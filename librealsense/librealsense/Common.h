@@ -14,11 +14,11 @@
 
 // ToDo:
 // -----
-// [] Calibration Info
+// [] Calibration Info - z to world?
 // [] Triple Buffering + proper mutexing
 // [] Error Handling
 // [] F200 Device Abstraction
-// [] Better Data Handling
+// [] Better frame data handling
 // [] Pointcloud Projection + Shader
 // [] Orbit Camera Class for Pointcloud
 // [] Shield user app from libusb/libuvc headers entirely 

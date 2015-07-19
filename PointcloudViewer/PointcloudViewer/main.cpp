@@ -56,7 +56,7 @@ GLuint imageUniformHandle;
 
 int main(int argc, const char * argv[])
 {
-    static int frameCount = 0;
+    uint64_t frameCount = 0;
     
     if (!glfwInit())
     {
