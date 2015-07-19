@@ -1,5 +1,6 @@
 #include "R200_SPI.h"
 #include <iostream>
+#include "R200_CalibrationBinaryUtil.h"
 
 using namespace XUControl;
 using namespace std;
@@ -128,11 +129,63 @@ void readAdminTable(uvc_device_handle_t *devh, int whichAdminSector, int blockLe
     readArbitraryChunk(devh, addressInSector, data, lengthToRead);
 }
 
-void readCameraModuleInfoBlock(uvc_device_handle_t *devh, uint8_t *data, int size)
+
+SPI_Interface::SPI_Interface(uvc_device_handle_t * devh) : deviceHandle(devh)
 {
-    RoutineStorageTables rst;
-    readAdminTable(devh, NV_IFFLEY_ROUTINE_TABLE_ADDRESS_INDEX, SIZEOF_ROUTINE_DESCRIPTION_ERASED_AND_PRESERVE_TABLE, rst.rd, ROUTINE_DESCRIPTION_OFFSET, SIZEOF_ROUTINE_DESCRIPTION_TABLE);
-    unsigned char block[SPI_FLASH_SECTOR_SIZE_IN_BYTES];
-    readAdminSector(devh, block, NV_CALIBRATION_DATA_ADDRESS_INDEX); // readCalibrationDataSector
-    memmove(data, block + 2048, (size < CAM_INFO_BLOCK_LEN ? size : CAM_INFO_BLOCK_LEN));
+    
 }
+
+void SPI_Interface::Initialize()
+{
+    rst = {0};
+    
+    readAdminTable(deviceHandle,
+                   NV_IFFLEY_ROUTINE_TABLE_ADDRESS_INDEX,
+                   SIZEOF_ROUTINE_DESCRIPTION_ERASED_AND_PRESERVE_TABLE,
+                   rst.rd,
+                   ROUTINE_DESCRIPTION_OFFSET,
+                   SIZEOF_ROUTINE_DESCRIPTION_TABLE);
+    
+    ReadCalibrationSector();
+}
+
+void SPI_Interface::ReadCalibrationSector()
+{
+    bool readStatus = readAdminSector(deviceHandle, flashData, NV_CALIBRATION_DATA_ADDRESS_INDEX);
+    
+    if (!readStatus)
+        throw std::runtime_error("Could not read calibration sector");
+    
+    memcpy(calibrationData, flashData + 2048, CAM_INFO_BLOCK_LEN);
+
+    bool parseHappy = ParseCalibrationRectifiedParametersFromMemory(parameters, calibrationData);
+    if (!parseHappy)
+        throw std::runtime_error("Could not parse calibration parameters from memory...");
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

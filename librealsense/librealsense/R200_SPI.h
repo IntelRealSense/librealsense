@@ -1,8 +1,9 @@
 #ifndef DS4_CAMERA_SPI_H
 #define DS4_CAMERA_SPI_H
 
-#include "R200_XU.h"
 #include "libuvc/libuvc.h"
+#include "R200_CalibRectParameters.h"
+#include "R200_XU.h"
 
 // SPI
 #define SPI_FLASH_PAGE_SIZE_IN_BYTES                        0x100
@@ -76,5 +77,28 @@ typedef struct
 uint32_t adminSectorAddresses[NV_ADMIN_DATA_N_ENTRIES];
 
 #define CAM_INFO_BLOCK_LEN 2048
+
+//@tofix error handling all up in this bitch
+class SPI_Interface
+{
+    DSCalibRectParameters parameters = {0};
+    
+    uint8_t flashData[SPI_FLASH_SECTOR_SIZE_IN_BYTES];
+    uint8_t calibrationData[CAM_INFO_BLOCK_LEN];
+    
+    void ReadCalibrationSector();
+    
+    uvc_device_handle_t * deviceHandle;
+    
+public:
+    
+    RoutineStorageTables rst;
+    
+    SPI_Interface(uvc_device_handle_t * deviceHandle);
+    void Initialize();
+
+    DSCalibRectParameters GetRectifiedParameters() { return parameters; }
+    
+};
 
 #endif

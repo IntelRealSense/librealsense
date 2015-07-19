@@ -222,6 +222,12 @@ public:
     //@todo Calibration info!
     // ------------------
     
+    void GetCalibrationDataRectZ()
+    {
+        // Check calibration info ok
+        // Can't be called for non-rectified LRZ mode
+    }
+    
 };
 
 ////////////////////

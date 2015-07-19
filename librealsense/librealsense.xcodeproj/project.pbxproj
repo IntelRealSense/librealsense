@@ -25,6 +25,8 @@
 		08567C001B5B5B5D00EB6C0D /* misc.c in Sources */ = {isa = PBXBuildFile; fileRef = 08567BF61B5B5B5D00EB6C0D /* misc.c */; };
 		08567C011B5B5B5D00EB6C0D /* stream.c in Sources */ = {isa = PBXBuildFile; fileRef = 08567BF71B5B5B5D00EB6C0D /* stream.c */; };
 		08567C061B5B7AD100EB6C0D /* Common.h in Headers */ = {isa = PBXBuildFile; fileRef = 08567C051B5B7AD100EB6C0D /* Common.h */; };
+		08567C111B5C25BE00EB6C0D /* R200_CalibRectParameters.h in Headers */ = {isa = PBXBuildFile; fileRef = 08567C101B5C25BE00EB6C0D /* R200_CalibRectParameters.h */; };
+		08567C131B5C2A6E00EB6C0D /* R200_CalibrationBinaryUtil.h in Headers */ = {isa = PBXBuildFile; fileRef = 08567C121B5C2A6E00EB6C0D /* R200_CalibrationBinaryUtil.h */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -47,6 +49,8 @@
 		08567BF61B5B5B5D00EB6C0D /* misc.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = misc.c; path = ../third_party/libuvc/src/misc.c; sourceTree = "<group>"; };
 		08567BF71B5B5B5D00EB6C0D /* stream.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = stream.c; path = ../third_party/libuvc/src/stream.c; sourceTree = "<group>"; };
 		08567C051B5B7AD100EB6C0D /* Common.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Common.h; sourceTree = "<group>"; };
+		08567C101B5C25BE00EB6C0D /* R200_CalibRectParameters.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = R200_CalibRectParameters.h; sourceTree = "<group>"; };
+		08567C121B5C2A6E00EB6C0D /* R200_CalibrationBinaryUtil.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = R200_CalibrationBinaryUtil.h; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -129,6 +133,8 @@
 				08567BDC1B5B5ABF00EB6C0D /* R200_SPI.h */,
 				08567BDD1B5B5ABF00EB6C0D /* R200_XU.cpp */,
 				08567BDE1B5B5ABF00EB6C0D /* R200_XU.h */,
+				08567C101B5C25BE00EB6C0D /* R200_CalibRectParameters.h */,
+				08567C121B5C2A6E00EB6C0D /* R200_CalibrationBinaryUtil.h */,
 			);
 			name = R200;
 			sourceTree = "<group>";
@@ -142,6 +148,8 @@
 			files = (
 				08567BEC1B5B5B4E00EB6C0D /* libuvc_internal.h in Headers */,
 				08567BE11B5B5ABF00EB6C0D /* R200_CameraHeader.h in Headers */,
+				08567C131B5C2A6E00EB6C0D /* R200_CalibrationBinaryUtil.h in Headers */,
+				08567C111B5C25BE00EB6C0D /* R200_CalibRectParameters.h in Headers */,
 				08567BEB1B5B5B4E00EB6C0D /* libuvc_config.h in Headers */,
 				08567BE31B5B5ABF00EB6C0D /* R200_SPI.h in Headers */,
 				08567BED1B5B5B4E00EB6C0D /* libuvc.h in Headers */,
@@ -353,6 +361,7 @@
 				08567BD11B5B5A0200EB6C0D /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 	};
