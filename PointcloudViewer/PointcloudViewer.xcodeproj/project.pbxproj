@@ -15,6 +15,7 @@
 		08567C0B1B5B898C00EB6C0D /* CoreVideo.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 08567C0A1B5B898C00EB6C0D /* CoreVideo.framework */; };
 		08567C0D1B5B899200EB6C0D /* IOKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 08567C0C1B5B899200EB6C0D /* IOKit.framework */; };
 		08567C0F1B5B899B00EB6C0D /* OpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 08567C0E1B5B899B00EB6C0D /* OpenGL.framework */; };
+		08567C171B5C359800EB6C0D /* libusb-1.0.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 08567C161B5C359800EB6C0D /* libusb-1.0.a */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -40,6 +41,7 @@
 		08567C0A1B5B898C00EB6C0D /* CoreVideo.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreVideo.framework; path = System/Library/Frameworks/CoreVideo.framework; sourceTree = SDKROOT; };
 		08567C0C1B5B899200EB6C0D /* IOKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = IOKit.framework; path = System/Library/Frameworks/IOKit.framework; sourceTree = SDKROOT; };
 		08567C0E1B5B899B00EB6C0D /* OpenGL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenGL.framework; path = System/Library/Frameworks/OpenGL.framework; sourceTree = SDKROOT; };
+		08567C161B5C359800EB6C0D /* libusb-1.0.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = "libusb-1.0.a"; path = "../../../../../usr/local/Cellar/libusb/1.0.19/lib/libusb-1.0.a"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -51,6 +53,7 @@
 				08567C0D1B5B899200EB6C0D /* IOKit.framework in Frameworks */,
 				08567C0B1B5B898C00EB6C0D /* CoreVideo.framework in Frameworks */,
 				08567C091B5B898400EB6C0D /* Cocoa.framework in Frameworks */,
+				08567C171B5C359800EB6C0D /* libusb-1.0.a in Frameworks */,
 				08567BD31B5B5A4A00EB6C0D /* librealsense.a in Frameworks */,
 				08567C041B5B5D6B00EB6C0D /* libglfw3.a in Frameworks */,
 			);
@@ -67,6 +70,7 @@
 				08567C0A1B5B898C00EB6C0D /* CoreVideo.framework */,
 				08567C081B5B898400EB6C0D /* Cocoa.framework */,
 				08567BD21B5B5A4A00EB6C0D /* librealsense.a */,
+				08567C161B5C359800EB6C0D /* libusb-1.0.a */,
 				08567C031B5B5D6B00EB6C0D /* libglfw3.a */,
 				08567BD41B5B5A5400EB6C0D /* third_party */,
 				08567BB31B5B59E800EB6C0D /* PointcloudViewer */,
@@ -314,6 +318,7 @@
 				08567BBA1B5B59E800EB6C0D /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 	};

@@ -116,6 +116,16 @@ int main(int argc, const char * argv[])
             for (auto cam : realsenseContext->cameras)
             {
                 std::cout << "Found Camera At Index: " << cam->GetCameraIndex() << std::endl;
+                
+                // 0 = IR, 1 = Z, 2 = RGB
+                cam->Open(1);
+             
+                auto zIntrin = cam->GetCalibrationDataRectZ();
+                
+                float hFov, vFov;
+                GetFieldOfView(zIntrin, hFov, vFov);
+                std::cout << "Computed FoV: " << hFov << " x " << vFov << std::endl;
+                
             }
         }
     }

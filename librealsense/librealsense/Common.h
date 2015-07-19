@@ -14,7 +14,7 @@
 
 // ToDo:
 // -----
-// [] Calibration Info - z to world?
+// [X] Calibration Info - z to world?
 // [] Triple Buffering + proper mutexing
 // [] Error Handling
 // [] F200 Device Abstraction

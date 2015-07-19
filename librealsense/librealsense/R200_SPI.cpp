@@ -1,11 +1,17 @@
 #include "R200_SPI.h"
 #include "R200_CalibrationBinaryUtil.h"
+#include "R200_CameraHeader.h"
 
 #include <iostream>
 #include <exception>
 
 using namespace XUControl;
 using namespace std;
+
+//@tofix ... this doesn't need to be global
+// and all the free functions should actually live in a struct
+// of some sort
+uint32_t g_adminSectorAddresses[NV_ADMIN_DATA_N_ENTRIES];
 
 ////////////////////////
 // SPI Free Functions //
@@ -95,11 +101,11 @@ void readArbitraryChunk(uvc_device_handle_t *devh, uint32_t address, void * data
 
 bool readAdminSector(uvc_device_handle_t *devh, unsigned char data[SPI_FLASH_SECTOR_SIZE_IN_BYTES], int whichAdminSector)
 {
-    readArbitraryChunk(devh, NV_NON_FIRMWARE_ROOT_ADDRESS, adminSectorAddresses, NV_ADMIN_DATA_N_ENTRIES * sizeof(adminSectorAddresses[0]));
+    readArbitraryChunk(devh, NV_NON_FIRMWARE_ROOT_ADDRESS, g_adminSectorAddresses, NV_ADMIN_DATA_N_ENTRIES * sizeof(g_adminSectorAddresses[0]));
     
     if (whichAdminSector >= 0 && whichAdminSector < NV_ADMIN_DATA_N_ENTRIES)
     {
-        uint32_t pageAddressInBytes = adminSectorAddresses[whichAdminSector];
+        uint32_t pageAddressInBytes = g_adminSectorAddresses[whichAdminSector];
         return readPages(devh, pageAddressInBytes, data, SPI_FLASH_PAGES_PER_SECTOR);
     }
     
@@ -130,7 +136,7 @@ int getAdminSectorUsedCopies(uvc_device_handle_t *devh, uint32_t sectorAddress, 
 
 void readAdminTable(uvc_device_handle_t *devh, int whichAdminSector, int blockLength, void * data, int offset, int lengthToRead)
 {
-    uint32_t address = adminSectorAddresses[whichAdminSector];
+    uint32_t address = g_adminSectorAddresses[whichAdminSector];
     uint32_t dummy;
     int usedCopiesCount = getAdminSectorUsedCopies(devh, address, &dummy);
     uint32_t addressInSector = address + (usedCopiesCount - 1) * blockLength + offset;
@@ -163,23 +169,53 @@ void SPI_Interface::Initialize()
 
 void SPI_Interface::ReadCalibrationSector()
 {
+    // Zero out params
+    parameters = {0};
+    
     // Read flash data
-    bool readStatus = readAdminSector(deviceHandle, flashData, NV_CALIBRATION_DATA_ADDRESS_INDEX);
+    bool readStatus = readAdminSector(deviceHandle, cameraHeader, NV_CALIBRATION_DATA_ADDRESS_INDEX);
     
     if (!readStatus)
         throw std::runtime_error("Could not read calibration sector");
     
     // Copy useful parts into calibration data
-    memcpy(calibrationData, flashData + 2048, CAM_INFO_BLOCK_LEN);
+    memcpy(calibrationData, cameraHeader, CAM_INFO_BLOCK_LEN);
 
     // Parse into something usable
     bool parseHappy = ParseCalibrationRectifiedParametersFromMemory(parameters, calibrationData);
     if (!parseHappy)
         throw std::runtime_error("Could not parse calibration parameters from memory...");
+    
+
 }
 
+DSCalibIntrinsicsRectified SPI_Interface::GetZIntrinsics(int mode)
+{
+    auto lrIntrin = parameters.modesLR[0][mode];
+    
+    // Some kind of crop offset happens here. This isn't the true lrIntrin.
+    std::cout << "### rfx: " << lrIntrin.rfx << std::endl;
+    std::cout << "### rfy: " << lrIntrin.rfy << std::endl;
+    std::cout << "### rpx: " << lrIntrin.rpx << std::endl;
+    std::cout << "### rpy: " << lrIntrin.rpy << std::endl;
+    std::cout << "### rw:  " << lrIntrin.rw << std::endl;
+    std::cout << "### rh:  " << lrIntrin.rh << std::endl;
+    
+    return lrIntrin;
+}
 
-
+void SPI_Interface::PrintHeaderInfo()
+{
+    R200::CameraHeaderInfo cameraInfo = {};
+    memcpy(&cameraInfo, cameraHeader + 2048, static_cast<int>(sizeof(cameraInfo)));
+    
+    std::cout << "######## Serial:" << cameraInfo.serialNumber << std::endl;
+    std::cout << "######## Model:" << cameraInfo.modelNumber << std::endl;
+    std::cout << "######## Revision:" << cameraInfo.revisionNumber << std::endl;
+    std::cout << "######## Version:" << int(cameraInfo.moduleVersion) << std::endl;
+    std::cout << "######## Major:" << int(cameraInfo.moduleMajorVersion) << std::endl;
+    std::cout << "######## Minor:" << int(cameraInfo.moduleMinorVersion) << std::endl;
+}
 
 
 

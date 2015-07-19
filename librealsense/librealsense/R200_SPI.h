@@ -75,17 +75,14 @@ typedef struct
 // Bus group
 #define COMMAND_MODIFIER_DIRECT 0x00000010
 
-// Global...
-uint32_t adminSectorAddresses[NV_ADMIN_DATA_N_ENTRIES];
-
 #define CAM_INFO_BLOCK_LEN 2048
 
 //@tofix error handling all up in this bitch
 class SPI_Interface
 {
-    DSCalibRectParameters parameters = {0};
+    DSCalibRectParameters parameters;
     
-    uint8_t flashData[SPI_FLASH_SECTOR_SIZE_IN_BYTES];
+    uint8_t cameraHeader[SPI_FLASH_SECTOR_SIZE_IN_BYTES];
     uint8_t calibrationData[CAM_INFO_BLOCK_LEN];
     
     void ReadCalibrationSector();
@@ -98,8 +95,14 @@ public:
     
     SPI_Interface(uvc_device_handle_t * deviceHandle);
     void Initialize();
+    
+    void PrintHeaderInfo();
 
     DSCalibRectParameters GetRectifiedParameters() { return parameters; }
+    DSCalibIntrinsicsRectified GetZIntrinsics(int mode = 0);
+    
+    
+    
 };
 
 #endif

@@ -1,6 +1,9 @@
 #pragma once
 
 #include <stdint.h>
+#include <stdio.h>
+#include <iostream>
+
 #include "R200_CalibRectParameters.h"
 
 // Assume little-endian architecture
@@ -99,6 +102,16 @@ static bool readFromBin(const unsigned char *& p, DSCalibIntrinsicsRectified & c
 
 inline bool ParseCalibrationRectifiedParametersFromMemory(DSCalibRectParameters & cal, const uint8_t * buffer)
 {
+    myNtoh((unsigned char *)&cal.versionNumber, buffer, sizeof(cal.versionNumber));
+    
+    std::cout << "Calibration Version Number: " << cal.versionNumber << std::endl;
+    if (cal.versionNumber <= 1)
+    {
+        throw std::runtime_error("Unsupported calibration version. Use a newer firmware!");
+    }
+
+    //@tofix -- this is actually V1
+        
     // Double check version number here
     const int
         mNIR = DS_MAX_NUM_INTRINSICS_RIGHT,
