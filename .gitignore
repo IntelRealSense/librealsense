@@ -39,3 +39,5 @@ xcuserdata
 *.moved-aside
 DerivedData
 *.xcuserstate
+
+local_ignore/
