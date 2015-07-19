@@ -1,0 +1,347 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 46;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		08567BDF1B5B5ABF00EB6C0D /* CameraContext.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 08567BD81B5B5ABF00EB6C0D /* CameraContext.cpp */; };
+		08567BE01B5B5ABF00EB6C0D /* CameraContext.h in Headers */ = {isa = PBXBuildFile; fileRef = 08567BD91B5B5ABF00EB6C0D /* CameraContext.h */; };
+		08567BE11B5B5ABF00EB6C0D /* CameraHeader.h in Headers */ = {isa = PBXBuildFile; fileRef = 08567BDA1B5B5ABF00EB6C0D /* CameraHeader.h */; };
+		08567BE21B5B5ABF00EB6C0D /* CameraSPI.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 08567BDB1B5B5ABF00EB6C0D /* CameraSPI.cpp */; };
+		08567BE31B5B5ABF00EB6C0D /* CameraSPI.h in Headers */ = {isa = PBXBuildFile; fileRef = 08567BDC1B5B5ABF00EB6C0D /* CameraSPI.h */; };
+		08567BE41B5B5ABF00EB6C0D /* CameraXU.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 08567BDD1B5B5ABF00EB6C0D /* CameraXU.cpp */; };
+		08567BE51B5B5ABF00EB6C0D /* CameraXU.h in Headers */ = {isa = PBXBuildFile; fileRef = 08567BDE1B5B5ABF00EB6C0D /* CameraXU.h */; };
+		08567BEB1B5B5B4E00EB6C0D /* libuvc_config.h in Headers */ = {isa = PBXBuildFile; fileRef = 08567BE81B5B5B4E00EB6C0D /* libuvc_config.h */; };
+		08567BEC1B5B5B4E00EB6C0D /* libuvc_internal.h in Headers */ = {isa = PBXBuildFile; fileRef = 08567BE91B5B5B4E00EB6C0D /* libuvc_internal.h */; };
+		08567BED1B5B5B4E00EB6C0D /* libuvc.h in Headers */ = {isa = PBXBuildFile; fileRef = 08567BEA1B5B5B4E00EB6C0D /* libuvc.h */; };
+		08567BF91B5B5B5D00EB6C0D /* ctrl.c in Sources */ = {isa = PBXBuildFile; fileRef = 08567BEF1B5B5B5D00EB6C0D /* ctrl.c */; };
+		08567BFA1B5B5B5D00EB6C0D /* device.c in Sources */ = {isa = PBXBuildFile; fileRef = 08567BF01B5B5B5D00EB6C0D /* device.c */; };
+		08567BFB1B5B5B5D00EB6C0D /* diag.c in Sources */ = {isa = PBXBuildFile; fileRef = 08567BF11B5B5B5D00EB6C0D /* diag.c */; };
+		08567BFE1B5B5B5D00EB6C0D /* frame.c in Sources */ = {isa = PBXBuildFile; fileRef = 08567BF41B5B5B5D00EB6C0D /* frame.c */; };
+		08567BFF1B5B5B5D00EB6C0D /* init.c in Sources */ = {isa = PBXBuildFile; fileRef = 08567BF51B5B5B5D00EB6C0D /* init.c */; };
+		08567C001B5B5B5D00EB6C0D /* misc.c in Sources */ = {isa = PBXBuildFile; fileRef = 08567BF61B5B5B5D00EB6C0D /* misc.c */; };
+		08567C011B5B5B5D00EB6C0D /* stream.c in Sources */ = {isa = PBXBuildFile; fileRef = 08567BF71B5B5B5D00EB6C0D /* stream.c */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		08567BC41B5B5A0200EB6C0D /* librealsense.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = librealsense.a; sourceTree = BUILT_PRODUCTS_DIR; };
+		08567BD81B5B5ABF00EB6C0D /* CameraContext.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = CameraContext.cpp; sourceTree = "<group>"; };
+		08567BD91B5B5ABF00EB6C0D /* CameraContext.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CameraContext.h; sourceTree = "<group>"; };
+		08567BDA1B5B5ABF00EB6C0D /* CameraHeader.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CameraHeader.h; sourceTree = "<group>"; };
+		08567BDB1B5B5ABF00EB6C0D /* CameraSPI.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = CameraSPI.cpp; sourceTree = "<group>"; };
+		08567BDC1B5B5ABF00EB6C0D /* CameraSPI.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CameraSPI.h; sourceTree = "<group>"; };
+		08567BDD1B5B5ABF00EB6C0D /* CameraXU.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = CameraXU.cpp; sourceTree = "<group>"; };
+		08567BDE1B5B5ABF00EB6C0D /* CameraXU.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CameraXU.h; sourceTree = "<group>"; };
+		08567BE81B5B5B4E00EB6C0D /* libuvc_config.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = libuvc_config.h; path = ../third_party/libuvc/include/libuvc/libuvc_config.h; sourceTree = "<group>"; };
+		08567BE91B5B5B4E00EB6C0D /* libuvc_internal.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = libuvc_internal.h; path = ../third_party/libuvc/include/libuvc/libuvc_internal.h; sourceTree = "<group>"; };
+		08567BEA1B5B5B4E00EB6C0D /* libuvc.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = libuvc.h; path = ../third_party/libuvc/include/libuvc/libuvc.h; sourceTree = "<group>"; };
+		08567BEF1B5B5B5D00EB6C0D /* ctrl.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = ctrl.c; path = ../third_party/libuvc/src/ctrl.c; sourceTree = "<group>"; };
+		08567BF01B5B5B5D00EB6C0D /* device.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = device.c; path = ../third_party/libuvc/src/device.c; sourceTree = "<group>"; };
+		08567BF11B5B5B5D00EB6C0D /* diag.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = diag.c; path = ../third_party/libuvc/src/diag.c; sourceTree = "<group>"; };
+		08567BF41B5B5B5D00EB6C0D /* frame.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = frame.c; path = ../third_party/libuvc/src/frame.c; sourceTree = "<group>"; };
+		08567BF51B5B5B5D00EB6C0D /* init.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = init.c; path = ../third_party/libuvc/src/init.c; sourceTree = "<group>"; };
+		08567BF61B5B5B5D00EB6C0D /* misc.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = misc.c; path = ../third_party/libuvc/src/misc.c; sourceTree = "<group>"; };
+		08567BF71B5B5B5D00EB6C0D /* stream.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = stream.c; path = ../third_party/libuvc/src/stream.c; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		08567BC11B5B5A0200EB6C0D /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		08567BBB1B5B5A0200EB6C0D = {
+			isa = PBXGroup;
+			children = (
+				08567BE61B5B5B2800EB6C0D /* libuvc */,
+				08567BC61B5B5A0200EB6C0D /* librealsense */,
+				08567BC51B5B5A0200EB6C0D /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		08567BC51B5B5A0200EB6C0D /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				08567BC41B5B5A0200EB6C0D /* librealsense.a */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		08567BC61B5B5A0200EB6C0D /* librealsense */ = {
+			isa = PBXGroup;
+			children = (
+				08567BD81B5B5ABF00EB6C0D /* CameraContext.cpp */,
+				08567BD91B5B5ABF00EB6C0D /* CameraContext.h */,
+				08567BDA1B5B5ABF00EB6C0D /* CameraHeader.h */,
+				08567BDB1B5B5ABF00EB6C0D /* CameraSPI.cpp */,
+				08567BDC1B5B5ABF00EB6C0D /* CameraSPI.h */,
+				08567BDD1B5B5ABF00EB6C0D /* CameraXU.cpp */,
+				08567BDE1B5B5ABF00EB6C0D /* CameraXU.h */,
+			);
+			path = librealsense;
+			sourceTree = "<group>";
+		};
+		08567BE61B5B5B2800EB6C0D /* libuvc */ = {
+			isa = PBXGroup;
+			children = (
+				08567BEE1B5B5B5100EB6C0D /* src */,
+				08567BE71B5B5B4100EB6C0D /* include */,
+			);
+			name = libuvc;
+			sourceTree = "<group>";
+		};
+		08567BE71B5B5B4100EB6C0D /* include */ = {
+			isa = PBXGroup;
+			children = (
+				08567BE81B5B5B4E00EB6C0D /* libuvc_config.h */,
+				08567BE91B5B5B4E00EB6C0D /* libuvc_internal.h */,
+				08567BEA1B5B5B4E00EB6C0D /* libuvc.h */,
+			);
+			name = include;
+			sourceTree = "<group>";
+		};
+		08567BEE1B5B5B5100EB6C0D /* src */ = {
+			isa = PBXGroup;
+			children = (
+				08567BEF1B5B5B5D00EB6C0D /* ctrl.c */,
+				08567BF01B5B5B5D00EB6C0D /* device.c */,
+				08567BF11B5B5B5D00EB6C0D /* diag.c */,
+				08567BF41B5B5B5D00EB6C0D /* frame.c */,
+				08567BF51B5B5B5D00EB6C0D /* init.c */,
+				08567BF61B5B5B5D00EB6C0D /* misc.c */,
+				08567BF71B5B5B5D00EB6C0D /* stream.c */,
+			);
+			name = src;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXHeadersBuildPhase section */
+		08567BC21B5B5A0200EB6C0D /* Headers */ = {
+			isa = PBXHeadersBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				08567BEC1B5B5B4E00EB6C0D /* libuvc_internal.h in Headers */,
+				08567BE11B5B5ABF00EB6C0D /* CameraHeader.h in Headers */,
+				08567BEB1B5B5B4E00EB6C0D /* libuvc_config.h in Headers */,
+				08567BE31B5B5ABF00EB6C0D /* CameraSPI.h in Headers */,
+				08567BED1B5B5B4E00EB6C0D /* libuvc.h in Headers */,
+				08567BE51B5B5ABF00EB6C0D /* CameraXU.h in Headers */,
+				08567BE01B5B5ABF00EB6C0D /* CameraContext.h in Headers */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXHeadersBuildPhase section */
+
+/* Begin PBXNativeTarget section */
+		08567BC31B5B5A0200EB6C0D /* librealsense */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 08567BCF1B5B5A0200EB6C0D /* Build configuration list for PBXNativeTarget "librealsense" */;
+			buildPhases = (
+				08567BC01B5B5A0200EB6C0D /* Sources */,
+				08567BC11B5B5A0200EB6C0D /* Frameworks */,
+				08567BC21B5B5A0200EB6C0D /* Headers */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = librealsense;
+			productName = librealsense;
+			productReference = 08567BC41B5B5A0200EB6C0D /* librealsense.a */;
+			productType = "com.apple.product-type.library.static";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		08567BBC1B5B5A0200EB6C0D /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				LastUpgradeCheck = 0620;
+				ORGANIZATIONNAME = "Dimitri Diakopoulos";
+				TargetAttributes = {
+					08567BC31B5B5A0200EB6C0D = {
+						CreatedOnToolsVersion = 6.2;
+					};
+				};
+			};
+			buildConfigurationList = 08567BBF1B5B5A0200EB6C0D /* Build configuration list for PBXProject "librealsense" */;
+			compatibilityVersion = "Xcode 3.2";
+			developmentRegion = English;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+			);
+			mainGroup = 08567BBB1B5B5A0200EB6C0D;
+			productRefGroup = 08567BC51B5B5A0200EB6C0D /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				08567BC31B5B5A0200EB6C0D /* librealsense */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		08567BC01B5B5A0200EB6C0D /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				08567BF91B5B5B5D00EB6C0D /* ctrl.c in Sources */,
+				08567BE41B5B5ABF00EB6C0D /* CameraXU.cpp in Sources */,
+				08567BFE1B5B5B5D00EB6C0D /* frame.c in Sources */,
+				08567C001B5B5B5D00EB6C0D /* misc.c in Sources */,
+				08567C011B5B5B5D00EB6C0D /* stream.c in Sources */,
+				08567BFB1B5B5B5D00EB6C0D /* diag.c in Sources */,
+				08567BFF1B5B5B5D00EB6C0D /* init.c in Sources */,
+				08567BFA1B5B5B5D00EB6C0D /* device.c in Sources */,
+				08567BDF1B5B5ABF00EB6C0D /* CameraContext.cpp in Sources */,
+				08567BE21B5B5ABF00EB6C0D /* CameraSPI.cpp in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		08567BCD1B5B5A0200EB6C0D /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
+					"$(SRCROOT)/../third_party/libuvc/include",
+					/usr/local/Cellar/libusb/1.0.19/include/,
+				);
+				LIBRARY_SEARCH_PATHS = /usr/local/Cellar/libusb/1.0.19/lib;
+				MACOSX_DEPLOYMENT_TARGET = 10.10;
+				MTL_ENABLE_DEBUG_INFO = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = macosx;
+			};
+			name = Debug;
+		};
+		08567BCE1B5B5A0200EB6C0D /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
+					"$(SRCROOT)/../third_party/libuvc/include",
+					/usr/local/Cellar/libusb/1.0.19/include/,
+				);
+				LIBRARY_SEARCH_PATHS = /usr/local/Cellar/libusb/1.0.19/lib;
+				MACOSX_DEPLOYMENT_TARGET = 10.10;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				SDKROOT = macosx;
+			};
+			name = Release;
+		};
+		08567BD01B5B5A0200EB6C0D /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				EXECUTABLE_PREFIX = "";
+				GCC_ENABLE_CPP_EXCEPTIONS = YES;
+				GCC_ENABLE_CPP_RTTI = YES;
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Debug;
+		};
+		08567BD11B5B5A0200EB6C0D /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				EXECUTABLE_PREFIX = "";
+				GCC_ENABLE_CPP_EXCEPTIONS = YES;
+				GCC_ENABLE_CPP_RTTI = YES;
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		08567BBF1B5B5A0200EB6C0D /* Build configuration list for PBXProject "librealsense" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				08567BCD1B5B5A0200EB6C0D /* Debug */,
+				08567BCE1B5B5A0200EB6C0D /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		08567BCF1B5B5A0200EB6C0D /* Build configuration list for PBXNativeTarget "librealsense" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				08567BD01B5B5A0200EB6C0D /* Debug */,
+				08567BD11B5B5A0200EB6C0D /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 08567BBC1B5B5A0200EB6C0D /* Project object */;
+}
