@@ -20,10 +20,6 @@
 
 GLFWwindow * window;
 
-GLuint g_IvCamLocation;
-GLuint g_DS4CamLocation;
-GLuint textureHandle;
-
 std::string vertShader = R"(#version 330 core
     layout(location = 0) in vec3 position;
     out vec2 texCoord;
@@ -35,15 +31,28 @@ std::string vertShader = R"(#version 330 core
 )";
 
 std::string fragShader = R"(#version 330 core
+    uniform sampler2D u_image;
     in vec2 texCoord;
     out vec3 color;
-    uniform sampler2D u_image;
     void main()
     {
         color = texture(u_image, texCoord.st * vec2(1.0, -1.0)).rgb;
     }
 )";
 
+static const GLfloat g_quad_vertex_buffer_data[] =
+{
+    1.0f, 1.0f, 0.0f,
+    -1.0f, 1.0f, 0.0f,
+    1.0f,  -1.0f, 0.0f,
+    1.0f,  -1.0f, 0.0f,
+    -1.0f, 1.0f, 0.0f,
+    -1.0f, -1.0f, 0.0f,
+};
+
+GLuint rgbTextureHandle;
+GLuint depthTextureHandle;
+GLuint imageUniformHandle;
 
 int main(int argc, const char * argv[])
 {
@@ -61,7 +70,7 @@ int main(int argc, const char * argv[])
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     
-    window = glfwCreateWindow(1280, 480, "DS4 & OSX", NULL, NULL);
+    window = glfwCreateWindow(1280, 480, "R200 Pointcloud", NULL, NULL);
     
     if (!window)
     {
@@ -78,26 +87,25 @@ int main(int argc, const char * argv[])
                                   glViewport(0, 0, width, height);
                               });
     
+    glfwSetKeyCallback (window,
+                        [](GLFWwindow * window, int key, int, int action, int mods)
+                        {
+                           if (action == GLFW_PRESS)
+                           {
+                               if (key == GLFW_KEY_ESCAPE)
+                               {
+                                   glfwSetWindowShouldClose(window, 1);
+                               }
+                           }
+                        });
+    
     // Remapped colors...
-    g_IvCamLocation = CreateTexture(640, 480, GL_RGB);
-    g_DS4CamLocation = CreateTexture(628, 468, GL_RGB);
+    rgbTextureHandle = CreateTexture(640, 480, GL_RGB);     // Normal RGB
+    depthTextureHandle = CreateTexture(628, 468, GL_RGB);   // Depth to RGB remap
     
-    // glfwSetWindowShouldClose(window, 1);
-    
-    // The fullscreen quad's FBO
     GLuint quad_VertexArrayID;
     glGenVertexArrays(1, &quad_VertexArrayID);
     glBindVertexArray(quad_VertexArrayID);
-    
-    static const GLfloat g_quad_vertex_buffer_data[] =
-    {
-        1.0f, 1.0f, 0.0f,
-        -1.0f, 1.0f, 0.0f,
-        1.0f,  -1.0f, 0.0f,
-        1.0f,  -1.0f, 0.0f,
-        -1.0f, 1.0f, 0.0f,
-        -1.0f, -1.0f, 0.0f,
-    };
     
     GLuint quad_vertexbuffer;
     glGenBuffers(1, &quad_vertexbuffer);
@@ -106,7 +114,7 @@ int main(int argc, const char * argv[])
     
     // Create and compile our GLSL program from the shaders
     GLuint fullscreenTextureProg = CreateGLProgram(vertShader, fragShader);
-    textureHandle = glGetUniformLocation(fullscreenTextureProg, "u_image");
+    imageUniformHandle = glGetUniformLocation(fullscreenTextureProg, "u_image");
     
     while(!glfwWindowShouldClose(window))
     {

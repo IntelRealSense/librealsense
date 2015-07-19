@@ -11,6 +11,10 @@
 		08567BD31B5B5A4A00EB6C0D /* librealsense.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 08567BD21B5B5A4A00EB6C0D /* librealsense.a */; };
 		08567BD71B5B5AA300EB6C0D /* GfxUtil.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 08567BD51B5B5AA300EB6C0D /* GfxUtil.cpp */; };
 		08567C041B5B5D6B00EB6C0D /* libglfw3.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 08567C031B5B5D6B00EB6C0D /* libglfw3.a */; };
+		08567C091B5B898400EB6C0D /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 08567C081B5B898400EB6C0D /* Cocoa.framework */; };
+		08567C0B1B5B898C00EB6C0D /* CoreVideo.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 08567C0A1B5B898C00EB6C0D /* CoreVideo.framework */; };
+		08567C0D1B5B899200EB6C0D /* IOKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 08567C0C1B5B899200EB6C0D /* IOKit.framework */; };
+		08567C0F1B5B899B00EB6C0D /* OpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 08567C0E1B5B899B00EB6C0D /* OpenGL.framework */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -32,6 +36,10 @@
 		08567BD51B5B5AA300EB6C0D /* GfxUtil.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = GfxUtil.cpp; sourceTree = "<group>"; };
 		08567BD61B5B5AA300EB6C0D /* GfxUtil.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = GfxUtil.h; sourceTree = "<group>"; };
 		08567C031B5B5D6B00EB6C0D /* libglfw3.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libglfw3.a; path = ../third_party/glfw/bin/osx/libglfw3.a; sourceTree = "<group>"; };
+		08567C081B5B898400EB6C0D /* Cocoa.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cocoa.framework; path = System/Library/Frameworks/Cocoa.framework; sourceTree = SDKROOT; };
+		08567C0A1B5B898C00EB6C0D /* CoreVideo.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreVideo.framework; path = System/Library/Frameworks/CoreVideo.framework; sourceTree = SDKROOT; };
+		08567C0C1B5B899200EB6C0D /* IOKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = IOKit.framework; path = System/Library/Frameworks/IOKit.framework; sourceTree = SDKROOT; };
+		08567C0E1B5B899B00EB6C0D /* OpenGL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenGL.framework; path = System/Library/Frameworks/OpenGL.framework; sourceTree = SDKROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -39,6 +47,10 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				08567C0F1B5B899B00EB6C0D /* OpenGL.framework in Frameworks */,
+				08567C0D1B5B899200EB6C0D /* IOKit.framework in Frameworks */,
+				08567C0B1B5B898C00EB6C0D /* CoreVideo.framework in Frameworks */,
+				08567C091B5B898400EB6C0D /* Cocoa.framework in Frameworks */,
 				08567BD31B5B5A4A00EB6C0D /* librealsense.a in Frameworks */,
 				08567C041B5B5D6B00EB6C0D /* libglfw3.a in Frameworks */,
 			);
@@ -50,6 +62,10 @@
 		08567BA81B5B59E800EB6C0D = {
 			isa = PBXGroup;
 			children = (
+				08567C0E1B5B899B00EB6C0D /* OpenGL.framework */,
+				08567C0C1B5B899200EB6C0D /* IOKit.framework */,
+				08567C0A1B5B898C00EB6C0D /* CoreVideo.framework */,
+				08567C081B5B898400EB6C0D /* Cocoa.framework */,
 				08567BD21B5B5A4A00EB6C0D /* librealsense.a */,
 				08567C031B5B5D6B00EB6C0D /* libglfw3.a */,
 				08567BD41B5B5A5400EB6C0D /* third_party */,
@@ -245,11 +261,13 @@
 					"$(SRCROOT)/../third_party/glfw",
 					"$(SRCROOT)/../third_party/catch",
 					"$(SRCROOT)/../librealsense/",
+					/usr/local/Cellar/libusb/1.0.19/include/,
 				);
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",
-					/Users/ddiakopoulos/Desktop/uvcsense/librealsense/build/Debug,
-					/Users/ddiakopoulos/Desktop/uvcsense/third_party/glfw/bin/osx,
+					"$(SRCROOT)/../librealsense/build/Debug",
+					"$(SRCROOT)/../third_party/glfw/bin/osx",
+					/usr/local/Cellar/libusb/1.0.19/lib,
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
@@ -265,11 +283,13 @@
 					"$(SRCROOT)/../third_party/glfw",
 					"$(SRCROOT)/../third_party/catch",
 					"$(SRCROOT)/../librealsense/",
+					/usr/local/Cellar/libusb/1.0.19/include/,
 				);
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",
-					/Users/ddiakopoulos/Desktop/uvcsense/librealsense/build/Debug,
-					/Users/ddiakopoulos/Desktop/uvcsense/third_party/glfw/bin/osx,
+					"$(SRCROOT)/../librealsense/build/Debug",
+					"$(SRCROOT)/../third_party/glfw/bin/osx",
+					/usr/local/Cellar/libusb/1.0.19/lib,
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
