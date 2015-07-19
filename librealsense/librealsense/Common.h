@@ -6,14 +6,22 @@
 #include <stdint.h>
 #include <vector>
 #include <memory>
+#include <stdio.h>
+#include <exception>
+#include <string>
+#include <array>
+#include <cmath>
 
 // ToDo:
 // -----
 // [] Calibration Info
-// [] Triple Buffering
+// [] Triple Buffering + proper mutexing
 // [] Error Handling
 // [] F200 Device Abstraction
 // [] Better Data Handling
+// [] Pointcloud Projection + Shader
+// [] Orbit Camera Class for Pointcloud
+// [] Shield user app from libusb/libuvc headers entirely 
 
 enum class RealSenseCamera : uint8_t
 {
@@ -32,7 +40,7 @@ enum class RealSenseCamera : uint8_t
 
 ///////////////////
 // Triple Buffer //
-//////////////////
+///////////////////
 
 struct TripleBufferedFrame
 {
@@ -61,5 +69,73 @@ struct TripleBufferedFrame
         updated = false;
     }
 };
+
+////////////////////
+// Math Utilities //
+////////////////////
+
+template <typename T>
+T rs_max(T a, T b, T c)
+{
+    return std::max(a, std::max(b, c));
+}
+
+template <typename T>
+T rs_min(T a, T b, T c)
+{
+    return std::min(a, std::min(b, c));
+}
+
+template<class T>
+T rs_clamp(T a, T mn, T mx)
+{
+    return std::max(std::min(a, mx), mn);
+}
+
+template <typename T>
+inline T remap(T value, T inputMin, T inputMax, T outputMin, T outputMax, bool clamp)
+{
+    T outVal = ((value - inputMin) / (inputMax - inputMin) * (outputMax - outputMin) + outputMin);
+    if (clamp)
+    {
+        if (outputMax < outputMin)
+        {
+            if (outVal < outputMax) outVal = outputMax;
+            else if (outVal > outputMin) outVal = outputMin;
+        }
+        else
+        {
+            if (outVal > outputMax) outVal = outputMax;
+            else if (outVal < outputMin) outVal = outputMin;
+        }
+    }
+    return outVal;
+}
+
+template <typename T, bool clamp, int inputMin, int inputMax>
+inline T remapInt(T value, float outputMin, float outputMax)
+{
+    T invVal = 1.0f / (inputMax - inputMin);
+    T outVal = (invVal * (value - inputMin) * (outputMax - outputMin) + outputMin);
+    if (clamp)
+    {
+        if (outputMax < outputMin)
+        {
+            if (outVal < outputMax) outVal = outputMax;
+            else if (outVal > outputMin) outVal = outputMin;
+        }
+        else
+        {
+            if (outVal > outputMax) outVal = outputMax;
+            else if (outVal < outputMin) outVal = outputMin;
+        }
+    }
+    return outVal;
+}
+
+inline uint8_t clampbyte(int v)
+{
+    return v < 0 ? 0 : v > 255 ? 255 : v;
+}
 
 #endif

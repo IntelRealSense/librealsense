@@ -238,6 +238,14 @@
 		08567BB91B5B59E800EB6C0D /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
+					"$(SRCROOT)/../third_party/libuvc/include",
+					"$(SRCROOT)/../third_party/glfw",
+					"$(SRCROOT)/../third_party/catch",
+					"$(SRCROOT)/../librealsense/",
+				);
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",
 					/Users/ddiakopoulos/Desktop/uvcsense/librealsense/build/Debug,
@@ -250,6 +258,14 @@
 		08567BBA1B5B59E800EB6C0D /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
+					"$(SRCROOT)/../third_party/libuvc/include",
+					"$(SRCROOT)/../third_party/glfw",
+					"$(SRCROOT)/../third_party/catch",
+					"$(SRCROOT)/../librealsense/",
+				);
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",
 					/Users/ddiakopoulos/Desktop/uvcsense/librealsense/build/Debug,

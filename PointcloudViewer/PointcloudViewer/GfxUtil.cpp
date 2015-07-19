@@ -1,11 +1,3 @@
-#include <stdio.h>
-#include <stdint.h>
-#include <vector>
-#include <exception>
-#include <string>
-#include <array>
-#include <cmath>
-
 #include "GfxUtil.h"
 
 void convert_yuyv_rgb(const uint8_t *src, int width, int height, uint8_t *dst)
@@ -37,16 +29,16 @@ void CheckGLError(const char* file, int32_t line)
     GLint error = glGetError();
     if (error)
     {
-        const char* errorString = 0;
+        const char * errorStr = 0;
         switch (error)
         {
-            case GL_INVALID_ENUM: errorString = "GL_INVALID_ENUM"; break;
-            case GL_INVALID_VALUE: errorString = "GL_INVALID_VALUE"; break;
-            case GL_INVALID_OPERATION: errorString = "GL_INVALID_OPERATION"; break;
-            case GL_OUT_OF_MEMORY: errorString = "GL_OUT_OF_MEMORY"; break;
-            default: errorString = "unknown error"; break;
+            case GL_INVALID_ENUM: errorStr = "GL_INVALID_ENUM"; break;
+            case GL_INVALID_VALUE: errorStr = "GL_INVALID_VALUE"; break;
+            case GL_INVALID_OPERATION: errorStr = "GL_INVALID_OPERATION"; break;
+            case GL_OUT_OF_MEMORY: errorStr = "GL_OUT_OF_MEMORY"; break;
+            default: errorStr = "unknown error"; break;
         }
-        printf("GL error : %s, line %d : %s\n", file, line, errorString);
+        printf("GL error : %s, line %d : %s\n", file, line, errorStr);
         error = 0;
     }
 }
@@ -150,11 +142,12 @@ std::array<double, 3> rgbToHsv(uint8_t r, uint8_t g, uint8_t b)
     double gd = (double)g / 255;
     double bd = (double)b / 255;
     
-    double max = util::max<double>(rd, gd, bd), min = util::min<double>(rd, gd, bd);
+    double max = rs_max<double>(rd, gd, bd);
+    double min = rs_min<double>(rd, gd, bd);
     double h, s, v = max;
     double d = max - min;
     
-    s = max == 0 ? 0 : d / max;
+    s = (max == 0) ? 0 : (d / max);
     
     if (max == min)
     {
@@ -202,8 +195,43 @@ std::array<int, 3> hsvToRgb(double h, double s, double v) {
         case 4: r = t, g = p, b = v; break;
         case 5: r = v, g = p, b = q; break;
     }
-    rgb[0] = uint8_t(clamp((float) r * 255.0f, 0.0f, 255.0f));
-    rgb[1] = uint8_t(clamp((float) g * 255.0f, 0.0f, 255.0f));
-    rgb[2] = uint8_t(clamp((float) b * 255.0f, 0.0f, 255.0f));
+    rgb[0] = uint8_t(rs_clamp((float) r * 255.0f, 0.0f, 255.0f));
+    rgb[1] = uint8_t(rs_clamp((float) g * 255.0f, 0.0f, 255.0f));
+    rgb[2] = uint8_t(rs_clamp((float) b * 255.0f, 0.0f, 255.0f));
     return rgb;
+}
+
+void drawTexture(GLuint prog, GLuint vbo, GLuint texHandle, GLuint texId, void * pixels, int width, int height, GLint fmt, GLenum type)
+{
+    CHECK_GL_ERROR();
+    
+    glUseProgram(prog);
+    
+    // Bind our texture in Texture Unit 0
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, texId);
+    glTexImage2D(GL_TEXTURE_2D, 0, fmt, width, height, 0, fmt, type, pixels);
+    glUniform1i(texHandle, 0); // Set our "u_image" sampler to user Texture Unit 0
+    
+    CHECK_GL_ERROR();
+    
+    // 1st attribute buffer : vertices
+    glEnableVertexAttribArray(0);
+    glBindBuffer(GL_ARRAY_BUFFER, vbo);
+    glVertexAttribPointer(
+                          0,                  // attribute 0 (layout location 1)
+                          3,                  // size
+                          GL_FLOAT,           // type
+                          GL_FALSE,           // normalized
+                          0,                  // stride
+                          (void*)0            // array buffer offset
+                          );
+    
+    CHECK_GL_ERROR();
+    
+    glDrawArrays(GL_TRIANGLES, 0, 6);
+    
+    glDisableVertexAttribArray(0);
+    
+    glUseProgram(0);
 }

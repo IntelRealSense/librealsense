@@ -81,9 +81,29 @@ class UVCCamera
         {
             //@tofix other pixel formats
         }
+        
+        /*
+         void rgbCallback(uvc_frame_t *frame, void *ptr)
+         {
+         static int frameCount;
+         
+         std::cout << "rgb_frame_count: " << frameCount << std::endl;
+         
+         std::vector<uint8_t> colorImg(frame->width * frame->height * 3); // YUY2 = 16 in -> 24 out
+         convert_yuyv_rgb((const uint8_t *)frame->data, frame->width, frame->height, colorImg.data());
+         memcpy(g_rgbImage, colorImg.data(), 640 * 480 * 3);
+         
+         frameCount++;
+         }
+         */
+
+        
     }
     
 public:
+    
+    // ivcam = 0x0a66
+    // UVC_FRAME_FORMAT_INVI, 640, 480, 60
     
     UVCCamera(uvc_device_t * device, int num) : device(device), cameraNum(num)
     {
