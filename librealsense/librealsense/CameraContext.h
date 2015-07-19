@@ -25,14 +25,10 @@ struct StreamInfo
     uvc_frame_format format;
 };
 
-struct StreamHandle
-{
-    // ...
-};
-
 struct DeviceInfo
 {
-    std::string serialNumber;
+    std::string usbSerial;
+    std::string cameraSerial;
     uint32_t vid;
     uint32_t pid;
 };
@@ -123,7 +119,7 @@ public:
         if(uvc_get_device_descriptor(device, &desc) == UVC_SUCCESS)
         {
             if (desc->serialNumber)
-                dInfo.serialNumber = desc->serialNumber;
+                dInfo.usbSerial = desc->serialNumber;
             
             if (desc->idVendor)
                 dInfo.vid = desc->idVendor;
@@ -134,7 +130,9 @@ public:
             uvc_free_device_descriptor(desc);
         }
         
-        std::cout << "Serial Number " << dInfo.serialNumber << std::endl;
+        std::cout << "Serial Number: " << dInfo.usbSerial << std::endl;
+        std::cout << "USB VID: " << dInfo.vid << std::endl;
+        std::cout << "USB PID: " << dInfo.pid << std::endl;
         
         isInitialized = true;
     }
@@ -196,7 +194,13 @@ public:
         uvc_print_diag(deviceHandle, stderr);
     }
     
-    std::vector<uint8_t> getDepthImage();
+    std::vector<uint8_t> getDepthImage()
+    {
+        return frameData;
+    }
+    
+    //@todo Calibration info!
+    // ------------------
     
 };
 
@@ -223,19 +227,6 @@ public:
     ~CameraContext();
     
     std::vector<std::shared_ptr<UVCCamera>> cameras;
-
 };
-
-bool GetCalibrationExtrinsics(const StreamHandle & h);
-
-bool GetCalibrationIntrinsics(const StreamHandle & h);
-
-int GetStreamStatus(const StreamHandle & h);
-
-int GetCameraSerial(const StreamHandle & h);
-
-// Etc
-float GetStreamGain(const StreamHandle & h);
-bool SetStreamGain(float gain, const StreamHandle & h);
 
 #endif

@@ -7,7 +7,13 @@
 #include <vector>
 #include <memory>
 
-// https://github.com/arpg/HAL/blob/e3fde877096a7131b4a609bfdc9af13abf89969f/HAL/Camera/Drivers/RealSense/RealSenseFactory.cpp
+// ToDo:
+// -----
+// [] Calibration Info
+// [] Triple Buffering
+// [] Error Handling
+// [] F200 Device Abstraction
+// [] Better Data Handling
 
 enum class RealSenseCamera : uint8_t
 {

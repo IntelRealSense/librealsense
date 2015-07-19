@@ -4,7 +4,7 @@
 #include <stdint.h>
 #include <string>
 
-#include "CameraSPI.h"
+#include "R200_SPI.h"
 #include "libuvc/libuvc.h"
 
 #define STATUS_BIT_Z_STREAMING (1 << 0)

@@ -1,7 +1,7 @@
 #ifndef DS4_CAMERA_SPI_H
 #define DS4_CAMERA_SPI_H
 
-#include "CameraXU.h"
+#include "R200_XU.h"
 #include "libuvc/libuvc.h"
 
 // SPI

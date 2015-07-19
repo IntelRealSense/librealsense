@@ -1,6 +1,7 @@
 #ifndef R200_CAMERA_HEADER_H
 #define R200_CAMERA_HEADER_H
-#include <cstdint>
+
+#include <stdint.h>
 
 namespace R200
 {

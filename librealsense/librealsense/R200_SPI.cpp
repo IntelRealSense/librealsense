@@ -1,4 +1,4 @@
-#include "CameraSPI.h"
+#include "R200_SPI.h"
 #include <iostream>
 
 using namespace XUControl;
