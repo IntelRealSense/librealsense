@@ -58,6 +58,8 @@ class UVCCamera
     
     std::mutex cameraMutex;
     
+    std::unique_ptr<SPI_Interface> spiInterface;
+    
     static void cb(uvc_frame_t *frame, void *ptr)
     {
         UVCCamera * camera = static_cast<UVCCamera*>(ptr);
@@ -154,6 +156,12 @@ public:
         std::cout << "USB VID: " << dInfo.vid << std::endl;
         std::cout << "USB PID: " << dInfo.pid << std::endl;
         
+        std::cout << "Now initializing SPI... " << std::endl;
+        
+        spiInterface.reset(new SPI_Interface(deviceHandle));
+        spiInterface->Initialize();
+        auto calibrationparameters = spiInterface->GetRectifiedParameters();
+        
         isInitialized = true;
     }
     
@@ -190,7 +198,7 @@ public:
         // @tofix: proper treatment of strides and frame data types
         frameData.resize(info.width * info.height * 2);
         
-        // Debugging
+        // Spam camera info for debugging
         DumpInfo();
         
         isStreaming = true;
@@ -218,6 +226,8 @@ public:
     {
         return frameData;
     }
+    
+    int GetCameraIndex() { return cameraNum; }
     
     //@todo Calibration info!
     // ------------------

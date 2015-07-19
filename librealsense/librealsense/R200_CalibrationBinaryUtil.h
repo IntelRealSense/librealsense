@@ -6,7 +6,6 @@
 // Assume little-endian architecture
 void myNtoh(unsigned char * result, const unsigned char * origin, int numBytes)
 {
-    assert(origin && result && result != origin);
     const bool changeEndianness = true; //  false; // HERE!!!! WHY need to change to false?
     if (changeEndianness)
     {

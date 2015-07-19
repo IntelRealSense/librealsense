@@ -1,9 +1,17 @@
 #include "R200_SPI.h"
-#include <iostream>
 #include "R200_CalibrationBinaryUtil.h"
+
+#include <iostream>
+#include <exception>
 
 using namespace XUControl;
 using namespace std;
+
+////////////////////////
+// SPI Free Functions //
+////////////////////////
+
+//@tofix namespace all the things
 
 bool readPages(uvc_device_handle_t *devh, uint32_t address, unsigned char * buffer, uint32_t nPages)
 {
@@ -129,6 +137,9 @@ void readAdminTable(uvc_device_handle_t *devh, int whichAdminSector, int blockLe
     readArbitraryChunk(devh, addressInSector, data, lengthToRead);
 }
 
+///////////////////
+// SPI Interface //
+///////////////////
 
 SPI_Interface::SPI_Interface(uvc_device_handle_t * devh) : deviceHandle(devh)
 {
@@ -139,6 +150,7 @@ void SPI_Interface::Initialize()
 {
     rst = {0};
     
+    // Setup admin table
     readAdminTable(deviceHandle,
                    NV_IFFLEY_ROUTINE_TABLE_ADDRESS_INDEX,
                    SIZEOF_ROUTINE_DESCRIPTION_ERASED_AND_PRESERVE_TABLE,
@@ -151,13 +163,16 @@ void SPI_Interface::Initialize()
 
 void SPI_Interface::ReadCalibrationSector()
 {
+    // Read flash data
     bool readStatus = readAdminSector(deviceHandle, flashData, NV_CALIBRATION_DATA_ADDRESS_INDEX);
     
     if (!readStatus)
         throw std::runtime_error("Could not read calibration sector");
     
+    // Copy useful parts into calibration data
     memcpy(calibrationData, flashData + 2048, CAM_INFO_BLOCK_LEN);
 
+    // Parse into something usable
     bool parseHappy = ParseCalibrationRectifiedParametersFromMemory(parameters, calibrationData);
     if (!parseHappy)
         throw std::runtime_error("Could not parse calibration parameters from memory...");

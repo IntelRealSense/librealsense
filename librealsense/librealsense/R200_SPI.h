@@ -1,3 +1,5 @@
+#pragma once
+
 #ifndef DS4_CAMERA_SPI_H
 #define DS4_CAMERA_SPI_H
 
@@ -98,7 +100,6 @@ public:
     void Initialize();
 
     DSCalibRectParameters GetRectifiedParameters() { return parameters; }
-    
 };
 
 #endif

@@ -54,6 +54,8 @@ GLuint rgbTextureHandle;
 GLuint depthTextureHandle;
 GLuint imageUniformHandle;
 
+std::unique_ptr<CameraContext> realsenseContext;
+
 int main(int argc, const char * argv[])
 {
     uint64_t frameCount = 0;
@@ -98,6 +100,25 @@ int main(int argc, const char * argv[])
                                }
                            }
                         });
+    
+    // Initialize RealSense R200 Camera ----------------------------------------------------------------
+    {
+        realsenseContext.reset(new CameraContext());
+    
+        auto cameraList = realsenseContext->cameras;
+        
+        if (cameraList.size() == 0)
+        {
+            std::cout << "Error: no cameras detected. Is it plugged in?" << std::endl;
+        }
+        else
+        {
+            for (auto cam : realsenseContext->cameras)
+            {
+                std::cout << "Found Camera At Index: " << cam->GetCameraIndex() << std::endl;
+            }
+        }
+    }
     
     // Remapped colors...
     rgbTextureHandle = CreateTexture(640, 480, GL_RGB);     // Normal RGB

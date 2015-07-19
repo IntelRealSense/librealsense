@@ -2,12 +2,12 @@
 
 #include <stdint.h>
 
-const int DS_MAX_NUM_INTRINSICS_RIGHT = 2;         ///< Max number right cameras supported (e.g. one or two, two would support a multi-baseline unit)
-const int DS_MAX_NUM_INTRINSICS_THIRD = 3;         ///< Max number native resolutions the third camera can have (e.g. 1920x1080 and 640x480)
-const int DS_MAX_NUM_INTRINSICS_PLATFORM = 4;      ///< Max number native resolutions the platform camera can have
-const int DS_MAX_NUM_RECTIFIED_MODES_LR = 4;       ///< Max number rectified LR resolution modes the structure supports (e.g. 640x480, 492x372 and 332x252)
-const int DS_MAX_NUM_RECTIFIED_MODES_THIRD = 3;    ///< Max number rectified Third resolution modes the structure supports (e.g. 1920x1080, 1280x720, 640x480 and 320x240)
-const int DS_MAX_NUM_RECTIFIED_MODES_PLATFORM = 1; ///< Max number rectified Platform resolution modes the structure supports
+const uint16_t DS_MAX_NUM_INTRINSICS_RIGHT = 2;         ///< Max number right cameras supported (e.g. one or two, two would support a multi-baseline unit)
+const uint16_t DS_MAX_NUM_INTRINSICS_THIRD = 3;         ///< Max number native resolutions the third camera can have (e.g. 1920x1080 and 640x480)
+const uint16_t DS_MAX_NUM_INTRINSICS_PLATFORM = 4;      ///< Max number native resolutions the platform camera can have
+const uint16_t DS_MAX_NUM_RECTIFIED_MODES_LR = 4;       ///< Max number rectified LR resolution modes the structure supports (e.g. 640x480, 492x372 and 332x252)
+const uint16_t DS_MAX_NUM_RECTIFIED_MODES_THIRD = 3;    ///< Max number rectified Third resolution modes the structure supports (e.g. 1920x1080, 1280x720, 640x480 and 320x240)
+const uint16_t DS_MAX_NUM_RECTIFIED_MODES_PLATFORM = 1; ///< Max number rectified Platform resolution modes the structure supports
 
 struct DSCalibIntrinsicsNonRectified
 {
