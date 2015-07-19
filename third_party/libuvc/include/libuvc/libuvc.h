@@ -63,6 +63,7 @@ enum uvc_frame_format {
      */
     UVC_FRAME_FORMAT_YUYV,
     UVC_FRAME_FORMAT_UYVY,
+    /** DS4 Depth */
     UVC_FRAME_FORMAT_Y12I,
     UVC_FRAME_FORMAT_Y16,
     UVC_FRAME_FORMAT_Y8,

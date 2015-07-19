@@ -1,12 +1,13 @@
-#ifndef DS4_CAMERA_HEADER_H
-#define DS4_CAMERA_HEADER_H
-
+#ifndef R200_CAMERA_HEADER_H
+#define R200_CAMERA_HEADER_H
 #include <cstdint>
 
+namespace R200
+{
+    
 #pragma pack(1)
-
 #define CURRENT_CAMERA_CONTENTS_VERSION_NUMBER 10
-
+    
 struct CameraHeaderInfo
 {
     uint32_t serialNumber;
@@ -73,7 +74,9 @@ struct CameraHeaderInfo
     uint32_t theLastWord;
     uint8_t reserved5[57];
 } __attribute__((aligned(1)));
-
+    
 #pragma pack()
+    
+} // R200
 
 #endif
