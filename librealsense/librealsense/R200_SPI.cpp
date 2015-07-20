@@ -1,5 +1,5 @@
 #include "R200_SPI.h"
-#include "R200_CalibrationBinaryUtil.h"
+#include "R200_CalibrationIO.h"
 #include "R200_CameraHeader.h"
 
 #include <iostream>
@@ -16,8 +16,6 @@ uint32_t g_adminSectorAddresses[NV_ADMIN_DATA_N_ENTRIES];
 ////////////////////////
 // SPI Free Functions //
 ////////////////////////
-
-//@tofix namespace all the things
 
 bool readPages(uvc_device_handle_t *devh, uint32_t address, unsigned char * buffer, uint32_t nPages)
 {
@@ -189,7 +187,7 @@ void SPI_Interface::ReadCalibrationSector()
 
 }
 
-DSCalibIntrinsicsRectified SPI_Interface::GetZIntrinsics(int mode)
+RectifiedIntrinsics SPI_Interface::GetZIntrinsics(int mode)
 {
     auto lrIntrin = parameters.modesLR[0][mode];
     

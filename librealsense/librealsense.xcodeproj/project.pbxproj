@@ -25,8 +25,10 @@
 		08567C001B5B5B5D00EB6C0D /* misc.c in Sources */ = {isa = PBXBuildFile; fileRef = 08567BF61B5B5B5D00EB6C0D /* misc.c */; };
 		08567C011B5B5B5D00EB6C0D /* stream.c in Sources */ = {isa = PBXBuildFile; fileRef = 08567BF71B5B5B5D00EB6C0D /* stream.c */; };
 		08567C061B5B7AD100EB6C0D /* Common.h in Headers */ = {isa = PBXBuildFile; fileRef = 08567C051B5B7AD100EB6C0D /* Common.h */; };
-		08567C111B5C25BE00EB6C0D /* R200_CalibRectParameters.h in Headers */ = {isa = PBXBuildFile; fileRef = 08567C101B5C25BE00EB6C0D /* R200_CalibRectParameters.h */; };
-		08567C131B5C2A6E00EB6C0D /* R200_CalibrationBinaryUtil.h in Headers */ = {isa = PBXBuildFile; fileRef = 08567C121B5C2A6E00EB6C0D /* R200_CalibrationBinaryUtil.h */; };
+		08567C111B5C25BE00EB6C0D /* R200_CalibrationIntrinsics.h in Headers */ = {isa = PBXBuildFile; fileRef = 08567C101B5C25BE00EB6C0D /* R200_CalibrationIntrinsics.h */; };
+		08567C131B5C2A6E00EB6C0D /* R200_CalibrationIO.h in Headers */ = {isa = PBXBuildFile; fileRef = 08567C121B5C2A6E00EB6C0D /* R200_CalibrationIO.h */; };
+		08567C191B5CB60600EB6C0D /* UVCCamera.h in Headers */ = {isa = PBXBuildFile; fileRef = 08567C181B5CB60600EB6C0D /* UVCCamera.h */; };
+		08567C1B1B5CB60E00EB6C0D /* UVCCamera.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 08567C1A1B5CB60E00EB6C0D /* UVCCamera.cpp */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -49,8 +51,10 @@
 		08567BF61B5B5B5D00EB6C0D /* misc.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = misc.c; path = ../third_party/libuvc/src/misc.c; sourceTree = "<group>"; };
 		08567BF71B5B5B5D00EB6C0D /* stream.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = stream.c; path = ../third_party/libuvc/src/stream.c; sourceTree = "<group>"; };
 		08567C051B5B7AD100EB6C0D /* Common.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Common.h; sourceTree = "<group>"; };
-		08567C101B5C25BE00EB6C0D /* R200_CalibRectParameters.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = R200_CalibRectParameters.h; sourceTree = "<group>"; };
-		08567C121B5C2A6E00EB6C0D /* R200_CalibrationBinaryUtil.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = R200_CalibrationBinaryUtil.h; sourceTree = "<group>"; };
+		08567C101B5C25BE00EB6C0D /* R200_CalibrationIntrinsics.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = R200_CalibrationIntrinsics.h; sourceTree = "<group>"; };
+		08567C121B5C2A6E00EB6C0D /* R200_CalibrationIO.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = R200_CalibrationIO.h; sourceTree = "<group>"; };
+		08567C181B5CB60600EB6C0D /* UVCCamera.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = UVCCamera.h; sourceTree = "<group>"; };
+		08567C1A1B5CB60E00EB6C0D /* UVCCamera.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = UVCCamera.cpp; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -86,6 +90,8 @@
 			children = (
 				08567BD81B5B5ABF00EB6C0D /* CameraContext.cpp */,
 				08567BD91B5B5ABF00EB6C0D /* CameraContext.h */,
+				08567C1A1B5CB60E00EB6C0D /* UVCCamera.cpp */,
+				08567C181B5CB60600EB6C0D /* UVCCamera.h */,
 				08567C051B5B7AD100EB6C0D /* Common.h */,
 				08567C071B5B7B3500EB6C0D /* R200 */,
 			);
@@ -133,8 +139,8 @@
 				08567BDC1B5B5ABF00EB6C0D /* R200_SPI.h */,
 				08567BDD1B5B5ABF00EB6C0D /* R200_XU.cpp */,
 				08567BDE1B5B5ABF00EB6C0D /* R200_XU.h */,
-				08567C101B5C25BE00EB6C0D /* R200_CalibRectParameters.h */,
-				08567C121B5C2A6E00EB6C0D /* R200_CalibrationBinaryUtil.h */,
+				08567C101B5C25BE00EB6C0D /* R200_CalibrationIntrinsics.h */,
+				08567C121B5C2A6E00EB6C0D /* R200_CalibrationIO.h */,
 			);
 			name = R200;
 			sourceTree = "<group>";
@@ -146,10 +152,11 @@
 			isa = PBXHeadersBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				08567C191B5CB60600EB6C0D /* UVCCamera.h in Headers */,
 				08567BEC1B5B5B4E00EB6C0D /* libuvc_internal.h in Headers */,
 				08567BE11B5B5ABF00EB6C0D /* R200_CameraHeader.h in Headers */,
-				08567C131B5C2A6E00EB6C0D /* R200_CalibrationBinaryUtil.h in Headers */,
-				08567C111B5C25BE00EB6C0D /* R200_CalibRectParameters.h in Headers */,
+				08567C131B5C2A6E00EB6C0D /* R200_CalibrationIO.h in Headers */,
+				08567C111B5C25BE00EB6C0D /* R200_CalibrationIntrinsics.h in Headers */,
 				08567BEB1B5B5B4E00EB6C0D /* libuvc_config.h in Headers */,
 				08567BE31B5B5ABF00EB6C0D /* R200_SPI.h in Headers */,
 				08567BED1B5B5B4E00EB6C0D /* libuvc.h in Headers */,
@@ -217,6 +224,7 @@
 			files = (
 				08567BF91B5B5B5D00EB6C0D /* ctrl.c in Sources */,
 				08567BE41B5B5ABF00EB6C0D /* R200_XU.cpp in Sources */,
+				08567C1B1B5CB60E00EB6C0D /* UVCCamera.cpp in Sources */,
 				08567BFE1B5B5B5D00EB6C0D /* frame.c in Sources */,
 				08567C001B5B5B5D00EB6C0D /* misc.c in Sources */,
 				08567C011B5B5B5D00EB6C0D /* stream.c in Sources */,

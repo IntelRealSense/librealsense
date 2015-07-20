@@ -1,15 +1,18 @@
 #pragma once
 
+#ifndef CALIBRATION_IO_H
+#define CALIBRATION_IO_H
+
 #include <stdint.h>
 #include <stdio.h>
 #include <iostream>
 
-#include "R200_CalibRectParameters.h"
+#include "R200_CalibrationIntrinsics.h"
 
 // Assume little-endian architecture
-void myNtoh(unsigned char * result, const unsigned char * origin, int numBytes)
+void endian_internal(unsigned char * result, const unsigned char * origin, int numBytes)
 {
-    const bool changeEndianness = true; //  false; // HERE!!!! WHY need to change to false?
+    const bool changeEndianness = true; // bug
     if (changeEndianness)
     {
         for (int i = 0; i < numBytes; i++)
@@ -26,7 +29,7 @@ void myNtoh(unsigned char * result, const unsigned char * origin, int numBytes)
 template <class T>
 static bool readFromBin(const unsigned char *& p, T & x)
 {
-    myNtoh((unsigned char *)&x, p, sizeof(T));
+    endian_internal((unsigned char *)&x, p, sizeof(T));
     p += sizeof(T);
     return true;
 }
@@ -79,7 +82,7 @@ static bool readFromBin(const unsigned char *& p, T * px, int m, int n, int o)
     return true;
 }
 
-static bool readFromBin(const unsigned char *& p, DSCalibIntrinsicsNonRectified & cri)
+static bool readFromBin(const unsigned char *& p, UnrectifiedIntrinsics & cri)
 {
     return readFromBin(p, cri.fx)
         && readFromBin(p, cri.fy)
@@ -90,7 +93,7 @@ static bool readFromBin(const unsigned char *& p, DSCalibIntrinsicsNonRectified 
         && readFromBin(p, cri.h);
 }
 
-static bool readFromBin(const unsigned char *& p, DSCalibIntrinsicsRectified & crm)
+static bool readFromBin(const unsigned char *& p, RectifiedIntrinsics & crm)
 {
     return readFromBin(p, crm.rfx)
         && readFromBin(p, crm.rfy)
@@ -100,25 +103,23 @@ static bool readFromBin(const unsigned char *& p, DSCalibIntrinsicsRectified & c
         && readFromBin(p, crm.rh);
 }
 
-inline bool ParseCalibrationRectifiedParametersFromMemory(DSCalibRectParameters & cal, const uint8_t * buffer)
+inline bool ParseCalibrationRectifiedParametersFromMemory(CameraCalibrationParameters & cal, const uint8_t * buffer)
 {
-    myNtoh((unsigned char *)&cal.versionNumber, buffer, sizeof(cal.versionNumber));
+    endian_internal((unsigned char *) &cal.versionNumber, buffer, sizeof(cal.versionNumber));
     
     if (cal.versionNumber <= 1)
     {
         //throw std::runtime_error("Unsupported calibration version. Use a newer firmware?");
     }
-
+    
     //@tofix -- this is actually V1
-        
-    // Double check version number here
-    const int
-        mNIR = DS_MAX_NUM_INTRINSICS_RIGHT,
-        mNIT = DS_MAX_NUM_INTRINSICS_THIRD,
-        mNIP = DS_MAX_NUM_INTRINSICS_PLATFORM,
-        mNMLR = DS_MAX_NUM_RECTIFIED_MODES_LR,
-        mNMT = DS_MAX_NUM_RECTIFIED_MODES_THIRD,
-        mNMP = DS_MAX_NUM_RECTIFIED_MODES_PLATFORM;
+    
+    const int mNIR = MAX_NUM_INTRINSICS_RIGHT;
+    const int mNIT = MAX_NUM_INTRINSICS_THIRD;
+    const int mNIP = MAX_NUM_INTRINSICS_PLATFORM;
+    const int mNMLR = MAX_NUM_RECTIFIED_MODES_LR;
+    const int mNMT = MAX_NUM_RECTIFIED_MODES_THIRD;
+    const int mNMP = MAX_NUM_RECTIFIED_MODES_PLATFORM;
     
     const uint8_t * p = buffer;
     bool ok =
@@ -147,3 +148,5 @@ inline bool ParseCalibrationRectifiedParametersFromMemory(DSCalibRectParameters 
     
     return ok;
 }
+
+#endif

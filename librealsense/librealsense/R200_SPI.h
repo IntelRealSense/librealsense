@@ -4,7 +4,7 @@
 #define DS4_CAMERA_SPI_H
 
 #include "libuvc/libuvc.h"
-#include "R200_CalibRectParameters.h"
+#include "R200_CalibrationIntrinsics.h"
 #include "R200_XU.h"
 
 // SPI
@@ -80,7 +80,7 @@ typedef struct
 //@tofix error handling all up in this bitch
 class SPI_Interface
 {
-    DSCalibRectParameters parameters;
+    CameraCalibrationParameters parameters;
     
     uint8_t cameraHeader[SPI_FLASH_SECTOR_SIZE_IN_BYTES];
     uint8_t calibrationData[CAM_INFO_BLOCK_LEN];
@@ -98,11 +98,8 @@ public:
     
     void PrintHeaderInfo();
 
-    DSCalibRectParameters GetRectifiedParameters() { return parameters; }
-    DSCalibIntrinsicsRectified GetZIntrinsics(int mode = 0);
-    
-    
-    
+    CameraCalibrationParameters GetRectifiedParameters() { return parameters; }
+    RectifiedIntrinsics GetZIntrinsics(int mode = 0);
 };
 
 #endif

@@ -17,6 +17,7 @@
 #include "GfxUtil.h"
 #include "librealsense/Common.h"
 #include "librealsense/CameraContext.h"
+#include "librealsense/UVCCamera.h"
 
 GLFWwindow * window;
 
