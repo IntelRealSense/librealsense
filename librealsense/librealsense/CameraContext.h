@@ -36,8 +36,8 @@ struct DeviceInfo
 class UVCCamera;
 struct StreamHandle
 {
-    UVCCamera * camera;
-    uvc_frame_format fmt;
+    UVCCamera * camera = nullptr;
+    uvc_frame_format fmt = UVC_FRAME_FORMAT_UNKNOWN;
     uvc_stream_ctrl_t ctrl = {0};
 };
 
@@ -71,6 +71,7 @@ class UVCCamera
     
     static void cb(uvc_frame_t * frame, void * ptr)
     {
+        printf("%s", __PRETTY_FUNCTION__);
         StreamHandle * handle = static_cast<StreamHandle*>(ptr);
         handle->camera->frameCallback(frame, handle);
     }
@@ -92,6 +93,7 @@ public:
     
     void StopStream(int streamNum);
     
+    // @tofix get rid of this function
     void DumpInfo();
     
     uint16_t * GetDepthImage();
@@ -99,6 +101,8 @@ public:
     uint8_t * GetColorImage();
     
     int GetCameraIndex() { return cameraNum; }
+    
+    bool IsStreaming() { return isStreaming; }
     
     DSCalibIntrinsicsRectified GetCalibrationDataRectZ()
     {

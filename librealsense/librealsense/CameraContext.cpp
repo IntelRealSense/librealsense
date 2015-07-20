@@ -147,6 +147,8 @@ void UVCCamera::DumpInfo()
 
 void UVCCamera::frameCallback(uvc_frame_t * frame, StreamHandle * handle)
 {
+    printf("%s", __PRETTY_FUNCTION__);
+    
     //@tofix check invalid frame width, height
     
     // Handle has camera, format, and ctrl
@@ -155,7 +157,6 @@ void UVCCamera::frameCallback(uvc_frame_t * frame, StreamHandle * handle)
 
     //@tofix -- assumes depth here. check frame->format
 
-    
     if (handle->fmt == UVC_FRAME_FORMAT_Z16)
     {
         memcpy(depthFrame->back.data(), frame->data, (frame->width * frame->height - 1) * 2);
@@ -221,9 +222,7 @@ uint8_t * UVCCamera::GetColorImage()
 
 CameraContext::CameraContext()
 {
-    uvc_error_t initStatus;
-
-    initStatus = uvc_init(&privateContext, NULL);
+    uvc_error_t initStatus = uvc_init(&privateContext, NULL);
     
     if (initStatus < 0)
     {
@@ -249,9 +248,8 @@ CameraContext::~CameraContext()
 void CameraContext::QueryDeviceList()
 {
     uvc_device_t **list;
-    uvc_error_t status;
     
-    status = uvc_get_device_list(privateContext, &list);
+    uvc_error_t status = uvc_get_device_list(privateContext, &list);
     if (status != UVC_SUCCESS)
     {
         uvc_perror(status, "uvc_get_device_list");

@@ -55,6 +55,7 @@ GLuint depthTextureHandle;
 GLuint imageUniformHandle;
 
 std::unique_ptr<CameraContext> realsenseContext;
+UVCCamera * RealSenseR200;
 
 int main(int argc, const char * argv[])
 {
@@ -117,8 +118,12 @@ int main(int argc, const char * argv[])
             {
                 std::cout << "Found Camera At Index: " << cam->GetCameraIndex() << std::endl;
                 
+                RealSenseR200 = cam.get();
+                
                 // 0 = IR, 1 = Z, 2 = RGB
-                cam->Open(1);
+                int deviceIndex = 1;
+                
+                cam->ProbeDevice(deviceIndex);
              
                 auto zIntrin = cam->GetCalibrationDataRectZ();
                 
@@ -126,10 +131,9 @@ int main(int argc, const char * argv[])
                 GetFieldOfView(zIntrin, hFov, vFov);
                 std::cout << "Computed FoV: " << hFov << " x " << vFov << std::endl;
                 
-                StreamInfo streamRequest = {1, 628, 468, 30, UVC_FRAME_FORMAT_Z16};
+                StreamInfo streamRequest = {628, 469, 0, UVC_FRAME_FORMAT_Z16};
                 
-                cam->Start(streamRequest);
-                
+                cam->StartStream(deviceIndex, streamRequest);
             }
         }
     }
@@ -142,9 +146,9 @@ int main(int argc, const char * argv[])
     glGenVertexArrays(1, &quad_VertexArrayID);
     glBindVertexArray(quad_VertexArrayID);
     
-    GLuint quad_vertexbuffer;
-    glGenBuffers(1, &quad_vertexbuffer);
-    glBindBuffer(GL_ARRAY_BUFFER, quad_vertexbuffer);
+    GLuint quadVBO;
+    glGenBuffers(1, &quadVBO);
+    glBindBuffer(GL_ARRAY_BUFFER, quadVBO);
     glBufferData(GL_ARRAY_BUFFER, sizeof(g_quad_vertex_buffer_data), g_quad_vertex_buffer_data, GL_STATIC_DRAW);
     
     // Create and compile our GLSL program from the shaders
@@ -164,15 +168,12 @@ int main(int argc, const char * argv[])
         glfwGetWindowSize(window, &width, &height);
         glViewport(0, 0, width, height);
         
-        auto depthImage = realsenseContext->cameras[0]->GetDepthImage();
-        
+        if (RealSenseR200 && RealSenseR200->IsStreaming())
         {
-            if (depthImage)
-            {
-                static uint8_t depthColoredHistogram[628 * 469 * 3];
-                ConvertDepthToRGBUsingHistogram(depthColoredHistogram, depthImage, 628, 469, 0.1f, 0.625f);
-                drawTexture(fullscreenTextureProg, quad_vertexbuffer, depthTextureHandle, imageUniformHandle, depthColoredHistogram, 628, 469, GL_RGB, GL_UNSIGNED_BYTE);
-            }
+            auto depthImage = realsenseContext->cameras[0]->GetDepthImage();
+            static uint8_t depthColoredHistogram[628 * 469 * 3];
+            ConvertDepthToRGBUsingHistogram(depthColoredHistogram, depthImage, 628, 469, 0.1f, 0.625f);
+            drawTexture(fullscreenTextureProg, quadVBO, imageUniformHandle, depthTextureHandle, depthColoredHistogram, 628, 469, GL_RGB, GL_UNSIGNED_BYTE);
         }
 
         /*

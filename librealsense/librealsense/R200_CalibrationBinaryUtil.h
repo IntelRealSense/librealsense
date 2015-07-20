@@ -106,7 +106,7 @@ inline bool ParseCalibrationRectifiedParametersFromMemory(DSCalibRectParameters 
     
     if (cal.versionNumber <= 1)
     {
-        throw std::runtime_error("Unsupported calibration version. Use a newer firmware?");
+        //throw std::runtime_error("Unsupported calibration version. Use a newer firmware?");
     }
 
     //@tofix -- this is actually V1
