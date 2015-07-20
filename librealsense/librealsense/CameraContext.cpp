@@ -106,7 +106,7 @@ void UVCCamera::StartStream(int streamNum, const StreamInfo & info)
     
     // @tofix other stream types here
     
-    auto streamIntent = XUControl::SetStreamIntent(deviceHandle, 5); //@tofix - proper streaming mode, assume color and depth
+    auto streamIntent = XUControl::SetStreamIntent(deviceHandle, 0); //@tofix - proper streaming mode, assume color and depth
     if (!streamIntent)
     {
         throw std::runtime_error("Could not set stream intent");

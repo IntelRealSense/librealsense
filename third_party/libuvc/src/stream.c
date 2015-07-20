@@ -949,9 +949,14 @@ uvc_error_t uvc_stream_start(
 
       libusb_set_iso_packet_lengths(transfer, endpoint_bytes_per_packet);
     }
-  } else {
+  } else
+  {
     for (transfer_id = 0; transfer_id < LIBUVC_NUM_TRANSFER_BUFS;
-        ++transfer_id) {
+        ++transfer_id)
+    {
+        
+    printf("Allocate bulk transfer \n");
+        
       transfer = libusb_alloc_transfer(0);
       strmh->transfers[transfer_id] = transfer;
       strmh->transfer_bufs[transfer_id] = malloc (
@@ -970,7 +975,9 @@ uvc_error_t uvc_stream_start(
   /* If the user wants it, set up a thread that calls the user's function
    * with the contents of each frame.
    */
-  if (cb) {
+  if (cb)
+  {
+    printf("Setting Up Callback... \n");
     pthread_create(&strmh->cb_thread, NULL, _uvc_user_caller, (void*) strmh);
   }
 
