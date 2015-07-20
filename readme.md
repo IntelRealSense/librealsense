@@ -1,6 +1,6 @@
 # librealsense
 
-A libusb based driver for the RealSense F200 (IVCAM) and RealSense R200 (DS4)
+A libusb based driver for the RealSense F200 (IVCAM) and RealSense R200 (DS4). It will work across OSX and Linux. Not sure about Windows...
 
 # Setup
 
@@ -15,6 +15,7 @@ A libusb based driver for the RealSense F200 (IVCAM) and RealSense R200 (DS4)
 [X] Better frame data handling (for streams, uint8_t etc)
 [X] Stream Handles
 [] Test Multiple Streams... proper support for streaming intent.
+[] Frame count into triple buffer
 
 [] Sterling linalg from Melax sandbox
 [] Pointcloud projection + shader
@@ -29,6 +30,7 @@ A libusb based driver for the RealSense F200 (IVCAM) and RealSense R200 (DS4)
 # Longer-Term ToDo
 [] Support IR frames + decoding
 [] Support autogain, etc.
+[] Fix rectification / image width/height, etc. 
 
 ivcam = 0x0a66
 UVC_FRAME_FORMAT_INVI, 640, 480, 60
