@@ -27,38 +27,11 @@ struct StreamInfo
 
 struct DeviceInfo
 {
-    std::string usbSerial;
-    std::string cameraSerial;
+    std::string serial;
     uint16_t vid;
     uint16_t pid;
+    RealSenseCamera cameraType;
 };
-
-//////////////////
-// Math Helpers //
-//////////////////
-
-// Compute field of view angles in degrees from rectified intrinsics
-// Get intrinsics via DSAPI getCalibIntrinsicsZ, getCalibIntrinsicsRectLeftRight or getCalibIntrinsicsRectOther
-inline void GetFieldOfView(const DSCalibIntrinsicsRectified & intrinsics, float & horizontalFOV, float & verticalFOV)
-{
-    horizontalFOV = atan2(intrinsics.rpx + 0.5f, intrinsics.rfx) + atan2(intrinsics.rw - intrinsics.rpx - 0.5f, intrinsics.rfx);
-    verticalFOV = atan2(intrinsics.rpy + 0.5f, intrinsics.rfy) + atan2(intrinsics.rh - intrinsics.rpy - 0.5f, intrinsics.rfy);
-    
-    // Convert to degrees
-    const float pi = 3.14159265358979323846f;
-    horizontalFOV = horizontalFOV * 180.0f / pi;
-    verticalFOV = verticalFOV * 180.0f / pi;
-}
-
-// From z image to z camera (right-handed coordinate system).
-// zImage is assumed to contain [z row, z column, z depth].
-// Get zIntrinsics via DSAPI getCalibIntrinsicsZ.
-inline void TransformFromZImageToZCamera(const DSCalibIntrinsicsRectified & zIntrinsics, const float zImage[3], float zCamera[3])
-{
-    zCamera[0] = zImage[2] * (zImage[0] - zIntrinsics.rpx) / zIntrinsics.rfx;
-    zCamera[1] = zImage[2] * (zImage[1] - zIntrinsics.rpy) / zIntrinsics.rfy;
-    zCamera[2] = zImage[2];
-}
 
 ////////////////
 // UVC Camera //
@@ -70,6 +43,7 @@ class UVCCamera
     
     uvc_device_t * device = nullptr;
     uvc_device_handle_t * deviceHandle = nullptr;
+    
     uvc_stream_ctrl_t ctrl = {0};
     
     bool isInitialized = false;
@@ -81,9 +55,10 @@ class UVCCamera
     StreamInfo sInfo = {};
     DeviceInfo dInfo = {};
     
-    std::vector<uint8_t> frameData;
+    std::mutex frameMutex;
     
-    std::mutex cameraMutex;
+    std::unique_ptr<TripleBufferedFrame> depthFrame;
+    std::unique_ptr<TripleBufferedFrame> colorFrame;
     
     std::unique_ptr<SPI_Interface> spiInterface;
     
@@ -112,7 +87,7 @@ public:
     
     void DumpInfo();
     
-    std::vector<uint8_t> getDepthImage() { return frameData; }
+    uint16_t * GetDepthImage();
     
     int GetCameraIndex() { return cameraNum; }
     

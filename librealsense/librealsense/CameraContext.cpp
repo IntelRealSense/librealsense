@@ -10,7 +10,6 @@
 // UVC Camera //
 ////////////////
 
-
 UVCCamera::UVCCamera(uvc_device_t * device, int num) : device(device), cameraNum(num)
 {
     printf("%s", __PRETTY_FUNCTION__);
@@ -48,7 +47,7 @@ void UVCCamera::Open(int streamNum)
     if(uvc_get_device_descriptor(device, &desc) == UVC_SUCCESS)
     {
         if (desc->serialNumber)
-            dInfo.usbSerial = desc->serialNumber;
+            dInfo.serial = desc->serialNumber;
         
         if (desc->idVendor)
             dInfo.vid = desc->idVendor;
@@ -59,7 +58,7 @@ void UVCCamera::Open(int streamNum)
         uvc_free_device_descriptor(desc);
     }
     
-    std::cout << "Serial Number: " << dInfo.usbSerial << std::endl;
+    std::cout << "Serial Number: " << dInfo.serial << std::endl;
     std::cout << "USB VID: " << dInfo.vid << std::endl;
     std::cout << "USB PID: " << dInfo.pid << std::endl;
     
@@ -91,6 +90,11 @@ void UVCCamera::Start(const StreamInfo & info)
         //throw std::runtime_error("Open camera_handle Failed");
     }
     
+    // Allocate stream memory
+    // @todo - check modes and only allocate if necessary
+    depthFrame.reset(new TripleBufferedFrame(info.width, info.height, 2)); // uint8_t * 2 (uint16_t)
+    colorFrame.reset(new TripleBufferedFrame(info.width, info.height, 3)); // uint8_t * 3
+    
     auto streamIntent = XUControl::SetStreamIntent(deviceHandle, 5); //@tofix - proper streaming mode
     if (!streamIntent)
     {
@@ -105,9 +109,7 @@ void UVCCamera::Start(const StreamInfo & info)
         throw std::runtime_error("Could not start stream");
     }
     
-    // @tofix: proper treatment of strides and frame data types
-    frameData.resize(info.width * info.height * 2);
-    
+
     // Spam camera info for debugging
     DumpInfo();
     
@@ -137,19 +139,14 @@ void UVCCamera::frameCallback(uvc_frame_t * frame)
     //@tofix check invalid frame width, height
     
     frameCount++;
+
+    memcpy(depthFrame->back.data(), frame->data, (frame->width * frame->height - 1) * 2);
     
-    if (sInfo.format == UVC_FRAME_FORMAT_Z16)
     {
-        // memcpy then .swapBack
-        memcpy(frameData.data(), frame->data, (frame->width * frame->height - 1) * 2);
-        
-        // { std::lock_guard<std::mutex> lock(cameraMutex); swapBack() }
+        std::lock_guard<std::mutex> lock(frameMutex);
+        depthFrame->swap_back();
     }
-    else
-    {
-        //@tofix other pixel formats
-    }
-    
+
     /*
      void rgbCallback(uvc_frame_t *frame, void *ptr)
      {
@@ -165,6 +162,18 @@ void UVCCamera::frameCallback(uvc_frame_t * frame)
      }
      */
     
+}
+
+uint16_t * UVCCamera::GetDepthImage()
+{
+    if (depthFrame->updated)
+    {
+        std::lock_guard<std::mutex> guard(frameMutex);
+        depthFrame->swap_front();
+    }
+    
+    uint16_t * framePtr = reinterpret_cast<uint16_t *>(depthFrame->front.data());
+    return framePtr;
 }
 
 ////////////////////

@@ -216,27 +216,3 @@ void SPI_Interface::PrintHeaderInfo()
     std::cout << "######## Major:" << int(cameraInfo.moduleMajorVersion) << std::endl;
     std::cout << "######## Minor:" << int(cameraInfo.moduleMinorVersion) << std::endl;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

@@ -160,6 +160,13 @@ int main(int argc, const char * argv[])
         glfwGetWindowSize(window, &width, &height);
         glViewport(0, 0, width, height);
         
+        auto depthImage = realsenseContext->cameras[0]->getDepthImage();
+        
+        static uint8_t remappedDS[628 * 469 * 3];
+        ConvertDepthToRGBUsingHistogram(remappedDS, depthImage, 628, 469, 0.1f, 0.625f);
+        drawTex(g_DS4CamLocation, remappedDS, 628, 469, GL_RGB, GL_UNSIGNED_BYTE);
+        drawTexture(fullscreenTextureProg, quad_vertexbuffer, depthTextureHandle, imageUniformHandle, remappedDS, 640, 480, GL_RGB, GL_UNSIGNED_BYTE);
+        
         /*
         static uint8_t remappedIv[640 * 480 * 3];
         ConvertDepthToRGBUsingHistogram(remappedIv, g_IvImg, 640, 480, 0.3f, 0.825f);

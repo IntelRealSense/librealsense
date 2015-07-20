@@ -97,7 +97,6 @@ inline std::string ResponseCodeToString(uint32_t rc)
     }
 }
 
-
 int GetStreamStatus(uvc_device_handle_t *devh);
 
 bool SetStreamIntent(uvc_device_handle_t *devh, uint8_t intent);

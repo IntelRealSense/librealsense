@@ -104,10 +104,9 @@ inline bool ParseCalibrationRectifiedParametersFromMemory(DSCalibRectParameters 
 {
     myNtoh((unsigned char *)&cal.versionNumber, buffer, sizeof(cal.versionNumber));
     
-    std::cout << "Calibration Version Number: " << cal.versionNumber << std::endl;
     if (cal.versionNumber <= 1)
     {
-        throw std::runtime_error("Unsupported calibration version. Use a newer firmware!");
+        throw std::runtime_error("Unsupported calibration version. Use a newer firmware?");
     }
 
     //@tofix -- this is actually V1
