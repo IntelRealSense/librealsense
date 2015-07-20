@@ -1,5 +1,7 @@
-#ifndef DS4_CAMERA_XU_H
-#define DS4_CAMERA_XU_H
+#pragma once
+
+#ifndef LIBREALSENSE_R200_XU_H
+#define LIBREALSENSE_R200_XU_H
 
 #include <stdint.h>
 #include <string>

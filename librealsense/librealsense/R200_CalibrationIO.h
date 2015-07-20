@@ -1,11 +1,9 @@
 #pragma once
 
-#ifndef CALIBRATION_IO_H
-#define CALIBRATION_IO_H
+#ifndef LIBREALSENSE_R200_CALIBRATION_IO_H
+#define LIBREALSENSE_R200_CALIBRATION_IO_H
 
 #include <stdint.h>
-#include <stdio.h>
-#include <iostream>
 
 #include "R200_CalibrationIntrinsics.h"
 

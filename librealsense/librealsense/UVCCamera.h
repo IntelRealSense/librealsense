@@ -1,7 +1,7 @@
 #pragma once
 
-#ifndef UVC_CAMERA_H
-#define UVC_CAMERA_H
+#ifndef LIBREALSENSE_UVC_CAMERA_H
+#define LIBREALSENSE_UVC_CAMERA_H
 
 #include "libuvc/libuvc.h"
 

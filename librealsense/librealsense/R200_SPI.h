@@ -1,7 +1,7 @@
 #pragma once
 
-#ifndef DS4_CAMERA_SPI_H
-#define DS4_CAMERA_SPI_H
+#ifndef LIBREALSENSE_R200_SPI_H
+#define LIBREALSENSE_R200_SPI_H
 
 #include "libuvc/libuvc.h"
 #include "R200_CalibrationIntrinsics.h"

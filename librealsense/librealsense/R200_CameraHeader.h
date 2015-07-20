@@ -1,11 +1,11 @@
-#ifndef R200_CAMERA_HEADER_H
-#define R200_CAMERA_HEADER_H
+#ifndef LIBREALSENSE_R200_CAMERA_HEADER_H
+#define LIBREALSENSE_R200_CAMERA_HEADER_H
 
 #include <stdint.h>
 
 namespace R200
 {
-    
+
 #pragma pack(1)
 #define CURRENT_CAMERA_CONTENTS_VERSION_NUMBER 10
     

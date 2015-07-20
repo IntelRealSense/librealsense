@@ -1,7 +1,7 @@
 #pragma once
 
-#ifndef CAMERA_CONTEXT_H
-#define CAMERA_CONTEXT_H
+#ifndef LIBREALSENSE_CAMERA_CONTEXT_H
+#define LIBREALSENSE_CAMERA_CONTEXT_H
 
 #include <stdint.h>
 #include <string>

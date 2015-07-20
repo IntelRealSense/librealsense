@@ -25,11 +25,12 @@
 // [] Sterling linalg from Melax sandbox
 // [] Pointcloud projection + shader
 // [] Orbit camera for pointcloud
+// [] Make drawing textures not suck
 
 // [] Properly namespace all the things
 // [] Shield user app from libusb/libuvc headers entirely
 // [] F200 Device Abstraction
-// [] Error Handling
+// [] Error handling for everything
 
 // Longer Term ToDo:
 // -----------------
