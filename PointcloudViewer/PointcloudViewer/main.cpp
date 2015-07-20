@@ -126,7 +126,7 @@ int main(int argc, const char * argv[])
                 GetFieldOfView(zIntrin, hFov, vFov);
                 std::cout << "Computed FoV: " << hFov << " x " << vFov << std::endl;
                 
-                StreamInfo streamRequest = {628, 468, 30, UVC_FRAME_FORMAT_Z16};
+                StreamInfo streamRequest = {1, 628, 468, 30, UVC_FRAME_FORMAT_Z16};
                 
                 cam->Start(streamRequest);
                 

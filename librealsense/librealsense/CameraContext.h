@@ -11,18 +11,12 @@
 #include <iostream>
 #include <exception>
 #include <mutex>
+#include <map>
 
 #include "Common.h"
 #include "R200_XU.h"
 #include "R200_SPI.h"
 #include "R200_CameraHeader.h"
-
-enum StreamType
-{
-    DEPTH,
-    COLOR,
-    IR
-};
 
 struct StreamInfo
 {
@@ -43,7 +37,8 @@ class UVCCamera;
 struct StreamHandle
 {
     UVCCamera * camera;
-    StreamType t;
+    uvc_frame_format fmt;
+    uvc_stream_ctrl_t ctrl = {0};
 };
 
 ////////////////
@@ -56,8 +51,6 @@ class UVCCamera
     
     uvc_device_t * device = nullptr;
     uvc_device_handle_t * deviceHandle = nullptr;
-    
-    uvc_stream_ctrl_t ctrl = {0};
     
     bool isInitialized = false;
     bool isStreaming = false;
@@ -74,13 +67,15 @@ class UVCCamera
     
     std::unique_ptr<SPI_Interface> spiInterface;
     
-    static void cb(uvc_frame_t *frame, void *ptr)
+    std::map<int, StreamHandle *> streamHandles;
+    
+    static void cb(uvc_frame_t * frame, void * ptr)
     {
-        UVCCamera * camera = static_cast<UVCCamera*>(ptr);
-        camera->frameCallback(frame);
+        StreamHandle * handle = static_cast<StreamHandle*>(ptr);
+        handle->camera->frameCallback(frame, handle);
     }
     
-    void frameCallback(uvc_frame_t * frame);
+    void frameCallback(uvc_frame_t * frame, StreamHandle * handle);
     
 public:
     
@@ -91,11 +86,11 @@ public:
     
     ~UVCCamera();
     
-    void Open(int streamNum);
+    void ProbeDevice(int deviceNum);
     
-    void Start(const StreamInfo & info);
+    void StartStream(int streamNum, const StreamInfo & info);
     
-    void Stop();
+    void StopStream(int streamNum);
     
     void DumpInfo();
     
