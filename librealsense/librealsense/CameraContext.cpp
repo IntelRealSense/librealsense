@@ -93,9 +93,6 @@ void UVCCamera::StartStream(int streamNum, const StreamInfo & info)
     }
     
     streamHandles.insert(std::pair<int, StreamHandle *>(streamNum, handle));
-                             
-    // Allocate stream memory
-    // @todo - check modes and only allocate if necessary
     
     if (info.format == UVC_FRAME_FORMAT_Z16)
     {
@@ -106,6 +103,7 @@ void UVCCamera::StartStream(int streamNum, const StreamInfo & info)
     {
         colorFrame.reset(new TripleBufferedFrame(info.width, info.height, 3)); // uint8_t * 3
     }
+    
     // @tofix other stream types here
     
     auto streamIntent = XUControl::SetStreamIntent(deviceHandle, 5); //@tofix - proper streaming mode, assume color and depth
@@ -155,11 +153,27 @@ void UVCCamera::frameCallback(uvc_frame_t * frame, StreamHandle * handle)
     
     frameCount++;
 
-    memcpy(depthFrame->back.data(), frame->data, (frame->width * frame->height - 1) * 2);
+    //@tofix -- assumes depth here. check frame->format
+
     
+    if (handle->fmt == UVC_FRAME_FORMAT_Z16)
     {
-        std::lock_guard<std::mutex> lock(frameMutex);
-        depthFrame->swap_back();
+        memcpy(depthFrame->back.data(), frame->data, (frame->width * frame->height - 1) * 2);
+        {
+            std::lock_guard<std::mutex> lock(frameMutex);
+            depthFrame->swap_back();
+        }
+    }
+    
+    else if (handle->fmt == UVC_FRAME_FORMAT_YUYV)
+    {
+        /*
+        memcpy(depthFrame->back.data(), frame->data, (frame->width * frame->height - 1) * 2);
+        {
+            std::lock_guard<std::mutex> lock(frameMutex);
+            depthFrame->swap_back();
+        }
+        */
     }
 
     /*
