@@ -76,10 +76,11 @@ void UVCCamera::Open(int streamNum)
 
 void UVCCamera::Start(const StreamInfo & info)
 {
-    if (isStreaming) throw std::runtime_error("Camera is already streaming");
-    
     printf("%s", __PRETTY_FUNCTION__);
     
+    if (isStreaming) throw std::runtime_error("Camera is already streaming");
+    
+    // Fix for multiple streams:
     sInfo = info;
     
     uvc_error_t status = uvc_get_stream_ctrl_format_size(deviceHandle, &ctrl, info.format, info.width, info.height, info.fps);
@@ -87,7 +88,7 @@ void UVCCamera::Start(const StreamInfo & info)
     if (status < 0)
     {
         uvc_perror(status, "uvc_get_stream_ctrl_format_size");
-        //throw std::runtime_error("Open camera_handle Failed");
+        throw std::runtime_error("Open camera_handle Failed");
     }
     
     // Allocate stream memory
@@ -109,7 +110,6 @@ void UVCCamera::Start(const StreamInfo & info)
         throw std::runtime_error("Could not start stream");
     }
     
-
     // Spam camera info for debugging
     DumpInfo();
     
@@ -171,8 +171,18 @@ uint16_t * UVCCamera::GetDepthImage()
         std::lock_guard<std::mutex> guard(frameMutex);
         depthFrame->swap_front();
     }
-    
     uint16_t * framePtr = reinterpret_cast<uint16_t *>(depthFrame->front.data());
+    return framePtr;
+}
+
+uint8_t * UVCCamera::GetColorImage()
+{
+    if (colorFrame->updated)
+    {
+        std::lock_guard<std::mutex> guard(frameMutex);
+        colorFrame->swap_front();
+    }
+    uint8_t * framePtr = reinterpret_cast<uint8_t *>(colorFrame->front.data());
     return framePtr;
 }
 

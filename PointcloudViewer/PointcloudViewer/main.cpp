@@ -126,6 +126,10 @@ int main(int argc, const char * argv[])
                 GetFieldOfView(zIntrin, hFov, vFov);
                 std::cout << "Computed FoV: " << hFov << " x " << vFov << std::endl;
                 
+                StreamInfo streamRequest = {628, 468, 30, UVC_FRAME_FORMAT_Z16};
+                
+                cam->Start(streamRequest);
+                
             }
         }
     }
@@ -160,13 +164,17 @@ int main(int argc, const char * argv[])
         glfwGetWindowSize(window, &width, &height);
         glViewport(0, 0, width, height);
         
-        auto depthImage = realsenseContext->cameras[0]->getDepthImage();
+        auto depthImage = realsenseContext->cameras[0]->GetDepthImage();
         
-        static uint8_t remappedDS[628 * 469 * 3];
-        ConvertDepthToRGBUsingHistogram(remappedDS, depthImage, 628, 469, 0.1f, 0.625f);
-        drawTex(g_DS4CamLocation, remappedDS, 628, 469, GL_RGB, GL_UNSIGNED_BYTE);
-        drawTexture(fullscreenTextureProg, quad_vertexbuffer, depthTextureHandle, imageUniformHandle, remappedDS, 640, 480, GL_RGB, GL_UNSIGNED_BYTE);
-        
+        {
+            if (depthImage)
+            {
+                static uint8_t depthColoredHistogram[628 * 469 * 3];
+                ConvertDepthToRGBUsingHistogram(depthColoredHistogram, depthImage, 628, 469, 0.1f, 0.625f);
+                drawTexture(fullscreenTextureProg, quad_vertexbuffer, depthTextureHandle, imageUniformHandle, depthColoredHistogram, 628, 469, GL_RGB, GL_UNSIGNED_BYTE);
+            }
+        }
+
         /*
         static uint8_t remappedIv[640 * 480 * 3];
         ConvertDepthToRGBUsingHistogram(remappedIv, g_IvImg, 640, 480, 0.3f, 0.825f);

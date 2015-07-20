@@ -17,6 +17,13 @@
 #include "R200_SPI.h"
 #include "R200_CameraHeader.h"
 
+enum StreamType
+{
+    DEPTH,
+    COLOR,
+    IR
+};
+
 struct StreamInfo
 {
     int width;
@@ -30,7 +37,13 @@ struct DeviceInfo
     std::string serial;
     uint16_t vid;
     uint16_t pid;
-    RealSenseCamera cameraType;
+};
+
+class UVCCamera;
+struct StreamHandle
+{
+    UVCCamera * camera;
+    StreamType t;
 };
 
 ////////////////
@@ -56,7 +69,6 @@ class UVCCamera
     DeviceInfo dInfo = {};
     
     std::mutex frameMutex;
-    
     std::unique_ptr<TripleBufferedFrame> depthFrame;
     std::unique_ptr<TripleBufferedFrame> colorFrame;
     
@@ -88,6 +100,8 @@ public:
     void DumpInfo();
     
     uint16_t * GetDepthImage();
+    
+    uint8_t * GetColorImage();
     
     int GetCameraIndex() { return cameraNum; }
     
