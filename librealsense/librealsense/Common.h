@@ -14,32 +14,6 @@
 
 #include "R200_CalibrationIntrinsics.h"
 
-// ToDo:
-// -----
-// [X] Calibration Info - z to world?
-// [X] Triple Buffering + proper mutexing
-// [X] Better frame data handling (for streams, uint8_t etc)
-// [X] Stream Handles
-// [] Test Multiple Streams... proper support for streaming intent.
-
-// [] Sterling linalg from Melax sandbox
-// [] Pointcloud projection + shader
-// [] Orbit camera for pointcloud
-// [] Make drawing textures not suck
-
-// [] Properly namespace all the things
-// [] Shield user app from libusb/libuvc headers entirely
-// [] F200 Device Abstraction
-// [] Error handling for everything
-
-// Longer Term ToDo:
-// -----------------
-// [] Support IR frames + decoding
-// [] Support autogain, etc.
-
-// ivcam = 0x0a66
-// UVC_FRAME_FORMAT_INVI, 640, 480, 60
-
 enum class RealSenseCamera : uint8_t
 {
     DS4 = 10,
