@@ -38,9 +38,10 @@ struct DeviceInfo
 };
 
 class UVCCamera;
-struct StreamHandle
+struct DeviceHandle
 {
     UVCCamera * camera = nullptr;
+    uvc_device_handle_t * uvcHandle = nullptr;
     uvc_frame_format fmt = UVC_FRAME_FORMAT_UNKNOWN;
     uvc_stream_ctrl_t ctrl = {0};
 };
@@ -53,9 +54,8 @@ class UVCCamera
 {
     NO_MOVE(UVCCamera);
     
-    uvc_device_t * device = nullptr;
-    uvc_device_handle_t * deviceHandle = nullptr;
-    
+    uvc_device_t * hardware = nullptr;
+
     bool isInitialized = false;
     bool isStreaming = false; // reduntant for StreamingModeBitfield
     
@@ -74,15 +74,15 @@ class UVCCamera
     
     std::unique_ptr<SPI_Interface> spiInterface;
     
-    std::map<int, StreamHandle *> streamHandles;
+    std::map<int, DeviceHandle *> deviceHandles;
     
     static void cb(uvc_frame_t * frame, void * ptr)
     {
-        StreamHandle * handle = static_cast<StreamHandle*>(ptr);
+        DeviceHandle * handle = static_cast<DeviceHandle*>(ptr);
         handle->camera->frameCallback(frame, handle);
     }
     
-    void frameCallback(uvc_frame_t * frame, StreamHandle * handle);
+    void frameCallback(uvc_frame_t * frame, DeviceHandle * handle);
     
 public:
     

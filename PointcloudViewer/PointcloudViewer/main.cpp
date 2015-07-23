@@ -137,8 +137,8 @@ int main(int argc, const char * argv[])
                 StreamInfo depthStreamRequest = {628, 469, 0, UVC_FRAME_FORMAT_Z16};
                 StreamInfo colorStreamRequest = {640, 480, 30, UVC_FRAME_FORMAT_YUYV};
                 
-                cam->StartStream(1, depthStreamRequest);
-                cam->StartStream(2, colorStreamRequest);
+                cam->StartStream(STREAM_DEPTH, depthStreamRequest);
+                cam->StartStream(STREAM_RGB, colorStreamRequest);
             }
         }
     }
