@@ -122,8 +122,8 @@ int main(int argc, const char * argv[])
                 
                 RealSenseR200 = cam.get();
 
-                cam->EnableDepthStream();
-                cam->EnableColorStream();
+                cam->EnableStream(STREAM_DEPTH);
+                cam->EnableStream(STREAM_RGB);
                 
                 cam->ConfigureStreams();
              
@@ -134,11 +134,11 @@ int main(int argc, const char * argv[])
                 std::cout << "Computed FoV: " << hFov << " x " << vFov << std::endl;
                 */
                 
-                StreamInfo depthStreamRequest = {628, 469, 0, UVC_FRAME_FORMAT_Z16};
-                StreamInfo colorStreamRequest = {640, 480, 30, UVC_FRAME_FORMAT_YUYV};
+                StreamConfiguration depthConfig = {628, 469, 0, UVC_FRAME_FORMAT_Z16};
+                StreamConfiguration colorConfig = {640, 480, 30, UVC_FRAME_FORMAT_YUYV};
                 
-                cam->StartStream(STREAM_DEPTH, depthStreamRequest);
-                cam->StartStream(STREAM_RGB, colorStreamRequest);
+                cam->StartStream(STREAM_DEPTH, depthConfig);
+                cam->StartStream(STREAM_RGB, colorConfig);
             }
         }
     }

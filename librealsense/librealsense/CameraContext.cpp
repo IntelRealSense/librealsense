@@ -18,7 +18,7 @@ CameraContext::CameraContext()
     if (initStatus < 0)
     {
         uvc_perror(initStatus, "uvc_init");
-        throw std::runtime_error("Could not initialize a UVC context");
+        throw std::runtime_error("Could not initialize UVC context");
     }
     
     QueryDeviceList();

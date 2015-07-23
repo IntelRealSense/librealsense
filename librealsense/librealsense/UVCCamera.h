@@ -22,7 +22,7 @@
 #define STREAM_LR 2
 #define STREAM_RGB 4
 
-struct StreamInfo
+struct StreamConfiguration
 {
     int width;
     int height;
@@ -30,7 +30,7 @@ struct StreamInfo
     uvc_frame_format format;
 };
 
-struct DeviceInfo
+struct USBDeviceInfo
 {
     std::string serial;
     uint16_t vid;
@@ -38,7 +38,7 @@ struct DeviceInfo
 };
 
 class UVCCamera;
-struct DeviceHandle
+struct StreamInterface
 {
     UVCCamera * camera = nullptr;
     uvc_device_handle_t * uvcHandle = nullptr;
@@ -57,7 +57,7 @@ class UVCCamera
     uvc_device_t * hardware = nullptr;
 
     bool isInitialized = false;
-    bool isStreaming = false; // reduntant for StreamingModeBitfield
+    bool isStreaming = false; // redundant for StreamingModeBitfield
     
     int streamingModeBitfield = 0;
     
@@ -65,8 +65,7 @@ class UVCCamera
     
     bool firstTime = true;
     
-    StreamInfo sInfo = {};
-    DeviceInfo dInfo = {};
+    USBDeviceInfo usbInfo = {};
     
     std::mutex frameMutex;
     std::unique_ptr<TripleBufferedFrame> depthFrame;
@@ -74,15 +73,15 @@ class UVCCamera
     
     std::unique_ptr<SPI_Interface> spiInterface;
     
-    std::map<int, DeviceHandle *> deviceHandles;
+    std::map<int, StreamInterface *> streamInterfaces;
     
     static void cb(uvc_frame_t * frame, void * ptr)
     {
-        DeviceHandle * handle = static_cast<DeviceHandle*>(ptr);
-        handle->camera->frameCallback(frame, handle);
+        StreamInterface * stream = static_cast<StreamInterface*>(ptr);
+        stream->camera->frameCallback(frame, stream);
     }
     
-    void frameCallback(uvc_frame_t * frame, DeviceHandle * handle);
+    void frameCallback(uvc_frame_t * frame, StreamInterface * stream);
     
 public:
     
@@ -92,9 +91,9 @@ public:
     
     bool ConfigureStreams();
     
-    void StartStream(int streamNum, const StreamInfo & info);
+    void StartStream(int streamIdentifier, const StreamConfiguration & config);
     
-    void StopStream(int streamNum);
+    void StopStream(int streamIdentifier);
     
     // @tofix get rid of this function
     void DumpInfo();
@@ -107,11 +106,11 @@ public:
     
     bool IsStreaming() { return isStreaming; }
     
-    void EnableDepthStream() { streamingModeBitfield |= STREAM_DEPTH; }
-    void EnableColorStream() { streamingModeBitfield |= STREAM_RGB; }
+    void EnableStream(int whichStream) { streamingModeBitfield |= whichStream; }
     
     RectifiedIntrinsics GetCalibrationDataRectZ()
     {
+        // Check if SPI interface even exists. 
         return spiInterface->GetZIntrinsics();
     }
     
