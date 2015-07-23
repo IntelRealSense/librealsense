@@ -14,8 +14,10 @@ A libusb based driver for the RealSense F200 (IVCAM) and RealSense R200 (DS4). I
 [X] Triple Buffering + proper mutexing
 [X] Better frame data handling (for streams, uint8_t etc)
 [X] Stream Handles
-[] Test Multiple Streams... proper support for streaming intent.
-[] Frame count into triple buffer
+[X] Proper support for streaming intent.
+[X] Frame count into triple buffer
+[] Device Handles per device! D'oh
+[] StartStream should already know about which streams to start without additional idx
 
 [] Sterling linalg from Melax sandbox
 [] Pointcloud projection + shader

@@ -11,6 +11,7 @@
 #include <string>
 #include <array>
 #include <cmath>
+#include <atomic>
 
 #include "R200_CalibrationIntrinsics.h"
 
@@ -41,7 +42,9 @@ struct TripleBufferedFrame
     
     bool updated = false;
     
-    TripleBufferedFrame(int width, int height, int stride)
+    std::atomic<uint64_t> frameCount;
+    
+    TripleBufferedFrame(int width, int height, int stride) : frameCount(0)
     {
         front.resize(width * height * stride);
         back.resize(width * height * stride);
@@ -155,5 +158,32 @@ inline void TransformFromZImageToZCamera(const RectifiedIntrinsics & zIntrinsics
     zCamera[2] = zImage[2];
 }
 
+/////////////////////
+// Image Utilities //
+/////////////////////
+
+inline void convert_yuyv_rgb(const uint8_t *src, int width, int height, uint8_t *dst)
+{
+    for (int y = 0; y < height; ++y)
+    {
+        for (int x = 0; x < width; x += 2)
+        {
+            int y0 = src[0], u0 = src[1], y1 = src[2], v0 = src[3];
+            
+            int c = y0 - 16, d = u0 - 128, e = v0 - 128;
+            dst[0] = clampbyte((298 * c + 409 * e + 128) >> 8);           // r
+            dst[1] = clampbyte((298 * c - 100 * d - 208 * e + 128) >> 8); // g
+            dst[2] = clampbyte((298 * c + 516 * d + 128) >> 8);           // b
+            
+            c = y1 - 16;
+            dst[3] = clampbyte((298 * c + 409 * e + 128) >> 8);           // r
+            dst[4] = clampbyte((298 * c - 100 * d - 208 * e + 128) >> 8); // g
+            dst[5] = clampbyte((298 * c + 516 * d + 128) >> 8);           // b
+            
+            src += 4;
+            dst += 6;
+        }
+    }
+}
 
 #endif

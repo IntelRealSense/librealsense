@@ -18,6 +18,10 @@
 #include "R200_SPI.h"
 #include "R200_CameraHeader.h"
 
+#define STREAM_DEPTH 1
+#define STREAM_LR 2
+#define STREAM_RGB 4
+
 struct StreamInfo
 {
     int width;
@@ -53,10 +57,13 @@ class UVCCamera
     uvc_device_handle_t * deviceHandle = nullptr;
     
     bool isInitialized = false;
-    bool isStreaming = false;
+    bool isStreaming = false; // reduntant for StreamingModeBitfield
     
-    uint64_t frameCount = 0;
+    int streamingModeBitfield = 0;
+    
     int cameraNum;
+    
+    bool firstTime = true;
     
     StreamInfo sInfo = {};
     DeviceInfo dInfo = {};
@@ -83,7 +90,7 @@ public:
     
     ~UVCCamera();
     
-    bool ProbeDevice(int deviceNum);
+    bool ConfigureStreams();
     
     void StartStream(int streamNum, const StreamInfo & info);
     
@@ -99,6 +106,9 @@ public:
     int GetCameraIndex() { return cameraNum; }
     
     bool IsStreaming() { return isStreaming; }
+    
+    void EnableDepthStream() { streamingModeBitfield |= STREAM_DEPTH; }
+    void EnableColorStream() { streamingModeBitfield |= STREAM_RGB; }
     
     RectifiedIntrinsics GetCalibrationDataRectZ()
     {

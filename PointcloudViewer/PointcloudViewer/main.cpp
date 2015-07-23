@@ -103,12 +103,13 @@ int main(int argc, const char * argv[])
                            }
                         });
     
-    // Initialize RealSense R200 Camera ----------------------------------------------------------------
+    // Init RealSense R200 Camera -------------------------------------------
     {
         realsenseContext.reset(new CameraContext());
     
         auto cameraList = realsenseContext->cameras;
         
+        // @tofix check pid/vid to make sure it's either/or F200 or R200
         if (cameraList.size() == 0)
         {
             std::cout << "Error: no cameras detected. Is it plugged in?" << std::endl;
@@ -120,24 +121,28 @@ int main(int argc, const char * argv[])
                 std::cout << "Found Camera At Index: " << cam->GetCameraIndex() << std::endl;
                 
                 RealSenseR200 = cam.get();
+
+                cam->EnableDepthStream();
+                cam->EnableColorStream();
                 
-                // 0 = IR, 1 = Z, 2 = RGB
-                int deviceIndex = 1;
-                
-                cam->ProbeDevice(deviceIndex);
+                cam->ConfigureStreams();
              
+                /*
                 auto zIntrin = cam->GetCalibrationDataRectZ();
-                
                 float hFov, vFov;
                 GetFieldOfView(zIntrin, hFov, vFov);
                 std::cout << "Computed FoV: " << hFov << " x " << vFov << std::endl;
+                */
                 
-                StreamInfo streamRequest = {628, 469, 0, UVC_FRAME_FORMAT_Z16};
+                StreamInfo depthStreamRequest = {628, 469, 0, UVC_FRAME_FORMAT_Z16};
+                StreamInfo colorStreamRequest = {640, 480, 30, UVC_FRAME_FORMAT_YUYV};
                 
-                cam->StartStream(deviceIndex, streamRequest);
+                cam->StartStream(1, depthStreamRequest);
+                cam->StartStream(2, colorStreamRequest);
             }
         }
     }
+    // ----------------------------------------------------------------
     
     // Remapped colors...
     rgbTextureHandle = CreateTexture(640, 480, GL_RGB);     // Normal RGB
@@ -167,27 +172,20 @@ int main(int argc, const char * argv[])
     
         int width, height;
         glfwGetWindowSize(window, &width, &height);
-        glViewport(0, 0, width, height);
+
         
         if (RealSenseR200 && RealSenseR200->IsStreaming())
         {
+            glViewport(0, 0, width, height);
             auto depthImage = realsenseContext->cameras[0]->GetDepthImage();
             static uint8_t depthColoredHistogram[628 * 469 * 3];
             ConvertDepthToRGBUsingHistogram(depthColoredHistogram, depthImage, 628, 469, 0.1f, 0.625f);
             drawTexture(fullscreenTextureProg, quadVBO, imageUniformHandle, depthTextureHandle, depthColoredHistogram, 628, 469, GL_RGB, GL_UNSIGNED_BYTE);
+            
+            glViewport(width / 2, 0, width, height);
+            auto colorImage = realsenseContext->cameras[0]->GetColorImage();
+            drawTexture(fullscreenTextureProg, quadVBO, imageUniformHandle, rgbTextureHandle, colorImage, 640, 480, GL_RGB, GL_UNSIGNED_BYTE);
         }
-
-        /*
-        static uint8_t remappedIv[640 * 480 * 3];
-        ConvertDepthToRGBUsingHistogram(remappedIv, g_IvImg, 640, 480, 0.3f, 0.825f);
-        drawTex(g_IvCamLocation, remappedIv, 640, 480, GL_RGB, GL_UNSIGNED_BYTE);
-        
-
-        glViewport(width / 2, 0, width, height);
-        static uint8_t remappedDS[628 * 469 * 3];
-        ConvertDepthToRGBUsingHistogram(remappedDS, g_DsImg, 628, 469, 0.1f, 0.625f);
-        drawTex(g_DS4CamLocation, remappedDS, 628, 469, GL_RGB, GL_UNSIGNED_BYTE);
-         */
         
         frameCount++;
         
