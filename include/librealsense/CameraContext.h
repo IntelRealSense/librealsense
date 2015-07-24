@@ -13,7 +13,7 @@
 
 #include "libuvc/libuvc.h"
 
-#include "Common.h"
+#include <librealsense/UVCCamera.h>
 
 ////////////////////
 // Camera Context //

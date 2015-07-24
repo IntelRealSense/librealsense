@@ -281,7 +281,7 @@
 					"$(SRCROOT)/../third_party/libuvc/include",
 					"$(SRCROOT)/../third_party/glfw",
 					"$(SRCROOT)/../third_party/catch",
-					"$(SRCROOT)/../librealsense/",
+					"$(SRCROOT)/../include",
 					/usr/local/Cellar/libusb/1.0.19/include/,
 				);
 				LIBRARY_SEARCH_PATHS = (
@@ -304,7 +304,7 @@
 					"$(SRCROOT)/../third_party/libuvc/include",
 					"$(SRCROOT)/../third_party/glfw",
 					"$(SRCROOT)/../third_party/catch",
-					"$(SRCROOT)/../librealsense/",
+					"$(SRCROOT)/../include",
 					/usr/local/Cellar/libusb/1.0.19/include/,
 				);
 				LIBRARY_SEARCH_PATHS = (

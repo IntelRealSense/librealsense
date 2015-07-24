@@ -1,11 +1,11 @@
 #pragma once
 
-#ifndef LIBREALSENSE_R200_CALIBRATION_IO_H
-#define LIBREALSENSE_R200_CALIBRATION_IO_H
+#ifndef LIBREALSENSE_R200_CALIB_IO_H
+#define LIBREALSENSE_R200_CALIB_IO_H
 
 #include <stdint.h>
 
-#include "R200_CalibrationIntrinsics.h"
+#include <librealsense/R200/R200_CalibParams.h>
 
 // Assume little-endian architecture
 void endian_internal(unsigned char * result, const unsigned char * origin, int numBytes)

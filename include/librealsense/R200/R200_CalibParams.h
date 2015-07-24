@@ -1,17 +1,28 @@
 #pragma once
 
-#ifndef LIBREALSENSE_R200_CALIBRATION_INTRINSICS_H
-#define LIBREALSENSE_R200_CALIBRATION_INTRINSICS_H
+#ifndef LIBREALSENSE_R200_CALIB_PARAMS_H
+#define LIBREALSENSE_R200_CALIB_PARAMS_H
 
 #include <stdint.h>
-#include "Common.h"
+#include <librealsense/Common.h>
 
-const uint16_t MAX_NUM_INTRINSICS_RIGHT = 1;         // Max number right cameras supported (e.g. one or two, two would support a multi-baseline unit)
-const uint16_t MAX_NUM_INTRINSICS_THIRD = 3;         // Max number native resolutions the third camera can have (e.g. 1920x1080 and 640x480)
-const uint16_t MAX_NUM_INTRINSICS_PLATFORM = 4;      // Max number native resolutions the platform camera can have
-const uint16_t MAX_NUM_RECTIFIED_MODES_LR = 4;       // Max number rectified LR resolution modes the structure supports (e.g. 640x480, 492x372 and 332x252)
-const uint16_t MAX_NUM_RECTIFIED_MODES_THIRD = 3;    // Max number rectified Third resolution modes the structure supports (e.g. 1920x1080, 1280x720, 640x480 and 320x240)
-const uint16_t MAX_NUM_RECTIFIED_MODES_PLATFORM = 1; // Max number rectified Platform resolution modes the structure supports
+// Max number right cameras supported (e.g. one or two, two would support a multi-baseline unit)
+const uint16_t MAX_NUM_INTRINSICS_RIGHT = 1;
+
+// Max number native resolutions the third camera can have (e.g. 1920x1080 and 640x480)
+const uint16_t MAX_NUM_INTRINSICS_THIRD = 3;
+
+// Max number native resolutions the platform camera can have
+const uint16_t MAX_NUM_INTRINSICS_PLATFORM = 4;
+
+// Max number rectified LR resolution modes the structure supports (e.g. 640x480, 492x372 and 332x252)
+const uint16_t MAX_NUM_RECTIFIED_MODES_LR = 4;
+
+// Max number rectified Third resolution modes the structure supports (e.g. 1920x1080, 1280x720, etc)
+const uint16_t MAX_NUM_RECTIFIED_MODES_THIRD = 3;
+
+// Max number rectified Platform resolution modes the structure supports
+const uint16_t MAX_NUM_RECTIFIED_MODES_PLATFORM = 1;
 
 struct CameraCalibrationParameters
 {

@@ -16,8 +16,9 @@ A libusb based driver for the RealSense F200 (IVCAM) and RealSense R200 (DS4). I
 [X] Stream Handles
 [X] Proper support for streaming intent.
 [X] Frame count into triple buffer
-[] Device Handles per device! D'oh
-[] StartStream should already know about which streams to start without additional idx
+[X] Device Handles per device! D'oh
+[] Latest camera header info 
+[] Latest calib version info
 
 [] Sterling linalg from Melax sandbox
 [] Pointcloud projection + shader
@@ -36,3 +37,12 @@ A libusb based driver for the RealSense F200 (IVCAM) and RealSense R200 (DS4). I
 
 ivcam = 0x0a66
 UVC_FRAME_FORMAT_INVI, 640, 480, 60
+
+void UVCCamera::DumpInfo()
+{
+    //if (!isInitialized) throw std::runtime_error("Camera not initialized. Must call Start() first");
+    
+    //uvc_print_stream_ctrl(&ctrl, stderr);
+    //uvc_print_diag(deviceHandle, stderr);
+}
+

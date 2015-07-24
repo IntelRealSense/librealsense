@@ -1,10 +1,6 @@
-#include "R200_SPI.h"
+#include <librealsense/R200/R200_XU.h>
 
-#include <stdio.h>
-#include <stdint.h>
-#include <iostream>
-
-namespace XUControl
+namespace xu
 {
     
 int GetStreamStatus(uvc_device_handle_t *devh)

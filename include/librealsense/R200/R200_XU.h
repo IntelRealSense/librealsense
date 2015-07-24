@@ -3,11 +3,15 @@
 #ifndef LIBREALSENSE_R200_XU_H
 #define LIBREALSENSE_R200_XU_H
 
+#include "libuvc/libuvc.h"
+
 #include <stdint.h>
 #include <string>
+#include <stdio.h>
+#include <stdint.h>
+#include <iostream>
 
-#include "R200_SPI.h"
-#include "libuvc/libuvc.h"
+#include <librealsense/R200/R200_SPI.h>
 
 #define STATUS_BIT_Z_STREAMING (1 << 0)
 #define STATUS_BIT_LR_STREAMING (1 << 1)
@@ -47,7 +51,7 @@
 #define INTENT_ENABLE_IR 0x2
 #define INTENT_ENABLE_RGB 0x4
 
-namespace XUControl
+namespace xu
 {
     
 struct CommandPacket

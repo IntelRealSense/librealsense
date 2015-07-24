@@ -4,8 +4,8 @@
 #define LIBREALSENSE_R200_SPI_H
 
 #include "libuvc/libuvc.h"
-#include "R200_CalibrationIntrinsics.h"
-#include "R200_XU.h"
+#include <librealsense/R200/R200_CalibParams.h>
+#include <librealsense/R200/R200_XU.h>
 
 // SPI
 #define SPI_FLASH_PAGE_SIZE_IN_BYTES                        0x100

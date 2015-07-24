@@ -4,8 +4,8 @@
 #include <thread>
 #include <chrono>
 
-#include "CameraContext.h"
-#include "UVCCamera.h"
+#include <librealsense/CameraContext.h>
+#include <librealsense/UVCCamera.h>
 
 ////////////////////
 // Camera Context //

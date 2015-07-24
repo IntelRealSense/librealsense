@@ -1,17 +1,16 @@
-#include "UVCCamera.h"
+#include <librealsense/UVCCamera.h>
 
 ////////////////
 // UVC Camera //
 ////////////////
 
-UVCCamera::UVCCamera(uvc_device_t * h, int num) : hardware(h), cameraNum(num)
+UVCCamera::UVCCamera(uvc_device_t * h, int idx) : hardware(h), cameraIdx(idx)
 {
-    printf("%s", __PRETTY_FUNCTION__);
+    
 }
 
 UVCCamera::~UVCCamera()
 {
-    printf("%s", __PRETTY_FUNCTION__);
     for (auto stream : streamInterfaces)
     {
         if (stream.second->uvcHandle != nullptr)
@@ -22,182 +21,9 @@ UVCCamera::~UVCCamera()
     uvc_unref_device(hardware);
 }
 
-//@tofix protect against calling this multiple times
-bool UVCCamera::ConfigureStreams()
-{
-    if (streamingModeBitfield == 0)
-        throw std::invalid_argument("No streams have been configured...");
-    
-    uvc_ref_device(hardware);
-    
-    //@tofix better error handling...
-    auto openStreamWithHardwareIndex = [&](int idx, uvc_device_handle_t *& uvc_handle)
-    {
-        // YES: Need different device handles!!
-        uvc_error_t status = uvc_open2(hardware, &uvc_handle, idx);
-        
-        if (status < 0)
-        {
-            uvc_perror(status, "uvc_open2");
-            return false;
-        }
-        return true;
-    };
-    
-    //@tofix: Test for successful open
-    if (streamingModeBitfield & STREAM_DEPTH)
-    {
-        StreamInterface * stream = new StreamInterface();
-        stream->camera = this;
-        
-        openStreamWithHardwareIndex(1, stream->uvcHandle);
-        streamInterfaces.insert(std::pair<int, StreamInterface *>(STREAM_DEPTH, stream));
-        //DumpInfo();
-    }
-    
-    if (streamingModeBitfield & STREAM_RGB)
-    {
-        StreamInterface * stream = new StreamInterface();
-        stream->camera = this;
-        
-        openStreamWithHardwareIndex(2, stream->uvcHandle);
-        streamInterfaces.insert(std::pair<int, StreamInterface *>(STREAM_RGB, stream));
-        //DumpInfo();
-    }
-    
-    //DumpInfo();
-    
-    /*
-    if (streamingModeBitfield & STREAM_LR)
-    {    
-        openDevice(0);
-    }
-    */
-    
-    uvc_device_descriptor_t * desc;
-    if(uvc_get_device_descriptor(hardware, &desc) == UVC_SUCCESS)
-    {
-        if (desc->serialNumber) usbInfo.serial = desc->serialNumber;
-        if (desc->idVendor) usbInfo.vid = desc->idVendor;
-        if (desc->idProduct) usbInfo.pid = desc->idProduct;
-        uvc_free_device_descriptor(desc);
-    }
-    
-    std::cout << "Serial Number: " << usbInfo.serial << std::endl;
-    std::cout << "USB VID: " << usbInfo.vid << std::endl;
-    std::cout << "USB PID: " << usbInfo.pid << std::endl;
-    
-    auto oneTimeInitialize = [&](uvc_device_handle_t * uvc_handle)
-    {
-        //@tofix if first time:
-        spiInterface.reset(new SPI_Interface(uvc_handle));
-        spiInterface->Initialize();
-        auto calibParams = spiInterface->GetRectifiedParameters();
-        
-        std::cout << "Firmware Revision: " << XUControl::GetFirmwareVersion(uvc_handle) << std::endl;
-        
-        // Debugging Camera Firmware:
-        std::cout << "Calib Version Number: " << calibParams.versionNumber << std::endl;
-        
-        spiInterface->PrintHeaderInfo();
-        
-        auto streamIntent = XUControl::SetStreamIntent(uvc_handle, streamingModeBitfield); //@tofix - proper streaming mode, assume color and depth
-        if (!streamIntent)
-        {
-            throw std::runtime_error("Could not set stream intent");
-        }
-    };
-    
-    // We only need to do this once, so check if any stream has been configured
-    if (streamInterfaces[STREAM_DEPTH]->uvcHandle)
-    {
-        oneTimeInitialize(streamInterfaces[STREAM_DEPTH]->uvcHandle);
-    }
-    
-    else if (streamInterfaces[STREAM_RGB]->uvcHandle)
-    {
-        oneTimeInitialize(streamInterfaces[STREAM_RGB]->uvcHandle);
-    }
-
-    isInitialized = true;
-    
-    return true;
-}
-
-//@tofix: cap number of devices <= 2
-void UVCCamera::StartStream(int streamIdentifier, const StreamConfiguration & config)
-{
-  //  if (isStreaming) throw std::runtime_error("Camera is already streaming");
-    
-    auto stream = streamInterfaces[streamIdentifier];
-    
-    if (stream->uvcHandle)
-    {
-        stream->fmt = config.format;
-        
-        uvc_error_t status = uvc_get_stream_ctrl_format_size(
-                                                             stream->uvcHandle,
-                                                             &stream->ctrl,
-                                                             config.format,
-                                                             config.width,
-                                                             config.height,
-                                                             config.fps);
-        
-        if (status < 0)
-        {
-            uvc_perror(status, "uvc_get_stream_ctrl_format_size");
-            throw std::runtime_error("Open camera_handle Failed");
-        }
-        
-        //@todo and check streaming mode
-        if (config.format == UVC_FRAME_FORMAT_Z16)
-        {
-            depthFrame.reset(new TripleBufferedFrame(config.width, config.height, 2)); // uint8_t * 2 (uint16_t)
-        }
-        
-        else if (config.format == UVC_FRAME_FORMAT_YUYV)
-        {
-            
-            colorFrame.reset(new TripleBufferedFrame(config.width, config.height, 3)); // uint8_t * 3
-        }
-        
-        {
-            // @todo Add LR streaming
-        }
-        
-        uvc_error_t startStreamResult = uvc_start_streaming(stream->uvcHandle, &stream->ctrl, &UVCCamera::cb, stream, 0);
-        
-        if (startStreamResult < 0)
-        {
-            uvc_perror(startStreamResult, "start_stream");
-            throw std::runtime_error("Could not start stream");
-        }
-        
-        isStreaming = true;
-    }
-    
-    // Else what?
-    
-}
-
-void UVCCamera::StopStream(int streamNum)
-{
-    //@tofix - uvc_stream_stop with a real stream handle -> index with map that we have 
-    if (!isStreaming) throw std::runtime_error("Camera is not already streaming...");
-    //uvc_stop_streaming(deviceHandle);
-    isStreaming = false;
-}
-
-void UVCCamera::DumpInfo()
-{
-    //if (!isInitialized) throw std::runtime_error("Camera not initialized. Must call Start() first");
-    
-    //uvc_print_stream_ctrl(&ctrl, stderr);
-    //uvc_print_diag(deviceHandle, stderr);
-}
-
 void UVCCamera::frameCallback(uvc_frame_t * frame, StreamInterface * stream)
 {
+    // @tofix - this is still R200 specific
     if (stream->fmt == UVC_FRAME_FORMAT_Z16)
     {
         memcpy(depthFrame->back.data(), frame->data, (frame->width * frame->height - 1) * 2);
@@ -244,4 +70,17 @@ uint8_t * UVCCamera::GetColorImage()
     }
     uint8_t * framePtr = reinterpret_cast<uint8_t *>(colorFrame->front.data());
     return framePtr;
+}
+
+bool UVCCamera::IsStreaming()
+{
+    if (streamingModeBitfield & STREAM_DEPTH)
+    {
+        return true;
+    }
+    else if (streamingModeBitfield & STREAM_RGB)
+    {
+        return true;
+    }
+    return false;
 }

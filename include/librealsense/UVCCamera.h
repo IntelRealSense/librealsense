@@ -13,20 +13,11 @@
 #include <mutex>
 #include <map>
 
-#include "Common.h"
-#include "R200_XU.h"
-#include "R200_SPI.h"
-#include "R200_CameraHeader.h"
+#include <librealsense/Common.h>
 
 #define STREAM_DEPTH 1
 #define STREAM_LR 2
 #define STREAM_RGB 4
-
-enum Imager
-{
-    IMAGER_BOTH,
-    IMAGER_THIRD
-};
 
 struct StreamConfiguration
 {
@@ -43,15 +34,6 @@ struct USBDeviceInfo
     uint16_t pid;
 };
 
-class UVCCamera;
-struct StreamInterface
-{
-    UVCCamera * camera = nullptr;
-    uvc_device_handle_t * uvcHandle = nullptr;
-    uvc_frame_format fmt = UVC_FRAME_FORMAT_UNKNOWN;
-    uvc_stream_ctrl_t ctrl = {0};
-};
-
 ////////////////
 // UVC Camera //
 ////////////////
@@ -60,26 +42,27 @@ class UVCCamera
 {
     NO_MOVE(UVCCamera);
     
+    struct StreamInterface
+    {
+        UVCCamera * camera = nullptr;
+        uvc_device_handle_t * uvcHandle = nullptr;
+        uvc_frame_format fmt = UVC_FRAME_FORMAT_UNKNOWN;
+        uvc_stream_ctrl_t ctrl = {0};
+    };
+    
+    int cameraIdx;
+    
     uvc_device_t * hardware = nullptr;
-
-    bool isInitialized = false;
-    bool isStreaming = false; // redundant for StreamingModeBitfield
-    
-    int streamingModeBitfield = 0;
-    
-    int cameraNum;
-    
-    bool firstTime = true;
-    
-    uint64_t frameCount = 0;
-    
     USBDeviceInfo usbInfo = {};
+    
+    bool hardwareInitialized = false;
+    
+    uint32_t streamingModeBitfield = 0;
+    uint64_t frameCount = 0;
     
     std::mutex frameMutex;
     std::unique_ptr<TripleBufferedFrame> depthFrame;
     std::unique_ptr<TripleBufferedFrame> colorFrame;
-    
-    std::unique_ptr<SPI_Interface> spiInterface;
     
     std::map<int, StreamInterface *> streamInterfaces;
     
@@ -95,35 +78,25 @@ public:
     
     UVCCamera(uvc_device_t * device, int num);
     
-    ~UVCCamera();
+    virtual ~UVCCamera();
     
-    bool ConfigureStreams();
+    void EnableStream(int whichStream) { streamingModeBitfield |= whichStream; }
     
-    void StartStream(int streamIdentifier, const StreamConfiguration & config);
+    virtual bool ConfigureStreams() = 0;
     
-    void StopStream(int streamIdentifier);
+    virtual void StartStream(int streamIdentifier, const StreamConfiguration & config) = 0;
     
-    // @tofix get rid of this function
-    void DumpInfo();
-    
+    virtual void StopStream(int streamIdentifier) = 0;
+
     uint16_t * GetDepthImage();
     
     uint8_t * GetColorImage();
     
-    int GetCameraIndex() { return cameraNum; }
+    bool IsStreaming();
     
-    bool IsStreaming() { return isStreaming; }
-    
-    void EnableStream(int whichStream) { streamingModeBitfield |= whichStream; }
-    
+    int GetCameraIndex() { return cameraIdx; }
+
     uint64_t GetFrameCount() { return frameCount; }
-    
-    RectifiedIntrinsics GetCalibrationDataRectZ()
-    {
-        // Check if SPI interface even exists. 
-        return spiInterface->GetZIntrinsics();
-    }
-    
 };
 
 #endif

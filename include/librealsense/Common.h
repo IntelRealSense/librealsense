@@ -13,14 +13,6 @@
 #include <cmath>
 #include <atomic>
 
-enum class RealSenseCamera : uint8_t
-{
-    DS4 = 10,
-    R200 = 10,
-    IVCAM = 20,
-    F200 = 20
-};
-
 /////////////////
 // Util Macros //
 /////////////////
