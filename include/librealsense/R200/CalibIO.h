@@ -5,7 +5,7 @@
 
 #include <stdint.h>
 
-#include <librealsense/R200/R200_CalibParams.h>
+#include <librealsense/R200/CalibParams.h>
 
 namespace r200
 {

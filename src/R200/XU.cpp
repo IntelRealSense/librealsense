@@ -1,4 +1,4 @@
-#include <librealsense/R200/R200_XU.h>
+#include <librealsense/R200/XU.h>
 
 namespace r200
 {

@@ -1,6 +1,6 @@
-#include <librealsense/R200/R200_SPI.h>
-#include <librealsense/R200/R200_CalibIO.h>
-#include <librealsense/R200/R200_CameraHeader.h>
+#include <librealsense/R200/SPI.h>
+#include <librealsense/R200/CalibIO.h>
+#include <librealsense/R200/CameraHeader.h>
 
 using namespace std;
 

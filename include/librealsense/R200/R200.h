@@ -5,9 +5,9 @@
 
 #include <librealsense/CameraContext.h>
 
-#include <librealsense/R200/R200_XU.h>
-#include <librealsense/R200/R200_SPI.h>
-#include <librealsense/R200/R200_CameraHeader.h>
+#include <librealsense/R200/XU.h>
+#include <librealsense/R200/SPI.h>
+#include <librealsense/R200/CameraHeader.h>
 
 namespace r200
 {

@@ -11,7 +11,7 @@
 #include <stdint.h>
 #include <iostream>
 
-#include <librealsense/R200/R200_SPI.h>
+#include <librealsense/R200/SPI.h>
 
 namespace r200
 {

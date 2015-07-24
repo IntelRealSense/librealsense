@@ -4,8 +4,8 @@
 #define LIBREALSENSE_R200_SPI_H
 
 #include "libuvc/libuvc.h"
-#include <librealsense/R200/R200_CalibParams.h>
-#include <librealsense/R200/R200_XU.h>
+#include <librealsense/R200/CalibParams.h>
+#include <librealsense/R200/XU.h>
 
 namespace r200
 {
