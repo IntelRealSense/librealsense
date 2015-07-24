@@ -5,14 +5,6 @@
 
 #include "libuvc/libuvc.h"
 
-#include <stdint.h>
-#include <string>
-#include <vector>
-#include <iostream>
-#include <exception>
-#include <mutex>
-#include <map>
-
 #include <librealsense/Common.h>
 
 #define STREAM_DEPTH 1
@@ -41,6 +33,8 @@ struct USBDeviceInfo
 class UVCCamera
 {
     NO_MOVE(UVCCamera);
+ 
+protected:
     
     struct StreamInterface
     {

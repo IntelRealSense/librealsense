@@ -19,6 +19,8 @@ A libusb based driver for the RealSense F200 (IVCAM) and RealSense R200 (DS4). I
 [X] Device Handles per device! D'oh
 [] Latest camera header info 
 [] Latest calib version info
+[] Context should let me know if it's R200 or F200
+[] openStreamWithHardwareIndex should be internal func
 
 [] Sterling linalg from Melax sandbox
 [] Pointcloud projection + shader

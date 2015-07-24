@@ -83,14 +83,14 @@ bool R200Camera::ConfigureStreams()
         spiInterface->Initialize();
         auto calibParams = spiInterface->GetRectifiedParameters();
         
-        std::cout << "Firmware Revision: " << XUControl::GetFirmwareVersion(uvc_handle) << std::endl;
+        std::cout << "Firmware Revision: " << xu::GetFirmwareVersion(uvc_handle) << std::endl;
         
         // Debugging Camera Firmware:
         std::cout << "Calib Version Number: " << calibParams.versionNumber << std::endl;
         
         spiInterface->PrintHeaderInfo();
         
-        auto streamIntent = XUControl::SetStreamIntent(uvc_handle, streamingModeBitfield); //@tofix - proper streaming mode, assume color and depth
+        auto streamIntent = xu::SetStreamIntent(uvc_handle, streamingModeBitfield); //@tofix - proper streaming mode, assume color and depth
         if (!streamIntent)
         {
             throw std::runtime_error("Could not set stream intent");
@@ -107,8 +107,6 @@ bool R200Camera::ConfigureStreams()
     {
         oneTimeInitialize(streamInterfaces[STREAM_RGB]->uvcHandle);
     }
-    
-    isInitialized = true;
     
     return true;
 }
@@ -163,7 +161,6 @@ void R200Camera::StartStream(int streamIdentifier, const StreamConfiguration & c
             throw std::runtime_error("Could not start stream");
         }
         
-        isStreaming = true;
     }
     
     // Else what?
@@ -173,7 +170,5 @@ void R200Camera::StartStream(int streamIdentifier, const StreamConfiguration & c
 void R200Camera::StopStream(int streamNum)
 {
     //@tofix - uvc_stream_stop with a real stream handle -> index with map that we have
-    if (!isStreaming) throw std::runtime_error("Camera is not already streaming...");
     //uvc_stop_streaming(deviceHandle);
-    isStreaming = false;
 }

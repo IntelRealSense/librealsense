@@ -3,14 +3,6 @@
 #ifndef LIBREALSENSE_CAMERA_CONTEXT_H
 #define LIBREALSENSE_CAMERA_CONTEXT_H
 
-#include <stdint.h>
-#include <string>
-#include <vector>
-#include <iostream>
-#include <exception>
-#include <mutex>
-#include <map>
-
 #include "libuvc/libuvc.h"
 
 #include <librealsense/UVCCamera.h>

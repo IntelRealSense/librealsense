@@ -15,9 +15,10 @@
 #include <OpenGL/gl3.h>
 
 #include "GfxUtil.h"
-#include "librealsense/Common.h"
+
 #include "librealsense/CameraContext.h"
 #include "librealsense/UVCCamera.h"
+#include "librealsense/R200/R200.h"
 
 GLFWwindow * window;
 
@@ -56,7 +57,7 @@ GLuint depthTextureHandle;
 GLuint imageUniformHandle;
 
 std::unique_ptr<CameraContext> realsenseContext;
-UVCCamera * RealSenseR200;
+R200Camera * camera;
 
 int main(int argc, const char * argv[])
 {
@@ -120,7 +121,7 @@ int main(int argc, const char * argv[])
             {
                 std::cout << "Found Camera At Index: " << cam->GetCameraIndex() << std::endl;
                 
-                RealSenseR200 = cam.get();
+                camera = cam.get();
 
                 cam->EnableStream(STREAM_DEPTH);
                 cam->EnableStream(STREAM_RGB);
@@ -128,7 +129,7 @@ int main(int argc, const char * argv[])
                 cam->ConfigureStreams();
              
 
-                auto zIntrin = cam->GetCalibrationDataRectZ();
+                auto zIntrin = camera->GetCalibrationDataRectZ();
                 float hFov, vFov;
                 GetFieldOfView(zIntrin, hFov, vFov);
                 std::cout << "Computed FoV: " << hFov << " x " << vFov << std::endl;

@@ -1,9 +1,3 @@
-#include <stdio.h>
-#include <stdint.h>
-#include <iostream>
-#include <thread>
-#include <chrono>
-
 #include <librealsense/CameraContext.h>
 #include <librealsense/UVCCamera.h>
 

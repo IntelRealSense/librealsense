@@ -32,7 +32,7 @@ public:
     virtual void StopStream(int streamIdentifier) override;
     
     // @tofix get rid of this function
-    void DumpInfo();
+    // void DumpInfo();
     
     RectifiedIntrinsics GetCalibrationDataRectZ()
     {

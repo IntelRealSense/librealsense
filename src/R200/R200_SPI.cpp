@@ -1,11 +1,8 @@
-#include "R200_SPI.h"
-#include "R200_CalibrationIO.h"
-#include "R200_CameraHeader.h"
+#include <librealsense/R200/R200_SPI.h>
+#include <librealsense/R200/R200_CalibIO.h>
+#include <librealsense/R200/R200_CameraHeader.h>
 
-#include <iostream>
-#include <exception>
-
-using namespace XUControl;
+using namespace xu;
 using namespace std;
 
 //@tofix ... this doesn't need to be global
