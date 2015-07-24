@@ -7,6 +7,10 @@
 
 #include <librealsense/Common.h>
 
+namespace rs
+{
+        
+//@tofix - this has an overloaded meaning for R200
 #define STREAM_DEPTH 1
 #define STREAM_LR 2
 #define STREAM_RGB 4
@@ -92,5 +96,7 @@ public:
 
     uint64_t GetFrameCount() { return frameCount; }
 };
+
+} // end namespace rs
 
 #endif

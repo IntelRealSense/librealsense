@@ -7,6 +7,9 @@
 
 #include <librealsense/R200/R200_CalibParams.h>
 
+namespace r200
+{
+    
 // Assume little-endian architecture
 void endian_internal(unsigned char * result, const unsigned char * origin, int numBytes)
 {
@@ -83,22 +86,22 @@ static bool readFromBin(const unsigned char *& p, T * px, int m, int n, int o)
 static bool readFromBin(const unsigned char *& p, UnrectifiedIntrinsics & cri)
 {
     return readFromBin(p, cri.fx)
-        && readFromBin(p, cri.fy)
-        && readFromBin(p, cri.px)
-        && readFromBin(p, cri.py)
-        && readFromBin(p, cri.k, 5)
-        && readFromBin(p, cri.w)
-        && readFromBin(p, cri.h);
+    && readFromBin(p, cri.fy)
+    && readFromBin(p, cri.px)
+    && readFromBin(p, cri.py)
+    && readFromBin(p, cri.k, 5)
+    && readFromBin(p, cri.w)
+    && readFromBin(p, cri.h);
 }
 
 static bool readFromBin(const unsigned char *& p, RectifiedIntrinsics & crm)
 {
     return readFromBin(p, crm.rfx)
-        && readFromBin(p, crm.rfy)
-        && readFromBin(p, crm.rpx)
-        && readFromBin(p, crm.rpy)
-        && readFromBin(p, crm.rw)
-        && readFromBin(p, crm.rh);
+    && readFromBin(p, crm.rfy)
+    && readFromBin(p, crm.rpx)
+    && readFromBin(p, crm.rpy)
+    && readFromBin(p, crm.rw)
+    && readFromBin(p, crm.rh);
 }
 
 inline bool ParseCalibrationRectifiedParametersFromMemory(CameraCalibrationParameters & cal, const uint8_t * buffer)
@@ -122,29 +125,31 @@ inline bool ParseCalibrationRectifiedParametersFromMemory(CameraCalibrationParam
     const uint8_t * p = buffer;
     bool ok =
     readFromBin(p, cal.versionNumber)
-        && readFromBin(p, cal.numIntrinsicsRight)
-        && readFromBin(p, cal.numIntrinsicsThird)
-        && readFromBin(p, cal.numIntrinsicsPlatform)
-        && readFromBin(p, cal.numRectifiedModesLR)
-        && readFromBin(p, cal.numRectifiedModesThird)
-        && readFromBin(p, cal.numRectifiedModesPlatform)
-        && readFromBin(p, cal.intrinsicsLeft)
-        && readFromBin(p, cal.intrinsicsRight, mNIR)
-        && readFromBin(p, cal.intrinsicsThird, mNIT)
-        && readFromBin(p, cal.intrinsicsPlatform, mNIP)
-        && readFromBin(p, &(cal.modesLR[0][0]), mNIR, mNMLR)
-        && readFromBin(p, &(cal.modesThird[0][0][0]), mNIR, mNIT, mNMT)
-        && readFromBin(p, &(cal.modesPlatform[0][0][0]), mNIR, mNIP, mNMP)
-        && readFromBin(p, &(cal.Rleft[0][0]), mNIR, 9)
-        && readFromBin(p, &(cal.Rright[0][0]), mNIR, 9)
-        && readFromBin(p, &(cal.Rthird[0][0]), mNIR, 9)
-        && readFromBin(p, &(cal.Rplatform[0][0]), mNIR, 9)              
-        && readFromBin(p, cal.B, mNIR)                                  
-        && readFromBin(p, &(cal.T[0][0]), mNIR, 3)                      
-        && readFromBin(p, &(cal.Tplatform[0][0]), mNIR, 3)              
-        && readFromBin(p, cal.Rworld, 9);
+    && readFromBin(p, cal.numIntrinsicsRight)
+    && readFromBin(p, cal.numIntrinsicsThird)
+    && readFromBin(p, cal.numIntrinsicsPlatform)
+    && readFromBin(p, cal.numRectifiedModesLR)
+    && readFromBin(p, cal.numRectifiedModesThird)
+    && readFromBin(p, cal.numRectifiedModesPlatform)
+    && readFromBin(p, cal.intrinsicsLeft)
+    && readFromBin(p, cal.intrinsicsRight, mNIR)
+    && readFromBin(p, cal.intrinsicsThird, mNIT)
+    && readFromBin(p, cal.intrinsicsPlatform, mNIP)
+    && readFromBin(p, &(cal.modesLR[0][0]), mNIR, mNMLR)
+    && readFromBin(p, &(cal.modesThird[0][0][0]), mNIR, mNIT, mNMT)
+    && readFromBin(p, &(cal.modesPlatform[0][0][0]), mNIR, mNIP, mNMP)
+    && readFromBin(p, &(cal.Rleft[0][0]), mNIR, 9)
+    && readFromBin(p, &(cal.Rright[0][0]), mNIR, 9)
+    && readFromBin(p, &(cal.Rthird[0][0]), mNIR, 9)
+    && readFromBin(p, &(cal.Rplatform[0][0]), mNIR, 9)              
+    && readFromBin(p, cal.B, mNIR)                                  
+    && readFromBin(p, &(cal.T[0][0]), mNIR, 3)                      
+    && readFromBin(p, &(cal.Tplatform[0][0]), mNIR, 3)              
+    && readFromBin(p, cal.Rworld, 9);
     
     return ok;
 }
+
+} // end namespace r200
 
 #endif

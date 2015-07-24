@@ -7,6 +7,9 @@
 #include <librealsense/R200/R200_CalibParams.h>
 #include <librealsense/R200/R200_XU.h>
 
+namespace r200
+{
+    
 // SPI
 #define SPI_FLASH_PAGE_SIZE_IN_BYTES                        0x100
 #define SPI_FLASH_SECTOR_SIZE_IN_BYTES                      0x1000
@@ -84,5 +87,7 @@ public:
     RectifiedIntrinsics GetZIntrinsics(int mode = 0);
     
 };
+
+} // end namespace r200
 
 #endif

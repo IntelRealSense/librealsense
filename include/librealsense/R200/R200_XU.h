@@ -13,6 +13,12 @@
 
 #include <librealsense/R200/R200_SPI.h>
 
+namespace r200
+{
+    
+//@tofix - these can be safely hidden in the cpp with a little refactoring...
+#define CAMERA_XU_UNIT_ID 2
+    
 #define STATUS_BIT_Z_STREAMING (1 << 0)
 #define STATUS_BIT_LR_STREAMING (1 << 1)
 #define STATUS_BIT_WEB_STREAMING (1 << 2)
@@ -32,27 +38,18 @@
 #define STATUS_BIT_VDF_WEBCAM_POINTER_STREAMING (1 << 16)
 #define STATUS_BIT_STREAMING_STATE (1 << 27) | (1 << 28) | (1 << 29) | (1 << 30)
 #define STATUS_BIT_BUSY (1 << 31)
-
-#define CAMERA_XU_UNIT_ID 2
-
+    
 #define CONTROL_COMMAND_RESPONSE 1
 #define CONTROL_IFFLEY 2
 #define CONTROL_STREAM_INTENT 3
 #define CONTROL_STATUS 20
-
+    
 #define COMMAND_DOWNLOAD_SPI_FLASH 0x1A
 #define COMMAND_PROTECT_FLASH 0x1C
 #define COMMAND_LED_ON 0x14
 #define COMMAND_LED_OFF 0x15
 #define COMMAND_GET_FWREVISION 0x21
 #define COMMAND_GET_SPI_PROTECT 0x23
-
-#define INTENT_ENABLE_DEPTH 0x1
-#define INTENT_ENABLE_IR 0x2
-#define INTENT_ENABLE_RGB 0x4
-
-namespace xu
-{
     
 struct CommandPacket
 {
@@ -108,7 +105,7 @@ int GetStreamStatus(uvc_device_handle_t *devh);
 bool SetStreamIntent(uvc_device_handle_t *devh, uint8_t intent);
     
 std::string GetFirmwareVersion(uvc_device_handle_t *t);
-    
-}
+
+} // end namespace r200
 
 #endif

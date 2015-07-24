@@ -2,8 +2,10 @@
 #include <librealsense/R200/R200_CalibIO.h>
 #include <librealsense/R200/R200_CameraHeader.h>
 
-using namespace xu;
 using namespace std;
+
+namespace r200
+{
 
 //@tofix ... this doesn't need to be global
 // and all the free functions should actually live in a struct
@@ -201,7 +203,7 @@ RectifiedIntrinsics SPI_Interface::GetZIntrinsics(int mode)
 
 void SPI_Interface::PrintHeaderInfo()
 {
-    R200::CameraHeaderInfo cameraInfo = {};
+    r200::CameraHeaderInfo cameraInfo = {};
     memcpy(&cameraInfo, cameraHeader + 2048, static_cast<int>(sizeof(cameraInfo)));
     
     std::cout << "######## Serial: " << cameraInfo.serialNumber << std::endl;
@@ -211,3 +213,5 @@ void SPI_Interface::PrintHeaderInfo()
     std::cout << "######## Built: " << cameraInfo.buildDate << std::endl;
     std::cout << "######## Programmed: " << cameraInfo.firstProgramDate << std::endl;
 }
+
+} // end namespace r200

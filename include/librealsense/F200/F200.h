@@ -5,7 +5,10 @@
 
 #include <librealsense/CameraContext.h>
 
-class F200Camera : public UVCCamera
+namespace f200
+{
+    
+class F200Camera : public rs::UVCCamera
 {
     
 public:
@@ -16,9 +19,11 @@ public:
     
     virtual bool ConfigureStreams() override;
     
-    virtual void StartStream(int streamIdentifier, const StreamConfiguration & config) override;
+    virtual void StartStream(int streamIdentifier, const rs::StreamConfiguration & config) override;
     
     virtual void StopStream(int streamIdentifier) override;
 };
+    
+} // end namespace f200
 
 #endif

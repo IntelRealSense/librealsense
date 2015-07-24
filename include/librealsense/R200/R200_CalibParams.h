@@ -6,6 +6,9 @@
 #include <stdint.h>
 #include <librealsense/Common.h>
 
+namespace r200
+{
+    
 // Max number right cameras supported (e.g. one or two, two would support a multi-baseline unit)
 const uint16_t MAX_NUM_INTRINSICS_RIGHT = 1;
 
@@ -56,5 +59,7 @@ struct CameraCalibrationParameters
     float Rworld[9];
     float Tworld[3];
 };
+    
+} // end namespace r200
 
 #endif

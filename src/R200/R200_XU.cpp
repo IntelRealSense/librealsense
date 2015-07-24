@@ -1,6 +1,6 @@
 #include <librealsense/R200/R200_XU.h>
 
-namespace xu
+namespace r200
 {
     
 int GetStreamStatus(uvc_device_handle_t *devh)
@@ -59,7 +59,7 @@ std::string GetFirmwareVersion(uvc_device_handle_t * devh)
     
     return std::string(fw);
 }
-
-}
-
-//@todo implement generic xu read / write + response
+    
+//@tofix - implement generic xu read / write + response
+    
+} // end namespace r200

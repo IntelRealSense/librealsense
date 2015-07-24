@@ -223,6 +223,7 @@
 					"$(SRCROOT)/../third_party/libuvc/include",
 					"$(SRCROOT)/../third_party/glfw",
 					"$(SRCROOT)/../third_party/catch",
+					"$(SRCROOT)/../include",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 10.10;
 				MTL_ENABLE_DEBUG_INFO = YES;
@@ -265,6 +266,7 @@
 					"$(SRCROOT)/../third_party/libuvc/include",
 					"$(SRCROOT)/../third_party/glfw",
 					"$(SRCROOT)/../third_party/catch",
+					"$(SRCROOT)/../include",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 10.10;
 				MTL_ENABLE_DEBUG_INFO = NO;

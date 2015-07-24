@@ -11,7 +11,8 @@
 // Camera Context //
 ////////////////////
 
-class UVCCamera;
+namespace rs
+{
 
 class CameraContext
 {
@@ -23,5 +24,7 @@ public:
     ~CameraContext();
     std::vector<std::shared_ptr<UVCCamera>> cameras;
 };
+
+} // end namespace rs
 
 #endif

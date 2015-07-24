@@ -5,6 +5,9 @@
 // Camera Context //
 ////////////////////
 
+namespace rs
+{
+    
 CameraContext::CameraContext()
 {
     uvc_error_t initStatus = uvc_init(&privateContext, NULL);
@@ -51,3 +54,5 @@ void CameraContext::QueryDeviceList()
     
     uvc_free_device_list(list, 1);
 }
+
+} // end namespace rs

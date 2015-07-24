@@ -4,6 +4,9 @@
 // UVC Camera //
 ////////////////
 
+namespace rs
+{
+
 UVCCamera::UVCCamera(uvc_device_t * h, int idx) : hardware(h), cameraIdx(idx)
 {
     
@@ -84,3 +87,5 @@ bool UVCCamera::IsStreaming()
     }
     return false;
 }
+    
+} // end namespace rs

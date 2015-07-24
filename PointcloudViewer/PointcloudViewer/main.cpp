@@ -56,6 +56,9 @@ GLuint rgbTextureHandle;
 GLuint depthTextureHandle;
 GLuint imageUniformHandle;
 
+using namespace rs;
+using namespace r200;
+
 std::unique_ptr<CameraContext> realsenseContext;
 R200Camera * camera;
 
@@ -174,7 +177,7 @@ int main(int argc, const char * argv[])
         glfwGetWindowSize(window, &width, &height);
 
         
-        if (RealSenseR200 && RealSenseR200->IsStreaming())
+        if (camera && camera->IsStreaming())
         {
             glViewport(0, 0, width, height);
             auto depthImage = realsenseContext->cameras[0]->GetDepthImage();

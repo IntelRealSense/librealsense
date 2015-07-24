@@ -3,9 +3,9 @@
 
 #include <stdint.h>
 
-namespace R200
+namespace r200
 {
-
+    
 #pragma pack(1)
 #define CURRENT_CAMERA_CONTENTS_VERSION_NUMBER 10
     
@@ -77,7 +77,7 @@ struct CameraHeaderInfo
 } __attribute__((aligned(1)));
     
 #pragma pack()
-    
-} // R200
+
+} // end namespace r200
 
 #endif
