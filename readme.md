@@ -17,19 +17,20 @@ A libusb based driver for the RealSense F200 (IVCAM) and RealSense R200 (DS4). I
 [X] Proper support for streaming intent.
 [X] Frame count into triple buffer
 [X] Device Handles per device! D'oh
-[] Latest camera header info 
-[] Latest calib version info
 [X] Context should let me know if it's R200 or F200
 [] openStreamWithHardwareIndex should be internal func
+[] Latest camera header info 
+[] Latest calib version info
+[] F200 Device Abstraction
+[] Properly namespace all the things. Half done. Maybe another rename pass...? 
 
 [] Sterling linalg from Melax sandbox
 [] Pointcloud projection + shader
 [] Orbit camera for pointcloud
 [] Make drawing textures not suck
 
-[] Properly namespace all the things
 [] Shield user app from libusb/libuvc headers entirely
-[] F200 Device Abstraction
+
 [] Error handling for everything
 
 # Longer-Term ToDo
