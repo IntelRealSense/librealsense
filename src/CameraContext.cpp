@@ -1,5 +1,6 @@
 #include <librealsense/CameraContext.h>
-#include <librealsense/UVCCamera.h>
+#include <librealsense/R200/R200.h>
+#include <librealsense/F200/F200.h>
 
 ////////////////////
 // Camera Context //
@@ -47,8 +48,28 @@ void CameraContext::QueryDeviceList()
     size_t index = 0;
     while (list[index] != nullptr)
     {
-        uvc_ref_device(list[index]);
-        cameras.push_back(std::make_shared<UVCCamera>(list[index], index));
+        auto dev = list[index];
+        
+        uvc_ref_device(dev);
+
+        uvc_device_descriptor_t * desc;
+        if(uvc_get_device_descriptor(dev, &desc) == UVC_SUCCESS)
+        {
+            
+            if (desc->idProduct == 2688)
+            {
+                cameras.push_back(std::make_shared<r200::R200Camera>(list[index], index));
+            }
+            
+            else if (desc->idProduct == 2662)
+            {
+                cameras.push_back(std::make_shared<f200::F200Camera>(list[index], index));
+            }
+            
+            uvc_free_device_descriptor(desc);
+        }
+        
+
         index++;
     }
     

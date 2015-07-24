@@ -37,16 +37,16 @@
 
 /* Begin PBXFileReference section */
 		08567BC41B5B5A0200EB6C0D /* librealsense.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = librealsense.a; sourceTree = BUILT_PRODUCTS_DIR; };
-		08567BE81B5B5B4E00EB6C0D /* libuvc_config.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = libuvc_config.h; path = ../third_party/libuvc/include/libuvc/libuvc_config.h; sourceTree = "<group>"; };
-		08567BE91B5B5B4E00EB6C0D /* libuvc_internal.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = libuvc_internal.h; path = ../third_party/libuvc/include/libuvc/libuvc_internal.h; sourceTree = "<group>"; };
-		08567BEA1B5B5B4E00EB6C0D /* libuvc.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = libuvc.h; path = ../third_party/libuvc/include/libuvc/libuvc.h; sourceTree = "<group>"; };
-		08567BEF1B5B5B5D00EB6C0D /* ctrl.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = ctrl.c; path = ../third_party/libuvc/src/ctrl.c; sourceTree = "<group>"; };
-		08567BF01B5B5B5D00EB6C0D /* device.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = device.c; path = ../third_party/libuvc/src/device.c; sourceTree = "<group>"; };
-		08567BF11B5B5B5D00EB6C0D /* diag.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = diag.c; path = ../third_party/libuvc/src/diag.c; sourceTree = "<group>"; };
-		08567BF41B5B5B5D00EB6C0D /* frame.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = frame.c; path = ../third_party/libuvc/src/frame.c; sourceTree = "<group>"; };
-		08567BF51B5B5B5D00EB6C0D /* init.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = init.c; path = ../third_party/libuvc/src/init.c; sourceTree = "<group>"; };
-		08567BF61B5B5B5D00EB6C0D /* misc.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = misc.c; path = ../third_party/libuvc/src/misc.c; sourceTree = "<group>"; };
-		08567BF71B5B5B5D00EB6C0D /* stream.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = stream.c; path = ../third_party/libuvc/src/stream.c; sourceTree = "<group>"; };
+		08567BE81B5B5B4E00EB6C0D /* libuvc_config.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = libuvc_config.h; path = third_party/libuvc/include/libuvc/libuvc_config.h; sourceTree = "<group>"; };
+		08567BE91B5B5B4E00EB6C0D /* libuvc_internal.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = libuvc_internal.h; path = third_party/libuvc/include/libuvc/libuvc_internal.h; sourceTree = "<group>"; };
+		08567BEA1B5B5B4E00EB6C0D /* libuvc.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = libuvc.h; path = third_party/libuvc/include/libuvc/libuvc.h; sourceTree = "<group>"; };
+		08567BEF1B5B5B5D00EB6C0D /* ctrl.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = ctrl.c; path = third_party/libuvc/src/ctrl.c; sourceTree = SOURCE_ROOT; };
+		08567BF01B5B5B5D00EB6C0D /* device.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = device.c; path = third_party/libuvc/src/device.c; sourceTree = SOURCE_ROOT; };
+		08567BF11B5B5B5D00EB6C0D /* diag.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = diag.c; path = third_party/libuvc/src/diag.c; sourceTree = SOURCE_ROOT; };
+		08567BF41B5B5B5D00EB6C0D /* frame.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = frame.c; path = third_party/libuvc/src/frame.c; sourceTree = SOURCE_ROOT; };
+		08567BF51B5B5B5D00EB6C0D /* init.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = init.c; path = third_party/libuvc/src/init.c; sourceTree = SOURCE_ROOT; };
+		08567BF61B5B5B5D00EB6C0D /* misc.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = misc.c; path = third_party/libuvc/src/misc.c; sourceTree = SOURCE_ROOT; };
+		08567BF71B5B5B5D00EB6C0D /* stream.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = stream.c; path = third_party/libuvc/src/stream.c; sourceTree = SOURCE_ROOT; };
 		08567C371B61E78D00EB6C0D /* CameraContext.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = CameraContext.h; path = include/librealsense/CameraContext.h; sourceTree = SOURCE_ROOT; };
 		08567C381B61E78D00EB6C0D /* Common.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Common.h; path = include/librealsense/Common.h; sourceTree = SOURCE_ROOT; };
 		08567C391B61E78D00EB6C0D /* UVCCamera.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = UVCCamera.h; path = include/librealsense/UVCCamera.h; sourceTree = SOURCE_ROOT; };

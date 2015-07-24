@@ -124,7 +124,7 @@ int main(int argc, const char * argv[])
             {
                 std::cout << "Found Camera At Index: " << cam->GetCameraIndex() << std::endl;
                 
-                camera = cam.get();
+                camera = static_cast<R200Camera*>(cam.get());
 
                 cam->EnableStream(STREAM_DEPTH);
                 cam->EnableStream(STREAM_RGB);
