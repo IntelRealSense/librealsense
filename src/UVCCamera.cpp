@@ -50,7 +50,6 @@ void UVCCamera::frameCallback(uvc_frame_t * frame, StreamInterface * stream)
     }
     
     frameCount++;
-    
 }
 
 uint16_t * UVCCamera::GetDepthImage()
@@ -77,14 +76,8 @@ uint8_t * UVCCamera::GetColorImage()
 
 bool UVCCamera::IsStreaming()
 {
-    if (streamingModeBitfield & STREAM_DEPTH)
-    {
-        return true;
-    }
-    else if (streamingModeBitfield & STREAM_RGB)
-    {
-        return true;
-    }
+    if (streamingModeBitfield & STREAM_DEPTH) return true;
+    else if (streamingModeBitfield & STREAM_RGB) return true;
     return false;
 }
     

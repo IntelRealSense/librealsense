@@ -55,7 +55,6 @@ void CameraContext::QueryDeviceList()
         uvc_device_descriptor_t * desc;
         if(uvc_get_device_descriptor(dev, &desc) == UVC_SUCCESS)
         {
-            
             if (desc->idProduct == 2688)
             {
                 cameras.push_back(std::make_shared<r200::R200Camera>(list[index], index));
@@ -68,11 +67,9 @@ void CameraContext::QueryDeviceList()
             
             uvc_free_device_descriptor(desc);
         }
-        
-
         index++;
     }
-    
+
     uvc_free_device_list(list, 1);
 }
 

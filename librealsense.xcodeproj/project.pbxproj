@@ -21,17 +21,17 @@
 		08567C3B1B61E78D00EB6C0D /* Common.h in Headers */ = {isa = PBXBuildFile; fileRef = 08567C381B61E78D00EB6C0D /* Common.h */; };
 		08567C3C1B61E78D00EB6C0D /* UVCCamera.h in Headers */ = {isa = PBXBuildFile; fileRef = 08567C391B61E78D00EB6C0D /* UVCCamera.h */; };
 		08567C3E1B61E79400EB6C0D /* F200.h in Headers */ = {isa = PBXBuildFile; fileRef = 08567C3D1B61E79400EB6C0D /* F200.h */; };
-		08567C451B61E79C00EB6C0D /* R200_CalibParams.h in Headers */ = {isa = PBXBuildFile; fileRef = 08567C3F1B61E79C00EB6C0D /* R200_CalibParams.h */; };
-		08567C461B61E79C00EB6C0D /* R200_CalibIO.h in Headers */ = {isa = PBXBuildFile; fileRef = 08567C401B61E79C00EB6C0D /* R200_CalibIO.h */; };
-		08567C471B61E79C00EB6C0D /* R200_CameraHeader.h in Headers */ = {isa = PBXBuildFile; fileRef = 08567C411B61E79C00EB6C0D /* R200_CameraHeader.h */; };
-		08567C481B61E79C00EB6C0D /* R200_SPI.h in Headers */ = {isa = PBXBuildFile; fileRef = 08567C421B61E79C00EB6C0D /* R200_SPI.h */; };
-		08567C491B61E79C00EB6C0D /* R200_XU.h in Headers */ = {isa = PBXBuildFile; fileRef = 08567C431B61E79C00EB6C0D /* R200_XU.h */; };
+		08567C451B61E79C00EB6C0D /* CalibParams.h in Headers */ = {isa = PBXBuildFile; fileRef = 08567C3F1B61E79C00EB6C0D /* CalibParams.h */; };
+		08567C461B61E79C00EB6C0D /* CalibIO.h in Headers */ = {isa = PBXBuildFile; fileRef = 08567C401B61E79C00EB6C0D /* CalibIO.h */; };
+		08567C471B61E79C00EB6C0D /* CameraHeader.h in Headers */ = {isa = PBXBuildFile; fileRef = 08567C411B61E79C00EB6C0D /* CameraHeader.h */; };
+		08567C481B61E79C00EB6C0D /* SPI.h in Headers */ = {isa = PBXBuildFile; fileRef = 08567C421B61E79C00EB6C0D /* SPI.h */; };
+		08567C491B61E79C00EB6C0D /* XU.h in Headers */ = {isa = PBXBuildFile; fileRef = 08567C431B61E79C00EB6C0D /* XU.h */; };
 		08567C4A1B61E79C00EB6C0D /* R200.h in Headers */ = {isa = PBXBuildFile; fileRef = 08567C441B61E79C00EB6C0D /* R200.h */; };
 		08567C4D1B61E8B400EB6C0D /* CameraContext.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 08567C4B1B61E8B400EB6C0D /* CameraContext.cpp */; };
 		08567C4E1B61E8B400EB6C0D /* UVCCamera.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 08567C4C1B61E8B400EB6C0D /* UVCCamera.cpp */; };
 		08567C501B61E8BA00EB6C0D /* F200.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 08567C4F1B61E8BA00EB6C0D /* F200.cpp */; };
-		08567C541B61E8C000EB6C0D /* R200_SPI.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 08567C511B61E8C000EB6C0D /* R200_SPI.cpp */; };
-		08567C551B61E8C000EB6C0D /* R200_XU.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 08567C521B61E8C000EB6C0D /* R200_XU.cpp */; };
+		08567C541B61E8C000EB6C0D /* SPI.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 08567C511B61E8C000EB6C0D /* SPI.cpp */; };
+		08567C551B61E8C000EB6C0D /* XU.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 08567C521B61E8C000EB6C0D /* XU.cpp */; };
 		08567C561B61E8C000EB6C0D /* R200.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 08567C531B61E8C000EB6C0D /* R200.cpp */; };
 /* End PBXBuildFile section */
 
@@ -51,17 +51,17 @@
 		08567C381B61E78D00EB6C0D /* Common.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Common.h; path = include/librealsense/Common.h; sourceTree = SOURCE_ROOT; };
 		08567C391B61E78D00EB6C0D /* UVCCamera.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = UVCCamera.h; path = include/librealsense/UVCCamera.h; sourceTree = SOURCE_ROOT; };
 		08567C3D1B61E79400EB6C0D /* F200.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = F200.h; path = include/librealsense/F200/F200.h; sourceTree = SOURCE_ROOT; };
-		08567C3F1B61E79C00EB6C0D /* R200_CalibParams.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = R200_CalibParams.h; path = include/librealsense/R200/R200_CalibParams.h; sourceTree = SOURCE_ROOT; };
-		08567C401B61E79C00EB6C0D /* R200_CalibIO.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = R200_CalibIO.h; path = include/librealsense/R200/R200_CalibIO.h; sourceTree = SOURCE_ROOT; };
-		08567C411B61E79C00EB6C0D /* R200_CameraHeader.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = R200_CameraHeader.h; path = include/librealsense/R200/R200_CameraHeader.h; sourceTree = SOURCE_ROOT; };
-		08567C421B61E79C00EB6C0D /* R200_SPI.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = R200_SPI.h; path = include/librealsense/R200/R200_SPI.h; sourceTree = SOURCE_ROOT; };
-		08567C431B61E79C00EB6C0D /* R200_XU.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = R200_XU.h; path = include/librealsense/R200/R200_XU.h; sourceTree = SOURCE_ROOT; };
+		08567C3F1B61E79C00EB6C0D /* CalibParams.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = CalibParams.h; path = include/librealsense/R200/CalibParams.h; sourceTree = SOURCE_ROOT; };
+		08567C401B61E79C00EB6C0D /* CalibIO.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = CalibIO.h; path = include/librealsense/R200/CalibIO.h; sourceTree = SOURCE_ROOT; };
+		08567C411B61E79C00EB6C0D /* CameraHeader.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = CameraHeader.h; path = include/librealsense/R200/CameraHeader.h; sourceTree = SOURCE_ROOT; };
+		08567C421B61E79C00EB6C0D /* SPI.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = SPI.h; path = include/librealsense/R200/SPI.h; sourceTree = SOURCE_ROOT; };
+		08567C431B61E79C00EB6C0D /* XU.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = XU.h; path = include/librealsense/R200/XU.h; sourceTree = SOURCE_ROOT; };
 		08567C441B61E79C00EB6C0D /* R200.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = R200.h; path = include/librealsense/R200/R200.h; sourceTree = SOURCE_ROOT; };
 		08567C4B1B61E8B400EB6C0D /* CameraContext.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = CameraContext.cpp; path = src/CameraContext.cpp; sourceTree = SOURCE_ROOT; };
 		08567C4C1B61E8B400EB6C0D /* UVCCamera.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = UVCCamera.cpp; path = src/UVCCamera.cpp; sourceTree = SOURCE_ROOT; };
 		08567C4F1B61E8BA00EB6C0D /* F200.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = F200.cpp; path = src/F200/F200.cpp; sourceTree = SOURCE_ROOT; };
-		08567C511B61E8C000EB6C0D /* R200_SPI.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = R200_SPI.cpp; path = src/R200/R200_SPI.cpp; sourceTree = SOURCE_ROOT; };
-		08567C521B61E8C000EB6C0D /* R200_XU.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = R200_XU.cpp; path = src/R200/R200_XU.cpp; sourceTree = SOURCE_ROOT; };
+		08567C511B61E8C000EB6C0D /* SPI.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = SPI.cpp; path = src/R200/SPI.cpp; sourceTree = SOURCE_ROOT; };
+		08567C521B61E8C000EB6C0D /* XU.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = XU.cpp; path = src/R200/XU.cpp; sourceTree = SOURCE_ROOT; };
 		08567C531B61E8C000EB6C0D /* R200.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = R200.cpp; path = src/R200/R200.cpp; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
@@ -150,11 +150,11 @@
 		08567C321B61E6A600EB6C0D /* R200 */ = {
 			isa = PBXGroup;
 			children = (
-				08567C3F1B61E79C00EB6C0D /* R200_CalibParams.h */,
-				08567C401B61E79C00EB6C0D /* R200_CalibIO.h */,
-				08567C411B61E79C00EB6C0D /* R200_CameraHeader.h */,
-				08567C421B61E79C00EB6C0D /* R200_SPI.h */,
-				08567C431B61E79C00EB6C0D /* R200_XU.h */,
+				08567C3F1B61E79C00EB6C0D /* CalibParams.h */,
+				08567C401B61E79C00EB6C0D /* CalibIO.h */,
+				08567C411B61E79C00EB6C0D /* CameraHeader.h */,
+				08567C421B61E79C00EB6C0D /* SPI.h */,
+				08567C431B61E79C00EB6C0D /* XU.h */,
 				08567C441B61E79C00EB6C0D /* R200.h */,
 			);
 			name = R200;
@@ -190,8 +190,8 @@
 		08567C361B61E6C600EB6C0D /* R200 */ = {
 			isa = PBXGroup;
 			children = (
-				08567C511B61E8C000EB6C0D /* R200_SPI.cpp */,
-				08567C521B61E8C000EB6C0D /* R200_XU.cpp */,
+				08567C511B61E8C000EB6C0D /* SPI.cpp */,
+				08567C521B61E8C000EB6C0D /* XU.cpp */,
 				08567C531B61E8C000EB6C0D /* R200.cpp */,
 			);
 			name = R200;
@@ -208,14 +208,14 @@
 				08567BEC1B5B5B4E00EB6C0D /* libuvc_internal.h in Headers */,
 				08567BEB1B5B5B4E00EB6C0D /* libuvc_config.h in Headers */,
 				08567C3B1B61E78D00EB6C0D /* Common.h in Headers */,
-				08567C491B61E79C00EB6C0D /* R200_XU.h in Headers */,
-				08567C451B61E79C00EB6C0D /* R200_CalibParams.h in Headers */,
-				08567C461B61E79C00EB6C0D /* R200_CalibIO.h in Headers */,
+				08567C491B61E79C00EB6C0D /* XU.h in Headers */,
+				08567C451B61E79C00EB6C0D /* CalibParams.h in Headers */,
+				08567C461B61E79C00EB6C0D /* CalibIO.h in Headers */,
 				08567C3E1B61E79400EB6C0D /* F200.h in Headers */,
-				08567C471B61E79C00EB6C0D /* R200_CameraHeader.h in Headers */,
+				08567C471B61E79C00EB6C0D /* CameraHeader.h in Headers */,
 				08567BED1B5B5B4E00EB6C0D /* libuvc.h in Headers */,
 				08567C3C1B61E78D00EB6C0D /* UVCCamera.h in Headers */,
-				08567C481B61E79C00EB6C0D /* R200_SPI.h in Headers */,
+				08567C481B61E79C00EB6C0D /* SPI.h in Headers */,
 				08567C3A1B61E78D00EB6C0D /* CameraContext.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -276,11 +276,11 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				08567C551B61E8C000EB6C0D /* R200_XU.cpp in Sources */,
+				08567C551B61E8C000EB6C0D /* XU.cpp in Sources */,
 				08567C4D1B61E8B400EB6C0D /* CameraContext.cpp in Sources */,
 				08567C4E1B61E8B400EB6C0D /* UVCCamera.cpp in Sources */,
 				08567BF91B5B5B5D00EB6C0D /* ctrl.c in Sources */,
-				08567C541B61E8C000EB6C0D /* R200_SPI.cpp in Sources */,
+				08567C541B61E8C000EB6C0D /* SPI.cpp in Sources */,
 				08567BFE1B5B5B5D00EB6C0D /* frame.c in Sources */,
 				08567C001B5B5B5D00EB6C0D /* misc.c in Sources */,
 				08567C011B5B5B5D00EB6C0D /* stream.c in Sources */,
