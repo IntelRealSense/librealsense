@@ -14,8 +14,8 @@
 		08567C0B1B5B898C00EB6C0D /* CoreVideo.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 08567C0A1B5B898C00EB6C0D /* CoreVideo.framework */; };
 		08567C0D1B5B899200EB6C0D /* IOKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 08567C0C1B5B899200EB6C0D /* IOKit.framework */; };
 		08567C0F1B5B899B00EB6C0D /* OpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 08567C0E1B5B899B00EB6C0D /* OpenGL.framework */; };
-		08567C171B5C359800EB6C0D /* libusb-1.0.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 08567C161B5C359800EB6C0D /* libusb-1.0.a */; };
 		08567C2C1B61D80B00EB6C0D /* librealsense.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 08567C2B1B61D80B00EB6C0D /* librealsense.a */; };
+		08567C301B61DB8100EB6C0D /* libusb-1.0.0.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 08567C2F1B61DB8100EB6C0D /* libusb-1.0.0.dylib */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -40,8 +40,8 @@
 		08567C0A1B5B898C00EB6C0D /* CoreVideo.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreVideo.framework; path = System/Library/Frameworks/CoreVideo.framework; sourceTree = SDKROOT; };
 		08567C0C1B5B899200EB6C0D /* IOKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = IOKit.framework; path = System/Library/Frameworks/IOKit.framework; sourceTree = SDKROOT; };
 		08567C0E1B5B899B00EB6C0D /* OpenGL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenGL.framework; path = System/Library/Frameworks/OpenGL.framework; sourceTree = SDKROOT; };
-		08567C161B5C359800EB6C0D /* libusb-1.0.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = "libusb-1.0.a"; path = "/usr/local/Cellar/libusb/1.0.19/lib/libusb-1.0.a"; sourceTree = "<absolute>"; };
 		08567C2B1B61D80B00EB6C0D /* librealsense.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = librealsense.a; path = ../../Library/Developer/Xcode/DerivedData/bin/Debug/librealsense.a; sourceTree = "<group>"; };
+		08567C2F1B61DB8100EB6C0D /* libusb-1.0.0.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = "libusb-1.0.0.dylib"; path = "../../../../usr/local/Cellar/libusb/1.0.19/lib/libusb-1.0.0.dylib"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -54,8 +54,8 @@
 				08567C0D1B5B899200EB6C0D /* IOKit.framework in Frameworks */,
 				08567C0B1B5B898C00EB6C0D /* CoreVideo.framework in Frameworks */,
 				08567C091B5B898400EB6C0D /* Cocoa.framework in Frameworks */,
-				08567C171B5C359800EB6C0D /* libusb-1.0.a in Frameworks */,
 				08567C041B5B5D6B00EB6C0D /* libglfw3.a in Frameworks */,
+				08567C301B61DB8100EB6C0D /* libusb-1.0.0.dylib in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -101,7 +101,7 @@
 		08567C2D1B61D82000EB6C0D /* libs */ = {
 			isa = PBXGroup;
 			children = (
-				08567C161B5C359800EB6C0D /* libusb-1.0.a */,
+				08567C2F1B61DB8100EB6C0D /* libusb-1.0.0.dylib */,
 				08567C031B5B5D6B00EB6C0D /* libglfw3.a */,
 				08567C2B1B61D80B00EB6C0D /* librealsense.a */,
 			);
