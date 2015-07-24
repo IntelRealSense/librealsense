@@ -1572,10 +1572,8 @@ void LIBUSB_CALL _uvc_status_callback(struct libusb_transfer *transfer) {
   case LIBUSB_TRANSFER_ERROR:
   case LIBUSB_TRANSFER_CANCELLED:
   case LIBUSB_TRANSFER_NO_DEVICE:
-    UVC_DEBUG("Dimitri - not true - not processing/resubmitting, status = %d", transfer->status);
-    //break;
-    UVC_EXIT_VOID();
-    return;
+    UVC_DEBUG("retrying transfer, status = %d", transfer->status);
+    break;
   case LIBUSB_TRANSFER_COMPLETED:
     uvc_process_status_xfer(devh, transfer);
     break;
