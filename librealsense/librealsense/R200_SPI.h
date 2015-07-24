@@ -80,7 +80,9 @@ public:
     void PrintHeaderInfo();
 
     CameraCalibrationParameters GetRectifiedParameters() { return parameters; }
+    
     RectifiedIntrinsics GetZIntrinsics(int mode = 0);
+    
 };
 
 #endif

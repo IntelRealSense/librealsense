@@ -103,6 +103,8 @@ int GetStreamStatus(uvc_device_handle_t *devh);
 
 bool SetStreamIntent(uvc_device_handle_t *devh, uint8_t intent);
     
+std::string GetFirmwareVersion(uvc_device_handle_t *t);
+    
 }
 
 #endif

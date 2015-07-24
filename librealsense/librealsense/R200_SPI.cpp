@@ -207,10 +207,10 @@ void SPI_Interface::PrintHeaderInfo()
     R200::CameraHeaderInfo cameraInfo = {};
     memcpy(&cameraInfo, cameraHeader + 2048, static_cast<int>(sizeof(cameraInfo)));
     
-    std::cout << "######## Serial:" << cameraInfo.serialNumber << std::endl;
-    std::cout << "######## Model:" << cameraInfo.modelNumber << std::endl;
-    std::cout << "######## Revision:" << cameraInfo.revisionNumber << std::endl;
-    std::cout << "######## Version:" << int(cameraInfo.moduleVersion) << std::endl;
-    std::cout << "######## Major:" << int(cameraInfo.moduleMajorVersion) << std::endl;
-    std::cout << "######## Minor:" << int(cameraInfo.moduleMinorVersion) << std::endl;
+    std::cout << "######## Serial: " << cameraInfo.serialNumber << std::endl;
+    std::cout << "######## Model: " << cameraInfo.modelNumber << std::endl;
+    std::cout << "######## Revision: " << cameraInfo.revisionNumber << std::endl;
+    std::cout << "######## Calibrated: " << cameraInfo.calibrationDate << std::endl;
+    std::cout << "######## Built: " << cameraInfo.buildDate << std::endl;
+    std::cout << "######## Programmed: " << cameraInfo.firstProgramDate << std::endl;
 }

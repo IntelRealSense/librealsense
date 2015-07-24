@@ -13,8 +13,6 @@
 #include <cmath>
 #include <atomic>
 
-#include "R200_CalibrationIntrinsics.h"
-
 enum class RealSenseCamera : uint8_t
 {
     DS4 = 10,
@@ -39,12 +37,9 @@ struct TripleBufferedFrame
     std::vector<uint8_t> front;    // Read by application
     std::vector<uint8_t> back;     // Write by camera
     std::vector<uint8_t> pending;  // Middle
-    
     bool updated = false;
     
-    std::atomic<uint64_t> frameCount;
-    
-    TripleBufferedFrame(int width, int height, int stride) : frameCount(0)
+    TripleBufferedFrame(int width, int height, int stride)
     {
         front.resize(width * height * stride);
         back.resize(width * height * stride);
@@ -86,26 +81,6 @@ T rs_clamp(T a, T mn, T mx)
     return std::max(std::min(a, mx), mn);
 }
 
-template <typename T>
-inline T remap(T value, T inputMin, T inputMax, T outputMin, T outputMax, bool clamp)
-{
-    T outVal = ((value - inputMin) / (inputMax - inputMin) * (outputMax - outputMin) + outputMin);
-    if (clamp)
-    {
-        if (outputMax < outputMin)
-        {
-            if (outVal < outputMax) outVal = outputMax;
-            else if (outVal > outputMin) outVal = outputMin;
-        }
-        else
-        {
-            if (outVal > outputMax) outVal = outputMax;
-            else if (outVal < outputMin) outVal = outputMin;
-        }
-    }
-    return outVal;
-}
-
 template <typename T, bool clamp, int inputMin, int inputMax>
 inline T remapInt(T value, float outputMin, float outputMax)
 {
@@ -135,6 +110,27 @@ inline uint8_t clampbyte(int v)
 /////////////////////////////////
 // Camera Math/Transform Utils //
 /////////////////////////////////
+
+struct UnrectifiedIntrinsics
+{
+    float fx;
+    float fy;
+    float px;
+    float py;
+    float k[5];
+    uint32_t w;
+    uint32_t h;
+};
+
+struct RectifiedIntrinsics
+{
+    float rfx;
+    float rfy;
+    float rpx;
+    float rpy;
+    uint32_t rw;
+    uint32_t rh;
+};
 
 // Compute field of view angles in degrees from rectified intrinsics
 inline void GetFieldOfView(const RectifiedIntrinsics & intrinsics, float & horizontalFOV, float & verticalFOV)

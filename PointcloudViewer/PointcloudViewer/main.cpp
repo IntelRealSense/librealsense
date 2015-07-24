@@ -127,12 +127,11 @@ int main(int argc, const char * argv[])
                 
                 cam->ConfigureStreams();
              
-                /*
+
                 auto zIntrin = cam->GetCalibrationDataRectZ();
                 float hFov, vFov;
                 GetFieldOfView(zIntrin, hFov, vFov);
                 std::cout << "Computed FoV: " << hFov << " x " << vFov << std::endl;
-                */
                 
                 StreamConfiguration depthConfig = {628, 469, 0, UVC_FRAME_FORMAT_Z16};
                 StreamConfiguration colorConfig = {640, 480, 30, UVC_FRAME_FORMAT_YUYV};

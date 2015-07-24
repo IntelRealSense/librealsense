@@ -94,8 +94,12 @@ bool UVCCamera::ConfigureStreams()
         spiInterface->Initialize();
         auto calibParams = spiInterface->GetRectifiedParameters();
         
+        std::cout << "Firmware Revision: " << XUControl::GetFirmwareVersion(uvc_handle) << std::endl;
+        
         // Debugging Camera Firmware:
         std::cout << "Calib Version Number: " << calibParams.versionNumber << std::endl;
+        
+        spiInterface->PrintHeaderInfo();
         
         auto streamIntent = XUControl::SetStreamIntent(uvc_handle, streamingModeBitfield); //@tofix - proper streaming mode, assume color and depth
         if (!streamIntent)
@@ -200,7 +204,6 @@ void UVCCamera::frameCallback(uvc_frame_t * frame, StreamInterface * stream)
         {
             std::lock_guard<std::mutex> lock(frameMutex);
             depthFrame->swap_back();
-            depthFrame->frameCount += 1;
         }
     }
     
@@ -214,9 +217,10 @@ void UVCCamera::frameCallback(uvc_frame_t * frame, StreamInterface * stream)
          {
             std::lock_guard<std::mutex> lock(frameMutex);
             colorFrame->swap_back();
-            colorFrame->frameCount += 1;
          }
     }
+    
+    frameCount++;
     
 }
 

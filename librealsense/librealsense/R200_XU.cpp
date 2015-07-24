@@ -42,7 +42,28 @@ bool SetStreamIntent(uvc_device_handle_t *devh, uint8_t intent)
     std::cerr << "XUWrite failed for DSDevice::SetStreamIntent" << std::endl;
     return false;
 }
+
+std::string GetFirmwareVersion(uvc_device_handle_t * devh)
+{
+    CommandPacket command;
+    command.code = COMMAND_GET_FWREVISION;
+    command.modifier = COMMAND_MODIFIER_DIRECT;
+    command.tag = 12;
     
+    unsigned int cmdLength = sizeof(CommandPacket);
+    auto XUWriteCmdStatus = uvc_set_ctrl(devh, CAMERA_XU_UNIT_ID, CONTROL_COMMAND_RESPONSE, &command, cmdLength);
+    
+    ResponsePacket response;
+    unsigned int resLength = sizeof(ResponsePacket);
+    auto XUReadCmdStatus = uvc_get_ctrl(devh, CAMERA_XU_UNIT_ID, CONTROL_COMMAND_RESPONSE, &response, resLength, UVC_GET_CUR);
+    
+    char fw[16];
+    
+    memcpy(fw, &response.revision, 16);
+    
+    return std::string(fw);
+}
+
 }
 
 //@todo implement generic xu read / write + response

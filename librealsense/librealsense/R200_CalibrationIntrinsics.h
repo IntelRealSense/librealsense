@@ -4,6 +4,7 @@
 #define LIBREALSENSE_R200_CALIBRATION_INTRINSICS_H
 
 #include <stdint.h>
+#include "Common.h"
 
 const uint16_t MAX_NUM_INTRINSICS_RIGHT = 1;         // Max number right cameras supported (e.g. one or two, two would support a multi-baseline unit)
 const uint16_t MAX_NUM_INTRINSICS_THIRD = 3;         // Max number native resolutions the third camera can have (e.g. 1920x1080 and 640x480)
@@ -11,27 +12,6 @@ const uint16_t MAX_NUM_INTRINSICS_PLATFORM = 4;      // Max number native resolu
 const uint16_t MAX_NUM_RECTIFIED_MODES_LR = 4;       // Max number rectified LR resolution modes the structure supports (e.g. 640x480, 492x372 and 332x252)
 const uint16_t MAX_NUM_RECTIFIED_MODES_THIRD = 3;    // Max number rectified Third resolution modes the structure supports (e.g. 1920x1080, 1280x720, 640x480 and 320x240)
 const uint16_t MAX_NUM_RECTIFIED_MODES_PLATFORM = 1; // Max number rectified Platform resolution modes the structure supports
-
-struct UnrectifiedIntrinsics
-{
-    float fx;
-    float fy;
-    float px;
-    float py;
-    float k[5];
-    uint32_t w;
-    uint32_t h;
-};
-
-struct RectifiedIntrinsics
-{
-    float rfx;
-    float rfy;
-    float rpx;
-    float rpy;
-    uint32_t rw;
-    uint32_t rh;
-};
 
 struct CameraCalibrationParameters
 {

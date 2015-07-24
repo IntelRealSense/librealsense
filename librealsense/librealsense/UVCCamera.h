@@ -22,6 +22,12 @@
 #define STREAM_LR 2
 #define STREAM_RGB 4
 
+enum Imager
+{
+    IMAGER_BOTH,
+    IMAGER_THIRD
+};
+
 struct StreamConfiguration
 {
     int width;
@@ -65,6 +71,8 @@ class UVCCamera
     
     bool firstTime = true;
     
+    uint64_t frameCount = 0;
+    
     USBDeviceInfo usbInfo = {};
     
     std::mutex frameMutex;
@@ -107,6 +115,8 @@ public:
     bool IsStreaming() { return isStreaming; }
     
     void EnableStream(int whichStream) { streamingModeBitfield |= whichStream; }
+    
+    uint64_t GetFrameCount() { return frameCount; }
     
     RectifiedIntrinsics GetCalibrationDataRectZ()
     {
