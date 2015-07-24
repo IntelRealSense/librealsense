@@ -71,6 +71,8 @@ protected:
     }
     
     void frameCallback(uvc_frame_t * frame, StreamInterface * stream);
+
+    bool OpenStreamOnSubdevice(uvc_device_t * dev, uvc_device_handle_t *& h, int idx);
     
 public:
     

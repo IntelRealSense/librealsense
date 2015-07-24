@@ -52,6 +52,17 @@ void UVCCamera::frameCallback(uvc_frame_t * frame, StreamInterface * stream)
     frameCount++;
 }
 
+bool UVCCamera::OpenStreamOnSubdevice(uvc_device_t * dev,  uvc_device_handle_t *& h, int idx)
+{
+    uvc_error_t status = uvc_open2(dev, &h, idx);
+    if (status < 0)
+    {
+        uvc_perror(status, "uvc_open2");
+        return false;
+    }
+    return true;
+};
+    
 uint16_t * UVCCamera::GetDepthImage()
 {
     if (depthFrame->updated)

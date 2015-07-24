@@ -24,27 +24,13 @@ bool R200Camera::ConfigureStreams()
     
     uvc_ref_device(hardware);
     
-    //@tofix better error handling...
-    auto openStreamWithHardwareIndex = [&](int idx, uvc_device_handle_t *& uvc_handle)
-    {
-        // YES: Need different device handles!!
-        uvc_error_t status = uvc_open2(hardware, &uvc_handle, idx);
-        
-        if (status < 0)
-        {
-            uvc_perror(status, "uvc_open2");
-            return false;
-        }
-        return true;
-    };
-    
     //@tofix: Test for successful open
     if (streamingModeBitfield & STREAM_DEPTH)
     {
         StreamInterface * stream = new StreamInterface();
         stream->camera = this;
         
-        openStreamWithHardwareIndex(1, stream->uvcHandle);
+        OpenStreamOnSubdevice(hardware, stream->uvcHandle, 1);
         streamInterfaces.insert(std::pair<int, StreamInterface *>(STREAM_DEPTH, stream));
         //DumpInfo();
     }
@@ -54,7 +40,7 @@ bool R200Camera::ConfigureStreams()
         StreamInterface * stream = new StreamInterface();
         stream->camera = this;
         
-        openStreamWithHardwareIndex(2, stream->uvcHandle);
+        OpenStreamOnSubdevice(hardware, stream->uvcHandle, 2);
         streamInterfaces.insert(std::pair<int, StreamInterface *>(STREAM_RGB, stream));
         //DumpInfo();
     }
