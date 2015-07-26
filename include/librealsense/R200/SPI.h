@@ -62,6 +62,7 @@ typedef struct
 #define CAM_INFO_BLOCK_LEN 2048
 
 //@tofix error handling all up in this bitch
+struct SPI;
 class SPI_Interface
 {
     CameraCalibrationParameters parameters;
@@ -73,11 +74,15 @@ class SPI_Interface
     
     uvc_device_handle_t * deviceHandle;
     
+    SPI * spi;
+    
 public:
     
     RoutineStorageTables rst;
     
     SPI_Interface(uvc_device_handle_t * deviceHandle);
+    ~SPI_Interface();
+    
     void Initialize();
     
     void PrintHeaderInfo();
