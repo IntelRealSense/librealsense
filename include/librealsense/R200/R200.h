@@ -4,19 +4,12 @@
 #define LIBREALSENSE_R200_CAMERA_H
 
 #include <librealsense/CameraContext.h>
-
+#include <librealsense/R200/CameraHeader.h>
 #include <librealsense/R200/XU.h>
 #include <librealsense/R200/SPI.h>
-#include <librealsense/R200/CameraHeader.h>
 
 namespace r200
 {
-    
-enum Imager
-{
-    IMAGER_BOTH,
-    IMAGER_THIRD
-};
 
 class R200Camera : public rs::UVCCamera
 {
@@ -32,11 +25,7 @@ public:
     
     virtual void StopStream(int streamIdentifier) override;
     
-    RectifiedIntrinsics GetCalibrationDataRectZ()
-    {
-        // Check if SPI interface even exists.
-        return spiInterface->GetZIntrinsics();
-    }
+    RectifiedIntrinsics GetRectifiedIntrinsicsZ();
 };
     
 } // end namespace r200

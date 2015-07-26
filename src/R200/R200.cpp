@@ -22,17 +22,14 @@ bool R200Camera::ConfigureStreams()
     if (streamingModeBitfield == 0)
         throw std::invalid_argument("No streams have been configured...");
     
-    uvc_ref_device(hardware);
-    
     //@tofix: Test for successful open
     if (streamingModeBitfield & STREAM_DEPTH)
     {
         StreamInterface * stream = new StreamInterface();
         stream->camera = this;
         
-        OpenStreamOnSubdevice(hardware, stream->uvcHandle, 1);
+        bool status = OpenStreamOnSubdevice(hardware, stream->uvcHandle, 1);
         streamInterfaces.insert(std::pair<int, StreamInterface *>(STREAM_DEPTH, stream));
-        //DumpInfo();
     }
     
     if (streamingModeBitfield & STREAM_RGB)
@@ -40,19 +37,17 @@ bool R200Camera::ConfigureStreams()
         StreamInterface * stream = new StreamInterface();
         stream->camera = this;
         
-        OpenStreamOnSubdevice(hardware, stream->uvcHandle, 2);
+        bool status = OpenStreamOnSubdevice(hardware, stream->uvcHandle, 2);
         streamInterfaces.insert(std::pair<int, StreamInterface *>(STREAM_RGB, stream));
-        //DumpInfo();
     }
     
-    //DumpInfo();
     
     /*
-     if (streamingModeBitfield & STREAM_LR)
-     {
-     openDevice(0);
-     }
-     */
+    if (streamingModeBitfield & STREAM_LR)
+    {
+        openDevice(0);
+    }
+    */
     
     uvc_device_descriptor_t * desc;
     if(uvc_get_device_descriptor(hardware, &desc) == UVC_SUCCESS)
@@ -69,22 +64,16 @@ bool R200Camera::ConfigureStreams()
     
     auto oneTimeInitialize = [&](uvc_device_handle_t * uvc_handle)
     {
-        //@tofix - if first time:
         spiInterface.reset(new SPI_Interface(uvc_handle));
+        
         spiInterface->Initialize();
-        auto calibParams = spiInterface->GetRectifiedParameters();
         
         std::cout << "Firmware Revision: " << GetFirmwareVersion(uvc_handle) << std::endl;
+        spiInterface->LogDebugInfo();
         
-        // Debugging Camera Firmware:
-        //std::cout << "Calib Version Number: " << calibParams.versionNumber << std::endl;
-        
-        spiInterface->PrintHeaderInfo();
-        
-        auto streamIntent = SetStreamIntent(uvc_handle, streamingModeBitfield); //@tofix - proper streaming mode, assume color and depth
-        if (!streamIntent)
+        if (!SetStreamIntent(uvc_handle, streamingModeBitfield))
         {
-            throw std::runtime_error("Could not set stream intent");
+            throw std::runtime_error("Could not set stream intent. Replug camera?");
         }
     };
     
@@ -122,10 +111,10 @@ void R200Camera::StartStream(int streamIdentifier, const StreamConfiguration & c
         
         //@tofix - check streaming mode as well
         if (c.format == UVC_FRAME_FORMAT_Z16)
-            depthFrame.reset(new TripleBufferedFrame(c.width, c.height, 2)); // uint8_t * 2 (uint16_t)
+            depthFrame.reset(new TripleBufferedFrame(c.width, c.height, 2));
 
         else if (c.format == UVC_FRAME_FORMAT_YUYV)
-            colorFrame.reset(new TripleBufferedFrame(c.width, c.height, 3)); // uint8_t * 3
+            colorFrame.reset(new TripleBufferedFrame(c.width, c.height, 3));
         
         uvc_error_t startStreamResult = uvc_start_streaming(stream->uvcHandle, &stream->ctrl, &UVCCamera::cb, stream, 0);
         
@@ -145,6 +134,12 @@ void R200Camera::StopStream(int streamNum)
 {
     //@tofix - uvc_stream_stop with a real stream handle -> index with map that we have
     //uvc_stop_streaming(deviceHandle);
+}
+    
+RectifiedIntrinsics R200Camera::GetRectifiedIntrinsicsZ()
+{
+    auto calibration = spiInterface->GetCalibration();
+    return calibration.modesLR[0]; // Warning: assume mode 0 here (628x468)
 }
 
 } // end namespace r200

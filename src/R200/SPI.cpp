@@ -1,6 +1,5 @@
 #include <librealsense/R200/SPI.h>
 #include <librealsense/R200/CalibIO.h>
-#include <librealsense/R200/CameraHeader.h>
 
 using namespace std;
 
@@ -149,6 +148,11 @@ SPI_Interface::SPI_Interface(uvc_device_handle_t * devh) : deviceHandle(devh)
     
 }
 
+SPI_Interface::~SPI_Interface()
+{
+    
+}
+
 void SPI_Interface::Initialize()
 {
     rst = {0};
@@ -166,46 +170,32 @@ void SPI_Interface::Initialize()
 
 void SPI_Interface::ReadCalibrationSector()
 {
-    // Read flash data
-    bool readStatus = readAdminSector(deviceHandle, cameraHeader, NV_CALIBRATION_DATA_ADDRESS_INDEX);
-    
-    if (!readStatus)
+    if (!readAdminSector(deviceHandle, flashDataBuffer, NV_CALIBRATION_DATA_ADDRESS_INDEX))
         throw std::runtime_error("Could not read calibration sector");
     
-    // Copy useful parts into calibration data
-    memcpy(calibrationData, cameraHeader, CAM_INFO_BLOCK_LEN);
-
-    // Parse into something usable
-    parameters = ParseCalibrationParameters(calibrationData);
+    memcpy(calibrationDataBuffer, flashDataBuffer, CAM_INFO_BLOCK_LEN);
+    memcpy(&cameraInfo, flashDataBuffer + CAM_INFO_BLOCK_LEN, sizeof(cameraInfo));
+    
+    cameraCalibration = ParseCalibrationParameters(calibrationDataBuffer);
 }
 
-RectifiedIntrinsics SPI_Interface::GetZIntrinsics(int mode)
+void SPI_Interface::LogDebugInfo()
 {
-        /*
-    auto lrIntrin = parameters.modesLR[0][mode];
+    std::cout << "#### Serial: " << cameraInfo.serialNumber << std::endl;
+    std::cout << "#### Model: " << cameraInfo.modelNumber << std::endl;
+    std::cout << "#### Revision: " << cameraInfo.revisionNumber << std::endl;
+    std::cout << "#### Calibrated: " << cameraInfo.calibrationDate << std::endl;
     
-    // Some kind of crop offset happens here. This isn't the true lrIntrin.
-    std::cout << "### rfx: " << lrIntrin.rfx << std::endl;
-    std::cout << "### rfy: " << lrIntrin.rfy << std::endl;
-    std::cout << "### rpx: " << lrIntrin.rpx << std::endl;
-    std::cout << "### rpy: " << lrIntrin.rpy << std::endl;
-    std::cout << "### rw:  " << lrIntrin.rw << std::endl;
-    std::cout << "### rh:  " << lrIntrin.rh << std::endl;
-    */
-    return RectifiedIntrinsics();
-}
-
-void SPI_Interface::PrintHeaderInfo()
-{
-    r200::CameraHeaderInfo cameraInfo = {};
-    memcpy(&cameraInfo, cameraHeader + 2048, static_cast<int>(sizeof(cameraInfo)));
+    auto params = cameraCalibration.modesLR[0];
     
-    std::cout << "######## Serial: " << cameraInfo.serialNumber << std::endl;
-    std::cout << "######## Model: " << cameraInfo.modelNumber << std::endl;
-    std::cout << "######## Revision: " << cameraInfo.revisionNumber << std::endl;
-    std::cout << "######## Calibrated: " << cameraInfo.calibrationDate << std::endl;
-    std::cout << "######## Built: " << cameraInfo.buildDate << std::endl;
-    std::cout << "######## Programmed: " << cameraInfo.firstProgramDate << std::endl;
+    std::cout << "## Mode LR[0] Rectified Intrinsics: " << std::endl;
+    std::cout << "## Calibration Version: " << cameraCalibration.metadata.versionNumber << std::endl;
+    std::cout << "## rfx: " << params.rfx << std::endl;
+    std::cout << "## rfy: " << params.rfy << std::endl;
+    std::cout << "## rpx: " << params.rpx << std::endl;
+    std::cout << "## rpy: " << params.rpy << std::endl;
+    std::cout << "## rw:  " << params.rw << std::endl;
+    std::cout << "## rh:  " << params.rh << std::endl;
 }
 
 } // end namespace r200

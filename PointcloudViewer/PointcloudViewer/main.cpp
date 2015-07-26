@@ -113,9 +113,8 @@ int main(int argc, const char * argv[])
     
         auto cameraList = realsenseContext->cameras;
         
-        // @tofix check pid/vid to make sure it's either/or F200 or R200
         if (cameraList.size() == 0)
-        {
+        { 
             std::cout << "Error: no cameras detected. Is it plugged in?" << std::endl;
         }
         else
@@ -131,8 +130,7 @@ int main(int argc, const char * argv[])
                 
                 cam->ConfigureStreams();
              
-
-                auto zIntrin = camera->GetCalibrationDataRectZ();
+                auto zIntrin = camera->GetRectifiedIntrinsicsZ();
                 float hFov, vFov;
                 GetFieldOfView(zIntrin, hFov, vFov);
                 std::cout << "Computed FoV: " << hFov << " x " << vFov << std::endl;

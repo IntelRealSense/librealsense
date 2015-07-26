@@ -4,8 +4,9 @@
 #define LIBREALSENSE_R200_SPI_H
 
 #include "libuvc/libuvc.h"
-#include <librealsense/R200/CalibParams.h>
 #include <librealsense/R200/XU.h>
+#include <librealsense/R200/CameraHeader.h>
+#include <librealsense/R200/CalibParams.h>
 
 namespace r200
 {
@@ -64,28 +65,29 @@ typedef struct
 //@tofix error handling all up in this bitch
 class SPI_Interface
 {
-    CameraCalibrationParameters parameters;
+    CameraCalibrationParameters cameraCalibration;
+    CameraHeaderInfo cameraInfo;
     
-    uint8_t cameraHeader[SPI_FLASH_SECTOR_SIZE_IN_BYTES];
-    uint8_t calibrationData[CAM_INFO_BLOCK_LEN];
+    uint8_t flashDataBuffer[SPI_FLASH_SECTOR_SIZE_IN_BYTES];
+    uint8_t calibrationDataBuffer[CAM_INFO_BLOCK_LEN];
     
     void ReadCalibrationSector();
     
     uvc_device_handle_t * deviceHandle;
     
-public:
-    
     RoutineStorageTables rst;
     
+public:
+    
     SPI_Interface(uvc_device_handle_t * deviceHandle);
+    ~SPI_Interface();
+    
     void Initialize();
     
-    void PrintHeaderInfo();
+    void LogDebugInfo();
 
-    CameraCalibrationParameters GetRectifiedParameters() { return parameters; }
-    
-    RectifiedIntrinsics GetZIntrinsics(int mode = 0);
-    
+    CameraCalibrationParameters GetCalibration() { return cameraCalibration; }
+    CameraHeaderInfo GetCameraHeader() { return cameraInfo; }
 };
 
 } // end namespace r200
