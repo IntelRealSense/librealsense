@@ -9,145 +9,134 @@
 
 namespace r200
 {
-    
-// Assume little-endian architecture
-void endian_internal(unsigned char * result, const unsigned char * origin, int numBytes)
+
+inline void swap_to_little(unsigned char * result, const unsigned char * origin, int numBytes)
 {
-    const bool changeEndianness = true; // bug
-    if (changeEndianness)
+    for (int i = 0; i < numBytes; i++)
     {
-        for (int i = 0; i < numBytes; i++)
-        {
-            result[i] = origin[numBytes - 1 - i];
-        }
-    }
-    else
-    {
-        memcpy(result, origin, numBytes);
+        result[i] = origin[numBytes - 1 - i];
     }
 }
 
+// Only valid for basic types
 template <class T>
-static bool readFromBin(const unsigned char *& p, T & x)
+inline void read_bytes(const unsigned char *& p, T & x)
 {
-    endian_internal((unsigned char *)&x, p, sizeof(T));
+    swap_to_little((unsigned char *)&x, p, sizeof(T));
     p += sizeof(T);
-    return true;
 }
-
-template <class T>
-static bool readFromBin(const unsigned char *& p, T * px, int n)
+ 
+template<unsigned long size>
+inline void read_array(const unsigned char *& p, std::array<float, size> & x)
 {
-    for (int i = 0; i < n; i++)
+    for (int i = 0; i < x.size(); i++)
     {
-        if (!readFromBin(p, px[i]))
-        {
-            return false;
-        }
+        read_bytes(p, x[i]);
     }
-    return true;
 }
 
-template <class T>
-static bool readFromBin(const unsigned char *& p, T * px, int m, int n)
+inline void read_unrectified(const unsigned char *& p, UnrectifiedIntrinsics & cri)
 {
-    for (int i = 0; i < m; i++)
-    {
-        for (int j = 0; j < n; j++)
-        {
-            if (!readFromBin(p, px[j + n * i]))
-            {
-                return false;
-            }
-        }
-    }
-    return true;
+    read_bytes(p, cri.fx);
+    read_bytes(p, cri.fy);
+    read_bytes(p, cri.px);
+    read_bytes(p, cri.py);
+    read_bytes(p, cri.k[0]);
+    read_bytes(p, cri.k[1]);
+    read_bytes(p, cri.k[2]);
+    read_bytes(p, cri.k[3]);
+    read_bytes(p, cri.k[4]);
+    read_bytes(p, cri.w);
+    read_bytes(p, cri.h);
 }
 
-template <class T>
-static bool readFromBin(const unsigned char *& p, T * px, int m, int n, int o)
+inline void read_rectified(const unsigned char *& p, RectifiedIntrinsics & crm)
 {
-    for (int i = 0; i < m; i++)
-    {
-        for (int j = 0; j < n; j++)
-        {
-            for (int k = 0; k < o; k++)
-            {
-                if (!readFromBin(p, px[k + o * (j + n * i)]))
-                {
-                    return false;
-                }
-            }
-        }
-    }
-    return true;
+    read_bytes(p, crm.rfx);
+    read_bytes(p, crm.rfy);
+    read_bytes(p, crm.rpx);
+    read_bytes(p, crm.rpy);
+    read_bytes(p, crm.rw);
+    read_bytes(p, crm.rh);
 }
 
-static bool readFromBin(const unsigned char *& p, UnrectifiedIntrinsics & cri)
+inline CameraCalibrationParameters ParseCalibrationParameters(const uint8_t * buffer)
 {
-    return readFromBin(p, cri.fx)
-    && readFromBin(p, cri.fy)
-    && readFromBin(p, cri.px)
-    && readFromBin(p, cri.py)
-    && readFromBin(p, cri.k, 5)
-    && readFromBin(p, cri.w)
-    && readFromBin(p, cri.h);
-}
-
-static bool readFromBin(const unsigned char *& p, RectifiedIntrinsics & crm)
-{
-    return readFromBin(p, crm.rfx)
-    && readFromBin(p, crm.rfy)
-    && readFromBin(p, crm.rpx)
-    && readFromBin(p, crm.rpy)
-    && readFromBin(p, crm.rw)
-    && readFromBin(p, crm.rh);
-}
-
-inline bool ParseCalibrationRectifiedParametersFromMemory(CameraCalibrationParameters & cal, const uint8_t * buffer)
-{
-    endian_internal((unsigned char *) &cal.versionNumber, buffer, sizeof(cal.versionNumber));
+    const unsigned char * p = buffer;
     
-    if (cal.versionNumber <= 1)
-    {
-        //throw std::runtime_error("Unsupported calibration version. Use a newer firmware?");
-    }
+    CameraCalibrationParameters cal = {0};
     
-    //@tofix -- this is actually V1
+    //////////////
+    // Metadata //
+    //////////////
     
-    const int mNIR = MAX_NUM_INTRINSICS_RIGHT;
-    const int mNIT = MAX_NUM_INTRINSICS_THIRD;
-    const int mNIP = MAX_NUM_INTRINSICS_PLATFORM;
-    const int mNMLR = MAX_NUM_RECTIFIED_MODES_LR;
-    const int mNMT = MAX_NUM_RECTIFIED_MODES_THIRD;
-    const int mNMP = MAX_NUM_RECTIFIED_MODES_PLATFORM;
+    read_bytes(p, cal.metadata.versionNumber);
+    read_bytes(p, cal.metadata.numIntrinsicsRight);
+    read_bytes(p, cal.metadata.numIntrinsicsThird);
+    read_bytes(p, cal.metadata.numIntrinsicsPlatform);
+    read_bytes(p, cal.metadata.numRectifiedModesLR);
+    read_bytes(p, cal.metadata.numRectifiedModesThird);
+    read_bytes(p, cal.metadata.numRectifiedModesPlatform);
     
-    const uint8_t * p = buffer;
-    bool ok =
-    readFromBin(p, cal.versionNumber)
-    && readFromBin(p, cal.numIntrinsicsRight)
-    && readFromBin(p, cal.numIntrinsicsThird)
-    && readFromBin(p, cal.numIntrinsicsPlatform)
-    && readFromBin(p, cal.numRectifiedModesLR)
-    && readFromBin(p, cal.numRectifiedModesThird)
-    && readFromBin(p, cal.numRectifiedModesPlatform)
-    && readFromBin(p, cal.intrinsicsLeft)
-    && readFromBin(p, cal.intrinsicsRight, mNIR)
-    && readFromBin(p, cal.intrinsicsThird, mNIT)
-    && readFromBin(p, cal.intrinsicsPlatform, mNIP)
-    && readFromBin(p, &(cal.modesLR[0][0]), mNIR, mNMLR)
-    && readFromBin(p, &(cal.modesThird[0][0][0]), mNIR, mNIT, mNMT)
-    && readFromBin(p, &(cal.modesPlatform[0][0][0]), mNIR, mNIP, mNMP)
-    && readFromBin(p, &(cal.Rleft[0][0]), mNIR, 9)
-    && readFromBin(p, &(cal.Rright[0][0]), mNIR, 9)
-    && readFromBin(p, &(cal.Rthird[0][0]), mNIR, 9)
-    && readFromBin(p, &(cal.Rplatform[0][0]), mNIR, 9)              
-    && readFromBin(p, cal.B, mNIR)                                  
-    && readFromBin(p, &(cal.T[0][0]), mNIR, 3)                      
-    && readFromBin(p, &(cal.Tplatform[0][0]), mNIR, 3)              
-    && readFromBin(p, cal.Rworld, 9);
+    ////////////////////////////
+    // Unrectified Parameters //
+    ////////////////////////////
     
-    return ok;
+    read_unrectified(p, cal.intrinsicsLeft);
+    
+    cal.intrinsicsRight.resize(MAX_NUM_INTRINSICS_RIGHT);
+    for (auto & t : cal.intrinsicsRight) { read_unrectified(p, t); }
+    
+    cal.intrinsicsThird.resize(MAX_NUM_INTRINSICS_THIRD);
+    for (auto & t : cal.intrinsicsThird) { read_unrectified(p, t); }
+    
+    cal.intrinsicsPlatform.resize(MAX_NUM_INTRINSICS_PLATFORM);
+    for (auto & t : cal.intrinsicsPlatform) { read_unrectified(p, t); }
+    
+    //////////////////////////
+    // Rectified Parameters //
+    //////////////////////////
+    
+    cal.modesLR.resize(MAX_NUM_INTRINSICS_RIGHT * MAX_NUM_RECTIFIED_MODES_LR);
+    for (auto & t : cal.modesLR) { read_rectified(p, t); }
+    
+    cal.modesThird.resize(MAX_NUM_INTRINSICS_RIGHT * MAX_NUM_INTRINSICS_THIRD * MAX_NUM_RECTIFIED_MODES_THIRD);
+    for (auto & t : cal.modesThird) { read_rectified(p, t); }
+    
+    cal.modesPlatform.resize(MAX_NUM_INTRINSICS_RIGHT * MAX_NUM_INTRINSICS_PLATFORM * MAX_NUM_RECTIFIED_MODES_PLATFORM);
+    for (auto & t : cal.modesPlatform) { read_rectified(p, t); }
+    
+    //////////
+    // Mats //
+    //////////
+    
+    cal.Rleft.resize(MAX_NUM_INTRINSICS_RIGHT);
+    for (auto & mat : cal.Rleft) { read_array(p, mat); };
+    
+    cal.Rright.resize(MAX_NUM_INTRINSICS_RIGHT);
+    for (auto & mat : cal.Rright) { read_array(p, mat); };
+    
+    cal.Rthird.resize(MAX_NUM_INTRINSICS_RIGHT);
+    for (auto & mat : cal.Rthird) { read_array(p, mat); };
+    
+    cal.Rplatform.resize(MAX_NUM_INTRINSICS_RIGHT);
+    for (auto & mat : cal.Rplatform) { read_array(p, mat); };
+    
+    // B & T
+    cal.B.resize(MAX_NUM_INTRINSICS_RIGHT);
+    for (int i = 0; i < cal.B.size(); i++) { read_bytes(p, cal.B[i]); }
+    
+    cal.T.resize(MAX_NUM_INTRINSICS_RIGHT);
+    for (auto & mat : cal.T) { read_array(p, mat); };
+    
+    cal.Tplatform.resize(MAX_NUM_INTRINSICS_RIGHT);
+    for (auto & mat : cal.Tplatform) { read_array(p, mat); };
+    
+    // RWorld & TWorld
+    read_array(p, cal.Rworld);
+    read_array(p, cal.Tworld);
+    
+    return cal;
 }
 
 } // end namespace r200

@@ -7,7 +7,7 @@ namespace r200
 {
     
 #pragma pack(1)
-#define CURRENT_CAMERA_CONTENTS_VERSION_NUMBER 10
+#define CURRENT_CAMERA_CONTENTS_VERSION_NUMBER 12
     
 struct CameraHeaderInfo
 {
@@ -26,11 +26,12 @@ struct CameraHeaderInfo
     uint32_t lensTypeThird;
     uint32_t OEMID;
     uint32_t lensCoatingTypeThird;
-    uint8_t reserved2[4];
+    uint8_t platformCameraSupport;
+    uint8_t reserved1[3];
     uint32_t emitterType;
-    uint8_t reserved3[4];
+    uint8_t reserved2[4];
     uint32_t cameraFPGAVersion;
-    uint8_t reserved4[4];
+    uint32_t platformCameraFocus; // This is the value during calibration
     double calibrationDate;
     uint32_t calibrationType;
     double calibrationXError;
@@ -72,8 +73,11 @@ struct CameraHeaderInfo
     uint32_t nominalBaseline;
     uint32_t lensType;
     uint32_t lensCoating;
+    int32_t nominalBaselinePlatform[3]; // NOTE: Signed, since platform camera can be mounted anywhere
+    uint32_t lensTypePlatform;
+    uint32_t imagerTypePlatform;
     uint32_t theLastWord;
-    uint8_t reserved5[57];
+    uint8_t reserved3[37];
 } __attribute__((aligned(1)));
     
 #pragma pack()

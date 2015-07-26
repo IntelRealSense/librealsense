@@ -166,9 +166,6 @@ void SPI_Interface::Initialize()
 
 void SPI_Interface::ReadCalibrationSector()
 {
-    // Zero out params
-    parameters = {0};
-    
     // Read flash data
     bool readStatus = readAdminSector(deviceHandle, cameraHeader, NV_CALIBRATION_DATA_ADDRESS_INDEX);
     
@@ -179,15 +176,12 @@ void SPI_Interface::ReadCalibrationSector()
     memcpy(calibrationData, cameraHeader, CAM_INFO_BLOCK_LEN);
 
     // Parse into something usable
-    bool parseHappy = ParseCalibrationRectifiedParametersFromMemory(parameters, calibrationData);
-    if (!parseHappy)
-        throw std::runtime_error("Could not parse calibration parameters from memory...");
-    
-
+    parameters = ParseCalibrationParameters(calibrationData);
 }
 
 RectifiedIntrinsics SPI_Interface::GetZIntrinsics(int mode)
 {
+        /*
     auto lrIntrin = parameters.modesLR[0][mode];
     
     // Some kind of crop offset happens here. This isn't the true lrIntrin.
@@ -197,8 +191,8 @@ RectifiedIntrinsics SPI_Interface::GetZIntrinsics(int mode)
     std::cout << "### rpy: " << lrIntrin.rpy << std::endl;
     std::cout << "### rw:  " << lrIntrin.rw << std::endl;
     std::cout << "### rh:  " << lrIntrin.rh << std::endl;
-    
-    return lrIntrin;
+    */
+    return RectifiedIntrinsics();
 }
 
 void SPI_Interface::PrintHeaderInfo()

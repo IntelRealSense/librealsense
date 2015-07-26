@@ -106,7 +106,7 @@ inline uint8_t clampbyte(int v)
 /////////////////////////////////
 // Camera Math/Transform Utils //
 /////////////////////////////////
-
+#pragma pack(1)
 struct UnrectifiedIntrinsics
 {
     float fx;
@@ -127,6 +127,7 @@ struct RectifiedIntrinsics
     uint32_t rw;
     uint32_t rh;
 };
+#pragma pack()
 
 // Compute field of view angles in degrees from rectified intrinsics
 inline void GetFieldOfView(const RectifiedIntrinsics & intrinsics, float & horizontalFOV, float & verticalFOV)

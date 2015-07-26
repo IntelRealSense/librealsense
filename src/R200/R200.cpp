@@ -77,7 +77,7 @@ bool R200Camera::ConfigureStreams()
         std::cout << "Firmware Revision: " << GetFirmwareVersion(uvc_handle) << std::endl;
         
         // Debugging Camera Firmware:
-        std::cout << "Calib Version Number: " << calibParams.versionNumber << std::endl;
+        //std::cout << "Calib Version Number: " << calibParams.versionNumber << std::endl;
         
         spiInterface->PrintHeaderInfo();
         
