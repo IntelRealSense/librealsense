@@ -1,6 +1,5 @@
 #include <librealsense/R200/SPI.h>
 #include <librealsense/R200/CalibIO.h>
-#include <librealsense/R200/CameraHeader.h>
 
 using namespace std;
 
@@ -157,7 +156,7 @@ SPI_Interface::~SPI_Interface()
 {
     delete spi;
 }
-
+    
 void SPI_Interface::Initialize()
 {
     rst = {0};
@@ -175,29 +174,18 @@ void SPI_Interface::Initialize()
 
 void SPI_Interface::ReadCalibrationSector()
 {
-    // Read flash data
-    bool readStatus = spi->read_admin_sector(deviceHandle, cameraHeader, NV_CALIBRATION_DATA_ADDRESS_INDEX);
-    
-    if (!readStatus)
+    if (!spi->read_admin_sector(deviceHandle, flashDataBuffer, NV_CALIBRATION_DATA_ADDRESS_INDEX))
         throw std::runtime_error("Could not read calibration sector");
     
-    // Copy useful parts into calibration data
-    memcpy(calibrationData, cameraHeader, CAM_INFO_BLOCK_LEN);
+    memcpy(calibrationDataBuffer, flashDataBuffer, CAM_INFO_BLOCK_LEN);
+    memcpy(&cameraInfo, flashDataBuffer + CAM_INFO_BLOCK_LEN, sizeof(cameraInfo));
 
     // Parse into something usable
-    parameters = ParseCalibrationParameters(calibrationData);
+    cameraCalibration = ParseCalibrationParameters(calibrationDataBuffer);
 }
 
-RectifiedIntrinsics SPI_Interface::GetZIntrinsics(int mode)
+void SPI_Interface::LogDebugInfo()
 {
-    return parameters.modesLR[mode];
-}
-
-void SPI_Interface::PrintHeaderInfo()
-{
-    r200::CameraHeaderInfo cameraInfo = {};
-    memcpy(&cameraInfo, cameraHeader + CAM_INFO_BLOCK_LEN, static_cast<int>(sizeof(cameraInfo)));
-    
     std::cout << "######## Serial: " << cameraInfo.serialNumber << std::endl;
     std::cout << "######## Model: " << cameraInfo.modelNumber << std::endl;
     std::cout << "######## Revision: " << cameraInfo.revisionNumber << std::endl;
@@ -205,6 +193,17 @@ void SPI_Interface::PrintHeaderInfo()
     std::cout << "######## Head Version: " << cameraInfo.cameraHeadContentsVersion << std::endl;
     std::cout << "######## Baseline: " << cameraInfo.nominalBaseline << std::endl;
     std::cout << "######## OEM ID: " << cameraInfo.OEMID << std::endl;
+    
+    auto params = cameraCalibration.modesLR[0];
+    
+    std::cout << "## Mode LR[0] Rectified Intrinsics: " << std::endl;
+    std::cout << "## Calibration Version: " << cameraCalibration.metadata.versionNumber << std::endl;
+    std::cout << "## rfx: " << params.rfx << std::endl;
+    std::cout << "## rfy: " << params.rfy << std::endl;
+    std::cout << "## rpx: " << params.rpx << std::endl;
+    std::cout << "## rpy: " << params.rpy << std::endl;
+    std::cout << "## rw:  " << params.rw << std::endl;
+    std::cout << "## rh:  " << params.rh << std::endl;
 }
 
 } // end namespace r200
