@@ -111,10 +111,16 @@ void R200Camera::StartStream(int streamIdentifier, const StreamConfiguration & c
         
         //@tofix - check streaming mode as well
         if (c.format == UVC_FRAME_FORMAT_Z16)
+        {
             depthFrame.reset(new TripleBufferedFrame(c.width, c.height, 2));
+            zConfig = c;
+        }
 
         else if (c.format == UVC_FRAME_FORMAT_YUYV)
+        {
             colorFrame.reset(new TripleBufferedFrame(c.width, c.height, 3));
+            rgbConfig = c;
+        }
         
         uvc_error_t startStreamResult = uvc_start_streaming(stream->uvcHandle, &stream->ctrl, &UVCCamera::cb, stream, 0);
         

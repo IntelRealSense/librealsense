@@ -14,6 +14,8 @@ namespace r200
 class R200Camera : public rs::UVCCamera
 {
     std::unique_ptr<SPI_Interface> spiInterface;
+    rs::StreamConfiguration zConfig;
+    rs::StreamConfiguration rgbConfig;
 public:
     
     R200Camera(uvc_device_t * device, int num);
@@ -26,6 +28,11 @@ public:
     virtual void StopStream(int streamIdentifier) override;
     
     RectifiedIntrinsics GetRectifiedIntrinsicsZ();
+    
+    rs::StreamConfiguration GetZConfig() { return zConfig; }
+    
+    rs::StreamConfiguration GetRGBConfig() { return rgbConfig; }
+    
 };
     
 } // end namespace r200
