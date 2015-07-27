@@ -21,14 +21,19 @@ A libusb based driver for the RealSense F200 (IVCAM) and RealSense R200 (DS4). I
 9. [x] openStreamWithHardwareIndex should be internal func
 10. [x] Latest camera header info 
 11. [x] Latest calib version info
-12. [ ] F200 Device Abstraction
 12. [ ] Properly namespace all the things. Half done. Maybe another rename pass...? 
-13. [ ] Shield user app from libusb/libuvc headers entirely
+13. [ ] Shield user app from libusb/libuvc headers entirely (forward decls)
+14. [ ] UVC Frame Format => Special librealsense struct instead
 14. [ ] Error handling for everything
 15. [ ] Header Documentation
 16. [ ] Cleanup @tofix declarations
 17. [ ] Fix stream width/height 
 18. [ ] Pointcloud lighting/camera
+
+# F200 ToDo
+1. [ ] F200 Device Abstraction
+2. [ ] Calibration Info
+3. [ ] Multi-Stream
 
 # Longer-Term ToDo
 1. [ ] Support IR frames + decoding
