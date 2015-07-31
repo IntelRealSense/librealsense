@@ -30,7 +30,6 @@ public:
     RectifiedIntrinsics GetRectifiedIntrinsicsZ();
     
     rs::StreamConfiguration GetZConfig() { return zConfig; }
-    
     rs::StreamConfiguration GetRGBConfig() { return rgbConfig; }
     
 };

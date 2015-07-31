@@ -4,6 +4,7 @@
 #define LIBREALSENSE_F200_CAMERA_H
 
 #include <librealsense/CameraContext.h>
+#include <librealsense/F200/XU.h>
 
 namespace f200
 {
