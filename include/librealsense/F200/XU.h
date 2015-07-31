@@ -29,7 +29,7 @@
 namespace f200
 {
     
-    CameraCalibrationParameters GetCalibration(uvc_device_handle_t *devh)
+    inline CameraCalibrationParameters GetCalibration(uvc_device_handle_t *devh)
     {
         CameraCalibrationParameters params;
         
@@ -52,7 +52,6 @@ namespace f200
         throw std::runtime_error("XURead failed for F200::GetCalibration()");
         
         return params;
-        
     }
 
 } // end namespace f200
