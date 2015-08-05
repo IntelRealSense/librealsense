@@ -78,7 +78,11 @@ struct CameraHeaderInfo
     uint32_t imagerTypePlatform;
     uint32_t theLastWord;
     uint8_t reserved3[37];
-} __attribute__((aligned(1)));
+}
+#ifndef _MSC_VER
+__attribute__((aligned(1)))
+#endif
+;
     
 #pragma pack()
 

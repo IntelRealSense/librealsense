@@ -3,6 +3,8 @@
 
 using namespace rs;
 
+#ifndef WIN32
+
 namespace f200
 {
     F200Camera::F200Camera(uvc_device_t * device, int idx) : UVCCamera(device, idx)
@@ -60,9 +62,9 @@ namespace f200
         
         if (stream->uvcHandle)
         {
-            stream->fmt = c.format;
+            stream->fmt = static_cast<uvc_frame_format>(c.format);
             
-            uvc_error_t status = uvc_get_stream_ctrl_format_size(stream->uvcHandle, &stream->ctrl, c.format, c.width, c.height, c.fps);
+            uvc_error_t status = uvc_get_stream_ctrl_format_size(stream->uvcHandle, &stream->ctrl, stream->fmt, c.width, c.height, c.fps);
             
             if (status < 0)
             {
@@ -70,12 +72,12 @@ namespace f200
                 throw std::runtime_error("Open camera_handle Failed");
             }
             
-            if (c.format == UVC_FRAME_FORMAT_INVI)
+            if (c.format == FrameFormat::INVI)
             {
                 depthFrame.reset(new TripleBufferedFrame(c.width, c.height, 2));
             }
             
-            else if (c.format == UVC_FRAME_FORMAT_YUYV)
+			else if (c.format == FrameFormat::YUYV)
             {
                 colorFrame.reset(new TripleBufferedFrame(c.width, c.height, 3));
             }
@@ -96,3 +98,5 @@ namespace f200
         //@tofix
     }
 }
+
+#endif

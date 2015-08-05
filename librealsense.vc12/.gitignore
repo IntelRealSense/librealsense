@@ -1,0 +1,6 @@
+ipch/
+packages/
+*.opensdf
+*.sdf
+*.suo
+*.vcxproj.user

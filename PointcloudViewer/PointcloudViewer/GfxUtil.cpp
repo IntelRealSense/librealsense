@@ -180,7 +180,7 @@ std::array<int, 3> hsvToRgb(double h, double s, double v) {
 void drawTexture(GLuint prog, GLuint vbo, GLuint texHandle, GLuint texId, void * pixels, int width, int height, GLint fmt, GLenum type)
 {
     CHECK_GL_ERROR();
-    
+
     glUseProgram(prog);
     
     // Bind our texture in Texture Unit 0

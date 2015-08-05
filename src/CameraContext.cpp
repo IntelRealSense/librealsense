@@ -2,6 +2,8 @@
 #include <librealsense/R200/R200.h>
 #include <librealsense/F200/F200.h>
 
+#include <DSAPI/DSFactory.h>
+
 ////////////////////
 // Camera Context //
 ////////////////////
@@ -11,6 +13,7 @@ namespace rs
     
 CameraContext::CameraContext()
 {
+#ifndef WIN32
     uvc_error_t initStatus = uvc_init(&privateContext, NULL);
     
     if (initStatus < 0)
@@ -18,7 +21,7 @@ CameraContext::CameraContext()
         uvc_perror(initStatus, "uvc_init");
         throw std::runtime_error("Could not initialize UVC context");
     }
-    
+#endif
     QueryDeviceList();
 }
 
@@ -27,15 +30,28 @@ CameraContext::~CameraContext()
     cameras.clear(); // tear down cameras before context
     
     std::this_thread::sleep_for(std::chrono::milliseconds(500));
-    
+
+#ifndef WIN32
     if (privateContext)
     {
         uvc_exit(privateContext);
     }
+#endif
 }
 
 void CameraContext::QueryDeviceList()
 {
+	#ifdef WIN32
+
+	int n = DSGetNumberOfCameras(true);
+	for (int i = 0; i < n; ++i)
+	{
+		uint32_t serialNo = DSGetCameraSerialNumber(i);
+		auto ds = DSCreate(DS_DS4_PLATFORM, serialNo);
+		if (ds) cameras.push_back(std::make_shared<r200::R200Camera>(ds, i));
+	}
+
+	#else
     uvc_device_t **list;
     
     uvc_error_t status = uvc_get_device_list(privateContext, &list);
@@ -71,6 +87,7 @@ void CameraContext::QueryDeviceList()
     }
 
     uvc_free_device_list(list, 1);
+	#endif
 }
 
 } // end namespace rs

@@ -1,7 +1,12 @@
 #ifndef DS4OSX_Util_h
 #define DS4OSX_Util_h
 
+#ifdef WIN32
+#include <GL\glew.h>
+#elif __APPLE__
 #include <OpenGL/gl3.h>
+#endif
+
 #include "librealsense/Common.h"
 
 #ifndef CHECK_GL_ERROR

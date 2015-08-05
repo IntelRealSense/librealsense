@@ -4,20 +4,24 @@
 #include <stdint.h>
 #include <mutex>
 #include <iostream>
-#include "Util.h"
+//#include "Util.h"
+
+#ifdef WIN32
+#include <GL\glew.h>
+#include <GLFW\glfw3.h>
+#elif __APPLE__
 
 #include "glfw3.h"
 
 #define GLFW_EXPOSE_NATIVE_COCOA
 #define GLFW_EXPOSE_NATIVE_NSGL
 #include "glfw3native.h"
-
 #include <OpenGL/gl3.h>
+#endif
 
 #include "GfxUtil.h"
 
 #include "librealsense/CameraContext.h"
-#include "librealsense/UVCCamera.h"
 #include "librealsense/R200/R200.h"
 
 GLFWwindow * window;
@@ -62,7 +66,7 @@ using namespace r200;
 std::unique_ptr<CameraContext> realsenseContext;
 R200Camera * camera;
 
-int main(int argc, const char * argv[])
+int main(int argc, const char * argv[]) try
 {
     uint64_t frameCount = 0;
     
@@ -72,11 +76,11 @@ int main(int argc, const char * argv[])
         return -1;
     }
     
-    glfwWindowHint(GLFW_SAMPLES, 2);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
-    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+    //glfwWindowHint(GLFW_SAMPLES, 2);
+   // glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+    //glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+    //glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+    //glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     
     window = glfwCreateWindow(1280, 480, "R200 Pointcloud", NULL, NULL);
     
@@ -88,6 +92,9 @@ int main(int argc, const char * argv[])
     }
     
     glfwMakeContextCurrent(window);
+#ifdef WIN32
+	glewInit();
+#endif
     
     glfwSetWindowSizeCallback(window,
                               [](GLFWwindow* window, int width, int height)
@@ -135,8 +142,8 @@ int main(int argc, const char * argv[])
                 GetFieldOfView(zIntrin, hFov, vFov);
                 std::cout << "Computed FoV: " << hFov << " x " << vFov << std::endl;
                 
-                StreamConfiguration depthConfig = {628, 469, 0, UVC_FRAME_FORMAT_Z16};
-                StreamConfiguration colorConfig = {640, 480, 30, UVC_FRAME_FORMAT_YUYV};
+                StreamConfiguration depthConfig = {628, 469, 0, FrameFormat::Z16};
+                StreamConfiguration colorConfig = {640, 480, 30, FrameFormat::YUYV};
                 
                 cam->StartStream(STREAM_DEPTH, depthConfig);
                 cam->StartStream(STREAM_RGB, colorConfig);
@@ -179,9 +186,9 @@ int main(int argc, const char * argv[])
         {
             glViewport(0, 0, width, height);
             auto depthImage = realsenseContext->cameras[0]->GetDepthImage();
-            static uint8_t depthColoredHistogram[628 * 469 * 3];
-            ConvertDepthToRGBUsingHistogram(depthColoredHistogram, depthImage, 628, 469, 0.1f, 0.625f);
-            drawTexture(fullscreenTextureProg, quadVBO, imageUniformHandle, depthTextureHandle, depthColoredHistogram, 628, 469, GL_RGB, GL_UNSIGNED_BYTE);
+            static uint8_t depthColoredHistogram[628 * 468 * 3];
+            ConvertDepthToRGBUsingHistogram(depthColoredHistogram, depthImage, 628, 468, 0.1f, 0.625f);
+            drawTexture(fullscreenTextureProg, quadVBO, imageUniformHandle, depthTextureHandle, depthColoredHistogram, 628, 468, GL_RGB, GL_UNSIGNED_BYTE);
             
             glViewport(width / 2, 0, width, height);
             auto colorImage = realsenseContext->cameras[0]->GetColorImage();
@@ -200,4 +207,9 @@ int main(int argc, const char * argv[])
     glfwTerminate();
     return 0;
     
+}
+catch (const std::exception & e)
+{
+	std::cerr << "Caught exception: " << e.what() << std::endl;
+	return EXIT_FAILURE;
 }
