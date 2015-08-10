@@ -28,13 +28,16 @@ struct CameraCalibrationParameters
     float	Invdistt[5];
     float   QV[6];
 };
+
+class IVCAMHardwareIOInternal;
     
 class IVCAMHardwareIO
 {
+    std::unique_ptr<IVCAMHardwareIOInternal> internal;
     
 public:
     
-    IVCAMHardwareIO();
+    IVCAMHardwareIO(uvc_device_t * handle);
     ~IVCAMHardwareIO();
     
     bool StartTempCompensationLoop();

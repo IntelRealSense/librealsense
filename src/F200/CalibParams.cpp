@@ -3,6 +3,10 @@
 
 #include "libuvc/libuvc.h"
 
+#include <thread>
+#include <atomic>
+#include <mutex>
+
 using namespace rs;
 
 #ifndef WIN32
@@ -16,8 +20,10 @@ namespace f200
     #define IVCAM_MONITOR_ENDPOINT_OUT      0x1
     #define IVCAM_MONITOR_ENDPOINT_IN       0x81
     #define IVCAM_MONITOR_MAGIC_NUMBER      0xcdab
+    #define IVCAM_MIN_SUPPORTED_VERSION     13
+    #define IVCAM_MONITOR_MAX_BUFFER_SIZE   1024
     
-    enum IvcamMonitorCommand
+    enum IVCAMMonitorCommand
     {
         UpdateCalib         = 0xBC,
         GetIRTemp           = 0x52,
@@ -38,11 +44,18 @@ namespace f200
         CheckDPTConnect     = 0x4C
     };
     
+    //////////////////////////
+    // Private Hardware I/O //
+    //////////////////////////
+    
     class IVCAMHardwareIOInternal
     {
+        uvc_device_t * uvcDeviceHandle;
+        
         CameraCalibrationParameters parameters;
         
-        std::atomic<bool> tempThreadStatus;
+        std::thread temperatureThread;
+        std::atomic<bool> isTemperatureThreadRunning;
         
         int PrepareUSBCommand(uint8_t *request, size_t & requestSize, uint32_t op,
                               uint32_t p1 = 0, uint32_t p2 = 0, uint32_t p3 = 0, uint32_t p4 = 0,
@@ -56,9 +69,23 @@ namespace f200
             
         }
         
+        int FillUSBBuffer(int opCodeNumber, int p1, int p2,
+                                   int p3, int p4, char * data, int dataLength,
+                                   char* bufferToSend, int & length);
+        
+        int GetCalibrationRawData(uint8_t * data, int & bytesReturned)
+        {
+            
+        }
+        
+        int ParseCalibrationParameters(uint8_t * data)
+        {
+            
+        }
+        
     public:
         
-        IVCAMHardwareIOInternal()
+        IVCAMHardwareIOInternal(uvc_device_t * handle) : uvcDeviceHandle(handle)
         {
             
         }
@@ -90,6 +117,35 @@ namespace f200
         }
         
     };
+    
+    /////////////////////////
+    // Public Hardware I/O //
+    /////////////////////////
+    
+    IVCAMHardwareIO::IVCAMHardwareIO(uvc_device_t * handle)
+    {
+        internal.reset(new IVCAMHardwareIOInternal(handle));
+    }
+    
+    IVCAMHardwareIO::~IVCAMHardwareIO()
+    {
+        
+    }
+    
+    bool IVCAMHardwareIO::StartTempCompensationLoop()
+    {
+        return internal->StartTempCompensationLoop();
+    }
+    
+    void IVCAMHardwareIO::StopTempCompensationLoop()
+    {
+        internal->StopTempCompensationLoop();
+    }
+    
+    CameraCalibrationParameters & IVCAMHardwareIO::GetParameters()
+    {
+        return internal->GetParameters();
+    }
 
 }
 
