@@ -4,7 +4,6 @@
 #include <stdint.h>
 #include <mutex>
 #include <iostream>
-//#include "Util.h"
 
 #ifdef WIN32
 #include <GL\glew.h>
@@ -21,8 +20,7 @@
 
 #include "GfxUtil.h"
 
-#include "librealsense/CameraContext.h"
-#include "librealsense/R200/R200.h"
+#include "librealsense/rs.h"
 
 GLFWwindow * window;
 
@@ -60,11 +58,14 @@ GLuint rgbTextureHandle;
 GLuint depthTextureHandle;
 GLuint imageUniformHandle;
 
-using namespace rs;
-using namespace r200;
+RScontext realsenseContext;
+RScamera camera;
 
-std::unique_ptr<CameraContext> realsenseContext;
-R200Camera * camera;
+// Compute field of view angles in degrees from rectified intrinsics
+inline float GetAsymmetricFieldOfView(int imageSize, float focalLength, float principalPoint)
+{ 
+	return (atan2(principalPoint + 0.5f, focalLength) + atan2(imageSize - principalPoint - 0.5f, focalLength)) * 180.0f / M_PI;
+}
 
 int main(int argc, const char * argv[]) try
 {
@@ -77,7 +78,7 @@ int main(int argc, const char * argv[]) try
     }
     
     //glfwWindowHint(GLFW_SAMPLES, 2);
-   // glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+    //glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     //glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     //glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
     //glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
@@ -116,37 +117,36 @@ int main(int argc, const char * argv[]) try
     
     // Init RealSense R200 Camera -------------------------------------------
     {
-        realsenseContext.reset(new CameraContext());
-    
-        auto cameraList = realsenseContext->cameras;
-        
-        if (cameraList.size() == 0)
+		realsenseContext = rsCreateContext();
+            
+        if (rsGetCameraCount(realsenseContext) == 0)
         { 
             std::cout << "Error: no cameras detected. Is it plugged in?" << std::endl;
         }
         else
         {
-            for (auto cam : realsenseContext->cameras)
+			for (int i = 0; i < rsGetCameraCount(realsenseContext); ++i)
             {
-                std::cout << "Found Camera At Index: " << cam->GetCameraIndex() << std::endl;
+                std::cout << "Found Camera At Index: " << i << std::endl;
                 
-                camera = static_cast<R200Camera*>(cam.get());
+				camera = rsGetCamera(realsenseContext, i);
 
-                cam->EnableStream(STREAM_DEPTH);
-                cam->EnableStream(STREAM_RGB);
-                
-                cam->ConfigureStreams();
+                rsEnableStream(camera, RS_STREAM_DEPTH);
+                rsEnableStream(camera, RS_STREAM_RGB);
+                rsConfigureStreams(camera);
              
-                auto zIntrin = camera->GetRectifiedIntrinsicsZ();
-                float hFov, vFov;
-                GetFieldOfView(zIntrin, hFov, vFov);
+				float hFov = GetAsymmetricFieldOfView(
+					rsGetStreamPropertyi(camera, RS_STREAM_DEPTH, RS_IMAGE_SIZE_X),
+					rsGetStreamPropertyf(camera, RS_STREAM_DEPTH, RS_FOCAL_LENGTH_X),
+					rsGetStreamPropertyf(camera, RS_STREAM_DEPTH, RS_PRINCIPAL_POINT_X));
+				float vFov = GetAsymmetricFieldOfView(
+					rsGetStreamPropertyi(camera, RS_STREAM_DEPTH, RS_IMAGE_SIZE_Y),
+					rsGetStreamPropertyf(camera, RS_STREAM_DEPTH, RS_FOCAL_LENGTH_Y),
+					rsGetStreamPropertyf(camera, RS_STREAM_DEPTH, RS_PRINCIPAL_POINT_Y));
                 std::cout << "Computed FoV: " << hFov << " x " << vFov << std::endl;
-                
-                StreamConfiguration depthConfig = {628, 469, 0, FrameFormat::Z16};
-                StreamConfiguration colorConfig = {640, 480, 30, FrameFormat::YUYV};
-                
-                cam->StartStream(STREAM_DEPTH, depthConfig);
-                cam->StartStream(STREAM_RGB, colorConfig);
+                                
+				rsStartStream(camera, RS_STREAM_DEPTH, 628, 469, 0, RS_FRAME_FORMAT_Z16);
+				rsStartStream(camera, RS_STREAM_RGB, 640, 480, 30, RS_FRAME_FORMAT_YUYV);
             }
         }
     }
@@ -182,16 +182,16 @@ int main(int argc, const char * argv[]) try
         glfwGetWindowSize(window, &width, &height);
 
         
-        if (camera && camera->IsStreaming())
+        if (camera && rsIsStreaming(camera))
         {
             glViewport(0, 0, width, height);
-            auto depthImage = realsenseContext->cameras[0]->GetDepthImage();
+			auto depthImage = rsGetDepthImage(camera);
             static uint8_t depthColoredHistogram[628 * 468 * 3];
             ConvertDepthToRGBUsingHistogram(depthColoredHistogram, depthImage, 628, 468, 0.1f, 0.625f);
             drawTexture(fullscreenTextureProg, quadVBO, imageUniformHandle, depthTextureHandle, depthColoredHistogram, 628, 468, GL_RGB, GL_UNSIGNED_BYTE);
             
             glViewport(width / 2, 0, width, height);
-            auto colorImage = realsenseContext->cameras[0]->GetColorImage();
+			auto colorImage = rsGetColorImage(camera);
             drawTexture(fullscreenTextureProg, quadVBO, imageUniformHandle, rgbTextureHandle, colorImage, 640, 480, GL_RGB, GL_UNSIGNED_BYTE);
         }
         

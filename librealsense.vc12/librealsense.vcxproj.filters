@@ -13,6 +13,9 @@
     <ClCompile Include="..\src\Camera.cpp">
       <Filter>src</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\rs.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="src">
@@ -75,6 +78,9 @@
       <Filter>include\F200</Filter>
     </ClInclude>
     <ClInclude Include="..\include\librealsense\Camera.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\librealsense\rs.h">
       <Filter>include</Filter>
     </ClInclude>
   </ItemGroup>

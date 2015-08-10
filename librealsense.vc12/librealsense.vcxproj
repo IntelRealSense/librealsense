@@ -23,6 +23,7 @@
     <ClCompile Include="..\src\CameraContext.cpp" />
     <ClCompile Include="..\src\F200\F200.cpp" />
     <ClCompile Include="..\src\R200\R200.cpp" />
+    <ClCompile Include="..\src\rs.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\include\librealsense\Camera.h" />
@@ -38,6 +39,7 @@
     <ClInclude Include="..\include\librealsense\R200\R200.h" />
     <ClInclude Include="..\include\librealsense\R200\SPI.h" />
     <ClInclude Include="..\include\librealsense\R200\XU.h" />
+    <ClInclude Include="..\include\librealsense\rs.h" />
     <ClInclude Include="..\include\librealsense\UVCCamera.h" />
   </ItemGroup>
   <ItemGroup>

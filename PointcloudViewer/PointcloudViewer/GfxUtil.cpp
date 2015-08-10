@@ -1,5 +1,7 @@
 #include "GfxUtil.h"
 
+#include <vector>
+
 void CheckGLError(const char* file, int32_t line)
 {
     GLint error = glGetError();
@@ -77,6 +79,27 @@ GLuint CreateTexture(int width, int height, GLint internalFmt)
     return newTexId;
 }
 
+template <typename T, bool clamp, int inputMin, int inputMax>
+inline T remapInt(T value, float outputMin, float outputMax)
+{
+	T invVal = 1.0f / (inputMax - inputMin);
+	T outVal = (invVal * (value - inputMin) * (outputMax - outputMin) + outputMin);
+	if (clamp)
+	{
+		if (outputMax < outputMin)
+		{
+			if (outVal < outputMax) outVal = outputMax;
+			else if (outVal > outputMin) outVal = outputMin;
+		}
+		else
+		{
+			if (outVal > outputMax) outVal = outputMax;
+			else if (outVal < outputMin) outVal = outputMin;
+		}
+	}
+	return outVal;
+}
+
 void ConvertDepthToRGBUsingHistogram(uint8_t img[], const uint16_t depthImage[], int width, int height, const float nearHue, const float farHue)
 {
     int histogram[256 * 256] = { 1 };
@@ -109,6 +132,28 @@ void ConvertDepthToRGBUsingHistogram(uint8_t img[], const uint16_t depthImage[],
             *rgb++ = 0;
         }
     }
+}
+
+////////////////////
+// Math Utilities //
+////////////////////
+
+template <typename T>
+T rs_max(T a, T b, T c)
+{
+	return std::max(a, std::max(b, c));
+}
+
+template <typename T>
+T rs_min(T a, T b, T c)
+{
+	return std::min(a, std::min(b, c));
+}
+
+template<class T>
+T rs_clamp(T a, T mn, T mx)
+{
+	return std::max(std::min(a, mx), mn);
 }
 
 std::array<double, 3> rgbToHsv(uint8_t r, uint8_t g, uint8_t b)
@@ -177,7 +222,7 @@ std::array<int, 3> hsvToRgb(double h, double s, double v) {
     return rgb;
 }
 
-void drawTexture(GLuint prog, GLuint vbo, GLuint texHandle, GLuint texId, void * pixels, int width, int height, GLint fmt, GLenum type)
+void drawTexture(GLuint prog, GLuint vbo, GLuint texHandle, GLuint texId, const void * pixels, int width, int height, GLint fmt, GLenum type)
 {
     CHECK_GL_ERROR();
 
