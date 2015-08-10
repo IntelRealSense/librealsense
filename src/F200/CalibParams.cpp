@@ -50,7 +50,8 @@ namespace f200
     
     class IVCAMHardwareIOInternal
     {
-        uvc_device_handle_t * uvcDeviceHandle;
+        uvc_device_handle_t * uvcDeviceHandle = nullptr;
+        libusb_device_handle * usbDeviceHandle = nullptr;
         
         CameraCalibrationParameters parameters;
         
@@ -88,6 +89,8 @@ namespace f200
         
         IVCAMHardwareIOInternal(uvc_device_handle_t * handle) : uvcDeviceHandle(handle)
         {
+            
+            usbDeviceHandle = uvc_get_libusb_handle(handle);
             
         }
         
