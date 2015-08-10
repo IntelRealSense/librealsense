@@ -9,6 +9,7 @@
 #include <librealsense/R200/CameraHeader.h>
 #include <librealsense/R200/XU.h>
 #include <librealsense/R200/SPI.h>
+#include <librealsense/UVCCamera.h>
 #else
 #include <DSAPI.h>
 #endif
