@@ -194,19 +194,6 @@ bool R200Camera::ConfigureStreams()
 	CheckDS(ds, "probeConfiguration", ds->probeConfiguration());
 	CheckDS(ds, "enableZ", ds->enableZ(false));
 
-	//@tofix: Test for successful open
-	/*if (streamingModeBitfield & STREAM_DEPTH)
-	{
-		CheckDS(ds, "enableZ", ds->enableZ(true));
-	}
-
-	if (streamingModeBitfield & STREAM_RGB)
-	{
-		auto third = ds->accessThird();
-		if (!third) throw std::runtime_error("Unable to configure RGB stream");
-		CheckDS(ds, "enableThird", third->enableThird(true));
-	}*/
-
 	uint32_t serialNo;
 	CheckDS(ds, "getCameraSerialNumber", ds->getCameraSerialNumber(serialNo));
 	std::ostringstream ss; ss << serialNo;

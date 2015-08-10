@@ -89,6 +89,9 @@
     <ClInclude Include="..\src\rs-internal.h">
       <Filter>src</Filter>
     </ClInclude>
+    <ClInclude Include="..\include\librealsense\rs.hpp">
+      <Filter>include</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="PointCloudViewer.vcxproj.filters" />
