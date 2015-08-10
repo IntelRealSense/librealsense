@@ -1,33 +1,30 @@
-#include <librealsense/Camera.h>
+#include "rs-internal.h"
 
-namespace rs
+void rsEnableStream(RScamera camera, RSenum stream) { camera->streamingModeBitfield |= stream; }
+int rsIsStreaming(RScamera camera) { return camera->streamingModeBitfield & RS_STREAM_DEPTH || camera->streamingModeBitfield & RS_STREAM_RGB ? 1 : 0; }
+int	rsGetCameraIndex(RScamera camera) { return camera->cameraIdx; }
+uint64_t rsGetFrameCount(RScamera camera) { return camera->frameCount; }
+
+const uint8_t *	rsGetColorImage(RScamera camera)
 {
-	uint16_t * Camera::GetDepthImage()
+	if (camera->colorFrame->updated)
 	{
-		if (depthFrame->updated)
-		{
-			std::lock_guard<std::mutex> guard(frameMutex);
-			depthFrame->swap_front();
-		}
-		uint16_t * framePtr = reinterpret_cast<uint16_t *>(depthFrame->front.data());
-		return framePtr;
+		std::lock_guard<std::mutex> guard(camera->frameMutex);
+		camera->colorFrame->swap_front();
 	}
-
-	uint8_t * Camera::GetColorImage()
-	{
-		if (colorFrame->updated)
-		{
-			std::lock_guard<std::mutex> guard(frameMutex);
-			colorFrame->swap_front();
-		}
-		uint8_t * framePtr = reinterpret_cast<uint8_t *>(colorFrame->front.data());
-		return framePtr;
-	}
-
-	bool Camera::IsStreaming()
-	{
-		if (streamingModeBitfield & STREAM_DEPTH) return true;
-		else if (streamingModeBitfield & STREAM_RGB) return true;
-		return false;
-	}
+	return reinterpret_cast<const uint8_t *>(camera->colorFrame->front.data());
 }
+
+const uint16_t * rsGetDepthImage(RScamera camera)
+{
+	if (camera->depthFrame->updated)
+	{
+		std::lock_guard<std::mutex> guard(camera->frameMutex);
+		camera->depthFrame->swap_front();
+	}
+	return reinterpret_cast<const uint16_t *>(camera->depthFrame->front.data());
+}
+
+int	rsConfigureStreams(RScamera camera) { return camera->ConfigureStreams(); }
+void rsStartStream(RScamera camera, RSenum stream, int width, int height, int fps, RSenum format) { camera->StartStream(stream, { width, height, fps, (rs::FrameFormat)format }); }
+void rsStopStream(RScamera camera, RSenum stream) { camera->StopStream(stream); }

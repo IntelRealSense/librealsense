@@ -16,6 +16,9 @@
     <ClCompile Include="..\src\rs.cpp">
       <Filter>src</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\verify.c">
+      <Filter>src</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="src">
@@ -82,6 +85,9 @@
     </ClInclude>
     <ClInclude Include="..\include\librealsense\rs.h">
       <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\rs-internal.h">
+      <Filter>src</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

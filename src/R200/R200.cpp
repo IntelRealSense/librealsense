@@ -174,7 +174,7 @@ static void CheckDS(DSAPI * ds, const std::string & call, bool b)
 	}
 }
 
-R200Camera::R200Camera(DSAPI * ds, int idx) : Camera(idx), ds(ds)
+R200Camera::R200Camera(DSAPI * ds, int idx) : RScamera_(idx), ds(ds)
 {
 
 }
@@ -267,7 +267,7 @@ void R200Camera::StartStream(int streamIdentifier, const StreamConfiguration & c
 	StopBackgroundCapture();
 	CheckDS(ds, "stopCapture", ds->stopCapture());
 
-	if (streamIdentifier & STREAM_DEPTH)
+	if (streamIdentifier & RS_STREAM_DEPTH)
 	{
 		if (c.format != FrameFormat::Z16) throw std::runtime_error("Only Z16 is supported");
 		CheckDS(ds, "enableZ", ds->enableZ(true));
@@ -275,7 +275,7 @@ void R200Camera::StartStream(int streamIdentifier, const StreamConfiguration & c
 		depthFrame.reset(new TripleBufferedFrame(c.width, c.height-1, sizeof(uint16_t)));
 		zConfig = c;
 	}
-	else if (streamIdentifier & STREAM_RGB)
+	else if (streamIdentifier & RS_STREAM_RGB)
 	{
 		if (c.format != FrameFormat::YUYV) throw std::runtime_error("Only YUYV is supported");
 

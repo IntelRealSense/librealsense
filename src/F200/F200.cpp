@@ -1,9 +1,9 @@
 #include <librealsense/Common.h>
 #include <librealsense/F200/F200.h>
 
-using namespace rs;
-
 #ifndef WIN32
+
+using namespace rs;
 
 namespace f200
 {
