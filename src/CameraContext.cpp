@@ -2,7 +2,9 @@
 #include <librealsense/R200/R200.h>
 #include <librealsense/F200/F200.h>
 
+#ifdef WIN32
 #include <DSAPI/DSFactory.h>
+#endif
 
 ////////////////////
 // Camera Context //
