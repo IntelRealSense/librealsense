@@ -1,6 +1,10 @@
 #include <librealsense/rs.h>
 #include <librealsense/R200/R200.h>
 
+const char * rsGetFailedFunction(RSerror error) { return error ? error->function.c_str() : nullptr; }
+const char * rsGetErrorMessage(RSerror error) {	return error ? error->message.c_str() : nullptr; }
+void rsFreeError(RSerror error) { if(error) delete error; }
+
 int rsGetStreamPropertyi(RScamera camera, RSenum stream, RSenum prop, RSerror * error)
 {
 	return Try("rsGetStreamPropertyi", error, [&]() -> int

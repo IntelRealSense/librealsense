@@ -91,6 +91,8 @@ template<class F> auto Try(const char * name, RSerror * error, F f) -> decltype(
 		return DefResult((decltype(f()) *)nullptr);
 	}
 }
+#define BEGIN return Try(__FUNCTION__, error, [&]() {
+#define END });
 
 struct RScamera_
 {
