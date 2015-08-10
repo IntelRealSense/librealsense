@@ -3,7 +3,7 @@
 #include <librealsense/R200/R200.h>
 #include <librealsense/F200/F200.h>
 
-RScontext_::RScontext_()
+rs_context_::rs_context_()
 {
 	#ifndef WIN32
 	uvc_error_t initStatus = uvc_init(&privateContext, NULL);
@@ -18,7 +18,7 @@ RScontext_::RScontext_()
 
 }
 
-RScontext_::~RScontext_()
+rs_context_::~rs_context_()
 {
 	cameras.clear(); // tear down cameras before context
 	std::this_thread::sleep_for(std::chrono::milliseconds(500));
@@ -30,7 +30,7 @@ RScontext_::~RScontext_()
 	#endif
 }
 
-void RScontext_::QueryDeviceList()
+void rs_context_::QueryDeviceList()
 {
 	#ifdef WIN32
 	int n = DSGetNumberOfCameras(true);
@@ -79,7 +79,7 @@ void RScontext_::QueryDeviceList()
 	#endif
 }
 
-RScontext rsCreateContext(RSerror * error) { BEGIN return new RScontext_(); END }
-void rsDeleteContext(RScontext context, RSerror * error) { BEGIN delete context; END }
-int	rsGetCameraCount(RScontext context, RSerror * error) { BEGIN return (int)context->cameras.size(); END }
-RScamera rsGetCamera(RScontext context, int index, RSerror * error) { BEGIN return context->cameras[index].get(); END }
+rs_context rs_create_context(rs_error * error) { BEGIN return new rs_context_(); END }
+void rs_delete_context(rs_context context, rs_error * error) { BEGIN delete context; END }
+int	rs_get_camera_count(rs_context context, rs_error * error) { BEGIN return (int)context->cameras.size(); END }
+rs_camera rs_get_camera(rs_context context, int index, rs_error * error) { BEGIN return context->cameras[index].get(); END }

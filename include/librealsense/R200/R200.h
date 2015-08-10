@@ -21,7 +21,7 @@ namespace r200
 #ifndef WIN32
 class R200Camera : public rs::UVCCamera
 #else
-class R200Camera : public RScamera_
+class R200Camera : public rs_camera_
 #endif
 {
 #ifndef WIN32

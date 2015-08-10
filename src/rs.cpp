@@ -1,13 +1,13 @@
 #include <librealsense/rs.h>
 #include <librealsense/R200/R200.h>
 
-const char * rsGetFailedFunction(RSerror error) { return error ? error->function.c_str() : nullptr; }
-const char * rsGetErrorMessage(RSerror error) {	return error ? error->message.c_str() : nullptr; }
-void rsFreeError(RSerror error) { if(error) delete error; }
+const char * rs_get_failed_function(rs_error error) { return error ? error->function.c_str() : nullptr; }
+const char * rs_get_error_message(rs_error error) { return error ? error->message.c_str() : nullptr; }
+void rs_free_error(rs_error error) { if (error) delete error; }
 
-int rsGetStreamPropertyi(RScamera camera, RSenum stream, RSenum prop, RSerror * error)
+int rs_get_stream_property_i(rs_camera camera, int stream, int prop, rs_error * error)
 {
-	return Try("rsGetStreamPropertyi", error, [&]() -> int
+	return Try("rs_get_stream_property_i", error, [&]() -> int
 	{
 		if (auto r200 = dynamic_cast<r200::R200Camera *>(camera))
 		{
@@ -24,9 +24,9 @@ int rsGetStreamPropertyi(RScamera camera, RSenum stream, RSenum prop, RSerror * 
 	});
 }
 
-float rsGetStreamPropertyf(RScamera camera, RSenum stream, RSenum prop, RSerror * error)
+float rs_get_stream_property_f(rs_camera camera, int stream, int prop, rs_error * error)
 {
-	return Try("rsGetStreamPropertyf", error, [&]() -> float
+	return Try("rs_get_stream_property_f", error, [&]() -> float
 	{
 		if (auto r200 = dynamic_cast<r200::R200Camera *>(camera))
 		{

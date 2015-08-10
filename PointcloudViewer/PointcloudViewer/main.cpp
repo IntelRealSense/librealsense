@@ -58,12 +58,10 @@ GLuint rgbTextureHandle;
 GLuint depthTextureHandle;
 GLuint imageUniformHandle;
 
-RScamera camera;
-
 // Compute field of view angles in degrees from rectified intrinsics
 inline float GetAsymmetricFieldOfView(int imageSize, float focalLength, float principalPoint)
 { 
-	return (atan2(principalPoint + 0.5f, focalLength) + atan2(imageSize - principalPoint - 0.5f, focalLength)) * 180.0f / M_PI;
+	return (atan2f(principalPoint + 0.5f, focalLength) + atan2f(imageSize - principalPoint - 0.5f, focalLength)) * 180.0f / (float)M_PI;
 }
 
 int main(int argc, const char * argv[]) try
@@ -135,13 +133,13 @@ int main(int argc, const char * argv[]) try
         camera.configure_streams();
              
 		float hFov = GetAsymmetricFieldOfView(
-			camera.get_stream_propertyi(RS_STREAM_DEPTH, RS_IMAGE_SIZE_X),
-			camera.get_stream_propertyf(RS_STREAM_DEPTH, RS_FOCAL_LENGTH_X),
-			camera.get_stream_propertyf(RS_STREAM_DEPTH, RS_PRINCIPAL_POINT_X));
+			camera.get_stream_property_i(RS_STREAM_DEPTH, RS_IMAGE_SIZE_X),
+			camera.get_stream_property_f(RS_STREAM_DEPTH, RS_FOCAL_LENGTH_X),
+			camera.get_stream_property_f(RS_STREAM_DEPTH, RS_PRINCIPAL_POINT_X));
 		float vFov = GetAsymmetricFieldOfView(
-			camera.get_stream_propertyi(RS_STREAM_DEPTH, RS_IMAGE_SIZE_Y),
-			camera.get_stream_propertyf(RS_STREAM_DEPTH, RS_FOCAL_LENGTH_Y),
-			camera.get_stream_propertyf(RS_STREAM_DEPTH, RS_PRINCIPAL_POINT_Y));
+			camera.get_stream_property_i(RS_STREAM_DEPTH, RS_IMAGE_SIZE_Y),
+			camera.get_stream_property_f(RS_STREAM_DEPTH, RS_FOCAL_LENGTH_Y),
+			camera.get_stream_property_f(RS_STREAM_DEPTH, RS_PRINCIPAL_POINT_Y));
         std::cout << "Computed FoV: " << hFov << " x " << vFov << std::endl;
                                 
 		camera.start_stream(RS_STREAM_DEPTH, 628, 469, 0, RS_FRAME_FORMAT_Z16);
@@ -170,7 +168,7 @@ int main(int argc, const char * argv[]) try
     {
         glfwPollEvents();
         
-        glClearColor(0.15, 0.15, 0.15, 1);
+        glClearColor(0.15f, 0.15f, 0.15f, 1);
         glClear(GL_COLOR_BUFFER_BIT);
         
         glfwMakeContextCurrent(window);

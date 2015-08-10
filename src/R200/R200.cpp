@@ -174,7 +174,7 @@ static void CheckDS(DSAPI * ds, const std::string & call, bool b)
 	}
 }
 
-R200Camera::R200Camera(DSAPI * ds, int idx) : RScamera_(idx), ds(ds)
+R200Camera::R200Camera(DSAPI * ds, int idx) : rs_camera_(idx), ds(ds)
 {
 
 }
