@@ -56,7 +56,7 @@ namespace rs
 
 } // end namespace rs
 
-struct rs_error_
+struct rs_error
 {
 	std::string function;
 	std::string message;
@@ -64,39 +64,27 @@ struct rs_error_
 
 template<class T> T DefResult(T *) { return T(); }
 inline void DefResult(void *) {}
-template<class F> auto Try(const char * name, rs_error * error, F f) -> decltype(f())
+template<class F> auto Try(const char * name, rs_error ** error, F f) -> decltype(f())
 {
 	if (error) *error = nullptr;
 	try { return f(); }
 	catch (const std::exception & e)
 	{
-		if (error)
-		{
-			// TODO: Handle case where THIS code throws
-			*error = new rs_error_;
-			(*error)->function = name;
-			(*error)->message = e.what();
-		}
+		if (error) *error = new rs_error{name, e.what()}; // TODO: Handle case where THIS code throws
 		return DefResult((decltype(f()) *)nullptr);
 	}
 	catch (...)
 	{
-		if (error)
-		{
-			// TODO: Handle case where THIS code throws
-			*error = new rs_error_;
-			(*error)->function = name;
-			(*error)->message = "unknown error";
-		}
+		if (error) *error = new rs_error{name, "unknown error"}; // TODO: Handle case where THIS code throws
 		return DefResult((decltype(f()) *)nullptr);
 	}
 }
 #define BEGIN return Try(__FUNCTION__, error, [&]() {
 #define END });
 
-struct rs_camera_
+struct rs_camera
 {
-	NO_MOVE(rs_camera_);
+	NO_MOVE(rs_camera);
 
 	int cameraIdx;
 
@@ -109,24 +97,24 @@ struct rs_camera_
 	std::unique_ptr<TripleBufferedFrame> depthFrame;
 	std::unique_ptr<TripleBufferedFrame> colorFrame;
 
-	rs_camera_(int index) : cameraIdx(index) {}
-	virtual ~rs_camera_() {}
+	rs_camera(int index) : cameraIdx(index) {}
+	virtual ~rs_camera() {}
 
 	virtual bool ConfigureStreams() = 0;
 	virtual void StartStream(int streamIdentifier, const rs::StreamConfiguration & config) = 0;
 	virtual void StopStream(int streamIdentifier) = 0;
 };
 
-struct rs_context_
+struct rs_context
 {
-	NO_MOVE(rs_context_);
+	NO_MOVE(rs_context);
 #ifndef WIN32
 	uvc_context_t * privateContext;
 #endif
-	std::vector<std::shared_ptr<rs_camera_>> cameras;
+	std::vector<std::shared_ptr<rs_camera>> cameras;
 
-	rs_context_();
-	~rs_context_();
+	rs_context();
+	~rs_context();
 
 	void QueryDeviceList();
 };

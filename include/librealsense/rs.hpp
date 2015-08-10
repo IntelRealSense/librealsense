@@ -8,7 +8,7 @@
 namespace rs
 {
 	// Modify this function if you wish to change error handling behavior from throwing exceptions to logging / callbacks / global status, etc.
-	inline void handle_error(rs_error error)
+	inline void handle_error(rs_error * error)
 	{
 		std::string message = std::string("error calling ") + rs_get_failed_function(error) + "(...) - " + rs_get_error_message(error);
 		rs_free_error(error);
@@ -18,21 +18,21 @@ namespace rs
 
 	class auto_error
 	{
-		rs_error			error;
+		rs_error *			error;
 	public:
 							auto_error()															: error() {}
 							auto_error(const auto_error &)											= delete;
 							~auto_error()															{ if (error) handle_error(error); }
 		auto_error &		operator = (const auto_error &)											= delete;
-							operator rs_error * ()													{ return &error; }
+							operator rs_error ** ()													{ return &error; }
 	};
 
 	class camera
 	{
-		rs_camera			cam;
+		rs_camera *			cam;
 	public:
 							camera()																: cam() {}
-							camera(rs_camera cam)													: cam(cam) {}
+							camera(rs_camera * cam)													: cam(cam) {}
 		explicit			operator bool() const													{ return !!cam; }
 
 		void				enable_stream(int stream)												{ return rs_enable_stream(cam, stream, auto_error()); }
@@ -51,7 +51,7 @@ namespace rs
 
 	class context
 	{
-		rs_context			ctx;
+		rs_context *		ctx;
 	public:
 							context()																: ctx(rs_create_context(auto_error())) {}
 							context(const auto_error &)												= delete;

@@ -3,35 +3,30 @@
 
 #include "stdint.h"
 
-typedef struct rs_error_ *		rs_error;
-typedef struct rs_context_ *	rs_context;
-typedef struct rs_camera_ *		rs_camera;
-
 #ifdef __cplusplus
 extern "C" {
 #endif
+	
+struct rs_context *	rs_create_context		(struct rs_error ** error);
+int					rs_get_camera_count		(struct rs_context * context, struct rs_error **);
+struct rs_camera *	rs_get_camera			(struct rs_context * context, int index, struct rs_error **);
+void				rs_delete_context		(struct rs_context * context, struct rs_error **);
 
-const char *		rs_get_failed_function	(rs_error error);
-const char *		rs_get_error_message	(rs_error error);
-void				rs_free_error			(rs_error error);
+void				rs_enable_stream		(struct rs_camera * camera, int stream, struct rs_error **);
+int 				rs_configure_streams	(struct rs_camera * camera, struct rs_error **);
+void				rs_start_stream			(struct rs_camera * camera, int stream, int width, int height, int fps, int format, struct rs_error **);
+void				rs_stop_stream			(struct rs_camera * camera, int stream, struct rs_error **);
+const uint16_t *	rs_get_depth_image		(struct rs_camera * camera, struct rs_error ** error);
+const uint8_t *		rs_get_color_image		(struct rs_camera * camera, struct rs_error ** error);
+int 				rs_is_streaming			(struct rs_camera * camera, struct rs_error ** error);
+int					rs_get_camera_index		(struct rs_camera * camera, struct rs_error ** error);
+uint64_t			rs_get_frame_count		(struct rs_camera * camera, struct rs_error ** error);
+int					rs_get_stream_property_i(struct rs_camera * camera, int stream, int prop, struct rs_error ** error); // RS_IMAGE_SIZE_X, RS_IMAGE_SIZE_Y
+float				rs_get_stream_property_f(struct rs_camera * camera, int stream, int prop, struct rs_error ** error); // RS_FOCAL_LENGTH_X, RS_FOCAL_LENGTH_Y, RS_PRINCIPAL_POINT_X, RS_PRINCIPAL_POINT_Y
 
-rs_context			rs_create_context		(rs_error * error);
-void				rs_delete_context		(rs_context context, rs_error * error);
-int					rs_get_camera_count		(rs_context context, rs_error * error);
-rs_camera			rs_get_camera			(rs_context context, int index, rs_error * error);
-
-void				rs_enable_stream		(rs_camera camera, int stream, rs_error * error);
-int 				rs_configure_streams	(rs_camera camera, rs_error * error);
-void				rs_start_stream			(rs_camera camera, int stream, int width, int height, int fps, int format, rs_error * error);
-void				rs_stop_stream			(rs_camera camera, int stream, rs_error * error);
-const uint16_t *	rs_get_depth_image		(rs_camera camera, rs_error * error);
-const uint8_t *		rs_get_color_image		(rs_camera camera, rs_error * error);
-int 				rs_is_streaming			(rs_camera camera, rs_error * error);
-int					rs_get_camera_index		(rs_camera camera, rs_error * error);
-uint64_t			rs_get_frame_count		(rs_camera camera, rs_error * error);
-
-int					rs_get_stream_property_i(rs_camera camera, int stream, int prop, rs_error * error); // RS_IMAGE_SIZE_X, RS_IMAGE_SIZE_Y
-float				rs_get_stream_property_f(rs_camera camera, int stream, int prop, rs_error * error); // RS_FOCAL_LENGTH_X, RS_FOCAL_LENGTH_Y, RS_PRINCIPAL_POINT_X, RS_PRINCIPAL_POINT_Y
+const char *		rs_get_failed_function	(struct rs_error * error);
+const char *		rs_get_error_message	(struct rs_error * error);
+void				rs_free_error			(struct rs_error * error);
 
 #ifdef __cplusplus
 }

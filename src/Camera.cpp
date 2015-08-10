@@ -1,10 +1,10 @@
 #include "rs-internal.h"
 
-void rs_enable_stream(rs_camera camera, int stream, rs_error * error) { BEGIN camera->streamingModeBitfield |= stream; END }
-int rs_is_streaming(rs_camera camera, rs_error * error) { BEGIN return camera->streamingModeBitfield & RS_STREAM_DEPTH || camera->streamingModeBitfield & RS_STREAM_RGB ? 1 : 0; END }
-int	rs_get_camera_index(rs_camera camera, rs_error * error) { BEGIN return camera->cameraIdx; END }
-uint64_t rs_get_frame_count(rs_camera camera, rs_error * error) { BEGIN return camera->frameCount; END }
-const uint8_t *	rs_get_color_image(rs_camera camera, rs_error * error)
+void rs_enable_stream(rs_camera * camera, int stream, rs_error ** error) { BEGIN camera->streamingModeBitfield |= stream; END }
+int rs_is_streaming(rs_camera * camera, rs_error ** error) { BEGIN return camera->streamingModeBitfield & RS_STREAM_DEPTH || camera->streamingModeBitfield & RS_STREAM_RGB ? 1 : 0; END }
+int	rs_get_camera_index(rs_camera * camera, rs_error ** error) { BEGIN return camera->cameraIdx; END }
+uint64_t rs_get_frame_count(rs_camera * camera, rs_error ** error) { BEGIN return camera->frameCount; END }
+const uint8_t *	rs_get_color_image(rs_camera * camera, rs_error ** error)
 {
 	BEGIN
 	if (camera->colorFrame->updated)
@@ -16,7 +16,7 @@ const uint8_t *	rs_get_color_image(rs_camera camera, rs_error * error)
 	END
 }
 
-const uint16_t * rs_get_depth_image(rs_camera camera, rs_error * error)
+const uint16_t * rs_get_depth_image(rs_camera * camera, rs_error ** error)
 {
 	BEGIN
 	if (camera->depthFrame->updated)
@@ -28,6 +28,6 @@ const uint16_t * rs_get_depth_image(rs_camera camera, rs_error * error)
 	END
 }
 
-int	rs_configure_streams(rs_camera camera, rs_error * error) { BEGIN return camera->ConfigureStreams(); END }
-void rs_start_stream(rs_camera camera, int stream, int width, int height, int fps, int format, rs_error * error) { BEGIN camera->StartStream(stream, { width, height, fps, (rs::FrameFormat)format }); END }
-void rs_stop_stream(rs_camera camera, int stream, rs_error * error) { BEGIN camera->StopStream(stream); END }
+int	rs_configure_streams(rs_camera * camera, rs_error ** error) { BEGIN return camera->ConfigureStreams(); END }
+void rs_start_stream(rs_camera * camera, int stream, int width, int height, int fps, int format, rs_error ** error) { BEGIN camera->StartStream(stream, { width, height, fps, (rs::FrameFormat)format }); END }
+void rs_stop_stream(rs_camera * camera, int stream, rs_error ** error) { BEGIN camera->StopStream(stream); END }

@@ -13,7 +13,7 @@ namespace rs
 // UVC Camera //
 ////////////////
 
-class UVCCamera : public RScamera_
+class UVCCamera : public rs_camera
 {
     NO_MOVE(UVCCamera);
  
