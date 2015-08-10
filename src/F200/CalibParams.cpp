@@ -50,7 +50,7 @@ namespace f200
     
     class IVCAMHardwareIOInternal
     {
-        uvc_device_t * uvcDeviceHandle;
+        uvc_device_handle_t * uvcDeviceHandle;
         
         CameraCalibrationParameters parameters;
         
@@ -64,14 +64,15 @@ namespace f200
             
         }
         
-        int ExecuteUSBCommand(uint8_t *out, size_t outSize, uint32_t & op, uint8_t *in, size_t & inSize)
+        int ExecuteUSBCommand(uint8_t *out, size_t outSize, uint32_t & op, uint8_t * in, size_t & inSize)
         {
             
         }
         
-        int FillUSBBuffer(int opCodeNumber, int p1, int p2,
-                                   int p3, int p4, char * data, int dataLength,
-                                   char* bufferToSend, int & length);
+        int FillUSBBuffer(int opCodeNumber, int p1, int p2, int p3, int p4, char * data, int dataLength, char * bufferToSend, int & length)
+        {
+            
+        }
         
         int GetCalibrationRawData(uint8_t * data, int & bytesReturned)
         {
@@ -85,7 +86,7 @@ namespace f200
         
     public:
         
-        IVCAMHardwareIOInternal(uvc_device_t * handle) : uvcDeviceHandle(handle)
+        IVCAMHardwareIOInternal(uvc_device_handle_t * handle) : uvcDeviceHandle(handle)
         {
             
         }
@@ -122,7 +123,7 @@ namespace f200
     // Public Hardware I/O //
     /////////////////////////
     
-    IVCAMHardwareIO::IVCAMHardwareIO(uvc_device_t * handle)
+    IVCAMHardwareIO::IVCAMHardwareIO(uvc_device_handle_t * handle)
     {
         internal.reset(new IVCAMHardwareIOInternal(handle));
     }

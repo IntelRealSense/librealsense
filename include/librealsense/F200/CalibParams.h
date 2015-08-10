@@ -37,11 +37,13 @@ class IVCAMHardwareIO
     
 public:
     
-    IVCAMHardwareIO(uvc_device_t * handle);
+    IVCAMHardwareIO(uvc_device_handle_t * handle);
     ~IVCAMHardwareIO();
     
     bool StartTempCompensationLoop();
     void StopTempCompensationLoop();
+    
+    // SetDepthResolution(int width, int height)
     
     CameraCalibrationParameters & GetParameters();
 
