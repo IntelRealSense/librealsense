@@ -36,6 +36,7 @@
 		27D08BCE1B6B050E003E9FB5 /* CalibParams.h in Headers */ = {isa = PBXBuildFile; fileRef = 27D08BCD1B6B050E003E9FB5 /* CalibParams.h */; };
 		27D08BD01B6B05A9003E9FB5 /* XU.h in Headers */ = {isa = PBXBuildFile; fileRef = 27D08BCF1B6B05A9003E9FB5 /* XU.h */; };
 		27D08BD21B6B05E1003E9FB5 /* Projection.h in Headers */ = {isa = PBXBuildFile; fileRef = 27D08BD11B6B05E1003E9FB5 /* Projection.h */; };
+		27F24EA71B79492300BF4D43 /* CalibParams.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 27F24EA61B79492300BF4D43 /* CalibParams.cpp */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -69,6 +70,7 @@
 		27D08BCD1B6B050E003E9FB5 /* CalibParams.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = CalibParams.h; path = include/librealsense/F200/CalibParams.h; sourceTree = SOURCE_ROOT; };
 		27D08BCF1B6B05A9003E9FB5 /* XU.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = XU.h; path = include/librealsense/F200/XU.h; sourceTree = SOURCE_ROOT; };
 		27D08BD11B6B05E1003E9FB5 /* Projection.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Projection.h; path = include/librealsense/F200/Projection.h; sourceTree = SOURCE_ROOT; };
+		27F24EA61B79492300BF4D43 /* CalibParams.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = CalibParams.cpp; path = src/F200/CalibParams.cpp; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -191,6 +193,7 @@
 		08567C351B61E6C100EB6C0D /* F200 */ = {
 			isa = PBXGroup;
 			children = (
+				27F24EA61B79492300BF4D43 /* CalibParams.cpp */,
 				08567C4F1B61E8BA00EB6C0D /* F200.cpp */,
 			);
 			name = F200;
@@ -297,6 +300,7 @@
 				08567C001B5B5B5D00EB6C0D /* misc.c in Sources */,
 				08567C011B5B5B5D00EB6C0D /* stream.c in Sources */,
 				08567C561B61E8C000EB6C0D /* R200.cpp in Sources */,
+				27F24EA71B79492300BF4D43 /* CalibParams.cpp in Sources */,
 				08567BFB1B5B5B5D00EB6C0D /* diag.c in Sources */,
 				08567BFF1B5B5B5D00EB6C0D /* init.c in Sources */,
 				08567BFA1B5B5B5D00EB6C0D /* device.c in Sources */,
