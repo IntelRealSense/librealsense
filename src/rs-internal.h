@@ -56,6 +56,42 @@ namespace rs
 
 } // end namespace rs
 
+struct RSerror_
+{
+	std::string function;
+	std::string message;
+};
+
+template<class T> T DefResult(T *) { return T(); }
+inline void DefResult(void *) {}
+template<class F> auto Try(const char * name, RSerror * error, F f) -> decltype(f())
+{
+	if (error) *error = nullptr;
+	try { return f(); }
+	catch (const std::exception & e)
+	{
+		if (error)
+		{
+			// TODO: Handle case where THIS code throws
+			*error = new RSerror_;
+			(*error)->function = name;
+			(*error)->message = e.what();
+		}
+		return DefResult((decltype(f()) *)nullptr);
+	}
+	catch (...)
+	{
+		if (error)
+		{
+			// TODO: Handle case where THIS code throws
+			*error = new RSerror_;
+			(*error)->function = name;
+			(*error)->message = "unknown error";
+		}
+		return DefResult((decltype(f()) *)nullptr);
+	}
+}
+
 struct RScamera_
 {
 	NO_MOVE(RScamera_);

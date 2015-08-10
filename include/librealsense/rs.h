@@ -40,6 +40,7 @@
 #define RS_PRINCIPAL_POINT_X	5
 #define RS_PRINCIPAL_POINT_Y	6
 
+typedef struct RSerror_ *	RSerror;
 typedef struct RScontext_ * RScontext;
 typedef struct RScamera_ *	RScamera;
 typedef uint32_t			RSenum;
@@ -48,23 +49,28 @@ typedef uint32_t			RSenum;
 extern "C" {
 #endif
 
-RScontext			rsCreateContext		();
-void				rsDeleteContext		(RScontext context);
-int					rsGetCameraCount	(RScontext context);
-RScamera			rsGetCamera			(RScontext context, int index);
 
-void				rsEnableStream		(RScamera camera, RSenum stream);
-int 				rsConfigureStreams	(RScamera camera);
-void				rsStartStream		(RScamera camera, RSenum stream, int width, int height, int fps, RSenum format);
-void				rsStopStream		(RScamera camera, RSenum stream);
-const uint16_t *	rsGetDepthImage		(RScamera camera);
-const uint8_t *		rsGetColorImage		(RScamera camera);
-int 				rsIsStreaming		(RScamera camera);
-int					rsGetCameraIndex	(RScamera camera);
-uint64_t			rsGetFrameCount		(RScamera camera);
+const char *		rsGetFailedFunction	(RSerror error);
+const char *		rsGetErrorMessage	(RSerror error);
+void				rsFreeError			(RSerror error);
 
-int					rsGetStreamPropertyi(RScamera camera, RSenum stream, RSenum prop); // RS_IMAGE_SIZE_X, RS_IMAGE_SIZE_Y
-float				rsGetStreamPropertyf(RScamera camera, RSenum stream, RSenum prop); // RS_FOCAL_LENGTH_X, RS_FOCAL_LENGTH_Y, RS_PRINCIPAL_POINT_X, RS_PRINCIPAL_POINT_Y
+RScontext			rsCreateContext		(RSerror * error);
+void				rsDeleteContext		(RScontext context, RSerror * error);
+int					rsGetCameraCount	(RScontext context, RSerror * error);
+RScamera			rsGetCamera			(RScontext context, int index, RSerror * error);
+
+void				rsEnableStream		(RScamera camera, RSenum stream, RSerror * error);
+int 				rsConfigureStreams	(RScamera camera, RSerror * error);
+void				rsStartStream		(RScamera camera, RSenum stream, int width, int height, int fps, RSenum format, RSerror * error);
+void				rsStopStream		(RScamera camera, RSenum stream, RSerror * error);
+const uint16_t *	rsGetDepthImage		(RScamera camera, RSerror * error);
+const uint8_t *		rsGetColorImage		(RScamera camera, RSerror * error);
+int 				rsIsStreaming		(RScamera camera, RSerror * error);
+int					rsGetCameraIndex	(RScamera camera, RSerror * error);
+uint64_t			rsGetFrameCount		(RScamera camera, RSerror * error);
+
+int					rsGetStreamPropertyi(RScamera camera, RSenum stream, RSenum prop, RSerror * error); // RS_IMAGE_SIZE_X, RS_IMAGE_SIZE_Y
+float				rsGetStreamPropertyf(RScamera camera, RSenum stream, RSenum prop, RSerror * error); // RS_FOCAL_LENGTH_X, RS_FOCAL_LENGTH_Y, RS_PRINCIPAL_POINT_X, RS_PRINCIPAL_POINT_Y
 
 #ifdef __cplusplus
 }

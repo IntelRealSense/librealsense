@@ -79,7 +79,7 @@ void RScontext_::QueryDeviceList()
 	#endif
 }
 
-RScontext rsCreateContext() { return new RScontext_(); }
-void rsDeleteContext(RScontext context) { delete context; }
-int	rsGetCameraCount(RScontext context) { return context->cameras.size(); }
-RScamera rsGetCamera(RScontext context, int index) { return context->cameras[index].get(); }
+RScontext rsCreateContext(RSerror * error) { return Try("rsCreateContext", error, [&]() { return new RScontext_(); }); }
+void rsDeleteContext(RScontext context, RSerror * error) { return Try("rsDeleteContext", error, [&]() { delete context; }); }
+int	rsGetCameraCount(RScontext context, RSerror * error) { return Try("rsGetCameraCount", error, [&]() { return context->cameras.size(); }); }
+RScamera rsGetCamera(RScontext context, int index, RSerror * error) { return Try("rsGetCamera", error, [&]() { return context->cameras[index].get(); }); }
