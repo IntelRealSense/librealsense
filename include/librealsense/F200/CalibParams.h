@@ -29,6 +29,14 @@ struct CameraCalibrationParameters
     float   QV[6];
 };
 
+struct CameraCalibrationParametersVersion
+{
+    int uniqueNumber; //Should be 0xCAFECAFE in Calibration version 1 or later. In calibration version 0 this is zero.
+    int16_t TableValidation;
+    int16_t TableVarsion;
+    CameraCalibrationParameters CalibrationParameters;
+};
+
 class IVCAMHardwareIOInternal;
     
 class IVCAMHardwareIO
@@ -37,7 +45,7 @@ class IVCAMHardwareIO
     
 public:
     
-    IVCAMHardwareIO(uvc_device_handle_t * handle);
+    IVCAMHardwareIO();
     ~IVCAMHardwareIO();
     
     bool StartTempCompensationLoop();
@@ -46,7 +54,6 @@ public:
     // SetDepthResolution(int width, int height)
     
     CameraCalibrationParameters & GetParameters();
-
 };
     
 } // end namespace f200
