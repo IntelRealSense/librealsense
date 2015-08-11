@@ -1,9 +1,17 @@
+#include "rs-internal.h"
+
+#ifdef USE_UVC_DEVICES
 #include "R200/R200.h"
 #include "F200/F200.h"
+#endif
+
+#ifdef USE_DSAPI_DEVICES
+#include "DsCamera.h"
+#endif
 
 rs_context::rs_context()
 {
-#ifndef WIN32
+#ifdef USE_UVC_DEVICES
 	uvc_error_t initStatus = uvc_init(&privateContext, NULL);
 
 	if (initStatus < 0)
@@ -12,6 +20,7 @@ rs_context::rs_context()
 		throw std::runtime_error("Could not initialize UVC context");
 	}
 #endif
+
 	QueryDeviceList();
 
 }
@@ -20,7 +29,8 @@ rs_context::~rs_context()
 {
 	cameras.clear(); // tear down cameras before context
 	std::this_thread::sleep_for(std::chrono::milliseconds(500));
-#ifndef WIN32
+
+#ifdef USE_UVC_DEVICES
 	if (privateContext)
 	{
 		uvc_exit(privateContext);
@@ -30,15 +40,7 @@ rs_context::~rs_context()
 
 void rs_context::QueryDeviceList()
 {
-#ifdef WIN32
-	int n = DSGetNumberOfCameras(true);
-	for (int i = 0; i < n; ++i)
-	{
-		uint32_t serialNo = DSGetCameraSerialNumber(i);
-		auto ds = DSCreate(DS_DS4_PLATFORM, serialNo);
-		if (ds) cameras.push_back(std::make_shared<r200::R200Camera>(ds, i));
-	}
-#else
+#ifdef USE_UVC_DEVICES
 	uvc_device_t **list;
 
 	uvc_error_t status = uvc_get_device_list(privateContext, &list);
@@ -75,6 +77,17 @@ void rs_context::QueryDeviceList()
 
 	uvc_free_device_list(list, 1);
 #endif
+
+#ifdef USE_DSAPI_DEVICES
+	int n = DSGetNumberOfCameras(true);
+	for (int i = 0; i < n; ++i)
+	{
+		uint32_t serialNo = DSGetCameraSerialNumber(i);
+		auto ds = DSCreate(DS_DS4_PLATFORM, serialNo);
+		if (ds) cameras.push_back(std::make_shared<DsCamera>(ds, i));
+	}
+#endif
+
 }
 
 rs_context * rs_create_context(int api_version, rs_error ** error) 
@@ -124,18 +137,13 @@ int rs_get_stream_property_i(rs_camera * camera, int stream, int prop, rs_error 
 {
 	return Try("rs_get_stream_property_i", error, [&]() -> int
 	{
-		if (auto r200 = dynamic_cast<r200::R200Camera *>(camera))
+		if (stream != RS_STREAM_DEPTH) return 0;
+		switch (prop)
 		{
-			if (stream != RS_STREAM_DEPTH) return 0;
-			auto intrin = r200->GetRectifiedIntrinsicsZ();
-			switch (prop)
-			{
-			case RS_IMAGE_SIZE_X: return intrin.rw;
-			case RS_IMAGE_SIZE_Y: return intrin.rh;
-			default: return 0;
-			}
+		case RS_IMAGE_SIZE_X: return camera->GetDepthIntrinsics().rw;
+		case RS_IMAGE_SIZE_Y: return camera->GetDepthIntrinsics().rh;
+		default: return 0;
 		}
-		return 0;
 	});
 }
 
@@ -143,20 +151,15 @@ float rs_get_stream_property_f(rs_camera * camera, int stream, int prop, rs_erro
 {
 	return Try("rs_get_stream_property_f", error, [&]() -> float
 	{
-		if (auto r200 = dynamic_cast<r200::R200Camera *>(camera))
+		if (stream != RS_STREAM_DEPTH) return 0;
+		switch (prop)
 		{
-			if (stream != RS_STREAM_DEPTH) return 0;
-			auto intrin = r200->GetRectifiedIntrinsicsZ();
-			switch (prop)
-			{
-			case RS_FOCAL_LENGTH_X: return intrin.rfx;
-			case RS_FOCAL_LENGTH_Y: return intrin.rfy;
-			case RS_PRINCIPAL_POINT_X: return intrin.rpx;
-			case RS_PRINCIPAL_POINT_Y: return intrin.rpy;
-			default: return 0;
-			}
+		case RS_FOCAL_LENGTH_X: return camera->GetDepthIntrinsics().rfx;
+		case RS_FOCAL_LENGTH_Y: return camera->GetDepthIntrinsics().rfy;
+		case RS_PRINCIPAL_POINT_X: return camera->GetDepthIntrinsics().rpx;
+		case RS_PRINCIPAL_POINT_Y: return camera->GetDepthIntrinsics().rpy;
+		default: return 0;
 		}
-		return 0;
 	});
 }
 
