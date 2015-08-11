@@ -78,7 +78,7 @@ int getVersionOfCalibration(uint8_t * validation, uint8_t * version)
 // Private Hardware I/O //
 //////////////////////////
 
-class IVCAMHardwareIOInternal
+class f200::IVCAMHardwareIOInternal
 {
     libusb_device_handle * usbDeviceHandle = nullptr;
     std::timed_mutex usbMutex;
@@ -352,7 +352,6 @@ public:
 // Public Hardware I/O //
 /////////////////////////
 
-/*
 IVCAMHardwareIO::IVCAMHardwareIO()
 {
     internal.reset(new IVCAMHardwareIOInternal());
@@ -377,6 +376,5 @@ CameraCalibrationParameters & IVCAMHardwareIO::GetParameters()
 {
     return internal->GetParameters();
 }
- */
 
 #endif
