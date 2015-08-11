@@ -4,6 +4,7 @@
 #define LIBREALSENSE_F200_CALIB_PARAMS_H
 
 #include <librealsense/CameraContext.h>
+#include <librealsense/F200/F200Types.h>
 
 namespace f200
 {

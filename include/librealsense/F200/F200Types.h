@@ -3,13 +3,9 @@
 #ifndef LIBREALSENSE_F200_TYPES_H
 #define LIBREALSENSE_F200_TYPES_H
 
-#include "libuvc/libuvc.h"
-
-#include <stdint.h>
 #include <string>
 #include <stdio.h>
 #include <stdint.h>
-#include <iostream>
 
 namespace f200
 {

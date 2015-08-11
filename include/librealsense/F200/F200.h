@@ -4,8 +4,8 @@
 #define LIBREALSENSE_F200_CAMERA_H
 
 #include <librealsense/CameraContext.h>
+
 #ifndef WIN32
-#include <librealsense/F200/XU.h>
 #include <librealsense/UVCCamera.h>
 
 namespace f200

@@ -243,7 +243,7 @@ namespace f200
         {
             uint8_t * bufParams = rawCalibData + 4;
             
-            VCAMCalibrator<float> * calibration = Projection::GetInstance()->GetCalibrationObject();
+            IVCAMCalibrator<float> * calibration = Projection::GetInstance()->GetCalibrationObject();
             
             CameraCalibrationParametersVersion CalibrationData;
             IVCAMTesterData TesterData;
@@ -304,7 +304,7 @@ namespace f200
             }
             
             uint8_t calBuf[HW_MONITOR_BUFFER_SIZE];
-            int len = HW_MONITOR_BUFFER_SIZE;
+            size_t len = HW_MONITOR_BUFFER_SIZE;
             
             GetCalibrationRawData(calBuf, len);
             

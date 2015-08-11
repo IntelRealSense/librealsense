@@ -4,14 +4,13 @@
 #define LIBREALSENSE_F200_PROJECTION_H
 
 #include "libuvc/libuvc.h"
-#include <librealsense/F200/CalibParams.h>
+#include <librealsense/F200/F200Types.h>
 #include <librealsense/F200/Calibration.h>
 #include <librealsense/F200/Projection.h>
-#include <librealsense/F200/F200Types.h>
 
 namespace f200
 {
-    
+
 class Projection
 {
 public:
@@ -57,7 +56,7 @@ public:
     
     int GetIndexOfCamera() { return m_IndexOfCamera; };
     
-    IVCAMCalibrator<float> * GetCalibrationObject() {return & m_calibration; };
+    IVCAMCalibrator<float> * GetCalibrationObject() { return & m_calibration; };
     
     void InitializeThermalData(IVCAMTemperatureData TemperatureData, IVCAMThermalLoopParams ThermalLoopParams);
     
