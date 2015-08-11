@@ -28,7 +28,7 @@ bool R200Camera::ConfigureStreams()
         StreamInterface * stream = new StreamInterface();
         stream->camera = this;
         
-        bool status = OpenStreamOnSubdevice(hardware, stream->uvcHandle, 1);
+        bool status = OpenStreamOnSubdevice(hardware, stream->uvcHandle, 2);
         streamInterfaces.insert(std::pair<int, StreamInterface *>(STREAM_DEPTH, stream));
     }
     
@@ -37,7 +37,7 @@ bool R200Camera::ConfigureStreams()
         StreamInterface * stream = new StreamInterface();
         stream->camera = this;
         
-        bool status = OpenStreamOnSubdevice(hardware, stream->uvcHandle, 2);
+        bool status = OpenStreamOnSubdevice(hardware, stream->uvcHandle, 3);
         streamInterfaces.insert(std::pair<int, StreamInterface *>(STREAM_RGB, stream));
     }
     
@@ -68,7 +68,10 @@ bool R200Camera::ConfigureStreams()
         
         spiInterface->Initialize();
         
+        //uvc_print_diag(uvc_handle, stderr);
+
         std::cout << "Firmware Revision: " << GetFirmwareVersion(uvc_handle) << std::endl;
+
         spiInterface->LogDebugInfo();
         
         if (!SetStreamIntent(uvc_handle, streamingModeBitfield))
@@ -80,12 +83,14 @@ bool R200Camera::ConfigureStreams()
     // We only need to do this once, so check if any stream has been configured
     if (streamInterfaces[STREAM_DEPTH]->uvcHandle)
     {
+        //uvc_print_stream_ctrl(&streamInterfaces[STREAM_DEPTH]->ctrl, stderr);
         oneTimeInitialize(streamInterfaces[STREAM_DEPTH]->uvcHandle);
     }
     
     else if (streamInterfaces[STREAM_RGB]->uvcHandle)
     {
-        oneTimeInitialize(streamInterfaces[STREAM_RGB]->uvcHandle);
+       //uvc_print_stream_ctrl(&streamInterfaces[STREAM_RGB]->ctrl, stderr);
+       oneTimeInitialize(streamInterfaces[STREAM_RGB]->uvcHandle);
     }
     
     return true;
@@ -129,7 +134,6 @@ void R200Camera::StartStream(int streamIdentifier, const StreamConfiguration & c
             uvc_perror(startStreamResult, "start_stream");
             throw std::runtime_error("Could not start stream");
         }
-        
     }
     
     //@tofix - else what?

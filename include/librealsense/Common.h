@@ -16,6 +16,7 @@
 #include <mutex>
 #include <map>
 #include <thread>
+#include <cstring>
 
 /////////////////
 // Util Macros //

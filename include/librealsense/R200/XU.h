@@ -10,6 +10,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <iostream>
+#include <cstring>
 
 #include <librealsense/R200/SPI.h>
 

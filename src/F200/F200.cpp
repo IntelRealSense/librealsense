@@ -70,7 +70,7 @@ namespace f200
                 throw std::runtime_error("Open camera_handle Failed");
             }
             
-            if (c.format == UVC_FRAME_FORMAT_INVI)
+            if (c.format == UVC_FRAME_FORMAT_INVR || c.format == UVC_FRAME_FORMAT_INVZ)
             {
                 depthFrame.reset(new TripleBufferedFrame(c.width, c.height, 2));
             }
