@@ -170,7 +170,7 @@ static void CheckDS(DSAPI * ds, const std::string & call, bool b)
 {
 	if (!b)
 	{
-		throw std::runtime_error("DSAPI call " + call + "() returned " + DSStatusString(ds->getLastErrorStatus()) + " - " + ds->getLastErrorDescription());
+		throw std::runtime_error("DSAPI::" + call + "() returned " + DSStatusString(ds->getLastErrorStatus()) + ":\n  " + ds->getLastErrorDescription());
 	}
 }
 

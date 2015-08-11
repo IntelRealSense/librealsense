@@ -4,6 +4,18 @@
 #define _USE_MATH_DEFINES
 #include <math.h>
 #include <stdio.h>
+#include <stdlib.h>
+
+struct rs_error * error;
+void check_error()
+{
+	if (error)
+	{
+		fprintf(stderr, "error calling %s(...):\n  %s\n", rs_get_failed_function(error), rs_get_error_message(error));
+		rs_free_error(error);
+		exit(EXIT_FAILURE);
+	}
+}
 
 float compute_fov(int image_size, float focal_length, float principal_point)
 {
@@ -17,15 +29,15 @@ int main(int argc, char * argv[])
 	float hfov, vfov;
 	GLFWwindow * win;
 
-	ctx = rs_create_context(RS_API_VERSION, NULL);
+	ctx = rs_create_context(RS_API_VERSION, &error); check_error();
 	for (int i = 0; i < rs_get_camera_count(ctx, NULL); ++i)
 	{
 		printf("Found camera at index %d\n", i);
 
-		cam = rs_get_camera(ctx, i, NULL);
-		rs_enable_stream(cam, RS_STREAM_DEPTH, NULL);
-		rs_enable_stream(cam, RS_STREAM_RGB, NULL);
-		rs_configure_streams(cam, NULL);
+		cam = rs_get_camera(ctx, i, &error); check_error();
+		rs_enable_stream(cam, RS_STREAM_DEPTH, &error); check_error();
+		rs_enable_stream(cam, RS_STREAM_RGB, &error); check_error();
+		rs_configure_streams(cam, &error); check_error();
 
 		hfov = compute_fov(
 			rs_get_stream_property_i(cam, RS_STREAM_DEPTH, RS_IMAGE_SIZE_X, NULL),
@@ -37,8 +49,8 @@ int main(int argc, char * argv[])
 			rs_get_stream_property_f(cam, RS_STREAM_DEPTH, RS_PRINCIPAL_POINT_Y, NULL));
 		printf("Computed FOV %f %f\n", hfov, vfov);
 
-		rs_start_stream(cam, RS_STREAM_DEPTH, 628, 469, 0, RS_FRAME_FORMAT_Z16, NULL);
-		rs_start_stream(cam, RS_STREAM_RGB, 640, 480, 30, RS_FRAME_FORMAT_YUYV, NULL);
+		rs_start_stream(cam, RS_STREAM_DEPTH, 628, 469, 0, RS_FRAME_FORMAT_Z16, &error); check_error();
+		rs_start_stream(cam, RS_STREAM_RGB, 640, 480, 30, RS_FRAME_FORMAT_YUYV, &error); check_error();
 	}
 	if (!cam)
 	{
@@ -58,11 +70,11 @@ int main(int argc, char * argv[])
 
 		glRasterPos2f(-1, 1);
 		glPixelTransferf(GL_RED_SCALE, 1);
-		glDrawPixels(640, 480, GL_RGB, GL_UNSIGNED_BYTE, rs_get_color_image(cam, NULL));
+		glDrawPixels(640, 480, GL_RGB, GL_UNSIGNED_BYTE, rs_get_color_image(cam, &error)); check_error();
 
 		glRasterPos2f(0, 1);
 		glPixelTransferf(GL_RED_SCALE, 30);
-		glDrawPixels(628, 468, GL_RED, GL_UNSIGNED_SHORT, rs_get_depth_image(cam, NULL));
+		glDrawPixels(628, 468, GL_RED, GL_UNSIGNED_SHORT, rs_get_depth_image(cam, &error)); check_error();
 
 		glfwSwapBuffers(win);
 	}
@@ -70,6 +82,6 @@ int main(int argc, char * argv[])
 	glfwDestroyWindow(win);
 	glfwTerminate();
 
-	rs_delete_context(ctx, NULL);
+	rs_delete_context(ctx, &error); check_error();
 	return 0;
 }
