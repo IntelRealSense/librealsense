@@ -34,6 +34,7 @@ namespace rs
 							camera()																: cam() {}
 							camera(rs_camera * cam)													: cam(cam) {}
 		explicit			operator bool() const													{ return !!cam; }
+        rs_camera *         get_handle() const                                                      { return cam; }
 
 		void				enable_stream(int stream)												{ return rs_enable_stream(cam, stream, auto_error()); }
 		int 				configure_streams()														{ return rs_configure_streams(cam, auto_error()); }
@@ -57,6 +58,7 @@ namespace rs
 							context(const auto_error &)												= delete;
 							~context()																{ rs_delete_context(ctx, nullptr); } // Deliberately ignore error on destruction
 							context & operator = (const context &)									= delete;
+        rs_context *        get_handle() const                                                      { return ctx; }
 
 		int					get_camera_count()														{ return rs_get_camera_count(ctx, auto_error()); }
 		camera				get_camera(int index)													{ return rs_get_camera(ctx, index, auto_error()); }

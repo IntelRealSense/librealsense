@@ -19,26 +19,15 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\src\F200\F200.cpp" />
-    <ClCompile Include="..\src\R200\R200.cpp" />
+    <ClCompile Include="..\src\DsCamera.cpp" />
     <ClCompile Include="..\src\rs.cpp" />
     <ClCompile Include="..\src\verify.c" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\include\librealsense\Camera.h" />
-    <ClInclude Include="..\include\librealsense\F200\CalibParams.h" />
-    <ClInclude Include="..\include\librealsense\F200\F200.h" />
-    <ClInclude Include="..\include\librealsense\F200\Projection.h" />
-    <ClInclude Include="..\include\librealsense\F200\XU.h" />
-    <ClInclude Include="..\include\librealsense\R200\CalibIO.h" />
-    <ClInclude Include="..\include\librealsense\R200\CalibParams.h" />
-    <ClInclude Include="..\include\librealsense\R200\CameraHeader.h" />
-    <ClInclude Include="..\include\librealsense\R200\R200.h" />
-    <ClInclude Include="..\include\librealsense\R200\SPI.h" />
-    <ClInclude Include="..\include\librealsense\R200\XU.h" />
     <ClInclude Include="..\include\librealsense\rs.h" />
     <ClInclude Include="..\include\librealsense\rs.hpp" />
-    <ClInclude Include="..\include\librealsense\UVCCamera.h" />
+    <ClInclude Include="..\src\Common.h" />
+    <ClInclude Include="..\src\DsCamera.h" />
     <ClInclude Include="..\src\rs-internal.h" />
   </ItemGroup>
   <ItemGroup>
