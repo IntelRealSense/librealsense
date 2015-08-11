@@ -193,7 +193,7 @@ namespace f200
             return ret;
         }
         
-        void  FillUSBBuffer(int opCodeNumber, int p1, int p2, int p3, int p4, char * data, int dataLength, char * bufferToSend, int & length)
+        void FillUSBBuffer(int opCodeNumber, int p1, int p2, int p3, int p4, char * data, int dataLength, char * bufferToSend, int & length)
         {
             uint16_t preHeaderData = IVCAM_MONITOR_MAGIC_NUMBER;
             
@@ -245,7 +245,7 @@ namespace f200
             IVCAMCalibrator<float> * calibration = Projection::GetInstance()->GetCalibrationObject();
             
             CameraCalibrationParametersVersion CalibrationData;
-            TTesterData TesterData;
+            IVCAMTesterData TesterData;
             
             memset(&CalibrationData, 0, sizeof(CameraCalibrationParametersVersion));
             
@@ -262,7 +262,7 @@ namespace f200
                 memcpy(calprms, params+1, sizeof(CameraCalibrationParameters));
                 memcpy(&TesterData, bufParams, SIZE_OF_CALIB_HEADER_BYTES);
                 
-                memset((uint8_t*)&TesterData+SIZE_OF_CALIB_HEADER_BYTES,0,sizeof(TTesterData) - SIZE_OF_CALIB_HEADER_BYTES);
+                memset((uint8_t*)&TesterData+SIZE_OF_CALIB_HEADER_BYTES,0,sizeof(IVCAMTesterData) - SIZE_OF_CALIB_HEADER_BYTES);
             }
             else if (ver > IVCAM_MIN_SUPPORTED_VERSION)
             {
@@ -281,7 +281,7 @@ namespace f200
                 
                 //copy the tester data from end of calibration
                 int EndOfCalibratioData = SIZE_OF_CALIB_PARAM_BYTES + SIZE_OF_CALIB_HEADER_BYTES;
-                memcpy((uint8_t*)&TesterData + SIZE_OF_CALIB_HEADER_BYTES , rawCalibData + EndOfCalibratioData , sizeof(TTesterData) - SIZE_OF_CALIB_HEADER_BYTES);
+                memcpy((uint8_t*)&TesterData + SIZE_OF_CALIB_HEADER_BYTES , rawCalibData + EndOfCalibratioData , sizeof(IVCAMTesterData) - SIZE_OF_CALIB_HEADER_BYTES);
                 calibration->InitializeThermalData(TesterData.TemperatureData, TesterData.ThermalLoopParams);
             }
         }
