@@ -167,21 +167,29 @@ int main(int argc, const char * argv[]) try
 		camera = realsenseContext.get_camera(i);
 
         camera.enable_stream(RS_STREAM_DEPTH);
-        camera.enable_stream(RS_STREAM_RGB);
+        //camera.enable_stream(RS_STREAM_RGB);
         camera.configure_streams();
              
 		float hFov = GetAsymmetricFieldOfView(
 			camera.get_stream_property_i(RS_STREAM_DEPTH, RS_IMAGE_SIZE_X),
 			camera.get_stream_property_f(RS_STREAM_DEPTH, RS_FOCAL_LENGTH_X),
 			camera.get_stream_property_f(RS_STREAM_DEPTH, RS_PRINCIPAL_POINT_X));
+        
 		float vFov = GetAsymmetricFieldOfView(
 			camera.get_stream_property_i(RS_STREAM_DEPTH, RS_IMAGE_SIZE_Y),
 			camera.get_stream_property_f(RS_STREAM_DEPTH, RS_FOCAL_LENGTH_Y),
 			camera.get_stream_property_f(RS_STREAM_DEPTH, RS_PRINCIPAL_POINT_Y));
+        
         std::cout << "Computed FoV: " << hFov << " x " << vFov << std::endl;
-                                
-		camera.start_stream(RS_STREAM_DEPTH, 628, 469, 0, RS_FRAME_FORMAT_Z16);
-		camera.start_stream(RS_STREAM_RGB, 640, 480, 30, RS_FRAME_FORMAT_YUYV);
+        
+        // R200 / DS4
+		//camera.start_stream(RS_STREAM_DEPTH, 628, 469, 0, RS_FRAME_FORMAT_Z16);
+		//camera.start_stream(RS_STREAM_RGB, 640, 480, 30, RS_FRAME_FORMAT_YUYV);
+        
+        // F200 / IVCAM
+        camera.start_stream(RS_STREAM_DEPTH, 640, 480, 30, RS_FRAME_FORMAT_INVZ);
+       // camera.start_stream(RS_STREAM_RGB, 640, 480, 30, RS_FRAME_FORMAT_YUYV);
+        
     }
     // ----------------------------------------------------------------
     
@@ -223,9 +231,9 @@ int main(int argc, const char * argv[]) try
             ConvertDepthToRGBUsingHistogram(depthColoredHistogram, depthImage, 628, 468, 0.1f, 0.625f);
             drawTexture(fullscreenTextureProg, quadVBO, imageUniformHandle, depthTextureHandle, depthColoredHistogram, 628, 468, GL_RGB, GL_UNSIGNED_BYTE);
             
-            glViewport(width / 2, 0, width, height);
-			auto colorImage = camera.get_color_image();
-            drawTexture(fullscreenTextureProg, quadVBO, imageUniformHandle, rgbTextureHandle, colorImage, 640, 480, GL_RGB, GL_UNSIGNED_BYTE);
+            //glViewport(width / 2, 0, width, height);
+			//auto colorImage = camera.get_color_image();
+            //drawTexture(fullscreenTextureProg, quadVBO, imageUniformHandle, rgbTextureHandle, colorImage, 640, 480, GL_RGB, GL_UNSIGNED_BYTE);
         }
         
         frameCount++;
