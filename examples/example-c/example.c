@@ -2,8 +2,8 @@
 #include <GLFW/glfw3.h>
 
 #define _USE_MATH_DEFINES
-#include <stdio.h>
 #include <math.h>
+#include <stdio.h>
 
 float compute_fov(int image_size, float focal_length, float principal_point)
 {
