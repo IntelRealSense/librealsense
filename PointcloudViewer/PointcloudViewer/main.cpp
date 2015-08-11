@@ -4,21 +4,30 @@
 #include <stdint.h>
 #include <mutex>
 #include <iostream>
-#include "Util.h"
+//#include "Util.h"
 
-#include "glfw3.h"
+
 
 #define GLFW_EXPOSE_NATIVE_COCOA
 #define GLFW_EXPOSE_NATIVE_NSGL
-#include "glfw3native.h"
 
+
+#if __APPLE__
 #include <OpenGL/gl3.h>
+#include "glfw3.h"
+#include "glfw3native.h"
+#else
+#define GL_GLEXT_PROTOTYPES
+#include <GL/gl.h>
+#include <GLFW/glfw3.h>
+#endif
 
 #include "GfxUtil.h"
 
 #include "librealsense/CameraContext.h"
 #include "librealsense/UVCCamera.h"
 #include "librealsense/R200/R200.h"
+#include "librealsense/F200/F200.h"
 
 GLFWwindow * window;
 
@@ -58,9 +67,11 @@ GLuint imageUniformHandle;
 
 using namespace rs;
 using namespace r200;
+using namespace f200;
 
 std::unique_ptr<CameraContext> realsenseContext;
-R200Camera * camera;
+//R200Camera * camera;
+F200Camera * camera;
 
 int main(int argc, const char * argv[])
 {
@@ -123,6 +134,8 @@ int main(int argc, const char * argv[])
             {
                 std::cout << "Found Camera At Index: " << cam->GetCameraIndex() << std::endl;
                 
+                // R200
+                /*
                 camera = static_cast<R200Camera*>(cam.get());
 
                 cam->EnableStream(STREAM_DEPTH);
@@ -134,12 +147,28 @@ int main(int argc, const char * argv[])
                 float hFov, vFov;
                 GetFieldOfView(zIntrin, hFov, vFov);
                 std::cout << "Computed FoV: " << hFov << " x " << vFov << std::endl;
-                
+
                 StreamConfiguration depthConfig = {628, 469, 0, UVC_FRAME_FORMAT_Z16};
                 StreamConfiguration colorConfig = {640, 480, 30, UVC_FRAME_FORMAT_YUYV};
                 
                 cam->StartStream(STREAM_DEPTH, depthConfig);
                 cam->StartStream(STREAM_RGB, colorConfig);
+                */
+                // F200
+
+                camera = static_cast<F200Camera*>(cam.get());
+
+                cam->EnableStream(STREAM_DEPTH);
+                //cam->EnableStream(STREAM_RGB);
+
+                cam->ConfigureStreams();
+
+                StreamConfiguration depthConfig = {640, 480, 0, UVC_FRAME_FORMAT_INVZ};
+                //StreamConfiguration colorConfig = {640, 480, 30, UVC_FRAME_FORMAT_YUYV};
+
+                cam->StartStream(STREAM_DEPTH, depthConfig);
+                //cam->StartStream(STREAM_RGB, colorConfig);
+
             }
         }
     }
@@ -183,9 +212,9 @@ int main(int argc, const char * argv[])
             ConvertDepthToRGBUsingHistogram(depthColoredHistogram, depthImage, 628, 469, 0.1f, 0.625f);
             drawTexture(fullscreenTextureProg, quadVBO, imageUniformHandle, depthTextureHandle, depthColoredHistogram, 628, 469, GL_RGB, GL_UNSIGNED_BYTE);
             
-            glViewport(width / 2, 0, width, height);
-            auto colorImage = realsenseContext->cameras[0]->GetColorImage();
-            drawTexture(fullscreenTextureProg, quadVBO, imageUniformHandle, rgbTextureHandle, colorImage, 640, 480, GL_RGB, GL_UNSIGNED_BYTE);
+            //glViewport(width / 2, 0, width, height);
+            //auto colorImage = realsenseContext->cameras[0]->GetColorImage();
+            //drawTexture(fullscreenTextureProg, quadVBO, imageUniformHandle, rgbTextureHandle, colorImage, 640, 480, GL_RGB, GL_UNSIGNED_BYTE);
         }
         
         frameCount++;
@@ -193,7 +222,7 @@ int main(int argc, const char * argv[])
         glfwSwapBuffers(window);
         CHECK_GL_ERROR();
         
-        std::this_thread::sleep_for(std::chrono::milliseconds(16)); // 16 fps
+        std::this_thread::sleep_for(std::chrono::milliseconds(33)); // 30 fps
         
     }
     
