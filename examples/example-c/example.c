@@ -28,15 +28,16 @@ int main(int argc, char * argv[])
 	struct rs_camera * cam;
 	float hfov, vfov;
 	GLFWwindow * win;
+    int i;
 
 	ctx = rs_create_context(RS_API_VERSION, &error); check_error();
-	for (int i = 0; i < rs_get_camera_count(ctx, NULL); ++i)
+    for (i = 0; i < rs_get_camera_count(ctx, NULL); ++i)
 	{
 		printf("Found camera at index %d\n", i);
 
 		cam = rs_get_camera(ctx, i, &error); check_error();
-		rs_enable_stream(cam, RS_STREAM_DEPTH, &error); check_error();
-		rs_enable_stream(cam, RS_STREAM_RGB, &error); check_error();
+        rs_enable_stream(cam, RS_STREAM_DEPTH, &error); check_error();
+        rs_enable_stream(cam, RS_STREAM_RGB, &error); check_error();
 		rs_configure_streams(cam, &error); check_error();
 
 		hfov = compute_fov(
@@ -49,8 +50,8 @@ int main(int argc, char * argv[])
 			rs_get_stream_property_f(cam, RS_STREAM_DEPTH, RS_PRINCIPAL_POINT_Y, NULL));
 		printf("Computed FOV %f %f\n", hfov, vfov);
 
-		rs_start_stream(cam, RS_STREAM_DEPTH, 628, 469, 0, RS_FRAME_FORMAT_Z16, &error); check_error();
-		rs_start_stream(cam, RS_STREAM_RGB, 640, 480, 30, RS_FRAME_FORMAT_YUYV, &error); check_error();
+        rs_start_stream(cam, RS_STREAM_DEPTH, 628, 469, 0, RS_FRAME_FORMAT_Z16, &error); check_error();
+        rs_start_stream(cam, RS_STREAM_RGB, 640, 480, 30, RS_FRAME_FORMAT_YUYV, &error); check_error();
 	}
 	if (!cam)
 	{
@@ -68,13 +69,13 @@ int main(int argc, char * argv[])
 		glClear(GL_COLOR_BUFFER_BIT);
 		glPixelZoom(1, -1);
 
-		glRasterPos2f(-1, 1);
+        glRasterPos2f(-1, 1);
 		glPixelTransferf(GL_RED_SCALE, 1);
 		glDrawPixels(640, 480, GL_RGB, GL_UNSIGNED_BYTE, rs_get_color_image(cam, &error)); check_error();
 
-		glRasterPos2f(0, 1);
+        glRasterPos2f(0, 1);
 		glPixelTransferf(GL_RED_SCALE, 30);
-		glDrawPixels(628, 468, GL_RED, GL_UNSIGNED_SHORT, rs_get_depth_image(cam, &error)); check_error();
+        glDrawPixels(628, 468, GL_RED, GL_UNSIGNED_SHORT, rs_get_depth_image(cam, &error)); check_error();
 
 		glfwSwapBuffers(win);
 	}

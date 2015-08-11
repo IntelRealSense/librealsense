@@ -22,22 +22,22 @@ namespace f200
         if (streamingModeBitfield == 0) throw std::invalid_argument("No streams have been configured...");
         
         //@tofix: Test for successful open
-        if (streamingModeBitfield & STREAM_DEPTH)
+        if (streamingModeBitfield & RS_STREAM_DEPTH)
         {
             StreamInterface * stream = new StreamInterface();
             stream->camera = this;
             
             bool status = OpenStreamOnSubdevice(hardware, stream->uvcHandle, 1);
-            streamInterfaces.insert(std::pair<int, StreamInterface *>(STREAM_DEPTH, stream));
+            streamInterfaces.insert(std::pair<int, StreamInterface *>(RS_STREAM_DEPTH, stream));
         }
         
-        if (streamingModeBitfield & STREAM_RGB)
+        if (streamingModeBitfield & RS_STREAM_RGB)
         {
             StreamInterface * stream = new StreamInterface();
             stream->camera = this;
             
             bool status = OpenStreamOnSubdevice(hardware, stream->uvcHandle, 2);
-            streamInterfaces.insert(std::pair<int, StreamInterface *>(STREAM_RGB, stream));
+            streamInterfaces.insert(std::pair<int, StreamInterface *>(RS_STREAM_RGB, stream));
         }
         
         uvc_device_descriptor_t * desc;
@@ -72,7 +72,7 @@ namespace f200
                 throw std::runtime_error("Open camera_handle Failed");
             }
             
-            if (c.format == UVC_FRAME_FORMAT_INVR || c.format == UVC_FRAME_FORMAT_INVZ)
+            if (c.format == FrameFormat::INVR || c.format == FrameFormat::INVZ)
             {
                 depthFrame.reset(new TripleBufferedFrame(c.width, c.height, 2));
             }

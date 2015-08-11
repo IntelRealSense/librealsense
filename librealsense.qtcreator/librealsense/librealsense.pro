@@ -21,17 +21,18 @@ HEADERS += \
     ../../include/librealsense/R200/R200.h \
     ../../include/librealsense/R200/SPI.h \
     ../../include/librealsense/R200/XU.h \
-    ../../include/librealsense/CameraContext.h \
     ../../include/librealsense/Common.h \
-    ../../include/librealsense/UVCCamera.h
+    ../../include/librealsense/UVCCamera.h \
+    ../../include/librealsense/rs.h \
+    ../../src/rs-internal.h
 
 SOURCES += \
     ../../src/F200/F200.cpp \
     ../../src/R200/R200.cpp \
     ../../src/R200/SPI.cpp \
     ../../src/R200/XU.cpp \
-    ../../src/CameraContext.cpp \
-    ../../src/UVCCamera.cpp
+    ../../src/UVCCamera.cpp \
+    ../../src/rs.cpp
 
 
 INCLUDEPATH += $$PWD/../libuvc

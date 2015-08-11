@@ -40,22 +40,22 @@ bool R200Camera::ConfigureStreams()
         throw std::invalid_argument("No streams have been configured...");
     
     //@tofix: Test for successful open
-    if (streamingModeBitfield & STREAM_DEPTH)
+    if (streamingModeBitfield & RS_STREAM_DEPTH)
+    {
+        StreamInterface * stream = new StreamInterface();
+        stream->camera = this;
+        
+        bool status = OpenStreamOnSubdevice(hardware, stream->uvcHandle, 1);
+        streamInterfaces.insert(std::pair<int, StreamInterface *>(RS_STREAM_DEPTH, stream));
+    }
+    
+    if (streamingModeBitfield & RS_STREAM_RGB)
     {
         StreamInterface * stream = new StreamInterface();
         stream->camera = this;
         
         bool status = OpenStreamOnSubdevice(hardware, stream->uvcHandle, 2);
-        streamInterfaces.insert(std::pair<int, StreamInterface *>(STREAM_DEPTH, stream));
-    }
-    
-    if (streamingModeBitfield & STREAM_RGB)
-    {
-        StreamInterface * stream = new StreamInterface();
-        stream->camera = this;
-        
-        bool status = OpenStreamOnSubdevice(hardware, stream->uvcHandle, 3);
-        streamInterfaces.insert(std::pair<int, StreamInterface *>(STREAM_RGB, stream));
+        streamInterfaces.insert(std::pair<int, StreamInterface *>(RS_STREAM_RGB, stream));
     }
     
     
@@ -98,16 +98,16 @@ bool R200Camera::ConfigureStreams()
     };
     
     // We only need to do this once, so check if any stream has been configured
-    if (streamInterfaces[STREAM_DEPTH]->uvcHandle)
+    if (streamInterfaces[RS_STREAM_DEPTH]->uvcHandle)
     {
         //uvc_print_stream_ctrl(&streamInterfaces[STREAM_DEPTH]->ctrl, stderr);
-        oneTimeInitialize(streamInterfaces[STREAM_DEPTH]->uvcHandle);
+        oneTimeInitialize(streamInterfaces[RS_STREAM_DEPTH]->uvcHandle);
     }
     
-    else if (streamInterfaces[STREAM_RGB]->uvcHandle)
+    else if (streamInterfaces[RS_STREAM_RGB]->uvcHandle)
     {
        //uvc_print_stream_ctrl(&streamInterfaces[STREAM_RGB]->ctrl, stderr);
-       oneTimeInitialize(streamInterfaces[STREAM_RGB]->uvcHandle);
+       oneTimeInitialize(streamInterfaces[RS_STREAM_RGB]->uvcHandle);
     }
     
     return true;

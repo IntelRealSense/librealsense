@@ -3,4 +3,5 @@ TEMPLATE = subdirs
 SUBDIRS += \
     ../libuvc \
     ../librealsense \
-    ../pointcloudviewer
+    ../example-c \
+    ../example-cpp

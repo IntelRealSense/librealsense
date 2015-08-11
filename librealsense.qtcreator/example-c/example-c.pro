@@ -9,15 +9,7 @@ INCLUDEPATH += ../../third_party/libuvc/include/ ../../include
 LIBS += -pthread -ljpeg
 PKGCONFIG += libusb-1.0
 
-SOURCES += \
-    ../../PointcloudViewer/PointcloudViewer/GfxUtil.cpp \
-    ../../PointcloudViewer/PointcloudViewer/main.cpp
-
-HEADERS += \
-    ../../PointcloudViewer/PointcloudViewer/GfxUtil.h \
-    ../../include/librealsense/rs.h \
-    ../../include/librealsense/rs.hpp
-
+SOURCES += ../../examples/example-c/example.c
 
 unix:!macx: LIBS += -L$$OUT_PWD/../librealsense/ -llibrealsense
 
