@@ -191,6 +191,9 @@ int main(int argc, const char * argv[]) try
         
         std::cout << "Computed FoV: " << hFov << " x " << vFov << std::endl;
         
+        // R300 / DS5
+        //camera.start_stream(RS_STREAM_DEPTH, 1280, 721, 30, RS_FRAME_FORMAT_Z16);
+        
         // R200 / DS4
 		//camera.start_stream(RS_STREAM_DEPTH, 628, 469, 0, RS_FRAME_FORMAT_Z16);
 		//camera.start_stream(RS_STREAM_RGB, 640, 480, 30, RS_FRAME_FORMAT_YUYV);
