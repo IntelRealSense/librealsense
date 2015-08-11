@@ -98,9 +98,9 @@ struct rs_camera
 struct rs_context
 {
 	NO_MOVE(rs_context);
-#ifdef USE_UVC_DEVICES
+    #ifdef USE_UVC_DEVICES
 	uvc_context_t * privateContext;
-#endif
+    #endif
 	std::vector<std::shared_ptr<rs_camera>> cameras;
     
 	rs_context();
@@ -130,7 +130,7 @@ template<class F> auto Try(const char * name, rs_error ** error, F f) -> decltyp
 		return DefResult((decltype(f()) *)nullptr);
 	}
 }
-#define BEGIN return Try(__FUNCTION__, error, [&]() {
-#define END });
+#define BEGIN_EXCEPTION_FIREWALL return Try(__FUNCTION__, error, [&]() {
+#define END_EXCEPTION_FIREWALL });
 
 #endif

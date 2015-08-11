@@ -86,109 +86,109 @@ void rs_context::QueryDeviceList()
 
 rs_context * rs_create_context(int api_version, rs_error ** error) 
 {
-	BEGIN
+    BEGIN_EXCEPTION_FIREWALL
 	if (api_version != RS_API_VERSION) throw std::runtime_error("api version mismatch");
 	return new rs_context();
-	END 
+    END_EXCEPTION_FIREWALL
 }
 
 int	rs_get_camera_count(rs_context * context, rs_error ** error)
 {
-    BEGIN
+    BEGIN_EXCEPTION_FIREWALL
     return (int)context->cameras.size();
-    END
+    END_EXCEPTION_FIREWALL
 }
 
 rs_camera * rs_get_camera(rs_context * context, int index, rs_error ** error)
 {
-    BEGIN
+    BEGIN_EXCEPTION_FIREWALL
     return context->cameras[index].get();
-    END
+    END_EXCEPTION_FIREWALL
 }
 
 void rs_delete_context(rs_context * context, rs_error ** error)
 {
-    BEGIN
+    BEGIN_EXCEPTION_FIREWALL
     delete context;
-    END
+    END_EXCEPTION_FIREWALL
 }
 
 void rs_enable_stream(rs_camera * camera, int stream, rs_error ** error)
 {
-    BEGIN
+    BEGIN_EXCEPTION_FIREWALL
     camera->streamingModeBitfield |= stream;
-    END
+    END_EXCEPTION_FIREWALL
 }
 
 int rs_is_streaming(rs_camera * camera, rs_error ** error)
 {
-    BEGIN
+    BEGIN_EXCEPTION_FIREWALL
     return camera->streamingModeBitfield & RS_STREAM_DEPTH || camera->streamingModeBitfield & RS_STREAM_RGB ? 1 : 0;
-    END
+    END_EXCEPTION_FIREWALL
 }
 
 int	rs_get_camera_index(rs_camera * camera, rs_error ** error)
 {
-    BEGIN
+    BEGIN_EXCEPTION_FIREWALL
     return camera->cameraIdx;
-    END
+    END_EXCEPTION_FIREWALL
 }
 
 uint64_t rs_get_frame_count(rs_camera * camera, rs_error ** error)
 {
-    BEGIN
+    BEGIN_EXCEPTION_FIREWALL
     return camera->frameCount;
-    END
+    END_EXCEPTION_FIREWALL
 }
 
 const uint8_t *	rs_get_color_image(rs_camera * camera, rs_error ** error)
 {
-	BEGIN
+    BEGIN_EXCEPTION_FIREWALL
 	if (camera->colorFrame->updated)
 	{
 		std::lock_guard<std::mutex> guard(camera->frameMutex);
 		camera->colorFrame->swap_front();
 	}
 	return reinterpret_cast<const uint8_t *>(camera->colorFrame->front.data());
-	END
+    END_EXCEPTION_FIREWALL
 }
 
 const uint16_t * rs_get_depth_image(rs_camera * camera, rs_error ** error)
 {
-	BEGIN
+    BEGIN_EXCEPTION_FIREWALL
 	if (camera->depthFrame->updated)
 	{
 		std::lock_guard<std::mutex> guard(camera->frameMutex);
 		camera->depthFrame->swap_front();
 	}
 	return reinterpret_cast<const uint16_t *>(camera->depthFrame->front.data());
-	END
+    END_EXCEPTION_FIREWALL
 }
 
 int	rs_configure_streams(rs_camera * camera, rs_error ** error)
 {
-    BEGIN
+    BEGIN_EXCEPTION_FIREWALL
     return camera->ConfigureStreams();
-    END
+    END_EXCEPTION_FIREWALL
 }
 
 void rs_start_stream(rs_camera * camera, int stream, int width, int height, int fps, int format, rs_error ** error)
 {
-    BEGIN
+    BEGIN_EXCEPTION_FIREWALL
     camera->StartStream(stream, { width, height, fps, (rs::FrameFormat)format });
-    END
+    END_EXCEPTION_FIREWALL
 }
 
 void rs_stop_stream(rs_camera * camera, int stream, rs_error ** error)
 {
-    BEGIN
+    BEGIN_EXCEPTION_FIREWALL
     camera->StopStream(stream);
-    END
+    END_EXCEPTION_FIREWALL
 }
 
 int rs_get_stream_property_i(rs_camera * camera, int stream, int prop, rs_error ** error)
 {
-    BEGIN
+    BEGIN_EXCEPTION_FIREWALL
     if (stream != RS_STREAM_DEPTH) return 0;
     switch (prop)
     {
@@ -196,12 +196,12 @@ int rs_get_stream_property_i(rs_camera * camera, int stream, int prop, rs_error 
     case RS_IMAGE_SIZE_Y: return (int)camera->GetDepthIntrinsics().rh;
     default: return 0;
     }
-    END
+    END_EXCEPTION_FIREWALL
 }
 
 float rs_get_stream_property_f(rs_camera * camera, int stream, int prop, rs_error ** error)
 {
-    BEGIN
+    BEGIN_EXCEPTION_FIREWALL
     if (stream != RS_STREAM_DEPTH) return 0.0f;
     switch (prop)
     {
@@ -211,7 +211,7 @@ float rs_get_stream_property_f(rs_camera * camera, int stream, int prop, rs_erro
     case RS_PRINCIPAL_POINT_Y: return camera->GetDepthIntrinsics().rpy;
     default: return 0.0f;
     }
-    END
+    END_EXCEPTION_FIREWALL
 }
 
 const char * rs_get_failed_function(rs_error * error) { return error ? error->function.c_str() : nullptr; }
