@@ -62,6 +62,8 @@ bool F200Camera::ConfigureStreams()
     
     const CameraCalibrationParameters & ivCamParams = hardware_io->GetParameters();
     
+    ivCamParams.Rmax;
+    
     ////////////////////////////////////////////////////////////////////////////
     
     return true;

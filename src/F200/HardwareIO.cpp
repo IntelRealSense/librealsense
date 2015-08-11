@@ -134,16 +134,14 @@ class f200::IVCAMHardwareIOInternal
         {
             int ret = libusb_bulk_transfer(usbDeviceHandle, IVCAM_MONITOR_ENDPOINT_OUT, out, (int) outSize, &outXfer, 1000); // timeout in ms
             
-            printf("libusb_bulk_transfer OUT returns %d (errno %d:%s)", ret, errno, strerror(errno));
-            
+            if (ret < 0 )
+            {
+                printf("[libusb failure] libusb_bulk_transfer (endpoint_out) - status: %s", libusb_error_name(ret));
+                return ret;
+            }
+
             // Debugging only
             // dumpCommand(out, outSize);
-            
-            if (ret < 0)
-            {
-                printf("usb_device_bulk_transfer OUT failed %d (errno %d:%s)", ret, errno, strerror(errno));
-                return -1;
-            }
             
             // read
             if (in && inSize)
@@ -154,11 +152,9 @@ class f200::IVCAMHardwareIOInternal
                 
                 ret = libusb_bulk_transfer(usbDeviceHandle, IVCAM_MONITOR_ENDPOINT_IN, buf, sizeof(buf), &outXfer, 1000);
                 
-                printf("usb_device_bulk_transfer IN returns %d (errno %d:%s)", ret, errno, strerror(errno));
-                
                 if (outXfer < (int)sizeof(uint32_t))
                 {
-                    printf("usb_device_bulk_transfer IN failed %d (errno %d:%s)", outXfer, errno, strerror(errno));
+                    printf("[libusb failure] libusb_bulk_transfer (endpoint_in) - status: %s", libusb_error_name(ret));
                     usbMutex.unlock();
                     return -1;
                 }
@@ -298,7 +294,6 @@ public:
     {
         if (!ctx) throw std::runtime_error("must pass libuvc context handle");
         
-        
         libusb_context * usbctx = uvc_get_libusb_context(ctx);
         
         usbDeviceHandle = libusb_open_device_with_vid_pid(usbctx, IVCAM_VID, IVCAM_PID);
@@ -328,13 +323,6 @@ public:
     ~IVCAMHardwareIOInternal()
     {
         libusb_release_interface(usbDeviceHandle, IVCAM_MONITOR_INTERFACE);
-    }
-    
-    // Reach out to hardware
-    bool Initialize()
-    {
-        // fixme
-        return false;
     }
     
     bool StartTempCompensationLoop()

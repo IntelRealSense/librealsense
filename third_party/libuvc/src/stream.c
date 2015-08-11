@@ -658,7 +658,7 @@ void LIBUSB_CALL _uvc_stream_callback(struct libusb_transfer *transfer) {
     break;
   }
   
-  if ( strmh->running && resubmit )
+  if (strmh->running && resubmit)
     libusb_submit_transfer(transfer);
 }
 

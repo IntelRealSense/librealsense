@@ -215,7 +215,7 @@ int main(int argc, const char * argv[]) try
 		//camera.start_stream(RS_STREAM_RGB, 640, 480, 30, RS_FRAME_FORMAT_YUYV);
         
         // F200 / IVCAM
-        camera.start_stream(RS_STREAM_DEPTH, 640, 480, 60, RS_FRAME_FORMAT_INVZ);
+        camera.start_stream(RS_STREAM_DEPTH, 640, 480, 30, RS_FRAME_FORMAT_INVZ);
        // camera.start_stream(RS_STREAM_RGB, 640, 480, 30, RS_FRAME_FORMAT_YUYV);
         
     }
@@ -225,7 +225,7 @@ int main(int argc, const char * argv[]) try
     
     // Remapped colors...
     rgbTextureHandle = CreateTexture(640, 480, GL_RGB);     // Normal RGB
-    depthTextureHandle = CreateTexture(628, 468, GL_RGB);   // Depth to RGB remap
+    depthTextureHandle = CreateTexture(640, 480, GL_RGB);   // Depth to RGB remap
     
     GLuint quad_VertexArrayID;
     glGenVertexArrays(1, &quad_VertexArrayID);
@@ -257,9 +257,9 @@ int main(int argc, const char * argv[]) try
         {
             glViewport(0, 0, width, height);
 			auto depthImage = camera.get_depth_image();
-            static uint8_t depthColoredHistogram[628 * 468 * 3];
-            ConvertDepthToRGBUsingHistogram(depthColoredHistogram, depthImage, 628, 468, 0.1f, 0.625f);
-            drawTexture(fullscreenTextureProg, quadVBO, imageUniformHandle, depthTextureHandle, depthColoredHistogram, 628, 468, GL_RGB, GL_UNSIGNED_BYTE);
+            static uint8_t depthColoredHistogram[640 * 480 * 3];
+            ConvertDepthToRGBUsingHistogram(depthColoredHistogram, depthImage, 640, 480, 0.4f, 0.925f);
+            drawTexture(fullscreenTextureProg, quadVBO, imageUniformHandle, depthTextureHandle, depthColoredHistogram, 640, 480, GL_RGB, GL_UNSIGNED_BYTE);
             
             //glViewport(width / 2, 0, width, height);
 			//auto colorImage = camera.get_color_image();
