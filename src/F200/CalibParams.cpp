@@ -1,6 +1,7 @@
 #include <librealsense/Common.h>
 #include <librealsense/F200/F200.h>
 #include <librealsense/F200/Calibration.h>
+#include <librealsense/F200/Projection.h>
 
 #include "libuvc/libuvc.h"
 
@@ -242,7 +243,7 @@ namespace f200
         {
             uint8_t * bufParams = rawCalibData + 4;
             
-            IVCAMCalibrator<float> * calibration = Projection::GetInstance()->GetCalibrationObject();
+            VCAMCalibrator<float> * calibration = Projection::GetInstance()->GetCalibrationObject();
             
             CameraCalibrationParametersVersion CalibrationData;
             IVCAMTesterData TesterData;

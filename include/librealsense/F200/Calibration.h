@@ -4,6 +4,7 @@
 #define LIBREALSENSE_F200_CALIB_PARAMS_H
 
 #include <librealsense/CameraContext.h>
+#include <librealsense/F200/F200Types.h>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -11,11 +12,8 @@
 namespace f200
 {
     
-#define DELTA_INF	(10000000.0)
-#define M_EPSILON	(0.0001)
-    
 template <typename T = float>
-class Calibration
+class IVCAMCalibrator
 {
     
 public:

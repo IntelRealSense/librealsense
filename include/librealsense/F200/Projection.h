@@ -6,6 +6,8 @@
 #include "libuvc/libuvc.h"
 #include <librealsense/F200/CalibParams.h>
 #include <librealsense/F200/Calibration.h>
+#include <librealsense/F200/Projection.h>
+#include <librealsense/F200/F200Types.h>
 
 namespace f200
 {
@@ -24,31 +26,28 @@ public:
     
     void GetProjectionSize(int &size);
     
-    void GetSerializedProjectionData(int &size,BYTE *data);
+    void GetSerializedProjectionData(int & size, uint8_t *data);
     
-    void SetSerializedProjectionData(BYTE *data);
+    void SetSerializedProjectionData(uint8_t *data);
     
-    void MapDepthToColorCoordinates(unsigned int npoints,Point3DF32 *pos2d, Point2DF32 *posc, bool isUVunitsRelative = true, TCoordinatSystemDirection coordinatSystemDirection = LeftHandedCoordinateSystem);
+    void MapDepthToColorCoordinates(unsigned int npoints, Point3DF32 *pos2d, Point2DF32 *posc, bool isUVunitsRelative = true, CoordinateSystem dir = LEFT_HANDED);
     
-    void MapDepthToColorCoordinates(unsigned int width, unsigned int height, uint16_t* pSrcDepth, float* pDestUV, bool isUVunitsRelative = true, TCoordinatSystemDirection coordinatSystemDirection = LeftHandedCoordinateSystem);
+    void MapDepthToColorCoordinates(unsigned int width, unsigned int height, uint16_t* pSrcDepth, float* pDestUV, bool isUVunitsRelative = true, CoordinateSystem dir = LEFT_HANDED);
     
-    void ProjectImageToRealWorld(unsigned int npoints, Point3DF32 *pos2d, Point3DF32 *pos3d, TCoordinatSystemDirection coordinatSystemDirection = LeftHandedCoordinateSystem);
+    void ProjectImageToRealWorld(unsigned int npoints, Point3DF32 *pos2d, Point3DF32 *pos3d, CoordinateSystem dir = LEFT_HANDED);
     
-    void ProjectImageToRealWorld(unsigned int width, unsigned int height, uint16_t * pSrcDepth, float* pDestXYZ, TCoordinatSystemDirection coordinatSystemDirection = LeftHandedCoordinateSystem);
+    void ProjectImageToRealWorld(unsigned int width, unsigned int height, uint16_t * pSrcDepth, float* pDestXYZ, CoordinateSystem dir = LEFT_HANDED);
     
     float ConvertDepth_Uint16ToMM(uint16_t d);
     
-    void Depth2Vertices(void* RawPointer, TIVCAMStreamWrapper* streamWrapper);
-    void depthToColor(void* RawPointer, TIVCAMStreamWrapper* streamWrapper);
-    
     bool IsInitialized() { return m_isInitialized; }
-    void SetDepthResolution(int width, int height) { m_currentDepthWidth=width; m_currentDepthHeight=height; }
-    void SetColorResolution(int width, int height) { m_currentColorWidth=width; m_currentColorHeight=height; }
+    void SetDepthResolution(int width, int height) { m_currentDepthWidth = width; m_currentDepthHeight = height; }
+    void SetColorResolution(int width, int height) { m_currentColorWidth =width; m_currentColorHeight = height; }
     
-    int GetColorWidth() {return m_currentColorWidth; }
-    int GetColorHeight() {return m_currentColorHeight; }
-    int GetDepthWidth() {return m_currentDepthWidth; }
-    int GetDepthHeight() {return m_currentDepthHeight; }
+    int GetColorWidth() { return m_currentColorWidth; }
+    int GetColorHeight() { return m_currentColorHeight; }
+    int GetDepthWidth() { return m_currentDepthWidth; }
+    int GetDepthHeight() { return m_currentDepthHeight; }
     
     void QueryProperty(Property label, float &value);
     
@@ -60,9 +59,9 @@ public:
     
     IVCAMCalibrator<float> * GetCalibrationObject() {return & m_calibration; };
     
-    void InitializeThermalData(ICVAMTemperatureData TemperatureData, IVCAMThermalLoopParams ThermalLoopParams);
+    void InitializeThermalData(IVCAMTemperatureData TemperatureData, IVCAMThermalLoopParams ThermalLoopParams);
     
-    void GetThermalData(ICVAMTemperatureData &TemperatureData, IVCAMThermalLoopParams &ThermalLoopParams);
+    void GetThermalData(IVCAMTemperatureData & TemperatureData, IVCAMThermalLoopParams & ThermalLoopParams);
     
     struct ProjectionParams
     {

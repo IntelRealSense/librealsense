@@ -6,25 +6,13 @@
 #include "libuvc/libuvc.h"
 
 #include <librealsense/F200/CalibParams.h>
+#include <librealsense/F200/F200Types.h>
 
 #include <stdint.h>
 #include <string>
 #include <stdio.h>
 #include <stdint.h>
 #include <iostream>
-
-#define IV_COMMAND_FIRMWARE_UPDATE_MODE     0x01
-#define IV_COMMAND_GET_CALIBRATION_DATA     0x02
-#define IV_COMMAND_LASER_POWER              0x03
-#define IV_COMMAND_DEPTH_ACCURACY           0x04
-#define IV_COMMAND_ZUNIT                    0x05
-#define IV_COMMAND_LOW_CONFIDENCE_LEVEL     0x06
-#define IV_COMMAND_INTENSITY_IMAGE_TYPE     0x07
-#define IV_COMMAND_MOTION_VS_RANGE_TRADE    0x08
-#define IV_COMMAND_POWER_GEAR               0x09
-#define IV_COMMAND_FILTER_OPTION            0x0A
-#define IV_COMMAND_VERSION                  0x0B
-#define IV_COMMAND_CONFIDENCE_THRESHHOLD    0x0C
 
 namespace f200
 {
