@@ -41,5 +41,6 @@ DerivedData
 *.xcuserstate
 
 *~
-
+*.a
+*.o
 local_ignore/
