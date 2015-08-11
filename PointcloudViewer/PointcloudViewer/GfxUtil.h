@@ -1,14 +1,16 @@
 #ifndef DS4OSX_Util_h
 #define DS4OSX_Util_h
 
-#if __APPLE__
+#ifdef WIN32
+#include <GL\glew.h>
+#elif __APPLE__
 #include <OpenGL/gl3.h>
-#else
-#define GL_GLEXT_PROTOTYPES
-#include <GL/gl.h>
 #endif
 
-#include "librealsense/Common.h"
+#define _USE_MATH_DEFINES
+#include <math.h>
+#include <cstdint>
+#include <array>
 
 #ifndef CHECK_GL_ERROR
 #define CHECK_GL_ERROR() CheckGLError(__FILE__, __LINE__)
@@ -28,6 +30,6 @@ std::array<double, 3> rgbToHsv(uint8_t r, uint8_t g, uint8_t b);
 
 std::array<int, 3> hsvToRgb(double h, double s, double v);
 
-void drawTexture(GLuint prog, GLuint vbo, GLuint texHandle, GLuint texId, void * pixels, int width, int height, GLint fmt, GLenum type);
+void drawTexture(GLuint prog, GLuint vbo, GLuint texHandle, GLuint texId, const void * pixels, int width, int height, GLint fmt, GLenum type);
 
 #endif

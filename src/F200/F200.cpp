@@ -1,6 +1,8 @@
 #include <librealsense/Common.h>
 #include <librealsense/F200/F200.h>
 
+#ifndef WIN32
+
 using namespace rs;
 
 namespace f200
@@ -60,9 +62,9 @@ namespace f200
         
         if (stream->uvcHandle)
         {
-            stream->fmt = c.format;
+            stream->fmt = static_cast<uvc_frame_format>(c.format);
             
-            uvc_error_t status = uvc_get_stream_ctrl_format_size(stream->uvcHandle, &stream->ctrl, c.format, c.width, c.height, c.fps);
+            uvc_error_t status = uvc_get_stream_ctrl_format_size(stream->uvcHandle, &stream->ctrl, stream->fmt, c.width, c.height, c.fps);
             
             if (status < 0)
             {
@@ -75,7 +77,7 @@ namespace f200
                 depthFrame.reset(new TripleBufferedFrame(c.width, c.height, 2));
             }
             
-            else if (c.format == UVC_FRAME_FORMAT_YUYV)
+			else if (c.format == FrameFormat::YUYV)
             {
                 colorFrame.reset(new TripleBufferedFrame(c.width, c.height, 3));
             }
@@ -96,3 +98,5 @@ namespace f200
         //@tofix
     }
 }
+
+#endif

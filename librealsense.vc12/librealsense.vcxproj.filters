@@ -1,0 +1,87 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="..\src\R200\R200.cpp">
+      <Filter>src\R200</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\F200\F200.cpp">
+      <Filter>src\F200</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\rs.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\verify.c">
+      <Filter>src</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="src">
+      <UniqueIdentifier>{b9f36edf-7b10-4373-956f-9c939cbc00ff}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\R200">
+      <UniqueIdentifier>{022996ca-8487-4a2d-8311-8bd824bcab1b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="include">
+      <UniqueIdentifier>{6773e236-7c37-4d34-b21a-3d9ae2c5b068}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="include\R200">
+      <UniqueIdentifier>{58bd7071-c03e-4919-9e26-34c596108a9e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\F200">
+      <UniqueIdentifier>{546101fa-cfee-46af-b002-6dad666d4f3b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="include\F200">
+      <UniqueIdentifier>{e8f9b02d-63a2-4274-9d83-bf8e80e7328a}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\include\librealsense\UVCCamera.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\librealsense\R200\CalibIO.h">
+      <Filter>include\R200</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\librealsense\R200\CalibParams.h">
+      <Filter>include\R200</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\librealsense\R200\CameraHeader.h">
+      <Filter>include\R200</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\librealsense\R200\R200.h">
+      <Filter>include\R200</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\librealsense\R200\SPI.h">
+      <Filter>include\R200</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\librealsense\R200\XU.h">
+      <Filter>include\R200</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\librealsense\F200\CalibParams.h">
+      <Filter>include\F200</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\librealsense\F200\F200.h">
+      <Filter>include\F200</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\librealsense\F200\Projection.h">
+      <Filter>include\F200</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\librealsense\F200\XU.h">
+      <Filter>include\F200</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\librealsense\Camera.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\librealsense\rs.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\rs-internal.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\librealsense\rs.hpp">
+      <Filter>include</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="PointCloudViewer.vcxproj.filters" />
+  </ItemGroup>
+</Project>

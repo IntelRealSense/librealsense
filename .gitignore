@@ -1,27 +1,4 @@
-# User-specific files
-*.suo
-*.user
-
-# Build results
-[Dd]ebug/
-[Rr]elease/
-[Oo]bj/
-
-*.ilk
-*.obj
-*.pch
-*.pdb
-*.log
-
-# Visual C++ cache files
-ipch/
-*.opensdf
-*.sdf
-
-# Visual Studio profiler
-*.psess
-*.vsp
-*.vspx
+bin/
 
 # XCode
 .DS_Store

@@ -3,6 +3,8 @@
 #ifndef LIBREALSENSE_COMMON_H
 #define LIBREALSENSE_COMMON_H
 
+#define _USE_MATH_DEFINES
+#include <math.h>
 #include <stdint.h>
 #include <vector>
 #include <memory>
@@ -127,19 +129,6 @@ struct RectifiedIntrinsics
     uint32_t rw;
     uint32_t rh;
 };
-
-// Compute field of view angles in degrees from rectified intrinsics
-inline void GetFieldOfView(const RectifiedIntrinsics & intrinsics, float & horizontalFOV, float & verticalFOV)
-{
-    horizontalFOV = atan2(intrinsics.rpx + 0.5f, intrinsics.rfx) +
-        atan2(intrinsics.rw - intrinsics.rpx - 0.5f, intrinsics.rfx);
-    
-    verticalFOV = atan2(intrinsics.rpy + 0.5f, intrinsics.rfy) +
-        atan2(intrinsics.rh - intrinsics.rpy - 0.5f, intrinsics.rfy);
-    
-    horizontalFOV = horizontalFOV * 180.0f / M_PI;
-    verticalFOV = verticalFOV * 180.0f / M_PI;
-}
 
 // From z image to z camera (right-handed coordinate system).
 // zImage is assumed to contain [z row, z column, z depth].
