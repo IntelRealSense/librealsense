@@ -3,11 +3,13 @@
 
 #include "stdint.h"
 
+#define RS_API_VERSION 1
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 	
-struct rs_context *	rs_create_context		(struct rs_error ** error);
+struct rs_context *	rs_create_context		(int api_version, struct rs_error ** error);
 int					rs_get_camera_count		(struct rs_context * context, struct rs_error **);
 struct rs_camera *	rs_get_camera			(struct rs_context * context, int index, struct rs_error **);
 void				rs_delete_context		(struct rs_context * context, struct rs_error **);

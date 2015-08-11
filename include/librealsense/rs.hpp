@@ -53,7 +53,7 @@ namespace rs
 	{
 		rs_context *		ctx;
 	public:
-							context()																: ctx(rs_create_context(auto_error())) {}
+							context()																: ctx(rs_create_context(RS_API_VERSION, auto_error())) {}
 							context(const auto_error &)												= delete;
 							~context()																{ rs_delete_context(ctx, nullptr); } // Deliberately ignore error on destruction
 							context & operator = (const context &)									= delete;

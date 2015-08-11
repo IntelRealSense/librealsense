@@ -17,7 +17,7 @@ int main(int argc, char * argv[])
 	float hfov, vfov;
 	GLFWwindow * win;
 
-	ctx = rs_create_context(NULL);
+	ctx = rs_create_context(RS_API_VERSION, NULL);
 	for (int i = 0; i < rs_get_camera_count(ctx, NULL); ++i)
 	{
 		printf("Found camera at index %d\n", i);

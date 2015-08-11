@@ -77,7 +77,13 @@ void rs_context::QueryDeviceList()
 #endif
 }
 
-rs_context * rs_create_context(rs_error ** error) { BEGIN return new rs_context(); END }
+rs_context * rs_create_context(int api_version, rs_error ** error) 
+{
+	BEGIN
+	if (api_version != RS_API_VERSION) throw std::runtime_error("api version mismatch");
+	return new rs_context();
+	END 
+}
 void rs_delete_context(rs_context * context, rs_error ** error) { BEGIN delete context; END }
 int	rs_get_camera_count(rs_context * context, rs_error ** error) { BEGIN return (int)context->cameras.size(); END }
 rs_camera * rs_get_camera(rs_context * context, int index, rs_error ** error) { BEGIN return context->cameras[index].get(); END }
@@ -89,11 +95,11 @@ uint64_t rs_get_frame_count(rs_camera * camera, rs_error ** error) { BEGIN retur
 const uint8_t *	rs_get_color_image(rs_camera * camera, rs_error ** error)
 {
 	BEGIN
-		if (camera->colorFrame->updated)
-		{
-			std::lock_guard<std::mutex> guard(camera->frameMutex);
-			camera->colorFrame->swap_front();
-		}
+	if (camera->colorFrame->updated)
+	{
+		std::lock_guard<std::mutex> guard(camera->frameMutex);
+		camera->colorFrame->swap_front();
+	}
 	return reinterpret_cast<const uint8_t *>(camera->colorFrame->front.data());
 	END
 }
@@ -101,11 +107,11 @@ const uint8_t *	rs_get_color_image(rs_camera * camera, rs_error ** error)
 const uint16_t * rs_get_depth_image(rs_camera * camera, rs_error ** error)
 {
 	BEGIN
-		if (camera->depthFrame->updated)
-		{
-			std::lock_guard<std::mutex> guard(camera->frameMutex);
-			camera->depthFrame->swap_front();
-		}
+	if (camera->depthFrame->updated)
+	{
+		std::lock_guard<std::mutex> guard(camera->frameMutex);
+		camera->depthFrame->swap_front();
+	}
 	return reinterpret_cast<const uint16_t *>(camera->depthFrame->front.data());
 	END
 }

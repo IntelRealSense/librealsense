@@ -19,8 +19,6 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\src\Camera.cpp" />
-    <ClCompile Include="..\src\CameraContext.cpp" />
     <ClCompile Include="..\src\F200\F200.cpp" />
     <ClCompile Include="..\src\R200\R200.cpp" />
     <ClCompile Include="..\src\rs.cpp" />
@@ -28,8 +26,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\include\librealsense\Camera.h" />
-    <ClInclude Include="..\include\librealsense\CameraContext.h" />
-    <ClInclude Include="..\include\librealsense\Common.h" />
     <ClInclude Include="..\include\librealsense\F200\CalibParams.h" />
     <ClInclude Include="..\include\librealsense\F200\F200.h" />
     <ClInclude Include="..\include\librealsense\F200\Projection.h" />
