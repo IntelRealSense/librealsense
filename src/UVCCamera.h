@@ -27,7 +27,9 @@ namespace rs
         NO_MOVE(UVCCamera);
 
     protected:
-
+        
+        uvc_context_t * internalContext;
+        
         struct StreamInterface
         {
             UVCCamera * camera = nullptr;
@@ -53,6 +55,7 @@ namespace rs
     public:
 
         UVCCamera(uvc_device_t * device, int num);
+        UVCCamera(uvc_context_t * ctx, uvc_device_t * device, int num);
         ~UVCCamera();
     };
     
