@@ -1,8 +1,5 @@
 #include <librealsense/Common.h>
 #include <librealsense/F200/F200.h>
-#include <librealsense/F200/CalibParams.h>
-#include <librealsense/F200/Calibration.h>
-#include <librealsense/F200/Projection.h>
 
 using namespace rs;
 

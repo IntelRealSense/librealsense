@@ -1,7 +1,9 @@
 #include <librealsense/Common.h>
 #include <librealsense/F200/F200.h>
+#include <librealsense/F200/F200Types.h>
 #include <librealsense/F200/Calibration.h>
 #include <librealsense/F200/Projection.h>
+#include <librealsense/F200/CalibParams.h>
 
 #include "libuvc/libuvc.h"
 
@@ -258,7 +260,8 @@ namespace f200
                 
                 calibration->buildParameters(params, 100);
                 
-                calibration->printParameters();
+                // Debugging -- optional
+                calibration->PrintParameters();
                 
                 memcpy(calprms, params+1, sizeof(CameraCalibrationParameters));
                 memcpy(&TesterData, bufParams, SIZE_OF_CALIB_HEADER_BYTES);
@@ -271,11 +274,18 @@ namespace f200
                 
                 int size = (sizeof(CameraCalibrationParametersVersion) > len) ? len : sizeof(CameraCalibrationParametersVersion);
                 
-                fillCalibrationData(CalibrationData, size, rawCalibData);
+                auto fixWithVersionInfo = [&](CameraCalibrationParametersVersion &d, int size, uint8_t * data)
+                {
+                    memcpy((uint8_t*)&d + sizeof(int), data, size - sizeof(int));
+                };
+                
+                fixWithVersionInfo(CalibrationData, size, rawCalibData);
                 
                 memcpy(calprms, &CalibrationData.CalibrationParameters, sizeof(CameraCalibrationParameters));
                 calibration->buildParameters(CalibrationData.CalibrationParameters);
-                calibration->printParameters();
+                
+                // Debugging -- optional
+                calibration->PrintParameters();
                 
                 
                 memcpy(&TesterData,  rawCalibData, SIZE_OF_CALIB_HEADER_BYTES);  //copy the header: valid + version

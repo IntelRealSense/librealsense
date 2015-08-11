@@ -5,13 +5,14 @@
 #include <sstream>
 
 using namespace std;
+using namespace f200;
 
 #define CM_TO_MM(_d)          float((_d)*10)
 #define MM_TO_CM(_d)          float((_d)/10)
 #define METERS_TO_CM(_d)      float((_d)*100)
 
-typedef IVCAMCalibtrator<float>::OpticalData opticalData;
-typedef IVCAMCalibtrator<float>::Resolution resolution;
+typedef f200::IVCAMCalibrator<float>::OpticalData opticalData;
+typedef f200::IVCAMCalibrator<float>::Resolution resolution;
 
 Projection * Projection::GetInstance()
 {
@@ -57,7 +58,7 @@ void  Projection::GetProjectionSize(int &size)
     return GetSerializedProjectionData(size, 0);
 }
 
-void Projection::GetSerializedProjectionData(int &dataSize, BYTE *data)
+void Projection::GetSerializedProjectionData(int & dataSize, uint8_t * data)
 {
     if ((bool) m_calibration)
     {
@@ -72,13 +73,13 @@ void Projection::GetSerializedProjectionData(int &dataSize, BYTE *data)
             params->colorWidth =  m_currentColorWidth;
             params->colorHeight = m_currentColorHeight;
             params->nParams =  m_calibration.nParamters();
-            const CameraCalibrationParameters* calibParams = m_calibration.getParameters();
-            memcpy(&(params->calibrationParams.CalibrationParameters), calibParams, sizeof(CameraCalibrationParameters));
+            const auto calibParams = m_calibration.getParameters();
+            memcpy(&(params->calibrationParams.CalibrationParameters), &calibParams, sizeof(CameraCalibrationParameters));
             
             params->calibrationParams.TableVarsion = m_calibrationData.TableVarsion;
             params->calibrationParams.TableValidation = m_calibrationData.TableValidation;
             params->calibrationParams.uniqueNumber = m_calibrationData.uniqueNumber;
-            memcpy(data,(BYTE*)params, totalSize);
+            memcpy(data, (uint8_t*) params, totalSize);
             
             delete[] params;
         }
@@ -114,73 +115,21 @@ void Projection::QueryProperty(Property label, float &value)
     
     OD = m_calibration.getOpticalData(depthRes,colorRes);
     
+    // Dimitri removed "m_isCalibOld"
     switch(label)
     {
         case IVCAM_PROPERTY_COLOR_FIELD_OF_VIEW:
-        {
-            if (m_isCalibOld)
-            {
-                value = 0;
-                return ivcamOldCalibration;
-            }
-            else
-                value = OD.RGBUndistortedFOV.x;
-            break;
-        }
-        case IVCAM_PROPERTY_COLOR_FIELD_OF_VIEW +1:
-        {
-            if (m_isCalibOld)
-            {
-                value = 0;
-                return ivcamOldCalibration;
-            }
-            else
-                value = OD.RGBUndistortedFOV.y;
-            break;
-        }
+            value = OD.RGBUndistortedFOV.x; break;
+        case IVCAM_PROPERTY_COLOR_FIELD_OF_VIEW + 1:
+            value = OD.RGBUndistortedFOV.y; break;
         case IVCAM_PROPERTY_COLOR_FOCAL_LENGTH:
-        {
-            if (m_isCalibOld)
-            {
-                value = 0;
-                return ivcamOldCalibration;
-            }
-            else
-                value = OD.RGBUndistortedFocalLengthPxl.x;
-            break;
-        }
+            value = OD.RGBUndistortedFocalLengthPxl.x; break;
         case IVCAM_PROPERTY_COLOR_FOCAL_LENGTH + 1:
-        {
-            if (m_isCalibOld)
-            {
-                value = 0;
-                return ivcamOldCalibration;
-            }
-            else
-                value = OD.RGBUndistortedFocalLengthPxl.y;
-            break;
-        }
+            value = OD.RGBUndistortedFocalLengthPxl.y; break;
         case IVCAM_PROPERTY_COLOR_PRINCIPAL_POINT:
-        {
-            if (m_isCalibOld)
-            {
-                value = 0;
-                return ivcamOldCalibration;
-            }
-            else
-                value = OD.RGBPrincipalPoint.x;
-            break;
-        }
+            value = OD.RGBPrincipalPoint.x; break;
         case IVCAM_PROPERTY_COLOR_PRINCIPAL_POINT+1:
-        {
-            if (m_isCalibOld)
-            {
-                value = 0;
-                return ivcamOldCalibration;
-            }
-            else
-                value = OD.RGBPrincipalPoint.y; break;
-        }
+            value = OD.RGBPrincipalPoint.y; break;
         case IVCAM_PROPERTY_DEPTH_FIELD_OF_VIEW:
             value = OD.IRDistortedFOV.x; break;
         case IVCAM_PROPERTY_DEPTH_FIELD_OF_VIEW+1:
@@ -260,25 +209,24 @@ void Projection::MapDepthToColorCoordinates(unsigned int width, unsigned int hei
     
     const int xShift = (m_currentDepthWidth == 320) ? 1 : 0;
     const int yShift = (m_currentDepthHeight == 240) ? 1 : 0;
-    const int yOffset = (m_currentDepthHeight == 360) ? 60 : 0;
     
     float u,v;
-    int SourceSizeOfPixelInBytes = 2;
-    int SourceSizeInBytes = m_currentDepthWidth*SourceSizeOfPixelInBytes;
     
     float* pTmpDestUV = pDestUV;
     
     const bool aspectRatio43 = (m_currentColorWidth * 3 == m_currentColorHeight * 4);
     uint16_t *pDepth = (uint16_t*)pSrcDepth;
+    
     for(int i=0; i<m_currentDepthHeight ; i++)
     {
         float* pUV = pTmpDestUV;
         for (int j=0 ; j< m_currentDepthWidth; j++)
         {
-            UINT16 d = *pDepth++;
+            uint16_t d = *pDepth++;
             if (d)
             {
                 float df = ConvertDepth_Uint16ToMM(d);
+                
                 if (dir == RIGHT_HANDED) //not mirrored
                 {
                     int xx = j << xShift;
@@ -290,6 +238,7 @@ void Projection::MapDepthToColorCoordinates(unsigned int width, unsigned int hei
                 {
                     m_calibration.buildUV(j << xShift, i<< yShift, (float)df, u ,v);
                 }
+                
                 if (aspectRatio43)
                     u = m_calibration.convertU_16to9_to_4to3(u);
                 
@@ -313,11 +262,10 @@ void Projection::MapDepthToColorCoordinates(unsigned int width, unsigned int hei
                 pUV[j*2+1] = 0;
             }
         }
+        
         pTmpDestUV = pTmpDestUV + 2 * m_currentDepthWidth;
-        //pSrcDepth = pSrcDepth + m_currentDepthWidth;
     }
     
-    return ivcamSuccess;
 }
 
 void Projection::ProjectImageToRealWorld(unsigned int npoints, Point3DF32 *pos2d, Point3DF32 *pos3d, CoordinateSystem dir)
@@ -327,6 +275,7 @@ void Projection::ProjectImageToRealWorld(unsigned int npoints, Point3DF32 *pos2d
     
     const int xShift = (m_currentDepthWidth == 320) ? 1 : 0;
     const int yShift = (m_currentDepthHeight == 240) ? 1 : 0;
+    
     for(int i=0; i< (int)npoints; i++)
     {
         int pxX = ((int)pos2d[i].x) << xShift;
@@ -347,9 +296,7 @@ void Projection::ProjectImageToRealWorld(unsigned int npoints, Point3DF32 *pos2d
         pos3d[i].x = x;
         pos3d[i].y = -1*y;
         pos3d[i].z = z;
-        
     }
-    return ivcamSuccess;
 }
 
 void Projection::ProjectImageToRealWorld(unsigned int width, unsigned int height, uint16_t* pSrcDepth,  float* pDestXYZ, CoordinateSystem dir)
@@ -366,16 +313,17 @@ void Projection::ProjectImageToRealWorld(unsigned int width, unsigned int height
     int SourceSizeInBytes = m_currentDepthWidth*SourceSizeOfPixelInBytes;
     
     float *pTmpDestXYZ = pDestXYZ;
-    DestSizeInBytes = m_currentDepthWidth*3* sizeof(uint16_t);
+    
+    DestSizeInBytes = m_currentDepthWidth * 3 * sizeof(uint16_t);
     
     for(int i=0; i<m_currentDepthHeight; i++)
     {
-        uint16_t *pDepth = (uint16_t*)pSrcDepth;
+        uint16_t *pDepth = (uint16_t*) pSrcDepth;
         float *pXYZ = pTmpDestXYZ;
         
         for(int j=0 ; j< m_currentDepthWidth; j++)
         {
-            uint16_t d = *(uint16_t*)(((INT8*)pDepth)+ j*SourceSizeOfPixelInBytes);
+            uint16_t d = *(uint16_t*)(((int8_t *)pDepth)+ j*SourceSizeOfPixelInBytes);
             if (d)
             {
                 if (dir == RIGHT_HANDED) //not mirrored
@@ -400,19 +348,18 @@ void Projection::ProjectImageToRealWorld(unsigned int width, unsigned int height
         pTmpDestXYZ = pTmpDestXYZ + m_currentDepthWidth * 3;
         pSrcDepth = (uint16_t*)(((uint8_t*)pSrcDepth) + SourceSizeInBytes );
     }
-    return ivcamSuccess;
 }
 
 float Projection::ConvertDepth_Uint16ToMM(uint16_t d)
 {
     if (!m_calibration) return 0.0f;
-    return m_calibration.convertDepth_Uint16ToMM(d);
+    return m_calibration.ivcamToMM(d);
 }
 
 void Projection::InitializeThermalData(IVCAMTemperatureData temp,IVCAMThermalLoopParams loopParams)
 {
     m_calibration.InitializeThermalData(temp, loopParams);
-};
+}
 
 void Projection::GetThermalData(IVCAMTemperatureData &temp, IVCAMThermalLoopParams &loopParams)
 {

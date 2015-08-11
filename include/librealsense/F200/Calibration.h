@@ -3,14 +3,14 @@
 #ifndef LIBREALSENSE_F200_CALIB_PARAMS_H
 #define LIBREALSENSE_F200_CALIB_PARAMS_H
 
-#include <librealsense/CameraContext.h>
 #include <librealsense/F200/F200Types.h>
-
-#include <stdio.h>
-#include <stdlib.h>
+#include <vector>
+#include <cmath>
 
 namespace f200
 {
+    
+#define NUM_OF_CALIBRATION_COEFFS   (64)
     
 template <typename T = float>
 class IVCAMCalibrator
@@ -52,7 +52,7 @@ public:
     
     //project: (x,y,z) -> (u,v,d)
     void project(T x, T y, T z, T& u, T& v, T& d) const;
-    void project(T x, T y, T z, T& u, T& v, uint16& d) const;
+    void project(T x, T y, T z, T& u, T& v, uint16_t & d) const;
     
     void unproject(int pixelX, int pixelY, uint16_t depth, T& x, T& y, T& z) const;
     void unproject(int pixelX, int pixelY, T depthInMM, T& x, T& y, T& z) const;
@@ -74,17 +74,17 @@ public:
     const CameraCalibrationParameters & getParameters()
     {
         if (isInitialized) return params;
-        else return 0;
+        else return std::move(CameraCalibrationParameters());
     }
     
-    // int nParamters() const { return sizeof (Params) / sizeof (T); }
+    int nParamters() const { return sizeof (CameraCalibrationParameters) / sizeof (T); }
     
-    void InitializeThermalData(IVCAMTemperatureInfo TemperatureData, IVCAMThermalLoopParams ThermalLoopParams)
+    void InitializeThermalData(IVCAMTemperatureData TemperatureData, IVCAMThermalLoopParams ThermalLoopParams)
     {
-        thermalModeData.Initialize(originalParams.Kc,TemperatureData, ThermalLoopParams);
+        thermalModeData.Initialize(originalParams.Kc, TemperatureData, ThermalLoopParams);
     };
     
-    void GetThermalData(IVCAMTemperatureInfo &TemperatureData,IVCAMThermalLoopParams &ThermalLoopParams)
+    void GetThermalData(IVCAMTemperatureData & TemperatureData, IVCAMThermalLoopParams & ThermalLoopParams)
     {
         TemperatureData = thermalModeData.BaseTemperatureData;
         ThermalLoopParams = thermalModeData.ThermalLoopParams;
@@ -198,7 +198,7 @@ private:
     {
         ThermalModelData() {}
         
-        void Initialize(float Kc[3][3],IVCAMTemperatureInfo temperatureData, IVCAMThermalLoopParams thermalLoopParams)
+        void Initialize(float Kc[3][3], IVCAMTemperatureData temperatureData, IVCAMThermalLoopParams thermalLoopParams)
         {
             
             BaseTemperatureData = temperatureData;
@@ -223,7 +223,7 @@ private:
             }
         }
         
-        IVCAMTemperatureInfo BaseTemperatureData;
+        IVCAMTemperatureData BaseTemperatureData;
         IVCAMThermalLoopParams ThermalLoopParams;
         
         float FcxSlope; // the temperature model calculated slope for fc
@@ -264,11 +264,11 @@ private:
 ////////////////////////////////////
     
 template <typename T>
-inline bool IVCAMCalibrator<T>::updateParamsAccordingToTemperature(float liguriaTemp,float IRTemp, int * timeout)
+inline bool IVCAMCalibrator<T>::updateParamsAccordingToTemperature(float liguriaTemp, float IRTemp, int * timeout)
 {
     if (!thermalModeData.ThermalLoopParams.IRThermalLoopEnable)
     {
-        *time= 999999;
+        // *time = 999999; Dimitri commented out
         return false;
     }
     
@@ -290,10 +290,9 @@ inline bool IVCAMCalibrator<T>::updateParamsAccordingToTemperature(float liguria
     double Kc11 = originalParams.Kc[0][0];
     double Kc13 = originalParams.Kc[0][2];
     
-    // apply model
+    // Apply model
     if (tempDetaFromLastFix >= thermalModeData.TempThreshold)
     {
-        
         //if we are during a transition, fix for after the transition
         double tempDeltaToUse = weightedTempDelta;
         if (tempDeltaToUse > 0 && tempDeltaToUse < thermalModeData.ThermalLoopParams.TransitionTemp)
@@ -510,7 +509,7 @@ inline typename IVCAMCalibrator<T>::OpticalData IVCAMCalibrator<T>::getOpticalDa
     //RGB
     T aspectRatioWanted = T(RGBResolution.width)/T(RGBResolution.height);
     T aspectRatioCalib = params.Kt[1][1]/params.Kt[0][0];
-    T diff = abs(aspectRatioWanted - aspectRatioCalib);
+    T diff = std::fabs(aspectRatioWanted - aspectRatioCalib);
     T Kt00 = params.Kt[0][0];
     
     T Kt02 = params.Kt[0][2];
@@ -571,7 +570,7 @@ inline bool IVCAMCalibrator<T>::buildParameters(const CameraCalibrationParameter
     params = _params;
     isInitialized = true;
     lastTemperatureDelta = DELTA_INF;
-    memcpy(&originalParams,&params,sizeof(Params));
+    memcpy(&originalParams,&params,sizeof(CameraCalibrationParameters));
     PrintParameters();
     precomputeUnproj();
     return true;
@@ -580,10 +579,10 @@ inline bool IVCAMCalibrator<T>::buildParameters(const CameraCalibrationParameter
 template <typename T>
 inline bool IVCAMCalibrator<T>::buildParameters(const float* paramData, int nParams)
 {
-    memcpy(&params, paramData + 1, sizeof(Params)); // skip the first float or 2 uint16
+    memcpy(&params, paramData + 1, sizeof(CameraCalibrationParameters)); // skip the first float or 2 uint16
     isInitialized = true;
     lastTemperatureDelta = DELTA_INF;
-    memcpy(&originalParams,&params,sizeof(Params));
+    memcpy(&originalParams,&params,sizeof(CameraCalibrationParameters));
     precomputeUnproj();
     return true;
 }
@@ -593,7 +592,7 @@ inline bool IVCAMCalibrator<T>::buildParameters(const double* paramData, int nPa
 {
     buildParametersFromOldTable(paramData, nParams);
     lastTemperatureDelta = DELTA_INF;
-    memcpy(&originalParams,&params,sizeof(Params));
+    memcpy(&originalParams,&params,sizeof(CameraCalibrationParameters));
     precomputeUnproj();
     return true;
 }
@@ -736,7 +735,7 @@ inline void IVCAMCalibrator<T>::buildUV(int pixelX, int pixelY, T depthInMM, T& 
     
     const float z = depthInMM;
     
-    const Params& p = params;
+    const CameraCalibrationParameters & p = params;
     const T D = T(0.5) / (puvc.d*z + p.Pt[2][3]);
     u = (puvc.u*z + p.Pt[0][3]) * D + T(0.5);
     v = (puvc.v*z + p.Pt[1][3]) * D + T(0.5);
@@ -747,7 +746,7 @@ inline void IVCAMCalibrator<T>::buildUV(T x, T y, T z, T& u, T& v) const
 {
     // x, y, z: must be unprojected coordinates
     // u, v are in the range [0, 1]
-    const Params& p = params;
+    const CameraCalibrationParameters & p = params;
     const T D = T(0.5) / (p.Pt[2][0]*x + p.Pt[2][1]*y + p.Pt[2][2]*z + p.Pt[2][3]); // 0.5 -> 1.0
     u = (p.Pt[0][0]*x + p.Pt[0][1]*y + p.Pt[0][2]*z + p.Pt[0][3]) * D + T(0.5);
     v = (p.Pt[1][0]*x + p.Pt[1][1]*y + p.Pt[1][2]*z + p.Pt[1][3]) * D + T(0.5);
@@ -831,45 +830,45 @@ inline void IVCAMCalibrator<T>::buildCameraProperties()
 {
     const T HFOVc = atan(T(1)/params.Kc[0])*T(360)/T(M_PI); // atan(1/Kc(1,1))*2*180/pi;
     const T VFOVc = atan(T(1)/params.Kc[4])*T(360)/T(M_PI); // atan(1/Kc(2,2))*2*180/pi;
-    const T xc = params.Kc[6] / T(2) * T(100); // Kc(1,3) / 2*100;
-    const T yc = params.Kc[7] / T(2) * T(100); // Kc(2,3) / 2*100;
+    const T xc = params.Kc[6] / T(2) * T(100);              // Kc(1,3) / 2*100;
+    const T yc = params.Kc[7] / T(2) * T(100);              // Kc(2,3) / 2*100;
     
-    const T HFOVp = atan(T(1)/params.Kp[4])*T(360)/T(M_PI); // atan(1/Kp(2,2))*2*180/pi;
+    const T HFOVp = atan(T(1)/params.Kp[4]) * T(360)/T(M_PI); // atan(1/Kp(2,2))*2*180/pi;
     
     camProperties.cameraIntrinsics.HFOV = HFOVc;
     camProperties.cameraIntrinsics.VFOV = VFOVc;
     camProperties.cameraIntrinsics.X = xc;
     camProperties.cameraIntrinsics.Y = yc;
-    camProperties.cameraIntrinsics.Rad25 = 0; // rad(1);
-    camProperties.cameraIntrinsics.Rad75 = 0; // rad(2);
-    camProperties.cameraIntrinsics.Tang = 0; // tang;
+    camProperties.cameraIntrinsics.Rad25 = 0;               // rad(1);
+    camProperties.cameraIntrinsics.Rad75 = 0;               // rad(2);
+    camProperties.cameraIntrinsics.Tang = 0;                // tang;
     camProperties.projectorIntrinsics.HFOV = HFOVp;
-    camProperties.projectorIntrinsics.X = 0; // xp;
-    camProperties.projectorIntrinsics.Curv = 0; // curv;
-    camProperties.projectorIntrinsics.Tilt = 0; // tilt0;
-    camProperties.projectorIntrinsics.DTilt = 0; // dtilt;
-    camProperties.textureIntrinsics.HFOV = 0; // HFOVt;
-    camProperties.textureIntrinsics.VFOV = 0; // VFOVt;
-    camProperties.textureIntrinsics.X = 0; // xt;
-    camProperties.textureIntrinsics.Y = 0; // yt;
-    camProperties.projectorExtrinsics.Conv = 0; // qp(1);
-    camProperties.projectorExtrinsics.Pitch = 0; // qp(2);
-    camProperties.projectorExtrinsics.Roll = 0; // qp(3);
-    camProperties.projectorExtrinsics.Disp = params.Tp[1]; // tp(1); // disparity
-    camProperties.projectorExtrinsics.xDis = params.Tp[0]; // tp(2);
-    camProperties.projectorExtrinsics.zDis = params.Tp[2]; // tp(3);
-    camProperties.projectorExtrinsics.Conv = 0; // qt(1);
-    camProperties.projectorExtrinsics.Pitch = 0; // qt(2);
-    camProperties.projectorExtrinsics.Roll = 0; // qt(3);
-    camProperties.projectorExtrinsics.Disp = 0; // tt(1);
-    camProperties.projectorExtrinsics.xDis = 0; // tt(2);
-    camProperties.projectorExtrinsics.zDis = 0; // tt(3);
-    camProperties.viewpoint.xRot = 0; // qv(1);
-    camProperties.viewpoint.yRot = 0; // qv(2);
-    camProperties.viewpoint.zRot = 0; // qv(3);
-    camProperties.viewpoint.xDis = 0; // qv(4);
-    camProperties.viewpoint.yDis = 0; // qv(5);
-    camProperties.viewpoint.zDis = 0; // qv(6);
+    camProperties.projectorIntrinsics.X = 0;                // xp;
+    camProperties.projectorIntrinsics.Curv = 0;             // curv;
+    camProperties.projectorIntrinsics.Tilt = 0;             // tilt0;
+    camProperties.projectorIntrinsics.DTilt = 0;            // dtilt;
+    camProperties.textureIntrinsics.HFOV = 0;               // HFOVt;
+    camProperties.textureIntrinsics.VFOV = 0;               // VFOVt;
+    camProperties.textureIntrinsics.X = 0;                  // xt;
+    camProperties.textureIntrinsics.Y = 0;                  // yt;
+    camProperties.projectorExtrinsics.Conv = 0;             // qp(1);
+    camProperties.projectorExtrinsics.Pitch = 0;            // qp(2);
+    camProperties.projectorExtrinsics.Roll = 0;             // qp(3);
+    camProperties.projectorExtrinsics.Disp = params.Tp[1];  // tp(1); // disparity
+    camProperties.projectorExtrinsics.xDis = params.Tp[0];  // tp(2);
+    camProperties.projectorExtrinsics.zDis = params.Tp[2];  // tp(3);
+    camProperties.projectorExtrinsics.Conv = 0;             // qt(1);
+    camProperties.projectorExtrinsics.Pitch = 0;            // qt(2);
+    camProperties.projectorExtrinsics.Roll = 0;             // qt(3);
+    camProperties.projectorExtrinsics.Disp = 0;             // tt(1);
+    camProperties.projectorExtrinsics.xDis = 0;             // tt(2);
+    camProperties.projectorExtrinsics.zDis = 0;             // tt(3);
+    camProperties.viewpoint.xRot = 0;                       // qv(1);
+    camProperties.viewpoint.yRot = 0;                       // qv(2);
+    camProperties.viewpoint.zRot = 0;                       // qv(3);
+    camProperties.viewpoint.xDis = 0;                       // qv(4);
+    camProperties.viewpoint.yDis = 0;                       // qv(5);
+    camProperties.viewpoint.zDis = 0;                       // qv(6);
 }
     
 } // end namespace f200
