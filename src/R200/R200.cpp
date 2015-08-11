@@ -1,5 +1,5 @@
-#include <librealsense/Common.h>
-#include <librealsense/R200/R200.h>
+#include "Common.h"
+#include "R200.h"
 
 #include <sstream>
 

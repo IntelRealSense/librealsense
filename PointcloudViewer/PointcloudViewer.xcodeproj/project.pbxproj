@@ -34,7 +34,7 @@
 		08567BB11B5B59E800EB6C0D /* PointcloudViewer */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = PointcloudViewer; sourceTree = BUILT_PRODUCTS_DIR; };
 		08567BB41B5B59E800EB6C0D /* main.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = main.cpp; sourceTree = "<group>"; };
 		08567BD51B5B5AA300EB6C0D /* GfxUtil.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = GfxUtil.cpp; sourceTree = "<group>"; };
-		08567BD61B5B5AA300EB6C0D /* GfxUtil.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = GfxUtil.h; sourceTree = "<group>"; };
+		08567BD61B5B5AA300EB6C0D /* GfxUtil.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; lineEnding = 0; path = GfxUtil.h; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
 		08567C031B5B5D6B00EB6C0D /* libglfw3.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libglfw3.a; path = third_party/glfw/bin/osx/libglfw3.a; sourceTree = "<group>"; };
 		08567C081B5B898400EB6C0D /* Cocoa.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cocoa.framework; path = System/Library/Frameworks/Cocoa.framework; sourceTree = SDKROOT; };
 		08567C0A1B5B898C00EB6C0D /* CoreVideo.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreVideo.framework; path = System/Library/Frameworks/CoreVideo.framework; sourceTree = SDKROOT; };

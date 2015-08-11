@@ -4,7 +4,7 @@
 #define LIBREALSENSE_R200_CALIB_PARAMS_H
 
 #include <stdint.h>
-#include <librealsense/Common.h>
+#include "Common.h"
 
 namespace r200
 {

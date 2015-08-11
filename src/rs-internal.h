@@ -1,17 +1,17 @@
 #ifndef RS_INTERNAL_H
 #define RS_INTERNAL_H
 
-#include <librealsense/rs.h>
+#include "rs.h"
 
 #ifdef WIN32
-#include <DSAPI/DSFactory.h>
+#include <DSAPI/DSFactory.h"
 #endif
 
 #ifndef WIN32
 #include "libuvc/libuvc.h"
 #endif
 
-#include <librealsense/Common.h>
+#include "Common.h"
 
 namespace rs
 {

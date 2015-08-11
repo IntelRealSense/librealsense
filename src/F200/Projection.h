@@ -3,10 +3,11 @@
 #ifndef LIBREALSENSE_F200_PROJECTION_H
 #define LIBREALSENSE_F200_PROJECTION_H
 
-#include "libuvc/libuvc.h"
-#include <librealsense/F200/F200Types.h>
-#include <librealsense/F200/Calibration.h>
-#include <librealsense/F200/Projection.h>
+#include <libuvc/libuvc.h>
+
+#include "F200Types.h"
+#include "Calibration.h"
+#include "Projection.h"
 
 namespace f200
 {

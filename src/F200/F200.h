@@ -4,7 +4,7 @@
 #define LIBREALSENSE_F200_CAMERA_H
 
 #ifndef WIN32
-#include <librealsense/UVCCamera.h>
+#include "UVCCamera.h"
 
 namespace f200
 {

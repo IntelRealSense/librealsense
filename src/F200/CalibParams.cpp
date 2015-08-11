@@ -1,11 +1,11 @@
-#include <librealsense/Common.h>
-#include <librealsense/F200/F200.h>
-#include <librealsense/F200/F200Types.h>
-#include <librealsense/F200/Calibration.h>
-#include <librealsense/F200/Projection.h>
-#include <librealsense/F200/CalibParams.h>
+#include "Common.h"
+#include "F200.h"
+#include "F200Types.h"
+#include "Calibration.h"
+#include "Projection.h"
+#include "CalibParams.h"
 
-#include "libuvc/libuvc.h"
+#include <libuvc/libuvc.h>
 
 #include <thread>
 #include <atomic>

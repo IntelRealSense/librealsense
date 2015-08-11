@@ -1,4 +1,4 @@
-#include <librealsense/UVCCamera.h>
+#include "UVCCamera.h"
 
 ////////////////
 // UVC Camera //

@@ -1,5 +1,5 @@
-#include <librealsense/Common.h>
-#include <librealsense/F200/F200.h>
+#include "Common.h"
+#include "F200.h"
 
 #ifndef WIN32
 

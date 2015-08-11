@@ -1,5 +1,5 @@
-#include <librealsense/R200/SPI.h>
-#include <librealsense/R200/CalibIO.h>
+#include "SPI.h"
+#include "CalibIO.h"
 
 using namespace std;
 

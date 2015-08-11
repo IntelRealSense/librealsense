@@ -3,10 +3,11 @@
 #ifndef LIBREALSENSE_R200_SPI_H
 #define LIBREALSENSE_R200_SPI_H
 
-#include "libuvc/libuvc.h"
-#include <librealsense/R200/XU.h>
-#include <librealsense/R200/CameraHeader.h>
-#include <librealsense/R200/CalibParams.h>
+#include <libuvc/libuvc.h>
+
+#include "XU.h"
+#include "CameraHeader.h"
+#include "CalibParams.h"
 
 namespace r200
 {

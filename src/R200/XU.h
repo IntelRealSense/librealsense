@@ -12,7 +12,7 @@
 #include <iostream>
 #include <cstring>
 
-#include <librealsense/R200/SPI.h>
+#include "SPI.h"
 
 namespace r200
 {
