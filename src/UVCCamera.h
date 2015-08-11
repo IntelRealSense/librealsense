@@ -13,7 +13,7 @@ namespace rs
 // UVC Camera //
 ////////////////
 
-void GetUSBInfo(uvc_device_t * dev, rs::USBDeviceInfo & info)
+inline void GetUSBInfo(uvc_device_t * dev, rs::USBDeviceInfo & info)
 {
     uvc_device_descriptor_t * desc;
     if (uvc_get_device_descriptor(dev, &desc) == UVC_SUCCESS)
