@@ -39,7 +39,7 @@ int main(int argc, char * argv[]) try
 	if (!cam) throw std::runtime_error("No camera detected. Is it plugged in?");
 
 	glfwInit();
-	GLFWwindow * win = glfwCreateWindow(1280, 480, "LibRealSense C++ Example", 0, 0);
+    GLFWwindow * win = glfwCreateWindow(1280, 480, "LibRealSense C plus plus Example", 0, 0);
 	while (!glfwWindowShouldClose(win))
 	{
 		glfwPollEvents();
