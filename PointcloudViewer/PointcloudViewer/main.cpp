@@ -195,7 +195,7 @@ int main(int argc, const char * argv[]) try
 		//camera.start_stream(RS_STREAM_RGB, 640, 480, 30, RS_FRAME_FORMAT_YUYV);
         
         // F200 / IVCAM
-        camera.start_stream(RS_STREAM_DEPTH, 640, 480, 30, RS_FRAME_FORMAT_INVZ);
+        camera.start_stream(RS_STREAM_DEPTH, 640, 480, 60, RS_FRAME_FORMAT_INVZ);
        // camera.start_stream(RS_STREAM_RGB, 640, 480, 30, RS_FRAME_FORMAT_YUYV);
         
     }
