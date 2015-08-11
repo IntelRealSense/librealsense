@@ -3,7 +3,7 @@
 #include "F200Types.h"
 #include "Calibration.h"
 #include "Projection.h"
-#include "CalibParams.h"
+#include "HardwareIO.h"
 
 #include <libuvc/libuvc.h>
 

@@ -1,7 +1,7 @@
 #pragma once
 
-#ifndef LIBREALSENSE_F200_CALIB_PARAMS_H
-#define LIBREALSENSE_F200_CALIB_PARAMS_H
+#ifndef LIBREALSENSE_F200_HARDWARE_IO_H
+#define LIBREALSENSE_F200_HARDWARE_IO_H
 
 #include "F200Types.h"
 #include <memory>

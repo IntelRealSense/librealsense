@@ -113,6 +113,8 @@ int main(int argc, const char * argv[]) try
         return -1;
     }
     
+    bool isScreenRetina = false;
+    
 //#if defined(PLATFORM_OSX)
     glfwWindowHint(GLFW_SAMPLES, 2);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
@@ -123,6 +125,18 @@ int main(int argc, const char * argv[]) try
     
     window = glfwCreateWindow(1280, 480, "R200 Pointcloud", NULL, NULL);
     
+    // Test for retina screens on mac
+    int wW, wH;
+    glfwGetWindowSize(window, &wW, &wH);
+    
+    int fbW, fbH;
+    glfwGetFramebufferSize(window, &fbW, &fbH);
+    
+    if (wW != fbW && wH != fbH)
+    {
+        isScreenRetina = true;
+    }
+
     if (!window)
     {
         std::cout << "Failed to open GLFW window\n" << std::endl;

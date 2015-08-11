@@ -28,8 +28,8 @@
 		27F24EC11B7A9B5B00BF4D43 /* SPI.h in Headers */ = {isa = PBXBuildFile; fileRef = 27F24EB81B7A9B5B00BF4D43 /* SPI.h */; };
 		27F24EC21B7A9B5B00BF4D43 /* XU.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 27F24EB91B7A9B5B00BF4D43 /* XU.cpp */; };
 		27F24EC31B7A9B5B00BF4D43 /* XU.h in Headers */ = {isa = PBXBuildFile; fileRef = 27F24EBA1B7A9B5B00BF4D43 /* XU.h */; };
-		27F24ECD1B7A9B6100BF4D43 /* CalibParams.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 27F24EC41B7A9B6100BF4D43 /* CalibParams.cpp */; };
-		27F24ECE1B7A9B6100BF4D43 /* CalibParams.h in Headers */ = {isa = PBXBuildFile; fileRef = 27F24EC51B7A9B6100BF4D43 /* CalibParams.h */; };
+		27F24ECD1B7A9B6100BF4D43 /* HardwareIO.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 27F24EC41B7A9B6100BF4D43 /* HardwareIO.cpp */; };
+		27F24ECE1B7A9B6100BF4D43 /* HardwareIO.h in Headers */ = {isa = PBXBuildFile; fileRef = 27F24EC51B7A9B6100BF4D43 /* HardwareIO.h */; };
 		27F24ECF1B7A9B6100BF4D43 /* Calibration.h in Headers */ = {isa = PBXBuildFile; fileRef = 27F24EC61B7A9B6100BF4D43 /* Calibration.h */; };
 		27F24ED01B7A9B6100BF4D43 /* F200.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 27F24EC71B7A9B6100BF4D43 /* F200.cpp */; };
 		27F24ED11B7A9B6100BF4D43 /* F200.h in Headers */ = {isa = PBXBuildFile; fileRef = 27F24EC81B7A9B6100BF4D43 /* F200.h */; };
@@ -66,8 +66,8 @@
 		27F24EB81B7A9B5B00BF4D43 /* SPI.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; lineEnding = 0; name = SPI.h; path = src/R200/SPI.h; sourceTree = SOURCE_ROOT; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
 		27F24EB91B7A9B5B00BF4D43 /* XU.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; lineEnding = 0; name = XU.cpp; path = src/R200/XU.cpp; sourceTree = SOURCE_ROOT; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
 		27F24EBA1B7A9B5B00BF4D43 /* XU.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; lineEnding = 0; name = XU.h; path = src/R200/XU.h; sourceTree = SOURCE_ROOT; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
-		27F24EC41B7A9B6100BF4D43 /* CalibParams.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; lineEnding = 0; name = CalibParams.cpp; path = src/F200/CalibParams.cpp; sourceTree = SOURCE_ROOT; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
-		27F24EC51B7A9B6100BF4D43 /* CalibParams.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; lineEnding = 0; name = CalibParams.h; path = src/F200/CalibParams.h; sourceTree = SOURCE_ROOT; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
+		27F24EC41B7A9B6100BF4D43 /* HardwareIO.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; lineEnding = 0; name = HardwareIO.cpp; path = src/F200/HardwareIO.cpp; sourceTree = SOURCE_ROOT; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
+		27F24EC51B7A9B6100BF4D43 /* HardwareIO.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; lineEnding = 0; name = HardwareIO.h; path = src/F200/HardwareIO.h; sourceTree = SOURCE_ROOT; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
 		27F24EC61B7A9B6100BF4D43 /* Calibration.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; lineEnding = 0; name = Calibration.h; path = src/F200/Calibration.h; sourceTree = SOURCE_ROOT; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
 		27F24EC71B7A9B6100BF4D43 /* F200.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; lineEnding = 0; name = F200.cpp; path = src/F200/F200.cpp; sourceTree = SOURCE_ROOT; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
 		27F24EC81B7A9B6100BF4D43 /* F200.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; lineEnding = 0; name = F200.h; path = src/F200/F200.h; sourceTree = SOURCE_ROOT; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
@@ -177,8 +177,8 @@
 		08567C351B61E6C100EB6C0D /* F200 */ = {
 			isa = PBXGroup;
 			children = (
-				27F24EC41B7A9B6100BF4D43 /* CalibParams.cpp */,
-				27F24EC51B7A9B6100BF4D43 /* CalibParams.h */,
+				27F24EC41B7A9B6100BF4D43 /* HardwareIO.cpp */,
+				27F24EC51B7A9B6100BF4D43 /* HardwareIO.h */,
 				27F24EC61B7A9B6100BF4D43 /* Calibration.h */,
 				27F24EC71B7A9B6100BF4D43 /* F200.cpp */,
 				27F24EC81B7A9B6100BF4D43 /* F200.h */,
@@ -214,7 +214,7 @@
 			files = (
 				27F24ED81B7A9B6700BF4D43 /* rs.h in Headers */,
 				27F24ED11B7A9B6100BF4D43 /* F200.h in Headers */,
-				27F24ECE1B7A9B6100BF4D43 /* CalibParams.h in Headers */,
+				27F24ECE1B7A9B6100BF4D43 /* HardwareIO.h in Headers */,
 				27F24EBF1B7A9B5B00BF4D43 /* R200.h in Headers */,
 				27F24EBC1B7A9B5B00BF4D43 /* CalibParams.h in Headers */,
 				27F24ED41B7A9B6100BF4D43 /* Projection.h in Headers */,
@@ -291,7 +291,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				27F24EB11B7A784E00BF4D43 /* rs.cpp in Sources */,
-				27F24ECD1B7A9B6100BF4D43 /* CalibParams.cpp in Sources */,
+				27F24ECD1B7A9B6100BF4D43 /* HardwareIO.cpp in Sources */,
 				27F24ED31B7A9B6100BF4D43 /* Projection.cpp in Sources */,
 				27F24ED01B7A9B6100BF4D43 /* F200.cpp in Sources */,
 				27F24EDE1B7A9B7800BF4D43 /* UVCCamera.cpp in Sources */,
