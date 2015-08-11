@@ -1,5 +1,6 @@
 #include <librealsense/Common.h>
 #include <librealsense/F200/F200.h>
+#include <librealsense/F200/Calibration.h>
 
 #include "libuvc/libuvc.h"
 
@@ -237,13 +238,13 @@ namespace f200
                 throw std::runtime_error("usb transfer to retrieve calibration data failed");
         }
         
-        void rojectionCalibrate(uint8_t * rawCalibData,int len, CameraCalibrationParameters * calprms)
+        void ProjectionCalibrate(uint8_t * rawCalibData,int len, CameraCalibrationParameters * calprms)
         {
             uint8_t * bufParams = rawCalibData + 4;
             
-            Calibration<float> *calibration = Projection::GetInstance()->GetCalibrationObject();
+            IVCAMCalibrator<float> * calibration = Projection::GetInstance()->GetCalibrationObject();
             
-            TCalibrationDataWithVersion CalibrationData;
+            CameraCalibrationParametersVersion CalibrationData;
             TTesterData TesterData;
             
             memset(&CalibrationData, 0, sizeof(CameraCalibrationParametersVersion));
@@ -302,13 +303,13 @@ namespace f200
             }
             
             uint8_t calBuf[HW_MONITOR_BUFFER_SIZE];
-            size_t len = HW_MONITOR_BUFFER_SIZE;
+            int len = HW_MONITOR_BUFFER_SIZE;
             
             GetCalibrationRawData(calBuf, len);
             
             CameraCalibrationParameters calParams;
             
-            ProjectionCalibrate(calBuf, len, &calParams);
+            ProjectionCalibrate(calBuf, (int) len, &calParams);
             
             parameters = calParams;
         }
