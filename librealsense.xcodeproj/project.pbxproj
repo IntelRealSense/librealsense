@@ -41,6 +41,8 @@
 		27F24EDD1B7A9B7800BF4D43 /* Common.h in Headers */ = {isa = PBXBuildFile; fileRef = 27F24EDA1B7A9B7700BF4D43 /* Common.h */; };
 		27F24EDE1B7A9B7800BF4D43 /* UVCCamera.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 27F24EDB1B7A9B7800BF4D43 /* UVCCamera.cpp */; };
 		27F24EDF1B7A9B7800BF4D43 /* UVCCamera.h in Headers */ = {isa = PBXBuildFile; fileRef = 27F24EDC1B7A9B7800BF4D43 /* UVCCamera.h */; };
+		27F24EE21B7AC2BC00BF4D43 /* XU.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 27F24EE01B7AC2BC00BF4D43 /* XU.cpp */; };
+		27F24EE31B7AC2BC00BF4D43 /* XU.h in Headers */ = {isa = PBXBuildFile; fileRef = 27F24EE11B7AC2BC00BF4D43 /* XU.h */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -79,6 +81,8 @@
 		27F24EDA1B7A9B7700BF4D43 /* Common.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; lineEnding = 0; name = Common.h; path = src/Common.h; sourceTree = SOURCE_ROOT; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
 		27F24EDB1B7A9B7800BF4D43 /* UVCCamera.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; lineEnding = 0; name = UVCCamera.cpp; path = src/UVCCamera.cpp; sourceTree = SOURCE_ROOT; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
 		27F24EDC1B7A9B7800BF4D43 /* UVCCamera.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = UVCCamera.h; path = src/UVCCamera.h; sourceTree = SOURCE_ROOT; };
+		27F24EE01B7AC2BC00BF4D43 /* XU.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = XU.cpp; path = src/F200/XU.cpp; sourceTree = SOURCE_ROOT; };
+		27F24EE11B7AC2BC00BF4D43 /* XU.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = XU.h; path = src/F200/XU.h; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -182,6 +186,8 @@
 				27F24EC61B7A9B6100BF4D43 /* Calibration.h */,
 				27F24EC71B7A9B6100BF4D43 /* F200.cpp */,
 				27F24EC81B7A9B6100BF4D43 /* F200.h */,
+				27F24EE01B7AC2BC00BF4D43 /* XU.cpp */,
+				27F24EE11B7AC2BC00BF4D43 /* XU.h */,
 				27F24EC91B7A9B6100BF4D43 /* F200Types.h */,
 				27F24ECA1B7A9B6100BF4D43 /* Projection.cpp */,
 				27F24ECB1B7A9B6100BF4D43 /* Projection.h */,
@@ -227,6 +233,7 @@
 				08567BEB1B5B5B4E00EB6C0D /* libuvc_config.h in Headers */,
 				27F24EC31B7A9B5B00BF4D43 /* XU.h in Headers */,
 				27F24ECF1B7A9B6100BF4D43 /* Calibration.h in Headers */,
+				27F24EE31B7AC2BC00BF4D43 /* XU.h in Headers */,
 				27F24EB01B7A784E00BF4D43 /* rs-internal.h in Headers */,
 				27F24EBB1B7A9B5B00BF4D43 /* CalibIO.h in Headers */,
 				08567BED1B5B5B4E00EB6C0D /* libuvc.h in Headers */,
@@ -294,6 +301,7 @@
 				27F24ECD1B7A9B6100BF4D43 /* HardwareIO.cpp in Sources */,
 				27F24ED31B7A9B6100BF4D43 /* Projection.cpp in Sources */,
 				27F24ED01B7A9B6100BF4D43 /* F200.cpp in Sources */,
+				27F24EE21B7AC2BC00BF4D43 /* XU.cpp in Sources */,
 				27F24EDE1B7A9B7800BF4D43 /* UVCCamera.cpp in Sources */,
 				08567BF91B5B5B5D00EB6C0D /* ctrl.c in Sources */,
 				08567BFE1B5B5B5D00EB6C0D /* frame.c in Sources */,
