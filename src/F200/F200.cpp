@@ -56,6 +56,14 @@ bool F200Camera::ConfigureStreams()
     std::cout << "USB VID: " << usbInfo.vid << std::endl;
     std::cout << "USB PID: " << usbInfo.pid << std::endl;
     
+    ////////////////////////////////////////////////////////////////////////////
+    
+    hardware_io.reset(new IVCAMHardwareIO());
+    
+    const CameraCalibrationParameters & ivCamParams = hardware_io->GetParameters();
+    
+    ////////////////////////////////////////////////////////////////////////////
+    
     return true;
 }
 

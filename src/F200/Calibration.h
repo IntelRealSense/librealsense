@@ -545,25 +545,25 @@ inline typename IVCAMCalibrator<T>::OpticalData IVCAMCalibrator<T>::getOpticalDa
 template <typename T>
 inline void IVCAMCalibrator<T>::PrintParameters()
 {
-    printf("######################## \n");
-    printf("# %f", params.Rmax);
-    printf("# %f", params.Kc[0][0]);
-    printf("# %f", params.Distc[0]);
-    printf("# %f", params.Invdistc[0]);
-    printf("# %f", params.Pp[0][0]);
-    printf("# %f", params.Kp[0][0]);
-    printf("# %f", params.Rp[0][0]);
-    printf("# %f", params.Tp[0]);
-    printf("# %f", params.Distp[0]);
-    printf("# %f", params.Invdistp[0]);
-    printf("# %f", params.Pt[0][0]);
-    printf("# %f", params.Kt[0][0]);
-    printf("# %f", params.Rt[0][0]);
-    printf("# %f", params.Tt[0]);
-    printf("# %f", params.Distt[0]);
-    printf("# %f", params.Invdistt[0]);
-    printf("# %f", params.QV[0]);
-    printf("######################## \n");
+    printf("Begin Calibration Parameters ######################## \n");
+    printf("# %f \n", params.Rmax);
+    printf("# %f \n", params.Kc[0][0]);
+    printf("# %f \n", params.Distc[0]);
+    printf("# %f \n", params.Invdistc[0]);
+    printf("# %f \n", params.Pp[0][0]);
+    printf("# %f \n", params.Kp[0][0]);
+    printf("# %f \n", params.Rp[0][0]);
+    printf("# %f \n", params.Tp[0]);
+    printf("# %f \n", params.Distp[0]);
+    printf("# %f \n", params.Invdistp[0]);
+    printf("# %f \n", params.Pt[0][0]);
+    printf("# %f \n", params.Kt[0][0]);
+    printf("# %f \n", params.Rt[0][0]);
+    printf("# %f \n", params.Tt[0]);
+    printf("# %f \n", params.Distt[0]);
+    printf("# %f \n", params.Invdistt[0]);
+    printf("# %f \n", params.QV[0]);
+    printf("End Calibration Parameters ######################## \n");
 }
 
 template <typename T>

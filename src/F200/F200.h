@@ -6,12 +6,15 @@
 #ifndef WIN32
 #include "../UVCCamera.h"
 #include "CalibParams.h"
+#include "HardwareIO.h"
 
 namespace f200
 {
     
 class F200Camera : public rs::UVCCamera
 {
+    
+    std::unique_ptr<IVCAMHardwareIO> hardware_io;
     
 public:
     
