@@ -1,0 +1,3 @@
+# UVC cameras
+SUBSYSTEMS=="usb", ENV{DEVTYPE}=="usb_device", ATTRS{idVendor}=="8086", ATTRS{idProduct}=="0a80", MODE="0666"
+# ^ Change the vendor and product IDs to match your camera.

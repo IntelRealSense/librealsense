@@ -1,10 +1,13 @@
 #ifndef DS4OSX_Util_h
 #define DS4OSX_Util_h
 
-#ifdef WIN32
+#ifdef _WIN32
 #include <GL\glew.h>
 #elif __APPLE__
 #include <OpenGL/gl3.h>
+#elif __linux__
+#include <GL/glew.h>
+#include <GL/gl.h>
 #endif
 
 #define _USE_MATH_DEFINES
