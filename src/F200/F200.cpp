@@ -19,15 +19,20 @@ namespace f200
     
     bool F200Camera::ConfigureStreams()
     {
-        if (streamingModeBitfield == 0) throw std::invalid_argument("No streams have been configured...");
+        if (streamingModeBitfield == 0)
+            throw std::invalid_argument("No streams have been configured...");
         
-        //@tofix: Test for successful open
         if (streamingModeBitfield & RS_STREAM_DEPTH)
         {
             StreamInterface * stream = new StreamInterface();
             stream->camera = this;
             
-            bool status = OpenStreamOnSubdevice(hardware, stream->uvcHandle, 1);
+            if (!OpenStreamOnSubdevice(hardware, stream->uvcHandle, 1))
+                throw std::runtime_error("Failed to open RS_STREAM_DEPTH (subdevice 1)");
+            
+            // Debugging
+            uvc_print_stream_ctrl(&stream->ctrl, stdout);
+            
             streamInterfaces.insert(std::pair<int, StreamInterface *>(RS_STREAM_DEPTH, stream));
         }
         
@@ -36,7 +41,12 @@ namespace f200
             StreamInterface * stream = new StreamInterface();
             stream->camera = this;
             
-            bool status = OpenStreamOnSubdevice(hardware, stream->uvcHandle, 2);
+            if (!OpenStreamOnSubdevice(hardware, stream->uvcHandle, 2))
+                throw std::runtime_error("Failed to open RS_STREAM_RGB (subdevice 2)");
+            
+            // Debugging
+            uvc_print_stream_ctrl(&stream->ctrl, stdout);
+            
             streamInterfaces.insert(std::pair<int, StreamInterface *>(RS_STREAM_RGB, stream));
         }
         
