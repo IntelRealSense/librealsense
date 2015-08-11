@@ -37,6 +37,8 @@
 		27F24EA91B79662500BF4D43 /* Calibration.h in Headers */ = {isa = PBXBuildFile; fileRef = 27F24EA81B79662500BF4D43 /* Calibration.h */; };
 		27F24EAB1B797E5C00BF4D43 /* Projection.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 27F24EAA1B797E5C00BF4D43 /* Projection.cpp */; };
 		27F24EAD1B7A687A00BF4D43 /* F200Types.h in Headers */ = {isa = PBXBuildFile; fileRef = 27F24EAC1B7A687A00BF4D43 /* F200Types.h */; };
+		27F24EB01B7A784E00BF4D43 /* rs-internal.h in Headers */ = {isa = PBXBuildFile; fileRef = 27F24EAE1B7A784E00BF4D43 /* rs-internal.h */; };
+		27F24EB11B7A784E00BF4D43 /* rs.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 27F24EAF1B7A784E00BF4D43 /* rs.cpp */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -71,6 +73,8 @@
 		27F24EA81B79662500BF4D43 /* Calibration.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Calibration.h; path = include/librealsense/F200/Calibration.h; sourceTree = SOURCE_ROOT; };
 		27F24EAA1B797E5C00BF4D43 /* Projection.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Projection.cpp; path = src/F200/Projection.cpp; sourceTree = SOURCE_ROOT; };
 		27F24EAC1B7A687A00BF4D43 /* F200Types.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = F200Types.h; path = include/librealsense/F200/F200Types.h; sourceTree = SOURCE_ROOT; };
+		27F24EAE1B7A784E00BF4D43 /* rs-internal.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = "rs-internal.h"; path = "src/rs-internal.h"; sourceTree = SOURCE_ROOT; };
+		27F24EAF1B7A784E00BF4D43 /* rs.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = rs.cpp; path = src/rs.cpp; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -183,6 +187,8 @@
 			isa = PBXGroup;
 			children = (
 				08567C4C1B61E8B400EB6C0D /* UVCCamera.cpp */,
+				27F24EAE1B7A784E00BF4D43 /* rs-internal.h */,
+				27F24EAF1B7A784E00BF4D43 /* rs.cpp */,
 				08567C361B61E6C600EB6C0D /* R200 */,
 				08567C351B61E6C100EB6C0D /* F200 */,
 			);
@@ -226,6 +232,7 @@
 				08567C461B61E79C00EB6C0D /* CalibIO.h in Headers */,
 				08567C3E1B61E79400EB6C0D /* F200.h in Headers */,
 				27F24EA91B79662500BF4D43 /* Calibration.h in Headers */,
+				27F24EB01B7A784E00BF4D43 /* rs-internal.h in Headers */,
 				08567C471B61E79C00EB6C0D /* CameraHeader.h in Headers */,
 				08567BED1B5B5B4E00EB6C0D /* libuvc.h in Headers */,
 				08567C3C1B61E78D00EB6C0D /* UVCCamera.h in Headers */,
@@ -291,6 +298,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				27F24EB11B7A784E00BF4D43 /* rs.cpp in Sources */,
 				08567C551B61E8C000EB6C0D /* XU.cpp in Sources */,
 				27F24EAB1B797E5C00BF4D43 /* Projection.cpp in Sources */,
 				08567C4E1B61E8B400EB6C0D /* UVCCamera.cpp in Sources */,
