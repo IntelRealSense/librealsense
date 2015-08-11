@@ -112,11 +112,14 @@ struct rs_context
 	uvc_context_t * privateContext;
 #endif
 	std::vector<std::shared_ptr<rs_camera>> cameras;
-
+    
 	rs_context();
 	~rs_context();
 
 	void QueryDeviceList();
+    
+    //@tofix
+    void * GetLibusbContext() { return uvc_get_libusb_context(privateContext); }
 };
 
 #endif

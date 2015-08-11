@@ -545,7 +545,7 @@ inline typename IVCAMCalibrator<T>::OpticalData IVCAMCalibrator<T>::getOpticalDa
 template <typename T>
 inline void IVCAMCalibrator<T>::PrintParameters()
 {
-    printf("Begin Calibration Parameters ######################## \n");
+    printf("\nBegin Calibration Parameters ########################\n");
     printf("# %f \n", params.Rmax);
     printf("# %f \n", params.Kc[0][0]);
     printf("# %f \n", params.Distc[0]);
@@ -563,7 +563,7 @@ inline void IVCAMCalibrator<T>::PrintParameters()
     printf("# %f \n", params.Distt[0]);
     printf("# %f \n", params.Invdistt[0]);
     printf("# %f \n", params.QV[0]);
-    printf("End Calibration Parameters ######################## \n");
+    printf("\nEnd Calibration Parameters ########################\n");
 }
 
 template <typename T>

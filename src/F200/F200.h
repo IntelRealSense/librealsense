@@ -18,8 +18,7 @@ class F200Camera : public rs::UVCCamera
     
 public:
     
-    F200Camera(uvc_device_t * device, int num);
-    
+    F200Camera(uvc_context_t * ctx, uvc_device_t * device, int num);
     virtual ~F200Camera();
     
     virtual bool ConfigureStreams() override;

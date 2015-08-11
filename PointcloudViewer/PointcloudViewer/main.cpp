@@ -175,7 +175,9 @@ int main(int argc, const char * argv[]) try
 	rs::context realsenseContext;
 	rs::camera camera;
 
-	// Init RealSense R200 Camera -------------------------------------------  
+	//////////////////////////////////////////////////////////////////////////////////////////////////////
+    //////////////////////////////////////////////////////////////////////////////////////////////////////
+        
     if (realsenseContext.get_camera_count() == 0)
     { 
         std::cout << "Error: no cameras detected. Is it plugged in?" << std::endl;
@@ -190,7 +192,7 @@ int main(int argc, const char * argv[]) try
 
         camera.enable_stream(RS_STREAM_DEPTH);
         //camera.enable_stream(RS_STREAM_RGB);
-        
+    
         camera.configure_streams();
              
 		float hFov = GetAsymmetricFieldOfView(
@@ -217,7 +219,9 @@ int main(int argc, const char * argv[]) try
        // camera.start_stream(RS_STREAM_RGB, 640, 480, 30, RS_FRAME_FORMAT_YUYV);
         
     }
-    // ----------------------------------------------------------------
+        
+    //////////////////////////////////////////////////////////////////////////////////////////////////////
+    //////////////////////////////////////////////////////////////////////////////////////////////////////
     
     // Remapped colors...
     rgbTextureHandle = CreateTexture(640, 480, GL_RGB);     // Normal RGB

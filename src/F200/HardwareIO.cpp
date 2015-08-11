@@ -294,9 +294,14 @@ class f200::IVCAMHardwareIOInternal
     
 public:
     
-    IVCAMHardwareIOInternal()
+    IVCAMHardwareIOInternal(uvc_context_t * ctx)
     {
-        usbDeviceHandle = libusb_open_device_with_vid_pid(NULL, IVCAM_VID, IVCAM_PID);
+        if (!ctx) throw std::runtime_error("must pass libuvc context handle");
+        
+        
+        libusb_context * usbctx = uvc_get_libusb_context(ctx);
+        
+        usbDeviceHandle = libusb_open_device_with_vid_pid(usbctx, IVCAM_VID, IVCAM_PID);
         
         if (usbDeviceHandle == NULL)
             throw std::runtime_error("libusb_open_device_with_vid_pid() failed");
@@ -353,9 +358,9 @@ public:
 // Public Hardware I/O //
 /////////////////////////
 
-IVCAMHardwareIO::IVCAMHardwareIO()
+IVCAMHardwareIO::IVCAMHardwareIO(uvc_context_t * ctx)
 {
-    internal.reset(new IVCAMHardwareIOInternal());
+    internal.reset(new IVCAMHardwareIOInternal(ctx));
 }
 
 IVCAMHardwareIO::~IVCAMHardwareIO()

@@ -29,8 +29,10 @@ inline void GetUSBInfo(uvc_device_t * dev, rs::USBDeviceInfo & info)
 class UVCCamera : public rs_camera
 {
     NO_MOVE(UVCCamera);
- 
+
 protected:
+
+    uvc_context_t * internalContext;
     
     struct StreamInterface
     {
@@ -57,6 +59,7 @@ protected:
 public:
     
     UVCCamera(uvc_device_t * device, int num);
+    UVCCamera(uvc_context_t * ctx, uvc_device_t * device, int num);
     ~UVCCamera();
 };
 

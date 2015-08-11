@@ -16,7 +16,7 @@ class IVCAMHardwareIO
     std::unique_ptr<IVCAMHardwareIOInternal> internal;
 public:
     
-    IVCAMHardwareIO();
+    IVCAMHardwareIO(uvc_context_t * ctx);
     ~IVCAMHardwareIO();
     
     bool StartTempCompensationLoop();
