@@ -11,6 +11,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "example-c", "example-c\exam
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "example-cpp", "example-cpp\example-cpp.vcxproj", "{33A974A4-5481-434E-A82C-9B2802F5E62B}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "examples", "examples", "{5C5E8399-EA8A-4456-9911-65063148708B}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -54,5 +56,9 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{394D3923-A511-42C6-9E15-811FA065831B} = {5C5E8399-EA8A-4456-9911-65063148708B}
+		{33A974A4-5481-434E-A82C-9B2802F5E62B} = {5C5E8399-EA8A-4456-9911-65063148708B}
 	EndGlobalSection
 EndGlobal
