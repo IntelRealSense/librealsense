@@ -4,7 +4,7 @@
 #include "../include/librealsense/rs.h"
 
 #ifdef WIN32
-#include <DSAPI/DSFactory.h"
+#include <DSAPI/DSFactory.h>
 #endif
 
 #ifndef WIN32

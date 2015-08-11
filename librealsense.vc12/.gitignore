@@ -1,5 +1,6 @@
 ipch/
 packages/
+build/
 *.opensdf
 *.sdf
 *.suo
