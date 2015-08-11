@@ -7,6 +7,7 @@
 
 #include <vector>
 #include <cmath>
+#include <cstring>
 
 namespace f200
 {
@@ -571,7 +572,7 @@ inline bool IVCAMCalibrator<T>::buildParameters(const CameraCalibrationParameter
     params = _params;
     isInitialized = true;
     lastTemperatureDelta = DELTA_INF;
-    memcpy(&originalParams,&params,sizeof(CameraCalibrationParameters));
+    std::memcpy(&originalParams,&params,sizeof(CameraCalibrationParameters));
     PrintParameters();
     precomputeUnproj();
     return true;

@@ -3,13 +3,13 @@
 #ifndef LIBREALSENSE_R200_CAMERA_H
 #define LIBREALSENSE_R200_CAMERA_H
 
-#include "rs-internal.h" // TODO: Migrate this header to be internal to LibRealsense
+#include "../rs-internal.h"
 
 #ifndef WIN32
 #include "CameraHeader.h"
 #include "XU.h"
 #include "SPI.h"
-#include "UVCCamera.h"
+#include "../UVCCamera.h"
 #else
 #include <DSAPI.h>
 #endif

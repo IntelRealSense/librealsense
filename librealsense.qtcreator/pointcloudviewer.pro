@@ -11,15 +11,8 @@ PKGCONFIG += glfw3 gl libusb-1.0 glew
 INCLUDEPATH += ../third_party/libuvc/include/ ../include
 LIBS += -pthread -ljpeg
 
-SOURCES += \
-    ../PointcloudViewer/PointcloudViewer/GfxUtil.cpp \
-    ../PointcloudViewer/PointcloudViewer/main.cpp
-
-HEADERS += \
-    ../PointcloudViewer/PointcloudViewer/GfxUtil.h \
-    ../include/librealsense/rs.h \
-    ../include/librealsense/rs.hpp
-
+SOURCES += ../PointcloudViewer/PointcloudViewer/*.cpp
+HEADERS += ../PointcloudViewer/PointcloudViewer/*.h
 
 LIBS += -L$$DESTDIR/ -lrealsense -luvc
 

@@ -176,6 +176,7 @@ int main(int argc, const char * argv[]) try
 
         camera.enable_stream(RS_STREAM_DEPTH);
         //camera.enable_stream(RS_STREAM_RGB);
+        
         camera.configure_streams();
              
 		float hFov = GetAsymmetricFieldOfView(

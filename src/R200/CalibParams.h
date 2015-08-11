@@ -3,8 +3,8 @@
 #ifndef LIBREALSENSE_R200_CALIB_PARAMS_H
 #define LIBREALSENSE_R200_CALIB_PARAMS_H
 
-#include <stdint.h>
-#include "Common.h"
+#include "../Common.h"
+#include <cstdint>
 
 namespace r200
 {
