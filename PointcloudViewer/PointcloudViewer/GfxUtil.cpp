@@ -1,6 +1,7 @@
 #include "GfxUtil.h"
 
 #include <vector>
+#include <string>
 
 void CheckGLError(const char* file, int32_t line)
 {

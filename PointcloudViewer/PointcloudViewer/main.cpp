@@ -1,3 +1,36 @@
+///////////////
+// Compilers //
+///////////////
+
+#if defined(_MSC_VER)
+    #define COMPILER_MSVC 1
+#endif
+
+#if defined(__GNUC__)
+    #define COMPILER_GCC 1
+    #define GCC_VERSION (__GNUC__ * 10000 + __GNUC_MINOR__ * 100 + __GNUC_PATCHLEVEL__)
+#endif
+
+#if defined(__clang__)
+    #define COMPILER_CLANG 1
+#endif
+
+///////////////
+// Platforms //
+///////////////
+
+#if defined(WIN32) || defined(_WIN32)
+    #define PLATFORM_WINDOWS 1
+#endif
+
+#ifdef __APPLE__
+    #define PLATFORM_OSX 1
+#endif
+
+#if defined(__linux__)
+    #define PLATFORM_LINUX 1
+#endif
+
 #include <thread>
 #include <chrono>
 #include <vector>
@@ -7,10 +40,12 @@
 #include "librealsense/rs.hpp"
 #include "GfxUtil.h"
 
-#ifdef WIN32
+#if defined(PLATFORM_WINDOWS)
+
 #include <GL\glew.h>
 #include <GLFW\glfw3.h>
-#elif __APPLE__
+
+#elif defined(PLATFORM_OSX)
 
 #include "glfw3.h"
 
@@ -18,8 +53,10 @@
 #define GLFW_EXPOSE_NATIVE_NSGL
 #include "glfw3native.h"
 #include <OpenGL/gl3.h>
-#elif __linux__
+
+#elif defined(PLATFORM_LINUX)
 #include <GLFW/glfw3.h>
+
 #endif
 
 GLFWwindow * window;
@@ -74,11 +111,13 @@ int main(int argc, const char * argv[]) try
         return -1;
     }
     
-    //glfwWindowHint(GLFW_SAMPLES, 2);
-    //glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-    //glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-    //glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
-    //glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+#if defined(PLATFORM_OSX)
+    glfwWindowHint(GLFW_SAMPLES, 2);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+#endif
     
     window = glfwCreateWindow(1280, 480, "R200 Pointcloud", NULL, NULL);
     
@@ -90,7 +129,7 @@ int main(int argc, const char * argv[]) try
     }
     
     glfwMakeContextCurrent(window);
-#ifdef WIN32
+#if defined(PLATFORM_WINDOWS)
 	glewInit();
 #endif
     
