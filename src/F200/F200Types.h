@@ -10,8 +10,8 @@
 namespace f200
 {
     
-#define DELTA_INF	(10000000.0)
-#define M_EPSILON	(0.0001)
+#define DELTA_INF                           (10000000.0)
+#define M_EPSILON                           (0.0001)
     
 #define IV_COMMAND_FIRMWARE_UPDATE_MODE     0x01
 #define IV_COMMAND_GET_CALIBRATION_DATA     0x02

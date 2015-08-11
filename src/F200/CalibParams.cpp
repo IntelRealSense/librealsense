@@ -1,5 +1,5 @@
 #include "../Common.h"
-#include "F200.h"
+
 #include "F200Types.h"
 #include "Calibration.h"
 #include "Projection.h"
@@ -11,7 +11,6 @@
 #include <atomic>
 #include <mutex>
 
-using namespace rs;
 using namespace f200;
 
 #ifndef WIN32
@@ -80,7 +79,7 @@ int getVersionOfCalibration(uint8_t * validation, uint8_t * version)
 // Private Hardware I/O //
 //////////////////////////
 
-class IVCAMHardwareIOInternal
+class f200::IVCAMHardwareIOInternal
 {
     libusb_device_handle * usbDeviceHandle = nullptr;
     std::timed_mutex usbMutex;
@@ -354,7 +353,6 @@ public:
 // Public Hardware I/O //
 /////////////////////////
 
-/*
 IVCAMHardwareIO::IVCAMHardwareIO()
 {
     internal.reset(new IVCAMHardwareIOInternal());
@@ -379,6 +377,5 @@ CameraCalibrationParameters & IVCAMHardwareIO::GetParameters()
 {
     return internal->GetParameters();
 }
- */
 
 #endif

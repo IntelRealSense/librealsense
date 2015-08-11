@@ -36,7 +36,6 @@
 		27F24ED21B7A9B6100BF4D43 /* F200Types.h in Headers */ = {isa = PBXBuildFile; fileRef = 27F24EC91B7A9B6100BF4D43 /* F200Types.h */; };
 		27F24ED31B7A9B6100BF4D43 /* Projection.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 27F24ECA1B7A9B6100BF4D43 /* Projection.cpp */; };
 		27F24ED41B7A9B6100BF4D43 /* Projection.h in Headers */ = {isa = PBXBuildFile; fileRef = 27F24ECB1B7A9B6100BF4D43 /* Projection.h */; };
-		27F24ED51B7A9B6100BF4D43 /* XU copy.h in Headers */ = {isa = PBXBuildFile; fileRef = 27F24ECC1B7A9B6100BF4D43 /* XU copy.h */; };
 		27F24ED81B7A9B6700BF4D43 /* rs.h in Headers */ = {isa = PBXBuildFile; fileRef = 27F24ED61B7A9B6700BF4D43 /* rs.h */; };
 		27F24ED91B7A9B6700BF4D43 /* rs.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 27F24ED71B7A9B6700BF4D43 /* rs.hpp */; };
 		27F24EDD1B7A9B7800BF4D43 /* Common.h in Headers */ = {isa = PBXBuildFile; fileRef = 27F24EDA1B7A9B7700BF4D43 /* Common.h */; };
@@ -75,7 +74,6 @@
 		27F24EC91B7A9B6100BF4D43 /* F200Types.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; lineEnding = 0; name = F200Types.h; path = src/F200/F200Types.h; sourceTree = SOURCE_ROOT; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
 		27F24ECA1B7A9B6100BF4D43 /* Projection.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; lineEnding = 0; name = Projection.cpp; path = src/F200/Projection.cpp; sourceTree = SOURCE_ROOT; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
 		27F24ECB1B7A9B6100BF4D43 /* Projection.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; lineEnding = 0; name = Projection.h; path = src/F200/Projection.h; sourceTree = SOURCE_ROOT; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
-		27F24ECC1B7A9B6100BF4D43 /* XU copy.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; lineEnding = 0; name = "XU copy.h"; path = "src/F200/XU copy.h"; sourceTree = SOURCE_ROOT; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
 		27F24ED61B7A9B6700BF4D43 /* rs.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = rs.h; path = include/librealsense/rs.h; sourceTree = SOURCE_ROOT; };
 		27F24ED71B7A9B6700BF4D43 /* rs.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = rs.hpp; path = include/librealsense/rs.hpp; sourceTree = SOURCE_ROOT; };
 		27F24EDA1B7A9B7700BF4D43 /* Common.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; lineEnding = 0; name = Common.h; path = src/Common.h; sourceTree = SOURCE_ROOT; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
@@ -187,7 +185,6 @@
 				27F24EC91B7A9B6100BF4D43 /* F200Types.h */,
 				27F24ECA1B7A9B6100BF4D43 /* Projection.cpp */,
 				27F24ECB1B7A9B6100BF4D43 /* Projection.h */,
-				27F24ECC1B7A9B6100BF4D43 /* XU copy.h */,
 			);
 			name = F200;
 			sourceTree = "<group>";
@@ -226,7 +223,6 @@
 				27F24EDF1B7A9B7800BF4D43 /* UVCCamera.h in Headers */,
 				27F24EC11B7A9B5B00BF4D43 /* SPI.h in Headers */,
 				27F24EDD1B7A9B7800BF4D43 /* Common.h in Headers */,
-				27F24ED51B7A9B6100BF4D43 /* XU copy.h in Headers */,
 				27F24ED21B7A9B6100BF4D43 /* F200Types.h in Headers */,
 				08567BEB1B5B5B4E00EB6C0D /* libuvc_config.h in Headers */,
 				27F24EC31B7A9B5B00BF4D43 /* XU.h in Headers */,

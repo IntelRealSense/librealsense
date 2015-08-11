@@ -17,7 +17,7 @@ int GetStreamStatus(uvc_device_handle_t *devh)
         return s;
     }
     
-    if (s < 0) uvc_perror((uvc_error_t)s, "");
+    if (s < 0) uvc_perror((uvc_error_t)s, "uvc_get_ctrl - ");
 
     return -1;
 }
@@ -34,7 +34,7 @@ bool SetStreamIntent(uvc_device_handle_t *devh, uint8_t intent)
         return true;
     }
 
-    if (s < 0) uvc_perror((uvc_error_t)s, "");
+    if (s < 0) uvc_perror((uvc_error_t)s, "uvc_set_ctrl -");
 
     return false;
 }
@@ -48,12 +48,12 @@ std::string GetFirmwareVersion(uvc_device_handle_t * devh)
     
     unsigned int cmdLength = sizeof(CommandPacket);
     auto s = uvc_set_ctrl(devh, CAMERA_XU_UNIT_ID, CONTROL_COMMAND_RESPONSE, &command, cmdLength);
+    if (s < 0) uvc_perror((uvc_error_t)s, "uvc_set_ctrl - ");
     
     ResponsePacket response;
     unsigned int resLength = sizeof(ResponsePacket);
     s = uvc_get_ctrl(devh, CAMERA_XU_UNIT_ID, CONTROL_COMMAND_RESPONSE, &response, resLength, UVC_GET_CUR);
-    
-    if (s < 0) uvc_perror((uvc_error_t)s, "");
+    if (s < 0) uvc_perror((uvc_error_t)s, "uvc_get_ctrl - ");
 
     char fw[16];
     

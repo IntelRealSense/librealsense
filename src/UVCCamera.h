@@ -13,6 +13,19 @@ namespace rs
 // UVC Camera //
 ////////////////
 
+inline void GetUSBInfo(uvc_device_t * dev, rs::USBDeviceInfo & info)
+{
+    uvc_device_descriptor_t * desc;
+    if (uvc_get_device_descriptor(dev, &desc) == UVC_SUCCESS)
+    {
+        if (desc->serialNumber) info.serial = desc->serialNumber;
+        if (desc->idVendor) info.vid = desc->idVendor;
+        if (desc->idProduct) info.pid = desc->idProduct;
+        uvc_free_device_descriptor(desc);
+    }
+    else throw std::runtime_error("call to uvc_get_device_descriptor() failed");
+}
+    
 class UVCCamera : public rs_camera
 {
     NO_MOVE(UVCCamera);

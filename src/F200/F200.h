@@ -5,6 +5,7 @@
 
 #ifndef WIN32
 #include "../UVCCamera.h"
+#include "CalibParams.h"
 
 namespace f200
 {

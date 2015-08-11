@@ -58,23 +58,7 @@ bool R200Camera::ConfigureStreams()
         streamInterfaces.insert(std::pair<int, StreamInterface *>(RS_STREAM_RGB, stream));
     }
     
-    
-    /*
-    if (streamingModeBitfield & STREAM_LR)
-    {
-        openDevice(0);
-    }
-    */
-    
-    uvc_device_descriptor_t * desc;
-    if(uvc_get_device_descriptor(hardware, &desc) == UVC_SUCCESS)
-    {
-        if (desc->serialNumber) usbInfo.serial = desc->serialNumber;
-        if (desc->idVendor) usbInfo.vid = desc->idVendor;
-        if (desc->idProduct) usbInfo.pid = desc->idProduct;
-        uvc_free_device_descriptor(desc);
-    }
-    
+    GetUSBInfo(hardware, usbInfo);
     std::cout << "Serial Number: " << usbInfo.serial << std::endl;
     std::cout << "USB VID: " << usbInfo.vid << std::endl;
     std::cout << "USB PID: " << usbInfo.pid << std::endl;
