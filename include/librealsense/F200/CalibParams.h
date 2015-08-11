@@ -3,17 +3,17 @@
 #ifndef LIBREALSENSE_F200_CALIB_PARAMS_H
 #define LIBREALSENSE_F200_CALIB_PARAMS_H
 
-#include <librealsense/CameraContext.h>
 #include <librealsense/F200/F200Types.h>
+#include <memory>
 
 namespace f200
 {
-
+    
 class IVCAMHardwareIOInternal;
 class IVCAMHardwareIO
 {
+
     std::unique_ptr<IVCAMHardwareIOInternal> internal;
-    
 public:
     
     IVCAMHardwareIO();
