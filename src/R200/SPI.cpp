@@ -32,11 +32,13 @@ struct SPI
         
         unsigned int cmdLength = sizeof(CommandPacket);
         auto XUWriteCmdStatus = uvc_set_ctrl(devh, CAMERA_XU_UNIT_ID, CONTROL_COMMAND_RESPONSE, &command, cmdLength);
+        if (XUWriteCmdStatus < 0) uvc_perror((uvc_error_t)XUWriteCmdStatus, "");
         
         ResponsePacket response;
         unsigned int resLength = sizeof(ResponsePacket);
         auto XUReadCmdStatus = uvc_get_ctrl(devh, CAMERA_XU_UNIT_ID, CONTROL_COMMAND_RESPONSE, &response, resLength, UVC_GET_CUR);
-        
+        if (XUReadCmdStatus < 0) uvc_perror((uvc_error_t)XUReadCmdStatus, "");
+
         std::cout << "Read SPI Command Status: " << ResponseCodeToString(response.responseCode) << std::endl;
         
         // End SendCommand()

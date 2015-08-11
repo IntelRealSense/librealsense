@@ -3,9 +3,8 @@
 #ifndef LIBREALSENSE_UVC_CAMERA_H
 #define LIBREALSENSE_UVC_CAMERA_H
 
+#include "../../../src/rs-internal.h" // TODO: Migrate this header to be internal to LibRealsense
 #include "libuvc/libuvc.h"
-
-#include <librealsense/Camera.h>
 
 namespace rs
 {
@@ -14,7 +13,7 @@ namespace rs
 // UVC Camera //
 ////////////////
 
-class UVCCamera : public Camera
+class UVCCamera : public rs_camera
 {
     NO_MOVE(UVCCamera);
  

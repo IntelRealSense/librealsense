@@ -7,7 +7,7 @@
 namespace rs
 {
 
-UVCCamera::UVCCamera(uvc_device_t * h, int idx) : Camera(idx), hardware(h)
+UVCCamera::UVCCamera(uvc_device_t * h, int idx) : rs_camera(idx), hardware(h)
 {
     
 }

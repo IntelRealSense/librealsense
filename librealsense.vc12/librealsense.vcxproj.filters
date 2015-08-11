@@ -1,16 +1,16 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <ClCompile Include="..\src\CameraContext.cpp">
-      <Filter>src</Filter>
-    </ClCompile>
     <ClCompile Include="..\src\R200\R200.cpp">
       <Filter>src\R200</Filter>
     </ClCompile>
     <ClCompile Include="..\src\F200\F200.cpp">
       <Filter>src\F200</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\Camera.cpp">
+    <ClCompile Include="..\src\rs.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\verify.c">
       <Filter>src</Filter>
     </ClCompile>
   </ItemGroup>
@@ -35,12 +35,6 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\include\librealsense\CameraContext.h">
-      <Filter>include</Filter>
-    </ClInclude>
-    <ClInclude Include="..\include\librealsense\Common.h">
-      <Filter>include</Filter>
-    </ClInclude>
     <ClInclude Include="..\include\librealsense\UVCCamera.h">
       <Filter>include</Filter>
     </ClInclude>
@@ -75,6 +69,15 @@
       <Filter>include\F200</Filter>
     </ClInclude>
     <ClInclude Include="..\include\librealsense\Camera.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\librealsense\rs.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\rs-internal.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\librealsense\rs.hpp">
       <Filter>include</Filter>
     </ClInclude>
   </ItemGroup>

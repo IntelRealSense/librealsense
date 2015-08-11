@@ -40,22 +40,22 @@ bool R200Camera::ConfigureStreams()
         throw std::invalid_argument("No streams have been configured...");
     
     //@tofix: Test for successful open
-    if (streamingModeBitfield & STREAM_DEPTH)
+    if (streamingModeBitfield & RS_STREAM_DEPTH)
     {
         StreamInterface * stream = new StreamInterface();
         stream->camera = this;
         
         bool status = OpenStreamOnSubdevice(hardware, stream->uvcHandle, 1);
-        streamInterfaces.insert(std::pair<int, StreamInterface *>(STREAM_DEPTH, stream));
+        streamInterfaces.insert(std::pair<int, StreamInterface *>(RS_STREAM_DEPTH, stream));
     }
     
-    if (streamingModeBitfield & STREAM_RGB)
+    if (streamingModeBitfield & RS_STREAM_RGB)
     {
         StreamInterface * stream = new StreamInterface();
         stream->camera = this;
         
         bool status = OpenStreamOnSubdevice(hardware, stream->uvcHandle, 2);
-        streamInterfaces.insert(std::pair<int, StreamInterface *>(STREAM_RGB, stream));
+        streamInterfaces.insert(std::pair<int, StreamInterface *>(RS_STREAM_RGB, stream));
     }
     
     
@@ -85,7 +85,10 @@ bool R200Camera::ConfigureStreams()
         
         spiInterface->Initialize();
         
+        //uvc_print_diag(uvc_handle, stderr);
+
         std::cout << "Firmware Revision: " << GetFirmwareVersion(uvc_handle) << std::endl;
+
         spiInterface->LogDebugInfo();
         
         if (!SetStreamIntent(uvc_handle, streamingModeBitfield))
@@ -95,14 +98,16 @@ bool R200Camera::ConfigureStreams()
     };
     
     // We only need to do this once, so check if any stream has been configured
-    if (streamInterfaces[STREAM_DEPTH]->uvcHandle)
+    if (streamInterfaces[RS_STREAM_DEPTH]->uvcHandle)
     {
-        oneTimeInitialize(streamInterfaces[STREAM_DEPTH]->uvcHandle);
+        //uvc_print_stream_ctrl(&streamInterfaces[STREAM_DEPTH]->ctrl, stderr);
+        oneTimeInitialize(streamInterfaces[RS_STREAM_DEPTH]->uvcHandle);
     }
     
-    else if (streamInterfaces[STREAM_RGB]->uvcHandle)
+    else if (streamInterfaces[RS_STREAM_RGB]->uvcHandle)
     {
-        oneTimeInitialize(streamInterfaces[STREAM_RGB]->uvcHandle);
+       //uvc_print_stream_ctrl(&streamInterfaces[STREAM_RGB]->ctrl, stderr);
+       oneTimeInitialize(streamInterfaces[RS_STREAM_RGB]->uvcHandle);
     }
     
     return true;
@@ -146,7 +151,6 @@ void R200Camera::StartStream(int streamIdentifier, const StreamConfiguration & c
             uvc_perror(startStreamResult, "start_stream");
             throw std::runtime_error("Could not start stream");
         }
-        
     }
     
     //@tofix - else what?
@@ -170,11 +174,11 @@ static void CheckDS(DSAPI * ds, const std::string & call, bool b)
 {
 	if (!b)
 	{
-		throw std::runtime_error("DSAPI call " + call + "() returned " + DSStatusString(ds->getLastErrorStatus()) + " - " + ds->getLastErrorDescription());
+		throw std::runtime_error("DSAPI::" + call + "() returned " + DSStatusString(ds->getLastErrorStatus()) + ":\n  " + ds->getLastErrorDescription());
 	}
 }
 
-R200Camera::R200Camera(DSAPI * ds, int idx) : Camera(idx), ds(ds)
+R200Camera::R200Camera(DSAPI * ds, int idx) : rs_camera(idx), ds(ds)
 {
 
 }
@@ -193,19 +197,6 @@ bool R200Camera::ConfigureStreams()
 
 	CheckDS(ds, "probeConfiguration", ds->probeConfiguration());
 	CheckDS(ds, "enableZ", ds->enableZ(false));
-
-	//@tofix: Test for successful open
-	/*if (streamingModeBitfield & STREAM_DEPTH)
-	{
-		CheckDS(ds, "enableZ", ds->enableZ(true));
-	}
-
-	if (streamingModeBitfield & STREAM_RGB)
-	{
-		auto third = ds->accessThird();
-		if (!third) throw std::runtime_error("Unable to configure RGB stream");
-		CheckDS(ds, "enableThird", third->enableThird(true));
-	}*/
 
 	uint32_t serialNo;
 	CheckDS(ds, "getCameraSerialNumber", ds->getCameraSerialNumber(serialNo));
@@ -267,7 +258,7 @@ void R200Camera::StartStream(int streamIdentifier, const StreamConfiguration & c
 	StopBackgroundCapture();
 	CheckDS(ds, "stopCapture", ds->stopCapture());
 
-	if (streamIdentifier & STREAM_DEPTH)
+	if (streamIdentifier & RS_STREAM_DEPTH)
 	{
 		if (c.format != FrameFormat::Z16) throw std::runtime_error("Only Z16 is supported");
 		CheckDS(ds, "enableZ", ds->enableZ(true));
@@ -275,7 +266,7 @@ void R200Camera::StartStream(int streamIdentifier, const StreamConfiguration & c
 		depthFrame.reset(new TripleBufferedFrame(c.width, c.height-1, sizeof(uint16_t)));
 		zConfig = c;
 	}
-	else if (streamIdentifier & STREAM_RGB)
+	else if (streamIdentifier & RS_STREAM_RGB)
 	{
 		if (c.format != FrameFormat::YUYV) throw std::runtime_error("Only YUYV is supported");
 

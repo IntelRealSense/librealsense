@@ -3,8 +3,6 @@
 #ifndef LIBREALSENSE_F200_CAMERA_H
 #define LIBREALSENSE_F200_CAMERA_H
 
-#include <librealsense/CameraContext.h>
-
 #ifndef WIN32
 #include <librealsense/UVCCamera.h>
 

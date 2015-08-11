@@ -17,7 +17,6 @@
 		08567BFF1B5B5B5D00EB6C0D /* init.c in Sources */ = {isa = PBXBuildFile; fileRef = 08567BF51B5B5B5D00EB6C0D /* init.c */; };
 		08567C001B5B5B5D00EB6C0D /* misc.c in Sources */ = {isa = PBXBuildFile; fileRef = 08567BF61B5B5B5D00EB6C0D /* misc.c */; };
 		08567C011B5B5B5D00EB6C0D /* stream.c in Sources */ = {isa = PBXBuildFile; fileRef = 08567BF71B5B5B5D00EB6C0D /* stream.c */; };
-		08567C3A1B61E78D00EB6C0D /* CameraContext.h in Headers */ = {isa = PBXBuildFile; fileRef = 08567C371B61E78D00EB6C0D /* CameraContext.h */; };
 		08567C3B1B61E78D00EB6C0D /* Common.h in Headers */ = {isa = PBXBuildFile; fileRef = 08567C381B61E78D00EB6C0D /* Common.h */; };
 		08567C3C1B61E78D00EB6C0D /* UVCCamera.h in Headers */ = {isa = PBXBuildFile; fileRef = 08567C391B61E78D00EB6C0D /* UVCCamera.h */; };
 		08567C3E1B61E79400EB6C0D /* F200.h in Headers */ = {isa = PBXBuildFile; fileRef = 08567C3D1B61E79400EB6C0D /* F200.h */; };
@@ -27,7 +26,6 @@
 		08567C481B61E79C00EB6C0D /* SPI.h in Headers */ = {isa = PBXBuildFile; fileRef = 08567C421B61E79C00EB6C0D /* SPI.h */; };
 		08567C491B61E79C00EB6C0D /* XU.h in Headers */ = {isa = PBXBuildFile; fileRef = 08567C431B61E79C00EB6C0D /* XU.h */; };
 		08567C4A1B61E79C00EB6C0D /* R200.h in Headers */ = {isa = PBXBuildFile; fileRef = 08567C441B61E79C00EB6C0D /* R200.h */; };
-		08567C4D1B61E8B400EB6C0D /* CameraContext.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 08567C4B1B61E8B400EB6C0D /* CameraContext.cpp */; };
 		08567C4E1B61E8B400EB6C0D /* UVCCamera.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 08567C4C1B61E8B400EB6C0D /* UVCCamera.cpp */; };
 		08567C501B61E8BA00EB6C0D /* F200.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 08567C4F1B61E8BA00EB6C0D /* F200.cpp */; };
 		08567C541B61E8C000EB6C0D /* SPI.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 08567C511B61E8C000EB6C0D /* SPI.cpp */; };
@@ -53,7 +51,6 @@
 		08567BF51B5B5B5D00EB6C0D /* init.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = init.c; path = third_party/libuvc/src/init.c; sourceTree = SOURCE_ROOT; };
 		08567BF61B5B5B5D00EB6C0D /* misc.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = misc.c; path = third_party/libuvc/src/misc.c; sourceTree = SOURCE_ROOT; };
 		08567BF71B5B5B5D00EB6C0D /* stream.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = stream.c; path = third_party/libuvc/src/stream.c; sourceTree = SOURCE_ROOT; };
-		08567C371B61E78D00EB6C0D /* CameraContext.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = CameraContext.h; path = include/librealsense/CameraContext.h; sourceTree = SOURCE_ROOT; };
 		08567C381B61E78D00EB6C0D /* Common.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Common.h; path = include/librealsense/Common.h; sourceTree = SOURCE_ROOT; };
 		08567C391B61E78D00EB6C0D /* UVCCamera.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = UVCCamera.h; path = include/librealsense/UVCCamera.h; sourceTree = SOURCE_ROOT; };
 		08567C3D1B61E79400EB6C0D /* F200.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = F200.h; path = include/librealsense/F200/F200.h; sourceTree = SOURCE_ROOT; };
@@ -63,7 +60,6 @@
 		08567C421B61E79C00EB6C0D /* SPI.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = SPI.h; path = include/librealsense/R200/SPI.h; sourceTree = SOURCE_ROOT; };
 		08567C431B61E79C00EB6C0D /* XU.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = XU.h; path = include/librealsense/R200/XU.h; sourceTree = SOURCE_ROOT; };
 		08567C441B61E79C00EB6C0D /* R200.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = R200.h; path = include/librealsense/R200/R200.h; sourceTree = SOURCE_ROOT; };
-		08567C4B1B61E8B400EB6C0D /* CameraContext.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = CameraContext.cpp; path = src/CameraContext.cpp; sourceTree = SOURCE_ROOT; };
 		08567C4C1B61E8B400EB6C0D /* UVCCamera.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = UVCCamera.cpp; path = src/UVCCamera.cpp; sourceTree = SOURCE_ROOT; };
 		08567C4F1B61E8BA00EB6C0D /* F200.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = F200.cpp; path = src/F200/F200.cpp; sourceTree = SOURCE_ROOT; };
 		08567C511B61E8C000EB6C0D /* SPI.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = SPI.cpp; path = src/R200/SPI.cpp; sourceTree = SOURCE_ROOT; };
@@ -150,7 +146,6 @@
 		08567C311B61E69E00EB6C0D /* include */ = {
 			isa = PBXGroup;
 			children = (
-				08567C371B61E78D00EB6C0D /* CameraContext.h */,
 				08567C391B61E78D00EB6C0D /* UVCCamera.h */,
 				08567C381B61E78D00EB6C0D /* Common.h */,
 				08567C321B61E6A600EB6C0D /* R200 */,
@@ -187,7 +182,6 @@
 		08567C341B61E6B900EB6C0D /* src */ = {
 			isa = PBXGroup;
 			children = (
-				08567C4B1B61E8B400EB6C0D /* CameraContext.cpp */,
 				08567C4C1B61E8B400EB6C0D /* UVCCamera.cpp */,
 				08567C361B61E6C600EB6C0D /* R200 */,
 				08567C351B61E6C100EB6C0D /* F200 */,
@@ -237,7 +231,6 @@
 				08567C3C1B61E78D00EB6C0D /* UVCCamera.h in Headers */,
 				08567C481B61E79C00EB6C0D /* SPI.h in Headers */,
 				27D08BCE1B6B050E003E9FB5 /* CalibParams.h in Headers */,
-				08567C3A1B61E78D00EB6C0D /* CameraContext.h in Headers */,
 				27D08BD21B6B05E1003E9FB5 /* Projection.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -299,7 +292,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				08567C551B61E8C000EB6C0D /* XU.cpp in Sources */,
-				08567C4D1B61E8B400EB6C0D /* CameraContext.cpp in Sources */,
 				27F24EAB1B797E5C00BF4D43 /* Projection.cpp in Sources */,
 				08567C4E1B61E8B400EB6C0D /* UVCCamera.cpp in Sources */,
 				08567BF91B5B5B5D00EB6C0D /* ctrl.c in Sources */,

@@ -3,7 +3,7 @@
 #ifndef LIBREALSENSE_R200_CAMERA_H
 #define LIBREALSENSE_R200_CAMERA_H
 
-#include <librealsense/CameraContext.h>
+#include "../../../src/rs-internal.h" // TODO: Migrate this header to be internal to LibRealsense
 
 #ifndef WIN32
 #include <librealsense/R200/CameraHeader.h>
@@ -21,7 +21,7 @@ namespace r200
 #ifndef WIN32
 class R200Camera : public rs::UVCCamera
 #else
-class R200Camera : public rs::Camera
+class R200Camera : public rs_camera
 #endif
 {
 #ifndef WIN32
