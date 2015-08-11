@@ -4,4 +4,5 @@ SUBDIRS += \
    ./uvc.pro \
    ./realsense.pro \
    ./example-c.pro \
-   ./example-cpp.pro
+   ./example-cpp.pro \
+   ./pointcloudviewer.pro

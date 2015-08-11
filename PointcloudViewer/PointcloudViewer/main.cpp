@@ -4,6 +4,8 @@
 #include <stdint.h>
 #include <mutex>
 #include <iostream>
+#include "librealsense/rs.hpp"
+#include "GfxUtil.h"
 
 #ifdef WIN32
 #include <GL\glew.h>
@@ -16,11 +18,9 @@
 #define GLFW_EXPOSE_NATIVE_NSGL
 #include "glfw3native.h"
 #include <OpenGL/gl3.h>
+#elif __linux__
+#include <GLFW/glfw3.h>
 #endif
-
-#include "GfxUtil.h"
-
-#include "librealsense/rs.hpp"
 
 GLFWwindow * window;
 
