@@ -136,8 +136,8 @@ namespace r200
         auto t = calib.intrinsicsThird[1]; // Assumes 640x480 for now
         switch(stream)
         {
-        case RS_STREAM_DEPTH: return {{lr.rw-12,lr.rh-12},{lr.rfx,lr.rfy},{lr.rpx-6,lr.rpy-6},{1,0,0,0,0}};
-        case RS_STREAM_RGB: return {{t.w,t.h},{t.fx,t.fy},{t.px,t.py},{t.k[0],t.k[1],t.k[2],t.k[3],t.k[4]}};
+        case RS_STREAM_DEPTH: return {{static_cast<int>(lr.rw-12),static_cast<int>(lr.rh-12)},{lr.rfx,lr.rfy},{lr.rpx-6,lr.rpy-6},{1,0,0,0,0}};
+        case RS_STREAM_RGB: return {{static_cast<int>(t.w),static_cast<int>(t.h)},{t.fx,t.fy},{t.px,t.py},{t.k[0],t.k[1],t.k[2],t.k[3],t.k[4]}};
         default: throw std::runtime_error("unsupported stream");
         }
     }
