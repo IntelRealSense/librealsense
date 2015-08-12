@@ -24,8 +24,31 @@ int main(int argc, char * argv[]) try
 	const auto depth_intrin = cam.get_stream_intrinsics(RS_STREAM_DEPTH), color_intrin = cam.get_stream_intrinsics(RS_STREAM_RGB);
 	const auto extrin = cam.get_stream_extrinsics(RS_STREAM_DEPTH, RS_STREAM_RGB);
 
+	struct state { float yaw, pitch; double lastX, lastY; bool ml; } app_state = {0,0,false};
+
 	glfwInit();
     GLFWwindow * win = glfwCreateWindow(1280, 720, "LibRealSense Point Cloud Example", 0, 0);
+	glfwSetWindowUserPointer(win, &app_state);
+	glfwSetMouseButtonCallback(win, [](GLFWwindow * win, int button, int action, int mods)
+	{
+		auto s = (state *)glfwGetWindowUserPointer(win);
+		if(button == GLFW_MOUSE_BUTTON_LEFT) s->ml = action == GLFW_PRESS;
+	});
+	glfwSetCursorPosCallback(win, [](GLFWwindow * win, double x, double y)
+	{
+		auto s = (state *)glfwGetWindowUserPointer(win);
+		if(s->ml)
+		{
+			s->yaw -= (x - s->lastX);
+			s->yaw = std::max(s->yaw, -120.0f);
+			s->yaw = std::min(s->yaw, +120.0f);
+			s->pitch += (y - s->lastY);
+			s->pitch = std::max(s->pitch, -80.0f);
+			s->pitch = std::min(s->pitch, +80.0f);
+		}
+		s->lastX = x;
+		s->lastY = y;
+	});
 	glfwMakeContextCurrent(win);
 
 	GLuint tex;
@@ -39,15 +62,25 @@ int main(int argc, char * argv[]) try
 	while (!glfwWindowShouldClose(win))
 	{
 		glfwPollEvents();
+
+		int width, height;
+		glfwGetWindowSize(win, &width, &height);
 		
 		auto depth = cam.get_depth_image();
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, color_intrin.image_size[0], color_intrin.image_size[1], 0, GL_RGB, GL_UNSIGNED_BYTE, cam.get_color_image());
 
+		glClearColor(0.3f,0.3f,0.3f,1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		glPushMatrix();
-		gluPerspective(60, (float)1280/720, 10.0f, 2000.0f);
+		gluPerspective(60, (float)width/height, 10.0f, 2000.0f);
 		gluLookAt(0,0,0, 0,0,1, 0,-1,0);
+		glTranslatef(0,0,500);
 
+		glRotatef(app_state.pitch, 1, 0, 0);
+		glRotatef(app_state.yaw, 0, 1, 0);
+		glTranslatef(0,0,-500);
+
+		glEnable(GL_DEPTH_TEST);
 		glEnable(GL_TEXTURE_2D);
 		glBegin(GL_POINTS);
 		for(int y=0; y<depth_intrin.image_size[1]; ++y)
