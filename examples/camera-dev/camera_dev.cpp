@@ -38,7 +38,7 @@
 #include <mutex>
 #include <iostream>
 #include "librealsense/rs.hpp"
-#include "GfxUtil.h"
+#include "gfx_util.h"
 
 #if defined(PLATFORM_WINDOWS)
 
