@@ -3,7 +3,7 @@
 #ifdef USE_UVC_DEVICES
 #include "CameraHeader.h"
 #include "XU.h"
-#include "SPI.h"
+#include "HardwareIO.h"
 
 using namespace rs;
 

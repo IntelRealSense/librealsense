@@ -24,8 +24,8 @@
 		27F24EBD1B7A9B5B00BF4D43 /* CameraHeader.h in Headers */ = {isa = PBXBuildFile; fileRef = 27F24EB41B7A9B5B00BF4D43 /* CameraHeader.h */; };
 		27F24EBE1B7A9B5B00BF4D43 /* R200.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 27F24EB51B7A9B5B00BF4D43 /* R200.cpp */; };
 		27F24EBF1B7A9B5B00BF4D43 /* R200.h in Headers */ = {isa = PBXBuildFile; fileRef = 27F24EB61B7A9B5B00BF4D43 /* R200.h */; };
-		27F24EC01B7A9B5B00BF4D43 /* SPI.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 27F24EB71B7A9B5B00BF4D43 /* SPI.cpp */; };
-		27F24EC11B7A9B5B00BF4D43 /* SPI.h in Headers */ = {isa = PBXBuildFile; fileRef = 27F24EB81B7A9B5B00BF4D43 /* SPI.h */; };
+		27F24EC01B7A9B5B00BF4D43 /* HardwareIO.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 27F24EB71B7A9B5B00BF4D43 /* HardwareIO.cpp */; };
+		27F24EC11B7A9B5B00BF4D43 /* HardwareIO.h in Headers */ = {isa = PBXBuildFile; fileRef = 27F24EB81B7A9B5B00BF4D43 /* HardwareIO.h */; };
 		27F24EC21B7A9B5B00BF4D43 /* XU.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 27F24EB91B7A9B5B00BF4D43 /* XU.cpp */; };
 		27F24EC31B7A9B5B00BF4D43 /* XU.h in Headers */ = {isa = PBXBuildFile; fileRef = 27F24EBA1B7A9B5B00BF4D43 /* XU.h */; };
 		27F24ECD1B7A9B6100BF4D43 /* HardwareIO.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 27F24EC41B7A9B6100BF4D43 /* HardwareIO.cpp */; };
@@ -64,8 +64,8 @@
 		27F24EB41B7A9B5B00BF4D43 /* CameraHeader.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; lineEnding = 0; name = CameraHeader.h; path = src/R200/CameraHeader.h; sourceTree = SOURCE_ROOT; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
 		27F24EB51B7A9B5B00BF4D43 /* R200.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; lineEnding = 0; name = R200.cpp; path = src/R200/R200.cpp; sourceTree = SOURCE_ROOT; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
 		27F24EB61B7A9B5B00BF4D43 /* R200.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; lineEnding = 0; name = R200.h; path = src/R200/R200.h; sourceTree = SOURCE_ROOT; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
-		27F24EB71B7A9B5B00BF4D43 /* SPI.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; lineEnding = 0; name = SPI.cpp; path = src/R200/SPI.cpp; sourceTree = SOURCE_ROOT; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
-		27F24EB81B7A9B5B00BF4D43 /* SPI.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; lineEnding = 0; name = SPI.h; path = src/R200/SPI.h; sourceTree = SOURCE_ROOT; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
+		27F24EB71B7A9B5B00BF4D43 /* HardwareIO.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; lineEnding = 0; name = HardwareIO.cpp; path = src/R200/HardwareIO.cpp; sourceTree = SOURCE_ROOT; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
+		27F24EB81B7A9B5B00BF4D43 /* HardwareIO.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; lineEnding = 0; name = HardwareIO.h; path = src/R200/HardwareIO.h; sourceTree = SOURCE_ROOT; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
 		27F24EB91B7A9B5B00BF4D43 /* XU.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; lineEnding = 0; name = XU.cpp; path = src/R200/XU.cpp; sourceTree = SOURCE_ROOT; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
 		27F24EBA1B7A9B5B00BF4D43 /* XU.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; lineEnding = 0; name = XU.h; path = src/R200/XU.h; sourceTree = SOURCE_ROOT; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
 		27F24EC41B7A9B6100BF4D43 /* HardwareIO.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; lineEnding = 0; name = HardwareIO.cpp; path = src/F200/HardwareIO.cpp; sourceTree = SOURCE_ROOT; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
@@ -203,8 +203,8 @@
 				27F24EB41B7A9B5B00BF4D43 /* CameraHeader.h */,
 				27F24EB51B7A9B5B00BF4D43 /* R200.cpp */,
 				27F24EB61B7A9B5B00BF4D43 /* R200.h */,
-				27F24EB71B7A9B5B00BF4D43 /* SPI.cpp */,
-				27F24EB81B7A9B5B00BF4D43 /* SPI.h */,
+				27F24EB71B7A9B5B00BF4D43 /* HardwareIO.cpp */,
+				27F24EB81B7A9B5B00BF4D43 /* HardwareIO.h */,
 				27F24EB91B7A9B5B00BF4D43 /* XU.cpp */,
 				27F24EBA1B7A9B5B00BF4D43 /* XU.h */,
 			);
@@ -227,7 +227,7 @@
 				08567BEC1B5B5B4E00EB6C0D /* libuvc_internal.h in Headers */,
 				27F24ED91B7A9B6700BF4D43 /* rs.hpp in Headers */,
 				27F24EDF1B7A9B7800BF4D43 /* UVCCamera.h in Headers */,
-				27F24EC11B7A9B5B00BF4D43 /* SPI.h in Headers */,
+				27F24EC11B7A9B5B00BF4D43 /* HardwareIO.h in Headers */,
 				27F24EDD1B7A9B7800BF4D43 /* Common.h in Headers */,
 				27F24ED21B7A9B6100BF4D43 /* F200Types.h in Headers */,
 				08567BEB1B5B5B4E00EB6C0D /* libuvc_config.h in Headers */,
@@ -307,7 +307,7 @@
 				08567BFE1B5B5B5D00EB6C0D /* frame.c in Sources */,
 				27F24EC21B7A9B5B00BF4D43 /* XU.cpp in Sources */,
 				08567C001B5B5B5D00EB6C0D /* misc.c in Sources */,
-				27F24EC01B7A9B5B00BF4D43 /* SPI.cpp in Sources */,
+				27F24EC01B7A9B5B00BF4D43 /* HardwareIO.cpp in Sources */,
 				08567C011B5B5B5D00EB6C0D /* stream.c in Sources */,
 				08567BFB1B5B5B5D00EB6C0D /* diag.c in Sources */,
 				08567BFF1B5B5B5D00EB6C0D /* init.c in Sources */,

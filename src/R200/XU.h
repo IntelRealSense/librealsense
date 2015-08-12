@@ -12,7 +12,7 @@
 #include <iostream>
 #include <cstring>
 
-#include "SPI.h"
+#include "HardwareIO.h"
 
 namespace r200
 {

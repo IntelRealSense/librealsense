@@ -1,7 +1,7 @@
 #pragma once
 
-#ifndef LIBREALSENSE_R200_SPI_H
-#define LIBREALSENSE_R200_SPI_H
+#ifndef LIBREALSENSE_R200_HARDWARE_IO_H
+#define LIBREALSENSE_R200_HARDWARE_IO_H
 
 #include <libuvc/libuvc.h>
 
