@@ -107,9 +107,6 @@ struct rs_context
 	~rs_context();
 
 	void QueryDeviceList();
-    
-    //@tofix
-    void * GetLibusbContext() { return uvc_get_libusb_context(privateContext); }
 };
 
 // This facility allows for translation of exceptions to rs_error structs at the API boundary

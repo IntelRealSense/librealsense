@@ -17,7 +17,6 @@
 namespace r200
 {
     
-//@tofix - these can be safely hidden in the cpp with a little refactoring...
 #define CAMERA_XU_UNIT_ID 2
     
 #define STATUS_BIT_Z_STREAMING (1 << 0)
