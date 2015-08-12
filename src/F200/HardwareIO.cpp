@@ -15,9 +15,9 @@ using namespace f200;
 
 #ifndef WIN32
 
-#define CM_TO_MM(_d)          float((_d)*10)
-#define MM_TO_CM(_d)          float((_d)/10)
-#define METERS_TO_CM(_d)      float((_d)*10
+#define CM_TO_MM(_d)                    float((_d)*10)
+#define MM_TO_CM(_d)                    float((_d)/10)
+#define METERS_TO_CM(_d)                float((_d)*10
 
 #define IVCAM_VID                       0x8086
 #define IVCAM_PID                       0x0A66
@@ -252,7 +252,7 @@ class f200::IVCAMHardwareIOInternal
             calibration->buildParameters(params, 100);
             
             // Debugging -- optional
-            calibration->PrintParameters();
+            // calibration->PrintParameters();
             
             memcpy(calprms, params+1, sizeof(CameraCalibrationParameters));
             memcpy(&TesterData, bufParams, SIZE_OF_CALIB_HEADER_BYTES);
@@ -276,7 +276,7 @@ class f200::IVCAMHardwareIOInternal
             calibration->buildParameters(CalibrationData.CalibrationParameters);
             
             // Debugging -- optional
-            calibration->PrintParameters();
+            // calibration->PrintParameters();
 
             memcpy(&TesterData,  rawCalibData, SIZE_OF_CALIB_HEADER_BYTES);  //copy the header: valid + version
             
@@ -286,6 +286,102 @@ class f200::IVCAMHardwareIOInternal
             
             calibration->InitializeThermalData(TesterData.TemperatureData, TesterData.ThermalLoopParams);
         }
+    }
+    
+    void ReadTemperatures(IVCAMTemperatureData & data)
+    {
+        data = {0};
+        
+        int IRTemp;
+        if (!GetIRtemp(IRTemp))
+            throw std::runtime_error("could not get IR temperature");
+        
+        data.IRTemp = (float) IRTemp;
+        
+        float LiguriaTemp;
+        if (!GetMEMStemp(LiguriaTemp))
+            throw std::runtime_error("could not get liguria temperature");
+        
+        data.LiguriaTemp = LiguriaTemp;
+    }
+    
+    bool GetMEMStemp(float & MEMStemp)
+    {
+        /*
+         TIVCAMCommandParameters CommandParameters;
+         CommandParameters.CommandOp = HWmonitor_GetMEMSTemp;
+         CommandParameters.Param1 = 0;
+         CommandParameters.Param2 = 0;
+         CommandParameters.Param3 = 0;
+         CommandParameters.Param4 = 0;
+         CommandParameters.sizeOfSendCommandData = 0;
+         CommandParameters.TimeOut = 5000;
+         CommandParameters.oneDirection = false;
+         
+         bool result = PerfomAndSendHWmonitorCommand(CommandParameters);
+         if (result != true)
+         return false;
+         
+         int32_t Temp = *((int32_t*)(CommandParameters.recivedCommandData));
+         MEMStemp = (float) Temp ;
+         MEMStemp /= 100;
+         
+         return true;
+         */
+        return false;
+    }
+    
+    bool GetIRtemp(int & IRtemp)
+    {
+        /*
+         TIVCAMCommandParameters CommandParameters;
+         
+         CommandParameters.CommandOp = HWmonitor_GetIRTemp;
+         CommandParameters.Param1 = 0;
+         CommandParameters.Param2 = 0;
+         CommandParameters.Param3 = 0;
+         CommandParameters.Param4 = 0;
+         CommandParameters.sizeOfSendCommandData = 0;
+         CommandParameters.TimeOut = 5000;
+         CommandParameters.oneDirection = false;
+         
+         sts = PerfomAndSendHWmonitorCommand(CommandParameters);
+         if (sts != IVCAM_SUCCESS)
+         return IVCAM_FAILURE;
+         
+         IRtemp = (int8_t) CommandParameters.recivedCommandData[0];
+         return IVCAM_SUCCESS;
+         */
+        return false;
+    }
+    
+    /*
+    void UpdateASICCoefs(TAsicCoefficiants * AsicCoefficiants)
+    {
+
+         TIVCAMCommandParameters CommandParameters;
+         ETCalibTable FWres;
+         
+         TIVCAMStreamProfile IVCAMStreamProfile;
+         FWres = ectVGA;
+         
+         CommandParameters.CommandOp = HWmonitor_UpdateCalib;
+         memcpy(CommandParameters.data, AsicCoefficiants->CoefValueArray, NUM_OF_CALIBRATION_COEFFS*sizeof(float));
+         CommandParameters.Param1 = FWres;
+         CommandParameters.Param2 = 0;
+         CommandParameters.Param3 = 0;
+         CommandParameters.Param4 = 0;
+         CommandParameters.oneDirection = false;
+         CommandParameters.sizeOfSendCommandData = NUM_OF_CALIBRATION_COEFFS*sizeof(float);
+         CommandParameters.TimeOut = 5000;
+         
+         return PerfomAndSendHWmonitorCommand(CommandParameters);
+    }
+    */
+    
+    void TemperatureControlLoop()
+    {
+        // @tofix
     }
     
 public:
@@ -301,23 +397,17 @@ public:
         if (usbDeviceHandle == NULL)
             throw std::runtime_error("libusb_open_device_with_vid_pid() failed");
         
-        int err = libusb_claim_interface(usbDeviceHandle, IVCAM_MONITOR_INTERFACE);
+        int status = libusb_claim_interface(usbDeviceHandle, IVCAM_MONITOR_INTERFACE);
+        if (status < 0) throw std::runtime_error("libusb_claim_interface() failed");
         
-        if (err)
-        {
-            throw std::runtime_error("libusb_claim_interface() failed");
-        }
+        uint8_t rawCalibrationBuffer[HW_MONITOR_BUFFER_SIZE];
+        size_t bufferLength = HW_MONITOR_BUFFER_SIZE;
+        GetCalibrationRawData(rawCalibrationBuffer, bufferLength);
         
-        uint8_t calBuf[HW_MONITOR_BUFFER_SIZE];
-        size_t len = HW_MONITOR_BUFFER_SIZE;
+        CameraCalibrationParameters calibratedParameters;
+        ProjectionCalibrate(rawCalibrationBuffer, (int) bufferLength, &calibratedParameters);
         
-        GetCalibrationRawData(calBuf, len);
-        
-        CameraCalibrationParameters calParams;
-        
-        ProjectionCalibrate(calBuf, (int) len, &calParams);
-        
-        parameters = calParams;
+        parameters = calibratedParameters;
     }
     
     ~IVCAMHardwareIOInternal()
@@ -327,12 +417,13 @@ public:
     
     bool StartTempCompensationLoop()
     {
+        // @tofix
         return false;
     }
     
     void StopTempCompensationLoop()
     {
-        
+        // @tofix
     }
     
     CameraCalibrationParameters & GetParameters()

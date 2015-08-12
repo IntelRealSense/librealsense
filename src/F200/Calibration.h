@@ -25,7 +25,7 @@ public:
         
     }
     
-    IVCAMCalibrator(const CameraCalibrationParameters& p)
+    IVCAMCalibrator(const CameraCalibrationParameters & p)
     {
         buildParameters(p);
     }
