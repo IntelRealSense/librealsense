@@ -35,6 +35,9 @@
     <ClInclude Include="..\src\DsCamera.h">
       <Filter>src</Filter>
     </ClInclude>
+    <ClInclude Include="..\include\librealsense\rsutil.h">
+      <Filter>include</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="PointCloudViewer.vcxproj.filters" />

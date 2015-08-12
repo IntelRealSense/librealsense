@@ -1,47 +1,13 @@
 #ifndef LIBREALSENSE_CPP_INCLUDE_GUARD
 #define LIBREALSENSE_CPP_INCLUDE_GUARD
 
-#include "rs.h"
+#include "rsutil.h"
 
+#include <array>
 #include <stdexcept>
 
 namespace rs
 {
-    // Transform 3D coordinates to pixel coordinate in an image
-    inline void project_point_to_pixel(const float point[3], const rs_intrinsics & intrin, float pixel[2])
-    {
-        pixel[0] = intrin.principal_point[0] + intrin.focal_length[0] + point[0] / point[2];
-        pixel[1] = intrin.principal_point[1] + intrin.focal_length[1] + point[1] / point[2];
-    }
-
-    // Transform pixel coordinates in an image to 3D coordinates
-    inline void deproject_rectified_pixel_to_point(const float pixel[2], float depth, const rs_intrinsics & intrin, float point[3])
-    {
-        point[0] = depth * (pixel[0] - intrin.principal_point[0]) / intrin.focal_length[0];
-        point[1] = depth * (pixel[1] - intrin.principal_point[1]) / intrin.focal_length[1];
-        point[2] = depth;
-    }
-
-    // Transform 3D coordinates from one viewpoint to 3D coordinates in another viewpoint
-    inline void transform_point_to_point(const float from_point[3], const rs_extrinsics & extrin, float to_point[3])
-    {
-        for(int i=0; i<3; ++i)
-        {
-            to_point[i] = extrin.translation_vec[i];
-            for(int j=0; j<3; ++j) to_point[i] += extrin.rotation_matrix[i*3+j] * from_point[j];
-        }
-    }
-
-    // Transform from pixel coordinates in one image to pixel coordinates in another image
-    inline void transform_rectified_pixel_to_pixel(const float * from_pixel, float from_depth, const rs_intrinsics & from_intrin,
-                                                   const rs_extrinsics & extrin, const rs_intrinsics & to_intrin, float * to_pixel)
-    {
-        float from_point[3], to_point[3];
-        deproject_rectified_pixel_to_point(from_pixel, from_depth, from_intrin, from_point);
-        transform_point_to_point(from_point, extrin, to_point);
-        project_point_to_pixel(to_point, to_intrin, to_pixel);
-    }
-
 	// Modify this function if you wish to change error handling behavior from throwing exceptions to logging / callbacks / global status, etc.
 	inline void handle_error(rs_error * error)
 	{
@@ -62,23 +28,17 @@ namespace rs
 							operator rs_error ** ()													{ return &error; }
 	};
 
-    struct pixel { float x,y; };
-    struct point { float x,y,z; };
-
     struct intrinsics : rs_intrinsics
     {
-
-        point deproject(pixel p, float depth) const {}
-        pixel project(point p) const {}
+		std::array<float,2>	project(const float point[3]) const										{ std::array<float,2> pixel; rs_project_point_to_pixel(point, *this, pixel.data()); return pixel; }
+		std::array<float,2>	project_to_rectified(const float point[3]) const						{ std::array<float,2> pixel; rs_project_point_to_rectified_pixel(point, *this, pixel.data()); return pixel; }
+		std::array<float,3>	deproject_from_rectified(const float pixel[2], float depth) const		{ std::array<float,3> point; rs_deproject_rectified_pixel_to_point(pixel, depth, *this, point.data()); return point; }        	
     };
 
     struct extrinsics : rs_extrinsics
     {
-        point transform(point p) const {}
-        point detransform(point p) const {}
+		std::array<float,3> transform(const float point[3]) const									{ std::array<float,3> p; rs_transform_point_to_point(point, *this, p.data()); return p; }
     };
-
-
 
 	class camera
 	{
@@ -102,9 +62,8 @@ namespace rs
 		int					get_stream_property_i(int stream, int prop)								{ return rs_get_stream_property_i(cam, stream, prop, auto_error()); }
 		float				get_stream_property_f(int stream, int prop)								{ return rs_get_stream_property_f(cam, stream, prop, auto_error()); }
 
-        intrinsics          get_intrinsics(int stream);
-        extrinsics          get_extrinsics(int from, int to);
-
+        intrinsics          get_stream_intrinsics(int stream)										{ intrinsics intrin; rs_get_stream_intrinsics(cam, stream, &intrin, auto_error()); return intrin; }
+        extrinsics          get_stream_extrinsics(int stream_from, int stream_to)					{ extrinsics extrin; rs_get_stream_extrinsics(cam, stream_from, stream_to, &extrin, auto_error()); return extrin; }
 	};
 
 	class context
