@@ -174,6 +174,12 @@ int main(int argc, const char * argv[]) try
     
 	rs::context realsenseContext;
 	rs::camera camera;
+	auto z_image_width = 640;
+	auto z_image_height = 480;
+	auto rgb_image_width = 640;
+	auto rgb_image_Height = 480;
+	int rgb_format = RS_FRAME_FORMAT_YUYV;
+	int z_format = RS_FRAME_FORMAT_Z16;
 
 	//////////////////////////////////////////////////////////////////////////////////////////////////////
     //////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -206,17 +212,23 @@ int main(int argc, const char * argv[]) try
 			camera.get_stream_property_f(RS_STREAM_DEPTH, RS_PRINCIPAL_POINT_Y));
         
         std::cout << "Computed FoV: " << hFov << " x " << vFov << std::endl;
-        
+
         // R300 / DS5
-        //camera.start_stream(RS_STREAM_DEPTH, 1280, 721, 30, RS_FRAME_FORMAT_Z16);
+		//z_image_width = 1280;
+		//z_image_height = 721;
         
         // R200 / DS4
-		//camera.start_stream(RS_STREAM_DEPTH, 628, 469, 0, RS_FRAME_FORMAT_Z16);
-		//camera.start_stream(RS_STREAM_RGB, 640, 480, 30, RS_FRAME_FORMAT_YUYV);
+		z_image_width = 628;
+		z_image_height = 469;
         
         // F200 / IVCAM
-        camera.start_stream(RS_STREAM_DEPTH, 640, 480, 30, RS_FRAME_FORMAT_INVZ);
-       // camera.start_stream(RS_STREAM_RGB, 640, 480, 30, RS_FRAME_FORMAT_YUYV);
+		//z_image_width = 640;
+		//z_image_height = 480;
+		//z_format = RS_FRAME_FORMAT_INVZ;
+
+		camera.start_stream(RS_STREAM_DEPTH, z_image_width, z_image_height, 30, z_format);
+		camera.start_stream(RS_STREAM_RGB, rgb_image_width, rgb_image_Height, 30, rgb_format);
+
         
     }
         
@@ -224,8 +236,8 @@ int main(int argc, const char * argv[]) try
     //////////////////////////////////////////////////////////////////////////////////////////////////////
     
     // Remapped colors...
-    rgbTextureHandle = CreateTexture(640, 480, GL_RGB);     // Normal RGB
-    depthTextureHandle = CreateTexture(640, 480, GL_RGB);   // Depth to RGB remap
+	rgbTextureHandle = CreateTexture(z_image_width, z_image_height, GL_RGB);     // Normal RGB
+	depthTextureHandle = CreateTexture(rgb_image_width, rgb_image_Height, GL_RGB);   // Depth to RGB remap
     
     GLuint quad_VertexArrayID;
     glGenVertexArrays(1, &quad_VertexArrayID);
@@ -257,13 +269,13 @@ int main(int argc, const char * argv[]) try
         {
             glViewport(0, 0, width, height);
 			auto depthImage = camera.get_depth_image();
-            static uint8_t depthColoredHistogram[640 * 480 * 3];
-            ConvertDepthToRGBUsingHistogram(depthColoredHistogram, depthImage, 640, 480, 0.4f, 0.925f);
-            drawTexture(fullscreenTextureProg, quadVBO, imageUniformHandle, depthTextureHandle, depthColoredHistogram, 640, 480, GL_RGB, GL_UNSIGNED_BYTE);
+            static uint8_t depthColoredHistogram[1280 * 721 * 3];
+			ConvertDepthToRGBUsingHistogram(depthColoredHistogram, depthImage, z_image_width, z_image_height, 0.4f, 0.925f);
+			drawTexture(fullscreenTextureProg, quadVBO, imageUniformHandle, depthTextureHandle, depthColoredHistogram, z_image_width, z_image_height, GL_RGB, GL_UNSIGNED_BYTE);
             
             //glViewport(width / 2, 0, width, height);
 			//auto colorImage = camera.get_color_image();
-            //drawTexture(fullscreenTextureProg, quadVBO, imageUniformHandle, rgbTextureHandle, colorImage, 640, 480, GL_RGB, GL_UNSIGNED_BYTE);
+            //drawTexture(fullscreenTextureProg, quadVBO, imageUniformHandle, rgbTextureHandle, colorImage, rgb_image_width, rgb_image_height, GL_RGB, GL_UNSIGNED_BYTE);
         }
         
         frameCount++;

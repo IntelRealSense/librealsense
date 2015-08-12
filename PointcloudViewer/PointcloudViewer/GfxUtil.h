@@ -31,7 +31,7 @@ void ConvertDepthToRGBUsingHistogram(uint8_t img[], const uint16_t depthImage[],
 
 std::array<double, 3> rgbToHsv(uint8_t r, uint8_t g, uint8_t b);
 
-std::array<int, 3> hsvToRgb(double h, double s, double v);
+std::array<int, 3> hsvToRgb(float h, float s, float v);
 
 void drawTexture(GLuint prog, GLuint vbo, GLuint texHandle, GLuint texId, const void * pixels, int width, int height, GLint fmt, GLenum type);
 

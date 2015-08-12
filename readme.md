@@ -11,6 +11,6 @@ A libusb based driver for the RealSense F200 (IVCAM) and RealSense R200 (DS4). I
 
 ## Linux Setup
 1. See "4.2: Running the Driver" http://wiki.ros.org/libuvc_camera
-2. cp 99-uvc.rules /etc/udev/rules.d/
-3. cp uvc.conf /etc/modprobe.d/uvc.conf/
+2. sudo cp 99-uvc.rules /etc/udev/rules.d/
+3. sudo cp uvc.conf /etc/modprobe.d/uvc.conf/
 

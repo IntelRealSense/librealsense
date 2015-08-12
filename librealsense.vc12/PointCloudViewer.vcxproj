@@ -163,6 +163,7 @@
   <ItemGroup>
     <ClCompile Include="..\PointcloudViewer\PointcloudViewer\GfxUtil.cpp" />
     <ClCompile Include="..\PointcloudViewer\PointcloudViewer\main.cpp" />
+    <ClCompile Include="test.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\PointcloudViewer\PointcloudViewer\GfxUtil.h" />
