@@ -121,7 +121,7 @@ void ConvertDepthToRGBUsingHistogram(uint8_t img[], const uint16_t depthImage[],
         {
             auto t = histogram[d]; // Use the histogram entry (in the range of [0-256]) to interpolate between nearColor and farColor
             std::array<int, 3> returnRGB = { 0, 0, 0 };
-            returnRGB = hsvToRgb(remapInt<float, true, 0, 255>(t,nearHue, farHue), 1, 1);
+            returnRGB = hsvToRgb(remapInt<float, true, 0, 255>((float)t,nearHue, farHue), 1.0f, 1.0f);
             *rgb++ = returnRGB[0];
             *rgb++ = returnRGB[1];
             *rgb++ = returnRGB[2];
@@ -198,15 +198,15 @@ std::array<double, 3> rgbToHsv(uint8_t r, uint8_t g, uint8_t b)
     return hsv;
 }
 
-std::array<int, 3> hsvToRgb(double h, double s, double v) {
+std::array<int, 3> hsvToRgb(float h, float s, float v) {
     
     std::array<int, 3> rgb;
-    double r, g, b;
+    float r, g, b;
     int i = int(h * 6);
-    double f = h * 6 - i;
-    double p = v * (1 - s);
-    double q = v * (1 - f * s);
-    double t = v * (1 - (1 - f) * s);
+    float f = h * 6 - i;
+    float p = v * (1 - s);
+    float q = v * (1 - f * s);
+    float t = v * (1 - (1 - f) * s);
     
     switch (i % 6)
     {
