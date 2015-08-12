@@ -79,6 +79,10 @@ void rs_context::QueryDeviceList()
     #endif
 }
 
+////////////////////////
+// API implementation //
+////////////////////////
+
 rs_context * rs_create_context(int api_version, rs_error ** error) 
 {
 	BEGIN
@@ -86,14 +90,56 @@ rs_context * rs_create_context(int api_version, rs_error ** error)
 	return new rs_context();
 	END 
 }
-void rs_delete_context(rs_context * context, rs_error ** error) { BEGIN delete context; END }
-int	rs_get_camera_count(rs_context * context, rs_error ** error) { BEGIN return (int)context->cameras.size(); END }
-rs_camera * rs_get_camera(rs_context * context, int index, rs_error ** error) { BEGIN return context->cameras[index].get(); END }
 
-void rs_enable_stream(rs_camera * camera, int stream, rs_error ** error) { BEGIN camera->streamingModeBitfield |= stream; END }
-int rs_is_streaming(rs_camera * camera, rs_error ** error) { BEGIN return camera->streamingModeBitfield & RS_STREAM_DEPTH || camera->streamingModeBitfield & RS_STREAM_RGB ? 1 : 0; END }
-int	rs_get_camera_index(rs_camera * camera, rs_error ** error) { BEGIN return camera->cameraIdx; END }
-uint64_t rs_get_frame_count(rs_camera * camera, rs_error ** error) { BEGIN return camera->frameCount; END }
+int	rs_get_camera_count(rs_context * context, rs_error ** error)
+{
+    BEGIN
+    return (int)context->cameras.size();
+    END
+}
+
+rs_camera * rs_get_camera(rs_context * context, int index, rs_error ** error)
+{
+    BEGIN
+    return context->cameras[index].get();
+    END
+}
+
+void rs_delete_context(rs_context * context, rs_error ** error)
+{
+    BEGIN
+    delete context;
+    END
+}
+
+void rs_enable_stream(rs_camera * camera, int stream, rs_error ** error)
+{
+    BEGIN
+    camera->streamingModeBitfield |= stream;
+    END
+}
+
+int rs_is_streaming(rs_camera * camera, rs_error ** error)
+{
+    BEGIN
+    return camera->streamingModeBitfield & RS_STREAM_DEPTH || camera->streamingModeBitfield & RS_STREAM_RGB ? 1 : 0;
+    END
+}
+
+int	rs_get_camera_index(rs_camera * camera, rs_error ** error)
+{
+    BEGIN
+    return camera->cameraIdx;
+    END
+}
+
+uint64_t rs_get_frame_count(rs_camera * camera, rs_error ** error)
+{
+    BEGIN
+    return camera->frameCount;
+    END
+}
+
 const uint8_t *	rs_get_color_image(rs_camera * camera, rs_error ** error)
 {
 	BEGIN
@@ -118,38 +164,53 @@ const uint16_t * rs_get_depth_image(rs_camera * camera, rs_error ** error)
 	END
 }
 
-int	rs_configure_streams(rs_camera * camera, rs_error ** error) { BEGIN return camera->ConfigureStreams(); END }
-void rs_start_stream(rs_camera * camera, int stream, int width, int height, int fps, int format, rs_error ** error) { BEGIN camera->StartStream(stream, { width, height, fps, (rs::FrameFormat)format }); END }
-void rs_stop_stream(rs_camera * camera, int stream, rs_error ** error) { BEGIN camera->StopStream(stream); END }
+int	rs_configure_streams(rs_camera * camera, rs_error ** error)
+{
+    BEGIN
+    return camera->ConfigureStreams();
+    END
+}
+
+void rs_start_stream(rs_camera * camera, int stream, int width, int height, int fps, int format, rs_error ** error)
+{
+    BEGIN
+    camera->StartStream(stream, { width, height, fps, (rs::FrameFormat)format });
+    END
+}
+
+void rs_stop_stream(rs_camera * camera, int stream, rs_error ** error)
+{
+    BEGIN
+    camera->StopStream(stream);
+    END
+}
 
 int rs_get_stream_property_i(rs_camera * camera, int stream, int prop, rs_error ** error)
 {
-	return Try("rs_get_stream_property_i", error, [&]() -> int
-	{
-		if (stream != RS_STREAM_DEPTH) return 0;
-		switch (prop)
-		{
-		case RS_IMAGE_SIZE_X: return camera->GetDepthIntrinsics().rw;
-		case RS_IMAGE_SIZE_Y: return camera->GetDepthIntrinsics().rh;
-		default: return 0;
-		}
-	});
+    BEGIN
+    if (stream != RS_STREAM_DEPTH) return 0;
+    switch (prop)
+    {
+    case RS_IMAGE_SIZE_X: return (int)camera->GetDepthIntrinsics().rw;
+    case RS_IMAGE_SIZE_Y: return (int)camera->GetDepthIntrinsics().rh;
+    default: return 0;
+    }
+    END
 }
 
 float rs_get_stream_property_f(rs_camera * camera, int stream, int prop, rs_error ** error)
 {
-	return Try("rs_get_stream_property_f", error, [&]() -> float
-	{
-		if (stream != RS_STREAM_DEPTH) return 0;
-		switch (prop)
-		{
-		case RS_FOCAL_LENGTH_X: return camera->GetDepthIntrinsics().rfx;
-		case RS_FOCAL_LENGTH_Y: return camera->GetDepthIntrinsics().rfy;
-		case RS_PRINCIPAL_POINT_X: return camera->GetDepthIntrinsics().rpx;
-		case RS_PRINCIPAL_POINT_Y: return camera->GetDepthIntrinsics().rpy;
-		default: return 0;
-		}
-	});
+    BEGIN
+    if (stream != RS_STREAM_DEPTH) return 0.0f;
+    switch (prop)
+    {
+    case RS_FOCAL_LENGTH_X: return camera->GetDepthIntrinsics().rfx;
+    case RS_FOCAL_LENGTH_Y: return camera->GetDepthIntrinsics().rfy;
+    case RS_PRINCIPAL_POINT_X: return camera->GetDepthIntrinsics().rpx;
+    case RS_PRINCIPAL_POINT_Y: return camera->GetDepthIntrinsics().rpy;
+    default: return 0.0f;
+    }
+    END
 }
 
 const char * rs_get_failed_function(rs_error * error) { return error ? error->function.c_str() : nullptr; }
