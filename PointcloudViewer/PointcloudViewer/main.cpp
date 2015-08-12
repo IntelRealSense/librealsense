@@ -55,6 +55,8 @@
 #include <OpenGL/gl3.h>
 
 #elif defined(PLATFORM_LINUX)
+
+#include <GL/glew.h>
 #include <GLFW/glfw3.h>
 
 #endif
@@ -111,13 +113,13 @@ int main(int argc, const char * argv[]) try
         return -1;
     }
     
-#if defined(PLATFORM_OSX)
+//#if defined(PLATFORM_OSX)
     glfwWindowHint(GLFW_SAMPLES, 2);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-#endif
+//#endif
     
     window = glfwCreateWindow(1280, 480, "R200 Pointcloud", NULL, NULL);
     
@@ -129,8 +131,13 @@ int main(int argc, const char * argv[]) try
     }
     
     glfwMakeContextCurrent(window);
-#if defined(PLATFORM_WINDOWS)
-	glewInit();
+    std::cout << "GL_VERSION  = " << glGetString(GL_VERSION) << std::endl;
+    std::cout << "GL_VENDOR   = " << glGetString(GL_VENDOR) << std::endl;
+    std::cout << "GL_RENDERER = " << glGetString(GL_RENDERER) << std::endl;
+
+#if defined(PLATFORM_WINDOWS) || defined(PLATFORM_LINUX)
+    glewExperimental = GL_TRUE;
+    if(glewInit() != GLEW_OK) throw std::runtime_error("Failed to initialize GLEW");
 #endif
     
     glfwSetWindowSizeCallback(window,
