@@ -7,7 +7,7 @@
 
 #ifdef USE_UVC_DEVICES
 #include "../UVCCamera.h"
-#include "CalibParams.h"
+#include "R200Types.h"
 #include "HardwareIO.h"
 
 namespace f200

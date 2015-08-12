@@ -15,10 +15,6 @@ using namespace f200;
 
 #ifndef WIN32
 
-#define CM_TO_MM(_d)                    float((_d)*10)
-#define MM_TO_CM(_d)                    float((_d)/10)
-#define METERS_TO_CM(_d)                float((_d)*10
-
 #define IVCAM_VID                       0x8086
 #define IVCAM_PID                       0x0A66
 #define IVCAM_MONITOR_INTERFACE         0x4

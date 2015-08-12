@@ -19,8 +19,8 @@
 		08567C011B5B5B5D00EB6C0D /* stream.c in Sources */ = {isa = PBXBuildFile; fileRef = 08567BF71B5B5B5D00EB6C0D /* stream.c */; };
 		27F24EB01B7A784E00BF4D43 /* rs-internal.h in Headers */ = {isa = PBXBuildFile; fileRef = 27F24EAE1B7A784E00BF4D43 /* rs-internal.h */; };
 		27F24EB11B7A784E00BF4D43 /* rs.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 27F24EAF1B7A784E00BF4D43 /* rs.cpp */; };
-		27F24EBB1B7A9B5B00BF4D43 /* CalibIO.h in Headers */ = {isa = PBXBuildFile; fileRef = 27F24EB21B7A9B5B00BF4D43 /* CalibIO.h */; };
-		27F24EBC1B7A9B5B00BF4D43 /* CalibParams.h in Headers */ = {isa = PBXBuildFile; fileRef = 27F24EB31B7A9B5B00BF4D43 /* CalibParams.h */; };
+		27F24EBB1B7A9B5B00BF4D43 /* ParseCalibration.h in Headers */ = {isa = PBXBuildFile; fileRef = 27F24EB21B7A9B5B00BF4D43 /* ParseCalibration.h */; };
+		27F24EBC1B7A9B5B00BF4D43 /* R200Types.h in Headers */ = {isa = PBXBuildFile; fileRef = 27F24EB31B7A9B5B00BF4D43 /* R200Types.h */; };
 		27F24EBD1B7A9B5B00BF4D43 /* CameraHeader.h in Headers */ = {isa = PBXBuildFile; fileRef = 27F24EB41B7A9B5B00BF4D43 /* CameraHeader.h */; };
 		27F24EBE1B7A9B5B00BF4D43 /* R200.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 27F24EB51B7A9B5B00BF4D43 /* R200.cpp */; };
 		27F24EBF1B7A9B5B00BF4D43 /* R200.h in Headers */ = {isa = PBXBuildFile; fileRef = 27F24EB61B7A9B5B00BF4D43 /* R200.h */; };
@@ -59,8 +59,8 @@
 		08567BF71B5B5B5D00EB6C0D /* stream.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = stream.c; path = third_party/libuvc/src/stream.c; sourceTree = SOURCE_ROOT; };
 		27F24EAE1B7A784E00BF4D43 /* rs-internal.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; lineEnding = 0; name = "rs-internal.h"; path = "src/rs-internal.h"; sourceTree = SOURCE_ROOT; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
 		27F24EAF1B7A784E00BF4D43 /* rs.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = rs.cpp; path = src/rs.cpp; sourceTree = SOURCE_ROOT; };
-		27F24EB21B7A9B5B00BF4D43 /* CalibIO.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; lineEnding = 0; name = CalibIO.h; path = src/R200/CalibIO.h; sourceTree = SOURCE_ROOT; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
-		27F24EB31B7A9B5B00BF4D43 /* CalibParams.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; lineEnding = 0; name = CalibParams.h; path = src/R200/CalibParams.h; sourceTree = SOURCE_ROOT; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
+		27F24EB21B7A9B5B00BF4D43 /* ParseCalibration.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; lineEnding = 0; name = ParseCalibration.h; path = src/R200/ParseCalibration.h; sourceTree = SOURCE_ROOT; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
+		27F24EB31B7A9B5B00BF4D43 /* R200Types.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; lineEnding = 0; name = R200Types.h; path = src/R200/R200Types.h; sourceTree = SOURCE_ROOT; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
 		27F24EB41B7A9B5B00BF4D43 /* CameraHeader.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; lineEnding = 0; name = CameraHeader.h; path = src/R200/CameraHeader.h; sourceTree = SOURCE_ROOT; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
 		27F24EB51B7A9B5B00BF4D43 /* R200.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; lineEnding = 0; name = R200.cpp; path = src/R200/R200.cpp; sourceTree = SOURCE_ROOT; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
 		27F24EB61B7A9B5B00BF4D43 /* R200.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; lineEnding = 0; name = R200.h; path = src/R200/R200.h; sourceTree = SOURCE_ROOT; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
@@ -198,8 +198,8 @@
 		08567C361B61E6C600EB6C0D /* R200 */ = {
 			isa = PBXGroup;
 			children = (
-				27F24EB21B7A9B5B00BF4D43 /* CalibIO.h */,
-				27F24EB31B7A9B5B00BF4D43 /* CalibParams.h */,
+				27F24EB21B7A9B5B00BF4D43 /* ParseCalibration.h */,
+				27F24EB31B7A9B5B00BF4D43 /* R200Types.h */,
 				27F24EB41B7A9B5B00BF4D43 /* CameraHeader.h */,
 				27F24EB51B7A9B5B00BF4D43 /* R200.cpp */,
 				27F24EB61B7A9B5B00BF4D43 /* R200.h */,
@@ -222,7 +222,7 @@
 				27F24ED11B7A9B6100BF4D43 /* F200.h in Headers */,
 				27F24ECE1B7A9B6100BF4D43 /* HardwareIO.h in Headers */,
 				27F24EBF1B7A9B5B00BF4D43 /* R200.h in Headers */,
-				27F24EBC1B7A9B5B00BF4D43 /* CalibParams.h in Headers */,
+				27F24EBC1B7A9B5B00BF4D43 /* R200Types.h in Headers */,
 				27F24ED41B7A9B6100BF4D43 /* Projection.h in Headers */,
 				08567BEC1B5B5B4E00EB6C0D /* libuvc_internal.h in Headers */,
 				27F24ED91B7A9B6700BF4D43 /* rs.hpp in Headers */,
@@ -235,7 +235,7 @@
 				27F24ECF1B7A9B6100BF4D43 /* Calibration.h in Headers */,
 				27F24EE31B7AC2BC00BF4D43 /* XU.h in Headers */,
 				27F24EB01B7A784E00BF4D43 /* rs-internal.h in Headers */,
-				27F24EBB1B7A9B5B00BF4D43 /* CalibIO.h in Headers */,
+				27F24EBB1B7A9B5B00BF4D43 /* ParseCalibration.h in Headers */,
 				08567BED1B5B5B4E00EB6C0D /* libuvc.h in Headers */,
 				27F24EBD1B7A9B5B00BF4D43 /* CameraHeader.h in Headers */,
 			);

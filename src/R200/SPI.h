@@ -7,7 +7,7 @@
 
 #include "XU.h"
 #include "CameraHeader.h"
-#include "CalibParams.h"
+#include "R200Types.h"
 
 namespace r200
 {

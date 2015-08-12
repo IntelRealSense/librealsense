@@ -1,11 +1,11 @@
 #pragma once
 
-#ifndef LIBREALSENSE_R200_CALIB_IO_H
-#define LIBREALSENSE_R200_CALIB_IO_H
+#ifndef LIBREALSENSE_R200_PARSE_CALIBRATION_H
+#define LIBREALSENSE_R200_PARSE_CALIBRATION_H
 
 #include <stdint.h>
 
-#include "CalibParams.h"
+#include "R200Types.h"
 
 namespace r200
 {

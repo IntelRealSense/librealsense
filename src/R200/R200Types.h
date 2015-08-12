@@ -1,7 +1,7 @@
 #pragma once
 
-#ifndef LIBREALSENSE_R200_CALIB_PARAMS_H
-#define LIBREALSENSE_R200_CALIB_PARAMS_H
+#ifndef LIBREALSENSE_R200_TYPES_H
+#define LIBREALSENSE_R200_TYPES_H
 
 #include "../Common.h"
 #include <cstdint>
