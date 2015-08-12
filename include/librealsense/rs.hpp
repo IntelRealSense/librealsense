@@ -30,8 +30,12 @@ namespace rs
 
     struct intrinsics : rs_intrinsics
     {
+
+
 		std::array<float,2>	project(const float point[3]) const										{ std::array<float,2> pixel; rs_project_point_to_pixel(point, *this, pixel.data()); return pixel; }
+		std::array<float,2>	project_to_texcoord(const float point[3]) const							{ auto pixel = project(point); return {pixel[0]/image_size[0], pixel[1]/image_size[1]}; }
 		std::array<float,2>	project_to_rectified(const float point[3]) const						{ std::array<float,2> pixel; rs_project_point_to_rectified_pixel(point, *this, pixel.data()); return pixel; }
+		std::array<float,2>	project_to_rectified_texcoord(const float point[3]) const				{ auto pixel = project_to_rectified(point); return {pixel[0]/image_size[0], pixel[1]/image_size[1]}; }
 		std::array<float,3>	deproject_from_rectified(const float pixel[2], float depth) const		{ std::array<float,3> point; rs_deproject_rectified_pixel_to_point(pixel, depth, *this, point.data()); return point; }        	
     };
 
