@@ -51,15 +51,11 @@ namespace r200
 
         auto oneTimeInitialize = [&](uvc_device_handle_t * uvc_handle)
         {
-            spiInterface.reset(new SPI_Interface(uvc_handle));
-
-            spiInterface->Initialize();
-
+            hardware_io.reset(new DS4HardwareIO(uvc_handle));
+            
             //uvc_print_diag(uvc_handle, stderr);
 
             std::cout << "Firmware Revision: " << GetFirmwareVersion(uvc_handle) << std::endl;
-
-            spiInterface->LogDebugInfo();
 
             if (!SetStreamIntent(uvc_handle, streamingModeBitfield))
             {
@@ -135,7 +131,7 @@ namespace r200
 
     RectifiedIntrinsics R200Camera::GetDepthIntrinsics()
     {
-        return spiInterface->GetCalibration().modesLR[0]; // Warning: assume mode 0 here (628x468)
+        return hardware_io->GetCalibration().modesLR[0]; // Warning: assume mode 0 here (628x468)
     }
 } // end namespace r200
 #endif

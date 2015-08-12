@@ -8,11 +8,11 @@
 #ifdef USE_UVC_DEVICES
 namespace r200
 {
-    class SPI_Interface;
+    class DS4HardwareIO;
 
     class R200Camera : public rs::UVCCamera
     {
-        std::unique_ptr<SPI_Interface> spiInterface;
+        std::unique_ptr<DS4HardwareIO> hardware_io;
         rs::StreamConfiguration zConfig;
         rs::StreamConfiguration rgbConfig;
     public:

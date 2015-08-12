@@ -25,6 +25,7 @@ public:
     // SetDepthResolution(int width, int height)
     
     CameraCalibrationParameters & GetParameters();
+        
 };
     
 } // end namespace f200
