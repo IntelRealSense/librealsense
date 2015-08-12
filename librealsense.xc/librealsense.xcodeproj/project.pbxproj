@@ -35,6 +35,16 @@
 		27F24F791B7BDF9700BF4D43 /* HardwareIO.h in Headers */ = {isa = PBXBuildFile; fileRef = 27F24F6F1B7BDF9700BF4D43 /* HardwareIO.h */; };
 		27F24F7A1B7BDF9700BF4D43 /* Projection.h in Headers */ = {isa = PBXBuildFile; fileRef = 27F24F701B7BDF9700BF4D43 /* Projection.h */; };
 		27F24F7B1B7BDF9700BF4D43 /* XU.h in Headers */ = {isa = PBXBuildFile; fileRef = 27F24F711B7BDF9700BF4D43 /* XU.h */; };
+		27F24F851B7BE0E800BF4D43 /* ctrl.c in Sources */ = {isa = PBXBuildFile; fileRef = 27F24F7D1B7BE0E800BF4D43 /* ctrl.c */; };
+		27F24F861B7BE0E800BF4D43 /* device.c in Sources */ = {isa = PBXBuildFile; fileRef = 27F24F7E1B7BE0E800BF4D43 /* device.c */; };
+		27F24F871B7BE0E800BF4D43 /* diag.c in Sources */ = {isa = PBXBuildFile; fileRef = 27F24F7F1B7BE0E800BF4D43 /* diag.c */; };
+		27F24F891B7BE0E800BF4D43 /* frame.c in Sources */ = {isa = PBXBuildFile; fileRef = 27F24F811B7BE0E800BF4D43 /* frame.c */; };
+		27F24F8A1B7BE0E800BF4D43 /* init.c in Sources */ = {isa = PBXBuildFile; fileRef = 27F24F821B7BE0E800BF4D43 /* init.c */; };
+		27F24F8B1B7BE0E800BF4D43 /* misc.c in Sources */ = {isa = PBXBuildFile; fileRef = 27F24F831B7BE0E800BF4D43 /* misc.c */; };
+		27F24F8C1B7BE0E800BF4D43 /* stream.c in Sources */ = {isa = PBXBuildFile; fileRef = 27F24F841B7BE0E800BF4D43 /* stream.c */; };
+		27F24F901B7BE0FB00BF4D43 /* libuvc_config.h in Headers */ = {isa = PBXBuildFile; fileRef = 27F24F8D1B7BE0FB00BF4D43 /* libuvc_config.h */; };
+		27F24F911B7BE0FB00BF4D43 /* libuvc_internal.h in Headers */ = {isa = PBXBuildFile; fileRef = 27F24F8E1B7BE0FB00BF4D43 /* libuvc_internal.h */; };
+		27F24F921B7BE0FB00BF4D43 /* libuvc.h in Headers */ = {isa = PBXBuildFile; fileRef = 27F24F8F1B7BE0FB00BF4D43 /* libuvc.h */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -67,6 +77,16 @@
 		27F24F6F1B7BDF9700BF4D43 /* HardwareIO.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = HardwareIO.h; path = ../src/F200/HardwareIO.h; sourceTree = SOURCE_ROOT; };
 		27F24F701B7BDF9700BF4D43 /* Projection.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Projection.h; path = ../src/F200/Projection.h; sourceTree = SOURCE_ROOT; };
 		27F24F711B7BDF9700BF4D43 /* XU.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = XU.h; path = ../src/F200/XU.h; sourceTree = SOURCE_ROOT; };
+		27F24F7D1B7BE0E800BF4D43 /* ctrl.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = ctrl.c; path = ../third_party/libuvc/src/ctrl.c; sourceTree = SOURCE_ROOT; };
+		27F24F7E1B7BE0E800BF4D43 /* device.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = device.c; path = ../third_party/libuvc/src/device.c; sourceTree = SOURCE_ROOT; };
+		27F24F7F1B7BE0E800BF4D43 /* diag.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = diag.c; path = ../third_party/libuvc/src/diag.c; sourceTree = SOURCE_ROOT; };
+		27F24F811B7BE0E800BF4D43 /* frame.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = frame.c; path = ../third_party/libuvc/src/frame.c; sourceTree = SOURCE_ROOT; };
+		27F24F821B7BE0E800BF4D43 /* init.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = init.c; path = ../third_party/libuvc/src/init.c; sourceTree = SOURCE_ROOT; };
+		27F24F831B7BE0E800BF4D43 /* misc.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = misc.c; path = ../third_party/libuvc/src/misc.c; sourceTree = SOURCE_ROOT; };
+		27F24F841B7BE0E800BF4D43 /* stream.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = stream.c; path = ../third_party/libuvc/src/stream.c; sourceTree = SOURCE_ROOT; };
+		27F24F8D1B7BE0FB00BF4D43 /* libuvc_config.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = libuvc_config.h; path = ../third_party/libuvc/include/libuvc/libuvc_config.h; sourceTree = SOURCE_ROOT; };
+		27F24F8E1B7BE0FB00BF4D43 /* libuvc_internal.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = libuvc_internal.h; path = ../third_party/libuvc/include/libuvc/libuvc_internal.h; sourceTree = SOURCE_ROOT; };
+		27F24F8F1B7BE0FB00BF4D43 /* libuvc.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = libuvc.h; path = ../third_party/libuvc/include/libuvc/libuvc.h; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -118,6 +138,9 @@
 		08567BE71B5B5B4100EB6C0D /* include */ = {
 			isa = PBXGroup;
 			children = (
+				27F24F8D1B7BE0FB00BF4D43 /* libuvc_config.h */,
+				27F24F8E1B7BE0FB00BF4D43 /* libuvc_internal.h */,
+				27F24F8F1B7BE0FB00BF4D43 /* libuvc.h */,
 			);
 			name = include;
 			sourceTree = "<group>";
@@ -125,6 +148,13 @@
 		08567BEE1B5B5B5100EB6C0D /* src */ = {
 			isa = PBXGroup;
 			children = (
+				27F24F7D1B7BE0E800BF4D43 /* ctrl.c */,
+				27F24F7E1B7BE0E800BF4D43 /* device.c */,
+				27F24F7F1B7BE0E800BF4D43 /* diag.c */,
+				27F24F811B7BE0E800BF4D43 /* frame.c */,
+				27F24F821B7BE0E800BF4D43 /* init.c */,
+				27F24F831B7BE0E800BF4D43 /* misc.c */,
+				27F24F841B7BE0E800BF4D43 /* stream.c */,
 			);
 			name = src;
 			sourceTree = "<group>";
@@ -223,18 +253,21 @@
 				27F24F791B7BDF9700BF4D43 /* HardwareIO.h in Headers */,
 				27F24F2F1B7BDF0100BF4D43 /* rsutil.h in Headers */,
 				27F24F3E1B7BDF1B00BF4D43 /* UVCCamera.h in Headers */,
+				27F24F921B7BE0FB00BF4D43 /* libuvc.h in Headers */,
 				27F24F3B1B7BDF1B00BF4D43 /* rs-internal.h in Headers */,
 				27F24F4E1B7BDF5A00BF4D43 /* R200.h in Headers */,
 				27F24F2D1B7BDF0100BF4D43 /* rs.h in Headers */,
 				27F24F521B7BDF5A00BF4D43 /* XU.h in Headers */,
 				27F24F501B7BDF5A00BF4D43 /* R200Types.h in Headers */,
 				27F24F2E1B7BDF0100BF4D43 /* rs.hpp in Headers */,
+				27F24F901B7BE0FB00BF4D43 /* libuvc_config.h in Headers */,
 				27F24F4A1B7BDF5A00BF4D43 /* CameraHeader.h in Headers */,
 				27F24F741B7BDF9700BF4D43 /* F200.h in Headers */,
 				27F24F381B7BDF1B00BF4D43 /* Common.h in Headers */,
 				27F24F7B1B7BDF9700BF4D43 /* XU.h in Headers */,
 				27F24F4B1B7BDF5A00BF4D43 /* HardwareIO.h in Headers */,
 				27F24F4C1B7BDF5A00BF4D43 /* ParseCalibration.h in Headers */,
+				27F24F911B7BE0FB00BF4D43 /* libuvc_internal.h in Headers */,
 				27F24F771B7BDF9700BF4D43 /* F200Types.h in Headers */,
 				27F24F721B7BDF9700BF4D43 /* Calibration.h in Headers */,
 			);
@@ -296,6 +329,9 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				27F24F8A1B7BE0E800BF4D43 /* init.c in Sources */,
+				27F24F851B7BE0E800BF4D43 /* ctrl.c in Sources */,
+				27F24F8B1B7BE0E800BF4D43 /* misc.c in Sources */,
 				27F24F761B7BDF9700BF4D43 /* F200Projection.cpp in Sources */,
 				27F24F4D1B7BDF5A00BF4D43 /* R200.cpp in Sources */,
 				27F24F751B7BDF9700BF4D43 /* F200HardwareIO.cpp in Sources */,
@@ -303,8 +339,12 @@
 				27F24F511B7BDF5A00BF4D43 /* R200XU.cpp in Sources */,
 				27F24F4F1B7BDF5A00BF4D43 /* R200HardwareIO.cpp in Sources */,
 				27F24F731B7BDF9700BF4D43 /* F200.cpp in Sources */,
+				27F24F8C1B7BE0E800BF4D43 /* stream.c in Sources */,
+				27F24F871B7BE0E800BF4D43 /* diag.c in Sources */,
 				27F24F3C1B7BDF1B00BF4D43 /* rs.cpp in Sources */,
+				27F24F861B7BE0E800BF4D43 /* device.c in Sources */,
 				27F24F3D1B7BDF1B00BF4D43 /* UVCCamera.cpp in Sources */,
+				27F24F891B7BE0E800BF4D43 /* frame.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
