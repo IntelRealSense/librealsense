@@ -3,16 +3,13 @@
 #ifndef LIBREALSENSE_R200_CAMERA_H
 #define LIBREALSENSE_R200_CAMERA_H
 
-#include "../rs-internal.h"
+#include "../UVCCamera.h"
 
 #ifdef USE_UVC_DEVICES
-#include "../UVCCamera.h"
-#include "CameraHeader.h"
-#include "XU.h"
-#include "SPI.h"
-
 namespace r200
 {
+    class SPI_Interface;
+
     class R200Camera : public rs::UVCCamera
     {
         std::unique_ptr<SPI_Interface> spiInterface;

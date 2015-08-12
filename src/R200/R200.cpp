@@ -1,8 +1,12 @@
 #include "R200.h"
 
+#ifdef USE_UVC_DEVICES
+#include "CameraHeader.h"
+#include "XU.h"
+#include "SPI.h"
+
 using namespace rs;
 
-#ifdef USE_UVC_DEVICES
 namespace r200
 {
     R200Camera::R200Camera(uvc_device_t * device, int idx) : UVCCamera(device, idx)

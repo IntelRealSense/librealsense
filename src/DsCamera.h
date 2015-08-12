@@ -1,5 +1,4 @@
 #pragma once
-
 #ifndef LIBREALSENSE_DS_CAMERA_H
 #define LIBREALSENSE_DS_CAMERA_H
 

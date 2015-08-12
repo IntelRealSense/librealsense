@@ -14,10 +14,6 @@
 #include <libuvc/libuvc.h>
 #endif
 
-#ifdef USE_DSAPI_DEVICES
-
-#endif
-
 #include "Common.h"
 
 namespace rs
