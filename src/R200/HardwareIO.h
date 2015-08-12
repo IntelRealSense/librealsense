@@ -11,21 +11,20 @@
 
 namespace r200
 {
-    
-class DS4HardwareIOInternal;
-class DS4HardwareIO
-{
-    std::unique_ptr<DS4HardwareIOInternal> internal;
-public:
-    
-    DS4HardwareIO(uvc_device_handle_t * deviceHandle);
-    ~DS4HardwareIO();
-    
-    CameraCalibrationParameters & GetCalibration();
-    
-    CameraHeaderInfo & GetCameraHeader();
-};
+    class DS4HardwareIOInternal;
 
+    class DS4HardwareIO
+    {
+        std::unique_ptr<DS4HardwareIOInternal> internal;
+    public:
+
+        DS4HardwareIO(uvc_device_handle_t * deviceHandle);
+        ~DS4HardwareIO();
+
+        CameraCalibrationParameters & GetCalibration();
+
+        CameraHeaderInfo & GetCameraHeader();
+    };
 } // end namespace r200
 
 #endif

@@ -189,11 +189,10 @@ void rs_stop_stream(rs_camera * camera, int stream, rs_error ** error)
 int rs_get_stream_property_i(rs_camera * camera, int stream, int prop, rs_error ** error)
 {
     BEGIN_EXCEPTION_FIREWALL
-    if (stream != RS_STREAM_DEPTH) return 0;
     switch (prop)
     {
-    case RS_IMAGE_SIZE_X: return (int)camera->GetDepthIntrinsics().rw;
-    case RS_IMAGE_SIZE_Y: return (int)camera->GetDepthIntrinsics().rh;
+    case RS_IMAGE_SIZE_X: return camera->GetStreamIntrinsics(stream).image_size[0];
+    case RS_IMAGE_SIZE_Y: return camera->GetStreamIntrinsics(stream).image_size[1];
     default: return 0;
     }
     END_EXCEPTION_FIREWALL
@@ -202,15 +201,28 @@ int rs_get_stream_property_i(rs_camera * camera, int stream, int prop, rs_error 
 float rs_get_stream_property_f(rs_camera * camera, int stream, int prop, rs_error ** error)
 {
     BEGIN_EXCEPTION_FIREWALL
-    if (stream != RS_STREAM_DEPTH) return 0.0f;
     switch (prop)
     {
-    case RS_FOCAL_LENGTH_X: return camera->GetDepthIntrinsics().rfx;
-    case RS_FOCAL_LENGTH_Y: return camera->GetDepthIntrinsics().rfy;
-    case RS_PRINCIPAL_POINT_X: return camera->GetDepthIntrinsics().rpx;
-    case RS_PRINCIPAL_POINT_Y: return camera->GetDepthIntrinsics().rpy;
+    case RS_FOCAL_LENGTH_X: return camera->GetStreamIntrinsics(stream).focal_length[0];
+    case RS_FOCAL_LENGTH_Y: return camera->GetStreamIntrinsics(stream).focal_length[1];
+    case RS_PRINCIPAL_POINT_X: return camera->GetStreamIntrinsics(stream).principal_point[0];
+    case RS_PRINCIPAL_POINT_Y: return camera->GetStreamIntrinsics(stream).principal_point[1];
     default: return 0.0f;
     }
+    END_EXCEPTION_FIREWALL
+}
+
+void rs_get_stream_intrinsics(struct rs_camera * camera, int stream, struct rs_intrinsics * intrin, struct rs_error ** error)
+{
+    BEGIN_EXCEPTION_FIREWALL
+	*intrin = camera->GetStreamIntrinsics(stream);
+    END_EXCEPTION_FIREWALL
+}
+
+void rs_get_stream_extrinsics(struct rs_camera * camera, int stream_from, int stream_to, struct rs_extrinsics * extrin, struct rs_error ** error)
+{
+    BEGIN_EXCEPTION_FIREWALL
+	*extrin = camera->GetStreamExtrinsics(stream_from, stream_to);
     END_EXCEPTION_FIREWALL
 }
 
