@@ -213,6 +213,9 @@ float rs_get_stream_property_f(rs_camera * camera, int stream, int prop, rs_erro
     END_EXCEPTION_FIREWALL
 }
 
+void rs_get_intrinsics(struct rs_camera * camera, int stream, struct rs_intrinsics * intrin, struct rs_error ** error) {}
+void rs_get_extrinsics(struct rs_camera * camera, int stream_from, int stream_to, struct rs_extrinsics * extrin, struct rs_error ** error) {}
+
 const char * rs_get_failed_function(rs_error * error) { return error ? error->function.c_str() : nullptr; }
 const char * rs_get_error_message(rs_error * error) { return error ? error->message.c_str() : nullptr; }
 void rs_free_error(rs_error * error) { if (error) delete error; }

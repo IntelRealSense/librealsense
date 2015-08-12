@@ -30,6 +30,28 @@ const char *		rs_get_failed_function	(struct rs_error * error);
 const char *		rs_get_error_message	(struct rs_error * error);
 void				rs_free_error			(struct rs_error * error);
 
+struct rs_intrinsics
+{
+    int image_size[2];          /* width and height of the image in pixels */
+    float focal_length[2];      /* focal length of the image plane, as a multiple of pixel width and height */
+    float principal_point[2];   /* coordinates of the principal point of the image, as a pixel offset from the top left */
+    float distortion_coeff[5];  /* distortion coefficients */
+};
+
+struct rs_extrinsics
+{
+    float rotation_matrix[9];
+    float translation_vec[3];
+};
+
+void                rs_get_intrinsics       (struct rs_camera * camera, int stream, struct rs_intrinsics * intrin, struct rs_error ** error);
+void                rs_get_extrinsics       (struct rs_camera * camera, int stream_from, int stream_to, struct rs_extrinsics * extrin, struct rs_error ** error);
+
+
+rs_get_intrinsics(cam, RS_DEPTH_STREAM, &depthIntrin);
+rs_get_intrinsics(cam, RS_COLOR_STREAM, &colorIntrin);
+rs_get_extrinsics(cam, RS_DEPTH_STREAM, RS_COLOR_STREAM, &extrin);
+
 #ifdef __cplusplus
 }
 #endif
