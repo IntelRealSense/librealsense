@@ -1,28 +1,21 @@
 #include "rs-internal.h"
 
-#ifdef USE_UVC_DEVICES
 #include "R200/R200.h"
 #include "F200/F200.h"
-#endif
-
-#ifdef USE_DSAPI_DEVICES
 #include "DsCamera.h"
-#endif
 
 rs_context::rs_context()
 {
-#ifdef USE_UVC_DEVICES
+    #ifdef USE_UVC_DEVICES
 	uvc_error_t initStatus = uvc_init(&privateContext, NULL);
-
 	if (initStatus < 0)
 	{
 		uvc_perror(initStatus, "uvc_init");
 		throw std::runtime_error("Could not initialize UVC context");
 	}
-#endif
+    #endif
 
 	QueryDeviceList();
-
 }
 
 rs_context::~rs_context()
@@ -30,17 +23,14 @@ rs_context::~rs_context()
 	cameras.clear(); // tear down cameras before context
 	std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
-#ifdef USE_UVC_DEVICES
-	if (privateContext)
-	{
-		uvc_exit(privateContext);
-	}
-#endif
+    #ifdef USE_UVC_DEVICES
+    if (privateContext) uvc_exit(privateContext);
+    #endif
 }
 
 void rs_context::QueryDeviceList()
 {
-#ifdef USE_UVC_DEVICES
+    #ifdef USE_UVC_DEVICES
 	uvc_device_t **list;
 
 	uvc_error_t status = uvc_get_device_list(privateContext, &list);
@@ -76,9 +66,9 @@ void rs_context::QueryDeviceList()
 	}
 
 	uvc_free_device_list(list, 1);
-#endif
+    #endif
 
-#ifdef USE_DSAPI_DEVICES
+    #ifdef USE_DSAPI_DEVICES
 	int n = DSGetNumberOfCameras(true);
 	for (int i = 0; i < n; ++i)
 	{
@@ -86,8 +76,7 @@ void rs_context::QueryDeviceList()
 		auto ds = DSCreate(DS_DS4_PLATFORM, serialNo);
 		if (ds) cameras.push_back(std::make_shared<DsCamera>(ds, i));
 	}
-#endif
-
+    #endif
 }
 
 rs_context * rs_create_context(int api_version, rs_error ** error) 
