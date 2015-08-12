@@ -113,6 +113,8 @@ int main(int argc, const char * argv[]) try
         return -1;
     }
     
+    bool isScreenRetina = false;
+    
 //#if defined(PLATFORM_OSX)
     glfwWindowHint(GLFW_SAMPLES, 2);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
@@ -123,6 +125,18 @@ int main(int argc, const char * argv[]) try
     
     window = glfwCreateWindow(1280, 480, "R200 Pointcloud", NULL, NULL);
     
+    // Test for retina screens on mac
+    int wW, wH;
+    glfwGetWindowSize(window, &wW, &wH);
+    
+    int fbW, fbH;
+    glfwGetFramebufferSize(window, &fbW, &fbH);
+    
+    if (wW != fbW && wH != fbH)
+    {
+        isScreenRetina = true;
+    }
+
     if (!window)
     {
         std::cout << "Failed to open GLFW window\n" << std::endl;
@@ -161,7 +175,9 @@ int main(int argc, const char * argv[]) try
 	rs::context realsenseContext;
 	rs::camera camera;
 
-	// Init RealSense R200 Camera -------------------------------------------  
+	//////////////////////////////////////////////////////////////////////////////////////////////////////
+    //////////////////////////////////////////////////////////////////////////////////////////////////////
+        
     if (realsenseContext.get_camera_count() == 0)
     { 
         std::cout << "Error: no cameras detected. Is it plugged in?" << std::endl;
@@ -176,7 +192,7 @@ int main(int argc, const char * argv[]) try
 
         camera.enable_stream(RS_STREAM_DEPTH);
         //camera.enable_stream(RS_STREAM_RGB);
-        
+    
         camera.configure_streams();
              
 		float hFov = GetAsymmetricFieldOfView(
@@ -199,15 +215,17 @@ int main(int argc, const char * argv[]) try
 		//camera.start_stream(RS_STREAM_RGB, 640, 480, 30, RS_FRAME_FORMAT_YUYV);
         
         // F200 / IVCAM
-        camera.start_stream(RS_STREAM_DEPTH, 640, 480, 60, RS_FRAME_FORMAT_INVZ);
+        camera.start_stream(RS_STREAM_DEPTH, 640, 480, 30, RS_FRAME_FORMAT_INVZ);
        // camera.start_stream(RS_STREAM_RGB, 640, 480, 30, RS_FRAME_FORMAT_YUYV);
         
     }
-    // ----------------------------------------------------------------
+        
+    //////////////////////////////////////////////////////////////////////////////////////////////////////
+    //////////////////////////////////////////////////////////////////////////////////////////////////////
     
     // Remapped colors...
     rgbTextureHandle = CreateTexture(640, 480, GL_RGB);     // Normal RGB
-    depthTextureHandle = CreateTexture(628, 468, GL_RGB);   // Depth to RGB remap
+    depthTextureHandle = CreateTexture(640, 480, GL_RGB);   // Depth to RGB remap
     
     GLuint quad_VertexArrayID;
     glGenVertexArrays(1, &quad_VertexArrayID);
@@ -239,9 +257,9 @@ int main(int argc, const char * argv[]) try
         {
             glViewport(0, 0, width, height);
 			auto depthImage = camera.get_depth_image();
-            static uint8_t depthColoredHistogram[628 * 468 * 3];
-            ConvertDepthToRGBUsingHistogram(depthColoredHistogram, depthImage, 628, 468, 0.1f, 0.625f);
-            drawTexture(fullscreenTextureProg, quadVBO, imageUniformHandle, depthTextureHandle, depthColoredHistogram, 628, 468, GL_RGB, GL_UNSIGNED_BYTE);
+            static uint8_t depthColoredHistogram[640 * 480 * 3];
+            ConvertDepthToRGBUsingHistogram(depthColoredHistogram, depthImage, 640, 480, 0.4f, 0.925f);
+            drawTexture(fullscreenTextureProg, quadVBO, imageUniformHandle, depthTextureHandle, depthColoredHistogram, 640, 480, GL_RGB, GL_UNSIGNED_BYTE);
             
             //glViewport(width / 2, 0, width, height);
 			//auto colorImage = camera.get_color_image();

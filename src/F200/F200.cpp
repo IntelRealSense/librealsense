@@ -8,7 +8,7 @@ using namespace rs;
 namespace f200
 {
     
-F200Camera::F200Camera(uvc_device_t * device, int idx) : UVCCamera(device, idx)
+F200Camera::F200Camera(uvc_context_t * ctx, uvc_device_t * device, int idx) : UVCCamera(ctx, device, idx)
 {
     
 }
@@ -55,6 +55,14 @@ bool F200Camera::ConfigureStreams()
     std::cout << "Serial Number: " << usbInfo.serial << std::endl;
     std::cout << "USB VID: " << usbInfo.vid << std::endl;
     std::cout << "USB PID: " << usbInfo.pid << std::endl;
+    
+    ////////////////////////////////////////////////////////////////////////////
+    
+    hardware_io.reset(new IVCAMHardwareIO(internalContext));
+    
+    const CameraCalibrationParameters & ivCamParams = hardware_io->GetParameters();
+    
+    ////////////////////////////////////////////////////////////////////////////
     
     return true;
 }

@@ -8,20 +8,27 @@
 #ifdef USE_UVC_DEVICES
 #include "../UVCCamera.h"
 #include "CalibParams.h"
+#include "HardwareIO.h"
 
 namespace f200
 {
-    class F200Camera : public rs::UVCCamera
-    {
-    public:
-        F200Camera(uvc_device_t * device, int num);
-        ~F200Camera();
+    
+class F200Camera : public rs::UVCCamera
+{
+    
+    std::unique_ptr<IVCAMHardwareIO> hardware_io;
+    
+public:
+    
+    F200Camera(uvc_context_t * ctx, uvc_device_t * device, int num);
+    ~F200Camera();
+    
+    bool ConfigureStreams() override;
+    void StartStream(int streamIdentifier, const rs::StreamConfiguration & config) override;
+    void StopStream(int streamIdentifier) override;
+    RectifiedIntrinsics GetDepthIntrinsics() override { return {}; }
+};
 
-        bool ConfigureStreams() override;
-        void StartStream(int streamIdentifier, const rs::StreamConfiguration & config) override;
-        void StopStream(int streamIdentifier) override;
-        RectifiedIntrinsics GetDepthIntrinsics() override { return {}; }
-    };
 } // end namespace f200
 #endif
 

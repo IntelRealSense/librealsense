@@ -148,6 +148,13 @@ void uvc_exit(uvc_context_t *ctx) {
   free(ctx);
 }
 
+libusb_context * uvc_get_libusb_context(uvc_context_t *ctx)
+{
+    if (ctx->own_usb_ctx)
+        return ctx->usb_ctx;
+    else return NULL;
+}
+
 /**
  * @internal
  * @brief Spawns a handler thread for the context

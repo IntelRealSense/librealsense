@@ -214,7 +214,8 @@ typedef struct uvc_device_info {
   We could/should change this to allow reduce it to, say, 5 by default
   and then allow the user to change the number of buffers as required.
  */
-#define LIBUVC_NUM_TRANSFER_BUFS 2
+// 1 = ivcam, 2 == ds4
+#define LIBUVC_NUM_TRANSFER_BUFS 1
 
 #define LIBUVC_XFER_BUF_SIZE (16 * 1024 * 1024)
 

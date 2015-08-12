@@ -57,7 +57,8 @@ void rs_context::QueryDeviceList()
 
 			else if (desc->idProduct == 2662)
 			{
-				cameras.push_back(std::make_shared<f200::F200Camera>(list[index], index));
+                // Special case for ivcam that it needs the libuvc context
+				cameras.push_back(std::make_shared<f200::F200Camera>(privateContext, list[index], index));
 			}
 
 			uvc_free_device_descriptor(desc);
