@@ -4,7 +4,4 @@
    <FileRef
       location = "group:librealsense.xcodeproj">
    </FileRef>
-   <FileRef
-      location = "group:PointcloudViewer/PointcloudViewer.xcodeproj">
-   </FileRef>
 </Workspace>

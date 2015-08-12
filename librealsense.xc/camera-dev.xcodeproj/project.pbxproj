@@ -31,7 +31,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		08567BB11B5B59E800EB6C0D /* PointcloudViewer */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = PointcloudViewer; sourceTree = BUILT_PRODUCTS_DIR; };
+		08567BB11B5B59E800EB6C0D /* CameraDev */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = CameraDev; sourceTree = BUILT_PRODUCTS_DIR; };
 		08567BB41B5B59E800EB6C0D /* main.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = main.cpp; sourceTree = "<group>"; };
 		08567BD51B5B5AA300EB6C0D /* GfxUtil.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = GfxUtil.cpp; sourceTree = "<group>"; };
 		08567BD61B5B5AA300EB6C0D /* GfxUtil.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; lineEnding = 0; path = GfxUtil.h; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
@@ -66,7 +66,7 @@
 			isa = PBXGroup;
 			children = (
 				08567BD41B5B5A5400EB6C0D /* third_party */,
-				08567BB31B5B59E800EB6C0D /* PointcloudViewer */,
+				08567BB31B5B59E800EB6C0D /* CameraDev */,
 				08567BB21B5B59E800EB6C0D /* Products */,
 			);
 			sourceTree = "<group>";
@@ -74,19 +74,19 @@
 		08567BB21B5B59E800EB6C0D /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				08567BB11B5B59E800EB6C0D /* PointcloudViewer */,
+				08567BB11B5B59E800EB6C0D /* CameraDev */,
 			);
 			name = Products;
 			sourceTree = "<group>";
 		};
-		08567BB31B5B59E800EB6C0D /* PointcloudViewer */ = {
+		08567BB31B5B59E800EB6C0D /* CameraDev */ = {
 			isa = PBXGroup;
 			children = (
 				08567BD51B5B5AA300EB6C0D /* GfxUtil.cpp */,
 				08567BD61B5B5AA300EB6C0D /* GfxUtil.h */,
 				08567BB41B5B59E800EB6C0D /* main.cpp */,
 			);
-			path = PointcloudViewer;
+			path = CameraDev;
 			sourceTree = "<group>";
 		};
 		08567BD41B5B5A5400EB6C0D /* third_party */ = {
@@ -123,9 +123,9 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		08567BB01B5B59E800EB6C0D /* PointcloudViewer */ = {
+		08567BB01B5B59E800EB6C0D /* CameraDev */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 08567BB81B5B59E800EB6C0D /* Build configuration list for PBXNativeTarget "PointcloudViewer" */;
+			buildConfigurationList = 08567BB81B5B59E800EB6C0D /* Build configuration list for PBXNativeTarget "CameraDev" */;
 			buildPhases = (
 				08567BAD1B5B59E800EB6C0D /* Sources */,
 				08567BAE1B5B59E800EB6C0D /* Frameworks */,
@@ -135,9 +135,9 @@
 			);
 			dependencies = (
 			);
-			name = PointcloudViewer;
-			productName = PointcloudViewer;
-			productReference = 08567BB11B5B59E800EB6C0D /* PointcloudViewer */;
+			name = CameraDev;
+			productName = CameraDev;
+			productReference = 08567BB11B5B59E800EB6C0D /* CameraDev */;
 			productType = "com.apple.product-type.tool";
 		};
 /* End PBXNativeTarget section */
@@ -154,7 +154,7 @@
 					};
 				};
 			};
-			buildConfigurationList = 08567BAC1B5B59E800EB6C0D /* Build configuration list for PBXProject "PointcloudViewer" */;
+			buildConfigurationList = 08567BAC1B5B59E800EB6C0D /* Build configuration list for PBXProject "CameraDev" */;
 			compatibilityVersion = "Xcode 3.2";
 			developmentRegion = English;
 			hasScannedForEncodings = 0;
@@ -166,7 +166,7 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				08567BB01B5B59E800EB6C0D /* PointcloudViewer */,
+				08567BB01B5B59E800EB6C0D /* CameraDev */,
 			);
 		};
 /* End PBXProject section */
@@ -323,7 +323,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		08567BAC1B5B59E800EB6C0D /* Build configuration list for PBXProject "PointcloudViewer" */ = {
+		08567BAC1B5B59E800EB6C0D /* Build configuration list for PBXProject "CameraDev" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				08567BB61B5B59E800EB6C0D /* Debug */,
@@ -332,7 +332,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		08567BB81B5B59E800EB6C0D /* Build configuration list for PBXNativeTarget "PointcloudViewer" */ = {
+		08567BB81B5B59E800EB6C0D /* Build configuration list for PBXNativeTarget "CameraDev" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				08567BB91B5B59E800EB6C0D /* Debug */,
