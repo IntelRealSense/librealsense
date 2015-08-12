@@ -3,6 +3,8 @@
 
 #include <fstream>
 #include <sstream>
+#include <stdexcept>
+#include <cstring>
 
 using namespace std;
 using namespace f200;

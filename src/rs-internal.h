@@ -1,7 +1,7 @@
 #ifndef RS_INTERNAL_H
 #define RS_INTERNAL_H
 
-#include "rs.h"
+#include "../include/librealsense/rs.h"
 
 #ifdef WIN32
 #include <DSAPI/DSFactory.h"
