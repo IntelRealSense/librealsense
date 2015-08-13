@@ -133,9 +133,46 @@ namespace r200
         //uvc_stop_streaming(deviceHandle);
     }
 
-    RectifiedIntrinsics R200Camera::GetDepthIntrinsics()
+    rs_intrinsics R200Camera::GetStreamIntrinsics(int stream)
     {
-        return spiInterface->GetCalibration().modesLR[0]; // Warning: assume mode 0 here (628x468)
+        auto calib = spiInterface->GetCalibration();
+        auto lr = calib.modesLR[0]; // Assumes 628x468 for now
+        auto t = calib.intrinsicsThird[1]; // Assumes 640x480 for now
+        switch(stream)
+        {
+        case RS_STREAM_DEPTH: return {{lr.rw-12,lr.rh-12},{lr.rfx,lr.rfy},{lr.rpx-6,lr.rpy-6},{1,0,0,0,0}};
+        case RS_STREAM_RGB: return {{t.w,t.h},{t.fx,t.fy},{t.px,t.py},{t.k[0],t.k[1],t.k[2],t.k[3],t.k[4]}};
+        default: throw std::runtime_error("unsupported stream");
+        }
+    }
+
+   /*     calib.
+                CalibrationMetadata metadata;
+
+                UnrectifiedIntrinsics intrinsicsLeft;
+                std::vector<UnrectifiedIntrinsics> intrinsicsRight;
+                std::vector<UnrectifiedIntrinsics> intrinsicsThird;
+                std::vector<UnrectifiedIntrinsics> intrinsicsPlatform;
+
+                std::vector<RectifiedIntrinsics> modesLR;
+                std::vector<RectifiedIntrinsics> modesThird;
+                std::vector<RectifiedIntrinsics> modesPlatform;
+
+                std::vector<std::array<float, 9>> Rleft;
+                std::vector<std::array<float, 9>> Rright;
+                std::vector<std::array<float, 9>> Rthird;
+                std::vector<std::array<float, 9>> Rplatform;
+
+                std::vector<float> B;
+                std::vector<std::array<float, 3>> T;
+                std::vector<std::array<float, 3>> Tplatform;
+
+                std::array<float, 9> Rworld;
+                std::array<float, 3> Tworld;
+    }*/
+    rs_extrinsics R200Camera::GetStreamExtrinsics(int from, int to)
+    {
+        return {{1,0,0,0,1,0,0,0,1},{0,0,0}};
     }
 } // end namespace r200
 #endif

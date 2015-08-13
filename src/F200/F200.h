@@ -7,7 +7,7 @@
 
 #ifdef USE_UVC_DEVICES
 #include "../UVCCamera.h"
-#include "CalibParams.h"
+#include "Calibration.h"
 #include "HardwareIO.h"
 
 namespace f200
@@ -26,7 +26,9 @@ public:
     bool ConfigureStreams() override;
     void StartStream(int streamIdentifier, const rs::StreamConfiguration & config) override;
     void StopStream(int streamIdentifier) override;
-    RectifiedIntrinsics GetDepthIntrinsics() override { return {}; }
+
+    rs_intrinsics GetStreamIntrinsics(int stream) override;
+    rs_extrinsics GetStreamExtrinsics(int from, int to) override;
 };
 
 } // end namespace f200
