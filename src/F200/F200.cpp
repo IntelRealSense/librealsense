@@ -68,17 +68,17 @@ bool F200Camera::ConfigureStreams()
     
     rect.image_size[0] = 640;
     rect.image_size[1] = 480;
-    rect.focal_length[0] =  od.IRUndistortedFocalLengthPxl.x;
-    rect.focal_length[1] =  od.IRUndistortedFocalLengthPxl.y;
-    rect.principal_point[0] =  od.IRPrincipalPoint.x + 320;
-    rect.principal_point[1] =  od.IRPrincipalPoint.y + 240;
+    rect.focal_length[0] = od.IRUndistortedFocalLengthPxl.x;
+    rect.focal_length[1] = od.IRUndistortedFocalLengthPxl.y;
+    rect.principal_point[0] = od.IRPrincipalPoint.x + 320;
+    rect.principal_point[1] = od.IRPrincipalPoint.y + 240;
     
     unrect.image_size[0] = 640;
     unrect.image_size[1] = 480;
-    unrect.focal_length[0] =  od.IRDistortedFocalLengthPxl.x;
+    unrect.focal_length[0] = od.IRDistortedFocalLengthPxl.x;
     unrect.focal_length[1] =  od.IRDistortedFocalLengthPxl.y;
-    unrect.principal_point[0] =  od.IRPrincipalPoint.x + 320;
-    unrect.principal_point[1] =  od.IRPrincipalPoint.y + 240;
+    unrect.principal_point[0] = od.IRPrincipalPoint.x + 320;
+    unrect.principal_point[1] = od.IRPrincipalPoint.y + 240;
     unrect.distortion_coeff[0] = calib.Distc[0];
     unrect.distortion_coeff[1] = calib.Distc[1];
     unrect.distortion_coeff[2] = calib.Distc[2];
@@ -147,6 +147,26 @@ rs_intrinsics F200Camera::GetStreamIntrinsics(int stream)
 rs_extrinsics F200Camera::GetStreamExtrinsics(int from, int to)
 {
     return {{1,0,0,0,1,0,0,0,1},{0,0,0}};
+}
+    
+const uint16_t * F200Camera::GetDepthImage()
+{
+    if (depthFrame->updated)
+    {
+        std::lock_guard<std::mutex> guard(frameMutex);
+        depthFrame->swap_front();
+    }
+    return reinterpret_cast<const uint16_t *>(depthFrame->front.data());
+}
+    
+const uint8_t * F200Camera::GetColorImage()
+{
+    if (colorFrame->updated)
+    {
+        std::lock_guard<std::mutex> guard(frameMutex);
+        colorFrame->swap_front();
+    }
+    return reinterpret_cast<const uint8_t *>(colorFrame->front.data());
 }
 
 } // end f200

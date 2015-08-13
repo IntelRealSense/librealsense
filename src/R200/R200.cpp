@@ -156,5 +156,26 @@ namespace r200
         }
         else throw std::runtime_error("unsupported streams");
     }
+    
+    const uint16_t * R200Camera::GetDepthImage()
+    {
+        if (depthFrame->updated)
+        {
+            std::lock_guard<std::mutex> guard(frameMutex);
+            depthFrame->swap_front();
+        }
+        return reinterpret_cast<const uint16_t *>(depthFrame->front.data());
+    }
+    
+    const uint8_t * R200Camera::GetColorImage()
+    {
+        if (colorFrame->updated)
+        {
+            std::lock_guard<std::mutex> guard(frameMutex);
+            colorFrame->swap_front();
+        }
+        return reinterpret_cast<const uint8_t *>(colorFrame->front.data());
+    }
+    
 } // end namespace r200
 #endif

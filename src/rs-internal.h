@@ -94,10 +94,12 @@ struct rs_camera
 	virtual bool ConfigureStreams() = 0;
 	virtual void StartStream(int streamIdentifier, const rs::StreamConfiguration & config) = 0;
 	virtual void StopStream(int streamIdentifier) = 0;
+    
 	virtual rs_intrinsics GetStreamIntrinsics(int stream) = 0;
 	virtual rs_extrinsics GetStreamExtrinsics(int from, int to) = 0;
-    virtual const uint16_t * GetDepthImage();
-    virtual const uint8_t * GetColorImage();
+    
+    virtual const uint16_t * GetDepthImage() = 0;
+    virtual const uint8_t * GetColorImage() = 0;
 };
 
 struct rs_context

@@ -28,6 +28,9 @@ namespace r200
 
         rs::StreamConfiguration GetZConfig() { return zConfig; }
         rs::StreamConfiguration GetRGBConfig() { return rgbConfig; }
+        
+        const uint16_t * GetDepthImage() override;
+        const uint8_t * GetColorImage() override;
     };
 } // end namespace r200
 #endif
