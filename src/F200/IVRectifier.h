@@ -88,7 +88,7 @@ namespace f200
         
         uint16_t * rectify(uint16_t * srcImg)
         {
-            /*for (int y = 0; y < height; y++)
+            for (int y = 0; y < height; y++)
             {
                 for (int x = 0; x < width; x++)
                 {
@@ -98,8 +98,8 @@ namespace f200
                     bool invalidLocation = sampleX < 0 || sampleX >= width || sampleY < 0 || sampleY >= height;
                     undistortedDepth[y * width + x] = invalidLocation ? 0 : srcImg[sampleY * width + sampleX];
                 }
-            }*/
-            return srcImg; //undistortedDepth.data();
+            }
+            return undistortedDepth.data();
         }
         
     };
