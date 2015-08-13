@@ -60,7 +60,32 @@ bool F200Camera::ConfigureStreams()
     
     hardware_io.reset(new IVCAMHardwareIO(internalContext));
     
-    const CameraCalibrationParameters & ivCamParams = hardware_io->GetParameters();
+    const auto od = hardware_io->GetOpticalData();
+    const auto calib = hardware_io->GetParameters();
+    
+    rs_intrinsics rect = {},unrect = {};
+    rs_extrinsics rotation ={{1.f,0.f,0.f,0.f,1.f,0.f,0.f,0.f,1.f},{0.f,0.f,0.f}};
+    
+    rect.image_size[0] = 640;
+    rect.image_size[1] = 480;
+    rect.focal_length[0] =  od.IRUndistortedFocalLengthPxl.x;
+    rect.focal_length[1] =  od.IRUndistortedFocalLengthPxl.y;
+    rect.principal_point[0] =  od.IRPrincipalPoint.x + 320;
+    rect.principal_point[1] =  od.IRPrincipalPoint.y + 240;
+    
+    unrect.image_size[0] = 640;
+    unrect.image_size[1] = 480;
+    unrect.focal_length[0] =  od.IRDistortedFocalLengthPxl.x;
+    unrect.focal_length[1] =  od.IRDistortedFocalLengthPxl.y;
+    unrect.principal_point[0] =  od.IRPrincipalPoint.x + 320;
+    unrect.principal_point[1] =  od.IRPrincipalPoint.y + 240;
+    unrect.distortion_coeff[0] = calib.Distc[0];
+    unrect.distortion_coeff[1] = calib.Distc[1];
+    unrect.distortion_coeff[2] = calib.Distc[2];
+    unrect.distortion_coeff[3] = calib.Distc[3];
+    unrect.distortion_coeff[4] = calib.Distc[4];
+
+    calibUtils.reset(new CalibrationUtils(640,480,rect,unrect,rotation));
     
     ////////////////////////////////////////////////////////////////////////////
     
@@ -83,14 +108,15 @@ void F200Camera::StartStream(int streamIdentifier, const StreamConfiguration & c
             throw std::runtime_error("Open camera_handle Failed");
         }
         
-        if (c.format == FrameFormat::INVR || c.format == FrameFormat::INVZ)
+        switch (c.format)
         {
-            depthFrame.reset(new TripleBufferedFrame(c.width, c.height, 2));
-        }
-        
-        else if (c.format == FrameFormat::YUYV)
-        {
-            colorFrame.reset(new TripleBufferedFrame(c.width, c.height, 3));
+            case FrameFormat::INVR:
+            case FrameFormat::INVZ:
+                depthFrame.reset(new TripleBufferedFrame(c.width, c.height, 2)); break;
+            case FrameFormat::YUYV:
+                colorFrame.reset(new TripleBufferedFrame(c.width, c.height, 3)); break;
+            default:
+                throw std::runtime_error("invalid frame format");
         }
         
         uvc_error_t startStreamResult = uvc_start_streaming(stream->uvcHandle, &stream->ctrl, &UVCCamera::cb, stream, 0);
@@ -100,7 +126,7 @@ void F200Camera::StartStream(int streamIdentifier, const StreamConfiguration & c
             uvc_perror(startStreamResult, "start_stream");
             throw std::runtime_error("Could not start stream");
         }
-        
+
     }
 }
 
@@ -109,6 +135,20 @@ void F200Camera::StopStream(int streamNum)
     //@tofix
 }
     
+rs_intrinsics F200Camera::GetStreamIntrinsics(int stream)
+{
+    // After having configured streams... optical data
+    
+    const CameraCalibrationParameters & ivCamParams = hardware_io->GetParameters();
+    // undistorted for rgb
+    return {{640,480},{500,500},{320,240},{1,0,0,0,0}}; // TODO: Use actual calibration data
+}
+
+rs_extrinsics F200Camera::GetStreamExtrinsics(int from, int to)
+{
+    return {{1,0,0,0,1,0,0,0,1},{0,0,0}};
+}
+
 } // end f200
 
 #endif

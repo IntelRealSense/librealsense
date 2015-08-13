@@ -8,26 +8,25 @@
 
 namespace f200
 {
-    
-class IVCAMHardwareIOInternal;
-class IVCAMHardwareIO
-{
+    class IVCAMHardwareIOInternal;
 
-    std::unique_ptr<IVCAMHardwareIOInternal> internal;
-public:
-    
-    IVCAMHardwareIO(uvc_context_t * ctx);
-    ~IVCAMHardwareIO();
-    
-    bool StartTempCompensationLoop();
-    void StopTempCompensationLoop();
-    
-    // SetDepthResolution(int width, int height)
-    
-    CameraCalibrationParameters & GetParameters();
+    class IVCAMHardwareIO
+    {
+        std::unique_ptr<IVCAMHardwareIOInternal> internal;
+    public:
+        IVCAMHardwareIO(uvc_context_t * ctx);
+        ~IVCAMHardwareIO();
+
+        bool StartTempCompensationLoop();
+        void StopTempCompensationLoop();
+
+        // SetDepthResolution(int width, int height)
+
+        CameraCalibrationParameters & GetParameters();
         
-};
-    
+        OpticalData GetOpticalData();
+        
+    };
 } // end namespace f200
 
 #endif

@@ -7,8 +7,6 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		08567BB51B5B59E800EB6C0D /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 08567BB41B5B59E800EB6C0D /* main.cpp */; };
-		08567BD71B5B5AA300EB6C0D /* GfxUtil.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 08567BD51B5B5AA300EB6C0D /* GfxUtil.cpp */; };
 		08567C041B5B5D6B00EB6C0D /* libglfw3.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 08567C031B5B5D6B00EB6C0D /* libglfw3.a */; };
 		08567C091B5B898400EB6C0D /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 08567C081B5B898400EB6C0D /* Cocoa.framework */; };
 		08567C0B1B5B898C00EB6C0D /* CoreVideo.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 08567C0A1B5B898C00EB6C0D /* CoreVideo.framework */; };
@@ -16,6 +14,8 @@
 		08567C0F1B5B899B00EB6C0D /* OpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 08567C0E1B5B899B00EB6C0D /* OpenGL.framework */; };
 		08567C2C1B61D80B00EB6C0D /* librealsense.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 08567C2B1B61D80B00EB6C0D /* librealsense.a */; };
 		08567C301B61DB8100EB6C0D /* libusb-1.0.0.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 08567C2F1B61DB8100EB6C0D /* libusb-1.0.0.dylib */; };
+		27F24F9B1B7BE19D00BF4D43 /* camera_dev.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 27F24F981B7BE19D00BF4D43 /* camera_dev.cpp */; };
+		27F24F9C1B7BE19D00BF4D43 /* gfx_util.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 27F24F991B7BE19D00BF4D43 /* gfx_util.cpp */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -31,10 +31,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		08567BB11B5B59E800EB6C0D /* PointcloudViewer */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = PointcloudViewer; sourceTree = BUILT_PRODUCTS_DIR; };
-		08567BB41B5B59E800EB6C0D /* main.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = main.cpp; sourceTree = "<group>"; };
-		08567BD51B5B5AA300EB6C0D /* GfxUtil.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = GfxUtil.cpp; sourceTree = "<group>"; };
-		08567BD61B5B5AA300EB6C0D /* GfxUtil.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; lineEnding = 0; path = GfxUtil.h; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
+		08567BB11B5B59E800EB6C0D /* CameraDev */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = CameraDev; sourceTree = BUILT_PRODUCTS_DIR; };
 		08567C031B5B5D6B00EB6C0D /* libglfw3.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libglfw3.a; path = third_party/glfw/bin/osx/libglfw3.a; sourceTree = "<group>"; };
 		08567C081B5B898400EB6C0D /* Cocoa.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cocoa.framework; path = System/Library/Frameworks/Cocoa.framework; sourceTree = SDKROOT; };
 		08567C0A1B5B898C00EB6C0D /* CoreVideo.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreVideo.framework; path = System/Library/Frameworks/CoreVideo.framework; sourceTree = SDKROOT; };
@@ -42,6 +39,9 @@
 		08567C0E1B5B899B00EB6C0D /* OpenGL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenGL.framework; path = System/Library/Frameworks/OpenGL.framework; sourceTree = SDKROOT; };
 		08567C2B1B61D80B00EB6C0D /* librealsense.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = librealsense.a; path = ../../Library/Developer/Xcode/DerivedData/bin/Debug/librealsense.a; sourceTree = "<group>"; };
 		08567C2F1B61DB8100EB6C0D /* libusb-1.0.0.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = "libusb-1.0.0.dylib"; path = "../../../../usr/local/Cellar/libusb/1.0.19/lib/libusb-1.0.0.dylib"; sourceTree = "<group>"; };
+		27F24F981B7BE19D00BF4D43 /* camera_dev.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = camera_dev.cpp; path = "../examples/camera-dev/camera_dev.cpp"; sourceTree = SOURCE_ROOT; };
+		27F24F991B7BE19D00BF4D43 /* gfx_util.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = gfx_util.cpp; path = "../examples/camera-dev/gfx_util.cpp"; sourceTree = SOURCE_ROOT; };
+		27F24F9A1B7BE19D00BF4D43 /* gfx_util.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = gfx_util.h; path = "../examples/camera-dev/gfx_util.h"; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -66,7 +66,7 @@
 			isa = PBXGroup;
 			children = (
 				08567BD41B5B5A5400EB6C0D /* third_party */,
-				08567BB31B5B59E800EB6C0D /* PointcloudViewer */,
+				08567BB31B5B59E800EB6C0D /* CameraDev */,
 				08567BB21B5B59E800EB6C0D /* Products */,
 			);
 			sourceTree = "<group>";
@@ -74,19 +74,19 @@
 		08567BB21B5B59E800EB6C0D /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				08567BB11B5B59E800EB6C0D /* PointcloudViewer */,
+				08567BB11B5B59E800EB6C0D /* CameraDev */,
 			);
 			name = Products;
 			sourceTree = "<group>";
 		};
-		08567BB31B5B59E800EB6C0D /* PointcloudViewer */ = {
+		08567BB31B5B59E800EB6C0D /* CameraDev */ = {
 			isa = PBXGroup;
 			children = (
-				08567BD51B5B5AA300EB6C0D /* GfxUtil.cpp */,
-				08567BD61B5B5AA300EB6C0D /* GfxUtil.h */,
-				08567BB41B5B59E800EB6C0D /* main.cpp */,
+				27F24F981B7BE19D00BF4D43 /* camera_dev.cpp */,
+				27F24F991B7BE19D00BF4D43 /* gfx_util.cpp */,
+				27F24F9A1B7BE19D00BF4D43 /* gfx_util.h */,
 			);
-			path = PointcloudViewer;
+			path = CameraDev;
 			sourceTree = "<group>";
 		};
 		08567BD41B5B5A5400EB6C0D /* third_party */ = {
@@ -123,9 +123,9 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		08567BB01B5B59E800EB6C0D /* PointcloudViewer */ = {
+		08567BB01B5B59E800EB6C0D /* CameraDev */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 08567BB81B5B59E800EB6C0D /* Build configuration list for PBXNativeTarget "PointcloudViewer" */;
+			buildConfigurationList = 08567BB81B5B59E800EB6C0D /* Build configuration list for PBXNativeTarget "CameraDev" */;
 			buildPhases = (
 				08567BAD1B5B59E800EB6C0D /* Sources */,
 				08567BAE1B5B59E800EB6C0D /* Frameworks */,
@@ -135,9 +135,9 @@
 			);
 			dependencies = (
 			);
-			name = PointcloudViewer;
-			productName = PointcloudViewer;
-			productReference = 08567BB11B5B59E800EB6C0D /* PointcloudViewer */;
+			name = CameraDev;
+			productName = CameraDev;
+			productReference = 08567BB11B5B59E800EB6C0D /* CameraDev */;
 			productType = "com.apple.product-type.tool";
 		};
 /* End PBXNativeTarget section */
@@ -154,7 +154,7 @@
 					};
 				};
 			};
-			buildConfigurationList = 08567BAC1B5B59E800EB6C0D /* Build configuration list for PBXProject "PointcloudViewer" */;
+			buildConfigurationList = 08567BAC1B5B59E800EB6C0D /* Build configuration list for PBXProject "camera-dev" */;
 			compatibilityVersion = "Xcode 3.2";
 			developmentRegion = English;
 			hasScannedForEncodings = 0;
@@ -166,7 +166,7 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				08567BB01B5B59E800EB6C0D /* PointcloudViewer */,
+				08567BB01B5B59E800EB6C0D /* CameraDev */,
 			);
 		};
 /* End PBXProject section */
@@ -176,8 +176,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				08567BB51B5B59E800EB6C0D /* main.cpp in Sources */,
-				08567BD71B5B5AA300EB6C0D /* GfxUtil.cpp in Sources */,
+				27F24F9B1B7BE19D00BF4D43 /* camera_dev.cpp in Sources */,
+				27F24F9C1B7BE19D00BF4D43 /* gfx_util.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -323,7 +323,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		08567BAC1B5B59E800EB6C0D /* Build configuration list for PBXProject "PointcloudViewer" */ = {
+		08567BAC1B5B59E800EB6C0D /* Build configuration list for PBXProject "camera-dev" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				08567BB61B5B59E800EB6C0D /* Debug */,
@@ -332,7 +332,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		08567BB81B5B59E800EB6C0D /* Build configuration list for PBXNativeTarget "PointcloudViewer" */ = {
+		08567BB81B5B59E800EB6C0D /* Build configuration list for PBXNativeTarget "CameraDev" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				08567BB91B5B59E800EB6C0D /* Debug */,

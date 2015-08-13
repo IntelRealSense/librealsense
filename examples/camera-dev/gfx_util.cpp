@@ -1,4 +1,4 @@
-#include "GfxUtil.h"
+#include "gfx_util.h"
 
 #include <vector>
 #include <string>

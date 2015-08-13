@@ -25,10 +25,26 @@ int					rs_get_camera_index		(struct rs_camera * camera, struct rs_error ** erro
 uint64_t			rs_get_frame_count		(struct rs_camera * camera, struct rs_error ** error);
 int					rs_get_stream_property_i(struct rs_camera * camera, int stream, int prop, struct rs_error ** error); // RS_IMAGE_SIZE_X, RS_IMAGE_SIZE_Y
 float				rs_get_stream_property_f(struct rs_camera * camera, int stream, int prop, struct rs_error ** error); // RS_FOCAL_LENGTH_X, RS_FOCAL_LENGTH_Y, RS_PRINCIPAL_POINT_X, RS_PRINCIPAL_POINT_Y
+void                rs_get_stream_intrinsics(struct rs_camera * camera, int stream, struct rs_intrinsics * intrin, struct rs_error ** error);
+void                rs_get_stream_extrinsics(struct rs_camera * camera, int stream_from, int stream_to, struct rs_extrinsics * extrin, struct rs_error ** error);
 
 const char *		rs_get_failed_function	(struct rs_error * error);
 const char *		rs_get_error_message	(struct rs_error * error);
 void				rs_free_error			(struct rs_error * error);
+
+struct rs_intrinsics
+{
+    int image_size[2];          /* width and height of the image in pixels */
+    float focal_length[2];      /* focal length of the image plane, as a multiple of pixel width and height */
+    float principal_point[2];   /* coordinates of the principal point of the image, as a pixel offset from the top left */
+    float distortion_coeff[5];  /* distortion coefficients */
+};
+
+struct rs_extrinsics
+{
+    float rotation[9];
+    float translation[3];
+};
 
 #ifdef __cplusplus
 }

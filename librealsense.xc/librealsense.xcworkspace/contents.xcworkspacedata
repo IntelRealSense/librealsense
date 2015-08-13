@@ -2,9 +2,9 @@
 <Workspace
    version = "1.0">
    <FileRef
-      location = "group:librealsense.xcodeproj">
+      location = "group:camera-dev.xcodeproj">
    </FileRef>
    <FileRef
-      location = "group:PointcloudViewer/PointcloudViewer.xcodeproj">
+      location = "container:librealsense.xcodeproj">
    </FileRef>
 </Workspace>

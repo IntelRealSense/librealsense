@@ -48,6 +48,61 @@ enum CoordinateSystem
     LEFT_HANDED = 1
 };
 
+struct Point
+{
+    Point() {}
+    Point(float _x, float _y) : x(_x), y(_y) {}
+    float x, y;
+};
+
+struct Resolution
+{
+    Resolution() {}
+    Resolution(short _width, short _height) : width(_width), height(_height) {}
+    short width, height;
+};
+
+struct FOV
+{
+    FOV() {}
+    FOV(float _x, float _y) : x(_x), y(_y) {}
+    float x, y;
+};
+
+struct FocalLength
+{
+    FocalLength() {}
+    FocalLength(float _x, float _y) : x(_x), y(_y) {}
+    float x, y;
+};
+
+struct UVPreComp
+{
+    UVPreComp() {}
+    UVPreComp(float _u, float _v, float _d) : u(_u), v(_v), d(_d) {}
+    float u, v, d;
+};
+
+struct OpticalData
+{
+    //the principal point of the IR sensor
+    Point IRPrincipalPoint;
+    //the principal point of the IR sensor
+    Point RGBPrincipalPoint;
+    //the IR sensor distorted FOV
+    FOV IRDistortedFOV;
+    //the IR sensor undistorted FOV
+    FOV IRUndistortedFOV;
+    //the RGB sensor undistorted FOV
+    FOV RGBUndistortedFOV;
+    //the IR sensor distorted focal length in pixels of the desired resolution
+    FocalLength IRDistortedFocalLengthPxl;
+    //the IR sensor undistorted focal length in pixels of the desired resolution
+    FocalLength IRUndistortedFocalLengthPxl;
+    //the RGB sensor undistorted focal length in pixels of the desired resolution
+    FocalLength RGBUndistortedFocalLengthPxl;
+};
+    
 struct OACOffsetData
 {
     int OACOffset1;
@@ -108,7 +163,7 @@ struct CameraCalibrationParameters
     float Pp[3][4];		// [3x4]: projection matrix
     float Kp[3][3];		// [3x3]: intrinsic calibration matrix of the projector
     float Rp[3][3];		// [3x3]: extrinsic calibration matrix of the projector
-    float Tp[3];			// [1x3]: translation vector of the projector
+    float Tp[3];		// [1x3]: translation vector of the projector
     float Distp[5];		// [1x5]: forward distortion parameters of the projector
     float Invdistp[5];	// [1x5]: inverse distortion parameters of the projector
     float Pt[3][4];		// [3x4]: IR to RGB (texture mapping) image transformation matrix

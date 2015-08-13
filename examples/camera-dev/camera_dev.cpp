@@ -38,7 +38,7 @@
 #include <mutex>
 #include <iostream>
 #include "librealsense/rs.hpp"
-#include "GfxUtil.h"
+#include "gfx_util.h"
 
 #if defined(PLATFORM_WINDOWS)
 
@@ -218,18 +218,17 @@ int main(int argc, const char * argv[]) try
 		//z_image_height = 721;
         
         // R200 / DS4
-		z_image_width = 628;
-		z_image_height = 469;
+		//z_image_width = 628;
+		//z_image_height = 469;
         
         // F200 / IVCAM
-		//z_image_width = 640;
-		//z_image_height = 480;
-		//z_format = RS_FRAME_FORMAT_INVZ;
+		z_image_width = 640;
+		z_image_height = 480;
+		z_format = RS_FRAME_FORMAT_INVZ;
 
-		camera.start_stream(RS_STREAM_DEPTH, z_image_width, z_image_height, 30, z_format);
-		camera.start_stream(RS_STREAM_RGB, rgb_image_width, rgb_image_Height, 30, rgb_format);
+		camera.start_stream(RS_STREAM_DEPTH, z_image_width, z_image_height, 60, z_format);
+		//camera.start_stream(RS_STREAM_RGB, rgb_image_width, rgb_image_Height, 30, rgb_format);
 
-        
     }
         
     //////////////////////////////////////////////////////////////////////////////////////////////////////
