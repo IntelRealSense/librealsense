@@ -22,6 +22,7 @@
     <ProjectGuid>{FEECEAB9-F6B0-4169-A1E1-294197A1B85C}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>PointCloudViewer</RootNamespace>
+    <ProjectName>camera-dev</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -161,12 +162,9 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\PointcloudViewer\PointcloudViewer\GfxUtil.cpp" />
-    <ClCompile Include="..\PointcloudViewer\PointcloudViewer\main.cpp" />
+    <ClCompile Include="..\examples\camera-dev\camera_dev.cpp" />
+    <ClCompile Include="..\examples\camera-dev\gfx_util.cpp" />
     <ClCompile Include="test.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="..\PointcloudViewer\PointcloudViewer\GfxUtil.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
@@ -175,6 +173,9 @@
     <ProjectReference Include="librealsense.vcxproj">
       <Project>{b0755d2b-b117-4bd7-bbfb-0f85454c1273}</Project>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\examples\camera-dev\gfx_util.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
