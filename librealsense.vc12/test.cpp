@@ -12,23 +12,35 @@ int							rs_get_camera_count			(struct rs_context * context, struct rs_error **
 struct rs_camera *			rs_get_camera				(struct rs_context * context, int index, struct rs_error **err){ return 0; };
 
 void						rs_get_stream_cfg_count		(struct rs_camera * camera, int stream_type, struct rs_error **err){};
-struct rs_stream_config *	rs_get_stream_cfg			(struct rs_camera * camera, int stream_type, int cfg_idx, struct rs_error **err){ return 0; };
+struct rs_stream_config *	rs_get_stream_cfg_by_index	(struct rs_camera * camera, int stream_type, int index, struct rs_error **err){ return 0; };
 int							rs_get_stream_cfg_property_i(struct rs_stream_config * cfg, int prop, struct rs_error ** error){ return 0; };
 int							rs_get_stream_cfg_property_f(struct rs_stream_config * cfg, float prop, struct rs_error ** error){ return 0; };
 void						rs_set_stream_cfg_property_i(struct rs_stream_config * cfg, int prop, int value, struct rs_error ** error){  };
 void						rs_set_stream_cfg_property_f(struct rs_stream_config * cfg, float prop, float value, struct rs_error ** error){  };
 void						rs_free_stream_cfg			(struct rs_stream_config * error){};
 
-struct rs_stream_config *	rs_enable_stream			(struct rs_camera * camera, int stream_type, int width, int height, int fps, int format, struct rs_error **err){ return 0; };
 void						rs_enable_stream_from_cfg	(struct rs_camera * camera, int stream_type, struct rs_stream_config * cfg, struct rs_error **err){};
+struct rs_stream_config *	rs_get_current_stream_cfg	(struct rs_camera * camera, int stream_type, struct rs_error ** err){ return 0; };
 
+//convenience functions. Perform best-effort selection of a valid configuration and return result of rs_get_current_stream_cfg
+struct rs_stream_config *	rs_enable_stream(struct rs_camera * camera, int stream_type, int width, int height, int fps, int format, struct rs_error **err){ return 0; };
+struct rs_stream_config *	rs_enable_stream(struct rs_camera * camera, int stream_type, int width, int height, int fps, int format_depth, int format_intensity, struct rs_error **err){ return 0; };
+
+//alternative would be to create/destroy a new opaque type (rs_stream) 
 void						rs_start_streaming			(struct rs_camera * camera, struct rs_error **err){};
 void						rs_stop_streaming			(struct rs_camera * camera, struct rs_error **err){};
 
-void						rs_wait_one_update			(struct rs_camera * camera, int stream_type, struct rs_error ** error){ };
-void						rs_wait_all_update			(struct rs_camera * camera, int stream_type, struct rs_error ** error){ };
+//alternative could be to create/destroy a new opaque type (rs_frame)
+void						rs_wait_one_update			(struct rs_camera * camera, int stream_type, int blocking_call, struct rs_error ** error){ };
+void						rs_wait_all_update			(struct rs_camera * camera, int stream_type, int blocking_call, struct rs_error ** error){ };
 
-void *						rs_get_image				(struct rs_camera * camera, int stream_type, struct rs_error ** error){ return 0; };
+typedef void(rs_frame_callback_t)(struct rs_camera *camera, void *user_ptr);
+void						rs_register_wait_one_update	(struct rs_camera * camera, int stream_type, rs_frame_callback_t *cb, void *user_ptr, struct rs_error ** error){ };
+void						rs_register_wait_all_update	(struct rs_camera * camera, int stream_type, rs_frame_callback_t *cb, void *user_ptr, struct rs_error ** error){ };
+
+void *						rs_get_image(struct rs_camera * camera, int stream_type, struct rs_error ** error){ return 0; };
+
+//alternatives for async operation should go here set stream callback for all/one and given
 
 int 						rs_is_streaming				(struct rs_camera * camera, struct rs_error ** error){ return 0; };
 int							rs_get_camera_index			(struct rs_camera * camera, struct rs_error ** error){ return 0; };
@@ -44,6 +56,7 @@ void						rs_free_error				(struct rs_error * error){};
 #define RS_API_VERSION 0
 #define NULL 0
 
+//define vs. enum?
 //@tofix -- DS also supports disparity mode and changing the disparity to depth multiplier
 #define RS_FRAME_FORMAT_UNKNOWN			0
 #define RS_FRAME_FORMAT_ANY				0 // Any supported format
@@ -105,7 +118,7 @@ int test_main(int argc, char * argv[])
 		rs_start_streaming(cam, NULL);
 
 		do {
-			rs_wait_one_update(cam, RS_STREAM_DEPTH | RS_STREAM_COLOR, &error);
+			rs_wait_one_update(cam, RS_STREAM_DEPTH | RS_STREAM_COLOR, 1, &error);
 			uint16_t * z = (uint16_t*)rs_get_image(cam, RS_STREAM_DEPTH, &error);
 			uint8_t * rgb = (uint8_t*)rs_get_image(cam, RS_STREAM_COLOR, &error);
 		} while (!error);
