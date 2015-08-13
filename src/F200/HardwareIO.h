@@ -23,6 +23,9 @@ namespace f200
         // SetDepthResolution(int width, int height)
 
         CameraCalibrationParameters & GetParameters();
+        
+        OpticalData GetOpticalData();
+        
     };
 } // end namespace f200
 

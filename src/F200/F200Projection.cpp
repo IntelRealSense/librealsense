@@ -13,9 +13,6 @@ using namespace f200;
 #define MM_TO_CM(_d)          float((_d)/10)
 #define METERS_TO_CM(_d)      float((_d)*100)
 
-typedef f200::IVCAMCalibrator<float>::OpticalData opticalData;
-typedef f200::IVCAMCalibrator<float>::Resolution resolution;
-
 Projection * Projection::GetInstance()
 {
     static Projection self(0);
@@ -53,108 +50,6 @@ bool Projection::Init()
 void  Projection::ThermalLoopKilled()
 {
     m_IsThermalLoopOpen = false;
-}
-
-void  Projection::GetProjectionSize(int &size)
-{
-    return GetSerializedProjectionData(size, 0);
-}
-
-void Projection::GetSerializedProjectionData(int & dataSize, uint8_t * data)
-{
-    if ((bool) m_calibration)
-    {
-        unsigned int totalSize = sizeof(ProjectionParams);
-        dataSize = totalSize;
-        
-        if (data)
-        {
-            ProjectionParams* params = new ProjectionParams;//(ProjectionParams*) (new BYTE[structSize+paramsSize]());
-            params->depthWidth = m_currentDepthWidth;
-            params->depthHeight = m_currentDepthHeight;
-            params->colorWidth =  m_currentColorWidth;
-            params->colorHeight = m_currentColorHeight;
-            params->nParams =  m_calibration.nParamters();
-            const auto calibParams = m_calibration.getParameters();
-            memcpy(&(params->calibrationParams.CalibrationParameters), &calibParams, sizeof(CameraCalibrationParameters));
-            
-            params->calibrationParams.TableVarsion = m_calibrationData.TableVarsion;
-            params->calibrationParams.TableValidation = m_calibrationData.TableValidation;
-            params->calibrationParams.uniqueNumber = m_calibrationData.uniqueNumber;
-            memcpy(data, (uint8_t*) params, totalSize);
-            
-            delete[] params;
-        }
-    }
-    throw std::runtime_error("GetSerializedProjectionData() failed");
-}
-
-void Projection::SetSerializedProjectionData(uint8_t * data)
-{
-    ProjectionParams * params = (ProjectionParams*)data;
-    SetDepthResolution(params->depthWidth,params->depthHeight);
-    SetColorResolution(params->colorWidth,params->colorHeight);
-    
-    int uniqueNum = 0; //UNIQUE_NUMBER;
-    int uniqueNumData = *(((int*)(data)) + 5);
-    
-    if (uniqueNumData == uniqueNum)
-    {
-        if (m_calibration.buildParameters(params->calibrationParams.CalibrationParameters))
-        {
-            memcpy(&m_calibrationData, &params->calibrationParams, sizeof(CameraCalibrationParametersVersion));
-            m_isInitialized = true;
-        }
-    }
-    throw std::runtime_error("SetSerializedProjectionData() failed");
-}
-
-void Projection::QueryProperty(Property label, float &value)
-{
-    opticalData OD;
-    resolution colorRes(m_currentColorWidth, m_currentColorHeight);
-    resolution depthRes(m_currentDepthWidth, m_currentDepthHeight);
-    
-    OD = m_calibration.getOpticalData(depthRes,colorRes);
-    
-    // Dimitri removed "m_isCalibOld"
-    switch(label)
-    {
-        case IVCAM_PROPERTY_COLOR_FIELD_OF_VIEW:
-            value = OD.RGBUndistortedFOV.x; break;
-        case IVCAM_PROPERTY_COLOR_FIELD_OF_VIEW + 1:
-            value = OD.RGBUndistortedFOV.y; break;
-        case IVCAM_PROPERTY_COLOR_FOCAL_LENGTH:
-            value = OD.RGBUndistortedFocalLengthPxl.x; break;
-        case IVCAM_PROPERTY_COLOR_FOCAL_LENGTH + 1:
-            value = OD.RGBUndistortedFocalLengthPxl.y; break;
-        case IVCAM_PROPERTY_COLOR_PRINCIPAL_POINT:
-            value = OD.RGBPrincipalPoint.x; break;
-        case IVCAM_PROPERTY_COLOR_PRINCIPAL_POINT+1:
-            value = OD.RGBPrincipalPoint.y; break;
-        case IVCAM_PROPERTY_DEPTH_FIELD_OF_VIEW:
-            value = OD.IRDistortedFOV.x; break;
-        case IVCAM_PROPERTY_DEPTH_FIELD_OF_VIEW+1:
-            value = OD.IRDistortedFOV.y; break;
-        case IVCAM_PROPERTY_DEPTH_UNDISTORTED_FIELD_OF_VIEW:
-            value = OD.IRUndistortedFOV.x; break;
-        case IVCAM_PROPERTY_DEPTH_UNDISTORTED_FIELD_OF_VIEW+1:
-            value = OD.IRUndistortedFOV.y; break;
-        case IVCAM_PROPERTY_DEPTH_FOCAL_LENGTH:
-            value = OD.IRDistortedFocalLengthPxl.x; break;
-        case IVCAM_PROPERTY_DEPTH_FOCAL_LENGTH +1:
-            value = OD.IRDistortedFocalLengthPxl.y; break;
-        case IVCAM_PROPERTY_DEPTH_UNDISTORTED_FOCAL_LENGTH:
-            value = OD.IRUndistortedFocalLengthPxl.x; break;
-        case IVCAM_PROPERTY_DEPTH_UNDISTORTED_FOCAL_LENGTH +1:
-            value = OD.IRUndistortedFocalLengthPxl.y; break;
-        case IVCAM_PROPERTY_DEPTH_PRINCIPAL_POINT:
-            value = OD.IRPrincipalPoint.x; break;
-        case IVCAM_PROPERTY_DEPTH_PRINCIPAL_POINT +1:
-            value = OD.IRPrincipalPoint.y; break;
-        default:
-            throw std::runtime_error("unsupported property");
-    }
 }
 
 void Projection::MapDepthToColorCoordinates(unsigned int npoints, Point3DF32 *pos2d, Point2DF32 *posc, bool isUVunitsRelative, CoordinateSystem dir)
@@ -204,7 +99,7 @@ void Projection::MapDepthToColorCoordinates(unsigned int npoints, Point3DF32 *po
     }
 }
 
-void Projection::MapDepthToColorCoordinates(unsigned int width, unsigned int height, uint16_t* pSrcDepth,  float* pDestUV, bool isUVunitsRelative, CoordinateSystem dir)
+void Projection::MapDepthToColorCoordinates(unsigned int width, unsigned int height, uint16_t * pSrcDepth,  float * pDestUV, bool isUVunitsRelative, CoordinateSystem dir)
 {
     if (!m_calibration)
         throw std::runtime_error("MapDepthToColorCoordinates failed, m_calibration not initialized");
@@ -214,10 +109,10 @@ void Projection::MapDepthToColorCoordinates(unsigned int width, unsigned int hei
     
     float u,v;
     
-    float* pTmpDestUV = pDestUV;
+    float * pTmpDestUV = pDestUV;
     
     const bool aspectRatio43 = (m_currentColorWidth * 3 == m_currentColorHeight * 4);
-    uint16_t *pDepth = (uint16_t*)pSrcDepth;
+    uint16_t * pDepth = (uint16_t*) pSrcDepth;
     
     for(int i=0; i<m_currentDepthHeight ; i++)
     {
@@ -264,7 +159,6 @@ void Projection::MapDepthToColorCoordinates(unsigned int width, unsigned int hei
                 pUV[j*2+1] = 0;
             }
         }
-        
         pTmpDestUV = pTmpDestUV + 2 * m_currentDepthWidth;
     }
     

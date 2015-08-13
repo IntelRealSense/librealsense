@@ -24,12 +24,6 @@ public:
     
     bool Init();
     
-    void GetProjectionSize(int &size);
-    
-    void GetSerializedProjectionData(int & size, uint8_t *data);
-    
-    void SetSerializedProjectionData(uint8_t *data);
-    
     void MapDepthToColorCoordinates(unsigned int npoints, Point3DF32 *pos2d, Point2DF32 *posc, bool isUVunitsRelative = true, CoordinateSystem dir = LEFT_HANDED);
     
     void MapDepthToColorCoordinates(unsigned int width, unsigned int height, uint16_t* pSrcDepth, float* pDestUV, bool isUVunitsRelative = true, CoordinateSystem dir = LEFT_HANDED);
@@ -48,8 +42,6 @@ public:
     int GetColorHeight() { return m_currentColorHeight; }
     int GetDepthWidth() { return m_currentDepthWidth; }
     int GetDepthHeight() { return m_currentDepthHeight; }
-    
-    void QueryProperty(Property label, float &value);
     
     // Start function of thermal loop thread.Thread will poll temperature each X seconds and make required changes to
     // Calibration table. Also inform users that calib table has changed and they need to redraw it.

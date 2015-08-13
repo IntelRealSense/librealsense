@@ -226,7 +226,7 @@ namespace f200
                 throw std::runtime_error("usb transfer to retrieve calibration data failed");
         }
 
-        void ProjectionCalibrate(uint8_t * rawCalibData,int len, CameraCalibrationParameters * calprms)
+        void ProjectionCalibrate(uint8_t * rawCalibData, int len, CameraCalibrationParameters * calprms)
         {
             uint8_t * bufParams = rawCalibData + 4;
 
@@ -424,6 +424,20 @@ namespace f200
         {
             return parameters;
         }
+        
+        OpticalData GetOpticalData()
+        {
+            IVCAMCalibrator<float> * calibration = Projection::GetInstance()->GetCalibrationObject();
+            
+            OpticalData d;
+            
+            Resolution colorRes( Projection::GetInstance()->GetColorWidth(),  Projection::GetInstance()->GetColorHeight());
+            Resolution depthRes(Projection::GetInstance()->GetDepthWidth(), Projection::GetInstance()->GetDepthHeight());
+            
+            d = calibration->getOpticalData(depthRes, colorRes);
+            
+            return d;
+        }
 
     };
 
@@ -454,5 +468,10 @@ namespace f200
     CameraCalibrationParameters & IVCAMHardwareIO::GetParameters()
     {
         return internal->GetParameters();
+    }
+    
+    OpticalData IVCAMHardwareIO::GetOpticalData()
+    {
+        return internal->GetOpticalData();
     }
 }

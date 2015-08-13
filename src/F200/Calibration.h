@@ -92,62 +92,7 @@ public:
         ThermalLoopParams = thermalModeData.ThermalLoopParams;
     };
     
-    struct Point
-    {
-        Point() {}
-        Point(T _x, T _y) : x(_x), y(_y) {}
-        T x, y;
-    };
-    
-    struct Resolution {
-        
-        Resolution() {}
-        Resolution(short _width, short _height) : width(_width), height(_height) {}
-        short width, height;
-    };
-    
-    struct FOV
-    {
-        FOV() {}
-        FOV(T _x, T _y) : x(_x), y(_y) {}
-        T x, y;
-    };
-    
-    struct FocalLength
-    {
-        FocalLength() {}
-        FocalLength(T _x, T _y) : x(_x), y(_y) {}
-        T x, y;
-    };
-    
-    struct UVPreComp
-    {
-        UVPreComp() {}
-        UVPreComp(T _u, T _v, T _d) : u(_u), v(_v), d(_d) {}
-        T u, v, d;
-    };
-    
-    struct OpticalData
-    {
-        //the principal point of the IR sensor
-        Point IRPrincipalPoint;
-        //the principal point of the IR sensor
-        Point RGBPrincipalPoint;
-        //the IR sensor distorted FOV
-        FOV IRDistortedFOV;
-        //the IR sensor undistorted FOV
-        FOV IRUndistortedFOV;
-        //the RGB sensor undistorted FOV
-        FOV RGBUndistortedFOV;
-        //the IR sensor distorted focal length in pixels of the desired resolution
-        FocalLength IRDistortedFocalLengthPxl;
-        //the IR sensor undistorted focal length in pixels of the desired resolution
-        FocalLength IRUndistortedFocalLengthPxl;
-        //the RGB sensor undistorted focal length in pixels of the desired resolution
-        FocalLength RGBUndistortedFocalLengthPxl;
-    };
-    
-    OpticalData getOpticalData(const Resolution IRResolution,const Resolution RGBresolution);
+    OpticalData getOpticalData(const Resolution IRResolution, const Resolution RGBresolution);
     
     void generateCalibrationCoefficients(Resolution IRResolution,bool isZmode, float* ValArray) const;
     
@@ -238,7 +183,7 @@ private:
     
     ThermalModelData thermalModeData;
     
-    bool buildParametersFromOldTable(const double* paramData, int nParams);
+    bool buildParametersFromOldTable(const double * paramData, int nParams);
     void precomputeUnproj();
     void buildCameraProperties();
     
@@ -469,24 +414,25 @@ inline void IVCAMCalibrator<T>::generateCalibrationCoefficients(Resolution IRRes
 }
 
 template <typename T>
-inline typename IVCAMCalibrator<T>::OpticalData IVCAMCalibrator<T>::getOpticalData(Resolution IRResolution,Resolution RGBResolution)
+inline OpticalData IVCAMCalibrator<T>::getOpticalData(Resolution IRResolution, Resolution RGBResolution)
 {
-    //create object
     OpticalData data;
     
-    //IR
+    //////////////////////////
+    // Infrared Camera (IR) //
+    //////////////////////////
     
-    //compute undistorted IR FOV
+    // compute undistorted IR FOV
     T tempX = atan(T(1)/params.Kc[0][0])*T(360)/T(M_PI);
     T tempY = atan(T(1)/params.Kc[1][1])*T(360)/T(M_PI);
-    data.IRUndistortedFOV = FOV(tempX,tempY);
+    data.IRUndistortedFOV = FOV(tempX, tempY);
     
-    //compute IR focal length
+    // compute IR focal length
     tempX = T(IRResolution.width)*params.Kc[0][0]/T(2);
     tempY = T(IRResolution.height)*params.Kc[1][1]/T(2);
-    data.IRUndistortedFocalLengthPxl = FocalLength(tempX,tempY);
+    data.IRUndistortedFocalLengthPxl = FocalLength(tempX, tempY);
     
-    //compute distorted IR FOV
+    // compute distorted IR FOV
     T r[2] = {T(0.8), T(0.6)};
     T r2[2] = {r[0]*r[0],r[1]*r[1]};
     T R[2];
@@ -496,26 +442,29 @@ inline typename IVCAMCalibrator<T>::OpticalData IVCAMCalibrator<T>::getOpticalDa
     }
     tempX = atan(R[0]/params.Kc[0][0])*T(360)/T(M_PI);
     tempY = atan(R[1]/params.Kc[1][1])*T(360)/T(M_PI);
-    data.IRDistortedFOV = FOV(tempX,tempY);
+    data.IRDistortedFOV = FOV(tempX, tempY);
     
-    //compute IR focal length
+    // compute IR focal length
     tempX = T(IRResolution.width)*params.Kc[0][0]/(R[0]*T(2));
     tempY = T(IRResolution.height)*params.Kc[1][1]/(R[1]*T(2));
-    data.IRDistortedFocalLengthPxl = FocalLength(tempX,tempY);
+    data.IRDistortedFocalLengthPxl = FocalLength(tempX, tempY);
     
-    //compute IR principal point
+    // compute IR principal point
     tempX = T(IRResolution.width)*params.Kc[0][2]/T(2);
     tempY = T(IRResolution.height)*params.Kc[1][2]/T(2);
-    data.IRPrincipalPoint = Point(tempX,tempY);
+    data.IRPrincipalPoint = Point(tempX, tempY);
     
-    //RGB
+    ////////////////////////
+    // Color Camera (RGB) //
+    ////////////////////////
+    
     T aspectRatioWanted = T(RGBResolution.width)/T(RGBResolution.height);
     T aspectRatioCalib = params.Kt[1][1]/params.Kt[0][0];
     T diff = std::fabs(aspectRatioWanted - aspectRatioCalib);
     T Kt00 = params.Kt[0][0];
     
     T Kt02 = params.Kt[0][2];
-    if ( diff  >  T(M_EPSILON))
+    if ( diff > T(M_EPSILON))
     {
         tempY = atan(T(1)/params.Kt[1][1])*T(360)/T(M_PI);
         tempX = tempY*aspectRatioWanted;
@@ -523,18 +472,17 @@ inline typename IVCAMCalibrator<T>::OpticalData IVCAMCalibrator<T>::getOpticalDa
         Kt02 *= Kt00/params.Kt[0][0];
     }
     
-    //compute undistorted RGB FOV
+    // compute undistorted RGB FOV
     tempX = atan(T(1)/Kt00)*T(360)/T(M_PI);
     tempY = atan(T(1)/params.Kt[1][1])*T(360)/T(M_PI);
     data.RGBUndistortedFOV = FOV(tempX,tempY);
     
-    
-    //compute RGB focal length
+    // compute RGB focal length
     tempX = T(RGBResolution.width)*Kt00/T(2);
     tempY = T(RGBResolution.height)*params.Kt[1][1]/T(2);
     data.RGBUndistortedFocalLengthPxl = FocalLength(tempX,tempY);
     
-    //compute RGB principal point
+    // compute RGB principal point
     tempX = T(RGBResolution.width)*Kt02/T(2);
     tempY = T(RGBResolution.height)*params.Kt[1][2]/T(2);
     data.RGBPrincipalPoint = Point(tempX,tempY);
@@ -715,7 +663,7 @@ void IVCAMCalibrator<T>::precomputeUnproj()
 }
 
 template <typename T>
-inline typename IVCAMCalibrator<T>::UVPreComp IVCAMCalibrator<T>::computeBuildUVCoeffs(const Point& r) const
+inline UVPreComp IVCAMCalibrator<T>::computeBuildUVCoeffs(const Point& r) const
 {
     const CameraCalibrationParameters & p = params;
     const float u = p.Pt[0][0]*r.x + p.Pt[0][1]*r.y + p.Pt[0][2];
@@ -786,9 +734,9 @@ void IVCAMCalibrator<T>::project(T x, T y, T z, T& u, T& v, T& d) const
 }
 
 template <typename T>
-typename IVCAMCalibrator<T>::Point IVCAMCalibrator<T>::computeUnprojectCoeffs(int _u, int _v) const
+Point IVCAMCalibrator<T>::computeUnprojectCoeffs(int _u, int _v) const
 {
-    const float u = T(_u) / width() * 2  - 1;
+    const float u = T(_u) / width() * 2  - 1; // -1.0 to 1.0
     const float v = T(_v) / height() * 2 - 1;
     
     // Distort camera coordinates
@@ -814,7 +762,7 @@ typename IVCAMCalibrator<T>::Point IVCAMCalibrator<T>::computeUnprojectCoeffs(in
 template <typename T>
 inline void IVCAMCalibrator<T>::unproject(int pixelX, int pixelY, T depthInMM, T& x, T& y, T& z) const
 {
-    const Point& p = unprojCoeffs[pixelY*width() + pixelX];
+    const Point & p = unprojCoeffs[pixelY * width() + pixelX];
     
     x = p.x * depthInMM;
     y = p.y * depthInMM;

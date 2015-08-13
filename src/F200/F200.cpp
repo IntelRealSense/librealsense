@@ -60,7 +60,32 @@ bool F200Camera::ConfigureStreams()
     
     hardware_io.reset(new IVCAMHardwareIO(internalContext));
     
-    const CameraCalibrationParameters & ivCamParams = hardware_io->GetParameters();
+    const auto od = hardware_io->GetOpticalData();
+    const auto calib = hardware_io->GetParameters();
+    
+    rs_intrinsics rect = {},unrect = {};
+    rs_extrinsics rotation ={{1.f,0.f,0.f,0.f,1.f,0.f,0.f,0.f,1.f},{0.f,0.f,0.f}};
+    
+    rect.image_size[0] = 640;
+    rect.image_size[1] = 480;
+    rect.focal_length[0] =  od.IRUndistortedFocalLengthPxl.x;
+    rect.focal_length[1] =  od.IRUndistortedFocalLengthPxl.y;
+    rect.principal_point[0] =  od.IRPrincipalPoint.x + 320;
+    rect.principal_point[1] =  od.IRPrincipalPoint.y + 240;
+    
+    unrect.image_size[0] = 640;
+    unrect.image_size[1] = 480;
+    unrect.focal_length[0] =  od.IRDistortedFocalLengthPxl.x;
+    unrect.focal_length[1] =  od.IRDistortedFocalLengthPxl.y;
+    unrect.principal_point[0] =  od.IRPrincipalPoint.x + 320;
+    unrect.principal_point[1] =  od.IRPrincipalPoint.y + 240;
+    unrect.distortion_coeff[0] = calib.Distc[0];
+    unrect.distortion_coeff[1] = calib.Distc[1];
+    unrect.distortion_coeff[2] = calib.Distc[2];
+    unrect.distortion_coeff[3] = calib.Distc[3];
+    unrect.distortion_coeff[4] = calib.Distc[4];
+
+    calibUtils.reset(new CalibrationUtils(640,480,rect,unrect,rotation));
     
     ////////////////////////////////////////////////////////////////////////////
     
@@ -112,6 +137,10 @@ void F200Camera::StopStream(int streamNum)
     
 rs_intrinsics F200Camera::GetStreamIntrinsics(int stream)
 {
+    // After having configured streams... optical data
+    
+    const CameraCalibrationParameters & ivCamParams = hardware_io->GetParameters();
+    // undistorted for rgb
     return {{640,480},{500,500},{320,240},{1,0,0,0,0}}; // TODO: Use actual calibration data
 }
 
