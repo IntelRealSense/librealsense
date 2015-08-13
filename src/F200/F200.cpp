@@ -83,14 +83,15 @@ void F200Camera::StartStream(int streamIdentifier, const StreamConfiguration & c
             throw std::runtime_error("Open camera_handle Failed");
         }
         
-        if (c.format == FrameFormat::INVR || c.format == FrameFormat::INVZ)
+        switch (c.format)
         {
-            depthFrame.reset(new TripleBufferedFrame(c.width, c.height, 2));
-        }
-        
-        else if (c.format == FrameFormat::YUYV)
-        {
-            colorFrame.reset(new TripleBufferedFrame(c.width, c.height, 3));
+            case FrameFormat::INVR:
+            case FrameFormat::INVZ:
+                depthFrame.reset(new TripleBufferedFrame(c.width, c.height, 2)); break;
+            case FrameFormat::YUYV:
+                colorFrame.reset(new TripleBufferedFrame(c.width, c.height, 3)); break;
+            default:
+                throw std::runtime_error("invalid frame format");
         }
         
         uvc_error_t startStreamResult = uvc_start_streaming(stream->uvcHandle, &stream->ctrl, &UVCCamera::cb, stream, 0);
@@ -100,7 +101,7 @@ void F200Camera::StartStream(int streamIdentifier, const StreamConfiguration & c
             uvc_perror(startStreamResult, "start_stream");
             throw std::runtime_error("Could not start stream");
         }
-        
+
     }
 }
 
