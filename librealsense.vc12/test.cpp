@@ -38,8 +38,8 @@ void						rs_enable_stream_from_cfg	(struct rs_camera * camera, int stream_type,
 struct rs_stream_config *	rs_get_current_stream_cfg	(struct rs_camera * camera, int stream_type, struct rs_error ** err){ return 0; };
 
 /*convenience functions. Perform best-effort selection of a valid configuration and return result of rs_get_current_stream_cfg*/
-struct rs_stream_config *	rs_enable_stream(struct rs_camera * camera, int stream_type, int width, int height, int fps, int format, struct rs_error **err){ return 0; };
-struct rs_stream_config *	rs_enable_stream(struct rs_camera * camera, int stream_type, int width, int height, int fps, int format_depth, int format_intensity, struct rs_error **err){ return 0; };
+struct rs_stream_config *	rs_enable_stream			(struct rs_camera * camera, int stream_type, int width, int height, int fps, int format, struct rs_error **err){ return 0; };
+struct rs_stream_config *	rs_enable_stream			(struct rs_camera * camera, int stream_type, int width, int height, int fps, int format_depth, int format_intensity, struct rs_error **err){ return 0; };
 
 /*alternative would be to create/destroy a new opaque type (rs_stream) */
 void						rs_start_streaming			(struct rs_camera * camera, struct rs_error **err){};
@@ -50,9 +50,11 @@ void						rs_wait_one_update			(struct rs_camera * camera, int stream_type, int 
 void						rs_wait_all_update			(struct rs_camera * camera, int stream_type, int blocking_call, struct rs_error ** error){ };
 
 typedef void(rs_frame_callback_t)(struct rs_camera *camera, void *user_ptr);
+typedef void(rs_error_callback_t)(struct rs_camera *camera, struct rs_error ** error, void *user_ptr);
+
 void						rs_register_wait_one_update	(struct rs_camera * camera, int stream_type, rs_frame_callback_t *cb, void *user_ptr, struct rs_error ** error){ };
 void						rs_register_wait_all_update	(struct rs_camera * camera, int stream_type, rs_frame_callback_t *cb, void *user_ptr, struct rs_error ** error){ };
-void						rs_register_streaming_error	(struct rs_camera * camera, int stream_type, rs_frame_callback_t *cb, void *user_ptr, struct rs_error ** error){ };
+void						rs_register_streaming_error	(struct rs_camera * camera, int stream_type, rs_error_callback_t *cb, void *user_ptr, struct rs_error ** error){ };
 
 void *						rs_get_data					(struct rs_camera * camera, int stream_type, struct rs_error ** error){ return 0; };
 
