@@ -239,7 +239,9 @@ int full_main(int argc, char * argv[])
 
 void frame_callback(struct rs_camera *camera, void *user_ptr)
 {
-
+    struct rs_error * error;
+    uint16_t * z = (uint16_t*)rs_get_data(camera, RS_STREAM_DEPTH, &error);
+    uint8_t * rgb = (uint8_t*)rs_get_data(camera, RS_STREAM_COLOR, &error);
 }
 
 int test_async(int argc, char * argv[])
