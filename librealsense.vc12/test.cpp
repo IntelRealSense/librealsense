@@ -26,7 +26,7 @@ void                        rs_free_context             (struct rs_context * con
 int                         rs_get_camera_count         (struct rs_context * context, struct rs_error **err){ return 0; };
 struct rs_camera *          rs_get_camera               (struct rs_context * context, int index, struct rs_error **err){ return 0; };
 
-void                        rs_get_stream_cfg_count     (struct rs_camera * camera, int stream_type, struct rs_error **err){};
+int                         rs_get_stream_cfg_count     (struct rs_camera * camera, int stream_type, struct rs_error **err){return 0;};
 struct rs_stream_config *   rs_get_stream_cfg_by_index  (struct rs_camera * camera, int stream_type, int index, struct rs_error **err){ return 0; };
 int                         rs_get_stream_cfg_property_i(struct rs_stream_config * cfg, int prop, struct rs_error ** error){ return 0; };
 int                         rs_get_stream_cfg_property_f(struct rs_stream_config * cfg, float prop, struct rs_error ** error){ return 0; };
@@ -34,7 +34,7 @@ void                        rs_set_stream_cfg_property_i(struct rs_stream_config
 void                        rs_set_stream_cfg_property_f(struct rs_stream_config * cfg, float prop, float value, struct rs_error ** error){  };
 void                        rs_free_stream_cfg          (struct rs_stream_config * error){};
 
-void                        rs_enable_stream_from_cfg   (struct rs_camera * camera, int stream_type, struct rs_stream_config * cfg, struct rs_error **err){};
+void                        rs_enable_stream_from_cfg   (struct rs_camera * camera, struct rs_stream_config * cfg, struct rs_error **err){};
 struct rs_stream_config *   rs_get_current_stream_cfg   (struct rs_camera * camera, int stream_type, struct rs_error ** err){ return 0; };
 
 /*convenience functions. Perform best-effort selection of a valid configuration and return result of rs_get_current_stream_cfg*/
@@ -158,7 +158,7 @@ void                        rs_free_error               (struct rs_error * error
 #define RS_SYNCHRONIZED_OFFSET  13
 
 
-int test_main(int argc, char * argv[])
+int short_main(int argc, char * argv[])
 {
     struct rs_context * ctx;
 
@@ -177,6 +177,89 @@ int test_main(int argc, char * argv[])
             rs_wait_one_update(cam, RS_STREAM_DEPTH | RS_STREAM_COLOR, 1, &error);
             uint16_t * z = (uint16_t*)rs_get_data(cam, RS_STREAM_DEPTH, &error);
             uint8_t * rgb = (uint8_t*)rs_get_data(cam, RS_STREAM_COLOR, &error);
+        } while (!error);
+    }
+    rs_free_context(ctx, &error);
+    return 0;
+}
+
+int full_main(int argc, char * argv[])
+{
+    struct rs_context * ctx;
+
+    struct rs_camera * cam;
+
+    struct rs_error * error;
+    ctx = rs_create_context(RS_API_VERSION, &error);
+    int cam_count = rs_get_camera_count(ctx, NULL);
+    if (cam_count) {
+        cam = rs_get_camera(ctx, 0, &error);
+        int z_stream_count = rs_get_stream_cfg_count(cam, RS_STREAM_DEPTH, NULL);
+        int rgb_stream_count = rs_get_stream_cfg_count(cam, RS_STREAM_COLOR, NULL);
+
+        int i = 0;
+        struct rs_stream_config * z_cfg=NULL;
+        struct rs_stream_config * rgb_cfg=NULL;
+        for (i = 0; i < z_stream_count; i++) {
+            z_cfg = rs_get_stream_cfg_by_index(cam, RS_STREAM_DEPTH, i, NULL);
+            int w = rs_get_stream_cfg_property_i(z_cfg, RS_IMAGE_SIZE_X, NULL);
+            int h = rs_get_stream_cfg_property_i(z_cfg, RS_IMAGE_SIZE_Y, NULL);
+            int t = rs_get_stream_cfg_property_i(z_cfg, RS_DATA_FPS, NULL);
+            if (w == 628) {
+                break;
+            }  else {
+                rs_free_stream_cfg(z_cfg);
+            }
+        }
+        for (i = 0; i < rgb_stream_count; i++) {
+            rgb_cfg = rs_get_stream_cfg_by_index(cam, RS_STREAM_DEPTH, i, NULL);
+            int w = rs_get_stream_cfg_property_i(rgb_cfg, RS_IMAGE_SIZE_X, NULL);
+            int h = rs_get_stream_cfg_property_i(rgb_cfg, RS_IMAGE_SIZE_Y, NULL);
+            int t = rs_get_stream_cfg_property_i(rgb_cfg, RS_DATA_FPS, NULL);
+            if (w == 640) {
+                break;
+            }
+            else {
+                rs_free_stream_cfg(rgb_cfg);
+            }
+        }
+        rs_enable_stream_from_cfg(cam, z_cfg, &error);
+        rs_enable_stream_from_cfg(cam, rgb_cfg, &error);
+        rs_start_streaming(cam, NULL);
+
+        do {
+            rs_wait_one_update(cam, RS_STREAM_DEPTH | RS_STREAM_COLOR, 1, &error);
+            uint16_t * z = (uint16_t*)rs_get_data(cam, RS_STREAM_DEPTH, &error);
+            uint8_t * rgb = (uint8_t*)rs_get_data(cam, RS_STREAM_COLOR, &error);
+        } while (!error);
+    }
+    rs_free_context(ctx, &error);
+    return 0;
+}
+
+void frame_callback(struct rs_camera *camera, void *user_ptr)
+{
+
+}
+
+int test_async(int argc, char * argv[])
+{
+    struct rs_context * ctx;
+
+    struct rs_camera * cam;
+
+    struct rs_error * error;
+    ctx = rs_create_context(RS_API_VERSION, &error);
+    int cam_count = rs_get_camera_count(ctx, NULL);
+    if (cam_count) {
+        cam = rs_get_camera(ctx, 0, &error);
+        struct rs_stream_config * z_cfg = rs_enable_stream(cam, RS_STREAM_DEPTH, 628, 469, 30, RS_FRAME_FORMAT_Z16, &error); /*should be a best-effort call.*/
+        struct rs_stream_config * rgb_cfg = rs_enable_stream(cam, RS_STREAM_COLOR, 640, 480, 30, RS_FRAME_FORMAT_YUYV, &error);
+        rs_register_wait_all_update(cam, RS_STREAM_DEPTH | RS_STREAM_COLOR, frame_callback, NULL, &error); 
+        rs_start_streaming(cam, NULL);
+        
+        do {
+            //maybe have the error point get updated as set in the main loop?
         } while (!error);
     }
     rs_free_context(ctx, &error);
