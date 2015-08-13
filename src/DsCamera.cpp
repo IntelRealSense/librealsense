@@ -71,10 +71,7 @@ void DsCamera::StartBackgroundCapture()
 			auto third = ds->accessThird();
 			if (third && third->isThirdEnabled())
 			{
-				//@tofix - this is a bit silly to overallocate. Blame Leo.
-				static uint8_t color_cvt[1920 * 1080 * 3]; // YUYV = 16 bits in in -> 24 out
-				convert_yuyv_rgb((uint8_t *)third->getThirdImage(), third->thirdWidth(), third->thirdHeight(), color_cvt);
-				memcpy(colorFrame->back.data(), color_cvt, (third->thirdWidth() * third->thirdHeight()) * 3);
+				convert_yuyv_rgb((uint8_t *)third->getThirdImage(), third->thirdWidth(), third->thirdHeight(), colorFrame->back.data());
 				std::lock_guard<std::mutex> lock(frameMutex);
 				colorFrame->swap_back();
 			}
@@ -117,11 +114,43 @@ void DsCamera::StopStream(int streamNum)
 
 }
 
-RectifiedIntrinsics DsCamera::GetDepthIntrinsics()
+rs_intrinsics DsCamera::GetStreamIntrinsics(int stream)
 {
-	DSCalibRectParameters params;
-	CheckDS(ds, "getCalibRectParameters", ds->getCalibRectParameters(params));
-	return reinterpret_cast<const RectifiedIntrinsics &>(params.modesLR[0][0]);
+	DSCalibIntrinsicsRectified rect;
+	DSCalibIntrinsicsNonRectified nonRect;
+	DSThird * third = ds->accessThird();
+	switch(stream)
+	{
+	case RS_STREAM_DEPTH:
+		CheckDS(ds, "getCalibIntrinsicsZ", ds->getCalibIntrinsicsZ(rect));
+		return {{rect.rw, rect.rh}, {rect.rfx, rect.rfy}, {rect.rpx, rect.rpy}, {1,0,0,0,0}};
+	case RS_STREAM_RGB:
+		if(third->isThirdRectificationEnabled())
+		{
+			CheckDS(ds, "getCalibIntrinsicsRectThird", third->getCalibIntrinsicsRectThird(rect));
+			return {{rect.rw, rect.rh}, {rect.rfx, rect.rfy}, {rect.rpx, rect.rpy}, {1,0,0,0,0}};
+		}
+		else
+		{
+			CheckDS(ds, "getCalibIntrinsicsNonRectThird", third->getCalibIntrinsicsNonRectThird(nonRect));
+			return {{nonRect.w, nonRect.h}, {nonRect.fx, nonRect.fy}, {nonRect.px, nonRect.py}, {nonRect.k[0],nonRect.k[1],nonRect.k[2],nonRect.k[3],nonRect.k[4]}};
+		}
+	default: throw std::runtime_error("unsupported stream");
+	}
+}
+
+rs_extrinsics DsCamera::GetStreamExtrinsics(int from, int to)
+{
+	if(from != RS_STREAM_DEPTH && to != RS_STREAM_RGB) throw std::runtime_error("unsupported streams");
+	DSThird * third = ds->accessThird();
+	double rotation[] = {1,0,0,0,1,0,0,0,1};
+	double translation[] = {0,0,0};
+	if(third->isThirdRectificationEnabled()) CheckDS(ds, "getCalibExtrinsicsZToRectThird", third->getCalibExtrinsicsZToRectThird(translation));
+	else CheckDS(ds, "getCalibExtrinsicsZToNonRectThird", third->getCalibExtrinsicsZToNonRectThird(rotation, translation));
+	rs_extrinsics r;
+	for(int i=0; i<9; ++i) r.rotation[i] = (float)rotation[i];
+	for(int i=0; i<3; ++i) r.translation[i] = (float)translation[i];
+	return r;
 }
 
 #if defined(_WIN64)

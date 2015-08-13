@@ -24,7 +24,8 @@ public:
 	bool ConfigureStreams() override;
 	void StartStream(int streamIdentifier, const rs::StreamConfiguration & config) override;
 	void StopStream(int streamIdentifier) override;
-	RectifiedIntrinsics GetDepthIntrinsics() override;
+	rs_intrinsics GetStreamIntrinsics(int stream) override;
+	rs_extrinsics GetStreamExtrinsics(int from, int to) override;
 
 	rs::StreamConfiguration GetZConfig() { return zConfig; }
 	rs::StreamConfiguration GetRGBConfig() { return rgbConfig; }

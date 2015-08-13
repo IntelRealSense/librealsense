@@ -109,6 +109,16 @@ void F200Camera::StopStream(int streamNum)
     //@tofix
 }
     
+rs_intrinsics F200Camera::GetStreamIntrinsics(int stream)
+{
+    return {{640,480},{500,500},{320,240},{1,0,0,0,0}}; // TODO: Use actual calibration data
+}
+
+rs_extrinsics F200Camera::GetStreamExtrinsics(int from, int to)
+{
+    return {{1,0,0,0,1,0,0,0,1},{0,0,0}};
+}
+
 } // end f200
 
 #endif

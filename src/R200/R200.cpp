@@ -129,9 +129,32 @@ namespace r200
         //uvc_stop_streaming(deviceHandle);
     }
 
-    RectifiedIntrinsics R200Camera::GetDepthIntrinsics()
+    rs_intrinsics R200Camera::GetStreamIntrinsics(int stream)
     {
-        return hardware_io->GetCalibration().modesLR[0]; // Warning: assume mode 0 here (628x468)
+        auto calib = hardware_io->GetCalibration();
+        auto lr = calib.modesLR[0]; // Assumes 628x468 for now
+        auto t = calib.intrinsicsThird[1]; // Assumes 640x480 for now
+        switch(stream)
+        {
+        case RS_STREAM_DEPTH: return {{lr.rw-12,lr.rh-12},{lr.rfx,lr.rfy},{lr.rpx-6,lr.rpy-6},{1,0,0,0,0}};
+        case RS_STREAM_RGB: return {{t.w,t.h},{t.fx,t.fy},{t.px,t.py},{t.k[0],t.k[1],t.k[2],t.k[3],t.k[4]}};
+        default: throw std::runtime_error("unsupported stream");
+        }
+    }
+
+    rs_extrinsics R200Camera::GetStreamExtrinsics(int from, int to)
+    {
+        auto calib = hardware_io->GetCalibration();
+        if(from == RS_STREAM_DEPTH && to == RS_STREAM_RGB)
+        {
+            rs_extrinsics extrin;
+            for(int i=0; i<9; ++i) extrin.rotation[i] = (float)calib.Rthird[0][i];
+            extrin.translation[0] = extrin.rotation[0]*calib.T[0][0] + extrin.rotation[1]*calib.T[0][1] + extrin.rotation[2]*calib.T[0][2];
+            extrin.translation[1] = extrin.rotation[3]*calib.T[0][0] + extrin.rotation[4]*calib.T[0][1] + extrin.rotation[5]*calib.T[0][2];
+            extrin.translation[2] = extrin.rotation[6]*calib.T[0][0] + extrin.rotation[7]*calib.T[0][1] + extrin.rotation[8]*calib.T[0][2];
+            return extrin;
+        }
+        else throw std::runtime_error("unsupported streams");
     }
 } // end namespace r200
 #endif
