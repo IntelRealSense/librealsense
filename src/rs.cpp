@@ -178,13 +178,25 @@ void rs_stop_stream(rs_camera * camera, int stream, rs_error ** error)
 
 int rs_get_stream_property_i(rs_camera * camera, int stream, int prop, rs_error ** error)
 {
-    BEGIN_EXCEPTION_FIREWALL
+    BEGIN_EXCEPTION_FIREWALL        
     switch (prop)
     {
-    case RS_IMAGE_SIZE_X: return camera->GetStreamIntrinsics(stream).image_size[0];
-    case RS_IMAGE_SIZE_Y: return camera->GetStreamIntrinsics(stream).image_size[1];
-    default: return 0;
+    case RS_IMAGE_SIZE_X:
+        switch(stream)
+        {
+        case RS_STREAM_DEPTH: return camera->depthFrame.width;
+        case RS_STREAM_RGB: return camera->colorFrame.width;
+        }
+        break;
+    case RS_IMAGE_SIZE_Y:
+        switch(stream)
+        {
+        case RS_STREAM_DEPTH: return camera->depthFrame.height;
+        case RS_STREAM_RGB: return camera->colorFrame.height;
+        }
+        break;
     }
+    throw std::runtime_error("invalid stream property");
     END_EXCEPTION_FIREWALL
 }
 

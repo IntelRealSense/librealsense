@@ -42,7 +42,7 @@ namespace f200
             StreamInterface * stream = new StreamInterface();
             stream->camera = this;
             
-            if (!OpenStreamOnSubdevice(hardware, stream->uvcHandle, 2))
+            if (!OpenStreamOnSubdevice(hardware, stream->uvcHandle, 0))
                 throw std::runtime_error("Failed to open RS_STREAM_RGB (subdevice 2)");
             
             // Debugging
@@ -117,9 +117,9 @@ namespace f200
             {
                 case FrameFormat::INVR:
                 case FrameFormat::INVZ:
-                    depthFrame.reset(new TripleBufferedFrame(c.width, c.height, 2)); break;
+                    depthFrame = TripleBufferedFrame(c.width, c.height, sizeof(uint16_t)); break;
                 case FrameFormat::YUYV:
-                    colorFrame.reset(new TripleBufferedFrame(c.width, c.height, 3)); break;
+                    colorFrame = TripleBufferedFrame(c.width, c.height, sizeof(uint8_t)*3); break;
                 default:
                     throw std::runtime_error("invalid frame format");
             }
@@ -156,23 +156,23 @@ namespace f200
         
     const uint16_t * F200Camera::GetDepthImage()
     {
-        if (depthFrame->updated)
+        if (depthFrame.updated)
         {
             std::lock_guard<std::mutex> guard(frameMutex);
-            depthFrame->swap_front();
+            depthFrame.swap_front();
         }
-        auto rectifiedDepthImage = rectifier->rectify(reinterpret_cast<uint16_t *>(depthFrame->front.data()));
+        auto rectifiedDepthImage = rectifier->rectify(reinterpret_cast<uint16_t *>(depthFrame.front.data()));
         return reinterpret_cast<const uint16_t *>(rectifiedDepthImage);
     }
         
     const uint8_t * F200Camera::GetColorImage()
     {
-        if (colorFrame->updated)
+        if (colorFrame.updated)
         {
             std::lock_guard<std::mutex> guard(frameMutex);
-            colorFrame->swap_front();
+            colorFrame.swap_front();
         }
-        return reinterpret_cast<const uint8_t *>(colorFrame->front.data());
+        return reinterpret_cast<const uint8_t *>(colorFrame.front.data());
     }
 
 } // end f200
