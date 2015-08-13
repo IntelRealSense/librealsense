@@ -52,6 +52,7 @@ void						rs_wait_all_update			(struct rs_camera * camera, int stream_type, int 
 typedef void(rs_frame_callback_t)(struct rs_camera *camera, void *user_ptr);
 void						rs_register_wait_one_update	(struct rs_camera * camera, int stream_type, rs_frame_callback_t *cb, void *user_ptr, struct rs_error ** error){ };
 void						rs_register_wait_all_update	(struct rs_camera * camera, int stream_type, rs_frame_callback_t *cb, void *user_ptr, struct rs_error ** error){ };
+void						rs_register_streaming_error	(struct rs_camera * camera, int stream_type, rs_frame_callback_t *cb, void *user_ptr, struct rs_error ** error){ };
 
 void *						rs_get_data					(struct rs_camera * camera, int stream_type, struct rs_error ** error){ return 0; };
 
