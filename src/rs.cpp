@@ -144,24 +144,14 @@ uint64_t rs_get_frame_count(rs_camera * camera, rs_error ** error)
 const uint8_t *	rs_get_color_image(rs_camera * camera, rs_error ** error)
 {
     BEGIN_EXCEPTION_FIREWALL
-	if (camera->colorFrame->updated)
-	{
-		std::lock_guard<std::mutex> guard(camera->frameMutex);
-		camera->colorFrame->swap_front();
-	}
-	return reinterpret_cast<const uint8_t *>(camera->colorFrame->front.data());
+    return camera->GetColorImage();
     END_EXCEPTION_FIREWALL
 }
 
 const uint16_t * rs_get_depth_image(rs_camera * camera, rs_error ** error)
 {
     BEGIN_EXCEPTION_FIREWALL
-	if (camera->depthFrame->updated)
-	{
-		std::lock_guard<std::mutex> guard(camera->frameMutex);
-		camera->depthFrame->swap_front();
-	}
-	return reinterpret_cast<const uint16_t *>(camera->depthFrame->front.data());
+    return camera->GetDepthImage();
     END_EXCEPTION_FIREWALL
 }
 
