@@ -18,7 +18,8 @@
 
 namespace rs
 {
-	enum class FrameFormat {
+	enum class FrameFormat
+    {
 		UNKNOWN = 0,
 		ANY = 0, // Any supported format
 		UNCOMPRESSED,
@@ -63,6 +64,7 @@ namespace rs
 		template<class T> ToString & operator << (const T & val) { ss << val; return *this; }
 		operator std::string() const { return ss.str(); }
 	};
+    
 } // end namespace rs
 
 struct rs_error
@@ -94,6 +96,8 @@ struct rs_camera
 	virtual void StopStream(int streamIdentifier) = 0;
 	virtual rs_intrinsics GetStreamIntrinsics(int stream) = 0;
 	virtual rs_extrinsics GetStreamExtrinsics(int from, int to) = 0;
+    virtual const uint16_t * GetDepthImage();
+    virtual const uint8_t * GetColorImage();
 };
 
 struct rs_context
