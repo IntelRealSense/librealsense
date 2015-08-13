@@ -93,8 +93,9 @@ namespace f200
                     uint32_t coeff = uvTable[y * width + x];
                     uint16_t sampleX =  coeff & 0x0000FFFF;
                     uint16_t sampleY = (coeff & 0xFFFF0000) >> 16;
-                    bool invalidLocation = sampleX < 0 || sampleX >= width || sampleY < 0 ||sampleY >= height;
-                    undistortedDepth[y * width + x] = invalidLocation ? 0 : srcImg[sampleY*width+x];
+                    //bool invalidLocation = sampleX < 0 || sampleX >= width || sampleY < 0 || sampleY >= height;
+                    //std::cout << "sample x: " << sampleX << " , " << sampleY << std::endl;
+                    undistortedDepth[y * width + x] = srcImg[sampleY * width + sampleX];
                 }
             }
             return undistortedDepth.data();
