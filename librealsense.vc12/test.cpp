@@ -1,41 +1,42 @@
 #include <cstdint>
 struct rs_context {};
-struct rs_device {};
+struct rs_camera {};
 struct rs_stream_config {};
-struct rs_frame {};
+//struct rs_frame {};
 struct rs_error {};
 
 struct rs_context *			rs_create_context			(int api_version, struct rs_error ** error){ return 0; };
-int							rs_get_device_count			(struct rs_context * context, struct rs_error **){ return 0; };
-struct rs_device *			rs_get_device				(struct rs_context * context, int index, struct rs_error **){ return 0; };
-void						rs_delete_context			(struct rs_context * context, struct rs_error **){};
+void						rs_free_context				(struct rs_context * context, struct rs_error **){};
 
-void						rs_get_stream_cfg_count		(struct rs_device * device, int stream_type, struct rs_error **){};
-struct rs_stream_config *	rs_get_stream_cfg			(struct rs_device * device, int stream_type, int cfg_idx, struct rs_error **){ return 0; };
+int							rs_get_camera_count			(struct rs_context * context, struct rs_error **){ return 0; };
+struct rs_camera *			rs_get_camera				(struct rs_context * context, int index, struct rs_error **){ return 0; };
+
+void						rs_get_stream_cfg_count		(struct rs_camera * camera, int stream_type, struct rs_error **){};
+struct rs_stream_config *	rs_get_stream_cfg			(struct rs_camera * camera, int stream_type, int cfg_idx, struct rs_error **){ return 0; };
 int							rs_get_stream_cfg_property_i(struct rs_stream_config * cfg, int prop, struct rs_error ** error){ return 0; };
-struct rs_stream_config *	rs_set_stream_cfg_i			(struct rs_device * device, int stream_type, int prop, int value, struct rs_error ** error){};
-struct rs_stream_config *	rs_set_stream_cfg_f			(struct rs_device * device, int stream_type, int prop, float value, struct rs_error ** error){};
+int							rs_get_stream_cfg_property_f(struct rs_stream_config * cfg, float prop, struct rs_error ** error){ return 0; };
+void						rs_set_stream_cfg_property_i(struct rs_stream_config * cfg, int prop, int value, struct rs_error ** error){  };
+void						rs_set_stream_cfg_property_f(struct rs_stream_config * cfg, float prop, float value, struct rs_error ** error){  };
+void						rs_free_stream_cfg			(struct rs_stream_config * error){};
 
+struct rs_stream_config *	rs_enable_stream			(struct rs_camera * camera, int stream_type, int width, int height, int fps, int format, struct rs_error **){ return 0; };
+void						rs_enable_stream_from_cfg	(struct rs_camera * camera, int stream_type, struct rs_stream_config * cfg, struct rs_error **){};
 
-struct rs_stream_config *	rs_enable_stream			(struct rs_device * device, int stream_type, int width, int height, int fps, int format, struct rs_error **){};
-void						rs_enable_stream_from_cfg	(struct rs_device * device, int stream_type, struct rs_stream_config * cfg, struct rs_error **){};
+void						rs_start_streaming			(struct rs_camera * camera, struct rs_error **){};
+void						rs_stop_streaming			(struct rs_camera * camera, struct rs_error **){};
 
-void						rs_start_streaming			(struct rs_device * device, struct rs_error **){};
-void						rs_stop_streaming			(struct rs_device * device, struct rs_error **){};
+void						rs_wait_one_update			(struct rs_camera * camera, int stream_type, struct rs_error ** error){ };
+void						rs_wait_all_update			(struct rs_camera * camera, int stream_type, struct rs_error ** error){ };
 
-void						rs_wait_one_update			(struct rs_device * device, int stream_type, struct rs_error ** error){ };
-void						rs_wait_all_update			(struct rs_device * device, int stream_type, struct rs_error ** error){ };
+void *						rs_get_image				(struct rs_camera * camera, int stream_type, struct rs_error ** error){ return 0; };
 
-const uint16_t *			rs_get_depth_image			(struct rs_device * device, struct rs_error ** error){ return 0; };
-const uint8_t *				rs_get_color_image			(struct rs_device * device, struct rs_error ** error){ return 0; };
-
-int 						rs_is_streaming				(struct rs_device * device, struct rs_error ** error){ return 0; };
-int							rs_get_device_index			(struct rs_device * device, struct rs_error ** error){ return 0; };
-uint64_t					rs_get_frame_count			(struct rs_device * device, struct rs_error ** error){ return 0; };
-int							rs_get_stream_property_i	(struct rs_device * device, int stream, int prop, struct rs_error ** error){ return 0; };
-float						rs_get_stream_property_f	(struct rs_device * device, int stream, int prop, struct rs_error ** error){ return 0; };
-void						rs_set_stream_property_i	(struct rs_device * device, int stream, int prop, int value, struct rs_error ** error){ };
-void						rs_set_stream_property_f	(struct rs_device * device, int stream, int prop, float value, struct rs_error ** error){ };
+int 						rs_is_streaming				(struct rs_camera * camera, struct rs_error ** error){ return 0; };
+int							rs_get_camera_index			(struct rs_camera * camera, struct rs_error ** error){ return 0; };
+uint32_t					rs_get_frame_count			(struct rs_camera * camera, struct rs_error ** error){ return 0; };
+int							rs_get_stream_property_i	(struct rs_camera * camera, int stream, int prop, struct rs_error ** error){ return 0; };
+float						rs_get_stream_property_f	(struct rs_camera * camera, int stream, int prop, struct rs_error ** error){ return 0; };
+void						rs_set_stream_property_i	(struct rs_camera * camera, int stream, int prop, int value, struct rs_error ** error){ };
+void						rs_set_stream_property_f	(struct rs_camera * camera, int stream, int prop, float value, struct rs_error ** error){ };
 
 const char *				rs_get_failed_function		(struct rs_error * error){ return 0; };
 const char *				rs_get_error_message		(struct rs_error * error){ return 0; };
@@ -92,21 +93,24 @@ int test_main(int argc, char * argv[])
 {
 	struct rs_context * ctx;
 
-	struct rs_device * cam;
+	struct rs_camera * cam;
 
 	struct rs_error * error;
 	ctx = rs_create_context(RS_API_VERSION, &error);
-	int cam_count = rs_get_device_count(ctx, NULL);
+	int cam_count = rs_get_camera_count(ctx, NULL);
 	if (cam_count) {
-		cam = rs_get_device(ctx, 0, &error);
+		cam = rs_get_camera(ctx, 0, &error);
 		struct rs_stream_config * z_cfg = rs_enable_stream(cam, RS_STREAM_DEPTH, 628, 469, 30, RS_FRAME_FORMAT_Z16, &error); //should be a best-effort call.
 		struct rs_stream_config * rgb_cfg = rs_enable_stream(cam, RS_STREAM_COLOR, 640, 480, 30, RS_FRAME_FORMAT_YUYV, &error);
 		rs_start_streaming(cam, NULL);
 
 		do {
-			auto z = rs_get_depth_image(cam, &error);
+			rs_wait_one_update(cam, RS_STREAM_DEPTH | RS_STREAM_COLOR, &error);
+			auto z = (uint16_t*)rs_get_image(cam, RS_STREAM_DEPTH, &error);
+			auto rgb = (uint8_t*)rs_get_image(cam, RS_STREAM_COLOR, &error);
+
 		} while (!error);
 	}
-	rs_delete_context(ctx, &error);
+	rs_free_context(ctx, &error);
 	return 0;
 }
