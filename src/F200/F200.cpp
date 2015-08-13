@@ -62,8 +62,8 @@ namespace f200
         
         // Set up calibration parameters for internal undistortion
         
-        const auto od = hardware_io->GetOpticalData();
-        const auto calib = hardware_io->GetParameters();
+        const CameraCalibrationParameters & calib = hardware_io->GetParameters();
+        const OpticalData & od = hardware_io->GetOpticalData();
         
         rs_intrinsics rect = {}, unrect = {};
         rs_extrinsics rotation = {{1.f,0.f,0.f,0.f,1.f,0.f,0.f,0.f,1.f},{0.f,0.f,0.f}};
@@ -75,13 +75,13 @@ namespace f200
         rect.image_size[1] = ivHeight;
         rect.focal_length[0] = od.IRUndistortedFocalLengthPxl.x;
         rect.focal_length[1] = od.IRUndistortedFocalLengthPxl.y;
-        rect.principal_point[0] = od.IRPrincipalPoint.x + (ivWidth / 2);
-        rect.principal_point[1] = od.IRPrincipalPoint.y + (ivHeight / 2);
+        rect.principal_point[0] = (ivWidth / 2); // Leo hack not to use real pp
+        rect.principal_point[1] = (ivHeight / 2); // Ditto
         
         unrect.image_size[0] = ivWidth;
         unrect.image_size[1] = ivHeight;
         unrect.focal_length[0] = od.IRDistortedFocalLengthPxl.x;
-        unrect.focal_length[1] =  od.IRDistortedFocalLengthPxl.y;
+        unrect.focal_length[1] =  od.IRDistortedFocalLengthPxl.x; // Leo hack for "Squareness"
         unrect.principal_point[0] = od.IRPrincipalPoint.x + (ivWidth / 2);
         unrect.principal_point[1] = od.IRPrincipalPoint.y + (ivHeight / 2);
         unrect.distortion_coeff[0] = calib.Distc[0];
@@ -143,6 +143,7 @@ namespace f200
     rs_intrinsics F200Camera::GetStreamIntrinsics(int stream)
     {
         const CameraCalibrationParameters & ivCamParams = hardware_io->GetParameters();
+        const OpticalData & ivOpticalData = hardware_io->GetOpticalData();
         
         // undistorted for rgb
         return {{640,480},{500,500},{320,240},{1,0,0,0,0}}; // TODO: Use actual calibration data
@@ -160,9 +161,7 @@ namespace f200
             std::lock_guard<std::mutex> guard(frameMutex);
             depthFrame->swap_front();
         }
-        
         auto rectifiedDepthImage = rectifier->rectify(reinterpret_cast<uint16_t *>(depthFrame->front.data()));
-        
         return reinterpret_cast<const uint16_t *>(rectifiedDepthImage);
     }
         

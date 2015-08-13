@@ -62,12 +62,14 @@ namespace f200
                     const float ji[2] = {(float)j, (float)i};
                     float uv[2];
                     TransformFromRectOtherImageToNonRectOtherImage(destIntrinsics, rotation, sourceIntrinsics, ji, uv);
-                    if (uv[0] < 0) uv[0] = 0;
-                    if (uv[1] < 0) uv[1] = 0;
-                    if (uv[0] >= sourceIntrinsics.image_size[0]) uv[0] = static_cast<float>(sourceIntrinsics.image_size[0] - 1);
-                    if (uv[1] >= sourceIntrinsics.image_size[1]) uv[1] = static_cast<float>(sourceIntrinsics.image_size[1] - 1);
-                    uint16_t uf = (uint16_t)(uv[0] * 32); // 11.5 fixed point representation  11  bits integer and 5 bits fractional
-                    uint16_t vf = (uint16_t)(uv[1] * 32);
+                    /*
+                        if (uv[0] < 0) uv[0] = 0;
+                        if (uv[1] < 0) uv[1] = 0;
+                        if (uv[0] >= sourceIntrinsics.image_size[0]) uv[0] = static_cast<float>(sourceIntrinsics.image_size[0] - 1);
+                        if (uv[1] >= sourceIntrinsics.image_size[1]) uv[1] = static_cast<float>(sourceIntrinsics.image_size[1] - 1);
+                    */
+                    uint16_t uf = (uint16_t)(uv[0] * 32) >> 5; // 11.5 fixed point representation  11  bits integer and 5 bits fractional
+                    uint16_t vf = (uint16_t)(uv[1] * 32) >> 5;
                     *table++ = uf | ((int)vf) << 16;
                 }
             }
@@ -81,7 +83,7 @@ namespace f200
         {
             uvTable.resize(width * height);
             undistortedDepth.resize(width * height);
-            BuildRectificationTable(rect, r.rotation, unrect);
+            BuildRectificationTable(unrect, r.rotation, rect);
         }
         
         uint16_t * rectify(uint16_t * srcImg)
@@ -93,9 +95,8 @@ namespace f200
                     uint32_t coeff = uvTable[y * width + x];
                     uint16_t sampleX =  coeff & 0x0000FFFF;
                     uint16_t sampleY = (coeff & 0xFFFF0000) >> 16;
-                    //bool invalidLocation = sampleX < 0 || sampleX >= width || sampleY < 0 || sampleY >= height;
-                    //std::cout << "sample x: " << sampleX << " , " << sampleY << std::endl;
-                    undistortedDepth[y * width + x] = srcImg[sampleY * width + sampleX];
+                    bool invalidLocation = sampleX < 0 || sampleX >= width || sampleY < 0 || sampleY >= height;
+                    undistortedDepth[y * width + x] = invalidLocation ? 0 : srcImg[sampleY * width + sampleX];
                 }
             }
             return undistortedDepth.data();
