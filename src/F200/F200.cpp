@@ -65,8 +65,8 @@ namespace f200
         const auto od = hardware_io->GetOpticalData();
         const auto calib = hardware_io->GetParameters();
         
-        rs_intrinsics rect = {},unrect = {};
-        rs_extrinsics rotation ={{1.f,0.f,0.f,0.f,1.f,0.f,0.f,0.f,1.f},{0.f,0.f,0.f}};
+        rs_intrinsics rect = {}, unrect = {};
+        rs_extrinsics rotation = {{1.f,0.f,0.f,0.f,1.f,0.f,0.f,0.f,1.f},{0.f,0.f,0.f}};
         
         const int ivWidth = 640;
         const int ivHeight = 480;
@@ -90,7 +90,7 @@ namespace f200
         unrect.distortion_coeff[3] = calib.Distc[3];
         unrect.distortion_coeff[4] = calib.Distc[4];
 
-        calibUtils.reset(new CalibrationUtils(ivWidth, ivHeight, rect, unrect, rotation));
+        rectifier.reset(new IVRectifier(ivWidth, ivHeight, rect, unrect, rotation));
         
         ////////////////////////////////////////////////////////////////////////////
         
@@ -142,9 +142,8 @@ namespace f200
         
     rs_intrinsics F200Camera::GetStreamIntrinsics(int stream)
     {
-        // After having configured streams... optical data
-        
         const CameraCalibrationParameters & ivCamParams = hardware_io->GetParameters();
+        
         // undistorted for rgb
         return {{640,480},{500,500},{320,240},{1,0,0,0,0}}; // TODO: Use actual calibration data
     }
@@ -161,7 +160,10 @@ namespace f200
             std::lock_guard<std::mutex> guard(frameMutex);
             depthFrame->swap_front();
         }
-        return reinterpret_cast<const uint16_t *>(depthFrame->front.data());
+        
+        auto rectifiedDepthImage = rectifier->rectify(reinterpret_cast<uint16_t *>(depthFrame->front.data()));
+        
+        return reinterpret_cast<const uint16_t *>(rectifiedDepthImage);
     }
         
     const uint8_t * F200Camera::GetColorImage()

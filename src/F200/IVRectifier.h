@@ -84,7 +84,7 @@ namespace f200
             BuildRectificationTable(rect, r.rotation, unrect);
         }
         
-        uint16_t * operator() (uint16_t * srcImg)
+        uint16_t * rectify(uint16_t * srcImg)
         {
             for (int y = 0; y < height; y++)
             {
