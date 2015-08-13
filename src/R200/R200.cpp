@@ -146,33 +146,19 @@ namespace r200
         }
     }
 
-   /*     calib.
-                CalibrationMetadata metadata;
-
-                UnrectifiedIntrinsics intrinsicsLeft;
-                std::vector<UnrectifiedIntrinsics> intrinsicsRight;
-                std::vector<UnrectifiedIntrinsics> intrinsicsThird;
-                std::vector<UnrectifiedIntrinsics> intrinsicsPlatform;
-
-                std::vector<RectifiedIntrinsics> modesLR;
-                std::vector<RectifiedIntrinsics> modesThird;
-                std::vector<RectifiedIntrinsics> modesPlatform;
-
-                std::vector<std::array<float, 9>> Rleft;
-                std::vector<std::array<float, 9>> Rright;
-                std::vector<std::array<float, 9>> Rthird;
-                std::vector<std::array<float, 9>> Rplatform;
-
-                std::vector<float> B;
-                std::vector<std::array<float, 3>> T;
-                std::vector<std::array<float, 3>> Tplatform;
-
-                std::array<float, 9> Rworld;
-                std::array<float, 3> Tworld;
-    }*/
     rs_extrinsics R200Camera::GetStreamExtrinsics(int from, int to)
     {
-        return {{1,0,0,0,1,0,0,0,1},{0,0,0}};
+        auto calib = spiInterface->GetCalibration();
+        if(from == RS_STREAM_DEPTH && to == RS_STREAM_RGB)
+        {
+            rs_extrinsics extrin;
+            for(int i=0; i<9; ++i) extrin.rotation[i] = (float)calib.Rthird[0][i];
+            extrin.translation[0] = extrin.rotation[0]*calib.T[0][0] + extrin.rotation[1]*calib.T[0][1] + extrin.rotation[2]*calib.T[0][2];
+            extrin.translation[1] = extrin.rotation[3]*calib.T[0][0] + extrin.rotation[4]*calib.T[0][1] + extrin.rotation[5]*calib.T[0][2];
+            extrin.translation[2] = extrin.rotation[6]*calib.T[0][0] + extrin.rotation[7]*calib.T[0][1] + extrin.rotation[8]*calib.T[0][2];
+            return extrin;
+        }
+        else throw std::runtime_error("unsupported streams");
     }
 } // end namespace r200
 #endif
