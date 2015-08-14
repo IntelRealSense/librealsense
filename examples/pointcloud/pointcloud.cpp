@@ -38,6 +38,19 @@ void ttf_print(stbtt_bakedchar cdata[], float x, float y, const char *text)
    glEnd();
 }
 
+float ttf_len(stbtt_bakedchar cdata[], const char *text)
+{
+    float x=0, y=0;
+   while (*text) {
+      if (*text >= 32 && *text < 128) {
+         stbtt_aligned_quad q;
+         stbtt_GetBakedQuad(cdata, 512,512, *text-32, &x,&y,&q,1);//1=opengl & d3d10+,0=d3d9
+      }
+      ++text;
+   }
+   return x;
+}
+
 int main(int argc, char * argv[]) try
 {
 	rs::camera cam;
@@ -61,7 +74,7 @@ int main(int argc, char * argv[]) try
     struct state { float yaw, pitch; double lastX, lastY; bool ml; } app_state = {};
 
 	glfwInit();
-    GLFWwindow * win = glfwCreateWindow(1280, 720, "LibRealSense Point Cloud Example", 0, 0);
+    GLFWwindow * win = glfwCreateWindow(640, 480, "RealSense Point Cloud", 0, 0);
 	glfwSetWindowUserPointer(win, &app_state);
 	glfwSetMouseButtonCallback(win, [](GLFWwindow * win, int button, int action, int mods)
 	{
@@ -97,7 +110,7 @@ int main(int argc, char * argv[]) try
         fread(ttf_buffer.data(), 1, ttf_buffer.size(), f);
 
         unsigned char temp_bitmap[512*512];
-        stbtt_BakeFontBitmap(ttf_buffer.data(),0, 32.0, temp_bitmap, 512,512, 32,96, cdata); // no guarantee this fits!
+        stbtt_BakeFontBitmap(ttf_buffer.data(),0, 20.0, temp_bitmap, 512,512, 32,96, cdata); // no guarantee this fits!
 
         glGenTextures(1, &ftex);
         glBindTexture(GL_TEXTURE_2D, ftex);
@@ -168,17 +181,31 @@ int main(int argc, char * argv[]) try
                     if(ivcam)
                     {
                         glTexCoord2fv(uv + (y*640 + x)*2);
-                        glVertex3f(xyz[(y*640 + x)*3], xyz[(y*640 + x)*3+1], xyz[(y*640 + x)*3+2]);
                     }
                     else
                     {
                         float depth_pixel[] = {x,y}, color_pixel[2];
                         rs_transform_rectified_pixel_to_pixel(depth_pixel, d, depth_intrin, extrin, color_intrin, color_pixel);
                         glTexCoord2f(color_pixel[0]/color_intrin.image_size[0], color_pixel[1]/color_intrin.image_size[1]);
-                        const float pixel[] = {x,y};
-                        const auto point = depth_intrin.deproject_from_rectified(pixel, d);
-                        glVertex3f(point[0] * scale, point[1] * scale, point[2] * scale);
                     }
+
+                    const float pixel[] = {x,y};
+                    const auto point = depth_intrin.deproject_from_rectified(pixel, d);
+
+                    float hue = point[2] * scale * 1000;
+                    float h = fmodf(hue / 60, 6);
+                    float x = (1 - fabsf(fmodf(h,2) - 1));
+                    float r,g,b;
+                         if(h < 1) {r=1;g=x;b=0;}
+                    else if(h < 2) {r=x;g=1;b=0;}
+                    else if(h < 3) {r=0;g=1;b=x;}
+                    else if(h < 4) {r=0;g=x;b=1;}
+                    else if(h < 5) {r=x;g=0;b=1;}
+                    else           {r=1;g=0;b=x;}
+
+                    float t = (cosf(glfwGetTime() / 10)+1)/2;
+                    glColor3f(t+r*(1-t),t+g*(1-t),t+b*(1-t));
+                    glVertex3f(point[0] * scale, point[1] * scale, point[2] * scale);
 				}
 			}
 		}
@@ -195,7 +222,7 @@ int main(int argc, char * argv[]) try
         glBindTexture(GL_TEXTURE_2D, ftex);
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-        ttf_print(cdata, 20, 40, cam.get_name());
+        ttf_print(cdata, (width-ttf_len(cdata, cam.get_name()))/2, height-20.0f, cam.get_name());
         glPopMatrix();
         glPopAttrib();
 
