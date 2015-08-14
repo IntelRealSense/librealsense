@@ -4,6 +4,41 @@
 #include <GLFW/glfw3.h>
 #include <iostream>
 
+#define STB_TRUETYPE_IMPLEMENTATION
+#include "stb_truetype.h"
+
+unsigned char ttf_buffer[1<<20];
+unsigned char temp_bitmap[512*512];
+stbtt_bakedchar cdata[96]; // ASCII 32..126 is 95 glyphs
+
+FILE * find_file(std::string path, int levels)
+{
+    for(int i=0; i<=levels; ++i)
+    {
+        if(auto f = fopen(path.c_str(), "rb")) return f;
+        path = "../" + path;
+    }
+    return nullptr;
+}
+
+void my_stbtt_print(float x, float y, char *text)
+{
+   // assume orthographic projection with units = screen pixels, origin at top left
+   glBegin(GL_QUADS);
+   while (*text) {
+      if (*text >= 32 && *text < 128) {
+         stbtt_aligned_quad q;
+         stbtt_GetBakedQuad(cdata, 512,512, *text-32, &x,&y,&q,1);//1=opengl & d3d10+,0=d3d9
+         glTexCoord2f(q.s0,q.t0); glVertex2f(q.x0,q.y0);
+         glTexCoord2f(q.s1,q.t0); glVertex2f(q.x1,q.y0);
+         glTexCoord2f(q.s1,q.t1); glVertex2f(q.x1,q.y1);
+         glTexCoord2f(q.s0,q.t1); glVertex2f(q.x0,q.y1);
+      }
+      ++text;
+   }
+   glEnd();
+}
+
 int main(int argc, char * argv[]) try
 {
 	rs::camera cam;
@@ -51,6 +86,20 @@ int main(int argc, char * argv[]) try
 	});
 	glfwMakeContextCurrent(win);
 
+    GLuint ftex;
+    if(auto f = find_file("examples/assets/Roboto-Bold.ttf", 3))
+    {
+        fread(ttf_buffer, 1, 1<<20, f);
+        stbtt_BakeFontBitmap(ttf_buffer,0, 32.0, temp_bitmap,512,512, 32,96, cdata); // no guarantee this fits!
+        // can free ttf_buffer at this point
+        glGenTextures(1, &ftex);
+        glBindTexture(GL_TEXTURE_2D, ftex);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_ALPHA, 512,512, 0, GL_ALPHA, GL_UNSIGNED_BYTE, temp_bitmap);
+        // can free temp_bitmap at this point
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    }
+    else throw std::runtime_error("Unable to open examples/assets/Roboto-Bold.ttf");
+
 	GLuint tex;
 	glGenTextures(1, &tex);
 	glBindTexture(GL_TEXTURE_2D, tex);
@@ -67,6 +116,7 @@ int main(int argc, char * argv[]) try
 		glfwGetWindowSize(win, &width, &height);
 		
 		auto depth = cam.get_depth_image();
+        glBindTexture(GL_TEXTURE_2D, tex);
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, cam.get_stream_property_i(RS_STREAM_RGB, RS_IMAGE_SIZE_X),
                      cam.get_stream_property_i(RS_STREAM_RGB, RS_IMAGE_SIZE_Y), 0, GL_RGB, GL_UNSIGNED_BYTE, cam.get_color_image());
 
@@ -83,7 +133,7 @@ int main(int argc, char * argv[]) try
 
         float scale = rs_get_depth_scale(cam.get_handle(), NULL);
 		glEnable(GL_DEPTH_TEST);
-		glEnable(GL_TEXTURE_2D);
+        glEnable(GL_TEXTURE_2D);
 		glBegin(GL_POINTS);
 		for(int y=0; y<depth_intrin.image_size[1]; ++y)
 		{
@@ -101,6 +151,18 @@ int main(int argc, char * argv[]) try
 		glEnd();
 
 		glPopMatrix();
+
+        glPushMatrix();
+        glOrtho(0, width, height, 0, -1, +1);
+        glDisable(GL_DEPTH_TEST);
+        glEnable(GL_TEXTURE_2D);
+        glBindTexture(GL_TEXTURE_2D, ftex);
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        my_stbtt_print(20, 40, "This is a test");
+        glDisable(GL_BLEND);
+        glPopMatrix();
+
 		glfwSwapBuffers(win);
 	}
 
