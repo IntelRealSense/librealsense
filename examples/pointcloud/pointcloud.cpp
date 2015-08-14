@@ -58,7 +58,7 @@ int main(int argc, char * argv[]) try
 	const auto depth_intrin = cam.get_stream_intrinsics(RS_STREAM_DEPTH), color_intrin = cam.get_stream_intrinsics(RS_STREAM_RGB);
 	const auto extrin = cam.get_stream_extrinsics(RS_STREAM_DEPTH, RS_STREAM_RGB);
 
-	struct state { float yaw, pitch; double lastX, lastY; bool ml; } app_state = {0,0,false};
+    struct state { float yaw, pitch; double lastX, lastY; bool ml; } app_state = {};
 
 	glfwInit();
     GLFWwindow * win = glfwCreateWindow(1280, 720, "LibRealSense Point Cloud Example", 0, 0);
@@ -85,6 +85,8 @@ int main(int argc, char * argv[]) try
 	});
 	glfwMakeContextCurrent(win);
 
+    glPushAttrib(GL_ALL_ATTRIB_BITS);
+
     GLuint ftex;
     stbtt_bakedchar cdata[96]; // ASCII 32..126 is 95 glyph
     if(auto f = find_file("examples/assets/Roboto-Bold.ttf", 3))
@@ -100,7 +102,10 @@ int main(int argc, char * argv[]) try
         glGenTextures(1, &ftex);
         glBindTexture(GL_TEXTURE_2D, ftex);
         glTexImage2D(GL_TEXTURE_2D, 0, GL_ALPHA, 512,512, 0, GL_ALPHA, GL_UNSIGNED_BYTE, temp_bitmap);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
     }
     else throw std::runtime_error("Unable to open examples/assets/Roboto-Bold.ttf");
 
@@ -112,6 +117,8 @@ int main(int argc, char * argv[]) try
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
 
+    glPopAttrib();
+
 	while (!glfwWindowShouldClose(win))
 	{
 		glfwPollEvents();
@@ -120,38 +127,39 @@ int main(int argc, char * argv[]) try
 		glfwGetWindowSize(win, &width, &height);
 		
 		auto depth = cam.get_depth_image();
-
         float uv[640 * 480 * 2];
         auto ivcam = dynamic_cast<f200::F200Camera *>(cam.get_handle());
-        if(ivcam)
-        {
-            ivcam->ComputeUVMap(depth, uv);
-        }
+        if(ivcam) ivcam->ComputeUVMap(depth, uv);
 
+        glPushAttrib(GL_ALL_ATTRIB_BITS);
         glBindTexture(GL_TEXTURE_2D, tex);
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, cam.get_stream_property_i(RS_STREAM_RGB, RS_IMAGE_SIZE_X),
                      cam.get_stream_property_i(RS_STREAM_RGB, RS_IMAGE_SIZE_Y), 0, GL_RGB, GL_UNSIGNED_BYTE, cam.get_color_image());
 
-		glClearColor(0.3f,0.3f,0.3f,1.0f);
+        glClearColor(0.0f, 116/255.0f, 197/255.0f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        glMatrixMode(GL_PROJECTION);
 		glPushMatrix();
         gluPerspective(60, (float)width/height, 0.01f, 2.0f);
+        glMatrixMode(GL_MODELVIEW);
+        glPushMatrix();
 		gluLookAt(0,0,0, 0,0,1, 0,-1,0);
         glTranslatef(0,0,+0.5f);
 
-		glRotatef(app_state.pitch, 1, 0, 0);
-		glRotatef(app_state.yaw, 0, 1, 0);
+        glRotatef(18, 0, 1, 0); // app_state.pitch, 1, 0, 0);
+        glRotatef(sin(glfwGetTime() / 3) * 30, 0, 1, 0); //app_state.yaw, 0, 1, 0);
         glTranslatef(0,0,-0.5f);
 
         float scale = rs_get_depth_scale(cam.get_handle(), NULL);
 		glEnable(GL_DEPTH_TEST);
         glEnable(GL_TEXTURE_2D);
         glBegin(GL_QUADS);
+
 		for(int y=0; y<depth_intrin.image_size[1]; ++y)
 		{
 			for(int x=0; x<depth_intrin.image_size[0]; ++x)
 			{
-				if(auto d = *depth++)
+                if(auto d = *depth++)
 				{
                     if(ivcam)
                     {
@@ -174,19 +182,21 @@ int main(int argc, char * argv[]) try
 			}
 		}
 		glEnd();
-
 		glPopMatrix();
+        glMatrixMode(GL_PROJECTION);
+        glPopMatrix();
+        glPopAttrib();
 
+        glPushAttrib(GL_ALL_ATTRIB_BITS);
         glPushMatrix();
         glOrtho(0, width, height, 0, -1, +1);
-        glDisable(GL_DEPTH_TEST);
         glEnable(GL_TEXTURE_2D);
         glBindTexture(GL_TEXTURE_2D, ftex);
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         ttf_print(cdata, 20, 40, cam.get_name());
-        glDisable(GL_BLEND);
         glPopMatrix();
+        glPopAttrib();
 
 		glfwSwapBuffers(win);
 	}
