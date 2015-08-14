@@ -148,16 +148,17 @@ int main(int argc, char * argv[]) try
             ivcam->ComputeVertexMap(depth, xyz);
         }
 
+        glViewport(0, 0, width, height);
+        glClearColor(0.0f, 116/255.0f, 197/255.0f, 1.0f);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
         glPushAttrib(GL_ALL_ATTRIB_BITS);
         glBindTexture(GL_TEXTURE_2D, tex);
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, cam.get_stream_property_i(RS_STREAM_RGB, RS_IMAGE_SIZE_X),
                      cam.get_stream_property_i(RS_STREAM_RGB, RS_IMAGE_SIZE_Y), 0, GL_RGB, GL_UNSIGNED_BYTE, cam.get_color_image());
-
-        glClearColor(0.0f, 116/255.0f, 197/255.0f, 1.0f);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         glMatrixMode(GL_PROJECTION);
 		glPushMatrix();
-        gluPerspective(60, (float)width/height, 0.01f, 2.0f);
+        gluPerspective(60, (float)width/height, 0.01f, 20.0f);
         glMatrixMode(GL_MODELVIEW);
         glPushMatrix();
 		gluLookAt(0,0,0, 0,0,1, 0,-1,0);
@@ -170,7 +171,9 @@ int main(int argc, char * argv[]) try
         float scale = rs_get_depth_scale(cam.get_handle(), NULL);
 		glEnable(GL_DEPTH_TEST);
         glEnable(GL_TEXTURE_2D);
-        glBegin(GL_POINTS); //ivcam ? GL_POINTS : GL_QUADS);
+
+        glPointSize((float)width/640);
+        glBegin(GL_POINTS);
 
 		for(int y=0; y<depth_intrin.image_size[1]; ++y)
 		{
@@ -192,7 +195,7 @@ int main(int argc, char * argv[]) try
                     const float pixel[] = {x,y};
                     const auto point = depth_intrin.deproject_from_rectified(pixel, d);
 
-                    float hue = point[2] * scale * 1000;
+                    /*float hue = point[2] * scale * 1000;
                     float h = fmodf(hue / 60, 6);
                     float x = (1 - fabsf(fmodf(h,2) - 1));
                     float r,g,b;
@@ -204,7 +207,7 @@ int main(int argc, char * argv[]) try
                     else           {r=1;g=0;b=x;}
 
                     float t = (cosf(glfwGetTime() / 10)+1)/2;
-                    glColor3f(t+r*(1-t),t+g*(1-t),t+b*(1-t));
+                    glColor3f(t+r*(1-t),t+g*(1-t),t+b*(1-t));*/
                     glVertex3f(point[0] * scale, point[1] * scale, point[2] * scale);
 				}
 			}
