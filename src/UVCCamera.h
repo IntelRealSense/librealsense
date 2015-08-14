@@ -54,7 +54,6 @@ namespace rs
 
     public:
 
-        UVCCamera(uvc_device_t * device, int num);
         UVCCamera(uvc_context_t * ctx, uvc_device_t * device, int num);
         ~UVCCamera();
     };

@@ -6,15 +6,15 @@
 
 namespace rs
 {
-
-UVCCamera::UVCCamera(uvc_device_t * h, int idx) : rs_camera(idx), hardware(h)
-{
-    
-}
     
 UVCCamera::UVCCamera(uvc_context_t * c, uvc_device_t * h, int idx) : rs_camera(idx), hardware(h), internalContext(c)
 {
-    
+    uvc_device_descriptor_t * desc;
+    uvc_error_t status = uvc_get_device_descriptor(h, &desc);
+    if(status < 0) {} // Handle error
+
+    cameraName = desc->product;
+    uvc_free_device_descriptor(desc);
 }
 
 UVCCamera::~UVCCamera()

@@ -52,7 +52,7 @@ void rs_context::QueryDeviceList()
 		{
 			if (desc->idProduct == 2688)
 			{
-				cameras.push_back(std::make_shared<r200::R200Camera>(list[index], index));
+                cameras.push_back(std::make_shared<r200::R200Camera>(privateContext, list[index], index));
 			}
 
 			else if (desc->idProduct == 2662)
@@ -110,6 +110,13 @@ void rs_delete_context(rs_context * context, rs_error ** error)
 {
     BEGIN_EXCEPTION_FIREWALL
     delete context;
+    END_EXCEPTION_FIREWALL
+}
+
+const char * rs_get_camera_name(rs_camera * camera, rs_error ** error)
+{
+    BEGIN_EXCEPTION_FIREWALL
+    return camera->cameraName.c_str();
     END_EXCEPTION_FIREWALL
 }
 

@@ -21,7 +21,7 @@ FILE * find_file(std::string path, int levels)
     return nullptr;
 }
 
-void my_stbtt_print(float x, float y, char *text)
+void my_stbtt_print(float x, float y, const char *text)
 {
    // assume orthographic projection with units = screen pixels, origin at top left
    glBegin(GL_QUADS);
@@ -159,7 +159,7 @@ int main(int argc, char * argv[]) try
         glBindTexture(GL_TEXTURE_2D, ftex);
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-        my_stbtt_print(20, 40, "This is a test");
+        my_stbtt_print(20, 40, cam.get_name());
         glDisable(GL_BLEND);
         glPopMatrix();
 

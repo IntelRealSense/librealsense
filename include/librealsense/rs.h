@@ -14,6 +14,7 @@ int					rs_get_camera_count		(struct rs_context * context, struct rs_error ** er
 struct rs_camera *	rs_get_camera			(struct rs_context * context, int index, struct rs_error ** error);
 void				rs_delete_context		(struct rs_context * context, struct rs_error ** error);
 
+const char *        rs_get_camera_name      (struct rs_camera * camera, struct rs_error ** error);
 void				rs_enable_stream		(struct rs_camera * camera, int stream, struct rs_error ** error);
 int 				rs_configure_streams	(struct rs_camera * camera, struct rs_error ** error);
 void				rs_start_stream			(struct rs_camera * camera, int stream, int width, int height, int fps, int format, struct rs_error ** error);

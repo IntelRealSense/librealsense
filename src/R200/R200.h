@@ -16,7 +16,7 @@ namespace r200
         rs::StreamConfiguration zConfig;
         rs::StreamConfiguration rgbConfig;
     public:
-        R200Camera(uvc_device_t * device, int num);
+        R200Camera(uvc_context_t * ctx, uvc_device_t * device, int num);
         ~R200Camera();
 
         bool ConfigureStreams() override;

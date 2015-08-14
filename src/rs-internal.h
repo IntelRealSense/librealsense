@@ -78,6 +78,7 @@ struct rs_camera
 	NO_MOVE(rs_camera);
 
 	int cameraIdx;
+    std::string cameraName;
 
 	rs::USBDeviceInfo usbInfo = {};
 

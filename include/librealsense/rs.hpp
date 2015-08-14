@@ -53,6 +53,7 @@ namespace rs
 		explicit			operator bool() const													{ return !!cam; }
         rs_camera *         get_handle() const                                                      { return cam; }
 
+        const char *        get_name()                                                              { return rs_get_camera_name(cam, auto_error()); }
 		void				enable_stream(int stream)												{ return rs_enable_stream(cam, stream, auto_error()); }
 		int 				configure_streams()														{ return rs_configure_streams(cam, auto_error()); }
 		void				start_stream(int stream, int width, int height, int fps, int format)	{ return rs_start_stream(cam, stream, width, height, fps, format, auto_error()); }
