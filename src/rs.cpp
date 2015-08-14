@@ -169,6 +169,13 @@ void rs_start_stream(rs_camera * camera, int stream, int width, int height, int 
     END_EXCEPTION_FIREWALL
 }
 
+void rs_start_stream_preset(rs_camera * camera, int stream, int preset, rs_error ** error)
+{
+    BEGIN_EXCEPTION_FIREWALL
+    camera->StartStreamPreset(stream, preset);
+    END_EXCEPTION_FIREWALL
+}
+
 void rs_stop_stream(rs_camera * camera, int stream, rs_error ** error)
 {
     BEGIN_EXCEPTION_FIREWALL

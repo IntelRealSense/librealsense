@@ -93,6 +93,7 @@ struct rs_camera
 
 	virtual bool ConfigureStreams() = 0;
 	virtual void StartStream(int streamIdentifier, const rs::StreamConfiguration & config) = 0;
+    virtual void StartStreamPreset(int streamIdentifier, int preset) = 0;
 	virtual void StopStream(int streamIdentifier) = 0;
     
 	virtual rs_intrinsics GetStreamIntrinsics(int stream) = 0;

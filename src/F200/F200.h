@@ -27,6 +27,15 @@ namespace f200
         
         bool ConfigureStreams() override;
         void StartStream(int streamIdentifier, const rs::StreamConfiguration & config) override;
+        void StartStreamPreset(int streamIdentifier, int preset) override
+        {
+            switch(streamIdentifier)
+            {
+            case RS_STREAM_DEPTH: StartStream(RS_STREAM_DEPTH, {640, 480, 60, rs::FrameFormat::INVZ}); break;
+            case RS_STREAM_RGB: StartStream(RS_STREAM_RGB, {640, 480, 60, rs::FrameFormat::YUYV}); break;
+            default: throw std::runtime_error("unsupported stream");
+            }
+        }
         void StopStream(int streamIdentifier) override;
         
         rs_intrinsics GetStreamIntrinsics(int stream) override;

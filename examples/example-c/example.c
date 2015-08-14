@@ -50,18 +50,8 @@ int main(int argc, char * argv[])
 			rs_get_stream_property_f(cam, RS_STREAM_DEPTH, RS_PRINCIPAL_POINT_Y, NULL));
 		printf("Computed FOV %f %f\n", hfov, vfov);
 
-        rs_start_stream(cam, RS_STREAM_DEPTH, 628, 469, 0, RS_FRAME_FORMAT_Z16, &error);
-        if(error)
-        {
-            rs_free_error(error);
-            rs_start_stream(cam, RS_STREAM_DEPTH, 640, 480, 60, RS_FRAME_FORMAT_INVZ, &error); check_error();
-        }
-        rs_start_stream(cam, RS_STREAM_RGB, 640, 480, 59, RS_FRAME_FORMAT_YUYV, &error);
-        if(error)
-        {
-            rs_free_error(error);
-            rs_start_stream(cam, RS_STREAM_RGB, 640, 480, 60, RS_FRAME_FORMAT_YUYV, &error); check_error();
-        }
+        rs_start_stream_preset(cam, RS_STREAM_DEPTH, RS_STREAM_PRESET_BEST_QUALITY, &error); check_error();
+        rs_start_stream_preset(cam, RS_STREAM_RGB, RS_STREAM_PRESET_BEST_QUALITY, &error); check_error();
 	}
 	if (!cam)
 	{
@@ -81,12 +71,14 @@ int main(int argc, char * argv[])
 
         glRasterPos2f(-1, 1);
 		glPixelTransferf(GL_RED_SCALE, 1);
-        glDrawPixels(640, 480, GL_RGB, GL_UNSIGNED_BYTE, rs_get_color_image(cam, &error)); check_error();
+        glDrawPixels(rs_get_stream_property_i(cam, RS_STREAM_RGB, RS_IMAGE_SIZE_X, NULL),
+                     rs_get_stream_property_i(cam, RS_STREAM_RGB, RS_IMAGE_SIZE_Y, NULL),
+                     GL_RGB, GL_UNSIGNED_BYTE, rs_get_color_image(cam, &error)); check_error();
 
         glRasterPos2f(0, 1);
 		glPixelTransferf(GL_RED_SCALE, 30);
-        glDrawPixels(rs_get_stream_property_i(cam, RS_STREAM_DEPTH, RS_IMAGE_SIZE_X, 0),
-                     rs_get_stream_property_i(cam, RS_STREAM_DEPTH, RS_IMAGE_SIZE_Y, 0),
+        glDrawPixels(rs_get_stream_property_i(cam, RS_STREAM_DEPTH, RS_IMAGE_SIZE_X, NULL),
+                     rs_get_stream_property_i(cam, RS_STREAM_DEPTH, RS_IMAGE_SIZE_Y, NULL),
                      GL_RED, GL_UNSIGNED_SHORT, rs_get_depth_image(cam, &error)); check_error();
 
 		glfwSwapBuffers(win);

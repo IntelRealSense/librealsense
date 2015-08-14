@@ -33,13 +33,13 @@ int main(int argc, char * argv[]) try
 			cam.get_stream_property_f(RS_STREAM_DEPTH, RS_PRINCIPAL_POINT_Y));
 		std::cout << "Computed FOV " << hfov << " " << vfov << std::endl;
 
-		cam.start_stream(RS_STREAM_DEPTH, 628, 469, 0, RS_FRAME_FORMAT_Z16);
-		cam.start_stream(RS_STREAM_RGB, 640, 480, 30, RS_FRAME_FORMAT_YUYV);
+        cam.start_stream_preset(RS_STREAM_DEPTH, RS_STREAM_PRESET_BEST_QUALITY);
+        cam.start_stream_preset(RS_STREAM_RGB, RS_STREAM_PRESET_BEST_QUALITY);
 	}
 	if (!cam) throw std::runtime_error("No camera detected. Is it plugged in?");
 
 	glfwInit();
-    GLFWwindow * win = glfwCreateWindow(1280, 480, "LibRealSense C plus plus Example", 0, 0);
+    GLFWwindow * win = glfwCreateWindow(1280, 480, "LibRealSense CPP Example", 0, 0);
 	while (!glfwWindowShouldClose(win))
 	{
 		glfwPollEvents();
@@ -50,11 +50,15 @@ int main(int argc, char * argv[]) try
 
 		glRasterPos2f(-1, 1);
 		glPixelTransferf(GL_RED_SCALE, 1);
-		glDrawPixels(640, 480, GL_RGB, GL_UNSIGNED_BYTE, cam.get_color_image());
+        glDrawPixels(cam.get_stream_property_i(RS_STREAM_RGB, RS_IMAGE_SIZE_X),
+                     cam.get_stream_property_i(RS_STREAM_RGB, RS_IMAGE_SIZE_Y),
+                     GL_RGB, GL_UNSIGNED_BYTE, cam.get_color_image());
 
 		glRasterPos2f(0, 1);
 		glPixelTransferf(GL_RED_SCALE, 30);
-		glDrawPixels(628, 468, GL_RED, GL_UNSIGNED_SHORT, cam.get_depth_image());
+        glDrawPixels(cam.get_stream_property_i(RS_STREAM_DEPTH, RS_IMAGE_SIZE_X),
+                     cam.get_stream_property_i(RS_STREAM_DEPTH, RS_IMAGE_SIZE_Y),
+                     GL_RED, GL_UNSIGNED_SHORT, cam.get_depth_image());
 
 		glfwSwapBuffers(win);
 	}
