@@ -34,12 +34,14 @@
 
 struct TripleBufferedFrame
 {
+    int width, height, stride;
     std::vector<uint8_t> front;    // Read by application
     std::vector<uint8_t> back;     // Write by camera
     std::vector<uint8_t> pending;  // Middle
     bool updated = false;
     
-    TripleBufferedFrame(int width, int height, int stride)
+    TripleBufferedFrame() : width(), height(), stride() {}
+    TripleBufferedFrame(int width, int height, int stride) : width(width), height(height), stride(stride)
     {
         front.resize(width * height * stride);
         back.resize(width * height * stride);

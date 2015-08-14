@@ -85,8 +85,8 @@ struct rs_camera
 	uint64_t frameCount = 0;
 
 	std::mutex frameMutex;
-	std::unique_ptr<TripleBufferedFrame> depthFrame;
-	std::unique_ptr<TripleBufferedFrame> colorFrame;
+    TripleBufferedFrame depthFrame;
+    TripleBufferedFrame colorFrame;
 
 	rs_camera(int index) : cameraIdx(index) {}
 	virtual ~rs_camera() {}

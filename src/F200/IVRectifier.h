@@ -86,7 +86,7 @@ namespace f200
         
         uint16_t * rectify(uint16_t * srcImg)
         {
-            for (int y = 0; y < height; y++)
+            /*for (int y = 0; y < height; y++)
             {
                 for (int x = 0; x < width; x++)
                 {
@@ -97,8 +97,8 @@ namespace f200
                     //std::cout << "sample x: " << sampleX << " , " << sampleY << std::endl;
                     undistortedDepth[y * width + x] = srcImg[sampleY * width + sampleX];
                 }
-            }
-            return undistortedDepth.data();
+            }*/
+            return srcImg; //undistortedDepth.data();
         }
         
     };

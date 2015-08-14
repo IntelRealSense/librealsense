@@ -33,10 +33,10 @@ void UVCCamera::frameCallback(uvc_frame_t * frame, StreamInterface * stream)
 {
     if (stream->fmt == UVC_FRAME_FORMAT_Z16 || stream->fmt == UVC_FRAME_FORMAT_INVR || stream->fmt == UVC_FRAME_FORMAT_INVZ)
     {
-        memcpy(depthFrame->back.data(), frame->data, (frame->width * frame->height - 1) * 2);
+        memcpy(depthFrame.back.data(), frame->data, (frame->width * frame->height - 1) * 2);
         {
             std::lock_guard<std::mutex> lock(frameMutex);
-            depthFrame->swap_back();
+            depthFrame.swap_back();
         }
     }
     
@@ -45,10 +45,10 @@ void UVCCamera::frameCallback(uvc_frame_t * frame, StreamInterface * stream)
         //@tofix - this is a bit silly to overallocate. Blame Leo.
         static uint8_t color_cvt[1920 * 1080 * 3]; // YUYV = 16 bits in in -> 24 out
         convert_yuyv_rgb((uint8_t *)frame->data, frame->width, frame->height, color_cvt);
-        memcpy(colorFrame->back.data(), color_cvt, (frame->width * frame->height) * 3);
+        memcpy(colorFrame.back.data(), color_cvt, (frame->width * frame->height) * 3);
         {
             std::lock_guard<std::mutex> lock(frameMutex);
-            colorFrame->swap_back();
+            colorFrame.swap_back();
         }
     }
     

@@ -100,13 +100,13 @@ namespace r200
             //@tofix - check streaming mode as well
             if (c.format == FrameFormat::Z16)
             {
-                depthFrame.reset(new TripleBufferedFrame(c.width, c.height, 2));
+                depthFrame = TripleBufferedFrame(c.width, c.height, 2);
                 zConfig = c;
             }
 
             else if (c.format == FrameFormat::YUYV)
             {
-                colorFrame.reset(new TripleBufferedFrame(c.width, c.height, 3));
+                colorFrame = TripleBufferedFrame(c.width, c.height, 3);
                 rgbConfig = c;
             }
 
@@ -159,22 +159,22 @@ namespace r200
     
     const uint16_t * R200Camera::GetDepthImage()
     {
-        if (depthFrame->updated)
+        if (depthFrame.updated)
         {
             std::lock_guard<std::mutex> guard(frameMutex);
-            depthFrame->swap_front();
+            depthFrame.swap_front();
         }
-        return reinterpret_cast<const uint16_t *>(depthFrame->front.data());
+        return reinterpret_cast<const uint16_t *>(depthFrame.front.data());
     }
     
     const uint8_t * R200Camera::GetColorImage()
     {
-        if (colorFrame->updated)
+        if (colorFrame.updated)
         {
             std::lock_guard<std::mutex> guard(frameMutex);
-            colorFrame->swap_front();
+            colorFrame.swap_front();
         }
-        return reinterpret_cast<const uint8_t *>(colorFrame->front.data());
+        return reinterpret_cast<const uint8_t *>(colorFrame.front.data());
     }
     
 } // end namespace r200

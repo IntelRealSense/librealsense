@@ -5,6 +5,4 @@ SUBDIRS += \
    ./realsense.pro \
    ./example-c.pro \
    ./example-cpp.pro \
-   ./pointcloud.pro \
-   ./pointcloudviewer.pro
-
+   ./pointcloud.pro
