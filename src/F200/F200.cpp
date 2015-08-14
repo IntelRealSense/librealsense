@@ -1,5 +1,6 @@
 #include "../Common.h"
 #include "F200.h"
+#include "Projection.h"
 
 #ifndef WIN32
 
@@ -154,6 +155,12 @@ namespace f200
         return {{1,0,0,0,1,0,0,0,1},{0,0,0}};
     }
         
+    float F200Camera::GetDepthScale()
+    {
+        IVCAMCalibrator<float> * calibration = Projection::GetInstance()->GetCalibrationObject();
+        return calibration->ivcamToMM(1) * 0.001f;
+    }
+
     const uint16_t * F200Camera::GetDepthImage()
     {
         if (depthFrame.updated)

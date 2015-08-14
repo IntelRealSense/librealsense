@@ -38,6 +38,7 @@ namespace r200
         rs::StreamConfiguration GetZConfig() { return zConfig; }
         rs::StreamConfiguration GetRGBConfig() { return rgbConfig; }
         
+        float GetDepthScale() override { return 0.001f; } // NOTE: Could change based on ZUnits
         const uint16_t * GetDepthImage() override;
         const uint8_t * GetColorImage() override;
     };

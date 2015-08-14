@@ -17,8 +17,8 @@ int main(int argc, char * argv[]) try
 		cam.enable_stream(RS_STREAM_RGB);
 		cam.configure_streams();
 
-		cam.start_stream(RS_STREAM_DEPTH, 628, 469, 0, RS_FRAME_FORMAT_Z16);
-		cam.start_stream(RS_STREAM_RGB, 640, 480, 30, RS_FRAME_FORMAT_YUYV);
+        cam.start_stream_preset(RS_STREAM_DEPTH, RS_STREAM_PRESET_BEST_QUALITY);
+        cam.start_stream_preset(RS_STREAM_RGB, RS_STREAM_PRESET_BEST_QUALITY);
 	}
 	if (!cam) throw std::runtime_error("No camera detected. Is it plugged in?");
 	const auto depth_intrin = cam.get_stream_intrinsics(RS_STREAM_DEPTH), color_intrin = cam.get_stream_intrinsics(RS_STREAM_RGB);
@@ -67,19 +67,21 @@ int main(int argc, char * argv[]) try
 		glfwGetWindowSize(win, &width, &height);
 		
 		auto depth = cam.get_depth_image();
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, color_intrin.image_size[0], color_intrin.image_size[1], 0, GL_RGB, GL_UNSIGNED_BYTE, cam.get_color_image());
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, cam.get_stream_property_i(RS_STREAM_RGB, RS_IMAGE_SIZE_X),
+                     cam.get_stream_property_i(RS_STREAM_RGB, RS_IMAGE_SIZE_Y), 0, GL_RGB, GL_UNSIGNED_BYTE, cam.get_color_image());
 
 		glClearColor(0.3f,0.3f,0.3f,1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		glPushMatrix();
-		gluPerspective(60, (float)width/height, 10.0f, 2000.0f);
+        gluPerspective(60, (float)width/height, 0.01f, 2.0f);
 		gluLookAt(0,0,0, 0,0,1, 0,-1,0);
-		glTranslatef(0,0,500);
+        glTranslatef(0,0,+0.5f);
 
 		glRotatef(app_state.pitch, 1, 0, 0);
 		glRotatef(app_state.yaw, 0, 1, 0);
-		glTranslatef(0,0,-500);
+        glTranslatef(0,0,-0.5f);
 
+        float scale = rs_get_depth_scale(cam.get_handle(), NULL);
 		glEnable(GL_DEPTH_TEST);
 		glEnable(GL_TEXTURE_2D);
 		glBegin(GL_POINTS);
@@ -92,7 +94,7 @@ int main(int argc, char * argv[]) try
 					const float pixel[] = {x,y};
 					const auto point = depth_intrin.deproject_from_rectified(pixel, d);
 					glTexCoord2fv(color_intrin.project_to_texcoord(extrin.transform(point.data()).data()).data());
-					glVertex3fv(point.data());
+                    glVertex3f(point[0] * scale, point[1] * scale, point[2] * scale);
 				}
 			}
 		}

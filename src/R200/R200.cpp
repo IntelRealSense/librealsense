@@ -156,7 +156,7 @@ namespace r200
         }
         else throw std::runtime_error("unsupported streams");
     }
-    
+
     const uint16_t * R200Camera::GetDepthImage()
     {
         if (depthFrame.updated)

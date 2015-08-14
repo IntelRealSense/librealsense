@@ -141,6 +141,13 @@ uint64_t rs_get_frame_count(rs_camera * camera, rs_error ** error)
     END_EXCEPTION_FIREWALL
 }
 
+float rs_get_depth_scale(rs_camera * camera, rs_error ** error)
+{
+    BEGIN_EXCEPTION_FIREWALL
+    return camera->GetDepthScale();
+    END_EXCEPTION_FIREWALL
+}
+
 const uint8_t *	rs_get_color_image(rs_camera * camera, rs_error ** error)
 {
     BEGIN_EXCEPTION_FIREWALL

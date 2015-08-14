@@ -41,9 +41,9 @@ namespace f200
         rs_intrinsics GetStreamIntrinsics(int stream) override;
         rs_extrinsics GetStreamExtrinsics(int from, int to) override;
         
+        float GetDepthScale() override;
         const uint16_t * GetDepthImage() override;
         const uint8_t * GetColorImage() override;
-        
     };
     
 } // end namespace f200
