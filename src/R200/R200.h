@@ -13,8 +13,6 @@ namespace r200
     class R200Camera : public rs::UVCCamera
     {
         std::unique_ptr<DS4HardwareIO> hardware_io;
-        rs::StreamConfiguration zConfig;
-        rs::StreamConfiguration rgbConfig;
     public:
         R200Camera(uvc_context_t * ctx, uvc_device_t * device, int num);
         ~R200Camera();
@@ -23,7 +21,6 @@ namespace r200
         int GetColorCameraNumber() const override final { return 2; }
         void RetrieveCalibration() override final;
 
-        void StartStream(int streamIdentifier, const rs::StreamConfiguration & config) override;
         void StartStreamPreset(int streamIdentifier, int preset) override
         {
             switch(streamIdentifier)
@@ -37,9 +34,6 @@ namespace r200
 
         rs_intrinsics GetStreamIntrinsics(int stream) override;
         rs_extrinsics GetStreamExtrinsics(int from, int to) override;
-
-        rs::StreamConfiguration GetZConfig() { return zConfig; }
-        rs::StreamConfiguration GetRGBConfig() { return rgbConfig; }
         
         float GetDepthScale() override { return 0.001f; } // NOTE: Could change based on ZUnits
         const uint16_t * GetDepthImage() override;

@@ -38,54 +38,6 @@ namespace r200
         }
     }
 
-    void R200Camera::StartStream(int streamIdentifier, const StreamConfiguration & c)
-    {
-        //  if (isStreaming) throw std::runtime_error("Camera is already streaming");
-
-        auto stream = streamInterfaces[streamIdentifier];
-
-        if (stream->uvcHandle)
-        {
-            stream->fmt = static_cast<uvc_frame_format>(c.format);
-
-            uvc_error_t status = uvc_get_stream_ctrl_format_size(stream->uvcHandle, &stream->ctrl, stream->fmt, c.width, c.height, c.fps);
-
-            if (status < 0)
-            {
-                uvc_perror(status, "uvc_get_stream_ctrl_format_size");
-                throw std::runtime_error("Open camera_handle Failed");
-            }
-
-            // Begin R200 specific //
-
-            //@tofix - check streaming mode as well
-            if (c.format == FrameFormat::Z16)
-            {
-                depthFrame = TripleBufferedFrame(c.width, c.height, 2);
-                zConfig = c;
-            }
-
-            else if (c.format == FrameFormat::YUYV)
-            {
-                colorFrame = TripleBufferedFrame(c.width, c.height, 3);
-                rgbConfig = c;
-            }
-
-            // End R200 specific //
-
-            uvc_error_t startStreamResult = uvc_start_streaming(stream->uvcHandle, &stream->ctrl, &UVCCamera::cb, stream, 0);
-
-            if (startStreamResult < 0)
-            {
-                uvc_perror(startStreamResult, "start_stream");
-                throw std::runtime_error("Could not start stream");
-            }
-        }
-
-        //@tofix - else what?
-
-    }
-
     void R200Camera::StopStream(int streamNum)
     {
         //@tofix - uvc_stream_stop with a real stream handle -> index with map that we have

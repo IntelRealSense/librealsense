@@ -58,48 +58,6 @@ namespace f200
         return true;
     }
 
-    void F200Camera::StartStream(int streamIdentifier, const StreamConfiguration & c)
-    {
-        auto stream = streamInterfaces[streamIdentifier];
-        
-        if (stream->uvcHandle)
-        {
-            stream->fmt = static_cast<uvc_frame_format>(c.format);
-            
-            uvc_error_t status = uvc_get_stream_ctrl_format_size(stream->uvcHandle, &stream->ctrl, stream->fmt, c.width, c.height, c.fps);
-            
-            if (status < 0)
-            {
-                uvc_perror(status, "uvc_get_stream_ctrl_format_size");
-                throw std::runtime_error("Open camera_handle Failed");
-            }
-            
-            // Begin F200 specific //
-
-            switch (c.format)
-            {
-                case FrameFormat::INVR:
-                case FrameFormat::INVZ:
-                    depthFrame = TripleBufferedFrame(c.width, c.height, sizeof(uint16_t)); break;
-                case FrameFormat::YUYV:
-                    colorFrame = TripleBufferedFrame(c.width, c.height, sizeof(uint8_t)*3); break;
-                default:
-                    throw std::runtime_error("invalid frame format");
-            }
-            
-            // End F200 specific //
-
-            uvc_error_t startStreamResult = uvc_start_streaming(stream->uvcHandle, &stream->ctrl, &UVCCamera::cb, stream, 0);
-            
-            if (startStreamResult < 0)
-            {
-                uvc_perror(startStreamResult, "start_stream");
-                throw std::runtime_error("Could not start stream");
-            }
-
-        }
-    }
-
     void F200Camera::StopStream(int streamNum)
     {
         //@tofix

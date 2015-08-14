@@ -66,6 +66,56 @@ bool UVCCamera::ConfigureStreams()
     return true;
 }
 
+void UVCCamera::StartStream(int streamIdentifier, const StreamConfiguration & c)
+{
+    auto stream = streamInterfaces[streamIdentifier];
+
+    if (stream->uvcHandle)
+    {
+        stream->fmt = static_cast<uvc_frame_format>(c.format);
+
+        uvc_error_t status = uvc_get_stream_ctrl_format_size(stream->uvcHandle, &stream->ctrl, stream->fmt, c.width, c.height, c.fps);
+
+        if (status < 0)
+        {
+            uvc_perror(status, "uvc_get_stream_ctrl_format_size");
+            throw std::runtime_error("Open camera_handle Failed");
+        }
+
+        switch(streamIdentifier)
+        {
+        case RS_STREAM_DEPTH:
+            switch(c.format)
+            {
+            case FrameFormat::Z16:
+            case FrameFormat::INVR:
+            case FrameFormat::INVZ:
+                depthFrame = TripleBufferedFrame(c.width, c.height, sizeof(uint16_t)); break;
+            default: throw std::runtime_error("invalid frame format");
+            }
+            zConfig = c;
+            break;
+        case RS_STREAM_RGB:
+            switch(c.format)
+            {
+            case FrameFormat::YUYV:
+                colorFrame = TripleBufferedFrame(c.width, c.height, sizeof(uint8_t)*3); break;
+            default: throw std::runtime_error("invalid frame format");
+            }
+            rgbConfig = c;
+            break;
+        }
+
+        uvc_error_t startStreamResult = uvc_start_streaming(stream->uvcHandle, &stream->ctrl, &UVCCamera::cb, stream, 0);
+
+        if (startStreamResult < 0)
+        {
+            uvc_perror(startStreamResult, "start_stream");
+            throw std::runtime_error("Could not start stream");
+        }
+    }
+}
+
 void UVCCamera::frameCallback(uvc_frame_t * frame, StreamInterface * stream)
 {
     if (stream->fmt == UVC_FRAME_FORMAT_Z16 || stream->fmt == UVC_FRAME_FORMAT_INVR || stream->fmt == UVC_FRAME_FORMAT_INVZ)

@@ -58,8 +58,6 @@ namespace rs
 
         void frameCallback(uvc_frame_t * frame, StreamInterface * stream);
 
-        bool ConfigureStreams() override final;
-
         virtual int GetDepthCameraNumber() const = 0;
         virtual int GetColorCameraNumber() const = 0;
         virtual void RetrieveCalibration() = 0;
@@ -68,6 +66,12 @@ namespace rs
 
         UVCCamera(uvc_context_t * ctx, uvc_device_t * device, int num);
         ~UVCCamera();
+
+        bool ConfigureStreams() override final;
+        void StartStream(int streamIdentifier, const StreamConfiguration & c) override final;
+
+        rs::StreamConfiguration zConfig;
+        rs::StreamConfiguration rgbConfig;
     };
     
 } // end namespace rs
