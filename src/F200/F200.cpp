@@ -195,6 +195,11 @@ namespace f200
         Projection::GetInstance()->MapDepthToColorCoordinates(640, 480, depth, destUV);
     }
 
+    void F200Camera::ComputeVertexMap(const uint16_t * depth, float * destXYZ)
+    {
+        Projection::GetInstance()->ProjectImageToRealWorld(640, 480, depth, destXYZ);
+    }
+
 } // end f200
 
 #endif

@@ -127,9 +127,13 @@ int main(int argc, char * argv[]) try
 		glfwGetWindowSize(win, &width, &height);
 		
 		auto depth = cam.get_depth_image();
-        float uv[640 * 480 * 2];
+        float uv[640 * 480 * 2], xyz[640 * 480 * 3];
         auto ivcam = dynamic_cast<f200::F200Camera *>(cam.get_handle());
-        if(ivcam) ivcam->ComputeUVMap(depth, uv);
+        if(ivcam)
+        {
+            ivcam->ComputeUVMap(depth, uv);
+            ivcam->ComputeVertexMap(depth, xyz);
+        }
 
         glPushAttrib(GL_ALL_ATTRIB_BITS);
         glBindTexture(GL_TEXTURE_2D, tex);
@@ -153,7 +157,7 @@ int main(int argc, char * argv[]) try
         float scale = rs_get_depth_scale(cam.get_handle(), NULL);
 		glEnable(GL_DEPTH_TEST);
         glEnable(GL_TEXTURE_2D);
-        glBegin(GL_QUADS);
+        glBegin(GL_POINTS); //ivcam ? GL_POINTS : GL_QUADS);
 
 		for(int y=0; y<depth_intrin.image_size[1]; ++y)
 		{
@@ -164,18 +168,15 @@ int main(int argc, char * argv[]) try
                     if(ivcam)
                     {
                         glTexCoord2fv(uv + (y*640 + x)*2);
+                        glVertex3f(xyz[(y*640 + x)*3], xyz[(y*640 + x)*3+1], xyz[(y*640 + x)*3+2]);
                     }
                     else
                     {
                         float depth_pixel[] = {x,y}, color_pixel[2];
                         rs_transform_rectified_pixel_to_pixel(depth_pixel, d, depth_intrin, extrin, color_intrin, color_pixel);
                         glTexCoord2f(color_pixel[0]/color_intrin.image_size[0], color_pixel[1]/color_intrin.image_size[1]);
-                    }
-
-                    const float pixels[][2] = {{x-0.5f,y-0.5f},{x+0.5f,y-0.5f},{x+0.5f,y+0.5f},{x-0.5f,y+0.5f}};
-                    for(auto & p : pixels)
-                    {
-                        const auto point = depth_intrin.deproject_from_rectified(p, d);
+                        const float pixel[] = {x,y};
+                        const auto point = depth_intrin.deproject_from_rectified(pixel, d);
                         glVertex3f(point[0] * scale, point[1] * scale, point[2] * scale);
                     }
 				}

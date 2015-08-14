@@ -31,7 +31,7 @@ namespace f200
         {
             switch(streamIdentifier)
             {
-            case RS_STREAM_DEPTH: StartStream(RS_STREAM_DEPTH, {640, 480, 60, rs::FrameFormat::INVZ}); break;
+            case RS_STREAM_DEPTH: StartStream(RS_STREAM_DEPTH, {640, 480, 60, rs::FrameFormat::INVR}); break;
             case RS_STREAM_RGB: StartStream(RS_STREAM_RGB, {640, 480, 60, rs::FrameFormat::YUYV}); break;
             default: throw std::runtime_error("unsupported stream");
             }
@@ -39,6 +39,7 @@ namespace f200
         void StopStream(int streamIdentifier) override;
 
         void ComputeUVMap(const uint16_t * depth, float * destUV);
+        void ComputeVertexMap(const uint16_t * depth, float * destXYZ);
         
         rs_intrinsics GetStreamIntrinsics(int stream) override;
         rs_extrinsics GetStreamExtrinsics(int from, int to) override;
