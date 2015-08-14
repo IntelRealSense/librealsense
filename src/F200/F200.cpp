@@ -143,16 +143,24 @@ namespace f200
         
     rs_intrinsics F200Camera::GetStreamIntrinsics(int stream)
     {
-        const CameraCalibrationParameters & ivCamParams = hardware_io->GetParameters();
-        const OpticalData & ivOpticalData = hardware_io->GetOpticalData();
-        
-        // undistorted for rgb
-        return {{640,480},{500,500},{320,240},{1,0,0,0,0}}; // TODO: Use actual calibration data
+        const CameraCalibrationParameters & calib = hardware_io->GetParameters();
+        const OpticalData & od = hardware_io->GetOpticalData();
+        switch(stream)
+        {
+        case RS_STREAM_DEPTH: return {{640,480},{od.IRUndistortedFocalLengthPxl.x,od.IRUndistortedFocalLengthPxl.y},{320,240},{1,0,0,0,0}};
+        case RS_STREAM_RGB: return {{640,480},{od.RGBUndistortedFocalLengthPxl.x,od.RGBUndistortedFocalLengthPxl.y},{320,240},{1,0,0,0,0}};
+        default: throw std::runtime_error("unsupported stream");
+        }
     }
 
     rs_extrinsics F200Camera::GetStreamExtrinsics(int from, int to)
     {
-        return {{1,0,0,0,1,0,0,0,1},{0,0,0}};
+        const CameraCalibrationParameters & calib = hardware_io->GetParameters();
+        float scale = 0.001f / GetDepthScale();
+        return {{calib.Rt[0][0], calib.Rt[0][1], calib.Rt[0][2],
+                 calib.Rt[1][0], calib.Rt[1][1], calib.Rt[1][2],
+                 calib.Rt[2][0], calib.Rt[2][1], calib.Rt[2][2]},
+                {calib.Tt[0] * scale, calib.Tt[1] * scale, calib.Tt[2] * scale}};
     }
         
     float F200Camera::GetDepthScale()
