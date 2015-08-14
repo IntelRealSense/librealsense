@@ -3,13 +3,12 @@
 #define GLFW_INCLUDE_GLU
 #include <GLFW/glfw3.h>
 #include <iostream>
+#include <vector>
 
 #define STB_TRUETYPE_IMPLEMENTATION
 #include "stb_truetype.h"
 
-unsigned char ttf_buffer[1<<20];
-unsigned char temp_bitmap[512*512];
-stbtt_bakedchar cdata[96]; // ASCII 32..126 is 95 glyphs
+#include "../../src/F200/F200.h"
 
 FILE * find_file(std::string path, int levels)
 {
@@ -21,7 +20,7 @@ FILE * find_file(std::string path, int levels)
     return nullptr;
 }
 
-void my_stbtt_print(float x, float y, const char *text)
+void ttf_print(stbtt_bakedchar cdata[], float x, float y, const char *text)
 {
    // assume orthographic projection with units = screen pixels, origin at top left
    glBegin(GL_QUADS);
@@ -87,15 +86,20 @@ int main(int argc, char * argv[]) try
 	glfwMakeContextCurrent(win);
 
     GLuint ftex;
+    stbtt_bakedchar cdata[96]; // ASCII 32..126 is 95 glyph
     if(auto f = find_file("examples/assets/Roboto-Bold.ttf", 3))
     {
-        fread(ttf_buffer, 1, 1<<20, f);
-        stbtt_BakeFontBitmap(ttf_buffer,0, 32.0, temp_bitmap,512,512, 32,96, cdata); // no guarantee this fits!
-        // can free ttf_buffer at this point
+        fseek(f, 0, SEEK_END);
+        std::vector<uint8_t> ttf_buffer(ftell(f));
+        fseek(f, 0, SEEK_SET);
+        fread(ttf_buffer.data(), 1, ttf_buffer.size(), f);
+
+        unsigned char temp_bitmap[512*512];
+        stbtt_BakeFontBitmap(ttf_buffer.data(),0, 32.0, temp_bitmap, 512,512, 32,96, cdata); // no guarantee this fits!
+
         glGenTextures(1, &ftex);
         glBindTexture(GL_TEXTURE_2D, ftex);
         glTexImage2D(GL_TEXTURE_2D, 0, GL_ALPHA, 512,512, 0, GL_ALPHA, GL_UNSIGNED_BYTE, temp_bitmap);
-        // can free temp_bitmap at this point
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     }
     else throw std::runtime_error("Unable to open examples/assets/Roboto-Bold.ttf");
@@ -116,6 +120,14 @@ int main(int argc, char * argv[]) try
 		glfwGetWindowSize(win, &width, &height);
 		
 		auto depth = cam.get_depth_image();
+
+        float uv[640 * 480 * 2];
+        auto ivcam = dynamic_cast<f200::F200Camera *>(cam.get_handle());
+        if(ivcam)
+        {
+            ivcam->ComputeUVMap(depth, uv);
+        }
+
         glBindTexture(GL_TEXTURE_2D, tex);
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, cam.get_stream_property_i(RS_STREAM_RGB, RS_IMAGE_SIZE_X),
                      cam.get_stream_property_i(RS_STREAM_RGB, RS_IMAGE_SIZE_Y), 0, GL_RGB, GL_UNSIGNED_BYTE, cam.get_color_image());
@@ -134,17 +146,30 @@ int main(int argc, char * argv[]) try
         float scale = rs_get_depth_scale(cam.get_handle(), NULL);
 		glEnable(GL_DEPTH_TEST);
         glEnable(GL_TEXTURE_2D);
-		glBegin(GL_POINTS);
+        glBegin(GL_QUADS);
 		for(int y=0; y<depth_intrin.image_size[1]; ++y)
 		{
 			for(int x=0; x<depth_intrin.image_size[0]; ++x)
 			{
 				if(auto d = *depth++)
 				{
-					const float pixel[] = {x,y};
-					const auto point = depth_intrin.deproject_from_rectified(pixel, d);
-					glTexCoord2fv(color_intrin.project_to_texcoord(extrin.transform(point.data()).data()).data());
-                    glVertex3f(point[0] * scale, point[1] * scale, point[2] * scale);
+                    if(ivcam)
+                    {
+                        glTexCoord2fv(uv + (y*640 + x)*2);
+                    }
+                    else
+                    {
+                        float depth_pixel[] = {x,y}, color_pixel[2];
+                        rs_transform_rectified_pixel_to_pixel(depth_pixel, d, depth_intrin, extrin, color_intrin, color_pixel);
+                        glTexCoord2f(color_pixel[0]/color_intrin.image_size[0], color_pixel[1]/color_intrin.image_size[1]);
+                    }
+
+                    const float pixels[][2] = {{x-0.5f,y-0.5f},{x+0.5f,y-0.5f},{x+0.5f,y+0.5f},{x-0.5f,y+0.5f}};
+                    for(auto & p : pixels)
+                    {
+                        const auto point = depth_intrin.deproject_from_rectified(p, d);
+                        glVertex3f(point[0] * scale, point[1] * scale, point[2] * scale);
+                    }
 				}
 			}
 		}
@@ -159,7 +184,7 @@ int main(int argc, char * argv[]) try
         glBindTexture(GL_TEXTURE_2D, ftex);
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-        my_stbtt_print(20, 40, cam.get_name());
+        ttf_print(cdata, 20, 40, cam.get_name());
         glDisable(GL_BLEND);
         glPopMatrix();
 

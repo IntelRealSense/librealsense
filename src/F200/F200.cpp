@@ -148,7 +148,7 @@ namespace f200
         switch(stream)
         {
         case RS_STREAM_DEPTH: return {{640,480},{od.IRUndistortedFocalLengthPxl.x,od.IRUndistortedFocalLengthPxl.y},{320,240},{1,0,0,0,0}};
-        case RS_STREAM_RGB: return {{640,480},{od.RGBUndistortedFocalLengthPxl.x,od.RGBUndistortedFocalLengthPxl.y},{320,240},{1,0,0,0,0}};
+        case RS_STREAM_RGB: return {{640,480},{od.RGBUndistortedFocalLengthPxl.x,od.RGBUndistortedFocalLengthPxl.y},{320,240},{calib.Distt[0],calib.Distt[1],calib.Distt[2],calib.Distt[3],calib.Distt[4]}};
         default: throw std::runtime_error("unsupported stream");
         }
     }
@@ -176,8 +176,8 @@ namespace f200
             std::lock_guard<std::mutex> guard(frameMutex);
             depthFrame.swap_front();
         }
-        auto rectifiedDepthImage = rectifier->rectify(reinterpret_cast<uint16_t *>(depthFrame.front.data()));
-        return reinterpret_cast<const uint16_t *>(rectifiedDepthImage);
+        //auto rectifiedDepthImage = rectifier->rectify(reinterpret_cast<uint16_t *>(depthFrame.front.data()));
+        return reinterpret_cast<const uint16_t *>(depthFrame.front.data()); //rectifiedDepthImage);
     }
         
     const uint8_t * F200Camera::GetColorImage()
@@ -188,6 +188,11 @@ namespace f200
             colorFrame.swap_front();
         }
         return reinterpret_cast<const uint8_t *>(colorFrame.front.data());
+    }
+
+    void F200Camera::ComputeUVMap(const uint16_t * depth, float * destUV)
+    {
+        Projection::GetInstance()->MapDepthToColorCoordinates(640, 480, depth, destUV);
     }
 
 } // end f200

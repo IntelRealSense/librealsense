@@ -37,6 +37,8 @@ namespace f200
             }
         }
         void StopStream(int streamIdentifier) override;
+
+        void ComputeUVMap(const uint16_t * depth, float * destUV);
         
         rs_intrinsics GetStreamIntrinsics(int stream) override;
         rs_extrinsics GetStreamExtrinsics(int from, int to) override;
