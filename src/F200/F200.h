@@ -25,7 +25,10 @@ namespace f200
         F200Camera(uvc_context_t * ctx, uvc_device_t * device, int num);
         ~F200Camera();
         
-        bool ConfigureStreams() override;
+        int GetDepthCameraNumber() const override final { return 1; }
+        int GetColorCameraNumber() const override final { return 0; }
+        void RetrieveCalibration() override final;
+
         void StartStream(int streamIdentifier, const rs::StreamConfiguration & config) override;
         void StartStreamPreset(int streamIdentifier, int preset) override
         {

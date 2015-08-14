@@ -19,64 +19,23 @@ namespace r200
 
     }
 
-    //@tofix protect against calling this multiple times
-    bool R200Camera::ConfigureStreams()
+    void R200Camera::RetrieveCalibration()
     {
-        if (streamingModeBitfield == 0)
-            throw std::invalid_argument("No streams have been configured...");
-
-        //@tofix: Test for successful open
-        if (streamingModeBitfield & RS_STREAM_DEPTH)
+        auto handle = streamInterfaces[RS_STREAM_DEPTH]->uvcHandle;
+        if(!handle) handle = streamInterfaces[RS_STREAM_RGB]->uvcHandle;
+        if(handle)
         {
-            StreamInterface * stream = new StreamInterface();
-            stream->camera = this;
+            hardware_io.reset(new DS4HardwareIO(handle));
 
-            bool status = OpenStreamOnSubdevice(hardware, stream->uvcHandle, 1);
-            streamInterfaces.insert(std::pair<int, StreamInterface *>(RS_STREAM_DEPTH, stream));
-        }
-
-        if (streamingModeBitfield & RS_STREAM_RGB)
-        {
-            StreamInterface * stream = new StreamInterface();
-            stream->camera = this;
-
-            bool status = OpenStreamOnSubdevice(hardware, stream->uvcHandle, 2);
-            streamInterfaces.insert(std::pair<int, StreamInterface *>(RS_STREAM_RGB, stream));
-        }
-
-        GetUSBInfo(hardware, usbInfo);
-        std::cout << "Serial Number: " << usbInfo.serial << std::endl;
-        std::cout << "USB VID: " << usbInfo.vid << std::endl;
-        std::cout << "USB PID: " << usbInfo.pid << std::endl;
-
-        auto oneTimeInitialize = [&](uvc_device_handle_t * uvc_handle)
-        {
-            hardware_io.reset(new DS4HardwareIO(uvc_handle));
-            
             //uvc_print_diag(uvc_handle, stderr);
 
-            std::cout << "Firmware Revision: " << GetFirmwareVersion(uvc_handle) << std::endl;
+            std::cout << "Firmware Revision: " << GetFirmwareVersion(handle) << std::endl;
 
-            if (!SetStreamIntent(uvc_handle, streamingModeBitfield))
+            if (!SetStreamIntent(handle, streamingModeBitfield))
             {
                 throw std::runtime_error("Could not set stream intent. Replug camera?");
             }
-        };
-
-        // We only need to do this once, so check if any stream has been configured
-        if (streamInterfaces[RS_STREAM_DEPTH]->uvcHandle)
-        {
-            //uvc_print_stream_ctrl(&streamInterfaces[STREAM_DEPTH]->ctrl, stderr);
-            oneTimeInitialize(streamInterfaces[RS_STREAM_DEPTH]->uvcHandle);
         }
-
-        else if (streamInterfaces[RS_STREAM_RGB]->uvcHandle)
-        {
-           //uvc_print_stream_ctrl(&streamInterfaces[STREAM_RGB]->ctrl, stderr);
-           oneTimeInitialize(streamInterfaces[RS_STREAM_RGB]->uvcHandle);
-        }
-
-        return true;
     }
 
     void R200Camera::StartStream(int streamIdentifier, const StreamConfiguration & c)
@@ -97,6 +56,8 @@ namespace r200
                 throw std::runtime_error("Open camera_handle Failed");
             }
 
+            // Begin R200 specific //
+
             //@tofix - check streaming mode as well
             if (c.format == FrameFormat::Z16)
             {
@@ -109,6 +70,8 @@ namespace r200
                 colorFrame = TripleBufferedFrame(c.width, c.height, 3);
                 rgbConfig = c;
             }
+
+            // End R200 specific //
 
             uvc_error_t startStreamResult = uvc_start_streaming(stream->uvcHandle, &stream->ctrl, &UVCCamera::cb, stream, 0);
 

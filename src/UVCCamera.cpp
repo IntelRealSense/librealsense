@@ -29,6 +29,43 @@ UVCCamera::~UVCCamera()
     uvc_unref_device(hardware);
 }
 
+bool UVCCamera::ConfigureStreams()
+{
+    if (streamingModeBitfield == 0)
+        throw std::invalid_argument("No streams have been configured...");
+
+    if (streamingModeBitfield & RS_STREAM_DEPTH)
+    {
+        StreamInterface * stream = new StreamInterface();
+        stream->camera = this;
+
+        CheckUVC("uvc_open2", uvc_open2(hardware, &stream->uvcHandle, GetDepthCameraNumber()));
+        uvc_print_stream_ctrl(&stream->ctrl, stdout); // Debugging
+
+        streamInterfaces.insert(std::pair<int, StreamInterface *>(RS_STREAM_DEPTH, stream));
+    }
+
+    if (streamingModeBitfield & RS_STREAM_RGB)
+    {
+        StreamInterface * stream = new StreamInterface();
+        stream->camera = this;
+
+        CheckUVC("uvc_open2", uvc_open2(hardware, &stream->uvcHandle, GetColorCameraNumber()));
+        uvc_print_stream_ctrl(&stream->ctrl, stdout); // Debugging
+
+        streamInterfaces.insert(std::pair<int, StreamInterface *>(RS_STREAM_RGB, stream));
+    }
+
+    GetUSBInfo(hardware, usbInfo);
+    std::cout << "Serial Number: " << usbInfo.serial << std::endl;
+    std::cout << "USB VID: " << usbInfo.vid << std::endl;
+    std::cout << "USB PID: " << usbInfo.pid << std::endl;
+
+    RetrieveCalibration();
+
+    return true;
+}
+
 void UVCCamera::frameCallback(uvc_frame_t * frame, StreamInterface * stream)
 {
     if (stream->fmt == UVC_FRAME_FORMAT_Z16 || stream->fmt == UVC_FRAME_FORMAT_INVR || stream->fmt == UVC_FRAME_FORMAT_INVZ)
@@ -54,16 +91,5 @@ void UVCCamera::frameCallback(uvc_frame_t * frame, StreamInterface * stream)
     
     frameCount++;
 }
-
-bool UVCCamera::OpenStreamOnSubdevice(uvc_device_t * dev,  uvc_device_handle_t *& h, int idx)
-{
-    uvc_error_t status = uvc_open2(dev, &h, idx);
-    if (status < 0)
-    {
-        uvc_perror(status, "uvc_open2");
-        return false;
-    }
-    return true;
-};
     
 } // end namespace rs

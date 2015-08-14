@@ -19,46 +19,8 @@ namespace f200
         
     }
 
-    bool F200Camera::ConfigureStreams()
+    void F200Camera::RetrieveCalibration()
     {
-        if (streamingModeBitfield == 0)
-            throw std::invalid_argument("No streams have been configured...");
-        
-        if (streamingModeBitfield & RS_STREAM_DEPTH)
-        {
-            StreamInterface * stream = new StreamInterface();
-            stream->camera = this;
-            
-            if (!OpenStreamOnSubdevice(hardware, stream->uvcHandle, 1))
-                throw std::runtime_error("Failed to open RS_STREAM_DEPTH (subdevice 1)");
-            
-            // Debugging
-            uvc_print_stream_ctrl(&stream->ctrl, stdout);
-            
-            streamInterfaces.insert(std::pair<int, StreamInterface *>(RS_STREAM_DEPTH, stream));
-        }
-        
-        if (streamingModeBitfield & RS_STREAM_RGB)
-        {
-            StreamInterface * stream = new StreamInterface();
-            stream->camera = this;
-            
-            if (!OpenStreamOnSubdevice(hardware, stream->uvcHandle, 0))
-                throw std::runtime_error("Failed to open RS_STREAM_RGB (subdevice 2)");
-            
-            // Debugging
-            uvc_print_stream_ctrl(&stream->ctrl, stdout);
-            
-            streamInterfaces.insert(std::pair<int, StreamInterface *>(RS_STREAM_RGB, stream));
-        }
-        
-        GetUSBInfo(hardware, usbInfo);
-        std::cout << "Serial Number: " << usbInfo.serial << std::endl;
-        std::cout << "USB VID: " << usbInfo.vid << std::endl;
-        std::cout << "USB PID: " << usbInfo.pid << std::endl;
-        
-        ////////////////////////////////////////////////////////////////////////////
-        
         hardware_io.reset(new IVCAMHardwareIO(internalContext));
         
         // Set up calibration parameters for internal undistortion
@@ -92,9 +54,7 @@ namespace f200
         unrect.distortion_coeff[4] = calib.Distc[4];
 
         rectifier.reset(new IVRectifier(ivWidth, ivHeight, rect, unrect, rotation));
-        
-        ////////////////////////////////////////////////////////////////////////////
-        
+
         return true;
     }
 
@@ -114,6 +74,8 @@ namespace f200
                 throw std::runtime_error("Open camera_handle Failed");
             }
             
+            // Begin F200 specific //
+
             switch (c.format)
             {
                 case FrameFormat::INVR:
@@ -125,6 +87,8 @@ namespace f200
                     throw std::runtime_error("invalid frame format");
             }
             
+            // End F200 specific //
+
             uvc_error_t startStreamResult = uvc_start_streaming(stream->uvcHandle, &stream->ctrl, &UVCCamera::cb, stream, 0);
             
             if (startStreamResult < 0)
