@@ -13,8 +13,9 @@ namespace f200
 {
     class IVRectifier
     {
-        std::vector<uint32_t> uvTable;
+        std::vector<int> uvTable;
         std::vector<uint16_t> undistortedDepth;
+        std::vector<float> undistortedUVs;
         uint32_t width;
         uint32_t height;
         
@@ -62,15 +63,11 @@ namespace f200
                     const float ji[2] = {(float)j, (float)i};
                     float uv[2];
                     TransformFromRectOtherImageToNonRectOtherImage(destIntrinsics, rotation, sourceIntrinsics, ji, uv);
-                    /*
-                        if (uv[0] < 0) uv[0] = 0;
-                        if (uv[1] < 0) uv[1] = 0;
-                        if (uv[0] >= sourceIntrinsics.image_size[0]) uv[0] = static_cast<float>(sourceIntrinsics.image_size[0] - 1);
-                        if (uv[1] >= sourceIntrinsics.image_size[1]) uv[1] = static_cast<float>(sourceIntrinsics.image_size[1] - 1);
-                    */
-                    uint16_t uf = (uint16_t)(uv[0] * 32) >> 5; // 11.5 fixed point representation  11  bits integer and 5 bits fractional
-                    uint16_t vf = (uint16_t)(uv[1] * 32) >> 5;
-                    *table++ = uf | ((int)vf) << 16;
+                    if (uv[0] < 0) uv[0] = 0;
+                    if (uv[1] < 0) uv[1] = 0;
+                    if (uv[0] >= sourceIntrinsics.image_size[0]) uv[0] = static_cast<float>(sourceIntrinsics.image_size[0] - 1);
+                    if (uv[1] >= sourceIntrinsics.image_size[1]) uv[1] = static_cast<float>(sourceIntrinsics.image_size[1] - 1);
+                    *table++ = (int)uv[1] * sourceIntrinsics.image_size[0] + (int)uv[0];
                 }
             }
         }
@@ -83,25 +80,26 @@ namespace f200
         {
             uvTable.resize(width * height);
             undistortedDepth.resize(width * height);
+            undistortedUVs.resize(width * height * 2);
             BuildRectificationTable(unrect, r.rotation, rect);
         }
         
-        uint16_t * rectify(uint16_t * srcImg)
+        void rectify(const uint16_t * srcDepth, const float * srcUVs)
         {
-            for (int y = 0; y < height; y++)
+            auto dstDepth = undistortedDepth.data();
+            auto dstUVs = undistortedUVs.data();
+            auto table = uvTable.data();
+            for (int i=0; i<width*height; ++i)
             {
-                for (int x = 0; x < width; x++)
-                {
-                    uint32_t coeff = uvTable[y * width + x];
-                    uint16_t sampleX =  coeff & 0x0000FFFF;
-                    uint16_t sampleY = (coeff & 0xFFFF0000) >> 16;
-                    bool invalidLocation = sampleX < 0 || sampleX >= width || sampleY < 0 || sampleY >= height;
-                    undistortedDepth[y * width + x] = invalidLocation ? 0 : srcImg[sampleY * width + sampleX];
-                }
+                int offset = *table++;
+                *dstDepth++ = srcDepth[offset];
+                *dstUVs++ = srcUVs[offset*2+0];
+                *dstUVs++ = srcUVs[offset*2+1];
             }
-            return undistortedDepth.data();
         }
         
+        const uint16_t * getDepth() const { return undistortedDepth.data(); }
+        const float * getUVs() const { return undistortedUVs.data(); }
     };
     
 } // end namespace f200

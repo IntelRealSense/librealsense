@@ -97,9 +97,12 @@ namespace f200
         {
             std::lock_guard<std::mutex> guard(frameMutex);
             depthFrame.swap_front();
+
+            float uvs[640 * 480 * 2];
+            Projection::GetInstance()->MapDepthToColorCoordinates(640, 480, reinterpret_cast<const uint16_t *>(depthFrame.front.data()), uvs);
+            rectifier->rectify(reinterpret_cast<const uint16_t *>(depthFrame.front.data()), uvs);
         }
-        //auto rectifiedDepthImage = rectifier->rectify(reinterpret_cast<uint16_t *>(depthFrame.front.data()));
-        return reinterpret_cast<const uint16_t *>(depthFrame.front.data()); //rectifiedDepthImage);
+        return rectifier->getDepth();
     }
         
     const uint8_t * F200Camera::GetColorImage()
@@ -112,15 +115,7 @@ namespace f200
         return reinterpret_cast<const uint8_t *>(colorFrame.front.data());
     }
 
-    void F200Camera::ComputeUVMap(const uint16_t * depth, float * destUV)
-    {
-        Projection::GetInstance()->MapDepthToColorCoordinates(640, 480, depth, destUV);
-    }
-
-    void F200Camera::ComputeVertexMap(const uint16_t * depth, float * destXYZ)
-    {
-        Projection::GetInstance()->ProjectImageToRealWorld(640, 480, depth, destXYZ);
-    }
+    const float * F200Camera::GetUVMap() { return rectifier->getUVs(); }
 
 } // end f200
 

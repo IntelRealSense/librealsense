@@ -140,13 +140,7 @@ int main(int argc, char * argv[]) try
 		glfwGetWindowSize(win, &width, &height);
 		
 		auto depth = cam.get_depth_image();
-        float uv[640 * 480 * 2], xyz[640 * 480 * 3];
         auto ivcam = dynamic_cast<f200::F200Camera *>(cam.get_handle());
-        if(ivcam)
-        {
-            ivcam->ComputeUVMap(depth, uv);
-            ivcam->ComputeVertexMap(depth, xyz);
-        }
 
         glViewport(0, 0, width, height);
         glClearColor(0.0f, 116/255.0f, 197/255.0f, 1.0f);
@@ -183,7 +177,7 @@ int main(int argc, char * argv[]) try
 				{
                     if(ivcam)
                     {
-                        glTexCoord2fv(uv + (y*640 + x)*2);
+                        glTexCoord2fv(ivcam->GetUVMap() + (y*640 + x)*2);
                     }
                     else
                     {
