@@ -123,7 +123,7 @@ int main(int argc, const char * argv[]) try
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 //#endif
     
-    window = glfwCreateWindow(1280, 480, "R200 Pointcloud", NULL, NULL);
+    window = glfwCreateWindow(640, 480, "F200 Camera Dev", NULL, NULL);
     
     // Test for retina screens on mac
     int wW, wH;
@@ -268,7 +268,7 @@ int main(int argc, const char * argv[]) try
         {
             glViewport(0, 0, width, height);
 			auto depthImage = camera.get_depth_image();
-            static uint8_t depthColoredHistogram[1280 * 721 * 3];
+            static uint8_t depthColoredHistogram[640 * 480 * 3];
 			ConvertDepthToRGBUsingHistogram(depthColoredHistogram, depthImage, z_image_width, z_image_height, 0.4f, 0.925f);
 			drawTexture(fullscreenTextureProg, quadVBO, imageUniformHandle, depthTextureHandle, depthColoredHistogram, z_image_width, z_image_height, GL_RGB, GL_UNSIGNED_BYTE);
             

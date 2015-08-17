@@ -52,7 +52,7 @@ void rs_context::QueryDeviceList()
 		{
 			if (desc->idProduct == 2688)
 			{
-				cameras.push_back(std::make_shared<r200::R200Camera>(list[index], index));
+                cameras.push_back(std::make_shared<r200::R200Camera>(privateContext, list[index], index));
 			}
 
 			else if (desc->idProduct == 2662)
@@ -113,6 +113,13 @@ void rs_delete_context(rs_context * context, rs_error ** error)
     END_EXCEPTION_FIREWALL
 }
 
+const char * rs_get_camera_name(rs_camera * camera, rs_error ** error)
+{
+    BEGIN_EXCEPTION_FIREWALL
+    return camera->cameraName.c_str();
+    END_EXCEPTION_FIREWALL
+}
+
 void rs_enable_stream(rs_camera * camera, int stream, rs_error ** error)
 {
     BEGIN_EXCEPTION_FIREWALL
@@ -141,27 +148,24 @@ uint64_t rs_get_frame_count(rs_camera * camera, rs_error ** error)
     END_EXCEPTION_FIREWALL
 }
 
+float rs_get_depth_scale(rs_camera * camera, rs_error ** error)
+{
+    BEGIN_EXCEPTION_FIREWALL
+    return camera->GetDepthScale();
+    END_EXCEPTION_FIREWALL
+}
+
 const uint8_t *	rs_get_color_image(rs_camera * camera, rs_error ** error)
 {
     BEGIN_EXCEPTION_FIREWALL
-	if (camera->colorFrame->updated)
-	{
-		std::lock_guard<std::mutex> guard(camera->frameMutex);
-		camera->colorFrame->swap_front();
-	}
-	return reinterpret_cast<const uint8_t *>(camera->colorFrame->front.data());
+    return camera->GetColorImage();
     END_EXCEPTION_FIREWALL
 }
 
 const uint16_t * rs_get_depth_image(rs_camera * camera, rs_error ** error)
 {
     BEGIN_EXCEPTION_FIREWALL
-	if (camera->depthFrame->updated)
-	{
-		std::lock_guard<std::mutex> guard(camera->frameMutex);
-		camera->depthFrame->swap_front();
-	}
-	return reinterpret_cast<const uint16_t *>(camera->depthFrame->front.data());
+    return camera->GetDepthImage();
     END_EXCEPTION_FIREWALL
 }
 
@@ -179,6 +183,13 @@ void rs_start_stream(rs_camera * camera, int stream, int width, int height, int 
     END_EXCEPTION_FIREWALL
 }
 
+void rs_start_stream_preset(rs_camera * camera, int stream, int preset, rs_error ** error)
+{
+    BEGIN_EXCEPTION_FIREWALL
+    camera->StartStreamPreset(stream, preset);
+    END_EXCEPTION_FIREWALL
+}
+
 void rs_stop_stream(rs_camera * camera, int stream, rs_error ** error)
 {
     BEGIN_EXCEPTION_FIREWALL
@@ -188,13 +199,25 @@ void rs_stop_stream(rs_camera * camera, int stream, rs_error ** error)
 
 int rs_get_stream_property_i(rs_camera * camera, int stream, int prop, rs_error ** error)
 {
-    BEGIN_EXCEPTION_FIREWALL
+    BEGIN_EXCEPTION_FIREWALL        
     switch (prop)
     {
-    case RS_IMAGE_SIZE_X: return camera->GetStreamIntrinsics(stream).image_size[0];
-    case RS_IMAGE_SIZE_Y: return camera->GetStreamIntrinsics(stream).image_size[1];
-    default: return 0;
+    case RS_IMAGE_SIZE_X:
+        switch(stream)
+        {
+        case RS_STREAM_DEPTH: return camera->depthFrame.width;
+        case RS_STREAM_RGB: return camera->colorFrame.width;
+        }
+        break;
+    case RS_IMAGE_SIZE_Y:
+        switch(stream)
+        {
+        case RS_STREAM_DEPTH: return camera->depthFrame.height;
+        case RS_STREAM_RGB: return camera->colorFrame.height;
+        }
+        break;
     }
+    throw std::runtime_error("invalid stream property");
     END_EXCEPTION_FIREWALL
 }
 

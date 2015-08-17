@@ -3,6 +3,53 @@
 #define GLFW_INCLUDE_GLU
 #include <GLFW/glfw3.h>
 #include <iostream>
+#include <vector>
+
+#define STB_TRUETYPE_IMPLEMENTATION
+#include "stb_truetype.h"
+
+#include "../../src/F200/F200.h"
+
+FILE * find_file(std::string path, int levels)
+{
+    for(int i=0; i<=levels; ++i)
+    {
+        if(auto f = fopen(path.c_str(), "rb")) return f;
+        path = "../" + path;
+    }
+    return nullptr;
+}
+
+void ttf_print(stbtt_bakedchar cdata[], float x, float y, const char *text)
+{
+   // assume orthographic projection with units = screen pixels, origin at top left
+   glBegin(GL_QUADS);
+   while (*text) {
+      if (*text >= 32 && *text < 128) {
+         stbtt_aligned_quad q;
+         stbtt_GetBakedQuad(cdata, 512,512, *text-32, &x,&y,&q,1);//1=opengl & d3d10+,0=d3d9
+         glTexCoord2f(q.s0,q.t0); glVertex2f(q.x0,q.y0);
+         glTexCoord2f(q.s1,q.t0); glVertex2f(q.x1,q.y0);
+         glTexCoord2f(q.s1,q.t1); glVertex2f(q.x1,q.y1);
+         glTexCoord2f(q.s0,q.t1); glVertex2f(q.x0,q.y1);
+      }
+      ++text;
+   }
+   glEnd();
+}
+
+float ttf_len(stbtt_bakedchar cdata[], const char *text)
+{
+    float x=0, y=0;
+   while (*text) {
+      if (*text >= 32 && *text < 128) {
+         stbtt_aligned_quad q;
+         stbtt_GetBakedQuad(cdata, 512,512, *text-32, &x,&y,&q,1);//1=opengl & d3d10+,0=d3d9
+      }
+      ++text;
+   }
+   return x;
+}
 
 int main(int argc, char * argv[]) try
 {
@@ -17,17 +64,17 @@ int main(int argc, char * argv[]) try
 		cam.enable_stream(RS_STREAM_RGB);
 		cam.configure_streams();
 
-		cam.start_stream(RS_STREAM_DEPTH, 628, 469, 0, RS_FRAME_FORMAT_Z16);
-		cam.start_stream(RS_STREAM_RGB, 640, 480, 30, RS_FRAME_FORMAT_YUYV);
+        cam.start_stream_preset(RS_STREAM_DEPTH, RS_STREAM_PRESET_BEST_QUALITY);
+        cam.start_stream_preset(RS_STREAM_RGB, RS_STREAM_PRESET_BEST_QUALITY);
 	}
 	if (!cam) throw std::runtime_error("No camera detected. Is it plugged in?");
 	const auto depth_intrin = cam.get_stream_intrinsics(RS_STREAM_DEPTH), color_intrin = cam.get_stream_intrinsics(RS_STREAM_RGB);
 	const auto extrin = cam.get_stream_extrinsics(RS_STREAM_DEPTH, RS_STREAM_RGB);
 
-	struct state { float yaw, pitch; double lastX, lastY; bool ml; } app_state = {0,0,false};
+    struct state { float yaw, pitch; double lastX, lastY; bool ml; } app_state = {};
 
 	glfwInit();
-    GLFWwindow * win = glfwCreateWindow(1280, 720, "LibRealSense Point Cloud Example", 0, 0);
+    GLFWwindow * win = glfwCreateWindow(640, 480, "RealSense Point Cloud", 0, 0);
 	glfwSetWindowUserPointer(win, &app_state);
 	glfwSetMouseButtonCallback(win, [](GLFWwindow * win, int button, int action, int mods)
 	{
@@ -51,6 +98,30 @@ int main(int argc, char * argv[]) try
 	});
 	glfwMakeContextCurrent(win);
 
+    glPushAttrib(GL_ALL_ATTRIB_BITS);
+
+    GLuint ftex;
+    stbtt_bakedchar cdata[96]; // ASCII 32..126 is 95 glyph
+    if(auto f = find_file("examples/assets/Roboto-Bold.ttf", 3))
+    {
+        fseek(f, 0, SEEK_END);
+        std::vector<uint8_t> ttf_buffer(ftell(f));
+        fseek(f, 0, SEEK_SET);
+        fread(ttf_buffer.data(), 1, ttf_buffer.size(), f);
+
+        unsigned char temp_bitmap[512*512];
+        stbtt_BakeFontBitmap(ttf_buffer.data(),0, 20.0, temp_bitmap, 512,512, 32,96, cdata); // no guarantee this fits!
+
+        glGenTextures(1, &ftex);
+        glBindTexture(GL_TEXTURE_2D, ftex);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_ALPHA, 512,512, 0, GL_ALPHA, GL_UNSIGNED_BYTE, temp_bitmap);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+    }
+    else throw std::runtime_error("Unable to open examples/assets/Roboto-Bold.ttf");
+
 	GLuint tex;
 	glGenTextures(1, &tex);
 	glBindTexture(GL_TEXTURE_2D, tex);
@@ -58,6 +129,8 @@ int main(int argc, char * argv[]) try
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+
+    glPopAttrib();
 
 	while (!glfwWindowShouldClose(win))
 	{
@@ -67,38 +140,89 @@ int main(int argc, char * argv[]) try
 		glfwGetWindowSize(win, &width, &height);
 		
 		auto depth = cam.get_depth_image();
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, color_intrin.image_size[0], color_intrin.image_size[1], 0, GL_RGB, GL_UNSIGNED_BYTE, cam.get_color_image());
+        auto ivcam = dynamic_cast<f200::F200Camera *>(cam.get_handle());
 
-		glClearColor(0.3f,0.3f,0.3f,1.0f);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        glViewport(0, 0, width, height);
+        glClearColor(0.0f, 116/255.0f, 197/255.0f, 1.0f);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+        glPushAttrib(GL_ALL_ATTRIB_BITS);
+        glBindTexture(GL_TEXTURE_2D, tex);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, cam.get_stream_property_i(RS_STREAM_RGB, RS_IMAGE_SIZE_X),
+                     cam.get_stream_property_i(RS_STREAM_RGB, RS_IMAGE_SIZE_Y), 0, GL_RGB, GL_UNSIGNED_BYTE, cam.get_color_image());
+        glMatrixMode(GL_PROJECTION);
 		glPushMatrix();
-		gluPerspective(60, (float)width/height, 10.0f, 2000.0f);
+        gluPerspective(60, (float)width/height, 0.01f, 20.0f);
+        glMatrixMode(GL_MODELVIEW);
+        glPushMatrix();
 		gluLookAt(0,0,0, 0,0,1, 0,-1,0);
-		glTranslatef(0,0,500);
+        glTranslatef(0,0,+0.5f);
 
-		glRotatef(app_state.pitch, 1, 0, 0);
-		glRotatef(app_state.yaw, 0, 1, 0);
-		glTranslatef(0,0,-500);
+        glRotatef(18, 0, 1, 0); // app_state.pitch, 1, 0, 0);
+        glRotatef(sin(glfwGetTime() / 3) * 30, 0, 1, 0); //app_state.yaw, 0, 1, 0);
+        glTranslatef(0,0,-0.5f);
 
+        float scale = rs_get_depth_scale(cam.get_handle(), NULL);
 		glEnable(GL_DEPTH_TEST);
-		glEnable(GL_TEXTURE_2D);
-		glBegin(GL_POINTS);
+        glEnable(GL_TEXTURE_2D);
+
+        glPointSize((float)width/640);
+        glBegin(GL_POINTS);
+
 		for(int y=0; y<depth_intrin.image_size[1]; ++y)
 		{
 			for(int x=0; x<depth_intrin.image_size[0]; ++x)
 			{
-				if(auto d = *depth++)
+                if(auto d = *depth++)
 				{
-					const float pixel[] = {x,y};
-					const auto point = depth_intrin.deproject_from_rectified(pixel, d);
-					glTexCoord2fv(color_intrin.project_to_texcoord(extrin.transform(point.data()).data()).data());
-					glVertex3fv(point.data());
+                    if(ivcam)
+                    {
+                        glTexCoord2fv(ivcam->GetUVMap() + (y*640 + x)*2);
+                    }
+                    else
+                    {
+                        float depth_pixel[] = {x,y}, color_pixel[2];
+                        rs_transform_rectified_pixel_to_pixel(depth_pixel, d, depth_intrin, extrin, color_intrin, color_pixel);
+                        glTexCoord2f(color_pixel[0]/color_intrin.image_size[0], color_pixel[1]/color_intrin.image_size[1]);
+                    }
+
+                    const float pixel[] = {x,y};
+                    const auto point = depth_intrin.deproject_from_rectified(pixel, d);
+
+                    /*float hue = point[2] * scale * 1000;
+                    float h = fmodf(hue / 60, 6);
+                    float x = (1 - fabsf(fmodf(h,2) - 1));
+                    float r,g,b;
+                         if(h < 1) {r=1;g=x;b=0;}
+                    else if(h < 2) {r=x;g=1;b=0;}
+                    else if(h < 3) {r=0;g=1;b=x;}
+                    else if(h < 4) {r=0;g=x;b=1;}
+                    else if(h < 5) {r=x;g=0;b=1;}
+                    else           {r=1;g=0;b=x;}
+
+                    float t = (cosf(glfwGetTime() / 10)+1)/2;
+                    glColor3f(t+r*(1-t),t+g*(1-t),t+b*(1-t));*/
+                    glVertex3f(point[0] * scale, point[1] * scale, point[2] * scale);
 				}
 			}
 		}
 		glEnd();
-
 		glPopMatrix();
+        glMatrixMode(GL_PROJECTION);
+        glPopMatrix();
+        glPopAttrib();
+
+        glPushAttrib(GL_ALL_ATTRIB_BITS);
+        glPushMatrix();
+        glOrtho(0, width, height, 0, -1, +1);
+        glEnable(GL_TEXTURE_2D);
+        glBindTexture(GL_TEXTURE_2D, ftex);
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        ttf_print(cdata, (width-ttf_len(cdata, cam.get_name()))/2, height-20.0f, cam.get_name());
+        glPopMatrix();
+        glPopAttrib();
+
 		glfwSwapBuffers(win);
 	}
 

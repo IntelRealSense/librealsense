@@ -9,6 +9,14 @@
 
 namespace rs
 {
+    inline void CheckUVC(const char * call, uvc_error_t status)
+    {
+        if (status < 0)
+        {
+            throw std::runtime_error(ToString() << call << "(...) returned " << uvc_strerror(status));
+        }
+    }
+
     inline void GetUSBInfo(uvc_device_t * dev, rs::USBDeviceInfo & info)
     {
         uvc_device_descriptor_t * desc;
@@ -50,13 +58,20 @@ namespace rs
 
         void frameCallback(uvc_frame_t * frame, StreamInterface * stream);
 
-        bool OpenStreamOnSubdevice(uvc_device_t * dev, uvc_device_handle_t *& h, int idx);
+        virtual int GetDepthCameraNumber() const = 0;
+        virtual int GetColorCameraNumber() const = 0;
+        virtual void RetrieveCalibration() = 0;
 
     public:
 
-        UVCCamera(uvc_device_t * device, int num);
         UVCCamera(uvc_context_t * ctx, uvc_device_t * device, int num);
         ~UVCCamera();
+
+        bool ConfigureStreams() override final;
+        void StartStream(int streamIdentifier, const StreamConfiguration & c) override final;
+
+        rs::StreamConfiguration zConfig;
+        rs::StreamConfiguration rgbConfig;
     };
     
 } // end namespace rs

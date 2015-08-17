@@ -10,14 +10,17 @@ extern "C" {
 #endif
 	
 struct rs_context *	rs_create_context		(int api_version, struct rs_error ** error);
-int					rs_get_camera_count		(struct rs_context * context, struct rs_error **);
-struct rs_camera *	rs_get_camera			(struct rs_context * context, int index, struct rs_error **);
-void				rs_delete_context		(struct rs_context * context, struct rs_error **);
+int					rs_get_camera_count		(struct rs_context * context, struct rs_error ** error);
+struct rs_camera *	rs_get_camera			(struct rs_context * context, int index, struct rs_error ** error);
+void				rs_delete_context		(struct rs_context * context, struct rs_error ** error);
 
-void				rs_enable_stream		(struct rs_camera * camera, int stream, struct rs_error **);
-int 				rs_configure_streams	(struct rs_camera * camera, struct rs_error **);
-void				rs_start_stream			(struct rs_camera * camera, int stream, int width, int height, int fps, int format, struct rs_error **);
-void				rs_stop_stream			(struct rs_camera * camera, int stream, struct rs_error **);
+const char *        rs_get_camera_name      (struct rs_camera * camera, struct rs_error ** error);
+void				rs_enable_stream		(struct rs_camera * camera, int stream, struct rs_error ** error);
+int 				rs_configure_streams	(struct rs_camera * camera, struct rs_error ** error);
+void				rs_start_stream			(struct rs_camera * camera, int stream, int width, int height, int fps, int format, struct rs_error ** error);
+void				rs_start_stream_preset	(struct rs_camera * camera, int stream, int preset, struct rs_error ** error);
+void				rs_stop_stream			(struct rs_camera * camera, int stream, struct rs_error ** error);
+float               rs_get_depth_scale      (struct rs_camera * camera, struct rs_error ** error);
 const uint16_t *	rs_get_depth_image		(struct rs_camera * camera, struct rs_error ** error);
 const uint8_t *		rs_get_color_image		(struct rs_camera * camera, struct rs_error ** error);
 int 				rs_is_streaming			(struct rs_camera * camera, struct rs_error ** error);
@@ -78,6 +81,8 @@ struct rs_extrinsics
 #define RS_STREAM_DEPTH					1
 #define RS_STREAM_LR					2
 #define RS_STREAM_RGB					4
+
+#define RS_STREAM_PRESET_BEST_QUALITY   0   /* Preset recommended for best quality and stability */
 
 // Valid arguments to rsGetStreamProperty*
 #define RS_IMAGE_SIZE_X			1
