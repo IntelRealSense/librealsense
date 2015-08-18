@@ -123,16 +123,11 @@ namespace f200
             std::lock_guard<std::mutex> guard(frameMutex);
             depthFrame.swap_front();
 
-            float uvs[640 * 480 * 2];
-
             auto inst = Projection::GetInstance();
             if (!inst->m_calibration) throw std::runtime_error("MapDepthToColorCoordinates failed, m_calibration not initialized");
             const int xShift = (inst->m_currentDepthWidth == 320) ? 1 : 0;
             const int yShift = (inst->m_currentDepthHeight == 240) ? 1 : 0;
-            const CameraCalibrationParameters & p = inst->m_calibration.params;
-
-            auto inDepth = reinterpret_cast<const uint16_t *>(depthFrame.front.data());
-            auto outUV = uvs;
+            const CameraCalibrationParameters & p = inst->m_calibration.params;          
 
             // Produce intrinsics for color camera
             rs_intrinsics colorIntrin;
@@ -158,6 +153,11 @@ namespace f200
             for(int i=0; i<3; ++i) for(int j=0; j<3; ++j) extrin.rotation[i*3+j] = p.Rt[i][j];
             for(int i=0; i<3; ++i) extrin.translation[i] = p.Tt[i];
 
+            uvs.resize(640*480*2);
+            vertices.resize(640*480*3);
+            auto inDepth = reinterpret_cast<const uint16_t *>(depthFrame.front.data());
+            auto vert = vertices.data();
+            auto outUV = uvs.data();
             for(int i=0; i<inst->m_currentDepthHeight; i++)
             {
                 for (int j=0 ; j<inst->m_currentDepthWidth; j++)
@@ -167,6 +167,9 @@ namespace f200
                         // Produce vertex location relative to depth camera
                         int pixelX = j << xShift, pixelY = i << yShift;
                         const auto point = DeprojectPixelToPoint(p, pixelX, pixelY, d);
+                        *vert++ = point[0];
+                        *vert++ = point[1];
+                        *vert++ = point[2];
 
                         // Also produce the point and pixel relative to color camera
                         float colorPoint[3], colorPixel[2];
@@ -177,13 +180,16 @@ namespace f200
                     }
                     else
                     {
+                        *vert++ = 0;
+                        *vert++ = 0;
+                        *vert++ = 0;
                         *outUV++ = 0;
                         *outUV++ = 0;
                     }
                 }
             }
 
-            rectifier->rectify(reinterpret_cast<const uint16_t *>(depthFrame.front.data()), uvs);
+            rectifier->rectify(reinterpret_cast<const uint16_t *>(depthFrame.front.data()), uvs.data());
         }
         return rectifier->getDepth();
     }
@@ -197,8 +203,6 @@ namespace f200
         }
         return reinterpret_cast<const uint8_t *>(colorFrame.front.data());
     }
-
-    const float * F200Camera::GetUVMap() { return rectifier->getUVs(); }
 
 } // end f200
 

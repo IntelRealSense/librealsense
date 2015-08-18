@@ -173,36 +173,27 @@ int main(int argc, char * argv[]) try
 		{
 			for(int x=0; x<depth_intrin.image_size[0]; ++x)
 			{
-                if(auto d = *depth++)
+                auto d = *depth++;
 				{
                     if(ivcam)
                     {
-                        glTexCoord2fv(ivcam->GetUVMap() + (y*640 + x)*2);
+                        auto v = ivcam->GetVertices() + (y*640 + x)*3;
+                        if(v[2])
+                        {
+                            glTexCoord2fv(ivcam->GetUVMap() + (y*640 + x)*2);
+                            glVertex3f(v[0]*0.001f, v[1]*0.001f, v[2]*0.001f);
+                        }
                     }
-                    else
+                    else if(d)
                     {
                         float depth_pixel[] = {x,y}, color_pixel[2];
                         rs_transform_rectified_pixel_to_pixel(depth_pixel, d, depth_intrin, extrin, color_intrin, color_pixel);
                         glTexCoord2f(color_pixel[0]/color_intrin.image_size[0], color_pixel[1]/color_intrin.image_size[1]);
+
+                        const float pixel[] = {x,y};
+                        const auto point = depth_intrin.deproject_from_rectified(pixel, d);
+                        glVertex3f(point[0] * scale, point[1] * scale, point[2] * scale);
                     }
-
-                    const float pixel[] = {x,y};
-                    const auto point = depth_intrin.deproject_from_rectified(pixel, d);
-
-                    /*float hue = point[2] * scale * 1000;
-                    float h = fmodf(hue / 60, 6);
-                    float x = (1 - fabsf(fmodf(h,2) - 1));
-                    float r,g,b;
-                         if(h < 1) {r=1;g=x;b=0;}
-                    else if(h < 2) {r=x;g=1;b=0;}
-                    else if(h < 3) {r=0;g=1;b=x;}
-                    else if(h < 4) {r=0;g=x;b=1;}
-                    else if(h < 5) {r=x;g=0;b=1;}
-                    else           {r=1;g=0;b=x;}
-
-                    float t = (cosf(glfwGetTime() / 10)+1)/2;
-                    glColor3f(t+r*(1-t),t+g*(1-t),t+b*(1-t));*/
-                    glVertex3f(point[0] * scale, point[1] * scale, point[2] * scale);
 				}
 			}
 		}
