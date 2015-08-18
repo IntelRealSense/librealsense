@@ -139,7 +139,7 @@ public:
     
     const Properties & GetCalibrationProperties() const { return camProperties; }
     
-private:
+public:
     
     struct ThermalModelData
     {

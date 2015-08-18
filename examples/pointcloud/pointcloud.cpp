@@ -158,8 +158,8 @@ int main(int argc, char * argv[]) try
 		gluLookAt(0,0,0, 0,0,1, 0,-1,0);
         glTranslatef(0,0,+0.5f);
 
-        glRotatef(18, 0, 1, 0); // app_state.pitch, 1, 0, 0);
-        glRotatef(sin(glfwGetTime() / 3) * 30, 0, 1, 0); //app_state.yaw, 0, 1, 0);
+        glRotatef(app_state.pitch, 1, 0, 0);
+        glRotatef(app_state.yaw, 0, 1, 0);
         glTranslatef(0,0,-0.5f);
 
         float scale = rs_get_depth_scale(cam.get_handle(), NULL);

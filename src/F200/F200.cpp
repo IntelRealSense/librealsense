@@ -99,7 +99,43 @@ namespace f200
             depthFrame.swap_front();
 
             float uvs[640 * 480 * 2];
-            Projection::GetInstance()->MapDepthToColorCoordinates(640, 480, reinterpret_cast<const uint16_t *>(depthFrame.front.data()), uvs);
+
+            auto inst = Projection::GetInstance();
+            if (!inst->m_calibration) throw std::runtime_error("MapDepthToColorCoordinates failed, m_calibration not initialized");
+            const int xShift = (inst->m_currentDepthWidth == 320) ? 1 : 0;
+            const int yShift = (inst->m_currentDepthHeight == 240) ? 1 : 0;
+            const bool aspectRatio43 = (inst->m_currentColorWidth * 3 == inst->m_currentColorHeight * 4);
+            const CameraCalibrationParameters & p = inst->m_calibration.params;
+
+            auto inDepth = reinterpret_cast<const uint16_t *>(depthFrame.front.data());
+            auto outUV = uvs;
+            for(int i=0; i<inst->m_currentDepthHeight; i++)
+            {
+                for (int j=0 ; j<inst->m_currentDepthWidth; j++)
+                {
+                    if (uint16_t d = *inDepth++)
+                    {
+                        int pixelX = j << xShift, pixelY = i << yShift;
+                        const Point point = inst->m_calibration.computeUnprojectCoeffs(pixelX, pixelY); // unprojCoeffs[y*640+x]
+                        const UVPreComp puvc = inst->m_calibration.computeBuildUVCoeffs(point); // buildUVCoeffs[y*640+x]
+
+                        const float z = inst->m_calibration.ivcamToMM(d);
+                        const float D = 0.5f / (puvc.d*z + p.Pt[2][3]);
+                        float u = (puvc.u*z + p.Pt[0][3]) * D + 0.5f;
+                        float v = (puvc.v*z + p.Pt[1][3]) * D + 0.5f;
+                        if (aspectRatio43) u = u * (4.0f/3) - (1.0f/6);
+
+                        *outUV++ = u;
+                        *outUV++ = v;
+                    }
+                    else
+                    {
+                        *outUV++ = 0;
+                        *outUV++ = 0;
+                    }
+                }
+            }
+
             rectifier->rectify(reinterpret_cast<const uint16_t *>(depthFrame.front.data()), uvs);
         }
         return rectifier->getDepth();

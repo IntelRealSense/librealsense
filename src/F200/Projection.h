@@ -67,8 +67,6 @@ public:
     
     void ThermalLoopKilled();
     
-private:
-    
     int m_IndexOfCamera;	
     bool m_isCalibOld;					
     
