@@ -106,6 +106,7 @@ namespace f200
             const int yShift = (inst->m_currentDepthHeight == 240) ? 1 : 0;
             const bool aspectRatio43 = (inst->m_currentColorWidth * 3 == inst->m_currentColorHeight * 4);
             const CameraCalibrationParameters & p = inst->m_calibration.params;
+            const auto uint16_to_mm_ratio = p.Rmax / 65535.0f;
 
             auto inDepth = reinterpret_cast<const uint16_t *>(depthFrame.front.data());
             auto outUV = uvs;
@@ -115,18 +116,41 @@ namespace f200
                 {
                     if (uint16_t d = *inDepth++)
                     {
+                        // Compute pixel coordinates in depth/UV map
                         int pixelX = j << xShift, pixelY = i << yShift;
-                        const Point point = inst->m_calibration.computeUnprojectCoeffs(pixelX, pixelY); // unprojCoeffs[y*640+x]
-                        const UVPreComp puvc = inst->m_calibration.computeBuildUVCoeffs(point); // buildUVCoeffs[y*640+x]
 
-                        const float z = inst->m_calibration.ivcamToMM(d);
+                        // Compute depth "UVs" in the [-1,+1] range
+                        const float u = float(pixelX) / 640 * 2 - 1;
+                        const float v = float(pixelY) / 480 * 2 - 1;
+
+                        // Distort camera coordinates
+                        float xc  = (u - p.Kc[0][2])/p.Kc[0][0];
+                        float yc  = (v - p.Kc[1][2])/p.Kc[1][1];
+                        float r2  = xc*xc + yc*yc;
+                        float r2c = 1 + p.Invdistc[0]*r2 + p.Invdistc[1]*r2*r2 + p.Invdistc[4]*r2*r2*r2;
+                        float xcd = xc*r2c + 2*p.Invdistc[2]*xc*yc + p.Invdistc[3]*(r2 + 2*xc*xc);
+                        float ycd = yc*r2c + 2*p.Invdistc[3]*xc*yc + p.Invdistc[2]*(r2 + 2*yc*yc);
+                        xcd = xcd*p.Kc[0][0] + p.Kc[0][2];
+                        ycd = ycd*p.Kc[1][1] + p.Kc[1][2];
+
+                        // Unnormalized camera rays
+                        float dx  = p.Kc[1][1]*xcd - p.Kc[1][1]*p.Kc[0][2];
+                        float dy  = p.Kc[0][0]*ycd - p.Kc[0][0]*p.Kc[1][2];
+                        float dz  = p.Kc[0][0]*p.Kc[1][1];
+                        Point r = Point(dx/dz, dy/dz); // unprojCoeffs[y*640+x]
+
+                        const auto puvc = UVPreComp(p.Pt[0][0]*r.x + p.Pt[0][1]*r.y + p.Pt[0][2],
+                                                    p.Pt[1][0]*r.x + p.Pt[1][1]*r.y + p.Pt[1][2],
+                                                    p.Pt[2][0]*r.x + p.Pt[2][1]*r.y + p.Pt[2][2]); // buildUVCoeffs[y*640+x]
+
+                        const float z = d * uint16_to_mm_ratio;
                         const float D = 0.5f / (puvc.d*z + p.Pt[2][3]);
-                        float u = (puvc.u*z + p.Pt[0][3]) * D + 0.5f;
-                        float v = (puvc.v*z + p.Pt[1][3]) * D + 0.5f;
-                        if (aspectRatio43) u = u * (4.0f/3) - (1.0f/6);
+                        float cu = (puvc.u*z + p.Pt[0][3]) * D + 0.5f;
+                        float cv = (puvc.v*z + p.Pt[1][3]) * D + 0.5f;
+                        if (aspectRatio43) cu = cu * (4.0f/3) - (1.0f/6);
 
-                        *outUV++ = u;
-                        *outUV++ = v;
+                        *outUV++ = cu;
+                        *outUV++ = cv;
                     }
                     else
                     {
