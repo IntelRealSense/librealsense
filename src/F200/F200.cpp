@@ -1,6 +1,7 @@
 #include "../Common.h"
 #include "F200.h"
 #include "Projection.h"
+#include "../../include/librealsense/rsutil.h"
 
 #ifndef WIN32
 
@@ -91,6 +92,30 @@ namespace f200
         return calibration->ivcamToMM(1) * 0.001f;
     }
 
+    static std::array<float,3> DeprojectPixelToPoint(const CameraCalibrationParameters & p, int pixelX, int pixelY, uint16_t d)
+    {
+        // Compute depth "UVs" in the [-1,+1] range
+        const float u = float(pixelX) / 640 * 2 - 1;
+        const float v = float(pixelY) / 480 * 2 - 1;
+
+        // Distort camera coordinates
+        float xc  = (u - p.Kc[0][2]) / p.Kc[0][0];
+        float yc  = (v - p.Kc[1][2]) / p.Kc[1][1];
+        float r2  = xc*xc + yc*yc;
+        float r2c = 1 + p.Invdistc[0]*r2 + p.Invdistc[1]*r2*r2 + p.Invdistc[4]*r2*r2*r2;
+        float xcd = xc*r2c + 2*p.Invdistc[2]*xc*yc + p.Invdistc[3]*(r2 + 2*xc*xc);
+        float ycd = yc*r2c + 2*p.Invdistc[3]*xc*yc + p.Invdistc[2]*(r2 + 2*yc*yc);
+        // Note: unprojCoeffs[y*640+x] == Point(xcd, ycd)
+        // Note: buildUVCoeffs[y*640+x] == UVPreComp(p.Pt[0][0]*xcd + p.Pt[0][1]*ycd + p.Pt[0][2],
+        //                                           p.Pt[1][0]*xcd + p.Pt[1][1]*ycd + p.Pt[1][2],
+        //                                           p.Pt[2][0]*xcd + p.Pt[2][1]*ycd + p.Pt[2][2]);
+
+        // Determine location of vertex, relative to depth camera, in mm
+        const auto uint16_to_mm_ratio = p.Rmax / 65535.0f;
+        const float z = d * uint16_to_mm_ratio, x = xcd * z, y = ycd * z;
+        return {x, y, z};
+    }
+
     const uint16_t * F200Camera::GetDepthImage()
     {
         if (depthFrame.updated)
@@ -104,53 +129,51 @@ namespace f200
             if (!inst->m_calibration) throw std::runtime_error("MapDepthToColorCoordinates failed, m_calibration not initialized");
             const int xShift = (inst->m_currentDepthWidth == 320) ? 1 : 0;
             const int yShift = (inst->m_currentDepthHeight == 240) ? 1 : 0;
-            const bool aspectRatio43 = (inst->m_currentColorWidth * 3 == inst->m_currentColorHeight * 4);
             const CameraCalibrationParameters & p = inst->m_calibration.params;
-            const auto uint16_to_mm_ratio = p.Rmax / 65535.0f;
 
             auto inDepth = reinterpret_cast<const uint16_t *>(depthFrame.front.data());
             auto outUV = uvs;
+
+            // Produce intrinsics for color camera
+            rs_intrinsics colorIntrin;
+            colorIntrin.focal_length[0] = p.Kt[0][0]*0.5f;
+            colorIntrin.focal_length[1] = p.Kt[1][1]*0.5f;
+            colorIntrin.principal_point[0] = p.Kt[0][2]*0.5f + 0.5f;
+            colorIntrin.principal_point[1] = p.Kt[1][2]*0.5f + 0.5f;
+            if(inst->m_currentColorWidth * 3 == inst->m_currentColorHeight * 4) // If using a 4:3 aspect ratio, adjust intrinsics (defaults to 16:9)
+            {
+                colorIntrin.focal_length[0] *= 4.0f/3;
+                colorIntrin.principal_point[0] *= 4.0f/3;
+                colorIntrin.principal_point[0] -= 1.0f/6;
+            }
+            colorIntrin.image_size[0] = 640;
+            colorIntrin.image_size[1] = 480;
+            colorIntrin.focal_length[0] *= 640;
+            colorIntrin.focal_length[1] *= 480;
+            colorIntrin.principal_point[0] *= 640;
+            colorIntrin.principal_point[1] *= 480;
+
+            // Produce extrinsics between depth and color camera
+            rs_extrinsics extrin;
+            for(int i=0; i<3; ++i) for(int j=0; j<3; ++j) extrin.rotation[i*3+j] = p.Rt[i][j];
+            for(int i=0; i<3; ++i) extrin.translation[i] = p.Tt[i];
+
             for(int i=0; i<inst->m_currentDepthHeight; i++)
             {
                 for (int j=0 ; j<inst->m_currentDepthWidth; j++)
                 {
                     if (uint16_t d = *inDepth++)
                     {
-                        // Compute pixel coordinates in depth/UV map
+                        // Produce vertex location relative to depth camera
                         int pixelX = j << xShift, pixelY = i << yShift;
+                        const auto point = DeprojectPixelToPoint(p, pixelX, pixelY, d);
 
-                        // Compute depth "UVs" in the [-1,+1] range
-                        const float u = float(pixelX) / 640 * 2 - 1;
-                        const float v = float(pixelY) / 480 * 2 - 1;
-
-                        // Distort camera coordinates
-                        float xc  = (u - p.Kc[0][2])/p.Kc[0][0];
-                        float yc  = (v - p.Kc[1][2])/p.Kc[1][1];
-                        float r2  = xc*xc + yc*yc;
-                        float r2c = 1 + p.Invdistc[0]*r2 + p.Invdistc[1]*r2*r2 + p.Invdistc[4]*r2*r2*r2;
-                        float xcd = xc*r2c + 2*p.Invdistc[2]*xc*yc + p.Invdistc[3]*(r2 + 2*xc*xc);
-                        float ycd = yc*r2c + 2*p.Invdistc[3]*xc*yc + p.Invdistc[2]*(r2 + 2*yc*yc);
-                        xcd = xcd*p.Kc[0][0] + p.Kc[0][2];
-                        ycd = ycd*p.Kc[1][1] + p.Kc[1][2];
-
-                        // Unnormalized camera rays
-                        float dx  = p.Kc[1][1]*xcd - p.Kc[1][1]*p.Kc[0][2];
-                        float dy  = p.Kc[0][0]*ycd - p.Kc[0][0]*p.Kc[1][2];
-                        float dz  = p.Kc[0][0]*p.Kc[1][1];
-                        Point r = Point(dx/dz, dy/dz); // unprojCoeffs[y*640+x]
-
-                        const auto puvc = UVPreComp(p.Pt[0][0]*r.x + p.Pt[0][1]*r.y + p.Pt[0][2],
-                                                    p.Pt[1][0]*r.x + p.Pt[1][1]*r.y + p.Pt[1][2],
-                                                    p.Pt[2][0]*r.x + p.Pt[2][1]*r.y + p.Pt[2][2]); // buildUVCoeffs[y*640+x]
-
-                        const float z = d * uint16_to_mm_ratio;
-                        const float D = 0.5f / (puvc.d*z + p.Pt[2][3]);
-                        float cu = (puvc.u*z + p.Pt[0][3]) * D + 0.5f;
-                        float cv = (puvc.v*z + p.Pt[1][3]) * D + 0.5f;
-                        if (aspectRatio43) cu = cu * (4.0f/3) - (1.0f/6);
-
-                        *outUV++ = cu;
-                        *outUV++ = cv;
+                        // Also produce the point and pixel relative to color camera
+                        float colorPoint[3], colorPixel[2];
+                        rs_transform_point_to_point(point.data(), extrin, colorPoint);
+                        rs_project_point_to_rectified_pixel(colorPoint, colorIntrin, colorPixel);
+                        *outUV++ = colorPixel[0] / 640;
+                        *outUV++ = colorPixel[1] / 480;
                     }
                     else
                     {
