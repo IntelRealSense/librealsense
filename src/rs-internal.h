@@ -102,6 +102,7 @@ struct rs_camera
     
     virtual float GetDepthScale() = 0;
     virtual const uint16_t * GetDepthImage() = 0;
+    virtual const float * GetVertexImage() = 0;
     virtual const uint8_t * GetColorImage() = 0;
 };
 

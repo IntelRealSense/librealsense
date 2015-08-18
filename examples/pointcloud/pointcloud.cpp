@@ -8,8 +8,6 @@
 #define STB_TRUETYPE_IMPLEMENTATION
 #include "stb_truetype.h"
 
-#include "../../src/F200/F200.h"
-
 FILE * find_file(std::string path, int levels)
 {
     for(int i=0; i<=levels; ++i)
@@ -139,8 +137,7 @@ int main(int argc, char * argv[]) try
 		int width, height;
 		glfwGetWindowSize(win, &width, &height);
 		
-		auto depth = cam.get_depth_image();
-        auto ivcam = dynamic_cast<f200::F200Camera *>(cam.get_handle());
+        auto depth = cam.get_depth_image();
 
         glViewport(0, 0, width, height);
         glClearColor(0.0f, 116/255.0f, 197/255.0f, 1.0f);
@@ -169,32 +166,20 @@ int main(int argc, char * argv[]) try
         glPointSize((float)width/640);
         glBegin(GL_POINTS);
 
+        auto v = rs_get_vertex_image(cam.get_handle(), 0);
 		for(int y=0; y<depth_intrin.image_size[1]; ++y)
 		{
 			for(int x=0; x<depth_intrin.image_size[0]; ++x)
 			{
-                auto d = *depth++;
+                if(v[2])
 				{
-                    if(ivcam)
-                    {
-                        auto v = ivcam->GetVertices() + (y*640 + x)*3;
-                        if(v[2])
-                        {
-                            glTexCoord2fv(ivcam->GetUVMap() + (y*640 + x)*2);
-                            glVertex3f(v[0]*0.001f, v[1]*0.001f, v[2]*0.001f);
-                        }
-                    }
-                    else if(d)
-                    {
-                        float depth_pixel[] = {x,y}, color_pixel[2];
-                        rs_transform_rectified_pixel_to_pixel(depth_pixel, d, depth_intrin, extrin, color_intrin, color_pixel);
-                        glTexCoord2f(color_pixel[0]/color_intrin.image_size[0], color_pixel[1]/color_intrin.image_size[1]);
-
-                        const float pixel[] = {x,y};
-                        const auto point = depth_intrin.deproject_from_rectified(pixel, d);
-                        glVertex3f(point[0] * scale, point[1] * scale, point[2] * scale);
-                    }
+                    float color_point[3], color_pixel[2];
+                    rs_transform_point_to_point(v, extrin, color_point);
+                    rs_project_point_to_pixel(color_point, color_intrin, color_pixel);
+                    glTexCoord2f(color_pixel[0] / color_intrin.image_size[0], color_pixel[1] / color_intrin.image_size[1]);
+                    glVertex3f(v[0]*0.001f, v[1]*0.001f, v[2]*0.001f);
 				}
+                v += 3;
 			}
 		}
 		glEnd();

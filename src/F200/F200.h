@@ -19,7 +19,6 @@ namespace f200
         
         std::unique_ptr<IVCAMHardwareIO> hardware_io;
         std::unique_ptr<IVRectifier> rectifier;
-        std::vector<float> uvs;
         std::vector<float> vertices;
 
 
@@ -42,15 +41,13 @@ namespace f200
             }
         }
         void StopStream(int streamIdentifier) override;
-
-        const float * GetUVMap() { return uvs.data(); }
-        const float * GetVertices() { return vertices.data(); }
         
         rs_intrinsics GetStreamIntrinsics(int stream) override;
         rs_extrinsics GetStreamExtrinsics(int from, int to) override;
         
         float GetDepthScale() override;
         const uint16_t * GetDepthImage() override;
+        const float * GetVertexImage() override { return vertices.data(); }
         const uint8_t * GetColorImage() override;
     };
     

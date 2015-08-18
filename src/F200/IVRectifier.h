@@ -15,7 +15,6 @@ namespace f200
     {
         std::vector<int> uvTable;
         std::vector<uint16_t> undistortedDepth;
-        std::vector<float> undistortedUVs;
         uint32_t width;
         uint32_t height;
         
@@ -80,26 +79,16 @@ namespace f200
         {
             uvTable.resize(width * height);
             undistortedDepth.resize(width * height);
-            undistortedUVs.resize(width * height * 2);
             BuildRectificationTable(unrect, r.rotation, rect);
         }
         
-        void rectify(const uint16_t * srcDepth, const float * srcUVs)
+        void rectify(const uint16_t * srcDepth)
         {
             auto dstDepth = undistortedDepth.data();
-            auto dstUVs = undistortedUVs.data();
-            auto table = uvTable.data();
-            for (int i=0; i<width*height; ++i)
-            {
-                int offset = *table++;
-                *dstDepth++ = srcDepth[offset];
-                *dstUVs++ = srcUVs[offset*2+0];
-                *dstUVs++ = srcUVs[offset*2+1];
-            }
+            for(auto offset : uvTable) *dstDepth++ = srcDepth[offset];
         }
         
         const uint16_t * getDepth() const { return undistortedDepth.data(); }
-        const float * getUVs() const { return undistortedUVs.data(); }
     };
     
 } // end namespace f200

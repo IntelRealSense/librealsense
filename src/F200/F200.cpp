@@ -1,7 +1,6 @@
 #include "../Common.h"
 #include "F200.h"
 #include "Projection.h"
-#include "../../include/librealsense/rsutil.h"
 
 #ifndef WIN32
 
@@ -67,23 +66,47 @@ namespace f200
     rs_intrinsics F200Camera::GetStreamIntrinsics(int stream)
     {
         const CameraCalibrationParameters & calib = hardware_io->GetParameters();
+        if(stream == RS_STREAM_RGB)
+        {
+            auto inst = Projection::GetInstance();
+
+            rs_intrinsics intrin = {{inst->GetColorWidth(), inst->GetColorHeight()}};
+            intrin.focal_length[0] = calib.Kt[0][0]*0.5f;
+            intrin.focal_length[1] = calib.Kt[1][1]*0.5f;
+            intrin.principal_point[0] = calib.Kt[0][2]*0.5f + 0.5f;
+            intrin.principal_point[1] = calib.Kt[1][2]*0.5f + 0.5f;
+            if(inst->m_currentColorWidth * 3 == inst->m_currentColorHeight * 4) // If using a 4:3 aspect ratio, adjust intrinsics (defaults to 16:9)
+            {
+                intrin.focal_length[0] *= 4.0f/3;
+                intrin.principal_point[0] *= 4.0f/3;
+                intrin.principal_point[0] -= 1.0f/6;
+            }
+            intrin.focal_length[0] *= intrin.image_size[0];
+            intrin.focal_length[1] *= intrin.image_size[1];
+            intrin.principal_point[0] *= intrin.image_size[0];
+            intrin.principal_point[1] *= intrin.image_size[1];
+            return intrin;
+        }
+
         const OpticalData & od = hardware_io->GetOpticalData();
         switch(stream)
         {
         case RS_STREAM_DEPTH: return {{640,480},{od.IRUndistortedFocalLengthPxl.x,od.IRUndistortedFocalLengthPxl.y},{320,240},{1,0,0,0,0}};
-        case RS_STREAM_RGB: return {{640,480},{od.RGBUndistortedFocalLengthPxl.x,od.RGBUndistortedFocalLengthPxl.y},{320,240},{calib.Distt[0],calib.Distt[1],calib.Distt[2],calib.Distt[3],calib.Distt[4]}};
         default: throw std::runtime_error("unsupported stream");
         }
     }
 
     rs_extrinsics F200Camera::GetStreamExtrinsics(int from, int to)
     {
-        const CameraCalibrationParameters & calib = hardware_io->GetParameters();
-        float scale = 0.001f / GetDepthScale();
-        return {{calib.Rt[0][0], calib.Rt[0][1], calib.Rt[0][2],
-                 calib.Rt[1][0], calib.Rt[1][1], calib.Rt[1][2],
-                 calib.Rt[2][0], calib.Rt[2][1], calib.Rt[2][2]},
-                {calib.Tt[0] * scale, calib.Tt[1] * scale, calib.Tt[2] * scale}};
+        if(from == RS_STREAM_DEPTH && to == RS_STREAM_RGB)
+        {
+            const CameraCalibrationParameters & calib = hardware_io->GetParameters();
+            return {{calib.Rt[0][0], calib.Rt[0][1], calib.Rt[0][2],
+                     calib.Rt[1][0], calib.Rt[1][1], calib.Rt[1][2],
+                     calib.Rt[2][0], calib.Rt[2][1], calib.Rt[2][2]},
+                    {calib.Tt[0], calib.Tt[1], calib.Tt[2]}};
+        }
+        else throw std::runtime_error("unsupported streams");
     }
         
     float F200Camera::GetDepthScale()
@@ -127,37 +150,11 @@ namespace f200
             if (!inst->m_calibration) throw std::runtime_error("MapDepthToColorCoordinates failed, m_calibration not initialized");
             const int xShift = (inst->m_currentDepthWidth == 320) ? 1 : 0;
             const int yShift = (inst->m_currentDepthHeight == 240) ? 1 : 0;
-            const CameraCalibrationParameters & p = inst->m_calibration.params;          
+            const CameraCalibrationParameters & p = inst->m_calibration.params;
 
-            // Produce intrinsics for color camera
-            rs_intrinsics colorIntrin;
-            colorIntrin.focal_length[0] = p.Kt[0][0]*0.5f;
-            colorIntrin.focal_length[1] = p.Kt[1][1]*0.5f;
-            colorIntrin.principal_point[0] = p.Kt[0][2]*0.5f + 0.5f;
-            colorIntrin.principal_point[1] = p.Kt[1][2]*0.5f + 0.5f;
-            if(inst->m_currentColorWidth * 3 == inst->m_currentColorHeight * 4) // If using a 4:3 aspect ratio, adjust intrinsics (defaults to 16:9)
-            {
-                colorIntrin.focal_length[0] *= 4.0f/3;
-                colorIntrin.principal_point[0] *= 4.0f/3;
-                colorIntrin.principal_point[0] -= 1.0f/6;
-            }
-            colorIntrin.image_size[0] = 640;
-            colorIntrin.image_size[1] = 480;
-            colorIntrin.focal_length[0] *= 640;
-            colorIntrin.focal_length[1] *= 480;
-            colorIntrin.principal_point[0] *= 640;
-            colorIntrin.principal_point[1] *= 480;
-
-            // Produce extrinsics between depth and color camera
-            rs_extrinsics extrin;
-            for(int i=0; i<3; ++i) for(int j=0; j<3; ++j) extrin.rotation[i*3+j] = p.Rt[i][j];
-            for(int i=0; i<3; ++i) extrin.translation[i] = p.Tt[i];
-
-            uvs.resize(640*480*2);
             vertices.resize(640*480*3);
             auto inDepth = reinterpret_cast<const uint16_t *>(depthFrame.front.data());
             auto vert = vertices.data();
-            auto outUV = uvs.data();
             for(int i=0; i<inst->m_currentDepthHeight; i++)
             {
                 for (int j=0 ; j<inst->m_currentDepthWidth; j++)
@@ -170,26 +167,17 @@ namespace f200
                         *vert++ = point[0];
                         *vert++ = point[1];
                         *vert++ = point[2];
-
-                        // Also produce the point and pixel relative to color camera
-                        float colorPoint[3], colorPixel[2];
-                        rs_transform_point_to_point(point.data(), extrin, colorPoint);
-                        rs_project_point_to_rectified_pixel(colorPoint, colorIntrin, colorPixel);
-                        *outUV++ = colorPixel[0] / 640;
-                        *outUV++ = colorPixel[1] / 480;
                     }
                     else
                     {
                         *vert++ = 0;
                         *vert++ = 0;
                         *vert++ = 0;
-                        *outUV++ = 0;
-                        *outUV++ = 0;
                     }
                 }
             }
 
-            rectifier->rectify(reinterpret_cast<const uint16_t *>(depthFrame.front.data()), uvs.data());
+            rectifier->rectify(reinterpret_cast<const uint16_t *>(depthFrame.front.data()));
         }
         return rectifier->getDepth();
     }

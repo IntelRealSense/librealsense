@@ -13,6 +13,7 @@ namespace r200
     class R200Camera : public rs::UVCCamera
     {
         std::unique_ptr<DS4HardwareIO> hardware_io;
+        std::vector<float> vertices;
     public:
         R200Camera(uvc_context_t * ctx, uvc_device_t * device, int num);
         ~R200Camera();
@@ -37,6 +38,7 @@ namespace r200
         
         float GetDepthScale() override { return 0.001f; } // NOTE: Could change based on ZUnits
         const uint16_t * GetDepthImage() override;
+        const float * GetVertexImage() override;
         const uint8_t * GetColorImage() override;
     };
 } // end namespace r200

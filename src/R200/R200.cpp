@@ -4,6 +4,7 @@
 #include "CameraHeader.h"
 #include "XU.h"
 #include "HardwareIO.h"
+#include "../../include/librealsense/rsutil.h"
 
 using namespace rs;
 
@@ -51,7 +52,7 @@ namespace r200
         auto t = calib.intrinsicsThird[1]; // Assumes 640x480 for now
         switch(stream)
         {
-        case RS_STREAM_DEPTH: return {{static_cast<int>(lr.rw-12),static_cast<int>(lr.rh-12)},{lr.rfx,lr.rfy},{lr.rpx-6,lr.rpy-6},{1,0,0,0,0}};
+        case RS_STREAM_DEPTH: return {{static_cast<int>(lr.rw-12),static_cast<int>(lr.rh-12)},{lr.rfx,lr.rfy},{lr.rpx-6,lr.rpy-6},{0,0,0,0,0}};
         case RS_STREAM_RGB: return {{static_cast<int>(t.w),static_cast<int>(t.h)},{t.fx,t.fy},{t.px,t.py},{t.k[0],t.k[1],t.k[2],t.k[3],t.k[4]}};
         default: throw std::runtime_error("unsupported stream");
         }
@@ -82,6 +83,31 @@ namespace r200
         return reinterpret_cast<const uint16_t *>(depthFrame.front.data());
     }
     
+    const float * R200Camera::GetVertexImage()
+    {
+        auto depth_intrin = GetStreamIntrinsics(RS_STREAM_DEPTH);
+        vertices.resize(depth_intrin.image_size[0] * depth_intrin.image_size[1] * 3);
+        auto inDepth = GetDepthImage();
+        auto outVert = vertices.data();
+        for(int y=0; y<depth_intrin.image_size[1]; ++y)
+        {
+            for(int x=0; x<depth_intrin.image_size[0]; ++x)
+            {
+                if(auto d = *inDepth++)
+                {
+                    const float pixel[] = {x,y};
+                    rs_deproject_rectified_pixel_to_point(pixel, d, depth_intrin, outVert);
+                }
+                else
+                {
+                    outVert[0] = outVert[1] = outVert[2] = 0;
+                }
+                outVert += 3;
+            }
+        }
+        return vertices.data();
+    }
+
     const uint8_t * R200Camera::GetColorImage()
     {
         if (colorFrame.updated)
