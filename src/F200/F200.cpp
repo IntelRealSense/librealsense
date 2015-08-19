@@ -21,46 +21,42 @@ namespace f200
 
     void F200Camera::RetrieveCalibration()
     {
-        hardware_io.reset(new IVCAMHardwareIO(internalContext));
-        
-        // Set up calibration parameters for internal undistortion
-        
-        const CameraCalibrationParameters & calib = hardware_io->GetParameters();
-        const OpticalData & od = hardware_io->GetOpticalData();
-        
-        rs_intrinsics rect = {}, unrect = {};
-        rs_extrinsics rotation = {{1.f,0.f,0.f,0.f,1.f,0.f,0.f,0.f,1.f},{0.f,0.f,0.f}};
-        
-        const int ivWidth = 640;
-        const int ivHeight = 480;
-        
-        rect.image_size[0] = ivWidth;
-        rect.image_size[1] = ivHeight;
-        rect.focal_length[0] = od.IRUndistortedFocalLengthPxl.x;
-        rect.focal_length[1] = od.IRUndistortedFocalLengthPxl.y;
-        rect.principal_point[0] = (ivWidth / 2); // Leo hack not to use real pp
-        rect.principal_point[1] = (ivHeight / 2); // Ditto
-        
-        unrect.image_size[0] = ivWidth;
-        unrect.image_size[1] = ivHeight;
-        unrect.focal_length[0] = od.IRDistortedFocalLengthPxl.x;
-        unrect.focal_length[1] =  od.IRDistortedFocalLengthPxl.x; // Leo hack for "Squareness"
-        unrect.principal_point[0] = od.IRPrincipalPoint.x + (ivWidth / 2);
-        unrect.principal_point[1] = od.IRPrincipalPoint.y + (ivHeight / 2);
-        unrect.distortion_coeff[0] = calib.Distc[0];
-        unrect.distortion_coeff[1] = calib.Distc[1];
-        unrect.distortion_coeff[2] = calib.Distc[2];
-        unrect.distortion_coeff[3] = calib.Distc[3];
-        unrect.distortion_coeff[4] = calib.Distc[4];
+        if(!hardware_io)
+        {
+            hardware_io.reset(new IVCAMHardwareIO(internalContext));
 
-        rectifier.reset(new IVRectifier(ivWidth, ivHeight, rect, unrect, rotation));
+            // Set up calibration parameters for internal undistortion
 
-        return true;
-    }
+            const CameraCalibrationParameters & calib = hardware_io->GetParameters();
+            const OpticalData & od = hardware_io->GetOpticalData();
 
-    void F200Camera::StopStream(int streamNum)
-    {
-        //@tofix
+            rs_intrinsics rect = {}, unrect = {};
+            rs_extrinsics rotation = {{1.f,0.f,0.f,0.f,1.f,0.f,0.f,0.f,1.f},{0.f,0.f,0.f}};
+
+            const int ivWidth = 640;
+            const int ivHeight = 480;
+
+            rect.image_size[0] = ivWidth;
+            rect.image_size[1] = ivHeight;
+            rect.focal_length[0] = od.IRUndistortedFocalLengthPxl.x;
+            rect.focal_length[1] = od.IRUndistortedFocalLengthPxl.y;
+            rect.principal_point[0] = (ivWidth / 2); // Leo hack not to use real pp
+            rect.principal_point[1] = (ivHeight / 2); // Ditto
+
+            unrect.image_size[0] = ivWidth;
+            unrect.image_size[1] = ivHeight;
+            unrect.focal_length[0] = od.IRDistortedFocalLengthPxl.x;
+            unrect.focal_length[1] =  od.IRDistortedFocalLengthPxl.x; // Leo hack for "Squareness"
+            unrect.principal_point[0] = od.IRPrincipalPoint.x + (ivWidth / 2);
+            unrect.principal_point[1] = od.IRPrincipalPoint.y + (ivHeight / 2);
+            unrect.distortion_coeff[0] = calib.Distc[0];
+            unrect.distortion_coeff[1] = calib.Distc[1];
+            unrect.distortion_coeff[2] = calib.Distc[2];
+            unrect.distortion_coeff[3] = calib.Distc[3];
+            unrect.distortion_coeff[4] = calib.Distc[4];
+
+            rectifier.reset(new IVRectifier(ivWidth, ivHeight, rect, unrect, rotation));
+        }
     }
         
     rs_intrinsics F200Camera::GetStreamIntrinsics(int stream)

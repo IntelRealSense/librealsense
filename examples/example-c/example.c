@@ -36,9 +36,9 @@ int main(int argc, char * argv[])
 		printf("Found camera at index %d\n", i);
 
 		cam = rs_get_camera(ctx, i, &error); check_error();
-        rs_enable_stream(cam, RS_STREAM_DEPTH, &error); check_error();
-        rs_enable_stream(cam, RS_STREAM_RGB, &error); check_error();
-		rs_configure_streams(cam, &error); check_error();
+        rs_enable_stream_preset(cam, RS_STREAM_DEPTH, RS_STREAM_PRESET_BEST_QUALITY, &error); check_error();
+        rs_enable_stream_preset(cam, RS_STREAM_RGB, RS_STREAM_PRESET_BEST_QUALITY, &error); check_error();
+        rs_start_streaming(cam, &error); check_error();
 
 		hfov = compute_fov(
 			rs_get_stream_property_i(cam, RS_STREAM_DEPTH, RS_IMAGE_SIZE_X, NULL),
@@ -49,9 +49,6 @@ int main(int argc, char * argv[])
 			rs_get_stream_property_f(cam, RS_STREAM_DEPTH, RS_FOCAL_LENGTH_Y, NULL),
 			rs_get_stream_property_f(cam, RS_STREAM_DEPTH, RS_PRINCIPAL_POINT_Y, NULL));
 		printf("Computed FOV %f %f\n", hfov, vfov);
-
-        rs_start_stream_preset(cam, RS_STREAM_DEPTH, RS_STREAM_PRESET_BEST_QUALITY, &error); check_error();
-        rs_start_stream_preset(cam, RS_STREAM_RGB, RS_STREAM_PRESET_BEST_QUALITY, &error); check_error();
 	}
 	if (!cam)
 	{

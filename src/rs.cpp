@@ -126,17 +126,31 @@ const char * rs_get_camera_name(rs_camera * camera, rs_error ** error)
     END_EXCEPTION_FIREWALL
 }
 
-void rs_enable_stream(rs_camera * camera, int stream, rs_error ** error)
+void rs_enable_stream(struct rs_camera * camera, int stream, int width, int height, int fps, int format, struct rs_error ** error)
 {
     BEGIN_EXCEPTION_FIREWALL
-    camera->streamingModeBitfield |= stream;
+    camera->EnableStream(stream, width, height, fps, (rs::FrameFormat)format);
     END_EXCEPTION_FIREWALL
 }
 
-int rs_is_streaming(rs_camera * camera, rs_error ** error)
+void rs_enable_stream_preset(struct rs_camera * camera, int stream, int preset, struct rs_error ** error)
 {
     BEGIN_EXCEPTION_FIREWALL
-    return camera->streamingModeBitfield & RS_STREAM_DEPTH || camera->streamingModeBitfield & RS_STREAM_RGB ? 1 : 0;
+    camera->EnableStreamPreset(stream, preset);
+    END_EXCEPTION_FIREWALL
+}
+
+void rs_start_streaming(struct rs_camera * camera, struct rs_error ** error)
+{
+    BEGIN_EXCEPTION_FIREWALL
+    camera->StartStreaming();
+    END_EXCEPTION_FIREWALL
+}
+
+void rs_stop_streaming(struct rs_camera * camera, struct rs_error ** error)
+{
+    BEGIN_EXCEPTION_FIREWALL
+    camera->StopStreaming();
     END_EXCEPTION_FIREWALL
 }
 
@@ -186,34 +200,6 @@ const float * rs_get_vertex_image(rs_camera * camera, rs_error ** error)
 {
     BEGIN_EXCEPTION_FIREWALL
     return camera->GetVertexImage();
-    END_EXCEPTION_FIREWALL
-}
-
-int	rs_configure_streams(rs_camera * camera, rs_error ** error)
-{
-    BEGIN_EXCEPTION_FIREWALL
-    return camera->ConfigureStreams();
-    END_EXCEPTION_FIREWALL
-}
-
-void rs_start_stream(rs_camera * camera, int stream, int width, int height, int fps, int format, rs_error ** error)
-{
-    BEGIN_EXCEPTION_FIREWALL
-    camera->StartStream(stream, { width, height, fps, (rs::FrameFormat)format });
-    END_EXCEPTION_FIREWALL
-}
-
-void rs_start_stream_preset(rs_camera * camera, int stream, int preset, rs_error ** error)
-{
-    BEGIN_EXCEPTION_FIREWALL
-    camera->StartStreamPreset(stream, preset);
-    END_EXCEPTION_FIREWALL
-}
-
-void rs_stop_stream(rs_camera * camera, int stream, rs_error ** error)
-{
-    BEGIN_EXCEPTION_FIREWALL
-    camera->StopStream(stream);
     END_EXCEPTION_FIREWALL
 }
 

@@ -47,7 +47,6 @@ namespace rs
         };
 
         uvc_device_t * hardware = nullptr;
-        bool hardwareInitialized = false;
         std::map<int, StreamInterface *> streamInterfaces;
 
         static void cb(uvc_frame_t * frame, void * ptr)
@@ -61,14 +60,16 @@ namespace rs
         virtual int GetDepthCameraNumber() const = 0;
         virtual int GetColorCameraNumber() const = 0;
         virtual void RetrieveCalibration() = 0;
+        virtual void SetStreamIntent(bool depth, bool color) = 0;
 
     public:
 
         UVCCamera(uvc_context_t * ctx, uvc_device_t * device, int num);
         ~UVCCamera();
 
-        bool ConfigureStreams() override final;
-        void StartStream(int streamIdentifier, const StreamConfiguration & c) override final;
+        void EnableStream(int stream, int width, int height, int fps, FrameFormat format) override final;
+        void StartStreaming() override final;
+        void StopStreaming() override final;
 
         rs::StreamConfiguration zConfig;
         rs::StreamConfiguration rgbConfig;

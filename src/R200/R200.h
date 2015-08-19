@@ -20,17 +20,17 @@ namespace r200
         int GetDepthCameraNumber() const override final { return 1; }
         int GetColorCameraNumber() const override final { return 2; }
         void RetrieveCalibration() override final;
+        void SetStreamIntent(bool depth, bool color) override final;
 
-        void StartStreamPreset(int streamIdentifier, int preset) override
+        void EnableStreamPreset(int streamIdentifier, int preset) override
         {
             switch(streamIdentifier)
             {
-            case RS_STREAM_DEPTH: StartStream(RS_STREAM_DEPTH, {628, 469, 0, rs::FrameFormat::Z16}); break;
-            case RS_STREAM_RGB: StartStream(RS_STREAM_RGB, {640, 480, 59, rs::FrameFormat::YUYV}); break;
+            case RS_STREAM_DEPTH: EnableStream(RS_STREAM_DEPTH, 628, 469, 0, rs::FrameFormat::Z16); break;
+            case RS_STREAM_RGB: EnableStream(RS_STREAM_RGB, 640, 480, 59, rs::FrameFormat::YUYV); break;
             default: throw std::runtime_error("unsupported stream");
             }
         }
-        void StopStream(int streamIdentifier) override;
 
         rs_intrinsics GetStreamIntrinsics(int stream) override;
         rs_extrinsics GetStreamExtrinsics(int from, int to) override;

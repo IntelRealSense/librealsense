@@ -82,7 +82,6 @@ struct rs_camera
 
 	rs::USBDeviceInfo usbInfo = {};
 
-	uint32_t streamingModeBitfield = 0;
 	uint64_t frameCount = 0;
 
     TripleBufferedFrame<uint16_t> depthFrame;
@@ -90,14 +89,14 @@ struct rs_camera
     std::vector<float> vertices;
 
 	rs_camera(int index) : cameraIdx(index) {}
-	virtual ~rs_camera() {}
+    ~rs_camera() {}
+
+    virtual void EnableStream(int stream, int width, int height, int fps, rs::FrameFormat format) = 0;
+    virtual void EnableStreamPreset(int stream, int preset) = 0;
+    virtual void StartStreaming() = 0;
+    virtual void StopStreaming() = 0;
 
     void WaitAllStreams();
-
-	virtual bool ConfigureStreams() = 0;
-	virtual void StartStream(int streamIdentifier, const rs::StreamConfiguration & config) = 0;
-    virtual void StartStreamPreset(int streamIdentifier, int preset) = 0;
-	virtual void StopStream(int streamIdentifier) = 0;
     
 	virtual rs_intrinsics GetStreamIntrinsics(int stream) = 0;
 	virtual rs_extrinsics GetStreamExtrinsics(int from, int to) = 0;

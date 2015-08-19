@@ -15,16 +15,17 @@ struct rs_camera *	rs_get_camera			(struct rs_context * context, int index, stru
 void				rs_delete_context		(struct rs_context * context, struct rs_error ** error);
 
 const char *        rs_get_camera_name      (struct rs_camera * camera, struct rs_error ** error);
-void				rs_enable_stream		(struct rs_camera * camera, int stream, struct rs_error ** error);
-int 				rs_configure_streams	(struct rs_camera * camera, struct rs_error ** error);
-void				rs_start_stream			(struct rs_camera * camera, int stream, int width, int height, int fps, int format, struct rs_error ** error);
-void				rs_start_stream_preset	(struct rs_camera * camera, int stream, int preset, struct rs_error ** error);
-void				rs_stop_stream			(struct rs_camera * camera, int stream, struct rs_error ** error);
+
+void				rs_enable_stream		(struct rs_camera * camera, int stream, int width, int height, int fps, int format, struct rs_error ** error);
+void				rs_enable_stream_preset	(struct rs_camera * camera, int stream, int preset, struct rs_error ** error);
+void 				rs_start_streaming  	(struct rs_camera * camera, struct rs_error ** error);
+void 				rs_stop_streaming       (struct rs_camera * camera, struct rs_error ** error);
+
 void                rs_wait_all_streams     (struct rs_camera * camera, struct rs_error ** error);
+
 const uint16_t *	rs_get_depth_image		(struct rs_camera * camera, struct rs_error ** error);
 const float *       rs_get_vertex_image		(struct rs_camera * camera, struct rs_error ** error);
 const uint8_t *		rs_get_color_image		(struct rs_camera * camera, struct rs_error ** error);
-int 				rs_is_streaming			(struct rs_camera * camera, struct rs_error ** error);
 int					rs_get_camera_index		(struct rs_camera * camera, struct rs_error ** error);
 uint64_t			rs_get_frame_count		(struct rs_camera * camera, struct rs_error ** error);
 int					rs_get_stream_property_i(struct rs_camera * camera, int stream, int prop, struct rs_error ** error); // RS_IMAGE_SIZE_X, RS_IMAGE_SIZE_Y

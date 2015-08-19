@@ -22,27 +22,26 @@ namespace r200
 
     void R200Camera::RetrieveCalibration()
     {
-        auto handle = streamInterfaces[RS_STREAM_DEPTH]->uvcHandle;
-        if(!handle) handle = streamInterfaces[RS_STREAM_RGB]->uvcHandle;
-        if(handle)
+        if(!hardware_io)
         {
+            auto handle = streamInterfaces[RS_STREAM_DEPTH]->uvcHandle;
+            if(!handle) handle = streamInterfaces[RS_STREAM_RGB]->uvcHandle;
+            if(!handle) throw std::runtime_error("RetrieveCalibration() failed as no stream interfaces were open");
             hardware_io.reset(new DS4HardwareIO(handle));
-
             //uvc_print_diag(uvc_handle, stderr);
-
             std::cout << "Firmware Revision: " << GetFirmwareVersion(handle) << std::endl;
-
-            if (!SetStreamIntent(handle, streamingModeBitfield))
-            {
-                throw std::runtime_error("Could not set stream intent. Replug camera?");
-            }
         }
     }
 
-    void R200Camera::StopStream(int streamNum)
+    void R200Camera::SetStreamIntent(bool depth, bool color)
     {
-        //@tofix - uvc_stream_stop with a real stream handle -> index with map that we have
-        //uvc_stop_streaming(deviceHandle);
+        uint32_t streamingModeBitfield = 0;
+        if(depth) streamingModeBitfield |= RS_STREAM_DEPTH;
+        if(color) streamingModeBitfield |= RS_STREAM_RGB;
+
+        auto handle = streamInterfaces[RS_STREAM_DEPTH]->uvcHandle;
+        if(!handle) handle = streamInterfaces[RS_STREAM_RGB]->uvcHandle;
+        if(handle) r200::SetStreamIntent(handle, streamingModeBitfield);
     }
 
     rs_intrinsics R200Camera::GetStreamIntrinsics(int stream)
