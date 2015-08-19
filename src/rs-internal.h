@@ -93,6 +93,8 @@ struct rs_camera
 	rs_camera(int index) : cameraIdx(index) {}
 	virtual ~rs_camera() {}
 
+    void WaitAllStreams();
+
 	virtual bool ConfigureStreams() = 0;
 	virtual void StartStream(int streamIdentifier, const rs::StreamConfiguration & config) = 0;
     virtual void StartStreamPreset(int streamIdentifier, int preset) = 0;
@@ -100,9 +102,8 @@ struct rs_camera
     
 	virtual rs_intrinsics GetStreamIntrinsics(int stream) = 0;
 	virtual rs_extrinsics GetStreamExtrinsics(int from, int to) = 0;
-    
+    virtual void ComputeVertexImage() = 0;
     virtual float GetDepthScale() = 0;
-    virtual void WaitAllStreams() = 0;
 
     const uint8_t * GetColorImage() const { return colorFrame.front.data(); }
     const uint16_t * GetDepthImage() const { return reinterpret_cast<const uint16_t *>(depthFrame.front.data()); }

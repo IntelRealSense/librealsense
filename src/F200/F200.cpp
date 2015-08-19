@@ -139,51 +139,36 @@ namespace f200
         return {x, y, z};
     }
 
-
-    void F200Camera::WaitAllStreams()
+    void F200Camera::ComputeVertexImage()
     {
-        if (depthFrame.updated)
+        auto inst = Projection::GetInstance();
+        if (!inst->m_calibration) throw std::runtime_error("MapDepthToColorCoordinates failed, m_calibration not initialized");
+        const int xShift = (inst->m_currentDepthWidth == 320) ? 1 : 0;
+        const int yShift = (inst->m_currentDepthHeight == 240) ? 1 : 0;
+        const CameraCalibrationParameters & p = inst->m_calibration.params;
+
+        auto inDepth = reinterpret_cast<const uint16_t *>(depthFrame.front.data());
+        auto vert = vertices.data();
+        for(int i=0; i<inst->m_currentDepthHeight; i++)
         {
-            std::lock_guard<std::mutex> guard(frameMutex);
-            depthFrame.swap_front();
-
-            auto inst = Projection::GetInstance();
-            if (!inst->m_calibration) throw std::runtime_error("MapDepthToColorCoordinates failed, m_calibration not initialized");
-            const int xShift = (inst->m_currentDepthWidth == 320) ? 1 : 0;
-            const int yShift = (inst->m_currentDepthHeight == 240) ? 1 : 0;
-            const CameraCalibrationParameters & p = inst->m_calibration.params;
-
-            auto inDepth = reinterpret_cast<const uint16_t *>(depthFrame.front.data());
-            auto vert = vertices.data();
-            for(int i=0; i<inst->m_currentDepthHeight; i++)
+            for (int j=0 ; j<inst->m_currentDepthWidth; j++)
             {
-                for (int j=0 ; j<inst->m_currentDepthWidth; j++)
+                if (uint16_t d = *inDepth++)
                 {
-                    if (uint16_t d = *inDepth++)
-                    {
-                        // Produce vertex location relative to depth camera
-                        int pixelX = j << xShift, pixelY = i << yShift;
-                        const auto point = DeprojectPixelToPoint(p, pixelX, pixelY, d);
-                        *vert++ = point[0];
-                        *vert++ = point[1];
-                        *vert++ = point[2];
-                    }
-                    else
-                    {
-                        *vert++ = 0;
-                        *vert++ = 0;
-                        *vert++ = 0;
-                    }
+                    // Produce vertex location relative to depth camera
+                    int pixelX = j << xShift, pixelY = i << yShift;
+                    const auto point = DeprojectPixelToPoint(p, pixelX, pixelY, d);
+                    *vert++ = point[0];
+                    *vert++ = point[1];
+                    *vert++ = point[2];
+                }
+                else
+                {
+                    *vert++ = 0;
+                    *vert++ = 0;
+                    *vert++ = 0;
                 }
             }
-
-            //rectifier->rectify(reinterpret_cast<const uint16_t *>(depthFrame.front.data()));
-        }
-
-        if (colorFrame.updated)
-        {
-            std::lock_guard<std::mutex> guard(frameMutex);
-            colorFrame.swap_front();
         }
     }
 

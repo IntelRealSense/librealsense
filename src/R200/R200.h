@@ -34,9 +34,8 @@ namespace r200
 
         rs_intrinsics GetStreamIntrinsics(int stream) override;
         rs_extrinsics GetStreamExtrinsics(int from, int to) override;
-        
+        void ComputeVertexImage() override;
         float GetDepthScale() override { return 0.001f; } // NOTE: Could change based on ZUnits
-        void WaitAllStreams() override;
     };
 } // end namespace r200
 #endif

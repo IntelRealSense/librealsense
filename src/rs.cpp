@@ -80,6 +80,24 @@ void rs_context::QueryDeviceList()
     #endif
 }
 
+void rs_camera::WaitAllStreams()
+{
+    if (depthFrame.updated)
+    {
+        {
+            std::lock_guard<std::mutex> guard(frameMutex);
+            depthFrame.swap_front();
+        }
+        ComputeVertexImage();
+    }
+
+    if (colorFrame.updated)
+    {
+        std::lock_guard<std::mutex> guard(frameMutex);
+        colorFrame.swap_front();
+    }
+}
+
 ////////////////////////
 // API implementation //
 ////////////////////////

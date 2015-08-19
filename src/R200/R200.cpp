@@ -73,38 +73,26 @@ namespace r200
         else throw std::runtime_error("unsupported streams");
     }
 
-    void R200Camera::WaitAllStreams()
+    void R200Camera::ComputeVertexImage()
     {
-        if (depthFrame.updated)
+        auto depth_intrin = GetStreamIntrinsics(RS_STREAM_DEPTH);
+        auto inDepth = GetDepthImage();
+        auto outVert = vertices.data();
+        for(int y=0; y<depth_intrin.image_size[1]; ++y)
         {
-            std::lock_guard<std::mutex> guard(frameMutex);
-            depthFrame.swap_front();
-
-            auto depth_intrin = GetStreamIntrinsics(RS_STREAM_DEPTH);
-            auto inDepth = GetDepthImage();
-            auto outVert = vertices.data();
-            for(int y=0; y<depth_intrin.image_size[1]; ++y)
+            for(int x=0; x<depth_intrin.image_size[0]; ++x)
             {
-                for(int x=0; x<depth_intrin.image_size[0]; ++x)
+                if(auto d = *inDepth++)
                 {
-                    if(auto d = *inDepth++)
-                    {
-                        const float pixel[] = {x,y};
-                        rs_deproject_rectified_pixel_to_point(pixel, d, depth_intrin, outVert);
-                    }
-                    else
-                    {
-                        outVert[0] = outVert[1] = outVert[2] = 0;
-                    }
-                    outVert += 3;
+                    const float pixel[] = {x,y};
+                    rs_deproject_rectified_pixel_to_point(pixel, d, depth_intrin, outVert);
                 }
+                else
+                {
+                    outVert[0] = outVert[1] = outVert[2] = 0;
+                }
+                outVert += 3;
             }
-        }
-
-        if (colorFrame.updated)
-        {
-            std::lock_guard<std::mutex> guard(frameMutex);
-            colorFrame.swap_front();
         }
     }
     
