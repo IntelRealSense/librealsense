@@ -115,37 +115,22 @@ namespace f200
         return calibration->ivcamToMM(1) * 0.001f;
     }
 
-    static std::array<float,3> DeprojectPixelToPoint(const CameraCalibrationParameters & p, int pixelX, int pixelY, uint16_t d)
+    struct float2 { float x,y; };
+    float2 distort(const float2 & coord, const float coeff[5])
     {
-        // Compute depth "UVs" in the [-1,+1] range
-        const float u = float(pixelX) / 640 * 2 - 1;
-        const float v = float(pixelY) / 480 * 2 - 1;
-
-        // Distort camera coordinates
-        float xc  = (u - p.Kc[0][2]) / p.Kc[0][0];
-        float yc  = (v - p.Kc[1][2]) / p.Kc[1][1];
-        float r2  = xc*xc + yc*yc;
-        float r2c = 1 + p.Invdistc[0]*r2 + p.Invdistc[1]*r2*r2 + p.Invdistc[4]*r2*r2*r2;
-        float xcd = xc*r2c + 2*p.Invdistc[2]*xc*yc + p.Invdistc[3]*(r2 + 2*xc*xc);
-        float ycd = yc*r2c + 2*p.Invdistc[3]*xc*yc + p.Invdistc[2]*(r2 + 2*yc*yc);
-        // Note: unprojCoeffs[y*640+x] == Point(xcd, ycd)
-        // Note: buildUVCoeffs[y*640+x] == UVPreComp(p.Pt[0][0]*xcd + p.Pt[0][1]*ycd + p.Pt[0][2],
-        //                                           p.Pt[1][0]*xcd + p.Pt[1][1]*ycd + p.Pt[1][2],
-        //                                           p.Pt[2][0]*xcd + p.Pt[2][1]*ycd + p.Pt[2][2]);
-
-        // Determine location of vertex, relative to depth camera, in mm
-        const auto uint16_to_mm_ratio = p.Rmax / 65535.0f;
-        const float z = d * uint16_to_mm_ratio, x = xcd * z, y = ycd * z;
-        return {x, y, z};
+        float r2  = coord.x*coord.x + coord.y*coord.y;
+        float r2c = 1 + coeff[0]*r2 + coeff[1]*r2*r2 + coeff[4]*r2*r2*r2;
+        return {coord.x*r2c + 2*coeff[2]*coord.x*coord.y + coeff[3]*(r2 + 2*coord.x*coord.x),
+                coord.y*r2c + 2*coeff[3]*coord.x*coord.y + coeff[2]*(r2 + 2*coord.y*coord.y)};
+        // ??? DS4 model multiplies coord.x/coord.y by r2c BEFORE using them in final line, IVCAM model multiplies after
     }
 
     void F200Camera::ComputeVertexImage()
     {
         auto inst = Projection::GetInstance();
         if (!inst->m_calibration) throw std::runtime_error("MapDepthToColorCoordinates failed, m_calibration not initialized");
-        const int xShift = (inst->m_currentDepthWidth == 320) ? 1 : 0;
-        const int yShift = (inst->m_currentDepthHeight == 240) ? 1 : 0;
         const CameraCalibrationParameters & p = inst->m_calibration.params;
+        const auto uint16_to_mm_ratio = p.Rmax / 65535.0f;
 
         auto inDepth = depthFrame.front_data();
         auto vert = vertices.data();
@@ -155,12 +140,25 @@ namespace f200
             {
                 if (uint16_t d = *inDepth++)
                 {
-                    // Produce vertex location relative to depth camera
-                    int pixelX = j << xShift, pixelY = i << yShift;
-                    const auto point = DeprojectPixelToPoint(p, pixelX, pixelY, d);
-                    *vert++ = point[0];
-                    *vert++ = point[1];
-                    *vert++ = point[2];
+                    // Compute depth image location in the [-1,+1] range
+                    const float u = float(j) / inst->m_currentDepthWidth * 2 - 1;
+                    const float v = float(i) / inst->m_currentDepthHeight * 2 - 1;
+
+                    // Undistort camera coordinates
+                    float2 dist = {(u - p.Kc[0][2]) / p.Kc[0][0], (v - p.Kc[1][2]) / p.Kc[1][1]};
+
+                    auto undist = distort(dist, p.Invdistc);
+                    // Note: unprojCoeffs[y*640+x] == Point(undist.x, undist.y)
+                    // Note: buildUVCoeffs[y*640+x] == UVPreComp(p.Pt[0][0]*undist.x + p.Pt[0][1]*undist.y + p.Pt[0][2],
+                    //                                           p.Pt[1][0]*undist.x + p.Pt[1][1]*undist.y + p.Pt[1][2],
+                    //                                           p.Pt[2][0]*undist.x + p.Pt[2][1]*undist.y + p.Pt[2][2]);
+
+                    // Determine location of vertex, relative to depth camera, in mm
+                    const float z = d * uint16_to_mm_ratio;
+
+                    *vert++ = z*undist.x;
+                    *vert++ = z*undist.y;
+                    *vert++ = z;
                 }
                 else
                 {
