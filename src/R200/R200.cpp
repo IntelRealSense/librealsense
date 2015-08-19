@@ -24,8 +24,9 @@ namespace r200
     {
         if(!hardware_io)
         {
-            auto handle = streamInterfaces[RS_STREAM_DEPTH]->uvcHandle;
-            if(!handle) handle = streamInterfaces[RS_STREAM_RGB]->uvcHandle;
+            uvc_device_handle_t * handle = nullptr;
+            if(!handle && streams[RS_DEPTH]) handle = streams[RS_DEPTH]->uvcHandle;
+            if(!handle && streams[RS_COLOR]) handle = streams[RS_COLOR]->uvcHandle;
             if(!handle) throw std::runtime_error("RetrieveCalibration() failed as no stream interfaces were open");
             hardware_io.reset(new DS4HardwareIO(handle));
             //uvc_print_diag(uvc_handle, stderr);
@@ -36,11 +37,12 @@ namespace r200
     void R200Camera::SetStreamIntent(bool depth, bool color)
     {
         uint32_t streamingModeBitfield = 0;
-        if(depth) streamingModeBitfield |= RS_STREAM_DEPTH;
-        if(color) streamingModeBitfield |= RS_STREAM_RGB;
+        if(depth) streamingModeBitfield |= r200::DS_STREAM_DEPTH;
+        if(color) streamingModeBitfield |= r200::DS_STREAM_RGB;
 
-        auto handle = streamInterfaces[RS_STREAM_DEPTH]->uvcHandle;
-        if(!handle) handle = streamInterfaces[RS_STREAM_RGB]->uvcHandle;
+        uvc_device_handle_t * handle = nullptr;
+        if(!handle && streams[RS_DEPTH]) handle = streams[RS_DEPTH]->uvcHandle;
+        if(!handle && streams[RS_COLOR]) handle = streams[RS_COLOR]->uvcHandle;
         if(handle) r200::SetStreamIntent(handle, streamingModeBitfield);
     }
 
@@ -51,8 +53,8 @@ namespace r200
         auto t = calib.intrinsicsThird[1]; // Assumes 640x480 for now
         switch(stream)
         {
-        case RS_STREAM_DEPTH: return {{static_cast<int>(lr.rw-12),static_cast<int>(lr.rh-12)},{lr.rfx,lr.rfy},{lr.rpx-6,lr.rpy-6},{0,0,0,0,0}};
-        case RS_STREAM_RGB: return {{static_cast<int>(t.w),static_cast<int>(t.h)},{t.fx,t.fy},{t.px,t.py},{t.k[0],t.k[1],t.k[2],t.k[3],t.k[4]}};
+        case RS_DEPTH: return {{static_cast<int>(lr.rw-12),static_cast<int>(lr.rh-12)},{lr.rfx,lr.rfy},{lr.rpx-6,lr.rpy-6},{0,0,0,0,0}};
+        case RS_COLOR: return {{static_cast<int>(t.w),static_cast<int>(t.h)},{t.fx,t.fy},{t.px,t.py},{t.k[0],t.k[1],t.k[2],t.k[3],t.k[4]}};
         default: throw std::runtime_error("unsupported stream");
         }
     }
@@ -60,7 +62,7 @@ namespace r200
     rs_extrinsics R200Camera::GetStreamExtrinsics(int from, int to)
     {
         auto calib = hardware_io->GetCalibration();
-        if(from == RS_STREAM_DEPTH && to == RS_STREAM_RGB)
+        if(from == RS_DEPTH && to == RS_COLOR)
         {
             rs_extrinsics extrin;
             for(int i=0; i<9; ++i) extrin.rotation[i] = (float)calib.Rthird[0][i];
@@ -74,7 +76,7 @@ namespace r200
 
     void R200Camera::ComputeVertexImage()
     {
-        auto depth_intrin = GetStreamIntrinsics(RS_STREAM_DEPTH);
+        auto depth_intrin = GetStreamIntrinsics(RS_DEPTH);
         auto inDepth = depthFrame.front_data();
         auto outVert = vertices.data();
         for(int y=0; y<depth_intrin.image_size[1]; ++y)

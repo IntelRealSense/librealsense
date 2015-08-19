@@ -19,18 +19,18 @@ int main(int argc, char * argv[]) try
 		std::cout << "Found camera at index " << i << std::endl;
 
 		cam = ctx.get_camera(i);
-        cam.enable_stream_preset(RS_STREAM_DEPTH, RS_STREAM_PRESET_BEST_QUALITY);
-        cam.enable_stream_preset(RS_STREAM_RGB, RS_STREAM_PRESET_BEST_QUALITY);
+        cam.enable_stream_preset(RS_DEPTH, RS_STREAM_PRESET_BEST_QUALITY);
+        cam.enable_stream_preset(RS_COLOR, RS_STREAM_PRESET_BEST_QUALITY);
         cam.start_streaming();
 
 		float hfov = compute_fov(
-			cam.get_stream_property_i(RS_STREAM_DEPTH, RS_IMAGE_SIZE_X),
-			cam.get_stream_property_f(RS_STREAM_DEPTH, RS_FOCAL_LENGTH_X),
-			cam.get_stream_property_f(RS_STREAM_DEPTH, RS_PRINCIPAL_POINT_X));
+            cam.get_stream_property_i(RS_DEPTH, RS_IMAGE_SIZE_X),
+            cam.get_stream_property_f(RS_DEPTH, RS_FOCAL_LENGTH_X),
+            cam.get_stream_property_f(RS_DEPTH, RS_PRINCIPAL_POINT_X));
 		float vfov = compute_fov(
-			cam.get_stream_property_i(RS_STREAM_DEPTH, RS_IMAGE_SIZE_Y),
-			cam.get_stream_property_f(RS_STREAM_DEPTH, RS_FOCAL_LENGTH_Y),
-			cam.get_stream_property_f(RS_STREAM_DEPTH, RS_PRINCIPAL_POINT_Y));
+            cam.get_stream_property_i(RS_DEPTH, RS_IMAGE_SIZE_Y),
+            cam.get_stream_property_f(RS_DEPTH, RS_FOCAL_LENGTH_Y),
+            cam.get_stream_property_f(RS_DEPTH, RS_PRINCIPAL_POINT_Y));
 		std::cout << "Computed FOV " << hfov << " " << vfov << std::endl;
 
 
@@ -50,14 +50,14 @@ int main(int argc, char * argv[]) try
 
 		glRasterPos2f(-1, 1);
 		glPixelTransferf(GL_RED_SCALE, 1);
-        glDrawPixels(cam.get_stream_property_i(RS_STREAM_RGB, RS_IMAGE_SIZE_X),
-                     cam.get_stream_property_i(RS_STREAM_RGB, RS_IMAGE_SIZE_Y),
+        glDrawPixels(cam.get_stream_property_i(RS_COLOR, RS_IMAGE_SIZE_X),
+                     cam.get_stream_property_i(RS_COLOR, RS_IMAGE_SIZE_Y),
                      GL_RGB, GL_UNSIGNED_BYTE, cam.get_color_image());
 
 		glRasterPos2f(0, 1);
 		glPixelTransferf(GL_RED_SCALE, 30);
-        glDrawPixels(cam.get_stream_property_i(RS_STREAM_DEPTH, RS_IMAGE_SIZE_X),
-                     cam.get_stream_property_i(RS_STREAM_DEPTH, RS_IMAGE_SIZE_Y),
+        glDrawPixels(cam.get_stream_property_i(RS_DEPTH, RS_IMAGE_SIZE_X),
+                     cam.get_stream_property_i(RS_DEPTH, RS_IMAGE_SIZE_Y),
                      GL_RED, GL_UNSIGNED_SHORT, cam.get_depth_image());
 
 		glfwSwapBuffers(win);

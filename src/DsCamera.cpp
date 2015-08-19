@@ -85,7 +85,7 @@ void DsCamera::StartStream(int streamIdentifier, const rs::StreamConfiguration &
 	StopBackgroundCapture();
 	CheckDS(ds, "stopCapture", ds->stopCapture());
 
-	if (streamIdentifier & RS_STREAM_DEPTH)
+    if (streamIdentifier & RS_DEPTH)
 	{
 		if (c.format != rs::FrameFormat::Z16) throw std::runtime_error("Only Z16 is supported");
 		CheckDS(ds, "enableZ", ds->enableZ(true));
@@ -93,7 +93,7 @@ void DsCamera::StartStream(int streamIdentifier, const rs::StreamConfiguration &
 		depthFrame.reset(new TripleBufferedFrame(c.width, c.height - 1, sizeof(uint16_t)));
 		zConfig = c;
 	}
-	else if (streamIdentifier & RS_STREAM_RGB)
+    else if (streamIdentifier & RS_COLOR)
 	{
 		if (c.format != rs::FrameFormat::YUYV) throw std::runtime_error("Only YUYV is supported");
 
@@ -121,10 +121,10 @@ rs_intrinsics DsCamera::GetStreamIntrinsics(int stream)
 	DSThird * third = ds->accessThird();
 	switch(stream)
 	{
-	case RS_STREAM_DEPTH:
+    case RS_DEPTH:
 		CheckDS(ds, "getCalibIntrinsicsZ", ds->getCalibIntrinsicsZ(rect));
 		return {{rect.rw, rect.rh}, {rect.rfx, rect.rfy}, {rect.rpx, rect.rpy}, {1,0,0,0,0}};
-	case RS_STREAM_RGB:
+    case RS_COLOR:
 		if(third->isThirdRectificationEnabled())
 		{
 			CheckDS(ds, "getCalibIntrinsicsRectThird", third->getCalibIntrinsicsRectThird(rect));
@@ -141,7 +141,7 @@ rs_intrinsics DsCamera::GetStreamIntrinsics(int stream)
 
 rs_extrinsics DsCamera::GetStreamExtrinsics(int from, int to)
 {
-	if(from != RS_STREAM_DEPTH && to != RS_STREAM_RGB) throw std::runtime_error("unsupported streams");
+    if(from != RS_DEPTH && to != RS_COLOR) throw std::runtime_error("unsupported streams");
 	DSThird * third = ds->accessThird();
 	double rotation[] = {1,0,0,0,1,0,0,0,1};
 	double translation[] = {0,0,0};

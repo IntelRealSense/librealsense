@@ -19,11 +19,11 @@ UVCCamera::UVCCamera(uvc_context_t * c, uvc_device_t * h, int idx) : rs_camera(i
 
 UVCCamera::~UVCCamera()
 {
-    for (auto stream : streamInterfaces)
+    for (auto & stream : streams)
     {
-        if (stream.second->uvcHandle != nullptr)
+        if(stream && stream->uvcHandle)
         {
-            uvc_close(stream.second->uvcHandle);
+            uvc_close(stream->uvcHandle);
         }
     }
     uvc_unref_device(hardware);
@@ -34,27 +34,25 @@ void UVCCamera::EnableStream(int stream, int width, int height, int fps, FrameFo
     int cameraNumber;
     switch(stream)
     {
-    case RS_STREAM_DEPTH: cameraNumber = GetDepthCameraNumber(); break;
-    case RS_STREAM_RGB: cameraNumber = GetColorCameraNumber(); break;
+    case RS_DEPTH: cameraNumber = GetDepthCameraNumber(); break;
+    case RS_COLOR: cameraNumber = GetColorCameraNumber(); break;
     default: throw std::invalid_argument("unsupported stream");
     }
 
-    StreamInterface * streamInterface = new StreamInterface();
-    streamInterface->camera = this;
-    CheckUVC("uvc_open2", uvc_open2(hardware, &streamInterface->uvcHandle, cameraNumber));
-    uvc_print_stream_ctrl(&streamInterface->ctrl, stdout); // Debugging
-
-    streamInterfaces.insert(std::pair<int, StreamInterface *>(stream, streamInterface));
+    streams[stream].reset(new StreamInterface());
+    streams[stream]->camera = this;
+    CheckUVC("uvc_open2", uvc_open2(hardware, &streams[stream]->uvcHandle, cameraNumber));
+    uvc_print_stream_ctrl(&streams[stream]->ctrl, stdout); // Debugging
 
     RetrieveCalibration();
 
     // TODO: Check formats and the like
-    streamInterface->fmt = static_cast<uvc_frame_format>(format);
-    CheckUVC("uvc_get_stream_ctrl_format_size", uvc_get_stream_ctrl_format_size(streamInterface->uvcHandle, &streamInterface->ctrl, streamInterface->fmt, width, height, fps));
+    streams[stream]->fmt = static_cast<uvc_frame_format>(format);
+    CheckUVC("uvc_get_stream_ctrl_format_size", uvc_get_stream_ctrl_format_size(streams[stream]->uvcHandle, &streams[stream]->ctrl, streams[stream]->fmt, width, height, fps));
 
     switch(stream)
     {
-    case RS_STREAM_DEPTH:
+    case RS_DEPTH:
         switch(format)
         {
         case FrameFormat::Z16:
@@ -67,7 +65,7 @@ void UVCCamera::EnableStream(int stream, int width, int height, int fps, FrameFo
         }
         zConfig = {width, height, fps, format};
         break;
-    case RS_STREAM_RGB:
+    case RS_COLOR:
         switch(format)
         {
         case FrameFormat::YUYV:
@@ -86,11 +84,11 @@ void UVCCamera::StartStreaming()
     std::cout << "USB VID: " << usbInfo.vid << std::endl;
     std::cout << "USB PID: " << usbInfo.pid << std::endl;
 
-    SetStreamIntent(!!streamInterfaces[RS_STREAM_DEPTH], !!streamInterfaces[RS_STREAM_RGB]);
+    SetStreamIntent(!!streams[RS_DEPTH], !!streams[RS_COLOR]);
 
-    for(auto & p : streamInterfaces)
+    for(auto & stream : streams)
     {
-        if (p.second->uvcHandle) CheckUVC("uvc_start_streaming", uvc_start_streaming(p.second->uvcHandle, &p.second->ctrl, &UVCCamera::cb, p.second, 0));
+        if (stream && stream->uvcHandle) CheckUVC("uvc_start_streaming", uvc_start_streaming(stream->uvcHandle, &stream->ctrl, &UVCCamera::cb, stream.get(), 0));
     }
 }
 

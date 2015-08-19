@@ -101,6 +101,10 @@ inline std::string ResponseCodeToString(uint32_t rc)
     }
 }
 
+const uint8_t DS_STREAM_DEPTH = 1;
+const uint8_t DS_STREAM_LR = 2;
+const uint8_t DS_STREAM_RGB = 4;
+
 int GetStreamStatus(uvc_device_handle_t *devh);
 
 bool SetStreamIntent(uvc_device_handle_t *devh, uint8_t intent);

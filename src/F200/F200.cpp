@@ -62,7 +62,7 @@ namespace f200
     rs_intrinsics F200Camera::GetStreamIntrinsics(int stream)
     {
         const CameraCalibrationParameters & calib = hardware_io->GetParameters();
-        if(stream == RS_STREAM_RGB)
+        if(stream == RS_COLOR)
         {
             auto inst = Projection::GetInstance();
 
@@ -87,14 +87,14 @@ namespace f200
         const OpticalData & od = hardware_io->GetOpticalData();
         switch(stream)
         {
-        case RS_STREAM_DEPTH: return {{640,480},{od.IRUndistortedFocalLengthPxl.x,od.IRUndistortedFocalLengthPxl.y},{320,240},{1,0,0,0,0}};
+        case RS_DEPTH: return {{640,480},{od.IRUndistortedFocalLengthPxl.x,od.IRUndistortedFocalLengthPxl.y},{320,240},{1,0,0,0,0}};
         default: throw std::runtime_error("unsupported stream");
         }
     }
 
     rs_extrinsics F200Camera::GetStreamExtrinsics(int from, int to)
     {
-        if(from == RS_STREAM_DEPTH && to == RS_STREAM_RGB)
+        if(from == RS_DEPTH && to == RS_COLOR)
         {
             const CameraCalibrationParameters & calib = hardware_io->GetParameters();
             return {{calib.Rt[0][0], calib.Rt[0][1], calib.Rt[0][2],

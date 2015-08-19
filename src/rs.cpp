@@ -211,15 +211,15 @@ int rs_get_stream_property_i(rs_camera * camera, int stream, int prop, rs_error 
     case RS_IMAGE_SIZE_X:
         switch(stream)
         {
-        case RS_STREAM_DEPTH: return camera->depthFrame.get_width();
-        case RS_STREAM_RGB: return camera->colorFrame.get_width();
+        case RS_DEPTH: return camera->depthFrame.get_width();
+        case RS_COLOR: return camera->colorFrame.get_width();
         }
         break;
     case RS_IMAGE_SIZE_Y:
         switch(stream)
         {
-        case RS_STREAM_DEPTH: return camera->depthFrame.get_height();
-        case RS_STREAM_RGB: return camera->colorFrame.get_height();
+        case RS_DEPTH: return camera->depthFrame.get_height();
+        case RS_COLOR: return camera->colorFrame.get_height();
         }
         break;
     }

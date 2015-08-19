@@ -79,11 +79,9 @@ struct rs_extrinsics
 #define RS_FRAME_FORMAT_INVZ			17 //Depth
 #define RS_FRAME_FORMAT_INRI			18 //Depth (24 bit)
 
-// @tofix - this has an overloaded meaning for R200
 // Valid arguments for rsEnableStream/rsStartStream/rsStopStream/rsGetStreamProperty*
-#define RS_STREAM_DEPTH					1
-#define RS_STREAM_LR					2
-#define RS_STREAM_RGB					4
+#define RS_DEPTH                        0
+#define RS_COLOR                        1
 
 #define RS_STREAM_PRESET_BEST_QUALITY   0   /* Preset recommended for best quality and stability */
 

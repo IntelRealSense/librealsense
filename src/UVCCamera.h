@@ -47,7 +47,8 @@ namespace rs
         };
 
         uvc_device_t * hardware = nullptr;
-        std::map<int, StreamInterface *> streamInterfaces;
+
+        std::unique_ptr<StreamInterface> streams[2];
 
         static void cb(uvc_frame_t * frame, void * ptr)
         {
