@@ -80,9 +80,7 @@ struct rs_camera
 	int cameraIdx;
     std::string cameraName;
 
-	rs::USBDeviceInfo usbInfo = {};
-
-	uint64_t frameCount = 0;
+    rs::USBDeviceInfo usbInfo = {};
 
     TripleBufferedFrame<uint16_t> depthFrame;
     TripleBufferedFrame<uint8_t> colorFrame;
@@ -101,7 +99,6 @@ struct rs_camera
 	virtual rs_intrinsics GetStreamIntrinsics(int stream) = 0;
 	virtual rs_extrinsics GetStreamExtrinsics(int from, int to) = 0;
     virtual void ComputeVertexImage() = 0;
-    virtual float GetDepthScale() = 0;
 
     const uint8_t * GetColorImage() const { return colorFrame.front_data(); }
     const uint16_t * GetDepthImage() const { return depthFrame.front_data(); }

@@ -53,6 +53,7 @@ namespace rs
 		explicit			operator bool() const													{ return !!cam; }
         rs_camera *         get_handle() const                                                      { return cam; }
 
+        int					get_index()                                                             { return rs_get_camera_index(cam, auto_error()); }
         const char *        get_name()                                                              { return rs_get_camera_name(cam, auto_error()); }
 
         void				enable_stream(int stream, int width, int height, int fps, int format)	{ rs_enable_stream(cam, stream, width, height, fps, format, auto_error()); }
@@ -61,13 +62,8 @@ namespace rs
         void				stop_streaming()                                                        { rs_stop_streaming(cam, auto_error()); }
         void                wait_all_streams()                                                      { rs_wait_all_streams(cam, auto_error()); }
 
-		const uint16_t *	get_depth_image()														{ return rs_get_depth_image(cam, auto_error()); }
         const uint8_t *		get_color_image()														{ return rs_get_color_image(cam, auto_error()); }
-		int					get_camera_index()														{ return rs_get_camera_index(cam, auto_error()); }
-		uint64_t			get_frame_count()														{ return rs_get_frame_count(cam, auto_error()); }
-
-		int					get_stream_property_i(int stream, int prop)								{ return rs_get_stream_property_i(cam, stream, prop, auto_error()); }
-		float				get_stream_property_f(int stream, int prop)								{ return rs_get_stream_property_f(cam, stream, prop, auto_error()); }
+		const uint16_t *	get_depth_image()														{ return rs_get_depth_image(cam, auto_error()); }
 
         intrinsics          get_stream_intrinsics(int stream)										{ intrinsics intrin; rs_get_stream_intrinsics(cam, stream, &intrin, auto_error()); return intrin; }
         extrinsics          get_stream_extrinsics(int stream_from, int stream_to)					{ extrinsics extrin; rs_get_stream_extrinsics(cam, stream_from, stream_to, &extrin, auto_error()); return extrin; }

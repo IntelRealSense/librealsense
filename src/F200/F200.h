@@ -42,7 +42,6 @@ namespace f200
         rs_intrinsics GetStreamIntrinsics(int stream) override;
         rs_extrinsics GetStreamExtrinsics(int from, int to) override;
         void ComputeVertexImage() override;
-        float GetDepthScale() override;
     };
     
 } // end namespace f200

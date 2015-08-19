@@ -104,12 +104,6 @@ namespace f200
         }
         else throw std::runtime_error("unsupported streams");
     }
-        
-    float F200Camera::GetDepthScale()
-    {
-        IVCAMCalibrator<float> * calibration = Projection::GetInstance()->GetCalibrationObject();
-        return calibration->ivcamToMM(1) * 0.001f;
-    }
 
     struct float2 { float x,y; };
     float2 distort(const float2 & coord, const float coeff[5])

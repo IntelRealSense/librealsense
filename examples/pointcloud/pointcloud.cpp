@@ -142,8 +142,7 @@ int main(int argc, char * argv[]) try
 
         glPushAttrib(GL_ALL_ATTRIB_BITS);
         glBindTexture(GL_TEXTURE_2D, tex);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, cam.get_stream_property_i(RS_COLOR, RS_IMAGE_SIZE_X),
-                     cam.get_stream_property_i(RS_COLOR, RS_IMAGE_SIZE_Y), 0, GL_RGB, GL_UNSIGNED_BYTE, cam.get_color_image());
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, color_intrin.image_size[0], color_intrin.image_size[1], 0, GL_RGB, GL_UNSIGNED_BYTE, cam.get_color_image());
         glMatrixMode(GL_PROJECTION);
 		glPushMatrix();
         gluPerspective(60, (float)width/height, 0.01f, 20.0f);
@@ -156,7 +155,6 @@ int main(int argc, char * argv[]) try
         glRotatef(app_state.yaw, 0, 1, 0);
         glTranslatef(0,0,-0.5f);
 
-        float scale = rs_get_depth_scale(cam.get_handle(), NULL);
 		glEnable(GL_DEPTH_TEST);
         glEnable(GL_TEXTURE_2D);
 

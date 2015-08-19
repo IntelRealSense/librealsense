@@ -119,6 +119,13 @@ void rs_delete_context(rs_context * context, rs_error ** error)
     END_EXCEPTION_FIREWALL
 }
 
+int	rs_get_camera_index(rs_camera * camera, rs_error ** error)
+{
+    BEGIN_EXCEPTION_FIREWALL
+    return camera->cameraIdx;
+    END_EXCEPTION_FIREWALL
+}
+
 const char * rs_get_camera_name(rs_camera * camera, rs_error ** error)
 {
     BEGIN_EXCEPTION_FIREWALL
@@ -154,27 +161,6 @@ void rs_stop_streaming(struct rs_camera * camera, struct rs_error ** error)
     END_EXCEPTION_FIREWALL
 }
 
-int	rs_get_camera_index(rs_camera * camera, rs_error ** error)
-{
-    BEGIN_EXCEPTION_FIREWALL
-    return camera->cameraIdx;
-    END_EXCEPTION_FIREWALL
-}
-
-uint64_t rs_get_frame_count(rs_camera * camera, rs_error ** error)
-{
-    BEGIN_EXCEPTION_FIREWALL
-    return camera->frameCount;
-    END_EXCEPTION_FIREWALL
-}
-
-float rs_get_depth_scale(rs_camera * camera, rs_error ** error)
-{
-    BEGIN_EXCEPTION_FIREWALL
-    return camera->GetDepthScale();
-    END_EXCEPTION_FIREWALL
-}
-
 void rs_wait_all_streams(struct rs_camera * camera, struct rs_error ** error)
 {
     BEGIN_EXCEPTION_FIREWALL
@@ -200,44 +186,6 @@ const float * rs_get_vertex_image(rs_camera * camera, rs_error ** error)
 {
     BEGIN_EXCEPTION_FIREWALL
     return camera->GetVertexImage();
-    END_EXCEPTION_FIREWALL
-}
-
-int rs_get_stream_property_i(rs_camera * camera, int stream, int prop, rs_error ** error)
-{
-    BEGIN_EXCEPTION_FIREWALL        
-    switch (prop)
-    {
-    case RS_IMAGE_SIZE_X:
-        switch(stream)
-        {
-        case RS_DEPTH: return camera->depthFrame.get_width();
-        case RS_COLOR: return camera->colorFrame.get_width();
-        }
-        break;
-    case RS_IMAGE_SIZE_Y:
-        switch(stream)
-        {
-        case RS_DEPTH: return camera->depthFrame.get_height();
-        case RS_COLOR: return camera->colorFrame.get_height();
-        }
-        break;
-    }
-    throw std::runtime_error("invalid stream property");
-    END_EXCEPTION_FIREWALL
-}
-
-float rs_get_stream_property_f(rs_camera * camera, int stream, int prop, rs_error ** error)
-{
-    BEGIN_EXCEPTION_FIREWALL
-    switch (prop)
-    {
-    case RS_FOCAL_LENGTH_X: return camera->GetStreamIntrinsics(stream).focal_length[0];
-    case RS_FOCAL_LENGTH_Y: return camera->GetStreamIntrinsics(stream).focal_length[1];
-    case RS_PRINCIPAL_POINT_X: return camera->GetStreamIntrinsics(stream).principal_point[0];
-    case RS_PRINCIPAL_POINT_Y: return camera->GetStreamIntrinsics(stream).principal_point[1];
-    default: return 0.0f;
-    }
     END_EXCEPTION_FIREWALL
 }
 

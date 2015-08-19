@@ -63,7 +63,6 @@ void UVCCamera::EnableStream(int stream, int width, int height, int fps, FrameFo
             break;
         default: throw std::runtime_error("invalid frame format");
         }
-        zConfig = {width, height, fps, format};
         break;
     case RS_COLOR:
         switch(format)
@@ -72,7 +71,6 @@ void UVCCamera::EnableStream(int stream, int width, int height, int fps, FrameFo
             colorFrame.resize(width, height, 3); break;
         default: throw std::runtime_error("invalid frame format");
         }
-        rgbConfig = {width, height, fps, format};
         break;
     }
 }
@@ -113,8 +111,6 @@ void UVCCamera::frameCallback(uvc_frame_t * frame, StreamInterface * stream)
         memcpy(colorFrame.back_data(), color_cvt, (frame->width * frame->height) * 3);
         colorFrame.swap_back();
     }
-    
-    frameCount++;
 }
     
 } // end namespace rs

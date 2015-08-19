@@ -71,9 +71,6 @@ namespace rs
         void EnableStream(int stream, int width, int height, int fps, FrameFormat format) override final;
         void StartStreaming() override final;
         void StopStreaming() override final;
-
-        rs::StreamConfiguration zConfig;
-        rs::StreamConfiguration rgbConfig;
     };
     
 } // end namespace rs

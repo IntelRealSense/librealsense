@@ -23,17 +23,10 @@ int main(int argc, char * argv[]) try
         cam.enable_stream_preset(RS_COLOR, RS_STREAM_PRESET_BEST_QUALITY);
         cam.start_streaming();
 
-		float hfov = compute_fov(
-            cam.get_stream_property_i(RS_DEPTH, RS_IMAGE_SIZE_X),
-            cam.get_stream_property_f(RS_DEPTH, RS_FOCAL_LENGTH_X),
-            cam.get_stream_property_f(RS_DEPTH, RS_PRINCIPAL_POINT_X));
-		float vfov = compute_fov(
-            cam.get_stream_property_i(RS_DEPTH, RS_IMAGE_SIZE_Y),
-            cam.get_stream_property_f(RS_DEPTH, RS_FOCAL_LENGTH_Y),
-            cam.get_stream_property_f(RS_DEPTH, RS_PRINCIPAL_POINT_Y));
+        auto intrin = cam.get_stream_intrinsics(RS_DEPTH);
+        float hfov = compute_fov(intrin.image_size[0], intrin.focal_length[0], intrin.principal_point[0]);
+        float vfov = compute_fov(intrin.image_size[1], intrin.focal_length[1], intrin.principal_point[1]);
 		std::cout << "Computed FOV " << hfov << " " << vfov << std::endl;
-
-
 	}
 	if (!cam) throw std::runtime_error("No camera detected. Is it plugged in?");
 
@@ -48,17 +41,15 @@ int main(int argc, char * argv[]) try
 		glClear(GL_COLOR_BUFFER_BIT);
 		glPixelZoom(1, -1);
 
+        auto c = cam.get_stream_intrinsics(RS_COLOR);
 		glRasterPos2f(-1, 1);
 		glPixelTransferf(GL_RED_SCALE, 1);
-        glDrawPixels(cam.get_stream_property_i(RS_COLOR, RS_IMAGE_SIZE_X),
-                     cam.get_stream_property_i(RS_COLOR, RS_IMAGE_SIZE_Y),
-                     GL_RGB, GL_UNSIGNED_BYTE, cam.get_color_image());
+        glDrawPixels(c.image_size[0], c.image_size[1], GL_RGB, GL_UNSIGNED_BYTE, cam.get_color_image());
 
+        auto d = cam.get_stream_intrinsics(RS_DEPTH);
 		glRasterPos2f(0, 1);
 		glPixelTransferf(GL_RED_SCALE, 30);
-        glDrawPixels(cam.get_stream_property_i(RS_DEPTH, RS_IMAGE_SIZE_X),
-                     cam.get_stream_property_i(RS_DEPTH, RS_IMAGE_SIZE_Y),
-                     GL_RED, GL_UNSIGNED_SHORT, cam.get_depth_image());
+        glDrawPixels(d.image_size[0], d.image_size[1], GL_RED, GL_UNSIGNED_SHORT, cam.get_depth_image());
 
 		glfwSwapBuffers(win);
 	}

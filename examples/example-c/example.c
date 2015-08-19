@@ -26,6 +26,7 @@ int main(int argc, char * argv[])
 {
 	struct rs_context * ctx;
 	struct rs_camera * cam;
+    struct rs_intrinsics color_intrin, depth_intrin;
 	float hfov, vfov;
 	GLFWwindow * win;
     int i;
@@ -40,14 +41,10 @@ int main(int argc, char * argv[])
         rs_enable_stream_preset(cam, RS_COLOR, RS_STREAM_PRESET_BEST_QUALITY, &error); check_error();
         rs_start_streaming(cam, &error); check_error();
 
-		hfov = compute_fov(
-            rs_get_stream_property_i(cam, RS_DEPTH, RS_IMAGE_SIZE_X, NULL),
-            rs_get_stream_property_f(cam, RS_DEPTH, RS_FOCAL_LENGTH_X, NULL),
-            rs_get_stream_property_f(cam, RS_DEPTH, RS_PRINCIPAL_POINT_X, NULL));
-		vfov = compute_fov(
-            rs_get_stream_property_i(cam, RS_DEPTH, RS_IMAGE_SIZE_Y, NULL),
-            rs_get_stream_property_f(cam, RS_DEPTH, RS_FOCAL_LENGTH_Y, NULL),
-            rs_get_stream_property_f(cam, RS_DEPTH, RS_PRINCIPAL_POINT_Y, NULL));
+        rs_get_stream_intrinsics(cam, RS_COLOR, &color_intrin, &error); check_error();
+        rs_get_stream_intrinsics(cam, RS_DEPTH, &depth_intrin, &error); check_error();
+        hfov = compute_fov(depth_intrin.image_size[0], depth_intrin.focal_length[0], depth_intrin.principal_point[0]);
+        vfov = compute_fov(depth_intrin.image_size[1], depth_intrin.focal_length[1], depth_intrin.principal_point[1]);
 		printf("Computed FOV %f %f\n", hfov, vfov);
 	}
 	if (!cam)
@@ -69,15 +66,11 @@ int main(int argc, char * argv[])
 
         glRasterPos2f(-1, 1);
 		glPixelTransferf(GL_RED_SCALE, 1);
-        glDrawPixels(rs_get_stream_property_i(cam, RS_COLOR, RS_IMAGE_SIZE_X, NULL),
-                     rs_get_stream_property_i(cam, RS_COLOR, RS_IMAGE_SIZE_Y, NULL),
-                     GL_RGB, GL_UNSIGNED_BYTE, rs_get_color_image(cam, &error)); check_error();
+        glDrawPixels(color_intrin.image_size[0], color_intrin.image_size[1], GL_RGB, GL_UNSIGNED_BYTE, rs_get_color_image(cam, &error)); check_error();
 
         glRasterPos2f(0, 1);
 		glPixelTransferf(GL_RED_SCALE, 30);
-        glDrawPixels(rs_get_stream_property_i(cam, RS_DEPTH, RS_IMAGE_SIZE_X, NULL),
-                     rs_get_stream_property_i(cam, RS_DEPTH, RS_IMAGE_SIZE_Y, NULL),
-                     GL_RED, GL_UNSIGNED_SHORT, rs_get_depth_image(cam, &error)); check_error();
+        glDrawPixels(depth_intrin.image_size[0], depth_intrin.image_size[1], GL_RED, GL_UNSIGNED_SHORT, rs_get_depth_image(cam, &error)); check_error();
 
 		glfwSwapBuffers(win);
 	}
