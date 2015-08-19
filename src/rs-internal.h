@@ -85,9 +85,8 @@ struct rs_camera
 	uint32_t streamingModeBitfield = 0;
 	uint64_t frameCount = 0;
 
-	std::mutex frameMutex;
-    TripleBufferedFrame depthFrame;
-    TripleBufferedFrame colorFrame;
+    TripleBufferedFrame<uint16_t> depthFrame;
+    TripleBufferedFrame<uint8_t> colorFrame;
     std::vector<float> vertices;
 
 	rs_camera(int index) : cameraIdx(index) {}
@@ -105,8 +104,8 @@ struct rs_camera
     virtual void ComputeVertexImage() = 0;
     virtual float GetDepthScale() = 0;
 
-    const uint8_t * GetColorImage() const { return colorFrame.front.data(); }
-    const uint16_t * GetDepthImage() const { return reinterpret_cast<const uint16_t *>(depthFrame.front.data()); }
+    const uint8_t * GetColorImage() const { return colorFrame.front_data(); }
+    const uint16_t * GetDepthImage() const { return depthFrame.front_data(); }
     const float * GetVertexImage() const { return vertices.data(); }
 };
 

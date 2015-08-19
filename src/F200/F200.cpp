@@ -147,7 +147,7 @@ namespace f200
         const int yShift = (inst->m_currentDepthHeight == 240) ? 1 : 0;
         const CameraCalibrationParameters & p = inst->m_calibration.params;
 
-        auto inDepth = reinterpret_cast<const uint16_t *>(depthFrame.front.data());
+        auto inDepth = depthFrame.front_data();
         auto vert = vertices.data();
         for(int i=0; i<inst->m_currentDepthHeight; i++)
         {

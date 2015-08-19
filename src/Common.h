@@ -32,32 +32,42 @@
 // Triple Buffer //
 ///////////////////
 
-struct TripleBufferedFrame
+template<class T> class TripleBufferedFrame
 {
-    int width, height, stride;
-    std::vector<uint8_t> front;    // Read by application
-    std::vector<uint8_t> back;     // Write by camera
-    std::vector<uint8_t> pending;  // Middle
-    bool updated = false;
-    
-    TripleBufferedFrame() : width(), height(), stride() {}
-    TripleBufferedFrame(int width, int height, int stride) : width(width), height(height), stride(stride)
+    volatile bool updated=false;
+    int width=0, height=0, channels=0;
+    std::vector<T> front, middle, back;
+    std::mutex mutex;
+public:
+    int get_width() const { return width; }
+    int get_height() const { return height; }
+
+    void resize(int width, int height, int channels)
     {
-        front.resize(width * height * stride);
-        back.resize(width * height * stride);
-        pending.resize(width * height * stride);
+        this->width = width;
+        this->height = height;
+        this->channels = channels;
+        front.resize(width * height * channels);
+        back = middle = front;
     }
-    
+
+    const T * front_data() const { return front.data(); }
+    T * back_data() { return back.data(); }
+
     void swap_back()
     {
-        std::swap(back, pending);
+        std::lock_guard<std::mutex> guard(mutex);
+        back.swap(middle);
         updated = true;
     }
     
-    void swap_front()
+    bool swap_front()
     {
-        std::swap(front, pending);
+        if(!updated) return false;
+        std::lock_guard<std::mutex> guard(mutex);
+        front.swap(middle);
         updated = false;
+        return true;
     }
 };
 

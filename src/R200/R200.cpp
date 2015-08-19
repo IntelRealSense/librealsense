@@ -76,7 +76,7 @@ namespace r200
     void R200Camera::ComputeVertexImage()
     {
         auto depth_intrin = GetStreamIntrinsics(RS_STREAM_DEPTH);
-        auto inDepth = GetDepthImage();
+        auto inDepth = depthFrame.front_data();
         auto outVert = vertices.data();
         for(int y=0; y<depth_intrin.image_size[1]; ++y)
         {
