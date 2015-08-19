@@ -139,7 +139,8 @@ namespace f200
         return {x, y, z};
     }
 
-    const uint16_t * F200Camera::GetDepthImage()
+
+    void F200Camera::WaitAllStreams()
     {
         if (depthFrame.updated)
         {
@@ -152,7 +153,6 @@ namespace f200
             const int yShift = (inst->m_currentDepthHeight == 240) ? 1 : 0;
             const CameraCalibrationParameters & p = inst->m_calibration.params;
 
-            vertices.resize(640*480*3);
             auto inDepth = reinterpret_cast<const uint16_t *>(depthFrame.front.data());
             auto vert = vertices.data();
             for(int i=0; i<inst->m_currentDepthHeight; i++)
@@ -177,19 +177,14 @@ namespace f200
                 }
             }
 
-            rectifier->rectify(reinterpret_cast<const uint16_t *>(depthFrame.front.data()));
+            //rectifier->rectify(reinterpret_cast<const uint16_t *>(depthFrame.front.data()));
         }
-        return rectifier->getDepth();
-    }
-        
-    const uint8_t * F200Camera::GetColorImage()
-    {
+
         if (colorFrame.updated)
         {
             std::lock_guard<std::mutex> guard(frameMutex);
             colorFrame.swap_front();
         }
-        return reinterpret_cast<const uint8_t *>(colorFrame.front.data());
     }
 
 } // end f200

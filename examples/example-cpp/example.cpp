@@ -43,6 +43,7 @@ int main(int argc, char * argv[]) try
 	while (!glfwWindowShouldClose(win))
 	{
 		glfwPollEvents();
+        cam.wait_all_streams();
 
 		glfwMakeContextCurrent(win);
 		glClear(GL_COLOR_BUFFER_BIT);

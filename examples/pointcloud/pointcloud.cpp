@@ -136,8 +136,8 @@ int main(int argc, char * argv[]) try
 
 		int width, height;
 		glfwGetWindowSize(win, &width, &height);
-		
-        auto depth = cam.get_depth_image();
+
+        cam.wait_all_streams();
 
         glViewport(0, 0, width, height);
         glClearColor(0.0f, 116/255.0f, 197/255.0f, 1.0f);

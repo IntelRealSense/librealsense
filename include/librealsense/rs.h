@@ -20,7 +20,7 @@ int 				rs_configure_streams	(struct rs_camera * camera, struct rs_error ** erro
 void				rs_start_stream			(struct rs_camera * camera, int stream, int width, int height, int fps, int format, struct rs_error ** error);
 void				rs_start_stream_preset	(struct rs_camera * camera, int stream, int preset, struct rs_error ** error);
 void				rs_stop_stream			(struct rs_camera * camera, int stream, struct rs_error ** error);
-float               rs_get_depth_scale      (struct rs_camera * camera, struct rs_error ** error);
+void                rs_wait_all_streams     (struct rs_camera * camera, struct rs_error ** error);
 const uint16_t *	rs_get_depth_image		(struct rs_camera * camera, struct rs_error ** error);
 const float *       rs_get_vertex_image		(struct rs_camera * camera, struct rs_error ** error);
 const uint8_t *		rs_get_color_image		(struct rs_camera * camera, struct rs_error ** error);
@@ -31,6 +31,7 @@ int					rs_get_stream_property_i(struct rs_camera * camera, int stream, int prop
 float				rs_get_stream_property_f(struct rs_camera * camera, int stream, int prop, struct rs_error ** error); // RS_FOCAL_LENGTH_X, RS_FOCAL_LENGTH_Y, RS_PRINCIPAL_POINT_X, RS_PRINCIPAL_POINT_Y
 void                rs_get_stream_intrinsics(struct rs_camera * camera, int stream, struct rs_intrinsics * intrin, struct rs_error ** error);
 void                rs_get_stream_extrinsics(struct rs_camera * camera, int stream_from, int stream_to, struct rs_extrinsics * extrin, struct rs_error ** error);
+float               rs_get_depth_scale      (struct rs_camera * camera, struct rs_error ** error);
 
 const char *		rs_get_failed_function	(struct rs_error * error);
 const char *		rs_get_error_message	(struct rs_error * error);

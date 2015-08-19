@@ -155,6 +155,13 @@ float rs_get_depth_scale(rs_camera * camera, rs_error ** error)
     END_EXCEPTION_FIREWALL
 }
 
+void rs_wait_all_streams(struct rs_camera * camera, struct rs_error ** error)
+{
+    BEGIN_EXCEPTION_FIREWALL
+    camera->WaitAllStreams();
+    END_EXCEPTION_FIREWALL
+}
+
 const uint8_t *	rs_get_color_image(rs_camera * camera, rs_error ** error)
 {
     BEGIN_EXCEPTION_FIREWALL

@@ -59,6 +59,8 @@ namespace rs
 		void				start_stream(int stream, int width, int height, int fps, int format)	{ return rs_start_stream(cam, stream, width, height, fps, format, auto_error()); }
         void				start_stream_preset(int stream, int preset)                             { return rs_start_stream_preset(cam, stream, preset, auto_error()); }
 		void				stop_stream(int stream)													{ return rs_stop_stream(cam, stream, auto_error()); }
+        void                wait_all_streams()                                                      { return rs_wait_all_streams(cam, auto_error()); }
+
 		const uint16_t *	get_depth_image()														{ return rs_get_depth_image(cam, auto_error()); }
 		const uint8_t *		get_color_image()														{ return rs_get_color_image(cam, auto_error()); }
 		int 				is_streaming()															{ return rs_is_streaming(cam, auto_error()); }

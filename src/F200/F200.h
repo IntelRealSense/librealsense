@@ -16,11 +16,8 @@ namespace f200
     
     class F200Camera : public rs::UVCCamera
     {
-        
         std::unique_ptr<IVCAMHardwareIO> hardware_io;
         std::unique_ptr<IVRectifier> rectifier;
-        std::vector<float> vertices;
-
 
     public:
         
@@ -46,9 +43,7 @@ namespace f200
         rs_extrinsics GetStreamExtrinsics(int from, int to) override;
         
         float GetDepthScale() override;
-        const uint16_t * GetDepthImage() override;
-        const float * GetVertexImage() override { return vertices.data(); }
-        const uint8_t * GetColorImage() override;
+        void WaitAllStreams() override;
     };
     
 } // end namespace f200

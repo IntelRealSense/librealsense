@@ -88,6 +88,7 @@ struct rs_camera
 	std::mutex frameMutex;
     TripleBufferedFrame depthFrame;
     TripleBufferedFrame colorFrame;
+    std::vector<float> vertices;
 
 	rs_camera(int index) : cameraIdx(index) {}
 	virtual ~rs_camera() {}
@@ -101,9 +102,11 @@ struct rs_camera
 	virtual rs_extrinsics GetStreamExtrinsics(int from, int to) = 0;
     
     virtual float GetDepthScale() = 0;
-    virtual const uint16_t * GetDepthImage() = 0;
-    virtual const float * GetVertexImage() = 0;
-    virtual const uint8_t * GetColorImage() = 0;
+    virtual void WaitAllStreams() = 0;
+
+    const uint8_t * GetColorImage() const { return colorFrame.front.data(); }
+    const uint16_t * GetDepthImage() const { return reinterpret_cast<const uint16_t *>(depthFrame.front.data()); }
+    const float * GetVertexImage() const { return vertices.data(); }
 };
 
 struct rs_context

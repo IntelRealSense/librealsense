@@ -90,7 +90,9 @@ void UVCCamera::StartStream(int streamIdentifier, const StreamConfiguration & c)
             case FrameFormat::Z16:
             case FrameFormat::INVR:
             case FrameFormat::INVZ:
-                depthFrame = TripleBufferedFrame(c.width, c.height, sizeof(uint16_t)); break;
+                depthFrame = TripleBufferedFrame(c.width, c.height, sizeof(uint16_t));
+                vertices.resize(c.width * c.height * 3);
+                break;
             default: throw std::runtime_error("invalid frame format");
             }
             zConfig = c;
