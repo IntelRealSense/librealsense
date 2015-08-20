@@ -164,7 +164,7 @@
   <ItemGroup>
     <ClCompile Include="..\examples\camera-dev\camera_dev.cpp" />
     <ClCompile Include="..\examples\camera-dev\gfx_util.cpp" />
-    <ClCompile Include="test.cpp" />
+    <ClCompile Include="..\src\api_test.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
