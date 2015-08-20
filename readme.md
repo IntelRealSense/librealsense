@@ -1,6 +1,6 @@
 # librealsense
 
-A libusb-based library for the RealSense F200 (IVCAM 1.0, 1.5) and RealSense R200 (DS4). It targets Apple OSX 10.7+ and "recent" versions of Linux (tested on Ubuntu 14.04). For cross-platform API development, it consumes DSAPI on Windows. 
+A libusb-based library for the RealSense F200 (IVCAM 1.0, 1.5) and RealSense R200 (DS4). It targets Mac OSX 10.7+ and "recent" versions of Linux (tested + developed on Ubuntu 14.04 LTS). For cross-platform API development, it consumes DSAPI on Windows. 
 
 Dependency management is done manually at the moment, pending the creation of installer scripts to automate the process. 
 
@@ -23,5 +23,9 @@ Dependency management is done manually at the moment, pending the creation of in
   * `sudo apt-get update && apt-get upgrade`
 3. Install appropriate dependencies via apt-get
   * `sudo apt-get install glfw3`
-  * `suto apt-get install libusb-de`
+  * `suto apt-get install libusb-dev`
+
+## License
+
+For internal distribution only. 
 
