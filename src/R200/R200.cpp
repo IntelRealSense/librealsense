@@ -11,7 +11,7 @@ using namespace rs;
 
 namespace r200
 {
-    R200Camera::R200Camera(uvc_context_t * ctx, uvc_device_t * device, int idx) : UVCCamera(ctx, device, idx)
+    R200Camera::R200Camera(uvc_context_t * ctx, uvc_device_t * device) : UVCCamera(ctx, device)
     {
 
     }
@@ -56,8 +56,8 @@ namespace r200
     void R200Camera::SetStreamIntent(bool depth, bool color)
     {
         uint32_t streamingModeBitfield = 0;
-        if(depth) streamingModeBitfield |= r200::DS_STREAM_DEPTH;
-        if(color) streamingModeBitfield |= r200::DS_STREAM_RGB;
+        if(depth) streamingModeBitfield |= STATUS_BIT_Z_STREAMING;
+        if(color) streamingModeBitfield |= STATUS_BIT_WEB_STREAMING;
 
         uvc_device_handle_t * handle = nullptr;
         if(!handle && streams[RS_DEPTH]) handle = streams[RS_DEPTH]->uvcHandle;

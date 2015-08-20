@@ -44,26 +44,20 @@ void rs_context::QueryDeviceList()
 	while (list[index] != nullptr)
 	{
 		auto dev = list[index];
-
 		uvc_ref_device(dev);
 
 		uvc_device_descriptor_t * desc;
 		if (uvc_get_device_descriptor(dev, &desc) == UVC_SUCCESS)
 		{
-			if (desc->idProduct == 2688)
-			{
-                cameras.push_back(std::make_shared<r200::R200Camera>(privateContext, list[index], index));
+            switch(desc->idProduct)
+            {
+            case 2688: cameras.push_back(std::make_shared<r200::R200Camera>(privateContext, list[index])); break;
+            case 2662: cameras.push_back(std::make_shared<f200::F200Camera>(privateContext, list[index])); break;
 			}
-
-			else if (desc->idProduct == 2662)
-			{
-                // Special case for ivcam that it needs the libuvc context
-				cameras.push_back(std::make_shared<f200::F200Camera>(privateContext, list[index], index));
-			}
-
 			uvc_free_device_descriptor(desc);
 		}
-		index++;
+
+        ++index;
 	}
 
 	uvc_free_device_list(list, 1);
@@ -110,13 +104,6 @@ void rs_delete_context(rs_context * context, rs_error ** error)
 {
     BEGIN_EXCEPTION_FIREWALL
     delete context;
-    END_EXCEPTION_FIREWALL
-}
-
-int	rs_get_camera_index(rs_camera * camera, rs_error ** error)
-{
-    BEGIN_EXCEPTION_FIREWALL
-    return camera->cameraIdx;
     END_EXCEPTION_FIREWALL
 }
 

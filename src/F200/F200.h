@@ -21,7 +21,7 @@ namespace f200
 
     public:
         
-        F200Camera(uvc_context_t * ctx, uvc_device_t * device, int num);
+        F200Camera(uvc_context_t * ctx, uvc_device_t * device);
         ~F200Camera();
         
         int GetDepthCameraNumber() const override final { return 1; }

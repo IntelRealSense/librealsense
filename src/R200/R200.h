@@ -14,7 +14,7 @@ namespace r200
     {
         std::unique_ptr<DS4HardwareIO> hardware_io;
     public:
-        R200Camera(uvc_context_t * ctx, uvc_device_t * device, int num);
+        R200Camera(uvc_context_t * ctx, uvc_device_t * device);
         ~R200Camera();
 
         int GetDepthCameraNumber() const override final { return 1; }

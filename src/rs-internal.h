@@ -42,15 +42,9 @@ struct rs_error
 
 struct rs_camera
 {
-	NO_MOVE(rs_camera);
-
-	int cameraIdx;
     std::string cameraName;
 
     rs::USBDeviceInfo usbInfo = {};
-
-	rs_camera(int index) : cameraIdx(index) {}
-    ~rs_camera() {}
 
     virtual void EnableStream(int stream, int width, int height, int fps, int format) = 0;
     virtual void EnableStreamPreset(int stream, int preset) = 0;

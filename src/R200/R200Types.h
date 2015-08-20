@@ -37,6 +37,27 @@ struct CalibrationMetadata
     uint16_t numRectifiedModesThird;
     uint16_t numRectifiedModesPlatform;
 };
+
+struct UnrectifiedIntrinsics
+{
+    float fx;
+    float fy;
+    float px;
+    float py;
+    float k[5];
+    uint32_t w;
+    uint32_t h;
+};
+
+struct RectifiedIntrinsics
+{
+    float rfx;
+    float rfy;
+    float rpx;
+    float rpy;
+    uint32_t rw;
+    uint32_t rh;
+};
     
 struct CameraCalibrationParameters
 {

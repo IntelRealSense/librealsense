@@ -47,16 +47,22 @@ namespace rs
 
     class UVCCamera : public rs_camera
     {
-        NO_MOVE(UVCCamera);
-
-    protected:
-        
+    protected: 
         struct StreamInterface
         {
             uvc_device_handle_t * uvcHandle = nullptr;
             uvc_stream_ctrl_t ctrl;
-            TripleBuffer buffer;
             ResolutionMode mode;
+
+            volatile bool updated = false;
+            std::vector<uint8_t> front, middle, back;
+            std::mutex mutex;
+
+            void set_mode(const ResolutionMode & mode);
+
+            template<class T> const T * get_image() const { return reinterpret_cast<const T *>(front.data()); }
+            bool update_image();
+            void on_frame(uvc_frame_t * frame);
         };
 
         uvc_context_t * internalContext;
@@ -65,10 +71,8 @@ namespace rs
         std::vector<float> vertices;
 
         std::vector<ResolutionMode> modes;
-
     public:
-
-        UVCCamera(uvc_context_t * ctx, uvc_device_t * device, int num);
+        UVCCamera(uvc_context_t * ctx, uvc_device_t * device);
         ~UVCCamera();
 
         void EnableStream(int stream, int width, int height, int fps, int format) override final;
@@ -76,8 +80,8 @@ namespace rs
         void StopStreaming() override final;
         void WaitAllStreams() override final;
 
-        const uint8_t * GetColorImage() const override final { return streams[RS_COLOR] ? streams[RS_COLOR]->buffer.front_data() : nullptr; }
-        const uint16_t * GetDepthImage() const override final { return streams[RS_DEPTH] ? reinterpret_cast<const uint16_t *>(streams[RS_DEPTH]->buffer.front_data()) : nullptr; }
+        const uint8_t * GetColorImage() const override final { return streams[RS_COLOR] ? streams[RS_COLOR]->get_image<uint8_t>() : nullptr; }
+        const uint16_t * GetDepthImage() const override final { return streams[RS_DEPTH] ? streams[RS_DEPTH]->get_image<uint16_t>() : nullptr; }
         const float * GetVertexImage() const override final { return vertices.data(); }
 
         rs_intrinsics GetStreamIntrinsics(int stream) const override final;
