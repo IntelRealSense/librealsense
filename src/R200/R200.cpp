@@ -24,12 +24,12 @@ namespace r200
     static ResolutionMode MakeDepthMode(int w, int h, const RectifiedIntrinsics & i)
     {
         assert(i.rw == w+12 && i.rh == h+12);
-        return {RS_DEPTH, w,h,0,rs::FrameFormat::Z16, 628,h+1,0,UVC_FRAME_FORMAT_Z16, {{w,h}, {i.rfx,i.rfy}, {i.rpx-6,i.rpy-6}, {0,0,0,0,0}}};
+        return {RS_DEPTH, w,h,0,RS_Z16, 628,h+1,0,UVC_FRAME_FORMAT_Z16, {{w,h}, {i.rfx,i.rfy}, {i.rpx-6,i.rpy-6}, {0,0,0,0,0}}};
     }
 
     static ResolutionMode MakeColorMode(const UnrectifiedIntrinsics & i)
     {
-        return {RS_COLOR, i.w,i.h,60,rs::FrameFormat::RGB, i.w,i.h,59,UVC_FRAME_FORMAT_YUYV, {{i.w,i.h}, {i.fx,i.fy}, {i.px,i.py}, {i.k[0],i.k[1],i.k[2],i.k[3],i.k[4]}}};
+        return {RS_COLOR, i.w,i.h,60,RS_RGB, i.w,i.h,59,UVC_FRAME_FORMAT_YUYV, {{i.w,i.h}, {i.fx,i.fy}, {i.px,i.py}, {i.k[0],i.k[1],i.k[2],i.k[3],i.k[4]}}};
     }
 
     void R200Camera::RetrieveCalibration()

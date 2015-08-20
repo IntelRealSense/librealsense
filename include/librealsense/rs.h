@@ -9,6 +9,8 @@
 extern "C" {
 #endif
 	
+struct rs_error;
+
 struct rs_context *	rs_create_context		(int api_version, struct rs_error ** error);
 int					rs_get_camera_count		(struct rs_context * context, struct rs_error ** error);
 struct rs_camera *	rs_get_camera			(struct rs_context * context, int index, struct rs_error ** error);
@@ -52,34 +54,15 @@ struct rs_extrinsics
 }
 #endif
 
-// TODO: Clean up this format list to the bare minimum supported format
-// Valid arguments for rsStartStream
-#define RS_FRAME_FORMAT_UNKNOWN			0
-#define RS_FRAME_FORMAT_ANY				0 // Any supported format
-#define RS_FRAME_FORMAT_UNCOMPRESSED	1
-#define RS_FRAME_FORMAT_COMPRESSED		2
-#define RS_FRAME_FORMAT_YUYV			3 // YUYV/YUV2/YUV422: YUV encoding with one luminance value per pixel and one UV (chrominance) pair for every two pixels.
-#define RS_FRAME_FORMAT_UYVY			4
-#define RS_FRAME_FORMAT_Y12I			5
-#define RS_FRAME_FORMAT_Y16				6
-#define RS_FRAME_FORMAT_Y8				7
-#define RS_FRAME_FORMAT_Z16				8
-#define RS_FRAME_FORMAT_RGB				9
-#define RS_FRAME_FORMAT_BGR				10
-#define RS_FRAME_FORMAT_MJPEG			11
-#define RS_FRAME_FORMAT_GRAY8			12
-#define RS_FRAME_FORMAT_BY8				13
-#define RS_FRAME_FORMAT_INVI			14 //IR
-#define RS_FRAME_FORMAT_RELI			15 //IR
-#define RS_FRAME_FORMAT_INVR			16 //Depth
-#define RS_FRAME_FORMAT_INVZ			17 //Depth
-#define RS_FRAME_FORMAT_INRI			18 //Depth (24 bit)
-
 /* Valid arguments for rs_enable_stream / rs_enable_stream_preset */
-#define RS_DEPTH                        0
-#define RS_COLOR                        1
+#define RS_DEPTH            0
+#define RS_COLOR            1
 
-/* Valid arguments for rs_enable_stream_preset */
-#define RS_STREAM_PRESET_BEST_QUALITY   0   /* Preset recommended for best quality and stability */
+/* Valid arguments for rs_enable_stream's format argument */
+#define RS_Z16              1
+#define RS_RGB              2
+
+/* Valid arguments for rs_enable_stream_preset's preset argument */
+#define RS_BEST_QUALITY     0   /* Preset recommended for best quality and stability */
 
 #endif

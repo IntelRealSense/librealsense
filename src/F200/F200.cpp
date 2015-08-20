@@ -36,7 +36,7 @@ namespace f200
         intrin.focal_length[1] *= h;
         intrin.principal_point[0] *= w;
         intrin.principal_point[1] *= h;
-        return {RS_COLOR, w,h,60,rs::FrameFormat::RGB, w,h,60,UVC_FRAME_FORMAT_YUYV, intrin};
+        return {RS_COLOR, w,h,60,RS_RGB, w,h,60,UVC_FRAME_FORMAT_YUYV, intrin};
     }
 
     void F200Camera::RetrieveCalibration()
@@ -77,7 +77,7 @@ namespace f200
 
             rectifier.reset(new IVRectifier(ivWidth, ivHeight, rect, unrect, rotation));
 
-            modes.push_back({RS_DEPTH, 640,480,60,rs::FrameFormat::Z16, 640,480,60,UVC_FRAME_FORMAT_INVR, unrect});
+            modes.push_back({RS_DEPTH, 640,480,60,RS_Z16, 640,480,60,UVC_FRAME_FORMAT_INVR, unrect});
             modes.push_back(MakeColorMode(calib, 1920, 1080));
             modes.push_back(MakeColorMode(calib, 640, 480));
         }

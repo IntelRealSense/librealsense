@@ -130,7 +130,7 @@ const char * rs_get_camera_name(rs_camera * camera, rs_error ** error)
 void rs_enable_stream(struct rs_camera * camera, int stream, int width, int height, int fps, int format, struct rs_error ** error)
 {
     BEGIN_EXCEPTION_FIREWALL
-    camera->EnableStream(stream, width, height, fps, (rs::FrameFormat)format);
+    camera->EnableStream(stream, width, height, fps, format);
     END_EXCEPTION_FIREWALL
 }
 

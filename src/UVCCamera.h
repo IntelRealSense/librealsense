@@ -36,7 +36,7 @@ namespace rs
 
         int width, height;          // Resolution visible to the library client
         int fps;                    // Framerate visible to the library client
-        rs::FrameFormat format;     // Format visible to the library client
+        int format;                 // Format visible to the library client
 
         int uvcWidth, uvcHeight;    // Resolution advertised over UVC
         int uvcFps;                 // Framerate advertised over UVC
@@ -54,7 +54,7 @@ namespace rs
         struct StreamInterface
         {
             uvc_device_handle_t * uvcHandle = nullptr;
-            uvc_stream_ctrl_t ctrl = uvc_stream_ctrl_t{}; // {0};
+            uvc_stream_ctrl_t ctrl;
             TripleBuffer buffer;
             ResolutionMode mode;
         };
@@ -71,7 +71,7 @@ namespace rs
         UVCCamera(uvc_context_t * ctx, uvc_device_t * device, int num);
         ~UVCCamera();
 
-        void EnableStream(int stream, int width, int height, int fps, FrameFormat format) override final;
+        void EnableStream(int stream, int width, int height, int fps, int format) override final;
         void StartStreaming() override final;
         void StopStreaming() override final;
         void WaitAllStreams() override final;

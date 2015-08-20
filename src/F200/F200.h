@@ -33,8 +33,8 @@ namespace f200
         {
             switch(streamIdentifier)
             {
-            case RS_DEPTH: EnableStream(RS_DEPTH, 640, 480, 60, rs::FrameFormat::Z16); break;
-            case RS_COLOR: EnableStream(RS_COLOR, 640, 480, 60, rs::FrameFormat::RGB); break;
+            case RS_DEPTH: EnableStream(RS_DEPTH, 640, 480, 60, RS_Z16); break;
+            case RS_COLOR: EnableStream(RS_COLOR, 640, 480, 60, RS_RGB); break;
             default: throw std::runtime_error("unsupported stream");
             }
         }

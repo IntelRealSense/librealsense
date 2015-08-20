@@ -19,8 +19,8 @@ int main(int argc, char * argv[]) try
 		std::cout << "Found camera at index " << i << std::endl;
 
 		cam = ctx.get_camera(i);
-        cam.enable_stream_preset(RS_DEPTH, RS_STREAM_PRESET_BEST_QUALITY);
-        cam.enable_stream_preset(RS_COLOR, RS_STREAM_PRESET_BEST_QUALITY);
+        cam.enable_stream_preset(RS_DEPTH, RS_BEST_QUALITY);
+        cam.enable_stream_preset(RS_COLOR, RS_BEST_QUALITY);
         cam.start_streaming();
 
         auto intrin = cam.get_stream_intrinsics(RS_DEPTH);

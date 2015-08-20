@@ -18,31 +18,6 @@
 
 namespace rs
 {
-	enum class FrameFormat
-    {
-		UNKNOWN = 0,
-		ANY = 0, // Any supported format
-		UNCOMPRESSED,
-		COMPRESSED,
-		YUYV, // YUYV/YUV2/YUV422: YUV encoding with one luminance value per pixel and one UV (chrominance) pair for every two pixels.
-		UYVY,
-		Y12I,
-		Y16,
-		Y8,
-		Z16,
-		RGB,
-		BGR,
-		MJPEG,
-		GRAY8,
-		BY8,
-		INVI, //IR
-		RELI, //IR
-		INVR, //Depth
-		INVZ, //Depth
-		INRI, //Depth (24 bit)
-		COUNT
-    };
-
 	struct USBDeviceInfo
 	{
 		std::string serial;
@@ -77,7 +52,7 @@ struct rs_camera
 	rs_camera(int index) : cameraIdx(index) {}
     ~rs_camera() {}
 
-    virtual void EnableStream(int stream, int width, int height, int fps, rs::FrameFormat format) = 0;
+    virtual void EnableStream(int stream, int width, int height, int fps, int format) = 0;
     virtual void EnableStreamPreset(int stream, int preset) = 0;
     virtual void StartStreaming() = 0;
     virtual void StopStreaming() = 0;

@@ -29,7 +29,7 @@ UVCCamera::~UVCCamera()
     uvc_unref_device(hardware);
 }
 
-void UVCCamera::EnableStream(int stream, int width, int height, int fps, FrameFormat format)
+void UVCCamera::EnableStream(int stream, int width, int height, int fps, int format)
 {
     int cameraNumber;
     switch(stream)
@@ -60,29 +60,14 @@ void UVCCamera::EnableStream(int stream, int width, int height, int fps, FrameFo
     CheckUVC("uvc_get_stream_ctrl_format_size", uvc_get_stream_ctrl_format_size(streams[stream]->uvcHandle, &streams[stream]->ctrl,
             mode.uvcFormat, mode.uvcWidth, mode.uvcHeight, mode.uvcFps));
 
-    switch(stream)
+    switch(format)
     {
-    case RS_DEPTH:
-        switch(format)
-        {
-        case FrameFormat::Z16:
-        case FrameFormat::INVR:
-        case FrameFormat::INVZ:
-            streams[stream]->buffer.resize(mode.width * mode.height * sizeof(uint16_t));
-            vertices.resize(mode.width * mode.height * 3);
-            break;
-        default: throw std::runtime_error("invalid frame format");
-        }
-        break;
-    case RS_COLOR:
-        switch(format)
-        {
-        case FrameFormat::RGB:
-            streams[stream]->buffer.resize(mode.width * mode.height * 3); break;
-        default: throw std::runtime_error("invalid frame format");
-        }
-        break;
+    case RS_Z16: streams[stream]->buffer.resize(mode.width * mode.height * sizeof(uint16_t)); break;
+    case RS_RGB: streams[stream]->buffer.resize(mode.width * mode.height * 3); break;
+    default: throw std::runtime_error("invalid frame format");
     }
+
+    if(stream == RS_DEPTH) vertices.resize(mode.width * mode.height * 3);
 }
 
 void UVCCamera::StartStreaming()
