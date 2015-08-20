@@ -84,7 +84,7 @@ namespace f200
             return {{calib.Rt[0][0], calib.Rt[0][1], calib.Rt[0][2],
                      calib.Rt[1][0], calib.Rt[1][1], calib.Rt[1][2],
                      calib.Rt[2][0], calib.Rt[2][1], calib.Rt[2][2]},
-                    {calib.Tt[0], calib.Tt[1], calib.Tt[2]}};
+                    {calib.Tt[0]*0.001f, calib.Tt[1]*0.001f, calib.Tt[2]*0.001f}}; // convert mm to m
         }
         else throw std::runtime_error("unsupported streams");
     }
@@ -94,7 +94,7 @@ namespace f200
         auto inst = Projection::GetInstance();
         if (!inst->m_calibration) throw std::runtime_error("calibration not initialized");
         const CameraCalibrationParameters & p = inst->m_calibration.params;
-        return p.Rmax / 0xFFFF;
+        return (p.Rmax / 0xFFFF) * 0.001f; // convert mm to m
     }
 
 } // end f200

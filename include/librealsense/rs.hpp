@@ -30,16 +30,12 @@ namespace rs
 
     struct intrinsics : rs_intrinsics
     {
-        /*std::array<float,2>	project(const float point[3]) const										{ std::array<float,2> pixel; rs_project_point_to_pixel(point, *this, pixel.data()); return pixel; }
-		std::array<float,2>	project_to_texcoord(const float point[3]) const							{ auto pixel = project(point); return {pixel[0]/image_size[0], pixel[1]/image_size[1]}; }
-		std::array<float,2>	project_to_rectified(const float point[3]) const						{ std::array<float,2> pixel; rs_project_point_to_rectified_pixel(point, *this, pixel.data()); return pixel; }
-		std::array<float,2>	project_to_rectified_texcoord(const float point[3]) const				{ auto pixel = project_to_rectified(point); return {pixel[0]/image_size[0], pixel[1]/image_size[1]}; }
-        std::array<float,3>	deproject_from_rectified(const float pixel[2], float depth) const		{ std::array<float,3> point; rs_deproject_rectified_pixel_to_point(pixel, depth, *this, point.data()); return point; }*/
+
     };
 
     struct extrinsics : rs_extrinsics
     {
-        //std::array<float,3> transform(const float point[3]) const									{ std::array<float,3> p; rs_transform_point_to_point(point, *this, p.data()); return p; }
+
     };
 
 	class camera
@@ -61,6 +57,7 @@ namespace rs
 
         const uint8_t *		get_color_image()														{ return rs_get_color_image(cam, auto_error()); }
 		const uint16_t *	get_depth_image()														{ return rs_get_depth_image(cam, auto_error()); }
+        float               get_depth_scale()														{ return rs_get_depth_scale(cam, auto_error()); }
 
         intrinsics          get_stream_intrinsics(int stream)										{ intrinsics intrin; rs_get_stream_intrinsics(cam, stream, &intrin, auto_error()); return intrin; }
         extrinsics          get_stream_extrinsics(int stream_from, int stream_to)					{ extrinsics extrin; rs_get_stream_extrinsics(cam, stream_from, stream_to, &extrin, auto_error()); return extrin; }

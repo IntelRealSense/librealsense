@@ -161,7 +161,7 @@ int main(int argc, char * argv[]) try
         glPointSize((float)width/640);
         glBegin(GL_POINTS);
         auto depth = cam.get_depth_image();
-        float scale = rs_get_depth_scale(cam.get_handle(), 0);
+        float scale = cam.get_depth_scale();
 		for(int y=0; y<depth_intrin.image_size[1]; ++y)
 		{
 			for(int x=0; x<depth_intrin.image_size[0]; ++x)
@@ -172,8 +172,9 @@ int main(int argc, char * argv[]) try
                     rs_deproject_pixel_to_point(depth_point, depth_intrin, depth_pixel, d*scale);
                     rs_transform_point_to_point(color_point, extrin, depth_point);
                     rs_project_point_to_pixel(color_pixel, color_intrin, color_point);
+
                     glTexCoord2f(color_pixel[0] / color_intrin.image_size[0], color_pixel[1] / color_intrin.image_size[1]);
-                    glVertex3f(depth_point[0]*0.001f, depth_point[1]*0.001f, depth_point[2]*0.001f);
+                    glVertex3fv(depth_point);
 				}
 			}
 		}

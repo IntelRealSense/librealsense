@@ -32,7 +32,7 @@ namespace r200
         }
 
         rs_extrinsics GetStreamExtrinsics(int from, int to) override final;
-        float GetDepthScale() const override final { return 1.0f; }
+        float GetDepthScale() const override final { return 0.001f; } // convert mm to m
     };
 } // end namespace r200
 #endif

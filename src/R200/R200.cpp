@@ -79,6 +79,7 @@ namespace r200
             extrin.translation[0] = extrin.rotation[0]*calib.T[0][0] + extrin.rotation[1]*calib.T[0][1] + extrin.rotation[2]*calib.T[0][2];
             extrin.translation[1] = extrin.rotation[3]*calib.T[0][0] + extrin.rotation[4]*calib.T[0][1] + extrin.rotation[5]*calib.T[0][2];
             extrin.translation[2] = extrin.rotation[6]*calib.T[0][0] + extrin.rotation[7]*calib.T[0][1] + extrin.rotation[8]*calib.T[0][2];
+            for(int i=0; i<3; ++i) extrin.translation[i] *= 0.001f; // Convert from mm to m
             return extrin;
         }
         else throw std::runtime_error("unsupported streams");
