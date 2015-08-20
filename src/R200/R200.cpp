@@ -32,17 +32,25 @@ namespace r200
         return {RS_COLOR, i.w,i.h,60,RS_RGB, i.w,i.h,59,UVC_FRAME_FORMAT_YUYV, {{i.w,i.h}, {i.fx,i.fy}, {i.px,i.py}, {i.k[0],i.k[1],i.k[2],i.k[3],i.k[4]}}};
     }
 
+    int R200Camera::GetStreamSubdeviceNumber(int stream) const
+    {
+        switch(stream)
+        {
+        case RS_DEPTH: return 1;
+        case RS_COLOR: return 2;
+        default: throw std::runtime_error("invalid stream");
+        }
+    }
+
     void R200Camera::RetrieveCalibration()
     {
         if(!hardware_io)
         {
-            uvc_device_handle_t * handle = nullptr;
-            if(!handle && streams[RS_DEPTH]) handle = streams[RS_DEPTH]->uvcHandle;
-            if(!handle && streams[RS_COLOR]) handle = streams[RS_COLOR]->uvcHandle;
+            uvc_device_handle_t * handle = GetHandleToAnyStream();
             if(!handle) throw std::runtime_error("RetrieveCalibration() failed as no stream interfaces were open");
             hardware_io.reset(new DS4HardwareIO(handle));
             //uvc_print_diag(uvc_handle, stderr);
-            std::cout << "Firmware Revision: " << GetFirmwareVersion(handle) << std::endl;
+            //std::cout << "Firmware Revision: " << GetFirmwareVersion(handle) << std::endl;
 
             auto calib = hardware_io->GetCalibration();
             modes.push_back(MakeDepthMode(628, 468, calib.modesLR[0]));
@@ -58,11 +66,7 @@ namespace r200
         uint32_t streamingModeBitfield = 0;
         if(depth) streamingModeBitfield |= STATUS_BIT_Z_STREAMING;
         if(color) streamingModeBitfield |= STATUS_BIT_WEB_STREAMING;
-
-        uvc_device_handle_t * handle = nullptr;
-        if(!handle && streams[RS_DEPTH]) handle = streams[RS_DEPTH]->uvcHandle;
-        if(!handle && streams[RS_COLOR]) handle = streams[RS_COLOR]->uvcHandle;
-        if(handle) r200::SetStreamIntent(handle, streamingModeBitfield);
+        if(uvc_device_handle_t * handle = GetHandleToAnyStream()) r200::SetStreamIntent(handle, streamingModeBitfield);
     }
 
     rs_extrinsics R200Camera::GetStreamExtrinsics(int from, int to)

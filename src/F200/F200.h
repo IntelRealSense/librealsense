@@ -24,8 +24,7 @@ namespace f200
         F200Camera(uvc_context_t * ctx, uvc_device_t * device);
         ~F200Camera();
         
-        int GetDepthCameraNumber() const override final { return 1; }
-        int GetColorCameraNumber() const override final { return 0; }
+        int GetStreamSubdeviceNumber(int stream) const override final;
         void RetrieveCalibration() override final;
         void SetStreamIntent(bool depth, bool color) override final {}
 

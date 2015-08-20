@@ -48,21 +48,26 @@ namespace rs
     class UVCCamera : public rs_camera
     {
     protected: 
-        struct StreamInterface
+        class StreamInterface
         {
-            uvc_device_handle_t * uvcHandle = nullptr;
+            uvc_device_handle_t * uvcHandle;
             uvc_stream_ctrl_t ctrl;
             ResolutionMode mode;
 
             volatile bool updated = false;
             std::vector<uint8_t> front, middle, back;
             std::mutex mutex;
+        public:
+            StreamInterface(uvc_device_t * device, int subdeviceNumber) { CheckUVC("uvc_open2", uvc_open2(device, &uvcHandle, subdeviceNumber)); }
+            ~StreamInterface() { uvc_close(uvcHandle); }
 
-            void set_mode(const ResolutionMode & mode);
-
+            const ResolutionMode & get_mode() const { return mode; }
             template<class T> const T * get_image() const { return reinterpret_cast<const T *>(front.data()); }
+
+            uvc_device_handle_t * get_handle() { return uvcHandle; }
+            void set_mode(const ResolutionMode & mode);
+            void start_streaming();
             bool update_image();
-            void on_frame(uvc_frame_t * frame);
         };
 
         uvc_context_t * internalContext;
@@ -71,6 +76,8 @@ namespace rs
         std::vector<float> vertices;
 
         std::vector<ResolutionMode> modes;
+
+        uvc_device_handle_t * GetHandleToAnyStream();
     public:
         UVCCamera(uvc_context_t * ctx, uvc_device_t * device);
         ~UVCCamera();
@@ -86,8 +93,7 @@ namespace rs
 
         rs_intrinsics GetStreamIntrinsics(int stream) const override final;
 
-        virtual int GetDepthCameraNumber() const = 0;
-        virtual int GetColorCameraNumber() const = 0;
+        virtual int GetStreamSubdeviceNumber(int stream) const = 0;
         virtual void RetrieveCalibration() = 0;
         virtual void SetStreamIntent(bool depth, bool color) = 0;
         virtual void ComputeVertexImage() = 0;

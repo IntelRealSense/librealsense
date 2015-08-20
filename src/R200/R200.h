@@ -17,8 +17,7 @@ namespace r200
         R200Camera(uvc_context_t * ctx, uvc_device_t * device);
         ~R200Camera();
 
-        int GetDepthCameraNumber() const override final { return 1; }
-        int GetColorCameraNumber() const override final { return 2; }
+        int GetStreamSubdeviceNumber(int stream) const override final;
         void RetrieveCalibration() override final;
         void SetStreamIntent(bool depth, bool color) override final;
 

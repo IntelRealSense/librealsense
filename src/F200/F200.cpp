@@ -19,6 +19,16 @@ namespace f200
         
     }
 
+    int F200Camera::GetStreamSubdeviceNumber(int stream) const
+    {
+        switch(stream)
+        {
+        case RS_COLOR: return 0;
+        case RS_DEPTH: return 1;
+        default: throw std::runtime_error("invalid stream");
+        }
+    }
+
     static ResolutionMode MakeColorMode(const CameraCalibrationParameters & c, int w, int h)
     {
         rs_intrinsics intrin = {{w,h}};
