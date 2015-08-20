@@ -10,19 +10,20 @@
 namespace r200
 {
 
-inline void swap_to_little(unsigned char * result, const unsigned char * origin, int numBytes)
+/*inline void swap_to_little(unsigned char * result, const unsigned char * origin, int numBytes)
 {
     for (int i = 0; i < numBytes; i++)
     {
         result[i] = origin[numBytes - 1 - i];
     }
-}
+}*/
 
 // Only valid for basic types
 template <class T>
 inline void read_bytes(const unsigned char *& p, T & x)
 {
-    swap_to_little((unsigned char *)&x, p, sizeof(T));
+    memcpy(&x, p, sizeof(T));
+    //swap_to_little((unsigned char *)&x, p, sizeof(T));
     p += sizeof(T);
 }
  
@@ -58,6 +59,68 @@ inline void read_rectified(const unsigned char *& p, RectifiedIntrinsics & crm)
     read_bytes(p, crm.rpy);
     read_bytes(p, crm.rw);
     read_bytes(p, crm.rh);
+}
+
+template<class T> void swap_endian_bytewise(T & value)
+{
+    auto p = (uint8_t *)&value;
+    for(size_t i=0; i<sizeof(T)/2; ++i) std::swap(p[i], p[sizeof(T)-i-1]);
+}
+
+void swap_endian(uint16_t & value) { swap_endian_bytewise(value); }
+void swap_endian(uint32_t & value) { swap_endian_bytewise(value); }
+void swap_endian(float & value) { swap_endian_bytewise(value); }
+template<class T, int N> void swap_endian(T (& value)[N]) { for(auto & elem : value) swap_endian(elem); }
+void swap_endian(CalibrationMetadata & value)
+{
+    swap_endian(value.versionNumber);
+    swap_endian(value.numIntrinsicsRight);
+    swap_endian(value.numIntrinsicsThird);
+    swap_endian(value.numIntrinsicsPlatform);
+    swap_endian(value.numRectifiedModesLR);
+    swap_endian(value.numRectifiedModesThird);
+    swap_endian(value.numRectifiedModesPlatform);
+}
+void swap_endian(UnrectifiedIntrinsics & value)
+{
+    swap_endian(value.fx);
+    swap_endian(value.fy);
+    swap_endian(value.px);
+    swap_endian(value.py);
+    swap_endian(value.k);
+    swap_endian(value.w);
+    swap_endian(value.h);
+}
+void swap_endian(RectifiedIntrinsics & value)
+{
+    swap_endian(value.rfx);
+    swap_endian(value.rfy);
+    swap_endian(value.rpx);
+    swap_endian(value.rpy);
+    swap_endian(value.rw);
+    swap_endian(value.rh);
+}
+template<class T, unsigned long N> void swap_endian(std::array<T,N> & value) { for(auto & elem : value) swap_endian(elem); }
+template<class T> void swap_endian(std::vector<T> & value) { for(auto & elem : value) swap_endian(elem); }
+void swap_endian(CameraCalibrationParameters & value)
+{
+    swap_endian(value.metadata);
+    swap_endian(value.intrinsicsLeft);
+    swap_endian(value.intrinsicsRight);
+    swap_endian(value.intrinsicsThird);
+    swap_endian(value.intrinsicsPlatform);
+    swap_endian(value.modesLR);
+    swap_endian(value.modesThird);
+    swap_endian(value.modesPlatform);
+    swap_endian(value.Rleft);
+    swap_endian(value.Rright);
+    swap_endian(value.Rthird);
+    swap_endian(value.Rplatform);
+    swap_endian(value.B);
+    swap_endian(value.T);
+    swap_endian(value.Tplatform);
+    swap_endian(value.Rworld);
+    swap_endian(value.Tworld);
 }
 
 inline CameraCalibrationParameters ParseCalibrationParameters(const uint8_t * buffer)
@@ -133,9 +196,11 @@ inline CameraCalibrationParameters ParseCalibrationParameters(const uint8_t * bu
     for (auto & mat : cal.Tplatform) { read_array(p, mat); };
     
     // RWorld & TWorld
-    read_array(p, cal.Rworld);
-    read_array(p, cal.Tworld);
+    read_bytes(p, cal.Rworld);
+    read_bytes(p, cal.Tworld);
     
+    swap_endian(cal);
+
     return cal;
 }
 

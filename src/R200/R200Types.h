@@ -82,8 +82,8 @@ struct CameraCalibrationParameters
     std::vector<std::array<float, 3>> T;
     std::vector<std::array<float, 3>> Tplatform;
     
-    std::array<float, 9> Rworld;
-    std::array<float, 3> Tworld;
+    float Rworld[9];
+    float Tworld[3];
 };
     
 } // end namespace r200
