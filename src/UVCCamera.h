@@ -42,13 +42,12 @@ namespace rs
             uvc_device_handle_t * uvcHandle = nullptr;
             uvc_frame_format fmt = UVC_FRAME_FORMAT_UNKNOWN;
             uvc_stream_ctrl_t ctrl = uvc_stream_ctrl_t{}; // {0};
+            TripleBuffer buffer;
         };
 
         uvc_context_t * internalContext;
         uvc_device_t * hardware = nullptr;
         std::unique_ptr<StreamInterface> streams[2];
-        TripleBuffer depthFrame;
-        TripleBuffer colorFrame;
         std::vector<float> vertices;
 
     public:
@@ -61,8 +60,8 @@ namespace rs
         void StopStreaming() override final;
         void WaitAllStreams() override final;
 
-        const uint8_t * GetColorImage() const override final { return colorFrame.front_data(); }
-        const uint16_t * GetDepthImage() const override final { return reinterpret_cast<const uint16_t *>(depthFrame.front_data()); }
+        const uint8_t * GetColorImage() const override final { return streams[RS_COLOR] ? streams[RS_COLOR]->buffer.front_data() : nullptr; }
+        const uint16_t * GetDepthImage() const override final { return streams[RS_DEPTH] ? reinterpret_cast<const uint16_t *>(streams[RS_DEPTH]->buffer.front_data()) : nullptr; }
         const float * GetVertexImage() const override final { return vertices.data(); }
 
         virtual int GetDepthCameraNumber() const = 0;

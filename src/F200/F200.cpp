@@ -122,7 +122,7 @@ namespace f200
         const CameraCalibrationParameters & p = inst->m_calibration.params;
         const auto uint16_to_mm_ratio = p.Rmax / 65535.0f;
 
-        auto inDepth = depthFrame.front_data();
+        auto inDepth = GetDepthImage();
         auto vert = vertices.data();
         for(int i=0; i<inst->m_currentDepthHeight; i++)
         {

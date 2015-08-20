@@ -58,7 +58,7 @@ void UVCCamera::EnableStream(int stream, int width, int height, int fps, FrameFo
         case FrameFormat::Z16:
         case FrameFormat::INVR:
         case FrameFormat::INVZ:
-            depthFrame.resize(width * height * sizeof(uint16_t));
+            streams[stream]->buffer.resize(width * height * sizeof(uint16_t));
             vertices.resize(width * height * 3);
             break;
         default: throw std::runtime_error("invalid frame format");
@@ -68,7 +68,7 @@ void UVCCamera::EnableStream(int stream, int width, int height, int fps, FrameFo
         switch(format)
         {
         case FrameFormat::YUYV:
-            colorFrame.resize(width * height * 3); break;
+            streams[stream]->buffer.resize(width * height * 3); break;
         default: throw std::runtime_error("invalid frame format");
         }
         break;
@@ -88,19 +88,20 @@ void UVCCamera::StartStreaming()
     {
         auto callback = [](uvc_frame_t * frame, void * ptr)
         {
-            StreamInterface * stream = static_cast<StreamInterface*>(ptr);
-
-            if (stream->fmt == UVC_FRAME_FORMAT_Z16 || stream->fmt == UVC_FRAME_FORMAT_INVR || stream->fmt == UVC_FRAME_FORMAT_INVZ)
+            auto stream = static_cast<StreamInterface*>(ptr);
+            switch(stream->fmt)
             {
-                memcpy(stream->camera->depthFrame.back_data(), frame->data, (frame->width * frame->height - 1) * sizeof(uint16_t));
-                stream->camera->depthFrame.swap_back();
+            case UVC_FRAME_FORMAT_Z16:
+            case UVC_FRAME_FORMAT_INVR:
+            case UVC_FRAME_FORMAT_INVZ:
+                memcpy(stream->buffer.back_data(), frame->data, (frame->width * frame->height - 1) * sizeof(uint16_t));
+                break;
+            case UVC_FRAME_FORMAT_YUYV:
+                convert_yuyv_rgb((uint8_t *)frame->data, frame->width, frame->height, stream->buffer.back_data());
+                break;
+            default: throw std::runtime_error("bad format");
             }
-
-            else if (stream->fmt == UVC_FRAME_FORMAT_YUYV)
-            {
-                convert_yuyv_rgb((uint8_t *)frame->data, frame->width, frame->height, stream->camera->colorFrame.back_data());
-                stream->camera->colorFrame.swap_back();
-            }
+            stream->buffer.swap_back();
         };
 
         if (stream && stream->uvcHandle) CheckUVC("uvc_start_streaming", uvc_start_streaming(stream->uvcHandle, &stream->ctrl, callback, stream.get(), 0));
@@ -114,8 +115,18 @@ void UVCCamera::StopStreaming()
     
 void UVCCamera::WaitAllStreams()
 {
-    colorFrame.swap_front();
-    if(depthFrame.swap_front()) ComputeVertexImage();
+    if(streams[RS_COLOR])
+    {
+        streams[RS_COLOR]->buffer.swap_front();
+    }
+
+    if(streams[RS_DEPTH])
+    {
+        if(streams[RS_DEPTH]->buffer.swap_front())
+        {
+            ComputeVertexImage();
+        }
+    }
 }
 
 } // end namespace rs
