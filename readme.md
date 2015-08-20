@@ -1,8 +1,12 @@
 # librealsense
 
-A libusb-based library for the RealSense F200 (IVCAM 1.0, 1.5) and RealSense R200 (DS4). It targets Mac OSX 10.7+ and "recent" versions of Linux (tested + developed on Ubuntu 14.04 LTS). For cross-platform API development, it consumes DSAPI on Windows. 
+A library for capturing data with the RealSense F200 (IVCAM 1.0, 1.5) and RealSense R200 (DS4). It targets Mac OSX 10.7+ and "recent" versions of Linux (tested & developed on Ubuntu 14.04 LTS). While the OSX and Linux example apps depend on GLFW, the capture portion requires only libusb. Libusb-1.0 is a user-space USB driver: this means that librealsense requires no kernel patches. In the future, support will be extended to Android 5.1+ to route around the typical HAL layer for the purposes of accessing the camera directly from JNI/C++ code.
 
-Dependency management is done manually at the moment, pending the creation of installer scripts to automate the process. 
+Dependency management for GLFW and Libusb-1.0 is done manually at the moment, pending the creation of installer scripts to automate the process. 
+
+## Functionality
+
+The goal of librealsense is to provide a reasonable hardware abstraction with minimal dependencies. It is not a computer vision SDK.
 
 ## Apple OSX Installation
 
@@ -23,7 +27,13 @@ Dependency management is done manually at the moment, pending the creation of in
   * `sudo apt-get update && apt-get upgrade`
 3. Install appropriate dependencies via apt-get
   * `sudo apt-get install glfw3`
-  * `suto apt-get install libusb-dev`
+  * `sudo apt-get install libusb-dev`
+4. We are using QtCreator as an IDE for Linux development on Ubuntu. While makefiles will eventually be supported, you will need to download and install the IDE to compile the library
+  * `sudo apt-get install qtcreator`
+
+## Releases
+
+Binary releases for OSX and Linux can be found on the Github repository page under the Releases tab. 
 
 ## License
 
