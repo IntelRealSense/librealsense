@@ -86,31 +86,30 @@ void UVCCamera::StartStreaming()
 
     for(auto & stream : streams)
     {
-        if (stream && stream->uvcHandle) CheckUVC("uvc_start_streaming", uvc_start_streaming(stream->uvcHandle, &stream->ctrl, &UVCCamera::cb, stream.get(), 0));
+        auto callback = [](uvc_frame_t * frame, void * ptr)
+        {
+            StreamInterface * stream = static_cast<StreamInterface*>(ptr);
+
+            if (stream->fmt == UVC_FRAME_FORMAT_Z16 || stream->fmt == UVC_FRAME_FORMAT_INVR || stream->fmt == UVC_FRAME_FORMAT_INVZ)
+            {
+                memcpy(stream->camera->depthFrame.back_data(), frame->data, (frame->width * frame->height - 1) * sizeof(uint16_t));
+                stream->camera->depthFrame.swap_back();
+            }
+
+            else if (stream->fmt == UVC_FRAME_FORMAT_YUYV)
+            {
+                convert_yuyv_rgb((uint8_t *)frame->data, frame->width, frame->height, stream->camera->colorFrame.back_data());
+                stream->camera->colorFrame.swap_back();
+            }
+        };
+
+        if (stream && stream->uvcHandle) CheckUVC("uvc_start_streaming", uvc_start_streaming(stream->uvcHandle, &stream->ctrl, callback, stream.get(), 0));
     }
 }
 
 void UVCCamera::StopStreaming()
 {
 
-}
-
-void UVCCamera::frameCallback(uvc_frame_t * frame, StreamInterface * stream)
-{
-    if (stream->fmt == UVC_FRAME_FORMAT_Z16 || stream->fmt == UVC_FRAME_FORMAT_INVR || stream->fmt == UVC_FRAME_FORMAT_INVZ)
-    {
-        memcpy(depthFrame.back_data(), frame->data, (frame->width * frame->height - 1) * sizeof(uint16_t));
-        depthFrame.swap_back();
-    }
-    
-    else if (stream->fmt == UVC_FRAME_FORMAT_YUYV)
-    {
-        //@tofix - this is a bit silly to overallocate. Blame Leo.
-        static uint8_t color_cvt[1920 * 1080 * 3]; // YUYV = 16 bits in in -> 24 out
-        convert_yuyv_rgb((uint8_t *)frame->data, frame->width, frame->height, color_cvt);
-        memcpy(colorFrame.back_data(), color_cvt, (frame->width * frame->height) * 3);
-        colorFrame.swap_back();
-    }
 }
     
 } // end namespace rs

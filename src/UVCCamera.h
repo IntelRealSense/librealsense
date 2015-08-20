@@ -36,8 +36,6 @@ namespace rs
 
     protected:
         
-        uvc_context_t * internalContext;
-        
         struct StreamInterface
         {
             UVCCamera * camera = nullptr;
@@ -46,17 +44,9 @@ namespace rs
             uvc_stream_ctrl_t ctrl = uvc_stream_ctrl_t{}; // {0};
         };
 
+        uvc_context_t * internalContext;
         uvc_device_t * hardware = nullptr;
-
         std::unique_ptr<StreamInterface> streams[2];
-
-        static void cb(uvc_frame_t * frame, void * ptr)
-        {
-            StreamInterface * stream = static_cast<StreamInterface*>(ptr);
-            stream->camera->frameCallback(frame, stream);
-        }
-
-        void frameCallback(uvc_frame_t * frame, StreamInterface * stream);
 
         virtual int GetDepthCameraNumber() const = 0;
         virtual int GetColorCameraNumber() const = 0;
