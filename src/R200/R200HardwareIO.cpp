@@ -1,10 +1,61 @@
 #include "HardwareIO.h"
 #include <cassert>
+#include <cstring>
+#include <iostream>
 
 using namespace std;
 
 namespace r200
 {
+    struct CommandPacket
+    {
+        CommandPacket(uint32_t code_ = 0, uint32_t modifier_ = 0, uint32_t tag_ = 0, uint32_t address_ = 0, uint32_t value_ = 0)
+        : code(code_), modifier(modifier_), tag(tag_), address(address_), value(value_)
+        {
+        }
+
+        uint32_t code = 0;
+        uint32_t modifier = 0;
+        uint32_t tag = 0;
+        uint32_t address = 0;
+        uint32_t value = 0;
+        uint32_t reserved[59]{};
+    };
+
+    struct ResponsePacket
+    {
+        ResponsePacket(uint32_t code_ = 0, uint32_t modifier_ = 0, uint32_t tag_ = 0, uint32_t responseCode_ = 0, uint32_t value_ = 0)
+        : code(code_), modifier(modifier_), tag(tag_), responseCode(responseCode_), value(value_)
+        {
+        }
+
+        uint32_t code = 0;
+        uint32_t modifier = 0;
+        uint32_t tag = 0;
+        uint32_t responseCode = 0;
+        uint32_t value = 0;
+        uint32_t revision[4]{};
+        uint32_t reserved[55]{};
+    };
+
+    inline std::string ResponseCodeToString(uint32_t rc)
+    {
+        switch (rc)
+        {
+            case 0x10: return std::string("RESPONSE_OK"); break;
+            case 0x11: return std::string("RESPONSE_TIMEOUT"); break;
+            case 0x12: return std::string("RESPONSE_ACQUIRING_IMAGE"); break;
+            case 0x13: return std::string("RESPONSE_IMAGE_BUSY"); break;
+            case 0x14: return std::string("RESPONSE_ACQUIRING_SPI"); break;
+            case 0x15: return std::string("RESPONSE_SENDING_SPI"); break;
+            case 0x16: return std::string("RESPONSE_SPI_BUSY"); break;
+            case 0x17: return std::string("RESPSONSE_UNAUTHORIZED"); break;
+            case 0x18: return std::string("RESPONSE_ERROR"); break;
+            case 0x19: return std::string("RESPONSE_CODE_END"); break;
+            default: return "RESPONSE_UNKNOWN";
+        }
+    }
+
     #define SPI_FLASH_PAGE_SIZE_IN_BYTES                        0x100
     #define SPI_FLASH_SECTOR_SIZE_IN_BYTES                      0x1000
     #define SPI_FLASH_SIZE_IN_SECTORS                           256
@@ -263,25 +314,71 @@ namespace r200
         CameraHeaderInfo GetCameraHeader() { return cameraInfo; }
     };
 
-    DS4HardwareIO::DS4HardwareIO(uvc_device_handle_t * deviceHandle)
+    void read_camera_info(uvc_device_handle_t * device, CameraCalibrationParameters & calib, CameraHeaderInfo & header)
     {
-        internal.reset(new DS4HardwareIOInternal(deviceHandle));
-        internal->LogDebugInfo();
+        DS4HardwareIOInternal internal(device);
+        internal.LogDebugInfo();
+        calib = internal.GetCalibration();
+        header = internal.GetCameraHeader();
     }
 
-    DS4HardwareIO::~DS4HardwareIO()
+    int read_stream_status(uvc_device_handle_t *devh)
     {
+        uint32_t status = 0xffffffff;
 
+        size_t length = sizeof(uint32_t);
+
+        // XU Read
+        auto s = uvc_get_ctrl(devh, CAMERA_XU_UNIT_ID, CONTROL_STATUS, &status, int(length), UVC_GET_CUR);
+
+        if (s > 0)
+        {
+            return s;
+        }
+
+        if (s < 0) uvc_perror((uvc_error_t)s, "uvc_get_ctrl");
+
+        return -1;
     }
 
-    CameraCalibrationParameters DS4HardwareIO::GetCalibration()
+    bool write_stream_intent(uvc_device_handle_t *devh, uint8_t intent)
     {
-        return internal->GetCalibration();
+        size_t length = sizeof(uint8_t);
+
+        // XU Write
+        auto s = uvc_set_ctrl(devh, CAMERA_XU_UNIT_ID, CONTROL_STREAM_INTENT, &intent, int(length));
+
+        if (s > 0)
+        {
+            return true;
+        }
+
+        if (s < 0) uvc_perror((uvc_error_t)s, "uvc_set_ctrl");
+
+        return false;
     }
 
-    CameraHeaderInfo DS4HardwareIO::GetCameraHeader()
+    std::string read_firmware_version(uvc_device_handle_t * devh)
     {
-        return internal->GetCameraHeader();
+        CommandPacket command;
+        command.code = COMMAND_GET_FWREVISION;
+        command.modifier = COMMAND_MODIFIER_DIRECT;
+        command.tag = 12;
+
+        unsigned int cmdLength = sizeof(CommandPacket);
+        auto s = uvc_set_ctrl(devh, CAMERA_XU_UNIT_ID, CONTROL_COMMAND_RESPONSE, &command, cmdLength);
+        if (s < 0) uvc_perror((uvc_error_t)s, "uvc_set_ctrl");
+
+        ResponsePacket response;
+        unsigned int resLength = sizeof(ResponsePacket);
+        s = uvc_get_ctrl(devh, CAMERA_XU_UNIT_ID, CONTROL_COMMAND_RESPONSE, &response, resLength, UVC_GET_CUR);
+        if (s < 0) uvc_perror((uvc_error_t)s, "uvc_get_ctrl");
+
+        char fw[16];
+
+        memcpy(fw, &response.revision, 16);
+
+        return std::string(fw);
     }
     
 } // end namespace r200

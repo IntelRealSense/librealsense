@@ -1,7 +1,6 @@
 #include "R200.h"
 
 #ifdef USE_UVC_DEVICES
-#include "XU.h"
 #include "HardwareIO.h"
 #include "../../include/librealsense/rsutil.h"
 #include <cassert>
@@ -43,15 +42,13 @@ namespace r200
 
     void R200Camera::RetrieveCalibration()
     {
-        if(!hardware_io)
+        if(modes.empty())
         {
             uvc_device_handle_t * handle = GetHandleToAnyStream();
             if(!handle) throw std::runtime_error("RetrieveCalibration() failed as no stream interfaces were open");
-            hardware_io.reset(new DS4HardwareIO(handle));
-            //uvc_print_diag(uvc_handle, stderr);
-            //std::cout << "Firmware Revision: " << GetFirmwareVersion(handle) << std::endl;
+            CameraHeaderInfo header;
+            read_camera_info(handle, calib, header);
 
-            auto calib = hardware_io->GetCalibration();
             modes.push_back(MakeDepthMode(628, 468, calib.modesLR[0]));
             modes.push_back(MakeDepthMode(480, 360, calib.modesLR[1]));
             //modes.push_back(MakeDepthMode(320, 240, calib.modesLR[2])); // NOTE: QRES oddness
@@ -65,12 +62,11 @@ namespace r200
         uint32_t streamingModeBitfield = 0;
         if(depth) streamingModeBitfield |= STATUS_BIT_Z_STREAMING;
         if(color) streamingModeBitfield |= STATUS_BIT_WEB_STREAMING;
-        if(uvc_device_handle_t * handle = GetHandleToAnyStream()) r200::SetStreamIntent(handle, streamingModeBitfield);
+        if(uvc_device_handle_t * handle = GetHandleToAnyStream()) r200::write_stream_intent(handle, streamingModeBitfield);
     }
 
     rs_extrinsics R200Camera::GetStreamExtrinsics(int from, int to)
     {
-        auto calib = hardware_io->GetCalibration();
         if(from == RS_DEPTH && to == RS_COLOR)
         {
             rs_extrinsics extrin;

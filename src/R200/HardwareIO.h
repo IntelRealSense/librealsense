@@ -6,25 +6,18 @@
 #include <libuvc/libuvc.h>
 #include <memory>
 
-#include "XU.h"
-
 namespace r200
 {
     struct CameraCalibrationParameters;
     struct CameraHeaderInfo;
-    class DS4HardwareIOInternal;
 
-    class DS4HardwareIO
-    {
-        std::unique_ptr<DS4HardwareIOInternal> internal;
-    public:
+    // Hardware API for R200 camera
+    std::string read_firmware_version(uvc_device_handle_t * device);
+    void        read_camera_info(uvc_device_handle_t * device, CameraCalibrationParameters & calib, CameraHeaderInfo & header);
+    int         read_stream_status(uvc_device_handle_t * device);
+    bool        write_stream_intent(uvc_device_handle_t * device, uint8_t intent);
 
-        DS4HardwareIO(uvc_device_handle_t * deviceHandle);
-        ~DS4HardwareIO();
-
-        CameraCalibrationParameters GetCalibration();
-        CameraHeaderInfo GetCameraHeader();
-    };
+    // TODO: Gather additional hardware specific APIs here
 
     #pragma pack(push, 1)
     const uint16_t MAX_NUM_INTRINSICS_RIGHT = 2; // Max number right cameras supported (e.g. one or two, two would support a multi-baseline unit)
@@ -166,6 +159,41 @@ namespace r200
     };
     #pragma pack(pop)
 } // end namespace r200
+
+#define CAMERA_XU_UNIT_ID 2
+
+#define STATUS_BIT_Z_STREAMING (1 << 0)
+#define STATUS_BIT_LR_STREAMING (1 << 1)
+#define STATUS_BIT_WEB_STREAMING (1 << 2)
+#define STATUS_BIT_BOOT_DIAGNOSTIC_FAULT (1 << 3)
+#define STATUS_BIT_IFFLEY_CONSTANTS_VALID (1 << 4)
+#define STATUS_BIT_WATCHDOG_TIMER_RESET (1 << 5)
+#define STATUS_BIT_REC_BUFFER_OVERRUN (1 << 6)
+#define STATUS_BIT_CAM_DATA_FORMAT_ERROR (1 << 7)
+#define STATUS_BIT_CAM_FIFO_OVERFLOW (1 << 8)
+#define STATUS_BIT_REC_DIVIDED_BY_ZERO_ERROR (1 << 9)
+#define STATUS_BIT_UVC_HEADER_ERROR (1 << 10)
+#define STATUS_BIT_EMITTER_FAULT (1 << 11)
+#define STATUS_BIT_THERMAL_FAULT (1 << 12)
+#define STATUS_BIT_REC_RUN_ENABLED (1 << 13)
+#define STATUS_BIT_VDF_DEPTH_POINTER_STREAMING (1 << 14)
+#define STATUS_BIT_VDF_LR_POINTER_STREAMING (1 << 15)
+#define STATUS_BIT_VDF_WEBCAM_POINTER_STREAMING (1 << 16)
+#define STATUS_BIT_STREAMING_STATE (1 << 27) | (1 << 28) | (1 << 29) | (1 << 30)
+#define STATUS_BIT_BUSY (1 << 31)
+
+#define CONTROL_COMMAND_RESPONSE 1
+#define CONTROL_IFFLEY 2
+#define CONTROL_STREAM_INTENT 3
+#define CONTROL_STATUS 20
+
+#define COMMAND_DOWNLOAD_SPI_FLASH 0x1A
+#define COMMAND_PROTECT_FLASH 0x1C
+#define COMMAND_LED_ON 0x14
+#define COMMAND_LED_OFF 0x15
+#define COMMAND_GET_FWREVISION 0x21
+#define COMMAND_GET_SPI_PROTECT 0x23
+#define COMMAND_MODIFIER_DIRECT 0x00000010
 
 #endif
 

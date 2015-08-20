@@ -4,15 +4,14 @@
 #define LIBREALSENSE_R200_CAMERA_H
 
 #include "../UVCCamera.h"
+#include "HardwareIO.h"
 
 #ifdef USE_UVC_DEVICES
 namespace r200
 {
-    class DS4HardwareIO;
-
     class R200Camera : public rs::UVCCamera
     {
-        std::unique_ptr<DS4HardwareIO> hardware_io;
+        CameraCalibrationParameters calib;
     public:
         R200Camera(uvc_context_t * ctx, uvc_device_t * device);
         ~R200Camera();
