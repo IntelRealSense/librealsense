@@ -19,6 +19,26 @@ namespace f200
         
     }
 
+    static ResolutionMode MakeColorMode(const CameraCalibrationParameters & c, int w, int h)
+    {
+        rs_intrinsics intrin = {{w,h}};
+        intrin.focal_length[0] = c.Kt[0][0]*0.5f;
+        intrin.focal_length[1] = c.Kt[1][1]*0.5f;
+        intrin.principal_point[0] = c.Kt[0][2]*0.5f + 0.5f;
+        intrin.principal_point[1] = c.Kt[1][2]*0.5f + 0.5f;
+        if(w*3 == h*4) // If using a 4:3 aspect ratio, adjust intrinsics (defaults to 16:9)
+        {
+            intrin.focal_length[0] *= 4.0f/3;
+            intrin.principal_point[0] *= 4.0f/3;
+            intrin.principal_point[0] -= 1.0f/6;
+        }
+        intrin.focal_length[0] *= w;
+        intrin.focal_length[1] *= h;
+        intrin.principal_point[0] *= w;
+        intrin.principal_point[1] *= h;
+        return {RS_COLOR, w,h,60,rs::FrameFormat::RGB, w,h,60,UVC_FRAME_FORMAT_YUYV, intrin};
+    }
+
     void F200Camera::RetrieveCalibration()
     {
         if(!hardware_io)
@@ -56,39 +76,10 @@ namespace f200
             unrect.distortion_coeff[4] = calib.Distc[4];
 
             rectifier.reset(new IVRectifier(ivWidth, ivHeight, rect, unrect, rotation));
-        }
-    }
-        
-    rs_intrinsics F200Camera::GetStreamIntrinsics(int stream)
-    {
-        const CameraCalibrationParameters & calib = hardware_io->GetParameters();
-        if(stream == RS_COLOR)
-        {
-            auto inst = Projection::GetInstance();
 
-            rs_intrinsics intrin = {{inst->GetColorWidth(), inst->GetColorHeight()}};
-            intrin.focal_length[0] = calib.Kt[0][0]*0.5f;
-            intrin.focal_length[1] = calib.Kt[1][1]*0.5f;
-            intrin.principal_point[0] = calib.Kt[0][2]*0.5f + 0.5f;
-            intrin.principal_point[1] = calib.Kt[1][2]*0.5f + 0.5f;
-            if(inst->m_currentColorWidth * 3 == inst->m_currentColorHeight * 4) // If using a 4:3 aspect ratio, adjust intrinsics (defaults to 16:9)
-            {
-                intrin.focal_length[0] *= 4.0f/3;
-                intrin.principal_point[0] *= 4.0f/3;
-                intrin.principal_point[0] -= 1.0f/6;
-            }
-            intrin.focal_length[0] *= intrin.image_size[0];
-            intrin.focal_length[1] *= intrin.image_size[1];
-            intrin.principal_point[0] *= intrin.image_size[0];
-            intrin.principal_point[1] *= intrin.image_size[1];
-            return intrin;
-        }
-
-        const OpticalData & od = hardware_io->GetOpticalData();
-        switch(stream)
-        {
-        case RS_DEPTH: return {{640,480},{od.IRUndistortedFocalLengthPxl.x,od.IRUndistortedFocalLengthPxl.y},{320,240},{1,0,0,0,0}};
-        default: throw std::runtime_error("unsupported stream");
+            modes.push_back({RS_DEPTH, 640,480,60,rs::FrameFormat::Z16, 640,480,60,UVC_FRAME_FORMAT_INVR, unrect});
+            modes.push_back(MakeColorMode(calib, 1920, 1080));
+            modes.push_back(MakeColorMode(calib, 640, 480));
         }
     }
 

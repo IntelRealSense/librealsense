@@ -33,13 +33,12 @@ namespace f200
         {
             switch(streamIdentifier)
             {
-            case RS_DEPTH: EnableStream(RS_DEPTH, 640, 480, 60, rs::FrameFormat::INVR); break;
-            case RS_COLOR: EnableStream(RS_COLOR, 640, 480, 60, rs::FrameFormat::YUYV); break;
+            case RS_DEPTH: EnableStream(RS_DEPTH, 640, 480, 60, rs::FrameFormat::Z16); break;
+            case RS_COLOR: EnableStream(RS_COLOR, 640, 480, 60, rs::FrameFormat::RGB); break;
             default: throw std::runtime_error("unsupported stream");
             }
         }
         
-        rs_intrinsics GetStreamIntrinsics(int stream) override;
         rs_extrinsics GetStreamExtrinsics(int from, int to) override;
         void ComputeVertexImage() override;
     };

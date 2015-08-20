@@ -21,7 +21,6 @@ namespace r200
 
     }
 
-
     static ResolutionMode MakeDepthMode(int w, int h, const RectifiedIntrinsics & i)
     {
         assert(i.rw == w+12 && i.rh == h+12);
@@ -48,7 +47,7 @@ namespace r200
             auto calib = hardware_io->GetCalibration();
             modes.push_back(MakeDepthMode(628, 468, calib.modesLR[0]));
             modes.push_back(MakeDepthMode(480, 360, calib.modesLR[1]));
-            modes.push_back(MakeDepthMode(320, 240, calib.modesLR[2]));
+            //modes.push_back(MakeDepthMode(320, 240, calib.modesLR[2])); // NOTE: QRES oddness
             modes.push_back(MakeColorMode(calib.intrinsicsThird[0]));
             modes.push_back(MakeColorMode(calib.intrinsicsThird[1]));
         }
@@ -64,12 +63,6 @@ namespace r200
         if(!handle && streams[RS_DEPTH]) handle = streams[RS_DEPTH]->uvcHandle;
         if(!handle && streams[RS_COLOR]) handle = streams[RS_COLOR]->uvcHandle;
         if(handle) r200::SetStreamIntent(handle, streamingModeBitfield);
-    }
-
-    rs_intrinsics R200Camera::GetStreamIntrinsics(int stream)
-    {
-        if(!streams[stream]) throw std::runtime_error("stream not enabled");
-        return streams[stream]->mode.intrinsics;
     }
 
     rs_extrinsics R200Camera::GetStreamExtrinsics(int from, int to)

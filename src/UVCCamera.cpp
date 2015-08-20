@@ -149,4 +149,10 @@ void UVCCamera::WaitAllStreams()
     }
 }
 
+rs_intrinsics UVCCamera::GetStreamIntrinsics(int stream) const
+{
+    if(!streams[stream]) throw std::runtime_error("stream not enabled");
+    return streams[stream]->mode.intrinsics;
+}
+
 } // end namespace rs

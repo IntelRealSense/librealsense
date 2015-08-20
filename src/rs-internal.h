@@ -87,7 +87,7 @@ struct rs_camera
     virtual const uint16_t * GetDepthImage() const = 0;
     virtual const float * GetVertexImage() const = 0;
     
-	virtual rs_intrinsics GetStreamIntrinsics(int stream) = 0;
+    virtual rs_intrinsics GetStreamIntrinsics(int stream) const = 0;
 	virtual rs_extrinsics GetStreamExtrinsics(int from, int to) = 0;
 };
 

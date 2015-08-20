@@ -80,6 +80,8 @@ namespace rs
         const uint16_t * GetDepthImage() const override final { return streams[RS_DEPTH] ? reinterpret_cast<const uint16_t *>(streams[RS_DEPTH]->buffer.front_data()) : nullptr; }
         const float * GetVertexImage() const override final { return vertices.data(); }
 
+        rs_intrinsics GetStreamIntrinsics(int stream) const override final;
+
         virtual int GetDepthCameraNumber() const = 0;
         virtual int GetColorCameraNumber() const = 0;
         virtual void RetrieveCalibration() = 0;
