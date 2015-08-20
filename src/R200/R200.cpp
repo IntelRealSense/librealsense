@@ -5,6 +5,7 @@
 #include "XU.h"
 #include "HardwareIO.h"
 #include "../../include/librealsense/rsutil.h"
+#include <cassert>
 
 using namespace rs;
 
@@ -20,6 +21,18 @@ namespace r200
 
     }
 
+
+    static ResolutionMode MakeDepthMode(int w, int h, const RectifiedIntrinsics & i)
+    {
+        assert(i.rw == w+12 && i.rh == h+12);
+        return {RS_DEPTH, w,h,0,rs::FrameFormat::Z16, 628,h+1,0,UVC_FRAME_FORMAT_Z16, {{w,h}, {i.rfx,i.rfy}, {i.rpx-6,i.rpy-6}, {0,0,0,0,0}}};
+    }
+
+    static ResolutionMode MakeColorMode(const UnrectifiedIntrinsics & i)
+    {
+        return {RS_COLOR, i.w,i.h,60,rs::FrameFormat::RGB, i.w,i.h,59,UVC_FRAME_FORMAT_YUYV, {{i.w,i.h}, {i.fx,i.fy}, {i.px,i.py}, {i.k[0],i.k[1],i.k[2],i.k[3],i.k[4]}}};
+    }
+
     void R200Camera::RetrieveCalibration()
     {
         if(!hardware_io)
@@ -31,6 +44,13 @@ namespace r200
             hardware_io.reset(new DS4HardwareIO(handle));
             //uvc_print_diag(uvc_handle, stderr);
             std::cout << "Firmware Revision: " << GetFirmwareVersion(handle) << std::endl;
+
+            auto calib = hardware_io->GetCalibration();
+            modes.push_back(MakeDepthMode(628, 468, calib.modesLR[0]));
+            modes.push_back(MakeDepthMode(480, 360, calib.modesLR[1]));
+            modes.push_back(MakeDepthMode(320, 240, calib.modesLR[2]));
+            modes.push_back(MakeColorMode(calib.intrinsicsThird[0]));
+            modes.push_back(MakeColorMode(calib.intrinsicsThird[1]));
         }
     }
 
@@ -48,15 +68,8 @@ namespace r200
 
     rs_intrinsics R200Camera::GetStreamIntrinsics(int stream)
     {
-        auto calib = hardware_io->GetCalibration();
-        auto lr = calib.modesLR[0]; // Assumes 628x468 for now
-        auto t = calib.intrinsicsThird[1]; // Assumes 640x480 for now
-        switch(stream)
-        {
-        case RS_DEPTH: return {{static_cast<int>(lr.rw-12),static_cast<int>(lr.rh-12)},{lr.rfx,lr.rfy},{lr.rpx-6,lr.rpy-6},{0,0,0,0,0}};
-        case RS_COLOR: return {{static_cast<int>(t.w),static_cast<int>(t.h)},{t.fx,t.fy},{t.px,t.py},{t.k[0],t.k[1],t.k[2],t.k[3],t.k[4]}};
-        default: throw std::runtime_error("unsupported stream");
-        }
+        if(!streams[stream]) throw std::runtime_error("stream not enabled");
+        return streams[stream]->mode.intrinsics;
     }
 
     rs_extrinsics R200Camera::GetStreamExtrinsics(int from, int to)

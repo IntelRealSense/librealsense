@@ -30,6 +30,21 @@ namespace rs
         else throw std::runtime_error("call to uvc_get_device_descriptor() failed");
     }
 
+    struct ResolutionMode
+    {
+        int stream;                 // RS_DEPTH, RS_COLOR, etc.
+
+        int width, height;          // Resolution visible to the library client
+        int fps;                    // Framerate visible to the library client
+        rs::FrameFormat format;     // Format visible to the library client
+
+        int uvcWidth, uvcHeight;    // Resolution advertised over UVC
+        int uvcFps;                 // Framerate advertised over UVC
+        uvc_frame_format uvcFormat; // Format advertised over UVC
+
+        rs_intrinsics intrinsics;   // Image intrinsics
+    };
+
     class UVCCamera : public rs_camera
     {
         NO_MOVE(UVCCamera);
@@ -41,12 +56,15 @@ namespace rs
             uvc_device_handle_t * uvcHandle = nullptr;
             uvc_stream_ctrl_t ctrl = uvc_stream_ctrl_t{}; // {0};
             TripleBuffer buffer;
+            ResolutionMode mode;
         };
 
         uvc_context_t * internalContext;
         uvc_device_t * hardware = nullptr;
         std::unique_ptr<StreamInterface> streams[2];
         std::vector<float> vertices;
+
+        std::vector<ResolutionMode> modes;
 
     public:
 

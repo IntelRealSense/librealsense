@@ -41,12 +41,24 @@ void UVCCamera::EnableStream(int stream, int width, int height, int fps, FrameFo
 
     streams[stream].reset(new StreamInterface());
     CheckUVC("uvc_open2", uvc_open2(hardware, &streams[stream]->uvcHandle, cameraNumber));
-    //uvc_print_stream_ctrl(&streams[stream]->ctrl, stdout); // Debugging
 
     RetrieveCalibration();
 
-    // TODO: Check formats and the like
-    CheckUVC("uvc_get_stream_ctrl_format_size", uvc_get_stream_ctrl_format_size(streams[stream]->uvcHandle, &streams[stream]->ctrl, static_cast<uvc_frame_format>(format), width, height, fps));
+    ResolutionMode mode = [=]()
+    {
+        for(const auto & mode : modes)
+        {
+            if(mode.stream == stream && mode.width == width && mode.height == height && mode.fps == fps && mode.format == format)
+            {
+                return mode;
+            }
+        }
+        throw std::runtime_error("invalid mode");
+    }();
+
+    streams[stream]->mode = mode;
+    CheckUVC("uvc_get_stream_ctrl_format_size", uvc_get_stream_ctrl_format_size(streams[stream]->uvcHandle, &streams[stream]->ctrl,
+            mode.uvcFormat, mode.uvcWidth, mode.uvcHeight, mode.uvcFps));
 
     switch(stream)
     {
@@ -56,8 +68,8 @@ void UVCCamera::EnableStream(int stream, int width, int height, int fps, FrameFo
         case FrameFormat::Z16:
         case FrameFormat::INVR:
         case FrameFormat::INVZ:
-            streams[stream]->buffer.resize(width * height * sizeof(uint16_t));
-            vertices.resize(width * height * 3);
+            streams[stream]->buffer.resize(mode.width * mode.height * sizeof(uint16_t));
+            vertices.resize(mode.width * mode.height * 3);
             break;
         default: throw std::runtime_error("invalid frame format");
         }
@@ -65,8 +77,8 @@ void UVCCamera::EnableStream(int stream, int width, int height, int fps, FrameFo
     case RS_COLOR:
         switch(format)
         {
-        case FrameFormat::YUYV:
-            streams[stream]->buffer.resize(width * height * 3); break;
+        case FrameFormat::RGB:
+            streams[stream]->buffer.resize(mode.width * mode.height * 3); break;
         default: throw std::runtime_error("invalid frame format");
         }
         break;
@@ -92,7 +104,17 @@ void UVCCamera::StartStreaming()
             case UVC_FRAME_FORMAT_Z16:
             case UVC_FRAME_FORMAT_INVR:
             case UVC_FRAME_FORMAT_INVZ:
-                memcpy(stream->buffer.back_data(), frame->data, (frame->width * frame->height - 1) * sizeof(uint16_t));
+                {
+                    // Copy row-by-row from the original image
+                    auto in = reinterpret_cast<const uint8_t *>(frame->data);
+                    auto out = stream->buffer.back_data();
+                    for(int y=0; y<stream->mode.height; ++y)
+                    {
+                        memcpy(out, in, stream->mode.width * sizeof(uint16_t));
+                        in += stream->mode.uvcWidth * sizeof(uint16_t);
+                        out += stream->mode.width * sizeof(uint16_t);
+                    }
+                }
                 break;
             case UVC_FRAME_FORMAT_YUYV:
                 convert_yuyv_rgb((uint8_t *)frame->data, frame->width, frame->height, stream->buffer.back_data());
