@@ -1,7 +1,6 @@
 #include "R200.h"
 
 #ifdef USE_UVC_DEVICES
-#include "CameraHeader.h"
 #include "XU.h"
 #include "HardwareIO.h"
 #include "../../include/librealsense/rsutil.h"

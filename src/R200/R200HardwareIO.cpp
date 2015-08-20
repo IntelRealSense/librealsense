@@ -1,5 +1,5 @@
 #include "HardwareIO.h"
-#include "ParseCalibration.h"
+#include <cassert>
 
 using namespace std;
 
@@ -55,6 +55,18 @@ namespace r200
 
     #define CAM_INFO_BLOCK_LEN 2048
     
+    template<class T> void swap_endian_bytewise(T & value) { auto p = (uint8_t *)&value; for(size_t i=0; i<sizeof(T)/2; ++i) std::swap(p[i], p[sizeof(T)-i-1]); }
+    void swap_endian(uint16_t & value) { swap_endian_bytewise(value); }
+    void swap_endian(uint32_t & value) { swap_endian_bytewise(value); }
+    void swap_endian(float & value) { swap_endian_bytewise(value); }
+    template<class T, int N> void swap_endian(T (& value)[N]) { for(auto & elem : value) swap_endian(elem); }
+    template<class T, class... U> void swap_endian(T & value, U & ... rest) { swap_endian(value); swap_endian(rest...); }
+    void swap_endian(CalibrationMetadata & value) { swap_endian(value.versionNumber, value.numIntrinsicsRight, value.numIntrinsicsThird, value.numIntrinsicsPlatform, value.numRectifiedModesLR, value.numRectifiedModesThird, value.numRectifiedModesPlatform); }
+    void swap_endian(UnrectifiedIntrinsics & value) { swap_endian(value.fx, value.fy, value.px, value.py, value.k, value.w, value.h); }
+    void swap_endian(RectifiedIntrinsics & value) { swap_endian(value.rfx, value.rfy, value.rpx, value.rpy, value.rw, value.rh); }
+    void swap_endian(CameraCalibrationParameters & value) { swap_endian(value.metadata, value.intrinsicsLeft, value.intrinsicsRight, value.intrinsicsThird, value.intrinsicsPlatform,
+        value.modesLR, value.modesThird, value.modesPlatform, value.Rleft, value.Rright, value.Rthird, value.Rplatform, value.B, value.T, value.Tplatform, value.Rworld, value.Tworld); }
+
     class DS4HardwareIOInternal
     {
         CameraCalibrationParameters cameraCalibration;
@@ -73,10 +85,11 @@ namespace r200
             if (!read_admin_sector(flashDataBuffer, NV_CALIBRATION_DATA_ADDRESS_INDEX))
                 throw std::runtime_error("Could not read calibration sector");
 
-            memcpy(calibrationDataBuffer, flashDataBuffer, CAM_INFO_BLOCK_LEN);
-            memcpy(&cameraInfo, flashDataBuffer + CAM_INFO_BLOCK_LEN, sizeof(cameraInfo));
+            assert(sizeof(cameraCalibration) <= CAM_INFO_BLOCK_LEN);
+            memcpy(&cameraCalibration, flashDataBuffer, CAM_INFO_BLOCK_LEN);
+            swap_endian(cameraCalibration);
 
-            cameraCalibration = ParseCalibrationParameters(calibrationDataBuffer);
+            memcpy(&cameraInfo, flashDataBuffer + CAM_INFO_BLOCK_LEN, sizeof(cameraInfo));
         }
 
         bool read_pages(uint32_t address, unsigned char * buffer, uint32_t nPages)
@@ -246,9 +259,8 @@ namespace r200
             std::cout << "## rh:  " << params.rh << std::endl;
         }
 
-        CameraCalibrationParameters & GetCalibration() { return cameraCalibration; }
-
-        CameraHeaderInfo & GetCameraHeader() { return cameraInfo; }
+        CameraCalibrationParameters GetCalibration() { return cameraCalibration; }
+        CameraHeaderInfo GetCameraHeader() { return cameraInfo; }
     };
 
     DS4HardwareIO::DS4HardwareIO(uvc_device_handle_t * deviceHandle)
@@ -262,12 +274,12 @@ namespace r200
 
     }
 
-    CameraCalibrationParameters & DS4HardwareIO::GetCalibration()
+    CameraCalibrationParameters DS4HardwareIO::GetCalibration()
     {
         return internal->GetCalibration();
     }
 
-    CameraHeaderInfo & DS4HardwareIO::GetCameraHeader()
+    CameraHeaderInfo DS4HardwareIO::GetCameraHeader()
     {
         return internal->GetCameraHeader();
     }
