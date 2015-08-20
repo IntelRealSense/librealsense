@@ -8,26 +8,30 @@
 namespace rs
 {
     
-UVCCamera::UVCCamera(uvc_context_t * c, uvc_device_t * h) : hardware(h), internalContext(c)
+UVCCamera::UVCCamera(uvc_context_t * context, uvc_device_t * device) : context(context), device(device)
 {
     uvc_device_descriptor_t * desc;
-    uvc_error_t status = uvc_get_device_descriptor(h, &desc);
-    if(status < 0) {} // Handle error
+    CheckUVC("uvc_get_device_descriptor", uvc_get_device_descriptor(device, &desc));
 
     cameraName = desc->product;
+    // Other interesting properties
+    // desc->serialNumber
+    // desc->idVendor
+    // desc->idProduct
+
     uvc_free_device_descriptor(desc);
 }
 
 UVCCamera::~UVCCamera()
 {
     for(auto & s : streams) s = nullptr;
-    uvc_unref_device(hardware);
+    uvc_unref_device(device);
 }
 
 void UVCCamera::EnableStream(int stream, int width, int height, int fps, int format)
 {
     // Open interface to stream
-    streams[stream].reset(new StreamInterface(hardware, GetStreamSubdeviceNumber(stream)));
+    streams[stream].reset(new StreamInterface(device, GetStreamSubdeviceNumber(stream)));
 
     // If this was the first interface to open, give subclass a change to retrieve calibration information
     RetrieveCalibration();
@@ -49,11 +53,6 @@ void UVCCamera::EnableStream(int stream, int width, int height, int fps, int for
 
 void UVCCamera::StartStreaming()
 {
-    GetUSBInfo(hardware, usbInfo);
-    // std::cout << "Serial Number: " << usbInfo.serial << std::endl;
-    // std::cout << "USB VID: " << usbInfo.vid << std::endl;
-    // std::cout << "USB PID: " << usbInfo.pid << std::endl;
-
     SetStreamIntent(!!streams[RS_DEPTH], !!streams[RS_COLOR]);
     for(auto & stream : streams) if(stream) stream->start_streaming();
 }
@@ -112,23 +111,17 @@ void UVCCamera::StreamInterface::start_streaming()
             assert(frame->width == mode.uvcWidth && frame->height == mode.uvcHeight && frame->frame_format == mode.uvcFormat);
 
             // Copy or convert the image into the back buffer
-            if(mode.format == RS_Z16)
+            switch(mode.format)
             {
-                auto in = reinterpret_cast<const uint8_t *>(frame->data);
-                auto out = self->back.data();
-                for(int y=0; y<mode.height; ++y)
-                {
-                    memcpy(out, in, mode.width * sizeof(uint16_t));
-                    in += mode.uvcWidth * sizeof(uint16_t);
-                    out += mode.width * sizeof(uint16_t);
-                }
-            }
-            else if(mode.format == RS_RGB)
-            {
+            case RS_Z16:
+                copy_strided_image(self->back.data(), mode.width * sizeof(uint16_t), frame->data, mode.uvcWidth * sizeof(uint16_t), mode.height);
+                break;
+            case RS_RGB:
                 assert(mode.uvcFormat == UVC_FRAME_FORMAT_YUYV);
                 convert_yuyv_to_rgb(self->back.data(), frame->width, frame->height, (uint8_t *)frame->data);
+                break;
+            default: throw std::runtime_error("bad format");
             }
-            else throw std::runtime_error("bad format");
 
             // Swap the backbuffer to the middle buffer and indicate that we have updated
             std::lock_guard<std::mutex> guard(self->mutex);

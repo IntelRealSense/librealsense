@@ -110,7 +110,7 @@ void rs_delete_context(rs_context * context, rs_error ** error)
 const char * rs_get_camera_name(rs_camera * camera, rs_error ** error)
 {
     BEGIN_EXCEPTION_FIREWALL
-    return camera->cameraName.c_str();
+    return camera->GetCameraName();
     END_EXCEPTION_FIREWALL
 }
 

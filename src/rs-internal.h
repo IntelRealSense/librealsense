@@ -24,13 +24,6 @@
 
 namespace rs
 {
-	struct USBDeviceInfo
-	{
-		std::string serial;
-		uint16_t vid;
-		uint16_t pid;
-	};
-
 	struct ToString
 	{
 		std::ostringstream ss;
@@ -48,9 +41,7 @@ struct rs_error
 
 struct rs_camera
 {
-    std::string cameraName;
-
-    rs::USBDeviceInfo usbInfo = {};
+    virtual const char * GetCameraName() const = 0;
 
     virtual void EnableStream(int stream, int width, int height, int fps, int format) = 0;
     virtual void EnableStreamPreset(int stream, int preset) = 0;

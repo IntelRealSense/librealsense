@@ -66,7 +66,7 @@ namespace f200
     {
         if(!hardware_io)
         {
-            hardware_io.reset(new IVCAMHardwareIO(internalContext));
+            hardware_io.reset(new IVCAMHardwareIO(context));
             const CameraCalibrationParameters & calib = hardware_io->GetParameters();
 
             modes.push_back(MakeDepthMode(calib, 640, 480));

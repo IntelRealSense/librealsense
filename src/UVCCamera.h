@@ -17,19 +17,6 @@ namespace rs
         }
     }
 
-    inline void GetUSBInfo(uvc_device_t * dev, rs::USBDeviceInfo & info)
-    {
-        uvc_device_descriptor_t * desc;
-        if (uvc_get_device_descriptor(dev, &desc) == UVC_SUCCESS)
-        {
-            if (desc->serialNumber) info.serial = desc->serialNumber;
-            if (desc->idVendor) info.vid = desc->idVendor;
-            if (desc->idProduct) info.pid = desc->idProduct;
-            uvc_free_device_descriptor(desc);
-        }
-        else throw std::runtime_error("call to uvc_get_device_descriptor() failed");
-    }
-
     struct ResolutionMode
     {
         int stream;                 // RS_DEPTH, RS_COLOR, etc.
@@ -70,16 +57,19 @@ namespace rs
             bool update_image();
         };
 
-        uvc_context_t * internalContext;
-        uvc_device_t * hardware = nullptr;
+        uvc_context_t * context;
+        uvc_device_t * device;
         std::unique_ptr<StreamInterface> streams[2];
 
+        std::string cameraName;
         std::vector<ResolutionMode> modes;
 
         uvc_device_handle_t * GetHandleToAnyStream();
     public:
-        UVCCamera(uvc_context_t * ctx, uvc_device_t * device);
+        UVCCamera(uvc_context_t * context, uvc_device_t * device);
         ~UVCCamera();
+
+        const char * GetCameraName() const override final { return cameraName.c_str(); }
 
         void EnableStream(int stream, int width, int height, int fps, int format) override final;
         void StartStreaming() override final;
