@@ -46,8 +46,6 @@ float               rs_get_depth_scale      (struct rs_camera * camera, struct r
 void                rs_get_stream_intrinsics(struct rs_camera * camera, int stream, struct rs_intrinsics * intrin, struct rs_error ** error);
 void                rs_get_stream_extrinsics(struct rs_camera * camera, int stream_from, int stream_to, struct rs_extrinsics * extrin, struct rs_error ** error);
 
-void                rs_compute_vertex_image (struct rs_camera * camera, float * buffer, ...);
-
 const char *		rs_get_failed_function	(struct rs_error * error);
 const char *		rs_get_error_message	(struct rs_error * error);
 void				rs_free_error			(struct rs_error * error);

@@ -1,4 +1,5 @@
 #include "UVCCamera.h"
+#include "image.h"
 
 ////////////////
 // UVC Camera //
@@ -125,7 +126,7 @@ void UVCCamera::StreamInterface::start_streaming()
             else if(mode.format == RS_RGB)
             {
                 assert(mode.uvcFormat == UVC_FRAME_FORMAT_YUYV);
-                convert_yuyv_rgb((uint8_t *)frame->data, frame->width, frame->height, self->back.data());
+                convert_yuyv_to_rgb(self->back.data(), frame->width, frame->height, (uint8_t *)frame->data);
             }
             else throw std::runtime_error("bad format");
 

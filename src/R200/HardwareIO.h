@@ -4,6 +4,7 @@
 #define LIBREALSENSE_R200_HARDWARE_IO_H
 
 #include <libuvc/libuvc.h>
+#include <memory>
 
 #include "XU.h"
 #include "CameraHeader.h"

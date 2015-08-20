@@ -3,6 +3,14 @@
 
 #include "../include/librealsense/rs.h"
 
+#include <cassert>      // For assert
+#include <cstring>      // For memcpy
+#include <sstream>      // For ostringstream
+#include <memory>       // For shared_ptr
+#include <vector>       // For vector
+#include <thread>       // For thread
+#include <mutex>        // For mutex
+
 // Currently, we will use DSAPI on Windows and libuvc everywhere else
 #ifdef WIN32
 #define USE_DSAPI_DEVICES
@@ -13,8 +21,6 @@
 #ifdef USE_UVC_DEVICES
 #include <libuvc/libuvc.h>
 #endif
-
-#include "Common.h"
 
 namespace rs
 {
@@ -62,7 +68,6 @@ struct rs_camera
 
 struct rs_context
 {
-	NO_MOVE(rs_context);
     #ifdef USE_UVC_DEVICES
 	uvc_context_t * privateContext;
     #endif

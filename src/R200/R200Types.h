@@ -3,8 +3,9 @@
 #ifndef LIBREALSENSE_R200_TYPES_H
 #define LIBREALSENSE_R200_TYPES_H
 
-#include "../Common.h"
 #include <cstdint>
+#include <vector>
+#include <array>
 
 namespace r200
 {
