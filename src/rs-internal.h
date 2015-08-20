@@ -41,15 +41,7 @@ namespace rs
 		INVZ, //Depth
 		INRI, //Depth (24 bit)
 		COUNT
-	};
-
-	struct StreamConfiguration
-	{
-		int width;
-		int height;
-		int fps;
-		FrameFormat format;
-	};
+    };
 
 	struct USBDeviceInfo
 	{
@@ -82,10 +74,6 @@ struct rs_camera
 
     rs::USBDeviceInfo usbInfo = {};
 
-    TripleBufferedFrame<uint16_t> depthFrame;
-    TripleBufferedFrame<uint8_t> colorFrame;
-    std::vector<float> vertices;
-
 	rs_camera(int index) : cameraIdx(index) {}
     ~rs_camera() {}
 
@@ -93,16 +81,14 @@ struct rs_camera
     virtual void EnableStreamPreset(int stream, int preset) = 0;
     virtual void StartStreaming() = 0;
     virtual void StopStreaming() = 0;
+    virtual void WaitAllStreams() = 0;
 
-    void WaitAllStreams();
+    virtual const uint8_t * GetColorImage() const = 0;
+    virtual const uint16_t * GetDepthImage() const = 0;
+    virtual const float * GetVertexImage() const = 0;
     
 	virtual rs_intrinsics GetStreamIntrinsics(int stream) = 0;
 	virtual rs_extrinsics GetStreamExtrinsics(int from, int to) = 0;
-    virtual void ComputeVertexImage() = 0;
-
-    const uint8_t * GetColorImage() const { return colorFrame.front_data(); }
-    const uint16_t * GetDepthImage() const { return depthFrame.front_data(); }
-    const float * GetVertexImage() const { return vertices.data(); }
 };
 
 struct rs_context

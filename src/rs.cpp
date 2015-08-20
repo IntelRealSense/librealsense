@@ -80,12 +80,6 @@ void rs_context::QueryDeviceList()
     #endif
 }
 
-void rs_camera::WaitAllStreams()
-{
-    colorFrame.swap_front();
-    if(depthFrame.swap_front()) ComputeVertexImage();
-}
-
 ////////////////////////
 // API implementation //
 ////////////////////////

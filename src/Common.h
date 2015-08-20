@@ -32,27 +32,20 @@
 // Triple Buffer //
 ///////////////////
 
-template<class T> class TripleBufferedFrame
+class TripleBuffer
 {
     volatile bool updated=false;
-    int width=0, height=0, channels=0;
-    std::vector<T> front, middle, back;
+    std::vector<uint8_t> front, middle, back;
     std::mutex mutex;
 public:
-    int get_width() const { return width; }
-    int get_height() const { return height; }
-
-    void resize(int width, int height, int channels)
+    void resize(size_t size)
     {
-        this->width = width;
-        this->height = height;
-        this->channels = channels;
-        front.resize(width * height * channels);
+        front.resize(size);
         back = middle = front;
     }
 
-    const T * front_data() const { return front.data(); }
-    T * back_data() { return back.data(); }
+    const uint8_t * front_data() const { return front.data(); }
+    uint8_t * back_data() { return back.data(); }
 
     void swap_back()
     {

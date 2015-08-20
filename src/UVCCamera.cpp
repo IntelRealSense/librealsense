@@ -58,7 +58,7 @@ void UVCCamera::EnableStream(int stream, int width, int height, int fps, FrameFo
         case FrameFormat::Z16:
         case FrameFormat::INVR:
         case FrameFormat::INVZ:
-            depthFrame.resize(width, height, 1);
+            depthFrame.resize(width * height * sizeof(uint16_t));
             vertices.resize(width * height * 3);
             break;
         default: throw std::runtime_error("invalid frame format");
@@ -68,7 +68,7 @@ void UVCCamera::EnableStream(int stream, int width, int height, int fps, FrameFo
         switch(format)
         {
         case FrameFormat::YUYV:
-            colorFrame.resize(width, height, 3); break;
+            colorFrame.resize(width * height * 3); break;
         default: throw std::runtime_error("invalid frame format");
         }
         break;
@@ -112,4 +112,10 @@ void UVCCamera::StopStreaming()
 
 }
     
+void UVCCamera::WaitAllStreams()
+{
+    colorFrame.swap_front();
+    if(depthFrame.swap_front()) ComputeVertexImage();
+}
+
 } // end namespace rs
