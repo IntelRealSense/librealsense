@@ -27,7 +27,13 @@ The goal of librealsense is to provide a reasonable hardware abstraction with mi
   * `sudo apt-get update && apt-get upgrade`
 3. Install appropriate dependencies via apt-get
   * `sudo apt-get install glfw3`
-  * `suto apt-get install libusb-dev`
+  * `sudo apt-get install libusb-dev`
+4. We are using QtCreator as an IDE for Linux development on Ubuntu. While makefiles will eventually be supported, you will need to download and install the IDE to compile the library
+  * `sudo apt-get install qtcreator`
+
+## Releases
+
+Binary releases for OSX and Linux can be found on the Github repository page under the Releases tab. 
 
 ## License
 
