@@ -38,9 +38,7 @@ namespace rs
         
         struct StreamInterface
         {
-            UVCCamera * camera = nullptr;
             uvc_device_handle_t * uvcHandle = nullptr;
-            uvc_frame_format fmt = UVC_FRAME_FORMAT_UNKNOWN;
             uvc_stream_ctrl_t ctrl = uvc_stream_ctrl_t{}; // {0};
             TripleBuffer buffer;
         };

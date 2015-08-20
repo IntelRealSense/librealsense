@@ -40,15 +40,13 @@ void UVCCamera::EnableStream(int stream, int width, int height, int fps, FrameFo
     }
 
     streams[stream].reset(new StreamInterface());
-    streams[stream]->camera = this;
     CheckUVC("uvc_open2", uvc_open2(hardware, &streams[stream]->uvcHandle, cameraNumber));
-    uvc_print_stream_ctrl(&streams[stream]->ctrl, stdout); // Debugging
+    //uvc_print_stream_ctrl(&streams[stream]->ctrl, stdout); // Debugging
 
     RetrieveCalibration();
 
     // TODO: Check formats and the like
-    streams[stream]->fmt = static_cast<uvc_frame_format>(format);
-    CheckUVC("uvc_get_stream_ctrl_format_size", uvc_get_stream_ctrl_format_size(streams[stream]->uvcHandle, &streams[stream]->ctrl, streams[stream]->fmt, width, height, fps));
+    CheckUVC("uvc_get_stream_ctrl_format_size", uvc_get_stream_ctrl_format_size(streams[stream]->uvcHandle, &streams[stream]->ctrl, static_cast<uvc_frame_format>(format), width, height, fps));
 
     switch(stream)
     {
@@ -89,7 +87,7 @@ void UVCCamera::StartStreaming()
         auto callback = [](uvc_frame_t * frame, void * ptr)
         {
             auto stream = static_cast<StreamInterface*>(ptr);
-            switch(stream->fmt)
+            switch(frame->frame_format)
             {
             case UVC_FRAME_FORMAT_Z16:
             case UVC_FRAME_FORMAT_INVR:
