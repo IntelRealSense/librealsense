@@ -44,9 +44,6 @@ void UVCCamera::EnableStream(int stream, int width, int height, int fps, int for
         throw std::runtime_error("invalid mode");
     }();
     streams[stream]->set_mode(mode);
-
-    // If this is the depth stream, reserve space for vertex image
-    if(stream == RS_DEPTH) vertices.resize(mode.width * mode.height * 3);
 }
 
 void UVCCamera::StartStreaming()
@@ -74,10 +71,7 @@ void UVCCamera::WaitAllStreams()
 
     if(streams[RS_DEPTH])
     {
-        if(streams[RS_DEPTH]->update_image())
-        {
-            ComputeVertexImage();
-        }
+        streams[RS_DEPTH]->update_image();
     }
 }
 

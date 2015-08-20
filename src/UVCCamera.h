@@ -73,7 +73,6 @@ namespace rs
         uvc_context_t * internalContext;
         uvc_device_t * hardware = nullptr;
         std::unique_ptr<StreamInterface> streams[2];
-        std::vector<float> vertices;
 
         std::vector<ResolutionMode> modes;
 
@@ -89,14 +88,12 @@ namespace rs
 
         const uint8_t * GetColorImage() const override final { return streams[RS_COLOR] ? streams[RS_COLOR]->get_image<uint8_t>() : nullptr; }
         const uint16_t * GetDepthImage() const override final { return streams[RS_DEPTH] ? streams[RS_DEPTH]->get_image<uint16_t>() : nullptr; }
-        const float * GetVertexImage() const override final { return vertices.data(); }
 
         rs_intrinsics GetStreamIntrinsics(int stream) const override final;
 
         virtual int GetStreamSubdeviceNumber(int stream) const = 0;
         virtual void RetrieveCalibration() = 0;
         virtual void SetStreamIntent(bool depth, bool color) = 0;
-        virtual void ComputeVertexImage() = 0;
     };
     
 } // end namespace rs

@@ -28,7 +28,7 @@ namespace f200
         void RetrieveCalibration() override final;
         void SetStreamIntent(bool depth, bool color) override final {}
 
-        void EnableStreamPreset(int streamIdentifier, int preset) override
+        void EnableStreamPreset(int streamIdentifier, int preset) override final
         {
             switch(streamIdentifier)
             {
@@ -38,8 +38,8 @@ namespace f200
             }
         }
         
-        rs_extrinsics GetStreamExtrinsics(int from, int to) override;
-        void ComputeVertexImage() override;
+        rs_extrinsics GetStreamExtrinsics(int from, int to) override final;
+        float GetDepthScale() const override final;
     };
     
 } // end namespace f200

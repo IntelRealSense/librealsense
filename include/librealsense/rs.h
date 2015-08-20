@@ -17,6 +17,7 @@ struct rs_intrinsics
     float focal_length[2];      /* focal length of the image plane, as a multiple of pixel width and height */
     float principal_point[2];   /* coordinates of the principal point of the image, as a pixel offset from the top left */
     float distortion_coeff[5];  /* distortion coefficients */
+    int distortion_model;       /* distortion model of the image */
 };
 
 struct rs_extrinsics
@@ -40,10 +41,12 @@ void                rs_wait_all_streams     (struct rs_camera * camera, struct r
 
 const uint8_t *		rs_get_color_image		(struct rs_camera * camera, struct rs_error ** error);
 const uint16_t *	rs_get_depth_image		(struct rs_camera * camera, struct rs_error ** error);
-const float *       rs_get_vertex_image		(struct rs_camera * camera, struct rs_error ** error);
+float               rs_get_depth_scale      (struct rs_camera * camera, struct rs_error ** error);
 
 void                rs_get_stream_intrinsics(struct rs_camera * camera, int stream, struct rs_intrinsics * intrin, struct rs_error ** error);
 void                rs_get_stream_extrinsics(struct rs_camera * camera, int stream_from, int stream_to, struct rs_extrinsics * extrin, struct rs_error ** error);
+
+void                rs_compute_vertex_image (struct rs_camera * camera, float * buffer, ...);
 
 const char *		rs_get_failed_function	(struct rs_error * error);
 const char *		rs_get_error_message	(struct rs_error * error);
@@ -61,9 +64,12 @@ void				rs_free_error			(struct rs_error * error);
 #define RS_RGB              2
 
 /* Valid arguments for rs_enable_stream_preset's preset argument */
-#define RS_BEST_QUALITY     0   /* Preset recommended for best quality and stability */
+#define RS_BEST_QUALITY     0                       /* Preset recommended for best quality and stability */
 
-
+/* Valid values for rs_intrinsics' distortion_model field */
+#define RS_NO_DISTORTION                        0   /* Rectilinear images, no distortion compensation required */
+#define RS_GORDON_BROWN_CONRADY_DISTORTION      1   /* Equivalent to Brown-Conrady distortion, except that tangential distortion is applied to radially distorted points */
+#define RS_INVERSE_BROWN_CONRADY_DISTORTION     2   /* Equivalent to Brown-Conrady distortion, except undistorts image instead of distorting it */
 
 #ifdef __cplusplus
 }

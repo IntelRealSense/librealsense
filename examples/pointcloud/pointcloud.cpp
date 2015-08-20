@@ -160,21 +160,21 @@ int main(int argc, char * argv[]) try
 
         glPointSize((float)width/640);
         glBegin(GL_POINTS);
-
-        auto v = rs_get_vertex_image(cam.get_handle(), 0);
+        auto depth = cam.get_depth_image();
+        float scale = rs_get_depth_scale(cam.get_handle(), 0);
 		for(int y=0; y<depth_intrin.image_size[1]; ++y)
 		{
 			for(int x=0; x<depth_intrin.image_size[0]; ++x)
 			{
-                if(v[2])
+                if(auto d = *depth++)
 				{
-                    float color_point[3], color_pixel[2];
-                    rs_transform_point_to_point(v, extrin, color_point);
-                    rs_project_point_to_pixel(color_point, color_intrin, color_pixel);
+                    float depth_pixel[2] = {x,y}, depth_point[3], color_point[3], color_pixel[2];
+                    rs_deproject_pixel_to_point(depth_point, depth_intrin, depth_pixel, d*scale);
+                    rs_transform_point_to_point(color_point, extrin, depth_point);
+                    rs_project_point_to_pixel(color_pixel, color_intrin, color_point);
                     glTexCoord2f(color_pixel[0] / color_intrin.image_size[0], color_pixel[1] / color_intrin.image_size[1]);
-                    glVertex3f(v[0]*0.001f, v[1]*0.001f, v[2]*0.001f);
+                    glVertex3f(depth_point[0]*0.001f, depth_point[1]*0.001f, depth_point[2]*0.001f);
 				}
-                v += 3;
 			}
 		}
 		glEnd();

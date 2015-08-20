@@ -2,58 +2,56 @@
 #define LIBREALSENSE_UTIL_INCLUDE_GUARD
 
 #include "rs.h"
+#include "assert.h"
 
-/* Transform 3D coordinates to pixel coordinate in an image (which can potentially contain distortion) */
-inline void rs_project_point_to_pixel(const float point[3], const rs_intrinsics & intrin, float pixel[2])
+/* Given a point in 3D space, compute the corresponding pixel coordinates in an image with no distortion or forward distortion coefficients produced by the same camera */
+inline void rs_project_point_to_pixel(float pixel[2], const rs_intrinsics & intrin, const float point[3])
 {
-	float t[] = { point[0] / point[2], point[1] / point[2] }, r2 = t[0] * t[0] + t[1] * t[1];
-	float f = 1 + r2 * (intrin.distortion_coeff[0] + r2 * (intrin.distortion_coeff[1] + r2 * intrin.distortion_coeff[4]));
-	t[0] *= f; t[1] *= f;
-	pixel[0] = intrin.principal_point[0] + intrin.focal_length[0] * (t[0] + 2*intrin.distortion_coeff[2]*t[0]*t[1] + intrin.distortion_coeff[3] * (r2 + 2*t[0]*t[0]));
-	pixel[1] = intrin.principal_point[1] + intrin.focal_length[1] * (t[1] + 2*intrin.distortion_coeff[3]*t[0]*t[1] + intrin.distortion_coeff[2] * (r2 + 2*t[1]*t[1]));
+    assert(intrin.distortion_model != RS_INVERSE_BROWN_CONRADY_DISTORTION); // Cannot project to an inverse-distorted image
+
+    float x = point[0] / point[2], y = point[1] / point[2];
+    if(intrin.distortion_model == RS_GORDON_BROWN_CONRADY_DISTORTION)
+    {
+        float r2  = x*x + y*y;
+        float f = 1 + intrin.distortion_coeff[0]*r2 + intrin.distortion_coeff[1]*r2*r2 + intrin.distortion_coeff[4]*r2*r2*r2;
+        x *= f;
+        y *= f;
+        float dx = x + 2*intrin.distortion_coeff[2]*x*y + intrin.distortion_coeff[3]*(r2 + 2*x*x);
+        float dy = y + 2*intrin.distortion_coeff[3]*x*y + intrin.distortion_coeff[2]*(r2 + 2*y*y);
+        x = dx;
+        y = dy;
+    }
+    pixel[0] = x * intrin.focal_length[0] + intrin.principal_point[0];
+    pixel[1] = y * intrin.focal_length[1] + intrin.principal_point[1];
 }
 
-/* Transform 3D coordinates to pixel coordinate in a rectified image (assumes no distortion) */
-inline void rs_project_point_to_rectified_pixel(const float point[3], const rs_intrinsics & intrin, float pixel[2])
+/* Given pixel coordinates and depth in an image with no distortion or inverse distortion coefficients, compute the corresponding point in 3D space relative to the same camera */
+inline void rs_deproject_pixel_to_point(float point[3], const rs_intrinsics & intrin, const float pixel[2], float depth)
 {
-	pixel[0] = intrin.principal_point[0] + intrin.focal_length[0] * point[0] / point[2];
-	pixel[1] = intrin.principal_point[1] + intrin.focal_length[1] * point[1] / point[2];
+    assert(intrin.distortion_model != RS_GORDON_BROWN_CONRADY_DISTORTION); // Cannot deproject from a forward-distorted image
+
+    float x = (pixel[0] - intrin.principal_point[0]) / intrin.focal_length[0];
+    float y = (pixel[1] - intrin.principal_point[1]) / intrin.focal_length[1];
+    if(intrin.distortion_model == RS_INVERSE_BROWN_CONRADY_DISTORTION)
+    {
+        float r2  = x*x + y*y;
+        float f = 1 + intrin.distortion_coeff[0]*r2 + intrin.distortion_coeff[1]*r2*r2 + intrin.distortion_coeff[4]*r2*r2*r2;
+        float ux = x*f + 2*intrin.distortion_coeff[2]*x*y + intrin.distortion_coeff[3]*(r2 + 2*x*x);
+        float uy = y*f + 2*intrin.distortion_coeff[3]*x*y + intrin.distortion_coeff[2]*(r2 + 2*y*y);
+        x = ux;
+        y = uy;
+    }
+    point[0] = depth * x;
+    point[1] = depth * y;
+    point[2] = depth;
 }
 
-/* Transform pixel coordinates in a rectified image to 3D coordinates (assumes no distortion) */
-inline void rs_deproject_rectified_pixel_to_point(const float pixel[2], float depth, const rs_intrinsics & intrin, float point[3])
-{
-	point[0] = depth * (pixel[0] - intrin.principal_point[0]) / intrin.focal_length[0];
-	point[1] = depth * (pixel[1] - intrin.principal_point[1]) / intrin.focal_length[1];
-	point[2] = depth;
-}
-
-/* Transform 3D coordinates from one viewpoint to 3D coordinates in another viewpoint */
-inline void rs_transform_point_to_point(const float from_point[3], const rs_extrinsics & extrin, float to_point[3])
+/* Transform 3D coordinates relative to one sensor to 3D coordinates relative to another viewpoint */
+inline void rs_transform_point_to_point(float to_point[3], const rs_extrinsics & extrin, const float from_point[3])
 {
 	to_point[0] = extrin.rotation[0] * from_point[0] + extrin.rotation[1] * from_point[1] + extrin.rotation[2] * from_point[2] + extrin.translation[0];
 	to_point[1] = extrin.rotation[3] * from_point[0] + extrin.rotation[4] * from_point[1] + extrin.rotation[5] * from_point[2] + extrin.translation[1];
 	to_point[2] = extrin.rotation[6] * from_point[0] + extrin.rotation[7] * from_point[1] + extrin.rotation[8] * from_point[2] + extrin.translation[2];
-}
-
-/* Transform from pixel coordinates from a rectified image to pixel coordinates in another image (assumes no distortion in the first image) */
-inline void rs_transform_rectified_pixel_to_pixel(const float * from_pixel, float from_depth, const rs_intrinsics & from_intrin,
-												  const rs_extrinsics & extrin, const rs_intrinsics & to_intrin, float * to_pixel)
-{
-	float from_point[3], to_point[3];
-	rs_deproject_rectified_pixel_to_point(from_pixel, from_depth, from_intrin, from_point);
-	rs_transform_point_to_point(from_point, extrin, to_point);
-	rs_project_point_to_pixel(to_point, to_intrin, to_pixel);
-}
-
-/* Transform from pixel coordinates from a rectified image to pixel coordinates in another rectified image (assumes no distortion in either image) */
-inline void rs_transform_rectified_pixel_to_rectified_pixel(const float * from_pixel, float from_depth, const rs_intrinsics & from_intrin,
-															const rs_extrinsics & extrin, const rs_intrinsics & to_intrin, float * to_pixel)
-{
-	float from_point[3], to_point[3];
-	rs_deproject_rectified_pixel_to_point(from_pixel, from_depth, from_intrin, from_point);
-	rs_transform_point_to_point(from_point, extrin, to_point);
-	rs_project_point_to_rectified_pixel(to_point, to_intrin, to_pixel);
 }
 
 #endif

@@ -163,10 +163,10 @@ const uint16_t * rs_get_depth_image(rs_camera * camera, rs_error ** error)
     END_EXCEPTION_FIREWALL
 }
 
-const float * rs_get_vertex_image(rs_camera * camera, rs_error ** error)
+float rs_get_depth_scale(rs_camera * camera, rs_error ** error)
 {
     BEGIN_EXCEPTION_FIREWALL
-    return camera->GetVertexImage();
+    return camera->GetDepthScale();
     END_EXCEPTION_FIREWALL
 }
 
