@@ -1,13 +1,4 @@
-#include "F200Types.h"
-#include "Calibration.h"
-#include "Projection.h"
 #include "HardwareIO.h"
-
-#include <libuvc/libuvc.h>
-
-#include <thread>
-#include <atomic>
-#include <mutex>
 
 namespace f200
 {
@@ -71,389 +62,472 @@ namespace f200
     // Private Hardware I/O //
     //////////////////////////
 
-    class IVCAMHardwareIOInternal
+    int IVCAMHardwareIO::PrepareUSBCommand(uint8_t * request, size_t & requestSize, uint32_t op,
+                          uint32_t p1, uint32_t p2, uint32_t p3, uint32_t p4, uint8_t * data, size_t dataLength)
     {
-        libusb_device_handle * usbDeviceHandle = nullptr;
-        std::timed_mutex usbMutex;
 
-        CameraCalibrationParameters parameters;
+        if (requestSize < IVCAM_MONITOR_HEADER_SIZE)
+            return 0;
 
-        std::thread temperatureThread;
-        std::atomic<bool> isTemperatureThreadRunning;
+        int index = sizeof(uint16_t);
+        *(uint16_t *)(request + index) = IVCAM_MONITOR_MAGIC_NUMBER;
+        index += sizeof(uint16_t);
+        *(uint32_t *)(request + index) = op;
+        index += sizeof(uint32_t);
+        *(uint32_t *)(request + index) = p1;
+        index += sizeof(uint32_t);
+        *(uint32_t *)(request + index) = p2;
+        index += sizeof(uint32_t);
+        *(uint32_t *)(request + index) = p3;
+        index += sizeof(uint32_t);
+        *(uint32_t *)(request + index) = p4;
+        index += sizeof(uint32_t);
 
-        int PrepareUSBCommand(uint8_t * request, size_t & requestSize, uint32_t op,
-                              uint32_t p1 = 0, uint32_t p2 = 0, uint32_t p3 = 0, uint32_t p4 = 0,
-                              uint8_t * data = 0, size_t dataLength = 0)
+        if (dataLength)
         {
-
-            if (requestSize < IVCAM_MONITOR_HEADER_SIZE)
-                return 0;
-
-            int index = sizeof(uint16_t);
-            *(uint16_t *)(request + index) = IVCAM_MONITOR_MAGIC_NUMBER;
-            index += sizeof(uint16_t);
-            *(uint32_t *)(request + index) = op;
-            index += sizeof(uint32_t);
-            *(uint32_t *)(request + index) = p1;
-            index += sizeof(uint32_t);
-            *(uint32_t *)(request + index) = p2;
-            index += sizeof(uint32_t);
-            *(uint32_t *)(request + index) = p3;
-            index += sizeof(uint32_t);
-            *(uint32_t *)(request + index) = p4;
-            index += sizeof(uint32_t);
-
-            if (dataLength)
-            {
-                memcpy(request + index , data, dataLength);
-                index += dataLength;
-            }
-
-            // Length doesn't include header size (sizeof(uint32_t))
-            *(uint16_t *)request = (uint16_t)(index - sizeof(uint32_t));
-            requestSize = index;
-            return index;
+            memcpy(request + index , data, dataLength);
+            index += dataLength;
         }
 
-        int ExecuteUSBCommand(uint8_t *out, size_t outSize, uint32_t & op, uint8_t * in, size_t & inSize)
+        // Length doesn't include header size (sizeof(uint32_t))
+        *(uint16_t *)request = (uint16_t)(index - sizeof(uint32_t));
+        requestSize = index;
+        return index;
+    }
+
+    int IVCAMHardwareIO::ExecuteUSBCommand(uint8_t *out, size_t outSize, uint32_t & op, uint8_t * in, size_t & inSize)
+    {
+        // write
+        errno = 0;
+
+        int outXfer;
+
+        if (usbMutex.try_lock_for(std::chrono::milliseconds(IVCAM_MONITOR_MUTEX_TIMEOUT)))
         {
-            // write
-            errno = 0;
+            int ret = libusb_bulk_transfer(usbDeviceHandle, IVCAM_MONITOR_ENDPOINT_OUT, out, (int) outSize, &outXfer, 1000); // timeout in ms
 
-            int outXfer;
-
-            if (usbMutex.try_lock_for(std::chrono::milliseconds(IVCAM_MONITOR_MUTEX_TIMEOUT)))
+            if (ret < 0 )
             {
-                int ret = libusb_bulk_transfer(usbDeviceHandle, IVCAM_MONITOR_ENDPOINT_OUT, out, (int) outSize, &outXfer, 1000); // timeout in ms
+                printf("[libusb failure] libusb_bulk_transfer (endpoint_out) - status: %s", libusb_error_name(ret));
+                return ret;
+            }
 
-                if (ret < 0 )
+            // Debugging only
+            // dumpCommand(out, outSize);
+
+            // read
+            if (in && inSize)
+            {
+                uint8_t buf[IVCAM_MONITOR_MAX_BUFFER_SIZE];
+
+                errno = 0;
+
+                ret = libusb_bulk_transfer(usbDeviceHandle, IVCAM_MONITOR_ENDPOINT_IN, buf, sizeof(buf), &outXfer, 1000);
+
+                if (outXfer < (int)sizeof(uint32_t))
                 {
-                    printf("[libusb failure] libusb_bulk_transfer (endpoint_out) - status: %s", libusb_error_name(ret));
-                    return ret;
+                    printf("[libusb failure] libusb_bulk_transfer (endpoint_in) - status: %s", libusb_error_name(ret));
+                    usbMutex.unlock();
+                    return -1;
                 }
-
-                // Debugging only
-                // dumpCommand(out, outSize);
-
-                // read
-                if (in && inSize)
+                else
                 {
-                    uint8_t buf[IVCAM_MONITOR_MAX_BUFFER_SIZE];
+                    // Debuggong only
+                    // dumpCommand(buf, outXfer);
+                    // outXfer -= sizeof(uint32_t);
 
-                    errno = 0;
+                    op = *(uint32_t *)buf;
 
-                    ret = libusb_bulk_transfer(usbDeviceHandle, IVCAM_MONITOR_ENDPOINT_IN, buf, sizeof(buf), &outXfer, 1000);
-
-                    if (outXfer < (int)sizeof(uint32_t))
+                    if (outXfer > (int)inSize)
                     {
-                        printf("[libusb failure] libusb_bulk_transfer (endpoint_in) - status: %s", libusb_error_name(ret));
+                        printf("usb_device_bulk_transfer IN failed: user buffer too small (%d:%zu)", outXfer, inSize);
                         usbMutex.unlock();
                         return -1;
                     }
                     else
-                    {
-                        // Debuggong only
-                        // dumpCommand(buf, outXfer);
-                        // outXfer -= sizeof(uint32_t);
-
-                        op = *(uint32_t *)buf;
-
-                        if (outXfer > (int)inSize)
-                        {
-                            printf("usb_device_bulk_transfer IN failed: user buffer too small (%d:%zu)", outXfer, inSize);
-                            usbMutex.unlock();
-                            return -1;
-                        }
-                        else
-                            inSize = outXfer;
-                        memcpy(in, buf, inSize);
-                    }
+                        inSize = outXfer;
+                    memcpy(in, buf, inSize);
                 }
-
-                usbMutex.unlock();
-                return ret;
             }
-            else
+
+            usbMutex.unlock();
+            return ret;
+        }
+        else
+        {
+            throw std::runtime_error("usbMutex timed out");
+        }
+    }
+
+    void IVCAMHardwareIO::FillUSBBuffer(int opCodeNumber, int p1, int p2, int p3, int p4, char * data, int dataLength, char * bufferToSend, int & length)
+    {
+        uint16_t preHeaderData = IVCAM_MONITOR_MAGIC_NUMBER;
+
+        char * writePtr = bufferToSend;
+        int header_size = 4;
+
+        // TBD !!! This may change. Need to define it as part of API
+        //typeSize = sizeof(float);
+
+        int cur_index = 2;
+        *(uint16_t *)(writePtr + cur_index) = preHeaderData;
+        cur_index += sizeof(uint16_t);
+        *(int *)( writePtr + cur_index) = opCodeNumber;
+        cur_index += sizeof(uint32_t);
+        *(int *)( writePtr + cur_index) = p1;
+        cur_index += sizeof(uint32_t);
+        *(int *)( writePtr + cur_index) = p2;
+        cur_index += sizeof(uint32_t);
+        *(int *)( writePtr + cur_index) = p3;
+        cur_index += sizeof(uint32_t);
+        *(int *)( writePtr + cur_index) = p4;
+        cur_index += sizeof(uint32_t);
+
+        if (dataLength)
+        {
+            memcpy(writePtr + cur_index , data, dataLength);
+            cur_index += dataLength;
+        }
+
+        length = cur_index;
+        *(uint16_t *) bufferToSend = (uint16_t)(length - header_size);// Length doesn't include header
+
+    }
+
+    void IVCAMHardwareIO::GetCalibrationRawData(uint8_t * data, size_t & bytesReturned)
+    {
+        uint8_t request[IVCAM_MONITOR_HEADER_SIZE];
+        size_t requestSize = sizeof(request);
+        uint32_t responseOp;
+
+        if ( !((PrepareUSBCommand(request, requestSize, GetCalibrationTable) > 0) && (ExecuteUSBCommand(request, requestSize, responseOp, data, bytesReturned) != -1)) )
+            throw std::runtime_error("usb transfer to retrieve calibration data failed");
+    }
+
+    void IVCAMHardwareIO::ProjectionCalibrate(uint8_t * rawCalibData, int len, CameraCalibrationParameters * calprms)
+    {
+        uint8_t * bufParams = rawCalibData + 4;
+
+        IVCAMCalibrator * calibration = projection->GetCalibrationObject();
+
+        CameraCalibrationParametersVersion CalibrationData;
+        IVCAMTesterData TesterData;
+
+        memset(&CalibrationData, 0, sizeof(CameraCalibrationParametersVersion));
+
+        int ver = getVersionOfCalibration(bufParams, bufParams + 2);
+
+        if (ver == IVCAM_MIN_SUPPORTED_VERSION)
+        {
+            float *params = (float *)bufParams;
+
+            calibration->buildParameters(params, 100);
+
+            // Debugging -- optional
+            // calibration->PrintParameters();
+
+            memcpy(calprms, params+1, sizeof(CameraCalibrationParameters));
+            memcpy(&TesterData, bufParams, SIZE_OF_CALIB_HEADER_BYTES);
+
+            memset((uint8_t*)&TesterData+SIZE_OF_CALIB_HEADER_BYTES,0,sizeof(IVCAMTesterData) - SIZE_OF_CALIB_HEADER_BYTES);
+        }
+        else if (ver > IVCAM_MIN_SUPPORTED_VERSION)
+        {
+            rawCalibData = rawCalibData + 4;
+
+            int size = (sizeof(CameraCalibrationParametersVersion) > len) ? len : sizeof(CameraCalibrationParametersVersion);
+
+            auto fixWithVersionInfo = [&](CameraCalibrationParametersVersion &d, int size, uint8_t * data)
             {
-                throw std::runtime_error("usbMutex timed out");
-            }
+                memcpy((uint8_t*)&d + sizeof(int), data, size - sizeof(int));
+            };
+
+            fixWithVersionInfo(CalibrationData, size, rawCalibData);
+
+            memcpy(calprms, &CalibrationData.CalibrationParameters, sizeof(CameraCalibrationParameters));
+            calibration->buildParameters(CalibrationData.CalibrationParameters);
+
+            // Debugging -- optional
+            // calibration->PrintParameters();
+
+            memcpy(&TesterData,  rawCalibData, SIZE_OF_CALIB_HEADER_BYTES);  //copy the header: valid + version
+
+            //copy the tester data from end of calibration
+            int EndOfCalibratioData = SIZE_OF_CALIB_PARAM_BYTES + SIZE_OF_CALIB_HEADER_BYTES;
+            memcpy((uint8_t*)&TesterData + SIZE_OF_CALIB_HEADER_BYTES , rawCalibData + EndOfCalibratioData , sizeof(IVCAMTesterData) - SIZE_OF_CALIB_HEADER_BYTES);
+
+            calibration->InitializeThermalData(TesterData.TemperatureData, TesterData.ThermalLoopParams);
         }
+    }
 
-        void FillUSBBuffer(int opCodeNumber, int p1, int p2, int p3, int p4, char * data, int dataLength, char * bufferToSend, int & length)
-        {
-            uint16_t preHeaderData = IVCAM_MONITOR_MAGIC_NUMBER;
+    void IVCAMHardwareIO::ReadTemperatures(IVCAMTemperatureData & data)
+    {
+        data = {0};
 
-            char * writePtr = bufferToSend;
-            int header_size = 4;
+        int IRTemp;
+        if (!GetIRtemp(IRTemp))
+            throw std::runtime_error("could not get IR temperature");
 
-            // TBD !!! This may change. Need to define it as part of API
-            //typeSize = sizeof(float);
+        data.IRTemp = (float) IRTemp;
 
-            int cur_index = 2;
-            *(uint16_t *)(writePtr + cur_index) = preHeaderData;
-            cur_index += sizeof(uint16_t);
-            *(int *)( writePtr + cur_index) = opCodeNumber;
-            cur_index += sizeof(uint32_t);
-            *(int *)( writePtr + cur_index) = p1;
-            cur_index += sizeof(uint32_t);
-            *(int *)( writePtr + cur_index) = p2;
-            cur_index += sizeof(uint32_t);
-            *(int *)( writePtr + cur_index) = p3;
-            cur_index += sizeof(uint32_t);
-            *(int *)( writePtr + cur_index) = p4;
-            cur_index += sizeof(uint32_t);
+        float LiguriaTemp;
+        if (!GetMEMStemp(LiguriaTemp))
+            throw std::runtime_error("could not get liguria temperature");
 
-            if (dataLength)
-            {
-                memcpy(writePtr + cur_index , data, dataLength);
-                cur_index += dataLength;
-            }
+        data.LiguriaTemp = LiguriaTemp;
+    }
 
-            length = cur_index;
-            *(uint16_t *) bufferToSend = (uint16_t)(length - header_size);// Length doesn't include header
-
-        }
-
-        void GetCalibrationRawData(uint8_t * data, size_t & bytesReturned)
-        {
-            uint8_t request[IVCAM_MONITOR_HEADER_SIZE];
-            size_t requestSize = sizeof(request);
-            uint32_t responseOp;
-
-            if ( !((PrepareUSBCommand(request, requestSize, GetCalibrationTable) > 0) && (ExecuteUSBCommand(request, requestSize, responseOp, data, bytesReturned) != -1)) )
-                throw std::runtime_error("usb transfer to retrieve calibration data failed");
-        }
-
-        void ProjectionCalibrate(uint8_t * rawCalibData, int len, CameraCalibrationParameters * calprms)
-        {
-            uint8_t * bufParams = rawCalibData + 4;
-
-            IVCAMCalibrator<float> * calibration = projection->GetCalibrationObject();
-
-            CameraCalibrationParametersVersion CalibrationData;
-            IVCAMTesterData TesterData;
-
-            memset(&CalibrationData, 0, sizeof(CameraCalibrationParametersVersion));
-
-            int ver = getVersionOfCalibration(bufParams, bufParams + 2);
-
-            if (ver == IVCAM_MIN_SUPPORTED_VERSION)
-            {
-                float *params = (float *)bufParams;
-
-                calibration->buildParameters(params, 100);
-
-                // Debugging -- optional
-                // calibration->PrintParameters();
-
-                memcpy(calprms, params+1, sizeof(CameraCalibrationParameters));
-                memcpy(&TesterData, bufParams, SIZE_OF_CALIB_HEADER_BYTES);
-
-                memset((uint8_t*)&TesterData+SIZE_OF_CALIB_HEADER_BYTES,0,sizeof(IVCAMTesterData) - SIZE_OF_CALIB_HEADER_BYTES);
-            }
-            else if (ver > IVCAM_MIN_SUPPORTED_VERSION)
-            {
-                rawCalibData = rawCalibData + 4;
-
-                int size = (sizeof(CameraCalibrationParametersVersion) > len) ? len : sizeof(CameraCalibrationParametersVersion);
-
-                auto fixWithVersionInfo = [&](CameraCalibrationParametersVersion &d, int size, uint8_t * data)
-                {
-                    memcpy((uint8_t*)&d + sizeof(int), data, size - sizeof(int));
-                };
-
-                fixWithVersionInfo(CalibrationData, size, rawCalibData);
-
-                memcpy(calprms, &CalibrationData.CalibrationParameters, sizeof(CameraCalibrationParameters));
-                calibration->buildParameters(CalibrationData.CalibrationParameters);
-
-                // Debugging -- optional
-                // calibration->PrintParameters();
-
-                memcpy(&TesterData,  rawCalibData, SIZE_OF_CALIB_HEADER_BYTES);  //copy the header: valid + version
-
-                //copy the tester data from end of calibration
-                int EndOfCalibratioData = SIZE_OF_CALIB_PARAM_BYTES + SIZE_OF_CALIB_HEADER_BYTES;
-                memcpy((uint8_t*)&TesterData + SIZE_OF_CALIB_HEADER_BYTES , rawCalibData + EndOfCalibratioData , sizeof(IVCAMTesterData) - SIZE_OF_CALIB_HEADER_BYTES);
-
-                calibration->InitializeThermalData(TesterData.TemperatureData, TesterData.ThermalLoopParams);
-            }
-        }
-
-        void ReadTemperatures(IVCAMTemperatureData & data)
-        {
-            data = {0};
-
-            int IRTemp;
-            if (!GetIRtemp(IRTemp))
-                throw std::runtime_error("could not get IR temperature");
-
-            data.IRTemp = (float) IRTemp;
-
-            float LiguriaTemp;
-            if (!GetMEMStemp(LiguriaTemp))
-                throw std::runtime_error("could not get liguria temperature");
-
-            data.LiguriaTemp = LiguriaTemp;
-        }
-
-        bool GetMEMStemp(float & MEMStemp)
-        {
-            /*
-             TIVCAMCommandParameters CommandParameters;
-             CommandParameters.CommandOp = HWmonitor_GetMEMSTemp;
-             CommandParameters.Param1 = 0;
-             CommandParameters.Param2 = 0;
-             CommandParameters.Param3 = 0;
-             CommandParameters.Param4 = 0;
-             CommandParameters.sizeOfSendCommandData = 0;
-             CommandParameters.TimeOut = 5000;
-             CommandParameters.oneDirection = false;
-
-             bool result = PerfomAndSendHWmonitorCommand(CommandParameters);
-             if (result != true)
-             return false;
-
-             int32_t Temp = *((int32_t*)(CommandParameters.recivedCommandData));
-             MEMStemp = (float) Temp ;
-             MEMStemp /= 100;
-
-             return true;
-             */
-            return false;
-        }
-
-        bool GetIRtemp(int & IRtemp)
-        {
-            /*
-             TIVCAMCommandParameters CommandParameters;
-
-             CommandParameters.CommandOp = HWmonitor_GetIRTemp;
-             CommandParameters.Param1 = 0;
-             CommandParameters.Param2 = 0;
-             CommandParameters.Param3 = 0;
-             CommandParameters.Param4 = 0;
-             CommandParameters.sizeOfSendCommandData = 0;
-             CommandParameters.TimeOut = 5000;
-             CommandParameters.oneDirection = false;
-
-             sts = PerfomAndSendHWmonitorCommand(CommandParameters);
-             if (sts != IVCAM_SUCCESS)
-             return IVCAM_FAILURE;
-
-             IRtemp = (int8_t) CommandParameters.recivedCommandData[0];
-             return IVCAM_SUCCESS;
-             */
-            return false;
-        }
-
+    bool IVCAMHardwareIO::GetMEMStemp(float & MEMStemp)
+    {
         /*
-        void UpdateASICCoefs(TAsicCoefficiants * AsicCoefficiants)
-        {
+         TIVCAMCommandParameters CommandParameters;
+         CommandParameters.CommandOp = HWmonitor_GetMEMSTemp;
+         CommandParameters.Param1 = 0;
+         CommandParameters.Param2 = 0;
+         CommandParameters.Param3 = 0;
+         CommandParameters.Param4 = 0;
+         CommandParameters.sizeOfSendCommandData = 0;
+         CommandParameters.TimeOut = 5000;
+         CommandParameters.oneDirection = false;
 
-             TIVCAMCommandParameters CommandParameters;
-             ETCalibTable FWres;
+         bool result = PerfomAndSendHWmonitorCommand(CommandParameters);
+         if (result != true)
+         return false;
 
-             TIVCAMStreamProfile IVCAMStreamProfile;
-             FWres = ectVGA;
+         int32_t Temp = *((int32_t*)(CommandParameters.recivedCommandData));
+         MEMStemp = (float) Temp ;
+         MEMStemp /= 100;
 
-             CommandParameters.CommandOp = HWmonitor_UpdateCalib;
-             memcpy(CommandParameters.data, AsicCoefficiants->CoefValueArray, NUM_OF_CALIBRATION_COEFFS*sizeof(float));
-             CommandParameters.Param1 = FWres;
-             CommandParameters.Param2 = 0;
-             CommandParameters.Param3 = 0;
-             CommandParameters.Param4 = 0;
-             CommandParameters.oneDirection = false;
-             CommandParameters.sizeOfSendCommandData = NUM_OF_CALIBRATION_COEFFS*sizeof(float);
-             CommandParameters.TimeOut = 5000;
+         return true;
+         */
+        return false;
+    }
 
-             return PerfomAndSendHWmonitorCommand(CommandParameters);
-        }
-        */
+    bool IVCAMHardwareIO::GetIRtemp(int & IRtemp)
+    {
+        /*
+         TIVCAMCommandParameters CommandParameters;
 
-        void TemperatureControlLoop()
-        {
-            // @tofix
-        }
+         CommandParameters.CommandOp = HWmonitor_GetIRTemp;
+         CommandParameters.Param1 = 0;
+         CommandParameters.Param2 = 0;
+         CommandParameters.Param3 = 0;
+         CommandParameters.Param4 = 0;
+         CommandParameters.sizeOfSendCommandData = 0;
+         CommandParameters.TimeOut = 5000;
+         CommandParameters.oneDirection = false;
 
-        std::unique_ptr<Projection> projection;
+         sts = PerfomAndSendHWmonitorCommand(CommandParameters);
+         if (sts != IVCAM_SUCCESS)
+         return IVCAM_FAILURE;
 
-    public:
+         IRtemp = (int8_t) CommandParameters.recivedCommandData[0];
+         return IVCAM_SUCCESS;
+         */
+        return false;
+    }
 
-        IVCAMHardwareIOInternal(uvc_context_t * ctx)
-        {
-            if (!ctx) throw std::runtime_error("must pass libuvc context handle");
+    /*
+    void IVCAMHardwareIO::UpdateASICCoefs(TAsicCoefficiants * AsicCoefficiants)
+    {
 
-            libusb_context * usbctx = uvc_get_libusb_context(ctx);
+         TIVCAMCommandParameters CommandParameters;
+         ETCalibTable FWres;
 
-            usbDeviceHandle = libusb_open_device_with_vid_pid(usbctx, IVCAM_VID, IVCAM_PID);
+         TIVCAMStreamProfile IVCAMStreamProfile;
+         FWres = ectVGA;
 
-            if (usbDeviceHandle == NULL)
-                throw std::runtime_error("libusb_open_device_with_vid_pid() failed");
+         CommandParameters.CommandOp = HWmonitor_UpdateCalib;
+         memcpy(CommandParameters.data, AsicCoefficiants->CoefValueArray, NUM_OF_CALIBRATION_COEFFS*sizeof(float));
+         CommandParameters.Param1 = FWres;
+         CommandParameters.Param2 = 0;
+         CommandParameters.Param3 = 0;
+         CommandParameters.Param4 = 0;
+         CommandParameters.oneDirection = false;
+         CommandParameters.sizeOfSendCommandData = NUM_OF_CALIBRATION_COEFFS*sizeof(float);
+         CommandParameters.TimeOut = 5000;
 
-            int status = libusb_claim_interface(usbDeviceHandle, IVCAM_MONITOR_INTERFACE);
-            if (status < 0) throw std::runtime_error("libusb_claim_interface() failed");
+         return PerfomAndSendHWmonitorCommand(CommandParameters);
+    }
+    */
 
-            uint8_t rawCalibrationBuffer[HW_MONITOR_BUFFER_SIZE];
-            size_t bufferLength = HW_MONITOR_BUFFER_SIZE;
-            GetCalibrationRawData(rawCalibrationBuffer, bufferLength);
-
-            projection.reset(new Projection(0));
-
-            CameraCalibrationParameters calibratedParameters;
-            ProjectionCalibrate(rawCalibrationBuffer, (int) bufferLength, &calibratedParameters);
-
-            parameters = calibratedParameters;
-        }
-
-        ~IVCAMHardwareIOInternal()
-        {
-            libusb_release_interface(usbDeviceHandle, IVCAM_MONITOR_INTERFACE);
-        }
-
-        bool StartTempCompensationLoop()
-        {
-            // @tofix
-            return false;
-        }
-
-        void StopTempCompensationLoop()
-        {
-            // @tofix
-        }
-
-        CameraCalibrationParameters & GetParameters()
-        {
-            return parameters;
-        }
-    };
-
-    /////////////////////////
-    // Public Hardware I/O //
-    /////////////////////////
+    void IVCAMHardwareIO::TemperatureControlLoop()
+    {
+        // @tofix
+    }
 
     IVCAMHardwareIO::IVCAMHardwareIO(uvc_context_t * ctx)
     {
-        internal.reset(new IVCAMHardwareIOInternal(ctx));
+        if (!ctx) throw std::runtime_error("must pass libuvc context handle");
+
+        libusb_context * usbctx = uvc_get_libusb_context(ctx);
+
+        usbDeviceHandle = libusb_open_device_with_vid_pid(usbctx, IVCAM_VID, IVCAM_PID);
+
+        if (usbDeviceHandle == NULL)
+            throw std::runtime_error("libusb_open_device_with_vid_pid() failed");
+
+        int status = libusb_claim_interface(usbDeviceHandle, IVCAM_MONITOR_INTERFACE);
+        if (status < 0) throw std::runtime_error("libusb_claim_interface() failed");
+
+        uint8_t rawCalibrationBuffer[HW_MONITOR_BUFFER_SIZE];
+        size_t bufferLength = HW_MONITOR_BUFFER_SIZE;
+        GetCalibrationRawData(rawCalibrationBuffer, bufferLength);
+
+        projection.reset(new Projection(0));
+
+        CameraCalibrationParameters calibratedParameters;
+        ProjectionCalibrate(rawCalibrationBuffer, (int) bufferLength, &calibratedParameters);
+
+        parameters = calibratedParameters;
     }
 
     IVCAMHardwareIO::~IVCAMHardwareIO()
     {
-
+        libusb_release_interface(usbDeviceHandle, IVCAM_MONITOR_INTERFACE);
     }
 
-    bool IVCAMHardwareIO::StartTempCompensationLoop()
+    ////////////////////////////////////
+    // IVCAMCalibrator Implementation //
+    ////////////////////////////////////
+
+    bool IVCAMCalibrator::updateParamsAccordingToTemperature(float liguriaTemp, float IRTemp, int * time)
     {
-        return internal->StartTempCompensationLoop();
+        if (!thermalModeData.ThermalLoopParams.IRThermalLoopEnable)
+        {
+            // *time = 999999; Dimitri commented out
+            return false;
+        }
+
+        bool isUpdated = false;
+
+        //inistialize TO variable to default
+        *time= thermalModeData.ThermalLoopParams.TimeOutA;
+
+        double IrBaseTemperature = thermalModeData.BaseTemperatureData.IRTemp; //should be taken from the parameters
+        double liguriaBaseTemperature = thermalModeData.BaseTemperatureData.LiguriaTemp; //should be taken from the parameters
+
+        //calculate deltas from the calibration and last fix
+        double IrTempDelta = IRTemp - IrBaseTemperature;
+        double liguriaTempDelta = liguriaTemp - liguriaBaseTemperature;
+        double weightedTempDelta = liguriaTempDelta * thermalModeData.ThermalLoopParams.LiguriaTempWeight + IrTempDelta * thermalModeData.ThermalLoopParams.IrTempWeight;
+        double tempDetaFromLastFix = abs(weightedTempDelta - lastTemperatureDelta);
+
+        //read intrinsic from the calibration working point
+        double Kc11 = originalParams.Kc[0][0];
+        double Kc13 = originalParams.Kc[0][2];
+
+        // Apply model
+        if (tempDetaFromLastFix >= thermalModeData.TempThreshold)
+        {
+            //if we are during a transition, fix for after the transition
+            double tempDeltaToUse = weightedTempDelta;
+            if (tempDeltaToUse > 0 && tempDeltaToUse < thermalModeData.ThermalLoopParams.TransitionTemp)
+            {
+                tempDeltaToUse =  thermalModeData.ThermalLoopParams.TransitionTemp;
+            }
+
+            //calculate fixed values
+            double fixed_Kc11 = Kc11 + (thermalModeData.FcxSlope * tempDeltaToUse) + thermalModeData.FcxOffset;
+            double fixed_Kc13 = Kc13 + (thermalModeData.UxSlope * tempDeltaToUse) + thermalModeData.UxOffset;
+
+            //write back to intrinsic hfov and vfov
+            params.Kc[0][0] = (float) fixed_Kc11;
+            params.Kc[1][1] = originalParams.Kc[1][1] * (float)(fixed_Kc11/Kc11);
+            params.Kc[0][2] = (float) fixed_Kc13;
+            isUpdated = true;
+            lastTemperatureDelta = weightedTempDelta;
+        }
+
+        return isUpdated;
     }
 
-    void IVCAMHardwareIO::StopTempCompensationLoop()
+    void IVCAMCalibrator::PrintParameters()
     {
-        internal->StopTempCompensationLoop();
+        printf("\nBegin Calibration Parameters ########################\n");
+        printf("# %f \n", params.Rmax);
+        printf("# %f \n", params.Kc[0][0]);
+        printf("# %f \n", params.Distc[0]);
+        printf("# %f \n", params.Invdistc[0]);
+        printf("# %f \n", params.Pp[0][0]);
+        printf("# %f \n", params.Kp[0][0]);
+        printf("# %f \n", params.Rp[0][0]);
+        printf("# %f \n", params.Tp[0]);
+        printf("# %f \n", params.Distp[0]);
+        printf("# %f \n", params.Invdistp[0]);
+        printf("# %f \n", params.Pt[0][0]);
+        printf("# %f \n", params.Kt[0][0]);
+        printf("# %f \n", params.Rt[0][0]);
+        printf("# %f \n", params.Tt[0]);
+        printf("# %f \n", params.Distt[0]);
+        printf("# %f \n", params.Invdistt[0]);
+        printf("# %f \n", params.QV[0]);
+        printf("\nEnd Calibration Parameters ########################\n");
     }
 
-    CameraCalibrationParameters & IVCAMHardwareIO::GetParameters()
+    bool IVCAMCalibrator::buildParameters(const CameraCalibrationParameters & _params)
     {
-        return internal->GetParameters();
+        params = _params;
+        isInitialized = true;
+        lastTemperatureDelta = DELTA_INF;
+        std::memcpy(&originalParams,&params,sizeof(CameraCalibrationParameters));
+        PrintParameters();
+        return true;
+    }
+
+    bool IVCAMCalibrator::buildParameters(const float* paramData, int nParams)
+    {
+        memcpy(&params, paramData + 1, sizeof(CameraCalibrationParameters)); // skip the first float or 2 uint16
+        isInitialized = true;
+        lastTemperatureDelta = DELTA_INF;
+        memcpy(&originalParams,&params,sizeof(CameraCalibrationParameters));
+        return true;
+    }
+
+    ///////////////////////////////
+    // Projection implementation //
+    ///////////////////////////////
+
+    Projection::Projection(int indexOfCamera, bool RunThermalLoop)
+    {
+        m_RunThermalLoop = RunThermalLoop;
+        m_IndexOfCamera = indexOfCamera;
+        m_isInitialized = false;
+        m_currentDepthWidth = 640;
+        m_currentDepthHeight = 480;
+        m_currentColorWidth = 640;
+        m_currentColorHeight = 480; //temp!!! calib params must be re-stored from IVCAM itself at every resolution change !!!
+        m_IsThermalLoopOpen = false;
+    }
+
+    Projection::~Projection(void)
+    {
+        m_currentDepthWidth = 0;
+        m_currentDepthHeight = 0;
+        m_currentColorWidth = 0;
+        m_currentColorHeight = 0;
+        m_isInitialized = false;
+    }
+
+    bool Projection::Init()
+    {
+        m_isInitialized = true;
+        m_isCalibOld = false;
+        return true;
+    }
+
+    void  Projection::ThermalLoopKilled()
+    {
+        m_IsThermalLoopOpen = false;
+    }
+
+    void Projection::InitializeThermalData(IVCAMTemperatureData temp,IVCAMThermalLoopParams loopParams)
+    {
+        m_calibration.InitializeThermalData(temp, loopParams);
+    }
+
+    void Projection::GetThermalData(IVCAMTemperatureData &temp, IVCAMThermalLoopParams &loopParams)
+    {
+        m_calibration.GetThermalData(temp, loopParams);
     }
 }
