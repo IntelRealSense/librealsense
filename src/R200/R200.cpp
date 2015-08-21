@@ -14,11 +14,6 @@ namespace r200
 
     }
 
-    R200Camera::~R200Camera()
-    {
-
-    }
-
     static ResolutionMode MakeDepthMode(int w, int h, const RectifiedIntrinsics & i)
     {
         assert(i.rw == w+12 && i.rh == h+12);
@@ -40,12 +35,23 @@ namespace r200
         }
     }
 
+    void R200Camera::EnableStreamPreset(int streamIdentifier, int preset)
+    {
+        switch(streamIdentifier)
+        {
+        case RS_DEPTH: EnableStream(RS_DEPTH, 480, 360, 0, RS_Z16); break;
+        case RS_COLOR: EnableStream(RS_COLOR, 640, 480, 60, RS_RGB); break;
+        default: throw std::runtime_error("unsupported stream");
+        }
+    }
+
     void R200Camera::RetrieveCalibration()
     {
         if(modes.empty())
         {
             uvc_device_handle_t * handle = GetHandleToAnyStream();
             if(!handle) throw std::runtime_error("RetrieveCalibration() failed as no stream interfaces were open");
+            CameraCalibrationParameters calib;
             CameraHeaderInfo header;
             read_camera_info(handle, calib, header);
 
@@ -74,6 +80,5 @@ namespace r200
             }
         }
     }
-    
-} // end namespace r200
+}
 #endif
