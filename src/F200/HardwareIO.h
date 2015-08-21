@@ -163,17 +163,8 @@ namespace f200
     class Projection
     {
     public:
-
-        Projection()
-        {
-            m_RunThermalLoop = false;
-            m_IsThermalLoopOpen = false;
-        }
-
-        ~Projection()
-        {
-
-        }
+        IVCAMCalibrator m_calibration;
+        bool m_IsThermalLoopOpen = false;
 
         // Start function of thermal loop thread.Thread will poll temperature each X seconds and make required changes to
         // Calibration table. Also inform users that calib table has changed and they need to redraw it.
@@ -195,12 +186,6 @@ namespace f200
         {
             m_IsThermalLoopOpen = false;
         }
-
-        IVCAMCalibrator m_calibration;
-
-        bool m_RunThermalLoop;
-        bool m_IsThermalLoopOpen;
-
     };
 } // end namespace f200
 
