@@ -40,6 +40,18 @@ namespace r200
     // Implementation details
 
     #pragma pack(push, 1)
+    template<class T> class big_endian
+    {
+        T be_value;
+    public:
+        operator T () const
+        {
+            T le_value;
+            for(int i=0; i<sizeof(T); ++i) reinterpret_cast<char *>(&le_value)[i] = reinterpret_cast<const char *>(&be_value)[sizeof(T)-i-1];
+            return le_value;
+        }
+    };
+
     const uint16_t MAX_NUM_INTRINSICS_RIGHT = 2; // Max number right cameras supported (e.g. one or two, two would support a multi-baseline unit)
     const uint16_t MAX_NUM_INTRINSICS_THIRD = 3; // Max number native resolutions the third camera can have (e.g. 1920x1080 and 640x480)
     const uint16_t MAX_NUM_INTRINSICS_PLATFORM = 4; // Max number native resolutions the platform camera can have
@@ -49,34 +61,34 @@ namespace r200
 
     struct CalibrationMetadata
     {
-        uint32_t versionNumber;
-        uint16_t numIntrinsicsRight;
-        uint16_t numIntrinsicsThird;
-        uint16_t numIntrinsicsPlatform;
-        uint16_t numRectifiedModesLR;
-        uint16_t numRectifiedModesThird;
-        uint16_t numRectifiedModesPlatform;
+        big_endian<uint32_t> versionNumber;
+        big_endian<uint16_t> numIntrinsicsRight;
+        big_endian<uint16_t> numIntrinsicsThird;
+        big_endian<uint16_t> numIntrinsicsPlatform;
+        big_endian<uint16_t> numRectifiedModesLR;
+        big_endian<uint16_t> numRectifiedModesThird;
+        big_endian<uint16_t> numRectifiedModesPlatform;
     };
 
     struct UnrectifiedIntrinsics
     {
-        float fx;
-        float fy;
-        float px;
-        float py;
-        float k[5];
-        uint32_t w;
-        uint32_t h;
+        big_endian<float> fx;
+        big_endian<float> fy;
+        big_endian<float> px;
+        big_endian<float> py;
+        big_endian<float> k[5];
+        big_endian<uint32_t> w;
+        big_endian<uint32_t> h;
     };
 
     struct RectifiedIntrinsics
     {
-        float rfx;
-        float rfy;
-        float rpx;
-        float rpy;
-        uint32_t rw;
-        uint32_t rh;
+        big_endian<float> rfx;
+        big_endian<float> rfy;
+        big_endian<float> rpx;
+        big_endian<float> rpy;
+        big_endian<uint32_t> rw;
+        big_endian<uint32_t> rh;
     };
 
     struct CameraCalibrationParameters
@@ -92,17 +104,17 @@ namespace r200
         RectifiedIntrinsics modesThird[MAX_NUM_INTRINSICS_RIGHT * MAX_NUM_INTRINSICS_THIRD * MAX_NUM_RECTIFIED_MODES_THIRD];
         RectifiedIntrinsics modesPlatform[MAX_NUM_INTRINSICS_RIGHT * MAX_NUM_INTRINSICS_PLATFORM * MAX_NUM_RECTIFIED_MODES_PLATFORM];
 
-        float Rleft[MAX_NUM_INTRINSICS_RIGHT][9];
-        float Rright[MAX_NUM_INTRINSICS_RIGHT][9];
-        float Rthird[MAX_NUM_INTRINSICS_RIGHT][9];
-        float Rplatform[MAX_NUM_INTRINSICS_RIGHT][9];
+        big_endian<float> Rleft[MAX_NUM_INTRINSICS_RIGHT][9];
+        big_endian<float> Rright[MAX_NUM_INTRINSICS_RIGHT][9];
+        big_endian<float> Rthird[MAX_NUM_INTRINSICS_RIGHT][9];
+        big_endian<float> Rplatform[MAX_NUM_INTRINSICS_RIGHT][9];
 
-        float B[MAX_NUM_INTRINSICS_RIGHT];
-        float T[MAX_NUM_INTRINSICS_RIGHT][3];
-        float Tplatform[MAX_NUM_INTRINSICS_RIGHT][3];
+        big_endian<float> B[MAX_NUM_INTRINSICS_RIGHT];
+        big_endian<float> T[MAX_NUM_INTRINSICS_RIGHT][3];
+        big_endian<float> Tplatform[MAX_NUM_INTRINSICS_RIGHT][3];
 
-        float Rworld[9];
-        float Tworld[3];
+        big_endian<float> Rworld[9];
+        big_endian<float> Tworld[3];
     };
 
     const int CURRENT_CAMERA_CONTENTS_VERSION_NUMBER = 12;
