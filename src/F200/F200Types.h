@@ -25,19 +25,6 @@ namespace f200
 #define IV_COMMAND_FILTER_OPTION            0x0A
 #define IV_COMMAND_VERSION                  0x0B
 #define IV_COMMAND_CONFIDENCE_THRESHHOLD    0x0C
-    
-enum DepthOutputUnit
-{
-    RAW_IVCAM   = 0,    // uint16_t in units of 1/32 mm
-    FLOAT32_MM  = 1     // float in units of 1 mm
-};
-    
-struct Resolution
-{
-    Resolution() {}
-    Resolution(short _width, short _height) : width(_width), height(_height) {}
-    short width, height;
-};
 
 struct OACOffsetData
 {
@@ -163,7 +150,6 @@ enum Property
     IVCAM_PROPERTY_PROJECTION_SERIALIZABLE			=   3003,	
     IVCAM_PROPERTY_CUSTOMIZED						=   0x04000000,
 };
-    
     
 } // end namespace f200
 

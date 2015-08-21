@@ -16,7 +16,7 @@
 
 namespace f200
 {
-    class Projection;
+    class IVCAMCalibrator;
 
     class IVCAMHardwareIO
     {
@@ -28,7 +28,7 @@ namespace f200
         std::thread temperatureThread;
         std::atomic<bool> isTemperatureThreadRunning;
 
-        std::unique_ptr<Projection> projection;
+        std::unique_ptr<IVCAMCalibrator> calibration;
 
         int PrepareUSBCommand(uint8_t * request, size_t & requestSize, uint32_t op,
                               uint32_t p1 = 0, uint32_t p2 = 0, uint32_t p3 = 0, uint32_t p4 = 0,
@@ -160,33 +160,6 @@ namespace f200
         float lastTemperatureDelta;
     };
 
-    class Projection
-    {
-    public:
-        IVCAMCalibrator m_calibration;
-        bool m_IsThermalLoopOpen = false;
-
-        // Start function of thermal loop thread.Thread will poll temperature each X seconds and make required changes to
-        // Calibration table. Also inform users that calib table has changed and they need to redraw it.
-        void CallThermalLoopThread();
-
-        IVCAMCalibrator * GetCalibrationObject() { return & m_calibration; }
-
-        void InitializeThermalData(IVCAMTemperatureData TemperatureData, IVCAMThermalLoopParams ThermalLoopParams)
-        {
-            m_calibration.InitializeThermalData(TemperatureData, ThermalLoopParams);
-        }
-
-        void GetThermalData(IVCAMTemperatureData & TemperatureData, IVCAMThermalLoopParams & ThermalLoopParams)
-        {
-            m_calibration.GetThermalData(TemperatureData, ThermalLoopParams);
-        }
-
-        void ThermalLoopKilled()
-        {
-            m_IsThermalLoopOpen = false;
-        }
-    };
 } // end namespace f200
 
 #endif

@@ -208,8 +208,6 @@ namespace f200
     {
         uint8_t * bufParams = rawCalibData + 4;
 
-        IVCAMCalibrator * calibration = projection->GetCalibrationObject();
-
         CameraCalibrationParametersVersion CalibrationData;
         IVCAMTesterData TesterData;
 
@@ -374,7 +372,7 @@ namespace f200
         size_t bufferLength = HW_MONITOR_BUFFER_SIZE;
         GetCalibrationRawData(rawCalibrationBuffer, bufferLength);
 
-        projection.reset(new Projection);
+        calibration.reset(new IVCAMCalibrator);
 
         CameraCalibrationParameters calibratedParameters;
         ProjectionCalibrate(rawCalibrationBuffer, (int) bufferLength, &calibratedParameters);
@@ -411,7 +409,7 @@ namespace f200
         double IrTempDelta = IRTemp - IrBaseTemperature;
         double liguriaTempDelta = liguriaTemp - liguriaBaseTemperature;
         double weightedTempDelta = liguriaTempDelta * thermalModeData.ThermalLoopParams.LiguriaTempWeight + IrTempDelta * thermalModeData.ThermalLoopParams.IrTempWeight;
-        double tempDetaFromLastFix = abs(weightedTempDelta - lastTemperatureDelta);
+        double tempDetaFromLastFix = std::abs(weightedTempDelta - lastTemperatureDelta);
 
         //read intrinsic from the calibration working point
         double Kc11 = originalParams.Kc[0][0];
