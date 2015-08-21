@@ -228,7 +228,7 @@ namespace f200
         {
             uint8_t * bufParams = rawCalibData + 4;
 
-            IVCAMCalibrator<float> * calibration = Projection::GetInstance()->GetCalibrationObject();
+            IVCAMCalibrator<float> * calibration = projection->GetCalibrationObject();
 
             CameraCalibrationParametersVersion CalibrationData;
             IVCAMTesterData TesterData;
@@ -376,6 +376,8 @@ namespace f200
             // @tofix
         }
 
+        std::unique_ptr<Projection> projection;
+
     public:
 
         IVCAMHardwareIOInternal(uvc_context_t * ctx)
@@ -395,6 +397,8 @@ namespace f200
             uint8_t rawCalibrationBuffer[HW_MONITOR_BUFFER_SIZE];
             size_t bufferLength = HW_MONITOR_BUFFER_SIZE;
             GetCalibrationRawData(rawCalibrationBuffer, bufferLength);
+
+            projection.reset(new Projection(0));
 
             CameraCalibrationParameters calibratedParameters;
             ProjectionCalibrate(rawCalibrationBuffer, (int) bufferLength, &calibratedParameters);
@@ -425,12 +429,12 @@ namespace f200
         
         OpticalData GetOpticalData()
         {
-            IVCAMCalibrator<float> * calibration = Projection::GetInstance()->GetCalibrationObject();
+            IVCAMCalibrator<float> * calibration = projection->GetCalibrationObject();
             
             OpticalData d;
             
-            Resolution colorRes( Projection::GetInstance()->GetColorWidth(),  Projection::GetInstance()->GetColorHeight());
-            Resolution depthRes(Projection::GetInstance()->GetDepthWidth(), Projection::GetInstance()->GetDepthHeight());
+            Resolution colorRes(projection->GetColorWidth(), projection->GetColorHeight());
+            Resolution depthRes(projection->GetDepthWidth(), projection->GetDepthHeight());
             
             d = calibration->getOpticalData(depthRes, colorRes);
             

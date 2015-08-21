@@ -13,12 +13,6 @@ using namespace f200;
 #define MM_TO_CM(_d)          float((_d)/10)
 #define METERS_TO_CM(_d)      float((_d)*100)
 
-Projection * Projection::GetInstance()
-{
-    static Projection self(0);
-    return &self;
-}
-
 Projection::Projection(int indexOfCamera, bool RunThermalLoop)
 {
     m_RunThermalLoop = RunThermalLoop;

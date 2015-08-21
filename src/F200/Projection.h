@@ -19,9 +19,7 @@ public:
     Projection(int indexOfCamera, bool RunThermalLoop = false);
     
     ~Projection(void);
-    
-    static Projection *  GetInstance();
-    
+
     bool Init();
     
     void MapDepthToColorCoordinates(unsigned int npoints, Point3DF32 *pos2d, Point2DF32 *posc, bool isUVunitsRelative = true, CoordinateSystem dir = LEFT_HANDED);
