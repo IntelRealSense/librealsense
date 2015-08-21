@@ -214,7 +214,7 @@ namespace r200
     void swap_endian(CameraCalibrationParameters & value) { swap_endian(value.metadata, value.intrinsicsLeft, value.intrinsicsRight, value.intrinsicsThird, value.intrinsicsPlatform,
         value.modesLR, value.modesThird, value.modesPlatform, value.Rleft, value.Rright, value.Rthird, value.Rplatform, value.B, value.T, value.Tplatform, value.Rworld, value.Tworld); }
 
-    class DS4HardwareIOInternal
+    class DS4HardwareIO
     {
         CameraCalibrationParameters cameraCalibration;
         CameraHeaderInfo cameraInfo;
@@ -223,7 +223,6 @@ namespace r200
         uint8_t calibrationDataBuffer[CAM_INFO_BLOCK_LEN];
 
         uint32_t adminSectorAddresses[NV_ADMIN_DATA_N_ENTRIES];
-        RoutineStorageTables rst;
 
         uvc_device_handle_t * deviceHandle;
 
@@ -358,24 +357,29 @@ namespace r200
             uint32_t addressInSector = address + (usedCopiesCount - 1) * blockLength + offset;
             read_arbitrary_chunk(addressInSector, data, lengthToRead);
         }
-
-    public:
-
-        DS4HardwareIOInternal(uvc_device_handle_t * devh) : deviceHandle(devh)
+        
+        void read_spi_flash_memory()
         {
-            rst = {0};
-
+            RoutineStorageTables rst = {0};
+            
             // Setup admin table
             read_admin_table(NV_IFFLEY_ROUTINE_TABLE_ADDRESS_INDEX,
                              SIZEOF_ROUTINE_DESCRIPTION_ERASED_AND_PRESERVE_TABLE,
                              rst.rd,
                              ROUTINE_DESCRIPTION_OFFSET,
                              SIZEOF_ROUTINE_DESCRIPTION_TABLE);
-
+            
             ReadCalibrationSector();
         }
 
-        ~DS4HardwareIOInternal()
+    public:
+
+        DS4HardwareIO(uvc_device_handle_t * devh) : deviceHandle(devh)
+        {
+            read_spi_flash_memory();
+        }
+
+        ~DS4HardwareIO()
         {
 
         }
@@ -386,7 +390,6 @@ namespace r200
             std::cout << "## Serial: " << cameraInfo.serialNumber << std::endl;
             std::cout << "## Model: " << cameraInfo.modelNumber << std::endl;
             std::cout << "## Revision: " << cameraInfo.revisionNumber << std::endl;
-            std::cout << "## Calibrated: " << cameraInfo.calibrationDate << std::endl;
             std::cout << "## Head Version: " << cameraInfo.cameraHeadContentsVersion << std::endl;
             std::cout << "## Baseline: " << cameraInfo.nominalBaseline << std::endl;
             std::cout << "## OEM ID: " << cameraInfo.OEMID << std::endl;
@@ -403,7 +406,7 @@ namespace r200
     
     void read_camera_info(uvc_device_handle_t * device, CameraCalibrationParameters & calib, CameraHeaderInfo & header)
     {
-        DS4HardwareIOInternal internal(device);
+        DS4HardwareIO internal(device);
         calib = internal.GetCalibration();
         header = internal.GetCameraHeader();
         internal.LogDebugInfo();
