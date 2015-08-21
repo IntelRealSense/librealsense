@@ -38,6 +38,26 @@ namespace r200
         uint32_t reserved[55]{};
     };
 
+    bool send_command(uvc_device_handle_t * device, CommandPacket * command, ResponsePacket * response)
+    {
+        uint32_t cmdSz = sizeof(CommandPacket);
+        auto status = uvc_set_ctrl(device, CAMERA_XU_UNIT_ID, CONTROL_COMMAND_RESPONSE, command, cmdSz);
+        if (status < 0)
+        {
+            uvc_perror((uvc_error_t) status, "SendCommand - uvc_set_ctrl");
+            return false;
+        }
+
+        uint32_t resSz = sizeof(ResponsePacket);
+        status = uvc_get_ctrl(device, CAMERA_XU_UNIT_ID, CONTROL_COMMAND_RESPONSE, response, resSz, UVC_GET_CUR);
+        if (status < 0)
+        {
+            uvc_perror((uvc_error_t) status, "SendCommand - uvc_get_ctrl");
+            return false;
+        }
+        return true;
+    }
+
     inline std::string ResponseCodeToString(uint32_t rc)
     {
         switch (rc)
@@ -343,42 +363,93 @@ namespace r200
 
     bool write_stream_intent(uvc_device_handle_t *devh, uint8_t intent)
     {
-        size_t length = sizeof(uint8_t);
-
-        // XU Write
-        auto s = uvc_set_ctrl(devh, CAMERA_XU_UNIT_ID, CONTROL_STREAM_INTENT, &intent, int(length));
-
-        if (s > 0)
-        {
-            return true;
-        }
-
-        if (s < 0) uvc_perror((uvc_error_t)s, "uvc_set_ctrl");
-
-        return false;
+        return xu_write(devh, CONTROL_STREAM_INTENT, &intent, sizeof(uint8_t));
     }
 
-    std::string read_firmware_version(uvc_device_handle_t * devh)
+    std::string read_firmware_version(uvc_device_handle_t * device)
     {
         CommandPacket command;
         command.code = COMMAND_GET_FWREVISION;
         command.modifier = COMMAND_MODIFIER_DIRECT;
         command.tag = 12;
 
-        unsigned int cmdLength = sizeof(CommandPacket);
-        auto s = uvc_set_ctrl(devh, CAMERA_XU_UNIT_ID, CONTROL_COMMAND_RESPONSE, &command, cmdLength);
-        if (s < 0) uvc_perror((uvc_error_t)s, "uvc_set_ctrl");
-
         ResponsePacket response;
-        unsigned int resLength = sizeof(ResponsePacket);
-        s = uvc_get_ctrl(devh, CAMERA_XU_UNIT_ID, CONTROL_COMMAND_RESPONSE, &response, resLength, UVC_GET_CUR);
-        if (s < 0) uvc_perror((uvc_error_t)s, "uvc_get_ctrl");
+        if (!send_command(device, &command, &response)) throw std::runtime_error("failed to read firmware version");
 
         char fw[16];
-
         memcpy(fw, &response.revision, 16);
-
-        return std::string(fw);
+        return fw;
     }
-    
+
+    bool xu_read(uvc_device_handle_t * device, uint64_t xu_ctrl, uint8_t * buffer, uint32_t length)
+    {
+        auto status = uvc_get_ctrl(device, CAMERA_XU_UNIT_ID, xu_ctrl, buffer, length, UVC_GET_CUR);
+        if (status < 0)
+        {
+            uvc_perror((uvc_error_t) status, "XURead - uvc_get_ctrl");
+            return false;
+        }
+        return true;
+    }
+
+    bool xu_write(uvc_device_handle_t * device, uint64_t xu_ctrl, uint8_t * buffer, uint32_t length)
+    {
+        auto status = uvc_set_ctrl(device, CAMERA_XU_UNIT_ID, xu_ctrl, buffer, length);
+        if (status < 0)
+        {
+            uvc_perror((uvc_error_t) status, "XUWrite - uvc_set_ctrl");
+            return false;
+        }
+        return true;
+    }
+
+    bool get_emitter_state(uvc_device_handle_t * device, bool & state)
+    {
+        uint8_t byte = 0;
+        if (!xu_read(device, CONTROL_EMITTER, &byte, sizeof(byte)))
+        {
+            return false;
+        }
+        if (byte & 4) state = (byte & 2 ? true : false);
+        return true;
+    }
+
+    bool set_emitter_state(uvc_device_handle_t * device, bool state)
+    {
+        unsigned char s = state ? 1 : 0;
+        return xu_read(device, CONTROL_EMITTER, &s, sizeof(uint8_t));
+    }
+
+    bool read_temperature(uvc_device_handle_t * device, int8_t & current, int8_t & min, int8_t & max, int8_t & min_fault)
+    {
+        uint32_t length = 4;
+        uint8_t buf[4] = {0};
+
+        if (!xu_read(device, CONTROL_TEMPERATURE, buf, length))
+        {
+            return false;
+        }
+        current = buf[0];
+        min = buf[1];
+        max = buf[2];
+        min_fault = buf[3];
+        return true;
+    }
+
+    bool reset_temperature(uvc_device_handle_t * device)
+    {
+        uint32_t length = 4;
+        uint8_t buf[4] = {0};
+        if (!xu_write(device, CONTROL_TEMPERATURE, buf, length))
+        {
+            return false;
+        }
+        return true;
+    }
+
+    bool get_last_error(uvc_device_handle_t * device, uint8_t & last_error)
+    {
+        return xu_read(device, CONTROL_LAST_ERROR, last_error, sizeof(uint8_t));
+    }
+
 } // end namespace r200

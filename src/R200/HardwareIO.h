@@ -17,6 +17,14 @@ namespace r200
     int         read_stream_status(uvc_device_handle_t * device);
     bool        write_stream_intent(uvc_device_handle_t * device, uint8_t intent);
 
+    bool        xu_read(uvc_device_handle_t * device, uint64_t xu_ctrl, uint8_t * buffer, uint32_t length);
+    bool        xu_write(uvc_device_handle_t * device, uint64_t xu_ctrl, uint8_t * buffer, uint32_t length);
+    bool        get_emitter_state(uvc_device_handle_t * device, bool & state);
+    bool        set_emitter_state(uvc_device_handle_t * device, bool state);
+    bool        read_temperature(uvc_device_handle_t * device, int8_t & current, int8_t & min, int8_t & max, int8_t & min_fault);
+    bool        reset_temperature(uvc_device_handle_t * device);
+    bool        get_last_error(uvc_device_handle_t * device, uint8_t & last_error);
+
     // TODO: Gather additional hardware specific APIs here
 
     #pragma pack(push, 1)
@@ -185,7 +193,25 @@ namespace r200
 #define CONTROL_COMMAND_RESPONSE 1
 #define CONTROL_IFFLEY 2
 #define CONTROL_STREAM_INTENT 3
+#define CONTROL_DEPTH_UNITS 4
+#define CONTROL_MIN_MAX 5
+#define CONTROL_DISPARITY 6
+#define CONTROL_RECTIFICATION 7
+#define CONTROL_EMITTER 8
+#define CONTROL_TEMPERATURE 9
+#define CONTROL_DEPTH 10
+#define CONTROL_LAST_ERROR 12
+#define CONTROL_EMBEDDED_COUNT 13
+#define CONTROL_LR_EXPOSURE 14
+#define CONTROL_LR_AUTOEXPOSURE_PARAMETERS 15
+#define CONTROL_SW_RESET 16
+#define CONTROL_LR_GAIN 17
+#define CONTROL_LR_EXPOSURE_MODE 18
+#define CONTROL_DISPARITY_SHIFT 19
 #define CONTROL_STATUS 20
+#define CONTROL_LR_EXPOSURE_DISCOVERY 21
+#define CONTROL_LR_GAIN_DISCOVERY 22
+#define CONTROL_HW_TIMESTAMP 23
 
 #define COMMAND_DOWNLOAD_SPI_FLASH 0x1A
 #define COMMAND_PROTECT_FLASH 0x1C
