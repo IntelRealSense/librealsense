@@ -59,10 +59,16 @@ namespace r200
 
     void R200Camera::SetStreamIntent(bool depth, bool color)
     {
-        uint32_t streamingModeBitfield = 0;
-        if(depth) streamingModeBitfield |= STATUS_BIT_Z_STREAMING;
-        if(color) streamingModeBitfield |= STATUS_BIT_WEB_STREAMING;
-        if(uvc_device_handle_t * handle = GetHandleToAnyStream()) r200::write_stream_intent(handle, streamingModeBitfield);
+        uint8_t streamIntent = 0;
+        if(depth) streamIntent |= STATUS_BIT_Z_STREAMING;
+        if(color) streamIntent |= STATUS_BIT_WEB_STREAMING;
+        if(uvc_device_handle_t * handle = GetHandleToAnyStream())
+        {
+            if(!xu_write(handle, CONTROL_STREAM_INTENT, &streamIntent, sizeof(streamIntent)))
+            {
+                throw std::runtime_error("xu_write failed");
+            }
+        }
     }
 
     rs_extrinsics R200Camera::GetStreamExtrinsics(int from, int to)

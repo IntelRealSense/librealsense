@@ -15,7 +15,6 @@ namespace r200
     std::string read_firmware_version(uvc_device_handle_t * device);
     void        read_camera_info(uvc_device_handle_t * device, CameraCalibrationParameters & calib, CameraHeaderInfo & header);
     int         read_stream_status(uvc_device_handle_t * device);
-    bool        write_stream_intent(uvc_device_handle_t * device, uint8_t intent);
 
     bool        xu_read(uvc_device_handle_t * device, uint64_t xu_ctrl, uint8_t * buffer, uint32_t length);
     bool        xu_write(uvc_device_handle_t * device, uint64_t xu_ctrl, uint8_t * buffer, uint32_t length);

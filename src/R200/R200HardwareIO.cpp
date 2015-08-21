@@ -361,11 +361,6 @@ namespace r200
         return -1;
     }
 
-    bool write_stream_intent(uvc_device_handle_t *devh, uint8_t intent)
-    {
-        return xu_write(devh, CONTROL_STREAM_INTENT, &intent, sizeof(uint8_t));
-    }
-
     std::string read_firmware_version(uvc_device_handle_t * device)
     {
         CommandPacket command;
