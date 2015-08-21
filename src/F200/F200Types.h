@@ -76,32 +76,12 @@ struct FocalLength
     float x, y;
 };
 
-struct UVPreComp
+/*struct UVPreComp
 {
     UVPreComp() {}
     UVPreComp(float _u, float _v, float _d) : u(_u), v(_v), d(_d) {}
     float u, v, d;
-};
-
-struct OpticalData
-{
-    //the principal point of the IR sensor
-    Point IRPrincipalPoint;
-    //the principal point of the IR sensor
-    Point RGBPrincipalPoint;
-    //the IR sensor distorted FOV
-    FOV IRDistortedFOV;
-    //the IR sensor undistorted FOV
-    FOV IRUndistortedFOV;
-    //the RGB sensor undistorted FOV
-    FOV RGBUndistortedFOV;
-    //the IR sensor distorted focal length in pixels of the desired resolution
-    FocalLength IRDistortedFocalLengthPxl;
-    //the IR sensor undistorted focal length in pixels of the desired resolution
-    FocalLength IRUndistortedFocalLengthPxl;
-    //the RGB sensor undistorted focal length in pixels of the desired resolution
-    FocalLength RGBUndistortedFocalLengthPxl;
-};
+};*/
     
 struct OACOffsetData
 {

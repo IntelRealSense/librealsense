@@ -51,22 +51,7 @@ public:
     void PrintParameters();
     
     void clear() { isInitialized = false; }
-    
-    //project: (x,y,z) -> (u,v,d)
-    void project(T x, T y, T z, T& u, T& v, T& d) const;
-    void project(T x, T y, T z, T& u, T& v, uint16_t & d) const;
-    
-    void unproject(int pixelX, int pixelY, uint16_t depth, T& x, T& y, T& z) const;
-    void unproject(int pixelX, int pixelY, T depthInMM, T& x, T& y, T& z) const;
-    
-    void buildUV(T x, T y, T z, T& u, T& v) const;
-    void buildUV_4to3(T x, T y, T z, T& u, T& v) const;
-    
-    void buildUV(int pixelX, int pixelY, uint16_t depth, T& u, T& v) const;
-    void buildUV(int pixelX, int pixelY, T depthInMM, T& u, T& v) const;
-    
-    T convertU_16to9_to_4to3(T u) const;
-    
+       
     T ivcamToMM(uint16_t d) const { return T(d) * uint16_to_mm_ratio; }
     
     T getZMax() const { return params.Rmax; };
@@ -91,9 +76,7 @@ public:
         TemperatureData = thermalModeData.BaseTemperatureData;
         ThermalLoopParams = thermalModeData.ThermalLoopParams;
     };
-    
-    OpticalData getOpticalData(const Resolution IRResolution, const Resolution RGBresolution);
-    
+
     void generateCalibrationCoefficients(Resolution IRResolution,bool isZmode, float* ValArray) const;
     
     bool updateParamsAccordingToTemperature(float liguriaTemp,float IRTemp, int* timeout);
@@ -196,14 +179,8 @@ public:
     
     float lastTemperatureDelta;
     
-    std::vector<Point> unprojCoeffs; // precomputed coefficients for unproject
-    std::vector<UVPreComp> buildUVCoeffs; // precomputed coefficients for buildUV
-    
     float uint16_to_mm_ratio;
     float mm_to_uint_ratio;
-    
-    Point computeUnprojectCoeffs(int x, int y) const;
-    UVPreComp computeBuildUVCoeffs(const Point& r) const;
 };
 
 ////////////////////////////////////
@@ -414,83 +391,6 @@ inline void IVCAMCalibrator<T>::generateCalibrationCoefficients(Resolution IRRes
 }
 
 template <typename T>
-inline OpticalData IVCAMCalibrator<T>::getOpticalData(Resolution IRResolution, Resolution RGBResolution)
-{
-    OpticalData data;
-    
-    //////////////////////////
-    // Infrared Camera (IR) //
-    //////////////////////////
-    
-    // compute undistorted IR FOV
-    T tempX = atan(T(1)/params.Kc[0][0])*T(360)/T(M_PI);
-    T tempY = atan(T(1)/params.Kc[1][1])*T(360)/T(M_PI);
-    data.IRUndistortedFOV = FOV(tempX, tempY);
-    
-    // compute IR focal length
-    tempX = T(IRResolution.width)*params.Kc[0][0]/T(2);
-    tempY = T(IRResolution.height)*params.Kc[1][1]/T(2);
-    data.IRUndistortedFocalLengthPxl = FocalLength(tempX, tempY);
-    
-    // compute distorted IR FOV
-    T r[2] = {T(0.8), T(0.6)};
-    T r2[2] = {r[0]*r[0],r[1]*r[1]};
-    T R[2];
-    for(int i = 0; i<2;i++)
-    {
-        R[i] = 1 + r[i]*(r2[i]*params.Invdistc[0] + r2[i]*r2[i]*params.Invdistc[1]+ r2[i]*r2[i]*r2[i]*params.Invdistc[4]);
-    }
-    tempX = atan(R[0]/params.Kc[0][0])*T(360)/T(M_PI);
-    tempY = atan(R[1]/params.Kc[1][1])*T(360)/T(M_PI);
-    data.IRDistortedFOV = FOV(tempX, tempY);
-    
-    // compute IR focal length
-    tempX = T(IRResolution.width)*params.Kc[0][0]/(R[0]*T(2));
-    tempY = T(IRResolution.height)*params.Kc[1][1]/(R[1]*T(2));
-    data.IRDistortedFocalLengthPxl = FocalLength(tempX, tempY);
-    
-    // compute IR principal point
-    tempX = T(IRResolution.width)*params.Kc[0][2]/T(2);
-    tempY = T(IRResolution.height)*params.Kc[1][2]/T(2);
-    data.IRPrincipalPoint = Point(tempX, tempY);
-    
-    ////////////////////////
-    // Color Camera (RGB) //
-    ////////////////////////
-    
-    T aspectRatioWanted = T(RGBResolution.width)/T(RGBResolution.height);
-    T aspectRatioCalib = params.Kt[1][1]/params.Kt[0][0];
-    T diff = std::fabs(aspectRatioWanted - aspectRatioCalib);
-    T Kt00 = params.Kt[0][0];
-    
-    T Kt02 = params.Kt[0][2];
-    if ( diff > T(M_EPSILON))
-    {
-        tempY = atan(T(1)/params.Kt[1][1])*T(360)/T(M_PI);
-        tempX = tempY*aspectRatioWanted;
-        Kt00 = T(1)/(tan(T(M_PI) * tempX / T(360)));
-        Kt02 *= Kt00/params.Kt[0][0];
-    }
-    
-    // compute undistorted RGB FOV
-    tempX = atan(T(1)/Kt00)*T(360)/T(M_PI);
-    tempY = atan(T(1)/params.Kt[1][1])*T(360)/T(M_PI);
-    data.RGBUndistortedFOV = FOV(tempX,tempY);
-    
-    // compute RGB focal length
-    tempX = T(RGBResolution.width)*Kt00/T(2);
-    tempY = T(RGBResolution.height)*params.Kt[1][1]/T(2);
-    data.RGBUndistortedFocalLengthPxl = FocalLength(tempX,tempY);
-    
-    // compute RGB principal point
-    tempX = T(RGBResolution.width)*Kt02/T(2);
-    tempY = T(RGBResolution.height)*params.Kt[1][2]/T(2);
-    data.RGBPrincipalPoint = Point(tempX,tempY);
-    
-    return data;
-}
-
-template <typename T>
 inline void IVCAMCalibrator<T>::PrintParameters()
 {
     printf("\nBegin Calibration Parameters ########################\n");
@@ -640,139 +540,6 @@ void IVCAMCalibrator<T>::precomputeUnproj()
 {
     uint16_to_mm_ratio = params.Rmax / T(65535);
     mm_to_uint_ratio = T(65535) / params.Rmax;
-    
-    const int w = width();
-    const int h = height();
-    const int sz = w * h;
-    
-    if (unprojCoeffs.size() == 0)
-    {
-        unprojCoeffs.resize(sz);
-        buildUVCoeffs.resize(sz);
-    }
-    
-    for (int y = 0; y != h; ++y)
-    {
-        for (int x = 0; x != w; ++x)
-        {
-            const Point & p = computeUnprojectCoeffs(x, y);
-            unprojCoeffs[y * w + x] = p;
-            buildUVCoeffs[y * w + x] = computeBuildUVCoeffs(p);
-        }
-    }
-}
-
-template <typename T>
-inline UVPreComp IVCAMCalibrator<T>::computeBuildUVCoeffs(const Point& r) const
-{
-    const CameraCalibrationParameters & p = params;
-    const float u = p.Pt[0][0]*r.x + p.Pt[0][1]*r.y + p.Pt[0][2];
-    const float v = p.Pt[1][0]*r.x + p.Pt[1][1]*r.y + p.Pt[1][2];
-    const float d = p.Pt[2][0]*r.x + p.Pt[2][1]*r.y + p.Pt[2][2];
-    return UVPreComp(u, v, d);
-}
-
-template <typename T>
-inline void IVCAMCalibrator<T>::buildUV(int pixelX, int pixelY, uint16_t depth, T& u, T& v) const
-{
-    buildUV(pixelX, pixelY, ivcamToMM(depth), u, v);
-}
-
-template <typename T>
-inline void IVCAMCalibrator<T>::buildUV(int pixelX, int pixelY, T depthInMM, T& u, T& v) const
-{
-    const UVPreComp& puvc = buildUVCoeffs[pixelY*width() + pixelX];
-    
-    const float z = depthInMM;
-    
-    const CameraCalibrationParameters & p = params;
-    const T D = T(0.5) / (puvc.d*z + p.Pt[2][3]);
-    u = (puvc.u*z + p.Pt[0][3]) * D + T(0.5);
-    v = (puvc.v*z + p.Pt[1][3]) * D + T(0.5);
-}
-
-template <typename T>
-inline void IVCAMCalibrator<T>::buildUV(T x, T y, T z, T& u, T& v) const
-{
-    // x, y, z: must be unprojected coordinates
-    // u, v are in the range [0, 1]
-    const CameraCalibrationParameters & p = params;
-    const T D = T(0.5) / (p.Pt[2][0]*x + p.Pt[2][1]*y + p.Pt[2][2]*z + p.Pt[2][3]); // 0.5 -> 1.0
-    u = (p.Pt[0][0]*x + p.Pt[0][1]*y + p.Pt[0][2]*z + p.Pt[0][3]) * D + T(0.5);
-    v = (p.Pt[1][0]*x + p.Pt[1][1]*y + p.Pt[1][2]*z + p.Pt[1][3]) * D + T(0.5);
-}
-
-template <typename T>
-inline T IVCAMCalibrator<T>::convertU_16to9_to_4to3(T u) const
-{
-    return u * (T(4.0) / T(3.0)) - (T(1.0) / T(6.0));
-}
-
-template <typename T>
-inline void IVCAMCalibrator<T>::buildUV_4to3(T x, T y, T z, T& u, T& v) const
-{
-    buildUV(x, y, z, u, v);
-    u = convertU_16to9_to_4to3(u);
-}
-
-template <typename T>
-void IVCAMCalibrator<T>::project(T x, T y, T z, T& u, T& v, T& d) const
-{
-    T xc = x/z;
-    T yc = y/z;
-    
-    T r2  = xc*xc + yc*yc;
-    T r2d = (T(1.0) + params.Distc[0]*r2 + params.Distc[1]*r2*r2 + params.Distc[4]*r2*r2*r2);
-    T xcd = xc*r2d + T(2.0)*params.Distc[2]*xc*yc + params.Distc[3]*(r2 + T(2.0)*xc*xc);
-    T ycd = yc*r2d + T(2.0)*params.Distc[3]*xc*yc + params.Distc[2]*(r2 + T(2.0)*yc*yc);
-    xcd = xcd*params.Kc[0] + params.Kc[6];
-    ycd = ycd*params.Kc[4] + params.Kc[7];
-    
-    u = T((xcd+1)*width()*0.5);
-    v = T((ycd+1)*height()*0.5);
-    d = z;
-}
-
-template <typename T>
-Point IVCAMCalibrator<T>::computeUnprojectCoeffs(int _u, int _v) const
-{
-    const float u = T(_u) / width() * 2  - 1; // -1.0 to 1.0
-    const float v = T(_v) / height() * 2 - 1;
-    
-    // Distort camera coordinates
-    T xc   = (u - params.Kc[0][2])/params.Kc[0][0];
-    T yc   = (v - params.Kc[1][2])/params.Kc[1][1];
-    T r2  = xc*xc + yc*yc;
-    T r2c = (T(1) + params.Invdistc[0]*r2 + params.Invdistc[1]*r2*r2 + params.Invdistc[4]*r2*r2*r2);
-    T xcd = xc*r2c + T(2.0)*params.Invdistc[2]*xc*yc + params.Invdistc[3]*(r2 + T(2.0)*xc*xc);
-    T ycd = yc*r2c + T(2.0)*params.Invdistc[3]*xc*yc + params.Invdistc[2]*(r2 + T(2.0)*yc*yc);
-    xcd = xcd*params.Kc[0][0] + params.Kc[0][2];
-    ycd = ycd*params.Kc[1][1] + params.Kc[1][2];
-    
-    // Unnormalized camera rays
-    T dx  = params.Kc[1][1]*xcd - params.Kc[1][1]*params.Kc[0][2];
-    T dy  = params.Kc[0][0]*ycd - params.Kc[0][0]*params.Kc[1][2]; 
-    T dz  = params.Kc[0][0]*params.Kc[1][1];
-    
-    const T x = dx / dz;
-    const T y = dy / dz;
-    return Point(x, y);
-}
-
-template <typename T>
-inline void IVCAMCalibrator<T>::unproject(int pixelX, int pixelY, T depthInMM, T& x, T& y, T& z) const
-{
-    const Point & p = unprojCoeffs[pixelY * width() + pixelX];
-    
-    x = p.x * depthInMM;
-    y = p.y * depthInMM;
-    z = depthInMM;
-}
-
-template <typename T>
-inline void IVCAMCalibrator<T>::unproject(int pixelX, int pixelY, uint16_t depth, T& x, T& y, T& z) const
-{
-    unproject(pixelX, pixelY, ivcamToMM(depth), x, y, z);
 }
 
 template <typename T>

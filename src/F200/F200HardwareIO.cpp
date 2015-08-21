@@ -426,21 +426,6 @@ namespace f200
         {
             return parameters;
         }
-        
-        OpticalData GetOpticalData()
-        {
-            IVCAMCalibrator<float> * calibration = projection->GetCalibrationObject();
-            
-            OpticalData d;
-            
-            Resolution colorRes(projection->GetColorWidth(), projection->GetColorHeight());
-            Resolution depthRes(projection->GetDepthWidth(), projection->GetDepthHeight());
-            
-            d = calibration->getOpticalData(depthRes, colorRes);
-            
-            return d;
-        }
-
     };
 
     /////////////////////////
@@ -470,10 +455,5 @@ namespace f200
     CameraCalibrationParameters & IVCAMHardwareIO::GetParameters()
     {
         return internal->GetParameters();
-    }
-    
-    OpticalData IVCAMHardwareIO::GetOpticalData()
-    {
-        return internal->GetOpticalData();
     }
 }

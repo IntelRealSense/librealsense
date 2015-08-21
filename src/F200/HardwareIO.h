@@ -24,8 +24,6 @@ namespace f200
 
         CameraCalibrationParameters & GetParameters();
         
-        OpticalData GetOpticalData();
-        
     };
 } // end namespace f200
 

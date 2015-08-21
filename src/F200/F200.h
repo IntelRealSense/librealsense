@@ -9,7 +9,6 @@
 #include "../UVCCamera.h"
 #include "F200Types.h"
 #include "HardwareIO.h"
-#include "IVRectifier.h"
 
 namespace f200
 {
@@ -17,7 +16,6 @@ namespace f200
     class F200Camera : public rs::UVCCamera
     {
         std::unique_ptr<IVCAMHardwareIO> hardware_io;
-        std::unique_ptr<IVRectifier> rectifier;
 
     public:
         

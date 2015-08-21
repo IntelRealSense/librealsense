@@ -21,15 +21,7 @@ public:
     ~Projection(void);
 
     bool Init();
-    
-    void MapDepthToColorCoordinates(unsigned int npoints, Point3DF32 *pos2d, Point2DF32 *posc, bool isUVunitsRelative = true, CoordinateSystem dir = LEFT_HANDED);
-    
-    void MapDepthToColorCoordinates(unsigned int width, unsigned int height, uint16_t* pSrcDepth, float* pDestUV, bool isUVunitsRelative = true, CoordinateSystem dir = LEFT_HANDED);
-    
-    void ProjectImageToRealWorld(unsigned int npoints, Point3DF32 *pos2d, Point3DF32 *pos3d, CoordinateSystem dir = LEFT_HANDED);
-    
-    void ProjectImageToRealWorld(unsigned int width, unsigned int height, uint16_t * pSrcDepth, float* pDestXYZ, CoordinateSystem dir = LEFT_HANDED);
-    
+
     float ConvertDepth_Uint16ToMM(uint16_t d);
     
     bool IsInitialized() { return m_isInitialized; }
@@ -45,9 +37,9 @@ public:
     // Calibration table. Also inform users that calib table has changed and they need to redraw it.
     void CallThermalLoopThread();
     
-    int GetIndexOfCamera() { return m_IndexOfCamera; };
+    int GetIndexOfCamera() { return m_IndexOfCamera; }
     
-    IVCAMCalibrator<float> * GetCalibrationObject() { return & m_calibration; };
+    IVCAMCalibrator<float> * GetCalibrationObject() { return & m_calibration; }
     
     void InitializeThermalData(IVCAMTemperatureData TemperatureData, IVCAMThermalLoopParams ThermalLoopParams);
     
