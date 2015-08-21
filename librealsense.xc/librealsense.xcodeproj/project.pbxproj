@@ -38,7 +38,6 @@
 		27F24F901B7BE0FB00BF4D43 /* libuvc_config.h in Headers */ = {isa = PBXBuildFile; fileRef = 27F24F8D1B7BE0FB00BF4D43 /* libuvc_config.h */; };
 		27F24F911B7BE0FB00BF4D43 /* libuvc_internal.h in Headers */ = {isa = PBXBuildFile; fileRef = 27F24F8E1B7BE0FB00BF4D43 /* libuvc_internal.h */; };
 		27F24F921B7BE0FB00BF4D43 /* libuvc.h in Headers */ = {isa = PBXBuildFile; fileRef = 27F24F8F1B7BE0FB00BF4D43 /* libuvc.h */; };
-		27F24FA01B7D0BBF00BF4D43 /* IVRectifier.h in Headers */ = {isa = PBXBuildFile; fileRef = 27F24F9F1B7D0BBF00BF4D43 /* IVRectifier.h */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -74,7 +73,6 @@
 		27F24F8D1B7BE0FB00BF4D43 /* libuvc_config.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = libuvc_config.h; path = ../third_party/libuvc/include/libuvc/libuvc_config.h; sourceTree = SOURCE_ROOT; };
 		27F24F8E1B7BE0FB00BF4D43 /* libuvc_internal.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = libuvc_internal.h; path = ../third_party/libuvc/include/libuvc/libuvc_internal.h; sourceTree = SOURCE_ROOT; };
 		27F24F8F1B7BE0FB00BF4D43 /* libuvc.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = libuvc.h; path = ../third_party/libuvc/include/libuvc/libuvc.h; sourceTree = SOURCE_ROOT; };
-		27F24F9F1B7D0BBF00BF4D43 /* IVRectifier.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = IVRectifier.h; path = ../src/F200/IVRectifier.h; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -206,7 +204,6 @@
 			children = (
 				27F24F6A1B7BDF9700BF4D43 /* F200.h */,
 				27F24F6D1B7BDF9700BF4D43 /* F200Types.h */,
-				27F24F9F1B7D0BBF00BF4D43 /* IVRectifier.h */,
 				27F24F6F1B7BDF9700BF4D43 /* HardwareIO.h */,
 				27F24F681B7BDF9700BF4D43 /* Calibration.h */,
 				27F24F701B7BDF9700BF4D43 /* Projection.h */,
@@ -225,7 +222,6 @@
 				27F24F3A1B7BDF1B00BF4D43 /* DsCamera.h in Headers */,
 				27F24F7A1B7BDF9700BF4D43 /* Projection.h in Headers */,
 				27F24F791B7BDF9700BF4D43 /* HardwareIO.h in Headers */,
-				27F24FA01B7D0BBF00BF4D43 /* IVRectifier.h in Headers */,
 				27F24F2F1B7BDF0100BF4D43 /* rsutil.h in Headers */,
 				27F24F3E1B7BDF1B00BF4D43 /* UVCCamera.h in Headers */,
 				27F24F921B7BE0FB00BF4D43 /* libuvc.h in Headers */,
