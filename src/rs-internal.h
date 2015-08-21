@@ -54,7 +54,7 @@ struct rs_camera
     virtual float GetDepthScale() const = 0;
     
     virtual rs_intrinsics GetStreamIntrinsics(int stream) const = 0;
-	virtual rs_extrinsics GetStreamExtrinsics(int from, int to) = 0;
+    virtual rs_extrinsics GetStreamExtrinsics(int from, int to) const = 0;
 };
 
 struct rs_context

@@ -32,6 +32,19 @@ namespace rs
         rs_intrinsics intrinsics;   // Image intrinsics
     };
 
+    // World's tiniest linear algebra library
+    struct float3 { float x,y,z; };
+    struct float3x3 { float3 x,y,z; };
+    struct pose { float3x3 orientation; float3 position; };
+    inline float3 operator + (const float3 & a, const float3 & b) { return {a.x+b.x, a.y+b.y, a.z+b.z}; }
+    inline float3 operator * (const float3 & a, float b) { return {a.x*b, a.y*b, a.z*b}; }
+    inline float3 operator * (const float3x3 & a, const float3 & b) { return a.x*b.x + a.y*b.y + a.z*b.z; }
+    inline float3x3 operator * (const float3x3 & a, const float3x3 & b) { return {a*b.x, a*b.y, a*b.z}; }
+    inline float3x3 transpose(const float3x3 & a) { return {{a.x.x,a.y.x,a.z.x}, {a.x.y,a.y.y,a.z.y}, {a.x.z,a.y.z,a.z.z}}; }
+    inline float3 operator * (const pose & a, const float3 & b) { return a.orientation * b + a.position; }
+    inline pose operator * (const pose & a, const pose & b) { return {a.orientation * b.orientation, a.position + a * b.position}; }
+    inline pose inverse(const pose & a) { auto inv = transpose(a.orientation); return {inv, inv * a.position * -1}; }
+
     class UVCCamera : public rs_camera
     {
     protected: 
@@ -63,6 +76,7 @@ namespace rs
 
         std::string cameraName;
         std::vector<ResolutionMode> modes;
+        pose stream_poses[2];
 
         uvc_device_handle_t * GetHandleToAnyStream();
     public:
@@ -80,6 +94,7 @@ namespace rs
         const uint16_t * GetDepthImage() const override final { return streams[RS_DEPTH] ? streams[RS_DEPTH]->get_image<uint16_t>() : nullptr; }
 
         rs_intrinsics GetStreamIntrinsics(int stream) const override final;
+        rs_extrinsics GetStreamExtrinsics(int from, int to) const override final;
 
         virtual int GetStreamSubdeviceNumber(int stream) const = 0;
         virtual void RetrieveCalibration() = 0;

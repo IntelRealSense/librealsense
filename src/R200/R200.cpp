@@ -54,6 +54,10 @@ namespace r200
             //modes.push_back(MakeDepthMode(320, 240, calib.modesLR[2])); // NOTE: QRES oddness
             modes.push_back(MakeColorMode(calib.intrinsicsThird[0]));
             modes.push_back(MakeColorMode(calib.intrinsicsThird[1]));
+
+            stream_poses[RS_DEPTH] = {{{1,0,0},{0,1,0},{0,0,1}}, {0,0,0}};
+            stream_poses[RS_COLOR].orientation = transpose((const float3x3 &)calib.Rthird[0]);
+            stream_poses[RS_COLOR].position = stream_poses[RS_COLOR].orientation * (const float3 &)calib.T[0] * 0.001f;
         }
     }
 
@@ -69,21 +73,6 @@ namespace r200
                 throw std::runtime_error("xu_write failed");
             }
         }
-    }
-
-    rs_extrinsics R200Camera::GetStreamExtrinsics(int from, int to)
-    {
-        if(from == RS_DEPTH && to == RS_COLOR)
-        {
-            rs_extrinsics extrin;
-            for(int i=0; i<9; ++i) extrin.rotation[i] = (float)calib.Rthird[0][i];
-            extrin.translation[0] = extrin.rotation[0]*calib.T[0][0] + extrin.rotation[1]*calib.T[0][1] + extrin.rotation[2]*calib.T[0][2];
-            extrin.translation[1] = extrin.rotation[3]*calib.T[0][0] + extrin.rotation[4]*calib.T[0][1] + extrin.rotation[5]*calib.T[0][2];
-            extrin.translation[2] = extrin.rotation[6]*calib.T[0][0] + extrin.rotation[7]*calib.T[0][1] + extrin.rotation[8]*calib.T[0][2];
-            for(int i=0; i<3; ++i) extrin.translation[i] *= 0.001f; // Convert from mm to m
-            return extrin;
-        }
-        else throw std::runtime_error("unsupported streams");
     }
     
 } // end namespace r200

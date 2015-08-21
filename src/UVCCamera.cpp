@@ -81,6 +81,15 @@ rs_intrinsics UVCCamera::GetStreamIntrinsics(int stream) const
     return streams[stream]->get_mode().intrinsics;
 }
 
+rs_extrinsics UVCCamera::GetStreamExtrinsics(int from, int to) const
+{
+    auto transform = inverse(stream_poses[from]) * stream_poses[to]; // TODO: Make sure this is the right order
+    rs_extrinsics extrin;
+    (float3x3 &)extrin.rotation = transpose(transform.orientation);
+    (float3 &)extrin.translation = transform.position;
+    return extrin;
+}
+
 uvc_device_handle_t * UVCCamera::GetHandleToAnyStream()
 {
     for(auto & s : streams) if(s) return s->get_handle();

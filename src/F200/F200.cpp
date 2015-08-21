@@ -72,20 +72,10 @@ namespace f200
             modes.push_back(MakeDepthMode(calib, 640, 480));
             modes.push_back(MakeColorMode(calib, 1920, 1080));
             modes.push_back(MakeColorMode(calib, 640, 480));
-        }
-    }
 
-    rs_extrinsics F200Camera::GetStreamExtrinsics(int from, int to)
-    {
-        if(from == RS_DEPTH && to == RS_COLOR)
-        {
-            const CameraCalibrationParameters & calib = hardware_io->GetParameters();
-            return {{calib.Rt[0][0], calib.Rt[0][1], calib.Rt[0][2],
-                     calib.Rt[1][0], calib.Rt[1][1], calib.Rt[1][2],
-                     calib.Rt[2][0], calib.Rt[2][1], calib.Rt[2][2]},
-                    {calib.Tt[0]*0.001f, calib.Tt[1]*0.001f, calib.Tt[2]*0.001f}}; // convert mm to m
+            stream_poses[RS_DEPTH] = {{{1,0,0},{0,1,0},{0,0,1}}, {0,0,0}};
+            stream_poses[RS_COLOR] = {transpose((const float3x3 &)calib.Rt), (const float3 &)calib.Tt * 0.001f}; // convert mm to m
         }
-        else throw std::runtime_error("unsupported streams");
     }
 
     float F200Camera::GetDepthScale() const

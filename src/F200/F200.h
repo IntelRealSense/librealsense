@@ -37,8 +37,7 @@ namespace f200
             default: throw std::runtime_error("unsupported stream");
             }
         }
-        
-        rs_extrinsics GetStreamExtrinsics(int from, int to) override final;
+
         float GetDepthScale() const override final;
     };
     
