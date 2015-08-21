@@ -41,8 +41,8 @@ public:
     
     const CameraCalibrationParameters & getParameters()
     {
-        if (isInitialized) return params;
-        else return std::move(CameraCalibrationParameters());
+        if (!isInitialized) throw std::runtime_error("not initialized");
+        return params;
     }
     
     int nParamters() const { return sizeof (CameraCalibrationParameters) / sizeof (T); }
@@ -115,7 +115,7 @@ private:
 ////////////////////////////////////
 // IVCAMCalibrator Implementation //
 ////////////////////////////////////
-    
+
 template <typename T>
 inline bool IVCAMCalibrator<T>::updateParamsAccordingToTemperature(float liguriaTemp, float IRTemp, int * timeout)
 {
