@@ -80,48 +80,7 @@ public:
     void generateCalibrationCoefficients(Resolution IRResolution,bool isZmode, float* ValArray) const;
     
     bool updateParamsAccordingToTemperature(float liguriaTemp,float IRTemp, int* timeout);
-    
-    struct Properties
-    {
-        struct CameraIntrinsics
-        {
-            T HFOV; // horizontal field of view
-            T VFOV; // vertical field of view
-            T X, Y; // principal point
-            T Rad25, Rad75, Tang;
-        };
-        
-        struct ProjectorIntrinsics
-        {
-            T HFOV; // horizontal field of view
-            T X, Curv, Tilt, DTilt;
-        };
-        
-        struct TextureIntrinsics
-        {
-            T HFOV; // horizontal field of view
-            T VFOV; // vertical field of view
-            T X, Y; // principal point
-        };
-        
-        struct ProjectorExtrinsics
-        {
-            T Conv, Pitch, Roll, Disp, xDis, zDis;
-        };
-        
-        struct TextureExtrinsics
-        {
-            T Conv, Pitch, Roll, Disp, xDis, zDis;
-        };
-        
-        struct Viewpoint
-        {
-            T xRot, yRot, zRot, xDis, yDis, zDis;
-        };
-    };
-    
-    const Properties & GetCalibrationProperties() const { return camProperties; }
-    
+
 public:
     
     struct ThermalModelData
@@ -168,12 +127,9 @@ public:
     
     bool buildParametersFromOldTable(const double * paramData, int nParams);
     void precomputeUnproj();
-    void buildCameraProperties();
     
     CameraCalibrationParameters params;
     CameraCalibrationParameters originalParams;
-    
-    Properties camProperties;
     
     bool isInitialized = false;
     
@@ -540,52 +496,6 @@ void IVCAMCalibrator<T>::precomputeUnproj()
 {
     uint16_to_mm_ratio = params.Rmax / T(65535);
     mm_to_uint_ratio = T(65535) / params.Rmax;
-}
-
-template <typename T>
-inline void IVCAMCalibrator<T>::buildCameraProperties()
-{
-    const T HFOVc = atan(T(1)/params.Kc[0])*T(360)/T(M_PI); // atan(1/Kc(1,1))*2*180/pi;
-    const T VFOVc = atan(T(1)/params.Kc[4])*T(360)/T(M_PI); // atan(1/Kc(2,2))*2*180/pi;
-    const T xc = params.Kc[6] / T(2) * T(100);              // Kc(1,3) / 2*100;
-    const T yc = params.Kc[7] / T(2) * T(100);              // Kc(2,3) / 2*100;
-    
-    const T HFOVp = atan(T(1)/params.Kp[4]) * T(360)/T(M_PI); // atan(1/Kp(2,2))*2*180/pi;
-    
-    camProperties.cameraIntrinsics.HFOV = HFOVc;
-    camProperties.cameraIntrinsics.VFOV = VFOVc;
-    camProperties.cameraIntrinsics.X = xc;
-    camProperties.cameraIntrinsics.Y = yc;
-    camProperties.cameraIntrinsics.Rad25 = 0;               // rad(1);
-    camProperties.cameraIntrinsics.Rad75 = 0;               // rad(2);
-    camProperties.cameraIntrinsics.Tang = 0;                // tang;
-    camProperties.projectorIntrinsics.HFOV = HFOVp;
-    camProperties.projectorIntrinsics.X = 0;                // xp;
-    camProperties.projectorIntrinsics.Curv = 0;             // curv;
-    camProperties.projectorIntrinsics.Tilt = 0;             // tilt0;
-    camProperties.projectorIntrinsics.DTilt = 0;            // dtilt;
-    camProperties.textureIntrinsics.HFOV = 0;               // HFOVt;
-    camProperties.textureIntrinsics.VFOV = 0;               // VFOVt;
-    camProperties.textureIntrinsics.X = 0;                  // xt;
-    camProperties.textureIntrinsics.Y = 0;                  // yt;
-    camProperties.projectorExtrinsics.Conv = 0;             // qp(1);
-    camProperties.projectorExtrinsics.Pitch = 0;            // qp(2);
-    camProperties.projectorExtrinsics.Roll = 0;             // qp(3);
-    camProperties.projectorExtrinsics.Disp = params.Tp[1];  // tp(1); // disparity
-    camProperties.projectorExtrinsics.xDis = params.Tp[0];  // tp(2);
-    camProperties.projectorExtrinsics.zDis = params.Tp[2];  // tp(3);
-    camProperties.projectorExtrinsics.Conv = 0;             // qt(1);
-    camProperties.projectorExtrinsics.Pitch = 0;            // qt(2);
-    camProperties.projectorExtrinsics.Roll = 0;             // qt(3);
-    camProperties.projectorExtrinsics.Disp = 0;             // tt(1);
-    camProperties.projectorExtrinsics.xDis = 0;             // tt(2);
-    camProperties.projectorExtrinsics.zDis = 0;             // tt(3);
-    camProperties.viewpoint.xRot = 0;                       // qv(1);
-    camProperties.viewpoint.yRot = 0;                       // qv(2);
-    camProperties.viewpoint.zRot = 0;                       // qv(3);
-    camProperties.viewpoint.xDis = 0;                       // qv(4);
-    camProperties.viewpoint.yDis = 0;                       // qv(5);
-    camProperties.viewpoint.zDis = 0;                       // qv(6);
 }
     
 } // end namespace f200
