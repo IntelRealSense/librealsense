@@ -23,7 +23,7 @@ namespace rs
 	public:
 							auto_error()															: error() {}
 							auto_error(const auto_error &)											= delete;
-							~auto_error()															{ if (error) handle_error(error); }
+                            ~auto_error() noexcept(false)											{ if (error) handle_error(error); }
 		auto_error &		operator = (const auto_error &)											= delete;
 							operator rs_error ** ()													{ return &error; }
 	};
