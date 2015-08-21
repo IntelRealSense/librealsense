@@ -1,7 +1,51 @@
+///////////////
+// Compilers //
+///////////////
+
+#if defined(_MSC_VER)
+#define COMPILER_MSVC 1
+#endif
+
+#if defined(__GNUC__)
+#define COMPILER_GCC 1
+#define GCC_VERSION (__GNUC__ * 10000 + __GNUC_MINOR__ * 100 + __GNUC_PATCHLEVEL__)
+#endif
+
+#if defined(__clang__)
+#define COMPILER_CLANG 1
+#endif
+
+///////////////
+// Platforms //
+///////////////
+
+#if defined(WIN32) || defined(_WIN32)
+#define PLATFORM_WINDOWS 1
+#endif
+
+#ifdef __APPLE__
+#define PLATFORM_OSX 1
+#endif
+
+#if defined(__linux__)
+#define PLATFORM_LINUX 1
+#endif
+
 #include <librealsense/rs.hpp>
 
 #define GLFW_INCLUDE_GLU
-#include <GLFW/glfw3.h>
+
+#if defined(PLATFORM_OSX)
+
+#include "glfw3.h"
+    #define GLFW_EXPOSE_NATIVE_COCOA
+    #define GLFW_EXPOSE_NATIVE_NSGL
+    #include "glfw3native.h"
+    #include <OpenGL/gl3.h>
+#elif defined(PLATFORM_LINUX)
+    #include <GLFW/glfw3.h>
+#endif
+
 #include <iostream>
 #include <vector>
 
@@ -167,7 +211,7 @@ int main(int argc, char * argv[]) try
 			{
                 if(auto d = *depth++)
 				{
-                    float depth_pixel[2] = {x,y}, depth_point[3], color_point[3], color_pixel[2];
+                    float depth_pixel[2] = {static_cast<float>(x),static_cast<float>(y)}, depth_point[3], color_point[3], color_pixel[2];
                     rs_deproject_pixel_to_point(depth_point, depth_intrin, depth_pixel, d*scale);
                     rs_transform_point_to_point(color_point, extrin, depth_point);
                     rs_project_point_to_pixel(color_pixel, color_intrin, color_point);

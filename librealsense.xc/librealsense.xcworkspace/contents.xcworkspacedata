@@ -2,7 +2,10 @@
 <Workspace
    version = "1.0">
    <FileRef
-      location = "group:camera-dev.xcodeproj">
+      location = "group:../examples/pointcloud/pointcloud.cpp">
+   </FileRef>
+   <FileRef
+      location = "group:/Users/dimitri/Desktop/librealsense/librealsense.xc/pointcloud.xcodeproj">
    </FileRef>
    <FileRef
       location = "container:librealsense.xcodeproj">

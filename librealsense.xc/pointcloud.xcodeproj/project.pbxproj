@@ -14,8 +14,7 @@
 		08567C0F1B5B899B00EB6C0D /* OpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 08567C0E1B5B899B00EB6C0D /* OpenGL.framework */; };
 		08567C2C1B61D80B00EB6C0D /* librealsense.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 08567C2B1B61D80B00EB6C0D /* librealsense.a */; };
 		08567C301B61DB8100EB6C0D /* libusb-1.0.0.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 08567C2F1B61DB8100EB6C0D /* libusb-1.0.0.dylib */; };
-		27F24F9B1B7BE19D00BF4D43 /* camera_dev.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 27F24F981B7BE19D00BF4D43 /* camera_dev.cpp */; };
-		27F24F9C1B7BE19D00BF4D43 /* gfx_util.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 27F24F991B7BE19D00BF4D43 /* gfx_util.cpp */; };
+		27E516361B87AAEA00DDA462 /* pointcloud.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 27E516351B87AAEA00DDA462 /* pointcloud.cpp */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -39,9 +38,7 @@
 		08567C0E1B5B899B00EB6C0D /* OpenGL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenGL.framework; path = System/Library/Frameworks/OpenGL.framework; sourceTree = SDKROOT; };
 		08567C2B1B61D80B00EB6C0D /* librealsense.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = librealsense.a; path = ../../Library/Developer/Xcode/DerivedData/bin/Debug/librealsense.a; sourceTree = "<group>"; };
 		08567C2F1B61DB8100EB6C0D /* libusb-1.0.0.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = "libusb-1.0.0.dylib"; path = "../../../../usr/local/Cellar/libusb/1.0.19/lib/libusb-1.0.0.dylib"; sourceTree = "<group>"; };
-		27F24F981B7BE19D00BF4D43 /* camera_dev.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = camera_dev.cpp; path = "../examples/camera-dev/camera_dev.cpp"; sourceTree = SOURCE_ROOT; };
-		27F24F991B7BE19D00BF4D43 /* gfx_util.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = gfx_util.cpp; path = "../examples/camera-dev/gfx_util.cpp"; sourceTree = SOURCE_ROOT; };
-		27F24F9A1B7BE19D00BF4D43 /* gfx_util.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = gfx_util.h; path = "../examples/camera-dev/gfx_util.h"; sourceTree = SOURCE_ROOT; };
+		27E516351B87AAEA00DDA462 /* pointcloud.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = pointcloud.cpp; path = ../examples/pointcloud/pointcloud.cpp; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -66,7 +63,7 @@
 			isa = PBXGroup;
 			children = (
 				08567BD41B5B5A5400EB6C0D /* third_party */,
-				08567BB31B5B59E800EB6C0D /* CameraDev */,
+				08567BB31B5B59E800EB6C0D /* src */,
 				08567BB21B5B59E800EB6C0D /* Products */,
 			);
 			sourceTree = "<group>";
@@ -79,13 +76,12 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
-		08567BB31B5B59E800EB6C0D /* CameraDev */ = {
+		08567BB31B5B59E800EB6C0D /* src */ = {
 			isa = PBXGroup;
 			children = (
-				27F24F981B7BE19D00BF4D43 /* camera_dev.cpp */,
-				27F24F991B7BE19D00BF4D43 /* gfx_util.cpp */,
-				27F24F9A1B7BE19D00BF4D43 /* gfx_util.h */,
+				27E516351B87AAEA00DDA462 /* pointcloud.cpp */,
 			);
+			name = src;
 			path = CameraDev;
 			sourceTree = "<group>";
 		};
@@ -154,7 +150,7 @@
 					};
 				};
 			};
-			buildConfigurationList = 08567BAC1B5B59E800EB6C0D /* Build configuration list for PBXProject "camera-dev" */;
+			buildConfigurationList = 08567BAC1B5B59E800EB6C0D /* Build configuration list for PBXProject "pointcloud" */;
 			compatibilityVersion = "Xcode 3.2";
 			developmentRegion = English;
 			hasScannedForEncodings = 0;
@@ -176,8 +172,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				27F24F9B1B7BE19D00BF4D43 /* camera_dev.cpp in Sources */,
-				27F24F9C1B7BE19D00BF4D43 /* gfx_util.cpp in Sources */,
+				27E516361B87AAEA00DDA462 /* pointcloud.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -279,11 +274,11 @@
 			buildSettings = {
 				HEADER_SEARCH_PATHS = (
 					"$(inherited)",
-					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
-					"$(SRCROOT)/../third_party/libuvc/include",
-					"$(SRCROOT)/../third_party/glfw",
-					"$(SRCROOT)/../third_party/catch",
 					"$(SRCROOT)/../include",
+					"$(SRCROOT)/../third_party/stb",
+					"$(SRCROOT)/../third_party/glfw",
+					"$(SRCROOT)/../third_party/libuvc/include",
+					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
 					/usr/local/Cellar/libusb/1.0.19/include/,
 				);
 				LIBRARY_SEARCH_PATHS = (
@@ -302,11 +297,11 @@
 			buildSettings = {
 				HEADER_SEARCH_PATHS = (
 					"$(inherited)",
-					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
-					"$(SRCROOT)/../third_party/libuvc/include",
-					"$(SRCROOT)/../third_party/glfw",
-					"$(SRCROOT)/../third_party/catch",
 					"$(SRCROOT)/../include",
+					"$(SRCROOT)/../third_party/stb",
+					"$(SRCROOT)/../third_party/glfw",
+					"$(SRCROOT)/../third_party/libuvc/include",
+					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
 					/usr/local/Cellar/libusb/1.0.19/include/,
 				);
 				LIBRARY_SEARCH_PATHS = (
@@ -323,7 +318,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		08567BAC1B5B59E800EB6C0D /* Build configuration list for PBXProject "camera-dev" */ = {
+		08567BAC1B5B59E800EB6C0D /* Build configuration list for PBXProject "pointcloud" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				08567BB61B5B59E800EB6C0D /* Debug */,

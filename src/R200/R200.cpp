@@ -38,7 +38,7 @@ namespace r200
 
     static ResolutionMode MakeColorMode(const UnrectifiedIntrinsics & i)
     {
-        return {RS_COLOR, i.w,i.h,60,RS_RGB, i.w,i.h,59,UVC_FRAME_FORMAT_YUYV, {{i.w,i.h}, {i.fx,i.fy}, {i.px,i.py}, {i.k[0],i.k[1],i.k[2],i.k[3],i.k[4]}, RS_GORDON_BROWN_CONRADY_DISTORTION}};
+        return {RS_COLOR, static_cast<int>(i.w),static_cast<int>(i.h),60,RS_RGB, static_cast<int>(i.w),static_cast<int>(i.h),59,UVC_FRAME_FORMAT_YUYV, {{static_cast<int>(i.w),static_cast<int>(i.h)}, {i.fx,i.fy}, {i.px,i.py}, {i.k[0],i.k[1],i.k[2],i.k[3],i.k[4]}, RS_GORDON_BROWN_CONRADY_DISTORTION}};
     }
 
     CalibrationInfo R200Camera::RetrieveCalibration(uvc_device_handle_t * handle)
@@ -516,7 +516,7 @@ namespace r200
 
     bool get_last_error(uvc_device_handle_t * device, uint8_t & last_error)
     {
-        return xu_read(device, CONTROL_LAST_ERROR, last_error, sizeof(uint8_t));
+        return xu_read(device, CONTROL_LAST_ERROR, &last_error, sizeof(uint8_t));
     }
 
 } // end namespace r200

@@ -7,24 +7,17 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		27E5163A1B87ABFA00DDA462 /* image.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 27E516391B87ABFA00DDA462 /* image.cpp */; };
 		27F24F2D1B7BDF0100BF4D43 /* rs.h in Headers */ = {isa = PBXBuildFile; fileRef = 27F24F2A1B7BDF0100BF4D43 /* rs.h */; };
 		27F24F2E1B7BDF0100BF4D43 /* rs.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 27F24F2B1B7BDF0100BF4D43 /* rs.hpp */; };
 		27F24F2F1B7BDF0100BF4D43 /* rsutil.h in Headers */ = {isa = PBXBuildFile; fileRef = 27F24F2C1B7BDF0100BF4D43 /* rsutil.h */; };
-		27F24F381B7BDF1B00BF4D43 /* Common.h in Headers */ = {isa = PBXBuildFile; fileRef = 27F24F301B7BDF1B00BF4D43 /* Common.h */; };
 		27F24F3A1B7BDF1B00BF4D43 /* DsCamera.h in Headers */ = {isa = PBXBuildFile; fileRef = 27F24F321B7BDF1B00BF4D43 /* DsCamera.h */; };
 		27F24F3B1B7BDF1B00BF4D43 /* rs-internal.h in Headers */ = {isa = PBXBuildFile; fileRef = 27F24F331B7BDF1B00BF4D43 /* rs-internal.h */; };
 		27F24F3C1B7BDF1B00BF4D43 /* rs.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 27F24F341B7BDF1B00BF4D43 /* rs.cpp */; };
 		27F24F3D1B7BDF1B00BF4D43 /* UVCCamera.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 27F24F351B7BDF1B00BF4D43 /* UVCCamera.cpp */; };
 		27F24F3E1B7BDF1B00BF4D43 /* UVCCamera.h in Headers */ = {isa = PBXBuildFile; fileRef = 27F24F361B7BDF1B00BF4D43 /* UVCCamera.h */; };
-		27F24F4A1B7BDF5A00BF4D43 /* CameraHeader.h in Headers */ = {isa = PBXBuildFile; fileRef = 27F24F411B7BDF5A00BF4D43 /* CameraHeader.h */; };
-		27F24F4B1B7BDF5A00BF4D43 /* HardwareIO.h in Headers */ = {isa = PBXBuildFile; fileRef = 27F24F421B7BDF5A00BF4D43 /* HardwareIO.h */; };
-		27F24F4C1B7BDF5A00BF4D43 /* ParseCalibration.h in Headers */ = {isa = PBXBuildFile; fileRef = 27F24F431B7BDF5A00BF4D43 /* ParseCalibration.h */; };
 		27F24F4D1B7BDF5A00BF4D43 /* R200.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 27F24F441B7BDF5A00BF4D43 /* R200.cpp */; };
 		27F24F4E1B7BDF5A00BF4D43 /* R200.h in Headers */ = {isa = PBXBuildFile; fileRef = 27F24F451B7BDF5A00BF4D43 /* R200.h */; };
-		27F24F4F1B7BDF5A00BF4D43 /* R200HardwareIO.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 27F24F461B7BDF5A00BF4D43 /* R200HardwareIO.cpp */; };
-		27F24F501B7BDF5A00BF4D43 /* R200Types.h in Headers */ = {isa = PBXBuildFile; fileRef = 27F24F471B7BDF5A00BF4D43 /* R200Types.h */; };
-		27F24F511B7BDF5A00BF4D43 /* R200XU.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 27F24F481B7BDF5A00BF4D43 /* R200XU.cpp */; };
-		27F24F521B7BDF5A00BF4D43 /* XU.h in Headers */ = {isa = PBXBuildFile; fileRef = 27F24F491B7BDF5A00BF4D43 /* XU.h */; };
 		27F24F721B7BDF9700BF4D43 /* Calibration.h in Headers */ = {isa = PBXBuildFile; fileRef = 27F24F681B7BDF9700BF4D43 /* Calibration.h */; };
 		27F24F731B7BDF9700BF4D43 /* F200.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 27F24F691B7BDF9700BF4D43 /* F200.cpp */; };
 		27F24F741B7BDF9700BF4D43 /* F200.h in Headers */ = {isa = PBXBuildFile; fileRef = 27F24F6A1B7BDF9700BF4D43 /* F200.h */; };
@@ -50,24 +43,17 @@
 
 /* Begin PBXFileReference section */
 		08567BC41B5B5A0200EB6C0D /* librealsense.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = librealsense.a; sourceTree = BUILT_PRODUCTS_DIR; };
+		27E516391B87ABFA00DDA462 /* image.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = image.cpp; path = ../src/image.cpp; sourceTree = SOURCE_ROOT; };
 		27F24F2A1B7BDF0100BF4D43 /* rs.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = rs.h; path = ../include/librealsense/rs.h; sourceTree = SOURCE_ROOT; };
 		27F24F2B1B7BDF0100BF4D43 /* rs.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = rs.hpp; path = ../include/librealsense/rs.hpp; sourceTree = SOURCE_ROOT; };
 		27F24F2C1B7BDF0100BF4D43 /* rsutil.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = rsutil.h; path = ../include/librealsense/rsutil.h; sourceTree = SOURCE_ROOT; };
-		27F24F301B7BDF1B00BF4D43 /* Common.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Common.h; path = ../src/Common.h; sourceTree = SOURCE_ROOT; };
 		27F24F321B7BDF1B00BF4D43 /* DsCamera.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = DsCamera.h; path = ../src/DsCamera.h; sourceTree = SOURCE_ROOT; };
 		27F24F331B7BDF1B00BF4D43 /* rs-internal.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = "rs-internal.h"; path = "../src/rs-internal.h"; sourceTree = SOURCE_ROOT; };
 		27F24F341B7BDF1B00BF4D43 /* rs.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = rs.cpp; path = ../src/rs.cpp; sourceTree = SOURCE_ROOT; };
 		27F24F351B7BDF1B00BF4D43 /* UVCCamera.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = UVCCamera.cpp; path = ../src/UVCCamera.cpp; sourceTree = SOURCE_ROOT; };
 		27F24F361B7BDF1B00BF4D43 /* UVCCamera.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = UVCCamera.h; path = ../src/UVCCamera.h; sourceTree = SOURCE_ROOT; };
-		27F24F411B7BDF5A00BF4D43 /* CameraHeader.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = CameraHeader.h; path = ../src/R200/CameraHeader.h; sourceTree = SOURCE_ROOT; };
-		27F24F421B7BDF5A00BF4D43 /* HardwareIO.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = HardwareIO.h; path = ../src/R200/HardwareIO.h; sourceTree = SOURCE_ROOT; };
-		27F24F431B7BDF5A00BF4D43 /* ParseCalibration.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = ParseCalibration.h; path = ../src/R200/ParseCalibration.h; sourceTree = SOURCE_ROOT; };
 		27F24F441B7BDF5A00BF4D43 /* R200.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = R200.cpp; path = ../src/R200/R200.cpp; sourceTree = SOURCE_ROOT; };
 		27F24F451B7BDF5A00BF4D43 /* R200.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = R200.h; path = ../src/R200/R200.h; sourceTree = SOURCE_ROOT; };
-		27F24F461B7BDF5A00BF4D43 /* R200HardwareIO.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = R200HardwareIO.cpp; path = ../src/R200/R200HardwareIO.cpp; sourceTree = SOURCE_ROOT; };
-		27F24F471B7BDF5A00BF4D43 /* R200Types.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = R200Types.h; path = ../src/R200/R200Types.h; sourceTree = SOURCE_ROOT; };
-		27F24F481B7BDF5A00BF4D43 /* R200XU.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = R200XU.cpp; path = ../src/R200/R200XU.cpp; sourceTree = SOURCE_ROOT; };
-		27F24F491B7BDF5A00BF4D43 /* XU.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = XU.h; path = ../src/R200/XU.h; sourceTree = SOURCE_ROOT; };
 		27F24F681B7BDF9700BF4D43 /* Calibration.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Calibration.h; path = ../src/F200/Calibration.h; sourceTree = SOURCE_ROOT; };
 		27F24F691B7BDF9700BF4D43 /* F200.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = F200.cpp; path = ../src/F200/F200.cpp; sourceTree = SOURCE_ROOT; };
 		27F24F6A1B7BDF9700BF4D43 /* F200.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = F200.h; path = ../src/F200/F200.h; sourceTree = SOURCE_ROOT; };
@@ -176,6 +162,7 @@
 			children = (
 				27F24F401B7BDF2D00BF4D43 /* headers */,
 				27F24F351B7BDF1B00BF4D43 /* UVCCamera.cpp */,
+				27E516391B87ABFA00DDA462 /* image.cpp */,
 				27F24F341B7BDF1B00BF4D43 /* rs.cpp */,
 				08567C361B61E6C600EB6C0D /* R200 */,
 				08567C351B61E6C100EB6C0D /* F200 */,
@@ -200,8 +187,6 @@
 			children = (
 				27F24F531B7BDF7800BF4D43 /* headers */,
 				27F24F441B7BDF5A00BF4D43 /* R200.cpp */,
-				27F24F461B7BDF5A00BF4D43 /* R200HardwareIO.cpp */,
-				27F24F481B7BDF5A00BF4D43 /* R200XU.cpp */,
 			);
 			name = R200;
 			sourceTree = "<group>";
@@ -209,7 +194,6 @@
 		27F24F401B7BDF2D00BF4D43 /* headers */ = {
 			isa = PBXGroup;
 			children = (
-				27F24F301B7BDF1B00BF4D43 /* Common.h */,
 				27F24F321B7BDF1B00BF4D43 /* DsCamera.h */,
 				27F24F331B7BDF1B00BF4D43 /* rs-internal.h */,
 				27F24F361B7BDF1B00BF4D43 /* UVCCamera.h */,
@@ -221,11 +205,6 @@
 			isa = PBXGroup;
 			children = (
 				27F24F451B7BDF5A00BF4D43 /* R200.h */,
-				27F24F471B7BDF5A00BF4D43 /* R200Types.h */,
-				27F24F421B7BDF5A00BF4D43 /* HardwareIO.h */,
-				27F24F411B7BDF5A00BF4D43 /* CameraHeader.h */,
-				27F24F431B7BDF5A00BF4D43 /* ParseCalibration.h */,
-				27F24F491B7BDF5A00BF4D43 /* XU.h */,
 			);
 			name = headers;
 			sourceTree = "<group>";
@@ -261,16 +240,10 @@
 				27F24F3B1B7BDF1B00BF4D43 /* rs-internal.h in Headers */,
 				27F24F4E1B7BDF5A00BF4D43 /* R200.h in Headers */,
 				27F24F2D1B7BDF0100BF4D43 /* rs.h in Headers */,
-				27F24F521B7BDF5A00BF4D43 /* XU.h in Headers */,
-				27F24F501B7BDF5A00BF4D43 /* R200Types.h in Headers */,
 				27F24F2E1B7BDF0100BF4D43 /* rs.hpp in Headers */,
 				27F24F901B7BE0FB00BF4D43 /* libuvc_config.h in Headers */,
-				27F24F4A1B7BDF5A00BF4D43 /* CameraHeader.h in Headers */,
 				27F24F741B7BDF9700BF4D43 /* F200.h in Headers */,
-				27F24F381B7BDF1B00BF4D43 /* Common.h in Headers */,
 				27F24F7B1B7BDF9700BF4D43 /* XU.h in Headers */,
-				27F24F4B1B7BDF5A00BF4D43 /* HardwareIO.h in Headers */,
-				27F24F4C1B7BDF5A00BF4D43 /* ParseCalibration.h in Headers */,
 				27F24F911B7BE0FB00BF4D43 /* libuvc_internal.h in Headers */,
 				27F24F771B7BDF9700BF4D43 /* F200Types.h in Headers */,
 				27F24F721B7BDF9700BF4D43 /* Calibration.h in Headers */,
@@ -335,13 +308,12 @@
 			files = (
 				27F24F8A1B7BE0E800BF4D43 /* init.c in Sources */,
 				27F24F851B7BE0E800BF4D43 /* ctrl.c in Sources */,
+				27E5163A1B87ABFA00DDA462 /* image.cpp in Sources */,
 				27F24F8B1B7BE0E800BF4D43 /* misc.c in Sources */,
 				27F24F761B7BDF9700BF4D43 /* F200Projection.cpp in Sources */,
 				27F24F4D1B7BDF5A00BF4D43 /* R200.cpp in Sources */,
 				27F24F751B7BDF9700BF4D43 /* F200HardwareIO.cpp in Sources */,
 				27F24F781B7BDF9700BF4D43 /* F200XU.cpp in Sources */,
-				27F24F511B7BDF5A00BF4D43 /* R200XU.cpp in Sources */,
-				27F24F4F1B7BDF5A00BF4D43 /* R200HardwareIO.cpp in Sources */,
 				27F24F731B7BDF9700BF4D43 /* F200.cpp in Sources */,
 				27F24F8C1B7BE0E800BF4D43 /* stream.c in Sources */,
 				27F24F871B7BE0E800BF4D43 /* diag.c in Sources */,
