@@ -7,12 +7,11 @@
 
 #ifdef USE_UVC_DEVICES
 #include "../UVCCamera.h"
-#include "F200Types.h"
-#include "HardwareIO.h"
 
 namespace f200
 {
-    
+    class IVCAMHardwareIO;
+
     class F200Camera : public rs::UVCCamera
     {
         std::unique_ptr<IVCAMHardwareIO> hardware_io;
