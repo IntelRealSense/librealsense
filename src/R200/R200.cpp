@@ -382,24 +382,14 @@ namespace r200
 
         void LogDebugInfo()
         {
-            std::cout << "######## Serial: " << cameraInfo.serialNumber << std::endl;
-            std::cout << "######## Model: " << cameraInfo.modelNumber << std::endl;
-            std::cout << "######## Revision: " << cameraInfo.revisionNumber << std::endl;
-            std::cout << "######## Calibrated: " << cameraInfo.calibrationDate << std::endl;
-            std::cout << "######## Head Version: " << cameraInfo.cameraHeadContentsVersion << std::endl;
-            std::cout << "######## Baseline: " << cameraInfo.nominalBaseline << std::endl;
-            std::cout << "######## OEM ID: " << cameraInfo.OEMID << std::endl;
-
-            auto params = cameraCalibration.modesLR[0];
-
-            std::cout << "## Mode LR[0] Rectified Intrinsics: " << std::endl;
             std::cout << "## Calibration Version: " << cameraCalibration.metadata.versionNumber << std::endl;
-            std::cout << "## rfx: " << params.rfx << std::endl;
-            std::cout << "## rfy: " << params.rfy << std::endl;
-            std::cout << "## rpx: " << params.rpx << std::endl;
-            std::cout << "## rpy: " << params.rpy << std::endl;
-            std::cout << "## rw:  " << params.rw << std::endl;
-            std::cout << "## rh:  " << params.rh << std::endl;
+            std::cout << "## Serial: " << cameraInfo.serialNumber << std::endl;
+            std::cout << "## Model: " << cameraInfo.modelNumber << std::endl;
+            std::cout << "## Revision: " << cameraInfo.revisionNumber << std::endl;
+            std::cout << "## Calibrated: " << cameraInfo.calibrationDate << std::endl;
+            std::cout << "## Head Version: " << cameraInfo.cameraHeadContentsVersion << std::endl;
+            std::cout << "## Baseline: " << cameraInfo.nominalBaseline << std::endl;
+            std::cout << "## OEM ID: " << cameraInfo.OEMID << std::endl;
         }
 
         CameraCalibrationParameters GetCalibration() { return cameraCalibration; }
@@ -410,12 +400,13 @@ namespace r200
     {
         return (c0 << 24) | (c1 << 16) | (c2 << 8) | c3;
     }
+    
     void read_camera_info(uvc_device_handle_t * device, CameraCalibrationParameters & calib, CameraHeaderInfo & header)
     {
         DS4HardwareIOInternal internal(device);
-        internal.LogDebugInfo();
         calib = internal.GetCalibration();
         header = internal.GetCameraHeader();
+        internal.LogDebugInfo();
     }
 
     int read_stream_status(uvc_device_handle_t *devh)

@@ -185,7 +185,7 @@
 		08567C361B61E6C600EB6C0D /* R200 */ = {
 			isa = PBXGroup;
 			children = (
-				27F24F531B7BDF7800BF4D43 /* headers */,
+				27F24F451B7BDF5A00BF4D43 /* R200.h */,
 				27F24F441B7BDF5A00BF4D43 /* R200.cpp */,
 			);
 			name = R200;
@@ -197,14 +197,6 @@
 				27F24F321B7BDF1B00BF4D43 /* DsCamera.h */,
 				27F24F331B7BDF1B00BF4D43 /* rs-internal.h */,
 				27F24F361B7BDF1B00BF4D43 /* UVCCamera.h */,
-			);
-			name = headers;
-			sourceTree = "<group>";
-		};
-		27F24F531B7BDF7800BF4D43 /* headers */ = {
-			isa = PBXGroup;
-			children = (
-				27F24F451B7BDF5A00BF4D43 /* R200.h */,
 			);
 			name = headers;
 			sourceTree = "<group>";
