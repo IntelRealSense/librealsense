@@ -692,6 +692,8 @@ uvc_error_t uvc_start_streaming(
     uvc_stream_close(strmh);
     return ret;
   }
+    
+  ctrl->handle = strmh;
 
   return UVC_SUCCESS;
 }

@@ -59,7 +59,7 @@ void UVCCamera::StartStreaming()
 
 void UVCCamera::StopStreaming()
 {
-
+    for(auto & stream : streams) if(stream) stream->stop_streaming();
 }
     
 void UVCCamera::WaitAllStreams()
@@ -138,7 +138,12 @@ void UVCCamera::StreamInterface::start_streaming()
             self->updated = true;
         }, this, 0));
 }
-
+    
+void UVCCamera::StreamInterface::stop_streaming()
+{
+    CheckUVC("uvc_stream_stop", uvc_stream_stop(ctrl.handle));
+}
+    
 bool UVCCamera::StreamInterface::update_image()
 {
     if(!updated) return false;
