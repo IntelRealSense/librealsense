@@ -219,15 +219,12 @@ namespace r200
         CameraCalibrationParameters cameraCalibration;
         CameraHeaderInfo cameraInfo;
 
-        uint8_t flashDataBuffer[SPI_FLASH_SECTOR_SIZE_IN_BYTES];
-        uint8_t calibrationDataBuffer[CAM_INFO_BLOCK_LEN];
-
-        uint32_t adminSectorAddresses[NV_ADMIN_DATA_N_ENTRIES];
-
         uvc_device_handle_t * deviceHandle;
 
         void ReadCalibrationSector()
         {
+            uint8_t flashDataBuffer[SPI_FLASH_SECTOR_SIZE_IN_BYTES];
+            
             if (!read_admin_sector(flashDataBuffer, NV_CALIBRATION_DATA_ADDRESS_INDEX))
                 throw std::runtime_error("Could not read calibration sector");
 
@@ -316,6 +313,8 @@ namespace r200
 
         bool read_admin_sector(unsigned char data[SPI_FLASH_SECTOR_SIZE_IN_BYTES], int whichAdminSector)
         {
+            uint32_t adminSectorAddresses[NV_ADMIN_DATA_N_ENTRIES];
+            
             read_arbitrary_chunk(NV_NON_FIRMWARE_ROOT_ADDRESS, adminSectorAddresses, NV_ADMIN_DATA_N_ENTRIES * sizeof(adminSectorAddresses[0]));
 
             if (whichAdminSector >= 0 && whichAdminSector < NV_ADMIN_DATA_N_ENTRIES)
@@ -349,9 +348,9 @@ namespace r200
             return usedCopiesCount;
         }
 
-        void read_admin_table(int whichAdminSector, int blockLength, void * data, int offset, int lengthToRead)
+        void read_admin_table(int blockLength, void * data, int offset, int lengthToRead)
         {
-            uint32_t address = adminSectorAddresses[whichAdminSector];
+            uint32_t address = NV_IFFLEY_ROUTINE_TABLE_ADDRESS_INDEX;
             uint32_t dummy;
             int usedCopiesCount = get_admin_sector_unused_copies(address, &dummy);
             uint32_t addressInSector = address + (usedCopiesCount - 1) * blockLength + offset;
@@ -363,8 +362,7 @@ namespace r200
             RoutineStorageTables rst = {0};
             
             // Setup admin table
-            read_admin_table(NV_IFFLEY_ROUTINE_TABLE_ADDRESS_INDEX,
-                             SIZEOF_ROUTINE_DESCRIPTION_ERASED_AND_PRESERVE_TABLE,
+            read_admin_table(SIZEOF_ROUTINE_DESCRIPTION_ERASED_AND_PRESERVE_TABLE,
                              rst.rd,
                              ROUTINE_DESCRIPTION_OFFSET,
                              SIZEOF_ROUTINE_DESCRIPTION_TABLE);
