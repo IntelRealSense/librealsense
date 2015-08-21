@@ -17,28 +17,12 @@ namespace f200
 template <typename T = float>
 class IVCAMCalibrator
 {
-    
 public:
     
-    IVCAMCalibrator()
-    {
-        
-    }
+    IVCAMCalibrator() {}
     
-    IVCAMCalibrator(const CameraCalibrationParameters & p)
-    {
-        buildParameters(p);
-    }
-    
-    IVCAMCalibrator(const float * newParamData, int nParams)
-    {
-        buildParameters(newParamData, nParams);
-    }
-    
-    IVCAMCalibrator(const double *  oldParamData, int nParams)
-    {
-        buildParameters(oldParamData, nParams);
-    }
+    IVCAMCalibrator(const CameraCalibrationParameters & p) { buildParameters(p); }
+    IVCAMCalibrator(const float * newParamData, int nParams) { buildParameters(newParamData, nParams); }
     
     static int width() { return 640; }
     static int height() { return 480; }
@@ -46,13 +30,10 @@ public:
     
     bool buildParameters(const CameraCalibrationParameters & p);
     bool buildParameters(const float * paramData, int nParams);
-    bool buildParameters(const double * paramData, int nParams);
     
     void PrintParameters();
     
     void clear() { isInitialized = false; }
-       
-    T ivcamToMM(uint16_t d) const { return T(d) * uint16_to_mm_ratio; }
     
     T getZMax() const { return params.Rmax; }
     
@@ -69,19 +50,17 @@ public:
     void InitializeThermalData(IVCAMTemperatureData TemperatureData, IVCAMThermalLoopParams ThermalLoopParams)
     {
         thermalModeData.Initialize(originalParams.Kc, TemperatureData, ThermalLoopParams);
-    };
+    }
     
     void GetThermalData(IVCAMTemperatureData & TemperatureData, IVCAMThermalLoopParams & ThermalLoopParams)
     {
         TemperatureData = thermalModeData.BaseTemperatureData;
         ThermalLoopParams = thermalModeData.ThermalLoopParams;
-    };
-
-    void generateCalibrationCoefficients(Resolution IRResolution,bool isZmode, float* ValArray) const;
+    }
     
     bool updateParamsAccordingToTemperature(float liguriaTemp,float IRTemp, int* timeout);
 
-public:
+private:
     
     struct ThermalModelData
     {
@@ -124,19 +103,13 @@ public:
     };
     
     ThermalModelData thermalModeData;
-    
-    bool buildParametersFromOldTable(const double * paramData, int nParams);
-    void precomputeUnproj();
-    
+
     CameraCalibrationParameters params;
     CameraCalibrationParameters originalParams;
     
     bool isInitialized = false;
     
     float lastTemperatureDelta;
-    
-    float uint16_to_mm_ratio;
-    float mm_to_uint_ratio;
 };
 
 ////////////////////////////////////
@@ -196,157 +169,6 @@ inline bool IVCAMCalibrator<T>::updateParamsAccordingToTemperature(float liguria
 }
 
 template <typename T>
-inline void IVCAMCalibrator<T>::generateCalibrationCoefficients(Resolution IRResolution,bool isZmode, float* ValArray) const
-{
-    //handle vertical crop at 360p - change to full 640x480 and crop at the end
-    bool Res360p = IRResolution.width == 640 && IRResolution.height == 360;
-    
-    if (Res360p)
-    {
-        IRResolution.height = 480;
-    }
-    
-    //generate coefficients
-    int scale = 5;
-    
-    float width  = (float)IRResolution.width*scale;
-    float height  = (float)IRResolution.height;
-    
-    int PrecisionBits = 16;
-    int CodeBits = 14;
-    int TexturePrecisionBits = 12;
-    float ypscale = (1<<(CodeBits+1-10));
-    float ypoff = 0;
-    
-    float s1 = (float)(1<<(PrecisionBits)) / params.Rmax;
-    float s2 = (float)(1<<(CodeBits))-ypscale*0.5f;
-    
-    float alpha = 2/(width*params.Kc[0][0]);
-    float beta  = -(params.Kc[0][2]+1)/params.Kc[0][0];
-    float gamma = 2/(height*params.Kc[1][1]);
-    float delta = -(params.Kc[1][2]+1)/params.Kc[1][1];
-    
-    float a  = alpha/gamma;
-    float a1 = 1;
-    float b  = 0.5f*scale*a  + beta/gamma;
-    float c  = 0.5f*a1 + delta/gamma;
-    
-    float d0 = 1;
-    float d1 = params.Invdistc[0]*pow(gamma,(float)2.0);
-    float d2 = params.Invdistc[1]*pow(gamma,(float)4.0);
-    float d5 = (float)( (double)(params.Invdistc[4])*pow((double)gamma,6.0) );
-    float d3 = params.Invdistc[2]*gamma;
-    float d4 = params.Invdistc[3]*gamma;
-    
-    float q  = 1/pow(gamma,(float)2.0);
-    float p1 = params.Pp[2][3]*s1;
-    float p2 = -s1*s2*(params.Pp[1][3]+params.Pp[2][3]);
-    
-    if (isZmode)
-    {
-        p1 = p1*sqrt(q);
-        p2 = p2*sqrt(q);
-    }
-    
-    float p3 = -params.Pp[2][0];
-    float p4 = -params.Pp[2][1];
-    float p5 = -params.Pp[2][2]/gamma;
-    float p6 = s2*(params.Pp[1][0]+params.Pp[2][0]);
-    float p7 = s2*(params.Pp[1][1]+params.Pp[2][1]);
-    float p8 = s2*(params.Pp[1][2]+params.Pp[2][2])/gamma;
-    
-    //Reprojection parameters
-    float sreproj = 2;
-    float ax = -(1+params.Kp[0][2])/params.Kp[0][0];
-    float ay = -(1+params.Kp[1][2])/params.Kp[1][1];
-    
-    float f0 = (params.Pp[0][1]+params.Pp[2][1]) / (params.Pp[0][0]+params.Pp[2][0]) / params.Kp[0][0];
-    float f1 = (params.Pp[0][2]+params.Pp[2][2]) / (params.Pp[0][0]+params.Pp[2][0]) / gamma / params.Kp[0][0];
-    float f2 = 0; //(Pp(2,1)+Pp(3,1)) / (Pp(1,1)+Pp(3,1)) / Kp(5);
-    float f3 = 0; //(Pp(2,2)+Pp(3,2)) / (Pp(1,1)+Pp(3,1)) / Kp(5);
-    float f4 = 0; //(Pp(2,3)+Pp(3,3)) / (Pp(1,1)+Pp(3,1)) / gamma / Kp(5);
-    float f5 = 2*params.Pp[2][0] / (params.Pp[0][0]+params.Pp[2][0]) / sreproj;
-    float f6 = 2*params.Pp[2][1] / (params.Pp[0][0]+params.Pp[2][0]) / sreproj;
-    float f7 = 2*params.Pp[2][2] / (params.Pp[0][0]+params.Pp[2][0]) / sreproj / gamma;
-    float f8 = (double)(params.Pp[0][3] + params.Pp[2][3]) / (params.Pp[0][0]+params.Pp[2][0]) * s1 / params.Kp[0][0];
-    float f9 = (params.Pp[1][3] + params.Pp[2][3]) / (params.Pp[0][0]+params.Pp[2][0]) * s1 / params.Kp[1][1];
-    float f10 = 2*params.Pp[2][3] / (params.Pp[0][0]+params.Pp[2][0]) * s1 / sreproj;
-    
-    if (isZmode)
-    {
-        f8  = f8  * sqrt(q);
-        f9  = 0; //f9  * sqrt(q);
-        f10 = f10 * sqrt(q);
-    }
-    float f11 = 1 / params.Kp[0][0];
-    
-    // Fix projection center
-    f11 = f11 + ax*f5;
-    f0  = f0  + ax*f6;
-    f1  = f1  + ax*f7;
-    f8  = f8  + ax*f10;
-    f2  = f2  + ay*f5;
-    f3  = f3  + ay*f6;
-    f4  = f4  + ay*f7;
-    f9  = f9  + ay*f10;
-    
-    // Texture coeffs
-    float suv = (1<<TexturePrecisionBits)-1;
-    
-    float h0 =  (params.Pt[0][1] +  params.Pt[2][1]) / (params.Pt[0][0]+params.Pt[2][0]);
-    float h1 =  (params.Pt[0][2] +  params.Pt[2][2]) / (params.Pt[0][0]+params.Pt[2][0]) / gamma;
-    float h2 =  (params.Pt[1][0] +  params.Pt[2][0]) / (params.Pt[0][0]+params.Pt[2][0]);
-    float h3 =  (params.Pt[1][1] +  params.Pt[2][1]) / (params.Pt[0][0]+params.Pt[2][0]);
-    float h4 =  (params.Pt[1][2] +  params.Pt[2][2]) / (params.Pt[0][0]+params.Pt[2][0]) / gamma;
-    float h5 = 2*params.Pt[2][0] / (params.Pt[0][0]  +  params.Pt[2][0]) / suv;
-    float h6 = 2*params.Pt[2][1] / (params.Pt[0][0]  +  params.Pt[2][0]) / suv;
-    float h7 = 2*params.Pt[2][2] / (params.Pt[0][0]  +  params.Pt[2][0]) / suv / gamma;
-    float h8 =  (params.Pt[0][3] +  params.Pt[2][3]) / (params.Pt[0][0]+params.Pt[2][0]) * s1;
-    float h9 =  (params.Pt[1][3] +  params.Pt[2][3]) / (params.Pt[0][0]+params.Pt[2][0]) * s1;
-    float h10 = 2*params.Pt[2][3] / (params.Pt[0][0]+params.Pt[2][0]) * s1 / suv;
-    float h11 = 1;
-    
-    if (isZmode)
-    {
-        h8  = h8  * sqrt(q);
-        h9  = h9  * sqrt(q);
-        h10 = h10 * sqrt(q);
-    }
-    
-    float o1 =  (1+params.Kp[0][2])/params.Kp[0][0];
-    float o2 = -(1+params.Kp[1][2])/params.Kp[1][1];
-    float o3 = 1/s2/params.Kp[1][1];
-    float o4 = 0; //s2*(1+Kp(8));
-    
-    float dp1 = params.Distp[0];
-    float dp2 = params.Distp[1];
-    float dp3 = params.Distp[2];
-    float dp4 = params.Distp[3];
-    float dp5 = params.Distp[4];
-    
-    float ip0 = params.Kp[1][1]*s2;
-    float ip1 = (s2*params.Invdistp[0]*params.Kp[1][1]) + s2*(1+params.Kp[1][2]);
-    float ip2 = (s2*params.Invdistp[1]*params.Kp[1][1]);
-    float ip3 = (s2*params.Invdistp[2]*params.Kp[1][1]);
-    float ip4 = (s2*params.Invdistp[3]*params.Kp[1][1]);
-    float ip5 = (s2*params.Invdistp[4]*params.Kp[1][1]);
-    
-    if (Res360p)
-    {
-        c *= 0.75;
-    }
-    
-    //to simplify the ordering of the coefficients, initialize it in list syntax and copy to allocated memory.
-    float coeffs [NUM_OF_CALIBRATION_COEFFS] = {(float)1.0,(float)3.0,a,a1,b,c,d0,d1,d2,
-        d3,d4,d5,q,p1,p2,p3,p4,p5,p6,p7,p8,h0,h1,h2,h3,h4,h5,h6,h7,h8,h9,h10,h11,f0,f1,
-        f2,f3,f4,f5,f6,f7,f8,f9,f10,f11,o1,o2,o3,o4,dp1,dp2,dp3,dp4,dp5,ip0,ip1,ip2,ip3,
-        ip4,ip5,ypscale,ypoff,0,0};
-    
-    memcpy(ValArray,coeffs,NUM_OF_CALIBRATION_COEFFS * sizeof(float));
-    return;
-}
-
-template <typename T>
 inline void IVCAMCalibrator<T>::PrintParameters()
 {
     printf("\nBegin Calibration Parameters ########################\n");
@@ -378,7 +200,6 @@ inline bool IVCAMCalibrator<T>::buildParameters(const CameraCalibrationParameter
     lastTemperatureDelta = DELTA_INF;
     std::memcpy(&originalParams,&params,sizeof(CameraCalibrationParameters));
     PrintParameters();
-    precomputeUnproj();
     return true;
 }
 
@@ -389,113 +210,7 @@ inline bool IVCAMCalibrator<T>::buildParameters(const float* paramData, int nPar
     isInitialized = true;
     lastTemperatureDelta = DELTA_INF;
     memcpy(&originalParams,&params,sizeof(CameraCalibrationParameters));
-    precomputeUnproj();
     return true;
-}
-
-template <typename T>
-inline bool IVCAMCalibrator<T>::buildParameters(const double* paramData, int nParams)
-{
-    buildParametersFromOldTable(paramData, nParams);
-    lastTemperatureDelta = DELTA_INF;
-    memcpy(&originalParams,&params,sizeof(CameraCalibrationParameters));
-    precomputeUnproj();
-    return true;
-}
-
-template <typename T>
-inline bool IVCAMCalibrator<T>::buildParametersFromOldTable(const double* paramData, int nParams)
-{
-    const int kParamsCount = 61;
-    
-    if (nParams < kParamsCount)
-        return false;
-    
-    int paramIdx=0;
-    
-    for (int i = 0; i != 3; i++)
-        for(int j = 0; j != 3; j++)
-            params.Kc[j][i] = float(paramData[paramIdx++]);
-    
-    for (int i=0; i != 5; i++)
-        params.Distc[i] = float(paramData[paramIdx++]);
-    for (int i=0; i != 5; i++)
-        params.Invdistc[i] = float(paramData[paramIdx++]);
-    
-    paramIdx++; // skip Width
-    paramIdx++; // skip Height
-    params.Rmax = float(paramData[paramIdx++]);
-    
-    if (T(100) > params.Rmax || params.Rmax > T(5000)) // 200 or 2048 expected
-        return false;
-    
-    for (int i = 0; i != 4; i++)
-        for(int j = 0; j != 3; j++)
-            params.Pp[j][i] = float(paramData[paramIdx++]);
-    
-    for (int i = 0; i != 3; i++)
-        for(int j = 0; j != 3; j++)
-            params.Kp[j][i] = float(paramData[paramIdx++]);
-    
-    for (int i = 0; i != 3; i++)
-        for(int j = 0; j != 3; j++)
-            params.Rp[j][i] = float(paramData[paramIdx++]);
-    
-    for (int i = 0; i != 3; i++)
-        params.Tp[i] = float(paramData[paramIdx++]);
-    
-    for (int i = 0; i != 5; i++)
-        params.Distp[i] = float(paramData[paramIdx++]);
-    
-    for (int i = 0; i != 5; i++)
-        params.Invdistp[i] = float(paramData[paramIdx++]);
-    
-    for (int i = 0; i != 4; i++)
-        for(int j = 0; j != 3; j++)
-            params.Pt[j][i] = float(paramData[paramIdx++]);
-    
-    for (int i = 0; i != 5; i++)
-        params.Distt[i] = float(paramData[paramIdx++]);
-    
-    isInitialized = true;
-    
-    // precompute pixel unproject coefficients
-    
-    if (T(100) <= params.Rmax && params.Rmax < T(500))
-    {
-        // Zmax in cm
-        params.Rmax *= T(10); // converted to mm
-        params.Pt[0][3] *= T(10); // converted to mm
-        params.Pt[1][3] *= T(10); // converted to mm
-        params.Pt[2][3] *= T(10); // converted to mm
-        params.Pp[0][3] *= T(10); // converted to mm
-        params.Pp[1][3] *= T(10); // converted to mm
-        params.Pp[2][3] *= T(10); // converted to mm
-    }
-    else
-    {
-        // fix bug when Zmax in mm while tp, Pp, Tp are still in cm
-        T ppMax = 0;
-        for (int i = 0; i != 3; ++i)
-            ppMax = max(ppMax, abs(params.Pp[0][i]));
-        
-        if (ppMax < T(10)) {
-            params.Pt[0][3] *= T(10); // converted to mm
-            params.Pt[1][3] *= T(10); // converted to mm
-            params.Pt[2][3] *= T(10); // converted to mm
-            params.Pp[0][3] *= T(10); // converted to mm
-            params.Pp[1][3] *= T(10); // converted to mm
-            params.Pp[2][3] *= T(10); // converted to mm
-        }
-    }
-    return true;
-}
-
-template <typename T>
-void IVCAMCalibrator<T>::precomputeUnproj()
-{
-    uint16_to_mm_ratio = params.Rmax / T(65535);
-    mm_to_uint_ratio = T(65535) / params.Rmax;
 }
     
 } // end namespace f200

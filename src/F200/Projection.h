@@ -21,8 +21,6 @@ public:
     ~Projection(void);
 
     bool Init();
-
-    float ConvertDepth_Uint16ToMM(uint16_t d);
     
     bool IsInitialized() { return m_isInitialized; }
     void SetDepthResolution(int width, int height) { m_currentDepthWidth = width; m_currentDepthHeight = height; }

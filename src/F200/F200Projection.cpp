@@ -46,12 +46,6 @@ void  Projection::ThermalLoopKilled()
     m_IsThermalLoopOpen = false;
 }
 
-float Projection::ConvertDepth_Uint16ToMM(uint16_t d)
-{
-    if (!m_calibration) return 0.0f;
-    return m_calibration.ivcamToMM(d);
-}
-
 void Projection::InitializeThermalData(IVCAMTemperatureData temp,IVCAMThermalLoopParams loopParams)
 {
     m_calibration.InitializeThermalData(temp, loopParams);
