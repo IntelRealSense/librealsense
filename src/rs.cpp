@@ -78,111 +78,106 @@ void rs_context::QueryDeviceList()
 // API implementation //
 ////////////////////////
 
-rs_context * rs_create_context(int api_version, rs_error ** error) 
+// This facility allows for translation of exceptions to rs_error structs at the API boundary
+
+static void translate_exception(const char * name, rs_error ** error)
 {
-    BEGIN_EXCEPTION_FIREWALL
+    try { throw; }
+    catch (const std::exception & e) { if (error) *error = new rs_error{ name, e.what() }; } // TODO: Handle case where THIS code throws
+    catch (...) { if (error) *error = new rs_error{ name, "unknown error" }; } // TODO: Handle case where THIS code throws
+}
+#define HANDLE_EXCEPTIONS_AND_RETURN(...) catch(...) { translate_exception(__FUNCTION__, error); return __VA_ARGS__; }
+
+rs_context * rs_create_context(int api_version, rs_error ** error) try
+{
 	if (api_version != RS_API_VERSION) throw std::runtime_error("api version mismatch");
 	return new rs_context();
-    END_EXCEPTION_FIREWALL
 }
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr)
 
-int	rs_get_camera_count(rs_context * context, rs_error ** error)
+int	rs_get_camera_count(rs_context * context, rs_error ** error) try
 {
-    BEGIN_EXCEPTION_FIREWALL
     return (int)context->cameras.size();
-    END_EXCEPTION_FIREWALL
 }
+HANDLE_EXCEPTIONS_AND_RETURN(0)
 
-rs_camera * rs_get_camera(rs_context * context, int index, rs_error ** error)
+rs_camera * rs_get_camera(rs_context * context, int index, rs_error ** error) try
 {
-    BEGIN_EXCEPTION_FIREWALL
     return context->cameras[index].get();
-    END_EXCEPTION_FIREWALL
 }
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr)
 
-void rs_delete_context(rs_context * context, rs_error ** error)
+void rs_delete_context(rs_context * context, rs_error ** error) try
 {
-    BEGIN_EXCEPTION_FIREWALL
     delete context;
-    END_EXCEPTION_FIREWALL
 }
+HANDLE_EXCEPTIONS_AND_RETURN()
 
-const char * rs_get_camera_name(rs_camera * camera, rs_error ** error)
+const char * rs_get_camera_name(rs_camera * camera, rs_error ** error) try
 {
-    BEGIN_EXCEPTION_FIREWALL
     return camera->GetCameraName();
-    END_EXCEPTION_FIREWALL
 }
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr)
 
-void rs_enable_stream(struct rs_camera * camera, int stream, int width, int height, int fps, int format, struct rs_error ** error)
+void rs_enable_stream(struct rs_camera * camera, int stream, int width, int height, int fps, int format, struct rs_error ** error) try
 {
-    BEGIN_EXCEPTION_FIREWALL
     camera->EnableStream(stream, width, height, fps, format);
-    END_EXCEPTION_FIREWALL
 }
+HANDLE_EXCEPTIONS_AND_RETURN()
 
-void rs_enable_stream_preset(struct rs_camera * camera, int stream, int preset, struct rs_error ** error)
+void rs_enable_stream_preset(struct rs_camera * camera, int stream, int preset, struct rs_error ** error) try
 {
-    BEGIN_EXCEPTION_FIREWALL
     camera->EnableStreamPreset(stream, preset);
-    END_EXCEPTION_FIREWALL
 }
+HANDLE_EXCEPTIONS_AND_RETURN()
 
-void rs_start_streaming(struct rs_camera * camera, struct rs_error ** error)
+void rs_start_streaming(struct rs_camera * camera, struct rs_error ** error) try
 {
-    BEGIN_EXCEPTION_FIREWALL
     camera->StartStreaming();
-    END_EXCEPTION_FIREWALL
 }
+HANDLE_EXCEPTIONS_AND_RETURN()
 
-void rs_stop_streaming(struct rs_camera * camera, struct rs_error ** error)
+void rs_stop_streaming(struct rs_camera * camera, struct rs_error ** error) try
 {
-    BEGIN_EXCEPTION_FIREWALL
     camera->StopStreaming();
-    END_EXCEPTION_FIREWALL
 }
+HANDLE_EXCEPTIONS_AND_RETURN()
 
-void rs_wait_all_streams(struct rs_camera * camera, struct rs_error ** error)
+void rs_wait_all_streams(struct rs_camera * camera, struct rs_error ** error) try
 {
-    BEGIN_EXCEPTION_FIREWALL
     camera->WaitAllStreams();
-    END_EXCEPTION_FIREWALL
 }
+HANDLE_EXCEPTIONS_AND_RETURN()
 
-const uint8_t *	rs_get_color_image(rs_camera * camera, rs_error ** error)
+const uint8_t *	rs_get_color_image(rs_camera * camera, rs_error ** error) try
 {
-    BEGIN_EXCEPTION_FIREWALL
     return camera->GetColorImage();
-    END_EXCEPTION_FIREWALL
 }
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr)
 
-const uint16_t * rs_get_depth_image(rs_camera * camera, rs_error ** error)
+const uint16_t * rs_get_depth_image(rs_camera * camera, rs_error ** error) try
 {
-    BEGIN_EXCEPTION_FIREWALL
     return camera->GetDepthImage();
-    END_EXCEPTION_FIREWALL
 }
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr)
 
-float rs_get_depth_scale(rs_camera * camera, rs_error ** error)
+float rs_get_depth_scale(rs_camera * camera, rs_error ** error) try
 {
-    BEGIN_EXCEPTION_FIREWALL
     return camera->GetDepthScale();
-    END_EXCEPTION_FIREWALL
 }
+HANDLE_EXCEPTIONS_AND_RETURN(0.0f)
 
-void rs_get_stream_intrinsics(struct rs_camera * camera, int stream, struct rs_intrinsics * intrin, struct rs_error ** error)
+void rs_get_stream_intrinsics(struct rs_camera * camera, int stream, struct rs_intrinsics * intrin, struct rs_error ** error) try
 {
-    BEGIN_EXCEPTION_FIREWALL
 	*intrin = camera->GetStreamIntrinsics(stream);
-    END_EXCEPTION_FIREWALL
 }
+HANDLE_EXCEPTIONS_AND_RETURN()
 
-void rs_get_stream_extrinsics(struct rs_camera * camera, int stream_from, int stream_to, struct rs_extrinsics * extrin, struct rs_error ** error)
+void rs_get_stream_extrinsics(struct rs_camera * camera, int stream_from, int stream_to, struct rs_extrinsics * extrin, struct rs_error ** error) try
 {
-    BEGIN_EXCEPTION_FIREWALL
 	*extrin = camera->GetStreamExtrinsics(stream_from, stream_to);
-    END_EXCEPTION_FIREWALL
 }
+HANDLE_EXCEPTIONS_AND_RETURN()
 
 const char * rs_get_failed_function(rs_error * error) { return error ? error->function.c_str() : nullptr; }
 const char * rs_get_error_message(rs_error * error) { return error ? error->message.c_str() : nullptr; }

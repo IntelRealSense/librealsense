@@ -70,25 +70,4 @@ struct rs_context
 	void QueryDeviceList();
 };
 
-// This facility allows for translation of exceptions to rs_error structs at the API boundary
-template<class T> T DefResult(T *) { return T(); }
-inline void DefResult(void *) {}
-template<class F> auto Try(const char * name, rs_error ** error, F f) -> decltype(f())
-{
-	if (error) *error = nullptr;
-	try { return f(); }
-	catch (const std::exception & e)
-	{
-		if (error) *error = new rs_error{ name, e.what() }; // TODO: Handle case where THIS code throws
-		return DefResult((decltype(f()) *)nullptr);
-	}
-	catch (...)
-	{
-		if (error) *error = new rs_error{ name, "unknown error" }; // TODO: Handle case where THIS code throws
-		return DefResult((decltype(f()) *)nullptr);
-	}
-}
-#define BEGIN_EXCEPTION_FIREWALL return Try(__FUNCTION__, error, [&]() {
-#define END_EXCEPTION_FIREWALL });
-
 #endif
