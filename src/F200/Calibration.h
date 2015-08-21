@@ -8,6 +8,7 @@
 #include <vector>
 #include <cmath>
 #include <cstring>
+#include <stdexcept>
 
 namespace f200
 {
