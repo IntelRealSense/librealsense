@@ -374,7 +374,7 @@ namespace f200
         size_t bufferLength = HW_MONITOR_BUFFER_SIZE;
         GetCalibrationRawData(rawCalibrationBuffer, bufferLength);
 
-        projection.reset(new Projection(0));
+        projection.reset(new Projection);
 
         CameraCalibrationParameters calibratedParameters;
         ProjectionCalibrate(rawCalibrationBuffer, (int) bufferLength, &calibratedParameters);

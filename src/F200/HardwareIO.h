@@ -164,31 +164,20 @@ namespace f200
     {
     public:
 
-        Projection(int indexOfCamera, bool RunThermalLoop = false)
+        Projection()
         {
-            m_RunThermalLoop = RunThermalLoop;
-            m_IndexOfCamera = indexOfCamera;
-            m_isInitialized = false;
+            m_RunThermalLoop = false;
             m_IsThermalLoopOpen = false;
         }
 
-        ~Projection(void)
+        ~Projection()
         {
-            m_isInitialized = false;
+
         }
 
-        bool Init()
-        {
-            m_isInitialized = true;
-            return true;
-        }
-
-        bool IsInitialized() { return m_isInitialized; }
         // Start function of thermal loop thread.Thread will poll temperature each X seconds and make required changes to
         // Calibration table. Also inform users that calib table has changed and they need to redraw it.
         void CallThermalLoopThread();
-
-        int GetIndexOfCamera() { return m_IndexOfCamera; }
 
         IVCAMCalibrator * GetCalibrationObject() { return & m_calibration; }
 
@@ -207,11 +196,7 @@ namespace f200
             m_IsThermalLoopOpen = false;
         }
 
-        int m_IndexOfCamera;
-
         IVCAMCalibrator m_calibration;
-
-        bool m_isInitialized;
 
         bool m_RunThermalLoop;
         bool m_IsThermalLoopOpen;
