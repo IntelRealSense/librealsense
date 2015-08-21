@@ -382,15 +382,15 @@ namespace r200
 
         }
 
-        void LogDebugInfo()
+        void LogDebugInfo(CameraCalibrationParameters & p, CameraHeaderInfo & h)
         {
-            std::cout << "## Calibration Version: " << cameraCalibration.metadata.versionNumber << std::endl;
-            std::cout << "## Serial: " << cameraInfo.serialNumber << std::endl;
-            std::cout << "## Model: " << cameraInfo.modelNumber << std::endl;
-            std::cout << "## Revision: " << cameraInfo.revisionNumber << std::endl;
-            std::cout << "## Head Version: " << cameraInfo.cameraHeadContentsVersion << std::endl;
-            std::cout << "## Baseline: " << cameraInfo.nominalBaseline << std::endl;
-            std::cout << "## OEM ID: " << cameraInfo.OEMID << std::endl;
+            std::cout << "## Calibration Version: " << p.metadata.versionNumber << std::endl;
+            std::cout << "## Serial: " << h.serialNumber << std::endl;
+            std::cout << "## Model: " << h.modelNumber << std::endl;
+            std::cout << "## Revision: " << h.revisionNumber << std::endl;
+            std::cout << "## Head Version: " << h.cameraHeadContentsVersion << std::endl;
+            std::cout << "## Baseline: " << h.nominalBaseline << std::endl;
+            std::cout << "## OEM ID: " << h.OEMID << std::endl;
         }
 
         CameraCalibrationParameters GetCalibration() { return cameraCalibration; }
@@ -407,7 +407,7 @@ namespace r200
         DS4HardwareIO internal(device);
         calib = internal.GetCalibration();
         header = internal.GetCameraHeader();
-        internal.LogDebugInfo();
+        internal.LogDebugInfo(calib, header);
     }
 
     int read_stream_status(uvc_device_handle_t *devh)
