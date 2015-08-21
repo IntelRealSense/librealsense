@@ -465,6 +465,7 @@ typedef struct uvc_stream_ctrl {
   uint8_t bMinVersion;
   uint8_t bMaxVersion;
   uint8_t bInterfaceNumber;
+  uvc_stream_handle_t *handle;
 } uvc_stream_ctrl_t;
 
 uvc_error_t uvc_init(uvc_context_t **ctx, struct libusb_context *usb_ctx);

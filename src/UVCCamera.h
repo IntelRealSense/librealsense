@@ -66,7 +66,7 @@ namespace rs
             std::mutex mutex;
         public:
             StreamInterface(uvc_device_t * device, int subdeviceNumber) { CheckUVC("uvc_open2", uvc_open2(device, &uvcHandle, subdeviceNumber)); }
-            ~StreamInterface() { uvc_close(uvcHandle); }
+            ~StreamInterface() { uvc_stop_streaming(uvcHandle); uvc_close(uvcHandle); }
 
             const ResolutionMode & get_mode() const { return mode; }
             template<class T> const T * get_image() const { return reinterpret_cast<const T *>(front.data()); }
@@ -74,6 +74,7 @@ namespace rs
             uvc_device_handle_t * get_handle() { return uvcHandle; }
             void set_mode(const ResolutionMode & mode);
             void start_streaming();
+            void stop_streaming();
             bool update_image();
         };
 
