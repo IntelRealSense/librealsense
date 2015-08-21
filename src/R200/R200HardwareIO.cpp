@@ -185,7 +185,7 @@ namespace r200
 
             ResponsePacket response;
 
-            if (!SendCommand(deviceHandle, &command, &response))
+            if (!send_command(deviceHandle, &command, &response))
             {
             	return false;
             }
@@ -194,7 +194,7 @@ namespace r200
             uint16_t spiLength = SPI_FLASH_PAGE_SIZE_IN_BYTES;
             for (unsigned int i = 0; i < nPages; ++i)
             {
-            	xu_read(deviceHandle, CONTROL_COMMAND_RESPONSE, p, spiLength;)
+                xu_read(deviceHandle, CONTROL_COMMAND_RESPONSE, p, spiLength);
                 p += SPI_FLASH_PAGE_SIZE_IN_BYTES;
             }
             return true;
