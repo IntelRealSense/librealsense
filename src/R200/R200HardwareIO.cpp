@@ -170,7 +170,11 @@ namespace r200
             if (!nPages || addressTest < 0)
                 return false;
 
-            //@tofix - could be refactored using generic xu read/write cycle function
+			// This command allows the host to read a block of data from the SPI flash.
+			// Once this command is processed by the DS4, further command messages will be treated as SPI data
+			// and therefore will be read from flash. The size of the SPI data must be a multiple of 256 bytes.
+			// This will repeat until the number of bytes specified in the ‘value’ field of the original command
+			// message has been read.  At that point the DS4 will process command messages as expected.
 
             CommandPacket command;
             command.code = COMMAND_DOWNLOAD_SPI_FLASH;
