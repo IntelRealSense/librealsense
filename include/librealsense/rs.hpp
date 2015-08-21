@@ -5,6 +5,7 @@
 
 #include <array>
 #include <stdexcept>
+#include <string>
 
 namespace rs
 {

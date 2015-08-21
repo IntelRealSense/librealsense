@@ -38,7 +38,7 @@ namespace r200
 
     static ResolutionMode MakeColorMode(const UnrectifiedIntrinsics & i)
     {
-        return {RS_COLOR, i.w,i.h,60,RS_RGB, i.w,i.h,59,UVC_FRAME_FORMAT_YUYV, {{i.w,i.h}, {i.fx,i.fy}, {i.px,i.py}, {i.k[0],i.k[1],i.k[2],i.k[3],i.k[4]}, RS_GORDON_BROWN_CONRADY_DISTORTION}};
+        return {RS_COLOR, static_cast<int>(i.w),static_cast<int>(i.h),60,RS_RGB, static_cast<int>(i.w),static_cast<int>(i.h),59,UVC_FRAME_FORMAT_YUYV, {{static_cast<int>(i.w),static_cast<int>(i.h)}, {i.fx,i.fy}, {i.px,i.py}, {i.k[0],i.k[1],i.k[2],i.k[3],i.k[4]}, RS_GORDON_BROWN_CONRADY_DISTORTION}};
     }
 
     CalibrationInfo R200Camera::RetrieveCalibration(uvc_device_handle_t * handle)
@@ -406,6 +406,10 @@ namespace r200
         CameraHeaderInfo GetCameraHeader() { return cameraInfo; }
     };
 
+    inline uint32_t pack(uint8_t c0, uint8_t c1, uint8_t c2, uint8_t c3)
+    {
+        return (c0 << 24) | (c1 << 16) | (c2 << 8) | c3;
+    }
     void read_camera_info(uvc_device_handle_t * device, CameraCalibrationParameters & calib, CameraHeaderInfo & header)
     {
         DS4HardwareIOInternal internal(device);
@@ -416,20 +420,9 @@ namespace r200
 
     int read_stream_status(uvc_device_handle_t *devh)
     {
-        uint32_t status = 0xffffffff;
-
-        size_t length = sizeof(uint32_t);
-
-        // XU Read
-        auto s = uvc_get_ctrl(devh, CAMERA_XU_UNIT_ID, CONTROL_STATUS, &status, int(length), UVC_GET_CUR);
-
-        if (s > 0)
-        {
-            return s;
-        }
-
-        if (s < 0) uvc_perror((uvc_error_t)s, "uvc_get_ctrl");
-
+        uint8_t status[4] = {255, 255, 255, 255};
+        auto result = xu_read(devh, CONTROL_STATUS, status, (int) sizeof(uint32_t));
+        if (result) return pack(status[0], status[1], status[2], status[3]);
         return -1;
     }
 
@@ -491,7 +484,6 @@ namespace r200
     {
         uint32_t length = 4;
         uint8_t buf[4] = {0};
-
         if (!xu_read(device, CONTROL_TEMPERATURE, buf, length))
         {
             return false;
@@ -516,7 +508,7 @@ namespace r200
 
     bool get_last_error(uvc_device_handle_t * device, uint8_t & last_error)
     {
-        return xu_read(device, CONTROL_LAST_ERROR, last_error, sizeof(uint8_t));
+        return xu_read(device, CONTROL_LAST_ERROR, &last_error, sizeof(uint8_t));
     }
 
 } // end namespace r200
