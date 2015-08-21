@@ -231,6 +231,7 @@ namespace r200
     #define COMMAND_GET_FWREVISION 0x21
     #define COMMAND_GET_SPI_PROTECT 0x23
     #define COMMAND_MODIFIER_DIRECT 0x00000010
+    
 } // end namespace r200
 #endif
 
