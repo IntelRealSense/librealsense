@@ -164,21 +164,26 @@ namespace f200
     {
     public:
 
-        Projection(int indexOfCamera, bool RunThermalLoop = false);
+        Projection(int indexOfCamera, bool RunThermalLoop = false)
+        {
+            m_RunThermalLoop = RunThermalLoop;
+            m_IndexOfCamera = indexOfCamera;
+            m_isInitialized = false;
+            m_IsThermalLoopOpen = false;
+        }
 
-        ~Projection(void);
+        ~Projection(void)
+        {
+            m_isInitialized = false;
+        }
 
-        bool Init();
+        bool Init()
+        {
+            m_isInitialized = true;
+            return true;
+        }
 
         bool IsInitialized() { return m_isInitialized; }
-        void SetDepthResolution(int width, int height) { m_currentDepthWidth = width; m_currentDepthHeight = height; }
-        void SetColorResolution(int width, int height) { m_currentColorWidth =width; m_currentColorHeight = height; }
-
-        int GetColorWidth() { return m_currentColorWidth; }
-        int GetColorHeight() { return m_currentColorHeight; }
-        int GetDepthWidth() { return m_currentDepthWidth; }
-        int GetDepthHeight() { return m_currentDepthHeight; }
-
         // Start function of thermal loop thread.Thread will poll temperature each X seconds and make required changes to
         // Calibration table. Also inform users that calib table has changed and they need to redraw it.
         void CallThermalLoopThread();
@@ -187,36 +192,30 @@ namespace f200
 
         IVCAMCalibrator * GetCalibrationObject() { return & m_calibration; }
 
-        void InitializeThermalData(IVCAMTemperatureData TemperatureData, IVCAMThermalLoopParams ThermalLoopParams);
-
-        void GetThermalData(IVCAMTemperatureData & TemperatureData, IVCAMThermalLoopParams & ThermalLoopParams);
-
-        struct ProjectionParams
+        void InitializeThermalData(IVCAMTemperatureData TemperatureData, IVCAMThermalLoopParams ThermalLoopParams)
         {
-            uint32_t depthWidth;
-            uint32_t depthHeight;
-            uint32_t colorWidth;
-            uint32_t colorHeight;
-            uint32_t nParams;
-            CameraCalibrationParametersVersion calibrationParams;
-        };
+            m_calibration.InitializeThermalData(TemperatureData, ThermalLoopParams);
+        }
 
-        void ThermalLoopKilled();
+        void GetThermalData(IVCAMTemperatureData & TemperatureData, IVCAMThermalLoopParams & ThermalLoopParams)
+        {
+            m_calibration.GetThermalData(TemperatureData, ThermalLoopParams);
+        }
+
+        void ThermalLoopKilled()
+        {
+            m_IsThermalLoopOpen = false;
+        }
 
         int m_IndexOfCamera;
-        bool m_isCalibOld;
 
         IVCAMCalibrator m_calibration;
-        CameraCalibrationParametersVersion m_calibrationData;
 
         bool m_isInitialized;
-        int m_currentDepthWidth;
-        int m_currentDepthHeight;
-        int m_currentColorWidth;
-        int m_currentColorHeight;
 
         bool m_RunThermalLoop;
         bool m_IsThermalLoopOpen;
+
     };
 } // end namespace f200
 
