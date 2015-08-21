@@ -31,30 +31,7 @@ enum DepthOutputUnit
     RAW_IVCAM   = 0,    // uint16_t in units of 1/32 mm
     FLOAT32_MM  = 1     // float in units of 1 mm
 };
-
-struct Point2DF32
-{
-    float x, y;
-};
-
-struct Point3DF32
-{
-    float x, y, z;
-};
-
-enum CoordinateSystem
-{
-    RIGHT_HANDED  = 0,
-    LEFT_HANDED = 1
-};
-
-struct Point
-{
-    Point() {}
-    Point(float _x, float _y) : x(_x), y(_y) {}
-    float x, y;
-};
-
+    
 struct Resolution
 {
     Resolution() {}
@@ -62,27 +39,6 @@ struct Resolution
     short width, height;
 };
 
-struct FOV
-{
-    FOV() {}
-    FOV(float _x, float _y) : x(_x), y(_y) {}
-    float x, y;
-};
-
-struct FocalLength
-{
-    FocalLength() {}
-    FocalLength(float _x, float _y) : x(_x), y(_y) {}
-    float x, y;
-};
-
-/*struct UVPreComp
-{
-    UVPreComp() {}
-    UVPreComp(float _u, float _v, float _d) : u(_u), v(_v), d(_d) {}
-    float u, v, d;
-};*/
-    
 struct OACOffsetData
 {
     int OACOffset1;

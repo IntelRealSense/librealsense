@@ -40,8 +40,8 @@ public:
         buildParameters(oldParamData, nParams);
     }
     
-    static int width() { return 640; };
-    static int height() { return 480; };
+    static int width() { return 640; }
+    static int height() { return 480; }
     static T defaultZmax() { return T(2047); }
     
     bool buildParameters(const CameraCalibrationParameters & p);
@@ -54,7 +54,7 @@ public:
        
     T ivcamToMM(uint16_t d) const { return T(d) * uint16_to_mm_ratio; }
     
-    T getZMax() const { return params.Rmax; };
+    T getZMax() const { return params.Rmax; }
     
     operator bool() const { return isInitialized; }
     
