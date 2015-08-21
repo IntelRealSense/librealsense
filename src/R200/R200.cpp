@@ -41,26 +41,23 @@ namespace r200
         return {RS_COLOR, i.w,i.h,60,RS_RGB, i.w,i.h,59,UVC_FRAME_FORMAT_YUYV, {{i.w,i.h}, {i.fx,i.fy}, {i.px,i.py}, {i.k[0],i.k[1],i.k[2],i.k[3],i.k[4]}, RS_GORDON_BROWN_CONRADY_DISTORTION}};
     }
 
-    void R200Camera::RetrieveCalibration()
+    CalibrationInfo R200Camera::RetrieveCalibration(uvc_device_handle_t * handle)
     {
-        if(modes.empty())
-        {
-            uvc_device_handle_t * handle = GetHandleToAnyStream();
-            if(!handle) throw std::runtime_error("RetrieveCalibration() failed as no stream interfaces were open");
-            CameraCalibrationParameters calib;
-            CameraHeaderInfo header;
-            read_camera_info(handle, calib, header);
+        CameraCalibrationParameters calib;
+        CameraHeaderInfo header;
+        read_camera_info(handle, calib, header);
 
-            modes.push_back(MakeDepthMode(628, 468, calib.modesLR[0]));
-            modes.push_back(MakeDepthMode(480, 360, calib.modesLR[1]));
-            //modes.push_back(MakeDepthMode(320, 240, calib.modesLR[2])); // NOTE: QRES oddness
-            modes.push_back(MakeColorMode(calib.intrinsicsThird[0]));
-            modes.push_back(MakeColorMode(calib.intrinsicsThird[1]));
-
-            stream_poses[RS_DEPTH] = {{{1,0,0},{0,1,0},{0,0,1}}, {0,0,0}};
-            stream_poses[RS_COLOR].orientation = transpose((const float3x3 &)calib.Rthird[0]);
-            stream_poses[RS_COLOR].position = stream_poses[RS_COLOR].orientation * (const float3 &)calib.T[0] * 0.001f;
-        }
+        rs::CalibrationInfo c;
+        c.modes.push_back(MakeDepthMode(628, 468, calib.modesLR[0]));
+        c.modes.push_back(MakeDepthMode(480, 360, calib.modesLR[1]));
+        //c.modes.push_back(MakeDepthMode(320, 240, calib.modesLR[2])); // NOTE: QRES oddness
+        c.modes.push_back(MakeColorMode(calib.intrinsicsThird[0]));
+        c.modes.push_back(MakeColorMode(calib.intrinsicsThird[1]));
+        c.stream_poses[RS_DEPTH] = {{{1,0,0},{0,1,0},{0,0,1}}, {0,0,0}};
+        c.stream_poses[RS_COLOR].orientation = transpose((const float3x3 &)calib.Rthird[0]);
+        c.stream_poses[RS_COLOR].position = c.stream_poses[RS_COLOR].orientation * (const float3 &)calib.T[0] * 0.001f;
+        c.depth_scale = 0.001f;
+        return c;
     }
 
     void R200Camera::SetStreamIntent(bool depth, bool color)

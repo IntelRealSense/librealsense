@@ -20,6 +20,8 @@ UVCCamera::UVCCamera(uvc_context_t * context, uvc_device_t * device) : context(c
     // desc->idProduct
 
     uvc_free_device_descriptor(desc);
+
+    calib = {};
 }
 
 UVCCamera::~UVCCamera()
@@ -30,16 +32,14 @@ UVCCamera::~UVCCamera()
 
 void UVCCamera::EnableStream(int stream, int width, int height, int fps, int format)
 {
-    // Open interface to stream
+    // Open interface to stream, and optionally retrieve calibration info
     streams[stream].reset(new StreamInterface(device, GetStreamSubdeviceNumber(stream)));
-
-    // If this was the first interface to open, give subclass a change to retrieve calibration information
-    RetrieveCalibration();
+    if(calib.modes.empty()) calib = RetrieveCalibration(streams[stream]->get_handle());
 
     // Choose a resolution mode based on the user's request
     ResolutionMode mode = [=]()
     {
-        for(const auto & mode : modes)
+        for(const auto & mode : calib.modes)
         {
             if(mode.stream == stream && mode.width == width && mode.height == height && mode.fps == fps && mode.format == format)
             {
@@ -83,7 +83,7 @@ rs_intrinsics UVCCamera::GetStreamIntrinsics(int stream) const
 
 rs_extrinsics UVCCamera::GetStreamExtrinsics(int from, int to) const
 {
-    auto transform = inverse(stream_poses[from]) * stream_poses[to]; // TODO: Make sure this is the right order
+    auto transform = inverse(calib.stream_poses[from]) * calib.stream_poses[to]; // TODO: Make sure this is the right order
     rs_extrinsics extrin;
     (float3x3 &)extrin.rotation = transpose(transform.orientation);
     (float3 &)extrin.translation = transform.position;

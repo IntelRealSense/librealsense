@@ -45,6 +45,13 @@ namespace rs
     inline pose operator * (const pose & a, const pose & b) { return {a.orientation * b.orientation, a.position + a * b.position}; }
     inline pose inverse(const pose & a) { auto inv = transpose(a.orientation); return {inv, inv * a.position * -1}; }
 
+    struct CalibrationInfo
+    {
+        std::vector<ResolutionMode> modes;
+        pose stream_poses[2];
+        float depth_scale;
+    };
+
     class UVCCamera : public rs_camera
     {
     protected: 
@@ -75,8 +82,7 @@ namespace rs
         std::unique_ptr<StreamInterface> streams[2];
 
         std::string cameraName;
-        std::vector<ResolutionMode> modes;
-        pose stream_poses[2];
+        CalibrationInfo calib;
 
         uvc_device_handle_t * GetHandleToAnyStream();
     public:
@@ -91,13 +97,14 @@ namespace rs
         void WaitAllStreams() override final;
 
         const uint8_t * GetColorImage() const override final { return streams[RS_COLOR] ? streams[RS_COLOR]->get_image<uint8_t>() : nullptr; }
-        const uint16_t * GetDepthImage() const override final { return streams[RS_DEPTH] ? streams[RS_DEPTH]->get_image<uint16_t>() : nullptr; }
+        const uint16_t * GetDepthImage() const override final { return streams[RS_DEPTH] ? streams[RS_DEPTH]->get_image<uint16_t>() : nullptr; }      
+        float GetDepthScale() const override final { return calib.depth_scale; }
 
         rs_intrinsics GetStreamIntrinsics(int stream) const override final;
         rs_extrinsics GetStreamExtrinsics(int from, int to) const override final;
 
         virtual int GetStreamSubdeviceNumber(int stream) const = 0;
-        virtual void RetrieveCalibration() = 0;
+        virtual CalibrationInfo RetrieveCalibration(uvc_device_handle_t * handle) = 0;
         virtual void SetStreamIntent(bool depth, bool color) = 0;
     };
     

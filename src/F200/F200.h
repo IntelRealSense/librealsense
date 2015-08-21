@@ -25,7 +25,7 @@ namespace f200
         ~F200Camera();
         
         int GetStreamSubdeviceNumber(int stream) const override final;
-        void RetrieveCalibration() override final;
+        rs::CalibrationInfo RetrieveCalibration(uvc_device_handle_t * handle) override final;
         void SetStreamIntent(bool depth, bool color) override final {}
 
         void EnableStreamPreset(int streamIdentifier, int preset) override final
@@ -37,8 +37,6 @@ namespace f200
             default: throw std::runtime_error("unsupported stream");
             }
         }
-
-        float GetDepthScale() const override final;
     };
     
 } // end namespace f200

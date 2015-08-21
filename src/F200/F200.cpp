@@ -62,28 +62,19 @@ namespace f200
         return {RS_COLOR, w,h,60,RS_RGB, w,h,60,UVC_FRAME_FORMAT_YUYV, intrin};
     }
 
-    void F200Camera::RetrieveCalibration()
+    CalibrationInfo F200Camera::RetrieveCalibration(uvc_device_handle_t *)
     {
-        if(!hardware_io)
-        {
-            hardware_io.reset(new IVCAMHardwareIO(context));
-            const CameraCalibrationParameters & calib = hardware_io->GetParameters();
+        if(!hardware_io) hardware_io.reset(new IVCAMHardwareIO(context));
+        const CameraCalibrationParameters & calib = hardware_io->GetParameters();
 
-            modes.push_back(MakeDepthMode(calib, 640, 480));
-            modes.push_back(MakeColorMode(calib, 1920, 1080));
-            modes.push_back(MakeColorMode(calib, 640, 480));
-
-            stream_poses[RS_DEPTH] = {{{1,0,0},{0,1,0},{0,0,1}}, {0,0,0}};
-            stream_poses[RS_COLOR] = {transpose((const float3x3 &)calib.Rt), (const float3 &)calib.Tt * 0.001f}; // convert mm to m
-        }
-    }
-
-    float F200Camera::GetDepthScale() const
-    {
-        auto inst = Projection::GetInstance();
-        if (!inst->m_calibration) throw std::runtime_error("calibration not initialized");
-        const CameraCalibrationParameters & p = inst->m_calibration.params;
-        return (p.Rmax / 0xFFFF) * 0.001f; // convert mm to m
+        rs::CalibrationInfo c;
+        c.modes.push_back(MakeDepthMode(calib, 640, 480));
+        c.modes.push_back(MakeColorMode(calib, 1920, 1080));
+        c.modes.push_back(MakeColorMode(calib, 640, 480));
+        c.stream_poses[RS_DEPTH] = {{{1,0,0},{0,1,0},{0,0,1}}, {0,0,0}};
+        c.stream_poses[RS_COLOR] = {transpose((const float3x3 &)calib.Rt), (const float3 &)calib.Tt * 0.001f}; // convert mm to m
+        c.depth_scale = (calib.Rmax / 0xFFFF) * 0.001f; // convert mm to m
+        return c;
     }
 
 } // end f200

@@ -13,11 +13,10 @@ namespace r200
     public:
         R200Camera(uvc_context_t * ctx, uvc_device_t * device);
 
-        float GetDepthScale() const override final { return 0.001f; } // convert mm to m
         void EnableStreamPreset(int streamIdentifier, int preset) override final;
 
         int GetStreamSubdeviceNumber(int stream) const override final;
-        void RetrieveCalibration() override final;
+        rs::CalibrationInfo RetrieveCalibration(uvc_device_handle_t * handle) override final;
         void SetStreamIntent(bool depth, bool color) override final;
     };
 
