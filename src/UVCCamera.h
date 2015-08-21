@@ -33,8 +33,8 @@ namespace rs
     };
 
     // World's tiniest linear algebra library
-    struct float3 { float x,y,z; };
-    struct float3x3 { float3 x,y,z; };
+    struct float3 { float x,y,z; float & operator [] (int i) { return (&x)[i]; } };
+    struct float3x3 { float3 x,y,z; float & operator () (int i, int j) { return (&x)[j][i]; } }; // column-major
     struct pose { float3x3 orientation; float3 position; };
     inline float3 operator + (const float3 & a, const float3 & b) { return {a.x+b.x, a.y+b.y, a.z+b.z}; }
     inline float3 operator * (const float3 & a, float b) { return {a.x*b, a.y*b, a.z*b}; }

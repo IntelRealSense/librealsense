@@ -54,8 +54,9 @@ namespace r200
         c.modes.push_back(MakeColorMode(calib.intrinsicsThird[0]));
         c.modes.push_back(MakeColorMode(calib.intrinsicsThird[1]));
         c.stream_poses[RS_DEPTH] = {{{1,0,0},{0,1,0},{0,0,1}}, {0,0,0}};
-        c.stream_poses[RS_COLOR].orientation = transpose((const float3x3 &)calib.Rthird[0]);
-        c.stream_poses[RS_COLOR].position = c.stream_poses[RS_COLOR].orientation * (const float3 &)calib.T[0] * 0.001f;
+        for(int i=0; i<3; ++i) for(int j=0; j<3; ++j) c.stream_poses[RS_COLOR].orientation(i,j) = calib.Rthird[0][i*3+j];
+        for(int i=0; i<3; ++i) c.stream_poses[RS_COLOR].position[i] = calib.T[0][i] * 0.001f;
+        c.stream_poses[RS_COLOR].position = c.stream_poses[RS_COLOR].orientation * c.stream_poses[RS_COLOR].position;
         c.depth_scale = 0.001f;
         return c;
     }
@@ -202,18 +203,6 @@ namespace r200
 
     #define CAM_INFO_BLOCK_LEN 2048
 
-    template<class T> void swap_endian_bytewise(T & value) { auto p = (uint8_t *)&value; for(size_t i=0; i<sizeof(T)/2; ++i) std::swap(p[i], p[sizeof(T)-i-1]); }
-    void swap_endian(uint16_t & value) { swap_endian_bytewise(value); }
-    void swap_endian(uint32_t & value) { swap_endian_bytewise(value); }
-    void swap_endian(float & value) { swap_endian_bytewise(value); }
-    template<class T, int N> void swap_endian(T (& value)[N]) { for(auto & elem : value) swap_endian(elem); }
-    template<class T, class... U> void swap_endian(T & value, U & ... rest) { swap_endian(value); swap_endian(rest...); }
-    void swap_endian(CalibrationMetadata & value) { swap_endian(value.versionNumber, value.numIntrinsicsRight, value.numIntrinsicsThird, value.numIntrinsicsPlatform, value.numRectifiedModesLR, value.numRectifiedModesThird, value.numRectifiedModesPlatform); }
-    void swap_endian(UnrectifiedIntrinsics & value) { swap_endian(value.fx, value.fy, value.px, value.py, value.k, value.w, value.h); }
-    void swap_endian(RectifiedIntrinsics & value) { swap_endian(value.rfx, value.rfy, value.rpx, value.rpy, value.rw, value.rh); }
-    void swap_endian(CameraCalibrationParameters & value) { swap_endian(value.metadata, value.intrinsicsLeft, value.intrinsicsRight, value.intrinsicsThird, value.intrinsicsPlatform,
-        value.modesLR, value.modesThird, value.modesPlatform, value.Rleft, value.Rright, value.Rthird, value.Rplatform, value.B, value.T, value.Tplatform, value.Rworld, value.Tworld); }
-
     class DS4HardwareIO
     {
         CameraCalibrationParameters cameraCalibration;
@@ -230,8 +219,6 @@ namespace r200
 
             assert(sizeof(cameraCalibration) <= CAM_INFO_BLOCK_LEN);
             memcpy(&cameraCalibration, flashDataBuffer, CAM_INFO_BLOCK_LEN);
-            swap_endian(cameraCalibration);
-
             memcpy(&cameraInfo, flashDataBuffer + CAM_INFO_BLOCK_LEN, sizeof(cameraInfo));
         }
 
