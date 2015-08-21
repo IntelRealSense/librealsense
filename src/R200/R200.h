@@ -17,7 +17,7 @@ namespace r200
 
         int GetStreamSubdeviceNumber(int stream) const override final;
         rs::CalibrationInfo RetrieveCalibration(uvc_device_handle_t * handle) override final;
-        void SetStreamIntent(bool depth, bool color) override final;
+        void SetStreamIntent() override final;
     };
 
     struct CameraCalibrationParameters;

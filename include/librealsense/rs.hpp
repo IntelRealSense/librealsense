@@ -58,6 +58,7 @@ namespace rs
 
         const uint8_t *		get_color_image()														{ return rs_get_color_image(cam, auto_error()); }
 		const uint16_t *	get_depth_image()														{ return rs_get_depth_image(cam, auto_error()); }
+        const void *        get_image_pixels(int stream)                                            { return rs_get_image_pixels(cam, stream, auto_error()); }
         float               get_depth_scale()														{ return rs_get_depth_scale(cam, auto_error()); }
 
         intrinsics          get_stream_intrinsics(int stream)										{ intrinsics intrin; rs_get_stream_intrinsics(cam, stream, &intrin, auto_error()); return intrin; }

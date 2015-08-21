@@ -9,6 +9,8 @@
 
 namespace rs
 {
+    const int MAX_STREAMS = 3;
+    
     inline void CheckUVC(const char * call, uvc_error_t status)
     {
         if (status < 0)
@@ -48,7 +50,7 @@ namespace rs
     struct CalibrationInfo
     {
         std::vector<ResolutionMode> modes;
-        pose stream_poses[2];
+        pose stream_poses[MAX_STREAMS];
         float depth_scale;
     };
 
@@ -69,7 +71,7 @@ namespace rs
             ~StreamInterface() { uvc_stop_streaming(uvcHandle); uvc_close(uvcHandle); }
 
             const ResolutionMode & get_mode() const { return mode; }
-            template<class T> const T * get_image() const { return reinterpret_cast<const T *>(front.data()); }
+            const void * get_image() const { return front.data(); }
 
             uvc_device_handle_t * get_handle() { return uvcHandle; }
             void set_mode(const ResolutionMode & mode);
@@ -80,7 +82,7 @@ namespace rs
 
         uvc_context_t * context;
         uvc_device_t * device;
-        std::unique_ptr<StreamInterface> streams[2];
+        std::unique_ptr<StreamInterface> streams[MAX_STREAMS];
 
         std::string cameraName;
         CalibrationInfo calib;
@@ -97,8 +99,7 @@ namespace rs
         void StopStreaming() override final;
         void WaitAllStreams() override final;
 
-        const uint8_t * GetColorImage() const override final { return streams[RS_COLOR] ? streams[RS_COLOR]->get_image<uint8_t>() : nullptr; }
-        const uint16_t * GetDepthImage() const override final { return streams[RS_DEPTH] ? streams[RS_DEPTH]->get_image<uint16_t>() : nullptr; }      
+        const void * GetImagePixels(int stream) const override final { return streams[stream] ? streams[stream]->get_image() : nullptr; }
         float GetDepthScale() const override final { return calib.depth_scale; }
 
         rs_intrinsics GetStreamIntrinsics(int stream) const override final;
@@ -106,7 +107,7 @@ namespace rs
 
         virtual int GetStreamSubdeviceNumber(int stream) const = 0;
         virtual CalibrationInfo RetrieveCalibration(uvc_device_handle_t * handle) = 0;
-        virtual void SetStreamIntent(bool depth, bool color) = 0;
+        virtual void SetStreamIntent() = 0;
     };
     
 } // end namespace rs

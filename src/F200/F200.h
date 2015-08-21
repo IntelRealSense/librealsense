@@ -23,14 +23,14 @@ namespace f200
         
         int GetStreamSubdeviceNumber(int stream) const override final;
         rs::CalibrationInfo RetrieveCalibration(uvc_device_handle_t * handle) override final;
-        void SetStreamIntent(bool depth, bool color) override final {}
+        void SetStreamIntent() override final {}
 
         void EnableStreamPreset(int streamIdentifier, int preset) override final
         {
             switch(streamIdentifier)
             {
             case RS_DEPTH: EnableStream(RS_DEPTH, 640, 480, 60, RS_Z16); break;
-            case RS_COLOR: EnableStream(RS_COLOR, 640, 480, 60, RS_RGB); break;
+            case RS_COLOR: EnableStream(RS_COLOR, 640, 480, 60, RS_RGB8); break;
             default: throw std::runtime_error("unsupported stream");
             }
         }

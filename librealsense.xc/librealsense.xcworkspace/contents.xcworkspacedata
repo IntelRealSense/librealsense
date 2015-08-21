@@ -2,7 +2,7 @@
 <Workspace
    version = "1.0">
    <FileRef
-      location = "group:../examples/pointcloud/pointcloud.cpp">
+      location = "group:example-cpp.xcodeproj">
    </FileRef>
    <FileRef
       location = "group:/Users/dimitri/Desktop/librealsense/librealsense.xc/pointcloud.xcodeproj">

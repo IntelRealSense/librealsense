@@ -41,6 +41,7 @@ void                rs_wait_all_streams     (struct rs_camera * camera, struct r
 
 const uint8_t *		rs_get_color_image		(struct rs_camera * camera, struct rs_error ** error);
 const uint16_t *	rs_get_depth_image		(struct rs_camera * camera, struct rs_error ** error);
+const void *        rs_get_image_pixels     (struct rs_camera * camera, int stream, struct rs_error ** error);
 float               rs_get_depth_scale      (struct rs_camera * camera, struct rs_error ** error);
 
 void                rs_get_stream_intrinsics(struct rs_camera * camera, int stream, struct rs_intrinsics * intrin, struct rs_error ** error);
@@ -56,10 +57,12 @@ void				rs_free_error			(struct rs_error * error);
 /* Valid arguments for rs_enable_stream / rs_enable_stream_preset */
 #define RS_DEPTH            0
 #define RS_COLOR            1
-
+#define RS_INFRARED         2
+    
 /* Valid arguments for rs_enable_stream's format argument */
 #define RS_Z16              1
-#define RS_RGB              2
+#define RS_RGB8             2
+#define RS_Y8               3
 
 /* Valid arguments for rs_enable_stream_preset's preset argument */
 #define RS_BEST_QUALITY     0                       /* Preset recommended for best quality and stability */

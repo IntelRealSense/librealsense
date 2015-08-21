@@ -59,7 +59,7 @@ namespace f200
         intrin.principal_point[0] *= w;
         intrin.principal_point[1] *= h;
         intrin.distortion_model = RS_NO_DISTORTION;
-        return {RS_COLOR, w,h,60,RS_RGB, w,h,60,UVC_FRAME_FORMAT_YUYV, intrin};
+        return {RS_COLOR, w,h,60,RS_RGB8, w,h,60,UVC_FRAME_FORMAT_YUYV, intrin};
     }
 
     CalibrationInfo F200Camera::RetrieveCalibration(uvc_device_handle_t *)

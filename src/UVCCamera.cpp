@@ -53,7 +53,7 @@ void UVCCamera::EnableStream(int stream, int width, int height, int fps, int for
 
 void UVCCamera::StartStreaming()
 {
-    SetStreamIntent(!!streams[RS_DEPTH], !!streams[RS_COLOR]);
+    SetStreamIntent();
     for(auto & stream : streams) if(stream) stream->start_streaming();
 }
 
@@ -64,15 +64,7 @@ void UVCCamera::StopStreaming()
     
 void UVCCamera::WaitAllStreams()
 {
-    if(streams[RS_COLOR])
-    {
-        streams[RS_COLOR]->update_image();
-    }
-
-    if(streams[RS_DEPTH])
-    {
-        streams[RS_DEPTH]->update_image();
-    }
+    for(auto & stream : streams) if(stream) stream->update_image();
 }
 
 rs_intrinsics UVCCamera::GetStreamIntrinsics(int stream) const
@@ -104,7 +96,8 @@ void UVCCamera::StreamInterface::set_mode(const ResolutionMode & mode)
     switch(mode.format)
     {
     case RS_Z16: front.resize(mode.width * mode.height * sizeof(uint16_t)); break;
-    case RS_RGB: front.resize(mode.width * mode.height * 3); break;
+    case RS_RGB8: front.resize(mode.width * mode.height * 3); break;
+    case RS_Y8: front.resize(mode.width * mode.height); break;
     default: throw std::runtime_error("invalid format");
     }
     back = middle = front;
@@ -125,7 +118,10 @@ void UVCCamera::StreamInterface::start_streaming()
             case RS_Z16:
                 copy_strided_image(self->back.data(), mode.width * sizeof(uint16_t), frame->data, mode.uvcWidth * sizeof(uint16_t), mode.height);
                 break;
-            case RS_RGB:
+            case RS_Y8:
+                copy_strided_image(self->back.data(), mode.width * sizeof(uint8_t), frame->data, mode.uvcWidth * sizeof(uint8_t), mode.height);
+                break;
+            case RS_RGB8:
                 assert(mode.uvcFormat == UVC_FRAME_FORMAT_YUYV);
                 convert_yuyv_to_rgb(self->back.data(), frame->width, frame->height, (uint8_t *)frame->data);
                 break;

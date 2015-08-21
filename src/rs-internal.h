@@ -49,12 +49,10 @@ struct rs_camera
     virtual void StopStreaming() = 0;
     virtual void WaitAllStreams() = 0;
 
-    virtual const uint8_t * GetColorImage() const = 0;
-    virtual const uint16_t * GetDepthImage() const = 0;
     virtual float GetDepthScale() const = 0;
-    
     virtual rs_intrinsics GetStreamIntrinsics(int stream) const = 0;
     virtual rs_extrinsics GetStreamExtrinsics(int from, int to) const = 0;
+    virtual const void * GetImagePixels(int stream) const = 0;    
 };
 
 struct rs_context

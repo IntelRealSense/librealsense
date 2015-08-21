@@ -151,13 +151,19 @@ HANDLE_EXCEPTIONS_AND_RETURN()
 
 const uint8_t *	rs_get_color_image(rs_camera * camera, rs_error ** error) try
 {
-    return camera->GetColorImage();
+    return reinterpret_cast<const uint8_t *>(camera->GetImagePixels(RS_COLOR));
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr)
 
 const uint16_t * rs_get_depth_image(rs_camera * camera, rs_error ** error) try
 {
-    return camera->GetDepthImage();
+    return reinterpret_cast<const uint16_t *>(camera->GetImagePixels(RS_DEPTH));
+}
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr)
+
+const void * rs_get_image_pixels(rs_camera * camera, int stream, rs_error ** error) try
+{
+    return camera->GetImagePixels(stream);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr)
 

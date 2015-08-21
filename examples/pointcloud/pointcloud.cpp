@@ -103,12 +103,13 @@ int main(int argc, char * argv[]) try
 
 		cam = ctx.get_camera(i);
         cam.enable_stream_preset(RS_DEPTH, RS_BEST_QUALITY);
-        cam.enable_stream_preset(RS_COLOR, RS_BEST_QUALITY);
+        //cam.enable_stream_preset(RS_COLOR, RS_BEST_QUALITY);
+        cam.enable_stream_preset(RS_INFRARED, RS_BEST_QUALITY);
         cam.start_streaming();
 	}
 	if (!cam) throw std::runtime_error("No camera detected. Is it plugged in?");
-    const auto depth_intrin = cam.get_stream_intrinsics(RS_DEPTH), color_intrin = cam.get_stream_intrinsics(RS_COLOR);
-    const auto extrin = cam.get_stream_extrinsics(RS_DEPTH, RS_COLOR);   
+    const auto depth_intrin = cam.get_stream_intrinsics(RS_DEPTH), color_intrin = cam.get_stream_intrinsics(RS_INFRARED);
+    const auto extrin = cam.get_stream_extrinsics(RS_DEPTH, RS_INFRARED);
     struct state { float yaw, pitch; double lastX, lastY; bool ml; } app_state = {};
 
 	glfwInit();
@@ -185,7 +186,8 @@ int main(int argc, char * argv[]) try
 
         glPushAttrib(GL_ALL_ATTRIB_BITS);
         glBindTexture(GL_TEXTURE_2D, tex);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, color_intrin.image_size[0], color_intrin.image_size[1], 0, GL_RGB, GL_UNSIGNED_BYTE, cam.get_color_image());
+        //glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, color_intrin.image_size[0], color_intrin.image_size[1], 0, GL_RGB, GL_UNSIGNED_BYTE, cam.get_color_image());
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, color_intrin.image_size[0], color_intrin.image_size[1], 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, cam.get_image_pixels(RS_INFRARED));
         glMatrixMode(GL_PROJECTION);
 		glPushMatrix();
         gluPerspective(60, (float)width/height, 0.01f, 20.0f);

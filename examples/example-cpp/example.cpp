@@ -1,5 +1,50 @@
+///////////////
+// Compilers //
+///////////////
+
+#if defined(_MSC_VER)
+#define COMPILER_MSVC 1
+#endif
+
+#if defined(__GNUC__)
+#define COMPILER_GCC 1
+#define GCC_VERSION (__GNUC__ * 10000 + __GNUC_MINOR__ * 100 + __GNUC_PATCHLEVEL__)
+#endif
+
+#if defined(__clang__)
+#define COMPILER_CLANG 1
+#endif
+
+///////////////
+// Platforms //
+///////////////
+
+#if defined(WIN32) || defined(_WIN32)
+#define PLATFORM_WINDOWS 1
+#endif
+
+#ifdef __APPLE__
+#define PLATFORM_OSX 1
+#endif
+
+#if defined(__linux__)
+#define PLATFORM_LINUX 1
+#endif
+
 #include <librealsense/rs.hpp>
+
+#define GLFW_INCLUDE_GLU
+
+#if defined(PLATFORM_OSX)
+
+#include "glfw3.h"
+#define GLFW_EXPOSE_NATIVE_COCOA
+#define GLFW_EXPOSE_NATIVE_NSGL
+#include "glfw3native.h"
+#include <OpenGL/gl3.h>
+#elif defined(PLATFORM_LINUX)
 #include <GLFW/glfw3.h>
+#endif
 
 #define _USE_MATH_DEFINES
 #include <math.h>
@@ -21,6 +66,7 @@ int main(int argc, char * argv[]) try
 		cam = ctx.get_camera(i);
         cam.enable_stream_preset(RS_DEPTH, RS_BEST_QUALITY);
         cam.enable_stream_preset(RS_COLOR, RS_BEST_QUALITY);
+        cam.enable_stream_preset(RS_INFRARED, RS_BEST_QUALITY);
         cam.start_streaming();
 
         auto intrin = cam.get_stream_intrinsics(RS_DEPTH);
@@ -31,7 +77,7 @@ int main(int argc, char * argv[]) try
 	if (!cam) throw std::runtime_error("No camera detected. Is it plugged in?");
 
 	glfwInit();
-    GLFWwindow * win = glfwCreateWindow(1280, 480, "LibRealSense CPP Example", 0, 0);
+    GLFWwindow * win = glfwCreateWindow(1280, 720, "LibRealSense CPP Example", 0, 0);
 	while (!glfwWindowShouldClose(win))
 	{
 		glfwPollEvents();
@@ -51,6 +97,11 @@ int main(int argc, char * argv[]) try
 		glPixelTransferf(GL_RED_SCALE, 30);
         glDrawPixels(d.image_size[0], d.image_size[1], GL_RED, GL_UNSIGNED_SHORT, cam.get_depth_image());
 
+        auto i = cam.get_stream_intrinsics(RS_INFRARED);
+        glRasterPos2f(0, 0);
+        glPixelTransferf(GL_RED_SCALE, 1);
+        glDrawPixels(i.image_size[0], i.image_size[1], GL_LUMINANCE, GL_UNSIGNED_BYTE, cam.get_image_pixels(RS_INFRARED));
+        
 		glfwSwapBuffers(win);
 	}
 
