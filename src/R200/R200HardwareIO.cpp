@@ -170,7 +170,11 @@ namespace r200
             if (!nPages || addressTest < 0)
                 return false;
 
-            //@tofix - could be refactored using generic xu read/write cycle function
+			// This command allows the host to read a block of data from the SPI flash.
+			// Once this command is processed by the DS4, further command messages will be treated as SPI data
+			// and therefore will be read from flash. The size of the SPI data must be a multiple of 256 bytes.
+			// This will repeat until the number of bytes specified in the ‘value’ field of the original command
+			// message has been read.  At that point the DS4 will process command messages as expected.
 
             CommandPacket command;
             command.code = COMMAND_DOWNLOAD_SPI_FLASH;
@@ -179,28 +183,20 @@ namespace r200
             command.address = address;
             command.value = nPages * SPI_FLASH_PAGE_SIZE_IN_BYTES;
 
-            unsigned int cmdLength = sizeof(CommandPacket);
-            auto XUWriteCmdStatus = uvc_set_ctrl(deviceHandle, CAMERA_XU_UNIT_ID, CONTROL_COMMAND_RESPONSE, &command, cmdLength);
-            if (XUWriteCmdStatus < 0) uvc_perror((uvc_error_t) XUWriteCmdStatus, "uvc_set_ctrl");
-
             ResponsePacket response;
-            unsigned int resLength = sizeof(ResponsePacket);
-            auto XUReadCmdStatus = uvc_get_ctrl(deviceHandle, CAMERA_XU_UNIT_ID, CONTROL_COMMAND_RESPONSE, &response, resLength, UVC_GET_CUR);
-            if (XUReadCmdStatus < 0) uvc_perror((uvc_error_t) XUReadCmdStatus, "uvc_get_ctrl");
 
-            std::cout << "Read SPI Command Status: " << ResponseCodeToString(response.responseCode) << std::endl;
-
-            if (XUReadCmdStatus > 0)
+            if (!SendCommand(deviceHandle, &command, &response))
             {
-                uint8_t *p = buffer;
-                uint16_t spiLength = SPI_FLASH_PAGE_SIZE_IN_BYTES;
-                for (unsigned int i = 0; i < nPages; ++i)
-                {
-                    int bytesReturned = uvc_get_ctrl(deviceHandle, CAMERA_XU_UNIT_ID, CONTROL_COMMAND_RESPONSE, p, spiLength, UVC_GET_CUR);
-                    p += SPI_FLASH_PAGE_SIZE_IN_BYTES;
-                }
+            	return false;
             }
 
+            uint8_t *p = buffer;
+            uint16_t spiLength = SPI_FLASH_PAGE_SIZE_IN_BYTES;
+            for (unsigned int i = 0; i < nPages; ++i)
+            {
+            	xu_read(deviceHandle, CONTROL_COMMAND_RESPONSE, p, spiLength;)
+                p += SPI_FLASH_PAGE_SIZE_IN_BYTES;
+            }
             return true;
         }
 
