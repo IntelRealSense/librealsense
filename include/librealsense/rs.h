@@ -22,8 +22,8 @@ struct rs_intrinsics
 
 struct rs_extrinsics
 {
-    float rotation[9];
-    float translation[3];
+    float rotation[9];          /* column-major 3x3 rotation matrix */
+    float translation[3];       /* 3 element translation vector, in meters */
 };
 
 struct rs_context *	rs_create_context		(int api_version, struct rs_error ** error);

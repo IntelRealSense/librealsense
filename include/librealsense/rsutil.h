@@ -49,9 +49,9 @@ inline void rs_deproject_pixel_to_point(float point[3], const rs_intrinsics & in
 /* Transform 3D coordinates relative to one sensor to 3D coordinates relative to another viewpoint */
 inline void rs_transform_point_to_point(float to_point[3], const rs_extrinsics & extrin, const float from_point[3])
 {
-	to_point[0] = extrin.rotation[0] * from_point[0] + extrin.rotation[1] * from_point[1] + extrin.rotation[2] * from_point[2] + extrin.translation[0];
-	to_point[1] = extrin.rotation[3] * from_point[0] + extrin.rotation[4] * from_point[1] + extrin.rotation[5] * from_point[2] + extrin.translation[1];
-	to_point[2] = extrin.rotation[6] * from_point[0] + extrin.rotation[7] * from_point[1] + extrin.rotation[8] * from_point[2] + extrin.translation[2];
+	to_point[0] = extrin.rotation[0] * from_point[0] + extrin.rotation[3] * from_point[1] + extrin.rotation[6] * from_point[2] + extrin.translation[0];
+	to_point[1] = extrin.rotation[1] * from_point[0] + extrin.rotation[4] * from_point[1] + extrin.rotation[7] * from_point[2] + extrin.translation[1];
+	to_point[2] = extrin.rotation[2] * from_point[0] + extrin.rotation[5] * from_point[1] + extrin.rotation[8] * from_point[2] + extrin.translation[2];
 }
 
 #endif

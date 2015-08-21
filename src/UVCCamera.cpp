@@ -85,7 +85,7 @@ rs_extrinsics UVCCamera::GetStreamExtrinsics(int from, int to) const
 {
     auto transform = inverse(calib.stream_poses[from]) * calib.stream_poses[to]; // TODO: Make sure this is the right order
     rs_extrinsics extrin;
-    (float3x3 &)extrin.rotation = transpose(transform.orientation);
+    (float3x3 &)extrin.rotation = transform.orientation;
     (float3 &)extrin.translation = transform.position;
     return extrin;
 }
