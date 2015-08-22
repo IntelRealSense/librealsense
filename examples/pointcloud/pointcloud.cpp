@@ -103,14 +103,13 @@ int main(int argc, char * argv[]) try
 
 		cam = ctx.get_camera(i);
         cam.enable_stream_preset(RS_DEPTH, RS_BEST_QUALITY);
-        //cam.enable_stream_preset(RS_COLOR, RS_BEST_QUALITY);
+        cam.enable_stream_preset(RS_COLOR, RS_BEST_QUALITY);
         cam.enable_stream_preset(RS_INFRARED, RS_BEST_QUALITY);
         cam.start_streaming();
 	}
 	if (!cam) throw std::runtime_error("No camera detected. Is it plugged in?");
-    const auto depth_intrin = cam.get_stream_intrinsics(RS_DEPTH), color_intrin = cam.get_stream_intrinsics(RS_INFRARED);
-    const auto extrin = cam.get_stream_extrinsics(RS_DEPTH, RS_INFRARED);
-    struct state { float yaw, pitch; double lastX, lastY; bool ml; } app_state = {};
+    const auto depth_intrin = cam.get_stream_intrinsics(RS_DEPTH);
+    struct state { float yaw, pitch; double lastX, lastY; bool ml; int tex_stream = RS_COLOR; } app_state = {};
 
 	glfwInit();
     GLFWwindow * win = glfwCreateWindow(640, 480, "RealSense Point Cloud", 0, 0);
@@ -119,6 +118,7 @@ int main(int argc, char * argv[]) try
 	{
 		auto s = (state *)glfwGetWindowUserPointer(win);
 		if(button == GLFW_MOUSE_BUTTON_LEFT) s->ml = action == GLFW_PRESS;
+        if(button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_PRESS) s->tex_stream = s->tex_stream == RS_COLOR ? RS_INFRARED : RS_COLOR;
 	});
 	glfwSetCursorPosCallback(win, [](GLFWwindow * win, double x, double y)
 	{
@@ -184,10 +184,14 @@ int main(int argc, char * argv[]) try
         glClearColor(0.0f, 116/255.0f, 197/255.0f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+        auto tex_intrin = cam.get_stream_intrinsics(app_state.tex_stream);
+        auto extrin = cam.get_stream_extrinsics(RS_DEPTH, app_state.tex_stream);
+        
         glPushAttrib(GL_ALL_ATTRIB_BITS);
         glBindTexture(GL_TEXTURE_2D, tex);
-        //glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, color_intrin.image_size[0], color_intrin.image_size[1], 0, GL_RGB, GL_UNSIGNED_BYTE, cam.get_color_image());
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, color_intrin.image_size[0], color_intrin.image_size[1], 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, cam.get_image_pixels(RS_INFRARED));
+        glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, tex_intrin.image_size[0], tex_intrin.image_size[1], 0,
+                     app_state.tex_stream == RS_COLOR ? GL_RGB : GL_LUMINANCE, GL_UNSIGNED_BYTE, cam.get_image_pixels(app_state.tex_stream));
         glMatrixMode(GL_PROJECTION);
 		glPushMatrix();
         gluPerspective(60, (float)width/height, 0.01f, 20.0f);
@@ -213,12 +217,12 @@ int main(int argc, char * argv[]) try
 			{
                 if(auto d = *depth++)
 				{
-                    float depth_pixel[2] = {static_cast<float>(x),static_cast<float>(y)}, depth_point[3], color_point[3], color_pixel[2];
+                    float depth_pixel[2] = {static_cast<float>(x),static_cast<float>(y)}, depth_point[3], tex_point[3], tex_pixel[2];
                     rs_deproject_pixel_to_point(depth_point, depth_intrin, depth_pixel, d*scale);
-                    rs_transform_point_to_point(color_point, extrin, depth_point);
-                    rs_project_point_to_pixel(color_pixel, color_intrin, color_point);
+                    rs_transform_point_to_point(tex_point, extrin, depth_point);
+                    rs_project_point_to_pixel(tex_pixel, tex_intrin, tex_point);
 
-                    glTexCoord2f(color_pixel[0] / color_intrin.image_size[0], color_pixel[1] / color_intrin.image_size[1]);
+                    glTexCoord2f(tex_pixel[0] / tex_intrin.image_size[0], tex_pixel[1] / tex_intrin.image_size[1]);
                     glVertex3fv(depth_point);
 				}
 			}
