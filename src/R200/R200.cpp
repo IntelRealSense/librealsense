@@ -92,7 +92,6 @@ namespace r200
         if(streams[RS_COLOR]) streamIntent |= STATUS_BIT_WEB_STREAMING;
         if(streams[RS_INFRARED]) streamIntent |= STATUS_BIT_LR_STREAMING;
 
-        // NOTE: Might need to be the FIRST handle we open
         if(first_handle)
         {
             if(!xu_write(first_handle, CONTROL_STREAM_INTENT, &streamIntent, sizeof(streamIntent)))

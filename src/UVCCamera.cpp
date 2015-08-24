@@ -50,12 +50,20 @@ void UVCCamera::EnableStream(int stream, int width, int height, int fps, int for
         throw std::runtime_error("invalid mode");
     }();
     streams[stream]->set_mode(mode);
+    user_streams[stream].reset(new UserStreamInterface());
+    user_streams[stream]->set_mode(mode);
 }
 
 void UVCCamera::StartStreaming()
 {
     SetStreamIntent();
-    for(auto & stream : streams) if(stream) stream->start_streaming();
+    for(int i=0; i<3; ++i)
+    {
+        if(streams[i] && user_streams[i])
+        {
+            streams[i]->start_streaming(user_streams[i].get());
+        }
+    }
 }
 
 void UVCCamera::StopStreaming()
@@ -66,9 +74,9 @@ void UVCCamera::StopStreaming()
 void UVCCamera::WaitAllStreams()
 {
     int maxFps = 0;
-    for(auto & stream : streams) maxFps = stream ? std::max(maxFps, stream->get_mode().fps) : maxFps;
+    for(auto & stream : user_streams) maxFps = stream ? std::max(maxFps, stream->get_mode().fps) : maxFps;
 
-    for(auto & stream : streams)
+    for(auto & stream : user_streams)
     {
         if(stream)
         {
@@ -87,8 +95,8 @@ void UVCCamera::WaitAllStreams()
 
 rs_intrinsics UVCCamera::GetStreamIntrinsics(int stream) const
 {
-    if(!streams[stream]) throw std::runtime_error("stream not enabled");
-    return streams[stream]->get_mode().intrinsics;
+    if(!user_streams[stream]) throw std::runtime_error("stream not enabled");
+    return user_streams[stream]->get_mode().intrinsics;
 }
 
 rs_extrinsics UVCCamera::GetStreamExtrinsics(int from, int to) const
@@ -100,11 +108,9 @@ rs_extrinsics UVCCamera::GetStreamExtrinsics(int from, int to) const
     return extrin;
 }
 
-void UVCCamera::StreamInterface::set_mode(const ResolutionMode & mode)
+void UVCCamera::UserStreamInterface::set_mode(const ResolutionMode & mode)
 {
     this->mode = mode;
-    CheckUVC("uvc_get_stream_ctrl_format_size", uvc_get_stream_ctrl_format_size(uvcHandle, &ctrl, mode.uvcFormat, mode.uvcWidth, mode.uvcHeight, mode.uvcFps));
-
     switch(mode.format)
     {
     case RS_Z16: front.resize(mode.width * mode.height * sizeof(uint16_t)); break;
@@ -116,8 +122,24 @@ void UVCCamera::StreamInterface::set_mode(const ResolutionMode & mode)
     updated = false;
 }
 
-void UVCCamera::StreamInterface::start_streaming()
+bool UVCCamera::UserStreamInterface::update_image()
 {
+    if(!updated) return false;
+    std::lock_guard<std::mutex> guard(mutex);
+    front.swap(middle);
+    updated = false;
+    return true;
+}
+
+void UVCCamera::StreamInterface::set_mode(const ResolutionMode & mode)
+{
+    this->mode = mode;
+    CheckUVC("uvc_get_stream_ctrl_format_size", uvc_get_stream_ctrl_format_size(uvcHandle, &ctrl, mode.uvcFormat, mode.uvcWidth, mode.uvcHeight, mode.uvcFps));
+}
+
+void UVCCamera::StreamInterface::start_streaming(UserStreamInterface * user_interface)
+{
+    this->user_interface = user_interface;
     CheckUVC("uvc_start_streaming", uvc_start_streaming(uvcHandle, &ctrl, [](uvc_frame_t * frame, void * ptr)
         {
             auto self = static_cast<StreamInterface *>(ptr);
@@ -128,37 +150,28 @@ void UVCCamera::StreamInterface::start_streaming()
             switch(mode.format)
             {
             case RS_Z16:
-                copy_strided_image(self->back.data(), mode.width * sizeof(uint16_t), frame->data, mode.uvcWidth * sizeof(uint16_t), mode.height);
+                copy_strided_image(self->user_interface->back.data(), mode.width * sizeof(uint16_t), frame->data, mode.uvcWidth * sizeof(uint16_t), mode.height);
                 break;
             case RS_Y8:
-                copy_strided_image(self->back.data(), mode.width * sizeof(uint8_t), frame->data, mode.uvcWidth * sizeof(uint8_t), mode.height);
+                copy_strided_image(self->user_interface->back.data(), mode.width * sizeof(uint8_t), frame->data, mode.uvcWidth * sizeof(uint8_t), mode.height);
                 break;
             case RS_RGB8:
                 assert(mode.uvcFormat == UVC_FRAME_FORMAT_YUYV);
-                convert_yuyv_to_rgb(self->back.data(), frame->width, frame->height, (uint8_t *)frame->data);
+                convert_yuyv_to_rgb(self->user_interface->back.data(), frame->width, frame->height, (uint8_t *)frame->data);
                 break;
             default: throw std::runtime_error("bad format");
             }
 
             // Swap the backbuffer to the middle buffer and indicate that we have updated
-            std::lock_guard<std::mutex> guard(self->mutex);
-            self->back.swap(self->middle);
-            self->updated = true;
+            std::lock_guard<std::mutex> guard(self->user_interface->mutex);
+            self->user_interface->back.swap(self->user_interface->middle);
+            self->user_interface->updated = true;
         }, this, 0));
 }
     
 void UVCCamera::StreamInterface::stop_streaming()
 {
     CheckUVC("uvc_stream_stop", uvc_stream_stop(ctrl.handle));
-}
-    
-bool UVCCamera::StreamInterface::update_image()
-{
-    if(!updated) return false;
-    std::lock_guard<std::mutex> guard(mutex);
-    front.swap(middle);
-    updated = false;
-    return true;
 }
 
 } // end namespace rs

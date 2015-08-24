@@ -74,31 +74,48 @@ namespace rs
     class UVCCamera : public rs_camera
     {
     protected: 
-        class StreamInterface
+        class StreamInterface;
+        class UserStreamInterface
         {
-            uvc_device_handle_t * uvcHandle;
-            uvc_stream_ctrl_t ctrl;
+            friend class StreamInterface;
+
             ResolutionMode mode;
 
             volatile bool updated = false;
             std::vector<uint8_t> front, middle, back;
             std::mutex mutex;
         public:
-            StreamInterface(uvc_device_t * device, int subdeviceNumber) { CheckUVC("uvc_open2", uvc_open2(device, &uvcHandle, subdeviceNumber)); }
-            ~StreamInterface() { uvc_stop_streaming(uvcHandle); uvc_close(uvcHandle); }
-
             const ResolutionMode & get_mode() const { return mode; }
             const void * get_image() const { return front.data(); }
 
+            void set_mode(const ResolutionMode & mode);
+            bool update_image();
+        };
+
+        class StreamInterface
+        {
+            uvc_device_handle_t * uvcHandle;
+            uvc_stream_ctrl_t ctrl;
+            ResolutionMode mode;
+
+            UserStreamInterface * user_interface;
+
+            void on_frame(uvc_frame_t * frame);
+        public:
+            StreamInterface(uvc_device_t * device, int subdeviceNumber) { CheckUVC("uvc_open2", uvc_open2(device, &uvcHandle, subdeviceNumber)); }
+            ~StreamInterface() { uvc_stop_streaming(uvcHandle); uvc_close(uvcHandle); }
+
+            //const ResolutionMode & get_mode() const { return mode; }
+
             uvc_device_handle_t * get_handle() { return uvcHandle; }
             void set_mode(const ResolutionMode & mode);
-            void start_streaming();
+            void start_streaming(UserStreamInterface * user_interface);
             void stop_streaming();
-            bool update_image();
         };
 
         uvc_context_t * context;
         uvc_device_t * device;
+        std::unique_ptr<UserStreamInterface> user_streams[MAX_STREAMS];
         std::unique_ptr<StreamInterface> streams[MAX_STREAMS];
 
         std::string cameraName;
@@ -117,7 +134,7 @@ namespace rs
         void StopStreaming() override final;
         void WaitAllStreams() override final;
 
-        const void * GetImagePixels(int stream) const override final { return streams[stream] ? streams[stream]->get_image() : nullptr; }
+        const void * GetImagePixels(int stream) const override final { return user_streams[stream] ? user_streams[stream]->get_image() : nullptr; }
         float GetDepthScale() const override final { return calib.depth_scale; }
 
         rs_intrinsics GetStreamIntrinsics(int stream) const override final;
