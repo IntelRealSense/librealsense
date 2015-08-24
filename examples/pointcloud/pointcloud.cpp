@@ -103,12 +103,10 @@ int main(int argc, char * argv[]) try
 	{
 		std::cout << "Found camera at index " << i << std::endl;
 
-		cam = ctx.get_camera(i);
-        //cam.enable_stream(RS_DEPTH, 480, 360, 90, RS_Z16);
-        //cam.enable_stream(RS_COLOR, 640, 480, 30, RS_RGB8);
+        cam = ctx.get_camera(i);
+        cam.enable_stream_preset(RS_INFRARED, RS_BEST_QUALITY);
         cam.enable_stream_preset(RS_DEPTH, RS_BEST_QUALITY);
         cam.enable_stream_preset(RS_COLOR, RS_BEST_QUALITY);
-        //cam.enable_stream_preset(RS_INFRARED, RS_BEST_QUALITY);
         cam.start_streaming();
 	}
 	if (!cam) throw std::runtime_error("No camera detected. Is it plugged in?");

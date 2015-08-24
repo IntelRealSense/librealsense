@@ -131,6 +131,12 @@ void rs_enable_stream_preset(struct rs_camera * camera, int stream, int preset, 
 }
 HANDLE_EXCEPTIONS_AND_RETURN()
 
+int rs_is_stream_enabled    (struct rs_camera * camera, int stream, struct rs_error ** error) try
+{
+    camera->IsStreamEnabled(stream);
+}
+HANDLE_EXCEPTIONS_AND_RETURN(0)
+
 void rs_start_streaming(struct rs_camera * camera, struct rs_error ** error) try
 {
     camera->StartStreaming();

@@ -35,6 +35,7 @@ const char *        rs_get_camera_name      (struct rs_camera * camera, struct r
 
 void				rs_enable_stream		(struct rs_camera * camera, int stream, int width, int height, int fps, int format, struct rs_error ** error);
 void				rs_enable_stream_preset	(struct rs_camera * camera, int stream, int preset, struct rs_error ** error);
+int                 rs_is_stream_enabled    (struct rs_camera * camera, int stream, struct rs_error ** error);
 void 				rs_start_streaming  	(struct rs_camera * camera, struct rs_error ** error);
 void 				rs_stop_streaming       (struct rs_camera * camera, struct rs_error ** error);
 void                rs_wait_all_streams     (struct rs_camera * camera, struct rs_error ** error);

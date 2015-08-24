@@ -8,7 +8,7 @@
 namespace rs
 {
     
-UVCCamera::UVCCamera(uvc_context_t * context, uvc_device_t * device) : context(context), device(device)
+UVCCamera::UVCCamera(uvc_context_t * context, uvc_device_t * device) : context(context), device(device), first_handle()
 {
     uvc_device_descriptor_t * desc;
     CheckUVC("uvc_get_device_descriptor", uvc_get_device_descriptor(device, &desc));
@@ -34,6 +34,7 @@ void UVCCamera::EnableStream(int stream, int width, int height, int fps, int for
 {
     // Open interface to stream, and optionally retrieve calibration info
     streams[stream].reset(new StreamInterface(device, GetStreamSubdeviceNumber(stream)));
+    if(!first_handle) first_handle = streams[stream]->get_handle();
     if(calib.modes.empty()) calib = RetrieveCalibration(streams[stream]->get_handle());
 
     // Choose a resolution mode based on the user's request
@@ -97,12 +98,6 @@ rs_extrinsics UVCCamera::GetStreamExtrinsics(int from, int to) const
     (float3x3 &)extrin.rotation = transform.orientation;
     (float3 &)extrin.translation = transform.position;
     return extrin;
-}
-
-uvc_device_handle_t * UVCCamera::GetHandleToAnyStream()
-{
-    for(auto & s : streams) if(s) return s->get_handle();
-    return nullptr;
 }
 
 void UVCCamera::StreamInterface::set_mode(const ResolutionMode & mode)

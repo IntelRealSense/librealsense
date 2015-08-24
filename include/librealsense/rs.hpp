@@ -52,6 +52,7 @@ namespace rs
 
         void				enable_stream(int stream, int width, int height, int fps, int format)	{ rs_enable_stream(cam, stream, width, height, fps, format, auto_error()); }
         void				enable_stream_preset(int stream, int preset)                            { rs_enable_stream_preset(cam, stream, preset, auto_error()); }
+        bool                is_stream_enabled(int stream)                                           { return !!rs_is_stream_enabled(cam, stream, auto_error()); }
         void 				start_streaming()														{ rs_start_streaming(cam, auto_error()); }
         void				stop_streaming()                                                        { rs_stop_streaming(cam, auto_error()); }
         void                wait_all_streams()                                                      { rs_wait_all_streams(cam, auto_error()); }

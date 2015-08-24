@@ -45,6 +45,7 @@ struct rs_camera
 
     virtual void EnableStream(int stream, int width, int height, int fps, int format) = 0;
     virtual void EnableStreamPreset(int stream, int preset) = 0;
+    virtual bool IsStreamEnabled(int stream) const = 0;
     virtual void StartStreaming() = 0;
     virtual void StopStreaming() = 0;
     virtual void WaitAllStreams() = 0;

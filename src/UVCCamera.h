@@ -104,7 +104,7 @@ namespace rs
         std::string cameraName;
         CalibrationInfo calib;
 
-        uvc_device_handle_t * GetHandleToAnyStream();
+        uvc_device_handle_t * first_handle;
     public:
         UVCCamera(uvc_context_t * context, uvc_device_t * device);
         ~UVCCamera();
@@ -112,6 +112,7 @@ namespace rs
         const char * GetCameraName() const override final { return cameraName.c_str(); }
 
         void EnableStream(int stream, int width, int height, int fps, int format) override final;
+        bool IsStreamEnabled(int stream) const override final { return (bool)streams[stream]; }
         void StartStreaming() override final;
         void StopStreaming() override final;
         void WaitAllStreams() override final;

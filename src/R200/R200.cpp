@@ -91,9 +91,11 @@ namespace r200
         if(streams[RS_DEPTH]) streamIntent |= STATUS_BIT_Z_STREAMING;
         if(streams[RS_COLOR]) streamIntent |= STATUS_BIT_WEB_STREAMING;
         if(streams[RS_INFRARED]) streamIntent |= STATUS_BIT_LR_STREAMING;
-        if(uvc_device_handle_t * handle = GetHandleToAnyStream())
+
+        // NOTE: Might need to be the FIRST handle we open
+        if(first_handle)
         {
-            if(!xu_write(handle, CONTROL_STREAM_INTENT, &streamIntent, sizeof(streamIntent)))
+            if(!xu_write(first_handle, CONTROL_STREAM_INTENT, &streamIntent, sizeof(streamIntent)))
             {
                 throw std::runtime_error("xu_write failed");
             }

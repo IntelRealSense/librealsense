@@ -64,15 +64,19 @@ int main(int argc, char * argv[]) try
 		std::cout << "Found camera at index " << i << std::endl;
 
 		cam = ctx.get_camera(i);
+
+        cam.enable_stream_preset(RS_INFRARED, RS_BEST_QUALITY);
         cam.enable_stream_preset(RS_DEPTH, RS_BEST_QUALITY);
         cam.enable_stream_preset(RS_COLOR, RS_BEST_QUALITY);
-        cam.enable_stream_preset(RS_INFRARED, RS_BEST_QUALITY);
         cam.start_streaming();
 
-        auto intrin = cam.get_stream_intrinsics(RS_DEPTH);
-        float hfov = compute_fov(intrin.image_size[0], intrin.focal_length[0], intrin.principal_point[0]);
-        float vfov = compute_fov(intrin.image_size[1], intrin.focal_length[1], intrin.principal_point[1]);
-		std::cout << "Computed FOV " << hfov << " " << vfov << std::endl;
+        if(cam.is_stream_enabled(RS_DEPTH))
+        {
+            auto intrin = cam.get_stream_intrinsics(RS_DEPTH);
+            float hfov = compute_fov(intrin.image_size[0], intrin.focal_length[0], intrin.principal_point[0]);
+            float vfov = compute_fov(intrin.image_size[1], intrin.focal_length[1], intrin.principal_point[1]);
+            std::cout << "Computed FOV " << hfov << " " << vfov << std::endl;
+        }
 	}
 	if (!cam) throw std::runtime_error("No camera detected. Is it plugged in?");
 
@@ -87,20 +91,28 @@ int main(int argc, char * argv[]) try
 		glClear(GL_COLOR_BUFFER_BIT);
 		glPixelZoom(1, -1);
 
-        auto c = cam.get_stream_intrinsics(RS_COLOR);
-		glRasterPos2f(-1, 1);
-		glPixelTransferf(GL_RED_SCALE, 1);
-        glDrawPixels(c.image_size[0], c.image_size[1], GL_RGB, GL_UNSIGNED_BYTE, cam.get_color_image());
+        if(cam.is_stream_enabled(RS_COLOR))
+        {
+            auto c = cam.get_stream_intrinsics(RS_COLOR);
+            glRasterPos2f(-1, 1);
+            glDrawPixels(c.image_size[0], c.image_size[1], GL_RGB, GL_UNSIGNED_BYTE, cam.get_color_image());
+        }
 
-        auto d = cam.get_stream_intrinsics(RS_DEPTH);
-		glRasterPos2f(0, 1);
-		glPixelTransferf(GL_RED_SCALE, 30);
-        glDrawPixels(d.image_size[0], d.image_size[1], GL_RED, GL_UNSIGNED_SHORT, cam.get_depth_image());
+        if(cam.is_stream_enabled(RS_DEPTH))
+        {
+            auto d = cam.get_stream_intrinsics(RS_DEPTH);
+            glRasterPos2f(0, 1);
+            glPixelTransferf(GL_RED_SCALE, 30);
+            glDrawPixels(d.image_size[0], d.image_size[1], GL_RED, GL_UNSIGNED_SHORT, cam.get_depth_image());
+            glPixelTransferf(GL_RED_SCALE, 1);
+        }
 
-        auto i = cam.get_stream_intrinsics(RS_INFRARED);
-        glRasterPos2f(0, 0);
-        glPixelTransferf(GL_RED_SCALE, 1);
-        glDrawPixels(i.image_size[0], i.image_size[1], GL_LUMINANCE, GL_UNSIGNED_BYTE, cam.get_image_pixels(RS_INFRARED));
+        if(cam.is_stream_enabled(RS_INFRARED))
+        {
+            auto i = cam.get_stream_intrinsics(RS_INFRARED);
+            glRasterPos2f(0, 0);
+            glDrawPixels(i.image_size[0], i.image_size[1], GL_LUMINANCE, GL_UNSIGNED_BYTE, cam.get_image_pixels(RS_INFRARED));
+        }
         
 		glfwSwapBuffers(win);
 	}
