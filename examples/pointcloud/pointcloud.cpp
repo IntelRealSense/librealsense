@@ -47,7 +47,9 @@
 #endif
 
 #include <iostream>
+#include <sstream>
 #include <vector>
+#include <chrono>
 
 #define STB_TRUETYPE_IMPLEMENTATION
 #include "stb_truetype.h"
@@ -102,9 +104,11 @@ int main(int argc, char * argv[]) try
 		std::cout << "Found camera at index " << i << std::endl;
 
 		cam = ctx.get_camera(i);
+        //cam.enable_stream(RS_DEPTH, 480, 360, 90, RS_Z16);
+        //cam.enable_stream(RS_COLOR, 640, 480, 30, RS_RGB8);
         cam.enable_stream_preset(RS_DEPTH, RS_BEST_QUALITY);
         cam.enable_stream_preset(RS_COLOR, RS_BEST_QUALITY);
-        cam.enable_stream_preset(RS_INFRARED, RS_BEST_QUALITY);
+        //cam.enable_stream_preset(RS_INFRARED, RS_BEST_QUALITY);
         cam.start_streaming();
 	}
 	if (!cam) throw std::runtime_error("No camera detected. Is it plugged in?");
@@ -136,6 +140,7 @@ int main(int argc, char * argv[]) try
 		s->lastY = y;
 	});
 	glfwMakeContextCurrent(win);
+    // glfwSwapInterval(0); // Use this if testing > 60 fps modes
 
     glPushAttrib(GL_ALL_ATTRIB_BITS);
 
@@ -171,6 +176,8 @@ int main(int argc, char * argv[]) try
 
     glPopAttrib();
 
+    int frames = 0; float time = 0, fps = 0;
+    auto t0 = std::chrono::high_resolution_clock::now();
 	while (!glfwWindowShouldClose(win))
 	{
 		glfwPollEvents();
@@ -179,6 +186,17 @@ int main(int argc, char * argv[]) try
 		glfwGetWindowSize(win, &width, &height);
 
         cam.wait_all_streams();
+
+        auto t1 = std::chrono::high_resolution_clock::now();
+        time += std::chrono::duration<float>(t1-t0).count();
+        t0 = t1;
+        ++frames;
+        if(time > 0.5f)
+        {
+            fps = frames / time;
+            frames = 0;
+            time = 0;
+        }
 
         glViewport(0, 0, width, height);
         glClearColor(0.0f, 116/255.0f, 197/255.0f, 1.0f);
@@ -241,6 +259,8 @@ int main(int argc, char * argv[]) try
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         ttf_print(cdata, (width-ttf_len(cdata, cam.get_name()))/2, height-20.0f, cam.get_name());
+        std::ostringstream ss; ss << fps << " FPS";
+        ttf_print(cdata, 20, 40, ss.str().c_str());
         glPopMatrix();
         glPopAttrib();
 

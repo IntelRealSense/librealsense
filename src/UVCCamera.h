@@ -19,6 +19,23 @@ namespace rs
         }
     }
 
+    /*struct ResolutionMode
+    {
+        int stream;                 // RS_DEPTH, RS_COLOR, RS_INFRARED, RS_INFRARED_2, etc.
+        int width, height, fps;     // Resolution and framerate visible to the library client
+        int format;                 // Pixel format visible to the library client
+        rs_intrinsics intrinsics;   // Image intrinsics
+    };
+
+    struct StreamMode
+    {
+        int subdevice;                      // 0, 1, 2, etc...
+        int width, height, fps;             // Resolution and framerate advertised over UVC
+        uvc_frame_format format;            // Pixel format advertised over UVC
+
+        std::vector<ResolutionMode> images; // Resolution mode for images visible to the user
+    };*/
+
     struct ResolutionMode
     {
         int stream;                 // RS_DEPTH, RS_COLOR, etc.

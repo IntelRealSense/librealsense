@@ -36,7 +36,7 @@ int main(int argc, char * argv[])
 	{
 		printf("Found camera at index %d\n", i);
 
-		cam = rs_get_camera(ctx, i, &error); check_error();
+        cam = rs_get_camera(ctx, i, &error); check_error();
         rs_enable_stream_preset(cam, RS_DEPTH, RS_BEST_QUALITY, &error); check_error();
         rs_enable_stream_preset(cam, RS_COLOR, RS_BEST_QUALITY, &error); check_error();
         rs_start_streaming(cam, &error); check_error();

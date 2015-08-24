@@ -19,7 +19,7 @@ UVCCamera::UVCCamera(uvc_context_t * context, uvc_device_t * device) : context(c
     // desc->idVendor
     // desc->idProduct
 
-    uvc_free_device_descriptor(desc);
+    uvc_free_device_descriptor(desc);  
 
     calib = {};
 }
@@ -64,7 +64,24 @@ void UVCCamera::StopStreaming()
     
 void UVCCamera::WaitAllStreams()
 {
-    for(auto & stream : streams) if(stream) stream->update_image();
+    int maxFps = 0;
+    for(auto & stream : streams) maxFps = stream ? std::max(maxFps, stream->get_mode().fps) : maxFps;
+
+    for(auto & stream : streams)
+    {
+        if(stream)
+        {
+            // If this is the fastest stream, wait until a new frame arrives
+            if(stream->get_mode().fps == maxFps)
+            {
+                while(true) if(stream->update_image()) break;
+            }
+            else // Otherwise simply check for a new frame
+            {
+                stream->update_image();
+            }
+        }
+    }
 }
 
 rs_intrinsics UVCCamera::GetStreamIntrinsics(int stream) const

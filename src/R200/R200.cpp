@@ -3,11 +3,16 @@
 #ifdef USE_UVC_DEVICES
 using namespace rs;
 
+#include <iostream>
+
 namespace r200
 {
     R200Camera::R200Camera(uvc_context_t * ctx, uvc_device_t * device) : UVCCamera(ctx, device)
     {
-
+        //uvc_device_handle_t * uvcHandle;
+        //CheckUVC("uvc_open2", uvc_open2(device, &uvcHandle, 0));
+        //calib = RetrieveCalibration(uvcHandle);
+        //uvc_close(uvcHandle);
     }
 
     int R200Camera::GetStreamSubdeviceNumber(int stream) const
@@ -25,28 +30,29 @@ namespace r200
     {
         switch(streamIdentifier)
         {
-        case RS_DEPTH: EnableStream(RS_DEPTH, 480, 360, 0, RS_Z16); break;
+        case RS_DEPTH: EnableStream(RS_DEPTH, 480, 360, 60, RS_Z16); break;
         case RS_COLOR: EnableStream(RS_COLOR, 640, 480, 60, RS_RGB8); break;
-        case RS_INFRARED: EnableStream(RS_INFRARED, 492, 372, 0, RS_Y8); break;
+        case RS_INFRARED: EnableStream(RS_INFRARED, 492, 372, 60, RS_Y8); break;
         default: throw std::runtime_error("unsupported stream");
         }
     }
 
-    static ResolutionMode MakeDepthMode(const RectifiedIntrinsics & i)
+    static ResolutionMode MakeDepthMode(const RectifiedIntrinsics & i, int userFps, int uvcFps)
     {
-        return {RS_DEPTH, (int)i.rw-12,(int)i.rh-12,0,RS_Z16, 640-12,(int)i.rh-12+1,0,UVC_FRAME_FORMAT_Z16,
+        return {RS_DEPTH, (int)i.rw-12,(int)i.rh-12,userFps,RS_Z16, 640-12,(int)i.rh-12+1,uvcFps,UVC_FRAME_FORMAT_Z16,
             {{(int)i.rw-12,(int)i.rh-12}, {i.rfx,i.rfy}, {i.rpx-6,i.rpy-6}, {0,0,0,0,0}, RS_NO_DISTORTION}};
     }
 
-    static ResolutionMode MakeLeftRightMode(const RectifiedIntrinsics & i)
+    static ResolutionMode MakeLeftRightMode(const RectifiedIntrinsics & i, int userFps, int uvcFps)
     {
-        return {RS_INFRARED, (int)i.rw,(int)i.rh,0,RS_Y8, 640,(int)i.rh+1,0,UVC_FRAME_FORMAT_Y8,
+        return {RS_INFRARED, (int)i.rw,(int)i.rh,userFps,RS_Y8, 640,(int)i.rh+1,uvcFps,UVC_FRAME_FORMAT_Y8,
             {{(int)i.rw,(int)i.rh}, {i.rfx,i.rfy}, {i.rpx,i.rpy}, {0,0,0,0,0}, RS_NO_DISTORTION}};
     }
     
-    static ResolutionMode MakeColorMode(const UnrectifiedIntrinsics & i)
+    static ResolutionMode MakeColorMode(const UnrectifiedIntrinsics & i, int userFps, int uvcFps)
     {
-        return {RS_COLOR, static_cast<int>(i.w),static_cast<int>(i.h),60,RS_RGB8, static_cast<int>(i.w),static_cast<int>(i.h),59,UVC_FRAME_FORMAT_YUYV, {{static_cast<int>(i.w),static_cast<int>(i.h)}, {i.fx,i.fy}, {i.px,i.py}, {i.k[0],i.k[1],i.k[2],i.k[3],i.k[4]}, RS_GORDON_BROWN_CONRADY_DISTORTION}};
+        return {RS_COLOR, static_cast<int>(i.w),static_cast<int>(i.h),userFps,RS_RGB8, static_cast<int>(i.w),static_cast<int>(i.h),uvcFps,UVC_FRAME_FORMAT_YUYV,
+            {{static_cast<int>(i.w),static_cast<int>(i.h)}, {i.fx,i.fy}, {i.px,i.py}, {i.k[0],i.k[1],i.k[2],i.k[3],i.k[4]}, RS_GORDON_BROWN_CONRADY_DISTORTION}};
     }
 
     CalibrationInfo R200Camera::RetrieveCalibration(uvc_device_handle_t * handle)
@@ -56,13 +62,20 @@ namespace r200
         read_camera_info(handle, calib, header);
 
         rs::CalibrationInfo c;
-        c.modes.push_back(MakeDepthMode(calib.modesLR[0]));
-        c.modes.push_back(MakeDepthMode(calib.modesLR[1]));
-        c.modes.push_back(MakeLeftRightMode(calib.modesLR[0]));
-        c.modes.push_back(MakeLeftRightMode(calib.modesLR[1]));
-        //c.modes.push_back(MakeDepthMode(320, 240, calib.modesLR[2])); // NOTE: QRES oddness
-        c.modes.push_back(MakeColorMode(calib.intrinsicsThird[0]));
-        c.modes.push_back(MakeColorMode(calib.intrinsicsThird[1]));
+        for(int i=0; i<2; ++i)
+        {
+            c.modes.push_back(MakeDepthMode(calib.modesLR[i], 90, 90));
+            c.modes.push_back(MakeDepthMode(calib.modesLR[i], 60, 59));
+            c.modes.push_back(MakeDepthMode(calib.modesLR[i], 30, 30));
+            c.modes.push_back(MakeLeftRightMode(calib.modesLR[i], 90, 90));
+            c.modes.push_back(MakeLeftRightMode(calib.modesLR[i], 60, 59));
+            c.modes.push_back(MakeLeftRightMode(calib.modesLR[i], 30, 30));
+        }
+        for(int i=0; i<2; ++i)
+        {
+            c.modes.push_back(MakeColorMode(calib.intrinsicsThird[i], 60, 59));
+            c.modes.push_back(MakeColorMode(calib.intrinsicsThird[i], 30, 30));
+        }
         c.stream_poses[RS_DEPTH] = {{{1,0,0},{0,1,0},{0,0,1}}, {0,0,0}};
         c.stream_poses[RS_INFRARED] = c.stream_poses[RS_DEPTH];
         for(int i=0; i<3; ++i) for(int j=0; j<3; ++j) c.stream_poses[RS_COLOR].orientation(i,j) = calib.Rthird[0][i*3+j];
