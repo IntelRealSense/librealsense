@@ -586,12 +586,19 @@ namespace r200
         return true;
     }
     
-    bool get_lr_exposure_mode(uvc_device_handle_t * device, int & mode)
+    bool get_lr_exposure_mode(uvc_device_handle_t * device, uint32_t & mode)
     {
-        uint8_t m;
+        uint8_t m; // 0 = EXPOSURE_MANUAL, 1 = EXPOSURE_AUTO
         if (!xu_read(device, CONTROL_LR_EXPOSURE_MODE, &m, sizeof(m)))
             return false;
         mode = m;
+        return true;
+    }
+    
+    bool set_lr_exposure_mode(uvc_device_handle_t * device, uint32_t mode)
+    {
+        if (!xu_write(device, CONTROL_LR_EXPOSURE_MODE, &mode, sizeof(mode)))
+            return false;
         return true;
     }
     
@@ -605,6 +612,34 @@ namespace r200
     bool set_depth_params(uvc_device_handle_t * device, depth_params params)
     {
         if (!xu_write(device, CONTROL_DEPTH_PARAMS, &params, sizeof(params)))
+            return false;
+        return true;
+    }
+    
+    bool get_disparity_mode(uvc_device_handle_t * device, disparity_mode & mode)
+    {
+        if (!xu_read(device, CONTROL_DISPARITY, &mode, sizeof(mode)))
+            return false;
+        return true;
+    }
+
+    bool set_disparity_mode(uvc_device_handle_t * device, disparity_mode mode)
+    {
+        if (!xu_write(device, CONTROL_DISPARITY, &mode, sizeof(mode)))
+            return false;
+        return true;
+    }
+    
+    bool get_disparity_shift(uvc_device_handle_t * device, uint32_t & shift)
+    {
+        if (!xu_read(device, CONTROL_DISPARITY_SHIFT, &shift, sizeof(shift)))
+            return false;
+        return true;
+    }
+    
+    bool set_disparity_shift(uvc_device_handle_t * device, uint32_t shift)
+    {
+        if (!xu_write(device, CONTROL_DISPARITY_SHIFT, &shift, sizeof(shift)))
             return false;
         return true;
     }

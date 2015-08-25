@@ -49,6 +49,18 @@ namespace r200
         uint32_t lr_thresh;
     };
     
+    enum class range_format : uint32_t
+    {
+        RANGE_FORMAT_DISPARITY,
+        RANGE_FORMAT_DISTANCE
+    };
+    
+    struct disparity_mode
+    {
+        range_format format;
+        uint64_t multiplier;
+    };
+    
     // Hardware API for R200 camera
     std::string read_firmware_version(uvc_device_handle_t * device);
     void        read_camera_info(uvc_device_handle_t * device, CameraCalibrationParameters & calib, CameraHeaderInfo & header);
@@ -57,7 +69,7 @@ namespace r200
     bool        xu_write(uvc_device_handle_t * device, uint64_t xu_ctrl, void * buffer, uint32_t length);
     
     bool        set_stream_intent(uvc_device_handle_t * device, uint8_t & intent);
-    bool        get_stream_status(uvc_device_handle_t * device, int & status);
+    bool        get_stream_status(uvc_device_handle_t * device, uint8_t & status);
     
     bool        get_last_error(uvc_device_handle_t * device, uint8_t & last_error);
     bool        force_firmware_reset(uvc_device_handle_t * device);
@@ -83,29 +95,23 @@ namespace r200
     bool        get_lr_auto_exposure_params(uvc_device_handle_t * device, auto_exposure_params & params);
     bool        set_lr_auto_exposure_params(uvc_device_handle_t * device, auto_exposure_params params);
     
-    bool        get_lr_exposure_mode(uvc_device_handle_t * device, int & mode);
-    bool        set_lr_exposure_mode(uvc_device_handle_t * device, int mode);
+    bool        get_lr_exposure_mode(uvc_device_handle_t * device, uint32_t & mode);
+    bool        set_lr_exposure_mode(uvc_device_handle_t * device, uint32_t mode);
     
     bool        get_depth_params(uvc_device_handle_t * device, depth_params & params);
     bool        set_depth_params(uvc_device_handle_t * device, depth_params params);
+    
+    bool        get_disparity_mode(uvc_device_handle_t * device, disparity_mode & mode);
+    bool        set_disparity_mode(uvc_device_handle_t * device, disparity_mode mode);
+    
+    bool        get_disparity_shift(uvc_device_handle_t * device, uint32_t & shift);
+    bool        set_disparity_shift(uvc_device_handle_t * device, uint32_t shift);
     
     //@todo - get_exposure_discovery
     //@todo - set_exposure_discovery
     
     //@todo - get_gain_discovery
     //@todo - set_gain_discovery
-    
-    //@todo - get_disparity_shift
-    //@todo - set_disparity_shift
-    
-    //@todo - get_disparity_info
-    //@todo - set_disparity_info
-    
-    //@todo - get_depth_control
-    //@todo - set_depth_control
-    
-    //@todo - read_register
-    //@todo - write_Register
 
     // Implementation details
 
