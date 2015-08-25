@@ -9,7 +9,7 @@ using namespace rs;
 namespace f200
 {
     
-    F200Camera::F200Camera(uvc_context_t * ctx, uvc_device_t * device) : UVCCamera(ctx, device)
+    F200Camera::F200Camera(uvc_context_t * ctx, uvc_device_t * device) : rs_camera(ctx, device)
     {
         subdevices.resize(2);
     }

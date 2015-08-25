@@ -3,11 +3,11 @@
 #ifndef LIBREALSENSE_R200_CAMERA_H
 #define LIBREALSENSE_R200_CAMERA_H
 
-#include "../UVCCamera.h"
+#include "../rs-internal.h"
 
 namespace r200
 {
-    class R200Camera : public rs::UVCCamera
+    class R200Camera : public rs_camera
     {
     public:
         R200Camera(uvc_context_t * ctx, uvc_device_t * device);

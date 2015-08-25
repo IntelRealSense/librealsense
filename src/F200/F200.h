@@ -5,13 +5,11 @@
 
 #include "../rs-internal.h"
 
-#include "../UVCCamera.h"
-
 namespace f200
 {
     class IVCAMHardwareIO;
 
-    class F200Camera : public rs::UVCCamera
+    class F200Camera : public rs_camera
     {
         std::unique_ptr<IVCAMHardwareIO> hardware_io;
 

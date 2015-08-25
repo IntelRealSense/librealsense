@@ -1,14 +1,13 @@
-#include "UVCCamera.h"
+#include "rs-internal.h"
 #include "image.h"
+
+using namespace rs;
 
 ////////////////
 // UVC Camera //
 ////////////////
 
-namespace rs
-{
-    
-UVCCamera::UVCCamera(uvc_context_t * context, uvc_device_t * device) : context(context), device(device), first_handle()
+rs_camera::rs_camera(uvc_context_t * context, uvc_device_t * device) : context(context), device(device), first_handle()
 {
     uvc_device_descriptor_t * desc;
     CheckUVC("uvc_get_device_descriptor", uvc_get_device_descriptor(device, &desc));
@@ -26,13 +25,13 @@ UVCCamera::UVCCamera(uvc_context_t * context, uvc_device_t * device) : context(c
     calib = {};
 }
 
-UVCCamera::~UVCCamera()
+rs_camera::~rs_camera()
 {
     subdevices.clear();
     uvc_unref_device(device);
 }
 
-void UVCCamera::EnableStream(int stream, int width, int height, int fps, int format)
+void rs_camera::EnableStream(int stream, int width, int height, int fps, int format)
 {
     requests[stream] = {true, width, height, format, fps};
 }
@@ -76,7 +75,7 @@ bool choose_mode(std::vector<SubdeviceMode> & dest, std::array<StreamRequest, MA
     return false;
 }
 
-void UVCCamera::StartStreaming()
+void rs_camera::StartStreaming()
 {
     // Open subdevice handles and retrieve calibration
     for(int i=0; i<subdevices.size(); ++i) subdevices[i].reset(new Subdevice(device, i));
@@ -107,12 +106,12 @@ void UVCCamera::StartStreaming()
     for(auto & subdevice : subdevices) subdevice->start_streaming();
 }
 
-void UVCCamera::StopStreaming()
+void rs_camera::StopStreaming()
 {
     for(auto & subdevice : subdevices) subdevice->stop_streaming();
 }
     
-void UVCCamera::WaitAllStreams()
+void rs_camera::WaitAllStreams()
 {
     int maxFps = 0;
     for(auto & stream : streams) maxFps = stream ? std::max(maxFps, stream->get_mode().fps) : maxFps;
@@ -134,13 +133,13 @@ void UVCCamera::WaitAllStreams()
     }
 }
 
-rs_intrinsics UVCCamera::GetStreamIntrinsics(int stream) const
+rs_intrinsics rs_camera::GetStreamIntrinsics(int stream) const
 {
     if(!streams[stream]) throw std::runtime_error("stream not enabled");
     return streams[stream]->get_mode().intrinsics;
 }
 
-rs_extrinsics UVCCamera::GetStreamExtrinsics(int from, int to) const
+rs_extrinsics rs_camera::GetStreamExtrinsics(int from, int to) const
 {
     auto transform = inverse(calib.stream_poses[from]) * calib.stream_poses[to]; // TODO: Make sure this is the right order
     rs_extrinsics extrin;
@@ -149,7 +148,7 @@ rs_extrinsics UVCCamera::GetStreamExtrinsics(int from, int to) const
     return extrin;
 }
 
-void UVCCamera::Stream::set_mode(const StreamMode & mode)
+void rs_camera::Stream::set_mode(const StreamMode & mode)
 {
     auto pixels = mode.intrinsics.image_size[0] * mode.intrinsics.image_size[1];
     this->mode = mode;
@@ -164,7 +163,7 @@ void UVCCamera::Stream::set_mode(const StreamMode & mode)
     updated = false;
 }
 
-bool UVCCamera::Stream::update_image()
+bool rs_camera::Stream::update_image()
 {
     if(!updated) return false;
     std::lock_guard<std::mutex> guard(mutex);
@@ -173,7 +172,7 @@ bool UVCCamera::Stream::update_image()
     return true;
 }
 
-void UVCCamera::Subdevice::set_mode(const SubdeviceMode & mode, std::vector<std::shared_ptr<Stream>> streams)
+void rs_camera::Subdevice::set_mode(const SubdeviceMode & mode, std::vector<std::shared_ptr<Stream>> streams)
 {
     assert(mode.streams.size() == streams.size());
     CheckUVC("uvc_get_stream_ctrl_format_size", uvc_get_stream_ctrl_format_size(uvcHandle, &ctrl, mode.format, mode.width, mode.height, mode.fps));
@@ -183,7 +182,7 @@ void UVCCamera::Subdevice::set_mode(const SubdeviceMode & mode, std::vector<std:
     for(size_t i=0; i<mode.streams.size(); ++i) streams[i]->set_mode(mode.streams[i]);
 }
 
-void UVCCamera::Subdevice::start_streaming()
+void rs_camera::Subdevice::start_streaming()
 {
     CheckUVC("uvc_start_streaming", uvc_start_streaming(uvcHandle, &ctrl, [](uvc_frame_t * frame, void * ptr)
     {
@@ -206,56 +205,57 @@ void UVCCamera::Subdevice::start_streaming()
     }, this, 0));
 }
     
-void UVCCamera::Subdevice::stop_streaming()
+void rs_camera::Subdevice::stop_streaming()
 {
     CheckUVC("uvc_stream_stop", uvc_stream_stop(ctrl.handle));
 }
 
-static size_t get_pixel_size(int format)
+namespace rs
 {
-    switch(format)
+    static size_t get_pixel_size(int format)
     {
-    case RS_Z16: return sizeof(uint16_t);
-    case RS_Y8: return sizeof(uint8_t);
-    case RS_RGB8: return sizeof(uint8_t) * 3;
-    default: assert(false);
-    }
-}
-
-void unpack_strided_image(void * dest[], const SubdeviceMode & mode, const uint8_t * source)
-{
-    assert(mode.streams.size() == 1);
-    copy_strided_image(dest[0], mode.streams[0].intrinsics.image_size[0] * get_pixel_size(mode.streams[0].format),
-        source, mode.width * get_pixel_size(mode.streams[0].format), mode.streams[0].intrinsics.image_size[1]);
-}
-
-void unpack_rly12_to_y8(void * dest[], const SubdeviceMode & mode, const uint8_t * frame)
-{
-    assert(mode.format == UVC_FRAME_FORMAT_Y12I && mode.streams.size() == 2 && mode.streams[0].format == RS_Y8 && mode.streams[1].format == RS_Y8);
-
-    #pragma pack(push, 1)
-    struct RightLeftY12Pixel { uint8_t rl : 8, rh : 4, ll : 4, lh : 8; };
-    static_assert(sizeof(RightLeftY12Pixel) == 3, "packing error");
-    #pragma pack(pop)
-
-    auto left = reinterpret_cast<uint8_t *>(dest[0]);
-    auto right = reinterpret_cast<uint8_t *>(dest[1]);
-    for(int y=0; y<mode.streams[0].intrinsics.image_size[1]; ++y)
-    {
-        auto src = reinterpret_cast<const RightLeftY12Pixel *>(frame) + y*640;
-        for(int x=0; x<mode.streams[0].intrinsics.image_size[0]; ++x)
+        switch(format)
         {
-            *right++ = (src->rh << 8 | src->rl) >> 2;
-            *left++ = (src->lh << 4 | src->ll) >> 2;
-            ++src;
+        case RS_Z16: return sizeof(uint16_t);
+        case RS_Y8: return sizeof(uint8_t);
+        case RS_RGB8: return sizeof(uint8_t) * 3;
+        default: assert(false);
         }
     }
-}
 
-void unpack_yuyv_to_rgb(void * dest[], const SubdeviceMode & mode, const uint8_t * source)
-{
-    assert(mode.format == UVC_FRAME_FORMAT_YUYV && mode.streams.size() == 1 && mode.streams[0].format == RS_RGB8);
-    convert_yuyv_to_rgb((uint8_t *) dest[0], mode.width, mode.height, source);
-}
+    void unpack_strided_image(void * dest[], const SubdeviceMode & mode, const uint8_t * source)
+    {
+        assert(mode.streams.size() == 1);
+        copy_strided_image(dest[0], mode.streams[0].intrinsics.image_size[0] * get_pixel_size(mode.streams[0].format),
+            source, mode.width * get_pixel_size(mode.streams[0].format), mode.streams[0].intrinsics.image_size[1]);
+    }
 
+    void unpack_rly12_to_y8(void * dest[], const SubdeviceMode & mode, const uint8_t * frame)
+    {
+        assert(mode.format == UVC_FRAME_FORMAT_Y12I && mode.streams.size() == 2 && mode.streams[0].format == RS_Y8 && mode.streams[1].format == RS_Y8);
+
+        #pragma pack(push, 1)
+        struct RightLeftY12Pixel { uint8_t rl : 8, rh : 4, ll : 4, lh : 8; };
+        static_assert(sizeof(RightLeftY12Pixel) == 3, "packing error");
+        #pragma pack(pop)
+
+        auto left = reinterpret_cast<uint8_t *>(dest[0]);
+        auto right = reinterpret_cast<uint8_t *>(dest[1]);
+        for(int y=0; y<mode.streams[0].intrinsics.image_size[1]; ++y)
+        {
+            auto src = reinterpret_cast<const RightLeftY12Pixel *>(frame) + y*640;
+            for(int x=0; x<mode.streams[0].intrinsics.image_size[0]; ++x)
+            {
+                *right++ = (src->rh << 8 | src->rl) >> 2;
+                *left++ = (src->lh << 4 | src->ll) >> 2;
+                ++src;
+            }
+        }
+    }
+
+    void unpack_yuyv_to_rgb(void * dest[], const SubdeviceMode & mode, const uint8_t * source)
+    {
+        assert(mode.format == UVC_FRAME_FORMAT_YUYV && mode.streams.size() == 1 && mode.streams[0].format == RS_RGB8);
+        convert_yuyv_to_rgb((uint8_t *) dest[0], mode.width, mode.height, source);
+    }
 } // end namespace rs
