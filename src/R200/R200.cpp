@@ -424,14 +424,6 @@ namespace r200
         internal.LogDebugInfo(calib, header);
     }
 
-    int read_stream_status(uvc_device_handle_t *devh)
-    {
-        uint8_t status[4] = {255, 255, 255, 255};
-        auto result = xu_read(devh, CONTROL_STATUS, status, (int) sizeof(uint32_t));
-        if (result) return pack(status[0], status[1], status[2], status[3]);
-        return -1;
-    }
-
     std::string read_firmware_version(uvc_device_handle_t * device)
     {
         CommandPacket command;
@@ -469,7 +461,26 @@ namespace r200
         return true;
     }
     
-    bool force_firmware_reset(uvc_device_handle_t *device)
+    bool set_stream_intent(uvc_device_handle_t * device, uint8_t & intent)
+    {
+        return xu_write(device, CONTROL_STREAM_INTENT, &intent, sizeof(intent));
+    }
+    
+    bool get_stream_status(uvc_device_handle_t * device, int & status)
+    {
+        uint8_t s[4] = {255, 255, 255, 255};
+        if (!xu_read(device, CONTROL_STATUS, s, (int) sizeof(uint32_t)))
+            return false;
+        status = pack(s[0], s[1], s[2], s[3]);
+        return true;
+    }
+    
+    bool get_last_error(uvc_device_handle_t * device, uint8_t & last_error)
+    {
+        return xu_read(device, CONTROL_LAST_ERROR, &last_error, sizeof(uint8_t));
+    }
+
+    bool force_firmware_reset(uvc_device_handle_t * device)
     {
         uint8_t reset = 1;
         return xu_write(device, CONTROL_SW_RESET, &reset, sizeof(uint8_t));
@@ -479,9 +490,8 @@ namespace r200
     {
         uint8_t byte = 0;
         if (!xu_read(device, CONTROL_EMITTER, &byte, sizeof(byte)))
-        {
             return false;
-        }
+
         if (byte & 4) state = (byte & 2 ? true : false);
         return true;
     }
@@ -497,9 +507,7 @@ namespace r200
         uint32_t length = 4;
         uint8_t buf[4] = {0};
         if (!xu_read(device, CONTROL_TEMPERATURE, buf, length))
-        {
             return false;
-        }
         current = buf[0];
         min = buf[1];
         max = buf[2];
@@ -512,15 +520,8 @@ namespace r200
         uint32_t length = 4;
         uint8_t buf[4] = {0};
         if (!xu_write(device, CONTROL_TEMPERATURE, buf, length))
-        {
             return false;
-        }
         return true;
-    }
-
-    bool get_last_error(uvc_device_handle_t * device, uint8_t & last_error)
-    {
-        return xu_read(device, CONTROL_LAST_ERROR, &last_error, sizeof(uint8_t));
     }
     
     bool get_depth_units(uvc_device_handle_t * device, uint32_t & units)
@@ -530,22 +531,61 @@ namespace r200
     
     bool get_min_max_depth(uvc_device_handle_t * device, uint16_t & min_depth, uint16_t & max_depth)
     {
-        struct mm
-        {
-            uint16_t min;
-            uint16_t max;
-        };
-        
-        mm depth;
-        
-        if (!xu_read(device, CONTROL_MIN_MAX, &depth, sizeof(depth)))
-        {
+        std::vector<uint16_t> depth = {0, 0};
+        if (!xu_read(device, CONTROL_MIN_MAX, depth.data(), sizeof(depth)))
             return false;
-        }
-        
-        min_depth = depth.min;
-        max_depth = depth.max;
-        
+        min_depth = depth[0];
+        max_depth = depth[1];
+        return true;
+    }
+    
+    bool get_lr_gain(uvc_device_handle_t * device, uint32_t & rate, uint32_t & gain)
+    {
+        std::vector<uint16_t> params = {0, 0};
+        if (!xu_read(device, CONTROL_LR_GAIN, &params, sizeof(params)))
+            return false;
+        rate = params[0];
+        gain = params[1];
+        return true;
+    }
+    
+    bool get_lr_exposure(uvc_device_handle_t * device, uint32_t & rate, uint32_t & exposure)
+    {
+        std::vector<uint16_t> params = {0, 0};
+        if (!xu_read(device, CONTROL_LR_EXPOSURE, &params, sizeof(params)))
+            return false;
+        rate = params[0];
+        exposure = params[1];
+        return true;
+    }
+    
+    bool get_lr_auto_exposure_params(uvc_device_handle_t * device)
+    {
+        // Expose this later as necessary
+        struct ds_auto_exposure_params
+        {
+            float mean_intensity;
+            float bright_ratio;
+            float kp_gain;
+            float kp_exposure;
+            float kp_dark_threshold;
+            uint16_t region_of_interest_top_left;
+            uint16_t region_of_interest_top_right;
+            uint16_t region_of_interest_bottom_left;
+            uint16_t region_of_interest_bottom_right;
+        };
+        ds_auto_exposure_params params;
+        if (!xu_read(device, CONTROL_LR_AUTOEXPOSURE_PARAMETERS, &params, sizeof(params)))
+            return false;
+        return true;
+    }
+    
+    bool get_lr_exposure_mode(uvc_device_handle_t * device, int & mode)
+    {
+        uint8_t m;
+        if (!xu_read(device, CONTROL_LR_EXPOSURE_MODE, &m, sizeof(m)))
+            return false;
+        mode = m;
         return true;
     }
 

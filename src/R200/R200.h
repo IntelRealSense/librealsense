@@ -26,16 +26,54 @@ namespace r200
     // Hardware API for R200 camera
     std::string read_firmware_version(uvc_device_handle_t * device);
     void        read_camera_info(uvc_device_handle_t * device, CameraCalibrationParameters & calib, CameraHeaderInfo & header);
-    int         read_stream_status(uvc_device_handle_t * device);
-
-    bool        xu_read(uvc_device_handle_t * device, uint64_t xu_ctrl, uint8_t * buffer, uint32_t length);
-    bool        xu_write(uvc_device_handle_t * device, uint64_t xu_ctrl, uint8_t * buffer, uint32_t length);
+    
+    bool        xu_read(uvc_device_handle_t * device, uint64_t xu_ctrl, void * buffer, uint32_t length);
+    bool        xu_write(uvc_device_handle_t * device, uint64_t xu_ctrl, void * buffer, uint32_t length);
+    
+    bool        set_stream_intent(uvc_device_handle_t * device, uint8_t & intent);
+    bool        get_stream_status(uvc_device_handle_t * device, int & status);
+    
+    bool        get_last_error(uvc_device_handle_t * device, uint8_t & last_error);
+    bool        force_firmware_reset(uvc_device_handle_t * device);
+    
     bool        get_emitter_state(uvc_device_handle_t * device, bool & state);
     bool        set_emitter_state(uvc_device_handle_t * device, bool state);
+    
     bool        read_temperature(uvc_device_handle_t * device, int8_t & current, int8_t & min, int8_t & max, int8_t & min_fault);
     bool        reset_temperature(uvc_device_handle_t * device);
-    bool        get_last_error(uvc_device_handle_t * device, uint8_t & last_error);
-    // TODO: Gather additional hardware specific APIs here
+    
+    bool        get_depth_units(uvc_device_handle_t * device, uint32_t & units);
+    //@todo - && set
+    
+    bool        get_min_max_depth(uvc_device_handle_t * device, uint16_t & min_depth, uint16_t & max_depth);
+    //@todo - && set
+    
+    bool        get_lr_gain(uvc_device_handle_t * device, uint32_t & rate, uint32_t & gain);
+    //@todo - && set
+    
+    bool        get_lr_exposure(uvc_device_handle_t * device, uint32_t & rate, uint32_t & exposure);
+    //@todo - && set
+    
+    bool        get_lr_auto_exposure_params(uvc_device_handle_t * device);
+    //@todo - && set
+    
+    bool        get_lr_exposure_mode(uvc_device_handle_t * device, int & mode);
+    //@todo - && set
+    
+    //@todo - get_exposure_discovery
+    //@todo - set_exposure_discovery
+    
+    //@todo - get_gain_discovery
+    //@todo - set_gain_discovery
+    
+    //@todo - get_disparity shift
+    //@todo - set_disparity shift
+    
+    //@todo - get_depth_control
+    //@todo - set_depth_control
+    
+    //@todo - read_register
+    //@todo - write_Register
 
     // Implementation details
 
