@@ -19,37 +19,25 @@ namespace rs
         }
     }
 
-    /*struct ResolutionMode
+    struct ResolutionMode
     {
         int stream;                 // RS_DEPTH, RS_COLOR, RS_INFRARED, RS_INFRARED_2, etc.
-        int width, height, fps;     // Resolution and framerate visible to the library client
-        int format;                 // Pixel format visible to the library client
-        rs_intrinsics intrinsics;   // Image intrinsics
+        rs_intrinsics intrinsics;   // Image intrinsics (which includes resolution)
+        int format, fps;            // Pixel format and framerate visible to the client library
     };
 
     struct StreamMode
     {
         int subdevice;                      // 0, 1, 2, etc...
-        int width, height, fps;             // Resolution and framerate advertised over UVC
+        int width, height;                  // Resolution advertised over UVC
         uvc_frame_format format;            // Pixel format advertised over UVC
-
+        int fps;                            // Framerate advertised over UVC
         std::vector<ResolutionMode> images; // Resolution mode for images visible to the user
-    };*/
-
-    struct ResolutionMode
-    {
-        int stream;                 // RS_DEPTH, RS_COLOR, etc.
-
-        int width, height;          // Resolution visible to the library client
-        int fps;                    // Framerate visible to the library client
-        int format;                 // Format visible to the library client
-
-        int uvcWidth, uvcHeight;    // Resolution advertised over UVC
-        int uvcFps;                 // Framerate advertised over UVC
-        uvc_frame_format uvcFormat; // Format advertised over UVC
-
-        rs_intrinsics intrinsics;   // Image intrinsics
+        void (* unpacker)(void * dest[], const StreamMode & mode, const uint8_t * frame);
     };
+
+    void unpack_strided_image(void * dest[], const StreamMode & mode, const uint8_t * frame);
+    void unpack_yuyv_to_rgb(void * dest[], const StreamMode & mode, const uint8_t * frame);
 
     // World's tiniest linear algebra library
     struct float3 { float x,y,z; float & operator [] (int i) { return (&x)[i]; } };
@@ -66,7 +54,7 @@ namespace rs
 
     struct CalibrationInfo
     {
-        std::vector<ResolutionMode> modes;
+        std::vector<StreamMode> modes;
         pose stream_poses[MAX_STREAMS];
         float depth_scale;
     };
@@ -96,26 +84,24 @@ namespace rs
         {
             uvc_device_handle_t * uvcHandle;
             uvc_stream_ctrl_t ctrl;
-            ResolutionMode mode;
+            StreamMode mode;
 
-            UserStreamInterface * user_interface;
+            std::shared_ptr<UserStreamInterface> user_interface;
 
             void on_frame(uvc_frame_t * frame);
         public:
             StreamInterface(uvc_device_t * device, int subdeviceNumber) { CheckUVC("uvc_open2", uvc_open2(device, &uvcHandle, subdeviceNumber)); }
             ~StreamInterface() { uvc_stop_streaming(uvcHandle); uvc_close(uvcHandle); }
 
-            //const ResolutionMode & get_mode() const { return mode; }
-
             uvc_device_handle_t * get_handle() { return uvcHandle; }
-            void set_mode(const ResolutionMode & mode);
-            void start_streaming(UserStreamInterface * user_interface);
+            void set_mode(const StreamMode & mode);
+            void start_streaming(std::shared_ptr<UserStreamInterface> user_interface);
             void stop_streaming();
         };
 
         uvc_context_t * context;
         uvc_device_t * device;
-        std::unique_ptr<UserStreamInterface> user_streams[MAX_STREAMS];
+        std::shared_ptr<UserStreamInterface> user_streams[MAX_STREAMS];
         std::unique_ptr<StreamInterface> streams[MAX_STREAMS];
 
         std::string cameraName;

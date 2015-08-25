@@ -28,7 +28,7 @@ namespace f200
         default: throw std::runtime_error("invalid stream");
         }
     }
-
+/*
     static ResolutionMode MakeDepthMode(const CameraCalibrationParameters & c, int w, int h)
     {
         rs_intrinsics intrin = {{w,h}};
@@ -61,16 +61,16 @@ namespace f200
         intrin.distortion_model = RS_NO_DISTORTION;
         return {RS_COLOR, w,h,60,RS_RGB8, w,h,60,UVC_FRAME_FORMAT_YUYV, intrin};
     }
-
+*/
     CalibrationInfo F200Camera::RetrieveCalibration(uvc_device_handle_t *)
     {
         if(!hardware_io) hardware_io.reset(new IVCAMHardwareIO(context));
         const CameraCalibrationParameters & calib = hardware_io->GetParameters();
 
         rs::CalibrationInfo c;
-        c.modes.push_back(MakeDepthMode(calib, 640, 480));
+        /*c.modes.push_back(MakeDepthMode(calib, 640, 480));
         c.modes.push_back(MakeColorMode(calib, 1920, 1080));
-        c.modes.push_back(MakeColorMode(calib, 640, 480));
+        c.modes.push_back(MakeColorMode(calib, 640, 480));*/
         c.stream_poses[RS_DEPTH] = {{{1,0,0},{0,1,0},{0,0,1}}, {0,0,0}};
         c.stream_poses[RS_COLOR] = {transpose((const float3x3 &)calib.Rt), (const float3 &)calib.Tt * 0.001f}; // convert mm to m
         c.depth_scale = (calib.Rmax / 0xFFFF) * 0.001f; // convert mm to m

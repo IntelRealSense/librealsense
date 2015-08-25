@@ -37,22 +37,10 @@ namespace r200
         }
     }
 
-    static ResolutionMode MakeDepthMode(const RectifiedIntrinsics & i, int userFps, int uvcFps)
+    static StreamMode MakeColorMode(const UnrectifiedIntrinsics & i, int userFps, int uvcFps)
     {
-        return {RS_DEPTH, (int)i.rw-12,(int)i.rh-12,userFps,RS_Z16, 640-12,(int)i.rh-12+1,uvcFps,UVC_FRAME_FORMAT_Z16,
-            {{(int)i.rw-12,(int)i.rh-12}, {i.rfx,i.rfy}, {i.rpx-6,i.rpy-6}, {0,0,0,0,0}, RS_NO_DISTORTION}};
-    }
-
-    static ResolutionMode MakeLeftRightMode(const RectifiedIntrinsics & i, int userFps, int uvcFps)
-    {
-        return {RS_INFRARED, (int)i.rw,(int)i.rh,userFps,RS_Y8, 640,(int)i.rh+1,uvcFps,UVC_FRAME_FORMAT_Y8,
-            {{(int)i.rw,(int)i.rh}, {i.rfx,i.rfy}, {i.rpx,i.rpy}, {0,0,0,0,0}, RS_NO_DISTORTION}};
-    }
-    
-    static ResolutionMode MakeColorMode(const UnrectifiedIntrinsics & i, int userFps, int uvcFps)
-    {
-        return {RS_COLOR, static_cast<int>(i.w),static_cast<int>(i.h),userFps,RS_RGB8, static_cast<int>(i.w),static_cast<int>(i.h),uvcFps,UVC_FRAME_FORMAT_YUYV,
-            {{static_cast<int>(i.w),static_cast<int>(i.h)}, {i.fx,i.fy}, {i.px,i.py}, {i.k[0],i.k[1],i.k[2],i.k[3],i.k[4]}, RS_GORDON_BROWN_CONRADY_DISTORTION}};
+        const rs_intrinsics thirdIntrin = {{(int)i.w, (int)i.h}, {i.fx,i.fy}, {i.px,i.py}, {i.k[0],i.k[1],i.k[2],i.k[3],i.k[4]}, RS_GORDON_BROWN_CONRADY_DISTORTION};
+        return {2, (int)i.w, (int)i.h, UVC_FRAME_FORMAT_YUYV, uvcFps, {{RS_COLOR, thirdIntrin, RS_RGB8, userFps}}, &rs::unpack_yuyv_to_rgb};
     }
 
     CalibrationInfo R200Camera::RetrieveCalibration(uvc_device_handle_t * handle)
@@ -64,12 +52,16 @@ namespace r200
         rs::CalibrationInfo c;
         for(int i=0; i<2; ++i)
         {
-            c.modes.push_back(MakeDepthMode(calib.modesLR[i], 90, 90));
-            c.modes.push_back(MakeDepthMode(calib.modesLR[i], 60, 59));
-            c.modes.push_back(MakeDepthMode(calib.modesLR[i], 30, 30));
-            c.modes.push_back(MakeLeftRightMode(calib.modesLR[i], 90, 90));
-            c.modes.push_back(MakeLeftRightMode(calib.modesLR[i], 60, 59));
-            c.modes.push_back(MakeLeftRightMode(calib.modesLR[i], 30, 30));
+            auto intrin = calib.modesLR[i];
+            const rs_intrinsics lrIntrin = {{(int)intrin.rw, (int)intrin.rh}, {intrin.rfx, intrin.rfy}, {intrin.rpx, intrin.rpy}, {0,0,0,0,0}, RS_NO_DISTORTION};
+            const rs_intrinsics zIntrin = {{(int)intrin.rw-12, (int)intrin.rh-12}, {intrin.rfx, intrin.rfy}, {intrin.rpx-6, intrin.rpy-6}, {0,0,0,0,0}, RS_NO_DISTORTION};
+            for(auto fps : {30, 60, 90})
+            {
+                auto uvcFps = fps == 60 ? 59 : fps; // UVC sees the 60 fps mode as 59 fps
+                auto lrHeight = (int)intrin.rh + 1; // Height of left/right images, including extra Dinghy row
+                c.modes.push_back({0, 640, lrHeight, UVC_FRAME_FORMAT_Y8, uvcFps, {{RS_INFRARED, lrIntrin, RS_Y8, fps}}, &rs::unpack_strided_image});
+                c.modes.push_back({1, 640 - 12, lrHeight - 12, UVC_FRAME_FORMAT_Z16, uvcFps, {{RS_DEPTH, zIntrin, RS_Z16, fps}}, &rs::unpack_strided_image});
+            }
         }
         for(int i=0; i<2; ++i)
         {
