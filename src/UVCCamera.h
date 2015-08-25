@@ -117,6 +117,8 @@ namespace rs
         CalibrationInfo calib;
 
         uvc_device_handle_t * first_handle;
+        bool isCapturing = false;
+        
     public:
         UVCCamera(uvc_context_t * context, uvc_device_t * device);
         ~UVCCamera();
