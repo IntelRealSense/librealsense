@@ -59,6 +59,7 @@ void				rs_free_error			(struct rs_error * error);
 #define RS_DEPTH            0
 #define RS_COLOR            1
 #define RS_INFRARED         2
+#define RS_INFRARED_2       3
     
 /* Valid arguments for rs_enable_stream's format argument */
 #define RS_Z16              1

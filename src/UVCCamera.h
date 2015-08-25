@@ -9,7 +9,7 @@
 
 namespace rs
 {
-    const int MAX_STREAMS = 3;
+    const int MAX_STREAMS = 4;
     
     inline void CheckUVC(const char * call, uvc_error_t status)
     {
@@ -19,37 +19,32 @@ namespace rs
         }
     }
 
-    /*struct ResolutionMode
+    struct StreamRequest
     {
-        int stream;                 // RS_DEPTH, RS_COLOR, RS_INFRARED, RS_INFRARED_2, etc.
-        int width, height, fps;     // Resolution and framerate visible to the library client
-        int format;                 // Pixel format visible to the library client
-        rs_intrinsics intrinsics;   // Image intrinsics
+        bool enabled;
+        int width, height, format, fps;
     };
 
     struct StreamMode
     {
-        int subdevice;                      // 0, 1, 2, etc...
-        int width, height, fps;             // Resolution and framerate advertised over UVC
-        uvc_frame_format format;            // Pixel format advertised over UVC
-
-        std::vector<ResolutionMode> images; // Resolution mode for images visible to the user
-    };*/
-
-    struct ResolutionMode
-    {
-        int stream;                 // RS_DEPTH, RS_COLOR, etc.
-
-        int width, height;          // Resolution visible to the library client
-        int fps;                    // Framerate visible to the library client
-        int format;                 // Format visible to the library client
-
-        int uvcWidth, uvcHeight;    // Resolution advertised over UVC
-        int uvcFps;                 // Framerate advertised over UVC
-        uvc_frame_format uvcFormat; // Format advertised over UVC
-
-        rs_intrinsics intrinsics;   // Image intrinsics
+        int stream;                 // RS_DEPTH, RS_COLOR, RS_INFRARED, RS_INFRARED_2, etc.
+        rs_intrinsics intrinsics;   // Image intrinsics (which includes resolution)
+        int format, fps;            // Pixel format and framerate visible to the client library
     };
+
+    struct SubdeviceMode
+    {
+        int subdevice;                      // 0, 1, 2, etc...
+        int width, height;                  // Resolution advertised over UVC
+        uvc_frame_format format;            // Pixel format advertised over UVC
+        int fps;                            // Framerate advertised over UVC
+        std::vector<StreamMode> streams;    // Modes for streams which can be supported by this device mode
+        void (* unpacker)(void * dest[], const SubdeviceMode & mode, const uint8_t * frame);
+    };
+
+    void unpack_strided_image(void * dest[], const SubdeviceMode & mode, const uint8_t * frame);
+    void unpack_rly12_to_y8(void * dest[], const SubdeviceMode & mode, const uint8_t * frame);
+    void unpack_yuyv_to_rgb(void * dest[], const SubdeviceMode & mode, const uint8_t * frame);
 
     // World's tiniest linear algebra library
     struct float3 { float x,y,z; float & operator [] (int i) { return (&x)[i]; } };
@@ -66,7 +61,7 @@ namespace rs
 
     struct CalibrationInfo
     {
-        std::vector<ResolutionMode> modes;
+        std::vector<SubdeviceMode> modes;
         pose stream_poses[MAX_STREAMS];
         float depth_scale;
     };
@@ -74,32 +69,49 @@ namespace rs
     class UVCCamera : public rs_camera
     {
     protected: 
-        class StreamInterface
+        class Subdevice;
+        class Stream
         {
-            uvc_device_handle_t * uvcHandle;
-            uvc_stream_ctrl_t ctrl;
-            ResolutionMode mode;
+            friend class Subdevice;
+
+            StreamMode mode;
 
             volatile bool updated = false;
             std::vector<uint8_t> front, middle, back;
             std::mutex mutex;
         public:
-            StreamInterface(uvc_device_t * device, int subdeviceNumber) { CheckUVC("uvc_open2", uvc_open2(device, &uvcHandle, subdeviceNumber)); }
-            ~StreamInterface() { uvc_stop_streaming(uvcHandle); uvc_close(uvcHandle); }
-
-            const ResolutionMode & get_mode() const { return mode; }
+            const StreamMode & get_mode() const { return mode; }
             const void * get_image() const { return front.data(); }
 
+            void set_mode(const StreamMode & mode);
+            bool update_image();
+        };
+
+        class Subdevice
+        {
+            uvc_device_handle_t * uvcHandle;
+            uvc_stream_ctrl_t ctrl;
+            SubdeviceMode mode;
+
+            std::vector<std::shared_ptr<Stream>> streams;
+
+            void on_frame(uvc_frame_t * frame);
+        public:
+            Subdevice(uvc_device_t * device, int subdeviceNumber) { CheckUVC("uvc_open2", uvc_open2(device, &uvcHandle, subdeviceNumber)); }
+            ~Subdevice() { uvc_stop_streaming(uvcHandle); uvc_close(uvcHandle); }
+
             uvc_device_handle_t * get_handle() { return uvcHandle; }
-            void set_mode(const ResolutionMode & mode);
+            void set_mode(const SubdeviceMode & mode, std::vector<std::shared_ptr<Stream>> streams);
             void start_streaming();
             void stop_streaming();
-            bool update_image();
         };
 
         uvc_context_t * context;
         uvc_device_t * device;
-        std::unique_ptr<StreamInterface> streams[MAX_STREAMS];
+
+        std::array<StreamRequest,MAX_STREAMS> requests;     // Indexed by RS_DEPTH, RS_COLOR, ...
+        std::shared_ptr<Stream> streams[MAX_STREAMS];       // Indexed by RS_DEPTH, RS_COLOR, ...
+        std::vector<std::unique_ptr<Subdevice>> subdevices; // Indexed by UVC subdevices number (0, 1, 2...)
 
         std::string cameraName;
         CalibrationInfo calib;
@@ -123,8 +135,7 @@ namespace rs
         rs_intrinsics GetStreamIntrinsics(int stream) const override final;
         rs_extrinsics GetStreamExtrinsics(int from, int to) const override final;
 
-        virtual int GetStreamSubdeviceNumber(int stream) const = 0;
-        virtual CalibrationInfo RetrieveCalibration(uvc_device_handle_t * handle) = 0;
+        virtual CalibrationInfo RetrieveCalibration() = 0;
         virtual void SetStreamIntent() = 0;
     };
     

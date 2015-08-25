@@ -9,67 +9,48 @@ namespace r200
 {
     R200Camera::R200Camera(uvc_context_t * ctx, uvc_device_t * device) : UVCCamera(ctx, device)
     {
-        //uvc_device_handle_t * uvcHandle;
-        //CheckUVC("uvc_open2", uvc_open2(device, &uvcHandle, 0));
-        //calib = RetrieveCalibration(uvcHandle);
-        //uvc_close(uvcHandle);
-    }
-
-    int R200Camera::GetStreamSubdeviceNumber(int stream) const
-    {
-        switch(stream)
-        {
-        case RS_INFRARED: return 0;
-        case RS_DEPTH: return 1;
-        case RS_COLOR: return 2;
-        default: throw std::runtime_error("invalid stream");
-        }
+        subdevices.resize(3);
     }
 
     void R200Camera::EnableStreamPreset(int streamIdentifier, int preset)
     {
         switch(streamIdentifier)
         {
-        case RS_DEPTH: EnableStream(RS_DEPTH, 480, 360, 60, RS_Z16); break;
-        case RS_COLOR: EnableStream(RS_COLOR, 640, 480, 60, RS_RGB8); break;
-        case RS_INFRARED: EnableStream(RS_INFRARED, 492, 372, 60, RS_Y8); break;
-        default: throw std::runtime_error("unsupported stream");
+        case RS_DEPTH: EnableStream(streamIdentifier, 480, 360, 60, RS_Z16); break;
+        case RS_COLOR: EnableStream(streamIdentifier, 640, 480, 60, RS_RGB8); break;
+        case RS_INFRARED: EnableStream(streamIdentifier, 492, 372, 60, RS_Y8); break;
+        case RS_INFRARED_2: EnableStream(streamIdentifier, 492, 372, 60, RS_Y8); break;
+        //default: throw std::runtime_error("unsupported stream");
         }
     }
 
-    static ResolutionMode MakeDepthMode(const RectifiedIntrinsics & i, int userFps, int uvcFps)
+    static SubdeviceMode MakeColorMode(const UnrectifiedIntrinsics & i, int userFps, int uvcFps)
     {
-        return {RS_DEPTH, (int)i.rw-12,(int)i.rh-12,userFps,RS_Z16, 640-12,(int)i.rh-12+1,uvcFps,UVC_FRAME_FORMAT_Z16,
-            {{(int)i.rw-12,(int)i.rh-12}, {i.rfx,i.rfy}, {i.rpx-6,i.rpy-6}, {0,0,0,0,0}, RS_NO_DISTORTION}};
+        const rs_intrinsics thirdIntrin = {{(int)i.w, (int)i.h}, {i.fx,i.fy}, {i.px,i.py}, {i.k[0],i.k[1],i.k[2],i.k[3],i.k[4]}, RS_GORDON_BROWN_CONRADY_DISTORTION};
+        return {2, (int)i.w, (int)i.h, UVC_FRAME_FORMAT_YUYV, uvcFps, {{RS_COLOR, thirdIntrin, RS_RGB8, userFps}}, &rs::unpack_yuyv_to_rgb};
     }
 
-    static ResolutionMode MakeLeftRightMode(const RectifiedIntrinsics & i, int userFps, int uvcFps)
-    {
-        return {RS_INFRARED, (int)i.rw,(int)i.rh,userFps,RS_Y8, 640,(int)i.rh+1,uvcFps,UVC_FRAME_FORMAT_Y8,
-            {{(int)i.rw,(int)i.rh}, {i.rfx,i.rfy}, {i.rpx,i.rpy}, {0,0,0,0,0}, RS_NO_DISTORTION}};
-    }
-    
-    static ResolutionMode MakeColorMode(const UnrectifiedIntrinsics & i, int userFps, int uvcFps)
-    {
-        return {RS_COLOR, static_cast<int>(i.w),static_cast<int>(i.h),userFps,RS_RGB8, static_cast<int>(i.w),static_cast<int>(i.h),uvcFps,UVC_FRAME_FORMAT_YUYV,
-            {{static_cast<int>(i.w),static_cast<int>(i.h)}, {i.fx,i.fy}, {i.px,i.py}, {i.k[0],i.k[1],i.k[2],i.k[3],i.k[4]}, RS_GORDON_BROWN_CONRADY_DISTORTION}};
-    }
-
-    CalibrationInfo R200Camera::RetrieveCalibration(uvc_device_handle_t * handle)
+    CalibrationInfo R200Camera::RetrieveCalibration()
     {
         CameraCalibrationParameters calib;
         CameraHeaderInfo header;
-        read_camera_info(handle, calib, header);
+        read_camera_info(first_handle, calib, header);
 
         rs::CalibrationInfo c;
         for(int i=0; i<2; ++i)
         {
-            c.modes.push_back(MakeDepthMode(calib.modesLR[i], 90, 90));
-            c.modes.push_back(MakeDepthMode(calib.modesLR[i], 60, 59));
-            c.modes.push_back(MakeDepthMode(calib.modesLR[i], 30, 30));
-            c.modes.push_back(MakeLeftRightMode(calib.modesLR[i], 90, 90));
-            c.modes.push_back(MakeLeftRightMode(calib.modesLR[i], 60, 59));
-            c.modes.push_back(MakeLeftRightMode(calib.modesLR[i], 30, 30));
+            auto intrin = calib.modesLR[i];
+            const rs_intrinsics lrIntrin = {{(int)intrin.rw, (int)intrin.rh}, {intrin.rfx, intrin.rfy}, {intrin.rpx, intrin.rpy}, {0,0,0,0,0}, RS_NO_DISTORTION};
+            const rs_intrinsics zIntrin = {{(int)intrin.rw-12, (int)intrin.rh-12}, {intrin.rfx, intrin.rfy}, {intrin.rpx-6, intrin.rpy-6}, {0,0,0,0,0}, RS_NO_DISTORTION};
+            for(auto fps : {30, 60, 90})
+            {
+                auto uvcFps = fps == 60 ? 59 : fps; // UVC sees the 60 fps mode as 59 fps
+                auto lrHeight = (int)intrin.rh + 1; // Height of left/right images, including extra Dinghy row
+                c.modes.push_back({0, 640, lrHeight, UVC_FRAME_FORMAT_Y8, uvcFps, {{RS_INFRARED, lrIntrin, RS_Y8, fps}}, &rs::unpack_strided_image});
+                c.modes.push_back({0, 640, lrHeight, UVC_FRAME_FORMAT_Y12I, uvcFps,
+                    {{RS_INFRARED, lrIntrin, RS_Y8, fps}, {RS_INFRARED_2, lrIntrin, RS_Y8, fps}}, &rs::unpack_rly12_to_y8});
+                c.modes.push_back({1, 640 - 12, lrHeight - 12, UVC_FRAME_FORMAT_Z16, uvcFps, {{RS_DEPTH, zIntrin, RS_Z16, fps}}, &rs::unpack_strided_image});
+            }
         }
         for(int i=0; i<2; ++i)
         {
@@ -78,6 +59,8 @@ namespace r200
         }
         c.stream_poses[RS_DEPTH] = {{{1,0,0},{0,1,0},{0,0,1}}, {0,0,0}};
         c.stream_poses[RS_INFRARED] = c.stream_poses[RS_DEPTH];
+        c.stream_poses[RS_INFRARED_2] = c.stream_poses[RS_DEPTH]; // TODO: Figure out the correct translation vector to put here
+
         for(int i=0; i<3; ++i) for(int j=0; j<3; ++j) c.stream_poses[RS_COLOR].orientation(i,j) = calib.Rthird[0][i*3+j];
         for(int i=0; i<3; ++i) c.stream_poses[RS_COLOR].position[i] = calib.T[0][i] * 0.001f;
         c.stream_poses[RS_COLOR].position = c.stream_poses[RS_COLOR].orientation * c.stream_poses[RS_COLOR].position;
@@ -88,11 +71,10 @@ namespace r200
     void R200Camera::SetStreamIntent()
     {
         uint8_t streamIntent = 0;
-        if(streams[RS_DEPTH]) streamIntent |= STATUS_BIT_Z_STREAMING;
-        if(streams[RS_COLOR]) streamIntent |= STATUS_BIT_WEB_STREAMING;
-        if(streams[RS_INFRARED]) streamIntent |= STATUS_BIT_LR_STREAMING;
+        if(subdevices[0]) streamIntent |= STATUS_BIT_LR_STREAMING;
+        if(subdevices[1]) streamIntent |= STATUS_BIT_Z_STREAMING;
+        if(subdevices[2]) streamIntent |= STATUS_BIT_WEB_STREAMING;
 
-        // NOTE: Might need to be the FIRST handle we open
         if(first_handle)
         {
             if(!xu_write(first_handle, CONTROL_STREAM_INTENT, &streamIntent, sizeof(streamIntent)))

@@ -20,9 +20,8 @@ namespace f200
         
         F200Camera(uvc_context_t * ctx, uvc_device_t * device);
         ~F200Camera();
-        
-        int GetStreamSubdeviceNumber(int stream) const override final;
-        rs::CalibrationInfo RetrieveCalibration(uvc_device_handle_t * handle) override final;
+
+        rs::CalibrationInfo RetrieveCalibration() override final;
         void SetStreamIntent() override final {}
 
         void EnableStreamPreset(int streamIdentifier, int preset) override final

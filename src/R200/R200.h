@@ -15,8 +15,7 @@ namespace r200
 
         void EnableStreamPreset(int streamIdentifier, int preset) override final;
 
-        int GetStreamSubdeviceNumber(int stream) const override final;
-        rs::CalibrationInfo RetrieveCalibration(uvc_device_handle_t * handle) override final;
+        rs::CalibrationInfo RetrieveCalibration() override final;
         void SetStreamIntent() override final;
     };
 
