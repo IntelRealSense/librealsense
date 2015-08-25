@@ -40,6 +40,11 @@ namespace r200
     {
 
     }
+    
+    R200Camera::~R200Camera()
+    {
+        force_firmware_reset(first_handle);
+    }
 
     void R200Camera::EnableStreamPreset(int streamIdentifier, int preset)
     {
@@ -49,7 +54,7 @@ namespace r200
         case RS_COLOR: EnableStream(streamIdentifier, 640, 480, 60, RS_RGB8); break;
         case RS_INFRARED: EnableStream(streamIdentifier, 492, 372, 60, RS_Y8); break;
         case RS_INFRARED_2: EnableStream(streamIdentifier, 492, 372, 60, RS_Y8); break;
-        //default: throw std::runtime_error("unsupported stream");
+        default: throw std::runtime_error("unsupported stream");
         }
     }
 
@@ -104,10 +109,7 @@ namespace r200
 
         if(first_handle)
         {
-            if(!xu_write(first_handle, CONTROL_STREAM_INTENT, &streamIntent, sizeof(streamIntent)))
-            {
-                throw std::runtime_error("xu_write failed");
-            }
+            if (!set_stream_intent(first_handle, streamIntent)) throw std::runtime_error("could not set stream intent");
         }
     }
 }
@@ -202,7 +204,7 @@ namespace r200
     #define SPI_FLASH_SECTORS_RESERVED_FOR_ROUTINES             64
     #define SPI_FLASH_FIRST_ROUTINE_SECTOR                      (SPI_FLASH_SIZE_IN_SECTORS - SPI_FLASH_SECTORS_RESERVED_FOR_ROUTINES)
 
-        // 1 Mb total
+    // 1 Mb total
     #define NV_STORAGE_IN_BYTES                                 (SPI_FLASH_SECTOR_SIZE_IN_BYTES * SPI_FLASH_SIZE_IN_SECTORS)
     #define NV_NON_FIRMWARE_START                               (SPI_FLASH_SECTORS_RESERVED_FOR_FIRMWARE * SPI_FLASH_SECTOR_SIZE_IN_BYTES)
 

@@ -10,28 +10,25 @@ using namespace rs;
 rs_camera::rs_camera(uvc_context_t * context, uvc_device_t * device, const StaticCameraInfo & camera_info)
     : context(context), device(device), camera_info(camera_info), first_handle()
 {
-    uvc_device_descriptor_t * desc;
-    CheckUVC("uvc_get_device_descriptor", uvc_get_device_descriptor(device, &desc));
-    cameraName = desc->product;
-    // Other interesting properties
-    // desc->serialNumber
-    // desc->idVendor
-    // desc->idProduct
-    uvc_free_device_descriptor(desc);  
+    {
+        uvc_device_descriptor_t * desc;
+        CheckUVC("uvc_get_device_descriptor", uvc_get_device_descriptor(device, &desc));
+        cameraName = desc->product;
+        uvc_free_device_descriptor(desc);
+    }
+
+    for(auto & req : requests) req = {};
+    calib = {};
 
     int max_subdevice = 0;
     for(auto & mode : camera_info.subdevice_modes) max_subdevice = std::max(max_subdevice, mode.subdevice);
     subdevices.resize(max_subdevice+1);
-
-    for(auto & req : requests) req = {};
-
-    calib = {};
 }
 
 rs_camera::~rs_camera()
 {
     subdevices.clear();
-    uvc_unref_device(device);
+    //uvc_unref_device(device); // we never ref
 }
 
 void rs_camera::EnableStream(int stream, int width, int height, int fps, int format)
@@ -143,7 +140,6 @@ void rs_camera::StartStreaming()
         calib = RetrieveCalibration();
     }
 
-    // Start streaming
     SetStreamIntent();
     for(auto & subdevice : subdevices) if(subdevice) subdevice->start_streaming();
     isCapturing = true;
