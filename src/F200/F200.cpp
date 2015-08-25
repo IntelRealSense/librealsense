@@ -12,15 +12,14 @@ namespace f200
     static StaticCameraInfo get_f200_info()
     {
         StaticCameraInfo info;
+        // Color modes on subdevice 0
         info.stream_subdevices[RS_COLOR] = 0;
+        info.subdevice_modes.push_back({0, 640, 480, UVC_FRAME_FORMAT_YUYV, 60, {{RS_COLOR, 640, 480, RS_RGB8, 60, COLOR_480P}}, &rs::unpack_yuyv_to_rgb});
+        info.subdevice_modes.push_back({0, 1920, 1080, UVC_FRAME_FORMAT_YUYV, 60, {{RS_COLOR, 1920, 1080, RS_RGB8, 60, COLOR_1080P}}, &rs::unpack_yuyv_to_rgb});
+        // Depth modes on subdevice 1
         info.stream_subdevices[RS_DEPTH] = 1;
-        info.subdevice_modes = {
-            // Color modes on subdevice 0
-            {0, 640, 480, UVC_FRAME_FORMAT_YUYV, 60, {{RS_COLOR, 640, 480, RS_RGB8, 60, COLOR_480P}}, &rs::unpack_yuyv_to_rgb},
-            {0, 1920, 1080, UVC_FRAME_FORMAT_YUYV, 60, {{RS_COLOR, 1920, 1080, RS_RGB8, 60, COLOR_1080P}}, &rs::unpack_yuyv_to_rgb},
-            // Depth modes oo subdevice 1
-            {1, 640, 480, UVC_FRAME_FORMAT_INVR, 60, {{RS_DEPTH, 640, 480, RS_Z16, 60, DEPTH_480P}}, &rs::unpack_strided_image},
-        };
+        info.subdevice_modes.push_back({1, 640, 480, UVC_FRAME_FORMAT_INVR, 60, {{RS_DEPTH, 640, 480, RS_Z16, 60, DEPTH_480P}}, &rs::unpack_strided_image});
+        return info;
     }
 
     F200Camera::F200Camera(uvc_context_t * ctx, uvc_device_t * device) : rs_camera(ctx, device, get_f200_info())

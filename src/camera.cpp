@@ -36,6 +36,7 @@ rs_camera::~rs_camera()
 
 void rs_camera::EnableStream(int stream, int width, int height, int fps, int format)
 {
+    if(camera_info.stream_subdevices[stream] == -1) throw std::runtime_error("unsupported stream");
     requests[stream] = {true, width, height, format, fps};
 }
 
@@ -144,13 +145,13 @@ void rs_camera::StartStreaming()
 
     // Start streaming
     SetStreamIntent();
-    for(auto & subdevice : subdevices) subdevice->start_streaming();
+    for(auto & subdevice : subdevices) if(subdevice) subdevice->start_streaming();
     isCapturing = true;
 }
 
 void rs_camera::StopStreaming()
 {
-    for(auto & subdevice : subdevices) subdevice->stop_streaming();
+    for(auto & subdevice : subdevices) if(subdevice) subdevice->stop_streaming();
     isCapturing = false;
 }
     
