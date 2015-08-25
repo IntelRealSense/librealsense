@@ -19,7 +19,7 @@ namespace f200
         
     }
 
-    static SubdeviceMode MakeDepthMode(const CameraCalibrationParameters & c, int w, int h)
+    static rs_intrinsics MakeDepthIntrinsics(const CameraCalibrationParameters & c, int w, int h)
     {
         rs_intrinsics intrin = {{w,h}};
         intrin.focal_length[0] = c.Kc[0][0]*0.5f * w;
@@ -28,10 +28,10 @@ namespace f200
         intrin.principal_point[1] = (c.Kc[1][2]*0.5f + 0.5f) * h;
         for(int i=0; i<5; ++i) intrin.distortion_coeff[i] = c.Invdistc[i];
         intrin.distortion_model = RS_INVERSE_BROWN_CONRADY_DISTORTION;
-        return {1, w, h, UVC_FRAME_FORMAT_INVR, 60, {{RS_DEPTH, intrin, RS_Z16, 60}}, &rs::unpack_strided_image};
+        return intrin;
     }
 
-    static SubdeviceMode MakeColorMode(const CameraCalibrationParameters & c, int w, int h)
+    static rs_intrinsics MakeColorIntrinsics(const CameraCalibrationParameters & c, int w, int h)
     {
         rs_intrinsics intrin = {{w,h}};
         intrin.focal_length[0] = c.Kt[0][0]*0.5f;
@@ -49,7 +49,7 @@ namespace f200
         intrin.principal_point[0] *= w;
         intrin.principal_point[1] *= h;
         intrin.distortion_model = RS_NO_DISTORTION;
-        return {0, w, h, UVC_FRAME_FORMAT_YUYV, 60, {{RS_COLOR, intrin, RS_RGB8, 60}}, &rs::unpack_yuyv_to_rgb};
+        return intrin;
     }
 
     CalibrationInfo F200Camera::RetrieveCalibration()
@@ -58,9 +58,15 @@ namespace f200
         const CameraCalibrationParameters & calib = hardware_io->GetParameters();
 
         rs::CalibrationInfo c;
-        c.modes.push_back(MakeDepthMode(calib, 640, 480));
-        c.modes.push_back(MakeColorMode(calib, 1920, 1080));
-        c.modes.push_back(MakeColorMode(calib, 640, 480));
+
+        c.modes.push_back({1, 640, 480, UVC_FRAME_FORMAT_INVR, 60, {{RS_DEPTH, 640, 480, RS_Z16, 60, 0}}, &rs::unpack_strided_image});
+        c.modes.push_back({0, 640, 480, UVC_FRAME_FORMAT_YUYV, 60, {{RS_COLOR, 640, 480, RS_RGB8, 60, 1}}, &rs::unpack_yuyv_to_rgb});
+        c.modes.push_back({0, 1920, 1080, UVC_FRAME_FORMAT_YUYV, 60, {{RS_COLOR, 1920, 1080, RS_RGB8, 60, 2}}, &rs::unpack_yuyv_to_rgb});
+
+        c.intrinsics.push_back(MakeDepthIntrinsics(calib, 640, 480));
+        c.intrinsics.push_back(MakeColorIntrinsics(calib, 640, 480));
+        c.intrinsics.push_back(MakeColorIntrinsics(calib, 1920, 1080));
+
         c.stream_poses[RS_DEPTH] = {{{1,0,0},{0,1,0},{0,0,1}}, {0,0,0}};
         c.stream_poses[RS_COLOR] = {transpose((const float3x3 &)calib.Rt), (const float3 &)calib.Tt * 0.001f}; // convert mm to m
         c.depth_scale = (calib.Rmax / 0xFFFF) * 0.001f; // convert mm to m

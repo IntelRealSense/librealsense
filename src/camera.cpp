@@ -55,9 +55,7 @@ bool choose_mode(std::vector<SubdeviceMode> & dest, std::array<StreamRequest, MA
             auto & req = reqs[stream_mode.stream];
             if(req.enabled)
             {
-                if(req.width != stream_mode.intrinsics.image_size[0] ||
-                   req.height != stream_mode.intrinsics.image_size[1] ||
-                   req.format != stream_mode.format || req.fps != stream_mode.fps)
+                if(req.width != stream_mode.width || req.height != stream_mode.height || req.format != stream_mode.format || req.fps != stream_mode.fps)
                 {
                     valid = false;
                     break;
@@ -144,7 +142,7 @@ void rs_camera::WaitAllStreams()
 rs_intrinsics rs_camera::GetStreamIntrinsics(int stream) const
 {
     if(!streams[stream]) throw std::runtime_error("stream not enabled");
-    return streams[stream]->get_mode().intrinsics;
+    return calib.intrinsics[streams[stream]->get_mode().intrinsics_index];
 }
 
 rs_extrinsics rs_camera::GetStreamExtrinsics(int from, int to) const
@@ -158,13 +156,12 @@ rs_extrinsics rs_camera::GetStreamExtrinsics(int from, int to) const
 
 void rs_camera::Stream::set_mode(const StreamMode & mode)
 {
-    auto pixels = mode.intrinsics.image_size[0] * mode.intrinsics.image_size[1];
     this->mode = mode;
     switch(mode.format)
     {
-    case RS_Z16: front.resize(pixels * sizeof(uint16_t)); break;
-    case RS_RGB8: front.resize(pixels * 3); break;
-    case RS_Y8: front.resize(pixels); break;
+    case RS_Z16: front.resize(mode.width * mode.height * sizeof(uint16_t)); break;
+    case RS_RGB8: front.resize(mode.width * mode.height * 3); break;
+    case RS_Y8: front.resize(mode.width * mode.height); break;
     default: throw std::runtime_error("invalid format");
     }
     back = middle = front;
@@ -234,14 +231,13 @@ namespace rs
     void unpack_strided_image(void * dest[], const SubdeviceMode & mode, const void * source)
     {
         assert(mode.streams.size() == 1);
-        copy_strided_image(dest[0], mode.streams[0].intrinsics.image_size[0] * get_pixel_size(mode.streams[0].format),
-            source, mode.width * get_pixel_size(mode.streams[0].format), mode.streams[0].intrinsics.image_size[1]);
+        copy_strided_image(dest[0], mode.streams[0].width * get_pixel_size(mode.streams[0].format), source, mode.width * get_pixel_size(mode.streams[0].format), mode.streams[0].height);
     }
 
     void unpack_rly12_to_y8(void * dest[], const SubdeviceMode & mode, const void * frame)
     {
         assert(mode.format == UVC_FRAME_FORMAT_Y12I && mode.streams.size() == 2 && mode.streams[0].format == RS_Y8 && mode.streams[1].format == RS_Y8);
-        convert_rly12_to_y8_y8(dest[0], dest[1], mode.streams[0].intrinsics.image_size[0], mode.streams[0].intrinsics.image_size[1], frame, 3*mode.width);
+        convert_rly12_to_y8_y8(dest[0], dest[1], mode.streams[0].width, mode.streams[0].height, frame, 3*mode.width);
     }
 
     void unpack_yuyv_to_rgb(void * dest[], const SubdeviceMode & mode, const void * source)

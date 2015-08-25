@@ -42,8 +42,9 @@ namespace rs
     struct StreamMode
     {
         int stream;                 // RS_DEPTH, RS_COLOR, RS_INFRARED, RS_INFRARED_2, etc.
-        rs_intrinsics intrinsics;   // Image intrinsics (which includes resolution)
+        int width, height;          // Resolution visible to the client library
         int format, fps;            // Pixel format and framerate visible to the client library
+        int intrinsics_index;       // Index of image intrinsics
     };
 
     struct SubdeviceMode
@@ -76,6 +77,7 @@ namespace rs
     struct CalibrationInfo
     {
         std::vector<SubdeviceMode> modes;
+        std::vector<rs_intrinsics> intrinsics;
         pose stream_poses[MAX_STREAMS];
         float depth_scale;
     };
