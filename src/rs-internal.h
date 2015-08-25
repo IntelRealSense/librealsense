@@ -76,7 +76,6 @@ namespace rs
 
     struct CalibrationInfo
     {
-        std::vector<SubdeviceMode> modes;
         std::vector<rs_intrinsics> intrinsics;
         pose stream_poses[MAX_STREAMS];
         float depth_scale;
@@ -133,6 +132,7 @@ protected:
 
     uvc_context_t * context;
     uvc_device_t * device;
+    const std::vector<rs::SubdeviceMode> modes;
 
     std::array<rs::StreamRequest, rs::MAX_STREAMS> requests;    // Indexed by RS_DEPTH, RS_COLOR, ...
     std::shared_ptr<Stream> streams[rs::MAX_STREAMS];       // Indexed by RS_DEPTH, RS_COLOR, ...
@@ -145,7 +145,7 @@ protected:
     bool isCapturing = false;
   
 public:
-    rs_camera(uvc_context_t * context, uvc_device_t * device);
+    rs_camera(uvc_context_t * context, uvc_device_t * device, std::vector<rs::SubdeviceMode> modes);
     ~rs_camera();
 
     const char * GetCameraName() const { return cameraName.c_str(); }

@@ -7,7 +7,7 @@ using namespace rs;
 // UVC Camera //
 ////////////////
 
-rs_camera::rs_camera(uvc_context_t * context, uvc_device_t * device) : context(context), device(device), first_handle()
+rs_camera::rs_camera(uvc_context_t * context, uvc_device_t * device, std::vector<SubdeviceMode> modes) : context(context), device(device), modes(move(modes)), first_handle()
 {
     uvc_device_descriptor_t * desc;
     CheckUVC("uvc_get_device_descriptor", uvc_get_device_descriptor(device, &desc));
@@ -84,19 +84,19 @@ void rs_camera::StartStreaming()
     }
 
     // Choose suitable modes for all subdevices
-    std::vector<SubdeviceMode> modes(subdevices.size());
-    if(!choose_mode(modes, requests, calib.modes, 0)) throw std::runtime_error("bad stream combination");
+    std::vector<SubdeviceMode> selected_modes(subdevices.size());
+    if(!choose_mode(selected_modes, requests, modes, 0)) throw std::runtime_error("bad stream combination");
 
     // Set chosen modes and open streams
     for(size_t i=0; i<subdevices.size(); ++i)
     {
         std::vector<std::shared_ptr<Stream>> mode_streams;
-        for(auto & stream_mode : modes[i].streams)
+        for(auto & stream_mode : selected_modes[i].streams)
         {
             streams[stream_mode.stream].reset(new Stream());
             mode_streams.push_back(streams[stream_mode.stream]);
         }
-        subdevices[i]->set_mode(modes[i], mode_streams);
+        subdevices[i]->set_mode(selected_modes[i], mode_streams);
     }
 
     // Shut off user access to streams that were not requested

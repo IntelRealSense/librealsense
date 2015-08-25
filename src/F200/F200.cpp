@@ -8,8 +8,20 @@ using namespace rs;
 
 namespace f200
 {
-    
-    F200Camera::F200Camera(uvc_context_t * ctx, uvc_device_t * device) : rs_camera(ctx, device)
+    enum { COLOR_480P, COLOR_1080P, DEPTH_480P, NUM_INTRINSICS };
+
+    static std::vector<SubdeviceMode> list_f200_modes()
+    {
+        return {
+            // Color modes on subdevice 0
+            {0, 640, 480, UVC_FRAME_FORMAT_YUYV, 60, {{RS_COLOR, 640, 480, RS_RGB8, 60, COLOR_480P}}, &rs::unpack_yuyv_to_rgb},
+            {0, 1920, 1080, UVC_FRAME_FORMAT_YUYV, 60, {{RS_COLOR, 1920, 1080, RS_RGB8, 60, COLOR_1080P}}, &rs::unpack_yuyv_to_rgb},
+            // Depth modes of subdevice 1
+            {1, 640, 480, UVC_FRAME_FORMAT_INVR, 60, {{RS_DEPTH, 640, 480, RS_Z16, 60, DEPTH_480P}}, &rs::unpack_strided_image},
+        };
+    }
+
+    F200Camera::F200Camera(uvc_context_t * ctx, uvc_device_t * device) : rs_camera(ctx, device, list_f200_modes())
     {
         subdevices.resize(2);
     }
@@ -58,15 +70,10 @@ namespace f200
         const CameraCalibrationParameters & calib = hardware_io->GetParameters();
 
         rs::CalibrationInfo c;
-
-        c.modes.push_back({1, 640, 480, UVC_FRAME_FORMAT_INVR, 60, {{RS_DEPTH, 640, 480, RS_Z16, 60, 0}}, &rs::unpack_strided_image});
-        c.modes.push_back({0, 640, 480, UVC_FRAME_FORMAT_YUYV, 60, {{RS_COLOR, 640, 480, RS_RGB8, 60, 1}}, &rs::unpack_yuyv_to_rgb});
-        c.modes.push_back({0, 1920, 1080, UVC_FRAME_FORMAT_YUYV, 60, {{RS_COLOR, 1920, 1080, RS_RGB8, 60, 2}}, &rs::unpack_yuyv_to_rgb});
-
-        c.intrinsics.push_back(MakeDepthIntrinsics(calib, 640, 480));
-        c.intrinsics.push_back(MakeColorIntrinsics(calib, 640, 480));
-        c.intrinsics.push_back(MakeColorIntrinsics(calib, 1920, 1080));
-
+        c.intrinsics.resize(NUM_INTRINSICS);
+        c.intrinsics[COLOR_480P] = MakeColorIntrinsics(calib, 640, 480);
+        c.intrinsics[COLOR_1080P] = MakeColorIntrinsics(calib, 1920, 1080);
+        c.intrinsics[DEPTH_480P] = MakeDepthIntrinsics(calib, 640, 480);
         c.stream_poses[RS_DEPTH] = {{{1,0,0},{0,1,0},{0,0,1}}, {0,0,0}};
         c.stream_poses[RS_COLOR] = {transpose((const float3x3 &)calib.Rt), (const float3 &)calib.Tt * 0.001f}; // convert mm to m
         c.depth_scale = (calib.Rmax / 0xFFFF) * 0.001f; // convert mm to m
