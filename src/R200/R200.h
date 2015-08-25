@@ -22,6 +22,33 @@ namespace r200
     struct CameraCalibrationParameters;
     struct CameraHeaderInfo;
 
+    struct auto_exposure_params
+    {
+        float mean_intensity;
+        float bright_ratio;
+        float kp_gain;
+        float kp_exposure;
+        float kp_dark_threshold;
+        uint16_t region_of_interest_top_left;
+        uint16_t region_of_interest_top_right;
+        uint16_t region_of_interest_bottom_left;
+        uint16_t region_of_interest_bottom_right;
+    };
+    
+    struct depth_params
+    {
+        uint32_t robbins_munroe_minus_inc;
+        uint32_t robbins_munroe_plus_inc;
+        uint32_t median_thresh;
+        uint32_t score_min_thresh;
+        uint32_t score_max_thresh;
+        uint32_t texture_count_thresh;
+        uint32_t texture_diff_thresh;
+        uint32_t second_peak_thresh;
+        uint32_t neighbor_thresh;
+        uint32_t lr_thresh;
+    };
+    
     // Hardware API for R200 camera
     std::string read_firmware_version(uvc_device_handle_t * device);
     void        read_camera_info(uvc_device_handle_t * device, CameraCalibrationParameters & calib, CameraHeaderInfo & header);
@@ -42,22 +69,25 @@ namespace r200
     bool        reset_temperature(uvc_device_handle_t * device);
     
     bool        get_depth_units(uvc_device_handle_t * device, uint32_t & units);
-    //@todo - && set
+    bool        set_depth_units(uvc_device_handle_t * device, uint32_t units);
     
     bool        get_min_max_depth(uvc_device_handle_t * device, uint16_t & min_depth, uint16_t & max_depth);
-    //@todo - && set
+    bool        set_min_max_depth(uvc_device_handle_t * device, uint16_t min_depth, uint16_t max_depth);
     
     bool        get_lr_gain(uvc_device_handle_t * device, uint32_t & rate, uint32_t & gain);
-    //@todo - && set
+    bool        set_lr_gain(uvc_device_handle_t * device, uint32_t rate, uint32_t gain);
     
     bool        get_lr_exposure(uvc_device_handle_t * device, uint32_t & rate, uint32_t & exposure);
-    //@todo - && set
+    bool        set_lr_exposure(uvc_device_handle_t * device, uint32_t rate, uint32_t exposure);
     
-    bool        get_lr_auto_exposure_params(uvc_device_handle_t * device);
-    //@todo - && set
+    bool        get_lr_auto_exposure_params(uvc_device_handle_t * device, auto_exposure_params & params);
+    bool        set_lr_auto_exposure_params(uvc_device_handle_t * device, auto_exposure_params params);
     
     bool        get_lr_exposure_mode(uvc_device_handle_t * device, int & mode);
-    //@todo - && set
+    bool        set_lr_exposure_mode(uvc_device_handle_t * device, int mode);
+    
+    bool        get_depth_params(uvc_device_handle_t * device, depth_params & params);
+    bool        set_depth_params(uvc_device_handle_t * device, depth_params params);
     
     //@todo - get_exposure_discovery
     //@todo - set_exposure_discovery
@@ -229,57 +259,57 @@ namespace r200
     #pragma pack(pop)
 
     #define CAMERA_XU_UNIT_ID 2
+    
+    #define STATUS_BIT_Z_STREAMING                      (1 << 0)
+    #define STATUS_BIT_LR_STREAMING                     (1 << 1)
+    #define STATUS_BIT_WEB_STREAMING                    (1 << 2)
+    #define STATUS_BIT_BOOT_DIAGNOSTIC_FAULT            (1 << 3)
+    #define STATUS_BIT_IFFLEY_CONSTANTS_VALID           (1 << 4)
+    #define STATUS_BIT_WATCHDOG_TIMER_RESET             (1 << 5)
+    #define STATUS_BIT_REC_BUFFER_OVERRUN               (1 << 6)
+    #define STATUS_BIT_CAM_DATA_FORMAT_ERROR            (1 << 7)
+    #define STATUS_BIT_CAM_FIFO_OVERFLOW                (1 << 8)
+    #define STATUS_BIT_REC_DIVIDED_BY_ZERO_ERROR        (1 << 9)
+    #define STATUS_BIT_UVC_HEADER_ERROR                 (1 << 10)
+    #define STATUS_BIT_EMITTER_FAULT                    (1 << 11)
+    #define STATUS_BIT_THERMAL_FAULT                    (1 << 12)
+    #define STATUS_BIT_REC_RUN_ENABLED                  (1 << 13)
+    #define STATUS_BIT_VDF_DEPTH_POINTER_STREAMING      (1 << 14)
+    #define STATUS_BIT_VDF_LR_POINTER_STREAMING         (1 << 15)
+    #define STATUS_BIT_VDF_WEBCAM_POINTER_STREAMING     (1 << 16)
+    #define STATUS_BIT_STREAMING_STATE                  (1 << 27) | (1 << 28) | (1 << 29) | (1 << 30)
+    #define STATUS_BIT_BUSY                             (1 << 31)
 
-    #define STATUS_BIT_Z_STREAMING (1 << 0)
-    #define STATUS_BIT_LR_STREAMING (1 << 1)
-    #define STATUS_BIT_WEB_STREAMING (1 << 2)
-    #define STATUS_BIT_BOOT_DIAGNOSTIC_FAULT (1 << 3)
-    #define STATUS_BIT_IFFLEY_CONSTANTS_VALID (1 << 4)
-    #define STATUS_BIT_WATCHDOG_TIMER_RESET (1 << 5)
-    #define STATUS_BIT_REC_BUFFER_OVERRUN (1 << 6)
-    #define STATUS_BIT_CAM_DATA_FORMAT_ERROR (1 << 7)
-    #define STATUS_BIT_CAM_FIFO_OVERFLOW (1 << 8)
-    #define STATUS_BIT_REC_DIVIDED_BY_ZERO_ERROR (1 << 9)
-    #define STATUS_BIT_UVC_HEADER_ERROR (1 << 10)
-    #define STATUS_BIT_EMITTER_FAULT (1 << 11)
-    #define STATUS_BIT_THERMAL_FAULT (1 << 12)
-    #define STATUS_BIT_REC_RUN_ENABLED (1 << 13)
-    #define STATUS_BIT_VDF_DEPTH_POINTER_STREAMING (1 << 14)
-    #define STATUS_BIT_VDF_LR_POINTER_STREAMING (1 << 15)
-    #define STATUS_BIT_VDF_WEBCAM_POINTER_STREAMING (1 << 16)
-    #define STATUS_BIT_STREAMING_STATE (1 << 27) | (1 << 28) | (1 << 29) | (1 << 30)
-    #define STATUS_BIT_BUSY (1 << 31)
+    #define CONTROL_COMMAND_RESPONSE                    1
+    #define CONTROL_IFFLEY                              2
+    #define CONTROL_STREAM_INTENT                       3
+    #define CONTROL_DEPTH_UNITS                         4
+    #define CONTROL_MIN_MAX                             5
+    #define CONTROL_DISPARITY                           6
+    #define CONTROL_RECTIFICATION                       7
+    #define CONTROL_EMITTER                             8
+    #define CONTROL_TEMPERATURE                         9
+    #define CONTROL_DEPTH_PARAMS                        10
+    #define CONTROL_LAST_ERROR                          12
+    #define CONTROL_EMBEDDED_COUNT                      13
+    #define CONTROL_LR_EXPOSURE                         14
+    #define CONTROL_LR_AUTOEXPOSURE_PARAMETERS          15
+    #define CONTROL_SW_RESET                            16
+    #define CONTROL_LR_GAIN                             17
+    #define CONTROL_LR_EXPOSURE_MODE                    18
+    #define CONTROL_DISPARITY_SHIFT                     19
+    #define CONTROL_STATUS                              20
+    #define CONTROL_LR_EXPOSURE_DISCOVERY               21
+    #define CONTROL_LR_GAIN_DISCOVERY                   22
+    #define CONTROL_HW_TIMESTAMP                        23
 
-    #define CONTROL_COMMAND_RESPONSE 1
-    #define CONTROL_IFFLEY 2
-    #define CONTROL_STREAM_INTENT 3
-    #define CONTROL_DEPTH_UNITS 4
-    #define CONTROL_MIN_MAX 5
-    #define CONTROL_DISPARITY 6
-    #define CONTROL_RECTIFICATION 7
-    #define CONTROL_EMITTER 8
-    #define CONTROL_TEMPERATURE 9
-    #define CONTROL_DEPTH 10
-    #define CONTROL_LAST_ERROR 12
-    #define CONTROL_EMBEDDED_COUNT 13
-    #define CONTROL_LR_EXPOSURE 14
-    #define CONTROL_LR_AUTOEXPOSURE_PARAMETERS 15
-    #define CONTROL_SW_RESET 16
-    #define CONTROL_LR_GAIN 17
-    #define CONTROL_LR_EXPOSURE_MODE 18
-    #define CONTROL_DISPARITY_SHIFT 19
-    #define CONTROL_STATUS 20
-    #define CONTROL_LR_EXPOSURE_DISCOVERY 21
-    #define CONTROL_LR_GAIN_DISCOVERY 22
-    #define CONTROL_HW_TIMESTAMP 23
-
-    #define COMMAND_DOWNLOAD_SPI_FLASH 0x1A
-    #define COMMAND_PROTECT_FLASH 0x1C
-    #define COMMAND_LED_ON 0x14
-    #define COMMAND_LED_OFF 0x15
-    #define COMMAND_GET_FWREVISION 0x21
-    #define COMMAND_GET_SPI_PROTECT 0x23
-    #define COMMAND_MODIFIER_DIRECT 0x00000010
+    #define COMMAND_DOWNLOAD_SPI_FLASH                  0x1A
+    #define COMMAND_PROTECT_FLASH                       0x1C
+    #define COMMAND_LED_ON                              0x14
+    #define COMMAND_LED_OFF                             0x15
+    #define COMMAND_GET_FWREVISION                      0x21
+    #define COMMAND_GET_SPI_PROTECT                     0x23
+    #define COMMAND_MODIFIER_DIRECT                     0x00000010
     
 } // end namespace r200
 #endif

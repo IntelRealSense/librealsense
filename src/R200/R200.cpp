@@ -511,53 +511,75 @@ namespace r200
         return xu_read(device, CONTROL_DEPTH_UNITS, &units, sizeof(units));
     }
     
+    bool set_depth_units(uvc_device_handle_t * device, uint32_t units)
+    {
+        return xu_write(device, CONTROL_DEPTH_UNITS, &units, sizeof(units));
+    }
+    
     bool get_min_max_depth(uvc_device_handle_t * device, uint16_t & min_depth, uint16_t & max_depth)
     {
-        std::vector<uint16_t> depth = {0, 0};
-        if (!xu_read(device, CONTROL_MIN_MAX, depth.data(), sizeof(depth)))
+        std::vector<uint16_t> minmax_values = {0, 0};
+        if (!xu_read(device, CONTROL_MIN_MAX, minmax_values.data(), sizeof(minmax_values)))
             return false;
-        min_depth = depth[0];
-        max_depth = depth[1];
+        min_depth = minmax_values[0];
+        max_depth = minmax_values[1];
+        return true;
+    }
+    
+    bool get_min_max_depth(uvc_device_handle_t * device, uint16_t min_depth, uint16_t  max_depth)
+    {
+        std::vector<uint16_t> minmax_values = {min_depth, max_depth};
+        if (!xu_read(device, CONTROL_MIN_MAX, minmax_values.data(), sizeof(minmax_values)))
+            return false;
         return true;
     }
     
     bool get_lr_gain(uvc_device_handle_t * device, uint32_t & rate, uint32_t & gain)
     {
-        std::vector<uint16_t> params = {0, 0};
-        if (!xu_read(device, CONTROL_LR_GAIN, &params, sizeof(params)))
+        std::vector<uint32_t> lr_gain_values = {0, 0};
+        if (!xu_read(device, CONTROL_LR_GAIN, lr_gain_values.data(), sizeof(lr_gain_values)))
             return false;
-        rate = params[0];
-        gain = params[1];
+        rate = lr_gain_values[0];
+        gain = lr_gain_values[1];
+        return true;
+    }
+    
+    bool set_lr_gain(uvc_device_handle_t * device, uint32_t rate, uint32_t gain)
+    {
+        std::vector<uint32_t> lr_gain_values = {rate, gain};
+        if (!xu_write(device, CONTROL_LR_GAIN, lr_gain_values.data(), sizeof(lr_gain_values)))
+            return false;
         return true;
     }
     
     bool get_lr_exposure(uvc_device_handle_t * device, uint32_t & rate, uint32_t & exposure)
     {
-        std::vector<uint16_t> params = {0, 0};
-        if (!xu_read(device, CONTROL_LR_EXPOSURE, &params, sizeof(params)))
+        std::vector<uint32_t> lr_exposure_values = {0, 0};
+        if (!xu_read(device, CONTROL_LR_EXPOSURE, lr_exposure_values.data(), sizeof(lr_exposure_values)))
             return false;
-        rate = params[0];
-        exposure = params[1];
+        rate = lr_exposure_values[0];
+        exposure = lr_exposure_values[1];
         return true;
     }
     
-    bool get_lr_auto_exposure_params(uvc_device_handle_t * device)
+    bool set_lr_exposure(uvc_device_handle_t * device, uint32_t rate, uint32_t exposure)
     {
-        // Expose this later as necessary
-        struct ds_auto_exposure_params
-        {
-            float mean_intensity;
-            float bright_ratio;
-            float kp_gain;
-            float kp_exposure;
-            float kp_dark_threshold;
-            uint16_t region_of_interest_top_left;
-            uint16_t region_of_interest_top_right;
-            uint16_t region_of_interest_bottom_left;
-            uint16_t region_of_interest_bottom_right;
-        };
-        ds_auto_exposure_params params;
+        std::vector<uint32_t> lr_exposure_values = {rate, exposure};
+        if (!xu_write(device, CONTROL_LR_EXPOSURE, lr_exposure_values.data(), sizeof(lr_exposure_values)))
+            return false;
+        return true;
+    }
+    
+    bool get_lr_auto_exposure_params(uvc_device_handle_t * device, auto_exposure_params & params)
+    {
         if (!xu_read(device, CONTROL_LR_AUTOEXPOSURE_PARAMETERS, &params, sizeof(params)))
+            return false;
+        return true;
+    }
+    
+    bool set_lr_auto_exposure_params(uvc_device_handle_t * device, auto_exposure_params params)
+    {
+        if (!xu_write(device, CONTROL_LR_AUTOEXPOSURE_PARAMETERS, &params, sizeof(params)))
             return false;
         return true;
     }
@@ -568,6 +590,20 @@ namespace r200
         if (!xu_read(device, CONTROL_LR_EXPOSURE_MODE, &m, sizeof(m)))
             return false;
         mode = m;
+        return true;
+    }
+    
+    bool get_depth_params(uvc_device_handle_t * device, depth_params & params)
+    {
+        if (!xu_read(device, CONTROL_DEPTH_PARAMS, &params, sizeof(params)))
+            return false;
+        return true;
+    }
+    
+    bool set_depth_params(uvc_device_handle_t * device, depth_params params)
+    {
+        if (!xu_write(device, CONTROL_DEPTH_PARAMS, &params, sizeof(params)))
+            return false;
         return true;
     }
 
