@@ -13,6 +13,8 @@ UVCCamera::UVCCamera(uvc_context_t * context, uvc_device_t * device) : context(c
     uvc_device_descriptor_t * desc;
     CheckUVC("uvc_get_device_descriptor", uvc_get_device_descriptor(device, &desc));
 
+    for(auto & req : requests) req = {};
+
     cameraName = desc->product;
     // Other interesting properties
     // desc->serialNumber
@@ -32,44 +34,72 @@ UVCCamera::~UVCCamera()
 
 void UVCCamera::EnableStream(int stream, int width, int height, int fps, int format)
 {
-    int sdnum = [stream]() { switch(stream)
-        {
-        case RS_INFRARED: return 0;
-        case RS_DEPTH: return 1;
-        case RS_COLOR: return 2;
-        } }();
+    requests[stream] = {true, width, height, format, fps};
+}
 
-    // Open interface to stream, and optionally retrieve calibration info
-    subdevices[stream].reset(new Subdevice(device, sdnum));
-    if(!first_handle) first_handle = subdevices[stream]->get_handle();
-    if(calib.modes.empty()) calib = RetrieveCalibration();
-
-    // Choose a resolution mode based on the user's request
-    SubdeviceMode mode = [=]()
+bool choose_mode(std::vector<SubdeviceMode> & dest, std::array<StreamRequest, MAX_STREAMS> requests, const std::vector<SubdeviceMode> & modes, int subdevice)
+{
+    if(dest.size() == subdevice)
     {
-        for(const auto & mode : calib.modes)
+        for(auto & req : requests) if(req.enabled) return false; // This request was not satisfied
+        return true; // Otherwise all requests are satisfied and we have chosen a mode for all subdevices. Win!
+    }
+
+    for(auto & mode : modes)
+    {
+        if(mode.subdevice != subdevice) continue;
+
+        bool valid = true;
+        auto reqs = requests;
+        for(auto & stream_mode : mode.streams)
         {
-            for(const auto & smode : mode.streams)
+            auto & req = reqs[stream_mode.stream];
+            if(req.enabled)
             {
-                if(smode.stream == stream && smode.intrinsics.image_size[0] == width && smode.intrinsics.image_size[1] == height && smode.fps == fps && smode.format == format)
+                if(req.width != stream_mode.intrinsics.image_size[0] ||
+                   req.height != stream_mode.intrinsics.image_size[1] ||
+                   req.format != stream_mode.format || req.fps != stream_mode.fps)
                 {
-                    return mode;
+                    valid = false;
+                    break;
                 }
+                req.enabled = false;
             }
         }
-        throw std::runtime_error("invalid mode");
-    }();
+        if(valid)
+        {
+            dest[subdevice] = mode;
+            if(choose_mode(dest, reqs, modes, subdevice + 1)) return true;
+        }
+    }
 
-    std::vector<std::shared_ptr<Stream>> mode_streams;
-
-    streams[stream].reset(new Stream());
-    mode_streams.push_back(streams[stream]);
-
-    subdevices[stream]->set_mode(mode, mode_streams);
+    return false;
 }
 
 void UVCCamera::StartStreaming()
 {
+    // Open subdevice handles and retrieve calibration
+    for(int i=0; i<subdevices.size(); ++i) subdevices[i].reset(new Subdevice(device, i));
+    first_handle = subdevices[0]->get_handle();
+    calib = RetrieveCalibration();
+
+    // Choose suitable modes for all subdevices
+    std::vector<SubdeviceMode> modes(subdevices.size());
+    if(!choose_mode(modes, requests, calib.modes, 0)) throw std::runtime_error("bad stream combination");
+
+    // Set chosen modes and open streams
+    for(size_t i=0; i<subdevices.size(); ++i)
+    {
+        std::vector<std::shared_ptr<Stream>> mode_streams;
+        for(auto & stream_mode : modes[i].streams)
+        {
+            streams[stream_mode.stream].reset(new Stream());
+            mode_streams.push_back(streams[stream_mode.stream]);
+        }
+        subdevices[i]->set_mode(modes[i], mode_streams);
+    }
+
+    // Start streaming
     SetStreamIntent();
     for(auto & subdevice : subdevices) subdevice->start_streaming();
 }

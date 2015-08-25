@@ -9,7 +9,7 @@
 
 namespace rs
 {
-    const int MAX_STREAMS = 3;
+    const int MAX_STREAMS = 4;
     
     inline void CheckUVC(const char * call, uvc_error_t status)
     {
@@ -18,6 +18,12 @@ namespace rs
             throw std::runtime_error(ToString() << call << "(...) returned " << uvc_strerror(status));
         }
     }
+
+    struct StreamRequest
+    {
+        bool enabled;
+        int width, height, format, fps;
+    };
 
     struct StreamMode
     {
@@ -102,6 +108,7 @@ namespace rs
         uvc_context_t * context;
         uvc_device_t * device;
 
+        std::array<StreamRequest,MAX_STREAMS> requests;     // Indexed by RS_DEPTH, RS_COLOR, ...
         std::shared_ptr<Stream> streams[MAX_STREAMS];       // Indexed by RS_DEPTH, RS_COLOR, ...
         std::vector<std::unique_ptr<Subdevice>> subdevices; // Indexed by UVC subdevices number (0, 1, 2...)
 
