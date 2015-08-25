@@ -12,16 +12,7 @@
 #include <mutex>        // For mutex
 #include <array>
 
-// Currently, we will use DSAPI on Windows and libuvc everywhere else
-#ifdef WIN32
-#define USE_DSAPI_DEVICES
-#else
-#define USE_UVC_DEVICES
-#endif
-
-#ifdef USE_UVC_DEVICES
 #include <libuvc/libuvc.h>
-#endif
 
 namespace rs
 {
@@ -59,9 +50,7 @@ struct rs_camera
 
 struct rs_context
 {
-    #ifdef USE_UVC_DEVICES
-	uvc_context_t * privateContext;
-    #endif
+    uvc_context_t * privateContext;
 	std::vector<std::shared_ptr<rs_camera>> cameras;
     
 	rs_context();
