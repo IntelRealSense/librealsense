@@ -16,10 +16,11 @@ namespace r200
     {
         switch(streamIdentifier)
         {
-        case RS_DEPTH: EnableStream(RS_DEPTH, 480, 360, 60, RS_Z16); break;
-        case RS_COLOR: EnableStream(RS_COLOR, 640, 480, 60, RS_RGB8); break;
-        case RS_INFRARED: EnableStream(RS_INFRARED, 492, 372, 60, RS_Y8); break;
-        default: throw std::runtime_error("unsupported stream");
+        case RS_DEPTH: EnableStream(streamIdentifier, 480, 360, 60, RS_Z16); break;
+        case RS_COLOR: EnableStream(streamIdentifier, 640, 480, 60, RS_RGB8); break;
+        case RS_INFRARED: EnableStream(streamIdentifier, 492, 372, 60, RS_Y8); break;
+        case RS_INFRARED_2: EnableStream(streamIdentifier, 492, 372, 60, RS_Y8); break;
+        //default: throw std::runtime_error("unsupported stream");
         }
     }
 
@@ -46,6 +47,8 @@ namespace r200
                 auto uvcFps = fps == 60 ? 59 : fps; // UVC sees the 60 fps mode as 59 fps
                 auto lrHeight = (int)intrin.rh + 1; // Height of left/right images, including extra Dinghy row
                 c.modes.push_back({0, 640, lrHeight, UVC_FRAME_FORMAT_Y8, uvcFps, {{RS_INFRARED, lrIntrin, RS_Y8, fps}}, &rs::unpack_strided_image});
+                c.modes.push_back({0, 640, lrHeight, UVC_FRAME_FORMAT_Y12I, uvcFps,
+                    {{RS_INFRARED, lrIntrin, RS_Y8, fps}, {RS_INFRARED_2, lrIntrin, RS_Y8, fps}}, &rs::unpack_strided_image});
                 c.modes.push_back({1, 640 - 12, lrHeight - 12, UVC_FRAME_FORMAT_Z16, uvcFps, {{RS_DEPTH, zIntrin, RS_Z16, fps}}, &rs::unpack_strided_image});
             }
         }
@@ -56,6 +59,8 @@ namespace r200
         }
         c.stream_poses[RS_DEPTH] = {{{1,0,0},{0,1,0},{0,0,1}}, {0,0,0}};
         c.stream_poses[RS_INFRARED] = c.stream_poses[RS_DEPTH];
+        c.stream_poses[RS_INFRARED_2] = c.stream_poses[RS_DEPTH]; // TODO: Figure out the correct translation vector to put here
+
         for(int i=0; i<3; ++i) for(int j=0; j<3; ++j) c.stream_poses[RS_COLOR].orientation(i,j) = calib.Rthird[0][i*3+j];
         for(int i=0; i<3; ++i) c.stream_poses[RS_COLOR].position[i] = calib.T[0][i] * 0.001f;
         c.stream_poses[RS_COLOR].position = c.stream_poses[RS_COLOR].orientation * c.stream_poses[RS_COLOR].position;

@@ -66,6 +66,7 @@ int main(int argc, char * argv[]) try
 		cam = ctx.get_camera(i);
 
         cam.enable_stream_preset(RS_INFRARED, RS_BEST_QUALITY);
+        cam.enable_stream_preset(RS_INFRARED_2, RS_BEST_QUALITY);
         cam.enable_stream_preset(RS_DEPTH, RS_BEST_QUALITY);
         cam.enable_stream_preset(RS_COLOR, RS_BEST_QUALITY);
         cam.start_streaming();
