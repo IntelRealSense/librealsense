@@ -19,7 +19,7 @@ namespace f200
         
     }
 
-    int F200Camera::GetStreamSubdeviceNumber(int stream) const
+    /*int F200Camera::GetStreamSubdeviceNumber(int stream) const
     {
         switch(stream)
         {
@@ -27,7 +27,7 @@ namespace f200
         case RS_DEPTH: return 1;
         default: throw std::runtime_error("invalid stream");
         }
-    }
+    }*/
 /*
     static ResolutionMode MakeDepthMode(const CameraCalibrationParameters & c, int w, int h)
     {
@@ -62,7 +62,7 @@ namespace f200
         return {RS_COLOR, w,h,60,RS_RGB8, w,h,60,UVC_FRAME_FORMAT_YUYV, intrin};
     }
 */
-    CalibrationInfo F200Camera::RetrieveCalibration(uvc_device_handle_t *)
+    CalibrationInfo F200Camera::RetrieveCalibration()
     {
         if(!hardware_io) hardware_io.reset(new IVCAMHardwareIO(context));
         const CameraCalibrationParameters & calib = hardware_io->GetParameters();

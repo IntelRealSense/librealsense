@@ -9,21 +9,7 @@ namespace r200
 {
     R200Camera::R200Camera(uvc_context_t * ctx, uvc_device_t * device) : UVCCamera(ctx, device)
     {
-        //uvc_device_handle_t * uvcHandle;
-        //CheckUVC("uvc_open2", uvc_open2(device, &uvcHandle, 0));
-        //calib = RetrieveCalibration(uvcHandle);
-        //uvc_close(uvcHandle);
-    }
-
-    int R200Camera::GetStreamSubdeviceNumber(int stream) const
-    {
-        switch(stream)
-        {
-        case RS_INFRARED: return 0;
-        case RS_DEPTH: return 1;
-        case RS_COLOR: return 2;
-        default: throw std::runtime_error("invalid stream");
-        }
+        subdevices.resize(3);
     }
 
     void R200Camera::EnableStreamPreset(int streamIdentifier, int preset)
@@ -37,17 +23,17 @@ namespace r200
         }
     }
 
-    static StreamMode MakeColorMode(const UnrectifiedIntrinsics & i, int userFps, int uvcFps)
+    static SubdeviceMode MakeColorMode(const UnrectifiedIntrinsics & i, int userFps, int uvcFps)
     {
         const rs_intrinsics thirdIntrin = {{(int)i.w, (int)i.h}, {i.fx,i.fy}, {i.px,i.py}, {i.k[0],i.k[1],i.k[2],i.k[3],i.k[4]}, RS_GORDON_BROWN_CONRADY_DISTORTION};
         return {2, (int)i.w, (int)i.h, UVC_FRAME_FORMAT_YUYV, uvcFps, {{RS_COLOR, thirdIntrin, RS_RGB8, userFps}}, &rs::unpack_yuyv_to_rgb};
     }
 
-    CalibrationInfo R200Camera::RetrieveCalibration(uvc_device_handle_t * handle)
+    CalibrationInfo R200Camera::RetrieveCalibration()
     {
         CameraCalibrationParameters calib;
         CameraHeaderInfo header;
-        read_camera_info(handle, calib, header);
+        read_camera_info(first_handle, calib, header);
 
         rs::CalibrationInfo c;
         for(int i=0; i<2; ++i)
@@ -80,9 +66,9 @@ namespace r200
     void R200Camera::SetStreamIntent()
     {
         uint8_t streamIntent = 0;
-        if(streams[RS_DEPTH]) streamIntent |= STATUS_BIT_Z_STREAMING;
-        if(streams[RS_COLOR]) streamIntent |= STATUS_BIT_WEB_STREAMING;
-        if(streams[RS_INFRARED]) streamIntent |= STATUS_BIT_LR_STREAMING;
+        if(subdevices[0]) streamIntent |= STATUS_BIT_LR_STREAMING;
+        if(subdevices[1]) streamIntent |= STATUS_BIT_Z_STREAMING;
+        if(subdevices[2]) streamIntent |= STATUS_BIT_WEB_STREAMING;
 
         if(first_handle)
         {
