@@ -53,12 +53,12 @@ namespace rs
         uvc_frame_format format;            // Pixel format advertised over UVC
         int fps;                            // Framerate advertised over UVC
         std::vector<StreamMode> streams;    // Modes for streams which can be supported by this device mode
-        void (* unpacker)(void * dest[], const SubdeviceMode & mode, const uint8_t * frame);
+        void (* unpacker)(void * dest[], const SubdeviceMode & mode, const void * frame);
     };
 
-    void unpack_strided_image(void * dest[], const SubdeviceMode & mode, const uint8_t * frame);
-    void unpack_rly12_to_y8(void * dest[], const SubdeviceMode & mode, const uint8_t * frame);
-    void unpack_yuyv_to_rgb(void * dest[], const SubdeviceMode & mode, const uint8_t * frame);
+    void unpack_strided_image(void * dest[], const SubdeviceMode & mode, const void * frame);
+    void unpack_rly12_to_y8(void * dest[], const SubdeviceMode & mode, const void * frame);
+    void unpack_yuyv_to_rgb(void * dest[], const SubdeviceMode & mode, const void * frame);
 
     // World's tiniest linear algebra library
     struct float3 { float x,y,z; float & operator [] (int i) { return (&x)[i]; } };

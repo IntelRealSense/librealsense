@@ -201,7 +201,7 @@ void rs_camera::Subdevice::start_streaming()
         // Unpack the image into the user stream interface back buffer
         std::vector<void *> dest;
         for(auto & stream : self->streams) dest.push_back(stream->back.data());
-        self->mode.unpacker(dest.data(), self->mode, (const uint8_t *)frame->data);
+        self->mode.unpacker(dest.data(), self->mode, frame->data);
 
         // Swap the backbuffer to the middle buffer and indicate that we have updated
         for(auto & stream : self->streams)
@@ -231,37 +231,20 @@ namespace rs
         }
     }
 
-    void unpack_strided_image(void * dest[], const SubdeviceMode & mode, const uint8_t * source)
+    void unpack_strided_image(void * dest[], const SubdeviceMode & mode, const void * source)
     {
         assert(mode.streams.size() == 1);
         copy_strided_image(dest[0], mode.streams[0].intrinsics.image_size[0] * get_pixel_size(mode.streams[0].format),
             source, mode.width * get_pixel_size(mode.streams[0].format), mode.streams[0].intrinsics.image_size[1]);
     }
 
-    void unpack_rly12_to_y8(void * dest[], const SubdeviceMode & mode, const uint8_t * frame)
+    void unpack_rly12_to_y8(void * dest[], const SubdeviceMode & mode, const void * frame)
     {
         assert(mode.format == UVC_FRAME_FORMAT_Y12I && mode.streams.size() == 2 && mode.streams[0].format == RS_Y8 && mode.streams[1].format == RS_Y8);
-
-        #pragma pack(push, 1)
-        struct RightLeftY12Pixel { uint8_t rl : 8, rh : 4, ll : 4, lh : 8; };
-        static_assert(sizeof(RightLeftY12Pixel) == 3, "packing error");
-        #pragma pack(pop)
-
-        auto left = reinterpret_cast<uint8_t *>(dest[0]);
-        auto right = reinterpret_cast<uint8_t *>(dest[1]);
-        for(int y=0; y<mode.streams[0].intrinsics.image_size[1]; ++y)
-        {
-            auto src = reinterpret_cast<const RightLeftY12Pixel *>(frame) + y*640;
-            for(int x=0; x<mode.streams[0].intrinsics.image_size[0]; ++x)
-            {
-                *right++ = (src->rh << 8 | src->rl) >> 2;
-                *left++ = (src->lh << 4 | src->ll) >> 2;
-                ++src;
-            }
-        }
+        convert_rly12_to_y8_y8(dest[0], dest[1], mode.streams[0].intrinsics.image_size[0], mode.streams[0].intrinsics.image_size[1], frame, 3*mode.width);
     }
 
-    void unpack_yuyv_to_rgb(void * dest[], const SubdeviceMode & mode, const uint8_t * source)
+    void unpack_yuyv_to_rgb(void * dest[], const SubdeviceMode & mode, const void * source)
     {
         assert(mode.format == UVC_FRAME_FORMAT_YUYV && mode.streams.size() == 1 && mode.streams[0].format == RS_RGB8);
         convert_yuyv_to_rgb((uint8_t *) dest[0], mode.width, mode.height, source);
