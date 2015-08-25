@@ -1,4 +1,5 @@
 #include "image.h"
+#include <cstdint>
 #include <cstring>
 #include <algorithm>
 
@@ -21,8 +22,10 @@ static uint8_t clamp_byte(int v)
     return v;
 }
 
-void convert_yuyv_to_rgb(uint8_t * dest, int width, int height, const uint8_t * source)
+void convert_yuyv_to_rgb(void * dest_image, int width, int height, const void * source_image)
 {
+    auto dest = reinterpret_cast<uint8_t *>(dest_image);
+    auto source = reinterpret_cast<const uint8_t *>(source_image);
     for (int y = 0; y < height; ++y)
     {
         for (int x = 0; x < width; x += 2)
@@ -40,6 +43,26 @@ void convert_yuyv_to_rgb(uint8_t * dest, int width, int height, const uint8_t * 
             *dest++ = clamp_byte((298 * c + 516 * d + 128) >> 8);           // b
 
             source += 4;
+        }
+    }
+}
+
+void convert_rly12_to_y8_y8(void * dest_left, void * dest_right, int width, int height, const void * source_image, int source_stride)
+{
+    #pragma pack(push, 1)
+    struct RightLeftY12Pixel { uint8_t rl : 8, rh : 4, ll : 4, lh : 8; };
+    static_assert(sizeof(RightLeftY12Pixel) == 3, "packing error");
+    #pragma pack(pop)
+
+    auto left = reinterpret_cast<uint8_t *>(dest_left), right = reinterpret_cast<uint8_t *>(dest_right);
+    for(int y=0; y<height; ++y)
+    {
+        auto src = reinterpret_cast<const RightLeftY12Pixel *>(reinterpret_cast<const char *>(source_image) + y*source_stride);
+        for(int x=0; x<width; ++x)
+        {
+            *right++ = (src->rh << 8 | src->rl) >> 2;
+            *left++ = (src->lh << 4 | src->ll) >> 2;
+            ++src;
         }
     }
 }

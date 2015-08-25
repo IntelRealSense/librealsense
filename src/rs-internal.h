@@ -42,8 +42,9 @@ namespace rs
     struct StreamMode
     {
         int stream;                 // RS_DEPTH, RS_COLOR, RS_INFRARED, RS_INFRARED_2, etc.
-        rs_intrinsics intrinsics;   // Image intrinsics (which includes resolution)
+        int width, height;          // Resolution visible to the client library
         int format, fps;            // Pixel format and framerate visible to the client library
+        int intrinsics_index;       // Index of image intrinsics
     };
 
     struct SubdeviceMode
@@ -53,12 +54,20 @@ namespace rs
         uvc_frame_format format;            // Pixel format advertised over UVC
         int fps;                            // Framerate advertised over UVC
         std::vector<StreamMode> streams;    // Modes for streams which can be supported by this device mode
-        void (* unpacker)(void * dest[], const SubdeviceMode & mode, const uint8_t * frame);
+        void (* unpacker)(void * dest[], const SubdeviceMode & mode, const void * frame);
     };
 
-    void unpack_strided_image(void * dest[], const SubdeviceMode & mode, const uint8_t * frame);
-    void unpack_rly12_to_y8(void * dest[], const SubdeviceMode & mode, const uint8_t * frame);
-    void unpack_yuyv_to_rgb(void * dest[], const SubdeviceMode & mode, const uint8_t * frame);
+    struct StaticCameraInfo
+    {
+        int stream_subdevices[MAX_STREAMS];             // Which subdevice is used to support each stream, or -1 if stream is unavailable
+        std::vector<SubdeviceMode> subdevice_modes;     // A list of available modes each subdevice can be put into
+
+        StaticCameraInfo() { for(auto & s : stream_subdevices) s = -1; }
+    };
+
+    void unpack_strided_image(void * dest[], const SubdeviceMode & mode, const void * frame);
+    void unpack_rly12_to_y8(void * dest[], const SubdeviceMode & mode, const void * frame);
+    void unpack_yuyv_to_rgb(void * dest[], const SubdeviceMode & mode, const void * frame);
 
     // World's tiniest linear algebra library
     struct float3 { float x,y,z; float & operator [] (int i) { return (&x)[i]; } };
@@ -75,7 +84,7 @@ namespace rs
 
     struct CalibrationInfo
     {
-        std::vector<SubdeviceMode> modes;
+        std::vector<rs_intrinsics> intrinsics;
         pose stream_poses[MAX_STREAMS];
         float depth_scale;
     };
@@ -131,6 +140,7 @@ protected:
 
     uvc_context_t * context;
     uvc_device_t * device;
+    const rs::StaticCameraInfo camera_info;
 
     std::array<rs::StreamRequest, rs::MAX_STREAMS> requests;    // Indexed by RS_DEPTH, RS_COLOR, ...
     std::shared_ptr<Stream> streams[rs::MAX_STREAMS];           // Indexed by RS_DEPTH, RS_COLOR, ...
@@ -143,7 +153,7 @@ protected:
     bool isCapturing = false;
   
 public:
-    rs_camera(uvc_context_t * context, uvc_device_t * device);
+    rs_camera(uvc_context_t * context, uvc_device_t * device, const rs::StaticCameraInfo & camera_info);
     ~rs_camera();
 
     const char * GetCameraName() const { return cameraName.c_str(); }
