@@ -1572,7 +1572,7 @@ void LIBUSB_CALL _uvc_status_callback(struct libusb_transfer *transfer) {
   case LIBUSB_TRANSFER_ERROR:
   case LIBUSB_TRANSFER_CANCELLED:
   case LIBUSB_TRANSFER_NO_DEVICE:
-    UVC_DEBUG("retrying transfer, status = %d", transfer->status);
+    UVC_DEBUG("retrying transfer, status = %s", libusb_error_name(transfer->status));
     break;
   case LIBUSB_TRANSFER_COMPLETED:
     uvc_process_status_xfer(devh, transfer);
@@ -1580,7 +1580,7 @@ void LIBUSB_CALL _uvc_status_callback(struct libusb_transfer *transfer) {
   case LIBUSB_TRANSFER_TIMED_OUT:
   case LIBUSB_TRANSFER_STALL:
   case LIBUSB_TRANSFER_OVERFLOW:
-    UVC_DEBUG("retrying transfer, status = %d", transfer->status);
+    UVC_DEBUG("retrying transfer, status = %s", libusb_error_name(transfer->status));
     break;
   }
 

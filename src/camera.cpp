@@ -107,7 +107,6 @@ void rs_camera::StartStreaming()
 void rs_camera::StopStreaming()
 {
     for(auto & subdevice : subdevices) subdevice->stop_streaming();
-    SetStreamIntent();
     isCapturing = false;
 }
     
