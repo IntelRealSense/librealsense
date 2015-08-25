@@ -77,10 +77,13 @@ bool choose_mode(std::vector<SubdeviceMode> & dest, std::array<StreamRequest, MA
 
 void rs_camera::StartStreaming()
 {
-    // Open subdevice handles and retrieve calibration
-    for(int i=0; i<subdevices.size(); ++i) subdevices[i].reset(new Subdevice(device, i));
-    first_handle = subdevices[0]->get_handle();
-    calib = RetrieveCalibration();
+    if (first_handle == nullptr)
+    {
+        // Open subdevice handles and retrieve calibration
+        for(int i=0; i<subdevices.size(); ++i) subdevices[i].reset(new Subdevice(device, i));
+        first_handle = subdevices[0]->get_handle();
+        calib = RetrieveCalibration();
+    }
 
     // Choose suitable modes for all subdevices
     std::vector<SubdeviceMode> modes(subdevices.size());
@@ -104,15 +107,19 @@ void rs_camera::StartStreaming()
     // Start streaming
     SetStreamIntent();
     for(auto & subdevice : subdevices) subdevice->start_streaming();
+    isCapturing = true;
 }
 
 void rs_camera::StopStreaming()
 {
     for(auto & subdevice : subdevices) subdevice->stop_streaming();
+    isCapturing = false;
 }
     
 void rs_camera::WaitAllStreams()
 {
+    if (!isCapturing) return;
+    
     int maxFps = 0;
     for(auto & stream : streams) maxFps = stream ? std::max(maxFps, stream->get_mode().fps) : maxFps;
 
@@ -123,7 +130,7 @@ void rs_camera::WaitAllStreams()
             // If this is the fastest stream, wait until a new frame arrives
             if(stream->get_mode().fps == maxFps)
             {
-                while(true) if(stream->update_image()) break;
+                while(true) if(stream->update_image()) break; // ok, this just blocks the entire loop on stop
             }
             else // Otherwise simply check for a new frame
             {

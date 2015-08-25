@@ -111,17 +111,21 @@ int main(int argc, char * argv[]) try
 	}
 	if (!cam) throw std::runtime_error("No camera detected. Is it plugged in?");
     const auto depth_intrin = cam.get_stream_intrinsics(RS_DEPTH);
-    struct state { float yaw, pitch; double lastX, lastY; bool ml; int tex_stream = RS_COLOR; } app_state = {};
+        
+    struct state { float yaw, pitch; double lastX, lastY; bool ml; int tex_stream = RS_COLOR; rs::camera * cam; } app_state = {};
+    app_state.cam = &cam;
 
 	glfwInit();
-    GLFWwindow * win = glfwCreateWindow(640, 480, "RealSense Point Cloud", 0, 0);
+    GLFWwindow * win = glfwCreateWindow(640, 480, "librealsense point cloud", 0, 0);
 	glfwSetWindowUserPointer(win, &app_state);
+        
 	glfwSetMouseButtonCallback(win, [](GLFWwindow * win, int button, int action, int mods)
 	{
 		auto s = (state *)glfwGetWindowUserPointer(win);
 		if(button == GLFW_MOUSE_BUTTON_LEFT) s->ml = action == GLFW_PRESS;
         if(button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_PRESS) s->tex_stream = s->tex_stream == RS_COLOR ? RS_INFRARED : RS_COLOR;
 	});
+        
 	glfwSetCursorPosCallback(win, [](GLFWwindow * win, double x, double y)
 	{
 		auto s = (state *)glfwGetWindowUserPointer(win);
@@ -137,6 +141,18 @@ int main(int argc, char * argv[]) try
 		s->lastX = x;
 		s->lastY = y;
 	});
+        
+    glfwSetKeyCallback(win, [](GLFWwindow * win, int key, int scancode, int action, int mods)
+    {
+        auto s = (state *)glfwGetWindowUserPointer(win);
+        if (action == GLFW_PRESS)
+        {
+            if (key == GLFW_KEY_ESCAPE) glfwSetWindowShouldClose(win, 1);
+            else if (key == GLFW_KEY_F1) s->cam->start_streaming();
+            else if (key == GLFW_KEY_F2) s->cam->stop_streaming();
+        }
+    });
+
 	glfwMakeContextCurrent(win);
     // glfwSwapInterval(0); // Use this if testing > 60 fps modes
 

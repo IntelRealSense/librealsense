@@ -140,6 +140,8 @@ protected:
     rs::CalibrationInfo calib;
 
     uvc_device_handle_t * first_handle;
+    bool isCapturing = false;
+  
 public:
     rs_camera(uvc_context_t * context, uvc_device_t * device);
     ~rs_camera();
