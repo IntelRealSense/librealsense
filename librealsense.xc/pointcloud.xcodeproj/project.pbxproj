@@ -119,9 +119,9 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		08567BB01B5B59E800EB6C0D /* CameraDev */ = {
+		08567BB01B5B59E800EB6C0D /* pointcloud */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 08567BB81B5B59E800EB6C0D /* Build configuration list for PBXNativeTarget "CameraDev" */;
+			buildConfigurationList = 08567BB81B5B59E800EB6C0D /* Build configuration list for PBXNativeTarget "pointcloud" */;
 			buildPhases = (
 				08567BAD1B5B59E800EB6C0D /* Sources */,
 				08567BAE1B5B59E800EB6C0D /* Frameworks */,
@@ -131,7 +131,7 @@
 			);
 			dependencies = (
 			);
-			name = CameraDev;
+			name = pointcloud;
 			productName = CameraDev;
 			productReference = 08567BB11B5B59E800EB6C0D /* CameraDev */;
 			productType = "com.apple.product-type.tool";
@@ -162,7 +162,7 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				08567BB01B5B59E800EB6C0D /* CameraDev */,
+				08567BB01B5B59E800EB6C0D /* pointcloud */,
 			);
 		};
 /* End PBXProject section */
@@ -327,7 +327,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		08567BB81B5B59E800EB6C0D /* Build configuration list for PBXNativeTarget "CameraDev" */ = {
+		08567BB81B5B59E800EB6C0D /* Build configuration list for PBXNativeTarget "pointcloud" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				08567BB91B5B59E800EB6C0D /* Debug */,

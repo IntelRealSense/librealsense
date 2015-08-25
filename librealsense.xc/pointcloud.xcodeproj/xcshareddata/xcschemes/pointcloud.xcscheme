@@ -15,8 +15,8 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "08567BB01B5B59E800EB6C0D"
-               BuildableName = "CameraDev"
-               BlueprintName = "CameraDev"
+               BuildableName = "pointcloud"
+               BlueprintName = "pointcloud"
                ReferencedContainer = "container:pointcloud.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
@@ -33,8 +33,8 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "08567BB01B5B59E800EB6C0D"
-            BuildableName = "CameraDev"
-            BlueprintName = "CameraDev"
+            BuildableName = "pointcloud"
+            BlueprintName = "pointcloud"
             ReferencedContainer = "container:pointcloud.xcodeproj">
          </BuildableReference>
       </MacroExpansion>
@@ -54,8 +54,8 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "08567BB01B5B59E800EB6C0D"
-            BuildableName = "CameraDev"
-            BlueprintName = "CameraDev"
+            BuildableName = "pointcloud"
+            BlueprintName = "pointcloud"
             ReferencedContainer = "container:pointcloud.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
@@ -73,8 +73,8 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "08567BB01B5B59E800EB6C0D"
-            BuildableName = "CameraDev"
-            BlueprintName = "CameraDev"
+            BuildableName = "pointcloud"
+            BlueprintName = "pointcloud"
             ReferencedContainer = "container:pointcloud.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
