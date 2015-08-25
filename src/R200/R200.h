@@ -5,7 +5,6 @@
 
 #include "../UVCCamera.h"
 
-#ifdef USE_UVC_DEVICES
 namespace r200
 {
     class R200Camera : public rs::UVCCamera
@@ -282,6 +281,5 @@ namespace r200
     #define COMMAND_MODIFIER_DIRECT 0x00000010
     
 } // end namespace r200
-#endif
 
 #endif

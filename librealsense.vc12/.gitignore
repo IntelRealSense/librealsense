@@ -1,7 +1,0 @@
-ipch/
-packages/
-build/
-*.opensdf
-*.sdf
-*.suo
-*.vcxproj.user

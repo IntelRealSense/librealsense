@@ -4,9 +4,6 @@
 
 #include "rs-internal.h"
 
-#ifdef USE_UVC_DEVICES
-#include <libuvc/libuvc.h>
-
 namespace rs
 {
     const int MAX_STREAMS = 4;
@@ -140,6 +137,5 @@ namespace rs
     };
     
 } // end namespace rs
-#endif
 
 #endif

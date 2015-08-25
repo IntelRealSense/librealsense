@@ -5,7 +5,6 @@
 
 #include "../rs-internal.h"
 
-#ifdef USE_UVC_DEVICES
 #include "../UVCCamera.h"
 
 namespace f200
@@ -36,7 +35,5 @@ namespace f200
     };
     
 } // end namespace f200
-
-#endif
 
 #endif

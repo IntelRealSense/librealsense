@@ -1,6 +1,5 @@
 #include "R200.h"
 
-#ifdef USE_UVC_DEVICES
 using namespace rs;
 
 #include <iostream>
@@ -572,5 +571,3 @@ namespace r200
     }
 
 } // end namespace r200
-
-#endif
