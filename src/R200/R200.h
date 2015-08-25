@@ -95,8 +95,11 @@ namespace r200
     //@todo - get_gain_discovery
     //@todo - set_gain_discovery
     
-    //@todo - get_disparity shift
-    //@todo - set_disparity shift
+    //@todo - get_disparity_shift
+    //@todo - set_disparity_shift
+    
+    //@todo - get_disparity_info
+    //@todo - set_disparity_info
     
     //@todo - get_depth_control
     //@todo - set_depth_control
@@ -258,7 +261,7 @@ namespace r200
     };
     #pragma pack(pop)
 
-    #define CAMERA_XU_UNIT_ID 2
+    #define CAMERA_XU_UNIT_ID                           2
     
     #define STATUS_BIT_Z_STREAMING                      (1 << 0)
     #define STATUS_BIT_LR_STREAMING                     (1 << 1)
@@ -312,6 +315,7 @@ namespace r200
     #define COMMAND_MODIFIER_DIRECT                     0x00000010
     
 } // end namespace r200
+
 #endif
 
 #endif
