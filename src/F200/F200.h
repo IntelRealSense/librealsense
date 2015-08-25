@@ -30,6 +30,10 @@ namespace f200
             default: throw std::runtime_error("unsupported stream");
             }
         }
+        
+        bool xu_read(uvc_device_handle_t * device, uint64_t xu_ctrl, void * buffer, uint32_t length);
+        bool xu_write(uvc_device_handle_t * device, uint64_t xu_ctrl, void * buffer, uint32_t length);
+        
     };
     
 } // end namespace f200

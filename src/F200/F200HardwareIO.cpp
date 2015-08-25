@@ -112,9 +112,6 @@ namespace f200
                 return ret;
             }
 
-            // Debugging only
-            // dumpCommand(out, outSize);
-
             // read
             if (in && inSize)
             {
@@ -132,9 +129,6 @@ namespace f200
                 }
                 else
                 {
-                    // Debuggong only
-                    // dumpCommand(buf, outXfer);
-                    // outXfer -= sizeof(uint32_t);
 
                     op = *(uint32_t *)buf;
 
@@ -221,8 +215,7 @@ namespace f200
 
             calibration->buildParameters(params, 100);
 
-            // Debugging -- optional
-            // calibration->PrintParameters();
+            // calprms; // breakpoint here to debug
 
             memcpy(calprms, params+1, sizeof(CameraCalibrationParameters));
             memcpy(&TesterData, bufParams, SIZE_OF_CALIB_HEADER_BYTES);
@@ -245,8 +238,7 @@ namespace f200
             memcpy(calprms, &CalibrationData.CalibrationParameters, sizeof(CameraCalibrationParameters));
             calibration->buildParameters(CalibrationData.CalibrationParameters);
 
-            // Debugging -- optional
-            // calibration->PrintParameters();
+            // calprms; // breakpoint here to debug
 
             memcpy(&TesterData,  rawCalibData, SIZE_OF_CALIB_HEADER_BYTES);  //copy the header: valid + version
 
@@ -358,9 +350,9 @@ namespace f200
     {
         if (!ctx) throw std::runtime_error("must pass libuvc context handle");
 
-        libusb_context * usbctx = uvc_get_libusb_context(ctx);
+        libusb_context * usb_ctx = uvc_get_libusb_context(ctx);
 
-        usbDeviceHandle = libusb_open_device_with_vid_pid(usbctx, IVCAM_VID, IVCAM_PID);
+        usbDeviceHandle = libusb_open_device_with_vid_pid(usb_ctx, IVCAM_VID, IVCAM_PID);
 
         if (usbDeviceHandle == NULL)
             throw std::runtime_error("libusb_open_device_with_vid_pid() failed");

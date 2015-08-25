@@ -144,9 +144,9 @@
 		08567C341B61E6B900EB6C0D /* src */ = {
 			isa = PBXGroup;
 			children = (
-				27F24F401B7BDF2D00BF4D43 /* headers */,
 				27E516391B87ABFA00DDA462 /* image.cpp */,
 				279D526B1B8D08E1007F2D73 /* camera.cpp */,
+				27F24F331B7BDF1B00BF4D43 /* rs-internal.h */,
 				27F24F341B7BDF1B00BF4D43 /* rs.cpp */,
 				08567C361B61E6C600EB6C0D /* R200 */,
 				08567C351B61E6C100EB6C0D /* F200 */,
@@ -158,9 +158,9 @@
 			isa = PBXGroup;
 			children = (
 				27F24F6A1B7BDF9700BF4D43 /* F200.h */,
+				27F24F691B7BDF9700BF4D43 /* F200.cpp */,
 				27F24F6D1B7BDF9700BF4D43 /* F200Types.h */,
 				27F24F6F1B7BDF9700BF4D43 /* HardwareIO.h */,
-				27F24F691B7BDF9700BF4D43 /* F200.cpp */,
 				27F24F6B1B7BDF9700BF4D43 /* F200HardwareIO.cpp */,
 			);
 			name = F200;
@@ -173,14 +173,6 @@
 				27F24F441B7BDF5A00BF4D43 /* R200.cpp */,
 			);
 			name = R200;
-			sourceTree = "<group>";
-		};
-		27F24F401B7BDF2D00BF4D43 /* headers */ = {
-			isa = PBXGroup;
-			children = (
-				27F24F331B7BDF1B00BF4D43 /* rs-internal.h */,
-			);
-			name = headers;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */

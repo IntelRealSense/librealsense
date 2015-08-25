@@ -80,6 +80,31 @@ namespace f200
         c.depth_scale = (calib.Rmax / 0xFFFF) * 0.001f; // convert mm to m
         return c;
     }
+    
+    
+    bool xu_read(uvc_device_handle_t * device, uint64_t xu_ctrl, void * buffer, uint32_t length)
+    {
+        auto xu_info = uvc_get_extension_units(device);
+        auto status = uvc_get_ctrl(device, xu_info->bUnitID, xu_ctrl, buffer, length, UVC_GET_CUR);
+        if (status < 0)
+        {
+            uvc_perror((uvc_error_t) status, "xu_read - uvc_get_ctrl");
+            return false;
+        }
+        return true;
+    }
+    
+    bool xu_write(uvc_device_handle_t * device, uint64_t xu_ctrl, void * buffer, uint32_t length)
+    {
+        auto xu_info = uvc_get_extension_units(device);
+        auto status = uvc_set_ctrl(device, xu_info->bUnitID, xu_ctrl, buffer, length);
+        if (status < 0)
+        {
+            uvc_perror((uvc_error_t) status, "xu_write - uvc_set_ctrl");
+            return false;
+        }
+        return true;
+    }
 
 } // end f200
 
