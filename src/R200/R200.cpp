@@ -447,26 +447,32 @@ namespace r200
         return fw;
     }
 
-    bool xu_read(uvc_device_handle_t * device, uint64_t xu_ctrl, uint8_t * buffer, uint32_t length)
+    bool xu_read(uvc_device_handle_t * device, uint64_t xu_ctrl, void * buffer, uint32_t length)
     {
         auto status = uvc_get_ctrl(device, CAMERA_XU_UNIT_ID, xu_ctrl, buffer, length, UVC_GET_CUR);
         if (status < 0)
         {
-            uvc_perror((uvc_error_t) status, "XURead - uvc_get_ctrl");
+            uvc_perror((uvc_error_t) status, "xu_read - uvc_get_ctrl");
             return false;
         }
         return true;
     }
 
-    bool xu_write(uvc_device_handle_t * device, uint64_t xu_ctrl, uint8_t * buffer, uint32_t length)
+    bool xu_write(uvc_device_handle_t * device, uint64_t xu_ctrl, void * buffer, uint32_t length)
     {
         auto status = uvc_set_ctrl(device, CAMERA_XU_UNIT_ID, xu_ctrl, buffer, length);
         if (status < 0)
         {
-            uvc_perror((uvc_error_t) status, "XUWrite - uvc_set_ctrl");
+            uvc_perror((uvc_error_t) status, "xu_write - uvc_set_ctrl");
             return false;
         }
         return true;
+    }
+    
+    bool force_firmware_reset(uvc_device_handle_t *device)
+    {
+        uint8_t reset = 1;
+        return xu_write(device, CONTROL_SW_RESET, &reset, sizeof(uint8_t));
     }
 
     bool get_emitter_state(uvc_device_handle_t * device, bool & state)
@@ -482,8 +488,8 @@ namespace r200
 
     bool set_emitter_state(uvc_device_handle_t * device, bool state)
     {
-        unsigned char s = state ? 1 : 0;
-        return xu_read(device, CONTROL_EMITTER, &s, sizeof(uint8_t));
+        uint8_t newEmitterState = state ? 1 : 0;
+        return xu_read(device, CONTROL_EMITTER, &newEmitterState, sizeof(uint8_t));
     }
 
     bool read_temperature(uvc_device_handle_t * device, int8_t & current, int8_t & min, int8_t & max, int8_t & min_fault)
@@ -516,6 +522,33 @@ namespace r200
     {
         return xu_read(device, CONTROL_LAST_ERROR, &last_error, sizeof(uint8_t));
     }
+    
+    bool get_depth_units(uvc_device_handle_t * device, uint32_t & units)
+    {
+        return xu_read(device, CONTROL_DEPTH_UNITS, &units, sizeof(units));
+    }
+    
+    bool get_min_max_depth(uvc_device_handle_t * device, uint16_t & min_depth, uint16_t & max_depth)
+    {
+        struct mm
+        {
+            uint16_t min;
+            uint16_t max;
+        };
+        
+        mm depth;
+        
+        if (!xu_read(device, CONTROL_MIN_MAX, &depth, sizeof(depth)))
+        {
+            return false;
+        }
+        
+        min_depth = depth.min;
+        max_depth = depth.max;
+        
+        return true;
+    }
 
 } // end namespace r200
+
 #endif
