@@ -255,7 +255,7 @@ void unpack_rly12_to_y8(void * dest[], const SubdeviceMode & mode, const uint8_t
 void unpack_yuyv_to_rgb(void * dest[], const SubdeviceMode & mode, const uint8_t * source)
 {
     assert(mode.format == UVC_FRAME_FORMAT_YUYV && mode.streams.size() == 1 && mode.streams[0].format == RS_RGB8);
-    convert_yuyv_to_rgb(dest[0], mode.width, mode.height, source);
+    convert_yuyv_to_rgb((uint8_t *) dest[0], mode.width, mode.height, source);
 }
 
 } // end namespace rs

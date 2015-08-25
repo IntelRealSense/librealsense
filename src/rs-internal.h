@@ -10,6 +10,7 @@
 #include <vector>       // For vector
 #include <thread>       // For thread
 #include <mutex>        // For mutex
+#include <array>
 
 // Currently, we will use DSAPI on Windows and libuvc everywhere else
 #ifdef WIN32
