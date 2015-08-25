@@ -99,6 +99,9 @@ void UVCCamera::StartStreaming()
         subdevices[i]->set_mode(modes[i], mode_streams);
     }
 
+    // Shut off user access to streams that were not requested
+    for(int i=0; i<MAX_STREAMS; ++i) if(!requests[i].enabled) streams[i].reset();
+
     // Start streaming
     SetStreamIntent();
     for(auto & subdevice : subdevices) subdevice->start_streaming();
@@ -180,30 +183,6 @@ void UVCCamera::Subdevice::set_mode(const SubdeviceMode & mode, std::vector<std:
     for(size_t i=0; i<mode.streams.size(); ++i) streams[i]->set_mode(mode.streams[i]);
 }
 
-static size_t get_pixel_size(int format)
-{
-    switch(format)
-    {
-    case RS_Z16: return sizeof(uint16_t);
-    case RS_Y8: return sizeof(uint8_t);
-    case RS_RGB8: return sizeof(uint8_t) * 3;
-    default: assert(false);
-    }
-}
-
-void unpack_strided_image(void * dest[], const SubdeviceMode & mode, const uint8_t * source)
-{
-    assert(mode.streams.size() == 1);
-    copy_strided_image(dest[0], mode.streams[0].intrinsics.image_size[0] * get_pixel_size(mode.streams[0].format),
-        source, mode.width * get_pixel_size(mode.streams[0].format), mode.streams[0].intrinsics.image_size[1]);
-}
-
-void unpack_yuyv_to_rgb(void * dest[], const SubdeviceMode & mode, const uint8_t * source)
-{
-    assert(mode.format == UVC_FRAME_FORMAT_YUYV && mode.streams.size() == 1 && mode.streams[0].format == RS_RGB8);
-    convert_yuyv_to_rgb(dest[0], mode.width, mode.height, source);
-}
-
 void UVCCamera::Subdevice::start_streaming()
 {
     CheckUVC("uvc_start_streaming", uvc_start_streaming(uvcHandle, &ctrl, [](uvc_frame_t * frame, void * ptr)
@@ -230,6 +209,53 @@ void UVCCamera::Subdevice::start_streaming()
 void UVCCamera::Subdevice::stop_streaming()
 {
     CheckUVC("uvc_stream_stop", uvc_stream_stop(ctrl.handle));
+}
+
+static size_t get_pixel_size(int format)
+{
+    switch(format)
+    {
+    case RS_Z16: return sizeof(uint16_t);
+    case RS_Y8: return sizeof(uint8_t);
+    case RS_RGB8: return sizeof(uint8_t) * 3;
+    default: assert(false);
+    }
+}
+
+void unpack_strided_image(void * dest[], const SubdeviceMode & mode, const uint8_t * source)
+{
+    assert(mode.streams.size() == 1);
+    copy_strided_image(dest[0], mode.streams[0].intrinsics.image_size[0] * get_pixel_size(mode.streams[0].format),
+        source, mode.width * get_pixel_size(mode.streams[0].format), mode.streams[0].intrinsics.image_size[1]);
+}
+
+void unpack_rly12_to_y8(void * dest[], const SubdeviceMode & mode, const uint8_t * frame)
+{
+    assert(mode.format == UVC_FRAME_FORMAT_Y12I && mode.streams.size() == 2 && mode.streams[0].format == RS_Y8 && mode.streams[1].format == RS_Y8);
+
+    #pragma pack(push, 1)
+    struct RightLeftY12Pixel { uint8_t rl : 8, rh : 4, ll : 4, lh : 8; };
+    static_assert(sizeof(RightLeftY12Pixel) == 3, "packing error");
+    #pragma pack(pop)
+
+    auto left = reinterpret_cast<uint8_t *>(dest[0]);
+    auto right = reinterpret_cast<uint8_t *>(dest[1]);
+    for(int y=0; y<mode.streams[0].intrinsics.image_size[1]; ++y)
+    {
+        auto src = reinterpret_cast<const RightLeftY12Pixel *>(frame) + y*640;
+        for(int x=0; x<mode.streams[0].intrinsics.image_size[0]; ++x)
+        {
+            *right++ = (src->rh << 8 | src->rl) >> 2;
+            *left++ = (src->lh << 4 | src->ll) >> 2;
+            ++src;
+        }
+    }
+}
+
+void unpack_yuyv_to_rgb(void * dest[], const SubdeviceMode & mode, const uint8_t * source)
+{
+    assert(mode.format == UVC_FRAME_FORMAT_YUYV && mode.streams.size() == 1 && mode.streams[0].format == RS_RGB8);
+    convert_yuyv_to_rgb(dest[0], mode.width, mode.height, source);
 }
 
 } // end namespace rs

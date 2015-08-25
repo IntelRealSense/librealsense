@@ -48,7 +48,7 @@ namespace r200
                 auto lrHeight = (int)intrin.rh + 1; // Height of left/right images, including extra Dinghy row
                 c.modes.push_back({0, 640, lrHeight, UVC_FRAME_FORMAT_Y8, uvcFps, {{RS_INFRARED, lrIntrin, RS_Y8, fps}}, &rs::unpack_strided_image});
                 c.modes.push_back({0, 640, lrHeight, UVC_FRAME_FORMAT_Y12I, uvcFps,
-                    {{RS_INFRARED, lrIntrin, RS_Y8, fps}, {RS_INFRARED_2, lrIntrin, RS_Y8, fps}}, &rs::unpack_strided_image});
+                    {{RS_INFRARED, lrIntrin, RS_Y8, fps}, {RS_INFRARED_2, lrIntrin, RS_Y8, fps}}, &rs::unpack_rly12_to_y8});
                 c.modes.push_back({1, 640 - 12, lrHeight - 12, UVC_FRAME_FORMAT_Z16, uvcFps, {{RS_DEPTH, zIntrin, RS_Z16, fps}}, &rs::unpack_strided_image});
             }
         }

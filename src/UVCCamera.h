@@ -43,6 +43,7 @@ namespace rs
     };
 
     void unpack_strided_image(void * dest[], const SubdeviceMode & mode, const uint8_t * frame);
+    void unpack_rly12_to_y8(void * dest[], const SubdeviceMode & mode, const uint8_t * frame);
     void unpack_yuyv_to_rgb(void * dest[], const SubdeviceMode & mode, const uint8_t * frame);
 
     // World's tiniest linear algebra library
