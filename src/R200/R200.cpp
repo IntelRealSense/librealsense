@@ -7,35 +7,38 @@ using namespace rs;
 namespace r200
 {
     enum { LR_FULL, LR_BIG, Z_FULL, Z_BIG, THIRD_HD, THIRD_VGA, NUM_INTRINSICS };
-
-    static std::vector<SubdeviceMode> list_r200_modes()
+    static StaticCameraInfo get_r200_info()
     {
-        std::vector<SubdeviceMode> modes;
+        StaticCameraInfo info;
+        info.stream_subdevices[RS_INFRARED] = 0;
+        info.stream_subdevices[RS_INFRARED_2] = 0;
+        info.stream_subdevices[RS_DEPTH] = 1;
+        info.stream_subdevices[RS_COLOR] = 2;
         for(auto fps : {30, 60, 90})
         {
             auto uvcFps = fps == 60 ? 59 : fps; // UVC sees the 60 fps mode as 59 fps
 
             // left/right modes on subdevice 0
-            modes.push_back({0, 640, 481, UVC_FRAME_FORMAT_Y8, uvcFps, {{RS_INFRARED, 640, 480, RS_Y8, fps, LR_FULL}}, &rs::unpack_strided_image});
-            modes.push_back({0, 640, 481, UVC_FRAME_FORMAT_Y12I, uvcFps, {{RS_INFRARED, 640, 480, RS_Y8, fps, LR_FULL}, {RS_INFRARED_2, 640, 480, RS_Y8, fps, LR_FULL}}, &rs::unpack_rly12_to_y8});
-            modes.push_back({0, 640, 373, UVC_FRAME_FORMAT_Y8, uvcFps, {{RS_INFRARED, 492, 372, RS_Y8, fps, LR_BIG}}, &rs::unpack_strided_image});
-            modes.push_back({0, 640, 373, UVC_FRAME_FORMAT_Y12I, uvcFps, {{RS_INFRARED, 492, 372, RS_Y8, fps, LR_BIG}, {RS_INFRARED_2, 492, 372, RS_Y8, fps, LR_BIG}}, &rs::unpack_rly12_to_y8});
+            info.subdevice_modes.push_back({0, 640, 481, UVC_FRAME_FORMAT_Y8, uvcFps, {{RS_INFRARED, 640, 480, RS_Y8, fps, LR_FULL}}, &rs::unpack_strided_image});
+            info.subdevice_modes.push_back({0, 640, 481, UVC_FRAME_FORMAT_Y12I, uvcFps, {{RS_INFRARED, 640, 480, RS_Y8, fps, LR_FULL}, {RS_INFRARED_2, 640, 480, RS_Y8, fps, LR_FULL}}, &rs::unpack_rly12_to_y8});
+            info.subdevice_modes.push_back({0, 640, 373, UVC_FRAME_FORMAT_Y8, uvcFps, {{RS_INFRARED, 492, 372, RS_Y8, fps, LR_BIG}}, &rs::unpack_strided_image});
+            info.subdevice_modes.push_back({0, 640, 373, UVC_FRAME_FORMAT_Y12I, uvcFps, {{RS_INFRARED, 492, 372, RS_Y8, fps, LR_BIG}, {RS_INFRARED_2, 492, 372, RS_Y8, fps, LR_BIG}}, &rs::unpack_rly12_to_y8});
 
             // z modes on subdevice 1
-            modes.push_back({1, 628, 469, UVC_FRAME_FORMAT_Z16, uvcFps, {{RS_DEPTH, 628, 468, RS_Z16, fps, Z_FULL}}, &rs::unpack_strided_image});
-            modes.push_back({1, 628, 361, UVC_FRAME_FORMAT_Z16, uvcFps, {{RS_DEPTH, 480, 360, RS_Z16, fps, Z_BIG}}, &rs::unpack_strided_image});
+            info.subdevice_modes.push_back({1, 628, 469, UVC_FRAME_FORMAT_Z16, uvcFps, {{RS_DEPTH, 628, 468, RS_Z16, fps, Z_FULL}}, &rs::unpack_strided_image});
+            info.subdevice_modes.push_back({1, 628, 361, UVC_FRAME_FORMAT_Z16, uvcFps, {{RS_DEPTH, 480, 360, RS_Z16, fps, Z_BIG}}, &rs::unpack_strided_image});
 
             // third modes on subdevice 2
             if(fps == 90) continue;
-            modes.push_back({2, 1920, 1080, UVC_FRAME_FORMAT_YUYV, uvcFps, {{RS_COLOR, 1920, 1080, RS_RGB8, fps, THIRD_HD}}, &rs::unpack_yuyv_to_rgb});
-            modes.push_back({2, 640, 480, UVC_FRAME_FORMAT_YUYV, uvcFps, {{RS_COLOR, 640, 480, RS_RGB8, fps, THIRD_VGA}}, &rs::unpack_yuyv_to_rgb});
+            info.subdevice_modes.push_back({2, 1920, 1080, UVC_FRAME_FORMAT_YUYV, uvcFps, {{RS_COLOR, 1920, 1080, RS_RGB8, fps, THIRD_HD}}, &rs::unpack_yuyv_to_rgb});
+            info.subdevice_modes.push_back({2, 640, 480, UVC_FRAME_FORMAT_YUYV, uvcFps, {{RS_COLOR, 640, 480, RS_RGB8, fps, THIRD_VGA}}, &rs::unpack_yuyv_to_rgb});
         }
-        return modes;
+        return info;
     }
 
-    R200Camera::R200Camera(uvc_context_t * ctx, uvc_device_t * device) : rs_camera(ctx, device, list_r200_modes())
+    R200Camera::R200Camera(uvc_context_t * ctx, uvc_device_t * device) : rs_camera(ctx, device, get_r200_info())
     {
-        subdevices.resize(3);
+
     }
 
     void R200Camera::EnableStreamPreset(int streamIdentifier, int preset)

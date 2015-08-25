@@ -57,6 +57,14 @@ namespace rs
         void (* unpacker)(void * dest[], const SubdeviceMode & mode, const void * frame);
     };
 
+    struct StaticCameraInfo
+    {
+        int stream_subdevices[MAX_STREAMS];             // Which subdevice is used to support each stream, or -1 if stream is unavailable
+        std::vector<SubdeviceMode> subdevice_modes;     // A list of available modes each subdevice can be put into
+
+        StaticCameraInfo() { for(auto & s : stream_subdevices) s = -1; }
+    };
+
     void unpack_strided_image(void * dest[], const SubdeviceMode & mode, const void * frame);
     void unpack_rly12_to_y8(void * dest[], const SubdeviceMode & mode, const void * frame);
     void unpack_yuyv_to_rgb(void * dest[], const SubdeviceMode & mode, const void * frame);
@@ -132,7 +140,7 @@ protected:
 
     uvc_context_t * context;
     uvc_device_t * device;
-    const std::vector<rs::SubdeviceMode> modes;
+    const rs::StaticCameraInfo camera_info;
 
     std::array<rs::StreamRequest, rs::MAX_STREAMS> requests;    // Indexed by RS_DEPTH, RS_COLOR, ...
     std::shared_ptr<Stream> streams[rs::MAX_STREAMS];       // Indexed by RS_DEPTH, RS_COLOR, ...
@@ -145,7 +153,7 @@ protected:
     bool isCapturing = false;
   
 public:
-    rs_camera(uvc_context_t * context, uvc_device_t * device, std::vector<rs::SubdeviceMode> modes);
+    rs_camera(uvc_context_t * context, uvc_device_t * device, const rs::StaticCameraInfo & camera_info);
     ~rs_camera();
 
     const char * GetCameraName() const { return cameraName.c_str(); }

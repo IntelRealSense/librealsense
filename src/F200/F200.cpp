@@ -9,21 +9,23 @@ using namespace rs;
 namespace f200
 {
     enum { COLOR_480P, COLOR_1080P, DEPTH_480P, NUM_INTRINSICS };
-
-    static std::vector<SubdeviceMode> list_f200_modes()
+    static StaticCameraInfo get_f200_info()
     {
-        return {
+        StaticCameraInfo info;
+        info.stream_subdevices[RS_COLOR] = 0;
+        info.stream_subdevices[RS_DEPTH] = 1;
+        info.subdevice_modes = {
             // Color modes on subdevice 0
             {0, 640, 480, UVC_FRAME_FORMAT_YUYV, 60, {{RS_COLOR, 640, 480, RS_RGB8, 60, COLOR_480P}}, &rs::unpack_yuyv_to_rgb},
             {0, 1920, 1080, UVC_FRAME_FORMAT_YUYV, 60, {{RS_COLOR, 1920, 1080, RS_RGB8, 60, COLOR_1080P}}, &rs::unpack_yuyv_to_rgb},
-            // Depth modes of subdevice 1
+            // Depth modes oo subdevice 1
             {1, 640, 480, UVC_FRAME_FORMAT_INVR, 60, {{RS_DEPTH, 640, 480, RS_Z16, 60, DEPTH_480P}}, &rs::unpack_strided_image},
         };
     }
 
-    F200Camera::F200Camera(uvc_context_t * ctx, uvc_device_t * device) : rs_camera(ctx, device, list_f200_modes())
+    F200Camera::F200Camera(uvc_context_t * ctx, uvc_device_t * device) : rs_camera(ctx, device, get_f200_info())
     {
-        subdevices.resize(2);
+
     }
 
     F200Camera::~F200Camera()

@@ -7,20 +7,23 @@ using namespace rs;
 // UVC Camera //
 ////////////////
 
-rs_camera::rs_camera(uvc_context_t * context, uvc_device_t * device, std::vector<SubdeviceMode> modes) : context(context), device(device), modes(move(modes)), first_handle()
+rs_camera::rs_camera(uvc_context_t * context, uvc_device_t * device, const StaticCameraInfo & camera_info)
+    : context(context), device(device), camera_info(camera_info), first_handle()
 {
     uvc_device_descriptor_t * desc;
     CheckUVC("uvc_get_device_descriptor", uvc_get_device_descriptor(device, &desc));
-
-    for(auto & req : requests) req = {};
-
     cameraName = desc->product;
     // Other interesting properties
     // desc->serialNumber
     // desc->idVendor
     // desc->idProduct
-
     uvc_free_device_descriptor(desc);  
+
+    int max_subdevice = 0;
+    for(auto & mode : camera_info.subdevice_modes) max_subdevice = std::max(max_subdevice, mode.subdevice);
+    subdevices.resize(max_subdevice+1);
+
+    for(auto & req : requests) req = {};
 
     calib = {};
 }
@@ -36,75 +39,111 @@ void rs_camera::EnableStream(int stream, int width, int height, int fps, int for
     requests[stream] = {true, width, height, format, fps};
 }
 
-bool choose_mode(std::vector<SubdeviceMode> & dest, std::array<StreamRequest, MAX_STREAMS> requests, const std::vector<SubdeviceMode> & modes, int subdevice)
-{
-    if(dest.size() == subdevice)
-    {
-        for(auto & req : requests) if(req.enabled) return false; // This request was not satisfied
-        return true; // Otherwise all requests are satisfied and we have chosen a mode for all subdevices. Win!
-    }
-
-    for(auto & mode : modes)
-    {
-        if(mode.subdevice != subdevice) continue;
-
-        bool valid = true;
-        auto reqs = requests;
-        for(auto & stream_mode : mode.streams)
-        {
-            auto & req = reqs[stream_mode.stream];
-            if(req.enabled)
-            {
-                if(req.width != stream_mode.width || req.height != stream_mode.height || req.format != stream_mode.format || req.fps != stream_mode.fps)
-                {
-                    valid = false;
-                    break;
-                }
-                req.enabled = false;
-            }
-        }
-        if(valid)
-        {
-            dest[subdevice] = mode;
-            if(choose_mode(dest, reqs, modes, subdevice + 1)) return true;
-        }
-    }
-
-    return false;
-}
+#include <algorithm>
 
 void rs_camera::StartStreaming()
 {
-    if (first_handle == nullptr)
+    for(auto & s : subdevices) s.reset();
+    for(auto & s : streams) s.reset();
+    first_handle = nullptr;
+
+    // For each subdevice
+    for(int i = 0; i < subdevices.size(); ++i)
     {
-        // Open subdevice handles and retrieve calibration
-        for(int i=0; i<subdevices.size(); ++i) subdevices[i].reset(new Subdevice(device, i));
-        first_handle = subdevices[0]->get_handle();
+        // Determine if the user has requested any streams which are supplied by this subdevice
+        bool any_stream_requested = false;
+        std::array<bool, MAX_STREAMS> stream_requested = {};
+        for(int j = 0; j < MAX_STREAMS; ++j)
+        {
+            if(requests[j].enabled && camera_info.stream_subdevices[j] == i)
+            {
+                stream_requested[j] = true;
+                any_stream_requested = true;
+            }
+        }
+
+        // If no streams were requested, skip to the next subdevice
+        if(!any_stream_requested) continue;
+
+        // Look for an appropriate mode
+        for(auto & subdevice_mode : camera_info.subdevice_modes)
+        {
+            // Determine if this mode satisfies the requirements on our requested streams
+            auto stream_unsatisfied = stream_requested;
+            for(auto & stream_mode : subdevice_mode.streams)
+            {
+                const auto & req = requests[stream_mode.stream];
+                if(req.enabled && req.width == stream_mode.width && req.height == stream_mode.height && req.format == stream_mode.format && req.fps == stream_mode.fps)
+                {
+                    stream_unsatisfied[stream_mode.stream] = false;
+                }
+            }
+
+            // If any requested streams are still unsatisfied, skip to the next mode
+            if(std::any_of(begin(stream_unsatisfied), end(stream_unsatisfied), [](bool b) { return b; })) continue;
+
+            // For each stream provided by this mode
+            std::vector<std::shared_ptr<Stream>> stream_list;
+            for(auto & stream_mode : subdevice_mode.streams)
+            {
+                // Create a buffer to receive the images from this stream
+                auto stream = std::make_shared<Stream>();
+                stream_list.push_back(stream);
+
+                // If this is one of the streams requested by the user, store the buffer so they can access it
+                if(stream_requested[stream_mode.stream])
+                {
+                    streams[stream_mode.stream] = stream;
+                }
+            }
+
+            // Initialize the subdevice and set it to the selected mode, then exit the loop early
+            subdevices[i].reset(new Subdevice(device, i));
+            subdevices[i]->set_mode(subdevice_mode, stream_list);
+            if(!first_handle) first_handle = subdevices[i]->get_handle();
+            break;
+        }
+
+        // If we did not find an appropriate mode, report an error
+        if(!subdevices[i])
+        {
+            std::ostringstream ss;
+            ss << "uvc subdevice " << i << " cannot provide";
+            bool first = true;
+            for(int j = 0; j < MAX_STREAMS; ++j)
+            {
+                if(!stream_requested[j]) continue;
+                ss << (first ? " " : " and ");
+
+                ss << requests[j].width << 'x' << requests[j].height << ':';
+                switch(requests[j].format)
+                {
+                case RS_Z16: ss << "Z16"; break;
+                case RS_RGB8: ss << "RGB8"; break;
+                case RS_Y8: ss << "Y8"; break;
+                }
+                ss << '@' << requests[j].fps << "Hz ";
+                switch(j)
+                {
+                case RS_DEPTH: ss << "DEPTH"; break;
+                case RS_COLOR: ss << "COLOR"; break;
+                case RS_INFRARED: ss << "INFRARED"; break;
+                case RS_INFRARED_2: ss << "INFRARED_2"; break;
+                }
+                first = false;
+            }
+            throw std::runtime_error(ss.str());
+        }
+    }
+
+    // If we have not yet retrieved calibration info and at least one subdevice is open, do so
+    if(calib.intrinsics.empty() && first_handle)
+    {
         calib = RetrieveCalibration();
     }
 
-    // Choose suitable modes for all subdevices
-    std::vector<SubdeviceMode> selected_modes(subdevices.size());
-    if(!choose_mode(selected_modes, requests, modes, 0)) throw std::runtime_error("bad stream combination");
-
-    // Set chosen modes and open streams
-    for(size_t i=0; i<subdevices.size(); ++i)
-    {
-        std::vector<std::shared_ptr<Stream>> mode_streams;
-        for(auto & stream_mode : selected_modes[i].streams)
-        {
-            streams[stream_mode.stream].reset(new Stream());
-            mode_streams.push_back(streams[stream_mode.stream]);
-        }
-        subdevices[i]->set_mode(selected_modes[i], mode_streams);
-    }
-
-    // Shut off user access to streams that were not requested
-    for(int i=0; i<MAX_STREAMS; ++i) if(!requests[i].enabled) streams[i].reset();
-
     // Start streaming
     SetStreamIntent();
-    
     for(auto & subdevice : subdevices) subdevice->start_streaming();
     isCapturing = true;
 }
