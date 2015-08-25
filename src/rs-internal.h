@@ -133,8 +133,8 @@ protected:
     uvc_device_t * device;
 
     std::array<rs::StreamRequest, rs::MAX_STREAMS> requests;    // Indexed by RS_DEPTH, RS_COLOR, ...
-    std::shared_ptr<Stream> streams[rs::MAX_STREAMS];       // Indexed by RS_DEPTH, RS_COLOR, ...
-    std::vector<std::unique_ptr<Subdevice>> subdevices; // Indexed by UVC subdevices number (0, 1, 2...)
+    std::shared_ptr<Stream> streams[rs::MAX_STREAMS];           // Indexed by RS_DEPTH, RS_COLOR, ...
+    std::vector<std::unique_ptr<Subdevice>> subdevices;         // Indexed by UVC subdevices number (0, 1, 2...)
 
     std::string cameraName;
     rs::CalibrationInfo calib;

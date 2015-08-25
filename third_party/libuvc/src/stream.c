@@ -627,7 +627,7 @@ void LIBUSB_CALL _uvc_stream_callback(struct libusb_transfer *transfer) {
   case LIBUSB_TRANSFER_ERROR:
   case LIBUSB_TRANSFER_NO_DEVICE: {
     int i;
-    UVC_DEBUG("not retrying transfer, status = %d", transfer->status);
+    UVC_DEBUG("transfer exception, status = %s", libusb_error_name(transfer->status));
     pthread_mutex_lock(&strmh->cb_mutex);
 
     /* Mark transfer as deleted. */
@@ -939,7 +939,8 @@ uvc_error_t uvc_stream_start(
     }
 
     /* Set up the transfers */
-    for (transfer_id = 0; transfer_id < LIBUVC_NUM_TRANSFER_BUFS; ++transfer_id) {
+    for (transfer_id = 0; transfer_id < LIBUVC_NUM_TRANSFER_BUFS; ++transfer_id)
+    {
       transfer = libusb_alloc_transfer(packets_per_transfer);
       strmh->transfers[transfer_id] = transfer;      
       strmh->transfer_bufs[transfer_id] = malloc(total_transfer_size);
@@ -951,14 +952,12 @@ uvc_error_t uvc_stream_start(
 
       libusb_set_iso_packet_lengths(transfer, endpoint_bytes_per_packet);
     }
-  } else
+  }
+    
+  else
   {
-    for (transfer_id = 0; transfer_id < LIBUVC_NUM_TRANSFER_BUFS;
-        ++transfer_id)
+    for (transfer_id = 0; transfer_id < LIBUVC_NUM_TRANSFER_BUFS; ++transfer_id)
     {
-        
-    printf("Allocate bulk transfer \n");
-        
       transfer = libusb_alloc_transfer(0);
       strmh->transfers[transfer_id] = transfer;
       strmh->transfer_bufs[transfer_id] = malloc (
@@ -979,15 +978,14 @@ uvc_error_t uvc_stream_start(
    */
   if (cb)
   {
-    printf("Setting Up Callback... \n");
     pthread_create(&strmh->cb_thread, NULL, _uvc_user_caller, (void*) strmh);
   }
 
-  for (transfer_id = 0; transfer_id < LIBUVC_NUM_TRANSFER_BUFS;
-      transfer_id++) {
+  for (transfer_id = 0; transfer_id < LIBUVC_NUM_TRANSFER_BUFS; transfer_id++)
+  {
     ret = libusb_submit_transfer(strmh->transfers[transfer_id]);
-    if (ret != UVC_SUCCESS) {
-      printf("Transfer number: %d\n", transfer_id);
+    if (ret != UVC_SUCCESS)
+    {
       UVC_DEBUG("libusb_submit_transfer failed");
       break;
     }
@@ -1241,6 +1239,7 @@ uvc_error_t uvc_stream_stop(uvc_stream_handle_t *strmh) {
             break;
         }
     } while(1);
+    
     // Kick the user thread awake
     pthread_cond_broadcast(&strmh->cb_cond);
     pthread_mutex_unlock(&strmh->cb_mutex);

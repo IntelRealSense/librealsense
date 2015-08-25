@@ -9,26 +9,20 @@ using namespace rs;
 
 rs_camera::rs_camera(uvc_context_t * context, uvc_device_t * device) : context(context), device(device), first_handle()
 {
-    uvc_device_descriptor_t * desc;
-    CheckUVC("uvc_get_device_descriptor", uvc_get_device_descriptor(device, &desc));
-
+    {
+        uvc_device_descriptor_t * desc;
+        CheckUVC("uvc_get_device_descriptor", uvc_get_device_descriptor(device, &desc));
+        cameraName = desc->product;
+        uvc_free_device_descriptor(desc);
+    }
     for(auto & req : requests) req = {};
-
-    cameraName = desc->product;
-    // Other interesting properties
-    // desc->serialNumber
-    // desc->idVendor
-    // desc->idProduct
-
-    uvc_free_device_descriptor(desc);  
-
     calib = {};
 }
 
 rs_camera::~rs_camera()
 {
     subdevices.clear();
-    uvc_unref_device(device);
+    //uvc_unref_device(device); // we never ref
 }
 
 void rs_camera::EnableStream(int stream, int width, int height, int fps, int format)
@@ -104,7 +98,6 @@ void rs_camera::StartStreaming()
     // Shut off user access to streams that were not requested
     for(int i=0; i<MAX_STREAMS; ++i) if(!requests[i].enabled) streams[i].reset();
 
-    // Start streaming
     SetStreamIntent();
     
     for(auto & subdevice : subdevices) subdevice->start_streaming();
@@ -114,6 +107,7 @@ void rs_camera::StartStreaming()
 void rs_camera::StopStreaming()
 {
     for(auto & subdevice : subdevices) subdevice->stop_streaming();
+    SetStreamIntent();
     isCapturing = false;
 }
     

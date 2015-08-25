@@ -11,6 +11,7 @@ namespace r200
     {
     public:
         R200Camera(uvc_context_t * ctx, uvc_device_t * device);
+        ~R200Camera();
 
         void EnableStreamPreset(int streamIdentifier, int preset) override final;
 
