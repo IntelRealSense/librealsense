@@ -106,6 +106,7 @@ void rs_camera::StartStreaming()
 
     // Start streaming
     SetStreamIntent();
+    
     for(auto & subdevice : subdevices) subdevice->start_streaming();
     isCapturing = true;
 }
