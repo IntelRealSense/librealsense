@@ -107,14 +107,11 @@ namespace r200
     bool        get_disparity_shift(uvc_device_handle_t * device, uint32_t & shift);
     bool        set_disparity_shift(uvc_device_handle_t * device, uint32_t shift);
     
-    //@todo - get_exposure_discovery
-    //@todo - set_exposure_discovery
+    //@todo - (if necessary) - get_exposure_discovery
+    //@todo - (if necessary) - set_exposure_discovery
+    //@todo - (if necessary) - get_gain_discovery
+    //@todo - (if necessary) - set_gain_discovery
     
-    //@todo - get_gain_discovery
-    //@todo - set_gain_discovery
-
-    // Implementation details
-
     #pragma pack(push, 1)
     template<class T> class big_endian
     {
