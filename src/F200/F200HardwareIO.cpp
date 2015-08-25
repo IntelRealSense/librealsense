@@ -440,36 +440,12 @@ namespace f200
         return isUpdated;
     }
 
-    void IVCAMCalibrator::PrintParameters()
-    {
-        printf("\nBegin Calibration Parameters ########################\n");
-        printf("# %f \n", params.Rmax);
-        printf("# %f \n", params.Kc[0][0]);
-        printf("# %f \n", params.Distc[0]);
-        printf("# %f \n", params.Invdistc[0]);
-        printf("# %f \n", params.Pp[0][0]);
-        printf("# %f \n", params.Kp[0][0]);
-        printf("# %f \n", params.Rp[0][0]);
-        printf("# %f \n", params.Tp[0]);
-        printf("# %f \n", params.Distp[0]);
-        printf("# %f \n", params.Invdistp[0]);
-        printf("# %f \n", params.Pt[0][0]);
-        printf("# %f \n", params.Kt[0][0]);
-        printf("# %f \n", params.Rt[0][0]);
-        printf("# %f \n", params.Tt[0]);
-        printf("# %f \n", params.Distt[0]);
-        printf("# %f \n", params.Invdistt[0]);
-        printf("# %f \n", params.QV[0]);
-        printf("\nEnd Calibration Parameters ########################\n");
-    }
-
     bool IVCAMCalibrator::buildParameters(const CameraCalibrationParameters & _params)
     {
         params = _params;
         isInitialized = true;
         lastTemperatureDelta = DELTA_INF;
         std::memcpy(&originalParams,&params,sizeof(CameraCalibrationParameters));
-        PrintParameters();
         return true;
     }
 

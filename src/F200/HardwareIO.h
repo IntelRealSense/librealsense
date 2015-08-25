@@ -79,8 +79,6 @@ namespace f200
         bool buildParameters(const CameraCalibrationParameters & p);
         bool buildParameters(const float * paramData, int nParams);
 
-        void PrintParameters();
-
         void clear() { isInitialized = false; }
 
         float getZMax() const { return params.Rmax; }
