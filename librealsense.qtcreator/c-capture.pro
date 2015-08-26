@@ -8,13 +8,11 @@ QMAKE_CXXFLAGS += -std=c++11
 PKGCONFIG += glfw3 gl libusb-1.0
 CONFIG += link_pkgconfig
 INCLUDEPATH += ../include
-LIBS += -pthread -ljpeg
+LIBS += -pthread
 
 SOURCES += ../examples/c-capture.c
 HEADERS += ../examples/example.h
 
-LIBS += -L$$DESTDIR/ -lrealsense -luvc
+LIBS += -L$$DESTDIR/ -lrealsense
 
 PRE_TARGETDEPS += $$DESTDIR/librealsense.a
-PRE_TARGETDEPS += $$DESTDIR/libuvc.a
-

@@ -2,10 +2,9 @@
 #define LIBREALSENSE_TYPES_H
 
 #include "../include/librealsense/rs.h"
-
-#include <array>            // For array
-#include <vector>           // For vector
-#include <libuvc/libuvc.h>  // For uvc_frame_format
+#include "libuvc/libuvc.h"                  // For uvc_frame_format
+#include <array>                            // For array
+#include <vector>                           // For vector
 
 namespace rsimpl
 {

@@ -36,8 +36,8 @@
  * @brief Support for finding, inspecting and opening UVC devices
  */
 
-#include "libuvc/libuvc.h"
-#include "libuvc/libuvc_internal.h"
+#include "libuvc.h"
+#include "libuvc_internal.h"
 
 int uvc_already_open(uvc_context_t *ctx, struct libusb_device *usb_dev);
 void uvc_free_devh(uvc_device_handle_t *devh);

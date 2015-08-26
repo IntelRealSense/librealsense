@@ -5,7 +5,7 @@
 
 #include "F200Types.h"
 
-#include <libuvc/libuvc.h>
+#include "../libuvc/libuvc.h"
 
 #include <cmath>    // for M_PI, tan
 #include <cstring>  // for memcpy, memcmp

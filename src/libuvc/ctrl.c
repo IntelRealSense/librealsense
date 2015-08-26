@@ -39,8 +39,8 @@
  * with the device's input, processing and output units.
  */
 
-#include "libuvc/libuvc.h"
-#include "libuvc/libuvc_internal.h"
+#include "libuvc.h"
+#include "libuvc_internal.h"
 
 static const int REQ_TYPE_SET = 0x21;
 static const int REQ_TYPE_GET = 0xa1;

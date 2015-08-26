@@ -36,8 +36,8 @@
  * @brief Interpretation of devices, error codes and negotiated stream parameters
  */
 
-#include "libuvc/libuvc.h"
-#include "libuvc/libuvc_internal.h"
+#include "libuvc.h"
+#include "libuvc_internal.h"
 
 /** @internal */
 typedef struct _uvc_error_msg {

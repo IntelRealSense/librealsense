@@ -6,9 +6,9 @@ extern "C" {
 #endif
 
 #include <stdio.h> // FILE
-#include <libusb-1.0/libusb.h>
-#include <libuvc/libuvc_config.h>
 #include <errno.h>
+#include <libusb-1.0/libusb.h>
+#include "libuvc_config.h"
     
 /** UVC error types, based on libusb errors
  * @ingroup diag

@@ -36,8 +36,8 @@
  * @brief Tools for creating, managing and consuming video streams
  */
 
-#include "libuvc/libuvc.h"
-#include "libuvc/libuvc_internal.h"
+#include "libuvc.h"
+#include "libuvc_internal.h"
 
 #ifdef _MSC_VER
 
