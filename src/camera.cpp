@@ -31,7 +31,7 @@ rs_camera::~rs_camera()
     //uvc_unref_device(device); // we never ref
 }
 
-void rs_camera::EnableStream(int stream, int width, int height, int fps, int format)
+void rs_camera::EnableStream(rs_stream stream, int width, int height, rs_format format, int fps)
 {
     if(camera_info.stream_subdevices[stream] == -1) throw std::runtime_error("unsupported stream");
     requests[stream] = {true, width, height, format, fps};
@@ -108,13 +108,13 @@ void rs_camera::WaitAllStreams()
     }
 }
 
-rs_intrinsics rs_camera::GetStreamIntrinsics(int stream) const
+rs_intrinsics rs_camera::GetStreamIntrinsics(rs_stream stream) const
 {
     if(!streams[stream]) throw std::runtime_error("stream not enabled");
     return calib.intrinsics[streams[stream]->get_mode().intrinsics_index];
 }
 
-rs_extrinsics rs_camera::GetStreamExtrinsics(int from, int to) const
+rs_extrinsics rs_camera::GetStreamExtrinsics(rs_stream from, rs_stream to) const
 {
     auto transform = inverse(calib.stream_poses[from]) * calib.stream_poses[to]; // TODO: Make sure this is the right order
     rs_extrinsics extrin;
@@ -128,9 +128,9 @@ void rs_camera::Stream::set_mode(const StreamMode & mode)
     this->mode = mode;
     switch(mode.format)
     {
-    case RS_Z16: front.resize(mode.width * mode.height * sizeof(uint16_t)); break;
-    case RS_RGB8: front.resize(mode.width * mode.height * 3); break;
-    case RS_Y8: front.resize(mode.width * mode.height); break;
+    case RS_FORMAT_Z16: front.resize(mode.width * mode.height * sizeof(uint16_t)); break;
+    case RS_FORMAT_RGB8: front.resize(mode.width * mode.height * 3); break;
+    case RS_FORMAT_Y8: front.resize(mode.width * mode.height); break;
     default: throw std::runtime_error("invalid format");
     }
     back = middle = front;

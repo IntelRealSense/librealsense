@@ -13,7 +13,7 @@ namespace rsimpl { namespace r200
         R200Camera(uvc_context_t * ctx, uvc_device_t * device);
         ~R200Camera();
 
-        void EnableStreamPreset(int streamIdentifier, int preset) override final;
+        void EnableStreamPreset(rs_stream stream, rs_preset preset) override final;
 
         CalibrationInfo RetrieveCalibration() override final;
         void SetStreamIntent() override final;

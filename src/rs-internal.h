@@ -1,8 +1,6 @@
 #ifndef RS_INTERNAL_H
 #define RS_INTERNAL_H
 
-#include "../include/librealsense/rs.h"
-
 #include "types.h"
 
 #include <cassert>      // For assert
@@ -119,19 +117,19 @@ public:
 
     const char * GetCameraName() const { return cameraName.c_str(); }
 
-    void EnableStream(int stream, int width, int height, int fps, int format);
-    bool IsStreamEnabled(int stream) const { return (bool)streams[stream]; }
+    void EnableStream(rs_stream stream, int width, int height, rs_format format, int fps);
+    bool IsStreamEnabled(rs_stream stream) const { return (bool)streams[stream]; }
     void StartStreaming();
     void StopStreaming();
     void WaitAllStreams();
 
-    const void * GetImagePixels(int stream) const { return streams[stream] ? streams[stream]->get_image() : nullptr; }
+    const void * GetImagePixels(rs_stream stream) const { return streams[stream] ? streams[stream]->get_image() : nullptr; }
     float GetDepthScale() const { return calib.depth_scale; }
 
-    rs_intrinsics GetStreamIntrinsics(int stream) const;
-    rs_extrinsics GetStreamExtrinsics(int from, int to) const;
+    rs_intrinsics GetStreamIntrinsics(rs_stream stream) const;
+    rs_extrinsics GetStreamExtrinsics(rs_stream from, rs_stream to) const;
 
-    virtual void EnableStreamPreset(int streamIdentifier, int preset) = 0;
+    virtual void EnableStreamPreset(rs_stream stream, rs_preset preset) = 0;
     virtual rsimpl::CalibrationInfo RetrieveCalibration() = 0;
     virtual void SetStreamIntent() = 0;
 };

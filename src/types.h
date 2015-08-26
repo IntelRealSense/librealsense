@@ -1,6 +1,8 @@
 #ifndef LIBREALSENSE_TYPES_H
 #define LIBREALSENSE_TYPES_H
 
+#include "../include/librealsense/rs.h"
+
 #include <array>            // For array
 #include <vector>           // For vector
 #include <libuvc/libuvc.h>  // For uvc_frame_format
@@ -17,9 +19,10 @@ namespace rsimpl
 
     struct StreamMode
     {
-        int stream;                 // RS_DEPTH, RS_COLOR, RS_INFRARED, RS_INFRARED_2, etc.
+        rs_stream stream;           // RS_DEPTH, RS_COLOR, RS_INFRARED, RS_INFRARED_2, etc.
         int width, height;          // Resolution visible to the client library
-        int format, fps;            // Pixel format and framerate visible to the client library
+        rs_format format;           // Pixel format visible to the client library
+        int fps;                    // Framerate visible to the client library
         int intrinsics_index;       // Index of image intrinsics
     };
 

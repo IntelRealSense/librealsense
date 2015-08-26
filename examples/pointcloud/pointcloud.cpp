@@ -104,15 +104,15 @@ int main(int argc, char * argv[]) try
 		std::cout << "Found camera at index " << i << std::endl;
 
         cam = ctx.get_camera(i);
-        cam.enable_stream_preset(RS_INFRARED, RS_BEST_QUALITY);
-        cam.enable_stream_preset(RS_DEPTH, RS_BEST_QUALITY);
-        cam.enable_stream_preset(RS_COLOR, RS_BEST_QUALITY);
+        cam.enable_stream_preset(RS_STREAM_INFRARED, RS_PRESET_BEST_QUALITY);
+        cam.enable_stream_preset(RS_STREAM_DEPTH, RS_PRESET_BEST_QUALITY);
+        cam.enable_stream_preset(RS_STREAM_COLOR, RS_PRESET_BEST_QUALITY);
         cam.start_streaming();
 	}
 	if (!cam) throw std::runtime_error("No camera detected. Is it plugged in?");
-    const auto depth_intrin = cam.get_stream_intrinsics(RS_DEPTH);
+    const auto depth_intrin = cam.get_stream_intrinsics(RS_STREAM_DEPTH);
         
-    struct state { float yaw, pitch; double lastX, lastY; bool ml; int tex_stream = RS_COLOR; rs::camera * cam; } app_state = {};
+    struct state { float yaw, pitch; double lastX, lastY; bool ml; int tex_stream = RS_STREAM_COLOR; rs::camera * cam; } app_state = {};
     app_state.cam = &cam;
 
 	glfwInit();
@@ -123,7 +123,7 @@ int main(int argc, char * argv[]) try
 	{
 		auto s = (state *)glfwGetWindowUserPointer(win);
 		if(button == GLFW_MOUSE_BUTTON_LEFT) s->ml = action == GLFW_PRESS;
-        if(button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_PRESS) s->tex_stream = s->tex_stream == RS_COLOR ? RS_INFRARED : RS_COLOR;
+        if(button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_PRESS) s->tex_stream = s->tex_stream == RS_STREAM_COLOR ? RS_STREAM_INFRARED : RS_STREAM_COLOR;
 	});
         
 	glfwSetCursorPosCallback(win, [](GLFWwindow * win, double x, double y)
@@ -217,13 +217,13 @@ int main(int argc, char * argv[]) try
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         auto tex_intrin = cam.get_stream_intrinsics(app_state.tex_stream);
-        auto extrin = cam.get_stream_extrinsics(RS_DEPTH, app_state.tex_stream);
+        auto extrin = cam.get_stream_extrinsics(RS_STREAM_DEPTH, app_state.tex_stream);
         
         glPushAttrib(GL_ALL_ATTRIB_BITS);
         glBindTexture(GL_TEXTURE_2D, tex);
         glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, tex_intrin.image_size[0], tex_intrin.image_size[1], 0,
-                     app_state.tex_stream == RS_COLOR ? GL_RGB : GL_LUMINANCE, GL_UNSIGNED_BYTE, cam.get_image_pixels(app_state.tex_stream));
+                     app_state.tex_stream == RS_STREAM_COLOR ? GL_RGB : GL_LUMINANCE, GL_UNSIGNED_BYTE, cam.get_image_pixels(app_state.tex_stream));
         glMatrixMode(GL_PROJECTION);
 		glPushMatrix();
         gluPerspective(60, (float)width/height, 0.01f, 20.0f);
@@ -241,7 +241,7 @@ int main(int argc, char * argv[]) try
 
         glPointSize((float)width/640);
         glBegin(GL_POINTS);
-        auto depth = cam.get_depth_image();
+        auto depth = reinterpret_cast<const uint16_t *>(cam.get_image_pixels(RS_STREAM_DEPTH));
         float scale = cam.get_depth_scale();
 		for(int y=0; y<depth_intrin.image_size[1]; ++y)
 		{
