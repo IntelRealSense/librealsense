@@ -39,6 +39,74 @@ void rs_camera::EnableStream(int stream, int width, int height, int fps, int for
 
 #include <algorithm>
 
+const SubdeviceMode * select_mode(const StaticCameraInfo & camera_info, const std::array<StreamRequest,MAX_STREAMS> & requests, int subdevice_index)
+{
+    // Determine if the user has requested any streams which are supplied by this subdevice
+    bool any_stream_requested = false;
+    std::array<bool, MAX_STREAMS> stream_requested = {};
+    for(int j = 0; j < MAX_STREAMS; ++j)
+    {
+        if(requests[j].enabled && camera_info.stream_subdevices[j] == subdevice_index)
+        {
+            stream_requested[j] = true;
+            any_stream_requested = true;
+        }
+    }
+
+    // If no streams were requested, skip to the next subdevice
+    if(!any_stream_requested) return nullptr;
+
+    // Look for an appropriate mode
+    for(auto & subdevice_mode : camera_info.subdevice_modes)
+    {
+        // Skip modes that apply to other subdevices
+        if(subdevice_mode.subdevice != subdevice_index) continue;
+
+        // Determine if this mode satisfies the requirements on our requested streams
+        auto stream_unsatisfied = stream_requested;
+        for(auto & stream_mode : subdevice_mode.streams)
+        {
+            const auto & req = requests[stream_mode.stream];
+            if(req.enabled && req.width == stream_mode.width && req.height == stream_mode.height && req.format == stream_mode.format && req.fps == stream_mode.fps)
+            {
+                stream_unsatisfied[stream_mode.stream] = false;
+            }
+        }
+
+        // If any requested streams are still unsatisfied, skip to the next mode
+        if(std::any_of(begin(stream_unsatisfied), end(stream_unsatisfied), [](bool b) { return b; })) continue;
+        return &subdevice_mode;
+    }
+
+    // If we did not find an appropriate mode, report an error
+    std::ostringstream ss;
+    ss << "uvc subdevice " << subdevice_index << " cannot provide";
+    bool first = true;
+    for(int j = 0; j < MAX_STREAMS; ++j)
+    {
+        if(!stream_requested[j]) continue;
+        ss << (first ? " " : " and ");
+
+        ss << requests[j].width << 'x' << requests[j].height << ':';
+        switch(requests[j].format)
+        {
+        case RS_Z16: ss << "Z16"; break;
+        case RS_RGB8: ss << "RGB8"; break;
+        case RS_Y8: ss << "Y8"; break;
+        }
+        ss << '@' << requests[j].fps << "Hz ";
+        switch(j)
+        {
+        case RS_DEPTH: ss << "DEPTH"; break;
+        case RS_COLOR: ss << "COLOR"; break;
+        case RS_INFRARED: ss << "INFRARED"; break;
+        case RS_INFRARED_2: ss << "INFRARED_2"; break;
+        }
+        first = false;
+    }
+    throw std::runtime_error(ss.str());
+}
+
 void rs_camera::StartStreaming()
 {
     for(auto & s : subdevices) s.reset();
@@ -48,89 +116,24 @@ void rs_camera::StartStreaming()
     // For each subdevice
     for(int i = 0; i < subdevices.size(); ++i)
     {
-        // Determine if the user has requested any streams which are supplied by this subdevice
-        bool any_stream_requested = false;
-        std::array<bool, MAX_STREAMS> stream_requested = {};
-        for(int j = 0; j < MAX_STREAMS; ++j)
+        if(const SubdeviceMode * mode = select_mode(camera_info, requests, i))
         {
-            if(requests[j].enabled && camera_info.stream_subdevices[j] == i)
-            {
-                stream_requested[j] = true;
-                any_stream_requested = true;
-            }
-        }
-
-        // If no streams were requested, skip to the next subdevice
-        if(!any_stream_requested) continue;
-
-        // Look for an appropriate mode
-        for(auto & subdevice_mode : camera_info.subdevice_modes)
-        {
-            // Determine if this mode satisfies the requirements on our requested streams
-            auto stream_unsatisfied = stream_requested;
-            for(auto & stream_mode : subdevice_mode.streams)
-            {
-                const auto & req = requests[stream_mode.stream];
-                if(req.enabled && req.width == stream_mode.width && req.height == stream_mode.height && req.format == stream_mode.format && req.fps == stream_mode.fps)
-                {
-                    stream_unsatisfied[stream_mode.stream] = false;
-                }
-            }
-
-            // If any requested streams are still unsatisfied, skip to the next mode
-            if(std::any_of(begin(stream_unsatisfied), end(stream_unsatisfied), [](bool b) { return b; })) continue;
-
             // For each stream provided by this mode
             std::vector<std::shared_ptr<Stream>> stream_list;
-            for(auto & stream_mode : subdevice_mode.streams)
+            for(auto & stream_mode : mode->streams)
             {
                 // Create a buffer to receive the images from this stream
                 auto stream = std::make_shared<Stream>();
                 stream_list.push_back(stream);
 
                 // If this is one of the streams requested by the user, store the buffer so they can access it
-                if(stream_requested[stream_mode.stream])
-                {
-                    streams[stream_mode.stream] = stream;
-                }
+                if(requests[stream_mode.stream].enabled) streams[stream_mode.stream] = stream;
             }
 
             // Initialize the subdevice and set it to the selected mode, then exit the loop early
             subdevices[i].reset(new Subdevice(device, i));
-            subdevices[i]->set_mode(subdevice_mode, stream_list);
+            subdevices[i]->set_mode(*mode, stream_list);
             if(!first_handle) first_handle = subdevices[i]->get_handle();
-            break;
-        }
-
-        // If we did not find an appropriate mode, report an error
-        if(!subdevices[i])
-        {
-            std::ostringstream ss;
-            ss << "uvc subdevice " << i << " cannot provide";
-            bool first = true;
-            for(int j = 0; j < MAX_STREAMS; ++j)
-            {
-                if(!stream_requested[j]) continue;
-                ss << (first ? " " : " and ");
-
-                ss << requests[j].width << 'x' << requests[j].height << ':';
-                switch(requests[j].format)
-                {
-                case RS_Z16: ss << "Z16"; break;
-                case RS_RGB8: ss << "RGB8"; break;
-                case RS_Y8: ss << "Y8"; break;
-                }
-                ss << '@' << requests[j].fps << "Hz ";
-                switch(j)
-                {
-                case RS_DEPTH: ss << "DEPTH"; break;
-                case RS_COLOR: ss << "COLOR"; break;
-                case RS_INFRARED: ss << "INFRARED"; break;
-                case RS_INFRARED_2: ss << "INFRARED_2"; break;
-                }
-                first = false;
-            }
-            throw std::runtime_error(ss.str());
         }
     }
 
