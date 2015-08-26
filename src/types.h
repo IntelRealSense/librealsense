@@ -5,7 +5,9 @@
 #include "../include/librealsense/rs.h"
 #include "libuvc/libuvc.h"                  // For uvc_frame_format
 
+#include <cassert>                          // For assert
 #include <vector>                           // For vector
+#include <memory>                           // For shared_ptr
 #include <sstream>                          // For ostringstream
 
 namespace rsimpl

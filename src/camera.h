@@ -4,14 +4,7 @@
 
 #include "types.h"
 
-#include <cassert>      // For assert
-#include <cstring>      // For memcpy
-#include <sstream>      // For ostringstream
-#include <memory>       // For shared_ptr
-#include <vector>       // For vector
-#include <thread>       // For thread
-#include <mutex>        // For mutex
-#include <array>
+#include <mutex>
 
 namespace rsimpl
 {
@@ -103,17 +96,6 @@ public:
     virtual void                                    enable_stream_preset(rs_stream stream, rs_preset preset) = 0;
     virtual rsimpl::calibration_info                retrieve_calibration() = 0;
     virtual void                                    set_stream_intent() = 0;
-};
-
-struct rs_context
-{
-    uvc_context_t *                                 context;
-    std::vector<std::shared_ptr<rs_camera>>         cameras;
-    
-                                                    rs_context();
-                                                    ~rs_context();
-
-    void                                            query_device_list();
 };
 
 #endif
