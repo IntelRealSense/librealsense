@@ -1,8 +1,7 @@
-#include "F200.h"
-#include "HardwareIO.h"
-#include "../../include/librealsense/rsutil.h"
+#include "f200.h"
+#include "f200-private.h"
 
-namespace rsimpl { namespace f200
+namespace rsimpl
 {
     enum { COLOR_480P, COLOR_1080P, DEPTH_480P, NUM_INTRINSICS };
     static static_camera_info get_f200_info()
@@ -28,7 +27,7 @@ namespace rsimpl { namespace f200
         
     }
 
-    static rs_intrinsics MakeDepthIntrinsics(const CameraCalibrationParameters & c, int w, int h)
+    static rs_intrinsics MakeDepthIntrinsics(const f200::CameraCalibrationParameters & c, int w, int h)
     {
         rs_intrinsics intrin = {{w,h}};
         intrin.focal_length[0] = c.Kc[0][0]*0.5f * w;
@@ -40,7 +39,7 @@ namespace rsimpl { namespace f200
         return intrin;
     }
 
-    static rs_intrinsics MakeColorIntrinsics(const CameraCalibrationParameters & c, int w, int h)
+    static rs_intrinsics MakeColorIntrinsics(const f200::CameraCalibrationParameters & c, int w, int h)
     {
         rs_intrinsics intrin = {{w,h}};
         intrin.focal_length[0] = c.Kt[0][0]*0.5f;
@@ -63,8 +62,8 @@ namespace rsimpl { namespace f200
 
     calibration_info F200Camera::retrieve_calibration()
     {
-        if(!hardware_io) hardware_io.reset(new IVCAMHardwareIO(context));
-        const CameraCalibrationParameters & calib = hardware_io->GetParameters();
+        if(!hardware_io) hardware_io.reset(new f200::IVCAMHardwareIO(context));
+        const f200::CameraCalibrationParameters & calib = hardware_io->GetParameters();
 
         calibration_info c;
         c.intrinsics.resize(NUM_INTRINSICS);
@@ -161,5 +160,5 @@ namespace rsimpl { namespace f200
         return xu_write(device, IVCAM_DEPTH_DYNAMIC_FPS, &dynamic_fps, sizeof(dynamic_fps));
     }
 
-} } // namespace rsimpl::f200
+} // namespace rsimpl::f200
 

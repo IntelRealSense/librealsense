@@ -16,8 +16,6 @@ namespace rsimpl
         void enable_stream_preset(rs_stream stream, rs_preset preset) override final;
         calibration_info retrieve_calibration() override final;
         void set_stream_intent() override final;
-
-        bool        set_disparity_shift(uvc_device_handle_t * device, uint32_t shift);
     };
 }
 

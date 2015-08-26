@@ -3,15 +3,15 @@
 #ifndef LIBREALSENSE_F200_CAMERA_H
 #define LIBREALSENSE_F200_CAMERA_H
 
-#include "../camera.h"
+#include "camera.h"
 
-namespace rsimpl { namespace f200
+namespace rsimpl
 {
-    class IVCAMHardwareIO;
+    namespace f200 { class IVCAMHardwareIO; }
 
     class F200Camera : public rs_camera
     {
-        std::unique_ptr<IVCAMHardwareIO> hardware_io;
+        std::unique_ptr<f200::IVCAMHardwareIO> hardware_io;
 
     public:
         
@@ -62,10 +62,8 @@ namespace rsimpl { namespace f200
         #define IVCAM_COLOR_EXPOSURE_PRIORITY   1
         #define IVCAM_COLOR_AUTO_FLICKER        2
         #define IVCAM_COLOR_ERROR               3
-        #define IVCAM_COLOR_EXPOSURE_GRANULAR   4
-        
+        #define IVCAM_COLOR_EXPOSURE_GRANULAR   4  
     };
-    
-} } // namespace rsimpl::f200
+}
 
 #endif
