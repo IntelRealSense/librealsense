@@ -7,11 +7,11 @@ CONFIG -= qt
 QMAKE_CXXFLAGS += -std=c++11
 PKGCONFIG += glfw3 gl libusb-1.0
 CONFIG += link_pkgconfig
-INCLUDEPATH += ../third_party/libuvc/include/ ../include
+INCLUDEPATH += ../include
 LIBS += -pthread -ljpeg
 
 SOURCES += ../examples/example-cpp/*.cpp
-
+HEADERS += ../examples/*.h
 
 LIBS += -L$$DESTDIR/ -lrealsense -luvc
 

@@ -11,11 +11,7 @@ PKGCONFIG += libusb-1.0
 LIBS += -pthread -ljpeg
 QMAKE_CXXFLAGS += -std=c++11 -fpermissive -fPIC -Wno-missing-field-initializers
 
-HEADERS += ../include/librealsense/* ../src/*.h ../src/F200/*.h ../src/R200/*.h \
-    ../src/image.h \
-    ../src/types.h
-SOURCES += ../src/verify.c ../src/*.cpp ../src/F200/*.cpp ../src/R200/*.cpp \
-    ../src/image.cpp \
-    ../src/types.cpp
+HEADERS += ../include/librealsense/* ../src/*.h ../src/F200/*.h ../src/R200/*.h
+SOURCES += ../src/verify.c ../src/*.cpp ../src/F200/*.cpp ../src/R200/*.cpp
 
 PRE_TARGETDEPS += $$DESTDIR/libuvc.a
