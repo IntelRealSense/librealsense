@@ -43,7 +43,7 @@ namespace rsimpl { namespace r200
     
     R200Camera::~R200Camera()
     {
-        force_firmware_reset(first_handle);
+        if(first_handle) force_firmware_reset(first_handle);
     }
 
     void R200Camera::EnableStreamPreset(rs_stream stream, rs_preset preset)

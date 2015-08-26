@@ -9,7 +9,7 @@ INCLUDEPATH += ../third_party/libuvc/include/ ../include
 CONFIG += link_pkgconfig
 PKGCONFIG += libusb-1.0
 LIBS += -pthread -ljpeg
-QMAKE_CXXFLAGS += -std=c++11 -fpermissive -fPIC
+QMAKE_CXXFLAGS += -std=c++11 -fpermissive -fPIC -Wno-missing-field-initializers
 
 HEADERS += ../include/librealsense/* ../src/*.h ../src/F200/*.h ../src/R200/*.h \
     ../src/image.h \

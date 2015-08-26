@@ -11,6 +11,12 @@ namespace rsimpl
 {
     const int MAX_STREAMS = 4;
 
+    #define RS_IMPLEMENT_IS_VALID(TYPE, PREFIX) inline bool IsValid(TYPE value) { return value >= RS_##PREFIX##_BEGIN_RANGE && value <= RS_##PREFIX##_END_RANGE; }
+    RS_IMPLEMENT_IS_VALID(rs_stream, STREAM)
+    RS_IMPLEMENT_IS_VALID(rs_format, FORMAT)
+    RS_IMPLEMENT_IS_VALID(rs_preset, PRESET)
+    #undef RS_IMPLEMENT_IS_VALID
+
     struct StreamRequest
     {
         bool enabled;

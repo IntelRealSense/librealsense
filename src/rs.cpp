@@ -63,7 +63,6 @@ void rs_context::QueryDeviceList()
 ////////////////////////
 
 // This facility allows for translation of exceptions to rs_error structs at the API boundary
-
 static void translate_exception(const char * name, rs_error ** error)
 {
     try { throw; }
@@ -71,6 +70,11 @@ static void translate_exception(const char * name, rs_error ** error)
     catch (...) { if (error) *error = new rs_error{ name, "unknown error" }; } // TODO: Handle case where THIS code throws
 }
 #define HANDLE_EXCEPTIONS_AND_RETURN(...) catch(...) { translate_exception(__FUNCTION__, error); return __VA_ARGS__; }
+
+// These macros provide mechanisms for reporting invalid argument errors
+#define VALIDATE_NOT_NULL(ARG) if(!ARG) throw std::runtime_error("null pointer passed for argument " #ARG);
+#define VALIDATE_ENUM(ARG) if(!rsimpl::IsValid(ARG)) { std::ostringstream ss; ss << "invalid enum value (" << ARG << ") passed for argument " #ARG; throw std::runtime_error(ss.str()); }
+#define VALIDATE_RANGE(ARG, MIN, MAX) if(ARG < MIN || ARG > MAX) { std::ostringstream ss; ss << "out of range value (" << ARG << ") passed for argument " #ARG; throw std::runtime_error(ss.str()); }
 
 rs_context * rs_create_context(int api_version, rs_error ** error) try
 {
@@ -81,84 +85,113 @@ HANDLE_EXCEPTIONS_AND_RETURN(nullptr)
 
 int	rs_get_camera_count(rs_context * context, rs_error ** error) try
 {
+    VALIDATE_NOT_NULL(context);
     return (int)context->cameras.size();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0)
 
 rs_camera * rs_get_camera(rs_context * context, int index, rs_error ** error) try
 {
+    VALIDATE_NOT_NULL(context);
+    VALIDATE_RANGE(index, 0, (int)context->cameras.size()-1);
     return context->cameras[index].get();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr)
 
 void rs_delete_context(rs_context * context, rs_error ** error) try
 {
+    VALIDATE_NOT_NULL(context);
     delete context;
 }
 HANDLE_EXCEPTIONS_AND_RETURN()
 
 const char * rs_get_camera_name(rs_camera * camera, rs_error ** error) try
 {
+    VALIDATE_NOT_NULL(camera);
     return camera->GetCameraName();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr)
 
 void rs_enable_stream(struct rs_camera * camera, enum rs_stream stream, int width, int height, enum rs_format format, int fps, struct rs_error ** error) try
 {
+    VALIDATE_NOT_NULL(camera);
+    VALIDATE_ENUM(stream);
+    VALIDATE_RANGE(width, 0, INT_MAX);
+    VALIDATE_RANGE(height, 0, INT_MAX);
+    VALIDATE_ENUM(format);
+    VALIDATE_RANGE(fps, 0, INT_MAX);
     camera->EnableStream(stream, width, height, format, fps);
 }
 HANDLE_EXCEPTIONS_AND_RETURN()
 
 void rs_enable_stream_preset(struct rs_camera * camera, enum rs_stream stream, enum rs_preset preset, struct rs_error ** error) try
 {
+    VALIDATE_NOT_NULL(camera);
+    VALIDATE_ENUM(stream);
+    VALIDATE_ENUM(preset);
     camera->EnableStreamPreset(stream, preset);
 }
 HANDLE_EXCEPTIONS_AND_RETURN()
 
 int rs_is_stream_enabled(struct rs_camera * camera, enum rs_stream stream, struct rs_error ** error) try
 {
+    VALIDATE_NOT_NULL(camera);
+    VALIDATE_ENUM(stream);
     return camera->IsStreamEnabled(stream);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0)
 
 void rs_start_streaming(struct rs_camera * camera, struct rs_error ** error) try
 {
+    VALIDATE_NOT_NULL(camera);
     camera->StartStreaming();
 }
 HANDLE_EXCEPTIONS_AND_RETURN()
 
 void rs_stop_streaming(struct rs_camera * camera, struct rs_error ** error) try
 {
+    VALIDATE_NOT_NULL(camera);
     camera->StopStreaming();
 }
 HANDLE_EXCEPTIONS_AND_RETURN()
 
 void rs_wait_all_streams(struct rs_camera * camera, struct rs_error ** error) try
 {
+    VALIDATE_NOT_NULL(camera);
     camera->WaitAllStreams();
 }
 HANDLE_EXCEPTIONS_AND_RETURN()
 
 const void * rs_get_image_pixels(rs_camera * camera, enum rs_stream stream, rs_error ** error) try
 {
+    VALIDATE_NOT_NULL(camera);
+    VALIDATE_ENUM(stream);
     return camera->GetImagePixels(stream);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr)
 
 float rs_get_depth_scale(rs_camera * camera, rs_error ** error) try
 {
+    VALIDATE_NOT_NULL(camera);
     return camera->GetDepthScale();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0.0f)
 
 void rs_get_stream_intrinsics(struct rs_camera * camera, enum rs_stream stream, struct rs_intrinsics * intrin, struct rs_error ** error) try
 {
+    VALIDATE_NOT_NULL(camera);
+    VALIDATE_ENUM(stream);
+    VALIDATE_NOT_NULL(intrin);
 	*intrin = camera->GetStreamIntrinsics(stream);
 }
 HANDLE_EXCEPTIONS_AND_RETURN()
 
 void rs_get_stream_extrinsics(struct rs_camera * camera, enum rs_stream from, enum rs_stream to, struct rs_extrinsics * extrin, struct rs_error ** error) try
 {
+    VALIDATE_NOT_NULL(camera);
+    VALIDATE_ENUM(from);
+    VALIDATE_ENUM(to);
+    VALIDATE_NOT_NULL(extrin);
     *extrin = camera->GetStreamExtrinsics(from, to);
 }
 HANDLE_EXCEPTIONS_AND_RETURN()
