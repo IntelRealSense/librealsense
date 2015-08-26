@@ -81,10 +81,9 @@ namespace f200
         return c;
     }
     
-    
     bool xu_read(uvc_device_handle_t * device, uint64_t xu_ctrl, void * buffer, uint32_t length)
     {
-        auto xu_info = uvc_get_extension_units(device);
+        auto xu_info = uvc_get_extension_units(device); // should return 5
         auto status = uvc_get_ctrl(device, xu_info->bUnitID, xu_ctrl, buffer, length, UVC_GET_CUR);
         if (status < 0)
         {
