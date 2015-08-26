@@ -10,8 +10,8 @@ CONFIG += link_pkgconfig
 INCLUDEPATH += ../include
 LIBS += -pthread -ljpeg
 
-SOURCES += ../examples/example-c/*.c
-HEADERS += ../examples/*.h
+SOURCES += ../examples/c-capture.c
+HEADERS += ../examples/example.h
 
 LIBS += -L$$DESTDIR/ -lrealsense -luvc
 

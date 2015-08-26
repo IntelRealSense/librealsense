@@ -10,8 +10,8 @@ CONFIG += link_pkgconfig
 INCLUDEPATH += ../include
 LIBS += -pthread -ljpeg
 
-SOURCES += ../examples/pointcloud/*.cpp
-HEADERS += ../examples/*.h
+SOURCES += ../examples/cpp-pointcloud.cpp
+HEADERS += ../examples/example.h
 
 LIBS += -L$$DESTDIR/ -lrealsense -luvc
 

@@ -138,5 +138,7 @@ int main(int argc, char * argv[])
 
 	glfwDestroyWindow(win);
 	glfwTerminate();
+
+    rs_delete_context(ctx, &error); check_error();
 	return EXIT_SUCCESS;
 }

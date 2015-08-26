@@ -1,5 +1,5 @@
 #include <librealsense/rs.h>
-#include "../example.h"
+#include "example.h"
 
 #define _USE_MATH_DEFINES
 #include <math.h>
@@ -100,7 +100,7 @@ int main(int argc, char * argv[])
 
 	glfwInit();
     height = rs_is_stream_enabled(cam, RS_STREAM_INFRARED, 0) || rs_is_stream_enabled(cam, RS_STREAM_INFRARED_2, 0) ? 960 : 480;
-    sprintf(buffer, "C Example (%s)", rs_get_camera_name(cam,0));
+    sprintf(buffer, "C Capture Example (%s)", rs_get_camera_name(cam,0));
     win = glfwCreateWindow(1280, height, buffer, 0, 0);
     glfwMakeContextCurrent(win);
     font = ttf_create(fopen("../../examples/assets/Roboto-Bold.ttf", "rb"));

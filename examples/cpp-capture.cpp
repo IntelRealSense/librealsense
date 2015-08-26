@@ -1,5 +1,5 @@
 #include <librealsense/rs.hpp>
-#include "../example.h"
+#include "example.h"
 
 #define _USE_MATH_DEFINES
 #include <math.h>
@@ -75,7 +75,7 @@ int main(int argc, char * argv[]) try
 
 	glfwInit();
     const int height = cam.is_stream_enabled(RS_STREAM_INFRARED) || cam.is_stream_enabled(RS_STREAM_INFRARED_2) ? 960 : 480;
-    std::ostringstream ss; ss << "CPP Example (" << cam.get_name() << ")";
+    std::ostringstream ss; ss << "CPP Capture Example (" << cam.get_name() << ")";
     GLFWwindow * win = glfwCreateWindow(1280, height, ss.str().c_str(), 0, 0);
     glfwMakeContextCurrent(win);
     font = ttf_create(fopen("../../examples/assets/Roboto-Bold.ttf", "rb"));

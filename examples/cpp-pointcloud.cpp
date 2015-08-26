@@ -1,6 +1,6 @@
 #include <librealsense/rs.hpp>
 #include <librealsense/rsutil.h>
-#include "../example.h"
+#include "example.h"
 
 #include <chrono>
 #include <sstream>
@@ -39,7 +39,7 @@ int main(int argc, char * argv[]) try
     app_state.cam = &cam;
 
 	glfwInit();
-    std::ostringstream ss; ss << "Point Cloud Example (" << cam.get_name() << ")";
+    std::ostringstream ss; ss << "CPP Point Cloud Example (" << cam.get_name() << ")";
     GLFWwindow * win = glfwCreateWindow(640, 480, ss.str().c_str(), 0, 0);
 	glfwSetWindowUserPointer(win, &app_state);
         
