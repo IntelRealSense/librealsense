@@ -63,6 +63,8 @@ namespace rs
         std::vector<SubdeviceMode> subdevice_modes;     // A list of available modes each subdevice can be put into
 
         StaticCameraInfo() { for(auto & s : stream_subdevices) s = -1; }
+
+        const SubdeviceMode * select_mode(const std::array<StreamRequest,MAX_STREAMS> & requests, int subdevice_index) const;
     };
 
     void unpack_strided_image(void * dest[], const SubdeviceMode & mode, const void * frame);
