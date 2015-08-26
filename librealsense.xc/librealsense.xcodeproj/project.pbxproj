@@ -8,11 +8,13 @@
 
 /* Begin PBXBuildFile section */
 		279D526C1B8D08E1007F2D73 /* camera.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 279D526B1B8D08E1007F2D73 /* camera.cpp */; };
+		279D52731B8D50C8007F2D73 /* types.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 279D52711B8D50C8007F2D73 /* types.cpp */; };
+		279D52741B8D50C8007F2D73 /* types.h in Headers */ = {isa = PBXBuildFile; fileRef = 279D52721B8D50C8007F2D73 /* types.h */; };
 		27E5163A1B87ABFA00DDA462 /* image.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 27E516391B87ABFA00DDA462 /* image.cpp */; };
 		27F24F2D1B7BDF0100BF4D43 /* rs.h in Headers */ = {isa = PBXBuildFile; fileRef = 27F24F2A1B7BDF0100BF4D43 /* rs.h */; };
 		27F24F2E1B7BDF0100BF4D43 /* rs.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 27F24F2B1B7BDF0100BF4D43 /* rs.hpp */; };
 		27F24F2F1B7BDF0100BF4D43 /* rsutil.h in Headers */ = {isa = PBXBuildFile; fileRef = 27F24F2C1B7BDF0100BF4D43 /* rsutil.h */; };
-		27F24F3B1B7BDF1B00BF4D43 /* rs-internal.h in Headers */ = {isa = PBXBuildFile; fileRef = 27F24F331B7BDF1B00BF4D43 /* rs-internal.h */; };
+		27F24F3B1B7BDF1B00BF4D43 /* camera.h in Headers */ = {isa = PBXBuildFile; fileRef = 27F24F331B7BDF1B00BF4D43 /* camera.h */; };
 		27F24F3C1B7BDF1B00BF4D43 /* rs.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 27F24F341B7BDF1B00BF4D43 /* rs.cpp */; };
 		27F24F4D1B7BDF5A00BF4D43 /* R200.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 27F24F441B7BDF5A00BF4D43 /* R200.cpp */; };
 		27F24F4E1B7BDF5A00BF4D43 /* R200.h in Headers */ = {isa = PBXBuildFile; fileRef = 27F24F451B7BDF5A00BF4D43 /* R200.h */; };
@@ -36,11 +38,13 @@
 /* Begin PBXFileReference section */
 		08567BC41B5B5A0200EB6C0D /* librealsense.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = librealsense.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		279D526B1B8D08E1007F2D73 /* camera.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = camera.cpp; path = ../src/camera.cpp; sourceTree = SOURCE_ROOT; };
+		279D52711B8D50C8007F2D73 /* types.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = types.cpp; path = ../src/types.cpp; sourceTree = SOURCE_ROOT; };
+		279D52721B8D50C8007F2D73 /* types.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = types.h; path = ../src/types.h; sourceTree = SOURCE_ROOT; };
 		27E516391B87ABFA00DDA462 /* image.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = image.cpp; path = ../src/image.cpp; sourceTree = SOURCE_ROOT; };
 		27F24F2A1B7BDF0100BF4D43 /* rs.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = rs.h; path = ../include/librealsense/rs.h; sourceTree = SOURCE_ROOT; };
 		27F24F2B1B7BDF0100BF4D43 /* rs.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = rs.hpp; path = ../include/librealsense/rs.hpp; sourceTree = SOURCE_ROOT; };
 		27F24F2C1B7BDF0100BF4D43 /* rsutil.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = rsutil.h; path = ../include/librealsense/rsutil.h; sourceTree = SOURCE_ROOT; };
-		27F24F331B7BDF1B00BF4D43 /* rs-internal.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = "rs-internal.h"; path = "../src/rs-internal.h"; sourceTree = SOURCE_ROOT; };
+		27F24F331B7BDF1B00BF4D43 /* camera.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = camera.h; path = ../src/camera.h; sourceTree = SOURCE_ROOT; };
 		27F24F341B7BDF1B00BF4D43 /* rs.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = rs.cpp; path = ../src/rs.cpp; sourceTree = SOURCE_ROOT; };
 		27F24F441B7BDF5A00BF4D43 /* R200.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = R200.cpp; path = ../src/R200/R200.cpp; sourceTree = SOURCE_ROOT; };
 		27F24F451B7BDF5A00BF4D43 /* R200.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = R200.h; path = ../src/R200/R200.h; sourceTree = SOURCE_ROOT; };
@@ -144,9 +148,11 @@
 		08567C341B61E6B900EB6C0D /* src */ = {
 			isa = PBXGroup;
 			children = (
+				279D52711B8D50C8007F2D73 /* types.cpp */,
+				279D52721B8D50C8007F2D73 /* types.h */,
 				27E516391B87ABFA00DDA462 /* image.cpp */,
 				279D526B1B8D08E1007F2D73 /* camera.cpp */,
-				27F24F331B7BDF1B00BF4D43 /* rs-internal.h */,
+				27F24F331B7BDF1B00BF4D43 /* camera.h */,
 				27F24F341B7BDF1B00BF4D43 /* rs.cpp */,
 				08567C361B61E6C600EB6C0D /* R200 */,
 				08567C351B61E6C100EB6C0D /* F200 */,
@@ -185,9 +191,10 @@
 				27F24F791B7BDF9700BF4D43 /* HardwareIO.h in Headers */,
 				27F24F2F1B7BDF0100BF4D43 /* rsutil.h in Headers */,
 				27F24F921B7BE0FB00BF4D43 /* libuvc.h in Headers */,
-				27F24F3B1B7BDF1B00BF4D43 /* rs-internal.h in Headers */,
+				27F24F3B1B7BDF1B00BF4D43 /* camera.h in Headers */,
 				27F24F4E1B7BDF5A00BF4D43 /* R200.h in Headers */,
 				27F24F2D1B7BDF0100BF4D43 /* rs.h in Headers */,
+				279D52741B8D50C8007F2D73 /* types.h in Headers */,
 				27F24F2E1B7BDF0100BF4D43 /* rs.hpp in Headers */,
 				27F24F901B7BE0FB00BF4D43 /* libuvc_config.h in Headers */,
 				27F24F741B7BDF9700BF4D43 /* F200.h in Headers */,
@@ -253,6 +260,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				279D526C1B8D08E1007F2D73 /* camera.cpp in Sources */,
+				279D52731B8D50C8007F2D73 /* types.cpp in Sources */,
 				27F24F8A1B7BE0E800BF4D43 /* init.c in Sources */,
 				27F24F851B7BE0E800BF4D43 /* ctrl.c in Sources */,
 				27E5163A1B87ABFA00DDA462 /* image.cpp in Sources */,
