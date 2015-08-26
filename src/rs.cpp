@@ -47,6 +47,7 @@ void rs_context::QueryDeviceList()
             {
             case 2688: cameras.push_back(std::make_shared<r200::R200Camera>(privateContext, list[index])); break;
             case 2662: cameras.push_back(std::make_shared<f200::F200Camera>(privateContext, list[index])); break;
+            case 2725: throw std::runtime_error("IVCAM 1.5 / SR300 is not supported at this time");
 			}
 			uvc_free_device_descriptor(desc);
 		}
