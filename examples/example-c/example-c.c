@@ -1,11 +1,12 @@
 #include <librealsense/rs.h>
-#include <GLFW/glfw3.h>
+#include "../example.h"
 
 #define _USE_MATH_DEFINES
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 
+struct font font;
 struct rs_error * error;
 void check_error()
 {
@@ -52,6 +53,8 @@ void draw_stream(struct rs_camera * cam, enum rs_stream stream, int x, int y)
         glDrawPixels(width, height, GL_RGB, GL_UNSIGNED_BYTE, pixels);
         break;
     }
+
+    ttf_print(&font, x+8, y+16, rs_get_stream_name(stream, 0));
 }
 
 int main(int argc, char * argv[])
@@ -60,7 +63,7 @@ int main(int argc, char * argv[])
 	struct rs_camera * cam;
     struct rs_intrinsics color_intrin, depth_intrin;
 	float hfov, vfov;
-	GLFWwindow * win;
+    GLFWwindow * win;
     int i;
 
 	ctx = rs_create_context(RS_API_VERSION, &error); check_error();
@@ -89,19 +92,21 @@ int main(int argc, char * argv[])
 
 	glfwInit();
     win = glfwCreateWindow(1600, 720, "LibRealSense C Example", 0, 0);
+    glfwMakeContextCurrent(win);
+    font = ttf_create(fopen("../../examples/assets/Roboto-Bold.ttf", "rb"));
+
 	while (!glfwWindowShouldClose(win))
 	{
 		glfwPollEvents();
         rs_wait_all_streams(cam, &error); check_error();
 
-        glfwMakeContextCurrent(win);
         glClear(GL_COLOR_BUFFER_BIT);
         glPushMatrix();
-        glOrtho(0, 1600, 0, 720, -1, +1);
+        glOrtho(0, 1600, 720, 0, -1, +1);
         glPixelZoom(1, -1);
 
-        draw_stream(cam, RS_STREAM_COLOR, 0, 720);
-        draw_stream(cam, RS_STREAM_DEPTH, 640, 720);
+        draw_stream(cam, RS_STREAM_COLOR, 0, 0);
+        draw_stream(cam, RS_STREAM_DEPTH, 640, 0);
         draw_stream(cam, RS_STREAM_INFRARED, 640, 360);
         draw_stream(cam, RS_STREAM_INFRARED_2, 1120, 360);
 

@@ -1,58 +1,9 @@
-///////////////
-// Compilers //
-///////////////
-
-#if defined(_MSC_VER)
-#define COMPILER_MSVC 1
-#endif
-
-#if defined(__GNUC__)
-#define COMPILER_GCC 1
-#define GCC_VERSION (__GNUC__ * 10000 + __GNUC_MINOR__ * 100 + __GNUC_PATCHLEVEL__)
-#endif
-
-#if defined(__clang__)
-#define COMPILER_CLANG 1
-#endif
-
-///////////////
-// Platforms //
-///////////////
-
-#if defined(WIN32) || defined(_WIN32)
-#define PLATFORM_WINDOWS 1
-#endif
-
-#ifdef __APPLE__
-#define PLATFORM_OSX 1
-#endif
-
-#if defined(__linux__)
-#define PLATFORM_LINUX 1
-#endif
-
 #include <librealsense/rs.hpp>
+#include "../example.h"
 
-#define GLFW_INCLUDE_GLU
-
-#if defined(PLATFORM_OSX)
-
-#include "glfw3.h"
-    #define GLFW_EXPOSE_NATIVE_COCOA
-    #define GLFW_EXPOSE_NATIVE_NSGL
-    #include "glfw3native.h"
-    #include <OpenGL/gl3.h>
-#elif defined(PLATFORM_LINUX)
-    #include <GLFW/glfw3.h>
-#endif
-
-#include <iostream>
-#include <sstream>
-#include <vector>
 #include <chrono>
-
-#define STB_TRUETYPE_IMPLEMENTATION
-#include "stb_truetype.h"
+#include <sstream>
+#include <iostream>
 
 FILE * find_file(std::string path, int levels)
 {
@@ -62,37 +13,6 @@ FILE * find_file(std::string path, int levels)
         path = "../" + path;
     }
     return nullptr;
-}
-
-void ttf_print(stbtt_bakedchar cdata[], float x, float y, const char *text)
-{
-   // assume orthographic projection with units = screen pixels, origin at top left
-   glBegin(GL_QUADS);
-   while (*text) {
-      if (*text >= 32 && *text < 128) {
-         stbtt_aligned_quad q;
-         stbtt_GetBakedQuad(cdata, 512,512, *text-32, &x,&y,&q,1);//1=opengl & d3d10+,0=d3d9
-         glTexCoord2f(q.s0,q.t0); glVertex2f(q.x0,q.y0);
-         glTexCoord2f(q.s1,q.t0); glVertex2f(q.x1,q.y0);
-         glTexCoord2f(q.s1,q.t1); glVertex2f(q.x1,q.y1);
-         glTexCoord2f(q.s0,q.t1); glVertex2f(q.x0,q.y1);
-      }
-      ++text;
-   }
-   glEnd();
-}
-
-float ttf_len(stbtt_bakedchar cdata[], const char *text)
-{
-    float x=0, y=0;
-   while (*text) {
-      if (*text >= 32 && *text < 128) {
-         stbtt_aligned_quad q;
-         stbtt_GetBakedQuad(cdata, 512,512, *text-32, &x,&y,&q,1);//1=opengl & d3d10+,0=d3d9
-      }
-      ++text;
-   }
-   return x;
 }
 
 int main(int argc, char * argv[]) try
@@ -158,25 +78,11 @@ int main(int argc, char * argv[]) try
 
     glPushAttrib(GL_ALL_ATTRIB_BITS);
 
-    GLuint ftex;
-    stbtt_bakedchar cdata[96]; // ASCII 32..126 is 95 glyph
+    font font;
     if(auto f = find_file("examples/assets/Roboto-Bold.ttf", 3))
     {
-        fseek(f, 0, SEEK_END);
-        std::vector<uint8_t> ttf_buffer(ftell(f));
-        fseek(f, 0, SEEK_SET);
-        fread(ttf_buffer.data(), 1, ttf_buffer.size(), f);
-
-        unsigned char temp_bitmap[512*512];
-        stbtt_BakeFontBitmap(ttf_buffer.data(),0, 20.0, temp_bitmap, 512,512, 32,96, cdata); // no guarantee this fits!
-
-        glGenTextures(1, &ftex);
-        glBindTexture(GL_TEXTURE_2D, ftex);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_ALPHA, 512,512, 0, GL_ALPHA, GL_UNSIGNED_BYTE, temp_bitmap);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+        font = ttf_create(f);
+        fclose(f);
     }
     else throw std::runtime_error("Unable to open examples/assets/Roboto-Bold.ttf");
 
@@ -265,18 +171,12 @@ int main(int argc, char * argv[]) try
         glPopMatrix();
         glPopAttrib();
 
-        glPushAttrib(GL_ALL_ATTRIB_BITS);
         glPushMatrix();
         glOrtho(0, width, height, 0, -1, +1);
-        glEnable(GL_TEXTURE_2D);
-        glBindTexture(GL_TEXTURE_2D, ftex);
-        glEnable(GL_BLEND);
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-        ttf_print(cdata, (width-ttf_len(cdata, cam.get_name()))/2, height-20.0f, cam.get_name());
+        ttf_print(&font, (width-ttf_len(&font, cam.get_name()))/2, height-20.0f, cam.get_name());
         std::ostringstream ss; ss << fps << " FPS";
-        ttf_print(cdata, 20, 40, ss.str().c_str());
+        ttf_print(&font, 20, 40, ss.str().c_str());
         glPopMatrix();
-        glPopAttrib();
 
 		glfwSwapBuffers(win);
 	}
