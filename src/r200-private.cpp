@@ -1,112 +1,4 @@
-#include "R200.h"
-
-#include <iostream>
-
-namespace rsimpl { namespace r200
-{
-    enum { LR_FULL, LR_BIG, Z_FULL, Z_BIG, THIRD_HD, THIRD_VGA, NUM_INTRINSICS };
-    static static_camera_info get_r200_info()
-    {
-        static_camera_info info;
-        for(auto fps : {30, 60, 90})
-        {
-            auto uvcFps = fps == 60 ? 59 : fps; // UVC sees the 60 fps mode as 59 fps
-
-            info.stream_subdevices[RS_STREAM_INFRARED  ] = 0;
-            info.stream_subdevices[RS_STREAM_INFRARED_2] = 0;
-            info.subdevice_modes.push_back({0,  640, 481, UVC_FRAME_FORMAT_Y8,   uvcFps, {{RS_STREAM_INFRARED,   640,  480, RS_FORMAT_Y8, fps, LR_FULL}}, &unpack_strided_image});
-            info.subdevice_modes.push_back({0,  640, 481, UVC_FRAME_FORMAT_Y12I, uvcFps, {{RS_STREAM_INFRARED,   640,  480, RS_FORMAT_Y8, fps, LR_FULL},
-                                                                                          {RS_STREAM_INFRARED_2, 640,  480, RS_FORMAT_Y8, fps, LR_FULL}}, &unpack_rly12_to_y8});
-            info.subdevice_modes.push_back({0,  640, 373, UVC_FRAME_FORMAT_Y8,   uvcFps, {{RS_STREAM_INFRARED,   492,  372, RS_FORMAT_Y8, fps, LR_BIG }}, &unpack_strided_image});
-            info.subdevice_modes.push_back({0,  640, 373, UVC_FRAME_FORMAT_Y12I, uvcFps, {{RS_STREAM_INFRARED,   492,  372, RS_FORMAT_Y8, fps, LR_BIG },
-                                                                                          {RS_STREAM_INFRARED_2, 492,  372, RS_FORMAT_Y8, fps, LR_BIG }}, &unpack_rly12_to_y8});
-
-            info.stream_subdevices[RS_STREAM_DEPTH] = 1;
-            info.subdevice_modes.push_back({1,  628, 469, UVC_FRAME_FORMAT_Z16,  uvcFps, {{RS_STREAM_DEPTH,      628,  468, RS_FORMAT_Z16, fps, Z_FULL}}, &unpack_strided_image});
-            info.subdevice_modes.push_back({1,  628, 361, UVC_FRAME_FORMAT_Z16,  uvcFps, {{RS_STREAM_DEPTH,      480,  360, RS_FORMAT_Z16, fps, Z_BIG }}, &unpack_strided_image});
-
-            if(fps == 90) continue;
-            info.stream_subdevices[RS_STREAM_COLOR] = 2;
-            info.subdevice_modes.push_back({2, 1920, 1080, UVC_FRAME_FORMAT_YUYV, uvcFps, {{RS_STREAM_COLOR,    1920, 1080, RS_FORMAT_RGB8, fps, THIRD_HD }}, &unpack_yuyv_to_rgb});
-            info.subdevice_modes.push_back({2,  640,  480, UVC_FRAME_FORMAT_YUYV, uvcFps, {{RS_STREAM_COLOR,     640,  480, RS_FORMAT_RGB8, fps, THIRD_VGA}}, &unpack_yuyv_to_rgb});
-        }
-        return info;
-    }
-
-    R200Camera::R200Camera(uvc_context_t * ctx, uvc_device_t * device) : rs_camera(ctx, device, get_r200_info())
-    {
-
-    }
-    
-    R200Camera::~R200Camera()
-    {
-        if(first_handle) force_firmware_reset(first_handle);
-    }
-
-    void R200Camera::enable_stream_preset(rs_stream stream, rs_preset preset)
-    {
-        switch(stream)
-        {
-        case RS_STREAM_DEPTH: enable_stream(stream, 480, 360, RS_FORMAT_Z16, 60); break;
-        case RS_STREAM_COLOR: enable_stream(stream, 640, 480, RS_FORMAT_RGB8, 60); break;
-        case RS_STREAM_INFRARED: enable_stream(stream, 492, 372, RS_FORMAT_Y8, 60); break;
-        case RS_STREAM_INFRARED_2: enable_stream(stream, 492, 372, RS_FORMAT_Y8, 60); break;
-        default: throw std::runtime_error("unsupported stream");
-        }
-    }
-
-    static rs_intrinsics MakeLeftRightIntrinsics(const RectifiedIntrinsics & i)
-    {
-        return {{(int)i.rw, (int)i.rh}, {i.rfx, i.rfy}, {i.rpx, i.rpy}, {0,0,0,0,0}, RS_DISTORTION_NONE};
-    }
-
-    static rs_intrinsics MakeDepthIntrinsics(const RectifiedIntrinsics & i)
-    {
-        return {{(int)i.rw-12, (int)i.rh-12}, {i.rfx, i.rfy}, {i.rpx-6, i.rpy-6}, {0,0,0,0,0}, RS_DISTORTION_NONE};
-    }
-
-    static rs_intrinsics MakeColorIntrinsics(const UnrectifiedIntrinsics & i)
-    {
-        return {{(int)i.w, (int)i.h}, {i.fx,i.fy}, {i.px,i.py}, {i.k[0],i.k[1],i.k[2],i.k[3],i.k[4]}, RS_DISTORTION_GORDON_BROWN_CONRADY};
-    }
-
-    calibration_info R200Camera::retrieve_calibration()
-    {
-        CameraCalibrationParameters calib;
-        CameraHeaderInfo header;
-        read_camera_info(first_handle, calib, header);
-
-        calibration_info c;
-        c.intrinsics.resize(NUM_INTRINSICS);
-        c.intrinsics[LR_FULL] = MakeLeftRightIntrinsics(calib.modesLR[0]);
-        c.intrinsics[LR_BIG] = MakeLeftRightIntrinsics(calib.modesLR[1]);
-        c.intrinsics[Z_FULL] = MakeDepthIntrinsics(calib.modesLR[0]);
-        c.intrinsics[Z_BIG] = MakeDepthIntrinsics(calib.modesLR[1]);
-        c.intrinsics[THIRD_HD] = MakeColorIntrinsics(calib.intrinsicsThird[0]);
-        c.intrinsics[THIRD_VGA] = MakeColorIntrinsics(calib.intrinsicsThird[1]);
-        c.stream_poses[RS_STREAM_DEPTH] = {{{1,0,0},{0,1,0},{0,0,1}}, {0,0,0}};
-        c.stream_poses[RS_STREAM_INFRARED] = c.stream_poses[RS_STREAM_DEPTH];
-        c.stream_poses[RS_STREAM_INFRARED_2] = c.stream_poses[RS_STREAM_DEPTH]; // TODO: Figure out the correct translation vector to put here
-        for(int i=0; i<3; ++i) for(int j=0; j<3; ++j) c.stream_poses[RS_STREAM_COLOR].orientation(i,j) = calib.Rthird[0][i*3+j];
-        for(int i=0; i<3; ++i) c.stream_poses[RS_STREAM_COLOR].position[i] = calib.T[0][i] * 0.001f;
-        c.stream_poses[RS_STREAM_COLOR].position = c.stream_poses[RS_STREAM_COLOR].orientation * c.stream_poses[RS_STREAM_COLOR].position;
-        c.depth_scale = 0.001f;
-        return c;
-    }
-
-    void R200Camera::set_stream_intent()
-    {
-        uint8_t streamIntent = 0;
-        if(subdevices[0]) streamIntent |= STATUS_BIT_LR_STREAMING;
-        if(subdevices[1]) streamIntent |= STATUS_BIT_Z_STREAMING;
-        if(subdevices[2]) streamIntent |= STATUS_BIT_WEB_STREAMING;
-
-        if(first_handle)
-        {
-            if (!r200::set_stream_intent(first_handle, streamIntent)) throw std::runtime_error("could not set stream intent");
-        }
-    }
-} }
+#include "r200-private.h"
 
 ////////////////////////////////
 // Former HardwareIO contents //
@@ -245,7 +137,7 @@ namespace rsimpl { namespace r200
         void ReadCalibrationSector()
         {
             uint8_t flashDataBuffer[SPI_FLASH_SECTOR_SIZE_IN_BYTES];
-            
+
             if (!read_admin_sector(flashDataBuffer, NV_CALIBRATION_DATA_ADDRESS_INDEX))
                 throw std::runtime_error("Could not read calibration sector");
 
@@ -333,7 +225,7 @@ namespace rsimpl { namespace r200
         bool read_admin_sector(unsigned char data[SPI_FLASH_SECTOR_SIZE_IN_BYTES], int whichAdminSector)
         {
             uint32_t adminSectorAddresses[NV_ADMIN_DATA_N_ENTRIES];
-            
+
             read_arbitrary_chunk(NV_NON_FIRMWARE_ROOT_ADDRESS, adminSectorAddresses, NV_ADMIN_DATA_N_ENTRIES * sizeof(adminSectorAddresses[0]));
 
             if (whichAdminSector >= 0 && whichAdminSector < NV_ADMIN_DATA_N_ENTRIES)
@@ -375,17 +267,17 @@ namespace rsimpl { namespace r200
             uint32_t addressInSector = address + (usedCopiesCount - 1) * blockLength + offset;
             read_arbitrary_chunk(addressInSector, data, lengthToRead);
         }
-        
+
         void read_spi_flash_memory()
         {
             RoutineStorageTables rst = {0};
-            
+
             // Setup admin table
             read_admin_table(SIZEOF_ROUTINE_DESCRIPTION_ERASED_AND_PRESERVE_TABLE,
                              rst.rd,
                              ROUTINE_DESCRIPTION_OFFSET,
                              SIZEOF_ROUTINE_DESCRIPTION_TABLE);
-            
+
             ReadCalibrationSector();
         }
 
@@ -420,7 +312,7 @@ namespace rsimpl { namespace r200
     {
         return (c0 << 24) | (c1 << 16) | (c2 << 8) | c3;
     }
-    
+
     void read_camera_info(uvc_device_handle_t * device, CameraCalibrationParameters & calib, CameraHeaderInfo & header)
     {
         DS4HardwareIO internal(device);
@@ -465,12 +357,12 @@ namespace rsimpl { namespace r200
         }
         return true;
     }
-    
+
     bool set_stream_intent(uvc_device_handle_t * device, uint8_t & intent)
     {
         return xu_write(device, CONTROL_STREAM_INTENT, &intent, sizeof(intent));
     }
-    
+
     bool get_stream_status(uvc_device_handle_t * device, int & status)
     {
         uint8_t s[4] = {255, 255, 255, 255};
@@ -479,7 +371,7 @@ namespace rsimpl { namespace r200
         status = pack(s[0], s[1], s[2], s[3]);
         return true;
     }
-    
+
     bool get_last_error(uvc_device_handle_t * device, uint8_t & last_error)
     {
         return xu_read(device, CONTROL_LAST_ERROR, &last_error, sizeof(uint8_t));
@@ -489,22 +381,6 @@ namespace rsimpl { namespace r200
     {
         uint8_t reset = 1;
         return xu_write(device, CONTROL_SW_RESET, &reset, sizeof(uint8_t));
-    }
-
-    bool get_emitter_state(uvc_device_handle_t * device, bool & state)
-    {
-        uint8_t byte = 0;
-        if (!xu_read(device, CONTROL_EMITTER, &byte, sizeof(byte)))
-            return false;
-
-        if (byte & 4) state = (byte & 2 ? true : false);
-        return true;
-    }
-
-    bool set_emitter_state(uvc_device_handle_t * device, bool state)
-    {
-        uint8_t newEmitterState = state ? 1 : 0;
-        return xu_read(device, CONTROL_EMITTER, &newEmitterState, sizeof(uint8_t));
     }
 
     bool read_temperature(uvc_device_handle_t * device, int8_t & current, int8_t & min, int8_t & max, int8_t & min_fault)
@@ -528,17 +404,17 @@ namespace rsimpl { namespace r200
             return false;
         return true;
     }
-    
+
     bool get_depth_units(uvc_device_handle_t * device, uint32_t & units)
     {
         return xu_read(device, CONTROL_DEPTH_UNITS, &units, sizeof(units));
     }
-    
+
     bool set_depth_units(uvc_device_handle_t * device, uint32_t units)
     {
         return xu_write(device, CONTROL_DEPTH_UNITS, &units, sizeof(units));
     }
-    
+
     bool get_min_max_depth(uvc_device_handle_t * device, uint16_t & min_depth, uint16_t & max_depth)
     {
         std::vector<uint16_t> minmax_values = {0, 0};
@@ -548,7 +424,7 @@ namespace rsimpl { namespace r200
         max_depth = minmax_values[1];
         return true;
     }
-    
+
     bool get_min_max_depth(uvc_device_handle_t * device, uint16_t min_depth, uint16_t  max_depth)
     {
         std::vector<uint16_t> minmax_values = {min_depth, max_depth};
@@ -556,7 +432,7 @@ namespace rsimpl { namespace r200
             return false;
         return true;
     }
-    
+
     bool get_lr_gain(uvc_device_handle_t * device, uint32_t & rate, uint32_t & gain)
     {
         std::vector<uint32_t> lr_gain_values = {0, 0};
@@ -566,7 +442,7 @@ namespace rsimpl { namespace r200
         gain = lr_gain_values[1];
         return true;
     }
-    
+
     bool set_lr_gain(uvc_device_handle_t * device, uint32_t rate, uint32_t gain)
     {
         std::vector<uint32_t> lr_gain_values = {rate, gain};
@@ -574,7 +450,7 @@ namespace rsimpl { namespace r200
             return false;
         return true;
     }
-    
+
     bool get_lr_exposure(uvc_device_handle_t * device, uint32_t & rate, uint32_t & exposure)
     {
         std::vector<uint32_t> lr_exposure_values = {0, 0};
@@ -584,7 +460,7 @@ namespace rsimpl { namespace r200
         exposure = lr_exposure_values[1];
         return true;
     }
-    
+
     bool set_lr_exposure(uvc_device_handle_t * device, uint32_t rate, uint32_t exposure)
     {
         std::vector<uint32_t> lr_exposure_values = {rate, exposure};
@@ -592,21 +468,21 @@ namespace rsimpl { namespace r200
             return false;
         return true;
     }
-    
+
     bool get_lr_auto_exposure_params(uvc_device_handle_t * device, auto_exposure_params & params)
     {
         if (!xu_read(device, CONTROL_LR_AUTOEXPOSURE_PARAMETERS, &params, sizeof(params)))
             return false;
         return true;
     }
-    
+
     bool set_lr_auto_exposure_params(uvc_device_handle_t * device, auto_exposure_params params)
     {
         if (!xu_write(device, CONTROL_LR_AUTOEXPOSURE_PARAMETERS, &params, sizeof(params)))
             return false;
         return true;
     }
-    
+
     bool get_lr_exposure_mode(uvc_device_handle_t * device, uint32_t & mode)
     {
         uint8_t m; // 0 = EXPOSURE_MANUAL, 1 = EXPOSURE_AUTO
@@ -615,28 +491,28 @@ namespace rsimpl { namespace r200
         mode = m;
         return true;
     }
-    
+
     bool set_lr_exposure_mode(uvc_device_handle_t * device, uint32_t mode)
     {
         if (!xu_write(device, CONTROL_LR_EXPOSURE_MODE, &mode, sizeof(mode)))
             return false;
         return true;
     }
-    
+
     bool get_depth_params(uvc_device_handle_t * device, depth_params & params)
     {
         if (!xu_read(device, CONTROL_DEPTH_PARAMS, &params, sizeof(params)))
             return false;
         return true;
     }
-    
+
     bool set_depth_params(uvc_device_handle_t * device, depth_params params)
     {
         if (!xu_write(device, CONTROL_DEPTH_PARAMS, &params, sizeof(params)))
             return false;
         return true;
     }
-    
+
     bool get_disparity_mode(uvc_device_handle_t * device, disparity_mode & mode)
     {
         if (!xu_read(device, CONTROL_DISPARITY, &mode, sizeof(mode)))
@@ -650,14 +526,14 @@ namespace rsimpl { namespace r200
             return false;
         return true;
     }
-    
+
     bool get_disparity_shift(uvc_device_handle_t * device, uint32_t & shift)
     {
         if (!xu_read(device, CONTROL_DISPARITY_SHIFT, &shift, sizeof(shift)))
             return false;
         return true;
     }
-    
+
     bool set_disparity_shift(uvc_device_handle_t * device, uint32_t shift)
     {
         if (!xu_write(device, CONTROL_DISPARITY_SHIFT, &shift, sizeof(shift)))

@@ -1,23 +1,63 @@
-#pragma once
+#ifndef R200_PRIVATE_H
+#define R200_PRIVATE_H
 
-#ifndef LIBREALSENSE_R200_CAMERA_H
-#define LIBREALSENSE_R200_CAMERA_H
+#include "camera.h"
 
-#include "../camera.h"
+#define CAMERA_XU_UNIT_ID                           2
+
+#define STATUS_BIT_Z_STREAMING                      (1 << 0)
+#define STATUS_BIT_LR_STREAMING                     (1 << 1)
+#define STATUS_BIT_WEB_STREAMING                    (1 << 2)
+#define STATUS_BIT_BOOT_DIAGNOSTIC_FAULT            (1 << 3)
+#define STATUS_BIT_IFFLEY_CONSTANTS_VALID           (1 << 4)
+#define STATUS_BIT_WATCHDOG_TIMER_RESET             (1 << 5)
+#define STATUS_BIT_REC_BUFFER_OVERRUN               (1 << 6)
+#define STATUS_BIT_CAM_DATA_FORMAT_ERROR            (1 << 7)
+#define STATUS_BIT_CAM_FIFO_OVERFLOW                (1 << 8)
+#define STATUS_BIT_REC_DIVIDED_BY_ZERO_ERROR        (1 << 9)
+#define STATUS_BIT_UVC_HEADER_ERROR                 (1 << 10)
+#define STATUS_BIT_EMITTER_FAULT                    (1 << 11)
+#define STATUS_BIT_THERMAL_FAULT                    (1 << 12)
+#define STATUS_BIT_REC_RUN_ENABLED                  (1 << 13)
+#define STATUS_BIT_VDF_DEPTH_POINTER_STREAMING      (1 << 14)
+#define STATUS_BIT_VDF_LR_POINTER_STREAMING         (1 << 15)
+#define STATUS_BIT_VDF_WEBCAM_POINTER_STREAMING     (1 << 16)
+#define STATUS_BIT_STREAMING_STATE                  (1 << 27) | (1 << 28) | (1 << 29) | (1 << 30)
+#define STATUS_BIT_BUSY                             (1 << 31)
+
+#define CONTROL_COMMAND_RESPONSE                    1
+#define CONTROL_IFFLEY                              2
+#define CONTROL_STREAM_INTENT                       3
+#define CONTROL_DEPTH_UNITS                         4
+#define CONTROL_MIN_MAX                             5
+#define CONTROL_DISPARITY                           6
+#define CONTROL_RECTIFICATION                       7
+#define CONTROL_EMITTER                             8
+#define CONTROL_TEMPERATURE                         9
+#define CONTROL_DEPTH_PARAMS                        10
+#define CONTROL_LAST_ERROR                          12
+#define CONTROL_EMBEDDED_COUNT                      13
+#define CONTROL_LR_EXPOSURE                         14
+#define CONTROL_LR_AUTOEXPOSURE_PARAMETERS          15
+#define CONTROL_SW_RESET                            16
+#define CONTROL_LR_GAIN                             17
+#define CONTROL_LR_EXPOSURE_MODE                    18
+#define CONTROL_DISPARITY_SHIFT                     19
+#define CONTROL_STATUS                              20
+#define CONTROL_LR_EXPOSURE_DISCOVERY               21
+#define CONTROL_LR_GAIN_DISCOVERY                   22
+#define CONTROL_HW_TIMESTAMP                        23
+
+#define COMMAND_DOWNLOAD_SPI_FLASH                  0x1A
+#define COMMAND_PROTECT_FLASH                       0x1C
+#define COMMAND_LED_ON                              0x14
+#define COMMAND_LED_OFF                             0x15
+#define COMMAND_GET_FWREVISION                      0x21
+#define COMMAND_GET_SPI_PROTECT                     0x23
+#define COMMAND_MODIFIER_DIRECT                     0x00000010
 
 namespace rsimpl { namespace r200
 {
-    class R200Camera : public rs_camera
-    {
-    public:
-        R200Camera(uvc_context_t * ctx, uvc_device_t * device);
-        ~R200Camera();
-
-        void enable_stream_preset(rs_stream stream, rs_preset preset) override final;
-        calibration_info retrieve_calibration() override final;
-        void set_stream_intent() override final;
-    };
-
     struct CameraCalibrationParameters;
     struct CameraHeaderInfo;
 
@@ -33,7 +73,7 @@ namespace rsimpl { namespace r200
         uint16_t region_of_interest_bottom_left;
         uint16_t region_of_interest_bottom_right;
     };
-    
+
     struct depth_params
     {
         uint32_t robbins_munroe_minus_inc;
@@ -47,70 +87,70 @@ namespace rsimpl { namespace r200
         uint32_t neighbor_thresh;
         uint32_t lr_thresh;
     };
-    
+
     enum class range_format : uint32_t
     {
         RANGE_FORMAT_DISPARITY,
         RANGE_FORMAT_DISTANCE
     };
-    
+
     struct disparity_mode
     {
         range_format format;
         uint64_t multiplier;
     };
-    
+
     // Hardware API for R200 camera
     std::string read_firmware_version(uvc_device_handle_t * device);
     void        read_camera_info(uvc_device_handle_t * device, CameraCalibrationParameters & calib, CameraHeaderInfo & header);
-    
+
     bool        xu_read(uvc_device_handle_t * device, uint64_t xu_ctrl, void * buffer, uint32_t length);
     bool        xu_write(uvc_device_handle_t * device, uint64_t xu_ctrl, void * buffer, uint32_t length);
-    
+
     bool        set_stream_intent(uvc_device_handle_t * device, uint8_t & intent);
     bool        get_stream_status(uvc_device_handle_t * device, uint8_t & status);
-    
+
     bool        get_last_error(uvc_device_handle_t * device, uint8_t & last_error);
     bool        force_firmware_reset(uvc_device_handle_t * device);
-    
+
     bool        get_emitter_state(uvc_device_handle_t * device, bool & state);
     bool        set_emitter_state(uvc_device_handle_t * device, bool state);
-    
+
     bool        read_temperature(uvc_device_handle_t * device, int8_t & current, int8_t & min, int8_t & max, int8_t & min_fault);
     bool        reset_temperature(uvc_device_handle_t * device);
-    
+
     bool        get_depth_units(uvc_device_handle_t * device, uint32_t & units);
     bool        set_depth_units(uvc_device_handle_t * device, uint32_t units);
-    
+
     bool        get_min_max_depth(uvc_device_handle_t * device, uint16_t & min_depth, uint16_t & max_depth);
     bool        set_min_max_depth(uvc_device_handle_t * device, uint16_t min_depth, uint16_t max_depth);
-    
+
     bool        get_lr_gain(uvc_device_handle_t * device, uint32_t & rate, uint32_t & gain);
     bool        set_lr_gain(uvc_device_handle_t * device, uint32_t rate, uint32_t gain);
-    
+
     bool        get_lr_exposure(uvc_device_handle_t * device, uint32_t & rate, uint32_t & exposure);
     bool        set_lr_exposure(uvc_device_handle_t * device, uint32_t rate, uint32_t exposure);
-    
+
     bool        get_lr_auto_exposure_params(uvc_device_handle_t * device, auto_exposure_params & params);
     bool        set_lr_auto_exposure_params(uvc_device_handle_t * device, auto_exposure_params params);
-    
+
     bool        get_lr_exposure_mode(uvc_device_handle_t * device, uint32_t & mode);
     bool        set_lr_exposure_mode(uvc_device_handle_t * device, uint32_t mode);
-    
+
     bool        get_depth_params(uvc_device_handle_t * device, depth_params & params);
     bool        set_depth_params(uvc_device_handle_t * device, depth_params params);
-    
+
     bool        get_disparity_mode(uvc_device_handle_t * device, disparity_mode & mode);
     bool        set_disparity_mode(uvc_device_handle_t * device, disparity_mode mode);
-    
+
     bool        get_disparity_shift(uvc_device_handle_t * device, uint32_t & shift);
     bool        set_disparity_shift(uvc_device_handle_t * device, uint32_t shift);
-    
+
     //@todo - (if necessary) - get_exposure_discovery
     //@todo - (if necessary) - set_exposure_discovery
     //@todo - (if necessary) - get_gain_discovery
     //@todo - (if necessary) - set_gain_discovery
-    
+
     #pragma pack(push, 1)
     template<class T> class big_endian
     {
@@ -263,59 +303,6 @@ namespace rsimpl { namespace r200
     };
     #pragma pack(pop)
 
-    #define CAMERA_XU_UNIT_ID                           2
-    
-    #define STATUS_BIT_Z_STREAMING                      (1 << 0)
-    #define STATUS_BIT_LR_STREAMING                     (1 << 1)
-    #define STATUS_BIT_WEB_STREAMING                    (1 << 2)
-    #define STATUS_BIT_BOOT_DIAGNOSTIC_FAULT            (1 << 3)
-    #define STATUS_BIT_IFFLEY_CONSTANTS_VALID           (1 << 4)
-    #define STATUS_BIT_WATCHDOG_TIMER_RESET             (1 << 5)
-    #define STATUS_BIT_REC_BUFFER_OVERRUN               (1 << 6)
-    #define STATUS_BIT_CAM_DATA_FORMAT_ERROR            (1 << 7)
-    #define STATUS_BIT_CAM_FIFO_OVERFLOW                (1 << 8)
-    #define STATUS_BIT_REC_DIVIDED_BY_ZERO_ERROR        (1 << 9)
-    #define STATUS_BIT_UVC_HEADER_ERROR                 (1 << 10)
-    #define STATUS_BIT_EMITTER_FAULT                    (1 << 11)
-    #define STATUS_BIT_THERMAL_FAULT                    (1 << 12)
-    #define STATUS_BIT_REC_RUN_ENABLED                  (1 << 13)
-    #define STATUS_BIT_VDF_DEPTH_POINTER_STREAMING      (1 << 14)
-    #define STATUS_BIT_VDF_LR_POINTER_STREAMING         (1 << 15)
-    #define STATUS_BIT_VDF_WEBCAM_POINTER_STREAMING     (1 << 16)
-    #define STATUS_BIT_STREAMING_STATE                  (1 << 27) | (1 << 28) | (1 << 29) | (1 << 30)
-    #define STATUS_BIT_BUSY                             (1 << 31)
-
-    #define CONTROL_COMMAND_RESPONSE                    1
-    #define CONTROL_IFFLEY                              2
-    #define CONTROL_STREAM_INTENT                       3
-    #define CONTROL_DEPTH_UNITS                         4
-    #define CONTROL_MIN_MAX                             5
-    #define CONTROL_DISPARITY                           6
-    #define CONTROL_RECTIFICATION                       7
-    #define CONTROL_EMITTER                             8
-    #define CONTROL_TEMPERATURE                         9
-    #define CONTROL_DEPTH_PARAMS                        10
-    #define CONTROL_LAST_ERROR                          12
-    #define CONTROL_EMBEDDED_COUNT                      13
-    #define CONTROL_LR_EXPOSURE                         14
-    #define CONTROL_LR_AUTOEXPOSURE_PARAMETERS          15
-    #define CONTROL_SW_RESET                            16
-    #define CONTROL_LR_GAIN                             17
-    #define CONTROL_LR_EXPOSURE_MODE                    18
-    #define CONTROL_DISPARITY_SHIFT                     19
-    #define CONTROL_STATUS                              20
-    #define CONTROL_LR_EXPOSURE_DISCOVERY               21
-    #define CONTROL_LR_GAIN_DISCOVERY                   22
-    #define CONTROL_HW_TIMESTAMP                        23
-
-    #define COMMAND_DOWNLOAD_SPI_FLASH                  0x1A
-    #define COMMAND_PROTECT_FLASH                       0x1C
-    #define COMMAND_LED_ON                              0x14
-    #define COMMAND_LED_OFF                             0x15
-    #define COMMAND_GET_FWREVISION                      0x21
-    #define COMMAND_GET_SPI_PROTECT                     0x23
-    #define COMMAND_MODIFIER_DIRECT                     0x00000010
-    
 } } // end namespace r200
 
-#endif
+#endif // R200PRIVATE_H

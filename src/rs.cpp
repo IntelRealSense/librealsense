@@ -1,6 +1,6 @@
 #include "camera.h"
 
-#include "R200/R200.h"
+#include "r200.h"
 #include "F200/F200.h"
 
 rs_context::rs_context()
@@ -45,7 +45,7 @@ void rs_context::QueryDeviceList()
 		{
             switch(desc->idProduct)
             {
-            case 2688: cameras.push_back(std::make_shared<rsimpl::r200::R200Camera>(privateContext, list[index])); break;
+            case 2688: cameras.push_back(std::make_shared<rsimpl::r200_camera>(privateContext, list[index])); break;
             case 2662: cameras.push_back(std::make_shared<rsimpl::f200::F200Camera>(privateContext, list[index])); break;
             case 2725: throw std::runtime_error("IVCAM 1.5 / SR300 is not supported at this time");
 			}
