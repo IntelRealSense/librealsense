@@ -38,7 +38,7 @@ void draw_stream(struct rs_camera * cam, enum rs_stream stream, int x, int y)
     format = rs_get_image_format(cam, stream, 0);
     pixels = rs_get_image_pixels(cam, stream, 0);
 
-    glRasterPos2i(x, y);
+    glRasterPos2i(x + (640 - intrin.image_size[0])/2, y + (480 - intrin.image_size[1])/2);
     switch(format)
     {
     case RS_FORMAT_Z16:
@@ -61,10 +61,10 @@ int main(int argc, char * argv[])
 {
 	struct rs_context * ctx;
 	struct rs_camera * cam;
-    struct rs_intrinsics color_intrin, depth_intrin;
+    struct rs_intrinsics intrin;
 	float hfov, vfov;
     GLFWwindow * win;
-    int i;
+    int i, j;
 
 	ctx = rs_create_context(RS_API_VERSION, &error); check_error();
     for (i = 0; i < rs_get_camera_count(ctx, NULL); ++i)
@@ -78,11 +78,14 @@ int main(int argc, char * argv[])
         rs_enable_stream_preset(cam, RS_STREAM_INFRARED_2, RS_PRESET_BEST_QUALITY, &error); check_error();
         rs_start_capture(cam, &error); check_error();
 
-        rs_get_stream_intrinsics(cam, RS_STREAM_COLOR, &color_intrin, &error); check_error();
-        rs_get_stream_intrinsics(cam, RS_STREAM_DEPTH, &depth_intrin, &error); check_error();
-        hfov = compute_fov(depth_intrin.image_size[0], depth_intrin.focal_length[0], depth_intrin.principal_point[0]);
-        vfov = compute_fov(depth_intrin.image_size[1], depth_intrin.focal_length[1], depth_intrin.principal_point[1]);
-		printf("Computed FOV %f %f\n", hfov, vfov);
+        for(j = RS_STREAM_BEGIN_RANGE; j <= RS_STREAM_END_RANGE; ++j)
+        {
+            if(!rs_is_stream_enabled(cam, (enum rs_stream)j, 0)) continue;
+            rs_get_stream_intrinsics(cam, (enum rs_stream)j, &intrin, &error); check_error();
+            hfov = compute_fov(intrin.image_size[0], intrin.focal_length[0], intrin.principal_point[0]);
+            vfov = compute_fov(intrin.image_size[1], intrin.focal_length[1], intrin.principal_point[1]);
+            printf("Capturing %s at %d x %d, fov = %.1f x %.1f\n", rs_get_stream_name((enum rs_stream)j, 0), intrin.image_size[0], intrin.image_size[1], hfov, vfov);
+        }
 	}
 	if (!cam)
 	{
@@ -91,7 +94,7 @@ int main(int argc, char * argv[])
 	}
 
 	glfwInit();
-    win = glfwCreateWindow(1600, 720, "LibRealSense C Example", 0, 0);
+    win = glfwCreateWindow(1280, 960, "LibRealSense C Example", 0, 0);
     glfwMakeContextCurrent(win);
     font = ttf_create(fopen("../../examples/assets/Roboto-Bold.ttf", "rb"));
 
@@ -102,13 +105,13 @@ int main(int argc, char * argv[])
 
         glClear(GL_COLOR_BUFFER_BIT);
         glPushMatrix();
-        glOrtho(0, 1600, 720, 0, -1, +1);
+        glOrtho(0, 1280, 960, 0, -1, +1);
         glPixelZoom(1, -1);
 
         draw_stream(cam, RS_STREAM_COLOR, 0, 0);
         draw_stream(cam, RS_STREAM_DEPTH, 640, 0);
-        draw_stream(cam, RS_STREAM_INFRARED, 640, 360);
-        draw_stream(cam, RS_STREAM_INFRARED_2, 1120, 360);
+        draw_stream(cam, RS_STREAM_INFRARED, 0, 480);
+        draw_stream(cam, RS_STREAM_INFRARED_2, 640, 480);
 
         glPopMatrix();
 		glfwSwapBuffers(win);

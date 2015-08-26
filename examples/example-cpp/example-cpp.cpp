@@ -1,54 +1,12 @@
-///////////////
-// Compilers //
-///////////////
-
-#if defined(_MSC_VER)
-#define COMPILER_MSVC 1
-#endif
-
-#if defined(__GNUC__)
-#define COMPILER_GCC 1
-#define GCC_VERSION (__GNUC__ * 10000 + __GNUC_MINOR__ * 100 + __GNUC_PATCHLEVEL__)
-#endif
-
-#if defined(__clang__)
-#define COMPILER_CLANG 1
-#endif
-
-///////////////
-// Platforms //
-///////////////
-
-#if defined(WIN32) || defined(_WIN32)
-#define PLATFORM_WINDOWS 1
-#endif
-
-#ifdef __APPLE__
-#define PLATFORM_OSX 1
-#endif
-
-#if defined(__linux__)
-#define PLATFORM_LINUX 1
-#endif
-
 #include <librealsense/rs.hpp>
-
-#define GLFW_INCLUDE_GLU
-
-#if defined(PLATFORM_OSX)
-
-#include "glfw3.h"
-#define GLFW_EXPOSE_NATIVE_COCOA
-#define GLFW_EXPOSE_NATIVE_NSGL
-#include "glfw3native.h"
-#include <OpenGL/gl3.h>
-#elif defined(PLATFORM_LINUX)
-#include <GLFW/glfw3.h>
-#endif
+#include "../example.h"
 
 #define _USE_MATH_DEFINES
 #include <math.h>
 #include <iostream>
+#include <iomanip>>
+
+font font;
 
 float compute_fov(int image_size, float focal_length, float principal_point)
 {
@@ -64,7 +22,8 @@ void draw_stream(rs::camera & cam, rs::stream stream, int x, int y)
     const rs::format format = cam.get_image_format(stream);
     const void * pixels = cam.get_image_pixels(stream);
 
-    glRasterPos2i(x, y);
+    glRasterPos2i(x + (640 - intrin.image_size[0])/2, y + (480 - intrin.image_size[1])/2);
+    glPixelZoom(1, -1);
     switch(format)
     {
     case RS_FORMAT_Z16:
@@ -79,6 +38,8 @@ void draw_stream(rs::camera & cam, rs::stream stream, int x, int y)
         glDrawPixels(width, height, GL_RGB, GL_UNSIGNED_BYTE, pixels);
         break;
     }
+
+    ttf_print(&font, x+8, y+16, rs_get_stream_name(stream, 0));
 }
 
 int main(int argc, char * argv[]) try
@@ -97,34 +58,37 @@ int main(int argc, char * argv[]) try
         cam.enable_stream_preset(RS_STREAM_INFRARED_2, RS_PRESET_BEST_QUALITY);
         cam.start_capture();
 
-        if(cam.is_stream_enabled(RS_STREAM_DEPTH))
+        for(int j = RS_STREAM_BEGIN_RANGE; j <= RS_STREAM_END_RANGE; ++j)
         {
-            auto intrin = cam.get_stream_intrinsics(RS_STREAM_DEPTH);
+            if(!cam.is_stream_enabled((rs::stream)j)) continue;
+            auto intrin = cam.get_stream_intrinsics((rs::stream)j);
             float hfov = compute_fov(intrin.image_size[0], intrin.focal_length[0], intrin.principal_point[0]);
             float vfov = compute_fov(intrin.image_size[1], intrin.focal_length[1], intrin.principal_point[1]);
-            std::cout << "Computed FOV " << hfov << " " << vfov << std::endl;
+            std::cout << "Capturing " << rs::get_name((rs::stream)j) << " at " << intrin.image_size[0] << " x " << intrin.image_size[1];
+            std::cout << std::setprecision(1) << std::fixed << ", fov = " << hfov << " x " << vfov << std::endl;
         }
 	}
 	if (!cam) throw std::runtime_error("No camera detected. Is it plugged in?");
 
 	glfwInit();
-    GLFWwindow * win = glfwCreateWindow(1600, 720, "LibRealSense CPP Example", 0, 0);
+    GLFWwindow * win = glfwCreateWindow(1280, 960, "LibRealSense CPP Example", 0, 0);
+    glfwMakeContextCurrent(win);
+    font = ttf_create(fopen("../../examples/assets/Roboto-Bold.ttf", "rb"));
+
 	while (!glfwWindowShouldClose(win))
 	{
 		glfwPollEvents();
         cam.wait_all_streams();
 
-		glfwMakeContextCurrent(win);
 		glClear(GL_COLOR_BUFFER_BIT);
         glPushMatrix();
-        glOrtho(0, 1600, 0, 720, -1, +1);
-		glPixelZoom(1, -1);
+        glOrtho(0, 1280, 960, 0, -1, +1);
 
-        draw_stream(cam, RS_STREAM_COLOR, 0, 720);
-        draw_stream(cam, RS_STREAM_DEPTH, 640, 720);
-        draw_stream(cam, RS_STREAM_INFRARED, 640, 360);
-        draw_stream(cam, RS_STREAM_INFRARED_2, 1120, 360);
-        
+        draw_stream(cam, RS_STREAM_COLOR, 0, 0);
+        draw_stream(cam, RS_STREAM_DEPTH, 640, 0);
+        draw_stream(cam, RS_STREAM_INFRARED, 0, 480);
+        draw_stream(cam, RS_STREAM_INFRARED_2, 640, 480);
+
         glPopMatrix();
 		glfwSwapBuffers(win);
 	}

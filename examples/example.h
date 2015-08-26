@@ -35,7 +35,7 @@ static struct font ttf_create(FILE * f)
     fseek(f, 0, SEEK_SET);
     fread(buffer, 1, buffer_size, f);
 
-    stbtt_BakeFontBitmap(buffer,0, 20.0, temp_bitmap, 512,512, 32,96, fn.cdata); // no guarantee this fits!
+    stbtt_BakeFontBitmap((unsigned char*)buffer,0, 20.0, temp_bitmap, 512,512, 32,96, fn.cdata); // no guarantee this fits!
     free(buffer);
 
     glGenTextures(1, &fn.tex);
@@ -49,7 +49,7 @@ static struct font ttf_create(FILE * f)
     return fn;
 }
 
-static void ttf_print(const struct font * font, float x, float y, const char *text)
+static void ttf_print(struct font * font, float x, float y, const char *text)
 {
     glPushAttrib(GL_ALL_ATTRIB_BITS);
     glEnable(GL_TEXTURE_2D);
@@ -73,7 +73,7 @@ static void ttf_print(const struct font * font, float x, float y, const char *te
     glPopAttrib();
 }
 
-static float ttf_len(const struct font * font, const char *text)
+static float ttf_len(struct font * font, const char *text)
 {
     float x=0, y=0;
     for(; *text; ++text)
