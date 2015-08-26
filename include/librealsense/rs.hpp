@@ -1,11 +1,11 @@
 #ifndef LIBREALSENSE_CPP_INCLUDE_GUARD
 #define LIBREALSENSE_CPP_INCLUDE_GUARD
 
-#include "rsutil.h"
+#include "rs.h"
 
-#include <array>
-#include <stdexcept>
 #include <string>
+#include <ostream>
+#include <stdexcept>
 
 namespace rs
 {
@@ -29,11 +29,17 @@ namespace rs
 							operator rs_error ** ()													{ return &error; }
 	};
 
-    typedef rs_stream stream;
-    typedef rs_format format;
-    typedef rs_preset preset;
-    typedef rs_intrinsics intrinsics;
-    typedef rs_extrinsics extrinsics;
+    typedef rs_stream       stream;
+    typedef rs_format       format;
+    typedef rs_preset       preset;
+    typedef rs_distortion   distortion;
+    typedef rs_intrinsics   intrinsics;
+    typedef rs_extrinsics   extrinsics;
+
+    inline const char *     get_name(stream s) { return rs_get_stream_name(s, auto_error()); }
+    inline const char *     get_name(format f) { return rs_get_format_name(f, auto_error()); }
+    inline const char *     get_name(preset p) { return rs_get_preset_name(p, auto_error()); }
+    inline const char *     get_name(distortion d) { return rs_get_distortion_name(d, auto_error()); }
 
 	class camera
 	{
@@ -49,10 +55,11 @@ namespace rs
         void				enable_stream(stream s, int width, int height, format f, int fps)       { rs_enable_stream(cam, s, width, height, f, fps, auto_error()); }
         void				enable_stream_preset(stream s, preset preset)                           { rs_enable_stream_preset(cam, s, preset, auto_error()); }
         bool                is_stream_enabled(stream s)                                             { return !!rs_is_stream_enabled(cam, s, auto_error()); }
-        void 				start_streaming()														{ rs_start_streaming(cam, auto_error()); }
-        void				stop_streaming()                                                        { rs_stop_streaming(cam, auto_error()); }
+        void 				start_capture()                                                         { rs_start_capture(cam, auto_error()); }
+        void				stop_capture()                                                          { rs_stop_capture(cam, auto_error()); }
         void                wait_all_streams()                                                      { rs_wait_all_streams(cam, auto_error()); }
 
+        format              get_image_format(stream s)                                              { return rs_get_image_format(cam, s, auto_error()); }
         const void *        get_image_pixels(stream s)                                              { return rs_get_image_pixels(cam, s, auto_error()); }
         float               get_depth_scale()														{ return rs_get_depth_scale(cam, auto_error()); }
 
@@ -74,5 +81,10 @@ namespace rs
 		camera				get_camera(int index)													{ return rs_get_camera(ctx, index, auto_error()); }
 	};
 }
+
+std::ostream & operator << (std::ostream & o, rs::stream s) { return o << rs::get_name(s); }
+std::ostream & operator << (std::ostream & o, rs::format f) { return o << rs::get_name(f); }
+std::ostream & operator << (std::ostream & o, rs::preset p) { return o << rs::get_name(p); }
+std::ostream & operator << (std::ostream & o, rs::distortion d) { return o << rs::get_name(d); }
 
 #endif

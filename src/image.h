@@ -1,3 +1,4 @@
+#pragma once
 #ifndef LIBREALSENSE_IMAGE_H
 #define LIBREALSENSE_IMAGE_H
 

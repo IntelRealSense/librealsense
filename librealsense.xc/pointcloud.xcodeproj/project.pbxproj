@@ -14,7 +14,6 @@
 		08567C0F1B5B899B00EB6C0D /* OpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 08567C0E1B5B899B00EB6C0D /* OpenGL.framework */; };
 		08567C2C1B61D80B00EB6C0D /* librealsense.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 08567C2B1B61D80B00EB6C0D /* librealsense.a */; };
 		08567C301B61DB8100EB6C0D /* libusb-1.0.0.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 08567C2F1B61DB8100EB6C0D /* libusb-1.0.0.dylib */; };
-		27E516361B87AAEA00DDA462 /* pointcloud.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 27E516351B87AAEA00DDA462 /* pointcloud.cpp */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -38,7 +37,6 @@
 		08567C0E1B5B899B00EB6C0D /* OpenGL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenGL.framework; path = System/Library/Frameworks/OpenGL.framework; sourceTree = SDKROOT; };
 		08567C2B1B61D80B00EB6C0D /* librealsense.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = librealsense.a; path = ../../Library/Developer/Xcode/DerivedData/bin/Debug/librealsense.a; sourceTree = "<group>"; };
 		08567C2F1B61DB8100EB6C0D /* libusb-1.0.0.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = "libusb-1.0.0.dylib"; path = "../../../../usr/local/Cellar/libusb/1.0.19/lib/libusb-1.0.0.dylib"; sourceTree = "<group>"; };
-		27E516351B87AAEA00DDA462 /* pointcloud.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = pointcloud.cpp; path = ../examples/pointcloud/pointcloud.cpp; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -79,7 +77,6 @@
 		08567BB31B5B59E800EB6C0D /* src */ = {
 			isa = PBXGroup;
 			children = (
-				27E516351B87AAEA00DDA462 /* pointcloud.cpp */,
 			);
 			name = src;
 			path = CameraDev;
@@ -172,7 +169,6 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				27E516361B87AAEA00DDA462 /* pointcloud.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

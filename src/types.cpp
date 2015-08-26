@@ -2,10 +2,65 @@
 #include "image.h"
 #include "camera.h"
 
+#include <array>
 #include <algorithm>
 
 namespace rsimpl
 {
+    const char * get_string(rs_stream value)
+    {
+        #define CASE(X) case RS_STREAM_##X: return #X;
+        switch(value)
+        {
+        CASE(DEPTH)
+        CASE(COLOR)
+        CASE(INFRARED)
+        CASE(INFRARED_2)
+        default: assert(!is_valid(value)); return nullptr;
+        }
+        #undef CASE
+    }
+
+    const char * get_string(rs_format value)
+    {
+        #define CASE(X) case RS_FORMAT_##X: return #X;
+        switch(value)
+        {
+        CASE(ANY)
+        CASE(Z16)
+        CASE(Y8)
+        CASE(RGB8)
+        default: assert(!is_valid(value)); return nullptr;
+        }
+        #undef CASE
+    }
+
+    const char * get_string(rs_preset value)
+    {
+        #define CASE(X) case RS_PRESET_##X: return #X;
+        switch(value)
+        {
+        CASE(BEST_QUALITY)
+        CASE(LARGEST_IMAGE)
+        CASE(HIGHEST_FRAMERATE)
+        default: assert(!is_valid(value)); return nullptr;
+        }
+        #undef CASE
+    }
+
+    const char * get_string(rs_distortion value)
+    {
+        #define CASE(X) case RS_DISTORTION_##X: return #X;
+        switch(value)
+        {
+        CASE(NONE)
+        CASE(GORDON_BROWN_CONRADY)
+        CASE(INVERSE_BROWN_CONRADY)
+        default: assert(!is_valid(value)); return nullptr;
+        }
+        #undef CASE
+    }
+
     static size_t get_pixel_size(int format)
     {
         switch(format)
@@ -17,30 +72,30 @@ namespace rsimpl
         }
     }
 
-    void unpack_strided_image(void * dest[], const SubdeviceMode & mode, const void * source)
+    void unpack_strided_image(void * dest[], const subdevice_mode & mode, const void * source)
     {
         assert(mode.streams.size() == 1);
         copy_strided_image(dest[0], mode.streams[0].width * get_pixel_size(mode.streams[0].format), source, mode.width * get_pixel_size(mode.streams[0].format), mode.streams[0].height);
     }
 
-    void unpack_rly12_to_y8(void * dest[], const SubdeviceMode & mode, const void * frame)
+    void unpack_rly12_to_y8(void * dest[], const subdevice_mode & mode, const void * frame)
     {
         assert(mode.format == UVC_FRAME_FORMAT_Y12I && mode.streams.size() == 2 && mode.streams[0].format == RS_FORMAT_Y8 && mode.streams[1].format == RS_FORMAT_Y8);
         convert_rly12_to_y8_y8(dest[0], dest[1], mode.streams[0].width, mode.streams[0].height, frame, 3*mode.width);
     }
 
-    void unpack_yuyv_to_rgb(void * dest[], const SubdeviceMode & mode, const void * source)
+    void unpack_yuyv_to_rgb(void * dest[], const subdevice_mode & mode, const void * source)
     {
         assert(mode.format == UVC_FRAME_FORMAT_YUYV && mode.streams.size() == 1 && mode.streams[0].format == RS_FORMAT_RGB8);
         convert_yuyv_to_rgb((uint8_t *) dest[0], mode.width, mode.height, source);
     }
 
-    const SubdeviceMode * StaticCameraInfo::select_mode(const std::array<StreamRequest,MAX_STREAMS> & requests, int subdevice_index) const
+    const subdevice_mode * static_camera_info::select_mode(const stream_request (& requests)[RS_STREAM_NUM], int subdevice_index) const
     {
         // Determine if the user has requested any streams which are supplied by this subdevice
         bool any_stream_requested = false;
-        std::array<bool, MAX_STREAMS> stream_requested = {};
-        for(int j = 0; j < MAX_STREAMS; ++j)
+        std::array<bool, RS_STREAM_NUM> stream_requested = {};
+        for(int j = 0; j < RS_STREAM_NUM; ++j)
         {
             if(requests[j].enabled && stream_subdevices[j] == subdevice_index)
             {
@@ -78,26 +133,12 @@ namespace rsimpl
         std::ostringstream ss;
         ss << "uvc subdevice " << subdevice_index << " cannot provide";
         bool first = true;
-        for(int j = 0; j < MAX_STREAMS; ++j)
+        for(int j = 0; j < RS_STREAM_NUM; ++j)
         {
             if(!stream_requested[j]) continue;
             ss << (first ? " " : " and ");
-
-            ss << requests[j].width << 'x' << requests[j].height << ':';
-            switch(requests[j].format)
-            {
-            case RS_FORMAT_Z16: ss << "Z16"; break;
-            case RS_FORMAT_RGB8: ss << "RGB8"; break;
-            case RS_FORMAT_Y8: ss << "Y8"; break;
-            }
-            ss << '@' << requests[j].fps << "Hz ";
-            switch(j)
-            {
-            case RS_STREAM_DEPTH: ss << "DEPTH"; break;
-            case RS_STREAM_COLOR: ss << "COLOR"; break;
-            case RS_STREAM_INFRARED: ss << "INFRARED"; break;
-            case RS_STREAM_INFRARED_2: ss << "INFRARED_2"; break;
-            }
+            ss << requests[j].width << 'x' << requests[j].height << ':' << get_string(requests[j].format);
+            ss << '@' << requests[j].fps << "Hz " << get_string((rs_stream)j);
             first = false;
         }
         throw std::runtime_error(ss.str());
