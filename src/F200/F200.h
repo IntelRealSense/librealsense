@@ -18,10 +18,7 @@ namespace rsimpl { namespace f200
         F200Camera(uvc_context_t * ctx, uvc_device_t * device);
         ~F200Camera();
 
-        calibration_info RetrieveCalibration() override final;
-        void SetStreamIntent() override final {}
-
-        void EnableStreamPreset(rs_stream stream, rs_preset preset) override final
+        void enable_stream_preset(rs_stream stream, rs_preset preset) override final
         {
             switch(stream)
             {
@@ -30,6 +27,8 @@ namespace rsimpl { namespace f200
             default: throw std::runtime_error("unsupported stream");
             }
         }
+        calibration_info retrieve_calibration() override final;
+        void set_stream_intent() override final {}
         
         bool xu_read(uvc_device_handle_t * device, uint64_t xu_ctrl, void * buffer, uint32_t length);
         bool xu_write(uvc_device_handle_t * device, uint64_t xu_ctrl, void * buffer, uint32_t length);

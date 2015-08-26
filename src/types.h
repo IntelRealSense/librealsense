@@ -3,7 +3,9 @@
 
 #include "../include/librealsense/rs.h"
 #include "libuvc/libuvc.h"                  // For uvc_frame_format
+
 #include <vector>                           // For vector
+#include <sstream>                          // For ostringstream
 
 namespace rsimpl
 {
@@ -80,6 +82,14 @@ namespace rsimpl
         std::vector<rs_intrinsics> intrinsics;
         pose stream_poses[RS_STREAM_NUM];
         float depth_scale;
+    };
+
+    // Utilities
+    struct to_string
+    {
+        std::ostringstream ss;
+        template<class T> to_string & operator << (const T & val) { ss << val; return *this; }
+        operator std::string() const { return ss.str(); }
     };
 }
 

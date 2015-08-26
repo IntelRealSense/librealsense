@@ -8,12 +8,12 @@ using namespace rsimpl;
 ////////////////
 
 rs_camera::rs_camera(uvc_context_t * context, uvc_device_t * device, const static_camera_info & camera_info)
-    : context(context), device(device), camera_info(camera_info), first_handle(), isCapturing()
+    : context(context), device(device), camera_info(camera_info), first_handle(), is_capturing()
 {
     {
         uvc_device_descriptor_t * desc;
         CheckUVC("uvc_get_device_descriptor", uvc_get_device_descriptor(device, &desc));
-        cameraName = desc->product;
+        camera_name = desc->product;
         uvc_free_device_descriptor(desc);
     }
 
@@ -49,11 +49,11 @@ void rs_camera::start_capture()
         if(const subdevice_mode * mode = camera_info.select_mode(requests, i))
         {
             // For each stream provided by this mode
-            std::vector<std::shared_ptr<Stream>> stream_list;
+            std::vector<std::shared_ptr<stream_buffer>> stream_list;
             for(auto & stream_mode : mode->streams)
             {
                 // Create a buffer to receive the images from this stream
-                auto stream = std::make_shared<Stream>();
+                auto stream = std::make_shared<stream_buffer>();
                 stream_list.push_back(stream);
 
                 // If this is one of the streams requested by the user, store the buffer so they can access it
@@ -61,7 +61,7 @@ void rs_camera::start_capture()
             }
 
             // Initialize the subdevice and set it to the selected mode, then exit the loop early
-            subdevices[i].reset(new Subdevice(device, i));
+            subdevices[i].reset(new subdevice_handle(device, i));
             subdevices[i]->set_mode(*mode, stream_list);
             if(!first_handle) first_handle = subdevices[i]->get_handle();
         }
@@ -70,23 +70,23 @@ void rs_camera::start_capture()
     // If we have not yet retrieved calibration info and at least one subdevice is open, do so
     if(calib.intrinsics.empty() && first_handle)
     {
-        calib = RetrieveCalibration();
+        calib = retrieve_calibration();
     }
 
-    SetStreamIntent();
+    set_stream_intent();
     for(auto & subdevice : subdevices) if(subdevice) subdevice->start_streaming();
-    isCapturing = true;
+    is_capturing = true;
 }
 
 void rs_camera::stop_capture()
 {
     for(auto & subdevice : subdevices) if(subdevice) subdevice->stop_streaming();
-    isCapturing = false;
+    is_capturing = false;
 }
 
 void rs_camera::wait_all_streams()
 {
-    if (!isCapturing) return;
+    if (!is_capturing) return;
     
     int maxFps = 0;
     for(auto & stream : streams) maxFps = stream ? std::max(maxFps, stream->get_mode().fps) : maxFps;
@@ -123,7 +123,11 @@ rs_extrinsics rs_camera::get_stream_extrinsics(rs_stream from, rs_stream to) con
     return extrin;
 }
 
-void rs_camera::Stream::set_mode(const stream_mode & mode)
+///////////////////
+// stream_buffer //
+///////////////////
+
+void rs_camera::stream_buffer::set_mode(const stream_mode & mode)
 {
     this->mode = mode;
     switch(mode.format)
@@ -137,7 +141,7 @@ void rs_camera::Stream::set_mode(const stream_mode & mode)
     updated = false;
 }
 
-bool rs_camera::Stream::update_image()
+bool rs_camera::stream_buffer::update_image()
 {
     if(!updated) return false;
     std::lock_guard<std::mutex> guard(mutex);
@@ -146,22 +150,37 @@ bool rs_camera::Stream::update_image()
     return true;
 }
 
-void rs_camera::Subdevice::set_mode(const subdevice_mode & mode, std::vector<std::shared_ptr<Stream>> streams)
+//////////////////////
+// subdevice_handle //
+//////////////////////
+
+rs_camera::subdevice_handle::subdevice_handle(uvc_device_t * device, int subdevice_index)
+{
+    CheckUVC("uvc_open2", uvc_open2(device, &handle, subdevice_index));
+}
+
+rs_camera::subdevice_handle::~subdevice_handle()
+{
+    uvc_stop_streaming(handle);
+    uvc_close(handle);
+}
+
+void rs_camera::subdevice_handle::set_mode(const subdevice_mode & mode, std::vector<std::shared_ptr<stream_buffer>> streams)
 {
     assert(mode.streams.size() == streams.size());
-    CheckUVC("uvc_get_stream_ctrl_format_size", uvc_get_stream_ctrl_format_size(uvcHandle, &ctrl, mode.format, mode.width, mode.height, mode.fps));
+    CheckUVC("uvc_get_stream_ctrl_format_size", uvc_get_stream_ctrl_format_size(handle, &ctrl, mode.format, mode.width, mode.height, mode.fps));
 
     this->mode = mode;
     this->streams = streams;
     for(size_t i=0; i<mode.streams.size(); ++i) streams[i]->set_mode(mode.streams[i]);
 }
 
-void rs_camera::Subdevice::start_streaming()
+void rs_camera::subdevice_handle::start_streaming()
 {
-    CheckUVC("uvc_start_streaming", uvc_start_streaming(uvcHandle, &ctrl, [](uvc_frame_t * frame, void * ptr)
+    CheckUVC("uvc_start_streaming", uvc_start_streaming(handle, &ctrl, [](uvc_frame_t * frame, void * ptr)
     {
         // Validate that this frame matches the mode information we've set
-        auto self = reinterpret_cast<Subdevice *>(ptr);
+        auto self = reinterpret_cast<subdevice_handle *>(ptr);
         assert((int)frame->width == self->mode.width && (int)frame->height == self->mode.height && frame->frame_format == self->mode.format);
 
         // Unpack the image into the user stream interface back buffer
@@ -179,7 +198,7 @@ void rs_camera::Subdevice::start_streaming()
     }, this, 0));
 }
     
-void rs_camera::Subdevice::stop_streaming()
+void rs_camera::subdevice_handle::stop_streaming()
 {
     CheckUVC("uvc_stream_stop", uvc_stream_stop(ctrl.handle));
 }

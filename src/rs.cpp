@@ -129,7 +129,7 @@ void rs_enable_stream_preset(struct rs_camera * camera, enum rs_stream stream, e
     VALIDATE_NOT_NULL(camera);
     VALIDATE_ENUM(stream);
     VALIDATE_ENUM(preset);
-    camera->EnableStreamPreset(stream, preset);
+    camera->enable_stream_preset(stream, preset);
 }
 HANDLE_EXCEPTIONS_AND_RETURN()
 

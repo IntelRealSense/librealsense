@@ -43,7 +43,7 @@ namespace rsimpl { namespace r200
         if(first_handle) force_firmware_reset(first_handle);
     }
 
-    void R200Camera::EnableStreamPreset(rs_stream stream, rs_preset preset)
+    void R200Camera::enable_stream_preset(rs_stream stream, rs_preset preset)
     {
         switch(stream)
         {
@@ -70,7 +70,7 @@ namespace rsimpl { namespace r200
         return {{(int)i.w, (int)i.h}, {i.fx,i.fy}, {i.px,i.py}, {i.k[0],i.k[1],i.k[2],i.k[3],i.k[4]}, RS_DISTORTION_GORDON_BROWN_CONRADY};
     }
 
-    calibration_info R200Camera::RetrieveCalibration()
+    calibration_info R200Camera::retrieve_calibration()
     {
         CameraCalibrationParameters calib;
         CameraHeaderInfo header;
@@ -94,7 +94,7 @@ namespace rsimpl { namespace r200
         return c;
     }
 
-    void R200Camera::SetStreamIntent()
+    void R200Camera::set_stream_intent()
     {
         uint8_t streamIntent = 0;
         if(subdevices[0]) streamIntent |= STATUS_BIT_LR_STREAMING;
@@ -103,7 +103,7 @@ namespace rsimpl { namespace r200
 
         if(first_handle)
         {
-            if (!set_stream_intent(first_handle, streamIntent)) throw std::runtime_error("could not set stream intent");
+            if (!r200::set_stream_intent(first_handle, streamIntent)) throw std::runtime_error("could not set stream intent");
         }
     }
 } }

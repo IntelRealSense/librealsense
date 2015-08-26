@@ -61,7 +61,7 @@ namespace rsimpl { namespace f200
         return intrin;
     }
 
-    calibration_info F200Camera::RetrieveCalibration()
+    calibration_info F200Camera::retrieve_calibration()
     {
         if(!hardware_io) hardware_io.reset(new IVCAMHardwareIO(context));
         const CameraCalibrationParameters & calib = hardware_io->GetParameters();
