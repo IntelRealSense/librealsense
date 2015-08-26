@@ -5,14 +5,14 @@
 
 rs_context::rs_context()
 {
-	uvc_error_t initStatus = uvc_init(&privateContext, NULL);
-	if (initStatus < 0)
+    uvc_error_t status = uvc_init(&context, NULL);
+    if (status < 0)
 	{
-		uvc_perror(initStatus, "uvc_init");
+        uvc_perror(status, "uvc_init");
 		throw std::runtime_error("Could not initialize UVC context");
     }
 
-	QueryDeviceList();
+    query_device_list();
 }
 
 rs_context::~rs_context()
@@ -20,14 +20,14 @@ rs_context::~rs_context()
 	cameras.clear(); // tear down cameras before context
 	std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
-    if (privateContext) uvc_exit(privateContext);
+    if (context) uvc_exit(context);
 }
 
-void rs_context::QueryDeviceList()
+void rs_context::query_device_list()
 {
 	uvc_device_t **list;
 
-	uvc_error_t status = uvc_get_device_list(privateContext, &list);
+    uvc_error_t status = uvc_get_device_list(context, &list);
 	if (status != UVC_SUCCESS)
 	{
 		uvc_perror(status, "uvc_get_device_list");
@@ -45,8 +45,8 @@ void rs_context::QueryDeviceList()
 		{
             switch(desc->idProduct)
             {
-            case 2688: cameras.push_back(std::make_shared<rsimpl::r200_camera>(privateContext, list[index])); break;
-            case 2662: cameras.push_back(std::make_shared<rsimpl::F200Camera>(privateContext, list[index])); break;
+            case 2688: cameras.push_back(std::make_shared<rsimpl::r200_camera>(context, list[index])); break;
+            case 2662: cameras.push_back(std::make_shared<rsimpl::f200_camera>(context, list[index])); break;
             case 2725: throw std::runtime_error("IVCAM 1.5 / SR300 is not supported at this time");
 			}
 			uvc_free_device_descriptor(desc);

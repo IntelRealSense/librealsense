@@ -106,13 +106,13 @@ public:
 
 struct rs_context
 {
-    uvc_context_t * privateContext;
-	std::vector<std::shared_ptr<rs_camera>> cameras;
+    uvc_context_t *                                 context;
+    std::vector<std::shared_ptr<rs_camera>>         cameras;
     
-	rs_context();
-	~rs_context();
+                                                    rs_context();
+                                                    ~rs_context();
 
-	void QueryDeviceList();
+    void                                            query_device_list();
 };
 
 #endif

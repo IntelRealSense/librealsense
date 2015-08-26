@@ -9,14 +9,14 @@ namespace rsimpl
 {
     namespace f200 { class IVCAMHardwareIO; }
 
-    class F200Camera : public rs_camera
+    class f200_camera : public rs_camera
     {
         std::unique_ptr<f200::IVCAMHardwareIO> hardware_io;
 
     public:
         
-        F200Camera(uvc_context_t * ctx, uvc_device_t * device);
-        ~F200Camera();
+        f200_camera(uvc_context_t * ctx, uvc_device_t * device);
+        ~f200_camera();
 
         void enable_stream_preset(rs_stream stream, rs_preset preset) override final
         {
