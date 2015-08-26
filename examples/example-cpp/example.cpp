@@ -65,10 +65,10 @@ int main(int argc, char * argv[]) try
 
 		cam = ctx.get_camera(i);
 
-        cam.enable_stream_preset(RS_DEPTH, RS_BEST_QUALITY);
-        cam.enable_stream_preset(RS_COLOR, RS_BEST_QUALITY);
-        //cam.enable_stream_preset(RS_INFRARED, RS_BEST_QUALITY);
-        //cam.enable_stream_preset(RS_INFRARED_2, RS_BEST_QUALITY);
+        cam.enable_stream_preset(RS_STREAM_DEPTH, RS_BEST_QUALITY);
+        cam.enable_stream_preset(RS_STREAM_COLOR, RS_BEST_QUALITY);
+        //cam.enable_stream_preset(RS_STREAM_INFRARED, RS_BEST_QUALITY);
+        //cam.enable_stream_preset(RS_STREAM_INFRARED_2, RS_BEST_QUALITY);
         cam.start_streaming();
 
         if(cam.is_stream_enabled(RS_DEPTH))
@@ -94,34 +94,34 @@ int main(int argc, char * argv[]) try
         glOrtho(0, 1600, 0, 720, -1, +1);
 		glPixelZoom(1, -1);
 
-        if(cam.is_stream_enabled(RS_COLOR))
+        if(cam.is_stream_enabled(RS_STREAM_COLOR))
         {
             auto c = cam.get_stream_intrinsics(RS_COLOR);
             glRasterPos2f(0, 720);
-            glDrawPixels(c.image_size[0], c.image_size[1], GL_RGB, GL_UNSIGNED_BYTE, cam.get_color_image());
+            glDrawPixels(c.image_size[0], c.image_size[1], GL_RGB, GL_UNSIGNED_BYTE, cam.get_image_pixels(RS_STREAM_COLOR));
         }
 
-        if(cam.is_stream_enabled(RS_DEPTH))
+        if(cam.is_stream_enabled(RS_STREAM_DEPTH))
         {
             auto d = cam.get_stream_intrinsics(RS_DEPTH);
             glRasterPos2f(640, 720);
             glPixelTransferf(GL_RED_SCALE, 30);
-            glDrawPixels(d.image_size[0], d.image_size[1], GL_RED, GL_UNSIGNED_SHORT, cam.get_depth_image());
+            glDrawPixels(d.image_size[0], d.image_size[1], GL_RED, GL_UNSIGNED_SHORT, cam.get_image_pixels(RS_STREAM_DEPTH));
             glPixelTransferf(GL_RED_SCALE, 1);
         }
 
-        if(cam.is_stream_enabled(RS_INFRARED))
+        if(cam.is_stream_enabled(RS_STREAM_INFRARED))
         {
-            auto i = cam.get_stream_intrinsics(RS_INFRARED);
+            auto i = cam.get_stream_intrinsics(RS_STREAM_INFRARED);
             glRasterPos2f(640, 360);
-            glDrawPixels(i.image_size[0], i.image_size[1], GL_LUMINANCE, GL_UNSIGNED_BYTE, cam.get_image_pixels(RS_INFRARED));
+            glDrawPixels(i.image_size[0], i.image_size[1], GL_LUMINANCE, GL_UNSIGNED_BYTE, cam.get_image_pixels(RS_STREAM_INFRARED));
         }
 
-        if(cam.is_stream_enabled(RS_INFRARED_2))
+        if(cam.is_stream_enabled(RS_STREAM_INFRARED_2))
         {
-            auto i = cam.get_stream_intrinsics(RS_INFRARED_2);
+            auto i = cam.get_stream_intrinsics(RS_STREAM_INFRARED_2);
             glRasterPos2f(1120, 360);
-            glDrawPixels(i.image_size[0], i.image_size[1], GL_LUMINANCE, GL_UNSIGNED_BYTE, cam.get_image_pixels(RS_INFRARED_2));
+            glDrawPixels(i.image_size[0], i.image_size[1], GL_LUMINANCE, GL_UNSIGNED_BYTE, cam.get_image_pixels(RS_STREAM_INFRARED_2));
         }
         
         glPopMatrix();

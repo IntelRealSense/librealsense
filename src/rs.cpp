@@ -73,7 +73,7 @@ static void translate_exception(const char * name, rs_error ** error)
 
 // These macros provide mechanisms for reporting invalid argument errors
 #define VALIDATE_NOT_NULL(ARG) if(!ARG) throw std::runtime_error("null pointer passed for argument " #ARG);
-#define VALIDATE_ENUM(ARG) if(!rsimpl::IsValid(ARG)) { std::ostringstream ss; ss << "invalid enum value (" << ARG << ") passed for argument " #ARG; throw std::runtime_error(ss.str()); }
+#define VALIDATE_ENUM(ARG) if(!rsimpl::is_valid(ARG)) { std::ostringstream ss; ss << "invalid enum value (" << ARG << ") passed for argument " #ARG; throw std::runtime_error(ss.str()); }
 #define VALIDATE_RANGE(ARG, MIN, MAX) if(ARG < MIN || ARG > MAX) { std::ostringstream ss; ss << "out of range value (" << ARG << ") passed for argument " #ARG; throw std::runtime_error(ss.str()); }
 
 rs_context * rs_create_context(int api_version, rs_error ** error) try
@@ -141,24 +141,24 @@ int rs_is_stream_enabled(struct rs_camera * camera, enum rs_stream stream, struc
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0)
 
-void rs_start_streaming(struct rs_camera * camera, struct rs_error ** error) try
+void rs_start_capture(struct rs_camera * camera, struct rs_error ** error) try
 {
     VALIDATE_NOT_NULL(camera);
-    camera->StartStreaming();
+    camera->start_capture();
 }
 HANDLE_EXCEPTIONS_AND_RETURN()
 
-void rs_stop_streaming(struct rs_camera * camera, struct rs_error ** error) try
+void rs_stop_capture(struct rs_camera * camera, struct rs_error ** error) try
 {
     VALIDATE_NOT_NULL(camera);
-    camera->StopStreaming();
+    camera->stop_capture();
 }
 HANDLE_EXCEPTIONS_AND_RETURN()
 
 void rs_wait_all_streams(struct rs_camera * camera, struct rs_error ** error) try
 {
     VALIDATE_NOT_NULL(camera);
-    camera->WaitAllStreams();
+    camera->wait_all_streams();
 }
 HANDLE_EXCEPTIONS_AND_RETURN()
 
@@ -195,6 +195,34 @@ void rs_get_stream_extrinsics(struct rs_camera * camera, enum rs_stream from, en
     *extrin = camera->GetStreamExtrinsics(from, to);
 }
 HANDLE_EXCEPTIONS_AND_RETURN()
+
+const char * rs_get_stream_name(rs_stream stream, rs_error ** error) try
+{
+    VALIDATE_ENUM(stream);
+    return rsimpl::get_string(stream);
+}
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr)
+
+const char * rs_get_format_name(rs_format format, rs_error ** error) try
+{
+   VALIDATE_ENUM(format);
+   return rsimpl::get_string(format);
+}
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr)
+
+const char * rs_get_preset_name(rs_preset preset, rs_error ** error) try
+{
+    VALIDATE_ENUM(preset);
+    return rsimpl::get_string(preset);
+}
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr)
+
+const char * rs_get_distortion_name(rs_distortion distortion, rs_error ** error) try
+{
+   VALIDATE_ENUM(distortion);
+   return rsimpl::get_string(distortion);
+}
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr)
 
 const char * rs_get_failed_function(rs_error * error) { return error ? error->function.c_str() : nullptr; }
 const char * rs_get_error_message(rs_error * error) { return error ? error->message.c_str() : nullptr; }

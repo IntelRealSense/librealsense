@@ -39,7 +39,7 @@ int main(int argc, char * argv[])
         cam = rs_get_camera(ctx, i, &error); check_error();
         rs_enable_stream_preset(cam, RS_STREAM_DEPTH, RS_PRESET_BEST_QUALITY, &error); check_error();
         rs_enable_stream_preset(cam, RS_STREAM_COLOR, RS_PRESET_BEST_QUALITY, &error); check_error();
-        rs_start_streaming(cam, &error); check_error();
+        rs_start_capture(cam, &error); check_error();
 
         rs_get_stream_intrinsics(cam, RS_STREAM_COLOR, &color_intrin, &error); check_error();
         rs_get_stream_intrinsics(cam, RS_STREAM_DEPTH, &depth_intrin, &error); check_error();

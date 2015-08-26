@@ -80,8 +80,9 @@ const char *        rs_get_camera_name      (struct rs_camera * camera, struct r
 void				rs_enable_stream		(struct rs_camera * camera, enum rs_stream stream, int width, int height, enum rs_format format, int fps, struct rs_error ** error);
 void				rs_enable_stream_preset	(struct rs_camera * camera, enum rs_stream stream, enum rs_preset preset, struct rs_error ** error);
 int                 rs_is_stream_enabled    (struct rs_camera * camera, enum rs_stream stream, struct rs_error ** error);
-void 				rs_start_streaming  	(struct rs_camera * camera, struct rs_error ** error);
-void 				rs_stop_streaming       (struct rs_camera * camera, struct rs_error ** error);
+
+void 				rs_start_capture      	(struct rs_camera * camera, struct rs_error ** error);
+void 				rs_stop_capture         (struct rs_camera * camera, struct rs_error ** error);
 void                rs_wait_all_streams     (struct rs_camera * camera, struct rs_error ** error);
 
 const uint8_t *		rs_get_color_image		(struct rs_camera * camera, struct rs_error ** error);
@@ -91,6 +92,11 @@ float               rs_get_depth_scale      (struct rs_camera * camera, struct r
 
 void                rs_get_stream_intrinsics(struct rs_camera * camera, enum rs_stream stream, struct rs_intrinsics * intrin, struct rs_error ** error);
 void                rs_get_stream_extrinsics(struct rs_camera * camera, enum rs_stream from, enum rs_stream to, struct rs_extrinsics * extrin, struct rs_error ** error);
+
+const char *        rs_get_stream_name      (enum rs_stream stream, struct rs_error ** error);
+const char *        rs_get_format_name      (enum rs_format format, struct rs_error ** error);
+const char *        rs_get_preset_name      (enum rs_preset preset, struct rs_error ** error);
+const char *        rs_get_distortion_name  (enum rs_distortion distortion, struct rs_error ** error);
 
 const char *		rs_get_failed_function	(struct rs_error * error);
 const char *		rs_get_error_message	(struct rs_error * error);

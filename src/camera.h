@@ -45,7 +45,7 @@ namespace rsimpl
     struct CalibrationInfo
     {
         std::vector<rs_intrinsics> intrinsics;
-        pose stream_poses[MAX_STREAMS];
+        pose stream_poses[RS_STREAM_NUM];
         float depth_scale;
     }; 
 }
@@ -101,9 +101,9 @@ protected:
     uvc_device_t * device;
     const rsimpl::StaticCameraInfo camera_info;
 
-    std::array<rsimpl::StreamRequest, rsimpl::MAX_STREAMS> requests;    // Indexed by RS_DEPTH, RS_COLOR, ...
-    std::shared_ptr<Stream> streams[rsimpl::MAX_STREAMS];               // Indexed by RS_DEPTH, RS_COLOR, ...
-    std::vector<std::unique_ptr<Subdevice>> subdevices;                 // Indexed by UVC subdevices number (0, 1, 2...)
+    std::array<rsimpl::StreamRequest, RS_STREAM_NUM> requests;    // Indexed by RS_DEPTH, RS_COLOR, ...
+    std::shared_ptr<Stream> streams[RS_STREAM_NUM];               // Indexed by RS_DEPTH, RS_COLOR, ...
+    std::vector<std::unique_ptr<Subdevice>> subdevices;           // Indexed by UVC subdevices number (0, 1, 2...)
 
     std::string cameraName;
     rsimpl::CalibrationInfo calib;
@@ -119,9 +119,10 @@ public:
 
     void EnableStream(rs_stream stream, int width, int height, rs_format format, int fps);
     bool IsStreamEnabled(rs_stream stream) const { return (bool)streams[stream]; }
-    void StartStreaming();
-    void StopStreaming();
-    void WaitAllStreams();
+
+    void start_capture();
+    void stop_capture();
+    void wait_all_streams();
 
     const void * GetImagePixels(rs_stream stream) const { return streams[stream] ? streams[stream]->get_image() : nullptr; }
     float GetDepthScale() const { return calib.depth_scale; }

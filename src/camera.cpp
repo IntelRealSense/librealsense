@@ -37,7 +37,7 @@ void rs_camera::EnableStream(rs_stream stream, int width, int height, rs_format 
     requests[stream] = {true, width, height, format, fps};
 }
 
-void rs_camera::StartStreaming()
+void rs_camera::start_capture()
 {
     for(auto & s : subdevices) s.reset();
     for(auto & s : streams) s.reset();
@@ -78,13 +78,13 @@ void rs_camera::StartStreaming()
     isCapturing = true;
 }
 
-void rs_camera::StopStreaming()
+void rs_camera::stop_capture()
 {
     for(auto & subdevice : subdevices) if(subdevice) subdevice->stop_streaming();
     isCapturing = false;
 }
-    
-void rs_camera::WaitAllStreams()
+
+void rs_camera::wait_all_streams()
 {
     if (!isCapturing) return;
     

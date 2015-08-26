@@ -9,18 +9,24 @@
 
 namespace rsimpl
 {
-    const int MAX_STREAMS = 4;
-
-    #define RS_IMPLEMENT_IS_VALID(TYPE, PREFIX) inline bool IsValid(TYPE value) { return value >= RS_##PREFIX##_BEGIN_RANGE && value <= RS_##PREFIX##_END_RANGE; }
+    #define RS_IMPLEMENT_IS_VALID(TYPE, PREFIX) inline bool is_valid(TYPE value) { return value >= RS_##PREFIX##_BEGIN_RANGE && value <= RS_##PREFIX##_END_RANGE; }
     RS_IMPLEMENT_IS_VALID(rs_stream, STREAM)
     RS_IMPLEMENT_IS_VALID(rs_format, FORMAT)
     RS_IMPLEMENT_IS_VALID(rs_preset, PRESET)
+    RS_IMPLEMENT_IS_VALID(rs_distortion, DISTORTION)
     #undef RS_IMPLEMENT_IS_VALID
+
+    const char * get_string(rs_stream value);
+    const char * get_string(rs_format value);
+    const char * get_string(rs_preset value);
+    const char * get_string(rs_distortion value);
 
     struct StreamRequest
     {
         bool enabled;
-        int width, height, format, fps;
+        int width, height;
+        rs_format format;
+        int fps;
     };
 
     struct StreamMode
@@ -47,12 +53,12 @@ namespace rsimpl
 
     struct StaticCameraInfo
     {
-        int stream_subdevices[MAX_STREAMS];             // Which subdevice is used to support each stream, or -1 if stream is unavailable
+        int stream_subdevices[RS_STREAM_NUM];             // Which subdevice is used to support each stream, or -1 if stream is unavailable
         std::vector<SubdeviceMode> subdevice_modes;     // A list of available modes each subdevice can be put into
 
         StaticCameraInfo() { for(auto & s : stream_subdevices) s = -1; }
 
-        const SubdeviceMode * select_mode(const std::array<StreamRequest,MAX_STREAMS> & requests, int subdevice_index) const;
+        const SubdeviceMode * select_mode(const std::array<StreamRequest,RS_STREAM_NUM> & requests, int subdevice_index) const;
     };
 
 

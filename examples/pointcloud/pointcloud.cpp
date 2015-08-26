@@ -107,7 +107,7 @@ int main(int argc, char * argv[]) try
         cam.enable_stream_preset(RS_STREAM_INFRARED, RS_PRESET_BEST_QUALITY);
         cam.enable_stream_preset(RS_STREAM_DEPTH, RS_PRESET_BEST_QUALITY);
         cam.enable_stream_preset(RS_STREAM_COLOR, RS_PRESET_BEST_QUALITY);
-        cam.start_streaming();
+        cam.start_capture();
 	}
 	if (!cam) throw std::runtime_error("No camera detected. Is it plugged in?");
     const auto depth_intrin = cam.get_stream_intrinsics(RS_STREAM_DEPTH);
@@ -148,8 +148,8 @@ int main(int argc, char * argv[]) try
         if (action == GLFW_PRESS)
         {
             if (key == GLFW_KEY_ESCAPE) glfwSetWindowShouldClose(win, 1);
-            else if (key == GLFW_KEY_F1) s->cam->start_streaming();
-            else if (key == GLFW_KEY_F2) s->cam->stop_streaming();
+            else if (key == GLFW_KEY_F1) s->cam->start_capture();
+            else if (key == GLFW_KEY_F2) s->cam->stop_capture();
         }
     });
 
