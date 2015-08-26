@@ -22,6 +22,38 @@ float compute_fov(int image_size, float focal_length, float principal_point)
 	return (atan2f(principal_point + 0.5f, focal_length) + atan2f(image_size - principal_point - 0.5f, focal_length)) * 180.0f / (float)M_PI;
 }
 
+void draw_stream(struct rs_camera * cam, enum rs_stream stream, int x, int y)
+{
+    struct rs_intrinsics intrin;
+    int width, height;
+    enum rs_format format;
+    const void * pixels;
+
+    if(!rs_is_stream_enabled(cam, stream, 0)) return;
+
+    rs_get_stream_intrinsics(cam, stream, &intrin, 0);
+    width = intrin.image_size[0];
+    height = intrin.image_size[1];
+    format = rs_get_image_format(cam, stream, 0);
+    pixels = rs_get_image_pixels(cam, stream, 0);
+
+    glRasterPos2i(x, y);
+    switch(format)
+    {
+    case RS_FORMAT_Z16:
+        glPixelTransferf(GL_RED_SCALE, 30);
+        glDrawPixels(width, height, GL_RED, GL_UNSIGNED_SHORT, pixels);
+        glPixelTransferf(GL_RED_SCALE, 1);
+        break;
+    case RS_FORMAT_Y8:
+        glDrawPixels(width, height, GL_LUMINANCE, GL_UNSIGNED_BYTE, pixels);
+        break;
+    case RS_FORMAT_RGB8:
+        glDrawPixels(width, height, GL_RGB, GL_UNSIGNED_BYTE, pixels);
+        break;
+    }
+}
+
 int main(int argc, char * argv[])
 {
 	struct rs_context * ctx;
@@ -39,6 +71,8 @@ int main(int argc, char * argv[])
         cam = rs_get_camera(ctx, i, &error); check_error();
         rs_enable_stream_preset(cam, RS_STREAM_DEPTH, RS_PRESET_BEST_QUALITY, &error); check_error();
         rs_enable_stream_preset(cam, RS_STREAM_COLOR, RS_PRESET_BEST_QUALITY, &error); check_error();
+        rs_enable_stream_preset(cam, RS_STREAM_INFRARED, RS_PRESET_BEST_QUALITY, &error); check_error();
+        rs_enable_stream_preset(cam, RS_STREAM_INFRARED_2, RS_PRESET_BEST_QUALITY, &error); check_error();
         rs_start_capture(cam, &error); check_error();
 
         rs_get_stream_intrinsics(cam, RS_STREAM_COLOR, &color_intrin, &error); check_error();
@@ -54,24 +88,24 @@ int main(int argc, char * argv[])
 	}
 
 	glfwInit();
-	win = glfwCreateWindow(1280, 480, "LibRealSense C Example", 0, 0);
+    win = glfwCreateWindow(1600, 720, "LibRealSense C Example", 0, 0);
 	while (!glfwWindowShouldClose(win))
 	{
 		glfwPollEvents();
         rs_wait_all_streams(cam, &error); check_error();
 
-		glfwMakeContextCurrent(win);
-		glClear(GL_COLOR_BUFFER_BIT);
-		glPixelZoom(1, -1);
+        glfwMakeContextCurrent(win);
+        glClear(GL_COLOR_BUFFER_BIT);
+        glPushMatrix();
+        glOrtho(0, 1600, 0, 720, -1, +1);
+        glPixelZoom(1, -1);
 
-        glRasterPos2f(-1, 1);
-		glPixelTransferf(GL_RED_SCALE, 1);
-        glDrawPixels(color_intrin.image_size[0], color_intrin.image_size[1], GL_RGB, GL_UNSIGNED_BYTE, rs_get_image_pixels(cam, RS_STREAM_COLOR, &error)); check_error();
+        draw_stream(cam, RS_STREAM_COLOR, 0, 720);
+        draw_stream(cam, RS_STREAM_DEPTH, 640, 720);
+        draw_stream(cam, RS_STREAM_INFRARED, 640, 360);
+        draw_stream(cam, RS_STREAM_INFRARED_2, 1120, 360);
 
-        glRasterPos2f(0, 1);
-		glPixelTransferf(GL_RED_SCALE, 30);
-        glDrawPixels(depth_intrin.image_size[0], depth_intrin.image_size[1], GL_RED, GL_UNSIGNED_SHORT, rs_get_image_pixels(cam, RS_STREAM_DEPTH, &error)); check_error();
-
+        glPopMatrix();
 		glfwSwapBuffers(win);
 	}
 

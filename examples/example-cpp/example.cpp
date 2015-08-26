@@ -55,6 +55,32 @@ float compute_fov(int image_size, float focal_length, float principal_point)
 	return (atan2f(principal_point + 0.5f, focal_length) + atan2f(image_size - principal_point - 0.5f, focal_length)) * 180.0f / (float)M_PI;
 }
 
+void draw_stream(rs::camera & cam, rs::stream stream, int x, int y)
+{
+    if(!cam.is_stream_enabled(stream)) return;
+
+    const rs::intrinsics intrin = cam.get_stream_intrinsics(stream);
+    const int width = intrin.image_size[0], height = intrin.image_size[1];
+    const rs::format format = cam.get_image_format(stream);
+    const void * pixels = cam.get_image_pixels(pixels);
+
+    glRasterPos2i(x, y);
+    switch(format)
+    {
+    case RS_FORMAT_Z16:
+        glPixelTransferf(GL_RED_SCALE, 30);
+        glDrawPixels(width, height, GL_RED, GL_UNSIGNED_SHORT, pixels);
+        glPixelTransferf(GL_RED_SCALE, 1);
+        break;
+    case RS_FORMAT_Y8:
+        glDrawPixels(width, height, GL_LUMINANCE, GL_UNSIGNED_BYTE, pixels);
+        break;
+    case RS_FORMAT_RGB8:
+        glDrawPixels(width, height, GL_RGB, GL_UNSIGNED_BYTE, pixels);
+        break;
+    }
+}
+
 int main(int argc, char * argv[]) try
 {
 	rs::camera cam;
@@ -94,35 +120,10 @@ int main(int argc, char * argv[]) try
         glOrtho(0, 1600, 0, 720, -1, +1);
 		glPixelZoom(1, -1);
 
-        if(cam.is_stream_enabled(RS_STREAM_COLOR))
-        {
-            auto c = cam.get_stream_intrinsics(RS_COLOR);
-            glRasterPos2f(0, 720);
-            glDrawPixels(c.image_size[0], c.image_size[1], GL_RGB, GL_UNSIGNED_BYTE, cam.get_image_pixels(RS_STREAM_COLOR));
-        }
-
-        if(cam.is_stream_enabled(RS_STREAM_DEPTH))
-        {
-            auto d = cam.get_stream_intrinsics(RS_DEPTH);
-            glRasterPos2f(640, 720);
-            glPixelTransferf(GL_RED_SCALE, 30);
-            glDrawPixels(d.image_size[0], d.image_size[1], GL_RED, GL_UNSIGNED_SHORT, cam.get_image_pixels(RS_STREAM_DEPTH));
-            glPixelTransferf(GL_RED_SCALE, 1);
-        }
-
-        if(cam.is_stream_enabled(RS_STREAM_INFRARED))
-        {
-            auto i = cam.get_stream_intrinsics(RS_STREAM_INFRARED);
-            glRasterPos2f(640, 360);
-            glDrawPixels(i.image_size[0], i.image_size[1], GL_LUMINANCE, GL_UNSIGNED_BYTE, cam.get_image_pixels(RS_STREAM_INFRARED));
-        }
-
-        if(cam.is_stream_enabled(RS_STREAM_INFRARED_2))
-        {
-            auto i = cam.get_stream_intrinsics(RS_STREAM_INFRARED_2);
-            glRasterPos2f(1120, 360);
-            glDrawPixels(i.image_size[0], i.image_size[1], GL_LUMINANCE, GL_UNSIGNED_BYTE, cam.get_image_pixels(RS_STREAM_INFRARED_2));
-        }
+        draw_stream(cam, RS_STREAM_COLOR, 0, 720);
+        draw_stream(cam, RS_STREAM_DEPTH, 640, 720);
+        draw_stream(cam, RS_STREAM_INFRARED, 640, 360);
+        draw_stream(cam, RS_STREAM_INFRARED_2, 1120, 360);
         
         glPopMatrix();
 		glfwSwapBuffers(win);

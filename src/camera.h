@@ -124,8 +124,9 @@ public:
     void stop_capture();
     void wait_all_streams();
 
-    const void * GetImagePixels(rs_stream stream) const { return streams[stream] ? streams[stream]->get_image() : nullptr; }
-    float GetDepthScale() const { return calib.depth_scale; }
+    rs_format get_image_format(rs_stream stream) const { if(!streams[stream]) throw std::runtime_error("stream not enabled"); return streams[stream]->get_mode().format; }
+    const void * get_image_pixels(rs_stream stream) const { if(!streams[stream]) throw std::runtime_error("stream not enabled"); return streams[stream]->get_image(); }
+    float get_depth_scale() const { return calib.depth_scale; }
 
     rs_intrinsics GetStreamIntrinsics(rs_stream stream) const;
     rs_extrinsics GetStreamExtrinsics(rs_stream from, rs_stream to) const;

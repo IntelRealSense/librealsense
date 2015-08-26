@@ -162,18 +162,26 @@ void rs_wait_all_streams(struct rs_camera * camera, struct rs_error ** error) tr
 }
 HANDLE_EXCEPTIONS_AND_RETURN()
 
+rs_format rs_get_image_format(rs_camera * camera, enum rs_stream stream, rs_error ** error) try
+{
+    VALIDATE_NOT_NULL(camera);
+    VALIDATE_ENUM(stream);
+    return camera->get_image_format(stream);
+}
+HANDLE_EXCEPTIONS_AND_RETURN(RS_FORMAT_ANY)
+
 const void * rs_get_image_pixels(rs_camera * camera, enum rs_stream stream, rs_error ** error) try
 {
     VALIDATE_NOT_NULL(camera);
     VALIDATE_ENUM(stream);
-    return camera->GetImagePixels(stream);
+    return camera->get_image_pixels(stream);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr)
 
 float rs_get_depth_scale(rs_camera * camera, rs_error ** error) try
 {
     VALIDATE_NOT_NULL(camera);
-    return camera->GetDepthScale();
+    return camera->get_depth_scale();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0.0f)
 

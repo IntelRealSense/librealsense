@@ -85,8 +85,7 @@ void 				rs_start_capture      	(struct rs_camera * camera, struct rs_error ** e
 void 				rs_stop_capture         (struct rs_camera * camera, struct rs_error ** error);
 void                rs_wait_all_streams     (struct rs_camera * camera, struct rs_error ** error);
 
-const uint8_t *		rs_get_color_image		(struct rs_camera * camera, struct rs_error ** error);
-const uint16_t *	rs_get_depth_image		(struct rs_camera * camera, struct rs_error ** error);
+enum rs_format      rs_get_image_format     (struct rs_camera * camera, enum rs_stream stream, struct rs_error ** error);
 const void *        rs_get_image_pixels     (struct rs_camera * camera, enum rs_stream stream, struct rs_error ** error);
 float               rs_get_depth_scale      (struct rs_camera * camera, struct rs_error ** error);
 

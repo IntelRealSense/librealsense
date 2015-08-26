@@ -59,6 +59,7 @@ namespace rs
         void				stop_capture()                                                          { rs_stop_capture(cam, auto_error()); }
         void                wait_all_streams()                                                      { rs_wait_all_streams(cam, auto_error()); }
 
+        format              get_image_format(stream s)                                              { return rs_get_image_format(cam, s, auto_error()); }
         const void *        get_image_pixels(stream s)                                              { return rs_get_image_pixels(cam, s, auto_error()); }
         float               get_depth_scale()														{ return rs_get_depth_scale(cam, auto_error()); }
 
