@@ -197,7 +197,7 @@ int main(int argc, char * argv[]) try
 		glfwPollEvents();
 
 		int width, height;
-		glfwGetWindowSize(win, &width, &height);
+		glfwGetFramebufferSize(win, &width, &height);
 
         cam.wait_all_streams();
 
@@ -265,6 +265,8 @@ int main(int argc, char * argv[]) try
         glPopMatrix();
         glPopAttrib();
 
+        glfwGetWindowSize(win, &width, &height);
+        
         glPushAttrib(GL_ALL_ATTRIB_BITS);
         glPushMatrix();
         glOrtho(0, width, height, 0, -1, +1);
