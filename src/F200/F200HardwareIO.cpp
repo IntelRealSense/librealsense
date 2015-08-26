@@ -1,6 +1,6 @@
 #include "HardwareIO.h"
 
-namespace f200
+namespace rsimpl { namespace f200
 {
     #define IVCAM_VID                       0x8086
     #define IVCAM_PID                       0x0A66
@@ -481,4 +481,5 @@ namespace f200
         memcpy(&originalParams,&params,sizeof(CameraCalibrationParameters));
         return true;
     }
-}
+
+} } // namespace rsimpl::f200

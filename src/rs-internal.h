@@ -14,10 +14,8 @@
 #include <mutex>        // For mutex
 #include <array>
 
-namespace rs
+namespace rsimpl
 {
-    using namespace rsimpl;
-
 	struct ToString
 	{
 		std::ostringstream ss;
@@ -51,9 +49,8 @@ namespace rs
         std::vector<rs_intrinsics> intrinsics;
         pose stream_poses[MAX_STREAMS];
         float depth_scale;
-    };
-    
-} // end namespace rs
+    }; 
+}
 
 struct rs_error
 {
@@ -70,16 +67,16 @@ protected:
     {
         friend class Subdevice;
 
-        rs::StreamMode mode;
+        rsimpl::StreamMode mode;
 
         volatile bool updated = false;
         std::vector<uint8_t> front, middle, back;
         std::mutex mutex;
     public:
-        const rs::StreamMode & get_mode() const { return mode; }
+        const rsimpl::StreamMode & get_mode() const { return mode; }
         const void * get_image() const { return front.data(); }
 
-        void set_mode(const rs::StreamMode & mode);
+        void set_mode(const rsimpl::StreamMode & mode);
         bool update_image();
     };
 
@@ -87,37 +84,37 @@ protected:
     {
         uvc_device_handle_t * uvcHandle;
         uvc_stream_ctrl_t ctrl;
-        rs::SubdeviceMode mode;
+        rsimpl::SubdeviceMode mode;
 
         std::vector<std::shared_ptr<Stream>> streams;
 
         void on_frame(uvc_frame_t * frame);
     public:
-        Subdevice(uvc_device_t * device, int subdeviceNumber) { rs::CheckUVC("uvc_open2", uvc_open2(device, &uvcHandle, subdeviceNumber)); }
+        Subdevice(uvc_device_t * device, int subdeviceNumber) { rsimpl::CheckUVC("uvc_open2", uvc_open2(device, &uvcHandle, subdeviceNumber)); }
         ~Subdevice() { uvc_stop_streaming(uvcHandle); uvc_close(uvcHandle); }
 
         uvc_device_handle_t * get_handle() { return uvcHandle; }
-        void set_mode(const rs::SubdeviceMode & mode, std::vector<std::shared_ptr<Stream>> streams);
+        void set_mode(const rsimpl::SubdeviceMode & mode, std::vector<std::shared_ptr<Stream>> streams);
         void start_streaming();
         void stop_streaming();
     };
 
     uvc_context_t * context;
     uvc_device_t * device;
-    const rs::StaticCameraInfo camera_info;
+    const rsimpl::StaticCameraInfo camera_info;
 
-    std::array<rs::StreamRequest, rs::MAX_STREAMS> requests;    // Indexed by RS_DEPTH, RS_COLOR, ...
-    std::shared_ptr<Stream> streams[rs::MAX_STREAMS];           // Indexed by RS_DEPTH, RS_COLOR, ...
-    std::vector<std::unique_ptr<Subdevice>> subdevices;         // Indexed by UVC subdevices number (0, 1, 2...)
+    std::array<rsimpl::StreamRequest, rsimpl::MAX_STREAMS> requests;    // Indexed by RS_DEPTH, RS_COLOR, ...
+    std::shared_ptr<Stream> streams[rsimpl::MAX_STREAMS];               // Indexed by RS_DEPTH, RS_COLOR, ...
+    std::vector<std::unique_ptr<Subdevice>> subdevices;                 // Indexed by UVC subdevices number (0, 1, 2...)
 
     std::string cameraName;
-    rs::CalibrationInfo calib;
+    rsimpl::CalibrationInfo calib;
 
     uvc_device_handle_t * first_handle;
     bool isCapturing = false;
   
 public:
-    rs_camera(uvc_context_t * context, uvc_device_t * device, const rs::StaticCameraInfo & camera_info);
+    rs_camera(uvc_context_t * context, uvc_device_t * device, const rsimpl::StaticCameraInfo & camera_info);
     ~rs_camera();
 
     const char * GetCameraName() const { return cameraName.c_str(); }
@@ -135,7 +132,7 @@ public:
     rs_extrinsics GetStreamExtrinsics(int from, int to) const;
 
     virtual void EnableStreamPreset(int streamIdentifier, int preset) = 0;
-    virtual rs::CalibrationInfo RetrieveCalibration() = 0;
+    virtual rsimpl::CalibrationInfo RetrieveCalibration() = 0;
     virtual void SetStreamIntent() = 0;
 };
 

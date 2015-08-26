@@ -5,7 +5,7 @@
 
 #include "../rs-internal.h"
 
-namespace f200
+namespace rsimpl { namespace f200
 {
     class IVCAMHardwareIO;
 
@@ -18,7 +18,7 @@ namespace f200
         F200Camera(uvc_context_t * ctx, uvc_device_t * device);
         ~F200Camera();
 
-        rs::CalibrationInfo RetrieveCalibration() override final;
+        CalibrationInfo RetrieveCalibration() override final;
         void SetStreamIntent() override final {}
 
         void EnableStreamPreset(int streamIdentifier, int preset) override final
@@ -32,6 +32,6 @@ namespace f200
         }
     };
     
-} // end namespace f200
+} } // namespace rsimpl::f200
 
 #endif

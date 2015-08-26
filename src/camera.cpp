@@ -1,7 +1,7 @@
 #include "rs-internal.h"
 #include "image.h"
 
-using namespace rs;
+using namespace rsimpl;
 
 ////////////////
 // UVC Camera //

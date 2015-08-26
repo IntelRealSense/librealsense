@@ -1,10 +1,8 @@
 #include "R200.h"
 
-using namespace rs;
-
 #include <iostream>
 
-namespace r200
+namespace rsimpl { namespace r200
 {
     enum { LR_FULL, LR_BIG, Z_FULL, Z_BIG, THIRD_HD, THIRD_VGA, NUM_INTRINSICS };
     static StaticCameraInfo get_r200_info()
@@ -19,19 +17,19 @@ namespace r200
             auto uvcFps = fps == 60 ? 59 : fps; // UVC sees the 60 fps mode as 59 fps
 
             // left/right modes on subdevice 0
-            info.subdevice_modes.push_back({0, 640, 481, UVC_FRAME_FORMAT_Y8, uvcFps, {{RS_INFRARED, 640, 480, RS_Y8, fps, LR_FULL}}, &rs::unpack_strided_image});
-            info.subdevice_modes.push_back({0, 640, 481, UVC_FRAME_FORMAT_Y12I, uvcFps, {{RS_INFRARED, 640, 480, RS_Y8, fps, LR_FULL}, {RS_INFRARED_2, 640, 480, RS_Y8, fps, LR_FULL}}, &rs::unpack_rly12_to_y8});
-            info.subdevice_modes.push_back({0, 640, 373, UVC_FRAME_FORMAT_Y8, uvcFps, {{RS_INFRARED, 492, 372, RS_Y8, fps, LR_BIG}}, &rs::unpack_strided_image});
-            info.subdevice_modes.push_back({0, 640, 373, UVC_FRAME_FORMAT_Y12I, uvcFps, {{RS_INFRARED, 492, 372, RS_Y8, fps, LR_BIG}, {RS_INFRARED_2, 492, 372, RS_Y8, fps, LR_BIG}}, &rs::unpack_rly12_to_y8});
+            info.subdevice_modes.push_back({0, 640, 481, UVC_FRAME_FORMAT_Y8, uvcFps, {{RS_INFRARED, 640, 480, RS_Y8, fps, LR_FULL}}, &unpack_strided_image});
+            info.subdevice_modes.push_back({0, 640, 481, UVC_FRAME_FORMAT_Y12I, uvcFps, {{RS_INFRARED, 640, 480, RS_Y8, fps, LR_FULL}, {RS_INFRARED_2, 640, 480, RS_Y8, fps, LR_FULL}}, &unpack_rly12_to_y8});
+            info.subdevice_modes.push_back({0, 640, 373, UVC_FRAME_FORMAT_Y8, uvcFps, {{RS_INFRARED, 492, 372, RS_Y8, fps, LR_BIG}}, &unpack_strided_image});
+            info.subdevice_modes.push_back({0, 640, 373, UVC_FRAME_FORMAT_Y12I, uvcFps, {{RS_INFRARED, 492, 372, RS_Y8, fps, LR_BIG}, {RS_INFRARED_2, 492, 372, RS_Y8, fps, LR_BIG}}, &unpack_rly12_to_y8});
 
             // z modes on subdevice 1
-            info.subdevice_modes.push_back({1, 628, 469, UVC_FRAME_FORMAT_Z16, uvcFps, {{RS_DEPTH, 628, 468, RS_Z16, fps, Z_FULL}}, &rs::unpack_strided_image});
-            info.subdevice_modes.push_back({1, 628, 361, UVC_FRAME_FORMAT_Z16, uvcFps, {{RS_DEPTH, 480, 360, RS_Z16, fps, Z_BIG}}, &rs::unpack_strided_image});
+            info.subdevice_modes.push_back({1, 628, 469, UVC_FRAME_FORMAT_Z16, uvcFps, {{RS_DEPTH, 628, 468, RS_Z16, fps, Z_FULL}}, &unpack_strided_image});
+            info.subdevice_modes.push_back({1, 628, 361, UVC_FRAME_FORMAT_Z16, uvcFps, {{RS_DEPTH, 480, 360, RS_Z16, fps, Z_BIG}}, &unpack_strided_image});
 
             // third modes on subdevice 2
             if(fps == 90) continue;
-            info.subdevice_modes.push_back({2, 1920, 1080, UVC_FRAME_FORMAT_YUYV, uvcFps, {{RS_COLOR, 1920, 1080, RS_RGB8, fps, THIRD_HD}}, &rs::unpack_yuyv_to_rgb});
-            info.subdevice_modes.push_back({2, 640, 480, UVC_FRAME_FORMAT_YUYV, uvcFps, {{RS_COLOR, 640, 480, RS_RGB8, fps, THIRD_VGA}}, &rs::unpack_yuyv_to_rgb});
+            info.subdevice_modes.push_back({2, 1920, 1080, UVC_FRAME_FORMAT_YUYV, uvcFps, {{RS_COLOR, 1920, 1080, RS_RGB8, fps, THIRD_HD}}, &unpack_yuyv_to_rgb});
+            info.subdevice_modes.push_back({2, 640, 480, UVC_FRAME_FORMAT_YUYV, uvcFps, {{RS_COLOR, 640, 480, RS_RGB8, fps, THIRD_VGA}}, &unpack_yuyv_to_rgb});
         }
         return info;
     }
@@ -79,8 +77,7 @@ namespace r200
         CameraHeaderInfo header;
         read_camera_info(first_handle, calib, header);
 
-        rs::CalibrationInfo c;
-
+        CalibrationInfo c;
         c.intrinsics.resize(NUM_INTRINSICS);
         c.intrinsics[LR_FULL] = MakeLeftRightIntrinsics(calib.modesLR[0]);
         c.intrinsics[LR_BIG] = MakeLeftRightIntrinsics(calib.modesLR[1]);
@@ -88,11 +85,9 @@ namespace r200
         c.intrinsics[Z_BIG] = MakeDepthIntrinsics(calib.modesLR[1]);
         c.intrinsics[THIRD_HD] = MakeColorIntrinsics(calib.intrinsicsThird[0]);
         c.intrinsics[THIRD_VGA] = MakeColorIntrinsics(calib.intrinsicsThird[1]);
-
         c.stream_poses[RS_DEPTH] = {{{1,0,0},{0,1,0},{0,0,1}}, {0,0,0}};
         c.stream_poses[RS_INFRARED] = c.stream_poses[RS_DEPTH];
         c.stream_poses[RS_INFRARED_2] = c.stream_poses[RS_DEPTH]; // TODO: Figure out the correct translation vector to put here
-
         for(int i=0; i<3; ++i) for(int j=0; j<3; ++j) c.stream_poses[RS_COLOR].orientation(i,j) = calib.Rthird[0][i*3+j];
         for(int i=0; i<3; ++i) c.stream_poses[RS_COLOR].position[i] = calib.T[0][i] * 0.001f;
         c.stream_poses[RS_COLOR].position = c.stream_poses[RS_COLOR].orientation * c.stream_poses[RS_COLOR].position;
@@ -112,7 +107,7 @@ namespace r200
             if (!set_stream_intent(first_handle, streamIntent)) throw std::runtime_error("could not set stream intent");
         }
     }
-}
+} }
 
 ////////////////////////////////
 // Former HardwareIO contents //
@@ -120,7 +115,7 @@ namespace r200
 
 #include <iostream>
 
-namespace r200
+namespace rsimpl { namespace r200
 {
     struct CommandPacket
     {
@@ -636,4 +631,4 @@ namespace r200
         return true;
     }
 
-} // end namespace r200
+} } // namespace rsimpl::r200
