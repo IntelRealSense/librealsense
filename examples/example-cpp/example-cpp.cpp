@@ -3,6 +3,7 @@
 
 #define _USE_MATH_DEFINES
 #include <math.h>
+#include <sstream>
 #include <iostream>
 #include <iomanip>>
 
@@ -39,7 +40,8 @@ void draw_stream(rs::camera & cam, rs::stream stream, int x, int y)
         break;
     }
 
-    ttf_print(&font, x+8, y+16, rs_get_stream_name(stream, 0));
+    std::ostringstream ss; ss << stream << ": " << intrin.image_size[0] << " x " << intrin.image_size[1] << " " << format;
+    ttf_print(&font, x+8, y+16, ss.str().c_str());
 }
 
 int main(int argc, char * argv[]) try
@@ -53,8 +55,10 @@ int main(int argc, char * argv[]) try
 		cam = ctx.get_camera(i);
         cam.enable_stream_preset(RS_STREAM_DEPTH, RS_PRESET_BEST_QUALITY);
         cam.enable_stream_preset(RS_STREAM_COLOR, RS_PRESET_BEST_QUALITY);
-        cam.enable_stream_preset(RS_STREAM_INFRARED, RS_PRESET_BEST_QUALITY);
-        cam.enable_stream_preset(RS_STREAM_INFRARED_2, RS_PRESET_BEST_QUALITY);
+        try {
+            cam.enable_stream_preset(RS_STREAM_INFRARED, RS_PRESET_BEST_QUALITY);
+            cam.enable_stream_preset(RS_STREAM_INFRARED_2, RS_PRESET_BEST_QUALITY);
+        } catch(...) {}
         cam.start_capture();
 
         for(int j = RS_STREAM_BEGIN_RANGE; j <= RS_STREAM_END_RANGE; ++j)
@@ -70,7 +74,9 @@ int main(int argc, char * argv[]) try
 	if (!cam) throw std::runtime_error("No camera detected. Is it plugged in?");
 
 	glfwInit();
-    GLFWwindow * win = glfwCreateWindow(1280, 960, "LibRealSense CPP Example", 0, 0);
+    const int height = cam.is_stream_enabled(RS_STREAM_INFRARED) || cam.is_stream_enabled(RS_STREAM_INFRARED_2) ? 960 : 480;
+    std::ostringstream ss; ss << "CPP Example (" << cam.get_name() << ")";
+    GLFWwindow * win = glfwCreateWindow(1280, height, ss.str().c_str(), 0, 0);
     glfwMakeContextCurrent(win);
     font = ttf_create(fopen("../../examples/assets/Roboto-Bold.ttf", "rb"));
 
@@ -81,7 +87,7 @@ int main(int argc, char * argv[]) try
 
 		glClear(GL_COLOR_BUFFER_BIT);
         glPushMatrix();
-        glOrtho(0, 1280, 960, 0, -1, +1);
+        glOrtho(0, 1280, height, 0, -1, +1);
 
         draw_stream(cam, RS_STREAM_COLOR, 0, 0);
         draw_stream(cam, RS_STREAM_DEPTH, 640, 0);

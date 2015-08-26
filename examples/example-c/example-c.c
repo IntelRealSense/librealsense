@@ -29,6 +29,7 @@ void draw_stream(struct rs_camera * cam, enum rs_stream stream, int x, int y)
     int width, height;
     enum rs_format format;
     const void * pixels;
+    char buffer[1024];
 
     if(!rs_is_stream_enabled(cam, stream, 0)) return;
 
@@ -54,7 +55,8 @@ void draw_stream(struct rs_camera * cam, enum rs_stream stream, int x, int y)
         break;
     }
 
-    ttf_print(&font, x+8, y+16, rs_get_stream_name(stream, 0));
+    sprintf(buffer, "%s: %d x %d %s", rs_get_stream_name(stream, 0), intrin.image_size[0], intrin.image_size[1], rs_get_format_name(format, 0));
+    ttf_print(&font, x+8, y+16, buffer);
 }
 
 int main(int argc, char * argv[])
@@ -63,8 +65,9 @@ int main(int argc, char * argv[])
 	struct rs_camera * cam;
     struct rs_intrinsics intrin;
 	float hfov, vfov;
+    char buffer[1024];
     GLFWwindow * win;
-    int i, j;
+    int i, j, height;
 
 	ctx = rs_create_context(RS_API_VERSION, &error); check_error();
     for (i = 0; i < rs_get_camera_count(ctx, NULL); ++i)
@@ -74,8 +77,8 @@ int main(int argc, char * argv[])
         cam = rs_get_camera(ctx, i, &error); check_error();
         rs_enable_stream_preset(cam, RS_STREAM_DEPTH, RS_PRESET_BEST_QUALITY, &error); check_error();
         rs_enable_stream_preset(cam, RS_STREAM_COLOR, RS_PRESET_BEST_QUALITY, &error); check_error();
-        rs_enable_stream_preset(cam, RS_STREAM_INFRARED, RS_PRESET_BEST_QUALITY, &error); check_error();
-        rs_enable_stream_preset(cam, RS_STREAM_INFRARED_2, RS_PRESET_BEST_QUALITY, &error); check_error();
+        rs_enable_stream_preset(cam, RS_STREAM_INFRARED, RS_PRESET_BEST_QUALITY, 0);
+        rs_enable_stream_preset(cam, RS_STREAM_INFRARED_2, RS_PRESET_BEST_QUALITY, 0);
         rs_start_capture(cam, &error); check_error();
 
         for(j = RS_STREAM_BEGIN_RANGE; j <= RS_STREAM_END_RANGE; ++j)
@@ -94,7 +97,9 @@ int main(int argc, char * argv[])
 	}
 
 	glfwInit();
-    win = glfwCreateWindow(1280, 960, "LibRealSense C Example", 0, 0);
+    height = rs_is_stream_enabled(cam, RS_STREAM_INFRARED, 0) || rs_is_stream_enabled(cam, RS_STREAM_INFRARED_2, 0) ? 960 : 480;
+    sprintf(buffer, "C Example (%s)", rs_get_camera_name(cam,0));
+    win = glfwCreateWindow(1280, height, buffer, 0, 0);
     glfwMakeContextCurrent(win);
     font = ttf_create(fopen("../../examples/assets/Roboto-Bold.ttf", "rb"));
 
@@ -105,7 +110,7 @@ int main(int argc, char * argv[])
 
         glClear(GL_COLOR_BUFFER_BIT);
         glPushMatrix();
-        glOrtho(0, 1280, 960, 0, -1, +1);
+        glOrtho(0, 1280, height, 0, -1, +1);
         glPixelZoom(1, -1);
 
         draw_stream(cam, RS_STREAM_COLOR, 0, 0);

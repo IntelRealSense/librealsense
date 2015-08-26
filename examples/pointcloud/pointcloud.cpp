@@ -24,9 +24,11 @@ int main(int argc, char * argv[]) try
 		std::cout << "Found camera at index " << i << std::endl;
 
         cam = ctx.get_camera(i);
-        cam.enable_stream_preset(RS_STREAM_INFRARED, RS_PRESET_BEST_QUALITY);
         cam.enable_stream_preset(RS_STREAM_DEPTH, RS_PRESET_BEST_QUALITY);
         cam.enable_stream_preset(RS_STREAM_COLOR, RS_PRESET_BEST_QUALITY);
+        try {
+            cam.enable_stream_preset(RS_STREAM_INFRARED, RS_PRESET_BEST_QUALITY);
+        } catch(...) {}
         cam.start_capture();
 	}
 	if (!cam) throw std::runtime_error("No camera detected. Is it plugged in?");
@@ -122,14 +124,15 @@ int main(int argc, char * argv[]) try
         glClearColor(0.0f, 116/255.0f, 197/255.0f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        auto tex_intrin = cam.get_stream_intrinsics(app_state.tex_stream);
-        auto extrin = cam.get_stream_extrinsics(RS_STREAM_DEPTH, app_state.tex_stream);
+        auto tex_stream = cam.is_stream_enabled(RS_STREAM_INFRARED) ? app_state.tex_stream : RS_STREAM_COLOR;
+        auto tex_intrin = cam.get_stream_intrinsics(tex_stream);
+        auto extrin = cam.get_stream_extrinsics(RS_STREAM_DEPTH, tex_stream);
         
         glPushAttrib(GL_ALL_ATTRIB_BITS);
         glBindTexture(GL_TEXTURE_2D, tex);
         glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, tex_intrin.image_size[0], tex_intrin.image_size[1], 0,
-                     app_state.tex_stream == RS_STREAM_COLOR ? GL_RGB : GL_LUMINANCE, GL_UNSIGNED_BYTE, cam.get_image_pixels(app_state.tex_stream));
+                     tex_stream == RS_STREAM_COLOR ? GL_RGB : GL_LUMINANCE, GL_UNSIGNED_BYTE, cam.get_image_pixels(tex_stream));
         glMatrixMode(GL_PROJECTION);
 		glPushMatrix();
         gluPerspective(60, (float)width/height, 0.01f, 20.0f);
