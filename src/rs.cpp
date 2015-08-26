@@ -1,4 +1,4 @@
-#include "rs-internal.h"
+#include "camera.h"
 
 #include "R200/R200.h"
 #include "F200/F200.h"
@@ -105,7 +105,7 @@ HANDLE_EXCEPTIONS_AND_RETURN(nullptr)
 
 void rs_enable_stream(struct rs_camera * camera, enum rs_stream stream, int width, int height, enum rs_format format, int fps, struct rs_error ** error) try
 {
-    camera->EnableStream(stream, width, height, fps, format);
+    camera->EnableStream(stream, width, height, format, fps);
 }
 HANDLE_EXCEPTIONS_AND_RETURN()
 

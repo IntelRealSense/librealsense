@@ -112,7 +112,7 @@ int main(int argc, char * argv[]) try
 	if (!cam) throw std::runtime_error("No camera detected. Is it plugged in?");
     const auto depth_intrin = cam.get_stream_intrinsics(RS_STREAM_DEPTH);
         
-    struct state { float yaw, pitch; double lastX, lastY; bool ml; int tex_stream = RS_STREAM_COLOR; rs::camera * cam; } app_state = {};
+    struct state { float yaw, pitch; double lastX, lastY; bool ml; rs_stream tex_stream = RS_STREAM_COLOR; rs::camera * cam; } app_state = {};
     app_state.cam = &cam;
 
 	glfwInit();

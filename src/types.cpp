@@ -1,6 +1,6 @@
 #include "types.h"
 #include "image.h"
-#include "rs-internal.h"
+#include "camera.h"
 
 #include <algorithm>
 

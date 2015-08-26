@@ -3,7 +3,7 @@
 #ifndef LIBREALSENSE_R200_CAMERA_H
 #define LIBREALSENSE_R200_CAMERA_H
 
-#include "../rs-internal.h"
+#include "../camera.h"
 
 namespace rsimpl { namespace r200
 {

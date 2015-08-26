@@ -1,4 +1,4 @@
-#include "rs-internal.h"
+#include "camera.h"
 #include "image.h"
 
 using namespace rsimpl;
