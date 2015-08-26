@@ -15,7 +15,7 @@ namespace rsimpl { namespace r200
 
         void EnableStreamPreset(rs_stream stream, rs_preset preset) override final;
 
-        CalibrationInfo RetrieveCalibration() override final;
+        calibration_info RetrieveCalibration() override final;
         void SetStreamIntent() override final;
     };
 

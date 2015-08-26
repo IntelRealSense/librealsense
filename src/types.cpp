@@ -2,6 +2,7 @@
 #include "image.h"
 #include "camera.h"
 
+#include <array>
 #include <algorithm>
 
 namespace rsimpl
@@ -71,25 +72,25 @@ namespace rsimpl
         }
     }
 
-    void unpack_strided_image(void * dest[], const SubdeviceMode & mode, const void * source)
+    void unpack_strided_image(void * dest[], const subdevice_mode & mode, const void * source)
     {
         assert(mode.streams.size() == 1);
         copy_strided_image(dest[0], mode.streams[0].width * get_pixel_size(mode.streams[0].format), source, mode.width * get_pixel_size(mode.streams[0].format), mode.streams[0].height);
     }
 
-    void unpack_rly12_to_y8(void * dest[], const SubdeviceMode & mode, const void * frame)
+    void unpack_rly12_to_y8(void * dest[], const subdevice_mode & mode, const void * frame)
     {
         assert(mode.format == UVC_FRAME_FORMAT_Y12I && mode.streams.size() == 2 && mode.streams[0].format == RS_FORMAT_Y8 && mode.streams[1].format == RS_FORMAT_Y8);
         convert_rly12_to_y8_y8(dest[0], dest[1], mode.streams[0].width, mode.streams[0].height, frame, 3*mode.width);
     }
 
-    void unpack_yuyv_to_rgb(void * dest[], const SubdeviceMode & mode, const void * source)
+    void unpack_yuyv_to_rgb(void * dest[], const subdevice_mode & mode, const void * source)
     {
         assert(mode.format == UVC_FRAME_FORMAT_YUYV && mode.streams.size() == 1 && mode.streams[0].format == RS_FORMAT_RGB8);
         convert_yuyv_to_rgb((uint8_t *) dest[0], mode.width, mode.height, source);
     }
 
-    const SubdeviceMode * StaticCameraInfo::select_mode(const std::array<StreamRequest,RS_STREAM_NUM> & requests, int subdevice_index) const
+    const subdevice_mode * static_camera_info::select_mode(const stream_request (& requests)[RS_STREAM_NUM], int subdevice_index) const
     {
         // Determine if the user has requested any streams which are supplied by this subdevice
         bool any_stream_requested = false;

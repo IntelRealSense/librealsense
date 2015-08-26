@@ -108,7 +108,7 @@ HANDLE_EXCEPTIONS_AND_RETURN()
 const char * rs_get_camera_name(rs_camera * camera, rs_error ** error) try
 {
     VALIDATE_NOT_NULL(camera);
-    return camera->GetCameraName();
+    return camera->get_name();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr)
 
@@ -120,7 +120,7 @@ void rs_enable_stream(struct rs_camera * camera, enum rs_stream stream, int widt
     VALIDATE_RANGE(height, 0, INT_MAX);
     VALIDATE_ENUM(format);
     VALIDATE_RANGE(fps, 0, INT_MAX);
-    camera->EnableStream(stream, width, height, format, fps);
+    camera->enable_stream(stream, width, height, format, fps);
 }
 HANDLE_EXCEPTIONS_AND_RETURN()
 
@@ -137,7 +137,7 @@ int rs_is_stream_enabled(struct rs_camera * camera, enum rs_stream stream, struc
 {
     VALIDATE_NOT_NULL(camera);
     VALIDATE_ENUM(stream);
-    return camera->IsStreamEnabled(stream);
+    return camera->is_stream_enabled(stream);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0)
 
@@ -190,7 +190,7 @@ void rs_get_stream_intrinsics(struct rs_camera * camera, enum rs_stream stream, 
     VALIDATE_NOT_NULL(camera);
     VALIDATE_ENUM(stream);
     VALIDATE_NOT_NULL(intrin);
-	*intrin = camera->GetStreamIntrinsics(stream);
+    *intrin = camera->get_stream_intrinsics(stream);
 }
 HANDLE_EXCEPTIONS_AND_RETURN()
 
@@ -200,7 +200,7 @@ void rs_get_stream_extrinsics(struct rs_camera * camera, enum rs_stream from, en
     VALIDATE_ENUM(from);
     VALIDATE_ENUM(to);
     VALIDATE_NOT_NULL(extrin);
-    *extrin = camera->GetStreamExtrinsics(from, to);
+    *extrin = camera->get_stream_extrinsics(from, to);
 }
 HANDLE_EXCEPTIONS_AND_RETURN()
 

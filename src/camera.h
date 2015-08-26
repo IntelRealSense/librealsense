@@ -29,25 +29,9 @@ namespace rsimpl
         }
     }
 
-    // World's tiniest linear algebra library
-    struct float3 { float x,y,z; float & operator [] (int i) { return (&x)[i]; } };
-    struct float3x3 { float3 x,y,z; float & operator () (int i, int j) { return (&x)[j][i]; } }; // column-major
-    struct pose { float3x3 orientation; float3 position; };
-    inline float3 operator + (const float3 & a, const float3 & b) { return {a.x+b.x, a.y+b.y, a.z+b.z}; }
-    inline float3 operator * (const float3 & a, float b) { return {a.x*b, a.y*b, a.z*b}; }
-    inline float3 operator * (const float3x3 & a, const float3 & b) { return a.x*b.x + a.y*b.y + a.z*b.z; }
-    inline float3x3 operator * (const float3x3 & a, const float3x3 & b) { return {a*b.x, a*b.y, a*b.z}; }
-    inline float3x3 transpose(const float3x3 & a) { return {{a.x.x,a.y.x,a.z.x}, {a.x.y,a.y.y,a.z.y}, {a.x.z,a.y.z,a.z.z}}; }
-    inline float3 operator * (const pose & a, const float3 & b) { return a.orientation * b + a.position; }
-    inline pose operator * (const pose & a, const pose & b) { return {a.orientation * b.orientation, a.position + a * b.position}; }
-    inline pose inverse(const pose & a) { auto inv = transpose(a.orientation); return {inv, inv * a.position * -1}; }
 
-    struct CalibrationInfo
-    {
-        std::vector<rs_intrinsics> intrinsics;
-        pose stream_poses[RS_STREAM_NUM];
-        float depth_scale;
-    }; 
+
+
 }
 
 struct rs_error
@@ -65,16 +49,16 @@ protected:
     {
         friend class Subdevice;
 
-        rsimpl::StreamMode mode;
+        rsimpl::stream_mode mode;
 
         volatile bool updated = false;
         std::vector<uint8_t> front, middle, back;
         std::mutex mutex;
     public:
-        const rsimpl::StreamMode & get_mode() const { return mode; }
+        const rsimpl::stream_mode & get_mode() const { return mode; }
         const void * get_image() const { return front.data(); }
 
-        void set_mode(const rsimpl::StreamMode & mode);
+        void set_mode(const rsimpl::stream_mode & mode);
         bool update_image();
     };
 
@@ -82,7 +66,7 @@ protected:
     {
         uvc_device_handle_t * uvcHandle;
         uvc_stream_ctrl_t ctrl;
-        rsimpl::SubdeviceMode mode;
+        rsimpl::subdevice_mode mode;
 
         std::vector<std::shared_ptr<Stream>> streams;
 
@@ -92,33 +76,32 @@ protected:
         ~Subdevice() { uvc_stop_streaming(uvcHandle); uvc_close(uvcHandle); }
 
         uvc_device_handle_t * get_handle() { return uvcHandle; }
-        void set_mode(const rsimpl::SubdeviceMode & mode, std::vector<std::shared_ptr<Stream>> streams);
+        void set_mode(const rsimpl::subdevice_mode & mode, std::vector<std::shared_ptr<Stream>> streams);
         void start_streaming();
         void stop_streaming();
     };
 
-    uvc_context_t * context;
-    uvc_device_t * device;
-    const rsimpl::StaticCameraInfo camera_info;
+    uvc_context_t *                         context;
+    uvc_device_t *                          device;
+    const rsimpl::static_camera_info        camera_info;
+    std::string                             cameraName;
 
-    std::array<rsimpl::StreamRequest, RS_STREAM_NUM> requests;    // Indexed by RS_DEPTH, RS_COLOR, ...
-    std::shared_ptr<Stream> streams[RS_STREAM_NUM];               // Indexed by RS_DEPTH, RS_COLOR, ...
-    std::vector<std::unique_ptr<Subdevice>> subdevices;           // Indexed by UVC subdevices number (0, 1, 2...)
+    rsimpl::stream_request                  requests[RS_STREAM_NUM];    // Indexed by RS_DEPTH, RS_COLOR, ...
+    std::shared_ptr<Stream>                 streams[RS_STREAM_NUM];     // Indexed by RS_DEPTH, RS_COLOR, ...
+    std::vector<std::unique_ptr<Subdevice>> subdevices;                 // Indexed by UVC subdevices number (0, 1, 2...)
 
-    std::string cameraName;
-    rsimpl::CalibrationInfo calib;
-
-    uvc_device_handle_t * first_handle;
-    bool isCapturing = false;
+    uvc_device_handle_t *                   first_handle;
+    rsimpl::calibration_info                calib;
+    bool                                    isCapturing;
   
 public:
-    rs_camera(uvc_context_t * context, uvc_device_t * device, const rsimpl::StaticCameraInfo & camera_info);
+    rs_camera(uvc_context_t * context, uvc_device_t * device, const rsimpl::static_camera_info & camera_info);
     ~rs_camera();
 
-    const char * GetCameraName() const { return cameraName.c_str(); }
+    const char * get_name() const { return cameraName.c_str(); }
 
-    void EnableStream(rs_stream stream, int width, int height, rs_format format, int fps);
-    bool IsStreamEnabled(rs_stream stream) const { return (bool)streams[stream]; }
+    void enable_stream(rs_stream stream, int width, int height, rs_format format, int fps);
+    bool is_stream_enabled(rs_stream stream) const { return (bool)streams[stream]; }
 
     void start_capture();
     void stop_capture();
@@ -128,11 +111,11 @@ public:
     const void * get_image_pixels(rs_stream stream) const { if(!streams[stream]) throw std::runtime_error("stream not enabled"); return streams[stream]->get_image(); }
     float get_depth_scale() const { return calib.depth_scale; }
 
-    rs_intrinsics GetStreamIntrinsics(rs_stream stream) const;
-    rs_extrinsics GetStreamExtrinsics(rs_stream from, rs_stream to) const;
+    rs_intrinsics get_stream_intrinsics(rs_stream stream) const;
+    rs_extrinsics get_stream_extrinsics(rs_stream from, rs_stream to) const;
 
     virtual void EnableStreamPreset(rs_stream stream, rs_preset preset) = 0;
-    virtual rsimpl::CalibrationInfo RetrieveCalibration() = 0;
+    virtual rsimpl::calibration_info RetrieveCalibration() = 0;
     virtual void SetStreamIntent() = 0;
 };
 

@@ -5,33 +5,30 @@
 namespace rsimpl { namespace r200
 {
     enum { LR_FULL, LR_BIG, Z_FULL, Z_BIG, THIRD_HD, THIRD_VGA, NUM_INTRINSICS };
-    static StaticCameraInfo get_r200_info()
+    static static_camera_info get_r200_info()
     {
-        StaticCameraInfo info;
-        info.stream_subdevices[RS_STREAM_INFRARED] = 0;
-        info.stream_subdevices[RS_STREAM_INFRARED_2] = 0;
-        info.stream_subdevices[RS_STREAM_DEPTH] = 1;
-        info.stream_subdevices[RS_STREAM_COLOR] = 2;
+        static_camera_info info;
         for(auto fps : {30, 60, 90})
         {
             auto uvcFps = fps == 60 ? 59 : fps; // UVC sees the 60 fps mode as 59 fps
 
-            // left/right modes on subdevice 0
-            info.subdevice_modes.push_back({0, 640, 481, UVC_FRAME_FORMAT_Y8, uvcFps, {{RS_STREAM_INFRARED, 640, 480, RS_FORMAT_Y8, fps, LR_FULL}}, &unpack_strided_image});
-            info.subdevice_modes.push_back({0, 640, 481, UVC_FRAME_FORMAT_Y12I, uvcFps, {{RS_STREAM_INFRARED, 640, 480, RS_FORMAT_Y8, fps, LR_FULL},
-                                                                                         {RS_STREAM_INFRARED_2, 640, 480, RS_FORMAT_Y8, fps, LR_FULL}}, &unpack_rly12_to_y8});
-            info.subdevice_modes.push_back({0, 640, 373, UVC_FRAME_FORMAT_Y8, uvcFps, {{RS_STREAM_INFRARED, 492, 372, RS_FORMAT_Y8, fps, LR_BIG}}, &unpack_strided_image});
-            info.subdevice_modes.push_back({0, 640, 373, UVC_FRAME_FORMAT_Y12I, uvcFps, {{RS_STREAM_INFRARED, 492, 372, RS_FORMAT_Y8, fps, LR_BIG},
-                                                                                         {RS_STREAM_INFRARED_2, 492, 372, RS_FORMAT_Y8, fps, LR_BIG}}, &unpack_rly12_to_y8});
+            info.stream_subdevices[RS_STREAM_INFRARED  ] = 0;
+            info.stream_subdevices[RS_STREAM_INFRARED_2] = 0;
+            info.subdevice_modes.push_back({0,  640, 481, UVC_FRAME_FORMAT_Y8,   uvcFps, {{RS_STREAM_INFRARED,   640,  480, RS_FORMAT_Y8, fps, LR_FULL}}, &unpack_strided_image});
+            info.subdevice_modes.push_back({0,  640, 481, UVC_FRAME_FORMAT_Y12I, uvcFps, {{RS_STREAM_INFRARED,   640,  480, RS_FORMAT_Y8, fps, LR_FULL},
+                                                                                          {RS_STREAM_INFRARED_2, 640,  480, RS_FORMAT_Y8, fps, LR_FULL}}, &unpack_rly12_to_y8});
+            info.subdevice_modes.push_back({0,  640, 373, UVC_FRAME_FORMAT_Y8,   uvcFps, {{RS_STREAM_INFRARED,   492,  372, RS_FORMAT_Y8, fps, LR_BIG }}, &unpack_strided_image});
+            info.subdevice_modes.push_back({0,  640, 373, UVC_FRAME_FORMAT_Y12I, uvcFps, {{RS_STREAM_INFRARED,   492,  372, RS_FORMAT_Y8, fps, LR_BIG },
+                                                                                          {RS_STREAM_INFRARED_2, 492,  372, RS_FORMAT_Y8, fps, LR_BIG }}, &unpack_rly12_to_y8});
 
-            // z modes on subdevice 1
-            info.subdevice_modes.push_back({1, 628, 469, UVC_FRAME_FORMAT_Z16, uvcFps, {{RS_STREAM_DEPTH, 628, 468, RS_FORMAT_Z16, fps, Z_FULL}}, &unpack_strided_image});
-            info.subdevice_modes.push_back({1, 628, 361, UVC_FRAME_FORMAT_Z16, uvcFps, {{RS_STREAM_DEPTH, 480, 360, RS_FORMAT_Z16, fps, Z_BIG}}, &unpack_strided_image});
+            info.stream_subdevices[RS_STREAM_DEPTH] = 1;
+            info.subdevice_modes.push_back({1,  628, 469, UVC_FRAME_FORMAT_Z16,  uvcFps, {{RS_STREAM_DEPTH,      628,  468, RS_FORMAT_Z16, fps, Z_FULL}}, &unpack_strided_image});
+            info.subdevice_modes.push_back({1,  628, 361, UVC_FRAME_FORMAT_Z16,  uvcFps, {{RS_STREAM_DEPTH,      480,  360, RS_FORMAT_Z16, fps, Z_BIG }}, &unpack_strided_image});
 
-            // third modes on subdevice 2
             if(fps == 90) continue;
-            info.subdevice_modes.push_back({2, 1920, 1080, UVC_FRAME_FORMAT_YUYV, uvcFps, {{RS_STREAM_COLOR, 1920, 1080, RS_FORMAT_RGB8, fps, THIRD_HD}}, &unpack_yuyv_to_rgb});
-            info.subdevice_modes.push_back({2, 640, 480, UVC_FRAME_FORMAT_YUYV, uvcFps, {{RS_STREAM_COLOR, 640, 480, RS_FORMAT_RGB8, fps, THIRD_VGA}}, &unpack_yuyv_to_rgb});
+            info.stream_subdevices[RS_STREAM_COLOR] = 2;
+            info.subdevice_modes.push_back({2, 1920, 1080, UVC_FRAME_FORMAT_YUYV, uvcFps, {{RS_STREAM_COLOR,    1920, 1080, RS_FORMAT_RGB8, fps, THIRD_HD }}, &unpack_yuyv_to_rgb});
+            info.subdevice_modes.push_back({2,  640,  480, UVC_FRAME_FORMAT_YUYV, uvcFps, {{RS_STREAM_COLOR,     640,  480, RS_FORMAT_RGB8, fps, THIRD_VGA}}, &unpack_yuyv_to_rgb});
         }
         return info;
     }
@@ -50,10 +47,10 @@ namespace rsimpl { namespace r200
     {
         switch(stream)
         {
-        case RS_STREAM_DEPTH: EnableStream(stream, 480, 360, RS_FORMAT_Z16, 60); break;
-        case RS_STREAM_COLOR: EnableStream(stream, 640, 480, RS_FORMAT_RGB8, 60); break;
-        case RS_STREAM_INFRARED: EnableStream(stream, 492, 372, RS_FORMAT_Y8, 60); break;
-        case RS_STREAM_INFRARED_2: EnableStream(stream, 492, 372, RS_FORMAT_Y8, 60); break;
+        case RS_STREAM_DEPTH: enable_stream(stream, 480, 360, RS_FORMAT_Z16, 60); break;
+        case RS_STREAM_COLOR: enable_stream(stream, 640, 480, RS_FORMAT_RGB8, 60); break;
+        case RS_STREAM_INFRARED: enable_stream(stream, 492, 372, RS_FORMAT_Y8, 60); break;
+        case RS_STREAM_INFRARED_2: enable_stream(stream, 492, 372, RS_FORMAT_Y8, 60); break;
         default: throw std::runtime_error("unsupported stream");
         }
     }
@@ -73,13 +70,13 @@ namespace rsimpl { namespace r200
         return {{(int)i.w, (int)i.h}, {i.fx,i.fy}, {i.px,i.py}, {i.k[0],i.k[1],i.k[2],i.k[3],i.k[4]}, RS_DISTORTION_GORDON_BROWN_CONRADY};
     }
 
-    CalibrationInfo R200Camera::RetrieveCalibration()
+    calibration_info R200Camera::RetrieveCalibration()
     {
         CameraCalibrationParameters calib;
         CameraHeaderInfo header;
         read_camera_info(first_handle, calib, header);
 
-        CalibrationInfo c;
+        calibration_info c;
         c.intrinsics.resize(NUM_INTRINSICS);
         c.intrinsics[LR_FULL] = MakeLeftRightIntrinsics(calib.modesLR[0]);
         c.intrinsics[LR_BIG] = MakeLeftRightIntrinsics(calib.modesLR[1]);

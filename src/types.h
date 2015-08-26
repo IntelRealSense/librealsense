@@ -3,11 +3,11 @@
 
 #include "../include/librealsense/rs.h"
 #include "libuvc/libuvc.h"                  // For uvc_frame_format
-#include <array>                            // For array
 #include <vector>                           // For vector
 
 namespace rsimpl
 {
+    // Enumerated type support
     #define RS_IMPLEMENT_IS_VALID(TYPE, PREFIX) inline bool is_valid(TYPE value) { return value >= RS_##PREFIX##_BEGIN_RANGE && value <= RS_##PREFIX##_END_RANGE; }
     RS_IMPLEMENT_IS_VALID(rs_stream, STREAM)
     RS_IMPLEMENT_IS_VALID(rs_format, FORMAT)
@@ -20,7 +20,21 @@ namespace rsimpl
     const char * get_string(rs_preset value);
     const char * get_string(rs_distortion value);
 
-    struct StreamRequest
+    // World's tiniest linear algebra library
+    struct float3 { float x,y,z; float & operator [] (int i) { return (&x)[i]; } };
+    struct float3x3 { float3 x,y,z; float & operator () (int i, int j) { return (&x)[j][i]; } }; // column-major
+    struct pose { float3x3 orientation; float3 position; };
+    inline float3 operator + (const float3 & a, const float3 & b) { return {a.x+b.x, a.y+b.y, a.z+b.z}; }
+    inline float3 operator * (const float3 & a, float b) { return {a.x*b, a.y*b, a.z*b}; }
+    inline float3 operator * (const float3x3 & a, const float3 & b) { return a.x*b.x + a.y*b.y + a.z*b.z; }
+    inline float3x3 operator * (const float3x3 & a, const float3x3 & b) { return {a*b.x, a*b.y, a*b.z}; }
+    inline float3x3 transpose(const float3x3 & a) { return {{a.x.x,a.y.x,a.z.x}, {a.x.y,a.y.y,a.z.y}, {a.x.z,a.y.z,a.z.z}}; }
+    inline float3 operator * (const pose & a, const float3 & b) { return a.orientation * b + a.position; }
+    inline pose operator * (const pose & a, const pose & b) { return {a.orientation * b.orientation, a.position + a * b.position}; }
+    inline pose inverse(const pose & a) { auto inv = transpose(a.orientation); return {inv, inv * a.position * -1}; }
+
+    // Static camera info
+    struct stream_request
     {
         bool enabled;
         int width, height;
@@ -28,7 +42,7 @@ namespace rsimpl
         int fps;
     };
 
-    struct StreamMode
+    struct stream_mode
     {
         rs_stream stream;           // RS_DEPTH, RS_COLOR, RS_INFRARED, RS_INFRARED_2, etc.
         int width, height;          // Resolution visible to the client library
@@ -37,30 +51,36 @@ namespace rsimpl
         int intrinsics_index;       // Index of image intrinsics
     };
 
-    struct SubdeviceMode
+    struct subdevice_mode
     {
         int subdevice;                      // 0, 1, 2, etc...
         int width, height;                  // Resolution advertised over UVC
         uvc_frame_format format;            // Pixel format advertised over UVC
         int fps;                            // Framerate advertised over UVC
-        std::vector<StreamMode> streams;    // Modes for streams which can be supported by this device mode
-        void (* unpacker)(void * dest[], const SubdeviceMode & mode, const void * frame);
+        std::vector<stream_mode> streams;   // Modes for streams which can be supported by this device mode
+        void (* unpacker)(void * dest[], const subdevice_mode & mode, const void * frame);
     };
-    void unpack_strided_image(void * dest[], const SubdeviceMode & mode, const void * frame);
-    void unpack_rly12_to_y8(void * dest[], const SubdeviceMode & mode, const void * frame);
-    void unpack_yuyv_to_rgb(void * dest[], const SubdeviceMode & mode, const void * frame);
+    void unpack_strided_image(void * dest[], const subdevice_mode & mode, const void * frame);
+    void unpack_rly12_to_y8(void * dest[], const subdevice_mode & mode, const void * frame);
+    void unpack_yuyv_to_rgb(void * dest[], const subdevice_mode & mode, const void * frame);
 
-    struct StaticCameraInfo
+    struct static_camera_info
     {
-        int stream_subdevices[RS_STREAM_NUM];             // Which subdevice is used to support each stream, or -1 if stream is unavailable
-        std::vector<SubdeviceMode> subdevice_modes;     // A list of available modes each subdevice can be put into
+        int stream_subdevices[RS_STREAM_NUM];           // Which subdevice is used to support each stream, or -1 if stream is unavailable
+        std::vector<subdevice_mode> subdevice_modes;    // A list of available modes each subdevice can be put into
 
-        StaticCameraInfo() { for(auto & s : stream_subdevices) s = -1; }
+        static_camera_info() { for(auto & s : stream_subdevices) s = -1; }
 
-        const SubdeviceMode * select_mode(const std::array<StreamRequest,RS_STREAM_NUM> & requests, int subdevice_index) const;
+        const subdevice_mode * select_mode(const stream_request (&requests)[RS_STREAM_NUM], int subdevice_index) const;
     };
 
-
+    // Calibration info
+    struct calibration_info
+    {
+        std::vector<rs_intrinsics> intrinsics;
+        pose stream_poses[RS_STREAM_NUM];
+        float depth_scale;
+    };
 }
 
 #endif

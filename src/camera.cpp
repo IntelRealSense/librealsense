@@ -7,8 +7,8 @@ using namespace rsimpl;
 // UVC Camera //
 ////////////////
 
-rs_camera::rs_camera(uvc_context_t * context, uvc_device_t * device, const StaticCameraInfo & camera_info)
-    : context(context), device(device), camera_info(camera_info), first_handle()
+rs_camera::rs_camera(uvc_context_t * context, uvc_device_t * device, const static_camera_info & camera_info)
+    : context(context), device(device), camera_info(camera_info), first_handle(), isCapturing()
 {
     {
         uvc_device_descriptor_t * desc;
@@ -31,7 +31,7 @@ rs_camera::~rs_camera()
     //uvc_unref_device(device); // we never ref
 }
 
-void rs_camera::EnableStream(rs_stream stream, int width, int height, rs_format format, int fps)
+void rs_camera::enable_stream(rs_stream stream, int width, int height, rs_format format, int fps)
 {
     if(camera_info.stream_subdevices[stream] == -1) throw std::runtime_error("unsupported stream");
     requests[stream] = {true, width, height, format, fps};
@@ -44,9 +44,9 @@ void rs_camera::start_capture()
     first_handle = nullptr;
 
     // For each subdevice
-    for(int i = 0; i < subdevices.size(); ++i)
+    for(size_t i = 0; i < subdevices.size(); ++i)
     {
-        if(const SubdeviceMode * mode = camera_info.select_mode(requests, i))
+        if(const subdevice_mode * mode = camera_info.select_mode(requests, i))
         {
             // For each stream provided by this mode
             std::vector<std::shared_ptr<Stream>> stream_list;
@@ -108,13 +108,13 @@ void rs_camera::wait_all_streams()
     }
 }
 
-rs_intrinsics rs_camera::GetStreamIntrinsics(rs_stream stream) const
+rs_intrinsics rs_camera::get_stream_intrinsics(rs_stream stream) const
 {
     if(!streams[stream]) throw std::runtime_error("stream not enabled");
     return calib.intrinsics[streams[stream]->get_mode().intrinsics_index];
 }
 
-rs_extrinsics rs_camera::GetStreamExtrinsics(rs_stream from, rs_stream to) const
+rs_extrinsics rs_camera::get_stream_extrinsics(rs_stream from, rs_stream to) const
 {
     auto transform = inverse(calib.stream_poses[from]) * calib.stream_poses[to]; // TODO: Make sure this is the right order
     rs_extrinsics extrin;
@@ -123,7 +123,7 @@ rs_extrinsics rs_camera::GetStreamExtrinsics(rs_stream from, rs_stream to) const
     return extrin;
 }
 
-void rs_camera::Stream::set_mode(const StreamMode & mode)
+void rs_camera::Stream::set_mode(const stream_mode & mode)
 {
     this->mode = mode;
     switch(mode.format)
@@ -146,7 +146,7 @@ bool rs_camera::Stream::update_image()
     return true;
 }
 
-void rs_camera::Subdevice::set_mode(const SubdeviceMode & mode, std::vector<std::shared_ptr<Stream>> streams)
+void rs_camera::Subdevice::set_mode(const subdevice_mode & mode, std::vector<std::shared_ptr<Stream>> streams)
 {
     assert(mode.streams.size() == streams.size());
     CheckUVC("uvc_get_stream_ctrl_format_size", uvc_get_stream_ctrl_format_size(uvcHandle, &ctrl, mode.format, mode.width, mode.height, mode.fps));
@@ -162,7 +162,7 @@ void rs_camera::Subdevice::start_streaming()
     {
         // Validate that this frame matches the mode information we've set
         auto self = reinterpret_cast<Subdevice *>(ptr);
-        assert(frame->width == self->mode.width && frame->height == self->mode.height && frame->frame_format == self->mode.format);
+        assert((int)frame->width == self->mode.width && (int)frame->height == self->mode.height && frame->frame_format == self->mode.format);
 
         // Unpack the image into the user stream interface back buffer
         std::vector<void *> dest;

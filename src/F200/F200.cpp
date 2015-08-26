@@ -5,9 +5,9 @@
 namespace rsimpl { namespace f200
 {
     enum { COLOR_480P, COLOR_1080P, DEPTH_480P, NUM_INTRINSICS };
-    static StaticCameraInfo get_f200_info()
+    static static_camera_info get_f200_info()
     {
-        StaticCameraInfo info;
+        static_camera_info info;
         // Color modes on subdevice 0
         info.stream_subdevices[RS_STREAM_COLOR] = 0;
         info.subdevice_modes.push_back({0, 640, 480, UVC_FRAME_FORMAT_YUYV, 60, {{RS_STREAM_COLOR, 640, 480, RS_FORMAT_RGB8, 60, COLOR_480P}}, &unpack_yuyv_to_rgb});
@@ -61,12 +61,12 @@ namespace rsimpl { namespace f200
         return intrin;
     }
 
-    CalibrationInfo F200Camera::RetrieveCalibration()
+    calibration_info F200Camera::RetrieveCalibration()
     {
         if(!hardware_io) hardware_io.reset(new IVCAMHardwareIO(context));
         const CameraCalibrationParameters & calib = hardware_io->GetParameters();
 
-        CalibrationInfo c;
+        calibration_info c;
         c.intrinsics.resize(NUM_INTRINSICS);
         c.intrinsics[COLOR_480P] = MakeColorIntrinsics(calib, 640, 480);
         c.intrinsics[COLOR_1080P] = MakeColorIntrinsics(calib, 1920, 1080);
