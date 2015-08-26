@@ -12,8 +12,10 @@ LIBS += -pthread -ljpeg
 QMAKE_CXXFLAGS += -std=c++11 -fpermissive -fPIC
 
 HEADERS += ../include/librealsense/* ../src/*.h ../src/F200/*.h ../src/R200/*.h \
-    ../src/image.h
+    ../src/image.h \
+    ../src/types.h
 SOURCES += ../src/verify.c ../src/*.cpp ../src/F200/*.cpp ../src/R200/*.cpp \
-    ../src/image.cpp
+    ../src/image.cpp \
+    ../src/types.cpp
 
 PRE_TARGETDEPS += $$DESTDIR/libuvc.a
