@@ -1,7 +1,7 @@
 #ifndef LIBREALSENSE_CPP_INCLUDE_GUARD
 #define LIBREALSENSE_CPP_INCLUDE_GUARD
 
-#include "rsutil.h"
+#include "rs.h"
 
 #include <string>
 #include <ostream>

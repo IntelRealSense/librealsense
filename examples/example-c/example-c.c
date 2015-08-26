@@ -6,6 +6,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include <librealsense/rsutil.h>
+
 struct font font;
 struct rs_error * error;
 void check_error()

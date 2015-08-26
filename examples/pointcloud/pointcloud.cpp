@@ -1,4 +1,5 @@
 #include <librealsense/rs.hpp>
+#include <librealsense/rsutil.h>
 #include "../example.h"
 
 #include <chrono>
@@ -38,7 +39,8 @@ int main(int argc, char * argv[]) try
     app_state.cam = &cam;
 
 	glfwInit();
-    GLFWwindow * win = glfwCreateWindow(640, 480, "librealsense point cloud", 0, 0);
+    std::ostringstream ss; ss << "Point Cloud Example (" << cam.get_name() << ")";
+    GLFWwindow * win = glfwCreateWindow(640, 480, ss.str().c_str(), 0, 0);
 	glfwSetWindowUserPointer(win, &app_state);
         
 	glfwSetMouseButtonCallback(win, [](GLFWwindow * win, int button, int action, int mods)
@@ -125,6 +127,7 @@ int main(int argc, char * argv[]) try
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         auto tex_stream = cam.is_stream_enabled(RS_STREAM_INFRARED) ? app_state.tex_stream : RS_STREAM_COLOR;
+
         auto tex_intrin = cam.get_stream_intrinsics(tex_stream);
         auto extrin = cam.get_stream_extrinsics(RS_STREAM_DEPTH, tex_stream);
         
@@ -159,9 +162,9 @@ int main(int argc, char * argv[]) try
                 if(auto d = *depth++)
 				{
                     float depth_pixel[2] = {static_cast<float>(x),static_cast<float>(y)}, depth_point[3], tex_point[3], tex_pixel[2];
-                    rs_deproject_pixel_to_point(depth_point, depth_intrin, depth_pixel, d*scale);
-                    rs_transform_point_to_point(tex_point, extrin, depth_point);
-                    rs_project_point_to_pixel(tex_pixel, tex_intrin, tex_point);
+                    rs_deproject_pixel_to_point(depth_point, &depth_intrin, depth_pixel, d*scale);
+                    rs_transform_point_to_point(tex_point, &extrin, depth_point);
+                    rs_project_point_to_pixel(tex_pixel, &tex_intrin, tex_point);
 
                     glTexCoord2f(tex_pixel[0] / tex_intrin.image_size[0], tex_pixel[1] / tex_intrin.image_size[1]);
                     glVertex3fv(depth_point);
