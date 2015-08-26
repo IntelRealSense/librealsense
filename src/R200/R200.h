@@ -5,7 +5,7 @@
 
 #include "../rs-internal.h"
 
-namespace r200
+namespace rsimpl { namespace r200
 {
     class R200Camera : public rs_camera
     {
@@ -13,9 +13,9 @@ namespace r200
         R200Camera(uvc_context_t * ctx, uvc_device_t * device);
         ~R200Camera();
 
-        void EnableStreamPreset(int streamIdentifier, int preset) override final;
+        void EnableStreamPreset(rs_stream stream, rs_preset preset) override final;
 
-        rs::CalibrationInfo RetrieveCalibration() override final;
+        CalibrationInfo RetrieveCalibration() override final;
         void SetStreamIntent() override final;
     };
 
@@ -317,6 +317,6 @@ namespace r200
     #define COMMAND_GET_SPI_PROTECT                     0x23
     #define COMMAND_MODIFIER_DIRECT                     0x00000010
     
-} // end namespace r200
+} } // end namespace r200
 
 #endif

@@ -14,7 +14,7 @@
 #include <mutex>
 #include <atomic>
 
-namespace f200
+namespace rsimpl { namespace f200
 {
     class IVCAMCalibrator;
 
@@ -158,6 +158,6 @@ namespace f200
         float lastTemperatureDelta;
     };
 
-} // end namespace f200
+} } // namespace rsimpl::f200
 
 #endif

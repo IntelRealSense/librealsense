@@ -29,15 +29,11 @@ namespace rs
 							operator rs_error ** ()													{ return &error; }
 	};
 
-    struct intrinsics : rs_intrinsics
-    {
-
-    };
-
-    struct extrinsics : rs_extrinsics
-    {
-
-    };
+    typedef rs_stream stream;
+    typedef rs_format format;
+    typedef rs_preset preset;
+    typedef rs_intrinsics intrinsics;
+    typedef rs_extrinsics extrinsics;
 
 	class camera
 	{
@@ -50,20 +46,18 @@ namespace rs
 
         const char *        get_name()                                                              { return rs_get_camera_name(cam, auto_error()); }
 
-        void				enable_stream(int stream, int width, int height, int fps, int format)	{ rs_enable_stream(cam, stream, width, height, fps, format, auto_error()); }
-        void				enable_stream_preset(int stream, int preset)                            { rs_enable_stream_preset(cam, stream, preset, auto_error()); }
-        bool                is_stream_enabled(int stream)                                           { return !!rs_is_stream_enabled(cam, stream, auto_error()); }
+        void				enable_stream(stream s, int width, int height, format f, int fps)       { rs_enable_stream(cam, s, width, height, f, fps, auto_error()); }
+        void				enable_stream_preset(stream s, preset preset)                           { rs_enable_stream_preset(cam, s, preset, auto_error()); }
+        bool                is_stream_enabled(stream s)                                             { return !!rs_is_stream_enabled(cam, s, auto_error()); }
         void 				start_streaming()														{ rs_start_streaming(cam, auto_error()); }
         void				stop_streaming()                                                        { rs_stop_streaming(cam, auto_error()); }
         void                wait_all_streams()                                                      { rs_wait_all_streams(cam, auto_error()); }
 
-        const uint8_t *		get_color_image()														{ return rs_get_color_image(cam, auto_error()); }
-		const uint16_t *	get_depth_image()														{ return rs_get_depth_image(cam, auto_error()); }
-        const void *        get_image_pixels(int stream)                                            { return rs_get_image_pixels(cam, stream, auto_error()); }
+        const void *        get_image_pixels(stream s)                                              { return rs_get_image_pixels(cam, s, auto_error()); }
         float               get_depth_scale()														{ return rs_get_depth_scale(cam, auto_error()); }
 
-        intrinsics          get_stream_intrinsics(int stream)										{ intrinsics intrin; rs_get_stream_intrinsics(cam, stream, &intrin, auto_error()); return intrin; }
-        extrinsics          get_stream_extrinsics(int stream_from, int stream_to)					{ extrinsics extrin; rs_get_stream_extrinsics(cam, stream_from, stream_to, &extrin, auto_error()); return extrin; }
+        intrinsics          get_stream_intrinsics(stream s)                         				{ intrinsics intrin; rs_get_stream_intrinsics(cam, s, &intrin, auto_error()); return intrin; }
+        extrinsics          get_stream_extrinsics(stream from, stream to)       					{ extrinsics extrin; rs_get_stream_extrinsics(cam, from, to, &extrin, auto_error()); return extrin; }
 	};
 
 	class context

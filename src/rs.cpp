@@ -45,8 +45,8 @@ void rs_context::QueryDeviceList()
 		{
             switch(desc->idProduct)
             {
-            case 2688: cameras.push_back(std::make_shared<r200::R200Camera>(privateContext, list[index])); break;
-            case 2662: cameras.push_back(std::make_shared<f200::F200Camera>(privateContext, list[index])); break;
+            case 2688: cameras.push_back(std::make_shared<rsimpl::r200::R200Camera>(privateContext, list[index])); break;
+            case 2662: cameras.push_back(std::make_shared<rsimpl::f200::F200Camera>(privateContext, list[index])); break;
             case 2725: throw std::runtime_error("IVCAM 1.5 / SR300 is not supported at this time");
 			}
 			uvc_free_device_descriptor(desc);
@@ -103,21 +103,21 @@ const char * rs_get_camera_name(rs_camera * camera, rs_error ** error) try
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr)
 
-void rs_enable_stream(struct rs_camera * camera, int stream, int width, int height, int fps, int format, struct rs_error ** error) try
+void rs_enable_stream(struct rs_camera * camera, enum rs_stream stream, int width, int height, enum rs_format format, int fps, struct rs_error ** error) try
 {
     camera->EnableStream(stream, width, height, fps, format);
 }
 HANDLE_EXCEPTIONS_AND_RETURN()
 
-void rs_enable_stream_preset(struct rs_camera * camera, int stream, int preset, struct rs_error ** error) try
+void rs_enable_stream_preset(struct rs_camera * camera, enum rs_stream stream, enum rs_preset preset, struct rs_error ** error) try
 {
     camera->EnableStreamPreset(stream, preset);
 }
 HANDLE_EXCEPTIONS_AND_RETURN()
 
-int rs_is_stream_enabled    (struct rs_camera * camera, int stream, struct rs_error ** error) try
+int rs_is_stream_enabled(struct rs_camera * camera, enum rs_stream stream, struct rs_error ** error) try
 {
-    camera->IsStreamEnabled(stream);
+    return camera->IsStreamEnabled(stream);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0)
 
@@ -139,19 +139,7 @@ void rs_wait_all_streams(struct rs_camera * camera, struct rs_error ** error) tr
 }
 HANDLE_EXCEPTIONS_AND_RETURN()
 
-const uint8_t *	rs_get_color_image(rs_camera * camera, rs_error ** error) try
-{
-    return reinterpret_cast<const uint8_t *>(camera->GetImagePixels(RS_COLOR));
-}
-HANDLE_EXCEPTIONS_AND_RETURN(nullptr)
-
-const uint16_t * rs_get_depth_image(rs_camera * camera, rs_error ** error) try
-{
-    return reinterpret_cast<const uint16_t *>(camera->GetImagePixels(RS_DEPTH));
-}
-HANDLE_EXCEPTIONS_AND_RETURN(nullptr)
-
-const void * rs_get_image_pixels(rs_camera * camera, int stream, rs_error ** error) try
+const void * rs_get_image_pixels(rs_camera * camera, enum rs_stream stream, rs_error ** error) try
 {
     return camera->GetImagePixels(stream);
 }
@@ -163,15 +151,15 @@ float rs_get_depth_scale(rs_camera * camera, rs_error ** error) try
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0.0f)
 
-void rs_get_stream_intrinsics(struct rs_camera * camera, int stream, struct rs_intrinsics * intrin, struct rs_error ** error) try
+void rs_get_stream_intrinsics(struct rs_camera * camera, enum rs_stream stream, struct rs_intrinsics * intrin, struct rs_error ** error) try
 {
 	*intrin = camera->GetStreamIntrinsics(stream);
 }
 HANDLE_EXCEPTIONS_AND_RETURN()
 
-void rs_get_stream_extrinsics(struct rs_camera * camera, int stream_from, int stream_to, struct rs_extrinsics * extrin, struct rs_error ** error) try
+void rs_get_stream_extrinsics(struct rs_camera * camera, enum rs_stream from, enum rs_stream to, struct rs_extrinsics * extrin, struct rs_error ** error) try
 {
-	*extrin = camera->GetStreamExtrinsics(stream_from, stream_to);
+    *extrin = camera->GetStreamExtrinsics(from, to);
 }
 HANDLE_EXCEPTIONS_AND_RETURN()
 

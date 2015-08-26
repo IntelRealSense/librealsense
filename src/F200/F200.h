@@ -5,7 +5,7 @@
 
 #include "../rs-internal.h"
 
-namespace f200
+namespace rsimpl { namespace f200
 {
     class IVCAMHardwareIO;
 
@@ -18,15 +18,15 @@ namespace f200
         F200Camera(uvc_context_t * ctx, uvc_device_t * device);
         ~F200Camera();
 
-        rs::CalibrationInfo RetrieveCalibration() override final;
+        CalibrationInfo RetrieveCalibration() override final;
         void SetStreamIntent() override final {}
 
-        void EnableStreamPreset(int streamIdentifier, int preset) override final
+        void EnableStreamPreset(rs_stream stream, rs_preset preset) override final
         {
-            switch(streamIdentifier)
+            switch(stream)
             {
-            case RS_DEPTH: EnableStream(RS_DEPTH, 640, 480, 60, RS_Z16); break;
-            case RS_COLOR: EnableStream(RS_COLOR, 640, 480, 60, RS_RGB8); break;
+            case RS_STREAM_DEPTH: EnableStream(stream, 640, 480, RS_FORMAT_Z16, 60); break;
+            case RS_STREAM_COLOR: EnableStream(stream, 640, 480, RS_FORMAT_RGB8, 60); break;
             default: throw std::runtime_error("unsupported stream");
             }
         }
@@ -67,6 +67,6 @@ namespace f200
         
     };
     
-} // end namespace f200
+} } // namespace rsimpl::f200
 
 #endif

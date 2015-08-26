@@ -7,7 +7,7 @@
 #include <stdio.h>
 #include <stdint.h>
 
-namespace f200
+namespace rsimpl { namespace f200
 {
     
 #define DELTA_INF                           (10000000.0)
@@ -151,6 +151,6 @@ enum Property
     IVCAM_PROPERTY_CUSTOMIZED						=   0x04000000,
 };
     
-} // end namespace f200
+} } // namespace rsimpl::f200
 
 #endif

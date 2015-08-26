@@ -11,20 +11,56 @@ struct rs_context;
 struct rs_camera;
 struct rs_error;
 
+enum rs_stream
+{
+    RS_STREAM_DEPTH                         = 0,
+    RS_STREAM_COLOR                         = 1,
+    RS_STREAM_INFRARED                      = 2,
+    RS_STREAM_INFRARED_2                    = 3,
+    RS_STREAM_MAX_ENUM = 0x7FFFFFFF
+};
+
+enum rs_format
+{
+    RS_FORMAT_ANY                           = 0,
+    RS_FORMAT_Z16                           = 1,
+    RS_FORMAT_Y8                            = 2,
+    RS_FORMAT_RGB8                          = 3,
+    RS_FORMAT_MAX_ENUM = 0x7FFFFFFF
+};
+
+enum rs_preset
+{
+    RS_PRESET_BEST_QUALITY                  = 0,
+    RS_PRESET_LARGEST_IMAGE                 = 1,
+    RS_PRESET_HIGHEST_FRAMERATE             = 2,
+    RS_PRESET_MAX_ENUM = 0x7FFFFFFF
+};
+
+enum rs_distortion
+{
+    RS_DISTORTION_NONE                      = 0, /* Rectilinear images, no distortion compensation required */
+    RS_DISTORTION_GORDON_BROWN_CONRADY      = 1, /* Equivalent to Brown-Conrady distortion, except that tangential distortion is applied to radially distorted points */
+    RS_DISTORTION_INVERSE_BROWN_CONRADY     = 2, /* Equivalent to Brown-Conrady distortion, except undistorts image instead of distorting it */
+    RS_DISTORTION_MAX_ENUM = 0x7FFFFFFF
+};
+
 struct rs_intrinsics
 {
-    int image_size[2];          /* width and height of the image in pixels */
-    float focal_length[2];      /* focal length of the image plane, as a multiple of pixel width and height */
-    float principal_point[2];   /* coordinates of the principal point of the image, as a pixel offset from the top left */
-    float distortion_coeff[5];  /* distortion coefficients */
-    int distortion_model;       /* distortion model of the image */
+    int image_size[2];                      /* width and height of the image in pixels */
+    float focal_length[2];                  /* focal length of the image plane, as a multiple of pixel width and height */
+    float principal_point[2];               /* coordinates of the principal point of the image, as a pixel offset from the top left */
+    float distortion_coeff[5];              /* distortion coefficients */
+    enum rs_distortion distortion_model;    /* distortion model of the image */
 };
 
 struct rs_extrinsics
 {
-    float rotation[9];          /* column-major 3x3 rotation matrix */
-    float translation[3];       /* 3 element translation vector, in meters */
+    float rotation[9];                      /* column-major 3x3 rotation matrix */
+    float translation[3];                   /* 3 element translation vector, in meters */
 };
+
+#define RS_API_VERSION 1
 
 struct rs_context *	rs_create_context		(int api_version, struct rs_error ** error);
 int					rs_get_camera_count		(struct rs_context * context, struct rs_error ** error);
@@ -33,46 +69,24 @@ void				rs_delete_context		(struct rs_context * context, struct rs_error ** erro
 
 const char *        rs_get_camera_name      (struct rs_camera * camera, struct rs_error ** error);
 
-void				rs_enable_stream		(struct rs_camera * camera, int stream, int width, int height, int fps, int format, struct rs_error ** error);
-void				rs_enable_stream_preset	(struct rs_camera * camera, int stream, int preset, struct rs_error ** error);
-int                 rs_is_stream_enabled    (struct rs_camera * camera, int stream, struct rs_error ** error);
+void				rs_enable_stream		(struct rs_camera * camera, enum rs_stream stream, int width, int height, enum rs_format format, int fps, struct rs_error ** error);
+void				rs_enable_stream_preset	(struct rs_camera * camera, enum rs_stream stream, enum rs_preset preset, struct rs_error ** error);
+int                 rs_is_stream_enabled    (struct rs_camera * camera, enum rs_stream stream, struct rs_error ** error);
 void 				rs_start_streaming  	(struct rs_camera * camera, struct rs_error ** error);
 void 				rs_stop_streaming       (struct rs_camera * camera, struct rs_error ** error);
 void                rs_wait_all_streams     (struct rs_camera * camera, struct rs_error ** error);
 
 const uint8_t *		rs_get_color_image		(struct rs_camera * camera, struct rs_error ** error);
 const uint16_t *	rs_get_depth_image		(struct rs_camera * camera, struct rs_error ** error);
-const void *        rs_get_image_pixels     (struct rs_camera * camera, int stream, struct rs_error ** error);
+const void *        rs_get_image_pixels     (struct rs_camera * camera, enum rs_stream stream, struct rs_error ** error);
 float               rs_get_depth_scale      (struct rs_camera * camera, struct rs_error ** error);
 
-void                rs_get_stream_intrinsics(struct rs_camera * camera, int stream, struct rs_intrinsics * intrin, struct rs_error ** error);
-void                rs_get_stream_extrinsics(struct rs_camera * camera, int stream_from, int stream_to, struct rs_extrinsics * extrin, struct rs_error ** error);
+void                rs_get_stream_intrinsics(struct rs_camera * camera, enum rs_stream stream, struct rs_intrinsics * intrin, struct rs_error ** error);
+void                rs_get_stream_extrinsics(struct rs_camera * camera, enum rs_stream from, enum rs_stream to, struct rs_extrinsics * extrin, struct rs_error ** error);
 
 const char *		rs_get_failed_function	(struct rs_error * error);
 const char *		rs_get_error_message	(struct rs_error * error);
 void				rs_free_error			(struct rs_error * error);
-
-/* Pass this constant to rs_create_context */
-#define RS_API_VERSION      1
-
-/* Valid arguments for rs_enable_stream / rs_enable_stream_preset */
-#define RS_DEPTH            0
-#define RS_COLOR            1
-#define RS_INFRARED         2
-#define RS_INFRARED_2       3
-    
-/* Valid arguments for rs_enable_stream's format argument */
-#define RS_Z16              1
-#define RS_RGB8             2
-#define RS_Y8               3
-
-/* Valid arguments for rs_enable_stream_preset's preset argument */
-#define RS_BEST_QUALITY     0                       /* Preset recommended for best quality and stability */
-
-/* Valid values for rs_intrinsics' distortion_model field */
-#define RS_NO_DISTORTION                        0   /* Rectilinear images, no distortion compensation required */
-#define RS_GORDON_BROWN_CONRADY_DISTORTION      1   /* Equivalent to Brown-Conrady distortion, except that tangential distortion is applied to radially distorted points */
-#define RS_INVERSE_BROWN_CONRADY_DISTORTION     2   /* Equivalent to Brown-Conrady distortion, except undistorts image instead of distorting it */
 
 #ifdef __cplusplus
 }

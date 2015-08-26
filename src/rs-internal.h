@@ -1,7 +1,7 @@
 #ifndef RS_INTERNAL_H
 #define RS_INTERNAL_H
 
-#include "../include/librealsense/rs.h"
+#include "types.h"
 
 #include <cassert>      // For assert
 #include <cstring>      // For memcpy
@@ -12,9 +12,7 @@
 #include <mutex>        // For mutex
 #include <array>
 
-#include <libuvc/libuvc.h>
-
-namespace rs
+namespace rsimpl
 {
 	struct ToString
 	{
@@ -23,8 +21,6 @@ namespace rs
 		operator std::string() const { return ss.str(); }
 	};
 
-    const int MAX_STREAMS = 4;
-
     inline void CheckUVC(const char * call, uvc_error_t status)
     {
         if (status < 0)
@@ -32,42 +28,6 @@ namespace rs
             throw std::runtime_error(ToString() << call << "(...) returned " << uvc_strerror(status));
         }
     }
-
-    struct StreamRequest
-    {
-        bool enabled;
-        int width, height, format, fps;
-    };
-
-    struct StreamMode
-    {
-        int stream;                 // RS_DEPTH, RS_COLOR, RS_INFRARED, RS_INFRARED_2, etc.
-        int width, height;          // Resolution visible to the client library
-        int format, fps;            // Pixel format and framerate visible to the client library
-        int intrinsics_index;       // Index of image intrinsics
-    };
-
-    struct SubdeviceMode
-    {
-        int subdevice;                      // 0, 1, 2, etc...
-        int width, height;                  // Resolution advertised over UVC
-        uvc_frame_format format;            // Pixel format advertised over UVC
-        int fps;                            // Framerate advertised over UVC
-        std::vector<StreamMode> streams;    // Modes for streams which can be supported by this device mode
-        void (* unpacker)(void * dest[], const SubdeviceMode & mode, const void * frame);
-    };
-
-    struct StaticCameraInfo
-    {
-        int stream_subdevices[MAX_STREAMS];             // Which subdevice is used to support each stream, or -1 if stream is unavailable
-        std::vector<SubdeviceMode> subdevice_modes;     // A list of available modes each subdevice can be put into
-
-        StaticCameraInfo() { for(auto & s : stream_subdevices) s = -1; }
-    };
-
-    void unpack_strided_image(void * dest[], const SubdeviceMode & mode, const void * frame);
-    void unpack_rly12_to_y8(void * dest[], const SubdeviceMode & mode, const void * frame);
-    void unpack_yuyv_to_rgb(void * dest[], const SubdeviceMode & mode, const void * frame);
 
     // World's tiniest linear algebra library
     struct float3 { float x,y,z; float & operator [] (int i) { return (&x)[i]; } };
@@ -87,9 +47,8 @@ namespace rs
         std::vector<rs_intrinsics> intrinsics;
         pose stream_poses[MAX_STREAMS];
         float depth_scale;
-    };
-    
-} // end namespace rs
+    }; 
+}
 
 struct rs_error
 {
@@ -106,16 +65,16 @@ protected:
     {
         friend class Subdevice;
 
-        rs::StreamMode mode;
+        rsimpl::StreamMode mode;
 
         volatile bool updated = false;
         std::vector<uint8_t> front, middle, back;
         std::mutex mutex;
     public:
-        const rs::StreamMode & get_mode() const { return mode; }
+        const rsimpl::StreamMode & get_mode() const { return mode; }
         const void * get_image() const { return front.data(); }
 
-        void set_mode(const rs::StreamMode & mode);
+        void set_mode(const rsimpl::StreamMode & mode);
         bool update_image();
     };
 
@@ -123,55 +82,55 @@ protected:
     {
         uvc_device_handle_t * uvcHandle;
         uvc_stream_ctrl_t ctrl;
-        rs::SubdeviceMode mode;
+        rsimpl::SubdeviceMode mode;
 
         std::vector<std::shared_ptr<Stream>> streams;
 
         void on_frame(uvc_frame_t * frame);
     public:
-        Subdevice(uvc_device_t * device, int subdeviceNumber) { rs::CheckUVC("uvc_open2", uvc_open2(device, &uvcHandle, subdeviceNumber)); }
+        Subdevice(uvc_device_t * device, int subdeviceNumber) { rsimpl::CheckUVC("uvc_open2", uvc_open2(device, &uvcHandle, subdeviceNumber)); }
         ~Subdevice() { uvc_stop_streaming(uvcHandle); uvc_close(uvcHandle); }
 
         uvc_device_handle_t * get_handle() { return uvcHandle; }
-        void set_mode(const rs::SubdeviceMode & mode, std::vector<std::shared_ptr<Stream>> streams);
+        void set_mode(const rsimpl::SubdeviceMode & mode, std::vector<std::shared_ptr<Stream>> streams);
         void start_streaming();
         void stop_streaming();
     };
 
     uvc_context_t * context;
     uvc_device_t * device;
-    const rs::StaticCameraInfo camera_info;
+    const rsimpl::StaticCameraInfo camera_info;
 
-    std::array<rs::StreamRequest, rs::MAX_STREAMS> requests;    // Indexed by RS_DEPTH, RS_COLOR, ...
-    std::shared_ptr<Stream> streams[rs::MAX_STREAMS];           // Indexed by RS_DEPTH, RS_COLOR, ...
-    std::vector<std::unique_ptr<Subdevice>> subdevices;         // Indexed by UVC subdevices number (0, 1, 2...)
+    std::array<rsimpl::StreamRequest, rsimpl::MAX_STREAMS> requests;    // Indexed by RS_DEPTH, RS_COLOR, ...
+    std::shared_ptr<Stream> streams[rsimpl::MAX_STREAMS];               // Indexed by RS_DEPTH, RS_COLOR, ...
+    std::vector<std::unique_ptr<Subdevice>> subdevices;                 // Indexed by UVC subdevices number (0, 1, 2...)
 
     std::string cameraName;
-    rs::CalibrationInfo calib;
+    rsimpl::CalibrationInfo calib;
 
     uvc_device_handle_t * first_handle;
     bool isCapturing = false;
   
 public:
-    rs_camera(uvc_context_t * context, uvc_device_t * device, const rs::StaticCameraInfo & camera_info);
+    rs_camera(uvc_context_t * context, uvc_device_t * device, const rsimpl::StaticCameraInfo & camera_info);
     ~rs_camera();
 
     const char * GetCameraName() const { return cameraName.c_str(); }
 
-    void EnableStream(int stream, int width, int height, int fps, int format);
-    bool IsStreamEnabled(int stream) const { return (bool)streams[stream]; }
+    void EnableStream(rs_stream stream, int width, int height, rs_format format, int fps);
+    bool IsStreamEnabled(rs_stream stream) const { return (bool)streams[stream]; }
     void StartStreaming();
     void StopStreaming();
     void WaitAllStreams();
 
-    const void * GetImagePixels(int stream) const { return streams[stream] ? streams[stream]->get_image() : nullptr; }
+    const void * GetImagePixels(rs_stream stream) const { return streams[stream] ? streams[stream]->get_image() : nullptr; }
     float GetDepthScale() const { return calib.depth_scale; }
 
-    rs_intrinsics GetStreamIntrinsics(int stream) const;
-    rs_extrinsics GetStreamExtrinsics(int from, int to) const;
+    rs_intrinsics GetStreamIntrinsics(rs_stream stream) const;
+    rs_extrinsics GetStreamExtrinsics(rs_stream from, rs_stream to) const;
 
-    virtual void EnableStreamPreset(int streamIdentifier, int preset) = 0;
-    virtual rs::CalibrationInfo RetrieveCalibration() = 0;
+    virtual void EnableStreamPreset(rs_stream stream, rs_preset preset) = 0;
+    virtual rsimpl::CalibrationInfo RetrieveCalibration() = 0;
     virtual void SetStreamIntent() = 0;
 };
 
