@@ -3,9 +3,9 @@
 
 #include "rsutil.h"
 
-#include <array>
-#include <stdexcept>
 #include <string>
+#include <ostream>
+#include <stdexcept>
 
 namespace rs
 {
@@ -81,5 +81,10 @@ namespace rs
 		camera				get_camera(int index)													{ return rs_get_camera(ctx, index, auto_error()); }
 	};
 }
+
+std::ostream & operator << (std::ostream & o, rs::stream s) { return o << rs::get_name(s); }
+std::ostream & operator << (std::ostream & o, rs::format f) { return o << rs::get_name(f); }
+std::ostream & operator << (std::ostream & o, rs::preset p) { return o << rs::get_name(p); }
+std::ostream & operator << (std::ostream & o, rs::distortion d) { return o << rs::get_name(d); }
 
 #endif

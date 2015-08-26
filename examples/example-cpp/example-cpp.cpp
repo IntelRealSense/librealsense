@@ -51,7 +51,6 @@ int main(int argc, char * argv[]) try
 		std::cout << "Found camera at index " << i << std::endl;
 
 		cam = ctx.get_camera(i);
-
         cam.enable_stream_preset(RS_STREAM_DEPTH, RS_PRESET_BEST_QUALITY);
         cam.enable_stream_preset(RS_STREAM_COLOR, RS_PRESET_BEST_QUALITY);
         cam.enable_stream_preset(RS_STREAM_INFRARED, RS_PRESET_BEST_QUALITY);
@@ -64,7 +63,7 @@ int main(int argc, char * argv[]) try
             auto intrin = cam.get_stream_intrinsics((rs::stream)j);
             float hfov = compute_fov(intrin.image_size[0], intrin.focal_length[0], intrin.principal_point[0]);
             float vfov = compute_fov(intrin.image_size[1], intrin.focal_length[1], intrin.principal_point[1]);
-            std::cout << "Capturing " << rs::get_name((rs::stream)j) << " at " << intrin.image_size[0] << " x " << intrin.image_size[1];
+            std::cout << "Capturing " << (rs::stream)j << " at " << intrin.image_size[0] << " x " << intrin.image_size[1];
             std::cout << std::setprecision(1) << std::fixed << ", fov = " << hfov << " x " << vfov << std::endl;
         }
 	}
