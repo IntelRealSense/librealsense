@@ -104,6 +104,66 @@ namespace f200
         }
         return true;
     }
+    
+    bool get_laser_power(uvc_device_handle_t * device, uint8_t & laser_power)
+    {
+        return xu_read(device, IVCAM_DEPTH_LASER_POWER, &laser_power, sizeof(laser_power));
+    }
+    
+    bool set_laser_power(uvc_device_handle_t * device, uint8_t laser_power)
+    {
+        return xu_write(device, IVCAM_DEPTH_LASER_POWER, &laser_power, sizeof(laser_power));
+    }
+    
+    bool get_accuracy(uvc_device_handle_t * device, uint8_t & accuracy)
+    {
+        return xu_read(device, IVCAM_DEPTH_ACCURACY, &accuracy, sizeof(accuracy));
+    }
+    
+    bool set_accuracy(uvc_device_handle_t * device, uint8_t accuracy)
+    {
+        return xu_write(device, IVCAM_DEPTH_ACCURACY, &accuracy, sizeof(accuracy));
+    }
+    
+    bool get_motion_range(uvc_device_handle_t * device, uint8_t & motion_range)
+    {
+        return xu_read(device, IVCAM_DEPTH_MOTION_RANGE, &motion_range, sizeof(motion_range));
+    }
+    
+    bool set_motion_range(uvc_device_handle_t * device, uint8_t motion_range)
+    {
+        return xu_write(device, IVCAM_DEPTH_MOTION_RANGE, &motion_range, sizeof(motion_range));
+    }
+    
+    bool get_filter_option(uvc_device_handle_t * device, uint8_t & filter_option)
+    {
+        return xu_read(device, IVCAM_DEPTH_FILTER_OPTION, &filter_option, sizeof(filter_option));
+    }
+    
+    bool set_filter_option(uvc_device_handle_t * device, uint8_t filter_option)
+    {
+        return xu_write(device, IVCAM_DEPTH_FILTER_OPTION, &filter_option, sizeof(filter_option));
+    }
+    
+    bool get_confidence_threshhold(uvc_device_handle_t * device, uint8_t & conf_thresh)
+    {
+        return xu_read(device, IVCAM_DEPTH_CONFIDENCE_THRESH, &conf_thresh, sizeof(conf_thresh));
+    }
+    
+    bool set_confidence_threshhold(uvc_device_handle_t * device, uint8_t conf_thresh)
+    {
+        return xu_write(device, IVCAM_DEPTH_CONFIDENCE_THRESH, &conf_thresh, sizeof(conf_thresh));
+    }
+    
+    bool get_dynamic_fps(uvc_device_handle_t * device, uint8_t & dynamic_fps)
+    {
+        return xu_read(device, IVCAM_DEPTH_DYNAMIC_FPS, &dynamic_fps, sizeof(dynamic_fps));
+    }
+    
+    bool set_dynamic_fps(uvc_device_handle_t * device, uint8_t dynamic_fps)
+    {
+        return xu_write(device, IVCAM_DEPTH_DYNAMIC_FPS, &dynamic_fps, sizeof(dynamic_fps));
+    }
 
 } // end f200
 
