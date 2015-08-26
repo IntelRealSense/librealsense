@@ -10,7 +10,7 @@ CONFIG += link_pkgconfig
 INCLUDEPATH += ../third_party/libuvc/include/ ../include
 LIBS += -pthread -ljpeg
 
-SOURCES += ../examples/example-cpp/example.cpp
+SOURCES += ../examples/example-cpp/*.cpp
 
 
 LIBS += -L$$DESTDIR/ -lrealsense -luvc

@@ -10,7 +10,7 @@ CONFIG += link_pkgconfig
 INCLUDEPATH += ../third_party/libuvc/include/ ../include ../third_party/stb
 LIBS += -pthread -ljpeg
 
-SOURCES += ../examples/pointcloud/pointcloud.cpp
+SOURCES += ../examples/pointcloud/*.cpp
 
 
 LIBS += -L$$DESTDIR/ -lrealsense -luvc

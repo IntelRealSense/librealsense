@@ -62,7 +62,7 @@ void draw_stream(rs::camera & cam, rs::stream stream, int x, int y)
     const rs::intrinsics intrin = cam.get_stream_intrinsics(stream);
     const int width = intrin.image_size[0], height = intrin.image_size[1];
     const rs::format format = cam.get_image_format(stream);
-    const void * pixels = cam.get_image_pixels(pixels);
+    const void * pixels = cam.get_image_pixels(stream);
 
     glRasterPos2i(x, y);
     switch(format)
@@ -91,15 +91,15 @@ int main(int argc, char * argv[]) try
 
 		cam = ctx.get_camera(i);
 
-        cam.enable_stream_preset(RS_STREAM_DEPTH, RS_BEST_QUALITY);
-        cam.enable_stream_preset(RS_STREAM_COLOR, RS_BEST_QUALITY);
-        //cam.enable_stream_preset(RS_STREAM_INFRARED, RS_BEST_QUALITY);
-        //cam.enable_stream_preset(RS_STREAM_INFRARED_2, RS_BEST_QUALITY);
-        cam.start_streaming();
+        cam.enable_stream_preset(RS_STREAM_DEPTH, RS_PRESET_BEST_QUALITY);
+        cam.enable_stream_preset(RS_STREAM_COLOR, RS_PRESET_BEST_QUALITY);
+        cam.enable_stream_preset(RS_STREAM_INFRARED, RS_PRESET_BEST_QUALITY);
+        cam.enable_stream_preset(RS_STREAM_INFRARED_2, RS_PRESET_BEST_QUALITY);
+        cam.start_capture();
 
-        if(cam.is_stream_enabled(RS_DEPTH))
+        if(cam.is_stream_enabled(RS_STREAM_DEPTH))
         {
-            auto intrin = cam.get_stream_intrinsics(RS_DEPTH);
+            auto intrin = cam.get_stream_intrinsics(RS_STREAM_DEPTH);
             float hfov = compute_fov(intrin.image_size[0], intrin.focal_length[0], intrin.principal_point[0]);
             float vfov = compute_fov(intrin.image_size[1], intrin.focal_length[1], intrin.principal_point[1]);
             std::cout << "Computed FOV " << hfov << " " << vfov << std::endl;
