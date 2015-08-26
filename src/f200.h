@@ -1,7 +1,6 @@
 #pragma once
-
-#ifndef LIBREALSENSE_F200_CAMERA_H
-#define LIBREALSENSE_F200_CAMERA_H
+#ifndef LIBREALSENSE_F200_H
+#define LIBREALSENSE_F200_H
 
 #include "camera.h"
 

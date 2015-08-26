@@ -1,3 +1,4 @@
+#pragma once
 #ifndef LIBREALSENSE_TYPES_H
 #define LIBREALSENSE_TYPES_H
 

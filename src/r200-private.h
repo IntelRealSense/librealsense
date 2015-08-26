@@ -1,7 +1,14 @@
-#ifndef R200_PRIVATE_H
-#define R200_PRIVATE_H
+#pragma once
+#ifndef LIBREALSENSE_R200_PRIVATE_H
+#define LIBREALSENSE_R200_PRIVATE_H
 
-#include "camera.h"
+#include "libuvc/libuvc.h"
+
+#include <cassert>
+#include <cstring>
+#include <vector>
+#include <string>
+#include <stdexcept>
 
 #define CAMERA_XU_UNIT_ID                           2
 

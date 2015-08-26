@@ -1,5 +1,6 @@
-#ifndef RS_INTERNAL_H
-#define RS_INTERNAL_H
+#pragma once
+#ifndef LIBREALSENSE_CAMERA_H
+#define LIBREALSENSE_CAMERA_H
 
 #include "types.h"
 

@@ -1,5 +1,4 @@
 #pragma once
-
 #ifndef LIBREALSENSE_R200_H
 #define LIBREALSENSE_R200_H
 
