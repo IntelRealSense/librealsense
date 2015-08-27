@@ -18,12 +18,14 @@ namespace rsimpl
     RS_IMPLEMENT_IS_VALID(rs_format, FORMAT)
     RS_IMPLEMENT_IS_VALID(rs_preset, PRESET)
     RS_IMPLEMENT_IS_VALID(rs_distortion, DISTORTION)
+    RS_IMPLEMENT_IS_VALID(rs_option, OPTION)
     #undef RS_IMPLEMENT_IS_VALID
 
     const char * get_string(rs_stream value);
     const char * get_string(rs_format value);
     const char * get_string(rs_preset value);
     const char * get_string(rs_distortion value);
+    const char * get_string(rs_option value);
 
     // World's tiniest linear algebra library
     struct float3 { float x,y,z; float & operator [] (int i) { return (&x)[i]; } };
@@ -74,6 +76,7 @@ namespace rsimpl
         int stream_subdevices[RS_STREAM_NUM];                   // Which subdevice is used to support each stream, or -1 if stream is unavailable
         std::vector<subdevice_mode> subdevice_modes;            // A list of available modes each subdevice can be put into
         stream_request presets[RS_STREAM_NUM][RS_PRESET_NUM];   // Presets available for each stream
+        bool option_supported[RS_OPTION_NUM];                   // Whether or not a given option is supported on this camera
 
         static_camera_info();
 

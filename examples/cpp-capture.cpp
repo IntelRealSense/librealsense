@@ -5,7 +5,8 @@
 #include <math.h>
 #include <sstream>
 #include <iostream>
-#include <iomanip>>
+#include <iomanip>
+#include <thread>
 
 font font;
 
@@ -56,39 +57,55 @@ void draw_stream(rs::camera & cam, rs::stream stream, int x, int y)
 
 int main(int argc, char * argv[]) try
 {
-	rs::camera cam;
-	rs::context ctx;
-	for (int i = 0; i < ctx.get_camera_count(); ++i)
-	{
-		std::cout << "Found camera at index " << i << std::endl;
+    rs::context ctx;
+    if(ctx.get_camera_count() < 1) throw std::runtime_error("No camera detected. Is it plugged in?");
 
-		cam = ctx.get_camera(i);
-        cam.enable_stream_preset(RS_STREAM_DEPTH, RS_PRESET_BEST_QUALITY);
-        cam.enable_stream_preset(RS_STREAM_COLOR, RS_PRESET_BEST_QUALITY);
-        try {
-            cam.enable_stream_preset(RS_STREAM_INFRARED, RS_PRESET_BEST_QUALITY);
-            cam.enable_stream_preset(RS_STREAM_INFRARED_2, RS_PRESET_BEST_QUALITY);
-        } catch(...) {}
-        cam.start_capture();
+    // Configure and start our camera
+    rs::camera cam = ctx.get_camera(0);
+    cam.enable_stream_preset(RS_STREAM_DEPTH, RS_PRESET_BEST_QUALITY);
+    cam.enable_stream_preset(RS_STREAM_COLOR, RS_PRESET_BEST_QUALITY);
+    try {
+        cam.enable_stream_preset(RS_STREAM_INFRARED, RS_PRESET_BEST_QUALITY);
+        cam.enable_stream_preset(RS_STREAM_INFRARED_2, RS_PRESET_BEST_QUALITY);
+    } catch(...) {}
+    cam.start_capture();
 
-        for(int j = RS_STREAM_BEGIN_RANGE; j <= RS_STREAM_END_RANGE; ++j)
+    // Compute field of view for each enabled stream
+    for(rs::stream stream = RS_STREAM_BEGIN_RANGE; stream <= RS_STREAM_END_RANGE; stream = (rs::stream)(stream+1))
+    {
+        if(!cam.is_stream_enabled(stream)) continue;
+        auto intrin = cam.get_stream_intrinsics(stream);
+        float hfov = compute_fov(intrin.image_size[0], intrin.focal_length[0], intrin.principal_point[0]);
+        float vfov = compute_fov(intrin.image_size[1], intrin.focal_length[1], intrin.principal_point[1]);
+        std::cout << "Capturing " << stream << " at " << intrin.image_size[0] << " x " << intrin.image_size[1];
+        std::cout << std::setprecision(1) << std::fixed << ", fov = " << hfov << " x " << vfov << std::endl;
+    }
+
+    // Report the status of each supported option
+    std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+    for(rs::option option = RS_OPTION_BEGIN_RANGE; option <= RS_OPTION_END_RANGE; option = (rs::option)(option+1))
+    {
+        if(cam.supports_option(option))
         {
-            if(!cam.is_stream_enabled((rs::stream)j)) continue;
-            auto intrin = cam.get_stream_intrinsics((rs::stream)j);
-            float hfov = compute_fov(intrin.image_size[0], intrin.focal_length[0], intrin.principal_point[0]);
-            float vfov = compute_fov(intrin.image_size[1], intrin.focal_length[1], intrin.principal_point[1]);
-            std::cout << "Capturing " << (rs::stream)j << " at " << intrin.image_size[0] << " x " << intrin.image_size[1];
-            std::cout << std::setprecision(1) << std::fixed << ", fov = " << hfov << " x " << vfov << std::endl;
+            std::cout << "Option " << option << ": ";
+            try { std::cout << cam.get_option(option) << std::endl; }
+            catch(const std::exception & e) { std::cout << e.what() << std::endl; }
         }
-	}
-	if (!cam) throw std::runtime_error("No camera detected. Is it plugged in?");
+    }
 
+    // Try setting some R200-specific settings
+    try {
+        cam.set_option(RS_OPTION_R200_LR_AUTO_EXPOSURE_ENABLED, 1);
+    }  catch(...) {}
+
+    // Open a GLFW window
 	glfwInit();
     const int height = cam.is_stream_enabled(RS_STREAM_INFRARED) || cam.is_stream_enabled(RS_STREAM_INFRARED_2) ? 960 : 480;
     std::ostringstream ss; ss << "CPP Capture Example (" << cam.get_name() << ")";
     GLFWwindow * win = glfwCreateWindow(1280, height, ss.str().c_str(), 0, 0);
     glfwMakeContextCurrent(win);
         
+    // Load our truetype font
     if(auto f = find_file("examples/assets/Roboto-Bold.ttf", 3))
     {
         font = ttf_create(f);
@@ -98,18 +115,18 @@ int main(int argc, char * argv[]) try
 
 	while (!glfwWindowShouldClose(win))
 	{
+        // Wait for new images
 		glfwPollEvents();
         cam.wait_all_streams();
 
+        // Draw the images
 		glClear(GL_COLOR_BUFFER_BIT);
         glPushMatrix();
         glOrtho(0, 1280, height, 0, -1, +1);
-        
         draw_stream(cam, RS_STREAM_COLOR, 0, 0);
         draw_stream(cam, RS_STREAM_DEPTH, 640, 0);
         draw_stream(cam, RS_STREAM_INFRARED, 0, 480);
         draw_stream(cam, RS_STREAM_INFRARED_2, 640, 480);
-
         glPopMatrix();
 		glfwSwapBuffers(win);
 	}

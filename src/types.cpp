@@ -62,6 +62,33 @@ namespace rsimpl
         #undef CASE
     }
 
+    const char * get_string(rs_option value)
+    {
+        #define CASE(X) case RS_OPTION_##X: return #X;
+        switch(value)
+        {
+        CASE(F200_LASER_POWER)
+        CASE(F200_ACCURACY)
+        CASE(F200_MOTION_RANGE)
+        CASE(F200_FILTER_OPTION)
+        CASE(F200_CONFIDENCE_THRESHOLD)
+        CASE(F200_DYNAMIC_FPS)
+        CASE(R200_LR_AUTO_EXPOSURE_ENABLED)
+        CASE(R200_LR_GAIN)
+        CASE(R200_LR_EXPOSURE)
+        CASE(R200_EMITTER_ENABLED)
+        CASE(R200_DEPTH_CONTROL_PRESET)
+        CASE(R200_DEPTH_UNITS)
+        CASE(R200_DEPTH_CLAMP_MIN)
+        CASE(R200_DEPTH_CLAMP_MAX)
+        CASE(R200_DISPARITY_MODE_ENABLED)
+        CASE(R200_DISPARITY_MULTIPLIER)
+        CASE(R200_DISPARITY_SHIFT)
+        default: assert(!is_valid(value)); return nullptr;
+        }
+        #undef CASE
+    }
+
     static size_t get_pixel_size(int format)
     {
         switch(format)
@@ -95,6 +122,7 @@ namespace rsimpl
     {
         for(auto & s : stream_subdevices) s = -1;
         for(auto & s : presets) for(auto & p : s) p = {};
+        for(auto & o : option_supported) o = false;
     }
 
     const subdevice_mode * static_camera_info::select_mode(const stream_request (& requests)[RS_STREAM_NUM], int subdevice_index) const

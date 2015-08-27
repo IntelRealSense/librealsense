@@ -11,12 +11,9 @@
 #include <mutex>
 #include <atomic>
 
-namespace rsimpl { namespace f200
-{
-    
 #define DELTA_INF                           (10000000.0)
 #define M_EPSILON                           (0.0001)
-    
+
 #define IV_COMMAND_FIRMWARE_UPDATE_MODE     0x01
 #define IV_COMMAND_GET_CALIBRATION_DATA     0x02
 #define IV_COMMAND_LASER_POWER              0x03
@@ -29,6 +26,22 @@ namespace rsimpl { namespace f200
 #define IV_COMMAND_FILTER_OPTION            0x0A
 #define IV_COMMAND_VERSION                  0x0B
 #define IV_COMMAND_CONFIDENCE_THRESHHOLD    0x0C
+
+#define IVCAM_DEPTH_LASER_POWER         1
+#define IVCAM_DEPTH_ACCURACY            2
+#define IVCAM_DEPTH_MOTION_RANGE        3
+#define IVCAM_DEPTH_ERROR               4
+#define IVCAM_DEPTH_FILTER_OPTION       5
+#define IVCAM_DEPTH_CONFIDENCE_THRESH   6
+#define IVCAM_DEPTH_DYNAMIC_FPS         7
+
+#define IVCAM_COLOR_EXPOSURE_PRIORITY   1
+#define IVCAM_COLOR_AUTO_FLICKER        2
+#define IVCAM_COLOR_ERROR               3
+#define IVCAM_COLOR_EXPOSURE_GRANULAR   4
+
+namespace rsimpl { namespace f200
+{
 
 struct OACOffsetData
 {

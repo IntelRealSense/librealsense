@@ -55,7 +55,7 @@ const char * rs_get_camera_name(rs_camera * camera, rs_error ** error) try
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr)
 
-void rs_enable_stream(struct rs_camera * camera, enum rs_stream stream, int width, int height, enum rs_format format, int fps, struct rs_error ** error) try
+void rs_enable_stream(rs_camera * camera, rs_stream stream, int width, int height, rs_format format, int fps, rs_error ** error) try
 {
     VALIDATE_NOT_NULL(camera);
     VALIDATE_ENUM(stream);
@@ -67,7 +67,7 @@ void rs_enable_stream(struct rs_camera * camera, enum rs_stream stream, int widt
 }
 HANDLE_EXCEPTIONS_AND_RETURN()
 
-void rs_enable_stream_preset(struct rs_camera * camera, enum rs_stream stream, enum rs_preset preset, struct rs_error ** error) try
+void rs_enable_stream_preset(rs_camera * camera, rs_stream stream, rs_preset preset, rs_error ** error) try
 {
     VALIDATE_NOT_NULL(camera);
     VALIDATE_ENUM(stream);
@@ -76,7 +76,7 @@ void rs_enable_stream_preset(struct rs_camera * camera, enum rs_stream stream, e
 }
 HANDLE_EXCEPTIONS_AND_RETURN()
 
-int rs_is_stream_enabled(struct rs_camera * camera, enum rs_stream stream, struct rs_error ** error) try
+int rs_is_stream_enabled(rs_camera * camera, rs_stream stream, rs_error ** error) try
 {
     VALIDATE_NOT_NULL(camera);
     VALIDATE_ENUM(stream);
@@ -84,28 +84,28 @@ int rs_is_stream_enabled(struct rs_camera * camera, enum rs_stream stream, struc
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0)
 
-void rs_start_capture(struct rs_camera * camera, struct rs_error ** error) try
+void rs_start_capture(rs_camera * camera, rs_error ** error) try
 {
     VALIDATE_NOT_NULL(camera);
     camera->start_capture();
 }
 HANDLE_EXCEPTIONS_AND_RETURN()
 
-void rs_stop_capture(struct rs_camera * camera, struct rs_error ** error) try
+void rs_stop_capture(rs_camera * camera, rs_error ** error) try
 {
     VALIDATE_NOT_NULL(camera);
     camera->stop_capture();
 }
 HANDLE_EXCEPTIONS_AND_RETURN()
 
-void rs_wait_all_streams(struct rs_camera * camera, struct rs_error ** error) try
+void rs_wait_all_streams(rs_camera * camera, rs_error ** error) try
 {
     VALIDATE_NOT_NULL(camera);
     camera->wait_all_streams();
 }
 HANDLE_EXCEPTIONS_AND_RETURN()
 
-rs_format rs_get_image_format(rs_camera * camera, enum rs_stream stream, rs_error ** error) try
+rs_format rs_get_image_format(rs_camera * camera, rs_stream stream, rs_error ** error) try
 {
     VALIDATE_NOT_NULL(camera);
     VALIDATE_ENUM(stream);
@@ -113,7 +113,7 @@ rs_format rs_get_image_format(rs_camera * camera, enum rs_stream stream, rs_erro
 }
 HANDLE_EXCEPTIONS_AND_RETURN(RS_FORMAT_ANY)
 
-const void * rs_get_image_pixels(rs_camera * camera, enum rs_stream stream, rs_error ** error) try
+const void * rs_get_image_pixels(rs_camera * camera, rs_stream stream, rs_error ** error) try
 {
     VALIDATE_NOT_NULL(camera);
     VALIDATE_ENUM(stream);
@@ -128,7 +128,7 @@ float rs_get_depth_scale(rs_camera * camera, rs_error ** error) try
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0.0f)
 
-void rs_get_stream_intrinsics(struct rs_camera * camera, enum rs_stream stream, struct rs_intrinsics * intrin, struct rs_error ** error) try
+void rs_get_stream_intrinsics(rs_camera * camera, rs_stream stream, rs_intrinsics * intrin, rs_error ** error) try
 {
     VALIDATE_NOT_NULL(camera);
     VALIDATE_ENUM(stream);
@@ -137,13 +137,39 @@ void rs_get_stream_intrinsics(struct rs_camera * camera, enum rs_stream stream, 
 }
 HANDLE_EXCEPTIONS_AND_RETURN()
 
-void rs_get_stream_extrinsics(struct rs_camera * camera, enum rs_stream from, enum rs_stream to, struct rs_extrinsics * extrin, struct rs_error ** error) try
+void rs_get_stream_extrinsics(rs_camera * camera, rs_stream from, rs_stream to, rs_extrinsics * extrin, rs_error ** error) try
 {
     VALIDATE_NOT_NULL(camera);
     VALIDATE_ENUM(from);
     VALIDATE_ENUM(to);
     VALIDATE_NOT_NULL(extrin);
     *extrin = camera->get_stream_extrinsics(from, to);
+}
+HANDLE_EXCEPTIONS_AND_RETURN()
+
+int rs_camera_supports_option(rs_camera * camera, rs_option option, rs_error ** error) try
+{
+    VALIDATE_NOT_NULL(camera);
+    VALIDATE_ENUM(option);
+    return camera->supports_option(option);
+}
+HANDLE_EXCEPTIONS_AND_RETURN(0)
+
+int rs_get_camera_option(rs_camera * camera, rs_option option, rs_error ** error) try
+{
+    VALIDATE_NOT_NULL(camera);
+    VALIDATE_ENUM(option);
+    if(!camera->supports_option(option)) throw std::runtime_error("option not supported by this camera");
+    return camera->get_option(option);
+}
+HANDLE_EXCEPTIONS_AND_RETURN(0)
+
+void rs_set_camera_option(rs_camera * camera, rs_option option, int value, rs_error ** error) try
+{
+    VALIDATE_NOT_NULL(camera);
+    VALIDATE_ENUM(option);
+    if(!camera->supports_option(option)) throw std::runtime_error("option not supported by this camera");
+    camera->set_option(option, value);
 }
 HANDLE_EXCEPTIONS_AND_RETURN()
 
@@ -172,6 +198,13 @@ const char * rs_get_distortion_name(rs_distortion distortion, rs_error ** error)
 {
    VALIDATE_ENUM(distortion);
    return rsimpl::get_string(distortion);
+}
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr)
+
+const char * rs_get_option_name(rs_option option, rs_error ** error) try
+{
+    VALIDATE_ENUM(option);
+    return rsimpl::get_string(option);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr)
 
