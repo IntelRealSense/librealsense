@@ -15,9 +15,9 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "08567BB01B5B59E800EB6C0D"
-               BuildableName = "pointcloud"
-               BlueprintName = "pointcloud"
-               ReferencedContainer = "container:pointcloud.xcodeproj">
+               BuildableName = "cpp-pointcloud"
+               BlueprintName = "cpp-pointcloud"
+               ReferencedContainer = "container:cpp-pointcloud.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
       </BuildActionEntries>
@@ -33,9 +33,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "08567BB01B5B59E800EB6C0D"
-            BuildableName = "pointcloud"
-            BlueprintName = "pointcloud"
-            ReferencedContainer = "container:pointcloud.xcodeproj">
+            BuildableName = "cpp-pointcloud"
+            BlueprintName = "cpp-pointcloud"
+            ReferencedContainer = "container:cpp-pointcloud.xcodeproj">
          </BuildableReference>
       </MacroExpansion>
    </TestAction>
@@ -54,9 +54,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "08567BB01B5B59E800EB6C0D"
-            BuildableName = "pointcloud"
-            BlueprintName = "pointcloud"
-            ReferencedContainer = "container:pointcloud.xcodeproj">
+            BuildableName = "cpp-pointcloud"
+            BlueprintName = "cpp-pointcloud"
+            ReferencedContainer = "container:cpp-pointcloud.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
       <AdditionalOptions>
@@ -73,9 +73,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "08567BB01B5B59E800EB6C0D"
-            BuildableName = "pointcloud"
-            BlueprintName = "pointcloud"
-            ReferencedContainer = "container:pointcloud.xcodeproj">
+            BuildableName = "cpp-pointcloud"
+            BlueprintName = "cpp-pointcloud"
+            ReferencedContainer = "container:cpp-pointcloud.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </ProfileAction>

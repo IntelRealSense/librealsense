@@ -1,14 +1,6 @@
 #define GLFW_INCLUDE_GLU
 
-#ifdef __APPLE__
-    #include "glfw3.h"
-    #define GLFW_EXPOSE_NATIVE_COCOA
-    #define GLFW_EXPOSE_NATIVE_NSGL
-    #include "glfw3native.h"
-    #include <OpenGL/gl3.h>
-#else
-    #include <GLFW/glfw3.h>
-#endif
+#include <GLFW/glfw3.h>
 
 #define STB_TRUETYPE_IMPLEMENTATION
 #include "third_party/stb_truetype.h"

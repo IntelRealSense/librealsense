@@ -9,6 +9,16 @@
 
 font font;
 
+FILE * find_file(std::string path, int levels)
+{
+    for(int i=0; i<=levels; ++i)
+    {
+        if(auto f = fopen(path.c_str(), "rb")) return f;
+        path = "../" + path;
+    }
+    return nullptr;
+}
+
 float compute_fov(int image_size, float focal_length, float principal_point)
 {
 	return (atan2f(principal_point + 0.5f, focal_length) + atan2f(image_size - principal_point - 0.5f, focal_length)) * 180.0f / (float)M_PI;
@@ -78,7 +88,13 @@ int main(int argc, char * argv[]) try
     std::ostringstream ss; ss << "CPP Capture Example (" << cam.get_name() << ")";
     GLFWwindow * win = glfwCreateWindow(1280, height, ss.str().c_str(), 0, 0);
     glfwMakeContextCurrent(win);
-    font = ttf_create(fopen("../../examples/assets/Roboto-Bold.ttf", "rb"));
+        
+    if(auto f = find_file("examples/assets/Roboto-Bold.ttf", 3))
+    {
+        font = ttf_create(f);
+        fclose(f);
+    }
+    else throw std::runtime_error("Unable to open examples/assets/Roboto-Bold.ttf");
 
 	while (!glfwWindowShouldClose(win))
 	{
@@ -88,7 +104,7 @@ int main(int argc, char * argv[]) try
 		glClear(GL_COLOR_BUFFER_BIT);
         glPushMatrix();
         glOrtho(0, 1280, height, 0, -1, +1);
-
+        
         draw_stream(cam, RS_STREAM_COLOR, 0, 0);
         draw_stream(cam, RS_STREAM_DEPTH, 640, 0);
         draw_stream(cam, RS_STREAM_INFRARED, 0, 480);

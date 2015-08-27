@@ -7,13 +7,14 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		08567C041B5B5D6B00EB6C0D /* libglfw3.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 08567C031B5B5D6B00EB6C0D /* libglfw3.a */; };
 		08567C091B5B898400EB6C0D /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 08567C081B5B898400EB6C0D /* Cocoa.framework */; };
 		08567C0B1B5B898C00EB6C0D /* CoreVideo.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 08567C0A1B5B898C00EB6C0D /* CoreVideo.framework */; };
 		08567C0D1B5B899200EB6C0D /* IOKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 08567C0C1B5B899200EB6C0D /* IOKit.framework */; };
 		08567C0F1B5B899B00EB6C0D /* OpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 08567C0E1B5B899B00EB6C0D /* OpenGL.framework */; };
 		08567C2C1B61D80B00EB6C0D /* librealsense.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 08567C2B1B61D80B00EB6C0D /* librealsense.a */; };
 		08567C301B61DB8100EB6C0D /* libusb-1.0.0.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 08567C2F1B61DB8100EB6C0D /* libusb-1.0.0.dylib */; };
+		279D52DA1B8E86FB007F2D73 /* cpp-capture.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 279D52D91B8E86FB007F2D73 /* cpp-capture.cpp */; };
+		279D52DE1B8E8866007F2D73 /* libglfw3.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 279D52DD1B8E8866007F2D73 /* libglfw3.dylib */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -29,14 +30,15 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		08567BB11B5B59E800EB6C0D /* example-cpp */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = "example-cpp"; sourceTree = BUILT_PRODUCTS_DIR; };
-		08567C031B5B5D6B00EB6C0D /* libglfw3.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libglfw3.a; path = third_party/glfw/bin/osx/libglfw3.a; sourceTree = "<group>"; };
+		08567BB11B5B59E800EB6C0D /* cpp-capture */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = "cpp-capture"; sourceTree = BUILT_PRODUCTS_DIR; };
 		08567C081B5B898400EB6C0D /* Cocoa.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cocoa.framework; path = System/Library/Frameworks/Cocoa.framework; sourceTree = SDKROOT; };
 		08567C0A1B5B898C00EB6C0D /* CoreVideo.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreVideo.framework; path = System/Library/Frameworks/CoreVideo.framework; sourceTree = SDKROOT; };
 		08567C0C1B5B899200EB6C0D /* IOKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = IOKit.framework; path = System/Library/Frameworks/IOKit.framework; sourceTree = SDKROOT; };
 		08567C0E1B5B899B00EB6C0D /* OpenGL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenGL.framework; path = System/Library/Frameworks/OpenGL.framework; sourceTree = SDKROOT; };
 		08567C2B1B61D80B00EB6C0D /* librealsense.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = librealsense.a; path = ../../Library/Developer/Xcode/DerivedData/bin/Debug/librealsense.a; sourceTree = "<group>"; };
 		08567C2F1B61DB8100EB6C0D /* libusb-1.0.0.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = "libusb-1.0.0.dylib"; path = "../../../../usr/local/Cellar/libusb/1.0.19/lib/libusb-1.0.0.dylib"; sourceTree = "<group>"; };
+		279D52D91B8E86FB007F2D73 /* cpp-capture.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = "cpp-capture.cpp"; path = "../examples/cpp-capture.cpp"; sourceTree = SOURCE_ROOT; };
+		279D52DD1B8E8866007F2D73 /* libglfw3.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libglfw3.dylib; path = ../../../../usr/local/Cellar/glfw3/3.1.1/lib/libglfw3.dylib; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -45,11 +47,11 @@
 			buildActionMask = 2147483647;
 			files = (
 				08567C2C1B61D80B00EB6C0D /* librealsense.a in Frameworks */,
+				279D52DE1B8E8866007F2D73 /* libglfw3.dylib in Frameworks */,
 				08567C0F1B5B899B00EB6C0D /* OpenGL.framework in Frameworks */,
 				08567C0D1B5B899200EB6C0D /* IOKit.framework in Frameworks */,
 				08567C0B1B5B898C00EB6C0D /* CoreVideo.framework in Frameworks */,
 				08567C091B5B898400EB6C0D /* Cocoa.framework in Frameworks */,
-				08567C041B5B5D6B00EB6C0D /* libglfw3.a in Frameworks */,
 				08567C301B61DB8100EB6C0D /* libusb-1.0.0.dylib in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -69,7 +71,7 @@
 		08567BB21B5B59E800EB6C0D /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				08567BB11B5B59E800EB6C0D /* example-cpp */,
+				08567BB11B5B59E800EB6C0D /* cpp-capture */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -77,6 +79,7 @@
 		08567BB31B5B59E800EB6C0D /* src */ = {
 			isa = PBXGroup;
 			children = (
+				279D52D91B8E86FB007F2D73 /* cpp-capture.cpp */,
 			);
 			name = src;
 			path = "example-cpp";
@@ -95,7 +98,7 @@
 			isa = PBXGroup;
 			children = (
 				08567C2F1B61DB8100EB6C0D /* libusb-1.0.0.dylib */,
-				08567C031B5B5D6B00EB6C0D /* libglfw3.a */,
+				279D52DD1B8E8866007F2D73 /* libglfw3.dylib */,
 				08567C2B1B61D80B00EB6C0D /* librealsense.a */,
 			);
 			name = libs;
@@ -116,9 +119,9 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		08567BB01B5B59E800EB6C0D /* example-cpp */ = {
+		08567BB01B5B59E800EB6C0D /* cpp-capture */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 08567BB81B5B59E800EB6C0D /* Build configuration list for PBXNativeTarget "example-cpp" */;
+			buildConfigurationList = 08567BB81B5B59E800EB6C0D /* Build configuration list for PBXNativeTarget "cpp-capture" */;
 			buildPhases = (
 				08567BAD1B5B59E800EB6C0D /* Sources */,
 				08567BAE1B5B59E800EB6C0D /* Frameworks */,
@@ -128,9 +131,9 @@
 			);
 			dependencies = (
 			);
-			name = "example-cpp";
+			name = "cpp-capture";
 			productName = "example-cpp";
-			productReference = 08567BB11B5B59E800EB6C0D /* example-cpp */;
+			productReference = 08567BB11B5B59E800EB6C0D /* cpp-capture */;
 			productType = "com.apple.product-type.tool";
 		};
 /* End PBXNativeTarget section */
@@ -147,7 +150,7 @@
 					};
 				};
 			};
-			buildConfigurationList = 08567BAC1B5B59E800EB6C0D /* Build configuration list for PBXProject "example-cpp" */;
+			buildConfigurationList = 08567BAC1B5B59E800EB6C0D /* Build configuration list for PBXProject "cpp-capture" */;
 			compatibilityVersion = "Xcode 3.2";
 			developmentRegion = English;
 			hasScannedForEncodings = 0;
@@ -159,7 +162,7 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				08567BB01B5B59E800EB6C0D /* example-cpp */,
+				08567BB01B5B59E800EB6C0D /* cpp-capture */,
 			);
 		};
 /* End PBXProject section */
@@ -169,6 +172,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				279D52DA1B8E86FB007F2D73 /* cpp-capture.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -271,20 +275,18 @@
 				HEADER_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(SRCROOT)/../include",
-					"$(SRCROOT)/../third_party/stb",
-					"$(SRCROOT)/../third_party/glfw",
-					"$(SRCROOT)/../third_party/libuvc/include",
-					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
 					/usr/local/Cellar/libusb/1.0.19/include/,
+					/usr/local/Cellar/glfw3/3.1.1/include/,
+					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
 				);
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(SRCROOT)/../librealsense/build/Debug",
-					"$(SRCROOT)/../third_party/glfw/bin/osx",
+					/usr/local/Cellar/glfw3/3.1.1/lib,
 					/usr/local/Cellar/libusb/1.0.19/lib,
 					"$(USER_LIBRARY_DIR)/Developer/Xcode/DerivedData/bin/Debug",
 				);
-				PRODUCT_NAME = "$(TARGET_NAME)";
+				PRODUCT_NAME = "cpp-capture";
 			};
 			name = Debug;
 		};
@@ -294,27 +296,25 @@
 				HEADER_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(SRCROOT)/../include",
-					"$(SRCROOT)/../third_party/stb",
-					"$(SRCROOT)/../third_party/glfw",
-					"$(SRCROOT)/../third_party/libuvc/include",
-					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
 					/usr/local/Cellar/libusb/1.0.19/include/,
+					/usr/local/Cellar/glfw3/3.1.1/include/,
+					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
 				);
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(SRCROOT)/../librealsense/build/Debug",
-					"$(SRCROOT)/../third_party/glfw/bin/osx",
+					/usr/local/Cellar/glfw3/3.1.1/lib,
 					/usr/local/Cellar/libusb/1.0.19/lib,
 					"$(USER_LIBRARY_DIR)/Developer/Xcode/DerivedData/bin/Debug",
 				);
-				PRODUCT_NAME = "$(TARGET_NAME)";
+				PRODUCT_NAME = "cpp-capture";
 			};
 			name = Release;
 		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		08567BAC1B5B59E800EB6C0D /* Build configuration list for PBXProject "example-cpp" */ = {
+		08567BAC1B5B59E800EB6C0D /* Build configuration list for PBXProject "cpp-capture" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				08567BB61B5B59E800EB6C0D /* Debug */,
@@ -323,7 +323,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		08567BB81B5B59E800EB6C0D /* Build configuration list for PBXNativeTarget "example-cpp" */ = {
+		08567BB81B5B59E800EB6C0D /* Build configuration list for PBXNativeTarget "cpp-capture" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				08567BB91B5B59E800EB6C0D /* Debug */,
