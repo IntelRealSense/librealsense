@@ -33,60 +33,76 @@ rs_camera::~rs_camera()
 
 void rs_camera::enable_stream(rs_stream stream, int width, int height, rs_format format, int fps)
 {
+    if(first_handle) throw std::runtime_error("streams cannot be reconfigured after having called start_capture()");
     if(camera_info.stream_subdevices[stream] == -1) throw std::runtime_error("unsupported stream");
     requests[stream] = {true, width, height, format, fps};
 }
 
 void rs_camera::enable_stream_preset(rs_stream stream, rs_preset preset)
 {
+    if(first_handle) throw std::runtime_error("streams cannot be reconfigured after having called start_capture()");
     if(!camera_info.presets[stream][preset].enabled) throw std::runtime_error("unsupported stream");
     requests[stream] = camera_info.presets[stream][preset];
 }
 
-void rs_camera::start_capture()
+void rs_camera::configure_enabled_streams()
 {
     for(auto & s : subdevices) s.reset();
     for(auto & s : streams) s.reset();
-    first_handle = nullptr;
-
-    // For each subdevice
-    for(size_t i = 0; i < subdevices.size(); ++i)
+    
+    // First create the subdevices and assign first_handle as appropriate
+    // Creating a subdevice_handle will reach out to the hardware and open the handle
+    if (!first_handle)
     {
-        if(const subdevice_mode * mode = camera_info.select_mode(requests, i))
+        for(int i = 0; i < subdevices.size(); ++i)
         {
-            // For each stream provided by this mode
-            std::vector<std::shared_ptr<stream_buffer>> stream_list;
-            for(auto & stream_mode : mode->streams)
-            {
-                // Create a buffer to receive the images from this stream
-                auto stream = std::make_shared<stream_buffer>();
-                stream_list.push_back(stream);
-
-                // If this is one of the streams requested by the user, store the buffer so they can access it
-                if(requests[stream_mode.stream].enabled) streams[stream_mode.stream] = stream;
-            }
-
-            // Initialize the subdevice and set it to the selected mode, then exit the loop early
             subdevices[i].reset(new subdevice_handle(device, i));
-            subdevices[i]->set_mode(*mode, stream_list);
-            if(!first_handle) first_handle = subdevices[i]->get_handle();
+            if (i == 0 && subdevices[0]) first_handle = subdevices[i]->get_handle();
+        }
+        
+        // Satisfy stream_requests as necessary for each subdevice, calling set_mode and
+        // dispatching the uvc configuration for a requested stream to the hardware
+        for(int i = 0; i < subdevices.size(); ++i)
+        {
+            if(const subdevice_mode * mode = camera_info.select_mode(requests, i))
+            {
+                // For each stream provided by this mode
+                std::vector<std::shared_ptr<stream_buffer>> stream_list;
+                for(auto & stream_mode : mode->streams)
+                {
+                    // Create a buffer to receive the images from this stream
+                    auto stream = std::make_shared<stream_buffer>();
+                    stream_list.push_back(stream);
+                    
+                    // If this is one of the streams requested by the user, store the buffer so they can access it
+                    if(requests[stream_mode.stream].enabled) streams[stream_mode.stream] = stream;
+                }
+                
+                // Initialize the subdevice and set it to the selected mode, then exit the loop early
+                subdevices[i]->set_mode(*mode, stream_list);
+            }
         }
     }
-
+    
     // If we have not yet retrieved calibration info and at least one subdevice is open, do so
     if(calib.intrinsics.empty() && first_handle)
     {
         calib = retrieve_calibration();
     }
+}
 
+void rs_camera::start_capture()
+{
+    if (!first_handle) configure_enabled_streams();
+    
     set_stream_intent();
-    for(auto & subdevice : subdevices) if(subdevice) subdevice->start_streaming();
+    for(auto & subdevice : subdevices) if (subdevice) subdevice->start_streaming();
     is_capturing = true;
 }
 
 void rs_camera::stop_capture()
 {
-    for(auto & subdevice : subdevices) if(subdevice) subdevice->stop_streaming();
+    for(auto & subdevice : subdevices) if (subdevice) subdevice->stop_streaming();
     is_capturing = false;
 }
 
@@ -104,7 +120,7 @@ void rs_camera::wait_all_streams()
             // If this is the fastest stream, wait until a new frame arrives
             if(stream->get_mode().fps == maxFps)
             {
-                while(true) if(stream->update_image()) break; // ok, this just blocks the entire loop on stop
+                while(true) if(stream->update_image()) break;
             }
             else // Otherwise simply check for a new frame
             {
@@ -167,7 +183,7 @@ rs_camera::subdevice_handle::subdevice_handle(uvc_device_t * device, int subdevi
 
 rs_camera::subdevice_handle::~subdevice_handle()
 {
-    uvc_stop_streaming(handle);
+    // uvc_stop_streaming(handle);
     uvc_close(handle);
 }
 
@@ -206,5 +222,5 @@ void rs_camera::subdevice_handle::start_streaming()
     
 void rs_camera::subdevice_handle::stop_streaming()
 {
-    CheckUVC("uvc_stream_stop", uvc_stream_stop(ctrl.handle));
+    uvc_stop_streaming(handle);
 }

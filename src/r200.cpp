@@ -197,5 +197,5 @@ namespace rsimpl
         if(!result) throw std::runtime_error("failed to read option from device");
         return value;
     }
+    
 }
-

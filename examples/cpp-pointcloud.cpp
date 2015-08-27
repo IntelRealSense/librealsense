@@ -1,10 +1,13 @@
 #include <librealsense/rs.hpp>
 #include <librealsense/rsutil.h>
+#include <../src/r200.h>
 #include "example.h"
 
 #include <chrono>
 #include <sstream>
 #include <iostream>
+
+using namespace rsimpl;
 
 FILE * find_file(std::string path, int levels)
 {
@@ -99,6 +102,8 @@ int main(int argc, char * argv[]) try
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
 
     glPopAttrib();
+        
+    r200_camera * cpp_handle = dynamic_cast<r200_camera *>(cam.get_handle());
 
     int frames = 0; float time = 0, fps = 0;
     auto t0 = std::chrono::high_resolution_clock::now();
@@ -122,6 +127,8 @@ int main(int argc, char * argv[]) try
             time = 0;
         }
 
+        if (!cpp_handle->is_streaming()) continue;
+        
         glViewport(0, 0, width, height);
         glClearColor(0.0f, 116/255.0f, 197/255.0f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
