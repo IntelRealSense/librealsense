@@ -152,12 +152,12 @@ namespace rsimpl
         return xu_write(device, IVCAM_DEPTH_FILTER_OPTION, &filter_option, sizeof(filter_option));
     }
     
-    bool get_confidence_threshhold(uvc_device_handle_t * device, uint8_t & conf_thresh)
+    bool get_confidence_threshold(uvc_device_handle_t * device, uint8_t & conf_thresh)
     {
         return xu_read(device, IVCAM_DEPTH_CONFIDENCE_THRESH, &conf_thresh, sizeof(conf_thresh));
     }
     
-    bool set_confidence_threshhold(uvc_device_handle_t * device, uint8_t conf_thresh)
+    bool set_confidence_threshold(uvc_device_handle_t * device, uint8_t conf_thresh)
     {
         return xu_write(device, IVCAM_DEPTH_CONFIDENCE_THRESH, &conf_thresh, sizeof(conf_thresh));
     }
@@ -170,6 +170,45 @@ namespace rsimpl
     bool set_dynamic_fps(uvc_device_handle_t * device, uint8_t dynamic_fps)
     {
         return xu_write(device, IVCAM_DEPTH_DYNAMIC_FPS, &dynamic_fps, sizeof(dynamic_fps));
+    }
+
+    bool f200_camera::supports_option(rs_option option) const
+    {
+        return option >= RS_OPTION_F200_LASER_POWER && option <= RS_OPTION_F200_DYNAMIC_FPS;
+    }
+
+    void f200_camera::set_option(rs_option option, int value)
+    {
+        // TODO: Range check value before write
+        auto val = static_cast<uint8_t>(value);
+        bool result = false;
+        switch(option)
+        {
+        case RS_OPTION_F200_LASER_POWER:          result = set_laser_power(first_handle, val); break;
+        case RS_OPTION_F200_ACCURACY:             result = set_accuracy(first_handle, val); break;
+        case RS_OPTION_F200_MOTION_RANGE:         result = set_motion_range(first_handle, val); break;
+        case RS_OPTION_F200_FILTER_OPTION:        result = set_filter_option(first_handle, val); break;
+        case RS_OPTION_F200_CONFIDENCE_THRESHOLD: result = set_confidence_threshold(first_handle, val); break;
+        case RS_OPTION_F200_DYNAMIC_FPS:          result = set_dynamic_fps(first_handle, val); break;
+        }
+        if(!result) throw std::runtime_error("failed to write option to device");
+    }
+
+    int f200_camera::get_option(rs_option option)
+    {
+        uint8_t value = 0;
+        bool result = false;
+        switch(option)
+        {
+        case RS_OPTION_F200_LASER_POWER:          result = get_laser_power(first_handle, value); break;
+        case RS_OPTION_F200_ACCURACY:             result = get_accuracy(first_handle, value); break;
+        case RS_OPTION_F200_MOTION_RANGE:         result = get_motion_range(first_handle, value); break;
+        case RS_OPTION_F200_FILTER_OPTION:        result = get_filter_option(first_handle, value); break;
+        case RS_OPTION_F200_CONFIDENCE_THRESHOLD: result = get_confidence_threshold(first_handle, value); break;
+        case RS_OPTION_F200_DYNAMIC_FPS:          result = get_dynamic_fps(first_handle, value); break;
+        }
+        if(!result) throw std::runtime_error("failed to read option from device");
+        return value;
     }
 
 } // namespace rsimpl::f200

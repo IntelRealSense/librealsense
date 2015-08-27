@@ -383,6 +383,22 @@ namespace rsimpl { namespace r200
         return xu_write(device, CONTROL_SW_RESET, &reset, sizeof(uint8_t));
     }
 
+    bool get_emitter_state(uvc_device_handle_t * device, bool & state)
+    {
+        uint8_t byte = 0;
+        if (!xu_read(device, CONTROL_EMITTER, &byte, sizeof(byte)))
+            return false;
+
+        if (byte & 4) state = (byte & 2 ? true : false);
+        return true;
+    }
+
+    bool set_emitter_state(uvc_device_handle_t * device, bool state)
+    {
+        uint8_t newEmitterState = state ? 1 : 0;
+        return xu_read(device, CONTROL_EMITTER, &newEmitterState, sizeof(uint8_t));
+    }
+
     bool read_temperature(uvc_device_handle_t * device, int8_t & current, int8_t & min, int8_t & max, int8_t & min_fault)
     {
         uint32_t length = 4;
@@ -415,6 +431,12 @@ namespace rsimpl { namespace r200
         return xu_write(device, CONTROL_DEPTH_UNITS, &units, sizeof(units));
     }
 
+    bool set_min_max_depth(uvc_device_handle_t * device, uint16_t min_depth, uint16_t max_depth)
+    {
+        const uint16_t values[] = {min_depth, max_depth};
+        return xu_write(device, CONTROL_MIN_MAX, values, sizeof(values));
+    }
+
     bool get_min_max_depth(uvc_device_handle_t * device, uint16_t & min_depth, uint16_t & max_depth)
     {
         std::vector<uint16_t> minmax_values = {0, 0};
@@ -422,14 +444,6 @@ namespace rsimpl { namespace r200
             return false;
         min_depth = minmax_values[0];
         max_depth = minmax_values[1];
-        return true;
-    }
-
-    bool get_min_max_depth(uvc_device_handle_t * device, uint16_t min_depth, uint16_t  max_depth)
-    {
-        std::vector<uint16_t> minmax_values = {min_depth, max_depth};
-        if (!xu_read(device, CONTROL_MIN_MAX, minmax_values.data(), sizeof(minmax_values)))
-            return false;
         return true;
     }
 

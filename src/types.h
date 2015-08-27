@@ -18,12 +18,14 @@ namespace rsimpl
     RS_IMPLEMENT_IS_VALID(rs_format, FORMAT)
     RS_IMPLEMENT_IS_VALID(rs_preset, PRESET)
     RS_IMPLEMENT_IS_VALID(rs_distortion, DISTORTION)
+    RS_IMPLEMENT_IS_VALID(rs_option, OPTION)
     #undef RS_IMPLEMENT_IS_VALID
 
     const char * get_string(rs_stream value);
     const char * get_string(rs_format value);
     const char * get_string(rs_preset value);
     const char * get_string(rs_distortion value);
+    const char * get_string(rs_option value);
 
     // World's tiniest linear algebra library
     struct float3 { float x,y,z; float & operator [] (int i) { return (&x)[i]; } };

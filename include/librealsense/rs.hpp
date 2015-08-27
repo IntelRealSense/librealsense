@@ -33,13 +33,15 @@ namespace rs
     typedef rs_format       format;
     typedef rs_preset       preset;
     typedef rs_distortion   distortion;
+    typedef rs_option       option;
     typedef rs_intrinsics   intrinsics;
     typedef rs_extrinsics   extrinsics;
 
-    inline const char *     get_name(stream s) { return rs_get_stream_name(s, auto_error()); }
-    inline const char *     get_name(format f) { return rs_get_format_name(f, auto_error()); }
-    inline const char *     get_name(preset p) { return rs_get_preset_name(p, auto_error()); }
-    inline const char *     get_name(distortion d) { return rs_get_distortion_name(d, auto_error()); }
+    inline const char *     get_name(stream s)                                                      { return rs_get_stream_name(s, auto_error()); }
+    inline const char *     get_name(format f)                                                      { return rs_get_format_name(f, auto_error()); }
+    inline const char *     get_name(preset p)                                                      { return rs_get_preset_name(p, auto_error()); }
+    inline const char *     get_name(distortion d)                                                  { return rs_get_distortion_name(d, auto_error()); }
+    inline const char *     get_name(option d)                                                      { return rs_get_option_name(d, auto_error()); }
 
 	class camera
 	{
@@ -65,6 +67,10 @@ namespace rs
 
         intrinsics          get_stream_intrinsics(stream s)                         				{ intrinsics intrin; rs_get_stream_intrinsics(cam, s, &intrin, auto_error()); return intrin; }
         extrinsics          get_stream_extrinsics(stream from, stream to)       					{ extrinsics extrin; rs_get_stream_extrinsics(cam, from, to, &extrin, auto_error()); return extrin; }
+
+        bool                supports_option(option o) const                                         { return rs_camera_supports_option(cam, o, auto_error()); }
+        void                set_option(option o, int value)                                         { rs_set_camera_option(cam, o, value, auto_error()); }
+        int                 get_option(option o)                                                    { return rs_get_camera_option(cam, o, auto_error()); }
 	};
 
 	class context
@@ -82,9 +88,10 @@ namespace rs
 	};
 }
 
-std::ostream & operator << (std::ostream & o, rs::stream s) { return o << rs::get_name(s); }
-std::ostream & operator << (std::ostream & o, rs::format f) { return o << rs::get_name(f); }
-std::ostream & operator << (std::ostream & o, rs::preset p) { return o << rs::get_name(p); }
-std::ostream & operator << (std::ostream & o, rs::distortion d) { return o << rs::get_name(d); }
+std::ostream &              operator << (std::ostream & out, rs::stream stream)                     { return out << rs::get_name(stream); }
+std::ostream &              operator << (std::ostream & out, rs::format format)                     { return out << rs::get_name(format); }
+std::ostream &              operator << (std::ostream & out, rs::preset preset)                     { return out << rs::get_name(preset); }
+std::ostream &              operator << (std::ostream & out, rs::distortion distortion)             { return out << rs::get_name(distortion); }
+std::ostream &              operator << (std::ostream & out, rs::option option)                     { return out << rs::get_name(option); }
 
 #endif
