@@ -33,7 +33,7 @@
 #define IVCAM_DEPTH_ERROR               4
 #define IVCAM_DEPTH_FILTER_OPTION       5
 #define IVCAM_DEPTH_CONFIDENCE_THRESH   6
-#define IVCAM_DEPTH_DYNAMIC_FPS         7
+#define IVCAM_DEPTH_DYNAMIC_FPS         7 // Only available on IVCAM 1.5 / SR300
 
 #define IVCAM_COLOR_EXPOSURE_PRIORITY   1
 #define IVCAM_COLOR_AUTO_FLICKER        2
