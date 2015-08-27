@@ -14,6 +14,7 @@ namespace rsimpl
 
         calibration_info retrieve_calibration() override final;
         void set_stream_intent() override final;
+        
     };
 }
 

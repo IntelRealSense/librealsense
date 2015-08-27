@@ -71,7 +71,7 @@ protected:
     std::shared_ptr<stream_buffer>                  streams[RS_STREAM_NUM];     // Indexed by RS_DEPTH, RS_COLOR, ...
     std::vector<std::unique_ptr<subdevice_handle>>  subdevices;                 // Indexed by UVC subdevices number (0, 1, 2...)
 
-    uvc_device_handle_t *                           first_handle;
+    uvc_device_handle_t *                           first_handle = nullptr;
     rsimpl::calibration_info                        calib;
     bool                                            is_capturing;
   
@@ -84,8 +84,10 @@ public:
     void                                            enable_stream(rs_stream stream, int width, int height, rs_format format, int fps);
     void                                            enable_stream_preset(rs_stream stream, rs_preset preset);
     bool                                            is_stream_enabled(rs_stream stream) const { return (bool)streams[stream]; }
+    void                                            configure_enabled_streams();
     void                                            start_capture();
     void                                            stop_capture();
+    bool                                            is_streaming() { return is_capturing; }
 
     void                                            wait_all_streams();
     rs_format                                       get_image_format(rs_stream stream) const { if(!streams[stream]) throw std::runtime_error("stream not enabled"); return streams[stream]->get_mode().format; }

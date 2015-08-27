@@ -108,5 +108,6 @@ namespace rsimpl
             if (!r200::set_stream_intent(first_handle, streamIntent)) throw std::runtime_error("could not set stream intent");
         }
     }
+
 }
 
