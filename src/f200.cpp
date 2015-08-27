@@ -7,13 +7,25 @@ namespace rsimpl
     static static_camera_info get_f200_info()
     {
         static_camera_info info;
+
         // Color modes on subdevice 0
         info.stream_subdevices[RS_STREAM_COLOR] = 0;
         info.subdevice_modes.push_back({0, 640, 480, UVC_FRAME_FORMAT_YUYV, 60, {{RS_STREAM_COLOR, 640, 480, RS_FORMAT_RGB8, 60, COLOR_480P}}, &unpack_yuyv_to_rgb});
         info.subdevice_modes.push_back({0, 1920, 1080, UVC_FRAME_FORMAT_YUYV, 60, {{RS_STREAM_COLOR, 1920, 1080, RS_FORMAT_RGB8, 60, COLOR_1080P}}, &unpack_yuyv_to_rgb});
+
         // Depth modes on subdevice 1
         info.stream_subdevices[RS_STREAM_DEPTH] = 1;
         info.subdevice_modes.push_back({1, 640, 480, UVC_FRAME_FORMAT_INVR, 60, {{RS_STREAM_DEPTH, 640, 480, RS_FORMAT_Z16, 60, DEPTH_480P}}, &unpack_strided_image});
+
+        info.presets[RS_STREAM_DEPTH][RS_PRESET_BEST_QUALITY] = {true, 640, 480, RS_FORMAT_Z16,  60};
+        info.presets[RS_STREAM_COLOR][RS_PRESET_BEST_QUALITY] = {true, 640, 480, RS_FORMAT_RGB8, 60};
+
+        info.presets[RS_STREAM_DEPTH][RS_PRESET_LARGEST_IMAGE] = {true,  640,  480, RS_FORMAT_Z16,  60};
+        info.presets[RS_STREAM_COLOR][RS_PRESET_LARGEST_IMAGE] = {true, 1920, 1080, RS_FORMAT_RGB8, 60};
+
+        info.presets[RS_STREAM_DEPTH][RS_PRESET_HIGHEST_FRAMERATE] = {true, 640, 480, RS_FORMAT_Z16,  60};
+        info.presets[RS_STREAM_COLOR][RS_PRESET_HIGHEST_FRAMERATE] = {true, 640, 480, RS_FORMAT_RGB8, 60};
+
         return info;
     }
 

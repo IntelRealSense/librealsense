@@ -2,8 +2,9 @@
 #include "image.h"
 #include "camera.h"
 
-#include <array>
+#include <cstring>
 #include <algorithm>
+#include <array>
 
 namespace rsimpl
 {
@@ -88,6 +89,12 @@ namespace rsimpl
     {
         assert(mode.format == UVC_FRAME_FORMAT_YUYV && mode.streams.size() == 1 && mode.streams[0].format == RS_FORMAT_RGB8);
         convert_yuyv_to_rgb((uint8_t *) dest[0], mode.width, mode.height, source);
+    }
+
+    static_camera_info::static_camera_info()
+    {
+        for(auto & s : stream_subdevices) s = -1;
+        for(auto & s : presets) for(auto & p : s) p = {};
     }
 
     const subdevice_mode * static_camera_info::select_mode(const stream_request (& requests)[RS_STREAM_NUM], int subdevice_index) const

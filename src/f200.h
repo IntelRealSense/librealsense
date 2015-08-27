@@ -17,15 +17,6 @@ namespace rsimpl
         f200_camera(uvc_context_t * ctx, uvc_device_t * device);
         ~f200_camera();
 
-        void enable_stream_preset(rs_stream stream, rs_preset preset) override final
-        {
-            switch(stream)
-            {
-            case RS_STREAM_DEPTH: enable_stream(stream, 640, 480, RS_FORMAT_Z16, 60); break;
-            case RS_STREAM_COLOR: enable_stream(stream, 640, 480, RS_FORMAT_RGB8, 60); break;
-            default: throw std::runtime_error("unsupported stream");
-            }
-        }
         calibration_info retrieve_calibration() override final;
         void set_stream_intent() override final {}
         

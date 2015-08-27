@@ -82,6 +82,7 @@ public:
     const char *                                    get_name() const { return camera_name.c_str(); }
 
     void                                            enable_stream(rs_stream stream, int width, int height, rs_format format, int fps);
+    void                                            enable_stream_preset(rs_stream stream, rs_preset preset);
     bool                                            is_stream_enabled(rs_stream stream) const { return (bool)streams[stream]; }
     void                                            start_capture();
     void                                            stop_capture();
@@ -93,7 +94,6 @@ public:
     rs_intrinsics                                   get_stream_intrinsics(rs_stream stream) const;
     rs_extrinsics                                   get_stream_extrinsics(rs_stream from, rs_stream to) const;
 
-    virtual void                                    enable_stream_preset(rs_stream stream, rs_preset preset) = 0;
     virtual rsimpl::calibration_info                retrieve_calibration() = 0;
     virtual void                                    set_stream_intent() = 0;
 };

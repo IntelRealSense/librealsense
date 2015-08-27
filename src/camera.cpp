@@ -37,6 +37,12 @@ void rs_camera::enable_stream(rs_stream stream, int width, int height, rs_format
     requests[stream] = {true, width, height, format, fps};
 }
 
+void rs_camera::enable_stream_preset(rs_stream stream, rs_preset preset)
+{
+    if(!camera_info.presets[stream][preset].enabled) throw std::runtime_error("unsupported stream");
+    requests[stream] = camera_info.presets[stream][preset];
+}
+
 void rs_camera::start_capture()
 {
     for(auto & s : subdevices) s.reset();

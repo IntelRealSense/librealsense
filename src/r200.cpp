@@ -29,6 +29,21 @@ namespace rsimpl
             info.subdevice_modes.push_back({2, 1920, 1080, UVC_FRAME_FORMAT_YUYV, uvcFps, {{RS_STREAM_COLOR,    1920, 1080, RS_FORMAT_RGB8, fps, THIRD_HD }}, &unpack_yuyv_to_rgb});
             info.subdevice_modes.push_back({2,  640,  480, UVC_FRAME_FORMAT_YUYV, uvcFps, {{RS_STREAM_COLOR,     640,  480, RS_FORMAT_RGB8, fps, THIRD_VGA}}, &unpack_yuyv_to_rgb});
         }
+
+        info.presets[RS_STREAM_INFRARED][RS_PRESET_BEST_QUALITY] = {true, 492, 372, RS_FORMAT_Y8,   60};
+        info.presets[RS_STREAM_DEPTH   ][RS_PRESET_BEST_QUALITY] = {true, 480, 360, RS_FORMAT_Z16,  60};
+        info.presets[RS_STREAM_COLOR   ][RS_PRESET_BEST_QUALITY] = {true, 640, 480, RS_FORMAT_RGB8, 60};
+
+        info.presets[RS_STREAM_INFRARED][RS_PRESET_LARGEST_IMAGE] = {true,  640,  480, RS_FORMAT_Y8,   60};
+        info.presets[RS_STREAM_DEPTH   ][RS_PRESET_LARGEST_IMAGE] = {true,  628,  468, RS_FORMAT_Z16,  60};
+        info.presets[RS_STREAM_COLOR   ][RS_PRESET_LARGEST_IMAGE] = {true, 1920, 1080, RS_FORMAT_RGB8, 30};
+
+        info.presets[RS_STREAM_INFRARED][RS_PRESET_HIGHEST_FRAMERATE] = {true, 492, 372, RS_FORMAT_Y8,   90};
+        info.presets[RS_STREAM_DEPTH   ][RS_PRESET_HIGHEST_FRAMERATE] = {true, 480, 360, RS_FORMAT_Z16,  90};
+        info.presets[RS_STREAM_COLOR   ][RS_PRESET_HIGHEST_FRAMERATE] = {true, 640, 480, RS_FORMAT_RGB8, 60};
+
+        for(int i=0; i<RS_PRESET_NUM; ++i) info.presets[RS_STREAM_INFRARED_2][i] = info.presets[RS_STREAM_INFRARED][i];
+
         return info;
     }
 
@@ -40,18 +55,6 @@ namespace rsimpl
     r200_camera::~r200_camera()
     {
         if(first_handle) r200::force_firmware_reset(first_handle);
-    }
-
-    void r200_camera::enable_stream_preset(rs_stream stream, rs_preset preset)
-    {
-        switch(stream)
-        {
-        case RS_STREAM_DEPTH: enable_stream(stream, 480, 360, RS_FORMAT_Z16, 60); break;
-        case RS_STREAM_COLOR: enable_stream(stream, 640, 480, RS_FORMAT_RGB8, 60); break;
-        case RS_STREAM_INFRARED: enable_stream(stream, 492, 372, RS_FORMAT_Y8, 60); break;
-        case RS_STREAM_INFRARED_2: enable_stream(stream, 492, 372, RS_FORMAT_Y8, 60); break;
-        default: throw std::runtime_error("unsupported stream");
-        }
     }
 
     static rs_intrinsics MakeLeftRightIntrinsics(const r200::RectifiedIntrinsics & i)

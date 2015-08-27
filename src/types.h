@@ -71,10 +71,11 @@ namespace rsimpl
 
     struct static_camera_info
     {
-        int stream_subdevices[RS_STREAM_NUM];           // Which subdevice is used to support each stream, or -1 if stream is unavailable
-        std::vector<subdevice_mode> subdevice_modes;    // A list of available modes each subdevice can be put into
+        int stream_subdevices[RS_STREAM_NUM];                   // Which subdevice is used to support each stream, or -1 if stream is unavailable
+        std::vector<subdevice_mode> subdevice_modes;            // A list of available modes each subdevice can be put into
+        stream_request presets[RS_STREAM_NUM][RS_PRESET_NUM];   // Presets available for each stream
 
-        static_camera_info() { for(auto & s : stream_subdevices) s = -1; }
+        static_camera_info();
 
         const subdevice_mode * select_mode(const stream_request (&requests)[RS_STREAM_NUM], int subdevice_index) const;
     };
