@@ -44,6 +44,7 @@ namespace rsimpl
 
         for(int i=0; i<RS_PRESET_NUM; ++i) info.presets[RS_STREAM_INFRARED_2][i] = info.presets[RS_STREAM_INFRARED][i];
 
+        for(int i = RS_OPTION_R200_LR_AUTO_EXPOSURE_ENABLED; i <= RS_OPTION_R200_DISPARITY_SHIFT; ++i) info.option_supported[i] = true;
         return info;
     }
 
@@ -107,11 +108,6 @@ namespace rsimpl
         {
             if (!r200::set_stream_intent(first_handle, streamIntent)) throw std::runtime_error("could not set stream intent");
         }
-    }
-
-    bool r200_camera::supports_option(rs_option option) const
-    {
-        return option >= RS_OPTION_R200_LR_AUTO_EXPOSURE_ENABLED && option <= RS_OPTION_R200_DISPARITY_SHIFT;
     }
 
     void r200_camera::set_option(rs_option option, int value)

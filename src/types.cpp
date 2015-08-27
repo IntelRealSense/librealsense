@@ -122,6 +122,7 @@ namespace rsimpl
     {
         for(auto & s : stream_subdevices) s = -1;
         for(auto & s : presets) for(auto & p : s) p = {};
+        for(auto & o : option_supported) o = false;
     }
 
     const subdevice_mode * static_camera_info::select_mode(const stream_request (& requests)[RS_STREAM_NUM], int subdevice_index) const

@@ -17,7 +17,6 @@ namespace rsimpl
         f200_camera(uvc_context_t * ctx, uvc_device_t * device);
         ~f200_camera();
 
-        bool supports_option(rs_option option) const override final;
         calibration_info retrieve_calibration() override final;
         void set_stream_intent() override final {}
         void set_option(rs_option option, int value) override final;

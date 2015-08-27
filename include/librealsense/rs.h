@@ -94,41 +94,41 @@ struct rs_extrinsics
 };
 
 /* public function declarations */
-struct rs_context *	rs_create_context		     (int api_version, struct rs_error ** error);
-int					rs_get_camera_count		     (struct rs_context * context, struct rs_error ** error);
-struct rs_camera *	rs_get_camera			     (struct rs_context * context, int index, struct rs_error ** error);
-void				rs_delete_context		     (struct rs_context * context, struct rs_error ** error);
+struct rs_context *	rs_create_context		  (int api_version, struct rs_error ** error);
+int					rs_get_camera_count		  (struct rs_context * context, struct rs_error ** error);
+struct rs_camera *	rs_get_camera			  (struct rs_context * context, int index, struct rs_error ** error);
+void				rs_delete_context		  (struct rs_context * context, struct rs_error ** error);
 
-const char *        rs_get_camera_name           (struct rs_camera * camera, struct rs_error ** error);
+const char *        rs_get_camera_name        (struct rs_camera * camera, struct rs_error ** error);
 
-void				rs_enable_stream		     (struct rs_camera * camera, enum rs_stream stream, int width, int height, enum rs_format format, int fps, struct rs_error ** error);
-void				rs_enable_stream_preset	     (struct rs_camera * camera, enum rs_stream stream, enum rs_preset preset, struct rs_error ** error);
-int                 rs_is_stream_enabled         (struct rs_camera * camera, enum rs_stream stream, struct rs_error ** error);
+void				rs_enable_stream		  (struct rs_camera * camera, enum rs_stream stream, int width, int height, enum rs_format format, int fps, struct rs_error ** error);
+void				rs_enable_stream_preset	  (struct rs_camera * camera, enum rs_stream stream, enum rs_preset preset, struct rs_error ** error);
+int                 rs_is_stream_enabled      (struct rs_camera * camera, enum rs_stream stream, struct rs_error ** error);
 
-void 				rs_start_capture             (struct rs_camera * camera, struct rs_error ** error);
-void 				rs_stop_capture              (struct rs_camera * camera, struct rs_error ** error);
-void                rs_wait_all_streams          (struct rs_camera * camera, struct rs_error ** error);
+void 				rs_start_capture          (struct rs_camera * camera, struct rs_error ** error);
+void 				rs_stop_capture           (struct rs_camera * camera, struct rs_error ** error);
+void                rs_wait_all_streams       (struct rs_camera * camera, struct rs_error ** error);
 
-enum rs_format      rs_get_image_format          (struct rs_camera * camera, enum rs_stream stream, struct rs_error ** error);
-const void *        rs_get_image_pixels          (struct rs_camera * camera, enum rs_stream stream, struct rs_error ** error);
-float               rs_get_depth_scale           (struct rs_camera * camera, struct rs_error ** error);
+enum rs_format      rs_get_image_format       (struct rs_camera * camera, enum rs_stream stream, struct rs_error ** error);
+const void *        rs_get_image_pixels       (struct rs_camera * camera, enum rs_stream stream, struct rs_error ** error);
+float               rs_get_depth_scale        (struct rs_camera * camera, struct rs_error ** error);
 
-void                rs_get_stream_intrinsics     (struct rs_camera * camera, enum rs_stream stream, struct rs_intrinsics * intrin, struct rs_error ** error);
-void                rs_get_stream_extrinsics     (struct rs_camera * camera, enum rs_stream from, enum rs_stream to, struct rs_extrinsics * extrin, struct rs_error ** error);
+void                rs_get_stream_intrinsics  (struct rs_camera * camera, enum rs_stream stream, struct rs_intrinsics * intrin, struct rs_error ** error);
+void                rs_get_stream_extrinsics  (struct rs_camera * camera, enum rs_stream from, enum rs_stream to, struct rs_extrinsics * extrin, struct rs_error ** error);
 
-int                 rs_camera_supports_option   (struct rs_camera * camera, enum rs_option option, struct rs_error ** error);
-int                 rs_get_camera_option         (struct rs_camera * camera, enum rs_option option, struct rs_error ** error);
-void                rs_set_camera_option         (struct rs_camera * camera, enum rs_option option, int value, struct rs_error ** error);
+int                 rs_camera_supports_option (struct rs_camera * camera, enum rs_option option, struct rs_error ** error);
+int                 rs_get_camera_option      (struct rs_camera * camera, enum rs_option option, struct rs_error ** error);
+void                rs_set_camera_option      (struct rs_camera * camera, enum rs_option option, int value, struct rs_error ** error);
 
-const char *        rs_get_stream_name           (enum rs_stream stream, struct rs_error ** error);
-const char *        rs_get_format_name           (enum rs_format format, struct rs_error ** error);
-const char *        rs_get_preset_name           (enum rs_preset preset, struct rs_error ** error);
-const char *        rs_get_distortion_name       (enum rs_distortion distortion, struct rs_error ** error);
-const char *        rs_get_option_name           (enum rs_option option, struct rs_error ** error);
+const char *        rs_get_stream_name        (enum rs_stream stream, struct rs_error ** error);
+const char *        rs_get_format_name        (enum rs_format format, struct rs_error ** error);
+const char *        rs_get_preset_name        (enum rs_preset preset, struct rs_error ** error);
+const char *        rs_get_distortion_name    (enum rs_distortion distortion, struct rs_error ** error);
+const char *        rs_get_option_name        (enum rs_option option, struct rs_error ** error);
 
-const char *		rs_get_failed_function       (struct rs_error * error);
-const char *		rs_get_error_message	     (struct rs_error * error);
-void				rs_free_error			     (struct rs_error * error);
+const char *		rs_get_failed_function    (struct rs_error * error);
+const char *		rs_get_error_message	  (struct rs_error * error);
+void				rs_free_error			  (struct rs_error * error);
 
 #ifdef __cplusplus
 }

@@ -76,6 +76,7 @@ namespace rsimpl
         int stream_subdevices[RS_STREAM_NUM];                   // Which subdevice is used to support each stream, or -1 if stream is unavailable
         std::vector<subdevice_mode> subdevice_modes;            // A list of available modes each subdevice can be put into
         stream_request presets[RS_STREAM_NUM][RS_PRESET_NUM];   // Presets available for each stream
+        bool option_supported[RS_OPTION_NUM];                   // Whether or not a given option is supported on this camera
 
         static_camera_info();
 

@@ -19,13 +19,12 @@ namespace rsimpl
 
         info.presets[RS_STREAM_DEPTH][RS_PRESET_BEST_QUALITY] = {true, 640, 480, RS_FORMAT_Z16,  60};
         info.presets[RS_STREAM_COLOR][RS_PRESET_BEST_QUALITY] = {true, 640, 480, RS_FORMAT_RGB8, 60};
-
         info.presets[RS_STREAM_DEPTH][RS_PRESET_LARGEST_IMAGE] = {true,  640,  480, RS_FORMAT_Z16,  60};
         info.presets[RS_STREAM_COLOR][RS_PRESET_LARGEST_IMAGE] = {true, 1920, 1080, RS_FORMAT_RGB8, 60};
-
         info.presets[RS_STREAM_DEPTH][RS_PRESET_HIGHEST_FRAMERATE] = {true, 640, 480, RS_FORMAT_Z16,  60};
         info.presets[RS_STREAM_COLOR][RS_PRESET_HIGHEST_FRAMERATE] = {true, 640, 480, RS_FORMAT_RGB8, 60};
 
+        for(int i = RS_OPTION_F200_LASER_POWER; i <= RS_OPTION_F200_DYNAMIC_FPS; ++i) info.option_supported[i] = true;
         return info;
     }
 
@@ -170,11 +169,6 @@ namespace rsimpl
     bool set_dynamic_fps(uvc_device_handle_t * device, uint8_t dynamic_fps)
     {
         return xu_write(device, IVCAM_DEPTH_DYNAMIC_FPS, &dynamic_fps, sizeof(dynamic_fps));
-    }
-
-    bool f200_camera::supports_option(rs_option option) const
-    {
-        return option >= RS_OPTION_F200_LASER_POWER && option <= RS_OPTION_F200_DYNAMIC_FPS;
     }
 
     void f200_camera::set_option(rs_option option, int value)
