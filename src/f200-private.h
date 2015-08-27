@@ -89,7 +89,7 @@ struct IVCAMTesterData
 {
     int16_t TableValidation;
     int16_t TableVarsion;
-    OACOffsetData OACOffsetData;
+    OACOffsetData OACOffsetData_;
     IVCAMThermalLoopParams ThermalLoopParams;
     IVCAMTemperatureData TemperatureData;
 };

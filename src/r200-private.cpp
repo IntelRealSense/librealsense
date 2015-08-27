@@ -433,7 +433,7 @@ namespace rsimpl { namespace r200
 
     bool set_min_max_depth(uvc_device_handle_t * device, uint16_t min_depth, uint16_t max_depth)
     {
-        const uint16_t values[] = {min_depth, max_depth};
+        uint16_t values[] = {min_depth, max_depth};
         return xu_write(device, CONTROL_MIN_MAX, values, sizeof(values));
     }
 

@@ -85,13 +85,13 @@ namespace rs
 
 		int					get_camera_count()														{ return rs_get_camera_count(ctx, auto_error()); }
 		camera				get_camera(int index)													{ return rs_get_camera(ctx, index, auto_error()); }
-	};
+    };
 }
 
-std::ostream &              operator << (std::ostream & out, rs::stream stream)                     { return out << rs::get_name(stream); }
-std::ostream &              operator << (std::ostream & out, rs::format format)                     { return out << rs::get_name(format); }
-std::ostream &              operator << (std::ostream & out, rs::preset preset)                     { return out << rs::get_name(preset); }
-std::ostream &              operator << (std::ostream & out, rs::distortion distortion)             { return out << rs::get_name(distortion); }
-std::ostream &              operator << (std::ostream & out, rs::option option)                     { return out << rs::get_name(option); }
+inline std::ostream &       operator << (std::ostream & out, rs::stream stream)                     { return out << rs::get_name(stream); }
+inline std::ostream &       operator << (std::ostream & out, rs::format format)                     { return out << rs::get_name(format); }
+inline std::ostream &       operator << (std::ostream & out, rs::preset preset)                     { return out << rs::get_name(preset); }
+inline std::ostream &       operator << (std::ostream & out, rs::distortion distortion)             { return out << rs::get_name(distortion); }
+inline std::ostream &       operator << (std::ostream & out, rs::option option)                     { return out << rs::get_name(option); }
 
 #endif

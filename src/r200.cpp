@@ -167,7 +167,6 @@ namespace rsimpl
             break;
         }
         if(!result) throw std::runtime_error("failed to read option from device");
-        return value;
     }
 
     int r200_camera::get_option(rs_option option)
