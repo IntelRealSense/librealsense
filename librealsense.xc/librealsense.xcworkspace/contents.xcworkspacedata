@@ -2,6 +2,12 @@
 <Workspace
    version = "1.0">
    <FileRef
+      location = "group:c-capture.xcodeproj">
+   </FileRef>
+   <FileRef
+      location = "group:c-pointcloud.xcodeproj">
+   </FileRef>
+   <FileRef
       location = "group:/Users/Dimitri/Desktop/librealsense/librealsense.xc/cpp-capture.xcodeproj">
    </FileRef>
    <FileRef
