@@ -87,8 +87,8 @@ void rs_camera::configure_enabled_streams()
     if(calib.intrinsics.empty() && first_handle)
     {
         calib = retrieve_calibration();
-        uvc_print_diag(first_handle, stdout);
     }
+    uvc_print_diag(first_handle, stdout);
 }
 
 void rs_camera::start_capture()
