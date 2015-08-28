@@ -65,7 +65,7 @@ enum rs_option
     RS_OPTION_R200_LR_GAIN,                     /* 100 - 1600 (Units of 0.01) */
     RS_OPTION_R200_LR_EXPOSURE,                 /* > 0 (Units of 0.1 ms) */
     RS_OPTION_R200_EMITTER_ENABLED,             /* {0, 1} */
-    RS_OPTION_R200_DEPTH_CONTROL_PRESET,
+    RS_OPTION_R200_DEPTH_CONTROL_PRESET,        /* {0, 5}, 0 is default, 1-5 is low to high outlier rejection */
     RS_OPTION_R200_DEPTH_UNITS,                 /* > 0 */
     RS_OPTION_R200_DEPTH_CLAMP_MIN,             /* 0 - USHORT_MAX */
     RS_OPTION_R200_DEPTH_CLAMP_MAX,             /* 0 - USHORT_MAX */
