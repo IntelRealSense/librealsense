@@ -52,27 +52,21 @@ int main(int argc, char * argv[]) try
         glPushMatrix();
         glOrtho(0, 1280, 960, 0, -1, +1);
         glPixelZoom(1, -1);
-        int x=0, y=0;
+        int x=0;
         for(int i=0; i<ctx.get_camera_count(); ++i)
         {
             auto cam = ctx.get_camera(i);
             const auto c = cam.get_stream_intrinsics(RS_STREAM_COLOR), d = cam.get_stream_intrinsics(RS_STREAM_DEPTH);
             const int width = std::max(c.image_size[0], d.image_size[0]);
 
-            glRasterPos2i(x + (width - c.image_size[0])/2, y);
-            glPixelTransferf(GL_RED_SCALE, 1);
+            glRasterPos2i(x + (width - c.image_size[0])/2, 0);
             glDrawPixels(c.image_size[0], c.image_size[1], GL_RGB, GL_UNSIGNED_BYTE, cam.get_image_pixels(RS_STREAM_COLOR));
-            y += c.image_size[1];
 
-            glRasterPos2i(x + (width - d.image_size[0])/2, y);
-            glPixelTransferf(GL_RED_SCALE, 30);
-            glDrawPixels(d.image_size[0], d.image_size[1], GL_RED, GL_UNSIGNED_SHORT, cam.get_image_pixels(RS_STREAM_DEPTH));
-            y += d.image_size[1];
+            glRasterPos2i(x + (width - d.image_size[0])/2, c.image_size[1]);
+            draw_depth_histogram(reinterpret_cast<const uint16_t *>(cam.get_image_pixels(RS_STREAM_DEPTH)), d.image_size[0], d.image_size[1]);
 
             ttf_print(&font, x+(width-ttf_len(&font, cam.get_name()))/2, 24, cam.get_name());
             x += width;
-            y = 0;
-
         }
 
         glPopMatrix();
