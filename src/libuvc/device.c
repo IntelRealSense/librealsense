@@ -48,49 +48,49 @@ void uvc_free_device_info(uvc_device_info_t *info);
 
 uvc_error_t uvc_scan_control(uvc_device_t *dev, uvc_device_info_t *info);
 uvc_error_t uvc_parse_vc(uvc_device_t *dev,
-			 uvc_device_info_t *info,
-			 const unsigned char *block, size_t block_size);
+             uvc_device_info_t *info,
+             const unsigned char *block, size_t block_size);
 uvc_error_t uvc_parse_vc_extension_unit(uvc_device_t *dev,
-					uvc_device_info_t *info,
-					const unsigned char *block,
-					size_t block_size);
+                    uvc_device_info_t *info,
+                    const unsigned char *block,
+                    size_t block_size);
 uvc_error_t uvc_parse_vc_header(uvc_device_t *dev,
-				uvc_device_info_t *info,
-				const unsigned char *block, size_t block_size);
+                uvc_device_info_t *info,
+                const unsigned char *block, size_t block_size);
 uvc_error_t uvc_parse_vc_input_terminal(uvc_device_t *dev,
-					uvc_device_info_t *info,
-					const unsigned char *block,
-					size_t block_size);
+                    uvc_device_info_t *info,
+                    const unsigned char *block,
+                    size_t block_size);
 uvc_error_t uvc_parse_vc_processing_unit(uvc_device_t *dev,
-					 uvc_device_info_t *info,
-					 const unsigned char *block,
-					 size_t block_size);
+                     uvc_device_info_t *info,
+                     const unsigned char *block,
+                     size_t block_size);
 
 uvc_error_t uvc_scan_streaming(uvc_device_t *dev,
-			       uvc_device_info_t *info,
-			       int interface_idx);
+                   uvc_device_info_t *info,
+                   int interface_idx);
 uvc_error_t uvc_parse_vs(uvc_device_t *dev,
-			 uvc_device_info_t *info,
-			 uvc_streaming_interface_t *stream_if,
-			 const unsigned char *block, size_t block_size);
+             uvc_device_info_t *info,
+             uvc_streaming_interface_t *stream_if,
+             const unsigned char *block, size_t block_size);
 uvc_error_t uvc_parse_vs_format_uncompressed(uvc_streaming_interface_t *stream_if,
-					     const unsigned char *block,
-					     size_t block_size);
+                         const unsigned char *block,
+                         size_t block_size);
 uvc_error_t uvc_parse_vs_format_mjpeg(uvc_streaming_interface_t *stream_if,
-					     const unsigned char *block,
-					     size_t block_size);
+                         const unsigned char *block,
+                         size_t block_size);
 uvc_error_t uvc_parse_vs_frame_uncompressed(uvc_streaming_interface_t *stream_if,
-					    const unsigned char *block,
-					    size_t block_size);
+                        const unsigned char *block,
+                        size_t block_size);
 uvc_error_t uvc_parse_vs_frame_format(uvc_streaming_interface_t *stream_if,
-					    const unsigned char *block,
-					    size_t block_size);
+                        const unsigned char *block,
+                        size_t block_size);
 uvc_error_t uvc_parse_vs_frame_frame(uvc_streaming_interface_t *stream_if,
-					    const unsigned char *block,
-					    size_t block_size);
+                        const unsigned char *block,
+                        size_t block_size);
 uvc_error_t uvc_parse_vs_input_header(uvc_streaming_interface_t *stream_if,
-				      const unsigned char *block,
-				      size_t block_size);
+                      const unsigned char *block,
+                      size_t block_size);
 
 void LIBUSB_CALL _uvc_status_callback(struct libusb_transfer *transfer);
 
@@ -311,7 +311,7 @@ uvc_error_t uvc_open2(
  * 
  */
 uvc_error_t uvc_get_device_info(uvc_device_t *dev,
-				uvc_device_info_t **info) {
+                uvc_device_info_t **info) {
   return uvc_get_device_info2(dev, info, 0);
 }
 
@@ -327,8 +327,8 @@ uvc_error_t uvc_get_device_info(uvc_device_t *dev,
  */
 
 uvc_error_t uvc_get_device_info2(uvc_device_t *dev,
-				uvc_device_info_t **info,
-				int camera_number) {
+                uvc_device_info_t **info,
+                int camera_number) {
   uvc_error_t ret;
   uvc_device_info_t *internal_info;
 
@@ -341,8 +341,8 @@ uvc_error_t uvc_get_device_info2(uvc_device_t *dev,
   }
 
   if (libusb_get_config_descriptor(dev->usb_dev,
-				   0,
-				   &(internal_info->config)) != 0) {
+                   0,
+                   &(internal_info->config)) != 0) {
     free(internal_info);
     UVC_EXIT(UVC_ERROR_IO);
     return UVC_ERROR_IO;
@@ -487,7 +487,7 @@ uvc_error_t uvc_get_device_descriptor(
     libusb_close(usb_devh);
   } else {
     UVC_DEBUG("can't open device %04x:%04x, not fetching serial etc.",
-	      usb_desc.idVendor, usb_desc.idProduct);
+          usb_desc.idVendor, usb_desc.idProduct);
   }
 
   *desc = desc_internal;
@@ -587,19 +587,19 @@ uvc_error_t uvc_get_device_list(
     } else {
 
       for (interface_idx = 0;
-	   !got_interface && interface_idx < config->bNumInterfaces;
-	   ++interface_idx) {
+       !got_interface && interface_idx < config->bNumInterfaces;
+       ++interface_idx) {
         interface = &config->interface[interface_idx];
 
         for (altsetting_idx = 0;
-	     !got_interface && altsetting_idx < interface->num_altsetting;
-	     ++altsetting_idx) {
-	  if_desc = &interface->altsetting[altsetting_idx];
+         !got_interface && altsetting_idx < interface->num_altsetting;
+         ++altsetting_idx) {
+      if_desc = &interface->altsetting[altsetting_idx];
 
-	  /* Video, Streaming */
-	  if (if_desc->bInterfaceClass == 14 && if_desc->bInterfaceSubClass == 2) {
-	    got_interface = 1;
-	  }
+      /* Video, Streaming */
+      if (if_desc->bInterfaceClass == 14 && if_desc->bInterfaceSubClass == 2) {
+        got_interface = 1;
+      }
         }
       }
     }
@@ -913,8 +913,8 @@ uvc_error_t uvc_scan_control(uvc_device_t *dev, uvc_device_info_t *info) {
  * @ingroup device
  */
 uvc_error_t uvc_parse_vc_header(uvc_device_t *dev,
-				uvc_device_info_t *info,
-				const unsigned char *block, size_t block_size) {
+                uvc_device_info_t *info,
+                const unsigned char *block, size_t block_size) {
   size_t i;
   uvc_error_t scan_ret, ret = UVC_SUCCESS;
 
@@ -955,8 +955,8 @@ uvc_error_t uvc_parse_vc_header(uvc_device_t *dev,
  * @ingroup device
  */
 uvc_error_t uvc_parse_vc_input_terminal(uvc_device_t *dev,
-					uvc_device_info_t *info,
-					const unsigned char *block, size_t block_size) {
+                    uvc_device_info_t *info,
+                    const unsigned char *block, size_t block_size) {
   uvc_input_terminal_t *term;
   size_t i;
 
@@ -990,8 +990,8 @@ uvc_error_t uvc_parse_vc_input_terminal(uvc_device_t *dev,
  * @ingroup device
  */
 uvc_error_t uvc_parse_vc_processing_unit(uvc_device_t *dev,
-					 uvc_device_info_t *info,
-					 const unsigned char *block, size_t block_size) {
+                     uvc_device_info_t *info,
+                     const unsigned char *block, size_t block_size) {
   uvc_processing_unit_t *unit;
   size_t i;
 
@@ -1015,8 +1015,8 @@ uvc_error_t uvc_parse_vc_processing_unit(uvc_device_t *dev,
  * @ingroup device
  */
 uvc_error_t uvc_parse_vc_extension_unit(uvc_device_t *dev,
-					uvc_device_info_t *info,
-					const unsigned char *block, size_t block_size) {
+                    uvc_device_info_t *info,
+                    const unsigned char *block, size_t block_size) {
   uvc_extension_unit_t *unit = calloc(1, sizeof(*unit));
   const uint8_t *start_of_controls;
   int size_of_controls, num_in_pins;
@@ -1090,8 +1090,8 @@ uvc_error_t uvc_parse_vc(
  * @ingroup device
  */
 uvc_error_t uvc_scan_streaming(uvc_device_t *dev,
-			       uvc_device_info_t *info,
-			       int interface_idx) {
+                   uvc_device_info_t *info,
+                   int interface_idx) {
   const struct libusb_interface_descriptor *if_desc;
   const unsigned char *buffer;
   size_t buffer_left, block_size;
@@ -1133,8 +1133,8 @@ uvc_error_t uvc_scan_streaming(uvc_device_t *dev,
  * @ingroup device
  */
 uvc_error_t uvc_parse_vs_input_header(uvc_streaming_interface_t *stream_if,
-				      const unsigned char *block,
-				      size_t block_size) {
+                      const unsigned char *block,
+                      size_t block_size) {
   UVC_ENTER();
 
   stream_if->bEndpointAddress = block[6] & 0x8f;
@@ -1149,8 +1149,8 @@ uvc_error_t uvc_parse_vs_input_header(uvc_streaming_interface_t *stream_if,
  * @ingroup device
  */
 uvc_error_t uvc_parse_vs_format_uncompressed(uvc_streaming_interface_t *stream_if,
-					     const unsigned char *block,
-					     size_t block_size) {
+                         const unsigned char *block,
+                         size_t block_size) {
   UVC_ENTER();
 
   uvc_format_desc_t *format = calloc(1, sizeof(*format));
@@ -1179,8 +1179,8 @@ uvc_error_t uvc_parse_vs_format_uncompressed(uvc_streaming_interface_t *stream_i
  * @ingroup device
  */
 uvc_error_t uvc_parse_vs_frame_format(uvc_streaming_interface_t *stream_if,
-					     const unsigned char *block,
-					     size_t block_size) {
+                         const unsigned char *block,
+                         size_t block_size) {
   UVC_ENTER();
 
   uvc_format_desc_t *format = calloc(1, sizeof(*format));
@@ -1209,8 +1209,8 @@ uvc_error_t uvc_parse_vs_frame_format(uvc_streaming_interface_t *stream_if,
  * @ingroup device
  */
 uvc_error_t uvc_parse_vs_format_mjpeg(uvc_streaming_interface_t *stream_if,
-					     const unsigned char *block,
-					     size_t block_size) {
+                         const unsigned char *block,
+                         size_t block_size) {
   UVC_ENTER();
 
   uvc_format_desc_t *format = calloc(1, sizeof(*format));
@@ -1238,8 +1238,8 @@ uvc_error_t uvc_parse_vs_format_mjpeg(uvc_streaming_interface_t *stream_if,
  * @ingroup device
  */
 uvc_error_t uvc_parse_vs_frame_frame(uvc_streaming_interface_t *stream_if,
-					    const unsigned char *block,
-					    size_t block_size) {
+                        const unsigned char *block,
+                        size_t block_size) {
   uvc_format_desc_t *format;
   uvc_frame_desc_t *frame;
 
@@ -1290,8 +1290,8 @@ uvc_error_t uvc_parse_vs_frame_frame(uvc_streaming_interface_t *stream_if,
  * @ingroup device
  */
 uvc_error_t uvc_parse_vs_frame_uncompressed(uvc_streaming_interface_t *stream_if,
-					    const unsigned char *block,
-					    size_t block_size) {
+                        const unsigned char *block,
+                        size_t block_size) {
   uvc_format_desc_t *format;
   uvc_frame_desc_t *frame;
 
@@ -1486,7 +1486,7 @@ void uvc_process_status_xfer(uvc_device_handle_t *devh, struct libusb_transfer *
 
     if (transfer->actual_length < 5) {
       UVC_DEBUG("Short read of VideoControl status update (%d bytes)",
-		transfer->actual_length);
+        transfer->actual_length);
       UVC_EXIT_VOID();
       return;
     }
@@ -1528,7 +1528,7 @@ void uvc_process_status_xfer(uvc_device_handle_t *devh, struct libusb_transfer *
 
     if (!found_entity) {
       UVC_DEBUG("Got status update for unknown VideoControl entity %d",
-		(int) originator);
+        (int) originator);
       UVC_EXIT_VOID();
       return;
     }
