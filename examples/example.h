@@ -78,3 +78,30 @@ static float ttf_len(struct font * font, const char *text)
     }
     return x;
 }
+
+static void draw_depth_histogram(const uint16_t depth_image[], int width, int height)
+{
+    uint32_t histogram[0x10000] = {};
+    uint8_t rgb_image[640*480*3];
+    int i, d, f;
+    
+    for(i = 0; i < width*height; ++i) ++histogram[depth_image[i]];
+    for(i = 2; i < 0x10000; ++i) histogram[i] += histogram[i-1]; // Build a cumulative histogram for the indices in [1,0xFFFF]
+    for(i = 0; i < width*height; ++i)
+    {
+        if(d = depth_image[i])
+        {
+            f = histogram[d] * 255 / histogram[0xFFFF]; // 0-255 based on histogram location
+            rgb_image[i*3 + 0] = 255 - f;
+            rgb_image[i*3 + 1] = 0;
+            rgb_image[i*3 + 2] = f;
+        }
+        else
+        {
+            rgb_image[i*3 + 0] = 20;
+            rgb_image[i*3 + 1] = 5;
+            rgb_image[i*3 + 2] = 0;
+        }
+    }
+    glDrawPixels(width, height, GL_RGB, GL_UNSIGNED_BYTE, rgb_image);
+}

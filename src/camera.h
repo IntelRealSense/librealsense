@@ -19,8 +19,8 @@ namespace rsimpl
 
 struct rs_error
 {
-	std::string function;
-	std::string message;
+    std::string function;
+    std::string message;
 };
 
 struct rs_camera

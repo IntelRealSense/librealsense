@@ -21,12 +21,12 @@ static void translate_exception(const char * name, rs_error ** error)
 
 rs_context * rs_create_context(int api_version, rs_error ** error) try
 {
-	if (api_version != RS_API_VERSION) throw std::runtime_error("api version mismatch");
-	return new rs_context();
+    if (api_version != RS_API_VERSION) throw std::runtime_error("api version mismatch");
+    return new rs_context();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr)
 
-int	rs_get_camera_count(rs_context * context, rs_error ** error) try
+int rs_get_camera_count(rs_context * context, rs_error ** error) try
 {
     VALIDATE_NOT_NULL(context);
     return (int)context->cameras.size();

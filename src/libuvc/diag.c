@@ -228,8 +228,8 @@ void uvc_print_diag(uvc_device_handle_t *devh, FILE *stream) {
                      ++interval_ptr) {
                   fprintf(stream,
                       "\t\t\t  interval[%d]: 1/%d\n",
-		      (int) (interval_ptr - frame_desc->intervals),
-		      10000000 / *interval_ptr);
+              (int) (interval_ptr - frame_desc->intervals),
+              10000000 / *interval_ptr);
                 }
               } else {
                 fprintf(stream,

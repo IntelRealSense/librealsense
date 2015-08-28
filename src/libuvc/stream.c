@@ -95,28 +95,28 @@ struct format_table_entry *_get_format_entry(enum uvc_frame_format format) {
     return &_fmt##_entry; }
 
   switch(format) {
-		/* Define new formats here */
-		ABS_FMT(UVC_FRAME_FORMAT_ANY, 2,
-		{UVC_FRAME_FORMAT_UNCOMPRESSED, UVC_FRAME_FORMAT_COMPRESSED})
+        /* Define new formats here */
+        ABS_FMT(UVC_FRAME_FORMAT_ANY, 2,
+        {UVC_FRAME_FORMAT_UNCOMPRESSED, UVC_FRAME_FORMAT_COMPRESSED})
 
-		ABS_FMT(UVC_FRAME_FORMAT_UNCOMPRESSED, 3,
-		{UVC_FRAME_FORMAT_Y12I, UVC_FRAME_FORMAT_Y16, UVC_FRAME_FORMAT_Y8, UVC_FRAME_FORMAT_Z16, UVC_FRAME_FORMAT_YUYV, UVC_FRAME_FORMAT_UYVY, UVC_FRAME_FORMAT_GRAY8})
-		FMT(UVC_FRAME_FORMAT_Y12I,
-		{'Y',  '1',  '2',  'I', 0x00, 0x00, 0x10, 0x00, 0x80, 0x00, 0x00, 0xaa, 0x00, 0x38, 0x9b, 0x71})
-		FMT(UVC_FRAME_FORMAT_Y16,
-		{'Y',  '1',  '6',  ' ', 0x00, 0x00, 0x10, 0x00, 0x80, 0x00, 0x00, 0xaa, 0x00, 0x38, 0x9b, 0x71})
-		FMT(UVC_FRAME_FORMAT_Y8,
-		{'Y',  '8',  ' ',  ' ', 0x00, 0x00, 0x10, 0x00, 0x80, 0x00, 0x00, 0xaa, 0x00, 0x38, 0x9b, 0x71})
-		FMT(UVC_FRAME_FORMAT_Z16,
-		{'Z',  '1',  '6',  ' ', 0x00, 0x00, 0x10, 0x00, 0x80, 0x00, 0x00, 0xaa, 0x00, 0x38, 0x9b, 0x71})
-		FMT(UVC_FRAME_FORMAT_YUYV,
-		{'Y',  'U',  'Y',  '2', 0x00, 0x00, 0x10, 0x00, 0x80, 0x00, 0x00, 0xaa, 0x00, 0x38, 0x9b, 0x71})
-		FMT(UVC_FRAME_FORMAT_UYVY,
-		{'U',  'Y',  'V',  'Y', 0x00, 0x00, 0x10, 0x00, 0x80, 0x00, 0x00, 0xaa, 0x00, 0x38, 0x9b, 0x71})
-		FMT(UVC_FRAME_FORMAT_GRAY8,
-		{'Y',  '8',  '0',  '0', 0x00, 0x00, 0x10, 0x00, 0x80, 0x00, 0x00, 0xaa, 0x00, 0x38, 0x9b, 0x71})
-		FMT(UVC_FRAME_FORMAT_BY8,
-		{'B',  'Y',  '8',  ' ', 0x00, 0x00, 0x10, 0x00, 0x80, 0x00, 0x00, 0xaa, 0x00, 0x38, 0x9b, 0x71})
+        ABS_FMT(UVC_FRAME_FORMAT_UNCOMPRESSED, 3,
+        {UVC_FRAME_FORMAT_Y12I, UVC_FRAME_FORMAT_Y16, UVC_FRAME_FORMAT_Y8, UVC_FRAME_FORMAT_Z16, UVC_FRAME_FORMAT_YUYV, UVC_FRAME_FORMAT_UYVY, UVC_FRAME_FORMAT_GRAY8})
+        FMT(UVC_FRAME_FORMAT_Y12I,
+        {'Y',  '1',  '2',  'I', 0x00, 0x00, 0x10, 0x00, 0x80, 0x00, 0x00, 0xaa, 0x00, 0x38, 0x9b, 0x71})
+        FMT(UVC_FRAME_FORMAT_Y16,
+        {'Y',  '1',  '6',  ' ', 0x00, 0x00, 0x10, 0x00, 0x80, 0x00, 0x00, 0xaa, 0x00, 0x38, 0x9b, 0x71})
+        FMT(UVC_FRAME_FORMAT_Y8,
+        {'Y',  '8',  ' ',  ' ', 0x00, 0x00, 0x10, 0x00, 0x80, 0x00, 0x00, 0xaa, 0x00, 0x38, 0x9b, 0x71})
+        FMT(UVC_FRAME_FORMAT_Z16,
+        {'Z',  '1',  '6',  ' ', 0x00, 0x00, 0x10, 0x00, 0x80, 0x00, 0x00, 0xaa, 0x00, 0x38, 0x9b, 0x71})
+        FMT(UVC_FRAME_FORMAT_YUYV,
+        {'Y',  'U',  'Y',  '2', 0x00, 0x00, 0x10, 0x00, 0x80, 0x00, 0x00, 0xaa, 0x00, 0x38, 0x9b, 0x71})
+        FMT(UVC_FRAME_FORMAT_UYVY,
+        {'U',  'Y',  'V',  'Y', 0x00, 0x00, 0x10, 0x00, 0x80, 0x00, 0x00, 0xaa, 0x00, 0x38, 0x9b, 0x71})
+        FMT(UVC_FRAME_FORMAT_GRAY8,
+        {'Y',  '8',  '0',  '0', 0x00, 0x00, 0x10, 0x00, 0x80, 0x00, 0x00, 0xaa, 0x00, 0x38, 0x9b, 0x71})
+        FMT(UVC_FRAME_FORMAT_BY8,
+        {'B',  'Y',  '8',  ' ', 0x00, 0x00, 0x10, 0x00, 0x80, 0x00, 0x00, 0xaa, 0x00, 0x38, 0x9b, 0x71})
           
         FMT(UVC_FRAME_FORMAT_INVI,
         {'I', 'N', 'V', 'I', 0xdb, 0x57, 0x49, 0x5e, 0x8e, 0x3f, 0xf4, 0x79, 0x53, 0x2b, 0x94, 0x6f})
@@ -129,10 +129,10 @@ struct format_table_entry *_get_format_entry(enum uvc_frame_format format) {
         FMT(UVC_FRAME_FORMAT_INRI,
         {'I','N','R','I', 0x90, 0x2d, 0x58, 0x4a, 0x92, 0x0b, 0x77, 0x3f, 0x1f, 0x2c, 0x55, 0x6b})
 
-		ABS_FMT(UVC_FRAME_FORMAT_COMPRESSED, 1,
-		{UVC_FRAME_FORMAT_MJPEG})
-		FMT(UVC_FRAME_FORMAT_MJPEG,
-		{'M',  'J',  'P',  'G'})
+        ABS_FMT(UVC_FRAME_FORMAT_COMPRESSED, 1,
+        {UVC_FRAME_FORMAT_MJPEG})
+        FMT(UVC_FRAME_FORMAT_MJPEG,
+        {'M',  'J',  'P',  'G'})
 
     default:
       return NULL;
@@ -1066,7 +1066,7 @@ void _uvc_populate_frame(uvc_stream_handle_t *strmh) {
    */
 
   frame_desc = uvc_find_frame_desc(strmh->devh, strmh->cur_ctrl.bFormatIndex,
-				   strmh->cur_ctrl.bFrameIndex);
+                   strmh->cur_ctrl.bFrameIndex);
 
   frame->frame_format = strmh->frame_format;
   
@@ -1103,8 +1103,8 @@ void _uvc_populate_frame(uvc_stream_handle_t *strmh) {
  * @param timeout_us >0: Wait at most N microseconds; 0: Wait indefinitely; -1: return immediately
  */
 uvc_error_t uvc_stream_get_frame(uvc_stream_handle_t *strmh,
-			  uvc_frame_t **frame,
-			  int32_t timeout_us) {
+              uvc_frame_t **frame,
+              int32_t timeout_us) {
   time_t add_secs;
   time_t add_nsecs;
   struct timespec ts;
