@@ -4,7 +4,7 @@
 #include "rs.h"
 
 #include <string>
-#include <ostream>
+#include <sstream>
 #include <stdexcept>
 
 namespace rs
@@ -12,10 +12,11 @@ namespace rs
     // Modify this function if you wish to change error handling behavior from throwing exceptions to logging / callbacks / global status, etc.
     inline void handle_error(rs_error * error)
     {
-        std::string message = std::string("error calling ") + rs_get_failed_function(error) + "(...):\n  " + rs_get_error_message(error);
+        std::ostringstream ss;
+        ss << rs_get_error_message(error) << " (" << rs_get_failed_function(error) << '(' << rs_get_failed_args(error) << "))";
         rs_free_error(error);
-        throw std::runtime_error(message);
-        // std::cerr << message << std::endl;
+        throw std::runtime_error(ss.str());
+        // std::cerr << ss.str() << std::endl;
     }
 
     class auto_error

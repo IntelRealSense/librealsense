@@ -5,28 +5,36 @@
 // API implementation //
 ////////////////////////
 
-template<class T> void stream_args(std::ostream & out, const T & last) { out << last; }
-template<class T, class... U> void stream_args(std::ostream & out, const T & first, const U &... rest) { out << first << ", "; stream_args(out, rest...); }
-
 struct rs_error
 {
     std::string message;
     const char * function;
     std::string args;
 };
-// This facility allows for translation of exceptions to rs_error structs at the API boundary
-static void translate_exception(const char * name, std::string args, rs_error ** error)
-{
-    try { throw; }
-    catch (const std::exception & e) { if (error) *error = new rs_error {e.what(), name, move(args)}; } // TODO: Handle case where THIS code throws
-    catch (...) { if (error) *error = new rs_error {"unknown error", name, move(args)}; } // TODO: Handle case where THIS code throws
-}
-#define HANDLE_EXCEPTIONS_AND_RETURN(R, ...) catch(...) { std::ostringstream ss; stream_args(ss, __VA_ARGS__); translate_exception(__FUNCTION__, ss.str(), error); return R; }
 
-// These macros provide mechanisms for reporting invalid argument errors
-#define VALIDATE_NOT_NULL(ARG) if(!ARG) throw std::runtime_error("null pointer passed for argument " #ARG);
-#define VALIDATE_ENUM(ARG) if(!rsimpl::is_valid(ARG)) { std::ostringstream ss; ss << "invalid enum value (" << ARG << ") passed for argument " #ARG; throw std::runtime_error(ss.str()); }
-#define VALIDATE_RANGE(ARG, MIN, MAX) if(ARG < MIN || ARG > MAX) { std::ostringstream ss; ss << "out of range value (" << ARG << ") passed for argument " #ARG; throw std::runtime_error(ss.str()); }
+// This facility allows for translation of exceptions to rs_error structs at the API boundary
+namespace rsimpl
+{
+    template<class T> void stream_args(std::ostream & out, const char * names, const T & last) { out << names << ':' << last; }
+    template<class T, class... U> void stream_args(std::ostream & out, const char * names, const T & first, const U &... rest)
+    {
+        while(*names && *names != ',') out << *names++;
+        out << ':' << first << ", ";
+        while(*names && (*names == ',' || isspace(*names))) ++names;
+        stream_args(out, names, rest...);
+    }
+
+    static void translate_exception(const char * name, std::string args, rs_error ** error)
+    {
+        try { throw; }
+        catch (const std::exception & e) { if (error) *error = new rs_error {e.what(), name, move(args)}; } // TODO: Handle case where THIS code throws
+        catch (...) { if (error) *error = new rs_error {"unknown error", name, move(args)}; } // TODO: Handle case where THIS code throws
+    }
+}
+#define HANDLE_EXCEPTIONS_AND_RETURN(R, ...) catch(...) { std::ostringstream ss; rsimpl::stream_args(ss, #__VA_ARGS__, __VA_ARGS__); rsimpl::translate_exception(__FUNCTION__, ss.str(), error); return R; }
+#define VALIDATE_NOT_NULL(ARG) if(!ARG) throw std::runtime_error("null pointer passed for argument \"" #ARG "\"");
+#define VALIDATE_ENUM(ARG) if(!rsimpl::is_valid(ARG)) { std::ostringstream ss; ss << "bad enum value for argument \"" #ARG "\""; throw std::runtime_error(ss.str()); }
+#define VALIDATE_RANGE(ARG, MIN, MAX) if(ARG < MIN || ARG > MAX) { std::ostringstream ss; ss << "out of range value for argument \"" #ARG "\""; throw std::runtime_error(ss.str()); }
 
 rs_context * rs_create_context(int api_version, rs_error ** error) try
 {

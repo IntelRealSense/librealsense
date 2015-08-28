@@ -13,19 +13,15 @@
 namespace rsimpl
 {
     // Enumerated type support
-    #define RS_IMPLEMENT_IS_VALID(TYPE, PREFIX) inline bool is_valid(TYPE value) { return value >= RS_##PREFIX##_BEGIN_RANGE && value <= RS_##PREFIX##_END_RANGE; }
-    RS_IMPLEMENT_IS_VALID(rs_stream, STREAM)
-    RS_IMPLEMENT_IS_VALID(rs_format, FORMAT)
-    RS_IMPLEMENT_IS_VALID(rs_preset, PRESET)
-    RS_IMPLEMENT_IS_VALID(rs_distortion, DISTORTION)
-    RS_IMPLEMENT_IS_VALID(rs_option, OPTION)
-    #undef RS_IMPLEMENT_IS_VALID
-
-    const char * get_string(rs_stream value);
-    const char * get_string(rs_format value);
-    const char * get_string(rs_preset value);
-    const char * get_string(rs_distortion value);
-    const char * get_string(rs_option value);
+    #define RS_ENUM_HELPERS(TYPE, PREFIX) const char * get_string(TYPE value); \
+        inline bool is_valid(TYPE value) { return value >= RS_##PREFIX##_BEGIN_RANGE && value <= RS_##PREFIX##_END_RANGE; } \
+        inline std::ostream & operator << (std::ostream & out, TYPE value) { if(is_valid(value)) return out << get_string(value); else return out << (int)value; }
+    RS_ENUM_HELPERS(rs_stream, STREAM)
+    RS_ENUM_HELPERS(rs_format, FORMAT)
+    RS_ENUM_HELPERS(rs_preset, PRESET)
+    RS_ENUM_HELPERS(rs_distortion, DISTORTION)
+    RS_ENUM_HELPERS(rs_option, OPTION)
+    #undef RS_ENUM_HELPERS
 
     // World's tiniest linear algebra library
     struct float3 { float x,y,z; float & operator [] (int i) { return (&x)[i]; } };
