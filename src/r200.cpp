@@ -137,9 +137,7 @@ namespace rsimpl
             result = r200::set_emitter_state(first_handle, !!value);
             break;
         case RS_OPTION_R200_DEPTH_CONTROL_PRESET:
-            // TODO: Set dp according to value
-            //result = r200::set_depth_params(first_handle, dp);
-            result = false;
+            result = r200::set_depth_params(first_handle, r200::depth_params::presets[value]);
             break;
         case RS_OPTION_R200_DEPTH_UNITS:
             result = r200::set_depth_units(first_handle, value);
@@ -186,13 +184,24 @@ namespace rsimpl
         case RS_OPTION_R200_LR_GAIN:                  result = r200::get_lr_gain         (first_handle, u32[0], u32[1]); value = u32[1]; break;
         case RS_OPTION_R200_LR_EXPOSURE:              result = r200::get_lr_exposure     (first_handle, u32[0], u32[1]); value = u32[1]; break;
         case RS_OPTION_R200_EMITTER_ENABLED:          result = r200::get_emitter_state   (first_handle, b);              value = b; break;
-        case RS_OPTION_R200_DEPTH_CONTROL_PRESET:     result = r200::get_depth_params    (first_handle, dp);             value = 0; break;
         case RS_OPTION_R200_DEPTH_UNITS:              result = r200::get_depth_units     (first_handle, u32[0]);         value = u32[0]; break;
         case RS_OPTION_R200_DEPTH_CLAMP_MIN:          result = r200::get_min_max_depth   (first_handle, u16[0], u16[1]); value = u16[0]; break;
         case RS_OPTION_R200_DEPTH_CLAMP_MAX:          result = r200::get_min_max_depth   (first_handle, u16[0], u16[1]); value = u16[1]; break;
         case RS_OPTION_R200_DISPARITY_MODE_ENABLED:   result = r200::get_disparity_mode  (first_handle, dm);             value = dm.format == r200::range_format::RANGE_FORMAT_DISPARITY; break;
         case RS_OPTION_R200_DISPARITY_MULTIPLIER:     result = r200::get_disparity_mode  (first_handle, dm);             value = static_cast<int>(dm.multiplier); break;
         case RS_OPTION_R200_DISPARITY_SHIFT:          result = r200::get_disparity_shift (first_handle, u32[0]);         value = u32[0]; break;
+        case RS_OPTION_R200_DEPTH_CONTROL_PRESET:
+            if(r200::get_depth_params(first_handle, dp))
+            {
+                for(int i=0; i<r200::depth_params::MAX_PRESETS; ++i)
+                {
+                    if(memcmp(&dp, &r200::depth_params::presets[i], sizeof(dp)) == 0)
+                    {
+                        return i;
+                    }
+                }
+            }
+            break;
         }
         if(!result) throw std::runtime_error("failed to read option from device");
         return value;

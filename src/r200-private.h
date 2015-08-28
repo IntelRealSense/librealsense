@@ -81,16 +81,6 @@ namespace rsimpl { namespace r200
         uint16_t region_of_interest_bottom_right;
     };
 
-    enum class ds_preset : uint8_t
-    {
-        DEPTH_PRESET_OFF = 0,       // Disable almost all hardware-based outlier removal
-        DEPTH_PRESET_LOW,           // Provide a depthmap with a lower number of outliers removed, which has minimal false negatives.
-        DEPTH_PRESET_MEDIUM,        // Provide a depthmap with a medium number of outliers removed, which has balanced approach.
-        DEPTH_PRESET_HIGH,          // Provide a depthmap with a higher number of outliers removed, which has minimal false positives.
-        DEPTH_PRESET_OPTIMIZED,     // Provide a depthmap with a medium/high number of outliers removed. Derived from an optimization function.
-        DEPTH_PRESET_DEFAULT,       // Default settings on chip. Similiar to the medium setting and best for outdoors.
-    };
-    
     struct depth_params
     {
         uint32_t robbins_munroe_minus_inc;
@@ -103,6 +93,9 @@ namespace rsimpl { namespace r200
         uint32_t second_peak_thresh;
         uint32_t neighbor_thresh;
         uint32_t lr_thresh;
+
+        enum { MAX_PRESETS = 6 };
+        static const depth_params presets[MAX_PRESETS];
     };
 
     enum class range_format : uint32_t
@@ -116,19 +109,6 @@ namespace rsimpl { namespace r200
         range_format format;
         uint64_t multiplier;
     };
-    
-    inline depth_params depth_control_preset_for_enum(ds_preset preset)
-    {
-        switch (preset)
-        {
-            case ds_preset::DEPTH_PRESET_OFF: return { 5, 5, 0, 0, 1023, 0, 0, 0, 0, 2047};
-            case ds_preset::DEPTH_PRESET_LOW:  return {5, 5, 115, 1, 512, 6, 18, 25, 3, 24};
-            case ds_preset::DEPTH_PRESET_MEDIUM: return {5, 5, 185, 5, 505, 6, 35, 45, 45, 14};
-            case ds_preset::DEPTH_PRESET_HIGH: return {5, 5, 235, 27, 420, 8, 80, 70, 90, 12};
-            case ds_preset::DEPTH_PRESET_OPTIMIZED: return {5, 5, 175, 24, 430, 6, 48, 47, 24, 12};
-            case ds_preset::DEPTH_PRESET_DEFAULT: return {5, 5, 192, 1, 512, 6, 24, 27, 7, 24};
-        }
-    }
     
     // Hardware API for R200 camera
     std::string read_firmware_version(uvc_device_handle_t * device);
