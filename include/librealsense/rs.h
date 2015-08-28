@@ -128,6 +128,7 @@ const char *        rs_get_distortion_name      (enum rs_distortion distortion, 
 const char *        rs_get_option_name          (enum rs_option option, struct rs_error ** error);
 
 const char *        rs_get_failed_function      (struct rs_error * error);
+const char *        rs_get_failed_args          (struct rs_error * error);
 const char *        rs_get_error_message        (struct rs_error * error);
 void                rs_free_error               (struct rs_error * error);
 
