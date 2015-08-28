@@ -39,9 +39,7 @@ void draw_stream(rs::camera & cam, rs::stream stream, int x, int y)
     switch(format)
     {
     case RS_FORMAT_Z16:
-        glPixelTransferf(GL_RED_SCALE, 30);
-        glDrawPixels(width, height, GL_RED, GL_UNSIGNED_SHORT, pixels);
-        glPixelTransferf(GL_RED_SCALE, 1);
+        draw_depth_histogram(reinterpret_cast<const uint16_t *>(pixels), width, height);
         break;
     case RS_FORMAT_Y8:
         glDrawPixels(width, height, GL_LUMINANCE, GL_UNSIGNED_BYTE, pixels);
