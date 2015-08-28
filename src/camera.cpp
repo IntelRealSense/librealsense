@@ -1,6 +1,8 @@
 #include "camera.h"
 #include "image.h"
 
+#include <iostream>
+
 using namespace rsimpl;
 
 ////////////////
@@ -86,6 +88,7 @@ void rs_camera::configure_enabled_streams()
     {
         calib = retrieve_calibration();
     }
+    uvc_print_diag(first_handle, stdout);
 }
 
 void rs_camera::start_capture()
@@ -189,6 +192,8 @@ void rs_camera::subdevice_handle::set_mode(const subdevice_mode & mode, std::vec
     assert(mode.streams.size() == streams.size());
     CheckUVC("uvc_get_stream_ctrl_format_size", uvc_get_stream_ctrl_format_size(handle, &ctrl, mode.format, mode.width, mode.height, mode.fps));
 
+    uvc_print_stream_ctrl(&ctrl, stdout);
+    
     this->mode = mode;
     this->streams = streams;
     for(size_t i=0; i<mode.streams.size(); ++i) streams[i]->set_mode(mode.streams[i]);

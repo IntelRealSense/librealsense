@@ -61,7 +61,6 @@ enum rs_option
     RS_OPTION_F200_FILTER_OPTION,               /* 0 - 7 */
     RS_OPTION_F200_CONFIDENCE_THRESHOLD,        /* 0 - 15 */
     RS_OPTION_F200_DYNAMIC_FPS,                 /* {2, 5, 15, 30, 60} */
-
     RS_OPTION_R200_LR_AUTO_EXPOSURE_ENABLED,    /* {0, 1} */
     RS_OPTION_R200_LR_GAIN,                     /* 100 - 1600 (Units of 0.01) */
     RS_OPTION_R200_LR_EXPOSURE,                 /* > 0 (Units of 0.1 ms) */
