@@ -5,6 +5,26 @@
 
 namespace rsimpl
 {
+    #pragma pack(push, 1)
+    struct inzi_pixel { uint16_t depth; uint8_t ir; };
+    #pragma pack(pop)
+
+    void unpack_inzi_to_z16_and_y8(void * dest[], const subdevice_mode & mode, const void * frame)
+    {
+        auto in = reinterpret_cast<const inzi_pixel *>(frame);
+        auto out_depth = reinterpret_cast<uint16_t *>(dest[0]);
+        auto out_ir = reinterpret_cast<uint8_t *>(dest[1]);
+        for(int y=0; y<mode.height; ++y)
+        {
+            for(int x=0; x<mode.width; ++x)
+            {
+                *out_depth++ = in->depth;
+                *out_ir++ = in->ir;
+                ++in;
+            }
+        }
+    }
+
     enum { COLOR_480P, COLOR_1080P, DEPTH_480P, NUM_INTRINSICS };
     static static_camera_info get_f200_info()
     {
@@ -15,16 +35,25 @@ namespace rsimpl
         info.subdevice_modes.push_back({0, 640, 480, UVC_FRAME_FORMAT_YUYV, 60, {{RS_STREAM_COLOR, 640, 480, RS_FORMAT_RGB8, 60, COLOR_480P}}, &unpack_yuyv_to_rgb});
         info.subdevice_modes.push_back({0, 1920, 1080, UVC_FRAME_FORMAT_YUYV, 60, {{RS_STREAM_COLOR, 1920, 1080, RS_FORMAT_RGB8, 60, COLOR_1080P}}, &unpack_yuyv_to_rgb});
 
-        // Depth modes on subdevice 1
+        // Depth and IR modes on subdevice 1
         info.stream_subdevices[RS_STREAM_DEPTH] = 1;
+        info.stream_subdevices[RS_STREAM_INFRARED] = 1;
         info.subdevice_modes.push_back({1, 640, 480, UVC_FRAME_FORMAT_INVR, 60, {{RS_STREAM_DEPTH, 640, 480, RS_FORMAT_Z16, 60, DEPTH_480P}}, &unpack_strided_image});
+        info.subdevice_modes.push_back({1, 640, 480, UVC_FRAME_FORMAT_INVI, 60, {{RS_STREAM_INFRARED, 640, 480, RS_FORMAT_Y8, 60, DEPTH_480P}}, &unpack_strided_image});
+        info.subdevice_modes.push_back({1, 640, 480, UVC_FRAME_FORMAT_INRI, 60, {{RS_STREAM_DEPTH, 640, 480, RS_FORMAT_Z16, 60, DEPTH_480P},
+                                                                                 {RS_STREAM_INFRARED, 640, 480, RS_FORMAT_Y8, 60, DEPTH_480P}}, &unpack_inzi_to_z16_and_y8});
 
-        info.presets[RS_STREAM_DEPTH][RS_PRESET_BEST_QUALITY] = {true, 640, 480, RS_FORMAT_Z16,  60};
-        info.presets[RS_STREAM_COLOR][RS_PRESET_BEST_QUALITY] = {true, 640, 480, RS_FORMAT_RGB8, 60};
-        info.presets[RS_STREAM_DEPTH][RS_PRESET_LARGEST_IMAGE] = {true,  640,  480, RS_FORMAT_Z16,  60};
-        info.presets[RS_STREAM_COLOR][RS_PRESET_LARGEST_IMAGE] = {true, 1920, 1080, RS_FORMAT_RGB8, 60};
-        info.presets[RS_STREAM_DEPTH][RS_PRESET_HIGHEST_FRAMERATE] = {true, 640, 480, RS_FORMAT_Z16,  60};
-        info.presets[RS_STREAM_COLOR][RS_PRESET_HIGHEST_FRAMERATE] = {true, 640, 480, RS_FORMAT_RGB8, 60};
+        info.presets[RS_STREAM_INFRARED][RS_PRESET_BEST_QUALITY] = {true, 640, 480, RS_FORMAT_Y8,   60};
+        info.presets[RS_STREAM_DEPTH   ][RS_PRESET_BEST_QUALITY] = {true, 640, 480, RS_FORMAT_Z16,  60};
+        info.presets[RS_STREAM_COLOR   ][RS_PRESET_BEST_QUALITY] = {true, 640, 480, RS_FORMAT_RGB8, 60};
+
+        info.presets[RS_STREAM_INFRARED][RS_PRESET_LARGEST_IMAGE] = {true,  640,  480, RS_FORMAT_Y8,   60};
+        info.presets[RS_STREAM_DEPTH   ][RS_PRESET_LARGEST_IMAGE] = {true,  640,  480, RS_FORMAT_Z16,  60};
+        info.presets[RS_STREAM_COLOR   ][RS_PRESET_LARGEST_IMAGE] = {true, 1920, 1080, RS_FORMAT_RGB8, 60};
+
+        info.presets[RS_STREAM_INFRARED][RS_PRESET_HIGHEST_FRAMERATE] = {true, 640, 480, RS_FORMAT_Y8,   60};
+        info.presets[RS_STREAM_DEPTH   ][RS_PRESET_HIGHEST_FRAMERATE] = {true, 640, 480, RS_FORMAT_Z16,  60};
+        info.presets[RS_STREAM_COLOR   ][RS_PRESET_HIGHEST_FRAMERATE] = {true, 640, 480, RS_FORMAT_RGB8, 60};
 
         for(int i = RS_OPTION_F200_LASER_POWER; i <= RS_OPTION_F200_DYNAMIC_FPS; ++i) info.option_supported[i] = true;
         return info;

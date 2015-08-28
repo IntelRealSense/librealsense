@@ -62,8 +62,8 @@ int main(int argc, char * argv[]) try
     rs::camera cam = ctx.get_camera(0);
     cam.enable_stream_preset(RS_STREAM_DEPTH, RS_PRESET_BEST_QUALITY);
     cam.enable_stream_preset(RS_STREAM_COLOR, RS_PRESET_BEST_QUALITY);
+    cam.enable_stream_preset(RS_STREAM_INFRARED, RS_PRESET_BEST_QUALITY);
     try {
-        cam.enable_stream_preset(RS_STREAM_INFRARED, RS_PRESET_BEST_QUALITY);
         cam.enable_stream_preset(RS_STREAM_INFRARED_2, RS_PRESET_BEST_QUALITY);
     } catch(...) {}
     cam.start_capture();
