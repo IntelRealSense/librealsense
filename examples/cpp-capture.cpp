@@ -79,8 +79,14 @@ int main(int argc, char * argv[]) try
         std::cout << std::setprecision(1) << std::fixed << ", fov = " << hfov << " x " << vfov << std::endl;
     }
 
-    // Report the status of each supported option
+    // Try setting some R200-specific settings
     std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+    try {
+        cam.set_option(RS_OPTION_R200_LR_AUTO_EXPOSURE_ENABLED, 1);
+        cam.set_option(RS_OPTION_R200_DEPTH_CONTROL_PRESET, 5);
+    }  catch(...) {}
+
+    // Report the status of each supported option
     for(rs::option option = RS_OPTION_BEGIN_RANGE; option <= RS_OPTION_END_RANGE; option = (rs::option)(option+1))
     {
         if(cam.supports_option(option))
@@ -90,11 +96,6 @@ int main(int argc, char * argv[]) try
             catch(const std::exception & e) { std::cout << e.what() << std::endl; }
         }
     }
-
-    // Try setting some R200-specific settings
-    try {
-        cam.set_option(RS_OPTION_R200_LR_AUTO_EXPOSURE_ENABLED, 1);
-    }  catch(...) {}
 
     // Open a GLFW window
 	glfwInit();
