@@ -155,11 +155,12 @@ void rs_camera::stream_buffer::set_mode(const stream_mode & mode)
     this->mode = mode;
     switch(mode.format)
     {
-    case RS_FORMAT_Z16: front.resize(mode.width * mode.height * sizeof(uint16_t)); break;
-    case RS_FORMAT_RGB8: front.resize(mode.width * mode.height * 3); break;
-    case RS_FORMAT_Y8: front.resize(mode.width * mode.height); break;
+    case RS_FORMAT_Z16: front.pixels.resize(mode.width * mode.height * sizeof(uint16_t)); break;
+    case RS_FORMAT_RGB8: front.pixels.resize(mode.width * mode.height * 3); break;
+    case RS_FORMAT_Y8: front.pixels.resize(mode.width * mode.height); break;
     default: throw std::runtime_error("invalid format");
     }
+    front.number = 0;
     back = middle = front;
     updated = false;
 }
@@ -210,8 +211,15 @@ void rs_camera::subdevice_handle::start_streaming()
 
         // Unpack the image into the user stream interface back buffer
         std::vector<void *> dest;
-        for(auto & stream : self->streams) dest.push_back(stream->back.data());
+        for(auto & stream : self->streams) dest.push_back(stream->back.pixels.data());
         self->mode.unpacker(dest.data(), self->mode, frame->data);
+
+        // If a frame number decoder is available, make use of it
+        if(self->mode.frame_number_decoder)
+        {
+            const int frame_number = self->mode.frame_number_decoder(self->mode, frame->data);
+            for(auto & stream : self->streams) stream->back.number = frame_number;
+        }
 
         // Swap the backbuffer to the middle buffer and indicate that we have updated
         for(auto & stream : self->streams)

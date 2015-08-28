@@ -111,6 +111,7 @@ void                rs_wait_all_streams         (struct rs_camera * camera, stru
 
 enum rs_format      rs_get_image_format         (struct rs_camera * camera, enum rs_stream stream, struct rs_error ** error);
 const void *        rs_get_image_pixels         (struct rs_camera * camera, enum rs_stream stream, struct rs_error ** error);
+int                 rs_get_image_frame_number   (struct rs_camera * camera, enum rs_stream stream, struct rs_error ** error);
 float               rs_get_depth_scale          (struct rs_camera * camera, struct rs_error ** error);
 
 void                rs_get_stream_intrinsics    (struct rs_camera * camera, enum rs_stream stream, struct rs_intrinsics * intrin, struct rs_error ** error);

@@ -311,6 +311,26 @@ namespace rsimpl { namespace r200
         uint32_t theLastWord;
         uint8_t reserved3[37];
     };
+
+    struct Dinghy
+    {
+        uint32_t magicNumber;
+        uint32_t frameCount;
+        uint32_t frameStatus;
+        uint32_t exposureLeftSum;
+        uint32_t exposureLeftDarkCount;
+        uint32_t exposureLeftBrightCount;
+        uint32_t exposureRightSum;
+        uint32_t exposureRightDarkCount;
+        uint32_t exposureRightBrightCount;
+        uint32_t CAMmoduleStatus;
+        uint32_t pad0;
+        uint32_t pad1;
+        uint32_t pad2;
+        uint32_t pad3;
+        uint32_t VDFerrorStatus;
+        uint32_t pad4;
+    };
     #pragma pack(pop)
 
 } } // end namespace r200

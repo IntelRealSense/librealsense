@@ -118,6 +118,14 @@ int main(int argc, char * argv[]) try
         glfwPollEvents();
         cam.wait_all_streams();
 
+        // Print out frame numbers
+        std::cout << "Frame numbers: ";
+        for(rs::stream s = RS_STREAM_BEGIN_RANGE; s <= RS_STREAM_END_RANGE; s = (rs::stream)(s+1))
+        {
+            if(cam.is_stream_enabled(s)) std::cout << s << "=" << cam.get_image_frame_number(s) << " ";
+        }
+        std::cout << std::endl;
+
         // Draw the images
         glClear(GL_COLOR_BUFFER_BIT);
         glPushMatrix();

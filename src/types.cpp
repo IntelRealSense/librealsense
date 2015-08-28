@@ -87,7 +87,7 @@ namespace rsimpl
         default: assert(!is_valid(value)); return nullptr;
         }
         #undef CASE
-    }
+    } 
 
     static size_t get_pixel_size(int format)
     {

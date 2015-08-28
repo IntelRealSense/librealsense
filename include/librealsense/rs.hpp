@@ -64,6 +64,7 @@ namespace rs
 
         format              get_image_format(stream s)                                              { return rs_get_image_format(cam, s, auto_error()); }
         const void *        get_image_pixels(stream s)                                              { return rs_get_image_pixels(cam, s, auto_error()); }
+        int                 get_image_frame_number(stream s)                                        { return rs_get_image_frame_number(cam, s, auto_error()); }
         float               get_depth_scale()                                                       { return rs_get_depth_scale(cam, auto_error()); }
 
         intrinsics          get_stream_intrinsics(stream s)                                         { intrinsics intrin; rs_get_stream_intrinsics(cam, s, &intrin, auto_error()); return intrin; }

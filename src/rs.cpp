@@ -138,6 +138,14 @@ const void * rs_get_image_pixels(rs_camera * camera, rs_stream stream, rs_error 
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, camera, stream)
 
+int rs_get_image_frame_number(rs_camera * camera, rs_stream stream, rs_error ** error) try
+{
+    VALIDATE_NOT_NULL(camera);
+    VALIDATE_ENUM(stream);
+    return camera->get_image_frame_number(stream);
+}
+HANDLE_EXCEPTIONS_AND_RETURN(0, camera, stream)
+
 float rs_get_depth_scale(rs_camera * camera, rs_error ** error) try
 {
     VALIDATE_NOT_NULL(camera);

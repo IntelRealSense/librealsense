@@ -27,13 +27,24 @@ protected:
     {
         friend class subdevice_handle;
 
+        struct frame
+        {
+            std::vector<uint8_t>                    pixels;
+            int                                     number;
+
+                                                    frame() : number() {}
+
+            void                                    swap(frame & r) { pixels.swap(r.pixels); std::swap(number, r.number); }
+        };
+
         rsimpl::stream_mode                         mode;
-        std::vector<uint8_t>                        front, middle, back;
+        frame                                       front, middle, back;
         std::mutex                                  mutex;
         volatile bool                               updated = false;
     public:
         const rsimpl::stream_mode &                 get_mode() const { return mode; }
-        const void *                                get_image() const { return front.data(); }
+        const void *                                get_image() const { return front.pixels.data(); }
+        int                                         get_frame_number() const { return front.number; }
 
         void                                        set_mode(const rsimpl::stream_mode & mode);
         bool                                        update_image();
@@ -86,6 +97,7 @@ public:
     void                                            wait_all_streams();
     rs_format                                       get_image_format(rs_stream stream) const { if(!streams[stream]) throw std::runtime_error("stream not enabled"); return streams[stream]->get_mode().format; }
     const void *                                    get_image_pixels(rs_stream stream) const { if(!streams[stream]) throw std::runtime_error("stream not enabled"); return streams[stream]->get_image(); }
+    int                                             get_image_frame_number(rs_stream stream) const { if(!streams[stream]) throw std::runtime_error("stream not enabled"); return streams[stream]->get_frame_number(); }
     float                                           get_depth_scale() const { return calib.depth_scale; }
     rs_intrinsics                                   get_stream_intrinsics(rs_stream stream) const;
     rs_extrinsics                                   get_stream_extrinsics(rs_stream from, rs_stream to) const;
