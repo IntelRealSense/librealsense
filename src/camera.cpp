@@ -54,18 +54,15 @@ void rs_camera::configure_enabled_streams()
     // Creating a subdevice_handle will reach out to the hardware and open the handle
     if (!first_handle)
     {
-        for(int i = 0; i < subdevices.size(); ++i)
-        {
-            subdevices[i].reset(new subdevice_handle(device, i));
-            if (i == 0 && subdevices[0]) first_handle = subdevices[i]->get_handle();
-        }
-        
         // Satisfy stream_requests as necessary for each subdevice, calling set_mode and
         // dispatching the uvc configuration for a requested stream to the hardware
         for(int i = 0; i < subdevices.size(); ++i)
         {
             if(const subdevice_mode * mode = camera_info.select_mode(requests, i))
             {
+                subdevices[i].reset(new subdevice_handle(device, i));
+                if (!first_handle) first_handle = subdevices[i]->get_handle();
+
                 // For each stream provided by this mode
                 std::vector<std::shared_ptr<stream_buffer>> stream_list;
                 for(auto & stream_mode : mode->streams)
