@@ -64,6 +64,8 @@ void rs_camera::configure_enabled_streams()
             {
                 subdevices[i].reset(new subdevice_handle(device, i));
                 if (!first_handle) first_handle = subdevices[i]->get_handle();
+                
+                uvc_print_diag(subdevices[i]->get_handle(), stdout);
 
                 // For each stream provided by this mode
                 std::vector<std::shared_ptr<stream_buffer>> stream_list;
@@ -88,7 +90,6 @@ void rs_camera::configure_enabled_streams()
     {
         calib = retrieve_calibration();
     }
-    uvc_print_diag(first_handle, stdout);
 }
 
 void rs_camera::start_capture()
@@ -191,8 +192,6 @@ void rs_camera::subdevice_handle::set_mode(const subdevice_mode & mode, std::vec
 {
     assert(mode.streams.size() == streams.size());
     CheckUVC("uvc_get_stream_ctrl_format_size", uvc_get_stream_ctrl_format_size(handle, &ctrl, mode.format, mode.width, mode.height, mode.fps));
-
-    uvc_print_stream_ctrl(&ctrl, stdout);
     
     this->mode = mode;
     this->streams = streams;
@@ -201,6 +200,8 @@ void rs_camera::subdevice_handle::set_mode(const subdevice_mode & mode, std::vec
 
 void rs_camera::subdevice_handle::start_streaming()
 {
+    //uvc_print_stream_ctrl(&ctrl, stdout);
+    
     CheckUVC("uvc_start_streaming", uvc_start_streaming(handle, &ctrl, [](uvc_frame_t * frame, void * ptr)
     {
         // Validate that this frame matches the mode information we've set
