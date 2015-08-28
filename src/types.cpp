@@ -103,7 +103,7 @@ namespace rsimpl
     void unpack_strided_image(void * dest[], const subdevice_mode & mode, const void * source)
     {
         assert(mode.streams.size() == 1);
-        copy_strided_image(dest[0], mode.streams[0].width * get_pixel_size(mode.streams[0].format), source, mode.width * get_pixel_size(mode.streams[0].format), mode.streams[0].height);
+        copy_strided_image(dest[0], mode.streams[0].width * (int) get_pixel_size(mode.streams[0].format), source, mode.width * (int) get_pixel_size(mode.streams[0].format), mode.streams[0].height);
     }
 
     void unpack_rly12_to_y8(void * dest[], const subdevice_mode & mode, const void * frame)

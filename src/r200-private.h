@@ -165,7 +165,7 @@ namespace rsimpl { namespace r200
     public:
         operator T () const
         {
-            T le_value;
+            T le_value = 0;
             for(int i=0; i<sizeof(T); ++i) reinterpret_cast<char *>(&le_value)[i] = reinterpret_cast<const char *>(&be_value)[sizeof(T)-i-1];
             return le_value;
         }

@@ -33,7 +33,6 @@
 		279D52CD1B8E868E007F2D73 /* libuvc_config.h in Headers */ = {isa = PBXBuildFile; fileRef = 279D52C21B8E868E007F2D73 /* libuvc_config.h */; };
 		279D52CE1B8E868E007F2D73 /* libuvc_internal.h in Headers */ = {isa = PBXBuildFile; fileRef = 279D52C31B8E868E007F2D73 /* libuvc_internal.h */; };
 		279D52CF1B8E868E007F2D73 /* libuvc.h in Headers */ = {isa = PBXBuildFile; fileRef = 279D52C41B8E868E007F2D73 /* libuvc.h */; };
-		279D52D01B8E868E007F2D73 /* misc.c in Sources */ = {isa = PBXBuildFile; fileRef = 279D52C51B8E868E007F2D73 /* misc.c */; };
 		279D52D11B8E868E007F2D73 /* stream.c in Sources */ = {isa = PBXBuildFile; fileRef = 279D52C61B8E868E007F2D73 /* stream.c */; };
 		279D52D21B8E868E007F2D73 /* utlist.h in Headers */ = {isa = PBXBuildFile; fileRef = 279D52C71B8E868E007F2D73 /* utlist.h */; };
 /* End PBXBuildFile section */
@@ -66,7 +65,6 @@
 		279D52C21B8E868E007F2D73 /* libuvc_config.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = libuvc_config.h; path = ../src/libuvc/libuvc_config.h; sourceTree = SOURCE_ROOT; };
 		279D52C31B8E868E007F2D73 /* libuvc_internal.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = libuvc_internal.h; path = ../src/libuvc/libuvc_internal.h; sourceTree = SOURCE_ROOT; };
 		279D52C41B8E868E007F2D73 /* libuvc.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = libuvc.h; path = ../src/libuvc/libuvc.h; sourceTree = SOURCE_ROOT; };
-		279D52C51B8E868E007F2D73 /* misc.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = misc.c; path = ../src/libuvc/misc.c; sourceTree = SOURCE_ROOT; };
 		279D52C61B8E868E007F2D73 /* stream.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = stream.c; path = ../src/libuvc/stream.c; sourceTree = SOURCE_ROOT; };
 		279D52C71B8E868E007F2D73 /* utlist.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = utlist.h; path = ../src/libuvc/utlist.h; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
@@ -135,7 +133,6 @@
 				279D52C21B8E868E007F2D73 /* libuvc_config.h */,
 				279D52C31B8E868E007F2D73 /* libuvc_internal.h */,
 				279D52C41B8E868E007F2D73 /* libuvc.h */,
-				279D52C51B8E868E007F2D73 /* misc.c */,
 				279D52C61B8E868E007F2D73 /* stream.c */,
 				279D52C71B8E868E007F2D73 /* utlist.h */,
 			);
@@ -223,7 +220,6 @@
 				279D52CC1B8E868E007F2D73 /* init.c in Sources */,
 				279D52CA1B8E868E007F2D73 /* diag.c in Sources */,
 				279D52C81B8E868E007F2D73 /* ctrl.c in Sources */,
-				279D52D01B8E868E007F2D73 /* misc.c in Sources */,
 				279D52BC1B8E8678007F2D73 /* verify.c in Sources */,
 				279D52B71B8E8678007F2D73 /* r200.cpp in Sources */,
 				279D52AF1B8E8678007F2D73 /* f200-private.cpp in Sources */,

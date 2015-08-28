@@ -1,6 +1,8 @@
 #include "f200.h"
 #include "f200-private.h"
 
+#include <iostream>
+
 namespace rsimpl
 {
     enum { COLOR_480P, COLOR_1080P, DEPTH_480P, NUM_INTRINSICS };
@@ -87,10 +89,11 @@ namespace rsimpl
         return c;
     }
     
+    // N.B. f200 xu_read and xu_write hard code the xu interface to the depth suvdevice. There is only a
+    // single *potentially* useful XU on the color device, so let's ignore it for now.
     bool xu_read(uvc_device_handle_t * device, uint64_t xu_ctrl, void * buffer, uint32_t length)
     {
-        auto xu_info = uvc_get_extension_units(device); // should return 5
-        auto status = uvc_get_ctrl(device, xu_info->bUnitID, xu_ctrl, buffer, length, UVC_GET_CUR);
+        auto status = uvc_get_ctrl(device, 6, xu_ctrl, buffer, length, UVC_GET_CUR);
         if (status < 0)
         {
             uvc_perror((uvc_error_t) status, "xu_read - uvc_get_ctrl");
@@ -101,8 +104,7 @@ namespace rsimpl
     
     bool xu_write(uvc_device_handle_t * device, uint64_t xu_ctrl, void * buffer, uint32_t length)
     {
-        auto xu_info = uvc_get_extension_units(device);
-        auto status = uvc_set_ctrl(device, xu_info->bUnitID, xu_ctrl, buffer, length);
+        auto status = uvc_set_ctrl(device, 6, xu_ctrl, buffer, length);
         if (status < 0)
         {
             uvc_perror((uvc_error_t) status, "xu_write - uvc_set_ctrl");
@@ -183,7 +185,7 @@ namespace rsimpl
         case RS_OPTION_F200_MOTION_RANGE:         result = set_motion_range(first_handle, val); break;
         case RS_OPTION_F200_FILTER_OPTION:        result = set_filter_option(first_handle, val); break;
         case RS_OPTION_F200_CONFIDENCE_THRESHOLD: result = set_confidence_threshold(first_handle, val); break;
-        case RS_OPTION_F200_DYNAMIC_FPS:          result = set_dynamic_fps(first_handle, val); break;
+        //case RS_OPTION_F200_DYNAMIC_FPS:          result = set_dynamic_fps(first_handle, val); break; // IVCAM 1.5 Only
         }
         if(!result) throw std::runtime_error("failed to write option to device");
     }
@@ -199,7 +201,7 @@ namespace rsimpl
         case RS_OPTION_F200_MOTION_RANGE:         result = get_motion_range(first_handle, value); break;
         case RS_OPTION_F200_FILTER_OPTION:        result = get_filter_option(first_handle, value); break;
         case RS_OPTION_F200_CONFIDENCE_THRESHOLD: result = get_confidence_threshold(first_handle, value); break;
-        case RS_OPTION_F200_DYNAMIC_FPS:          result = get_dynamic_fps(first_handle, value); break;
+        //case RS_OPTION_F200_DYNAMIC_FPS:          result = get_dynamic_fps(first_handle, value); break; // IVCAM 1.5 Only
         }
         if(!result) throw std::runtime_error("failed to read option from device");
         return value;
