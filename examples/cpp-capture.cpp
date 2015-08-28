@@ -30,8 +30,8 @@ void draw_stream(rs::camera & cam, rs::stream stream, int x, int y)
     if(!cam.is_stream_enabled(stream)) return;
 
     const rs::intrinsics intrin = cam.get_stream_intrinsics(stream);
+    const rs::format format = cam.get_stream_format(stream);
     const int width = intrin.image_size[0], height = intrin.image_size[1];
-    const rs::format format = cam.get_image_format(stream);
     const void * pixels = cam.get_image_pixels(stream);
 
     glRasterPos2i(x + (640 - intrin.image_size[0])/2, y + (480 - intrin.image_size[1])/2);

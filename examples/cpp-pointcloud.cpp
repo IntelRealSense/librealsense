@@ -1,13 +1,10 @@
 #include <librealsense/rs.hpp>
 #include <librealsense/rsutil.h>
-#include <../src/r200.h>
 #include "example.h"
 
 #include <chrono>
 #include <sstream>
 #include <iostream>
-
-using namespace rsimpl;
 
 FILE * find_file(std::string path, int levels)
 {
@@ -30,9 +27,7 @@ int main(int argc, char * argv[]) try
         cam = ctx.get_camera(i);
         cam.enable_stream_preset(RS_STREAM_DEPTH, RS_PRESET_BEST_QUALITY);
         cam.enable_stream_preset(RS_STREAM_COLOR, RS_PRESET_BEST_QUALITY);
-        try {
-            cam.enable_stream_preset(RS_STREAM_INFRARED, RS_PRESET_BEST_QUALITY);
-        } catch(...) {}
+        cam.enable_stream_preset(RS_STREAM_INFRARED, RS_PRESET_BEST_QUALITY);
         cam.start_capture();
     }
     if (!cam) throw std::runtime_error("No camera detected. Is it plugged in?");
@@ -102,8 +97,6 @@ int main(int argc, char * argv[]) try
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
 
     glPopAttrib();
-        
-    r200_camera * cpp_handle = dynamic_cast<r200_camera *>(cam.get_handle());
 
     int frames = 0; float time = 0, fps = 0;
     auto t0 = std::chrono::high_resolution_clock::now();
@@ -127,7 +120,7 @@ int main(int argc, char * argv[]) try
             time = 0;
         }
 
-        if (!cpp_handle->is_streaming()) continue;
+        if (!cam.is_capturing()) continue;
         
         glViewport(0, 0, width, height);
         glClearColor(0.0f, 116/255.0f, 197/255.0f, 1.0f);
@@ -170,10 +163,17 @@ int main(int argc, char * argv[]) try
                 {
                     float depth_pixel[2] = {static_cast<float>(x),static_cast<float>(y)}, depth_point[3], tex_point[3], tex_pixel[2];
                     rs_deproject_pixel_to_point(depth_point, &depth_intrin, depth_pixel, d*scale);
-                    rs_transform_point_to_point(tex_point, &extrin, depth_point);
-                    rs_project_point_to_pixel(tex_pixel, &tex_intrin, tex_point);
-
-                    glTexCoord2f(tex_pixel[0] / tex_intrin.image_size[0], tex_pixel[1] / tex_intrin.image_size[1]);
+                    if(tex_stream == RS_STREAM_INFRARED)
+                    {
+                        // TODO: Should actually do this branch if we determine that depth_intrin == ir_intrin and extrin == identity
+                        glTexCoord2f((x+0.5f)/depth_intrin.image_size[0], (y+0.5f)/depth_intrin.image_size[1]);
+                    }
+                    else
+                    {
+                        rs_transform_point_to_point(tex_point, &extrin, depth_point);
+                        rs_project_point_to_pixel(tex_pixel, &tex_intrin, tex_point);
+                        glTexCoord2f(tex_pixel[0] / tex_intrin.image_size[0], tex_pixel[1] / tex_intrin.image_size[1]);
+                    }
                     glVertex3fv(depth_point);
                 }
             }

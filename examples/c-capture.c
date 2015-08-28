@@ -28,17 +28,17 @@ float compute_fov(int image_size, float focal_length, float principal_point)
 void draw_stream(struct rs_camera * cam, enum rs_stream stream, int x, int y)
 {
     struct rs_intrinsics intrin;
-    int width, height;
     enum rs_format format;
+    int width, height;    
     const void * pixels;
     char buffer[1024];
 
     if(!rs_is_stream_enabled(cam, stream, 0)) return;
 
     rs_get_stream_intrinsics(cam, stream, &intrin, 0);
+    format = rs_get_stream_format(cam, stream, 0);
     width = intrin.image_size[0];
-    height = intrin.image_size[1];
-    format = rs_get_image_format(cam, stream, 0);
+    height = intrin.image_size[1];    
     pixels = rs_get_image_pixels(cam, stream, 0);
 
     glRasterPos2i(x + (640 - intrin.image_size[0])/2, y + (480 - intrin.image_size[1])/2);
@@ -77,7 +77,7 @@ int main(int argc, char * argv[])
         cam = rs_get_camera(ctx, i, &error); check_error();
         rs_enable_stream_preset(cam, RS_STREAM_DEPTH, RS_PRESET_BEST_QUALITY, &error); check_error();
         rs_enable_stream_preset(cam, RS_STREAM_COLOR, RS_PRESET_BEST_QUALITY, &error); check_error();
-        rs_enable_stream_preset(cam, RS_STREAM_INFRARED, RS_PRESET_BEST_QUALITY, 0);
+        rs_enable_stream_preset(cam, RS_STREAM_INFRARED, RS_PRESET_BEST_QUALITY, &error); check_error();
         rs_enable_stream_preset(cam, RS_STREAM_INFRARED_2, RS_PRESET_BEST_QUALITY, 0);
         rs_start_capture(cam, &error); check_error();
 

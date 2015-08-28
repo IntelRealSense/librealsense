@@ -58,17 +58,19 @@ namespace rs
         void                enable_stream(stream s, int width, int height, format f, int fps)       { rs_enable_stream(cam, s, width, height, f, fps, auto_error()); }
         void                enable_stream_preset(stream s, preset preset)                           { rs_enable_stream_preset(cam, s, preset, auto_error()); }
         bool                is_stream_enabled(stream s)                                             { return !!rs_is_stream_enabled(cam, s, auto_error()); }
+
         void                start_capture()                                                         { rs_start_capture(cam, auto_error()); }
         void                stop_capture()                                                          { rs_stop_capture(cam, auto_error()); }
-        void                wait_all_streams()                                                      { rs_wait_all_streams(cam, auto_error()); }
+        bool                is_capturing()                                                          { return !!rs_is_capturing(cam, auto_error()); }
 
-        format              get_image_format(stream s)                                              { return rs_get_image_format(cam, s, auto_error()); }
-        const void *        get_image_pixels(stream s)                                              { return rs_get_image_pixels(cam, s, auto_error()); }
-        int                 get_image_frame_number(stream s)                                        { return rs_get_image_frame_number(cam, s, auto_error()); }
         float               get_depth_scale()                                                       { return rs_get_depth_scale(cam, auto_error()); }
-
+        format              get_stream_format(stream s)                                             { return rs_get_stream_format(cam, s, auto_error()); }
         intrinsics          get_stream_intrinsics(stream s)                                         { intrinsics intrin; rs_get_stream_intrinsics(cam, s, &intrin, auto_error()); return intrin; }
         extrinsics          get_stream_extrinsics(stream from, stream to)                           { extrinsics extrin; rs_get_stream_extrinsics(cam, from, to, &extrin, auto_error()); return extrin; }
+
+        void                wait_all_streams()                                                      { rs_wait_all_streams(cam, auto_error()); }
+        const void *        get_image_pixels(stream s)                                              { return rs_get_image_pixels(cam, s, auto_error()); }
+        int                 get_image_frame_number(stream s)                                        { return rs_get_image_frame_number(cam, s, auto_error()); }
 
         bool                supports_option(option o) const                                         { return rs_camera_supports_option(cam, o, auto_error()); }
         void                set_option(option o, int value)                                         { rs_set_camera_option(cam, o, value, auto_error()); }
