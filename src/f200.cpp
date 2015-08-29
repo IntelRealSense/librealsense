@@ -26,29 +26,29 @@ namespace rsimpl
         }
     }
 
-    enum { COLOR_480P, COLOR_1080P, DEPTH_480P, DEPTH_240P, NUM_INTRINSICS };
+    enum { COLOR_VGA, COLOR_HD, DEPTH_VGA, DEPTH_QVGA, NUM_INTRINSICS };
     static static_camera_info get_f200_info()
     {
         static_camera_info info;
 
         // Color modes on subdevice 0
         info.stream_subdevices[RS_STREAM_COLOR] = 0;
-        info.subdevice_modes.push_back({0, 640, 480, UVC_FRAME_FORMAT_YUYV, 60, {{RS_STREAM_COLOR, 640, 480, RS_FORMAT_RGB8, 60, COLOR_480P}}, &unpack_yuyv_to_rgb});
-        info.subdevice_modes.push_back({0, 1920, 1080, UVC_FRAME_FORMAT_YUYV, 60, {{RS_STREAM_COLOR, 1920, 1080, RS_FORMAT_RGB8, 60, COLOR_1080P}}, &unpack_yuyv_to_rgb});
+        info.subdevice_modes.push_back({0, 640, 480, UVC_FRAME_FORMAT_YUYV, 60, {{RS_STREAM_COLOR, 640, 480, RS_FORMAT_RGB8, 60, COLOR_VGA}}, &unpack_yuyv_to_rgb});
+        info.subdevice_modes.push_back({0, 1920, 1080, UVC_FRAME_FORMAT_YUYV, 60, {{RS_STREAM_COLOR, 1920, 1080, RS_FORMAT_RGB8, 60, COLOR_HD}}, &unpack_yuyv_to_rgb});
 
         // Depth and IR modes on subdevice 1
         info.stream_subdevices[RS_STREAM_DEPTH] = 1;
         info.stream_subdevices[RS_STREAM_INFRARED] = 1;
-        info.subdevice_modes.push_back({1, 640, 480, UVC_FRAME_FORMAT_INVR, 60, {{RS_STREAM_DEPTH, 640, 480, RS_FORMAT_Z16, 60, DEPTH_480P}}, &unpack_strided_image});
-        info.subdevice_modes.push_back({1, 640, 240, UVC_FRAME_FORMAT_INVR, 60, {{RS_STREAM_DEPTH, 320, 240, RS_FORMAT_Z16, 60, DEPTH_240P}}, &unpack_strided_image});
+        info.subdevice_modes.push_back({1, 640, 480, UVC_FRAME_FORMAT_INVR, 60, {{RS_STREAM_DEPTH, 640, 480, RS_FORMAT_Z16, 60, DEPTH_VGA}}, &unpack_strided_image});
+        info.subdevice_modes.push_back({1, 640, 240, UVC_FRAME_FORMAT_INVR, 60, {{RS_STREAM_DEPTH, 320, 240, RS_FORMAT_Z16, 60, DEPTH_QVGA}}, &unpack_strided_image});
 
-        info.subdevice_modes.push_back({1, 640, 480, UVC_FRAME_FORMAT_INVI, 60, {{RS_STREAM_INFRARED, 640, 480, RS_FORMAT_Y8, 60, DEPTH_480P}}, &unpack_strided_image});
-        info.subdevice_modes.push_back({1, 640, 240, UVC_FRAME_FORMAT_INVI, 60, {{RS_STREAM_INFRARED, 320, 240, RS_FORMAT_Y8, 60, DEPTH_240P}}, &unpack_strided_image});
+        info.subdevice_modes.push_back({1, 640, 480, UVC_FRAME_FORMAT_INVI, 60, {{RS_STREAM_INFRARED, 640, 480, RS_FORMAT_Y8, 60, DEPTH_VGA}}, &unpack_strided_image});
+        info.subdevice_modes.push_back({1, 640, 240, UVC_FRAME_FORMAT_INVI, 60, {{RS_STREAM_INFRARED, 320, 240, RS_FORMAT_Y8, 60, DEPTH_QVGA}}, &unpack_strided_image});
 
-        info.subdevice_modes.push_back({1, 640, 480, UVC_FRAME_FORMAT_INRI, 60, {{RS_STREAM_DEPTH,    640, 480, RS_FORMAT_Z16, 60, DEPTH_480P},
-                                                                                 {RS_STREAM_INFRARED, 640, 480, RS_FORMAT_Y8,  60, DEPTH_480P}}, &unpack_inzi_to_z16_and_y8});
-        info.subdevice_modes.push_back({1, 640, 240, UVC_FRAME_FORMAT_INRI, 60, {{RS_STREAM_DEPTH,    320, 240, RS_FORMAT_Z16, 60, DEPTH_240P},
-                                                                                 {RS_STREAM_INFRARED, 320, 240, RS_FORMAT_Y8,  60, DEPTH_240P}}, &unpack_inzi_to_z16_and_y8});
+        info.subdevice_modes.push_back({1, 640, 480, UVC_FRAME_FORMAT_INRI, 60, {{RS_STREAM_DEPTH,    640, 480, RS_FORMAT_Z16, 60, DEPTH_VGA},
+                                                                                 {RS_STREAM_INFRARED, 640, 480, RS_FORMAT_Y8,  60, DEPTH_VGA}}, &unpack_inzi_to_z16_and_y8});
+        info.subdevice_modes.push_back({1, 640, 240, UVC_FRAME_FORMAT_INRI, 60, {{RS_STREAM_DEPTH,    320, 240, RS_FORMAT_Z16, 60, DEPTH_QVGA},
+                                                                                 {RS_STREAM_INFRARED, 320, 240, RS_FORMAT_Y8,  60, DEPTH_QVGA}}, &unpack_inzi_to_z16_and_y8});
 
         info.presets[RS_STREAM_INFRARED][RS_PRESET_BEST_QUALITY] = {true, 640, 480, RS_FORMAT_Y8,   60};
         info.presets[RS_STREAM_DEPTH   ][RS_PRESET_BEST_QUALITY] = {true, 640, 480, RS_FORMAT_Z16,  60};
@@ -116,10 +116,10 @@ namespace rsimpl
 
         calibration_info c;
         c.intrinsics.resize(NUM_INTRINSICS);
-        c.intrinsics[COLOR_480P] = MakeColorIntrinsics(calib, 640, 480);
-        c.intrinsics[COLOR_1080P] = MakeColorIntrinsics(calib, 1920, 1080);
-        c.intrinsics[DEPTH_480P] = MakeDepthIntrinsics(calib, 640, 480);
-        c.intrinsics[DEPTH_240P] = MakeDepthIntrinsics(calib, 320, 240);
+        c.intrinsics[COLOR_VGA] = MakeColorIntrinsics(calib, 640, 480);
+        c.intrinsics[COLOR_HD] = MakeColorIntrinsics(calib, 1920, 1080);
+        c.intrinsics[DEPTH_VGA] = MakeDepthIntrinsics(calib, 640, 480);
+        c.intrinsics[DEPTH_QVGA] = MakeDepthIntrinsics(calib, 320, 240);
         c.stream_poses[RS_STREAM_DEPTH] = {{{1,0,0},{0,1,0},{0,0,1}}, {0,0,0}};
         c.stream_poses[RS_STREAM_COLOR] = {transpose((const float3x3 &)calib.Rt), (const float3 &)calib.Tt * 0.001f}; // convert mm to m
         c.depth_scale = (calib.Rmax / 0xFFFF) * 0.001f; // convert mm to m
