@@ -16,16 +16,17 @@ namespace rsimpl
         auto out_ir = reinterpret_cast<uint8_t *>(dest[1]);
         for(int y=0; y<mode.height; ++y)
         {
-            for(int x=0; x<mode.width; ++x)
+            for(int x=0; x<mode.streams[0].width; ++x)
             {
                 *out_depth++ = in->depth;
                 *out_ir++ = in->ir;
                 ++in;
             }
+            in += (mode.width - mode.streams[0].width);
         }
     }
 
-    enum { COLOR_480P, COLOR_1080P, DEPTH_480P, NUM_INTRINSICS };
+    enum { COLOR_480P, COLOR_1080P, DEPTH_480P, DEPTH_240P, NUM_INTRINSICS };
     static static_camera_info get_f200_info()
     {
         static_camera_info info;
@@ -39,9 +40,15 @@ namespace rsimpl
         info.stream_subdevices[RS_STREAM_DEPTH] = 1;
         info.stream_subdevices[RS_STREAM_INFRARED] = 1;
         info.subdevice_modes.push_back({1, 640, 480, UVC_FRAME_FORMAT_INVR, 60, {{RS_STREAM_DEPTH, 640, 480, RS_FORMAT_Z16, 60, DEPTH_480P}}, &unpack_strided_image});
+        info.subdevice_modes.push_back({1, 640, 240, UVC_FRAME_FORMAT_INVR, 60, {{RS_STREAM_DEPTH, 320, 240, RS_FORMAT_Z16, 60, DEPTH_240P}}, &unpack_strided_image});
+
         info.subdevice_modes.push_back({1, 640, 480, UVC_FRAME_FORMAT_INVI, 60, {{RS_STREAM_INFRARED, 640, 480, RS_FORMAT_Y8, 60, DEPTH_480P}}, &unpack_strided_image});
-        info.subdevice_modes.push_back({1, 640, 480, UVC_FRAME_FORMAT_INRI, 60, {{RS_STREAM_DEPTH, 640, 480, RS_FORMAT_Z16, 60, DEPTH_480P},
-                                                                                 {RS_STREAM_INFRARED, 640, 480, RS_FORMAT_Y8, 60, DEPTH_480P}}, &unpack_inzi_to_z16_and_y8});
+        info.subdevice_modes.push_back({1, 640, 240, UVC_FRAME_FORMAT_INVI, 60, {{RS_STREAM_INFRARED, 320, 240, RS_FORMAT_Y8, 60, DEPTH_240P}}, &unpack_strided_image});
+
+        info.subdevice_modes.push_back({1, 640, 480, UVC_FRAME_FORMAT_INRI, 60, {{RS_STREAM_DEPTH,    640, 480, RS_FORMAT_Z16, 60, DEPTH_480P},
+                                                                                 {RS_STREAM_INFRARED, 640, 480, RS_FORMAT_Y8,  60, DEPTH_480P}}, &unpack_inzi_to_z16_and_y8});
+        info.subdevice_modes.push_back({1, 640, 240, UVC_FRAME_FORMAT_INRI, 60, {{RS_STREAM_DEPTH,    320, 240, RS_FORMAT_Z16, 60, DEPTH_240P},
+                                                                                 {RS_STREAM_INFRARED, 320, 240, RS_FORMAT_Y8,  60, DEPTH_240P}}, &unpack_inzi_to_z16_and_y8});
 
         info.presets[RS_STREAM_INFRARED][RS_PRESET_BEST_QUALITY] = {true, 640, 480, RS_FORMAT_Y8,   60};
         info.presets[RS_STREAM_DEPTH   ][RS_PRESET_BEST_QUALITY] = {true, 640, 480, RS_FORMAT_Z16,  60};
@@ -112,6 +119,7 @@ namespace rsimpl
         c.intrinsics[COLOR_480P] = MakeColorIntrinsics(calib, 640, 480);
         c.intrinsics[COLOR_1080P] = MakeColorIntrinsics(calib, 1920, 1080);
         c.intrinsics[DEPTH_480P] = MakeDepthIntrinsics(calib, 640, 480);
+        c.intrinsics[DEPTH_240P] = MakeDepthIntrinsics(calib, 320, 240);
         c.stream_poses[RS_STREAM_DEPTH] = {{{1,0,0},{0,1,0},{0,0,1}}, {0,0,0}};
         c.stream_poses[RS_STREAM_COLOR] = {transpose((const float3x3 &)calib.Rt), (const float3 &)calib.Tt * 0.001f}; // convert mm to m
         c.depth_scale = (calib.Rmax / 0xFFFF) * 0.001f; // convert mm to m
