@@ -1,21 +1,25 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Workspace
    version = "1.0">
-   <FileRef
-      location = "group:cpp-multicam.xcodeproj">
-   </FileRef>
-   <FileRef
-      location = "group:c-capture.xcodeproj">
-   </FileRef>
-   <FileRef
-      location = "group:c-pointcloud.xcodeproj">
-   </FileRef>
-   <FileRef
-      location = "group:/Users/Dimitri/Desktop/librealsense/librealsense.xc/cpp-capture.xcodeproj">
-   </FileRef>
-   <FileRef
-      location = "group:/Users/dimitri/Desktop/librealsense/librealsense.xc/cpp-pointcloud.xcodeproj">
-   </FileRef>
+   <Group
+      location = "container:"
+      name = "examples">
+      <FileRef
+         location = "group:cpp-multicam.xcodeproj">
+      </FileRef>
+      <FileRef
+         location = "group:c-capture.xcodeproj">
+      </FileRef>
+      <FileRef
+         location = "group:c-pointcloud.xcodeproj">
+      </FileRef>
+      <FileRef
+         location = "group:/Users/Dimitri/Desktop/librealsense/librealsense.xc/cpp-capture.xcodeproj">
+      </FileRef>
+      <FileRef
+         location = "group:/Users/dimitri/Desktop/librealsense/librealsense.xc/cpp-pointcloud.xcodeproj">
+      </FileRef>
+   </Group>
    <FileRef
       location = "container:librealsense.xcodeproj">
    </FileRef>
