@@ -7,13 +7,7 @@
 
 rs_context::rs_context()
 {
-    uvc_error_t status = rsimpl::uvc::init(&context, NULL);
-    if (status < 0)
-    {
-        rsimpl::uvc::perror(status, "uvc_init");
-        throw std::runtime_error("Could not initialize UVC context");
-    }
-
+    rsimpl::uvc::init(&context, NULL);
     query_device_list();
 }
 
@@ -28,13 +22,7 @@ rs_context::~rs_context()
 void rs_context::query_device_list()
 {
     uvc_device_t **list;
-
-    uvc_error_t status = rsimpl::uvc::get_device_list(context, &list);
-    if (status != UVC_SUCCESS)
-    {
-        rsimpl::uvc::perror(status, "uvc_get_device_list");
-        return;
-    }
+    rsimpl::uvc::get_device_list(context, &list);
 
     size_t index = 0;
     while (list[index] != nullptr)

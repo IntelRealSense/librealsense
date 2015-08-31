@@ -40,7 +40,7 @@ namespace rsimpl
         {
             if (status < 0)
             {
-                throw std::runtime_error(to_string() << call << "(...) returned " << uvc::strerror(status));
+                throw std::runtime_error(to_string() << call << "(...) returned " << uvc_strerror(status));
             }
         }
 
@@ -54,9 +54,9 @@ namespace rsimpl
             return uvc_perror(err, msg);
         }
 
-        uvc_error_t init(uvc_context_t **pctx, struct libusb_context *usb_ctx)
+        void init(uvc_context_t **pctx, struct libusb_context *usb_ctx)
         {
-            return uvc_init(pctx, usb_ctx);
+            check("uvc_init", uvc_init(pctx, usb_ctx));
         }
 
         void exit(uvc_context_t *ctx)
@@ -64,9 +64,9 @@ namespace rsimpl
             return uvc_exit(ctx);
         }
 
-        uvc_error_t get_device_list(uvc_context_t *ctx, uvc_device_t ***list)
+        void get_device_list(uvc_context_t *ctx, uvc_device_t ***list)
         {
-            return uvc_get_device_list(ctx, list);
+            check("uvc_get_device_list", uvc_get_device_list(ctx, list));
         }
 
         void free_device_list(uvc_device_t **list, uint8_t unref_devices)

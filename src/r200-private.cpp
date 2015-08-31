@@ -45,7 +45,7 @@ namespace rsimpl { namespace r200
         auto status = uvc::set_ctrl(device, CAMERA_XU_UNIT_ID, CONTROL_COMMAND_RESPONSE, command, cmdSz);
         if (status < 0)
         {
-            uvc::perror((uvc_error_t) status, "SendCommand - uvc_set_ctrl");
+            std::cerr << "send_command - uvc_set_ctrl - " << usb::error_name(status) << std::endl;
             return false;
         }
 
@@ -53,7 +53,7 @@ namespace rsimpl { namespace r200
         status = uvc::get_ctrl(device, CAMERA_XU_UNIT_ID, CONTROL_COMMAND_RESPONSE, response, resSz);
         if (status < 0)
         {
-            uvc::perror((uvc_error_t) status, "SendCommand - uvc_get_ctrl");
+            std::cerr << "send_command - uvc_get_ctrl - " << usb::error_name(status) << std::endl;
             return false;
         }
         return true;
@@ -341,7 +341,7 @@ namespace rsimpl { namespace r200
         auto status = uvc::get_ctrl(device, CAMERA_XU_UNIT_ID, xu_ctrl, buffer, length);
         if (status < 0)
         {
-            uvc::perror((uvc_error_t) status, "xu_read - uvc_get_ctrl");
+            std::cerr << "xu_read - uvc_get_ctrl - " << usb::error_name(status) << std::endl;
             return false;
         }
         return true;
@@ -352,7 +352,7 @@ namespace rsimpl { namespace r200
         auto status = uvc::set_ctrl(device, CAMERA_XU_UNIT_ID, xu_ctrl, buffer, length);
         if (status < 0)
         {
-            uvc::perror((uvc_error_t) status, "xu_write - uvc_set_ctrl");
+            std::cerr << "xu_read - uvc_set_ctrl - " << usb::error_name(status) << std::endl;
             return false;
         }
         return true;

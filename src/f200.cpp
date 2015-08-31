@@ -133,7 +133,7 @@ namespace rsimpl
         auto status = uvc::get_ctrl(device, 6, xu_ctrl, buffer, length);
         if (status < 0)
         {
-            uvc::perror((uvc_error_t) status, "xu_read - uvc_get_ctrl");
+            std::cerr << "xu read - uvc_get_ctrl - " << usb::error_name(status) << std::endl;
             return false;
         }
         return true;
@@ -144,7 +144,7 @@ namespace rsimpl
         auto status = uvc::set_ctrl(device, 6, xu_ctrl, buffer, length);
         if (status < 0)
         {
-            uvc::perror((uvc_error_t) status, "xu_write - uvc_set_ctrl");
+            std::cerr << "xu write - uvc_get_ctrl - " << usb::error_name(status) << std::endl;
             return false;
         }
         return true;
