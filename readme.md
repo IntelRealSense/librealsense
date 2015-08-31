@@ -46,9 +46,12 @@ The goal of librealsense is to provide a reasonable hardware abstraction with mi
   * `sudo apt-get install libusb-dev`
 4. glfw3 is not available in apt-get on Ubuntu 14.04. Use included installer script:
   * `sudo chmod a+x install_glfw3.sh`
-  * `./install_glfw3.sh`
-5. We are using QtCreator as an IDE for Linux development on Ubuntu. While makefiles will eventually be supported, you will need to download and install the IDE to compile the library
+  * `scripts/install_glfw3.sh`
+5. We use QtCreator as an IDE for Linux development on Ubuntu: 
   * `sudo apt-get install qtcreator`
+6. Don't want to use QtCreator? We have a makefile!
+  * `make && sudo make install`
+  * The example executables will build into `/bin`
 
 ## FAQ
 
