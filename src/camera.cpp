@@ -16,7 +16,7 @@ rs_camera::rs_camera(uvc_context_t * context, uvc_device_t * device, const stati
 
     {
         uvc_device_descriptor_t * desc;
-        CheckUVC("uvc_get_device_descriptor", uvc::get_device_descriptor(device, &desc));
+        uvc::get_device_descriptor(device, &desc);
         camera_name = desc->product;
         uvc::free_device_descriptor(desc);
     }
@@ -184,7 +184,7 @@ bool rs_camera::stream_buffer::update_image()
 
 rs_camera::subdevice_handle::subdevice_handle(uvc_device_t * device, int subdevice_index)
 {
-    CheckUVC("uvc_open2", uvc::open2(device, &handle, subdevice_index));
+    uvc::open2(device, &handle, subdevice_index);
 }
 
 rs_camera::subdevice_handle::~subdevice_handle()
@@ -196,7 +196,7 @@ rs_camera::subdevice_handle::~subdevice_handle()
 void rs_camera::subdevice_handle::set_mode(const subdevice_mode & mode, std::vector<std::shared_ptr<stream_buffer>> streams)
 {
     assert(mode.streams.size() == streams.size());
-    CheckUVC("uvc_get_stream_ctrl_format_size", uvc::get_stream_ctrl_format_size(handle, &ctrl, mode.format, mode.width, mode.height, mode.fps));
+    uvc::get_stream_ctrl_format_size(handle, &ctrl, mode.format, mode.width, mode.height, mode.fps);
     
     this->mode = mode;
     this->streams = streams;
@@ -210,7 +210,7 @@ void rs_camera::subdevice_handle::start_streaming()
     uvc_print_stream_ctrl(&ctrl, stdout);
 #endif
     
-    CheckUVC("uvc_start_streaming", uvc::start_streaming(handle, &ctrl, [](uvc_frame_t * frame, void * ptr)
+    uvc::start_streaming(handle, &ctrl, [](uvc_frame_t * frame, void * ptr)
     {
         // Validate that this frame matches the mode information we've set
         auto self = reinterpret_cast<subdevice_handle *>(ptr);
@@ -235,7 +235,7 @@ void rs_camera::subdevice_handle::start_streaming()
             stream->back.swap(stream->middle);
             stream->updated = true;
         }
-    }, this, 0));
+    }, this, 0);
 }
     
 void rs_camera::subdevice_handle::stop_streaming()

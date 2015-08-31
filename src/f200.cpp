@@ -130,7 +130,7 @@ namespace rsimpl
     // single *potentially* useful XU on the color device, so let's ignore it for now.
     bool xu_read(uvc_device_handle_t * device, uint64_t xu_ctrl, void * buffer, uint32_t length)
     {
-        auto status = uvc::get_ctrl(device, 6, xu_ctrl, buffer, length, UVC_GET_CUR);
+        auto status = uvc::get_ctrl(device, 6, xu_ctrl, buffer, length);
         if (status < 0)
         {
             uvc::perror((uvc_error_t) status, "xu_read - uvc_get_ctrl");

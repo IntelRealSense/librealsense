@@ -155,19 +155,6 @@ typedef struct uvc_frame {
 
 typedef void(uvc_frame_callback_t)(struct uvc_frame *frame, void *user_ptr);
 
-/** UVC request code (A.8) */
-enum uvc_req_code {
-  UVC_RC_UNDEFINED = 0x00,
-  UVC_SET_CUR = 0x01,
-  UVC_GET_CUR = 0x81,
-  UVC_GET_MIN = 0x82,
-  UVC_GET_MAX = 0x83,
-  UVC_GET_RES = 0x84,
-  UVC_GET_LEN = 0x85,
-  UVC_GET_INFO = 0x86,
-  UVC_GET_DEF = 0x87
-};
-
 #endif
 
 namespace rsimpl
@@ -196,17 +183,17 @@ namespace rsimpl
         void ref_device(uvc_device_t *dev);
         void unref_device(uvc_device_t *dev);
 
-        uvc_error_t get_device_descriptor(uvc_device_t *dev, uvc_device_descriptor_t **desc);
+        void get_device_descriptor(uvc_device_t *dev, uvc_device_descriptor_t **desc);
         void free_device_descriptor(uvc_device_descriptor_t *desc);
 
-        uvc_error_t open2(uvc_device_t *dev, uvc_device_handle_t **devh, int camera_number);
+        void open2(uvc_device_t *dev, uvc_device_handle_t **devh, int camera_number);
         void close(uvc_device_handle_t *devh);
 
-        uvc_error_t get_stream_ctrl_format_size(uvc_device_handle_t *devh, uvc_stream_ctrl_t *ctrl, enum uvc_frame_format cf, int width, int height, int fps);
-        uvc_error_t start_streaming(uvc_device_handle_t *devh, uvc_stream_ctrl_t *ctrl, uvc_frame_callback_t *cb, void *user_ptr, uint8_t flags);
+        void get_stream_ctrl_format_size(uvc_device_handle_t *devh, uvc_stream_ctrl_t *ctrl, enum uvc_frame_format cf, int width, int height, int fps);
+        void start_streaming(uvc_device_handle_t *devh, uvc_stream_ctrl_t *ctrl, uvc_frame_callback_t *cb, void *user_ptr, uint8_t flags);
         void stop_streaming(uvc_device_handle_t *devh);
 
-        int get_ctrl(uvc_device_handle_t *devh, uint8_t unit, uint8_t ctrl, void *data, int len, enum uvc_req_code req_code);
+        int get_ctrl(uvc_device_handle_t *devh, uint8_t unit, uint8_t ctrl, void *data, int len);
         int set_ctrl(uvc_device_handle_t *devh, uint8_t unit, uint8_t ctrl, void *data, int len);
 
         libusb_context * get_libusb_context(uvc_context_t *ctx);

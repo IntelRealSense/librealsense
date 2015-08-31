@@ -6,17 +6,6 @@
 
 #include <mutex>
 
-namespace rsimpl
-{
-    inline void CheckUVC(const char * call, uvc_error_t status)
-    {
-        if (status < 0)
-        {
-            throw std::runtime_error(to_string() << call << "(...) returned " << uvc::strerror(status));
-        }
-    }
-}
-
 struct rs_camera
 {
 protected:

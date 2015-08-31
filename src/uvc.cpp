@@ -2,6 +2,7 @@
 
 #define NO_UVC_TYPES
 #include "uvc.h"
+#include "types.h"
 
 namespace rsimpl
 {
@@ -35,6 +36,14 @@ namespace rsimpl
 
     namespace uvc // Correspond to uvc_* calls
     {
+        static void check(const char * call, uvc_error_t status)
+        {
+            if (status < 0)
+            {
+                throw std::runtime_error(to_string() << call << "(...) returned " << uvc::strerror(status));
+            }
+        }
+
         const char* strerror(uvc_error_t err)
         {
             return uvc_strerror(err);
@@ -75,9 +84,9 @@ namespace rsimpl
             return uvc_unref_device(dev);
         }
 
-        uvc_error_t get_device_descriptor(uvc_device_t *dev, uvc_device_descriptor_t **desc)
+        void get_device_descriptor(uvc_device_t *dev, uvc_device_descriptor_t **desc)
         {
-            return uvc_get_device_descriptor(dev, desc);
+            return check("uvc_get_device_descriptor", uvc_get_device_descriptor(dev, desc));
         }
 
         void free_device_descriptor(uvc_device_descriptor_t *desc)
@@ -85,9 +94,9 @@ namespace rsimpl
             return uvc_free_device_descriptor(desc);
         }
 
-        uvc_error_t open2(uvc_device_t *dev, uvc_device_handle_t **devh, int camera_number)
+        void open2(uvc_device_t *dev, uvc_device_handle_t **devh, int camera_number)
         {
-            return uvc_open2(dev, devh, camera_number);
+            return check("uvc_open2", uvc_open2(dev, devh, camera_number));
         }
 
         void close(uvc_device_handle_t *devh)
@@ -95,14 +104,14 @@ namespace rsimpl
             return uvc_close(devh);
         }
 
-        uvc_error_t get_stream_ctrl_format_size(uvc_device_handle_t *devh, uvc_stream_ctrl_t *ctrl, enum uvc_frame_format cf, int width, int height, int fps)
+        void get_stream_ctrl_format_size(uvc_device_handle_t *devh, uvc_stream_ctrl_t *ctrl, enum uvc_frame_format cf, int width, int height, int fps)
         {
-            return uvc_get_stream_ctrl_format_size(devh, ctrl, cf, width, height, fps);
+            return check("get_stream_ctrl_format_size", uvc_get_stream_ctrl_format_size(devh, ctrl, cf, width, height, fps));
         }
 
-        uvc_error_t start_streaming(uvc_device_handle_t *devh, uvc_stream_ctrl_t *ctrl, uvc_frame_callback_t *cb, void *user_ptr, uint8_t flags)
+        void start_streaming(uvc_device_handle_t *devh, uvc_stream_ctrl_t *ctrl, uvc_frame_callback_t *cb, void *user_ptr, uint8_t flags)
         {
-            return uvc_start_streaming(devh, ctrl, cb, user_ptr, flags);
+            return check("uvc_start_streaming", uvc_start_streaming(devh, ctrl, cb, user_ptr, flags));
         }
 
         void stop_streaming(uvc_device_handle_t *devh)
@@ -110,9 +119,9 @@ namespace rsimpl
             return uvc_stop_streaming(devh);
         }
 
-        int get_ctrl(uvc_device_handle_t *devh, uint8_t unit, uint8_t ctrl, void *data, int len, enum uvc_req_code req_code)
+        int get_ctrl(uvc_device_handle_t *devh, uint8_t unit, uint8_t ctrl, void *data, int len)
         {
-            return uvc_get_ctrl(devh, unit, ctrl, data, len, req_code);
+            return uvc_get_ctrl(devh, unit, ctrl, data, len, UVC_GET_CUR);
         }
 
         int set_ctrl(uvc_device_handle_t *devh, uint8_t unit, uint8_t ctrl, void *data, int len)

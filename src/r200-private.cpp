@@ -50,7 +50,7 @@ namespace rsimpl { namespace r200
         }
 
         uint32_t resSz = sizeof(ResponsePacket);
-        status = uvc::get_ctrl(device, CAMERA_XU_UNIT_ID, CONTROL_COMMAND_RESPONSE, response, resSz, UVC_GET_CUR);
+        status = uvc::get_ctrl(device, CAMERA_XU_UNIT_ID, CONTROL_COMMAND_RESPONSE, response, resSz);
         if (status < 0)
         {
             uvc::perror((uvc_error_t) status, "SendCommand - uvc_get_ctrl");
@@ -338,7 +338,7 @@ namespace rsimpl { namespace r200
 
     bool xu_read(uvc_device_handle_t * device, uint64_t xu_ctrl, void * buffer, uint32_t length)
     {
-        auto status = uvc::get_ctrl(device, CAMERA_XU_UNIT_ID, xu_ctrl, buffer, length, UVC_GET_CUR);
+        auto status = uvc::get_ctrl(device, CAMERA_XU_UNIT_ID, xu_ctrl, buffer, length);
         if (status < 0)
         {
             uvc::perror((uvc_error_t) status, "xu_read - uvc_get_ctrl");
