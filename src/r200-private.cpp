@@ -39,10 +39,10 @@ namespace rsimpl { namespace r200
         uint32_t reserved[55]{};
     };
 
-    bool send_command(uvc_device_handle_t * device, CommandPacket * command, ResponsePacket * response)
+    bool send_command(uvc::device_handle & device, CommandPacket * command, ResponsePacket * response)
     {
         uint32_t cmdSz = sizeof(CommandPacket);
-        auto status = uvc::set_ctrl(device, CAMERA_XU_UNIT_ID, CONTROL_COMMAND_RESPONSE, command, cmdSz);
+        auto status = device.set_ctrl(CAMERA_XU_UNIT_ID, CONTROL_COMMAND_RESPONSE, command, cmdSz);
         if (status < 0)
         {
             std::cerr << "send_command - uvc_set_ctrl - " << usb::error_name(status) << std::endl;
@@ -50,7 +50,7 @@ namespace rsimpl { namespace r200
         }
 
         uint32_t resSz = sizeof(ResponsePacket);
-        status = uvc::get_ctrl(device, CAMERA_XU_UNIT_ID, CONTROL_COMMAND_RESPONSE, response, resSz);
+        status = device.get_ctrl(CAMERA_XU_UNIT_ID, CONTROL_COMMAND_RESPONSE, response, resSz);
         if (status < 0)
         {
             std::cerr << "send_command - uvc_get_ctrl - " << usb::error_name(status) << std::endl;
@@ -132,7 +132,7 @@ namespace rsimpl { namespace r200
         CameraCalibrationParameters cameraCalibration;
         CameraHeaderInfo cameraInfo;
 
-        uvc_device_handle_t * deviceHandle;
+        uvc::device_handle & deviceHandle;
 
         void ReadCalibrationSector()
         {
@@ -283,7 +283,7 @@ namespace rsimpl { namespace r200
 
     public:
 
-        DS4HardwareIO(uvc_device_handle_t * devh) : deviceHandle(devh)
+        DS4HardwareIO(uvc::device_handle & devh) : deviceHandle(devh)
         {
             read_spi_flash_memory();
         }
@@ -313,7 +313,7 @@ namespace rsimpl { namespace r200
         return (c0 << 24) | (c1 << 16) | (c2 << 8) | c3;
     }
 
-    void read_camera_info(uvc_device_handle_t * device, CameraCalibrationParameters & calib, CameraHeaderInfo & header)
+    void read_camera_info(uvc::device_handle & device, CameraCalibrationParameters & calib, CameraHeaderInfo & header)
     {
         DS4HardwareIO internal(device);
         calib = internal.GetCalibration();
@@ -321,7 +321,7 @@ namespace rsimpl { namespace r200
         internal.LogDebugInfo(calib, header);
     }
 
-    std::string read_firmware_version(uvc_device_handle_t * device)
+    std::string read_firmware_version(uvc::device_handle & device)
     {
         CommandPacket command;
         command.code = COMMAND_GET_FWREVISION;
@@ -336,9 +336,9 @@ namespace rsimpl { namespace r200
         return fw;
     }
 
-    bool xu_read(uvc_device_handle_t * device, uint64_t xu_ctrl, void * buffer, uint32_t length)
+    bool xu_read(uvc::device_handle & device, uint64_t xu_ctrl, void * buffer, uint32_t length)
     {
-        auto status = uvc::get_ctrl(device, CAMERA_XU_UNIT_ID, xu_ctrl, buffer, length);
+        auto status = device.get_ctrl(CAMERA_XU_UNIT_ID, xu_ctrl, buffer, length);
         if (status < 0)
         {
             std::cerr << "xu_read - uvc_get_ctrl - " << usb::error_name(status) << std::endl;
@@ -347,9 +347,9 @@ namespace rsimpl { namespace r200
         return true;
     }
 
-    bool xu_write(uvc_device_handle_t * device, uint64_t xu_ctrl, void * buffer, uint32_t length)
+    bool xu_write(uvc::device_handle & device, uint64_t xu_ctrl, void * buffer, uint32_t length)
     {
-        auto status = uvc::set_ctrl(device, CAMERA_XU_UNIT_ID, xu_ctrl, buffer, length);
+        auto status = device.set_ctrl(CAMERA_XU_UNIT_ID, xu_ctrl, buffer, length);
         if (status < 0)
         {
             std::cerr << "xu_read - uvc_set_ctrl - " << usb::error_name(status) << std::endl;
@@ -358,12 +358,12 @@ namespace rsimpl { namespace r200
         return true;
     }
 
-    bool set_stream_intent(uvc_device_handle_t * device, uint8_t & intent)
+    bool set_stream_intent(uvc::device_handle & device, uint8_t & intent)
     {
         return xu_write(device, CONTROL_STREAM_INTENT, &intent, sizeof(intent));
     }
 
-    bool get_stream_status(uvc_device_handle_t * device, int & status)
+    bool get_stream_status(uvc::device_handle & device, int & status)
     {
         uint8_t s[4] = {255, 255, 255, 255};
         if (!xu_read(device, CONTROL_STATUS, s, (int) sizeof(uint32_t)))
@@ -372,18 +372,18 @@ namespace rsimpl { namespace r200
         return true;
     }
 
-    bool get_last_error(uvc_device_handle_t * device, uint8_t & last_error)
+    bool get_last_error(uvc::device_handle & device, uint8_t & last_error)
     {
         return xu_read(device, CONTROL_LAST_ERROR, &last_error, sizeof(uint8_t));
     }
 
-    bool force_firmware_reset(uvc_device_handle_t * device)
+    bool force_firmware_reset(uvc::device_handle & device)
     {
         uint8_t reset = 1;
         return xu_write(device, CONTROL_SW_RESET, &reset, sizeof(uint8_t));
     }
 
-    bool get_emitter_state(uvc_device_handle_t * device, bool & state)
+    bool get_emitter_state(uvc::device_handle & device, bool & state)
     {
         uint8_t byte = 0;
         if (!xu_read(device, CONTROL_EMITTER, &byte, sizeof(byte)))
@@ -393,13 +393,13 @@ namespace rsimpl { namespace r200
         return true;
     }
 
-    bool set_emitter_state(uvc_device_handle_t * device, bool state)
+    bool set_emitter_state(uvc::device_handle & device, bool state)
     {
         uint8_t newEmitterState = state ? 1 : 0;
         return xu_read(device, CONTROL_EMITTER, &newEmitterState, sizeof(uint8_t));
     }
 
-    bool read_temperature(uvc_device_handle_t * device, int8_t & current, int8_t & min, int8_t & max, int8_t & min_fault)
+    bool read_temperature(uvc::device_handle & device, int8_t & current, int8_t & min, int8_t & max, int8_t & min_fault)
     {
         uint32_t length = 4;
         uint8_t buf[4] = {0};
@@ -412,7 +412,7 @@ namespace rsimpl { namespace r200
         return true;
     }
 
-    bool reset_temperature(uvc_device_handle_t * device)
+    bool reset_temperature(uvc::device_handle & device)
     {
         uint32_t length = 4;
         uint8_t buf[4] = {0};
@@ -421,23 +421,23 @@ namespace rsimpl { namespace r200
         return true;
     }
 
-    bool get_depth_units(uvc_device_handle_t * device, uint32_t & units)
+    bool get_depth_units(uvc::device_handle & device, uint32_t & units)
     {
         return xu_read(device, CONTROL_DEPTH_UNITS, &units, sizeof(units));
     }
 
-    bool set_depth_units(uvc_device_handle_t * device, uint32_t units)
+    bool set_depth_units(uvc::device_handle & device, uint32_t units)
     {
         return xu_write(device, CONTROL_DEPTH_UNITS, &units, sizeof(units));
     }
 
-    bool set_min_max_depth(uvc_device_handle_t * device, uint16_t min_depth, uint16_t max_depth)
+    bool set_min_max_depth(uvc::device_handle & device, uint16_t min_depth, uint16_t max_depth)
     {
         uint16_t values[] = {min_depth, max_depth};
         return xu_write(device, CONTROL_MIN_MAX, values, sizeof(values));
     }
 
-    bool get_min_max_depth(uvc_device_handle_t * device, uint16_t & min_depth, uint16_t & max_depth)
+    bool get_min_max_depth(uvc::device_handle & device, uint16_t & min_depth, uint16_t & max_depth)
     {
         std::vector<uint16_t> minmax_values = {0, 0};
         if (!xu_read(device, CONTROL_MIN_MAX, minmax_values.data(), sizeof(minmax_values)))
@@ -447,7 +447,7 @@ namespace rsimpl { namespace r200
         return true;
     }
 
-    bool get_lr_gain(uvc_device_handle_t * device, uint32_t & rate, uint32_t & gain)
+    bool get_lr_gain(uvc::device_handle & device, uint32_t & rate, uint32_t & gain)
     {
         std::vector<uint32_t> lr_gain_values = {0, 0};
         if (!xu_read(device, CONTROL_LR_GAIN, lr_gain_values.data(), sizeof(lr_gain_values)))
@@ -457,7 +457,7 @@ namespace rsimpl { namespace r200
         return true;
     }
 
-    bool set_lr_gain(uvc_device_handle_t * device, uint32_t rate, uint32_t gain)
+    bool set_lr_gain(uvc::device_handle & device, uint32_t rate, uint32_t gain)
     {
         std::vector<uint32_t> lr_gain_values = {rate, gain};
         if (!xu_write(device, CONTROL_LR_GAIN, lr_gain_values.data(), sizeof(lr_gain_values)))
@@ -465,7 +465,7 @@ namespace rsimpl { namespace r200
         return true;
     }
 
-    bool get_lr_exposure(uvc_device_handle_t * device, uint32_t & rate, uint32_t & exposure)
+    bool get_lr_exposure(uvc::device_handle & device, uint32_t & rate, uint32_t & exposure)
     {
         std::vector<uint32_t> lr_exposure_values = {0, 0};
         if (!xu_read(device, CONTROL_LR_EXPOSURE, lr_exposure_values.data(), sizeof(lr_exposure_values)))
@@ -475,7 +475,7 @@ namespace rsimpl { namespace r200
         return true;
     }
 
-    bool set_lr_exposure(uvc_device_handle_t * device, uint32_t rate, uint32_t exposure)
+    bool set_lr_exposure(uvc::device_handle & device, uint32_t rate, uint32_t exposure)
     {
         std::vector<uint32_t> lr_exposure_values = {rate, exposure};
         if (!xu_write(device, CONTROL_LR_EXPOSURE, lr_exposure_values.data(), sizeof(lr_exposure_values)))
@@ -483,21 +483,21 @@ namespace rsimpl { namespace r200
         return true;
     }
 
-    bool get_lr_auto_exposure_params(uvc_device_handle_t * device, auto_exposure_params & params)
+    bool get_lr_auto_exposure_params(uvc::device_handle & device, auto_exposure_params & params)
     {
         if (!xu_read(device, CONTROL_LR_AUTOEXPOSURE_PARAMETERS, &params, sizeof(params)))
             return false;
         return true;
     }
 
-    bool set_lr_auto_exposure_params(uvc_device_handle_t * device, auto_exposure_params params)
+    bool set_lr_auto_exposure_params(uvc::device_handle & device, auto_exposure_params params)
     {
         if (!xu_write(device, CONTROL_LR_AUTOEXPOSURE_PARAMETERS, &params, sizeof(params)))
             return false;
         return true;
     }
 
-    bool get_lr_exposure_mode(uvc_device_handle_t * device, uint32_t & mode)
+    bool get_lr_exposure_mode(uvc::device_handle & device, uint32_t & mode)
     {
         uint8_t m; // 0 = EXPOSURE_MANUAL, 1 = EXPOSURE_AUTO
         if (!xu_read(device, CONTROL_LR_EXPOSURE_MODE, &m, sizeof(m)))
@@ -506,49 +506,49 @@ namespace rsimpl { namespace r200
         return true;
     }
 
-    bool set_lr_exposure_mode(uvc_device_handle_t * device, uint32_t mode)
+    bool set_lr_exposure_mode(uvc::device_handle & device, uint32_t mode)
     {
         if (!xu_write(device, CONTROL_LR_EXPOSURE_MODE, &mode, sizeof(mode)))
             return false;
         return true;
     }
 
-    bool get_depth_params(uvc_device_handle_t * device, depth_params & params)
+    bool get_depth_params(uvc::device_handle & device, depth_params & params)
     {
         if (!xu_read(device, CONTROL_DEPTH_PARAMS, &params, sizeof(params)))
             return false;
         return true;
     }
 
-    bool set_depth_params(uvc_device_handle_t * device, depth_params params)
+    bool set_depth_params(uvc::device_handle & device, depth_params params)
     {
         if (!xu_write(device, CONTROL_DEPTH_PARAMS, &params, sizeof(params)))
             return false;
         return true;
     }
 
-    bool get_disparity_mode(uvc_device_handle_t * device, disparity_mode & mode)
+    bool get_disparity_mode(uvc::device_handle & device, disparity_mode & mode)
     {
         if (!xu_read(device, CONTROL_DISPARITY, &mode, sizeof(mode)))
             return false;
         return true;
     }
 
-    bool set_disparity_mode(uvc_device_handle_t * device, disparity_mode mode)
+    bool set_disparity_mode(uvc::device_handle & device, disparity_mode mode)
     {
         if (!xu_write(device, CONTROL_DISPARITY, &mode, sizeof(mode)))
             return false;
         return true;
     }
 
-    bool get_disparity_shift(uvc_device_handle_t * device, uint32_t & shift)
+    bool get_disparity_shift(uvc::device_handle & device, uint32_t & shift)
     {
         if (!xu_read(device, CONTROL_DISPARITY_SHIFT, &shift, sizeof(shift)))
             return false;
         return true;
     }
 
-    bool set_disparity_shift(uvc_device_handle_t * device, uint32_t shift)
+    bool set_disparity_shift(uvc::device_handle & device, uint32_t shift)
     {
         if (!xu_write(device, CONTROL_DISPARITY_SHIFT, &shift, sizeof(shift)))
             return false;

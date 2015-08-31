@@ -64,6 +64,11 @@ namespace rsimpl
             return uvc_exit(ctx);
         }
 
+        libusb_context * get_libusb_context(uvc_context_t *ctx)
+        {
+            return uvc_get_libusb_context(ctx);
+        }
+
         void get_device_list(uvc_context_t *ctx, uvc_device_t ***list)
         {
             check("uvc_get_device_list", uvc_get_device_list(ctx, list));
@@ -94,44 +99,53 @@ namespace rsimpl
             return uvc_free_device_descriptor(desc);
         }
 
-        void open2(uvc_device_t *dev, uvc_device_handle_t **devh, int camera_number)
+        ///////////////////
+        // device_handle //
+        ///////////////////
+
+        struct device_handle::impl_t
         {
-            return check("uvc_open2", uvc_open2(dev, devh, camera_number));
+            uvc_device_handle_t * handle;
+            uvc_stream_ctrl_t ctrl;
+        };
+
+        device_handle::device_handle(uvc_device_t * device, int camera_number) : impl(new impl_t)
+        {
+            check("uvc_open2", uvc_open2(device, &impl->handle, camera_number));
         }
 
-        void close(uvc_device_handle_t *devh)
+        device_handle::~device_handle()
         {
-            return uvc_close(devh);
+            uvc_close(impl->handle);
         }
 
-        void get_stream_ctrl_format_size(uvc_device_handle_t *devh, uvc_stream_ctrl_t *ctrl, enum uvc_frame_format cf, int width, int height, int fps)
+        void device_handle::get_stream_ctrl_format_size(enum uvc_frame_format cf, int width, int height, int fps)
         {
-            return check("get_stream_ctrl_format_size", uvc_get_stream_ctrl_format_size(devh, ctrl, cf, width, height, fps));
+            check("get_stream_ctrl_format_size", uvc_get_stream_ctrl_format_size(impl->handle, &impl->ctrl, cf, width, height, fps));
         }
 
-        void start_streaming(uvc_device_handle_t *devh, uvc_stream_ctrl_t *ctrl, uvc_frame_callback_t *cb, void *user_ptr, uint8_t flags)
+        void device_handle::start_streaming(uvc_frame_callback_t *cb, void *user_ptr, uint8_t flags)
         {
-            return check("uvc_start_streaming", uvc_start_streaming(devh, ctrl, cb, user_ptr, flags));
+            #if defined (ENABLE_DEBUG_SPAM)
+            uvc_print_stream_ctrl(&impl->ctrl, stdout);
+            #endif
+
+            check("uvc_start_streaming", uvc_start_streaming(impl->handle, &impl->ctrl, cb, user_ptr, flags));
         }
 
-        void stop_streaming(uvc_device_handle_t *devh)
+        void device_handle::stop_streaming()
         {
-            return uvc_stop_streaming(devh);
+            uvc_stop_streaming(impl->handle);
         }
 
-        int get_ctrl(uvc_device_handle_t *devh, uint8_t unit, uint8_t ctrl, void *data, int len)
+        int device_handle::get_ctrl(uint8_t unit, uint8_t ctrl, void *data, int len)
         {
-            return uvc_get_ctrl(devh, unit, ctrl, data, len, UVC_GET_CUR);
+            return uvc_get_ctrl(impl->handle, unit, ctrl, data, len, UVC_GET_CUR);
         }
 
-        int set_ctrl(uvc_device_handle_t *devh, uint8_t unit, uint8_t ctrl, void *data, int len)
+        int device_handle::set_ctrl(uint8_t unit, uint8_t ctrl, void *data, int len)
         {
-            return uvc_set_ctrl(devh, unit, ctrl, data, len);
-        }
-
-        libusb_context * get_libusb_context(uvc_context_t *ctx)
-        {
-            return uvc_get_libusb_context(ctx);
+            return uvc_set_ctrl(impl->handle, unit, ctrl, data, len);
         }
     }
 }

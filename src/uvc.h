@@ -4,6 +4,7 @@
 
 #include <cstdint>
 #include <ctime>
+#include <memory>
 
 #ifndef NO_UVC_TYPES
 
@@ -50,27 +51,6 @@ enum uvc_frame_format {
     /** Number of formats understood */
     UVC_FRAME_FORMAT_COUNT,
 };
-
-typedef struct uvc_stream_ctrl {
-  uint16_t bmHint;
-  uint8_t bFormatIndex;
-  uint8_t bFrameIndex;
-  uint32_t dwFrameInterval;
-  uint16_t wKeyFrameRate;
-  uint16_t wPFrameRate;
-  uint16_t wCompQuality;
-  uint16_t wCompWindowSize;
-  uint16_t wDelay;
-  uint32_t dwMaxVideoFrameSize;
-  uint32_t dwMaxPayloadTransferSize;
-  uint32_t dwClockFrequency;
-  uint8_t bmFramingInfo;
-  uint8_t bPreferredVersion;
-  uint8_t bMinVersion;
-  uint8_t bMaxVersion;
-  uint8_t bInterfaceNumber;
-  uvc_stream_handle_t *handle;
-} uvc_stream_ctrl_t;
 
 typedef struct uvc_device_descriptor {
   /** Vendor ID */
@@ -136,6 +116,7 @@ namespace rsimpl
     {
         void init(uvc_context_t **pctx, struct libusb_context *usb_ctx);
         void exit(uvc_context_t *ctx);
+        libusb_context * get_libusb_context(uvc_context_t *ctx);
 
         void get_device_list(uvc_context_t *ctx, uvc_device_t ***list);
         void free_device_list(uvc_device_t **list, uint8_t unref_devices);
@@ -146,17 +127,20 @@ namespace rsimpl
         void get_device_descriptor(uvc_device_t *dev, uvc_device_descriptor_t **desc);
         void free_device_descriptor(uvc_device_descriptor_t *desc);
 
-        void open2(uvc_device_t *dev, uvc_device_handle_t **devh, int camera_number);
-        void close(uvc_device_handle_t *devh);
+        class device_handle
+        {
+            struct impl_t; std::unique_ptr<impl_t> impl;
+        public:
+            device_handle(uvc_device_t * device, int camera_number);
+            ~device_handle();
 
-        void get_stream_ctrl_format_size(uvc_device_handle_t *devh, uvc_stream_ctrl_t *ctrl, enum uvc_frame_format cf, int width, int height, int fps);
-        void start_streaming(uvc_device_handle_t *devh, uvc_stream_ctrl_t *ctrl, uvc_frame_callback_t *cb, void *user_ptr, uint8_t flags);
-        void stop_streaming(uvc_device_handle_t *devh);
+            void get_stream_ctrl_format_size(enum uvc_frame_format cf, int width, int height, int fps);
+            void start_streaming(uvc_frame_callback_t *cb, void *user_ptr, uint8_t flags);
+            void stop_streaming();
 
-        int get_ctrl(uvc_device_handle_t *devh, uint8_t unit, uint8_t ctrl, void *data, int len);
-        int set_ctrl(uvc_device_handle_t *devh, uint8_t unit, uint8_t ctrl, void *data, int len);
-
-        libusb_context * get_libusb_context(uvc_context_t *ctx);
+            int get_ctrl(uint8_t unit, uint8_t ctrl, void *data, int len);
+            int set_ctrl(uint8_t unit, uint8_t ctrl, void *data, int len);
+        };
     }
 }
 

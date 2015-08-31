@@ -42,15 +42,14 @@ protected:
     // Interfaces with a UVC subdevice, and unpacks the encoded frames into one or more stream_buffers
     class subdevice_handle
     {
-        uvc_device_handle_t *                       handle;
-        uvc_stream_ctrl_t                           ctrl;
+        rsimpl::uvc::device_handle                  handle;
         rsimpl::subdevice_mode                      mode;
         std::vector<std::shared_ptr<stream_buffer>> streams;
     public:
                                                     subdevice_handle(uvc_device_t * device, int subdevice_index);
                                                     ~subdevice_handle();
 
-        uvc_device_handle_t *                       get_handle() { return handle; }
+        rsimpl::uvc::device_handle *                get_handle() { return &handle; }
         void                                        set_mode(const rsimpl::subdevice_mode & mode, std::vector<std::shared_ptr<stream_buffer>> streams);
         void                                        start_streaming();
         void                                        stop_streaming();
@@ -65,7 +64,7 @@ protected:
     std::shared_ptr<stream_buffer>                  streams[RS_STREAM_NUM];     // Indexed by RS_DEPTH, RS_COLOR, ...
     std::vector<std::unique_ptr<subdevice_handle>>  subdevices;                 // Indexed by UVC subdevices number (0, 1, 2...)
 
-    uvc_device_handle_t *                           first_handle = nullptr;
+    rsimpl::uvc::device_handle *                    first_handle = nullptr;
     rsimpl::calibration_info                        calib;
     bool                                            is_capturing;
   
