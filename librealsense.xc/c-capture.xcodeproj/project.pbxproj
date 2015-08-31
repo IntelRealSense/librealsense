@@ -11,8 +11,7 @@
 		08567C0B1B5B898C00EB6C0D /* CoreVideo.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 08567C0A1B5B898C00EB6C0D /* CoreVideo.framework */; };
 		08567C0D1B5B899200EB6C0D /* IOKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 08567C0C1B5B899200EB6C0D /* IOKit.framework */; };
 		08567C0F1B5B899B00EB6C0D /* OpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 08567C0E1B5B899B00EB6C0D /* OpenGL.framework */; };
-		08567C2C1B61D80B00EB6C0D /* librealsense.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 08567C2B1B61D80B00EB6C0D /* librealsense.a */; };
-		08567C301B61DB8100EB6C0D /* libusb-1.0.0.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 08567C2F1B61DB8100EB6C0D /* libusb-1.0.0.dylib */; };
+		2799858F1B95088B00894334 /* librealsense.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 2799858E1B95088B00894334 /* librealsense.dylib */; };
 		279D52DA1B8E86FB007F2D73 /* c-capture.c in Sources */ = {isa = PBXBuildFile; fileRef = 279D52D91B8E86FB007F2D73 /* c-capture.c */; };
 		279D52DE1B8E8866007F2D73 /* libglfw3.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 279D52DD1B8E8866007F2D73 /* libglfw3.dylib */; };
 /* End PBXBuildFile section */
@@ -35,8 +34,7 @@
 		08567C0A1B5B898C00EB6C0D /* CoreVideo.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreVideo.framework; path = System/Library/Frameworks/CoreVideo.framework; sourceTree = SDKROOT; };
 		08567C0C1B5B899200EB6C0D /* IOKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = IOKit.framework; path = System/Library/Frameworks/IOKit.framework; sourceTree = SDKROOT; };
 		08567C0E1B5B899B00EB6C0D /* OpenGL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenGL.framework; path = System/Library/Frameworks/OpenGL.framework; sourceTree = SDKROOT; };
-		08567C2B1B61D80B00EB6C0D /* librealsense.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = librealsense.a; path = ../../Library/Developer/Xcode/DerivedData/bin/Debug/librealsense.a; sourceTree = "<group>"; };
-		08567C2F1B61DB8100EB6C0D /* libusb-1.0.0.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = "libusb-1.0.0.dylib"; path = "../../../../usr/local/Cellar/libusb/1.0.19/lib/libusb-1.0.0.dylib"; sourceTree = "<group>"; };
+		2799858E1B95088B00894334 /* librealsense.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = librealsense.dylib; path = librealsense.xc/build/Debug/librealsense.dylib; sourceTree = "<group>"; };
 		279D52D91B8E86FB007F2D73 /* c-capture.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = "c-capture.c"; path = "../examples/c-capture.c"; sourceTree = SOURCE_ROOT; };
 		279D52DD1B8E8866007F2D73 /* libglfw3.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libglfw3.dylib; path = ../../../../usr/local/Cellar/glfw3/3.1.1/lib/libglfw3.dylib; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -46,13 +44,12 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				08567C2C1B61D80B00EB6C0D /* librealsense.a in Frameworks */,
+				2799858F1B95088B00894334 /* librealsense.dylib in Frameworks */,
 				279D52DE1B8E8866007F2D73 /* libglfw3.dylib in Frameworks */,
 				08567C0F1B5B899B00EB6C0D /* OpenGL.framework in Frameworks */,
 				08567C0D1B5B899200EB6C0D /* IOKit.framework in Frameworks */,
 				08567C0B1B5B898C00EB6C0D /* CoreVideo.framework in Frameworks */,
 				08567C091B5B898400EB6C0D /* Cocoa.framework in Frameworks */,
-				08567C301B61DB8100EB6C0D /* libusb-1.0.0.dylib in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -97,9 +94,8 @@
 		08567C2D1B61D82000EB6C0D /* libs */ = {
 			isa = PBXGroup;
 			children = (
-				08567C2F1B61DB8100EB6C0D /* libusb-1.0.0.dylib */,
+				2799858E1B95088B00894334 /* librealsense.dylib */,
 				279D52DD1B8E8866007F2D73 /* libglfw3.dylib */,
-				08567C2B1B61D80B00EB6C0D /* librealsense.a */,
 			);
 			name = libs;
 			path = ..;
@@ -285,6 +281,7 @@
 					/usr/local/Cellar/glfw3/3.1.1/lib,
 					/usr/local/Cellar/libusb/1.0.19/lib,
 					"$(USER_LIBRARY_DIR)/Developer/Xcode/DerivedData/bin/Debug",
+					"$(PROJECT_DIR)/build/Debug",
 				);
 				PRODUCT_NAME = "c-capture";
 			};
@@ -306,6 +303,7 @@
 					/usr/local/Cellar/glfw3/3.1.1/lib,
 					/usr/local/Cellar/libusb/1.0.19/lib,
 					"$(USER_LIBRARY_DIR)/Developer/Xcode/DerivedData/bin/Debug",
+					"$(PROJECT_DIR)/build/Debug",
 				);
 				PRODUCT_NAME = "c-capture";
 			};

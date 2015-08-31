@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		279985841B95074500894334 /* libusb-1.0.0.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 279985831B95074500894334 /* libusb-1.0.0.dylib */; };
 		279D52AB1B8E8678007F2D73 /* camera.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 279D52991B8E8678007F2D73 /* camera.cpp */; };
 		279D52AC1B8E8678007F2D73 /* camera.h in Headers */ = {isa = PBXBuildFile; fileRef = 279D529A1B8E8678007F2D73 /* camera.h */; };
 		279D52AD1B8E8678007F2D73 /* context.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 279D529B1B8E8678007F2D73 /* context.cpp */; };
@@ -41,7 +42,8 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		08567BC41B5B5A0200EB6C0D /* librealsense.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = librealsense.a; sourceTree = BUILT_PRODUCTS_DIR; };
+		08567BC41B5B5A0200EB6C0D /* librealsense.dylib */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = librealsense.dylib; sourceTree = BUILT_PRODUCTS_DIR; };
+		279985831B95074500894334 /* libusb-1.0.0.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = "libusb-1.0.0.dylib"; path = "/usr/local/Cellar/libusb/1.0.19/lib/libusb-1.0.0.dylib"; sourceTree = "<absolute>"; };
 		279D52991B8E8678007F2D73 /* camera.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = camera.cpp; path = ../src/camera.cpp; sourceTree = SOURCE_ROOT; };
 		279D529A1B8E8678007F2D73 /* camera.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = camera.h; path = ../src/camera.h; sourceTree = SOURCE_ROOT; };
 		279D529B1B8E8678007F2D73 /* context.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = context.cpp; path = ../src/context.cpp; sourceTree = SOURCE_ROOT; };
@@ -80,6 +82,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				279985841B95074500894334 /* libusb-1.0.0.dylib in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -89,6 +92,7 @@
 		08567BBB1B5B5A0200EB6C0D = {
 			isa = PBXGroup;
 			children = (
+				279985851B95074A00894334 /* libs */,
 				08567BE61B5B5B2800EB6C0D /* libuvc */,
 				08567BC61B5B5A0200EB6C0D /* librealsense */,
 				08567BC51B5B5A0200EB6C0D /* Products */,
@@ -98,7 +102,7 @@
 		08567BC51B5B5A0200EB6C0D /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				08567BC41B5B5A0200EB6C0D /* librealsense.a */,
+				08567BC41B5B5A0200EB6C0D /* librealsense.dylib */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -127,6 +131,14 @@
 				279D52C71B8E868E007F2D73 /* utlist.h */,
 			);
 			name = libuvc;
+			sourceTree = "<group>";
+		};
+		279985851B95074A00894334 /* libs */ = {
+			isa = PBXGroup;
+			children = (
+				279985831B95074500894334 /* libusb-1.0.0.dylib */,
+			);
+			name = libs;
 			sourceTree = "<group>";
 		};
 		279D52E71B90FD53007F2D73 /* src */ = {
@@ -207,7 +219,7 @@
 			);
 			name = librealsense;
 			productName = librealsense;
-			productReference = 08567BC41B5B5A0200EB6C0D /* librealsense.a */;
+			productReference = 08567BC41B5B5A0200EB6C0D /* librealsense.dylib */;
 			productType = "com.apple.product-type.library.static";
 		};
 /* End PBXNativeTarget section */
@@ -308,6 +320,7 @@
 					/usr/local/Cellar/libusb/1.0.19/include/,
 				);
 				LIBRARY_SEARCH_PATHS = /usr/local/Cellar/libusb/1.0.19/lib;
+				MACH_O_TYPE = mh_dylib;
 				MACOSX_DEPLOYMENT_TARGET = 10.10;
 				MTL_ENABLE_DEBUG_INFO = YES;
 				ONLY_ACTIVE_ARCH = YES;
@@ -350,6 +363,7 @@
 					/usr/local/Cellar/libusb/1.0.19/include/,
 				);
 				LIBRARY_SEARCH_PATHS = /usr/local/Cellar/libusb/1.0.19/lib;
+				MACH_O_TYPE = mh_dylib;
 				MACOSX_DEPLOYMENT_TARGET = 10.10;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				SDKROOT = macosx;
@@ -360,6 +374,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				COMBINE_HIDPI_IMAGES = YES;
+				EXECUTABLE_EXTENSION = dylib;
 				EXECUTABLE_PREFIX = "";
 				GCC_ENABLE_CPP_EXCEPTIONS = YES;
 				GCC_ENABLE_CPP_RTTI = YES;
@@ -375,6 +390,11 @@
 					/usr/local/Cellar/libusb/1.0.19/include/,
 					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
 				);
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					/usr/local/Cellar/libusb/1.0.19/lib,
+				);
+				MACH_O_TYPE = mh_dylib;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
 			name = Debug;
@@ -383,6 +403,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				COMBINE_HIDPI_IMAGES = YES;
+				EXECUTABLE_EXTENSION = dylib;
 				EXECUTABLE_PREFIX = "";
 				GCC_ENABLE_CPP_EXCEPTIONS = YES;
 				GCC_ENABLE_CPP_RTTI = YES;
@@ -394,6 +415,11 @@
 					/usr/local/Cellar/libusb/1.0.19/include/,
 					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
 				);
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					/usr/local/Cellar/libusb/1.0.19/lib,
+				);
+				MACH_O_TYPE = mh_dylib;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
 			name = Release;
