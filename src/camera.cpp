@@ -65,8 +65,10 @@ void rs_camera::configure_enabled_streams()
                 subdevices[i].reset(new subdevice_handle(device, i));
                 if (!first_handle) first_handle = subdevices[i]->get_handle();
                 
+#if defined(ENABLE_DEBUG_SPAM)
                 uvc_print_diag(subdevices[i]->get_handle(), stdout);
-
+#endif
+                
                 // For each stream provided by this mode
                 std::vector<std::shared_ptr<stream_buffer>> stream_list;
                 for(auto & stream_mode : mode->streams)
@@ -201,7 +203,10 @@ void rs_camera::subdevice_handle::set_mode(const subdevice_mode & mode, std::vec
 
 void rs_camera::subdevice_handle::start_streaming()
 {
-    //uvc_print_stream_ctrl(&ctrl, stdout);
+    
+#if defined (ENABLE_DEBUG_SPAM)
+    uvc_print_stream_ctrl(&ctrl, stdout);
+#endif
     
     CheckUVC("uvc_start_streaming", uvc_start_streaming(handle, &ctrl, [](uvc_frame_t * frame, void * ptr)
     {

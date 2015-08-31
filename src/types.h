@@ -10,6 +10,8 @@
 #include <memory>                           // For shared_ptr
 #include <sstream>                          // For ostringstream
 
+//#define ENABLE_DEBUG_SPAM
+
 namespace rsimpl
 {
     // Enumerated type support
