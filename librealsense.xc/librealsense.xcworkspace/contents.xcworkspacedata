@@ -2,6 +2,9 @@
 <Workspace
    version = "1.0">
    <FileRef
+      location = "group:cpp-multicam.xcodeproj">
+   </FileRef>
+   <FileRef
       location = "group:c-capture.xcodeproj">
    </FileRef>
    <FileRef
