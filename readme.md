@@ -1,12 +1,29 @@
 # librealsense
 
-A library for capturing data with the RealSense F200 (IVCAM 1.0, 1.5) and RealSense R200 (DS4). It targets Mac OSX 10.7+ and "recent" versions of Linux (tested & developed on Ubuntu 14.04 LTS). While the OSX and Linux example apps depend on GLFW, the capture portion requires only libusb. Libusb-1.0 is a user-space USB driver: this means that librealsense requires no kernel patches. In the future, support will be extended to Android 5.1+ to route around the typical HAL layer for the purposes of accessing the camera directly from JNI/C++ code.
+A library for capturing data with the RealSense F200 (IVCAM 1.0, 1.5) and RealSense R200 (DS4). It targets Mac OSX 10.7+ and "recent" versions of Linux (tested & developed on Ubuntu 14.04 LTS). This effort is aimed at supporting prototyping efforts on new platforms and form-factors (robots, drones, VR, etc). This repository hosts both the source-code and binary releases.
 
-Dependency management for GLFW and Libusb-1.0 is done manually at the moment, pending the creation of installer scripts to automate the process. 
+Dependency management for GLFW3 and libusb-1.0 is done manually at the moment (see the corresponding sections below), pending the creation of installer scripts to automate the process. 
+
+## Cameras
+
+1.	DS4 / R200 (v0.2 release will support DS5; issue that it shares the same USB PID as DS4 right now)
+2.	IVCAM 1.0 / F200 (v0.2 release will support the newer calibration model of IVCAM 1.5)
 
 ## Functionality
 
 The goal of librealsense is to provide a reasonable hardware abstraction with minimal dependencies. It is not a computer vision SDK.
+
+1.	Streams: depth, color, infrared
+  *	Of the different streaming modes + fps options available, only fairly common ones have been tested. 
+2.	Intrinsic/extrinsic calibration information (inc. uv map, etc)
+3.	Majority of XU-exposed functionality for each camera
+
+## API
+
+1.	Unified API combines F200, R200, and future hardware iterations. 
+2.	Example apps will work with both F200 and R200 at runtime, no code modifications necessary unless camera-specific features are used
+3.	API is expressed as a simple C interface for cross-language compatibility. A C++ API is also exposed for convenience.
+
 
 ## Apple OSX Installation
 
@@ -20,7 +37,7 @@ The goal of librealsense is to provide a reasonable hardware abstraction with mi
 
 ## Ubuntu 14.04+ Installation
 
-1. Grant appropriate permissions to detach the kernel uvc driver when a device is plugged in:
+1. Grant appropriate permissions to detach the kernel UVC driver when a device is plugged in:
   * `sudo cp 99-uvc.rules /etc/udev/rules.d/`
   * `sudo cp uvc.conf /etc/modprobe.d/uvc.conf/`
 2. Ensure apt-get is up to date
@@ -36,6 +53,16 @@ The goal of librealsense is to provide a reasonable hardware abstraction with mi
 ## Releases
 
 Binary releases for OSX and Linux can be found on the Github repository page under the Releases tab. 
+
+## FAQ
+
+*Q:* How is this implemented?
+
+*A:* It uses a libusb implementation of UVC (libuvc) and thusly does not require platform-specific camera drivers. The same backend can be shared across platforms. It does not link against any existing DSAPI or IVCAM-DLL binaries. 
+
+*Q:* Is it maintained or supported?
+
+*A:* It is supported in the sense that bugs will be fixed if they are found and new features will be periodically added. It is not intended to replace functionality developed by other teams to support HVM (firmware updates, etc), nor materially impact SSG’s roadmap for the SDK/DCM – it is independent & outside of these major efforts. 
 
 ## License
 
