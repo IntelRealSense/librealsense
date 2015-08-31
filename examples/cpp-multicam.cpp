@@ -8,6 +8,16 @@
 #include <iomanip>
 #include <thread>
 
+FILE * find_file(std::string path, int levels)
+{
+    for(int i=0; i<=levels; ++i)
+    {
+        if(auto f = fopen(path.c_str(), "rb")) return f;
+        path = "../" + path;
+    }
+    return nullptr;
+}
+
 int main(int argc, char * argv[]) try
 {
     rs::context ctx;
@@ -29,9 +39,8 @@ int main(int argc, char * argv[]) try
     GLFWwindow * win = glfwCreateWindow(1280, 960, ss.str().c_str(), 0, 0);
     glfwMakeContextCurrent(win);
 
-    // Load our truetype font
     font font;
-    if(auto f = fopen("../../examples/assets/Roboto-Bold.ttf", "rb"))
+    if(auto f = find_file("examples/assets/Roboto-Bold.ttf", 3))
     {
         font = ttf_create(f);
         fclose(f);
