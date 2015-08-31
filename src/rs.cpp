@@ -1,6 +1,8 @@
 #include "context.h"
 #include "camera.h"
 
+#include <climits>
+
 ////////////////////////
 // API implementation //
 ////////////////////////

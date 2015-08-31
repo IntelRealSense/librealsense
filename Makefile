@@ -1,6 +1,3 @@
-CC ?= gcc
-CXX ?= g++
-
 CFLAGS := -std=c11 -fPIC -pedantic
 CXXFLAGS := -std=c++11 -fPIC -pedantic -Wno-missing-field-initializers -Wno-switch
 

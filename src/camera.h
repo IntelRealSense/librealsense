@@ -12,7 +12,7 @@ namespace rsimpl
     {
         if (status < 0)
         {
-            throw std::runtime_error(to_string() << call << "(...) returned " << uvc_strerror(status));
+            throw std::runtime_error(to_string() << call << "(...) returned " << uvc::strerror(status));
         }
     }
 }

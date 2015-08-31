@@ -3,7 +3,7 @@
 #define LIBREALSENSE_TYPES_H
 
 #include "../include/librealsense/rs.h"
-#include "libuvc/libuvc.h"                  // For uvc_frame_format
+#include "uvc.h"
 
 #include <cassert>                          // For assert
 #include <vector>                           // For vector

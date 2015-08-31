@@ -2,7 +2,7 @@
 #ifndef LIBREALSENSE_F200_PRIVATE_H
 #define LIBREALSENSE_F200_PRIVATE_H
 
-#include "libuvc/libuvc.h"
+#include "uvc.h"
 
 #include <cmath>    // for M_PI, tan
 #include <cstring>  // for memcpy, memcmp

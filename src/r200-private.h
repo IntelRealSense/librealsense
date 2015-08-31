@@ -2,7 +2,7 @@
 #ifndef LIBREALSENSE_R200_PRIVATE_H
 #define LIBREALSENSE_R200_PRIVATE_H
 
-#include "libuvc/libuvc.h"
+#include "uvc.h"
 
 #include <cassert>
 #include <cstring>

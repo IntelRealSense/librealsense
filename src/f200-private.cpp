@@ -104,11 +104,11 @@ namespace rsimpl { namespace f200
 
         if (usbMutex.try_lock_for(std::chrono::milliseconds(IVCAM_MONITOR_MUTEX_TIMEOUT)))
         {
-            int ret = libusb_bulk_transfer(usbDeviceHandle, IVCAM_MONITOR_ENDPOINT_OUT, out, (int) outSize, &outXfer, 1000); // timeout in ms
+            int ret = usb::bulk_transfer(usbDeviceHandle, IVCAM_MONITOR_ENDPOINT_OUT, out, (int) outSize, &outXfer, 1000); // timeout in ms
 
             if (ret < 0 )
             {
-                printf("[libusb failure] libusb_bulk_transfer (endpoint_out) - status: %s", libusb_error_name(ret));
+                printf("[libusb failure] libusb_bulk_transfer (endpoint_out) - status: %s", usb::error_name(ret));
                 return ret;
             }
 
@@ -119,11 +119,11 @@ namespace rsimpl { namespace f200
 
                 errno = 0;
 
-                ret = libusb_bulk_transfer(usbDeviceHandle, IVCAM_MONITOR_ENDPOINT_IN, buf, sizeof(buf), &outXfer, 1000);
+                ret = usb::bulk_transfer(usbDeviceHandle, IVCAM_MONITOR_ENDPOINT_IN, buf, sizeof(buf), &outXfer, 1000);
 
                 if (outXfer < (int)sizeof(uint32_t))
                 {
-                    printf("[libusb failure] libusb_bulk_transfer (endpoint_in) - status: %s", libusb_error_name(ret));
+                    printf("[libusb failure] libusb_bulk_transfer (endpoint_in) - status: %s", usb::error_name(ret));
                     usbMutex.unlock();
                     return -1;
                 }
@@ -350,14 +350,14 @@ namespace rsimpl { namespace f200
     {
         if (!ctx) throw std::runtime_error("must pass libuvc context handle");
 
-        libusb_context * usb_ctx = uvc_get_libusb_context(ctx);
+        libusb_context * usb_ctx = uvc::get_libusb_context(ctx);
 
-        usbDeviceHandle = libusb_open_device_with_vid_pid(usb_ctx, IVCAM_VID, IVCAM_PID);
+        usbDeviceHandle = usb::open_device_with_vid_pid(usb_ctx, IVCAM_VID, IVCAM_PID);
 
         if (usbDeviceHandle == NULL)
             throw std::runtime_error("libusb_open_device_with_vid_pid() failed");
 
-        int status = libusb_claim_interface(usbDeviceHandle, IVCAM_MONITOR_INTERFACE);
+        int status = usb::claim_interface(usbDeviceHandle, IVCAM_MONITOR_INTERFACE);
         if (status < 0) throw std::runtime_error("libusb_claim_interface() failed");
 
         uint8_t rawCalibrationBuffer[HW_MONITOR_BUFFER_SIZE];
@@ -374,7 +374,7 @@ namespace rsimpl { namespace f200
 
     IVCAMHardwareIO::~IVCAMHardwareIO()
     {
-        libusb_release_interface(usbDeviceHandle, IVCAM_MONITOR_INTERFACE);
+        usb::release_interface(usbDeviceHandle, IVCAM_MONITOR_INTERFACE);
     }
 
     ////////////////////////////////////
