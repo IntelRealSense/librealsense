@@ -50,10 +50,6 @@ The goal of librealsense is to provide a reasonable hardware abstraction with mi
 5. We are using QtCreator as an IDE for Linux development on Ubuntu. While makefiles will eventually be supported, you will need to download and install the IDE to compile the library
   * `sudo apt-get install qtcreator`
 
-## Releases
-
-Binary releases for OSX and Linux can be found on the Github repository page under the Releases tab. 
-
 ## FAQ
 
 *Q:* How is this implemented?
