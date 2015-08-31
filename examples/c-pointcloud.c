@@ -85,7 +85,7 @@ int main(int argc, char * argv[])
 
         glfwGetFramebufferSize(win, &width, &height);
         glViewport(0, 0, width, height);
-        glClearColor(0.0f, 116/255.0f, 197/255.0f, 1.0f);
+        glClearColor(52.f / 255.f, 72.f / 255.0f, 94.f / 255.0f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         
         glPushAttrib(GL_ALL_ATTRIB_BITS);

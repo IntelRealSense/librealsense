@@ -123,7 +123,7 @@ int main(int argc, char * argv[]) try
         if (!cam.is_capturing()) continue;
         
         glViewport(0, 0, width, height);
-        glClearColor(0.0f, 116/255.0f, 197/255.0f, 1.0f);
+        glClearColor(52.f / 255.f, 72.f / 255.0f, 94.f / 255.0f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         auto tex_stream = cam.is_stream_enabled(RS_STREAM_INFRARED) ? app_state.tex_stream : RS_STREAM_COLOR;
