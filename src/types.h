@@ -60,7 +60,7 @@ namespace rsimpl
     {
         int subdevice;                      // 0, 1, 2, etc...
         int width, height;                  // Resolution advertised over UVC
-        uvc_frame_format format;            // Pixel format advertised over UVC
+        uvc::frame_format format;           // Pixel format advertised over UVC
         int fps;                            // Framerate advertised over UVC
         std::vector<stream_mode> streams;   // Modes for streams which can be supported by this device mode
         void (* unpacker)(void * dest[], const subdevice_mode & mode, const void * frame);

@@ -195,7 +195,7 @@ rs_camera::subdevice_handle::~subdevice_handle()
 void rs_camera::subdevice_handle::set_mode(const subdevice_mode & mode, std::vector<std::shared_ptr<stream_buffer>> streams)
 {
     assert(mode.streams.size() == streams.size());
-    handle.get_stream_ctrl_format_size(mode.format, mode.width, mode.height, mode.fps);
+    handle.get_stream_ctrl_format_size(mode.width, mode.height, mode.format, mode.fps);
     
     this->mode = mode;
     this->streams = streams;
@@ -204,7 +204,7 @@ void rs_camera::subdevice_handle::set_mode(const subdevice_mode & mode, std::vec
 
 void rs_camera::subdevice_handle::start_streaming()
 {    
-    handle.start_streaming([this](const void * frame, int width, int height, uvc_frame_format format)
+    handle.start_streaming([this](const void * frame, int width, int height, uvc::frame_format format)
     {
         // Validate that this frame matches the mode information we've set
         assert(width == mode.width && height == mode.height && format == mode.format);

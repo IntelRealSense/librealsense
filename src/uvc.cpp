@@ -122,7 +122,7 @@ namespace rsimpl
         {
             uvc_device_handle_t * handle;
             uvc_stream_ctrl_t ctrl;
-            std::function<void(const void * frame, int width, int height, uvc_frame_format format)> callback;
+            std::function<void(const void * frame, int width, int height, frame_format format)> callback;
         };
 
         device_handle::device_handle(uvc_device_t * device, int camera_number) : impl(new impl_t)
@@ -135,12 +135,12 @@ namespace rsimpl
             uvc_close(impl->handle);
         }
 
-        void device_handle::get_stream_ctrl_format_size(enum uvc_frame_format cf, int width, int height, int fps)
+        void device_handle::get_stream_ctrl_format_size(int width, int height, frame_format cf, int fps)
         {
-            check("get_stream_ctrl_format_size", uvc_get_stream_ctrl_format_size(impl->handle, &impl->ctrl, cf, width, height, fps));
+            check("get_stream_ctrl_format_size", uvc_get_stream_ctrl_format_size(impl->handle, &impl->ctrl, (uvc_frame_format)cf, width, height, fps));
         }
 
-        void device_handle::start_streaming(std::function<void(const void * frame, int width, int height, uvc_frame_format format)> callback)
+        void device_handle::start_streaming(std::function<void(const void * frame, int width, int height, frame_format format)> callback)
         {
             #if defined (ENABLE_DEBUG_SPAM)
             uvc_print_stream_ctrl(&impl->ctrl, stdout);
@@ -149,7 +149,7 @@ namespace rsimpl
             impl->callback = callback;
             check("uvc_start_streaming", uvc_start_streaming(impl->handle, &impl->ctrl, [](uvc_frame * frame, void * user)
             {
-                reinterpret_cast<device_handle *>(user)->impl->callback(frame->data, frame->width, frame->height, frame->frame_format);
+                reinterpret_cast<device_handle *>(user)->impl->callback(frame->data, frame->width, frame->height, (frame_format)frame->frame_format);
             }, this, 0));
         }
 

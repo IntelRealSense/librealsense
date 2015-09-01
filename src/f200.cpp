@@ -33,22 +33,22 @@ namespace rsimpl
 
         // Color modes on subdevice 0
         info.stream_subdevices[RS_STREAM_COLOR] = 0;
-        info.subdevice_modes.push_back({0, 640, 480, UVC_FRAME_FORMAT_YUYV, 60, {{RS_STREAM_COLOR, 640, 480, RS_FORMAT_RGB8, 60, COLOR_VGA}}, &unpack_yuyv_to_rgb});
-        info.subdevice_modes.push_back({0, 1920, 1080, UVC_FRAME_FORMAT_YUYV, 60, {{RS_STREAM_COLOR, 1920, 1080, RS_FORMAT_RGB8, 60, COLOR_HD}}, &unpack_yuyv_to_rgb});
+        info.subdevice_modes.push_back({0,  640,  480, uvc::frame_format::YUYV, 60, {{RS_STREAM_COLOR, 640, 480, RS_FORMAT_RGB8, 60, COLOR_VGA}}, &unpack_yuyv_to_rgb});
+        info.subdevice_modes.push_back({0, 1920, 1080, uvc::frame_format::YUYV, 60, {{RS_STREAM_COLOR, 1920, 1080, RS_FORMAT_RGB8, 60, COLOR_HD}}, &unpack_yuyv_to_rgb});
 
         // Depth and IR modes on subdevice 1
         info.stream_subdevices[RS_STREAM_DEPTH] = 1;
         info.stream_subdevices[RS_STREAM_INFRARED] = 1;
-        info.subdevice_modes.push_back({1, 640, 480, UVC_FRAME_FORMAT_INVR, 60, {{RS_STREAM_DEPTH, 640, 480, RS_FORMAT_Z16, 60, DEPTH_VGA}}, &unpack_strided_image});
-        info.subdevice_modes.push_back({1, 640, 240, UVC_FRAME_FORMAT_INVR, 60, {{RS_STREAM_DEPTH, 320, 240, RS_FORMAT_Z16, 60, DEPTH_QVGA}}, &unpack_strided_image});
+        info.subdevice_modes.push_back({1, 640, 480, uvc::frame_format::INVR, 60, {{RS_STREAM_DEPTH, 640, 480, RS_FORMAT_Z16, 60, DEPTH_VGA}}, &unpack_strided_image});
+        info.subdevice_modes.push_back({1, 640, 240, uvc::frame_format::INVR, 60, {{RS_STREAM_DEPTH, 320, 240, RS_FORMAT_Z16, 60, DEPTH_QVGA}}, &unpack_strided_image});
 
-        info.subdevice_modes.push_back({1, 640, 480, UVC_FRAME_FORMAT_INVI, 60, {{RS_STREAM_INFRARED, 640, 480, RS_FORMAT_Y8, 60, DEPTH_VGA}}, &unpack_strided_image});
-        info.subdevice_modes.push_back({1, 640, 240, UVC_FRAME_FORMAT_INVI, 60, {{RS_STREAM_INFRARED, 320, 240, RS_FORMAT_Y8, 60, DEPTH_QVGA}}, &unpack_strided_image});
+        info.subdevice_modes.push_back({1, 640, 480, uvc::frame_format::INVI, 60, {{RS_STREAM_INFRARED, 640, 480, RS_FORMAT_Y8, 60, DEPTH_VGA}}, &unpack_strided_image});
+        info.subdevice_modes.push_back({1, 640, 240, uvc::frame_format::INVI, 60, {{RS_STREAM_INFRARED, 320, 240, RS_FORMAT_Y8, 60, DEPTH_QVGA}}, &unpack_strided_image});
 
-        info.subdevice_modes.push_back({1, 640, 480, UVC_FRAME_FORMAT_INRI, 60, {{RS_STREAM_DEPTH,    640, 480, RS_FORMAT_Z16, 60, DEPTH_VGA},
-                                                                                 {RS_STREAM_INFRARED, 640, 480, RS_FORMAT_Y8,  60, DEPTH_VGA}}, &unpack_inzi_to_z16_and_y8});
-        info.subdevice_modes.push_back({1, 640, 240, UVC_FRAME_FORMAT_INRI, 60, {{RS_STREAM_DEPTH,    320, 240, RS_FORMAT_Z16, 60, DEPTH_QVGA},
-                                                                                 {RS_STREAM_INFRARED, 320, 240, RS_FORMAT_Y8,  60, DEPTH_QVGA}}, &unpack_inzi_to_z16_and_y8});
+        info.subdevice_modes.push_back({1, 640, 480, uvc::frame_format::INRI, 60, {{RS_STREAM_DEPTH,    640, 480, RS_FORMAT_Z16, 60, DEPTH_VGA},
+                                                                                   {RS_STREAM_INFRARED, 640, 480, RS_FORMAT_Y8,  60, DEPTH_VGA}}, &unpack_inzi_to_z16_and_y8});
+        info.subdevice_modes.push_back({1, 640, 240, uvc::frame_format::INRI, 60, {{RS_STREAM_DEPTH,    320, 240, RS_FORMAT_Z16, 60, DEPTH_QVGA},
+                                                                                   {RS_STREAM_INFRARED, 320, 240, RS_FORMAT_Y8,  60, DEPTH_QVGA}}, &unpack_inzi_to_z16_and_y8});
 
         info.presets[RS_STREAM_INFRARED][RS_PRESET_BEST_QUALITY] = {true, 640, 480, RS_FORMAT_Y8,   60};
         info.presets[RS_STREAM_DEPTH   ][RS_PRESET_BEST_QUALITY] = {true, 640, 480, RS_FORMAT_Z16,  60};
