@@ -79,6 +79,21 @@ namespace rsimpl
             return uvc_free_device_list(list, unref_devices);
         }
 
+        int get_vendor_id(uvc_device_descriptor_t * desc)
+        {
+            desc->idVendor;
+        }
+
+        int get_product_id(uvc_device_descriptor_t * desc)
+        {
+            return desc->idProduct;
+        }
+
+        const char * get_product_name(uvc_device_descriptor_t * desc)
+        {
+            return desc->product;
+        }
+
         void ref_device(uvc_device_t *dev)
         {
             return uvc_ref_device(dev);

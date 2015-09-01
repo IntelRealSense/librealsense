@@ -13,6 +13,7 @@ typedef struct libusb_context libusb_context;
 typedef struct libusb_device_handle libusb_device_handle;
 typedef struct uvc_context uvc_context_t;
 typedef struct uvc_device uvc_device_t;
+typedef struct uvc_device_descriptor uvc_device_descriptor_t;
 typedef struct uvc_device_handle uvc_device_handle_t;
 typedef struct uvc_stream_handle uvc_stream_handle_t;
 
@@ -52,21 +53,6 @@ enum uvc_frame_format {
     UVC_FRAME_FORMAT_COUNT,
 };
 
-typedef struct uvc_device_descriptor {
-  /** Vendor ID */
-  uint16_t idVendor;
-  /** Product ID */
-  uint16_t idProduct;
-  /** UVC compliance level, e.g. 0x0100 (1.0), 0x0110 */
-  uint16_t bcdUVC;
-  /** Serial number (null if unavailable) */
-  const char *serialNumber;
-  /** Device-reported manufacturer name (or null) */
-  const char *manufacturer;
-  /** Device-reporter product name (or null) */
-  const char *product;
-} uvc_device_descriptor_t;
-
 #endif
 
 namespace rsimpl
@@ -89,12 +75,14 @@ namespace rsimpl
 
         void get_device_list(uvc_context_t *ctx, uvc_device_t ***list);
         void free_device_list(uvc_device_t **list, uint8_t unref_devices);
-
         void ref_device(uvc_device_t *dev);
         void unref_device(uvc_device_t *dev);
 
         void get_device_descriptor(uvc_device_t *dev, uvc_device_descriptor_t **desc);
         void free_device_descriptor(uvc_device_descriptor_t *desc);
+        int get_vendor_id(uvc_device_descriptor_t * desc);
+        int get_product_id(uvc_device_descriptor_t * desc);
+        const char * get_product_name(uvc_device_descriptor_t * desc);
 
         class device_handle
         {

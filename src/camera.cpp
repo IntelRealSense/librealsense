@@ -17,7 +17,7 @@ rs_camera::rs_camera(uvc_context_t * context, uvc_device_t * device, const stati
     {
         uvc_device_descriptor_t * desc;
         uvc::get_device_descriptor(device, &desc);
-        camera_name = desc->product;
+        camera_name = uvc::get_product_name(desc);
         uvc::free_device_descriptor(desc);
     }
 

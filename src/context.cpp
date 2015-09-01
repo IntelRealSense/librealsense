@@ -31,7 +31,7 @@ void rs_context::query_device_list()
 
         uvc_device_descriptor_t * desc;
         rsimpl::uvc::get_device_descriptor(dev, &desc);
-        switch(desc->idProduct)
+        switch(rsimpl::uvc::get_product_id(desc))
         {
         case 2688: cameras.push_back(std::make_shared<rsimpl::r200_camera>(context, list[index])); break;
         case 2662: cameras.push_back(std::make_shared<rsimpl::f200_camera>(context, list[index])); break;
