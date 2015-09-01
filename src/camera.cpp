@@ -204,32 +204,31 @@ void rs_camera::subdevice_handle::set_mode(const subdevice_mode & mode, std::vec
 
 void rs_camera::subdevice_handle::start_streaming()
 {    
-    handle.start_streaming([](uvc_frame_t * frame, void * ptr)
+    handle.start_streaming([this](const void * frame, int width, int height, uvc_frame_format format)
     {
         // Validate that this frame matches the mode information we've set
-        auto self = reinterpret_cast<subdevice_handle *>(ptr);
-        assert((int)frame->width == self->mode.width && (int)frame->height == self->mode.height && frame->frame_format == self->mode.format);
+        assert(width == mode.width && height == mode.height && format == mode.format);
 
         // Unpack the image into the user stream interface back buffer
         std::vector<void *> dest;
-        for(auto & stream : self->streams) dest.push_back(stream->back.pixels.data());
-        self->mode.unpacker(dest.data(), self->mode, frame->data);
+        for(auto & stream : streams) dest.push_back(stream->back.pixels.data());
+        mode.unpacker(dest.data(), mode, frame);
 
         // If a frame number decoder is available, make use of it
-        if(self->mode.frame_number_decoder)
+        if(mode.frame_number_decoder)
         {
-            const int frame_number = self->mode.frame_number_decoder(self->mode, frame->data);
-            for(auto & stream : self->streams) stream->back.number = frame_number;
+            const int frame_number = mode.frame_number_decoder(mode, frame);
+            for(auto & stream : streams) stream->back.number = frame_number;
         }
 
         // Swap the backbuffer to the middle buffer and indicate that we have updated
-        for(auto & stream : self->streams)
+        for(auto & stream : streams)
         {
             std::lock_guard<std::mutex> guard(stream->mutex);
             stream->back.swap(stream->middle);
             stream->updated = true;
         }
-    }, this, 0);
+    });
 }
     
 void rs_camera::subdevice_handle::stop_streaming()
