@@ -2,10 +2,7 @@
 #ifndef LIBREALSENSE_UVC_H
 #define LIBREALSENSE_UVC_H
 
-#include <cstdint>
-#include <ctime>
-#include <memory>
-#include <vector>
+#include "types.h"
 
 namespace rsimpl
 {
@@ -14,20 +11,8 @@ namespace rsimpl
         const char * error_name(int errcode);
     }
 
-    namespace uvc // Correspond to uvc_* calls
+    namespace uvc
     {
-        enum class frame_format
-        {
-            ANY     = 0,
-            YUYV    = 3,
-            Y12I    = 5,    // R200 - 12 bit infrared (stereo interleaved)
-            Y8      = 7,    // R200 - 8 bit infrared
-            Z16     = 8,    // R200 - 16 bit depth
-            INVI    = 14,   // F200 - 8 bit infrared
-            INVR    = 16,   // F200 - 16 bit depth
-            INRI    = 18,   // F200 - 16 bit depth + 8 bit infrared
-        };
-
         struct context_impl;
         struct device_impl;
         struct device_handle_impl;

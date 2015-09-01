@@ -3,7 +3,6 @@
 #define LIBREALSENSE_TYPES_H
 
 #include "../include/librealsense/rs.h"
-#include "uvc.h"
 
 #include <cassert>                          // For assert
 #include <vector>                           // For vector
@@ -37,6 +36,22 @@ namespace rsimpl
     inline float3 operator * (const pose & a, const float3 & b) { return a.orientation * b + a.position; }
     inline pose operator * (const pose & a, const pose & b) { return {a.orientation * b.orientation, a.position + a * b.position}; }
     inline pose inverse(const pose & a) { auto inv = transpose(a.orientation); return {inv, inv * a.position * -1}; }
+
+    // UVC types
+    namespace uvc
+    {
+        enum class frame_format
+        {
+            ANY     = 0,
+            YUYV    = 3,
+            Y12I    = 5,    // R200 - 12 bit infrared (stereo interleaved)
+            Y8      = 7,    // R200 - 8 bit infrared
+            Z16     = 8,    // R200 - 16 bit depth
+            INVI    = 14,   // F200 - 8 bit infrared
+            INVR    = 16,   // F200 - 16 bit depth
+            INRI    = 18,   // F200 - 16 bit depth + 8 bit infrared
+        };
+    }
 
     // Static camera info
     struct stream_request

@@ -2,7 +2,7 @@
 #ifndef LIBREALSENSE_CAMERA_H
 #define LIBREALSENSE_CAMERA_H
 
-#include "types.h"
+#include "uvc.h"
 
 #include <mutex>
 
