@@ -55,7 +55,7 @@ protected:
         void                                        stop_streaming();
     };
 
-    uvc_context_t *                                 context;
+    rsimpl::uvc::context *                          context;
     rsimpl::uvc::device                             device;
     const rsimpl::static_camera_info                camera_info;
     std::string                                     camera_name;
@@ -69,7 +69,7 @@ protected:
     bool                                            is_capturing;
   
 public:
-                                                    rs_camera(uvc_context_t * context, rsimpl::uvc::device device, const rsimpl::static_camera_info & camera_info);
+                                                    rs_camera(rsimpl::uvc::context * context, rsimpl::uvc::device device, const rsimpl::static_camera_info & camera_info);
                                                     ~rs_camera();
 
     const char *                                    get_name() const { return camera_name.c_str(); }

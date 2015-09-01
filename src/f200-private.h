@@ -196,7 +196,7 @@ enum Property
 
     public:
 
-        IVCAMHardwareIO(uvc_context_t * ctx);
+        IVCAMHardwareIO(uvc::context * ctx);
         ~IVCAMHardwareIO();
 
         bool StartTempCompensationLoop()

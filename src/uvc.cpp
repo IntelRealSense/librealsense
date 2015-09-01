@@ -44,39 +44,37 @@ namespace rsimpl
             }
         }
 
-        const char* strerror(uvc_error_t err)
+        /////////////
+        // context //
+        /////////////
+
+        struct context::impl_t
         {
-            return uvc_strerror(err);
+            uvc_context_t * ctx;
+
+            impl_t() : ctx() {}
+            ~impl_t() { if(ctx) uvc_exit(ctx); }
+        };
+
+        context::context() : impl(new impl_t)
+        {
+            check("uvc_init", uvc_init(&impl->ctx, nullptr));
+        }
+        context::~context() {}
+
+        libusb_context * context::get_libusb_context()
+        {
+            uvc_get_libusb_context(impl->ctx);
         }
 
-        void perror(uvc_error_t err, const char *msg)
+        std::vector<device> context::query_devices()
         {
-            return uvc_perror(err, msg);
-        }
-
-        void init(uvc_context_t **pctx, struct libusb_context *usb_ctx)
-        {
-            check("uvc_init", uvc_init(pctx, usb_ctx));
-        }
-
-        void exit(uvc_context_t *ctx)
-        {
-            return uvc_exit(ctx);
-        }
-
-        libusb_context * get_libusb_context(uvc_context_t *ctx)
-        {
-            return uvc_get_libusb_context(ctx);
-        }
-
-        void get_device_list(uvc_context_t *ctx, uvc_device_t ***list)
-        {
-            check("uvc_get_device_list", uvc_get_device_list(ctx, list));
-        }
-
-        void free_device_list(uvc_device_t **list, uint8_t unref_devices)
-        {
-            return uvc_free_device_list(list, unref_devices);
+            uvc_device_t ** list;
+            check("uvc_get_device_list", uvc_get_device_list(impl->ctx, &list));
+            std::vector<device> devices;
+            for(auto it = list; *it; ++it) devices.push_back(device(*it));
+            uvc_free_device_list(list, 1);
+            return devices;
         }
 
         ////////////

@@ -5,12 +5,12 @@
 #include <cstdint>
 #include <ctime>
 #include <memory>
+#include <vector>
 
 #ifndef NO_UVC_TYPES
+typedef struct uvc_device uvc_device_t;
 typedef struct libusb_context libusb_context;
 typedef struct libusb_device_handle libusb_device_handle;
-typedef struct uvc_context uvc_context_t;
-typedef struct uvc_device uvc_device_t;
 #endif
 
 namespace rsimpl
@@ -39,13 +39,6 @@ namespace rsimpl
             INRI    = 18,   // F200 - 16 bit depth + 8 bit infrared
         };
 
-        void init(uvc_context_t **pctx, struct libusb_context *usb_ctx);
-        void exit(uvc_context_t *ctx);
-        libusb_context * get_libusb_context(uvc_context_t *ctx);
-
-        void get_device_list(uvc_context_t *ctx, uvc_device_t ***list);
-        void free_device_list(uvc_device_t **list, uint8_t unref_devices);
-
         class device_handle;
 
         class device
@@ -59,6 +52,17 @@ namespace rsimpl
             int get_vendor_id() const;
             int get_product_id() const;
             const char * get_product_name() const;
+        };
+
+        class context
+        {
+            struct impl_t; std::unique_ptr<impl_t> impl;
+        public:
+            context();
+            ~context();
+
+            libusb_context * get_libusb_context();
+            std::vector<device> query_devices();
         };
 
         class device_handle

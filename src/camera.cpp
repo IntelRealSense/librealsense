@@ -9,7 +9,7 @@ using namespace rsimpl;
 // UVC Camera //
 ////////////////
 
-rs_camera::rs_camera(uvc_context_t * context, rsimpl::uvc::device device, const static_camera_info & camera_info)
+rs_camera::rs_camera(rsimpl::uvc::context * context, rsimpl::uvc::device device, const static_camera_info & camera_info)
     : context(context), device(device), camera_info(camera_info), first_handle(), is_capturing()
 {
     camera_name = device.get_product_name();
