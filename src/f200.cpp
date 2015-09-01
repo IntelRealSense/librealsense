@@ -111,7 +111,7 @@ namespace rsimpl
 
     calibration_info f200_camera::retrieve_calibration()
     {
-        if(!hardware_io) hardware_io.reset(new f200::IVCAMHardwareIO(device.get_parent()));
+        if(!hardware_io) hardware_io.reset(new f200::IVCAMHardwareIO(*first_handle));
         const f200::CameraCalibrationParameters & calib = hardware_io->GetParameters();
 
         calibration_info c;

@@ -8,7 +8,6 @@
 #include <vector>
 
 #ifndef NO_UVC_TYPES
-typedef struct libusb_context libusb_context;
 typedef struct libusb_device_handle libusb_device_handle;
 #endif
 
@@ -18,7 +17,6 @@ namespace rsimpl
     {
         const char * error_name(int errcode);
 
-        libusb_device_handle * open_device_with_vid_pid(libusb_context *ctx, uint16_t vendor_id, uint16_t product_id);
         int claim_interface(libusb_device_handle *dev, int interface_number);
         int release_interface(libusb_device_handle *dev, int interface_number);
         int bulk_transfer(libusb_device_handle *dev_handle, unsigned char endpoint, unsigned char *data, int length, int *actual_length, unsigned int timeout);
@@ -53,7 +51,6 @@ namespace rsimpl
             context() {}
             context(std::shared_ptr<context_impl> impl) : impl(move(impl)) {}
 
-            libusb_context * get_libusb_context();
             std::vector<device> query_devices();
 
             static context create();
@@ -73,11 +70,6 @@ namespace rsimpl
             const char * get_product_name() const;
 
             device_handle claim_subdevice(int subdevice_index);
-
-            // TODO: Implicit libusb_device_handle (punchthrough libuvc in some way)
-            // int claim_interface(int interface_number);
-            // int release_interface(int interface_number);
-            // int bulk_transfer(unsigned char endpoint, unsigned char *data, int length, int *actual_length, unsigned int timeout);
         };
 
         class device_handle
@@ -95,6 +87,13 @@ namespace rsimpl
 
             int get_ctrl(uint8_t unit, uint8_t ctrl, void *data, int len);
             int set_ctrl(uint8_t unit, uint8_t ctrl, void *data, int len);
+
+            libusb_device_handle * get_usb_handle();
+
+            // TODO: Implicit libusb_device_handle (punchthrough libuvc in some way)
+            // int claim_interface(int interface_number);
+            // int release_interface(int interface_number);
+            // int bulk_transfer(unsigned char endpoint, unsigned char *data, int length, int *actual_length, unsigned int timeout);
         };
     }
 }

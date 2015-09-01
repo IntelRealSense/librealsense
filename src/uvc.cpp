@@ -1,7 +1,9 @@
 #include "libuvc/libuvc.h"
+#include "libuvc/libuvc_internal.h" // For LibUSB punchthrough
 
 #define NO_UVC_TYPES
 #include "uvc.h"
+
 #include "types.h"
 
 namespace rsimpl
@@ -127,7 +129,10 @@ namespace rsimpl
             return uvc_set_ctrl(impl->handle, unit, ctrl, data, len);
         }
 
-
+        libusb_device_handle * device_handle::get_usb_handle()
+        {
+            return impl->handle->usb_devh;
+        }
 
         ////////////
         // device //
@@ -152,11 +157,6 @@ namespace rsimpl
             context c;
             c.impl.reset(new context_impl);
             return c;
-        }
-
-        libusb_context * context::get_libusb_context()
-        {
-            uvc_get_libusb_context(impl->ctx);
         }
 
         std::vector<device> context::query_devices()

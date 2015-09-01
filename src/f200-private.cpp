@@ -346,14 +346,12 @@ namespace rsimpl { namespace f200
         // @tofix
     }
 
-    IVCAMHardwareIO::IVCAMHardwareIO(uvc::context ctx)
+    IVCAMHardwareIO::IVCAMHardwareIO(uvc::device_handle handle)
     {
-        libusb_context * usb_ctx = ctx.get_libusb_context();
-
-        usbDeviceHandle = usb::open_device_with_vid_pid(usb_ctx, IVCAM_VID, IVCAM_PID);
+        usbDeviceHandle = handle.get_usb_handle();
 
         if (usbDeviceHandle == NULL)
-            throw std::runtime_error("libusb_open_device_with_vid_pid() failed");
+            throw std::runtime_error("unable to get usb device handle");
 
         int status = usb::claim_interface(usbDeviceHandle, IVCAM_MONITOR_INTERFACE);
         if (status < 0) throw std::runtime_error("libusb_claim_interface() failed");
