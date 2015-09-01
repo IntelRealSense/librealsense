@@ -27,19 +27,13 @@ void rs_context::query_device_list()
     size_t index = 0;
     while (list[index] != nullptr)
     {
-        auto dev = list[index];
-
-        uvc_device_descriptor_t * desc;
-        rsimpl::uvc::get_device_descriptor(dev, &desc);
-        switch(rsimpl::uvc::get_product_id(desc))
+        rsimpl::uvc::device device(list[index++]);
+        switch(device.get_product_id())
         {
-        case 2688: cameras.push_back(std::make_shared<rsimpl::r200_camera>(context, list[index])); break;
-        case 2662: cameras.push_back(std::make_shared<rsimpl::f200_camera>(context, list[index])); break;
+        case 2688: cameras.push_back(std::make_shared<rsimpl::r200_camera>(context, device)); break;
+        case 2662: cameras.push_back(std::make_shared<rsimpl::f200_camera>(context, device)); break;
         case 2725: throw std::runtime_error("IVCAM 1.5 / SR300 is not supported at this time");
         }
-        rsimpl::uvc::free_device_descriptor(desc);
-
-        ++index;
     }
 
     rsimpl::uvc::free_device_list(list, 1);

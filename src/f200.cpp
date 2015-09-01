@@ -66,7 +66,7 @@ namespace rsimpl
         return info;
     }
 
-    f200_camera::f200_camera(uvc_context_t * ctx, uvc_device_t * device) : rs_camera(ctx, device, get_f200_info())
+    f200_camera::f200_camera(uvc_context_t * ctx, uvc::device device) : rs_camera(ctx, device, get_f200_info())
     {
 
     }

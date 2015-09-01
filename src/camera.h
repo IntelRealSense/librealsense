@@ -46,7 +46,7 @@ protected:
         rsimpl::subdevice_mode                      mode;
         std::vector<std::shared_ptr<stream_buffer>> streams;
     public:
-                                                    subdevice_handle(uvc_device_t * device, int subdevice_index);
+                                                    subdevice_handle(rsimpl::uvc::device device, int subdevice_index);
                                                     ~subdevice_handle();
 
         rsimpl::uvc::device_handle *                get_handle() { return &handle; }
@@ -56,7 +56,7 @@ protected:
     };
 
     uvc_context_t *                                 context;
-    uvc_device_t *                                  device;
+    rsimpl::uvc::device                             device;
     const rsimpl::static_camera_info                camera_info;
     std::string                                     camera_name;
 
@@ -69,7 +69,7 @@ protected:
     bool                                            is_capturing;
   
 public:
-                                                    rs_camera(uvc_context_t * context, uvc_device_t * device, const rsimpl::static_camera_info & camera_info);
+                                                    rs_camera(uvc_context_t * context, rsimpl::uvc::device device, const rsimpl::static_camera_info & camera_info);
                                                     ~rs_camera();
 
     const char *                                    get_name() const { return camera_name.c_str(); }

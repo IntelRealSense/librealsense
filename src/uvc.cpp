@@ -79,40 +79,34 @@ namespace rsimpl
             return uvc_free_device_list(list, unref_devices);
         }
 
-        int get_vendor_id(uvc_device_descriptor_t * desc)
+        ////////////
+        // device //
+        ////////////
+
+        struct device::impl_t
         {
-            desc->idVendor;
+            uvc_device_t * device;
+            uvc_device_descriptor_t * desc;
+
+            impl_t() : device(), desc() {}
+            ~impl_t()
+            {
+                if(desc) uvc_free_device_descriptor(desc);
+                if(device) uvc_unref_device(device);
+            }
+        };
+
+        device::device(uvc_device_t * dev) : impl(new impl_t)
+        {
+            impl->device = dev;
+            uvc_ref_device(dev);
+            check("uvc_get_device_descriptor", uvc_get_device_descriptor(dev, &impl->desc));
         }
 
-        int get_product_id(uvc_device_descriptor_t * desc)
-        {
-            return desc->idProduct;
-        }
-
-        const char * get_product_name(uvc_device_descriptor_t * desc)
-        {
-            return desc->product;
-        }
-
-        void ref_device(uvc_device_t *dev)
-        {
-            return uvc_ref_device(dev);
-        }
-
-        void unref_device(uvc_device_t *dev)
-        {
-            return uvc_unref_device(dev);
-        }
-
-        void get_device_descriptor(uvc_device_t *dev, uvc_device_descriptor_t **desc)
-        {
-            return check("uvc_get_device_descriptor", uvc_get_device_descriptor(dev, desc));
-        }
-
-        void free_device_descriptor(uvc_device_descriptor_t *desc)
-        {
-            return uvc_free_device_descriptor(desc);
-        }
+        device::~device() {}
+        int device::get_vendor_id() const { return impl->desc->idVendor; }
+        int device::get_product_id() const { return impl->desc->idProduct; }
+        const char * device::get_product_name() const { return impl->desc->product; }
 
         ///////////////////
         // device_handle //
@@ -125,9 +119,9 @@ namespace rsimpl
             std::function<void(const void * frame, int width, int height, frame_format format)> callback;
         };
 
-        device_handle::device_handle(uvc_device_t * device, int camera_number) : impl(new impl_t)
+        device_handle::device_handle(uvc::device device, int camera_number) : impl(new impl_t)
         {
-            check("uvc_open2", uvc_open2(device, &impl->handle, camera_number));
+            check("uvc_open2", uvc_open2(device.impl->device, &impl->handle, camera_number));
         }
 
         device_handle::~device_handle()

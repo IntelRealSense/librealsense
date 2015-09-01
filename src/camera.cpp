@@ -9,17 +9,10 @@ using namespace rsimpl;
 // UVC Camera //
 ////////////////
 
-rs_camera::rs_camera(uvc_context_t * context, uvc_device_t * device, const static_camera_info & camera_info)
+rs_camera::rs_camera(uvc_context_t * context, rsimpl::uvc::device device, const static_camera_info & camera_info)
     : context(context), device(device), camera_info(camera_info), first_handle(), is_capturing()
 {
-    uvc::ref_device(device);
-
-    {
-        uvc_device_descriptor_t * desc;
-        uvc::get_device_descriptor(device, &desc);
-        camera_name = uvc::get_product_name(desc);
-        uvc::free_device_descriptor(desc);
-    }
+    camera_name = device.get_product_name();
 
     for(auto & req : requests) req = {};
     calib = {};
@@ -32,7 +25,6 @@ rs_camera::rs_camera(uvc_context_t * context, uvc_device_t * device, const stati
 rs_camera::~rs_camera()
 {
     subdevices.clear();
-    uvc::unref_device(device); // we never ref
 }
 
 void rs_camera::enable_stream(rs_stream stream, int width, int height, rs_format format, int fps)
@@ -182,7 +174,7 @@ bool rs_camera::stream_buffer::update_image()
 // subdevice_handle //
 //////////////////////
 
-rs_camera::subdevice_handle::subdevice_handle(uvc_device_t * device, int subdevice_index) : handle(device, subdevice_index)
+rs_camera::subdevice_handle::subdevice_handle(uvc::device device, int subdevice_index) : handle(device, subdevice_index)
 {
 
 }

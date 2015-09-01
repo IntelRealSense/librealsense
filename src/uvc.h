@@ -11,9 +11,6 @@ typedef struct libusb_context libusb_context;
 typedef struct libusb_device_handle libusb_device_handle;
 typedef struct uvc_context uvc_context_t;
 typedef struct uvc_device uvc_device_t;
-typedef struct uvc_device_descriptor uvc_device_descriptor_t;
-typedef struct uvc_device_handle uvc_device_handle_t;
-typedef struct uvc_stream_handle uvc_stream_handle_t;
 #endif
 
 namespace rsimpl
@@ -48,20 +45,27 @@ namespace rsimpl
 
         void get_device_list(uvc_context_t *ctx, uvc_device_t ***list);
         void free_device_list(uvc_device_t **list, uint8_t unref_devices);
-        void ref_device(uvc_device_t *dev);
-        void unref_device(uvc_device_t *dev);
 
-        void get_device_descriptor(uvc_device_t *dev, uvc_device_descriptor_t **desc);
-        void free_device_descriptor(uvc_device_descriptor_t *desc);
-        int get_vendor_id(uvc_device_descriptor_t * desc);
-        int get_product_id(uvc_device_descriptor_t * desc);
-        const char * get_product_name(uvc_device_descriptor_t * desc);
+        class device_handle;
+
+        class device
+        {
+            friend class device_handle;
+            struct impl_t; std::shared_ptr<impl_t> impl;
+        public:
+            device(uvc_device_t * dev);
+            ~device();
+
+            int get_vendor_id() const;
+            int get_product_id() const;
+            const char * get_product_name() const;
+        };
 
         class device_handle
         {
             struct impl_t; std::unique_ptr<impl_t> impl;
         public:
-            device_handle(uvc_device_t * device, int camera_number);
+            device_handle(device device, int camera_number);
             ~device_handle();
 
             void get_stream_ctrl_format_size(int width, int height, frame_format format, int fps);
