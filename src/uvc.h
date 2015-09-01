@@ -8,7 +8,6 @@
 #include <vector>
 
 #ifndef NO_UVC_TYPES
-typedef struct uvc_device uvc_device_t;
 typedef struct libusb_context libusb_context;
 typedef struct libusb_device_handle libusb_device_handle;
 #endif
@@ -74,6 +73,11 @@ namespace rsimpl
             const char * get_product_name() const;
 
             device_handle claim_subdevice(int subdevice_index);
+
+            // TODO: Implicit libusb_device_handle (punchthrough libuvc in some way)
+            // int claim_interface(int interface_number);
+            // int release_interface(int interface_number);
+            // int bulk_transfer(unsigned char endpoint, unsigned char *data, int length, int *actual_length, unsigned int timeout);
         };
 
         class device_handle
