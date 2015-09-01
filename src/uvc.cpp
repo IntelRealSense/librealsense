@@ -1,10 +1,11 @@
+#include "uvc.h"
+
 #include "libuvc/libuvc.h"
 #include "libuvc/libuvc_internal.h" // For LibUSB punchthrough
 
-#define NO_UVC_TYPES
-#include "uvc.h"
-
 #include "types.h"
+
+#include <iostream>
 
 namespace rsimpl
 {
@@ -61,13 +62,22 @@ namespace rsimpl
             uvc_device_handle_t * handle;
             uvc_stream_ctrl_t ctrl;
             std::function<void(const void * frame, int width, int height, frame_format format)> callback;
+            std::vector<int> claimed_interfaces;
 
-            device_handle_impl(std::shared_ptr<device_impl> device, int subdevice_index)
+            device_handle_impl(std::shared_ptr<device_impl> device, int subdevice_index) : handle()
             {
                 this->device = device;
                 check("uvc_open2", uvc_open2(device->device, &handle, subdevice_index));
             }
-            ~device_handle_impl() { uvc_close(handle); }
+            ~device_handle_impl()
+            {
+                for(auto interface_number : claimed_interfaces)
+                {
+                    int status = libusb_release_interface(handle->usb_devh, interface_number);
+                    if(status < 0) std::cerr << "Warning: libusb_release_interface(...) returned " << libusb_error_name(status) << std::endl;
+                }
+                uvc_close(handle);
+            }
         };
 
         ///////////////////
@@ -90,8 +100,8 @@ namespace rsimpl
             impl->callback = callback;
             check("uvc_start_streaming", uvc_start_streaming(impl->handle, &impl->ctrl, [](uvc_frame * frame, void * user)
             {
-                reinterpret_cast<device_handle *>(user)->impl->callback(frame->data, frame->width, frame->height, (frame_format)frame->frame_format);
-            }, this, 0));
+                reinterpret_cast<device_handle_impl *>(user)->callback(frame->data, frame->width, frame->height, (frame_format)frame->frame_format);
+            }, impl.get(), 0));
         }
 
         void device_handle::stop_streaming()
@@ -111,12 +121,9 @@ namespace rsimpl
 
         int device_handle::claim_interface(int interface_number)
         {
-            return libusb_claim_interface(impl->handle->usb_devh, interface_number);
-        }
-
-        int device_handle::release_interface(int interface_number)
-        {
-            return libusb_release_interface(impl->handle->usb_devh, interface_number);
+            int status = libusb_claim_interface(impl->handle->usb_devh, interface_number);
+            if(status >= 0) impl->claimed_interfaces.push_back(interface_number);
+            return status;
         }
 
         int device_handle::bulk_transfer(unsigned char endpoint, unsigned char *data, int length, int *actual_length, unsigned int timeout)

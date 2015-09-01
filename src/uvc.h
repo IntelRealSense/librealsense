@@ -81,13 +81,7 @@ namespace rsimpl
             int set_ctrl(uint8_t unit, uint8_t ctrl, void *data, int len);
 
             int claim_interface(int interface_number);
-            int release_interface(int interface_number);
             int bulk_transfer(unsigned char endpoint, unsigned char *data, int length, int *actual_length, unsigned int timeout);
-
-            // TODO: Implicit libusb_device_handle (punchthrough libuvc in some way)
-            // int claim_interface(int interface_number);
-            // int release_interface(int interface_number);
-            // int bulk_transfer(unsigned char endpoint, unsigned char *data, int length, int *actual_length, unsigned int timeout);
         };
     }
 }

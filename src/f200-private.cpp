@@ -363,11 +363,6 @@ namespace rsimpl { namespace f200
         parameters = calibratedParameters;
     }
 
-    IVCAMHardwareIO::~IVCAMHardwareIO()
-    {
-        handle.release_interface(IVCAM_MONITOR_INTERFACE);
-    }
-
     ////////////////////////////////////
     // IVCAMCalibrator Implementation //
     ////////////////////////////////////

@@ -42,9 +42,14 @@ protected:
     // Interfaces with a UVC subdevice, and unpacks the encoded frames into one or more stream_buffers
     class subdevice_handle
     {
+        struct capture_state
+        {
+            rsimpl::subdevice_mode                      mode;
+            std::vector<std::shared_ptr<stream_buffer>> streams;
+        };
+
         rsimpl::uvc::device_handle                  handle;
-        rsimpl::subdevice_mode                      mode;
-        std::vector<std::shared_ptr<stream_buffer>> streams;
+        std::shared_ptr<capture_state>              state;
     public:
                                                     subdevice_handle(rsimpl::uvc::device device, int subdevice_index);
                                                     ~subdevice_handle();

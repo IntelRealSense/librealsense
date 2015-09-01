@@ -178,7 +178,7 @@ rs_camera::subdevice_handle::subdevice_handle(uvc::device device, int subdevice_
 
 rs_camera::subdevice_handle::~subdevice_handle()
 {
-    // handle.stop_streaming();
+    stop_streaming();
 }
 
 void rs_camera::subdevice_handle::set_mode(const subdevice_mode & mode, std::vector<std::shared_ptr<stream_buffer>> streams)
@@ -186,32 +186,36 @@ void rs_camera::subdevice_handle::set_mode(const subdevice_mode & mode, std::vec
     assert(mode.streams.size() == streams.size());
     handle.get_stream_ctrl_format_size(mode.width, mode.height, mode.format, mode.fps);
     
-    this->mode = mode;
-    this->streams = streams;
+    if(!state) state = std::make_shared<capture_state>();
+    state->mode = mode;
+    state->streams = streams;
     for(size_t i=0; i<mode.streams.size(); ++i) streams[i]->set_mode(mode.streams[i]);
 }
 
 void rs_camera::subdevice_handle::start_streaming()
 {    
-    handle.start_streaming([this](const void * frame, int width, int height, uvc::frame_format format)
+    // The callback may actually outlive the subdevice_handle
+    // Make sure to capture our state by shared_ptr, not by the this ptr
+    auto s = state;
+    handle.start_streaming([s](const void * frame, int width, int height, uvc::frame_format format)
     {
         // Validate that this frame matches the mode information we've set
-        assert(width == mode.width && height == mode.height && format == mode.format);
+        assert(width == s->mode.width && height == s->mode.height && format == s->mode.format);
 
         // Unpack the image into the user stream interface back buffer
         std::vector<void *> dest;
-        for(auto & stream : streams) dest.push_back(stream->back.pixels.data());
-        mode.unpacker(dest.data(), mode, frame);
+        for(auto & stream : s->streams) dest.push_back(stream->back.pixels.data());
+        s->mode.unpacker(dest.data(), s->mode, frame);
 
         // If a frame number decoder is available, make use of it
-        if(mode.frame_number_decoder)
+        if(s->mode.frame_number_decoder)
         {
-            const int frame_number = mode.frame_number_decoder(mode, frame);
-            for(auto & stream : streams) stream->back.number = frame_number;
+            const int frame_number = s->mode.frame_number_decoder(s->mode, frame);
+            for(auto & stream : s->streams) stream->back.number = frame_number;
         }
 
         // Swap the backbuffer to the middle buffer and indicate that we have updated
-        for(auto & stream : streams)
+        for(auto & stream : s->streams)
         {
             std::lock_guard<std::mutex> guard(stream->mutex);
             stream->back.swap(stream->middle);
