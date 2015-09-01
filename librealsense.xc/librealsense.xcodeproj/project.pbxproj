@@ -8,6 +8,8 @@
 
 /* Begin PBXBuildFile section */
 		279985841B95074500894334 /* libusb-1.0.0.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 279985831B95074500894334 /* libusb-1.0.0.dylib */; };
+		279985A21B964EFF00894334 /* uvc.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 279985A01B964EFF00894334 /* uvc.cpp */; };
+		279985A31B964EFF00894334 /* uvc.h in Headers */ = {isa = PBXBuildFile; fileRef = 279985A11B964EFF00894334 /* uvc.h */; };
 		279D52AB1B8E8678007F2D73 /* camera.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 279D52991B8E8678007F2D73 /* camera.cpp */; };
 		279D52AC1B8E8678007F2D73 /* camera.h in Headers */ = {isa = PBXBuildFile; fileRef = 279D529A1B8E8678007F2D73 /* camera.h */; };
 		279D52AD1B8E8678007F2D73 /* context.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 279D529B1B8E8678007F2D73 /* context.cpp */; };
@@ -44,6 +46,8 @@
 /* Begin PBXFileReference section */
 		08567BC41B5B5A0200EB6C0D /* librealsense.dylib */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = librealsense.dylib; sourceTree = BUILT_PRODUCTS_DIR; };
 		279985831B95074500894334 /* libusb-1.0.0.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = "libusb-1.0.0.dylib"; path = "/usr/local/Cellar/libusb/1.0.19/lib/libusb-1.0.0.dylib"; sourceTree = "<absolute>"; };
+		279985A01B964EFF00894334 /* uvc.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = uvc.cpp; path = ../src/uvc.cpp; sourceTree = SOURCE_ROOT; };
+		279985A11B964EFF00894334 /* uvc.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = uvc.h; path = ../src/uvc.h; sourceTree = SOURCE_ROOT; };
 		279D52991B8E8678007F2D73 /* camera.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = camera.cpp; path = ../src/camera.cpp; sourceTree = SOURCE_ROOT; };
 		279D529A1B8E8678007F2D73 /* camera.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = camera.h; path = ../src/camera.h; sourceTree = SOURCE_ROOT; };
 		279D529B1B8E8678007F2D73 /* context.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = context.cpp; path = ../src/context.cpp; sourceTree = SOURCE_ROOT; };
@@ -144,6 +148,8 @@
 		279D52E71B90FD53007F2D73 /* src */ = {
 			isa = PBXGroup;
 			children = (
+				279985A01B964EFF00894334 /* uvc.cpp */,
+				279985A11B964EFF00894334 /* uvc.h */,
 				279D52991B8E8678007F2D73 /* camera.cpp */,
 				279D529A1B8E8678007F2D73 /* camera.h */,
 				279D529B1B8E8678007F2D73 /* context.cpp */,
@@ -193,6 +199,7 @@
 				279D52CF1B8E868E007F2D73 /* libuvc.h in Headers */,
 				279D52B41B8E8678007F2D73 /* image.h in Headers */,
 				279D52E41B90FD4E007F2D73 /* rs.h in Headers */,
+				279985A31B964EFF00894334 /* uvc.h in Headers */,
 				279D52E61B90FD4E007F2D73 /* rsutil.h in Headers */,
 				279D52B01B8E8678007F2D73 /* f200-private.h in Headers */,
 				279D52AE1B8E8678007F2D73 /* context.h in Headers */,
@@ -272,6 +279,7 @@
 				279D52AD1B8E8678007F2D73 /* context.cpp in Sources */,
 				279D52C91B8E868E007F2D73 /* device.c in Sources */,
 				279D52B51B8E8678007F2D73 /* r200-private.cpp in Sources */,
+				279985A21B964EFF00894334 /* uvc.cpp in Sources */,
 				279D52BA1B8E8678007F2D73 /* types.cpp in Sources */,
 				279D52CB1B8E868E007F2D73 /* frame.c in Sources */,
 			);

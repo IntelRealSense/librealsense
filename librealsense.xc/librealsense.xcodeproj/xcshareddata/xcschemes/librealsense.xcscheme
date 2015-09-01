@@ -15,7 +15,7 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "08567BC31B5B5A0200EB6C0D"
-               BuildableName = "librealsense.a"
+               BuildableName = "librealsense.dylib"
                BlueprintName = "librealsense"
                ReferencedContainer = "container:librealsense.xcodeproj">
             </BuildableReference>
@@ -43,7 +43,7 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "08567BC31B5B5A0200EB6C0D"
-            BuildableName = "librealsense.a"
+            BuildableName = "librealsense.dylib"
             BlueprintName = "librealsense"
             ReferencedContainer = "container:librealsense.xcodeproj">
          </BuildableReference>
@@ -61,7 +61,7 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "08567BC31B5B5A0200EB6C0D"
-            BuildableName = "librealsense.a"
+            BuildableName = "librealsense.dylib"
             BlueprintName = "librealsense"
             ReferencedContainer = "container:librealsense.xcodeproj">
          </BuildableReference>
