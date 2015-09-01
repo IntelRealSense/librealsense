@@ -40,16 +40,17 @@ The goal of librealsense is to provide a reasonable hardware abstraction with mi
 1. Grant appropriate permissions to detach the kernel UVC driver when a device is plugged in:
   * `sudo cp 99-uvc.rules /etc/udev/rules.d/`
   * `sudo cp uvc.conf /etc/modprobe.d/uvc.conf/`
-  * Reboot to enforce the new udev rules
+  * Either reboot or run `udevadm control --reload-rules && udevadm trigger` to enforce the new udev rules
 2. Ensure apt-get is up to date
   * `sudo apt-get update && apt-get upgrade`
 3. Install libusb-1.0 via apt-get
-  * `sudo apt-get install libusb-dev`
+  * `sudo apt-get install libusb-1.0-0-dev`
 4. glfw3 is not available in apt-get on Ubuntu 14.04. Use included installer script:
-  * `sudo chmod a+x install_glfw3.sh`
   * `scripts/install_glfw3.sh`
 5. We use QtCreator as an IDE for Linux development on Ubuntu: 
   * `sudo apt-get install qtcreator`
+  * `all.pro` contains librealsense and all example applications
+  * Clean => Run Qmake => Build
 6. Don't want to use QtCreator? We have a makefile!
   * `make && sudo make install`
   * The example executables will build into `./bin`
