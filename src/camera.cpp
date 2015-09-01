@@ -174,7 +174,7 @@ bool rs_camera::stream_buffer::update_image()
 // subdevice_handle //
 //////////////////////
 
-rs_camera::subdevice_handle::subdevice_handle(uvc::device device, int subdevice_index) : handle(device, subdevice_index)
+rs_camera::subdevice_handle::subdevice_handle(uvc::device device, int subdevice_index) : handle(device.claim_subdevice(subdevice_index))
 {
 
 }

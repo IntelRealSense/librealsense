@@ -5,8 +5,6 @@
 #include "types.h"
 #include "uvc.h"
 
-struct rs_camera;
-
 struct rs_context
 {
     rsimpl::uvc::context                            context;
@@ -14,8 +12,6 @@ struct rs_context
 
                                                     rs_context();
                                                     ~rs_context();
-
-    void                                            query_device_list();
 };
 
 #endif

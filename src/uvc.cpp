@@ -44,88 +44,53 @@ namespace rsimpl
             }
         }
 
-        /////////////
-        // context //
-        /////////////
-
-        struct context::impl_t
+        struct context_impl
         {
             uvc_context_t * ctx;
 
-            impl_t() : ctx() {}
-            ~impl_t() { if(ctx) uvc_exit(ctx); }
+            context_impl() : ctx() { check("uvc_init", uvc_init(&ctx, nullptr)); }
+            ~context_impl() { if(ctx) uvc_exit(ctx); }
         };
 
-        context::context() : impl(new impl_t)
+        struct device_impl
         {
-            check("uvc_init", uvc_init(&impl->ctx, nullptr));
-        }
-        context::~context() {}
-
-        libusb_context * context::get_libusb_context()
-        {
-            uvc_get_libusb_context(impl->ctx);
-        }
-
-        std::vector<device> context::query_devices()
-        {
-            uvc_device_t ** list;
-            check("uvc_get_device_list", uvc_get_device_list(impl->ctx, &list));
-            std::vector<device> devices;
-            for(auto it = list; *it; ++it) devices.push_back(device(*it));
-            uvc_free_device_list(list, 1);
-            return devices;
-        }
-
-        ////////////
-        // device //
-        ////////////
-
-        struct device::impl_t
-        {
+            std::shared_ptr<context_impl> context;
             uvc_device_t * device;
             uvc_device_descriptor_t * desc;
 
-            impl_t() : device(), desc() {}
-            ~impl_t()
+            device_impl() : device(), desc() {}
+            device_impl(std::shared_ptr<context_impl> context, uvc_device_t * device) : device_impl()
+            {
+                this->context = context;
+                this->device = device;
+                uvc_ref_device(device);
+                check("uvc_get_device_descriptor", uvc_get_device_descriptor(device, &desc));
+            }
+            ~device_impl()
             {
                 if(desc) uvc_free_device_descriptor(desc);
                 if(device) uvc_unref_device(device);
             }
         };
 
-        device::device(uvc_device_t * dev) : impl(new impl_t)
+        struct device_handle_impl
         {
-            impl->device = dev;
-            uvc_ref_device(dev);
-            check("uvc_get_device_descriptor", uvc_get_device_descriptor(dev, &impl->desc));
-        }
+            std::shared_ptr<device_impl> device;
+            uvc_device_handle_t * handle;
+            uvc_stream_ctrl_t ctrl;
+            std::function<void(const void * frame, int width, int height, frame_format format)> callback;
 
-        device::~device() {}
-        int device::get_vendor_id() const { return impl->desc->idVendor; }
-        int device::get_product_id() const { return impl->desc->idProduct; }
-        const char * device::get_product_name() const { return impl->desc->product; }
+            device_handle_impl(std::shared_ptr<device_impl> device, int subdevice_index)
+            {
+                this->device = device;
+                check("uvc_open2", uvc_open2(device->device, &handle, subdevice_index));
+            }
+            ~device_handle_impl() { uvc_close(handle); }
+        };
 
         ///////////////////
         // device_handle //
         ///////////////////
-
-        struct device_handle::impl_t
-        {
-            uvc_device_handle_t * handle;
-            uvc_stream_ctrl_t ctrl;
-            std::function<void(const void * frame, int width, int height, frame_format format)> callback;
-        };
-
-        device_handle::device_handle(uvc::device device, int camera_number) : impl(new impl_t)
-        {
-            check("uvc_open2", uvc_open2(device.impl->device, &impl->handle, camera_number));
-        }
-
-        device_handle::~device_handle()
-        {
-            uvc_close(impl->handle);
-        }
 
         void device_handle::get_stream_ctrl_format_size(int width, int height, frame_format cf, int fps)
         {
@@ -159,5 +124,53 @@ namespace rsimpl
         {
             return uvc_set_ctrl(impl->handle, unit, ctrl, data, len);
         }
+
+        ////////////
+        // device //
+        ////////////
+
+        int device::get_vendor_id() const { return impl->desc->idVendor; }
+        int device::get_product_id() const { return impl->desc->idProduct; }
+        const char * device::get_product_name() const { return impl->desc->product; }
+
+        device_handle device::claim_subdevice(int subdevice_index)
+        {
+            device_handle handle;
+            handle.impl.reset(new device_handle_impl(impl, subdevice_index));
+            return handle;
+        }
+
+        /////////////
+        // context //
+        /////////////
+
+        context context::create()
+        {
+            context c;
+            c.impl.reset(new context_impl);
+            return c;
+        }
+
+        libusb_context * context::get_libusb_context()
+        {
+            uvc_get_libusb_context(impl->ctx);
+        }
+
+        std::vector<device> context::query_devices()
+        {
+            uvc_device_t ** list;
+            check("uvc_get_device_list", uvc_get_device_list(impl->ctx, &list));
+            std::vector<device> devices;
+            for(auto it = list; *it; ++it)
+            {
+                device d;
+                d.impl.reset(new device_impl(impl, *it));
+                devices.push_back(d);
+            }
+            uvc_free_device_list(list, 1);
+            return devices;
+        }
     }
+
+
 }

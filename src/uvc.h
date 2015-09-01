@@ -39,39 +39,41 @@ namespace rsimpl
             INRI    = 18,   // F200 - 16 bit depth + 8 bit infrared
         };
 
+        struct context_impl;
+        struct device_impl;
+        struct device_handle_impl;
+
+        class context;
+        class device;
         class device_handle;
-
-        class device
-        {
-            friend class device_handle;
-            struct impl_t; std::shared_ptr<impl_t> impl;
-        public:
-            device(uvc_device_t * dev);
-            ~device();
-
-            int get_vendor_id() const;
-            int get_product_id() const;
-            const char * get_product_name() const;
-        };
 
         class context
         {
-            struct impl_t; std::unique_ptr<impl_t> impl;
+            std::shared_ptr<context_impl> impl;
         public:
-            context();
-            ~context();
-
             libusb_context * get_libusb_context();
             std::vector<device> query_devices();
+
+            static context create();
+        };
+
+        class device
+        {
+            friend class context;
+            std::shared_ptr<device_impl> impl;
+        public:
+            int get_vendor_id() const;
+            int get_product_id() const;
+            const char * get_product_name() const;
+
+            device_handle claim_subdevice(int subdevice_index);
         };
 
         class device_handle
         {
-            struct impl_t; std::unique_ptr<impl_t> impl;
+            friend class device;
+            std::shared_ptr<device_handle_impl> impl;
         public:
-            device_handle(device device, int camera_number);
-            ~device_handle();
-
             void get_stream_ctrl_format_size(int width, int height, frame_format format, int fps);
             void start_streaming(std::function<void(const void * frame, int width, int height, frame_format format)> callback);
             void stop_streaming();
