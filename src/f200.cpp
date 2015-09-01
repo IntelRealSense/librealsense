@@ -33,22 +33,22 @@ namespace rsimpl
 
         // Color modes on subdevice 0
         info.stream_subdevices[RS_STREAM_COLOR] = 0;
-        info.subdevice_modes.push_back({0, 640, 480, UVC_FRAME_FORMAT_YUYV, 60, {{RS_STREAM_COLOR, 640, 480, RS_FORMAT_RGB8, 60, COLOR_VGA}}, &unpack_yuyv_to_rgb});
-        info.subdevice_modes.push_back({0, 1920, 1080, UVC_FRAME_FORMAT_YUYV, 60, {{RS_STREAM_COLOR, 1920, 1080, RS_FORMAT_RGB8, 60, COLOR_HD}}, &unpack_yuyv_to_rgb});
+        info.subdevice_modes.push_back({0,  640,  480, uvc::frame_format::YUYV, 60, {{RS_STREAM_COLOR, 640, 480, RS_FORMAT_RGB8, 60, COLOR_VGA}}, &unpack_yuyv_to_rgb});
+        info.subdevice_modes.push_back({0, 1920, 1080, uvc::frame_format::YUYV, 60, {{RS_STREAM_COLOR, 1920, 1080, RS_FORMAT_RGB8, 60, COLOR_HD}}, &unpack_yuyv_to_rgb});
 
         // Depth and IR modes on subdevice 1
         info.stream_subdevices[RS_STREAM_DEPTH] = 1;
         info.stream_subdevices[RS_STREAM_INFRARED] = 1;
-        info.subdevice_modes.push_back({1, 640, 480, UVC_FRAME_FORMAT_INVR, 60, {{RS_STREAM_DEPTH, 640, 480, RS_FORMAT_Z16, 60, DEPTH_VGA}}, &unpack_strided_image});
-        info.subdevice_modes.push_back({1, 640, 240, UVC_FRAME_FORMAT_INVR, 60, {{RS_STREAM_DEPTH, 320, 240, RS_FORMAT_Z16, 60, DEPTH_QVGA}}, &unpack_strided_image});
+        info.subdevice_modes.push_back({1, 640, 480, uvc::frame_format::INVR, 60, {{RS_STREAM_DEPTH, 640, 480, RS_FORMAT_Z16, 60, DEPTH_VGA}}, &unpack_strided_image});
+        info.subdevice_modes.push_back({1, 640, 240, uvc::frame_format::INVR, 60, {{RS_STREAM_DEPTH, 320, 240, RS_FORMAT_Z16, 60, DEPTH_QVGA}}, &unpack_strided_image});
 
-        info.subdevice_modes.push_back({1, 640, 480, UVC_FRAME_FORMAT_INVI, 60, {{RS_STREAM_INFRARED, 640, 480, RS_FORMAT_Y8, 60, DEPTH_VGA}}, &unpack_strided_image});
-        info.subdevice_modes.push_back({1, 640, 240, UVC_FRAME_FORMAT_INVI, 60, {{RS_STREAM_INFRARED, 320, 240, RS_FORMAT_Y8, 60, DEPTH_QVGA}}, &unpack_strided_image});
+        info.subdevice_modes.push_back({1, 640, 480, uvc::frame_format::INVI, 60, {{RS_STREAM_INFRARED, 640, 480, RS_FORMAT_Y8, 60, DEPTH_VGA}}, &unpack_strided_image});
+        info.subdevice_modes.push_back({1, 640, 240, uvc::frame_format::INVI, 60, {{RS_STREAM_INFRARED, 320, 240, RS_FORMAT_Y8, 60, DEPTH_QVGA}}, &unpack_strided_image});
 
-        info.subdevice_modes.push_back({1, 640, 480, UVC_FRAME_FORMAT_INRI, 60, {{RS_STREAM_DEPTH,    640, 480, RS_FORMAT_Z16, 60, DEPTH_VGA},
-                                                                                 {RS_STREAM_INFRARED, 640, 480, RS_FORMAT_Y8,  60, DEPTH_VGA}}, &unpack_inzi_to_z16_and_y8});
-        info.subdevice_modes.push_back({1, 640, 240, UVC_FRAME_FORMAT_INRI, 60, {{RS_STREAM_DEPTH,    320, 240, RS_FORMAT_Z16, 60, DEPTH_QVGA},
-                                                                                 {RS_STREAM_INFRARED, 320, 240, RS_FORMAT_Y8,  60, DEPTH_QVGA}}, &unpack_inzi_to_z16_and_y8});
+        info.subdevice_modes.push_back({1, 640, 480, uvc::frame_format::INRI, 60, {{RS_STREAM_DEPTH,    640, 480, RS_FORMAT_Z16, 60, DEPTH_VGA},
+                                                                                   {RS_STREAM_INFRARED, 640, 480, RS_FORMAT_Y8,  60, DEPTH_VGA}}, &unpack_inzi_to_z16_and_y8});
+        info.subdevice_modes.push_back({1, 640, 240, uvc::frame_format::INRI, 60, {{RS_STREAM_DEPTH,    320, 240, RS_FORMAT_Z16, 60, DEPTH_QVGA},
+                                                                                   {RS_STREAM_INFRARED, 320, 240, RS_FORMAT_Y8,  60, DEPTH_QVGA}}, &unpack_inzi_to_z16_and_y8});
 
         info.presets[RS_STREAM_INFRARED][RS_PRESET_BEST_QUALITY] = {true, 640, 480, RS_FORMAT_Y8,   60};
         info.presets[RS_STREAM_DEPTH   ][RS_PRESET_BEST_QUALITY] = {true, 640, 480, RS_FORMAT_Z16,  60};
@@ -62,11 +62,11 @@ namespace rsimpl
         info.presets[RS_STREAM_DEPTH   ][RS_PRESET_HIGHEST_FRAMERATE] = {true, 640, 480, RS_FORMAT_Z16,  60};
         info.presets[RS_STREAM_COLOR   ][RS_PRESET_HIGHEST_FRAMERATE] = {true, 640, 480, RS_FORMAT_RGB8, 60};
 
-        for(int i = RS_OPTION_F200_LASER_POWER; i <= RS_OPTION_F200_DYNAMIC_FPS; ++i) info.option_supported[i] = true;
+        for(int i = RS_OPTION_F200_LASER_POWER; i <= RS_OPTION_F200_CONFIDENCE_THRESHOLD; ++i) info.option_supported[i] = true;
         return info;
     }
 
-    f200_camera::f200_camera(uvc_context_t * ctx, uvc_device_t * device) : rs_camera(ctx, device, get_f200_info())
+    f200_camera::f200_camera(uvc::device device) : rs_camera(device, get_f200_info())
     {
 
     }
@@ -111,7 +111,7 @@ namespace rsimpl
 
     calibration_info f200_camera::retrieve_calibration()
     {
-        if(!hardware_io) hardware_io.reset(new f200::IVCAMHardwareIO(context));
+        if(!hardware_io) hardware_io.reset(new f200::IVCAMHardwareIO(first_handle));
         const f200::CameraCalibrationParameters & calib = hardware_io->GetParameters();
 
         calibration_info c;
@@ -128,119 +128,107 @@ namespace rsimpl
     
     // N.B. f200 xu_read and xu_write hard code the xu interface to the depth suvdevice. There is only a
     // single *potentially* useful XU on the color device, so let's ignore it for now.
-    bool xu_read(uvc_device_handle_t * device, uint64_t xu_ctrl, void * buffer, uint32_t length)
+    void xu_read(uvc::device_handle & device, uint64_t xu_ctrl, void * buffer, uint32_t length)
     {
-        auto status = uvc_get_ctrl(device, 6, xu_ctrl, buffer, length, UVC_GET_CUR);
-        if (status < 0)
-        {
-            uvc_perror((uvc_error_t) status, "xu_read - uvc_get_ctrl");
-            return false;
-        }
-        return true;
+        device.get_ctrl(6, xu_ctrl, buffer, length);
     }
     
-    bool xu_write(uvc_device_handle_t * device, uint64_t xu_ctrl, void * buffer, uint32_t length)
+    void xu_write(uvc::device_handle & device, uint64_t xu_ctrl, void * buffer, uint32_t length)
     {
-        auto status = uvc_set_ctrl(device, 6, xu_ctrl, buffer, length);
-        if (status < 0)
-        {
-            uvc_perror((uvc_error_t) status, "xu_write - uvc_set_ctrl");
-            return false;
-        }
-        return true;
+        device.set_ctrl(6, xu_ctrl, buffer, length);
     }
     
-    bool get_laser_power(uvc_device_handle_t * device, uint8_t & laser_power)
+    void get_laser_power(uvc::device_handle & device, uint8_t & laser_power)
     {
-        return xu_read(device, IVCAM_DEPTH_LASER_POWER, &laser_power, sizeof(laser_power));
+        xu_read(device, IVCAM_DEPTH_LASER_POWER, &laser_power, sizeof(laser_power));
     }
     
-    bool set_laser_power(uvc_device_handle_t * device, uint8_t laser_power)
+    void set_laser_power(uvc::device_handle & device, uint8_t laser_power)
     {
-        return xu_write(device, IVCAM_DEPTH_LASER_POWER, &laser_power, sizeof(laser_power));
+        xu_write(device, IVCAM_DEPTH_LASER_POWER, &laser_power, sizeof(laser_power));
     }
     
-    bool get_accuracy(uvc_device_handle_t * device, uint8_t & accuracy)
+    void get_accuracy(uvc::device_handle & device, uint8_t & accuracy)
     {
-        return xu_read(device, IVCAM_DEPTH_ACCURACY, &accuracy, sizeof(accuracy));
+        xu_read(device, IVCAM_DEPTH_ACCURACY, &accuracy, sizeof(accuracy));
     }
     
-    bool set_accuracy(uvc_device_handle_t * device, uint8_t accuracy)
+    void set_accuracy(uvc::device_handle & device, uint8_t accuracy)
     {
-        return xu_write(device, IVCAM_DEPTH_ACCURACY, &accuracy, sizeof(accuracy));
+        xu_write(device, IVCAM_DEPTH_ACCURACY, &accuracy, sizeof(accuracy));
     }
     
-    bool get_motion_range(uvc_device_handle_t * device, uint8_t & motion_range)
+    void get_motion_range(uvc::device_handle & device, uint8_t & motion_range)
     {
-        return xu_read(device, IVCAM_DEPTH_MOTION_RANGE, &motion_range, sizeof(motion_range));
+        xu_read(device, IVCAM_DEPTH_MOTION_RANGE, &motion_range, sizeof(motion_range));
     }
     
-    bool set_motion_range(uvc_device_handle_t * device, uint8_t motion_range)
+    void set_motion_range(uvc::device_handle & device, uint8_t motion_range)
     {
-        return xu_write(device, IVCAM_DEPTH_MOTION_RANGE, &motion_range, sizeof(motion_range));
+        xu_write(device, IVCAM_DEPTH_MOTION_RANGE, &motion_range, sizeof(motion_range));
     }
     
-    bool get_filter_option(uvc_device_handle_t * device, uint8_t & filter_option)
+    void get_filter_option(uvc::device_handle & device, uint8_t & filter_option)
     {
-        return xu_read(device, IVCAM_DEPTH_FILTER_OPTION, &filter_option, sizeof(filter_option));
+        xu_read(device, IVCAM_DEPTH_FILTER_OPTION, &filter_option, sizeof(filter_option));
     }
     
-    bool set_filter_option(uvc_device_handle_t * device, uint8_t filter_option)
+    void set_filter_option(uvc::device_handle & device, uint8_t filter_option)
     {
-        return xu_write(device, IVCAM_DEPTH_FILTER_OPTION, &filter_option, sizeof(filter_option));
+        xu_write(device, IVCAM_DEPTH_FILTER_OPTION, &filter_option, sizeof(filter_option));
     }
     
-    bool get_confidence_threshold(uvc_device_handle_t * device, uint8_t & conf_thresh)
+    void get_confidence_threshold(uvc::device_handle & device, uint8_t & conf_thresh)
     {
-        return xu_read(device, IVCAM_DEPTH_CONFIDENCE_THRESH, &conf_thresh, sizeof(conf_thresh));
+        xu_read(device, IVCAM_DEPTH_CONFIDENCE_THRESH, &conf_thresh, sizeof(conf_thresh));
     }
     
-    bool set_confidence_threshold(uvc_device_handle_t * device, uint8_t conf_thresh)
+    void set_confidence_threshold(uvc::device_handle & device, uint8_t conf_thresh)
     {
-        return xu_write(device, IVCAM_DEPTH_CONFIDENCE_THRESH, &conf_thresh, sizeof(conf_thresh));
+        xu_write(device, IVCAM_DEPTH_CONFIDENCE_THRESH, &conf_thresh, sizeof(conf_thresh));
     }
     
-    bool get_dynamic_fps(uvc_device_handle_t * device, uint8_t & dynamic_fps)
+    void get_dynamic_fps(uvc::device_handle & device, uint8_t & dynamic_fps)
     {
         return xu_read(device, IVCAM_DEPTH_DYNAMIC_FPS, &dynamic_fps, sizeof(dynamic_fps));
     }
     
-    bool set_dynamic_fps(uvc_device_handle_t * device, uint8_t dynamic_fps)
+    void set_dynamic_fps(uvc::device_handle & device, uint8_t dynamic_fps)
     {
         return xu_write(device, IVCAM_DEPTH_DYNAMIC_FPS, &dynamic_fps, sizeof(dynamic_fps));
     }
 
     void f200_camera::set_option(rs_option option, int value)
     {
+        if(!first_handle) throw std::runtime_error("cannot call before rs_start_capture(...)");
+
         // TODO: Range check value before write
         auto val = static_cast<uint8_t>(value);
-        bool result = false;
         switch(option)
         {
-        case RS_OPTION_F200_LASER_POWER:          result = set_laser_power(first_handle, val); break;
-        case RS_OPTION_F200_ACCURACY:             result = set_accuracy(first_handle, val); break;
-        case RS_OPTION_F200_MOTION_RANGE:         result = set_motion_range(first_handle, val); break;
-        case RS_OPTION_F200_FILTER_OPTION:        result = set_filter_option(first_handle, val); break;
-        case RS_OPTION_F200_CONFIDENCE_THRESHOLD: result = set_confidence_threshold(first_handle, val); break;
-        //case RS_OPTION_F200_DYNAMIC_FPS:          result = set_dynamic_fps(first_handle, val); break; // IVCAM 1.5 Only
+        case RS_OPTION_F200_LASER_POWER:          set_laser_power(first_handle, val); break;
+        case RS_OPTION_F200_ACCURACY:             set_accuracy(first_handle, val); break;
+        case RS_OPTION_F200_MOTION_RANGE:         set_motion_range(first_handle, val); break;
+        case RS_OPTION_F200_FILTER_OPTION:        set_filter_option(first_handle, val); break;
+        case RS_OPTION_F200_CONFIDENCE_THRESHOLD: set_confidence_threshold(first_handle, val); break;
+        //case RS_OPTION_F200_DYNAMIC_FPS:        set_dynamic_fps(*first_handle, val); break; // IVCAM 1.5 Only
         }
-        if(!result) throw std::runtime_error("failed to write option to device");
     }
 
     int f200_camera::get_option(rs_option option)
     {
+        if(!first_handle) throw std::runtime_error("cannot call before rs_start_capture(...)");
+
         uint8_t value = 0;
-        bool result = false;
         switch(option)
         {
-        case RS_OPTION_F200_LASER_POWER:          result = get_laser_power(first_handle, value); break;
-        case RS_OPTION_F200_ACCURACY:             result = get_accuracy(first_handle, value); break;
-        case RS_OPTION_F200_MOTION_RANGE:         result = get_motion_range(first_handle, value); break;
-        case RS_OPTION_F200_FILTER_OPTION:        result = get_filter_option(first_handle, value); break;
-        case RS_OPTION_F200_CONFIDENCE_THRESHOLD: result = get_confidence_threshold(first_handle, value); break;
-        //case RS_OPTION_F200_DYNAMIC_FPS:          result = get_dynamic_fps(first_handle, value); break; // IVCAM 1.5 Only
+        case RS_OPTION_F200_LASER_POWER:          get_laser_power(first_handle, value); break;
+        case RS_OPTION_F200_ACCURACY:             get_accuracy(first_handle, value); break;
+        case RS_OPTION_F200_MOTION_RANGE:         get_motion_range(first_handle, value); break;
+        case RS_OPTION_F200_FILTER_OPTION:        get_filter_option(first_handle, value); break;
+        case RS_OPTION_F200_CONFIDENCE_THRESHOLD: get_confidence_threshold(first_handle, value); break;
+        //case RS_OPTION_F200_DYNAMIC_FPS:        get_dynamic_fps(first_handle, value); break; // IVCAM 1.5 Only
         }
-        if(!result) throw std::runtime_error("failed to read option from device");
         return value;
     }
 

@@ -3,7 +3,6 @@
 #define LIBREALSENSE_TYPES_H
 
 #include "../include/librealsense/rs.h"
-#include "libuvc/libuvc.h"                  // For uvc_frame_format
 
 #include <cassert>                          // For assert
 #include <vector>                           // For vector
@@ -38,6 +37,22 @@ namespace rsimpl
     inline pose operator * (const pose & a, const pose & b) { return {a.orientation * b.orientation, a.position + a * b.position}; }
     inline pose inverse(const pose & a) { auto inv = transpose(a.orientation); return {inv, inv * a.position * -1}; }
 
+    // UVC types
+    namespace uvc
+    {
+        enum class frame_format
+        {
+            ANY     = 0,
+            YUYV    = 3,
+            Y12I    = 5,    // R200 - 12 bit infrared (stereo interleaved)
+            Y8      = 7,    // R200 - 8 bit infrared
+            Z16     = 8,    // R200 - 16 bit depth
+            INVI    = 14,   // F200 - 8 bit infrared
+            INVR    = 16,   // F200 - 16 bit depth
+            INRI    = 18,   // F200 - 16 bit depth + 8 bit infrared
+        };
+    }
+
     // Static camera info
     struct stream_request
     {
@@ -60,7 +75,7 @@ namespace rsimpl
     {
         int subdevice;                      // 0, 1, 2, etc...
         int width, height;                  // Resolution advertised over UVC
-        uvc_frame_format format;            // Pixel format advertised over UVC
+        uvc::frame_format format;           // Pixel format advertised over UVC
         int fps;                            // Framerate advertised over UVC
         std::vector<stream_mode> streams;   // Modes for streams which can be supported by this device mode
         void (* unpacker)(void * dest[], const subdevice_mode & mode, const void * frame);

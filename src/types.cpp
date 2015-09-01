@@ -109,13 +109,13 @@ namespace rsimpl
 
     void unpack_rly12_to_y8(void * dest[], const subdevice_mode & mode, const void * frame)
     {
-        assert(mode.format == UVC_FRAME_FORMAT_Y12I && mode.streams.size() == 2 && mode.streams[0].format == RS_FORMAT_Y8 && mode.streams[1].format == RS_FORMAT_Y8);
+        assert(mode.format == uvc::frame_format::Y12I && mode.streams.size() == 2 && mode.streams[0].format == RS_FORMAT_Y8 && mode.streams[1].format == RS_FORMAT_Y8);
         convert_rly12_to_y8_y8(dest[0], dest[1], mode.streams[0].width, mode.streams[0].height, frame, 3*mode.width);
     }
 
     void unpack_yuyv_to_rgb(void * dest[], const subdevice_mode & mode, const void * source)
     {
-        assert(mode.format == UVC_FRAME_FORMAT_YUYV && mode.streams.size() == 1 && mode.streams[0].format == RS_FORMAT_RGB8);
+        assert(mode.format == uvc::frame_format::YUYV && mode.streams.size() == 1 && mode.streams[0].format == RS_FORMAT_RGB8);
         convert_yuyv_to_rgb((uint8_t *) dest[0], mode.width, mode.height, source);
     }
 

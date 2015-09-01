@@ -2,7 +2,7 @@
 #ifndef LIBREALSENSE_F200_PRIVATE_H
 #define LIBREALSENSE_F200_PRIVATE_H
 
-#include "libuvc/libuvc.h"
+#include "uvc.h"
 
 #include <cmath>    // for M_PI, tan
 #include <cstring>  // for memcpy, memcmp
@@ -172,7 +172,7 @@ enum Property
 
     class IVCAMHardwareIO
     {
-        libusb_device_handle * usbDeviceHandle = nullptr;
+        uvc::device_handle handle;
         std::timed_mutex usbMutex;
 
         CameraCalibrationParameters parameters;
@@ -185,7 +185,7 @@ enum Property
         int PrepareUSBCommand(uint8_t * request, size_t & requestSize, uint32_t op,
                               uint32_t p1 = 0, uint32_t p2 = 0, uint32_t p3 = 0, uint32_t p4 = 0,
                               uint8_t * data = 0, size_t dataLength = 0);
-        int ExecuteUSBCommand(uint8_t *out, size_t outSize, uint32_t & op, uint8_t * in, size_t & inSize);
+        void ExecuteUSBCommand(uint8_t *out, size_t outSize, uint32_t & op, uint8_t * in, size_t & inSize);
         void FillUSBBuffer(int opCodeNumber, int p1, int p2, int p3, int p4, char * data, int dataLength, char * bufferToSend, int & length);
         void GetCalibrationRawData(uint8_t * data, size_t & bytesReturned);
         void ProjectionCalibrate(uint8_t * rawCalibData, int len, CameraCalibrationParameters * calprms);
@@ -196,8 +196,7 @@ enum Property
 
     public:
 
-        IVCAMHardwareIO(uvc_context_t * ctx);
-        ~IVCAMHardwareIO();
+        IVCAMHardwareIO(uvc::device_handle handle);
 
         bool StartTempCompensationLoop()
         {

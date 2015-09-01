@@ -3,18 +3,15 @@
 #define LIBREALSENSE_CONTEXT_H
 
 #include "types.h"
-
-struct rs_camera;
+#include "uvc.h"
 
 struct rs_context
 {
-    uvc_context_t *                                 context;
+    rsimpl::uvc::context                            context;
     std::vector<std::shared_ptr<rs_camera>>         cameras;
 
                                                     rs_context();
                                                     ~rs_context();
-
-    void                                            query_device_list();
 };
 
 #endif
