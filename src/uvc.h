@@ -7,19 +7,11 @@
 #include <memory>
 #include <vector>
 
-#ifndef NO_UVC_TYPES
-typedef struct libusb_device_handle libusb_device_handle;
-#endif
-
 namespace rsimpl
 {
     namespace usb // Correspond to libusb_* calls
     {
         const char * error_name(int errcode);
-
-        int claim_interface(libusb_device_handle *dev, int interface_number);
-        int release_interface(libusb_device_handle *dev, int interface_number);
-        int bulk_transfer(libusb_device_handle *dev_handle, unsigned char endpoint, unsigned char *data, int length, int *actual_length, unsigned int timeout);
     }
 
     namespace uvc // Correspond to uvc_* calls
@@ -88,7 +80,9 @@ namespace rsimpl
             int get_ctrl(uint8_t unit, uint8_t ctrl, void *data, int len);
             int set_ctrl(uint8_t unit, uint8_t ctrl, void *data, int len);
 
-            libusb_device_handle * get_usb_handle();
+            int claim_interface(int interface_number);
+            int release_interface(int interface_number);
+            int bulk_transfer(unsigned char endpoint, unsigned char *data, int length, int *actual_length, unsigned int timeout);
 
             // TODO: Implicit libusb_device_handle (punchthrough libuvc in some way)
             // int claim_interface(int interface_number);

@@ -14,26 +14,6 @@ namespace rsimpl
         {
             return libusb_error_name(errcode);
         }
-
-        libusb_device_handle * open_device_with_vid_pid(libusb_context *ctx, uint16_t vendor_id, uint16_t product_id)
-        {
-            return libusb_open_device_with_vid_pid(ctx, vendor_id, product_id);
-        }
-
-        int claim_interface(libusb_device_handle *dev, int interface_number)
-        {
-            return libusb_claim_interface(dev, interface_number);
-        }
-
-        int release_interface(libusb_device_handle *dev, int interface_number)
-        {
-            return libusb_release_interface(dev, interface_number);
-        }
-
-        int bulk_transfer(libusb_device_handle *dev_handle, unsigned char endpoint, unsigned char *data, int length, int *actual_length, unsigned int timeout)
-        {
-            return libusb_bulk_transfer(dev_handle, endpoint, data, length, actual_length, timeout);
-        }
     }
 
     namespace uvc // Correspond to uvc_* calls
@@ -129,9 +109,19 @@ namespace rsimpl
             return uvc_set_ctrl(impl->handle, unit, ctrl, data, len);
         }
 
-        libusb_device_handle * device_handle::get_usb_handle()
+        int device_handle::claim_interface(int interface_number)
         {
-            return impl->handle->usb_devh;
+            return libusb_claim_interface(impl->handle->usb_devh, interface_number);
+        }
+
+        int device_handle::release_interface(int interface_number)
+        {
+            return libusb_release_interface(impl->handle->usb_devh, interface_number);
+        }
+
+        int device_handle::bulk_transfer(unsigned char endpoint, unsigned char *data, int length, int *actual_length, unsigned int timeout)
+        {
+            return libusb_bulk_transfer(impl->handle->usb_devh, endpoint, data, length, actual_length, timeout);
         }
 
         ////////////

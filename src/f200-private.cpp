@@ -104,7 +104,7 @@ namespace rsimpl { namespace f200
 
         if (usbMutex.try_lock_for(std::chrono::milliseconds(IVCAM_MONITOR_MUTEX_TIMEOUT)))
         {
-            int ret = usb::bulk_transfer(usbDeviceHandle, IVCAM_MONITOR_ENDPOINT_OUT, out, (int) outSize, &outXfer, 1000); // timeout in ms
+            int ret = handle.bulk_transfer(IVCAM_MONITOR_ENDPOINT_OUT, out, (int) outSize, &outXfer, 1000); // timeout in ms
 
             if (ret < 0 )
             {
@@ -119,7 +119,7 @@ namespace rsimpl { namespace f200
 
                 errno = 0;
 
-                ret = usb::bulk_transfer(usbDeviceHandle, IVCAM_MONITOR_ENDPOINT_IN, buf, sizeof(buf), &outXfer, 1000);
+                ret = handle.bulk_transfer(IVCAM_MONITOR_ENDPOINT_IN, buf, sizeof(buf), &outXfer, 1000);
 
                 if (outXfer < (int)sizeof(uint32_t))
                 {
@@ -346,14 +346,9 @@ namespace rsimpl { namespace f200
         // @tofix
     }
 
-    IVCAMHardwareIO::IVCAMHardwareIO(uvc::device_handle handle)
+    IVCAMHardwareIO::IVCAMHardwareIO(uvc::device_handle handle) : handle(handle)
     {
-        usbDeviceHandle = handle.get_usb_handle();
-
-        if (usbDeviceHandle == NULL)
-            throw std::runtime_error("unable to get usb device handle");
-
-        int status = usb::claim_interface(usbDeviceHandle, IVCAM_MONITOR_INTERFACE);
+        int status = handle.claim_interface(IVCAM_MONITOR_INTERFACE);
         if (status < 0) throw std::runtime_error("libusb_claim_interface() failed");
 
         uint8_t rawCalibrationBuffer[HW_MONITOR_BUFFER_SIZE];
@@ -370,7 +365,7 @@ namespace rsimpl { namespace f200
 
     IVCAMHardwareIO::~IVCAMHardwareIO()
     {
-        usb::release_interface(usbDeviceHandle, IVCAM_MONITOR_INTERFACE);
+        handle.release_interface(IVCAM_MONITOR_INTERFACE);
     }
 
     ////////////////////////////////////

@@ -172,7 +172,7 @@ enum Property
 
     class IVCAMHardwareIO
     {
-        libusb_device_handle * usbDeviceHandle = nullptr;
+        uvc::device_handle handle;
         std::timed_mutex usbMutex;
 
         CameraCalibrationParameters parameters;
