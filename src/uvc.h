@@ -19,10 +19,10 @@ namespace rsimpl
             void start_streaming(std::function<void(const void * frame, int width, int height, frame_format format)> callback);
             void stop_streaming();
 
-            int get_ctrl(uint8_t unit, uint8_t ctrl, void *data, int len);
-            int set_ctrl(uint8_t unit, uint8_t ctrl, void *data, int len);
+            void get_ctrl(uint8_t unit, uint8_t ctrl, void *data, int len);
+            void set_ctrl(uint8_t unit, uint8_t ctrl, void *data, int len);
 
-            int claim_interface(int interface_number);
+            void claim_interface(int interface_number);
             int bulk_transfer(unsigned char endpoint, unsigned char *data, int length, int *actual_length, unsigned int timeout);
         };
 

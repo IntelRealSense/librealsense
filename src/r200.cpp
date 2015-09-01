@@ -128,14 +128,13 @@ namespace rsimpl
 
     void r200_camera::set_stream_intent()
     {
-        uint8_t streamIntent = 0;
-        if(subdevices[0]) streamIntent |= STATUS_BIT_LR_STREAMING;
-        if(subdevices[1]) streamIntent |= STATUS_BIT_Z_STREAMING;
-        if(subdevices[2]) streamIntent |= STATUS_BIT_WEB_STREAMING;
-
         if(first_handle)
         {
-            if (!r200::set_stream_intent(first_handle, streamIntent)) throw std::runtime_error("could not set stream intent");
+            uint8_t streamIntent = 0;
+            if(subdevices[0]) streamIntent |= STATUS_BIT_LR_STREAMING;
+            if(subdevices[1]) streamIntent |= STATUS_BIT_Z_STREAMING;
+            if(subdevices[2]) streamIntent |= STATUS_BIT_WEB_STREAMING;
+            r200::set_stream_intent(first_handle, streamIntent);
         }
     }
 
@@ -150,52 +149,50 @@ namespace rsimpl
         uint16_t u16[2];
 
         // TODO: Range check value before write
-        bool result = false;
         switch(option)
         {
         case RS_OPTION_R200_LR_AUTO_EXPOSURE_ENABLED:
-            result = r200::set_lr_exposure_mode(first_handle, value);
+            r200::set_lr_exposure_mode(first_handle, value);
             break;
         case RS_OPTION_R200_LR_GAIN:
-            result = r200::get_lr_gain(first_handle, u32[0], u32[1]);
-            if(result) result = r200::set_lr_gain(first_handle, u32[0], value);
+            r200::get_lr_gain(first_handle, u32[0], u32[1]);
+            r200::set_lr_gain(first_handle, u32[0], value);
             break;
         case RS_OPTION_R200_LR_EXPOSURE:
-            result = r200::get_lr_exposure(first_handle, u32[0], u32[1]);
-            if(result) result = r200::set_lr_exposure(first_handle, u32[0], value);
+            r200::get_lr_exposure(first_handle, u32[0], u32[1]);
+            r200::set_lr_exposure(first_handle, u32[0], value);
             break;
         case RS_OPTION_R200_EMITTER_ENABLED:
-            result = r200::set_emitter_state(first_handle, !!value);
+            r200::set_emitter_state(first_handle, !!value);
             break;
         case RS_OPTION_R200_DEPTH_CONTROL_PRESET:
-            result = r200::set_depth_params(first_handle, r200::depth_params::presets[value]);
+            r200::set_depth_params(first_handle, r200::depth_params::presets[value]);
             break;
         case RS_OPTION_R200_DEPTH_UNITS:
-            result = r200::set_depth_units(first_handle, value);
+            r200::set_depth_units(first_handle, value);
             break;
         case RS_OPTION_R200_DEPTH_CLAMP_MIN:
-            result = r200::get_min_max_depth(first_handle, u16[0], u16[1]);
-            if(result) result = r200::set_min_max_depth(first_handle, value, u16[1]);
+            r200::get_min_max_depth(first_handle, u16[0], u16[1]);
+            r200::set_min_max_depth(first_handle, value, u16[1]);
             break;
         case RS_OPTION_R200_DEPTH_CLAMP_MAX:
-            result = r200::get_min_max_depth(first_handle, u16[0], u16[1]);
-            if(result) result = r200::set_min_max_depth(first_handle, u16[0], value);
+            r200::get_min_max_depth(first_handle, u16[0], u16[1]);
+            r200::set_min_max_depth(first_handle, u16[0], value);
             break;
         case RS_OPTION_R200_DISPARITY_MODE_ENABLED:
-            result = r200::get_disparity_mode(first_handle, dm);
+            r200::get_disparity_mode(first_handle, dm);
             dm.format = value ? r200::range_format::RANGE_FORMAT_DISPARITY : r200::range_format::RANGE_FORMAT_DISTANCE;
-            if(result) result = r200::set_disparity_mode(first_handle, dm);
+            r200::set_disparity_mode(first_handle, dm);
             break;
         case RS_OPTION_R200_DISPARITY_MULTIPLIER:
-            result = r200::get_disparity_mode(first_handle, dm);
+            r200::get_disparity_mode(first_handle, dm);
             dm.multiplier = value;
-            if(result) result = r200::set_disparity_mode(first_handle, dm);
+            r200::set_disparity_mode(first_handle, dm);
             break;
         case RS_OPTION_R200_DISPARITY_SHIFT:
             r200::set_disparity_shift(first_handle, value);
             break;
         }
-        if(!result) throw std::runtime_error("failed to read option from device");
     }
 
     int r200_camera::get_option(rs_option option)
@@ -210,33 +207,29 @@ namespace rsimpl
         bool b;
 
         int value = 0;
-        bool result = false;
         switch(option)
         {
-        case RS_OPTION_R200_LR_AUTO_EXPOSURE_ENABLED: result = r200::get_lr_exposure_mode(first_handle, u32[0]);         value = u32[0]; break;
-        case RS_OPTION_R200_LR_GAIN:                  result = r200::get_lr_gain         (first_handle, u32[0], u32[1]); value = u32[1]; break;
-        case RS_OPTION_R200_LR_EXPOSURE:              result = r200::get_lr_exposure     (first_handle, u32[0], u32[1]); value = u32[1]; break;
-        case RS_OPTION_R200_EMITTER_ENABLED:          result = r200::get_emitter_state   (first_handle, b);              value = b; break;
-        case RS_OPTION_R200_DEPTH_UNITS:              result = r200::get_depth_units     (first_handle, u32[0]);         value = u32[0]; break;
-        case RS_OPTION_R200_DEPTH_CLAMP_MIN:          result = r200::get_min_max_depth   (first_handle, u16[0], u16[1]); value = u16[0]; break;
-        case RS_OPTION_R200_DEPTH_CLAMP_MAX:          result = r200::get_min_max_depth   (first_handle, u16[0], u16[1]); value = u16[1]; break;
-        case RS_OPTION_R200_DISPARITY_MODE_ENABLED:   result = r200::get_disparity_mode  (first_handle, dm);             value = dm.format == r200::range_format::RANGE_FORMAT_DISPARITY; break;
-        case RS_OPTION_R200_DISPARITY_MULTIPLIER:     result = r200::get_disparity_mode  (first_handle, dm);             value = static_cast<int>(dm.multiplier); break;
-        case RS_OPTION_R200_DISPARITY_SHIFT:          result = r200::get_disparity_shift (first_handle, u32[0]);         value = u32[0]; break;
+        case RS_OPTION_R200_LR_AUTO_EXPOSURE_ENABLED: r200::get_lr_exposure_mode(first_handle, u32[0]);         value = u32[0]; break;
+        case RS_OPTION_R200_LR_GAIN:                  r200::get_lr_gain         (first_handle, u32[0], u32[1]); value = u32[1]; break;
+        case RS_OPTION_R200_LR_EXPOSURE:              r200::get_lr_exposure     (first_handle, u32[0], u32[1]); value = u32[1]; break;
+        case RS_OPTION_R200_EMITTER_ENABLED:          r200::get_emitter_state   (first_handle, b);              value = b; break;
+        case RS_OPTION_R200_DEPTH_UNITS:              r200::get_depth_units     (first_handle, u32[0]);         value = u32[0]; break;
+        case RS_OPTION_R200_DEPTH_CLAMP_MIN:          r200::get_min_max_depth   (first_handle, u16[0], u16[1]); value = u16[0]; break;
+        case RS_OPTION_R200_DEPTH_CLAMP_MAX:          r200::get_min_max_depth   (first_handle, u16[0], u16[1]); value = u16[1]; break;
+        case RS_OPTION_R200_DISPARITY_MODE_ENABLED:   r200::get_disparity_mode  (first_handle, dm);             value = dm.format == r200::range_format::RANGE_FORMAT_DISPARITY; break;
+        case RS_OPTION_R200_DISPARITY_MULTIPLIER:     r200::get_disparity_mode  (first_handle, dm);             value = static_cast<int>(dm.multiplier); break;
+        case RS_OPTION_R200_DISPARITY_SHIFT:          r200::get_disparity_shift (first_handle, u32[0]);         value = u32[0]; break;
         case RS_OPTION_R200_DEPTH_CONTROL_PRESET:
-            if(r200::get_depth_params(first_handle, dp))
+            r200::get_depth_params(first_handle, dp);
+            for(int i=0; i<r200::depth_params::MAX_PRESETS; ++i)
             {
-                for(int i=0; i<r200::depth_params::MAX_PRESETS; ++i)
+                if(memcmp(&dp, &r200::depth_params::presets[i], sizeof(dp)) == 0)
                 {
-                    if(memcmp(&dp, &r200::depth_params::presets[i], sizeof(dp)) == 0)
-                    {
-                        return i;
-                    }
+                    return i;
                 }
             }
             break;
         }
-        if(!result) throw std::runtime_error("failed to read option from device");
         return value;
     }
     

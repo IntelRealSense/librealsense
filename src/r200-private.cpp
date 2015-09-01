@@ -39,24 +39,10 @@ namespace rsimpl { namespace r200
         uint32_t reserved[55]{};
     };
 
-    bool send_command(uvc::device_handle & device, CommandPacket * command, ResponsePacket * response)
+    void send_command(uvc::device_handle & device, CommandPacket & command, ResponsePacket & response)
     {
-        uint32_t cmdSz = sizeof(CommandPacket);
-        auto status = device.set_ctrl(CAMERA_XU_UNIT_ID, CONTROL_COMMAND_RESPONSE, command, cmdSz);
-        if (status < 0)
-        {
-            std::cerr << "send_command - uvc_set_ctrl - " << uvc::usb_error_name(status) << std::endl;
-            return false;
-        }
-
-        uint32_t resSz = sizeof(ResponsePacket);
-        status = device.get_ctrl(CAMERA_XU_UNIT_ID, CONTROL_COMMAND_RESPONSE, response, resSz);
-        if (status < 0)
-        {
-            std::cerr << "send_command - uvc_get_ctrl - " << uvc::usb_error_name(status) << std::endl;
-            return false;
-        }
-        return true;
+        device.set_ctrl(CAMERA_XU_UNIT_ID, CONTROL_COMMAND_RESPONSE, &command, sizeof(command));
+        device.get_ctrl(CAMERA_XU_UNIT_ID, CONTROL_COMMAND_RESPONSE, &response, sizeof(response));
     }
 
     inline std::string ResponseCodeToString(uint32_t rc)
@@ -168,10 +154,7 @@ namespace rsimpl { namespace r200
 
             ResponsePacket response;
 
-            if (!send_command(deviceHandle, &command, &response))
-            {
-                return false;
-            }
+            send_command(deviceHandle, command, response);
 
             uint8_t *p = buffer;
             uint16_t spiLength = SPI_FLASH_PAGE_SIZE_IN_BYTES;
@@ -329,230 +312,181 @@ namespace rsimpl { namespace r200
         command.tag = 12;
 
         ResponsePacket response;
-        if (!send_command(device, &command, &response)) throw std::runtime_error("failed to read firmware version");
+        send_command(device, command, response);
 
         char fw[16];
         memcpy(fw, &response.revision, 16);
         return fw;
     }
 
-    bool xu_read(uvc::device_handle & device, uint64_t xu_ctrl, void * buffer, uint32_t length)
+    void xu_read(uvc::device_handle & device, uint64_t xu_ctrl, void * buffer, uint32_t length)
     {
-        auto status = device.get_ctrl(CAMERA_XU_UNIT_ID, xu_ctrl, buffer, length);
-        if (status < 0)
-        {
-            std::cerr << "xu_read - uvc_get_ctrl - " << uvc::usb_error_name(status) << std::endl;
-            return false;
-        }
-        return true;
+        device.get_ctrl(CAMERA_XU_UNIT_ID, xu_ctrl, buffer, length);
     }
 
-    bool xu_write(uvc::device_handle & device, uint64_t xu_ctrl, void * buffer, uint32_t length)
+    void xu_write(uvc::device_handle & device, uint64_t xu_ctrl, void * buffer, uint32_t length)
     {
-        auto status = device.set_ctrl(CAMERA_XU_UNIT_ID, xu_ctrl, buffer, length);
-        if (status < 0)
-        {
-            std::cerr << "xu_write - uvc_set_ctrl - " << uvc::usb_error_name(status) << std::endl;
-            return false;
-        }
-        return true;
+        device.set_ctrl(CAMERA_XU_UNIT_ID, xu_ctrl, buffer, length);
     }
 
-    bool set_stream_intent(uvc::device_handle & device, uint8_t & intent)
+    void set_stream_intent(uvc::device_handle & device, uint8_t & intent)
     {
-        return xu_write(device, CONTROL_STREAM_INTENT, &intent, sizeof(intent));
+        xu_write(device, CONTROL_STREAM_INTENT, &intent, sizeof(intent));
     }
 
-    bool get_stream_status(uvc::device_handle & device, int & status)
+    void get_stream_status(uvc::device_handle & device, int & status)
     {
         uint8_t s[4] = {255, 255, 255, 255};
-        if (!xu_read(device, CONTROL_STATUS, s, (int) sizeof(uint32_t)))
-            return false;
+        xu_read(device, CONTROL_STATUS, s, sizeof(uint32_t));
         status = pack(s[0], s[1], s[2], s[3]);
-        return true;
     }
 
-    bool get_last_error(uvc::device_handle & device, uint8_t & last_error)
+    void get_last_error(uvc::device_handle & device, uint8_t & last_error)
     {
-        return xu_read(device, CONTROL_LAST_ERROR, &last_error, sizeof(uint8_t));
+        xu_read(device, CONTROL_LAST_ERROR, &last_error, sizeof(uint8_t));
     }
 
-    bool force_firmware_reset(uvc::device_handle & device)
+    void force_firmware_reset(uvc::device_handle & device)
     {
-        uint8_t reset = 1;
-        return xu_write(device, CONTROL_SW_RESET, &reset, sizeof(uint8_t));
+        try
+        {
+            uint8_t reset = 1;
+            xu_write(device, CONTROL_SW_RESET, &reset, sizeof(uint8_t));
+        }
+        catch(...) {} // xu_write always throws during a CONTROL_SW_RESET, since the firmware is unable to send a proper response
     }
 
-    bool get_emitter_state(uvc::device_handle & device, bool & state)
+    void get_emitter_state(uvc::device_handle & device, bool & state)
     {
         uint8_t byte = 0;
-        if (!xu_read(device, CONTROL_EMITTER, &byte, sizeof(byte)))
-            return false;
-
-        if (byte & 4) state = (byte & 2 ? true : false);
-        return true;
+        xu_read(device, CONTROL_EMITTER, &byte, sizeof(byte));
+        if (byte & 4) state = (byte & 2 ? true : false); // TODO: Figure out what should actually be done here
     }
 
-    bool set_emitter_state(uvc::device_handle & device, bool state)
+    void set_emitter_state(uvc::device_handle & device, bool state)
     {
         uint8_t newEmitterState = state ? 1 : 0;
-        return xu_read(device, CONTROL_EMITTER, &newEmitterState, sizeof(uint8_t));
+        xu_read(device, CONTROL_EMITTER, &newEmitterState, sizeof(uint8_t));
     }
 
-    bool read_temperature(uvc::device_handle & device, int8_t & current, int8_t & min, int8_t & max, int8_t & min_fault)
+    void read_temperature(uvc::device_handle & device, int8_t & current, int8_t & min, int8_t & max, int8_t & min_fault)
     {
-        uint32_t length = 4;
         uint8_t buf[4] = {0};
-        if (!xu_read(device, CONTROL_TEMPERATURE, buf, length))
-            return false;
+        xu_read(device, CONTROL_TEMPERATURE, buf, sizeof(buf));
         current = buf[0];
         min = buf[1];
         max = buf[2];
         min_fault = buf[3];
-        return true;
     }
 
-    bool reset_temperature(uvc::device_handle & device)
+    void reset_temperature(uvc::device_handle & device)
     {
-        uint32_t length = 4;
         uint8_t buf[4] = {0};
-        if (!xu_write(device, CONTROL_TEMPERATURE, buf, length))
-            return false;
-        return true;
+        xu_write(device, CONTROL_TEMPERATURE, buf, sizeof(buf));
     }
 
-    bool get_depth_units(uvc::device_handle & device, uint32_t & units)
+    void get_depth_units(uvc::device_handle & device, uint32_t & units)
     {
-        return xu_read(device, CONTROL_DEPTH_UNITS, &units, sizeof(units));
+        xu_read(device, CONTROL_DEPTH_UNITS, &units, sizeof(units));
     }
 
-    bool set_depth_units(uvc::device_handle & device, uint32_t units)
+    void set_depth_units(uvc::device_handle & device, uint32_t units)
     {
-        return xu_write(device, CONTROL_DEPTH_UNITS, &units, sizeof(units));
+        xu_write(device, CONTROL_DEPTH_UNITS, &units, sizeof(units));
     }
 
-    bool set_min_max_depth(uvc::device_handle & device, uint16_t min_depth, uint16_t max_depth)
+    void set_min_max_depth(uvc::device_handle & device, uint16_t min_depth, uint16_t max_depth)
     {
         uint16_t values[] = {min_depth, max_depth};
-        return xu_write(device, CONTROL_MIN_MAX, values, sizeof(values));
+        xu_write(device, CONTROL_MIN_MAX, values, sizeof(values));
     }
 
-    bool get_min_max_depth(uvc::device_handle & device, uint16_t & min_depth, uint16_t & max_depth)
+    void get_min_max_depth(uvc::device_handle & device, uint16_t & min_depth, uint16_t & max_depth)
     {
-        std::vector<uint16_t> minmax_values = {0, 0};
-        if (!xu_read(device, CONTROL_MIN_MAX, minmax_values.data(), sizeof(minmax_values)))
-            return false;
-        min_depth = minmax_values[0];
-        max_depth = minmax_values[1];
-        return true;
+        uint16_t values[] = {0, 0};
+        xu_read(device, CONTROL_MIN_MAX, values, sizeof(values));
+        min_depth = values[0];
+        max_depth = values[1];
     }
 
-    bool get_lr_gain(uvc::device_handle & device, uint32_t & rate, uint32_t & gain)
+    void get_lr_gain(uvc::device_handle & device, uint32_t & rate, uint32_t & gain)
     {
-        std::vector<uint32_t> lr_gain_values = {0, 0};
-        if (!xu_read(device, CONTROL_LR_GAIN, lr_gain_values.data(), sizeof(lr_gain_values)))
-            return false;
-        rate = lr_gain_values[0];
-        gain = lr_gain_values[1];
-        return true;
+        uint32_t values[] = {0, 0};
+        xu_read(device, CONTROL_LR_GAIN, values, sizeof(values));
+        rate = values[0];
+        gain = values[1];
     }
 
-    bool set_lr_gain(uvc::device_handle & device, uint32_t rate, uint32_t gain)
+    void set_lr_gain(uvc::device_handle & device, uint32_t rate, uint32_t gain)
     {
-        std::vector<uint32_t> lr_gain_values = {rate, gain};
-        if (!xu_write(device, CONTROL_LR_GAIN, lr_gain_values.data(), sizeof(lr_gain_values)))
-            return false;
-        return true;
+        uint32_t values[] = {rate, gain};
+        xu_write(device, CONTROL_LR_GAIN, values, sizeof(values));
     }
 
-    bool get_lr_exposure(uvc::device_handle & device, uint32_t & rate, uint32_t & exposure)
+    void get_lr_exposure(uvc::device_handle & device, uint32_t & rate, uint32_t & exposure)
     {
-        std::vector<uint32_t> lr_exposure_values = {0, 0};
-        if (!xu_read(device, CONTROL_LR_EXPOSURE, lr_exposure_values.data(), sizeof(lr_exposure_values)))
-            return false;
-        rate = lr_exposure_values[0];
-        exposure = lr_exposure_values[1];
-        return true;
+        uint32_t values[] = {0, 0};
+        xu_read(device, CONTROL_LR_EXPOSURE, values, sizeof(values));
+        rate = values[0];
+        exposure = values[1];
     }
 
-    bool set_lr_exposure(uvc::device_handle & device, uint32_t rate, uint32_t exposure)
+    void set_lr_exposure(uvc::device_handle & device, uint32_t rate, uint32_t exposure)
     {
-        std::vector<uint32_t> lr_exposure_values = {rate, exposure};
-        if (!xu_write(device, CONTROL_LR_EXPOSURE, lr_exposure_values.data(), sizeof(lr_exposure_values)))
-            return false;
-        return true;
+        uint32_t values[] = {rate, exposure};
+        xu_write(device, CONTROL_LR_EXPOSURE, values, sizeof(values));
     }
 
-    bool get_lr_auto_exposure_params(uvc::device_handle & device, auto_exposure_params & params)
+    void get_lr_auto_exposure_params(uvc::device_handle & device, auto_exposure_params & params)
     {
-        if (!xu_read(device, CONTROL_LR_AUTOEXPOSURE_PARAMETERS, &params, sizeof(params)))
-            return false;
-        return true;
+        xu_read(device, CONTROL_LR_AUTOEXPOSURE_PARAMETERS, &params, sizeof(params));
     }
 
-    bool set_lr_auto_exposure_params(uvc::device_handle & device, auto_exposure_params params)
+    void set_lr_auto_exposure_params(uvc::device_handle & device, auto_exposure_params params)
     {
-        if (!xu_write(device, CONTROL_LR_AUTOEXPOSURE_PARAMETERS, &params, sizeof(params)))
-            return false;
-        return true;
+        xu_write(device, CONTROL_LR_AUTOEXPOSURE_PARAMETERS, &params, sizeof(params));
     }
 
-    bool get_lr_exposure_mode(uvc::device_handle & device, uint32_t & mode)
+    void get_lr_exposure_mode(uvc::device_handle & device, uint32_t & mode)
     {
         uint8_t m; // 0 = EXPOSURE_MANUAL, 1 = EXPOSURE_AUTO
-        if (!xu_read(device, CONTROL_LR_EXPOSURE_MODE, &m, sizeof(m)))
-            return false;
+        xu_read(device, CONTROL_LR_EXPOSURE_MODE, &m, sizeof(m));
         mode = m;
-        return true;
     }
 
-    bool set_lr_exposure_mode(uvc::device_handle & device, uint32_t mode)
+    void set_lr_exposure_mode(uvc::device_handle & device, uint32_t mode)
     {
-        if (!xu_write(device, CONTROL_LR_EXPOSURE_MODE, &mode, sizeof(mode)))
-            return false;
-        return true;
+        xu_write(device, CONTROL_LR_EXPOSURE_MODE, &mode, sizeof(mode));
     }
 
-    bool get_depth_params(uvc::device_handle & device, depth_params & params)
+    void get_depth_params(uvc::device_handle & device, depth_params & params)
     {
-        if (!xu_read(device, CONTROL_DEPTH_PARAMS, &params, sizeof(params)))
-            return false;
-        return true;
+        xu_read(device, CONTROL_DEPTH_PARAMS, &params, sizeof(params));
     }
 
-    bool set_depth_params(uvc::device_handle & device, depth_params params)
+    void set_depth_params(uvc::device_handle & device, depth_params params)
     {
-        if (!xu_write(device, CONTROL_DEPTH_PARAMS, &params, sizeof(params)))
-            return false;
-        return true;
+        xu_write(device, CONTROL_DEPTH_PARAMS, &params, sizeof(params));
     }
 
-    bool get_disparity_mode(uvc::device_handle & device, disparity_mode & mode)
+    void get_disparity_mode(uvc::device_handle & device, disparity_mode & mode)
     {
-        if (!xu_read(device, CONTROL_DISPARITY, &mode, sizeof(mode)))
-            return false;
-        return true;
+        xu_read(device, CONTROL_DISPARITY, &mode, sizeof(mode));
     }
 
-    bool set_disparity_mode(uvc::device_handle & device, disparity_mode mode)
+    void set_disparity_mode(uvc::device_handle & device, disparity_mode mode)
     {
-        if (!xu_write(device, CONTROL_DISPARITY, &mode, sizeof(mode)))
-            return false;
-        return true;
+        xu_write(device, CONTROL_DISPARITY, &mode, sizeof(mode));
     }
 
-    bool get_disparity_shift(uvc::device_handle & device, uint32_t & shift)
+    void get_disparity_shift(uvc::device_handle & device, uint32_t & shift)
     {
-        if (!xu_read(device, CONTROL_DISPARITY_SHIFT, &shift, sizeof(shift)))
-            return false;
-        return true;
+        xu_read(device, CONTROL_DISPARITY_SHIFT, &shift, sizeof(shift));
     }
 
-    bool set_disparity_shift(uvc::device_handle & device, uint32_t shift)
+    void set_disparity_shift(uvc::device_handle & device, uint32_t shift)
     {
-        if (!xu_write(device, CONTROL_DISPARITY_SHIFT, &shift, sizeof(shift)))
-            return false;
-        return true;
+        xu_write(device, CONTROL_DISPARITY_SHIFT, &shift, sizeof(shift));
     }
 
     const depth_params depth_params::presets[] = {

@@ -347,8 +347,7 @@ namespace rsimpl { namespace f200
 
     IVCAMHardwareIO::IVCAMHardwareIO(uvc::device_handle handle) : handle(handle)
     {
-        int status = handle.claim_interface(IVCAM_MONITOR_INTERFACE);
-        if (status < 0) throw std::runtime_error("libusb_claim_interface() failed");
+        handle.claim_interface(IVCAM_MONITOR_INTERFACE);
 
         uint8_t rawCalibrationBuffer[HW_MONITOR_BUFFER_SIZE];
         size_t bufferLength = HW_MONITOR_BUFFER_SIZE;

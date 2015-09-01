@@ -128,84 +128,72 @@ namespace rsimpl
     
     // N.B. f200 xu_read and xu_write hard code the xu interface to the depth suvdevice. There is only a
     // single *potentially* useful XU on the color device, so let's ignore it for now.
-    bool xu_read(uvc::device_handle & device, uint64_t xu_ctrl, void * buffer, uint32_t length)
+    void xu_read(uvc::device_handle & device, uint64_t xu_ctrl, void * buffer, uint32_t length)
     {
-        auto status = device.get_ctrl(6, xu_ctrl, buffer, length);
-        if (status < 0)
-        {
-            std::cerr << "xu read - uvc_get_ctrl - " << uvc::usb_error_name(status) << std::endl;
-            return false;
-        }
-        return true;
+        device.get_ctrl(6, xu_ctrl, buffer, length);
     }
     
-    bool xu_write(uvc::device_handle & device, uint64_t xu_ctrl, void * buffer, uint32_t length)
+    void xu_write(uvc::device_handle & device, uint64_t xu_ctrl, void * buffer, uint32_t length)
     {
-        auto status = device.set_ctrl(6, xu_ctrl, buffer, length);
-        if (status < 0)
-        {
-            std::cerr << "xu write - uvc_get_ctrl - " << uvc::usb_error_name(status) << std::endl;
-            return false;
-        }
-        return true;
+        device.set_ctrl(6, xu_ctrl, buffer, length);
     }
     
-    bool get_laser_power(uvc::device_handle & device, uint8_t & laser_power)
+    void get_laser_power(uvc::device_handle & device, uint8_t & laser_power)
     {
-        return xu_read(device, IVCAM_DEPTH_LASER_POWER, &laser_power, sizeof(laser_power));
+        xu_read(device, IVCAM_DEPTH_LASER_POWER, &laser_power, sizeof(laser_power));
     }
     
-    bool set_laser_power(uvc::device_handle & device, uint8_t laser_power)
+    void set_laser_power(uvc::device_handle & device, uint8_t laser_power)
     {
-        return xu_write(device, IVCAM_DEPTH_LASER_POWER, &laser_power, sizeof(laser_power));
+        xu_write(device, IVCAM_DEPTH_LASER_POWER, &laser_power, sizeof(laser_power));
     }
     
-    bool get_accuracy(uvc::device_handle & device, uint8_t & accuracy)
+    void get_accuracy(uvc::device_handle & device, uint8_t & accuracy)
     {
-        return xu_read(device, IVCAM_DEPTH_ACCURACY, &accuracy, sizeof(accuracy));
+        xu_read(device, IVCAM_DEPTH_ACCURACY, &accuracy, sizeof(accuracy));
     }
     
-    bool set_accuracy(uvc::device_handle & device, uint8_t accuracy)
+    void set_accuracy(uvc::device_handle & device, uint8_t accuracy)
     {
-        return xu_write(device, IVCAM_DEPTH_ACCURACY, &accuracy, sizeof(accuracy));
+        xu_write(device, IVCAM_DEPTH_ACCURACY, &accuracy, sizeof(accuracy));
     }
     
-    bool get_motion_range(uvc::device_handle & device, uint8_t & motion_range)
+    void get_motion_range(uvc::device_handle & device, uint8_t & motion_range)
     {
-        return xu_read(device, IVCAM_DEPTH_MOTION_RANGE, &motion_range, sizeof(motion_range));
+        xu_read(device, IVCAM_DEPTH_MOTION_RANGE, &motion_range, sizeof(motion_range));
     }
     
-    bool set_motion_range(uvc::device_handle & device, uint8_t motion_range)
+    void set_motion_range(uvc::device_handle & device, uint8_t motion_range)
     {
-        return xu_write(device, IVCAM_DEPTH_MOTION_RANGE, &motion_range, sizeof(motion_range));
+        xu_write(device, IVCAM_DEPTH_MOTION_RANGE, &motion_range, sizeof(motion_range));
     }
     
-    bool get_filter_option(uvc::device_handle & device, uint8_t & filter_option)
+    void get_filter_option(uvc::device_handle & device, uint8_t & filter_option)
     {
-        return xu_read(device, IVCAM_DEPTH_FILTER_OPTION, &filter_option, sizeof(filter_option));
+        xu_read(device, IVCAM_DEPTH_FILTER_OPTION, &filter_option, sizeof(filter_option));
     }
     
-    bool set_filter_option(uvc::device_handle & device, uint8_t filter_option)
+    void set_filter_option(uvc::device_handle & device, uint8_t filter_option)
     {
-        return xu_write(device, IVCAM_DEPTH_FILTER_OPTION, &filter_option, sizeof(filter_option));
+        xu_write(device, IVCAM_DEPTH_FILTER_OPTION, &filter_option, sizeof(filter_option));
     }
     
-    bool get_confidence_threshold(uvc::device_handle & device, uint8_t & conf_thresh)
+    void get_confidence_threshold(uvc::device_handle & device, uint8_t & conf_thresh)
     {
-        return xu_read(device, IVCAM_DEPTH_CONFIDENCE_THRESH, &conf_thresh, sizeof(conf_thresh));
+        xu_read(device, IVCAM_DEPTH_CONFIDENCE_THRESH, &conf_thresh, sizeof(conf_thresh));
     }
     
-    bool set_confidence_threshold(uvc::device_handle & device, uint8_t conf_thresh)
+    void set_confidence_threshold(uvc::device_handle & device, uint8_t conf_thresh)
     {
-        return xu_write(device, IVCAM_DEPTH_CONFIDENCE_THRESH, &conf_thresh, sizeof(conf_thresh));
+        xu_write(device, IVCAM_DEPTH_CONFIDENCE_THRESH, &conf_thresh, sizeof(conf_thresh));
     }
     
-    bool get_dynamic_fps(uvc::device_handle & device, uint8_t & dynamic_fps)
+    void get_dynamic_fps(uvc::device_handle & device, uint8_t & dynamic_fps)
     {
         return xu_read(device, IVCAM_DEPTH_DYNAMIC_FPS, &dynamic_fps, sizeof(dynamic_fps));
     }
     
-    bool set_dynamic_fps(uvc::device_handle & device, uint8_t dynamic_fps)
+    void set_dynamic_fps(uvc::device_handle & device, uint8_t dynamic_fps)
     {
         return xu_write(device, IVCAM_DEPTH_DYNAMIC_FPS, &dynamic_fps, sizeof(dynamic_fps));
     }
@@ -216,17 +204,15 @@ namespace rsimpl
 
         // TODO: Range check value before write
         auto val = static_cast<uint8_t>(value);
-        bool result = false;
         switch(option)
         {
-        case RS_OPTION_F200_LASER_POWER:          result = set_laser_power(first_handle, val); break;
-        case RS_OPTION_F200_ACCURACY:             result = set_accuracy(first_handle, val); break;
-        case RS_OPTION_F200_MOTION_RANGE:         result = set_motion_range(first_handle, val); break;
-        case RS_OPTION_F200_FILTER_OPTION:        result = set_filter_option(first_handle, val); break;
-        case RS_OPTION_F200_CONFIDENCE_THRESHOLD: result = set_confidence_threshold(first_handle, val); break;
-        //case RS_OPTION_F200_DYNAMIC_FPS:          result = set_dynamic_fps(*first_handle, val); break; // IVCAM 1.5 Only
+        case RS_OPTION_F200_LASER_POWER:          set_laser_power(first_handle, val); break;
+        case RS_OPTION_F200_ACCURACY:             set_accuracy(first_handle, val); break;
+        case RS_OPTION_F200_MOTION_RANGE:         set_motion_range(first_handle, val); break;
+        case RS_OPTION_F200_FILTER_OPTION:        set_filter_option(first_handle, val); break;
+        case RS_OPTION_F200_CONFIDENCE_THRESHOLD: set_confidence_threshold(first_handle, val); break;
+        //case RS_OPTION_F200_DYNAMIC_FPS:        set_dynamic_fps(*first_handle, val); break; // IVCAM 1.5 Only
         }
-        if(!result) throw std::runtime_error("failed to write option to device");
     }
 
     int f200_camera::get_option(rs_option option)
@@ -234,17 +220,15 @@ namespace rsimpl
         if(!first_handle) throw std::runtime_error("cannot call before rs_start_capture(...)");
 
         uint8_t value = 0;
-        bool result = false;
         switch(option)
         {
-        case RS_OPTION_F200_LASER_POWER:          result = get_laser_power(first_handle, value); break;
-        case RS_OPTION_F200_ACCURACY:             result = get_accuracy(first_handle, value); break;
-        case RS_OPTION_F200_MOTION_RANGE:         result = get_motion_range(first_handle, value); break;
-        case RS_OPTION_F200_FILTER_OPTION:        result = get_filter_option(first_handle, value); break;
-        case RS_OPTION_F200_CONFIDENCE_THRESHOLD: result = get_confidence_threshold(first_handle, value); break;
-        //case RS_OPTION_F200_DYNAMIC_FPS:          result = get_dynamic_fps(first_handle, value); break; // IVCAM 1.5 Only
+        case RS_OPTION_F200_LASER_POWER:          get_laser_power(first_handle, value); break;
+        case RS_OPTION_F200_ACCURACY:             get_accuracy(first_handle, value); break;
+        case RS_OPTION_F200_MOTION_RANGE:         get_motion_range(first_handle, value); break;
+        case RS_OPTION_F200_FILTER_OPTION:        get_filter_option(first_handle, value); break;
+        case RS_OPTION_F200_CONFIDENCE_THRESHOLD: get_confidence_threshold(first_handle, value); break;
+        //case RS_OPTION_F200_DYNAMIC_FPS:        get_dynamic_fps(first_handle, value); break; // IVCAM 1.5 Only
         }
-        if(!result) throw std::runtime_error("failed to read option from device");
         return value;
     }
 

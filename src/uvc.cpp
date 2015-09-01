@@ -101,21 +101,23 @@ namespace rsimpl
             uvc_stop_streaming(impl->handle);
         }
 
-        int device_handle::get_ctrl(uint8_t unit, uint8_t ctrl, void *data, int len)
+        void device_handle::get_ctrl(uint8_t unit, uint8_t ctrl, void *data, int len)
         {
-            return uvc_get_ctrl(impl->handle, unit, ctrl, data, len, UVC_GET_CUR);
+            int status = uvc_get_ctrl(impl->handle, unit, ctrl, data, len, UVC_GET_CUR);
+            if(status < 0) throw std::runtime_error(to_string() << "uvc_get_ctrl(...) returned " << libusb_error_name(status));
         }
 
-        int device_handle::set_ctrl(uint8_t unit, uint8_t ctrl, void *data, int len)
+        void device_handle::set_ctrl(uint8_t unit, uint8_t ctrl, void *data, int len)
         {
-            return uvc_set_ctrl(impl->handle, unit, ctrl, data, len);
+            int status = uvc_set_ctrl(impl->handle, unit, ctrl, data, len);
+            if(status < 0) throw std::runtime_error(to_string() << "uvc_set_ctrl(...) returned " << libusb_error_name(status));
         }
 
-        int device_handle::claim_interface(int interface_number)
+        void device_handle::claim_interface(int interface_number)
         {
             int status = libusb_claim_interface(impl->handle->usb_devh, interface_number);
-            if(status >= 0) impl->claimed_interfaces.push_back(interface_number);
-            return status;
+            if(status < 0) throw std::runtime_error(to_string() << "libusb_claim_interface(...) returned " << libusb_error_name(status));
+            impl->claimed_interfaces.push_back(interface_number);
         }
 
         int device_handle::bulk_transfer(unsigned char endpoint, unsigned char *data, int length, int *actual_length, unsigned int timeout)
