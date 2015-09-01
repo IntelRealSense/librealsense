@@ -9,7 +9,7 @@ namespace rsimpl
     class r200_camera : public rs_camera
     {
     public:
-        r200_camera(uvc::context * ctx, uvc::device device);
+        r200_camera(uvc::device device);
         ~r200_camera();
 
         calibration_info retrieve_calibration() override final;

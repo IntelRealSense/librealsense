@@ -92,6 +92,8 @@ namespace rsimpl
         // device_handle //
         ///////////////////
 
+        device device_handle::get_parent() { return impl->device; }
+
         void device_handle::get_stream_ctrl_format_size(int width, int height, frame_format cf, int fps)
         {
             check("get_stream_ctrl_format_size", uvc_get_stream_ctrl_format_size(impl->handle, &impl->ctrl, (uvc_frame_format)cf, width, height, fps));
@@ -125,6 +127,8 @@ namespace rsimpl
             return uvc_set_ctrl(impl->handle, unit, ctrl, data, len);
         }
 
+
+
         ////////////
         // device //
         ////////////
@@ -132,12 +136,11 @@ namespace rsimpl
         int device::get_vendor_id() const { return impl->desc->idVendor; }
         int device::get_product_id() const { return impl->desc->idProduct; }
         const char * device::get_product_name() const { return impl->desc->product; }
+        context device::get_parent() { return impl->context; }
 
         device_handle device::claim_subdevice(int subdevice_index)
         {
-            device_handle handle;
-            handle.impl.reset(new device_handle_impl(impl, subdevice_index));
-            return handle;
+            return std::make_shared<device_handle_impl>(impl, subdevice_index);
         }
 
         /////////////
@@ -163,14 +166,10 @@ namespace rsimpl
             std::vector<device> devices;
             for(auto it = list; *it; ++it)
             {
-                device d;
-                d.impl.reset(new device_impl(impl, *it));
-                devices.push_back(d);
+                devices.push_back(std::make_shared<device_impl>(impl, *it));
             }
             uvc_free_device_list(list, 1);
             return devices;
         }
     }
-
-
 }

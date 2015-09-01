@@ -55,10 +55,8 @@ protected:
         void                                        stop_streaming();
     };
 
-    rsimpl::uvc::context *                          context;
     rsimpl::uvc::device                             device;
     const rsimpl::static_camera_info                camera_info;
-    std::string                                     camera_name;
 
     rsimpl::stream_request                          requests[RS_STREAM_NUM];    // Indexed by RS_DEPTH, RS_COLOR, ...
     std::shared_ptr<stream_buffer>                  streams[RS_STREAM_NUM];     // Indexed by RS_DEPTH, RS_COLOR, ...
@@ -69,10 +67,10 @@ protected:
     bool                                            is_capturing;
   
 public:
-                                                    rs_camera(rsimpl::uvc::context * context, rsimpl::uvc::device device, const rsimpl::static_camera_info & camera_info);
+                                                    rs_camera(rsimpl::uvc::device device, const rsimpl::static_camera_info & camera_info);
                                                     ~rs_camera();
 
-    const char *                                    get_name() const { return camera_name.c_str(); }
+    const char *                                    get_name() const { return device.get_product_name(); }
 
     void                                            enable_stream(rs_stream stream, int width, int height, rs_format format, int fps);
     void                                            enable_stream_preset(rs_stream stream, rs_preset preset);

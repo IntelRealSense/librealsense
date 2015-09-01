@@ -14,7 +14,7 @@ namespace rsimpl
 
     public:
         
-        f200_camera(uvc::context * ctx, uvc::device device);
+        f200_camera(uvc::device device);
         ~f200_camera();
 
         calibration_info retrieve_calibration() override final;

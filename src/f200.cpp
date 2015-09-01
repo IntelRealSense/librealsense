@@ -66,7 +66,7 @@ namespace rsimpl
         return info;
     }
 
-    f200_camera::f200_camera(uvc::context * ctx, uvc::device device) : rs_camera(ctx, device, get_f200_info())
+    f200_camera::f200_camera(uvc::device device) : rs_camera(device, get_f200_info())
     {
 
     }
@@ -111,7 +111,7 @@ namespace rsimpl
 
     calibration_info f200_camera::retrieve_calibration()
     {
-        if(!hardware_io) hardware_io.reset(new f200::IVCAMHardwareIO(context));
+        if(!hardware_io) hardware_io.reset(new f200::IVCAMHardwareIO(device.get_parent()));
         const f200::CameraCalibrationParameters & calib = hardware_io->GetParameters();
 
         calibration_info c;

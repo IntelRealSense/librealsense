@@ -346,11 +346,9 @@ namespace rsimpl { namespace f200
         // @tofix
     }
 
-    IVCAMHardwareIO::IVCAMHardwareIO(uvc::context * ctx)
+    IVCAMHardwareIO::IVCAMHardwareIO(uvc::context ctx)
     {
-        if (!ctx) throw std::runtime_error("must pass libuvc context handle");
-
-        libusb_context * usb_ctx = ctx->get_libusb_context();
+        libusb_context * usb_ctx = ctx.get_libusb_context();
 
         usbDeviceHandle = usb::open_device_with_vid_pid(usb_ctx, IVCAM_VID, IVCAM_PID);
 
