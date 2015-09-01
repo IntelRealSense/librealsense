@@ -4,6 +4,8 @@
 
 #include "types.h"
 
+#include <functional>
+
 namespace rsimpl
 {
     namespace uvc

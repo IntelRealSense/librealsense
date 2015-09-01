@@ -1,7 +1,8 @@
 #include "uvc.h"
+
+#ifndef WIN32
 #include "libuvc/libuvc.h"
 #include "libuvc/libuvc_internal.h" // For LibUSB punchthrough
-
 #include <iostream>
 
 namespace rsimpl
@@ -154,3 +155,98 @@ namespace rsimpl
         }
     }
 }
+#else
+namespace rsimpl
+{
+    namespace uvc
+    {
+
+        struct context::_impl
+        {
+        };
+
+        struct device::_impl
+        {
+            std::shared_ptr<context::_impl> parent;
+
+            _impl() {}
+            _impl(std::shared_ptr<context::_impl> parent) : _impl()
+            {
+                this->parent = parent;
+            }
+        };
+
+        struct device_handle::_impl
+        {
+            std::shared_ptr<device::_impl> parent;
+
+            _impl(std::shared_ptr<device::_impl> parent, int subdevice_index)
+            {
+                this->parent = parent;
+            }
+            ~_impl()
+            {
+            }
+        };
+
+        ///////////////////
+        // device_handle //
+        ///////////////////
+
+        void device_handle::get_stream_ctrl_format_size(int width, int height, frame_format cf, int fps)
+        {
+        }
+
+        void device_handle::start_streaming(std::function<void(const void * frame, int width, int height, frame_format format)> callback)
+        {
+        }
+
+        void device_handle::stop_streaming()
+        {
+        }
+
+        void device_handle::get_ctrl(uint8_t unit, uint8_t ctrl, void *data, int len)
+        {
+        }
+
+        void device_handle::set_ctrl(uint8_t unit, uint8_t ctrl, void *data, int len)
+        {
+        }
+
+        void device_handle::claim_interface(int interface_number)
+        {
+        }
+
+        void device_handle::bulk_transfer(unsigned char endpoint, unsigned char *data, int length, int *actual_length, unsigned int timeout)
+        {
+        }
+
+        ////////////
+        // device //
+        ////////////
+
+		int device::get_vendor_id() const { return 0; }
+		int device::get_product_id() const { return 0; }
+		const char * device::get_product_name() const { return ""; }
+
+        device_handle device::claim_subdevice(int subdevice_index)
+        {
+			return {};
+        }
+
+        /////////////
+        // context //
+        /////////////
+
+        context context::create()
+        {
+            return {std::make_shared<context::_impl>()};
+        }
+
+        std::vector<device> context::query_devices()
+        {
+			return {};
+        }
+    }
+}
+#endif

@@ -5,6 +5,7 @@
 #include <chrono>
 #include <sstream>
 #include <iostream>
+#include <algorithm>
 
 FILE * find_file(std::string path, int levels)
 {
@@ -16,6 +17,7 @@ FILE * find_file(std::string path, int levels)
     return nullptr;
 }
 
+struct state { float yaw, pitch; double lastX, lastY; bool ml; rs_stream tex_stream; rs::camera * cam; };
 int main(int argc, char * argv[]) try
 {
     rs::camera cam;
@@ -33,9 +35,8 @@ int main(int argc, char * argv[]) try
     if (!cam) throw std::runtime_error("No camera detected. Is it plugged in?");
     const auto depth_intrin = cam.get_stream_intrinsics(RS_STREAM_DEPTH);
         
-    struct state { float yaw, pitch; double lastX, lastY; bool ml; rs_stream tex_stream = RS_STREAM_COLOR; rs::camera * cam; } app_state = {};
-    app_state.cam = &cam;
-
+	state app_state = {0, 0, 0, 0, false, RS_STREAM_COLOR, &cam};
+	
     glfwInit();
     std::ostringstream ss; ss << "CPP Point Cloud Example (" << cam.get_name() << ")";
     GLFWwindow * win = glfwCreateWindow(640, 480, ss.str().c_str(), 0, 0);

@@ -2,6 +2,7 @@
 #include "image.h"
 
 #include <iostream>
+#include <algorithm>
 
 using namespace rsimpl;
 
@@ -11,7 +12,7 @@ using namespace rsimpl;
 
 rs_camera::rs_camera(rsimpl::uvc::device device, const static_camera_info & camera_info) : device(device), camera_info(camera_info), first_handle(), is_capturing()
 {
-    for(auto & req : requests) req = {};
+    for(auto & req : requests) req = rsimpl::stream_request();
     calib = {};
 
     int max_subdevice = 0;
