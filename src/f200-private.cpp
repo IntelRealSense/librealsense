@@ -104,11 +104,13 @@ namespace rsimpl { namespace f200
 
         if (usbMutex.try_lock_for(std::chrono::milliseconds(IVCAM_MONITOR_MUTEX_TIMEOUT)))
         {
+            std::lock_guard<std::timed_mutex> guard(usbMutex, std::adopt_lock);
+
             int ret = handle.bulk_transfer(IVCAM_MONITOR_ENDPOINT_OUT, out, (int) outSize, &outXfer, 1000); // timeout in ms
 
             if (ret < 0 )
             {
-                printf("[libusb failure] libusb_bulk_transfer (endpoint_out) - status: %s", usb::error_name(ret));
+                printf("[libusb failure] libusb_bulk_transfer (endpoint_out) - status: %s", uvc::usb_error_name(ret));
                 return ret;
             }
 
@@ -123,8 +125,7 @@ namespace rsimpl { namespace f200
 
                 if (outXfer < (int)sizeof(uint32_t))
                 {
-                    printf("[libusb failure] libusb_bulk_transfer (endpoint_in) - status: %s", usb::error_name(ret));
-                    usbMutex.unlock();
+                    printf("[libusb failure] libusb_bulk_transfer (endpoint_in) - status: %s", uvc::usb_error_name(ret));
                     return -1;
                 }
                 else
@@ -135,7 +136,6 @@ namespace rsimpl { namespace f200
                     if (outXfer > (int)inSize)
                     {
                         printf("usb_device_bulk_transfer IN failed: user buffer too small (%d:%zu)", outXfer, inSize);
-                        usbMutex.unlock();
                         return -1;
                     }
                     else
@@ -144,7 +144,6 @@ namespace rsimpl { namespace f200
                 }
             }
 
-            usbMutex.unlock();
             return ret;
         }
         else

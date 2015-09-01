@@ -45,7 +45,7 @@ namespace rsimpl { namespace r200
         auto status = device.set_ctrl(CAMERA_XU_UNIT_ID, CONTROL_COMMAND_RESPONSE, command, cmdSz);
         if (status < 0)
         {
-            std::cerr << "send_command - uvc_set_ctrl - " << usb::error_name(status) << std::endl;
+            std::cerr << "send_command - uvc_set_ctrl - " << uvc::usb_error_name(status) << std::endl;
             return false;
         }
 
@@ -53,7 +53,7 @@ namespace rsimpl { namespace r200
         status = device.get_ctrl(CAMERA_XU_UNIT_ID, CONTROL_COMMAND_RESPONSE, response, resSz);
         if (status < 0)
         {
-            std::cerr << "send_command - uvc_get_ctrl - " << usb::error_name(status) << std::endl;
+            std::cerr << "send_command - uvc_get_ctrl - " << uvc::usb_error_name(status) << std::endl;
             return false;
         }
         return true;
@@ -341,7 +341,7 @@ namespace rsimpl { namespace r200
         auto status = device.get_ctrl(CAMERA_XU_UNIT_ID, xu_ctrl, buffer, length);
         if (status < 0)
         {
-            std::cerr << "xu_read - uvc_get_ctrl - " << usb::error_name(status) << std::endl;
+            std::cerr << "xu_read - uvc_get_ctrl - " << uvc::usb_error_name(status) << std::endl;
             return false;
         }
         return true;
@@ -352,7 +352,7 @@ namespace rsimpl { namespace r200
         auto status = device.set_ctrl(CAMERA_XU_UNIT_ID, xu_ctrl, buffer, length);
         if (status < 0)
         {
-            std::cerr << "xu_read - uvc_set_ctrl - " << usb::error_name(status) << std::endl;
+            std::cerr << "xu_write - uvc_set_ctrl - " << uvc::usb_error_name(status) << std::endl;
             return false;
         }
         return true;

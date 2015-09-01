@@ -111,7 +111,7 @@ namespace rsimpl
 
     calibration_info f200_camera::retrieve_calibration()
     {
-        if(!hardware_io) hardware_io.reset(new f200::IVCAMHardwareIO(*first_handle));
+        if(!hardware_io) hardware_io.reset(new f200::IVCAMHardwareIO(first_handle));
         const f200::CameraCalibrationParameters & calib = hardware_io->GetParameters();
 
         calibration_info c;
@@ -133,7 +133,7 @@ namespace rsimpl
         auto status = device.get_ctrl(6, xu_ctrl, buffer, length);
         if (status < 0)
         {
-            std::cerr << "xu read - uvc_get_ctrl - " << usb::error_name(status) << std::endl;
+            std::cerr << "xu read - uvc_get_ctrl - " << uvc::usb_error_name(status) << std::endl;
             return false;
         }
         return true;
@@ -144,7 +144,7 @@ namespace rsimpl
         auto status = device.set_ctrl(6, xu_ctrl, buffer, length);
         if (status < 0)
         {
-            std::cerr << "xu write - uvc_get_ctrl - " << usb::error_name(status) << std::endl;
+            std::cerr << "xu write - uvc_get_ctrl - " << uvc::usb_error_name(status) << std::endl;
             return false;
         }
         return true;
@@ -212,16 +212,18 @@ namespace rsimpl
 
     void f200_camera::set_option(rs_option option, int value)
     {
+        if(!first_handle) throw std::runtime_error("cannot call before rs_start_capture(...)");
+
         // TODO: Range check value before write
         auto val = static_cast<uint8_t>(value);
         bool result = false;
         switch(option)
         {
-        case RS_OPTION_F200_LASER_POWER:          result = set_laser_power(*first_handle, val); break;
-        case RS_OPTION_F200_ACCURACY:             result = set_accuracy(*first_handle, val); break;
-        case RS_OPTION_F200_MOTION_RANGE:         result = set_motion_range(*first_handle, val); break;
-        case RS_OPTION_F200_FILTER_OPTION:        result = set_filter_option(*first_handle, val); break;
-        case RS_OPTION_F200_CONFIDENCE_THRESHOLD: result = set_confidence_threshold(*first_handle, val); break;
+        case RS_OPTION_F200_LASER_POWER:          result = set_laser_power(first_handle, val); break;
+        case RS_OPTION_F200_ACCURACY:             result = set_accuracy(first_handle, val); break;
+        case RS_OPTION_F200_MOTION_RANGE:         result = set_motion_range(first_handle, val); break;
+        case RS_OPTION_F200_FILTER_OPTION:        result = set_filter_option(first_handle, val); break;
+        case RS_OPTION_F200_CONFIDENCE_THRESHOLD: result = set_confidence_threshold(first_handle, val); break;
         //case RS_OPTION_F200_DYNAMIC_FPS:          result = set_dynamic_fps(*first_handle, val); break; // IVCAM 1.5 Only
         }
         if(!result) throw std::runtime_error("failed to write option to device");
@@ -229,16 +231,18 @@ namespace rsimpl
 
     int f200_camera::get_option(rs_option option)
     {
+        if(!first_handle) throw std::runtime_error("cannot call before rs_start_capture(...)");
+
         uint8_t value = 0;
         bool result = false;
         switch(option)
         {
-        case RS_OPTION_F200_LASER_POWER:          result = get_laser_power(*first_handle, value); break;
-        case RS_OPTION_F200_ACCURACY:             result = get_accuracy(*first_handle, value); break;
-        case RS_OPTION_F200_MOTION_RANGE:         result = get_motion_range(*first_handle, value); break;
-        case RS_OPTION_F200_FILTER_OPTION:        result = get_filter_option(*first_handle, value); break;
-        case RS_OPTION_F200_CONFIDENCE_THRESHOLD: result = get_confidence_threshold(*first_handle, value); break;
-        //case RS_OPTION_F200_DYNAMIC_FPS:          result = get_dynamic_fps(*first_handle, value); break; // IVCAM 1.5 Only
+        case RS_OPTION_F200_LASER_POWER:          result = get_laser_power(first_handle, value); break;
+        case RS_OPTION_F200_ACCURACY:             result = get_accuracy(first_handle, value); break;
+        case RS_OPTION_F200_MOTION_RANGE:         result = get_motion_range(first_handle, value); break;
+        case RS_OPTION_F200_FILTER_OPTION:        result = get_filter_option(first_handle, value); break;
+        case RS_OPTION_F200_CONFIDENCE_THRESHOLD: result = get_confidence_threshold(first_handle, value); break;
+        //case RS_OPTION_F200_DYNAMIC_FPS:          result = get_dynamic_fps(first_handle, value); break; // IVCAM 1.5 Only
         }
         if(!result) throw std::runtime_error("failed to read option from device");
         return value;
