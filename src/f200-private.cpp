@@ -95,60 +95,32 @@ namespace rsimpl { namespace f200
         return index;
     }
 
-    int IVCAMHardwareIO::ExecuteUSBCommand(uint8_t *out, size_t outSize, uint32_t & op, uint8_t * in, size_t & inSize)
+    void IVCAMHardwareIO::ExecuteUSBCommand(uint8_t *out, size_t outSize, uint32_t & op, uint8_t * in, size_t & inSize)
     {
         // write
         errno = 0;
 
         int outXfer;
 
-        if (usbMutex.try_lock_for(std::chrono::milliseconds(IVCAM_MONITOR_MUTEX_TIMEOUT)))
+        if (!usbMutex.try_lock_for(std::chrono::milliseconds(IVCAM_MONITOR_MUTEX_TIMEOUT))) throw std::runtime_error("usbMutex timed out");
+        std::lock_guard<std::timed_mutex> guard(usbMutex, std::adopt_lock);
+
+        handle.bulk_transfer(IVCAM_MONITOR_ENDPOINT_OUT, out, (int) outSize, &outXfer, 1000); // timeout in ms
+
+        // read
+        if (in && inSize)
         {
-            std::lock_guard<std::timed_mutex> guard(usbMutex, std::adopt_lock);
+            uint8_t buf[IVCAM_MONITOR_MAX_BUFFER_SIZE];
 
-            int ret = handle.bulk_transfer(IVCAM_MONITOR_ENDPOINT_OUT, out, (int) outSize, &outXfer, 1000); // timeout in ms
+            errno = 0;
 
-            if (ret < 0 )
-            {
-                printf("[libusb failure] libusb_bulk_transfer (endpoint_out) - status: %s", uvc::usb_error_name(ret));
-                return ret;
-            }
+            handle.bulk_transfer(IVCAM_MONITOR_ENDPOINT_IN, buf, sizeof(buf), &outXfer, 1000);
+            if (outXfer < (int)sizeof(uint32_t)) throw std::runtime_error("incomplete bulk usb transfer");
 
-            // read
-            if (in && inSize)
-            {
-                uint8_t buf[IVCAM_MONITOR_MAX_BUFFER_SIZE];
-
-                errno = 0;
-
-                ret = handle.bulk_transfer(IVCAM_MONITOR_ENDPOINT_IN, buf, sizeof(buf), &outXfer, 1000);
-
-                if (outXfer < (int)sizeof(uint32_t))
-                {
-                    printf("[libusb failure] libusb_bulk_transfer (endpoint_in) - status: %s", uvc::usb_error_name(ret));
-                    return -1;
-                }
-                else
-                {
-
-                    op = *(uint32_t *)buf;
-
-                    if (outXfer > (int)inSize)
-                    {
-                        printf("usb_device_bulk_transfer IN failed: user buffer too small (%d:%zu)", outXfer, inSize);
-                        return -1;
-                    }
-                    else
-                        inSize = outXfer;
-                    memcpy(in, buf, inSize);
-                }
-            }
-
-            return ret;
-        }
-        else
-        {
-            throw std::runtime_error("usbMutex timed out");
+            op = *(uint32_t *)buf;
+            if (outXfer > (int)inSize) throw std::runtime_error("bulk transfer failed - user buffer too small");
+            inSize = outXfer;
+            memcpy(in, buf, inSize);
         }
     }
 
@@ -193,8 +165,8 @@ namespace rsimpl { namespace f200
         size_t requestSize = sizeof(request);
         uint32_t responseOp;
 
-        if ( !((PrepareUSBCommand(request, requestSize, GetCalibrationTable) > 0) && (ExecuteUSBCommand(request, requestSize, responseOp, data, bytesReturned) != -1)) )
-            throw std::runtime_error("usb transfer to retrieve calibration data failed");
+        if (PrepareUSBCommand(request, requestSize, GetCalibrationTable) <= 0) throw std::runtime_error("usb transfer to retrieve calibration data failed");
+        ExecuteUSBCommand(request, requestSize, responseOp, data, bytesReturned);
     }
 
     void IVCAMHardwareIO::ProjectionCalibrate(uint8_t * rawCalibData, int len, CameraCalibrationParameters * calprms)

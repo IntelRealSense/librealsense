@@ -8,8 +8,6 @@ namespace rsimpl
 {
     namespace uvc
     {
-        const char * usb_error_name(int errcode);
-
         struct device_handle
         {
             struct _impl; std::shared_ptr<_impl> impl;
@@ -23,7 +21,7 @@ namespace rsimpl
             void set_ctrl(uint8_t unit, uint8_t ctrl, void *data, int len);
 
             void claim_interface(int interface_number);
-            int bulk_transfer(unsigned char endpoint, unsigned char *data, int length, int *actual_length, unsigned int timeout);
+            void bulk_transfer(unsigned char endpoint, unsigned char *data, int length, int *actual_length, unsigned int timeout);
         };
 
         struct device

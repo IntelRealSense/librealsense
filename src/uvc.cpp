@@ -8,17 +8,9 @@ namespace rsimpl
 {
     namespace uvc
     {
-        const char * usb_error_name(int errcode)
-        {
-            return libusb_error_name(errcode);
-        }
-
         static void check(const char * call, uvc_error_t status)
         {
-            if (status < 0)
-            {
-                throw std::runtime_error(to_string() << call << "(...) returned " << uvc_strerror(status));
-            }
+            if (status < 0) throw std::runtime_error(to_string() << call << "(...) returned " << uvc_strerror(status));
         }
 
         struct context::_impl
@@ -120,9 +112,10 @@ namespace rsimpl
             impl->claimed_interfaces.push_back(interface_number);
         }
 
-        int device_handle::bulk_transfer(unsigned char endpoint, unsigned char *data, int length, int *actual_length, unsigned int timeout)
+        void device_handle::bulk_transfer(unsigned char endpoint, unsigned char *data, int length, int *actual_length, unsigned int timeout)
         {
-            return libusb_bulk_transfer(impl->handle->usb_devh, endpoint, data, length, actual_length, timeout);
+            int status = libusb_bulk_transfer(impl->handle->usb_devh, endpoint, data, length, actual_length, timeout);
+            if(status < 0) throw std::runtime_error(to_string() << "libusb_bulk_transfer(...) returned " << libusb_error_name(status));
         }
 
         ////////////
