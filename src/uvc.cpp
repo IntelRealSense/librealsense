@@ -169,8 +169,18 @@ namespace rsimpl
 #pragma comment(lib, "mfreadwrite.lib")
 #pragma comment(lib, "mfuuid.lib")
 
+
+#include <uuids.h>
+#include <vidcap.h>
+#include <ksmedia.h>
+#include <ksproxy.h>
+
+#include <thread>
+#include <chrono>
 #include <algorithm>
 #include <iostream>
+
+#define XUNODEID 1
 
 namespace rsimpl
 {
@@ -178,7 +188,7 @@ namespace rsimpl
     {
 		static void check(const char * call, HRESULT hr)
 		{
-			if(FAILED(hr)) throw std::runtime_error(to_string() << call << "(...) returned " << hr);
+			if(FAILED(hr)) throw std::runtime_error(to_string() << call << "(...) returned 0x" << std::hex << (uint32_t)hr);
 		}
 
 		template<class T> class com_ptr
@@ -259,6 +269,7 @@ namespace rsimpl
 
 			com_ptr<IMFMediaSource> pSource;
 			com_ptr<IMFSourceReader> pReader;
+			com_ptr<IKsControl> pControl;
 
             _impl(std::shared_ptr<device::_impl> parent, int subdevice_index)
             {
@@ -302,6 +313,41 @@ namespace rsimpl
 					std::cout << " @ " << uvc_fps_num << "/" << uvc_fps_denom << std::endl;
 				}*/
             }
+
+			void obtain_control_node()
+			{
+				if(pControl) return;
+				com_ptr<IKsTopologyInfo> pTopologyInfo;
+				check("IUnknown::QueryInterface", pSource->QueryInterface(__uuidof(IKsTopologyInfo), (void **)&pTopologyInfo));
+        
+				// Begin: debug output
+				DWORD num_nodes = 0;
+				check("IKsTopologyInfo::get_NumNodes", pTopologyInfo->get_NumNodes(&num_nodes));
+				std::cout << "num_nodes = " << num_nodes << std::endl;
+
+				for(int i=0; i<3; ++i)
+				{
+					GUID node_type;
+					check("IKsTopologyInfo::get_NodeType", pTopologyInfo->get_NodeType(i, &node_type));
+					std::cout << "node " << i << " type = ";
+					if(node_type == KSNODETYPE_DEV_SPECIFIC) std::cout << "KSNODETYPE_DEV_SPECIFIC";
+					if(node_type == KSNODETYPE_VIDEO_CAMERA_TERMINAL) std::cout << "KSNODETYPE_VIDEO_CAMERA_TERMINAL";
+					if(node_type == KSNODETYPE_VIDEO_INPUT_MTT) std::cout << "KSNODETYPE_VIDEO_INPUT_MTT";
+					if(node_type == KSNODETYPE_VIDEO_INPUT_TERMINAL) std::cout << "KSNODETYPE_VIDEO_INPUT_TERMINAL";
+					if(node_type == KSNODETYPE_VIDEO_OUTPUT_MTT) std::cout << "KSNODETYPE_VIDEO_OUTPUT_MTT";
+					if(node_type == KSNODETYPE_VIDEO_OUTPUT_TERMINAL) std::cout << "KSNODETYPE_VIDEO_OUTPUT_TERMINAL";
+					if(node_type == KSNODETYPE_VIDEO_PROCESSING) std::cout << "KSNODETYPE_VIDEO_PROCESSING";
+					if(node_type == KSNODETYPE_VIDEO_SELECTOR) std::cout << "KSNODETYPE_VIDEO_SELECTOR";
+					if(node_type == KSNODETYPE_VIDEO_STREAMING) std::cout << "KSNODETYPE_VIDEO_STREAMING";
+					std::cout << std::endl;
+				}
+				// End: debug output
+
+				com_ptr<IUnknown> pUnknown;
+				check("IKsTopologyInfo::CreateNodeInstance", pTopologyInfo->CreateNodeInstance(XUNODEID, IID_IUnknown, (LPVOID *)&pUnknown));
+                check("IUnknown::QueryInterface", pUnknown->QueryInterface(__uuidof(IKsControl), (void **)&pControl));
+				std::cout << "Successfully opened KsControl" << std::endl;
+			}
         };
 
         ///////////////////
@@ -342,6 +388,7 @@ namespace rsimpl
 				if(std::abs(fps - uvc_fps) > 1) continue;
 
 				check("IMFSourceReader::SetCurrentMediaType", impl->pReader->SetCurrentMediaType((DWORD)MF_SOURCE_READER_FIRST_VIDEO_STREAM, NULL, pType));
+				std::cout << "Selected mode " << uvc_width << "x" << uvc_height << ":" << std::string((const char *)&subtype.Data1, ((const char *)&subtype.Data1)+4) << "@" << uvc_fps << " for stream" << std::endl;
 				return;
 			}
 			throw std::runtime_error("no matching media type");
@@ -359,14 +406,36 @@ namespace rsimpl
 			throw std::runtime_error("device_handle::stop_streaming(...) not implemented");
         }
 
+		const GUID GUID_EXTENSION_UNIT_DESCRIPTOR = {0x18682d34, 0xdd2c, 0x4073, {0xad, 0x23, 0x72, 0x14, 0x73, 0x9a, 0x07, 0x4c}};
+
         void device_handle::get_ctrl(uint8_t unit, uint8_t ctrl, void *data, int len)
         {
-			throw std::runtime_error("device_handle::get_ctrl(...) not implemented");
+			impl->obtain_control_node();
+
+			KSP_NODE node;
+			memset(&node, 0, sizeof(KSP_NODE));
+			node.Property.Set = GUID_EXTENSION_UNIT_DESCRIPTOR;
+			node.Property.Id = unit;
+			node.Property.Flags = KSPROPERTY_TYPE_GET | KSPROPERTY_TYPE_TOPOLOGY;
+			node.NodeId = XUNODEID;
+
+			ULONG bytes_received = 0;
+        	check("IKsControl::KsProperty", impl->pControl->KsProperty((PKSPROPERTY)&node, sizeof(node), data, len, &bytes_received));
+			if(bytes_received != len) throw std::runtime_error("XU read did not return enough data");
         }
 
         void device_handle::set_ctrl(uint8_t unit, uint8_t ctrl, void *data, int len)
         {
-			throw std::runtime_error("device_handle::set_ctrl(...) not implemented");
+			impl->obtain_control_node();
+
+			KSP_NODE node;
+			memset(&node, 0, sizeof(KSP_NODE));
+			node.Property.Set = GUID_EXTENSION_UNIT_DESCRIPTOR;
+			node.Property.Id = unit;
+			node.Property.Flags = KSPROPERTY_TYPE_SET | KSPROPERTY_TYPE_TOPOLOGY;
+			node.NodeId = XUNODEID;
+
+        	check("IKsControl::KsProperty", impl->pControl->KsProperty((PKSPROPERTY)&node, sizeof(node), data, len, nullptr));
         }
 
         void device_handle::claim_interface(int interface_number)
