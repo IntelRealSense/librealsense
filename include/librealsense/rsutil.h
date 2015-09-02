@@ -10,7 +10,7 @@ static void rs_project_point_to_pixel(float pixel[2], const struct rs_intrinsics
     assert(intrin->distortion_model != RS_DISTORTION_INVERSE_BROWN_CONRADY); // Cannot project to an inverse-distorted image
 
     float x = point[0] / point[2], y = point[1] / point[2];
-    if(intrin->distortion_model == RS_DISTORTION_GORDON_BROWN_CONRADY)
+    if(intrin->distortion_model == RS_DISTORTION_MODIFIED_BROWN_CONRADY)
     {
         float r2  = x*x + y*y;
         float f = 1 + intrin->distortion_coeff[0]*r2 + intrin->distortion_coeff[1]*r2*r2 + intrin->distortion_coeff[4]*r2*r2*r2;
@@ -28,7 +28,7 @@ static void rs_project_point_to_pixel(float pixel[2], const struct rs_intrinsics
 /* Given pixel coordinates and depth in an image with no distortion or inverse distortion coefficients, compute the corresponding point in 3D space relative to the same camera */
 static void rs_deproject_pixel_to_point(float point[3], const struct rs_intrinsics * intrin, const float pixel[2], float depth)
 {
-    assert(intrin->distortion_model != RS_DISTORTION_GORDON_BROWN_CONRADY); // Cannot deproject from a forward-distorted image
+    assert(intrin->distortion_model != RS_DISTORTION_MODIFIED_BROWN_CONRADY); // Cannot deproject from a forward-distorted image
 
     float x = (pixel[0] - intrin->principal_point[0]) / intrin->focal_length[0];
     float y = (pixel[1] - intrin->principal_point[1]) / intrin->focal_length[1];

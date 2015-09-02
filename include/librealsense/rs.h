@@ -48,7 +48,7 @@ enum rs_preset
 enum rs_distortion
 {
     RS_DISTORTION_NONE                      = 0, /* Rectilinear images, no distortion compensation required */
-    RS_DISTORTION_GORDON_BROWN_CONRADY      = 1, /* Equivalent to Brown-Conrady distortion, except that tangential distortion is applied to radially distorted points */
+    RS_DISTORTION_MODIFIED_BROWN_CONRADY    = 1, /* Equivalent to Brown-Conrady distortion, except that tangential distortion is applied to radially distorted points */
     RS_DISTORTION_INVERSE_BROWN_CONRADY     = 2, /* Equivalent to Brown-Conrady distortion, except undistorts image instead of distorting it */
     RS_ENUM_RANGE(DISTORTION, NONE, INVERSE_BROWN_CONRADY)
 };

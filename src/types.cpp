@@ -56,7 +56,7 @@ namespace rsimpl
         switch(value)
         {
         CASE(NONE)
-        CASE(GORDON_BROWN_CONRADY)
+        CASE(MODIFIED_BROWN_CONRADY)
         CASE(INVERSE_BROWN_CONRADY)
         default: assert(!is_valid(value)); return nullptr;
         }

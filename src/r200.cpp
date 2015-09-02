@@ -99,7 +99,7 @@ namespace rsimpl
 
     static rs_intrinsics MakeColorIntrinsics(const r200::UnrectifiedIntrinsics & i)
     {
-        return {{(int)i.w, (int)i.h}, {i.fx,i.fy}, {i.px,i.py}, {i.k[0],i.k[1],i.k[2],i.k[3],i.k[4]}, RS_DISTORTION_GORDON_BROWN_CONRADY};
+        return {{(int)i.w, (int)i.h}, {i.fx,i.fy}, {i.px,i.py}, {i.k[0],i.k[1],i.k[2],i.k[3],i.k[4]}, RS_DISTORTION_MODIFIED_BROWN_CONRADY};
     }
 
     calibration_info r200_camera::retrieve_calibration()
