@@ -238,8 +238,9 @@ namespace rsimpl
 
 			_impl()
 			{
-				CoInitializeEx(NULL, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE);
-				MFStartup(MF_VERSION);
+				CoInitializeEx(NULL, COINIT_APARTMENTTHREADED);
+				std::this_thread::sleep_for(std::chrono::milliseconds(100));
+				MFStartup(MF_VERSION, MFSTARTUP_NOSOCKET);
 			}
 			~_impl()
 			{	
@@ -556,7 +557,53 @@ namespace rsimpl
 				}
 				std::string unique_id = ids[1];
 
-				device dev;
+				if(mi != 0) continue;
+
+				std::cout << "Trying " << name << std::endl;
+
+				IMFMediaSource * pSource = NULL;
+				check("ActivateObject", ppDevices[i]->ActivateObject(__uuidof(IMFMediaSource), (void **)&pSource));
+
+				IKsTopologyInfo * pKsTopologyInfo = NULL;
+				IKsControl * pKsControl = NULL;
+				check("QueryInterface", pSource->QueryInterface(__uuidof(pKsTopologyInfo), (void **)&pKsTopologyInfo));
+
+				DWORD dwNumNodes = 0;
+				check("get_numNodes", pKsTopologyInfo->get_NumNodes(&dwNumNodes));
+
+				const GUID KSNODETYPE_DEV_SPECIFIC_LOCAL{0x941C7AC0L, 0xC559, 0x11D0, {0x8A, 0x2B, 0x00, 0xA0, 0xC9, 0x25, 0x5A, 0xC1}};
+
+				GUID guidNodeType;
+				check("get_nodeType", pKsTopologyInfo->get_NodeType(XUNODEID, &guidNodeType));
+
+				if (guidNodeType == KSNODETYPE_DEV_SPECIFIC_LOCAL)
+				{
+					IUnknown * pUnknown = NULL;
+					check("CreateNodeInstance", pKsTopologyInfo->CreateNodeInstance(XUNODEID, IID_IUnknown, (LPVOID *)&pUnknown));
+					check("QueryInterface", pUnknown->QueryInterface(__uuidof(pKsControl), (void **)&pKsControl));
+					pUnknown->Release();
+				}
+
+			    if (!pKsControl) throw std::runtime_error("Camera is not found");
+
+				// Set stream intent
+				
+				unsigned long XUControlNumber = 3; //CONTROL_STREAM_INTENT;
+				uint8_t streamIntent = 7;
+				
+				KSP_NODE kspNode;
+				memset(&kspNode, 0, sizeof(KSP_NODE));
+				kspNode.Property.Set = {0x18682d34, 0xdd2c, 0x4073, {0xad, 0x23, 0x72, 0x14, 0x73, 0x9a, 0x07, 0x4c}}; // GUID_EXTENSION_UNIT_DESCRIPTOR
+				kspNode.Property.Id = XUControlNumber;
+				kspNode.Property.Flags = KSPROPERTY_TYPE_SET | KSPROPERTY_TYPE_TOPOLOGY;
+				kspNode.NodeId = XUNODEID;
+				
+				ULONG ulBytesReturned = 0;
+				check("KsProperty", pKsControl->KsProperty((PKSPROPERTY)&kspNode, sizeof(KSP_NODE), &streamIntent, sizeof(streamIntent), &ulBytesReturned));
+				std::cout << "It worked!" << std::endl;
+
+
+				/*device dev;
 				for(auto & d : devices)
 				{
 					if(d.impl->vid == vid && d.impl->pid == pid && d.impl->unique_id == unique_id)
@@ -575,7 +622,7 @@ namespace rsimpl
 
 				int subdevice_index = mi/2;
 				if(subdevice_index >= dev.impl->subdevices.size()) dev.impl->subdevices.resize(subdevice_index+1);
-				dev.impl->subdevices[subdevice_index] = pDevice;
+				dev.impl->subdevices[subdevice_index] = pDevice;*/
 			}
 			CoTaskMemFree(ppDevices);
 			return devices;
