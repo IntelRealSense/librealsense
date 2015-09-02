@@ -7,6 +7,12 @@
 #include <sstream>
 #include <stdexcept>
 
+#ifndef WIN32
+#define RS_THROWING_DESTRUCTOR noexcept(false)
+#else
+#define RS_THROWING_DESTRUCTOR
+#endif
+
 namespace rs
 {
     // Modify this function if you wish to change error handling behavior from throwing exceptions to logging / callbacks / global status, etc.
@@ -25,7 +31,7 @@ namespace rs
     public:
                             auto_error()                                                            : error() {}
                             auto_error(const auto_error &)                                          = delete;
-                            ~auto_error() noexcept(false)                                           { if (error) handle_error(error); }
+                            ~auto_error() RS_THROWING_DESTRUCTOR                                    { if (error) handle_error(error); }
         auto_error &        operator = (const auto_error &)                                         = delete;
                             operator rs_error ** ()                                                 { return &error; }
     };
@@ -72,7 +78,7 @@ namespace rs
         const void *        get_image_pixels(stream s)                                              { return rs_get_image_pixels(cam, s, auto_error()); }
         int                 get_image_frame_number(stream s)                                        { return rs_get_image_frame_number(cam, s, auto_error()); }
 
-        bool                supports_option(option o) const                                         { return rs_camera_supports_option(cam, o, auto_error()); }
+        bool                supports_option(option o) const                                         { return !!rs_camera_supports_option(cam, o, auto_error()); }
         void                set_option(option o, int value)                                         { rs_set_camera_option(cam, o, value, auto_error()); }
         int                 get_option(option o)                                                    { return rs_get_camera_option(cam, o, auto_error()); }
     };

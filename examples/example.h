@@ -81,10 +81,11 @@ static float ttf_len(struct font * font, const char *text)
 
 static void draw_depth_histogram(const uint16_t depth_image[], int width, int height)
 {
-    uint32_t histogram[0x10000] = {};
-    uint8_t rgb_image[640*480*3];
+    static uint32_t histogram[0x10000];
+    static uint8_t rgb_image[640*480*3];
     int i, d, f;
-    
+	memset(histogram, 0, sizeof(histogram));
+
     for(i = 0; i < width*height; ++i) ++histogram[depth_image[i]];
     for(i = 2; i < 0x10000; ++i) histogram[i] += histogram[i-1]; // Build a cumulative histogram for the indices in [1,0xFFFF]
     for(i = 0; i < width*height; ++i)

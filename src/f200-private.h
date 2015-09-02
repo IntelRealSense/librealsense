@@ -4,7 +4,8 @@
 
 #include "uvc.h"
 
-#include <cmath>    // for M_PI, tan
+#define _USE_MATH_DEFINES
+#include <math.h>
 #include <cstring>  // for memcpy, memcmp
 #include <memory>
 #include <thread>

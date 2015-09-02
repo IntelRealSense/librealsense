@@ -104,57 +104,59 @@ namespace rsimpl { namespace r200
         RANGE_FORMAT_DISTANCE
     };
 
+	#pragma pack(push, 1)
     struct disparity_mode
     {
         range_format format;
         uint64_t multiplier;
     };
+	#pragma pop
     
     // Hardware API for R200 camera
-    std::string read_firmware_version(uvc::device_handle & device);
-    void        read_camera_info(uvc::device_handle & device, CameraCalibrationParameters & calib, CameraHeaderInfo & header);
+    std::string read_firmware_version(uvc::device & device);
+    void        read_camera_info(uvc::device & device, CameraCalibrationParameters & calib, CameraHeaderInfo & header);
 
-    void        xu_read(uvc::device_handle & device, uint64_t xu_ctrl, void * buffer, uint32_t length);
-    void        xu_write(uvc::device_handle & device, uint64_t xu_ctrl, void * buffer, uint32_t length);
+    void        xu_read(uvc::device & device, uint64_t xu_ctrl, void * buffer, uint32_t length);
+    void        xu_write(uvc::device & device, uint64_t xu_ctrl, void * buffer, uint32_t length);
 
-    void        set_stream_intent(uvc::device_handle & device, uint8_t & intent);
-    void        get_stream_status(uvc::device_handle & device, uint8_t & status);
+    void        set_stream_intent(uvc::device & device, uint8_t & intent);
+    void        get_stream_status(uvc::device & device, uint8_t & status);
 
-    void        get_last_error(uvc::device_handle & device, uint8_t & last_error);
-    void        force_firmware_reset(uvc::device_handle & device);
+    void        get_last_error(uvc::device & device, uint8_t & last_error);
+    void        force_firmware_reset(uvc::device & device);
 
-    void        get_emitter_state(uvc::device_handle & device, bool & state);
-    void        set_emitter_state(uvc::device_handle & device, bool state);
+    void        get_emitter_state(uvc::device & device, bool & state);
+    void        set_emitter_state(uvc::device & device, bool state);
 
-    void        read_temperature(uvc::device_handle & device, int8_t & current, int8_t & min, int8_t & max, int8_t & min_fault);
-    void        reset_temperature(uvc::device_handle & device);
+    void        read_temperature(uvc::device & device, int8_t & current, int8_t & min, int8_t & max, int8_t & min_fault);
+    void        reset_temperature(uvc::device & device);
 
-    void        get_depth_units(uvc::device_handle & device, uint32_t & units);
-    void        set_depth_units(uvc::device_handle & device, uint32_t units);
+    void        get_depth_units(uvc::device & device, uint32_t & units);
+    void        set_depth_units(uvc::device & device, uint32_t units);
 
-    void        get_min_max_depth(uvc::device_handle & device, uint16_t & min_depth, uint16_t & max_depth);
-    void        set_min_max_depth(uvc::device_handle & device, uint16_t min_depth, uint16_t max_depth);
+    void        get_min_max_depth(uvc::device & device, uint16_t & min_depth, uint16_t & max_depth);
+    void        set_min_max_depth(uvc::device & device, uint16_t min_depth, uint16_t max_depth);
 
-    void        get_lr_gain(uvc::device_handle & device, uint32_t & rate, uint32_t & gain);
-    void        set_lr_gain(uvc::device_handle & device, uint32_t rate, uint32_t gain);
+    void        get_lr_gain(uvc::device & device, uint32_t & rate, uint32_t & gain);
+    void        set_lr_gain(uvc::device & device, uint32_t rate, uint32_t gain);
 
-    void        get_lr_exposure(uvc::device_handle & device, uint32_t & rate, uint32_t & exposure);
-    void        set_lr_exposure(uvc::device_handle & device, uint32_t rate, uint32_t exposure);
+    void        get_lr_exposure(uvc::device & device, uint32_t & rate, uint32_t & exposure);
+    void        set_lr_exposure(uvc::device & device, uint32_t rate, uint32_t exposure);
 
-    void        get_lr_auto_exposure_params(uvc::device_handle & device, auto_exposure_params & params);
-    void        set_lr_auto_exposure_params(uvc::device_handle & device, auto_exposure_params params);
+    void        get_lr_auto_exposure_params(uvc::device & device, auto_exposure_params & params);
+    void        set_lr_auto_exposure_params(uvc::device & device, auto_exposure_params params);
 
-    void        get_lr_exposure_mode(uvc::device_handle & device, uint32_t & mode);
-    void        set_lr_exposure_mode(uvc::device_handle & device, uint32_t mode);
+    void        get_lr_exposure_mode(uvc::device & device, uint32_t & mode);
+    void        set_lr_exposure_mode(uvc::device & device, uint32_t mode);
 
-    void        get_depth_params(uvc::device_handle & device, depth_params & params);
-    void        set_depth_params(uvc::device_handle & device, depth_params params);
+    void        get_depth_params(uvc::device & device, depth_params & params);
+    void        set_depth_params(uvc::device & device, depth_params params);
 
-    void        get_disparity_mode(uvc::device_handle & device, disparity_mode & mode);
-    void        set_disparity_mode(uvc::device_handle & device, disparity_mode mode);
+    void        get_disparity_mode(uvc::device & device, disparity_mode & mode);
+    void        set_disparity_mode(uvc::device & device, disparity_mode mode);
 
-    void        get_disparity_shift(uvc::device_handle & device, uint32_t & shift);
-    void        set_disparity_shift(uvc::device_handle & device, uint32_t shift);
+    void        get_disparity_shift(uvc::device & device, uint32_t & shift);
+    void        set_disparity_shift(uvc::device & device, uint32_t shift);
 
     //@todo - (if necessary) - get_exposure_discovery
     //@todo - (if necessary) - set_exposure_discovery

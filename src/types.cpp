@@ -97,7 +97,7 @@ namespace rsimpl
         case RS_FORMAT_Z16: return sizeof(uint16_t);
         case RS_FORMAT_Y8: return sizeof(uint8_t);
         case RS_FORMAT_RGB8: return sizeof(uint8_t) * 3;
-        default: assert(false);
+        default: assert(false); return 0;
         }
     }
 
@@ -122,7 +122,7 @@ namespace rsimpl
     static_camera_info::static_camera_info()
     {
         for(auto & s : stream_subdevices) s = -1;
-        for(auto & s : presets) for(auto & p : s) p = {};
+        for(auto & s : presets) for(auto & p : s) p = stream_request();
         for(auto & o : option_supported) o = false;
     }
 

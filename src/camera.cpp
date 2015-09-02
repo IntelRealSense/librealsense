@@ -2,6 +2,7 @@
 #include "image.h"
 
 #include <iostream>
+#include <algorithm>
 
 using namespace rsimpl;
 
@@ -11,7 +12,7 @@ using namespace rsimpl;
 
 rs_camera::rs_camera(rsimpl::uvc::device device, const static_camera_info & camera_info) : device(device), camera_info(camera_info), first_handle(), is_capturing()
 {
-    for(auto & req : requests) req = {};
+    for(auto & req : requests) req = rsimpl::stream_request();
     calib = {};
 
     int max_subdevice = 0;
@@ -184,7 +185,7 @@ rs_camera::subdevice_handle::~subdevice_handle()
 void rs_camera::subdevice_handle::set_mode(const subdevice_mode & mode, std::vector<std::shared_ptr<stream_buffer>> streams)
 {
     assert(mode.streams.size() == streams.size());
-    handle.get_stream_ctrl_format_size(mode.width, mode.height, mode.format, mode.fps);
+    handle.set_mode(mode.width, mode.height, mode.format, mode.fps);
     
     if(!state) state = std::make_shared<capture_state>();
     state->mode = mode;
@@ -197,11 +198,8 @@ void rs_camera::subdevice_handle::start_streaming()
     // The callback may actually outlive the subdevice_handle
     // Make sure to capture our state by shared_ptr, not by the this ptr
     auto s = state;
-    handle.start_streaming([s](const void * frame, int width, int height, uvc::frame_format format)
+    handle.start_streaming([s](const void * frame)
     {
-        // Validate that this frame matches the mode information we've set
-        assert(width == s->mode.width && height == s->mode.height && format == s->mode.format);
-
         // Unpack the image into the user stream interface back buffer
         std::vector<void *> dest;
         for(auto & stream : s->streams) dest.push_back(stream->back.pixels.data());

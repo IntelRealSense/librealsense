@@ -3,10 +3,11 @@
 
 #define _USE_MATH_DEFINES
 #include <math.h>
+#include <algorithm>
+#include <thread>
 #include <sstream>
 #include <iostream>
 #include <iomanip>
-#include <thread>
 
 FILE * find_file(std::string path, int levels)
 {
