@@ -357,7 +357,7 @@ namespace rsimpl { namespace f200
         double IrTempDelta = IRTemp - IrBaseTemperature;
         double liguriaTempDelta = liguriaTemp - liguriaBaseTemperature;
         double weightedTempDelta = liguriaTempDelta * thermalModeData.ThermalLoopParams.LiguriaTempWeight + IrTempDelta * thermalModeData.ThermalLoopParams.IrTempWeight;
-        double tempDetaFromLastFix = std::abs(weightedTempDelta - lastTemperatureDelta);
+        double tempDetaFromLastFix = abs(weightedTempDelta - lastTemperatureDelta);
 
         //read intrinsic from the calibration working point
         double Kc11 = originalParams.Kc[0][0];
