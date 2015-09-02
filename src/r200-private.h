@@ -104,11 +104,13 @@ namespace rsimpl { namespace r200
         RANGE_FORMAT_DISTANCE
     };
 
+	#pragma pack(push, 1)
     struct disparity_mode
     {
         range_format format;
         uint64_t multiplier;
     };
+	#pragma pop
     
     // Hardware API for R200 camera
     std::string read_firmware_version(uvc::device_handle & device);
