@@ -155,21 +155,98 @@ namespace rsimpl
         }
     }
 }
+
 #else
+
+#include <mfapi.h>			// For MFStartup, etc.
+#include <mfidl.h>			// For MF_DEVSOURCE_*, etc.
+#include <mfreadwrite.h>    // MFCreateSourceReaderFromMediaSource
+#include <mferror.h>
+#include <d3d9.h>
+
+#pragma comment(lib, "mf.lib")
+#pragma comment(lib, "mfplat.lib")
+#pragma comment(lib, "mfreadwrite.lib")
+#pragma comment(lib, "mfuuid.lib")
+
+#include <algorithm>
+#include <iostream>
+
 namespace rsimpl
 {
     namespace uvc
     {
+		static void check(const char * call, HRESULT hr)
+		{
+			if(FAILED(hr)) throw std::runtime_error(to_string() << call << "(...) returned " << hr);
+		}
+
+		template<class T> class com_ptr
+		{
+			T * p;
+
+			void release()
+			{
+				if(p)
+				{
+					p->Release();
+					p = nullptr;
+				}
+			}
+		public:
+			com_ptr() : p() {}
+			com_ptr(nullptr_t) : p() {}
+			com_ptr(const com_ptr & r) : p() { *this = r; }
+			~com_ptr() { release(); }
+
+			operator T * () const { return p; }
+			T & operator * () const { return *p; }
+			T * operator -> () const { return p; }
+
+			com_ptr & operator = (const com_ptr & r)
+			{ 
+				if(this != &r)
+				{
+					release();
+					p = r.p;
+					if(p) p->AddRef();
+				}
+				return *this; 
+			}
+
+			T ** operator & ()
+			{
+				release();
+				return &p;
+			}
+		};
 
         struct context::_impl
         {
+			IMFAttributes * pAttributes = nullptr;
+			IMFActivate ** ppDevices = nullptr;
+
+			_impl()
+			{
+				CoInitializeEx(NULL, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE);
+				MFStartup(MF_VERSION);
+			}
+			~_impl()
+			{	
+				MFShutdown();
+				CoUninitialize();
+			}
         };
 
         struct device::_impl
         {
             std::shared_ptr<context::_impl> parent;
 
-            _impl() {}
+			int vid, pid;
+			std::string unique_id;
+			std::vector<com_ptr<IMFActivate>> subdevices;
+
+            _impl() : vid(), pid() {}
             _impl(std::shared_ptr<context::_impl> parent) : _impl()
             {
                 this->parent = parent;
@@ -180,12 +257,50 @@ namespace rsimpl
         {
             std::shared_ptr<device::_impl> parent;
 
+			com_ptr<IMFMediaSource> pSource;
+			com_ptr<IMFSourceReader> pReader;
+
             _impl(std::shared_ptr<device::_impl> parent, int subdevice_index)
             {
                 this->parent = parent;
-            }
-            ~_impl()
-            {
+
+				check("IMFActivate::ActivateObject", parent->subdevices[subdevice_index]->ActivateObject(__uuidof(IMFMediaSource), (void **)&pSource));
+
+				com_ptr<IMFAttributes> pAttributes;
+				check("MFCreateAttributes", MFCreateAttributes(&pAttributes, 0));
+				// hr = pAttributes->SetUINT32(MF_READWRITE_DISABLE_CONVERTERS, TRUE);
+				// hr = pAttributes->SetUnknown(MF_SOURCE_READER_ASYNC_CALLBACK, this);			
+				check("MFCreateSourceReaderFromMediaSource", MFCreateSourceReaderFromMediaSource(pSource, pAttributes, &pReader));
+
+				/*for (DWORD j = 0; ; j++)
+				{
+					com_ptr<IMFMediaType> pType;
+					HRESULT hr = pReader->GetNativeMediaType((DWORD)MF_SOURCE_READER_FIRST_VIDEO_STREAM, j, &pType);
+					if (hr == MF_E_NO_MORE_TYPES) break;
+					check("IMFSourceReader::GetNativeMediaType", hr);
+
+					UINT32 uvc_width, uvc_height, uvc_fps_num, uvc_fps_denom; GUID subtype;
+					check("MFGetAttributeSize", MFGetAttributeSize(pType, MF_MT_FRAME_SIZE, &uvc_width, &uvc_height));
+					check("IMFMediaType::GetGUID", pType->GetGUID(MF_MT_SUBTYPE, &subtype));
+					check("MFGetAttributeRatio", MFGetAttributeRatio(pType, MF_MT_FRAME_RATE, &uvc_fps_num, &uvc_fps_denom));
+
+					std::cout << "    Media type " << j << " is " << uvc_width << " x " << uvc_height << " : ";
+					switch(subtype.Data1)
+					{
+					case FCC('Y8  '): std::cout << "R200 Left Y8"; break;
+					case FCC('Y16 '): std::cout << "R200 Left Y16"; break;
+					case FCC('Y8I '): std::cout << "R200 Left Y8 + Right Y8"; break;
+					case FCC('Y12I'): std::cout << "R200 Left Y12 + Right Y12"; break;
+					case FCC('Y16I'): std::cout << "R200 Left Y16 + Right Y16"; break;
+					case FCC('Z16 '): std::cout << "R200 Depth Z16"; break;
+					case FCC('INVI'): std::cout << "F200 Infrared Y8"; break;
+					case FCC('INVR'): std::cout << "F200 Depth Z16"; break;
+					case FCC('INRI'): std::cout << "F200 Depth Z16 + Infrared Y8"; break;
+					case FCC('YUY2'): std::cout << "Color YUY2"; break;
+					default: std::cout << "Unknown"; break;
+					}
+					std::cout << " @ " << uvc_fps_num << "/" << uvc_fps_denom << std::endl;
+				}*/
             }
         };
 
@@ -193,45 +308,88 @@ namespace rsimpl
         // device_handle //
         ///////////////////
 
+		static bool matches_format(const GUID & a, frame_format b)
+		{
+			return (a.Data1 == FCC('YUY2') && b == frame_format::YUYV)
+				|| (a.Data1 == FCC('Y8  ') && b == frame_format::Y8  )
+				|| (a.Data1 == FCC('Y12I') && b == frame_format::Y12I)
+				|| (a.Data1 == FCC('Z16 ') && b == frame_format::Z16 )
+				|| (a.Data1 == FCC('INVI') && b == frame_format::INVI)
+				|| (a.Data1 == FCC('INVR') && b == frame_format::INVR)
+				|| (a.Data1 == FCC('INRI') && b == frame_format::INRI);
+			// TODO: Y16, Y8I, Y16I, other IVCAM formats, etc.
+		}
+
         void device_handle::get_stream_ctrl_format_size(int width, int height, frame_format cf, int fps)
         {
+			for (DWORD j = 0; ; j++)
+			{
+				com_ptr<IMFMediaType> pType;
+				HRESULT hr = impl->pReader->GetNativeMediaType((DWORD)MF_SOURCE_READER_FIRST_VIDEO_STREAM, j, &pType);
+				if (hr == MF_E_NO_MORE_TYPES) break;
+				check("IMFSourceReader::GetNativeMediaType", hr);
+
+				UINT32 uvc_width, uvc_height, uvc_fps_num, uvc_fps_denom; GUID subtype;
+				check("MFGetAttributeSize", MFGetAttributeSize(pType, MF_MT_FRAME_SIZE, &uvc_width, &uvc_height));
+				if(uvc_width != width || uvc_height != height) continue;
+
+				check("IMFMediaType::GetGUID", pType->GetGUID(MF_MT_SUBTYPE, &subtype));
+				if(!matches_format(subtype, cf)) continue;
+
+				check("MFGetAttributeRatio", MFGetAttributeRatio(pType, MF_MT_FRAME_RATE, &uvc_fps_num, &uvc_fps_denom));
+				if(uvc_fps_denom == 0) continue;
+				int uvc_fps = uvc_fps_num / uvc_fps_denom;
+				if(std::abs(fps - uvc_fps) > 1) continue;
+
+				check("IMFSourceReader::SetCurrentMediaType", impl->pReader->SetCurrentMediaType((DWORD)MF_SOURCE_READER_FIRST_VIDEO_STREAM, NULL, pType));
+				return;
+			}
+			throw std::runtime_error("no matching media type");
         }
 
         void device_handle::start_streaming(std::function<void(const void * frame, int width, int height, frame_format format)> callback)
         {
+			// pSource->Start(...);
+			// pReader->ReadSample(...);
+			throw std::runtime_error("device_handle::start_streaming(...) not implemented");
         }
 
         void device_handle::stop_streaming()
         {
+			throw std::runtime_error("device_handle::stop_streaming(...) not implemented");
         }
 
         void device_handle::get_ctrl(uint8_t unit, uint8_t ctrl, void *data, int len)
         {
+			throw std::runtime_error("device_handle::get_ctrl(...) not implemented");
         }
 
         void device_handle::set_ctrl(uint8_t unit, uint8_t ctrl, void *data, int len)
         {
+			throw std::runtime_error("device_handle::set_ctrl(...) not implemented");
         }
 
         void device_handle::claim_interface(int interface_number)
         {
+			throw std::runtime_error("device_handle::claim_interface(...) not implemented");
         }
 
         void device_handle::bulk_transfer(unsigned char endpoint, unsigned char *data, int length, int *actual_length, unsigned int timeout)
         {
+			throw std::runtime_error("device_handle::bulk_transfer(...) not implemented");
         }
 
         ////////////
         // device //
         ////////////
 
-		int device::get_vendor_id() const { return 0; }
-		int device::get_product_id() const { return 0; }
+		int device::get_vendor_id() const { return impl->vid; }
+		int device::get_product_id() const { return impl->pid; }
 		const char * device::get_product_name() const { return ""; }
 
         device_handle device::claim_subdevice(int subdevice_index)
         {
-			return {};
+			return {std::make_shared<device_handle::_impl>(impl, subdevice_index)};
         }
 
         /////////////
@@ -243,10 +401,116 @@ namespace rsimpl
             return {std::make_shared<context::_impl>()};
         }
 
+		std::string win_to_utf(const WCHAR * s)
+		{
+			int len = WideCharToMultiByte(CP_UTF8, 0, s, -1, nullptr, 0, NULL, NULL);
+			if(len == 0) throw std::runtime_error(to_string() << "WideCharToMultiByte(...) returned 0 and GetLastError() is " << GetLastError());
+			std::string buffer(len-1, ' ');
+			len = WideCharToMultiByte(CP_UTF8, 0, s, -1, &buffer[0], buffer.size()+1, NULL, NULL);
+			if(len == 0) throw std::runtime_error(to_string() << "WideCharToMultiByte(...) returned 0 and GetLastError() is " << GetLastError());
+			return buffer;
+		}
+
+		std::vector<std::string> tokenize(std::string string, char separator)
+		{
+			std::vector<std::string> tokens;
+			std::string::size_type i1 = 0;
+			while(true)
+			{
+				auto i2 = string.find(separator, i1);
+				if(i2 == std::string::npos)
+				{
+					tokens.push_back(string.substr(i1));
+					return tokens;
+				}
+				tokens.push_back(string.substr(i1, i2-i1));
+				i1 = i2+1;
+			}
+		}
+
         std::vector<device> context::query_devices()
         {
-			return {};
-        }
+			IMFAttributes * pAttributes = NULL;
+			check("MFCreateAttributes", MFCreateAttributes(&pAttributes, 1));
+			check("IMFAttributes::SetGUID", pAttributes->SetGUID(MF_DEVSOURCE_ATTRIBUTE_SOURCE_TYPE, MF_DEVSOURCE_ATTRIBUTE_SOURCE_TYPE_VIDCAP_GUID));
+ 
+			IMFActivate ** ppDevices;
+			UINT32 numDevices;
+			check("MFEnumDeviceSources", MFEnumDeviceSources(pAttributes, &ppDevices, &numDevices));
+
+			std::vector<device> devices;
+			for(UINT32 i=0; i<numDevices; ++i)
+			{
+				com_ptr<IMFActivate> pDevice;
+				*&pDevice = ppDevices[i];
+
+				WCHAR * wchar_name = NULL;
+				UINT32 length;
+				pDevice->GetAllocatedString(MF_DEVSOURCE_ATTRIBUTE_SOURCE_TYPE_VIDCAP_SYMBOLIC_LINK, &wchar_name, &length);
+				auto name = win_to_utf(wchar_name);
+				CoTaskMemFree(wchar_name);
+
+				int vid, pid, mi;
+
+				auto tokens = tokenize(name, '#');
+				if(tokens.size() < 1 || tokens[0] != R"(\\?\usb)") continue; // Not a USB device
+				if(tokens.size() < 3)
+				{
+					std::cerr << "malformed usb device path: " << name << std::endl;
+					continue;
+				}
+
+				auto ids = tokenize(tokens[1], '&');
+				if(ids[0].size() != 8 || ids[0].substr(0,4) != "vid_" || !(std::istringstream(ids[0].substr(4,4)) >> std::hex >> vid))
+				{
+					std::cerr << "malformed vid string: " << tokens[1] << std::endl;
+					continue;
+				}
+
+				if(ids[1].size() != 8 || ids[1].substr(0,4) != "pid_" || !(std::istringstream(ids[1].substr(4,4)) >> std::hex >> pid))
+				{
+					std::cerr << "malformed pid string: " << tokens[1] << std::endl;
+					continue;
+				}
+
+				if(ids[2].size() != 5 || ids[2].substr(0,3) != "mi_" || !(std::istringstream(ids[2].substr(3,2)) >> mi))
+				{
+					std::cerr << "malformed mi string: " << tokens[1] << std::endl;
+					continue;
+				}
+
+				ids = tokenize(tokens[2], '&');
+				if(ids.size() < 2)
+				{
+					std::cerr << "malformed id string: " << tokens[2] << std::endl;
+					continue;				
+				}
+				std::string unique_id = ids[1];
+
+				device dev;
+				for(auto & d : devices)
+				{
+					if(d.impl->vid == vid && d.impl->pid == pid && d.impl->unique_id == unique_id)
+					{
+						dev = d;
+					}
+				}
+				if(!dev)
+				{
+					dev = {std::make_shared<device::_impl>()};
+					dev.impl->vid = vid;
+					dev.impl->pid = pid;
+					dev.impl->unique_id = unique_id;
+					devices.push_back(dev);
+				}
+
+				int subdevice_index = mi/2;
+				if(subdevice_index >= dev.impl->subdevices.size()) dev.impl->subdevices.resize(subdevice_index+1);
+				dev.impl->subdevices[subdevice_index] = pDevice;
+			}
+			CoTaskMemFree(ppDevices);
+			return devices;
+		}
     }
 }
 #endif
