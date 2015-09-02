@@ -319,7 +319,7 @@ namespace rsimpl
 			int width, height;
 			frame_format format;
 
-			std::function<void(const void * frame, int width, int height, frame_format format)> callback;
+			std::function<void(const void * frame)> callback;
 
             _impl(std::shared_ptr<device::_impl> parent, int subdevice_index) : subdevice_index(subdevice_index)
             {
@@ -365,7 +365,7 @@ namespace rsimpl
 						BYTE * byte_buffer; DWORD max_length, current_length;
 						if(SUCCEEDED(pBuffer->Lock(&byte_buffer, &max_length, &current_length)))
 						{
-							 callback(byte_buffer, width, height, format);
+							 callback(byte_buffer);
 						}
 					}
 				}
@@ -393,7 +393,7 @@ namespace rsimpl
 			// TODO: Y16, Y8I, Y16I, other IVCAM formats, etc.
 		}
 
-        void device_handle::get_stream_ctrl_format_size(int width, int height, frame_format cf, int fps)
+        void device_handle::set_mode(int width, int height, frame_format cf, int fps)
         {
 			for (DWORD j = 0; ; j++)
 			{
@@ -424,7 +424,7 @@ namespace rsimpl
 			throw std::runtime_error("no matching media type");
         }
 
-        void device_handle::start_streaming(std::function<void(const void * frame, int width, int height, frame_format format)> callback)
+        void device_handle::start_streaming(std::function<void(const void * frame)> callback)
         {
 			impl->callback = callback;
 			check("IMFSourceReader::ReadSample", impl->pReader->ReadSample(MF_SOURCE_READER_FIRST_VIDEO_STREAM, 0, NULL, NULL, NULL, NULL));
@@ -433,32 +433,6 @@ namespace rsimpl
         void device_handle::stop_streaming()
         {
 			throw std::runtime_error("device_handle::stop_streaming(...) not implemented");
-        }
-
-        void device_handle::get_ctrl(uint8_t unit, uint8_t ctrl, void *data, int len)
-        {
-			KSP_NODE node;
-			memset(&node, 0, sizeof(KSP_NODE));
-			node.Property.Set = {0x18682d34, 0xdd2c, 0x4073, {0xad, 0x23, 0x72, 0x14, 0x73, 0x9a, 0x07, 0x4c}}; // GUID_EXTENSION_UNIT_DESCRIPTOR
-			node.Property.Id = ctrl;
-			node.Property.Flags = KSPROPERTY_TYPE_GET | KSPROPERTY_TYPE_TOPOLOGY;
-			node.NodeId = XUNODEID;
-
-			ULONG bytes_received = 0;
-        	check("IKsControl::KsProperty", impl->parent->get_control_node()->KsProperty((PKSPROPERTY)&node, sizeof(node), data, len, &bytes_received));
-			if(bytes_received != len) throw std::runtime_error("XU read did not return enough data");
-        }
-
-        void device_handle::set_ctrl(uint8_t unit, uint8_t ctrl, void *data, int len)
-        {				
-			KSP_NODE kspNode;
-			memset(&kspNode, 0, sizeof(KSP_NODE));
-			kspNode.Property.Set = {0x18682d34, 0xdd2c, 0x4073, {0xad, 0x23, 0x72, 0x14, 0x73, 0x9a, 0x07, 0x4c}}; // GUID_EXTENSION_UNIT_DESCRIPTOR
-			kspNode.Property.Id = ctrl;
-			kspNode.Property.Flags = KSPROPERTY_TYPE_SET | KSPROPERTY_TYPE_TOPOLOGY;
-			kspNode.NodeId = XUNODEID;
-				
-			check("IKsControl::KsProperty", impl->parent->get_control_node()->KsProperty((PKSPROPERTY)&kspNode, sizeof(KSP_NODE), data, len, NULL));
         }
 
         void device_handle::claim_interface(int interface_number)
@@ -477,7 +451,32 @@ namespace rsimpl
 
 		int device::get_vendor_id() const { return impl->vid; }
 		int device::get_product_id() const { return impl->pid; }
-		const char * device::get_product_name() const { return ""; }
+
+        void device::get_control(uint8_t unit, uint8_t ctrl, void *data, int len)
+        {
+			KSP_NODE node;
+			memset(&node, 0, sizeof(KSP_NODE));
+			node.Property.Set = {0x18682d34, 0xdd2c, 0x4073, {0xad, 0x23, 0x72, 0x14, 0x73, 0x9a, 0x07, 0x4c}}; // GUID_EXTENSION_UNIT_DESCRIPTOR
+			node.Property.Id = ctrl;
+			node.Property.Flags = KSPROPERTY_TYPE_GET | KSPROPERTY_TYPE_TOPOLOGY;
+			node.NodeId = XUNODEID;
+
+			ULONG bytes_received = 0;
+        	check("IKsControl::KsProperty", impl->get_control_node()->KsProperty((PKSPROPERTY)&node, sizeof(node), data, len, &bytes_received));
+			if(bytes_received != len) throw std::runtime_error("XU read did not return enough data");
+        }
+
+        void device::set_control(uint8_t unit, uint8_t ctrl, void *data, int len)
+        {				
+			KSP_NODE kspNode;
+			memset(&kspNode, 0, sizeof(KSP_NODE));
+			kspNode.Property.Set = {0x18682d34, 0xdd2c, 0x4073, {0xad, 0x23, 0x72, 0x14, 0x73, 0x9a, 0x07, 0x4c}}; // GUID_EXTENSION_UNIT_DESCRIPTOR
+			kspNode.Property.Id = ctrl;
+			kspNode.Property.Flags = KSPROPERTY_TYPE_SET | KSPROPERTY_TYPE_TOPOLOGY;
+			kspNode.NodeId = XUNODEID;
+				
+			check("IKsControl::KsProperty", impl->get_control_node()->KsProperty((PKSPROPERTY)&kspNode, sizeof(KSP_NODE), data, len, NULL));
+        }
 
         device_handle device::claim_subdevice(int subdevice_index)
         {

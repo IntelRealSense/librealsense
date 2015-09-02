@@ -84,7 +84,7 @@ namespace rsimpl
     
     r200_camera::~r200_camera()
     {
-        if(first_handle) r200::force_firmware_reset(first_handle);
+        r200::force_firmware_reset(device);
     }
 
     static rs_intrinsics MakeLeftRightIntrinsics(const r200::RectifiedIntrinsics & i)
@@ -106,7 +106,7 @@ namespace rsimpl
     {
         r200::CameraCalibrationParameters calib;
         r200::CameraHeaderInfo header;
-        r200::read_camera_info(first_handle, calib, header);
+        r200::read_camera_info(device, calib, header);
 
         calibration_info c;
         c.intrinsics.resize(NUM_INTRINSICS);
@@ -127,21 +127,16 @@ namespace rsimpl
     }
 
     void r200_camera::set_stream_intent()
-    {
-        if(first_handle)
-        {
-            uint8_t streamIntent = 0;
-            if(subdevices[0]) streamIntent |= STATUS_BIT_LR_STREAMING;
-            if(subdevices[1]) streamIntent |= STATUS_BIT_Z_STREAMING;
-            if(subdevices[2]) streamIntent |= STATUS_BIT_WEB_STREAMING;
-            r200::set_stream_intent(first_handle, streamIntent);
-        }
+	{
+        uint8_t streamIntent = 0;
+        if(subdevices[0]) streamIntent |= STATUS_BIT_LR_STREAMING;
+        if(subdevices[1]) streamIntent |= STATUS_BIT_Z_STREAMING;
+        if(subdevices[2]) streamIntent |= STATUS_BIT_WEB_STREAMING;
+        r200::set_stream_intent(device, streamIntent);
     }
 
     void r200_camera::set_option(rs_option option, int value)
     {
-        if(!first_handle) throw std::runtime_error("cannot call before rs_start_capture(...)");
-
         //r200::auto_exposure_params aep;
         //r200::depth_params dp;
         r200::disparity_mode dm;
@@ -152,52 +147,52 @@ namespace rsimpl
         switch(option)
         {
         case RS_OPTION_R200_LR_AUTO_EXPOSURE_ENABLED:
-            r200::set_lr_exposure_mode(first_handle, value);
+            r200::set_lr_exposure_mode(device, value);
             break;
         case RS_OPTION_R200_LR_GAIN:
-            r200::get_lr_gain(first_handle, u32[0], u32[1]);
-            r200::set_lr_gain(first_handle, u32[0], value);
+            r200::get_lr_gain(device, u32[0], u32[1]);
+            r200::set_lr_gain(device, u32[0], value);
             break;
         case RS_OPTION_R200_LR_EXPOSURE:
-            r200::get_lr_exposure(first_handle, u32[0], u32[1]);
-            r200::set_lr_exposure(first_handle, u32[0], value);
+            r200::get_lr_exposure(device, u32[0], u32[1]);
+            r200::set_lr_exposure(device, u32[0], value);
             break;
         case RS_OPTION_R200_EMITTER_ENABLED:
-            r200::set_emitter_state(first_handle, !!value);
+            r200::set_emitter_state(device, !!value);
             break;
         case RS_OPTION_R200_DEPTH_CONTROL_PRESET:
-            r200::set_depth_params(first_handle, r200::depth_params::presets[value]);
+            r200::set_depth_params(device, r200::depth_params::presets[value]);
             break;
         case RS_OPTION_R200_DEPTH_UNITS:
-            r200::set_depth_units(first_handle, value);
+            r200::set_depth_units(device, value);
             break;
         case RS_OPTION_R200_DEPTH_CLAMP_MIN:
-            r200::get_min_max_depth(first_handle, u16[0], u16[1]);
-            r200::set_min_max_depth(first_handle, value, u16[1]);
+            r200::get_min_max_depth(device, u16[0], u16[1]);
+            r200::set_min_max_depth(device, value, u16[1]);
             break;
         case RS_OPTION_R200_DEPTH_CLAMP_MAX:
-            r200::get_min_max_depth(first_handle, u16[0], u16[1]);
-            r200::set_min_max_depth(first_handle, u16[0], value);
+            r200::get_min_max_depth(device, u16[0], u16[1]);
+            r200::set_min_max_depth(device, u16[0], value);
             break;
         case RS_OPTION_R200_DISPARITY_MODE_ENABLED:
-            r200::get_disparity_mode(first_handle, dm);
+            r200::get_disparity_mode(device, dm);
             dm.format = value ? r200::range_format::RANGE_FORMAT_DISPARITY : r200::range_format::RANGE_FORMAT_DISTANCE;
-            r200::set_disparity_mode(first_handle, dm);
+            r200::set_disparity_mode(device, dm);
             break;
         case RS_OPTION_R200_DISPARITY_MULTIPLIER:
-            r200::get_disparity_mode(first_handle, dm);
+            r200::get_disparity_mode(device, dm);
             dm.multiplier = value;
-            r200::set_disparity_mode(first_handle, dm);
+            r200::set_disparity_mode(device, dm);
             break;
         case RS_OPTION_R200_DISPARITY_SHIFT:
-            r200::set_disparity_shift(first_handle, value);
+            r200::set_disparity_shift(device, value);
             break;
         }
     }
 
     int r200_camera::get_option(rs_option option)
     {
-        if(!first_handle) throw std::runtime_error("cannot call before rs_start_capture(...)");
+        if(!device) throw std::runtime_error("cannot call before rs_start_capture(...)");
 
         //r200::auto_exposure_params aep;
         r200::depth_params dp;
@@ -209,18 +204,18 @@ namespace rsimpl
         int value = 0;
         switch(option)
         {
-        case RS_OPTION_R200_LR_AUTO_EXPOSURE_ENABLED: r200::get_lr_exposure_mode(first_handle, u32[0]);         value = u32[0]; break;
-        case RS_OPTION_R200_LR_GAIN:                  r200::get_lr_gain         (first_handle, u32[0], u32[1]); value = u32[1]; break;
-        case RS_OPTION_R200_LR_EXPOSURE:              r200::get_lr_exposure     (first_handle, u32[0], u32[1]); value = u32[1]; break;
-        case RS_OPTION_R200_EMITTER_ENABLED:          r200::get_emitter_state   (first_handle, b);              value = b; break;
-        case RS_OPTION_R200_DEPTH_UNITS:              r200::get_depth_units     (first_handle, u32[0]);         value = u32[0]; break;
-        case RS_OPTION_R200_DEPTH_CLAMP_MIN:          r200::get_min_max_depth   (first_handle, u16[0], u16[1]); value = u16[0]; break;
-        case RS_OPTION_R200_DEPTH_CLAMP_MAX:          r200::get_min_max_depth   (first_handle, u16[0], u16[1]); value = u16[1]; break;
-        case RS_OPTION_R200_DISPARITY_MODE_ENABLED:   r200::get_disparity_mode  (first_handle, dm);             value = dm.format == r200::range_format::RANGE_FORMAT_DISPARITY; break;
-        case RS_OPTION_R200_DISPARITY_MULTIPLIER:     r200::get_disparity_mode  (first_handle, dm);             value = static_cast<int>(dm.multiplier); break;
-        case RS_OPTION_R200_DISPARITY_SHIFT:          r200::get_disparity_shift (first_handle, u32[0]);         value = u32[0]; break;
+        case RS_OPTION_R200_LR_AUTO_EXPOSURE_ENABLED: r200::get_lr_exposure_mode(device, u32[0]);         value = u32[0]; break;
+        case RS_OPTION_R200_LR_GAIN:                  r200::get_lr_gain         (device, u32[0], u32[1]); value = u32[1]; break;
+        case RS_OPTION_R200_LR_EXPOSURE:              r200::get_lr_exposure     (device, u32[0], u32[1]); value = u32[1]; break;
+        case RS_OPTION_R200_EMITTER_ENABLED:          r200::get_emitter_state   (device, b);              value = b; break;
+        case RS_OPTION_R200_DEPTH_UNITS:              r200::get_depth_units     (device, u32[0]);         value = u32[0]; break;
+        case RS_OPTION_R200_DEPTH_CLAMP_MIN:          r200::get_min_max_depth   (device, u16[0], u16[1]); value = u16[0]; break;
+        case RS_OPTION_R200_DEPTH_CLAMP_MAX:          r200::get_min_max_depth   (device, u16[0], u16[1]); value = u16[1]; break;
+        case RS_OPTION_R200_DISPARITY_MODE_ENABLED:   r200::get_disparity_mode  (device, dm);             value = dm.format == r200::range_format::RANGE_FORMAT_DISPARITY; break;
+        case RS_OPTION_R200_DISPARITY_MULTIPLIER:     r200::get_disparity_mode  (device, dm);             value = static_cast<int>(dm.multiplier); break;
+        case RS_OPTION_R200_DISPARITY_SHIFT:          r200::get_disparity_shift (device, u32[0]);         value = u32[0]; break;
         case RS_OPTION_R200_DEPTH_CONTROL_PRESET:
-            r200::get_depth_params(first_handle, dp);
+            r200::get_depth_params(device, dp);
             for(int i=0; i<r200::depth_params::MAX_PRESETS; ++i)
             {
                 if(memcmp(&dp, &r200::depth_params::presets[i], sizeof(dp)) == 0)

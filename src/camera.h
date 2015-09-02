@@ -75,8 +75,6 @@ public:
                                                     rs_camera(rsimpl::uvc::device device, const rsimpl::static_camera_info & camera_info);
                                                     ~rs_camera();
 
-    const char *                                    get_name() const { return device.get_product_name(); }
-
     void                                            enable_stream(rs_stream stream, int width, int height, rs_format format, int fps);
     void                                            enable_stream_preset(rs_stream stream, rs_preset preset);
     bool                                            is_stream_enabled(rs_stream stream) const { return (bool)streams[stream]; }
@@ -94,6 +92,7 @@ public:
     rs_extrinsics                                   get_stream_extrinsics(rs_stream from, rs_stream to) const;
     bool                                            supports_option(rs_option option) const { return camera_info.option_supported[option]; }
 
+	virtual const char *                            get_name() const = 0;
     virtual rsimpl::calibration_info                retrieve_calibration() = 0;
     virtual void                                    set_stream_intent() = 0;
     virtual void                                    set_option(rs_option option, int value) = 0;
