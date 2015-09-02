@@ -266,12 +266,46 @@ namespace rsimpl
 			int vid, pid;
 			std::string unique_id;
 			std::vector<com_ptr<IMFActivate>> subdevices;
+			std::vector<com_ptr<IMFMediaSource>> sources;
+			com_ptr<IKsControl> pControl;
 
             _impl() : vid(), pid() {}
             _impl(std::shared_ptr<context::_impl> parent) : _impl()
             {
                 this->parent = parent;
             }
+
+			com_ptr<IMFMediaSource> get_media_source(int subdevice_index)
+			{
+				if(!sources[subdevice_index]) check("IMFActivate::ActivateObject", subdevices[subdevice_index]->ActivateObject(__uuidof(IMFMediaSource), (void **)&sources[subdevice_index]));
+				return sources[subdevice_index];
+			}
+
+			IKsControl * get_control_node()
+			{
+				if(!pControl)
+				{		
+					IKsTopologyInfo * pKsTopologyInfo = NULL;
+					check("QueryInterface", get_media_source(0)->QueryInterface(__uuidof(pKsTopologyInfo), (void **)&pKsTopologyInfo));
+
+					DWORD dwNumNodes = 0;
+					check("get_numNodes", pKsTopologyInfo->get_NumNodes(&dwNumNodes));
+
+					const GUID KSNODETYPE_DEV_SPECIFIC_LOCAL{0x941C7AC0L, 0xC559, 0x11D0, {0x8A, 0x2B, 0x00, 0xA0, 0xC9, 0x25, 0x5A, 0xC1}};
+
+					GUID guidNodeType;
+					check("get_nodeType", pKsTopologyInfo->get_NodeType(XUNODEID, &guidNodeType));
+
+					if (guidNodeType == KSNODETYPE_DEV_SPECIFIC_LOCAL)
+					{
+						com_ptr<IUnknown> pUnknown;
+						check("CreateNodeInstance", pKsTopologyInfo->CreateNodeInstance(XUNODEID, IID_IUnknown, (LPVOID *)&pUnknown));
+						check("QueryInterface", pUnknown->QueryInterface(__uuidof(IKsControl), (void **)&pControl));
+					}
+				}
+				if (!pControl) throw std::runtime_error("unable to obtain control node");
+				return pControl;
+			}
         };
 
         struct device_handle::_impl : public IMFSourceReaderCallback
@@ -281,7 +315,6 @@ namespace rsimpl
 
 			com_ptr<IMFMediaSource> pSource;
 			com_ptr<IMFSourceReader> pReader;
-			com_ptr<IKsControl> pControl;
 
 			int width, height;
 			frame_format format;
@@ -292,7 +325,7 @@ namespace rsimpl
             {
                 this->parent = parent;
 
-				check("IMFActivate::ActivateObject", parent->subdevices[subdevice_index]->ActivateObject(__uuidof(IMFMediaSource), (void **)&pSource));
+				pSource = parent->get_media_source(subdevice_index);
 
 				com_ptr<IMFAttributes> pAttributes;
 				check("MFCreateAttributes", MFCreateAttributes(&pAttributes, 1));
@@ -300,31 +333,6 @@ namespace rsimpl
 				check("IMFAttributes::SetUnknown", pAttributes->SetUnknown(MF_SOURCE_READER_ASYNC_CALLBACK, static_cast<IUnknown *>(this))); // TODO: Fix
 				check("MFCreateSourceReaderFromMediaSource", MFCreateSourceReaderFromMediaSource(pSource, pAttributes, &pReader));
             }
-
-			void obtain_control_node()
-			{
-				if(pControl) return;
-				
-				IKsTopologyInfo * pKsTopologyInfo = NULL;
-				check("QueryInterface", pSource->QueryInterface(__uuidof(pKsTopologyInfo), (void **)&pKsTopologyInfo));
-
-				DWORD dwNumNodes = 0;
-				check("get_numNodes", pKsTopologyInfo->get_NumNodes(&dwNumNodes));
-
-				const GUID KSNODETYPE_DEV_SPECIFIC_LOCAL{0x941C7AC0L, 0xC559, 0x11D0, {0x8A, 0x2B, 0x00, 0xA0, 0xC9, 0x25, 0x5A, 0xC1}};
-
-				GUID guidNodeType;
-				check("get_nodeType", pKsTopologyInfo->get_NodeType(XUNODEID, &guidNodeType));
-
-				if (guidNodeType == KSNODETYPE_DEV_SPECIFIC_LOCAL)
-				{
-					com_ptr<IUnknown> pUnknown;
-					check("CreateNodeInstance", pKsTopologyInfo->CreateNodeInstance(XUNODEID, IID_IUnknown, (LPVOID *)&pUnknown));
-					check("QueryInterface", pUnknown->QueryInterface(__uuidof(IKsControl), (void **)&pControl));
-				}
-
-			    if (!pControl) throw std::runtime_error("unable to obtain control node");
-			}
 
 			// Implement IUnknown
 			HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, void ** ppvObject) override 
@@ -429,8 +437,6 @@ namespace rsimpl
 
         void device_handle::get_ctrl(uint8_t unit, uint8_t ctrl, void *data, int len)
         {
-			impl->obtain_control_node();
-
 			KSP_NODE node;
 			memset(&node, 0, sizeof(KSP_NODE));
 			node.Property.Set = {0x18682d34, 0xdd2c, 0x4073, {0xad, 0x23, 0x72, 0x14, 0x73, 0x9a, 0x07, 0x4c}}; // GUID_EXTENSION_UNIT_DESCRIPTOR
@@ -439,14 +445,12 @@ namespace rsimpl
 			node.NodeId = XUNODEID;
 
 			ULONG bytes_received = 0;
-        	check("IKsControl::KsProperty", impl->pControl->KsProperty((PKSPROPERTY)&node, sizeof(node), data, len, &bytes_received));
+        	check("IKsControl::KsProperty", impl->parent->get_control_node()->KsProperty((PKSPROPERTY)&node, sizeof(node), data, len, &bytes_received));
 			if(bytes_received != len) throw std::runtime_error("XU read did not return enough data");
         }
 
         void device_handle::set_ctrl(uint8_t unit, uint8_t ctrl, void *data, int len)
-        {
-			impl->obtain_control_node();
-				
+        {				
 			KSP_NODE kspNode;
 			memset(&kspNode, 0, sizeof(KSP_NODE));
 			kspNode.Property.Set = {0x18682d34, 0xdd2c, 0x4073, {0xad, 0x23, 0x72, 0x14, 0x73, 0x9a, 0x07, 0x4c}}; // GUID_EXTENSION_UNIT_DESCRIPTOR
@@ -454,7 +458,7 @@ namespace rsimpl
 			kspNode.Property.Flags = KSPROPERTY_TYPE_SET | KSPROPERTY_TYPE_TOPOLOGY;
 			kspNode.NodeId = XUNODEID;
 				
-			check("IKsControl::KsProperty", impl->pControl->KsProperty((PKSPROPERTY)&kspNode, sizeof(KSP_NODE), data, len, NULL));
+			check("IKsControl::KsProperty", impl->parent->get_control_node()->KsProperty((PKSPROPERTY)&kspNode, sizeof(KSP_NODE), data, len, NULL));
         }
 
         void device_handle::claim_interface(int interface_number)
@@ -587,6 +591,7 @@ namespace rsimpl
 				dev.impl->subdevices[subdevice_index] = pDevice;
 			}
 			CoTaskMemFree(ppDevices);
+			for(auto & dev : devices) dev.impl->sources.resize(dev.impl->subdevices.size());
 			return devices;
 		}
     }
