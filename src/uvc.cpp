@@ -27,8 +27,9 @@ namespace rsimpl
             std::shared_ptr<context::_impl> parent;
             uvc_device_t * device;
             uvc_device_descriptor_t * desc;
+            uvc_device_handle_t * first_handle;
 
-            _impl() : device(), desc() {}
+            _impl() : device(), desc(), first_handle() {}
             _impl(std::shared_ptr<context::_impl> parent, uvc_device_t * device) : _impl()
             {
                 this->parent = parent;
@@ -48,13 +49,14 @@ namespace rsimpl
             std::shared_ptr<device::_impl> parent;
             uvc_device_handle_t * handle;
             uvc_stream_ctrl_t ctrl;
-            std::function<void(const void * frame, int width, int height, frame_format format)> callback;
+            std::function<void(const void * frame)> callback;
             std::vector<int> claimed_interfaces;
 
             _impl(std::shared_ptr<device::_impl> parent, int subdevice_index) : handle()
             {
                 this->parent = parent;
                 check("uvc_open2", uvc_open2(parent->device, &handle, subdevice_index));
+                if(!parent->first_handle) parent->first_handle = handle;
             }
             ~_impl()
             {
@@ -64,6 +66,7 @@ namespace rsimpl
                     if(status < 0) std::cerr << "Warning: libusb_release_interface(...) returned " << libusb_error_name(status) << std::endl;
                 }
                 uvc_close(handle);
+                if(parent->first_handle == handle) parent->first_handle = nullptr;
             }
         };
 
@@ -71,12 +74,12 @@ namespace rsimpl
         // device_handle //
         ///////////////////
 
-        void device_handle::get_stream_ctrl_format_size(int width, int height, frame_format cf, int fps)
+        void device_handle::set_mode(int width, int height, frame_format cf, int fps)
         {
             check("get_stream_ctrl_format_size", uvc_get_stream_ctrl_format_size(impl->handle, &impl->ctrl, (uvc_frame_format)cf, width, height, fps));
         }
 
-        void device_handle::start_streaming(std::function<void(const void * frame, int width, int height, frame_format format)> callback)
+        void device_handle::start_streaming(std::function<void(const void * frame)> callback)
         {
             #if defined (ENABLE_DEBUG_SPAM)
             uvc_print_stream_ctrl(&impl->ctrl, stdout);
@@ -85,25 +88,13 @@ namespace rsimpl
             impl->callback = callback;
             check("uvc_start_streaming", uvc_start_streaming(impl->handle, &impl->ctrl, [](uvc_frame * frame, void * user)
             {
-                reinterpret_cast<device_handle::_impl *>(user)->callback(frame->data, frame->width, frame->height, (frame_format)frame->frame_format);
+                reinterpret_cast<device_handle::_impl *>(user)->callback(frame->data);
             }, impl.get(), 0));
         }
 
         void device_handle::stop_streaming()
         {
             uvc_stop_streaming(impl->handle);
-        }
-
-        void device_handle::get_ctrl(uint8_t unit, uint8_t ctrl, void *data, int len)
-        {
-            int status = uvc_get_ctrl(impl->handle, unit, ctrl, data, len, UVC_GET_CUR);
-            if(status < 0) throw std::runtime_error(to_string() << "uvc_get_ctrl(...) returned " << libusb_error_name(status));
-        }
-
-        void device_handle::set_ctrl(uint8_t unit, uint8_t ctrl, void *data, int len)
-        {
-            int status = uvc_set_ctrl(impl->handle, unit, ctrl, data, len);
-            if(status < 0) throw std::runtime_error(to_string() << "uvc_set_ctrl(...) returned " << libusb_error_name(status));
         }
 
         void device_handle::claim_interface(int interface_number)
@@ -125,7 +116,18 @@ namespace rsimpl
 
         int device::get_vendor_id() const { return impl->desc->idVendor; }
         int device::get_product_id() const { return impl->desc->idProduct; }
-        const char * device::get_product_name() const { return impl->desc->product; }
+
+        void device::get_control(uint8_t unit, uint8_t ctrl, void * data, int len)
+        {
+            int status = uvc_get_ctrl(impl->first_handle, unit, ctrl, data, len, UVC_GET_CUR);
+            if(status < 0) throw std::runtime_error(to_string() << "uvc_get_ctrl(...) returned " << libusb_error_name(status));
+        }
+
+        void device::set_control(uint8_t unit, uint8_t ctrl, void * data, int len)
+        {
+            int status = uvc_set_ctrl(impl->first_handle, unit, ctrl, data, len);
+            if(status < 0) throw std::runtime_error(to_string() << "uvc_set_ctrl(...) returned " << libusb_error_name(status));
+        }
 
         device_handle device::claim_subdevice(int subdevice_index)
         {
