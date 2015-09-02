@@ -274,7 +274,7 @@ namespace rsimpl
             }
         };
 
-        struct device_handle::_impl
+        struct device_handle::_impl : public IMFSourceReaderCallback
         {
             std::shared_ptr<device::_impl> parent;
 			int subdevice_index;
@@ -283,6 +283,11 @@ namespace rsimpl
 			com_ptr<IMFSourceReader> pReader;
 			com_ptr<IKsControl> pControl;
 
+			int width, height;
+			frame_format format;
+
+			std::function<void(const void * frame, int width, int height, frame_format format)> callback;
+
             _impl(std::shared_ptr<device::_impl> parent, int subdevice_index) : subdevice_index(subdevice_index)
             {
                 this->parent = parent;
@@ -290,9 +295,9 @@ namespace rsimpl
 				check("IMFActivate::ActivateObject", parent->subdevices[subdevice_index]->ActivateObject(__uuidof(IMFMediaSource), (void **)&pSource));
 
 				com_ptr<IMFAttributes> pAttributes;
-				check("MFCreateAttributes", MFCreateAttributes(&pAttributes, 0));
+				check("MFCreateAttributes", MFCreateAttributes(&pAttributes, 1));
 				// hr = pAttributes->SetUINT32(MF_READWRITE_DISABLE_CONVERTERS, TRUE);
-				// hr = pAttributes->SetUnknown(MF_SOURCE_READER_ASYNC_CALLBACK, this);			
+				check("IMFAttributes::SetUnknown", pAttributes->SetUnknown(MF_SOURCE_READER_ASYNC_CALLBACK, static_cast<IUnknown *>(this))); // TODO: Fix
 				check("MFCreateSourceReaderFromMediaSource", MFCreateSourceReaderFromMediaSource(pSource, pAttributes, &pReader));
             }
 
@@ -320,6 +325,48 @@ namespace rsimpl
 
 			    if (!pControl) throw std::runtime_error("unable to obtain control node");
 			}
+
+			// Implement IUnknown
+			HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, void ** ppvObject) override 
+			{
+				if(!ppvObject) return E_POINTER;
+				if(riid == __uuidof(IMFSourceReaderCallback))
+				{
+					*ppvObject = static_cast<IMFSourceReaderCallback *>(this);
+					return S_OK;
+				}
+				if(riid == __uuidof(IUnknown))
+				{
+					*ppvObject = static_cast<IUnknown *>(this);
+					return S_OK;
+				}
+				*ppvObject = nullptr;
+				return E_NOINTERFACE;
+			}
+			ULONG STDMETHODCALLTYPE AddRef() override { return 10; }
+			ULONG STDMETHODCALLTYPE Release() override { return 10; }
+
+			// Implement IMFSourceReaderCallback
+			HRESULT STDMETHODCALLTYPE OnReadSample(HRESULT hrStatus, DWORD dwStreamIndex, DWORD dwStreamFlags, LONGLONG llTimestamp, IMFSample *pSample) override 
+			{ 
+				if(pSample)
+				{
+					com_ptr<IMFMediaBuffer> pBuffer = NULL;
+					if(SUCCEEDED(pSample->GetBufferByIndex(0, &pBuffer)))
+					{
+						BYTE * byte_buffer; DWORD max_length, current_length;
+						if(SUCCEEDED(pBuffer->Lock(&byte_buffer, &max_length, &current_length)))
+						{
+							 callback(byte_buffer, width, height, format);
+						}
+					}
+				}
+
+				HRESULT hr = pReader->ReadSample(MF_SOURCE_READER_FIRST_VIDEO_STREAM, 0, NULL, NULL, NULL, NULL);
+				return S_OK; 
+			}
+			HRESULT STDMETHODCALLTYPE OnFlush(DWORD dwStreamIndex) override { return S_OK; }
+			HRESULT STDMETHODCALLTYPE OnEvent(DWORD dwStreamIndex, IMFMediaEvent *pEvent) override { return S_OK; }
         };
 
         ///////////////////
@@ -360,6 +407,9 @@ namespace rsimpl
 				if(std::abs(fps - uvc_fps) > 1) continue;
 
 				check("IMFSourceReader::SetCurrentMediaType", impl->pReader->SetCurrentMediaType((DWORD)MF_SOURCE_READER_FIRST_VIDEO_STREAM, NULL, pType));
+				impl->width = width;
+				impl->height = height;
+				impl->format = cf;
 				std::cout << "Selected mode " << uvc_width << "x" << uvc_height << ":" << std::string((const char *)&subtype.Data1, ((const char *)&subtype.Data1)+4) << "@" << uvc_fps << " for stream" << std::endl;
 				return;
 			}
@@ -368,9 +418,8 @@ namespace rsimpl
 
         void device_handle::start_streaming(std::function<void(const void * frame, int width, int height, frame_format format)> callback)
         {
-			// pSource->Start(...);
-			// pReader->ReadSample(...);
-			throw std::runtime_error("device_handle::start_streaming(...) not implemented");
+			impl->callback = callback;
+			check("IMFSourceReader::ReadSample", impl->pReader->ReadSample(MF_SOURCE_READER_FIRST_VIDEO_STREAM, 0, NULL, NULL, NULL, NULL));
         }
 
         void device_handle::stop_streaming()
