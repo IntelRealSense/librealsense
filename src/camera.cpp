@@ -82,16 +82,7 @@ void rs_camera::configure_enabled_streams()
     // If we have not yet retrieved calibration info and at least one subdevice is open, do so
     if(calib.intrinsics.empty() && first_handle)
     {
-		for(auto & subdevice_mode : camera_info.subdevice_modes)
-		{
-			for(auto & stream_mode : subdevice_mode.streams)
-			{
-				if(stream_mode.intrinsics_index >= calib.intrinsics.size()) calib.intrinsics.resize(stream_mode.intrinsics_index+1);
-				calib.intrinsics[stream_mode.intrinsics_index] = {{stream_mode.width, stream_mode.height}};
-			}
-		}
-
-        //calib = retrieve_calibration();
+        calib = retrieve_calibration();
     }
 }
 

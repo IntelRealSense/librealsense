@@ -186,6 +186,16 @@ namespace rsimpl
 {
     namespace uvc
     {
+		static std::string win_to_utf(const WCHAR * s)
+		{
+			int len = WideCharToMultiByte(CP_UTF8, 0, s, -1, nullptr, 0, NULL, NULL);
+			if(len == 0) throw std::runtime_error(to_string() << "WideCharToMultiByte(...) returned 0 and GetLastError() is " << GetLastError());
+			std::string buffer(len-1, ' ');
+			len = WideCharToMultiByte(CP_UTF8, 0, s, -1, &buffer[0], buffer.size()+1, NULL, NULL);
+			if(len == 0) throw std::runtime_error(to_string() << "WideCharToMultiByte(...) returned 0 and GetLastError() is " << GetLastError());
+			return buffer;
+		}
+
 		static void check(const char * call, HRESULT hr)
 		{
 			if(FAILED(hr)) throw std::runtime_error(to_string() << call << "(...) returned 0x" << std::hex << (uint32_t)hr);
@@ -267,12 +277,13 @@ namespace rsimpl
         struct device_handle::_impl
         {
             std::shared_ptr<device::_impl> parent;
+			int subdevice_index;
 
 			com_ptr<IMFMediaSource> pSource;
 			com_ptr<IMFSourceReader> pReader;
 			com_ptr<IKsControl> pControl;
 
-            _impl(std::shared_ptr<device::_impl> parent, int subdevice_index)
+            _impl(std::shared_ptr<device::_impl> parent, int subdevice_index) : subdevice_index(subdevice_index)
             {
                 this->parent = parent;
 
@@ -283,71 +294,31 @@ namespace rsimpl
 				// hr = pAttributes->SetUINT32(MF_READWRITE_DISABLE_CONVERTERS, TRUE);
 				// hr = pAttributes->SetUnknown(MF_SOURCE_READER_ASYNC_CALLBACK, this);			
 				check("MFCreateSourceReaderFromMediaSource", MFCreateSourceReaderFromMediaSource(pSource, pAttributes, &pReader));
-
-				/*for (DWORD j = 0; ; j++)
-				{
-					com_ptr<IMFMediaType> pType;
-					HRESULT hr = pReader->GetNativeMediaType((DWORD)MF_SOURCE_READER_FIRST_VIDEO_STREAM, j, &pType);
-					if (hr == MF_E_NO_MORE_TYPES) break;
-					check("IMFSourceReader::GetNativeMediaType", hr);
-
-					UINT32 uvc_width, uvc_height, uvc_fps_num, uvc_fps_denom; GUID subtype;
-					check("MFGetAttributeSize", MFGetAttributeSize(pType, MF_MT_FRAME_SIZE, &uvc_width, &uvc_height));
-					check("IMFMediaType::GetGUID", pType->GetGUID(MF_MT_SUBTYPE, &subtype));
-					check("MFGetAttributeRatio", MFGetAttributeRatio(pType, MF_MT_FRAME_RATE, &uvc_fps_num, &uvc_fps_denom));
-
-					std::cout << "    Media type " << j << " is " << uvc_width << " x " << uvc_height << " : ";
-					switch(subtype.Data1)
-					{
-					case FCC('Y8  '): std::cout << "R200 Left Y8"; break;
-					case FCC('Y16 '): std::cout << "R200 Left Y16"; break;
-					case FCC('Y8I '): std::cout << "R200 Left Y8 + Right Y8"; break;
-					case FCC('Y12I'): std::cout << "R200 Left Y12 + Right Y12"; break;
-					case FCC('Y16I'): std::cout << "R200 Left Y16 + Right Y16"; break;
-					case FCC('Z16 '): std::cout << "R200 Depth Z16"; break;
-					case FCC('INVI'): std::cout << "F200 Infrared Y8"; break;
-					case FCC('INVR'): std::cout << "F200 Depth Z16"; break;
-					case FCC('INRI'): std::cout << "F200 Depth Z16 + Infrared Y8"; break;
-					case FCC('YUY2'): std::cout << "Color YUY2"; break;
-					default: std::cout << "Unknown"; break;
-					}
-					std::cout << " @ " << uvc_fps_num << "/" << uvc_fps_denom << std::endl;
-				}*/
             }
 
 			void obtain_control_node()
 			{
 				if(pControl) return;
-				com_ptr<IKsTopologyInfo> pTopologyInfo;
-				check("IUnknown::QueryInterface", pSource->QueryInterface(__uuidof(IKsTopologyInfo), (void **)&pTopologyInfo));
-        
-				// Begin: debug output
-				DWORD num_nodes = 0;
-				check("IKsTopologyInfo::get_NumNodes", pTopologyInfo->get_NumNodes(&num_nodes));
-				std::cout << "num_nodes = " << num_nodes << std::endl;
+				
+				IKsTopologyInfo * pKsTopologyInfo = NULL;
+				check("QueryInterface", pSource->QueryInterface(__uuidof(pKsTopologyInfo), (void **)&pKsTopologyInfo));
 
-				for(int i=0; i<3; ++i)
+				DWORD dwNumNodes = 0;
+				check("get_numNodes", pKsTopologyInfo->get_NumNodes(&dwNumNodes));
+
+				const GUID KSNODETYPE_DEV_SPECIFIC_LOCAL{0x941C7AC0L, 0xC559, 0x11D0, {0x8A, 0x2B, 0x00, 0xA0, 0xC9, 0x25, 0x5A, 0xC1}};
+
+				GUID guidNodeType;
+				check("get_nodeType", pKsTopologyInfo->get_NodeType(XUNODEID, &guidNodeType));
+
+				if (guidNodeType == KSNODETYPE_DEV_SPECIFIC_LOCAL)
 				{
-					GUID node_type;
-					check("IKsTopologyInfo::get_NodeType", pTopologyInfo->get_NodeType(i, &node_type));
-					std::cout << "node " << i << " type = ";
-					if(node_type == KSNODETYPE_DEV_SPECIFIC) std::cout << "KSNODETYPE_DEV_SPECIFIC";
-					if(node_type == KSNODETYPE_VIDEO_CAMERA_TERMINAL) std::cout << "KSNODETYPE_VIDEO_CAMERA_TERMINAL";
-					if(node_type == KSNODETYPE_VIDEO_INPUT_MTT) std::cout << "KSNODETYPE_VIDEO_INPUT_MTT";
-					if(node_type == KSNODETYPE_VIDEO_INPUT_TERMINAL) std::cout << "KSNODETYPE_VIDEO_INPUT_TERMINAL";
-					if(node_type == KSNODETYPE_VIDEO_OUTPUT_MTT) std::cout << "KSNODETYPE_VIDEO_OUTPUT_MTT";
-					if(node_type == KSNODETYPE_VIDEO_OUTPUT_TERMINAL) std::cout << "KSNODETYPE_VIDEO_OUTPUT_TERMINAL";
-					if(node_type == KSNODETYPE_VIDEO_PROCESSING) std::cout << "KSNODETYPE_VIDEO_PROCESSING";
-					if(node_type == KSNODETYPE_VIDEO_SELECTOR) std::cout << "KSNODETYPE_VIDEO_SELECTOR";
-					if(node_type == KSNODETYPE_VIDEO_STREAMING) std::cout << "KSNODETYPE_VIDEO_STREAMING";
-					std::cout << std::endl;
+					com_ptr<IUnknown> pUnknown;
+					check("CreateNodeInstance", pKsTopologyInfo->CreateNodeInstance(XUNODEID, IID_IUnknown, (LPVOID *)&pUnknown));
+					check("QueryInterface", pUnknown->QueryInterface(__uuidof(IKsControl), (void **)&pControl));
 				}
-				// End: debug output
 
-				com_ptr<IUnknown> pUnknown;
-				check("IKsTopologyInfo::CreateNodeInstance", pTopologyInfo->CreateNodeInstance(XUNODEID, IID_IUnknown, (LPVOID *)&pUnknown));
-                check("IUnknown::QueryInterface", pUnknown->QueryInterface(__uuidof(IKsControl), (void **)&pControl));
-				std::cout << "Successfully opened KsControl" << std::endl;
+			    if (!pControl) throw std::runtime_error("unable to obtain control node");
 			}
         };
 
@@ -407,16 +378,14 @@ namespace rsimpl
 			throw std::runtime_error("device_handle::stop_streaming(...) not implemented");
         }
 
-		const GUID GUID_EXTENSION_UNIT_DESCRIPTOR = {0x18682d34, 0xdd2c, 0x4073, {0xad, 0x23, 0x72, 0x14, 0x73, 0x9a, 0x07, 0x4c}};
-
         void device_handle::get_ctrl(uint8_t unit, uint8_t ctrl, void *data, int len)
         {
 			impl->obtain_control_node();
 
 			KSP_NODE node;
 			memset(&node, 0, sizeof(KSP_NODE));
-			node.Property.Set = GUID_EXTENSION_UNIT_DESCRIPTOR;
-			node.Property.Id = unit;
+			node.Property.Set = {0x18682d34, 0xdd2c, 0x4073, {0xad, 0x23, 0x72, 0x14, 0x73, 0x9a, 0x07, 0x4c}}; // GUID_EXTENSION_UNIT_DESCRIPTOR
+			node.Property.Id = ctrl;
 			node.Property.Flags = KSPROPERTY_TYPE_GET | KSPROPERTY_TYPE_TOPOLOGY;
 			node.NodeId = XUNODEID;
 
@@ -428,15 +397,15 @@ namespace rsimpl
         void device_handle::set_ctrl(uint8_t unit, uint8_t ctrl, void *data, int len)
         {
 			impl->obtain_control_node();
-
-			KSP_NODE node;
-			memset(&node, 0, sizeof(KSP_NODE));
-			node.Property.Set = GUID_EXTENSION_UNIT_DESCRIPTOR;
-			node.Property.Id = unit;
-			node.Property.Flags = KSPROPERTY_TYPE_SET | KSPROPERTY_TYPE_TOPOLOGY;
-			node.NodeId = XUNODEID;
-
-        	check("IKsControl::KsProperty", impl->pControl->KsProperty((PKSPROPERTY)&node, sizeof(node), data, len, nullptr));
+				
+			KSP_NODE kspNode;
+			memset(&kspNode, 0, sizeof(KSP_NODE));
+			kspNode.Property.Set = {0x18682d34, 0xdd2c, 0x4073, {0xad, 0x23, 0x72, 0x14, 0x73, 0x9a, 0x07, 0x4c}}; // GUID_EXTENSION_UNIT_DESCRIPTOR
+			kspNode.Property.Id = ctrl;
+			kspNode.Property.Flags = KSPROPERTY_TYPE_SET | KSPROPERTY_TYPE_TOPOLOGY;
+			kspNode.NodeId = XUNODEID;
+				
+			check("IKsControl::KsProperty", impl->pControl->KsProperty((PKSPROPERTY)&kspNode, sizeof(KSP_NODE), data, len, NULL));
         }
 
         void device_handle::claim_interface(int interface_number)
@@ -470,16 +439,6 @@ namespace rsimpl
         {
             return {std::make_shared<context::_impl>()};
         }
-
-		std::string win_to_utf(const WCHAR * s)
-		{
-			int len = WideCharToMultiByte(CP_UTF8, 0, s, -1, nullptr, 0, NULL, NULL);
-			if(len == 0) throw std::runtime_error(to_string() << "WideCharToMultiByte(...) returned 0 and GetLastError() is " << GetLastError());
-			std::string buffer(len-1, ' ');
-			len = WideCharToMultiByte(CP_UTF8, 0, s, -1, &buffer[0], buffer.size()+1, NULL, NULL);
-			if(len == 0) throw std::runtime_error(to_string() << "WideCharToMultiByte(...) returned 0 and GetLastError() is " << GetLastError());
-			return buffer;
-		}
 
 		std::vector<std::string> tokenize(std::string string, char separator)
 		{
@@ -557,53 +516,7 @@ namespace rsimpl
 				}
 				std::string unique_id = ids[1];
 
-				if(mi != 0) continue;
-
-				std::cout << "Trying " << name << std::endl;
-
-				IMFMediaSource * pSource = NULL;
-				check("ActivateObject", ppDevices[i]->ActivateObject(__uuidof(IMFMediaSource), (void **)&pSource));
-
-				IKsTopologyInfo * pKsTopologyInfo = NULL;
-				IKsControl * pKsControl = NULL;
-				check("QueryInterface", pSource->QueryInterface(__uuidof(pKsTopologyInfo), (void **)&pKsTopologyInfo));
-
-				DWORD dwNumNodes = 0;
-				check("get_numNodes", pKsTopologyInfo->get_NumNodes(&dwNumNodes));
-
-				const GUID KSNODETYPE_DEV_SPECIFIC_LOCAL{0x941C7AC0L, 0xC559, 0x11D0, {0x8A, 0x2B, 0x00, 0xA0, 0xC9, 0x25, 0x5A, 0xC1}};
-
-				GUID guidNodeType;
-				check("get_nodeType", pKsTopologyInfo->get_NodeType(XUNODEID, &guidNodeType));
-
-				if (guidNodeType == KSNODETYPE_DEV_SPECIFIC_LOCAL)
-				{
-					IUnknown * pUnknown = NULL;
-					check("CreateNodeInstance", pKsTopologyInfo->CreateNodeInstance(XUNODEID, IID_IUnknown, (LPVOID *)&pUnknown));
-					check("QueryInterface", pUnknown->QueryInterface(__uuidof(pKsControl), (void **)&pKsControl));
-					pUnknown->Release();
-				}
-
-			    if (!pKsControl) throw std::runtime_error("Camera is not found");
-
-				// Set stream intent
-				
-				unsigned long XUControlNumber = 3; //CONTROL_STREAM_INTENT;
-				uint8_t streamIntent = 7;
-				
-				KSP_NODE kspNode;
-				memset(&kspNode, 0, sizeof(KSP_NODE));
-				kspNode.Property.Set = {0x18682d34, 0xdd2c, 0x4073, {0xad, 0x23, 0x72, 0x14, 0x73, 0x9a, 0x07, 0x4c}}; // GUID_EXTENSION_UNIT_DESCRIPTOR
-				kspNode.Property.Id = XUControlNumber;
-				kspNode.Property.Flags = KSPROPERTY_TYPE_SET | KSPROPERTY_TYPE_TOPOLOGY;
-				kspNode.NodeId = XUNODEID;
-				
-				ULONG ulBytesReturned = 0;
-				check("KsProperty", pKsControl->KsProperty((PKSPROPERTY)&kspNode, sizeof(KSP_NODE), &streamIntent, sizeof(streamIntent), &ulBytesReturned));
-				std::cout << "It worked!" << std::endl;
-
-
-				/*device dev;
+				device dev;
 				for(auto & d : devices)
 				{
 					if(d.impl->vid == vid && d.impl->pid == pid && d.impl->unique_id == unique_id)
@@ -622,7 +535,7 @@ namespace rsimpl
 
 				int subdevice_index = mi/2;
 				if(subdevice_index >= dev.impl->subdevices.size()) dev.impl->subdevices.resize(subdevice_index+1);
-				dev.impl->subdevices[subdevice_index] = pDevice;*/
+				dev.impl->subdevices[subdevice_index] = pDevice;
 			}
 			CoTaskMemFree(ppDevices);
 			return devices;
