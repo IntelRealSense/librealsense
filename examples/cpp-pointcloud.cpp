@@ -31,14 +31,14 @@ int main(int argc, char * argv[]) try
         cam.enable_stream_preset(RS_STREAM_DEPTH, RS_PRESET_BEST_QUALITY);
         cam.enable_stream_preset(RS_STREAM_COLOR, RS_PRESET_BEST_QUALITY);
         cam.enable_stream_preset(RS_STREAM_INFRARED, RS_PRESET_BEST_QUALITY);
-		try { cam.enable_stream_preset(RS_STREAM_INFRARED_2, RS_PRESET_BEST_QUALITY); } catch(...) {}
+        try { cam.enable_stream_preset(RS_STREAM_INFRARED_2, RS_PRESET_BEST_QUALITY); } catch(...) {}
         cam.start_capture();
     }
     if (!cam) throw std::runtime_error("No camera detected. Is it plugged in?");
         
     state app_state = {0, 0, 0, 0, false, {RS_STREAM_COLOR, RS_STREAM_INFRARED}, 0, &cam};
-	if(cam.is_stream_enabled(RS_STREAM_INFRARED_2)) app_state.tex_streams.push_back(RS_STREAM_INFRARED_2);
-	
+    if(cam.is_stream_enabled(RS_STREAM_INFRARED_2)) app_state.tex_streams.push_back(RS_STREAM_INFRARED_2);
+    
     glfwInit();
     std::ostringstream ss; ss << "CPP Point Cloud Example (" << cam.get_name() << ")";
     GLFWwindow * win = glfwCreateWindow(640, 480, ss.str().c_str(), 0, 0);
@@ -106,7 +106,7 @@ int main(int argc, char * argv[]) try
     while (!glfwWindowShouldClose(win))
     {
         glfwPollEvents();
-		if(cam.is_capturing()) cam.wait_all_streams();
+        if(cam.is_capturing()) cam.wait_all_streams();
 
         auto t1 = std::chrono::high_resolution_clock::now();
         time += std::chrono::duration<float>(t1-t0).count();
@@ -120,13 +120,13 @@ int main(int argc, char * argv[]) try
         }
 
         const rs::stream tex_stream = app_state.tex_streams[app_state.index];
-		const float depth_scale = cam.get_depth_scale();
-		const rs::intrinsics depth_intrin = cam.get_stream_intrinsics(RS_STREAM_DEPTH);
+        const float depth_scale = cam.get_depth_scale();
+        const rs::intrinsics depth_intrin = cam.get_stream_intrinsics(RS_STREAM_DEPTH);
         const rs::intrinsics tex_intrin = cam.get_stream_intrinsics(tex_stream);
         const rs::extrinsics extrin = cam.get_stream_extrinsics(RS_STREAM_DEPTH, tex_stream);
-		bool identical = memcmp(&depth_intrin, &tex_intrin, sizeof(rs::intrinsics)) == 0
-			&& extrin.rotation[0] == 1 && extrin.rotation[4] == 1 && extrin.rotation[8] == 1
-			&& extrin.translation[0] == 0 && extrin.translation[1] == 0 && extrin.translation[2] == 0;
+        bool identical = memcmp(&depth_intrin, &tex_intrin, sizeof(rs::intrinsics)) == 0
+            && extrin.rotation[0] == 1 && extrin.rotation[4] == 1 && extrin.rotation[8] == 1
+            && extrin.translation[0] == 0 && extrin.translation[1] == 0 && extrin.translation[2] == 0;
 
         int width, height;
         glfwGetFramebufferSize(win, &width, &height);
@@ -191,11 +191,11 @@ int main(int argc, char * argv[]) try
         glPushAttrib(GL_ALL_ATTRIB_BITS);
         glPushMatrix();
         glOrtho(0, width, height, 0, -1, +1);
-		
-		std::ostringstream ss; ss << cam.get_name() << " (" << app_state.tex_streams[app_state.index] << ")";
+        
+        std::ostringstream ss; ss << cam.get_name() << " (" << app_state.tex_streams[app_state.index] << ")";
         ttf_print(&font, (width-ttf_len(&font, ss.str().c_str()))/2, height-20.0f, ss.str().c_str());
 
-		ss.str(""); ss << fps << " FPS";
+        ss.str(""); ss << fps << " FPS";
         ttf_print(&font, 20, 40, ss.str().c_str());
         glPopMatrix();
 

@@ -92,7 +92,7 @@ public:
     rs_extrinsics                                   get_stream_extrinsics(rs_stream from, rs_stream to) const;
     bool                                            supports_option(rs_option option) const { return camera_info.option_supported[option]; }
 
-	virtual const char *                            get_name() const = 0;
+    virtual const char *                            get_name() const = 0;
     virtual rsimpl::calibration_info                retrieve_calibration() = 0;
     virtual void                                    set_stream_intent() = 0;
     virtual void                                    set_option(rs_option option, int value) = 0;

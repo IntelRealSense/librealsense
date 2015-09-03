@@ -31,7 +31,7 @@ namespace rsimpl
             int get_vendor_id() const;
             int get_product_id() const;
 
-			void get_control(uint8_t unit, uint8_t ctrl, void * data, int len);
+            void get_control(uint8_t unit, uint8_t ctrl, void * data, int len);
             void set_control(uint8_t unit, uint8_t ctrl, void * data, int len);
 
             device_handle claim_subdevice(int subdevice_index);
