@@ -1,5 +1,7 @@
 #include "r200-private.h"
 
+#include <cstring>
+
 #define CAMERA_XU_UNIT_ID                           2
 
 #define STATUS_BIT_BOOT_DIAGNOSTIC_FAULT            (1 << 3)

@@ -1,6 +1,8 @@
 #include "r200.h"
 #include "r200-private.h"
 
+#include <cstring>
+
 namespace rsimpl
 {
     int decode_dinghy_frame_number(const subdevice_mode & mode, const void * frame)

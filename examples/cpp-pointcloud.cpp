@@ -36,7 +36,7 @@ int main(int argc, char * argv[]) try
     }
     if (!cam) throw std::runtime_error("No camera detected. Is it plugged in?");
         
-	state app_state = {0, 0, 0, 0, false, {RS_STREAM_COLOR, RS_STREAM_INFRARED}, 0, &cam};
+    state app_state = {0, 0, 0, 0, false, {RS_STREAM_COLOR, RS_STREAM_INFRARED}, 0, &cam};
 	if(cam.is_stream_enabled(RS_STREAM_INFRARED_2)) app_state.tex_streams.push_back(RS_STREAM_INFRARED_2);
 	
     glfwInit();
