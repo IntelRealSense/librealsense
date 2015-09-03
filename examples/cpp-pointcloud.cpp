@@ -18,7 +18,7 @@ FILE * find_file(std::string path, int levels)
     return nullptr;
 }
 
-struct state { float yaw, pitch; double lastX, lastY; bool ml; std::vector<rs_stream> tex_streams; int index; rs::camera * cam; };
+struct state { double yaw, pitch, lastX, lastY; bool ml; std::vector<rs_stream> tex_streams; int index; rs::camera * cam; };
 int main(int argc, char * argv[]) try
 {
     rs::camera cam;
@@ -57,11 +57,11 @@ int main(int argc, char * argv[]) try
         if(s->ml)
         {
             s->yaw -= (x - s->lastX);
-            s->yaw = std::max(s->yaw, -120.0f);
-            s->yaw = std::min(s->yaw, +120.0f);
+            s->yaw = std::max(s->yaw, -120.0);
+            s->yaw = std::min(s->yaw, +120.0);
             s->pitch += (y - s->lastY);
-            s->pitch = std::max(s->pitch, -80.0f);
-            s->pitch = std::min(s->pitch, +80.0f);
+            s->pitch = std::max(s->pitch, -80.0);
+            s->pitch = std::min(s->pitch, +80.0);
         }
         s->lastX = x;
         s->lastY = y;
@@ -130,32 +130,34 @@ int main(int argc, char * argv[]) try
 
         int width, height;
         glfwGetFramebufferSize(win, &width, &height);
-
-        glViewport(0, 0, width, height);
-        glClearColor(52.f / 255.f, 72.f / 255.0f, 94.f / 255.0f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        
+       
         glPushAttrib(GL_ALL_ATTRIB_BITS);
+
         glBindTexture(GL_TEXTURE_2D, tex);
         glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, tex_intrin.image_size[0], tex_intrin.image_size[1], 0,
                      tex_stream == RS_STREAM_COLOR ? GL_RGB : GL_LUMINANCE, GL_UNSIGNED_BYTE, cam.get_image_pixels(tex_stream));
+
+        glViewport(0, 0, width, height);
+        glClearColor(52.0f/255, 72.f/255, 94.0f/255.0f, 1);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
         glMatrixMode(GL_PROJECTION);
         glPushMatrix();
         gluPerspective(60, (float)width/height, 0.01f, 20.0f);
+
         glMatrixMode(GL_MODELVIEW);
         glPushMatrix();
         gluLookAt(0,0,0, 0,0,1, 0,-1,0);
-        glTranslatef(0,0,+0.5f);
 
-        glRotatef(app_state.pitch, 1, 0, 0);
-        glRotatef(app_state.yaw, 0, 1, 0);
+        glTranslatef(0,0,+0.5f);
+        glRotated(app_state.pitch, 1, 0, 0);
+        glRotated(app_state.yaw, 0, 1, 0);
         glTranslatef(0,0,-0.5f);
 
+        glPointSize((float)width/640);
         glEnable(GL_DEPTH_TEST);
         glEnable(GL_TEXTURE_2D);
-
-        glPointSize((float)width/640);
         glBegin(GL_POINTS);
         auto depth = reinterpret_cast<const uint16_t *>(cam.get_image_pixels(RS_STREAM_DEPTH));
         
