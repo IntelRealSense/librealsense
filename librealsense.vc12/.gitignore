@@ -4,3 +4,4 @@ packages/
 *.opensdf
 *.sdf
 *.suo
+*.user

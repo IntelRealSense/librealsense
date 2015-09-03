@@ -94,6 +94,7 @@ public:
 
     virtual const char *                            get_name() const = 0;
     virtual rsimpl::calibration_info                retrieve_calibration() = 0;
+    virtual void                                    enforce_interstream_constraints() {}
     virtual void                                    set_stream_intent() = 0;
     virtual void                                    set_option(rs_option option, int value) = 0;
     virtual int                                     get_option(rs_option option) = 0;

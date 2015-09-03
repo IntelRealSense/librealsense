@@ -135,8 +135,12 @@ int main(int argc, char * argv[]) try
 
         glBindTexture(GL_TEXTURE_2D, tex);
         glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, tex_intrin.image_size[0], tex_intrin.image_size[1], 0,
-                     tex_stream == RS_STREAM_COLOR ? GL_RGB : GL_LUMINANCE, GL_UNSIGNED_BYTE, cam.get_image_pixels(tex_stream));
+        switch(cam.get_stream_format(tex_stream))
+        {
+        case RS_FORMAT_RGB8: glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, tex_intrin.image_size[0], tex_intrin.image_size[1], 0, GL_RGB, GL_UNSIGNED_BYTE, cam.get_image_pixels(tex_stream)); break;
+        case RS_FORMAT_Y8:   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, tex_intrin.image_size[0], tex_intrin.image_size[1], 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, cam.get_image_pixels(tex_stream)); break;
+        case RS_FORMAT_Y16:  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, tex_intrin.image_size[0], tex_intrin.image_size[1], 0, GL_LUMINANCE, GL_UNSIGNED_SHORT, cam.get_image_pixels(tex_stream)); break;
+        }
 
         glViewport(0, 0, width, height);
         glClearColor(52.0f/255, 72.f/255, 94.0f/255.0f, 1);

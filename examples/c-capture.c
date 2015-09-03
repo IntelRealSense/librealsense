@@ -47,11 +47,14 @@ void draw_stream(struct rs_camera * cam, enum rs_stream stream, int x, int y)
     case RS_FORMAT_Z16:
         draw_depth_histogram((const uint16_t *)pixels, width, height);
         break;
+    case RS_FORMAT_RGB8:
+        glDrawPixels(width, height, GL_RGB, GL_UNSIGNED_BYTE, pixels);
+        break;
     case RS_FORMAT_Y8:
         glDrawPixels(width, height, GL_LUMINANCE, GL_UNSIGNED_BYTE, pixels);
         break;
-    case RS_FORMAT_RGB8:
-        glDrawPixels(width, height, GL_RGB, GL_UNSIGNED_BYTE, pixels);
+    case RS_FORMAT_Y16:
+        glDrawPixels(width, height, GL_LUMINANCE, GL_UNSIGNED_SHORT, pixels);
         break;
     }
 

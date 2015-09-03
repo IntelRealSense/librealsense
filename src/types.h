@@ -24,6 +24,8 @@ namespace rsimpl
     RS_ENUM_HELPERS(rs_option, OPTION)
     #undef RS_ENUM_HELPERS
 
+    size_t get_image_size(int width, int height, rs_format format);
+
     // World's tiniest linear algebra library
     struct float3 { float x,y,z; float & operator [] (int i) { return (&x)[i]; } };
     struct float3x3 { float3 x,y,z; float & operator () (int i, int j) { return (&x)[j][i]; } }; // column-major
@@ -82,7 +84,8 @@ namespace rsimpl
         int (* frame_number_decoder)(const subdevice_mode & mode, const void * frame);
     };
     void unpack_strided_image(void * dest[], const subdevice_mode & mode, const void * frame);
-    void unpack_rly12_to_y8(void * dest[], const subdevice_mode & mode, const void * frame);
+    void unpack_y12i_to_y8(void * dest[], const subdevice_mode & mode, const void * frame);
+    void unpack_y12i_to_y16(void * dest[], const subdevice_mode & mode, const void * frame);
     void unpack_yuyv_to_rgb(void * dest[], const subdevice_mode & mode, const void * frame);
 
     struct static_camera_info

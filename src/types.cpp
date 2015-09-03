@@ -30,11 +30,24 @@ namespace rsimpl
         {
         CASE(ANY)
         CASE(Z16)
-        CASE(Y8)
         CASE(RGB8)
+        CASE(Y8)
+        CASE(Y16)
         default: assert(!is_valid(value)); return nullptr;
         }
         #undef CASE
+    }
+
+    size_t get_image_size(int width, int height, rs_format format)
+    {
+        switch(format)
+        {
+        case RS_FORMAT_Z16: return width * height * sizeof(uint16_t);
+        case RS_FORMAT_RGB8: return width * height * sizeof(uint8_t) * 3;
+        case RS_FORMAT_Y8: return width * height * sizeof(uint8_t);
+        case RS_FORMAT_Y16: return width * height * sizeof(uint8_t) * 2;
+        default: assert(false); return 0;
+        }    
     }
 
     const char * get_string(rs_preset value)
@@ -88,29 +101,24 @@ namespace rsimpl
         default: assert(!is_valid(value)); return nullptr;
         }
         #undef CASE
-    } 
-
-    static size_t get_pixel_size(int format)
-    {
-        switch(format)
-        {
-        case RS_FORMAT_Z16: return sizeof(uint16_t);
-        case RS_FORMAT_Y8: return sizeof(uint8_t);
-        case RS_FORMAT_RGB8: return sizeof(uint8_t) * 3;
-        default: assert(false); return 0;
-        }
     }
 
     void unpack_strided_image(void * dest[], const subdevice_mode & mode, const void * source)
     {
         assert(mode.streams.size() == 1);
-        copy_strided_image(dest[0], mode.streams[0].width * (int) get_pixel_size(mode.streams[0].format), source, mode.width * (int) get_pixel_size(mode.streams[0].format), mode.streams[0].height);
+        copy_strided_image(dest[0], get_image_size(mode.streams[0].width, 1, mode.streams[0].format), source, get_image_size(mode.width, 1, mode.streams[0].format), mode.streams[0].height);
     }
 
-    void unpack_rly12_to_y8(void * dest[], const subdevice_mode & mode, const void * frame)
+    void unpack_y12i_to_y8(void * dest[], const subdevice_mode & mode, const void * frame)
     {
         assert(mode.format == uvc::frame_format::Y12I && mode.streams.size() == 2 && mode.streams[0].format == RS_FORMAT_Y8 && mode.streams[1].format == RS_FORMAT_Y8);
-        convert_rly12_to_y8_y8(dest[0], dest[1], mode.streams[0].width, mode.streams[0].height, frame, 3*mode.width);
+        convert_y12i_to_y8_y8(dest[0], dest[1], mode.streams[0].width, mode.streams[0].height, frame, 3*mode.width);
+    }
+
+    void unpack_y12i_to_y16(void * dest[], const subdevice_mode & mode, const void * frame)
+    {
+        assert(mode.format == uvc::frame_format::Y12I && mode.streams.size() == 2 && mode.streams[0].format == RS_FORMAT_Y16 && mode.streams[1].format == RS_FORMAT_Y16);
+        convert_y12i_to_y16_y16(dest[0], dest[1], mode.streams[0].width, mode.streams[0].height, frame, 3*mode.width);
     }
 
     void unpack_yuyv_to_rgb(void * dest[], const subdevice_mode & mode, const void * source)
@@ -154,7 +162,10 @@ namespace rsimpl
             for(auto & stream_mode : subdevice_mode.streams)
             {
                 const auto & req = requests[stream_mode.stream];
-                if(req.enabled && req.width == stream_mode.width && req.height == stream_mode.height && req.format == stream_mode.format && req.fps == stream_mode.fps)
+                if(req.enabled && (req.width == 0 || req.width == stream_mode.width) 
+                               && (req.height == 0 || req.height == stream_mode.height)
+                               && (req.format == RS_FORMAT_ANY || req.format == stream_mode.format)
+                               && (req.fps == 0 || req.fps == stream_mode.fps))
                 {
                     stream_unsatisfied[stream_mode.stream] = false;
                 }

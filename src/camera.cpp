@@ -48,6 +48,8 @@ void rs_camera::configure_enabled_streams()
     // Creating a subdevice_handle will reach out to the hardware and open the handle
     if (!first_handle)
     {
+        enforce_interstream_constraints();
+
         // Satisfy stream_requests as necessary for each subdevice, calling set_mode and
         // dispatching the uvc configuration for a requested stream to the hardware
         for(int i = 0; i < subdevices.size(); ++i)
@@ -147,13 +149,7 @@ rs_extrinsics rs_camera::get_stream_extrinsics(rs_stream from, rs_stream to) con
 void rs_camera::stream_buffer::set_mode(const stream_mode & mode)
 {
     this->mode = mode;
-    switch(mode.format)
-    {
-    case RS_FORMAT_Z16: front.pixels.resize(mode.width * mode.height * sizeof(uint16_t)); break;
-    case RS_FORMAT_RGB8: front.pixels.resize(mode.width * mode.height * 3); break;
-    case RS_FORMAT_Y8: front.pixels.resize(mode.width * mode.height); break;
-    default: throw std::runtime_error("invalid format");
-    }
+    front.pixels.resize(get_image_size(mode.width, mode.height, mode.format));
     front.number = 0;
     back = middle = front;
     updated = false;

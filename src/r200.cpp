@@ -46,10 +46,14 @@ namespace rsimpl
             info.stream_subdevices[RS_STREAM_INFRARED_2] = 0;
             info.subdevice_modes.push_back({0,  640, 481, uvc::frame_format::Y8,   uvcFps, {{RS_STREAM_INFRARED,   640,  480, RS_FORMAT_Y8, fps, LR_FULL}}, &unpack_strided_image, &decode_dinghy_frame_number});
             info.subdevice_modes.push_back({0,  640, 481, uvc::frame_format::Y12I, uvcFps, {{RS_STREAM_INFRARED,   640,  480, RS_FORMAT_Y8, fps, LR_FULL},
-                                                                                            {RS_STREAM_INFRARED_2, 640,  480, RS_FORMAT_Y8, fps, LR_FULL}}, &unpack_rly12_to_y8, &decode_dinghy_frame_number});
+                                                                                            {RS_STREAM_INFRARED_2, 640,  480, RS_FORMAT_Y8, fps, LR_FULL}}, &unpack_y12i_to_y8, &decode_dinghy_frame_number});
+            info.subdevice_modes.push_back({0,  640, 481, uvc::frame_format::Y12I, uvcFps, {{RS_STREAM_INFRARED,   640,  480, RS_FORMAT_Y16, fps, LR_FULL},
+                                                                                            {RS_STREAM_INFRARED_2, 640,  480, RS_FORMAT_Y16, fps, LR_FULL}}, &unpack_y12i_to_y16, &decode_dinghy_frame_number});
             info.subdevice_modes.push_back({0,  640, 373, uvc::frame_format::Y8,   uvcFps, {{RS_STREAM_INFRARED,   492,  372, RS_FORMAT_Y8, fps, LR_BIG }}, &unpack_strided_image, &decode_dinghy_frame_number});
             info.subdevice_modes.push_back({0,  640, 373, uvc::frame_format::Y12I, uvcFps, {{RS_STREAM_INFRARED,   492,  372, RS_FORMAT_Y8, fps, LR_BIG },
-                                                                                            {RS_STREAM_INFRARED_2, 492,  372, RS_FORMAT_Y8, fps, LR_BIG }}, &unpack_rly12_to_y8, &decode_dinghy_frame_number});
+                                                                                            {RS_STREAM_INFRARED_2, 492,  372, RS_FORMAT_Y8, fps, LR_BIG }}, &unpack_y12i_to_y8, &decode_dinghy_frame_number});
+            info.subdevice_modes.push_back({0,  640, 373, uvc::frame_format::Y12I, uvcFps, {{RS_STREAM_INFRARED,   492,  372, RS_FORMAT_Y16, fps, LR_BIG },
+                                                                                            {RS_STREAM_INFRARED_2, 492,  372, RS_FORMAT_Y16, fps, LR_BIG }}, &unpack_y12i_to_y16, &decode_dinghy_frame_number});
 
             info.stream_subdevices[RS_STREAM_DEPTH] = 1;
             info.subdevice_modes.push_back({1,  628, 469, uvc::frame_format::Z16,  uvcFps, {{RS_STREAM_DEPTH,      628,  468, RS_FORMAT_Z16, fps, Z_FULL}}, &unpack_strided_image, &decode_dinghy_frame_number});
@@ -127,6 +131,33 @@ namespace rsimpl
         c.stream_poses[RS_STREAM_COLOR].position = c.stream_poses[RS_STREAM_COLOR].orientation * c.stream_poses[RS_STREAM_COLOR].position;
         c.depth_scale = 0.001f;
         return c;
+    }
+
+    template<class T> static void enforce_lr_field(stream_request (& requests)[RS_STREAM_NUM], T (stream_request::* field), const char *name, const T & value)
+    {
+        for(auto s : {RS_STREAM_INFRARED, RS_STREAM_INFRARED_2})
+        {
+            if(requests[s].enabled)
+            {
+                if(requests[s].*field && requests[s].*field != value)
+                {
+                    throw std::runtime_error(to_string() << s << " " << name << " incompatible with " << RS_STREAM_DEPTH << " " << name);
+                }
+                requests[s].*field = value;
+            }
+        }    
+    }
+
+    void r200_camera::enforce_interstream_constraints()
+    {
+        // If depth is enabled, modify left/right requests to match any specified z requests
+        const auto & z = requests[RS_STREAM_DEPTH];
+        if(z.enabled)
+        {
+            if(z.width) enforce_lr_field(requests, &stream_request::width, "width", z.width + 12);
+            if(z.height) enforce_lr_field(requests, &stream_request::height, "height", z.height + 12);
+            if(z.fps) enforce_lr_field(requests, &stream_request::fps, "fps", z.fps);
+        }
     }
 
     void r200_camera::set_stream_intent()

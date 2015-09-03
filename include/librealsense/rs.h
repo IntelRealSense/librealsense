@@ -5,7 +5,7 @@
 extern "C" {
 #endif
     
-#define RS_API_VERSION 1
+#define RS_API_VERSION 2
 
 /* opaque type declarations */
 struct rs_context;
@@ -32,9 +32,10 @@ enum rs_format
 {
     RS_FORMAT_ANY                           = 0,
     RS_FORMAT_Z16                           = 1,
-    RS_FORMAT_Y8                            = 2,
-    RS_FORMAT_RGB8                          = 3,
-    RS_ENUM_RANGE(FORMAT, ANY, RGB8)
+    RS_FORMAT_RGB8                          = 2,
+    RS_FORMAT_Y8                            = 3,
+    RS_FORMAT_Y16                           = 4,
+    RS_ENUM_RANGE(FORMAT, ANY, Y16)
 };
 
 enum rs_preset
