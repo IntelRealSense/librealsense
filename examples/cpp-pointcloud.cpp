@@ -3,6 +3,7 @@
 #include "example.h"
 
 #include <chrono>
+#include <vector>
 #include <sstream>
 #include <iostream>
 #include <algorithm>
@@ -17,7 +18,7 @@ FILE * find_file(std::string path, int levels)
     return nullptr;
 }
 
-struct state { float yaw, pitch; double lastX, lastY; bool ml; rs_stream tex_stream; rs::camera * cam; };
+struct state { float yaw, pitch; double lastX, lastY; bool ml; std::vector<rs_stream> tex_streams; int index; rs::camera * cam; };
 int main(int argc, char * argv[]) try
 {
     rs::camera cam;
@@ -30,12 +31,13 @@ int main(int argc, char * argv[]) try
         cam.enable_stream_preset(RS_STREAM_DEPTH, RS_PRESET_BEST_QUALITY);
         cam.enable_stream_preset(RS_STREAM_COLOR, RS_PRESET_BEST_QUALITY);
         cam.enable_stream_preset(RS_STREAM_INFRARED, RS_PRESET_BEST_QUALITY);
+		try { cam.enable_stream_preset(RS_STREAM_INFRARED_2, RS_PRESET_BEST_QUALITY); } catch(...) {}
         cam.start_capture();
     }
     if (!cam) throw std::runtime_error("No camera detected. Is it plugged in?");
-    const auto depth_intrin = cam.get_stream_intrinsics(RS_STREAM_DEPTH);
         
-	state app_state = {0, 0, 0, 0, false, RS_STREAM_COLOR, &cam};
+	state app_state = {0, 0, 0, 0, false, {RS_STREAM_COLOR, RS_STREAM_INFRARED}, 0, &cam};
+	if(cam.is_stream_enabled(RS_STREAM_INFRARED_2)) app_state.tex_streams.push_back(RS_STREAM_INFRARED_2);
 	
     glfwInit();
     std::ostringstream ss; ss << "CPP Point Cloud Example (" << cam.get_name() << ")";
@@ -46,7 +48,7 @@ int main(int argc, char * argv[]) try
     {
         auto s = (state *)glfwGetWindowUserPointer(win);
         if(button == GLFW_MOUSE_BUTTON_LEFT) s->ml = action == GLFW_PRESS;
-        if(button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_PRESS) s->tex_stream = s->tex_stream == RS_STREAM_COLOR ? RS_STREAM_INFRARED : RS_STREAM_COLOR;
+        if(button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_PRESS) s->index = (s->index+1) % s->tex_streams.size();
     });
         
     glfwSetCursorPosCallback(win, [](GLFWwindow * win, double x, double y)
@@ -104,11 +106,7 @@ int main(int argc, char * argv[]) try
     while (!glfwWindowShouldClose(win))
     {
         glfwPollEvents();
-
-        int width, height;
-        glfwGetFramebufferSize(win, &width, &height);
-
-        cam.wait_all_streams();
+		if(cam.is_capturing()) cam.wait_all_streams();
 
         auto t1 = std::chrono::high_resolution_clock::now();
         time += std::chrono::duration<float>(t1-t0).count();
@@ -121,16 +119,17 @@ int main(int argc, char * argv[]) try
             time = 0;
         }
 
-        if (!cam.is_capturing()) continue;
-        
+		const auto depth_intrin = cam.get_stream_intrinsics(RS_STREAM_DEPTH);
+        const auto tex_stream = app_state.tex_streams[app_state.index];
+        const auto tex_intrin = cam.get_stream_intrinsics(tex_stream);
+        const auto extrin = cam.get_stream_extrinsics(RS_STREAM_DEPTH, tex_stream);
+
+        int width, height;
+        glfwGetFramebufferSize(win, &width, &height);
+
         glViewport(0, 0, width, height);
         glClearColor(52.f / 255.f, 72.f / 255.0f, 94.f / 255.0f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-        auto tex_stream = cam.is_stream_enabled(RS_STREAM_INFRARED) ? app_state.tex_stream : RS_STREAM_COLOR;
-
-        auto tex_intrin = cam.get_stream_intrinsics(tex_stream);
-        auto extrin = cam.get_stream_extrinsics(RS_STREAM_DEPTH, tex_stream);
         
         glPushAttrib(GL_ALL_ATTRIB_BITS);
         glBindTexture(GL_TEXTURE_2D, tex);

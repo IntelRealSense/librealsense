@@ -119,6 +119,7 @@ namespace rsimpl
         c.stream_poses[RS_STREAM_DEPTH] = {{{1,0,0},{0,1,0},{0,0,1}}, {0,0,0}};
         c.stream_poses[RS_STREAM_INFRARED] = c.stream_poses[RS_STREAM_DEPTH];
         c.stream_poses[RS_STREAM_INFRARED_2] = c.stream_poses[RS_STREAM_DEPTH]; // TODO: Figure out the correct translation vector to put here
+		c.stream_poses[RS_STREAM_INFRARED_2].position.x = calib.B[0] * 0.001f;
         for(int i=0; i<3; ++i) for(int j=0; j<3; ++j) c.stream_poses[RS_STREAM_COLOR].orientation(i,j) = calib.Rthird[0][i*3+j];
         for(int i=0; i<3; ++i) c.stream_poses[RS_STREAM_COLOR].position[i] = calib.T[0][i] * 0.001f;
         c.stream_poses[RS_STREAM_COLOR].position = c.stream_poses[RS_STREAM_COLOR].orientation * c.stream_poses[RS_STREAM_COLOR].position;

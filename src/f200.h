@@ -11,9 +11,7 @@ namespace rsimpl
     class f200_camera : public rs_camera
     {
         std::unique_ptr<f200::IVCAMHardwareIO> hardware_io;
-
-    public:
-        
+    public:      
         f200_camera(uvc::device device);
         ~f200_camera();
 
