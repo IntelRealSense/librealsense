@@ -165,14 +165,12 @@ namespace rsimpl
 #include <mfidl.h>			// For MF_DEVSOURCE_*, etc.
 #include <mfreadwrite.h>    // MFCreateSourceReaderFromMediaSource
 #include <mferror.h>
-#include <d3d9.h>
 
 #pragma comment(lib, "Shlwapi.lib")
 #pragma comment(lib, "mf.lib")
 #pragma comment(lib, "mfplat.lib")
 #pragma comment(lib, "mfreadwrite.lib")
 #pragma comment(lib, "mfuuid.lib")
-
 
 #include <uuids.h>
 #include <vidcap.h>

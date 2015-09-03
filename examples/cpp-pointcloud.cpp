@@ -119,10 +119,14 @@ int main(int argc, char * argv[]) try
             time = 0;
         }
 
-		const auto depth_intrin = cam.get_stream_intrinsics(RS_STREAM_DEPTH);
-        const auto tex_stream = app_state.tex_streams[app_state.index];
-        const auto tex_intrin = cam.get_stream_intrinsics(tex_stream);
-        const auto extrin = cam.get_stream_extrinsics(RS_STREAM_DEPTH, tex_stream);
+        const rs::stream tex_stream = app_state.tex_streams[app_state.index];
+		const float depth_scale = cam.get_depth_scale();
+		const rs::intrinsics depth_intrin = cam.get_stream_intrinsics(RS_STREAM_DEPTH);
+        const rs::intrinsics tex_intrin = cam.get_stream_intrinsics(tex_stream);
+        const rs::extrinsics extrin = cam.get_stream_extrinsics(RS_STREAM_DEPTH, tex_stream);
+		bool identical = memcmp(&depth_intrin, &tex_intrin, sizeof(rs::intrinsics)) == 0
+			&& extrin.rotation[0] == 1 && extrin.rotation[4] == 1 && extrin.rotation[8] == 1
+			&& extrin.translation[0] == 0 && extrin.translation[1] == 0 && extrin.translation[2] == 0;
 
         int width, height;
         glfwGetFramebufferSize(win, &width, &height);
@@ -154,7 +158,7 @@ int main(int argc, char * argv[]) try
         glPointSize((float)width/640);
         glBegin(GL_POINTS);
         auto depth = reinterpret_cast<const uint16_t *>(cam.get_image_pixels(RS_STREAM_DEPTH));
-        float scale = cam.get_depth_scale();
+        
         for(int y=0; y<depth_intrin.image_size[1]; ++y)
         {
             for(int x=0; x<depth_intrin.image_size[0]; ++x)
@@ -162,17 +166,13 @@ int main(int argc, char * argv[]) try
                 if(auto d = *depth++)
                 {
                     float depth_pixel[2] = {static_cast<float>(x),static_cast<float>(y)}, depth_point[3], tex_point[3], tex_pixel[2];
-                    rs_deproject_pixel_to_point(depth_point, &depth_intrin, depth_pixel, d*scale);
-                    if(tex_stream == RS_STREAM_INFRARED)
-                    {
-                        // TODO: Should actually do this branch if we determine that depth_intrin == ir_intrin and extrin == identity
-                        glTexCoord2f((x+0.5f)/depth_intrin.image_size[0], (y+0.5f)/depth_intrin.image_size[1]);
-                    }
+                    rs_deproject_pixel_to_point(depth_point, &depth_intrin, depth_pixel, d*depth_scale);
+                    if(identical) glTexCoord2f((x+0.5f)/depth_intrin.image_size[0], (y+0.5f)/depth_intrin.image_size[1]);
                     else
                     {
                         rs_transform_point_to_point(tex_point, &extrin, depth_point);
                         rs_project_point_to_pixel(tex_pixel, &tex_intrin, tex_point);
-                        glTexCoord2f(tex_pixel[0] / tex_intrin.image_size[0], tex_pixel[1] / tex_intrin.image_size[1]);
+                        glTexCoord2f((tex_pixel[0]+0.5f) / tex_intrin.image_size[0], (tex_pixel[1]+0.5f) / tex_intrin.image_size[1]);
                     }
                     glVertex3fv(depth_point);
                 }
@@ -189,8 +189,11 @@ int main(int argc, char * argv[]) try
         glPushAttrib(GL_ALL_ATTRIB_BITS);
         glPushMatrix();
         glOrtho(0, width, height, 0, -1, +1);
-        ttf_print(&font, (width-ttf_len(&font, cam.get_name()))/2, height-20.0f, cam.get_name());
-        std::ostringstream ss; ss << fps << " FPS";
+		
+		std::ostringstream ss; ss << cam.get_name() << " (" << app_state.tex_streams[app_state.index] << ")";
+        ttf_print(&font, (width-ttf_len(&font, ss.str().c_str()))/2, height-20.0f, ss.str().c_str());
+
+		ss.str(""); ss << fps << " FPS";
         ttf_print(&font, 20, 40, ss.str().c_str());
         glPopMatrix();
 
