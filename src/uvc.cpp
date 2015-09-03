@@ -160,12 +160,14 @@ namespace rsimpl
 
 #else
 
+#include <Shlwapi.h>		// For QISearch, etc.
 #include <mfapi.h>			// For MFStartup, etc.
 #include <mfidl.h>			// For MF_DEVSOURCE_*, etc.
 #include <mfreadwrite.h>    // MFCreateSourceReaderFromMediaSource
 #include <mferror.h>
 #include <d3d9.h>
 
+#pragma comment(lib, "Shlwapi.lib")
 #pragma comment(lib, "mf.lib")
 #pragma comment(lib, "mfplat.lib")
 #pragma comment(lib, "mfreadwrite.lib")
@@ -193,7 +195,7 @@ namespace rsimpl
 			int len = WideCharToMultiByte(CP_UTF8, 0, s, -1, nullptr, 0, NULL, NULL);
 			if(len == 0) throw std::runtime_error(to_string() << "WideCharToMultiByte(...) returned 0 and GetLastError() is " << GetLastError());
 			std::string buffer(len-1, ' ');
-			len = WideCharToMultiByte(CP_UTF8, 0, s, -1, &buffer[0], buffer.size()+1, NULL, NULL);
+			len = WideCharToMultiByte(CP_UTF8, 0, s, -1, &buffer[0], (int)buffer.size()+1, NULL, NULL);
 			if(len == 0) throw std::runtime_error(to_string() << "WideCharToMultiByte(...) returned 0 and GetLastError() is " << GetLastError());
 			return buffer;
 		}
@@ -207,7 +209,15 @@ namespace rsimpl
 		{
 			T * p;
 
-			void release()
+			void ref(T * new_p)
+			{
+				if(p == new_p) return;
+				unref();
+				p = new_p;
+				if(p) p->AddRef();
+			}
+
+			void unref()
 			{
 				if(p)
 				{
@@ -217,30 +227,16 @@ namespace rsimpl
 			}
 		public:
 			com_ptr() : p() {}
-			com_ptr(nullptr_t) : p() {}
-			com_ptr(const com_ptr & r) : p() { *this = r; }
-			~com_ptr() { release(); }
+			com_ptr(T * p) : com_ptr() { ref(p); }
+			com_ptr(const com_ptr & r) : com_ptr(r.p) {}
+			~com_ptr() { unref(); }
 
 			operator T * () const { return p; }
 			T & operator * () const { return *p; }
 			T * operator -> () const { return p; }
 
-			com_ptr & operator = (const com_ptr & r)
-			{ 
-				if(this != &r)
-				{
-					release();
-					p = r.p;
-					if(p) p->AddRef();
-				}
-				return *this; 
-			}
-
-			T ** operator & ()
-			{
-				release();
-				return &p;
-			}
+			T ** operator & () { unref(); return &p; }
+			com_ptr & operator = (const com_ptr & r) { ref(r.p); return *this; }			
 		};
 
         struct context::_impl
@@ -263,19 +259,15 @@ namespace rsimpl
 
         struct device::_impl
         {
-            std::shared_ptr<context::_impl> parent;
+            const std::shared_ptr<context::_impl> parent;
+			const int vid, pid;
+			const std::string unique_id;
 
-			int vid, pid;
-			std::string unique_id;
 			std::vector<com_ptr<IMFActivate>> subdevices;
 			std::vector<com_ptr<IMFMediaSource>> sources;
-			com_ptr<IKsControl> pControl;
+			com_ptr<IKsControl> ks_control;
 
-            _impl() : vid(), pid() {}
-            _impl(std::shared_ptr<context::_impl> parent) : _impl()
-            {
-                this->parent = parent;
-            }
+			_impl(std::shared_ptr<context::_impl> parent, int vid, int pid, std::string unique_id) : parent(move(parent)), vid(vid), pid(pid), unique_id(move(unique_id)) {}
 
 			com_ptr<IMFMediaSource> get_media_source(int subdevice_index)
 			{
@@ -285,98 +277,40 @@ namespace rsimpl
 
 			IKsControl * get_control_node()
 			{
-				if(!pControl)
+				if(!ks_control)
 				{		
-					IKsTopologyInfo * pKsTopologyInfo = NULL;
-					check("QueryInterface", get_media_source(0)->QueryInterface(__uuidof(pKsTopologyInfo), (void **)&pKsTopologyInfo));
+					com_ptr<IKsTopologyInfo> ks_topology_info = NULL;
+					check("QueryInterface", get_media_source(0)->QueryInterface(__uuidof(IKsTopologyInfo), (void **)&ks_topology_info));
 
-					DWORD dwNumNodes = 0;
-					check("get_numNodes", pKsTopologyInfo->get_NumNodes(&dwNumNodes));
+					DWORD num_nodes = 0;
+					check("get_numNodes", ks_topology_info->get_NumNodes(&num_nodes));
 
+					GUID node_type;
+					check("get_nodeType", ks_topology_info->get_NodeType(XUNODEID, &node_type));
 					const GUID KSNODETYPE_DEV_SPECIFIC_LOCAL{0x941C7AC0L, 0xC559, 0x11D0, {0x8A, 0x2B, 0x00, 0xA0, 0xC9, 0x25, 0x5A, 0xC1}};
 
-					GUID guidNodeType;
-					check("get_nodeType", pKsTopologyInfo->get_NodeType(XUNODEID, &guidNodeType));
-
-					if (guidNodeType == KSNODETYPE_DEV_SPECIFIC_LOCAL)
+					if (node_type == KSNODETYPE_DEV_SPECIFIC_LOCAL)
 					{
-						com_ptr<IUnknown> pUnknown;
-						check("CreateNodeInstance", pKsTopologyInfo->CreateNodeInstance(XUNODEID, IID_IUnknown, (LPVOID *)&pUnknown));
-						check("QueryInterface", pUnknown->QueryInterface(__uuidof(IKsControl), (void **)&pControl));
+						com_ptr<IUnknown> unknown;
+						check("CreateNodeInstance", ks_topology_info->CreateNodeInstance(XUNODEID, IID_IUnknown, (LPVOID *)&unknown));
+						check("QueryInterface", unknown->QueryInterface(__uuidof(IKsControl), (void **)&ks_control));
 					}
 				}
-				if (!pControl) throw std::runtime_error("unable to obtain control node");
-				return pControl;
+				if (!ks_control) throw std::runtime_error("unable to obtain control node");
+				return ks_control;
 			}
         };
 
-        struct device_handle::_impl : public IMFSourceReaderCallback
+        struct device_handle::_impl
         {
-            std::shared_ptr<device::_impl> parent;
-			int subdevice_index;
-
-			com_ptr<IMFMediaSource> pSource;
-			com_ptr<IMFSourceReader> pReader;
-
-			int width, height;
-			frame_format format;
+            const std::shared_ptr<device::_impl> parent;
 
 			std::function<void(const void * frame)> callback;
+			com_ptr<IMFMediaSource> media_source;
+			com_ptr<IMFSourceReaderCallback> source_reader_callback;
+			com_ptr<IMFSourceReader> source_reader;
 
-            _impl(std::shared_ptr<device::_impl> parent, int subdevice_index) : subdevice_index(subdevice_index)
-            {
-                this->parent = parent;
-
-				pSource = parent->get_media_source(subdevice_index);
-
-				com_ptr<IMFAttributes> pAttributes;
-				check("MFCreateAttributes", MFCreateAttributes(&pAttributes, 1));
-				// hr = pAttributes->SetUINT32(MF_READWRITE_DISABLE_CONVERTERS, TRUE);
-				check("IMFAttributes::SetUnknown", pAttributes->SetUnknown(MF_SOURCE_READER_ASYNC_CALLBACK, static_cast<IUnknown *>(this))); // TODO: Fix
-				check("MFCreateSourceReaderFromMediaSource", MFCreateSourceReaderFromMediaSource(pSource, pAttributes, &pReader));
-            }
-
-			// Implement IUnknown
-			HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, void ** ppvObject) override 
-			{
-				if(!ppvObject) return E_POINTER;
-				if(riid == __uuidof(IMFSourceReaderCallback))
-				{
-					*ppvObject = static_cast<IMFSourceReaderCallback *>(this);
-					return S_OK;
-				}
-				if(riid == __uuidof(IUnknown))
-				{
-					*ppvObject = static_cast<IUnknown *>(this);
-					return S_OK;
-				}
-				*ppvObject = nullptr;
-				return E_NOINTERFACE;
-			}
-			ULONG STDMETHODCALLTYPE AddRef() override { return 10; }
-			ULONG STDMETHODCALLTYPE Release() override { return 10; }
-
-			// Implement IMFSourceReaderCallback
-			HRESULT STDMETHODCALLTYPE OnReadSample(HRESULT hrStatus, DWORD dwStreamIndex, DWORD dwStreamFlags, LONGLONG llTimestamp, IMFSample *pSample) override 
-			{ 
-				if(pSample)
-				{
-					com_ptr<IMFMediaBuffer> pBuffer = NULL;
-					if(SUCCEEDED(pSample->GetBufferByIndex(0, &pBuffer)))
-					{
-						BYTE * byte_buffer; DWORD max_length, current_length;
-						if(SUCCEEDED(pBuffer->Lock(&byte_buffer, &max_length, &current_length)))
-						{
-							 callback(byte_buffer);
-						}
-					}
-				}
-
-				HRESULT hr = pReader->ReadSample(MF_SOURCE_READER_FIRST_VIDEO_STREAM, 0, NULL, NULL, NULL, NULL);
-				return S_OK; 
-			}
-			HRESULT STDMETHODCALLTYPE OnFlush(DWORD dwStreamIndex) override { return S_OK; }
-			HRESULT STDMETHODCALLTYPE OnEvent(DWORD dwStreamIndex, IMFMediaEvent *pEvent) override { return S_OK; }
+			_impl(std::shared_ptr<device::_impl> parent) : parent(move(parent)) {}
         };
 
         ///////////////////
@@ -399,28 +333,24 @@ namespace rsimpl
         {
 			for (DWORD j = 0; ; j++)
 			{
-				com_ptr<IMFMediaType> pType;
-				HRESULT hr = impl->pReader->GetNativeMediaType((DWORD)MF_SOURCE_READER_FIRST_VIDEO_STREAM, j, &pType);
+				com_ptr<IMFMediaType> media_type;
+				HRESULT hr = impl->source_reader->GetNativeMediaType((DWORD)MF_SOURCE_READER_FIRST_VIDEO_STREAM, j, &media_type);
 				if (hr == MF_E_NO_MORE_TYPES) break;
 				check("IMFSourceReader::GetNativeMediaType", hr);
 
 				UINT32 uvc_width, uvc_height, uvc_fps_num, uvc_fps_denom; GUID subtype;
-				check("MFGetAttributeSize", MFGetAttributeSize(pType, MF_MT_FRAME_SIZE, &uvc_width, &uvc_height));
+				check("MFGetAttributeSize", MFGetAttributeSize(media_type, MF_MT_FRAME_SIZE, &uvc_width, &uvc_height));
 				if(uvc_width != width || uvc_height != height) continue;
 
-				check("IMFMediaType::GetGUID", pType->GetGUID(MF_MT_SUBTYPE, &subtype));
+				check("IMFMediaType::GetGUID", media_type->GetGUID(MF_MT_SUBTYPE, &subtype));
 				if(!matches_format(subtype, cf)) continue;
 
-				check("MFGetAttributeRatio", MFGetAttributeRatio(pType, MF_MT_FRAME_RATE, &uvc_fps_num, &uvc_fps_denom));
+				check("MFGetAttributeRatio", MFGetAttributeRatio(media_type, MF_MT_FRAME_RATE, &uvc_fps_num, &uvc_fps_denom));
 				if(uvc_fps_denom == 0) continue;
 				int uvc_fps = uvc_fps_num / uvc_fps_denom;
 				if(std::abs(fps - uvc_fps) > 1) continue;
 
-				check("IMFSourceReader::SetCurrentMediaType", impl->pReader->SetCurrentMediaType((DWORD)MF_SOURCE_READER_FIRST_VIDEO_STREAM, NULL, pType));
-				impl->width = width;
-				impl->height = height;
-				impl->format = cf;
-				std::cout << "Selected mode " << uvc_width << "x" << uvc_height << ":" << std::string((const char *)&subtype.Data1, ((const char *)&subtype.Data1)+4) << "@" << uvc_fps << " for stream" << std::endl;
+				check("IMFSourceReader::SetCurrentMediaType", impl->source_reader->SetCurrentMediaType((DWORD)MF_SOURCE_READER_FIRST_VIDEO_STREAM, NULL, media_type));
 				return;
 			}
 			throw std::runtime_error("no matching media type");
@@ -429,7 +359,7 @@ namespace rsimpl
         void device_handle::start_streaming(std::function<void(const void * frame)> callback)
         {
 			impl->callback = callback;
-			check("IMFSourceReader::ReadSample", impl->pReader->ReadSample(MF_SOURCE_READER_FIRST_VIDEO_STREAM, 0, NULL, NULL, NULL, NULL));
+			check("IMFSourceReader::ReadSample", impl->source_reader->ReadSample(MF_SOURCE_READER_FIRST_VIDEO_STREAM, 0, NULL, NULL, NULL, NULL));
         }
 
         void device_handle::stop_streaming()
@@ -470,19 +400,76 @@ namespace rsimpl
 
         void device::set_control(uint8_t unit, uint8_t ctrl, void *data, int len)
         {				
-			KSP_NODE kspNode;
-			memset(&kspNode, 0, sizeof(KSP_NODE));
-			kspNode.Property.Set = {0x18682d34, 0xdd2c, 0x4073, {0xad, 0x23, 0x72, 0x14, 0x73, 0x9a, 0x07, 0x4c}}; // GUID_EXTENSION_UNIT_DESCRIPTOR
-			kspNode.Property.Id = ctrl;
-			kspNode.Property.Flags = KSPROPERTY_TYPE_SET | KSPROPERTY_TYPE_TOPOLOGY;
-			kspNode.NodeId = XUNODEID;
+			KSP_NODE node;
+			memset(&node, 0, sizeof(KSP_NODE));
+			node.Property.Set = {0x18682d34, 0xdd2c, 0x4073, {0xad, 0x23, 0x72, 0x14, 0x73, 0x9a, 0x07, 0x4c}}; // GUID_EXTENSION_UNIT_DESCRIPTOR
+			node.Property.Id = ctrl;
+			node.Property.Flags = KSPROPERTY_TYPE_SET | KSPROPERTY_TYPE_TOPOLOGY;
+			node.NodeId = XUNODEID;
 				
-			check("IKsControl::KsProperty", impl->get_control_node()->KsProperty((PKSPROPERTY)&kspNode, sizeof(KSP_NODE), data, len, NULL));
+			check("IKsControl::KsProperty", impl->get_control_node()->KsProperty((PKSPROPERTY)&node, sizeof(KSP_NODE), data, len, nullptr));
         }
+
+		class reader_callback : public IMFSourceReaderCallback
+        {
+			std::weak_ptr<device_handle::_impl> owner; // The device_handle holds a reference to us, so use weak_ptr to prevent a cycle
+			ULONG ref_count;
+		public:
+			reader_callback(std::shared_ptr<device_handle::_impl> owner) : owner(owner), ref_count() {}
+
+			// Implement IUnknown
+			HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, void ** ppvObject) override 
+			{
+				static const QITAB table[] = {QITABENT(reader_callback, IUnknown), QITABENT(reader_callback, IMFSourceReaderCallback), {0}};
+			    return QISearch(this, table, riid, ppvObject);
+			}
+			ULONG STDMETHODCALLTYPE AddRef() override { return InterlockedIncrement(&ref_count); }
+			ULONG STDMETHODCALLTYPE Release() override 
+			{ 
+				ULONG count = InterlockedDecrement(&ref_count);
+				if(count == 0) delete this;
+				return count;
+			}
+
+			// Implement IMFSourceReaderCallback
+			HRESULT STDMETHODCALLTYPE OnReadSample(HRESULT hrStatus, DWORD dwStreamIndex, DWORD dwStreamFlags, LONGLONG llTimestamp, IMFSample * sample) override 
+			{ 
+				if(auto owner_ptr = owner.lock())
+				{
+					if(sample)
+					{
+						com_ptr<IMFMediaBuffer> buffer = NULL;
+						if(SUCCEEDED(sample->GetBufferByIndex(0, &buffer)))
+						{
+							BYTE * byte_buffer; DWORD max_length, current_length;
+							if(SUCCEEDED(buffer->Lock(&byte_buffer, &max_length, &current_length)))
+							{
+								 owner_ptr->callback(byte_buffer);
+							}
+						}
+					}
+
+					HRESULT hr = owner_ptr->source_reader->ReadSample(MF_SOURCE_READER_FIRST_VIDEO_STREAM, 0, NULL, NULL, NULL, NULL);
+				}
+				return S_OK; 
+			}
+			HRESULT STDMETHODCALLTYPE OnFlush(DWORD dwStreamIndex) override { return S_OK; }
+			HRESULT STDMETHODCALLTYPE OnEvent(DWORD dwStreamIndex, IMFMediaEvent *pEvent) override { return S_OK; }
+        };
 
         device_handle device::claim_subdevice(int subdevice_index)
         {
-			return {std::make_shared<device_handle::_impl>(impl, subdevice_index)};
+			auto sub = std::make_shared<device_handle::_impl>(impl);
+
+			sub->media_source = impl->get_media_source(subdevice_index);
+			sub->source_reader_callback = new reader_callback(sub);
+
+			com_ptr<IMFAttributes> pAttributes;
+			check("MFCreateAttributes", MFCreateAttributes(&pAttributes, 1));
+			check("IMFAttributes::SetUnknown", pAttributes->SetUnknown(MF_SOURCE_READER_ASYNC_CALLBACK, static_cast<IUnknown *>(sub->source_reader_callback))); // TODO: Fix
+			check("MFCreateSourceReaderFromMediaSource", MFCreateSourceReaderFromMediaSource(sub->media_source, pAttributes, &sub->source_reader));
+            
+			return {sub};
         }
 
         /////////////
@@ -580,10 +567,7 @@ namespace rsimpl
 				}
 				if(!dev)
 				{
-					dev = {std::make_shared<device::_impl>()};
-					dev.impl->vid = vid;
-					dev.impl->pid = pid;
-					dev.impl->unique_id = unique_id;
+					dev = {std::make_shared<device::_impl>(impl, vid, pid, unique_id)};
 					devices.push_back(dev);
 				}
 

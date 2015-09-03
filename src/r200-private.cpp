@@ -301,7 +301,7 @@ namespace rsimpl { namespace r200
         DS4HardwareIO internal(device);
         calib = internal.GetCalibration();
         header = internal.GetCameraHeader();
-        internal.LogDebugInfo(calib, header);
+        //internal.LogDebugInfo(calib, header);
     }
 
     std::string read_firmware_version(uvc::device & device)
