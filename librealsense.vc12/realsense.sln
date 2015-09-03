@@ -15,6 +15,11 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "c-capture", "c-capture\c-ca
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "c-pointcloud", "c-pointcloud\c-pointcloud.vcxproj", "{43E2D263-1BDA-4012-8B37-14203CD45FB7}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "cs-capture", "cs-capture\cs-capture.csproj", "{0563A416-851F-4F25-BA30-C1E77235D3D1}"
+	ProjectSection(ProjectDependencies) = postProject
+		{1AE4CEB5-9A0B-4B9F-9505-824FD56BB41F} = {1AE4CEB5-9A0B-4B9F-9505-824FD56BB41F}
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -71,6 +76,14 @@ Global
 		{43E2D263-1BDA-4012-8B37-14203CD45FB7}.Release|Win32.Build.0 = Release|Win32
 		{43E2D263-1BDA-4012-8B37-14203CD45FB7}.Release|x64.ActiveCfg = Release|x64
 		{43E2D263-1BDA-4012-8B37-14203CD45FB7}.Release|x64.Build.0 = Release|x64
+		{0563A416-851F-4F25-BA30-C1E77235D3D1}.Debug|Win32.ActiveCfg = Debug|x86
+		{0563A416-851F-4F25-BA30-C1E77235D3D1}.Debug|Win32.Build.0 = Debug|x86
+		{0563A416-851F-4F25-BA30-C1E77235D3D1}.Debug|x64.ActiveCfg = Debug|x64
+		{0563A416-851F-4F25-BA30-C1E77235D3D1}.Debug|x64.Build.0 = Debug|x64
+		{0563A416-851F-4F25-BA30-C1E77235D3D1}.Release|Win32.ActiveCfg = Release|x86
+		{0563A416-851F-4F25-BA30-C1E77235D3D1}.Release|Win32.Build.0 = Release|x86
+		{0563A416-851F-4F25-BA30-C1E77235D3D1}.Release|x64.ActiveCfg = Release|x64
+		{0563A416-851F-4F25-BA30-C1E77235D3D1}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
