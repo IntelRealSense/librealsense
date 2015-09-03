@@ -1,44 +1,95 @@
 #include "r200-private.h"
 
-////////////////////////////////
-// Former HardwareIO contents //
-////////////////////////////////
+#define CAMERA_XU_UNIT_ID                           2
 
-#include <iostream>
+#define STATUS_BIT_BOOT_DIAGNOSTIC_FAULT            (1 << 3)
+#define STATUS_BIT_IFFLEY_CONSTANTS_VALID           (1 << 4)
+#define STATUS_BIT_WATCHDOG_TIMER_RESET             (1 << 5)
+#define STATUS_BIT_REC_BUFFER_OVERRUN               (1 << 6)
+#define STATUS_BIT_CAM_DATA_FORMAT_ERROR            (1 << 7)
+#define STATUS_BIT_CAM_FIFO_OVERFLOW                (1 << 8)
+#define STATUS_BIT_REC_DIVIDED_BY_ZERO_ERROR        (1 << 9)
+#define STATUS_BIT_UVC_HEADER_ERROR                 (1 << 10)
+#define STATUS_BIT_EMITTER_FAULT                    (1 << 11)
+#define STATUS_BIT_THERMAL_FAULT                    (1 << 12)
+#define STATUS_BIT_REC_RUN_ENABLED                  (1 << 13)
+#define STATUS_BIT_VDF_DEPTH_POINTER_STREAMING      (1 << 14)
+#define STATUS_BIT_VDF_LR_POINTER_STREAMING         (1 << 15)
+#define STATUS_BIT_VDF_WEBCAM_POINTER_STREAMING     (1 << 16)
+#define STATUS_BIT_STREAMING_STATE                  (1 << 27) | (1 << 28) | (1 << 29) | (1 << 30)
+#define STATUS_BIT_BUSY                             (1 << 31)
+
+#define CONTROL_COMMAND_RESPONSE                    1
+#define CONTROL_IFFLEY                              2
+#define CONTROL_STREAM_INTENT                       3
+#define CONTROL_DEPTH_UNITS                         4
+#define CONTROL_MIN_MAX                             5
+#define CONTROL_DISPARITY                           6
+#define CONTROL_RECTIFICATION                       7
+#define CONTROL_EMITTER                             8
+#define CONTROL_TEMPERATURE                         9
+#define CONTROL_DEPTH_PARAMS                        10
+#define CONTROL_LAST_ERROR                          12
+#define CONTROL_EMBEDDED_COUNT                      13
+#define CONTROL_LR_EXPOSURE                         14
+#define CONTROL_LR_AUTOEXPOSURE_PARAMETERS          15
+#define CONTROL_SW_RESET                            16
+#define CONTROL_LR_GAIN                             17
+#define CONTROL_LR_EXPOSURE_MODE                    18
+#define CONTROL_DISPARITY_SHIFT                     19
+#define CONTROL_STATUS                              20
+#define CONTROL_LR_EXPOSURE_DISCOVERY               21
+#define CONTROL_LR_GAIN_DISCOVERY                   22
+#define CONTROL_HW_TIMESTAMP                        23
+
+#define COMMAND_DOWNLOAD_SPI_FLASH                  0x1A
+#define COMMAND_PROTECT_FLASH                       0x1C
+#define COMMAND_LED_ON                              0x14
+#define COMMAND_LED_OFF                             0x15
+#define COMMAND_GET_FWREVISION                      0x21
+#define COMMAND_GET_SPI_PROTECT                     0x23
+#define COMMAND_MODIFIER_DIRECT                     0x00000010
+
+#define SPI_FLASH_PAGE_SIZE_IN_BYTES                        0x100
+#define SPI_FLASH_SECTOR_SIZE_IN_BYTES                      0x1000
+#define SPI_FLASH_SIZE_IN_SECTORS                           256
+#define SPI_FLASH_TOTAL_SIZE_IN_BYTES                       (SPI_FLASH_SIZE_IN_SECTORS * SPI_FLASH_SECTOR_SIZE_IN_BYTES)
+#define SPI_FLASH_PAGES_PER_SECTOR                          (SPI_FLASH_SECTOR_SIZE_IN_BYTES / SPI_FLASH_PAGE_SIZE_IN_BYTES)
+#define SPI_FLASH_LENGTH_IN_PAGES(N_BYTES)                  ((N_BYTES + 0xFF) / SPI_FLASH_PAGE_SIZE_IN_BYTES)
+
+#define SPI_FLASH_SECTORS_RESERVED_FOR_FIRMWARE             160
+#define SPI_FLASH_START_OF_SECTORS_NOT_FOR_FIRMWARE         (SPI_FLASH_SECTORS_RESERVED_FOR_FIRMWARE * SPI_FLASH_SECTOR_SIZE_IN_BYTES)
+
+#define SPI_FLASH_SECTORS_RESERVED_FOR_ROUTINES             64
+#define SPI_FLASH_FIRST_ROUTINE_SECTOR                      (SPI_FLASH_SIZE_IN_SECTORS - SPI_FLASH_SECTORS_RESERVED_FOR_ROUTINES)
+
+// 1 Mb total
+#define NV_STORAGE_IN_BYTES                                 (SPI_FLASH_SECTOR_SIZE_IN_BYTES * SPI_FLASH_SIZE_IN_SECTORS)
+#define NV_NON_FIRMWARE_START                               (SPI_FLASH_SECTORS_RESERVED_FOR_FIRMWARE * SPI_FLASH_SECTOR_SIZE_IN_BYTES)
+
+#define NV_ADMIN_DATA_N_ENTRIES                             9
+#define NV_CALIBRATION_DATA_ADDRESS_INDEX                   0
+#define NV_IFFLEY_ROUTINE_TABLE_ADDRESS_INDEX               1
+
+#define NV_NON_FIRMWARE_ROOT_ADDRESS                        NV_NON_FIRMWARE_START
+
+#define UNUSED_ROUTINE(ENTRY)                               (ENTRY == UNINITIALIZED_ROUTINE_ENTRY || ENTRY == DELETED_ROUTINE_ENTRY)
+typedef unsigned short RoutineDescription;
+
+#define MAX_ROUTINES                                        256
+
+#define SIZEOF_ROUTINE_DESCRIPTION_TABLE                    (MAX_ROUTINES * sizeof(RoutineDescription))
+#define SIZEOF_ERASED_TABLE                                 (SPI_FLASH_SECTORS_RESERVED_FOR_ROUTINES * sizeof(unsigned short))
+#define SIZEOF_PRESERVE_TABLE                               (SPI_FLASH_SECTORS_RESERVED_FOR_ROUTINES * sizeof(unsigned short))
+
+#define SIZEOF_ROUTINE_DESCRIPTION_ERASED_AND_PRESERVE_TABLE (SIZEOF_ROUTINE_DESCRIPTION_TABLE + SIZEOF_ERASED_TABLE + SIZEOF_PRESERVE_TABLE)
+
+#define ROUTINE_DESCRIPTION_OFFSET                          0
+#define ERASED_TABLE_OFFSET                                 SIZEOF_ROUTINE_DESCRIPTION_TABLE
+#define PRESERVE_TABLE_OFFSET                               (ERASED_TABLE_OFFSET + SIZEOF_ERASED_TABLE)
 
 namespace rsimpl { namespace r200
 {
-    struct CommandPacket
-    {
-        CommandPacket(uint32_t code_ = 0, uint32_t modifier_ = 0, uint32_t tag_ = 0, uint32_t address_ = 0, uint32_t value_ = 0)
-        : code(code_), modifier(modifier_), tag(tag_), address(address_), value(value_)
-        {
-        }
-
-        uint32_t code = 0;
-        uint32_t modifier = 0;
-        uint32_t tag = 0;
-        uint32_t address = 0;
-        uint32_t value = 0;
-        uint32_t reserved[59]{};
-    };
-
-    struct ResponsePacket
-    {
-        ResponsePacket(uint32_t code_ = 0, uint32_t modifier_ = 0, uint32_t tag_ = 0, uint32_t responseCode_ = 0, uint32_t value_ = 0)
-        : code(code_), modifier(modifier_), tag(tag_), responseCode(responseCode_), value(value_)
-        {
-        }
-
-        uint32_t code = 0;
-        uint32_t modifier = 0;
-        uint32_t tag = 0;
-        uint32_t responseCode = 0;
-        uint32_t value = 0;
-        uint32_t revision[4]{};
-        uint32_t reserved[55]{};
-    };
-
     void send_command(uvc::device & device, CommandPacket & command, ResponsePacket & response)
     {
         device.set_control(CAMERA_XU_UNIT_ID, CONTROL_COMMAND_RESPONSE, &command, sizeof(command));
@@ -62,44 +113,6 @@ namespace rsimpl { namespace r200
             default: return "RESPONSE_UNKNOWN";
         }
     }
-
-    #define SPI_FLASH_PAGE_SIZE_IN_BYTES                        0x100
-    #define SPI_FLASH_SECTOR_SIZE_IN_BYTES                      0x1000
-    #define SPI_FLASH_SIZE_IN_SECTORS                           256
-    #define SPI_FLASH_TOTAL_SIZE_IN_BYTES                       (SPI_FLASH_SIZE_IN_SECTORS * SPI_FLASH_SECTOR_SIZE_IN_BYTES)
-    #define SPI_FLASH_PAGES_PER_SECTOR                          (SPI_FLASH_SECTOR_SIZE_IN_BYTES / SPI_FLASH_PAGE_SIZE_IN_BYTES)
-    #define SPI_FLASH_LENGTH_IN_PAGES(N_BYTES)                  ((N_BYTES + 0xFF) / SPI_FLASH_PAGE_SIZE_IN_BYTES)
-
-    #define SPI_FLASH_SECTORS_RESERVED_FOR_FIRMWARE             160
-    #define SPI_FLASH_START_OF_SECTORS_NOT_FOR_FIRMWARE         (SPI_FLASH_SECTORS_RESERVED_FOR_FIRMWARE * SPI_FLASH_SECTOR_SIZE_IN_BYTES)
-
-    #define SPI_FLASH_SECTORS_RESERVED_FOR_ROUTINES             64
-    #define SPI_FLASH_FIRST_ROUTINE_SECTOR                      (SPI_FLASH_SIZE_IN_SECTORS - SPI_FLASH_SECTORS_RESERVED_FOR_ROUTINES)
-
-    // 1 Mb total
-    #define NV_STORAGE_IN_BYTES                                 (SPI_FLASH_SECTOR_SIZE_IN_BYTES * SPI_FLASH_SIZE_IN_SECTORS)
-    #define NV_NON_FIRMWARE_START                               (SPI_FLASH_SECTORS_RESERVED_FOR_FIRMWARE * SPI_FLASH_SECTOR_SIZE_IN_BYTES)
-
-    #define NV_ADMIN_DATA_N_ENTRIES                             9
-    #define NV_CALIBRATION_DATA_ADDRESS_INDEX                   0
-    #define NV_IFFLEY_ROUTINE_TABLE_ADDRESS_INDEX               1
-
-    #define NV_NON_FIRMWARE_ROOT_ADDRESS                        NV_NON_FIRMWARE_START
-
-    #define UNUSED_ROUTINE(ENTRY)                               (ENTRY == UNINITIALIZED_ROUTINE_ENTRY || ENTRY == DELETED_ROUTINE_ENTRY)
-    typedef unsigned short RoutineDescription;
-
-    #define MAX_ROUTINES                                        256
-
-    #define SIZEOF_ROUTINE_DESCRIPTION_TABLE                    (MAX_ROUTINES * sizeof(RoutineDescription))
-    #define SIZEOF_ERASED_TABLE                                 (SPI_FLASH_SECTORS_RESERVED_FOR_ROUTINES * sizeof(unsigned short))
-    #define SIZEOF_PRESERVE_TABLE                               (SPI_FLASH_SECTORS_RESERVED_FOR_ROUTINES * sizeof(unsigned short))
-
-    #define SIZEOF_ROUTINE_DESCRIPTION_ERASED_AND_PRESERVE_TABLE (SIZEOF_ROUTINE_DESCRIPTION_TABLE + SIZEOF_ERASED_TABLE + SIZEOF_PRESERVE_TABLE)
-
-    #define ROUTINE_DESCRIPTION_OFFSET                          0
-    #define ERASED_TABLE_OFFSET                                 SIZEOF_ROUTINE_DESCRIPTION_TABLE
-    #define PRESERVE_TABLE_OFFSET                               (ERASED_TABLE_OFFSET + SIZEOF_ERASED_TABLE)
 
     typedef struct
     {
@@ -278,13 +291,13 @@ namespace rsimpl { namespace r200
 
         void LogDebugInfo(CameraCalibrationParameters & p, CameraHeaderInfo & h)
         {
-            std::cout << "## Calibration Version: " << p.metadata.versionNumber << std::endl;
-            std::cout << "## Serial: " << h.serialNumber << std::endl;
-            std::cout << "## Model: " << h.modelNumber << std::endl;
-            std::cout << "## Revision: " << h.revisionNumber << std::endl;
-            std::cout << "## Head Version: " << h.cameraHeadContentsVersion << std::endl;
-            std::cout << "## Baseline: " << h.nominalBaseline << std::endl;
-            std::cout << "## OEM ID: " << h.OEMID << std::endl;
+            // std::cout << "## Calibration Version: " << p.metadata.versionNumber << std::endl;
+            // std::cout << "## Serial: " << h.serialNumber << std::endl;
+            // std::cout << "## Model: " << h.modelNumber << std::endl;
+            // std::cout << "## Revision: " << h.revisionNumber << std::endl;
+            // std::cout << "## Head Version: " << h.cameraHeadContentsVersion << std::endl;
+            // std::cout << "## Baseline: " << h.nominalBaseline << std::endl;
+            // std::cout << "## OEM ID: " << h.OEMID << std::endl;
         }
 
         CameraCalibrationParameters GetCalibration() { return cameraCalibration; }
