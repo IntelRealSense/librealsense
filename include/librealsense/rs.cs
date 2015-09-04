@@ -134,19 +134,6 @@ namespace RealSense
 
         #region P/Invoke declarations for backing C API
         private IntPtr handle;
-        private unsafe struct Intrin
-        {
-            public fixed int sz[2];
-            public fixed float fl[2];
-            public fixed float pt[2];
-            public fixed float k[5];
-            public Distortion m;
-        };
-        private unsafe struct Extrin
-        {
-            public fixed float r[9];
-            public fixed float t[3];
-        };
         [DllImport("realsense")] private static extern IntPtr rs_get_camera_name(IntPtr camera, ref IntPtr error);
         [DllImport("realsense")] private static extern void rs_enable_stream(IntPtr camera, Stream stream, int width, int height, Format format, int fps, ref IntPtr error);
         [DllImport("realsense")] private static extern void rs_enable_stream_preset(IntPtr camera, Stream stream, Preset preset, ref IntPtr error);
@@ -169,9 +156,8 @@ namespace RealSense
 
     public class Error : Exception
     {
-        public readonly string ErrorMessage;
-        public readonly string FailedFunction;
-        public readonly string FailedArgs;
+        public string FailedFunction;
+        public string FailedArgs;
 
         public static void Handle(IntPtr error)
         {
@@ -181,16 +167,11 @@ namespace RealSense
                 var failedFunction = Marshal.PtrToStringAnsi(rs_get_failed_function(error));
                 var failedArgs = Marshal.PtrToStringAnsi(rs_get_failed_args(error));                
                 rs_free_error(error);
-                throw new Error(errorMessage, failedFunction, failedArgs);
+                throw new Error(errorMessage) { FailedFunction = failedFunction, FailedArgs = failedArgs };
             }
         }
 
-        private Error(string errorMessage, string failedFunction, string failedArgs) : base(string.Format("{0} ({1}({2}))", errorMessage, failedFunction, failedArgs))
-        {
-            this.ErrorMessage = errorMessage;
-            this.FailedFunction = failedFunction;
-            this.FailedArgs = failedArgs;
-        }
+        private Error(string message) : base(message) {}
         
         #region P/Invoke declarations for backing C API
         [DllImport("realsense")] private static extern IntPtr rs_get_failed_function(IntPtr error);
