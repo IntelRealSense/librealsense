@@ -3,7 +3,7 @@ using System.Runtime.InteropServices;
 
 namespace RealSense
 {
-    enum Stream : int
+    public enum Stream : int
     {
         Depth                         = 0,
         Color                         = 1,
@@ -11,50 +11,55 @@ namespace RealSense
         Infrared2                     = 3,
     };
 
-    enum Format : int
+    public enum Format : int
     {
         Any                           = 0,
         Z16                           = 1,
-        Y8                            = 2,
+        YUYV                          = 2,
         RGB8                          = 3,
+        BGR8                          = 4,
+        RGBA8                         = 5,
+        BGRA8                         = 6,
+        Y8                            = 7,
+        Y16                           = 8,
     };
 
-    enum Preset : int
+    public enum Preset : int
     {
         BestQuality                   = 0,
         LargestImage                  = 1,
         HighestFramerate              = 2,
     };
 
-    enum Distortion : int
+    public enum Distortion : int
     {
         None                          = 0,
         ModifiedBrownConrady          = 1,
         InverseBrownConrady           = 2,
     };
 
-    enum Option : int
+    public enum Option : int
     {
-        F200_LASER_POWER,                 /* 0 - 15 */
-        F200_ACCURACY,                    /* 0 - 3 */
-        F200_MOTION_RANGE,                /* 0 - 100 */
-        F200_FILTER_OPTION,               /* 0 - 7 */
-        F200_CONFIDENCE_THRESHOLD,        /* 0 - 15 */
-        F200_DYNAMIC_FPS,                 /* {2, 5, 15, 30, 60} */
-        R200_LR_AUTO_EXPOSURE_ENABLED,    /* {0, 1} */
-        R200_LR_GAIN,                     /* 100 - 1600 (Units of 0.01) */
-        R200_LR_EXPOSURE,                 /* > 0 (Units of 0.1 ms) */
-        R200_EMITTER_ENABLED,             /* {0, 1} */
-        R200_DEPTH_CONTROL_PRESET,        /* {0, 5}, 0 is default, 1-5 is low to high outlier rejection */
-        R200_DEPTH_UNITS,                 /* > 0 */
-        R200_DEPTH_CLAMP_MIN,             /* 0 - USHORT_MAX */
-        R200_DEPTH_CLAMP_MAX,             /* 0 - USHORT_MAX */
-        R200_DISPARITY_MODE_ENABLED,      /* {0, 1} */
-        R200_DISPARITY_MULTIPLIER,
-        R200_DISPARITY_SHIFT,
+        F200LaserPower,           
+        F200Accuracy,             
+        F200MotionRange,          
+        F200FilterOption,         
+        F200ConfidenceThreshold,  
+        F200DynamicFPS,           
+        R200LRAutoExposureEnabled,
+        R200LRGain,               
+        R200LRExposure,           
+        R200EmitterEnabled,       
+        R200DepthControlPreset,   
+        R200DepthUnits,           
+        R200DepthClampMin,        
+        R200DepthClampMax,        
+        R200DisparityModeEnabled, 
+        R200DisparityMultiplier,
+        R200DisparityShift,
     };
 
-    unsafe struct Intrinsics
+    public unsafe struct Intrinsics
     {
         public fixed int image_size[2];        
         public fixed float focal_length[2];    
@@ -63,13 +68,13 @@ namespace RealSense
         public Distortion distortion_model;    
     };
 
-    unsafe struct Extrinsics
+    public unsafe struct Extrinsics
     {
         public fixed float rotation[9];
         public fixed float translation[3];
     };
 
-    class Context : IDisposable
+    public class Context : IDisposable
     {
         public int CameraCount
         {
@@ -104,7 +109,7 @@ namespace RealSense
             return new Camera(result);
         }
         
-        private const int ApiVersion = 1;
+        private const int ApiVersion = 2;
 
         #region P/Invoke declarations for backing C API
         private IntPtr handle;
@@ -115,7 +120,7 @@ namespace RealSense
         #endregion
     }
 
-    class Camera
+    public class Camera
     {
         public string Name
         {
@@ -125,6 +130,17 @@ namespace RealSense
                 var result = Marshal.PtrToStringAnsi(rs_get_camera_name(handle, ref error));
                 Error.Handle(error);
                 return result;
+            }
+        }
+
+        public bool IsCapturing
+        {
+            get
+            {
+                IntPtr error = IntPtr.Zero;
+                int result = rs_is_capturing(handle, ref error);
+                Error.Handle(error);
+                return result != 0;
             }
         }
 
@@ -166,6 +182,21 @@ namespace RealSense
             Error.Handle(error);
         }
 
+        public void WaitAllStreams()
+        {
+            IntPtr error = IntPtr.Zero;
+            rs_wait_all_streams(handle, ref error);
+            Error.Handle(error);
+        }
+
+        public IntPtr GetImagePixels(Stream stream)
+        {
+            IntPtr error = IntPtr.Zero;
+            IntPtr result = rs_get_image_pixels(handle, stream, ref error);
+            Error.Handle(error);
+            return result;
+        }
+
         #region P/Invoke declarations for backing C API
         private IntPtr handle;
         [DllImport("realsense.dll")] private static extern IntPtr rs_get_camera_name(IntPtr camera, ref IntPtr error);
@@ -188,7 +219,7 @@ namespace RealSense
         #endregion
     }
 
-    class Error : Exception
+    public class Error : Exception
     {
         public readonly string ErrorMessage;
         public readonly string FailedFunction;

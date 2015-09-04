@@ -12,9 +12,25 @@ namespace cs_capture
 {
     public partial class Form1 : Form
     {
+        private RealSense.Camera camera;
+
         public Form1()
         {
             InitializeComponent();
+        }
+
+        public void SetCamera(RealSense.Camera camera)
+        {
+            this.camera = camera;
+            timer1.Start();
+        }
+
+        private void timer1_Tick(object sender, EventArgs e)
+        {
+            if (camera == null) return;
+
+            camera.WaitAllStreams();
+            colorPictureBox.Image = new System.Drawing.Bitmap(640, 480, 640 * 3, System.Drawing.Imaging.PixelFormat.Format24bppRgb, camera.GetImagePixels(RealSense.Stream.Color));
         }
     }
 }
