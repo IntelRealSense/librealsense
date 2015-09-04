@@ -68,10 +68,10 @@ namespace RealSense
         public Distortion DistortionModel;    
     }
 
-    public unsafe struct Extrinsics
+    public class Extrinsics
     {
-        public fixed float rotation[9];
-        public fixed float translation[3];
+        public float[] Rotation;
+        public float[] Translation;
     };
 
     public class Context : IDisposable
@@ -246,11 +246,19 @@ namespace RealSense
 
         public Extrinsics GetStreamExtrinsics(Stream from, Stream to)
         {
-            Extrinsics extrin = new Extrinsics();
+            rs_extrinsics e = new rs_extrinsics();
             IntPtr error = IntPtr.Zero;
-            rs_get_stream_extrinsics(handle, from, to, ref extrin, ref error);
+            rs_get_stream_extrinsics(handle, from, to, ref e, ref error);
             Error.Handle(error);
-            return extrin;
+
+            unsafe
+            {
+                return new Extrinsics
+                {
+                    Rotation = new float[] { e.rotation[0], e.rotation[1], e.rotation[2], e.rotation[3], e.rotation[4], e.rotation[5], e.rotation[6], e.rotation[7], e.rotation[8] },
+                    Translation = new float[] { e.translation[0], e.translation[1], e.translation[2] }
+                };
+            }
         }
 
         public void WaitAllStreams()
@@ -286,6 +294,11 @@ namespace RealSense
             public fixed float distortion_coeff[5];
             public Distortion distortion_model;
         };
+        private unsafe struct rs_extrinsics
+        {
+            public fixed float rotation[9];
+            public fixed float translation[3];
+        };
         [DllImport("realsense.dll")] private static extern IntPtr rs_get_camera_name(IntPtr camera, ref IntPtr error);
         [DllImport("realsense.dll")] private static extern void rs_enable_stream(IntPtr camera, Stream stream, int width, int height, Format format, int fps, ref IntPtr error);
         [DllImport("realsense.dll")] private static extern void rs_enable_stream_preset(IntPtr camera, Stream stream, Preset preset, ref IntPtr error);
@@ -299,7 +312,7 @@ namespace RealSense
         [DllImport("realsense.dll")] private static extern float rs_get_depth_scale(IntPtr camera, ref IntPtr error);
         [DllImport("realsense.dll")] private static extern Format rs_get_stream_format(IntPtr camera, Stream stream, ref IntPtr error);
         [DllImport("realsense.dll")] private static extern void rs_get_stream_intrinsics(IntPtr camera, Stream stream, ref rs_intrinsics intrin, ref IntPtr error);
-        [DllImport("realsense.dll")] private static extern void rs_get_stream_extrinsics(IntPtr camera, Stream from, Stream to, ref Extrinsics extrin, ref IntPtr error);
+        [DllImport("realsense.dll")] private static extern void rs_get_stream_extrinsics(IntPtr camera, Stream from, Stream to, ref rs_extrinsics extrin, ref IntPtr error);
         [DllImport("realsense.dll")] private static extern void rs_wait_all_streams(IntPtr camera, ref IntPtr error);
         [DllImport("realsense.dll")] private static extern IntPtr rs_get_image_pixels(IntPtr camera, Stream stream, ref IntPtr error);
         [DllImport("realsense.dll")] private static extern int rs_get_image_frame_number(IntPtr camera, Stream stream, ref IntPtr error);
