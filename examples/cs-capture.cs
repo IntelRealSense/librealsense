@@ -1,12 +1,17 @@
 ﻿using System;
 using System.Drawing;
+using System.Drawing.Imaging;
 using System.Windows.Forms;
 using System.Runtime.InteropServices;
 
 public class Capture : Form
 {
     private RealSense.Camera camera;
-    private PictureBox color, depth;
+    private short[] depthMap;
+    private uint[] depthHistogram;
+    private byte[] depthImage;
+
+    private PictureBox colorPicture, depthPicture;
     private Timer timer;
 
     public Capture(RealSense.Camera camera)
@@ -15,17 +20,21 @@ public class Capture : Form
 
         var colorIntrin = camera.GetStreamIntrinsics(RealSense.Stream.Color);
         var depthIntrin = camera.GetStreamIntrinsics(RealSense.Stream.Depth);
+
+        depthMap = new short[depthIntrin.ImageSize[0] * depthIntrin.ImageSize[1]];
+        depthHistogram = new uint[0x10000];
+        depthImage = new byte[depthMap.Length * 3];
             
         Text = string.Format("C# Capture Example ({0})", camera.Name);
         ClientSize = new System.Drawing.Size(colorIntrin.ImageSize[0] + depthIntrin.ImageSize[0] + 36, colorIntrin.ImageSize[1] + 24);
 
-        color = new PictureBox { Location = new Point(12, 12), Size = new Size(colorIntrin.ImageSize[0], colorIntrin.ImageSize[1]) };
-        Controls.Add(color);
+        colorPicture = new PictureBox { Location = new Point(12, 12), Size = new Size(colorIntrin.ImageSize[0], colorIntrin.ImageSize[1]) };
+        Controls.Add(colorPicture);
 
-        depth = new PictureBox { Location = new Point(24 + colorIntrin.ImageSize[0], 12), Size = new Size(depthIntrin.ImageSize[0], depthIntrin.ImageSize[1]) };
-        Controls.Add(depth);
+        depthPicture = new PictureBox { Location = new Point(24 + colorIntrin.ImageSize[0], 12), Size = new Size(depthIntrin.ImageSize[0], depthIntrin.ImageSize[1]) };
+        Controls.Add(depthPicture);
 
-        timer = new Timer { Interval = 16 };
+        timer = new Timer { Interval = 10 };
         timer.Tick += this.OnCaptureTick;
         timer.Start();
     }
@@ -49,45 +58,45 @@ public class Capture : Form
         int width = intrinsics.ImageSize[0], height = intrinsics.ImageSize[1];
 
         // Create a bitmap of the color image and assign it to our PictureBox
-        color.Image = new Bitmap(width, height, width * 3, System.Drawing.Imaging.PixelFormat.Format24bppRgb, camera.GetImagePixels(RealSense.Stream.Color));
+        colorPicture.Image = new Bitmap(width, height, width * 3, PixelFormat.Format24bppRgb, camera.GetImagePixels(RealSense.Stream.Color));
 
         // Obtain depth image data
+        Marshal.Copy(camera.GetImagePixels(RealSense.Stream.Depth), depthMap, 0, depthMap.Length);
         intrinsics = camera.GetStreamIntrinsics(RealSense.Stream.Depth);
         width = intrinsics.ImageSize[0];
-        height = intrinsics.ImageSize[1];            
+        height = intrinsics.ImageSize[1]; 
 
-        // Build a cumulative histogram for of depth values in [1,0xFFFF]
-        var depthPixels = new short[width*height];
-        Marshal.Copy(camera.GetImagePixels(RealSense.Stream.Depth), depthPixels, 0, depthPixels.Length);
-
-        var histogram = new uint[0x10000];
-        for (int i = 0; i < width * height; ++i) ++histogram[(ushort)depthPixels[i]];
-        for(int i = 2; i < 0x10000; ++i) histogram[i] += histogram[i-1]; 
+        // Build a cumulative histogram for of depth values in [1,0xFFFF]      
+        for (int i = 0; i < depthHistogram.Length; i++) depthHistogram[i] = 0;
+        for (int i = 0; i < depthMap.Length; i++) depthHistogram[(ushort)depthMap[i]]++;
+        for (int i = 2; i < depthHistogram.Length; i++) depthHistogram[i] += depthHistogram[i - 1]; 
 
         // Produce an image in BGR ordered byte array
-        var image = new byte[width * height * 3];
-        for(int i = 0; i < width*height; ++i)
+        for (int i = 0; i < depthMap.Length; ++i)
         {
-            ushort d = (ushort)depthPixels[i];
+            ushort d = (ushort)depthMap[i];
             if(d != 0)
             {
-                uint f = histogram[d] * 255 / histogram[0xFFFF]; // 0-255 based on histogram location
-                image[i*3 + 0] = (byte)f;
-                image[i*3 + 1] = 0;
-                image[i*3 + 2] = (byte)(255 - f);
+                uint f = depthHistogram[d] * 255 / depthHistogram[0xFFFF]; // 0-255 based on histogram location
+                depthImage[i*3 + 0] = (byte)f;
+                depthImage[i * 3 + 1] = 0;
+                depthImage[i * 3 + 2] = (byte)(255 - f);
             }
             else
             {
-                image[i*3 + 0] = 0;
-                image[i*3 + 1] = 5;
-                image[i*3 + 2] = 20;
+                depthImage[i * 3 + 0] = 0;
+                depthImage[i * 3 + 1] = 5;
+                depthImage[i * 3 + 2] = 20;
             }
         }
 
         // Create a bitmap of the histogram colored depth image and assign it to our PictureBox
-        GCHandle handle = GCHandle.Alloc(image, GCHandleType.Pinned);
-        depth.Image = new Bitmap(width, height, width * 3, System.Drawing.Imaging.PixelFormat.Format24bppRgb, handle.AddrOfPinnedObject());
+        GCHandle handle = GCHandle.Alloc(depthImage, GCHandleType.Pinned);
+        depthPicture.Image = new Bitmap(width, height, width * 3, PixelFormat.Format24bppRgb, handle.AddrOfPinnedObject());
         handle.Free();
+
+        //Bitmap bmp;
+        //bmp.LockBits(Rectang)
 
         timer.Start();
     }
@@ -108,9 +117,7 @@ public class Capture : Form
                 context.Cameras[0].EnableStreamPreset(RealSense.Stream.Depth, RealSense.Preset.BestQuality);
                 context.Cameras[0].EnableStream(RealSense.Stream.Color, 640, 480, RealSense.Format.BGR8, 60);
                 context.Cameras[0].StartCapture();
-
-                Application.EnableVisualStyles();
-                Application.SetCompatibleTextRenderingDefault(false);
+                
                 Application.Run(new Capture(context.Cameras[0]));
             }
         }
