@@ -93,7 +93,6 @@ int main(int argc, char * argv[]) try
     std::this_thread::sleep_for(std::chrono::milliseconds(1000));
     try {
         cam.set_option(RS_OPTION_R200_LR_AUTO_EXPOSURE_ENABLED, 1);
-        cam.set_option(RS_OPTION_R200_DEPTH_CONTROL_PRESET, 5);
     }  catch(...) {}
 
     // Report the status of each supported option
