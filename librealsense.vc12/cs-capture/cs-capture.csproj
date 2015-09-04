@@ -84,14 +84,16 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="RealSense.cs" />
+    <Compile Include="..\..\include\librealsense\rs.cs">
+      <Link>rs.cs</Link>
+    </Compile>
     <Compile Include="Capture.cs">
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="Capture.Designer.cs">
       <DependentUpon>Capture.cs</DependentUpon>
     </Compile>
-    <Compile Include="Program.cs" />
+    <Compile Include="cs-capture.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <EmbeddedResource Include="Capture.resx">
       <DependentUpon>Capture.cs</DependentUpon>
