@@ -30,7 +30,11 @@ namespace rsimpl
         {
         CASE(ANY)
         CASE(Z16)
+        CASE(YUYV)
         CASE(RGB8)
+        CASE(BGR8)
+        CASE(RGBA8)
+        CASE(BGRA8)
         CASE(Y8)
         CASE(Y16)
         default: assert(!is_valid(value)); return nullptr;
@@ -42,10 +46,14 @@ namespace rsimpl
     {
         switch(format)
         {
-        case RS_FORMAT_Z16: return width * height * sizeof(uint16_t);
-        case RS_FORMAT_RGB8: return width * height * sizeof(uint8_t) * 3;
-        case RS_FORMAT_Y8: return width * height * sizeof(uint8_t);
-        case RS_FORMAT_Y16: return width * height * sizeof(uint8_t) * 2;
+        case RS_FORMAT_Z16: return width * height * 2;
+        case RS_FORMAT_YUYV: assert(width % 2 == 0); return width * height * 2;
+        case RS_FORMAT_RGB8: return width * height * 3;
+        case RS_FORMAT_BGR8: return width * height * 3;
+        case RS_FORMAT_RGBA8: return width * height * 4;
+        case RS_FORMAT_BGRA8: return width * height * 4;
+        case RS_FORMAT_Y8: return width * height * 2;
+        case RS_FORMAT_Y16: return width * height * 2;
         default: assert(false); return 0;
         }    
     }
@@ -124,7 +132,25 @@ namespace rsimpl
     void unpack_yuyv_to_rgb(void * dest[], const subdevice_mode & mode, const void * source)
     {
         assert(mode.format == uvc::frame_format::YUYV && mode.streams.size() == 1 && mode.streams[0].format == RS_FORMAT_RGB8);
-        convert_yuyv_to_rgb((uint8_t *) dest[0], mode.width, mode.height, source);
+        convert_yuyv_to_rgb(dest[0], mode.width, mode.height, source);
+    }
+
+    void unpack_yuyv_to_rgba(void * dest[], const subdevice_mode & mode, const void * source)
+    {
+        assert(mode.format == uvc::frame_format::YUYV && mode.streams.size() == 1 && mode.streams[0].format == RS_FORMAT_RGBA8);
+        convert_yuyv_to_rgba(dest[0], mode.width, mode.height, source);
+    }
+
+    void unpack_yuyv_to_bgr(void * dest[], const subdevice_mode & mode, const void * source)
+    {
+        assert(mode.format == uvc::frame_format::YUYV && mode.streams.size() == 1 && mode.streams[0].format == RS_FORMAT_BGR8);
+        convert_yuyv_to_bgr(dest[0], mode.width, mode.height, source);
+    }
+
+    void unpack_yuyv_to_bgra(void * dest[], const subdevice_mode & mode, const void * source)
+    {
+        assert(mode.format == uvc::frame_format::YUYV && mode.streams.size() == 1 && mode.streams[0].format == RS_FORMAT_BGRA8);
+        convert_yuyv_to_bgra(dest[0], mode.width, mode.height, source);
     }
 
     static_camera_info::static_camera_info()

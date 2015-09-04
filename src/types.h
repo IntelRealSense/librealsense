@@ -87,6 +87,9 @@ namespace rsimpl
     void unpack_y12i_to_y8(void * dest[], const subdevice_mode & mode, const void * frame);
     void unpack_y12i_to_y16(void * dest[], const subdevice_mode & mode, const void * frame);
     void unpack_yuyv_to_rgb(void * dest[], const subdevice_mode & mode, const void * frame);
+    void unpack_yuyv_to_rgba(void * dest[], const subdevice_mode & mode, const void * frame);
+    void unpack_yuyv_to_bgr(void * dest[], const subdevice_mode & mode, const void * frame);
+    void unpack_yuyv_to_bgra(void * dest[], const subdevice_mode & mode, const void * frame);
 
     struct static_camera_info
     {

@@ -10,7 +10,36 @@ using namespace rsimpl;
 // UVC Camera //
 ////////////////
 
-rs_camera::rs_camera(rsimpl::uvc::device device, const static_camera_info & camera_info) : device(device), camera_info(camera_info), first_handle(), is_capturing()
+static static_camera_info add_standard_unpackers(const static_camera_info & camera_info)
+{
+    static_camera_info info = camera_info;
+    for(auto & mode : camera_info.subdevice_modes)
+    {
+        // Unstrided YUYV modes can be unpacked into RGB and BGR
+        if(mode.format == uvc::frame_format::YUYV && mode.unpacker == &unpack_strided_image && mode.width == mode.streams[0].width && mode.height == mode.streams[0].height)
+        {
+            auto m = mode;
+            m.streams[0].format = RS_FORMAT_RGB8;
+            m.unpacker = &unpack_yuyv_to_rgb;
+            info.subdevice_modes.push_back(m);
+
+            m.streams[0].format = RS_FORMAT_BGR8;
+            m.unpacker = &unpack_yuyv_to_bgr;
+            info.subdevice_modes.push_back(m);
+
+            m.streams[0].format = RS_FORMAT_RGBA8;
+            m.unpacker = &unpack_yuyv_to_rgba;
+            info.subdevice_modes.push_back(m);
+
+            m.streams[0].format = RS_FORMAT_BGRA8;
+            m.unpacker = &unpack_yuyv_to_bgra;
+            info.subdevice_modes.push_back(m);
+        }
+    }
+    return info;
+}
+
+rs_camera::rs_camera(rsimpl::uvc::device device, const static_camera_info & camera_info) : device(device), camera_info(add_standard_unpackers(camera_info)), first_handle(), is_capturing()
 {
     for(auto & req : requests) req = rsimpl::stream_request();
     calib = {};

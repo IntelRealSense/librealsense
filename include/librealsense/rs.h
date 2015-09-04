@@ -32,9 +32,13 @@ enum rs_format
 {
     RS_FORMAT_ANY                           = 0,
     RS_FORMAT_Z16                           = 1,
-    RS_FORMAT_RGB8                          = 2,
-    RS_FORMAT_Y8                            = 3,
-    RS_FORMAT_Y16                           = 4,
+    RS_FORMAT_YUYV                          = 2,
+    RS_FORMAT_RGB8                          = 3,
+    RS_FORMAT_BGR8                          = 4,
+    RS_FORMAT_RGBA8                         = 5,
+    RS_FORMAT_BGRA8                         = 6,
+    RS_FORMAT_Y8                            = 7,
+    RS_FORMAT_Y16                           = 8,
     RS_ENUM_RANGE(FORMAT, ANY, Y16)
 };
 

@@ -24,6 +24,10 @@ namespace rsimpl
         return v;
     }
 
+    inline uint8_t yuv_to_r(int y, int u, int v) { return clamp_byte((128 + 298 * y           + 409 * v) >> 8); }
+    inline uint8_t yuv_to_g(int y, int u, int v) { return clamp_byte((128 + 298 * y - 100 * u - 208 * v) >> 8); }
+    inline uint8_t yuv_to_b(int y, int u, int v) { return clamp_byte((128 + 298 * y + 516 * u          ) >> 8); }
+
     void convert_yuyv_to_rgb(void * dest_image, int width, int height, const void * source_image)
     {
         auto dest = reinterpret_cast<uint8_t *>(dest_image);
@@ -32,17 +36,88 @@ namespace rsimpl
         {
             for (int x = 0; x < width; x += 2)
             {
-                int y0 = source[0], u = source[1], y1 = source[2], v = source[3];
+                const int y0 = source[0] - 16, u = source[1] - 128, y1 = source[2] - 16, v = source[3] - 128;
 
-                int c = y0 - 16, d = u - 128, e = v - 128;
-                *dest++ = clamp_byte((298 * c + 409 * e + 128) >> 8);           // r
-                *dest++ = clamp_byte((298 * c - 100 * d - 208 * e + 128) >> 8); // g
-                *dest++ = clamp_byte((298 * c + 516 * d + 128) >> 8);           // b
+                *dest++ = yuv_to_r(y0, u, v);
+                *dest++ = yuv_to_g(y0, u, v);
+                *dest++ = yuv_to_b(y0, u, v);
 
-                c = y1 - 16;
-                *dest++ = clamp_byte((298 * c + 409 * e + 128) >> 8);           // r
-                *dest++ = clamp_byte((298 * c - 100 * d - 208 * e + 128) >> 8); // g
-                *dest++ = clamp_byte((298 * c + 516 * d + 128) >> 8);           // b
+                *dest++ = yuv_to_r(y1, u, v);
+                *dest++ = yuv_to_g(y1, u, v);
+                *dest++ = yuv_to_b(y1, u, v);
+
+                source += 4;
+            }
+        }
+    }
+
+    void convert_yuyv_to_rgba(void * dest_image, int width, int height, const void * source_image)
+    {
+        auto dest = reinterpret_cast<uint8_t *>(dest_image);
+        auto source = reinterpret_cast<const uint8_t *>(source_image);
+        for (int y = 0; y < height; ++y)
+        {
+            for (int x = 0; x < width; x += 2)
+            {
+                const int y0 = source[0] - 16, u = source[1] - 128, y1 = source[2] - 16, v = source[3] - 128;
+
+                *dest++ = yuv_to_r(y0, u, v);
+                *dest++ = yuv_to_g(y0, u, v);
+                *dest++ = yuv_to_b(y0, u, v);
+                *dest++ = 255;
+
+                *dest++ = yuv_to_r(y1, u, v);
+                *dest++ = yuv_to_g(y1, u, v);
+                *dest++ = yuv_to_b(y1, u, v);
+                *dest++ = 255;
+
+                source += 4;
+            }
+        }
+    }
+
+    void convert_yuyv_to_bgr(void * dest_image, int width, int height, const void * source_image)
+    {
+        auto dest = reinterpret_cast<uint8_t *>(dest_image);
+        auto source = reinterpret_cast<const uint8_t *>(source_image);
+        for (int y = 0; y < height; ++y)
+        {
+            for (int x = 0; x < width; x += 2)
+            {
+                const int y0 = source[0] - 16, u = source[1] - 128, y1 = source[2] - 16, v = source[3] - 128;
+
+                *dest++ = yuv_to_b(y0, u, v);
+                *dest++ = yuv_to_g(y0, u, v);
+                *dest++ = yuv_to_r(y0, u, v);                
+
+                *dest++ = yuv_to_b(y1, u, v);
+                *dest++ = yuv_to_g(y1, u, v);
+                *dest++ = yuv_to_r(y1, u, v);
+
+                source += 4;
+            }
+        }
+    }
+
+    void convert_yuyv_to_bgra(void * dest_image, int width, int height, const void * source_image)
+    {
+        auto dest = reinterpret_cast<uint8_t *>(dest_image);
+        auto source = reinterpret_cast<const uint8_t *>(source_image);
+        for (int y = 0; y < height; ++y)
+        {
+            for (int x = 0; x < width; x += 2)
+            {
+                const int y0 = source[0] - 16, u = source[1] - 128, y1 = source[2] - 16, v = source[3] - 128;
+
+                *dest++ = yuv_to_b(y0, u, v);
+                *dest++ = yuv_to_g(y0, u, v);
+                *dest++ = yuv_to_r(y0, u, v);                
+                *dest++ = 255;
+
+                *dest++ = yuv_to_b(y1, u, v);
+                *dest++ = yuv_to_g(y1, u, v);
+                *dest++ = yuv_to_r(y1, u, v);
+                *dest++ = 255;
 
                 source += 4;
             }

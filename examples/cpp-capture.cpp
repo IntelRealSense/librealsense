@@ -41,8 +41,14 @@ void draw_stream(rs::camera & cam, rs::stream stream, int x, int y)
     case RS_FORMAT_Z16:
         draw_depth_histogram(reinterpret_cast<const uint16_t *>(pixels), width, height);
         break;
-    case RS_FORMAT_RGB8:
+    case RS_FORMAT_YUYV:
+        glDrawPixels(width, height, GL_LUMINANCE_ALPHA, GL_UNSIGNED_BYTE, pixels); // Display YUYV by showing the luminance channel and packing chrominance into ignored alpha channel
+        break;
+    case RS_FORMAT_RGB8: case RS_FORMAT_BGR8: // Display both RGB and BGR by interpreting them RGB, to show the flipped byte ordering. Obviously, GL_BGR could be used on OpenGL 1.2+
         glDrawPixels(width, height, GL_RGB, GL_UNSIGNED_BYTE, pixels);
+        break;
+    case RS_FORMAT_RGBA8: case RS_FORMAT_BGRA8: // Display both RGBA and BGRA by interpreting them RGBA, to show the flipped byte ordering. Obviously, GL_BGRA could be used on OpenGL 1.2+
+        glDrawPixels(width, height, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
         break;
     case RS_FORMAT_Y8:
         glDrawPixels(width, height, GL_LUMINANCE, GL_UNSIGNED_BYTE, pixels);
@@ -66,7 +72,7 @@ int main(int argc, char * argv[]) try
     cam.enable_stream_preset(RS_STREAM_DEPTH, RS_PRESET_BEST_QUALITY);
     cam.enable_stream_preset(RS_STREAM_COLOR, RS_PRESET_BEST_QUALITY);
     cam.enable_stream_preset(RS_STREAM_INFRARED, RS_PRESET_BEST_QUALITY);
-    // cam.enable_stream(RS_STREAM_INFRARED, 0, 0, RS_FORMAT_Y16, 0);
+    //cam.enable_stream(RS_STREAM_INFRARED, 0, 0, RS_FORMAT_Y16, 0);
     try {
         cam.enable_stream(RS_STREAM_INFRARED_2, 0, 0, RS_FORMAT_ANY, 0); // Select a format for INFRARED_2 that matches INFRARED
     } catch(...) {}
