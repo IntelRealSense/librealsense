@@ -157,7 +157,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\src\camera.cpp" />
+    <ClCompile Include="..\..\src\device.cpp" />
     <ClCompile Include="..\..\src\context.cpp" />
     <ClCompile Include="..\..\src\f200-private.cpp" />
     <ClCompile Include="..\..\src\f200.cpp" />
@@ -173,7 +173,7 @@
     <ClInclude Include="..\..\include\librealsense\rs.h" />
     <ClInclude Include="..\..\include\librealsense\rs.hpp" />
     <ClInclude Include="..\..\include\librealsense\rsutil.h" />
-    <ClInclude Include="..\..\src\camera.h" />
+    <ClInclude Include="..\..\src\device.h" />
     <ClInclude Include="..\..\src\context.h" />
     <ClInclude Include="..\..\src\f200-private.h" />
     <ClInclude Include="..\..\src\f200.h" />

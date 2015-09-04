@@ -23,14 +23,14 @@ int main(int argc, char * argv[]) try
 {
     rs::context ctx;
 
-    // Configure and start our camera
-    for(int i=0; i<ctx.get_camera_count(); ++i)
+    // Configure and start our device
+    for(int i=0; i<ctx.get_device_count(); ++i)
     {
-        rs::camera cam = ctx.get_camera(i);
-        std::cout << "Starting " << cam.get_name() << "... ";
-        cam.enable_stream_preset(RS_STREAM_DEPTH, RS_PRESET_BEST_QUALITY);
-        cam.enable_stream_preset(RS_STREAM_COLOR, RS_PRESET_BEST_QUALITY);
-        cam.start_capture();
+        rs::device dev = ctx.get_device(i);
+        std::cout << "Starting " << dev.get_name() << "... ";
+        dev.enable_stream_preset(RS_STREAM_DEPTH, RS_PRESET_BEST_QUALITY);
+        dev.enable_stream_preset(RS_STREAM_COLOR, RS_PRESET_BEST_QUALITY);
+        dev.start();
         std::cout << "done." << std::endl;
     }
 
@@ -52,9 +52,9 @@ int main(int argc, char * argv[]) try
     {
         // Wait for new images
         glfwPollEvents();
-        for(int i=0; i<ctx.get_camera_count(); ++i)
+        for(int i=0; i<ctx.get_device_count(); ++i)
         {
-            ctx.get_camera(i).wait_all_streams();
+            ctx.get_device(i).wait_for_frames(RS_ALL_STREAM_BITS);
         }
 
         // Draw the images
@@ -63,19 +63,19 @@ int main(int argc, char * argv[]) try
         glOrtho(0, 1280, 960, 0, -1, +1);
         glPixelZoom(1, -1);
         int x=0;
-        for(int i=0; i<ctx.get_camera_count(); ++i)
+        for(int i=0; i<ctx.get_device_count(); ++i)
         {
-            auto cam = ctx.get_camera(i);
-            const auto c = cam.get_stream_intrinsics(RS_STREAM_COLOR), d = cam.get_stream_intrinsics(RS_STREAM_DEPTH);
+            auto dev = ctx.get_device(i);
+            const auto c = dev.get_stream_intrinsics(RS_STREAM_COLOR), d = dev.get_stream_intrinsics(RS_STREAM_DEPTH);
             const int width = std::max(c.image_size[0], d.image_size[0]);
 
             glRasterPos2i(x + (width - c.image_size[0])/2, 0);
-            glDrawPixels(c.image_size[0], c.image_size[1], GL_RGB, GL_UNSIGNED_BYTE, cam.get_image_pixels(RS_STREAM_COLOR));
+            glDrawPixels(c.image_size[0], c.image_size[1], GL_RGB, GL_UNSIGNED_BYTE, dev.get_frame_data(RS_STREAM_COLOR));
 
             glRasterPos2i(x + (width - d.image_size[0])/2, c.image_size[1]);
-            draw_depth_histogram(reinterpret_cast<const uint16_t *>(cam.get_image_pixels(RS_STREAM_DEPTH)), d.image_size[0], d.image_size[1]);
+            draw_depth_histogram(reinterpret_cast<const uint16_t *>(dev.get_frame_data(RS_STREAM_DEPTH)), d.image_size[0], d.image_size[1]);
 
-            ttf_print(&font, x+(width-ttf_len(&font, cam.get_name()))/2, 24, cam.get_name());
+            ttf_print(&font, x+(width-ttf_len(&font, dev.get_name()))/2, 24, dev.get_name());
             x += width;
         }
 

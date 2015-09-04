@@ -2,13 +2,13 @@
 #ifndef LIBREALSENSE_F200_H
 #define LIBREALSENSE_F200_H
 
-#include "camera.h"
+#include "device.h"
 
 namespace rsimpl
 {
     namespace f200 { class IVCAMHardwareIO; }
 
-    class f200_camera : public rs_camera
+    class f200_camera : public rs_device
     {
         std::unique_ptr<f200::IVCAMHardwareIO> hardware_io;
     public:      

@@ -50,37 +50,36 @@ namespace rs
     inline const char *     to_string(distortion d)                                                 { return rs_distortion_to_string(d); }
     inline const char *     to_string(option o)                                                     { return rs_option_to_string(o); }
 
-    class camera
+    class device
     {
-        rs_camera *         cam;
+        rs_device *         dev;
     public:
-                            camera()                                                                : cam() {}
-                            camera(rs_camera * cam)                                                 : cam(cam) {}
-        explicit            operator bool() const                                                   { return !!cam; }
-        rs_camera *         get_handle() const                                                      { return cam; }
+                            device()                                                                : dev() {}
+                            device(rs_device * dev)                                                 : dev(dev) {}
+        explicit            operator bool() const                                                   { return !!dev; }
+        rs_device *         get_handle() const                                                      { return dev; }
 
-        const char *        get_name()                                                              { return rs_get_camera_name(cam, auto_error()); }
+        const char *        get_name()                                                              { return rs_get_device_name(dev, auto_error()); }
+        bool                supports_option(option o) const                                         { return !!rs_device_supports_option(dev, o, auto_error()); }
+        extrinsics          get_extrinsics(stream from, stream to)                                  { extrinsics extrin; rs_get_device_extrinsics(dev, from, to, &extrin, auto_error()); return extrin; }
 
-        void                enable_stream(stream s, int width, int height, format f, int fps)       { rs_enable_stream(cam, s, width, height, f, fps, auto_error()); }
-        void                enable_stream_preset(stream s, preset preset)                           { rs_enable_stream_preset(cam, s, preset, auto_error()); }
-        bool                is_stream_enabled(stream s)                                             { return !!rs_is_stream_enabled(cam, s, auto_error()); }
+        void                enable_stream(stream s, int width, int height, format f, int fps)       { rs_enable_stream(dev, s, width, height, f, fps, auto_error()); }
+        void                enable_stream_preset(stream s, preset preset)                           { rs_enable_stream_preset(dev, s, preset, auto_error()); }
+        bool                is_stream_enabled(stream s)                                             { return !!rs_stream_is_enabled(dev, s, auto_error()); }
 
-        void                start_capture()                                                         { rs_start_capture(cam, auto_error()); }
-        void                stop_capture()                                                          { rs_stop_capture(cam, auto_error()); }
-        bool                is_capturing()                                                          { return !!rs_is_capturing(cam, auto_error()); }
+        void                start()                                                                 { rs_start_device(dev, auto_error()); }
+        void                stop()                                                                  { rs_stop_device(dev, auto_error()); }
+        bool                is_streaming()                                                          { return !!rs_device_is_streaming(dev, auto_error()); }
+        intrinsics          get_stream_intrinsics(stream s)                                         { intrinsics intrin; rs_get_stream_intrinsics(dev, s, &intrin, auto_error()); return intrin; }
+        format              get_stream_format(stream s)                                             { return rs_get_stream_format(dev, s, auto_error()); }
 
-        float               get_depth_scale()                                                       { return rs_get_depth_scale(cam, auto_error()); }
-        format              get_stream_format(stream s)                                             { return rs_get_stream_format(cam, s, auto_error()); }
-        intrinsics          get_stream_intrinsics(stream s)                                         { intrinsics intrin; rs_get_stream_intrinsics(cam, s, &intrin, auto_error()); return intrin; }
-        extrinsics          get_stream_extrinsics(stream from, stream to)                           { extrinsics extrin; rs_get_stream_extrinsics(cam, from, to, &extrin, auto_error()); return extrin; }
+        void                wait_for_frames(int stream_bits)                                        { rs_wait_for_frames(dev, stream_bits, auto_error()); }
+        int                 get_frame_number(stream s)                                              { return rs_get_frame_number(dev, s, auto_error()); }
+        const void *        get_frame_data(stream s)                                                { return rs_get_frame_data(dev, s, auto_error()); }
 
-        void                wait_all_streams()                                                      { rs_wait_all_streams(cam, auto_error()); }
-        const void *        get_image_pixels(stream s)                                              { return rs_get_image_pixels(cam, s, auto_error()); }
-        int                 get_image_frame_number(stream s)                                        { return rs_get_image_frame_number(cam, s, auto_error()); }
-
-        bool                supports_option(option o) const                                         { return !!rs_camera_supports_option(cam, o, auto_error()); }
-        void                set_option(option o, int value)                                         { rs_set_camera_option(cam, o, value, auto_error()); }
-        int                 get_option(option o)                                                    { return rs_get_camera_option(cam, o, auto_error()); }
+        void                set_option(option o, int value)                                         { rs_set_device_option(dev, o, value, auto_error()); }
+        int                 get_option(option o)                                                    { return rs_get_device_option(dev, o, auto_error()); }
+        float               get_depth_scale()                                                       { return rs_get_device_depth_scale(dev, auto_error()); }
     };
 
     class context
@@ -93,8 +92,8 @@ namespace rs
                             context & operator = (const context &)                                  = delete;
         rs_context *        get_handle() const                                                      { return ctx; }
 
-        int                 get_camera_count()                                                      { return rs_get_camera_count(ctx, auto_error()); }
-        camera              get_camera(int index)                                                   { return rs_get_camera(ctx, index, auto_error()); }
+        int                 get_device_count()                                                      { return rs_get_device_count(ctx, auto_error()); }
+        device              get_device(int index)                                                   { return rs_get_device(ctx, index, auto_error()); }
     };
 }
 

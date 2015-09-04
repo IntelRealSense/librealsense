@@ -27,9 +27,9 @@ namespace rsimpl
     }
 
     enum { COLOR_VGA, COLOR_HD, DEPTH_VGA, DEPTH_QVGA, NUM_INTRINSICS };
-    static static_camera_info get_f200_info()
+    static static_device_info get_f200_info()
     {
-        static_camera_info info;
+        static_device_info info;
         info.name = {"Intel RealSense F200"};
 
         // Color modes on subdevice 0
@@ -67,7 +67,7 @@ namespace rsimpl
         return info;
     }
 
-    f200_camera::f200_camera(uvc::device device) : rs_camera(device, get_f200_info())
+    f200_camera::f200_camera(uvc::device device) : rs_device(device, get_f200_info())
     {
 
     }

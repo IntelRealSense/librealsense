@@ -5,11 +5,11 @@
 extern "C" {
 #endif
     
-#define RS_API_VERSION 2
+#define RS_API_VERSION 3
 
 /* public type definitions */
 typedef struct rs_context rs_context;
-typedef struct rs_camera rs_camera;
+typedef struct rs_device rs_device;
 typedef struct rs_error rs_error;
 typedef struct rs_intrinsics rs_intrinsics;
 typedef struct rs_extrinsics rs_extrinsics;
@@ -22,29 +22,30 @@ typedef enum rs_option rs_option;
 /* public function declarations */
 rs_context *    rs_create_context           (int api_version, rs_error ** error);
 void            rs_delete_context           (rs_context * context, rs_error ** error);
-int             rs_get_camera_count         (const rs_context * context, rs_error ** error);
-rs_camera *     rs_get_camera               (const rs_context * context, int index, rs_error ** error);
-const char *    rs_get_camera_name          (const rs_camera * camera, rs_error ** error);
-int             rs_camera_supports_option   (const rs_camera * camera, rs_option option, rs_error ** error);
+int             rs_get_device_count         (const rs_context * context, rs_error ** error);
+rs_device *     rs_get_device               (const rs_context * context, int index, rs_error ** error);
 
-void            rs_enable_stream            (rs_camera * camera, rs_stream stream, int width, int height, rs_format format, int fps, rs_error ** error);
-void            rs_enable_stream_preset     (rs_camera * camera, rs_stream stream, rs_preset preset, rs_error ** error);
-int             rs_is_stream_enabled        (const rs_camera * camera, rs_stream stream, rs_error ** error);
+const char *    rs_get_device_name          (const rs_device * device, rs_error ** error);
+int             rs_device_supports_option   (const rs_device * device, rs_option option, rs_error ** error);
+void            rs_get_device_extrinsics    (const rs_device * device, rs_stream from, rs_stream to, rs_extrinsics * extrin, rs_error ** error);
 
-void            rs_start_capture            (rs_camera * camera, rs_error ** error);
-void            rs_stop_capture             (rs_camera * camera, rs_error ** error);
-int             rs_is_capturing             (const rs_camera * camera, rs_error ** error);
-float           rs_get_depth_scale          (const rs_camera * camera, rs_error ** error);
-rs_format       rs_get_stream_format        (const rs_camera * camera, rs_stream stream, rs_error ** error);
-void            rs_get_stream_intrinsics    (const rs_camera * camera, rs_stream stream, rs_intrinsics * intrin, rs_error ** error);
-void            rs_get_stream_extrinsics    (const rs_camera * camera, rs_stream from, rs_stream to, rs_extrinsics * extrin, rs_error ** error);
+void            rs_enable_stream            (rs_device * device, rs_stream stream, int width, int height, rs_format format, int fps, rs_error ** error);
+void            rs_enable_stream_preset     (rs_device * device, rs_stream stream, rs_preset preset, rs_error ** error);
+int             rs_stream_is_enabled        (const rs_device * device, rs_stream stream, rs_error ** error);
 
-void            rs_wait_all_streams         (rs_camera * camera, rs_error ** error);
-int             rs_get_image_frame_number   (const rs_camera * camera, rs_stream stream, rs_error ** error);
-const void *    rs_get_image_pixels         (const rs_camera * camera, rs_stream stream, rs_error ** error);
+void            rs_start_device             (rs_device * device, rs_error ** error);
+void            rs_stop_device              (rs_device * device, rs_error ** error);
+int             rs_device_is_streaming      (const rs_device * device, rs_error ** error);
+rs_format       rs_get_stream_format        (const rs_device * device, rs_stream stream, rs_error ** error);
+void            rs_get_stream_intrinsics    (const rs_device * device, rs_stream stream, rs_intrinsics * intrin, rs_error ** error);
 
-void            rs_set_camera_option        (rs_camera * camera, rs_option option, int value, rs_error ** error);
-int             rs_get_camera_option        (const rs_camera * camera, rs_option option, rs_error ** error);
+void            rs_set_device_option        (rs_device * device, rs_option option, int value, rs_error ** error);
+int             rs_get_device_option        (const rs_device * device, rs_option option, rs_error ** error);
+float           rs_get_device_depth_scale   (const rs_device * device, rs_error ** error);
+
+void            rs_wait_for_frames          (rs_device * device, int stream_bits, rs_error ** error);
+int             rs_get_frame_number         (const rs_device * device, rs_stream stream, rs_error ** error);
+const void *    rs_get_frame_data           (const rs_device * device, rs_stream stream, rs_error ** error);
 
 void            rs_free_error               (rs_error * error);
 const char *    rs_get_failed_function      (const rs_error * error);
@@ -66,6 +67,15 @@ enum rs_stream
     RS_STREAM_INFRARED_2                    = 3,
     RS_STREAM_COUNT                         = 4,
     RS_STREAM_MAX_ENUM                      = 0x7FFFFFFF
+};
+
+enum
+{
+    RS_STREAM_DEPTH_BIT                     = 1 << RS_STREAM_DEPTH,
+    RS_STREAM_COLOR_BIT                     = 1 << RS_STREAM_COLOR,
+    RS_STREAM_INFRARED_BIT                  = 1 << RS_STREAM_INFRARED,
+    RS_STREAM_INFRARED_2_BIT                = 1 << RS_STREAM_INFRARED_2,
+    RS_ALL_STREAM_BITS                      = (1 << RS_STREAM_COUNT) - 1
 };
 
 enum rs_format

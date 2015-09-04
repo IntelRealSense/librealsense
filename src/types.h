@@ -98,7 +98,7 @@ namespace rsimpl
         int delta;
     };
 
-    struct static_camera_info
+    struct static_device_info
     {
         std::string name;                                           // Model name of the camera
         int stream_subdevices[RS_STREAM_COUNT];                     // Which subdevice is used to support each stream, or -1 if stream is unavailable
@@ -107,7 +107,7 @@ namespace rsimpl
         stream_request presets[RS_STREAM_COUNT][RS_PRESET_COUNT];   // Presets available for each stream
         bool option_supported[RS_OPTION_COUNT];                     // Whether or not a given option is supported on this camera
 
-        static_camera_info();
+        static_device_info();
 
         const subdevice_mode * select_mode(const stream_request (&requests)[RS_STREAM_COUNT], int subdevice_index) const;
     };

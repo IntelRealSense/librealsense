@@ -1,9 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <ClCompile Include="..\..\src\camera.cpp">
-      <Filter>src</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\context.cpp">
       <Filter>src</Filter>
     </ClCompile>
@@ -34,11 +31,11 @@
     <ClCompile Include="..\..\src\verify.c">
       <Filter>src</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\device.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\src\camera.h">
-      <Filter>src</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\context.h">
       <Filter>src</Filter>
     </ClInclude>
@@ -71,6 +68,9 @@
     </ClInclude>
     <ClInclude Include="..\..\include\librealsense\rsutil.h">
       <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\device.h">
+      <Filter>src</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

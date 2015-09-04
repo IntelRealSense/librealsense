@@ -1,5 +1,5 @@
 #include "context.h"
-#include "camera.h"
+#include "device.h"
 
 #include <climits>
 
@@ -52,170 +52,170 @@ void rs_delete_context(rs_context * context, rs_error ** error) try
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, context)
 
-int rs_get_camera_count(const rs_context * context, rs_error ** error) try
+int rs_get_device_count(const rs_context * context, rs_error ** error) try
 {
     VALIDATE_NOT_NULL(context);
-    return (int)context->cameras.size();
+    return (int)context->devices.size();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, context)
 
-rs_camera * rs_get_camera(const rs_context * context, int index, rs_error ** error) try
+rs_device * rs_get_device(const rs_context * context, int index, rs_error ** error) try
 {
     VALIDATE_NOT_NULL(context);
-    VALIDATE_RANGE(index, 0, (int)context->cameras.size()-1);
-    return context->cameras[index].get();
+    VALIDATE_RANGE(index, 0, (int)context->devices.size()-1);
+    return context->devices[index].get();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, context, index)
 
 
 
-const char * rs_get_camera_name(const rs_camera * camera, rs_error ** error) try
+const char * rs_get_device_name(const rs_device * device, rs_error ** error) try
 {
-    VALIDATE_NOT_NULL(camera);
-    return camera->get_name();
+    VALIDATE_NOT_NULL(device);
+    return device->get_name();
 }
-HANDLE_EXCEPTIONS_AND_RETURN(nullptr, camera)
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, device)
 
-int rs_camera_supports_option(const rs_camera * camera, rs_option option, rs_error ** error) try
+int rs_device_supports_option(const rs_device * device, rs_option option, rs_error ** error) try
 {
-    VALIDATE_NOT_NULL(camera);
+    VALIDATE_NOT_NULL(device);
     VALIDATE_ENUM(option);
-    return camera->supports_option(option);
+    return device->supports_option(option);
 }
-HANDLE_EXCEPTIONS_AND_RETURN(0, camera, option)
+HANDLE_EXCEPTIONS_AND_RETURN(0, device, option)
 
-
-
-void rs_enable_stream(rs_camera * camera, rs_stream stream, int width, int height, rs_format format, int fps, rs_error ** error) try
+void rs_get_device_extrinsics(const rs_device * device, rs_stream from, rs_stream to, rs_extrinsics * extrin, rs_error ** error) try
 {
-    VALIDATE_NOT_NULL(camera);
+    VALIDATE_NOT_NULL(device);
+    VALIDATE_ENUM(from);
+    VALIDATE_ENUM(to);
+    VALIDATE_NOT_NULL(extrin);
+    *extrin = device->get_stream_extrinsics(from, to);
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, device, from, to, extrin)
+
+
+
+void rs_enable_stream(rs_device * device, rs_stream stream, int width, int height, rs_format format, int fps, rs_error ** error) try
+{
+    VALIDATE_NOT_NULL(device);
     VALIDATE_ENUM(stream);
     VALIDATE_RANGE(width, 0, INT_MAX);
     VALIDATE_RANGE(height, 0, INT_MAX);
     VALIDATE_ENUM(format);
     VALIDATE_RANGE(fps, 0, INT_MAX);
-    camera->enable_stream(stream, width, height, format, fps);
+    device->enable_stream(stream, width, height, format, fps);
 }
-HANDLE_EXCEPTIONS_AND_RETURN(, camera, stream, width, height, format, fps)
+HANDLE_EXCEPTIONS_AND_RETURN(, device, stream, width, height, format, fps)
 
-void rs_enable_stream_preset(rs_camera * camera, rs_stream stream, rs_preset preset, rs_error ** error) try
+void rs_enable_stream_preset(rs_device * device, rs_stream stream, rs_preset preset, rs_error ** error) try
 {
-    VALIDATE_NOT_NULL(camera);
+    VALIDATE_NOT_NULL(device);
     VALIDATE_ENUM(stream);
     VALIDATE_ENUM(preset);
-    camera->enable_stream_preset(stream, preset);
+    device->enable_stream_preset(stream, preset);
 }
-HANDLE_EXCEPTIONS_AND_RETURN(, camera, stream, preset)
+HANDLE_EXCEPTIONS_AND_RETURN(, device, stream, preset)
 
-int rs_is_stream_enabled(const rs_camera * camera, rs_stream stream, rs_error ** error) try
+int rs_stream_is_enabled(const rs_device * device, rs_stream stream, rs_error ** error) try
 {
-    VALIDATE_NOT_NULL(camera);
+    VALIDATE_NOT_NULL(device);
     VALIDATE_ENUM(stream);
-    return camera->is_stream_enabled(stream);
+    return device->is_stream_enabled(stream);
 }
-HANDLE_EXCEPTIONS_AND_RETURN(0, camera, stream)
+HANDLE_EXCEPTIONS_AND_RETURN(0, device, stream)
 
 
 
-void rs_start_capture(rs_camera * camera, rs_error ** error) try
+void rs_start_device(rs_device * device, rs_error ** error) try
 {
-    VALIDATE_NOT_NULL(camera);
-    camera->start_capture();
+    VALIDATE_NOT_NULL(device);
+    device->start_capture();
 }
-HANDLE_EXCEPTIONS_AND_RETURN(, camera)
+HANDLE_EXCEPTIONS_AND_RETURN(, device)
 
-void rs_stop_capture(rs_camera * camera, rs_error ** error) try
+void rs_stop_device(rs_device * device, rs_error ** error) try
 {
-    VALIDATE_NOT_NULL(camera);
-    camera->stop_capture();
+    VALIDATE_NOT_NULL(device);
+    device->stop_capture();
 }
-HANDLE_EXCEPTIONS_AND_RETURN(, camera)
+HANDLE_EXCEPTIONS_AND_RETURN(, device)
 
-int rs_is_capturing(const rs_camera * camera, rs_error ** error) try
+int rs_device_is_streaming(const rs_device * device, rs_error ** error) try
 {
-    VALIDATE_NOT_NULL(camera);
-    return camera->is_capturing();
+    VALIDATE_NOT_NULL(device);
+    return device->is_capturing();
 }
-HANDLE_EXCEPTIONS_AND_RETURN(0, camera)
+HANDLE_EXCEPTIONS_AND_RETURN(0, device)
 
-float rs_get_depth_scale(const rs_camera * camera, rs_error ** error) try
+float rs_get_device_depth_scale(const rs_device * device, rs_error ** error) try
 {
-    VALIDATE_NOT_NULL(camera);
-    return camera->get_depth_scale();
+    VALIDATE_NOT_NULL(device);
+    return device->get_depth_scale();
 }
-HANDLE_EXCEPTIONS_AND_RETURN(0.0f, camera)
+HANDLE_EXCEPTIONS_AND_RETURN(0.0f, device)
 
-rs_format rs_get_stream_format(const rs_camera * camera, rs_stream stream, rs_error ** error) try
+rs_format rs_get_stream_format(const rs_device * device, rs_stream stream, rs_error ** error) try
 {
-    VALIDATE_NOT_NULL(camera);
+    VALIDATE_NOT_NULL(device);
     VALIDATE_ENUM(stream);
-    return camera->get_stream_format(stream);
+    return device->get_stream_format(stream);
 }
-HANDLE_EXCEPTIONS_AND_RETURN(RS_FORMAT_ANY, camera, stream)
+HANDLE_EXCEPTIONS_AND_RETURN(RS_FORMAT_ANY, device, stream)
 
-void rs_get_stream_intrinsics(const rs_camera * camera, rs_stream stream, rs_intrinsics * intrin, rs_error ** error) try
+void rs_get_stream_intrinsics(const rs_device * device, rs_stream stream, rs_intrinsics * intrin, rs_error ** error) try
 {
-    VALIDATE_NOT_NULL(camera);
+    VALIDATE_NOT_NULL(device);
     VALIDATE_ENUM(stream);
     VALIDATE_NOT_NULL(intrin);
-    *intrin = camera->get_stream_intrinsics(stream);
+    *intrin = device->get_stream_intrinsics(stream);
 }
-HANDLE_EXCEPTIONS_AND_RETURN(, camera, stream, intrin)
+HANDLE_EXCEPTIONS_AND_RETURN(, device, stream, intrin)
 
-void rs_get_stream_extrinsics(const rs_camera * camera, rs_stream from, rs_stream to, rs_extrinsics * extrin, rs_error ** error) try
+
+
+void rs_wait_for_frames(rs_device * device, int stream_bits, rs_error ** error) try
 {
-    VALIDATE_NOT_NULL(camera);
-    VALIDATE_ENUM(from);
-    VALIDATE_ENUM(to);
-    VALIDATE_NOT_NULL(extrin);
-    *extrin = camera->get_stream_extrinsics(from, to);
+    VALIDATE_NOT_NULL(device);
+    device->wait_all_streams();
 }
-HANDLE_EXCEPTIONS_AND_RETURN(, camera, from, to, extrin)
+HANDLE_EXCEPTIONS_AND_RETURN(, device)
 
-
-
-void rs_wait_all_streams(rs_camera * camera, rs_error ** error) try
+int rs_get_frame_number(const rs_device * device, rs_stream stream, rs_error ** error) try
 {
-    VALIDATE_NOT_NULL(camera);
-    camera->wait_all_streams();
-}
-HANDLE_EXCEPTIONS_AND_RETURN(, camera)
-
-int rs_get_image_frame_number(const rs_camera * camera, rs_stream stream, rs_error ** error) try
-{
-    VALIDATE_NOT_NULL(camera);
+    VALIDATE_NOT_NULL(device);
     VALIDATE_ENUM(stream);
-    return camera->get_image_frame_number(stream);
+    return device->get_image_frame_number(stream);
 }
-HANDLE_EXCEPTIONS_AND_RETURN(0, camera, stream)
+HANDLE_EXCEPTIONS_AND_RETURN(0, device, stream)
 
-const void * rs_get_image_pixels(const rs_camera * camera, rs_stream stream, rs_error ** error) try
+const void * rs_get_frame_data(const rs_device * device, rs_stream stream, rs_error ** error) try
 {
-    VALIDATE_NOT_NULL(camera);
+    VALIDATE_NOT_NULL(device);
     VALIDATE_ENUM(stream);
-    return camera->get_image_pixels(stream);
+    return device->get_image_pixels(stream);
 }
-HANDLE_EXCEPTIONS_AND_RETURN(nullptr, camera, stream)
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, device, stream)
 
 
 
-void rs_set_camera_option(rs_camera * camera, rs_option option, int value, rs_error ** error) try
+void rs_set_device_option(rs_device * device, rs_option option, int value, rs_error ** error) try
 {
-    VALIDATE_NOT_NULL(camera);
+    VALIDATE_NOT_NULL(device);
     VALIDATE_ENUM(option);
-    if(!camera->supports_option(option)) throw std::runtime_error("option not supported by this camera");
-    camera->set_option(option, value);
+    if(!device->supports_option(option)) throw std::runtime_error("option not supported by this device");
+    device->set_option(option, value);
 }
-HANDLE_EXCEPTIONS_AND_RETURN(, camera, option, value)
+HANDLE_EXCEPTIONS_AND_RETURN(, device, option, value)
 
-int rs_get_camera_option(const rs_camera * camera, rs_option option, rs_error ** error) try
+int rs_get_device_option(const rs_device * device, rs_option option, rs_error ** error) try
 {
-    VALIDATE_NOT_NULL(camera);
+    VALIDATE_NOT_NULL(device);
     VALIDATE_ENUM(option);
-    if(!camera->supports_option(option)) throw std::runtime_error("option not supported by this camera");
-    return camera->get_option(option);
+    if(!device->supports_option(option)) throw std::runtime_error("option not supported by this device");
+    return device->get_option(option);
 }
-HANDLE_EXCEPTIONS_AND_RETURN(0, camera, option)
+HANDLE_EXCEPTIONS_AND_RETURN(0, device, option)
 
 
 

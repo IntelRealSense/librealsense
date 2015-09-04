@@ -2,11 +2,11 @@
 #ifndef LIBREALSENSE_R200_H
 #define LIBREALSENSE_R200_H
 
-#include "camera.h"
+#include "device.h"
 
 namespace rsimpl
 {
-    class r200_camera : public rs_camera
+    class r200_camera : public rs_device
     {
     public:
         r200_camera(uvc::device device);

@@ -6,17 +6,17 @@ namespace RealSense
     #region Public classes modeled on the opaque types specified in rs.h
     public class Context : IDisposable
     {
-        public Camera[] Cameras
+        public Device[] Cameras
         {
             get
             {
-                Camera[] cameras;
-                using (var e = new AutoError()) { cameras = new Camera[rs_get_camera_count(handle, ref e.Handle)]; }
-                for (int i = 0; i < cameras.Length; ++i) 
+                Device[] devices;
+                using (var e = new AutoError()) { devices = new Device[rs_get_device_count(handle, ref e.Handle)]; }
+                for (int i = 0; i < devices.Length; ++i) 
                 {
-                    using (var e = new AutoError()) { cameras[i] = new Camera(rs_get_camera(handle, i, ref e.Handle)); }
+                    using (var e = new AutoError()) { devices[i] = new Device(rs_get_device(handle, i, ref e.Handle)); }
                 }
-                return cameras;
+                return devices;
             }
         }
 
@@ -27,30 +27,35 @@ namespace RealSense
         private IntPtr handle;
         private const int ApiVersion = 2;
         [DllImport("realsense")] private static extern IntPtr rs_create_context(int api_version, ref IntPtr error);
-        [DllImport("realsense")] private static extern int rs_get_camera_count(IntPtr context, ref IntPtr error);
-        [DllImport("realsense")] private static extern IntPtr rs_get_camera(IntPtr context, int index, ref IntPtr error);
         [DllImport("realsense")] private static extern void rs_delete_context(IntPtr context, IntPtr error); // Note: NOT ref IntPtr, since we want to pass 0
+        [DllImport("realsense")] private static extern int rs_get_device_count(IntPtr context, ref IntPtr error);
+        [DllImport("realsense")] private static extern IntPtr rs_get_device(IntPtr context, int index, ref IntPtr error);
         #endregion
     }
 
-    public class Camera
+    public class Device
     {
+        public Device(IntPtr handle) { this.handle = handle; }
+
         public string Name
         {
-            get { using (var e = new AutoError()) { return Marshal.PtrToStringAnsi(rs_get_camera_name(handle, ref e.Handle)); } }
+            get { using (var e = new AutoError()) { return Marshal.PtrToStringAnsi(rs_get_device_name(handle, ref e.Handle)); } }
         }
 
-        public bool IsCapturing
+        public bool SupportsOption(Option option)
         {
-            get { using (var e = new AutoError()) { return rs_is_capturing(handle, ref e.Handle) != 0; } }
+            using (var e = new AutoError()) { return rs_device_supports_option(handle, option, ref e.Handle) != 0; }
         }
 
-        public float DepthScale
+        public Extrinsics GetExtrinsics(Stream from, Stream to)
         {
-            get { using (var e = new AutoError()) { return rs_get_depth_scale(handle, ref e.Handle); } }
+            using (var e = new AutoError())
+            {
+                var extrin = new Extrinsics();
+                rs_get_device_extrinsics(handle, from, to, ref extrin, ref e.Handle);
+                return extrin;
+            }
         }
-
-        public Camera(IntPtr handle) { this.handle = handle; }
 
         public void EnableStream(Stream stream, int width, int height, Format format, int fps)
         {
@@ -62,34 +67,24 @@ namespace RealSense
             using (var e = new AutoError()) { rs_enable_stream_preset(handle, stream, preset, ref e.Handle); }
         }
 
-        public bool IsStreamEnabled(Stream stream)
+        public bool StreamIsEnabled(Stream stream)
         {
-            using (var e = new AutoError()) { return rs_is_stream_enabled(handle, stream, ref e.Handle) != 0; }
+            using (var e = new AutoError()) { return rs_stream_is_enabled(handle, stream, ref e.Handle) != 0; }
         }
 
-        public void StartCapture()
+        public void Start()
         {
-            using (var e = new AutoError()) { rs_start_capture(handle, ref e.Handle); }
+            using (var e = new AutoError()) { rs_start_device(handle, ref e.Handle); }
         }
 
-        public void StopCapture()
+        public void Stop()
         {
-            using (var e = new AutoError()) { rs_stop_capture(handle, ref e.Handle); }
+            using (var e = new AutoError()) { rs_stop_device(handle, ref e.Handle); }
         }
 
-        public bool SupportsOption(Option option)
+        public bool IsStreaming
         {
-            using (var e = new AutoError()) { return rs_camera_supports_option(handle, option, ref e.Handle) != 0; }
-        }
-
-        public int GetOption(Option option)
-        {
-            using (var e = new AutoError()) { return rs_get_camera_option(handle, option, ref e.Handle); }
-        }
-
-        public void SetOption(Option option, int value)
-        {
-            using (var e = new AutoError()) { rs_set_camera_option(handle, option, value, ref e.Handle); }
+            get { using (var e = new AutoError()) { return rs_device_is_streaming(handle, ref e.Handle) != 0; } }
         }
 
         public Format GetStreamFormat(Stream stream)
@@ -107,50 +102,59 @@ namespace RealSense
             }
         }
 
-        public Extrinsics GetStreamExtrinsics(Stream from, Stream to)
+        public void SetOption(Option option, int value)
         {
-            using (var e = new AutoError())
-            {
-                var extrin = new Extrinsics();
-                rs_get_stream_extrinsics(handle, from, to, ref extrin, ref e.Handle);
-                return extrin;
-            }
+            using (var e = new AutoError()) { rs_set_device_option(handle, option, value, ref e.Handle); }
         }
 
-        public void WaitAllStreams()
+        public int GetOption(Option option)
         {
-            using (var e = new AutoError()) { rs_wait_all_streams(handle, ref e.Handle); }
+            using (var e = new AutoError()) { return rs_get_device_option(handle, option, ref e.Handle); }
         }
 
-        public IntPtr GetImagePixels(Stream stream)
+        public float DepthScale
         {
-            using (var e = new AutoError()) { return rs_get_image_pixels(handle, stream, ref e.Handle); }
+            get { using (var e = new AutoError()) { return rs_get_device_depth_scale(handle, ref e.Handle); } }
+        }
+        
+        public void WaitForFrames(Streams streams)
+        {
+            using (var e = new AutoError()) { rs_wait_for_frames(handle, streams, ref e.Handle); }
         }
 
-        public int GetImageFrameNumber(Stream stream)
+        public int GetFrameNumber(Stream stream)
         {
-            using (var e = new AutoError()) { return rs_get_image_frame_number(handle, stream, ref e.Handle); }
+            using (var e = new AutoError()) { return rs_get_frame_number(handle, stream, ref e.Handle); }
+        }
+
+        public IntPtr GetFrameData(Stream stream)
+        {
+            using (var e = new AutoError()) { return rs_get_frame_data(handle, stream, ref e.Handle); }
         }
 
         #region P/Invoke declarations for backing C API
         private IntPtr handle;
-        [DllImport("realsense")] private static extern IntPtr rs_get_camera_name(IntPtr camera, ref IntPtr error);
-        [DllImport("realsense")] private static extern void rs_enable_stream(IntPtr camera, Stream stream, int width, int height, Format format, int fps, ref IntPtr error);
-        [DllImport("realsense")] private static extern void rs_enable_stream_preset(IntPtr camera, Stream stream, Preset preset, ref IntPtr error);
-        [DllImport("realsense")] private static extern int rs_is_stream_enabled(IntPtr camera, Stream stream, ref IntPtr error);
-        [DllImport("realsense")] private static extern void rs_start_capture(IntPtr camera, ref IntPtr error);
-        [DllImport("realsense")] private static extern void rs_stop_capture(IntPtr camera, ref IntPtr error);
-        [DllImport("realsense")] private static extern int rs_is_capturing(IntPtr camera, ref IntPtr error);
-        [DllImport("realsense")] private static extern int rs_camera_supports_option(IntPtr camera, Option option, ref IntPtr error);
-        [DllImport("realsense")] private static extern int rs_get_camera_option(IntPtr camera, Option option, ref IntPtr error);
-        [DllImport("realsense")] private static extern void rs_set_camera_option(IntPtr camera, Option option, int value, ref IntPtr error);
-        [DllImport("realsense")] private static extern float rs_get_depth_scale(IntPtr camera, ref IntPtr error);
-        [DllImport("realsense")] private static extern Format rs_get_stream_format(IntPtr camera, Stream stream, ref IntPtr error);
-        [DllImport("realsense")] private static extern void rs_get_stream_intrinsics(IntPtr camera, Stream stream, ref Intrinsics intrin, ref IntPtr error);
-        [DllImport("realsense")] private static extern void rs_get_stream_extrinsics(IntPtr camera, Stream from, Stream to, ref Extrinsics extrin, ref IntPtr error);
-        [DllImport("realsense")] private static extern void rs_wait_all_streams(IntPtr camera, ref IntPtr error);
-        [DllImport("realsense")] private static extern IntPtr rs_get_image_pixels(IntPtr camera, Stream stream, ref IntPtr error);
-        [DllImport("realsense")] private static extern int rs_get_image_frame_number(IntPtr camera, Stream stream, ref IntPtr error);
+        [DllImport("realsense")] private static extern IntPtr rs_get_device_name(IntPtr device, ref IntPtr error);
+        [DllImport("realsense")] private static extern int rs_device_supports_option(IntPtr device, Option option, ref IntPtr error);
+        [DllImport("realsense")] private static extern void rs_get_device_extrinsics(IntPtr device, Stream from, Stream to, ref Extrinsics extrin, ref IntPtr error);
+
+        [DllImport("realsense")] private static extern void rs_enable_stream(IntPtr device, Stream stream, int width, int height, Format format, int fps, ref IntPtr error);
+        [DllImport("realsense")] private static extern void rs_enable_stream_preset(IntPtr device, Stream stream, Preset preset, ref IntPtr error);
+        [DllImport("realsense")] private static extern int rs_stream_is_enabled(IntPtr device, Stream stream, ref IntPtr error);
+
+        [DllImport("realsense")] private static extern void rs_start_device(IntPtr device, ref IntPtr error);
+        [DllImport("realsense")] private static extern void rs_stop_device(IntPtr device, ref IntPtr error);        
+        [DllImport("realsense")] private static extern int rs_device_is_streaming(IntPtr device, ref IntPtr error);
+        [DllImport("realsense")] private static extern Format rs_get_stream_format(IntPtr device, Stream stream, ref IntPtr error);
+        [DllImport("realsense")] private static extern void rs_get_stream_intrinsics(IntPtr device, Stream stream, ref Intrinsics intrin, ref IntPtr error);
+
+        [DllImport("realsense")] private static extern void rs_set_device_option(IntPtr device, Option option, int value, ref IntPtr error);
+        [DllImport("realsense")] private static extern int rs_get_device_option(IntPtr device, Option option, ref IntPtr error);
+        [DllImport("realsense")] private static extern float rs_get_device_depth_scale(IntPtr device, ref IntPtr error);      
+
+        [DllImport("realsense")] private static extern void rs_wait_for_frames(IntPtr device, Streams stream_bits, ref IntPtr error);
+        [DllImport("realsense")] private static extern int rs_get_frame_number(IntPtr device, Stream stream, ref IntPtr error);
+        [DllImport("realsense")] private static extern IntPtr rs_get_frame_data(IntPtr device, Stream stream, ref IntPtr error);        
         #endregion
     }
 
@@ -174,10 +178,10 @@ namespace RealSense
         private Error(string message) : base(message) {}
         
         #region P/Invoke declarations for backing C API
+        [DllImport("realsense")] private static extern void rs_free_error(IntPtr error);
         [DllImport("realsense")] private static extern IntPtr rs_get_failed_function(IntPtr error);
         [DllImport("realsense")] private static extern IntPtr rs_get_failed_args(IntPtr error);
         [DllImport("realsense")] private static extern IntPtr rs_get_error_message(IntPtr error);
-        [DllImport("realsense")] private static extern void rs_free_error(IntPtr error);
         #endregion
     }
     #endregion
@@ -208,6 +212,16 @@ namespace RealSense
         Color = 1,
         Infrared = 2,
         Infrared2 = 3,
+    };
+
+    [Flags]
+    public enum Streams : int
+    {
+        Depth = 1 << Stream.Depth,
+        Color = 1 << Stream.Color,
+        Infrared = 1 << Stream.Infrared,
+        Infrared2 = 1 << Stream.Infrared2,
+        All = Depth|Color|Infrared|Infrared2
     };
 
     public enum Format : int

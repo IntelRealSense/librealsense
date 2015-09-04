@@ -6,7 +6,7 @@ using System.Runtime.InteropServices;
 
 public class Capture : Form
 {
-    private RealSense.Camera camera;
+    private RealSense.Device device;
     private short[] depthMap;
     private uint[] depthHistogram;
     private byte[] depthImage;
@@ -14,18 +14,18 @@ public class Capture : Form
     private PictureBox colorPicture, depthPicture;
     private Timer timer;
 
-    public Capture(RealSense.Camera camera)
+    public Capture(RealSense.Device device)
     {
-        this.camera = camera;
+        this.device = device;
 
-        var colorIntrin = camera.GetStreamIntrinsics(RealSense.Stream.Color);
-        var depthIntrin = camera.GetStreamIntrinsics(RealSense.Stream.Depth);
+        var colorIntrin = device.GetStreamIntrinsics(RealSense.Stream.Color);
+        var depthIntrin = device.GetStreamIntrinsics(RealSense.Stream.Depth);
 
         depthMap = new short[depthIntrin.ImageSize[0] * depthIntrin.ImageSize[1]];
         depthHistogram = new uint[0x10000];
         depthImage = new byte[depthMap.Length * 3];
-            
-        Text = string.Format("C# Capture Example ({0})", camera.Name);
+
+        Text = string.Format("C# Capture Example ({0})", device.Name);
         ClientSize = new System.Drawing.Size(colorIntrin.ImageSize[0] + depthIntrin.ImageSize[0] + 36, colorIntrin.ImageSize[1] + 24);
 
         colorPicture = new PictureBox { Location = new Point(12, 12), Size = new Size(colorIntrin.ImageSize[0], colorIntrin.ImageSize[1]) };
@@ -47,22 +47,22 @@ public class Capture : Form
 
     private void OnCaptureTick(object sender, EventArgs e)
     {
-        if (camera == null) return;
+        if (device == null) return;
 
         timer.Stop();
 
-        camera.WaitAllStreams();
+        device.WaitForFrames(RealSense.Streams.All);
 
         // Obtain color image data
-        RealSense.Intrinsics intrinsics = camera.GetStreamIntrinsics(RealSense.Stream.Color);
+        RealSense.Intrinsics intrinsics = device.GetStreamIntrinsics(RealSense.Stream.Color);
         int width = intrinsics.ImageSize[0], height = intrinsics.ImageSize[1];
 
         // Create a bitmap of the color image and assign it to our PictureBox
-        colorPicture.Image = new Bitmap(width, height, width * 3, PixelFormat.Format24bppRgb, camera.GetImagePixels(RealSense.Stream.Color));
+        colorPicture.Image = new Bitmap(width, height, width * 3, PixelFormat.Format24bppRgb, device.GetFrameData(RealSense.Stream.Color));
 
         // Obtain depth image data
-        Marshal.Copy(camera.GetImagePixels(RealSense.Stream.Depth), depthMap, 0, depthMap.Length);
-        intrinsics = camera.GetStreamIntrinsics(RealSense.Stream.Depth);
+        Marshal.Copy(device.GetFrameData(RealSense.Stream.Depth), depthMap, 0, depthMap.Length);
+        intrinsics = device.GetStreamIntrinsics(RealSense.Stream.Depth);
         width = intrinsics.ImageSize[0];
         height = intrinsics.ImageSize[1]; 
 
@@ -95,9 +95,6 @@ public class Capture : Form
         depthPicture.Image = new Bitmap(width, height, width * 3, PixelFormat.Format24bppRgb, handle.AddrOfPinnedObject());
         handle.Free();
 
-        //Bitmap bmp;
-        //bmp.LockBits(Rectang)
-
         timer.Start();
     }
 
@@ -116,7 +113,7 @@ public class Capture : Form
 
                 context.Cameras[0].EnableStreamPreset(RealSense.Stream.Depth, RealSense.Preset.BestQuality);
                 context.Cameras[0].EnableStream(RealSense.Stream.Color, 640, 480, RealSense.Format.BGR8, 60);
-                context.Cameras[0].StartCapture();
+                context.Cameras[0].Start();
                 
                 Application.Run(new Capture(context.Cameras[0]));
             }

@@ -1,4 +1,4 @@
-#include "camera.h"
+#include "device.h"
 #include "image.h"
 
 #include <iostream>
@@ -6,14 +6,10 @@
 
 using namespace rsimpl;
 
-////////////////
-// UVC Camera //
-////////////////
-
-static static_camera_info add_standard_unpackers(const static_camera_info & camera_info)
+static static_device_info add_standard_unpackers(const static_device_info & device_info)
 {
-    static_camera_info info = camera_info;
-    for(auto & mode : camera_info.subdevice_modes)
+    static_device_info info = device_info;
+    for(auto & mode : device_info.subdevice_modes)
     {
         // Unstrided YUYV modes can be unpacked into RGB and BGR
         if(mode.format == uvc::frame_format::YUYV && mode.unpacker == &unpack_strided_image && mode.width == mode.streams[0].width && mode.height == mode.streams[0].height)
@@ -39,36 +35,36 @@ static static_camera_info add_standard_unpackers(const static_camera_info & came
     return info;
 }
 
-rs_camera::rs_camera(rsimpl::uvc::device device, const static_camera_info & camera_info) : device(device), camera_info(add_standard_unpackers(camera_info)), first_handle(), capturing()
+rs_device::rs_device(rsimpl::uvc::device device, const static_device_info & device_info) : device(device), device_info(add_standard_unpackers(device_info)), first_handle(), capturing()
 {
     for(auto & req : requests) req = rsimpl::stream_request();
     calib = {};
 
     int max_subdevice = 0;
-    for(auto & mode : camera_info.subdevice_modes) max_subdevice = std::max(max_subdevice, mode.subdevice);
+    for(auto & mode : device_info.subdevice_modes) max_subdevice = std::max(max_subdevice, mode.subdevice);
     subdevices.resize(max_subdevice+1);
 }
 
-rs_camera::~rs_camera()
+rs_device::~rs_device()
 {
     subdevices.clear();
 }
 
-void rs_camera::enable_stream(rs_stream stream, int width, int height, rs_format format, int fps)
+void rs_device::enable_stream(rs_stream stream, int width, int height, rs_format format, int fps)
 {
     if(first_handle) throw std::runtime_error("streams cannot be reconfigured after having called start_capture()");
-    if(camera_info.stream_subdevices[stream] == -1) throw std::runtime_error("unsupported stream");
+    if(device_info.stream_subdevices[stream] == -1) throw std::runtime_error("unsupported stream");
     requests[stream] = {true, width, height, format, fps};
 }
 
-void rs_camera::enable_stream_preset(rs_stream stream, rs_preset preset)
+void rs_device::enable_stream_preset(rs_stream stream, rs_preset preset)
 {
     if(first_handle) throw std::runtime_error("streams cannot be reconfigured after having called start_capture()");
-    if(!camera_info.presets[stream][preset].enabled) throw std::runtime_error("unsupported stream");
-    requests[stream] = camera_info.presets[stream][preset];
+    if(!device_info.presets[stream][preset].enabled) throw std::runtime_error("unsupported stream");
+    requests[stream] = device_info.presets[stream][preset];
 }
 
-void rs_camera::configure_enabled_streams()
+void rs_device::configure_enabled_streams()
 {
     for(auto & s : subdevices) s.reset();
     for(auto & s : streams) s.reset();
@@ -78,7 +74,7 @@ void rs_camera::configure_enabled_streams()
     if (!first_handle)
     {
         // Check and modify our requests to enforce all interstream constraints
-        for(auto & rule : camera_info.interstream_rules)
+        for(auto & rule : device_info.interstream_rules)
         {
             auto & a = requests[rule.a], & b = requests[rule.b]; auto f = rule.field;
             if(a.enabled && b.enabled)
@@ -99,7 +95,7 @@ void rs_camera::configure_enabled_streams()
         // dispatching the uvc configuration for a requested stream to the hardware
         for(int i = 0; i < subdevices.size(); ++i)
         {
-            if(const subdevice_mode * mode = camera_info.select_mode(requests, i))
+            if(const subdevice_mode * mode = device_info.select_mode(requests, i))
             {
                 subdevices[i].reset(new subdevice_handle(device, i));
                 if (!first_handle) first_handle = subdevices[i]->get_handle();
@@ -133,7 +129,7 @@ void rs_camera::configure_enabled_streams()
     }
 }
 
-void rs_camera::start_capture()
+void rs_device::start_capture()
 {
     if (!first_handle) configure_enabled_streams();
     
@@ -142,13 +138,13 @@ void rs_camera::start_capture()
     capturing = true;
 }
 
-void rs_camera::stop_capture()
+void rs_device::stop_capture()
 {
     for(auto & subdevice : subdevices) if (subdevice) subdevice->stop_streaming();
     capturing = false;
 }
 
-void rs_camera::wait_all_streams()
+void rs_device::wait_all_streams()
 {
     if (!capturing) return;
     
@@ -172,13 +168,13 @@ void rs_camera::wait_all_streams()
     }
 }
 
-rs_intrinsics rs_camera::get_stream_intrinsics(rs_stream stream) const
+rs_intrinsics rs_device::get_stream_intrinsics(rs_stream stream) const
 {
     if(!streams[stream]) throw std::runtime_error("stream not enabled");
     return calib.intrinsics[streams[stream]->get_mode().intrinsics_index];
 }
 
-rs_extrinsics rs_camera::get_stream_extrinsics(rs_stream from, rs_stream to) const
+rs_extrinsics rs_device::get_stream_extrinsics(rs_stream from, rs_stream to) const
 {
     auto transform = inverse(calib.stream_poses[from]) * calib.stream_poses[to]; // TODO: Make sure this is the right order
     rs_extrinsics extrin;
@@ -191,7 +187,7 @@ rs_extrinsics rs_camera::get_stream_extrinsics(rs_stream from, rs_stream to) con
 // stream_buffer //
 ///////////////////
 
-void rs_camera::stream_buffer::set_mode(const stream_mode & mode)
+void rs_device::stream_buffer::set_mode(const stream_mode & mode)
 {
     this->mode = mode;
     front.pixels.resize(get_image_size(mode.width, mode.height, mode.format));
@@ -200,7 +196,7 @@ void rs_camera::stream_buffer::set_mode(const stream_mode & mode)
     updated = false;
 }
 
-bool rs_camera::stream_buffer::update_image()
+bool rs_device::stream_buffer::update_image()
 {
     if(!updated) return false;
     std::lock_guard<std::mutex> guard(mutex);
@@ -213,17 +209,17 @@ bool rs_camera::stream_buffer::update_image()
 // subdevice_handle //
 //////////////////////
 
-rs_camera::subdevice_handle::subdevice_handle(uvc::device device, int subdevice_index) : handle(device.claim_subdevice(subdevice_index))
+rs_device::subdevice_handle::subdevice_handle(uvc::device device, int subdevice_index) : handle(device.claim_subdevice(subdevice_index))
 {
 
 }
 
-rs_camera::subdevice_handle::~subdevice_handle()
+rs_device::subdevice_handle::~subdevice_handle()
 {
     stop_streaming();
 }
 
-void rs_camera::subdevice_handle::set_mode(const subdevice_mode & mode, std::vector<std::shared_ptr<stream_buffer>> streams)
+void rs_device::subdevice_handle::set_mode(const subdevice_mode & mode, std::vector<std::shared_ptr<stream_buffer>> streams)
 {
     assert(mode.streams.size() == streams.size());
     handle.set_mode(mode.width, mode.height, mode.format, mode.fps);
@@ -234,7 +230,7 @@ void rs_camera::subdevice_handle::set_mode(const subdevice_mode & mode, std::vec
     for(size_t i=0; i<mode.streams.size(); ++i) streams[i]->set_mode(mode.streams[i]);
 }
 
-void rs_camera::subdevice_handle::start_streaming()
+void rs_device::subdevice_handle::start_streaming()
 {    
     // The callback may actually outlive the subdevice_handle
     // Make sure to capture our state by shared_ptr, not by the this ptr
@@ -263,7 +259,7 @@ void rs_camera::subdevice_handle::start_streaming()
     });
 }
     
-void rs_camera::subdevice_handle::stop_streaming()
+void rs_device::subdevice_handle::stop_streaming()
 {
     handle.stop_streaming();
 }

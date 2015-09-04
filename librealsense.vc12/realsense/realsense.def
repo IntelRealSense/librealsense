@@ -3,31 +3,30 @@ LIBRARY
 EXPORTS
 	rs_create_context
 	rs_delete_context
-	rs_get_camera_count
-	rs_get_camera         
+	rs_get_device_count
+	rs_get_device
 	
-	rs_get_camera_name	
-	rs_camera_supports_option
-
+	rs_get_device_name
+	rs_device_supports_option
+	rs_get_device_extrinsics
+	
 	rs_enable_stream
 	rs_enable_stream_preset
-	rs_is_stream_enabled
-
-	rs_start_capture
-	rs_stop_capture
-	rs_is_capturing 	
-	rs_get_depth_scale
+	rs_stream_is_enabled
+	
+	rs_start_device
+	rs_stop_device
+	rs_device_is_streaming
 	rs_get_stream_format
 	rs_get_stream_intrinsics
-	rs_get_stream_extrinsics
-
 	
-	rs_wait_all_streams
-	rs_get_image_frame_number
-	rs_get_image_pixels
-
-	rs_set_camera_option
-	rs_get_camera_option	
+	rs_set_device_option
+	rs_get_device_option
+	rs_get_device_depth_scale
+	
+	rs_wait_for_frames
+	rs_get_frame_number
+	rs_get_frame_data
 		
 	rs_get_failed_function
 	rs_get_failed_args

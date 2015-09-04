@@ -35,9 +35,9 @@ namespace rsimpl
     }
 
     enum { LR_FULL, LR_BIG, Z_FULL, Z_BIG, THIRD_HD, THIRD_VGA, NUM_INTRINSICS };
-    static static_camera_info get_r200_info()
+    static static_device_info get_r200_info()
     {
-        static_camera_info info;
+        static_device_info info;
         info.name = {"Intel RealSense R200"};
         for(auto fps : {30, 60, 90})
         {
@@ -91,7 +91,7 @@ namespace rsimpl
         return info;
     }
 
-    r200_camera::r200_camera(uvc::device device) : rs_camera(device, get_r200_info())
+    r200_camera::r200_camera(uvc::device device) : rs_device(device, get_r200_info())
     {
 
     }

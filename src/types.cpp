@@ -1,6 +1,6 @@
 #include "types.h"
 #include "image.h"
-#include "camera.h"
+#include "device.h"
 
 #include <cstring>
 #include <algorithm>
@@ -153,14 +153,14 @@ namespace rsimpl
         convert_yuyv_to_bgra(dest[0], mode.width, mode.height, source);
     }
 
-    static_camera_info::static_camera_info()
+    static_device_info::static_device_info()
     {
         for(auto & s : stream_subdevices) s = -1;
         for(auto & s : presets) for(auto & p : s) p = stream_request();
         for(auto & o : option_supported) o = false;
     }
 
-    const subdevice_mode * static_camera_info::select_mode(const stream_request (& requests)[RS_STREAM_COUNT], int subdevice_index) const
+    const subdevice_mode * static_device_info::select_mode(const stream_request (& requests)[RS_STREAM_COUNT], int subdevice_index) const
     {
         // Determine if the user has requested any streams which are supplied by this subdevice
         bool any_stream_requested = false;

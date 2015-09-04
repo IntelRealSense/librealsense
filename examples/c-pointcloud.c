@@ -2,7 +2,7 @@
 #include <librealsense/rsutil.h>
 #include "example.h"
 
-struct rs_error * error;
+rs_error * error;
 void check_error()
 {
     if (error)
@@ -34,10 +34,10 @@ static void on_cursor_pos(GLFWwindow * win, double x, double y)
 
 int main(int argc, char * argv[])
 {
-    struct rs_context * ctx;
-    struct rs_camera * cam;
-    struct rs_intrinsics depth_intrin, color_intrin;
-    struct rs_extrinsics extrin;
+    rs_context * ctx;
+    rs_device * dev;
+    rs_intrinsics depth_intrin, color_intrin;
+    rs_extrinsics extrin;
     char buffer[1024];
     GLFWwindow * win;
     int x, y, d;
@@ -45,24 +45,23 @@ int main(int argc, char * argv[])
     float scale;
 
     ctx = rs_create_context(RS_API_VERSION, &error); check_error();
-    if(rs_get_camera_count(ctx, NULL) < 1)
+    if(rs_get_device_count(ctx, NULL) < 1)
     {
-        fprintf(stderr, "No camera detected. Is it plugged in?\n");
+        fprintf(stderr, "No device detected. Is it plugged in?\n");
         return EXIT_FAILURE;
     }
 
-    cam = rs_get_camera(ctx, 0, &error); check_error();
-    rs_enable_stream_preset(cam, RS_STREAM_DEPTH, RS_PRESET_BEST_QUALITY, &error); check_error();
-    rs_enable_stream_preset(cam, RS_STREAM_COLOR, RS_PRESET_BEST_QUALITY, &error); check_error();
-    rs_start_capture(cam, &error); check_error();
-
-    rs_get_stream_intrinsics(cam, RS_STREAM_DEPTH, &depth_intrin, &error); check_error();
-    rs_get_stream_intrinsics(cam, RS_STREAM_COLOR, &color_intrin, &error); check_error();
-    rs_get_stream_extrinsics(cam, RS_STREAM_DEPTH, RS_STREAM_COLOR, &extrin, &error); check_error();
-    scale = rs_get_depth_scale(cam, &error); check_error();
+    dev = rs_get_device(ctx, 0, &error); check_error();
+    rs_enable_stream_preset(dev, RS_STREAM_DEPTH, RS_PRESET_BEST_QUALITY, &error); check_error();
+    rs_enable_stream_preset(dev, RS_STREAM_COLOR, RS_PRESET_BEST_QUALITY, &error); check_error();
+    rs_start_device(dev, &error); check_error();
+    rs_get_device_extrinsics(dev, RS_STREAM_DEPTH, RS_STREAM_COLOR, &extrin, &error); check_error();
+    rs_get_stream_intrinsics(dev, RS_STREAM_DEPTH, &depth_intrin, &error); check_error();
+    rs_get_stream_intrinsics(dev, RS_STREAM_COLOR, &color_intrin, &error); check_error();
+    scale = rs_get_device_depth_scale(dev, &error); check_error();
 
     glfwInit();
-    sprintf(buffer, "C Point Cloud Example (%s)", rs_get_camera_name(cam,0));
+    sprintf(buffer, "C Point Cloud Example (%s)", rs_get_device_name(dev, 0));
     win = glfwCreateWindow(640, 480, buffer, 0, 0);
     glfwSetMouseButtonCallback(win, on_mouse_button);
     glfwSetCursorPosCallback(win, on_cursor_pos);
@@ -81,7 +80,7 @@ int main(int argc, char * argv[])
         int width, height;
 
         glfwPollEvents();
-        rs_wait_all_streams(cam, &error); check_error();
+        rs_wait_for_frames(dev, RS_ALL_STREAM_BITS, &error); check_error();
 
         glfwGetFramebufferSize(win, &width, &height);
         glViewport(0, 0, width, height);
@@ -91,7 +90,7 @@ int main(int argc, char * argv[])
         glPushAttrib(GL_ALL_ATTRIB_BITS);
         glBindTexture(GL_TEXTURE_2D, tex);
         glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, color_intrin.image_size[0], color_intrin.image_size[1], 0, GL_RGB, GL_UNSIGNED_BYTE, rs_get_image_pixels(cam, RS_STREAM_COLOR, 0));
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, color_intrin.image_size[0], color_intrin.image_size[1], 0, GL_RGB, GL_UNSIGNED_BYTE, rs_get_frame_data(dev, RS_STREAM_COLOR, 0));
 
         glMatrixMode(GL_PROJECTION);
         glPushMatrix();
@@ -108,8 +107,7 @@ int main(int argc, char * argv[])
         glEnable(GL_TEXTURE_2D);
         glPointSize((float)width/640);
         glBegin(GL_POINTS);
-        depth = rs_get_image_pixels(cam, RS_STREAM_DEPTH, 0);
-        float scale = rs_get_depth_scale(cam, 0);
+        depth = rs_get_frame_data(dev, RS_STREAM_DEPTH, 0);
         for(y=0; y<depth_intrin.image_size[1]; ++y)
         {
             for(x=0; x<depth_intrin.image_size[0]; ++x)

@@ -1,12 +1,12 @@
 #pragma once
-#ifndef LIBREALSENSE_CAMERA_H
-#define LIBREALSENSE_CAMERA_H
+#ifndef LIBREALSENSE_DEVICE_H
+#define LIBREALSENSE_DEVICE_H
 
 #include "uvc.h"
 
 #include <mutex>
 
-struct rs_camera
+struct rs_device
 {
 protected:
     class subdevice_handle;
@@ -61,7 +61,7 @@ protected:
     };
 
     rsimpl::uvc::device                             device;
-    const rsimpl::static_camera_info                camera_info;
+    const rsimpl::static_device_info                device_info;
 
     rsimpl::stream_request                          requests[RS_STREAM_COUNT];  // Indexed by RS_DEPTH, RS_COLOR, ...
     std::shared_ptr<stream_buffer>                  streams[RS_STREAM_COUNT];   // Indexed by RS_DEPTH, RS_COLOR, ...
@@ -72,11 +72,11 @@ protected:
     bool                                            capturing;
   
 public:
-                                                    rs_camera(rsimpl::uvc::device device, const rsimpl::static_camera_info & camera_info);
-                                                    ~rs_camera();
+                                                    rs_device(rsimpl::uvc::device device, const rsimpl::static_device_info & device_info);
+                                                    ~rs_device();
 
-    const char *                                    get_name() const { return camera_info.name.c_str(); }
-    bool                                            supports_option(rs_option option) const { return camera_info.option_supported[option]; }
+    const char *                                    get_name() const { return device_info.name.c_str(); }
+    bool                                            supports_option(rs_option option) const { return device_info.option_supported[option]; }
 
     bool                                            is_stream_enabled(rs_stream stream) const { return requests[stream].enabled; }
     bool                                            is_capturing() const { return capturing; }
