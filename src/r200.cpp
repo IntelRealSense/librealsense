@@ -133,30 +133,45 @@ namespace rsimpl
         return c;
     }
 
-    template<class T> static void enforce_lr_field(stream_request (& requests)[RS_STREAM_NUM], T (stream_request::* field), const char *name, const T & value)
+    template<class T> static void enforce_lr_field(stream_request (& requests)[RS_STREAM_NUM], T (stream_request::* field), const char *name, T & z_value, T offset)
     {
-        for(auto s : {RS_STREAM_INFRARED, RS_STREAM_INFRARED_2})
+        if(z_value)
         {
-            if(requests[s].enabled)
+            // Make sure that left/right values are compatible with requested z value
+            for(auto s : {RS_STREAM_INFRARED, RS_STREAM_INFRARED_2})
             {
-                if(requests[s].*field && requests[s].*field != value)
+                if(requests[s].enabled)
                 {
-                    throw std::runtime_error(to_string() << s << " " << name << " incompatible with " << RS_STREAM_DEPTH << " " << name);
+                    if(requests[s].*field && requests[s].*field != z_value + offset)
+                    {
+                        throw std::runtime_error(to_string() << s << " " << name << " incompatible with " << RS_STREAM_DEPTH << " " << name);
+                    }
+                    requests[s].*field = z_value + offset;
                 }
-                requests[s].*field = value;
-            }
-        }    
+            }    
+        }
+        else
+        {
+            // Make sure that z value corresponds to any requested left/right values
+            for(auto s : {RS_STREAM_INFRARED, RS_STREAM_INFRARED_2})
+            {
+                if(requests[s].enabled && requests[s].*field)
+                {
+                    z_value = requests[s].*field - offset;
+                }
+            }          
+        }
     }
 
     void r200_camera::enforce_interstream_constraints()
     {
         // If depth is enabled, modify left/right requests to match any specified z requests
-        const auto & z = requests[RS_STREAM_DEPTH];
+        auto & z = requests[RS_STREAM_DEPTH];
         if(z.enabled)
         {
-            if(z.width) enforce_lr_field(requests, &stream_request::width, "width", z.width + 12);
-            if(z.height) enforce_lr_field(requests, &stream_request::height, "height", z.height + 12);
-            if(z.fps) enforce_lr_field(requests, &stream_request::fps, "fps", z.fps);
+            enforce_lr_field(requests, &stream_request::width, "width", z.width, 12);
+            enforce_lr_field(requests, &stream_request::height, "height", z.height, 12);
+            enforce_lr_field(requests, &stream_request::fps, "fps", z.fps, 0);
         }
     }
 
