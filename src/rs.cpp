@@ -256,7 +256,15 @@ HANDLE_EXCEPTIONS_AND_RETURN(nullptr, option)
 
 
 
-const char * rs_get_failed_function(rs_error * error) { return error ? error->function : nullptr; }
-const char * rs_get_failed_args(rs_error * error) { return error ? error->args.c_str() : nullptr; }
-const char * rs_get_error_message(rs_error * error) { return error ? error->message.c_str() : nullptr; }
 void rs_free_error(rs_error * error) { if (error) delete error; }
+const char * rs_get_failed_function(const rs_error * error) { return error ? error->function : nullptr; }
+const char * rs_get_failed_args(const rs_error * error) { return error ? error->args.c_str() : nullptr; }
+const char * rs_get_error_message(const rs_error * error) { return error ? error->message.c_str() : nullptr; }
+
+
+
+const char * rs_stream_to_string(rs_stream stream) { return rsimpl::get_string(stream); }
+const char * rs_format_to_string(rs_format format) { return rsimpl::get_string(format); }
+const char * rs_preset_to_string(rs_preset preset) { return rsimpl::get_string(preset); }
+const char * rs_distortion_to_string(rs_distortion distortion) { return rsimpl::get_string(distortion); }
+const char * rs_option_to_string(rs_option option) { return rsimpl::get_string(option); }

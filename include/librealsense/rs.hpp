@@ -44,11 +44,11 @@ namespace rs
     typedef rs_intrinsics   intrinsics;
     typedef rs_extrinsics   extrinsics;
 
-    inline const char *     get_name(stream s)                                                      { return rs_get_stream_name(s, auto_error()); }
-    inline const char *     get_name(format f)                                                      { return rs_get_format_name(f, auto_error()); }
-    inline const char *     get_name(preset p)                                                      { return rs_get_preset_name(p, auto_error()); }
-    inline const char *     get_name(distortion d)                                                  { return rs_get_distortion_name(d, auto_error()); }
-    inline const char *     get_name(option d)                                                      { return rs_get_option_name(d, auto_error()); }
+    inline const char *     to_string(stream s)                                                     { return rs_stream_to_string(s); }
+    inline const char *     to_string(format f)                                                     { return rs_format_to_string(f); }
+    inline const char *     to_string(preset p)                                                     { return rs_preset_to_string(p); }
+    inline const char *     to_string(distortion d)                                                 { return rs_distortion_to_string(d); }
+    inline const char *     to_string(option o)                                                     { return rs_option_to_string(o); }
 
     class camera
     {
@@ -98,10 +98,10 @@ namespace rs
     };
 }
 
-inline std::ostream &       operator << (std::ostream & out, rs::stream stream)                     { return out << rs::get_name(stream); }
-inline std::ostream &       operator << (std::ostream & out, rs::format format)                     { return out << rs::get_name(format); }
-inline std::ostream &       operator << (std::ostream & out, rs::preset preset)                     { return out << rs::get_name(preset); }
-inline std::ostream &       operator << (std::ostream & out, rs::distortion distortion)             { return out << rs::get_name(distortion); }
-inline std::ostream &       operator << (std::ostream & out, rs::option option)                     { return out << rs::get_name(option); }
+inline std::ostream &       operator << (std::ostream & out, rs::stream stream)                     { return out << rs::to_string(stream); }
+inline std::ostream &       operator << (std::ostream & out, rs::format format)                     { return out << rs::to_string(format); }
+inline std::ostream &       operator << (std::ostream & out, rs::preset preset)                     { return out << rs::to_string(preset); }
+inline std::ostream &       operator << (std::ostream & out, rs::distortion distortion)             { return out << rs::to_string(distortion); }
+inline std::ostream &       operator << (std::ostream & out, rs::option option)                     { return out << rs::to_string(option); }
 
 #endif

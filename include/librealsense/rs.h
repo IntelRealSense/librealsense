@@ -25,7 +25,6 @@ rs_context *    rs_create_context           (int api_version, rs_error ** error)
 void            rs_delete_context           (rs_context * context, rs_error ** error);
 int             rs_get_camera_count         (const rs_context * context, rs_error ** error);
 rs_camera *     rs_get_camera               (const rs_context * context, int index, rs_error ** error);
-
 const char *    rs_get_camera_name          (const rs_camera * camera, rs_error ** error);
 int             rs_camera_supports_option   (const rs_camera * camera, rs_option option, rs_error ** error);
 
@@ -48,16 +47,16 @@ const void *    rs_get_image_pixels         (const rs_camera * camera, rs_stream
 void            rs_set_camera_option        (rs_camera * camera, rs_option option, int value, rs_error ** error);
 int             rs_get_camera_option        (const rs_camera * camera, rs_option option, rs_error ** error);
 
-const char *    rs_get_stream_name          (rs_stream stream, rs_error ** error);
-const char *    rs_get_format_name          (rs_format format, rs_error ** error);
-const char *    rs_get_preset_name          (rs_preset preset, rs_error ** error);
-const char *    rs_get_distortion_name      (rs_distortion distortion, rs_error ** error);
-const char *    rs_get_option_name          (rs_option option, rs_error ** error);
-
-const char *    rs_get_failed_function      (rs_error * error);
-const char *    rs_get_failed_args          (rs_error * error);
-const char *    rs_get_error_message        (rs_error * error);
 void            rs_free_error               (rs_error * error);
+const char *    rs_get_failed_function      (const rs_error * error);
+const char *    rs_get_failed_args          (const rs_error * error);
+const char *    rs_get_error_message        (const rs_error * error);
+
+const char *    rs_stream_to_string         (rs_stream stream);
+const char *    rs_format_to_string         (rs_format format);
+const char *    rs_preset_to_string         (rs_preset preset);
+const char *    rs_distortion_to_string     (rs_distortion distortion);
+const char *    rs_option_to_string         (rs_option option);
 
 /* public enum type definitions */
 #define RS_ENUM_RANGE(PREFIX,FIRST,LAST) \

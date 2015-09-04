@@ -58,7 +58,7 @@ void draw_stream(struct rs_camera * cam, enum rs_stream stream, int x, int y)
         break;
     }
 
-    sprintf(buffer, "%s: %d x %d %s", rs_get_stream_name(stream, 0), intrin.image_size[0], intrin.image_size[1], rs_get_format_name(format, 0));
+    sprintf(buffer, "%s: %d x %d %s", rs_stream_to_string(stream), intrin.image_size[0], intrin.image_size[1], rs_format_to_string(format));
     ttf_print(&font, x+8, y+16, buffer);
 }
 
@@ -90,7 +90,7 @@ int main(int argc, char * argv[])
             rs_get_stream_intrinsics(cam, (enum rs_stream)j, &intrin, &error); check_error();
             hfov = compute_fov(intrin.image_size[0], intrin.focal_length[0], intrin.principal_point[0]);
             vfov = compute_fov(intrin.image_size[1], intrin.focal_length[1], intrin.principal_point[1]);
-            printf("Capturing %s at %d x %d, fov = %.1f x %.1f\n", rs_get_stream_name((enum rs_stream)j, 0), intrin.image_size[0], intrin.image_size[1], hfov, vfov);
+            printf("Capturing %s at %d x %d, fov = %.1f x %.1f\n", rs_stream_to_string((enum rs_stream)j), intrin.image_size[0], intrin.image_size[1], hfov, vfov);
         }
     }
     if (!cam)
