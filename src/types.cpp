@@ -160,12 +160,12 @@ namespace rsimpl
         for(auto & o : option_supported) o = false;
     }
 
-    const subdevice_mode * static_camera_info::select_mode(const stream_request (& requests)[RS_STREAM_NUM], int subdevice_index) const
+    const subdevice_mode * static_camera_info::select_mode(const stream_request (& requests)[RS_STREAM_COUNT], int subdevice_index) const
     {
         // Determine if the user has requested any streams which are supplied by this subdevice
         bool any_stream_requested = false;
-        std::array<bool, RS_STREAM_NUM> stream_requested = {};
-        for(int j = 0; j < RS_STREAM_NUM; ++j)
+        std::array<bool, RS_STREAM_COUNT> stream_requested = {};
+        for(int j = 0; j < RS_STREAM_COUNT; ++j)
         {
             if(requests[j].enabled && stream_subdevices[j] == subdevice_index)
             {
@@ -206,7 +206,7 @@ namespace rsimpl
         std::ostringstream ss;
         ss << "uvc subdevice " << subdevice_index << " cannot provide";
         bool first = true;
-        for(int j = 0; j < RS_STREAM_NUM; ++j)
+        for(int j = 0; j < RS_STREAM_COUNT; ++j)
         {
             if(!stream_requested[j]) continue;
             ss << (first ? " " : " and ");

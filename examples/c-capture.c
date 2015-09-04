@@ -84,7 +84,7 @@ int main(int argc, char * argv[])
         rs_enable_stream_preset(cam, RS_STREAM_INFRARED_2, RS_PRESET_BEST_QUALITY, 0);
         rs_start_capture(cam, &error); check_error();
 
-        for(j = RS_STREAM_BEGIN_RANGE; j <= RS_STREAM_END_RANGE; ++j)
+        for(j = 0; j < RS_STREAM_COUNT; ++j)
         {
             if(!rs_is_stream_enabled(cam, (enum rs_stream)j, 0)) continue;
             rs_get_stream_intrinsics(cam, (enum rs_stream)j, &intrin, &error); check_error();

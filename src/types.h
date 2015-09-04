@@ -15,7 +15,7 @@ namespace rsimpl
 {
     // Enumerated type support
     #define RS_ENUM_HELPERS(TYPE, PREFIX) const char * get_string(TYPE value); \
-        inline bool is_valid(TYPE value) { return value >= RS_##PREFIX##_BEGIN_RANGE && value <= RS_##PREFIX##_END_RANGE; } \
+        inline bool is_valid(TYPE value) { return value >= 0 && value < RS_##PREFIX##_COUNT; } \
         inline std::ostream & operator << (std::ostream & out, TYPE value) { if(is_valid(value)) return out << get_string(value); else return out << (int)value; }
     RS_ENUM_HELPERS(rs_stream, STREAM)
     RS_ENUM_HELPERS(rs_format, FORMAT)
@@ -100,23 +100,23 @@ namespace rsimpl
 
     struct static_camera_info
     {
-        std::string name;                                       // Model name of the camera
-        int stream_subdevices[RS_STREAM_NUM];                   // Which subdevice is used to support each stream, or -1 if stream is unavailable
-        std::vector<subdevice_mode> subdevice_modes;            // A list of available modes each subdevice can be put into
-        std::vector<interstream_rule> interstream_rules;        // Rules which constrain the set of available modes
-        stream_request presets[RS_STREAM_NUM][RS_PRESET_NUM];   // Presets available for each stream
-        bool option_supported[RS_OPTION_NUM];                   // Whether or not a given option is supported on this camera
+        std::string name;                                           // Model name of the camera
+        int stream_subdevices[RS_STREAM_COUNT];                     // Which subdevice is used to support each stream, or -1 if stream is unavailable
+        std::vector<subdevice_mode> subdevice_modes;                // A list of available modes each subdevice can be put into
+        std::vector<interstream_rule> interstream_rules;            // Rules which constrain the set of available modes
+        stream_request presets[RS_STREAM_COUNT][RS_PRESET_COUNT];   // Presets available for each stream
+        bool option_supported[RS_OPTION_COUNT];                     // Whether or not a given option is supported on this camera
 
         static_camera_info();
 
-        const subdevice_mode * select_mode(const stream_request (&requests)[RS_STREAM_NUM], int subdevice_index) const;
+        const subdevice_mode * select_mode(const stream_request (&requests)[RS_STREAM_COUNT], int subdevice_index) const;
     };
 
     // Calibration info
     struct calibration_info
     {
         std::vector<rs_intrinsics> intrinsics;
-        pose stream_poses[RS_STREAM_NUM];
+        pose stream_poses[RS_STREAM_COUNT];
         float depth_scale;
     };
 

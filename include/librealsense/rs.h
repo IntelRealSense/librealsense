@@ -59,19 +59,14 @@ const char *    rs_distortion_to_string     (rs_distortion distortion);
 const char *    rs_option_to_string         (rs_option option);
 
 /* public enum type definitions */
-#define RS_ENUM_RANGE(PREFIX,FIRST,LAST) \
-    RS_##PREFIX##_BEGIN_RANGE   = RS_##PREFIX##_##FIRST, \
-    RS_##PREFIX##_END_RANGE     = RS_##PREFIX##_##LAST, \
-    RS_##PREFIX##_NUM           = RS_##PREFIX##_##LAST - RS_##PREFIX##_##FIRST + 1, \
-    RS_##PREFIX##_MAX_ENUM      = 0x7FFFFFFF
-
 enum rs_stream
 {
     RS_STREAM_DEPTH                         = 0,
     RS_STREAM_COLOR                         = 1,
     RS_STREAM_INFRARED                      = 2,
     RS_STREAM_INFRARED_2                    = 3,
-    RS_ENUM_RANGE(STREAM, DEPTH, INFRARED_2)
+    RS_STREAM_COUNT                         = 4,
+    RS_STREAM_MAX_ENUM                      = INT32_MAX
 };
 
 enum rs_format
@@ -85,7 +80,8 @@ enum rs_format
     RS_FORMAT_BGRA8                         = 6,
     RS_FORMAT_Y8                            = 7,
     RS_FORMAT_Y16                           = 8,
-    RS_ENUM_RANGE(FORMAT, ANY, Y16)
+    RS_FORMAT_COUNT                         = 9,
+    RS_FORMAT_MAX_ENUM                      = INT32_MAX
 };
 
 enum rs_preset
@@ -93,7 +89,8 @@ enum rs_preset
     RS_PRESET_BEST_QUALITY                  = 0,
     RS_PRESET_LARGEST_IMAGE                 = 1,
     RS_PRESET_HIGHEST_FRAMERATE             = 2,
-    RS_ENUM_RANGE(PRESET, BEST_QUALITY, HIGHEST_FRAMERATE)
+    RS_PRESET_COUNT                         = 9,
+    RS_PRESET_MAX_ENUM                      = INT32_MAX
 };
 
 enum rs_distortion
@@ -101,32 +98,32 @@ enum rs_distortion
     RS_DISTORTION_NONE                      = 0, /* Rectilinear images, no distortion compensation required */
     RS_DISTORTION_MODIFIED_BROWN_CONRADY    = 1, /* Equivalent to Brown-Conrady distortion, except that tangential distortion is applied to radially distorted points */
     RS_DISTORTION_INVERSE_BROWN_CONRADY     = 2, /* Equivalent to Brown-Conrady distortion, except undistorts image instead of distorting it */
-    RS_ENUM_RANGE(DISTORTION, NONE, INVERSE_BROWN_CONRADY)
+    RS_DISTORTION_COUNT                     = 3,
+    RS_DISTORTION_MAX_ENUM                  = INT32_MAX
 };
 
 enum rs_option
 {
-    RS_OPTION_F200_LASER_POWER,                 /* 0 - 15 */
-    RS_OPTION_F200_ACCURACY,                    /* 0 - 3 */
-    RS_OPTION_F200_MOTION_RANGE,                /* 0 - 100 */
-    RS_OPTION_F200_FILTER_OPTION,               /* 0 - 7 */
-    RS_OPTION_F200_CONFIDENCE_THRESHOLD,        /* 0 - 15 */
-    RS_OPTION_F200_DYNAMIC_FPS,                 /* {2, 5, 15, 30, 60} */
-    RS_OPTION_R200_LR_AUTO_EXPOSURE_ENABLED,    /* {0, 1} */
-    RS_OPTION_R200_LR_GAIN,                     /* 100 - 1600 (Units of 0.01) */
-    RS_OPTION_R200_LR_EXPOSURE,                 /* > 0 (Units of 0.1 ms) */
-    RS_OPTION_R200_EMITTER_ENABLED,             /* {0, 1} */
-    RS_OPTION_R200_DEPTH_CONTROL_PRESET,        /* {0, 5}, 0 is default, 1-5 is low to high outlier rejection */
-    RS_OPTION_R200_DEPTH_UNITS,                 /* > 0 */
-    RS_OPTION_R200_DEPTH_CLAMP_MIN,             /* 0 - USHORT_MAX */
-    RS_OPTION_R200_DEPTH_CLAMP_MAX,             /* 0 - USHORT_MAX */
-    RS_OPTION_R200_DISPARITY_MODE_ENABLED,      /* {0, 1} */
-    RS_OPTION_R200_DISPARITY_MULTIPLIER,
-    RS_OPTION_R200_DISPARITY_SHIFT,
-
-    RS_ENUM_RANGE(OPTION, F200_LASER_POWER, R200_DISPARITY_SHIFT)
+    RS_OPTION_F200_LASER_POWER              = 0, /* 0 - 15 */
+    RS_OPTION_F200_ACCURACY                 = 1, /* 0 - 3 */
+    RS_OPTION_F200_MOTION_RANGE             = 2, /* 0 - 100 */
+    RS_OPTION_F200_FILTER_OPTION            = 3, /* 0 - 7 */
+    RS_OPTION_F200_CONFIDENCE_THRESHOLD     = 4, /* 0 - 15 */
+    RS_OPTION_F200_DYNAMIC_FPS              = 5, /* {2, 5, 15, 30, 60} */
+    RS_OPTION_R200_LR_AUTO_EXPOSURE_ENABLED = 6, /* {0, 1} */
+    RS_OPTION_R200_LR_GAIN                  = 7, /* 100 - 1600 (Units of 0.01) */
+    RS_OPTION_R200_LR_EXPOSURE              = 8, /* > 0 (Units of 0.1 ms) */
+    RS_OPTION_R200_EMITTER_ENABLED          = 9, /* {0, 1} */
+    RS_OPTION_R200_DEPTH_CONTROL_PRESET     = 10, /* {0, 5}, 0 is default, 1-5 is low to high outlier rejection */
+    RS_OPTION_R200_DEPTH_UNITS              = 11, /* > 0 */
+    RS_OPTION_R200_DEPTH_CLAMP_MIN          = 12, /* 0 - USHORT_MAX */
+    RS_OPTION_R200_DEPTH_CLAMP_MAX          = 13, /* 0 - USHORT_MAX */
+    RS_OPTION_R200_DISPARITY_MODE_ENABLED   = 14, /* {0, 1} */
+    RS_OPTION_R200_DISPARITY_MULTIPLIER     = 15,
+    RS_OPTION_R200_DISPARITY_SHIFT          = 16,
+    RS_OPTION_COUNT                         = 17,
+    RS_OPTION_MAX_ENUM                      = INT32_MAX
 };
-#undef RS_ENUM
 
 /* public struct type definitions */
 struct rs_intrinsics

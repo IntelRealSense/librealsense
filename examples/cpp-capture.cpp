@@ -79,8 +79,9 @@ int main(int argc, char * argv[]) try
     cam.start_capture();
 
     // Compute field of view for each enabled stream
-    for(rs::stream stream = RS_STREAM_BEGIN_RANGE; stream <= RS_STREAM_END_RANGE; stream = (rs::stream)(stream+1))
+    for(int i = 0; i < RS_STREAM_COUNT; ++i)
     {
+        auto stream = rs::stream(i);
         if(!cam.is_stream_enabled(stream)) continue;
         auto intrin = cam.get_stream_intrinsics(stream);
         float hfov = compute_fov(intrin.image_size[0], intrin.focal_length[0], intrin.principal_point[0]);
@@ -96,8 +97,9 @@ int main(int argc, char * argv[]) try
     }  catch(...) {}
 
     // Report the status of each supported option
-    for(rs::option option = RS_OPTION_BEGIN_RANGE; option <= RS_OPTION_END_RANGE; option = (rs::option)(option+1))
+    for(int i = 0; i < RS_OPTION_COUNT; ++i)
     {
+        auto option = rs::option(i);
         if(cam.supports_option(option))
         {
             std::cout << "Option " << option << ": ";

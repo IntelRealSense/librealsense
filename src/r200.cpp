@@ -85,7 +85,7 @@ namespace rsimpl
         info.presets[RS_STREAM_DEPTH   ][RS_PRESET_HIGHEST_FRAMERATE] = {true, 480, 360, RS_FORMAT_Z16,  90};
         info.presets[RS_STREAM_COLOR   ][RS_PRESET_HIGHEST_FRAMERATE] = {true, 640, 480, RS_FORMAT_RGB8, 60};
 
-        for(int i=0; i<RS_PRESET_NUM; ++i) info.presets[RS_STREAM_INFRARED_2][i] = info.presets[RS_STREAM_INFRARED][i];
+        for(int i=0; i<RS_PRESET_COUNT; ++i) info.presets[RS_STREAM_INFRARED_2][i] = info.presets[RS_STREAM_INFRARED][i];
 
         for(int i = RS_OPTION_R200_LR_AUTO_EXPOSURE_ENABLED; i <= RS_OPTION_R200_DISPARITY_SHIFT; ++i) info.option_supported[i] = true;
         return info;
@@ -141,7 +141,7 @@ namespace rsimpl
         return c;
     }
 
-    template<class T> static void enforce_lr_field(stream_request (& requests)[RS_STREAM_NUM], T (stream_request::* field), const char *name, T & z_value, T offset)
+    template<class T> static void enforce_lr_field(stream_request (& requests)[RS_STREAM_COUNT], T (stream_request::* field), const char *name, T & z_value, T offset)
     {
         if(z_value)
         {
