@@ -1,6 +1,6 @@
 ﻿namespace cs_capture
 {
-    partial class Form1
+    partial class Capture
     {
         /// <summary>
         /// Required designer variable.
@@ -30,7 +30,7 @@
         {
             this.components = new System.ComponentModel.Container();
             this.colorPictureBox = new System.Windows.Forms.PictureBox();
-            this.timer1 = new System.Windows.Forms.Timer(this.components);
+            this.captureTimer = new System.Windows.Forms.Timer(this.components);
             ((System.ComponentModel.ISupportInitialize)(this.colorPictureBox)).BeginInit();
             this.SuspendLayout();
             // 
@@ -43,19 +43,19 @@
             this.colorPictureBox.TabIndex = 0;
             this.colorPictureBox.TabStop = false;
             // 
-            // timer1
+            // captureTimer
             // 
-            this.timer1.Enabled = true;
-            this.timer1.Interval = 1;
-            this.timer1.Tick += new System.EventHandler(this.timer1_Tick);
+            this.captureTimer.Enabled = true;
+            this.captureTimer.Interval = 1;
+            this.captureTimer.Tick += new System.EventHandler(this.OnCaptureTick);
             // 
-            // Form1
+            // Capture
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(665, 503);
             this.Controls.Add(this.colorPictureBox);
-            this.Name = "Form1";
+            this.Name = "Capture";
             this.Text = "Form1";
             ((System.ComponentModel.ISupportInitialize)(this.colorPictureBox)).EndInit();
             this.ResumeLayout(false);
@@ -65,7 +65,7 @@
         #endregion
 
         private System.Windows.Forms.PictureBox colorPictureBox;
-        private System.Windows.Forms.Timer timer1;
+        private System.Windows.Forms.Timer captureTimer;
     }
 }
 

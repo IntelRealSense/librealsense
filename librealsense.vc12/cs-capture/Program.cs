@@ -22,7 +22,7 @@ namespace cs_capture
 
                 Application.EnableVisualStyles();
                 Application.SetCompatibleTextRenderingDefault(false);
-                Application.Run(new Form1 {Camera = camera});
+                Application.Run(new Capture {Camera = camera, Text = string.Format("C# Capture Example ({0})", camera.Name)});
             }
         }
     }
