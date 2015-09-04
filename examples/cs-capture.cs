@@ -45,29 +45,30 @@ public class Capture : Form
         camera.WaitAllStreams();
 
         // Obtain color image data
-        IntPtr pixels = camera.GetImagePixels(RealSense.Stream.Color);
         RealSense.Intrinsics intrinsics = camera.GetStreamIntrinsics(RealSense.Stream.Color);
         int width = intrinsics.ImageSize[0], height = intrinsics.ImageSize[1];
 
         // Create a bitmap of the color image and assign it to our PictureBox
-        color.Image = new Bitmap(width, height, width * 3, System.Drawing.Imaging.PixelFormat.Format24bppRgb, pixels);
+        color.Image = new Bitmap(width, height, width * 3, System.Drawing.Imaging.PixelFormat.Format24bppRgb, camera.GetImagePixels(RealSense.Stream.Color));
 
         // Obtain depth image data
-        pixels = camera.GetImagePixels(RealSense.Stream.Depth);
         intrinsics = camera.GetStreamIntrinsics(RealSense.Stream.Depth);
         width = intrinsics.ImageSize[0];
         height = intrinsics.ImageSize[1];            
 
         // Build a cumulative histogram for of depth values in [1,0xFFFF]
-        var histogram = new uint[0x10000];   
-        for(int i = 0; i < width*height; ++i) ++histogram[(ushort)Marshal.ReadInt16(pixels + i*2)];
+        var depthPixels = new short[width*height];
+        Marshal.Copy(camera.GetImagePixels(RealSense.Stream.Depth), depthPixels, 0, depthPixels.Length);
+
+        var histogram = new uint[0x10000];
+        for (int i = 0; i < width * height; ++i) ++histogram[(ushort)depthPixels[i]];
         for(int i = 2; i < 0x10000; ++i) histogram[i] += histogram[i-1]; 
 
         // Produce an image in BGR ordered byte array
         var image = new byte[width * height * 3];
         for(int i = 0; i < width*height; ++i)
         {
-            ushort d = (ushort)Marshal.ReadInt16(pixels + i*2);
+            ushort d = (ushort)depthPixels[i];
             if(d != 0)
             {
                 uint f = histogram[d] * 255 / histogram[0xFFFF]; // 0-255 based on histogram location
@@ -81,7 +82,7 @@ public class Capture : Form
                 image[i*3 + 1] = 5;
                 image[i*3 + 2] = 20;
             }
-        }            
+        }
 
         // Create a bitmap of the histogram colored depth image and assign it to our PictureBox
         GCHandle handle = GCHandle.Alloc(image, GCHandleType.Pinned);
