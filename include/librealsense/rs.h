@@ -1,6 +1,5 @@
-#ifndef LIBREALSENSE_INCLUDE_GUARD
-#define LIBREALSENSE_INCLUDE_GUARD
-#include "stdint.h"
+#ifndef LIBREALSENSE_RS_H
+#define LIBREALSENSE_RS_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -66,7 +65,7 @@ enum rs_stream
     RS_STREAM_INFRARED                      = 2,
     RS_STREAM_INFRARED_2                    = 3,
     RS_STREAM_COUNT                         = 4,
-    RS_STREAM_MAX_ENUM                      = INT32_MAX
+    RS_STREAM_MAX_ENUM                      = 0x7FFFFFFF
 };
 
 enum rs_format
@@ -81,7 +80,7 @@ enum rs_format
     RS_FORMAT_Y8                            = 7,
     RS_FORMAT_Y16                           = 8,
     RS_FORMAT_COUNT                         = 9,
-    RS_FORMAT_MAX_ENUM                      = INT32_MAX
+    RS_FORMAT_MAX_ENUM                      = 0x7FFFFFFF
 };
 
 enum rs_preset
@@ -90,7 +89,7 @@ enum rs_preset
     RS_PRESET_LARGEST_IMAGE                 = 1,
     RS_PRESET_HIGHEST_FRAMERATE             = 2,
     RS_PRESET_COUNT                         = 9,
-    RS_PRESET_MAX_ENUM                      = INT32_MAX
+    RS_PRESET_MAX_ENUM                      = 0x7FFFFFFF
 };
 
 enum rs_distortion
@@ -99,7 +98,7 @@ enum rs_distortion
     RS_DISTORTION_MODIFIED_BROWN_CONRADY    = 1, /* Equivalent to Brown-Conrady distortion, except that tangential distortion is applied to radially distorted points */
     RS_DISTORTION_INVERSE_BROWN_CONRADY     = 2, /* Equivalent to Brown-Conrady distortion, except undistorts image instead of distorting it */
     RS_DISTORTION_COUNT                     = 3,
-    RS_DISTORTION_MAX_ENUM                  = INT32_MAX
+    RS_DISTORTION_MAX_ENUM                  = 0x7FFFFFFF
 };
 
 enum rs_option
@@ -122,7 +121,7 @@ enum rs_option
     RS_OPTION_R200_DISPARITY_MULTIPLIER     = 15,
     RS_OPTION_R200_DISPARITY_SHIFT          = 16,
     RS_OPTION_COUNT                         = 17,
-    RS_OPTION_MAX_ENUM                      = INT32_MAX
+    RS_OPTION_MAX_ENUM                      = 0x7FFFFFFF
 };
 
 /* public struct type definitions */
@@ -132,7 +131,7 @@ struct rs_intrinsics
     float focal_length[2];                  /* focal length of the image plane, as a multiple of pixel width and height */
     float principal_point[2];               /* coordinates of the principal point of the image, as a pixel offset from the top left */
     float distortion_coeff[5];              /* distortion coefficients */
-    enum rs_distortion distortion_model;    /* distortion model of the image */
+    rs_distortion distortion_model;         /* distortion model of the image */
 };
 
 struct rs_extrinsics
