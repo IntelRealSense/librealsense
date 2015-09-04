@@ -22,9 +22,7 @@ namespace cs_capture
 
                 Application.EnableVisualStyles();
                 Application.SetCompatibleTextRenderingDefault(false);
-                var form = new Form1();
-                form.SetCamera(camera);
-                Application.Run(form);
+                Application.Run(new Form1 {Camera = camera});
             }
         }
     }
