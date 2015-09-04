@@ -18,6 +18,7 @@ namespace cs_capture
                 var camera = context.GetCamera(0);               
                 camera.EnableStreamPreset(RealSense.Stream.Depth, RealSense.Preset.BestQuality);
                 camera.EnableStream(RealSense.Stream.Color, 640, 480, RealSense.Format.BGR8, 60);
+                //camera.EnableStream(RealSense.Stream.Infrared, 0, 0, RealSense.Format.Y8, 0);
                 camera.StartCapture();
 
                 Application.EnableVisualStyles();

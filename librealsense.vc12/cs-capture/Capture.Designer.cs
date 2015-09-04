@@ -31,7 +31,9 @@
             this.components = new System.ComponentModel.Container();
             this.colorPictureBox = new System.Windows.Forms.PictureBox();
             this.captureTimer = new System.Windows.Forms.Timer(this.components);
+            this.irPictureBox = new System.Windows.Forms.PictureBox();
             ((System.ComponentModel.ISupportInitialize)(this.colorPictureBox)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.irPictureBox)).BeginInit();
             this.SuspendLayout();
             // 
             // colorPictureBox
@@ -46,18 +48,29 @@
             // captureTimer
             // 
             this.captureTimer.Enabled = true;
-            this.captureTimer.Interval = 1;
+            this.captureTimer.Interval = 16;
             this.captureTimer.Tick += new System.EventHandler(this.OnCaptureTick);
+            // 
+            // irPictureBox
+            // 
+            this.irPictureBox.Location = new System.Drawing.Point(659, 13);
+            this.irPictureBox.MinimumSize = new System.Drawing.Size(640, 480);
+            this.irPictureBox.Name = "irPictureBox";
+            this.irPictureBox.Size = new System.Drawing.Size(640, 480);
+            this.irPictureBox.TabIndex = 1;
+            this.irPictureBox.TabStop = false;
             // 
             // Capture
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(665, 503);
+            this.ClientSize = new System.Drawing.Size(1311, 506);
+            this.Controls.Add(this.irPictureBox);
             this.Controls.Add(this.colorPictureBox);
             this.Name = "Capture";
             this.Text = "Form1";
             ((System.ComponentModel.ISupportInitialize)(this.colorPictureBox)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.irPictureBox)).EndInit();
             this.ResumeLayout(false);
 
         }
@@ -66,6 +79,7 @@
 
         private System.Windows.Forms.PictureBox colorPictureBox;
         private System.Windows.Forms.Timer captureTimer;
+        private System.Windows.Forms.PictureBox irPictureBox;
     }
 }
 
