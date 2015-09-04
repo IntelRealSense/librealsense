@@ -38,6 +38,7 @@ namespace rsimpl
     static static_camera_info get_r200_info()
     {
         static_camera_info info;
+        info.name = {"Intel RealSense R200"};
         for(auto fps : {30, 60, 90})
         {
             auto uvcFps = fps == 60 ? 59 : fps; // UVC sees the 60 fps mode as 59 fps
@@ -63,6 +64,13 @@ namespace rsimpl
             info.stream_subdevices[RS_STREAM_COLOR] = 2;
             info.subdevice_modes.push_back({2, 1920, 1080, uvc::frame_format::YUYV, uvcFps, {{RS_STREAM_COLOR,    1920, 1080, RS_FORMAT_YUYV, fps, THIRD_HD }}, &unpack_strided_image, &decode_yuy2_frame_number});
             info.subdevice_modes.push_back({2,  640,  480, uvc::frame_format::YUYV, uvcFps, {{RS_STREAM_COLOR,     640,  480, RS_FORMAT_YUYV, fps, THIRD_VGA}}, &unpack_strided_image, &decode_yuy2_frame_number});
+        }
+
+        for(auto ir : {RS_STREAM_INFRARED, RS_STREAM_INFRARED_2})
+        {
+            info.interstream_rules.push_back({RS_STREAM_DEPTH, ir, &stream_request::width, 12});
+            info.interstream_rules.push_back({RS_STREAM_DEPTH, ir, &stream_request::height, 12});
+            info.interstream_rules.push_back({RS_STREAM_DEPTH, ir, &stream_request::fps, 0});
         }
 
         info.presets[RS_STREAM_INFRARED][RS_PRESET_BEST_QUALITY] = {true, 492, 372, RS_FORMAT_Y8,   60};
@@ -144,7 +152,7 @@ namespace rsimpl
                 {
                     if(requests[s].*field && requests[s].*field != z_value + offset)
                     {
-                        throw std::runtime_error(to_string() << s << " " << name << " incompatible with " << RS_STREAM_DEPTH << " " << name);
+                        throw std::runtime_error(to_string() << "requested " << s << " " << name << " incompatible with " << RS_STREAM_DEPTH << " " << name);
                     }
                     requests[s].*field = z_value + offset;
                 }
@@ -160,18 +168,6 @@ namespace rsimpl
                     z_value = requests[s].*field - offset;
                 }
             }          
-        }
-    }
-
-    void r200_camera::enforce_interstream_constraints()
-    {
-        // If depth is enabled, modify left/right requests to match any specified z requests
-        auto & z = requests[RS_STREAM_DEPTH];
-        if(z.enabled)
-        {
-            enforce_lr_field(requests, &stream_request::width, "width", z.width, 12);
-            enforce_lr_field(requests, &stream_request::height, "height", z.height, 12);
-            enforce_lr_field(requests, &stream_request::fps, "fps", z.fps, 0);
         }
     }
 
@@ -239,7 +235,7 @@ namespace rsimpl
         }
     }
 
-    int r200_camera::get_option(rs_option option)
+    int r200_camera::get_option(rs_option option) const
     {
         if(!device) throw std::runtime_error("cannot call before rs_start_capture(...)");
 

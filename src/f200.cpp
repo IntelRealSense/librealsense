@@ -30,6 +30,7 @@ namespace rsimpl
     static static_camera_info get_f200_info()
     {
         static_camera_info info;
+        info.name = {"Intel RealSense F200"};
 
         // Color modes on subdevice 0
         info.stream_subdevices[RS_STREAM_COLOR] = 0;
@@ -128,7 +129,7 @@ namespace rsimpl
     
     // N.B. f200 xu_read and xu_write hard code the xu interface to the depth suvdevice. There is only a
     // single *potentially* useful XU on the color device, so let's ignore it for now.
-    void xu_read(uvc::device & device, uint64_t xu_ctrl, void * buffer, uint32_t length)
+    void xu_read(const uvc::device & device, uint64_t xu_ctrl, void * buffer, uint32_t length)
     {
         device.get_control(6, xu_ctrl, buffer, length);
     }
@@ -138,7 +139,7 @@ namespace rsimpl
         device.set_control(6, xu_ctrl, buffer, length);
     }
     
-    void get_laser_power(uvc::device & device, uint8_t & laser_power)
+    void get_laser_power(const uvc::device & device, uint8_t & laser_power)
     {
         xu_read(device, IVCAM_DEPTH_LASER_POWER, &laser_power, sizeof(laser_power));
     }
@@ -148,7 +149,7 @@ namespace rsimpl
         xu_write(device, IVCAM_DEPTH_LASER_POWER, &laser_power, sizeof(laser_power));
     }
     
-    void get_accuracy(uvc::device & device, uint8_t & accuracy)
+    void get_accuracy(const uvc::device & device, uint8_t & accuracy)
     {
         xu_read(device, IVCAM_DEPTH_ACCURACY, &accuracy, sizeof(accuracy));
     }
@@ -158,7 +159,7 @@ namespace rsimpl
         xu_write(device, IVCAM_DEPTH_ACCURACY, &accuracy, sizeof(accuracy));
     }
     
-    void get_motion_range(uvc::device & device, uint8_t & motion_range)
+    void get_motion_range(const uvc::device & device, uint8_t & motion_range)
     {
         xu_read(device, IVCAM_DEPTH_MOTION_RANGE, &motion_range, sizeof(motion_range));
     }
@@ -168,7 +169,7 @@ namespace rsimpl
         xu_write(device, IVCAM_DEPTH_MOTION_RANGE, &motion_range, sizeof(motion_range));
     }
     
-    void get_filter_option(uvc::device & device, uint8_t & filter_option)
+    void get_filter_option(const uvc::device & device, uint8_t & filter_option)
     {
         xu_read(device, IVCAM_DEPTH_FILTER_OPTION, &filter_option, sizeof(filter_option));
     }
@@ -178,7 +179,7 @@ namespace rsimpl
         xu_write(device, IVCAM_DEPTH_FILTER_OPTION, &filter_option, sizeof(filter_option));
     }
     
-    void get_confidence_threshold(uvc::device & device, uint8_t & conf_thresh)
+    void get_confidence_threshold(const uvc::device & device, uint8_t & conf_thresh)
     {
         xu_read(device, IVCAM_DEPTH_CONFIDENCE_THRESH, &conf_thresh, sizeof(conf_thresh));
     }
@@ -188,7 +189,7 @@ namespace rsimpl
         xu_write(device, IVCAM_DEPTH_CONFIDENCE_THRESH, &conf_thresh, sizeof(conf_thresh));
     }
     
-    void get_dynamic_fps(uvc::device & device, uint8_t & dynamic_fps)
+    void get_dynamic_fps(const uvc::device & device, uint8_t & dynamic_fps)
     {
         return xu_read(device, IVCAM_DEPTH_DYNAMIC_FPS, &dynamic_fps, sizeof(dynamic_fps));
     }
@@ -213,7 +214,7 @@ namespace rsimpl
         }
     }
 
-    int f200_camera::get_option(rs_option option)
+    int f200_camera::get_option(rs_option option) const
     {
         uint8_t value = 0;
         switch(option)

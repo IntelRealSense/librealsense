@@ -334,7 +334,7 @@ namespace rsimpl { namespace r200
         return fw;
     }
 
-    void xu_read(uvc::device & device, uint64_t xu_ctrl, void * buffer, uint32_t length)
+    void xu_read(const uvc::device & device, uint64_t xu_ctrl, void * buffer, uint32_t length)
     {
         device.get_control(CAMERA_XU_UNIT_ID, xu_ctrl, buffer, length);
     }
@@ -349,14 +349,14 @@ namespace rsimpl { namespace r200
         xu_write(device, CONTROL_STREAM_INTENT, &intent, sizeof(intent));
     }
 
-    void get_stream_status(uvc::device & device, int & status)
+    void get_stream_status(const uvc::device & device, int & status)
     {
         uint8_t s[4] = {255, 255, 255, 255};
         xu_read(device, CONTROL_STATUS, s, sizeof(uint32_t));
         status = pack(s[0], s[1], s[2], s[3]);
     }
 
-    void get_last_error(uvc::device & device, uint8_t & last_error)
+    void get_last_error(const uvc::device & device, uint8_t & last_error)
     {
         xu_read(device, CONTROL_LAST_ERROR, &last_error, sizeof(uint8_t));
     }
@@ -371,7 +371,7 @@ namespace rsimpl { namespace r200
         catch(...) {} // xu_write always throws during a CONTROL_SW_RESET, since the firmware is unable to send a proper response
     }
 
-    void get_emitter_state(uvc::device & device, bool & state)
+    void get_emitter_state(const uvc::device & device, bool & state)
     {
         uint8_t byte = 0;
         xu_read(device, CONTROL_EMITTER, &byte, sizeof(byte));
@@ -400,7 +400,7 @@ namespace rsimpl { namespace r200
         xu_write(device, CONTROL_TEMPERATURE, buf, sizeof(buf));
     }
 
-    void get_depth_units(uvc::device & device, uint32_t & units)
+    void get_depth_units(const uvc::device & device, uint32_t & units)
     {
         xu_read(device, CONTROL_DEPTH_UNITS, &units, sizeof(units));
     }
@@ -416,7 +416,7 @@ namespace rsimpl { namespace r200
         xu_write(device, CONTROL_MIN_MAX, values, sizeof(values));
     }
 
-    void get_min_max_depth(uvc::device & device, uint16_t & min_depth, uint16_t & max_depth)
+    void get_min_max_depth(const uvc::device & device, uint16_t & min_depth, uint16_t & max_depth)
     {
         uint16_t values[] = {0, 0};
         xu_read(device, CONTROL_MIN_MAX, values, sizeof(values));
@@ -424,7 +424,7 @@ namespace rsimpl { namespace r200
         max_depth = values[1];
     }
 
-    void get_lr_gain(uvc::device & device, uint32_t & rate, uint32_t & gain)
+    void get_lr_gain(const uvc::device & device, uint32_t & rate, uint32_t & gain)
     {
         uint32_t values[] = {0, 0};
         xu_read(device, CONTROL_LR_GAIN, values, sizeof(values));
@@ -438,7 +438,7 @@ namespace rsimpl { namespace r200
         xu_write(device, CONTROL_LR_GAIN, values, sizeof(values));
     }
 
-    void get_lr_exposure(uvc::device & device, uint32_t & rate, uint32_t & exposure)
+    void get_lr_exposure(const uvc::device & device, uint32_t & rate, uint32_t & exposure)
     {
         uint32_t values[] = {0, 0};
         xu_read(device, CONTROL_LR_EXPOSURE, values, sizeof(values));
@@ -452,7 +452,7 @@ namespace rsimpl { namespace r200
         xu_write(device, CONTROL_LR_EXPOSURE, values, sizeof(values));
     }
 
-    void get_lr_auto_exposure_params(uvc::device & device, auto_exposure_params & params)
+    void get_lr_auto_exposure_params(const uvc::device & device, auto_exposure_params & params)
     {
         xu_read(device, CONTROL_LR_AUTOEXPOSURE_PARAMETERS, &params, sizeof(params));
     }
@@ -462,7 +462,7 @@ namespace rsimpl { namespace r200
         xu_write(device, CONTROL_LR_AUTOEXPOSURE_PARAMETERS, &params, sizeof(params));
     }
 
-    void get_lr_exposure_mode(uvc::device & device, uint32_t & mode)
+    void get_lr_exposure_mode(const uvc::device & device, uint32_t & mode)
     {
         uint8_t m; // 0 = EXPOSURE_MANUAL, 1 = EXPOSURE_AUTO
         xu_read(device, CONTROL_LR_EXPOSURE_MODE, &m, sizeof(m));
@@ -474,7 +474,7 @@ namespace rsimpl { namespace r200
         xu_write(device, CONTROL_LR_EXPOSURE_MODE, &mode, sizeof(mode));
     }
 
-    void get_depth_params(uvc::device & device, depth_params & params)
+    void get_depth_params(const uvc::device & device, depth_params & params)
     {
         xu_read(device, CONTROL_DEPTH_PARAMS, &params, sizeof(params));
     }
@@ -484,7 +484,7 @@ namespace rsimpl { namespace r200
         xu_write(device, CONTROL_DEPTH_PARAMS, &params, sizeof(params));
     }
 
-    void get_disparity_mode(uvc::device & device, disparity_mode & mode)
+    void get_disparity_mode(const uvc::device & device, disparity_mode & mode)
     {
         xu_read(device, CONTROL_DISPARITY, &mode, sizeof(mode));
     }
@@ -494,7 +494,7 @@ namespace rsimpl { namespace r200
         xu_write(device, CONTROL_DISPARITY, &mode, sizeof(mode));
     }
 
-    void get_disparity_shift(uvc::device & device, uint32_t & shift)
+    void get_disparity_shift(const uvc::device & device, uint32_t & shift)
     {
         xu_read(device, CONTROL_DISPARITY_SHIFT, &shift, sizeof(shift));
     }

@@ -91,10 +91,19 @@ namespace rsimpl
     void unpack_yuyv_to_bgr(void * dest[], const subdevice_mode & mode, const void * frame);
     void unpack_yuyv_to_bgra(void * dest[], const subdevice_mode & mode, const void * frame);
 
+    struct interstream_rule // Requires a.*field + delta == b.*field
+    {
+        rs_stream a, b;        
+        int stream_request::* field;
+        int delta;
+    };
+
     struct static_camera_info
     {
+        std::string name;                                       // Model name of the camera
         int stream_subdevices[RS_STREAM_NUM];                   // Which subdevice is used to support each stream, or -1 if stream is unavailable
         std::vector<subdevice_mode> subdevice_modes;            // A list of available modes each subdevice can be put into
+        std::vector<interstream_rule> interstream_rules;        // Rules which constrain the set of available modes
         stream_request presets[RS_STREAM_NUM][RS_PRESET_NUM];   // Presets available for each stream
         bool option_supported[RS_OPTION_NUM];                   // Whether or not a given option is supported on this camera
 

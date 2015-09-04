@@ -117,7 +117,7 @@ namespace rsimpl
         int device::get_vendor_id() const { return impl->desc->idVendor; }
         int device::get_product_id() const { return impl->desc->idProduct; }
 
-        void device::get_control(uint8_t unit, uint8_t ctrl, void * data, int len)
+        void device::get_control(uint8_t unit, uint8_t ctrl, void * data, int len) const
         {
             int status = uvc_get_ctrl(impl->first_handle, unit, ctrl, data, len, UVC_GET_CUR);
             if(status < 0) throw std::runtime_error(to_string() << "uvc_get_ctrl(...) returned " << libusb_error_name(status));
@@ -382,7 +382,7 @@ namespace rsimpl
         int device::get_vendor_id() const { return impl->vid; }
         int device::get_product_id() const { return impl->pid; }
 
-        void device::get_control(uint8_t unit, uint8_t ctrl, void *data, int len)
+        void device::get_control(uint8_t unit, uint8_t ctrl, void *data, int len) const
         {
             KSP_NODE node;
             memset(&node, 0, sizeof(KSP_NODE));

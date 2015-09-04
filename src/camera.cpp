@@ -39,7 +39,7 @@ static static_camera_info add_standard_unpackers(const static_camera_info & came
     return info;
 }
 
-rs_camera::rs_camera(rsimpl::uvc::device device, const static_camera_info & camera_info) : device(device), camera_info(add_standard_unpackers(camera_info)), first_handle(), is_capturing()
+rs_camera::rs_camera(rsimpl::uvc::device device, const static_camera_info & camera_info) : device(device), camera_info(add_standard_unpackers(camera_info)), first_handle(), capturing()
 {
     for(auto & req : requests) req = rsimpl::stream_request();
     calib = {};
@@ -77,7 +77,23 @@ void rs_camera::configure_enabled_streams()
     // Creating a subdevice_handle will reach out to the hardware and open the handle
     if (!first_handle)
     {
-        enforce_interstream_constraints();
+        // Check and modify our requests to enforce all interstream constraints
+        for(auto & rule : camera_info.interstream_rules)
+        {
+            auto & a = requests[rule.a], & b = requests[rule.b]; auto f = rule.field;
+            if(a.enabled && b.enabled)
+            {
+                // Check for incompatibility if both values specified
+                if(a.*f != 0 && b.*f != 0 && a.*f + rule.delta != b.*f)
+                {
+                    throw std::runtime_error(to_string() << "requested " << rule.a << " and " << rule.b << " settings are incompatible");
+                }
+
+                // If only one value is specified, modify the other request to match
+                if(a.*f != 0 && b.*f == 0) b.*f = a.*f + rule.delta;
+                if(a.*f == 0 && b.*f != 0) a.*f = b.*f - rule.delta;
+            }
+        }
 
         // Satisfy stream_requests as necessary for each subdevice, calling set_mode and
         // dispatching the uvc configuration for a requested stream to the hardware
@@ -88,9 +104,9 @@ void rs_camera::configure_enabled_streams()
                 subdevices[i].reset(new subdevice_handle(device, i));
                 if (!first_handle) first_handle = subdevices[i]->get_handle();
                 
-#if defined(ENABLE_DEBUG_SPAM)
+                #if defined(ENABLE_DEBUG_SPAM)
                 uvc_print_diag(subdevices[i]->get_handle(), stdout);
-#endif
+                #endif
                 
                 // For each stream provided by this mode
                 std::vector<std::shared_ptr<stream_buffer>> stream_list;
@@ -123,18 +139,18 @@ void rs_camera::start_capture()
     
     set_stream_intent();
     for(auto & subdevice : subdevices) if (subdevice) subdevice->start_streaming();
-    is_capturing = true;
+    capturing = true;
 }
 
 void rs_camera::stop_capture()
 {
     for(auto & subdevice : subdevices) if (subdevice) subdevice->stop_streaming();
-    is_capturing = false;
+    capturing = false;
 }
 
 void rs_camera::wait_all_streams()
 {
-    if (!is_capturing) return;
+    if (!capturing) return;
     
     int maxFps = 0;
     for(auto & stream : streams) maxFps = stream ? std::max(maxFps, stream->get_mode().fps) : maxFps;

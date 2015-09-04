@@ -69,35 +69,38 @@ protected:
 
     rsimpl::uvc::device_handle                      first_handle;
     rsimpl::calibration_info                        calib;
-    bool                                            is_capturing;
+    bool                                            capturing;
   
 public:
                                                     rs_camera(rsimpl::uvc::device device, const rsimpl::static_camera_info & camera_info);
                                                     ~rs_camera();
 
+    const char *                                    get_name() const { return camera_info.name.c_str(); }
+    bool                                            supports_option(rs_option option) const { return camera_info.option_supported[option]; }
+
+    bool                                            is_stream_enabled(rs_stream stream) const { return requests[stream].enabled; }
+    bool                                            is_capturing() const { return capturing; }
+    float                                           get_depth_scale() const { return calib.depth_scale; }
+    rs_format                                       get_stream_format(rs_stream stream) const { if(!streams[stream]) throw std::runtime_error("stream not enabled"); return streams[stream]->get_mode().format; }
+    rs_intrinsics                                   get_stream_intrinsics(rs_stream stream) const;
+    rs_extrinsics                                   get_stream_extrinsics(rs_stream from, rs_stream to) const;
+    const void *                                    get_image_pixels(rs_stream stream) const { if(!streams[stream]) throw std::runtime_error("stream not enabled"); return streams[stream]->get_image(); }
+    int                                             get_image_frame_number(rs_stream stream) const { if(!streams[stream]) throw std::runtime_error("stream not enabled"); return streams[stream]->get_frame_number(); }
+
     void                                            enable_stream(rs_stream stream, int width, int height, rs_format format, int fps);
-    void                                            enable_stream_preset(rs_stream stream, rs_preset preset);
-    bool                                            is_stream_enabled(rs_stream stream) const { return (bool)streams[stream]; }
+    void                                            enable_stream_preset(rs_stream stream, rs_preset preset);    
     void                                            configure_enabled_streams();
     void                                            start_capture();
     void                                            stop_capture();
-    bool                                            is_streaming() { return is_capturing; }
 
     void                                            wait_all_streams();
-    rs_format                                       get_image_format(rs_stream stream) const { if(!streams[stream]) throw std::runtime_error("stream not enabled"); return streams[stream]->get_mode().format; }
-    const void *                                    get_image_pixels(rs_stream stream) const { if(!streams[stream]) throw std::runtime_error("stream not enabled"); return streams[stream]->get_image(); }
-    int                                             get_image_frame_number(rs_stream stream) const { if(!streams[stream]) throw std::runtime_error("stream not enabled"); return streams[stream]->get_frame_number(); }
-    float                                           get_depth_scale() const { return calib.depth_scale; }
-    rs_intrinsics                                   get_stream_intrinsics(rs_stream stream) const;
-    rs_extrinsics                                   get_stream_extrinsics(rs_stream from, rs_stream to) const;
-    bool                                            supports_option(rs_option option) const { return camera_info.option_supported[option]; }
 
-    virtual const char *                            get_name() const = 0;
+    
+
     virtual rsimpl::calibration_info                retrieve_calibration() = 0;
-    virtual void                                    enforce_interstream_constraints() {}
     virtual void                                    set_stream_intent() = 0;
     virtual void                                    set_option(rs_option option, int value) = 0;
-    virtual int                                     get_option(rs_option option) = 0;
+    virtual int                                     get_option(rs_option option) const = 0;
 };
 
 #endif

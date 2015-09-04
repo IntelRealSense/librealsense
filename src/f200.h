@@ -15,11 +15,10 @@ namespace rsimpl
         f200_camera(uvc::device device);
         ~f200_camera();
 
-        const char * get_name() const override final { return "Intel RealSense F200"; }
         calibration_info retrieve_calibration() override final;
         void set_stream_intent() override final {}
         void set_option(rs_option option, int value) override final;
-        int get_option(rs_option option) override final;
+        int get_option(rs_option option) const override final;
     };
 }
 
