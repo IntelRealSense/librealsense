@@ -59,64 +59,37 @@ namespace RealSense
         R200DisparityShift,
     };
 
-    public class Intrinsics
+    [StructLayout(LayoutKind.Sequential, Pack = 1)]
+    public struct Intrinsics
     {
-        public int[] ImageSize;
-        public float[] FocalLength;
-        public float[] PrincipalPoint;
-        public float[] DistortionCoeffs;
+        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 2)] public int[] ImageSize;
+        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 2)] public float[] FocalLength;
+        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 2)] public float[] PrincipalPoint;
+        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 5)] public float[] DistortionCoeffs;
         public Distortion DistortionModel;    
     }
 
-    public class Extrinsics
+    [StructLayout(LayoutKind.Sequential, Pack = 1)]
+    public struct Extrinsics
     {
-        public float[] Rotation;
-        public float[] Translation;
+        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 9)] public float[] Rotation;
+        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 3)] public float[] Translation;
     };
 
     public class Context : IDisposable
     {
-        public int CameraCount
-        {
-            get
-            {
-                IntPtr error = IntPtr.Zero;
-                var result = rs_get_camera_count(handle, ref error);
-                Error.Handle(error);
-                return result;
-            }
-        }
-
-        public Context()
-        {
-            IntPtr error = IntPtr.Zero;
-            handle = rs_create_context(ApiVersion, ref error);
-            Error.Handle(error);
-        }
-
-        public void Dispose()
-        {
-            IntPtr error = IntPtr.Zero;
-            rs_delete_context(handle, ref error);
-            Error.Ignore(error);
-        }
-
-        public Camera GetCamera(int index)
-        {
-            IntPtr error = IntPtr.Zero;
-            var result = rs_get_camera(handle, index, ref error);
-            Error.Handle(error);
-            return new Camera(result);
-        }
-        
-        private const int ApiVersion = 2;
+        public Context() { using (var e = new AutoError()) { handle = rs_create_context(ApiVersion, ref e.Handle); } }
+        public int CameraCount { get { using (var e = new AutoError()) { return rs_get_camera_count(handle, ref e.Handle); } } }
+        public Camera GetCamera(int index) { using (var e = new AutoError()) { return new Camera(rs_get_camera(handle, index, ref e.Handle)); } }
+        public void Dispose() { rs_delete_context(handle, IntPtr.Zero); }
 
         #region P/Invoke declarations for backing C API
         private IntPtr handle;
+        private const int ApiVersion = 2;
         [DllImport("realsense.dll")] private static extern IntPtr rs_create_context(int api_version, ref IntPtr error);
         [DllImport("realsense.dll")] private static extern int rs_get_camera_count(IntPtr context, ref IntPtr error);
         [DllImport("realsense.dll")] private static extern IntPtr rs_get_camera(IntPtr context, int index, ref IntPtr error);
-        [DllImport("realsense.dll")] private static extern void rs_delete_context(IntPtr context, ref IntPtr error);
+        [DllImport("realsense.dll")] private static extern void rs_delete_context(IntPtr context, IntPtr error); // Note: NOT ref IntPtr, since we want to pass 0
         #endregion
     }
 
@@ -124,180 +97,115 @@ namespace RealSense
     {
         public string Name
         {
-            get
-            {
-                IntPtr error = IntPtr.Zero;
-                var result = Marshal.PtrToStringAnsi(rs_get_camera_name(handle, ref error));
-                Error.Handle(error);
-                return result;
-            }
+            get { using (var e = new AutoError()) { return Marshal.PtrToStringAnsi(rs_get_camera_name(handle, ref e.Handle)); } }
         }
 
         public bool IsCapturing
         {
-            get
-            {
-                IntPtr error = IntPtr.Zero;
-                int result = rs_is_capturing(handle, ref error);
-                Error.Handle(error);
-                return result != 0;
-            }
+            get { using (var e = new AutoError()) { return rs_is_capturing(handle, ref e.Handle) != 0; } }
         }
 
         public float DepthScale
         {
-            get
-            {
-                IntPtr error = IntPtr.Zero;
-                var result = rs_get_depth_scale(handle, ref error);
-                Error.Handle(error);
-                return result;
-            }
+            get { using (var e = new AutoError()) { return rs_get_depth_scale(handle, ref e.Handle); } }
         }
 
         public Camera(IntPtr handle) { this.handle = handle; }
 
         public void EnableStream(Stream stream, int width, int height, Format format, int fps)
         {
-            IntPtr error = IntPtr.Zero;
-            rs_enable_stream(handle, stream, width, height, format, fps, ref error);
-            Error.Handle(error);
+            using (var e = new AutoError()) { rs_enable_stream(handle, stream, width, height, format, fps, ref e.Handle); }
         }
 
         public void EnableStreamPreset(Stream stream, Preset preset)
         {
-            IntPtr error = IntPtr.Zero;
-            rs_enable_stream_preset(handle, stream, preset, ref error);
-            Error.Handle(error);
+            using (var e = new AutoError()) { rs_enable_stream_preset(handle, stream, preset, ref e.Handle); }
         }
 
         public bool IsStreamEnabled(Stream stream)
         {
-            IntPtr error = IntPtr.Zero;
-            var result = rs_is_stream_enabled(handle, stream, ref error);
-            Error.Handle(error);
-            return result != 0;
+            using (var e = new AutoError()) { return rs_is_stream_enabled(handle, stream, ref e.Handle) != 0; }
         }
 
         public void StartCapture()
         {
-            IntPtr error = IntPtr.Zero;
-            rs_start_capture(handle, ref error);
-            Error.Handle(error);
+            using (var e = new AutoError()) { rs_start_capture(handle, ref e.Handle); }
         }
 
         public void StopCapture()
         {
-            IntPtr error = IntPtr.Zero;
-            rs_stop_capture(handle, ref error);
-            Error.Handle(error);
+            using (var e = new AutoError()) { rs_stop_capture(handle, ref e.Handle); }
         }
 
         public bool SupportsOption(Option option)
         {
-            IntPtr error = IntPtr.Zero;
-            var result = rs_camera_supports_option(handle, option, ref error);
-            Error.Handle(error);
-            return result != 0;
+            using (var e = new AutoError()) { return rs_camera_supports_option(handle, option, ref e.Handle) != 0; }
         }
 
         public int GetOption(Option option)
         {
-            IntPtr error = IntPtr.Zero;
-            var result = rs_get_camera_option(handle, option, ref error);
-            Error.Handle(error);
-            return result;
+            using (var e = new AutoError()) { return rs_get_camera_option(handle, option, ref e.Handle); }
         }
 
         public void SetOption(Option option, int value)
         {
-            IntPtr error = IntPtr.Zero;
-            rs_set_camera_option(handle, option, value, ref error);
-            Error.Handle(error);
+            using (var e = new AutoError()) { rs_set_camera_option(handle, option, value, ref e.Handle); }
         }
 
         public Format GetStreamFormat(Stream stream)
         {
-            IntPtr error = IntPtr.Zero;
-            var result = rs_get_stream_format(handle, stream, ref error);
-            Error.Handle(error);
-            return result;
+            using (var e = new AutoError()) { return rs_get_stream_format(handle, stream, ref e.Handle); }
         }
 
         public Intrinsics GetStreamIntrinsics(Stream stream)
         {
-            rs_intrinsics i = new rs_intrinsics();
-            IntPtr error = IntPtr.Zero;
-            rs_get_stream_intrinsics(handle, stream, ref i, ref error);
-            Error.Handle(error);
-
-            unsafe
+            using (var e = new AutoError())
             {
-                return new Intrinsics
-                {
-                    ImageSize = new int[] { i.image_size[0], i.image_size[1] },
-                    FocalLength = new float[] { i.focal_length[0], i.focal_length[1] },
-                    PrincipalPoint = new float[] { i.principal_point[0], i.principal_point[1] },
-                    DistortionCoeffs = new float[] { i.distortion_coeff[0], i.distortion_coeff[1], i.distortion_coeff[2], i.distortion_coeff[3], i.distortion_coeff[4] },
-                    DistortionModel = i.distortion_model
-                };
+                var intrin = new Intrinsics();
+                rs_get_stream_intrinsics(handle, stream, ref intrin, ref e.Handle);
+                return intrin;
             }
         }
 
         public Extrinsics GetStreamExtrinsics(Stream from, Stream to)
         {
-            rs_extrinsics e = new rs_extrinsics();
-            IntPtr error = IntPtr.Zero;
-            rs_get_stream_extrinsics(handle, from, to, ref e, ref error);
-            Error.Handle(error);
-
-            unsafe
+            using (var e = new AutoError())
             {
-                return new Extrinsics
-                {
-                    Rotation = new float[] { e.rotation[0], e.rotation[1], e.rotation[2], e.rotation[3], e.rotation[4], e.rotation[5], e.rotation[6], e.rotation[7], e.rotation[8] },
-                    Translation = new float[] { e.translation[0], e.translation[1], e.translation[2] }
-                };
+                var extrin = new Extrinsics();
+                rs_get_stream_extrinsics(handle, from, to, ref extrin, ref e.Handle);
+                return extrin;
             }
         }
 
         public void WaitAllStreams()
         {
-            IntPtr error = IntPtr.Zero;
-            rs_wait_all_streams(handle, ref error);
-            Error.Handle(error);
+            using (var e = new AutoError()) { rs_wait_all_streams(handle, ref e.Handle); }
         }
 
         public IntPtr GetImagePixels(Stream stream)
         {
-            IntPtr error = IntPtr.Zero;
-            var result = rs_get_image_pixels(handle, stream, ref error);
-            Error.Handle(error);
-            return result;
+            using (var e = new AutoError()) { return rs_get_image_pixels(handle, stream, ref e.Handle); }
         }
 
         public int GetImageFrameNumber(Stream stream)
         {
-            IntPtr error = IntPtr.Zero;
-            var result = rs_get_image_frame_number(handle, stream, ref error);
-            Error.Handle(error);
-            return result;
+            using (var e = new AutoError()) { return rs_get_image_frame_number(handle, stream, ref e.Handle); }
         }
 
         #region P/Invoke declarations for backing C API
         private IntPtr handle;
-        private unsafe struct rs_intrinsics
+        private unsafe struct Intrin
         {
-            public fixed int image_size[2];
-            public fixed float focal_length[2];
-            public fixed float principal_point[2];
-            public fixed float distortion_coeff[5];
-            public Distortion distortion_model;
+            public fixed int sz[2];
+            public fixed float fl[2];
+            public fixed float pt[2];
+            public fixed float k[5];
+            public Distortion m;
         };
-        private unsafe struct rs_extrinsics
+        private unsafe struct Extrin
         {
-            public fixed float rotation[9];
-            public fixed float translation[3];
+            public fixed float r[9];
+            public fixed float t[3];
         };
         [DllImport("realsense.dll")] private static extern IntPtr rs_get_camera_name(IntPtr camera, ref IntPtr error);
         [DllImport("realsense.dll")] private static extern void rs_enable_stream(IntPtr camera, Stream stream, int width, int height, Format format, int fps, ref IntPtr error);
@@ -311,8 +219,8 @@ namespace RealSense
         [DllImport("realsense.dll")] private static extern void rs_set_camera_option(IntPtr camera, Option option, int value, ref IntPtr error);
         [DllImport("realsense.dll")] private static extern float rs_get_depth_scale(IntPtr camera, ref IntPtr error);
         [DllImport("realsense.dll")] private static extern Format rs_get_stream_format(IntPtr camera, Stream stream, ref IntPtr error);
-        [DllImport("realsense.dll")] private static extern void rs_get_stream_intrinsics(IntPtr camera, Stream stream, ref rs_intrinsics intrin, ref IntPtr error);
-        [DllImport("realsense.dll")] private static extern void rs_get_stream_extrinsics(IntPtr camera, Stream from, Stream to, ref rs_extrinsics extrin, ref IntPtr error);
+        [DllImport("realsense.dll")] private static extern void rs_get_stream_intrinsics(IntPtr camera, Stream stream, ref Intrinsics intrin, ref IntPtr error);
+        [DllImport("realsense.dll")] private static extern void rs_get_stream_extrinsics(IntPtr camera, Stream from, Stream to, ref Extrinsics extrin, ref IntPtr error);
         [DllImport("realsense.dll")] private static extern void rs_wait_all_streams(IntPtr camera, ref IntPtr error);
         [DllImport("realsense.dll")] private static extern IntPtr rs_get_image_pixels(IntPtr camera, Stream stream, ref IntPtr error);
         [DllImport("realsense.dll")] private static extern int rs_get_image_frame_number(IntPtr camera, Stream stream, ref IntPtr error);
@@ -337,14 +245,6 @@ namespace RealSense
             }
         }
 
-        public static void Ignore(IntPtr error)
-        {
-            if (error != IntPtr.Zero)
-            {
-                rs_free_error(error);
-            }
-        }
-
         private Error(string errorMessage, string failedFunction, string failedArgs) : base(string.Format("{0} ({1}({2}))", errorMessage, failedFunction, failedArgs))
         {
             this.ErrorMessage = errorMessage;
@@ -358,5 +258,11 @@ namespace RealSense
         [DllImport("realsense.dll")] private static extern IntPtr rs_get_error_message(IntPtr error);
         [DllImport("realsense.dll")] private static extern void rs_free_error(IntPtr error);
         #endregion
+    }
+
+    internal class AutoError : IDisposable
+    {
+        public IntPtr Handle;
+        public void Dispose() { Error.Handle(Handle); }
     }
 }
