@@ -15,7 +15,6 @@ namespace rsimpl
         f200_camera(uvc::device device);
         ~f200_camera();
 
-        calibration_info retrieve_calibration() override final;
         void set_stream_intent() override final {}
         void set_option(rs_option option, int value) override final;
         int get_option(rs_option option) const override final;

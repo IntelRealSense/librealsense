@@ -67,16 +67,6 @@ namespace rsimpl
         return info;
     }
 
-    f200_camera::f200_camera(uvc::device device) : rs_device(device, get_f200_info())
-    {
-
-    }
-
-    f200_camera::~f200_camera()
-    {
-        
-    }
-
     static rs_intrinsics MakeDepthIntrinsics(const f200::CameraCalibrationParameters & c, int w, int h)
     {
         rs_intrinsics intrin = {{w,h}};
@@ -110,21 +100,24 @@ namespace rsimpl
         return intrin;
     }
 
-    calibration_info f200_camera::retrieve_calibration()
+    f200_camera::f200_camera(uvc::device device) : rs_device(device, get_f200_info())
     {
-        if(!hardware_io) hardware_io.reset(new f200::IVCAMHardwareIO(first_handle));
-        const f200::CameraCalibrationParameters & calib = hardware_io->GetParameters();
+        if(!hardware_io) hardware_io.reset(new f200::IVCAMHardwareIO(device));
+        const f200::CameraCalibrationParameters & c = hardware_io->GetParameters();
 
-        calibration_info c;
-        c.intrinsics.resize(NUM_INTRINSICS);
-        c.intrinsics[COLOR_VGA] = MakeColorIntrinsics(calib, 640, 480);
-        c.intrinsics[COLOR_HD] = MakeColorIntrinsics(calib, 1920, 1080);
-        c.intrinsics[DEPTH_VGA] = MakeDepthIntrinsics(calib, 640, 480);
-        c.intrinsics[DEPTH_QVGA] = MakeDepthIntrinsics(calib, 320, 240);
-        c.stream_poses[RS_STREAM_DEPTH] = c.stream_poses[RS_STREAM_INFRARED] = {{{1,0,0},{0,1,0},{0,0,1}}, {0,0,0}};
-        c.stream_poses[RS_STREAM_COLOR] = {transpose((const float3x3 &)calib.Rt), (const float3 &)calib.Tt * 0.001f}; // convert mm to m
-        c.depth_scale = (calib.Rmax / 0xFFFF) * 0.001f; // convert mm to m
-        return c;
+        calib.intrinsics.resize(NUM_INTRINSICS);
+        calib.intrinsics[COLOR_VGA] = MakeColorIntrinsics(c, 640, 480);
+        calib.intrinsics[COLOR_HD] = MakeColorIntrinsics(c, 1920, 1080);
+        calib.intrinsics[DEPTH_VGA] = MakeDepthIntrinsics(c, 640, 480);
+        calib.intrinsics[DEPTH_QVGA] = MakeDepthIntrinsics(c, 320, 240);
+        calib.stream_poses[RS_STREAM_DEPTH] = calib.stream_poses[RS_STREAM_INFRARED] = {{{1,0,0},{0,1,0},{0,0,1}}, {0,0,0}};
+        calib.stream_poses[RS_STREAM_COLOR] = {transpose((const float3x3 &)c.Rt), (const float3 &)c.Tt * 0.001f}; // convert mm to m
+        calib.depth_scale = (c.Rmax / 0xFFFF) * 0.001f; // convert mm to m
+    }
+
+    f200_camera::~f200_camera()
+    {
+        
     }
     
     // N.B. f200 xu_read and xu_write hard code the xu interface to the depth suvdevice. There is only a

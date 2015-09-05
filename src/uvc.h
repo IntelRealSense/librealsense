@@ -18,9 +18,6 @@ namespace rsimpl
             void set_mode(int width, int height, frame_format format, int fps);
             void start_streaming(std::function<void(const void * frame)> callback);
             void stop_streaming();
-
-            void claim_interface(int interface_number);
-            void bulk_transfer(unsigned char endpoint, unsigned char *data, int length, int *actual_length, unsigned int timeout);
         };
 
         struct device
@@ -33,6 +30,9 @@ namespace rsimpl
 
             void get_control(uint8_t unit, uint8_t ctrl, void * data, int len) const;
             void set_control(uint8_t unit, uint8_t ctrl, void * data, int len);
+
+            void claim_interface(int interface_number);
+            void bulk_transfer(unsigned char endpoint, unsigned char *data, int length, int *actual_length, unsigned int timeout);
 
             device_handle claim_subdevice(int subdevice_index);
         };

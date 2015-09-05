@@ -173,7 +173,7 @@ enum Property
 
     class IVCAMHardwareIO
     {
-        uvc::device_handle handle;
+        uvc::device device;
         std::timed_mutex usbMutex;
 
         CameraCalibrationParameters parameters;
@@ -197,7 +197,7 @@ enum Property
 
     public:
 
-        IVCAMHardwareIO(uvc::device_handle handle);
+        IVCAMHardwareIO(uvc::device device);
 
         bool StartTempCompensationLoop()
         {

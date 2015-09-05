@@ -91,16 +91,6 @@ namespace rsimpl
         return info;
     }
 
-    r200_camera::r200_camera(uvc::device device) : rs_device(device, get_r200_info())
-    {
-
-    }
-    
-    r200_camera::~r200_camera()
-    {
-        r200::force_firmware_reset(device);
-    }
-
     static rs_intrinsics MakeLeftRightIntrinsics(const r200::RectifiedIntrinsics & i)
     {
         return {{(int)i.rw, (int)i.rh}, {i.rfx, i.rfy}, {i.rpx, i.rpy}, {0,0,0,0,0}, RS_DISTORTION_NONE};
@@ -116,29 +106,32 @@ namespace rsimpl
         return {{(int)i.w, (int)i.h}, {i.fx,i.fy}, {i.px,i.py}, {i.k[0],i.k[1],i.k[2],i.k[3],i.k[4]}, RS_DISTORTION_MODIFIED_BROWN_CONRADY};
     }
 
-    calibration_info r200_camera::retrieve_calibration()
-    {
-        r200::CameraCalibrationParameters calib;
-        r200::CameraHeaderInfo header;
-        r200::read_camera_info(device, calib, header);
 
-        calibration_info c;
-        c.intrinsics.resize(NUM_INTRINSICS);
-        c.intrinsics[LR_FULL] = MakeLeftRightIntrinsics(calib.modesLR[0]);
-        c.intrinsics[LR_BIG] = MakeLeftRightIntrinsics(calib.modesLR[1]);
-        c.intrinsics[Z_FULL] = MakeDepthIntrinsics(calib.modesLR[0]);
-        c.intrinsics[Z_BIG] = MakeDepthIntrinsics(calib.modesLR[1]);
-        c.intrinsics[THIRD_HD] = MakeColorIntrinsics(calib.intrinsicsThird[0]);
-        c.intrinsics[THIRD_VGA] = MakeColorIntrinsics(calib.intrinsicsThird[1]);
-        c.stream_poses[RS_STREAM_DEPTH] = {{{1,0,0},{0,1,0},{0,0,1}}, {0,0,0}};
-        c.stream_poses[RS_STREAM_INFRARED] = c.stream_poses[RS_STREAM_DEPTH];
-        c.stream_poses[RS_STREAM_INFRARED_2] = c.stream_poses[RS_STREAM_DEPTH]; // TODO: Figure out the correct translation vector to put here
-        c.stream_poses[RS_STREAM_INFRARED_2].position.x = calib.B[0] * 0.001f;
-        for(int i=0; i<3; ++i) for(int j=0; j<3; ++j) c.stream_poses[RS_STREAM_COLOR].orientation(i,j) = calib.Rthird[0][i*3+j];
-        for(int i=0; i<3; ++i) c.stream_poses[RS_STREAM_COLOR].position[i] = calib.T[0][i] * 0.001f;
-        c.stream_poses[RS_STREAM_COLOR].position = c.stream_poses[RS_STREAM_COLOR].orientation * c.stream_poses[RS_STREAM_COLOR].position;
-        c.depth_scale = 0.001f;
-        return c;
+    r200_camera::r200_camera(uvc::device device) : rs_device(device, get_r200_info())
+    {
+        r200::CameraCalibrationParameters c;
+        r200::CameraHeaderInfo h;
+        r200::read_camera_info(device, c, h);
+
+        calib.intrinsics.resize(NUM_INTRINSICS);
+        calib.intrinsics[LR_FULL] = MakeLeftRightIntrinsics(c.modesLR[0]);
+        calib.intrinsics[LR_BIG] = MakeLeftRightIntrinsics(c.modesLR[1]);
+        calib.intrinsics[Z_FULL] = MakeDepthIntrinsics(c.modesLR[0]);
+        calib.intrinsics[Z_BIG] = MakeDepthIntrinsics(c.modesLR[1]);
+        calib.intrinsics[THIRD_HD] = MakeColorIntrinsics(c.intrinsicsThird[0]);
+        calib.intrinsics[THIRD_VGA] = MakeColorIntrinsics(c.intrinsicsThird[1]);
+        calib.stream_poses[RS_STREAM_DEPTH] = {{{1,0,0},{0,1,0},{0,0,1}}, {0,0,0}};
+        calib.stream_poses[RS_STREAM_INFRARED] = {{{1,0,0},{0,1,0},{0,0,1}}, {0,0,0}};
+        calib.stream_poses[RS_STREAM_INFRARED_2] = {{{1,0,0},{0,1,0},{0,0,1}}, {c.B[0] * 0.001f, 0, 0}};
+        for(int i=0; i<3; ++i) for(int j=0; j<3; ++j) calib.stream_poses[RS_STREAM_COLOR].orientation(i,j) = c.Rthird[0][i*3+j];
+        for(int i=0; i<3; ++i) calib.stream_poses[RS_STREAM_COLOR].position[i] = c.T[0][i] * 0.001f;
+        calib.stream_poses[RS_STREAM_COLOR].position = calib.stream_poses[RS_STREAM_COLOR].orientation * calib.stream_poses[RS_STREAM_COLOR].position;
+        calib.depth_scale = 0.001f;
+    }
+    
+    r200_camera::~r200_camera()
+    {
+        r200::force_firmware_reset(device);
     }
 
     template<class T> static void enforce_lr_field(stream_request (& requests)[RS_STREAM_COUNT], T (stream_request::* field), const char *name, T & z_value, T offset)

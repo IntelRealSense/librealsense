@@ -95,9 +95,6 @@ public:
 
     void                                            wait_all_streams();
 
-    
-
-    virtual rsimpl::calibration_info                retrieve_calibration() = 0;
     virtual void                                    set_stream_intent() = 0;
     virtual void                                    set_option(rs_option option, int value) = 0;
     virtual int                                     get_option(rs_option option) const = 0;

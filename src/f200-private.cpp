@@ -105,7 +105,7 @@ namespace rsimpl { namespace f200
         if (!usbMutex.try_lock_for(std::chrono::milliseconds(IVCAM_MONITOR_MUTEX_TIMEOUT))) throw std::runtime_error("usbMutex timed out");
         std::lock_guard<std::timed_mutex> guard(usbMutex, std::adopt_lock);
 
-        handle.bulk_transfer(IVCAM_MONITOR_ENDPOINT_OUT, out, (int) outSize, &outXfer, 1000); // timeout in ms
+        device.bulk_transfer(IVCAM_MONITOR_ENDPOINT_OUT, out, (int) outSize, &outXfer, 1000); // timeout in ms
 
         // read
         if (in && inSize)
@@ -114,7 +114,7 @@ namespace rsimpl { namespace f200
 
             errno = 0;
 
-            handle.bulk_transfer(IVCAM_MONITOR_ENDPOINT_IN, buf, sizeof(buf), &outXfer, 1000);
+            device.bulk_transfer(IVCAM_MONITOR_ENDPOINT_IN, buf, sizeof(buf), &outXfer, 1000);
             if (outXfer < (int)sizeof(uint32_t)) throw std::runtime_error("incomplete bulk usb transfer");
 
             op = *(uint32_t *)buf;
@@ -317,9 +317,9 @@ namespace rsimpl { namespace f200
         // @tofix
     }
 
-    IVCAMHardwareIO::IVCAMHardwareIO(uvc::device_handle handle) : handle(handle)
+    IVCAMHardwareIO::IVCAMHardwareIO(uvc::device device) : device(device)
     {
-        handle.claim_interface(IVCAM_MONITOR_INTERFACE);
+        device.claim_interface(IVCAM_MONITOR_INTERFACE);
 
         uint8_t rawCalibrationBuffer[HW_MONITOR_BUFFER_SIZE];
         size_t bufferLength = HW_MONITOR_BUFFER_SIZE;

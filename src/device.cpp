@@ -121,12 +121,6 @@ void rs_device::configure_enabled_streams()
             }
         }
     }
-    
-    // If we have not yet retrieved calibration info and at least one subdevice is open, do so
-    if(calib.intrinsics.empty() && first_handle)
-    {
-        calib = retrieve_calibration();
-    }
 }
 
 void rs_device::start_capture()
