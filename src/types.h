@@ -107,17 +107,13 @@ namespace rsimpl
         stream_request presets[RS_STREAM_COUNT][RS_PRESET_COUNT];   // Presets available for each stream
         bool option_supported[RS_OPTION_COUNT];                     // Whether or not a given option is supported on this camera
 
+        std::vector<rs_intrinsics> intrinsics;                      // Set of available intrinsics, each stream_mode has one
+        pose stream_poses[RS_STREAM_COUNT];                         // Static pose of each camera on the device
+        float depth_scale;                                          // Scale of depth values
+
         static_device_info();
 
         const subdevice_mode * select_mode(const stream_request (&requests)[RS_STREAM_COUNT], int subdevice_index) const;
-    };
-
-    // Calibration info
-    struct calibration_info
-    {
-        std::vector<rs_intrinsics> intrinsics;
-        pose stream_poses[RS_STREAM_COUNT];
-        float depth_scale;
     };
 
     // Utilities

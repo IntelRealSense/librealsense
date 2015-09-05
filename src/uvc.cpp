@@ -367,16 +367,6 @@ namespace rsimpl
             throw std::runtime_error("device_handle::stop_streaming(...) not implemented");
         }
 
-        void device_handle::claim_interface(int interface_number)
-        {
-            throw std::runtime_error("device_handle::claim_interface(...) not implemented");
-        }
-
-        void device_handle::bulk_transfer(unsigned char endpoint, unsigned char *data, int length, int *actual_length, unsigned int timeout)
-        {
-            throw std::runtime_error("device_handle::bulk_transfer(...) not implemented");
-        }
-
         ////////////
         // device //
         ////////////
@@ -408,6 +398,16 @@ namespace rsimpl
             node.NodeId = XUNODEID;
                 
             check("IKsControl::KsProperty", impl->get_control_node()->KsProperty((PKSPROPERTY)&node, sizeof(KSP_NODE), data, len, nullptr));
+        }
+
+        void device::claim_interface(int interface_number)
+        {
+            throw std::runtime_error("device_handle::claim_interface(...) not implemented");
+        }
+
+        void device::bulk_transfer(unsigned char endpoint, unsigned char *data, int length, int *actual_length, unsigned int timeout)
+        {
+            throw std::runtime_error("device_handle::bulk_transfer(...) not implemented");
         }
 
         class reader_callback : public IMFSourceReaderCallback

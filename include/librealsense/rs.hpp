@@ -60,26 +60,27 @@ namespace rs
         rs_device *         get_handle() const                                                      { return dev; }
 
         const char *        get_name()                                                              { return rs_get_device_name(dev, auto_error()); }
-        bool                supports_option(option o) const                                         { return !!rs_device_supports_option(dev, o, auto_error()); }
         extrinsics          get_extrinsics(stream from, stream to)                                  { extrinsics extrin; rs_get_device_extrinsics(dev, from, to, &extrin, auto_error()); return extrin; }
+        float               get_depth_scale()                                                       { return rs_get_device_depth_scale(dev, auto_error()); }
+        bool                supports_option(option o) const                                         { return !!rs_device_supports_option(dev, o, auto_error()); }
 
         void                enable_stream(stream s, int width, int height, format f, int fps)       { rs_enable_stream(dev, s, width, height, f, fps, auto_error()); }
         void                enable_stream_preset(stream s, preset preset)                           { rs_enable_stream_preset(dev, s, preset, auto_error()); }
         bool                is_stream_enabled(stream s)                                             { return !!rs_stream_is_enabled(dev, s, auto_error()); }
+        intrinsics          get_stream_intrinsics(stream s)                                         { intrinsics intrin; rs_get_stream_intrinsics(dev, s, &intrin, auto_error()); return intrin; }
+        format              get_stream_format(stream s)                                             { return rs_get_stream_format(dev, s, auto_error()); }
+        int                 get_stream_framerate(stream s)                                          { return rs_get_stream_framerate(dev, s, auto_error()); }
 
         void                start()                                                                 { rs_start_device(dev, auto_error()); }
         void                stop()                                                                  { rs_stop_device(dev, auto_error()); }
         bool                is_streaming()                                                          { return !!rs_device_is_streaming(dev, auto_error()); }
-        intrinsics          get_stream_intrinsics(stream s)                                         { intrinsics intrin; rs_get_stream_intrinsics(dev, s, &intrin, auto_error()); return intrin; }
-        format              get_stream_format(stream s)                                             { return rs_get_stream_format(dev, s, auto_error()); }
+
+        void                set_option(option o, int value)                                         { rs_set_device_option(dev, o, value, auto_error()); }
+        int                 get_option(option o)                                                    { return rs_get_device_option(dev, o, auto_error()); }
 
         void                wait_for_frames(int stream_bits)                                        { rs_wait_for_frames(dev, stream_bits, auto_error()); }
         int                 get_frame_number(stream s)                                              { return rs_get_frame_number(dev, s, auto_error()); }
         const void *        get_frame_data(stream s)                                                { return rs_get_frame_data(dev, s, auto_error()); }
-
-        void                set_option(option o, int value)                                         { rs_set_device_option(dev, o, value, auto_error()); }
-        int                 get_option(option o)                                                    { return rs_get_device_option(dev, o, auto_error()); }
-        float               get_depth_scale()                                                       { return rs_get_device_depth_scale(dev, auto_error()); }
     };
 
     class context

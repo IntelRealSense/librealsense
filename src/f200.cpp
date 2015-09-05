@@ -26,8 +26,41 @@ namespace rsimpl
         }
     }
 
+    static rs_intrinsics MakeDepthIntrinsics(const f200::CameraCalibrationParameters & c, int w, int h)
+    {
+        rs_intrinsics intrin = {{w,h}};
+        intrin.focal_length[0] = c.Kc[0][0]*0.5f * w;
+        intrin.focal_length[1] = c.Kc[1][1]*0.5f * h;
+        intrin.principal_point[0] = (c.Kc[0][2]*0.5f + 0.5f) * w;
+        intrin.principal_point[1] = (c.Kc[1][2]*0.5f + 0.5f) * h;
+        for(int i=0; i<5; ++i) intrin.distortion_coeff[i] = c.Invdistc[i];
+        intrin.distortion_model = RS_DISTORTION_INVERSE_BROWN_CONRADY;
+        return intrin;
+    }
+
+    static rs_intrinsics MakeColorIntrinsics(const f200::CameraCalibrationParameters & c, int w, int h)
+    {
+        rs_intrinsics intrin = {{w,h}};
+        intrin.focal_length[0] = c.Kt[0][0]*0.5f;
+        intrin.focal_length[1] = c.Kt[1][1]*0.5f;
+        intrin.principal_point[0] = c.Kt[0][2]*0.5f + 0.5f;
+        intrin.principal_point[1] = c.Kt[1][2]*0.5f + 0.5f;
+        if(w*3 == h*4) // If using a 4:3 aspect ratio, adjust intrinsics (defaults to 16:9)
+        {
+            intrin.focal_length[0] *= 4.0f/3;
+            intrin.principal_point[0] *= 4.0f/3;
+            intrin.principal_point[0] -= 1.0f/6;
+        }
+        intrin.focal_length[0] *= w;
+        intrin.focal_length[1] *= h;
+        intrin.principal_point[0] *= w;
+        intrin.principal_point[1] *= h;
+        intrin.distortion_model = RS_DISTORTION_NONE;
+        return intrin;
+    }
+
     enum { COLOR_VGA, COLOR_HD, DEPTH_VGA, DEPTH_QVGA, NUM_INTRINSICS };
-    static static_device_info get_f200_info()
+    static static_device_info get_f200_info(uvc::device device)
     {
         static_device_info info;
         info.name = {"Intel RealSense F200"};
@@ -64,55 +97,24 @@ namespace rsimpl
         info.presets[RS_STREAM_COLOR   ][RS_PRESET_HIGHEST_FRAMERATE] = {true, 640, 480, RS_FORMAT_RGB8, 60};
 
         for(int i = RS_OPTION_F200_LASER_POWER; i <= RS_OPTION_F200_CONFIDENCE_THRESHOLD; ++i) info.option_supported[i] = true;
+
+        f200::IVCAMHardwareIO io(device);
+        const f200::CameraCalibrationParameters & c = io.GetParameters();
+        info.intrinsics.resize(NUM_INTRINSICS);
+        info.intrinsics[COLOR_VGA] = MakeColorIntrinsics(c, 640, 480);
+        info.intrinsics[COLOR_HD] = MakeColorIntrinsics(c, 1920, 1080);
+        info.intrinsics[DEPTH_VGA] = MakeDepthIntrinsics(c, 640, 480);
+        info.intrinsics[DEPTH_QVGA] = MakeDepthIntrinsics(c, 320, 240);
+        info.stream_poses[RS_STREAM_DEPTH] = info.stream_poses[RS_STREAM_INFRARED] = {{{1,0,0},{0,1,0},{0,0,1}}, {0,0,0}};
+        info.stream_poses[RS_STREAM_COLOR] = {transpose((const float3x3 &)c.Rt), (const float3 &)c.Tt * 0.001f}; // convert mm to m
+        info.depth_scale = (c.Rmax / 0xFFFF) * 0.001f; // convert mm to m
+
         return info;
     }
 
-    static rs_intrinsics MakeDepthIntrinsics(const f200::CameraCalibrationParameters & c, int w, int h)
+    f200_camera::f200_camera(uvc::device device) : rs_device(device, get_f200_info(device))
     {
-        rs_intrinsics intrin = {{w,h}};
-        intrin.focal_length[0] = c.Kc[0][0]*0.5f * w;
-        intrin.focal_length[1] = c.Kc[1][1]*0.5f * h;
-        intrin.principal_point[0] = (c.Kc[0][2]*0.5f + 0.5f) * w;
-        intrin.principal_point[1] = (c.Kc[1][2]*0.5f + 0.5f) * h;
-        for(int i=0; i<5; ++i) intrin.distortion_coeff[i] = c.Invdistc[i];
-        intrin.distortion_model = RS_DISTORTION_INVERSE_BROWN_CONRADY;
-        return intrin;
-    }
 
-    static rs_intrinsics MakeColorIntrinsics(const f200::CameraCalibrationParameters & c, int w, int h)
-    {
-        rs_intrinsics intrin = {{w,h}};
-        intrin.focal_length[0] = c.Kt[0][0]*0.5f;
-        intrin.focal_length[1] = c.Kt[1][1]*0.5f;
-        intrin.principal_point[0] = c.Kt[0][2]*0.5f + 0.5f;
-        intrin.principal_point[1] = c.Kt[1][2]*0.5f + 0.5f;
-        if(w*3 == h*4) // If using a 4:3 aspect ratio, adjust intrinsics (defaults to 16:9)
-        {
-            intrin.focal_length[0] *= 4.0f/3;
-            intrin.principal_point[0] *= 4.0f/3;
-            intrin.principal_point[0] -= 1.0f/6;
-        }
-        intrin.focal_length[0] *= w;
-        intrin.focal_length[1] *= h;
-        intrin.principal_point[0] *= w;
-        intrin.principal_point[1] *= h;
-        intrin.distortion_model = RS_DISTORTION_NONE;
-        return intrin;
-    }
-
-    f200_camera::f200_camera(uvc::device device) : rs_device(device, get_f200_info())
-    {
-        if(!hardware_io) hardware_io.reset(new f200::IVCAMHardwareIO(device));
-        const f200::CameraCalibrationParameters & c = hardware_io->GetParameters();
-
-        calib.intrinsics.resize(NUM_INTRINSICS);
-        calib.intrinsics[COLOR_VGA] = MakeColorIntrinsics(c, 640, 480);
-        calib.intrinsics[COLOR_HD] = MakeColorIntrinsics(c, 1920, 1080);
-        calib.intrinsics[DEPTH_VGA] = MakeDepthIntrinsics(c, 640, 480);
-        calib.intrinsics[DEPTH_QVGA] = MakeDepthIntrinsics(c, 320, 240);
-        calib.stream_poses[RS_STREAM_DEPTH] = calib.stream_poses[RS_STREAM_INFRARED] = {{{1,0,0},{0,1,0},{0,0,1}}, {0,0,0}};
-        calib.stream_poses[RS_STREAM_COLOR] = {transpose((const float3x3 &)c.Rt), (const float3 &)c.Tt * 0.001f}; // convert mm to m
-        calib.depth_scale = (c.Rmax / 0xFFFF) * 0.001f; // convert mm to m
     }
 
     f200_camera::~f200_camera()

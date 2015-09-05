@@ -97,22 +97,23 @@ int             rs_get_device_count         (const rs_context * context, rs_erro
 rs_device *     rs_get_device               (const rs_context * context, int index, rs_error ** error);
 
 const char *    rs_get_device_name          (const rs_device * device, rs_error ** error);
-int             rs_device_supports_option   (const rs_device * device, rs_option option, rs_error ** error);
 void            rs_get_device_extrinsics    (const rs_device * device, rs_stream from, rs_stream to, rs_extrinsics * extrin, rs_error ** error);
+float           rs_get_device_depth_scale   (const rs_device * device, rs_error ** error);
+int             rs_device_supports_option   (const rs_device * device, rs_option option, rs_error ** error);
 
-void            rs_enable_stream            (rs_device * device, rs_stream stream, int width, int height, rs_format format, int fps, rs_error ** error);
+void            rs_enable_stream            (rs_device * device, rs_stream stream, int width, int height, rs_format format, int framerate, rs_error ** error);
 void            rs_enable_stream_preset     (rs_device * device, rs_stream stream, rs_preset preset, rs_error ** error);
 int             rs_stream_is_enabled        (const rs_device * device, rs_stream stream, rs_error ** error);
+void            rs_get_stream_intrinsics    (const rs_device * device, rs_stream stream, rs_intrinsics * intrin, rs_error ** error);
+rs_format       rs_get_stream_format        (const rs_device * device, rs_stream stream, rs_error ** error);
+int             rs_get_stream_framerate     (const rs_device * device, rs_stream stream, rs_error ** error);
 
 void            rs_start_device             (rs_device * device, rs_error ** error);
 void            rs_stop_device              (rs_device * device, rs_error ** error);
 int             rs_device_is_streaming      (const rs_device * device, rs_error ** error);
-rs_format       rs_get_stream_format        (const rs_device * device, rs_stream stream, rs_error ** error);
-void            rs_get_stream_intrinsics    (const rs_device * device, rs_stream stream, rs_intrinsics * intrin, rs_error ** error);
 
 void            rs_set_device_option        (rs_device * device, rs_option option, int value, rs_error ** error);
 int             rs_get_device_option        (const rs_device * device, rs_option option, rs_error ** error);
-float           rs_get_device_depth_scale   (const rs_device * device, rs_error ** error);
 
 void            rs_wait_for_frames          (rs_device * device, int stream_bits, rs_error ** error);
 int             rs_get_frame_number         (const rs_device * device, rs_stream stream, rs_error ** error);

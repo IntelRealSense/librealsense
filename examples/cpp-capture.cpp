@@ -31,7 +31,7 @@ void draw_stream(rs::device & dev, rs::stream stream, int x, int y)
 
     const rs::intrinsics intrin = dev.get_stream_intrinsics(stream);
     const rs::format format = dev.get_stream_format(stream);
-    const int width = intrin.image_size[0], height = intrin.image_size[1];
+    const int width = intrin.image_size[0], height = intrin.image_size[1], fps = dev.get_stream_framerate(stream);
     const void * pixels = dev.get_frame_data(stream);
 
     glRasterPos2i(x + (640 - intrin.image_size[0])/2, y + (480 - intrin.image_size[1])/2);
@@ -67,7 +67,7 @@ int main(int argc, char * argv[]) try
     rs::context ctx;
     if(ctx.get_device_count() < 1) throw std::runtime_error("No device detected. Is it plugged in?");
 
-    // Configure and start our device
+    // Configure our device
     rs::device dev = ctx.get_device(0);
     dev.enable_stream_preset(RS_STREAM_DEPTH, RS_PRESET_BEST_QUALITY);
     dev.enable_stream_preset(RS_STREAM_COLOR, RS_PRESET_BEST_QUALITY);
@@ -76,7 +76,6 @@ int main(int argc, char * argv[]) try
     try {
         dev.enable_stream(RS_STREAM_INFRARED_2, 0, 0, RS_FORMAT_ANY, 0); // Select a format for INFRARED_2 that matches INFRARED
     } catch(...) {}
-    dev.start();
 
     // Compute field of view for each enabled stream
     for(int i = 0; i < RS_STREAM_COUNT; ++i)
@@ -89,6 +88,9 @@ int main(int argc, char * argv[]) try
         std::cout << "Capturing " << stream << " at " << intrin.image_size[0] << " x " << intrin.image_size[1];
         std::cout << std::setprecision(1) << std::fixed << ", fov = " << hfov << " x " << vfov << std::endl;
     }
+    
+    // Start our device
+    dev.start();
 
     // Try setting some R200-specific settings
     std::this_thread::sleep_for(std::chrono::milliseconds(1000));

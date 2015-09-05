@@ -7,22 +7,23 @@ EXPORTS
 	rs_get_device
 	
 	rs_get_device_name
-	rs_device_supports_option
 	rs_get_device_extrinsics
+	rs_get_device_depth_scale
+	rs_device_supports_option
 	
 	rs_enable_stream
 	rs_enable_stream_preset
 	rs_stream_is_enabled
+	rs_get_stream_intrinsics
+	rs_get_stream_format
+	rs_get_stream_framerate
 	
 	rs_start_device
 	rs_stop_device
 	rs_device_is_streaming
-	rs_get_stream_format
-	rs_get_stream_intrinsics
 	
 	rs_set_device_option
 	rs_get_device_option
-	rs_get_device_depth_scale
 	
 	rs_wait_for_frames
 	rs_get_frame_number

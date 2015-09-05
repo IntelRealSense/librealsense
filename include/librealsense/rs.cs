@@ -72,6 +72,26 @@ namespace RealSense
             using (var e = new AutoError()) { return rs_stream_is_enabled(handle, stream, ref e.Handle) != 0; }
         }
 
+        public Intrinsics GetStreamIntrinsics(Stream stream)
+        {
+            using (var e = new AutoError())
+            {
+                var intrin = new Intrinsics();
+                rs_get_stream_intrinsics(handle, stream, ref intrin, ref e.Handle);
+                return intrin;
+            }
+        }
+
+        public Format GetStreamFormat(Stream stream)
+        {
+            using (var e = new AutoError()) { return rs_get_stream_format(handle, stream, ref e.Handle); }
+        }
+
+        public int GetStreamFramerate(Stream stream)
+        {
+            using (var e = new AutoError()) { return rs_get_stream_framerate(handle, stream, ref e.Handle); }
+        }
+
         public void Start()
         {
             using (var e = new AutoError()) { rs_start_device(handle, ref e.Handle); }
@@ -85,21 +105,6 @@ namespace RealSense
         public bool IsStreaming
         {
             get { using (var e = new AutoError()) { return rs_device_is_streaming(handle, ref e.Handle) != 0; } }
-        }
-
-        public Format GetStreamFormat(Stream stream)
-        {
-            using (var e = new AutoError()) { return rs_get_stream_format(handle, stream, ref e.Handle); }
-        }
-
-        public Intrinsics GetStreamIntrinsics(Stream stream)
-        {
-            using (var e = new AutoError())
-            {
-                var intrin = new Intrinsics();
-                rs_get_stream_intrinsics(handle, stream, ref intrin, ref e.Handle);
-                return intrin;
-            }
         }
 
         public void SetOption(Option option, int value)
@@ -137,20 +142,21 @@ namespace RealSense
         [DllImport("realsense")] private static extern IntPtr rs_get_device_name(IntPtr device, ref IntPtr error);
         [DllImport("realsense")] private static extern int rs_device_supports_option(IntPtr device, Option option, ref IntPtr error);
         [DllImport("realsense")] private static extern void rs_get_device_extrinsics(IntPtr device, Stream from, Stream to, ref Extrinsics extrin, ref IntPtr error);
+        [DllImport("realsense")] private static extern float rs_get_device_depth_scale(IntPtr device, ref IntPtr error);
 
         [DllImport("realsense")] private static extern void rs_enable_stream(IntPtr device, Stream stream, int width, int height, Format format, int fps, ref IntPtr error);
         [DllImport("realsense")] private static extern void rs_enable_stream_preset(IntPtr device, Stream stream, Preset preset, ref IntPtr error);
         [DllImport("realsense")] private static extern int rs_stream_is_enabled(IntPtr device, Stream stream, ref IntPtr error);
+        [DllImport("realsense")] private static extern void rs_get_stream_intrinsics(IntPtr device, Stream stream, ref Intrinsics intrin, ref IntPtr error);
+        [DllImport("realsense")] private static extern Format rs_get_stream_format(IntPtr device, Stream stream, ref IntPtr error);
+        [DllImport("realsense")] private static extern int rs_get_stream_framerate(IntPtr device, Stream stream, ref IntPtr error);
 
         [DllImport("realsense")] private static extern void rs_start_device(IntPtr device, ref IntPtr error);
         [DllImport("realsense")] private static extern void rs_stop_device(IntPtr device, ref IntPtr error);        
-        [DllImport("realsense")] private static extern int rs_device_is_streaming(IntPtr device, ref IntPtr error);
-        [DllImport("realsense")] private static extern Format rs_get_stream_format(IntPtr device, Stream stream, ref IntPtr error);
-        [DllImport("realsense")] private static extern void rs_get_stream_intrinsics(IntPtr device, Stream stream, ref Intrinsics intrin, ref IntPtr error);
+        [DllImport("realsense")] private static extern int rs_device_is_streaming(IntPtr device, ref IntPtr error);        
 
         [DllImport("realsense")] private static extern void rs_set_device_option(IntPtr device, Option option, int value, ref IntPtr error);
         [DllImport("realsense")] private static extern int rs_get_device_option(IntPtr device, Option option, ref IntPtr error);
-        [DllImport("realsense")] private static extern float rs_get_device_depth_scale(IntPtr device, ref IntPtr error);      
 
         [DllImport("realsense")] private static extern void rs_wait_for_frames(IntPtr device, Streams stream_bits, ref IntPtr error);
         [DllImport("realsense")] private static extern int rs_get_frame_number(IntPtr device, Stream stream, ref IntPtr error);

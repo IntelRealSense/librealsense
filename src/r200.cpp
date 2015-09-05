@@ -34,9 +34,24 @@ namespace rsimpl
         return number;
     }
 
-    enum { LR_FULL, LR_BIG, Z_FULL, Z_BIG, THIRD_HD, THIRD_VGA, NUM_INTRINSICS };
-    static static_device_info get_r200_info()
+    static rs_intrinsics MakeLeftRightIntrinsics(const r200::RectifiedIntrinsics & i)
     {
+        return {{(int)i.rw, (int)i.rh}, {i.rfx, i.rfy}, {i.rpx, i.rpy}, {0,0,0,0,0}, RS_DISTORTION_NONE};
+    }
+
+    static rs_intrinsics MakeDepthIntrinsics(const r200::RectifiedIntrinsics & i)
+    {
+        return {{(int)i.rw-12, (int)i.rh-12}, {i.rfx, i.rfy}, {i.rpx-6, i.rpy-6}, {0,0,0,0,0}, RS_DISTORTION_NONE};
+    }
+
+    static rs_intrinsics MakeColorIntrinsics(const r200::UnrectifiedIntrinsics & i)
+    {
+        return {{(int)i.w, (int)i.h}, {i.fx,i.fy}, {i.px,i.py}, {i.k[0],i.k[1],i.k[2],i.k[3],i.k[4]}, RS_DISTORTION_MODIFIED_BROWN_CONRADY};
+    }
+
+    static static_device_info get_r200_info(uvc::device device)
+    {
+        enum { LR_FULL, LR_BIG, Z_FULL, Z_BIG, THIRD_HD, THIRD_VGA, NUM_INTRINSICS };
         static_device_info info;
         info.name = {"Intel RealSense R200"};
         for(auto fps : {30, 60, 90})
@@ -88,80 +103,37 @@ namespace rsimpl
         for(int i=0; i<RS_PRESET_COUNT; ++i) info.presets[RS_STREAM_INFRARED_2][i] = info.presets[RS_STREAM_INFRARED][i];
 
         for(int i = RS_OPTION_R200_LR_AUTO_EXPOSURE_ENABLED; i <= RS_OPTION_R200_DISPARITY_SHIFT; ++i) info.option_supported[i] = true;
-        return info;
-    }
 
-    static rs_intrinsics MakeLeftRightIntrinsics(const r200::RectifiedIntrinsics & i)
-    {
-        return {{(int)i.rw, (int)i.rh}, {i.rfx, i.rfy}, {i.rpx, i.rpy}, {0,0,0,0,0}, RS_DISTORTION_NONE};
-    }
-
-    static rs_intrinsics MakeDepthIntrinsics(const r200::RectifiedIntrinsics & i)
-    {
-        return {{(int)i.rw-12, (int)i.rh-12}, {i.rfx, i.rfy}, {i.rpx-6, i.rpy-6}, {0,0,0,0,0}, RS_DISTORTION_NONE};
-    }
-
-    static rs_intrinsics MakeColorIntrinsics(const r200::UnrectifiedIntrinsics & i)
-    {
-        return {{(int)i.w, (int)i.h}, {i.fx,i.fy}, {i.px,i.py}, {i.k[0],i.k[1],i.k[2],i.k[3],i.k[4]}, RS_DISTORTION_MODIFIED_BROWN_CONRADY};
-    }
-
-
-    r200_camera::r200_camera(uvc::device device) : rs_device(device, get_r200_info())
-    {
         r200::CameraCalibrationParameters c;
         r200::CameraHeaderInfo h;
         r200::read_camera_info(device, c, h);
 
-        calib.intrinsics.resize(NUM_INTRINSICS);
-        calib.intrinsics[LR_FULL] = MakeLeftRightIntrinsics(c.modesLR[0]);
-        calib.intrinsics[LR_BIG] = MakeLeftRightIntrinsics(c.modesLR[1]);
-        calib.intrinsics[Z_FULL] = MakeDepthIntrinsics(c.modesLR[0]);
-        calib.intrinsics[Z_BIG] = MakeDepthIntrinsics(c.modesLR[1]);
-        calib.intrinsics[THIRD_HD] = MakeColorIntrinsics(c.intrinsicsThird[0]);
-        calib.intrinsics[THIRD_VGA] = MakeColorIntrinsics(c.intrinsicsThird[1]);
-        calib.stream_poses[RS_STREAM_DEPTH] = {{{1,0,0},{0,1,0},{0,0,1}}, {0,0,0}};
-        calib.stream_poses[RS_STREAM_INFRARED] = {{{1,0,0},{0,1,0},{0,0,1}}, {0,0,0}};
-        calib.stream_poses[RS_STREAM_INFRARED_2] = {{{1,0,0},{0,1,0},{0,0,1}}, {c.B[0] * 0.001f, 0, 0}};
-        for(int i=0; i<3; ++i) for(int j=0; j<3; ++j) calib.stream_poses[RS_STREAM_COLOR].orientation(i,j) = c.Rthird[0][i*3+j];
-        for(int i=0; i<3; ++i) calib.stream_poses[RS_STREAM_COLOR].position[i] = c.T[0][i] * 0.001f;
-        calib.stream_poses[RS_STREAM_COLOR].position = calib.stream_poses[RS_STREAM_COLOR].orientation * calib.stream_poses[RS_STREAM_COLOR].position;
-        calib.depth_scale = 0.001f;
+        info.intrinsics.resize(NUM_INTRINSICS);
+        info.intrinsics[LR_FULL] = MakeLeftRightIntrinsics(c.modesLR[0]);
+        info.intrinsics[LR_BIG] = MakeLeftRightIntrinsics(c.modesLR[1]);
+        info.intrinsics[Z_FULL] = MakeDepthIntrinsics(c.modesLR[0]);
+        info.intrinsics[Z_BIG] = MakeDepthIntrinsics(c.modesLR[1]);
+        info.intrinsics[THIRD_HD] = MakeColorIntrinsics(c.intrinsicsThird[0]);
+        info.intrinsics[THIRD_VGA] = MakeColorIntrinsics(c.intrinsicsThird[1]);
+        info.stream_poses[RS_STREAM_DEPTH] = {{{1,0,0},{0,1,0},{0,0,1}}, {0,0,0}};
+        info.stream_poses[RS_STREAM_INFRARED] = {{{1,0,0},{0,1,0},{0,0,1}}, {0,0,0}};
+        info.stream_poses[RS_STREAM_INFRARED_2] = {{{1,0,0},{0,1,0},{0,0,1}}, {c.B[0] * 0.001f, 0, 0}};
+        for(int i=0; i<3; ++i) for(int j=0; j<3; ++j) info.stream_poses[RS_STREAM_COLOR].orientation(i,j) = c.Rthird[0][i*3+j];
+        for(int i=0; i<3; ++i) info.stream_poses[RS_STREAM_COLOR].position[i] = c.T[0][i] * 0.001f;
+        info.stream_poses[RS_STREAM_COLOR].position = info.stream_poses[RS_STREAM_COLOR].orientation * info.stream_poses[RS_STREAM_COLOR].position;
+        info.depth_scale = 0.001f;
+
+        return info;
+    }
+
+    r200_camera::r200_camera(uvc::device device) : rs_device(device, get_r200_info(device))
+    {
+
     }
     
     r200_camera::~r200_camera()
     {
         r200::force_firmware_reset(device);
-    }
-
-    template<class T> static void enforce_lr_field(stream_request (& requests)[RS_STREAM_COUNT], T (stream_request::* field), const char *name, T & z_value, T offset)
-    {
-        if(z_value)
-        {
-            // Make sure that left/right values are compatible with requested z value
-            for(auto s : {RS_STREAM_INFRARED, RS_STREAM_INFRARED_2})
-            {
-                if(requests[s].enabled)
-                {
-                    if(requests[s].*field && requests[s].*field != z_value + offset)
-                    {
-                        throw std::runtime_error(to_string() << "requested " << s << " " << name << " incompatible with " << RS_STREAM_DEPTH << " " << name);
-                    }
-                    requests[s].*field = z_value + offset;
-                }
-            }    
-        }
-        else
-        {
-            // Make sure that z value corresponds to any requested left/right values
-            for(auto s : {RS_STREAM_INFRARED, RS_STREAM_INFRARED_2})
-            {
-                if(requests[s].enabled && requests[s].*field)
-                {
-                    z_value = requests[s].*field - offset;
-                }
-            }          
-        }
     }
 
     void r200_camera::set_stream_intent()

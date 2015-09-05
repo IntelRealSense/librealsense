@@ -38,7 +38,6 @@ static static_device_info add_standard_unpackers(const static_device_info & devi
 rs_device::rs_device(rsimpl::uvc::device device, const static_device_info & device_info) : device(device), device_info(add_standard_unpackers(device_info)), first_handle(), capturing()
 {
     for(auto & req : requests) req = rsimpl::stream_request();
-    calib = {};
 
     int max_subdevice = 0;
     for(auto & mode : device_info.subdevice_modes) max_subdevice = std::max(max_subdevice, mode.subdevice);
@@ -162,15 +161,26 @@ void rs_device::wait_all_streams()
     }
 }
 
-rs_intrinsics rs_device::get_stream_intrinsics(rs_stream stream) const
+rsimpl::stream_mode rs_device::get_stream_mode(rs_stream stream) const
 {
-    if(!streams[stream]) throw std::runtime_error("stream not enabled");
-    return calib.intrinsics[streams[stream]->get_mode().intrinsics_index];
+    if(streams[stream]) return streams[stream]->get_mode();
+    if(requests[stream].enabled)
+    {
+        if(auto subdevice_mode = device_info.select_mode(requests, device_info.stream_subdevices[stream]))
+        {
+            for(auto & mode : subdevice_mode->streams)
+            {
+                if(mode.stream == stream) return mode;
+            }
+        }   
+        throw std::logic_error("no mode found"); // Should never happen, select_mode should throw if no mode can be found
+    }
+    throw std::runtime_error("stream not enabled");
 }
 
 rs_extrinsics rs_device::get_stream_extrinsics(rs_stream from, rs_stream to) const
 {
-    auto transform = inverse(calib.stream_poses[from]) * calib.stream_poses[to]; // TODO: Make sure this is the right order
+    auto transform = inverse(device_info.stream_poses[from]) * device_info.stream_poses[to];
     rs_extrinsics extrin;
     (float3x3 &)extrin.rotation = transform.orientation;
     (float3 &)extrin.translation = transform.position;
