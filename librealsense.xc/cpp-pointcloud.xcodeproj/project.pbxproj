@@ -34,9 +34,9 @@
 		08567C0A1B5B898C00EB6C0D /* CoreVideo.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreVideo.framework; path = System/Library/Frameworks/CoreVideo.framework; sourceTree = SDKROOT; };
 		08567C0C1B5B899200EB6C0D /* IOKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = IOKit.framework; path = System/Library/Frameworks/IOKit.framework; sourceTree = SDKROOT; };
 		08567C0E1B5B899B00EB6C0D /* OpenGL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenGL.framework; path = System/Library/Frameworks/OpenGL.framework; sourceTree = SDKROOT; };
-		279985881B95083000894334 /* librealsense.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = librealsense.dylib; path = ../../../Dimitri/Desktop/librealsense/librealsense.xc/build/Debug/librealsense.dylib; sourceTree = "<group>"; };
-		279D52DB1B8E8776007F2D73 /* cpp-pointcloud.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = "cpp-pointcloud.cpp"; path = "../../../../Dimitri/Desktop/librealsense/examples/cpp-pointcloud.cpp"; sourceTree = SOURCE_ROOT; };
-		279D52DF1B8E886D007F2D73 /* libglfw3.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libglfw3.dylib; path = ../../../../usr/local/Cellar/glfw3/3.1.1/lib/libglfw3.dylib; sourceTree = "<group>"; };
+		279985881B95083000894334 /* librealsense.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = librealsense.dylib; path = librealsense.xc/build/Debug/librealsense.dylib; sourceTree = "<group>"; };
+		279D52DB1B8E8776007F2D73 /* cpp-pointcloud.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = "cpp-pointcloud.cpp"; path = "../examples/cpp-pointcloud.cpp"; sourceTree = SOURCE_ROOT; };
+		279D52DF1B8E886D007F2D73 /* libglfw3.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libglfw3.dylib; path = /usr/local/Cellar/glfw3/3.1.1/lib/libglfw3.dylib; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
