@@ -259,7 +259,7 @@ namespace rsimpl { namespace f200
         void TemperatureControlLoop();
 
 		bool PerfomAndSendHWmonitorCommand(IVCAMCommand & newCommand);
-		bool IVCAMHardwareIO::SendHWmonitorCommand(IVCAMCommandDetails & details);
+		bool SendHWmonitorCommand(IVCAMCommandDetails & details);
 
     public:
 
