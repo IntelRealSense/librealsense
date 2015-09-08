@@ -33,9 +33,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "08567BB01B5B59E800EB6C0D"
-            BuildableName = "cpp-multicam"
-            BlueprintName = "cpp-multicam"
-            ReferencedContainer = "container:cpp-multicam.xcodeproj">
+            BuildableName = "c-capture"
+            BlueprintName = "c-capture"
+            ReferencedContainer = "container:c-capture.xcodeproj">
          </BuildableReference>
       </MacroExpansion>
    </TestAction>
@@ -54,9 +54,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "08567BB01B5B59E800EB6C0D"
-            BuildableName = "cpp-multicam"
-            BlueprintName = "cpp-multicam"
-            ReferencedContainer = "container:cpp-multicam.xcodeproj">
+            BuildableName = "c-capture"
+            BlueprintName = "c-capture"
+            ReferencedContainer = "container:c-capture.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
       <AdditionalOptions>

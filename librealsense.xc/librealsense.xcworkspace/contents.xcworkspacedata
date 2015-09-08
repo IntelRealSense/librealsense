@@ -14,10 +14,10 @@
          location = "group:c-pointcloud.xcodeproj">
       </FileRef>
       <FileRef
-         location = "group:/Users/Dimitri/Desktop/librealsense/librealsense.xc/cpp-capture.xcodeproj">
+         location = "group:cpp-capture.xcodeproj">
       </FileRef>
       <FileRef
-         location = "group:/Users/dimitri/Desktop/librealsense/librealsense.xc/cpp-pointcloud.xcodeproj">
+         location = "group:cpp-pointcloud.xcodeproj">
       </FileRef>
    </Group>
    <FileRef
