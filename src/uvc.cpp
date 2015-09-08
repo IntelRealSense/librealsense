@@ -297,212 +297,157 @@ namespace rsimpl
 				void Cancel() { _releaseFunc = std::function<void()>([](){});}
 			};
 
-			using USB_GUID_T = std::vector<const _GUID *>;
-			using WinUsbCustomFunc = std::function<WinUsbEnumerationAction(int, HDEVINFO, WCHAR *)>;
+			#define IVCAM_VID				L"8086"
+			#define IVCAM_PID				L"0A66"
+			#define IVCAM_DEVICE_NAME		L"IVCAM"
 
-			class WinUsbUtils
+			#define IVCAM_USB2_PID			L"0AA1"
+			#define SKYCAM_OPER_PID			L"0AA2"
+			#define SKYCAM_UVC_PID			L"0AA3"
+			#define REALTEK_OPER_PID		L"0AA4"
+			#define REALTEK_DBG_PID			L"0AA5"
+
+            BOOL get_device_data(int i, const _GUID* guid, const HDEVINFO & deviceInfo, std::shared_ptr<WCHAR> & lpDevicePath)
 			{
-				#define IVCAM_VID				L"8086"
-				#define IVCAM_PID				L"0A66"
-				#define IVCAM_DEVICE_NAME		L"IVCAM"
+				SP_DEVICE_INTERFACE_DATA interfaceData;
+				unsigned long length;
+				unsigned long requiredLength = 0;
 
-				#define IVCAM_USB2_PID			L"0AA1"
-				#define SKYCAM_OPER_PID			L"0AA2"
-				#define SKYCAM_UVC_PID			L"0AA3"
-				#define REALTEK_OPER_PID		L"0AA4"
-				#define REALTEK_DBG_PID			L"0AA5"
+				std::shared_ptr<SP_DEVICE_INTERFACE_DETAIL_DATA> detailData;
 
-				static WinUsbStatus for_each_device(const _GUID * guid, const WinUsbCustomFunc & action)
+				// Enumerate all the device interfaces in the device information set.
+				memset(&interfaceData, 0, sizeof(interfaceData));
+				interfaceData.cbSize = sizeof(SP_DEVICE_INTERFACE_DATA);
+
+				if (!SetupDiEnumDeviceInterfaces(deviceInfo, nullptr, guid, i, &interfaceData))
+					return FALSE;
+
+				if (!SetupDiGetDeviceInterfaceDetail(deviceInfo, &interfaceData, nullptr, 0, &requiredLength, nullptr))
 				{
-					auto result = WinUsbEnumerationAction::Continue;
-					HDEVINFO deviceInfo;
-
-					deviceInfo = SetupDiGetClassDevs(guid, nullptr, nullptr, DIGCF_PRESENT | DIGCF_DEVICEINTERFACE);
-					if (deviceInfo != INVALID_HANDLE_VALUE)
+					if ((ERROR_INSUFFICIENT_BUFFER == GetLastError()) && (requiredLength > 0))
 					{
-						for (int i = 0; i < 256; i++)
-						{
-							std::shared_ptr<WCHAR> lpDevicePath;
-							if (!get_device_data(i, guid, deviceInfo, lpDevicePath))
-								continue;
+						//we got the size, allocate buffer
+						auto * detailData1 = static_cast<PSP_DEVICE_INTERFACE_DETAIL_DATA>(LocalAlloc(LMEM_FIXED, requiredLength));
+						if (!detailData1)
+							return Failure;
 
-							result = action(i, deviceInfo, lpDevicePath.get());
-							if (result != WinUsbEnumerationAction::Continue)
-								break;
-						}
+						detailData = std::shared_ptr<SP_DEVICE_INTERFACE_DETAIL_DATA>(detailData1,[=](SP_DEVICE_INTERFACE_DETAIL_DATA *)
+						{
+							if (detailData1 != nullptr) LocalFree(detailData1);
+						});
 					}
 					else
-					{
-						throw std::runtime_error("SetupDiGetClassDevs");
-						return Failure;
-					}
-
-					if (!SetupDiDestroyDeviceInfoList(deviceInfo))
-						std::cerr << "Failed to clean-up SetupDiDestroyDeviceInfoList!" << std::endl;
-
-					switch (result)
-					{
-					case WinUsbEnumerationAction::BreakWithRetryError:
-						return TempraryFailureTryToRecallFunction;
-					case WinUsbEnumerationAction::BreakWithError:
-						return Failure;
-					case WinUsbEnumerationAction::BreakWithSuccess:
-					case WinUsbEnumerationAction::Continue:
-						return Success;
-					}
-
-					return Failure;
-				}
-
-				static BOOL get_device_data(int i, const _GUID* guid, const HDEVINFO & deviceInfo, std::shared_ptr<WCHAR> & lpDevicePath)
-				{
-					SP_DEVICE_INTERFACE_DATA interfaceData;
-					unsigned long length;
-					unsigned long requiredLength = 0;
-
-					std::shared_ptr<SP_DEVICE_INTERFACE_DETAIL_DATA> detailData;
-
-					// Enumerate all the device interfaces in the device information set.
-					memset(&interfaceData, 0, sizeof(interfaceData));
-					interfaceData.cbSize = sizeof(SP_DEVICE_INTERFACE_DATA);
-
-					if (!SetupDiEnumDeviceInterfaces(deviceInfo, nullptr, guid, i, &interfaceData))
-						return FALSE;
-
-					if (!SetupDiGetDeviceInterfaceDetail(deviceInfo, &interfaceData, nullptr, 0, &requiredLength, nullptr))
-					{
-						if ((ERROR_INSUFFICIENT_BUFFER == GetLastError()) && (requiredLength > 0))
-						{
-							//we got the size, allocate buffer
-							auto * detailData1 = static_cast<PSP_DEVICE_INTERFACE_DETAIL_DATA>(LocalAlloc(LMEM_FIXED, requiredLength));
-							if (!detailData1)
-								return Failure;
-
-							detailData = std::shared_ptr<SP_DEVICE_INTERFACE_DETAIL_DATA>(detailData1,[=](SP_DEVICE_INTERFACE_DETAIL_DATA *)
-							{
-								if (detailData1 != nullptr) LocalFree(detailData1);
-							});
-						}
-						else
-						{
-							std::cerr << "SetupDiGetDeviceInterfaceDetail failed" << std::endl;
-							return FALSE;
-						}
-					}
-
-					detailData->cbSize = sizeof(SP_DEVICE_INTERFACE_DETAIL_DATA);
-					length = requiredLength;
-
-					if (!SetupDiGetDeviceInterfaceDetail(deviceInfo, &interfaceData, detailData.get(), length, &requiredLength, nullptr))
 					{
 						std::cerr << "SetupDiGetDeviceInterfaceDetail failed" << std::endl;
 						return FALSE;
 					}
-
-					// Get the device path 
-					auto nLength = wcslen(detailData->DevicePath) + 1;
-					auto lpDevicePath1 = static_cast<WCHAR*>(LocalAlloc(LPTR, nLength * sizeof(WCHAR)));
-					if (lpDevicePath1 == nullptr)
-					{
-						std::cerr << "failed to get path" << std::endl;
-						return FALSE;
-					}
-
-					auto hr = StringCchCopy(lpDevicePath1, nLength, detailData->DevicePath);
-					lpDevicePath1[nLength-1] = 0;
-					if (FAILED(hr))
-					{
-						std::cerr << "failed StringCchCopy()" << std::endl;
-						return FALSE;
-					}
-
-					lpDevicePath = std::shared_ptr<WCHAR>(lpDevicePath1, [=](WCHAR*)
-					{
-						if (lpDevicePath1 != nullptr) LocalFree(lpDevicePath1);
-					});
-
-					return TRUE;
 				}
-				static bool contains_pid_substring(const wchar_t* str, const std::vector<LPWSTR>& ivcam_pid)
+
+				detailData->cbSize = sizeof(SP_DEVICE_INTERFACE_DETAIL_DATA);
+				length = requiredLength;
+
+				if (!SetupDiGetDeviceInterfaceDetail(deviceInfo, &interfaceData, detailData.get(), length, &requiredLength, nullptr))
 				{
-					CString StrCopy(str);
-					for (auto pid : ivcam_pid)
-					{
-						CString pidStr(pid);
-						pidStr = CString(L"&pid_") + pidStr + CString(L"&");
-						int num = StrCopy.MakeLower().Find(pidStr.MakeLower());
-						if ((num >= 0) && (num < StrCopy.GetLength()))
-							return true;
-					}
+					std::cerr << "SetupDiGetDeviceInterfaceDetail failed" << std::endl;
+					return FALSE;
+				}
+
+				// Get the device path 
+				auto nLength = wcslen(detailData->DevicePath) + 1;
+				auto lpDevicePath1 = static_cast<WCHAR*>(LocalAlloc(LPTR, nLength * sizeof(WCHAR)));
+				if (lpDevicePath1 == nullptr)
+				{
+					std::cerr << "failed to get path" << std::endl;
+					return FALSE;
+				}
+
+				auto hr = StringCchCopy(lpDevicePath1, nLength, detailData->DevicePath);
+				lpDevicePath1[nLength-1] = 0;
+				if (FAILED(hr))
+				{
+					std::cerr << "failed StringCchCopy()" << std::endl;
+					return FALSE;
+				}
+
+				lpDevicePath = std::shared_ptr<WCHAR>(lpDevicePath1, [=](WCHAR*)
+				{
+					if (lpDevicePath1 != nullptr) LocalFree(lpDevicePath1);
+				});
+
+				return TRUE;
+			}
+
+			bool contains_pid_substring(const wchar_t* str, const std::vector<LPWSTR>& ivcam_pid)
+			{
+				CString StrCopy(str);
+				for (auto pid : ivcam_pid)
+				{
+					CString pidStr(pid);
+					pidStr = CString(L"&pid_") + pidStr + CString(L"&");
+					int num = StrCopy.MakeLower().Find(pidStr.MakeLower());
+					if ((num >= 0) && (num < StrCopy.GetLength()))
+						return true;
+				}
+				return false;
+			}
+
+			IvcamUsbDevice get_camera_usb_type(const wchar_t * deviceID)
+			{	
+				std::wsmatch matches;
+				std::wstring deviceIDstr(deviceID);
+				std::wregex camTypeReg(L"\\b(mi_|MI_)(\\d\\d)");
+	
+				if (!std::regex_search(deviceIDstr, matches, camTypeReg) || matches.size() < 3)
+					return IvcamUsbDevice::None;
+
+				std::wstring cam = matches[2];
+				auto camType = static_cast<IvcamUsbDevice>(_wtoi(cam.c_str()));
+
+				if (camType == IvcamUsbDevice::RGB || camType == IvcamUsbDevice::Depth || camType == IvcamUsbDevice::HardwareMonitor)
+					return camType;
+
+				return IvcamUsbDevice::None;
+			}
+
+			bool get_camera_usb_id(IN const wchar_t* deviceID, OUT std::string *devID)
+			{
+				std::wsmatch matches;
+				std::wstring deviceIDstr(deviceID);
+
+				std::wregex camIdReg(L"\\b(mi_)(.*#\\w&)(.*)(&.*&)", std::regex_constants::icase);
+				if (!std::regex_search(deviceIDstr, matches, camIdReg) || matches.size() < 5)
+					return false;
+
+				std::wstring wdevID = matches[3];
+				*devID = win_to_utf(wdevID.c_str());
+				return true;
+			}
+
+			bool is_ivcam_pid(const wchar_t * deviceID)
+			{
+				return (contains_pid_substring(deviceID, {IVCAM_PID, IVCAM_USB2_PID}) 
+					||  contains_pid_substring(deviceID, {SKYCAM_OPER_PID, SKYCAM_UVC_PID, REALTEK_OPER_PID, REALTEK_DBG_PID}));
+			}
+
+			bool parse_device_id(IN const wchar_t* deviceID, OUT  std::string* devID, OUT IvcamUsbDevice * camType)
+			{
+				if (deviceID == nullptr)
+					throw std::runtime_error("device id is null");
+
+				auto resultingCamType = get_camera_usb_type(deviceID);
+				if (resultingCamType == IvcamUsbDevice::None)
+					return false;
+
+				std::string resultingDevId;
+				if (!get_camera_usb_id(deviceID, &resultingDevId))
+				{
 					return false;
 				}
 
-				static IvcamUsbDevice get_camera_usb_type(const wchar_t * deviceID)
-				{	
-					std::wsmatch matches;
-					std::wstring deviceIDstr(deviceID);
-					std::wregex camTypeReg(L"\\b(mi_|MI_)(\\d\\d)");
-	
-					if (!std::regex_search(deviceIDstr, matches, camTypeReg) || matches.size() < 3)
-						return IvcamUsbDevice::None;
-
-					std::wstring cam = matches[2];
-					auto camType = static_cast<IvcamUsbDevice>(_wtoi(cam.c_str()));
-
-					if (camType == IvcamUsbDevice::RGB || camType == IvcamUsbDevice::Depth || camType == IvcamUsbDevice::HardwareMonitor)
-						return camType;
-
-					return IvcamUsbDevice::None;
-				}
-
-				bool static get_camera_usb_id(IN const wchar_t* deviceID, OUT std::string *devID)
-				{
-					std::wsmatch matches;
-					std::wstring deviceIDstr(deviceID);
-
-					std::wregex camIdReg(L"\\b(mi_)(.*#\\w&)(.*)(&.*&)", std::regex_constants::icase);
-					if (!std::regex_search(deviceIDstr, matches, camIdReg) || matches.size() < 5)
-						return false;
-
-					std::wstring wdevID = matches[3];
-					*devID = win_to_utf(wdevID.c_str());
-					return true;
-				}
-
-			public:
-				static WinUsbStatus for_each_device(const USB_GUID_T & guids, const WinUsbCustomFunc & action)
-				{
-					for (auto pGuid : guids)
-						WIN_USB_CALL(for_each_device(pGuid, action));
-					return Success;
-				}
-
-				static bool is_ivcam_pid(const wchar_t * deviceID)
-				{
-					return (contains_pid_substring(deviceID, {IVCAM_PID, IVCAM_USB2_PID}) 
-						||  contains_pid_substring(deviceID, {SKYCAM_OPER_PID, SKYCAM_UVC_PID, REALTEK_OPER_PID, REALTEK_DBG_PID}));
-				}
-
-				bool static parse_device_id(IN const wchar_t* deviceID, OUT  std::string* devID, OUT IvcamUsbDevice * camType)
-				{
-					if (deviceID == nullptr)
-						throw std::runtime_error("device id is null");
-
-					auto resultingCamType = get_camera_usb_type(deviceID);
-					if (resultingCamType == IvcamUsbDevice::None)
-						return false;
-
-					std::string resultingDevId;
-					if (!get_camera_usb_id(deviceID, &resultingDevId))
-					{
-						return false;
-					}
-
-					*devID = resultingDevId;
-					*camType = resultingCamType;
-					return true;
-				}
-			};
+				*devID = resultingDevId;
+				*camType = resultingCamType;
+				return true;
+			}
 		}
 
         struct context::_impl
@@ -547,12 +492,6 @@ namespace rsimpl
                 return sources[subdevice_index];
             }
 
-			bool iterate_win_usb_devices(const winusb::WinUsbCustomFunc & action)
-			{
-				winusb::USB_GUID_T guidList {&IVCAM_WIN_USB_DEVICE_GUID, &IVCAM_WIN_USB_DEVICE_GUID_2};
-				return winusb::WinUsbUtils::for_each_device(guidList, action) == winusb::Success;
-			}
-
 			bool query_device_endpoints()
 			{
 				if (usbHandle == INVALID_HANDLE_VALUE || usbHandle == nullptr)
@@ -592,59 +531,80 @@ namespace rsimpl
 			}
 
 			void open_win_usb()
-			{
-				auto result = iterate_win_usb_devices([&](int i, HDEVINFO deviceInfo, LPTSTR lpDevicePath)
-				{
-					std::string devid;
-					winusb::IvcamUsbDevice cameraNum;
+			{                
+				for (auto guid : {&IVCAM_WIN_USB_DEVICE_GUID, &IVCAM_WIN_USB_DEVICE_GUID_2})
+                {
+                    if(winUsbOpen) break;
 
-					if (!winusb::WinUsbUtils::is_ivcam_pid(lpDevicePath))
-						return winusb::WinUsbEnumerationAction::Continue;
+				    auto result = winusb::WinUsbEnumerationAction::Continue;
+				    HDEVINFO deviceInfo;
 
-					if (!winusb::WinUsbUtils::parse_device_id(lpDevicePath, &devid, &cameraNum))
-						return winusb::WinUsbEnumerationAction::Continue;
-
-					if (unique_id != devid)
-						return winusb::WinUsbEnumerationAction::Continue;
-
-					auto fileHandle = CreateFile(lpDevicePath, GENERIC_WRITE | GENERIC_READ, FILE_SHARE_WRITE | FILE_SHARE_READ, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL | FILE_FLAG_OVERLAPPED, nullptr);
-
-					// Argh, refactor this crap
-					winusb::OnScopeExit releaseFileHandle([&] { close_win_usb(); });
-
-					if (fileHandle != INVALID_HANDLE_VALUE)
-						winUsbHandle = fileHandle;
-					else
-						throw std::runtime_error("CreateFile for path returned invalid_handle"); // lpDevicePath
-
-				    if (winUsbHandle == nullptr)
-					    throw std::runtime_error("winUsbHandle has not been opened");
-
-				    auto result = WinUsb_Initialize(IN winUsbHandle, OUT &usbHandle);
-				    if (!result)
+				    deviceInfo = SetupDiGetClassDevs(guid, nullptr, nullptr, DIGCF_PRESENT | DIGCF_DEVICEINTERFACE);
+				    if (deviceInfo != INVALID_HANDLE_VALUE)
 				    {
-					    std::cerr << "Last Error: " << GetLastError() << std::endl;
-					    close_win_usb();
-					    throw std::runtime_error("could not initialize winusb");
-				    }
+					    for (int i = 0; i < 256; i++)
+					    {
+						    std::shared_ptr<WCHAR> lpDevicePath;
+						    if (!winusb::get_device_data(i, guid, deviceInfo, lpDevicePath))
+							    continue;
 
-				    result = query_device_endpoints();
-				    if (!result)
+					        std::string devid;
+					        winusb::IvcamUsbDevice cameraNum;
+
+					        if (!winusb::is_ivcam_pid(lpDevicePath.get()))
+						        continue;
+
+					        if (!winusb::parse_device_id(lpDevicePath.get(), &devid, &cameraNum))
+						        continue;
+
+					        if (unique_id != devid)
+						        continue;
+
+					        auto fileHandle = CreateFile(lpDevicePath.get(), GENERIC_WRITE | GENERIC_READ, FILE_SHARE_WRITE | FILE_SHARE_READ, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL | FILE_FLAG_OVERLAPPED, nullptr);
+
+					        // Argh, refactor this crap
+					        winusb::OnScopeExit releaseFileHandle([&] { close_win_usb(); });
+
+					        if (fileHandle != INVALID_HANDLE_VALUE)
+						        winUsbHandle = fileHandle;
+					        else
+						        throw std::runtime_error("CreateFile for path returned invalid_handle"); // lpDevicePath
+
+				            if (winUsbHandle == nullptr)
+					            throw std::runtime_error("winUsbHandle has not been opened");
+
+				            auto result = WinUsb_Initialize(IN winUsbHandle, OUT &usbHandle);
+				            if (!result)
+				            {
+					            std::cerr << "Last Error: " << GetLastError() << std::endl;
+					            close_win_usb();
+					            throw std::runtime_error("could not initialize winusb");
+				            }
+
+				            result = query_device_endpoints();
+				            if (!result)
+				            {
+					            std::cerr << "Last Error: " << GetLastError() << std::endl;
+					            close_win_usb();
+					            throw std::runtime_error("could not query endpoints");
+				            }
+
+					        releaseFileHandle.Cancel();
+
+                            if (!SetupDiDestroyDeviceInfoList(deviceInfo))
+					            std::cerr << "Failed to clean-up SetupDiDestroyDeviceInfoList!" << std::endl;
+
+                            winUsbOpen = true;
+                            break;
+				        }
+				    }
+				    else
 				    {
-					    std::cerr << "Last Error: " << GetLastError() << std::endl;
-					    close_win_usb();
-					    throw std::runtime_error("could not query endpoints");
+					    throw std::runtime_error("SetupDiGetClassDevs");
 				    }
+                }
 
-					releaseFileHandle.Cancel();
-
-					return winusb::WinUsbEnumerationAction::Continue;
-				});
-
-				if (result)
-				{
-					winUsbOpen = true;
-				}
+                if(!winUsbOpen) throw std::runtime_error("Unable to open device via WinUSB");
 			}
 
 			void close_win_usb()
