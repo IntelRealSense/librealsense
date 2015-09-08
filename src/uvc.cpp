@@ -703,7 +703,7 @@ namespace rsimpl
 				return result;
 			}
 
-			bool usb_synchronous_read(unsigned char* buffer, int bufferLength, ULONG& lengthTransferred, DWORD TimeOut)
+			bool usb_synchronous_read(unsigned char * buffer, int bufferLength, int * actual_length, DWORD TimeOut)
 			{
 				if (!winUsbOpen) throw std::runtime_error("winusb has not been initialized");
 
@@ -716,6 +716,8 @@ namespace rsimpl
 
 				hOvl.hEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
 				winusb::OnScopeExit closeHandle([=]{ CloseHandle(hOvl.hEvent); });
+
+				ULONG lengthTransferred;
 
 				bRetVal = WinUsb_ReadPipe(usbHandle, dataInPipe, buffer, bufferLength, &lengthTransferred, &hOvl);
 
@@ -735,10 +737,11 @@ namespace rsimpl
 					}
 				}
 
+				*actual_length = lengthTransferred;
 				return result;
 			}
 
-			bool usb_synchronous_write(unsigned char* buffer, int bufferLength, unsigned char* outputBuffer, ULONG& bufferSize, DWORD TimeOut, bool oneDirection)
+			bool usb_synchronous_write(unsigned char * buffer, int bufferLength, DWORD TimeOut)
 			{
 				if (!winUsbOpen) throw std::runtime_error("winusb has not been initialized");
 
@@ -767,8 +770,8 @@ namespace rsimpl
 					}
 				}
 
-				if (!oneDirection && result == true)
-					result = usb_synchronous_read(outputBuffer, 1024, bufferSize, 1000); // HW_MONITOR_BUFFER_SIZE
+				//if (!oneDirection && result == true)
+				//	result = usb_synchronous_read(outputBuffer, 1024, bufferSize, 1000); // HW_MONITOR_BUFFER_SIZE
 
 				return result;
 			}
@@ -908,16 +911,17 @@ namespace rsimpl
 			// #define IVCAM_MONITOR_ENDPOINT_OUT      0x1
 			// #define IVCAM_MONITOR_ENDPOINT_IN       0x81
 
-			// Write Operation
+			// Write
 			if (endpoint == 0x1)
 			{
-
+				impl->usb_synchronous_write(data, length, timeout);
 			}
 
-			// Read Operation
+			// Read
 			else if (endpoint == 0x81)
 			{
-
+				auto actualLen = ULONG(actual_length);
+				impl->usb_synchronous_read(data, length, actual_length, timeout);
 			}
         }
 
