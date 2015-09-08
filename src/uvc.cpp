@@ -462,123 +462,108 @@ namespace rsimpl
 
 			void open_win_usb()
 			{                
-				for (auto guid : {&IVCAM_WIN_USB_DEVICE_GUID, &IVCAM_WIN_USB_DEVICE_GUID_2})
+				for(const auto & guid : {IVCAM_WIN_USB_DEVICE_GUID, IVCAM_WIN_USB_DEVICE_GUID_2})
                 {
-                    if(winUsbOpen) break;
-
 				    auto result = winusb::WinUsbEnumerationAction::Continue;
 				    HDEVINFO deviceInfo;
 
-				    deviceInfo = SetupDiGetClassDevs(guid, nullptr, nullptr, DIGCF_PRESENT | DIGCF_DEVICEINTERFACE);
-				    if (deviceInfo != INVALID_HANDLE_VALUE)
-				    {
-					    for (int i = 0; i < 256; i++)
-					    {
-                            std::wstring lpDevicePath;
-			                {
-				                SP_DEVICE_INTERFACE_DATA interfaceData;
-				                unsigned long length;
-				                unsigned long requiredLength = 0;
+				    deviceInfo = SetupDiGetClassDevs(&guid, nullptr, nullptr, DIGCF_PRESENT | DIGCF_DEVICEINTERFACE);
+				    if (deviceInfo == INVALID_HANDLE_VALUE) throw std::runtime_error("SetupDiGetClassDevs");
 
-				                std::shared_ptr<SP_DEVICE_INTERFACE_DETAIL_DATA> detailData;
+					for(int member_index = 0; ; ++member_index)
+					{
+				        unsigned long length;
+				        unsigned long requiredLength = 0;
 
-				                // Enumerate all the device interfaces in the device information set.
-				                memset(&interfaceData, 0, sizeof(interfaceData));
-				                interfaceData.cbSize = sizeof(SP_DEVICE_INTERFACE_DATA);
+				        // Enumerate all the device interfaces in the device information set.
+                        SP_DEVICE_INTERFACE_DATA interfaceData = {sizeof(SP_DEVICE_INTERFACE_DATA)};
+				        if(SetupDiEnumDeviceInterfaces(deviceInfo, nullptr, &guid, member_index, &interfaceData) == FALSE)
+                        {
+                            if(GetLastError() == ERROR_NO_MORE_ITEMS) break;
+                            continue;
+                        }					        
 
-				                if (!SetupDiEnumDeviceInterfaces(deviceInfo, nullptr, guid, i, &interfaceData))
-					                continue;
+                        std::shared_ptr<SP_DEVICE_INTERFACE_DETAIL_DATA> detailData;
+				        if (!SetupDiGetDeviceInterfaceDetail(deviceInfo, &interfaceData, nullptr, 0, &requiredLength, nullptr))
+				        {
+					        if ((ERROR_INSUFFICIENT_BUFFER == GetLastError()) && (requiredLength > 0))
+					        {
+						        //we got the size, allocate buffer
+						        auto * detailData1 = static_cast<PSP_DEVICE_INTERFACE_DETAIL_DATA>(LocalAlloc(LMEM_FIXED, requiredLength));
+						        if (!detailData1) throw std::bad_alloc();
 
-				                if (!SetupDiGetDeviceInterfaceDetail(deviceInfo, &interfaceData, nullptr, 0, &requiredLength, nullptr))
-				                {
-					                if ((ERROR_INSUFFICIENT_BUFFER == GetLastError()) && (requiredLength > 0))
-					                {
-						                //we got the size, allocate buffer
-						                auto * detailData1 = static_cast<PSP_DEVICE_INTERFACE_DETAIL_DATA>(LocalAlloc(LMEM_FIXED, requiredLength));
-						                if (!detailData1) throw std::bad_alloc();
-
-						                detailData = std::shared_ptr<SP_DEVICE_INTERFACE_DETAIL_DATA>(detailData1,[=](SP_DEVICE_INTERFACE_DETAIL_DATA *)
-						                {
-							                if (detailData1 != nullptr) LocalFree(detailData1);
-						                });
-					                }
-					                else
-					                {
-						                std::cerr << "SetupDiGetDeviceInterfaceDetail failed" << std::endl;
-						                continue;
-					                }
-				                }
-
-				                detailData->cbSize = sizeof(SP_DEVICE_INTERFACE_DETAIL_DATA);
-				                length = requiredLength;
-
-				                if (!SetupDiGetDeviceInterfaceDetail(deviceInfo, &interfaceData, detailData.get(), length, &requiredLength, nullptr))
-				                {
-					                std::cerr << "SetupDiGetDeviceInterfaceDetail failed" << std::endl;
-					                continue;
-				                }
-
-				                // Get the device path 
-				                lpDevicePath = detailData->DevicePath;
-			                }
-
-					        std::string devid;
-					        winusb::IvcamUsbDevice cameraNum;
-
-					        if (!winusb::is_ivcam_pid(lpDevicePath.c_str()))
-						        continue;
-
-					        if (!winusb::parse_device_id(lpDevicePath.c_str(), &devid, &cameraNum))
-						        continue;
-
-					        if (unique_id != devid)
-						        continue;
-
-					        auto fileHandle = CreateFile(lpDevicePath.c_str(), GENERIC_WRITE | GENERIC_READ, FILE_SHARE_WRITE | FILE_SHARE_READ, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL | FILE_FLAG_OVERLAPPED, nullptr);
-
-					        // Argh, refactor this crap
-					        winusb::OnScopeExit releaseFileHandle([&] { close_win_usb(); });
-
-					        if (fileHandle != INVALID_HANDLE_VALUE)
-						        winUsbHandle = fileHandle;
+						        detailData = std::shared_ptr<SP_DEVICE_INTERFACE_DETAIL_DATA>(detailData1,[=](SP_DEVICE_INTERFACE_DETAIL_DATA *)
+						        {
+							        if (detailData1 != nullptr) LocalFree(detailData1);
+						        });
+					        }
 					        else
-						        throw std::runtime_error("CreateFile for path returned invalid_handle"); // lpDevicePath
-
-				            if (winUsbHandle == nullptr)
-					            throw std::runtime_error("winUsbHandle has not been opened");
-
-				            auto result = WinUsb_Initialize(IN winUsbHandle, OUT &usbHandle);
-				            if (!result)
-				            {
-					            std::cerr << "Last Error: " << GetLastError() << std::endl;
-					            close_win_usb();
-					            throw std::runtime_error("could not initialize winusb");
-				            }
-
-				            result = query_device_endpoints();
-				            if (!result)
-				            {
-					            std::cerr << "Last Error: " << GetLastError() << std::endl;
-					            close_win_usb();
-					            throw std::runtime_error("could not query endpoints");
-				            }
-
-					        releaseFileHandle.Cancel();
-
-                            if (!SetupDiDestroyDeviceInfoList(deviceInfo))
-					            std::cerr << "Failed to clean-up SetupDiDestroyDeviceInfoList!" << std::endl;
-
-                            winUsbOpen = true;
-                            break;
+					        {
+						        std::cerr << "SetupDiGetDeviceInterfaceDetail failed" << std::endl;
+						        continue;
+					        }
 				        }
-				    }
-				    else
-				    {
-					    throw std::runtime_error("SetupDiGetClassDevs");
+
+				        detailData->cbSize = sizeof(SP_DEVICE_INTERFACE_DETAIL_DATA);
+				        length = requiredLength;
+
+				        if (!SetupDiGetDeviceInterfaceDetail(deviceInfo, &interfaceData, detailData.get(), length, &requiredLength, nullptr))
+				        {
+					        std::cerr << "SetupDiGetDeviceInterfaceDetail failed" << std::endl;
+					        continue;
+				        }
+
+					    if (!winusb::is_ivcam_pid(detailData->DevicePath))
+						    continue;
+
+					    std::string devid;
+					    winusb::IvcamUsbDevice cameraNum;
+					    if (!winusb::parse_device_id(detailData->DevicePath, &devid, &cameraNum))
+						    continue;
+
+					    if (unique_id != devid)
+						    continue;
+
+					    auto fileHandle = CreateFile(detailData->DevicePath, GENERIC_WRITE | GENERIC_READ, FILE_SHARE_WRITE | FILE_SHARE_READ, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL | FILE_FLAG_OVERLAPPED, nullptr);
+
+					    // Argh, refactor this crap
+					    winusb::OnScopeExit releaseFileHandle([&] { close_win_usb(); });
+
+					    if (fileHandle != INVALID_HANDLE_VALUE)
+						    winUsbHandle = fileHandle;
+					    else
+						    throw std::runtime_error("CreateFile for path returned invalid_handle"); // lpDevicePath
+
+				        if (winUsbHandle == nullptr)
+					        throw std::runtime_error("winUsbHandle has not been opened");
+
+				        auto result = WinUsb_Initialize(IN winUsbHandle, OUT &usbHandle);
+				        if (!result)
+				        {
+					        std::cerr << "Last Error: " << GetLastError() << std::endl;
+					        close_win_usb();
+					        throw std::runtime_error("could not initialize winusb");
+				        }
+
+				        result = query_device_endpoints();
+				        if (!result)
+				        {
+					        std::cerr << "Last Error: " << GetLastError() << std::endl;
+					        close_win_usb();
+					        throw std::runtime_error("could not query endpoints");
+				        }
+
+					    releaseFileHandle.Cancel();
+
+                        if (!SetupDiDestroyDeviceInfoList(deviceInfo))
+					        std::cerr << "Failed to clean-up SetupDiDestroyDeviceInfoList!" << std::endl;
+
+                        winUsbOpen = true;
+                        return;
 				    }
                 }
 
-                if(!winUsbOpen) throw std::runtime_error("Unable to open device via WinUSB");
+                throw std::runtime_error("Unable to open device via WinUSB");
 			}
 
 			void close_win_usb()
