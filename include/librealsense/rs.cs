@@ -25,7 +25,7 @@ namespace RealSense
 
         #region P/Invoke declarations for backing C API
         private IntPtr handle;
-        private const int ApiVersion = 2;
+        private const int ApiVersion = 3;
         [DllImport("realsense")] private static extern IntPtr rs_create_context(int api_version, ref IntPtr error);
         [DllImport("realsense")] private static extern void rs_delete_context(IntPtr context, IntPtr error); // Note: NOT ref IntPtr, since we want to pass 0
         [DllImport("realsense")] private static extern int rs_get_device_count(IntPtr context, ref IntPtr error);
