@@ -1,6 +1,7 @@
 #include "device.h"
 #include "image.h"
 
+#include <thread>
 #include <iostream>
 #include <algorithm>
 
@@ -141,6 +142,7 @@ void rs_device::start()
     
     set_stream_intent();
     for(int i=0; i<subdevices.size(); ++i) if (subdevices[i]) subdevices[i].start_streaming(on_frame[i]);
+    capture_started = std::chrono::high_resolution_clock::now();
     capturing = true;
 }
 
@@ -165,6 +167,8 @@ void rs_device::wait_all_streams()
     int maxFps = 0;
     for(auto & stream : streams) maxFps = stream ? std::max(maxFps, stream->get_mode().fps) : maxFps;
 
+    auto t0 = std::chrono::high_resolution_clock::now();
+    auto t1 = std::max(t0 + std::chrono::milliseconds(10000 / maxFps), capture_started + std::chrono::seconds(2));
     for(auto & stream : streams)
     {
         if(stream)
@@ -172,7 +176,12 @@ void rs_device::wait_all_streams()
             // If this is the fastest stream, wait until a new frame arrives
             if(stream->get_mode().fps == maxFps)
             {
-                while(true) if(stream->swap_front()) break;
+                while(true)
+                {
+                    if(stream->swap_front()) break;
+                    std::this_thread::sleep_for(std::chrono::milliseconds(1));
+                    if(std::chrono::high_resolution_clock::now() >= t1) throw std::runtime_error("Timeout waiting for frames");
+                }
             }
             else // Otherwise simply check for a new frame
             {

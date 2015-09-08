@@ -17,7 +17,7 @@ protected:
     std::vector<rsimpl::uvc::device_handle> subdevices;                 // Indexed by UVC subdevices number (0, 1, 2...)
 
     bool                                    capturing;
-  
+    std::chrono::high_resolution_clock::time_point capture_started;  
 public:
                                             rs_device(rsimpl::uvc::device device, const rsimpl::static_device_info & device_info);
                                             ~rs_device();

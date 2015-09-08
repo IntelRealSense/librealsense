@@ -947,7 +947,7 @@ namespace rsimpl
 
             // Implement IMFSourceReaderCallback
             HRESULT STDMETHODCALLTYPE OnReadSample(HRESULT hrStatus, DWORD dwStreamIndex, DWORD dwStreamFlags, LONGLONG llTimestamp, IMFSample * sample) override 
-            { 
+            {
                 if(auto owner_ptr = owner.lock())
                 {
                     if(sample)
@@ -959,11 +959,22 @@ namespace rsimpl
                             if(SUCCEEDED(buffer->Lock(&byte_buffer, &max_length, &current_length)))
                             {
                                  owner_ptr->callback(byte_buffer);
+                                 HRESULT hr = buffer->Unlock();
                             }
                         }
                     }
 
                     HRESULT hr = owner_ptr->source_reader->ReadSample(MF_SOURCE_READER_FIRST_VIDEO_STREAM, 0, NULL, NULL, NULL, NULL);
+                    switch(hr)
+                    {
+                    case S_OK: break;
+                    case MF_E_INVALIDREQUEST: std::cout << "ReadSample returned MF_E_INVALIDREQUEST" << std::endl; break;
+                    case MF_E_INVALIDSTREAMNUMBER: std::cout << "ReadSample returned MF_E_INVALIDSTREAMNUMBER" << std::endl; break;
+                    case MF_E_NOTACCEPTING: std::cout << "ReadSample returned MF_E_NOTACCEPTING" << std::endl; break;
+                    case E_INVALIDARG: std::cout << "ReadSample returned E_INVALIDARG" << std::endl; break;
+                    case MF_E_VIDEO_RECORDING_DEVICE_INVALIDATED: std::cout << "ReadSample returned MF_E_VIDEO_RECORDING_DEVICE_INVALIDATED" << std::endl; break;
+                    default: std::cout << "ReadSample returned HRESULT " << std::hex << (uint32_t)hr << std::endl; break;
+                    }
                 }
                 return S_OK; 
             }
