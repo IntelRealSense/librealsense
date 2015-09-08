@@ -49,6 +49,7 @@ The goal of librealsense is to provide a reasonable hardware abstraction with mi
   * `scripts/install_glfw3.sh`
 5. We use QtCreator as an IDE for Linux development on Ubuntu: 
   * `sudo apt-get install qtcreator`
+  * `sudo scripts/install_qt.sh` (we also need qmake from the full qt5 distribution)
   * `all.pro` contains librealsense and all example applications
   * Clean => Run Qmake => Build
 6. Don't want to use QtCreator? We have a makefile!
