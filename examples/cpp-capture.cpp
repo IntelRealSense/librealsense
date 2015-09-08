@@ -10,16 +10,6 @@
 
 font font;
 
-FILE * find_file(std::string path, int levels)
-{
-    for(int i=0; i<=levels; ++i)
-    {
-        if(auto f = fopen(path.c_str(), "rb")) return f;
-        path = "../" + path;
-    }
-    return nullptr;
-}
-
 float compute_fov(int image_size, float focal_length, float principal_point)
 {
     return (atan2f(principal_point + 0.5f, focal_length) + atan2f(image_size - principal_point - 0.5f, focal_length)) * 180.0f / (float)M_PI;
@@ -118,7 +108,7 @@ int main(int argc, char * argv[]) try
     glfwMakeContextCurrent(win);
         
     // Load our truetype font
-    if(auto f = find_file("examples/assets/Roboto-Bold.ttf", 3))
+    if (auto f = find_file("examples/assets/Roboto-Bold.ttf", 3))
     {
         font = ttf_create(f);
         fclose(f);
