@@ -591,28 +591,6 @@ namespace rsimpl
 				return result;
 			}
 
-			void init_usb_pipe()
-			{
-				if (winUsbHandle == nullptr)
-					throw std::runtime_error("winUsbHandle has not been opened");
-
-				auto result = WinUsb_Initialize(IN winUsbHandle, OUT &usbHandle);
-				if (!result)
-				{
-					std::cerr << "Last Error: " << GetLastError() << std::endl;
-					close_win_usb();
-					throw std::runtime_error("could not initialize winusb");
-				}
-
-				result = query_device_endpoints();
-				if (!result)
-				{
-					std::cerr << "Last Error: " << GetLastError() << std::endl;
-					close_win_usb();
-					throw std::runtime_error("could not query endpoints");
-				}
-			}
-
 			void open_win_usb()
 			{
 				auto result = iterate_win_usb_devices([&](int i, HDEVINFO deviceInfo, LPTSTR lpDevicePath)
@@ -639,7 +617,24 @@ namespace rsimpl
 					else
 						throw std::runtime_error("CreateFile for path returned invalid_handle"); // lpDevicePath
 
-					init_usb_pipe();
+				    if (winUsbHandle == nullptr)
+					    throw std::runtime_error("winUsbHandle has not been opened");
+
+				    auto result = WinUsb_Initialize(IN winUsbHandle, OUT &usbHandle);
+				    if (!result)
+				    {
+					    std::cerr << "Last Error: " << GetLastError() << std::endl;
+					    close_win_usb();
+					    throw std::runtime_error("could not initialize winusb");
+				    }
+
+				    result = query_device_endpoints();
+				    if (!result)
+				    {
+					    std::cerr << "Last Error: " << GetLastError() << std::endl;
+					    close_win_usb();
+					    throw std::runtime_error("could not query endpoints");
+				    }
 
 					releaseFileHandle.Cancel();
 
@@ -661,47 +656,6 @@ namespace rsimpl
 				}
 			}
 
-			bool wait_for_async_transfer(OVERLAPPED & hOvl, ULONG & lengthTransferred, DWORD TimeOut, UCHAR pipeId)
-			{
-				if (!winUsbOpen) throw std::runtime_error("winusb has not been initialized");
-
-				bool result = false;
-
-				auto rc = GetOverlappedResult(winUsbHandle, &hOvl, &lengthTransferred, FALSE);
-				if (rc == FALSE)
-				{
-					auto lastResult = GetLastError();
-					if (lastResult == ERROR_IO_PENDING || lastResult == ERROR_IO_INCOMPLETE)
-					{
-						auto hResult = WaitForSingleObject(hOvl.hEvent, TimeOut);
-						if (hResult == WAIT_TIMEOUT)
-						{
-							lengthTransferred = 0;
-							WinUsb_ResetPipe(usbHandle, dataInPipe);
-							WinUsb_ResetPipe(usbHandle, dataOutPipe);		
-						}
-						else
-						{
-							if (GetOverlappedResult(winUsbHandle, &hOvl, &lengthTransferred, FALSE) == 1)
-								result = true;
-							else
-								result = false;
-						}
-					}
-					else
-					{
-						lengthTransferred = 0;
-						WinUsb_ResetPipe(usbHandle, pipeId);
-						std::cerr << "WinUsb_ReadPipe failure... lastResult: " << lastResult << std::endl;
-					}
-				}
-				else
-				{
-					result = true;
-				}
-				return result;
-			}
-
 			bool usb_synchronous_read(unsigned char * buffer, int bufferLength, int * actual_length, DWORD TimeOut)
 			{
 				if (!winUsbOpen) throw std::runtime_error("winusb has not been initialized");
@@ -709,31 +663,20 @@ namespace rsimpl
 				auto result = false;
 
 				BOOL bRetVal = true;
-				OVERLAPPED hOvl;
 
 				buffer[0] = buffer[1] = 0;
 
-				hOvl.hEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
-				winusb::OnScopeExit closeHandle([=]{ CloseHandle(hOvl.hEvent); });
-
 				ULONG lengthTransferred;
 
-				bRetVal = WinUsb_ReadPipe(usbHandle, dataInPipe, buffer, bufferLength, &lengthTransferred, &hOvl);
+				bRetVal = WinUsb_ReadPipe(usbHandle, dataInPipe, buffer, bufferLength, &lengthTransferred, NULL);
 
 				if (bRetVal)
 					result = true;
 				else
 				{
 					auto lastResult = GetLastError();
-					if (lastResult == ERROR_IO_PENDING)
-					{
-						result = wait_for_async_transfer(hOvl, lengthTransferred, TimeOut, dataInPipe);
-					}
-					else
-					{
-						WinUsb_ResetPipe(usbHandle, dataInPipe);
-						result = false;
-					}
+					WinUsb_ResetPipe(usbHandle, dataInPipe);
+					result = false;
 				}
 
 				*actual_length = lengthTransferred;
@@ -745,32 +688,18 @@ namespace rsimpl
 				if (!winUsbOpen) throw std::runtime_error("winusb has not been initialized");
 
 				auto result = false;
-				OVERLAPPED hOvl;
-
-				hOvl.hEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
-				winusb::OnScopeExit closeHandle([=]{ CloseHandle(hOvl.hEvent); });
 
 				ULONG lengthWritten;
-				auto bRetVal = WinUsb_WritePipe(usbHandle, dataOutPipe, buffer, bufferLength, &lengthWritten, &hOvl);
+				auto bRetVal = WinUsb_WritePipe(usbHandle, dataOutPipe, buffer, bufferLength, &lengthWritten, NULL);
 				if (bRetVal)
 					result = true;
 				else
 				{
 					auto lastError = GetLastError();
-					if (lastError == ERROR_IO_PENDING)
-					{
-						result = wait_for_async_transfer(hOvl, lengthWritten, TimeOut, dataOutPipe);
-					}
-					else
-					{
-						WinUsb_ResetPipe(usbHandle, dataOutPipe);
-						std::cerr << "WinUsb_ReadPipe failure... lastError: " << lastError << std::endl;
-						result = false;
-					}
+					WinUsb_ResetPipe(usbHandle, dataOutPipe);
+					std::cerr << "WinUsb_ReadPipe failure... lastError: " << lastError << std::endl;
+					result = false;
 				}
-
-				//if (!oneDirection && result == true)
-				//	result = usb_synchronous_read(outputBuffer, 1024, bufferSize, 1000); // HW_MONITOR_BUFFER_SIZE
 
 				return result;
 			}
