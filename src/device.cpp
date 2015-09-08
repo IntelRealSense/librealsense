@@ -53,34 +53,24 @@ void rs_device::enable_stream(rs_stream stream, int width, int height, rs_format
 {
     if(capturing) throw std::runtime_error("streams cannot be reconfigured after having called start_capture()");
     if(device_info.stream_subdevices[stream] == -1) throw std::runtime_error("unsupported stream");
+
     requests[stream] = {true, width, height, format, fps};
+    for(auto & s : streams) s.reset(); // Changing stream configuration invalidates the current stream info
 }
 
 void rs_device::enable_stream_preset(rs_stream stream, rs_preset preset)
 {
     if(capturing) throw std::runtime_error("streams cannot be reconfigured after having called start_capture()");
     if(!device_info.presets[stream][preset].enabled) throw std::runtime_error("unsupported stream");
+
     requests[stream] = device_info.presets[stream][preset];
+    for(auto & s : streams) s.reset(); // Changing stream configuration invalidates the current stream info
 } 
 
-void rs_device::stream_buffer::swap_back()
-{
-    // Swap the backbuffer to the middle buffer and indicate that we have updated
-    std::lock_guard<std::mutex> guard(mutex);
-    back.swap(middle);
-    updated = true;
-}
-
-void rs_device::start_capture()
+void rs_device::start()
 {
     if(capturing) throw std::runtime_error("cannot restart device without first stopping device");
-
-    for(auto & s : subdevices) s = uvc::device_handle();
-    for(auto & s : streams) s.reset();
-    
-    // First create the subdevices and assign first_handle as appropriate
-    // Creating a subdevice_handle will reach out to the hardware and open the handle
-
+        
     // Check and modify our requests to enforce all interstream constraints
     for(auto & rule : device_info.interstream_rules)
     {
@@ -99,6 +89,7 @@ void rs_device::start_capture()
         }
     }
 
+    for(auto & s : streams) s.reset(); // Starting capture invalidates the current stream info, if any exists from previous capture
     std::vector<std::function<void(const void *)>> on_frame(subdevices.size());
 
     // Satisfy stream_requests as necessary for each subdevice, calling set_mode and
@@ -113,8 +104,7 @@ void rs_device::start_capture()
             for(auto & stream_mode : mode.streams)
             {
                 // Create a buffer to receive the images from this stream
-                auto stream = std::make_shared<stream_buffer>();
-                stream->set_mode(stream_mode);
+                auto stream = std::make_shared<stream_buffer>(stream_mode);
                 stream_list.push_back(stream);
                     
                 // If this is one of the streams requested by the user, store the buffer so they can access it
@@ -133,7 +123,7 @@ void rs_device::start_capture()
             {
                 // Unpack the image into the user stream interface back buffer
                 std::vector<void *> dest;
-                for(auto & stream : stream_list) dest.push_back(stream->get_back_image());
+                for(auto & stream : stream_list) dest.push_back(stream->get_back_data());
                 mode.unpacker(dest.data(), mode, frame);
 
                 // If a frame number decoder is available, make use of it
@@ -154,10 +144,17 @@ void rs_device::start_capture()
     capturing = true;
 }
 
-void rs_device::stop_capture()
+void rs_device::stop()
 {
     if(!capturing) throw std::runtime_error("cannot stop device without first starting device");
-    for(auto & subdevice : subdevices) if (subdevice) subdevice.stop_streaming();
+    for(auto & subdevice : subdevices)
+    {
+        if (subdevice)
+        {
+            subdevice.stop_streaming();
+            subdevice = uvc::device_handle();
+        }
+    }
     capturing = false;
 }
 
@@ -175,11 +172,11 @@ void rs_device::wait_all_streams()
             // If this is the fastest stream, wait until a new frame arrives
             if(stream->get_mode().fps == maxFps)
             {
-                while(true) if(stream->update_image()) break;
+                while(true) if(stream->swap_front()) break;
             }
             else // Otherwise simply check for a new frame
             {
-                stream->update_image();
+                stream->swap_front();
             }
         }
     }
@@ -209,26 +206,4 @@ rs_extrinsics rs_device::get_stream_extrinsics(rs_stream from, rs_stream to) con
     (float3x3 &)extrin.rotation = transform.orientation;
     (float3 &)extrin.translation = transform.position;
     return extrin;
-}
-
-///////////////////
-// stream_buffer //
-///////////////////
-
-void rs_device::stream_buffer::set_mode(const stream_mode & mode)
-{
-    this->mode = mode;
-    front.pixels.resize(get_image_size(mode.width, mode.height, mode.format));
-    front.number = 0;
-    back = middle = front;
-    updated = false;
-}
-
-bool rs_device::stream_buffer::update_image()
-{
-    if(!updated) return false;
-    std::lock_guard<std::mutex> guard(mutex);
-    front.swap(middle);
-    updated = false;
-    return true;
 }

@@ -8,6 +8,7 @@
 #include <vector>                           // For vector
 #include <memory>                           // For shared_ptr
 #include <sstream>                          // For ostringstream
+#include <mutex>
 
 //#define ENABLE_DEBUG_SPAM
 
@@ -114,6 +115,35 @@ namespace rsimpl
         static_device_info();
 
         const subdevice_mode * select_mode(const stream_request (&requests)[RS_STREAM_COUNT], int subdevice_index) const;
+    };
+
+    // Buffer for storing images provided by a given stream
+    class stream_buffer
+    {
+        struct frame
+        {
+            std::vector<uint8_t>    data;
+            int                     number;
+
+                                    frame(const rsimpl::stream_mode & m) : data(rsimpl::get_image_size(m.width, m.height, m.format)), number() {}
+            void                    swap(frame & r) { data.swap(r.data); std::swap(number, r.number); }
+        };
+
+        stream_mode                 mode;
+        frame                       front, middle, back;
+        std::mutex                  mutex;
+        volatile bool               updated = false;
+    public:
+                                    stream_buffer(const rsimpl::stream_mode & mode) : mode(mode), front(mode), middle(mode), back(mode), updated(false) {}
+
+        const stream_mode &         get_mode() const { return mode; }
+        const void *                get_front_data() const { return front.data.data(); }
+        int                         get_front_number() const { return front.number; }
+
+        void *                      get_back_data() { return back.data.data(); }
+        void                        set_back_number(int number) { back.number = number; }
+        void                        swap_back();
+        bool                        swap_front();
     };
 
     // Utilities
