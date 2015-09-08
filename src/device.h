@@ -14,8 +14,6 @@ protected:
     // Provides a stream of images to the user, and stores information about the current mode
     class stream_buffer
     {
-        friend class subdevice_handle;
-
         struct frame
         {
             std::vector<uint8_t>                    pixels;
@@ -37,27 +35,10 @@ protected:
 
         void                                        set_mode(const rsimpl::stream_mode & mode);
         bool                                        update_image();
-    };
 
-    // Interfaces with a UVC subdevice, and unpacks the encoded frames into one or more stream_buffers
-    class subdevice_handle
-    {
-        struct capture_state
-        {
-            rsimpl::subdevice_mode                      mode;
-            std::vector<std::shared_ptr<stream_buffer>> streams;
-        };
-
-        rsimpl::uvc::device_handle                  handle;
-        std::shared_ptr<capture_state>              state;
-    public:
-                                                    subdevice_handle(rsimpl::uvc::device device, int subdevice_index);
-                                                    ~subdevice_handle();
-
-        rsimpl::uvc::device_handle                  get_handle() { return handle; }
-        void                                        set_mode(const rsimpl::subdevice_mode & mode, std::vector<std::shared_ptr<stream_buffer>> streams);
-        void                                        start_streaming();
-        void                                        stop_streaming();
+        void                                        set_back_number(int number) { back.number = number; }
+        void *                                      get_back_image() { return back.pixels.data(); }
+        void                                        swap_back();
     };
 
     rsimpl::uvc::device                             device;
@@ -65,9 +46,8 @@ protected:
 
     rsimpl::stream_request                          requests[RS_STREAM_COUNT];  // Indexed by RS_DEPTH, RS_COLOR, ...
     std::shared_ptr<stream_buffer>                  streams[RS_STREAM_COUNT];   // Indexed by RS_DEPTH, RS_COLOR, ...
-    std::vector<std::unique_ptr<subdevice_handle>>  subdevices;                 // Indexed by UVC subdevices number (0, 1, 2...)
+    std::vector<rsimpl::uvc::device_handle>         subdevices;                 // Indexed by UVC subdevices number (0, 1, 2...)
 
-    rsimpl::uvc::device_handle                      first_handle;
     bool                                            capturing;
   
 public:
