@@ -538,6 +538,7 @@ namespace rsimpl
 			UCHAR  dataInPipe;		
 			UCHAR  dataOutPipe;
 			char ivcamCameraId[256];
+			bool winUsbOpen = false;
 
             _impl(std::shared_ptr<context::_impl> parent, int vid, int pid, std::string unique_id) : parent(move(parent)), vid(vid), pid(pid), unique_id(move(unique_id)) {}
 
@@ -645,6 +646,11 @@ namespace rsimpl
 
 					return winusb::WinUsbEnumerationAction::Continue;
 				});
+
+				if (result)
+				{
+					winUsbOpen = true;
+				}
 			}
 
 			void close_win_usb()
@@ -654,6 +660,117 @@ namespace rsimpl
 					WinUsb_Free(usbHandle);
 					usbHandle = nullptr;
 				}
+			}
+
+			bool wait_for_async_transfer(OVERLAPPED & hOvl, ULONG & lengthTransferred, DWORD TimeOut, UCHAR pipeId)
+			{
+				if (!winUsbOpen) throw std::runtime_error("winusb has not been initialized");
+
+				bool result = false;
+
+				auto rc = GetOverlappedResult(winUsbHandle, &hOvl, &lengthTransferred, FALSE);
+				if (rc == FALSE)
+				{
+					auto lastResult = GetLastError();
+					if (lastResult == ERROR_IO_PENDING || lastResult == ERROR_IO_INCOMPLETE)
+					{
+						auto hResult = WaitForSingleObject(hOvl.hEvent, TimeOut);
+						if (hResult == WAIT_TIMEOUT)
+						{
+							lengthTransferred = 0;
+							WinUsb_ResetPipe(usbHandle, dataInPipe);
+							WinUsb_ResetPipe(usbHandle, dataOutPipe);		
+						}
+						else
+						{
+							if (GetOverlappedResult(winUsbHandle, &hOvl, &lengthTransferred, FALSE) == 1)
+								result = true;
+							else
+								result = false;
+						}
+					}
+					else
+					{
+						lengthTransferred = 0;
+						WinUsb_ResetPipe(usbHandle, pipeId);
+						std::cerr << "WinUsb_ReadPipe failure... lastResult: " << lastResult << std::endl;
+					}
+				}
+				else
+				{
+					result = true;
+				}
+				return result;
+			}
+
+			bool usb_synchronous_read(unsigned char* buffer, int bufferLength, ULONG& lengthTransferred, DWORD TimeOut)
+			{
+				if (!winUsbOpen) throw std::runtime_error("winusb has not been initialized");
+
+				auto result = false;
+
+				BOOL bRetVal = true;
+				OVERLAPPED hOvl;
+
+				buffer[0] = buffer[1] = 0;
+
+				hOvl.hEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
+				winusb::OnScopeExit closeHandle([=]{ CloseHandle(hOvl.hEvent); });
+
+				bRetVal = WinUsb_ReadPipe(usbHandle, dataInPipe, buffer, bufferLength, &lengthTransferred, &hOvl);
+
+				if (bRetVal)
+					result = true;
+				else
+				{
+					auto lastResult = GetLastError();
+					if (lastResult == ERROR_IO_PENDING)
+					{
+						result = wait_for_async_transfer(hOvl, lengthTransferred, TimeOut, dataInPipe);
+					}
+					else
+					{
+						WinUsb_ResetPipe(usbHandle, dataInPipe);
+						result = false;
+					}
+				}
+
+				return result;
+			}
+
+			bool usb_synchronous_write(unsigned char* buffer, int bufferLength, unsigned char* outputBuffer, ULONG& bufferSize, DWORD TimeOut, bool oneDirection)
+			{
+				if (!winUsbOpen) throw std::runtime_error("winusb has not been initialized");
+
+				auto result = false;
+				OVERLAPPED hOvl;
+
+				hOvl.hEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
+				winusb::OnScopeExit closeHandle([=]{ CloseHandle(hOvl.hEvent); });
+
+				ULONG lengthWritten;
+				auto bRetVal = WinUsb_WritePipe(usbHandle, dataOutPipe, buffer, bufferLength, &lengthWritten, &hOvl);
+				if (bRetVal)
+					result = true;
+				else
+				{
+					auto lastError = GetLastError();
+					if (lastError == ERROR_IO_PENDING)
+					{
+						result = wait_for_async_transfer(hOvl, lengthWritten, TimeOut, dataOutPipe);
+					}
+					else
+					{
+						WinUsb_ResetPipe(usbHandle, dataOutPipe);
+						std::cerr << "WinUsb_ReadPipe failure... lastError: " << lastError << std::endl;
+						result = false;
+					}
+				}
+
+				if (!oneDirection && result == true)
+					result = usb_synchronous_read(outputBuffer, 1024, bufferSize, 1000); // HW_MONITOR_BUFFER_SIZE
+
+				return result;
 			}
 
             IKsControl * get_control_node()
@@ -787,8 +904,21 @@ namespace rsimpl
         }
 
         void device::bulk_transfer(unsigned char endpoint, unsigned char *data, int length, int *actual_length, unsigned int timeout)
-        {
-            throw std::runtime_error("device_handle::bulk_transfer(...) not implemented");
+        {		
+			// #define IVCAM_MONITOR_ENDPOINT_OUT      0x1
+			// #define IVCAM_MONITOR_ENDPOINT_IN       0x81
+
+			// Write Operation
+			if (endpoint == 0x1)
+			{
+
+			}
+
+			// Read Operation
+			else if (endpoint == 0x81)
+			{
+
+			}
         }
 
         class reader_callback : public IMFSourceReaderCallback
