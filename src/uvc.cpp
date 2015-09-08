@@ -174,6 +174,9 @@ namespace rsimpl
 #pragma comment(lib, "mfreadwrite.lib")
 #pragma comment(lib, "mfuuid.lib")
 
+#pragma comment(lib, "setupapi.lib")
+#pragma comment(lib, "winusb.lib")
+
 #include <uuids.h>
 #include <vidcap.h>
 #include <ksmedia.h>
