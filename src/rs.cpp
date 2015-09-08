@@ -155,14 +155,14 @@ HANDLE_EXCEPTIONS_AND_RETURN(RS_FORMAT_ANY, device, stream)
 void rs_start_device(rs_device * device, rs_error ** error) try
 {
     VALIDATE_NOT_NULL(device);
-    device->start_capture();
+    device->start();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, device)
 
 void rs_stop_device(rs_device * device, rs_error ** error) try
 {
     VALIDATE_NOT_NULL(device);
-    device->stop_capture();
+    device->stop();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, device)
 
@@ -193,7 +193,7 @@ int rs_get_frame_number(const rs_device * device, rs_stream stream, rs_error ** 
 {
     VALIDATE_NOT_NULL(device);
     VALIDATE_ENUM(stream);
-    return device->get_image_frame_number(stream);
+    return device->get_frame_number(stream);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, device, stream)
 
@@ -201,7 +201,7 @@ const void * rs_get_frame_data(const rs_device * device, rs_stream stream, rs_er
 {
     VALIDATE_NOT_NULL(device);
     VALIDATE_ENUM(stream);
-    return device->get_image_pixels(stream);
+    return device->get_frame_data(stream);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, device, stream)
 

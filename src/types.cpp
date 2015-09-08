@@ -216,4 +216,20 @@ namespace rsimpl
         }
         throw std::runtime_error(ss.str());
     }
+
+    bool stream_buffer::swap_front()
+    {
+        if(!updated) return false;
+        std::lock_guard<std::mutex> guard(mutex);
+        front.swap(middle);
+        updated = false;
+        return true;
+    }
+
+    void stream_buffer::swap_back()
+    {
+        std::lock_guard<std::mutex> guard(mutex);
+        back.swap(middle);
+        updated = true;
+    }
 }
