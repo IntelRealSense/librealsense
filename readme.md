@@ -38,8 +38,8 @@ The goal of librealsense is to provide a reasonable hardware abstraction with mi
 ## Ubuntu 14.04+ Installation
 
 1. Grant appropriate permissions to detach the kernel UVC driver when a device is plugged in:
-  * `sudo cp 99-uvc.rules /etc/udev/rules.d/`
-  * `sudo cp uvc.conf /etc/modprobe.d/uvc.conf/`
+  * `sudo cp config/99-uvc.rules /etc/udev/rules.d/`
+  * `sudo cp config/uvc.conf /etc/modprobe.d/uvc.conf/`
   * Either reboot or run `udevadm control --reload-rules && udevadm trigger` to enforce the new udev rules
 2. Ensure apt-get is up to date
   * `sudo apt-get update && apt-get upgrade`
