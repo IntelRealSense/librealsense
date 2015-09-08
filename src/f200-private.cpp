@@ -219,6 +219,10 @@ namespace rsimpl { namespace f200
 
             calibration->InitializeThermalData(TesterData.TemperatureData, TesterData.ThermalLoopParams);
         }
+		else if (ver > 17)
+		{
+			throw std::runtime_error("calibration table is not compatible with this API");
+		}
     }
 
     void IVCAMHardwareIO::ReadTemperatures(IVCAMTemperatureData & data)
