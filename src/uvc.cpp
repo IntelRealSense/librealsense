@@ -537,7 +537,6 @@ namespace rsimpl
 			WINUSB_INTERFACE_HANDLE usbHandle = nullptr;
 			UCHAR  dataInPipe;		
 			UCHAR  dataOutPipe;
-			char ivcamCameraId[256];
 			bool winUsbOpen = false;
 
             _impl(std::shared_ptr<context::_impl> parent, int vid, int pid, std::string unique_id) : parent(move(parent)), vid(vid), pid(pid), unique_id(move(unique_id)) {}
@@ -551,7 +550,7 @@ namespace rsimpl
 			bool iterate_win_usb_devices(const winusb::WinUsbCustomFunc & action)
 			{
 				winusb::USB_GUID_T guidList {&IVCAM_WIN_USB_DEVICE_GUID, &IVCAM_WIN_USB_DEVICE_GUID_2};
-				return winusb::WinUsbUtils::for_each_device(guidList, action);
+				return winusb::WinUsbUtils::for_each_device(guidList, action) == winusb::Success;
 			}
 
 			bool query_device_endpoints()
@@ -627,7 +626,7 @@ namespace rsimpl
 					if (!winusb::WinUsbUtils::parse_device_id(lpDevicePath, &devid, &cameraNum))
 						return winusb::WinUsbEnumerationAction::Continue;
 
-					if (strcmp(ivcamCameraId, devid.c_str()))
+					if (unique_id != devid)
 						return winusb::WinUsbEnumerationAction::Continue;
 
 					auto fileHandle = CreateFile(lpDevicePath, GENERIC_WRITE | GENERIC_READ, FILE_SHARE_WRITE | FILE_SHARE_READ, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL | FILE_FLAG_OVERLAPPED, nullptr);
