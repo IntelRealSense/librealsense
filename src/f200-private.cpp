@@ -43,6 +43,34 @@ namespace rsimpl { namespace f200
         CheckDPTConnect     = 0x4C
     };
 
+	struct IVCAMCommand
+	{
+		IVCAMMonitorCommand cmd;
+		int Param1;
+		int Param2;
+		int Param3;
+		int Param4;
+		char data[HW_MONITOR_BUFFER_SIZE];
+		int sizeOfSendCommandData;
+		long TimeOut;
+		bool oneDirection;
+		char recivedCommandData[HW_MONITOR_BUFFER_SIZE];
+		int sizeOfRecivedCommandData;
+		char recievedOPcode[4];
+
+		IVCAMCommand(IVCAMMonitorCommand cmd)
+		{
+			this->cmd = cmd;
+			Param1 = 0;
+			Param2 = 0;
+			Param3 = 0;
+			Param4 = 0;
+			sizeOfSendCommandData = 0;
+			TimeOut = 5000;
+			oneDirection = false;
+		}
+	};
+
     int bcdtoint(uint8_t * buf, int bufsize)
     {
         int r = 0;
@@ -224,6 +252,19 @@ namespace rsimpl { namespace f200
 			throw std::runtime_error("calibration table is not compatible with this API");
 		}
     }
+
+	bool EnableTimeStamp(bool colorEnable, bool depthEnable)
+	{
+		int depthTSEnable = depthEnable ? 1 : 0;
+		int colorTSEnable = colorEnable ? 1 : 0;
+
+		IVCAMCommand cmd(HWmonitor_TimeStempEnable);
+		cmd.Param1 = depthTSEnable;
+		cmd.Param2 = colorTSEnable;
+
+		auto result = PerfomAndSendHWmonitorCommand(cmd);
+		return result;
+	}
 
     void IVCAMHardwareIO::ReadTemperatures(IVCAMTemperatureData & data)
     {
