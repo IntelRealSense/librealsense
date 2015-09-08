@@ -14,62 +14,10 @@ namespace rsimpl { namespace f200
     #define IVCAM_MONITOR_MUTEX_TIMEOUT     3000
 
     #define NUM_OF_CALIBRATION_PARAMS       (100)
-    #define HW_MONITOR_COMMAND_SIZE         (1000)
-    #define HW_MONITOR_BUFFER_SIZE          (1000)
     #define PARAMETERS_BUFFER_SIZE          (50)
-
     #define MAX_SIZE_OF_CALIB_PARAM_BYTES   (800)
     #define SIZE_OF_CALIB_PARAM_BYTES       (512)
     #define SIZE_OF_CALIB_HEADER_BYTES      (4)
-
-    enum IVCAMMonitorCommand
-    {
-        UpdateCalib         = 0xBC,
-        GetIRTemp           = 0x52,
-        GetMEMSTemp         = 0x0A,
-        HWReset             = 0x28,
-        GVD                 = 0x3B,
-        BIST                = 0xFF,
-        GoToDFU             = 0x80,
-        GetCalibrationTable = 0x3D,
-        DebugFormat         = 0x0B,
-        TimeStempEnable     = 0x0C,
-        GetPowerGearState   = 0xFF,
-        SetDefaultControls  = 0xA6,
-        GetDefaultControls  = 0xA7,
-        GetFWLastError      = 0x0E,
-        CheckI2cConnect     = 0x4A,
-        CheckRGBConnect     = 0x4B,
-        CheckDPTConnect     = 0x4C
-    };
-
-	struct IVCAMCommand
-	{
-		IVCAMMonitorCommand cmd;
-		int Param1;
-		int Param2;
-		int Param3;
-		int Param4;
-		char data[HW_MONITOR_BUFFER_SIZE];
-		int sizeOfSendCommandData;
-		long TimeOut;
-		bool oneDirection;
-		char recivedCommandData[HW_MONITOR_BUFFER_SIZE];
-		int sizeOfRecivedCommandData;
-		char recievedOPcode[4];
-
-		IVCAMCommand(IVCAMMonitorCommand cmd)
-		{
-			this->cmd = cmd;
-			Param1 = 0;
-			Param2 = 0;
-			Param3 = 0;
-			Param4 = 0;
-			sizeOfSendCommandData = 0;
-			TimeOut = 5000;
-			oneDirection = false;
-		}
-	};
 
     int bcdtoint(uint8_t * buf, int bufsize)
     {
@@ -253,14 +201,11 @@ namespace rsimpl { namespace f200
 		}
     }
 
-	bool EnableTimeStamp(bool colorEnable, bool depthEnable)
+	bool IVCAMHardwareIO::EnableTimeStamp(bool colorEnable, bool depthEnable)
 	{
-		int depthTSEnable = depthEnable ? 1 : 0;
-		int colorTSEnable = colorEnable ? 1 : 0;
-
-		IVCAMCommand cmd(HWmonitor_TimeStempEnable);
-		cmd.Param1 = depthTSEnable;
-		cmd.Param2 = colorTSEnable;
+		IVCAMCommand cmd(IVCAMMonitorCommand::TimeStempEnable);
+		cmd.Param1 = depthEnable ? 1 : 0;
+		cmd.Param2 = colorEnable ? 1 : 0;
 
 		auto result = PerfomAndSendHWmonitorCommand(cmd);
 		return result;
@@ -282,6 +227,75 @@ namespace rsimpl { namespace f200
 
         data.LiguriaTemp = LiguriaTemp;
     }
+
+	
+	bool IVCAMHardwareIO::PerfomAndSendHWmonitorCommand(IVCAMCommand & newCommand)
+	{
+		bool result = true;
+		unsigned int opCodeNumber;
+
+		opCodeNumber = newCommand.cmd;
+
+		IVCAMCommandDetails details;
+		details.oneDirection = newCommand.oneDirection;
+		details.TimeOut = newCommand.TimeOut;
+
+		FillUSBBuffer(opCodeNumber,
+					  newCommand.Param1,
+					  newCommand.Param2,
+					  newCommand.Param3,
+					  newCommand.Param4,
+					  newCommand.data,
+					  newCommand.sizeOfSendCommandData,
+					  details.sendCommandData,
+					  details.sizeOfSendCommandData);
+
+		result = SendHWmonitorCommand(details);
+
+		// Error/exit conditions
+		if (result == false) return result;
+		if (newCommand.oneDirection) return result;
+
+		memcpy(newCommand.recievedOPcode,  details.recievedOPcode,4);
+		memcpy(newCommand.recivedCommandData, details.recievedCommandData,details.sizeOfRecievedCommandData);
+		newCommand.sizeOfRecivedCommandData = details.sizeOfRecievedCommandData;
+
+		char inputOPCode[4];
+		memset(inputOPCode, 0, 4);
+		memset(inputOPCode, newCommand.cmd, 1);
+		if (memcmp(newCommand.recievedOPcode, inputOPCode, 4))
+		{
+			int x;
+			memcpy(&x, newCommand.recievedOPcode, 4);
+			throw std::runtime_error("opcodes do not match");
+		}
+		return result;
+	}
+
+	bool IVCAMHardwareIO::SendHWmonitorCommand(IVCAMCommandDetails & details)
+	{
+		unsigned char outputBuffer[HW_MONITOR_BUFFER_SIZE];
+
+		uint32_t op;
+		size_t recievedDataSize = HW_MONITOR_BUFFER_SIZE;
+
+		ExecuteUSBCommand((uint8_t*) details.sendCommandData, (size_t) details.sizeOfSendCommandData, op, outputBuffer, recievedDataSize);
+		details.sizeOfRecievedCommandData = recievedDataSize;
+
+		if (details.oneDirection) return true;
+
+		if (details.sizeOfRecievedCommandData >= 4)
+		{
+			details.sizeOfRecievedCommandData -= 4;
+			memcpy(details.recievedOPcode, outputBuffer, 4);
+		}
+		else return false;
+
+		if (details.sizeOfRecievedCommandData > 0 )
+			memcpy(details.recievedCommandData, outputBuffer + 4, details.sizeOfRecievedCommandData);
+
+		return true;
+	}
 
     bool IVCAMHardwareIO::GetMEMStemp(float & MEMStemp)
     {

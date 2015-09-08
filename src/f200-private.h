@@ -41,8 +41,71 @@
 #define IVCAM_COLOR_ERROR               3
 #define IVCAM_COLOR_EXPOSURE_GRANULAR   4
 
+#define HW_MONITOR_COMMAND_SIZE         (1000)
+#define HW_MONITOR_BUFFER_SIZE          (1000)
+
 namespace rsimpl { namespace f200
 {
+
+enum IVCAMMonitorCommand
+{
+    UpdateCalib         = 0xBC,
+    GetIRTemp           = 0x52,
+    GetMEMSTemp         = 0x0A,
+    HWReset             = 0x28,
+    GVD                 = 0x3B,
+    BIST                = 0xFF,
+    GoToDFU             = 0x80,
+    GetCalibrationTable = 0x3D,
+    DebugFormat         = 0x0B,
+    TimeStempEnable     = 0x0C,
+    GetPowerGearState   = 0xFF,
+    SetDefaultControls  = 0xA6,
+    GetDefaultControls  = 0xA7,
+    GetFWLastError      = 0x0E,
+    CheckI2cConnect     = 0x4A,
+    CheckRGBConnect     = 0x4B,
+    CheckDPTConnect     = 0x4C
+};
+
+struct IVCAMCommand
+{
+	IVCAMMonitorCommand cmd;
+	int Param1;
+	int Param2;
+	int Param3;
+	int Param4;
+	char data[HW_MONITOR_BUFFER_SIZE];
+	int sizeOfSendCommandData;
+	long TimeOut;
+	bool oneDirection;
+	char recivedCommandData[HW_MONITOR_BUFFER_SIZE];
+	int sizeOfRecivedCommandData;
+	char recievedOPcode[4];
+
+	IVCAMCommand(IVCAMMonitorCommand cmd)
+	{
+		this->cmd = cmd;
+		Param1 = 0;
+		Param2 = 0;
+		Param3 = 0;
+		Param4 = 0;
+		sizeOfSendCommandData = 0;
+		TimeOut = 5000;
+		oneDirection = false;
+	}
+};
+
+struct IVCAMCommandDetails
+{
+	bool oneDirection;
+	char sendCommandData[HW_MONITOR_COMMAND_SIZE];
+	int sizeOfSendCommandData;
+	long TimeOut;
+	char recievedOPcode[4];
+	char recievedCommandData[HW_MONITOR_BUFFER_SIZE];
+	int sizeOfRecievedCommandData;
+};
 
 struct OACOffsetData
 {
@@ -191,9 +254,13 @@ enum Property
         void GetCalibrationRawData(uint8_t * data, size_t & bytesReturned);
         void ProjectionCalibrate(uint8_t * rawCalibData, int len, CameraCalibrationParameters * calprms);
         void ReadTemperatures(IVCAMTemperatureData & data);
+		bool EnableTimeStamp(bool enableColor, bool enableDepth);
         bool GetMEMStemp(float & MEMStemp);
         bool GetIRtemp(int & IRtemp);
         void TemperatureControlLoop();
+
+		bool PerfomAndSendHWmonitorCommand(IVCAMCommand & newCommand);
+		bool IVCAMHardwareIO::SendHWmonitorCommand(IVCAMCommandDetails & details);
 
     public:
 
@@ -292,12 +359,12 @@ enum Property
             IVCAMTemperatureData BaseTemperatureData;
             IVCAMThermalLoopParams ThermalLoopParams;
 
-            float FcxSlope; // the temperature model calculated slope for fc
-            float UxSlope; // the temperature model calculated slope for ux
-            float FcxOffset; // the temperature model fc offset
-            float UxOffset; // the temperature model ux offset
+            float FcxSlope;			// the temperature model calculated slope for fc
+            float UxSlope;			// the temperature model calculated slope for ux
+            float FcxOffset;		// the temperature model fc offset
+            float UxOffset;			// the temperature model ux offset
 
-            float TempThreshold; //celcius degrees, the temperatures delta that above should be fixed;
+            float TempThreshold;	//celcius degrees, the temperatures delta that above should be fixed;
         };
 
         ThermalModelData thermalModeData;
