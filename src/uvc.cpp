@@ -307,76 +307,6 @@ namespace rsimpl
 			#define REALTEK_OPER_PID		L"0AA4"
 			#define REALTEK_DBG_PID			L"0AA5"
 
-            BOOL get_device_data(int i, const _GUID* guid, const HDEVINFO & deviceInfo, std::shared_ptr<WCHAR> & lpDevicePath)
-			{
-				SP_DEVICE_INTERFACE_DATA interfaceData;
-				unsigned long length;
-				unsigned long requiredLength = 0;
-
-				std::shared_ptr<SP_DEVICE_INTERFACE_DETAIL_DATA> detailData;
-
-				// Enumerate all the device interfaces in the device information set.
-				memset(&interfaceData, 0, sizeof(interfaceData));
-				interfaceData.cbSize = sizeof(SP_DEVICE_INTERFACE_DATA);
-
-				if (!SetupDiEnumDeviceInterfaces(deviceInfo, nullptr, guid, i, &interfaceData))
-					return FALSE;
-
-				if (!SetupDiGetDeviceInterfaceDetail(deviceInfo, &interfaceData, nullptr, 0, &requiredLength, nullptr))
-				{
-					if ((ERROR_INSUFFICIENT_BUFFER == GetLastError()) && (requiredLength > 0))
-					{
-						//we got the size, allocate buffer
-						auto * detailData1 = static_cast<PSP_DEVICE_INTERFACE_DETAIL_DATA>(LocalAlloc(LMEM_FIXED, requiredLength));
-						if (!detailData1)
-							return Failure;
-
-						detailData = std::shared_ptr<SP_DEVICE_INTERFACE_DETAIL_DATA>(detailData1,[=](SP_DEVICE_INTERFACE_DETAIL_DATA *)
-						{
-							if (detailData1 != nullptr) LocalFree(detailData1);
-						});
-					}
-					else
-					{
-						std::cerr << "SetupDiGetDeviceInterfaceDetail failed" << std::endl;
-						return FALSE;
-					}
-				}
-
-				detailData->cbSize = sizeof(SP_DEVICE_INTERFACE_DETAIL_DATA);
-				length = requiredLength;
-
-				if (!SetupDiGetDeviceInterfaceDetail(deviceInfo, &interfaceData, detailData.get(), length, &requiredLength, nullptr))
-				{
-					std::cerr << "SetupDiGetDeviceInterfaceDetail failed" << std::endl;
-					return FALSE;
-				}
-
-				// Get the device path 
-				auto nLength = wcslen(detailData->DevicePath) + 1;
-				auto lpDevicePath1 = static_cast<WCHAR*>(LocalAlloc(LPTR, nLength * sizeof(WCHAR)));
-				if (lpDevicePath1 == nullptr)
-				{
-					std::cerr << "failed to get path" << std::endl;
-					return FALSE;
-				}
-
-				auto hr = StringCchCopy(lpDevicePath1, nLength, detailData->DevicePath);
-				lpDevicePath1[nLength-1] = 0;
-				if (FAILED(hr))
-				{
-					std::cerr << "failed StringCchCopy()" << std::endl;
-					return FALSE;
-				}
-
-				lpDevicePath = std::shared_ptr<WCHAR>(lpDevicePath1, [=](WCHAR*)
-				{
-					if (lpDevicePath1 != nullptr) LocalFree(lpDevicePath1);
-				});
-
-				return TRUE;
-			}
-
 			bool contains_pid_substring(const wchar_t* str, const std::vector<LPWSTR>& ivcam_pid)
 			{
 				CString StrCopy(str);
@@ -544,23 +474,67 @@ namespace rsimpl
 				    {
 					    for (int i = 0; i < 256; i++)
 					    {
-						    std::shared_ptr<WCHAR> lpDevicePath;
-						    if (!winusb::get_device_data(i, guid, deviceInfo, lpDevicePath))
-							    continue;
+                            std::wstring lpDevicePath;
+			                {
+				                SP_DEVICE_INTERFACE_DATA interfaceData;
+				                unsigned long length;
+				                unsigned long requiredLength = 0;
+
+				                std::shared_ptr<SP_DEVICE_INTERFACE_DETAIL_DATA> detailData;
+
+				                // Enumerate all the device interfaces in the device information set.
+				                memset(&interfaceData, 0, sizeof(interfaceData));
+				                interfaceData.cbSize = sizeof(SP_DEVICE_INTERFACE_DATA);
+
+				                if (!SetupDiEnumDeviceInterfaces(deviceInfo, nullptr, guid, i, &interfaceData))
+					                continue;
+
+				                if (!SetupDiGetDeviceInterfaceDetail(deviceInfo, &interfaceData, nullptr, 0, &requiredLength, nullptr))
+				                {
+					                if ((ERROR_INSUFFICIENT_BUFFER == GetLastError()) && (requiredLength > 0))
+					                {
+						                //we got the size, allocate buffer
+						                auto * detailData1 = static_cast<PSP_DEVICE_INTERFACE_DETAIL_DATA>(LocalAlloc(LMEM_FIXED, requiredLength));
+						                if (!detailData1) throw std::bad_alloc();
+
+						                detailData = std::shared_ptr<SP_DEVICE_INTERFACE_DETAIL_DATA>(detailData1,[=](SP_DEVICE_INTERFACE_DETAIL_DATA *)
+						                {
+							                if (detailData1 != nullptr) LocalFree(detailData1);
+						                });
+					                }
+					                else
+					                {
+						                std::cerr << "SetupDiGetDeviceInterfaceDetail failed" << std::endl;
+						                continue;
+					                }
+				                }
+
+				                detailData->cbSize = sizeof(SP_DEVICE_INTERFACE_DETAIL_DATA);
+				                length = requiredLength;
+
+				                if (!SetupDiGetDeviceInterfaceDetail(deviceInfo, &interfaceData, detailData.get(), length, &requiredLength, nullptr))
+				                {
+					                std::cerr << "SetupDiGetDeviceInterfaceDetail failed" << std::endl;
+					                continue;
+				                }
+
+				                // Get the device path 
+				                lpDevicePath = detailData->DevicePath;
+			                }
 
 					        std::string devid;
 					        winusb::IvcamUsbDevice cameraNum;
 
-					        if (!winusb::is_ivcam_pid(lpDevicePath.get()))
+					        if (!winusb::is_ivcam_pid(lpDevicePath.c_str()))
 						        continue;
 
-					        if (!winusb::parse_device_id(lpDevicePath.get(), &devid, &cameraNum))
+					        if (!winusb::parse_device_id(lpDevicePath.c_str(), &devid, &cameraNum))
 						        continue;
 
 					        if (unique_id != devid)
 						        continue;
 
-					        auto fileHandle = CreateFile(lpDevicePath.get(), GENERIC_WRITE | GENERIC_READ, FILE_SHARE_WRITE | FILE_SHARE_READ, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL | FILE_FLAG_OVERLAPPED, nullptr);
+					        auto fileHandle = CreateFile(lpDevicePath.c_str(), GENERIC_WRITE | GENERIC_READ, FILE_SHARE_WRITE | FILE_SHARE_READ, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL | FILE_FLAG_OVERLAPPED, nullptr);
 
 					        // Argh, refactor this crap
 					        winusb::OnScopeExit releaseFileHandle([&] { close_win_usb(); });
