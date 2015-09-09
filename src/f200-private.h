@@ -11,6 +11,7 @@
 #include <thread>
 #include <mutex>
 #include <atomic>
+#include <condition_variable>
 
 #define DELTA_INF                           (10000000.0)
 #define M_EPSILON                           (0.0001)
@@ -238,6 +239,52 @@ namespace rsimpl { namespace f200
 		IVCAM_PROPERTY_CUSTOMIZED                       =   0x04000000,
 	};
 
+	enum class FirmwareError : int32_t
+	{
+		FW_ACTIVE = 0,
+		FW_MSAFE_S1_ERR,
+		FW_I2C_SAFE_ERR,
+		FW_FLASH_SAFE_ERR,
+		FW_I2C_CFG_ERR,
+		FW_I2C_EV_ERR,
+		FW_HUMIDITY_ERR,
+		FW_MSAFE_S0_ERR,
+		FW_LD_ERR,
+		FW_PI_ERR,
+		FW_PJCLK_ERR,
+		FW_OAC_ERR,
+		FW_LIGURIA_TEMPERATURE_ERR,
+		FW_CONTINUE_SAFE_ERROR,
+		FW_FORZA_HUNG,
+		FW_FORZA_CONTINUES_HUNG,
+		FW_PJ_EYESAFETY_CHKRHARD,
+		FW_MIPI_PCAM_ERR,
+		FW_MIPI_TCAM_ERR,
+		FW_SYNC_DISABLED,
+		FW_MIPI_PCAM_SVR_ERR,
+		FW_MIPI_TCAM_SVR_ERR,
+		FW_MIPI_PCAM_FRAME_SIZE_ERR,
+		FW_MIPI_TCAM_FRAME_SIZE_ERR,
+		FW_MIPI_PCAM_FRAME_RESPONSE_ERR,
+		FW_MIPI_TCAM_FRAME_RESPONSE_ERR,
+		FW_USB_PCAM_THROTTLED_ERR,
+		FW_USB_TCAM_THROTTLED_ERR,
+		FW_USB_PCAM_QOS_WAR,
+		FW_USB_TCAM_QOS_WAR,
+		FW_USB_PCAM_OVERFLOW,
+		FW_USB_TCAM_OVERFLOW,
+		FW_Flash_OEM_SECTOR,
+		FW_Flash_CALIBRATION_RW,
+		FW_Flash_IR_CALIBRATION,
+		FW_Flash_RGB_CALIBRATION,
+		FW_Flash_THERMAL_LOOP_CONFIGURATION,
+		FW_Flash_REALTEK,
+		FW_RGB_ISP_BOOT_FAILED,
+		FW_PRIVACY_RGB_OFF,
+		FW_PRIVACY_DEPTH_OFF,
+		FW_COUNT_ERROR
+	};
+
     class IVCAMCalibrator;
 
     class IVCAMHardwareIO
@@ -250,6 +297,7 @@ namespace rsimpl { namespace f200
         std::thread temperatureThread;
         std::atomic<bool> runTemperatureThread;
 		std::mutex temperatureMutex;
+		std::condition_variable temperatureCv;
 
         std::unique_ptr<IVCAMCalibrator> calibration;
 
@@ -265,12 +313,14 @@ namespace rsimpl { namespace f200
 		void ForceHardwareReset();
         bool GetMEMStemp(float & MEMStemp);
         bool GetIRtemp(int & IRtemp);
+		bool GetFwLastError(FirmwareError & error);
 
-        bool StartTempCompensationLoop();
+        void StartTempCompensationLoop();
         void StopTempCompensationLoop();
         void TemperatureControlLoop();
 
 		bool UpdateASICCoefs(IVCAMASICCoefficients * coeffs);
+		void GenerateAsicCalibrationCoefficients(std::vector<int> resolution, const bool isZMode, float * values) const;
 
 		bool PerfomAndSendHWmonitorCommand(IVCAMCommand & newCommand);
 		bool SendHWmonitorCommand(IVCAMCommandDetails & details);
@@ -278,6 +328,8 @@ namespace rsimpl { namespace f200
     public:
 
         IVCAMHardwareIO(uvc::device device);
+		~IVCAMHardwareIO();
+
         CameraCalibrationParameters & GetParameters() { std::lock_guard<std::mutex> guard(temperatureMutex); return parameters; }
     };
 
@@ -311,7 +363,7 @@ namespace rsimpl { namespace f200
             return params;
         }
 
-        int nParamters() const { return sizeof (CameraCalibrationParameters) / sizeof (float); }
+        int numParameters() const { return sizeof (CameraCalibrationParameters) / sizeof (float); }
 
         void InitializeThermalData(IVCAMTemperatureData TemperatureData, IVCAMThermalLoopParams ThermalLoopParams)
         {
@@ -334,7 +386,6 @@ namespace rsimpl { namespace f200
 
             void Initialize(float Kc[3][3], IVCAMTemperatureData temperatureData, IVCAMThermalLoopParams thermalLoopParams)
             {
-
                 BaseTemperatureData = temperatureData;
                 ThermalLoopParams = thermalLoopParams;
 
@@ -347,14 +398,10 @@ namespace rsimpl { namespace f200
                 TempThreshold = ThermalLoopParams.TempThreshold;
 
                 if (TempThreshold <= 0)
-                {
                     TempThreshold = tempFromHFOV;
-                }
 
-                if(TempThreshold > tempFromHFOV)
-                {
+                if (TempThreshold > tempFromHFOV)
                     TempThreshold = tempFromHFOV;
-                }
             }
 
             IVCAMTemperatureData BaseTemperatureData;

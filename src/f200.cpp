@@ -66,7 +66,7 @@ namespace rsimpl
     }
 
     enum { COLOR_VGA, COLOR_HD, DEPTH_VGA, DEPTH_QVGA, NUM_INTRINSICS };
-    static static_device_info get_f200_info(uvc::device device)
+    static static_device_info get_f200_info(f200::IVCAMHardwareIO & io)
     {
         static_device_info info;
         info.name = {"Intel RealSense F200"};
@@ -104,7 +104,6 @@ namespace rsimpl
 
         for(int i = RS_OPTION_F200_LASER_POWER; i <= RS_OPTION_F200_CONFIDENCE_THRESHOLD; ++i) info.option_supported[i] = true;
 
-        f200::IVCAMHardwareIO io(device);
         const f200::CameraCalibrationParameters & c = io.GetParameters();
         info.intrinsics.resize(NUM_INTRINSICS);
         info.intrinsics[COLOR_VGA] = MakeColorIntrinsics(c, 640, 480);
@@ -118,9 +117,11 @@ namespace rsimpl
         return info;
     }
 
-    f200_camera::f200_camera(uvc::device device) : rs_device(device, get_f200_info(device))
+    f200_camera::f200_camera(uvc::device device) : rs_device(device)
     {
-
+		extern static_device_info add_standard_unpackers(const static_device_info & device_info);
+		hardware_io.reset(new f200::IVCAMHardwareIO(device));
+		device_info = add_standard_unpackers(get_f200_info(*hardware_io));
     }
 
     f200_camera::~f200_camera()
