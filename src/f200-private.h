@@ -328,6 +328,8 @@ namespace rsimpl { namespace f200
     public:
 
         IVCAMHardwareIO(uvc::device device);
+		~IVCAMHardwareIO();
+
         CameraCalibrationParameters & GetParameters() { std::lock_guard<std::mutex> guard(temperatureMutex); return parameters; }
     };
 
@@ -398,7 +400,7 @@ namespace rsimpl { namespace f200
                 if (TempThreshold <= 0)
                     TempThreshold = tempFromHFOV;
 
-                if(TempThreshold > tempFromHFOV)
+                if (TempThreshold > tempFromHFOV)
                     TempThreshold = tempFromHFOV;
             }
 

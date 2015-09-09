@@ -580,7 +580,14 @@ namespace rsimpl { namespace f200
         ProjectionCalibrate(rawCalibrationBuffer, (int) bufferLength, &calibratedParameters);
 
         parameters = calibratedParameters;
+
+		StartTempCompensationLoop();
     }
+
+	IVCAMHardwareIO::~IVCAMHardwareIO()
+	{
+		StopTempCompensationLoop();
+	}
 
     ////////////////////////////////////
     // IVCAMCalibrator Implementation //
