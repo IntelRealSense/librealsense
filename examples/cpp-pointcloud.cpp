@@ -8,7 +8,7 @@
 #include <iostream>
 #include <algorithm>
 
-struct state { double yaw, pitch, lastX, lastY; bool ml; std::vector<rs_stream> tex_streams; int index; rs::device * dev; };
+struct state { double yaw, pitch, lastX, lastY; bool ml; std::vector<rs::stream> tex_streams; int index; rs::device * dev; };
 
 int main(int argc, char * argv[]) try
 {
@@ -17,16 +17,16 @@ int main(int argc, char * argv[]) try
     for (int i = 0; i < ctx.get_device_count(); ++i)
     {
         dev = ctx.get_device(i);
-        dev.enable_stream_preset(RS_STREAM_DEPTH, RS_PRESET_BEST_QUALITY);
-        dev.enable_stream_preset(RS_STREAM_COLOR, RS_PRESET_BEST_QUALITY);
-        dev.enable_stream_preset(RS_STREAM_INFRARED, RS_PRESET_BEST_QUALITY);
-        try { dev.enable_stream_preset(RS_STREAM_INFRARED_2, RS_PRESET_BEST_QUALITY); } catch(...) {}
+        dev.enable_stream_preset(rs::stream::DEPTH, rs::preset::BEST_QUALITY);
+        dev.enable_stream_preset(rs::stream::COLOR, rs::preset::BEST_QUALITY);
+        dev.enable_stream_preset(rs::stream::INFRARED, rs::preset::BEST_QUALITY);
+        try { dev.enable_stream_preset(rs::stream::INFRARED_2, rs::preset::BEST_QUALITY); } catch(...) {}
         dev.start();
     }
     if (!dev) throw std::runtime_error("No device detected. Is it plugged in?");
         
-    state app_state = {0, 0, 0, 0, false, {RS_STREAM_COLOR, RS_STREAM_INFRARED}, 0, &dev};
-    if(dev.is_stream_enabled(RS_STREAM_INFRARED_2)) app_state.tex_streams.push_back(RS_STREAM_INFRARED_2);
+    state app_state = {0, 0, 0, 0, false, {rs::stream::COLOR, rs::stream::INFRARED}, 0, &dev};
+    if(dev.is_stream_enabled(rs::stream::INFRARED_2)) app_state.tex_streams.push_back(rs::stream::INFRARED_2);
     
     glfwInit();
     std::ostringstream ss; ss << "CPP Point Cloud Example (" << dev.get_name() << ")";
@@ -110,8 +110,8 @@ int main(int argc, char * argv[]) try
 
         const rs::stream tex_stream = app_state.tex_streams[app_state.index];
         const float depth_scale = dev.get_depth_scale();
-        const rs::extrinsics extrin = dev.get_extrinsics(RS_STREAM_DEPTH, tex_stream);
-        const rs::intrinsics depth_intrin = dev.get_stream_intrinsics(RS_STREAM_DEPTH);
+        const rs::extrinsics extrin = dev.get_extrinsics(rs::stream::DEPTH, tex_stream);
+        const rs::intrinsics depth_intrin = dev.get_stream_intrinsics(rs::stream::DEPTH);
         const rs::intrinsics tex_intrin = dev.get_stream_intrinsics(tex_stream);
         bool identical = memcmp(&depth_intrin, &tex_intrin, sizeof(rs::intrinsics)) == 0
             && extrin.rotation[0] == 1 && extrin.rotation[4] == 1 && extrin.rotation[8] == 1
@@ -126,9 +126,9 @@ int main(int argc, char * argv[]) try
         glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
         switch(dev.get_stream_format(tex_stream))
         {
-        case RS_FORMAT_RGB8: glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, tex_intrin.image_size[0], tex_intrin.image_size[1], 0, GL_RGB, GL_UNSIGNED_BYTE, dev.get_frame_data(tex_stream)); break;
-        case RS_FORMAT_Y8:   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, tex_intrin.image_size[0], tex_intrin.image_size[1], 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, dev.get_frame_data(tex_stream)); break;
-        case RS_FORMAT_Y16:  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, tex_intrin.image_size[0], tex_intrin.image_size[1], 0, GL_LUMINANCE, GL_UNSIGNED_SHORT, dev.get_frame_data(tex_stream)); break;
+        case rs::format::RGB8: glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, tex_intrin.image_size[0], tex_intrin.image_size[1], 0, GL_RGB, GL_UNSIGNED_BYTE, dev.get_frame_data(tex_stream)); break;
+        case rs::format::Y8:   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, tex_intrin.image_size[0], tex_intrin.image_size[1], 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, dev.get_frame_data(tex_stream)); break;
+        case rs::format::Y16:  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, tex_intrin.image_size[0], tex_intrin.image_size[1], 0, GL_LUMINANCE, GL_UNSIGNED_SHORT, dev.get_frame_data(tex_stream)); break;
         }
 
         glViewport(0, 0, width, height);
@@ -152,7 +152,7 @@ int main(int argc, char * argv[]) try
         glEnable(GL_DEPTH_TEST);
         glEnable(GL_TEXTURE_2D);
         glBegin(GL_POINTS);
-        auto depth = reinterpret_cast<const uint16_t *>(dev.get_frame_data(RS_STREAM_DEPTH));
+        auto depth = reinterpret_cast<const uint16_t *>(dev.get_frame_data(rs::stream::DEPTH));
         
         for(int y=0; y<depth_intrin.image_size[1]; ++y)
         {

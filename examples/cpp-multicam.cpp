@@ -18,8 +18,8 @@ int main(int argc, char * argv[]) try
     {
         rs::device dev = ctx.get_device(i);
         std::cout << "Starting " << dev.get_name() << "... ";
-        dev.enable_stream_preset(RS_STREAM_DEPTH, RS_PRESET_BEST_QUALITY);
-        dev.enable_stream_preset(RS_STREAM_COLOR, RS_PRESET_BEST_QUALITY);
+        dev.enable_stream_preset(rs::stream::DEPTH, rs::preset::BEST_QUALITY);
+        dev.enable_stream_preset(rs::stream::COLOR, rs::preset::BEST_QUALITY);
         dev.start();
         std::cout << "done." << std::endl;
     }
@@ -56,14 +56,14 @@ int main(int argc, char * argv[]) try
         for(int i=0; i<ctx.get_device_count(); ++i)
         {
             auto dev = ctx.get_device(i);
-            const auto c = dev.get_stream_intrinsics(RS_STREAM_COLOR), d = dev.get_stream_intrinsics(RS_STREAM_DEPTH);
+            const auto c = dev.get_stream_intrinsics(rs::stream::COLOR), d = dev.get_stream_intrinsics(rs::stream::DEPTH);
             const int width = std::max(c.image_size[0], d.image_size[0]);
 
             glRasterPos2i(x + (width - c.image_size[0])/2, 0);
-            glDrawPixels(c.image_size[0], c.image_size[1], GL_RGB, GL_UNSIGNED_BYTE, dev.get_frame_data(RS_STREAM_COLOR));
+            glDrawPixels(c.image_size[0], c.image_size[1], GL_RGB, GL_UNSIGNED_BYTE, dev.get_frame_data(rs::stream::COLOR));
 
             glRasterPos2i(x + (width - d.image_size[0])/2, c.image_size[1]);
-            draw_depth_histogram(reinterpret_cast<const uint16_t *>(dev.get_frame_data(RS_STREAM_DEPTH)), d.image_size[0], d.image_size[1]);
+            draw_depth_histogram(reinterpret_cast<const uint16_t *>(dev.get_frame_data(rs::stream::DEPTH)), d.image_size[0], d.image_size[1]);
 
             ttf_print(&font, x+(width-ttf_len(&font, dev.get_name()))/2, 24, dev.get_name());
             x += width;
