@@ -85,7 +85,7 @@ namespace rsimpl
             if(status < 0) throw std::runtime_error(to_string() << "uvc_set_ctrl(...) returned " << libusb_error_name(status));
         }
 
-        void device::claim_interface(int interface_number)
+        void device::claim_interface(const guid & interface_guid, int interface_number)
         {
             int status = libusb_claim_interface(impl->get_subdevice(0).handle->usb_devh, interface_number);
             if(status < 0) throw std::runtime_error(to_string() << "libusb_claim_interface(...) returned " << libusb_error_name(status));
@@ -177,6 +177,7 @@ namespace rsimpl
 #include <ksmedia.h>
 #include <ksproxy.h>
 
+#include <Cfgmgr32.h>
 #include <SetupAPI.h>
 #include <WinUsb.h>
 #include <atlstr.h>
@@ -190,9 +191,6 @@ namespace rsimpl
 #include <strsafe.h>
 
 #define XUNODEID 1
-
-DEFINE_GUID(IVCAM_WIN_USB_DEVICE_GUID_2, 0x8EC3DC67, 0xE0E0, 0x4F04, 0x85, 0x19, 0xC2, 0x77, 0x52, 0x5B, 0x4B, 0xEA);
-DEFINE_GUID(IVCAM_WIN_USB_DEVICE_GUID, 0x175695CD, 0x30D9, 0x4F87, 0x8B, 0xE3, 0x5A, 0x82, 0x70, 0xF4, 0x9A, 0x31);
 
 namespace rsimpl
 {
@@ -414,68 +412,61 @@ namespace rsimpl
                 return subdevices[subdevice_index].get_media_source();
             }			
 
-			void open_win_usb(int interface_number) try
+			void open_win_usb(const guid & interface_guid, int interface_number) try
 			{    
-				for(const auto & guid : {IVCAM_WIN_USB_DEVICE_GUID, IVCAM_WIN_USB_DEVICE_GUID_2})
-                {
-				    HDEVINFO device_info = SetupDiGetClassDevs(&guid, nullptr, nullptr, DIGCF_PRESENT | DIGCF_DEVICEINTERFACE);
-				    if (device_info == INVALID_HANDLE_VALUE) throw std::runtime_error("SetupDiGetClassDevs");
+                static_assert(sizeof(guid) == sizeof(GUID), "struct packing error");
+				HDEVINFO device_info = SetupDiGetClassDevs((const GUID *)&interface_guid, nullptr, nullptr, DIGCF_PRESENT | DIGCF_DEVICEINTERFACE);
+				if (device_info == INVALID_HANDLE_VALUE) throw std::runtime_error("SetupDiGetClassDevs");
+                auto di = std::shared_ptr<void>(device_info, SetupDiDestroyDeviceInfoList);
 
-					for(int member_index = 0; ; ++member_index)
-					{
-				        // Enumerate all the device interfaces in the device information set.
-                        SP_DEVICE_INTERFACE_DATA interfaceData = {sizeof(SP_DEVICE_INTERFACE_DATA)};
-				        if(SetupDiEnumDeviceInterfaces(device_info, nullptr, &guid, member_index, &interfaceData) == FALSE)
-                        {
-                            if(GetLastError() == ERROR_NO_MORE_ITEMS) break;
-                            continue;
-                        }					        
+				for(int member_index = 0; ; ++member_index)
+				{
+				    // Enumerate all the device interfaces in the device information set.
+                    SP_DEVICE_INTERFACE_DATA interfaceData = {sizeof(SP_DEVICE_INTERFACE_DATA)};
+				    if(SetupDiEnumDeviceInterfaces(device_info, nullptr, (const GUID *)&interface_guid, member_index, &interfaceData) == FALSE)
+                    {
+                        if(GetLastError() == ERROR_NO_MORE_ITEMS) break;
+                        continue;
+                    }					        
 
-                        // Allocate space for a detail data struct
-                        unsigned long detail_data_size = 0;
-				        SetupDiGetDeviceInterfaceDetail(device_info, &interfaceData, nullptr, 0, &detail_data_size, nullptr);
-                        if(GetLastError() != ERROR_INSUFFICIENT_BUFFER)
-                        {
-                            std::cerr << "SetupDiGetDeviceInterfaceDetail failed" << std::endl;
-                            continue;
-                        }
-                        auto alloc = std::malloc(detail_data_size);
-                        if(!alloc) throw std::bad_alloc();
+                    // Allocate space for a detail data struct
+                    unsigned long detail_data_size = 0;
+				    SetupDiGetDeviceInterfaceDetail(device_info, &interfaceData, nullptr, 0, &detail_data_size, nullptr);
+                    if(GetLastError() != ERROR_INSUFFICIENT_BUFFER)
+                    {
+                        std::cerr << "SetupDiGetDeviceInterfaceDetail failed" << std::endl;
+                        continue;
+                    }
+                    auto alloc = std::malloc(detail_data_size);
+                    if(!alloc) throw std::bad_alloc();
 
-                        // Retrieve the detail data struct
-                        auto detail_data = std::shared_ptr<SP_DEVICE_INTERFACE_DETAIL_DATA>(reinterpret_cast<SP_DEVICE_INTERFACE_DETAIL_DATA *>(alloc), std::free);
-                        detail_data->cbSize = sizeof(SP_DEVICE_INTERFACE_DETAIL_DATA);
-				        if (!SetupDiGetDeviceInterfaceDetail(device_info, &interfaceData, detail_data.get(), detail_data_size, nullptr, nullptr))
-				        {
-					        std::cerr << "SetupDiGetDeviceInterfaceDetail failed" << std::endl;
-					        continue;
-				        }
-                        if (detail_data->DevicePath == nullptr) continue;
-
-                        // Check if this is our device
-                        int usb_vid, usb_pid, usb_mi; std::string usb_unique_id;
-                        if(!parse_usb_path(usb_vid, usb_pid, usb_mi, usb_unique_id, win_to_utf(detail_data->DevicePath))) continue;
-                        if(usb_vid != vid || usb_pid != pid || usb_mi != interface_number || usb_unique_id != unique_id) continue;                    
-                        
-					    usb_file_handle = CreateFile(detail_data->DevicePath, GENERIC_WRITE | GENERIC_READ, FILE_SHARE_WRITE | FILE_SHARE_READ, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL | FILE_FLAG_OVERLAPPED, nullptr);
-					    if (usb_file_handle == INVALID_HANDLE_VALUE) throw std::runtime_error("CreateFile(...) failed");
-
-				        if(!WinUsb_Initialize(usb_file_handle, &usb_interface_handle))
-                        {
-					        std::cerr << "Last Error: " << GetLastError() << std::endl;
-					        throw std::runtime_error("could not initialize winusb");
-				        }
-
-                        if (!SetupDiDestroyDeviceInfoList(device_info))
-                        {
-                            // Not a fatal error
-                            std::cerr << "Failed to clean-up SetupDiDestroyDeviceInfoList!" << std::endl;
-                        }
-
-                        // We successfully set up a WinUsb interface handle to our device
-                        return;
+                    // Retrieve the detail data struct
+                    auto detail_data = std::shared_ptr<SP_DEVICE_INTERFACE_DETAIL_DATA>(reinterpret_cast<SP_DEVICE_INTERFACE_DETAIL_DATA *>(alloc), std::free);
+                    detail_data->cbSize = sizeof(SP_DEVICE_INTERFACE_DETAIL_DATA);
+				    if (!SetupDiGetDeviceInterfaceDetail(device_info, &interfaceData, detail_data.get(), detail_data_size, nullptr, nullptr))
+				    {
+					    std::cerr << "SetupDiGetDeviceInterfaceDetail failed" << std::endl;
+					    continue;
 				    }
-                }
+                    if (detail_data->DevicePath == nullptr) continue;
+
+                    // Check if this is our device
+                    int usb_vid, usb_pid, usb_mi; std::string usb_unique_id;
+                    if(!parse_usb_path(usb_vid, usb_pid, usb_mi, usb_unique_id, win_to_utf(detail_data->DevicePath))) continue;
+                    if(usb_vid != vid || usb_pid != pid || usb_mi != interface_number || usb_unique_id != unique_id) continue;                    
+                        
+					usb_file_handle = CreateFile(detail_data->DevicePath, GENERIC_WRITE | GENERIC_READ, FILE_SHARE_WRITE | FILE_SHARE_READ, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL | FILE_FLAG_OVERLAPPED, nullptr);
+					if (usb_file_handle == INVALID_HANDLE_VALUE) throw std::runtime_error("CreateFile(...) failed");
+
+				    if(!WinUsb_Initialize(usb_file_handle, &usb_interface_handle))
+                    {
+					    std::cerr << "Last Error: " << GetLastError() << std::endl;
+					    throw std::runtime_error("could not initialize winusb");
+				    }
+
+                    // We successfully set up a WinUsb interface handle to our device
+                    return;
+				}
                 throw std::runtime_error("Unable to open device via WinUSB");
             }
             catch(...)
@@ -637,9 +628,9 @@ namespace rsimpl
             check("IKsControl::KsProperty", impl->get_control_node()->KsProperty((PKSPROPERTY)&node, sizeof(KSP_NODE), data, len, nullptr));
         }
 
-        void device::claim_interface(int interface_number)
+        void device::claim_interface(const guid & interface_guid, int interface_number)
         {
-			impl->open_win_usb(interface_number);
+			impl->open_win_usb(interface_guid, interface_number);
         }
 
         void device::bulk_transfer(uint8_t endpoint, void * data, int length, int *actual_length, unsigned int timeout)
