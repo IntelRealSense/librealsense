@@ -252,78 +252,64 @@ namespace rsimpl
             com_ptr & operator = (const com_ptr & r) { ref(r.p); return *this; }            
         };
 
-		namespace winusb
-		{
-			enum class IvcamUsbDevice
-			{
-				None			= -1,
-				RGB				=  0,
-				Depth			=  2,
-				HardwareMonitor	=  4
-			};
+        std::vector<std::string> tokenize(std::string string, char separator)
+        {
+            std::vector<std::string> tokens;
+            std::string::size_type i1 = 0;
+            while(true)
+            {
+                auto i2 = string.find(separator, i1);
+                if(i2 == std::string::npos)
+                {
+                    tokens.push_back(string.substr(i1));
+                    return tokens;
+                }
+                tokens.push_back(string.substr(i1, i2-i1));
+                i1 = i2+1;
+            }
+        }
 
-			#define IVCAM_VID				L"8086"
-			#define IVCAM_PID				L"0A66"
-			#define IVCAM_DEVICE_NAME		L"IVCAM"
+        bool parse_usb_path(int & vid, int & pid, int & mi, std::string & unique_id, const std::string & path)
+        {
+            auto name = path;
+            //std::transform(begin(name), end(name), begin(name), ::tolower);
+            
+            auto tokens = tokenize(name, '#');
+            if(tokens.size() < 1 || tokens[0] != R"(\\?\usb)") return false; // Not a USB device
+            if(tokens.size() < 3)
+            {
+                std::cerr << "malformed usb device path: " << name << std::endl;
+                return false;
+            }
 
-			#define IVCAM_USB2_PID			L"0AA1"
-			#define SKYCAM_OPER_PID			L"0AA2"
-			#define SKYCAM_UVC_PID			L"0AA3"
-			#define REALTEK_OPER_PID		L"0AA4"
-			#define REALTEK_DBG_PID			L"0AA5"
+            auto ids = tokenize(tokens[1], '&');
+            if(ids[0].size() != 8 || ids[0].substr(0,4) != "vid_" || !(std::istringstream(ids[0].substr(4,4)) >> std::hex >> vid))
+            {
+                std::cerr << "malformed vid string: " << tokens[1] << std::endl;
+                return false;
+            }
 
-			bool contains_pid_substring(const wchar_t* str, const std::vector<LPWSTR>& ivcam_pid)
-			{
-				CString StrCopy(str);
-				for (auto pid : ivcam_pid)
-				{
-					CString pidStr(pid);
-					pidStr = CString(L"&pid_") + pidStr + CString(L"&");
-					int num = StrCopy.MakeLower().Find(pidStr.MakeLower());
-					if ((num >= 0) && (num < StrCopy.GetLength()))
-						return true;
-				}
-				return false;
-			}
+            if(ids[1].size() != 8 || ids[1].substr(0,4) != "pid_" || !(std::istringstream(ids[1].substr(4,4)) >> std::hex >> pid))
+            {
+                std::cerr << "malformed pid string: " << tokens[1] << std::endl;
+                return false;
+            }
 
-			IvcamUsbDevice get_camera_usb_type(const wchar_t * deviceID)
-			{	
-				std::wsmatch matches;
-				std::wstring deviceIDstr(deviceID);
-				std::wregex camTypeReg(L"\\b(mi_|MI_)(\\d\\d)");
-	
-				if (!std::regex_search(deviceIDstr, matches, camTypeReg) || matches.size() < 3)
-					return IvcamUsbDevice::None;
+            if(ids[2].size() != 5 || ids[2].substr(0,3) != "mi_" || !(std::istringstream(ids[2].substr(3,2)) >> mi))
+            {
+                std::cerr << "malformed mi string: " << tokens[1] << std::endl;
+                return false;
+            }
 
-				std::wstring cam = matches[2];
-				auto camType = static_cast<IvcamUsbDevice>(_wtoi(cam.c_str()));
-
-				if (camType == IvcamUsbDevice::RGB || camType == IvcamUsbDevice::Depth || camType == IvcamUsbDevice::HardwareMonitor)
-					return camType;
-
-				return IvcamUsbDevice::None;
-			}
-
-			bool get_camera_usb_id(IN const wchar_t* deviceID, OUT std::string *devID)
-			{
-				std::wsmatch matches;
-				std::wstring deviceIDstr(deviceID);
-
-				std::wregex camIdReg(L"\\b(mi_)(.*#\\w&)(.*)(&.*&)", std::regex_constants::icase);
-				if (!std::regex_search(deviceIDstr, matches, camIdReg) || matches.size() < 5)
-					return false;
-
-				std::wstring wdevID = matches[3];
-				*devID = win_to_utf(wdevID.c_str());
-				return true;
-			}
-
-			bool is_ivcam_pid(const wchar_t * deviceID)
-			{
-				return (contains_pid_substring(deviceID, {IVCAM_PID, IVCAM_USB2_PID}) 
-					||  contains_pid_substring(deviceID, {SKYCAM_OPER_PID, SKYCAM_UVC_PID, REALTEK_OPER_PID, REALTEK_DBG_PID}));
-			}
-		}
+            ids = tokenize(tokens[2], '&');
+            if(ids.size() < 2)
+            {
+                std::cerr << "malformed id string: " << tokens[2] << std::endl;
+                return false;
+            }
+            unique_id = ids[1];
+            return true;
+        }
 
         struct context::_impl
         {
@@ -403,15 +389,11 @@ namespace rsimpl
 				        }
                         if (detail_data->DevicePath == nullptr) continue;
 
-					    if (!winusb::is_ivcam_pid(detail_data->DevicePath)) continue;                         
-                                                    
-					    auto cam_type = winusb::get_camera_usb_type(detail_data->DevicePath);
-                        if (cam_type == winusb::IvcamUsbDevice::None) continue;
-
-                        std::string usb_id;
-				        if (!winusb::get_camera_usb_id(detail_data->DevicePath, &usb_id)) continue;
-                        if (unique_id != usb_id) continue;
-
+                        // Check if this is our device
+                        int usb_vid, usb_pid, usb_mi; std::string usb_unique_id;
+                        if(!parse_usb_path(usb_vid, usb_pid, usb_mi, usb_unique_id, win_to_utf(detail_data->DevicePath))) continue;
+                        if(usb_vid != vid || usb_pid != pid || usb_unique_id != unique_id) continue;                    
+                        
 					    usb_file_handle = CreateFile(detail_data->DevicePath, GENERIC_WRITE | GENERIC_READ, FILE_SHARE_WRITE | FILE_SHARE_READ, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL | FILE_FLAG_OVERLAPPED, nullptr);
 					    if (usb_file_handle == INVALID_HANDLE_VALUE) throw std::runtime_error("CreateFile(...) failed");
 
@@ -756,23 +738,6 @@ namespace rsimpl
             return {std::make_shared<context::_impl>()};
         }
 
-        std::vector<std::string> tokenize(std::string string, char separator)
-        {
-            std::vector<std::string> tokens;
-            std::string::size_type i1 = 0;
-            while(true)
-            {
-                auto i2 = string.find(separator, i1);
-                if(i2 == std::string::npos)
-                {
-                    tokens.push_back(string.substr(i1));
-                    return tokens;
-                }
-                tokens.push_back(string.substr(i1, i2-i1));
-                i1 = i2+1;
-            }
-        }
-
         std::vector<device> context::query_devices()
         {
             IMFAttributes * pAttributes = NULL;
@@ -789,48 +754,13 @@ namespace rsimpl
                 com_ptr<IMFActivate> pDevice;
                 *&pDevice = ppDevices[i];
 
-                WCHAR * wchar_name = NULL;
-                UINT32 length;
+                WCHAR * wchar_name = NULL; UINT32 length;
                 pDevice->GetAllocatedString(MF_DEVSOURCE_ATTRIBUTE_SOURCE_TYPE_VIDCAP_SYMBOLIC_LINK, &wchar_name, &length);
                 auto name = win_to_utf(wchar_name);
                 CoTaskMemFree(wchar_name);
 
-                int vid, pid, mi;
-
-                auto tokens = tokenize(name, '#');
-                if(tokens.size() < 1 || tokens[0] != R"(\\?\usb)") continue; // Not a USB device
-                if(tokens.size() < 3)
-                {
-                    std::cerr << "malformed usb device path: " << name << std::endl;
-                    continue;
-                }
-
-                auto ids = tokenize(tokens[1], '&');
-                if(ids[0].size() != 8 || ids[0].substr(0,4) != "vid_" || !(std::istringstream(ids[0].substr(4,4)) >> std::hex >> vid))
-                {
-                    std::cerr << "malformed vid string: " << tokens[1] << std::endl;
-                    continue;
-                }
-
-                if(ids[1].size() != 8 || ids[1].substr(0,4) != "pid_" || !(std::istringstream(ids[1].substr(4,4)) >> std::hex >> pid))
-                {
-                    std::cerr << "malformed pid string: " << tokens[1] << std::endl;
-                    continue;
-                }
-
-                if(ids[2].size() != 5 || ids[2].substr(0,3) != "mi_" || !(std::istringstream(ids[2].substr(3,2)) >> mi))
-                {
-                    std::cerr << "malformed mi string: " << tokens[1] << std::endl;
-                    continue;
-                }
-
-                ids = tokenize(tokens[2], '&');
-                if(ids.size() < 2)
-                {
-                    std::cerr << "malformed id string: " << tokens[2] << std::endl;
-                    continue;               
-                }
-                std::string unique_id = ids[1];
+                int vid, pid, mi; std::string unique_id;
+                if(!parse_usb_path(vid, pid, mi, unique_id, name)) continue;
 
                 device dev;
                 for(auto & d : devices)
