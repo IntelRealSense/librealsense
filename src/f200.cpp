@@ -62,8 +62,7 @@ namespace rsimpl
     int decode_ivcam_frame_number(const subdevice_mode & mode, const void * frame)
     {
         // FIXME: This currently just guesses at a "frame number"
-        uint64_t timestamp = *reinterpret_cast<const uint32_t *>(frame);
-        return (int)(timestamp * mode.fps / 100000000);
+        return *reinterpret_cast<const int *>(frame);
     }
 
     enum { COLOR_VGA, COLOR_HD, DEPTH_VGA, DEPTH_QVGA, NUM_INTRINSICS };

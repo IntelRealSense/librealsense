@@ -111,22 +111,16 @@ void rs_device::start()
             }
                 
             // Initialize the subdevice and set it to the selected mode
-            device.set_subdevice_mode(i, mode.width, mode.height, mode.format, mode.fps, [mode, stream_list](const void * frame)
+            device.set_subdevice_mode(i, mode.width, mode.height, mode.format, mode.fps, [mode, stream_list](const void * frame) mutable
             {
                 // Unpack the image into the user stream interface back buffer
                 std::vector<void *> dest;
                 for(auto & stream : stream_list) dest.push_back(stream->get_back_data());
                 mode.unpacker(dest.data(), mode, frame);
-
-                // If a frame number decoder is available, make use of it
-                if(mode.frame_number_decoder)
-                {
-                    const int frame_number = mode.frame_number_decoder(mode, frame);
-                    for(auto & stream : stream_list) stream->set_back_number(frame_number);
-                }
-
+                const int frame_number = mode.frame_number_decoder(mode, frame);
+                
                 // Swap the backbuffer to the middle buffer and indicate that we have updated
-                for(auto & stream : stream_list) stream->swap_back();
+                for(auto & stream : stream_list) stream->swap_back(frame_number);
             });
         }
     }
@@ -148,28 +142,46 @@ void rs_device::wait_all_streams()
 {
     if (!capturing) return;
     
-    int maxFps = 0;
-    for(auto & stream : streams) maxFps = stream ? std::max(maxFps, stream->get_mode().fps) : maxFps;
+    // Determine timeout time
+    const auto timeout = std::max(std::chrono::high_resolution_clock::now() + std::chrono::milliseconds(250), capture_started + std::chrono::seconds(2));
 
-    auto t0 = std::chrono::high_resolution_clock::now();
-    auto t1 = std::max(t0 + std::chrono::milliseconds(10000 / maxFps), capture_started + std::chrono::seconds(2));
-    for(auto & stream : streams)
+    // Check for new data on all streams, make sure that at least one stream provides an update
+    bool updated = false;
+    while(true)
     {
-        if(stream)
+        for(int i=0; i<RS_STREAM_COUNT; ++i)
         {
-            // If this is the fastest stream, wait until a new frame arrives
-            if(stream->get_mode().fps == maxFps)
+            if(streams[i] && streams[i]->swap_front())
             {
-                while(true)
-                {
-                    if(stream->swap_front()) break;
-                    std::this_thread::sleep_for(std::chrono::milliseconds(1));
-                    if(std::chrono::high_resolution_clock::now() >= t1) throw std::runtime_error("Timeout waiting for frames");
-                }
+                updated = true;
             }
-            else // Otherwise simply check for a new frame
+        }
+        if(updated) break;
+
+        std::this_thread::sleep_for(std::chrono::microseconds(100)); // TODO: Use a condition variable or something to avoid this
+        if(std::chrono::high_resolution_clock::now() >= timeout) throw std::runtime_error("Timeout waiting for frames");
+    }
+
+    // The frame time will be the most recent timestamp available on any stream
+    int frame_time = INT_MIN;
+    for(int i=0; i<RS_STREAM_COUNT; ++i)
+    {
+        if(streams[i])
+        {
+            frame_time = std::max(frame_time, streams[i]->get_front_number());
+        }
+    }
+
+    // Wait for any stream which expects a new frame prior to the frame time
+    for(int i=0; i<RS_STREAM_COUNT; ++i)
+    {
+        if(streams[i] && streams[i]->get_front_number() + streams[i]->get_front_delta() <= frame_time)
+        {
+            while(true)
             {
-                stream->swap_front();
+                if(streams[i]->swap_front()) break;
+                std::this_thread::sleep_for(std::chrono::microseconds(100)); // TODO: Use a condition variable or something to avoid this
+                if(std::chrono::high_resolution_clock::now() >= timeout) throw std::runtime_error("Timeout waiting for frames");
             }
         }
     }

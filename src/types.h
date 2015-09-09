@@ -129,25 +129,28 @@ namespace rsimpl
         {
             std::vector<uint8_t>    data;
             int                     number;
+            int                     delta;
 
-                                    frame(const rsimpl::stream_mode & m) : data(rsimpl::get_image_size(m.width, m.height, m.format)), number() {}
-            void                    swap(frame & r) { data.swap(r.data); std::swap(number, r.number); }
+                                    frame(const rsimpl::stream_mode & m) : data(rsimpl::get_image_size(m.width, m.height, m.format)), number(), delta() {}
+            void                    swap(frame & r) { data.swap(r.data); std::swap(number, r.number); std::swap(delta, r.delta); }
         };
 
         stream_mode                 mode;
         frame                       front, middle, back;
         std::mutex                  mutex;
         volatile bool               updated = false;
+        int                         last_frame_number;
+        bool                        first = true;
     public:
                                     stream_buffer(const rsimpl::stream_mode & mode) : mode(mode), front(mode), middle(mode), back(mode), updated(false) {}
 
         const stream_mode &         get_mode() const { return mode; }
         const void *                get_front_data() const { return front.data.data(); }
         int                         get_front_number() const { return front.number; }
+        int                         get_front_delta() const { return front.delta; }
 
         void *                      get_back_data() { return back.data.data(); }
-        void                        set_back_number(int number) { back.number = number; }
-        void                        swap_back();
+        void                        swap_back(int frame_number);
         bool                        swap_front();
     };
 

@@ -226,8 +226,18 @@ namespace rsimpl
         return true;
     }
 
-    void stream_buffer::swap_back()
+    void stream_buffer::swap_back(int frame_number)
     {
+        if(first)
+        {
+            last_frame_number = frame_number;
+            first = false;
+            return;
+        }
+
+        back.number = frame_number;
+        back.delta = frame_number - last_frame_number;
+        last_frame_number = frame_number;
         std::lock_guard<std::mutex> guard(mutex);
         back.swap(middle);
         updated = true;
