@@ -272,8 +272,7 @@ namespace rsimpl
         bool parse_usb_path(int & vid, int & pid, int & mi, std::string & unique_id, const std::string & path)
         {
             auto name = path;
-            //std::transform(begin(name), end(name), begin(name), ::tolower);
-            
+            std::transform(begin(name), end(name), begin(name), ::tolower);
             auto tokens = tokenize(name, '#');
             if(tokens.size() < 1 || tokens[0] != R"(\\?\usb)") return false; // Not a USB device
             if(tokens.size() < 3)
@@ -341,7 +340,6 @@ namespace rsimpl
 
 			HANDLE usb_file_handle = INVALID_HANDLE_VALUE;
 			WINUSB_INTERFACE_HANDLE usb_interface_handle = INVALID_HANDLE_VALUE;
-			UCHAR dataInPipe, dataOutPipe;
 
             _impl(std::shared_ptr<context::_impl> parent, int vid, int pid, std::string unique_id) : parent(move(parent)), vid(vid), pid(pid), unique_id(move(unique_id)) {}
 
@@ -351,7 +349,7 @@ namespace rsimpl
                 return sources[subdevice_index];
             }			
 
-			void open_win_usb() try
+			void open_win_usb(int interface_number) try
 			{    
 				for(const auto & guid : {IVCAM_WIN_USB_DEVICE_GUID, IVCAM_WIN_USB_DEVICE_GUID_2})
                 {
@@ -392,7 +390,7 @@ namespace rsimpl
                         // Check if this is our device
                         int usb_vid, usb_pid, usb_mi; std::string usb_unique_id;
                         if(!parse_usb_path(usb_vid, usb_pid, usb_mi, usb_unique_id, win_to_utf(detail_data->DevicePath))) continue;
-                        if(usb_vid != vid || usb_pid != pid || usb_unique_id != unique_id) continue;                    
+                        if(usb_vid != vid || usb_pid != pid || usb_mi != interface_number || usb_unique_id != unique_id) continue;                    
                         
 					    usb_file_handle = CreateFile(detail_data->DevicePath, GENERIC_WRITE | GENERIC_READ, FILE_SHARE_WRITE | FILE_SHARE_READ, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL | FILE_FLAG_OVERLAPPED, nullptr);
 					    if (usb_file_handle == INVALID_HANDLE_VALUE) throw std::runtime_error("CreateFile(...) failed");
@@ -402,29 +400,6 @@ namespace rsimpl
 					        std::cerr << "Last Error: " << GetLastError() << std::endl;
 					        throw std::runtime_error("could not initialize winusb");
 				        }
-
-				        USB_INTERFACE_DESCRIPTOR desc;
-				        ZeroMemory(&desc, sizeof(USB_INTERFACE_DESCRIPTOR));
-
-				        WINUSB_PIPE_INFORMATION  Pipe;
-				        ZeroMemory(&Pipe, sizeof(WINUSB_PIPE_INFORMATION));
-
-				        if(!WinUsb_QueryInterfaceSettings(usb_interface_handle, 0, &desc))
-                        {
-					        std::cerr << "Last Error: " << GetLastError() << std::endl;
-					        throw std::runtime_error("WinUsb_QueryInterfaceSettings(...) failed");
-                        }
-
-                        int inPipe = -1, outPipe = -1;
-					    for (auto index = (UCHAR)0; index < desc.bNumEndpoints; index++)
-					    {
-						    if(!WinUsb_QueryPipe(usb_interface_handle, 0, index, &Pipe)) continue;
-                            if(Pipe.PipeType != UsbdPipeTypeBulk) continue;
-							if(USB_ENDPOINT_DIRECTION_IN(Pipe.PipeId)) inPipe = dataInPipe = Pipe.PipeId;
-							if(USB_ENDPOINT_DIRECTION_OUT(Pipe.PipeId)) outPipe = dataOutPipe = Pipe.PipeId;
-					    }
-                        if(inPipe == -1) throw std::runtime_error("Unable to obtain USB bulk transfer input endpoint");
-                        if(outPipe == -1) throw std::runtime_error("Unable to obtain USB bulk transfer output endpoint");
 
                         if (!SetupDiDestroyDeviceInfoList(device_info))
                         {
@@ -459,7 +434,7 @@ namespace rsimpl
                 }
 			}
 
-			bool usb_synchronous_read(unsigned char * buffer, int bufferLength, int * actual_length, DWORD TimeOut)
+			bool usb_synchronous_read(uint8_t endpoint, unsigned char * buffer, int bufferLength, int * actual_length, DWORD TimeOut)
 			{
 				if (usb_interface_handle == INVALID_HANDLE_VALUE) throw std::runtime_error("winusb has not been initialized");
 
@@ -471,14 +446,14 @@ namespace rsimpl
 
 				ULONG lengthTransferred;
 
-				bRetVal = WinUsb_ReadPipe(usb_interface_handle, dataInPipe, buffer, bufferLength, &lengthTransferred, NULL);
+				bRetVal = WinUsb_ReadPipe(usb_interface_handle, endpoint, buffer, bufferLength, &lengthTransferred, NULL);
 
 				if (bRetVal)
 					result = true;
 				else
 				{
 					auto lastResult = GetLastError();
-					WinUsb_ResetPipe(usb_interface_handle, dataInPipe);
+					WinUsb_ResetPipe(usb_interface_handle, endpoint);
 					result = false;
 				}
 
@@ -486,20 +461,20 @@ namespace rsimpl
 				return result;
 			}
 
-			bool usb_synchronous_write(unsigned char * buffer, int bufferLength, DWORD TimeOut)
+			bool usb_synchronous_write(uint8_t endpoint, unsigned char * buffer, int bufferLength, DWORD TimeOut)
 			{
 				if (usb_interface_handle == INVALID_HANDLE_VALUE) throw std::runtime_error("winusb has not been initialized");
 
 				auto result = false;
 
 				ULONG lengthWritten;
-				auto bRetVal = WinUsb_WritePipe(usb_interface_handle, dataOutPipe, buffer, bufferLength, &lengthWritten, NULL);
+				auto bRetVal = WinUsb_WritePipe(usb_interface_handle, endpoint, buffer, bufferLength, &lengthWritten, NULL);
 				if (bRetVal)
 					result = true;
 				else
 				{
 					auto lastError = GetLastError();
-					WinUsb_ResetPipe(usb_interface_handle, dataOutPipe);
+					WinUsb_ResetPipe(usb_interface_handle, endpoint);
 					std::cerr << "WinUsb_ReadPipe failure... lastError: " << lastError << std::endl;
 					result = false;
 				}
@@ -634,25 +609,20 @@ namespace rsimpl
 
         void device::claim_interface(int interface_number)
         {
-			impl->open_win_usb();
+			impl->open_win_usb(interface_number);
         }
 
-        void device::bulk_transfer(unsigned char endpoint, unsigned char *data, int length, int *actual_length, unsigned int timeout)
+        void device::bulk_transfer(uint8_t endpoint, unsigned char *data, int length, int *actual_length, unsigned int timeout)
         {		
-			// #define IVCAM_MONITOR_ENDPOINT_OUT      0x1
-			// #define IVCAM_MONITOR_ENDPOINT_IN       0x81
-
-			// Write
-			if (endpoint == 0x1)
-			{
-				impl->usb_synchronous_write(data, length, timeout);
-			}
-
-			// Read
-			else if (endpoint == 0x81)
+            if(USB_ENDPOINT_DIRECTION_OUT(endpoint))
+            {
+            	impl->usb_synchronous_write(endpoint, data, length, timeout);
+            }
+            
+            if(USB_ENDPOINT_DIRECTION_IN(endpoint))
 			{
 				auto actualLen = ULONG(actual_length);
-				impl->usb_synchronous_read(data, length, actual_length, timeout);
+				impl->usb_synchronous_read(endpoint, data, length, actual_length, timeout);
 			}
         }
 
