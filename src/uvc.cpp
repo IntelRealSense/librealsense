@@ -22,12 +22,19 @@ namespace rsimpl
             ~_impl() { if(ctx) uvc_exit(ctx); }
         };
 
+        struct subdevice
+        {
+            uvc_device_handle_t * handle = nullptr;
+            uvc_stream_ctrl_t ctrl;
+            std::function<void(const void * frame)> callback;
+        };
+
         struct device::_impl
         {
             std::shared_ptr<context::_impl> parent;
             uvc_device_t * device;
             uvc_device_descriptor_t * desc;
-            std::vector<uvc_device_handle_t *> handles;
+            std::vector<subdevice> subdevices;
             std::vector<int> claimed_interfaces;
 
             _impl() : device(), desc() {}
@@ -42,62 +49,22 @@ namespace rsimpl
             {
                 for(auto interface_number : claimed_interfaces)
                 {
-                    int status = libusb_release_interface(get_handle(0)->usb_devh, interface_number);
+                    int status = libusb_release_interface(get_subdevice(0).handle->usb_devh, interface_number);
                     if(status < 0) std::cerr << "Warning: libusb_release_interface(...) returned " << libusb_error_name(status) << std::endl;
                 }
 
-                for(auto * h : handles) if(h) uvc_close(h);
+                for(auto & sub : subdevices) if(sub.handle) uvc_close(sub.handle);
                 if(desc) uvc_free_device_descriptor(desc);
                 if(device) uvc_unref_device(device);
             }
 
-            uvc_device_handle_t * get_handle(int subdevice_index)
+            subdevice & get_subdevice(int subdevice_index)
             {
-                if(subdevice_index >= handles.size()) handles.resize(subdevice_index+1);
-                if(!handles[subdevice_index]) check("uvc_open2", uvc_open2(device, &handles[subdevice_index], subdevice_index));
-                return handles[subdevice_index];
+                if(subdevice_index >= subdevices.size()) subdevices.resize(subdevice_index+1);
+                if(!subdevices[subdevice_index].handle) check("uvc_open2", uvc_open2(device, &subdevices[subdevice_index].handle, subdevice_index));
+                return subdevices[subdevice_index];
             }
         };
-
-        struct device_handle::_impl
-        {
-            std::shared_ptr<device::_impl> parent;
-            int subdevice_index;
-            uvc_stream_ctrl_t ctrl;
-            std::function<void(const void * frame)> callback;
-
-            _impl(std::shared_ptr<device::_impl> parent, int subdevice_index) : parent(parent), subdevice_index(subdevice_index) { get_handle(); }
-            ~_impl() { uvc_stop_streaming(get_handle()); } // UVC callback has a naked ptr to this struct, must make sure it's done before we destruct
-
-            uvc_device_handle_t * get_handle() { return parent->get_handle(subdevice_index); }
-        };
-
-        ///////////////////
-        // device_handle //
-        ///////////////////
-
-        void device_handle::set_mode(int width, int height, frame_format cf, int fps, std::function<void(const void * frame)> callback)
-        {
-            check("get_stream_ctrl_format_size", uvc_get_stream_ctrl_format_size(impl->get_handle(), &impl->ctrl, (uvc_frame_format)cf, width, height, fps));
-            impl->callback = callback;
-        }
-
-        void device_handle::start_streaming()
-        {
-            #if defined (ENABLE_DEBUG_SPAM)
-            uvc_print_stream_ctrl(&impl->ctrl, stdout);
-            #endif
-
-            check("uvc_start_streaming", uvc_start_streaming(impl->get_handle(), &impl->ctrl, [](uvc_frame * frame, void * user)
-            {
-                reinterpret_cast<device_handle::_impl *>(user)->callback(frame->data);
-            }, impl.get(), 0));
-        }
-
-        void device_handle::stop_streaming()
-        {
-            uvc_stop_streaming(impl->get_handle());
-        }
 
         ////////////
         // device //
@@ -108,32 +75,60 @@ namespace rsimpl
 
         void device::get_control(uint8_t unit, uint8_t ctrl, void * data, int len) const
         {
-            int status = uvc_get_ctrl(impl->get_handle(0), unit, ctrl, data, len, UVC_GET_CUR);
+            int status = uvc_get_ctrl(impl->get_subdevice(0).handle, unit, ctrl, data, len, UVC_GET_CUR);
             if(status < 0) throw std::runtime_error(to_string() << "uvc_get_ctrl(...) returned " << libusb_error_name(status));
         }
 
         void device::set_control(uint8_t unit, uint8_t ctrl, void * data, int len)
         {
-            int status = uvc_set_ctrl(impl->get_handle(0), unit, ctrl, data, len);
+            int status = uvc_set_ctrl(impl->get_subdevice(0).handle, unit, ctrl, data, len);
             if(status < 0) throw std::runtime_error(to_string() << "uvc_set_ctrl(...) returned " << libusb_error_name(status));
         }
 
         void device::claim_interface(int interface_number)
         {
-            int status = libusb_claim_interface(impl->get_handle(0)->usb_devh, interface_number);
+            int status = libusb_claim_interface(impl->get_subdevice(0).handle->usb_devh, interface_number);
             if(status < 0) throw std::runtime_error(to_string() << "libusb_claim_interface(...) returned " << libusb_error_name(status));
             impl->claimed_interfaces.push_back(interface_number);
         }
 
         void device::bulk_transfer(unsigned char endpoint, void * data, int length, int *actual_length, unsigned int timeout)
         {
-            int status = libusb_bulk_transfer(impl->get_handle(0)->usb_devh, endpoint, (unsigned char *)data, length, actual_length, timeout);
+            int status = libusb_bulk_transfer(impl->get_subdevice(0).handle->usb_devh, endpoint, (unsigned char *)data, length, actual_length, timeout);
             if(status < 0) throw std::runtime_error(to_string() << "libusb_bulk_transfer(...) returned " << libusb_error_name(status));
         }
 
-        device_handle device::claim_subdevice(int subdevice_index)
+        void device::set_subdevice_mode(int subdevice_index, int width, int height, frame_format cf, int fps, std::function<void(const void * frame)> callback)
         {
-            return {std::make_shared<device_handle::_impl>(impl, subdevice_index)};
+            auto & sub = impl->get_subdevice(subdevice_index);
+            check("get_stream_ctrl_format_size", uvc_get_stream_ctrl_format_size(sub.handle, &sub.ctrl, (uvc_frame_format)cf, width, height, fps));
+            sub.callback = callback;
+        }
+
+        void device::start_streaming()
+        {
+            for(auto & sub : impl->subdevices)
+            {
+                if(sub.handle)
+                {
+                    #if defined (ENABLE_DEBUG_SPAM)
+                    uvc_print_stream_ctrl(&sub.ctrl, stdout);
+                    #endif
+
+                    check("uvc_start_streaming", uvc_start_streaming(sub.handle, &sub.ctrl, [](uvc_frame * frame, void * user)
+                    {
+                        reinterpret_cast<subdevice *>(user)->callback(frame->data);
+                    }, &sub, 0));
+                }
+            }
+        }
+
+        void device::stop_streaming()
+        {
+            for(auto & sub : impl->subdevices)
+            {
+                if(sub.handle) uvc_stop_streaming(sub.handle);
+            }
         }
 
         /////////////
