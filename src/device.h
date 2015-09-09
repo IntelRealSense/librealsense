@@ -42,7 +42,7 @@ public:
     bool                                    is_capturing() const { return capturing; }
     
     void                                    wait_all_streams();
-    int                                     get_frame_number(rs_stream stream) const;
+    int                                     get_frame_timestamp(rs_stream stream) const;
     const void *                            get_frame_data(rs_stream stream) const { if(!streams[stream]) throw std::runtime_error("stream not enabled"); return streams[stream]->get_front_data(); } 
 
     virtual void                            set_stream_intent() = 0;

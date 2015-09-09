@@ -120,7 +120,7 @@ int main(int argc, char * argv[]) try
         glfwPollEvents();
         dev.wait_for_frames();
 
-        std::cout << dev.get_frame_number(rs::stream::depth) << " " << dev.get_frame_number(rs::stream::color) << std::endl;
+        std::cout << dev.get_frame_timestamp(rs::stream::depth) << " " << dev.get_frame_timestamp(rs::stream::color) << std::endl;
 
         // Draw the images
         glClear(GL_COLOR_BUFFER_BIT);

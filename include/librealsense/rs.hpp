@@ -169,7 +169,7 @@ namespace rs
         int                 get_option(option o)                                                    { return rs_get_device_option(dev, (rs_option)o, throw_on_error()); }
 
         void                wait_for_frames()                                                       { rs_wait_for_frames(dev, throw_on_error()); }
-        int                 get_frame_number(stream s)                                              { return rs_get_frame_number(dev, (rs_stream)s, throw_on_error()); }
+        int                 get_frame_timestamp(stream s)                                           { return rs_get_frame_timestamp(dev, (rs_stream)s, throw_on_error()); }
         const void *        get_frame_data(stream s)                                                { return rs_get_frame_data(dev, (rs_stream)s, throw_on_error()); }
     };
 

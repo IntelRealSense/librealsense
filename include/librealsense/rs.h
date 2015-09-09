@@ -5,7 +5,7 @@
 extern "C" {
 #endif
     
-#define RS_API_VERSION 4
+#define RS_API_VERSION 5
 
 /* public enum type definitions */
 typedef enum rs_stream
@@ -107,7 +107,7 @@ void            rs_set_device_option        (rs_device * device, rs_option optio
 int             rs_get_device_option        (const rs_device * device, rs_option option, rs_error ** error);
 
 void            rs_wait_for_frames          (rs_device * device, rs_error ** error);
-int             rs_get_frame_number         (const rs_device * device, rs_stream stream, rs_error ** error);
+int             rs_get_frame_timestamp      (const rs_device * device, rs_stream stream, rs_error ** error);
 const void *    rs_get_frame_data           (const rs_device * device, rs_stream stream, rs_error ** error);
 
 void            rs_free_error               (rs_error * error);

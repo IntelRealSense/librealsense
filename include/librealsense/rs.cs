@@ -25,7 +25,7 @@ namespace RealSense
 
         #region P/Invoke declarations for backing C API
         private IntPtr handle;
-        private const int ApiVersion = 3;
+        private const int ApiVersion = 5;
         [DllImport("realsense")] private static extern IntPtr rs_create_context(int api_version, ref IntPtr error);
         [DllImport("realsense")] private static extern void rs_delete_context(IntPtr context, IntPtr error); // Note: NOT ref IntPtr, since we want to pass 0
         [DllImport("realsense")] private static extern int rs_get_device_count(IntPtr context, ref IntPtr error);
@@ -127,9 +127,9 @@ namespace RealSense
             using (var e = new AutoError()) { rs_wait_for_frames(handle, ref e.Handle); }
         }
 
-        public int GetFrameNumber(Stream stream)
+        public int GetFrameTimestamp(Stream stream)
         {
-            using (var e = new AutoError()) { return rs_get_frame_number(handle, stream, ref e.Handle); }
+            using (var e = new AutoError()) { return rs_get_frame_timestamp(handle, stream, ref e.Handle); }
         }
 
         public IntPtr GetFrameData(Stream stream)
@@ -159,7 +159,7 @@ namespace RealSense
         [DllImport("realsense")] private static extern int rs_get_device_option(IntPtr device, Option option, ref IntPtr error);
 
         [DllImport("realsense")] private static extern void rs_wait_for_frames(IntPtr device, ref IntPtr error);
-        [DllImport("realsense")] private static extern int rs_get_frame_number(IntPtr device, Stream stream, ref IntPtr error);
+        [DllImport("realsense")] private static extern int rs_get_frame_timestamp(IntPtr device, Stream stream, ref IntPtr error);
         [DllImport("realsense")] private static extern IntPtr rs_get_frame_data(IntPtr device, Stream stream, ref IntPtr error);        
         #endregion
     }
