@@ -11,6 +11,7 @@
 #include <thread>
 #include <mutex>
 #include <atomic>
+#include <condition_variable>
 
 #define DELTA_INF                           (10000000.0)
 #define M_EPSILON                           (0.0001)
@@ -250,6 +251,7 @@ namespace rsimpl { namespace f200
         std::thread temperatureThread;
         std::atomic<bool> runTemperatureThread;
 		std::mutex temperatureMutex;
+		std::condition_variable temperatureCv;
 
         std::unique_ptr<IVCAMCalibrator> calibration;
 
@@ -266,11 +268,12 @@ namespace rsimpl { namespace f200
         bool GetMEMStemp(float & MEMStemp);
         bool GetIRtemp(int & IRtemp);
 
-        bool StartTempCompensationLoop();
+        void StartTempCompensationLoop();
         void StopTempCompensationLoop();
         void TemperatureControlLoop();
 
 		bool UpdateASICCoefs(IVCAMASICCoefficients * coeffs);
+		void GenerateAsicCalibrationCoefficients(std::vector<int> resolution, const bool isZMode, float * values) const;
 
 		bool PerfomAndSendHWmonitorCommand(IVCAMCommand & newCommand);
 		bool SendHWmonitorCommand(IVCAMCommandDetails & details);
