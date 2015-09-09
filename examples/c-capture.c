@@ -102,8 +102,19 @@ int main(int argc, char * argv[])
     sprintf(buffer, "C Capture Example (%s)", rs_get_device_name(dev,0));
     win = glfwCreateWindow(1280, height, buffer, 0, 0);
     glfwMakeContextCurrent(win);
-    font = ttf_create(fopen("../../examples/assets/Roboto-Bold.ttf", "rb"));
-
+    
+    // Load our truetype font
+    FILE * fontFile = 0;
+    if ((fontFile = find_file("examples/assets/Roboto-Bold.ttf", 3)))
+    {
+        font = ttf_create(fontFile);
+        fclose(fontFile);
+    }
+    else
+    {
+        fprintf(stderr, "Could not open Roboto-bold.ttf\n");
+    }
+    
     while (!glfwWindowShouldClose(win))
     {
         glfwPollEvents();

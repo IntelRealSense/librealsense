@@ -8,6 +8,27 @@
 #include "stdint.h"
 #include "stdio.h"
 
+char * concat_path(char * a, const char * b)
+{
+    char * aux = (char *) malloc(1 + strlen(a) + strlen(b));
+    strcpy(aux, a);
+    strcat(aux, b);
+    return aux;
+}
+
+
+FILE * find_file(const char * path, int levels)
+{
+    for (int i = 0; i <= levels; ++i)
+    {
+        FILE * f = 0;
+        if ((f = fopen(path, "rb")))
+            return f;
+        path = concat_path("../", path);
+    }
+    return 0;
+}
+
 struct font
 {
     GLuint tex;

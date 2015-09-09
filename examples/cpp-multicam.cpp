@@ -9,16 +9,6 @@
 #include <iostream>
 #include <iomanip>
 
-FILE * find_file(std::string path, int levels)
-{
-    for(int i=0; i<=levels; ++i)
-    {
-        if(auto f = fopen(path.c_str(), "rb")) return f;
-        path = "../" + path;
-    }
-    return nullptr;
-}
-
 int main(int argc, char * argv[]) try
 {
     rs::context ctx;
@@ -41,7 +31,7 @@ int main(int argc, char * argv[]) try
     glfwMakeContextCurrent(win);
 
     font font;
-    if(auto f = find_file("examples/assets/Roboto-Bold.ttf", 3))
+    if (auto f = find_file("examples/assets/Roboto-Bold.ttf", 3))
     {
         font = ttf_create(f);
         fclose(f);
