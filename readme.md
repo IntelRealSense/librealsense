@@ -29,6 +29,13 @@ Android support will be provided in the near future. librealsense is likely to c
 
 Our intent is to provide bindings and wrappers for as many languages and frameworks as possible. Our core library exposes its functionality via C, and we intend for our various bindings and wrappers to look and feel "native" to their respective libraries, for instance, using classes to represent objects, throwing exceptions to report errors, and following established naming conventions and casing styles of the language or framework in question.
 
+## Library Dependencies
+
+* Windows:
+  * Windows SDK (WinUSB + Media Foundation)
+* Linux, OS X, Android:
+  * libusb-1.0
+
 ## Functionality
 
 The goal of librealsense is to provide a reasonable hardware abstraction with minimal dependencies. It is not a computer vision SDK.
