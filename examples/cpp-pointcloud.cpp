@@ -95,7 +95,7 @@ int main(int argc, char * argv[]) try
     while (!glfwWindowShouldClose(win))
     {
         glfwPollEvents();
-        if(dev.is_streaming()) dev.wait_for_frames(RS_ALL_STREAM_BITS);
+        if(dev.is_streaming()) dev.wait_for_frames();
 
         auto t1 = std::chrono::high_resolution_clock::now();
         time += std::chrono::duration<float>(t1-t0).count();

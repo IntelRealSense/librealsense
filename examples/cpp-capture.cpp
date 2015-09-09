@@ -118,7 +118,7 @@ int main(int argc, char * argv[]) try
     {
         // Wait for new images
         glfwPollEvents();
-        dev.wait_for_frames(RS_ALL_STREAM_BITS);
+        dev.wait_for_frames();
 
         std::cout << dev.get_frame_number(rs::stream::depth) << " " << dev.get_frame_number(rs::stream::color) << std::endl;
 

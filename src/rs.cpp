@@ -182,7 +182,7 @@ HANDLE_EXCEPTIONS_AND_RETURN(0.0f, device)
 
 
 
-void rs_wait_for_frames(rs_device * device, int stream_bits, rs_error ** error) try
+void rs_wait_for_frames(rs_device * device, rs_error ** error) try
 {
     VALIDATE_NOT_NULL(device);
     device->wait_all_streams();

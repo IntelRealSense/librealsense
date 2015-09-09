@@ -122,9 +122,9 @@ namespace RealSense
             get { using (var e = new AutoError()) { return rs_get_device_depth_scale(handle, ref e.Handle); } }
         }
         
-        public void WaitForFrames(Streams streams)
+        public void WaitForFrames()
         {
-            using (var e = new AutoError()) { rs_wait_for_frames(handle, streams, ref e.Handle); }
+            using (var e = new AutoError()) { rs_wait_for_frames(handle, ref e.Handle); }
         }
 
         public int GetFrameNumber(Stream stream)
@@ -158,7 +158,7 @@ namespace RealSense
         [DllImport("realsense")] private static extern void rs_set_device_option(IntPtr device, Option option, int value, ref IntPtr error);
         [DllImport("realsense")] private static extern int rs_get_device_option(IntPtr device, Option option, ref IntPtr error);
 
-        [DllImport("realsense")] private static extern void rs_wait_for_frames(IntPtr device, Streams stream_bits, ref IntPtr error);
+        [DllImport("realsense")] private static extern void rs_wait_for_frames(IntPtr device, ref IntPtr error);
         [DllImport("realsense")] private static extern int rs_get_frame_number(IntPtr device, Stream stream, ref IntPtr error);
         [DllImport("realsense")] private static extern IntPtr rs_get_frame_data(IntPtr device, Stream stream, ref IntPtr error);        
         #endregion
@@ -218,16 +218,6 @@ namespace RealSense
         Color = 1,
         Infrared = 2,
         Infrared2 = 3,
-    };
-
-    [Flags]
-    public enum Streams : int
-    {
-        Depth = 1 << Stream.Depth,
-        Color = 1 << Stream.Color,
-        Infrared = 1 << Stream.Infrared,
-        Infrared2 = 1 << Stream.Infrared2,
-        All = Depth|Color|Infrared|Infrared2
     };
 
     public enum Format : int

@@ -51,7 +51,7 @@ public class Capture : Form
 
         timer.Stop();
 
-        device.WaitForFrames(RealSense.Streams.All);
+        device.WaitForFrames();
 
         // Obtain color image data
         RealSense.Intrinsics intrinsics = device.GetStreamIntrinsics(RealSense.Stream.Color);

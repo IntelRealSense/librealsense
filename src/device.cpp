@@ -129,6 +129,7 @@ void rs_device::start()
     device.start_streaming();
     capture_started = std::chrono::high_resolution_clock::now();
     capturing = true;
+    base_timestamp = 0;
 }
 
 void rs_device::stop()
@@ -140,51 +141,93 @@ void rs_device::stop()
 
 void rs_device::wait_all_streams()
 {
-    if (!capturing) return;
-    
+    if(!capturing) return;
+
     // Determine timeout time
     const auto timeout = std::max(std::chrono::high_resolution_clock::now() + std::chrono::milliseconds(250), capture_started + std::chrono::seconds(2));
 
-    // Check for new data on all streams, make sure that at least one stream provides an update
-    bool updated = false;
-    while(true)
-    {
-        for(int i=0; i<RS_STREAM_COUNT; ++i)
-        {
-            if(streams[i] && streams[i]->swap_front())
-            {
-                updated = true;
-            }
-        }
-        if(updated) break;
-
-        std::this_thread::sleep_for(std::chrono::microseconds(100)); // TODO: Use a condition variable or something to avoid this
-        if(std::chrono::high_resolution_clock::now() >= timeout) throw std::runtime_error("Timeout waiting for frames");
-    }
-
-    // The frame time will be the most recent timestamp available on any stream
-    int frame_time = INT_MIN;
+    // Check if any of our streams do not have data yet, if so, wait for them to have data, and remember that we are on the first frame
+    bool first_frame = false;
     for(int i=0; i<RS_STREAM_COUNT; ++i)
     {
-        if(streams[i])
+        if(streams[i] && !streams[i]->is_front_valid())
         {
-            frame_time = std::max(frame_time, streams[i]->get_front_number());
+            while(!streams[i]->swap_front())
+            {
+                std::this_thread::sleep_for(std::chrono::microseconds(100)); // TODO: Use a condition variable or something to avoid this
+                if(std::chrono::high_resolution_clock::now() >= timeout) throw std::runtime_error("Timeout waiting for frames");
+            }
+            assert(streams[i]->is_front_valid());
+            last_stream_timestamp = streams[i]->get_front_number();
+            first_frame = true;
         }
+    }
+
+    // If this is not the first frame, check for new data on all streams, make sure that at least one stream provides an update
+    if(!first_frame)
+    {
+        bool updated = false;
+        while(true)
+        {
+            for(int i=0; i<RS_STREAM_COUNT; ++i)
+            {
+                if(streams[i] && streams[i]->swap_front())
+                {
+                    updated = true;
+                }
+            }
+            if(updated) break;
+
+            std::this_thread::sleep_for(std::chrono::microseconds(100)); // TODO: Use a condition variable or something to avoid this
+            if(std::chrono::high_resolution_clock::now() >= timeout) throw std::runtime_error("Timeout waiting for frames");
+        }
+    }
+
+    // Determine the largest change from the previous timestamp
+    int frame_delta = INT_MIN;    
+    for(int i=0; i<RS_STREAM_COUNT; ++i)
+    {
+        if(!streams[i]) continue;
+        int delta = streams[i]->get_front_number() - last_stream_timestamp; // Relying on undefined behavior: 32-bit integer overflow -> wraparound
+        frame_delta = std::max(frame_delta, delta);
     }
 
     // Wait for any stream which expects a new frame prior to the frame time
     for(int i=0; i<RS_STREAM_COUNT; ++i)
     {
-        if(streams[i] && streams[i]->get_front_number() + streams[i]->get_front_delta() <= frame_time)
+        if(!streams[i]) continue;
+        int next_timestamp = streams[i]->get_front_number() + streams[i]->get_front_delta();
+        int next_delta = next_timestamp - last_stream_timestamp;
+        if(next_delta > frame_delta) continue;
+        while(!streams[i]->swap_front())
         {
-            while(true)
-            {
-                if(streams[i]->swap_front()) break;
-                std::this_thread::sleep_for(std::chrono::microseconds(100)); // TODO: Use a condition variable or something to avoid this
-                if(std::chrono::high_resolution_clock::now() >= timeout) throw std::runtime_error("Timeout waiting for frames");
-            }
+            std::this_thread::sleep_for(std::chrono::microseconds(100)); // TODO: Use a condition variable or something to avoid this
+            if(std::chrono::high_resolution_clock::now() >= timeout) throw std::runtime_error("Timeout waiting for frames");
         }
     }
+
+    if(first_frame)
+    {
+        // Set time 0 to the least recent of the current frames
+        base_timestamp = 0;
+        for(int i=0; i<RS_STREAM_COUNT; ++i)
+        {
+            if(!streams[i]) continue;
+            int delta = streams[i]->get_front_number() - last_stream_timestamp; // Relying on undefined behavior: 32-bit integer overflow -> wraparound
+            if(delta < 0) last_stream_timestamp = streams[i]->get_front_number();
+        }
+    }
+    else
+    {
+        base_timestamp += frame_delta;
+        last_stream_timestamp += frame_delta;
+    }    
+}
+
+int rs_device::get_frame_number(rs_stream stream) const 
+{ 
+    if(!streams[stream]) throw std::runtime_error("stream not enabled"); 
+    return base_timestamp == -1 ? 0 : convert_timestamp(base_timestamp + streams[stream]->get_front_number() - last_stream_timestamp);
 }
 
 rsimpl::stream_mode rs_device::get_stream_mode(rs_stream stream) const

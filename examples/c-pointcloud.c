@@ -80,7 +80,7 @@ int main(int argc, char * argv[])
         int width, height;
 
         glfwPollEvents();
-        rs_wait_for_frames(dev, RS_ALL_STREAM_BITS, &error); check_error();
+        rs_wait_for_frames(dev, &error); check_error();
 
         glfwGetFramebufferSize(win, &width, &height);
         glViewport(0, 0, width, height);

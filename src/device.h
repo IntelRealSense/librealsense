@@ -17,6 +17,9 @@ protected:
 
     bool                                    capturing;
     std::chrono::high_resolution_clock::time_point capture_started;  
+
+    int64_t                                 base_timestamp;
+    int                                     last_stream_timestamp;
 public:
                                             rs_device(rsimpl::uvc::device device, const rsimpl::static_device_info & device_info);
                                             ~rs_device();
@@ -39,12 +42,13 @@ public:
     bool                                    is_capturing() const { return capturing; }
     
     void                                    wait_all_streams();
-    int                                     get_frame_number(rs_stream stream) const { if(!streams[stream]) throw std::runtime_error("stream not enabled"); return streams[stream]->get_front_number(); }
+    int                                     get_frame_number(rs_stream stream) const;
     const void *                            get_frame_data(rs_stream stream) const { if(!streams[stream]) throw std::runtime_error("stream not enabled"); return streams[stream]->get_front_data(); } 
 
     virtual void                            set_stream_intent() = 0;
     virtual void                            set_option(rs_option option, int value) = 0;
     virtual int                             get_option(rs_option option) const = 0;
+    virtual int                             convert_timestamp(int64_t timestamp) const = 0;
 };
 
 #endif

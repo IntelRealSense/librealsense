@@ -222,6 +222,7 @@ namespace rsimpl
         if(!updated) return false;
         std::lock_guard<std::mutex> guard(mutex);
         front.swap(middle);
+        has_front = true;
         updated = false;
         return true;
     }

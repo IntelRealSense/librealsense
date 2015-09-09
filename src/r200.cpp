@@ -2,6 +2,7 @@
 #include "r200-private.h"
 
 #include <cstring>
+#include <algorithm>
 
 namespace rsimpl
 {
@@ -143,6 +144,13 @@ namespace rsimpl
         if(streams[RS_STREAM_DEPTH]) streamIntent |= r200::STATUS_BIT_Z_STREAMING;
         if(streams[RS_STREAM_COLOR]) streamIntent |= r200::STATUS_BIT_WEB_STREAMING;
         r200::set_stream_intent(device, streamIntent);
+    }
+
+    int r200_camera::convert_timestamp(int64_t timestamp) const
+    { 
+        int max_fps = 0;
+        for(auto & req : requests) if(req.enabled) max_fps = std::max(max_fps, req.fps);
+        return static_cast<int>(timestamp * 1000 / max_fps);
     }
 
     void r200_camera::set_option(rs_option option, int value)

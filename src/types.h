@@ -139,6 +139,7 @@ namespace rsimpl
         frame                       front, middle, back;
         std::mutex                  mutex;
         volatile bool               updated = false;
+        bool                        has_front = false;
         int                         last_frame_number;
         bool                        first = true;
     public:
@@ -148,6 +149,7 @@ namespace rsimpl
         const void *                get_front_data() const { return front.data.data(); }
         int                         get_front_number() const { return front.number; }
         int                         get_front_delta() const { return front.delta; }
+        bool                        is_front_valid() const { return has_front; }
 
         void *                      get_back_data() { return back.data.data(); }
         void                        swap_back(int frame_number);

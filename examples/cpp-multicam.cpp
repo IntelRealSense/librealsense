@@ -44,7 +44,7 @@ int main(int argc, char * argv[]) try
         glfwPollEvents();
         for(int i=0; i<ctx.get_device_count(); ++i)
         {
-            ctx.get_device(i).wait_for_frames(RS_ALL_STREAM_BITS);
+            ctx.get_device(i).wait_for_frames();
         }
 
         // Draw the images

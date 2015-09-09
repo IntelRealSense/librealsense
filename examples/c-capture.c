@@ -118,7 +118,7 @@ int main(int argc, char * argv[])
     while (!glfwWindowShouldClose(win))
     {
         glfwPollEvents();
-        rs_wait_for_frames(dev, RS_ALL_STREAM_BITS, &error); check_error();
+        rs_wait_for_frames(dev, &error); check_error();
 
         glClear(GL_COLOR_BUFFER_BIT);
         glPushMatrix();

@@ -5,7 +5,7 @@
 extern "C" {
 #endif
     
-#define RS_API_VERSION 3
+#define RS_API_VERSION 4
 
 /* public enum type definitions */
 typedef enum rs_stream
@@ -17,15 +17,6 @@ typedef enum rs_stream
     RS_STREAM_COUNT                         = 4,
     RS_STREAM_MAX_ENUM                      = 0x7FFFFFFF
 } rs_stream;
-
-enum
-{
-    RS_STREAM_DEPTH_BIT                     = 1 << RS_STREAM_DEPTH,
-    RS_STREAM_COLOR_BIT                     = 1 << RS_STREAM_COLOR,
-    RS_STREAM_INFRARED_BIT                  = 1 << RS_STREAM_INFRARED,
-    RS_STREAM_INFRARED2_BIT                 = 1 << RS_STREAM_INFRARED2,
-    RS_ALL_STREAM_BITS                      = (1 << RS_STREAM_COUNT) - 1
-};
 
 typedef enum rs_format
 {
@@ -115,7 +106,7 @@ int             rs_device_is_streaming      (const rs_device * device, rs_error 
 void            rs_set_device_option        (rs_device * device, rs_option option, int value, rs_error ** error);
 int             rs_get_device_option        (const rs_device * device, rs_option option, rs_error ** error);
 
-void            rs_wait_for_frames          (rs_device * device, int stream_bits, rs_error ** error);
+void            rs_wait_for_frames          (rs_device * device, rs_error ** error);
 int             rs_get_frame_number         (const rs_device * device, rs_stream stream, rs_error ** error);
 const void *    rs_get_frame_data           (const rs_device * device, rs_stream stream, rs_error ** error);
 
