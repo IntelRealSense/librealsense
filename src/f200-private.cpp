@@ -307,81 +307,106 @@ namespace rsimpl { namespace f200
 
     bool IVCAMHardwareIO::GetMEMStemp(float & MEMStemp)
     {
-        /*
-         TIVCAMCommandParameters CommandParameters;
-         CommandParameters.CommandOp = HWmonitor_GetMEMSTemp;
-         CommandParameters.Param1 = 0;
-         CommandParameters.Param2 = 0;
-         CommandParameters.Param3 = 0;
-         CommandParameters.Param4 = 0;
-         CommandParameters.sizeOfSendCommandData = 0;
-         CommandParameters.TimeOut = 5000;
-         CommandParameters.oneDirection = false;
+         IVCAMCommand command(IVCAMMonitorCommand::GetMEMSTemp);
+         command.Param1 = 0;
+         command.Param2 = 0;
+         command.Param3 = 0;
+         command.Param4 = 0;
+         command.sizeOfSendCommandData = 0;
+         command.TimeOut = 5000;
+         command.oneDirection = false;
 
-         bool result = PerfomAndSendHWmonitorCommand(CommandParameters);
-         if (result != true)
-         return false;
-
-         int32_t Temp = *((int32_t*)(CommandParameters.recivedCommandData));
-         MEMStemp = (float) Temp ;
-         MEMStemp /= 100;
-
-         return true;
-         */
-        return false;
+         bool result = PerfomAndSendHWmonitorCommand(command);
+		 if (result)
+		 {
+			int32_t t = *((int32_t*)(command.receivedCommandData));
+			MEMStemp = (float) t;
+			MEMStemp /= 100;
+		 }
+		 return false;
     }
 
     bool IVCAMHardwareIO::GetIRtemp(int & IRtemp)
     {
-        /*
-         TIVCAMCommandParameters CommandParameters;
+        IVCAMCommand command(IVCAMMonitorCommand::GetIRTemp);
+        command.Param1 = 0;
+        command.Param2 = 0;
+        command.Param3 = 0;
+        command.Param4 = 0;
+        command.sizeOfSendCommandData = 0;
+        command.TimeOut = 5000;
+        command.oneDirection = false;
 
-         CommandParameters.CommandOp = HWmonitor_GetIRTemp;
-         CommandParameters.Param1 = 0;
-         CommandParameters.Param2 = 0;
-         CommandParameters.Param3 = 0;
-         CommandParameters.Param4 = 0;
-         CommandParameters.sizeOfSendCommandData = 0;
-         CommandParameters.TimeOut = 5000;
-         CommandParameters.oneDirection = false;
-
-         sts = PerfomAndSendHWmonitorCommand(CommandParameters);
-         if (sts != IVCAM_SUCCESS)
-         return IVCAM_FAILURE;
-
-         IRtemp = (int8_t) CommandParameters.recivedCommandData[0];
-         return IVCAM_SUCCESS;
-         */
+        bool result = PerfomAndSendHWmonitorCommand(command);
+        if (result)
+		{
+			IRtemp = (int8_t) command.receivedCommandData[0];
+		}
         return false;
     }
 
-    /*
-    void IVCAMHardwareIO::UpdateASICCoefs(TAsicCoefficiants * AsicCoefficiants)
+    bool IVCAMHardwareIO::UpdateASICCoefs(IVCAMASICCoefficients * coeffs)
     {
+         IVCAMCommand command(IVCAMMonitorCommand::UpdateCalib);
 
-         TIVCAMCommandParameters CommandParameters;
-         ETCalibTable FWres;
+         memcpy(command.data, coeffs->CoefValueArray, NUM_OF_CALIBRATION_COEFFS * sizeof(float));
+         command.Param1 = 0;
+         command.Param2 = 0;
+         command.Param3 = 0;
+         command.Param4 = 0;
+         command.oneDirection = false;
+         command.sizeOfSendCommandData = NUM_OF_CALIBRATION_COEFFS * sizeof(float);
+         command.TimeOut = 5000;
 
-         TIVCAMStreamProfile IVCAMStreamProfile;
-         FWres = ectVGA;
-
-         CommandParameters.CommandOp = HWmonitor_UpdateCalib;
-         memcpy(CommandParameters.data, AsicCoefficiants->CoefValueArray, NUM_OF_CALIBRATION_COEFFS*sizeof(float));
-         CommandParameters.Param1 = FWres;
-         CommandParameters.Param2 = 0;
-         CommandParameters.Param3 = 0;
-         CommandParameters.Param4 = 0;
-         CommandParameters.oneDirection = false;
-         CommandParameters.sizeOfSendCommandData = NUM_OF_CALIBRATION_COEFFS*sizeof(float);
-         CommandParameters.TimeOut = 5000;
-
-         return PerfomAndSendHWmonitorCommand(CommandParameters);
+         return PerfomAndSendHWmonitorCommand(command);
     }
-    */
+
+	
+    bool IVCAMHardwareIO::StartTempCompensationLoop()
+	{
+		temperatureThread = std::thread(&IVCAMHardwareIO::TemperatureControlLoop, this);
+		return true; // tofix
+	}
+
+    void IVCAMHardwareIO::StopTempCompensationLoop()
+	{
+		runTemperatureThread = false;
+		if (temperatureThread.joinable())
+			temperatureThread.join();
+	}
 
     void IVCAMHardwareIO::TemperatureControlLoop()
     {
-        // @tofix
+		IVCAMTemperatureData t;
+		IVCAMASICCoefficients coeffs;
+
+		while(runTemperatureThread) 
+		{
+			//@tofix, this will throw if bad, but might periodically fail anyway. try/catch
+			ReadTemperatures(t);
+
+			bool updateNeeded = false;
+			{
+				std::lock_guard<std::mutex> guard(temperatureMutex);
+				updateNeeded = calibration->updateParamsAccordingToTemperature(t.LiguriaTemp, t.IRTemp);
+			}
+
+			if (updateNeeded)
+			{
+				// @todo, fix for qres -
+				// calibration->generateCalibrationCoefficients({640, 480}, true, coeffs.CoefValueArray);
+				if (UpdateASICCoefs(&coeffs) != true)
+				{
+					if (UpdateASICCoefs(&coeffs) != true) 
+					{
+						continue;
+					}
+				}
+			}
+
+			// ... is this correct? at the very least, this will block and prevent us from exiting cleanly
+			std::this_thread::sleep_for(std::chrono::milliseconds(10000));
+		}
     }
 
     IVCAMHardwareIO::IVCAMHardwareIO(uvc::device device) : device(device)
@@ -404,23 +429,15 @@ namespace rsimpl { namespace f200
     // IVCAMCalibrator Implementation //
     ////////////////////////////////////
 
-    bool IVCAMCalibrator::updateParamsAccordingToTemperature(float liguriaTemp, float IRTemp, int * time)
+    bool IVCAMCalibrator::updateParamsAccordingToTemperature(float liguriaTemp, float IRTemp)
     {
         if (!thermalModeData.ThermalLoopParams.IRThermalLoopEnable)
-        {
-            // *time = 999999; Dimitri commented out
             return false;
-        }
-
-        bool isUpdated = false;
-
-        //inistialize TO variable to default
-        *time= thermalModeData.ThermalLoopParams.TimeOutA;
 
         double IrBaseTemperature = thermalModeData.BaseTemperatureData.IRTemp; //should be taken from the parameters
         double liguriaBaseTemperature = thermalModeData.BaseTemperatureData.LiguriaTemp; //should be taken from the parameters
 
-        //calculate deltas from the calibration and last fix
+        // calculate deltas from the calibration and last fix
         double IrTempDelta = IRTemp - IrBaseTemperature;
         double liguriaTempDelta = liguriaTemp - liguriaBaseTemperature;
         double weightedTempDelta = liguriaTempDelta * thermalModeData.ThermalLoopParams.LiguriaTempWeight + IrTempDelta * thermalModeData.ThermalLoopParams.IrTempWeight;
@@ -448,11 +465,10 @@ namespace rsimpl { namespace f200
             params.Kc[0][0] = (float) fixed_Kc11;
             params.Kc[1][1] = originalParams.Kc[1][1] * (float)(fixed_Kc11/Kc11);
             params.Kc[0][2] = (float) fixed_Kc13;
-            isUpdated = true;
             lastTemperatureDelta = weightedTempDelta;
+			return true;
         }
-
-        return isUpdated;
+		return false;
     }
 
     bool IVCAMCalibrator::buildParameters(const CameraCalibrationParameters & _params)
@@ -460,7 +476,7 @@ namespace rsimpl { namespace f200
         params = _params;
         isInitialized = true;
         lastTemperatureDelta = DELTA_INF;
-        std::memcpy(&originalParams,&params,sizeof(CameraCalibrationParameters));
+        std::memcpy(&originalParams, &params, sizeof(CameraCalibrationParameters));
         return true;
     }
 
@@ -469,7 +485,7 @@ namespace rsimpl { namespace f200
         memcpy(&params, paramData + 1, sizeof(CameraCalibrationParameters)); // skip the first float or 2 uint16
         isInitialized = true;
         lastTemperatureDelta = DELTA_INF;
-        memcpy(&originalParams,&params,sizeof(CameraCalibrationParameters));
+        memcpy(&originalParams, &params, sizeof(CameraCalibrationParameters));
         return true;
     }
 

@@ -44,6 +44,8 @@
 #define HW_MONITOR_COMMAND_SIZE         (1000)
 #define HW_MONITOR_BUFFER_SIZE          (1000)
 
+#define NUM_OF_CALIBRATION_COEFFS		(64)
+
 namespace rsimpl { namespace f200
 {
 	enum class IVCAMMonitorCommand : uint32_t
@@ -148,6 +150,11 @@ namespace rsimpl { namespace f200
 		float Param5 = 0;                   // reserved
 	};
 
+	struct IVCAMASICCoefficients
+	{
+		float CoefValueArray[NUM_OF_CALIBRATION_COEFFS];
+	};
+
 	struct IVCAMTesterData
 	{
 		int16_t TableValidation;
@@ -241,7 +248,8 @@ namespace rsimpl { namespace f200
         CameraCalibrationParameters parameters;
 
         std::thread temperatureThread;
-        std::atomic<bool> isTemperatureThreadRunning;
+        std::atomic<bool> runTemperatureThread;
+		std::mutex temperatureMutex;
 
         std::unique_ptr<IVCAMCalibrator> calibration;
 
@@ -257,7 +265,12 @@ namespace rsimpl { namespace f200
 		void ForceHardwareReset();
         bool GetMEMStemp(float & MEMStemp);
         bool GetIRtemp(int & IRtemp);
+
+        bool StartTempCompensationLoop();
+        void StopTempCompensationLoop();
         void TemperatureControlLoop();
+
+		bool UpdateASICCoefs(IVCAMASICCoefficients * coeffs);
 
 		bool PerfomAndSendHWmonitorCommand(IVCAMCommand & newCommand);
 		bool SendHWmonitorCommand(IVCAMCommandDetails & details);
@@ -265,19 +278,7 @@ namespace rsimpl { namespace f200
     public:
 
         IVCAMHardwareIO(uvc::device device);
-
-        bool StartTempCompensationLoop()
-        {
-            // @tofix
-            return false;
-        }
-
-        void StopTempCompensationLoop()
-        {
-            // @tofix
-        }
-
-        CameraCalibrationParameters & GetParameters() { return parameters; }
+        CameraCalibrationParameters & GetParameters() { std::lock_guard<std::mutex> guard(temperatureMutex); return parameters; }
     };
 
     #define NUM_OF_CALIBRATION_COEFFS   (64)
@@ -323,7 +324,7 @@ namespace rsimpl { namespace f200
             ThermalLoopParams = thermalModeData.ThermalLoopParams;
         }
 
-        bool updateParamsAccordingToTemperature(float liguriaTemp,float IRTemp, int* timeout);
+        bool updateParamsAccordingToTemperature(float liguriaTemp, float IRTemp);
 
     private:
 
