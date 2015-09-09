@@ -361,7 +361,7 @@ namespace rsimpl { namespace f200
             return params;
         }
 
-        int nParamters() const { return sizeof (CameraCalibrationParameters) / sizeof (float); }
+        int numParameters() const { return sizeof (CameraCalibrationParameters) / sizeof (float); }
 
         void InitializeThermalData(IVCAMTemperatureData TemperatureData, IVCAMThermalLoopParams ThermalLoopParams)
         {
@@ -384,7 +384,6 @@ namespace rsimpl { namespace f200
 
             void Initialize(float Kc[3][3], IVCAMTemperatureData temperatureData, IVCAMThermalLoopParams thermalLoopParams)
             {
-
                 BaseTemperatureData = temperatureData;
                 ThermalLoopParams = thermalLoopParams;
 
@@ -397,14 +396,10 @@ namespace rsimpl { namespace f200
                 TempThreshold = ThermalLoopParams.TempThreshold;
 
                 if (TempThreshold <= 0)
-                {
                     TempThreshold = tempFromHFOV;
-                }
 
                 if(TempThreshold > tempFromHFOV)
-                {
                     TempThreshold = tempFromHFOV;
-                }
             }
 
             IVCAMTemperatureData BaseTemperatureData;
