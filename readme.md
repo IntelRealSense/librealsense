@@ -1,13 +1,25 @@
 # librealsense
 
-A library for capturing data with the RealSense F200 (IVCAM 1.0, 1.5) and RealSense R200 (DS4). It targets Mac OSX 10.7+ and "recent" versions of Linux (tested & developed on Ubuntu 14.04 LTS). This effort is aimed at supporting prototyping efforts on new platforms and form-factors (robots, drones, VR, etc). This repository hosts both the source-code and binary releases.
+A cross-platform library for capturing data with the RealSense F200 (IVCAM 1.0, 1.5) and RealSense R200 (DS4). This effort is aimed at supporting prototyping efforts on new platforms and form-factors (robots, drones, VR, etc). This repository hosts both the source-code and binary releases.
 
 Dependency management for GLFW3 and libusb-1.0 is done manually at the moment (see the corresponding sections below), pending the creation of installer scripts to automate the process. 
 
 ## Cameras
 
-1.	DS4 / R200 (v0.2 release will support DS5; issue that it shares the same USB PID as DS4 right now)
-2.	IVCAM 1.0 / F200 (v0.2 release will support the newer calibration model of IVCAM 1.5)
+1.	RealSense R200 (DS4)
+2.	RealSense F200 (IVCAM 1.0)
+	
+DS5 and IVCAM 1.5 support will be provided in the near future. librealsense should in principal be able to support any 3D camera which exposes a UVC interface and which chiefly relies on UVC XU commands and USB sidechannel traffic for controls and calibration information.
+
+## Supported Platforms
+
+librealsense is written in standards-conforming C++11 and relies only on the C89 ABI for its public interface. It was developed and tested on the following platforms:
+
+1. Windows 8 (Visual C++ 2013)
+2. Ubuntu 14.04 LTS (gcc toolchain)
+3. Mac OS X 10.7+ (clang toolchain)
+
+Android support will be provided in the near future. librealsense is likely to compile and run on other platforms as well, and we appreciate any assistance in testing and debugging support for other platforms and operating system versions.
 
 ## Functionality
 
