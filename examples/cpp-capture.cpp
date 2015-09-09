@@ -28,22 +28,22 @@ void draw_stream(rs::device & dev, rs::stream stream, int x, int y)
     glPixelZoom(1, -1);
     switch(format)
     {
-    case rs::format::Z16:
+    case rs::format::z16:
         draw_depth_histogram(reinterpret_cast<const uint16_t *>(pixels), width, height);
         break;
-    case rs::format::YUYV:
+    case rs::format::yuyv:
         glDrawPixels(width, height, GL_LUMINANCE_ALPHA, GL_UNSIGNED_BYTE, pixels); // Display YUYV by showing the luminance channel and packing chrominance into ignored alpha channel
         break;
-    case rs::format::RGB8: case rs::format::BGR8: // Display both RGB and BGR by interpreting them RGB, to show the flipped byte ordering. Obviously, GL_BGR could be used on OpenGL 1.2+
+    case rs::format::rgb8: case rs::format::bgr8: // Display both RGB and BGR by interpreting them RGB, to show the flipped byte ordering. Obviously, GL_BGR could be used on OpenGL 1.2+
         glDrawPixels(width, height, GL_RGB, GL_UNSIGNED_BYTE, pixels);
         break;
-    case rs::format::RGBA8: case rs::format::BGRA8: // Display both RGBA and BGRA by interpreting them RGBA, to show the flipped byte ordering. Obviously, GL_BGRA could be used on OpenGL 1.2+
+    case rs::format::rgba8: case rs::format::bgra8: // Display both RGBA and BGRA by interpreting them RGBA, to show the flipped byte ordering. Obviously, GL_BGRA could be used on OpenGL 1.2+
         glDrawPixels(width, height, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
         break;
-    case rs::format::Y8:
+    case rs::format::y8:
         glDrawPixels(width, height, GL_LUMINANCE, GL_UNSIGNED_BYTE, pixels);
         break;
-    case rs::format::Y16:
+    case rs::format::y16:
         glDrawPixels(width, height, GL_LUMINANCE, GL_UNSIGNED_SHORT, pixels);
         break;
     }
@@ -59,12 +59,12 @@ int main(int argc, char * argv[]) try
 
     // Configure our device
     rs::device dev = ctx.get_device(0);
-    dev.enable_stream_preset(rs::stream::DEPTH, rs::preset::BEST_QUALITY);
-    dev.enable_stream_preset(rs::stream::COLOR, rs::preset::BEST_QUALITY);
-    dev.enable_stream_preset(rs::stream::INFRARED, rs::preset::BEST_QUALITY);
-    //dev.enable_stream(rs::stream::INFRARED, 0, 0, rs::format::Y16, 0);
+    dev.enable_stream(rs::stream::depth, rs::preset::best_quality);
+    dev.enable_stream(rs::stream::color, rs::preset::best_quality);
+    dev.enable_stream(rs::stream::infrared, rs::preset::best_quality);
+    //dev.enable_stream(rs::stream::infrared, 0, 0, rs::format::y16, 0);
     try {
-        dev.enable_stream(rs::stream::INFRARED2, 0, 0, rs::format::ANY, 0); // Select a format for INFRARED2 that matches INFRARED
+        dev.enable_stream(rs::stream::infrared2, 0, 0, rs::format::any, 0); // select a format for infrared2 that matches infrared
     } catch(...) {}
 
     // Compute field of view for each enabled stream
@@ -85,7 +85,7 @@ int main(int argc, char * argv[]) try
     // Try setting some R200-specific settings
     std::this_thread::sleep_for(std::chrono::milliseconds(1000));
     try {
-        dev.set_option(rs::option::R200_LR_AUTO_EXPOSURE_ENABLED, 1);
+        dev.set_option(rs::option::r200_lr_auto_exposure_enabled, 1);
     }  catch(...) {}
 
     // Report the status of each supported option
@@ -120,16 +120,16 @@ int main(int argc, char * argv[]) try
         glfwPollEvents();
         dev.wait_for_frames(RS_ALL_STREAM_BITS);
 
-        std::cout << dev.get_frame_number(rs::stream::DEPTH) << " " << dev.get_frame_number(rs::stream::COLOR) << std::endl;
+        std::cout << dev.get_frame_number(rs::stream::depth) << " " << dev.get_frame_number(rs::stream::color) << std::endl;
 
         // Draw the images
         glClear(GL_COLOR_BUFFER_BIT);
         glPushMatrix();
         glOrtho(0, 1280, 960, 0, -1, +1);
-        draw_stream(dev, rs::stream::COLOR, 0, 0);
-        draw_stream(dev, rs::stream::DEPTH, 640, 0);
-        draw_stream(dev, rs::stream::INFRARED, 0, 480);
-        draw_stream(dev, rs::stream::INFRARED2, 640, 480);
+        draw_stream(dev, rs::stream::color, 0, 0);
+        draw_stream(dev, rs::stream::depth, 640, 0);
+        draw_stream(dev, rs::stream::infrared, 0, 480);
+        draw_stream(dev, rs::stream::infrared2, 640, 480);
         glPopMatrix();
         glfwSwapBuffers(win);
     }
@@ -138,7 +138,12 @@ int main(int argc, char * argv[]) try
     glfwTerminate();
     return EXIT_SUCCESS;
 }
-catch (const std::exception & e)
+catch(const rs::error & e)
+{
+    std::cerr << "RealSense error calling " << e.get_failed_function() << "(" << e.get_failed_args() << "):\n    " << e.what() << std::endl;
+    return EXIT_FAILURE;
+}
+catch(const std::exception & e)
 {
     std::cerr << e.what() << std::endl;
     return EXIT_FAILURE;

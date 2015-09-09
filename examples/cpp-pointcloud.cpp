@@ -17,16 +17,16 @@ int main(int argc, char * argv[]) try
     for (int i = 0; i < ctx.get_device_count(); ++i)
     {
         dev = ctx.get_device(i);
-        dev.enable_stream_preset(rs::stream::DEPTH, rs::preset::BEST_QUALITY);
-        dev.enable_stream_preset(rs::stream::COLOR, rs::preset::BEST_QUALITY);
-        dev.enable_stream_preset(rs::stream::INFRARED, rs::preset::BEST_QUALITY);
-        try { dev.enable_stream_preset(rs::stream::INFRARED2, rs::preset::BEST_QUALITY); } catch(...) {}
+        dev.enable_stream(rs::stream::depth, rs::preset::best_quality);
+        dev.enable_stream(rs::stream::color, rs::preset::best_quality);
+        dev.enable_stream(rs::stream::infrared, rs::preset::best_quality);
+        try { dev.enable_stream(rs::stream::infrared2, rs::preset::best_quality); } catch(...) {}
         dev.start();
     }
     if (!dev) throw std::runtime_error("No device detected. Is it plugged in?");
         
-    state app_state = {0, 0, 0, 0, false, {rs::stream::COLOR, rs::stream::INFRARED}, 0, &dev};
-    if(dev.is_stream_enabled(rs::stream::INFRARED2)) app_state.tex_streams.push_back(rs::stream::INFRARED2);
+    state app_state = {0, 0, 0, 0, false, {rs::stream::color, rs::stream::infrared}, 0, &dev};
+    if(dev.is_stream_enabled(rs::stream::infrared2)) app_state.tex_streams.push_back(rs::stream::infrared2);
     
     glfwInit();
     std::ostringstream ss; ss << "CPP Point Cloud Example (" << dev.get_name() << ")";
@@ -110,10 +110,10 @@ int main(int argc, char * argv[]) try
 
         const rs::stream tex_stream = app_state.tex_streams[app_state.index];
         const float depth_scale = dev.get_depth_scale();
-        const rs::extrinsics extrin = dev.get_extrinsics(rs::stream::DEPTH, tex_stream);
-        const rs::intrinsics depth_intrin = dev.get_stream_intrinsics(rs::stream::DEPTH);
+        const rs::extrinsics extrin = dev.get_extrinsics(rs::stream::depth, tex_stream);
+        const rs::intrinsics depth_intrin = dev.get_stream_intrinsics(rs::stream::depth);
         const rs::intrinsics tex_intrin = dev.get_stream_intrinsics(tex_stream);
-        bool identical = memcmp(&depth_intrin, &tex_intrin, sizeof(rs::intrinsics)) == 0 && extrin.is_identity();
+        bool identical = depth_intrin == tex_intrin && extrin.is_identity();
 
         int width, height;
         glfwGetFramebufferSize(win, &width, &height);
@@ -124,9 +124,9 @@ int main(int argc, char * argv[]) try
         glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
         switch(dev.get_stream_format(tex_stream))
         {
-        case rs::format::RGB8: glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, tex_intrin.image_size.x, tex_intrin.image_size.y, 0, GL_RGB, GL_UNSIGNED_BYTE, dev.get_frame_data(tex_stream)); break;
-        case rs::format::Y8:   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, tex_intrin.image_size.x, tex_intrin.image_size.y, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, dev.get_frame_data(tex_stream)); break;
-        case rs::format::Y16:  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, tex_intrin.image_size.x, tex_intrin.image_size.y, 0, GL_LUMINANCE, GL_UNSIGNED_SHORT, dev.get_frame_data(tex_stream)); break;
+        case rs::format::rgb8: glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, tex_intrin.image_size.x, tex_intrin.image_size.y, 0, GL_RGB, GL_UNSIGNED_BYTE, dev.get_frame_data(tex_stream)); break;
+        case rs::format::y8:   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, tex_intrin.image_size.x, tex_intrin.image_size.y, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, dev.get_frame_data(tex_stream)); break;
+        case rs::format::y16:  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, tex_intrin.image_size.x, tex_intrin.image_size.y, 0, GL_LUMINANCE, GL_UNSIGNED_SHORT, dev.get_frame_data(tex_stream)); break;
         }
 
         glViewport(0, 0, width, height);
@@ -150,7 +150,7 @@ int main(int argc, char * argv[]) try
         glEnable(GL_DEPTH_TEST);
         glEnable(GL_TEXTURE_2D);
         glBegin(GL_POINTS);
-        auto depth = reinterpret_cast<const uint16_t *>(dev.get_frame_data(rs::stream::DEPTH));
+        auto depth = reinterpret_cast<const uint16_t *>(dev.get_frame_data(rs::stream::depth));
         
         for(int y=0; y<depth_intrin.image_size.y; ++y)
         {
@@ -195,7 +195,12 @@ int main(int argc, char * argv[]) try
     glfwTerminate();
     return EXIT_SUCCESS;
 }
-catch (const std::exception & e)
+catch(const rs::error & e)
+{
+    std::cerr << "RealSense error calling " << e.get_failed_function() << "(" << e.get_failed_args() << "):\n    " << e.what() << std::endl;
+    return EXIT_FAILURE;
+}
+catch(const std::exception & e)
 {
     std::cerr << e.what() << std::endl;
     return EXIT_FAILURE;
