@@ -46,7 +46,7 @@
 
 namespace rsimpl { namespace f200
 {
-	enum IVCAMMonitorCommand
+	enum class IVCAMMonitorCommand : uint32_t
 	{
 		UpdateCalib         = 0xBC,
 		GetIRTemp           = 0x52,

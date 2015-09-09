@@ -306,11 +306,6 @@ namespace rsimpl { namespace r200
         CameraHeaderInfo GetCameraHeader() { return cameraInfo; }
     };
 
-    inline uint32_t pack(uint8_t c0, uint8_t c1, uint8_t c2, uint8_t c3)
-    {
-        return (c0 << 24) | (c1 << 16) | (c2 << 8) | c3;
-    }
-
     void read_camera_info(uvc::device & device, CameraCalibrationParameters & calib, CameraHeaderInfo & header)
     {
         DS4HardwareIO internal(device);
@@ -353,7 +348,7 @@ namespace rsimpl { namespace r200
     {
         uint8_t s[4] = {255, 255, 255, 255};
         xu_read(device, CONTROL_STATUS, s, sizeof(uint32_t));
-        status = pack(s[0], s[1], s[2], s[3]);
+        status = rsimpl::pack(s[0], s[1], s[2], s[3]);
     }
 
     void get_last_error(const uvc::device & device, uint8_t & last_error)

@@ -141,7 +141,9 @@ namespace rsimpl { namespace f200
         size_t requestSize = sizeof(request);
         uint32_t responseOp;
 
-        if (PrepareUSBCommand(request, requestSize, GetCalibrationTable) <= 0) throw std::runtime_error("usb transfer to retrieve calibration data failed");
+        if (PrepareUSBCommand(request, requestSize, (uint32_t) IVCAMMonitorCommand::GetCalibrationTable) <= 0) 
+			throw std::runtime_error("usb transfer to retrieve calibration data failed");
+
         ExecuteUSBCommand(request, requestSize, responseOp, data, bytesReturned);
     }
 
@@ -215,32 +217,30 @@ namespace rsimpl { namespace f200
     {
         data = {0};
 
-        int IRTemp;
-        if (!GetIRtemp(IRTemp))
+        int irTemp;
+        if (!GetIRtemp(irTemp))
             throw std::runtime_error("could not get IR temperature");
 
-        data.IRTemp = (float) IRTemp;
+        data.IRTemp = (float) irTemp;
 
-        float LiguriaTemp;
-        if (!GetMEMStemp(LiguriaTemp))
+        float memsTemp;
+        if (!GetMEMStemp(memsTemp))
             throw std::runtime_error("could not get liguria temperature");
 
-        data.LiguriaTemp = LiguriaTemp;
+        data.LiguriaTemp = memsTemp;
     }
 
-	
 	bool IVCAMHardwareIO::PerfomAndSendHWmonitorCommand(IVCAMCommand & newCommand)
 	{
 		bool result = true;
-		unsigned int opCodeNumber;
 
-		opCodeNumber = newCommand.cmd;
+		uint32_t opCodeXmit = (uint32_t) newCommand.cmd;
 
 		IVCAMCommandDetails details;
 		details.oneDirection = newCommand.oneDirection;
 		details.TimeOut = newCommand.TimeOut;
 
-		FillUSBBuffer(opCodeNumber,
+		FillUSBBuffer(opCodeXmit,
 					  newCommand.Param1,
 					  newCommand.Param2,
 					  newCommand.Param3,
@@ -256,19 +256,17 @@ namespace rsimpl { namespace f200
 		if (result == false) return result;
 		if (newCommand.oneDirection) return result;
 
-		memcpy(newCommand.recievedOPcode,  details.recievedOPcode,4);
+		memcpy(newCommand.recievedOPcode, details.recievedOPcode, 4);
 		memcpy(newCommand.recivedCommandData, details.recievedCommandData,details.sizeOfRecievedCommandData);
 		newCommand.sizeOfRecivedCommandData = details.sizeOfRecievedCommandData;
 
-		char inputOPCode[4];
-		memset(inputOPCode, 0, 4);
-		memset(inputOPCode, newCommand.cmd, 1);
-		if (memcmp(newCommand.recievedOPcode, inputOPCode, 4))
+		// endian? 
+		uint32_t opCodeAsUint32 = pack(details.recievedOPcode[0], details.recievedOPcode[1], details.recievedOPcode[2], details.recievedOPcode[3]);
+		if (opCodeAsUint32 != opCodeXmit)
 		{
-			int x;
-			memcpy(&x, newCommand.recievedOPcode, 4);
 			throw std::runtime_error("opcodes do not match");
 		}
+
 		return result;
 	}
 
