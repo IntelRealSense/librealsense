@@ -40,6 +40,11 @@ namespace rsimpl
     inline pose operator * (const pose & a, const pose & b) { return {a.orientation * b.orientation, a.position + a * b.position}; }
     inline pose inverse(const pose & a) { auto inv = transpose(a.orientation); return {inv, inv * a.position * -1}; }
 
+	inline uint32_t pack(uint8_t c0, uint8_t c1, uint8_t c2, uint8_t c3)
+    {
+        return (c0 << 24) | (c1 << 16) | (c2 << 8) | c3;
+    }
+
     // UVC types
     namespace uvc
     {
@@ -153,6 +158,20 @@ namespace rsimpl
         template<class T> to_string & operator << (const T & val) { ss << val; return *this; }
         operator std::string() const { return ss.str(); }
     };
+
+    #pragma pack(push, 1)
+    template<class T> class big_endian
+    {
+        T be_value;
+    public:
+        operator T () const
+        {
+            T le_value = 0;
+            for(int i=0; i<sizeof(T); ++i) reinterpret_cast<char *>(&le_value)[i] = reinterpret_cast<const char *>(&be_value)[sizeof(T)-i-1];
+            return le_value;
+        }
+    };
+    #pragma pack(pop)
 }
 
 #endif

@@ -91,7 +91,6 @@ void rs_device::start()
     }
 
     for(auto & s : streams) s.reset(); // Starting capture invalidates the current stream info, if any exists from previous capture
-    std::vector<std::function<void(const void *)>> on_frame(subdevices.size());
 
     // Satisfy stream_requests as necessary for each subdevice, calling set_mode and
     // dispatching the uvc configuration for a requested stream to the hardware
@@ -114,13 +113,7 @@ void rs_device::start()
                 
             // Initialize the subdevice and set it to the selected mode
             subdevices[i] = device.claim_subdevice(i);
-            subdevices[i].set_mode(mode.width, mode.height, mode.format, mode.fps);
-
-            #if defined(ENABLE_DEBUG_SPAM)
-            uvc_print_diag(subdevices[i]->get_handle(), stdout);
-            #endif
-
-            on_frame[i] = [mode, stream_list](const void * frame)
+            subdevices[i].set_mode(mode.width, mode.height, mode.format, mode.fps, [mode, stream_list](const void * frame)
             {
                 // Unpack the image into the user stream interface back buffer
                 std::vector<void *> dest;
@@ -136,12 +129,16 @@ void rs_device::start()
 
                 // Swap the backbuffer to the middle buffer and indicate that we have updated
                 for(auto & stream : stream_list) stream->swap_back();
-            };
+            });
+
+            #if defined(ENABLE_DEBUG_SPAM)
+            uvc_print_diag(subdevices[i]->get_handle(), stdout);
+            #endif
         }
     }
     
     set_stream_intent();
-    for(int i=0; i<subdevices.size(); ++i) if (subdevices[i]) subdevices[i].start_streaming(on_frame[i]);
+    for(int i=0; i<subdevices.size(); ++i) if (subdevices[i]) subdevices[i].start_streaming();
     capture_started = std::chrono::high_resolution_clock::now();
     capturing = true;
 }

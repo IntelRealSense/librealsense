@@ -121,6 +121,8 @@ int main(int argc, char * argv[]) try
         glfwPollEvents();
         dev.wait_for_frames(RS_ALL_STREAM_BITS);
 
+        std::cout << dev.get_frame_number(RS_STREAM_DEPTH) << " " << dev.get_frame_number(RS_STREAM_COLOR) << std::endl;
+
         // Draw the images
         glClear(GL_COLOR_BUFFER_BIT);
         glPushMatrix();

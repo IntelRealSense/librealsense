@@ -14,34 +14,10 @@ namespace rsimpl { namespace f200
     #define IVCAM_MONITOR_MUTEX_TIMEOUT     3000
 
     #define NUM_OF_CALIBRATION_PARAMS       (100)
-    #define HW_MONITOR_COMMAND_SIZE         (1000)
-    #define HW_MONITOR_BUFFER_SIZE          (1000)
     #define PARAMETERS_BUFFER_SIZE          (50)
-
     #define MAX_SIZE_OF_CALIB_PARAM_BYTES   (800)
     #define SIZE_OF_CALIB_PARAM_BYTES       (512)
     #define SIZE_OF_CALIB_HEADER_BYTES      (4)
-
-    enum IVCAMMonitorCommand
-    {
-        UpdateCalib         = 0xBC,
-        GetIRTemp           = 0x52,
-        GetMEMSTemp         = 0x0A,
-        HWReset             = 0x28,
-        GVD                 = 0x3B,
-        BIST                = 0xFF,
-        GoToDFU             = 0x80,
-        GetCalibrationTable = 0x3D,
-        DebugFormat         = 0x0B,
-        TimeStempEnable     = 0x0C,
-        GetPowerGearState   = 0xFF,
-        SetDefaultControls  = 0xA6,
-        GetDefaultControls  = 0xA7,
-        GetFWLastError      = 0x0E,
-        CheckI2cConnect     = 0x4A,
-        CheckRGBConnect     = 0x4B,
-        CheckDPTConnect     = 0x4C
-    };
 
     int bcdtoint(uint8_t * buf, int bufsize)
     {
@@ -165,7 +141,9 @@ namespace rsimpl { namespace f200
         size_t requestSize = sizeof(request);
         uint32_t responseOp;
 
-        if (PrepareUSBCommand(request, requestSize, GetCalibrationTable) <= 0) throw std::runtime_error("usb transfer to retrieve calibration data failed");
+        if (PrepareUSBCommand(request, requestSize, (uint32_t) IVCAMMonitorCommand::GetCalibrationTable) <= 0) 
+			throw std::runtime_error("usb transfer to retrieve calibration data failed");
+
         ExecuteUSBCommand(request, requestSize, responseOp, data, bytesReturned);
     }
 
@@ -219,24 +197,113 @@ namespace rsimpl { namespace f200
 
             calibration->InitializeThermalData(TesterData.TemperatureData, TesterData.ThermalLoopParams);
         }
+		else if (ver > 17)
+		{
+			throw std::runtime_error("calibration table is not compatible with this API");
+		}
+
+		// Dimitri: debugging dangerously (assume we are pulling color + depth)
+		EnableTimeStamp(true, true);
     }
+
+	void IVCAMHardwareIO::ForceHardwareReset()
+	{
+		IVCAMCommand cmd(IVCAMMonitorCommand::HWReset);
+		cmd.oneDirection = true;
+		PerfomAndSendHWmonitorCommand(cmd);
+	}
+
+	bool IVCAMHardwareIO::EnableTimeStamp(bool colorEnable, bool depthEnable)
+	{
+		IVCAMCommand cmd(IVCAMMonitorCommand::TimeStampEnable);
+		cmd.Param1 = depthEnable ? 1 : 0;
+		cmd.Param2 = colorEnable ? 1 : 0;
+
+		auto result = PerfomAndSendHWmonitorCommand(cmd);
+		return result;
+	}
 
     void IVCAMHardwareIO::ReadTemperatures(IVCAMTemperatureData & data)
     {
         data = {0};
 
-        int IRTemp;
-        if (!GetIRtemp(IRTemp))
+        int irTemp;
+        if (!GetIRtemp(irTemp))
             throw std::runtime_error("could not get IR temperature");
 
-        data.IRTemp = (float) IRTemp;
+        data.IRTemp = (float) irTemp;
 
-        float LiguriaTemp;
-        if (!GetMEMStemp(LiguriaTemp))
+        float memsTemp;
+        if (!GetMEMStemp(memsTemp))
             throw std::runtime_error("could not get liguria temperature");
 
-        data.LiguriaTemp = LiguriaTemp;
+        data.LiguriaTemp = memsTemp;
     }
+
+	bool IVCAMHardwareIO::PerfomAndSendHWmonitorCommand(IVCAMCommand & newCommand)
+	{
+		bool result = true;
+
+		uint32_t opCodeXmit = (uint32_t) newCommand.cmd;
+
+		IVCAMCommandDetails details;
+		details.oneDirection = newCommand.oneDirection;
+		details.TimeOut = newCommand.TimeOut;
+
+		FillUSBBuffer(opCodeXmit,
+					  newCommand.Param1,
+					  newCommand.Param2,
+					  newCommand.Param3,
+					  newCommand.Param4,
+					  newCommand.data,
+					  newCommand.sizeOfSendCommandData,
+					  details.sendCommandData,
+					  details.sizeOfSendCommandData);
+
+		result = SendHWmonitorCommand(details);
+
+		// Error/exit conditions
+		if (result == false) return result;
+		if (newCommand.oneDirection) return result;
+
+		memcpy(newCommand.receivedOpcode, details.receivedOpcode, 4);
+		memcpy(newCommand.receivedCommandData, details.receivedCommandData,details.receivedCommandDataLength);
+		newCommand.receivedCommandDataLength = details.receivedCommandDataLength;
+
+		// endian? 
+		uint32_t opCodeAsUint32 = pack(details.receivedOpcode[3], details.receivedOpcode[2], details.receivedOpcode[1], details.receivedOpcode[0]);
+		if (opCodeAsUint32 != opCodeXmit)
+		{
+			throw std::runtime_error("opcodes do not match");
+		}
+
+		return result;
+	}
+
+	bool IVCAMHardwareIO::SendHWmonitorCommand(IVCAMCommandDetails & details)
+	{
+		unsigned char outputBuffer[HW_MONITOR_BUFFER_SIZE];
+
+		uint32_t op;
+		size_t receivedCmdLen = HW_MONITOR_BUFFER_SIZE;
+
+		ExecuteUSBCommand((uint8_t*) details.sendCommandData, (size_t) details.sizeOfSendCommandData, op, outputBuffer, receivedCmdLen);
+		details.receivedCommandDataLength = receivedCmdLen;
+
+		if (details.oneDirection) return true;
+
+		if (details.receivedCommandDataLength >= 4)
+		{
+			details.receivedCommandDataLength -= 4;
+			memcpy(details.receivedOpcode, outputBuffer, 4);
+		}
+		else return false;
+
+		if (details.receivedCommandDataLength > 0 )
+			memcpy(details.receivedCommandData, outputBuffer + 4, details.receivedCommandDataLength);
+
+		return true;
+	}
 
     bool IVCAMHardwareIO::GetMEMStemp(float & MEMStemp)
     {
