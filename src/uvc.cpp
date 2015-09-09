@@ -330,12 +330,12 @@ namespace rsimpl
             std::weak_ptr<device::_impl> owner; // The device holds a reference to us, so use weak_ptr to prevent a cycle
             int subdevice_index;
             ULONG ref_count;
-            volatile bool flushed = false;
+            volatile bool streaming = false;
         public:
             reader_callback(std::weak_ptr<device::_impl> owner, int subdevice_index) : owner(owner), subdevice_index(subdevice_index), ref_count() {}
 
-            bool is_flushed() const { return flushed; }
-            void on_start() { flushed = false; }
+            bool is_streaming() const { return streaming; }
+            void on_start() { streaming = true; }
 
             // Implement IUnknown
             HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, void ** ppvObject) override 
@@ -353,7 +353,7 @@ namespace rsimpl
 
             // Implement IMFSourceReaderCallback
             HRESULT STDMETHODCALLTYPE OnReadSample(HRESULT hrStatus, DWORD dwStreamIndex, DWORD dwStreamFlags, LONGLONG llTimestamp, IMFSample * sample) override;
-            HRESULT STDMETHODCALLTYPE OnFlush(DWORD dwStreamIndex) override { flushed = true; return S_OK; }
+            HRESULT STDMETHODCALLTYPE OnFlush(DWORD dwStreamIndex) override { streaming = false; return S_OK; }
             HRESULT STDMETHODCALLTYPE OnEvent(DWORD dwStreamIndex, IMFMediaEvent *pEvent) override { return S_OK; }
         };
 
@@ -401,13 +401,16 @@ namespace rsimpl
 
             void stop_streaming()
             {
-                for(auto & sub : subdevices) sub.mf_source_reader->Flush(MF_SOURCE_READER_FIRST_VIDEO_STREAM);
+                for(auto & sub : subdevices)
+                {
+                    if(sub.mf_source_reader) sub.mf_source_reader->Flush(MF_SOURCE_READER_FIRST_VIDEO_STREAM);
+                }
                 while(true)
                 {
-                    bool is_flushed = true;
-                    for(auto & sub : subdevices) is_flushed &= sub.reader_callback->is_flushed();
-                    if(is_flushed) break;
-                    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+                    bool is_streaming = false;
+                    for(auto & sub : subdevices) is_streaming |= sub.reader_callback->is_streaming();                   
+                    if(is_streaming) std::this_thread::sleep_for(std::chrono::milliseconds(10));
+                    else break;
                 }
             }
 
