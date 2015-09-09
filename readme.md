@@ -1,13 +1,43 @@
 # librealsense
 
-A library for capturing data with the RealSense F200 (IVCAM 1.0, 1.5) and RealSense R200 (DS4). It targets Mac OSX 10.7+ and "recent" versions of Linux (tested & developed on Ubuntu 14.04 LTS). This effort is aimed at supporting prototyping efforts on new platforms and form-factors (robots, drones, VR, etc). This repository hosts both the source-code and binary releases.
+A cross-platform library for capturing data with the RealSense F200 (IVCAM 1.0, 1.5) and RealSense R200 (DS4). This effort is aimed at supporting prototyping efforts on new platforms and form-factors (robots, drones, VR, etc). This repository hosts both the source-code and binary releases.
 
 Dependency management for GLFW3 and libusb-1.0 is done manually at the moment (see the corresponding sections below), pending the creation of installer scripts to automate the process. 
 
-## Cameras
+## Supported Devices
 
-1.	DS4 / R200 (v0.2 release will support DS5; issue that it shares the same USB PID as DS4 right now)
-2.	IVCAM 1.0 / F200 (v0.2 release will support the newer calibration model of IVCAM 1.5)
+1. RealSense R200 (DS4)
+2. RealSense F200 (IVCAM 1.0)
+	
+DS5 and IVCAM 1.5 support will be provided in the near future. librealsense should in principal be able to support any 3D camera which exposes a UVC interface and which chiefly relies on UVC XU commands and USB sidechannel traffic for controls and calibration information.
+
+## Supported Platforms
+
+librealsense is written in standards-conforming C++11 and relies only on the C89 ABI for its public interface. It was developed and tested on the following platforms:
+
+1. Windows 8 (Visual C++ 2013)
+2. Ubuntu 14.04 LTS (gcc toolchain)
+3. Mac OS X 10.7+ (clang toolchain)
+
+Android support will be provided in the near future. librealsense is likely to compile and run on other platforms as well, and we appreciate any assistance in testing and debugging support for other platforms and operating system versions.
+
+## Supported Languages and Frameworks
+
+1. C - Core library API exposed via the C89 ABI
+2. C++ - Single header file (rs.hpp) wrapper around C API, providing classes and exceptions
+3. C# - Single source file (rs.cs) wrapper for P/Invoke to C API, providing classes and exceptions
+
+Our intent is to provide bindings and wrappers for as many languages and frameworks as possible. Our core library exposes its functionality via C, and we intend for our various bindings and wrappers to look and feel "native" to their respective languages, for instance, using classes to represent objects, throwing exceptions to report errors, and following established naming conventions and casing styles of the language or framework in question.
+
+## Library Dependencies
+
+* Windows:
+  * Windows SDK (WinUSB + Media Foundation)
+* Linux, OS X, Android:
+  * libusb-1.0
+* Example Programs:
+  * OpenGL 1.1+
+  * GLFW 3.0+
 
 ## Functionality
 
@@ -17,13 +47,6 @@ The goal of librealsense is to provide a reasonable hardware abstraction with mi
   *	Of the different streaming modes + fps options available, only fairly common ones have been tested. 
 2.	Intrinsic/extrinsic calibration information (inc. uv map, etc)
 3.	Majority of XU-exposed functionality for each camera
-
-## API
-
-1.	Unified API combines F200, R200, and future hardware iterations. 
-2.	Example apps will work with both F200 and R200 at runtime, no code modifications necessary unless camera-specific features are used
-3.	API is expressed as a simple C interface for cross-language compatibility. A C++ API is also exposed for convenience.
-
 
 ## Apple OSX Installation
 
@@ -60,11 +83,11 @@ The goal of librealsense is to provide a reasonable hardware abstraction with mi
 
 *Q:* How is this implemented?
 
-*A:* It uses a libusb implementation of UVC (libuvc) and thusly does not require platform-specific camera drivers. The same backend can be shared across platforms. It does not link against any existing DSAPI or IVCAM-DLL binaries. 
+*A:* The library communicates with RealSense devices via the UVC and USB protocols, using Media Foundation / WinUSB on Windows and libuvc / libusb on all other platforms. It does not link against DSAPI or IVCAM-DLL. 
 
 *Q:* Is it maintained or supported?
 
-*A:* It is supported in the sense that bugs will be fixed if they are found and new features will be periodically added. It is not intended to replace functionality developed by other teams to support HVM (firmware updates, etc), nor materially impact SSG’s roadmap for the SDK/DCM – it is independent & outside of these major efforts. 
+*A:* It is supported in the sense that bugs will be fixed if they are found and new features will be periodically added. It is not intended to replace functionality developed by other teams to support HVM (firmware updates, etc), nor materially impact SSG’s roadmap for the SDK/DCM – it is independent and outside of these major efforts. 
 
 ## License
 
