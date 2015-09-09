@@ -158,6 +158,20 @@ namespace rsimpl
         template<class T> to_string & operator << (const T & val) { ss << val; return *this; }
         operator std::string() const { return ss.str(); }
     };
+
+    #pragma pack(push, 1)
+    template<class T> class big_endian
+    {
+        T be_value;
+    public:
+        operator T () const
+        {
+            T le_value = 0;
+            for(int i=0; i<sizeof(T); ++i) reinterpret_cast<char *>(&le_value)[i] = reinterpret_cast<const char *>(&be_value)[sizeof(T)-i-1];
+            return le_value;
+        }
+    };
+    #pragma pack(pop)
 }
 
 #endif
