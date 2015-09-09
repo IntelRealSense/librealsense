@@ -13,18 +13,6 @@ namespace rsimpl
         const int STATUS_BIT_WEB_STREAMING = 1 << 2;
 
         #pragma pack(push, 1)
-        template<class T> class big_endian
-        {
-            T be_value;
-        public:
-            operator T () const
-            {
-                T le_value = 0;
-                for(int i=0; i<sizeof(T); ++i) reinterpret_cast<char *>(&le_value)[i] = reinterpret_cast<const char *>(&be_value)[sizeof(T)-i-1];
-                return le_value;
-            }
-        };
-
         struct CalibrationMetadata
         {
             big_endian<uint32_t> versionNumber;
