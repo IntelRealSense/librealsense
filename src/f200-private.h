@@ -57,7 +57,7 @@ namespace rsimpl { namespace f200
 		GoToDFU             = 0x80,
 		GetCalibrationTable = 0x3D,
 		DebugFormat         = 0x0B,
-		TimeStempEnable     = 0x0C,
+		TimeStampEnable     = 0x0C,
 		GetPowerGearState   = 0xFF,
 		SetDefaultControls  = 0xA6,
 		GetDefaultControls  = 0xA7,
@@ -78,9 +78,9 @@ namespace rsimpl { namespace f200
 		int sizeOfSendCommandData;
 		long TimeOut;
 		bool oneDirection;
-		char recivedCommandData[HW_MONITOR_BUFFER_SIZE];
-		int sizeOfRecivedCommandData;
-		char recievedOPcode[4];
+		char receivedCommandData[HW_MONITOR_BUFFER_SIZE];
+		int receivedCommandDataLength;
+		char receivedOpcode[4];
 
 		IVCAMCommand(IVCAMMonitorCommand cmd)
 		{
@@ -101,9 +101,9 @@ namespace rsimpl { namespace f200
 		char sendCommandData[HW_MONITOR_COMMAND_SIZE];
 		int sizeOfSendCommandData;
 		long TimeOut;
-		char recievedOPcode[4];
-		char recievedCommandData[HW_MONITOR_BUFFER_SIZE];
-		int sizeOfRecievedCommandData;
+		char receivedOpcode[4];
+		char receivedCommandData[HW_MONITOR_BUFFER_SIZE];
+		int receivedCommandDataLength;
 	};
 
 	struct OACOffsetData

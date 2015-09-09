@@ -208,7 +208,7 @@ namespace rsimpl { namespace f200
 
 	bool IVCAMHardwareIO::EnableTimeStamp(bool colorEnable, bool depthEnable)
 	{
-		IVCAMCommand cmd(IVCAMMonitorCommand::TimeStempEnable);
+		IVCAMCommand cmd(IVCAMMonitorCommand::TimeStampEnable);
 		cmd.Param1 = depthEnable ? 1 : 0;
 		cmd.Param2 = colorEnable ? 1 : 0;
 
@@ -259,12 +259,12 @@ namespace rsimpl { namespace f200
 		if (result == false) return result;
 		if (newCommand.oneDirection) return result;
 
-		memcpy(newCommand.recievedOPcode, details.recievedOPcode, 4);
-		memcpy(newCommand.recivedCommandData, details.recievedCommandData,details.sizeOfRecievedCommandData);
-		newCommand.sizeOfRecivedCommandData = details.sizeOfRecievedCommandData;
+		memcpy(newCommand.receivedOpcode, details.receivedOpcode, 4);
+		memcpy(newCommand.receivedCommandData, details.receivedCommandData,details.receivedCommandDataLength);
+		newCommand.receivedCommandDataLength = details.receivedCommandDataLength;
 
 		// endian? 
-		uint32_t opCodeAsUint32 = pack(details.recievedOPcode[3], details.recievedOPcode[2], details.recievedOPcode[1], details.recievedOPcode[0]);
+		uint32_t opCodeAsUint32 = pack(details.receivedOpcode[3], details.receivedOpcode[2], details.receivedOpcode[1], details.receivedOpcode[0]);
 		if (opCodeAsUint32 != opCodeXmit)
 		{
 			throw std::runtime_error("opcodes do not match");
@@ -278,22 +278,22 @@ namespace rsimpl { namespace f200
 		unsigned char outputBuffer[HW_MONITOR_BUFFER_SIZE];
 
 		uint32_t op;
-		size_t recievedDataSize = HW_MONITOR_BUFFER_SIZE;
+		size_t receivedCmdLen = HW_MONITOR_BUFFER_SIZE;
 
-		ExecuteUSBCommand((uint8_t*) details.sendCommandData, (size_t) details.sizeOfSendCommandData, op, outputBuffer, recievedDataSize);
-		details.sizeOfRecievedCommandData = recievedDataSize;
+		ExecuteUSBCommand((uint8_t*) details.sendCommandData, (size_t) details.sizeOfSendCommandData, op, outputBuffer, receivedCmdLen);
+		details.receivedCommandDataLength = receivedCmdLen;
 
 		if (details.oneDirection) return true;
 
-		if (details.sizeOfRecievedCommandData >= 4)
+		if (details.receivedCommandDataLength >= 4)
 		{
-			details.sizeOfRecievedCommandData -= 4;
-			memcpy(details.recievedOPcode, outputBuffer, 4);
+			details.receivedCommandDataLength -= 4;
+			memcpy(details.receivedOpcode, outputBuffer, 4);
 		}
 		else return false;
 
-		if (details.sizeOfRecievedCommandData > 0 )
-			memcpy(details.recievedCommandData, outputBuffer + 4, details.sizeOfRecievedCommandData);
+		if (details.receivedCommandDataLength > 0 )
+			memcpy(details.receivedCommandData, outputBuffer + 4, details.receivedCommandDataLength);
 
 		return true;
 	}
