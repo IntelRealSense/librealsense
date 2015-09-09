@@ -254,6 +254,7 @@ namespace rsimpl { namespace f200
         void ProjectionCalibrate(uint8_t * rawCalibData, int len, CameraCalibrationParameters * calprms);
         void ReadTemperatures(IVCAMTemperatureData & data);
 		bool EnableTimeStamp(bool enableColor, bool enableDepth);
+		void ForceHardwareReset();
         bool GetMEMStemp(float & MEMStemp);
         bool GetIRtemp(int & IRtemp);
         void TemperatureControlLoop();

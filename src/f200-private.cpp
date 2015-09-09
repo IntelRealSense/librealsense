@@ -206,6 +206,13 @@ namespace rsimpl { namespace f200
 		EnableTimeStamp(true, true);
     }
 
+	void IVCAMHardwareIO::ForceHardwareReset()
+	{
+		IVCAMCommand cmd(IVCAMMonitorCommand::HWReset);
+		cmd.oneDirection = true;
+		PerfomAndSendHWmonitorCommand(cmd);
+	}
+
 	bool IVCAMHardwareIO::EnableTimeStamp(bool colorEnable, bool depthEnable)
 	{
 		IVCAMCommand cmd(IVCAMMonitorCommand::TimeStampEnable);
