@@ -264,7 +264,7 @@ namespace rsimpl { namespace f200
 		newCommand.sizeOfRecivedCommandData = details.sizeOfRecievedCommandData;
 
 		// endian? 
-		uint32_t opCodeAsUint32 = pack(details.recievedOPcode[0], details.recievedOPcode[1], details.recievedOPcode[2], details.recievedOPcode[3]);
+		uint32_t opCodeAsUint32 = pack(details.recievedOPcode[3], details.recievedOPcode[2], details.recievedOPcode[1], details.recievedOPcode[0]);
 		if (opCodeAsUint32 != opCodeXmit)
 		{
 			throw std::runtime_error("opcodes do not match");
