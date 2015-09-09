@@ -201,6 +201,9 @@ namespace rsimpl { namespace f200
 		{
 			throw std::runtime_error("calibration table is not compatible with this API");
 		}
+
+		// Dimitri: debugging dangerously (assume we are pulling color + depth)
+		EnableTimeStamp(true, true);
     }
 
 	bool IVCAMHardwareIO::EnableTimeStamp(bool colorEnable, bool depthEnable)
