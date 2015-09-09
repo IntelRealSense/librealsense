@@ -17,7 +17,7 @@ namespace rsimpl
         CASE(DEPTH)
         CASE(COLOR)
         CASE(INFRARED)
-        CASE(INFRARED_2)
+        CASE(INFRARED2)
         default: assert(!is_valid(value)); return nullptr;
         }
         #undef CASE

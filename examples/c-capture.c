@@ -79,7 +79,7 @@ int main(int argc, char * argv[])
         rs_enable_stream_preset(dev, RS_STREAM_DEPTH, RS_PRESET_BEST_QUALITY, &error); check_error();
         rs_enable_stream_preset(dev, RS_STREAM_COLOR, RS_PRESET_BEST_QUALITY, &error); check_error();
         rs_enable_stream_preset(dev, RS_STREAM_INFRARED, RS_PRESET_BEST_QUALITY, &error); check_error();
-        rs_enable_stream_preset(dev, RS_STREAM_INFRARED_2, RS_PRESET_BEST_QUALITY, 0);
+        rs_enable_stream_preset(dev, RS_STREAM_INFRARED2, RS_PRESET_BEST_QUALITY, 0);
         rs_start_device(dev, &error); check_error();
 
         for(j = 0; j < RS_STREAM_COUNT; ++j)
@@ -98,7 +98,7 @@ int main(int argc, char * argv[])
     }
 
     glfwInit();
-    height = rs_stream_is_enabled(dev, RS_STREAM_INFRARED, 0) || rs_stream_is_enabled(dev, RS_STREAM_INFRARED_2, 0) ? 960 : 480;
+    height = rs_stream_is_enabled(dev, RS_STREAM_INFRARED, 0) || rs_stream_is_enabled(dev, RS_STREAM_INFRARED2, 0) ? 960 : 480;
     sprintf(buffer, "C Capture Example (%s)", rs_get_device_name(dev,0));
     win = glfwCreateWindow(1280, height, buffer, 0, 0);
     glfwMakeContextCurrent(win);
@@ -128,7 +128,7 @@ int main(int argc, char * argv[])
         draw_stream(dev, RS_STREAM_COLOR, 0, 0);
         draw_stream(dev, RS_STREAM_DEPTH, 640, 0);
         draw_stream(dev, RS_STREAM_INFRARED, 0, 480);
-        draw_stream(dev, RS_STREAM_INFRARED_2, 640, 480);
+        draw_stream(dev, RS_STREAM_INFRARED2, 640, 480);
 
         glPopMatrix();
         glfwSwapBuffers(win);

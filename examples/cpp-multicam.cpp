@@ -57,13 +57,13 @@ int main(int argc, char * argv[]) try
         {
             auto dev = ctx.get_device(i);
             const auto c = dev.get_stream_intrinsics(rs::stream::COLOR), d = dev.get_stream_intrinsics(rs::stream::DEPTH);
-            const int width = std::max(c.image_size[0], d.image_size[0]);
+            const int width = std::max(c.image_size.x, d.image_size.x);
 
-            glRasterPos2i(x + (width - c.image_size[0])/2, 0);
-            glDrawPixels(c.image_size[0], c.image_size[1], GL_RGB, GL_UNSIGNED_BYTE, dev.get_frame_data(rs::stream::COLOR));
+            glRasterPos2i(x + (width - c.image_size.x)/2, 0);
+            glDrawPixels(c.image_size.x, c.image_size.y, GL_RGB, GL_UNSIGNED_BYTE, dev.get_frame_data(rs::stream::COLOR));
 
-            glRasterPos2i(x + (width - d.image_size[0])/2, c.image_size[1]);
-            draw_depth_histogram(reinterpret_cast<const uint16_t *>(dev.get_frame_data(rs::stream::DEPTH)), d.image_size[0], d.image_size[1]);
+            glRasterPos2i(x + (width - d.image_size.x)/2, c.image_size.y);
+            draw_depth_histogram(reinterpret_cast<const uint16_t *>(dev.get_frame_data(rs::stream::DEPTH)), d.image_size.x, d.image_size.y);
 
             ttf_print(&font, x+(width-ttf_len(&font, dev.get_name()))/2, 24, dev.get_name());
             x += width;

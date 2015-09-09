@@ -21,10 +21,10 @@ void draw_stream(rs::device & dev, rs::stream stream, int x, int y)
 
     const rs::intrinsics intrin = dev.get_stream_intrinsics(stream);
     const rs::format format = dev.get_stream_format(stream);
-    const int width = intrin.image_size[0], height = intrin.image_size[1], fps = dev.get_stream_framerate(stream);
+    const int width = intrin.image_size.x, height = intrin.image_size.y, fps = dev.get_stream_framerate(stream);
     const void * pixels = dev.get_frame_data(stream);
 
-    glRasterPos2i(x + (640 - intrin.image_size[0])/2, y + (480 - intrin.image_size[1])/2);
+    glRasterPos2i(x + (640 - intrin.image_size.x)/2, y + (480 - intrin.image_size.y)/2);
     glPixelZoom(1, -1);
     switch(format)
     {
@@ -48,7 +48,7 @@ void draw_stream(rs::device & dev, rs::stream stream, int x, int y)
         break;
     }
 
-    std::ostringstream ss; ss << stream << ": " << intrin.image_size[0] << " x " << intrin.image_size[1] << " " << format;
+    std::ostringstream ss; ss << stream << ": " << intrin.image_size.x << " x " << intrin.image_size.y << " " << format;
     ttf_print(&font, x+8, y+16, ss.str().c_str());
 }
 
@@ -64,7 +64,7 @@ int main(int argc, char * argv[]) try
     dev.enable_stream_preset(rs::stream::INFRARED, rs::preset::BEST_QUALITY);
     //dev.enable_stream(rs::stream::INFRARED, 0, 0, rs::format::Y16, 0);
     try {
-        dev.enable_stream(rs::stream::INFRARED_2, 0, 0, rs::format::ANY, 0); // Select a format for INFRARED_2 that matches INFRARED
+        dev.enable_stream(rs::stream::INFRARED2, 0, 0, rs::format::ANY, 0); // Select a format for INFRARED2 that matches INFRARED
     } catch(...) {}
 
     // Compute field of view for each enabled stream
@@ -73,9 +73,9 @@ int main(int argc, char * argv[]) try
         auto stream = rs::stream(i);
         if(!dev.is_stream_enabled(stream)) continue;
         auto intrin = dev.get_stream_intrinsics(stream);
-        float hfov = compute_fov(intrin.image_size[0], intrin.focal_length[0], intrin.principal_point[0]);
-        float vfov = compute_fov(intrin.image_size[1], intrin.focal_length[1], intrin.principal_point[1]);
-        std::cout << "Capturing " << stream << " at " << intrin.image_size[0] << " x " << intrin.image_size[1];
+        float hfov = compute_fov(intrin.image_size.x, intrin.focal_length.x, intrin.principal_point.x);
+        float vfov = compute_fov(intrin.image_size.y, intrin.focal_length.y, intrin.principal_point.y);
+        std::cout << "Capturing " << stream << " at " << intrin.image_size.x << " x " << intrin.image_size.y;
         std::cout << std::setprecision(1) << std::fixed << ", fov = " << hfov << " x " << vfov << std::endl;
     }
     
@@ -129,7 +129,7 @@ int main(int argc, char * argv[]) try
         draw_stream(dev, rs::stream::COLOR, 0, 0);
         draw_stream(dev, rs::stream::DEPTH, 640, 0);
         draw_stream(dev, rs::stream::INFRARED, 0, 480);
-        draw_stream(dev, rs::stream::INFRARED_2, 640, 480);
+        draw_stream(dev, rs::stream::INFRARED2, 640, 480);
         glPopMatrix();
         glfwSwapBuffers(win);
     }

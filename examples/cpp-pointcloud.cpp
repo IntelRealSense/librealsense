@@ -20,13 +20,13 @@ int main(int argc, char * argv[]) try
         dev.enable_stream_preset(rs::stream::DEPTH, rs::preset::BEST_QUALITY);
         dev.enable_stream_preset(rs::stream::COLOR, rs::preset::BEST_QUALITY);
         dev.enable_stream_preset(rs::stream::INFRARED, rs::preset::BEST_QUALITY);
-        try { dev.enable_stream_preset(rs::stream::INFRARED_2, rs::preset::BEST_QUALITY); } catch(...) {}
+        try { dev.enable_stream_preset(rs::stream::INFRARED2, rs::preset::BEST_QUALITY); } catch(...) {}
         dev.start();
     }
     if (!dev) throw std::runtime_error("No device detected. Is it plugged in?");
         
     state app_state = {0, 0, 0, 0, false, {rs::stream::COLOR, rs::stream::INFRARED}, 0, &dev};
-    if(dev.is_stream_enabled(rs::stream::INFRARED_2)) app_state.tex_streams.push_back(rs::stream::INFRARED_2);
+    if(dev.is_stream_enabled(rs::stream::INFRARED2)) app_state.tex_streams.push_back(rs::stream::INFRARED2);
     
     glfwInit();
     std::ostringstream ss; ss << "CPP Point Cloud Example (" << dev.get_name() << ")";
@@ -113,9 +113,7 @@ int main(int argc, char * argv[]) try
         const rs::extrinsics extrin = dev.get_extrinsics(rs::stream::DEPTH, tex_stream);
         const rs::intrinsics depth_intrin = dev.get_stream_intrinsics(rs::stream::DEPTH);
         const rs::intrinsics tex_intrin = dev.get_stream_intrinsics(tex_stream);
-        bool identical = memcmp(&depth_intrin, &tex_intrin, sizeof(rs::intrinsics)) == 0
-            && extrin.rotation[0] == 1 && extrin.rotation[4] == 1 && extrin.rotation[8] == 1
-            && extrin.translation[0] == 0 && extrin.translation[1] == 0 && extrin.translation[2] == 0;
+        bool identical = memcmp(&depth_intrin, &tex_intrin, sizeof(rs::intrinsics)) == 0 && extrin.is_identity();
 
         int width, height;
         glfwGetFramebufferSize(win, &width, &height);
@@ -126,9 +124,9 @@ int main(int argc, char * argv[]) try
         glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
         switch(dev.get_stream_format(tex_stream))
         {
-        case rs::format::RGB8: glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, tex_intrin.image_size[0], tex_intrin.image_size[1], 0, GL_RGB, GL_UNSIGNED_BYTE, dev.get_frame_data(tex_stream)); break;
-        case rs::format::Y8:   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, tex_intrin.image_size[0], tex_intrin.image_size[1], 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, dev.get_frame_data(tex_stream)); break;
-        case rs::format::Y16:  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, tex_intrin.image_size[0], tex_intrin.image_size[1], 0, GL_LUMINANCE, GL_UNSIGNED_SHORT, dev.get_frame_data(tex_stream)); break;
+        case rs::format::RGB8: glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, tex_intrin.image_size.x, tex_intrin.image_size.y, 0, GL_RGB, GL_UNSIGNED_BYTE, dev.get_frame_data(tex_stream)); break;
+        case rs::format::Y8:   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, tex_intrin.image_size.x, tex_intrin.image_size.y, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, dev.get_frame_data(tex_stream)); break;
+        case rs::format::Y16:  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, tex_intrin.image_size.x, tex_intrin.image_size.y, 0, GL_LUMINANCE, GL_UNSIGNED_SHORT, dev.get_frame_data(tex_stream)); break;
         }
 
         glViewport(0, 0, width, height);
@@ -154,22 +152,20 @@ int main(int argc, char * argv[]) try
         glBegin(GL_POINTS);
         auto depth = reinterpret_cast<const uint16_t *>(dev.get_frame_data(rs::stream::DEPTH));
         
-        for(int y=0; y<depth_intrin.image_size[1]; ++y)
+        for(int y=0; y<depth_intrin.image_size.y; ++y)
         {
-            for(int x=0; x<depth_intrin.image_size[0]; ++x)
+            for(int x=0; x<depth_intrin.image_size.x; ++x)
             {
                 if(auto d = *depth++)
                 {
-                    float depth_pixel[2] = {static_cast<float>(x),static_cast<float>(y)}, depth_point[3], tex_point[3], tex_pixel[2];
-                    rs_deproject_pixel_to_point(depth_point, &depth_intrin, depth_pixel, d*depth_scale);
-                    if(identical) glTexCoord2f((x+0.5f)/depth_intrin.image_size[0], (y+0.5f)/depth_intrin.image_size[1]);
+                    rs::float3 point = depth_intrin.deproject({x, y}, d*depth_scale);
+                    if(identical) glTexCoord2f((x+0.5f)/depth_intrin.image_size.x, (y+0.5f)/depth_intrin.image_size.y);
                     else
                     {
-                        rs_transform_point_to_point(tex_point, &extrin, depth_point);
-                        rs_project_point_to_pixel(tex_pixel, &tex_intrin, tex_point);
-                        glTexCoord2f((tex_pixel[0]+0.5f) / tex_intrin.image_size[0], (tex_pixel[1]+0.5f) / tex_intrin.image_size[1]);
+                        rs::float2 tex_pixel = tex_intrin.project(extrin.transform(point));
+                        glTexCoord2f((tex_pixel.x+0.5f) / tex_intrin.image_size.x, (tex_pixel.y+0.5f) / tex_intrin.image_size.y);
                     }
-                    glVertex3fv(depth_point);
+                    glVertex3fv(&point.x);
                 }
             }
         }

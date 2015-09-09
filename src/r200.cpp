@@ -58,18 +58,18 @@ namespace rsimpl
         {
             auto uvcFps = fps == 60 ? 59 : fps; // UVC sees the 60 fps mode as 59 fps
 
-            info.stream_subdevices[RS_STREAM_INFRARED  ] = 0;
-            info.stream_subdevices[RS_STREAM_INFRARED_2] = 0;
-            info.subdevice_modes.push_back({0,  640, 481, uvc::frame_format::Y8,   uvcFps, {{RS_STREAM_INFRARED,   640,  480, RS_FORMAT_Y8, fps, LR_FULL}}, &unpack_strided_image, &decode_dinghy_frame_number});
-            info.subdevice_modes.push_back({0,  640, 481, uvc::frame_format::Y12I, uvcFps, {{RS_STREAM_INFRARED,   640,  480, RS_FORMAT_Y8, fps, LR_FULL},
-                                                                                            {RS_STREAM_INFRARED_2, 640,  480, RS_FORMAT_Y8, fps, LR_FULL}}, &unpack_y12i_to_y8, &decode_dinghy_frame_number});
-            info.subdevice_modes.push_back({0,  640, 481, uvc::frame_format::Y12I, uvcFps, {{RS_STREAM_INFRARED,   640,  480, RS_FORMAT_Y16, fps, LR_FULL},
-                                                                                            {RS_STREAM_INFRARED_2, 640,  480, RS_FORMAT_Y16, fps, LR_FULL}}, &unpack_y12i_to_y16, &decode_dinghy_frame_number});
-            info.subdevice_modes.push_back({0,  640, 373, uvc::frame_format::Y8,   uvcFps, {{RS_STREAM_INFRARED,   492,  372, RS_FORMAT_Y8, fps, LR_BIG }}, &unpack_strided_image, &decode_dinghy_frame_number});
-            info.subdevice_modes.push_back({0,  640, 373, uvc::frame_format::Y12I, uvcFps, {{RS_STREAM_INFRARED,   492,  372, RS_FORMAT_Y8, fps, LR_BIG },
-                                                                                            {RS_STREAM_INFRARED_2, 492,  372, RS_FORMAT_Y8, fps, LR_BIG }}, &unpack_y12i_to_y8, &decode_dinghy_frame_number});
-            info.subdevice_modes.push_back({0,  640, 373, uvc::frame_format::Y12I, uvcFps, {{RS_STREAM_INFRARED,   492,  372, RS_FORMAT_Y16, fps, LR_BIG },
-                                                                                            {RS_STREAM_INFRARED_2, 492,  372, RS_FORMAT_Y16, fps, LR_BIG }}, &unpack_y12i_to_y16, &decode_dinghy_frame_number});
+            info.stream_subdevices[RS_STREAM_INFRARED ] = 0;
+            info.stream_subdevices[RS_STREAM_INFRARED2] = 0;
+            info.subdevice_modes.push_back({0,  640, 481, uvc::frame_format::Y8,   uvcFps, {{RS_STREAM_INFRARED,  640,  480, RS_FORMAT_Y8,  fps, LR_FULL}}, &unpack_strided_image, &decode_dinghy_frame_number});
+            info.subdevice_modes.push_back({0,  640, 481, uvc::frame_format::Y12I, uvcFps, {{RS_STREAM_INFRARED,  640,  480, RS_FORMAT_Y8,  fps, LR_FULL},
+                                                                                            {RS_STREAM_INFRARED2, 640,  480, RS_FORMAT_Y8,  fps, LR_FULL}}, &unpack_y12i_to_y8, &decode_dinghy_frame_number});
+            info.subdevice_modes.push_back({0,  640, 481, uvc::frame_format::Y12I, uvcFps, {{RS_STREAM_INFRARED,  640,  480, RS_FORMAT_Y16, fps, LR_FULL},
+                                                                                            {RS_STREAM_INFRARED2, 640,  480, RS_FORMAT_Y16, fps, LR_FULL}}, &unpack_y12i_to_y16, &decode_dinghy_frame_number});
+            info.subdevice_modes.push_back({0,  640, 373, uvc::frame_format::Y8,   uvcFps, {{RS_STREAM_INFRARED,  492,  372, RS_FORMAT_Y8,  fps, LR_BIG }}, &unpack_strided_image, &decode_dinghy_frame_number});
+            info.subdevice_modes.push_back({0,  640, 373, uvc::frame_format::Y12I, uvcFps, {{RS_STREAM_INFRARED,  492,  372, RS_FORMAT_Y8,  fps, LR_BIG },
+                                                                                            {RS_STREAM_INFRARED2, 492,  372, RS_FORMAT_Y8,  fps, LR_BIG }}, &unpack_y12i_to_y8, &decode_dinghy_frame_number});
+            info.subdevice_modes.push_back({0,  640, 373, uvc::frame_format::Y12I, uvcFps, {{RS_STREAM_INFRARED,  492,  372, RS_FORMAT_Y16, fps, LR_BIG },
+                                                                                            {RS_STREAM_INFRARED2, 492,  372, RS_FORMAT_Y16, fps, LR_BIG }}, &unpack_y12i_to_y16, &decode_dinghy_frame_number});
 
             info.stream_subdevices[RS_STREAM_DEPTH] = 1;
             info.subdevice_modes.push_back({1,  628, 469, uvc::frame_format::Z16,  uvcFps, {{RS_STREAM_DEPTH,      628,  468, RS_FORMAT_Z16, fps, Z_FULL}}, &unpack_strided_image, &decode_dinghy_frame_number});
@@ -81,7 +81,7 @@ namespace rsimpl
             info.subdevice_modes.push_back({2,  640,  480, uvc::frame_format::YUYV, uvcFps, {{RS_STREAM_COLOR,     640,  480, RS_FORMAT_YUYV, fps, THIRD_VGA}}, &unpack_strided_image, &decode_yuy2_frame_number});
         }
 
-        for(auto ir : {RS_STREAM_INFRARED, RS_STREAM_INFRARED_2})
+        for(auto ir : {RS_STREAM_INFRARED, RS_STREAM_INFRARED2})
         {
             info.interstream_rules.push_back({RS_STREAM_DEPTH, ir, &stream_request::width, 12});
             info.interstream_rules.push_back({RS_STREAM_DEPTH, ir, &stream_request::height, 12});
@@ -100,7 +100,7 @@ namespace rsimpl
         info.presets[RS_STREAM_DEPTH   ][RS_PRESET_HIGHEST_FRAMERATE] = {true, 480, 360, RS_FORMAT_Z16,  90};
         info.presets[RS_STREAM_COLOR   ][RS_PRESET_HIGHEST_FRAMERATE] = {true, 640, 480, RS_FORMAT_RGB8, 60};
 
-        for(int i=0; i<RS_PRESET_COUNT; ++i) info.presets[RS_STREAM_INFRARED_2][i] = info.presets[RS_STREAM_INFRARED][i];
+        for(int i=0; i<RS_PRESET_COUNT; ++i) info.presets[RS_STREAM_INFRARED2][i] = info.presets[RS_STREAM_INFRARED][i];
 
         for(int i = RS_OPTION_R200_LR_AUTO_EXPOSURE_ENABLED; i <= RS_OPTION_R200_DISPARITY_SHIFT; ++i) info.option_supported[i] = true;
 
@@ -117,7 +117,7 @@ namespace rsimpl
         info.intrinsics[THIRD_VGA] = MakeColorIntrinsics(c.intrinsicsThird[1]);
         info.stream_poses[RS_STREAM_DEPTH] = {{{1,0,0},{0,1,0},{0,0,1}}, {0,0,0}};
         info.stream_poses[RS_STREAM_INFRARED] = {{{1,0,0},{0,1,0},{0,0,1}}, {0,0,0}};
-        info.stream_poses[RS_STREAM_INFRARED_2] = {{{1,0,0},{0,1,0},{0,0,1}}, {c.B[0] * 0.001f, 0, 0}};
+        info.stream_poses[RS_STREAM_INFRARED2] = {{{1,0,0},{0,1,0},{0,0,1}}, {c.B[0] * 0.001f, 0, 0}};
         for(int i=0; i<3; ++i) for(int j=0; j<3; ++j) info.stream_poses[RS_STREAM_COLOR].orientation(i,j) = c.Rthird[0][i*3+j];
         for(int i=0; i<3; ++i) info.stream_poses[RS_STREAM_COLOR].position[i] = c.T[0][i] * 0.001f;
         info.stream_poses[RS_STREAM_COLOR].position = info.stream_poses[RS_STREAM_COLOR].orientation * info.stream_poses[RS_STREAM_COLOR].position;
@@ -139,7 +139,7 @@ namespace rsimpl
     void r200_camera::set_stream_intent()
     {
         uint8_t streamIntent = 0;
-        if(streams[RS_STREAM_INFRARED] || streams[RS_STREAM_INFRARED_2]) streamIntent |= r200::STATUS_BIT_LR_STREAMING;
+        if(streams[RS_STREAM_INFRARED] || streams[RS_STREAM_INFRARED2]) streamIntent |= r200::STATUS_BIT_LR_STREAMING;
         if(streams[RS_STREAM_DEPTH]) streamIntent |= r200::STATUS_BIT_Z_STREAMING;
         if(streams[RS_STREAM_COLOR]) streamIntent |= r200::STATUS_BIT_WEB_STREAMING;
         r200::set_stream_intent(device, streamIntent);

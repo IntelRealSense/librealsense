@@ -13,7 +13,7 @@ typedef enum rs_stream
     RS_STREAM_DEPTH                         = 0,
     RS_STREAM_COLOR                         = 1,
     RS_STREAM_INFRARED                      = 2,
-    RS_STREAM_INFRARED_2                    = 3,
+    RS_STREAM_INFRARED2                     = 3,
     RS_STREAM_COUNT                         = 4,
     RS_STREAM_MAX_ENUM                      = 0x7FFFFFFF
 } rs_stream;
@@ -23,7 +23,7 @@ enum
     RS_STREAM_DEPTH_BIT                     = 1 << RS_STREAM_DEPTH,
     RS_STREAM_COLOR_BIT                     = 1 << RS_STREAM_COLOR,
     RS_STREAM_INFRARED_BIT                  = 1 << RS_STREAM_INFRARED,
-    RS_STREAM_INFRARED_2_BIT                = 1 << RS_STREAM_INFRARED_2,
+    RS_STREAM_INFRARED2_BIT                 = 1 << RS_STREAM_INFRARED2,
     RS_ALL_STREAM_BITS                      = (1 << RS_STREAM_COUNT) - 1
 };
 
