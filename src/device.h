@@ -10,7 +10,7 @@ protected:
     class subdevice_handle;
 
     rsimpl::uvc::device                     device;
-    const rsimpl::static_device_info        device_info;
+    rsimpl::static_device_info              device_info;
 
     rsimpl::stream_request                  requests[RS_STREAM_COUNT];  // Indexed by RS_DEPTH, RS_COLOR, ...
     std::shared_ptr<rsimpl::stream_buffer>  streams[RS_STREAM_COUNT];   // Indexed by RS_DEPTH, RS_COLOR, ...
@@ -18,7 +18,7 @@ protected:
     bool                                    capturing;
     std::chrono::high_resolution_clock::time_point capture_started;  
 public:
-                                            rs_device(rsimpl::uvc::device device, const rsimpl::static_device_info & device_info);
+                                            rs_device(rsimpl::uvc::device device);
                                             ~rs_device();
 
     const char *                            get_name() const { return device_info.name.c_str(); }

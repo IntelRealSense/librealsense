@@ -1,4 +1,5 @@
 #include "f200-private.h"
+#include <iostream>
 
 namespace rsimpl { namespace f200
 {
@@ -336,7 +337,7 @@ namespace rsimpl { namespace f200
             MEMStemp = (float) t;
             MEMStemp /= 100;
          }
-         return false;
+		 else return false;
     }
 
     bool IVCAMHardwareIO::GetIRtemp(int & IRtemp)
@@ -352,8 +353,7 @@ namespace rsimpl { namespace f200
 
         if (PerfomAndSendHWmonitorCommand(command))
             IRtemp = (int8_t) command.receivedCommandData[0];
-
-        return false;
+		else return false;
     }
 
     bool IVCAMHardwareIO::UpdateASICCoefs(IVCAMASICCoefficients * coeffs)
@@ -523,6 +523,7 @@ namespace rsimpl { namespace f200
     
     void IVCAMHardwareIO::StartTempCompensationLoop()
     {
+		runTemperatureThread = true;
         temperatureThread = std::thread(&IVCAMHardwareIO::TemperatureControlLoop, this);
     }
 
@@ -553,13 +554,14 @@ namespace rsimpl { namespace f200
             if (updateNeeded)
             {
                 //@tofix, qRes mode
+				std::cout << "[Debug] updating asic with new temperature calibration coefficients" << std::endl;
                 GenerateAsicCalibrationCoefficients({640, 480}, true, coeffs.CoefValueArray);
                 if (UpdateASICCoefs(&coeffs) != true)
                 {
                     continue; // try again if we couldn't update the coefficients
                 }
             }
-
+			
             std::unique_lock<std::mutex> ulock(temperatureMutex);
             temperatureCv.wait_for(ulock, std::chrono::seconds(10)); 
         }

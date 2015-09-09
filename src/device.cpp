@@ -7,7 +7,7 @@
 
 using namespace rsimpl;
 
-static static_device_info add_standard_unpackers(const static_device_info & device_info)
+static_device_info add_standard_unpackers(const static_device_info & device_info)
 {
     static_device_info info = device_info;
     for(auto & mode : device_info.subdevice_modes)
@@ -36,7 +36,7 @@ static static_device_info add_standard_unpackers(const static_device_info & devi
     return info;
 }
 
-rs_device::rs_device(rsimpl::uvc::device device, const static_device_info & device_info) : device(device), device_info(add_standard_unpackers(device_info)), capturing()
+rs_device::rs_device(rsimpl::uvc::device device) : device(device), capturing()
 {
     for(auto & req : requests) req = rsimpl::stream_request();
 }
