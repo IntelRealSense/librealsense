@@ -76,18 +76,18 @@ namespace rsimpl
         // device_handle //
         ///////////////////
 
-        void device_handle::set_mode(int width, int height, frame_format cf, int fps)
+        void device_handle::set_mode(int width, int height, frame_format cf, int fps, std::function<void(const void * frame)> callback)
         {
             check("get_stream_ctrl_format_size", uvc_get_stream_ctrl_format_size(impl->get_handle(), &impl->ctrl, (uvc_frame_format)cf, width, height, fps));
+            impl->callback = callback;
         }
 
-        void device_handle::start_streaming(std::function<void(const void * frame)> callback)
+        void device_handle::start_streaming()
         {
             #if defined (ENABLE_DEBUG_SPAM)
             uvc_print_stream_ctrl(&impl->ctrl, stdout);
             #endif
 
-            impl->callback = callback;
             check("uvc_start_streaming", uvc_start_streaming(impl->get_handle(), &impl->ctrl, [](uvc_frame * frame, void * user)
             {
                 reinterpret_cast<device_handle::_impl *>(user)->callback(frame->data);
@@ -125,9 +125,9 @@ namespace rsimpl
             impl->claimed_interfaces.push_back(interface_number);
         }
 
-        void device::bulk_transfer(unsigned char endpoint, unsigned char *data, int length, int *actual_length, unsigned int timeout)
+        void device::bulk_transfer(unsigned char endpoint, void * data, int length, int *actual_length, unsigned int timeout)
         {
-            int status = libusb_bulk_transfer(impl->get_handle(0)->usb_devh, endpoint, data, length, actual_length, timeout);
+            int status = libusb_bulk_transfer(impl->get_handle(0)->usb_devh, endpoint, (unsigned char *)data, length, actual_length, timeout);
             if(status < 0) throw std::runtime_error(to_string() << "libusb_bulk_transfer(...) returned " << libusb_error_name(status));
         }
 
@@ -434,19 +434,17 @@ namespace rsimpl
                 }
 			}
 
-			bool usb_synchronous_read(uint8_t endpoint, unsigned char * buffer, int bufferLength, int * actual_length, DWORD TimeOut)
+			bool usb_synchronous_read(uint8_t endpoint, void * buffer, int bufferLength, int * actual_length, DWORD TimeOut)
 			{
 				if (usb_interface_handle == INVALID_HANDLE_VALUE) throw std::runtime_error("winusb has not been initialized");
 
 				auto result = false;
 
 				BOOL bRetVal = true;
-
-				buffer[0] = buffer[1] = 0;
-
+                
 				ULONG lengthTransferred;
 
-				bRetVal = WinUsb_ReadPipe(usb_interface_handle, endpoint, buffer, bufferLength, &lengthTransferred, NULL);
+				bRetVal = WinUsb_ReadPipe(usb_interface_handle, endpoint, (PUCHAR)buffer, bufferLength, &lengthTransferred, NULL);
 
 				if (bRetVal)
 					result = true;
@@ -461,14 +459,14 @@ namespace rsimpl
 				return result;
 			}
 
-			bool usb_synchronous_write(uint8_t endpoint, unsigned char * buffer, int bufferLength, DWORD TimeOut)
+			bool usb_synchronous_write(uint8_t endpoint, void * buffer, int bufferLength, DWORD TimeOut)
 			{
 				if (usb_interface_handle == INVALID_HANDLE_VALUE) throw std::runtime_error("winusb has not been initialized");
 
 				auto result = false;
 
 				ULONG lengthWritten;
-				auto bRetVal = WinUsb_WritePipe(usb_interface_handle, endpoint, buffer, bufferLength, &lengthWritten, NULL);
+				auto bRetVal = WinUsb_WritePipe(usb_interface_handle, endpoint, (PUCHAR)buffer, bufferLength, &lengthWritten, NULL);
 				if (bRetVal)
 					result = true;
 				else
@@ -536,7 +534,7 @@ namespace rsimpl
             // TODO: Y16, Y8I, Y16I, other IVCAM formats, etc.
         }
 
-        void device_handle::set_mode(int width, int height, frame_format cf, int fps)
+        void device_handle::set_mode(int width, int height, frame_format cf, int fps, std::function<void(const void * frame)> callback)
         {
             for (DWORD j = 0; ; j++)
             {
@@ -558,14 +556,14 @@ namespace rsimpl
                 if(std::abs(fps - uvc_fps) > 1) continue;
 
                 check("IMFSourceReader::SetCurrentMediaType", impl->source_reader->SetCurrentMediaType((DWORD)MF_SOURCE_READER_FIRST_VIDEO_STREAM, NULL, media_type));
+                impl->callback = callback;
                 return;
             }
             throw std::runtime_error("no matching media type");
         }
 
-        void device_handle::start_streaming(std::function<void(const void * frame)> callback)
+        void device_handle::start_streaming()
         {
-            impl->callback = callback;
             check("IMFSourceReader::ReadSample", impl->source_reader->ReadSample(MF_SOURCE_READER_FIRST_VIDEO_STREAM, 0, NULL, NULL, NULL, NULL));
         }
 
@@ -612,7 +610,7 @@ namespace rsimpl
 			impl->open_win_usb(interface_number);
         }
 
-        void device::bulk_transfer(uint8_t endpoint, unsigned char *data, int length, int *actual_length, unsigned int timeout)
+        void device::bulk_transfer(uint8_t endpoint, void * data, int length, int *actual_length, unsigned int timeout)
         {		
             if(USB_ENDPOINT_DIRECTION_OUT(endpoint))
             {
