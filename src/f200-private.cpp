@@ -554,7 +554,8 @@ namespace rsimpl { namespace f200
 
     IVCAMHardwareIO::IVCAMHardwareIO(uvc::device device) : device(device)
     {
-        device.claim_interface(IVCAM_MONITOR_INTERFACE);
+        const uvc::guid IVCAM_WIN_USB_DEVICE_GUID = {0x175695CD, 0x30D9, 0x4F87, {0x8B, 0xE3, 0x5A, 0x82, 0x70, 0xF4, 0x9A, 0x31}};
+        device.claim_interface(IVCAM_WIN_USB_DEVICE_GUID, IVCAM_MONITOR_INTERFACE);
 
         uint8_t rawCalibrationBuffer[HW_MONITOR_BUFFER_SIZE];
         size_t bufferLength = HW_MONITOR_BUFFER_SIZE;

@@ -43,10 +43,10 @@ Our intent is to provide bindings and wrappers for as many languages and framewo
 
 The goal of librealsense is to provide a reasonable hardware abstraction with minimal dependencies. It is not a computer vision SDK.
 
-1.	Streams: depth, color, infrared
-  *	Of the different streaming modes + fps options available, only fairly common ones have been tested. 
-2.	Intrinsic/extrinsic calibration information (inc. uv map, etc)
-3.	Majority of XU-exposed functionality for each camera
+1. Streams: depth, color, infrared
+  * Of the different streaming modes + fps options available, only fairly common ones have been tested. 
+2. Intrinsic/extrinsic calibration information (inc. uv map, etc)
+3. Majority of XU-exposed functionality for each camera
 
 ## Apple OSX Installation
 
@@ -62,7 +62,7 @@ The goal of librealsense is to provide a reasonable hardware abstraction with mi
 
 1. Grant appropriate permissions to detach the kernel UVC driver when a device is plugged in:
   * `sudo cp config/99-uvc.rules /etc/udev/rules.d/`
-  * `sudo cp config/uvc.conf /etc/modprobe.d/uvc.conf/`
+  * `sudo cp config/uvc.conf /etc/modprobe.d/`
   * Either reboot or run `udevadm control --reload-rules && udevadm trigger` to enforce the new udev rules
 2. Ensure apt-get is up to date
   * `sudo apt-get update && apt-get upgrade`

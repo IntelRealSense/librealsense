@@ -10,6 +10,14 @@ namespace rsimpl
 {
     namespace uvc
     {
+        struct guid
+        {
+            uint32_t data1;
+            uint16_t data2;
+            uint16_t data3;
+            uint8_t data4[8];
+        };
+
         struct device
         {
             struct _impl; std::shared_ptr<_impl> impl;
@@ -18,7 +26,7 @@ namespace rsimpl
             int get_vendor_id() const;
             int get_product_id() const;
 
-            void claim_interface(int interface_number);
+            void claim_interface(const guid & interface_guid, int interface_number);
             void bulk_transfer(unsigned char endpoint, void * data, int length, int *actual_length, unsigned int timeout);
 
             void get_control(uint8_t unit, uint8_t ctrl, void * data, int len) const;

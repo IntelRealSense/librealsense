@@ -188,11 +188,11 @@ namespace rs
         device              get_device(int index)                                                   { return rs_get_device(ctx, index, throw_on_error()); }
     };
 
-    inline std::ostream &   operator << (std::ostream & out, stream stream)                         { return out << rs_stream_to_string((rs_stream)stream); }
-    inline std::ostream &   operator << (std::ostream & out, format format)                         { return out << rs_format_to_string((rs_format)format); }
-    inline std::ostream &   operator << (std::ostream & out, preset preset)                         { return out << rs_preset_to_string((rs_preset)preset); }
-    inline std::ostream &   operator << (std::ostream & out, distortion distortion)                 { return out << rs_distortion_to_string((rs_distortion)distortion); }
-    inline std::ostream &   operator << (std::ostream & out, option option)                         { return out << rs_option_to_string((rs_option)option); }
+    inline std::ostream &   operator << (std::ostream & out, stream stream)                         { for(auto s = rs_stream_to_string((rs_stream)stream);             *s; ++s) out << (char)tolower(*s); return out; }
+    inline std::ostream &   operator << (std::ostream & out, format format)                         { for(auto s = rs_format_to_string((rs_format)format);             *s; ++s) out << (char)tolower(*s); return out; }
+    inline std::ostream &   operator << (std::ostream & out, preset preset)                         { for(auto s = rs_preset_to_string((rs_preset)preset);             *s; ++s) out << (char)tolower(*s); return out; }
+    inline std::ostream &   operator << (std::ostream & out, distortion distortion)                 { for(auto s = rs_distortion_to_string((rs_distortion)distortion); *s; ++s) out << (char)tolower(*s); return out; }
+    inline std::ostream &   operator << (std::ostream & out, option option)                         { for(auto s = rs_option_to_string((rs_option)option);             *s; ++s) out << (char)tolower(*s); return out; }
 }
 
 static_assert(sizeof(rs::intrinsics) == sizeof(rs_intrinsics), "struct layout error");
