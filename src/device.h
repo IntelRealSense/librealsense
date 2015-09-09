@@ -14,7 +14,6 @@ protected:
 
     rsimpl::stream_request                  requests[RS_STREAM_COUNT];  // Indexed by RS_DEPTH, RS_COLOR, ...
     std::shared_ptr<rsimpl::stream_buffer>  streams[RS_STREAM_COUNT];   // Indexed by RS_DEPTH, RS_COLOR, ...
-    std::vector<rsimpl::uvc::device_handle> subdevices;                 // Indexed by UVC subdevices number (0, 1, 2...)
 
     bool                                    capturing;
     std::chrono::high_resolution_clock::time_point capture_started;  

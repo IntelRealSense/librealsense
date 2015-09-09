@@ -39,15 +39,11 @@ static static_device_info add_standard_unpackers(const static_device_info & devi
 rs_device::rs_device(rsimpl::uvc::device device, const static_device_info & device_info) : device(device), device_info(add_standard_unpackers(device_info)), capturing()
 {
     for(auto & req : requests) req = rsimpl::stream_request();
-
-    int max_subdevice = 0;
-    for(auto & mode : device_info.subdevice_modes) max_subdevice = std::max(max_subdevice, mode.subdevice);
-    subdevices.resize(max_subdevice+1);
 }
 
 rs_device::~rs_device()
 {
-    subdevices.clear();
+
 }
 
 void rs_device::enable_stream(rs_stream stream, int width, int height, rs_format format, int fps)
@@ -92,9 +88,12 @@ void rs_device::start()
 
     for(auto & s : streams) s.reset(); // Starting capture invalidates the current stream info, if any exists from previous capture
 
+    int max_subdevice = 0;
+    for(auto & mode : device_info.subdevice_modes) max_subdevice = std::max(max_subdevice, mode.subdevice);
+
     // Satisfy stream_requests as necessary for each subdevice, calling set_mode and
     // dispatching the uvc configuration for a requested stream to the hardware
-    for(int i = 0; i < subdevices.size(); ++i)
+    for(int i = 0; i <= max_subdevice; ++i)
     {
         if(const subdevice_mode * m = device_info.select_mode(requests, i))
         {               
@@ -112,8 +111,7 @@ void rs_device::start()
             }
                 
             // Initialize the subdevice and set it to the selected mode
-            subdevices[i] = device.claim_subdevice(i);
-            subdevices[i].set_mode(mode.width, mode.height, mode.format, mode.fps, [mode, stream_list](const void * frame)
+            device.set_subdevice_mode(i, mode.width, mode.height, mode.format, mode.fps, [mode, stream_list](const void * frame)
             {
                 // Unpack the image into the user stream interface back buffer
                 std::vector<void *> dest;
@@ -130,15 +128,11 @@ void rs_device::start()
                 // Swap the backbuffer to the middle buffer and indicate that we have updated
                 for(auto & stream : stream_list) stream->swap_back();
             });
-
-            #if defined(ENABLE_DEBUG_SPAM)
-            uvc_print_diag(subdevices[i]->get_handle(), stdout);
-            #endif
         }
     }
     
     set_stream_intent();
-    for(int i=0; i<subdevices.size(); ++i) if (subdevices[i]) subdevices[i].start_streaming();
+    device.start_streaming();
     capture_started = std::chrono::high_resolution_clock::now();
     capturing = true;
 }
@@ -146,14 +140,7 @@ void rs_device::start()
 void rs_device::stop()
 {
     if(!capturing) throw std::runtime_error("cannot stop device without first starting device");
-    for(auto & subdevice : subdevices)
-    {
-        if (subdevice)
-        {
-            subdevice.stop_streaming();
-            subdevice = uvc::device_handle();
-        }
-    }
+    device.stop_streaming();
     capturing = false;
 }
 

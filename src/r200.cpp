@@ -139,9 +139,9 @@ namespace rsimpl
     void r200_camera::set_stream_intent()
     {
         uint8_t streamIntent = 0;
-        if(subdevices[0]) streamIntent |= r200::STATUS_BIT_LR_STREAMING;
-        if(subdevices[1]) streamIntent |= r200::STATUS_BIT_Z_STREAMING;
-        if(subdevices[2]) streamIntent |= r200::STATUS_BIT_WEB_STREAMING;
+        if(streams[RS_STREAM_INFRARED] || streams[RS_STREAM_INFRARED_2]) streamIntent |= r200::STATUS_BIT_LR_STREAMING;
+        if(streams[RS_STREAM_DEPTH]) streamIntent |= r200::STATUS_BIT_Z_STREAMING;
+        if(streams[RS_STREAM_COLOR]) streamIntent |= r200::STATUS_BIT_WEB_STREAMING;
         r200::set_stream_intent(device, streamIntent);
     }
 

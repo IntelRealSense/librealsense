@@ -18,7 +18,8 @@ char * concat_path(char * a, const char * b)
 
 FILE * find_file(const char * path, int levels)
 {
-    for (int i = 0; i <= levels; ++i)
+    int i;
+    for (i = 0; i <= levels; ++i)
     {
         FILE * f = 0;
         if ((f = fopen(path, "rb")))

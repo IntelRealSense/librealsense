@@ -22,12 +22,19 @@ namespace rsimpl
             ~_impl() { if(ctx) uvc_exit(ctx); }
         };
 
+        struct subdevice
+        {
+            uvc_device_handle_t * handle = nullptr;
+            uvc_stream_ctrl_t ctrl;
+            std::function<void(const void * frame)> callback;
+        };
+
         struct device::_impl
         {
             std::shared_ptr<context::_impl> parent;
             uvc_device_t * device;
             uvc_device_descriptor_t * desc;
-            std::vector<uvc_device_handle_t *> handles;
+            std::vector<subdevice> subdevices;
             std::vector<int> claimed_interfaces;
 
             _impl() : device(), desc() {}
@@ -42,62 +49,22 @@ namespace rsimpl
             {
                 for(auto interface_number : claimed_interfaces)
                 {
-                    int status = libusb_release_interface(get_handle(0)->usb_devh, interface_number);
+                    int status = libusb_release_interface(get_subdevice(0).handle->usb_devh, interface_number);
                     if(status < 0) std::cerr << "Warning: libusb_release_interface(...) returned " << libusb_error_name(status) << std::endl;
                 }
 
-                for(auto * h : handles) if(h) uvc_close(h);
+                for(auto & sub : subdevices) if(sub.handle) uvc_close(sub.handle);
                 if(desc) uvc_free_device_descriptor(desc);
                 if(device) uvc_unref_device(device);
             }
 
-            uvc_device_handle_t * get_handle(int subdevice_index)
+            subdevice & get_subdevice(int subdevice_index)
             {
-                if(subdevice_index >= handles.size()) handles.resize(subdevice_index+1);
-                if(!handles[subdevice_index]) check("uvc_open2", uvc_open2(device, &handles[subdevice_index], subdevice_index));
-                return handles[subdevice_index];
+                if(subdevice_index >= subdevices.size()) subdevices.resize(subdevice_index+1);
+                if(!subdevices[subdevice_index].handle) check("uvc_open2", uvc_open2(device, &subdevices[subdevice_index].handle, subdevice_index));
+                return subdevices[subdevice_index];
             }
         };
-
-        struct device_handle::_impl
-        {
-            std::shared_ptr<device::_impl> parent;
-            int subdevice_index;
-            uvc_stream_ctrl_t ctrl;
-            std::function<void(const void * frame)> callback;
-
-            _impl(std::shared_ptr<device::_impl> parent, int subdevice_index) : parent(parent), subdevice_index(subdevice_index) { get_handle(); }
-            ~_impl() { uvc_stop_streaming(get_handle()); } // UVC callback has a naked ptr to this struct, must make sure it's done before we destruct
-
-            uvc_device_handle_t * get_handle() { return parent->get_handle(subdevice_index); }
-        };
-
-        ///////////////////
-        // device_handle //
-        ///////////////////
-
-        void device_handle::set_mode(int width, int height, frame_format cf, int fps, std::function<void(const void * frame)> callback)
-        {
-            check("get_stream_ctrl_format_size", uvc_get_stream_ctrl_format_size(impl->get_handle(), &impl->ctrl, (uvc_frame_format)cf, width, height, fps));
-            impl->callback = callback;
-        }
-
-        void device_handle::start_streaming()
-        {
-            #if defined (ENABLE_DEBUG_SPAM)
-            uvc_print_stream_ctrl(&impl->ctrl, stdout);
-            #endif
-
-            check("uvc_start_streaming", uvc_start_streaming(impl->get_handle(), &impl->ctrl, [](uvc_frame * frame, void * user)
-            {
-                reinterpret_cast<device_handle::_impl *>(user)->callback(frame->data);
-            }, impl.get(), 0));
-        }
-
-        void device_handle::stop_streaming()
-        {
-            uvc_stop_streaming(impl->get_handle());
-        }
 
         ////////////
         // device //
@@ -108,32 +75,60 @@ namespace rsimpl
 
         void device::get_control(uint8_t unit, uint8_t ctrl, void * data, int len) const
         {
-            int status = uvc_get_ctrl(impl->get_handle(0), unit, ctrl, data, len, UVC_GET_CUR);
+            int status = uvc_get_ctrl(impl->get_subdevice(0).handle, unit, ctrl, data, len, UVC_GET_CUR);
             if(status < 0) throw std::runtime_error(to_string() << "uvc_get_ctrl(...) returned " << libusb_error_name(status));
         }
 
         void device::set_control(uint8_t unit, uint8_t ctrl, void * data, int len)
         {
-            int status = uvc_set_ctrl(impl->get_handle(0), unit, ctrl, data, len);
+            int status = uvc_set_ctrl(impl->get_subdevice(0).handle, unit, ctrl, data, len);
             if(status < 0) throw std::runtime_error(to_string() << "uvc_set_ctrl(...) returned " << libusb_error_name(status));
         }
 
         void device::claim_interface(int interface_number)
         {
-            int status = libusb_claim_interface(impl->get_handle(0)->usb_devh, interface_number);
+            int status = libusb_claim_interface(impl->get_subdevice(0).handle->usb_devh, interface_number);
             if(status < 0) throw std::runtime_error(to_string() << "libusb_claim_interface(...) returned " << libusb_error_name(status));
             impl->claimed_interfaces.push_back(interface_number);
         }
 
         void device::bulk_transfer(unsigned char endpoint, void * data, int length, int *actual_length, unsigned int timeout)
         {
-            int status = libusb_bulk_transfer(impl->get_handle(0)->usb_devh, endpoint, (unsigned char *)data, length, actual_length, timeout);
+            int status = libusb_bulk_transfer(impl->get_subdevice(0).handle->usb_devh, endpoint, (unsigned char *)data, length, actual_length, timeout);
             if(status < 0) throw std::runtime_error(to_string() << "libusb_bulk_transfer(...) returned " << libusb_error_name(status));
         }
 
-        device_handle device::claim_subdevice(int subdevice_index)
+        void device::set_subdevice_mode(int subdevice_index, int width, int height, frame_format cf, int fps, std::function<void(const void * frame)> callback)
         {
-            return {std::make_shared<device_handle::_impl>(impl, subdevice_index)};
+            auto & sub = impl->get_subdevice(subdevice_index);
+            check("get_stream_ctrl_format_size", uvc_get_stream_ctrl_format_size(sub.handle, &sub.ctrl, (uvc_frame_format)cf, width, height, fps));
+            sub.callback = callback;
+        }
+
+        void device::start_streaming()
+        {
+            for(auto & sub : impl->subdevices)
+            {
+                if(sub.handle)
+                {
+                    #if defined (ENABLE_DEBUG_SPAM)
+                    uvc_print_stream_ctrl(&sub.ctrl, stdout);
+                    #endif
+
+                    check("uvc_start_streaming", uvc_start_streaming(sub.handle, &sub.ctrl, [](uvc_frame * frame, void * user)
+                    {
+                        reinterpret_cast<subdevice *>(user)->callback(frame->data);
+                    }, &sub, 0));
+                }
+            }
+        }
+
+        void device::stop_streaming()
+        {
+            for(auto & sub : impl->subdevices)
+            {
+                if(sub.handle) uvc_stop_streaming(sub.handle);
+            }
         }
 
         /////////////
@@ -312,9 +307,6 @@ namespace rsimpl
 
         struct context::_impl
         {
-            IMFAttributes * pAttributes = nullptr;
-            IMFActivate ** ppDevices = nullptr;
-
             _impl()
             {
                 CoInitializeEx(NULL, COINIT_APARTMENTTHREADED);
@@ -328,25 +320,98 @@ namespace rsimpl
             }
         };
 
+        class reader_callback : public IMFSourceReaderCallback
+        {
+            std::weak_ptr<device::_impl> owner; // The device holds a reference to us, so use weak_ptr to prevent a cycle
+            int subdevice_index;
+            ULONG ref_count;
+            volatile bool streaming = false;
+        public:
+            reader_callback(std::weak_ptr<device::_impl> owner, int subdevice_index) : owner(owner), subdevice_index(subdevice_index), ref_count() {}
+
+            bool is_streaming() const { return streaming; }
+            void on_start() { streaming = true; }
+
+            // Implement IUnknown
+            HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, void ** ppvObject) override 
+            {
+                static const QITAB table[] = {QITABENT(reader_callback, IUnknown), QITABENT(reader_callback, IMFSourceReaderCallback), {0}};
+                return QISearch(this, table, riid, ppvObject);
+            }
+            ULONG STDMETHODCALLTYPE AddRef() override { return InterlockedIncrement(&ref_count); }
+            ULONG STDMETHODCALLTYPE Release() override 
+            { 
+                ULONG count = InterlockedDecrement(&ref_count);
+                if(count == 0) delete this;
+                return count;
+            }
+
+            // Implement IMFSourceReaderCallback
+            HRESULT STDMETHODCALLTYPE OnReadSample(HRESULT hrStatus, DWORD dwStreamIndex, DWORD dwStreamFlags, LONGLONG llTimestamp, IMFSample * sample) override;
+            HRESULT STDMETHODCALLTYPE OnFlush(DWORD dwStreamIndex) override { streaming = false; return S_OK; }
+            HRESULT STDMETHODCALLTYPE OnEvent(DWORD dwStreamIndex, IMFMediaEvent *pEvent) override { return S_OK; }
+        };
+
+        struct subdevice
+        {
+            com_ptr<reader_callback> reader_callback;
+            com_ptr<IMFActivate> mf_activate;
+            com_ptr<IMFMediaSource> mf_media_source;
+            com_ptr<IMFSourceReader> mf_source_reader;
+            std::function<void(const void * frame)> callback;
+
+            com_ptr<IMFMediaSource> get_media_source()
+            {
+                if(!mf_media_source) check("IMFActivate::ActivateObject", mf_activate->ActivateObject(__uuidof(IMFMediaSource), (void **)&mf_media_source));
+                return mf_media_source;
+            }
+        };
+
         struct device::_impl
         {
             const std::shared_ptr<context::_impl> parent;
             const int vid, pid;
             const std::string unique_id;
 
-            std::vector<com_ptr<IMFActivate>> subdevices;
-            std::vector<com_ptr<IMFMediaSource>> sources;
+            std::vector<subdevice> subdevices;
             com_ptr<IKsControl> ks_control;
 
 			HANDLE usb_file_handle = INVALID_HANDLE_VALUE;
 			WINUSB_INTERFACE_HANDLE usb_interface_handle = INVALID_HANDLE_VALUE;
 
             _impl(std::shared_ptr<context::_impl> parent, int vid, int pid, std::string unique_id) : parent(move(parent)), vid(vid), pid(pid), unique_id(move(unique_id)) {}
+            ~_impl() { stop_streaming(); close_win_usb(); }
+
+            void start_streaming()
+            {
+                for(auto & sub : subdevices)
+                {
+                    if(sub.mf_source_reader)
+                    {
+                        sub.reader_callback->on_start();
+                        check("IMFSourceReader::ReadSample", sub.mf_source_reader->ReadSample(MF_SOURCE_READER_FIRST_VIDEO_STREAM, 0, NULL, NULL, NULL, NULL));                    
+                    }
+                }
+            }
+
+            void stop_streaming()
+            {
+                for(auto & sub : subdevices)
+                {
+                    if(sub.mf_source_reader) sub.mf_source_reader->Flush(MF_SOURCE_READER_FIRST_VIDEO_STREAM);
+                }
+                while(true)
+                {
+                    bool is_streaming = false;
+                    for(auto & sub : subdevices) is_streaming |= sub.reader_callback->is_streaming();                   
+                    if(is_streaming) std::this_thread::sleep_for(std::chrono::milliseconds(10));
+                    else break;
+                }
+            }
 
             com_ptr<IMFMediaSource> get_media_source(int subdevice_index)
             {
-                if(!sources[subdevice_index]) check("IMFActivate::ActivateObject", subdevices[subdevice_index]->ActivateObject(__uuidof(IMFMediaSource), (void **)&sources[subdevice_index]));
-                return sources[subdevice_index];
+                return subdevices[subdevice_index].get_media_source();
             }			
 
 			void open_win_usb(int interface_number) try
@@ -506,70 +571,37 @@ namespace rsimpl
             }
         };
 
-        struct device_handle::_impl
+        HRESULT reader_callback::OnReadSample(HRESULT hrStatus, DWORD dwStreamIndex, DWORD dwStreamFlags, LONGLONG llTimestamp, IMFSample * sample) 
         {
-            const std::shared_ptr<device::_impl> parent;
-
-            std::function<void(const void * frame)> callback;
-            com_ptr<IMFMediaSource> media_source;
-            com_ptr<IMFSourceReaderCallback> source_reader_callback;
-            com_ptr<IMFSourceReader> source_reader;
-
-            _impl(std::shared_ptr<device::_impl> parent) : parent(move(parent)) {}
-        };
-
-        ///////////////////
-        // device_handle //
-        ///////////////////
-
-        static bool matches_format(const GUID & a, frame_format b)
-        {
-            return (a.Data1 == FCC('YUY2') && b == frame_format::YUYV)
-                || (a.Data1 == FCC('Y8  ') && b == frame_format::Y8  )
-                || (a.Data1 == FCC('Y12I') && b == frame_format::Y12I)
-                || (a.Data1 == FCC('Z16 ') && b == frame_format::Z16 )
-                || (a.Data1 == FCC('INVI') && b == frame_format::INVI)
-                || (a.Data1 == FCC('INVR') && b == frame_format::INVR)
-                || (a.Data1 == FCC('INRI') && b == frame_format::INRI);
-            // TODO: Y16, Y8I, Y16I, other IVCAM formats, etc.
-        }
-
-        void device_handle::set_mode(int width, int height, frame_format cf, int fps, std::function<void(const void * frame)> callback)
-        {
-            for (DWORD j = 0; ; j++)
+            if(auto owner_ptr = owner.lock())
             {
-                com_ptr<IMFMediaType> media_type;
-                HRESULT hr = impl->source_reader->GetNativeMediaType((DWORD)MF_SOURCE_READER_FIRST_VIDEO_STREAM, j, &media_type);
-                if (hr == MF_E_NO_MORE_TYPES) break;
-                check("IMFSourceReader::GetNativeMediaType", hr);
+                if(sample)
+                {
+                    com_ptr<IMFMediaBuffer> buffer = NULL;
+                    if(SUCCEEDED(sample->GetBufferByIndex(0, &buffer)))
+                    {
+                        BYTE * byte_buffer; DWORD max_length, current_length;
+                        if(SUCCEEDED(buffer->Lock(&byte_buffer, &max_length, &current_length)))
+                        {
+                            owner_ptr->subdevices[subdevice_index].callback(byte_buffer);
+                            HRESULT hr = buffer->Unlock();
+                        }
+                    }
+                }
 
-                UINT32 uvc_width, uvc_height, uvc_fps_num, uvc_fps_denom; GUID subtype;
-                check("MFGetAttributeSize", MFGetAttributeSize(media_type, MF_MT_FRAME_SIZE, &uvc_width, &uvc_height));
-                if(uvc_width != width || uvc_height != height) continue;
-
-                check("IMFMediaType::GetGUID", media_type->GetGUID(MF_MT_SUBTYPE, &subtype));
-                if(!matches_format(subtype, cf)) continue;
-
-                check("MFGetAttributeRatio", MFGetAttributeRatio(media_type, MF_MT_FRAME_RATE, &uvc_fps_num, &uvc_fps_denom));
-                if(uvc_fps_denom == 0) continue;
-                int uvc_fps = uvc_fps_num / uvc_fps_denom;
-                if(std::abs(fps - uvc_fps) > 1) continue;
-
-                check("IMFSourceReader::SetCurrentMediaType", impl->source_reader->SetCurrentMediaType((DWORD)MF_SOURCE_READER_FIRST_VIDEO_STREAM, NULL, media_type));
-                impl->callback = callback;
-                return;
+                HRESULT hr = owner_ptr->subdevices[subdevice_index].mf_source_reader->ReadSample(MF_SOURCE_READER_FIRST_VIDEO_STREAM, 0, NULL, NULL, NULL, NULL);
+                switch(hr)
+                {
+                case S_OK: break;
+                case MF_E_INVALIDREQUEST: std::cout << "ReadSample returned MF_E_INVALIDREQUEST" << std::endl; break;
+                case MF_E_INVALIDSTREAMNUMBER: std::cout << "ReadSample returned MF_E_INVALIDSTREAMNUMBER" << std::endl; break;
+                case MF_E_NOTACCEPTING: std::cout << "ReadSample returned MF_E_NOTACCEPTING" << std::endl; break;
+                case E_INVALIDARG: std::cout << "ReadSample returned E_INVALIDARG" << std::endl; break;
+                case MF_E_VIDEO_RECORDING_DEVICE_INVALIDATED: std::cout << "ReadSample returned MF_E_VIDEO_RECORDING_DEVICE_INVALIDATED" << std::endl; break;
+                default: std::cout << "ReadSample returned HRESULT " << std::hex << (uint32_t)hr << std::endl; break;
+                }
             }
-            throw std::runtime_error("no matching media type");
-        }
-
-        void device_handle::start_streaming()
-        {
-            check("IMFSourceReader::ReadSample", impl->source_reader->ReadSample(MF_SOURCE_READER_FIRST_VIDEO_STREAM, 0, NULL, NULL, NULL, NULL));
-        }
-
-        void device_handle::stop_streaming()
-        {
-            throw std::runtime_error("device_handle::stop_streaming(...) not implemented");
+            return S_OK; 
         }
 
         ////////////
@@ -624,78 +656,58 @@ namespace rsimpl
 			}
         }
 
-        class reader_callback : public IMFSourceReaderCallback
+        static bool matches_format(const GUID & a, frame_format b)
         {
-            std::weak_ptr<device_handle::_impl> owner; // The device_handle holds a reference to us, so use weak_ptr to prevent a cycle
-            ULONG ref_count;
-        public:
-            reader_callback(std::shared_ptr<device_handle::_impl> owner) : owner(owner), ref_count() {}
-
-            // Implement IUnknown
-            HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, void ** ppvObject) override 
-            {
-                static const QITAB table[] = {QITABENT(reader_callback, IUnknown), QITABENT(reader_callback, IMFSourceReaderCallback), {0}};
-                return QISearch(this, table, riid, ppvObject);
-            }
-            ULONG STDMETHODCALLTYPE AddRef() override { return InterlockedIncrement(&ref_count); }
-            ULONG STDMETHODCALLTYPE Release() override 
-            { 
-                ULONG count = InterlockedDecrement(&ref_count);
-                if(count == 0) delete this;
-                return count;
-            }
-
-            // Implement IMFSourceReaderCallback
-            HRESULT STDMETHODCALLTYPE OnReadSample(HRESULT hrStatus, DWORD dwStreamIndex, DWORD dwStreamFlags, LONGLONG llTimestamp, IMFSample * sample) override 
-            {
-                if(auto owner_ptr = owner.lock())
-                {
-                    if(sample)
-                    {
-                        com_ptr<IMFMediaBuffer> buffer = NULL;
-                        if(SUCCEEDED(sample->GetBufferByIndex(0, &buffer)))
-                        {
-                            BYTE * byte_buffer; DWORD max_length, current_length;
-                            if(SUCCEEDED(buffer->Lock(&byte_buffer, &max_length, &current_length)))
-                            {
-                                 owner_ptr->callback(byte_buffer);
-                                 HRESULT hr = buffer->Unlock();
-                            }
-                        }
-                    }
-
-                    HRESULT hr = owner_ptr->source_reader->ReadSample(MF_SOURCE_READER_FIRST_VIDEO_STREAM, 0, NULL, NULL, NULL, NULL);
-                    switch(hr)
-                    {
-                    case S_OK: break;
-                    case MF_E_INVALIDREQUEST: std::cout << "ReadSample returned MF_E_INVALIDREQUEST" << std::endl; break;
-                    case MF_E_INVALIDSTREAMNUMBER: std::cout << "ReadSample returned MF_E_INVALIDSTREAMNUMBER" << std::endl; break;
-                    case MF_E_NOTACCEPTING: std::cout << "ReadSample returned MF_E_NOTACCEPTING" << std::endl; break;
-                    case E_INVALIDARG: std::cout << "ReadSample returned E_INVALIDARG" << std::endl; break;
-                    case MF_E_VIDEO_RECORDING_DEVICE_INVALIDATED: std::cout << "ReadSample returned MF_E_VIDEO_RECORDING_DEVICE_INVALIDATED" << std::endl; break;
-                    default: std::cout << "ReadSample returned HRESULT " << std::hex << (uint32_t)hr << std::endl; break;
-                    }
-                }
-                return S_OK; 
-            }
-            HRESULT STDMETHODCALLTYPE OnFlush(DWORD dwStreamIndex) override { return S_OK; }
-            HRESULT STDMETHODCALLTYPE OnEvent(DWORD dwStreamIndex, IMFMediaEvent *pEvent) override { return S_OK; }
-        };
-
-        device_handle device::claim_subdevice(int subdevice_index)
-        {
-            auto sub = std::make_shared<device_handle::_impl>(impl);
-
-            sub->media_source = impl->get_media_source(subdevice_index);
-            sub->source_reader_callback = new reader_callback(sub);
-
-            com_ptr<IMFAttributes> pAttributes;
-            check("MFCreateAttributes", MFCreateAttributes(&pAttributes, 1));
-            check("IMFAttributes::SetUnknown", pAttributes->SetUnknown(MF_SOURCE_READER_ASYNC_CALLBACK, static_cast<IUnknown *>(sub->source_reader_callback))); // TODO: Fix
-            check("MFCreateSourceReaderFromMediaSource", MFCreateSourceReaderFromMediaSource(sub->media_source, pAttributes, &sub->source_reader));
-            
-            return {sub};
+            return (a.Data1 == FCC('YUY2') && b == frame_format::YUYV)
+                || (a.Data1 == FCC('Y8  ') && b == frame_format::Y8  )
+                || (a.Data1 == FCC('Y12I') && b == frame_format::Y12I)
+                || (a.Data1 == FCC('Z16 ') && b == frame_format::Z16 )
+                || (a.Data1 == FCC('INVI') && b == frame_format::INVI)
+                || (a.Data1 == FCC('INVR') && b == frame_format::INVR)
+                || (a.Data1 == FCC('INRI') && b == frame_format::INRI);
+            // TODO: Y16, Y8I, Y16I, other IVCAM formats, etc.
         }
+
+        void device::set_subdevice_mode(int subdevice_index, int width, int height, frame_format cf, int fps, std::function<void(const void * frame)> callback)
+        {
+            auto & sub = impl->subdevices[subdevice_index];
+            
+            if(!sub.mf_source_reader)
+            {
+                com_ptr<IMFAttributes> pAttributes;
+                check("MFCreateAttributes", MFCreateAttributes(&pAttributes, 1));
+                check("IMFAttributes::SetUnknown", pAttributes->SetUnknown(MF_SOURCE_READER_ASYNC_CALLBACK, static_cast<IUnknown *>(sub.reader_callback)));
+                check("MFCreateSourceReaderFromMediaSource", MFCreateSourceReaderFromMediaSource(sub.get_media_source(), pAttributes, &sub.mf_source_reader));
+            }
+
+            for (DWORD j = 0; ; j++)
+            {
+                com_ptr<IMFMediaType> media_type;
+                HRESULT hr = sub.mf_source_reader->GetNativeMediaType((DWORD)MF_SOURCE_READER_FIRST_VIDEO_STREAM, j, &media_type);
+                if (hr == MF_E_NO_MORE_TYPES) break;
+                check("IMFSourceReader::GetNativeMediaType", hr);
+
+                UINT32 uvc_width, uvc_height, uvc_fps_num, uvc_fps_denom; GUID subtype;
+                check("MFGetAttributeSize", MFGetAttributeSize(media_type, MF_MT_FRAME_SIZE, &uvc_width, &uvc_height));
+                if(uvc_width != width || uvc_height != height) continue;
+
+                check("IMFMediaType::GetGUID", media_type->GetGUID(MF_MT_SUBTYPE, &subtype));
+                if(!matches_format(subtype, cf)) continue;
+
+                check("MFGetAttributeRatio", MFGetAttributeRatio(media_type, MF_MT_FRAME_RATE, &uvc_fps_num, &uvc_fps_denom));
+                if(uvc_fps_denom == 0) continue;
+                int uvc_fps = uvc_fps_num / uvc_fps_denom;
+                if(std::abs(fps - uvc_fps) > 1) continue;
+
+                check("IMFSourceReader::SetCurrentMediaType", sub.mf_source_reader->SetCurrentMediaType((DWORD)MF_SOURCE_READER_FIRST_VIDEO_STREAM, NULL, media_type));
+                sub.callback = callback;
+                return;
+            }
+            throw std::runtime_error("no matching media type");
+        }
+
+        void device::start_streaming() { impl->start_streaming(); }
+        void device::stop_streaming() { impl->stop_streaming(); }
 
         /////////////
         // context //
@@ -746,10 +758,11 @@ namespace rsimpl
 
                 int subdevice_index = mi/2;
                 if(subdevice_index >= dev.impl->subdevices.size()) dev.impl->subdevices.resize(subdevice_index+1);
-                dev.impl->subdevices[subdevice_index] = pDevice;
+
+                dev.impl->subdevices[subdevice_index].reader_callback = new reader_callback(dev.impl, subdevice_index);
+                dev.impl->subdevices[subdevice_index].mf_activate = pDevice;                
             }
             CoTaskMemFree(ppDevices);
-            for(auto & dev : devices) dev.impl->sources.resize(dev.impl->subdevices.size());
             return devices;
         }
     }
