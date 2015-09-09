@@ -4,10 +4,10 @@ A cross-platform library for capturing data with the RealSense F200 (IVCAM 1.0, 
 
 Dependency management for GLFW3 and libusb-1.0 is done manually at the moment (see the corresponding sections below), pending the creation of installer scripts to automate the process. 
 
-## Cameras
+## Supported Devices
 
-1.	RealSense R200 (DS4)
-2.	RealSense F200 (IVCAM 1.0)
+1. RealSense R200 (DS4)
+2. RealSense F200 (IVCAM 1.0)
 	
 DS5 and IVCAM 1.5 support will be provided in the near future. librealsense should in principal be able to support any 3D camera which exposes a UVC interface and which chiefly relies on UVC XU commands and USB sidechannel traffic for controls and calibration information.
 
@@ -21,6 +21,14 @@ librealsense is written in standards-conforming C++11 and relies only on the C89
 
 Android support will be provided in the near future. librealsense is likely to compile and run on other platforms as well, and we appreciate any assistance in testing and debugging support for other platforms and operating system versions.
 
+## Supported Languages and Frameworks
+
+1. C - Core library API exposed via the C89 ABI
+2. C++ - Single header file (rs.hpp) wrapper around C API, providing classes and exceptions
+3. C# - Single source file (rs.cs) wrapper for P/Invoke to C API, providing classes and exceptions
+
+Our intent is to provide bindings and wrappers for as many languages and frameworks as possible. Our core library exposes its functionality via C, and we intend for our various bindings and wrappers to look and feel "native" to their respective libraries, for instance, using classes to represent objects, throwing exceptions to report errors, and following established naming conventions and casing styles of the language or framework in question.
+
 ## Functionality
 
 The goal of librealsense is to provide a reasonable hardware abstraction with minimal dependencies. It is not a computer vision SDK.
@@ -29,13 +37,6 @@ The goal of librealsense is to provide a reasonable hardware abstraction with mi
   *	Of the different streaming modes + fps options available, only fairly common ones have been tested. 
 2.	Intrinsic/extrinsic calibration information (inc. uv map, etc)
 3.	Majority of XU-exposed functionality for each camera
-
-## API
-
-1.	Unified API combines F200, R200, and future hardware iterations. 
-2.	Example apps will work with both F200 and R200 at runtime, no code modifications necessary unless camera-specific features are used
-3.	API is expressed as a simple C interface for cross-language compatibility. A C++ API is also exposed for convenience.
-
 
 ## Apple OSX Installation
 
