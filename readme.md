@@ -27,7 +27,7 @@ Android support will be provided in the near future. librealsense is likely to c
 2. C++ - Single header file (rs.hpp) wrapper around C API, providing classes and exceptions
 3. C# - Single source file (rs.cs) wrapper for P/Invoke to C API, providing classes and exceptions
 
-Our intent is to provide bindings and wrappers for as many languages and frameworks as possible. Our core library exposes its functionality via C, and we intend for our various bindings and wrappers to look and feel "native" to their respective libraries, for instance, using classes to represent objects, throwing exceptions to report errors, and following established naming conventions and casing styles of the language or framework in question.
+Our intent is to provide bindings and wrappers for as many languages and frameworks as possible. Our core library exposes its functionality via C, and we intend for our various bindings and wrappers to look and feel "native" to their respective languages, for instance, using classes to represent objects, throwing exceptions to report errors, and following established naming conventions and casing styles of the language or framework in question.
 
 ## Library Dependencies
 
@@ -35,6 +35,9 @@ Our intent is to provide bindings and wrappers for as many languages and framewo
   * Windows SDK (WinUSB + Media Foundation)
 * Linux, OS X, Android:
   * libusb-1.0
+* Example Programs:
+  * OpenGL 1.1+
+  * GLFW 3.0+
 
 ## Functionality
 
@@ -80,11 +83,11 @@ The goal of librealsense is to provide a reasonable hardware abstraction with mi
 
 *Q:* How is this implemented?
 
-*A:* It uses a libusb implementation of UVC (libuvc) and thusly does not require platform-specific camera drivers. The same backend can be shared across platforms. It does not link against any existing DSAPI or IVCAM-DLL binaries. 
+*A:* The library communicates with RealSense devices via the UVC and USB protocols, using Media Foundation / WinUSB on Windows and libuvc / libusb on all other platforms. It does not link against DSAPI or IVCAM-DLL. 
 
 *Q:* Is it maintained or supported?
 
-*A:* It is supported in the sense that bugs will be fixed if they are found and new features will be periodically added. It is not intended to replace functionality developed by other teams to support HVM (firmware updates, etc), nor materially impact SSG’s roadmap for the SDK/DCM – it is independent & outside of these major efforts. 
+*A:* It is supported in the sense that bugs will be fixed if they are found and new features will be periodically added. It is not intended to replace functionality developed by other teams to support HVM (firmware updates, etc), nor materially impact SSG’s roadmap for the SDK/DCM – it is independent and outside of these major efforts. 
 
 ## License
 
