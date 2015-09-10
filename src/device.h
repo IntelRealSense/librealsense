@@ -31,6 +31,7 @@ public:
 
     void                                    enable_stream(rs_stream stream, int width, int height, rs_format format, int fps);
     void                                    enable_stream_preset(rs_stream stream, rs_preset preset);    
+    void                                    disable_stream(rs_stream stream);
     bool                                    is_stream_enabled(rs_stream stream) const { return requests[stream].enabled; }
     rsimpl::stream_mode                     get_stream_mode(rs_stream stream) const;
     rs_intrinsics                           get_stream_intrinsics(rs_stream stream) const { return device_info.intrinsics[get_stream_mode(stream).intrinsics_index]; }
@@ -45,7 +46,7 @@ public:
     int                                     get_frame_timestamp(rs_stream stream) const;
     const void *                            get_frame_data(rs_stream stream) const { if(!streams[stream]) throw std::runtime_error("stream not enabled"); return streams[stream]->get_front_data(); } 
 
-    virtual void                            set_stream_intent() = 0;
+    virtual void                            set_stream_intent(const bool (& stream_enabled)[RS_STREAM_COUNT]) = 0;
     virtual void                            set_option(rs_option option, int value) = 0;
     virtual int                             get_option(rs_option option) const = 0;
     virtual int                             convert_timestamp(int64_t timestamp) const = 0;

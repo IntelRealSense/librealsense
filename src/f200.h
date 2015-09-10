@@ -15,7 +15,7 @@ namespace rsimpl
         f200_camera(uvc::device device);
         ~f200_camera();
 
-        void set_stream_intent() override final {}
+        void set_stream_intent(const bool (& stream_enabled)[RS_STREAM_COUNT]) override final {}
         void set_option(rs_option option, int value) override final;
         int get_option(rs_option option) const override final;
         int convert_timestamp(int64_t timestamp) const override final { return static_cast<int>(timestamp / 100000); }

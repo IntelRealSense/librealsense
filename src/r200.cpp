@@ -138,12 +138,12 @@ namespace rsimpl
         r200::force_firmware_reset(device);
     }
 
-    void r200_camera::set_stream_intent()
+    void r200_camera::set_stream_intent(const bool (& stream_enabled)[RS_STREAM_COUNT])
     {
         uint8_t streamIntent = 0;
-        if(streams[RS_STREAM_INFRARED] || streams[RS_STREAM_INFRARED2]) streamIntent |= r200::STATUS_BIT_LR_STREAMING;
-        if(streams[RS_STREAM_DEPTH]) streamIntent |= r200::STATUS_BIT_Z_STREAMING;
-        if(streams[RS_STREAM_COLOR]) streamIntent |= r200::STATUS_BIT_WEB_STREAMING;
+        if(stream_enabled[RS_STREAM_INFRARED] || stream_enabled[RS_STREAM_INFRARED2]) streamIntent |= r200::STATUS_BIT_LR_STREAMING;
+        if(stream_enabled[RS_STREAM_DEPTH]) streamIntent |= r200::STATUS_BIT_Z_STREAMING;
+        if(stream_enabled[RS_STREAM_COLOR]) streamIntent |= r200::STATUS_BIT_WEB_STREAMING;
         r200::set_stream_intent(device, streamIntent);
     }
 

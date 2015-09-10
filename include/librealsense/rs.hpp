@@ -156,6 +156,7 @@ namespace rs
 
         void                enable_stream(stream s, int width, int height, format f, int fps)       { rs_enable_stream(dev, (rs_stream)s, width, height, (rs_format)f, fps, throw_on_error()); }
         void                enable_stream(stream s, preset preset)                                  { rs_enable_stream_preset(dev, (rs_stream)s, (rs_preset)preset, throw_on_error()); }
+        void                disable_stream(stream s)                                                { rs_disable_stream(dev, (rs_stream)s, throw_on_error()); }
         bool                is_stream_enabled(stream s)                                             { return !!rs_stream_is_enabled(dev, (rs_stream)s, throw_on_error()); }
         intrinsics          get_stream_intrinsics(stream s)                                         { intrinsics intrin; rs_get_stream_intrinsics(dev, (rs_stream)s, (rs_intrinsics *)&intrin, throw_on_error()); return intrin; }
         format              get_stream_format(stream s)                                             { return (format)rs_get_stream_format(dev, (rs_stream)s, throw_on_error()); }

@@ -48,7 +48,7 @@ rs_device::~rs_device()
 
 void rs_device::enable_stream(rs_stream stream, int width, int height, rs_format format, int fps)
 {
-    if(capturing) throw std::runtime_error("streams cannot be reconfigured after having called start_capture()");
+    if(capturing) throw std::runtime_error("streams cannot be reconfigured after having called rs_start_device()");
     if(device_info.stream_subdevices[stream] == -1) throw std::runtime_error("unsupported stream");
 
     requests[stream] = {true, width, height, format, fps};
@@ -57,12 +57,22 @@ void rs_device::enable_stream(rs_stream stream, int width, int height, rs_format
 
 void rs_device::enable_stream_preset(rs_stream stream, rs_preset preset)
 {
-    if(capturing) throw std::runtime_error("streams cannot be reconfigured after having called start_capture()");
+    if(capturing) throw std::runtime_error("streams cannot be reconfigured after having called rs_start_device()");
     if(!device_info.presets[stream][preset].enabled) throw std::runtime_error("unsupported stream");
 
     requests[stream] = device_info.presets[stream][preset];
     for(auto & s : streams) s.reset(); // Changing stream configuration invalidates the current stream info
-} 
+}
+
+void rs_device::disable_stream(rs_stream stream)
+{
+    if(capturing) throw std::runtime_error("streams cannot be reconfigured after having called rs_start_device()");
+    if(device_info.stream_subdevices[stream] == -1) throw std::runtime_error("unsupported stream");
+
+    requests[stream] = {};
+    for(auto & s : streams) s.reset(); // Changing stream configuration invalidates the current stream info
+}
+
 
 void rs_device::start()
 {
@@ -93,6 +103,7 @@ void rs_device::start()
 
     // Satisfy stream_requests as necessary for each subdevice, calling set_mode and
     // dispatching the uvc configuration for a requested stream to the hardware
+    bool stream_enabled[RS_STREAM_COUNT] = {};
     for(int i = 0; i <= max_subdevice; ++i)
     {
         if(const subdevice_mode * m = device_info.select_mode(requests, i))
@@ -105,6 +116,7 @@ void rs_device::start()
                 // Create a buffer to receive the images from this stream
                 auto stream = std::make_shared<stream_buffer>(stream_mode);
                 stream_list.push_back(stream);
+                stream_enabled[stream_mode.stream] = true;
                     
                 // If this is one of the streams requested by the user, store the buffer so they can access it
                 if(requests[stream_mode.stream].enabled) streams[stream_mode.stream] = stream;
@@ -125,7 +137,7 @@ void rs_device::start()
         }
     }
     
-    set_stream_intent();
+    set_stream_intent(stream_enabled);
     device.start_streaming();
     capture_started = std::chrono::high_resolution_clock::now();
     capturing = true;
@@ -155,7 +167,7 @@ void rs_device::wait_all_streams()
             while(!streams[i]->swap_front())
             {
                 std::this_thread::sleep_for(std::chrono::microseconds(100)); // TODO: Use a condition variable or something to avoid this
-                if(std::chrono::high_resolution_clock::now() >= timeout) throw std::runtime_error("Timeout waiting for frames");
+                //if(std::chrono::high_resolution_clock::now() >= timeout) throw std::runtime_error("Timeout waiting for frames");
             }
             assert(streams[i]->is_front_valid());
             last_stream_timestamp = streams[i]->get_front_number();
@@ -179,7 +191,7 @@ void rs_device::wait_all_streams()
             if(updated) break;
 
             std::this_thread::sleep_for(std::chrono::microseconds(100)); // TODO: Use a condition variable or something to avoid this
-            if(std::chrono::high_resolution_clock::now() >= timeout) throw std::runtime_error("Timeout waiting for frames");
+            //if(std::chrono::high_resolution_clock::now() >= timeout) throw std::runtime_error("Timeout waiting for frames");
         }
     }
 
@@ -202,7 +214,7 @@ void rs_device::wait_all_streams()
         while(!streams[i]->swap_front())
         {
             std::this_thread::sleep_for(std::chrono::microseconds(100)); // TODO: Use a condition variable or something to avoid this
-            if(std::chrono::high_resolution_clock::now() >= timeout) throw std::runtime_error("Timeout waiting for frames");
+            //if(std::chrono::high_resolution_clock::now() >= timeout) throw std::runtime_error("Timeout waiting for frames");
         }
     }
 

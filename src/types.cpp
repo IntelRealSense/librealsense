@@ -52,7 +52,7 @@ namespace rsimpl
         case RS_FORMAT_BGR8: return width * height * 3;
         case RS_FORMAT_RGBA8: return width * height * 4;
         case RS_FORMAT_BGRA8: return width * height * 4;
-        case RS_FORMAT_Y8: return width * height * 2;
+        case RS_FORMAT_Y8: return width * height;
         case RS_FORMAT_Y16: return width * height * 2;
         default: assert(false); return 0;
         }    

@@ -405,6 +405,19 @@ namespace rsimpl
                     if(is_streaming) std::this_thread::sleep_for(std::chrono::milliseconds(10));
                     else break;
                 }
+
+                // Free up our KS control node, our source readers, and our media sources, but retain our original IMFActivate objects for later reuse
+                ks_control = nullptr;
+                for(auto & sub : subdevices)
+                {
+                    sub.mf_source_reader = nullptr;
+                    if(sub.mf_media_source)
+                    {
+                        sub.mf_media_source = nullptr;
+                        check("IMFActivate::ShutdownObject", sub.mf_activate->ShutdownObject());
+                    }
+                    sub.callback = {};
+                }
             }
 
             com_ptr<IMFMediaSource> get_media_source(int subdevice_index)

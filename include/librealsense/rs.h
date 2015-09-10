@@ -94,6 +94,7 @@ int             rs_device_supports_option   (const rs_device * device, rs_option
 
 void            rs_enable_stream            (rs_device * device, rs_stream stream, int width, int height, rs_format format, int framerate, rs_error ** error);
 void            rs_enable_stream_preset     (rs_device * device, rs_stream stream, rs_preset preset, rs_error ** error);
+void            rs_disable_stream           (rs_device * device, rs_stream stream, rs_error ** error);
 int             rs_stream_is_enabled        (const rs_device * device, rs_stream stream, rs_error ** error);
 void            rs_get_stream_intrinsics    (const rs_device * device, rs_stream stream, rs_intrinsics * intrin, rs_error ** error);
 rs_format       rs_get_stream_format        (const rs_device * device, rs_stream stream, rs_error ** error);

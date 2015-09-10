@@ -117,6 +117,14 @@ void rs_enable_stream_preset(rs_device * device, rs_stream stream, rs_preset pre
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, device, stream, preset)
 
+void rs_disable_stream(rs_device * device, rs_stream stream, rs_error ** error) try
+{
+    VALIDATE_NOT_NULL(device);
+    VALIDATE_ENUM(stream);
+    device->disable_stream(stream);
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, device, stream)
+
 int rs_stream_is_enabled(const rs_device * device, rs_stream stream, rs_error ** error) try
 {
     VALIDATE_NOT_NULL(device);
