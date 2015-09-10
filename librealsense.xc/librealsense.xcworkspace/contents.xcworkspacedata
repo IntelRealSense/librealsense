@@ -5,6 +5,9 @@
       location = "container:"
       name = "examples">
       <FileRef
+         location = "group:cpp-restart.xcodeproj">
+      </FileRef>
+      <FileRef
          location = "group:cpp-multicam.xcodeproj">
       </FileRef>
       <FileRef
