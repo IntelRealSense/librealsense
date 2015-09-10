@@ -148,9 +148,10 @@ int main(int argc, char * argv[]) try
             }
             device.stop();
         }
-        catch(...)
+        catch(const rs::error & e)
         {
-            std::cout << "skipping mode" << std::endl;
+            std::cerr << "RealSense error calling " << e.get_failed_function() << "(" << e.get_failed_args() << "):\n    " << e.what() << std::endl;
+            std::cout << "Skipping mode " << i << std::endl;
         }
     }
 done:

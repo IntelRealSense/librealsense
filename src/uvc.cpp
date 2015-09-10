@@ -109,7 +109,7 @@ namespace rsimpl
         {
             for(auto & sub : impl->subdevices)
             {
-                if(sub.handle)
+                if(sub.callback)
                 {
                     #if defined (ENABLE_DEBUG_SPAM)
                     uvc_print_stream_ctrl(&sub.ctrl, stdout);
@@ -127,7 +127,14 @@ namespace rsimpl
         {
             for(auto & sub : impl->subdevices)
             {
-                if(sub.handle) uvc_stop_streaming(sub.handle);
+                if(sub.handle)
+                {
+                    uvc_stop_streaming(sub.handle);
+                    //uvc_close(sub.handle);
+                    //sub.handle = nullptr;
+                }
+                sub.ctrl = {};
+                sub.callback = {};
             }
         }
 

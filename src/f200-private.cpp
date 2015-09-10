@@ -540,30 +540,28 @@ namespace rsimpl { namespace f200
         IVCAMTemperatureData t;
         IVCAMASICCoefficients coeffs;
 
+        std::unique_lock<std::mutex> lock(temperatureMutex);
         while (runTemperatureThread) 
         {
             //@tofix, this will throw if bad, but might periodically fail anyway. try/catch
-            ReadTemperatures(t);
-
-            bool updateNeeded = false;
+            try
             {
-                std::lock_guard<std::mutex> guard(temperatureMutex);
-                updateNeeded = calibration->updateParamsAccordingToTemperature(t.LiguriaTemp, t.IRTemp);
-            }
+                ReadTemperatures(t);
 
-            if (updateNeeded)
-            {
-                //@tofix, qRes mode
-				std::cout << "[Debug] updating asic with new temperature calibration coefficients" << std::endl;
-                GenerateAsicCalibrationCoefficients({640, 480}, true, coeffs.CoefValueArray);
-                if (UpdateASICCoefs(&coeffs) != true)
+                if (calibration->updateParamsAccordingToTemperature(t.LiguriaTemp, t.IRTemp))
                 {
-                    continue; // try again if we couldn't update the coefficients
+                    //@tofix, qRes mode
+                    std::cout << "[Debug] updating asic with new temperature calibration coefficients" << std::endl;
+                    GenerateAsicCalibrationCoefficients({640, 480}, true, coeffs.CoefValueArray);
+                    if (UpdateASICCoefs(&coeffs) != true)
+                    {
+                        continue; // try again if we couldn't update the coefficients
+                    }
                 }
             }
+            catch(...) { std::cout << "[Debug] temperature read failed" << std::endl; }
 			
-            std::unique_lock<std::mutex> ulock(temperatureMutex);
-            temperatureCv.wait_for(ulock, std::chrono::seconds(10)); 
+            temperatureCv.wait_for(lock, std::chrono::seconds(10));
         }
     }
 

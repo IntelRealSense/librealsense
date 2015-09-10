@@ -61,7 +61,6 @@ namespace rsimpl
 
     int decode_ivcam_frame_number(const subdevice_mode & mode, const void * frame)
     {
-        // FIXME: This currently just guesses at a "frame number"
         return *reinterpret_cast<const int *>(frame);
     }
 
