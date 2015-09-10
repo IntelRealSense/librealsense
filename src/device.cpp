@@ -14,7 +14,7 @@ static_device_info rsimpl::add_standard_unpackers(const static_device_info & dev
     for(auto & mode : device_info.subdevice_modes)
     {
         // Unstrided YUYV modes can be unpacked into RGB and BGR
-        if(mode.format == uvc::frame_format::YUYV && mode.unpacker == &unpack_strided_image && mode.width == mode.streams[0].width && mode.height == mode.streams[0].height)
+        if(mode.fourcc == FOURCC('Y','U','Y','2') && mode.unpacker == &unpack_strided_image && mode.width == mode.streams[0].width && mode.height == mode.streams[0].height)
         {
             auto m = mode;
             m.streams[0].format = RS_FORMAT_RGB8;
@@ -124,7 +124,7 @@ void rs_device::start()
             }
                 
             // Initialize the subdevice and set it to the selected mode
-            device.set_subdevice_mode(i, mode.width, mode.height, mode.format, mode.fps, [mode, stream_list](const void * frame) mutable
+            device.set_subdevice_mode(i, mode.width, mode.height, mode.fourcc, mode.fps, [mode, stream_list](const void * frame) mutable
             {
                 // Unpack the image into the user stream interface back buffer
                 std::vector<void *> dest;

@@ -365,7 +365,7 @@ uvc_frame_desc_t *uvc_find_frame_desc(uvc_device_handle_t *devh,
 uvc_error_t uvc_get_stream_ctrl_format_size(
     uvc_device_handle_t *devh,
     uvc_stream_ctrl_t *ctrl,
-    enum uvc_frame_format cf,
+    uint32_t fourcc,
     int width, int height,
     int fps) {
   uvc_streaming_interface_t *stream_if;
@@ -377,7 +377,7 @@ uvc_error_t uvc_get_stream_ctrl_format_size(
     DL_FOREACH(stream_if->format_descs, format) {
       uvc_frame_desc_t *frame;
 
-      if (!_uvc_frame_format_matches_guid(cf, format->guidFormat))
+      if(fourcc != *(const uint32_t *)format->guidFormat)
         continue;
 
       DL_FOREACH(format->frame_descs, frame) {
@@ -389,7 +389,8 @@ uvc_error_t uvc_get_stream_ctrl_format_size(
         if (frame->intervals) {
           for (interval = frame->intervals; *interval; ++interval) {
             // allow a fps rate of zero to mean "accept first rate available"
-            if (10000000 / *interval == (unsigned int) fps || fps == 0) {
+            int uvc_fps = 10000000 / *interval;
+            if (abs(uvc_fps - fps) <= 1 || fps == 0) {
 
               /* get the max values -- we need the interface number to be able
                  to do this */

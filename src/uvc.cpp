@@ -98,10 +98,10 @@ namespace rsimpl
             if(status < 0) throw std::runtime_error(to_string() << "libusb_bulk_transfer(...) returned " << libusb_error_name(status));
         }
 
-        void device::set_subdevice_mode(int subdevice_index, int width, int height, frame_format cf, int fps, std::function<void(const void * frame)> callback)
+        void device::set_subdevice_mode(int subdevice_index, int width, int height, uint32_t fourcc, int fps, std::function<void(const void * frame)> callback)
         {
             auto & sub = impl->get_subdevice(subdevice_index);
-            check("get_stream_ctrl_format_size", uvc_get_stream_ctrl_format_size(sub.handle, &sub.ctrl, (uvc_frame_format)cf, width, height, fps));
+            check("get_stream_ctrl_format_size", uvc_get_stream_ctrl_format_size(sub.handle, &sub.ctrl, fourcc, width, height, fps));
             sub.callback = callback;
         }
 

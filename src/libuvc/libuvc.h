@@ -520,7 +520,7 @@ const uvc_extension_unit_t *uvc_get_extension_units(uvc_device_handle_t *devh);
 uvc_error_t uvc_get_stream_ctrl_format_size(
     uvc_device_handle_t *devh,
     uvc_stream_ctrl_t *ctrl,
-    enum uvc_frame_format format,
+    uint32_t fourcc,
     int width, int height,
     int fps
     );

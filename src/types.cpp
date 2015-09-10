@@ -119,37 +119,37 @@ namespace rsimpl
 
     void unpack_y12i_to_y8(void * dest[], const subdevice_mode & mode, const void * frame)
     {
-        assert(mode.format == uvc::frame_format::Y12I && mode.streams.size() == 2 && mode.streams[0].format == RS_FORMAT_Y8 && mode.streams[1].format == RS_FORMAT_Y8);
+        assert(mode.fourcc == FOURCC('Y','1','2','I') && mode.streams.size() == 2 && mode.streams[0].format == RS_FORMAT_Y8 && mode.streams[1].format == RS_FORMAT_Y8);
         convert_y12i_to_y8_y8(dest[0], dest[1], mode.streams[0].width, mode.streams[0].height, frame, 3*mode.width);
     }
 
     void unpack_y12i_to_y16(void * dest[], const subdevice_mode & mode, const void * frame)
     {
-        assert(mode.format == uvc::frame_format::Y12I && mode.streams.size() == 2 && mode.streams[0].format == RS_FORMAT_Y16 && mode.streams[1].format == RS_FORMAT_Y16);
+        assert(mode.fourcc == FOURCC('Y','1','2','I') && mode.streams.size() == 2 && mode.streams[0].format == RS_FORMAT_Y16 && mode.streams[1].format == RS_FORMAT_Y16);
         convert_y12i_to_y16_y16(dest[0], dest[1], mode.streams[0].width, mode.streams[0].height, frame, 3*mode.width);
     }
 
     void unpack_yuyv_to_rgb(void * dest[], const subdevice_mode & mode, const void * source)
     {
-        assert(mode.format == uvc::frame_format::YUYV && mode.streams.size() == 1 && mode.streams[0].format == RS_FORMAT_RGB8);
+        assert(mode.fourcc == FOURCC('Y','U','Y','2') && mode.streams.size() == 1 && mode.streams[0].format == RS_FORMAT_RGB8);
         convert_yuyv_to_rgb(dest[0], mode.width, mode.height, source);
     }
 
     void unpack_yuyv_to_rgba(void * dest[], const subdevice_mode & mode, const void * source)
     {
-        assert(mode.format == uvc::frame_format::YUYV && mode.streams.size() == 1 && mode.streams[0].format == RS_FORMAT_RGBA8);
+        assert(mode.fourcc == FOURCC('Y','U','Y','2') && mode.streams.size() == 1 && mode.streams[0].format == RS_FORMAT_RGBA8);
         convert_yuyv_to_rgba(dest[0], mode.width, mode.height, source);
     }
 
     void unpack_yuyv_to_bgr(void * dest[], const subdevice_mode & mode, const void * source)
     {
-        assert(mode.format == uvc::frame_format::YUYV && mode.streams.size() == 1 && mode.streams[0].format == RS_FORMAT_BGR8);
+        assert(mode.fourcc == FOURCC('Y','U','Y','2') && mode.streams.size() == 1 && mode.streams[0].format == RS_FORMAT_BGR8);
         convert_yuyv_to_bgr(dest[0], mode.width, mode.height, source);
     }
 
     void unpack_yuyv_to_bgra(void * dest[], const subdevice_mode & mode, const void * source)
     {
-        assert(mode.format == uvc::frame_format::YUYV && mode.streams.size() == 1 && mode.streams[0].format == RS_FORMAT_BGRA8);
+        assert(mode.fourcc == FOURCC('Y','U','Y','2') && mode.streams.size() == 1 && mode.streams[0].format == RS_FORMAT_BGRA8);
         convert_yuyv_to_bgra(dest[0], mode.width, mode.height, source);
     }
 

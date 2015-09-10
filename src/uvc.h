@@ -32,7 +32,7 @@ namespace rsimpl
             void get_control(uint8_t unit, uint8_t ctrl, void * data, int len) const;
             void set_control(uint8_t unit, uint8_t ctrl, void * data, int len);
 
-            void set_subdevice_mode(int subdevice_index, int width, int height, frame_format format, int fps, std::function<void(const void * frame)> callback);
+            void set_subdevice_mode(int subdevice_index, int width, int height, uint32_t fourcc, int fps, std::function<void(const void * frame)> callback);
             void start_streaming();
             void stop_streaming();
         };
