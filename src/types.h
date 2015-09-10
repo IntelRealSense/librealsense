@@ -121,6 +121,7 @@ namespace rsimpl
 
         const subdevice_mode * select_mode(const stream_request (&requests)[RS_STREAM_COUNT], int subdevice_index) const;
     };
+    static_device_info add_standard_unpackers(const static_device_info & device_info);
 
     // Buffer for storing images provided by a given stream
     class stream_buffer

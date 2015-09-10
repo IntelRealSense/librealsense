@@ -119,7 +119,6 @@ namespace rsimpl
 
     f200_camera::f200_camera(uvc::device device) : rs_device(device)
     {
-		extern static_device_info add_standard_unpackers(const static_device_info & device_info);
 		hardware_io.reset(new f200::IVCAMHardwareIO(device));
 		device_info = add_standard_unpackers(get_f200_info(*hardware_io));
     }

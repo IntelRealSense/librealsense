@@ -517,7 +517,7 @@ namespace rsimpl { namespace f200
             f2,f3,f4,f5,f6,f7,f8,f9,f10,f11,o1,o2,o3,o4,dp1,dp2,dp3,dp4,dp5,ip0,ip1,ip2,ip3,
             ip4,ip5,ypscale,ypoff,0,0};
 
-        memcpy_s(values, NUM_OF_CALIBRATION_COEFFS  * sizeof(float), coeffs, NUM_OF_CALIBRATION_COEFFS * sizeof(float));
+        memcpy(values, coeffs, NUM_OF_CALIBRATION_COEFFS  * sizeof(float));
         return ;
     }
     

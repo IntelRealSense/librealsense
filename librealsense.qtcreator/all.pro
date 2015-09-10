@@ -5,5 +5,6 @@ SUBDIRS += \
    ./c-capture.pro \
    ./c-pointcloud.pro \
    ./cpp-capture.pro \
+   ./cpp-multicam.pro \
    ./cpp-pointcloud.pro \
-   ./cpp-multicam.pro
+   ./cpp-restart.pro

@@ -1,13 +1,14 @@
 #include "device.h"
 #include "image.h"
 
+#include <climits>
 #include <thread>
 #include <iostream>
 #include <algorithm>
 
 using namespace rsimpl;
 
-static_device_info add_standard_unpackers(const static_device_info & device_info)
+static_device_info rsimpl::add_standard_unpackers(const static_device_info & device_info)
 {
     static_device_info info = device_info;
     for(auto & mode : device_info.subdevice_modes)

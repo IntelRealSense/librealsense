@@ -4,8 +4,10 @@
 #include "rs.h"
 #include "rsutil.h"
 
-#include <cstdint>
-#include <ostream>
+#include <cstdint>      // For int32_t
+#include <cstring>      // For memcmp
+#include <ostream>      // For std::ostream
+#include <stdexcept>    // For std::runtime_error
 
 namespace rs
 {
@@ -85,7 +87,7 @@ namespace rs
                             #ifdef WIN32
                             ~throw_on_error()                                                       { if (err) throw error(err); }
                             #else
-                            ~auto_error() noexcept(false)                                           { if (err) throw error(err); }
+                            ~throw_on_error() noexcept(false)                                       { if (err) throw error(err); }
                             #endif
                             operator rs_error ** ()                                                 { return &err; }
     };
