@@ -73,7 +73,7 @@ int main(int argc, char * argv[]) try
     }
     else throw std::runtime_error("Unable to open examples/assets/Roboto-Bold.ttf");
 
-    for(int i=0; i<8; ++i)
+    for(int i=0; i<7; ++i)
     {
         switch(i)
         {
@@ -108,14 +108,10 @@ int main(int argc, char * argv[]) try
             device.enable_stream(rs::stream::infrared2, rs::preset::largest_image);
             break;
         case 6:
-            device.enable_stream(rs::stream::depth, rs::preset::best_quality);
-            device.disable_stream(rs::stream::color);
-            device.disable_stream(rs::stream::infrared);
-            device.disable_stream(rs::stream::infrared2);
-            break;
-        case 7:
             device.disable_stream(rs::stream::depth);
-            device.enable_stream(rs::stream::color, rs::preset::best_quality);
+            device.disable_stream(rs::stream::color);
+            device.enable_stream(rs::stream::infrared, rs::preset::best_quality);
+            device.enable_stream(rs::stream::infrared2, rs::preset::best_quality);
             break;
         }
 
