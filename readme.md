@@ -15,7 +15,7 @@ DS5 and IVCAM 1.5 support will be provided in the near future. librealsense shou
 
 librealsense is written in standards-conforming C++11 and relies only on the C89 ABI for its public interface. It was developed and tested on the following platforms:
 
-1. Windows 8 (Visual C++ 2013)
+1. Windows 8.1 (Visual C++ 2013)
 2. Ubuntu 14.04 LTS (gcc toolchain)
 3. Mac OS X 10.7+ (clang toolchain)
 
@@ -47,6 +47,7 @@ The goal of librealsense is to provide a reasonable hardware abstraction with mi
   * Of the different streaming modes + fps options available, only fairly common ones have been tested. 
 2. Intrinsic/extrinsic calibration information (inc. uv map, etc)
 3. Majority of XU-exposed functionality for each camera
+4. Full multi-camera capture, even mixing device types (F200 and R200) 
 
 ## Apple OSX Installation
 
