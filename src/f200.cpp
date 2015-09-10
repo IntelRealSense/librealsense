@@ -116,10 +116,38 @@ namespace rsimpl
         return info;
     }
 
-    f200_camera::f200_camera(uvc::device device) : rs_device(device)
+    static static_device_info get_sr300_info(f200::IVCAMHardwareIO & io)
     {
-		hardware_io.reset(new f200::IVCAMHardwareIO(device));
-		device_info = add_standard_unpackers(get_f200_info(*hardware_io));
+        static_device_info info;
+        info.name = {"Intel RealSense SR300"};
+		
+		info.stream_subdevices[RS_STREAM_COLOR] = 0;
+		info.subdevice_modes.push_back({0, 640, 480, 'YUY2', 60, {{RS_STREAM_COLOR, 640, 480, RS_FORMAT_YUYV, 60, COLOR_VGA}}, &unpack_strided_image, &decode_ivcam_frame_number});
+
+		info.stream_subdevices[RS_STREAM_DEPTH] = 1;
+        info.subdevice_modes.push_back({1, 640, 480, 'INVZ', 60, {{RS_STREAM_DEPTH, 640, 480, RS_FORMAT_Z16, 60, DEPTH_VGA}}, &unpack_strided_image, &decode_ivcam_frame_number});
+
+		for(int i=0; i<RS_PRESET_COUNT; ++i)
+		{
+			info.presets[RS_STREAM_COLOR][i] = {true, 640, 480, RS_FORMAT_RGB8, 60};
+			info.presets[RS_STREAM_DEPTH][i] = {true, 640, 480, RS_FORMAT_Z16, 60};
+		}
+
+		const f200::CameraCalibrationParameters & c = io.GetParameters();
+        info.intrinsics.resize(NUM_INTRINSICS);
+        info.intrinsics[COLOR_VGA] = MakeColorIntrinsics(c, 640, 480);
+        info.intrinsics[DEPTH_VGA] = MakeDepthIntrinsics(c, 640, 480);
+        info.stream_poses[RS_STREAM_DEPTH] = info.stream_poses[RS_STREAM_INFRARED] = {{{1,0,0},{0,1,0},{0,0,1}}, {0,0,0}};
+        info.stream_poses[RS_STREAM_COLOR] = {transpose((const float3x3 &)c.Rt), (const float3 &)c.Tt * 0.001f}; // convert mm to m
+        info.depth_scale = (c.Rmax / 0xFFFF) * 0.001f; // convert mm to m*/
+        return info;
+    }
+
+    f200_camera::f200_camera(uvc::device device, bool sr300) : rs_device(device)
+    {
+		hardware_io.reset(new f200::IVCAMHardwareIO(device, sr300));
+        if(sr300) device_info = add_standard_unpackers(get_sr300_info(*hardware_io));
+		else device_info = add_standard_unpackers(get_f200_info(*hardware_io));
     }
 
     f200_camera::~f200_camera()

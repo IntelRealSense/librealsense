@@ -186,12 +186,32 @@ namespace rsimpl { namespace f200
 		float QV[6];
 	};
 
-	struct CameraCalibrationParametersVersion
+	struct IVCAMCalibration
 	{
 		int uniqueNumber; //Should be 0xCAFECAFE in Calibration version 1 or later. In calibration version 0 this is zero.
 		int16_t TableValidation;
-		int16_t TableVarsion;
+		int16_t TableVersion;
 		CameraCalibrationParameters CalibrationParameters;
+	};
+
+	struct SR300RawCalibration
+	{
+		uint16_t tableVersion;
+		uint16_t tableID;
+		uint32_t dataSize;
+		uint32_t reserved;
+		int crc;
+		CameraCalibrationParameters CalibrationParameters;
+		uint8_t reserved_1[176];
+		IVCAMTemperatureData TemperatureData;
+		uint8_t reserved21[148];
+	};
+
+	enum class IVCAMDataSource : uint32_t
+	{
+		TakeFromRO = 0,
+		TakeFromRW = 1,
+		TakeFromRAM = 2
 	};
 
 	enum Property
@@ -306,7 +326,7 @@ namespace rsimpl { namespace f200
                               uint8_t * data = 0, size_t dataLength = 0);
         void ExecuteUSBCommand(uint8_t *out, size_t outSize, uint32_t & op, uint8_t * in, size_t & inSize);
         void FillUSBBuffer(int opCodeNumber, int p1, int p2, int p3, int p4, char * data, int dataLength, char * bufferToSend, int & length);
-        void GetCalibrationRawData(uint8_t * data, size_t & bytesReturned);
+        void GetCalibrationRawData(IVCAMDataSource src, uint8_t * data, size_t & bytesReturned);
         void ProjectionCalibrate(uint8_t * rawCalibData, int len, CameraCalibrationParameters * calprms);
         void ReadTemperatures(IVCAMTemperatureData & data);
 		bool EnableTimeStamp(bool enableColor, bool enableDepth);
@@ -327,7 +347,7 @@ namespace rsimpl { namespace f200
 
     public:
 
-        IVCAMHardwareIO(uvc::device device);
+        IVCAMHardwareIO(uvc::device device, bool sr300);
 		~IVCAMHardwareIO();
 
         CameraCalibrationParameters & GetParameters() { std::lock_guard<std::mutex> guard(temperatureMutex); return parameters; }

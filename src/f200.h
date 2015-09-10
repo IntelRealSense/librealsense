@@ -12,7 +12,7 @@ namespace rsimpl
     {
         std::unique_ptr<f200::IVCAMHardwareIO> hardware_io;
     public:      
-        f200_camera(uvc::device device);
+        f200_camera(uvc::device device, bool sr300);
         ~f200_camera();
 
         void set_stream_intent(const bool (& stream_enabled)[RS_STREAM_COUNT]) override final {}
