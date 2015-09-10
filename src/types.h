@@ -164,7 +164,4 @@ namespace rsimpl
     #pragma pack(pop)
 }
 
-#define FOURCC(a,b,c,d) (uint8_t(a) | (uint8_t(b) << 8) | (uint8_t(c) << 16) | (uint8_t(d) << 24))
-//#define FOURCC(d,c,b,a) (uint8_t(a) | (uint8_t(b) << 8) | (uint8_t(c) << 16) | (uint8_t(d) << 24))
-
 #endif

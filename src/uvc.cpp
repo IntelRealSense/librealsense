@@ -667,19 +667,7 @@ namespace rsimpl
 			}
         }
 
-        static bool matches_format(const GUID & a, frame_format b)
-        {
-            return (a.Data1 == FCC('YUY2') && b == frame_format::YUYV)
-                || (a.Data1 == FCC('Y8  ') && b == frame_format::Y8  )
-                || (a.Data1 == FCC('Y12I') && b == frame_format::Y12I)
-                || (a.Data1 == FCC('Z16 ') && b == frame_format::Z16 )
-                || (a.Data1 == FCC('INVI') && b == frame_format::INVI)
-                || (a.Data1 == FCC('INVR') && b == frame_format::INVR)
-                || (a.Data1 == FCC('INRI') && b == frame_format::INRI);
-            // TODO: Y16, Y8I, Y16I, other IVCAM formats, etc.
-        }
-
-        void device::set_subdevice_mode(int subdevice_index, int width, int height, frame_format cf, int fps, std::function<void(const void * frame)> callback)
+        void device::set_subdevice_mode(int subdevice_index, int width, int height, uint32_t fourcc, int fps, std::function<void(const void * frame)> callback)
         {
             auto & sub = impl->subdevices[subdevice_index];
             
@@ -703,7 +691,7 @@ namespace rsimpl
                 if(uvc_width != width || uvc_height != height) continue;
 
                 check("IMFMediaType::GetGUID", media_type->GetGUID(MF_MT_SUBTYPE, &subtype));
-                if(!matches_format(subtype, cf)) continue;
+                if(reinterpret_cast<const big_endian<uint32_t> &>(subtype.Data1) != fourcc) continue;
 
                 check("MFGetAttributeRatio", MFGetAttributeRatio(media_type, MF_MT_FRAME_RATE, &uvc_fps_num, &uvc_fps_denom));
                 if(uvc_fps_denom == 0) continue;
