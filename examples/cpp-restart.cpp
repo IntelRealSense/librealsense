@@ -73,68 +73,85 @@ int main(int argc, char * argv[]) try
     }
     else throw std::runtime_error("Unable to open examples/assets/Roboto-Bold.ttf");
 
-    for(int i=0; i<7; ++i)
+    for(int i=0; i<9; ++i)
     {
-        switch(i)
+        try
         {
-        case 0:
-            device.enable_stream(rs::stream::depth, rs::preset::best_quality);
-            device.enable_stream(rs::stream::color, rs::preset::best_quality);
-            break;
-        case 1:
-            device.enable_stream(rs::stream::depth, rs::preset::largest_image);
-            device.enable_stream(rs::stream::color, rs::preset::best_quality);
-            break;
-        case 2:
-            device.enable_stream(rs::stream::depth, rs::preset::best_quality);
-            device.enable_stream(rs::stream::color, rs::preset::best_quality);
-            device.enable_stream(rs::stream::infrared, rs::preset::best_quality);
-            break;
-        case 3:
-            device.enable_stream(rs::stream::depth, rs::preset::largest_image);
-            device.enable_stream(rs::stream::color, rs::preset::best_quality);
-            device.enable_stream(rs::stream::infrared, rs::preset::largest_image);
-            break;
-        case 4:
-            device.enable_stream(rs::stream::depth, rs::preset::best_quality);
-            device.enable_stream(rs::stream::color, rs::preset::best_quality);
-            device.enable_stream(rs::stream::infrared, rs::preset::best_quality);
-            device.enable_stream(rs::stream::infrared2, rs::preset::best_quality);
-            break;
-        case 5:
-            device.enable_stream(rs::stream::depth, rs::preset::largest_image);
-            device.enable_stream(rs::stream::color, rs::preset::best_quality);
-            device.enable_stream(rs::stream::infrared, rs::preset::largest_image);
-            device.enable_stream(rs::stream::infrared2, rs::preset::largest_image);
-            break;
-        case 6:
-            device.disable_stream(rs::stream::depth);
-            device.disable_stream(rs::stream::color);
-            device.enable_stream(rs::stream::infrared, rs::preset::best_quality);
-            device.enable_stream(rs::stream::infrared2, rs::preset::best_quality);
-            break;
-        }
+            for(int j=0; j<RS_STREAM_COUNT; ++j)
+            {
+                auto s = (rs::stream)j;
+                if(device.is_stream_enabled(s)) device.disable_stream(s);
+            }
 
-        device.start();
-        for(int j=0; j<120; ++j)
+            switch(i)
+            {
+            case 0:
+                device.enable_stream(rs::stream::depth, rs::preset::best_quality);
+                device.enable_stream(rs::stream::color, rs::preset::best_quality);
+                break;
+            case 1:
+                device.enable_stream(rs::stream::depth, rs::preset::largest_image);
+                device.enable_stream(rs::stream::color, rs::preset::best_quality);
+                break;
+            case 2:
+                device.enable_stream(rs::stream::depth, rs::preset::best_quality);
+                device.enable_stream(rs::stream::color, rs::preset::best_quality);
+                device.enable_stream(rs::stream::infrared, rs::preset::best_quality);
+                break;
+            case 3:
+                device.enable_stream(rs::stream::depth, rs::preset::largest_image);
+                device.enable_stream(rs::stream::color, rs::preset::best_quality);
+                device.enable_stream(rs::stream::infrared, rs::preset::largest_image);
+                break;
+            case 4:
+                device.enable_stream(rs::stream::depth, rs::preset::best_quality);
+                device.enable_stream(rs::stream::color, rs::preset::best_quality);
+                device.enable_stream(rs::stream::infrared, rs::preset::best_quality);
+                device.enable_stream(rs::stream::infrared2, rs::preset::best_quality);
+                break;
+            case 5:
+                device.enable_stream(rs::stream::depth, rs::preset::largest_image);
+                device.enable_stream(rs::stream::color, rs::preset::best_quality);
+                device.enable_stream(rs::stream::infrared, rs::preset::largest_image);
+                device.enable_stream(rs::stream::infrared2, rs::preset::largest_image);
+                break;
+            case 6:
+                device.enable_stream(rs::stream::infrared, rs::preset::best_quality);
+                device.enable_stream(rs::stream::infrared2, rs::preset::best_quality);
+                break;
+            case 7:
+                device.enable_stream(rs::stream::depth, rs::preset::best_quality);
+                break;
+            case 8:
+                device.enable_stream(rs::stream::color, rs::preset::best_quality);
+                break;
+            }
+
+            device.start();
+            for(int j=0; j<120; ++j)
+            {
+                // Wait for new images
+                glfwPollEvents();
+                if(glfwWindowShouldClose(win)) goto done;
+                device.wait_for_frames();
+
+                // Draw the images
+                glClear(GL_COLOR_BUFFER_BIT);
+                glPushMatrix();
+                glOrtho(0, 1280, 960, 0, -1, +1);
+                draw_stream(device, rs::stream::color, 0, 0);
+                draw_stream(device, rs::stream::depth, 640, 0);
+                draw_stream(device, rs::stream::infrared, 0, 480);
+                draw_stream(device, rs::stream::infrared2, 640, 480);
+                glPopMatrix();
+                glfwSwapBuffers(win);
+            }
+            device.stop();
+        }
+        catch(...)
         {
-            // Wait for new images
-            glfwPollEvents();
-            if(glfwWindowShouldClose(win)) goto done;
-            device.wait_for_frames();
-
-            // Draw the images
-            glClear(GL_COLOR_BUFFER_BIT);
-            glPushMatrix();
-            glOrtho(0, 1280, 960, 0, -1, +1);
-            draw_stream(device, rs::stream::color, 0, 0);
-            draw_stream(device, rs::stream::depth, 640, 0);
-            draw_stream(device, rs::stream::infrared, 0, 480);
-            draw_stream(device, rs::stream::infrared2, 640, 480);
-            glPopMatrix();
-            glfwSwapBuffers(win);
+            std::cout << "skipping mode" << std::endl;
         }
-        device.stop();
     }
 done:
     glfwDestroyWindow(win);
