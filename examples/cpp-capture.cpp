@@ -61,10 +61,10 @@ int main(int argc, char * argv[]) try
     rs::device dev = ctx.get_device(0);
     dev.enable_stream(rs::stream::depth, rs::preset::best_quality);
     dev.enable_stream(rs::stream::color, rs::preset::best_quality);
-    //dev.enable_stream(rs::stream::infrared, rs::preset::best_quality);
-    //dev.enable_stream(rs::stream::infrared, 0, 0, rs::format::y16, 0);
-    try {
-        //dev.enable_stream(rs::stream::infrared2, 0, 0, rs::format::any, 0); // select a format for infrared2 that matches infrared
+    try 
+    { 
+        dev.enable_stream(rs::stream::infrared, rs::preset::best_quality);
+        dev.enable_stream(rs::stream::infrared2, 0, 0, rs::format::any, 0); 
     } catch(...) {}
 
     // Compute field of view for each enabled stream
