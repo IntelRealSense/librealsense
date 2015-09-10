@@ -410,6 +410,7 @@ namespace rsimpl { namespace f200
             int32_t t = *((int32_t*)(command.receivedCommandData));
             MEMStemp = (float) t;
             MEMStemp /= 100;
+            return true;
          }
 		 else return false;
     }
@@ -426,7 +427,10 @@ namespace rsimpl { namespace f200
         command.oneDirection = false;
 
         if (PerfomAndSendHWmonitorCommand(command))
+        {
             IRtemp = (int8_t) command.receivedCommandData[0];
+            return true;
+        }
 		else return false;
     }
 

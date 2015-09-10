@@ -158,7 +158,7 @@ int main(int argc, char * argv[]) try
             {
                 if(auto d = *depth++)
                 {
-                    rs::float3 point = depth_intrin.deproject({x, y}, d*depth_scale);
+                    rs::float3 point = depth_intrin.deproject({static_cast<float>(x), static_cast<float>(y)}, d*depth_scale);
                     if(identical) glTexCoord2f((x+0.5f)/depth_intrin.image_size.x, (y+0.5f)/depth_intrin.image_size.y);
                     else
                     {
