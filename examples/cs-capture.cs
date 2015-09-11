@@ -108,7 +108,7 @@ public class Capture : Form
                     return;
                 }
 
-                devices[0].EnableStreamPreset(RealSense.Stream.Depth, RealSense.Preset.BestQuality);
+                devices[0].EnableStream(RealSense.Stream.Depth, RealSense.Preset.BestQuality);
                 devices[0].EnableStream(RealSense.Stream.Color, 640, 480, RealSense.Format.BGR8, 60);
                 devices[0].Start();
 

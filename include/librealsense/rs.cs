@@ -72,9 +72,14 @@ namespace RealSense
             using (var e = new AutoError()) { rs_enable_stream(handle, stream, width, height, format, fps, ref e.Handle); }
         }
 
-        public void EnableStreamPreset(Stream stream, Preset preset)
+        public void EnableStream(Stream stream, Preset preset)
         {
             using (var e = new AutoError()) { rs_enable_stream_preset(handle, stream, preset, ref e.Handle); }
+        }
+
+        public void DisableStream(Stream stream)
+        {
+            using (var e = new AutoError()) { rs_disable_stream(handle, stream, ref e.Handle); }
         }
 
         public bool StreamIsEnabled(Stream stream)
@@ -158,6 +163,7 @@ namespace RealSense
 
         [DllImport("realsense")] private static extern void rs_enable_stream(IntPtr device, Stream stream, int width, int height, Format format, int fps, ref IntPtr error);
         [DllImport("realsense")] private static extern void rs_enable_stream_preset(IntPtr device, Stream stream, Preset preset, ref IntPtr error);
+        [DllImport("realsense")] private static extern void rs_disable_stream(IntPtr device, Stream stream, ref IntPtr error);
         [DllImport("realsense")] private static extern int rs_stream_is_enabled(IntPtr device, Stream stream, ref IntPtr error);
         [DllImport("realsense")] private static extern void rs_get_stream_intrinsics(IntPtr device, Stream stream, out Intrinsics intrin, ref IntPtr error);
         [DllImport("realsense")] private static extern Format rs_get_stream_format(IntPtr device, Stream stream, ref IntPtr error);
