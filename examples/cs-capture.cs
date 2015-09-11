@@ -101,18 +101,18 @@ public class Capture : Form
         {
             using (var context = new RealSense.Context())
             {
-                var cameras = context.Cameras;
-                if (cameras.Length < 1)
+                var devices = context.Devices;
+                if (devices.Length < 1)
                 {
-                    MessageBox.Show("No RealSense cameras detected. Program will now exit.", "C# Capture Example", MessageBoxButtons.OK);
+                    MessageBox.Show("No RealSense devices detected. Program will now exit.", "C# Capture Example", MessageBoxButtons.OK);
                     return;
                 }
 
-                context.Cameras[0].EnableStreamPreset(RealSense.Stream.Depth, RealSense.Preset.BestQuality);
-                context.Cameras[0].EnableStream(RealSense.Stream.Color, 640, 480, RealSense.Format.BGR8, 60);
-                context.Cameras[0].Start();
-                
-                Application.Run(new Capture(context.Cameras[0]));
+                devices[0].EnableStreamPreset(RealSense.Stream.Depth, RealSense.Preset.BestQuality);
+                devices[0].EnableStream(RealSense.Stream.Color, 640, 480, RealSense.Format.BGR8, 60);
+                devices[0].Start();
+
+                Application.Run(new Capture(devices[0]));
             }
         }
         catch (RealSense.Error e)

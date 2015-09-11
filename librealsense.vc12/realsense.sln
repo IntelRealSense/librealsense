@@ -24,6 +24,11 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "cpp-restart", "cpp-restart\
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "c-enumerate", "c-enumerate\c-enumerate.vcxproj", "{EB08824E-0EFF-477F-93E3-837AFCBDF18B}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "cs-config", "cs-config\cs-config.csproj", "{7C43EEA2-0DD0-413E-9244-3EEE0766F4EF}"
+	ProjectSection(ProjectDependencies) = postProject
+		{1AE4CEB5-9A0B-4B9F-9505-824FD56BB41F} = {1AE4CEB5-9A0B-4B9F-9505-824FD56BB41F}
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -104,6 +109,14 @@ Global
 		{EB08824E-0EFF-477F-93E3-837AFCBDF18B}.Release|Win32.Build.0 = Release|Win32
 		{EB08824E-0EFF-477F-93E3-837AFCBDF18B}.Release|x64.ActiveCfg = Release|x64
 		{EB08824E-0EFF-477F-93E3-837AFCBDF18B}.Release|x64.Build.0 = Release|x64
+		{7C43EEA2-0DD0-413E-9244-3EEE0766F4EF}.Debug|Win32.ActiveCfg = Debug|x86
+		{7C43EEA2-0DD0-413E-9244-3EEE0766F4EF}.Debug|Win32.Build.0 = Debug|x86
+		{7C43EEA2-0DD0-413E-9244-3EEE0766F4EF}.Debug|x64.ActiveCfg = Debug|x64
+		{7C43EEA2-0DD0-413E-9244-3EEE0766F4EF}.Debug|x64.Build.0 = Debug|x64
+		{7C43EEA2-0DD0-413E-9244-3EEE0766F4EF}.Release|Win32.ActiveCfg = Release|x86
+		{7C43EEA2-0DD0-413E-9244-3EEE0766F4EF}.Release|Win32.Build.0 = Release|x86
+		{7C43EEA2-0DD0-413E-9244-3EEE0766F4EF}.Release|x64.ActiveCfg = Release|x64
+		{7C43EEA2-0DD0-413E-9244-3EEE0766F4EF}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
