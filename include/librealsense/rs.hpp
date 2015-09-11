@@ -4,6 +4,7 @@
 #include "rs.h"
 #include "rsutil.h"
 
+#include <cmath>        // For atan2f
 #include <cstdint>      // For int32_t
 #include <cstring>      // For memcmp
 #include <ostream>      // For std::ostream
@@ -102,8 +103,9 @@ namespace rs
         // Basic properties of a stream
         int                 width() const                                                           { return intrin.width; }
         int                 height() const                                                          { return intrin.height; }
-        float2              focal_length() const                                                    { return {intrin.fx, intrin.fy}; }
-        float2              principal_point() const                                                 { return {intrin.ppx, intrin.ppy}; }
+        float               hfov() const                                                            { return (atan2f(intrin.ppx + 0.5f, intrin.fx) + atan2f(intrin.width - (intrin.ppx + 0.5f), intrin.fx)) * 57.2957795f; }
+        float               vfov() const                                                            { return (atan2f(intrin.ppy + 0.5f, intrin.fy) + atan2f(intrin.height - (intrin.ppy + 0.5f), intrin.fy)) * 57.2957795f; }
+        bool                distorted() const                                                       { return distortion_model() != distortion::none; }
         distortion          distortion_model() const                                                { return (distortion)intrin.model; }
 
         // Helpers for mapping between pixel coordinates and texture coordinates

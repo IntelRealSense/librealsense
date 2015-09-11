@@ -1,19 +1,12 @@
 #include <librealsense/rs.hpp>
 #include "example.h"
 
-#define _USE_MATH_DEFINES
-#include <math.h>
 #include <sstream>
 #include <iostream>
 #include <iomanip>
 #include <thread>
 
 font font;
-
-float compute_fov(int image_size, float focal_length, float principal_point)
-{
-    return (atan2f(principal_point + 0.5f, focal_length) + atan2f(image_size - principal_point - 0.5f, focal_length)) * 180.0f / (float)M_PI;
-}
 
 void draw_stream(rs::device & dev, rs::stream stream, int x, int y)
 {
@@ -70,10 +63,8 @@ int main(int argc, char * argv[]) try
         auto stream = rs::stream(i);
         if(!dev.is_stream_enabled(stream)) continue;
         auto intrin = dev.get_stream_intrinsics(stream);
-        float hfov = compute_fov(intrin.width(), intrin.focal_length().x, intrin.principal_point().x);
-        float vfov = compute_fov(intrin.height(), intrin.focal_length().y, intrin.principal_point().y);
         std::cout << "Capturing " << stream << " at " << intrin.width() << " x " << intrin.height();
-        std::cout << std::setprecision(1) << std::fixed << ", fov = " << hfov << " x " << vfov << std::endl;
+        std::cout << std::setprecision(1) << std::fixed << ", fov = " << intrin.hfov() << " x " << intrin.vfov() << (intrin.distorted() ? " (distorted)" : " (rectilinear)") << std::endl;
     }
     
     // Start our device

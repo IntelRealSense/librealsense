@@ -1,13 +1,9 @@
 #include <librealsense/rs.hpp>
 #include "example.h"
 
-#define _USE_MATH_DEFINES
-#include <math.h>
-#include <algorithm>
-#include <thread>
 #include <sstream>
 #include <iostream>
-#include <iomanip>
+#include <algorithm>
 
 int main(int argc, char * argv[]) try
 {
