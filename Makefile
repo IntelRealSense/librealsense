@@ -1,5 +1,5 @@
 CFLAGS := -std=c11 -fPIC -pedantic
-CXXFLAGS := -std=c++11 -fPIC -pedantic -Wno-missing-field-initializers -Wno-switch
+CXXFLAGS := -std=c++11 -fPIC -pedantic -Wno-missing-field-initializers -Wno-switch -Wno-multichar
 
 # Compute list of all *.o files that participate in librealsense.so
 OBJECTS = verify
@@ -36,20 +36,11 @@ prepare:
 	mkdir -p bin
 
 # Rules for building the sample programs
-bin/c-capture: library examples/c-capture.c
-	$(CC) examples/c-capture.c $(REALSENSE_FLAGS) $(GLFW3_FLAGS) -o $@
+bin/c-%: examples/c-%.c library
+	$(CC) $< $(REALSENSE_FLAGS) $(GLFW3_FLAGS) -o $@
 
-bin/c-pointcloud: library examples/c-pointcloud.c
-	$(CC) examples/c-pointcloud.c $(REALSENSE_FLAGS) $(GLFW3_FLAGS) -o $@
-
-bin/cpp-capture: library examples/cpp-capture.cpp
-	$(CXX) examples/cpp-capture.cpp -std=c++11 $(REALSENSE_FLAGS) $(GLFW3_FLAGS) -o $@
-
-bin/cpp-multicam: library examples/cpp-multicam.cpp
-	$(CXX) examples/cpp-multicam.cpp -std=c++11 $(REALSENSE_FLAGS) $(GLFW3_FLAGS) -o $@
-
-bin/cpp-pointcloud: library examples/cpp-pointcloud.cpp
-	$(CXX) examples/cpp-pointcloud.cpp -std=c++11 $(REALSENSE_FLAGS) $(GLFW3_FLAGS) -o $@
+bin/cpp-%: examples/cpp-%.cpp library
+	$(CXX) $< -std=c++11 $(REALSENSE_FLAGS) $(GLFW3_FLAGS) -o $@
 
 # Rules for building the library itself
 lib/librealsense.so: prepare $(OBJECTS)

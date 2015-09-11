@@ -2,6 +2,7 @@ TEMPLATE = subdirs
 
 SUBDIRS += \
    ./realsense.pro \
+   ./c-enumerate.pro \
    ./c-capture.pro \
    ./c-pointcloud.pro \
    ./cpp-capture.pro \

@@ -61,7 +61,7 @@ int main()
                 rs_get_stream_mode(device, stream, k, &width, &height, &format, &framerate, &e);
                 check_error(e);
 
-                printf("    %dx%d %s %dHz", width, height, rs_format_to_string(format), framerate);
+                printf("    %dx%d\t%s\t%dHz", width, height, rs_format_to_string(format), framerate);
 
                 /* Enable the stream in this mode so that we can retrieve its intrinsics */
                 rs_enable_stream(device, stream, width, height, format, framerate, &e);
@@ -73,7 +73,7 @@ int main()
                 /* Show horizontal and vertical field of view, in degrees, and whether the mode produced rectilinear or distorted images */
                 hfov = (atan2f(intrin.ppx + 0.5f, intrin.fx) + atan2f(width - intrin.ppx - 0.5f, intrin.fx)) * 57.2957795f;
                 vfov = (atan2f(intrin.ppy + 0.5f, intrin.fy) + atan2f(height - intrin.ppy - 0.5f, intrin.fy)) * 57.2957795f;
-                printf(" - %.1f\u00F8 x %.1f\u00F8 %s\n", hfov, vfov, intrin.model == RS_DISTORTION_NONE ? "rectilinear" : "distorted");
+                printf("\t%.1f x %.1f degrees, %s\n", hfov, vfov, intrin.model == RS_DISTORTION_NONE ? "rectilinear" : "distorted");
             }
 
             /* Some stream mode combinations are invalid, so disable this stream before moving on to the next one */
