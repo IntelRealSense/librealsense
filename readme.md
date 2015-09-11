@@ -8,8 +8,9 @@ Dependency management for GLFW3 and libusb-1.0 is done manually at the moment (s
 
 1. RealSense R200 (DS4)
 2. RealSense F200 (IVCAM 1.0)
+3. RealSense SR300 (IVCAM 1.5)
 	
-DS5 and IVCAM 1.5 support will be provided in the near future. librealsense should in principal be able to support any 3D camera which exposes a UVC interface and which chiefly relies on UVC XU commands and USB sidechannel traffic for controls and calibration information.
+DS5 support will be provided in the near future. librealsense should in principal be able to support any 3D camera which exposes a UVC interface and which chiefly relies on UVC XU commands and USB sidechannel traffic for controls and calibration information.
 
 ## Supported Platforms
 
