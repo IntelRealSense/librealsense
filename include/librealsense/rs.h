@@ -91,6 +91,8 @@ const char *    rs_get_device_name          (const rs_device * device, rs_error 
 void            rs_get_device_extrinsics    (const rs_device * device, rs_stream from, rs_stream to, rs_extrinsics * extrin, rs_error ** error);
 float           rs_get_device_depth_scale   (const rs_device * device, rs_error ** error);
 int             rs_device_supports_option   (const rs_device * device, rs_option option, rs_error ** error);
+int             rs_get_stream_mode_count    (const rs_device * device, rs_stream stream, rs_error ** error);
+void            rs_get_stream_mode          (const rs_device * device, rs_stream stream, int index, int * width, int * height, rs_format * format, int * framerate, rs_error ** error);
 
 void            rs_enable_stream            (rs_device * device, rs_stream stream, int width, int height, rs_format format, int framerate, rs_error ** error);
 void            rs_enable_stream_preset     (rs_device * device, rs_stream stream, rs_preset preset, rs_error ** error);

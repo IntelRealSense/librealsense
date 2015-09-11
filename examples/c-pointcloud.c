@@ -7,7 +7,7 @@ void check_error()
 {
     if (error)
     {
-        fprintf(stderr, "error calling %s(...):\n  %s\n", rs_get_failed_function(error), rs_get_error_message(error));
+        fprintf(stderr, "error calling %s(%s):\n  %s\n", rs_get_failed_function(error), rs_get_failed_args(error), rs_get_error_message(error));
         rs_free_error(error);
         exit(EXIT_FAILURE);
     }

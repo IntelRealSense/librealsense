@@ -76,6 +76,16 @@ const char * rs_get_device_name(const rs_device * device, rs_error ** error) try
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, device)
 
+void rs_get_device_extrinsics(const rs_device * device, rs_stream from, rs_stream to, rs_extrinsics * extrin, rs_error ** error) try
+{
+    VALIDATE_NOT_NULL(device);
+    VALIDATE_ENUM(from);
+    VALIDATE_ENUM(to);
+    VALIDATE_NOT_NULL(extrin);
+    *extrin = device->get_extrinsics(from, to);
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, device, from, to, extrin)
+
 int rs_device_supports_option(const rs_device * device, rs_option option, rs_error ** error) try
 {
     VALIDATE_NOT_NULL(device);
@@ -84,16 +94,22 @@ int rs_device_supports_option(const rs_device * device, rs_option option, rs_err
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, device, option)
 
-void rs_get_device_extrinsics(const rs_device * device, rs_stream from, rs_stream to, rs_extrinsics * extrin, rs_error ** error) try
+int rs_get_stream_mode_count(const rs_device * device, rs_stream stream, rs_error ** error) try
 {
     VALIDATE_NOT_NULL(device);
-    VALIDATE_ENUM(from);
-    VALIDATE_ENUM(to);
-    VALIDATE_NOT_NULL(extrin);
-    *extrin = device->get_stream_extrinsics(from, to);
+    VALIDATE_ENUM(stream);
+    return device->get_stream_mode_count(stream);
 }
-HANDLE_EXCEPTIONS_AND_RETURN(, device, from, to, extrin)
+HANDLE_EXCEPTIONS_AND_RETURN(0, device, stream);
 
+void rs_get_stream_mode(const rs_device * device, rs_stream stream, int index, int * width, int * height, rs_format * format, int * framerate, rs_error ** error) try
+{
+    VALIDATE_NOT_NULL(device);
+    VALIDATE_ENUM(stream);
+    VALIDATE_RANGE(index, 0, device->get_stream_mode_count(stream)-1);
+    return device->get_stream_mode(stream, index, width, height, format, framerate);
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, device, stream, index, width, height, format, framerate);
 
 
 void rs_enable_stream(rs_device * device, rs_stream stream, int width, int height, rs_format format, int fps, rs_error ** error) try

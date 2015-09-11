@@ -25,18 +25,20 @@ public:
                                             ~rs_device();
 
     const char *                            get_name() const { return device_info.name.c_str(); }
-    bool                                    supports_option(rs_option option) const { return device_info.option_supported[option]; }
-    rs_extrinsics                           get_stream_extrinsics(rs_stream from, rs_stream to) const;
+    rs_extrinsics                           get_extrinsics(rs_stream from, rs_stream to) const;
     float                                   get_depth_scale() const { return device_info.depth_scale; }
+    bool                                    supports_option(rs_option option) const { return device_info.option_supported[option]; }
+    int                                     get_stream_mode_count(rs_stream stream) const;
+    void                                    get_stream_mode(rs_stream stream, int mode, int * width, int * height, rs_format * format, int * framerate) const;
 
     void                                    enable_stream(rs_stream stream, int width, int height, rs_format format, int fps);
     void                                    enable_stream_preset(rs_stream stream, rs_preset preset);    
     void                                    disable_stream(rs_stream stream);
     bool                                    is_stream_enabled(rs_stream stream) const { return requests[stream].enabled; }
-    rsimpl::stream_mode                     get_stream_mode(rs_stream stream) const;
-    rs_intrinsics                           get_stream_intrinsics(rs_stream stream) const { return device_info.intrinsics[get_stream_mode(stream).intrinsics_index]; }
-    rs_format                               get_stream_format(rs_stream stream) const { return get_stream_mode(stream).format; }
-    int                                     get_stream_framerate(rs_stream stream) const { return get_stream_mode(stream).fps; }
+    rsimpl::stream_mode                     get_current_stream_mode(rs_stream stream) const;
+    rs_intrinsics                           get_stream_intrinsics(rs_stream stream) const { return device_info.intrinsics[get_current_stream_mode(stream).intrinsics_index]; }
+    rs_format                               get_stream_format(rs_stream stream) const { return get_current_stream_mode(stream).format; }
+    int                                     get_stream_framerate(rs_stream stream) const { return get_current_stream_mode(stream).fps; }
 
     void                                    start();
     void                                    stop();

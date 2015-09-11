@@ -243,7 +243,7 @@ int rs_device::get_frame_timestamp(rs_stream stream) const
     return base_timestamp == -1 ? 0 : convert_timestamp(base_timestamp + streams[stream]->get_front_number() - last_stream_timestamp);
 }
 
-rsimpl::stream_mode rs_device::get_stream_mode(rs_stream stream) const
+rsimpl::stream_mode rs_device::get_current_stream_mode(rs_stream stream) const
 {
     if(streams[stream]) return streams[stream]->get_mode();
     if(requests[stream].enabled)
@@ -260,11 +260,56 @@ rsimpl::stream_mode rs_device::get_stream_mode(rs_stream stream) const
     throw std::runtime_error("stream not enabled");
 }
 
-rs_extrinsics rs_device::get_stream_extrinsics(rs_stream from, rs_stream to) const
+rs_extrinsics rs_device::get_extrinsics(rs_stream from, rs_stream to) const
 {
     auto transform = inverse(device_info.stream_poses[from]) * device_info.stream_poses[to];
     rs_extrinsics extrin;
     (float3x3 &)extrin.rotation = transform.orientation;
     (float3 &)extrin.translation = transform.position;
     return extrin;
+}
+
+namespace rsimpl
+{
+    std::vector<stream_mode> enumerate_stream_modes(const static_device_info & device_info, rs_stream stream)
+    {
+        std::vector<stream_mode> modes;
+        for(auto & subdevice_mode : device_info.subdevice_modes)
+        {
+            for(auto & stream_mode : subdevice_mode.streams)
+            {
+                if(stream_mode.stream == stream)
+                {
+                    modes.push_back(stream_mode);
+                }
+            }
+        }
+
+        std::sort(begin(modes), end(modes), [](const stream_mode & a, const stream_mode & b)
+        {
+            return std::make_tuple(-a.width, -a.height, -a.fps, a.format) < std::make_tuple(-b.width, -b.height, -b.fps, b.format);
+        });
+
+        auto it = std::unique(begin(modes), end(modes), [](const stream_mode & a, const stream_mode & b)
+        {
+            return std::make_tuple(a.width, a.height, a.fps, a.format) == std::make_tuple(b.width, b.height, b.fps, b.format);
+        });
+        if(it != end(modes)) modes.erase(it, end(modes));
+
+        return modes;
+    }
+}
+
+int rs_device::get_stream_mode_count(rs_stream stream) const
+{
+    return enumerate_stream_modes(device_info, stream).size();
+}
+
+void rs_device::get_stream_mode(rs_stream stream, int mode, int * width, int * height, rs_format * format, int * framerate) const
+{
+    auto m = enumerate_stream_modes(device_info, stream)[mode];
+    if(width) *width = m.width;
+    if(height) *height = m.height;
+    if(format) *format = m.format;
+    if(framerate) *framerate = m.fps;
 }
