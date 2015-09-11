@@ -18,6 +18,8 @@ namespace cs_config
             device = d;
 
             foreach (var stream in Streams) stream.Setup(d);
+
+            Text = string.Format("C# Configuration Example ({0})", device.Name);
         }
 
         private void button1_Click(object sender, EventArgs e)
