@@ -95,28 +95,24 @@ namespace rs
     struct int2
     { 
         int                 x,y;
-
         bool                operator == (const int2 & r) const                                      { return x==r.x && y==r.y; } 
     };
 
     struct float2
     {
         float               x,y;
-
         bool                operator == (const float2 & r) const                                    { return x==r.x && y==r.y; } 
     };
 
     struct float3
     { 
         float               x,y,z; 
-
         bool                operator == (const float3 & r) const                                    { return x==r.x && y==r.y && z==r.z; } 
     };
 
     struct float3x3
     { 
         float3              x,y,z;
-
         bool                operator == (const float3x3 & r) const                                  { return x==r.x && y==r.y && z==r.z; }
     };
 
@@ -128,9 +124,13 @@ namespace rs
         float               distortion_coeff[5];
         distortion          distortion_model;
 
+        bool                operator == (const intrinsics & r) const                                { return memcmp(this, &r, sizeof(intrinsics)) == 0; }
+
+        float2              pixel_to_texcoord(const float2 & pixel) const                           { return {(pixel.x+0.5f)/image_size.x, (pixel.y+0.5f)/image_size.y}; }
+
         float3              deproject(const float2 & pixel, float depth) const                      { float3 point; rs_deproject_pixel_to_point(&point.x, (const rs_intrinsics *)this, &pixel.x, depth); return point; }
         float2              project(const float3 & point) const                                     { float2 pixel; rs_project_point_to_pixel(&pixel.x, (const rs_intrinsics *)this, &point.x); return pixel; }
-        bool                operator == (const intrinsics & r) const                                { return memcmp(this, &r, sizeof(intrinsics)) == 0; }
+        float2              project_to_texcoord(const float3 & point) const                         { return pixel_to_texcoord(project(point)); }
     };
 
     struct extrinsics

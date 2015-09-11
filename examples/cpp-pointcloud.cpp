@@ -8,6 +8,9 @@
 #include <iostream>
 #include <algorithm>
 
+inline void glVertex(const rs::float3 & vertex) { glVertex3fv(&vertex.x); }
+inline void glTexCoord(const rs::float2 & tex_coord) { glTexCoord2fv(&tex_coord.x); }
+
 struct state { double yaw, pitch, lastX, lastY; bool ml; std::vector<rs::stream> tex_streams; int index; rs::device * dev; };
 
 int main(int argc, char * argv[]) try
@@ -28,7 +31,7 @@ int main(int argc, char * argv[]) try
     }
     if (!dev) throw std::runtime_error("No device detected. Is it plugged in?");
         
-    state app_state = {0, 0, 0, 0, false, {rs::stream::color, rs::stream::infrared}, 0, &dev};
+    state app_state = {0, 0, 0, 0, false, {rs::stream::color}, 0, &dev};
     if(dev.is_stream_enabled(rs::stream::infrared)) app_state.tex_streams.push_back(rs::stream::infrared);
     if(dev.is_stream_enabled(rs::stream::infrared2)) app_state.tex_streams.push_back(rs::stream::infrared2);
     
@@ -160,16 +163,11 @@ int main(int argc, char * argv[]) try
         {
             for(int x=0; x<depth_intrin.image_size.x; ++x)
             {
-                if(auto d = *depth++)
+                if(uint16_t d = *depth++)
                 {
-                    rs::float3 point = depth_intrin.deproject({static_cast<float>(x), static_cast<float>(y)}, d*depth_scale);
-                    if(identical) glTexCoord2f((x+0.5f)/depth_intrin.image_size.x, (y+0.5f)/depth_intrin.image_size.y);
-                    else
-                    {
-                        rs::float2 tex_pixel = tex_intrin.project(extrin.transform(point));
-                        glTexCoord2f((tex_pixel.x+0.5f) / tex_intrin.image_size.x, (tex_pixel.y+0.5f) / tex_intrin.image_size.y);
-                    }
-                    glVertex3fv(&point.x);
+                    const rs::float3 point = depth_intrin.deproject({x,y}, d*depth_scale);
+                    glTexCoord(identical ? tex_intrin.pixel_to_texcoord({x,y}) : tex_intrin.project_to_texcoord(extrin.transform(point)));
+                    glVertex(point);
                 }
             }
         }
@@ -180,7 +178,8 @@ int main(int argc, char * argv[]) try
         glPopAttrib();
 
         glfwGetWindowSize(win, &width, &height);
-        
+        glViewport(0, 0, width, height);
+
         glPushAttrib(GL_ALL_ATTRIB_BITS);
         glPushMatrix();
         glOrtho(0, width, height, 0, -1, +1);
