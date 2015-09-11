@@ -3,7 +3,6 @@
 
 #include <climits>
 #include <thread>
-#include <iostream>
 #include <algorithm>
 
 using namespace rsimpl;

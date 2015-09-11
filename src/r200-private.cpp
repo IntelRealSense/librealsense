@@ -293,13 +293,13 @@ namespace rsimpl { namespace r200
 
         void LogDebugInfo(CameraCalibrationParameters & p, CameraHeaderInfo & h)
         {
-            // std::cout << "## Calibration Version: " << p.metadata.versionNumber << std::endl;
-            // std::cout << "## Serial: " << h.serialNumber << std::endl;
-            // std::cout << "## Model: " << h.modelNumber << std::endl;
-            // std::cout << "## Revision: " << h.revisionNumber << std::endl;
-            // std::cout << "## Head Version: " << h.cameraHeadContentsVersion << std::endl;
-            // std::cout << "## Baseline: " << h.nominalBaseline << std::endl;
-            // std::cout << "## OEM ID: " << h.OEMID << std::endl;
+            DEBUG_OUT("Calibration Version: " << p.metadata.versionNumber);
+            DEBUG_OUT("Serial: " << h.serialNumber);
+            DEBUG_OUT("Model: " << h.modelNumber);
+            DEBUG_OUT("Revision: " << h.revisionNumber);
+            DEBUG_OUT("Head Version: " << h.cameraHeadContentsVersion);
+            DEBUG_OUT("Baseline: " << h.nominalBaseline);
+            DEBUG_OUT("OEM ID: " << h.OEMID);
         }
 
         CameraCalibrationParameters GetCalibration() { return cameraCalibration; }

@@ -1,5 +1,4 @@
 #include "f200-private.h"
-#include <iostream>
 
 namespace rsimpl { namespace f200
 {
@@ -172,7 +171,7 @@ namespace rsimpl { namespace f200
 
         int ver = getVersionOfCalibration(bufParams, bufParams + 2);
 
-		std::cout << "######## Calibration Version: " << ver << std::endl;
+		DEBUG_OUT("######## Calibration Version: " << ver);
 
         if (ver == IVCAM_MIN_SUPPORTED_VERSION)
         {
@@ -629,7 +628,7 @@ namespace rsimpl { namespace f200
                 if (calibration->updateParamsAccordingToTemperature(t.LiguriaTemp, t.IRTemp))
                 {
                     //@tofix, qRes mode
-                    std::cout << "[Debug] updating asic with new temperature calibration coefficients" << std::endl;
+                    DEBUG_OUT("updating asic with new temperature calibration coefficients");
                     GenerateAsicCalibrationCoefficients({640, 480}, true, coeffs.CoefValueArray);
                     if (UpdateASICCoefs(&coeffs) != true)
                     {
@@ -637,7 +636,7 @@ namespace rsimpl { namespace f200
                     }
                 }
             }
-            catch(...) { std::cout << "[Debug] temperature read failed" << std::endl; }
+            catch(...) { DEBUG_OUT("temperature read failed"); }
 			
             temperatureCv.wait_for(lock, std::chrono::seconds(10));
         }

@@ -3,7 +3,6 @@
 #ifndef WIN32
 #include "libuvc/libuvc.h"
 #include "libuvc/libuvc_internal.h" // For LibUSB punchthrough
-#include <iostream>
 
 namespace rsimpl
 {
@@ -50,7 +49,7 @@ namespace rsimpl
                 for(auto interface_number : claimed_interfaces)
                 {
                     int status = libusb_release_interface(get_subdevice(0).handle->usb_devh, interface_number);
-                    if(status < 0) std::cerr << "Warning: libusb_release_interface(...) returned " << libusb_error_name(status) << std::endl;
+                    if(status < 0) DEBUG_ERR("libusb_release_interface(...) returned " << libusb_error_name(status));
                 }
 
                 for(auto & sub : subdevices) if(sub.handle) uvc_close(sub.handle);
@@ -192,7 +191,6 @@ namespace rsimpl
 #include <thread>
 #include <chrono>
 #include <algorithm>
-#include <iostream>
 #include <regex>
 
 #include <strsafe.h>
@@ -277,33 +275,33 @@ namespace rsimpl
             if(tokens.size() < 1 || tokens[0] != R"(\\?\usb)") return false; // Not a USB device
             if(tokens.size() < 3)
             {
-                std::cerr << "malformed usb device path: " << name << std::endl;
+                DEBUG_ERR("malformed usb device path: " << name);
                 return false;
             }
 
             auto ids = tokenize(tokens[1], '&');
             if(ids[0].size() != 8 || ids[0].substr(0,4) != "vid_" || !(std::istringstream(ids[0].substr(4,4)) >> std::hex >> vid))
             {
-                std::cerr << "malformed vid string: " << tokens[1] << std::endl;
+                DEBUG_ERR("malformed vid string: " << tokens[1]);
                 return false;
             }
 
             if(ids[1].size() != 8 || ids[1].substr(0,4) != "pid_" || !(std::istringstream(ids[1].substr(4,4)) >> std::hex >> pid))
             {
-                std::cerr << "malformed pid string: " << tokens[1] << std::endl;
+                DEBUG_ERR("malformed pid string: " << tokens[1]);
                 return false;
             }
 
             if(ids[2].size() != 5 || ids[2].substr(0,3) != "mi_" || !(std::istringstream(ids[2].substr(3,2)) >> mi))
             {
-                std::cerr << "malformed mi string: " << tokens[1] << std::endl;
+                DEBUG_ERR("malformed mi string: " << tokens[1]);
                 return false;
             }
 
             ids = tokenize(tokens[2], '&');
             if(ids.size() < 2)
             {
-                std::cerr << "malformed id string: " << tokens[2] << std::endl;
+                DEBUG_ERR("malformed id string: " << tokens[2]);
                 return false;
             }
             unique_id = ids[1];
@@ -454,7 +452,7 @@ namespace rsimpl
 				    SetupDiGetDeviceInterfaceDetail(device_info, &interfaceData, nullptr, 0, &detail_data_size, nullptr);
                     if(GetLastError() != ERROR_INSUFFICIENT_BUFFER)
                     {
-                        std::cerr << "SetupDiGetDeviceInterfaceDetail failed" << std::endl;
+                        DEBUG_ERR("SetupDiGetDeviceInterfaceDetail failed");
                         continue;
                     }
                     auto alloc = std::malloc(detail_data_size);
@@ -465,7 +463,7 @@ namespace rsimpl
                     detail_data->cbSize = sizeof(SP_DEVICE_INTERFACE_DETAIL_DATA);
 				    if (!SetupDiGetDeviceInterfaceDetail(device_info, &interfaceData, detail_data.get(), detail_data_size, nullptr, nullptr))
 				    {
-					    std::cerr << "SetupDiGetDeviceInterfaceDetail failed" << std::endl;
+					    DEBUG_ERR("SetupDiGetDeviceInterfaceDetail failed");
 					    continue;
 				    }
                     if (detail_data->DevicePath == nullptr) continue;
@@ -480,7 +478,7 @@ namespace rsimpl
 
 				    if(!WinUsb_Initialize(usb_file_handle, &usb_interface_handle))
                     {
-					    std::cerr << "Last Error: " << GetLastError() << std::endl;
+					    DEBUG_ERR("Last Error: " << GetLastError());
 					    throw std::runtime_error("could not initialize winusb");
 				    }
 
@@ -549,7 +547,7 @@ namespace rsimpl
 				{
 					auto lastError = GetLastError();
 					WinUsb_ResetPipe(usb_interface_handle, endpoint);
-					std::cerr << "WinUsb_ReadPipe failure... lastError: " << lastError << std::endl;
+					DEBUG_ERR("WinUsb_ReadPipe failure... lastError: " << lastError);
 					result = false;
 				}
 
@@ -604,12 +602,12 @@ namespace rsimpl
                 switch(hr)
                 {
                 case S_OK: break;
-                case MF_E_INVALIDREQUEST: std::cout << "ReadSample returned MF_E_INVALIDREQUEST" << std::endl; break;
-                case MF_E_INVALIDSTREAMNUMBER: std::cout << "ReadSample returned MF_E_INVALIDSTREAMNUMBER" << std::endl; break;
-                case MF_E_NOTACCEPTING: std::cout << "ReadSample returned MF_E_NOTACCEPTING" << std::endl; break;
-                case E_INVALIDARG: std::cout << "ReadSample returned E_INVALIDARG" << std::endl; break;
-                case MF_E_VIDEO_RECORDING_DEVICE_INVALIDATED: std::cout << "ReadSample returned MF_E_VIDEO_RECORDING_DEVICE_INVALIDATED" << std::endl; break;
-                default: std::cout << "ReadSample returned HRESULT " << std::hex << (uint32_t)hr << std::endl; break;
+                case MF_E_INVALIDREQUEST: DEBUG_OUT("ReadSample returned MF_E_INVALIDREQUEST"); break;
+                case MF_E_INVALIDSTREAMNUMBER: DEBUG_OUT("ReadSample returned MF_E_INVALIDSTREAMNUMBER"); break;
+                case MF_E_NOTACCEPTING: DEBUG_OUT("ReadSample returned MF_E_NOTACCEPTING"); break;
+                case E_INVALIDARG: DEBUG_OUT("ReadSample returned E_INVALIDARG"); break;
+                case MF_E_VIDEO_RECORDING_DEVICE_INVALIDATED: DEBUG_OUT("ReadSample returned MF_E_VIDEO_RECORDING_DEVICE_INVALIDATED"); break;
+                default: DEBUG_OUT("ReadSample returned HRESULT " << std::hex << (uint32_t)hr); break;
                 }
             }
             return S_OK; 

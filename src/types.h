@@ -12,6 +12,15 @@
 
 //#define ENABLE_DEBUG_SPAM
 
+#ifdef _DEBUG
+#include <iostream> // For cout, cerr, endl. DO NOT INCLUDE ANYWHERE ELSE IN LIBREALSENSE 
+#define DEBUG_OUT(...) std::cout << "[debug] " << __VA_ARGS__ << std::endl
+#define DEBUG_ERR(...) std::cerr << "[error] " << __VA_ARGS__ << std::endl
+#else
+#define DEBUG_OUT(...) do {} while(false)
+#define DEBUG_ERR(...) do {} while(false)
+#endif
+
 namespace rsimpl
 {
     // Enumerated type support

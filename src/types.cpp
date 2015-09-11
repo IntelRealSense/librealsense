@@ -5,7 +5,6 @@
 #include <cstring>
 #include <algorithm>
 #include <array>
-#include <iostream>
 
 namespace rsimpl
 {
