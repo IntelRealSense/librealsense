@@ -196,11 +196,11 @@ namespace RealSense
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
     public struct Intrinsics
     {
-        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 2)] public int[] ImageSize;
-        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 2)] public float[] FocalLength;
-        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 2)] public float[] PrincipalPoint;
-        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 5)] public float[] DistortionCoeffs;
+        public int Width, Height;
+        public float PrincipalPointX, PrincipalPointY;
+        public float FocalLengthX, FocalLengthY;
         public Distortion DistortionModel;    
+        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 5)] public float[] DistortionCoeffs;
     }
 
     [StructLayout(LayoutKind.Sequential, Pack = 1)]

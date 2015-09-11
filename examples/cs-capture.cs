@@ -21,17 +21,17 @@ public class Capture : Form
         var colorIntrin = device.GetStreamIntrinsics(RealSense.Stream.Color);
         var depthIntrin = device.GetStreamIntrinsics(RealSense.Stream.Depth);
 
-        depthMap = new short[depthIntrin.ImageSize[0] * depthIntrin.ImageSize[1]];
+        depthMap = new short[depthIntrin.Width * depthIntrin.Height];
         depthHistogram = new uint[0x10000];
         depthImage = new byte[depthMap.Length * 3];
 
         Text = string.Format("C# Capture Example ({0})", device.Name);
-        ClientSize = new System.Drawing.Size(colorIntrin.ImageSize[0] + depthIntrin.ImageSize[0] + 36, colorIntrin.ImageSize[1] + 24);
+        ClientSize = new System.Drawing.Size(colorIntrin.Width + depthIntrin.Width + 36, colorIntrin.Height + 24);
 
-        colorPicture = new PictureBox { Location = new Point(12, 12), Size = new Size(colorIntrin.ImageSize[0], colorIntrin.ImageSize[1]) };
+        colorPicture = new PictureBox { Location = new Point(12, 12), Size = new Size(colorIntrin.Width, colorIntrin.Height) };
         Controls.Add(colorPicture);
 
-        depthPicture = new PictureBox { Location = new Point(24 + colorIntrin.ImageSize[0], 12), Size = new Size(depthIntrin.ImageSize[0], depthIntrin.ImageSize[1]) };
+        depthPicture = new PictureBox { Location = new Point(24 + colorIntrin.Width, 12), Size = new Size(depthIntrin.Width, depthIntrin.Height) };
         Controls.Add(depthPicture);
 
         timer = new Timer { Interval = 10 };
@@ -55,16 +55,13 @@ public class Capture : Form
 
         // Obtain color image data
         RealSense.Intrinsics intrinsics = device.GetStreamIntrinsics(RealSense.Stream.Color);
-        int width = intrinsics.ImageSize[0], height = intrinsics.ImageSize[1];
 
         // Create a bitmap of the color image and assign it to our PictureBox
-        colorPicture.Image = new Bitmap(width, height, width * 3, PixelFormat.Format24bppRgb, device.GetFrameData(RealSense.Stream.Color));
+        colorPicture.Image = new Bitmap(intrinsics.Width, intrinsics.Height, intrinsics.Width * 3, PixelFormat.Format24bppRgb, device.GetFrameData(RealSense.Stream.Color));
 
         // Obtain depth image data
         Marshal.Copy(device.GetFrameData(RealSense.Stream.Depth), depthMap, 0, depthMap.Length);
         intrinsics = device.GetStreamIntrinsics(RealSense.Stream.Depth);
-        width = intrinsics.ImageSize[0];
-        height = intrinsics.ImageSize[1]; 
 
         // Build a cumulative histogram for of depth values in [1,0xFFFF]      
         for (int i = 0; i < depthHistogram.Length; i++) depthHistogram[i] = 0;
@@ -92,7 +89,7 @@ public class Capture : Form
 
         // Create a bitmap of the histogram colored depth image and assign it to our PictureBox
         GCHandle handle = GCHandle.Alloc(depthImage, GCHandleType.Pinned);
-        depthPicture.Image = new Bitmap(width, height, width * 3, PixelFormat.Format24bppRgb, handle.AddrOfPinnedObject());
+        depthPicture.Image = new Bitmap(intrinsics.Width, intrinsics.Height, intrinsics.Width * 3, PixelFormat.Format24bppRgb, handle.AddrOfPinnedObject());
         handle.Free();
 
         timer.Start();
