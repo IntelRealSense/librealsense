@@ -78,13 +78,31 @@ namespace cs_config
         {
             LoadSource(index, frame, width * height * 2);
             Reserve(ref dst[index], width * height * 3);
-            for (int i = 0; i < width * height; i++)
+
+            // Build a cumulative histogram for of depth values in [1,0xFFFF]      
+            for (int i = 0; i < depthHistogram.Length; i++) depthHistogram[i] = 0;
+            for (int i = 0; i < width * height; i++) depthHistogram[src[index][i * 2] | (src[index][i * 2 + 1] << 8)]++;
+            for (int i = 2; i < depthHistogram.Length; i++) depthHistogram[i] += depthHistogram[i - 1];
+
+            // Produce an image in BGR ordered byte array
+            for (int i = 0; i < width*height; ++i)
             {
-                int depth = src[index][i * 2] | (src[index][i * 2 + 1] << 8);
-                dst[index][i * 3 + 0] = 0;
-                dst[index][i * 3 + 1] = 0;
-                dst[index][i * 3 + 2] = (byte)(depth >> 2);
+                int d = src[index][i * 2] | (src[index][i * 2 + 1] << 8);
+                if (d != 0)
+                {
+                    uint f = depthHistogram[d] * 255 / depthHistogram[0xFFFF]; // 0-255 based on histogram location
+                    dst[index][i * 3 + 0] = (byte)f;
+                    dst[index][i * 3 + 1] = 0;
+                    dst[index][i * 3 + 2] = (byte)(255 - f);
+                }
+                else
+                {
+                    dst[index][i * 3 + 0] = 0;
+                    dst[index][i * 3 + 1] = 5;
+                    dst[index][i * 3 + 2] = 20;
+                }
             }
+
             return GetDest(index, width, height);
         }
 
@@ -175,5 +193,6 @@ namespace cs_config
 
         private RealSense.Device device;
         private byte[][] src = new byte[4][], dst = new byte[4][];
+        private uint[] depthHistogram = new uint[0x10000];
     }
 }

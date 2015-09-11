@@ -75,7 +75,7 @@ public class Capture : Form
             if(d != 0)
             {
                 uint f = depthHistogram[d] * 255 / depthHistogram[0xFFFF]; // 0-255 based on histogram location
-                depthImage[i*3 + 0] = (byte)f;
+                depthImage[i * 3 + 0] = (byte)f;
                 depthImage[i * 3 + 1] = 0;
                 depthImage[i * 3 + 2] = (byte)(255 - f);
             }

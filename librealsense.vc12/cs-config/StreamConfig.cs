@@ -28,12 +28,18 @@ namespace cs_config
 
         public void Setup(RealSense.Device device)
         {
+            if(device.GetStreamModeCount(Stream) == 0)
+            {
+                this.Visible = false;
+                return;
+            }
+
             var res = new List<Resolution>();
             var fmt = new List<RealSense.Format>();
             var fps = new List<int>();
 
             checkBox1.Text = string.Format("{0} Stream Enabled", Stream);
-
+            
             for (int i = 0, n = device.GetStreamModeCount(Stream); i < n; i++)
             {
                 int width, height, framerate; RealSense.Format format;
@@ -50,6 +56,11 @@ namespace cs_config
 
         public void Apply(RealSense.Device device)
         {
+            if (device.GetStreamModeCount(Stream) == 0)
+            {
+                return;
+            }
+
             if (checkBox1.Checked)
             {
                 var res = (Resolution)resComboBox.SelectedItem;
