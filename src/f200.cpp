@@ -83,34 +83,23 @@ namespace rsimpl
 
     static rs_intrinsics MakeDepthIntrinsics(const f200::CameraCalibrationParameters & c, int w, int h)
     {
-        rs_intrinsics intrin = {{w,h}};
-        intrin.focal_length[0] = c.Kc[0][0]*0.5f * w;
-        intrin.focal_length[1] = c.Kc[1][1]*0.5f * h;
-        intrin.principal_point[0] = (c.Kc[0][2]*0.5f + 0.5f) * w;
-        intrin.principal_point[1] = (c.Kc[1][2]*0.5f + 0.5f) * h;
-        for(int i=0; i<5; ++i) intrin.distortion_coeff[i] = c.Invdistc[i];
-        intrin.distortion_model = RS_DISTORTION_INVERSE_BROWN_CONRADY;
-        return intrin;
+        return {w, h, (c.Kc[0][2]*0.5f + 0.5f) * w, (c.Kc[1][2]*0.5f + 0.5f) * h, c.Kc[0][0]*0.5f * w, c.Kc[1][1]*0.5f * h,
+            RS_DISTORTION_INVERSE_BROWN_CONRADY, {c.Invdistc[0], c.Invdistc[1], c.Invdistc[2], c.Invdistc[3], c.Invdistc[4]}};
     }
 
     static rs_intrinsics MakeColorIntrinsics(const f200::CameraCalibrationParameters & c, int w, int h)
     {
-        rs_intrinsics intrin = {{w,h}};
-        intrin.focal_length[0] = c.Kt[0][0]*0.5f;
-        intrin.focal_length[1] = c.Kt[1][1]*0.5f;
-        intrin.principal_point[0] = c.Kt[0][2]*0.5f + 0.5f;
-        intrin.principal_point[1] = c.Kt[1][2]*0.5f + 0.5f;
+        rs_intrinsics intrin = {w, h, c.Kt[0][2]*0.5f + 0.5f, c.Kt[1][2]*0.5f + 0.5f, c.Kt[0][0]*0.5f, c.Kt[1][1]*0.5f, RS_DISTORTION_NONE};
         if(w*3 == h*4) // If using a 4:3 aspect ratio, adjust intrinsics (defaults to 16:9)
         {
-            intrin.focal_length[0] *= 4.0f/3;
-            intrin.principal_point[0] *= 4.0f/3;
-            intrin.principal_point[0] -= 1.0f/6;
+            intrin.fx *= 4.0f/3;
+            intrin.ppx *= 4.0f/3;
+            intrin.ppy -= 1.0f/6;
         }
-        intrin.focal_length[0] *= w;
-        intrin.focal_length[1] *= h;
-        intrin.principal_point[0] *= w;
-        intrin.principal_point[1] *= h;
-        intrin.distortion_model = RS_DISTORTION_NONE;
+        intrin.fx *= w;
+        intrin.fy *= h;
+        intrin.ppx *= w;
+        intrin.ppy *= h;
         return intrin;
     }
 

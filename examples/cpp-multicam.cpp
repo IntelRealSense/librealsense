@@ -57,13 +57,13 @@ int main(int argc, char * argv[]) try
         {
             auto dev = ctx.get_device(i);
             const auto c = dev.get_stream_intrinsics(rs::stream::color), d = dev.get_stream_intrinsics(rs::stream::depth);
-            const int width = std::max(c.image_size.x, d.image_size.x);
+            const int width = std::max(c.width(), d.width());
 
-            glRasterPos2i(x + (width - c.image_size.x)/2, 0);
-            glDrawPixels(c.image_size.x, c.image_size.y, GL_RGB, GL_UNSIGNED_BYTE, dev.get_frame_data(rs::stream::color));
+            glRasterPos2i(x + (width - c.width())/2, 0);
+            glDrawPixels(c.width(), c.width(), GL_RGB, GL_UNSIGNED_BYTE, dev.get_frame_data(rs::stream::color));
 
-            glRasterPos2i(x + (width - d.image_size.x)/2, c.image_size.y);
-            draw_depth_histogram(reinterpret_cast<const uint16_t *>(dev.get_frame_data(rs::stream::depth)), d.image_size.x, d.image_size.y);
+            glRasterPos2i(x + (width - d.width())/2, c.height());
+            draw_depth_histogram(reinterpret_cast<const uint16_t *>(dev.get_frame_data(rs::stream::depth)), d.width(), d.height());
 
             ttf_print(&font, x+(width-ttf_len(&font, dev.get_name()))/2, 24, dev.get_name());
             x += width;

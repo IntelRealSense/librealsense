@@ -37,11 +37,11 @@ void draw_stream(rs_device * dev, rs_stream stream, int x, int y)
 
     rs_get_stream_intrinsics(dev, stream, &intrin, 0);
     format = rs_get_stream_format(dev, stream, 0);
-    width = intrin.image_size[0];
-    height = intrin.image_size[1];    
+    width = intrin.width;
+    height = intrin.height;
     pixels = rs_get_frame_data(dev, stream, 0);
 
-    glRasterPos2i(x + (640 - intrin.image_size[0])/2, y + (480 - intrin.image_size[1])/2);
+    glRasterPos2i(x + (640 - intrin.width)/2, y + (480 - intrin.height)/2);
     switch(format)
     {
     case RS_FORMAT_Z16:
@@ -58,7 +58,7 @@ void draw_stream(rs_device * dev, rs_stream stream, int x, int y)
         break;
     }
 
-    sprintf(buffer, "%s: %d x %d %s", rs_stream_to_string(stream), intrin.image_size[0], intrin.image_size[1], rs_format_to_string(format));
+    sprintf(buffer, "%s: %d x %d %s", rs_stream_to_string(stream), intrin.width, intrin.height, rs_format_to_string(format));
     ttf_print(&font, x+8, y+16, buffer);
 }
 
@@ -86,9 +86,9 @@ int main(int argc, char * argv[])
         {
             if(!rs_stream_is_enabled(dev, (enum rs_stream)j, 0)) continue;
             rs_get_stream_intrinsics(dev, (enum rs_stream)j, &intrin, &error); check_error();
-            hfov = compute_fov(intrin.image_size[0], intrin.focal_length[0], intrin.principal_point[0]);
-            vfov = compute_fov(intrin.image_size[1], intrin.focal_length[1], intrin.principal_point[1]);
-            printf("Capturing %s at %d x %d, fov = %.1f x %.1f\n", rs_stream_to_string((enum rs_stream)j), intrin.image_size[0], intrin.image_size[1], hfov, vfov);
+            hfov = compute_fov(intrin.width, intrin.fx, intrin.ppx);
+            vfov = compute_fov(intrin.height, intrin.fy, intrin.ppy);
+            printf("Capturing %s at %d x %d, fov = %.1f x %.1f\n", rs_stream_to_string((enum rs_stream)j), intrin.width, intrin.height, hfov, vfov);
         }
     }
     if (!dev)

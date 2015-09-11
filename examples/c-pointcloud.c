@@ -90,7 +90,7 @@ int main(int argc, char * argv[])
         glPushAttrib(GL_ALL_ATTRIB_BITS);
         glBindTexture(GL_TEXTURE_2D, tex);
         glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, color_intrin.image_size[0], color_intrin.image_size[1], 0, GL_RGB, GL_UNSIGNED_BYTE, rs_get_frame_data(dev, RS_STREAM_COLOR, 0));
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, color_intrin.width, color_intrin.height, 0, GL_RGB, GL_UNSIGNED_BYTE, rs_get_frame_data(dev, RS_STREAM_COLOR, 0));
 
         glMatrixMode(GL_PROJECTION);
         glPushMatrix();
@@ -108,9 +108,9 @@ int main(int argc, char * argv[])
         glPointSize((float)width/640);
         glBegin(GL_POINTS);
         depth = rs_get_frame_data(dev, RS_STREAM_DEPTH, 0);
-        for(y=0; y<depth_intrin.image_size[1]; ++y)
+        for(y=0; y<depth_intrin.height; ++y)
         {
-            for(x=0; x<depth_intrin.image_size[0]; ++x)
+            for(x=0; x<depth_intrin.width; ++x)
             {
                 if(d = *depth++)
                 {
@@ -119,7 +119,7 @@ int main(int argc, char * argv[])
                     rs_transform_point_to_point(color_point, &extrin, depth_point);
                     rs_project_point_to_pixel(color_pixel, &color_intrin, color_point);
 
-                    glTexCoord2f(color_pixel[0] / color_intrin.image_size[0], color_pixel[1] / color_intrin.image_size[1]);
+                    glTexCoord2f(color_pixel[0] / color_intrin.width, color_pixel[1] / color_intrin.height);
                     glVertex3fv(depth_point);
                 }
             }

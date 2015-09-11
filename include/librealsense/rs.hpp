@@ -92,54 +92,41 @@ namespace rs
                             operator rs_error ** ()                                                 { return &err; }
     };
 
-    struct int2
-    { 
-        int                 x,y;
-        bool                operator == (const int2 & r) const                                      { return x==r.x && y==r.y; } 
-    };
-
-    struct float2
-    {
-        float               x,y;
-        bool                operator == (const float2 & r) const                                    { return x==r.x && y==r.y; } 
-    };
-
-    struct float3
-    { 
-        float               x,y,z; 
-        bool                operator == (const float3 & r) const                                    { return x==r.x && y==r.y && z==r.z; } 
-    };
-
-    struct float3x3
-    { 
-        float3              x,y,z;
-        bool                operator == (const float3x3 & r) const                                  { return x==r.x && y==r.y && z==r.z; }
-    };
+    struct float2 { float x,y; };
+    struct float3 { float x,y,z; };
 
     struct intrinsics
     {
-        int2                image_size;
-        float2              focal_length;
-        float2              principal_point;
-        float               distortion_coeff[5];
-        distortion          distortion_model;
+        rs_intrinsics       intrin;
 
-        bool                operator == (const intrinsics & r) const                                { return memcmp(this, &r, sizeof(intrinsics)) == 0; }
+        // Basic properties of a stream
+        int                 width() const                                                           { return intrin.width; }
+        int                 height() const                                                          { return intrin.height; }
+        float2              focal_length() const                                                    { return {intrin.fx, intrin.fy}; }
+        float2              principal_point() const                                                 { return {intrin.ppx, intrin.ppy}; }
+        distortion          distortion_model() const                                                { return (distortion)intrin.model; }
 
-        float2              pixel_to_texcoord(const float2 & pixel) const                           { return {(pixel.x+0.5f)/image_size.x, (pixel.y+0.5f)/image_size.y}; }
+        // Helpers for mapping between pixel coordinates and texture coordinates
+        float2              pixel_to_texcoord(const float2 & pixel) const                           { return {(pixel.x+0.5f)/width(), (pixel.y+0.5f)/height()}; }
+        float2              texcoord_to_pixel(const float2 & coord) const                           { return {coord.x*width() - 0.5f, coord.y*height() - 0.5f}; }
 
-        float3              deproject(const float2 & pixel, float depth) const                      { float3 point; rs_deproject_pixel_to_point(&point.x, (const rs_intrinsics *)this, &pixel.x, depth); return point; }
-        float2              project(const float3 & point) const                                     { float2 pixel; rs_project_point_to_pixel(&pixel.x, (const rs_intrinsics *)this, &point.x); return pixel; }
+        // Helpers for mapping from image coordinates into 3D space
+        float3              deproject(const float2 & pixel, float depth) const                      { float3 point; rs_deproject_pixel_to_point(&point.x, &intrin, &pixel.x, depth); return point; }
+        float3              deproject_from_texcoord(const float2 & coord, float depth) const        { return deproject(texcoord_to_pixel(coord), depth); }
+
+        // Helpers for mapping from 3D space into image coordinates
+        float2              project(const float3 & point) const                                     { float2 pixel; rs_project_point_to_pixel(&pixel.x, &intrin, &point.x); return pixel; }
         float2              project_to_texcoord(const float3 & point) const                         { return pixel_to_texcoord(project(point)); }
+
+        bool                operator == (const intrinsics & r) const                                { return memcmp(&intrin, &r.intrin, sizeof(intrin)) == 0; }
     };
 
     struct extrinsics
     {
-        float3x3            rotation;
-        float3              translation;
+        rs_extrinsics       extrin;
 
-        bool                is_identity() const                                                     { return rotation == float3x3{{1,0,0},{0,1,0},{0,0,1}} && translation == float3{0,0,0}; }
-        float3              transform(const float3 & point) const                                   { float3 p; rs_transform_point_to_point(&p.x, (const rs_extrinsics *)this, &point.x); return p; }
+        bool                is_identity() const                                                     { return extrin.rotation[0] == 1 && extrin.rotation[4] == 1 && extrin.translation[0] == 0 && extrin.translation[1] == 0 && extrin.translation[2] == 0; }
+        float3              transform(const float3 & point) const                                   { float3 p; rs_transform_point_to_point(&p.x, &extrin, &point.x); return p; }
     };
 
     class device
@@ -152,7 +139,7 @@ namespace rs
         rs_device *         get_handle() const                                                      { return dev; }
 
         const char *        get_name()                                                              { return rs_get_device_name(dev, throw_on_error()); }
-        extrinsics          get_extrinsics(stream from, stream to)                                  { extrinsics extrin; rs_get_device_extrinsics(dev, (rs_stream)from, (rs_stream)to, (rs_extrinsics *)&extrin, throw_on_error()); return extrin; }
+        extrinsics          get_extrinsics(stream from, stream to)                                  { extrinsics extrin; rs_get_device_extrinsics(dev, (rs_stream)from, (rs_stream)to, &extrin.extrin, throw_on_error()); return extrin; }
         float               get_depth_scale()                                                       { return rs_get_device_depth_scale(dev, throw_on_error()); }
         bool                supports_option(option o) const                                         { return !!rs_device_supports_option(dev, (rs_option)o, throw_on_error()); }
 
@@ -160,7 +147,7 @@ namespace rs
         void                enable_stream(stream s, preset preset)                                  { rs_enable_stream_preset(dev, (rs_stream)s, (rs_preset)preset, throw_on_error()); }
         void                disable_stream(stream s)                                                { rs_disable_stream(dev, (rs_stream)s, throw_on_error()); }
         bool                is_stream_enabled(stream s)                                             { return !!rs_stream_is_enabled(dev, (rs_stream)s, throw_on_error()); }
-        intrinsics          get_stream_intrinsics(stream s)                                         { intrinsics intrin; rs_get_stream_intrinsics(dev, (rs_stream)s, (rs_intrinsics *)&intrin, throw_on_error()); return intrin; }
+        intrinsics          get_stream_intrinsics(stream s)                                         { intrinsics intrin; rs_get_stream_intrinsics(dev, (rs_stream)s, &intrin.intrin, throw_on_error()); return intrin; }
         format              get_stream_format(stream s)                                             { return (format)rs_get_stream_format(dev, (rs_stream)s, throw_on_error()); }
         int                 get_stream_framerate(stream s)                                          { return rs_get_stream_framerate(dev, (rs_stream)s, throw_on_error()); }
 

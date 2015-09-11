@@ -37,17 +37,17 @@ namespace rsimpl
 
     static rs_intrinsics MakeLeftRightIntrinsics(const r200::RectifiedIntrinsics & i)
     {
-        return {{(int)i.rw, (int)i.rh}, {i.rfx, i.rfy}, {i.rpx, i.rpy}, {0,0,0,0,0}, RS_DISTORTION_NONE};
+        return {(int)i.rw, (int)i.rh, i.rpx, i.rpy, i.rfx, i.rfy, RS_DISTORTION_NONE, {0,0,0,0,0}};
     }
 
     static rs_intrinsics MakeDepthIntrinsics(const r200::RectifiedIntrinsics & i)
     {
-        return {{(int)i.rw-12, (int)i.rh-12}, {i.rfx, i.rfy}, {i.rpx-6, i.rpy-6}, {0,0,0,0,0}, RS_DISTORTION_NONE};
+        return {(int)i.rw-12, (int)i.rh-12, i.rpx-6, i.rpy-6, i.rfx, i.rfy, RS_DISTORTION_NONE, {0,0,0,0,0}};
     }
 
     static rs_intrinsics MakeColorIntrinsics(const r200::UnrectifiedIntrinsics & i)
     {
-        return {{(int)i.w, (int)i.h}, {i.fx,i.fy}, {i.px,i.py}, {i.k[0],i.k[1],i.k[2],i.k[3],i.k[4]}, RS_DISTORTION_MODIFIED_BROWN_CONRADY};
+        return {(int)i.w, (int)i.h, i.px, i.py, i.fx, i.fy, RS_DISTORTION_MODIFIED_BROWN_CONRADY, {i.k[0],i.k[1],i.k[2],i.k[3],i.k[4]}};
     }
 
     static static_device_info get_r200_info(uvc::device device)

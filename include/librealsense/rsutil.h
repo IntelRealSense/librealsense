@@ -10,19 +10,19 @@ static void rs_project_point_to_pixel(float pixel[2], const struct rs_intrinsics
     assert(intrin->distortion_model != RS_DISTORTION_INVERSE_BROWN_CONRADY); // Cannot project to an inverse-distorted image
 
     float x = point[0] / point[2], y = point[1] / point[2];
-    if(intrin->distortion_model == RS_DISTORTION_MODIFIED_BROWN_CONRADY)
+    if(intrin->model == RS_DISTORTION_MODIFIED_BROWN_CONRADY)
     {
         float r2  = x*x + y*y;
-        float f = 1 + intrin->distortion_coeff[0]*r2 + intrin->distortion_coeff[1]*r2*r2 + intrin->distortion_coeff[4]*r2*r2*r2;
+        float f = 1 + intrin->coeffs[0]*r2 + intrin->coeffs[1]*r2*r2 + intrin->coeffs[4]*r2*r2*r2;
         x *= f;
         y *= f;
-        float dx = x + 2*intrin->distortion_coeff[2]*x*y + intrin->distortion_coeff[3]*(r2 + 2*x*x);
-        float dy = y + 2*intrin->distortion_coeff[3]*x*y + intrin->distortion_coeff[2]*(r2 + 2*y*y);
+        float dx = x + 2*intrin->coeffs[2]*x*y + intrin->coeffs[3]*(r2 + 2*x*x);
+        float dy = y + 2*intrin->coeffs[3]*x*y + intrin->coeffs[2]*(r2 + 2*y*y);
         x = dx;
         y = dy;
     }
-    pixel[0] = x * intrin->focal_length[0] + intrin->principal_point[0];
-    pixel[1] = y * intrin->focal_length[1] + intrin->principal_point[1];
+    pixel[0] = x * intrin->fx + intrin->ppx;
+    pixel[1] = y * intrin->fy + intrin->ppy;
 }
 
 /* Given pixel coordinates and depth in an image with no distortion or inverse distortion coefficients, compute the corresponding point in 3D space relative to the same camera */
@@ -30,14 +30,14 @@ static void rs_deproject_pixel_to_point(float point[3], const struct rs_intrinsi
 {
     assert(intrin->distortion_model != RS_DISTORTION_MODIFIED_BROWN_CONRADY); // Cannot deproject from a forward-distorted image
 
-    float x = (pixel[0] - intrin->principal_point[0]) / intrin->focal_length[0];
-    float y = (pixel[1] - intrin->principal_point[1]) / intrin->focal_length[1];
-    if(intrin->distortion_model == RS_DISTORTION_INVERSE_BROWN_CONRADY)
+    float x = (pixel[0] - intrin->ppx) / intrin->fx;
+    float y = (pixel[1] - intrin->ppy) / intrin->fy;
+    if(intrin->model == RS_DISTORTION_INVERSE_BROWN_CONRADY)
     {
         float r2  = x*x + y*y;
-        float f = 1 + intrin->distortion_coeff[0]*r2 + intrin->distortion_coeff[1]*r2*r2 + intrin->distortion_coeff[4]*r2*r2*r2;
-        float ux = x*f + 2*intrin->distortion_coeff[2]*x*y + intrin->distortion_coeff[3]*(r2 + 2*x*x);
-        float uy = y*f + 2*intrin->distortion_coeff[3]*x*y + intrin->distortion_coeff[2]*(r2 + 2*y*y);
+        float f = 1 + intrin->coeffs[0]*r2 + intrin->coeffs[1]*r2*r2 + intrin->coeffs[4]*r2*r2*r2;
+        float ux = x*f + 2*intrin->coeffs[2]*x*y + intrin->coeffs[3]*(r2 + 2*x*x);
+        float uy = y*f + 2*intrin->coeffs[3]*x*y + intrin->coeffs[2]*(r2 + 2*y*y);
         x = ux;
         y = uy;
     }

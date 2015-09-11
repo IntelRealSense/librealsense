@@ -20,35 +20,32 @@ void draw_stream(rs::device & dev, rs::stream stream, int x, int y)
     if(!dev.is_stream_enabled(stream)) return;
 
     const rs::intrinsics intrin = dev.get_stream_intrinsics(stream);
-    const rs::format format = dev.get_stream_format(stream);
-    const int width = intrin.image_size.x, height = intrin.image_size.y, fps = dev.get_stream_framerate(stream);
-    const void * pixels = dev.get_frame_data(stream);
 
-    glRasterPos2i(x + (640 - intrin.image_size.x)/2, y + (480 - intrin.image_size.y)/2);
+    glRasterPos2i(x + (640 - intrin.width())/2, y + (480 - intrin.height())/2);
     glPixelZoom(1, -1);
-    switch(format)
+    switch(dev.get_stream_format(stream))
     {
     case rs::format::z16:
-        draw_depth_histogram(reinterpret_cast<const uint16_t *>(pixels), width, height);
+        draw_depth_histogram(reinterpret_cast<const uint16_t *>(dev.get_frame_data(stream)), intrin.width(), intrin.height());
         break;
-    case rs::format::yuyv:
-        glDrawPixels(width, height, GL_LUMINANCE_ALPHA, GL_UNSIGNED_BYTE, pixels); // Display YUYV by showing the luminance channel and packing chrominance into ignored alpha channel
+    case rs::format::yuyv: // Display YUYV by showing the luminance channel and packing chrominance into ignored alpha channel
+        glDrawPixels(intrin.width(), intrin.height(), GL_LUMINANCE_ALPHA, GL_UNSIGNED_BYTE, dev.get_frame_data(stream)); 
         break;
     case rs::format::rgb8: case rs::format::bgr8: // Display both RGB and BGR by interpreting them RGB, to show the flipped byte ordering. Obviously, GL_BGR could be used on OpenGL 1.2+
-        glDrawPixels(width, height, GL_RGB, GL_UNSIGNED_BYTE, pixels);
+        glDrawPixels(intrin.width(), intrin.height(), GL_RGB, GL_UNSIGNED_BYTE, dev.get_frame_data(stream));
         break;
     case rs::format::rgba8: case rs::format::bgra8: // Display both RGBA and BGRA by interpreting them RGBA, to show the flipped byte ordering. Obviously, GL_BGRA could be used on OpenGL 1.2+
-        glDrawPixels(width, height, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
+        glDrawPixels(intrin.width(), intrin.height(), GL_RGBA, GL_UNSIGNED_BYTE, dev.get_frame_data(stream));
         break;
     case rs::format::y8:
-        glDrawPixels(width, height, GL_LUMINANCE, GL_UNSIGNED_BYTE, pixels);
+        glDrawPixels(intrin.width(), intrin.height(), GL_LUMINANCE, GL_UNSIGNED_BYTE, dev.get_frame_data(stream));
         break;
     case rs::format::y16:
-        glDrawPixels(width, height, GL_LUMINANCE, GL_UNSIGNED_SHORT, pixels);
+        glDrawPixels(intrin.width(), intrin.height(), GL_LUMINANCE, GL_UNSIGNED_SHORT, dev.get_frame_data(stream));
         break;
     }
 
-    std::ostringstream ss; ss << stream << ": " << intrin.image_size.x << " x " << intrin.image_size.y << " " << format;
+    std::ostringstream ss; ss << stream << ": " << intrin.width() << " x " << intrin.height() << " " << dev.get_stream_format(stream) << " (" << dev.get_stream_framerate(stream) << ")";
     ttf_print(&font, x+8, y+16, ss.str().c_str());
 }
 

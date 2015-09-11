@@ -125,17 +125,17 @@ const char *    rs_option_to_string         (rs_option option);
 /* public struct type definitions */
 struct rs_intrinsics
 {
-    int image_size[2];                      /* width and height of the image in pixels */
-    float focal_length[2];                  /* focal length of the image plane, as a multiple of pixel width and height */
-    float principal_point[2];               /* coordinates of the principal point of the image, as a pixel offset from the top left */
-    float distortion_coeff[5];              /* distortion coefficients */
-    rs_distortion distortion_model;         /* distortion model of the image */
+    int width, height;      /* width and height of the image in pixels */
+    float ppx, ppy;         /* coordinates of the principal point of the image, as a pixel offset from the top left */
+    float fx, fy;           /* focal length of the image plane, as a multiple of pixel width and height */
+    rs_distortion model;    /* distortion model of the image */
+    float coeffs[5];        /* distortion coefficients */
 };
 
 struct rs_extrinsics
 {
-    float rotation[9];                      /* column-major 3x3 rotation matrix */
-    float translation[3];                   /* 3 element translation vector, in meters */
+    float rotation[9];      /* column-major 3x3 rotation matrix */
+    float translation[3];   /* 3 element translation vector, in meters */
 };
 
 #ifdef __cplusplus

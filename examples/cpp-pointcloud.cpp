@@ -131,9 +131,9 @@ int main(int argc, char * argv[]) try
         glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
         switch(dev.get_stream_format(tex_stream))
         {
-        case rs::format::rgb8: glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, tex_intrin.image_size.x, tex_intrin.image_size.y, 0, GL_RGB, GL_UNSIGNED_BYTE, dev.get_frame_data(tex_stream)); break;
-        case rs::format::y8:   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, tex_intrin.image_size.x, tex_intrin.image_size.y, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, dev.get_frame_data(tex_stream)); break;
-        case rs::format::y16:  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, tex_intrin.image_size.x, tex_intrin.image_size.y, 0, GL_LUMINANCE, GL_UNSIGNED_SHORT, dev.get_frame_data(tex_stream)); break;
+        case rs::format::rgb8: glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, tex_intrin.width(), tex_intrin.height(), 0, GL_RGB, GL_UNSIGNED_BYTE, dev.get_frame_data(tex_stream)); break;
+        case rs::format::y8:   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, tex_intrin.width(), tex_intrin.height(), 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, dev.get_frame_data(tex_stream)); break;
+        case rs::format::y16:  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, tex_intrin.width(), tex_intrin.height(), 0, GL_LUMINANCE, GL_UNSIGNED_SHORT, dev.get_frame_data(tex_stream)); break;
         }
 
         glViewport(0, 0, width, height);
@@ -159,9 +159,9 @@ int main(int argc, char * argv[]) try
         glBegin(GL_POINTS);
         auto depth = reinterpret_cast<const uint16_t *>(dev.get_frame_data(rs::stream::depth));
         
-        for(int y=0; y<depth_intrin.image_size.y; ++y)
+        for(int y=0; y<depth_intrin.height(); ++y)
         {
-            for(int x=0; x<depth_intrin.image_size.x; ++x)
+            for(int x=0; x<depth_intrin.width(); ++x)
             {
                 if(uint16_t d = *depth++)
                 {
