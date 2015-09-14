@@ -60,9 +60,10 @@ namespace rsimpl
     // 2-in-1 format splitting routines //
     //////////////////////////////////////
 
-    template<class SOURCE, class SPLIT_A, class SPLIT_B> void split_frame(void * dest[], const subdevice_mode & mode, const SOURCE * source, SPLIT_A split_a, SPLIT_B split_b)
+    template<class SOURCE, class SPLIT_A, class SPLIT_B> void split_frame(void * dest[], const subdevice_mode & mode, const SOURCE * source, uint32_t fourcc, rs_format format_a, rs_format format_b, SPLIT_A split_a, SPLIT_B split_b)
     {
-        assert(mode.streams.size() == 2 && mode.streams[0].width == mode.streams[1].width && mode.streams[0].height == mode.streams[1].height && mode.streams[0].width <= mode.width && mode.streams[0].height <= mode.height);
+        assert(mode.fourcc == fourcc && mode.streams.size() == 2 && mode.streams[0].format == format_b && mode.streams[1].format == format_b
+            && mode.streams[0].width == mode.streams[1].width && mode.streams[0].height == mode.streams[1].height && mode.streams[0].width <= mode.width && mode.streams[0].height <= mode.height);
         auto a = reinterpret_cast<decltype(split_a(SOURCE())) *>(dest[0]);
         auto b = reinterpret_cast<decltype(split_b(SOURCE())) *>(dest[1]);
         for(int y = 0; y < mode.streams[0].height; ++y)
@@ -86,31 +87,24 @@ namespace rsimpl
 
     void unpack_y8_y8_from_y12i(void * dest[], const void * source, const subdevice_mode & mode)
     {
-        assert(mode.fourcc == 'Y12I' && mode.streams.size() == 2 && mode.streams[0].format == RS_FORMAT_Y8 && mode.streams[1].format == RS_FORMAT_Y8);        
-        split_frame(dest, mode, reinterpret_cast<const y12i_pixel *>(source),
+        split_frame(dest, mode, reinterpret_cast<const y12i_pixel *>(source), 'Y12I', RS_FORMAT_Y8, RS_FORMAT_Y8,
             [](const y12i_pixel & p) -> uint8_t { return p.l() >> 2; },  // We want to convert 10-bit data to 8-bit data
             [](const y12i_pixel & p) -> uint8_t { return p.r() >> 2; }); // Multiply by 1/4 to efficiently approximate 255/1023
     }
 
     void unpack_y16_y16_from_y12i(void * dest[], const void * source, const subdevice_mode & mode)
     {
-        assert(mode.fourcc == 'Y12I' && mode.streams.size() == 2 && mode.streams[0].format == RS_FORMAT_Y16 && mode.streams[1].format == RS_FORMAT_Y16);
-        split_frame(dest, mode, reinterpret_cast<const y12i_pixel *>(source),
+        split_frame(dest, mode, reinterpret_cast<const y12i_pixel *>(source), 'Y12I', RS_FORMAT_Y16, RS_FORMAT_Y16,
             [](const y12i_pixel & p) -> uint16_t { return p.l() << 6 | p.l() >> 4; },  // We want to convert 10-bit data to 16-bit data
             [](const y12i_pixel & p) -> uint16_t { return p.r() << 6 | p.r() >> 4; }); // Multiply by 64 1/16 to efficiently approximate 65535/1023
     }
 
-    struct inri_pixel 
-    { 
-        uint16_t z16; 
-        uint8_t y8; 
-    };
+    struct inri_pixel { uint16_t z16; uint8_t y8; };
     static_assert(sizeof(y12i_pixel) == 3, "packing error");
 
     void unpack_z16_y8_from_inri(void * dest[], const void * source, const subdevice_mode & mode)
     {
-        assert(mode.fourcc == 'INRI' && mode.streams.size() == 2 && mode.streams[0].format == RS_FORMAT_Z16 && mode.streams[1].format == RS_FORMAT_Y8);
-        split_frame(dest, mode, reinterpret_cast<const inri_pixel *>(source),
+        split_frame(dest, mode, reinterpret_cast<const inri_pixel *>(source), 'INRI', RS_FORMAT_Z16, RS_FORMAT_Y8,
             [](const inri_pixel & p) -> uint16_t { return p.z16; },
             [](const inri_pixel & p) -> uint8_t { return p.y8; });
     }
