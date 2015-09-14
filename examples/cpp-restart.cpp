@@ -1,5 +1,5 @@
 #include <librealsense/rs.hpp>
-#include "example.h"
+#include "example.hpp"
 
 #define _USE_MATH_DEFINES
 #include <math.h>
@@ -9,45 +9,7 @@
 #include <thread>
 
 font font;
-
-float compute_fov(int image_size, float focal_length, float principal_point)
-{
-    return (atan2f(principal_point + 0.5f, focal_length) + atan2f(image_size - principal_point - 0.5f, focal_length)) * 180.0f / (float)M_PI;
-}
-
-void draw_stream(rs::device & dev, rs::stream stream, int x, int y)
-{
-    if(!dev.is_stream_enabled(stream)) return;
-
-    const rs::intrinsics intrin = dev.get_stream_intrinsics(stream);
-
-    glRasterPos2i(x + (640 - intrin.width())/2, y + (480 - intrin.height())/2);
-    glPixelZoom(1, -1);
-    switch(dev.get_stream_format(stream))
-    {
-    case rs::format::z16:
-        draw_depth_histogram(reinterpret_cast<const uint16_t *>(dev.get_frame_data(stream)), intrin.width(), intrin.height());
-        break;
-    case rs::format::yuyv: // Display YUYV by showing the luminance channel and packing chrominance into ignored alpha channel
-        glDrawPixels(intrin.width(), intrin.height(), GL_LUMINANCE_ALPHA, GL_UNSIGNED_BYTE, dev.get_frame_data(stream)); 
-        break;
-    case rs::format::rgb8: case rs::format::bgr8: // Display both RGB and BGR by interpreting them RGB, to show the flipped byte ordering. Obviously, GL_BGR could be used on OpenGL 1.2+
-        glDrawPixels(intrin.width(), intrin.height(), GL_RGB, GL_UNSIGNED_BYTE, dev.get_frame_data(stream));
-        break;
-    case rs::format::rgba8: case rs::format::bgra8: // Display both RGBA and BGRA by interpreting them RGBA, to show the flipped byte ordering. Obviously, GL_BGRA could be used on OpenGL 1.2+
-        glDrawPixels(intrin.width(), intrin.height(), GL_RGBA, GL_UNSIGNED_BYTE, dev.get_frame_data(stream));
-        break;
-    case rs::format::y8:
-        glDrawPixels(intrin.width(), intrin.height(), GL_LUMINANCE, GL_UNSIGNED_BYTE, dev.get_frame_data(stream));
-        break;
-    case rs::format::y16:
-        glDrawPixels(intrin.width(), intrin.height(), GL_LUMINANCE, GL_UNSIGNED_SHORT, dev.get_frame_data(stream));
-        break;
-    }
-
-    std::ostringstream ss; ss << stream << ": " << intrin.width() << " x " << intrin.height() << " " << dev.get_stream_format(stream) << " (" << dev.get_stream_framerate(stream) << ")";
-    ttf_print(&font, x+8, y+16, ss.str().c_str());
-}
+texture_buffer buffers[RS_STREAM_COUNT];
 
 int main(int argc, char * argv[]) try
 {
@@ -166,14 +128,20 @@ int main(int argc, char * argv[]) try
                 if(glfwWindowShouldClose(win)) goto done;
                 device.wait_for_frames();
 
-                // Draw the images
+                // Clear the framebuffer
+                int w,h;
+                glfwGetWindowSize(win, &w, &h);
+                glViewport(0, 0, w, h);
                 glClear(GL_COLOR_BUFFER_BIT);
+
+                // Draw the images
                 glPushMatrix();
-                glOrtho(0, 1280, 960, 0, -1, +1);
-                draw_stream(device, rs::stream::color, 0, 0);
-                draw_stream(device, rs::stream::depth, 640, 0);
-                draw_stream(device, rs::stream::infrared, 0, 480);
-                draw_stream(device, rs::stream::infrared2, 640, 480);
+                glfwGetWindowSize(win, &w, &h);
+                glOrtho(0, w, h, 0, -1, +1);
+                buffers[0].show(device, rs::stream::color, 0, 0, w/2, h/2, font);
+                buffers[1].show(device, rs::stream::depth, w/2, 0, w-w/2, h/2, font);
+                buffers[2].show(device, rs::stream::infrared, 0, h/2, w/2, h-h/2, font);
+                buffers[3].show(device, rs::stream::infrared2, w/2, h/2, w-w/2, h-h/2, font);
                 glPopMatrix();
                 glfwSwapBuffers(win);
             }

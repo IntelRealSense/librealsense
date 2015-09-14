@@ -1,9 +1,10 @@
 #include <librealsense/rs.hpp>
-#include "example.h"
+#include "example.hpp"
 
-#include <sstream>
 #include <iostream>
 #include <algorithm>
+
+std::vector<texture_buffer> buffers;
 
 int main(int argc, char * argv[]) try
 {
@@ -19,6 +20,7 @@ int main(int argc, char * argv[]) try
         dev.start();
         std::cout << "done." << std::endl;
     }
+    buffers.resize(ctx.get_device_count()*2);
 
     // Open a GLFW window
     glfwInit();
@@ -53,16 +55,11 @@ int main(int argc, char * argv[]) try
         {
             auto dev = ctx.get_device(i);
             const auto c = dev.get_stream_intrinsics(rs::stream::color), d = dev.get_stream_intrinsics(rs::stream::depth);
-            const int width = std::max(c.width(), d.width());
 
-            glRasterPos2i(x + (width - c.width())/2, 0);
-            glDrawPixels(c.width(), c.width(), GL_RGB, GL_UNSIGNED_BYTE, dev.get_frame_data(rs::stream::color));
-
-            glRasterPos2i(x + (width - d.width())/2, c.height());
-            draw_depth_histogram(reinterpret_cast<const uint16_t *>(dev.get_frame_data(rs::stream::depth)), d.width(), d.height());
-
-            ttf_print(&font, x+(width-ttf_len(&font, dev.get_name()))/2, 24, dev.get_name());
-            x += width;
+            buffers[i*2+0].show(dev, rs::stream::color, x, 0, 640, 480, font);
+            buffers[i*2+1].show(dev, rs::stream::depth, x, 480, 640, 480, font);
+            ttf_print(&font, x+(640 - ttf_len(&font, dev.get_name()))/2, 24, dev.get_name());
+            x += 640;
         }
 
         glPopMatrix();
