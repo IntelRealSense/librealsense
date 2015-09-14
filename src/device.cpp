@@ -96,45 +96,46 @@ void rs_device::start()
         }
     }
 
-    for(auto & s : streams) s.reset(); // Starting capture invalidates the current stream info, if any exists from previous capture
-
+    // Select subdevice modes needed to satisfy our requests
     int max_subdevice = 0;
     for(auto & mode : device_info.subdevice_modes) max_subdevice = std::max(max_subdevice, mode.subdevice);
+    std::vector<subdevice_mode> selected_modes;
+    for(int i = 0; i <= max_subdevice; ++i) if(auto * m = device_info.select_mode(requests, i)) selected_modes.push_back(*m);
+
+    for(auto & s : streams) s.reset(); // Starting capture invalidates the current stream info, if any exists from previous capture
 
     // Satisfy stream_requests as necessary for each subdevice, calling set_mode and
     // dispatching the uvc configuration for a requested stream to the hardware
     bool stream_enabled[RS_STREAM_COUNT] = {};
-    for(int i = 0; i <= max_subdevice; ++i)
+    for(auto mode : selected_modes)
     {
-        if(const subdevice_mode * m = device_info.select_mode(requests, i))
-        {               
-            // Create a stream buffer for each stream served by this subdevice mode
-            const subdevice_mode mode = *m;
-            std::vector<std::shared_ptr<stream_buffer>> stream_list;
-            for(auto & stream_mode : mode.streams)
-            {
-                // Create a buffer to receive the images from this stream
-                auto stream = std::make_shared<stream_buffer>(stream_mode);
-                stream_list.push_back(stream);
-                stream_enabled[stream_mode.stream] = true;
+        // Create a stream buffer for each stream served by this subdevice mode
+        std::vector<std::shared_ptr<stream_buffer>> stream_list;
+        for(auto & stream_mode : mode.streams)
+        {
+            // Create a buffer to receive the images from this stream
+            auto stream = std::make_shared<stream_buffer>(stream_mode);
+            stream_list.push_back(stream);
+            stream_enabled[stream_mode.stream] = true;
                     
-                // If this is one of the streams requested by the user, store the buffer so they can access it
-                if(requests[stream_mode.stream].enabled) streams[stream_mode.stream] = stream;
-            }
-                
-            // Initialize the subdevice and set it to the selected mode
-            device.set_subdevice_mode(i, mode.width, mode.height, mode.fourcc, mode.fps, [mode, stream_list](const void * frame) mutable
-            {
-                // Unpack the image into the user stream interface back buffer
-                std::vector<void *> dest;
-                for(auto & stream : stream_list) dest.push_back(stream->get_back_data());
-                mode.unpacker(dest.data(), mode, frame);
-                const int frame_number = mode.frame_number_decoder(mode, frame);
-                
-                // Swap the backbuffer to the middle buffer and indicate that we have updated
-                for(auto & stream : stream_list) stream->swap_back(frame_number);
-            });
+            // If this is one of the streams requested by the user, store the buffer so they can access it
+            if(requests[stream_mode.stream].enabled) streams[stream_mode.stream] = stream;
         }
+                
+        // Initialize the subdevice and set it to the selected mode
+        int serial_frame_no = 0;
+        bool only_stream = selected_modes.size() == 1;
+        device.set_subdevice_mode(mode.subdevice, mode.width, mode.height, mode.fourcc, mode.fps, [mode, stream_list, only_stream, serial_frame_no](const void * frame) mutable
+        {
+            // Unpack the image into the user stream interface back buffer
+            std::vector<void *> dest;
+            for(auto & stream : stream_list) dest.push_back(stream->get_back_data());
+            mode.unpacker(dest.data(), mode, frame);
+            const int frame_number = (mode.use_serial_numbers_if_unique && only_stream) ? serial_frame_no++ : mode.frame_number_decoder(mode, frame);
+                
+            // Swap the backbuffer to the middle buffer and indicate that we have updated
+            for(auto & stream : stream_list) stream->swap_back(frame_number);
+        });
     }
     
     set_stream_intent(stream_enabled);

@@ -81,6 +81,7 @@ namespace rsimpl
         std::vector<stream_mode> streams;   // Modes for streams which can be supported by this device mode
         void (* unpacker)(void * dest[], const subdevice_mode & mode, const void * frame);
         int (* frame_number_decoder)(const subdevice_mode & mode, const void * frame);
+        bool use_serial_numbers_if_unique;  // If true, ignore frame_number_decoder and use a serial frame count if this is the only mode set
     };
     void unpack_strided_image(void * dest[], const subdevice_mode & mode, const void * frame);
     void unpack_y12i_to_y8(void * dest[], const subdevice_mode & mode, const void * frame);

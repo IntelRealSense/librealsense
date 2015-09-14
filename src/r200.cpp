@@ -77,8 +77,8 @@ namespace rsimpl
 
             if(fps == 90) continue;
             info.stream_subdevices[RS_STREAM_COLOR] = 2;
-            info.subdevice_modes.push_back({2, 1920, 1080, 'YUY2', fps, {{RS_STREAM_COLOR,    1920, 1080, RS_FORMAT_YUYV, fps, THIRD_HD }}, &unpack_strided_image, &decode_yuy2_frame_number});
-            info.subdevice_modes.push_back({2,  640,  480, 'YUY2', fps, {{RS_STREAM_COLOR,     640,  480, RS_FORMAT_YUYV, fps, THIRD_VGA}}, &unpack_strided_image, &decode_yuy2_frame_number});
+            info.subdevice_modes.push_back({2, 1920, 1080, 'YUY2', fps, {{RS_STREAM_COLOR,    1920, 1080, RS_FORMAT_YUYV, fps, THIRD_HD }}, &unpack_strided_image, &decode_yuy2_frame_number, true});
+            info.subdevice_modes.push_back({2,  640,  480, 'YUY2', fps, {{RS_STREAM_COLOR,     640,  480, RS_FORMAT_YUYV, fps, THIRD_VGA}}, &unpack_strided_image, &decode_yuy2_frame_number, true});
         }
 
         for(auto ir : {RS_STREAM_INFRARED, RS_STREAM_INFRARED2})
