@@ -30,119 +30,88 @@ namespace rsimpl
     // YUY2 unpacking routines //
     /////////////////////////////
 
-    struct yuy2_double_pixel
+    template<class UNPACK> void unpack_from_yuy2(void * dest[], const void * source, const subdevice_mode & mode, UNPACK unpack)
     {
-        uint8_t bytes[4];
-        int y0() const { return bytes[0] - 16; }
-        int y1() const { return bytes[2] - 16; }
-        int u() const { return bytes[1] - 128; }
-        int v() const { return bytes[3] - 128; }
-    };
-    static_assert(sizeof(yuy2_double_pixel) == 4, "packing error");
+        assert(mode.fourcc == 'YUY2' && mode.streams.size() == 1 && mode.streams[0].width == mode.width && mode.streams[0].height == mode.height);
+        auto in = reinterpret_cast<const uint8_t *>(source);
+        auto out = reinterpret_cast<uint8_t *>(dest[0]);        
+        for (int y = 0; y < mode.height; ++y)
+        {
+            for (int x = 0; x < mode.width; x += 2)
+            {
+                unpack(out, in[0]-16, in[1]-128, in[2]-16, in[3]-128);
+                in += 4;
+            }
+        }     
+    }
 
     inline uint8_t clamp_byte(int v) { return v < 0 ? 0 : v > 255 ? 255 : v; }
     inline uint8_t yuv_to_r(int y, int u, int v) { return clamp_byte((128 + 298 * y           + 409 * v) >> 8); }
     inline uint8_t yuv_to_g(int y, int u, int v) { return clamp_byte((128 + 298 * y - 100 * u - 208 * v) >> 8); }
     inline uint8_t yuv_to_b(int y, int u, int v) { return clamp_byte((128 + 298 * y + 516 * u          ) >> 8); }
-
+    
     void unpack_rgb_from_yuy2(void * dest[], const void * source, const subdevice_mode & mode)
     {
-        assert(mode.fourcc == 'YUY2' && mode.streams.size() == 1 && mode.streams[0].width == mode.width && mode.streams[0].height == mode.height && mode.streams[0].format == RS_FORMAT_RGB);
-
-        auto in = reinterpret_cast<const yuy2_double_pixel *>(source);
-        auto out = reinterpret_cast<uint8_t *>(dest[0]);
-        
-        for (int y = 0; y < mode.height; ++y)
+        assert(mode.streams.size() == 1 && mode.streams[0].format == RS_FORMAT_RGB);
+        unpack_from_yuy2(dest, source, mode, [](uint8_t * & out, int y0, int u, int y1, int v)
         {
-            for (int x = 0; x < mode.width; x += 2)
-            {
-                *out++ = yuv_to_r(in->y0(), in->u(), in->v());
-                *out++ = yuv_to_g(in->y0(), in->u(), in->v());
-                *out++ = yuv_to_b(in->y0(), in->u(), in->v());
+            *out++ = yuv_to_r(y0, u, v);
+            *out++ = yuv_to_g(y0, u, v);
+            *out++ = yuv_to_b(y0, u, v);
 
-                *out++ = yuv_to_r(in->y1(), in->u(), in->v());
-                *out++ = yuv_to_g(in->y1(), in->u(), in->v());
-                *out++ = yuv_to_b(in->y1(), in->u(), in->v());
-                
-                ++in;
-            }
-        }    
+            *out++ = yuv_to_r(y1, u, v);
+            *out++ = yuv_to_g(y1, u, v);
+            *out++ = yuv_to_b(y1, u, v);
+        });  
     }
-
+    
     void unpack_rgba_from_yuy2(void * dest[], const void * source, const subdevice_mode & mode)
     {
-        assert(mode.fourcc == 'YUY2' && mode.streams.size() == 1 && mode.streams[0].width == mode.width && mode.streams[0].height == mode.height && mode.streams[0].format == RS_FORMAT_RGBA);
-
-        auto in = reinterpret_cast<const yuy2_double_pixel *>(source);
-        auto out = reinterpret_cast<uint8_t *>(dest[0]);
-        
-        for (int y = 0; y < mode.height; ++y)
+        assert(mode.streams.size() == 1 && mode.streams[0].format == RS_FORMAT_RGBA);
+        unpack_from_yuy2(dest, source, mode, [](uint8_t * & out, int y0, int u, int y1, int v)
         {
-            for (int x = 0; x < mode.width; x += 2)
-            {
-                *out++ = yuv_to_r(in->y0(), in->u(), in->v());
-                *out++ = yuv_to_g(in->y0(), in->u(), in->v());
-                *out++ = yuv_to_b(in->y0(), in->u(), in->v());
-                *out++ = 255;
+            *out++ = yuv_to_r(y0, u, v);
+            *out++ = yuv_to_g(y0, u, v);
+            *out++ = yuv_to_b(y0, u, v);
+            *out++ = 255;
 
-                *out++ = yuv_to_r(in->y1(), in->u(), in->v());
-                *out++ = yuv_to_g(in->y1(), in->u(), in->v());
-                *out++ = yuv_to_b(in->y1(), in->u(), in->v());
-                *out++ = 255;
-                
-                ++in;
-            }
-        }    
+            *out++ = yuv_to_r(y1, u, v);
+            *out++ = yuv_to_g(y1, u, v);
+            *out++ = yuv_to_b(y1, u, v);
+            *out++ = 255;
+        });
     }
 
     void unpack_bgr_from_yuy2(void * dest[], const void * source, const subdevice_mode & mode)
     {
-        assert(mode.fourcc == 'YUY2' && mode.streams.size() == 1 && mode.streams[0].width == mode.width && mode.streams[0].height == mode.height && mode.streams[0].format == RS_FORMAT_BGR);
-
-        auto in = reinterpret_cast<const yuy2_double_pixel *>(source);
-        auto out = reinterpret_cast<uint8_t *>(dest[0]);
-        
-        for (int y = 0; y < mode.height; ++y)
+        assert(mode.streams.size() == 1 && mode.streams[0].format == RS_FORMAT_BGR);
+        unpack_from_yuy2(dest, source, mode, [](uint8_t * & out, int y0, int u, int y1, int v)
         {
-            for (int x = 0; x < mode.width; x += 2)
-            {
-                *out++ = yuv_to_b(in->y0(), in->u(), in->v());
-                *out++ = yuv_to_g(in->y0(), in->u(), in->v());
-                *out++ = yuv_to_r(in->y0(), in->u(), in->v());
-                
-                *out++ = yuv_to_b(in->y1(), in->u(), in->v());
-                *out++ = yuv_to_g(in->y1(), in->u(), in->v());
-                *out++ = yuv_to_r(in->y1(), in->u(), in->v());
-                
-                ++in;
-            }
-        }    
+            *out++ = yuv_to_b(y0, u, v);
+            *out++ = yuv_to_g(y0, u, v);
+            *out++ = yuv_to_r(y0, u, v);
+
+            *out++ = yuv_to_b(y1, u, v);
+            *out++ = yuv_to_g(y1, u, v);
+            *out++ = yuv_to_r(y1, u, v);
+        });    
     }
 
     void unpack_bgra_from_yuy2(void * dest[], const void * source, const subdevice_mode & mode)
     {
-        assert(mode.fourcc == 'YUY2' && mode.streams.size() == 1 && mode.streams[0].width == mode.width && mode.streams[0].height == mode.height && mode.streams[0].format == RS_FORMAT_BGRA);
-
-        auto in = reinterpret_cast<const yuy2_double_pixel *>(source);
-        auto out = reinterpret_cast<uint8_t *>(dest[0]);
-        
-        for (int y = 0; y < mode.height; ++y)
+        assert(mode.streams.size() == 1 && mode.streams[0].format == RS_FORMAT_BGRA);
+        unpack_from_yuy2(dest, source, mode, [](uint8_t * & out, int y0, int u, int y1, int v)
         {
-            for (int x = 0; x < mode.width; x += 2)
-            {
-                *out++ = yuv_to_b(in->y0(), in->u(), in->v());
-                *out++ = yuv_to_g(in->y0(), in->u(), in->v());
-                *out++ = yuv_to_r(in->y0(), in->u(), in->v());
-                *out++ = 255;
-                
-                *out++ = yuv_to_b(in->y1(), in->u(), in->v());
-                *out++ = yuv_to_g(in->y1(), in->u(), in->v());
-                *out++ = yuv_to_r(in->y1(), in->u(), in->v());
-                *out++ = 255;
-                
-                ++in;
-            }
-        }    
+            *out++ = yuv_to_b(y0, u, v);
+            *out++ = yuv_to_g(y0, u, v);
+            *out++ = yuv_to_r(y0, u, v);
+            *out++ = 255;
+
+            *out++ = yuv_to_b(y1, u, v);
+            *out++ = yuv_to_g(y1, u, v);
+            *out++ = yuv_to_r(y1, u, v);
+            *out++ = 255;
+        });   
     }
 
     //////////////////////////////////////
