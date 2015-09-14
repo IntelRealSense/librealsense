@@ -78,35 +78,12 @@ void rs_device::start()
 {
     if(capturing) throw std::runtime_error("cannot restart device without first stopping device");
         
-    // Check and modify our requests to enforce all interstream constraints
-    for(auto & rule : device_info.interstream_rules)
-    {
-        auto & a = requests[rule.a], & b = requests[rule.b]; auto f = rule.field;
-        if(a.enabled && b.enabled)
-        {
-            // Check for incompatibility if both values specified
-            if(a.*f != 0 && b.*f != 0 && a.*f + rule.delta != b.*f)
-            {
-                throw std::runtime_error(to_string() << "requested " << rule.a << " and " << rule.b << " settings are incompatible");
-            }
-
-            // If only one value is specified, modify the other request to match
-            if(a.*f != 0 && b.*f == 0) b.*f = a.*f + rule.delta;
-            if(a.*f == 0 && b.*f != 0) a.*f = b.*f - rule.delta;
-        }
-    }
-
-    // Select subdevice modes needed to satisfy our requests
-    int max_subdevice = 0;
-    for(auto & mode : device_info.subdevice_modes) max_subdevice = std::max(max_subdevice, mode.subdevice);
-    std::vector<subdevice_mode> selected_modes;
-    for(int i = 0; i <= max_subdevice; ++i) if(auto * m = device_info.select_mode(requests, i)) selected_modes.push_back(*m);
+    auto selected_modes = device_info.select_modes(requests);
 
     for(auto & s : streams) s.reset(); // Starting capture invalidates the current stream info, if any exists from previous capture
 
     // Satisfy stream_requests as necessary for each subdevice, calling set_mode and
     // dispatching the uvc configuration for a requested stream to the hardware
-    bool stream_enabled[RS_STREAM_COUNT] = {};
     for(auto mode : selected_modes)
     {
         // Create a stream buffer for each stream served by this subdevice mode
@@ -116,7 +93,6 @@ void rs_device::start()
             // Create a buffer to receive the images from this stream
             auto stream = std::make_shared<stream_buffer>(stream_mode);
             stream_list.push_back(stream);
-            stream_enabled[stream_mode.stream] = true;
                     
             // If this is one of the streams requested by the user, store the buffer so they can access it
             if(requests[stream_mode.stream].enabled) streams[stream_mode.stream] = stream;
@@ -138,7 +114,7 @@ void rs_device::start()
         });
     }
     
-    set_stream_intent(stream_enabled);
+    on_before_start(selected_modes);
     device.start_streaming();
     capture_started = std::chrono::high_resolution_clock::now();
     capturing = true;
@@ -248,14 +224,14 @@ rsimpl::stream_mode rs_device::get_current_stream_mode(rs_stream stream) const
     if(streams[stream]) return streams[stream]->get_mode();
     if(requests[stream].enabled)
     {
-        if(auto subdevice_mode = device_info.select_mode(requests, device_info.stream_subdevices[stream]))
+        for(auto subdevice_mode : device_info.select_modes(requests))
         {
-            for(auto & mode : subdevice_mode->streams)
+            for(auto stream_mode : subdevice_mode.streams)
             {
-                if(mode.stream == stream) return mode;
+                if(stream_mode.stream == stream) return stream_mode;
             }
         }   
-        throw std::logic_error("no mode found"); // Should never happen, select_mode should throw if no mode can be found
+        throw std::logic_error("no mode found"); // Should never happen, select_modes should throw if no mode can be found
     }
     throw std::runtime_error("stream not enabled");
 }

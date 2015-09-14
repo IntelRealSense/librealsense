@@ -12,7 +12,7 @@ namespace rsimpl
         r200_camera(uvc::device device);
         ~r200_camera();
 
-        void set_stream_intent(const bool (& stream_enabled)[RS_STREAM_COUNT]) override final;
+        void on_before_start(const std::vector<subdevice_mode> & selected_modes) override final;
         void set_option(rs_option option, int value) override final;
         int get_option(rs_option option) const override final;
         int convert_timestamp(int64_t timestamp) const override final;

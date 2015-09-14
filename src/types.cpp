@@ -216,6 +216,38 @@ namespace rsimpl
         throw std::runtime_error(ss.str());
     }
 
+    std::vector<subdevice_mode> static_device_info::select_modes(const stream_request (&reqs)[RS_STREAM_COUNT]) const
+    {
+        // Make a mutable copy of our array
+        stream_request requests[RS_STREAM_COUNT];
+        for(int i=0; i<RS_STREAM_COUNT; ++i) requests[i] = reqs[i];
+
+        // Check and modify requests to enforce all interstream constraints
+        for(auto & rule : interstream_rules)
+        {
+            auto & a = requests[rule.a], & b = requests[rule.b]; auto f = rule.field;
+            if(a.enabled && b.enabled)
+            {
+                // Check for incompatibility if both values specified
+                if(a.*f != 0 && b.*f != 0 && a.*f + rule.delta != b.*f)
+                {
+                    throw std::runtime_error(to_string() << "requested " << rule.a << " and " << rule.b << " settings are incompatible");
+                }
+
+                // If only one value is specified, modify the other request to match
+                if(a.*f != 0 && b.*f == 0) b.*f = a.*f + rule.delta;
+                if(a.*f == 0 && b.*f != 0) a.*f = b.*f - rule.delta;
+            }
+        }
+
+        // Select subdevice modes needed to satisfy our requests
+        int num_subdevices = 0;
+        for(auto & mode : subdevice_modes) num_subdevices = std::max(num_subdevices, mode.subdevice+1);
+        std::vector<subdevice_mode> selected_modes;
+        for(int i = 0; i < num_subdevices; ++i) if(auto * m = select_mode(requests, i)) selected_modes.push_back(*m);
+        return selected_modes;
+    }
+
     bool stream_buffer::swap_front()
     {
         if(!updated) return false;

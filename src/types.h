@@ -114,6 +114,7 @@ namespace rsimpl
         static_device_info();
 
         const subdevice_mode * select_mode(const stream_request (&requests)[RS_STREAM_COUNT], int subdevice_index) const;
+        std::vector<subdevice_mode> select_modes(const stream_request (&requests)[RS_STREAM_COUNT]) const;
     };
     static_device_info add_standard_unpackers(const static_device_info & device_info);
 

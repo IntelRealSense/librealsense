@@ -59,7 +59,6 @@ namespace rsimpl
         {
             info.stream_subdevices[RS_STREAM_INFRARED ] = 0;
             info.stream_subdevices[RS_STREAM_INFRARED2] = 0;
-
             info.subdevice_modes.push_back({0,  640, 481, 'Y8  ', fps, {{RS_STREAM_INFRARED,  640,  480, RS_FORMAT_Y8,  fps, LR_FULL}}, &unpack_strided_image, &decode_dinghy_frame_number});
             info.subdevice_modes.push_back({0,  640, 481, 'Y12I', fps, {{RS_STREAM_INFRARED,  640,  480, RS_FORMAT_Y8,  fps, LR_FULL},
                                                                         {RS_STREAM_INFRARED2, 640,  480, RS_FORMAT_Y8,  fps, LR_FULL}}, &unpack_y12i_to_y8, &decode_dinghy_frame_number});
@@ -136,12 +135,18 @@ namespace rsimpl
         r200::force_firmware_reset(device);
     }
 
-    void r200_camera::set_stream_intent(const bool (& stream_enabled)[RS_STREAM_COUNT])
+    void r200_camera::on_before_start(const std::vector<subdevice_mode> & selected_modes)
     {
         uint8_t streamIntent = 0;
-        if(stream_enabled[RS_STREAM_INFRARED] || stream_enabled[RS_STREAM_INFRARED2]) streamIntent |= r200::STATUS_BIT_LR_STREAMING;
-        if(stream_enabled[RS_STREAM_DEPTH]) streamIntent |= r200::STATUS_BIT_Z_STREAMING;
-        if(stream_enabled[RS_STREAM_COLOR]) streamIntent |= r200::STATUS_BIT_WEB_STREAMING;
+        for(const auto & m : selected_modes)
+        {
+            switch(m.subdevice)
+            {
+            case 0: streamIntent |= r200::STATUS_BIT_LR_STREAMING; break;
+            case 1: streamIntent |= r200::STATUS_BIT_Z_STREAMING; break;
+            case 2: streamIntent |= r200::STATUS_BIT_WEB_STREAMING; break;
+            }
+        }
         r200::set_stream_intent(device, streamIntent);
     }
 
