@@ -54,7 +54,7 @@ int main(int argc, char * argv[]) try
     try 
     { 
         dev.enable_stream(rs::stream::infrared, rs::preset::best_quality);
-        dev.enable_stream(rs::stream::infrared2, 0, 0, rs::format::any, 0); 
+        //dev.enable_stream(rs::stream::infrared2, 0, 0, rs::format::any, 0); 
     } catch(...) {}
 
     // Compute field of view for each enabled stream

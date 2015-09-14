@@ -9,17 +9,8 @@ namespace rsimpl
 {
     int decode_dinghy_frame_number(const subdevice_mode & mode, const void * frame)
     {
-        auto data = reinterpret_cast<const uint8_t *>(frame);
-        const r200::Dinghy * dinghy = nullptr;
-        switch(mode.fourcc)
-        {
-        case 'Y8  ': dinghy = reinterpret_cast<const r200::Dinghy *>(data +  mode.width * (mode.height-1)   ); break;
-        case 'Y12I': dinghy = reinterpret_cast<const r200::Dinghy *>(data + (mode.width * (mode.height-1))*3); break;
-        case 'Z16 ': dinghy = reinterpret_cast<const r200::Dinghy *>(data + (mode.width * (mode.height-1))*2); break;
-        }
-        assert(dinghy);
         // Todo: check dinghy->magicNumber against 0x08070605 (IR), 0x4030201 (Z), 0x8A8B8C8D (Third)
-        return dinghy->frameCount;
+        return reinterpret_cast<const r200::Dinghy *>(reinterpret_cast<const uint8_t *>(frame) + get_image_size(mode.width, mode.streams[0].height, mode.fourcc))->frameCount;
     }
 
     int decode_yuy2_frame_number(const subdevice_mode & mode, const void * frame)
@@ -53,34 +44,44 @@ namespace rsimpl
 
     static static_device_info get_r200_info(uvc::device device)
     {
-        enum { LR_FULL, LR_BIG, Z_FULL, Z_BIG, THIRD_HD, THIRD_VGA, NUM_INTRINSICS };
+        enum { LR_FULL, LR_BIG, LR_QRES, Z_FULL, Z_BIG, Z_QRES, THIRD_HD, THIRD_VGA, NUM_INTRINSICS };
+        const static struct { int w, h, uvc_w, uvc_h, lr_intrin, z_intrin; } lrz_modes[] = {
+            {640, 480,   640, 481,  LR_FULL, Z_FULL},
+            {492, 372,   640, 373,  LR_BIG,  Z_BIG },
+            // {332, 252,   640, 254,  LR_QRES, Z_QRES} // TODO: Fix QRES
+        };
+
         static_device_info info;
         info.name = {"Intel RealSense R200"};
-        for(auto fps : {30, 60, 90})
+        info.stream_subdevices[RS_STREAM_DEPTH] = 1;
+        info.stream_subdevices[RS_STREAM_COLOR] = 2;
+        info.stream_subdevices[RS_STREAM_INFRARED ] = 0;
+        info.stream_subdevices[RS_STREAM_INFRARED2] = 0;            
+
+        // Set up modes for left/right/z images
+        for(auto m : lrz_modes)
         {
-            info.stream_subdevices[RS_STREAM_INFRARED ] = 0;
-            info.stream_subdevices[RS_STREAM_INFRARED2] = 0;
-            info.subdevice_modes.push_back({0,  640, 481, 'Y8  ', fps, {{RS_STREAM_INFRARED,  640,  480, RS_FORMAT_Y8,  fps, LR_FULL}}, &unpack_subrect, &decode_dinghy_frame_number});
-            info.subdevice_modes.push_back({0,  640, 481, 'Y12I', fps, {{RS_STREAM_INFRARED,  640,  480, RS_FORMAT_Y8,  fps, LR_FULL},
-                                                                        {RS_STREAM_INFRARED2, 640,  480, RS_FORMAT_Y8,  fps, LR_FULL}}, &unpack_y8_y8_from_y12i, &decode_dinghy_frame_number});
-            info.subdevice_modes.push_back({0,  640, 481, 'Y12I', fps, {{RS_STREAM_INFRARED,  640,  480, RS_FORMAT_Y16, fps, LR_FULL},
-                                                                        {RS_STREAM_INFRARED2, 640,  480, RS_FORMAT_Y16, fps, LR_FULL}}, &unpack_y16_y16_from_y12i, &decode_dinghy_frame_number});
-            info.subdevice_modes.push_back({0,  640, 373, 'Y8  ', fps, {{RS_STREAM_INFRARED,  492,  372, RS_FORMAT_Y8,  fps, LR_BIG }}, &unpack_subrect, &decode_dinghy_frame_number});
-            info.subdevice_modes.push_back({0,  640, 373, 'Y12I', fps, {{RS_STREAM_INFRARED,  492,  372, RS_FORMAT_Y8,  fps, LR_BIG },
-                                                                        {RS_STREAM_INFRARED2, 492,  372, RS_FORMAT_Y8,  fps, LR_BIG }}, &unpack_y8_y8_from_y12i, &decode_dinghy_frame_number});
-            info.subdevice_modes.push_back({0,  640, 373, 'Y12I', fps, {{RS_STREAM_INFRARED,  492,  372, RS_FORMAT_Y16, fps, LR_BIG },
-                                                                        {RS_STREAM_INFRARED2, 492,  372, RS_FORMAT_Y16, fps, LR_BIG }}, &unpack_y16_y16_from_y12i, &decode_dinghy_frame_number});
+            for(auto fps : {30, 60, 90})
+            {
+                info.subdevice_modes.push_back({1, m.uvc_w-12, m.uvc_h-12, 'Z16 ', fps, {{RS_STREAM_DEPTH, m.w-12, m.h-12, RS_FORMAT_Z16, fps, m.z_intrin}}, &unpack_subrect, &decode_dinghy_frame_number});
 
-            info.stream_subdevices[RS_STREAM_DEPTH] = 1;
-            info.subdevice_modes.push_back({1,  628, 469, 'Z16 ', fps, {{RS_STREAM_DEPTH,      628,  468, RS_FORMAT_Z16, fps, Z_FULL}}, &unpack_subrect, &decode_dinghy_frame_number});
-            info.subdevice_modes.push_back({1,  628, 361, 'Z16 ', fps, {{RS_STREAM_DEPTH,      480,  360, RS_FORMAT_Z16, fps, Z_BIG }}, &unpack_subrect, &decode_dinghy_frame_number});
-
-            if(fps == 90) continue;
-            info.stream_subdevices[RS_STREAM_COLOR] = 2;
-            info.subdevice_modes.push_back({2, 1920, 1080, 'YUY2', fps, {{RS_STREAM_COLOR,    1920, 1080, RS_FORMAT_YUYV, fps, THIRD_HD }}, &unpack_subrect, &decode_yuy2_frame_number, true});
-            info.subdevice_modes.push_back({2,  640,  480, 'YUY2', fps, {{RS_STREAM_COLOR,     640,  480, RS_FORMAT_YUYV, fps, THIRD_VGA}}, &unpack_subrect, &decode_yuy2_frame_number, true});
+                info.subdevice_modes.push_back({0, m.uvc_w, m.uvc_h, 'Y8  ', fps, {{RS_STREAM_INFRARED,  m.w, m.h, RS_FORMAT_Y8,  fps, m.lr_intrin}}, &unpack_subrect, &decode_dinghy_frame_number});
+                info.subdevice_modes.push_back({0, m.uvc_w, m.uvc_h, 'Y8I ', fps, {{RS_STREAM_INFRARED,  m.w, m.h, RS_FORMAT_Y8,  fps, m.lr_intrin},
+                                                                                   {RS_STREAM_INFRARED2, m.w, m.h, RS_FORMAT_Y8,  fps, m.lr_intrin}}, &unpack_y8_y8_from_y8i, &decode_dinghy_frame_number});
+                info.subdevice_modes.push_back({0, m.uvc_w, m.uvc_h, 'Y16 ', fps, {{RS_STREAM_INFRARED,  m.w, m.h, RS_FORMAT_Y16, fps, m.lr_intrin}}, &unpack_y16_from_y10, &decode_dinghy_frame_number});
+                info.subdevice_modes.push_back({0, m.uvc_w, m.uvc_h, 'Y12I', fps, {{RS_STREAM_INFRARED,  m.w, m.h, RS_FORMAT_Y16, fps, m.lr_intrin},
+                                                                                   {RS_STREAM_INFRARED2, m.w, m.h, RS_FORMAT_Y16, fps, m.lr_intrin}}, &unpack_y16_y16_from_y12i, &decode_dinghy_frame_number});
+            }
         }
 
+        // Set up modes for third images
+        for(auto fps : {30, 60}) // TODO: 15?
+        {   
+            info.subdevice_modes.push_back({2,  640,  480, 'YUY2', fps, {{RS_STREAM_COLOR,  640,  480, RS_FORMAT_YUYV, fps, THIRD_VGA}}, &unpack_subrect, &decode_yuy2_frame_number, true});
+            info.subdevice_modes.push_back({2, 1920, 1080, 'YUY2', fps, {{RS_STREAM_COLOR, 1920, 1080, RS_FORMAT_YUYV, fps, THIRD_HD }}, &unpack_subrect, &decode_yuy2_frame_number, true});            
+        }
+
+        // Set up interstream rules for left/right/z images
         for(auto ir : {RS_STREAM_INFRARED, RS_STREAM_INFRARED2})
         {
             info.interstream_rules.push_back({RS_STREAM_DEPTH, ir, &stream_request::width, 12});
@@ -111,8 +112,10 @@ namespace rsimpl
         info.intrinsics.resize(NUM_INTRINSICS);
         info.intrinsics[LR_FULL] = MakeLeftRightIntrinsics(c.modesLR[0]);
         info.intrinsics[LR_BIG] = MakeLeftRightIntrinsics(c.modesLR[1]);
+        info.intrinsics[LR_QRES] = MakeLeftRightIntrinsics(c.modesLR[2]);
         info.intrinsics[Z_FULL] = MakeDepthIntrinsics(c.modesLR[0]);
         info.intrinsics[Z_BIG] = MakeDepthIntrinsics(c.modesLR[1]);
+        info.intrinsics[Z_QRES] = MakeDepthIntrinsics(c.modesLR[2]);
         info.intrinsics[THIRD_HD] = MakeColorIntrinsics(c.intrinsicsThird[0]);
         info.intrinsics[THIRD_VGA] = MakeColorIntrinsics(c.intrinsicsThird[1]);
         info.stream_poses[RS_STREAM_DEPTH] = {{{1,0,0},{0,1,0},{0,0,1}}, {0,0,0}};

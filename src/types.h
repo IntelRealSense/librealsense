@@ -13,6 +13,10 @@
 //#define ENABLE_DEBUG_SPAM
 
 #ifdef _DEBUG
+#define ENABLE_DEBUG_OUTPUT
+#endif
+
+#ifdef ENABLE_DEBUG_OUTPUT
 #include <iostream> // For cout, cerr, endl. DO NOT INCLUDE ANYWHERE ELSE IN LIBREALSENSE 
 #define DEBUG_OUT(...) std::cout << "[debug] " << __VA_ARGS__ << std::endl
 #define DEBUG_ERR(...) std::cerr << "[error] " << __VA_ARGS__ << std::endl
@@ -33,8 +37,6 @@ namespace rsimpl
     RS_ENUM_HELPERS(rs_distortion, DISTORTION)
     RS_ENUM_HELPERS(rs_option, OPTION)
     #undef RS_ENUM_HELPERS
-
-    size_t get_image_size(int width, int height, rs_format format);
 
     // World's tiniest linear algebra library
     struct float3 { float x,y,z; float & operator [] (int i) { return (&x)[i]; } };
@@ -120,7 +122,7 @@ namespace rsimpl
             int                     number;
             int                     delta;
 
-                                    frame(const rsimpl::stream_mode & m) : data(rsimpl::get_image_size(m.width, m.height, m.format)), number(), delta() {}
+                                    frame(const stream_mode & m);
             void                    swap(frame & r) { data.swap(r.data); std::swap(number, r.number); std::swap(delta, r.delta); }
         };
 
@@ -132,7 +134,7 @@ namespace rsimpl
         int                         last_frame_number;
         bool                        first = true;
     public:
-                                    stream_buffer(const rsimpl::stream_mode & mode) : mode(mode), front(mode), middle(mode), back(mode), updated(false) {}
+                                    stream_buffer(const stream_mode & mode);
 
         const stream_mode &         get_mode() const { return mode; }
         const void *                get_front_data() const { return front.data.data(); }

@@ -41,22 +41,6 @@ namespace rsimpl
         #undef CASE
     }
 
-    size_t get_image_size(int width, int height, rs_format format)
-    {
-        switch(format)
-        {
-        case RS_FORMAT_Z16: return width * height * 2;
-        case RS_FORMAT_YUYV: assert(width % 2 == 0); return width * height * 2;
-        case RS_FORMAT_RGB8: return width * height * 3;
-        case RS_FORMAT_BGR8: return width * height * 3;
-        case RS_FORMAT_RGBA8: return width * height * 4;
-        case RS_FORMAT_BGRA8: return width * height * 4;
-        case RS_FORMAT_Y8: return width * height;
-        case RS_FORMAT_Y16: return width * height * 2;
-        default: assert(false); return 0;
-        }    
-    }
-
     const char * get_string(rs_preset value)
     {
         #define CASE(X) case RS_PRESET_##X: return #X;
@@ -213,6 +197,9 @@ namespace rsimpl
     ///////////////////
     // stream_buffer //
     ///////////////////
+
+    stream_buffer::frame::frame(const stream_mode & m) : data(get_image_size(m.width, m.height, m.format)), number(), delta() {}
+    stream_buffer::stream_buffer(const stream_mode & mode) : mode(mode), front(mode), middle(mode), back(mode), updated(false) {}
 
     bool stream_buffer::swap_front()
     {

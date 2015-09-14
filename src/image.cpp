@@ -1,10 +1,64 @@
 #include "image.h"
-#include <cstdint>
-#include <cstring>
 
 #pragma pack(push, 1) // All structs in this file are assumed to be byte-packed
 namespace rsimpl
 {
+    struct y12i_pixel
+    { 
+        uint8_t rl : 8, rh : 4, ll : 4, lh : 8; 
+        int l() const { return lh << 4 | ll; }
+        int r() const { return rh << 8 | rl; }
+    };
+    static_assert(sizeof(y12i_pixel) == 3, "packing error");
+
+    struct inri_pixel { uint16_t z16; uint8_t y8; };
+    static_assert(sizeof(inri_pixel) == 3, "packing error");
+
+    ////////////////////////////
+    // Image size computation //
+    ////////////////////////////
+
+    size_t get_image_size(int width, int height, rs_format format)
+    {
+        switch(format)
+        {
+        case RS_FORMAT_Z16: return width * height * 2;
+        case RS_FORMAT_YUYV: assert(width % 2 == 0); return width * height * 2;
+        case RS_FORMAT_RGB8: return width * height * 3;
+        case RS_FORMAT_BGR8: return width * height * 3;
+        case RS_FORMAT_RGBA8: return width * height * 4;
+        case RS_FORMAT_BGRA8: return width * height * 4;
+        case RS_FORMAT_Y8: return width * height;
+        case RS_FORMAT_Y16: return width * height * 2;
+        default: assert(false); return 0;
+        }    
+    }
+
+    size_t get_image_size(int width, int height, uint32_t fourcc)
+    {
+        struct format { uint32_t fourcc; int macropixel_width; size_t macropixel_size; };
+        static const format formats[] = {
+            {'YUY2', 2, 4},                  // Standard Y0, U, Y1, V ordered 2x1 macropixel
+            {'Z16 ', 1, sizeof(uint16_t)  }, // DS* 16-bit Z format
+            {'Y8  ', 1, sizeof(uint8_t)   }, // DS* 8-bit left format
+            {'Y16 ', 1, sizeof(uint16_t)  }, // DS* 16-bit left format
+            {'Y8I ', 1, sizeof(uint8_t)*2 }, // DS* 8-bit left/right format
+            {'Y12I', 1, sizeof(y12i_pixel)}, // DS* 12-bit left/right format
+            {'INVR', 1, sizeof(uint16_t)  }, // IVCAM 16-bit depth format
+            {'INVI', 1, sizeof(uint8_t)   }, // IVCAM 8-bit infrared format (NOTE: Might have an overloaded meaning on SR300, might need special logic)
+            {'INRI', 1, sizeof(inri_pixel)}, // IVCAM 16-bit depth + 8 bit infrared format
+            {'INZI', 2, 4},                  // IVCAM 16-bit depth + 16-bit infrared in a 2x1 macropixel
+        };
+        for(auto & f : formats)
+        {
+            if(f.fourcc != fourcc) continue;
+            assert(width % f.macropixel_width == 0);
+            return (width / f.macropixel_width) * height * f.macropixel_size;
+        }
+        assert(false && "unsupported format");
+        return 0;
+    }
+
     //////////////////////////////
     // Naive unpacking routines //
     //////////////////////////////
@@ -12,10 +66,8 @@ namespace rsimpl
     void unpack_subrect(void * dest[], const void * source, const subdevice_mode & mode)
     {
         assert(mode.streams.size() == 1 && mode.streams[0].width <= mode.width && mode.streams[0].height <= mode.height);
-
         auto in = reinterpret_cast<const uint8_t *>(source);
         auto out = reinterpret_cast<uint8_t *>(dest[0]);
-
         const size_t in_stride = get_image_size(mode.width, 1, mode.streams[0].format), out_stride = get_image_size(mode.streams[0].width, 1, mode.streams[0].format);
         for(int i=0; i<mode.streams[0].height; ++i)
         {
@@ -23,6 +75,21 @@ namespace rsimpl
             out += out_stride;
             in += in_stride;            
         }
+    }
+
+    void unpack_y16_from_y10(void * dest[], const void * source, const subdevice_mode & mode)
+    {
+        assert(mode.fourcc == 'Y16 ' && mode.streams.size() == 1 && mode.streams[0].width <= mode.width && mode.streams[0].height <= mode.height && mode.streams[0].format == RS_FORMAT_Y16);
+        auto in = reinterpret_cast<const uint16_t *>(source);
+        auto out = reinterpret_cast<uint16_t *>(dest[0]);
+        for(int y = 0; y < mode.streams[0].height; ++y)
+        {
+            for(int x = 0; x < mode.streams[0].width; ++x)
+            {
+                *out++ = *in++ << 6;
+            }
+            in += mode.width - mode.streams[0].width;
+        }       
     }
 
     /////////////////////////////
@@ -77,19 +144,12 @@ namespace rsimpl
         }    
     }
 
-    struct y12i_pixel
-    { 
-        uint8_t rl : 8, rh : 4, ll : 4, lh : 8; 
-        int l() const { return lh << 4 | ll; }
-        int r() const { return rh << 8 | rl; }
-    };
-    static_assert(sizeof(y12i_pixel) == 3, "packing error");
-
-    void unpack_y8_y8_from_y12i(void * dest[], const void * source, const subdevice_mode & mode)
+    void unpack_y8_y8_from_y8i(void * dest[], const void * source, const subdevice_mode & mode)
     {
-        split_frame(dest, mode, reinterpret_cast<const y12i_pixel *>(source), 'Y12I', RS_FORMAT_Y8, RS_FORMAT_Y8,
-            [](const y12i_pixel & p) -> uint8_t { return p.l() >> 2; },  // We want to convert 10-bit data to 8-bit data
-            [](const y12i_pixel & p) -> uint8_t { return p.r() >> 2; }); // Multiply by 1/4 to efficiently approximate 255/1023
+        struct y8i_pixel { uint8_t r, l; };
+        split_frame(dest, mode, reinterpret_cast<const y8i_pixel *>(source), 'Y8I ', RS_FORMAT_Y8, RS_FORMAT_Y8,
+            [](const y8i_pixel & p) -> uint8_t { return p.l; },
+            [](const y8i_pixel & p) -> uint8_t { return p.r; });
     }
 
     void unpack_y16_y16_from_y12i(void * dest[], const void * source, const subdevice_mode & mode)
@@ -98,9 +158,6 @@ namespace rsimpl
             [](const y12i_pixel & p) -> uint16_t { return p.l() << 6 | p.l() >> 4; },  // We want to convert 10-bit data to 16-bit data
             [](const y12i_pixel & p) -> uint16_t { return p.r() << 6 | p.r() >> 4; }); // Multiply by 64 1/16 to efficiently approximate 65535/1023
     }
-
-    struct inri_pixel { uint16_t z16; uint8_t y8; };
-    static_assert(sizeof(y12i_pixel) == 3, "packing error");
 
     void unpack_z16_y8_from_inri(void * dest[], const void * source, const subdevice_mode & mode)
     {
