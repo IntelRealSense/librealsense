@@ -5,26 +5,8 @@
 namespace rsimpl
 {
     #pragma pack(push, 1)
-    struct inri_pixel { uint16_t depth; uint8_t ir; };
     struct inzi_pixel { uint16_t value; uint16_t empty; };
     #pragma pack(pop)
-
-    void unpack_inri_to_z16_and_y8(void * dest[], const void * frame, const subdevice_mode & mode)
-    {
-        auto in = reinterpret_cast<const inri_pixel *>(frame);
-        auto out_depth = reinterpret_cast<uint16_t *>(dest[0]);
-        auto out_ir = reinterpret_cast<uint8_t *>(dest[1]);
-        for(int y=0; y<mode.height; ++y)
-        {
-            for(int x=0; x<mode.streams[0].width; ++x)
-            {
-                *out_depth++ = in->depth;
-                *out_ir++ = in->ir;
-                ++in;
-            }
-            in += (mode.width - mode.streams[0].width);
-        }
-    }
 
     void unpack_inzi_to_z16_and_y16(void * dest[], const void * frame, const subdevice_mode & mode)
     {
@@ -128,9 +110,9 @@ namespace rsimpl
         info.subdevice_modes.push_back({1, 640, 240, 'INVI', 60, {{RS_STREAM_INFRARED, 320, 240, RS_FORMAT_Y8, 60, DEPTH_QVGA}}, &unpack_subrect, &decode_ivcam_frame_number});
 
         info.subdevice_modes.push_back({1, 640, 480, 'INRI', 60, {{RS_STREAM_DEPTH,    640, 480, RS_FORMAT_Z16, 60, DEPTH_VGA},
-                                                                  {RS_STREAM_INFRARED, 640, 480, RS_FORMAT_Y8,  60, DEPTH_VGA}}, &unpack_inri_to_z16_and_y8, &decode_ivcam_frame_number});
+                                                                  {RS_STREAM_INFRARED, 640, 480, RS_FORMAT_Y8,  60, DEPTH_VGA}}, &unpack_z16_y8_from_inri, &decode_ivcam_frame_number});
         info.subdevice_modes.push_back({1, 640, 240, 'INRI', 60, {{RS_STREAM_DEPTH,    320, 240, RS_FORMAT_Z16, 60, DEPTH_QVGA},
-                                                                  {RS_STREAM_INFRARED, 320, 240, RS_FORMAT_Y8,  60, DEPTH_QVGA}}, &unpack_inri_to_z16_and_y8, &decode_ivcam_frame_number});
+                                                                  {RS_STREAM_INFRARED, 320, 240, RS_FORMAT_Y8,  60, DEPTH_QVGA}}, &unpack_z16_y8_from_inri, &decode_ivcam_frame_number});
 
         info.presets[RS_STREAM_INFRARED][RS_PRESET_BEST_QUALITY] = {true, 640, 480, RS_FORMAT_Y8,   60};
         info.presets[RS_STREAM_DEPTH   ][RS_PRESET_BEST_QUALITY] = {true, 640, 480, RS_FORMAT_Z16,  60};
