@@ -92,27 +92,30 @@ namespace rsimpl
     enum { COLOR_VGA, COLOR_HD, DEPTH_VGA, DEPTH_QVGA, NUM_INTRINSICS };
     static static_device_info get_f200_info(f200::IVCAMHardwareIO & io)
     {
+        struct mode { int w, h, intrin; };
+        static const mode color_modes[] = {{640, 480, COLOR_VGA}, {1920, 1080, COLOR_HD}};
+        static const mode depth_modes[] = {{640, 480, DEPTH_VGA}, {320, 240, DEPTH_QVGA}};        
+
         static_device_info info;
         info.name = {"Intel RealSense F200"};
 
         // Color modes on subdevice 0
         info.stream_subdevices[RS_STREAM_COLOR] = 0;
-        info.subdevice_modes.push_back({0,  640,  480, 'YUY2', 60, {{RS_STREAM_COLOR, 640, 480, RS_FORMAT_YUYV, 60, COLOR_VGA}}, &unpack_subrect, &decode_ivcam_frame_number});
-        info.subdevice_modes.push_back({0, 1920, 1080, 'YUY2', 60, {{RS_STREAM_COLOR, 1920, 1080, RS_FORMAT_YUYV, 60, COLOR_HD}}, &unpack_subrect, &decode_ivcam_frame_number});
+        for(auto & m : color_modes) info.subdevice_modes.push_back({0, m.w, m.h, 'YUY2', 60, {{RS_STREAM_COLOR, m.w, m.h, RS_FORMAT_YUYV, 60, m.intrin}}, &unpack_subrect, &decode_ivcam_frame_number});
 
         // Depth and IR modes on subdevice 1
         info.stream_subdevices[RS_STREAM_DEPTH] = 1;
-        info.stream_subdevices[RS_STREAM_INFRARED] = 1;
-        info.subdevice_modes.push_back({1, 640, 480, 'INVR', 60, {{RS_STREAM_DEPTH, 640, 480, RS_FORMAT_Z16, 60, DEPTH_VGA}}, &unpack_subrect, &decode_ivcam_frame_number});
-        info.subdevice_modes.push_back({1, 640, 240, 'INVR', 60, {{RS_STREAM_DEPTH, 320, 240, RS_FORMAT_Z16, 60, DEPTH_QVGA}}, &unpack_subrect, &decode_ivcam_frame_number});
-
-        info.subdevice_modes.push_back({1, 640, 480, 'INVI', 60, {{RS_STREAM_INFRARED, 640, 480, RS_FORMAT_Y8, 60, DEPTH_VGA}}, &unpack_subrect, &decode_ivcam_frame_number});
-        info.subdevice_modes.push_back({1, 640, 240, 'INVI', 60, {{RS_STREAM_INFRARED, 320, 240, RS_FORMAT_Y8, 60, DEPTH_QVGA}}, &unpack_subrect, &decode_ivcam_frame_number});
-
-        info.subdevice_modes.push_back({1, 640, 480, 'INRI', 60, {{RS_STREAM_DEPTH,    640, 480, RS_FORMAT_Z16, 60, DEPTH_VGA},
-                                                                  {RS_STREAM_INFRARED, 640, 480, RS_FORMAT_Y8,  60, DEPTH_VGA}}, &unpack_z16_y8_from_inri, &decode_ivcam_frame_number});
-        info.subdevice_modes.push_back({1, 640, 240, 'INRI', 60, {{RS_STREAM_DEPTH,    320, 240, RS_FORMAT_Z16, 60, DEPTH_QVGA},
-                                                                  {RS_STREAM_INFRARED, 320, 240, RS_FORMAT_Y8,  60, DEPTH_QVGA}}, &unpack_z16_y8_from_inri, &decode_ivcam_frame_number});
+        info.stream_subdevices[RS_STREAM_INFRARED] = 1;        
+        for(auto & m : depth_modes)
+        {
+            info.subdevice_modes.push_back({1, 640, m.h, 'INVR', 60, {{RS_STREAM_DEPTH,    m.w, m.h, RS_FORMAT_Z16, 60, m.intrin}}, &unpack_subrect, &decode_ivcam_frame_number});
+            info.subdevice_modes.push_back({1, 640, m.h, 'INVI', 60, {{RS_STREAM_INFRARED, m.w, m.h, RS_FORMAT_Y8,  60, m.intrin}}, &unpack_subrect, &decode_ivcam_frame_number});            
+            info.subdevice_modes.push_back({1, 640, m.h, 'INVI', 60, {{RS_STREAM_INFRARED, m.w, m.h, RS_FORMAT_Y16, 60, m.intrin}}, &unpack_y16_from_y8, &decode_ivcam_frame_number});            
+            info.subdevice_modes.push_back({1, 640, m.h, 'INRI', 60, {{RS_STREAM_DEPTH,    m.w, m.h, RS_FORMAT_Z16, 60, m.intrin},
+                                                                      {RS_STREAM_INFRARED, m.w, m.h, RS_FORMAT_Y8,  60, m.intrin}}, &unpack_z16_y8_from_inri, &decode_ivcam_frame_number});;
+            info.subdevice_modes.push_back({1, 640, m.h, 'INRI', 60, {{RS_STREAM_DEPTH,    m.w, m.h, RS_FORMAT_Z16, 60, m.intrin},
+                                                                      {RS_STREAM_INFRARED, m.w, m.h, RS_FORMAT_Y16, 60, m.intrin}}, &unpack_z16_y16_from_inri, &decode_ivcam_frame_number});;
+        }
 
         info.presets[RS_STREAM_INFRARED][RS_PRESET_BEST_QUALITY] = {true, 640, 480, RS_FORMAT_Y8,   60};
         info.presets[RS_STREAM_DEPTH   ][RS_PRESET_BEST_QUALITY] = {true, 640, 480, RS_FORMAT_Z16,  60};

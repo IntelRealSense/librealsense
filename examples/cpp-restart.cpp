@@ -70,10 +70,11 @@ int main(int argc, char * argv[]) try
     }
     else throw std::runtime_error("Unable to open examples/assets/Roboto-Bold.ttf");
 
-    for(int i=0; i<9; ++i)
+    for(int i=0; i<11; ++i)
     {
         try
         {
+            if(device.is_streaming()) device.stop();
             for(int j=0; j<RS_STREAM_COUNT; ++j)
             {
                 auto s = (rs::stream)j;
@@ -122,6 +123,13 @@ int main(int argc, char * argv[]) try
             case 8:
                 device.enable_stream(rs::stream::color, rs::preset::best_quality);
                 break;
+            case 9:
+                device.enable_stream(rs::stream::depth, rs::preset::best_quality);
+                device.enable_stream(rs::stream::infrared, 0, 0, rs::format::y16, 0);
+                break;
+            case 10:
+                device.enable_stream(rs::stream::infrared, 0, 0, rs::format::y16, 0);
+                break;
             }
 
             device.start();
@@ -143,7 +151,6 @@ int main(int argc, char * argv[]) try
                 glPopMatrix();
                 glfwSwapBuffers(win);
             }
-            device.stop();
         }
         catch(const rs::error & e)
         {
