@@ -101,10 +101,9 @@ static float ttf_len(struct font * font, const char *text)
     return x;
 }
 
-static void draw_depth_histogram(const uint16_t depth_image[], int width, int height)
+static void make_depth_histogram(uint8_t rgb_image[640*480*3], const uint16_t depth_image[], int width, int height)
 {
     static uint32_t histogram[0x10000];
-    static uint8_t rgb_image[640*480*3];
     int i, d, f;
     memset(histogram, 0, sizeof(histogram));
 
@@ -126,5 +125,12 @@ static void draw_depth_histogram(const uint16_t depth_image[], int width, int he
             rgb_image[i*3 + 2] = 0;
         }
     }
+}
+
+
+static void draw_depth_histogram(const uint16_t depth_image[], int width, int height)
+{
+    static uint8_t rgb_image[640*480*3];
+    make_depth_histogram(rgb_image, depth_image, width, height);
     glDrawPixels(width, height, GL_RGB, GL_UNSIGNED_BYTE, rgb_image);
 }

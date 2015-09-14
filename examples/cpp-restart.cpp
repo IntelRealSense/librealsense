@@ -70,11 +70,14 @@ int main(int argc, char * argv[]) try
     }
     else throw std::runtime_error("Unable to open examples/assets/Roboto-Bold.ttf");
 
-    for(int i=0; i<11; ++i)
+    for(int i=0; i<20; ++i)
     {
         try
         {
             if(device.is_streaming()) device.stop();
+
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+
             for(int j=0; j<RS_STREAM_COUNT; ++j)
             {
                 auto s = (rs::stream)j;
@@ -84,51 +87,74 @@ int main(int argc, char * argv[]) try
             switch(i)
             {
             case 0:
-                device.enable_stream(rs::stream::depth, rs::preset::best_quality);
-                device.enable_stream(rs::stream::color, rs::preset::best_quality);
+                device.enable_stream(rs::stream::color, 640, 480, rs::format::yuyv, 60);
                 break;
             case 1:
-                device.enable_stream(rs::stream::depth, rs::preset::largest_image);
-                device.enable_stream(rs::stream::color, rs::preset::best_quality);
+                device.enable_stream(rs::stream::color, 640, 480, rs::format::rgb8, 60);
                 break;
             case 2:
-                device.enable_stream(rs::stream::depth, rs::preset::best_quality);
-                device.enable_stream(rs::stream::color, rs::preset::best_quality);
-                device.enable_stream(rs::stream::infrared, rs::preset::best_quality);
+                device.enable_stream(rs::stream::color, 640, 480, rs::format::bgr8, 60);
                 break;
             case 3:
-                device.enable_stream(rs::stream::depth, rs::preset::largest_image);
-                device.enable_stream(rs::stream::color, rs::preset::best_quality);
-                device.enable_stream(rs::stream::infrared, rs::preset::largest_image);
+                device.enable_stream(rs::stream::color, 640, 480, rs::format::rgba8, 60);
                 break;
             case 4:
-                device.enable_stream(rs::stream::depth, rs::preset::best_quality);
-                device.enable_stream(rs::stream::color, rs::preset::best_quality);
-                device.enable_stream(rs::stream::infrared, rs::preset::best_quality);
-                device.enable_stream(rs::stream::infrared2, rs::preset::best_quality);
+                device.enable_stream(rs::stream::color, 640, 480, rs::format::bgra8, 60);
                 break;
             case 5:
-                device.enable_stream(rs::stream::depth, rs::preset::largest_image);
-                device.enable_stream(rs::stream::color, rs::preset::best_quality);
-                device.enable_stream(rs::stream::infrared, rs::preset::largest_image);
-                device.enable_stream(rs::stream::infrared2, rs::preset::largest_image);
+                device.enable_stream(rs::stream::color, 1920, 1080, rs::format::rgb8, 60);
                 break;
             case 6:
-                device.enable_stream(rs::stream::infrared, rs::preset::best_quality);
-                device.enable_stream(rs::stream::infrared2, rs::preset::best_quality);
+                device.enable_stream(rs::stream::depth, rs::preset::largest_image);
                 break;
             case 7:
-                device.enable_stream(rs::stream::depth, rs::preset::best_quality);
+                device.enable_stream(rs::stream::depth, 480, 360, rs::format::z16, 60);
                 break;
             case 8:
-                device.enable_stream(rs::stream::color, rs::preset::best_quality);
+                device.enable_stream(rs::stream::depth, 320, 240, rs::format::z16, 60);
                 break;
             case 9:
+                device.enable_stream(rs::stream::infrared, rs::preset::largest_image);
+                break;
+            case 10:
+                device.enable_stream(rs::stream::infrared, 492, 372, rs::format::y8, 60);
+                break;
+            case 11:
+                device.enable_stream(rs::stream::infrared, 320, 240, rs::format::y8, 60);
+                break;
+            case 12:
+                device.enable_stream(rs::stream::infrared, 0, 0, rs::format::y16, 60);
+                break;
+            case 13:
+                device.enable_stream(rs::stream::infrared, 0, 0, rs::format::y8, 60);
+                device.enable_stream(rs::stream::infrared2, 0, 0, rs::format::y8, 60);
+                break;
+            case 14:
+                device.enable_stream(rs::stream::infrared, 0, 0, rs::format::y16, 60);
+                device.enable_stream(rs::stream::infrared2, 0, 0, rs::format::y16, 60);
+                break;
+            case 15:
+                device.enable_stream(rs::stream::depth, rs::preset::best_quality);
+                device.enable_stream(rs::stream::infrared, 0, 0, rs::format::y8, 0);
+                break;
+            case 16:
                 device.enable_stream(rs::stream::depth, rs::preset::best_quality);
                 device.enable_stream(rs::stream::infrared, 0, 0, rs::format::y16, 0);
                 break;
-            case 10:
-                device.enable_stream(rs::stream::infrared, 0, 0, rs::format::y16, 0);
+            case 17:
+                device.enable_stream(rs::stream::depth, rs::preset::best_quality);
+                device.enable_stream(rs::stream::color, rs::preset::best_quality);
+                break;
+            case 18:
+                device.enable_stream(rs::stream::depth, rs::preset::best_quality);
+                device.enable_stream(rs::stream::color, rs::preset::best_quality);
+                device.enable_stream(rs::stream::infrared, rs::preset::best_quality);
+                break;
+            case 19:
+                device.enable_stream(rs::stream::depth, rs::preset::best_quality);
+                device.enable_stream(rs::stream::color, rs::preset::best_quality);
+                device.enable_stream(rs::stream::infrared, rs::preset::best_quality);
+                device.enable_stream(rs::stream::infrared2, rs::preset::best_quality);
                 break;
             }
 

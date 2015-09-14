@@ -133,7 +133,7 @@ void rs_device::wait_all_streams()
     if(!capturing) return;
 
     // Determine timeout time
-    const auto timeout = std::max(std::chrono::high_resolution_clock::now() + std::chrono::milliseconds(250), capture_started + std::chrono::seconds(2));
+    const auto timeout = std::max(std::chrono::high_resolution_clock::now() + std::chrono::milliseconds(500), capture_started + std::chrono::seconds(5));
 
     // Check if any of our streams do not have data yet, if so, wait for them to have data, and remember that we are on the first frame
     bool first_frame = false;
