@@ -1,5 +1,6 @@
 #include "f200.h"
 #include "f200-private.h"
+#include "image.h"
 
 namespace rsimpl
 {
@@ -8,7 +9,7 @@ namespace rsimpl
     struct inzi_pixel { uint16_t value; uint16_t empty; };
     #pragma pack(pop)
 
-    void unpack_inri_to_z16_and_y8(void * dest[], const subdevice_mode & mode, const void * frame)
+    void unpack_inri_to_z16_and_y8(void * dest[], const void * frame, const subdevice_mode & mode)
     {
         auto in = reinterpret_cast<const inri_pixel *>(frame);
         auto out_depth = reinterpret_cast<uint16_t *>(dest[0]);
@@ -25,7 +26,7 @@ namespace rsimpl
         }
     }
 
-    void unpack_inzi_to_z16_and_y16(void * dest[], const subdevice_mode & mode, const void * frame)
+    void unpack_inzi_to_z16_and_y16(void * dest[], const void * frame, const subdevice_mode & mode)
     {
         auto in = reinterpret_cast<const inzi_pixel *>(frame);
         auto out_depth = reinterpret_cast<uint16_t *>(dest[0]);
@@ -52,7 +53,7 @@ namespace rsimpl
         }
     }
 
-    void unpack_inzi_to_z16_and_y8(void * dest[], const subdevice_mode & mode, const void * frame)
+    void unpack_inzi_to_z16_and_y8(void * dest[], const void * frame, const subdevice_mode & mode)
     {
         auto in = reinterpret_cast<const inzi_pixel *>(frame);
         auto out_depth = reinterpret_cast<uint16_t *>(dest[0]);
@@ -114,17 +115,17 @@ namespace rsimpl
 
         // Color modes on subdevice 0
         info.stream_subdevices[RS_STREAM_COLOR] = 0;
-        info.subdevice_modes.push_back({0,  640,  480, 'YUY2', 60, {{RS_STREAM_COLOR, 640, 480, RS_FORMAT_YUYV, 60, COLOR_VGA}}, &unpack_strided_image, &decode_ivcam_frame_number});
-        info.subdevice_modes.push_back({0, 1920, 1080, 'YUY2', 60, {{RS_STREAM_COLOR, 1920, 1080, RS_FORMAT_YUYV, 60, COLOR_HD}}, &unpack_strided_image, &decode_ivcam_frame_number});
+        info.subdevice_modes.push_back({0,  640,  480, 'YUY2', 60, {{RS_STREAM_COLOR, 640, 480, RS_FORMAT_YUYV, 60, COLOR_VGA}}, &unpack_subrect, &decode_ivcam_frame_number});
+        info.subdevice_modes.push_back({0, 1920, 1080, 'YUY2', 60, {{RS_STREAM_COLOR, 1920, 1080, RS_FORMAT_YUYV, 60, COLOR_HD}}, &unpack_subrect, &decode_ivcam_frame_number});
 
         // Depth and IR modes on subdevice 1
         info.stream_subdevices[RS_STREAM_DEPTH] = 1;
         info.stream_subdevices[RS_STREAM_INFRARED] = 1;
-        info.subdevice_modes.push_back({1, 640, 480, 'INVR', 60, {{RS_STREAM_DEPTH, 640, 480, RS_FORMAT_Z16, 60, DEPTH_VGA}}, &unpack_strided_image, &decode_ivcam_frame_number});
-        info.subdevice_modes.push_back({1, 640, 240, 'INVR', 60, {{RS_STREAM_DEPTH, 320, 240, RS_FORMAT_Z16, 60, DEPTH_QVGA}}, &unpack_strided_image, &decode_ivcam_frame_number});
+        info.subdevice_modes.push_back({1, 640, 480, 'INVR', 60, {{RS_STREAM_DEPTH, 640, 480, RS_FORMAT_Z16, 60, DEPTH_VGA}}, &unpack_subrect, &decode_ivcam_frame_number});
+        info.subdevice_modes.push_back({1, 640, 240, 'INVR', 60, {{RS_STREAM_DEPTH, 320, 240, RS_FORMAT_Z16, 60, DEPTH_QVGA}}, &unpack_subrect, &decode_ivcam_frame_number});
 
-        info.subdevice_modes.push_back({1, 640, 480, 'INVI', 60, {{RS_STREAM_INFRARED, 640, 480, RS_FORMAT_Y8, 60, DEPTH_VGA}}, &unpack_strided_image, &decode_ivcam_frame_number});
-        info.subdevice_modes.push_back({1, 640, 240, 'INVI', 60, {{RS_STREAM_INFRARED, 320, 240, RS_FORMAT_Y8, 60, DEPTH_QVGA}}, &unpack_strided_image, &decode_ivcam_frame_number});
+        info.subdevice_modes.push_back({1, 640, 480, 'INVI', 60, {{RS_STREAM_INFRARED, 640, 480, RS_FORMAT_Y8, 60, DEPTH_VGA}}, &unpack_subrect, &decode_ivcam_frame_number});
+        info.subdevice_modes.push_back({1, 640, 240, 'INVI', 60, {{RS_STREAM_INFRARED, 320, 240, RS_FORMAT_Y8, 60, DEPTH_QVGA}}, &unpack_subrect, &decode_ivcam_frame_number});
 
         info.subdevice_modes.push_back({1, 640, 480, 'INRI', 60, {{RS_STREAM_DEPTH,    640, 480, RS_FORMAT_Z16, 60, DEPTH_VGA},
                                                                   {RS_STREAM_INFRARED, 640, 480, RS_FORMAT_Y8,  60, DEPTH_VGA}}, &unpack_inri_to_z16_and_y8, &decode_ivcam_frame_number});
@@ -164,11 +165,11 @@ namespace rsimpl
         info.name = {"Intel RealSense SR300"};
 		
 		info.stream_subdevices[RS_STREAM_COLOR] = 0;
-		info.subdevice_modes.push_back({0, 640, 480, 'YUY2', 60, {{RS_STREAM_COLOR, 640, 480, RS_FORMAT_YUYV, 60, COLOR_VGA}}, &unpack_strided_image, &decode_ivcam_frame_number});
+		info.subdevice_modes.push_back({0, 640, 480, 'YUY2', 60, {{RS_STREAM_COLOR, 640, 480, RS_FORMAT_YUYV, 60, COLOR_VGA}}, &unpack_subrect, &decode_ivcam_frame_number});
 
 		info.stream_subdevices[RS_STREAM_DEPTH] = 1;
         info.stream_subdevices[RS_STREAM_INFRARED] = 1;
-        info.subdevice_modes.push_back({1, 640, 480, 'INVZ', 60, {{RS_STREAM_DEPTH,    640, 480, RS_FORMAT_Z16, 60, DEPTH_VGA}}, &unpack_strided_image, &decode_ivcam_frame_number});
+        info.subdevice_modes.push_back({1, 640, 480, 'INVZ', 60, {{RS_STREAM_DEPTH,    640, 480, RS_FORMAT_Z16, 60, DEPTH_VGA}}, &unpack_subrect, &decode_ivcam_frame_number});
         info.subdevice_modes.push_back({1, 640, 480, 'INZI', 60, {{RS_STREAM_DEPTH,    640, 480, RS_FORMAT_Z16, 60, DEPTH_VGA},
                                                                   {RS_STREAM_INFRARED, 640, 480, RS_FORMAT_Y16, 60, DEPTH_VGA}}, &unpack_inzi_to_z16_and_y16, &decode_ivcam_frame_number});
         info.subdevice_modes.push_back({1, 640, 480, 'INZI', 60, {{RS_STREAM_DEPTH,    640, 480, RS_FORMAT_Z16, 60, DEPTH_VGA},

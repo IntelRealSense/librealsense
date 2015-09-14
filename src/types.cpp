@@ -110,47 +110,9 @@ namespace rsimpl
         #undef CASE
     }
 
-    void unpack_strided_image(void * dest[], const subdevice_mode & mode, const void * source)
-    {
-        assert(mode.streams.size() == 1);
-        copy_strided_image(dest[0], get_image_size(mode.streams[0].width, 1, mode.streams[0].format), source, get_image_size(mode.width, 1, mode.streams[0].format), mode.streams[0].height);
-    }
-
-    void unpack_y12i_to_y8(void * dest[], const subdevice_mode & mode, const void * frame)
-    {
-        assert(mode.fourcc == 'Y12I' && mode.streams.size() == 2 && mode.streams[0].format == RS_FORMAT_Y8 && mode.streams[1].format == RS_FORMAT_Y8);
-        convert_y12i_to_y8_y8(dest[0], dest[1], mode.streams[0].width, mode.streams[0].height, frame, 3*mode.width);
-    }
-
-    void unpack_y12i_to_y16(void * dest[], const subdevice_mode & mode, const void * frame)
-    {
-        assert(mode.fourcc == 'Y12I' && mode.streams.size() == 2 && mode.streams[0].format == RS_FORMAT_Y16 && mode.streams[1].format == RS_FORMAT_Y16);
-        convert_y12i_to_y16_y16(dest[0], dest[1], mode.streams[0].width, mode.streams[0].height, frame, 3*mode.width);
-    }
-
-    void unpack_yuyv_to_rgb(void * dest[], const subdevice_mode & mode, const void * source)
-    {
-        assert(mode.fourcc == 'YUY2' && mode.streams.size() == 1 && mode.streams[0].format == RS_FORMAT_RGB8);
-        convert_yuyv_to_rgb(dest[0], mode.width, mode.height, source);
-    }
-
-    void unpack_yuyv_to_rgba(void * dest[], const subdevice_mode & mode, const void * source)
-    {
-        assert(mode.fourcc == 'YUY2' && mode.streams.size() == 1 && mode.streams[0].format == RS_FORMAT_RGBA8);
-        convert_yuyv_to_rgba(dest[0], mode.width, mode.height, source);
-    }
-
-    void unpack_yuyv_to_bgr(void * dest[], const subdevice_mode & mode, const void * source)
-    {
-        assert(mode.fourcc == 'YUY2' && mode.streams.size() == 1 && mode.streams[0].format == RS_FORMAT_BGR8);
-        convert_yuyv_to_bgr(dest[0], mode.width, mode.height, source);
-    }
-
-    void unpack_yuyv_to_bgra(void * dest[], const subdevice_mode & mode, const void * source)
-    {
-        assert(mode.fourcc == 'YUY2' && mode.streams.size() == 1 && mode.streams[0].format == RS_FORMAT_BGRA8);
-        convert_yuyv_to_bgra(dest[0], mode.width, mode.height, source);
-    }
+    ////////////////////////
+    // static_device_info //
+    ////////////////////////
 
     static_device_info::static_device_info()
     {
@@ -247,6 +209,10 @@ namespace rsimpl
         for(int i = 0; i < num_subdevices; ++i) if(auto * m = select_mode(requests, i)) selected_modes.push_back(*m);
         return selected_modes;
     }
+
+    ///////////////////
+    // stream_buffer //
+    ///////////////////
 
     bool stream_buffer::swap_front()
     {

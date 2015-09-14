@@ -2,15 +2,17 @@
 #ifndef LIBREALSENSE_IMAGE_H
 #define LIBREALSENSE_IMAGE_H
 
+#include "types.h"
+
 namespace rsimpl
 {
-    void copy_strided_image(void * dest_image, int dest_stride, const void * source_image, int source_stride, int rows);
-    void convert_yuyv_to_rgb(void * dest_image, int width, int height, const void * source_image);
-    void convert_yuyv_to_rgba(void * dest_image, int width, int height, const void * source_image);
-    void convert_yuyv_to_bgr(void * dest_image, int width, int height, const void * source_image);
-    void convert_yuyv_to_bgra(void * dest_image, int width, int height, const void * source_image);
-    void convert_y12i_to_y8_y8(void * dest_left, void * dest_right, int width, int height, const void * source_image, int source_stride);
-    void convert_y12i_to_y16_y16(void * dest_left, void * dest_right, int width, int height, const void * source_image, int source_stride);
+    void unpack_subrect             (void * dest[], const void * source, const subdevice_mode & mode);
+    void unpack_y8_y8_from_y12i     (void * dest[], const void * source, const subdevice_mode & mode);
+    void unpack_y16_y16_from_y12i   (void * dest[], const void * source, const subdevice_mode & mode);
+    void unpack_rgb_from_yuy2       (void * dest[], const void * source, const subdevice_mode & mode);
+    void unpack_rgba_from_yuy2      (void * dest[], const void * source, const subdevice_mode & mode);
+    void unpack_bgr_from_yuy2       (void * dest[], const void * source, const subdevice_mode & mode);
+    void unpack_bgra_from_yuy2      (void * dest[], const void * source, const subdevice_mode & mode);
 }
 
 #endif
