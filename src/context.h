@@ -11,7 +11,6 @@ struct rs_context
     std::vector<std::shared_ptr<rs_device>>         devices;
 
                                                     rs_context();
-                                                    ~rs_context();
 };
 
 #endif

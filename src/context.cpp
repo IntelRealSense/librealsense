@@ -3,11 +3,8 @@
 #include "r200.h"
 #include "f200.h"
 
-#include <thread>
-
-rs_context::rs_context()
+rs_context::rs_context() : context(rsimpl::uvc::context::create())
 {
-    context = rsimpl::uvc::context::create();
     for(auto device : context.query_devices())
     {
         switch(device.get_product_id())
@@ -19,8 +16,3 @@ rs_context::rs_context()
     }
 }
 
-rs_context::~rs_context()
-{
-    devices.clear(); // tear down cameras before context
-    std::this_thread::sleep_for(std::chrono::milliseconds(500));
-}
