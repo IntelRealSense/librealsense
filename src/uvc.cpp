@@ -4,6 +4,8 @@
 #include "libuvc/libuvc.h"
 #include "libuvc/libuvc_internal.h" // For LibUSB punchthrough
 
+#include <thread>
+
 namespace rsimpl
 {
     namespace uvc
@@ -11,6 +13,46 @@ namespace rsimpl
         static void check(const char * call, uvc_error_t status)
         {
             if (status < 0) throw std::runtime_error(to_string() << call << "(...) returned " << uvc_strerror(status));
+        }
+        #define CALL_UVC(name, ...) check(#name, name(__VA_ARGS__))
+
+        struct device_ref { int vid, pid; std::string serial_no; };
+
+        std::vector<device_ref> enumerate_devices(uvc_context * context)
+        {
+            std::vector<device_ref> refs;
+            uvc_device_t ** list;
+            CALL_UVC(uvc_get_device_list, context, &list);
+            for(auto it = list; *it; ++it)
+            {
+                uvc_device_descriptor_t * desc;
+                CALL_UVC(uvc_get_device_descriptor, *it, &desc);
+                refs.push_back({desc->idVendor, desc->idProduct, desc->serialNumber});
+                uvc_free_device_descriptor(desc);
+            }
+            uvc_free_device_list(list, 1);
+            return refs;
+        }
+
+        uvc_device_t * create_device(uvc_context * context, const device_ref & ref)
+        {
+            uvc_device_t * device = nullptr;
+            uvc_device_t ** list;
+            CALL_UVC(uvc_get_device_list, context, &list);
+            for(auto it = list; *it; ++it)
+            {
+                uvc_device_descriptor_t * desc;
+                CALL_UVC(uvc_get_device_descriptor, *it, &desc);
+                if(desc->idVendor == ref.vid && desc->idProduct == ref.pid && desc->serialNumber == ref.serial_no)
+                {
+                    device = *it;
+                    uvc_ref_device(device);
+                }
+                uvc_free_device_descriptor(desc);
+                if(device) break;
+            }
+            uvc_free_device_list(list, 1);
+            return device;
         }
 
         struct context::_impl
@@ -31,18 +73,17 @@ namespace rsimpl
         struct device::_impl
         {
             std::shared_ptr<context::_impl> parent;
+            device_ref ref;
             uvc_device_t * device;
-            uvc_device_descriptor_t * desc;
             std::vector<subdevice> subdevices;
             std::vector<int> claimed_interfaces;
 
-            _impl() : device(), desc() {}
-            _impl(std::shared_ptr<context::_impl> parent, uvc_device_t * device) : _impl()
+            _impl() : device() {}
+            _impl(std::shared_ptr<context::_impl> parent, device_ref ref) : _impl()
             {
                 this->parent = parent;
-                this->device = device;
-                uvc_ref_device(device);
-                check("uvc_get_device_descriptor", uvc_get_device_descriptor(device, &desc));
+                this->ref = ref;
+                this->device = create_device(parent->ctx, ref);
             }
             ~_impl()
             {
@@ -53,7 +94,6 @@ namespace rsimpl
                 }
 
                 for(auto & sub : subdevices) if(sub.handle) uvc_close(sub.handle);
-                if(desc) uvc_free_device_descriptor(desc);
                 if(device) uvc_unref_device(device);
             }
 
@@ -69,8 +109,8 @@ namespace rsimpl
         // device //
         ////////////
 
-        int device::get_vendor_id() const { return impl->desc->idVendor; }
-        int device::get_product_id() const { return impl->desc->idProduct; }
+        int device::get_vendor_id() const { return impl->ref.vid; }
+        int device::get_product_id() const { return impl->ref.pid; }
 
         void device::get_control(uint8_t unit, uint8_t ctrl, void * data, int len) const
         {
@@ -124,17 +164,31 @@ namespace rsimpl
 
         void device::stop_streaming()
         {
+            // Stop all streaming
             for(auto & sub : impl->subdevices)
             {
-                if(sub.handle)
-                {
-                    uvc_stop_streaming(sub.handle);
-                    //uvc_close(sub.handle);
-                    //sub.handle = nullptr;
-                }
+                if(sub.handle) uvc_stop_streaming(sub.handle);
                 sub.ctrl = {};
                 sub.callback = {};
             }
+
+            // SW reset
+            if(impl->ref.pid == 2688)
+            {
+                uint8_t reset = 1;
+                const int CAMERA_XU_UNIT_ID = 2;
+                const int CONTROL_SW_RESET = 16;
+                uvc_set_ctrl(impl->get_subdevice(0).handle, CAMERA_XU_UNIT_ID, CONTROL_SW_RESET, &reset, sizeof(reset));
+            }
+
+            // NOTE: We are explicitly NOT calling uvc_close(...) for each subdevice handle
+            for(auto & sub : impl->subdevices) sub.handle = nullptr;
+
+            // Attempt to recreate the device
+            uvc_unref_device(impl->device);
+            std::this_thread::sleep_for(std::chrono::seconds(2));
+            impl->device = create_device(impl->parent->ctx, impl->ref);
+            if(!impl->device) throw std::runtime_error("software reset failed");
         }
 
         /////////////
@@ -148,14 +202,11 @@ namespace rsimpl
 
         std::vector<device> context::query_devices()
         {
-            uvc_device_t ** list;
-            check("uvc_get_device_list", uvc_get_device_list(impl->ctx, &list));
             std::vector<device> devices;
-            for(auto it = list; *it; ++it)
+            for(auto ref : enumerate_devices(impl->ctx))
             {
-                devices.push_back({std::make_shared<device::_impl>(impl, *it)});
-            }
-            uvc_free_device_list(list, 1);
+                devices.push_back({std::make_shared<device::_impl>(impl, ref)});
+            };
             return devices;
         }
     }
