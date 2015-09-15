@@ -130,7 +130,7 @@ namespace rsimpl
 
     r200_camera::r200_camera(uvc::device device) : rs_device(device)
     {
-		device_info = add_standard_unpackers(get_r200_info(device));
+        device_info = add_standard_unpackers(get_r200_info(device));
     }
     
     r200_camera::~r200_camera()

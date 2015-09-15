@@ -148,11 +148,11 @@ namespace rsimpl
     {
         static_device_info info;
         info.name = {"Intel RealSense SR300"};
-		
-		info.stream_subdevices[RS_STREAM_COLOR] = 0;
-		info.subdevice_modes.push_back({0, 640, 480, 'YUY2', 60, {{RS_STREAM_COLOR, 640, 480, RS_FORMAT_YUYV, 60, COLOR_VGA}}, &unpack_subrect, &decode_ivcam_frame_number});
+        
+        info.stream_subdevices[RS_STREAM_COLOR] = 0;
+        info.subdevice_modes.push_back({0, 640, 480, 'YUY2', 60, {{RS_STREAM_COLOR, 640, 480, RS_FORMAT_YUYV, 60, COLOR_VGA}}, &unpack_subrect, &decode_ivcam_frame_number});
 
-		info.stream_subdevices[RS_STREAM_DEPTH] = 1;
+        info.stream_subdevices[RS_STREAM_DEPTH] = 1;
         info.stream_subdevices[RS_STREAM_INFRARED] = 1;
         info.subdevice_modes.push_back({1, 640, 480, 'INVZ', 60, {{RS_STREAM_DEPTH,    640, 480, RS_FORMAT_Z16, 60, DEPTH_VGA}}, &unpack_subrect, &decode_ivcam_frame_number});
         info.subdevice_modes.push_back({1, 640, 480, 'INZI', 60, {{RS_STREAM_DEPTH,    640, 480, RS_FORMAT_Z16, 60, DEPTH_VGA},
@@ -160,14 +160,14 @@ namespace rsimpl
         info.subdevice_modes.push_back({1, 640, 480, 'INZI', 60, {{RS_STREAM_DEPTH,    640, 480, RS_FORMAT_Z16, 60, DEPTH_VGA},
                                                                   {RS_STREAM_INFRARED, 640, 480, RS_FORMAT_Y8,  60, DEPTH_VGA}}, &unpack_inzi_to_z16_and_y8, &decode_ivcam_frame_number});
 
-		for(int i=0; i<RS_PRESET_COUNT; ++i)
-		{
-			info.presets[RS_STREAM_COLOR   ][i] = {true, 640, 480, RS_FORMAT_RGB8, 60};
-			info.presets[RS_STREAM_DEPTH   ][i] = {true, 640, 480, RS_FORMAT_Z16, 60};
+        for(int i=0; i<RS_PRESET_COUNT; ++i)
+        {
+            info.presets[RS_STREAM_COLOR   ][i] = {true, 640, 480, RS_FORMAT_RGB8, 60};
+            info.presets[RS_STREAM_DEPTH   ][i] = {true, 640, 480, RS_FORMAT_Z16, 60};
             info.presets[RS_STREAM_INFRARED][i] = {true, 640, 480, RS_FORMAT_Y16, 60};
-		}
+        }
 
-		const f200::CameraCalibrationParameters & c = io.GetParameters();
+        const f200::CameraCalibrationParameters & c = io.GetParameters();
         info.intrinsics.resize(NUM_INTRINSICS);
         info.intrinsics[COLOR_VGA] = MakeColorIntrinsics(c, 640, 480);
         info.intrinsics[DEPTH_VGA] = MakeDepthIntrinsics(c, 640, 480);
@@ -179,9 +179,9 @@ namespace rsimpl
 
     f200_camera::f200_camera(uvc::device device, bool sr300) : rs_device(device)
     {
-		hardware_io.reset(new f200::IVCAMHardwareIO(device, sr300));
+        hardware_io.reset(new f200::IVCAMHardwareIO(device, sr300));
         if(sr300) device_info = add_standard_unpackers(get_sr300_info(*hardware_io));
-		else device_info = add_standard_unpackers(get_f200_info(*hardware_io));
+        else device_info = add_standard_unpackers(get_f200_info(*hardware_io));
     }
 
     f200_camera::~f200_camera()

@@ -8,7 +8,7 @@
 #include "stdint.h"
 #include "stdio.h"
 
-char * concat_path(char * a, const char * b)
+char * concat_path(const char * a, const char * b)
 {
     char * aux = (char *) malloc(1 + strlen(a) + strlen(b));
     strcpy(aux, a);

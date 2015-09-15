@@ -137,16 +137,16 @@ namespace rsimpl { namespace f200
 
     void IVCAMHardwareIO::GetCalibrationRawData(IVCAMDataSource src, uint8_t * data, size_t & bytesReturned)
     {
-		IVCAMCommand command(IVCAMMonitorCommand::GetCalibrationTable);
-		command.Param1 = (uint32_t) src;
+        IVCAMCommand command(IVCAMMonitorCommand::GetCalibrationTable);
+        command.Param1 = (uint32_t) src;
 
-		bool result = PerfomAndSendHWmonitorCommand(command);
-		if (result)
-		{
-			memcpy(data, command.receivedCommandData, HW_MONITOR_BUFFER_SIZE);
-			bytesReturned = command.receivedCommandDataLength;
-		}
-	}
+        bool result = PerfomAndSendHWmonitorCommand(command);
+        if (result)
+        {
+            memcpy(data, command.receivedCommandData, HW_MONITOR_BUFFER_SIZE);
+            bytesReturned = command.receivedCommandDataLength;
+        }
+    }
 
     /*void IVCAMHardwareIO::GetCalibrationRawData(uint8_t * data, size_t & bytesReturned)
     {
@@ -171,7 +171,7 @@ namespace rsimpl { namespace f200
 
         int ver = getVersionOfCalibration(bufParams, bufParams + 2);
 
-		DEBUG_OUT("######## Calibration Version: " << ver);
+        DEBUG_OUT("######## Calibration Version: " << ver);
 
         if (ver == IVCAM_MIN_SUPPORTED_VERSION)
         {
@@ -312,20 +312,20 @@ namespace rsimpl { namespace f200
         data.LiguriaTemp = memsTemp;
     }
 
-	bool IVCAMHardwareIO::GetFwLastError(FirmwareError & error)
-	{
-		IVCAMCommand cmd(IVCAMMonitorCommand::GetFWLastError);
+    bool IVCAMHardwareIO::GetFwLastError(FirmwareError & error)
+    {
+        IVCAMCommand cmd(IVCAMMonitorCommand::GetFWLastError);
         memset(cmd.data, 0, 4);
 
-		bool result = PerfomAndSendHWmonitorCommand(cmd);
+        bool result = PerfomAndSendHWmonitorCommand(cmd);
 
-		if (result)
-		{
-			auto fwError = *reinterpret_cast<FirmwareError *>(cmd.receivedCommandData);
-		}
+        if (result)
+        {
+            auto fwError = *reinterpret_cast<FirmwareError *>(cmd.receivedCommandData);
+        }
 
-		return false;
-	}
+        return false;
+    }
 
     bool IVCAMHardwareIO::PerfomAndSendHWmonitorCommand(IVCAMCommand & newCommand)
     {
@@ -411,7 +411,7 @@ namespace rsimpl { namespace f200
             MEMStemp /= 100;
             return true;
          }
-		 else return false;
+         else return false;
     }
 
     bool IVCAMHardwareIO::GetIRtemp(int & IRtemp)
@@ -430,7 +430,7 @@ namespace rsimpl { namespace f200
             IRtemp = (int8_t) command.receivedCommandData[0];
             return true;
         }
-		else return false;
+        else return false;
     }
 
     bool IVCAMHardwareIO::UpdateASICCoefs(IVCAMASICCoefficients * coeffs)
@@ -600,7 +600,7 @@ namespace rsimpl { namespace f200
     
     void IVCAMHardwareIO::StartTempCompensationLoop()
     {
-		runTemperatureThread = true;
+        runTemperatureThread = true;
         temperatureThread = std::thread(&IVCAMHardwareIO::TemperatureControlLoop, this);
     }
 
@@ -637,7 +637,7 @@ namespace rsimpl { namespace f200
                 }
             }
             catch(...) { DEBUG_OUT("temperature read failed"); }
-			
+            
             temperatureCv.wait_for(lock, std::chrono::seconds(10));
         }
     }
@@ -649,29 +649,29 @@ namespace rsimpl { namespace f200
 
         // Grab binary blob from the camera - SR300 - firmware gets the data from different stores
         uint8_t rawCalibrationBuffer[HW_MONITOR_BUFFER_SIZE];
-        size_t bufferLength = HW_MONITOR_BUFFER_SIZE;		
+        size_t bufferLength = HW_MONITOR_BUFFER_SIZE;       
         GetCalibrationRawData(sr300 ? IVCAMDataSource::TakeFromRAM : IVCAMDataSource::TakeFromRW, rawCalibrationBuffer, bufferLength);
 
         calibration.reset(new IVCAMCalibrator);
 
-		CameraCalibrationParameters calibratedParameters;
-		if (sr300)
-		{
-			SR300RawCalibration rawCalib;
-			memcpy(&rawCalib, rawCalibrationBuffer, bufferLength);
-			calibratedParameters = rawCalib.CalibrationParameters;
-		}
+        CameraCalibrationParameters calibratedParameters;
+        if (sr300)
+        {
+            SR300RawCalibration rawCalib;
+            memcpy(&rawCalib, rawCalibrationBuffer, bufferLength);
+            calibratedParameters = rawCalib.CalibrationParameters;
+        }
         ProjectionCalibrate(rawCalibrationBuffer, (int) bufferLength, &calibratedParameters);
 
         parameters = calibratedParameters;
 
-		StartTempCompensationLoop();
+        StartTempCompensationLoop();
     }
 
-	IVCAMHardwareIO::~IVCAMHardwareIO()
-	{
-		StopTempCompensationLoop();
-	}
+    IVCAMHardwareIO::~IVCAMHardwareIO()
+    {
+        StopTempCompensationLoop();
+    }
 
     ////////////////////////////////////
     // IVCAMCalibrator Implementation //
