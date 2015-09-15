@@ -246,7 +246,7 @@ struct uvc_stream_handle {
   struct libusb_transfer *transfers[LIBUVC_NUM_TRANSFER_BUFS];
   uint8_t *transfer_bufs[LIBUVC_NUM_TRANSFER_BUFS];
   struct uvc_frame frame;
-  enum uvc_frame_format frame_format;
+  uint32_t fourcc;
 };
 
 /** Handle on an open UVC device

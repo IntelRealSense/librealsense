@@ -72,110 +72,13 @@ uvc_frame_desc_t *uvc_find_frame_desc(uvc_device_handle_t *devh,
 void *_uvc_user_caller(void *arg);
 void _uvc_populate_frame(uvc_stream_handle_t *strmh);
 
-struct format_table_entry {
-  enum uvc_frame_format format;
-  uint8_t abstract_fmt;
-  uint8_t guid[16];
-  int children_count;
-  enum uvc_frame_format *children;
-};
 
-struct format_table_entry *_get_format_entry(enum uvc_frame_format format) {
-  #define ABS_FMT(_fmt, _num, ...) \
-    case _fmt: { \
-    static enum uvc_frame_format _fmt##_children[] = __VA_ARGS__; \
-    static struct format_table_entry _fmt##_entry = { \
-      _fmt, 0, {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}, _num, _fmt##_children }; \
-    return &_fmt##_entry; }
-
-  #define FMT(_fmt, ...) \
-    case _fmt: { \
-    static struct format_table_entry _fmt##_entry = { \
-      _fmt, 0, __VA_ARGS__, 0, NULL }; \
-    return &_fmt##_entry; }
-
-  switch(format) {
-        /* Define new formats here */
-        ABS_FMT(UVC_FRAME_FORMAT_ANY, 2,
-        {UVC_FRAME_FORMAT_UNCOMPRESSED, UVC_FRAME_FORMAT_COMPRESSED})
-
-        ABS_FMT(UVC_FRAME_FORMAT_UNCOMPRESSED, 3,
-        {UVC_FRAME_FORMAT_Y12I, UVC_FRAME_FORMAT_Y16, UVC_FRAME_FORMAT_Y8, UVC_FRAME_FORMAT_Z16, UVC_FRAME_FORMAT_YUYV, UVC_FRAME_FORMAT_UYVY, UVC_FRAME_FORMAT_GRAY8})
-        FMT(UVC_FRAME_FORMAT_Y12I,
-        {'Y',  '1',  '2',  'I', 0x00, 0x00, 0x10, 0x00, 0x80, 0x00, 0x00, 0xaa, 0x00, 0x38, 0x9b, 0x71})
-        FMT(UVC_FRAME_FORMAT_Y16,
-        {'Y',  '1',  '6',  ' ', 0x00, 0x00, 0x10, 0x00, 0x80, 0x00, 0x00, 0xaa, 0x00, 0x38, 0x9b, 0x71})
-        FMT(UVC_FRAME_FORMAT_Y8,
-        {'Y',  '8',  ' ',  ' ', 0x00, 0x00, 0x10, 0x00, 0x80, 0x00, 0x00, 0xaa, 0x00, 0x38, 0x9b, 0x71})
-        FMT(UVC_FRAME_FORMAT_Z16,
-        {'Z',  '1',  '6',  ' ', 0x00, 0x00, 0x10, 0x00, 0x80, 0x00, 0x00, 0xaa, 0x00, 0x38, 0x9b, 0x71})
-        FMT(UVC_FRAME_FORMAT_YUYV,
-        {'Y',  'U',  'Y',  '2', 0x00, 0x00, 0x10, 0x00, 0x80, 0x00, 0x00, 0xaa, 0x00, 0x38, 0x9b, 0x71})
-        FMT(UVC_FRAME_FORMAT_UYVY,
-        {'U',  'Y',  'V',  'Y', 0x00, 0x00, 0x10, 0x00, 0x80, 0x00, 0x00, 0xaa, 0x00, 0x38, 0x9b, 0x71})
-        FMT(UVC_FRAME_FORMAT_GRAY8,
-        {'Y',  '8',  '0',  '0', 0x00, 0x00, 0x10, 0x00, 0x80, 0x00, 0x00, 0xaa, 0x00, 0x38, 0x9b, 0x71})
-        FMT(UVC_FRAME_FORMAT_BY8,
-        {'B',  'Y',  '8',  ' ', 0x00, 0x00, 0x10, 0x00, 0x80, 0x00, 0x00, 0xaa, 0x00, 0x38, 0x9b, 0x71})
-          
-        FMT(UVC_FRAME_FORMAT_INVI,
-        {'I', 'N', 'V', 'I', 0xdb, 0x57, 0x49, 0x5e, 0x8e, 0x3f, 0xf4, 0x79, 0x53, 0x2b, 0x94, 0x6f})
-        FMT(UVC_FRAME_FORMAT_RELI,
-        {'R', 'E', 'L', 'I', 0x14, 0x13, 0x43, 0xf9, 0xa7, 0x5a, 0xee, 0x6b, 0xbf, 0x01, 0x2e, 0x23})
-        FMT(UVC_FRAME_FORMAT_INVR,
-        {'I', 'N', 'V', 'R', 0x90, 0x2d, 0x58, 0x4a, 0x92, 0x0b, 0x77, 0x3f, 0x1f, 0x2c, 0x55, 0x6b})
-        FMT(UVC_FRAME_FORMAT_INVZ,
-        {'I', 'N', 'V', 'Z', 0x90, 0x2d, 0x58, 0x4a, 0x92, 0x0b, 0x77, 0x3f, 0x1f, 0x2c, 0x55, 0x6b})
-        FMT(UVC_FRAME_FORMAT_INRI,
-        {'I', 'N', 'R', 'I', 0x90, 0x2d, 0x58, 0x4a, 0x92, 0x0b, 0x77, 0x3f, 0x1f, 0x2c, 0x55, 0x6b})
-        FMT(UVC_FRAME_FORMAT_INZI,
-        {'I', 'N', 'Z', 'I', 0x66, 0x1a, 0x42, 0xa2, 0x90, 0x65, 0xd0, 0x18, 0x14, 0xa8, 0xef, 0x8a})
-
-        ABS_FMT(UVC_FRAME_FORMAT_COMPRESSED, 1,
-        {UVC_FRAME_FORMAT_MJPEG})
-        FMT(UVC_FRAME_FORMAT_MJPEG,
-        {'M',  'J',  'P',  'G'})
-
-    default:
-      return NULL;
-  }
-
-  #undef ABS_FMT
-  #undef FMT
+static uint8_t _uvc_frame_format_matches_guid(uint32_t fourcc, uint8_t guid[16]) {
+  return fourcc == *(const uint32_t *)guid ? 1 : 0;
 }
 
-static uint8_t _uvc_frame_format_matches_guid(enum uvc_frame_format fmt, uint8_t guid[16]) {
-  struct format_table_entry *format;
-  int child_idx;
-
-  format = _get_format_entry(fmt);
-  if (!format)
-    return 0;
-
-  if (!format->abstract_fmt && !memcmp(guid, format->guid, 16))
-    return 1;
-
-  for (child_idx = 0; child_idx < format->children_count; child_idx++) {
-    if (_uvc_frame_format_matches_guid(format->children[child_idx], guid))
-      return 1;
-  }
-
-  return 0;
-}
-
-static enum uvc_frame_format uvc_frame_format_for_guid(uint8_t guid[16]) {
-  struct format_table_entry *format;
-  enum uvc_frame_format fmt;
-
-  for (fmt = 0; fmt < UVC_FRAME_FORMAT_COUNT; ++fmt) {
-    format = _get_format_entry(fmt);
-    if (!format || format->abstract_fmt)
-      continue;
-    if (!memcmp(format->guid, guid, 16))
-      return format->format;
-  }
-
-  return UVC_FRAME_FORMAT_UNKNOWN;
+static uint32_t uvc_frame_format_for_guid(uint8_t guid[16]) {
+    return *(const uint32_t *)guid;
 }
 
 /** @internal
@@ -860,11 +763,7 @@ uvc_error_t uvc_stream_start(
   }
   format_desc = frame_desc->parent;
 
-  strmh->frame_format = uvc_frame_format_for_guid(format_desc->guidFormat);
-  if (strmh->frame_format == UVC_FRAME_FORMAT_UNKNOWN) {
-    ret = UVC_ERROR_NOT_SUPPORTED;
-    goto fail;
-  }
+  strmh->fourcc = uvc_frame_format_for_guid(format_desc->guidFormat);
 
   // Get the interface that provides the chosen format and frame configuration
   interface_id = strmh->stream_if->bInterfaceNumber;
@@ -1071,17 +970,14 @@ void _uvc_populate_frame(uvc_stream_handle_t *strmh) {
   frame_desc = uvc_find_frame_desc(strmh->devh, strmh->cur_ctrl.bFormatIndex,
                    strmh->cur_ctrl.bFrameIndex);
 
-  frame->frame_format = strmh->frame_format;
+  frame->fourcc = strmh->fourcc;
   
   frame->width = frame_desc->wWidth;
   frame->height = frame_desc->wHeight;
   
-  switch (frame->frame_format) {
-  case UVC_FRAME_FORMAT_YUYV:
+  switch (frame->fourcc) {
+  case '2YUY': /* YUY2 */
     frame->step = frame->width * 2;
-    break;
-  case UVC_FRAME_FORMAT_MJPEG:
-    frame->step = 0;
     break;
   default:
     frame->step = 0;

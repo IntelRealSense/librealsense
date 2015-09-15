@@ -50,57 +50,6 @@ typedef enum uvc_error {
   UVC_ERROR_OTHER = -99
 } uvc_error_t;
 
-/** Color coding of stream, transport-independent
- * @ingroup streaming
- */
-enum uvc_frame_format {
-    UVC_FRAME_FORMAT_UNKNOWN = 0,
-    /** Any supported format */
-    UVC_FRAME_FORMAT_ANY = 0,
-    UVC_FRAME_FORMAT_UNCOMPRESSED,
-    UVC_FRAME_FORMAT_COMPRESSED,
-    /** YUYV/YUV2/YUV422: YUV encoding with one luminance value per pixel and
-     * one UV (chrominance) pair for every two pixels.
-     */
-    UVC_FRAME_FORMAT_YUYV,
-    UVC_FRAME_FORMAT_UYVY,
-    /** DS4 Depth */
-    UVC_FRAME_FORMAT_Y12I,
-    UVC_FRAME_FORMAT_Y16,
-    UVC_FRAME_FORMAT_Y8,
-    UVC_FRAME_FORMAT_Z16,
-    /** 24-bit RGB */
-    UVC_FRAME_FORMAT_RGB,
-    UVC_FRAME_FORMAT_BGR,
-    /** Motion-JPEG (or JPEG) encoded images */
-    UVC_FRAME_FORMAT_MJPEG,
-    UVC_FRAME_FORMAT_GRAY8,
-    UVC_FRAME_FORMAT_BY8,
-    
-    /** IVCam Depth */
-    UVC_FRAME_FORMAT_INVI, //IR
-    UVC_FRAME_FORMAT_RELI, //IR
-    UVC_FRAME_FORMAT_INVR, //Depth
-    UVC_FRAME_FORMAT_INVZ, //Depth
-    UVC_FRAME_FORMAT_INRI, //Depth (24 bit)
-    UVC_FRAME_FORMAT_INZI, //16-bit depth + 8-bit IR
-    
-    /** Number of formats understood */
-    UVC_FRAME_FORMAT_COUNT,
-};
-
-/* UVC_COLOR_FORMAT_* have been replaced with UVC_FRAME_FORMAT_*. Please use
- * UVC_FRAME_FORMAT_* instead of using these. */
-#define UVC_COLOR_FORMAT_UNKNOWN UVC_FRAME_FORMAT_UNKNOWN
-#define UVC_COLOR_FORMAT_UNCOMPRESSED UVC_FRAME_FORMAT_UNCOMPRESSED
-#define UVC_COLOR_FORMAT_COMPRESSED UVC_FRAME_FORMAT_COMPRESSED
-#define UVC_COLOR_FORMAT_YUYV UVC_FRAME_FORMAT_YUYV
-#define UVC_COLOR_FORMAT_UYVY UVC_FRAME_FORMAT_UYVY
-#define UVC_COLOR_FORMAT_RGB UVC_FRAME_FORMAT_RGB
-#define UVC_COLOR_FORMAT_BGR UVC_FRAME_FORMAT_BGR
-#define UVC_COLOR_FORMAT_MJPEG UVC_FRAME_FORMAT_MJPEG
-#define UVC_COLOR_FORMAT_GRAY8 UVC_FRAME_FORMAT_GRAY8
-
 /** VideoStreaming interface descriptor subtype (A.6) */
 enum uvc_vs_desc_subtype {
   UVC_VS_UNDEFINED = 0x00,
@@ -421,7 +370,7 @@ typedef struct uvc_frame {
   /** Height of image in pixels */
   uint32_t height;
   /** Pixel data format */
-  enum uvc_frame_format frame_format;
+  uint32_t fourcc;
   /** Number of bytes per horizontal line (undefined for compressed format) */
   size_t step;
   /** Frame number (may skip, but is strictly monotonically increasing) */
@@ -701,18 +650,6 @@ uvc_frame_t *uvc_allocate_frame(size_t data_bytes);
 void uvc_free_frame(uvc_frame_t *frame);
 
 uvc_error_t uvc_duplicate_frame(uvc_frame_t *in, uvc_frame_t *out);
-
-uvc_error_t uvc_yuyv2rgb(uvc_frame_t *in, uvc_frame_t *out);
-uvc_error_t uvc_uyvy2rgb(uvc_frame_t *in, uvc_frame_t *out);
-uvc_error_t uvc_any2rgb(uvc_frame_t *in, uvc_frame_t *out);
-
-uvc_error_t uvc_yuyv2bgr(uvc_frame_t *in, uvc_frame_t *out);
-uvc_error_t uvc_uyvy2bgr(uvc_frame_t *in, uvc_frame_t *out);
-uvc_error_t uvc_any2bgr(uvc_frame_t *in, uvc_frame_t *out);
-
-#ifdef LIBUVC_HAS_JPEG
-uvc_error_t uvc_mjpeg2rgb(uvc_frame_t *in, uvc_frame_t *out);
-#endif
 
 #ifdef __cplusplus
 }
