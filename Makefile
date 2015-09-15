@@ -1,5 +1,5 @@
 CFLAGS := -std=c11 -fPIC -pedantic
-CXXFLAGS := -std=c++11 -fPIC -pedantic -Wno-missing-field-initializers -Wno-switch -Wno-multichar
+CXXFLAGS := -std=c++11 -fPIC -pedantic -O3 -Wno-missing-field-initializers -Wno-switch -Wno-multichar
 
 # Compute list of all *.o files that participate in librealsense.so
 OBJECTS = verify
