@@ -1,6 +1,6 @@
 #include <librealsense/rs.hpp>
 #include <librealsense/rsutil.h>
-#include "example.h"
+#include "example.hpp"
 
 #include <chrono>
 #include <vector>
@@ -22,17 +22,13 @@ int main(int argc, char * argv[]) try
         dev = ctx.get_device(i);
         dev.enable_stream(rs::stream::depth, rs::preset::best_quality);
         dev.enable_stream(rs::stream::color, rs::preset::best_quality);
-        try 
-        { 
-            dev.enable_stream(rs::stream::infrared, rs::preset::best_quality);
-            dev.enable_stream(rs::stream::infrared2, rs::preset::best_quality); 
-        } catch(...) {}
+        dev.enable_stream(rs::stream::infrared, rs::preset::best_quality);
+        try { dev.enable_stream(rs::stream::infrared2, rs::preset::best_quality); } catch(...) {}
         dev.start();
     }
     if (!dev) throw std::runtime_error("No device detected. Is it plugged in?");
         
-    state app_state = {0, 0, 0, 0, false, {rs::stream::color}, 0, &dev};
-    if(dev.is_stream_enabled(rs::stream::infrared)) app_state.tex_streams.push_back(rs::stream::infrared);
+    state app_state = {0, 0, 0, 0, false, {rs::stream::color, rs::stream::depth, rs::stream::infrared}, 0, &dev};
     if(dev.is_stream_enabled(rs::stream::infrared2)) app_state.tex_streams.push_back(rs::stream::infrared2);
     
     glfwInit();
@@ -75,10 +71,7 @@ int main(int argc, char * argv[]) try
     });
 
     glfwMakeContextCurrent(win);
-    // glfwSwapInterval(0); // Use this if testing > 60 fps modes
-
-    glPushAttrib(GL_ALL_ATTRIB_BITS);
-
+    
     font font;
     if (auto f = find_file("examples/assets/Roboto-Bold.ttf", 3))
     {
@@ -87,15 +80,7 @@ int main(int argc, char * argv[]) try
     }
     else throw std::runtime_error("Unable to open examples/assets/Roboto-Bold.ttf");
 
-    GLuint tex;
-    glGenTextures(1, &tex);
-    glBindTexture(GL_TEXTURE_2D, tex);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
-
-    glPopAttrib();
+    texture_buffer tex;
 
     int frames = 0; float time = 0, fps = 0;
     auto t0 = std::chrono::high_resolution_clock::now();
@@ -127,14 +112,7 @@ int main(int argc, char * argv[]) try
        
         glPushAttrib(GL_ALL_ATTRIB_BITS);
 
-        glBindTexture(GL_TEXTURE_2D, tex);
-        glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-        switch(dev.get_stream_format(tex_stream))
-        {
-        case rs::format::rgb8: glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, tex_intrin.width(), tex_intrin.height(), 0, GL_RGB, GL_UNSIGNED_BYTE, dev.get_frame_data(tex_stream)); break;
-        case rs::format::y8:   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, tex_intrin.width(), tex_intrin.height(), 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, dev.get_frame_data(tex_stream)); break;
-        case rs::format::y16:  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, tex_intrin.width(), tex_intrin.height(), 0, GL_LUMINANCE, GL_UNSIGNED_SHORT, dev.get_frame_data(tex_stream)); break;
-        }
+        tex.upload(dev, tex_stream);
 
         glViewport(0, 0, width, height);
         glClearColor(52.0f/255, 72.f/255, 94.0f/255.0f, 1);

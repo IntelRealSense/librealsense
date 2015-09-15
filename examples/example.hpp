@@ -13,9 +13,9 @@ class texture_buffer
 public:
     texture_buffer() : texture(), last_timestamp(-1), fps(), num_frames(), next_time(1000) {}
 
-    void show(rs::device & dev, rs::stream stream, int rx, int ry, int rw, int rh, font & font)
+    void upload(rs::device & dev, rs::stream stream)
     {
-        if(!dev.is_stream_enabled(stream)) return;
+        assert(dev.is_stream_enabled(stream));
 
         const rs::intrinsics intrin = dev.get_stream_intrinsics(stream);     
         const int timestamp = dev.get_frame_timestamp(stream);
@@ -62,8 +62,16 @@ public:
                 num_frames = 0;
                 next_time += 1000;
             }
-        }
+        }    
+    }
+
+    void show(rs::device & dev, rs::stream stream, int rx, int ry, int rw, int rh, font & font)
+    {
+        if(!dev.is_stream_enabled(stream)) return;
+
+        upload(dev, stream);
         
+        const rs::intrinsics intrin = dev.get_stream_intrinsics(stream);  
         float h = rh, w = rh * intrin.width() / intrin.height();
         if(w > rw)
         {

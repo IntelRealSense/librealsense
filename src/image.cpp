@@ -152,7 +152,7 @@ namespace rsimpl
 
     void unpack_y8_y8_from_y8i(void * dest[], const void * source, const subdevice_mode & mode)
     {
-        struct y8i_pixel { uint8_t r, l; };
+        struct y8i_pixel { uint8_t l, r; };
         split_frame(dest, mode, reinterpret_cast<const y8i_pixel *>(source), 'Y8I ', RS_FORMAT_Y8, RS_FORMAT_Y8,
             [](const y8i_pixel & p) -> uint8_t { return p.l; },
             [](const y8i_pixel & p) -> uint8_t { return p.r; });
