@@ -430,7 +430,27 @@ namespace rsimpl
             HANDLE usb_file_handle = INVALID_HANDLE_VALUE;
             WINUSB_INTERFACE_HANDLE usb_interface_handle = INVALID_HANDLE_VALUE;
 
-            device(std::shared_ptr<context> parent, int vid, int pid, std::string unique_id) : parent(move(parent)), vid(vid), pid(pid), unique_id(move(unique_id)) {}
+            device(std::shared_ptr<context> parent, int vid, int pid, std::string unique_id) : parent(move(parent)), vid(vid), pid(pid), unique_id(move(unique_id))
+            {
+                // Attempt to retrieve IKsControl
+                com_ptr<IKsTopologyInfo> ks_topology_info = NULL;
+                check("QueryInterface", get_media_source(0)->QueryInterface(__uuidof(IKsTopologyInfo), (void **)&ks_topology_info));
+
+                DWORD num_nodes = 0;
+                check("get_numNodes", ks_topology_info->get_NumNodes(&num_nodes));
+
+                GUID node_type;
+                check("get_nodeType", ks_topology_info->get_NodeType(XUNODEID, &node_type));
+                const GUID KSNODETYPE_DEV_SPECIFIC_LOCAL{0x941C7AC0L, 0xC559, 0x11D0, {0x8A, 0x2B, 0x00, 0xA0, 0xC9, 0x25, 0x5A, 0xC1}};
+
+                if (node_type == KSNODETYPE_DEV_SPECIFIC_LOCAL)
+                {
+                    com_ptr<IUnknown> unknown;
+                    check("CreateNodeInstance", ks_topology_info->CreateNodeInstance(XUNODEID, IID_IUnknown, (LPVOID *)&unknown));
+                    check("QueryInterface", unknown->QueryInterface(__uuidof(IKsControl), (void **)&ks_control));
+                }
+            }
+
             ~device() { stop_streaming(); close_win_usb(); }
 
             void start_streaming()
@@ -602,27 +622,8 @@ namespace rsimpl
                 return result;
             }
 
-            IKsControl * get_control_node()
+            IKsControl * get_control_node() const
             {
-                if(!ks_control)
-                {       
-                    com_ptr<IKsTopologyInfo> ks_topology_info = NULL;
-                    check("QueryInterface", get_media_source(0)->QueryInterface(__uuidof(IKsTopologyInfo), (void **)&ks_topology_info));
-
-                    DWORD num_nodes = 0;
-                    check("get_numNodes", ks_topology_info->get_NumNodes(&num_nodes));
-
-                    GUID node_type;
-                    check("get_nodeType", ks_topology_info->get_NodeType(XUNODEID, &node_type));
-                    const GUID KSNODETYPE_DEV_SPECIFIC_LOCAL{0x941C7AC0L, 0xC559, 0x11D0, {0x8A, 0x2B, 0x00, 0xA0, 0xC9, 0x25, 0x5A, 0xC1}};
-
-                    if (node_type == KSNODETYPE_DEV_SPECIFIC_LOCAL)
-                    {
-                        com_ptr<IUnknown> unknown;
-                        check("CreateNodeInstance", ks_topology_info->CreateNodeInstance(XUNODEID, IID_IUnknown, (LPVOID *)&unknown));
-                        check("QueryInterface", unknown->QueryInterface(__uuidof(IKsControl), (void **)&ks_control));
-                    }
-                }
                 if (!ks_control) throw std::runtime_error("unable to obtain control node");
                 return ks_control;
             }
@@ -665,10 +666,10 @@ namespace rsimpl
         // device //
         ////////////
 
-        int device_ref::get_vendor_id() const { return impl->vid; }
-        int device_ref::get_product_id() const { return impl->pid; }
+        int get_vendor_id(const device & device) { return device.vid; }
+        int get_product_id(const device & device) { return device.pid; }
 
-        void device_ref::get_control(uint8_t unit, uint8_t ctrl, void *data, int len) const
+        void get_control(const device & device, uint8_t unit, uint8_t ctrl, void *data, int len)
         {
             KSP_NODE node;
             memset(&node, 0, sizeof(KSP_NODE));
@@ -678,11 +679,11 @@ namespace rsimpl
             node.NodeId = XUNODEID;
 
             ULONG bytes_received = 0;
-            check("IKsControl::KsProperty", impl->get_control_node()->KsProperty((PKSPROPERTY)&node, sizeof(node), data, len, &bytes_received));
+            check("IKsControl::KsProperty", device.get_control_node()->KsProperty((PKSPROPERTY)&node, sizeof(node), data, len, &bytes_received));
             if(bytes_received != len) throw std::runtime_error("XU read did not return enough data");
         }
 
-        void device_ref::set_control(uint8_t unit, uint8_t ctrl, void *data, int len) const
+        void set_control(device & device, uint8_t unit, uint8_t ctrl, void *data, int len)
         {               
             KSP_NODE node;
             memset(&node, 0, sizeof(KSP_NODE));
@@ -691,31 +692,31 @@ namespace rsimpl
             node.Property.Flags = KSPROPERTY_TYPE_SET | KSPROPERTY_TYPE_TOPOLOGY;
             node.NodeId = XUNODEID;
                 
-            check("IKsControl::KsProperty", impl->get_control_node()->KsProperty((PKSPROPERTY)&node, sizeof(KSP_NODE), data, len, nullptr));
+            check("IKsControl::KsProperty", device.get_control_node()->KsProperty((PKSPROPERTY)&node, sizeof(KSP_NODE), data, len, nullptr));
         }
 
-        void device_ref::claim_interface(const guid & interface_guid, int interface_number) const
+        void claim_interface(device & device, const guid & interface_guid, int interface_number)
         {
-            impl->open_win_usb(interface_guid, interface_number);
+            device.open_win_usb(interface_guid, interface_number);
         }
 
-        void device_ref::bulk_transfer(uint8_t endpoint, void * data, int length, int *actual_length, unsigned int timeout) const
+        void bulk_transfer(device & device, uint8_t endpoint, void * data, int length, int *actual_length, unsigned int timeout)
         {       
             if(USB_ENDPOINT_DIRECTION_OUT(endpoint))
             {
-                impl->usb_synchronous_write(endpoint, data, length, timeout);
+                device.usb_synchronous_write(endpoint, data, length, timeout);
             }
             
             if(USB_ENDPOINT_DIRECTION_IN(endpoint))
             {
                 auto actualLen = ULONG(actual_length);
-                impl->usb_synchronous_read(endpoint, data, length, actual_length, timeout);
+                device.usb_synchronous_read(endpoint, data, length, actual_length, timeout);
             }
         }
 
-        void device_ref::set_subdevice_mode(int subdevice_index, int width, int height, uint32_t fourcc, int fps, std::function<void(const void * frame)> callback) const
+        void set_subdevice_mode(device & device, int subdevice_index, int width, int height, uint32_t fourcc, int fps, std::function<void(const void * frame)> callback)
         {
-            auto & sub = impl->subdevices[subdevice_index];
+            auto & sub = device.subdevices[subdevice_index];
             
             if(!sub.mf_source_reader)
             {
@@ -751,19 +752,19 @@ namespace rsimpl
             throw std::runtime_error("no matching media type");
         }
 
-        void device_ref::start_streaming() const { impl->start_streaming(); }
-        void device_ref::stop_streaming() const { impl->stop_streaming(); }
+        void start_streaming(device & device) { device.start_streaming(); }
+        void stop_streaming(device & device) { device.stop_streaming(); }
 
         /////////////
         // context //
         /////////////
 
-        context_ref create_context()
+        std::shared_ptr<context> create_context()
         {
-            return {std::make_shared<context>()};
+            return std::make_shared<context>();
         }
 
-        std::vector<device_ref> context_ref::query_devices() const
+        std::vector<std::shared_ptr<device>> query_devices(std::shared_ptr<context> context)
         {
             IMFAttributes * pAttributes = NULL;
             check("MFCreateAttributes", MFCreateAttributes(&pAttributes, 1));
@@ -773,7 +774,7 @@ namespace rsimpl
             UINT32 numDevices;
             check("MFEnumDeviceSources", MFEnumDeviceSources(pAttributes, &ppDevices, &numDevices));
 
-            std::vector<device_ref> devices;
+            std::vector<std::shared_ptr<device>> devices;
             for(UINT32 i=0; i<numDevices; ++i)
             {
                 com_ptr<IMFActivate> pDevice;
@@ -787,25 +788,25 @@ namespace rsimpl
                 int vid, pid, mi; std::string unique_id;
                 if(!parse_usb_path(vid, pid, mi, unique_id, name)) continue;
 
-                device_ref dev;
+                std::shared_ptr<device> dev;
                 for(auto & d : devices)
                 {
-                    if(d.impl->vid == vid && d.impl->pid == pid && d.impl->unique_id == unique_id)
+                    if(d->vid == vid && d->pid == pid && d->unique_id == unique_id)
                     {
                         dev = d;
                     }
                 }
                 if(!dev)
                 {
-                    dev = {std::make_shared<device>(impl, vid, pid, unique_id)};
+                    dev = std::make_shared<device>(context, vid, pid, unique_id);
                     devices.push_back(dev);
                 }
 
                 int subdevice_index = mi/2;
-                if(subdevice_index >= dev.impl->subdevices.size()) dev.impl->subdevices.resize(subdevice_index+1);
+                if(subdevice_index >= dev->subdevices.size()) dev->subdevices.resize(subdevice_index+1);
 
-                dev.impl->subdevices[subdevice_index].reader_callback = new reader_callback(dev.impl, subdevice_index);
-                dev.impl->subdevices[subdevice_index].mf_activate = pDevice;                
+                dev->subdevices[subdevice_index].reader_callback = new reader_callback(dev, subdevice_index);
+                dev->subdevices[subdevice_index].mf_activate = pDevice;                
             }
             CoTaskMemFree(ppDevices);
             return devices;

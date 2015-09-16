@@ -183,7 +183,7 @@ namespace rsimpl
         return intrinsics;
     }
 
-    f200_camera::f200_camera(uvc::device_ref device, const static_device_info & info, const f200::CameraCalibrationParameters & calib, const f200::IVCAMTemperatureData & temp, const f200::IVCAMThermalLoopParams & params) :
+    f200_camera::f200_camera(std::shared_ptr<uvc::device> device, const static_device_info & info, const f200::CameraCalibrationParameters & calib, const f200::IVCAMTemperatureData & temp, const f200::IVCAMThermalLoopParams & params) :
         rs_device(device, info), base_calibration(calib), base_temperature_data(temp), thermal_loop_params(params), last_temperature_delta(std::numeric_limits<float>::infinity())
     {
         set_intrinsics_thread_safe(compute_intrinsics(base_calibration));
@@ -196,19 +196,19 @@ namespace rsimpl
         }
     }
 
-    std::shared_ptr<rs_device> make_f200_device(uvc::device_ref device)
+    std::shared_ptr<rs_device> make_f200_device(std::shared_ptr<uvc::device> device)
     {
         std::timed_mutex mutex;
-        f200::claim_ivcam_interface(device);
-        auto calib = f200::read_f200_calibration(device, mutex);
+        f200::claim_ivcam_interface(*device);
+        auto calib = f200::read_f200_calibration(*device, mutex);
         return std::make_shared<f200_camera>(device, get_f200_info(std::get<0>(calib)), std::get<0>(calib), std::get<1>(calib), std::get<2>(calib));
     }
 
-    std::shared_ptr<rs_device> make_sr300_device(uvc::device_ref device)
+    std::shared_ptr<rs_device> make_sr300_device(std::shared_ptr<uvc::device> device)
     {
         std::timed_mutex mutex;
-        f200::claim_ivcam_interface(device);
-        auto calib = f200::read_sr300_calibration(device, mutex);
+        f200::claim_ivcam_interface(*device);
+        auto calib = f200::read_sr300_calibration(*device, mutex);
         return std::make_shared<f200_camera>(device, get_sr300_info(std::get<0>(calib)), std::get<0>(calib), std::get<1>(calib), std::get<2>(calib));    
     }
 
@@ -232,7 +232,7 @@ namespace rsimpl
             case 1: depth = true; break;
             }
         }
-        f200::enable_timestamp(device, usbMutex, color, depth);
+        f200::enable_timestamp(get_device(), usbMutex, color, depth);
     }
 
     void f200_camera::temperature_control_loop()
@@ -250,8 +250,8 @@ namespace rsimpl
             //@tofix, this will throw if bad, but might periodically fail anyway. try/catch
             try
             {
-                float IRTemp = (float)f200::read_ir_temp(device, usbMutex);
-                float LiguriaTemp = f200::read_mems_temp(device, usbMutex);
+                float IRTemp = (float)f200::read_ir_temp(get_device(), usbMutex);
+                float LiguriaTemp = f200::read_mems_temp(get_device(), usbMutex);
 
                 double IrBaseTemperature = base_temperature_data.IRTemp; //should be taken from the parameters
                 double liguriaBaseTemperature = base_temperature_data.LiguriaTemp; //should be taken from the parameters
@@ -289,7 +289,7 @@ namespace rsimpl
                     //@tofix, qRes mode
                     // TODO: Pass the current resolution into update_asic_coefficients
                     DEBUG_OUT("updating asic with new temperature calibration coefficients");
-                    update_asic_coefficients(device, usbMutex, compensated_calibration);
+                    update_asic_coefficients(get_device(), usbMutex, compensated_calibration);
                     set_intrinsics_thread_safe(compute_intrinsics(compensated_calibration));
                     last_temperature_delta = weightedTempDelta;
                 }
@@ -306,12 +306,12 @@ namespace rsimpl
         auto val = static_cast<uint8_t>(value);
         switch(option)
         {
-        case RS_OPTION_F200_LASER_POWER:          f200::set_laser_power(device, val); break;
-        case RS_OPTION_F200_ACCURACY:             f200::set_accuracy(device, val); break;
-        case RS_OPTION_F200_MOTION_RANGE:         f200::set_motion_range(device, val); break;
-        case RS_OPTION_F200_FILTER_OPTION:        f200::set_filter_option(device, val); break;
-        case RS_OPTION_F200_CONFIDENCE_THRESHOLD: f200::set_confidence_threshold(device, val); break;
-        case RS_OPTION_F200_DYNAMIC_FPS:          f200::set_dynamic_fps(device, val); break; // IVCAM 1.5 Only
+        case RS_OPTION_F200_LASER_POWER:          f200::set_laser_power(get_device(), val); break;
+        case RS_OPTION_F200_ACCURACY:             f200::set_accuracy(get_device(), val); break;
+        case RS_OPTION_F200_MOTION_RANGE:         f200::set_motion_range(get_device(), val); break;
+        case RS_OPTION_F200_FILTER_OPTION:        f200::set_filter_option(get_device(), val); break;
+        case RS_OPTION_F200_CONFIDENCE_THRESHOLD: f200::set_confidence_threshold(get_device(), val); break;
+        case RS_OPTION_F200_DYNAMIC_FPS:          f200::set_dynamic_fps(get_device(), val); break; // IVCAM 1.5 Only
         }
     }
 
@@ -320,12 +320,12 @@ namespace rsimpl
         uint8_t value = 0;
         switch(option)
         {
-        case RS_OPTION_F200_LASER_POWER:          f200::get_laser_power(device, value); break;
-        case RS_OPTION_F200_ACCURACY:             f200::get_accuracy(device, value); break;
-        case RS_OPTION_F200_MOTION_RANGE:         f200::get_motion_range(device, value); break;
-        case RS_OPTION_F200_FILTER_OPTION:        f200::get_filter_option(device, value); break;
-        case RS_OPTION_F200_CONFIDENCE_THRESHOLD: f200::get_confidence_threshold(device, value); break;
-        case RS_OPTION_F200_DYNAMIC_FPS:          f200::get_dynamic_fps(device, value); break; // IVCAM 1.5 Only
+        case RS_OPTION_F200_LASER_POWER:          f200::get_laser_power(get_device(), value); break;
+        case RS_OPTION_F200_ACCURACY:             f200::get_accuracy(get_device(), value); break;
+        case RS_OPTION_F200_MOTION_RANGE:         f200::get_motion_range(get_device(), value); break;
+        case RS_OPTION_F200_FILTER_OPTION:        f200::get_filter_option(get_device(), value); break;
+        case RS_OPTION_F200_CONFIDENCE_THRESHOLD: f200::get_confidence_threshold(get_device(), value); break;
+        case RS_OPTION_F200_DYNAMIC_FPS:          f200::get_dynamic_fps(get_device(), value); break; // IVCAM 1.5 Only
         }
         return value;
     }

@@ -10,45 +10,25 @@ namespace rsimpl
 {
     namespace uvc
     {
-        // Opaque object types (implementation is platform specific)
-        struct context;
-        struct device;
-
-        // Value types
         struct guid { uint32_t data1; uint16_t data2, data3; uint8_t data4[8]; };
+        struct context; // Opaque type representing access to the underlying UVC implementation
+        struct device; // Opaque type representing access to a specific UVC device
 
-        // Reference types, via shared-pointer-to-implementation idiom
-        struct device_ref
-        {
-            std::shared_ptr<device>     impl;
+        std::shared_ptr<context> create_context();
+        std::vector<std::shared_ptr<device>> query_devices(std::shared_ptr<context> context);
 
-            explicit                    operator bool () const { return static_cast<bool>(impl); }
+        int get_vendor_id(const device & device);
+        int get_product_id(const device & device);
 
-            int                         get_vendor_id() const;
-            int                         get_product_id() const;
+        void claim_interface(device & device, const guid & interface_guid, int interface_number);
+        void bulk_transfer(device & device, unsigned char endpoint, void * data, int length, int *actual_length, unsigned int timeout);
 
-            void                        claim_interface(const guid & interface_guid, int interface_number) const;
-            void                        bulk_transfer(unsigned char endpoint, void * data, int length, int *actual_length, unsigned int timeout) const;
+        void get_control(const device & device, uint8_t unit, uint8_t ctrl, void * data, int len);
+        void set_control(device & device, uint8_t unit, uint8_t ctrl, void * data, int len);
 
-            void                        get_control(uint8_t unit, uint8_t ctrl, void * data, int len) const;
-            void                        set_control(uint8_t unit, uint8_t ctrl, void * data, int len) const;
-
-            void                        set_subdevice_mode(int subdevice_index, int width, int height, uint32_t fourcc, int fps, std::function<void(const void * frame)> callback) const;
-            void                        start_streaming() const;
-            void                        stop_streaming() const;
-        };
-
-        struct context_ref
-        {
-            std::shared_ptr<context>    impl;
-
-            explicit                    operator bool () const { return static_cast<bool>(impl); }
-
-            std::vector<device_ref>     query_devices() const;
-        };
-
-        // Factory functions
-        context_ref                     create_context();
+        void set_subdevice_mode(device & device, int subdevice_index, int width, int height, uint32_t fourcc, int fps, std::function<void(const void * frame)> callback);
+        void start_streaming(device & device);
+        void stop_streaming(device & device);
     }
 }
 

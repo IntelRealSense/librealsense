@@ -36,7 +36,7 @@ static_device_info rsimpl::add_standard_unpackers(const static_device_info & dev
     return info;
 }
 
-rs_device::rs_device(const rsimpl::uvc::device_ref & device, const rsimpl::static_device_info & info) : device(device), device_info(add_standard_unpackers(info)), capturing(false)
+rs_device::rs_device(std::shared_ptr<rsimpl::uvc::device> device, const rsimpl::static_device_info & info) : device(device), device_info(add_standard_unpackers(info)), capturing(false)
 {
     for(auto & req : requests) req = rsimpl::stream_request();
 }
@@ -101,7 +101,7 @@ void rs_device::start()
         // Initialize the subdevice and set it to the selected mode
         int serial_frame_no = 0;
         bool only_stream = selected_modes.size() == 1;
-        device.set_subdevice_mode(mode.subdevice, mode.width, mode.height, mode.fourcc, mode.fps, [mode, stream_list, only_stream, serial_frame_no](const void * frame) mutable
+        set_subdevice_mode(*device, mode.subdevice, mode.width, mode.height, mode.fourcc, mode.fps, [mode, stream_list, only_stream, serial_frame_no](const void * frame) mutable
         {
             // Unpack the image into the user stream interface back buffer
             std::vector<void *> dest;
@@ -115,7 +115,7 @@ void rs_device::start()
     }
     
     on_before_start(selected_modes);
-    device.start_streaming();
+    start_streaming(*device);
     capture_started = std::chrono::high_resolution_clock::now();
     capturing = true;
     base_timestamp = 0;
@@ -124,7 +124,7 @@ void rs_device::start()
 void rs_device::stop()
 {
     if(!capturing) throw std::runtime_error("cannot stop device without first starting device");
-    device.stop_streaming();
+    stop_streaming(*device);
     capturing = false;
 }
 

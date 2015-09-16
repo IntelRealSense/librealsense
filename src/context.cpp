@@ -5,9 +5,10 @@
 
 rs_context::rs_context() : context(rsimpl::uvc::create_context())
 {
-    for(auto device : context.query_devices())
+    for(auto device : query_devices(context))
     {
-        switch(device.get_product_id())
+        // TODO: Check vendor ID against Intel's ID
+        switch(get_product_id(*device))
         {
         case 2688: devices.push_back(rsimpl::make_r200_device(device)); break;
         case 2662: devices.push_back(rsimpl::make_f200_device(device)); break;
