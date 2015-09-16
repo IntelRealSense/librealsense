@@ -55,12 +55,12 @@ namespace rsimpl
             return device;
         }
 
-        struct context_ref::_impl
+        struct context
         {
             uvc_context_t * ctx;
 
-            _impl() : ctx() { check("uvc_init", uvc_init(&ctx, nullptr)); }
-            ~_impl() { if(ctx) uvc_exit(ctx); }
+            context() : ctx() { check("uvc_init", uvc_init(&ctx, nullptr)); }
+            ~context() { if(ctx) uvc_exit(ctx); }
         };
 
         struct subdevice
@@ -70,22 +70,20 @@ namespace rsimpl
             std::function<void(const void * frame)> callback;
         };
 
-        struct device_ref::_impl
+        struct device
         {
-            std::shared_ptr<context_ref::_impl> parent;
-            device_id id;
-            uvc_device_t * device;
+            const std::shared_ptr<context> parent;
+            const device_id id;
+            uvc_device_t * uvcdevice;
             std::vector<subdevice> subdevices;
             std::vector<int> claimed_interfaces;
 
-            _impl() : device() {}
-            _impl(std::shared_ptr<context_ref::_impl> parent, device_id id) : _impl()
+            device(std::shared_ptr<context> parent, device_id id) : parent(parent), id(id)
             {
-                this->parent = parent;
-                this->id = id;
-                this->device = create_device(parent->ctx, id);
+                uvcdevice = create_device(parent->ctx, id);
+                get_subdevice(0);
             }
-            ~_impl()
+            ~device()
             {
                 for(auto interface_number : claimed_interfaces)
                 {
@@ -94,14 +92,20 @@ namespace rsimpl
                 }
 
                 for(auto & sub : subdevices) if(sub.handle) uvc_close(sub.handle);
-                if(device) uvc_unref_device(device);
+                if(uvcdevice) uvc_unref_device(uvcdevice);
             }
 
             subdevice & get_subdevice(int subdevice_index)
             {
                 if(subdevice_index >= subdevices.size()) subdevices.resize(subdevice_index+1);
-                if(!subdevices[subdevice_index].handle) check("uvc_open2", uvc_open2(device, &subdevices[subdevice_index].handle, subdevice_index));
+                if(!subdevices[subdevice_index].handle) check("uvc_open2", uvc_open2(uvcdevice, &subdevices[subdevice_index].handle, subdevice_index));
                 return subdevices[subdevice_index];
+            }
+
+            uvc_device_handle_t * get_control_handle() const
+            {
+                if(subdevices.empty() || !subdevices[0].handle) throw std::runtime_error("unable to get control handle");
+                return subdevices[0].handle;
             }
         };
 
@@ -109,44 +113,44 @@ namespace rsimpl
         // device //
         ////////////
 
-        int device_ref::get_vendor_id() const { return impl->id.vid; }
-        int device_ref::get_product_id() const { return impl->id.pid; }
+        int get_vendor_id(const device & device) { return device.id.vid; }
+        int get_product_id(const device & device) { return device.id.pid; }
 
-        void device_ref::get_control(uint8_t unit, uint8_t ctrl, void * data, int len) const
+        void get_control(const device & device, uint8_t unit, uint8_t ctrl, void * data, int len)
         {
-            int status = uvc_get_ctrl(impl->get_subdevice(0).handle, unit, ctrl, data, len, UVC_GET_CUR);
+            int status = uvc_get_ctrl(device.get_control_handle(), unit, ctrl, data, len, UVC_GET_CUR);
             if(status < 0) throw std::runtime_error(to_string() << "uvc_get_ctrl(...) returned " << libusb_error_name(status));
         }
 
-        void device_ref::set_control(uint8_t unit, uint8_t ctrl, void * data, int len) const
+        void set_control(device & device, uint8_t unit, uint8_t ctrl, void * data, int len)
         {
-            int status = uvc_set_ctrl(impl->get_subdevice(0).handle, unit, ctrl, data, len);
+            int status = uvc_set_ctrl(device.get_control_handle(), unit, ctrl, data, len);
             if(status < 0) throw std::runtime_error(to_string() << "uvc_set_ctrl(...) returned " << libusb_error_name(status));
         }
 
-        void device_ref::claim_interface(const guid & interface_guid, int interface_number) const
+        void claim_interface(device & device, const guid & interface_guid, int interface_number)
         {
-            int status = libusb_claim_interface(impl->get_subdevice(0).handle->usb_devh, interface_number);
+            int status = libusb_claim_interface(device.get_control_handle()->usb_devh, interface_number);
             if(status < 0) throw std::runtime_error(to_string() << "libusb_claim_interface(...) returned " << libusb_error_name(status));
-            impl->claimed_interfaces.push_back(interface_number);
+            device.claimed_interfaces.push_back(interface_number);
         }
 
-        void device_ref::bulk_transfer(unsigned char endpoint, void * data, int length, int *actual_length, unsigned int timeout) const
+        void bulk_transfer(device & device, unsigned char endpoint, void * data, int length, int *actual_length, unsigned int timeout)
         {
-            int status = libusb_bulk_transfer(impl->get_subdevice(0).handle->usb_devh, endpoint, (unsigned char *)data, length, actual_length, timeout);
+            int status = libusb_bulk_transfer(device.get_control_handle()->usb_devh, endpoint, (unsigned char *)data, length, actual_length, timeout);
             if(status < 0) throw std::runtime_error(to_string() << "libusb_bulk_transfer(...) returned " << libusb_error_name(status));
         }
 
-        void device_ref::set_subdevice_mode(int subdevice_index, int width, int height, uint32_t fourcc, int fps, std::function<void(const void * frame)> callback) const
+        void set_subdevice_mode(device & device, int subdevice_index, int width, int height, uint32_t fourcc, int fps, std::function<void(const void * frame)> callback)
         {
-            auto & sub = impl->get_subdevice(subdevice_index);
+            auto & sub = device.get_subdevice(subdevice_index);
             check("get_stream_ctrl_format_size", uvc_get_stream_ctrl_format_size(sub.handle, &sub.ctrl, reinterpret_cast<const big_endian<uint32_t> &>(fourcc), width, height, fps));
             sub.callback = callback;
         }
 
-        void device_ref::start_streaming() const
+        void start_streaming(device & device)
         {
-            for(auto & sub : impl->subdevices)
+            for(auto & sub : device.subdevices)
             {
                 if(sub.callback)
                 {
@@ -162,10 +166,10 @@ namespace rsimpl
             }
         }
 
-        void device_ref::stop_streaming() const
+        void stop_streaming(device & device)
         {
             // Stop all streaming
-            for(auto & sub : impl->subdevices)
+            for(auto & sub : device.subdevices)
             {
                 if(sub.handle) uvc_stop_streaming(sub.handle);
                 sub.ctrl = {};
@@ -173,37 +177,38 @@ namespace rsimpl
             }
 
             // SW reset
-            if(impl->id.pid == 2688)
+            if(device.id.pid == 2688)
             {
                 uint8_t reset = 1;
                 const int CAMERA_XU_UNIT_ID = 2;
                 const int CONTROL_SW_RESET = 16;
-                uvc_set_ctrl(impl->get_subdevice(0).handle, CAMERA_XU_UNIT_ID, CONTROL_SW_RESET, &reset, sizeof(reset));
+                uvc_set_ctrl(device.get_subdevice(0).handle, CAMERA_XU_UNIT_ID, CONTROL_SW_RESET, &reset, sizeof(reset));
             }
 
             // NOTE: We are explicitly NOT calling uvc_close(...) for each subdevice handle
-            for(auto & sub : impl->subdevices) sub.handle = nullptr;
+            for(auto & sub : device.subdevices) sub.handle = nullptr;
 
             // Attempt to recreate the device
-            uvc_unref_device(impl->device);
+            uvc_unref_device(device.uvcdevice);
             std::this_thread::sleep_for(std::chrono::seconds(2));
-            impl->device = create_device(impl->parent->ctx, impl->id);
-            if(!impl->device) throw std::runtime_error("software reset failed");
+            device.uvcdevice = create_device(device.parent->ctx, device.id);
+            if(!device.uvcdevice) throw std::runtime_error("software reset failed");
+            device.get_subdevice(0);
         }
 
         /////////////
         // context //
         /////////////
 
-        context_ref create_context()
+        std::shared_ptr<context> create_context()
         {
-            return {std::make_shared<context_ref::_impl>()};
+            return std::make_shared<context>();
         }
 
-        std::vector<device_ref> context_ref::query_devices() const
+        std::vector<std::shared_ptr<device>> query_devices(std::shared_ptr<context> context)
         {
-            std::vector<device_ref> devices;
-            for(auto id : enumerate_devices(impl->ctx)) devices.push_back({std::make_shared<device_ref::_impl>(impl, id)});
+            std::vector<std::shared_ptr<device>> devices;
+            for(auto id : enumerate_devices(context->ctx)) devices.push_back(std::make_shared<device>(context, id));
             return devices;
         }
     }
