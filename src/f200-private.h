@@ -307,43 +307,16 @@ namespace rsimpl { namespace f200
 
     class IVCAMTemperatureCompensator
     {
+        CameraCalibrationParameters originalParams;
         IVCAMTemperatureData BaseTemperatureData;
         IVCAMThermalLoopParams ThermalLoopParams;
-
-        float FcxSlope;         // the temperature model calculated slope for fc
-        float UxSlope;          // the temperature model calculated slope for ux
-        float FcxOffset;        // the temperature model fc offset
-        float UxOffset;         // the temperature model ux offset
-
-        float TempThreshold;    //celcius degrees, the temperatures delta that above should be fixed;
-
-        CameraCalibrationParameters params;
-        CameraCalibrationParameters originalParams;
-
-        float lastTemperatureDelta;
+        float lastTemperatureDelta; // This is the only piece of state that actually changes
     public:
         IVCAMTemperatureCompensator() {}
         IVCAMTemperatureCompensator(const CameraCalibrationParameters & p, IVCAMTemperatureData TemperatureData, IVCAMThermalLoopParams ThermalLoopParams) 
-            : BaseTemperatureData(TemperatureData), ThermalLoopParams(ThermalLoopParams), 
-            FcxSlope(p.Kc[0][0] * ThermalLoopParams.FcxSlopeA + ThermalLoopParams.FcxSlopeB),
-            UxSlope(p.Kc[0][2] * ThermalLoopParams.UxSlopeA + p.Kc[0][0] * ThermalLoopParams.UxSlopeB + ThermalLoopParams.UxSlopeC),
-            FcxOffset(ThermalLoopParams.FcxOffset),
-            UxOffset(ThermalLoopParams.UxOffset),          
-            TempThreshold(ThermalLoopParams.TempThreshold),            
-            params(p), originalParams(p), lastTemperatureDelta(DELTA_INF) 
-        {
-            float tempFromHFOV = (tan(ThermalLoopParams.HFOVsensitivity*M_PI/360)*(1 + p.Kc[0][0]*p.Kc[0][0]))/(FcxSlope * (1 + p.Kc[0][0] * tan(ThermalLoopParams.HFOVsensitivity * M_PI/360)));
+            : originalParams(p), BaseTemperatureData(TemperatureData), ThermalLoopParams(ThermalLoopParams), lastTemperatureDelta(DELTA_INF) {}
 
-            if (TempThreshold <= 0)
-                TempThreshold = tempFromHFOV;
-
-            if (TempThreshold > tempFromHFOV)
-                TempThreshold = tempFromHFOV;
-        }
-
-        const CameraCalibrationParameters & get_compensated_parameters() const { return params; }
-
-        bool updateParamsAccordingToTemperature(float liguriaTemp, float IRTemp);
+        std::pair<bool, CameraCalibrationParameters> updateParamsAccordingToTemperature(float liguriaTemp, float IRTemp);
     };
 
     class IVCAMHardwareIO
@@ -379,7 +352,7 @@ namespace rsimpl { namespace f200
         void TemperatureControlLoop();
 
         bool UpdateASICCoefs(IVCAMASICCoefficients * coeffs);
-        void GenerateAsicCalibrationCoefficients(std::vector<int> resolution, const bool isZMode, float * values) const;
+        void GenerateAsicCalibrationCoefficients(const CameraCalibrationParameters & compensated_calibration, std::vector<int> resolution, const bool isZMode, float * values) const;
 
         bool PerfomAndSendHWmonitorCommand(IVCAMCommand & newCommand);
         bool SendHWmonitorCommand(IVCAMCommandDetails & details);

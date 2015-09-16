@@ -389,9 +389,9 @@ namespace rsimpl { namespace f200
          return PerfomAndSendHWmonitorCommand(command);
     }
 
-    void IVCAMHardwareIO::GenerateAsicCalibrationCoefficients(std::vector<int> resolution, const bool isZMode, float * values) const
+    void IVCAMHardwareIO::GenerateAsicCalibrationCoefficients(const CameraCalibrationParameters & compensated_calibration, std::vector<int> resolution, const bool isZMode, float * values) const
     {
-        auto params = calibration.get_compensated_parameters();
+        auto params = compensated_calibration;
 
         //handle vertical crop at 360p - change to full 640x480 and crop at the end
         bool isQres = resolution[0] == 640 && resolution[1] == 360;
@@ -565,11 +565,12 @@ namespace rsimpl { namespace f200
             {
                 ReadTemperatures(t);
 
-                if (calibration.updateParamsAccordingToTemperature(t.LiguriaTemp, t.IRTemp))
+                auto result = calibration.updateParamsAccordingToTemperature(t.LiguriaTemp, t.IRTemp);
+                if (result.first)
                 {
                     //@tofix, qRes mode
                     DEBUG_OUT("updating asic with new temperature calibration coefficients");
-                    GenerateAsicCalibrationCoefficients({640, 480}, true, coeffs.CoefValueArray);
+                    GenerateAsicCalibrationCoefficients(result.second, {640, 480}, true, coeffs.CoefValueArray);
                     if (UpdateASICCoefs(&coeffs) != true)
                     {
                         continue; // try again if we couldn't update the coefficients
@@ -624,10 +625,17 @@ namespace rsimpl { namespace f200
     // IVCAMCalibrator Implementation //
     ////////////////////////////////////
 
-    bool IVCAMTemperatureCompensator::updateParamsAccordingToTemperature(float liguriaTemp, float IRTemp)
+    std::pair<bool, CameraCalibrationParameters> IVCAMTemperatureCompensator::updateParamsAccordingToTemperature(float liguriaTemp, float IRTemp)
     {
         if (!ThermalLoopParams.IRThermalLoopEnable)
-            return false;
+            return std::make_pair(false, CameraCalibrationParameters());
+
+        float FcxSlope = originalParams.Kc[0][0] * ThermalLoopParams.FcxSlopeA + ThermalLoopParams.FcxSlopeB;
+        float UxSlope = originalParams.Kc[0][2] * ThermalLoopParams.UxSlopeA + originalParams.Kc[0][0] * ThermalLoopParams.UxSlopeB + ThermalLoopParams.UxSlopeC;
+        float TempThreshold = ThermalLoopParams.TempThreshold; //celcius degrees, the temperatures delta that above should be fixed;
+        float tempFromHFOV = (tan(ThermalLoopParams.HFOVsensitivity*M_PI/360)*(1 + originalParams.Kc[0][0]*originalParams.Kc[0][0]))/(FcxSlope * (1 + originalParams.Kc[0][0] * tan(ThermalLoopParams.HFOVsensitivity * M_PI/360)));
+        if (TempThreshold <= 0) TempThreshold = tempFromHFOV;
+        if (TempThreshold > tempFromHFOV) TempThreshold = tempFromHFOV;
 
         double IrBaseTemperature = BaseTemperatureData.IRTemp; //should be taken from the parameters
         double liguriaBaseTemperature = BaseTemperatureData.LiguriaTemp; //should be taken from the parameters
@@ -642,6 +650,7 @@ namespace rsimpl { namespace f200
         double Kc11 = originalParams.Kc[0][0];
         double Kc13 = originalParams.Kc[0][2];
 
+
         // Apply model
         if (tempDetaFromLastFix >= TempThreshold)
         {
@@ -653,17 +662,18 @@ namespace rsimpl { namespace f200
             }
 
             //calculate fixed values
-            double fixed_Kc11 = Kc11 + (FcxSlope * tempDeltaToUse) + FcxOffset;
-            double fixed_Kc13 = Kc13 + (UxSlope * tempDeltaToUse) + UxOffset;
+            double fixed_Kc11 = Kc11 + (FcxSlope * tempDeltaToUse) + ThermalLoopParams.FcxOffset;
+            double fixed_Kc13 = Kc13 + (UxSlope * tempDeltaToUse) + ThermalLoopParams.UxOffset;
 
             //write back to intrinsic hfov and vfov
+            auto params = originalParams;
             params.Kc[0][0] = (float) fixed_Kc11;
             params.Kc[1][1] = originalParams.Kc[1][1] * (float)(fixed_Kc11/Kc11);
             params.Kc[0][2] = (float) fixed_Kc13;
             lastTemperatureDelta = weightedTempDelta;
-            return true;
+            return std::make_pair(true, params);
         }
-        return false;
+        return std::make_pair(false, CameraCalibrationParameters());
     }
 
     namespace f200_only
