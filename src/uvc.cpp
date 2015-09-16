@@ -356,15 +356,15 @@ namespace rsimpl
             return true;
         }
 
-        struct context_ref::_impl
+        struct context
         {
-            _impl()
+            context()
             {
                 CoInitializeEx(NULL, COINIT_APARTMENTTHREADED);
                 std::this_thread::sleep_for(std::chrono::milliseconds(100));
                 MFStartup(MF_VERSION, MFSTARTUP_NOSOCKET);
             }
-            ~_impl()
+            ~context()
             {   
                 MFShutdown();
                 CoUninitialize();
@@ -373,12 +373,12 @@ namespace rsimpl
 
         class reader_callback : public IMFSourceReaderCallback
         {
-            std::weak_ptr<device_ref::_impl> owner; // The device holds a reference to us, so use weak_ptr to prevent a cycle
+            std::weak_ptr<device> owner; // The device holds a reference to us, so use weak_ptr to prevent a cycle
             int subdevice_index;
             ULONG ref_count;
             volatile bool streaming = false;
         public:
-            reader_callback(std::weak_ptr<device_ref::_impl> owner, int subdevice_index) : owner(owner), subdevice_index(subdevice_index), ref_count() {}
+            reader_callback(std::weak_ptr<device> owner, int subdevice_index) : owner(owner), subdevice_index(subdevice_index), ref_count() {}
 
             bool is_streaming() const { return streaming; }
             void on_start() { streaming = true; }
@@ -418,9 +418,9 @@ namespace rsimpl
             }
         };
 
-        struct device_ref::_impl
+        struct device
         {
-            const std::shared_ptr<context_ref::_impl> parent;
+            const std::shared_ptr<context> parent;
             const int vid, pid;
             const std::string unique_id;
 
@@ -430,8 +430,8 @@ namespace rsimpl
             HANDLE usb_file_handle = INVALID_HANDLE_VALUE;
             WINUSB_INTERFACE_HANDLE usb_interface_handle = INVALID_HANDLE_VALUE;
 
-            _impl(std::shared_ptr<context_ref::_impl> parent, int vid, int pid, std::string unique_id) : parent(move(parent)), vid(vid), pid(pid), unique_id(move(unique_id)) {}
-            ~_impl() { stop_streaming(); close_win_usb(); }
+            device(std::shared_ptr<context> parent, int vid, int pid, std::string unique_id) : parent(move(parent)), vid(vid), pid(pid), unique_id(move(unique_id)) {}
+            ~device() { stop_streaming(); close_win_usb(); }
 
             void start_streaming()
             {
@@ -760,7 +760,7 @@ namespace rsimpl
 
         context_ref create_context()
         {
-            return {std::make_shared<context_ref::_impl>()};
+            return {std::make_shared<context>()};
         }
 
         std::vector<device_ref> context_ref::query_devices() const
@@ -797,7 +797,7 @@ namespace rsimpl
                 }
                 if(!dev)
                 {
-                    dev = {std::make_shared<device_ref::_impl>(impl, vid, pid, unique_id)};
+                    dev = {std::make_shared<device>(impl, vid, pid, unique_id)};
                     devices.push_back(dev);
                 }
 
