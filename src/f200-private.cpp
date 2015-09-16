@@ -1,5 +1,7 @@
 #include "f200-private.h"
 
+#include <algorithm>
+
 #define IVCAM_VID                       0x8086
 #define IVCAM_PID                       0x0A66
 #define IVCAM_MONITOR_INTERFACE         0x4
@@ -366,60 +368,6 @@ namespace rsimpl { namespace f200
 
         throw std::runtime_error("calibration table is not compatible with this API");
     }
-    
-    std::tuple<CameraCalibrationParameters, IVCAMTemperatureData, IVCAMThermalLoopParams> get_sr300_calibration(uint8_t * rawCalibData, int len)
-    {
-        uint8_t * bufParams = rawCalibData + 4;
-
-        IVCAMCalibration CalibrationData;
-        IVCAMTesterData TesterData;
-
-        memset(&CalibrationData, 0, sizeof(IVCAMCalibration));
-
-        int ver = getVersionOfCalibration(bufParams, bufParams + 2);
-
-        DEBUG_OUT("######## Calibration Version: " << ver);
-
-        if (ver == IVCAM_MIN_SUPPORTED_VERSION)
-        {
-            float *params = (float *)bufParams;
-
-            // calprms; // breakpoint here to debug
-
-            CameraCalibrationParameters calibration;
-            memcpy(&calibration, params+1, sizeof(CameraCalibrationParameters));
-            memcpy(&TesterData, bufParams, SIZE_OF_CALIB_HEADER_BYTES);
-
-            memset((uint8_t*)&TesterData+SIZE_OF_CALIB_HEADER_BYTES, 0, sizeof(IVCAMTesterData) - SIZE_OF_CALIB_HEADER_BYTES);
-            return std::make_tuple(calibration, TesterData.TemperatureData, TesterData.ThermalLoopParams);
-        }
-        else if (ver > IVCAM_MIN_SUPPORTED_VERSION)
-        {
-            rawCalibData = rawCalibData + 4;
-
-            int size = (sizeof(IVCAMCalibration) > len) ? len : sizeof(IVCAMCalibration);
-
-            auto fixWithVersionInfo = [&](IVCAMCalibration &d, int size, uint8_t * data)
-            {
-                memcpy((uint8_t*)&d + sizeof(int), data, size - sizeof(int));
-            };
-
-            fixWithVersionInfo(CalibrationData, size, rawCalibData);
-            
-            // calprms; // breakpoint here to debug
-
-            memcpy(&TesterData, rawCalibData, SIZE_OF_CALIB_HEADER_BYTES);  //copy the header: valid + version
-
-            //copy the tester data from end of calibration
-            int EndOfCalibratioData = SIZE_OF_CALIB_PARAM_BYTES + SIZE_OF_CALIB_HEADER_BYTES;
-            memcpy((uint8_t*)&TesterData + SIZE_OF_CALIB_HEADER_BYTES , rawCalibData + EndOfCalibratioData , sizeof(IVCAMTesterData) - SIZE_OF_CALIB_HEADER_BYTES);
-            return std::make_tuple(CalibrationData.CalibrationParameters, TesterData.TemperatureData, TesterData.ThermalLoopParams);
-        }
-        else if (ver > 17)
-        {
-            throw std::runtime_error("calibration table is not compatible with this API");
-        }
-    }
 
     void IVCAMHardwareIO::GenerateAsicCalibrationCoefficients(const CameraCalibrationParameters & compensated_calibration, std::vector<int> resolution, const bool isZMode, float * values) const
     {
@@ -609,51 +557,48 @@ namespace rsimpl { namespace f200
                 if (!get_mems_temp(device, usbMutex, t.LiguriaTemp))
                     throw std::runtime_error("could not get liguria temperature");
 
-                if(true) //thermal_loop_params.IRThermalLoopEnable)
+                double IrBaseTemperature = base_temperature_data.IRTemp; //should be taken from the parameters
+                double liguriaBaseTemperature = base_temperature_data.LiguriaTemp; //should be taken from the parameters
+
+                // calculate deltas from the calibration and last fix
+                double IrTempDelta = t.IRTemp - IrBaseTemperature;
+                double liguriaTempDelta = t.LiguriaTemp - liguriaBaseTemperature;
+                double weightedTempDelta = liguriaTempDelta * thermal_loop_params.LiguriaTempWeight + IrTempDelta * thermal_loop_params.IrTempWeight;
+                double tempDetaFromLastFix = abs(weightedTempDelta - last_temperature_delta);
+
+                //read intrinsic from the calibration working point
+                double Kc11 = base_calibration.Kc[0][0];
+                double Kc13 = base_calibration.Kc[0][2];
+
+                // Apply model
+                if (tempDetaFromLastFix >= TempThreshold)
                 {
-                    double IrBaseTemperature = base_temperature_data.IRTemp; //should be taken from the parameters
-                    double liguriaBaseTemperature = base_temperature_data.LiguriaTemp; //should be taken from the parameters
-
-                    // calculate deltas from the calibration and last fix
-                    double IrTempDelta = t.IRTemp - IrBaseTemperature;
-                    double liguriaTempDelta = t.LiguriaTemp - liguriaBaseTemperature;
-                    double weightedTempDelta = liguriaTempDelta * thermal_loop_params.LiguriaTempWeight + IrTempDelta * thermal_loop_params.IrTempWeight;
-                    double tempDetaFromLastFix = abs(weightedTempDelta - last_temperature_delta);
-
-                    //read intrinsic from the calibration working point
-                    double Kc11 = base_calibration.Kc[0][0];
-                    double Kc13 = base_calibration.Kc[0][2];
-
-                    // Apply model
-                    if (tempDetaFromLastFix >= TempThreshold)
+                    //if we are during a transition, fix for after the transition
+                    double tempDeltaToUse = weightedTempDelta;
+                    if (tempDeltaToUse > 0 && tempDeltaToUse < thermal_loop_params.TransitionTemp)
                     {
-                        //if we are during a transition, fix for after the transition
-                        double tempDeltaToUse = weightedTempDelta;
-                        if (tempDeltaToUse > 0 && tempDeltaToUse < thermal_loop_params.TransitionTemp)
-                        {
-                            tempDeltaToUse = thermal_loop_params.TransitionTemp;
-                        }
+                        tempDeltaToUse = thermal_loop_params.TransitionTemp;
+                    }
 
-                        //calculate fixed values
-                        double fixed_Kc11 = Kc11 + (FcxSlope * tempDeltaToUse) + thermal_loop_params.FcxOffset;
-                        double fixed_Kc13 = Kc13 + (UxSlope * tempDeltaToUse) + thermal_loop_params.UxOffset;
+                    //calculate fixed values
+                    double fixed_Kc11 = Kc11 + (FcxSlope * tempDeltaToUse) + thermal_loop_params.FcxOffset;
+                    double fixed_Kc13 = Kc13 + (UxSlope * tempDeltaToUse) + thermal_loop_params.UxOffset;
 
-                        //write back to intrinsic hfov and vfov
-                        compensated_calibration = base_calibration;
-                        compensated_calibration.Kc[0][0] = (float) fixed_Kc11;
-                        compensated_calibration.Kc[1][1] = base_calibration.Kc[1][1] * (float)(fixed_Kc11/Kc11);
-                        compensated_calibration.Kc[0][2] = (float) fixed_Kc13;
-                        last_temperature_delta = weightedTempDelta;
-                        // *******
+                    //write back to intrinsic hfov and vfov
+                    compensated_calibration = base_calibration;
+                    compensated_calibration.Kc[0][0] = (float) fixed_Kc11;
+                    compensated_calibration.Kc[1][1] = base_calibration.Kc[1][1] * (float)(fixed_Kc11/Kc11);
+                    compensated_calibration.Kc[0][2] = (float) fixed_Kc13;
+                    last_temperature_delta = weightedTempDelta;
+                    // *******
 
-                        //@tofix, qRes mode
-                        DEBUG_OUT("updating asic with new temperature calibration coefficients");
-                        IVCAMASICCoefficients coeffs = {};
-                        GenerateAsicCalibrationCoefficients(compensated_calibration, {640, 480}, true, coeffs.CoefValueArray);
-                        if (set_asic_coefficients(device, usbMutex, &coeffs) != true)
-                        {
-                            continue; // try again if we couldn't update the coefficients
-                        }
+                    //@tofix, qRes mode
+                    DEBUG_OUT("updating asic with new temperature calibration coefficients");
+                    IVCAMASICCoefficients coeffs = {};
+                    GenerateAsicCalibrationCoefficients(compensated_calibration, {640, 480}, true, coeffs.CoefValueArray);
+                    if (set_asic_coefficients(device, usbMutex, &coeffs) != true)
+                    {
+                        continue; // try again if we couldn't update the coefficients
                     }
                 }
             }
@@ -665,42 +610,31 @@ namespace rsimpl { namespace f200
 
     IVCAMHardwareIO::IVCAMHardwareIO(uvc::device device, bool sr300) : device(device)
     {
+        const uvc::guid IVCAM_WIN_USB_DEVICE_GUID = {0x175695CD, 0x30D9, 0x4F87, {0x8B, 0xE3, 0x5A, 0x82, 0x70, 0xF4, 0x9A, 0x31}};
+        device.claim_interface(IVCAM_WIN_USB_DEVICE_GUID, IVCAM_MONITOR_INTERFACE);
+
+        uint8_t rawCalibrationBuffer[HW_MONITOR_BUFFER_SIZE];
+        size_t bufferLength = HW_MONITOR_BUFFER_SIZE;       
+
         if(sr300)
         {
-            const uvc::guid IVCAM_WIN_USB_DEVICE_GUID = {0x175695CD, 0x30D9, 0x4F87, {0x8B, 0xE3, 0x5A, 0x82, 0x70, 0xF4, 0x9A, 0x31}};
-            device.claim_interface(IVCAM_WIN_USB_DEVICE_GUID, IVCAM_MONITOR_INTERFACE);
-
-            // Grab binary blob from the camera - SR300 - firmware gets the data from different stores
-            uint8_t rawCalibrationBuffer[HW_MONITOR_BUFFER_SIZE];
-            size_t bufferLength = HW_MONITOR_BUFFER_SIZE;       
             get_sr300_calibration_raw_data(device, usbMutex, sr300 ? IVCAMDataSource::TakeFromRAM : IVCAMDataSource::TakeFromRW, rawCalibrationBuffer, bufferLength);
 
-            CameraCalibrationParameters calibratedParameters;
-            if (sr300)
-            {
-                SR300RawCalibration rawCalib;
-                memcpy(&rawCalib, rawCalibrationBuffer, bufferLength);
-                calibratedParameters = rawCalib.CalibrationParameters;
-            }
-            std::tie(base_calibration, base_temperature_data, thermal_loop_params) = get_sr300_calibration(rawCalibrationBuffer, (int) bufferLength);
+            SR300RawCalibration rawCalib;
+            memcpy(&rawCalib, rawCalibrationBuffer, std::min(sizeof(rawCalib), bufferLength)); // Is this longer or shorter than the rawCalib struct?
+            base_calibration = rawCalib.CalibrationParameters;
+            base_temperature_data = rawCalib.TemperatureData;
+            thermal_loop_params = {}; // TODO: Figure out where to find this on SR300
         }
         else
         {
-            const uvc::guid IVCAM_WIN_USB_DEVICE_GUID = {0x175695CD, 0x30D9, 0x4F87, {0x8B, 0xE3, 0x5A, 0x82, 0x70, 0xF4, 0x9A, 0x31}};
-            device.claim_interface(IVCAM_WIN_USB_DEVICE_GUID, IVCAM_MONITOR_INTERFACE);
-
-            uint8_t rawCalibrationBuffer[HW_MONITOR_BUFFER_SIZE];
-            size_t bufferLength = HW_MONITOR_BUFFER_SIZE;
             get_f200_calibration_raw_data(device, usbMutex, rawCalibrationBuffer, bufferLength);
-
-            //return f200::get_f200_calibration(rawCalibrationBuffer, (int) bufferLength);
-
             std::tie(base_calibration, base_temperature_data, thermal_loop_params) = get_f200_calibration(rawCalibrationBuffer, bufferLength);
         }
 
         compensated_calibration = base_calibration;
         enable_timestamp(device, usbMutex, true, true); // Dimitri: debugging dangerously (assume we are pulling color + depth)
-		StartTempCompensationLoop();
+		if(thermal_loop_params.IRThermalLoopEnable) StartTempCompensationLoop();
     }
 
     IVCAMHardwareIO::~IVCAMHardwareIO()
