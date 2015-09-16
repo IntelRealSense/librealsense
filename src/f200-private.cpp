@@ -160,7 +160,7 @@ namespace rsimpl { namespace f200
         ExecuteUSBCommand(request, requestSize, responseOp, data, bytesReturned);
     }*/
 
-    void IVCAMHardwareIO::ProjectionCalibrate(uint8_t * rawCalibData, int len, CameraCalibrationParameters * calprms)
+    void IVCAMHardwareIO::ProjectionCalibrate(uint8_t * rawCalibData, int len)
     {
         uint8_t * bufParams = rawCalibData + 4;
 
@@ -179,10 +179,12 @@ namespace rsimpl { namespace f200
 
             // calprms; // breakpoint here to debug
 
-            memcpy(calprms, params+1, sizeof(CameraCalibrationParameters));
+            memcpy(&base_calibration, params+1, sizeof(CameraCalibrationParameters));
             memcpy(&TesterData, bufParams, SIZE_OF_CALIB_HEADER_BYTES);
 
             memset((uint8_t*)&TesterData+SIZE_OF_CALIB_HEADER_BYTES, 0, sizeof(IVCAMTesterData) - SIZE_OF_CALIB_HEADER_BYTES);
+            base_temperature_data = TesterData.TemperatureData;
+            thermal_loop_params = TesterData.ThermalLoopParams;
 
         }
         else if (ver > IVCAM_MIN_SUPPORTED_VERSION)
@@ -198,8 +200,7 @@ namespace rsimpl { namespace f200
 
             fixWithVersionInfo(CalibrationData, size, rawCalibData);
 
-            memcpy(calprms, &CalibrationData.CalibrationParameters, sizeof(CameraCalibrationParameters));
-            
+            base_calibration = CalibrationData.CalibrationParameters;            
 
             // calprms; // breakpoint here to debug
 
@@ -208,13 +209,15 @@ namespace rsimpl { namespace f200
             //copy the tester data from end of calibration
             int EndOfCalibratioData = SIZE_OF_CALIB_PARAM_BYTES + SIZE_OF_CALIB_HEADER_BYTES;
             memcpy((uint8_t*)&TesterData + SIZE_OF_CALIB_HEADER_BYTES , rawCalibData + EndOfCalibratioData , sizeof(IVCAMTesterData) - SIZE_OF_CALIB_HEADER_BYTES);
+            base_temperature_data = TesterData.TemperatureData;
+            thermal_loop_params = TesterData.ThermalLoopParams;
         }
         else if (ver > 17)
         {
             throw std::runtime_error("calibration table is not compatible with this API");
         }
 
-        calibration = IVCAMTemperatureCompensator(*calprms, TesterData.TemperatureData, TesterData.ThermalLoopParams);
+        compensated_calibration = base_calibration;
 
         // Dimitri: debugging dangerously (assume we are pulling color + depth)
         EnableTimeStamp(true, true);
@@ -557,6 +560,13 @@ namespace rsimpl { namespace f200
         IVCAMTemperatureData t;
         IVCAMASICCoefficients coeffs;
 
+        const float FcxSlope = base_calibration.Kc[0][0] * thermal_loop_params.FcxSlopeA + thermal_loop_params.FcxSlopeB;
+        const float UxSlope = base_calibration.Kc[0][2] * thermal_loop_params.UxSlopeA + base_calibration.Kc[0][0] * thermal_loop_params.UxSlopeB + thermal_loop_params.UxSlopeC;
+        const float tempFromHFOV = (tan(thermal_loop_params.HFOVsensitivity*M_PI/360)*(1 + base_calibration.Kc[0][0]*base_calibration.Kc[0][0]))/(FcxSlope * (1 + base_calibration.Kc[0][0] * tan(thermal_loop_params.HFOVsensitivity * M_PI/360)));
+        float TempThreshold = thermal_loop_params.TempThreshold; //celcius degrees, the temperatures delta that above should be fixed;
+        if (TempThreshold <= 0) TempThreshold = tempFromHFOV;
+        if (TempThreshold > tempFromHFOV) TempThreshold = tempFromHFOV;
+
         std::unique_lock<std::mutex> lock(temperatureMutex);
         while (runTemperatureThread) 
         {
@@ -565,19 +575,54 @@ namespace rsimpl { namespace f200
             {
                 ReadTemperatures(t);
 
-                auto result = calibration.updateParamsAccordingToTemperature(t.LiguriaTemp, t.IRTemp);
-                if (result.first)
+                if(true) //thermal_loop_params.IRThermalLoopEnable)
                 {
-                    //@tofix, qRes mode
-                    DEBUG_OUT("updating asic with new temperature calibration coefficients");
-                    GenerateAsicCalibrationCoefficients(result.second, {640, 480}, true, coeffs.CoefValueArray);
-                    if (UpdateASICCoefs(&coeffs) != true)
+                    double IrBaseTemperature = base_temperature_data.IRTemp; //should be taken from the parameters
+                    double liguriaBaseTemperature = base_temperature_data.LiguriaTemp; //should be taken from the parameters
+
+                    // calculate deltas from the calibration and last fix
+                    double IrTempDelta = t.IRTemp - IrBaseTemperature;
+                    double liguriaTempDelta = t.LiguriaTemp - liguriaBaseTemperature;
+                    double weightedTempDelta = liguriaTempDelta * thermal_loop_params.LiguriaTempWeight + IrTempDelta * thermal_loop_params.IrTempWeight;
+                    double tempDetaFromLastFix = abs(weightedTempDelta - last_temperature_delta);
+
+                    //read intrinsic from the calibration working point
+                    double Kc11 = base_calibration.Kc[0][0];
+                    double Kc13 = base_calibration.Kc[0][2];
+
+                    // Apply model
+                    if (tempDetaFromLastFix >= TempThreshold)
                     {
-                        continue; // try again if we couldn't update the coefficients
+                        //if we are during a transition, fix for after the transition
+                        double tempDeltaToUse = weightedTempDelta;
+                        if (tempDeltaToUse > 0 && tempDeltaToUse < thermal_loop_params.TransitionTemp)
+                        {
+                            tempDeltaToUse = thermal_loop_params.TransitionTemp;
+                        }
+
+                        //calculate fixed values
+                        double fixed_Kc11 = Kc11 + (FcxSlope * tempDeltaToUse) + thermal_loop_params.FcxOffset;
+                        double fixed_Kc13 = Kc13 + (UxSlope * tempDeltaToUse) + thermal_loop_params.UxOffset;
+
+                        //write back to intrinsic hfov and vfov
+                        compensated_calibration = base_calibration;
+                        compensated_calibration.Kc[0][0] = (float) fixed_Kc11;
+                        compensated_calibration.Kc[1][1] = base_calibration.Kc[1][1] * (float)(fixed_Kc11/Kc11);
+                        compensated_calibration.Kc[0][2] = (float) fixed_Kc13;
+                        last_temperature_delta = weightedTempDelta;
+                        // *******
+
+                        //@tofix, qRes mode
+                        DEBUG_OUT("updating asic with new temperature calibration coefficients");
+                        GenerateAsicCalibrationCoefficients(compensated_calibration, {640, 480}, true, coeffs.CoefValueArray);
+                        if (UpdateASICCoefs(&coeffs) != true)
+                        {
+                            continue; // try again if we couldn't update the coefficients
+                        }
                     }
                 }
             }
-            catch(...) { DEBUG_OUT("temperature read failed"); }
+            catch(const std::exception & e) { DEBUG_ERR("TemperatureControlLoop: " << e.what()); }
             
             temperatureCv.wait_for(lock, std::chrono::seconds(10));
         }
@@ -602,15 +647,14 @@ namespace rsimpl { namespace f200
                 memcpy(&rawCalib, rawCalibrationBuffer, bufferLength);
                 calibratedParameters = rawCalib.CalibrationParameters;
             }
-            ProjectionCalibrate(rawCalibrationBuffer, (int) bufferLength, &calibratedParameters);
-
-            parameters = calibratedParameters;
-
+            ProjectionCalibrate(rawCalibrationBuffer, (int) bufferLength);
+            
             StartTempCompensationLoop();
         }
         else
         {
-            parameters = f200_only::get_f200_calibration(device, usbMutex, calibration);
+            std::tie(base_calibration, base_temperature_data, thermal_loop_params) = f200_only::get_f200_calibration(device, usbMutex);
+            compensated_calibration = base_calibration;
             EnableTimeStamp(true, true); // Dimitri: debugging dangerously (assume we are pulling color + depth)
 		    StartTempCompensationLoop();
         }
@@ -619,61 +663,6 @@ namespace rsimpl { namespace f200
     IVCAMHardwareIO::~IVCAMHardwareIO()
     {
         StopTempCompensationLoop();
-    }
-
-    ////////////////////////////////////
-    // IVCAMCalibrator Implementation //
-    ////////////////////////////////////
-
-    std::pair<bool, CameraCalibrationParameters> IVCAMTemperatureCompensator::updateParamsAccordingToTemperature(float liguriaTemp, float IRTemp)
-    {
-        if (!ThermalLoopParams.IRThermalLoopEnable)
-            return std::make_pair(false, CameraCalibrationParameters());
-
-        float FcxSlope = originalParams.Kc[0][0] * ThermalLoopParams.FcxSlopeA + ThermalLoopParams.FcxSlopeB;
-        float UxSlope = originalParams.Kc[0][2] * ThermalLoopParams.UxSlopeA + originalParams.Kc[0][0] * ThermalLoopParams.UxSlopeB + ThermalLoopParams.UxSlopeC;
-        float TempThreshold = ThermalLoopParams.TempThreshold; //celcius degrees, the temperatures delta that above should be fixed;
-        float tempFromHFOV = (tan(ThermalLoopParams.HFOVsensitivity*M_PI/360)*(1 + originalParams.Kc[0][0]*originalParams.Kc[0][0]))/(FcxSlope * (1 + originalParams.Kc[0][0] * tan(ThermalLoopParams.HFOVsensitivity * M_PI/360)));
-        if (TempThreshold <= 0) TempThreshold = tempFromHFOV;
-        if (TempThreshold > tempFromHFOV) TempThreshold = tempFromHFOV;
-
-        double IrBaseTemperature = BaseTemperatureData.IRTemp; //should be taken from the parameters
-        double liguriaBaseTemperature = BaseTemperatureData.LiguriaTemp; //should be taken from the parameters
-
-        // calculate deltas from the calibration and last fix
-        double IrTempDelta = IRTemp - IrBaseTemperature;
-        double liguriaTempDelta = liguriaTemp - liguriaBaseTemperature;
-        double weightedTempDelta = liguriaTempDelta * ThermalLoopParams.LiguriaTempWeight + IrTempDelta * ThermalLoopParams.IrTempWeight;
-        double tempDetaFromLastFix = abs(weightedTempDelta - lastTemperatureDelta);
-
-        //read intrinsic from the calibration working point
-        double Kc11 = originalParams.Kc[0][0];
-        double Kc13 = originalParams.Kc[0][2];
-
-
-        // Apply model
-        if (tempDetaFromLastFix >= TempThreshold)
-        {
-            //if we are during a transition, fix for after the transition
-            double tempDeltaToUse = weightedTempDelta;
-            if (tempDeltaToUse > 0 && tempDeltaToUse < ThermalLoopParams.TransitionTemp)
-            {
-                tempDeltaToUse =  ThermalLoopParams.TransitionTemp;
-            }
-
-            //calculate fixed values
-            double fixed_Kc11 = Kc11 + (FcxSlope * tempDeltaToUse) + ThermalLoopParams.FcxOffset;
-            double fixed_Kc13 = Kc13 + (UxSlope * tempDeltaToUse) + ThermalLoopParams.UxOffset;
-
-            //write back to intrinsic hfov and vfov
-            auto params = originalParams;
-            params.Kc[0][0] = (float) fixed_Kc11;
-            params.Kc[1][1] = originalParams.Kc[1][1] * (float)(fixed_Kc11/Kc11);
-            params.Kc[0][2] = (float) fixed_Kc13;
-            lastTemperatureDelta = weightedTempDelta;
-            return std::make_pair(true, params);
-        }
-        return std::make_pair(false, CameraCalibrationParameters());
     }
 
     namespace f200_only
@@ -749,7 +738,7 @@ namespace rsimpl { namespace f200
             execute_usb_command(device, usbMutex, request, requestSize, responseOp, data, bytesReturned);
         }
 
-        void projection_calibrate(IVCAMTemperatureCompensator & calibration, uint8_t * rawCalibData, int len, CameraCalibrationParameters * calprms)
+        std::tuple<CameraCalibrationParameters, IVCAMTemperatureData, IVCAMThermalLoopParams> projection_calibrate(uint8_t * rawCalibData, int len)
         {
             uint8_t * bufParams = rawCalibData + 4;
 
@@ -760,21 +749,7 @@ namespace rsimpl { namespace f200
 
             int ver = getVersionOfCalibration(bufParams, bufParams + 2);
 
-            if (ver == IVCAM_MIN_SUPPORTED_VERSION)
-            {
-                float *params = (float *)bufParams;
-
-                CameraCalibrationParameters p;
-                memcpy(&p, params + 1, sizeof(CameraCalibrationParameters)); // skip the first float or 2 uint16
-
-                // calprms; // breakpoint here to debug
-
-                memcpy(calprms, params+1, sizeof(CameraCalibrationParameters));
-                memcpy(&TesterData, bufParams, SIZE_OF_CALIB_HEADER_BYTES);
-
-                memset((uint8_t*)&TesterData+SIZE_OF_CALIB_HEADER_BYTES,0,sizeof(IVCAMTesterData) - SIZE_OF_CALIB_HEADER_BYTES);
-            }
-            else if (ver > IVCAM_MIN_SUPPORTED_VERSION)
+            if (ver > IVCAM_MIN_SUPPORTED_VERSION)
             {
                 rawCalibData = rawCalibData + 4;
 
@@ -787,7 +762,8 @@ namespace rsimpl { namespace f200
 
                 fixWithVersionInfo(CalibrationData, size, rawCalibData);
 
-                memcpy(calprms, &CalibrationData.CalibrationParameters, sizeof(CameraCalibrationParameters));
+                CameraCalibrationParameters calibration;
+                memcpy(&calibration, &CalibrationData.CalibrationParameters, sizeof(CameraCalibrationParameters));
 
                 // calprms; // breakpoint here to debug
 
@@ -796,16 +772,28 @@ namespace rsimpl { namespace f200
                 //copy the tester data from end of calibration
                 int EndOfCalibratioData = SIZE_OF_CALIB_PARAM_BYTES + SIZE_OF_CALIB_HEADER_BYTES;
                 memcpy((uint8_t*)&TesterData + SIZE_OF_CALIB_HEADER_BYTES , rawCalibData + EndOfCalibratioData , sizeof(IVCAMTesterData) - SIZE_OF_CALIB_HEADER_BYTES);
-            }
-            else if (ver > 17)
-            {
-                throw std::runtime_error("calibration table is not compatible with this API");
+                return std::make_tuple(calibration, TesterData.TemperatureData, TesterData.ThermalLoopParams);
             }
 
-            calibration = IVCAMTemperatureCompensator(*calprms, TesterData.TemperatureData, TesterData.ThermalLoopParams);
+            if (ver == IVCAM_MIN_SUPPORTED_VERSION)
+            {
+                float *params = (float *)bufParams;
+
+                CameraCalibrationParameters calibration;
+                memcpy(&calibration, params + 1, sizeof(CameraCalibrationParameters)); // skip the first float or 2 uint16
+
+                // calprms; // breakpoint here to debug
+
+                memcpy(&TesterData, bufParams, SIZE_OF_CALIB_HEADER_BYTES);
+
+                memset((uint8_t*)&TesterData+SIZE_OF_CALIB_HEADER_BYTES,0,sizeof(IVCAMTesterData) - SIZE_OF_CALIB_HEADER_BYTES);
+                return std::make_tuple(calibration, TesterData.TemperatureData, TesterData.ThermalLoopParams);
+            }
+
+            throw std::runtime_error("calibration table is not compatible with this API");
         }
 
-        CameraCalibrationParameters get_f200_calibration(uvc::device & device, std::timed_mutex & usbMutex, IVCAMTemperatureCompensator & calibration)
+        std::tuple<CameraCalibrationParameters, IVCAMTemperatureData, IVCAMThermalLoopParams> get_f200_calibration(uvc::device & device, std::timed_mutex & usbMutex)
         {
             const uvc::guid IVCAM_WIN_USB_DEVICE_GUID = {0x175695CD, 0x30D9, 0x4F87, {0x8B, 0xE3, 0x5A, 0x82, 0x70, 0xF4, 0x9A, 0x31}};
             device.claim_interface(IVCAM_WIN_USB_DEVICE_GUID, IVCAM_MONITOR_INTERFACE);
@@ -814,10 +802,7 @@ namespace rsimpl { namespace f200
             size_t bufferLength = HW_MONITOR_BUFFER_SIZE;
             f200_only::get_calibration_raw_data(device, usbMutex, rawCalibrationBuffer, bufferLength);
 
-            CameraCalibrationParameters calibratedParameters;
-            f200_only::projection_calibrate(calibration, rawCalibrationBuffer, (int) bufferLength, &calibratedParameters);
-
-            return calibratedParameters;
+            return f200_only::projection_calibrate(rawCalibrationBuffer, (int) bufferLength);
         }
     }
 

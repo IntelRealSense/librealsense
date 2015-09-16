@@ -305,7 +305,7 @@ namespace rsimpl { namespace f200
         FW_COUNT_ERROR
     };
 
-    class IVCAMTemperatureCompensator
+    /*class IVCAMTemperatureCompensator
     {
         CameraCalibrationParameters originalParams;
         IVCAMTemperatureData BaseTemperatureData;
@@ -317,21 +317,24 @@ namespace rsimpl { namespace f200
             : originalParams(p), BaseTemperatureData(TemperatureData), ThermalLoopParams(ThermalLoopParams), lastTemperatureDelta(DELTA_INF) {}
 
         std::pair<bool, CameraCalibrationParameters> updateParamsAccordingToTemperature(float liguriaTemp, float IRTemp);
-    };
+    };*/
 
     class IVCAMHardwareIO
     {
         uvc::device device;
         std::timed_mutex usbMutex;
 
-        CameraCalibrationParameters parameters;
+        CameraCalibrationParameters base_calibration;
+        IVCAMTemperatureData base_temperature_data;
+        IVCAMThermalLoopParams thermal_loop_params;
+
+        CameraCalibrationParameters compensated_calibration;
+        float last_temperature_delta = DELTA_INF;
 
         std::thread temperatureThread;
         std::atomic<bool> runTemperatureThread;
         std::mutex temperatureMutex;
         std::condition_variable temperatureCv;
-
-        IVCAMTemperatureCompensator calibration;
 
         int PrepareUSBCommand(uint8_t * request, size_t & requestSize, uint32_t op,
                               uint32_t p1 = 0, uint32_t p2 = 0, uint32_t p3 = 0, uint32_t p4 = 0,
@@ -339,7 +342,7 @@ namespace rsimpl { namespace f200
         void ExecuteUSBCommand(uint8_t *out, size_t outSize, uint32_t & op, uint8_t * in, size_t & inSize);
         void FillUSBBuffer(int opCodeNumber, int p1, int p2, int p3, int p4, char * data, int dataLength, char * bufferToSend, int & length);
         void GetCalibrationRawData(IVCAMDataSource src, uint8_t * data, size_t & bytesReturned);
-        void ProjectionCalibrate(uint8_t * rawCalibData, int len, CameraCalibrationParameters * calprms);
+        void ProjectionCalibrate(uint8_t * rawCalibData, int len);
         void ReadTemperatures(IVCAMTemperatureData & data);
         bool EnableTimeStamp(bool enableColor, bool enableDepth);
         void ForceHardwareReset();
@@ -362,14 +365,14 @@ namespace rsimpl { namespace f200
         IVCAMHardwareIO(uvc::device device, bool sr300);
         ~IVCAMHardwareIO();
 
-        CameraCalibrationParameters & GetParameters() { std::lock_guard<std::mutex> guard(temperatureMutex); return parameters; }
+        CameraCalibrationParameters & GetParameters() { std::lock_guard<std::mutex> guard(temperatureMutex); return compensated_calibration; } // TODO: Store
     };
 
     #define NUM_OF_CALIBRATION_COEFFS   (64)
 
     namespace f200_only
     {
-        CameraCalibrationParameters get_f200_calibration(uvc::device & device, std::timed_mutex & usbMutex, IVCAMTemperatureCompensator & calibration);
+        std::tuple<CameraCalibrationParameters, IVCAMTemperatureData, IVCAMThermalLoopParams> get_f200_calibration(uvc::device & device, std::timed_mutex & usbMutex);
     }
 } } // namespace rsimpl::f200
 
