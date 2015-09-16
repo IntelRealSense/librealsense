@@ -1,23 +1,77 @@
 #include "f200-private.h"
 
+#define IVCAM_VID                       0x8086
+#define IVCAM_PID                       0x0A66
+#define IVCAM_MONITOR_INTERFACE         0x4
+#define IVCAM_MONITOR_ENDPOINT_OUT      0x1
+#define IVCAM_MONITOR_ENDPOINT_IN       0x81
+#define IVCAM_MONITOR_MAGIC_NUMBER      0xcdab
+#define IVCAM_MIN_SUPPORTED_VERSION     13
+#define IVCAM_MONITOR_MAX_BUFFER_SIZE   1024
+#define IVCAM_MONITOR_HEADER_SIZE       (sizeof(uint32_t)*6)
+#define IVCAM_MONITOR_MUTEX_TIMEOUT     3000
+
+#define NUM_OF_CALIBRATION_PARAMS       (100)
+#define PARAMETERS_BUFFER_SIZE          (50)
+#define MAX_SIZE_OF_CALIB_PARAM_BYTES   (800)
+#define SIZE_OF_CALIB_PARAM_BYTES       (512)
+#define SIZE_OF_CALIB_HEADER_BYTES      (4)
+
 namespace rsimpl { namespace f200
 {
-    #define IVCAM_VID                       0x8086
-    #define IVCAM_PID                       0x0A66
-    #define IVCAM_MONITOR_INTERFACE         0x4
-    #define IVCAM_MONITOR_ENDPOINT_OUT      0x1
-    #define IVCAM_MONITOR_ENDPOINT_IN       0x81
-    #define IVCAM_MONITOR_MAGIC_NUMBER      0xcdab
-    #define IVCAM_MIN_SUPPORTED_VERSION     13
-    #define IVCAM_MONITOR_MAX_BUFFER_SIZE   1024
-    #define IVCAM_MONITOR_HEADER_SIZE       (sizeof(uint32_t)*6)
-    #define IVCAM_MONITOR_MUTEX_TIMEOUT     3000
+    void execute_usb_command(uvc::device & device, std::timed_mutex & mutex, uint8_t *out, size_t outSize, uint32_t & op, uint8_t * in, size_t & inSize)
+    {
+        // write
+        errno = 0;
 
-    #define NUM_OF_CALIBRATION_PARAMS       (100)
-    #define PARAMETERS_BUFFER_SIZE          (50)
-    #define MAX_SIZE_OF_CALIB_PARAM_BYTES   (800)
-    #define SIZE_OF_CALIB_PARAM_BYTES       (512)
-    #define SIZE_OF_CALIB_HEADER_BYTES      (4)
+        int outXfer;
+
+        if (!mutex.try_lock_for(std::chrono::milliseconds(IVCAM_MONITOR_MUTEX_TIMEOUT))) throw std::runtime_error("timed_mutex::try_lock_for(...) timed out");
+        std::lock_guard<std::timed_mutex> guard(mutex, std::adopt_lock);
+
+        device.bulk_transfer(IVCAM_MONITOR_ENDPOINT_OUT, out, (int) outSize, &outXfer, 1000); // timeout in ms
+
+        // read
+        if (in && inSize)
+        {
+            uint8_t buf[IVCAM_MONITOR_MAX_BUFFER_SIZE];
+
+            errno = 0;
+
+            device.bulk_transfer(IVCAM_MONITOR_ENDPOINT_IN, buf, sizeof(buf), &outXfer, 1000);
+            if (outXfer < (int)sizeof(uint32_t)) throw std::runtime_error("incomplete bulk usb transfer");
+
+            op = *(uint32_t *)buf;
+            if (outXfer > (int)inSize) throw std::runtime_error("bulk transfer failed - user buffer too small");
+            inSize = outXfer;
+            memcpy(in, buf, inSize);
+        }
+    }
+
+    bool send_hw_monitor_command(uvc::device & device, std::timed_mutex & mutex, IVCAMCommandDetails & details)
+    {
+        unsigned char outputBuffer[HW_MONITOR_BUFFER_SIZE];
+
+        uint32_t op;
+        size_t receivedCmdLen = HW_MONITOR_BUFFER_SIZE;
+
+        execute_usb_command(device, mutex, (uint8_t*) details.sendCommandData, (size_t) details.sizeOfSendCommandData, op, outputBuffer, receivedCmdLen);
+        details.receivedCommandDataLength = receivedCmdLen;
+
+        if (details.oneDirection) return true;
+
+        if (details.receivedCommandDataLength >= 4)
+        {
+            details.receivedCommandDataLength -= 4;
+            memcpy(details.receivedOpcode, outputBuffer, 4);
+        }
+        else return false;
+
+        if (details.receivedCommandDataLength > 0 )
+            memcpy(details.receivedCommandData, outputBuffer + 4, details.receivedCommandDataLength);
+
+        return true;
+    }
 
     int bcdtoint(uint8_t * buf, int bufsize)
     {
@@ -69,35 +123,6 @@ namespace rsimpl { namespace f200
         *(uint16_t *)request = (uint16_t)(index - sizeof(uint32_t));
         requestSize = index;
         return index;
-    }
-
-    void IVCAMHardwareIO::ExecuteUSBCommand(uint8_t *out, size_t outSize, uint32_t & op, uint8_t * in, size_t & inSize)
-    {
-        // write
-        errno = 0;
-
-        int outXfer;
-
-        if (!usbMutex.try_lock_for(std::chrono::milliseconds(IVCAM_MONITOR_MUTEX_TIMEOUT))) throw std::runtime_error("usbMutex timed out");
-        std::lock_guard<std::timed_mutex> guard(usbMutex, std::adopt_lock);
-
-        device.bulk_transfer(IVCAM_MONITOR_ENDPOINT_OUT, out, (int) outSize, &outXfer, 1000); // timeout in ms
-
-        // read
-        if (in && inSize)
-        {
-            uint8_t buf[IVCAM_MONITOR_MAX_BUFFER_SIZE];
-
-            errno = 0;
-
-            device.bulk_transfer(IVCAM_MONITOR_ENDPOINT_IN, buf, sizeof(buf), &outXfer, 1000);
-            if (outXfer < (int)sizeof(uint32_t)) throw std::runtime_error("incomplete bulk usb transfer");
-
-            op = *(uint32_t *)buf;
-            if (outXfer > (int)inSize) throw std::runtime_error("bulk transfer failed - user buffer too small");
-            inSize = outXfer;
-            memcpy(in, buf, inSize);
-        }
     }
 
     void IVCAMHardwareIO::FillUSBBuffer(int opCodeNumber, int p1, int p2, int p3, int p4, char * data, int dataLength, char * bufferToSend, int & length)
@@ -238,23 +263,6 @@ namespace rsimpl { namespace f200
         return PerfomAndSendHWmonitorCommand(cmd);
     }
 
-    void IVCAMHardwareIO::ReadTemperatures(IVCAMTemperatureData & data)
-    {
-        data = {0};
-
-        int irTemp;
-        if (!GetIRtemp(irTemp))
-            throw std::runtime_error("could not get IR temperature");
-
-        data.IRTemp = (float) irTemp;
-
-        float memsTemp;
-        if (!GetMEMStemp(memsTemp))
-            throw std::runtime_error("could not get liguria temperature");
-
-        data.LiguriaTemp = memsTemp;
-    }
-
     bool IVCAMHardwareIO::GetFwLastError(FirmwareError & error)
     {
         IVCAMCommand cmd(IVCAMMonitorCommand::GetFWLastError);
@@ -290,7 +298,7 @@ namespace rsimpl { namespace f200
                       details.sendCommandData,
                       details.sizeOfSendCommandData);
 
-        result = SendHWmonitorCommand(details);
+        result = send_hw_monitor_command(device, usbMutex, details);
 
         // Error/exit conditions
         if (result == false) return result;
@@ -308,31 +316,6 @@ namespace rsimpl { namespace f200
         }
 
         return result;
-    }
-
-    bool IVCAMHardwareIO::SendHWmonitorCommand(IVCAMCommandDetails & details)
-    {
-        unsigned char outputBuffer[HW_MONITOR_BUFFER_SIZE];
-
-        uint32_t op;
-        size_t receivedCmdLen = HW_MONITOR_BUFFER_SIZE;
-
-        ExecuteUSBCommand((uint8_t*) details.sendCommandData, (size_t) details.sizeOfSendCommandData, op, outputBuffer, receivedCmdLen);
-        details.receivedCommandDataLength = receivedCmdLen;
-
-        if (details.oneDirection) return true;
-
-        if (details.receivedCommandDataLength >= 4)
-        {
-            details.receivedCommandDataLength -= 4;
-            memcpy(details.receivedOpcode, outputBuffer, 4);
-        }
-        else return false;
-
-        if (details.receivedCommandDataLength > 0 )
-            memcpy(details.receivedCommandData, outputBuffer + 4, details.receivedCommandDataLength);
-
-        return true;
     }
 
     bool IVCAMHardwareIO::GetMEMStemp(float & MEMStemp)
@@ -557,9 +540,6 @@ namespace rsimpl { namespace f200
 
     void IVCAMHardwareIO::TemperatureControlLoop()
     {
-        IVCAMTemperatureData t;
-        IVCAMASICCoefficients coeffs;
-
         const float FcxSlope = base_calibration.Kc[0][0] * thermal_loop_params.FcxSlopeA + thermal_loop_params.FcxSlopeB;
         const float UxSlope = base_calibration.Kc[0][2] * thermal_loop_params.UxSlopeA + base_calibration.Kc[0][0] * thermal_loop_params.UxSlopeB + thermal_loop_params.UxSlopeC;
         const float tempFromHFOV = (tan(thermal_loop_params.HFOVsensitivity*M_PI/360)*(1 + base_calibration.Kc[0][0]*base_calibration.Kc[0][0]))/(FcxSlope * (1 + base_calibration.Kc[0][0] * tan(thermal_loop_params.HFOVsensitivity * M_PI/360)));
@@ -573,7 +553,15 @@ namespace rsimpl { namespace f200
             //@tofix, this will throw if bad, but might periodically fail anyway. try/catch
             try
             {
-                ReadTemperatures(t);
+                IVCAMTemperatureData t = {};
+
+                int irTempInt;
+                if (!GetIRtemp(irTempInt))
+                    throw std::runtime_error("could not get IR temperature");
+                t.IRTemp = (float)irTempInt;
+
+                if (!GetMEMStemp(t.LiguriaTemp))
+                    throw std::runtime_error("could not get liguria temperature");
 
                 if(true) //thermal_loop_params.IRThermalLoopEnable)
                 {
@@ -614,6 +602,7 @@ namespace rsimpl { namespace f200
 
                         //@tofix, qRes mode
                         DEBUG_OUT("updating asic with new temperature calibration coefficients");
+                        IVCAMASICCoefficients coeffs = {};
                         GenerateAsicCalibrationCoefficients(compensated_calibration, {640, 480}, true, coeffs.CoefValueArray);
                         if (UpdateASICCoefs(&coeffs) != true)
                         {
@@ -696,35 +685,6 @@ namespace rsimpl { namespace f200
             *(uint16_t *)request = (uint16_t)(index - sizeof(uint32_t));
             requestSize = index;
             return index;
-        }
-
-        void execute_usb_command(uvc::device & device, std::timed_mutex & usbMutex, uint8_t *out, size_t outSize, uint32_t & op, uint8_t * in, size_t & inSize)
-        {
-            // write
-            errno = 0;
-
-            int outXfer;
-
-            if (!usbMutex.try_lock_for(std::chrono::milliseconds(IVCAM_MONITOR_MUTEX_TIMEOUT))) throw std::runtime_error("usbMutex timed out");
-            std::lock_guard<std::timed_mutex> guard(usbMutex, std::adopt_lock);
-
-            device.bulk_transfer(IVCAM_MONITOR_ENDPOINT_OUT, out, (int) outSize, &outXfer, 1000); // timeout in ms
-
-            // read
-            if (in && inSize)
-            {
-                uint8_t buf[IVCAM_MONITOR_MAX_BUFFER_SIZE];
-
-                errno = 0;
-
-                device.bulk_transfer(IVCAM_MONITOR_ENDPOINT_IN, buf, sizeof(buf), &outXfer, 1000);
-                if (outXfer < (int)sizeof(uint32_t)) throw std::runtime_error("incomplete bulk usb transfer");
-
-                op = *(uint32_t *)buf;
-                if (outXfer > (int)inSize) throw std::runtime_error("bulk transfer failed - user buffer too small");
-                inSize = outXfer;
-                memcpy(in, buf, inSize);
-            }
         }
 
         void get_calibration_raw_data(uvc::device & device, std::timed_mutex & usbMutex, uint8_t * data, size_t & bytesReturned)
