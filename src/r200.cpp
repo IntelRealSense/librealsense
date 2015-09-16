@@ -42,7 +42,7 @@ namespace rsimpl
         return {(int)i.w, (int)i.h, i.px, i.py, i.fx, i.fy, RS_DISTORTION_MODIFIED_BROWN_CONRADY, {i.k[0],i.k[1],i.k[2],i.k[3],i.k[4]}};
     }
 
-    static static_device_info get_r200_info(uvc::device device, std::vector<rs_intrinsics> & intrinsics)
+    static std::tuple<static_device_info, std::vector<rs_intrinsics>> get_r200_info(uvc::device device)
     {
         enum { LR_FULL, LR_BIG, LR_QRES, Z_FULL, Z_BIG, Z_QRES, THIRD_HD, THIRD_VGA, NUM_INTRINSICS };
         const static struct { int w, h, uvc_w, uvc_h, lr_intrin, z_intrin; } lrz_modes[] = {
@@ -108,7 +108,7 @@ namespace rsimpl
         r200::CameraHeaderInfo h;
         r200::read_camera_info(device, c, h);
 
-        intrinsics.resize(NUM_INTRINSICS);
+        std::vector<rs_intrinsics> intrinsics(NUM_INTRINSICS);
         intrinsics[LR_FULL] = MakeLeftRightIntrinsics(c.modesLR[0]);
         intrinsics[LR_BIG] = MakeLeftRightIntrinsics(c.modesLR[1]);
         intrinsics[LR_QRES] = MakeLeftRightIntrinsics(c.modesLR[2]);
@@ -125,13 +125,14 @@ namespace rsimpl
         info.stream_poses[RS_STREAM_COLOR].position = info.stream_poses[RS_STREAM_COLOR].orientation * info.stream_poses[RS_STREAM_COLOR].position;
         info.depth_scale = 0.001f;
 
-        return info;
+        return std::make_tuple(info, intrinsics);
     }
 
     r200_camera::r200_camera(uvc::device device) : rs_device(device)
     {
-        auto info = get_r200_info(device, intrinsics);
-        device_info = add_standard_unpackers(info);
+        auto info = get_r200_info(device);
+        device_info = add_standard_unpackers(std::get<0>(info));
+        set_intrinsics_thread_safe(std::get<1>(info));
     }
     
     r200_camera::~r200_camera()

@@ -173,6 +173,16 @@ namespace rsimpl
         return info;
     }
 
+    std::vector<rs_intrinsics> compute_intrinsics(const f200::CameraCalibrationParameters & calibration)
+    {
+        std::vector<rs_intrinsics> intrinsics(NUM_INTRINSICS);
+        intrinsics[COLOR_VGA] = MakeColorIntrinsics(calibration, 640, 480);
+        intrinsics[COLOR_HD] = MakeColorIntrinsics(calibration, 1920, 1080);
+        intrinsics[DEPTH_VGA] = MakeDepthIntrinsics(calibration, 640, 480);
+        intrinsics[DEPTH_QVGA] = MakeDepthIntrinsics(calibration, 320, 240);
+        return intrinsics;
+    }
+
     f200_camera::f200_camera(uvc::device device, bool sr300) : rs_device(device), last_temperature_delta(std::numeric_limits<float>::infinity())
     {
         f200::claim_ivcam_interface(device);
@@ -187,7 +197,7 @@ namespace rsimpl
             std::tie(base_calibration, base_temperature_data, thermal_loop_params) = f200::read_f200_calibration(device, usbMutex);
             device_info = add_standard_unpackers(get_f200_info(base_calibration));
         }
-        update_intrinsics(base_calibration);       
+        set_intrinsics_thread_safe(compute_intrinsics(base_calibration));
 
         // TODO: Only enable timestamps for streams that are active, such as in on_before_start()
         f200::enable_timestamp(device, usbMutex, true, true); // Dimitri: debugging dangerously (assume we are pulling color + depth)
@@ -207,16 +217,6 @@ namespace rsimpl
         temperatureCv.notify_one();
         if (temperatureThread.joinable())
             temperatureThread.join();        
-    }
-
-    void f200_camera::update_intrinsics(const f200::CameraCalibrationParameters & calibration)
-    {
-        std::lock_guard<std::mutex> lock(intrinsics_mutex);
-        intrinsics.resize(NUM_INTRINSICS);
-        intrinsics[COLOR_VGA] = MakeColorIntrinsics(calibration, 640, 480);
-        intrinsics[COLOR_HD] = MakeColorIntrinsics(calibration, 1920, 1080);
-        intrinsics[DEPTH_VGA] = MakeDepthIntrinsics(calibration, 640, 480);
-        intrinsics[DEPTH_QVGA] = MakeDepthIntrinsics(calibration, 320, 240);
     }
 
     void f200_camera::temperature_control_loop()
@@ -274,7 +274,7 @@ namespace rsimpl
                     // TODO: Pass the current resolution into update_asic_coefficients
                     DEBUG_OUT("updating asic with new temperature calibration coefficients");
                     update_asic_coefficients(device, usbMutex, compensated_calibration);
-                    update_intrinsics(compensated_calibration);
+                    set_intrinsics_thread_safe(compute_intrinsics(compensated_calibration));
                     last_temperature_delta = weightedTempDelta;
                 }
             }

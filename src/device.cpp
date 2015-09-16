@@ -289,3 +289,9 @@ void rs_device::get_stream_mode(rs_stream stream, int mode, int * width, int * h
     if(format) *format = m.format;
     if(framerate) *framerate = m.fps;
 }
+
+void rs_device::set_intrinsics_thread_safe(std::vector<rs_intrinsics> new_intrinsics)
+{
+    std::lock_guard<std::mutex> lock(intrinsics_mutex);
+    intrinsics.swap(new_intrinsics);
+}

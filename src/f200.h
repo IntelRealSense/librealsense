@@ -29,7 +29,6 @@ namespace rsimpl
         std::condition_variable temperatureCv;
 
         void temperature_control_loop();
-        void update_intrinsics(const f200::CameraCalibrationParameters & calib); // Safe to call from any thread
     public:      
         f200_camera(uvc::device device, bool sr300);
         ~f200_camera();

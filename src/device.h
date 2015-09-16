@@ -11,10 +11,10 @@ protected:
 
     rsimpl::uvc::device                     device;
     rsimpl::static_device_info              device_info;
-
+private:
     std::vector<rs_intrinsics>              intrinsics;
     mutable std::mutex                      intrinsics_mutex;           // Controls access to intrinsics, mutable so that it can be locked from const methods which only read the value of intrinsics
-
+protected:
     rsimpl::stream_request                  requests[RS_STREAM_COUNT];  // Indexed by RS_DEPTH, RS_COLOR, ...
     std::shared_ptr<rsimpl::stream_buffer>  streams[RS_STREAM_COUNT];   // Indexed by RS_DEPTH, RS_COLOR, ...
 
@@ -23,6 +23,8 @@ protected:
 
     int64_t                                 base_timestamp;
     int                                     last_stream_timestamp;
+
+    void                                    set_intrinsics_thread_safe(std::vector<rs_intrinsics> new_intrinsics); // Thread-safe
 public:
                                             rs_device(rsimpl::uvc::device device);
                                             ~rs_device();
