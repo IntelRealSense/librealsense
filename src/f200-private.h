@@ -4,30 +4,6 @@
 
 #include "uvc.h"
 
-#define _USE_MATH_DEFINES
-#include <math.h>
-#include <cstring>  // for memcpy, memcmp
-#include <memory>
-#include <thread>
-#include <mutex>
-#include <atomic>
-#include <condition_variable>
-
-// IVCAM depth XU identifiers
-#define IVCAM_DEPTH_LASER_POWER         1
-#define IVCAM_DEPTH_ACCURACY            2
-#define IVCAM_DEPTH_MOTION_RANGE        3
-#define IVCAM_DEPTH_ERROR               4
-#define IVCAM_DEPTH_FILTER_OPTION       5
-#define IVCAM_DEPTH_CONFIDENCE_THRESH   6
-#define IVCAM_DEPTH_DYNAMIC_FPS         7 // Only available on IVCAM 1.5 / SR300
-
-// IVCAM color XU identifiers
-#define IVCAM_COLOR_EXPOSURE_PRIORITY   1
-#define IVCAM_COLOR_AUTO_FLICKER        2
-#define IVCAM_COLOR_ERROR               3
-#define IVCAM_COLOR_EXPOSURE_GRANULAR   4
-
 namespace rsimpl { namespace f200
 {
     struct CameraCalibrationParameters
@@ -98,6 +74,20 @@ namespace rsimpl { namespace f200
     void force_hardware_reset(uvc::device & device, std::timed_mutex & mutex);
     void enable_timestamp(uvc::device & device, std::timed_mutex & mutex, bool colorEnable, bool depthEnable);
     void update_asic_coefficients(uvc::device & device, std::timed_mutex & mutex, const CameraCalibrationParameters & compensated_params); // TODO: Allow you to specify resolution
+
+    // XU read/write
+    void get_laser_power(const uvc::device & device, uint8_t & laser_power);
+    void set_laser_power(uvc::device & device, uint8_t laser_power);  
+    void get_accuracy(const uvc::device & device, uint8_t & accuracy);  
+    void set_accuracy(uvc::device & device, uint8_t accuracy);    
+    void get_motion_range(const uvc::device & device, uint8_t & motion_range);
+    void set_motion_range(uvc::device & device, uint8_t motion_range);
+    void get_filter_option(const uvc::device & device, uint8_t & filter_option);
+    void set_filter_option(uvc::device & device, uint8_t filter_option);
+    void get_confidence_threshold(const uvc::device & device, uint8_t & conf_thresh);
+    void set_confidence_threshold(uvc::device & device, uint8_t conf_thresh);
+    void get_dynamic_fps(const uvc::device & device, uint8_t & dynamic_fps);
+    void set_dynamic_fps(uvc::device & device, uint8_t dynamic_fps);
 
     #define NUM_OF_CALIBRATION_COEFFS   (64)
 

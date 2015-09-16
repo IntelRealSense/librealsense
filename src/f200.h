@@ -5,6 +5,10 @@
 #include "device.h"
 #include "f200-private.h" // TODO: Refactor so we don't need this here
 
+#include <atomic>
+#include <thread>
+#include <condition_variable>
+
 namespace rsimpl
 {
     namespace f200 { class IVCAMHardwareIO; }
