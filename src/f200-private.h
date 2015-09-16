@@ -305,20 +305,6 @@ namespace rsimpl { namespace f200
         FW_COUNT_ERROR
     };
 
-    /*class IVCAMTemperatureCompensator
-    {
-        CameraCalibrationParameters originalParams;
-        IVCAMTemperatureData BaseTemperatureData;
-        IVCAMThermalLoopParams ThermalLoopParams;
-        float lastTemperatureDelta; // This is the only piece of state that actually changes
-    public:
-        IVCAMTemperatureCompensator() {}
-        IVCAMTemperatureCompensator(const CameraCalibrationParameters & p, IVCAMTemperatureData TemperatureData, IVCAMThermalLoopParams ThermalLoopParams) 
-            : originalParams(p), BaseTemperatureData(TemperatureData), ThermalLoopParams(ThermalLoopParams), lastTemperatureDelta(DELTA_INF) {}
-
-        std::pair<bool, CameraCalibrationParameters> updateParamsAccordingToTemperature(float liguriaTemp, float IRTemp);
-    };*/
-
     class IVCAMHardwareIO
     {
         uvc::device device;
@@ -336,17 +322,7 @@ namespace rsimpl { namespace f200
         std::mutex temperatureMutex;
         std::condition_variable temperatureCv;
 
-        int PrepareUSBCommand(uint8_t * request, size_t & requestSize, uint32_t op,
-                              uint32_t p1 = 0, uint32_t p2 = 0, uint32_t p3 = 0, uint32_t p4 = 0,
-                              uint8_t * data = 0, size_t dataLength = 0);
-        void FillUSBBuffer(int opCodeNumber, int p1, int p2, int p3, int p4, char * data, int dataLength, char * bufferToSend, int & length);
-        void GetCalibrationRawData(IVCAMDataSource src, uint8_t * data, size_t & bytesReturned);
         void ProjectionCalibrate(uint8_t * rawCalibData, int len);
-        bool EnableTimeStamp(bool enableColor, bool enableDepth);
-        void ForceHardwareReset();
-        bool GetMEMStemp(float & MEMStemp);
-        bool GetIRtemp(int & IRtemp);
-        bool GetFwLastError(FirmwareError & error);
 
         void StartTempCompensationLoop();
         void StopTempCompensationLoop();
@@ -354,8 +330,6 @@ namespace rsimpl { namespace f200
 
         bool UpdateASICCoefs(IVCAMASICCoefficients * coeffs);
         void GenerateAsicCalibrationCoefficients(const CameraCalibrationParameters & compensated_calibration, std::vector<int> resolution, const bool isZMode, float * values) const;
-
-        bool PerfomAndSendHWmonitorCommand(IVCAMCommand & newCommand);
 
     public:
 

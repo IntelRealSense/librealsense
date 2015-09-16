@@ -19,6 +19,74 @@
 
 namespace rsimpl { namespace f200
 {
+    int prepare_usb_command(uint8_t * request, size_t & requestSize, uint32_t op, uint32_t p1 = 0, uint32_t p2 = 0, uint32_t p3 = 0, uint32_t p4 = 0, uint8_t * data = 0, size_t dataLength = 0)
+    {
+
+        if (requestSize < IVCAM_MONITOR_HEADER_SIZE)
+            return 0;
+
+        int index = sizeof(uint16_t);
+        *(uint16_t *)(request + index) = IVCAM_MONITOR_MAGIC_NUMBER;
+        index += sizeof(uint16_t);
+        *(uint32_t *)(request + index) = op;
+        index += sizeof(uint32_t);
+        *(uint32_t *)(request + index) = p1;
+        index += sizeof(uint32_t);
+        *(uint32_t *)(request + index) = p2;
+        index += sizeof(uint32_t);
+        *(uint32_t *)(request + index) = p3;
+        index += sizeof(uint32_t);
+        *(uint32_t *)(request + index) = p4;
+        index += sizeof(uint32_t);
+
+        if (dataLength)
+        {
+            memcpy(request + index , data, dataLength);
+            index += dataLength;
+        }
+
+        // Length doesn't include header size (sizeof(uint32_t))
+        *(uint16_t *)request = (uint16_t)(index - sizeof(uint32_t));
+        requestSize = index;
+        return index;
+    }
+
+    // NOTE: Almost certainly redundant with above function, unify later
+    void fill_usb_buffer(int opCodeNumber, int p1, int p2, int p3, int p4, char * data, int dataLength, char * bufferToSend, int & length)
+    {
+        uint16_t preHeaderData = IVCAM_MONITOR_MAGIC_NUMBER;
+
+        char * writePtr = bufferToSend;
+        int header_size = 4;
+
+        // TBD !!! This may change. Need to define it as part of API
+        //typeSize = sizeof(float);
+
+        int cur_index = 2;
+        *(uint16_t *)(writePtr + cur_index) = preHeaderData;
+        cur_index += sizeof(uint16_t);
+        *(int *)( writePtr + cur_index) = opCodeNumber;
+        cur_index += sizeof(uint32_t);
+        *(int *)( writePtr + cur_index) = p1;
+        cur_index += sizeof(uint32_t);
+        *(int *)( writePtr + cur_index) = p2;
+        cur_index += sizeof(uint32_t);
+        *(int *)( writePtr + cur_index) = p3;
+        cur_index += sizeof(uint32_t);
+        *(int *)( writePtr + cur_index) = p4;
+        cur_index += sizeof(uint32_t);
+
+        if (dataLength)
+        {
+            memcpy(writePtr + cur_index , data, dataLength);
+            cur_index += dataLength;
+        }
+
+        length = cur_index;
+        *(uint16_t *) bufferToSend = (uint16_t)(length - header_size);// Length doesn't include header
+
+    }
+
     void execute_usb_command(uvc::device & device, std::timed_mutex & mutex, uint8_t *out, size_t outSize, uint32_t & op, uint8_t * in, size_t & inSize)
     {
         // write
@@ -73,6 +141,131 @@ namespace rsimpl { namespace f200
         return true;
     }
 
+    bool perform_and_send_monitor_command(uvc::device & device, std::timed_mutex & mutex, IVCAMCommand & newCommand)
+    {
+        bool result = true;
+
+        uint32_t opCodeXmit = (uint32_t) newCommand.cmd;
+
+        IVCAMCommandDetails details;
+        details.oneDirection = newCommand.oneDirection;
+        details.TimeOut = newCommand.TimeOut;
+
+        fill_usb_buffer(opCodeXmit,
+                        newCommand.Param1,
+                        newCommand.Param2,
+                        newCommand.Param3,
+                        newCommand.Param4,
+                        newCommand.data,
+                        newCommand.sizeOfSendCommandData,
+                        details.sendCommandData,
+                        details.sizeOfSendCommandData);
+
+        result = send_hw_monitor_command(device, mutex, details);
+
+        // Error/exit conditions
+        if (result == false) return result;
+        if (newCommand.oneDirection) return result;
+
+        memcpy(newCommand.receivedOpcode, details.receivedOpcode, 4);
+        memcpy(newCommand.receivedCommandData, details.receivedCommandData,details.receivedCommandDataLength);
+        newCommand.receivedCommandDataLength = details.receivedCommandDataLength;
+
+        // endian? 
+        uint32_t opCodeAsUint32 = pack(details.receivedOpcode[3], details.receivedOpcode[2], details.receivedOpcode[1], details.receivedOpcode[0]);
+        if (opCodeAsUint32 != opCodeXmit)
+        {
+            throw std::runtime_error("opcodes do not match");
+        }
+
+        return result;
+    }
+
+    void force_hardware_reset(uvc::device & device, std::timed_mutex & mutex)
+    {
+        IVCAMCommand cmd(IVCAMMonitorCommand::HWReset);
+        cmd.oneDirection = true;
+        perform_and_send_monitor_command(device, mutex, cmd);
+    }
+
+    bool enable_timestamp(uvc::device & device, std::timed_mutex & mutex, bool colorEnable, bool depthEnable)
+    {
+        IVCAMCommand cmd(IVCAMMonitorCommand::TimeStampEnable);
+        cmd.Param1 = depthEnable ? 1 : 0;
+        cmd.Param2 = colorEnable ? 1 : 0;
+        return perform_and_send_monitor_command(device, mutex, cmd);
+    }
+
+    bool get_fw_last_error(uvc::device & device, std::timed_mutex & mutex, FirmwareError & error)
+    {
+        IVCAMCommand cmd(IVCAMMonitorCommand::GetFWLastError);
+        memset(cmd.data, 0, 4);
+
+        bool result = perform_and_send_monitor_command(device, mutex, cmd);
+
+        if (result)
+        {
+            auto fwError = *reinterpret_cast<FirmwareError *>(cmd.receivedCommandData);
+        }
+
+        return false;
+    }
+
+    bool get_mems_temp(uvc::device & device, std::timed_mutex & mutex, float & MEMStemp)
+    {
+         IVCAMCommand command(IVCAMMonitorCommand::GetMEMSTemp);
+         command.Param1 = 0;
+         command.Param2 = 0;
+         command.Param3 = 0;
+         command.Param4 = 0;
+         command.sizeOfSendCommandData = 0;
+         command.TimeOut = 5000;
+         command.oneDirection = false;
+
+         bool result = perform_and_send_monitor_command(device, mutex, command);
+         if (result)
+         {
+            int32_t t = *((int32_t*)(command.receivedCommandData));
+            MEMStemp = (float) t;
+            MEMStemp /= 100;
+            return true;
+         }
+         else return false;
+    }
+
+    bool get_ir_temp(uvc::device & device, std::timed_mutex & mutex, int & IRtemp)
+    {
+        IVCAMCommand command(IVCAMMonitorCommand::GetIRTemp);
+        command.Param1 = 0;
+        command.Param2 = 0;
+        command.Param3 = 0;
+        command.Param4 = 0;
+        command.sizeOfSendCommandData = 0;
+        command.TimeOut = 5000;
+        command.oneDirection = false;
+
+        if (perform_and_send_monitor_command(device, mutex, command))
+        {
+            IRtemp = (int8_t) command.receivedCommandData[0];
+            return true;
+        }
+        else return false;
+    }
+
+    void get_sr300_calibration_raw_data(uvc::device & device, std::timed_mutex & mutex, IVCAMDataSource src, uint8_t * data, size_t & bytesReturned)
+    {
+        IVCAMCommand command(IVCAMMonitorCommand::GetCalibrationTable);
+        command.Param1 = (uint32_t) src;
+
+        bool result = perform_and_send_monitor_command(device, mutex, command);
+        if (result)
+        {
+            memcpy(data, command.receivedCommandData, HW_MONITOR_BUFFER_SIZE);
+            bytesReturned = command.receivedCommandDataLength;
+        }
+    }
+
+
     int bcdtoint(uint8_t * buf, int bufsize)
     {
         int r = 0;
@@ -92,98 +285,7 @@ namespace rsimpl { namespace f200
     // Private Hardware I/O //
     //////////////////////////
 
-    int IVCAMHardwareIO::PrepareUSBCommand(uint8_t * request, size_t & requestSize, uint32_t op,
-                          uint32_t p1, uint32_t p2, uint32_t p3, uint32_t p4, uint8_t * data, size_t dataLength)
-    {
 
-        if (requestSize < IVCAM_MONITOR_HEADER_SIZE)
-            return 0;
-
-        int index = sizeof(uint16_t);
-        *(uint16_t *)(request + index) = IVCAM_MONITOR_MAGIC_NUMBER;
-        index += sizeof(uint16_t);
-        *(uint32_t *)(request + index) = op;
-        index += sizeof(uint32_t);
-        *(uint32_t *)(request + index) = p1;
-        index += sizeof(uint32_t);
-        *(uint32_t *)(request + index) = p2;
-        index += sizeof(uint32_t);
-        *(uint32_t *)(request + index) = p3;
-        index += sizeof(uint32_t);
-        *(uint32_t *)(request + index) = p4;
-        index += sizeof(uint32_t);
-
-        if (dataLength)
-        {
-            memcpy(request + index , data, dataLength);
-            index += dataLength;
-        }
-
-        // Length doesn't include header size (sizeof(uint32_t))
-        *(uint16_t *)request = (uint16_t)(index - sizeof(uint32_t));
-        requestSize = index;
-        return index;
-    }
-
-    void IVCAMHardwareIO::FillUSBBuffer(int opCodeNumber, int p1, int p2, int p3, int p4, char * data, int dataLength, char * bufferToSend, int & length)
-    {
-        uint16_t preHeaderData = IVCAM_MONITOR_MAGIC_NUMBER;
-
-        char * writePtr = bufferToSend;
-        int header_size = 4;
-
-        // TBD !!! This may change. Need to define it as part of API
-        //typeSize = sizeof(float);
-
-        int cur_index = 2;
-        *(uint16_t *)(writePtr + cur_index) = preHeaderData;
-        cur_index += sizeof(uint16_t);
-        *(int *)( writePtr + cur_index) = opCodeNumber;
-        cur_index += sizeof(uint32_t);
-        *(int *)( writePtr + cur_index) = p1;
-        cur_index += sizeof(uint32_t);
-        *(int *)( writePtr + cur_index) = p2;
-        cur_index += sizeof(uint32_t);
-        *(int *)( writePtr + cur_index) = p3;
-        cur_index += sizeof(uint32_t);
-        *(int *)( writePtr + cur_index) = p4;
-        cur_index += sizeof(uint32_t);
-
-        if (dataLength)
-        {
-            memcpy(writePtr + cur_index , data, dataLength);
-            cur_index += dataLength;
-        }
-
-        length = cur_index;
-        *(uint16_t *) bufferToSend = (uint16_t)(length - header_size);// Length doesn't include header
-
-    }
-
-    void IVCAMHardwareIO::GetCalibrationRawData(IVCAMDataSource src, uint8_t * data, size_t & bytesReturned)
-    {
-        IVCAMCommand command(IVCAMMonitorCommand::GetCalibrationTable);
-        command.Param1 = (uint32_t) src;
-
-        bool result = PerfomAndSendHWmonitorCommand(command);
-        if (result)
-        {
-            memcpy(data, command.receivedCommandData, HW_MONITOR_BUFFER_SIZE);
-            bytesReturned = command.receivedCommandDataLength;
-        }
-    }
-
-    /*void IVCAMHardwareIO::GetCalibrationRawData(uint8_t * data, size_t & bytesReturned)
-    {
-        uint8_t request[IVCAM_MONITOR_HEADER_SIZE];
-        size_t requestSize = sizeof(request);
-        uint32_t responseOp;
-
-        if (PrepareUSBCommand(request, requestSize, (uint32_t) IVCAMMonitorCommand::GetCalibrationTable) <= 0) 
-            throw std::runtime_error("usb transfer to retrieve calibration data failed");
-
-        ExecuteUSBCommand(request, requestSize, responseOp, data, bytesReturned);
-    }*/
 
     void IVCAMHardwareIO::ProjectionCalibrate(uint8_t * rawCalibData, int len)
     {
@@ -245,118 +347,7 @@ namespace rsimpl { namespace f200
         compensated_calibration = base_calibration;
 
         // Dimitri: debugging dangerously (assume we are pulling color + depth)
-        EnableTimeStamp(true, true);
-    }
-
-    void IVCAMHardwareIO::ForceHardwareReset()
-    {
-        IVCAMCommand cmd(IVCAMMonitorCommand::HWReset);
-        cmd.oneDirection = true;
-        PerfomAndSendHWmonitorCommand(cmd);
-    }
-
-    bool IVCAMHardwareIO::EnableTimeStamp(bool colorEnable, bool depthEnable)
-    {
-        IVCAMCommand cmd(IVCAMMonitorCommand::TimeStampEnable);
-        cmd.Param1 = depthEnable ? 1 : 0;
-        cmd.Param2 = colorEnable ? 1 : 0;
-        return PerfomAndSendHWmonitorCommand(cmd);
-    }
-
-    bool IVCAMHardwareIO::GetFwLastError(FirmwareError & error)
-    {
-        IVCAMCommand cmd(IVCAMMonitorCommand::GetFWLastError);
-        memset(cmd.data, 0, 4);
-
-        bool result = PerfomAndSendHWmonitorCommand(cmd);
-
-        if (result)
-        {
-            auto fwError = *reinterpret_cast<FirmwareError *>(cmd.receivedCommandData);
-        }
-
-        return false;
-    }
-
-    bool IVCAMHardwareIO::PerfomAndSendHWmonitorCommand(IVCAMCommand & newCommand)
-    {
-        bool result = true;
-
-        uint32_t opCodeXmit = (uint32_t) newCommand.cmd;
-
-        IVCAMCommandDetails details;
-        details.oneDirection = newCommand.oneDirection;
-        details.TimeOut = newCommand.TimeOut;
-
-        FillUSBBuffer(opCodeXmit,
-                      newCommand.Param1,
-                      newCommand.Param2,
-                      newCommand.Param3,
-                      newCommand.Param4,
-                      newCommand.data,
-                      newCommand.sizeOfSendCommandData,
-                      details.sendCommandData,
-                      details.sizeOfSendCommandData);
-
-        result = send_hw_monitor_command(device, usbMutex, details);
-
-        // Error/exit conditions
-        if (result == false) return result;
-        if (newCommand.oneDirection) return result;
-
-        memcpy(newCommand.receivedOpcode, details.receivedOpcode, 4);
-        memcpy(newCommand.receivedCommandData, details.receivedCommandData,details.receivedCommandDataLength);
-        newCommand.receivedCommandDataLength = details.receivedCommandDataLength;
-
-        // endian? 
-        uint32_t opCodeAsUint32 = pack(details.receivedOpcode[3], details.receivedOpcode[2], details.receivedOpcode[1], details.receivedOpcode[0]);
-        if (opCodeAsUint32 != opCodeXmit)
-        {
-            throw std::runtime_error("opcodes do not match");
-        }
-
-        return result;
-    }
-
-    bool IVCAMHardwareIO::GetMEMStemp(float & MEMStemp)
-    {
-         IVCAMCommand command(IVCAMMonitorCommand::GetMEMSTemp);
-         command.Param1 = 0;
-         command.Param2 = 0;
-         command.Param3 = 0;
-         command.Param4 = 0;
-         command.sizeOfSendCommandData = 0;
-         command.TimeOut = 5000;
-         command.oneDirection = false;
-
-         bool result = PerfomAndSendHWmonitorCommand(command);
-         if (result)
-         {
-            int32_t t = *((int32_t*)(command.receivedCommandData));
-            MEMStemp = (float) t;
-            MEMStemp /= 100;
-            return true;
-         }
-         else return false;
-    }
-
-    bool IVCAMHardwareIO::GetIRtemp(int & IRtemp)
-    {
-        IVCAMCommand command(IVCAMMonitorCommand::GetIRTemp);
-        command.Param1 = 0;
-        command.Param2 = 0;
-        command.Param3 = 0;
-        command.Param4 = 0;
-        command.sizeOfSendCommandData = 0;
-        command.TimeOut = 5000;
-        command.oneDirection = false;
-
-        if (PerfomAndSendHWmonitorCommand(command))
-        {
-            IRtemp = (int8_t) command.receivedCommandData[0];
-            return true;
-        }
-        else return false;
+        enable_timestamp(device, usbMutex, true, true);
     }
 
     bool IVCAMHardwareIO::UpdateASICCoefs(IVCAMASICCoefficients * coeffs)
@@ -372,7 +363,7 @@ namespace rsimpl { namespace f200
          command.sizeOfSendCommandData = NUM_OF_CALIBRATION_COEFFS * sizeof(float);
          command.TimeOut = 5000;
 
-         return PerfomAndSendHWmonitorCommand(command);
+         return perform_and_send_monitor_command(device, usbMutex, command);
     }
 
     void IVCAMHardwareIO::GenerateAsicCalibrationCoefficients(const CameraCalibrationParameters & compensated_calibration, std::vector<int> resolution, const bool isZMode, float * values) const
@@ -556,11 +547,11 @@ namespace rsimpl { namespace f200
                 IVCAMTemperatureData t = {};
 
                 int irTempInt;
-                if (!GetIRtemp(irTempInt))
+                if (!get_ir_temp(device, usbMutex, irTempInt))
                     throw std::runtime_error("could not get IR temperature");
                 t.IRTemp = (float)irTempInt;
 
-                if (!GetMEMStemp(t.LiguriaTemp))
+                if (!get_mems_temp(device, usbMutex, t.LiguriaTemp))
                     throw std::runtime_error("could not get liguria temperature");
 
                 if(true) //thermal_loop_params.IRThermalLoopEnable)
@@ -627,7 +618,7 @@ namespace rsimpl { namespace f200
             // Grab binary blob from the camera - SR300 - firmware gets the data from different stores
             uint8_t rawCalibrationBuffer[HW_MONITOR_BUFFER_SIZE];
             size_t bufferLength = HW_MONITOR_BUFFER_SIZE;       
-            GetCalibrationRawData(sr300 ? IVCAMDataSource::TakeFromRAM : IVCAMDataSource::TakeFromRW, rawCalibrationBuffer, bufferLength);
+            get_sr300_calibration_raw_data(device, usbMutex, sr300 ? IVCAMDataSource::TakeFromRAM : IVCAMDataSource::TakeFromRW, rawCalibrationBuffer, bufferLength);
 
             CameraCalibrationParameters calibratedParameters;
             if (sr300)
@@ -644,7 +635,7 @@ namespace rsimpl { namespace f200
         {
             std::tie(base_calibration, base_temperature_data, thermal_loop_params) = f200_only::get_f200_calibration(device, usbMutex);
             compensated_calibration = base_calibration;
-            EnableTimeStamp(true, true); // Dimitri: debugging dangerously (assume we are pulling color + depth)
+            enable_timestamp(device, usbMutex, true, true); // Dimitri: debugging dangerously (assume we are pulling color + depth)
 		    StartTempCompensationLoop();
         }
     }
@@ -656,37 +647,6 @@ namespace rsimpl { namespace f200
 
     namespace f200_only
     {
-        int prepare_usb_command(uint8_t * request, size_t & requestSize, uint32_t op, uint32_t p1 = 0, uint32_t p2 = 0, uint32_t p3 = 0, uint32_t p4 = 0, uint8_t * data = 0, size_t dataLength = 0)
-        {
-            if (requestSize < IVCAM_MONITOR_HEADER_SIZE)
-                return 0;
-
-            int index = sizeof(uint16_t);
-            *(uint16_t *)(request + index) = IVCAM_MONITOR_MAGIC_NUMBER;
-            index += sizeof(uint16_t);
-            *(uint32_t *)(request + index) = op;
-            index += sizeof(uint32_t);
-            *(uint32_t *)(request + index) = p1;
-            index += sizeof(uint32_t);
-            *(uint32_t *)(request + index) = p2;
-            index += sizeof(uint32_t);
-            *(uint32_t *)(request + index) = p3;
-            index += sizeof(uint32_t);
-            *(uint32_t *)(request + index) = p4;
-            index += sizeof(uint32_t);
-
-            if (dataLength)
-            {
-                memcpy(request + index , data, dataLength);
-                index += dataLength;
-            }
-
-            // Length doesn't include header size (sizeof(uint32_t))
-            *(uint16_t *)request = (uint16_t)(index - sizeof(uint32_t));
-            requestSize = index;
-            return index;
-        }
-
         void get_calibration_raw_data(uvc::device & device, std::timed_mutex & usbMutex, uint8_t * data, size_t & bytesReturned)
         {
             uint8_t request[IVCAM_MONITOR_HEADER_SIZE];
