@@ -75,7 +75,7 @@ namespace rsimpl
         {
             intrin.fx *= 4.0f/3;
             intrin.ppx *= 4.0f/3;
-            intrin.ppy -= 1.0f/6;
+            intrin.ppx -= 1.0f/6;
         }
         intrin.fx *= w;
         intrin.fy *= h;
