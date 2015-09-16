@@ -676,7 +676,7 @@ namespace rsimpl { namespace f200
             calibration.reset(new IVCAMCalibrator);
             parameters = f200_only::get_f200_calibration(device, usbMutex, *calibration);
             EnableTimeStamp(true, true); // Dimitri: debugging dangerously (assume we are pulling color + depth)
-		    //StartTempCompensationLoop();
+		    StartTempCompensationLoop();
         }
     }
 
