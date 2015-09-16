@@ -432,6 +432,13 @@ namespace rsimpl
 
             device(std::shared_ptr<context> parent, int vid, int pid, std::string unique_id) : parent(move(parent)), vid(vid), pid(pid), unique_id(move(unique_id))
             {
+
+            }
+
+            ~device() { stop_streaming(); close_win_usb(); }
+
+            void open_ks_control()
+            {
                 // Attempt to retrieve IKsControl
                 com_ptr<IKsTopologyInfo> ks_topology_info = NULL;
                 check("QueryInterface", get_media_source(0)->QueryInterface(__uuidof(IKsTopologyInfo), (void **)&ks_topology_info));
@@ -448,10 +455,8 @@ namespace rsimpl
                     com_ptr<IUnknown> unknown;
                     check("CreateNodeInstance", ks_topology_info->CreateNodeInstance(XUNODEID, IID_IUnknown, (LPVOID *)&unknown));
                     check("QueryInterface", unknown->QueryInterface(__uuidof(IKsControl), (void **)&ks_control));
-                }
+                }            
             }
-
-            ~device() { stop_streaming(); close_win_usb(); }
 
             void start_streaming()
             {
@@ -809,6 +814,7 @@ namespace rsimpl
                 dev->subdevices[subdevice_index].mf_activate = pDevice;                
             }
             CoTaskMemFree(ppDevices);
+            for(auto & dev : devices) dev->open_ks_control();
             return devices;
         }
     }
