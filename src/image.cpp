@@ -137,7 +137,7 @@ namespace rsimpl
 
     template<class SOURCE, class SPLIT_A, class SPLIT_B> void split_frame(void * dest[], const subdevice_mode & mode, const SOURCE * source, uint32_t fourcc, rs_format format_a, rs_format format_b, SPLIT_A split_a, SPLIT_B split_b)
     {
-        assert(mode.fourcc == fourcc && mode.streams.size() == 2 && mode.streams[0].format == format_b && mode.streams[1].format == format_b
+        assert(mode.fourcc == fourcc && mode.streams.size() == 2 && mode.streams[0].format == format_a && mode.streams[1].format == format_b
             && mode.streams[0].width == mode.streams[1].width && mode.streams[0].height == mode.streams[1].height && mode.streams[0].width <= mode.width && mode.streams[0].height <= mode.height);
         auto a = reinterpret_cast<decltype(split_a(SOURCE())) *>(dest[0]);
         auto b = reinterpret_cast<decltype(split_b(SOURCE())) *>(dest[1]);
