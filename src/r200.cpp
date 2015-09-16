@@ -42,7 +42,7 @@ namespace rsimpl
         return {(int)i.w, (int)i.h, i.px, i.py, i.fx, i.fy, RS_DISTORTION_MODIFIED_BROWN_CONRADY, {i.k[0],i.k[1],i.k[2],i.k[3],i.k[4]}};
     }
 
-    static static_device_info get_r200_info(uvc::device device)
+    static static_device_info get_r200_info(uvc::device device, std::vector<rs_intrinsics> & intrinsics)
     {
         enum { LR_FULL, LR_BIG, LR_QRES, Z_FULL, Z_BIG, Z_QRES, THIRD_HD, THIRD_VGA, NUM_INTRINSICS };
         const static struct { int w, h, uvc_w, uvc_h, lr_intrin, z_intrin; } lrz_modes[] = {
@@ -108,15 +108,15 @@ namespace rsimpl
         r200::CameraHeaderInfo h;
         r200::read_camera_info(device, c, h);
 
-        info.intrinsics.resize(NUM_INTRINSICS);
-        info.intrinsics[LR_FULL] = MakeLeftRightIntrinsics(c.modesLR[0]);
-        info.intrinsics[LR_BIG] = MakeLeftRightIntrinsics(c.modesLR[1]);
-        info.intrinsics[LR_QRES] = MakeLeftRightIntrinsics(c.modesLR[2]);
-        info.intrinsics[Z_FULL] = MakeDepthIntrinsics(c.modesLR[0]);
-        info.intrinsics[Z_BIG] = MakeDepthIntrinsics(c.modesLR[1]);
-        info.intrinsics[Z_QRES] = MakeDepthIntrinsics(c.modesLR[2]);
-        info.intrinsics[THIRD_HD] = MakeColorIntrinsics(c.intrinsicsThird[0]);
-        info.intrinsics[THIRD_VGA] = MakeColorIntrinsics(c.intrinsicsThird[1]);
+        intrinsics.resize(NUM_INTRINSICS);
+        intrinsics[LR_FULL] = MakeLeftRightIntrinsics(c.modesLR[0]);
+        intrinsics[LR_BIG] = MakeLeftRightIntrinsics(c.modesLR[1]);
+        intrinsics[LR_QRES] = MakeLeftRightIntrinsics(c.modesLR[2]);
+        intrinsics[Z_FULL] = MakeDepthIntrinsics(c.modesLR[0]);
+        intrinsics[Z_BIG] = MakeDepthIntrinsics(c.modesLR[1]);
+        intrinsics[Z_QRES] = MakeDepthIntrinsics(c.modesLR[2]);
+        intrinsics[THIRD_HD] = MakeColorIntrinsics(c.intrinsicsThird[0]);
+        intrinsics[THIRD_VGA] = MakeColorIntrinsics(c.intrinsicsThird[1]);
         info.stream_poses[RS_STREAM_DEPTH] = {{{1,0,0},{0,1,0},{0,0,1}}, {0,0,0}};
         info.stream_poses[RS_STREAM_INFRARED] = {{{1,0,0},{0,1,0},{0,0,1}}, {0,0,0}};
         info.stream_poses[RS_STREAM_INFRARED2] = {{{1,0,0},{0,1,0},{0,0,1}}, {c.B[0] * 0.001f, 0, 0}};
@@ -130,7 +130,8 @@ namespace rsimpl
 
     r200_camera::r200_camera(uvc::device device) : rs_device(device)
     {
-        device_info = add_standard_unpackers(get_r200_info(device));
+        auto info = get_r200_info(device, intrinsics);
+        device_info = add_standard_unpackers(info);
     }
     
     r200_camera::~r200_camera()

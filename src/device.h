@@ -12,6 +12,9 @@ protected:
     rsimpl::uvc::device                     device;
     rsimpl::static_device_info              device_info;
 
+    std::vector<rs_intrinsics>              intrinsics;
+    mutable std::mutex                      intrinsics_mutex;           // Controls access to intrinsics, mutable so that it can be locked from const methods which only read the value of intrinsics
+
     rsimpl::stream_request                  requests[RS_STREAM_COUNT];  // Indexed by RS_DEPTH, RS_COLOR, ...
     std::shared_ptr<rsimpl::stream_buffer>  streams[RS_STREAM_COUNT];   // Indexed by RS_DEPTH, RS_COLOR, ...
 
@@ -36,7 +39,7 @@ public:
     void                                    disable_stream(rs_stream stream);
     bool                                    is_stream_enabled(rs_stream stream) const { return requests[stream].enabled; }
     rsimpl::stream_mode                     get_current_stream_mode(rs_stream stream) const;
-    rs_intrinsics                           get_stream_intrinsics(rs_stream stream) const { return device_info.intrinsics[get_current_stream_mode(stream).intrinsics_index]; }
+    rs_intrinsics                           get_stream_intrinsics(rs_stream stream) const { std::lock_guard<std::mutex> lock(intrinsics_mutex); return intrinsics[get_current_stream_mode(stream).intrinsics_index]; }
     rs_format                               get_stream_format(rs_stream stream) const { return get_current_stream_mode(stream).format; }
     int                                     get_stream_framerate(rs_stream stream) const { return get_current_stream_mode(stream).fps; }
 

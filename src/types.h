@@ -101,8 +101,6 @@ namespace rsimpl
         std::vector<interstream_rule> interstream_rules;            // Rules which constrain the set of available modes
         stream_request presets[RS_STREAM_COUNT][RS_PRESET_COUNT];   // Presets available for each stream
         bool option_supported[RS_OPTION_COUNT];                     // Whether or not a given option is supported on this camera
-
-        std::vector<rs_intrinsics> intrinsics;                      // Set of available intrinsics, each stream_mode has one
         pose stream_poses[RS_STREAM_COUNT];                         // Static pose of each camera on the device
         float depth_scale;                                          // Scale of depth values
 
