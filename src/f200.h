@@ -18,7 +18,7 @@ namespace rsimpl
         f200::IVCAMThermalLoopParams thermal_loop_params;
 
         f200::CameraCalibrationParameters compensated_calibration;
-        float last_temperature_delta = DELTA_INF;
+        float last_temperature_delta;
 
         std::thread temperatureThread;
         std::atomic<bool> runTemperatureThread;

@@ -2,6 +2,8 @@
 #include "f200-private.h"
 #include "image.h"
 
+#include <limits>
+
 namespace rsimpl
 {
     #pragma pack(push, 1)
@@ -175,10 +177,9 @@ namespace rsimpl
         return info;
     }
 
-    f200_camera::f200_camera(uvc::device device, bool sr300) : rs_device(device)
+    f200_camera::f200_camera(uvc::device device, bool sr300) : rs_device(device), last_temperature_delta(std::numeric_limits<float>::infinity())
     {
-        const uvc::guid IVCAM_WIN_USB_DEVICE_GUID = {0x175695CD, 0x30D9, 0x4F87, {0x8B, 0xE3, 0x5A, 0x82, 0x70, 0xF4, 0x9A, 0x31}};
-        device.claim_interface(IVCAM_WIN_USB_DEVICE_GUID, IVCAM_MONITOR_INTERFACE);
+        f200::claim_ivcam_interface(device);
 
         if(sr300)
         {
