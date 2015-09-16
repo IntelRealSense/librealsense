@@ -305,7 +305,46 @@ namespace rsimpl { namespace f200
         FW_COUNT_ERROR
     };
 
-    class IVCAMCalibrator;
+    class IVCAMTemperatureCompensator
+    {
+        IVCAMTemperatureData BaseTemperatureData;
+        IVCAMThermalLoopParams ThermalLoopParams;
+
+        float FcxSlope;         // the temperature model calculated slope for fc
+        float UxSlope;          // the temperature model calculated slope for ux
+        float FcxOffset;        // the temperature model fc offset
+        float UxOffset;         // the temperature model ux offset
+
+        float TempThreshold;    //celcius degrees, the temperatures delta that above should be fixed;
+
+        CameraCalibrationParameters params;
+        CameraCalibrationParameters originalParams;
+
+        float lastTemperatureDelta;
+    public:
+        IVCAMTemperatureCompensator() {}
+        IVCAMTemperatureCompensator(const CameraCalibrationParameters & p, IVCAMTemperatureData TemperatureData, IVCAMThermalLoopParams ThermalLoopParams) 
+            : BaseTemperatureData(TemperatureData), ThermalLoopParams(ThermalLoopParams), 
+            FcxSlope(p.Kc[0][0] * ThermalLoopParams.FcxSlopeA + ThermalLoopParams.FcxSlopeB),
+            UxSlope(p.Kc[0][2] * ThermalLoopParams.UxSlopeA + p.Kc[0][0] * ThermalLoopParams.UxSlopeB + ThermalLoopParams.UxSlopeC),
+            FcxOffset(ThermalLoopParams.FcxOffset),
+            UxOffset(ThermalLoopParams.UxOffset),          
+            TempThreshold(ThermalLoopParams.TempThreshold),            
+            params(p), originalParams(p), lastTemperatureDelta(DELTA_INF) 
+        {
+            float tempFromHFOV = (tan(ThermalLoopParams.HFOVsensitivity*M_PI/360)*(1 + p.Kc[0][0]*p.Kc[0][0]))/(FcxSlope * (1 + p.Kc[0][0] * tan(ThermalLoopParams.HFOVsensitivity * M_PI/360)));
+
+            if (TempThreshold <= 0)
+                TempThreshold = tempFromHFOV;
+
+            if (TempThreshold > tempFromHFOV)
+                TempThreshold = tempFromHFOV;
+        }
+
+        const CameraCalibrationParameters & get_compensated_parameters() const { return params; }
+
+        bool updateParamsAccordingToTemperature(float liguriaTemp, float IRTemp);
+    };
 
     class IVCAMHardwareIO
     {
@@ -319,7 +358,7 @@ namespace rsimpl { namespace f200
         std::mutex temperatureMutex;
         std::condition_variable temperatureCv;
 
-        std::unique_ptr<IVCAMCalibrator> calibration;
+        IVCAMTemperatureCompensator calibration;
 
         int PrepareUSBCommand(uint8_t * request, size_t & requestSize, uint32_t op,
                               uint32_t p1 = 0, uint32_t p2 = 0, uint32_t p3 = 0, uint32_t p4 = 0,
@@ -355,99 +394,9 @@ namespace rsimpl { namespace f200
 
     #define NUM_OF_CALIBRATION_COEFFS   (64)
 
-    class IVCAMCalibrator
-    {
-    public:
-
-        IVCAMCalibrator() {}
-
-        IVCAMCalibrator(const CameraCalibrationParameters & p) { buildParameters(p); }
-        IVCAMCalibrator(const float * newParamData, int nParams) { buildParameters(newParamData, nParams); }
-
-        static int width() { return 640; }
-        static int height() { return 480; }
-        static float defaultZmax() { return 2047; }
-
-        bool buildParameters(const CameraCalibrationParameters & p);
-        bool buildParameters(const float * paramData, int nParams);
-
-        void clear() { isInitialized = false; }
-
-        float getZMax() const { return params.Rmax; }
-
-        operator bool() const { return isInitialized; }
-
-        const CameraCalibrationParameters & getParameters()
-        {
-            if (!isInitialized) throw std::runtime_error("not initialized");
-            return params;
-        }
-
-        int numParameters() const { return sizeof (CameraCalibrationParameters) / sizeof (float); }
-
-        void InitializeThermalData(IVCAMTemperatureData TemperatureData, IVCAMThermalLoopParams ThermalLoopParams)
-        {
-            thermalModeData.Initialize(originalParams.Kc, TemperatureData, ThermalLoopParams);
-        }
-
-        void GetThermalData(IVCAMTemperatureData & TemperatureData, IVCAMThermalLoopParams & ThermalLoopParams)
-        {
-            TemperatureData = thermalModeData.BaseTemperatureData;
-            ThermalLoopParams = thermalModeData.ThermalLoopParams;
-        }
-
-        bool updateParamsAccordingToTemperature(float liguriaTemp, float IRTemp);
-
-    private:
-
-        struct ThermalModelData
-        {
-            ThermalModelData() {}
-
-            void Initialize(float Kc[3][3], IVCAMTemperatureData temperatureData, IVCAMThermalLoopParams thermalLoopParams)
-            {
-                BaseTemperatureData = temperatureData;
-                ThermalLoopParams = thermalLoopParams;
-
-                FcxSlope = Kc[0][0] * ThermalLoopParams.FcxSlopeA + ThermalLoopParams.FcxSlopeB;
-                UxSlope = Kc[0][2] * ThermalLoopParams.UxSlopeA + Kc[0][0] * ThermalLoopParams.UxSlopeB + ThermalLoopParams.UxSlopeC;
-                FcxOffset = ThermalLoopParams.FcxOffset;
-                UxOffset = ThermalLoopParams.UxOffset;
-
-                float tempFromHFOV = (tan(ThermalLoopParams.HFOVsensitivity*M_PI/360)*(1 + Kc[0][0]*Kc[0][0]))/(FcxSlope * (1 + Kc[0][0] * tan(ThermalLoopParams.HFOVsensitivity * M_PI/360)));
-                TempThreshold = ThermalLoopParams.TempThreshold;
-
-                if (TempThreshold <= 0)
-                    TempThreshold = tempFromHFOV;
-
-                if (TempThreshold > tempFromHFOV)
-                    TempThreshold = tempFromHFOV;
-            }
-
-            IVCAMTemperatureData BaseTemperatureData;
-            IVCAMThermalLoopParams ThermalLoopParams;
-
-            float FcxSlope;         // the temperature model calculated slope for fc
-            float UxSlope;          // the temperature model calculated slope for ux
-            float FcxOffset;        // the temperature model fc offset
-            float UxOffset;         // the temperature model ux offset
-
-            float TempThreshold;    //celcius degrees, the temperatures delta that above should be fixed;
-        };
-
-        ThermalModelData thermalModeData;
-
-        CameraCalibrationParameters params;
-        CameraCalibrationParameters originalParams;
-
-        bool isInitialized = false;
-
-        float lastTemperatureDelta;
-    };
-
     namespace f200_only
     {
-        CameraCalibrationParameters get_f200_calibration(uvc::device & device, std::timed_mutex & usbMutex, IVCAMCalibrator & calibration);
+        CameraCalibrationParameters get_f200_calibration(uvc::device & device, std::timed_mutex & usbMutex, IVCAMTemperatureCompensator & calibration);
     }
 } } // namespace rsimpl::f200
 
