@@ -199,8 +199,6 @@ namespace rsimpl
         }
         set_intrinsics_thread_safe(compute_intrinsics(base_calibration));
 
-        // TODO: Only enable timestamps for streams that are active, such as in on_before_start()
-        f200::enable_timestamp(device, usbMutex, true, true); // Dimitri: debugging dangerously (assume we are pulling color + depth)
 
         // If thermal control loop requested, start up thread to handle it
 		if(thermal_loop_params.IRThermalLoopEnable)
@@ -217,6 +215,20 @@ namespace rsimpl
         temperatureCv.notify_one();
         if (temperatureThread.joinable())
             temperatureThread.join();        
+    }
+
+    void f200_camera::on_before_start(const std::vector<subdevice_mode> & selected_modes)
+    {
+        bool color = false, depth = false;
+        for(const auto & m : selected_modes)
+        {
+            switch(m.subdevice)
+            {
+            case 0: color = true; break;
+            case 1: depth = true; break;
+            }
+        }
+        f200::enable_timestamp(device, usbMutex, color, depth);
     }
 
     void f200_camera::temperature_control_loop()
