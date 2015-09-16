@@ -118,7 +118,7 @@ namespace rsimpl { namespace f200
         }
     }
 
-    bool send_hw_monitor_command(uvc::device & device, std::timed_mutex & mutex, IVCAMCommandDetails & details)
+    void send_hw_monitor_command(uvc::device & device, std::timed_mutex & mutex, IVCAMCommandDetails & details)
     {
         unsigned char outputBuffer[HW_MONITOR_BUFFER_SIZE];
 
@@ -128,25 +128,19 @@ namespace rsimpl { namespace f200
         execute_usb_command(device, mutex, (uint8_t*) details.sendCommandData, (size_t) details.sizeOfSendCommandData, op, outputBuffer, receivedCmdLen);
         details.receivedCommandDataLength = receivedCmdLen;
 
-        if (details.oneDirection) return true;
+        if (details.oneDirection) return;
 
-        if (details.receivedCommandDataLength >= 4)
-        {
-            details.receivedCommandDataLength -= 4;
-            memcpy(details.receivedOpcode, outputBuffer, 4);
-        }
-        else return false;
+        if (details.receivedCommandDataLength < 4) throw std::runtime_error("received incomplete response to usb command");
+
+        details.receivedCommandDataLength -= 4;
+        memcpy(details.receivedOpcode, outputBuffer, 4);
 
         if (details.receivedCommandDataLength > 0 )
             memcpy(details.receivedCommandData, outputBuffer + 4, details.receivedCommandDataLength);
-
-        return true;
     }
 
-    bool perform_and_send_monitor_command(uvc::device & device, std::timed_mutex & mutex, IVCAMCommand & newCommand)
+    void perform_and_send_monitor_command(uvc::device & device, std::timed_mutex & mutex, IVCAMCommand & newCommand)
     {
-        bool result = true;
-
         uint32_t opCodeXmit = (uint32_t) newCommand.cmd;
 
         IVCAMCommandDetails details;
@@ -163,11 +157,10 @@ namespace rsimpl { namespace f200
                         details.sendCommandData,
                         details.sizeOfSendCommandData);
 
-        result = send_hw_monitor_command(device, mutex, details);
+        send_hw_monitor_command(device, mutex, details);
 
         // Error/exit conditions
-        if (result == false) return result;
-        if (newCommand.oneDirection) return result;
+        if (newCommand.oneDirection) return;
 
         memcpy(newCommand.receivedOpcode, details.receivedOpcode, 4);
         memcpy(newCommand.receivedCommandData, details.receivedCommandData,details.receivedCommandDataLength);
@@ -179,8 +172,6 @@ namespace rsimpl { namespace f200
         {
             throw std::runtime_error("opcodes do not match");
         }
-
-        return result;
     }
 
     void force_hardware_reset(uvc::device & device, std::timed_mutex & mutex)
@@ -190,15 +181,15 @@ namespace rsimpl { namespace f200
         perform_and_send_monitor_command(device, mutex, cmd);
     }
 
-    bool enable_timestamp(uvc::device & device, std::timed_mutex & mutex, bool colorEnable, bool depthEnable)
+    void enable_timestamp(uvc::device & device, std::timed_mutex & mutex, bool colorEnable, bool depthEnable)
     {
         IVCAMCommand cmd(IVCAMMonitorCommand::TimeStampEnable);
         cmd.Param1 = depthEnable ? 1 : 0;
         cmd.Param2 = colorEnable ? 1 : 0;
-        return perform_and_send_monitor_command(device, mutex, cmd);
+        perform_and_send_monitor_command(device, mutex, cmd);
     }
 
-    bool set_asic_coefficients(uvc::device & device, std::timed_mutex & mutex, IVCAMASICCoefficients * coeffs)
+    void set_asic_coefficients(uvc::device & device, std::timed_mutex & mutex, IVCAMASICCoefficients * coeffs)
     {
          IVCAMCommand command(IVCAMMonitorCommand::UpdateCalib);
 
@@ -211,47 +202,36 @@ namespace rsimpl { namespace f200
          command.sizeOfSendCommandData = NUM_OF_CALIBRATION_COEFFS * sizeof(float);
          command.TimeOut = 5000;
 
-         return perform_and_send_monitor_command(device, mutex, command);
+         perform_and_send_monitor_command(device, mutex, command);
     }
 
-    bool get_fw_last_error(uvc::device & device, std::timed_mutex & mutex, FirmwareError & error)
+    void get_fw_last_error(uvc::device & device, std::timed_mutex & mutex, FirmwareError & error)
     {
         IVCAMCommand cmd(IVCAMMonitorCommand::GetFWLastError);
         memset(cmd.data, 0, 4);
 
-        bool result = perform_and_send_monitor_command(device, mutex, cmd);
-
-        if (result)
-        {
-            auto fwError = *reinterpret_cast<FirmwareError *>(cmd.receivedCommandData);
-        }
-
-        return false;
+        perform_and_send_monitor_command(device, mutex, cmd);
+        error = *reinterpret_cast<FirmwareError *>(cmd.receivedCommandData);
     }
 
-    bool get_mems_temp(uvc::device & device, std::timed_mutex & mutex, float & MEMStemp)
+    void get_mems_temp(uvc::device & device, std::timed_mutex & mutex, float & MEMStemp)
     {
-         IVCAMCommand command(IVCAMMonitorCommand::GetMEMSTemp);
-         command.Param1 = 0;
-         command.Param2 = 0;
-         command.Param3 = 0;
-         command.Param4 = 0;
-         command.sizeOfSendCommandData = 0;
-         command.TimeOut = 5000;
-         command.oneDirection = false;
+        IVCAMCommand command(IVCAMMonitorCommand::GetMEMSTemp);
+        command.Param1 = 0;
+        command.Param2 = 0;
+        command.Param3 = 0;
+        command.Param4 = 0;
+        command.sizeOfSendCommandData = 0;
+        command.TimeOut = 5000;
+        command.oneDirection = false;
 
-         bool result = perform_and_send_monitor_command(device, mutex, command);
-         if (result)
-         {
-            int32_t t = *((int32_t*)(command.receivedCommandData));
-            MEMStemp = (float) t;
-            MEMStemp /= 100;
-            return true;
-         }
-         else return false;
+        perform_and_send_monitor_command(device, mutex, command);
+        int32_t t = *((int32_t*)(command.receivedCommandData));
+        MEMStemp = (float) t;
+        MEMStemp /= 100;
     }
 
-    bool get_ir_temp(uvc::device & device, std::timed_mutex & mutex, int & IRtemp)
+    void get_ir_temp(uvc::device & device, std::timed_mutex & mutex, int & IRtemp)
     {
         IVCAMCommand command(IVCAMMonitorCommand::GetIRTemp);
         command.Param1 = 0;
@@ -262,12 +242,8 @@ namespace rsimpl { namespace f200
         command.TimeOut = 5000;
         command.oneDirection = false;
 
-        if (perform_and_send_monitor_command(device, mutex, command))
-        {
-            IRtemp = (int8_t) command.receivedCommandData[0];
-            return true;
-        }
-        else return false;
+        perform_and_send_monitor_command(device, mutex, command);
+        IRtemp = (int8_t) command.receivedCommandData[0];
     }
 
     void get_f200_calibration_raw_data(uvc::device & device, std::timed_mutex & usbMutex, uint8_t * data, size_t & bytesReturned)
@@ -281,19 +257,15 @@ namespace rsimpl { namespace f200
         execute_usb_command(device, usbMutex, request, requestSize, responseOp, data, bytesReturned);
     }
 
-    void get_sr300_calibration_raw_data(uvc::device & device, std::timed_mutex & mutex, IVCAMDataSource src, uint8_t * data, size_t & bytesReturned)
+    void get_sr300_calibration_raw_data(uvc::device & device, std::timed_mutex & mutex,uint8_t * data, size_t & bytesReturned)
     {
         IVCAMCommand command(IVCAMMonitorCommand::GetCalibrationTable);
-        command.Param1 = (uint32_t) src;
+        command.Param1 = (uint32_t)IVCAMDataSource::TakeFromRAM;
 
-        bool result = perform_and_send_monitor_command(device, mutex, command);
-        if (result)
-        {
-            memcpy(data, command.receivedCommandData, HW_MONITOR_BUFFER_SIZE);
-            bytesReturned = command.receivedCommandDataLength;
-        }
+        perform_and_send_monitor_command(device, mutex, command);
+        memcpy(data, command.receivedCommandData, HW_MONITOR_BUFFER_SIZE);
+        bytesReturned = command.receivedCommandDataLength;
     }
-
 
     int bcdtoint(uint8_t * buf, int bufsize)
     {
@@ -550,12 +522,10 @@ namespace rsimpl { namespace f200
                 IVCAMTemperatureData t = {};
 
                 int irTempInt;
-                if (!get_ir_temp(device, usbMutex, irTempInt))
-                    throw std::runtime_error("could not get IR temperature");
+                get_ir_temp(device, usbMutex, irTempInt);
                 t.IRTemp = (float)irTempInt;
 
-                if (!get_mems_temp(device, usbMutex, t.LiguriaTemp))
-                    throw std::runtime_error("could not get liguria temperature");
+                get_mems_temp(device, usbMutex, t.LiguriaTemp);
 
                 double IrBaseTemperature = base_temperature_data.IRTemp; //should be taken from the parameters
                 double liguriaBaseTemperature = base_temperature_data.LiguriaTemp; //should be taken from the parameters
@@ -596,10 +566,7 @@ namespace rsimpl { namespace f200
                     DEBUG_OUT("updating asic with new temperature calibration coefficients");
                     IVCAMASICCoefficients coeffs = {};
                     GenerateAsicCalibrationCoefficients(compensated_calibration, {640, 480}, true, coeffs.CoefValueArray);
-                    if (set_asic_coefficients(device, usbMutex, &coeffs) != true)
-                    {
-                        continue; // try again if we couldn't update the coefficients
-                    }
+                    set_asic_coefficients(device, usbMutex, &coeffs);
                 }
             }
             catch(const std::exception & e) { DEBUG_ERR("TemperatureControlLoop: " << e.what()); }
@@ -618,7 +585,7 @@ namespace rsimpl { namespace f200
 
         if(sr300)
         {
-            get_sr300_calibration_raw_data(device, usbMutex, sr300 ? IVCAMDataSource::TakeFromRAM : IVCAMDataSource::TakeFromRW, rawCalibrationBuffer, bufferLength);
+            get_sr300_calibration_raw_data(device, usbMutex, rawCalibrationBuffer, bufferLength);
 
             SR300RawCalibration rawCalib;
             memcpy(&rawCalib, rawCalibrationBuffer, std::min(sizeof(rawCalib), bufferLength)); // Is this longer or shorter than the rawCalib struct?
