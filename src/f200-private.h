@@ -322,14 +322,8 @@ namespace rsimpl { namespace f200
         std::mutex temperatureMutex;
         std::condition_variable temperatureCv;
 
-        void StartTempCompensationLoop();
-        void StopTempCompensationLoop();
         void TemperatureControlLoop();
-
-        void GenerateAsicCalibrationCoefficients(const CameraCalibrationParameters & compensated_calibration, std::vector<int> resolution, const bool isZMode, float * values) const;
-
     public:
-
         IVCAMHardwareIO(uvc::device device, bool sr300);
         ~IVCAMHardwareIO();
 

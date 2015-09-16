@@ -266,6 +266,10 @@ namespace rsimpl { namespace f200
         bytesReturned = command.receivedCommandDataLength;
     }
 
+    //////////////////////////
+    // Private Hardware I/O //
+    //////////////////////////
+
     int bcdtoint(uint8_t * buf, int bufsize)
     {
         int r = 0;
@@ -274,16 +278,12 @@ namespace rsimpl { namespace f200
         return r;
     }
 
-    int getVersionOfCalibration(uint8_t * validation, uint8_t * version)
+    int get_version_of_calibration(uint8_t * validation, uint8_t * version)
     {
         uint8_t valid[2] = {0X14, 0x0A};
         if (memcmp(valid, validation, 2) != 0) return 0;
         else return bcdtoint(version, 2);
     }
-
-    //////////////////////////
-    // Private Hardware I/O //
-    //////////////////////////
 
     std::tuple<CameraCalibrationParameters, IVCAMTemperatureData, IVCAMThermalLoopParams> get_f200_calibration(uint8_t * rawCalibData, int len)
     {
@@ -294,7 +294,7 @@ namespace rsimpl { namespace f200
 
         memset(&CalibrationData, 0, sizeof(IVCAMCalibration));
 
-        int ver = getVersionOfCalibration(bufParams, bufParams + 2);
+        int ver = get_version_of_calibration(bufParams, bufParams + 2);
 
         if (ver > IVCAM_MIN_SUPPORTED_VERSION)
         {
@@ -340,7 +340,7 @@ namespace rsimpl { namespace f200
         throw std::runtime_error("calibration table is not compatible with this API");
     }
 
-    void IVCAMHardwareIO::GenerateAsicCalibrationCoefficients(const CameraCalibrationParameters & compensated_calibration, std::vector<int> resolution, const bool isZMode, float * values) const
+    void generate_asic_calibration_coefficients(const CameraCalibrationParameters & compensated_calibration, std::vector<int> resolution, const bool isZMode, float * values)
     {
         auto params = compensated_calibration;
 
@@ -489,14 +489,48 @@ namespace rsimpl { namespace f200
         return ;
     }
     
-    void IVCAMHardwareIO::StartTempCompensationLoop()
+    /////////////////////
+    // IVCAMHardwareIO //
+    /////////////////////
+
+    IVCAMHardwareIO::IVCAMHardwareIO(uvc::device device, bool sr300) : device(device)
     {
-        runTemperatureThread = true;
-        temperatureThread = std::thread(&IVCAMHardwareIO::TemperatureControlLoop, this);
+        const uvc::guid IVCAM_WIN_USB_DEVICE_GUID = {0x175695CD, 0x30D9, 0x4F87, {0x8B, 0xE3, 0x5A, 0x82, 0x70, 0xF4, 0x9A, 0x31}};
+        device.claim_interface(IVCAM_WIN_USB_DEVICE_GUID, IVCAM_MONITOR_INTERFACE);
+
+        uint8_t rawCalibrationBuffer[HW_MONITOR_BUFFER_SIZE];
+        size_t bufferLength = HW_MONITOR_BUFFER_SIZE;       
+
+        if(sr300)
+        {
+            get_sr300_calibration_raw_data(device, usbMutex, rawCalibrationBuffer, bufferLength);
+
+            SR300RawCalibration rawCalib;
+            memcpy(&rawCalib, rawCalibrationBuffer, std::min(sizeof(rawCalib), bufferLength)); // Is this longer or shorter than the rawCalib struct?
+            base_calibration = rawCalib.CalibrationParameters;
+            base_temperature_data = rawCalib.TemperatureData;
+            // NOTE: Leaving thermal_loop_params at their default. Is this correct?
+        }
+        else
+        {
+            get_f200_calibration_raw_data(device, usbMutex, rawCalibrationBuffer, bufferLength);
+            std::tie(base_calibration, base_temperature_data, thermal_loop_params) = get_f200_calibration(rawCalibrationBuffer, bufferLength);
+        }
+
+        compensated_calibration = base_calibration;
+        enable_timestamp(device, usbMutex, true, true); // Dimitri: debugging dangerously (assume we are pulling color + depth)
+
+        // If thermal control loop requested, start up thread to handle it
+		if(thermal_loop_params.IRThermalLoopEnable)
+        {
+            runTemperatureThread = true;
+            temperatureThread = std::thread(&IVCAMHardwareIO::TemperatureControlLoop, this);
+        }
     }
 
-    void IVCAMHardwareIO::StopTempCompensationLoop()
+    IVCAMHardwareIO::~IVCAMHardwareIO()
     {
+        // Shut down thermal control loop thread
         runTemperatureThread = false;
         temperatureCv.notify_one();
         if (temperatureThread.joinable())
@@ -559,7 +593,7 @@ namespace rsimpl { namespace f200
                     //@tofix, qRes mode
                     DEBUG_OUT("updating asic with new temperature calibration coefficients");
                     IVCAMASICCoefficients coeffs = {};
-                    GenerateAsicCalibrationCoefficients(compensated_calibration, {640, 480}, true, coeffs.CoefValueArray);
+                    generate_asic_calibration_coefficients(compensated_calibration, {640, 480}, true, coeffs.CoefValueArray);
                     set_asic_coefficients(device, usbMutex, &coeffs);
                 }
             }
@@ -567,40 +601,6 @@ namespace rsimpl { namespace f200
             
             temperatureCv.wait_for(lock, std::chrono::seconds(10));
         }
-    }
-
-    IVCAMHardwareIO::IVCAMHardwareIO(uvc::device device, bool sr300) : device(device)
-    {
-        const uvc::guid IVCAM_WIN_USB_DEVICE_GUID = {0x175695CD, 0x30D9, 0x4F87, {0x8B, 0xE3, 0x5A, 0x82, 0x70, 0xF4, 0x9A, 0x31}};
-        device.claim_interface(IVCAM_WIN_USB_DEVICE_GUID, IVCAM_MONITOR_INTERFACE);
-
-        uint8_t rawCalibrationBuffer[HW_MONITOR_BUFFER_SIZE];
-        size_t bufferLength = HW_MONITOR_BUFFER_SIZE;       
-
-        if(sr300)
-        {
-            get_sr300_calibration_raw_data(device, usbMutex, rawCalibrationBuffer, bufferLength);
-
-            SR300RawCalibration rawCalib;
-            memcpy(&rawCalib, rawCalibrationBuffer, std::min(sizeof(rawCalib), bufferLength)); // Is this longer or shorter than the rawCalib struct?
-            base_calibration = rawCalib.CalibrationParameters;
-            base_temperature_data = rawCalib.TemperatureData;
-            thermal_loop_params = {}; // TODO: Figure out where to find this on SR300
-        }
-        else
-        {
-            get_f200_calibration_raw_data(device, usbMutex, rawCalibrationBuffer, bufferLength);
-            std::tie(base_calibration, base_temperature_data, thermal_loop_params) = get_f200_calibration(rawCalibrationBuffer, bufferLength);
-        }
-
-        compensated_calibration = base_calibration;
-        enable_timestamp(device, usbMutex, true, true); // Dimitri: debugging dangerously (assume we are pulling color + depth)
-		if(thermal_loop_params.IRThermalLoopEnable) StartTempCompensationLoop();
-    }
-
-    IVCAMHardwareIO::~IVCAMHardwareIO()
-    {
-        StopTempCompensationLoop();
     }
 
 } } // namespace rsimpl::f200
