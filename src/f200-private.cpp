@@ -451,6 +451,8 @@ namespace rsimpl { namespace f200
 
     void IVCAMHardwareIO::GenerateAsicCalibrationCoefficients(std::vector<int> resolution, const bool isZMode, float * values) const
     {
+        return;
+
         auto params = this->parameters;
 
         //handle vertical crop at 360p - change to full 640x480 and crop at the end
@@ -644,28 +646,38 @@ namespace rsimpl { namespace f200
 
     IVCAMHardwareIO::IVCAMHardwareIO(uvc::device device, bool sr300) : device(device)
     {
-        const uvc::guid IVCAM_WIN_USB_DEVICE_GUID = {0x175695CD, 0x30D9, 0x4F87, {0x8B, 0xE3, 0x5A, 0x82, 0x70, 0xF4, 0x9A, 0x31}};
-        device.claim_interface(IVCAM_WIN_USB_DEVICE_GUID, IVCAM_MONITOR_INTERFACE);
-
-        // Grab binary blob from the camera - SR300 - firmware gets the data from different stores
-        uint8_t rawCalibrationBuffer[HW_MONITOR_BUFFER_SIZE];
-        size_t bufferLength = HW_MONITOR_BUFFER_SIZE;       
-        GetCalibrationRawData(sr300 ? IVCAMDataSource::TakeFromRAM : IVCAMDataSource::TakeFromRW, rawCalibrationBuffer, bufferLength);
-
-        calibration.reset(new IVCAMCalibrator);
-
-        CameraCalibrationParameters calibratedParameters;
-        if (sr300)
+        if(sr300)
         {
-            SR300RawCalibration rawCalib;
-            memcpy(&rawCalib, rawCalibrationBuffer, bufferLength);
-            calibratedParameters = rawCalib.CalibrationParameters;
+            const uvc::guid IVCAM_WIN_USB_DEVICE_GUID = {0x175695CD, 0x30D9, 0x4F87, {0x8B, 0xE3, 0x5A, 0x82, 0x70, 0xF4, 0x9A, 0x31}};
+            device.claim_interface(IVCAM_WIN_USB_DEVICE_GUID, IVCAM_MONITOR_INTERFACE);
+
+            // Grab binary blob from the camera - SR300 - firmware gets the data from different stores
+            uint8_t rawCalibrationBuffer[HW_MONITOR_BUFFER_SIZE];
+            size_t bufferLength = HW_MONITOR_BUFFER_SIZE;       
+            GetCalibrationRawData(sr300 ? IVCAMDataSource::TakeFromRAM : IVCAMDataSource::TakeFromRW, rawCalibrationBuffer, bufferLength);
+
+            calibration.reset(new IVCAMCalibrator);
+
+            CameraCalibrationParameters calibratedParameters;
+            if (sr300)
+            {
+                SR300RawCalibration rawCalib;
+                memcpy(&rawCalib, rawCalibrationBuffer, bufferLength);
+                calibratedParameters = rawCalib.CalibrationParameters;
+            }
+            ProjectionCalibrate(rawCalibrationBuffer, (int) bufferLength, &calibratedParameters);
+
+            parameters = calibratedParameters;
+
+            StartTempCompensationLoop();
         }
-        ProjectionCalibrate(rawCalibrationBuffer, (int) bufferLength, &calibratedParameters);
-
-        parameters = calibratedParameters;
-
-        StartTempCompensationLoop();
+        else
+        {
+            calibration.reset(new IVCAMCalibrator);
+            parameters = f200_only::get_f200_calibration(device, usbMutex, *calibration);
+            EnableTimeStamp(true, true); // Dimitri: debugging dangerously (assume we are pulling color + depth)
+		    //StartTempCompensationLoop();
+        }
     }
 
     IVCAMHardwareIO::~IVCAMHardwareIO()
@@ -735,6 +747,151 @@ namespace rsimpl { namespace f200
         lastTemperatureDelta = DELTA_INF;
         memcpy(&originalParams, &params, sizeof(CameraCalibrationParameters));
         return true;
+    }
+
+    namespace f200_only
+    {
+        int prepare_usb_command(uint8_t * request, size_t & requestSize, uint32_t op, uint32_t p1 = 0, uint32_t p2 = 0, uint32_t p3 = 0, uint32_t p4 = 0, uint8_t * data = 0, size_t dataLength = 0)
+        {
+            if (requestSize < IVCAM_MONITOR_HEADER_SIZE)
+                return 0;
+
+            int index = sizeof(uint16_t);
+            *(uint16_t *)(request + index) = IVCAM_MONITOR_MAGIC_NUMBER;
+            index += sizeof(uint16_t);
+            *(uint32_t *)(request + index) = op;
+            index += sizeof(uint32_t);
+            *(uint32_t *)(request + index) = p1;
+            index += sizeof(uint32_t);
+            *(uint32_t *)(request + index) = p2;
+            index += sizeof(uint32_t);
+            *(uint32_t *)(request + index) = p3;
+            index += sizeof(uint32_t);
+            *(uint32_t *)(request + index) = p4;
+            index += sizeof(uint32_t);
+
+            if (dataLength)
+            {
+                memcpy(request + index , data, dataLength);
+                index += dataLength;
+            }
+
+            // Length doesn't include header size (sizeof(uint32_t))
+            *(uint16_t *)request = (uint16_t)(index - sizeof(uint32_t));
+            requestSize = index;
+            return index;
+        }
+
+        void execute_usb_command(uvc::device & device, std::timed_mutex & usbMutex, uint8_t *out, size_t outSize, uint32_t & op, uint8_t * in, size_t & inSize)
+        {
+            // write
+            errno = 0;
+
+            int outXfer;
+
+            if (!usbMutex.try_lock_for(std::chrono::milliseconds(IVCAM_MONITOR_MUTEX_TIMEOUT))) throw std::runtime_error("usbMutex timed out");
+            std::lock_guard<std::timed_mutex> guard(usbMutex, std::adopt_lock);
+
+            device.bulk_transfer(IVCAM_MONITOR_ENDPOINT_OUT, out, (int) outSize, &outXfer, 1000); // timeout in ms
+
+            // read
+            if (in && inSize)
+            {
+                uint8_t buf[IVCAM_MONITOR_MAX_BUFFER_SIZE];
+
+                errno = 0;
+
+                device.bulk_transfer(IVCAM_MONITOR_ENDPOINT_IN, buf, sizeof(buf), &outXfer, 1000);
+                if (outXfer < (int)sizeof(uint32_t)) throw std::runtime_error("incomplete bulk usb transfer");
+
+                op = *(uint32_t *)buf;
+                if (outXfer > (int)inSize) throw std::runtime_error("bulk transfer failed - user buffer too small");
+                inSize = outXfer;
+                memcpy(in, buf, inSize);
+            }
+        }
+
+        void get_calibration_raw_data(uvc::device & device, std::timed_mutex & usbMutex, uint8_t * data, size_t & bytesReturned)
+        {
+            uint8_t request[IVCAM_MONITOR_HEADER_SIZE];
+            size_t requestSize = sizeof(request);
+            uint32_t responseOp;
+
+            if (prepare_usb_command(request, requestSize, (uint32_t) IVCAMMonitorCommand::GetCalibrationTable) <= 0) 
+                throw std::runtime_error("usb transfer to retrieve calibration data failed");
+            execute_usb_command(device, usbMutex, request, requestSize, responseOp, data, bytesReturned);
+        }
+
+        void projection_calibrate(IVCAMCalibrator & calibration, uint8_t * rawCalibData, int len, CameraCalibrationParameters * calprms)
+        {
+            uint8_t * bufParams = rawCalibData + 4;
+
+            IVCAMCalibration CalibrationData;
+            IVCAMTesterData TesterData;
+
+            memset(&CalibrationData, 0, sizeof(IVCAMCalibration));
+
+            int ver = getVersionOfCalibration(bufParams, bufParams + 2);
+
+            if (ver == IVCAM_MIN_SUPPORTED_VERSION)
+            {
+                float *params = (float *)bufParams;
+
+                calibration.buildParameters(params, 100);
+
+                // calprms; // breakpoint here to debug
+
+                memcpy(calprms, params+1, sizeof(CameraCalibrationParameters));
+                memcpy(&TesterData, bufParams, SIZE_OF_CALIB_HEADER_BYTES);
+
+                memset((uint8_t*)&TesterData+SIZE_OF_CALIB_HEADER_BYTES,0,sizeof(IVCAMTesterData) - SIZE_OF_CALIB_HEADER_BYTES);
+            }
+            else if (ver > IVCAM_MIN_SUPPORTED_VERSION)
+            {
+                rawCalibData = rawCalibData + 4;
+
+                int size = (sizeof(IVCAMCalibration) > len) ? len : sizeof(IVCAMCalibration);
+
+                auto fixWithVersionInfo = [&](IVCAMCalibration &d, int size, uint8_t * data)
+                {
+                    memcpy((uint8_t*)&d + sizeof(int), data, size - sizeof(int));
+                };
+
+                fixWithVersionInfo(CalibrationData, size, rawCalibData);
+
+                memcpy(calprms, &CalibrationData.CalibrationParameters, sizeof(CameraCalibrationParameters));
+                calibration.buildParameters(CalibrationData.CalibrationParameters);
+
+                // calprms; // breakpoint here to debug
+
+                memcpy(&TesterData,  rawCalibData, SIZE_OF_CALIB_HEADER_BYTES);  //copy the header: valid + version
+
+                //copy the tester data from end of calibration
+                int EndOfCalibratioData = SIZE_OF_CALIB_PARAM_BYTES + SIZE_OF_CALIB_HEADER_BYTES;
+                memcpy((uint8_t*)&TesterData + SIZE_OF_CALIB_HEADER_BYTES , rawCalibData + EndOfCalibratioData , sizeof(IVCAMTesterData) - SIZE_OF_CALIB_HEADER_BYTES);
+
+                calibration.InitializeThermalData(TesterData.TemperatureData, TesterData.ThermalLoopParams);
+            }
+            else if (ver > 17)
+            {
+                throw std::runtime_error("calibration table is not compatible with this API");
+            }
+        }
+
+        CameraCalibrationParameters get_f200_calibration(uvc::device & device, std::timed_mutex & usbMutex, IVCAMCalibrator & calibration)
+        {
+            const uvc::guid IVCAM_WIN_USB_DEVICE_GUID = {0x175695CD, 0x30D9, 0x4F87, {0x8B, 0xE3, 0x5A, 0x82, 0x70, 0xF4, 0x9A, 0x31}};
+            device.claim_interface(IVCAM_WIN_USB_DEVICE_GUID, IVCAM_MONITOR_INTERFACE);
+
+            uint8_t rawCalibrationBuffer[HW_MONITOR_BUFFER_SIZE];
+            size_t bufferLength = HW_MONITOR_BUFFER_SIZE;
+            f200_only::get_calibration_raw_data(device, usbMutex, rawCalibrationBuffer, bufferLength);
+
+            CameraCalibrationParameters calibratedParameters;
+            f200_only::projection_calibrate(calibration, rawCalibrationBuffer, (int) bufferLength, &calibratedParameters);
+
+            return calibratedParameters;
+        }
     }
 
 } } // namespace rsimpl::f200

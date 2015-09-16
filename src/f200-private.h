@@ -445,6 +445,10 @@ namespace rsimpl { namespace f200
         float lastTemperatureDelta;
     };
 
+    namespace f200_only
+    {
+        CameraCalibrationParameters get_f200_calibration(uvc::device & device, std::timed_mutex & usbMutex, IVCAMCalibrator & calibration);
+    }
 } } // namespace rsimpl::f200
 
 #endif
