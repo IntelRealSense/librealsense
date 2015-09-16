@@ -1,5 +1,6 @@
 #include "f200-private.h"
 
+#include <cstring>
 #include <algorithm>
 
 #define IV_COMMAND_FIRMWARE_UPDATE_MODE     0x01
