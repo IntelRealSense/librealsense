@@ -16,6 +16,8 @@
 #define DELTA_INF                           (10000000.0)
 #define M_EPSILON                           (0.0001)
 
+#define IVCAM_MONITOR_INTERFACE         0x4
+
 #define IV_COMMAND_FIRMWARE_UPDATE_MODE     0x01
 #define IV_COMMAND_GET_CALIBRATION_DATA     0x02
 #define IV_COMMAND_LASER_POWER              0x03
@@ -313,31 +315,6 @@ namespace rsimpl { namespace f200
     void force_hardware_reset(uvc::device & device, std::timed_mutex & mutex);
     void enable_timestamp(uvc::device & device, std::timed_mutex & mutex, bool colorEnable, bool depthEnable);
     void update_asic_coefficients(uvc::device & device, std::timed_mutex & mutex, const CameraCalibrationParameters & compensated_params); // TODO: Allow you to specify resolution
-
-    class IVCAMHardwareIO
-    {
-        uvc::device device;
-        std::timed_mutex usbMutex;
-
-        CameraCalibrationParameters base_calibration;
-        IVCAMTemperatureData base_temperature_data;
-        IVCAMThermalLoopParams thermal_loop_params;
-
-        CameraCalibrationParameters compensated_calibration;
-        float last_temperature_delta = DELTA_INF;
-
-        std::thread temperatureThread;
-        std::atomic<bool> runTemperatureThread;
-        std::mutex temperatureMutex;
-        std::condition_variable temperatureCv;
-
-        void TemperatureControlLoop();
-    public:
-        IVCAMHardwareIO(uvc::device device, bool sr300);
-        ~IVCAMHardwareIO();
-
-        CameraCalibrationParameters & GetParameters() { std::lock_guard<std::mutex> guard(temperatureMutex); return compensated_calibration; } // TODO: Store
-    };
 
     #define NUM_OF_CALIBRATION_COEFFS   (64)
 

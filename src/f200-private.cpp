@@ -4,7 +4,6 @@
 
 #define IVCAM_VID                       0x8086
 #define IVCAM_PID                       0x0A66
-#define IVCAM_MONITOR_INTERFACE         0x4
 #define IVCAM_MONITOR_ENDPOINT_OUT      0x1
 #define IVCAM_MONITOR_ENDPOINT_IN       0x81
 #define IVCAM_MONITOR_MAGIC_NUMBER      0xcdab
@@ -21,108 +20,6 @@
 
 namespace rsimpl { namespace f200
 {
-    /////////////////////
-    // IVCAMHardwareIO //
-    /////////////////////
-
-    IVCAMHardwareIO::IVCAMHardwareIO(uvc::device device, bool sr300) : device(device)
-    {
-        const uvc::guid IVCAM_WIN_USB_DEVICE_GUID = {0x175695CD, 0x30D9, 0x4F87, {0x8B, 0xE3, 0x5A, 0x82, 0x70, 0xF4, 0x9A, 0x31}};
-        device.claim_interface(IVCAM_WIN_USB_DEVICE_GUID, IVCAM_MONITOR_INTERFACE);
-
-        if(sr300)
-        {
-            std::tie(base_calibration, base_temperature_data, thermal_loop_params) = read_sr300_calibration(device, usbMutex);
-        }
-        else
-        {
-            std::tie(base_calibration, base_temperature_data, thermal_loop_params) = read_f200_calibration(device, usbMutex);
-        }
-
-        compensated_calibration = base_calibration;
-        enable_timestamp(device, usbMutex, true, true); // Dimitri: debugging dangerously (assume we are pulling color + depth)
-
-        // If thermal control loop requested, start up thread to handle it
-		if(thermal_loop_params.IRThermalLoopEnable)
-        {
-            runTemperatureThread = true;
-            temperatureThread = std::thread(&IVCAMHardwareIO::TemperatureControlLoop, this);
-        }
-    }
-
-    IVCAMHardwareIO::~IVCAMHardwareIO()
-    {
-        // Shut down thermal control loop thread
-        runTemperatureThread = false;
-        temperatureCv.notify_one();
-        if (temperatureThread.joinable())
-            temperatureThread.join();
-    }
-
-    void IVCAMHardwareIO::TemperatureControlLoop()
-    {
-        const float FcxSlope = base_calibration.Kc[0][0] * thermal_loop_params.FcxSlopeA + thermal_loop_params.FcxSlopeB;
-        const float UxSlope = base_calibration.Kc[0][2] * thermal_loop_params.UxSlopeA + base_calibration.Kc[0][0] * thermal_loop_params.UxSlopeB + thermal_loop_params.UxSlopeC;
-        const float tempFromHFOV = (tan(thermal_loop_params.HFOVsensitivity*M_PI/360)*(1 + base_calibration.Kc[0][0]*base_calibration.Kc[0][0]))/(FcxSlope * (1 + base_calibration.Kc[0][0] * tan(thermal_loop_params.HFOVsensitivity * M_PI/360)));
-        float TempThreshold = thermal_loop_params.TempThreshold; //celcius degrees, the temperatures delta that above should be fixed;
-        if (TempThreshold <= 0) TempThreshold = tempFromHFOV;
-        if (TempThreshold > tempFromHFOV) TempThreshold = tempFromHFOV;
-
-        std::unique_lock<std::mutex> lock(temperatureMutex);
-        while (runTemperatureThread) 
-        {
-            //@tofix, this will throw if bad, but might periodically fail anyway. try/catch
-            try
-            {
-                float IRTemp = (float)read_ir_temp(device, usbMutex);
-                float LiguriaTemp = read_mems_temp(device, usbMutex);
-
-                double IrBaseTemperature = base_temperature_data.IRTemp; //should be taken from the parameters
-                double liguriaBaseTemperature = base_temperature_data.LiguriaTemp; //should be taken from the parameters
-
-                // calculate deltas from the calibration and last fix
-                double IrTempDelta = IRTemp - IrBaseTemperature;
-                double liguriaTempDelta = LiguriaTemp - liguriaBaseTemperature;
-                double weightedTempDelta = liguriaTempDelta * thermal_loop_params.LiguriaTempWeight + IrTempDelta * thermal_loop_params.IrTempWeight;
-                double tempDetaFromLastFix = abs(weightedTempDelta - last_temperature_delta);
-
-                //read intrinsic from the calibration working point
-                double Kc11 = base_calibration.Kc[0][0];
-                double Kc13 = base_calibration.Kc[0][2];
-
-                // Apply model
-                if (tempDetaFromLastFix >= TempThreshold)
-                {
-                    //if we are during a transition, fix for after the transition
-                    double tempDeltaToUse = weightedTempDelta;
-                    if (tempDeltaToUse > 0 && tempDeltaToUse < thermal_loop_params.TransitionTemp)
-                    {
-                        tempDeltaToUse = thermal_loop_params.TransitionTemp;
-                    }
-
-                    //calculate fixed values
-                    double fixed_Kc11 = Kc11 + (FcxSlope * tempDeltaToUse) + thermal_loop_params.FcxOffset;
-                    double fixed_Kc13 = Kc13 + (UxSlope * tempDeltaToUse) + thermal_loop_params.UxOffset;
-
-                    //write back to intrinsic hfov and vfov
-                    compensated_calibration = base_calibration;
-                    compensated_calibration.Kc[0][0] = (float) fixed_Kc11;
-                    compensated_calibration.Kc[1][1] = base_calibration.Kc[1][1] * (float)(fixed_Kc11/Kc11);
-                    compensated_calibration.Kc[0][2] = (float) fixed_Kc13;
-                    last_temperature_delta = weightedTempDelta;
-                    // *******
-
-                    //@tofix, qRes mode
-                    DEBUG_OUT("updating asic with new temperature calibration coefficients");
-                    update_asic_coefficients(device, usbMutex, compensated_calibration);
-                }
-            }
-            catch(const std::exception & e) { DEBUG_ERR("TemperatureControlLoop: " << e.what()); }
-            
-            temperatureCv.wait_for(lock, std::chrono::seconds(10));
-        }
-    }
-
     ///////////////////////
     // USB functionality //
     ///////////////////////

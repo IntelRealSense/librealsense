@@ -90,7 +90,7 @@ namespace rsimpl
     }
 
     enum { COLOR_VGA, COLOR_HD, DEPTH_VGA, DEPTH_QVGA, NUM_INTRINSICS };
-    static static_device_info get_f200_info(f200::IVCAMHardwareIO & io)
+    static static_device_info get_f200_info(const f200::CameraCalibrationParameters & c)
     {
         struct mode { int w, h, intrin; };
         static const mode color_modes[] = {{640, 480, COLOR_VGA}, {1920, 1080, COLOR_HD}};
@@ -131,7 +131,6 @@ namespace rsimpl
 
         for(int i = RS_OPTION_F200_LASER_POWER; i <= RS_OPTION_F200_CONFIDENCE_THRESHOLD; ++i) info.option_supported[i] = true;
 
-        const f200::CameraCalibrationParameters & c = io.GetParameters();
         info.intrinsics.resize(NUM_INTRINSICS);
         info.intrinsics[COLOR_VGA] = MakeColorIntrinsics(c, 640, 480);
         info.intrinsics[COLOR_HD] = MakeColorIntrinsics(c, 1920, 1080);
@@ -144,7 +143,7 @@ namespace rsimpl
         return info;
     }
 
-    static static_device_info get_sr300_info(f200::IVCAMHardwareIO & io)
+    static static_device_info get_sr300_info(const f200::CameraCalibrationParameters & c)
     {
         static_device_info info;
         info.name = {"Intel RealSense SR300"};
@@ -167,7 +166,6 @@ namespace rsimpl
             info.presets[RS_STREAM_INFRARED][i] = {true, 640, 480, RS_FORMAT_Y16, 60};
         }
 
-        const f200::CameraCalibrationParameters & c = io.GetParameters();
         info.intrinsics.resize(NUM_INTRINSICS);
         info.intrinsics[COLOR_VGA] = MakeColorIntrinsics(c, 640, 480);
         info.intrinsics[DEPTH_VGA] = MakeDepthIntrinsics(c, 640, 480);
@@ -179,14 +177,102 @@ namespace rsimpl
 
     f200_camera::f200_camera(uvc::device device, bool sr300) : rs_device(device)
     {
-        hardware_io.reset(new f200::IVCAMHardwareIO(device, sr300));
-        if(sr300) device_info = add_standard_unpackers(get_sr300_info(*hardware_io));
-        else device_info = add_standard_unpackers(get_f200_info(*hardware_io));
+        const uvc::guid IVCAM_WIN_USB_DEVICE_GUID = {0x175695CD, 0x30D9, 0x4F87, {0x8B, 0xE3, 0x5A, 0x82, 0x70, 0xF4, 0x9A, 0x31}};
+        device.claim_interface(IVCAM_WIN_USB_DEVICE_GUID, IVCAM_MONITOR_INTERFACE);
+
+        if(sr300)
+        {
+            std::tie(base_calibration, base_temperature_data, thermal_loop_params) = f200::read_sr300_calibration(device, usbMutex);
+            device_info = add_standard_unpackers(get_sr300_info(base_calibration));
+        }
+        else
+        {
+            std::tie(base_calibration, base_temperature_data, thermal_loop_params) = f200::read_f200_calibration(device, usbMutex);
+            device_info = add_standard_unpackers(get_f200_info(base_calibration));
+        }
+
+        compensated_calibration = base_calibration;
+        f200::enable_timestamp(device, usbMutex, true, true); // Dimitri: debugging dangerously (assume we are pulling color + depth)
+
+        // If thermal control loop requested, start up thread to handle it
+		if(thermal_loop_params.IRThermalLoopEnable)
+        {
+            runTemperatureThread = true;
+            temperatureThread = std::thread(&f200_camera::temperature_control_loop, this);
+        }
     }
 
     f200_camera::~f200_camera()
     {
-        
+        // Shut down thermal control loop thread
+        runTemperatureThread = false;
+        temperatureCv.notify_one();
+        if (temperatureThread.joinable())
+            temperatureThread.join();        
+    }
+
+    void f200_camera::temperature_control_loop()
+    {
+        const float FcxSlope = base_calibration.Kc[0][0] * thermal_loop_params.FcxSlopeA + thermal_loop_params.FcxSlopeB;
+        const float UxSlope = base_calibration.Kc[0][2] * thermal_loop_params.UxSlopeA + base_calibration.Kc[0][0] * thermal_loop_params.UxSlopeB + thermal_loop_params.UxSlopeC;
+        const float tempFromHFOV = (tan(thermal_loop_params.HFOVsensitivity*M_PI/360)*(1 + base_calibration.Kc[0][0]*base_calibration.Kc[0][0]))/(FcxSlope * (1 + base_calibration.Kc[0][0] * tan(thermal_loop_params.HFOVsensitivity * M_PI/360)));
+        float TempThreshold = thermal_loop_params.TempThreshold; //celcius degrees, the temperatures delta that above should be fixed;
+        if (TempThreshold <= 0) TempThreshold = tempFromHFOV;
+        if (TempThreshold > tempFromHFOV) TempThreshold = tempFromHFOV;
+
+        std::unique_lock<std::mutex> lock(temperatureMutex);
+        while (runTemperatureThread) 
+        {
+            //@tofix, this will throw if bad, but might periodically fail anyway. try/catch
+            try
+            {
+                float IRTemp = (float)f200::read_ir_temp(device, usbMutex);
+                float LiguriaTemp = f200::read_mems_temp(device, usbMutex);
+
+                double IrBaseTemperature = base_temperature_data.IRTemp; //should be taken from the parameters
+                double liguriaBaseTemperature = base_temperature_data.LiguriaTemp; //should be taken from the parameters
+
+                // calculate deltas from the calibration and last fix
+                double IrTempDelta = IRTemp - IrBaseTemperature;
+                double liguriaTempDelta = LiguriaTemp - liguriaBaseTemperature;
+                double weightedTempDelta = liguriaTempDelta * thermal_loop_params.LiguriaTempWeight + IrTempDelta * thermal_loop_params.IrTempWeight;
+                double tempDetaFromLastFix = abs(weightedTempDelta - last_temperature_delta);
+
+                //read intrinsic from the calibration working point
+                double Kc11 = base_calibration.Kc[0][0];
+                double Kc13 = base_calibration.Kc[0][2];
+
+                // Apply model
+                if (tempDetaFromLastFix >= TempThreshold)
+                {
+                    //if we are during a transition, fix for after the transition
+                    double tempDeltaToUse = weightedTempDelta;
+                    if (tempDeltaToUse > 0 && tempDeltaToUse < thermal_loop_params.TransitionTemp)
+                    {
+                        tempDeltaToUse = thermal_loop_params.TransitionTemp;
+                    }
+
+                    //calculate fixed values
+                    double fixed_Kc11 = Kc11 + (FcxSlope * tempDeltaToUse) + thermal_loop_params.FcxOffset;
+                    double fixed_Kc13 = Kc13 + (UxSlope * tempDeltaToUse) + thermal_loop_params.UxOffset;
+
+                    //write back to intrinsic hfov and vfov
+                    compensated_calibration = base_calibration;
+                    compensated_calibration.Kc[0][0] = (float) fixed_Kc11;
+                    compensated_calibration.Kc[1][1] = base_calibration.Kc[1][1] * (float)(fixed_Kc11/Kc11);
+                    compensated_calibration.Kc[0][2] = (float) fixed_Kc13;
+                    last_temperature_delta = weightedTempDelta;
+                    // *******
+
+                    //@tofix, qRes mode
+                    DEBUG_OUT("updating asic with new temperature calibration coefficients");
+                    update_asic_coefficients(device, usbMutex, compensated_calibration);
+                }
+            }
+            catch(const std::exception & e) { DEBUG_ERR("TemperatureControlLoop: " << e.what()); }
+            
+            temperatureCv.wait_for(lock, std::chrono::seconds(10));
+        }
     }
     
     // N.B. f200 xu_read and xu_write hard code the xu interface to the depth suvdevice. There is only a
