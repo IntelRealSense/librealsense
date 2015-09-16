@@ -305,6 +305,15 @@ namespace rsimpl { namespace f200
         FW_COUNT_ERROR
     };
 
+    std::tuple<CameraCalibrationParameters, IVCAMTemperatureData, IVCAMThermalLoopParams> read_f200_calibration(uvc::device & device, std::timed_mutex & mutex);
+    std::tuple<CameraCalibrationParameters, IVCAMTemperatureData, IVCAMThermalLoopParams> read_sr300_calibration(uvc::device & device, std::timed_mutex & mutex);
+    float read_mems_temp(uvc::device & device, std::timed_mutex & mutex);
+    int read_ir_temp(uvc::device & device, std::timed_mutex & mutex);
+
+    void force_hardware_reset(uvc::device & device, std::timed_mutex & mutex);
+    void enable_timestamp(uvc::device & device, std::timed_mutex & mutex, bool colorEnable, bool depthEnable);
+    void update_asic_coefficients(uvc::device & device, std::timed_mutex & mutex, const CameraCalibrationParameters & compensated_params); // TODO: Allow you to specify resolution
+
     class IVCAMHardwareIO
     {
         uvc::device device;
