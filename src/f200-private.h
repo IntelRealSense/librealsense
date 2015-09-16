@@ -322,13 +322,10 @@ namespace rsimpl { namespace f200
         std::mutex temperatureMutex;
         std::condition_variable temperatureCv;
 
-        void ProjectionCalibrate(uint8_t * rawCalibData, int len);
-
         void StartTempCompensationLoop();
         void StopTempCompensationLoop();
         void TemperatureControlLoop();
 
-        bool UpdateASICCoefs(IVCAMASICCoefficients * coeffs);
         void GenerateAsicCalibrationCoefficients(const CameraCalibrationParameters & compensated_calibration, std::vector<int> resolution, const bool isZMode, float * values) const;
 
     public:
@@ -341,10 +338,6 @@ namespace rsimpl { namespace f200
 
     #define NUM_OF_CALIBRATION_COEFFS   (64)
 
-    namespace f200_only
-    {
-        std::tuple<CameraCalibrationParameters, IVCAMTemperatureData, IVCAMThermalLoopParams> get_f200_calibration(uvc::device & device, std::timed_mutex & usbMutex);
-    }
 } } // namespace rsimpl::f200
 
 #endif

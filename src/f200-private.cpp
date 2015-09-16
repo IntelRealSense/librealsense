@@ -196,6 +196,22 @@ namespace rsimpl { namespace f200
         return perform_and_send_monitor_command(device, mutex, cmd);
     }
 
+    bool set_asic_coefficients(uvc::device & device, std::timed_mutex & mutex, IVCAMASICCoefficients * coeffs)
+    {
+         IVCAMCommand command(IVCAMMonitorCommand::UpdateCalib);
+
+         memcpy(command.data, coeffs->CoefValueArray, NUM_OF_CALIBRATION_COEFFS * sizeof(float));
+         command.Param1 = 0;
+         command.Param2 = 0;
+         command.Param3 = 0;
+         command.Param4 = 0;
+         command.oneDirection = false;
+         command.sizeOfSendCommandData = NUM_OF_CALIBRATION_COEFFS * sizeof(float);
+         command.TimeOut = 5000;
+
+         return perform_and_send_monitor_command(device, mutex, command);
+    }
+
     bool get_fw_last_error(uvc::device & device, std::timed_mutex & mutex, FirmwareError & error)
     {
         IVCAMCommand cmd(IVCAMMonitorCommand::GetFWLastError);
@@ -252,6 +268,17 @@ namespace rsimpl { namespace f200
         else return false;
     }
 
+    void get_f200_calibration_raw_data(uvc::device & device, std::timed_mutex & usbMutex, uint8_t * data, size_t & bytesReturned)
+    {
+        uint8_t request[IVCAM_MONITOR_HEADER_SIZE];
+        size_t requestSize = sizeof(request);
+        uint32_t responseOp;
+
+        if (prepare_usb_command(request, requestSize, (uint32_t) IVCAMMonitorCommand::GetCalibrationTable) <= 0) 
+            throw std::runtime_error("usb transfer to retrieve calibration data failed");
+        execute_usb_command(device, usbMutex, request, requestSize, responseOp, data, bytesReturned);
+    }
+
     void get_sr300_calibration_raw_data(uvc::device & device, std::timed_mutex & mutex, IVCAMDataSource src, uint8_t * data, size_t & bytesReturned)
     {
         IVCAMCommand command(IVCAMMonitorCommand::GetCalibrationTable);
@@ -285,9 +312,62 @@ namespace rsimpl { namespace f200
     // Private Hardware I/O //
     //////////////////////////
 
+    std::tuple<CameraCalibrationParameters, IVCAMTemperatureData, IVCAMThermalLoopParams> get_f200_calibration(uint8_t * rawCalibData, int len)
+    {
+        uint8_t * bufParams = rawCalibData + 4;
 
+        IVCAMCalibration CalibrationData;
+        IVCAMTesterData TesterData;
 
-    void IVCAMHardwareIO::ProjectionCalibrate(uint8_t * rawCalibData, int len)
+        memset(&CalibrationData, 0, sizeof(IVCAMCalibration));
+
+        int ver = getVersionOfCalibration(bufParams, bufParams + 2);
+
+        if (ver > IVCAM_MIN_SUPPORTED_VERSION)
+        {
+            rawCalibData = rawCalibData + 4;
+
+            int size = (sizeof(IVCAMCalibration) > len) ? len : sizeof(IVCAMCalibration);
+
+            auto fixWithVersionInfo = [&](IVCAMCalibration &d, int size, uint8_t * data)
+            {
+                memcpy((uint8_t*)&d + sizeof(int), data, size - sizeof(int));
+            };
+
+            fixWithVersionInfo(CalibrationData, size, rawCalibData);
+
+            CameraCalibrationParameters calibration;
+            memcpy(&calibration, &CalibrationData.CalibrationParameters, sizeof(CameraCalibrationParameters));
+
+            // calprms; // breakpoint here to debug
+
+            memcpy(&TesterData,  rawCalibData, SIZE_OF_CALIB_HEADER_BYTES);  //copy the header: valid + version
+
+            //copy the tester data from end of calibration
+            int EndOfCalibratioData = SIZE_OF_CALIB_PARAM_BYTES + SIZE_OF_CALIB_HEADER_BYTES;
+            memcpy((uint8_t*)&TesterData + SIZE_OF_CALIB_HEADER_BYTES , rawCalibData + EndOfCalibratioData , sizeof(IVCAMTesterData) - SIZE_OF_CALIB_HEADER_BYTES);
+            return std::make_tuple(calibration, TesterData.TemperatureData, TesterData.ThermalLoopParams);
+        }
+
+        if (ver == IVCAM_MIN_SUPPORTED_VERSION)
+        {
+            float *params = (float *)bufParams;
+
+            CameraCalibrationParameters calibration;
+            memcpy(&calibration, params + 1, sizeof(CameraCalibrationParameters)); // skip the first float or 2 uint16
+
+            // calprms; // breakpoint here to debug
+
+            memcpy(&TesterData, bufParams, SIZE_OF_CALIB_HEADER_BYTES);
+
+            memset((uint8_t*)&TesterData+SIZE_OF_CALIB_HEADER_BYTES,0,sizeof(IVCAMTesterData) - SIZE_OF_CALIB_HEADER_BYTES);
+            return std::make_tuple(calibration, TesterData.TemperatureData, TesterData.ThermalLoopParams);
+        }
+
+        throw std::runtime_error("calibration table is not compatible with this API");
+    }
+    
+    std::tuple<CameraCalibrationParameters, IVCAMTemperatureData, IVCAMThermalLoopParams> get_sr300_calibration(uint8_t * rawCalibData, int len)
     {
         uint8_t * bufParams = rawCalibData + 4;
 
@@ -306,13 +386,12 @@ namespace rsimpl { namespace f200
 
             // calprms; // breakpoint here to debug
 
-            memcpy(&base_calibration, params+1, sizeof(CameraCalibrationParameters));
+            CameraCalibrationParameters calibration;
+            memcpy(&calibration, params+1, sizeof(CameraCalibrationParameters));
             memcpy(&TesterData, bufParams, SIZE_OF_CALIB_HEADER_BYTES);
 
             memset((uint8_t*)&TesterData+SIZE_OF_CALIB_HEADER_BYTES, 0, sizeof(IVCAMTesterData) - SIZE_OF_CALIB_HEADER_BYTES);
-            base_temperature_data = TesterData.TemperatureData;
-            thermal_loop_params = TesterData.ThermalLoopParams;
-
+            return std::make_tuple(calibration, TesterData.TemperatureData, TesterData.ThermalLoopParams);
         }
         else if (ver > IVCAM_MIN_SUPPORTED_VERSION)
         {
@@ -326,9 +405,7 @@ namespace rsimpl { namespace f200
             };
 
             fixWithVersionInfo(CalibrationData, size, rawCalibData);
-
-            base_calibration = CalibrationData.CalibrationParameters;            
-
+            
             // calprms; // breakpoint here to debug
 
             memcpy(&TesterData, rawCalibData, SIZE_OF_CALIB_HEADER_BYTES);  //copy the header: valid + version
@@ -336,34 +413,12 @@ namespace rsimpl { namespace f200
             //copy the tester data from end of calibration
             int EndOfCalibratioData = SIZE_OF_CALIB_PARAM_BYTES + SIZE_OF_CALIB_HEADER_BYTES;
             memcpy((uint8_t*)&TesterData + SIZE_OF_CALIB_HEADER_BYTES , rawCalibData + EndOfCalibratioData , sizeof(IVCAMTesterData) - SIZE_OF_CALIB_HEADER_BYTES);
-            base_temperature_data = TesterData.TemperatureData;
-            thermal_loop_params = TesterData.ThermalLoopParams;
+            return std::make_tuple(CalibrationData.CalibrationParameters, TesterData.TemperatureData, TesterData.ThermalLoopParams);
         }
         else if (ver > 17)
         {
             throw std::runtime_error("calibration table is not compatible with this API");
         }
-
-        compensated_calibration = base_calibration;
-
-        // Dimitri: debugging dangerously (assume we are pulling color + depth)
-        enable_timestamp(device, usbMutex, true, true);
-    }
-
-    bool IVCAMHardwareIO::UpdateASICCoefs(IVCAMASICCoefficients * coeffs)
-    {
-         IVCAMCommand command(IVCAMMonitorCommand::UpdateCalib);
-
-         memcpy(command.data, coeffs->CoefValueArray, NUM_OF_CALIBRATION_COEFFS * sizeof(float));
-         command.Param1 = 0;
-         command.Param2 = 0;
-         command.Param3 = 0;
-         command.Param4 = 0;
-         command.oneDirection = false;
-         command.sizeOfSendCommandData = NUM_OF_CALIBRATION_COEFFS * sizeof(float);
-         command.TimeOut = 5000;
-
-         return perform_and_send_monitor_command(device, usbMutex, command);
     }
 
     void IVCAMHardwareIO::GenerateAsicCalibrationCoefficients(const CameraCalibrationParameters & compensated_calibration, std::vector<int> resolution, const bool isZMode, float * values) const
@@ -595,7 +650,7 @@ namespace rsimpl { namespace f200
                         DEBUG_OUT("updating asic with new temperature calibration coefficients");
                         IVCAMASICCoefficients coeffs = {};
                         GenerateAsicCalibrationCoefficients(compensated_calibration, {640, 480}, true, coeffs.CoefValueArray);
-                        if (UpdateASICCoefs(&coeffs) != true)
+                        if (set_asic_coefficients(device, usbMutex, &coeffs) != true)
                         {
                             continue; // try again if we couldn't update the coefficients
                         }
@@ -627,103 +682,30 @@ namespace rsimpl { namespace f200
                 memcpy(&rawCalib, rawCalibrationBuffer, bufferLength);
                 calibratedParameters = rawCalib.CalibrationParameters;
             }
-            ProjectionCalibrate(rawCalibrationBuffer, (int) bufferLength);
-            
-            StartTempCompensationLoop();
+            std::tie(base_calibration, base_temperature_data, thermal_loop_params) = get_sr300_calibration(rawCalibrationBuffer, (int) bufferLength);
         }
         else
-        {
-            std::tie(base_calibration, base_temperature_data, thermal_loop_params) = f200_only::get_f200_calibration(device, usbMutex);
-            compensated_calibration = base_calibration;
-            enable_timestamp(device, usbMutex, true, true); // Dimitri: debugging dangerously (assume we are pulling color + depth)
-		    StartTempCompensationLoop();
-        }
-    }
-
-    IVCAMHardwareIO::~IVCAMHardwareIO()
-    {
-        StopTempCompensationLoop();
-    }
-
-    namespace f200_only
-    {
-        void get_calibration_raw_data(uvc::device & device, std::timed_mutex & usbMutex, uint8_t * data, size_t & bytesReturned)
-        {
-            uint8_t request[IVCAM_MONITOR_HEADER_SIZE];
-            size_t requestSize = sizeof(request);
-            uint32_t responseOp;
-
-            if (prepare_usb_command(request, requestSize, (uint32_t) IVCAMMonitorCommand::GetCalibrationTable) <= 0) 
-                throw std::runtime_error("usb transfer to retrieve calibration data failed");
-            execute_usb_command(device, usbMutex, request, requestSize, responseOp, data, bytesReturned);
-        }
-
-        std::tuple<CameraCalibrationParameters, IVCAMTemperatureData, IVCAMThermalLoopParams> projection_calibrate(uint8_t * rawCalibData, int len)
-        {
-            uint8_t * bufParams = rawCalibData + 4;
-
-            IVCAMCalibration CalibrationData;
-            IVCAMTesterData TesterData;
-
-            memset(&CalibrationData, 0, sizeof(IVCAMCalibration));
-
-            int ver = getVersionOfCalibration(bufParams, bufParams + 2);
-
-            if (ver > IVCAM_MIN_SUPPORTED_VERSION)
-            {
-                rawCalibData = rawCalibData + 4;
-
-                int size = (sizeof(IVCAMCalibration) > len) ? len : sizeof(IVCAMCalibration);
-
-                auto fixWithVersionInfo = [&](IVCAMCalibration &d, int size, uint8_t * data)
-                {
-                    memcpy((uint8_t*)&d + sizeof(int), data, size - sizeof(int));
-                };
-
-                fixWithVersionInfo(CalibrationData, size, rawCalibData);
-
-                CameraCalibrationParameters calibration;
-                memcpy(&calibration, &CalibrationData.CalibrationParameters, sizeof(CameraCalibrationParameters));
-
-                // calprms; // breakpoint here to debug
-
-                memcpy(&TesterData,  rawCalibData, SIZE_OF_CALIB_HEADER_BYTES);  //copy the header: valid + version
-
-                //copy the tester data from end of calibration
-                int EndOfCalibratioData = SIZE_OF_CALIB_PARAM_BYTES + SIZE_OF_CALIB_HEADER_BYTES;
-                memcpy((uint8_t*)&TesterData + SIZE_OF_CALIB_HEADER_BYTES , rawCalibData + EndOfCalibratioData , sizeof(IVCAMTesterData) - SIZE_OF_CALIB_HEADER_BYTES);
-                return std::make_tuple(calibration, TesterData.TemperatureData, TesterData.ThermalLoopParams);
-            }
-
-            if (ver == IVCAM_MIN_SUPPORTED_VERSION)
-            {
-                float *params = (float *)bufParams;
-
-                CameraCalibrationParameters calibration;
-                memcpy(&calibration, params + 1, sizeof(CameraCalibrationParameters)); // skip the first float or 2 uint16
-
-                // calprms; // breakpoint here to debug
-
-                memcpy(&TesterData, bufParams, SIZE_OF_CALIB_HEADER_BYTES);
-
-                memset((uint8_t*)&TesterData+SIZE_OF_CALIB_HEADER_BYTES,0,sizeof(IVCAMTesterData) - SIZE_OF_CALIB_HEADER_BYTES);
-                return std::make_tuple(calibration, TesterData.TemperatureData, TesterData.ThermalLoopParams);
-            }
-
-            throw std::runtime_error("calibration table is not compatible with this API");
-        }
-
-        std::tuple<CameraCalibrationParameters, IVCAMTemperatureData, IVCAMThermalLoopParams> get_f200_calibration(uvc::device & device, std::timed_mutex & usbMutex)
         {
             const uvc::guid IVCAM_WIN_USB_DEVICE_GUID = {0x175695CD, 0x30D9, 0x4F87, {0x8B, 0xE3, 0x5A, 0x82, 0x70, 0xF4, 0x9A, 0x31}};
             device.claim_interface(IVCAM_WIN_USB_DEVICE_GUID, IVCAM_MONITOR_INTERFACE);
 
             uint8_t rawCalibrationBuffer[HW_MONITOR_BUFFER_SIZE];
             size_t bufferLength = HW_MONITOR_BUFFER_SIZE;
-            f200_only::get_calibration_raw_data(device, usbMutex, rawCalibrationBuffer, bufferLength);
+            get_f200_calibration_raw_data(device, usbMutex, rawCalibrationBuffer, bufferLength);
 
-            return f200_only::projection_calibrate(rawCalibrationBuffer, (int) bufferLength);
+            //return f200::get_f200_calibration(rawCalibrationBuffer, (int) bufferLength);
+
+            std::tie(base_calibration, base_temperature_data, thermal_loop_params) = get_f200_calibration(rawCalibrationBuffer, bufferLength);
         }
+
+        compensated_calibration = base_calibration;
+        enable_timestamp(device, usbMutex, true, true); // Dimitri: debugging dangerously (assume we are pulling color + depth)
+		StartTempCompensationLoop();
+    }
+
+    IVCAMHardwareIO::~IVCAMHardwareIO()
+    {
+        StopTempCompensationLoop();
     }
 
 } } // namespace rsimpl::f200
