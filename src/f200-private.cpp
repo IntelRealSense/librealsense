@@ -205,16 +205,16 @@ namespace rsimpl { namespace f200
          perform_and_send_monitor_command(device, mutex, command);
     }
 
-    void get_fw_last_error(uvc::device & device, std::timed_mutex & mutex, FirmwareError & error)
+    FirmwareError get_fw_last_error(uvc::device & device, std::timed_mutex & mutex)
     {
         IVCAMCommand cmd(IVCAMMonitorCommand::GetFWLastError);
         memset(cmd.data, 0, 4);
 
         perform_and_send_monitor_command(device, mutex, cmd);
-        error = *reinterpret_cast<FirmwareError *>(cmd.receivedCommandData);
+        return *reinterpret_cast<FirmwareError *>(cmd.receivedCommandData);
     }
 
-    void get_mems_temp(uvc::device & device, std::timed_mutex & mutex, float & MEMStemp)
+    float get_mems_temp(uvc::device & device, std::timed_mutex & mutex)
     {
         IVCAMCommand command(IVCAMMonitorCommand::GetMEMSTemp);
         command.Param1 = 0;
@@ -226,12 +226,11 @@ namespace rsimpl { namespace f200
         command.oneDirection = false;
 
         perform_and_send_monitor_command(device, mutex, command);
-        int32_t t = *((int32_t*)(command.receivedCommandData));
-        MEMStemp = (float) t;
-        MEMStemp /= 100;
+        int32_t t = *reinterpret_cast<int32_t *>(command.receivedCommandData);
+        return static_cast<float>(t) / 100;
     }
 
-    void get_ir_temp(uvc::device & device, std::timed_mutex & mutex, int & IRtemp)
+    int get_ir_temp(uvc::device & device, std::timed_mutex & mutex)
     {
         IVCAMCommand command(IVCAMMonitorCommand::GetIRTemp);
         command.Param1 = 0;
@@ -243,7 +242,7 @@ namespace rsimpl { namespace f200
         command.oneDirection = false;
 
         perform_and_send_monitor_command(device, mutex, command);
-        IRtemp = (int8_t) command.receivedCommandData[0];
+        return static_cast<int8_t>(command.receivedCommandData[0]);
     }
 
     void get_f200_calibration_raw_data(uvc::device & device, std::timed_mutex & usbMutex, uint8_t * data, size_t & bytesReturned)
@@ -519,20 +518,15 @@ namespace rsimpl { namespace f200
             //@tofix, this will throw if bad, but might periodically fail anyway. try/catch
             try
             {
-                IVCAMTemperatureData t = {};
-
-                int irTempInt;
-                get_ir_temp(device, usbMutex, irTempInt);
-                t.IRTemp = (float)irTempInt;
-
-                get_mems_temp(device, usbMutex, t.LiguriaTemp);
+                float IRTemp = (float)get_ir_temp(device, usbMutex);
+                float LiguriaTemp = get_mems_temp(device, usbMutex);
 
                 double IrBaseTemperature = base_temperature_data.IRTemp; //should be taken from the parameters
                 double liguriaBaseTemperature = base_temperature_data.LiguriaTemp; //should be taken from the parameters
 
                 // calculate deltas from the calibration and last fix
-                double IrTempDelta = t.IRTemp - IrBaseTemperature;
-                double liguriaTempDelta = t.LiguriaTemp - liguriaBaseTemperature;
+                double IrTempDelta = IRTemp - IrBaseTemperature;
+                double liguriaTempDelta = LiguriaTemp - liguriaBaseTemperature;
                 double weightedTempDelta = liguriaTempDelta * thermal_loop_params.LiguriaTempWeight + IrTempDelta * thermal_loop_params.IrTempWeight;
                 double tempDetaFromLastFix = abs(weightedTempDelta - last_temperature_delta);
 
