@@ -9,7 +9,7 @@ namespace rsimpl
     class r200_camera : public rs_device
     {
     public:
-        r200_camera(uvc::device device, const static_device_info & info, std::vector<rs_intrinsics> intrinsics);
+        r200_camera(uvc::device_ref device, const static_device_info & info, std::vector<rs_intrinsics> intrinsics);
         ~r200_camera();
 
         void on_before_start(const std::vector<subdevice_mode> & selected_modes) override final;
@@ -18,7 +18,7 @@ namespace rsimpl
         int convert_timestamp(const rsimpl::stream_request (& requests)[RS_STREAM_COUNT], int64_t timestamp) const override final;
     };
 
-    std::shared_ptr<rs_device> make_r200_device(uvc::device device);
+    std::shared_ptr<rs_device> make_r200_device(uvc::device_ref device);
 }
 
 #endif

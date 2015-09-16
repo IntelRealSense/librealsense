@@ -3,7 +3,7 @@
 #include "r200.h"
 #include "f200.h"
 
-rs_context::rs_context() : context(rsimpl::uvc::context::create())
+rs_context::rs_context() : context(rsimpl::uvc::create_context())
 {
     for(auto device : context.query_devices())
     {

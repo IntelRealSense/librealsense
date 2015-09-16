@@ -183,7 +183,7 @@ namespace rsimpl
         return intrinsics;
     }
 
-    f200_camera::f200_camera(uvc::device device, const static_device_info & info, const f200::CameraCalibrationParameters & calib, const f200::IVCAMTemperatureData & temp, const f200::IVCAMThermalLoopParams & params) :
+    f200_camera::f200_camera(uvc::device_ref device, const static_device_info & info, const f200::CameraCalibrationParameters & calib, const f200::IVCAMTemperatureData & temp, const f200::IVCAMThermalLoopParams & params) :
         rs_device(device, info), base_calibration(calib), base_temperature_data(temp), thermal_loop_params(params), last_temperature_delta(std::numeric_limits<float>::infinity())
     {
         set_intrinsics_thread_safe(compute_intrinsics(base_calibration));
@@ -196,7 +196,7 @@ namespace rsimpl
         }
     }
 
-    std::shared_ptr<rs_device> make_f200_device(uvc::device device)
+    std::shared_ptr<rs_device> make_f200_device(uvc::device_ref device)
     {
         std::timed_mutex mutex;
         f200::claim_ivcam_interface(device);
@@ -204,7 +204,7 @@ namespace rsimpl
         return std::make_shared<f200_camera>(device, get_f200_info(std::get<0>(calib)), std::get<0>(calib), std::get<1>(calib), std::get<2>(calib));
     }
 
-    std::shared_ptr<rs_device> make_sr300_device(uvc::device device)
+    std::shared_ptr<rs_device> make_sr300_device(uvc::device_ref device)
     {
         std::timed_mutex mutex;
         f200::claim_ivcam_interface(device);

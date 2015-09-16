@@ -359,7 +359,7 @@ namespace rsimpl
             return true;
         }
 
-        struct context::_impl
+        struct context_ref::_impl
         {
             _impl()
             {
@@ -376,12 +376,12 @@ namespace rsimpl
 
         class reader_callback : public IMFSourceReaderCallback
         {
-            std::weak_ptr<device::_impl> owner; // The device holds a reference to us, so use weak_ptr to prevent a cycle
+            std::weak_ptr<device_ref::_impl> owner; // The device holds a reference to us, so use weak_ptr to prevent a cycle
             int subdevice_index;
             ULONG ref_count;
             volatile bool streaming = false;
         public:
-            reader_callback(std::weak_ptr<device::_impl> owner, int subdevice_index) : owner(owner), subdevice_index(subdevice_index), ref_count() {}
+            reader_callback(std::weak_ptr<device_ref::_impl> owner, int subdevice_index) : owner(owner), subdevice_index(subdevice_index), ref_count() {}
 
             bool is_streaming() const { return streaming; }
             void on_start() { streaming = true; }
@@ -421,9 +421,9 @@ namespace rsimpl
             }
         };
 
-        struct device::_impl
+        struct device_ref::_impl
         {
-            const std::shared_ptr<context::_impl> parent;
+            const std::shared_ptr<context_ref::_impl> parent;
             const int vid, pid;
             const std::string unique_id;
 
@@ -433,7 +433,7 @@ namespace rsimpl
             HANDLE usb_file_handle = INVALID_HANDLE_VALUE;
             WINUSB_INTERFACE_HANDLE usb_interface_handle = INVALID_HANDLE_VALUE;
 
-            _impl(std::shared_ptr<context::_impl> parent, int vid, int pid, std::string unique_id) : parent(move(parent)), vid(vid), pid(pid), unique_id(move(unique_id)) {}
+            _impl(std::shared_ptr<context_ref::_impl> parent, int vid, int pid, std::string unique_id) : parent(move(parent)), vid(vid), pid(pid), unique_id(move(unique_id)) {}
             ~_impl() { stop_streaming(); close_win_usb(); }
 
             void start_streaming()
@@ -668,10 +668,10 @@ namespace rsimpl
         // device //
         ////////////
 
-        int device::get_vendor_id() const { return impl->vid; }
-        int device::get_product_id() const { return impl->pid; }
+        int device_ref::get_vendor_id() const { return impl->vid; }
+        int device_ref::get_product_id() const { return impl->pid; }
 
-        void device::get_control(uint8_t unit, uint8_t ctrl, void *data, int len) const
+        void device_ref::get_control(uint8_t unit, uint8_t ctrl, void *data, int len) const
         {
             KSP_NODE node;
             memset(&node, 0, sizeof(KSP_NODE));
@@ -685,7 +685,7 @@ namespace rsimpl
             if(bytes_received != len) throw std::runtime_error("XU read did not return enough data");
         }
 
-        void device::set_control(uint8_t unit, uint8_t ctrl, void *data, int len)
+        void device_ref::set_control(uint8_t unit, uint8_t ctrl, void *data, int len) const
         {               
             KSP_NODE node;
             memset(&node, 0, sizeof(KSP_NODE));
@@ -697,12 +697,12 @@ namespace rsimpl
             check("IKsControl::KsProperty", impl->get_control_node()->KsProperty((PKSPROPERTY)&node, sizeof(KSP_NODE), data, len, nullptr));
         }
 
-        void device::claim_interface(const guid & interface_guid, int interface_number)
+        void device_ref::claim_interface(const guid & interface_guid, int interface_number) const
         {
             impl->open_win_usb(interface_guid, interface_number);
         }
 
-        void device::bulk_transfer(uint8_t endpoint, void * data, int length, int *actual_length, unsigned int timeout)
+        void device_ref::bulk_transfer(uint8_t endpoint, void * data, int length, int *actual_length, unsigned int timeout) const
         {       
             if(USB_ENDPOINT_DIRECTION_OUT(endpoint))
             {
@@ -716,7 +716,7 @@ namespace rsimpl
             }
         }
 
-        void device::set_subdevice_mode(int subdevice_index, int width, int height, uint32_t fourcc, int fps, std::function<void(const void * frame)> callback)
+        void device_ref::set_subdevice_mode(int subdevice_index, int width, int height, uint32_t fourcc, int fps, std::function<void(const void * frame)> callback) const
         {
             auto & sub = impl->subdevices[subdevice_index];
             
@@ -754,19 +754,19 @@ namespace rsimpl
             throw std::runtime_error("no matching media type");
         }
 
-        void device::start_streaming() { impl->start_streaming(); }
-        void device::stop_streaming() { impl->stop_streaming(); }
+        void device_ref::start_streaming() const { impl->start_streaming(); }
+        void device_ref::stop_streaming() const { impl->stop_streaming(); }
 
         /////////////
         // context //
         /////////////
 
-        context context::create()
+        context_ref create_context()
         {
-            return {std::make_shared<context::_impl>()};
+            return {std::make_shared<context_ref::_impl>()};
         }
 
-        std::vector<device> context::query_devices()
+        std::vector<device_ref> context_ref::query_devices() const
         {
             IMFAttributes * pAttributes = NULL;
             check("MFCreateAttributes", MFCreateAttributes(&pAttributes, 1));
@@ -776,7 +776,7 @@ namespace rsimpl
             UINT32 numDevices;
             check("MFEnumDeviceSources", MFEnumDeviceSources(pAttributes, &ppDevices, &numDevices));
 
-            std::vector<device> devices;
+            std::vector<device_ref> devices;
             for(UINT32 i=0; i<numDevices; ++i)
             {
                 com_ptr<IMFActivate> pDevice;
@@ -790,7 +790,7 @@ namespace rsimpl
                 int vid, pid, mi; std::string unique_id;
                 if(!parse_usb_path(vid, pid, mi, unique_id, name)) continue;
 
-                device dev;
+                device_ref dev;
                 for(auto & d : devices)
                 {
                     if(d.impl->vid == vid && d.impl->pid == pid && d.impl->unique_id == unique_id)
@@ -800,7 +800,7 @@ namespace rsimpl
                 }
                 if(!dev)
                 {
-                    dev = {std::make_shared<device::_impl>(impl, vid, pid, unique_id)};
+                    dev = {std::make_shared<device_ref::_impl>(impl, vid, pid, unique_id)};
                     devices.push_back(dev);
                 }
 

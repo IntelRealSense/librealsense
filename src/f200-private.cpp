@@ -259,72 +259,72 @@ namespace rsimpl { namespace f200
 
     // N.B. f200 xu_read and xu_write hard code the xu interface to the depth suvdevice. There is only a
     // single *potentially* useful XU on the color device, so let's ignore it for now.
-    void xu_read(const uvc::device & device, uint64_t xu_ctrl, void * buffer, uint32_t length)
+    void xu_read(const uvc::device_ref & device, uint64_t xu_ctrl, void * buffer, uint32_t length)
     {
         device.get_control(6, xu_ctrl, buffer, length);
     }
     
-    void xu_write(uvc::device & device, uint64_t xu_ctrl, void * buffer, uint32_t length)
+    void xu_write(const uvc::device_ref & device, uint64_t xu_ctrl, void * buffer, uint32_t length)
     {
         device.set_control(6, xu_ctrl, buffer, length);
     }
     
-    void get_laser_power(const uvc::device & device, uint8_t & laser_power)
+    void get_laser_power(const uvc::device_ref & device, uint8_t & laser_power)
     {
         xu_read(device, IVCAM_DEPTH_LASER_POWER, &laser_power, sizeof(laser_power));
     }
     
-    void set_laser_power(uvc::device & device, uint8_t laser_power)
+    void set_laser_power(const uvc::device_ref & device, uint8_t laser_power)
     {
         xu_write(device, IVCAM_DEPTH_LASER_POWER, &laser_power, sizeof(laser_power));
     }
     
-    void get_accuracy(const uvc::device & device, uint8_t & accuracy)
+    void get_accuracy(const uvc::device_ref & device, uint8_t & accuracy)
     {
         xu_read(device, IVCAM_DEPTH_ACCURACY, &accuracy, sizeof(accuracy));
     }
     
-    void set_accuracy(uvc::device & device, uint8_t accuracy)
+    void set_accuracy(const uvc::device_ref & device, uint8_t accuracy)
     {
         xu_write(device, IVCAM_DEPTH_ACCURACY, &accuracy, sizeof(accuracy));
     }
     
-    void get_motion_range(const uvc::device & device, uint8_t & motion_range)
+    void get_motion_range(const uvc::device_ref & device, uint8_t & motion_range)
     {
         xu_read(device, IVCAM_DEPTH_MOTION_RANGE, &motion_range, sizeof(motion_range));
     }
     
-    void set_motion_range(uvc::device & device, uint8_t motion_range)
+    void set_motion_range(const uvc::device_ref & device, uint8_t motion_range)
     {
         xu_write(device, IVCAM_DEPTH_MOTION_RANGE, &motion_range, sizeof(motion_range));
     }
     
-    void get_filter_option(const uvc::device & device, uint8_t & filter_option)
+    void get_filter_option(const uvc::device_ref & device, uint8_t & filter_option)
     {
         xu_read(device, IVCAM_DEPTH_FILTER_OPTION, &filter_option, sizeof(filter_option));
     }
     
-    void set_filter_option(uvc::device & device, uint8_t filter_option)
+    void set_filter_option(const uvc::device_ref & device, uint8_t filter_option)
     {
         xu_write(device, IVCAM_DEPTH_FILTER_OPTION, &filter_option, sizeof(filter_option));
     }
     
-    void get_confidence_threshold(const uvc::device & device, uint8_t & conf_thresh)
+    void get_confidence_threshold(const uvc::device_ref & device, uint8_t & conf_thresh)
     {
         xu_read(device, IVCAM_DEPTH_CONFIDENCE_THRESH, &conf_thresh, sizeof(conf_thresh));
     }
     
-    void set_confidence_threshold(uvc::device & device, uint8_t conf_thresh)
+    void set_confidence_threshold(const uvc::device_ref & device, uint8_t conf_thresh)
     {
         xu_write(device, IVCAM_DEPTH_CONFIDENCE_THRESH, &conf_thresh, sizeof(conf_thresh));
     }
     
-    void get_dynamic_fps(const uvc::device & device, uint8_t & dynamic_fps)
+    void get_dynamic_fps(const uvc::device_ref & device, uint8_t & dynamic_fps)
     {
         return xu_read(device, IVCAM_DEPTH_DYNAMIC_FPS, &dynamic_fps, sizeof(dynamic_fps));
     }
     
-    void set_dynamic_fps(uvc::device & device, uint8_t dynamic_fps)
+    void set_dynamic_fps(const uvc::device_ref & device, uint8_t dynamic_fps)
     {
         return xu_write(device, IVCAM_DEPTH_DYNAMIC_FPS, &dynamic_fps, sizeof(dynamic_fps));
     }
@@ -333,7 +333,7 @@ namespace rsimpl { namespace f200
     // USB functions //
     ///////////////////
 
-    void claim_ivcam_interface(uvc::device & device)
+    void claim_ivcam_interface(const uvc::device_ref & device)
     {
         const uvc::guid IVCAM_WIN_USB_DEVICE_GUID = {0x175695CD, 0x30D9, 0x4F87, {0x8B, 0xE3, 0x5A, 0x82, 0x70, 0xF4, 0x9A, 0x31}};
         device.claim_interface(IVCAM_WIN_USB_DEVICE_GUID, IVCAM_MONITOR_INTERFACE);
@@ -407,7 +407,7 @@ namespace rsimpl { namespace f200
 
     }
 
-    void execute_usb_command(uvc::device & device, std::timed_mutex & mutex, uint8_t *out, size_t outSize, uint32_t & op, uint8_t * in, size_t & inSize)
+    void execute_usb_command(const uvc::device_ref & device, std::timed_mutex & mutex, uint8_t *out, size_t outSize, uint32_t & op, uint8_t * in, size_t & inSize)
     {
         // write
         errno = 0;
@@ -436,7 +436,7 @@ namespace rsimpl { namespace f200
         }
     }
 
-    void send_hw_monitor_command(uvc::device & device, std::timed_mutex & mutex, IVCAMCommandDetails & details)
+    void send_hw_monitor_command(const uvc::device_ref & device, std::timed_mutex & mutex, IVCAMCommandDetails & details)
     {
         unsigned char outputBuffer[HW_MONITOR_BUFFER_SIZE];
 
@@ -457,7 +457,7 @@ namespace rsimpl { namespace f200
             memcpy(details.receivedCommandData, outputBuffer + 4, details.receivedCommandDataLength);
     }
 
-    void perform_and_send_monitor_command(uvc::device & device, std::timed_mutex & mutex, IVCAMCommand & newCommand)
+    void perform_and_send_monitor_command(const uvc::device_ref & device, std::timed_mutex & mutex, IVCAMCommand & newCommand)
     {
         uint32_t opCodeXmit = (uint32_t) newCommand.cmd;
 
@@ -492,14 +492,14 @@ namespace rsimpl { namespace f200
         }
     }
 
-    void force_hardware_reset(uvc::device & device, std::timed_mutex & mutex)
+    void force_hardware_reset(const uvc::device_ref & device, std::timed_mutex & mutex)
     {
         IVCAMCommand cmd(IVCAMMonitorCommand::HWReset);
         cmd.oneDirection = true;
         perform_and_send_monitor_command(device, mutex, cmd);
     }
 
-    void enable_timestamp(uvc::device & device, std::timed_mutex & mutex, bool colorEnable, bool depthEnable)
+    void enable_timestamp(const uvc::device_ref & device, std::timed_mutex & mutex, bool colorEnable, bool depthEnable)
     {
         IVCAMCommand cmd(IVCAMMonitorCommand::TimeStampEnable);
         cmd.Param1 = depthEnable ? 1 : 0;
@@ -507,7 +507,7 @@ namespace rsimpl { namespace f200
         perform_and_send_monitor_command(device, mutex, cmd);
     }
 
-    void set_asic_coefficients(uvc::device & device, std::timed_mutex & mutex, const IVCAMASICCoefficients & coeffs)
+    void set_asic_coefficients(const uvc::device_ref & device, std::timed_mutex & mutex, const IVCAMASICCoefficients & coeffs)
     {
          IVCAMCommand command(IVCAMMonitorCommand::UpdateCalib);
 
@@ -523,7 +523,7 @@ namespace rsimpl { namespace f200
          perform_and_send_monitor_command(device, mutex, command);
     }
 
-    FirmwareError get_fw_last_error(uvc::device & device, std::timed_mutex & mutex)
+    FirmwareError get_fw_last_error(const uvc::device_ref & device, std::timed_mutex & mutex)
     {
         IVCAMCommand cmd(IVCAMMonitorCommand::GetFWLastError);
         memset(cmd.data, 0, 4);
@@ -532,7 +532,7 @@ namespace rsimpl { namespace f200
         return *reinterpret_cast<FirmwareError *>(cmd.receivedCommandData);
     }
 
-    float read_mems_temp(uvc::device & device, std::timed_mutex & mutex)
+    float read_mems_temp(const uvc::device_ref & device, std::timed_mutex & mutex)
     {
         IVCAMCommand command(IVCAMMonitorCommand::GetMEMSTemp);
         command.Param1 = 0;
@@ -548,7 +548,7 @@ namespace rsimpl { namespace f200
         return static_cast<float>(t) / 100;
     }
 
-    int read_ir_temp(uvc::device & device, std::timed_mutex & mutex)
+    int read_ir_temp(const uvc::device_ref & device, std::timed_mutex & mutex)
     {
         IVCAMCommand command(IVCAMMonitorCommand::GetIRTemp);
         command.Param1 = 0;
@@ -563,7 +563,7 @@ namespace rsimpl { namespace f200
         return static_cast<int8_t>(command.receivedCommandData[0]);
     }
 
-    void get_f200_calibration_raw_data(uvc::device & device, std::timed_mutex & usbMutex, uint8_t * data, size_t & bytesReturned)
+    void get_f200_calibration_raw_data(const uvc::device_ref & device, std::timed_mutex & usbMutex, uint8_t * data, size_t & bytesReturned)
     {
         uint8_t request[IVCAM_MONITOR_HEADER_SIZE];
         size_t requestSize = sizeof(request);
@@ -574,7 +574,7 @@ namespace rsimpl { namespace f200
         execute_usb_command(device, usbMutex, request, requestSize, responseOp, data, bytesReturned);
     }
 
-    void get_sr300_calibration_raw_data(uvc::device & device, std::timed_mutex & mutex,uint8_t * data, size_t & bytesReturned)
+    void get_sr300_calibration_raw_data(const uvc::device_ref & device, std::timed_mutex & mutex,uint8_t * data, size_t & bytesReturned)
     {
         IVCAMCommand command(IVCAMMonitorCommand::GetCalibrationTable);
         command.Param1 = (uint32_t)IVCAMDataSource::TakeFromRAM;
@@ -655,7 +655,7 @@ namespace rsimpl { namespace f200
     }
 
     
-    std::tuple<CameraCalibrationParameters, IVCAMTemperatureData, IVCAMThermalLoopParams> read_f200_calibration(uvc::device & device, std::timed_mutex & mutex)
+    std::tuple<CameraCalibrationParameters, IVCAMTemperatureData, IVCAMThermalLoopParams> read_f200_calibration(const uvc::device_ref & device, std::timed_mutex & mutex)
     {
         uint8_t rawCalibrationBuffer[HW_MONITOR_BUFFER_SIZE];
         size_t bufferLength = HW_MONITOR_BUFFER_SIZE;       
@@ -663,7 +663,7 @@ namespace rsimpl { namespace f200
         return get_f200_calibration(rawCalibrationBuffer, bufferLength);
     }
 
-    std::tuple<CameraCalibrationParameters, IVCAMTemperatureData, IVCAMThermalLoopParams> read_sr300_calibration(uvc::device & device, std::timed_mutex & mutex)
+    std::tuple<CameraCalibrationParameters, IVCAMTemperatureData, IVCAMThermalLoopParams> read_sr300_calibration(const uvc::device_ref & device, std::timed_mutex & mutex)
     {
         uint8_t rawCalibrationBuffer[HW_MONITOR_BUFFER_SIZE];
         size_t bufferLength = HW_MONITOR_BUFFER_SIZE;       
@@ -823,7 +823,7 @@ namespace rsimpl { namespace f200
         return ;
     }
     
-    void update_asic_coefficients(uvc::device & device, std::timed_mutex & mutex, const CameraCalibrationParameters & compensated_params)
+    void update_asic_coefficients(const uvc::device_ref & device, std::timed_mutex & mutex, const CameraCalibrationParameters & compensated_params)
     {
         IVCAMASICCoefficients coeffs = {};
         generate_asic_calibration_coefficients(compensated_params, {640, 480}, true, coeffs.CoefValueArray);

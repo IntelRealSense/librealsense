@@ -7,7 +7,7 @@
 
 struct rs_context
 {
-    rsimpl::uvc::context                            context;
+    rsimpl::uvc::context_ref                        context;
     std::vector<std::shared_ptr<rs_device>>         devices;
 
                                                     rs_context();

@@ -62,32 +62,32 @@ namespace rsimpl { namespace f200
     };
 
     // Claim USB interface used for device
-    void claim_ivcam_interface(uvc::device & device);
+    void claim_ivcam_interface(const uvc::device_ref & device);
 
     // Read calibration or device state
-    std::tuple<CameraCalibrationParameters, IVCAMTemperatureData, IVCAMThermalLoopParams> read_f200_calibration(uvc::device & device, std::timed_mutex & mutex);
-    std::tuple<CameraCalibrationParameters, IVCAMTemperatureData, IVCAMThermalLoopParams> read_sr300_calibration(uvc::device & device, std::timed_mutex & mutex);
-    float read_mems_temp(uvc::device & device, std::timed_mutex & mutex);
-    int read_ir_temp(uvc::device & device, std::timed_mutex & mutex);
+    std::tuple<CameraCalibrationParameters, IVCAMTemperatureData, IVCAMThermalLoopParams> read_f200_calibration(const uvc::device_ref & device, std::timed_mutex & mutex);
+    std::tuple<CameraCalibrationParameters, IVCAMTemperatureData, IVCAMThermalLoopParams> read_sr300_calibration(const uvc::device_ref & device, std::timed_mutex & mutex);
+    float read_mems_temp(const uvc::device_ref & device, std::timed_mutex & mutex);
+    int read_ir_temp(const uvc::device_ref & device, std::timed_mutex & mutex);
 
     // Modify device state
-    void force_hardware_reset(uvc::device & device, std::timed_mutex & mutex);
-    void enable_timestamp(uvc::device & device, std::timed_mutex & mutex, bool colorEnable, bool depthEnable);
-    void update_asic_coefficients(uvc::device & device, std::timed_mutex & mutex, const CameraCalibrationParameters & compensated_params); // TODO: Allow you to specify resolution
+    void force_hardware_reset(const uvc::device_ref & device, std::timed_mutex & mutex);
+    void enable_timestamp(const uvc::device_ref & device, std::timed_mutex & mutex, bool colorEnable, bool depthEnable);
+    void update_asic_coefficients(const uvc::device_ref & device, std::timed_mutex & mutex, const CameraCalibrationParameters & compensated_params); // TODO: Allow you to specify resolution
 
     // XU read/write
-    void get_laser_power(const uvc::device & device, uint8_t & laser_power);
-    void set_laser_power(uvc::device & device, uint8_t laser_power);  
-    void get_accuracy(const uvc::device & device, uint8_t & accuracy);  
-    void set_accuracy(uvc::device & device, uint8_t accuracy);    
-    void get_motion_range(const uvc::device & device, uint8_t & motion_range);
-    void set_motion_range(uvc::device & device, uint8_t motion_range);
-    void get_filter_option(const uvc::device & device, uint8_t & filter_option);
-    void set_filter_option(uvc::device & device, uint8_t filter_option);
-    void get_confidence_threshold(const uvc::device & device, uint8_t & conf_thresh);
-    void set_confidence_threshold(uvc::device & device, uint8_t conf_thresh);
-    void get_dynamic_fps(const uvc::device & device, uint8_t & dynamic_fps);
-    void set_dynamic_fps(uvc::device & device, uint8_t dynamic_fps);
+    void get_laser_power(const uvc::device_ref & device, uint8_t & laser_power);
+    void set_laser_power(const uvc::device_ref & device, uint8_t laser_power);  
+    void get_accuracy(const uvc::device_ref & device, uint8_t & accuracy);  
+    void set_accuracy(const uvc::device_ref & device, uint8_t accuracy);    
+    void get_motion_range(const uvc::device_ref & device, uint8_t & motion_range);
+    void set_motion_range(const uvc::device_ref & device, uint8_t motion_range);
+    void get_filter_option(const uvc::device_ref & device, uint8_t & filter_option);
+    void set_filter_option(const uvc::device_ref & device, uint8_t filter_option);
+    void get_confidence_threshold(const uvc::device_ref & device, uint8_t & conf_thresh);
+    void set_confidence_threshold(const uvc::device_ref & device, uint8_t conf_thresh);
+    void get_dynamic_fps(const uvc::device_ref & device, uint8_t & dynamic_fps);
+    void set_dynamic_fps(const uvc::device_ref & device, uint8_t dynamic_fps);
 
     #define NUM_OF_CALIBRATION_COEFFS   (64)
 

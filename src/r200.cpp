@@ -42,12 +42,12 @@ namespace rsimpl
         return {(int)i.w, (int)i.h, i.px, i.py, i.fx, i.fy, RS_DISTORTION_MODIFIED_BROWN_CONRADY, {i.k[0],i.k[1],i.k[2],i.k[3],i.k[4]}};
     }
 
-    static std::tuple<static_device_info, std::vector<rs_intrinsics>> get_r200_info(uvc::device device)
+    static std::tuple<static_device_info, std::vector<rs_intrinsics>> get_r200_info(uvc::device_ref device)
     {
         
     }
 
-    r200_camera::r200_camera(uvc::device device, const static_device_info & info, std::vector<rs_intrinsics> intrinsics) : rs_device(device, info)
+    r200_camera::r200_camera(uvc::device_ref device, const static_device_info & info, std::vector<rs_intrinsics> intrinsics) : rs_device(device, info)
     {
         set_intrinsics_thread_safe(intrinsics);
     }
@@ -57,7 +57,7 @@ namespace rsimpl
         r200::force_firmware_reset(device);
     }
 
-    std::shared_ptr<rs_device> make_r200_device(uvc::device device)
+    std::shared_ptr<rs_device> make_r200_device(uvc::device_ref device)
     {
         enum { LR_FULL, LR_BIG, LR_QRES, Z_FULL, Z_BIG, Z_QRES, THIRD_HD, THIRD_VGA, NUM_INTRINSICS };
         const static struct { int w, h, uvc_w, uvc_h, lr_intrin, z_intrin; } lrz_modes[] = {

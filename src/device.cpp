@@ -36,7 +36,7 @@ static_device_info rsimpl::add_standard_unpackers(const static_device_info & dev
     return info;
 }
 
-rs_device::rs_device(const rsimpl::uvc::device & device, const rsimpl::static_device_info & info) : device(device), device_info(add_standard_unpackers(info)), capturing(false)
+rs_device::rs_device(const rsimpl::uvc::device_ref & device, const rsimpl::static_device_info & info) : device(device), device_info(add_standard_unpackers(info)), capturing(false)
 {
     for(auto & req : requests) req = rsimpl::stream_request();
 }

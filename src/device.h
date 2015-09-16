@@ -7,7 +7,7 @@
 struct rs_device
 {
 protected:
-    rsimpl::uvc::device                     device;
+    const rsimpl::uvc::device_ref           device;
 private:
     const rsimpl::static_device_info        device_info;
     std::vector<rs_intrinsics>              intrinsics;
@@ -24,7 +24,7 @@ private:
 protected:
     void                                    set_intrinsics_thread_safe(std::vector<rs_intrinsics> new_intrinsics); // Thread-safe
 public:
-                                            rs_device(const rsimpl::uvc::device & device, const rsimpl::static_device_info & info);
+                                            rs_device(const rsimpl::uvc::device_ref & device, const rsimpl::static_device_info & info);
                                             ~rs_device();
 
     const char *                            get_name() const { return device_info.name.c_str(); }
