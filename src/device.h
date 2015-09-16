@@ -7,14 +7,12 @@
 struct rs_device
 {
 protected:
-    class subdevice_handle;
-
     rsimpl::uvc::device                     device;
-    rsimpl::static_device_info              device_info;
 private:
+    const rsimpl::static_device_info        device_info;
     std::vector<rs_intrinsics>              intrinsics;
     mutable std::mutex                      intrinsics_mutex;           // Controls access to intrinsics, mutable so that it can be locked from const methods which only read the value of intrinsics
-protected:
+
     rsimpl::stream_request                  requests[RS_STREAM_COUNT];  // Indexed by RS_DEPTH, RS_COLOR, ...
     std::shared_ptr<rsimpl::stream_buffer>  streams[RS_STREAM_COUNT];   // Indexed by RS_DEPTH, RS_COLOR, ...
 
@@ -23,10 +21,10 @@ protected:
 
     int64_t                                 base_timestamp;
     int                                     last_stream_timestamp;
-
+protected:
     void                                    set_intrinsics_thread_safe(std::vector<rs_intrinsics> new_intrinsics); // Thread-safe
 public:
-                                            rs_device(rsimpl::uvc::device device);
+                                            rs_device(const rsimpl::uvc::device & device, const rsimpl::static_device_info & info);
                                             ~rs_device();
 
     const char *                            get_name() const { return device_info.name.c_str(); }
@@ -56,7 +54,7 @@ public:
     virtual void                            on_before_start(const std::vector<rsimpl::subdevice_mode> & selected_modes) {}
     virtual void                            set_option(rs_option option, int value) = 0;
     virtual int                             get_option(rs_option option) const = 0;
-    virtual int                             convert_timestamp(int64_t timestamp) const = 0;
+    virtual int                             convert_timestamp(const rsimpl::stream_request (& requests)[RS_STREAM_COUNT], int64_t timestamp) const = 0;
 };
 
 #endif

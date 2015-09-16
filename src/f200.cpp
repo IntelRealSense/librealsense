@@ -183,22 +183,10 @@ namespace rsimpl
         return intrinsics;
     }
 
-    f200_camera::f200_camera(uvc::device device, bool sr300) : rs_device(device), last_temperature_delta(std::numeric_limits<float>::infinity())
+    f200_camera::f200_camera(uvc::device device, const static_device_info & info, const f200::CameraCalibrationParameters & calib, const f200::IVCAMTemperatureData & temp, const f200::IVCAMThermalLoopParams & params) :
+        rs_device(device, info), base_calibration(calib), base_temperature_data(temp), thermal_loop_params(params), last_temperature_delta(std::numeric_limits<float>::infinity())
     {
-        f200::claim_ivcam_interface(device);
-
-        if(sr300)
-        {
-            std::tie(base_calibration, base_temperature_data, thermal_loop_params) = f200::read_sr300_calibration(device, usbMutex);
-            device_info = add_standard_unpackers(get_sr300_info(base_calibration));
-        }
-        else
-        {
-            std::tie(base_calibration, base_temperature_data, thermal_loop_params) = f200::read_f200_calibration(device, usbMutex);
-            device_info = add_standard_unpackers(get_f200_info(base_calibration));
-        }
         set_intrinsics_thread_safe(compute_intrinsics(base_calibration));
-
 
         // If thermal control loop requested, start up thread to handle it
 		if(thermal_loop_params.IRThermalLoopEnable)
@@ -206,6 +194,22 @@ namespace rsimpl
             runTemperatureThread = true;
             temperatureThread = std::thread(&f200_camera::temperature_control_loop, this);
         }
+    }
+
+    std::shared_ptr<rs_device> make_f200_device(uvc::device device)
+    {
+        std::timed_mutex mutex;
+        f200::claim_ivcam_interface(device);
+        auto calib = f200::read_f200_calibration(device, mutex);
+        return std::make_shared<f200_camera>(device, get_f200_info(std::get<0>(calib)), std::get<0>(calib), std::get<1>(calib), std::get<2>(calib));
+    }
+
+    std::shared_ptr<rs_device> make_sr300_device(uvc::device device)
+    {
+        std::timed_mutex mutex;
+        f200::claim_ivcam_interface(device);
+        auto calib = f200::read_sr300_calibration(device, mutex);
+        return std::make_shared<f200_camera>(device, get_sr300_info(std::get<0>(calib)), std::get<0>(calib), std::get<1>(calib), std::get<2>(calib));    
     }
 
     f200_camera::~f200_camera()

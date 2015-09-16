@@ -44,6 +44,21 @@ namespace rsimpl
 
     static std::tuple<static_device_info, std::vector<rs_intrinsics>> get_r200_info(uvc::device device)
     {
+        
+    }
+
+    r200_camera::r200_camera(uvc::device device, const static_device_info & info, std::vector<rs_intrinsics> intrinsics) : rs_device(device, info)
+    {
+        set_intrinsics_thread_safe(intrinsics);
+    }
+    
+    r200_camera::~r200_camera()
+    {
+        r200::force_firmware_reset(device);
+    }
+
+    std::shared_ptr<rs_device> make_r200_device(uvc::device device)
+    {
         enum { LR_FULL, LR_BIG, LR_QRES, Z_FULL, Z_BIG, Z_QRES, THIRD_HD, THIRD_VGA, NUM_INTRINSICS };
         const static struct { int w, h, uvc_w, uvc_h, lr_intrin, z_intrin; } lrz_modes[] = {
             {640, 480,   640, 481,  LR_FULL, Z_FULL},
@@ -125,19 +140,7 @@ namespace rsimpl
         info.stream_poses[RS_STREAM_COLOR].position = info.stream_poses[RS_STREAM_COLOR].orientation * info.stream_poses[RS_STREAM_COLOR].position;
         info.depth_scale = 0.001f;
 
-        return std::make_tuple(info, intrinsics);
-    }
-
-    r200_camera::r200_camera(uvc::device device) : rs_device(device)
-    {
-        auto info = get_r200_info(device);
-        device_info = add_standard_unpackers(std::get<0>(info));
-        set_intrinsics_thread_safe(std::get<1>(info));
-    }
-    
-    r200_camera::~r200_camera()
-    {
-        r200::force_firmware_reset(device);
+        return std::make_shared<r200_camera>(device, info, intrinsics);
     }
 
     void r200_camera::on_before_start(const std::vector<subdevice_mode> & selected_modes)
@@ -155,7 +158,7 @@ namespace rsimpl
         r200::set_stream_intent(device, streamIntent);
     }
 
-    int r200_camera::convert_timestamp(int64_t timestamp) const
+    int r200_camera::convert_timestamp(const rsimpl::stream_request (& requests)[RS_STREAM_COUNT], int64_t timestamp) const
     { 
         int max_fps = 0;
         for(auto & req : requests) if(req.enabled) max_fps = std::max(max_fps, req.fps);
