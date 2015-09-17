@@ -707,7 +707,7 @@ namespace rsimpl
             device.subdevices[subdevice].ks_property_set = reinterpret_cast<const GUID &>(guid);
         }
 
-        void get_control(const device & device, int subdevice, uint8_t unit, uint8_t ctrl, void *data, int len)
+        void get_control(const device & device, int subdevice, uint8_t ctrl, void *data, int len)
         {
             KSP_NODE node;
             memset(&node, 0, sizeof(KSP_NODE));
@@ -721,7 +721,7 @@ namespace rsimpl
             if(bytes_received != len) throw std::runtime_error("XU read did not return enough data");
         }
 
-        void set_control(device & device, int subdevice, uint8_t unit, uint8_t ctrl, void *data, int len)
+        void set_control(device & device, int subdevice, uint8_t ctrl, void *data, int len)
         {        
             KSP_NODE node;
             memset(&node, 0, sizeof(KSP_NODE));
