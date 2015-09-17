@@ -49,12 +49,24 @@ namespace rs
 
     enum class option : int32_t
     {
+        color_backlight_compensation    = RS_OPTION_COLOR_BACKLIGHT_COMPENSATION,
+        color_brightness                = RS_OPTION_COLOR_BRIGHTNESS,
+        color_contrast                  = RS_OPTION_COLOR_CONTRAST,
+        color_exposure                  = RS_OPTION_COLOR_EXPOSURE,
+        color_gain                      = RS_OPTION_COLOR_GAIN,
+        color_gamma                     = RS_OPTION_COLOR_GAMMA,
+        color_hue                       = RS_OPTION_COLOR_HUE,
+        color_saturation                = RS_OPTION_COLOR_SATURATION,
+        color_sharpness                 = RS_OPTION_COLOR_SHARPNESS,
+        color_white_balance             = RS_OPTION_COLOR_WHITE_BALANCE,
+
         f200_laser_power                = RS_OPTION_F200_LASER_POWER,
         f200_accuracy                   = RS_OPTION_F200_ACCURACY,
         f200_motion_range               = RS_OPTION_F200_MOTION_RANGE,
         f200_filter_option              = RS_OPTION_F200_FILTER_OPTION,
         f200_confidence_threshold       = RS_OPTION_F200_CONFIDENCE_THRESHOLD,
         f200_dynamic_fps                = RS_OPTION_F200_DYNAMIC_FPS,
+
         r200_lr_auto_exposure_enabled   = RS_OPTION_R200_LR_AUTO_EXPOSURE_ENABLED,
         r200_lr_gain                    = RS_OPTION_R200_LR_GAIN,
         r200_lr_exposure                = RS_OPTION_R200_LR_EXPOSURE,

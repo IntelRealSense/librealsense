@@ -808,15 +808,39 @@ namespace rsimpl
         void start_streaming(device & device) { device.start_streaming(); }
         void stop_streaming(device & device) { device.stop_streaming(); }
 
+        struct pu_control { rs_option option; long property; };
+        static const pu_control pu_controls[] = {
+            {RS_OPTION_COLOR_BACKLIGHT_COMPENSATION, VideoProcAmp_BacklightCompensation},
+            {RS_OPTION_COLOR_BRIGHTNESS, VideoProcAmp_Brightness},
+            {RS_OPTION_COLOR_CONTRAST, VideoProcAmp_Contrast},
+            {RS_OPTION_COLOR_GAIN, VideoProcAmp_Gain},
+            {RS_OPTION_COLOR_GAMMA, VideoProcAmp_Gamma},
+            {RS_OPTION_COLOR_HUE, VideoProcAmp_Hue},
+            {RS_OPTION_COLOR_SATURATION, VideoProcAmp_Saturation},
+            {RS_OPTION_COLOR_SHARPNESS, VideoProcAmp_Sharpness},
+            {RS_OPTION_COLOR_WHITE_BALANCE, VideoProcAmp_WhiteBalance},
+        };
+
         void set_pu_control(device & device, int subdevice, rs_option option, int value)
         {
-            // TODO: Implement
+            auto & sub = device.subdevices[subdevice];
+            if(option == RS_OPTION_COLOR_EXPOSURE) check("IAMCameraControl::Set", sub.am_camera_control->Set(CameraControl_Exposure, value, CameraControl_Flags_Manual));
+            for(auto & pu : pu_controls)
+            {
+                if(option == pu.option) check("IAMVideoProcAmp::Set", sub.am_video_proc_amp->Set(pu.property, value, VideoProcAmp_Flags_Manual));
+            }
         }
 
         int get_pu_control(const device & device, int subdevice, rs_option option)
         {
-            // TODO: Implement
-            return 0;
+            auto & sub = device.subdevices[subdevice];
+            long value=0, flags=0;
+            if(option == RS_OPTION_COLOR_EXPOSURE) check("IAMCameraControl::Get", sub.am_camera_control->Get(CameraControl_Exposure, &value, &flags));
+            for(auto & pu : pu_controls)
+            {
+                if(option == pu.option) check("IAMVideoProcAmp::Get", sub.am_video_proc_amp->Get(pu.property, &value, &flags));
+            }
+            return value;
         }
 
         /////////////
