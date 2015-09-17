@@ -214,6 +214,18 @@ namespace rsimpl
         std::timed_mutex mutex;
         f200::claim_ivcam_interface(*device);
         auto calib = f200::read_sr300_calibration(*device, mutex);
+
+        uvc::set_pu_control(*device, 0, rs_option::RS_OPTION_COLOR_BACKLIGHT_COMPENSATION, 0);
+        uvc::set_pu_control(*device, 0, rs_option::RS_OPTION_COLOR_BRIGHTNESS, 0);
+        uvc::set_pu_control(*device, 0, rs_option::RS_OPTION_COLOR_CONTRAST, 50);
+        uvc::set_pu_control(*device, 0, rs_option::RS_OPTION_COLOR_GAMMA, 300);
+        uvc::set_pu_control(*device, 0, rs_option::RS_OPTION_COLOR_HUE, 0);
+        uvc::set_pu_control(*device, 0, rs_option::RS_OPTION_COLOR_SATURATION, 64);
+        uvc::set_pu_control(*device, 0, rs_option::RS_OPTION_COLOR_SHARPNESS, 50);
+        uvc::set_pu_control(*device, 0, rs_option::RS_OPTION_COLOR_GAIN, 64);
+        //uvc::set_pu_control(*device, 0, rs_option::RS_OPTION_COLOR_WHITE_BALANCE, 4600); // auto
+        //uvc::set_pu_control(*device, 0, rs_option::RS_OPTION_COLOR_EXPOSURE, -6); // auto
+
         return std::make_shared<f200_camera>(device, get_sr300_info(std::get<0>(calib)), std::get<0>(calib), std::get<1>(calib), std::get<2>(calib));    
     }
 
