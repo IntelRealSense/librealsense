@@ -29,7 +29,7 @@ namespace rsimpl
             {
                 uvc_device_descriptor_t * desc;
                 CALL_UVC(uvc_get_device_descriptor, *it, &desc);
-                refs.push_back({desc->idVendor, desc->idProduct, desc->serialNumber});
+                refs.push_back({desc->idVendor, desc->idProduct, desc->serialNumber ? desc->serialNumber : ""});
                 uvc_free_device_descriptor(desc);
             }
             uvc_free_device_list(list, 1);
@@ -45,7 +45,7 @@ namespace rsimpl
             {
                 uvc_device_descriptor_t * desc;
                 CALL_UVC(uvc_get_device_descriptor, *it, &desc);
-                if(desc->idVendor == ref.vid && desc->idProduct == ref.pid && desc->serialNumber == ref.serial_no)
+                if(desc->idVendor == ref.vid && desc->idProduct == ref.pid && (desc->serialNumber ? desc->serialNumber : "") == ref.serial_no)
                 {
                     device = *it;
                     uvc_ref_device(device);
@@ -217,7 +217,42 @@ namespace rsimpl
 
         void set_pu_control(device & device, int subdevice, rs_option option, int value)
         {           
-            // TODO: Implement
+            auto & sub = device.subdevices[subdevice];
+
+            switch(option)
+            {
+            case RS_OPTION_COLOR_BACKLIGHT_COMPENSATION:
+                CALL_UVC(uvc_set_backlight_compensation, sub.handle, value);
+                return;
+            case RS_OPTION_COLOR_BRIGHTNESS:
+                CALL_UVC(uvc_set_brightness, sub.handle, value);
+                return;
+            case RS_OPTION_COLOR_CONTRAST:
+                CALL_UVC(uvc_set_contrast, sub.handle, value);
+                return;
+            case RS_OPTION_COLOR_EXPOSURE:
+                CALL_UVC(uvc_set_exposure_abs, sub.handle, value);
+                return;
+            case RS_OPTION_COLOR_GAIN:
+                CALL_UVC(uvc_set_gain, sub.handle, value);
+                return;
+            case RS_OPTION_COLOR_GAMMA:
+                CALL_UVC(uvc_set_gamma, sub.handle, value);
+                return;
+            case RS_OPTION_COLOR_HUE:
+                CALL_UVC(uvc_set_hue, sub.handle, value);
+                return;
+            case RS_OPTION_COLOR_SATURATION:
+                CALL_UVC(uvc_set_saturation, sub.handle, value);
+                return;
+            case RS_OPTION_COLOR_SHARPNESS:
+                CALL_UVC(uvc_set_sharpness, sub.handle, value);
+                return;
+            case RS_OPTION_COLOR_WHITE_BALANCE:
+                CALL_UVC(uvc_set_white_balance_temperature, sub.handle, value);
+                return;
+            }
+            throw std::logic_error("invalid option");
         }
 
         int get_pu_control(const device & device, int subdevice, rs_option option)
