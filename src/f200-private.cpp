@@ -2,6 +2,7 @@
 
 #include <cstring>
 #include <algorithm>
+#include <cmath>
 
 #define IV_COMMAND_FIRMWARE_UPDATE_MODE     0x01
 #define IV_COMMAND_GET_CALIBRATION_DATA     0x02
