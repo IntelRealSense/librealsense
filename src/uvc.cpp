@@ -6,6 +6,8 @@
 
 #include <thread>
 
+#include <iostream>
+
 namespace rsimpl
 {
     namespace uvc
@@ -67,6 +69,7 @@ namespace rsimpl
         {
             uvc_device_handle_t * handle = nullptr;
             uvc_stream_ctrl_t ctrl;
+            uint8_t unit;
             std::function<void(const void * frame)> callback;
         };
 
@@ -116,15 +119,31 @@ namespace rsimpl
         int get_vendor_id(const device & device) { return device.id.vid; }
         int get_product_id(const device & device) { return device.id.pid; }
 
-        void get_control(const device & device, uint8_t unit, uint8_t ctrl, void * data, int len)
+        void init_controls(device & device, int subdevice, const guid & xu_guid)
         {
-            int status = uvc_get_ctrl(device.get_control_handle(), unit, ctrl, data, len, UVC_GET_CUR);
+            const uvc_extension_unit_t * xu = uvc_get_extension_units(device.get_subdevice(subdevice).handle);
+            while(xu)
+            {
+                if(memcmp(&xu_guid, xu->guidExtensionCode, sizeof(guid)) == 0)
+                {
+                    device.subdevices[subdevice].unit = xu->bUnitID;
+                    DEBUG_OUT("subdevice " << subdevice << " uses control unit " << (int)xu->bUnitID);
+                    return;
+                }
+                xu = xu->next;
+            }
+            throw std::runtime_error("unable to find control unit for subdevice");
+        }
+
+        void get_control(const device & device, int subdevice, uint8_t ctrl, void * data, int len)
+        {
+            int status = uvc_get_ctrl(device.get_control_handle(), device.subdevices[subdevice].unit, ctrl, data, len, UVC_GET_CUR);
             if(status < 0) throw std::runtime_error(to_string() << "uvc_get_ctrl(...) returned " << libusb_error_name(status));
         }
 
-        void set_control(device & device, uint8_t unit, uint8_t ctrl, void * data, int len)
+        void set_control(device & device, int subdevice, uint8_t ctrl, void * data, int len)
         {
-            int status = uvc_set_ctrl(device.get_control_handle(), unit, ctrl, data, len);
+            int status = uvc_set_ctrl(device.get_control_handle(), device.subdevices[subdevice].unit, ctrl, data, len);
             if(status < 0) throw std::runtime_error(to_string() << "uvc_set_ctrl(...) returned " << libusb_error_name(status));
         }
 

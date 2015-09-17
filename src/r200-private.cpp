@@ -2,8 +2,6 @@
 
 #include <cstring>
 
-#define CAMERA_XU_UNIT_ID                           2
-
 #define STATUS_BIT_BOOT_DIAGNOSTIC_FAULT            (1 << 3)
 #define STATUS_BIT_IFFLEY_CONSTANTS_VALID           (1 << 4)
 #define STATUS_BIT_WATCHDOG_TIMER_RESET             (1 << 5)
@@ -94,8 +92,8 @@ namespace rsimpl { namespace r200
 {
     void send_command(uvc::device & device, CommandPacket & command, ResponsePacket & response)
     {
-        set_control(device, 0, CAMERA_XU_UNIT_ID, CONTROL_COMMAND_RESPONSE, &command, sizeof(command));
-        get_control(device, 0, CAMERA_XU_UNIT_ID, CONTROL_COMMAND_RESPONSE, &response, sizeof(response));
+        set_control(device, 0, CONTROL_COMMAND_RESPONSE, &command, sizeof(command));
+        get_control(device, 0, CONTROL_COMMAND_RESPONSE, &response, sizeof(response));
     }
 
     inline std::string ResponseCodeToString(uint32_t rc)
@@ -331,12 +329,12 @@ namespace rsimpl { namespace r200
 
     void xu_read(const uvc::device & device, uint64_t xu_ctrl, void * buffer, uint32_t length)
     {
-        get_control(device, 0, CAMERA_XU_UNIT_ID, xu_ctrl, buffer, length);
+        get_control(device, 0, xu_ctrl, buffer, length);
     }
 
     void xu_write(uvc::device & device, uint64_t xu_ctrl, void * buffer, uint32_t length)
     {
-        set_control(device, 0, CAMERA_XU_UNIT_ID, xu_ctrl, buffer, length);
+        set_control(device, 0, xu_ctrl, buffer, length);
     }
 
     void set_stream_intent(uvc::device & device, uint8_t & intent)
