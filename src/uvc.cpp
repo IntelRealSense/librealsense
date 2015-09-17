@@ -8,9 +8,6 @@
 
 #include <iostream>
 
-extern int __HACK__ct_unit;
-extern int __HACK__pu_unit;
-
 namespace rsimpl
 {
     namespace uvc
