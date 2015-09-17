@@ -53,24 +53,38 @@ typedef enum rs_distortion
 
 typedef enum rs_option
 {
-    RS_OPTION_F200_LASER_POWER              = 0, /* 0 - 15 */
-    RS_OPTION_F200_ACCURACY                 = 1, /* 0 - 3 */
-    RS_OPTION_F200_MOTION_RANGE             = 2, /* 0 - 100 */
-    RS_OPTION_F200_FILTER_OPTION            = 3, /* 0 - 7 */
-    RS_OPTION_F200_CONFIDENCE_THRESHOLD     = 4, /* 0 - 15 */
-    RS_OPTION_F200_DYNAMIC_FPS              = 5, /* {2, 5, 15, 30, 60} */
-    RS_OPTION_R200_LR_AUTO_EXPOSURE_ENABLED = 6, /* {0, 1} */
-    RS_OPTION_R200_LR_GAIN                  = 7, /* 100 - 1600 (Units of 0.01) */
-    RS_OPTION_R200_LR_EXPOSURE              = 8, /* > 0 (Units of 0.1 ms) */
-    RS_OPTION_R200_EMITTER_ENABLED          = 9, /* {0, 1} */
-    RS_OPTION_R200_DEPTH_CONTROL_PRESET     = 10, /* {0, 5}, 0 is default, 1-5 is low to high outlier rejection */
-    RS_OPTION_R200_DEPTH_UNITS              = 11, /* > 0 */
-    RS_OPTION_R200_DEPTH_CLAMP_MIN          = 12, /* 0 - USHORT_MAX */
-    RS_OPTION_R200_DEPTH_CLAMP_MAX          = 13, /* 0 - USHORT_MAX */
-    RS_OPTION_R200_DISPARITY_MODE_ENABLED   = 14, /* {0, 1} */
-    RS_OPTION_R200_DISPARITY_MULTIPLIER     = 15,
-    RS_OPTION_R200_DISPARITY_SHIFT          = 16,
-    RS_OPTION_COUNT                         = 17,
+    /* Standard options which should be available on most cameras */
+    RS_OPTION_COLOR_GAIN                    = 0,
+    RS_OPTION_COLOR_EXPOSURE                = 1,
+    RS_OPTION_COLOR_BRIGHTNESS              = 2,
+    RS_OPTION_COLOR_CONTRAST                = 3,
+    RS_OPTION_COLOR_HUE                     = 4,
+    RS_OPTION_COLOR_SATURATION              = 5,
+    RS_OPTION_COLOR_SHARPNESS               = 6,
+    RS_OPTION_COLOR_GAMMA                   = 7,
+    RS_OPTION_COLOR_WHITE_BALANCE           = 8,
+
+    /* Options for RealSense coded light cameras, such as the F200/SR300 */
+    RS_OPTION_F200_LASER_POWER              = 9,  /* 0 - 15 */
+    RS_OPTION_F200_ACCURACY                 = 10, /* 0 - 3 */
+    RS_OPTION_F200_MOTION_RANGE             = 11, /* 0 - 100 */
+    RS_OPTION_F200_FILTER_OPTION            = 12, /* 0 - 7 */
+    RS_OPTION_F200_CONFIDENCE_THRESHOLD     = 13, /* 0 - 15 */
+    RS_OPTION_F200_DYNAMIC_FPS              = 14, /* {2, 5, 15, 30, 60} */
+
+    /* Options for RealSense stereo cameras, such as the R200 */
+    RS_OPTION_R200_LR_AUTO_EXPOSURE_ENABLED = 15, /* {0, 1} */
+    RS_OPTION_R200_LR_GAIN                  = 16, /* 100 - 1600 (Units of 0.01) */
+    RS_OPTION_R200_LR_EXPOSURE              = 17, /* > 0 (Units of 0.1 ms) */
+    RS_OPTION_R200_EMITTER_ENABLED          = 18, /* {0, 1} */
+    RS_OPTION_R200_DEPTH_CONTROL_PRESET     = 19, /* {0, 5}, 0 is default, 1-5 is low to high outlier rejection */
+    RS_OPTION_R200_DEPTH_UNITS              = 20, /* > 0 */
+    RS_OPTION_R200_DEPTH_CLAMP_MIN          = 21, /* 0 - USHORT_MAX */
+    RS_OPTION_R200_DEPTH_CLAMP_MAX          = 22, /* 0 - USHORT_MAX */
+    RS_OPTION_R200_DISPARITY_MODE_ENABLED   = 23, /* {0, 1} */
+    RS_OPTION_R200_DISPARITY_MULTIPLIER     = 24,
+    RS_OPTION_R200_DISPARITY_SHIFT          = 25,
+    RS_OPTION_COUNT                         = 26,
     RS_OPTION_MAX_ENUM                      = 0x7FFFFFFF
 } rs_option;
 

@@ -430,6 +430,8 @@ namespace rsimpl
             com_ptr<reader_callback> reader_callback;
             com_ptr<IMFActivate> mf_activate;
             com_ptr<IMFMediaSource> mf_media_source;
+            com_ptr<IAMCameraControl> am_camera_control;
+            com_ptr<IAMVideoProcAmp> am_video_proc_amp;            
             com_ptr<IKsControl> ks_control;
             int ks_node_id = 0;
             GUID ks_property_set = {};
@@ -441,6 +443,8 @@ namespace rsimpl
                 if(!mf_media_source)
                 {
                     check("IMFActivate::ActivateObject", mf_activate->ActivateObject(__uuidof(IMFMediaSource), (void **)&mf_media_source));
+                    check("IMFMediaSource::QueryInterface", mf_media_source->QueryInterface(__uuidof(IAMCameraControl), (void **)&am_camera_control));
+                    if(SUCCEEDED(mf_media_source->QueryInterface(__uuidof(IAMVideoProcAmp), (void **)&am_video_proc_amp))) DEBUG_OUT("obtained IAMVideoProcAmp");                    
 
                     // Attempt to retrieve IKsControl
                     com_ptr<IKsTopologyInfo> ks_topology_info = NULL;

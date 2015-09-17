@@ -12,8 +12,8 @@ private:
     std::vector<rs_intrinsics>                  intrinsics;
     mutable std::mutex                          intrinsics_mutex;           // Controls access to intrinsics, mutable so that it can be locked from const methods which only read the value of intrinsics
 
-    rsimpl::stream_request                      requests[RS_STREAM_COUNT];  // Indexed by RS_DEPTH, RS_COLOR, ...
-    std::shared_ptr<rsimpl::stream_buffer>      streams[RS_STREAM_COUNT];   // Indexed by RS_DEPTH, RS_COLOR, ...
+    rsimpl::stream_request                      requests[RS_STREAM_COUNT];  // Modified by enable/disable_stream calls
+    std::shared_ptr<rsimpl::stream_buffer>      streams[RS_STREAM_COUNT];   // Set up during start(), maintains buffers to receive frames from callback
 
     bool                                        capturing;
     std::chrono::high_resolution_clock::time_point capture_started;  
