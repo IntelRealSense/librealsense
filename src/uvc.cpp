@@ -883,23 +883,40 @@ namespace rsimpl
         void set_pu_control(device & device, int subdevice, rs_option option, int value)
         {
             auto & sub = device.subdevices[subdevice];
-            if(option == RS_OPTION_COLOR_EXPOSURE) check("IAMCameraControl::Set", sub.am_camera_control->Set(CameraControl_Exposure, value, CameraControl_Flags_Manual));
+            if(option == RS_OPTION_COLOR_EXPOSURE)
+            {
+                check("IAMCameraControl::Set", sub.am_camera_control->Set(CameraControl_Exposure, static_cast<int>(std::round(log2(static_cast<double>(value) / 10000))), CameraControl_Flags_Manual));
+                return;
+            }
             for(auto & pu : pu_controls)
             {
-                if(option == pu.option) check("IAMVideoProcAmp::Set", sub.am_video_proc_amp->Set(pu.property, value, VideoProcAmp_Flags_Manual));
+                if(option == pu.option)
+                {
+                    check("IAMVideoProcAmp::Set", sub.am_video_proc_amp->Set(pu.property, value, VideoProcAmp_Flags_Manual));
+                    return;
+                }
             }
+            throw std::runtime_error("unsupported control");
         }
 
         int get_pu_control(const device & device, int subdevice, rs_option option)
         {
             auto & sub = device.subdevices[subdevice];
             long value=0, flags=0;
-            if(option == RS_OPTION_COLOR_EXPOSURE) check("IAMCameraControl::Get", sub.am_camera_control->Get(CameraControl_Exposure, &value, &flags));
+            if(option == RS_OPTION_COLOR_EXPOSURE)
+            {
+                check("IAMCameraControl::Get", sub.am_camera_control->Get(CameraControl_Exposure, &value, &flags));
+                return static_cast<int>(std::round(exp2(static_cast<double>(value)) * 10000));
+            }
             for(auto & pu : pu_controls)
             {
-                if(option == pu.option) check("IAMVideoProcAmp::Get", sub.am_video_proc_amp->Get(pu.property, &value, &flags));
+                if(option == pu.option)
+                {
+                    check("IAMVideoProcAmp::Get", sub.am_video_proc_amp->Get(pu.property, &value, &flags));
+                    return value;
+                }
             }
-            return value;
+            throw std::runtime_error("unsupported control");
         }
 
         /////////////
