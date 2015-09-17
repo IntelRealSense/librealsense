@@ -262,12 +262,12 @@ namespace rsimpl { namespace f200
     // single *potentially* useful XU on the color device, so let's ignore it for now.
     void xu_read(const uvc::device & device, uint64_t xu_ctrl, void * buffer, uint32_t length)
     {
-        get_control(device, 1, 6, xu_ctrl, buffer, length);
+        get_control(device, 1, xu_ctrl, buffer, length);
     }
     
     void xu_write(uvc::device & device, uint64_t xu_ctrl, void * buffer, uint32_t length)
     {
-        set_control(device, 1, 6, xu_ctrl, buffer, length);
+        set_control(device, 1, xu_ctrl, buffer, length);
     }
     
     void get_laser_power(const uvc::device & device, uint8_t & laser_power)

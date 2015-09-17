@@ -24,8 +24,8 @@ namespace rsimpl
         void bulk_transfer(device & device, unsigned char endpoint, void * data, int length, int *actual_length, unsigned int timeout);
 
         void init_controls(device & device, int subdevice, const guid & xu_guid);
-        void set_control(device & device, int subdevice, uint8_t unit, uint8_t ctrl, void * data, int len);
-        void get_control(const device & device, int subdevice, uint8_t unit, uint8_t ctrl, void * data, int len);
+        void set_control(device & device, int subdevice, uint8_t ctrl, void * data, int len);
+        void get_control(const device & device, int subdevice, uint8_t ctrl, void * data, int len);
 
         void set_subdevice_mode(device & device, int subdevice_index, int width, int height, uint32_t fourcc, int fps, std::function<void(const void * frame)> callback);
         void start_streaming(device & device);
