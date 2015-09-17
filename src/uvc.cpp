@@ -216,14 +216,49 @@ namespace rsimpl
         }
 
         void set_pu_control(device & device, int subdevice, rs_option option, int value)
-        {
+        {           
             // TODO: Implement
         }
 
         int get_pu_control(const device & device, int subdevice, rs_option option)
         {
-            // TODO: Implement
-            return 0;
+            auto & sub = device.subdevices[subdevice];
+
+            int16_t i16; uint16_t u16; uint32_t u32;
+            switch(option)
+            {
+            case RS_OPTION_COLOR_BACKLIGHT_COMPENSATION:
+                CALL_UVC(uvc_get_backlight_compensation, sub.handle, &u16, UVC_GET_CUR);
+                return u16;
+            case RS_OPTION_COLOR_BRIGHTNESS:
+                CALL_UVC(uvc_get_brightness, sub.handle, &i16, UVC_GET_CUR);
+                return i16;
+            case RS_OPTION_COLOR_CONTRAST:
+                CALL_UVC(uvc_get_contrast, sub.handle, &u16, UVC_GET_CUR);
+                return u16;
+            case RS_OPTION_COLOR_EXPOSURE:
+                CALL_UVC(uvc_get_exposure_abs, sub.handle, &u32, UVC_GET_CUR);
+                return u32;
+            case RS_OPTION_COLOR_GAIN:
+                CALL_UVC(uvc_get_gain, sub.handle, &u16, UVC_GET_CUR);
+                return u16;
+            case RS_OPTION_COLOR_GAMMA:
+                CALL_UVC(uvc_get_gamma, sub.handle, &u16, UVC_GET_CUR);
+                return u16;
+            case RS_OPTION_COLOR_HUE:
+                CALL_UVC(uvc_get_hue, sub.handle, &i16, UVC_GET_CUR);
+                return i16;
+            case RS_OPTION_COLOR_SATURATION:
+                CALL_UVC(uvc_get_saturation, sub.handle, &u16, UVC_GET_CUR);
+                return u16;
+            case RS_OPTION_COLOR_SHARPNESS:
+                CALL_UVC(uvc_get_sharpness, sub.handle, &u16, UVC_GET_CUR);
+                return u16;
+            case RS_OPTION_COLOR_WHITE_BALANCE:
+                CALL_UVC(uvc_get_white_balance_temperature, sub.handle, &u16, UVC_GET_CUR);
+                return u16;
+            }
+            throw std::logic_error("invalid option");
         }
 
         /////////////
