@@ -63,28 +63,29 @@ typedef enum rs_option
     RS_OPTION_COLOR_SHARPNESS               = 6,
     RS_OPTION_COLOR_GAMMA                   = 7,
     RS_OPTION_COLOR_WHITE_BALANCE           = 8,
+    RS_OPTION_COLOR_BACKLIGHT_COMPENSATION  = 9,
 
     /* Options for RealSense coded light cameras, such as the F200/SR300 */
-    RS_OPTION_F200_LASER_POWER              = 9,  /* 0 - 15 */
-    RS_OPTION_F200_ACCURACY                 = 10, /* 0 - 3 */
-    RS_OPTION_F200_MOTION_RANGE             = 11, /* 0 - 100 */
-    RS_OPTION_F200_FILTER_OPTION            = 12, /* 0 - 7 */
-    RS_OPTION_F200_CONFIDENCE_THRESHOLD     = 13, /* 0 - 15 */
-    RS_OPTION_F200_DYNAMIC_FPS              = 14, /* {2, 5, 15, 30, 60} */
+    RS_OPTION_F200_LASER_POWER              = 10,  /* 0 - 15 */
+    RS_OPTION_F200_ACCURACY                 = 11, /* 0 - 3 */
+    RS_OPTION_F200_MOTION_RANGE             = 12, /* 0 - 100 */
+    RS_OPTION_F200_FILTER_OPTION            = 13, /* 0 - 7 */
+    RS_OPTION_F200_CONFIDENCE_THRESHOLD     = 14, /* 0 - 15 */
+    RS_OPTION_F200_DYNAMIC_FPS              = 15, /* {2, 5, 15, 30, 60} */
 
     /* Options for RealSense stereo cameras, such as the R200 */
-    RS_OPTION_R200_LR_AUTO_EXPOSURE_ENABLED = 15, /* {0, 1} */
-    RS_OPTION_R200_LR_GAIN                  = 16, /* 100 - 1600 (Units of 0.01) */
-    RS_OPTION_R200_LR_EXPOSURE              = 17, /* > 0 (Units of 0.1 ms) */
-    RS_OPTION_R200_EMITTER_ENABLED          = 18, /* {0, 1} */
-    RS_OPTION_R200_DEPTH_CONTROL_PRESET     = 19, /* {0, 5}, 0 is default, 1-5 is low to high outlier rejection */
-    RS_OPTION_R200_DEPTH_UNITS              = 20, /* > 0 */
-    RS_OPTION_R200_DEPTH_CLAMP_MIN          = 21, /* 0 - USHORT_MAX */
-    RS_OPTION_R200_DEPTH_CLAMP_MAX          = 22, /* 0 - USHORT_MAX */
-    RS_OPTION_R200_DISPARITY_MODE_ENABLED   = 23, /* {0, 1} */
-    RS_OPTION_R200_DISPARITY_MULTIPLIER     = 24,
-    RS_OPTION_R200_DISPARITY_SHIFT          = 25,
-    RS_OPTION_COUNT                         = 26,
+    RS_OPTION_R200_LR_AUTO_EXPOSURE_ENABLED = 16, /* {0, 1} */
+    RS_OPTION_R200_LR_GAIN                  = 17, /* 100 - 1600 (Units of 0.01) */
+    RS_OPTION_R200_LR_EXPOSURE              = 18, /* > 0 (Units of 0.1 ms) */
+    RS_OPTION_R200_EMITTER_ENABLED          = 19, /* {0, 1} */
+    RS_OPTION_R200_DEPTH_CONTROL_PRESET     = 20, /* {0, 5}, 0 is default, 1-5 is low to high outlier rejection */
+    RS_OPTION_R200_DEPTH_UNITS              = 21, /* > 0 */
+    RS_OPTION_R200_DEPTH_CLAMP_MIN          = 22, /* 0 - USHORT_MAX */
+    RS_OPTION_R200_DEPTH_CLAMP_MAX          = 23, /* 0 - USHORT_MAX */
+    RS_OPTION_R200_DISPARITY_MODE_ENABLED   = 24, /* {0, 1} */
+    RS_OPTION_R200_DISPARITY_MULTIPLIER     = 25,
+    RS_OPTION_R200_DISPARITY_SHIFT          = 26,
+    RS_OPTION_COUNT                         = 27,
     RS_OPTION_MAX_ENUM                      = 0x7FFFFFFF
 } rs_option;
 
