@@ -163,7 +163,7 @@ namespace rsimpl
         return static_cast<int>(timestamp * 1000 / max_fps);
     }
 
-    void r200_camera::set_option(rs_option option, int value)
+    void r200_camera::set_xu_option(rs_option option, int value)
     {
         //r200::auto_exposure_params aep;
         //r200::depth_params dp;
@@ -218,7 +218,7 @@ namespace rsimpl
         }
     }
 
-    int r200_camera::get_option(rs_option option) const
+    int r200_camera::get_xu_option(rs_option option) const
     {
         if(!is_capturing()) throw std::runtime_error("cannot call before rs_start_capture(...)");
 

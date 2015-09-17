@@ -215,6 +215,17 @@ namespace rsimpl
             device.get_subdevice(0);
         }
 
+        void set_pu_control(device & device, int subdevice, rs_option option, int value)
+        {
+            // TODO: Implement
+        }
+
+        int get_pu_control(const device & device, int subdevice, rs_option option)
+        {
+            // TODO: Implement
+            return 0;
+        }
+
         /////////////
         // context //
         /////////////
@@ -796,6 +807,17 @@ namespace rsimpl
 
         void start_streaming(device & device) { device.start_streaming(); }
         void stop_streaming(device & device) { device.stop_streaming(); }
+
+        void set_pu_control(device & device, int subdevice, rs_option option, int value)
+        {
+            // TODO: Implement
+        }
+
+        int get_pu_control(const device & device, int subdevice, rs_option option)
+        {
+            // TODO: Implement
+            return 0;
+        }
 
         /////////////
         // context //

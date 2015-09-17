@@ -5,7 +5,7 @@
 extern "C" {
 #endif
     
-#define RS_API_VERSION 5
+#define RS_API_VERSION 6
 
 /* public enum type definitions */
 typedef enum rs_stream
@@ -54,16 +54,16 @@ typedef enum rs_distortion
 typedef enum rs_option
 {
     /* Standard options which should be available on most cameras */
-    RS_OPTION_COLOR_GAIN                    = 0,
-    RS_OPTION_COLOR_EXPOSURE                = 1,
-    RS_OPTION_COLOR_BRIGHTNESS              = 2,
-    RS_OPTION_COLOR_CONTRAST                = 3,
-    RS_OPTION_COLOR_HUE                     = 4,
-    RS_OPTION_COLOR_SATURATION              = 5,
-    RS_OPTION_COLOR_SHARPNESS               = 6,
-    RS_OPTION_COLOR_GAMMA                   = 7,
-    RS_OPTION_COLOR_WHITE_BALANCE           = 8,
-    RS_OPTION_COLOR_BACKLIGHT_COMPENSATION  = 9,
+    RS_OPTION_COLOR_BACKLIGHT_COMPENSATION  = 0,
+    RS_OPTION_COLOR_BRIGHTNESS              = 1,
+    RS_OPTION_COLOR_CONTRAST                = 2,
+    RS_OPTION_COLOR_EXPOSURE                = 3,
+    RS_OPTION_COLOR_GAIN                    = 4,
+    RS_OPTION_COLOR_GAMMA                   = 5,
+    RS_OPTION_COLOR_HUE                     = 6,
+    RS_OPTION_COLOR_SATURATION              = 7,
+    RS_OPTION_COLOR_SHARPNESS               = 8,
+    RS_OPTION_COLOR_WHITE_BALANCE           = 9,
 
     /* Options for RealSense coded light cameras, such as the F200/SR300 */
     RS_OPTION_F200_LASER_POWER              = 10,  /* 0 - 15 */

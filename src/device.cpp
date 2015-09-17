@@ -33,6 +33,16 @@ static_device_info rsimpl::add_standard_unpackers(const static_device_info & dev
             info.subdevice_modes.push_back(m);
         }
     }
+
+    // Flag all standard options as supported
+    for(int i=0; i<RS_OPTION_COUNT; ++i)
+    {
+        if(uvc::is_pu_control((rs_option)i))
+        {
+            info.option_supported[i] = true;
+        }
+    }
+
     return info;
 }
 
@@ -294,4 +304,30 @@ void rs_device::set_intrinsics_thread_safe(std::vector<rs_intrinsics> new_intrin
 {
     std::lock_guard<std::mutex> lock(intrinsics_mutex);
     intrinsics.swap(new_intrinsics);
+}
+
+void rs_device::set_option(rs_option option, int value)
+{
+    if(!supports_option(option)) throw std::runtime_error("option not supported by this device");
+    if(uvc::is_pu_control(option))
+    {
+        uvc::set_pu_control(get_device(), device_info.stream_subdevices[RS_STREAM_COLOR], option, value);
+    }
+    else
+    {
+        set_xu_option(option, value);
+    }
+}
+
+int rs_device::get_option(rs_option option) const
+{
+    if(!supports_option(option)) throw std::runtime_error("option not supported by this device");
+    if(uvc::is_pu_control(option))
+    {
+        return uvc::get_pu_control(get_device(), device_info.stream_subdevices[RS_STREAM_COLOR], option);
+    }
+    else
+    {
+        return get_xu_option(option);
+    }
 }

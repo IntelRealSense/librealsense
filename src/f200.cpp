@@ -305,7 +305,7 @@ namespace rsimpl
         }
     }
 
-    void f200_camera::set_option(rs_option option, int value)
+    void f200_camera::set_xu_option(rs_option option, int value)
     {
         // TODO: Range check value before write
         auto val = static_cast<uint8_t>(value);
@@ -320,7 +320,7 @@ namespace rsimpl
         }
     }
 
-    int f200_camera::get_option(rs_option option) const
+    int f200_camera::get_xu_option(rs_option option) const
     {
         uint8_t value = 0;
         switch(option)

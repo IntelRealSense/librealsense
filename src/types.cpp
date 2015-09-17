@@ -72,6 +72,16 @@ namespace rsimpl
         #define CASE(X) case RS_OPTION_##X: return #X;
         switch(value)
         {
+        CASE(COLOR_BACKLIGHT_COMPENSATION)
+        CASE(COLOR_BRIGHTNESS)
+        CASE(COLOR_CONTRAST)
+        CASE(COLOR_EXPOSURE)
+        CASE(COLOR_GAIN)
+        CASE(COLOR_GAMMA)
+        CASE(COLOR_HUE)
+        CASE(COLOR_SATURATION)
+        CASE(COLOR_SHARPNESS)
+        CASE(COLOR_WHITE_BALANCE)
         CASE(F200_LASER_POWER)
         CASE(F200_ACCURACY)
         CASE(F200_MOTION_RANGE)

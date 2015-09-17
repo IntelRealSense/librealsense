@@ -235,7 +235,6 @@ void rs_set_device_option(rs_device * device, rs_option option, int value, rs_er
 {
     VALIDATE_NOT_NULL(device);
     VALIDATE_ENUM(option);
-    if(!device->supports_option(option)) throw std::runtime_error("option not supported by this device");
     device->set_option(option, value);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, device, option, value)
@@ -244,7 +243,6 @@ int rs_get_device_option(const rs_device * device, rs_option option, rs_error **
 {
     VALIDATE_NOT_NULL(device);
     VALIDATE_ENUM(option);
-    if(!device->supports_option(option)) throw std::runtime_error("option not supported by this device");
     return device->get_option(option);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, device, option)
