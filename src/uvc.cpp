@@ -248,8 +248,6 @@ namespace rsimpl
 
 #include <strsafe.h>
 
-#define XUNODEID 1
-
 namespace rsimpl
 {
     namespace uvc
@@ -413,12 +411,40 @@ namespace rsimpl
             com_ptr<reader_callback> reader_callback;
             com_ptr<IMFActivate> mf_activate;
             com_ptr<IMFMediaSource> mf_media_source;
+            com_ptr<IKsControl> ks_control;
+            int ks_node_id = 0;
+            GUID ks_property_set = {};
             com_ptr<IMFSourceReader> mf_source_reader;
             std::function<void(const void * frame)> callback;
 
             com_ptr<IMFMediaSource> get_media_source()
             {
-                if(!mf_media_source) check("IMFActivate::ActivateObject", mf_activate->ActivateObject(__uuidof(IMFMediaSource), (void **)&mf_media_source));
+                if(!mf_media_source)
+                {
+                    check("IMFActivate::ActivateObject", mf_activate->ActivateObject(__uuidof(IMFMediaSource), (void **)&mf_media_source));
+
+                    // Attempt to retrieve IKsControl
+                    com_ptr<IKsTopologyInfo> ks_topology_info = NULL;
+                    check("QueryInterface", mf_media_source->QueryInterface(__uuidof(IKsTopologyInfo), (void **)&ks_topology_info));
+
+                    DWORD num_nodes = 0;
+                    check("get_NumNodes", ks_topology_info->get_NumNodes(&num_nodes));
+                    for(DWORD i=0; i<num_nodes; ++i)
+                    {
+                        GUID node_type;
+                        check("get_NodeType", ks_topology_info->get_NodeType(i, &node_type));
+                        const GUID KSNODETYPE_DEV_SPECIFIC_LOCAL{0x941C7AC0L, 0xC559, 0x11D0, {0x8A, 0x2B, 0x00, 0xA0, 0xC9, 0x25, 0x5A, 0xC1}};
+
+                        if (node_type == KSNODETYPE_DEV_SPECIFIC_LOCAL)
+                        {
+                            com_ptr<IUnknown> unknown;
+                            check("CreateNodeInstance", ks_topology_info->CreateNodeInstance(i, IID_IUnknown, (LPVOID *)&unknown));
+                            check("QueryInterface", unknown->QueryInterface(__uuidof(IKsControl), (void **)&ks_control));
+                            ks_node_id = i;
+                            DEBUG_OUT("Found KS control node at location " << i << "!");
+                        }
+                    }
+                }
                 return mf_media_source;
             }
         };
@@ -430,7 +456,6 @@ namespace rsimpl
             const std::string unique_id;
 
             std::vector<subdevice> subdevices;
-            com_ptr<IKsControl> ks_control;
 
             HANDLE usb_file_handle = INVALID_HANDLE_VALUE;
             WINUSB_INTERFACE_HANDLE usb_interface_handle = INVALID_HANDLE_VALUE;
@@ -444,23 +469,7 @@ namespace rsimpl
 
             void open_ks_control()
             {
-                // Attempt to retrieve IKsControl
-                com_ptr<IKsTopologyInfo> ks_topology_info = NULL;
-                check("QueryInterface", get_media_source(0)->QueryInterface(__uuidof(IKsTopologyInfo), (void **)&ks_topology_info));
-
-                DWORD num_nodes = 0;
-                check("get_numNodes", ks_topology_info->get_NumNodes(&num_nodes));
-
-                GUID node_type;
-                check("get_nodeType", ks_topology_info->get_NodeType(XUNODEID, &node_type));
-                const GUID KSNODETYPE_DEV_SPECIFIC_LOCAL{0x941C7AC0L, 0xC559, 0x11D0, {0x8A, 0x2B, 0x00, 0xA0, 0xC9, 0x25, 0x5A, 0xC1}};
-
-                if (node_type == KSNODETYPE_DEV_SPECIFIC_LOCAL)
-                {
-                    com_ptr<IUnknown> unknown;
-                    check("CreateNodeInstance", ks_topology_info->CreateNodeInstance(XUNODEID, IID_IUnknown, (LPVOID *)&unknown));
-                    check("QueryInterface", unknown->QueryInterface(__uuidof(IKsControl), (void **)&ks_control));
-                }            
+                for(auto & subdevice : subdevices) subdevice.get_media_source();
             }
 
             void start_streaming()
@@ -489,11 +498,11 @@ namespace rsimpl
                     else break;
                 }
 
-                // Free up our KS control node, our source readers, and our media sources, but retain our original IMFActivate objects for later reuse
-                ks_control = nullptr;
+                // Free up our source readers, our KS control nodes, and our media sources, but retain our original IMFActivate objects for later reuse
                 for(auto & sub : subdevices)
                 {
                     sub.mf_source_reader = nullptr;
+                    sub.ks_control = nullptr;
                     if(sub.mf_media_source)
                     {
                         sub.mf_media_source = nullptr;
@@ -631,12 +640,6 @@ namespace rsimpl
 
                 return result;
             }
-
-            IKsControl * get_control_node() const
-            {
-                if (!ks_control) throw std::runtime_error("unable to obtain control node");
-                return ks_control;
-            }
         };
 
         HRESULT reader_callback::OnReadSample(HRESULT hrStatus, DWORD dwStreamIndex, DWORD dwStreamFlags, LONGLONG llTimestamp, IMFSample * sample) 
@@ -679,30 +682,36 @@ namespace rsimpl
         int get_vendor_id(const device & device) { return device.vid; }
         int get_product_id(const device & device) { return device.pid; }
 
-        void get_control(const device & device, uint8_t unit, uint8_t ctrl, void *data, int len)
+        void init_controls(device & device, int subdevice, const guid & guid)
+        {
+            device.get_media_source(subdevice);
+            device.subdevices[subdevice].ks_property_set = reinterpret_cast<const GUID &>(guid);
+        }
+
+        void get_control(const device & device, int subdevice, uint8_t unit, uint8_t ctrl, void *data, int len)
         {
             KSP_NODE node;
             memset(&node, 0, sizeof(KSP_NODE));
-            node.Property.Set = {0x18682d34, 0xdd2c, 0x4073, {0xad, 0x23, 0x72, 0x14, 0x73, 0x9a, 0x07, 0x4c}}; // GUID_EXTENSION_UNIT_DESCRIPTOR
+            node.Property.Set = device.subdevices[subdevice].ks_property_set; //{0x18682d34, 0xdd2c, 0x4073, {0xad, 0x23, 0x72, 0x14, 0x73, 0x9a, 0x07, 0x4c}}; // GUID_EXTENSION_UNIT_DESCRIPTOR
             node.Property.Id = ctrl;
             node.Property.Flags = KSPROPERTY_TYPE_GET | KSPROPERTY_TYPE_TOPOLOGY;
-            node.NodeId = XUNODEID;
+            node.NodeId = device.subdevices[subdevice].ks_node_id;
 
             ULONG bytes_received = 0;
-            check("IKsControl::KsProperty", device.get_control_node()->KsProperty((PKSPROPERTY)&node, sizeof(node), data, len, &bytes_received));
+            check("IKsControl::KsProperty", device.subdevices[subdevice].ks_control->KsProperty((PKSPROPERTY)&node, sizeof(node), data, len, &bytes_received));
             if(bytes_received != len) throw std::runtime_error("XU read did not return enough data");
         }
 
-        void set_control(device & device, uint8_t unit, uint8_t ctrl, void *data, int len)
-        {               
+        void set_control(device & device, int subdevice, uint8_t unit, uint8_t ctrl, void *data, int len)
+        {        
             KSP_NODE node;
             memset(&node, 0, sizeof(KSP_NODE));
-            node.Property.Set = {0x18682d34, 0xdd2c, 0x4073, {0xad, 0x23, 0x72, 0x14, 0x73, 0x9a, 0x07, 0x4c}}; // GUID_EXTENSION_UNIT_DESCRIPTOR
+            node.Property.Set = device.subdevices[subdevice].ks_property_set; //{0x18682d34, 0xdd2c, 0x4073, {0xad, 0x23, 0x72, 0x14, 0x73, 0x9a, 0x07, 0x4c}}; // GUID_EXTENSION_UNIT_DESCRIPTOR
             node.Property.Id = ctrl;
             node.Property.Flags = KSPROPERTY_TYPE_SET | KSPROPERTY_TYPE_TOPOLOGY;
-            node.NodeId = XUNODEID;
+            node.NodeId = device.subdevices[subdevice].ks_node_id;
                 
-            check("IKsControl::KsProperty", device.get_control_node()->KsProperty((PKSPROPERTY)&node, sizeof(KSP_NODE), data, len, nullptr));
+            check("IKsControl::KsProperty", device.subdevices[subdevice].ks_control->KsProperty((PKSPROPERTY)&node, sizeof(KSP_NODE), data, len, nullptr));
         }
 
         void claim_interface(device & device, const guid & interface_guid, int interface_number)

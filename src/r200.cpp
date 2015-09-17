@@ -54,6 +54,9 @@ namespace rsimpl
 
     std::shared_ptr<rs_device> make_r200_device(std::shared_ptr<uvc::device> device)
     {
+        const uvc::guid DS_LEFT_RIGHT_XU = {0x18682d34, 0xdd2c, 0x4073, {0xad, 0x23, 0x72, 0x14, 0x73, 0x9a, 0x07, 0x4c}};
+        init_controls(*device, 0, DS_LEFT_RIGHT_XU);
+
         enum { LR_FULL, LR_BIG, LR_QRES, Z_FULL, Z_BIG, Z_QRES, THIRD_HD, THIRD_VGA, NUM_INTRINSICS };
         const static struct { int w, h, uvc_w, uvc_h, lr_intrin, z_intrin; } lrz_modes[] = {
             {640, 480,   640, 481,  LR_FULL, Z_FULL},
