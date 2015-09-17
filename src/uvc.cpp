@@ -8,6 +8,9 @@
 
 #include <iostream>
 
+extern int __HACK__ct_unit;
+extern int __HACK__pu_unit;
+
 namespace rsimpl
 {
     namespace uvc
@@ -215,83 +218,73 @@ namespace rsimpl
             device.get_subdevice(0);
         }
 
+        template<class T> void set_pu(uvc_device_handle_t * devh, uint8_t unit, uint8_t control, int value)
+        {
+            const int REQ_TYPE_SET = 0x21;
+            unsigned char buffer[sizeof(T)];
+            if(sizeof(buffer)==1) buffer[0] = value;
+            if(sizeof(buffer)==2) SHORT_TO_SW(value, buffer);
+            if(sizeof(buffer)==4) INT_TO_DW(value, buffer);
+            int status = libusb_control_transfer(devh->usb_devh, REQ_TYPE_SET, UVC_SET_CUR, control << 8, unit << 8, buffer, sizeof(buffer), 0);
+            if(status < 0) throw std::runtime_error(to_string() << "libusb_control_transfer(...) returned " << libusb_error_name(status));
+            if(status != sizeof(buffer)) throw std::runtime_error("insufficient data written to usb");
+        }
+
+        template<class T> int get_pu(uvc_device_handle_t * devh, uint8_t unit, uint8_t control)
+        {
+            const int REQ_TYPE_GET = 0xa1;
+            unsigned char buffer[sizeof(T)];
+            int status = libusb_control_transfer(devh->usb_devh, REQ_TYPE_GET, UVC_GET_CUR, control << 8, unit << 8, buffer, sizeof(buffer), 0);
+            if(status < 0) throw std::runtime_error(to_string() << "libusb_control_transfer(...) returned " << libusb_error_name(status));
+            if(status != sizeof(buffer)) throw std::runtime_error("insufficient data read from usb");
+            if(sizeof(buffer)==1) return buffer[0];
+            if(sizeof(buffer)==2) return SW_TO_SHORT(buffer);
+            if(sizeof(buffer)==4) return DW_TO_INT(buffer);
+            throw std::logic_error("unsupported type");
+        }
+
         void set_pu_control(device & device, int subdevice, rs_option option, int value)
-        {           
-            auto & sub = device.subdevices[subdevice];
+        {                      
+            auto handle = device.subdevices[subdevice].handle;
+            int ct_unit = 0, pu_unit = 0;
+            for(auto ct = uvc_get_input_terminals(handle); ct; ct = ct->next) ct_unit = ct->bTerminalID; // TODO: Check supported caps
+            for(auto pu = uvc_get_processing_units(handle); pu; pu = pu->next) pu_unit = pu->bUnitID; // TODO: Check supported caps
 
             switch(option)
             {
-            case RS_OPTION_COLOR_BACKLIGHT_COMPENSATION:
-                CALL_UVC(uvc_set_backlight_compensation, sub.handle, value);
-                return;
-            case RS_OPTION_COLOR_BRIGHTNESS:
-                CALL_UVC(uvc_set_brightness, sub.handle, value);
-                return;
-            case RS_OPTION_COLOR_CONTRAST:
-                CALL_UVC(uvc_set_contrast, sub.handle, value);
-                return;
-            case RS_OPTION_COLOR_EXPOSURE:
-                CALL_UVC(uvc_set_exposure_abs, sub.handle, value);
-                return;
-            case RS_OPTION_COLOR_GAIN:
-                CALL_UVC(uvc_set_gain, sub.handle, value);
-                return;
-            case RS_OPTION_COLOR_GAMMA:
-                CALL_UVC(uvc_set_gamma, sub.handle, value);
-                return;
-            case RS_OPTION_COLOR_HUE:
-                CALL_UVC(uvc_set_hue, sub.handle, value);
-                return;
-            case RS_OPTION_COLOR_SATURATION:
-                CALL_UVC(uvc_set_saturation, sub.handle, value);
-                return;
-            case RS_OPTION_COLOR_SHARPNESS:
-                CALL_UVC(uvc_set_sharpness, sub.handle, value);
-                return;
-            case RS_OPTION_COLOR_WHITE_BALANCE:
-                CALL_UVC(uvc_set_white_balance_temperature, sub.handle, value);
-                return;
+            case RS_OPTION_COLOR_BACKLIGHT_COMPENSATION: return set_pu<uint16_t>(handle, pu_unit, UVC_PU_BACKLIGHT_COMPENSATION_CONTROL, value);
+            case RS_OPTION_COLOR_BRIGHTNESS: return set_pu<int16_t>(handle, pu_unit, UVC_PU_BRIGHTNESS_CONTROL, value);
+            case RS_OPTION_COLOR_CONTRAST: return set_pu<uint16_t>(handle, pu_unit, UVC_PU_CONTRAST_CONTROL, value);
+            case RS_OPTION_COLOR_EXPOSURE: return set_pu<uint32_t>(handle, ct_unit, UVC_CT_EXPOSURE_TIME_ABSOLUTE_CONTROL, value);
+            case RS_OPTION_COLOR_GAIN: return set_pu<uint16_t>(handle, pu_unit, UVC_PU_GAIN_CONTROL, value);
+            case RS_OPTION_COLOR_GAMMA: return set_pu<uint16_t>(handle, pu_unit, UVC_PU_GAMMA_CONTROL, value);
+            case RS_OPTION_COLOR_HUE: return set_pu<int16_t>(handle, pu_unit, UVC_PU_HUE_CONTROL, value);
+            case RS_OPTION_COLOR_SATURATION: return set_pu<uint16_t>(handle, pu_unit, UVC_PU_SATURATION_CONTROL, value);
+            case RS_OPTION_COLOR_SHARPNESS: return set_pu<uint16_t>(handle, pu_unit, UVC_PU_SHARPNESS_CONTROL, value);
+            case RS_OPTION_COLOR_WHITE_BALANCE: return set_pu<uint16_t>(handle, pu_unit, UVC_PU_WHITE_BALANCE_TEMPERATURE_CONTROL, value);
             }
             throw std::logic_error("invalid option");
         }
 
         int get_pu_control(const device & device, int subdevice, rs_option option)
         {
-            auto & sub = device.subdevices[subdevice];
+            auto handle = device.subdevices[subdevice].handle;
+            int ct_unit = 0, pu_unit = 0;
+            for(auto ct = uvc_get_input_terminals(handle); ct; ct = ct->next) ct_unit = ct->bTerminalID; // TODO: Check supported caps
+            for(auto pu = uvc_get_processing_units(handle); pu; pu = pu->next) pu_unit = pu->bUnitID; // TODO: Check supported caps
 
-            int16_t i16; uint16_t u16; uint32_t u32;
             switch(option)
             {
-            case RS_OPTION_COLOR_BACKLIGHT_COMPENSATION:
-                CALL_UVC(uvc_get_backlight_compensation, sub.handle, &u16, UVC_GET_CUR);
-                return u16;
-            case RS_OPTION_COLOR_BRIGHTNESS:
-                CALL_UVC(uvc_get_brightness, sub.handle, &i16, UVC_GET_CUR);
-                return i16;
-            case RS_OPTION_COLOR_CONTRAST:
-                CALL_UVC(uvc_get_contrast, sub.handle, &u16, UVC_GET_CUR);
-                return u16;
-            case RS_OPTION_COLOR_EXPOSURE:
-                CALL_UVC(uvc_get_exposure_abs, sub.handle, &u32, UVC_GET_CUR);
-                return u32;
-            case RS_OPTION_COLOR_GAIN:
-                CALL_UVC(uvc_get_gain, sub.handle, &u16, UVC_GET_CUR);
-                return u16;
-            case RS_OPTION_COLOR_GAMMA:
-                CALL_UVC(uvc_get_gamma, sub.handle, &u16, UVC_GET_CUR);
-                return u16;
-            case RS_OPTION_COLOR_HUE:
-                CALL_UVC(uvc_get_hue, sub.handle, &i16, UVC_GET_CUR);
-                return i16;
-            case RS_OPTION_COLOR_SATURATION:
-                CALL_UVC(uvc_get_saturation, sub.handle, &u16, UVC_GET_CUR);
-                return u16;
-            case RS_OPTION_COLOR_SHARPNESS:
-                CALL_UVC(uvc_get_sharpness, sub.handle, &u16, UVC_GET_CUR);
-                return u16;
-            case RS_OPTION_COLOR_WHITE_BALANCE:
-                CALL_UVC(uvc_get_white_balance_temperature, sub.handle, &u16, UVC_GET_CUR);
-                return u16;
+            case RS_OPTION_COLOR_BACKLIGHT_COMPENSATION: return get_pu<uint16_t>(handle, pu_unit, UVC_PU_BACKLIGHT_COMPENSATION_CONTROL);
+            case RS_OPTION_COLOR_BRIGHTNESS: return get_pu<int16_t>(handle, pu_unit, UVC_PU_BRIGHTNESS_CONTROL);
+            case RS_OPTION_COLOR_CONTRAST: return get_pu<uint16_t>(handle, pu_unit, UVC_PU_CONTRAST_CONTROL);
+            case RS_OPTION_COLOR_EXPOSURE: return get_pu<uint32_t>(handle, ct_unit, UVC_CT_EXPOSURE_TIME_ABSOLUTE_CONTROL);
+            case RS_OPTION_COLOR_GAIN: return get_pu<uint16_t>(handle, pu_unit, UVC_PU_GAIN_CONTROL);
+            case RS_OPTION_COLOR_GAMMA: return get_pu<uint16_t>(handle, pu_unit, UVC_PU_GAMMA_CONTROL);
+            case RS_OPTION_COLOR_HUE: return get_pu<int16_t>(handle, pu_unit, UVC_PU_HUE_CONTROL);
+            case RS_OPTION_COLOR_SATURATION: return get_pu<uint16_t>(handle, pu_unit, UVC_PU_SATURATION_CONTROL);
+            case RS_OPTION_COLOR_SHARPNESS: return get_pu<uint16_t>(handle, pu_unit, UVC_PU_SHARPNESS_CONTROL);
+            case RS_OPTION_COLOR_WHITE_BALANCE: return get_pu<uint16_t>(handle, pu_unit, UVC_PU_WHITE_BALANCE_TEMPERATURE_CONTROL);
             }
             throw std::logic_error("invalid option");
         }
