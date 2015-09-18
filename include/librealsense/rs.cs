@@ -25,7 +25,7 @@ namespace RealSense
 
         #region P/Invoke declarations for backing C API
         private IntPtr handle;
-        private const int ApiVersion = 5;
+        private const int ApiVersion = 6;
         [DllImport("realsense")] private static extern IntPtr rs_create_context(int api_version, ref IntPtr error);
         [DllImport("realsense")] private static extern void rs_delete_context(IntPtr context, IntPtr error); // Note: NOT ref IntPtr, since we want to pass 0
         [DllImport("realsense")] private static extern int rs_get_device_count(IntPtr context, ref IntPtr error);
@@ -267,23 +267,35 @@ namespace RealSense
 
     public enum Option : int
     {
-        F200LaserPower,
-        F200Accuracy,
-        F200MotionRange,
-        F200FilterOption,
-        F200ConfidenceThreshold,
-        F200DynamicFPS,
-        R200LRAutoExposureEnabled,
-        R200LRGain,
-        R200LRExposure,
-        R200EmitterEnabled,
-        R200DepthControlPreset,
-        R200DepthUnits,
-        R200DepthClampMin,
-        R200DepthClampMax,
-        R200DisparityModeEnabled,
-        R200DisparityMultiplier,
-        R200DisparityShift,
+        ColorBacklightCompensation = 0,
+        ColorBrightness = 1,
+        ColorContrast = 2,
+        ColorExposure = 3,
+        ColorGain = 4,
+        ColorGamma = 5,
+        ColorHue = 6,
+        ColorSaturation = 7,
+        ColorSharpness = 8,
+        ColorWhiteBalance = 9,
+
+        F200LaserPower = 10,
+        F200Accuracy = 11,
+        F200MotionRange = 12,
+        F200FilterOption = 13,
+        F200ConfidenceThreshold = 14,
+        F200DynamicFPS = 15,
+
+        R200LRAutoExposureEnabled = 16,
+        R200LRGain = 17,
+        R200LRExposure = 18,
+        R200EmitterEnabled = 19,
+        R200DepthControlPreset = 20,
+        R200DepthUnits = 21,
+        R200DepthClampMin = 22,
+        R200DepthClampMax = 23,
+        R200DisparityModeEnabled = 24,
+        R200DisparityMultiplier = 25,
+        R200DisparityShift = 26,
     };
     #endregion
 
