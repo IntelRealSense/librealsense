@@ -143,8 +143,8 @@ int main(int argc, char * argv[]) try
             {
                 if(uint16_t d = *depth++)
                 {
-                    const rs::float3 point = depth_intrin.deproject({x,y}, d*depth_scale);
-                    glTexCoord(identical ? tex_intrin.pixel_to_texcoord({x,y}) : tex_intrin.project_to_texcoord(extrin.transform(point)));
+                    const rs::float3 point = depth_intrin.deproject({static_cast<float>(x),static_cast<float>(y)}, d*depth_scale);
+                    glTexCoord(identical ? tex_intrin.pixel_to_texcoord({static_cast<float>(x),static_cast<float>(y)}) : tex_intrin.project_to_texcoord(extrin.transform(point)));
                     glVertex(point);
                 }
             }
