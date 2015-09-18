@@ -21,6 +21,7 @@ private:
     int64_t                                     base_timestamp;
     int                                         last_stream_timestamp;
 protected:
+    rsimpl::stream_mode                         get_current_stream_mode(rs_stream stream) const;
     const rsimpl::uvc::device &                 get_device() const { return *device; }
     rsimpl::uvc::device &                       get_device() { return *device; }
     void                                        set_intrinsics_thread_safe(std::vector<rs_intrinsics> new_intrinsics); // Thread-safe
@@ -39,7 +40,7 @@ public:
     void                                        enable_stream_preset(rs_stream stream, rs_preset preset);    
     void                                        disable_stream(rs_stream stream);
     bool                                        is_stream_enabled(rs_stream stream) const { return requests[stream].enabled; }
-    rsimpl::stream_mode                         get_current_stream_mode(rs_stream stream) const;
+
     rs_intrinsics                               get_stream_intrinsics(rs_stream stream) const { std::lock_guard<std::mutex> lock(intrinsics_mutex); return intrinsics[get_current_stream_mode(stream).intrinsics_index]; }
     rs_format                                   get_stream_format(rs_stream stream) const { return get_current_stream_mode(stream).format; }
     int                                         get_stream_framerate(rs_stream stream) const { return get_current_stream_mode(stream).fps; }
@@ -58,7 +59,7 @@ public:
     virtual void                                on_before_start(const std::vector<rsimpl::subdevice_mode> & selected_modes) {}
     virtual void                                set_xu_option(rs_option option, int value) = 0;
     virtual int                                 get_xu_option(rs_option option) const = 0;
-    virtual int                                 convert_timestamp(const rsimpl::stream_request (& requests)[RS_STREAM_COUNT], int64_t timestamp) const = 0;
+    virtual int                                 convert_timestamp(int64_t timestamp) const = 0;
 };
 
 #endif

@@ -154,10 +154,16 @@ namespace rsimpl
         r200::set_stream_intent(get_device(), streamIntent);
     }
 
-    int r200_camera::convert_timestamp(const rsimpl::stream_request (& requests)[RS_STREAM_COUNT], int64_t timestamp) const
+    int r200_camera::convert_timestamp(int64_t timestamp) const
     { 
         int max_fps = 0;
-        for(auto & req : requests) if(req.enabled) max_fps = std::max(max_fps, req.fps);
+        for(int i=0; i<RS_STREAM_COUNT; ++i)
+        {
+            if(is_stream_enabled((rs_stream)i))
+            {
+                max_fps = std::max(max_fps, get_stream_framerate((rs_stream)i));
+            }
+        }
         return static_cast<int>(timestamp * 1000 / max_fps);
     }
 
