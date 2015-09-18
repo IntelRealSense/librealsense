@@ -5,7 +5,7 @@
 extern "C" {
 #endif
     
-#define RS_API_VERSION 6
+#define RS_API_VERSION 2
 
 /* public enum type definitions */
 typedef enum rs_stream
@@ -38,7 +38,7 @@ typedef enum rs_preset
     RS_PRESET_BEST_QUALITY                  = 0,
     RS_PRESET_LARGEST_IMAGE                 = 1,
     RS_PRESET_HIGHEST_FRAMERATE             = 2,
-    RS_PRESET_COUNT                         = 9,
+    RS_PRESET_COUNT                         = 3,
     RS_PRESET_MAX_ENUM                      = 0x7FFFFFFF
 } rs_preset;
 
