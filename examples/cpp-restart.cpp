@@ -64,7 +64,7 @@ int main(int argc, char * argv[]) try
                 device.enable_stream(rs::stream::color, 640, 480, rs::format::bgra8, 60);
                 break;
             case 5:
-                device.enable_stream(rs::stream::color, 1920, 1080, rs::format::rgb8, 60);
+                device.enable_stream(rs::stream::color, 1920, 1080, rs::format::rgb8, 30);
                 break;
             case 6:
                 device.enable_stream(rs::stream::depth, rs::preset::largest_image);

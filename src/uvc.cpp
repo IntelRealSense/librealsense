@@ -595,6 +595,8 @@ namespace rsimpl
                 for(auto & sub : subdevices)
                 {
                     sub.mf_source_reader = nullptr;
+                    sub.am_camera_control = nullptr;
+                    sub.am_video_proc_amp = nullptr;
                     sub.ks_control = nullptr;
                     if(sub.mf_media_source)
                     {
@@ -797,6 +799,8 @@ namespace rsimpl
 
         void set_control(device & device, int subdevice, uint8_t ctrl, void *data, int len)
         {        
+            device.open_ks_control();
+
             KSP_NODE node;
             memset(&node, 0, sizeof(KSP_NODE));
             node.Property.Set = device.subdevices[subdevice].ks_property_set; //{0x18682d34, 0xdd2c, 0x4073, {0xad, 0x23, 0x72, 0x14, 0x73, 0x9a, 0x07, 0x4c}}; // GUID_EXTENSION_UNIT_DESCRIPTOR
