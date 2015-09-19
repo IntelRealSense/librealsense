@@ -97,7 +97,6 @@ namespace rsimpl
     static static_device_info get_f200_info(const f200::CameraCalibrationParameters & c)
     {
         struct mode { int w, h, intrin; };
-        static const mode color_modes[] = {{640, 480, COLOR_VGA}, {1920, 1080, COLOR_HD}};
         static const mode depth_modes[] = {{640, 480, DEPTH_VGA}, {320, 240, DEPTH_QVGA}};        
 
         static_device_info info;
@@ -105,7 +104,9 @@ namespace rsimpl
 
         // Color modes on subdevice 0
         info.stream_subdevices[RS_STREAM_COLOR] = 0;
-        for(auto & m : color_modes) info.subdevice_modes.push_back({0, m.w, m.h, 'YUY2', 60, {{RS_STREAM_COLOR, m.w, m.h, RS_FORMAT_YUYV, 60, m.intrin}}, &unpack_subrect, &decode_ivcam_frame_number});
+        info.subdevice_modes.push_back({0, 640, 480, 'YUY2', 60, {{RS_STREAM_COLOR, 640, 480, RS_FORMAT_YUYV, 60, COLOR_VGA}}, &unpack_subrect, &decode_ivcam_frame_number});
+        info.subdevice_modes.push_back({0, 640, 480, 'YUY2', 60, {{RS_STREAM_COLOR, 640, 480, RS_FORMAT_YUYV, 30, COLOR_VGA}}, &unpack_subrect, &decode_ivcam_frame_number});
+        info.subdevice_modes.push_back({0, 1920, 1080, 'YUY2', 30, {{RS_STREAM_COLOR, 1920, 1080, RS_FORMAT_YUYV, 30, COLOR_HD}}, &unpack_subrect, &decode_ivcam_frame_number});
 
         // Depth and IR modes on subdevice 1
         info.stream_subdevices[RS_STREAM_DEPTH] = 1;
@@ -149,6 +150,8 @@ namespace rsimpl
         
         info.stream_subdevices[RS_STREAM_COLOR] = 0;
         info.subdevice_modes.push_back({0, 640, 480, 'YUY2', 60, {{RS_STREAM_COLOR, 640, 480, RS_FORMAT_YUYV, 60, COLOR_VGA}}, &unpack_subrect, &decode_ivcam_frame_number});
+        info.subdevice_modes.push_back({0, 640, 480, 'YUY2', 60, {{RS_STREAM_COLOR, 640, 480, RS_FORMAT_YUYV, 30, COLOR_VGA}}, &unpack_subrect, &decode_ivcam_frame_number});
+        info.subdevice_modes.push_back({0, 1920, 1080, 'YUY2', 30, {{RS_STREAM_COLOR, 1920, 1080, RS_FORMAT_YUYV, 30, COLOR_HD}}, &unpack_subrect, &decode_ivcam_frame_number});
 
         info.stream_subdevices[RS_STREAM_DEPTH] = 1;
         info.stream_subdevices[RS_STREAM_INFRARED] = 1;

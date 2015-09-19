@@ -226,7 +226,7 @@ void rs_device::wait_all_streams()
 int rs_device::get_frame_timestamp(rs_stream stream) const 
 { 
     if(!streams[stream]) throw std::runtime_error("stream not enabled"); 
-    return base_timestamp == -1 ? 0 : convert_timestamp(requests, base_timestamp + streams[stream]->get_front_number() - last_stream_timestamp);
+    return base_timestamp == -1 ? 0 : convert_timestamp(base_timestamp + streams[stream]->get_front_number() - last_stream_timestamp);
 }
 
 rsimpl::stream_mode rs_device::get_current_stream_mode(rs_stream stream) const

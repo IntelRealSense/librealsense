@@ -86,12 +86,10 @@ namespace rsimpl
             }
         }
 
-        // Set up modes for third images
-        for(auto fps : {30, 60}) // TODO: 15?
-        {   
-            info.subdevice_modes.push_back({2,  640,  480, 'YUY2', fps, {{RS_STREAM_COLOR,  640,  480, RS_FORMAT_YUYV, fps, THIRD_VGA}}, &unpack_subrect, &decode_yuy2_frame_number, true});
-            info.subdevice_modes.push_back({2, 1920, 1080, 'YUY2', fps, {{RS_STREAM_COLOR, 1920, 1080, RS_FORMAT_YUYV, fps, THIRD_HD }}, &unpack_subrect, &decode_yuy2_frame_number, true});            
-        }
+        // Set up modes for third images (TODO: 15?)
+        info.subdevice_modes.push_back({2,  640,  480, 'YUY2', 60, {{RS_STREAM_COLOR,  640,  480, RS_FORMAT_YUYV, 60, THIRD_VGA}}, &unpack_subrect, &decode_yuy2_frame_number, true});
+        info.subdevice_modes.push_back({2,  640,  480, 'YUY2', 30, {{RS_STREAM_COLOR,  640,  480, RS_FORMAT_YUYV, 30, THIRD_VGA}}, &unpack_subrect, &decode_yuy2_frame_number, true});
+        info.subdevice_modes.push_back({2, 1920, 1080, 'YUY2', 30, {{RS_STREAM_COLOR, 1920, 1080, RS_FORMAT_YUYV, 30, THIRD_HD }}, &unpack_subrect, &decode_yuy2_frame_number, true});
 
         // Set up interstream rules for left/right/z images
         for(auto ir : {RS_STREAM_INFRARED, RS_STREAM_INFRARED2})
@@ -156,10 +154,16 @@ namespace rsimpl
         r200::set_stream_intent(get_device(), streamIntent);
     }
 
-    int r200_camera::convert_timestamp(const rsimpl::stream_request (& requests)[RS_STREAM_COUNT], int64_t timestamp) const
+    int r200_camera::convert_timestamp(int64_t timestamp) const
     { 
         int max_fps = 0;
-        for(auto & req : requests) if(req.enabled) max_fps = std::max(max_fps, req.fps);
+        for(int i=0; i<RS_STREAM_COUNT; ++i)
+        {
+            if(is_stream_enabled((rs_stream)i))
+            {
+                max_fps = std::max(max_fps, get_stream_framerate((rs_stream)i));
+            }
+        }
         return static_cast<int>(timestamp * 1000 / max_fps);
     }
 
