@@ -118,6 +118,9 @@ namespace rsimpl
         r200::CameraCalibrationParameters c;
         r200::CameraHeaderInfo h;
         r200::read_camera_info(*device, c, h);
+        
+        if (c.metadata.versionNumber != 2)
+            throw std::runtime_error("only supported calibration struct is version 2. got (" + std::to_string(c.metadata.versionNumber) + ").");
 
         std::vector<rs_intrinsics> intrinsics(NUM_INTRINSICS);
         intrinsics[LR_FULL] = MakeLeftRightIntrinsics(c.modesLR[0]);
