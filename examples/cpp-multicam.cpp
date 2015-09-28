@@ -44,11 +44,16 @@ int main(int argc, char * argv[]) try
         {
             ctx.get_device(i).wait_for_frames();
         }
-
+        
         // Draw the images
+        int w,h;
+        glfwGetFramebufferSize(win, &w, &h);
+        glViewport(0, 0, w, h);
         glClear(GL_COLOR_BUFFER_BIT);
+        
+        glfwGetWindowSize(win, &w, &h);
         glPushMatrix();
-        glOrtho(0, 1280, 960, 0, -1, +1);
+        glOrtho(0, w, h, 0, -1, +1);
         glPixelZoom(1, -1);
         int x=0;
         for(int i=0; i<ctx.get_device_count(); ++i)

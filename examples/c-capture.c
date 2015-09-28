@@ -117,13 +117,18 @@ int main(int argc, char * argv[])
     
     while (!glfwWindowShouldClose(win))
     {
+        int w,h,fw,fh;
         glfwPollEvents();
         rs_wait_for_frames(dev, &error); check_error();
 
+        glfwGetFramebufferSize(win, &fw, &fh);
+        glViewport(0, 0, fw, fh);
         glClear(GL_COLOR_BUFFER_BIT);
+        
+        glfwGetWindowSize(win, &w, &h);
         glPushMatrix();
-        glOrtho(0, 1280, height, 0, -1, +1);
-        glPixelZoom(1, -1);
+        glOrtho(0, w, h, 0, -1, +1);
+        glPixelZoom(fw/w, -fh/h);
 
         draw_stream(dev, RS_STREAM_COLOR, 0, 0);
         draw_stream(dev, RS_STREAM_DEPTH, 640, 0);

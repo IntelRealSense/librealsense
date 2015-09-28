@@ -106,14 +106,13 @@ int main(int argc, char * argv[]) try
         const rs::intrinsics depth_intrin = dev.get_stream_intrinsics(rs::stream::depth);
         const rs::intrinsics tex_intrin = dev.get_stream_intrinsics(tex_stream);
         bool identical = depth_intrin == tex_intrin && extrin.is_identity();
-
-        int width, height;
-        glfwGetFramebufferSize(win, &width, &height);
-       
+      
         glPushAttrib(GL_ALL_ATTRIB_BITS);
 
         tex.upload(dev, tex_stream);
 
+        int width, height;
+        glfwGetFramebufferSize(win, &width, &height);
         glViewport(0, 0, width, height);
         glClearColor(52.0f/255, 72.f/255, 94.0f/255.0f, 1);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -156,8 +155,6 @@ int main(int argc, char * argv[]) try
         glPopAttrib();
 
         glfwGetWindowSize(win, &width, &height);
-        glViewport(0, 0, width, height);
-
         glPushAttrib(GL_ALL_ATTRIB_BITS);
         glPushMatrix();
         glOrtho(0, width, height, 0, -1, +1);

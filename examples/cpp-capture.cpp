@@ -74,7 +74,7 @@ int main(int argc, char * argv[]) try
 
         // Clear the framebuffer
         int w,h;
-        glfwGetWindowSize(win, &w, &h);
+        glfwGetFramebufferSize(win, &w, &h);
         glViewport(0, 0, w, h);
         glClear(GL_COLOR_BUFFER_BIT);
 
