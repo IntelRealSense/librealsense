@@ -537,7 +537,7 @@ void LIBUSB_CALL _uvc_stream_callback(struct libusb_transfer *transfer) {
     pthread_mutex_lock(&strmh->cb_mutex);
 
     /* Mark transfer as deleted. */
-    for(i=0; i < LIBUVC_NUM_TRANSFER_BUFS; i++) {
+    for(i=0; i < strmh->num_transfer_bufs; i++) {
       if(strmh->transfers[i] == transfer) {
         UVC_DEBUG("Freeing transfer %d (%p)", i, transfer);
         free(transfer->buffer);
@@ -546,7 +546,7 @@ void LIBUSB_CALL _uvc_stream_callback(struct libusb_transfer *transfer) {
         break;
       }
     }
-    if(i == LIBUVC_NUM_TRANSFER_BUFS ) {
+    if(i == strmh->num_transfer_bufs ) {
       UVC_DEBUG("transfer %p not found; not freeing!", transfer);
     }
 
@@ -583,7 +583,8 @@ uvc_error_t uvc_start_streaming(
     uvc_stream_ctrl_t *ctrl,
     uvc_frame_callback_t *cb,
     void *user_ptr,
-    uint8_t flags
+    uint8_t flags,
+    int num_transfer_buffers
 ) {
   uvc_error_t ret;
   uvc_stream_handle_t *strmh;
@@ -592,7 +593,7 @@ uvc_error_t uvc_start_streaming(
   if (ret != UVC_SUCCESS)
     return ret;
 
-  ret = uvc_stream_start(strmh, cb, user_ptr, flags);
+  ret = uvc_stream_start(strmh, cb, user_ptr, flags, num_transfer_buffers);
   if (ret != UVC_SUCCESS) {
       UVC_DEBUG("FAILED TO START STREAM: %i", ret);
     uvc_stream_close(strmh);
@@ -602,28 +603,6 @@ uvc_error_t uvc_start_streaming(
   ctrl->handle = strmh;
 
   return UVC_SUCCESS;
-}
-
-/** Begin streaming video from the camera into the callback function.
- * @ingroup streaming
- *
- * @deprecated The stream type (bulk vs. isochronous) will be determined by the
- * type of interface associated with the uvc_stream_ctrl_t parameter, regardless
- * of whether the caller requests isochronous streaming. Please switch to
- * uvc_start_streaming().
- *
- * @param devh UVC device
- * @param ctrl Control block, processed using {uvc_probe_stream_ctrl} or
- *             {uvc_get_stream_ctrl_format_size}
- * @param cb   User callback function. See {uvc_frame_callback_t} for restrictions.
- */
-uvc_error_t uvc_start_iso_streaming(
-    uvc_device_handle_t *devh,
-    uvc_stream_ctrl_t *ctrl,
-    uvc_frame_callback_t *cb,
-    void *user_ptr
-) {
-  return uvc_start_streaming(devh, ctrl, cb, user_ptr, 0);
 }
 
 static uvc_stream_handle_t *_uvc_get_stream_by_interface(uvc_device_handle_t *devh, int interface_idx) {
@@ -726,7 +705,8 @@ uvc_error_t uvc_stream_start(
     uvc_stream_handle_t *strmh,
     uvc_frame_callback_t *cb,
     void *user_ptr,
-    uint8_t flags
+    uint8_t flags,
+    int num_transfer_buffers
 ) {
   /* USB interface we'll be using */
   const struct libusb_interface *interface;
@@ -841,7 +821,10 @@ uvc_error_t uvc_stream_start(
     }
 
     /* Set up the transfers */
-    for (transfer_id = 0; transfer_id < LIBUVC_NUM_TRANSFER_BUFS; ++transfer_id)
+    strmh->num_transfer_bufs = num_transfer_buffers;
+    strmh->transfers = malloc(sizeof(struct libusb_transfer *) * num_transfer_buffers);
+    strmh->transfer_bufs = malloc(sizeof(struct uint8_t *) * num_transfer_buffers);
+    for (transfer_id = 0; transfer_id < num_transfer_buffers; ++transfer_id)
     {
       transfer = libusb_alloc_transfer(packets_per_transfer);
       strmh->transfers[transfer_id] = transfer;      
@@ -858,7 +841,10 @@ uvc_error_t uvc_stream_start(
     
   else
   {
-    for (transfer_id = 0; transfer_id < LIBUVC_NUM_TRANSFER_BUFS; ++transfer_id)
+    strmh->num_transfer_bufs = num_transfer_buffers;
+    strmh->transfers = malloc(sizeof(struct libusb_transfer *) * num_transfer_buffers);
+    strmh->transfer_bufs = malloc(sizeof(struct uint8_t *) * num_transfer_buffers);
+    for (transfer_id = 0; transfer_id < num_transfer_buffers; ++transfer_id)
     {
       transfer = libusb_alloc_transfer(0);
       strmh->transfers[transfer_id] = transfer;
@@ -883,7 +869,7 @@ uvc_error_t uvc_stream_start(
     pthread_create(&strmh->cb_thread, NULL, _uvc_user_caller, (void*) strmh);
   }
 
-  for (transfer_id = 0; transfer_id < LIBUVC_NUM_TRANSFER_BUFS; transfer_id++)
+  for (transfer_id = 0; transfer_id < num_transfer_buffers; transfer_id++)
   {
     ret = libusb_submit_transfer(strmh->transfers[transfer_id]);
     if (ret != UVC_SUCCESS)
@@ -899,25 +885,6 @@ fail:
   strmh->running = 0;
   UVC_EXIT(ret);
   return ret;
-}
-
-/** Begin streaming video from the stream into the callback function.
- * @ingroup streaming
- *
- * @deprecated The stream type (bulk vs. isochronous) will be determined by the
- * type of interface associated with the uvc_stream_ctrl_t parameter, regardless
- * of whether the caller requests isochronous streaming. Please switch to
- * uvc_stream_start().
- *
- * @param strmh UVC stream
- * @param cb   User callback function. See {uvc_frame_callback_t} for restrictions.
- */
-uvc_error_t uvc_stream_start_iso(
-    uvc_stream_handle_t *strmh,
-    uvc_frame_callback_t *cb,
-    void *user_ptr
-) {
-  return uvc_stream_start(strmh, cb, user_ptr, 0);
 }
 
 /** @internal
@@ -1094,7 +1061,7 @@ uvc_error_t uvc_stream_stop(uvc_stream_handle_t *strmh) {
     
     pthread_mutex_lock(&strmh->cb_mutex);
     
-    for(i=0; i < LIBUVC_NUM_TRANSFER_BUFS; i++) {
+    for(i=0; i < strmh->num_transfer_bufs; i++) {
         if(strmh->transfers[i] != NULL) {
             int res = libusb_cancel_transfer(strmh->transfers[i]);
             if(res < 0 && res != LIBUSB_ERROR_NOT_FOUND ) {
@@ -1108,12 +1075,12 @@ uvc_error_t uvc_stream_stop(uvc_stream_handle_t *strmh) {
 
     /* Wait for transfers to complete/cancel */
     do {
-        for(i=0; i < LIBUVC_NUM_TRANSFER_BUFS; i++) {
+        for(i=0; i < strmh->num_transfer_bufs; i++) {
             if(strmh->transfers[i] != NULL)
                 break;
         }
         
-        if(i == LIBUVC_NUM_TRANSFER_BUFS )
+        if(i == strmh->num_transfer_bufs )
             break;
         
         // this ones sometimes does not return.

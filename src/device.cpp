@@ -124,8 +124,9 @@ void rs_device::start()
         });
     }
     
+    const int NUM_TRANSFER_BUFS = 1;
     on_before_start(selected_modes);
-    start_streaming(*device);
+    start_streaming(*device, NUM_TRANSFER_BUFS);
     capture_started = std::chrono::high_resolution_clock::now();
     capturing = true;
     base_timestamp = 0;

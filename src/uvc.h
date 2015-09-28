@@ -38,7 +38,7 @@ namespace rsimpl
 
         // Control streaming
         void set_subdevice_mode(device & device, int subdevice_index, int width, int height, uint32_t fourcc, int fps, std::function<void(const void * frame)> callback);
-        void start_streaming(device & device);
+        void start_streaming(device & device, int num_transfer_bufs);
         void stop_streaming(device & device);
     }
 }

@@ -485,7 +485,8 @@ uvc_error_t uvc_start_streaming(
     uvc_stream_ctrl_t *ctrl,
     uvc_frame_callback_t *cb,
     void *user_ptr,
-    uint8_t flags);
+    uint8_t flags,
+    int num_transfer_buffers);
 
 uvc_error_t uvc_start_iso_streaming(
     uvc_device_handle_t *devh,
@@ -500,7 +501,8 @@ uvc_error_t uvc_stream_ctrl(uvc_stream_handle_t *strmh, uvc_stream_ctrl_t *ctrl)
 uvc_error_t uvc_stream_start(uvc_stream_handle_t *strmh,
     uvc_frame_callback_t *cb,
     void *user_ptr,
-    uint8_t flags);
+    uint8_t flags,
+    int num_transfer_buffers);
 uvc_error_t uvc_stream_start_iso(uvc_stream_handle_t *strmh,
     uvc_frame_callback_t *cb,
     void *user_ptr);

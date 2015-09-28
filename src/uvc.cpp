@@ -167,7 +167,7 @@ namespace rsimpl
             sub.callback = callback;
         }
 
-        void start_streaming(device & device)
+        void start_streaming(device & device, int num_transfer_bufs)
         {
             for(auto & sub : device.subdevices)
             {
@@ -180,7 +180,7 @@ namespace rsimpl
                     check("uvc_start_streaming", uvc_start_streaming(sub.handle, &sub.ctrl, [](uvc_frame * frame, void * user)
                     {
                         reinterpret_cast<subdevice *>(user)->callback(frame->data);
-                    }, &sub, 0));
+                    }, &sub, 0, num_transfer_bufs));
                 }
             }
         }
@@ -868,7 +868,7 @@ namespace rsimpl
             throw std::runtime_error("no matching media type");
         }
 
-        void start_streaming(device & device) { device.start_streaming(); }
+        void start_streaming(device & device, int num_transfer_bufs) { device.start_streaming(); }
         void stop_streaming(device & device) { device.stop_streaming(); }
 
         struct pu_control { rs_option option; long property; };
