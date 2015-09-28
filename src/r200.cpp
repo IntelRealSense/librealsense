@@ -138,6 +138,7 @@ namespace rsimpl
         for(int i=0; i<3; ++i) info.stream_poses[RS_STREAM_COLOR].position[i] = c.T[0][i] * 0.001f;
         info.stream_poses[RS_STREAM_COLOR].position = info.stream_poses[RS_STREAM_COLOR].orientation * info.stream_poses[RS_STREAM_COLOR].position;
         info.depth_scale = 0.001f;
+        info.num_libuvc_transfer_buffers = 4;
 
         return std::make_shared<r200_camera>(device, info, intrinsics);
     }

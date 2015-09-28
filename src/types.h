@@ -103,6 +103,7 @@ namespace rsimpl
         bool option_supported[RS_OPTION_COUNT];                     // Whether or not a given option is supported on this camera
         pose stream_poses[RS_STREAM_COUNT];                         // Static pose of each camera on the device
         float depth_scale;                                          // Scale of depth values
+        int num_libuvc_transfer_buffers;                            // Number of transfer buffers to use in LibUVC backend
 
         static_device_info();
 

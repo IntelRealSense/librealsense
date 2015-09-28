@@ -139,6 +139,7 @@ namespace rsimpl
         info.stream_poses[RS_STREAM_DEPTH] = info.stream_poses[RS_STREAM_INFRARED] = {{{1,0,0},{0,1,0},{0,0,1}}, {0,0,0}};
         info.stream_poses[RS_STREAM_COLOR] = {transpose((const float3x3 &)c.Rt), (const float3 &)c.Tt * 0.001f}; // convert mm to m
         info.depth_scale = (c.Rmax / 0xFFFF) * 0.001f; // convert mm to m
+        info.num_libuvc_transfer_buffers = 1;
 
         return info;
     }
@@ -172,7 +173,9 @@ namespace rsimpl
 
         info.stream_poses[RS_STREAM_DEPTH] = info.stream_poses[RS_STREAM_INFRARED] = {{{1,0,0},{0,1,0},{0,0,1}}, {0,0,0}};
         info.stream_poses[RS_STREAM_COLOR] = {transpose((const float3x3 &)c.Rt), (const float3 &)c.Tt * 0.001f}; // convert mm to m
-        info.depth_scale = (c.Rmax / 0xFFFF) * 0.001f; // convert mm to m*/
+        info.depth_scale = (c.Rmax / 0xFFFF) * 0.001f; // convert mm to m
+        info.num_libuvc_transfer_buffers = 1;
+
         return info;
     }
 
