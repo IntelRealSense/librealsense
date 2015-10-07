@@ -11,6 +11,9 @@
 #include <linux/videodev2.h>
 #include <linux/usb/video.h>
 
+// debug
+#include <iostream>
+
 namespace rsimpl
 {
     namespace uvc
@@ -116,6 +119,8 @@ namespace rsimpl
                 uint16_t indexIR = 0;
                 uint16_t indexRGB = 0;
 
+                int cameraCount = 0;
+
                 for (int i = 0; i < 64; ++i)
                 {
                     ss.str("");
@@ -148,6 +153,14 @@ namespace rsimpl
 
                     if (strncmp(buf, "DS4", 3) || strncmp(buf, "Intel(R) RealSense(TM) 3D Camera (R200)", 39) == 0)
                     {
+                        cameraCount++;
+
+                        std::cout << "Found device: " << std::string(buf) << std::endl;
+                        
+                        // Every 3 subdevices, add a new device
+                        if (cameraCount % 3 == 0)
+                            devices.push_back(std::make_shared<device>());
+
                         devices.subdevices.push_back(make_subdevice(buf, indexDepth, indexIR, indexRGB));
                     }
                 }
