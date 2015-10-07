@@ -77,23 +77,22 @@ namespace rsimpl
 
         std::vector<std::shared_ptr<device>> query_devices(std::shared_ptr<context> context)
         {
-
             std::vector<std::shared_ptr<device>> devices;
 
             auto make_subdevice = [&](char * name, uint16_t & indexDepth, uint16_t & indexIR, uint16_t & indexRGB)
             {
                 auto subdev = std::make_shared<subdevice>();
-                if (strcmp(name, "Intel(R) RealSense(TM) 3D Camera (R200) Depth") == 0)
+                if (std::string(name) == "Intel(R) RealSense(TM) 3D Camera (R200) Depth"))
                 {
                     subdev.name = std::string(name);
                     subdev.camIndex = indexDepth++;
                 }
-                else if (strcmp(name, "Intel(R) RealSense(TM) 3D Camera (R200) Left-Right") == 0)
+                else if (std::string(name) == "Intel(R) RealSense(TM) 3D Camera (R200) Left-Right"))
                 {
                     subdev.name = std::string(name);
                     subdev.camIndex = indexIR++;
                 }
-                else if (strcmp(name, "Intel(R) RealSense(TM) 3D Camera (R200) RGB") == 0)
+                else if (std::string(name) == "Intel(R) RealSense(TM) 3D Camera (R200) RGB"))
                 {
                     subdev.name = std::string(name);
                     subdev.camIndex = indexRGB++;
@@ -147,7 +146,7 @@ namespace rsimpl
 
                     *nl = '\0';
 
-                    if (strncmp(buf, "DS4", 3) == 0 || strncmp(buf, "Intel(R) RealSense(TM) 3D Camera (R200)", 39) == 0)
+                    if (strncmp(buf, "DS4", 3) || strncmp(buf, "Intel(R) RealSense(TM) 3D Camera (R200)", 39) == 0)
                     {
                         devices.subdevices.push_back(make_subdevice(buf, indexDepth, indexIR, indexRGB));
                     }
