@@ -25,13 +25,13 @@
     <ClCompile Include="..\..\src\types.cpp">
       <Filter>src</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\uvc.cpp">
-      <Filter>src</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\verify.c">
       <Filter>src</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\device.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\backends\uvc-wmf.cpp">
       <Filter>src</Filter>
     </ClCompile>
   </ItemGroup>
