@@ -1,5 +1,19 @@
 #include "../uvc.h"
 
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <string>
+#include <sstream>
+
+#include <linux/uvcvideo.h>
+#include <linux/videodev2.h>
+#include <linux/usb/video.h>
+
+// debug
+#include <iostream>
+
 namespace rsimpl
 {
     namespace uvc
@@ -15,6 +29,8 @@ namespace rsimpl
         struct subdevice
         {
             // TODO: Stream-specific information
+            std::string name;
+            uint16_t camIndex;
 
             std::function<void(const void * frame)> callback;
         };
@@ -22,8 +38,11 @@ namespace rsimpl
         struct device
         {
             const std::shared_ptr<context> parent;
+
             // TODO: Device-specific information
             std::vector<subdevice> subdevices;
+
+            uint32_t serialNumber;
 
             device(std::shared_ptr<context> parent) : parent(parent) {} // TODO: Init
             ~device() {} // TODO: Cleanup
@@ -62,7 +81,96 @@ namespace rsimpl
         std::vector<std::shared_ptr<device>> query_devices(std::shared_ptr<context> context)
         {
             std::vector<std::shared_ptr<device>> devices;
-            // TODO: Enumerate devices
+
+            auto make_subdevice = [&](char * name, uint16_t & indexDepth, uint16_t & indexIR, uint16_t & indexRGB)
+            {
+                auto subdev = std::make_shared<subdevice>();
+                if (std::string(name) == "Intel(R) RealSense(TM) 3D Camera (R200) Depth"))
+                {
+                    subdev.name = std::string(name);
+                    subdev.camIndex = indexDepth++;
+                }
+                else if (std::string(name) == "Intel(R) RealSense(TM) 3D Camera (R200) Left-Right"))
+                {
+                    subdev.name = std::string(name);
+                    subdev.camIndex = indexIR++;
+                }
+                else if (std::string(name) == "Intel(R) RealSense(TM) 3D Camera (R200) RGB"))
+                {
+                    subdev.name = std::string(name);
+                    subdev.camIndex = indexRGB++;
+                }
+                return subdev;
+            };
+
+            try
+            {
+                std::stringstream ss;
+                std::string strTmpDev;
+                std::string strTmpInt;
+
+                struct stat vstat;
+                char buf[64] = {0};
+                int fd = 0;
+                int ret = 0;
+                char * nl = NULL;
+
+                uint16_t indexDepth = 0;
+                uint16_t indexIR = 0;
+                uint16_t indexRGB = 0;
+
+                int cameraCount = 0;
+
+                for (int i = 0; i < 64; ++i)
+                {
+                    ss.str("");
+                    ss << "/dev/video" << i;
+
+                    strTmpDev = ss.str();
+                    if (stat(strTmpDev.c_str(), &vstat) < 0 || !S_ISCHR(vstat.st_mode))
+                        break;
+
+                    ss.str("");
+                    ss << "/sys/class/video4linux/video" << i << "/device/interface";
+                    strTmpInt = ss.str();
+
+                    fd = open(strTmpInt.c_str(), O_RDONLY);
+                    if (fd < 0)
+                        continue;
+
+                    ret = read(fd, buf, sizeof(buf));
+                    close(fd);
+                    if (ret < 0)
+                        continue;
+
+                    buf[63] = 0;
+
+                    nl = strchr(buf, '\n');
+                    if (!nl)
+                        continue;
+
+                    *nl = '\0';
+
+                    if (strncmp(buf, "DS4", 3) || strncmp(buf, "Intel(R) RealSense(TM) 3D Camera (R200)", 39) == 0)
+                    {
+                        cameraCount++;
+
+                        std::cout << "Found device: " << std::string(buf) << std::endl;
+
+                        // Every 3 subdevices, add a new device
+                        if (cameraCount % 3 == 0)
+                            devices.push_back(std::make_shared<device>());
+
+                        // Heh
+                        devices.back().subdevices.push_back(make_subdevice(buf, indexDepth, indexIR, indexRGB));
+                    }
+                }
+            }
+            catch (...)
+            {
+                throw std::runtime_error("failed to enumerate list of devices");
+            }
+
             return devices;
         }
     }
