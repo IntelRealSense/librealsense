@@ -50,24 +50,21 @@ class subdevice
     int fd;
     std::vector<buffer> buffers;
 public:
-    subdevice(const std::string & dev_name, bool force_format) : dev_name(dev_name), fd()
+    subdevice(const std::string & dev_name) : dev_name(dev_name), fd()
     {
         struct stat st;
         if(stat(dev_name.c_str(), &st) < 0)
         {
-            fprintf(stderr, "Cannot identify '%s': %d, %s\n", dev_name.c_str(), errno, strerror(errno));
-            throw std::runtime_error("bad");
+            std::ostringstream ss; ss << "Cannot identify '" << dev_name << "': " << errno << ", " << strerror(errno);
+            throw std::runtime_error(ss.str());
         }
-        if(!S_ISCHR(st.st_mode))
-        {
-            throw std::runtime_error(dev_name + " is no device");
-        }
+        if(!S_ISCHR(st.st_mode)) throw std::runtime_error(dev_name + " is no device");
 
-        fd = open(dev_name.c_str(), O_RDWR /* required */ | O_NONBLOCK, 0);
+        fd = open(dev_name.c_str(), O_RDWR | O_NONBLOCK, 0);
         if(fd < 0)
         {
-            fprintf(stderr, "Cannot open '%s': %d, %s\n", dev_name.c_str(), errno, strerror(errno));
-            throw std::runtime_error("bad");
+            std::ostringstream ss; ss << "Cannot open '" << dev_name << "': " << errno << ", " << strerror(errno);
+            throw std::runtime_error(ss.str());
         }
 
         v4l2_capability cap = {};
@@ -76,7 +73,6 @@ public:
             if(errno == EINVAL) throw std::runtime_error(dev_name + " is no V4L2 device");
             else throw_error("VIDIOC_QUERYCAP");
         }
-
         if (!(cap.capabilities & V4L2_CAP_VIDEO_CAPTURE)) throw std::runtime_error(dev_name + " is no video capture device");
         if (!(cap.capabilities & V4L2_CAP_STREAMING)) throw std::runtime_error(dev_name + " does not support streaming I/O");
 
@@ -97,23 +93,25 @@ public:
                 }
             }
         } else {} // Errors ignored
+    }
 
+    void set_format(int width, int height, int pixelformat)
+    {
         v4l2_format fmt = {};
         fmt.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-        if(force_format) // Force format?
-        {
-            fmt.fmt.pix.width       = 640;
-            fmt.fmt.pix.height      = 480;
-            fmt.fmt.pix.pixelformat = V4L2_PIX_FMT_YUYV;
-            fmt.fmt.pix.field       = V4L2_FIELD_INTERLACED;
-            if(xioctl(fd, VIDIOC_S_FMT, &fmt) < 0) throw_error("VIDIOC_S_FMT");
-            // Note VIDIOC_S_FMT may change width and height
-        }
-        else
-        {
-            // Preserve original settings as set by v4l2-ctl for example
-            if(xioctl(fd, VIDIOC_G_FMT, &fmt) < 0) throw_error("VIDIOC_G_FMT");
-        }
+        fmt.fmt.pix.width       = width;
+        fmt.fmt.pix.height      = height;
+        fmt.fmt.pix.pixelformat = pixelformat;
+        fmt.fmt.pix.field       = V4L2_FIELD_INTERLACED;
+        if(xioctl(fd, VIDIOC_S_FMT, &fmt) < 0) throw_error("VIDIOC_S_FMT");
+        // Note VIDIOC_S_FMT may change width and height
+    }
+
+    void start_capture()
+    {
+        v4l2_format fmt = {};
+        fmt.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+        if(xioctl(fd, VIDIOC_G_FMT, &fmt) < 0) throw_error("VIDIOC_G_FMT");
 
         // Buggy driver paranoia.
         unsigned int min = fmt.fmt.pix.width * 2;
@@ -228,16 +226,19 @@ public:
 
 int main(int argc, char * argv[])
 {
-    subdevice dev0("/dev/video0", true);
-    subdevice dev1("/dev/video1", false);
+    subdevice dev0("/dev/video0"), dev1("/dev/video1");
+    dev0.set_format(640, 480, V4L2_PIX_FMT_YUYV);
+    dev0.start_capture();
+    dev1.set_format(640, 480, v4l2_fourcc('I','N','V','R'));
+    dev1.start_capture();
 
     // Open a GLFW window
     glfwInit();
-    GLFWwindow * win = glfwCreateWindow(960, 480, "V4L2 test", 0, 0);
+    GLFWwindow * win = glfwCreateWindow(1280, 480, "V4L2 test", 0, 0);
     glfwMakeContextCurrent(win);
 
     // While window is open
-    uint16_t z[320*240]; uint8_t y[320*240];
+    uint16_t z[640*480];
     uint8_t yuy2[640*480*2];
     while (!glfwWindowShouldClose(win))
     {
@@ -246,18 +247,13 @@ int main(int argc, char * argv[])
         dev0.poll([&](const void * data, size_t size)
         {
             memcpy(yuy2, data, size);
-            printf("%d %d\n", size, 640*480*2);
+            std::cout << size << " " << 640*480*2 << std::endl;
         });
 
         dev1.poll([&](const void * data, size_t size)
         {
-            auto in = reinterpret_cast<const z16y8_pixel *>(data);
-            for(int i=0; i<320*240; ++i)
-            {
-                z[i] = in[i].z;
-                y[i] = in[i].y;
-            }
-            printf("%d %d\n", size, 320*240*3);
+            memcpy(z, data, std::min(size, size_t(640*480*2)));
+            std::cout << size << " " << 640*480*2 << std::endl;
         });
 
         int w,h;
@@ -272,9 +268,7 @@ int main(int argc, char * argv[])
         glRasterPos2i(0, 480);
         glDrawPixels(640, 480, GL_LUMINANCE_ALPHA, GL_UNSIGNED_BYTE, yuy2);
         glRasterPos2i(640, 480);
-        glDrawPixels(320, 240, GL_LUMINANCE, GL_UNSIGNED_SHORT, z);
-        glRasterPos2i(640, 240);
-        glDrawPixels(320, 240, GL_LUMINANCE, GL_UNSIGNED_BYTE, y);
+        glDrawPixels(640, 480, GL_LUMINANCE, GL_UNSIGNED_SHORT, z);
 
         glPopMatrix();
         glfwSwapBuffers(win);
