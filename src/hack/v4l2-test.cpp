@@ -195,12 +195,8 @@ public:
             max_fd = std::max(max_fd, sub->fd);
         }
 
-        struct timeval tv;
-        tv.tv_sec = 2;
-        tv.tv_usec = 0;
-
-        int r = select(max_fd + 1, &fds, NULL, NULL, &tv);
-        if(r < 0)
+        struct timeval tv = {};
+        if(select(max_fd + 1, &fds, NULL, NULL, &tv) < 0)
         {
             if (errno == EINTR) return;
             throw_error("select");
