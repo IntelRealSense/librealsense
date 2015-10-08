@@ -20,6 +20,8 @@
 #include <sys/stat.h>
 #include <sys/mman.h>
 #include <sys/ioctl.h>
+#include <linux/usb/video.h>
+#include <linux/uvcvideo.h>
 #include <linux/videodev2.h>
 
 static int xioctl(int fh, int request, void *arg)
@@ -128,6 +130,18 @@ public:
 
     int get_vid() const { return vid; }
     int get_pid() const { return pid; }
+
+    void get_control(int control, void * data, size_t size)
+    {
+        struct uvc_xu_control_query q = {2, control, UVC_GET_CUR, size, reinterpret_cast<uint8_t *>(data)};
+        if(xioctl(fd, UVCIOC_CTRL_QUERY, &q) < 0) throw_error("UVCIOC_CTRL_QUERY:UVC_GET_CUR");
+    }
+
+    void set_control(int control, void * data, size_t size)
+    {
+        struct uvc_xu_control_query q = {2, control, UVC_SET_CUR, size, reinterpret_cast<uint8_t *>(data)};
+        if(xioctl(fd, UVCIOC_CTRL_QUERY, &q) < 0) throw_error("UVCIOC_CTRL_QUERY:UVC_SET_CUR");
+    }
 
     void start_capture(int width, int height, int fourcc, std::function<void(const void * data, size_t size)> callback)
     {
