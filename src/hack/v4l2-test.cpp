@@ -295,3 +295,11 @@ int main(int argc, char * argv[])
 
     return EXIT_SUCCESS;
 }
+
+// struct uvc_xu_control_query q;
+// q.unit = 2;
+// q.selector = cmd;
+// q.query = UVC_GET_CUR/UVC_SET_CUR;
+// q.size = sizeof(x);
+// q.data = &x;
+// ioctl(fd, UVCIOC_CTRL_QUERY, &q)
