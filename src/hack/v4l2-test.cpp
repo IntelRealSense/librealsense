@@ -2,10 +2,12 @@
 #include <cstdlib>
 #include <cstdio>
 #include <cstring>
+
 #include <vector>
 #include <sstream>
 #include <iostream>
 #include <stdexcept>
+#include <functional>
 
 #include <GLFW/glfw3.h>
 
@@ -49,6 +51,7 @@ class subdevice
     std::string dev_name;
     int fd;
     std::vector<buffer> buffers;
+    std::function<void(const void *, size_t)> callback;
 public:
     subdevice(const std::string & dev_name) : dev_name(dev_name), fd()
     {
@@ -95,6 +98,19 @@ public:
         } else {} // Errors ignored
     }
 
+    ~subdevice()
+    {
+        v4l2_buf_type type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+        if(xioctl(fd, VIDIOC_STREAMOFF, &type) < 0) warn_error("VIDIOC_STREAMOFF");
+
+        for(int i = 0; i < buffers.size(); ++i)
+        {
+            if(munmap(buffers[i].start, buffers[i].length) < 0) warn_error("munmap");
+        }
+
+        if(close(fd) < 0) warn_error("close");
+    }
+
     void set_format(int width, int height, int pixelformat)
     {
         v4l2_format fmt = {};
@@ -107,7 +123,7 @@ public:
         // Note VIDIOC_S_FMT may change width and height
     }
 
-    void start_capture()
+    void start_capture(std::function<void(const void * data, size_t size)> callback)
     {
         v4l2_format fmt = {};
         fmt.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
@@ -164,64 +180,64 @@ public:
 
         v4l2_buf_type type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
         if(xioctl(fd, VIDIOC_STREAMON, &type) < 0) throw_error("VIDIOC_STREAMON");
+
+        this->callback = callback;
     }
 
-    ~subdevice()
+    static void poll(std::initializer_list<subdevice *> subdevices)
     {
-        v4l2_buf_type type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-        if(xioctl(fd, VIDIOC_STREAMOFF, &type) < 0) warn_error("VIDIOC_STREAMOFF");
-
-        for(int i = 0; i < buffers.size(); ++i)
-        {
-            if(munmap(buffers[i].start, buffers[i].length) < 0) warn_error("munmap");
-        }
-
-        if(close(fd) < 0) warn_error("close");
-    }
-
-    template<class F> void poll(F f)
-    {
+        int max_fd = 0;
         fd_set fds;
         FD_ZERO(&fds);
-        FD_SET(fd, &fds);
+        for(auto * sub : subdevices)
+        {
+            FD_SET(sub->fd, &fds);
+            max_fd = std::max(max_fd, sub->fd);
+        }
 
         struct timeval tv;
         tv.tv_sec = 2;
         tv.tv_usec = 0;
 
-        int r = select(fd + 1, &fds, NULL, NULL, &tv);
+        int r = select(max_fd + 1, &fds, NULL, NULL, &tv);
         if(r < 0)
         {
             if (errno == EINTR) return;
             throw_error("select");
         }
 
-        if(r == 1)
+        for(auto * sub : subdevices)
         {
-            v4l2_buffer buf = {};
-            buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-            buf.memory = V4L2_MEMORY_MMAP;
-            if(xioctl(fd, VIDIOC_DQBUF, &buf) < 0)
+            if(FD_ISSET(sub->fd, &fds))
             {
-                if(errno == EAGAIN) return;
-                throw_error("VIDIOC_DQBUF");
+                v4l2_buffer buf = {};
+                buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+                buf.memory = V4L2_MEMORY_MMAP;
+                if(xioctl(sub->fd, VIDIOC_DQBUF, &buf) < 0)
+                {
+                    if(errno == EAGAIN) return;
+                    throw_error("VIDIOC_DQBUF");
+                }
+                assert(buf.index < sub->buffers.size());
+
+                sub->callback(sub->buffers[buf.index].start, buf.bytesused);
+
+                if(xioctl(sub->fd, VIDIOC_QBUF, &buf) < 0) throw_error("VIDIOC_QBUF");
             }
-            assert(buf.index < buffers.size());
-
-            f(buffers[buf.index].start, buf.bytesused);
-
-            if(xioctl(fd, VIDIOC_QBUF, &buf) < 0) throw_error("VIDIOC_QBUF");
         }
     }
 };
 
 int main(int argc, char * argv[])
 {
+    uint16_t z[640*480] = {};
+    uint8_t yuy2[640*480*2] = {};
+
     subdevice dev0("/dev/video0"), dev1("/dev/video1");
     dev0.set_format(640, 480, V4L2_PIX_FMT_YUYV);
-    dev0.start_capture();
+    dev0.start_capture([&](const void * data, size_t size) { if(size == sizeof(yuy2)) memcpy(yuy2, data, size); });
     dev1.set_format(640, 480, v4l2_fourcc('I','N','V','R'));
-    dev1.start_capture();
+    dev1.start_capture([&](const void * data, size_t size) { if(size == sizeof(z)) memcpy(z, data, size); });
 
     // Open a GLFW window
     glfwInit();
@@ -229,14 +245,11 @@ int main(int argc, char * argv[])
     glfwMakeContextCurrent(win);
 
     // While window is open
-    uint16_t z[640*480] = {};
-    uint8_t yuy2[640*480*2] = {};
     while (!glfwWindowShouldClose(win))
     {
         glfwPollEvents();
 
-        dev0.poll([&](const void * data, size_t size) { if(size == sizeof(yuy2)) memcpy(yuy2, data, size); });
-        dev1.poll([&](const void * data, size_t size) { if(size == sizeof(z)) memcpy(z, data, size); });
+        subdevice::poll({&dev0, &dev1});
 
         int w,h;
         glfwGetFramebufferSize(win, &w, &h);
