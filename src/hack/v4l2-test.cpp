@@ -1,25 +1,18 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <assert.h>
-
-#include <getopt.h>             /* getopt_long() */
-
-#include <fcntl.h>              /* low-level i/o */
-#include <unistd.h>
-#include <errno.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <sys/time.h>
-#include <sys/mman.h>
-#include <sys/ioctl.h>
-
-#include <linux/videodev2.h>
+#include <cassert>
+#include <cstdlib>
+#include <cstdio>
+#include <cstring>
+#include <vector>
 
 #include <GLFW/glfw3.h>
 
-#include <vector>
-
+#include <fcntl.h>
+#include <unistd.h>
+#include <errno.h>
+#include <sys/stat.h>
+#include <sys/mman.h>
+#include <sys/ioctl.h>
+#include <linux/videodev2.h>
 
 static void errno_exit(const char *s)
 {
@@ -45,56 +38,47 @@ struct z16y8_pixel { uint16_t z; uint8_t y; };
 
 int main(int argc, char * argv[])
 {
-    char            *dev_name = "/dev/video1";
-    int              fd = -1;
-    std::vector<buffer> buffers;
-    //buffer          *buffers = 0;
-    //unsigned int     n_buffers = 0;
-    int              force_format = 0;
-
+    const char * dev_name = "/dev/video1";
     struct stat st;
-    if (stat(dev_name, &st) < 0)
+    if(stat(dev_name, &st) < 0)
     {
         fprintf(stderr, "Cannot identify '%s': %d, %s\n", dev_name, errno, strerror(errno));
         return EXIT_FAILURE;
     }
-
-    if (!S_ISCHR(st.st_mode))
+    if(!S_ISCHR(st.st_mode))
     {
         fprintf(stderr, "%s is no device\n", dev_name);
         return EXIT_FAILURE;
     }
 
-    fd = open(dev_name, O_RDWR /* required */ | O_NONBLOCK, 0);
-
-    if (-1 == fd) {
-            fprintf(stderr, "Cannot open '%s': %d, %s\n",
-                     dev_name, errno, strerror(errno));
-            exit(EXIT_FAILURE);
+    int fd = open(dev_name, O_RDWR /* required */ | O_NONBLOCK, 0);
+    if(fd < 0)
+    {
+        fprintf(stderr, "Cannot open '%s': %d, %s\n", dev_name, errno, strerror(errno));
+        return EXIT_FAILURE;
     }
 
     v4l2_capability cap = {};
     if(xioctl(fd, VIDIOC_QUERYCAP, &cap) < 0)
     {
-        if (EINVAL == errno) {
-                fprintf(stderr, "%s is no V4L2 device\n",
-                         dev_name);
-                exit(EXIT_FAILURE);
-        } else {
-                errno_exit("VIDIOC_QUERYCAP");
+        if (EINVAL == errno)
+        {
+            fprintf(stderr, "%s is no V4L2 device\n", dev_name);
+            return EXIT_FAILURE;
         }
+        else errno_exit("VIDIOC_QUERYCAP");
     }
 
-    if (!(cap.capabilities & V4L2_CAP_VIDEO_CAPTURE)) {
-            fprintf(stderr, "%s is no video capture device\n",
-                     dev_name);
-            exit(EXIT_FAILURE);
+    if (!(cap.capabilities & V4L2_CAP_VIDEO_CAPTURE))
+    {
+        fprintf(stderr, "%s is no video capture device\n", dev_name);
+        return EXIT_FAILURE;
     }
 
-    if (!(cap.capabilities & V4L2_CAP_STREAMING)) {
-            fprintf(stderr, "%s does not support streaming i/o\n",
-                     dev_name);
-            exit(EXIT_FAILURE);
+    if (!(cap.capabilities & V4L2_CAP_STREAMING))
+    {
+        fprintf(stderr, "%s does not support streaming i/o\n", dev_name);
+        return EXIT_FAILURE;
     }
 
     // Select video input, video standard and tune here.
@@ -117,7 +101,7 @@ int main(int argc, char * argv[])
 
     v4l2_format fmt = {};
     fmt.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-    if (force_format)
+    if(false) // Force format?
     {
         fmt.fmt.pix.width       = 640;
         fmt.fmt.pix.height      = 480;
@@ -134,36 +118,31 @@ int main(int argc, char * argv[])
 
     // Buggy driver paranoia.
     unsigned int min = fmt.fmt.pix.width * 2;
-    if (fmt.fmt.pix.bytesperline < min)
-            fmt.fmt.pix.bytesperline = min;
+    if(fmt.fmt.pix.bytesperline < min) fmt.fmt.pix.bytesperline = min;
     min = fmt.fmt.pix.bytesperline * fmt.fmt.pix.height;
-    if (fmt.fmt.pix.sizeimage < min)
-            fmt.fmt.pix.sizeimage = min;
+    if(fmt.fmt.pix.sizeimage < min) fmt.fmt.pix.sizeimage = min;
 
     // Init memory mapped IO
-
     v4l2_requestbuffers req = {};
     req.count = 4;
     req.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
     req.memory = V4L2_MEMORY_MMAP;
     if(xioctl(fd, VIDIOC_REQBUFS, &req) < 0)
     {
-        if (EINVAL == errno) {
-                fprintf(stderr, "%s does not support "
-                         "memory mapping\n", dev_name);
-                exit(EXIT_FAILURE);
-        } else {
-                errno_exit("VIDIOC_REQBUFS");
+        if(errno == EINVAL)
+        {
+            fprintf(stderr, "%s does not support memory mapping\n", dev_name);
+            return EXIT_FAILURE;
         }
+        else errno_exit("VIDIOC_REQBUFS");
+    }
+    if(req.count < 2)
+    {
+        fprintf(stderr, "Insufficient buffer memory on %s\n", dev_name);
+        return EXIT_FAILURE;
     }
 
-    if (req.count < 2) {
-        fprintf(stderr, "Insufficient buffer memory on %s\n",
-                 dev_name);
-        exit(EXIT_FAILURE);
-    }
-
-    buffers.resize(req.count);
+    std::vector<buffer> buffers(req.count);
     for(int i=0; i<buffers.size(); ++i)
     {
         v4l2_buffer buf = {};
@@ -178,8 +157,7 @@ int main(int argc, char * argv[])
                       PROT_READ | PROT_WRITE /* required */,
                       MAP_SHARED /* recommended */,
                       fd, buf.m.offset);
-        if (MAP_FAILED == buffers[i].start)
-                errno_exit("mmap");
+        if(buffers[i].start == MAP_FAILED) errno_exit("mmap");
     }
 
     // Start capturing
