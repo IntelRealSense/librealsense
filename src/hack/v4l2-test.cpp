@@ -17,11 +17,6 @@
 #include <sys/ioctl.h>
 #include <linux/videodev2.h>
 
-static void errno_exit(const char *s)
-{
-    fprintf(stderr, "%s error %d, %s\n", s, errno, strerror(errno));
-    exit(EXIT_FAILURE);
-}
 
 static int xioctl(int fh, int request, void *arg)
 {
@@ -37,54 +32,53 @@ struct buffer { void * start; size_t length; };
 struct z16y8_pixel { uint16_t z; uint8_t y; };
 #pragma pack(pop)
 
+void throw_error(const char * s)
+{
+    std::ostringstream ss;
+    ss << s << " error " << errno << ", " << strerror(errno);
+    throw std::runtime_error(s);
+}
+
+void warn_error(const char * s)
+{
+    std::cerr << s << " error " << errno << ", " << strerror(errno) << std::endl;
+}
+
 class subdevice
 {
+    std::string dev_name;
     int fd;
     std::vector<buffer> buffers;
 public:
-    subdevice(const char * dev_name, bool force_format) : fd()
+    subdevice(const std::string & dev_name, bool force_format) : dev_name(dev_name), fd()
     {
         struct stat st;
-        if(stat(dev_name, &st) < 0)
+        if(stat(dev_name.c_str(), &st) < 0)
         {
-            fprintf(stderr, "Cannot identify '%s': %d, %s\n", dev_name, errno, strerror(errno));
+            fprintf(stderr, "Cannot identify '%s': %d, %s\n", dev_name.c_str(), errno, strerror(errno));
             throw std::runtime_error("bad");
         }
         if(!S_ISCHR(st.st_mode))
         {
-            fprintf(stderr, "%s is no device\n", dev_name);
-            throw std::runtime_error("bad");
+            throw std::runtime_error(dev_name + " is no device");
         }
 
-        fd = open(dev_name, O_RDWR /* required */ | O_NONBLOCK, 0);
+        fd = open(dev_name.c_str(), O_RDWR /* required */ | O_NONBLOCK, 0);
         if(fd < 0)
         {
-            fprintf(stderr, "Cannot open '%s': %d, %s\n", dev_name, errno, strerror(errno));
+            fprintf(stderr, "Cannot open '%s': %d, %s\n", dev_name.c_str(), errno, strerror(errno));
             throw std::runtime_error("bad");
         }
 
         v4l2_capability cap = {};
         if(xioctl(fd, VIDIOC_QUERYCAP, &cap) < 0)
         {
-            if (EINVAL == errno)
-            {
-                fprintf(stderr, "%s is no V4L2 device\n", dev_name);
-                throw std::runtime_error("bad");
-            }
-            else errno_exit("VIDIOC_QUERYCAP");
+            if(errno == EINVAL) throw std::runtime_error(dev_name + " is no V4L2 device");
+            else throw_error("VIDIOC_QUERYCAP");
         }
 
-        if (!(cap.capabilities & V4L2_CAP_VIDEO_CAPTURE))
-        {
-            fprintf(stderr, "%s is no video capture device\n", dev_name);
-            throw std::runtime_error("bad");
-        }
-
-        if (!(cap.capabilities & V4L2_CAP_STREAMING))
-        {
-            fprintf(stderr, "%s does not support streaming i/o\n", dev_name);
-            throw std::runtime_error("bad");
-        }
+        if (!(cap.capabilities & V4L2_CAP_VIDEO_CAPTURE)) throw std::runtime_error(dev_name + " is no video capture device");
+        if (!(cap.capabilities & V4L2_CAP_STREAMING)) throw std::runtime_error(dev_name + " does not support streaming I/O");
 
         // Select video input, video standard and tune here.
         v4l2_cropcap cropcap = {};
@@ -112,13 +106,13 @@ public:
             fmt.fmt.pix.height      = 480;
             fmt.fmt.pix.pixelformat = V4L2_PIX_FMT_YUYV;
             fmt.fmt.pix.field       = V4L2_FIELD_INTERLACED;
-            if(xioctl(fd, VIDIOC_S_FMT, &fmt) < 0) errno_exit("VIDIOC_S_FMT");
+            if(xioctl(fd, VIDIOC_S_FMT, &fmt) < 0) throw_error("VIDIOC_S_FMT");
             // Note VIDIOC_S_FMT may change width and height
         }
         else
         {
             // Preserve original settings as set by v4l2-ctl for example
-            if(xioctl(fd, VIDIOC_G_FMT, &fmt) < 0) errno_exit("VIDIOC_G_FMT");
+            if(xioctl(fd, VIDIOC_G_FMT, &fmt) < 0) throw_error("VIDIOC_G_FMT");
         }
 
         // Buggy driver paranoia.
@@ -134,17 +128,12 @@ public:
         req.memory = V4L2_MEMORY_MMAP;
         if(xioctl(fd, VIDIOC_REQBUFS, &req) < 0)
         {
-            if(errno == EINVAL)
-            {
-                fprintf(stderr, "%s does not support memory mapping\n", dev_name);
-                throw std::runtime_error("bad");
-            }
-            else errno_exit("VIDIOC_REQBUFS");
+            if(errno == EINVAL) throw std::runtime_error(dev_name + " does not support memory mapping");
+            else throw_error("VIDIOC_REQBUFS");
         }
         if(req.count < 2)
         {
-            fprintf(stderr, "Insufficient buffer memory on %s\n", dev_name);
-            throw std::runtime_error("bad");
+            throw std::runtime_error("Insufficient buffer memory on " + dev_name);
         }
 
         buffers.resize(req.count);
@@ -154,7 +143,7 @@ public:
             buf.type        = V4L2_BUF_TYPE_VIDEO_CAPTURE;
             buf.memory      = V4L2_MEMORY_MMAP;
             buf.index       = i;
-            if(xioctl(fd, VIDIOC_QUERYBUF, &buf) < 0) errno_exit("VIDIOC_QUERYBUF");
+            if(xioctl(fd, VIDIOC_QUERYBUF, &buf) < 0) throw_error("VIDIOC_QUERYBUF");
 
             buffers[i].length = buf.length;
             buffers[i].start = mmap(NULL /* start anywhere */,
@@ -162,7 +151,7 @@ public:
                           PROT_READ | PROT_WRITE /* required */,
                           MAP_SHARED /* recommended */,
                           fd, buf.m.offset);
-            if(buffers[i].start == MAP_FAILED) errno_exit("mmap");
+            if(buffers[i].start == MAP_FAILED) throw_error("mmap");
         }
 
         // Start capturing
@@ -172,24 +161,24 @@ public:
             buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
             buf.memory = V4L2_MEMORY_MMAP;
             buf.index = i;
-            if(xioctl(fd, VIDIOC_QBUF, &buf) < 0) errno_exit("VIDIOC_QBUF");
+            if(xioctl(fd, VIDIOC_QBUF, &buf) < 0) throw_error("VIDIOC_QBUF");
         }
 
         v4l2_buf_type type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-        if(xioctl(fd, VIDIOC_STREAMON, &type) < 0) errno_exit("VIDIOC_STREAMON");
+        if(xioctl(fd, VIDIOC_STREAMON, &type) < 0) throw_error("VIDIOC_STREAMON");
     }
 
     ~subdevice()
     {
         v4l2_buf_type type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-        if(xioctl(fd, VIDIOC_STREAMOFF, &type) < 0) errno_exit("VIDIOC_STREAMOFF");
+        if(xioctl(fd, VIDIOC_STREAMOFF, &type) < 0) warn_error("VIDIOC_STREAMOFF");
 
         for(int i = 0; i < buffers.size(); ++i)
         {
-            if(munmap(buffers[i].start, buffers[i].length) < 0) errno_exit("munmap");
+            if(munmap(buffers[i].start, buffers[i].length) < 0) warn_error("munmap");
         }
 
-        if(close(fd) < 0) errno_exit("close");
+        if(close(fd) < 0) warn_error("close");
     }
 
     template<class F> void poll(F f)
@@ -212,12 +201,11 @@ public:
             if (-1 == r) {
                     if (EINTR == errno)
                             continue;
-                    errno_exit("select");
+                    throw_error("select");
             }
 
             if (0 == r) {
-                    fprintf(stderr, "select timeout\n");
-                    exit(EXIT_FAILURE);
+                    throw_error("select timeout");
             }
 
             v4l2_buffer buf = {};
@@ -226,13 +214,13 @@ public:
             if(xioctl(fd, VIDIOC_DQBUF, &buf) < 0)
             {
                 if(errno == EAGAIN) continue;
-                errno_exit("VIDIOC_DQBUF");
+                throw_error("VIDIOC_DQBUF");
             }
             assert(buf.index < buffers.size());
 
             f(buffers[buf.index].start, buf.bytesused);
 
-            if(xioctl(fd, VIDIOC_QBUF, &buf) < 0) errno_exit("VIDIOC_QBUF");
+            if(xioctl(fd, VIDIOC_QBUF, &buf) < 0) throw_error("VIDIOC_QBUF");
             break;
         }
     }
