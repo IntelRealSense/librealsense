@@ -181,37 +181,29 @@ public:
 
     template<class F> void poll(F f)
     {
-        for (;;)
+        fd_set fds;
+        FD_ZERO(&fds);
+        FD_SET(fd, &fds);
+
+        struct timeval tv;
+        tv.tv_sec = 2;
+        tv.tv_usec = 0;
+
+        int r = select(fd + 1, &fds, NULL, NULL, &tv);
+        if(r < 0)
         {
-            fd_set fds;
-            struct timeval tv;
-            int r;
+            if (errno == EINTR) return;
+            throw_error("select");
+        }
 
-            FD_ZERO(&fds);
-            FD_SET(fd, &fds);
-
-            /* Timeout. */
-            tv.tv_sec = 2;
-            tv.tv_usec = 0;
-
-            r = select(fd + 1, &fds, NULL, NULL, &tv);
-
-            if (-1 == r) {
-                    if (EINTR == errno)
-                            continue;
-                    throw_error("select");
-            }
-
-            if (0 == r) {
-                    throw_error("select timeout");
-            }
-
+        if(r == 1)
+        {
             v4l2_buffer buf = {};
             buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
             buf.memory = V4L2_MEMORY_MMAP;
             if(xioctl(fd, VIDIOC_DQBUF, &buf) < 0)
             {
-                if(errno == EAGAIN) continue;
+                if(errno == EAGAIN) return;
                 throw_error("VIDIOC_DQBUF");
             }
             assert(buf.index < buffers.size());
@@ -219,7 +211,6 @@ public:
             f(buffers[buf.index].start, buf.bytesused);
 
             if(xioctl(fd, VIDIOC_QBUF, &buf) < 0) throw_error("VIDIOC_QBUF");
-            break;
         }
     }
 };
@@ -238,23 +229,14 @@ int main(int argc, char * argv[])
     glfwMakeContextCurrent(win);
 
     // While window is open
-    uint16_t z[640*480];
-    uint8_t yuy2[640*480*2];
+    uint16_t z[640*480] = {};
+    uint8_t yuy2[640*480*2] = {};
     while (!glfwWindowShouldClose(win))
     {
         glfwPollEvents();
 
-        dev0.poll([&](const void * data, size_t size)
-        {
-            memcpy(yuy2, data, size);
-            std::cout << size << " " << 640*480*2 << std::endl;
-        });
-
-        dev1.poll([&](const void * data, size_t size)
-        {
-            memcpy(z, data, std::min(size, size_t(640*480*2)));
-            std::cout << size << " " << 640*480*2 << std::endl;
-        });
+        dev0.poll([&](const void * data, size_t size) { if(size == sizeof(yuy2)) memcpy(yuy2, data, size); });
+        dev1.poll([&](const void * data, size_t size) { if(size == sizeof(z)) memcpy(z, data, size); });
 
         int w,h;
         glfwGetFramebufferSize(win, &w, &h);
