@@ -8,4 +8,5 @@ SUBDIRS += \
    ./cpp-capture.pro \
    ./cpp-multicam.pro \
    ./cpp-pointcloud.pro \
-   ./cpp-restart.pro
+   ./cpp-restart.pro \
+   ./v4l2-test.pro

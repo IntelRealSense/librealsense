@@ -1,7 +1,15 @@
 #include <dirent.h> 
+#include <fcntl.h>
+#include <unistd.h>
+#include <sys/ioctl.h>
 #include <cstdio> 
 #include <cstdlib>
 #include <string>
+
+
+#include <linux/uvcvideo.h>
+#include <linux/videodev2.h>
+#include <linux/usb/video.h>
 
 void check_device(const std::string & name)
 {
@@ -19,6 +27,16 @@ void check_device(const std::string & name)
       system(cmd.c_str());
       cmd = "cat " + path + "/" + name2 + "/id/product";
       system(cmd.c_str());
+
+      int fd = open(("/dev/"+name).c_str(), 0); // Or possibly O_NONBLOCK
+      ioctl(fd, VIDIOC_STREAMON, NULL);
+
+      char buffer[640*480*4];
+      size_t num = read(fd, buffer, 640*480*2);
+      printf("Read: %d B\n", num);
+
+      ioctl(fd, VIDIOC_STREAMOFF, NULL);
+      close(fd);
     }
 
     closedir(d);
