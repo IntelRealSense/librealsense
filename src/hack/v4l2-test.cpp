@@ -3,6 +3,8 @@
 #include <cstdio>
 #include <cstring>
 
+#include <thread>
+#include <chrono>
 #include <memory>
 #include <vector>
 #include <sstream>
@@ -42,7 +44,7 @@ void throw_error(const char * s)
 {
     std::ostringstream ss;
     ss << s << " error " << errno << ", " << strerror(errno);
-    throw std::runtime_error(s);
+    throw std::runtime_error(ss.str());
 }
 
 void warn_error(const char * s)
@@ -239,6 +241,41 @@ public:
     }
 };
 
+class texture
+{
+    GLuint name = 0;
+    int width, height;
+public:
+    void upload(int width, int height, GLenum format, GLenum type, const void * data)
+    {
+        if(!name)
+        {
+            glGenTextures(1, &name);
+            glBindTexture(GL_TEXTURE_2D, name);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        }
+        glBindTexture(GL_TEXTURE_2D, name);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, format, type, data);
+        glBindTexture(GL_TEXTURE_2D, 0);
+        this->width = width;
+        this->height = height;
+    }
+
+    void draw(int x, int y) const
+    {
+        glEnable(GL_TEXTURE_2D);
+        glBindTexture(GL_TEXTURE_2D, name);
+        glBegin(GL_QUADS);
+        glTexCoord2f(0,0); glVertex2i(x,y);
+        glTexCoord2f(1,0); glVertex2i(x+width,y);
+        glTexCoord2f(1,1); glVertex2i(x+width,y+height);
+        glTexCoord2f(0,1); glVertex2i(x,y+height);
+        glEnd();
+        glBindTexture(GL_TEXTURE_2D, 0);
+    }
+};
+
 int main(int argc, char * argv[])
 {
     std::vector<std::unique_ptr<subdevice>> subdevices;
@@ -254,21 +291,42 @@ int main(int argc, char * argv[])
     }
     closedir(dir);
 
-    uint16_t z[640*480] = {};
-    uint8_t yuy2[640*480*2] = {};
+    texture texColor, texDepth;
+
     std::vector<subdevice *> devs;
     if(subdevices.size() >= 2 && subdevices[0]->get_vid() == 0x8086 && subdevices[0]->get_pid() == 0xa66)
     {
         std::cout << "F200 detected!" << std::endl;
-        subdevices[0]->start_capture(640, 480, V4L2_PIX_FMT_YUYV, [&](const void * data, size_t size) { if(size == sizeof(yuy2)) memcpy(yuy2, data, size); });
-        subdevices[1]->start_capture(640, 480, v4l2_fourcc('I','N','V','R'), [&](const void * data, size_t size) { if(size == sizeof(z)) memcpy(z, data, size); });
+        subdevices[0]->start_capture(640, 480, V4L2_PIX_FMT_YUYV, [&](const void * data, size_t size)
+        {
+            texColor.upload(640, 480, GL_LUMINANCE_ALPHA, GL_UNSIGNED_BYTE, data);
+        });
+        subdevices[1]->start_capture(640, 480, v4l2_fourcc('I','N','V','R'), [&](const void * data, size_t size)
+        {
+            texDepth.upload(640, 480, GL_LUMINANCE, GL_UNSIGNED_SHORT, data);
+        });
         devs = {subdevices[0].get(), subdevices[1].get()};
     }
     else if(subdevices.size() >= 3 && subdevices[0]->get_vid() == 0x8086 && subdevices[0]->get_pid() == 0xa80)
     {
         std::cout << "R200 detected!" << std::endl;
-        subdevices[2]->start_capture(640, 480, V4L2_PIX_FMT_YUYV, [&](const void * data, size_t size) { if(size == sizeof(yuy2)) memcpy(yuy2, data, size); });
-        devs = {subdevices[2].get()};
+
+        const int STATUS_BIT_Z_STREAMING = 1 << 0;
+        const int STATUS_BIT_LR_STREAMING = 1 << 1;
+        const int STATUS_BIT_WEB_STREAMING = 1 << 2;
+        const int CONTROL_STREAM_INTENT = 3;
+        uint8_t intent = STATUS_BIT_Z_STREAMING | STATUS_BIT_LR_STREAMING | STATUS_BIT_WEB_STREAMING;
+        subdevices[0]->set_control(CONTROL_STREAM_INTENT, &intent, sizeof(intent));
+
+        subdevices[1]->start_capture(480, 360, v4l2_fourcc('Z','1','6',' '), [&](const void * data, size_t size)
+        {
+            texDepth.upload(480, 360, GL_LUMINANCE, GL_UNSIGNED_SHORT, data);
+        });
+        subdevices[2]->start_capture(640, 480, V4L2_PIX_FMT_YUYV, [&](const void * data, size_t size)
+        {
+            texColor.upload(640, 480, GL_LUMINANCE_ALPHA, GL_UNSIGNED_BYTE, data);
+        });
+        devs = {subdevices[1].get(), subdevices[2].get()};
     }
     else if(!subdevices.empty())
     {
@@ -296,10 +354,8 @@ int main(int argc, char * argv[])
         glfwGetWindowSize(win, &w, &h);
         glOrtho(0, w, h, 0, -1, +1);
 
-        glRasterPos2i(0, 480);
-        glDrawPixels(640, 480, GL_LUMINANCE_ALPHA, GL_UNSIGNED_BYTE, yuy2);
-        glRasterPos2i(640, 480);
-        glDrawPixels(640, 480, GL_LUMINANCE, GL_UNSIGNED_SHORT, z);
+        texColor.draw(0, 0);
+        texDepth.draw(640, 0);
 
         glPopMatrix();
         glfwSwapBuffers(win);
@@ -309,11 +365,3 @@ int main(int argc, char * argv[])
 
     return EXIT_SUCCESS;
 }
-
-// struct uvc_xu_control_query q;
-// q.unit = 2;
-// q.selector = cmd;
-// q.query = UVC_GET_CUR/UVC_SET_CUR;
-// q.size = sizeof(x);
-// q.data = &x;
-// ioctl(fd, UVCIOC_CTRL_QUERY, &q)
