@@ -18,21 +18,8 @@
 
 #include <GLFW/glfw3.h>
 
-#define CLEAR(x) memset(&(x), 0, sizeof(x))
+#include <vector>
 
-
-struct buffer {
-        void   *start;
-        size_t  length;
-};
-
-static char            *dev_name;
-static int              fd = -1;
-struct buffer          *buffers;
-static unsigned int     n_buffers;
-static int              out_buf;
-static int              force_format;
-static int              frame_count = 70;
 
 static void errno_exit(const char *s)
 {
@@ -51,152 +38,40 @@ static int xioctl(int fh, int request, void *arg)
         return r;
 }
 
+struct buffer { void * start; size_t length; };
 #pragma pack(push, 1)
 struct z16y8_pixel { uint16_t z; uint8_t y; };
 #pragma pack(pop)
 
-static void process_image(const void *p, int size)
+int main(int argc, char * argv[])
 {
-    uint16_t z[320*240];
-    uint8_t y[320*240];
+    char            *dev_name = "/dev/video1";
+    int              fd = -1;
+    std::vector<buffer> buffers;
+    //buffer          *buffers = 0;
+    //unsigned int     n_buffers = 0;
+    int              force_format = 0;
 
-    auto in = reinterpret_cast<const z16y8_pixel *>(p);
-    for(int i=0; i<320*240; ++i)
+    struct stat st;
+    if (stat(dev_name, &st) < 0)
     {
-        z[i] = in[i].z;
-        y[i] = in[i].y;
+        fprintf(stderr, "Cannot identify '%s': %d, %s\n", dev_name, errno, strerror(errno));
+        return EXIT_FAILURE;
     }
 
-    glRasterPos2i(0, 240);
-    glDrawPixels(320, 240, GL_LUMINANCE, GL_UNSIGNED_SHORT, z);
-    glRasterPos2i(320, 240);
-    glDrawPixels(320, 240, GL_LUMINANCE, GL_UNSIGNED_BYTE, y);
-    printf("%d %d\n", size, 320*240*3);
-}
+    if (!S_ISCHR(st.st_mode))
+    {
+        fprintf(stderr, "%s is no device\n", dev_name);
+        return EXIT_FAILURE;
+    }
 
-static int read_frame(void)
-{
-        struct v4l2_buffer buf;
-        unsigned int i;
+    fd = open(dev_name, O_RDWR /* required */ | O_NONBLOCK, 0);
 
-        CLEAR(buf);
-
-        buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-        buf.memory = V4L2_MEMORY_MMAP;
-
-        if (-1 == xioctl(fd, VIDIOC_DQBUF, &buf)) {
-                switch (errno) {
-                case EAGAIN:
-                        return 0;
-
-                case EIO:
-                        /* Could ignore EIO, see spec. */
-
-                        /* fall through */
-
-                default:
-                        errno_exit("VIDIOC_DQBUF");
-                }
-        }
-
-        assert(buf.index < n_buffers);
-
-        process_image(buffers[buf.index].start, buf.bytesused);
-
-        if (-1 == xioctl(fd, VIDIOC_QBUF, &buf))
-                errno_exit("VIDIOC_QBUF");
-
-        return 1;
-}
-
-static void init_mmap(void)
-{
-        struct v4l2_requestbuffers req;
-
-        CLEAR(req);
-
-        req.count = 4;
-        req.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-        req.memory = V4L2_MEMORY_MMAP;
-
-        if (-1 == xioctl(fd, VIDIOC_REQBUFS, &req)) {
-                if (EINVAL == errno) {
-                        fprintf(stderr, "%s does not support "
-                                 "memory mapping\n", dev_name);
-                        exit(EXIT_FAILURE);
-                } else {
-                        errno_exit("VIDIOC_REQBUFS");
-                }
-        }
-
-        if (req.count < 2) {
-                fprintf(stderr, "Insufficient buffer memory on %s\n",
-                         dev_name);
-                exit(EXIT_FAILURE);
-        }
-
-        buffers = (buffer *)calloc(req.count, sizeof(*buffers));
-
-        if (!buffers) {
-                fprintf(stderr, "Out of memory\n");
-                exit(EXIT_FAILURE);
-        }
-
-        for (n_buffers = 0; n_buffers < req.count; ++n_buffers) {
-                struct v4l2_buffer buf;
-
-                CLEAR(buf);
-
-                buf.type        = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-                buf.memory      = V4L2_MEMORY_MMAP;
-                buf.index       = n_buffers;
-
-                if (-1 == xioctl(fd, VIDIOC_QUERYBUF, &buf))
-                        errno_exit("VIDIOC_QUERYBUF");
-
-                buffers[n_buffers].length = buf.length;
-                buffers[n_buffers].start =
-                        mmap(NULL /* start anywhere */,
-                              buf.length,
-                              PROT_READ | PROT_WRITE /* required */,
-                              MAP_SHARED /* recommended */,
-                              fd, buf.m.offset);
-
-                if (MAP_FAILED == buffers[n_buffers].start)
-                        errno_exit("mmap");
-        }
-}
-
-static void open_device(void)
-{
-        struct stat st;
-
-        if (-1 == stat(dev_name, &st)) {
-                fprintf(stderr, "Cannot identify '%s': %d, %s\n",
-                         dev_name, errno, strerror(errno));
-                exit(EXIT_FAILURE);
-        }
-
-        if (!S_ISCHR(st.st_mode)) {
-                fprintf(stderr, "%s is no device\n", dev_name);
-                exit(EXIT_FAILURE);
-        }
-
-        fd = open(dev_name, O_RDWR /* required */ | O_NONBLOCK, 0);
-
-        if (-1 == fd) {
-                fprintf(stderr, "Cannot open '%s': %d, %s\n",
-                         dev_name, errno, strerror(errno));
-                exit(EXIT_FAILURE);
-        }
-}
-
-int main(int argc, char **argv)
-{
-    dev_name = "/dev/video1";
-    out_buf = 1;
-
-    open_device();
+    if (-1 == fd) {
+            fprintf(stderr, "Cannot open '%s': %d, %s\n",
+                     dev_name, errno, strerror(errno));
+            exit(EXIT_FAILURE);
+    }
 
     v4l2_capability cap = {};
     if(xioctl(fd, VIDIOC_QUERYCAP, &cap) < 0)
@@ -265,10 +140,50 @@ int main(int argc, char **argv)
     if (fmt.fmt.pix.sizeimage < min)
             fmt.fmt.pix.sizeimage = min;
 
-    init_mmap();
+    // Init memory mapped IO
+
+    v4l2_requestbuffers req = {};
+    req.count = 4;
+    req.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+    req.memory = V4L2_MEMORY_MMAP;
+    if(xioctl(fd, VIDIOC_REQBUFS, &req) < 0)
+    {
+        if (EINVAL == errno) {
+                fprintf(stderr, "%s does not support "
+                         "memory mapping\n", dev_name);
+                exit(EXIT_FAILURE);
+        } else {
+                errno_exit("VIDIOC_REQBUFS");
+        }
+    }
+
+    if (req.count < 2) {
+        fprintf(stderr, "Insufficient buffer memory on %s\n",
+                 dev_name);
+        exit(EXIT_FAILURE);
+    }
+
+    buffers.resize(req.count);
+    for(int i=0; i<buffers.size(); ++i)
+    {
+        v4l2_buffer buf = {};
+        buf.type        = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+        buf.memory      = V4L2_MEMORY_MMAP;
+        buf.index       = i;
+        if(xioctl(fd, VIDIOC_QUERYBUF, &buf) < 0) errno_exit("VIDIOC_QUERYBUF");
+
+        buffers[i].length = buf.length;
+        buffers[i].start = mmap(NULL /* start anywhere */,
+                      buf.length,
+                      PROT_READ | PROT_WRITE /* required */,
+                      MAP_SHARED /* recommended */,
+                      fd, buf.m.offset);
+        if (MAP_FAILED == buffers[i].start)
+                errno_exit("mmap");
+    }
 
     // Start capturing
-    for(int i = 0; i < n_buffers; ++i)
+    for(int i = 0; i < buffers.size(); ++i)
     {
         v4l2_buffer buf = {};
         buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
@@ -324,9 +239,32 @@ int main(int argc, char **argv)
                     exit(EXIT_FAILURE);
             }
 
-            if (read_frame())
-                    break;
-            /* EAGAIN - continue select loop. */
+            v4l2_buffer buf = {};
+            buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+            buf.memory = V4L2_MEMORY_MMAP;
+            if(xioctl(fd, VIDIOC_DQBUF, &buf) < 0)
+            {
+                if(errno == EAGAIN) continue;
+                errno_exit("VIDIOC_DQBUF");
+            }
+            assert(buf.index < buffers.size());
+
+            uint16_t z[320*240]; uint8_t y[320*240];
+            auto in = reinterpret_cast<const z16y8_pixel *>(buffers[buf.index].start);
+            for(int i=0; i<320*240; ++i)
+            {
+                z[i] = in[i].z;
+                y[i] = in[i].y;
+            }
+
+            glRasterPos2i(0, 240);
+            glDrawPixels(320, 240, GL_LUMINANCE, GL_UNSIGNED_SHORT, z);
+            glRasterPos2i(320, 240);
+            glDrawPixels(320, 240, GL_LUMINANCE, GL_UNSIGNED_BYTE, y);
+            printf("%d %d\n", buf.bytesused, 320*240*3);
+
+            if(xioctl(fd, VIDIOC_QBUF, &buf) < 0) errno_exit("VIDIOC_QBUF");
+            break;
         }
 
         glPopMatrix();
@@ -337,11 +275,10 @@ int main(int argc, char **argv)
 
     if(xioctl(fd, VIDIOC_STREAMOFF, &type) < 0) errno_exit("VIDIOC_STREAMOFF");
 
-    for(int i = 0; i < n_buffers; ++i)
+    for(int i = 0; i < buffers.size(); ++i)
     {
         if(munmap(buffers[i].start, buffers[i].length) < 0) errno_exit("munmap");
     }
-    free(buffers);
 
     if(close(fd) < 0) errno_exit("close");
 
