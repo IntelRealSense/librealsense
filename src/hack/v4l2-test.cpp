@@ -120,13 +120,27 @@ public:
     ~subdevice()
     {
         v4l2_buf_type type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+
+        // Will warn for subdev fds that are not streaming
         if(xioctl(fd, VIDIOC_STREAMOFF, &type) < 0) warn_error("VIDIOC_STREAMOFF");
 
-        for(int i = 0; i < buffers.size(); ++i)
+        for(int i = 0; i < buffers.size(); i++)
         {
             if(munmap(buffers[i].start, buffers[i].length) < 0) warn_error("munmap");
         }
 
+        // Close memory mapped IO
+        struct v4l2_requestbuffers req = {};
+        req.count = 0;
+        req.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+        req.memory = V4L2_MEMORY_MMAP;
+        if(xioctl(fd, VIDIOC_REQBUFS, &req) < 0)
+        {
+            if(errno == EINVAL) throw std::runtime_error(dev_name + " does not support memory mapping");
+            else throw_error("VIDIOC_REQBUFS");
+        }
+
+        std::cout << "Closing... " << fd << std::endl;
         if(close(fd) < 0) warn_error("close");
     }
 
@@ -135,14 +149,14 @@ public:
 
     void get_control(int control, void * data, size_t size)
     {
-        struct uvc_xu_control_query q = {2, control, UVC_GET_CUR, size, reinterpret_cast<uint8_t *>(data)};
+        uvc_xu_control_query q = {2, control, UVC_GET_CUR, size, reinterpret_cast<uint8_t *>(data)};
         if(xioctl(fd, UVCIOC_CTRL_QUERY, &q) < 0) throw_error("UVCIOC_CTRL_QUERY:UVC_GET_CUR");
     }
 
     void set_control(int control, void * data, size_t size)
     {
-        struct uvc_xu_control_query q = {2, control, UVC_SET_CUR, size, reinterpret_cast<uint8_t *>(data)};
-        if(xioctl(fd, UVCIOC_CTRL_QUERY, &q) < 0) throw_error("UVCIOC_CTRL_QUERY:UVC_SET_CUR");
+       uvc_xu_control_query q = {2, control, UVC_SET_CUR, size, reinterpret_cast<uint8_t *>(data)};
+       if(xioctl(fd, UVCIOC_CTRL_QUERY, &q) < 0) throw_error("UVCIOC_CTRL_QUERY:UVC_SET_CUR");
     }
 
     void start_capture(int width, int height, int fourcc, std::function<void(const void * data, size_t size)> callback)
@@ -152,7 +166,7 @@ public:
         fmt.fmt.pix.width       = width;
         fmt.fmt.pix.height      = height;
         fmt.fmt.pix.pixelformat = fourcc;
-        fmt.fmt.pix.field       = V4L2_FIELD_INTERLACED;
+        fmt.fmt.pix.field       = V4L2_FIELD_NONE;
         if(xioctl(fd, VIDIOC_S_FMT, &fmt) < 0) throw_error("VIDIOC_S_FMT");
         // Note VIDIOC_S_FMT may change width and height
 
@@ -311,22 +325,29 @@ int main(int argc, char * argv[])
     {
         std::cout << "R200 detected!" << std::endl;
 
-        const int STATUS_BIT_Z_STREAMING = 1 << 0;
-        const int STATUS_BIT_LR_STREAMING = 1 << 1;
-        const int STATUS_BIT_WEB_STREAMING = 1 << 2;
-        const int CONTROL_STREAM_INTENT = 3;
-        uint8_t intent = STATUS_BIT_Z_STREAMING | STATUS_BIT_LR_STREAMING | STATUS_BIT_WEB_STREAMING;
-        subdevices[0]->set_control(CONTROL_STREAM_INTENT, &intent, sizeof(intent));
+        uint8_t intent = 5;// STATUS_BIT_Z_STREAMING | STATUS_BIT_WEB_STREAMING;
+        subdevices[0].get()->set_control(3, &intent, sizeof(uint8_t));
 
-        subdevices[1]->start_capture(480, 360, v4l2_fourcc('Z','1','6',' '), [&](const void * data, size_t size)
+        subdevices[1]->start_capture(628, 469, v4l2_fourcc('Z','1','6',' '), [&](const void * data, size_t size)
         {
-            texDepth.upload(480, 360, GL_LUMINANCE, GL_UNSIGNED_SHORT, data);
+            glPixelTransferf(GL_RED_SCALE, 64.0f);
+            texDepth.upload(628, 469, GL_LUMINANCE, GL_UNSIGNED_SHORT, data);
+            glPixelTransferf(GL_RED_SCALE, 1.0f);
         });
         subdevices[2]->start_capture(640, 480, V4L2_PIX_FMT_YUYV, [&](const void * data, size_t size)
         {
             texColor.upload(640, 480, GL_LUMINANCE_ALPHA, GL_UNSIGNED_BYTE, data);
         });
+
+        //devs = {subdevices[1].get()};
         devs = {subdevices[1].get(), subdevices[2].get()};
+
+        //const int STATUS_BIT_Z_STREAMING = 1 << 0;
+        //const int STATUS_BIT_LR_STREAMING = 1 << 1;
+        //const int STATUS_BIT_WEB_STREAMING = 1 << 2;
+        //const int CONTROL_STREAM_INTENT = 3;
+
+
     }
     else if(!subdevices.empty())
     {
@@ -338,6 +359,7 @@ int main(int argc, char * argv[])
     GLFWwindow * win = glfwCreateWindow(1280, 480, "V4L2 test", 0, 0);
     glfwMakeContextCurrent(win);
 
+    int frameCount = 0;
     // While window is open
     while (!glfwWindowShouldClose(win))
     {
@@ -355,11 +377,13 @@ int main(int argc, char * argv[])
         glOrtho(0, w, h, 0, -1, +1);
 
         texColor.draw(0, 0);
-        texDepth.draw(640, 0);
+        texDepth.draw(628, 0);
 
         glPopMatrix();
         glfwSwapBuffers(win);
+        frameCount++;
     }
+
     glfwDestroyWindow(win);
     glfwTerminate();
 

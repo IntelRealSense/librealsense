@@ -18,8 +18,8 @@ int main(int argc, char * argv[]) try
     rs::device dev = ctx.get_device(0);
     dev.enable_stream(rs::stream::color, rs::preset::best_quality);
     dev.enable_stream(rs::stream::depth, rs::preset::best_quality);
-    dev.enable_stream(rs::stream::infrared, 0, 0, rs::format::any, 0);
-    try { dev.enable_stream(rs::stream::infrared2, 0, 0, rs::format::any, 0); } catch(...) {}
+    dev.enable_stream(rs::stream::infrared, 0, 0, rs::format::y8, 0);
+    //try { dev.enable_stream(rs::stream::infrared2, 0, 0, rs::format::any, 0); } catch(...) {}
 
     // Compute field of view for each enabled stream
     for(int i = 0; i < RS_STREAM_COUNT; ++i)
@@ -35,7 +35,7 @@ int main(int argc, char * argv[]) try
     dev.start();
 
     // Try setting some R200-specific settings
-    std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+    /*std::this_thread::sleep_for(std::chrono::milliseconds(1000));
     try {
         dev.set_option(rs::option::r200_lr_auto_exposure_enabled, 1);
     }  catch(...) {}
@@ -50,7 +50,7 @@ int main(int argc, char * argv[]) try
             try { std::cout << dev.get_option(option) << std::endl; }
             catch(const std::exception & e) { std::cout << e.what() << std::endl; }
         }
-    }
+    }*/
 
     // Open a GLFW window
     glfwInit();
