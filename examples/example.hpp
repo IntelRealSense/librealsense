@@ -69,6 +69,20 @@ public:
         }    
     }
 
+    void show(float rx, float ry, float rw, float rh) const
+    {
+        glBindTexture(GL_TEXTURE_2D, texture);
+        glEnable(GL_TEXTURE_2D);
+        glBegin(GL_QUADS);
+        glTexCoord2f(0, 0); glVertex2f(rx,    ry   );
+        glTexCoord2f(1, 0); glVertex2f(rx+rw, ry   );
+        glTexCoord2f(1, 1); glVertex2f(rx+rw, ry+rh);
+        glTexCoord2f(0, 1); glVertex2f(rx,    ry+rh);
+        glEnd();    
+        glDisable(GL_TEXTURE_2D);    
+        glBindTexture(GL_TEXTURE_2D, 0);
+    }
+
     void show(rs::device & dev, rs::stream stream, int rx, int ry, int rw, int rh, font & font)
     {
         if(!dev.is_stream_enabled(stream)) return;
@@ -83,17 +97,8 @@ public:
             w *= scale;
             h *= scale;
         }
-        float x0 = rx + (rw - w)/2, x1 = x0 + w, y0 = ry + (rh - h)/2, y1 = y0 + h;
 
-        glEnable(GL_TEXTURE_2D);
-        glBegin(GL_QUADS);
-        glTexCoord2f(0,0); glVertex2f(x0,y0);
-        glTexCoord2f(1,0); glVertex2f(x1,y0);
-        glTexCoord2f(1,1); glVertex2f(x1,y1);
-        glTexCoord2f(0,1); glVertex2f(x0,y1);
-        glEnd();    
-        glDisable(GL_TEXTURE_2D);
-
+        show(rx + (rw - w)/2, ry + (rh - h)/2, w, h);
         glBindTexture(GL_TEXTURE_2D, 0);
 
         std::ostringstream ss; ss << stream << ": " << intrin.width() << " x " << intrin.height() << " " << dev.get_stream_format(stream) << " (" << fps << "/" << dev.get_stream_framerate(stream) << ")";
