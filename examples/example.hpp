@@ -99,9 +99,28 @@ public:
         }
 
         show(rx + (rw - w)/2, ry + (rh - h)/2, w, h);
-        glBindTexture(GL_TEXTURE_2D, 0);
 
         std::ostringstream ss; ss << stream << ": " << intrin.width() << " x " << intrin.height() << " " << dev.get_stream_format(stream) << " (" << fps << "/" << dev.get_stream_framerate(stream) << ")";
+        ttf_print(&font, rx+8, ry+16, ss.str().c_str());
+    }
+
+    void show(const void * data, int width, int height, rs::format format, const std::string & caption, int rx, int ry, int rw, int rh, font & font)
+    {
+        if(!data) return;
+
+        upload(data, width, height, format);
+        
+        float h = rh, w = rh * width / height;
+        if(w > rw)
+        {
+            float scale = rw/w;
+            w *= scale;
+            h *= scale;
+        }
+
+        show(rx + (rw - w)/2, ry + (rh - h)/2, w, h);
+
+        std::ostringstream ss; ss << caption << ": " << width << " x " << height << " " << format;
         ttf_print(&font, rx+8, ry+16, ss.str().c_str());
     }
 };
