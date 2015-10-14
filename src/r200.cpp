@@ -61,7 +61,7 @@ namespace rsimpl
         const static struct { int w, h, uvc_w, uvc_h, lr_intrin, z_intrin; } lrz_modes[] = {
             {640, 480,   640, 481,  LR_FULL, Z_FULL},
             {492, 372,   640, 373,  LR_BIG,  Z_BIG },
-            // {332, 252,   640, 254,  LR_QRES, Z_QRES} // TODO: Fix QRES
+            {332, 252,   640, 254,  LR_QRES, Z_QRES}
         };
 
         static_device_info info;
