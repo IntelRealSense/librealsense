@@ -54,10 +54,11 @@ namespace rsimpl
 
     std::shared_ptr<rs_device> make_r200_device(std::shared_ptr<uvc::device> device)
     {
+		// Sterling comment. Why is this here? 
         const uvc::guid DS_LEFT_RIGHT_XU = {0x18682d34, 0xdd2c, 0x4073, {0xad, 0x23, 0x72, 0x14, 0x73, 0x9a, 0x07, 0x4c}};
         init_controls(*device, 0, DS_LEFT_RIGHT_XU);
 
-        enum { LR_FULL, LR_BIG, LR_QRES, Z_FULL, Z_BIG, Z_QRES, THIRD_HD, THIRD_VGA, NUM_INTRINSICS };
+        enum { LR_FULL, LR_BIG, LR_QRES, Z_FULL, Z_BIG, Z_QRES, THIRD_HD, THIRD_VGA, THIRD_QRES, NUM_INTRINSICS };
         const static struct { int w, h, uvc_w, uvc_h, lr_intrin, z_intrin; } lrz_modes[] = {
             {640, 480,   640, 481,  LR_FULL, Z_FULL},
             {492, 372,   640, 373,  LR_BIG,  Z_BIG },
@@ -87,6 +88,10 @@ namespace rsimpl
         }
 
         // Set up modes for third images (TODO: 15?)
+		// We can stream 320x240 from DS4, but no recification table exists...
+		//info.subdevice_modes.push_back({2,  320,  240, 'YUY2', 30, {{RS_STREAM_COLOR,  320,  240, RS_FORMAT_YUYV, 30, THIRD_QRES}}, &unpack_subrect, &decode_yuy2_frame_number, true});
+		//info.subdevice_modes.push_back({2,  320,  240, 'YUY2', 60, {{RS_STREAM_COLOR,  320,  240, RS_FORMAT_YUYV, 60, THIRD_QRES}}, &unpack_subrect, &decode_yuy2_frame_number, true});
+
         info.subdevice_modes.push_back({2,  640,  480, 'YUY2', 60, {{RS_STREAM_COLOR,  640,  480, RS_FORMAT_YUYV, 60, THIRD_VGA}}, &unpack_subrect, &decode_yuy2_frame_number, true});
         info.subdevice_modes.push_back({2,  640,  480, 'YUY2', 30, {{RS_STREAM_COLOR,  640,  480, RS_FORMAT_YUYV, 30, THIRD_VGA}}, &unpack_subrect, &decode_yuy2_frame_number, true});
         info.subdevice_modes.push_back({2, 1920, 1080, 'YUY2', 30, {{RS_STREAM_COLOR, 1920, 1080, RS_FORMAT_YUYV, 30, THIRD_HD }}, &unpack_subrect, &decode_yuy2_frame_number, true});
@@ -111,9 +116,11 @@ namespace rsimpl
         info.presets[RS_STREAM_DEPTH   ][RS_PRESET_HIGHEST_FRAMERATE] = {true, 480, 360, RS_FORMAT_Z16,  90};
         info.presets[RS_STREAM_COLOR   ][RS_PRESET_HIGHEST_FRAMERATE] = {true, 640, 480, RS_FORMAT_RGB8, 60};
 
-        for(int i=0; i<RS_PRESET_COUNT; ++i) info.presets[RS_STREAM_INFRARED2][i] = info.presets[RS_STREAM_INFRARED][i];
+        for(int i=0; i<RS_PRESET_COUNT; ++i) 
+			info.presets[RS_STREAM_INFRARED2][i] = info.presets[RS_STREAM_INFRARED][i];
 
-        for(int i = RS_OPTION_R200_LR_AUTO_EXPOSURE_ENABLED; i <= RS_OPTION_R200_DISPARITY_SHIFT; ++i) info.option_supported[i] = true;
+        for(int i = RS_OPTION_R200_LR_AUTO_EXPOSURE_ENABLED; i <= RS_OPTION_R200_DISPARITY_SHIFT; ++i)
+			info.option_supported[i] = true;
 
         r200::CameraCalibrationParameters c;
         r200::CameraHeaderInfo h;
@@ -131,13 +138,26 @@ namespace rsimpl
         intrinsics[Z_QRES] = MakeDepthIntrinsics(c.modesLR[2]);
         intrinsics[THIRD_HD] = MakeColorIntrinsics(c.intrinsicsThird[0]);
         intrinsics[THIRD_VGA] = MakeColorIntrinsics(c.intrinsicsThird[1]);
+
+		//Fixme -- qres isn't a thing
+		//intrinsics[THIRD_QRES] = MakeColorIntrinsics(c.intrinsicsThird[2]);
+
         info.stream_poses[RS_STREAM_DEPTH] = {{{1,0,0},{0,1,0},{0,0,1}}, {0,0,0}};
         info.stream_poses[RS_STREAM_INFRARED] = {{{1,0,0},{0,1,0},{0,0,1}}, {0,0,0}};
-        info.stream_poses[RS_STREAM_INFRARED2] = {{{1,0,0},{0,1,0},{0,0,1}}, {c.B[0] * 0.001f, 0, 0}};
-        for(int i=0; i<3; ++i) for(int j=0; j<3; ++j) info.stream_poses[RS_STREAM_COLOR].orientation(i,j) = c.Rthird[0][i*3+j];
-        for(int i=0; i<3; ++i) info.stream_poses[RS_STREAM_COLOR].position[i] = c.T[0][i] * 0.001f;
+        info.stream_poses[RS_STREAM_INFRARED2] = {{{1,0,0},{0,1,0},{0,0,1}}, {c.B[0] * 0.001f, 0, 0}}; // Sterling comment
+
+		// Sterling comment
+        for(int i=0; i<3; ++i) for(int j=0; j<3; ++j) 
+			info.stream_poses[RS_STREAM_COLOR].orientation(i,j) = c.Rthird[0][i*3+j];
+
+		// Sterling comment
+        for(int i=0; i<3; ++i) 
+			info.stream_poses[RS_STREAM_COLOR].position[i] = c.T[0][i] * 0.001f;
+
         info.stream_poses[RS_STREAM_COLOR].position = info.stream_poses[RS_STREAM_COLOR].orientation * info.stream_poses[RS_STREAM_COLOR].position;
         info.depth_scale = 0.001f;
+
+		// Sterling comment
         info.num_libuvc_transfer_buffers = 4;
 
         return std::make_shared<r200_camera>(device, info, intrinsics);
