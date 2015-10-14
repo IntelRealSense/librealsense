@@ -37,9 +37,9 @@ namespace rsimpl
         return {(int)i.rw-12, (int)i.rh-12, i.rpx-6, i.rpy-6, i.rfx, i.rfy, RS_DISTORTION_NONE, {0,0,0,0,0}};
     }
 
-    static rs_intrinsics MakeColorIntrinsics(const r200::UnrectifiedIntrinsics & i)
+    static rs_intrinsics MakeColorIntrinsics(const r200::UnrectifiedIntrinsics & i, int denom)
     {
-        return {(int)i.w, (int)i.h, i.px, i.py, i.fx, i.fy, RS_DISTORTION_MODIFIED_BROWN_CONRADY, {i.k[0],i.k[1],i.k[2],i.k[3],i.k[4]}};
+        return {(int)i.w/denom, (int)i.h/denom, i.px/denom, i.py/denom, i.fx/denom, i.fy/denom, RS_DISTORTION_MODIFIED_BROWN_CONRADY, {i.k[0],i.k[1],i.k[2],i.k[3],i.k[4]}};
     }
 
     r200_camera::r200_camera(std::shared_ptr<uvc::device> device, const static_device_info & info, std::vector<rs_intrinsics> intrinsics) : rs_device(device, info)
@@ -54,9 +54,10 @@ namespace rsimpl
 
     std::shared_ptr<rs_device> make_r200_device(std::shared_ptr<uvc::device> device)
     {
-		// Sterling comment. Why is this here? 
-        const uvc::guid DS_LEFT_RIGHT_XU = {0x18682d34, 0xdd2c, 0x4073, {0xad, 0x23, 0x72, 0x14, 0x73, 0x9a, 0x07, 0x4c}};
-        init_controls(*device, 0, DS_LEFT_RIGHT_XU);
+		// Retrieve the extension unit for the R200's left/right infrared camera
+        // This XU is used for all commands related to retrieving calibration information and setting depth generation settings
+        const uvc::guid R200_LEFT_RIGHT_XU = {0x18682d34, 0xdd2c, 0x4073, {0xad, 0x23, 0x72, 0x14, 0x73, 0x9a, 0x07, 0x4c}};
+        init_controls(*device, 0, R200_LEFT_RIGHT_XU);
 
         enum { LR_FULL, LR_BIG, LR_QRES, Z_FULL, Z_BIG, Z_QRES, THIRD_HD, THIRD_VGA, THIRD_QRES, NUM_INTRINSICS };
         const static struct { int w, h, uvc_w, uvc_h, lr_intrin, z_intrin; } lrz_modes[] = {
@@ -87,11 +88,9 @@ namespace rsimpl
             }
         }
 
-        // Set up modes for third images (TODO: 15?)
-		// We can stream 320x240 from DS4, but no recification table exists...
-		//info.subdevice_modes.push_back({2,  320,  240, 'YUY2', 30, {{RS_STREAM_COLOR,  320,  240, RS_FORMAT_YUYV, 30, THIRD_QRES}}, &unpack_subrect, &decode_yuy2_frame_number, true});
-		//info.subdevice_modes.push_back({2,  320,  240, 'YUY2', 60, {{RS_STREAM_COLOR,  320,  240, RS_FORMAT_YUYV, 60, THIRD_QRES}}, &unpack_subrect, &decode_yuy2_frame_number, true});
-
+        // Set up modes for third images (TODO: 15 FPS?)
+		info.subdevice_modes.push_back({2,  320,  240, 'YUY2', 60, {{RS_STREAM_COLOR,  320,  240, RS_FORMAT_YUYV, 60, THIRD_QRES}}, &unpack_subrect, &decode_yuy2_frame_number, true});
+        info.subdevice_modes.push_back({2,  320,  240, 'YUY2', 30, {{RS_STREAM_COLOR,  320,  240, RS_FORMAT_YUYV, 30, THIRD_QRES}}, &unpack_subrect, &decode_yuy2_frame_number, true});
         info.subdevice_modes.push_back({2,  640,  480, 'YUY2', 60, {{RS_STREAM_COLOR,  640,  480, RS_FORMAT_YUYV, 60, THIRD_VGA}}, &unpack_subrect, &decode_yuy2_frame_number, true});
         info.subdevice_modes.push_back({2,  640,  480, 'YUY2', 30, {{RS_STREAM_COLOR,  640,  480, RS_FORMAT_YUYV, 30, THIRD_VGA}}, &unpack_subrect, &decode_yuy2_frame_number, true});
         info.subdevice_modes.push_back({2, 1920, 1080, 'YUY2', 30, {{RS_STREAM_COLOR, 1920, 1080, RS_FORMAT_YUYV, 30, THIRD_HD }}, &unpack_subrect, &decode_yuy2_frame_number, true});
@@ -136,28 +135,28 @@ namespace rsimpl
         intrinsics[Z_FULL] = MakeDepthIntrinsics(c.modesLR[0]);
         intrinsics[Z_BIG] = MakeDepthIntrinsics(c.modesLR[1]);
         intrinsics[Z_QRES] = MakeDepthIntrinsics(c.modesLR[2]);
-        intrinsics[THIRD_HD] = MakeColorIntrinsics(c.intrinsicsThird[0]);
-        intrinsics[THIRD_VGA] = MakeColorIntrinsics(c.intrinsicsThird[1]);
+        intrinsics[THIRD_HD] = MakeColorIntrinsics(c.intrinsicsThird[0],1);
+        intrinsics[THIRD_VGA] = MakeColorIntrinsics(c.intrinsicsThird[1],1);
+        intrinsics[THIRD_QRES] = MakeColorIntrinsics(c.intrinsicsThird[1],2);
 
-		//Fixme -- qres isn't a thing
-		//intrinsics[THIRD_QRES] = MakeColorIntrinsics(c.intrinsicsThird[2]);
-
+        // We select the depth/left infrared camera's viewpoint to be the origin
         info.stream_poses[RS_STREAM_DEPTH] = {{{1,0,0},{0,1,0},{0,0,1}}, {0,0,0}};
         info.stream_poses[RS_STREAM_INFRARED] = {{{1,0,0},{0,1,0},{0,0,1}}, {0,0,0}};
+
+        // The right infrared camera is offset along the +x axis by the baseline (B)
         info.stream_poses[RS_STREAM_INFRARED2] = {{{1,0,0},{0,1,0},{0,0,1}}, {c.B[0] * 0.001f, 0, 0}}; // Sterling comment
 
-		// Sterling comment
+		// The transformation between the depth camera and third camera is described by a translation vector (T), followed by rotation matrix (Rthird)
         for(int i=0; i<3; ++i) for(int j=0; j<3; ++j) 
 			info.stream_poses[RS_STREAM_COLOR].orientation(i,j) = c.Rthird[0][i*3+j];
-
-		// Sterling comment
         for(int i=0; i<3; ++i) 
 			info.stream_poses[RS_STREAM_COLOR].position[i] = c.T[0][i] * 0.001f;
 
+        // Our position is added AFTER orientation is applied, not before, so we must multiply Rthird * T to compute it
         info.stream_poses[RS_STREAM_COLOR].position = info.stream_poses[RS_STREAM_COLOR].orientation * info.stream_poses[RS_STREAM_COLOR].position;
         info.depth_scale = 0.001f;
 
-		// Sterling comment
+		// On LibUVC backends, the R200 should use four transfer buffers
         info.num_libuvc_transfer_buffers = 4;
 
         return std::make_shared<r200_camera>(device, info, intrinsics);

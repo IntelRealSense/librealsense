@@ -16,6 +16,7 @@ int main(int argc, char * argv[]) try
 
     // Configure our device
     rs::device dev = ctx.get_device(0);
+    //dev.enable_stream(rs::stream::color, 320, 240, rs::format::rgb8, 60);
     dev.enable_stream(rs::stream::color, rs::preset::best_quality);
     dev.enable_stream(rs::stream::depth, rs::preset::best_quality);
     dev.enable_stream(rs::stream::infrared, 0, 0, rs::format::any, 0);
