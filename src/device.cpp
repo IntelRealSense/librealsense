@@ -291,13 +291,50 @@ int rs_device::get_frame_timestamp(rs_stream stream) const
 #define RSUTIL_IMPLEMENTATION
 #include "../include/librealsense/rsutil.h"
 
-void rs_align_images(void * depth_aligned_to_color, void * color_aligned_to_depth, const void * depth_pixels, rs_format depth_format, float depth_scale, const rs_intrinsics * depth_intrin, const rs_extrinsics * depth_to_color, const rs_intrinsics * color_intrin, const void * color_pixels, rs_format color_format)
+void rs_align_depth_to_color(void * depth_aligned_to_color, const void * depth_pixels, rs_format depth_format, float depth_scale, const rs_intrinsics * depth_intrin, const rs_extrinsics * depth_to_color, const rs_intrinsics * color_intrin)
+{
+    assert(depth_format == RS_FORMAT_Z16);
+    const uint16_t * in_depth = (const uint16_t *)(depth_pixels);
+    uint16_t * out_depth = (uint16_t *)(depth_aligned_to_color);
+    int depth_x, depth_y, depth_pixel_index, color_x, color_y, color_pixel_index;
+
+    // Iterate over the pixels of the depth image       
+    for(depth_y = 0; depth_y < depth_intrin->height; ++depth_y)
+    {
+        for(depth_x = 0; depth_x < depth_intrin->width; ++depth_x)
+        {
+            // Skip over depth pixels with the value of zero, we have no depth data so we will not write anything into our aligned images
+            depth_pixel_index = depth_y * depth_intrin->width + depth_x;
+            if(in_depth[depth_pixel_index])
+            {
+                // Determine the corresponding pixel location in our color image
+                float depth_pixel[2] = {depth_x, depth_y}, depth_point[3], color_point[3], color_pixel[2];
+                rs_deproject_pixel_to_point(depth_point, depth_intrin, depth_pixel, in_depth[depth_pixel_index] * depth_scale);
+                rs_transform_point_to_point(color_point, depth_to_color, depth_point);
+                rs_project_point_to_pixel(color_pixel, color_intrin, color_point);
+                
+                // If the location is outside the bounds of the image, skip to the next pixel
+                color_x = (int)roundf(color_pixel[0]);
+                color_y = (int)roundf(color_pixel[1]);
+                if(color_x < 0 || color_y < 0 || color_x >= color_intrin->width || color_y >= color_intrin->height)
+                {
+                    continue;
+                }
+
+                // Transfer data from original images into corresponding aligned images
+                color_pixel_index = color_y * color_intrin->width + color_x;
+                out_depth[color_pixel_index] = in_depth[depth_pixel_index];
+            }
+        }
+    }
+}
+
+void rs_align_color_to_depth(void * color_aligned_to_depth, const void * depth_pixels, rs_format depth_format, float depth_scale, const rs_intrinsics * depth_intrin, const rs_extrinsics * depth_to_color, const rs_intrinsics * color_intrin, const void * color_pixels, rs_format color_format)
 {
     assert(depth_format == RS_FORMAT_Z16);
     assert(color_format == RS_FORMAT_RGB8);
     const uint16_t * in_depth = (const uint16_t *)(depth_pixels);
     const rs_byte3 * in_color = (const rs_byte3 *)(color_pixels);
-    uint16_t * out_depth = (uint16_t *)(depth_aligned_to_color);
     rs_byte3 * out_color = (rs_byte3 *)(color_aligned_to_depth);
     int depth_x, depth_y, depth_pixel_index, color_x, color_y, color_pixel_index;
 
@@ -327,7 +364,6 @@ void rs_align_images(void * depth_aligned_to_color, void * color_aligned_to_dept
                 // Transfer data from original images into corresponding aligned images
                 color_pixel_index = color_y * color_intrin->width + color_x;
                 out_color[depth_pixel_index] = in_color[color_pixel_index];
-                out_depth[color_pixel_index] = in_depth[depth_pixel_index];
             }
         }
     }
@@ -359,7 +395,19 @@ const void * rs_device::get_frame_data(rs_stream stream) const
             rectified_color.resize(get_image_size(rect_intrin.width, rect_intrin.height, format));
             rs_rectify_image(rectified_color.data(), &rect_intrin, rectification_table.data(), get_frame_data(RS_STREAM_COLOR), format);
         }
-        else
+        else if(stream == RS_STREAM_COLOR_ALIGNED_TO_DEPTH)
+        {
+            auto depth_intrin = get_stream_intrinsics(RS_STREAM_DEPTH);
+            auto color_intrin = get_stream_intrinsics(RS_STREAM_COLOR);
+            auto depth_to_color = get_extrinsics(RS_STREAM_DEPTH, RS_STREAM_COLOR);
+
+            auto & color_aligned_to_depth = synthetic_images[RS_STREAM_COLOR_ALIGNED_TO_DEPTH - RS_STREAM_NATIVE_COUNT];
+            color_aligned_to_depth.resize(rsimpl::get_image_size(depth_intrin.width, depth_intrin.height, get_stream_format(RS_STREAM_COLOR)));
+            memset(color_aligned_to_depth.data(), 0, color_aligned_to_depth.size());
+            rs_align_color_to_depth(color_aligned_to_depth.data(), get_frame_data(RS_STREAM_DEPTH), get_stream_format(RS_STREAM_DEPTH), get_depth_scale(), &depth_intrin, &depth_to_color, &color_intrin, get_frame_data(RS_STREAM_COLOR), get_stream_format(RS_STREAM_COLOR));           
+            synthetic_timestamps[RS_STREAM_COLOR_ALIGNED_TO_DEPTH - RS_STREAM_NATIVE_COUNT] = get_frame_timestamp(RS_STREAM_COLOR);
+        }
+        else if(stream == RS_STREAM_DEPTH_ALIGNED_TO_COLOR)
         {
             auto depth_intrin = get_stream_intrinsics(RS_STREAM_DEPTH);
             auto color_intrin = get_stream_intrinsics(RS_STREAM_COLOR);
@@ -368,17 +416,20 @@ const void * rs_device::get_frame_data(rs_stream stream) const
             auto & depth_aligned_to_color = synthetic_images[RS_STREAM_DEPTH_ALIGNED_TO_COLOR - RS_STREAM_NATIVE_COUNT];
             depth_aligned_to_color.resize(rsimpl::get_image_size(color_intrin.width, color_intrin.height, get_stream_format(RS_STREAM_DEPTH)));
             memset(depth_aligned_to_color.data(), 0, depth_aligned_to_color.size());
-
-            auto & color_aligned_to_depth = synthetic_images[RS_STREAM_COLOR_ALIGNED_TO_DEPTH - RS_STREAM_NATIVE_COUNT];
-            color_aligned_to_depth.resize(rsimpl::get_image_size(depth_intrin.width, depth_intrin.height, get_stream_format(RS_STREAM_COLOR)));
-            memset(color_aligned_to_depth.data(), 0, color_aligned_to_depth.size());
-
-            rs_align_images(depth_aligned_to_color.data(), color_aligned_to_depth.data(),
-                get_frame_data(RS_STREAM_DEPTH), get_stream_format(RS_STREAM_DEPTH), get_depth_scale(), &depth_intrin,
-                &depth_to_color, &color_intrin, get_frame_data(RS_STREAM_COLOR), get_stream_format(RS_STREAM_COLOR));    
-
+            rs_align_depth_to_color(depth_aligned_to_color.data(), get_frame_data(RS_STREAM_DEPTH), get_stream_format(RS_STREAM_DEPTH), get_depth_scale(), &depth_intrin, &depth_to_color, &color_intrin);   
             synthetic_timestamps[RS_STREAM_DEPTH_ALIGNED_TO_COLOR - RS_STREAM_NATIVE_COUNT] = get_frame_timestamp(RS_STREAM_DEPTH);
-            synthetic_timestamps[RS_STREAM_COLOR_ALIGNED_TO_DEPTH - RS_STREAM_NATIVE_COUNT] = get_frame_timestamp(RS_STREAM_COLOR);
+        }
+        else if(stream == RS_STREAM_DEPTH_ALIGNED_TO_RECTIFIED_COLOR)
+        {
+            auto depth_intrin = get_stream_intrinsics(RS_STREAM_DEPTH);
+            auto color_intrin = get_stream_intrinsics(RS_STREAM_RECTIFIED_COLOR);
+            auto depth_to_color = get_extrinsics(RS_STREAM_DEPTH, RS_STREAM_RECTIFIED_COLOR);
+
+            auto & depth_aligned_to_color = synthetic_images[RS_STREAM_DEPTH_ALIGNED_TO_RECTIFIED_COLOR - RS_STREAM_NATIVE_COUNT];
+            depth_aligned_to_color.resize(rsimpl::get_image_size(color_intrin.width, color_intrin.height, get_stream_format(RS_STREAM_DEPTH)));
+            memset(depth_aligned_to_color.data(), 0, depth_aligned_to_color.size());
+            rs_align_depth_to_color(depth_aligned_to_color.data(), get_frame_data(RS_STREAM_DEPTH), get_stream_format(RS_STREAM_DEPTH), get_depth_scale(), &depth_intrin, &depth_to_color, &color_intrin);   
+            synthetic_timestamps[RS_STREAM_DEPTH_ALIGNED_TO_RECTIFIED_COLOR - RS_STREAM_NATIVE_COUNT] = get_frame_timestamp(RS_STREAM_DEPTH);
         }
     }
     return synthetic_images[stream - RS_STREAM_NATIVE_COUNT].data();
