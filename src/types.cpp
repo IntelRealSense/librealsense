@@ -17,8 +17,10 @@ namespace rsimpl
         CASE(COLOR)
         CASE(INFRARED)
         CASE(INFRARED2)
-        CASE(DEPTH_ALIGNED_TO_COLOR)
+        CASE(RECTIFIED_COLOR)
         CASE(COLOR_ALIGNED_TO_DEPTH)
+        CASE(DEPTH_ALIGNED_TO_COLOR)
+        CASE(DEPTH_ALIGNED_TO_RECTIFIED_COLOR)
         default: assert(!is_valid(value)); return nullptr;
         }
         #undef CASE

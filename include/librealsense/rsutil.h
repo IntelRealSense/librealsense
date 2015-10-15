@@ -38,7 +38,7 @@ void rs_rectify_image(void * rect_pixels, const rs_intrinsics * rect_intrin, con
 #include "assert.h" /* for assert(...) */
 #include "math.h" /* for roundf(...) */
 
-static void rs_project_point_to_pixel(float pixel[2], const struct rs_intrinsics * intrin, const float point[3])
+void rs_project_point_to_pixel(float pixel[2], const struct rs_intrinsics * intrin, const float point[3])
 {
     assert(intrin->model != RS_DISTORTION_INVERSE_BROWN_CONRADY); // Cannot project to an inverse-distorted image
 
@@ -58,7 +58,7 @@ static void rs_project_point_to_pixel(float pixel[2], const struct rs_intrinsics
     pixel[1] = y * intrin->fy + intrin->ppy;
 }
 
-static void rs_deproject_pixel_to_point(float point[3], const struct rs_intrinsics * intrin, const float pixel[2], float depth)
+void rs_deproject_pixel_to_point(float point[3], const struct rs_intrinsics * intrin, const float pixel[2], float depth)
 {
     assert(intrin->model != RS_DISTORTION_MODIFIED_BROWN_CONRADY); // Cannot deproject from a forward-distorted image
 

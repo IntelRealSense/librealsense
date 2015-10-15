@@ -21,6 +21,7 @@ private:
     int64_t                                     base_timestamp;
     int                                         last_stream_timestamp;
 
+    mutable std::vector<int>                    rectification_table;
     mutable std::vector<uint8_t>                synthetic_images[RS_STREAM_COUNT - RS_STREAM_NATIVE_COUNT];
     mutable int                                 synthetic_timestamps[RS_STREAM_COUNT - RS_STREAM_NATIVE_COUNT];
 protected:
@@ -33,6 +34,7 @@ public:
                                                 ~rs_device();
 
     const char *                                get_name() const { return device_info.name.c_str(); }
+    rsimpl::pose                                get_pose(rs_stream stream) const;
     rs_extrinsics                               get_extrinsics(rs_stream from, rs_stream to) const;
     float                                       get_depth_scale() const { return device_info.depth_scale; }
     bool                                        supports_option(rs_option option) const { return device_info.option_supported[option]; }

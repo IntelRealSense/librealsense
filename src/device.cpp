@@ -91,7 +91,8 @@ static rs_stream get_stream_intrinsics_native_stream(rs_stream stream)
     {
     case RS_STREAM_COLOR_ALIGNED_TO_DEPTH: return RS_STREAM_DEPTH;
     case RS_STREAM_DEPTH_ALIGNED_TO_COLOR: return RS_STREAM_COLOR;
-    default: assert(stream < RS_STREAM_NATIVE_COUNT); return stream;
+    case RS_STREAM_DEPTH_ALIGNED_TO_RECTIFIED_COLOR: return RS_STREAM_RECTIFIED_COLOR;
+    default: assert(stream < RS_STREAM_RECTIFIED_COLOR); return stream;
     }
 }
 
@@ -100,8 +101,10 @@ static rs_stream get_stream_data_native_stream(rs_stream stream)
 {
     switch(stream)
     {
+    case RS_STREAM_RECTIFIED_COLOR: return RS_STREAM_COLOR;
     case RS_STREAM_COLOR_ALIGNED_TO_DEPTH: return RS_STREAM_COLOR;
     case RS_STREAM_DEPTH_ALIGNED_TO_COLOR: return RS_STREAM_DEPTH;
+    case RS_STREAM_DEPTH_ALIGNED_TO_RECTIFIED_COLOR: return RS_STREAM_DEPTH;
     default: assert(stream < RS_STREAM_NATIVE_COUNT); return stream;
     }
 }
@@ -116,8 +119,17 @@ bool rs_device::is_stream_enabled(rs_stream stream) const
 
 rs_intrinsics rs_device::get_stream_intrinsics(rs_stream stream) const 
 {
-    std::lock_guard<std::mutex> lock(intrinsics_mutex); 
-    return intrinsics[get_current_stream_mode(get_stream_intrinsics_native_stream(stream)).intrinsics_index];
+    std::lock_guard<std::mutex> lock(intrinsics_mutex);
+
+    stream = get_stream_intrinsics_native_stream(stream);
+    if(stream == RS_STREAM_RECTIFIED_COLOR)
+    {
+        auto intrin = intrinsics[get_current_stream_mode(RS_STREAM_COLOR).intrinsics_index];
+        intrin.model = RS_DISTORTION_NONE;
+        memset(&intrin.coeffs, 0, sizeof(intrin.coeffs));
+        return intrin;
+    }
+    else return intrinsics[get_current_stream_mode(stream).intrinsics_index];
 }
 
 rs_format rs_device::get_stream_format(rs_stream stream) const
@@ -331,24 +343,43 @@ const void * rs_device::get_frame_data(rs_stream stream) const
 
     if(synthetic_images[stream - RS_STREAM_NATIVE_COUNT].empty() || synthetic_timestamps[stream - RS_STREAM_NATIVE_COUNT] != get_frame_timestamp(get_stream_data_native_stream(stream)))
     {
-        auto depth_intrin = get_stream_intrinsics(RS_STREAM_DEPTH);
-        auto color_intrin = get_stream_intrinsics(RS_STREAM_COLOR);
-        auto depth_to_color = get_extrinsics(RS_STREAM_DEPTH, RS_STREAM_COLOR);
+        if(stream == RS_STREAM_RECTIFIED_COLOR)
+        {
+            const auto rect_intrin = get_stream_intrinsics(RS_STREAM_RECTIFIED_COLOR);
+            if(rectification_table.empty())
+            {
+                const auto unrect_intrin = get_stream_intrinsics(RS_STREAM_COLOR);
+                const auto rect_extrin = get_extrinsics(RS_STREAM_DEPTH, RS_STREAM_RECTIFIED_COLOR), unrect_extrin = get_extrinsics(RS_STREAM_DEPTH, RS_STREAM_COLOR);
+                rectification_table.resize(rect_intrin.width * rect_intrin.height);
+                rs_compute_rectification_table(rectification_table.data(), &rect_intrin, &rect_extrin, &unrect_intrin, &unrect_extrin);
+            }
+            
+            const auto format = get_stream_format(RS_STREAM_COLOR);
+            auto & rectified_color = synthetic_images[RS_STREAM_RECTIFIED_COLOR - RS_STREAM_NATIVE_COUNT];
+            rectified_color.resize(get_image_size(rect_intrin.width, rect_intrin.height, format));
+            rs_rectify_image(rectified_color.data(), &rect_intrin, rectification_table.data(), get_frame_data(RS_STREAM_COLOR), format);
+        }
+        else
+        {
+            auto depth_intrin = get_stream_intrinsics(RS_STREAM_DEPTH);
+            auto color_intrin = get_stream_intrinsics(RS_STREAM_COLOR);
+            auto depth_to_color = get_extrinsics(RS_STREAM_DEPTH, RS_STREAM_COLOR);
 
-        auto & depth_aligned_to_color = synthetic_images[RS_STREAM_DEPTH_ALIGNED_TO_COLOR - RS_STREAM_NATIVE_COUNT];
-        depth_aligned_to_color.resize(rsimpl::get_image_size(color_intrin.width, color_intrin.height, get_stream_format(RS_STREAM_DEPTH)));
-        memset(depth_aligned_to_color.data(), 0, depth_aligned_to_color.size());
+            auto & depth_aligned_to_color = synthetic_images[RS_STREAM_DEPTH_ALIGNED_TO_COLOR - RS_STREAM_NATIVE_COUNT];
+            depth_aligned_to_color.resize(rsimpl::get_image_size(color_intrin.width, color_intrin.height, get_stream_format(RS_STREAM_DEPTH)));
+            memset(depth_aligned_to_color.data(), 0, depth_aligned_to_color.size());
 
-        auto & color_aligned_to_depth = synthetic_images[RS_STREAM_COLOR_ALIGNED_TO_DEPTH - RS_STREAM_NATIVE_COUNT];
-        color_aligned_to_depth.resize(rsimpl::get_image_size(depth_intrin.width, depth_intrin.height, get_stream_format(RS_STREAM_COLOR)));
-        memset(color_aligned_to_depth.data(), 0, color_aligned_to_depth.size());
+            auto & color_aligned_to_depth = synthetic_images[RS_STREAM_COLOR_ALIGNED_TO_DEPTH - RS_STREAM_NATIVE_COUNT];
+            color_aligned_to_depth.resize(rsimpl::get_image_size(depth_intrin.width, depth_intrin.height, get_stream_format(RS_STREAM_COLOR)));
+            memset(color_aligned_to_depth.data(), 0, color_aligned_to_depth.size());
 
-        rs_align_images(depth_aligned_to_color.data(), color_aligned_to_depth.data(),
-            get_frame_data(RS_STREAM_DEPTH), get_stream_format(RS_STREAM_DEPTH), get_depth_scale(), &depth_intrin,
-            &depth_to_color, &color_intrin, get_frame_data(RS_STREAM_COLOR), get_stream_format(RS_STREAM_COLOR));    
+            rs_align_images(depth_aligned_to_color.data(), color_aligned_to_depth.data(),
+                get_frame_data(RS_STREAM_DEPTH), get_stream_format(RS_STREAM_DEPTH), get_depth_scale(), &depth_intrin,
+                &depth_to_color, &color_intrin, get_frame_data(RS_STREAM_COLOR), get_stream_format(RS_STREAM_COLOR));    
 
-        synthetic_timestamps[RS_STREAM_DEPTH_ALIGNED_TO_COLOR - RS_STREAM_NATIVE_COUNT] = get_frame_timestamp(RS_STREAM_DEPTH);
-        synthetic_timestamps[RS_STREAM_COLOR_ALIGNED_TO_DEPTH - RS_STREAM_NATIVE_COUNT] = get_frame_timestamp(RS_STREAM_COLOR);
+            synthetic_timestamps[RS_STREAM_DEPTH_ALIGNED_TO_COLOR - RS_STREAM_NATIVE_COUNT] = get_frame_timestamp(RS_STREAM_DEPTH);
+            synthetic_timestamps[RS_STREAM_COLOR_ALIGNED_TO_DEPTH - RS_STREAM_NATIVE_COUNT] = get_frame_timestamp(RS_STREAM_COLOR);
+        }
     }
     return synthetic_images[stream - RS_STREAM_NATIVE_COUNT].data();
 } 
@@ -370,10 +401,15 @@ rsimpl::stream_mode rs_device::get_current_stream_mode(rs_stream stream) const
     throw std::runtime_error(to_string() << "stream not enabled: " << stream);
 }
 
+rsimpl::pose rs_device::get_pose(rs_stream stream) const
+{
+    if(stream == RS_STREAM_RECTIFIED_COLOR) return {device_info.stream_poses[RS_STREAM_DEPTH].orientation, device_info.stream_poses[RS_STREAM_COLOR].position};
+    else return device_info.stream_poses[get_stream_intrinsics_native_stream(stream)];
+}
+
 rs_extrinsics rs_device::get_extrinsics(rs_stream from, rs_stream to) const
 {
-    // TODO: Adjust for synthetic streams
-    auto transform = inverse(device_info.stream_poses[get_stream_intrinsics_native_stream(from)]) * device_info.stream_poses[get_stream_intrinsics_native_stream(to)];
+    auto transform = inverse(get_pose(from)) * get_pose(to);
     rs_extrinsics extrin;
     (float3x3 &)extrin.rotation = transform.orientation;
     (float3 &)extrin.translation = transform.position;

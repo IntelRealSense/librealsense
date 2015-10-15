@@ -15,72 +15,74 @@ namespace rs
 {
     enum class stream : int32_t
     {
-        depth                           = RS_STREAM_DEPTH,
-        color                           = RS_STREAM_COLOR,
-        infrared                        = RS_STREAM_INFRARED,
-        infrared2                       = RS_STREAM_INFRARED2,
-        depth_aligned_to_color          = RS_STREAM_DEPTH_ALIGNED_TO_COLOR,
-        color_aligned_to_depth          = RS_STREAM_COLOR_ALIGNED_TO_DEPTH
+        depth                               = RS_STREAM_DEPTH,
+        color                               = RS_STREAM_COLOR,
+        infrared                            = RS_STREAM_INFRARED,
+        infrared2                           = RS_STREAM_INFRARED2,
+        rectified_color                     = RS_STREAM_RECTIFIED_COLOR,
+        color_aligned_to_depth              = RS_STREAM_COLOR_ALIGNED_TO_DEPTH,
+        depth_aligned_to_color              = RS_STREAM_DEPTH_ALIGNED_TO_COLOR,
+        depth_aligned_to_rectified_color    = RS_STREAM_DEPTH_ALIGNED_TO_RECTIFIED_COLOR
     };
 
     enum class format : int32_t
     {
-        any                             = RS_FORMAT_ANY,
-        z16                             = RS_FORMAT_Z16,
-        yuyv                            = RS_FORMAT_YUYV,
-        rgb8                            = RS_FORMAT_RGB8,
-        bgr8                            = RS_FORMAT_BGR8,
-        rgba8                           = RS_FORMAT_RGBA8,
-        bgra8                           = RS_FORMAT_BGRA8,
-        y8                              = RS_FORMAT_Y8,
-        y16                             = RS_FORMAT_Y16
+        any                                 = RS_FORMAT_ANY,
+        z16                                 = RS_FORMAT_Z16,
+        yuyv                                = RS_FORMAT_YUYV,
+        rgb8                                = RS_FORMAT_RGB8,
+        bgr8                                = RS_FORMAT_BGR8,
+        rgba8                               = RS_FORMAT_RGBA8,
+        bgra8                               = RS_FORMAT_BGRA8,
+        y8                                  = RS_FORMAT_Y8,
+        y16                                 = RS_FORMAT_Y16
     };
 
     enum class preset : int32_t
     {
-        best_quality                    = RS_PRESET_BEST_QUALITY,
-        largest_image                   = RS_PRESET_LARGEST_IMAGE,
-        highest_framerate               = RS_PRESET_HIGHEST_FRAMERATE
+        best_quality                        = RS_PRESET_BEST_QUALITY,
+        largest_image                       = RS_PRESET_LARGEST_IMAGE,
+        highest_framerate                   = RS_PRESET_HIGHEST_FRAMERATE
     };
 
     enum class distortion : int32_t
     {
-        none                            = RS_DISTORTION_NONE,
-        modified_brown_conrady          = RS_DISTORTION_MODIFIED_BROWN_CONRADY,
-        inverse_brown_conrady           = RS_DISTORTION_INVERSE_BROWN_CONRADY
+        none                                = RS_DISTORTION_NONE,
+        modified_brown_conrady              = RS_DISTORTION_MODIFIED_BROWN_CONRADY,
+        inverse_brown_conrady               = RS_DISTORTION_INVERSE_BROWN_CONRADY
     };
 
     enum class option : int32_t
     {
-        color_backlight_compensation    = RS_OPTION_COLOR_BACKLIGHT_COMPENSATION,
-        color_brightness                = RS_OPTION_COLOR_BRIGHTNESS,
-        color_contrast                  = RS_OPTION_COLOR_CONTRAST,
-        color_exposure                  = RS_OPTION_COLOR_EXPOSURE,
-        color_gain                      = RS_OPTION_COLOR_GAIN,
-        color_gamma                     = RS_OPTION_COLOR_GAMMA,
-        color_hue                       = RS_OPTION_COLOR_HUE,
-        color_saturation                = RS_OPTION_COLOR_SATURATION,
-        color_sharpness                 = RS_OPTION_COLOR_SHARPNESS,
-        color_white_balance             = RS_OPTION_COLOR_WHITE_BALANCE,
+        color_backlight_compensation        = RS_OPTION_COLOR_BACKLIGHT_COMPENSATION,
+        color_brightness                    = RS_OPTION_COLOR_BRIGHTNESS,
+        color_contrast                      = RS_OPTION_COLOR_CONTRAST,
+        color_exposure                      = RS_OPTION_COLOR_EXPOSURE,
+        color_gain                          = RS_OPTION_COLOR_GAIN,
+        color_gamma                         = RS_OPTION_COLOR_GAMMA,
+        color_hue                           = RS_OPTION_COLOR_HUE,
+        color_saturation                    = RS_OPTION_COLOR_SATURATION,
+        color_sharpness                     = RS_OPTION_COLOR_SHARPNESS,
+        color_white_balance                 = RS_OPTION_COLOR_WHITE_BALANCE,
 
-        f200_laser_power                = RS_OPTION_F200_LASER_POWER,
-        f200_accuracy                   = RS_OPTION_F200_ACCURACY,
-        f200_motion_range               = RS_OPTION_F200_MOTION_RANGE,
-        f200_filter_option              = RS_OPTION_F200_FILTER_OPTION,
-        f200_confidence_threshold       = RS_OPTION_F200_CONFIDENCE_THRESHOLD,
-        f200_dynamic_fps                = RS_OPTION_F200_DYNAMIC_FPS,
+        f200_laser_power                    = RS_OPTION_F200_LASER_POWER,
+        f200_accuracy                       = RS_OPTION_F200_ACCURACY,
+        f200_motion_range                   = RS_OPTION_F200_MOTION_RANGE,
+        f200_filter_option                  = RS_OPTION_F200_FILTER_OPTION,
+        f200_confidence_threshold           = RS_OPTION_F200_CONFIDENCE_THRESHOLD,
+        f200_dynamic_fps                    = RS_OPTION_F200_DYNAMIC_FPS,
 
-        r200_lr_auto_exposure_enabled   = RS_OPTION_R200_LR_AUTO_EXPOSURE_ENABLED,
-        r200_lr_gain                    = RS_OPTION_R200_LR_GAIN,
-        r200_lr_exposure                = RS_OPTION_R200_LR_EXPOSURE,
-        r200_emitter_enabled            = RS_OPTION_R200_EMITTER_ENABLED,
-        r200_depth_control_preset       = RS_OPTION_R200_DEPTH_CONTROL_PRESET,
-        r200_depth_units                = RS_OPTION_R200_DEPTH_UNITS,
-        r200_depth_clamp_min            = RS_OPTION_R200_DEPTH_CLAMP_MIN,
-        r200_depth_clamp_max            = RS_OPTION_R200_DEPTH_CLAMP_MAX,
-        r200_disparity_mode_enabled     = RS_OPTION_R200_DISPARITY_MODE_ENABLED,
-        r200_disparity_multiplier       = RS_OPTION_R200_DISPARITY_MULTIPLIER,
-        r200_disparity_shift            = RS_OPTION_R200_DISPARITY_SHIFT         
+        r200_lr_auto_exposure_enabled       = RS_OPTION_R200_LR_AUTO_EXPOSURE_ENABLED,
+        r200_lr_gain                        = RS_OPTION_R200_LR_GAIN,
+        r200_lr_exposure                    = RS_OPTION_R200_LR_EXPOSURE,
+        r200_emitter_enabled                = RS_OPTION_R200_EMITTER_ENABLED,
+        r200_depth_control_preset           = RS_OPTION_R200_DEPTH_CONTROL_PRESET,
+        r200_depth_units                    = RS_OPTION_R200_DEPTH_UNITS,
+        r200_depth_clamp_min                = RS_OPTION_R200_DEPTH_CLAMP_MIN,
+        r200_depth_clamp_max                = RS_OPTION_R200_DEPTH_CLAMP_MAX,
+        r200_disparity_mode_enabled         = RS_OPTION_R200_DISPARITY_MODE_ENABLED,
+        r200_disparity_multiplier           = RS_OPTION_R200_DISPARITY_MULTIPLIER,
+        r200_disparity_shift                = RS_OPTION_R200_DISPARITY_SHIFT         
     };
 
     class error : public std::runtime_error
