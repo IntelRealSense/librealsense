@@ -1,6 +1,4 @@
 #include <librealsense/rs.h>
-
-#define RSUTIL_IMPLEMENTATION
 #include <librealsense/rsutil.h>
 
 #include "example.h"
