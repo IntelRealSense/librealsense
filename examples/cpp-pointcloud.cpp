@@ -1,5 +1,5 @@
+#define RSUTIL_IMPLEMENTATION
 #include <librealsense/rs.hpp>
-#include <librealsense/rsutil.h>
 #include "example.hpp"
 
 #include <chrono>

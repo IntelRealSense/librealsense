@@ -7,6 +7,7 @@
 #include <cmath>        // For atan2f
 #include <cstdint>      // For int32_t
 #include <cstring>      // For memcmp
+#include <vector>       // For std::vector
 #include <ostream>      // For std::ostream
 #include <stdexcept>    // For std::runtime_error
 
@@ -197,6 +198,36 @@ namespace rs
     inline std::ostream &   operator << (std::ostream & out, preset preset)                         { for(auto s = rs_preset_to_string((rs_preset)preset);             *s; ++s) out << (char)tolower(*s); return out; }
     inline std::ostream &   operator << (std::ostream & out, distortion distortion)                 { for(auto s = rs_distortion_to_string((rs_distortion)distortion); *s; ++s) out << (char)tolower(*s); return out; }
     inline std::ostream &   operator << (std::ostream & out, option option)                         { for(auto s = rs_option_to_string((rs_option)option);             *s; ++s) out << (char)tolower(*s); return out; }
+
+    class rectifier
+    {
+        stream s;
+        intrinsics rect;
+        extrinsics depth_to_rect;
+        std::vector<uint8_t> image;
+        std::vector<int> table;
+    public:
+        rectifier(device & d, stream s) : s(s)
+        {
+            // Compute desired properties of rectified image
+            intrinsics unrect = d.get_stream_intrinsics(s);
+            extrinsics depth_to_unrect = d.get_extrinsics(stream::depth, s);
+            rs_compute_rectified_parameters(&rect.intrin, &depth_to_rect.extrin, &unrect.intrin, &depth_to_unrect.extrin);
+
+            // Allocate space to store rectified image
+            image.resize(rect.width() * rect.height() * 4); // TODO: Select based on format
+            
+            // Precompute a table of indices mapping from the rectified image to the unrectified image
+            table.resize(rect.width() * rect.height());
+            rs_compute_rectification_table(table.data(), &rect.intrin, &depth_to_rect.extrin, &unrect.intrin, &depth_to_unrect.extrin);
+        }
+
+        const rs::intrinsics & get_image_intrinsics() const { return rect; }
+        const rs::extrinsics & get_depth_to_image_extrinsics() const { return depth_to_rect; }
+        const void * get_image() const { return image.data(); }
+
+        void rectify(device & d) { rs_rectify_image(image.data(), &rect.intrin, table.data(), d.get_frame_data(s), (rs_format)d.get_stream_format(s)); }        
+    };
 }
 
 static_assert(sizeof(rs::intrinsics) == sizeof(rs_intrinsics), "struct layout error");

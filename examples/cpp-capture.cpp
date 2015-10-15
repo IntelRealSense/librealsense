@@ -1,3 +1,4 @@
+#define RSUTIL_IMPLEMENTATION
 #include <librealsense/rs.hpp>
 #include "example.hpp"
 
@@ -5,9 +6,11 @@
 #include <iostream>
 #include <iomanip>
 #include <thread>
+#include <algorithm>
 
 font font;
 texture_buffer buffers[RS_STREAM_COUNT];
+bool color_rectification_enabled = false;
 
 int main(int argc, char * argv[]) try
 {
@@ -52,10 +55,16 @@ int main(int argc, char * argv[]) try
         }
     }
 
+    auto rect_color = rs::rectifier(dev, rs::stream::color);
+
     // Open a GLFW window
     glfwInit();
     std::ostringstream ss; ss << "CPP Capture Example (" << dev.get_name() << ")";
     GLFWwindow * win = glfwCreateWindow(1280, 960, ss.str().c_str(), 0, 0);
+    glfwSetKeyCallback(win, [](GLFWwindow *, int key, int scancode, int action, int mods) 
+    { 
+        if(key == GLFW_KEY_R && action != GLFW_RELEASE) color_rectification_enabled = !color_rectification_enabled; 
+    });
     glfwMakeContextCurrent(win);
             
     // Load our truetype font
@@ -82,7 +91,12 @@ int main(int argc, char * argv[]) try
         glPushMatrix();
         glfwGetWindowSize(win, &w, &h);
         glOrtho(0, w, h, 0, -1, +1);
-        buffers[0].show(dev, rs::stream::color, 0, 0, w/2, h/2, font);
+        if(color_rectification_enabled)
+        {
+            rect_color.rectify(dev);
+            buffers[0].show(rect_color.get_image(), rect_color.get_image_intrinsics().width(), rect_color.get_image_intrinsics().height(), dev.get_stream_format(rs::stream::color), "rectified color", 0, 0, w/2, h/2, font);
+        }
+        else buffers[0].show(dev, rs::stream::color, 0, 0, w/2, h/2, font);
         buffers[1].show(dev, rs::stream::depth, w/2, 0, w-w/2, h/2, font);
         buffers[2].show(dev, rs::stream::infrared, 0, h/2, w/2, h-h/2, font);
         buffers[3].show(dev, rs::stream::infrared2, w/2, h/2, w-w/2, h-h/2, font);

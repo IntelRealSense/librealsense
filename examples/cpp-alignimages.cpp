@@ -1,3 +1,4 @@
+#define RSUTIL_IMPLEMENTATION
 #include <librealsense/rs.hpp>
 #include "example.hpp"
 

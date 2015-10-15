@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#define RSUTIL_IMPLEMENTATION
 #include <librealsense/rsutil.h>
 
 struct font font;
