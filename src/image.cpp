@@ -2,6 +2,7 @@
 #include "../include/librealsense/rsutil.h" // For projection/deprojection logic
 
 #include <cstring> // For memcpy
+#include <cmath>
 
 #pragma pack(push, 1) // All structs in this file are assumed to be byte-packed
 namespace rsimpl
@@ -207,7 +208,7 @@ namespace rsimpl
                     rs_project_point_to_pixel(other_pixel, &other_intrin, other_point);
                 
                     // If the location is outside the bounds of the image, skip to the next pixel
-                    const int other_x = (int)roundf(other_pixel[0]), other_y = (int)roundf(other_pixel[1]);
+                    const int other_x = (int)std::round(other_pixel[0]), other_y = (int)std::round(other_pixel[1]);
                     if(other_x < 0 || other_y < 0 || other_x >= other_intrin.width || other_y >= other_intrin.height)
                     {
                         continue;
