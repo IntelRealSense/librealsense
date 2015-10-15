@@ -291,6 +291,59 @@ int rs_device::get_frame_timestamp(rs_stream stream) const
 #define RSUTIL_IMPLEMENTATION
 #include "../include/librealsense/rsutil.h"
 
+#pragma pack(push, 1)
+template<int N> struct bytes { char b[N]; };
+#pragma pack(pop)
+
+void rs_compute_rectification_table(int * rectification_table, 
+    const rs_intrinsics * rect_intrin, const rs_extrinsics * depth_to_rect_extrin,
+    const rs_intrinsics * unrect_intrin, const rs_extrinsics * depth_to_unrect_extrin)
+{   
+    int x, y, ux, uy;
+    rs_extrinsics rect_to_depth, rect_to_unrect;
+
+    rs_invert_extrinsics(&rect_to_depth, depth_to_rect_extrin);
+    rs_compose_extrinsics(&rect_to_unrect, &rect_to_depth, depth_to_unrect_extrin);
+    /* NOTE: rect_to_unrect.translation will be approximately the zero vector, and we can ignore it going forward */
+
+    for(y=0; y<rect_intrin->height; ++y)
+    {
+        for(x=0; x<rect_intrin->width; ++x)
+        {
+            float rect_pixel[2] = {x,y}, rect_ray[3], unrect_ray[3], unrect_pixel[2];
+            rs_deproject_pixel_to_point(rect_ray, rect_intrin, rect_pixel, 1);
+            rs_multiply_mat3x3_vec3(unrect_ray, rect_to_unrect.rotation, rect_ray);
+            rs_project_point_to_pixel(unrect_pixel, unrect_intrin, unrect_ray);
+            ux = roundf(unrect_pixel[0]);
+            ux = ux < 0 ? 0 : ux;
+            ux = ux >= unrect_intrin->width ? unrect_intrin->width - 1 : ux;
+            uy = roundf(unrect_pixel[1]);
+            uy = uy < 0 ? 0 : uy;
+            uy = uy >= unrect_intrin->height ? unrect_intrin->height - 1 : uy;
+            *rectification_table++ = uy * unrect_intrin->width + ux;
+        }
+    }
+}
+
+template<int N> void rs_rectify_image_bytes(void * rect_pixels, const rs_intrinsics * rect_intrin, const int * rectification_table, const void * unrect_pixels)
+{
+    auto rect = (bytes<N> *)rect_pixels;
+    auto unrect = (const bytes<N> *)unrect_pixels;
+    for(int i=0, n=rect_intrin->width*rect_intrin->height; i<n; ++i) rect[i] = unrect[rectification_table[i]];
+}
+
+void rs_rectify_image(void * rect_pixels, const rs_intrinsics * rect_intrin, const int * rectification_table, const void * unrect_pixels, rs_format format)
+{
+    switch(format)
+    {
+    case RS_FORMAT_Y8: return rs_rectify_image_bytes<1>(rect_pixels, rect_intrin, rectification_table, unrect_pixels);
+    case RS_FORMAT_Y16: case RS_FORMAT_Z16: return rs_rectify_image_bytes<2>(rect_pixels, rect_intrin, rectification_table, unrect_pixels);
+    case RS_FORMAT_RGB8: case RS_FORMAT_BGR8: return rs_rectify_image_bytes<3>(rect_pixels, rect_intrin, rectification_table, unrect_pixels);
+    case RS_FORMAT_RGBA8: case RS_FORMAT_BGRA8: return rs_rectify_image_bytes<4>(rect_pixels, rect_intrin, rectification_table, unrect_pixels);
+    default: assert(false); // NOTE: rs_rectify_image_bytes<2>(...) is not appropriate for RS_FORMAT_YUYV images, no logic prevents U/V channels from being written to one another
+    }
+}
+
 void rs_align_depth_to_color(void * depth_aligned_to_color, const void * depth_pixels, rs_format depth_format, float depth_scale, const rs_intrinsics * depth_intrin, const rs_extrinsics * depth_to_color, const rs_intrinsics * color_intrin)
 {
     assert(depth_format == RS_FORMAT_Z16);
@@ -329,13 +382,10 @@ void rs_align_depth_to_color(void * depth_aligned_to_color, const void * depth_p
     }
 }
 
-void rs_align_color_to_depth(void * color_aligned_to_depth, const void * depth_pixels, rs_format depth_format, float depth_scale, const rs_intrinsics * depth_intrin, const rs_extrinsics * depth_to_color, const rs_intrinsics * color_intrin, const void * color_pixels, rs_format color_format)
+template<int N> void rs_align_color_to_depth_bytes(void * color_aligned_to_depth, const uint16_t * depth_pixels, float depth_scale, const rs_intrinsics * depth_intrin, const rs_extrinsics * depth_to_color, const rs_intrinsics * color_intrin, const void * color_pixels)
 {
-    assert(depth_format == RS_FORMAT_Z16);
-    assert(color_format == RS_FORMAT_RGB8);
-    const uint16_t * in_depth = (const uint16_t *)(depth_pixels);
-    const rs_byte3 * in_color = (const rs_byte3 *)(color_pixels);
-    rs_byte3 * out_color = (rs_byte3 *)(color_aligned_to_depth);
+    auto in_color = (const bytes<N> *)(color_pixels);
+    auto out_color = (bytes<N> *)(color_aligned_to_depth);
     int depth_x, depth_y, depth_pixel_index, color_x, color_y, color_pixel_index;
 
     // Iterate over the pixels of the depth image       
@@ -345,11 +395,11 @@ void rs_align_color_to_depth(void * color_aligned_to_depth, const void * depth_p
         {
             // Skip over depth pixels with the value of zero, we have no depth data so we will not write anything into our aligned images
             depth_pixel_index = depth_y * depth_intrin->width + depth_x;
-            if(in_depth[depth_pixel_index])
+            if(depth_pixels[depth_pixel_index])
             {
                 // Determine the corresponding pixel location in our color image
                 float depth_pixel[2] = {depth_x, depth_y}, depth_point[3], color_point[3], color_pixel[2];
-                rs_deproject_pixel_to_point(depth_point, depth_intrin, depth_pixel, in_depth[depth_pixel_index] * depth_scale);
+                rs_deproject_pixel_to_point(depth_point, depth_intrin, depth_pixel, depth_pixels[depth_pixel_index] * depth_scale);
                 rs_transform_point_to_point(color_point, depth_to_color, depth_point);
                 rs_project_point_to_pixel(color_pixel, color_intrin, color_point);
                 
@@ -366,6 +416,24 @@ void rs_align_color_to_depth(void * color_aligned_to_depth, const void * depth_p
                 out_color[depth_pixel_index] = in_color[color_pixel_index];
             }
         }
+    }
+}
+
+void rs_align_color_to_depth(void * color_aligned_to_depth, const void * depth_pixels, rs_format depth_format, float depth_scale, const rs_intrinsics * depth_intrin, const rs_extrinsics * depth_to_color, const rs_intrinsics * color_intrin, const void * color_pixels, rs_format color_format)
+{
+    assert(depth_format == RS_FORMAT_Z16);
+    auto depth = reinterpret_cast<const uint16_t *>(depth_pixels);
+    switch(color_format)
+    {
+    case RS_FORMAT_Y8: 
+        return rs_align_color_to_depth_bytes<1>(color_aligned_to_depth, depth, depth_scale, depth_intrin, depth_to_color, color_intrin, color_pixels);
+    case RS_FORMAT_Y16: case RS_FORMAT_Z16: 
+        return rs_align_color_to_depth_bytes<2>(color_aligned_to_depth, depth, depth_scale, depth_intrin, depth_to_color, color_intrin, color_pixels);
+    case RS_FORMAT_RGB8: case RS_FORMAT_BGR8: 
+        return rs_align_color_to_depth_bytes<3>(color_aligned_to_depth, depth, depth_scale, depth_intrin, depth_to_color, color_intrin, color_pixels);
+    case RS_FORMAT_RGBA8: case RS_FORMAT_BGRA8: 
+        return rs_align_color_to_depth_bytes<4>(color_aligned_to_depth, depth, depth_scale, depth_intrin, depth_to_color, color_intrin, color_pixels);
+    default: assert(false); // NOTE: rs_align_color_to_depth_bytes<2>(...) is not appropriate for RS_FORMAT_YUYV images, no logic prevents U/V channels from being written to one another
     }
 }
 
