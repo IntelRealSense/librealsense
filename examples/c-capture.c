@@ -130,7 +130,7 @@ int main(int argc, char * argv[])
         glOrtho(0, w, h, 0, -1, +1);
         glPixelZoom(fw/w, -fh/h);
 
-        draw_stream(dev, RS_STREAM_COLOR_ALIGNED_TO_DEPTH, 0, 0);
+        draw_stream(dev, RS_STREAM_COLOR, 0, 0);
         draw_stream(dev, RS_STREAM_DEPTH, 640, 0);
         draw_stream(dev, RS_STREAM_INFRARED, 0, 480);
         draw_stream(dev, RS_STREAM_INFRARED2, 640, 480);

@@ -93,7 +93,7 @@ static rs_stream get_stream_intrinsics_native_stream(rs_stream stream)
     case RS_STREAM_COLOR_ALIGNED_TO_DEPTH: return RS_STREAM_DEPTH;
     case RS_STREAM_DEPTH_ALIGNED_TO_COLOR: return RS_STREAM_COLOR;
     case RS_STREAM_DEPTH_ALIGNED_TO_RECTIFIED_COLOR: return RS_STREAM_RECTIFIED_COLOR;
-    default: assert(stream < RS_STREAM_RECTIFIED_COLOR); return stream;
+    default: assert(stream <= RS_STREAM_RECTIFIED_COLOR); return stream;
     }
 }
 
@@ -298,15 +298,13 @@ const void * rs_device::get_aligned_image(rs_stream stream, rs_stream from, rs_s
         memset(synthetic_images[index].data(), 0, synthetic_images[index].size());
         synthetic_timestamps[index] = get_frame_timestamp(from);
 
-        if(from == RS_STREAM_DEPTH)
+        if(get_stream_format(from) == RS_FORMAT_Z16)
         {
-            align_depth_to_color(synthetic_images[index].data(), get_frame_data(RS_STREAM_DEPTH), get_stream_format(RS_STREAM_DEPTH), get_depth_scale(), get_stream_intrinsics(RS_STREAM_DEPTH),
-                get_extrinsics(RS_STREAM_DEPTH, to), get_stream_intrinsics(to));    
+            align_depth_to_color(synthetic_images[index].data(), (const uint16_t *)get_frame_data(from), get_depth_scale(), get_stream_intrinsics(from), get_extrinsics(from, to), get_stream_intrinsics(to));    
         }
-        else if(to == RS_STREAM_DEPTH)
+        else if(get_stream_format(to) == RS_FORMAT_Z16)
         {
-            align_color_to_depth(synthetic_images[index].data(), get_frame_data(RS_STREAM_DEPTH), get_stream_format(RS_STREAM_DEPTH), get_depth_scale(), get_stream_intrinsics(RS_STREAM_DEPTH),
-                get_extrinsics(RS_STREAM_DEPTH, from), get_stream_intrinsics(from), get_frame_data(from), get_stream_format(from));      
+            align_color_to_depth(synthetic_images[index].data(), (const uint16_t *)get_frame_data(to), get_depth_scale(), get_stream_intrinsics(to), get_extrinsics(to, from), get_stream_intrinsics(from), get_frame_data(from), get_stream_format(from));      
         }
         else
         {
@@ -331,8 +329,7 @@ const void * rs_device::get_frame_data(rs_stream stream) const
             auto rect_intrin = get_stream_intrinsics(RS_STREAM_RECTIFIED_COLOR);
             if(rectification_table.empty())
             {
-                const auto rect_to_unrect_extrin = get_extrinsics(RS_STREAM_RECTIFIED_COLOR, RS_STREAM_COLOR);
-                rectification_table = compute_rectification_table(rect_intrin, (const float3x3 &)rect_to_unrect_extrin.rotation, get_stream_intrinsics(RS_STREAM_COLOR));
+                rectification_table = compute_rectification_table(rect_intrin, get_extrinsics(RS_STREAM_RECTIFIED_COLOR, RS_STREAM_COLOR), get_stream_intrinsics(RS_STREAM_COLOR));
             }
             
             const auto format = get_stream_format(RS_STREAM_COLOR);
