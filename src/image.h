@@ -24,6 +24,14 @@ namespace rsimpl
 
     void unpack_z16_y8_from_inri    (void * dest[], const void * source, const subdevice_mode & mode);
     void unpack_z16_y16_from_inri   (void * dest[], const void * source, const subdevice_mode & mode);
+
+    void compute_rectification_table(int * rectification_table, const rs_intrinsics * rect_intrin, const float3x3 & rect_to_unrect_rotation, const rs_intrinsics * unrect_intrin);
+    void rectify_image              (void * rect_pixels, const rs_intrinsics * rect_intrin, const int * rectification_table, const void * unrect_pixels, rs_format format);
+
+    void align_depth_to_color       (void * depth_aligned_to_color, const void * depth_pixels, rs_format depth_format, float depth_scale, const rs_intrinsics * depth_intrin, 
+                                        const rs_extrinsics * depth_to_color, const rs_intrinsics * color_intrin);
+    void align_color_to_depth       (void * color_aligned_to_depth, const void * depth_pixels, rs_format depth_format, float depth_scale, const rs_intrinsics * depth_intrin, 
+                                        const rs_extrinsics * depth_to_color, const rs_intrinsics * color_intrin, const void * color_pixels, rs_format color_format);
 }
 
 #endif

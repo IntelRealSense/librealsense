@@ -288,147 +288,6 @@ int rs_device::get_frame_timestamp(rs_stream stream) const
     return base_timestamp == -1 ? 0 : convert_timestamp(base_timestamp + streams[stream]->get_front_number() - last_stream_timestamp);
 }
 
-#include "../include/librealsense/rsutil.h"
-
-#pragma pack(push, 1)
-template<int N> struct bytes { char b[N]; };
-#pragma pack(pop)
-
-void rs_compute_rectification_table(int * rectification_table, const rs_intrinsics * rect_intrin, const float3x3 & rect_to_unrect_rotation, const rs_intrinsics * unrect_intrin)
-{   
-    int x, y, ux, uy;   
-    for(y=0; y<rect_intrin->height; ++y)
-    {
-        for(x=0; x<rect_intrin->width; ++x)
-        {
-            float3 rect_ray, unrect_ray;
-            float rect_pixel[2] = {x,y}, unrect_pixel[2];
-            rs_deproject_pixel_to_point(&rect_ray.x, rect_intrin, rect_pixel, 1);
-            unrect_ray = rect_to_unrect_rotation * rect_ray;
-            rs_project_point_to_pixel(unrect_pixel, unrect_intrin, &unrect_ray.x);
-            ux = roundf(unrect_pixel[0]);
-            ux = ux < 0 ? 0 : ux;
-            ux = ux >= unrect_intrin->width ? unrect_intrin->width - 1 : ux;
-            uy = roundf(unrect_pixel[1]);
-            uy = uy < 0 ? 0 : uy;
-            uy = uy >= unrect_intrin->height ? unrect_intrin->height - 1 : uy;
-            *rectification_table++ = uy * unrect_intrin->width + ux;
-        }
-    }
-}
-
-template<int N> void rs_rectify_image_bytes(void * rect_pixels, const rs_intrinsics * rect_intrin, const int * rectification_table, const void * unrect_pixels)
-{
-    auto rect = (bytes<N> *)rect_pixels;
-    auto unrect = (const bytes<N> *)unrect_pixels;
-    for(int i=0, n=rect_intrin->width*rect_intrin->height; i<n; ++i) rect[i] = unrect[rectification_table[i]];
-}
-
-void rs_rectify_image(void * rect_pixels, const rs_intrinsics * rect_intrin, const int * rectification_table, const void * unrect_pixels, rs_format format)
-{
-    switch(format)
-    {
-    case RS_FORMAT_Y8: return rs_rectify_image_bytes<1>(rect_pixels, rect_intrin, rectification_table, unrect_pixels);
-    case RS_FORMAT_Y16: case RS_FORMAT_Z16: return rs_rectify_image_bytes<2>(rect_pixels, rect_intrin, rectification_table, unrect_pixels);
-    case RS_FORMAT_RGB8: case RS_FORMAT_BGR8: return rs_rectify_image_bytes<3>(rect_pixels, rect_intrin, rectification_table, unrect_pixels);
-    case RS_FORMAT_RGBA8: case RS_FORMAT_BGRA8: return rs_rectify_image_bytes<4>(rect_pixels, rect_intrin, rectification_table, unrect_pixels);
-    default: assert(false); // NOTE: rs_rectify_image_bytes<2>(...) is not appropriate for RS_FORMAT_YUYV images, no logic prevents U/V channels from being written to one another
-    }
-}
-
-void rs_align_depth_to_color(void * depth_aligned_to_color, const void * depth_pixels, rs_format depth_format, float depth_scale, const rs_intrinsics * depth_intrin, const rs_extrinsics * depth_to_color, const rs_intrinsics * color_intrin)
-{
-    assert(depth_format == RS_FORMAT_Z16);
-    const uint16_t * in_depth = (const uint16_t *)(depth_pixels);
-    uint16_t * out_depth = (uint16_t *)(depth_aligned_to_color);
-    int depth_x, depth_y, depth_pixel_index, color_x, color_y, color_pixel_index;
-
-    // Iterate over the pixels of the depth image       
-    for(depth_y = 0; depth_y < depth_intrin->height; ++depth_y)
-    {
-        for(depth_x = 0; depth_x < depth_intrin->width; ++depth_x)
-        {
-            // Skip over depth pixels with the value of zero, we have no depth data so we will not write anything into our aligned images
-            depth_pixel_index = depth_y * depth_intrin->width + depth_x;
-            if(in_depth[depth_pixel_index])
-            {
-                // Determine the corresponding pixel location in our color image
-                float depth_pixel[2] = {depth_x, depth_y}, depth_point[3], color_point[3], color_pixel[2];
-                rs_deproject_pixel_to_point(depth_point, depth_intrin, depth_pixel, in_depth[depth_pixel_index] * depth_scale);
-                rs_transform_point_to_point(color_point, depth_to_color, depth_point);
-                rs_project_point_to_pixel(color_pixel, color_intrin, color_point);
-                
-                // If the location is outside the bounds of the image, skip to the next pixel
-                color_x = (int)roundf(color_pixel[0]);
-                color_y = (int)roundf(color_pixel[1]);
-                if(color_x < 0 || color_y < 0 || color_x >= color_intrin->width || color_y >= color_intrin->height)
-                {
-                    continue;
-                }
-
-                // Transfer data from original images into corresponding aligned images
-                color_pixel_index = color_y * color_intrin->width + color_x;
-                out_depth[color_pixel_index] = in_depth[depth_pixel_index];
-            }
-        }
-    }
-}
-
-template<int N> void rs_align_color_to_depth_bytes(void * color_aligned_to_depth, const uint16_t * depth_pixels, float depth_scale, const rs_intrinsics * depth_intrin, const rs_extrinsics * depth_to_color, const rs_intrinsics * color_intrin, const void * color_pixels)
-{
-    auto in_color = (const bytes<N> *)(color_pixels);
-    auto out_color = (bytes<N> *)(color_aligned_to_depth);
-    int depth_x, depth_y, depth_pixel_index, color_x, color_y, color_pixel_index;
-
-    // Iterate over the pixels of the depth image       
-    for(depth_y = 0; depth_y < depth_intrin->height; ++depth_y)
-    {
-        for(depth_x = 0; depth_x < depth_intrin->width; ++depth_x)
-        {
-            // Skip over depth pixels with the value of zero, we have no depth data so we will not write anything into our aligned images
-            depth_pixel_index = depth_y * depth_intrin->width + depth_x;
-            if(depth_pixels[depth_pixel_index])
-            {
-                // Determine the corresponding pixel location in our color image
-                float depth_pixel[2] = {depth_x, depth_y}, depth_point[3], color_point[3], color_pixel[2];
-                rs_deproject_pixel_to_point(depth_point, depth_intrin, depth_pixel, depth_pixels[depth_pixel_index] * depth_scale);
-                rs_transform_point_to_point(color_point, depth_to_color, depth_point);
-                rs_project_point_to_pixel(color_pixel, color_intrin, color_point);
-                
-                // If the location is outside the bounds of the image, skip to the next pixel
-                color_x = (int)roundf(color_pixel[0]);
-                color_y = (int)roundf(color_pixel[1]);
-                if(color_x < 0 || color_y < 0 || color_x >= color_intrin->width || color_y >= color_intrin->height)
-                {
-                    continue;
-                }
-
-                // Transfer data from original images into corresponding aligned images
-                color_pixel_index = color_y * color_intrin->width + color_x;
-                out_color[depth_pixel_index] = in_color[color_pixel_index];
-            }
-        }
-    }
-}
-
-void rs_align_color_to_depth(void * color_aligned_to_depth, const void * depth_pixels, rs_format depth_format, float depth_scale, const rs_intrinsics * depth_intrin, const rs_extrinsics * depth_to_color, const rs_intrinsics * color_intrin, const void * color_pixels, rs_format color_format)
-{
-    assert(depth_format == RS_FORMAT_Z16);
-    auto depth = reinterpret_cast<const uint16_t *>(depth_pixels);
-    switch(color_format)
-    {
-    case RS_FORMAT_Y8: 
-        return rs_align_color_to_depth_bytes<1>(color_aligned_to_depth, depth, depth_scale, depth_intrin, depth_to_color, color_intrin, color_pixels);
-    case RS_FORMAT_Y16: case RS_FORMAT_Z16: 
-        return rs_align_color_to_depth_bytes<2>(color_aligned_to_depth, depth, depth_scale, depth_intrin, depth_to_color, color_intrin, color_pixels);
-    case RS_FORMAT_RGB8: case RS_FORMAT_BGR8: 
-        return rs_align_color_to_depth_bytes<3>(color_aligned_to_depth, depth, depth_scale, depth_intrin, depth_to_color, color_intrin, color_pixels);
-    case RS_FORMAT_RGBA8: case RS_FORMAT_BGRA8: 
-        return rs_align_color_to_depth_bytes<4>(color_aligned_to_depth, depth, depth_scale, depth_intrin, depth_to_color, color_intrin, color_pixels);
-    default: assert(false); // NOTE: rs_align_color_to_depth_bytes<2>(...) is not appropriate for RS_FORMAT_YUYV images, no logic prevents U/V channels from being written to one another
-    }
-}
-
 const void * rs_device::get_frame_data(rs_stream stream) const 
 { 
     if(stream < RS_STREAM_NATIVE_COUNT)
@@ -447,13 +306,13 @@ const void * rs_device::get_frame_data(rs_stream stream) const
                 const auto unrect_intrin = get_stream_intrinsics(RS_STREAM_COLOR);
                 const auto rect_to_unrect_extrin = get_extrinsics(RS_STREAM_RECTIFIED_COLOR, RS_STREAM_COLOR);
                 rectification_table.resize(rect_intrin.width * rect_intrin.height);
-                rs_compute_rectification_table(rectification_table.data(), &rect_intrin, (const float3x3 &)rect_to_unrect_extrin.rotation, &unrect_intrin);
+                compute_rectification_table(rectification_table.data(), &rect_intrin, (const float3x3 &)rect_to_unrect_extrin.rotation, &unrect_intrin);
             }
             
             const auto format = get_stream_format(RS_STREAM_COLOR);
             auto & rectified_color = synthetic_images[RS_STREAM_RECTIFIED_COLOR - RS_STREAM_NATIVE_COUNT];
             rectified_color.resize(get_image_size(rect_intrin.width, rect_intrin.height, format));
-            rs_rectify_image(rectified_color.data(), &rect_intrin, rectification_table.data(), get_frame_data(RS_STREAM_COLOR), format);
+            rectify_image(rectified_color.data(), &rect_intrin, rectification_table.data(), get_frame_data(RS_STREAM_COLOR), format);
         }
         else if(stream == RS_STREAM_COLOR_ALIGNED_TO_DEPTH)
         {
@@ -464,7 +323,7 @@ const void * rs_device::get_frame_data(rs_stream stream) const
             auto & color_aligned_to_depth = synthetic_images[RS_STREAM_COLOR_ALIGNED_TO_DEPTH - RS_STREAM_NATIVE_COUNT];
             color_aligned_to_depth.resize(rsimpl::get_image_size(depth_intrin.width, depth_intrin.height, get_stream_format(RS_STREAM_COLOR)));
             memset(color_aligned_to_depth.data(), 0, color_aligned_to_depth.size());
-            rs_align_color_to_depth(color_aligned_to_depth.data(), get_frame_data(RS_STREAM_DEPTH), get_stream_format(RS_STREAM_DEPTH), get_depth_scale(), &depth_intrin, &depth_to_color, &color_intrin, get_frame_data(RS_STREAM_COLOR), get_stream_format(RS_STREAM_COLOR));           
+            align_color_to_depth(color_aligned_to_depth.data(), get_frame_data(RS_STREAM_DEPTH), get_stream_format(RS_STREAM_DEPTH), get_depth_scale(), &depth_intrin, &depth_to_color, &color_intrin, get_frame_data(RS_STREAM_COLOR), get_stream_format(RS_STREAM_COLOR));           
             synthetic_timestamps[RS_STREAM_COLOR_ALIGNED_TO_DEPTH - RS_STREAM_NATIVE_COUNT] = get_frame_timestamp(RS_STREAM_COLOR);
         }
         else if(stream == RS_STREAM_DEPTH_ALIGNED_TO_COLOR)
@@ -476,7 +335,7 @@ const void * rs_device::get_frame_data(rs_stream stream) const
             auto & depth_aligned_to_color = synthetic_images[RS_STREAM_DEPTH_ALIGNED_TO_COLOR - RS_STREAM_NATIVE_COUNT];
             depth_aligned_to_color.resize(rsimpl::get_image_size(color_intrin.width, color_intrin.height, get_stream_format(RS_STREAM_DEPTH)));
             memset(depth_aligned_to_color.data(), 0, depth_aligned_to_color.size());
-            rs_align_depth_to_color(depth_aligned_to_color.data(), get_frame_data(RS_STREAM_DEPTH), get_stream_format(RS_STREAM_DEPTH), get_depth_scale(), &depth_intrin, &depth_to_color, &color_intrin);   
+            align_depth_to_color(depth_aligned_to_color.data(), get_frame_data(RS_STREAM_DEPTH), get_stream_format(RS_STREAM_DEPTH), get_depth_scale(), &depth_intrin, &depth_to_color, &color_intrin);   
             synthetic_timestamps[RS_STREAM_DEPTH_ALIGNED_TO_COLOR - RS_STREAM_NATIVE_COUNT] = get_frame_timestamp(RS_STREAM_DEPTH);
         }
         else if(stream == RS_STREAM_DEPTH_ALIGNED_TO_RECTIFIED_COLOR)
@@ -488,7 +347,7 @@ const void * rs_device::get_frame_data(rs_stream stream) const
             auto & depth_aligned_to_color = synthetic_images[RS_STREAM_DEPTH_ALIGNED_TO_RECTIFIED_COLOR - RS_STREAM_NATIVE_COUNT];
             depth_aligned_to_color.resize(rsimpl::get_image_size(color_intrin.width, color_intrin.height, get_stream_format(RS_STREAM_DEPTH)));
             memset(depth_aligned_to_color.data(), 0, depth_aligned_to_color.size());
-            rs_align_depth_to_color(depth_aligned_to_color.data(), get_frame_data(RS_STREAM_DEPTH), get_stream_format(RS_STREAM_DEPTH), get_depth_scale(), &depth_intrin, &depth_to_color, &color_intrin);   
+            align_depth_to_color(depth_aligned_to_color.data(), get_frame_data(RS_STREAM_DEPTH), get_stream_format(RS_STREAM_DEPTH), get_depth_scale(), &depth_intrin, &depth_to_color, &color_intrin);   
             synthetic_timestamps[RS_STREAM_DEPTH_ALIGNED_TO_RECTIFIED_COLOR - RS_STREAM_NATIVE_COUNT] = get_frame_timestamp(RS_STREAM_DEPTH);
         }
     }

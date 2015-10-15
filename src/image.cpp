@@ -1,4 +1,5 @@
 #include "image.h"
+#include "../include/librealsense/rsutil.h" // For projection/deprojection logic
 
 #include <cstring> // For memcpy
 
@@ -179,6 +180,159 @@ namespace rsimpl
         split_frame(dest, mode, reinterpret_cast<const inri_pixel *>(source), 'INRI', RS_FORMAT_Z16, RS_FORMAT_Y16,
             [](const inri_pixel & p) -> uint16_t { return p.z16; },
             [](const inri_pixel & p) -> uint16_t { return p.y8 | p.y8 << 8; });
+    }
+
+    /////////////////////////
+    // Image rectification //
+    /////////////////////////
+
+    #pragma pack(push, 1)
+    template<int N> struct bytes { char b[N]; };
+    #pragma pack(pop)
+
+    void compute_rectification_table(int * rectification_table, const rs_intrinsics * rect_intrin, const float3x3 & rect_to_unrect_rotation, const rs_intrinsics * unrect_intrin)
+    {   
+        int x, y, ux, uy;   
+        for(y=0; y<rect_intrin->height; ++y)
+        {
+            for(x=0; x<rect_intrin->width; ++x)
+            {
+                float3 rect_ray, unrect_ray;
+                float rect_pixel[2] = {x,y}, unrect_pixel[2];
+                rs_deproject_pixel_to_point(&rect_ray.x, rect_intrin, rect_pixel, 1);
+                unrect_ray = rect_to_unrect_rotation * rect_ray;
+                rs_project_point_to_pixel(unrect_pixel, unrect_intrin, &unrect_ray.x);
+                ux = roundf(unrect_pixel[0]);
+                ux = ux < 0 ? 0 : ux;
+                ux = ux >= unrect_intrin->width ? unrect_intrin->width - 1 : ux;
+                uy = roundf(unrect_pixel[1]);
+                uy = uy < 0 ? 0 : uy;
+                uy = uy >= unrect_intrin->height ? unrect_intrin->height - 1 : uy;
+                *rectification_table++ = uy * unrect_intrin->width + ux;
+            }
+        }
+    }
+
+    template<int N> void rectify_image_bytes(void * rect_pixels, const rs_intrinsics * rect_intrin, const int * rectification_table, const void * unrect_pixels)
+    {
+        auto rect = (bytes<N> *)rect_pixels;
+        auto unrect = (const bytes<N> *)unrect_pixels;
+        for(int i=0, n=rect_intrin->width*rect_intrin->height; i<n; ++i) rect[i] = unrect[rectification_table[i]];
+    }
+
+    void rectify_image(void * rect_pixels, const rs_intrinsics * rect_intrin, const int * rectification_table, const void * unrect_pixels, rs_format format)
+    {
+        switch(format)
+        {
+        case RS_FORMAT_Y8: 
+            return rectify_image_bytes<1>(rect_pixels, rect_intrin, rectification_table, unrect_pixels);
+        case RS_FORMAT_Y16: case RS_FORMAT_Z16: 
+            return rectify_image_bytes<2>(rect_pixels, rect_intrin, rectification_table, unrect_pixels);
+        case RS_FORMAT_RGB8: case RS_FORMAT_BGR8: 
+            return rectify_image_bytes<3>(rect_pixels, rect_intrin, rectification_table, unrect_pixels);
+        case RS_FORMAT_RGBA8: case RS_FORMAT_BGRA8: 
+            return rectify_image_bytes<4>(rect_pixels, rect_intrin, rectification_table, unrect_pixels);
+        default: 
+            assert(false); // NOTE: rs_rectify_image_bytes<2>(...) is not appropriate for RS_FORMAT_YUYV images, no logic prevents U/V channels from being written to one another
+        }
+    }
+
+    /////////////////////
+    // Image alignment //
+    /////////////////////
+
+    void align_depth_to_color(void * depth_aligned_to_color, const void * depth_pixels, rs_format depth_format, float depth_scale, const rs_intrinsics * depth_intrin, const rs_extrinsics * depth_to_color, const rs_intrinsics * color_intrin)
+    {
+        assert(depth_format == RS_FORMAT_Z16);
+        const uint16_t * in_depth = (const uint16_t *)(depth_pixels);
+        uint16_t * out_depth = (uint16_t *)(depth_aligned_to_color);
+        int depth_x, depth_y, depth_pixel_index, color_x, color_y, color_pixel_index;
+
+        // Iterate over the pixels of the depth image       
+        for(depth_y = 0; depth_y < depth_intrin->height; ++depth_y)
+        {
+            for(depth_x = 0; depth_x < depth_intrin->width; ++depth_x)
+            {
+                // Skip over depth pixels with the value of zero, we have no depth data so we will not write anything into our aligned images
+                depth_pixel_index = depth_y * depth_intrin->width + depth_x;
+                if(in_depth[depth_pixel_index])
+                {
+                    // Determine the corresponding pixel location in our color image
+                    float depth_pixel[2] = {depth_x, depth_y}, depth_point[3], color_point[3], color_pixel[2];
+                    rs_deproject_pixel_to_point(depth_point, depth_intrin, depth_pixel, in_depth[depth_pixel_index] * depth_scale);
+                    rs_transform_point_to_point(color_point, depth_to_color, depth_point);
+                    rs_project_point_to_pixel(color_pixel, color_intrin, color_point);
+                
+                    // If the location is outside the bounds of the image, skip to the next pixel
+                    color_x = (int)roundf(color_pixel[0]);
+                    color_y = (int)roundf(color_pixel[1]);
+                    if(color_x < 0 || color_y < 0 || color_x >= color_intrin->width || color_y >= color_intrin->height)
+                    {
+                        continue;
+                    }
+
+                    // Transfer data from original images into corresponding aligned images
+                    color_pixel_index = color_y * color_intrin->width + color_x;
+                    out_depth[color_pixel_index] = in_depth[depth_pixel_index];
+                }
+            }
+        }
+    }
+
+    template<int N> void align_color_to_depth_bytes(void * color_aligned_to_depth, const uint16_t * depth_pixels, float depth_scale, const rs_intrinsics * depth_intrin, const rs_extrinsics * depth_to_color, const rs_intrinsics * color_intrin, const void * color_pixels)
+    {
+        auto in_color = (const bytes<N> *)(color_pixels);
+        auto out_color = (bytes<N> *)(color_aligned_to_depth);
+        int depth_x, depth_y, depth_pixel_index, color_x, color_y, color_pixel_index;
+
+        // Iterate over the pixels of the depth image       
+        for(depth_y = 0; depth_y < depth_intrin->height; ++depth_y)
+        {
+            for(depth_x = 0; depth_x < depth_intrin->width; ++depth_x)
+            {
+                // Skip over depth pixels with the value of zero, we have no depth data so we will not write anything into our aligned images
+                depth_pixel_index = depth_y * depth_intrin->width + depth_x;
+                if(depth_pixels[depth_pixel_index])
+                {
+                    // Determine the corresponding pixel location in our color image
+                    float depth_pixel[2] = {depth_x, depth_y}, depth_point[3], color_point[3], color_pixel[2];
+                    rs_deproject_pixel_to_point(depth_point, depth_intrin, depth_pixel, depth_pixels[depth_pixel_index] * depth_scale);
+                    rs_transform_point_to_point(color_point, depth_to_color, depth_point);
+                    rs_project_point_to_pixel(color_pixel, color_intrin, color_point);
+                
+                    // If the location is outside the bounds of the image, skip to the next pixel
+                    color_x = (int)roundf(color_pixel[0]);
+                    color_y = (int)roundf(color_pixel[1]);
+                    if(color_x < 0 || color_y < 0 || color_x >= color_intrin->width || color_y >= color_intrin->height)
+                    {
+                        continue;
+                    }
+
+                    // Transfer data from original images into corresponding aligned images
+                    color_pixel_index = color_y * color_intrin->width + color_x;
+                    out_color[depth_pixel_index] = in_color[color_pixel_index];
+                }
+            }
+        }
+    }
+
+    void align_color_to_depth(void * color_aligned_to_depth, const void * depth_pixels, rs_format depth_format, float depth_scale, const rs_intrinsics * depth_intrin, const rs_extrinsics * depth_to_color, const rs_intrinsics * color_intrin, const void * color_pixels, rs_format color_format)
+    {
+        assert(depth_format == RS_FORMAT_Z16);
+        auto depth = reinterpret_cast<const uint16_t *>(depth_pixels);
+        switch(color_format)
+        {
+        case RS_FORMAT_Y8: 
+            return align_color_to_depth_bytes<1>(color_aligned_to_depth, depth, depth_scale, depth_intrin, depth_to_color, color_intrin, color_pixels);
+        case RS_FORMAT_Y16: case RS_FORMAT_Z16: 
+            return align_color_to_depth_bytes<2>(color_aligned_to_depth, depth, depth_scale, depth_intrin, depth_to_color, color_intrin, color_pixels);
+        case RS_FORMAT_RGB8: case RS_FORMAT_BGR8: 
+            return align_color_to_depth_bytes<3>(color_aligned_to_depth, depth, depth_scale, depth_intrin, depth_to_color, color_intrin, color_pixels);
+        case RS_FORMAT_RGBA8: case RS_FORMAT_BGRA8: 
+            return align_color_to_depth_bytes<4>(color_aligned_to_depth, depth, depth_scale, depth_intrin, depth_to_color, color_intrin, color_pixels);
+        default: 
+            assert(false); // NOTE: rs_align_color_to_depth_bytes<2>(...) is not appropriate for RS_FORMAT_YUYV images, no logic prevents U/V channels from being written to one another
+        }
     }
 }
 #pragma pack(pop)
