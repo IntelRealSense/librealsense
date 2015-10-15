@@ -1,6 +1,7 @@
 #include "device.h"
 #include "image.h"
 
+#include <cstring>
 #include <climits>
 #include <thread>
 #include <algorithm>
@@ -276,12 +277,12 @@ int rs_device::get_frame_timestamp(rs_stream stream) const
     return base_timestamp == -1 ? 0 : convert_timestamp(base_timestamp + streams[stream]->get_front_number() - last_stream_timestamp);
 }
 
-#define RSUTIL_IMPLEMENTATION
-#include "../include/librealsense/rsutil.h"
+//#define RSUTIL_IMPLEMENTATION
+//#include "../include/librealsense/rsutil.h"
 
 void rs_align_images(void * depth_aligned_to_color, void * color_aligned_to_depth, const void * depth_pixels, rs_format depth_format, float depth_scale, const rs_intrinsics * depth_intrin, const rs_extrinsics * depth_to_color, const rs_intrinsics * color_intrin, const void * color_pixels, rs_format color_format)
 {
-    assert(depth_format == RS_FORMAT_Z16);
+    /*assert(depth_format == RS_FORMAT_Z16);
     assert(color_format == RS_FORMAT_RGB8);
     const uint16_t * in_depth = (const uint16_t *)(depth_pixels);
     const rs_byte3 * in_color = (const rs_byte3 *)(color_pixels);
@@ -318,7 +319,7 @@ void rs_align_images(void * depth_aligned_to_color, void * color_aligned_to_dept
                 out_depth[color_pixel_index] = in_depth[depth_pixel_index];
             }
         }
-    }
+    }*/
 }
 
 const void * rs_device::get_frame_data(rs_stream stream) const 
