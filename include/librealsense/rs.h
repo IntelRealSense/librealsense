@@ -10,11 +10,14 @@ extern "C" {
 /* public enum type definitions */
 typedef enum rs_stream
 {
-    RS_STREAM_DEPTH                         = 0,
-    RS_STREAM_COLOR                         = 1,
-    RS_STREAM_INFRARED                      = 2,
-    RS_STREAM_INFRARED2                     = 3,
-    RS_STREAM_COUNT                         = 4,
+    RS_STREAM_DEPTH                         = 0, /* Native stream of depth data produced by RealSense device */
+    RS_STREAM_COLOR                         = 1, /* Native stream of color data captured by RealSense device */
+    RS_STREAM_INFRARED                      = 2, /* Native stream of infrared data captured by RealSense device */
+    RS_STREAM_INFRARED2                     = 3, /* Native stream of infrared data captured from a second viewpoint by RealSense device */
+    RS_STREAM_NATIVE_COUNT                  = 4,
+    RS_STREAM_DEPTH_ALIGNED_TO_COLOR        = 4, /* Synthetic stream containing depth data but sharing intrinsics of color stream */
+    RS_STREAM_COLOR_ALIGNED_TO_DEPTH        = 5, /* Synthetic stream containing color data but sharing intrinsics of depth stream */
+    RS_STREAM_COUNT                         = 6,
     RS_STREAM_MAX_ENUM                      = 0x7FFFFFFF
 } rs_stream;
 

@@ -49,6 +49,7 @@ static_device_info rsimpl::add_standard_unpackers(const static_device_info & dev
 rs_device::rs_device(std::shared_ptr<rsimpl::uvc::device> device, const rsimpl::static_device_info & info) : device(device), device_info(add_standard_unpackers(info)), capturing(false)
 {
     for(auto & req : requests) req = rsimpl::stream_request();
+    for(auto & t : synthetic_timestamps) t = 0;
 }
 
 rs_device::~rs_device()
@@ -83,6 +84,51 @@ void rs_device::disable_stream(rs_stream stream)
     for(auto & s : streams) s.reset(); // Changing stream configuration invalidates the current stream info
 }
 
+// Where do the intrinsics for a given (possibly synthetic) stream come from?
+static rs_stream get_stream_intrinsics_native_stream(rs_stream stream)
+{
+    switch(stream)
+    {
+    case RS_STREAM_COLOR_ALIGNED_TO_DEPTH: return RS_STREAM_DEPTH;
+    case RS_STREAM_DEPTH_ALIGNED_TO_COLOR: return RS_STREAM_COLOR;
+    default: assert(stream < RS_STREAM_NATIVE_COUNT); return stream;
+    }
+}
+
+// Where does the pixel data for a given (possibly synthetic) stream come from?
+static rs_stream get_stream_data_native_stream(rs_stream stream)
+{
+    switch(stream)
+    {
+    case RS_STREAM_COLOR_ALIGNED_TO_DEPTH: return RS_STREAM_COLOR;
+    case RS_STREAM_DEPTH_ALIGNED_TO_COLOR: return RS_STREAM_DEPTH;
+    default: assert(stream < RS_STREAM_NATIVE_COUNT); return stream;
+    }
+}
+
+
+
+bool rs_device::is_stream_enabled(rs_stream stream) const 
+{ 
+    if(stream < RS_STREAM_NATIVE_COUNT) return requests[stream].enabled;
+    else return true; // Synthetic streams always enabled?
+}
+
+rs_intrinsics rs_device::get_stream_intrinsics(rs_stream stream) const 
+{
+    std::lock_guard<std::mutex> lock(intrinsics_mutex); 
+    return intrinsics[get_current_stream_mode(get_stream_intrinsics_native_stream(stream)).intrinsics_index];
+}
+
+rs_format rs_device::get_stream_format(rs_stream stream) const
+{ 
+    return get_current_stream_mode(get_stream_data_native_stream(stream)).format;
+}
+
+int rs_device::get_stream_framerate(rs_stream stream) const
+{ 
+    return get_current_stream_mode(get_stream_data_native_stream(stream)).fps; 
+}
 
 void rs_device::start()
 {
@@ -147,7 +193,7 @@ void rs_device::wait_all_streams()
 
     // Check if any of our streams do not have data yet, if so, wait for them to have data, and remember that we are on the first frame
     bool first_frame = false;
-    for(int i=0; i<RS_STREAM_COUNT; ++i)
+    for(int i=0; i<RS_STREAM_NATIVE_COUNT; ++i)
     {
         if(streams[i] && !streams[i]->is_front_valid())
         {
@@ -168,7 +214,7 @@ void rs_device::wait_all_streams()
         bool updated = false;
         while(true)
         {
-            for(int i=0; i<RS_STREAM_COUNT; ++i)
+            for(int i=0; i<RS_STREAM_NATIVE_COUNT; ++i)
             {
                 if(streams[i] && streams[i]->swap_front())
                 {
@@ -184,7 +230,7 @@ void rs_device::wait_all_streams()
 
     // Determine the largest change from the previous timestamp
     int frame_delta = INT_MIN;    
-    for(int i=0; i<RS_STREAM_COUNT; ++i)
+    for(int i=0; i<RS_STREAM_NATIVE_COUNT; ++i)
     {
         if(!streams[i]) continue;
         int delta = streams[i]->get_front_number() - last_stream_timestamp; // Relying on undefined behavior: 32-bit integer overflow -> wraparound
@@ -192,7 +238,7 @@ void rs_device::wait_all_streams()
     }
 
     // Wait for any stream which expects a new frame prior to the frame time
-    for(int i=0; i<RS_STREAM_COUNT; ++i)
+    for(int i=0; i<RS_STREAM_NATIVE_COUNT; ++i)
     {
         if(!streams[i]) continue;
         int next_timestamp = streams[i]->get_front_number() + streams[i]->get_front_delta();
@@ -209,7 +255,7 @@ void rs_device::wait_all_streams()
     {
         // Set time 0 to the least recent of the current frames
         base_timestamp = 0;
-        for(int i=0; i<RS_STREAM_COUNT; ++i)
+        for(int i=0; i<RS_STREAM_NATIVE_COUNT; ++i)
         {
             if(!streams[i]) continue;
             int delta = streams[i]->get_front_number() - last_stream_timestamp; // Relying on undefined behavior: 32-bit integer overflow -> wraparound
@@ -225,9 +271,87 @@ void rs_device::wait_all_streams()
 
 int rs_device::get_frame_timestamp(rs_stream stream) const 
 { 
-    if(!streams[stream]) throw std::runtime_error("stream not enabled"); 
+    stream = get_stream_data_native_stream(stream);
+    if(!streams[stream]) throw std::runtime_error(to_string() << "stream not enabled: " << stream); 
     return base_timestamp == -1 ? 0 : convert_timestamp(base_timestamp + streams[stream]->get_front_number() - last_stream_timestamp);
 }
+
+#define RSUTIL_IMPLEMENTATION
+#include "../include/librealsense/rsutil.h"
+
+void rs_align_images(void * depth_aligned_to_color, void * color_aligned_to_depth, const void * depth_pixels, rs_format depth_format, float depth_scale, const rs_intrinsics * depth_intrin, const rs_extrinsics * depth_to_color, const rs_intrinsics * color_intrin, const void * color_pixels, rs_format color_format)
+{
+    assert(depth_format == RS_FORMAT_Z16);
+    assert(color_format == RS_FORMAT_RGB8);
+    const uint16_t * in_depth = (const uint16_t *)(depth_pixels);
+    const rs_byte3 * in_color = (const rs_byte3 *)(color_pixels);
+    uint16_t * out_depth = (uint16_t *)(depth_aligned_to_color);
+    rs_byte3 * out_color = (rs_byte3 *)(color_aligned_to_depth);
+    int depth_x, depth_y, depth_pixel_index, color_x, color_y, color_pixel_index;
+
+    // Iterate over the pixels of the depth image       
+    for(depth_y = 0; depth_y < depth_intrin->height; ++depth_y)
+    {
+        for(depth_x = 0; depth_x < depth_intrin->width; ++depth_x)
+        {
+            // Skip over depth pixels with the value of zero, we have no depth data so we will not write anything into our aligned images
+            depth_pixel_index = depth_y * depth_intrin->width + depth_x;
+            if(in_depth[depth_pixel_index])
+            {
+                // Determine the corresponding pixel location in our color image
+                float depth_pixel[2] = {depth_x, depth_y}, depth_point[3], color_point[3], color_pixel[2];
+                rs_deproject_pixel_to_point(depth_point, depth_intrin, depth_pixel, in_depth[depth_pixel_index] * depth_scale);
+                rs_transform_point_to_point(color_point, depth_to_color, depth_point);
+                rs_project_point_to_pixel(color_pixel, color_intrin, color_point);
+                
+                // If the location is outside the bounds of the image, skip to the next pixel
+                color_x = (int)roundf(color_pixel[0]);
+                color_y = (int)roundf(color_pixel[1]);
+                if(color_x < 0 || color_y < 0 || color_x >= color_intrin->width || color_y >= color_intrin->height)
+                {
+                    continue;
+                }
+
+                // Transfer data from original images into corresponding aligned images
+                color_pixel_index = color_y * color_intrin->width + color_x;
+                out_color[depth_pixel_index] = in_color[color_pixel_index];
+                out_depth[color_pixel_index] = in_depth[depth_pixel_index];
+            }
+        }
+    }
+}
+
+const void * rs_device::get_frame_data(rs_stream stream) const 
+{ 
+    if(stream < RS_STREAM_NATIVE_COUNT)
+    {
+        if(!streams[stream]) throw std::runtime_error(to_string() << "stream not enabled: " << stream);
+        return streams[stream]->get_front_data(); 
+    }
+
+    if(synthetic_images[stream - RS_STREAM_NATIVE_COUNT].empty() || synthetic_timestamps[stream - RS_STREAM_NATIVE_COUNT] != get_frame_timestamp(get_stream_data_native_stream(stream)))
+    {
+        auto depth_intrin = get_stream_intrinsics(RS_STREAM_DEPTH);
+        auto color_intrin = get_stream_intrinsics(RS_STREAM_COLOR);
+        auto depth_to_color = get_extrinsics(RS_STREAM_DEPTH, RS_STREAM_COLOR);
+
+        auto & depth_aligned_to_color = synthetic_images[RS_STREAM_DEPTH_ALIGNED_TO_COLOR - RS_STREAM_NATIVE_COUNT];
+        depth_aligned_to_color.resize(rsimpl::get_image_size(color_intrin.width, color_intrin.height, get_stream_format(RS_STREAM_DEPTH)));
+        memset(depth_aligned_to_color.data(), 0, depth_aligned_to_color.size());
+
+        auto & color_aligned_to_depth = synthetic_images[RS_STREAM_COLOR_ALIGNED_TO_DEPTH - RS_STREAM_NATIVE_COUNT];
+        color_aligned_to_depth.resize(rsimpl::get_image_size(depth_intrin.width, depth_intrin.height, get_stream_format(RS_STREAM_COLOR)));
+        memset(color_aligned_to_depth.data(), 0, color_aligned_to_depth.size());
+
+        rs_align_images(depth_aligned_to_color.data(), color_aligned_to_depth.data(),
+            get_frame_data(RS_STREAM_DEPTH), get_stream_format(RS_STREAM_DEPTH), get_depth_scale(), &depth_intrin,
+            &depth_to_color, &color_intrin, get_frame_data(RS_STREAM_COLOR), get_stream_format(RS_STREAM_COLOR));    
+
+        synthetic_timestamps[RS_STREAM_DEPTH_ALIGNED_TO_COLOR - RS_STREAM_NATIVE_COUNT] = get_frame_timestamp(RS_STREAM_DEPTH);
+        synthetic_timestamps[RS_STREAM_COLOR_ALIGNED_TO_DEPTH - RS_STREAM_NATIVE_COUNT] = get_frame_timestamp(RS_STREAM_COLOR);
+    }
+    return synthetic_images[stream - RS_STREAM_NATIVE_COUNT].data();
+} 
 
 rsimpl::stream_mode rs_device::get_current_stream_mode(rs_stream stream) const
 {
@@ -243,12 +367,13 @@ rsimpl::stream_mode rs_device::get_current_stream_mode(rs_stream stream) const
         }   
         throw std::logic_error("no mode found"); // Should never happen, select_modes should throw if no mode can be found
     }
-    throw std::runtime_error("stream not enabled");
+    throw std::runtime_error(to_string() << "stream not enabled: " << stream);
 }
 
 rs_extrinsics rs_device::get_extrinsics(rs_stream from, rs_stream to) const
 {
-    auto transform = inverse(device_info.stream_poses[from]) * device_info.stream_poses[to];
+    // TODO: Adjust for synthetic streams
+    auto transform = inverse(device_info.stream_poses[get_stream_intrinsics_native_stream(from)]) * device_info.stream_poses[get_stream_intrinsics_native_stream(to)];
     rs_extrinsics extrin;
     (float3x3 &)extrin.rotation = transform.orientation;
     (float3 &)extrin.translation = transform.position;
@@ -288,7 +413,12 @@ namespace rsimpl
 
 int rs_device::get_stream_mode_count(rs_stream stream) const
 {
-    return enumerate_stream_modes(device_info, stream).size();
+    switch(stream)
+    {
+    case RS_STREAM_COLOR_ALIGNED_TO_DEPTH: return 0; // Synthetic streams are not configurable
+    case RS_STREAM_DEPTH_ALIGNED_TO_COLOR: return 0; // Synthetic streams are not configurable
+    default: assert(stream < RS_STREAM_NATIVE_COUNT); return enumerate_stream_modes(device_info, stream).size();
+    }
 }
 
 void rs_device::get_stream_mode(rs_stream stream, int mode, int * width, int * height, rs_format * format, int * framerate) const
@@ -308,7 +438,7 @@ void rs_device::set_intrinsics_thread_safe(std::vector<rs_intrinsics> new_intrin
 
 void rs_device::set_option(rs_option option, int value)
 {
-    if(!supports_option(option)) throw std::runtime_error("option not supported by this device");
+    if(!supports_option(option)) throw std::runtime_error(to_string() << "option not supported by this device - " << option);
     if(uvc::is_pu_control(option))
     {
         uvc::set_pu_control(get_device(), device_info.stream_subdevices[RS_STREAM_COLOR], option, value);
@@ -321,7 +451,7 @@ void rs_device::set_option(rs_option option, int value)
 
 int rs_device::get_option(rs_option option) const
 {
-    if(!supports_option(option)) throw std::runtime_error("option not supported by this device");
+    if(!supports_option(option)) throw std::runtime_error(to_string() << "option not supported by this device - " << option);
     if(uvc::is_pu_control(option))
     {
         return uvc::get_pu_control(get_device(), device_info.stream_subdevices[RS_STREAM_COLOR], option);

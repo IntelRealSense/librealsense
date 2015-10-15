@@ -18,7 +18,9 @@ namespace rs
         depth                           = RS_STREAM_DEPTH,
         color                           = RS_STREAM_COLOR,
         infrared                        = RS_STREAM_INFRARED,
-        infrared2                       = RS_STREAM_INFRARED2
+        infrared2                       = RS_STREAM_INFRARED2,
+        depth_aligned_to_color          = RS_STREAM_DEPTH_ALIGNED_TO_COLOR,
+        color_aligned_to_depth          = RS_STREAM_COLOR_ALIGNED_TO_DEPTH
     };
 
     enum class format : int32_t
@@ -154,6 +156,7 @@ namespace rs
         rs_device *         get_handle() const                                                      { return dev; }
 
         const char *        get_name()                                                              { return rs_get_device_name(dev, throw_on_error()); }
+
         extrinsics          get_extrinsics(stream from, stream to)                                  { extrinsics extrin; rs_get_device_extrinsics(dev, (rs_stream)from, (rs_stream)to, &extrin.extrin, throw_on_error()); return extrin; }
         float               get_depth_scale()                                                       { return rs_get_device_depth_scale(dev, throw_on_error()); }
         bool                supports_option(option o) const                                         { return !!rs_device_supports_option(dev, (rs_option)o, throw_on_error()); }
@@ -162,6 +165,8 @@ namespace rs
         void                enable_stream(stream s, preset preset)                                  { rs_enable_stream_preset(dev, (rs_stream)s, (rs_preset)preset, throw_on_error()); }
         void                disable_stream(stream s)                                                { rs_disable_stream(dev, (rs_stream)s, throw_on_error()); }
         bool                is_stream_enabled(stream s)                                             { return !!rs_stream_is_enabled(dev, (rs_stream)s, throw_on_error()); }
+        int                 get_stream_width(stream s)                                              { return get_stream_intrinsics(s).width(); }
+        int                 get_stream_height(stream s)                                             { return get_stream_intrinsics(s).height(); }
         intrinsics          get_stream_intrinsics(stream s)                                         { intrinsics intrin; rs_get_stream_intrinsics(dev, (rs_stream)s, &intrin.intrin, throw_on_error()); return intrin; }
         format              get_stream_format(stream s)                                             { return (format)rs_get_stream_format(dev, (rs_stream)s, throw_on_error()); }
         int                 get_stream_framerate(stream s)                                          { return rs_get_stream_framerate(dev, (rs_stream)s, throw_on_error()); }

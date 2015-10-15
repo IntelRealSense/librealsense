@@ -95,20 +95,20 @@ namespace rsimpl
 
     struct static_device_info
     {
-        std::string name;                                           // Model name of the camera
-        int stream_subdevices[RS_STREAM_COUNT];                     // Which subdevice is used to support each stream, or -1 if stream is unavailable
-        std::vector<subdevice_mode> subdevice_modes;                // A list of available modes each subdevice can be put into
-        std::vector<interstream_rule> interstream_rules;            // Rules which constrain the set of available modes
-        stream_request presets[RS_STREAM_COUNT][RS_PRESET_COUNT];   // Presets available for each stream
-        bool option_supported[RS_OPTION_COUNT];                     // Whether or not a given option is supported on this camera
-        pose stream_poses[RS_STREAM_COUNT];                         // Static pose of each camera on the device
-        float depth_scale;                                          // Scale of depth values
-        int num_libuvc_transfer_buffers;                            // Number of transfer buffers to use in LibUVC backend
+        std::string name;                                                   // Model name of the camera
+        int stream_subdevices[RS_STREAM_NATIVE_COUNT];                      // Which subdevice is used to support each stream, or -1 if stream is unavailable
+        std::vector<subdevice_mode> subdevice_modes;                        // A list of available modes each subdevice can be put into
+        std::vector<interstream_rule> interstream_rules;                    // Rules which constrain the set of available modes
+        stream_request presets[RS_STREAM_NATIVE_COUNT][RS_PRESET_COUNT];    // Presets available for each stream
+        bool option_supported[RS_OPTION_COUNT];                             // Whether or not a given option is supported on this camera
+        pose stream_poses[RS_STREAM_NATIVE_COUNT];                          // Static pose of each camera on the device
+        float depth_scale;                                                  // Scale of depth values
+        int num_libuvc_transfer_buffers;                                    // Number of transfer buffers to use in LibUVC backend
 
         static_device_info();
 
-        const subdevice_mode * select_mode(const stream_request (&requests)[RS_STREAM_COUNT], int subdevice_index) const;
-        std::vector<subdevice_mode> select_modes(const stream_request (&requests)[RS_STREAM_COUNT]) const;
+        const subdevice_mode * select_mode(const stream_request (&requests)[RS_STREAM_NATIVE_COUNT], int subdevice_index) const;
+        std::vector<subdevice_mode> select_modes(const stream_request (&requests)[RS_STREAM_NATIVE_COUNT]) const;
     };
     static_device_info add_standard_unpackers(const static_device_info & device_info);
 

@@ -34,8 +34,9 @@ void rs_rectify_image(void * rect_pixels, const rs_intrinsics * rect_intrin, con
 #endif
 
 #ifdef RSUTIL_IMPLEMENTATION
-#include "assert.h"
-#include "math.h"
+#include "stdint.h" /* for uint16_t */
+#include "assert.h" /* for assert(...) */
+#include "math.h" /* for roundf(...) */
 
 static void rs_project_point_to_pixel(float pixel[2], const struct rs_intrinsics * intrin, const float point[3])
 {
@@ -195,43 +196,46 @@ void rs_compute_rectification_table(int * rectification_table,
     }
 }
 
+
+
 #pragma pack(push, 1)
+typedef struct rs_byte1 { char b[1]; } rs_byte1;
+typedef struct rs_byte2 { char b[2]; } rs_byte2;
+typedef struct rs_byte3 { char b[3]; } rs_byte3;
+typedef struct rs_byte4 { char b[4]; } rs_byte4;
+#pragma pack(pop)
+
 void rs_rectify_image_8bpp(void * rect_pixels, const rs_intrinsics * rect_intrin, const int * rectification_table, const void * unrect_pixels)
 {
-    struct pixel { char b[1]; };
-    struct pixel * rect = (struct pixel *)rect_pixels;
-    const struct pixel * unrect = (const struct pixel *)unrect_pixels;
+    rs_byte1 * rect = (rs_byte1 *)rect_pixels;
+    const rs_byte1 * unrect = (const rs_byte1 *)unrect_pixels;
     int i, n = rect_intrin->width * rect_intrin->height;
     for(i=0; i<n; ++i) rect[i] = unrect[rectification_table[i]];
 }
 
 void rs_rectify_image_16bpp(void * rect_pixels, const rs_intrinsics * rect_intrin, const int * rectification_table, const void * unrect_pixels)
 {
-    struct pixel { char b[2]; };
-    struct pixel * rect = (struct pixel *)rect_pixels;
-    const struct pixel * unrect = (const struct pixel *)unrect_pixels;
+    rs_byte2 * rect = (rs_byte2 *)rect_pixels;
+    const rs_byte2 * unrect = (const rs_byte2 *)unrect_pixels;
     int i, n = rect_intrin->width * rect_intrin->height;
     for(i=0; i<n; ++i) rect[i] = unrect[rectification_table[i]];
 }
 
 void rs_rectify_image_24bpp(void * rect_pixels, const rs_intrinsics * rect_intrin, const int * rectification_table, const void * unrect_pixels)
 {
-    struct pixel { char b[3]; };
-    struct pixel * rect = (struct pixel *)rect_pixels;
-    const struct pixel * unrect = (const struct pixel *)unrect_pixels;
+    rs_byte3 * rect = (rs_byte3 *)rect_pixels;
+    const rs_byte3 * unrect = (const rs_byte3 *)unrect_pixels;
     int i, n = rect_intrin->width * rect_intrin->height;
     for(i=0; i<n; ++i) rect[i] = unrect[rectification_table[i]];
 }
 
 void rs_rectify_image_32bpp(void * rect_pixels, const rs_intrinsics * rect_intrin, const int * rectification_table, const void * unrect_pixels)
 {
-    struct pixel { char b[4]; };
-    struct pixel * rect = (struct pixel *)rect_pixels;
-    const struct pixel * unrect = (const struct pixel *)unrect_pixels;
+    rs_byte4 * rect = (rs_byte4 *)rect_pixels;
+    const rs_byte4 * unrect = (const rs_byte4 *)unrect_pixels;
     int i, n = rect_intrin->width * rect_intrin->height;
     for(i=0; i<n; ++i) rect[i] = unrect[rectification_table[i]];
 }
-#pragma pack(pop)
 
 void rs_rectify_image(void * rect_pixels, const rs_intrinsics * rect_intrin, const int * rectification_table, const void * unrect_pixels, rs_format format)
 {
@@ -251,7 +255,7 @@ void rs_rectify_image(void * rect_pixels, const rs_intrinsics * rect_intrin, con
         break;
     default:
         /* NOTE: rs_rectify_image_16bpp(...) is not appropriate for RS_FORMAT_YUYV images, no logic prevents U/V channels from being written to one another */
-        assert(false);
+        assert(0);
     }
 }
 
