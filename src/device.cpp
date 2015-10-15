@@ -92,7 +92,8 @@ static rs_stream get_stream_intrinsics_native_stream(rs_stream stream)
     {
     case RS_STREAM_COLOR_ALIGNED_TO_DEPTH: return RS_STREAM_DEPTH;
     case RS_STREAM_DEPTH_ALIGNED_TO_COLOR: return RS_STREAM_COLOR;
-    default: assert(stream < RS_STREAM_NATIVE_COUNT); return stream;
+    case RS_STREAM_DEPTH_ALIGNED_TO_RECTIFIED_COLOR: return RS_STREAM_RECTIFIED_COLOR;
+    default: assert(stream < RS_STREAM_RECTIFIED_COLOR); return stream;
     }
 }
 
@@ -101,8 +102,10 @@ static rs_stream get_stream_data_native_stream(rs_stream stream)
 {
     switch(stream)
     {
+    case RS_STREAM_RECTIFIED_COLOR: return RS_STREAM_COLOR;
     case RS_STREAM_COLOR_ALIGNED_TO_DEPTH: return RS_STREAM_COLOR;
     case RS_STREAM_DEPTH_ALIGNED_TO_COLOR: return RS_STREAM_DEPTH;
+    case RS_STREAM_DEPTH_ALIGNED_TO_RECTIFIED_COLOR: return RS_STREAM_DEPTH;
     default: assert(stream < RS_STREAM_NATIVE_COUNT); return stream;
     }
 }
@@ -117,8 +120,17 @@ bool rs_device::is_stream_enabled(rs_stream stream) const
 
 rs_intrinsics rs_device::get_stream_intrinsics(rs_stream stream) const 
 {
-    std::lock_guard<std::mutex> lock(intrinsics_mutex); 
-    return intrinsics[get_current_stream_mode(get_stream_intrinsics_native_stream(stream)).intrinsics_index];
+    std::lock_guard<std::mutex> lock(intrinsics_mutex);
+
+    stream = get_stream_intrinsics_native_stream(stream);
+    if(stream == RS_STREAM_RECTIFIED_COLOR)
+    {
+        auto intrin = intrinsics[get_current_stream_mode(RS_STREAM_COLOR).intrinsics_index];
+        intrin.model = RS_DISTORTION_NONE;
+        memset(&intrin.coeffs, 0, sizeof(intrin.coeffs));
+        return intrin;
+    }
+    else return intrinsics[get_current_stream_mode(stream).intrinsics_index];
 }
 
 rs_format rs_device::get_stream_format(rs_stream stream) const
@@ -277,49 +289,31 @@ int rs_device::get_frame_timestamp(rs_stream stream) const
     return base_timestamp == -1 ? 0 : convert_timestamp(base_timestamp + streams[stream]->get_front_number() - last_stream_timestamp);
 }
 
-//#define RSUTIL_IMPLEMENTATION
-//#include "../include/librealsense/rsutil.h"
-
-void rs_align_images(void * depth_aligned_to_color, void * color_aligned_to_depth, const void * depth_pixels, rs_format depth_format, float depth_scale, const rs_intrinsics * depth_intrin, const rs_extrinsics * depth_to_color, const rs_intrinsics * color_intrin, const void * color_pixels, rs_format color_format)
+const void * rs_device::get_aligned_image(rs_stream stream, rs_stream from, rs_stream to) const
 {
-    /*assert(depth_format == RS_FORMAT_Z16);
-    assert(color_format == RS_FORMAT_RGB8);
-    const uint16_t * in_depth = (const uint16_t *)(depth_pixels);
-    const rs_byte3 * in_color = (const rs_byte3 *)(color_pixels);
-    uint16_t * out_depth = (uint16_t *)(depth_aligned_to_color);
-    rs_byte3 * out_color = (rs_byte3 *)(color_aligned_to_depth);
-    int depth_x, depth_y, depth_pixel_index, color_x, color_y, color_pixel_index;
-
-    // Iterate over the pixels of the depth image       
-    for(depth_y = 0; depth_y < depth_intrin->height; ++depth_y)
+    const int index = stream - RS_STREAM_NATIVE_COUNT;
+    if(synthetic_images[index].empty() || synthetic_timestamps[index] != get_frame_timestamp(from))
     {
-        for(depth_x = 0; depth_x < depth_intrin->width; ++depth_x)
-        {
-            // Skip over depth pixels with the value of zero, we have no depth data so we will not write anything into our aligned images
-            depth_pixel_index = depth_y * depth_intrin->width + depth_x;
-            if(in_depth[depth_pixel_index])
-            {
-                // Determine the corresponding pixel location in our color image
-                float depth_pixel[2] = {depth_x, depth_y}, depth_point[3], color_point[3], color_pixel[2];
-                rs_deproject_pixel_to_point(depth_point, depth_intrin, depth_pixel, in_depth[depth_pixel_index] * depth_scale);
-                rs_transform_point_to_point(color_point, depth_to_color, depth_point);
-                rs_project_point_to_pixel(color_pixel, color_intrin, color_point);
-                
-                // If the location is outside the bounds of the image, skip to the next pixel
-                color_x = (int)roundf(color_pixel[0]);
-                color_y = (int)roundf(color_pixel[1]);
-                if(color_x < 0 || color_y < 0 || color_x >= color_intrin->width || color_y >= color_intrin->height)
-                {
-                    continue;
-                }
+        synthetic_images[index].resize(rsimpl::get_image_size(get_stream_intrinsics(to).width, get_stream_intrinsics(to).height, get_stream_format(from)));
+        memset(synthetic_images[index].data(), 0, synthetic_images[index].size());
+        synthetic_timestamps[index] = get_frame_timestamp(from);
 
-                // Transfer data from original images into corresponding aligned images
-                color_pixel_index = color_y * color_intrin->width + color_x;
-                out_color[depth_pixel_index] = in_color[color_pixel_index];
-                out_depth[color_pixel_index] = in_depth[depth_pixel_index];
-            }
+        if(from == RS_STREAM_DEPTH)
+        {
+            align_depth_to_color(synthetic_images[index].data(), get_frame_data(RS_STREAM_DEPTH), get_stream_format(RS_STREAM_DEPTH), get_depth_scale(), get_stream_intrinsics(RS_STREAM_DEPTH),
+                get_extrinsics(RS_STREAM_DEPTH, to), get_stream_intrinsics(to));    
         }
-    }*/
+        else if(to == RS_STREAM_DEPTH)
+        {
+            align_color_to_depth(synthetic_images[index].data(), get_frame_data(RS_STREAM_DEPTH), get_stream_format(RS_STREAM_DEPTH), get_depth_scale(), get_stream_intrinsics(RS_STREAM_DEPTH),
+                get_extrinsics(RS_STREAM_DEPTH, from), get_stream_intrinsics(from), get_frame_data(from), get_stream_format(from));      
+        }
+        else
+        {
+            assert(false && "Cannot align two images if neither have depth data");
+        }
+    }
+    return synthetic_images[index].data();
 }
 
 const void * rs_device::get_frame_data(rs_stream stream) const 
@@ -332,24 +326,27 @@ const void * rs_device::get_frame_data(rs_stream stream) const
 
     if(synthetic_images[stream - RS_STREAM_NATIVE_COUNT].empty() || synthetic_timestamps[stream - RS_STREAM_NATIVE_COUNT] != get_frame_timestamp(get_stream_data_native_stream(stream)))
     {
-        auto depth_intrin = get_stream_intrinsics(RS_STREAM_DEPTH);
-        auto color_intrin = get_stream_intrinsics(RS_STREAM_COLOR);
-        auto depth_to_color = get_extrinsics(RS_STREAM_DEPTH, RS_STREAM_COLOR);
-
-        auto & depth_aligned_to_color = synthetic_images[RS_STREAM_DEPTH_ALIGNED_TO_COLOR - RS_STREAM_NATIVE_COUNT];
-        depth_aligned_to_color.resize(rsimpl::get_image_size(color_intrin.width, color_intrin.height, get_stream_format(RS_STREAM_DEPTH)));
-        memset(depth_aligned_to_color.data(), 0, depth_aligned_to_color.size());
-
-        auto & color_aligned_to_depth = synthetic_images[RS_STREAM_COLOR_ALIGNED_TO_DEPTH - RS_STREAM_NATIVE_COUNT];
-        color_aligned_to_depth.resize(rsimpl::get_image_size(depth_intrin.width, depth_intrin.height, get_stream_format(RS_STREAM_COLOR)));
-        memset(color_aligned_to_depth.data(), 0, color_aligned_to_depth.size());
-
-        rs_align_images(depth_aligned_to_color.data(), color_aligned_to_depth.data(),
-            get_frame_data(RS_STREAM_DEPTH), get_stream_format(RS_STREAM_DEPTH), get_depth_scale(), &depth_intrin,
-            &depth_to_color, &color_intrin, get_frame_data(RS_STREAM_COLOR), get_stream_format(RS_STREAM_COLOR));    
-
-        synthetic_timestamps[RS_STREAM_DEPTH_ALIGNED_TO_COLOR - RS_STREAM_NATIVE_COUNT] = get_frame_timestamp(RS_STREAM_DEPTH);
-        synthetic_timestamps[RS_STREAM_COLOR_ALIGNED_TO_DEPTH - RS_STREAM_NATIVE_COUNT] = get_frame_timestamp(RS_STREAM_COLOR);
+        if(stream == RS_STREAM_RECTIFIED_COLOR)
+        {
+            auto rect_intrin = get_stream_intrinsics(RS_STREAM_RECTIFIED_COLOR);
+            if(rectification_table.empty())
+            {
+                const auto rect_to_unrect_extrin = get_extrinsics(RS_STREAM_RECTIFIED_COLOR, RS_STREAM_COLOR);
+                rectification_table = compute_rectification_table(rect_intrin, (const float3x3 &)rect_to_unrect_extrin.rotation, get_stream_intrinsics(RS_STREAM_COLOR));
+            }
+            
+            const auto format = get_stream_format(RS_STREAM_COLOR);
+            auto & rectified_color = synthetic_images[RS_STREAM_RECTIFIED_COLOR - RS_STREAM_NATIVE_COUNT];
+            rectified_color.resize(get_image_size(rect_intrin.width, rect_intrin.height, format));
+            rectify_image(rectified_color.data(), rectification_table, get_frame_data(RS_STREAM_COLOR), format);
+        }
+        
+        switch(stream)
+        {
+        case RS_STREAM_COLOR_ALIGNED_TO_DEPTH: return get_aligned_image(stream, RS_STREAM_COLOR, RS_STREAM_DEPTH);
+        case RS_STREAM_DEPTH_ALIGNED_TO_COLOR: return get_aligned_image(stream, RS_STREAM_DEPTH, RS_STREAM_COLOR);
+        case RS_STREAM_DEPTH_ALIGNED_TO_RECTIFIED_COLOR: return get_aligned_image(stream, RS_STREAM_DEPTH, RS_STREAM_RECTIFIED_COLOR);
+        }
     }
     return synthetic_images[stream - RS_STREAM_NATIVE_COUNT].data();
 } 
@@ -371,10 +368,15 @@ rsimpl::stream_mode rs_device::get_current_stream_mode(rs_stream stream) const
     throw std::runtime_error(to_string() << "stream not enabled: " << stream);
 }
 
+rsimpl::pose rs_device::get_pose(rs_stream stream) const
+{
+    if(stream == RS_STREAM_RECTIFIED_COLOR) return {device_info.stream_poses[RS_STREAM_DEPTH].orientation, device_info.stream_poses[RS_STREAM_COLOR].position};
+    else return device_info.stream_poses[get_stream_intrinsics_native_stream(stream)];
+}
+
 rs_extrinsics rs_device::get_extrinsics(rs_stream from, rs_stream to) const
 {
-    // TODO: Adjust for synthetic streams
-    auto transform = inverse(device_info.stream_poses[get_stream_intrinsics_native_stream(from)]) * device_info.stream_poses[get_stream_intrinsics_native_stream(to)];
+    auto transform = inverse(get_pose(from)) * get_pose(to);
     rs_extrinsics extrin;
     (float3x3 &)extrin.rotation = transform.orientation;
     (float3 &)extrin.translation = transform.position;
