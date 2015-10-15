@@ -288,32 +288,24 @@ int rs_device::get_frame_timestamp(rs_stream stream) const
     return base_timestamp == -1 ? 0 : convert_timestamp(base_timestamp + streams[stream]->get_front_number() - last_stream_timestamp);
 }
 
-#define RSUTIL_IMPLEMENTATION
 #include "../include/librealsense/rsutil.h"
 
 #pragma pack(push, 1)
 template<int N> struct bytes { char b[N]; };
 #pragma pack(pop)
 
-void rs_compute_rectification_table(int * rectification_table, 
-    const rs_intrinsics * rect_intrin, const rs_extrinsics * depth_to_rect_extrin,
-    const rs_intrinsics * unrect_intrin, const rs_extrinsics * depth_to_unrect_extrin)
+void rs_compute_rectification_table(int * rectification_table, const rs_intrinsics * rect_intrin, const float3x3 & rect_to_unrect_rotation, const rs_intrinsics * unrect_intrin)
 {   
-    int x, y, ux, uy;
-    rs_extrinsics rect_to_depth, rect_to_unrect;
-
-    rs_invert_extrinsics(&rect_to_depth, depth_to_rect_extrin);
-    rs_compose_extrinsics(&rect_to_unrect, &rect_to_depth, depth_to_unrect_extrin);
-    /* NOTE: rect_to_unrect.translation will be approximately the zero vector, and we can ignore it going forward */
-
+    int x, y, ux, uy;   
     for(y=0; y<rect_intrin->height; ++y)
     {
         for(x=0; x<rect_intrin->width; ++x)
         {
-            float rect_pixel[2] = {x,y}, rect_ray[3], unrect_ray[3], unrect_pixel[2];
-            rs_deproject_pixel_to_point(rect_ray, rect_intrin, rect_pixel, 1);
-            rs_multiply_mat3x3_vec3(unrect_ray, rect_to_unrect.rotation, rect_ray);
-            rs_project_point_to_pixel(unrect_pixel, unrect_intrin, unrect_ray);
+            float3 rect_ray, unrect_ray;
+            float rect_pixel[2] = {x,y}, unrect_pixel[2];
+            rs_deproject_pixel_to_point(&rect_ray.x, rect_intrin, rect_pixel, 1);
+            unrect_ray = rect_to_unrect_rotation * rect_ray;
+            rs_project_point_to_pixel(unrect_pixel, unrect_intrin, &unrect_ray.x);
             ux = roundf(unrect_pixel[0]);
             ux = ux < 0 ? 0 : ux;
             ux = ux >= unrect_intrin->width ? unrect_intrin->width - 1 : ux;
@@ -453,9 +445,9 @@ const void * rs_device::get_frame_data(rs_stream stream) const
             if(rectification_table.empty())
             {
                 const auto unrect_intrin = get_stream_intrinsics(RS_STREAM_COLOR);
-                const auto rect_extrin = get_extrinsics(RS_STREAM_DEPTH, RS_STREAM_RECTIFIED_COLOR), unrect_extrin = get_extrinsics(RS_STREAM_DEPTH, RS_STREAM_COLOR);
+                const auto rect_to_unrect_extrin = get_extrinsics(RS_STREAM_RECTIFIED_COLOR, RS_STREAM_COLOR);
                 rectification_table.resize(rect_intrin.width * rect_intrin.height);
-                rs_compute_rectification_table(rectification_table.data(), &rect_intrin, &rect_extrin, &unrect_intrin, &unrect_extrin);
+                rs_compute_rectification_table(rectification_table.data(), &rect_intrin, (const float3x3 &)rect_to_unrect_extrin.rotation, &unrect_intrin);
             }
             
             const auto format = get_stream_format(RS_STREAM_COLOR);
