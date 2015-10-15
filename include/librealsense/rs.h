@@ -109,7 +109,9 @@ void            rs_delete_context           (rs_context * context, rs_error ** e
 int             rs_get_device_count         (const rs_context * context, rs_error ** error);
 rs_device *     rs_get_device               (const rs_context * context, int index, rs_error ** error);
 
-const char *    rs_get_device_name          (const rs_device * device, rs_error ** error);
+const char *    rs_get_device_name              (const rs_device * device, rs_error ** error);
+const char *    rs_get_device_serial            (const rs_device * device, rs_error ** error);
+const char *    rs_get_device_firmware_version  (const rs_device * device, rs_error ** error);
 void            rs_get_device_extrinsics    (const rs_device * device, rs_stream from, rs_stream to, rs_extrinsics * extrin, rs_error ** error);
 float           rs_get_device_depth_scale   (const rs_device * device, rs_error ** error);
 int             rs_device_supports_option   (const rs_device * device, rs_option option, rs_error ** error);

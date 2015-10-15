@@ -76,6 +76,9 @@ int main(int argc, char * argv[])
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
 
+    printf("Device Serial: %s \n", rs_get_device_serial(dev, &error)); check_error();
+    printf("Device Firmware: %s \n", rs_get_device_firmware_version(dev, &error)); check_error();
+
     while (!glfwWindowShouldClose(win))
     {
         int width, height;

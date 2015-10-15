@@ -77,6 +77,21 @@ const char * rs_get_device_name(const rs_device * device, rs_error ** error) try
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, device)
 
+const char * rs_get_device_serial(const rs_device * device, rs_error ** error) try
+{
+    VALIDATE_NOT_NULL(device);
+    return device->get_serial();
+}
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, device)
+
+const char * rs_get_device_firmware_version(const rs_device * device, rs_error ** error) try
+{
+    VALIDATE_NOT_NULL(device);
+    return device->get_firmware_version();
+}
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, device)
+
+
 void rs_get_device_extrinsics(const rs_device * device, rs_stream from, rs_stream to, rs_extrinsics * extrin, rs_error ** error) try
 {
     VALIDATE_NOT_NULL(device);
