@@ -243,35 +243,31 @@ namespace rsimpl
     // Image alignment //
     /////////////////////
 
-    template<class TRANSFER_PIXEL> void align_images(const uint16_t * in_depth, float depth_scale, 
-        const rs_intrinsics & depth_intrin, const rs_extrinsics & depth_to_other, const rs_intrinsics & other_intrin, TRANSFER_PIXEL transfer_pixel)
+    template<class GET_DEPTH, class TRANSFER_PIXEL> void align_images(const rs_intrinsics & depth_intrin, const rs_extrinsics & depth_to_other, const rs_intrinsics & other_intrin, GET_DEPTH get_depth, TRANSFER_PIXEL transfer_pixel)
     {
-        // Iterate over the pixels of the depth image       
-        for(int depth_y = 0; depth_y < depth_intrin.height; ++depth_y)
+        // Iterate over the pixels of the depth image    
+        for(int depth_y = 0, depth_pixel_index = 0; depth_y < depth_intrin.height; ++depth_y)
         {
-            for(int depth_x = 0; depth_x < depth_intrin.width; ++depth_x)
+            for(int depth_x = 0; depth_x < depth_intrin.width; ++depth_x, ++depth_pixel_index)
             {
                 // Skip over depth pixels with the value of zero, we have no depth data so we will not write anything into our aligned images
-                int depth_pixel_index = depth_y * depth_intrin.width + depth_x;
-                if(in_depth[depth_pixel_index])
+                if(float depth = get_depth(depth_pixel_index))
                 {
                     // Determine the corresponding pixel location in our color image
                     float depth_pixel[2] = {depth_x, depth_y}, depth_point[3], other_point[3], other_pixel[2];
-                    rs_deproject_pixel_to_point(depth_point, &depth_intrin, depth_pixel, in_depth[depth_pixel_index] * depth_scale);
+                    rs_deproject_pixel_to_point(depth_point, &depth_intrin, depth_pixel, depth);
                     rs_transform_point_to_point(other_point, &depth_to_other, depth_point);
                     rs_project_point_to_pixel(other_pixel, &other_intrin, other_point);
                 
                     // If the location is outside the bounds of the image, skip to the next pixel
-                    int other_x = (int)roundf(other_pixel[0]);
-                    int other_y = (int)roundf(other_pixel[1]);
+                    const int other_x = (int)roundf(other_pixel[0]), other_y = (int)roundf(other_pixel[1]);
                     if(other_x < 0 || other_y < 0 || other_x >= other_intrin.width || other_y >= other_intrin.height)
                     {
                         continue;
                     }
 
                     // Transfer data from original images into corresponding aligned images
-                    int other_pixel_index = other_y * other_intrin.width + other_x;
-                    transfer_pixel(depth_pixel_index, other_pixel_index);
+                    transfer_pixel(depth_pixel_index, other_y * other_intrin.width + other_x);
                 }
             }
         }    
@@ -282,20 +278,18 @@ namespace rsimpl
         assert(depth_format == RS_FORMAT_Z16);
         auto in_depth = (const uint16_t *)(depth_pixels);
         auto out_depth = (uint16_t *)(depth_aligned_to_color);
-        align_images(in_depth, depth_scale, depth_intrin, depth_to_color, color_intrin, [out_depth, in_depth](int depth_pixel_index, int color_pixel_index)
-        {
-            out_depth[color_pixel_index] = in_depth[depth_pixel_index];
-        });
+        align_images(depth_intrin, depth_to_color, color_intrin, 
+            [in_depth, depth_scale](int depth_pixel_index) { return in_depth[depth_pixel_index] * depth_scale; },
+            [out_depth, in_depth](int depth_pixel_index, int color_pixel_index) { out_depth[color_pixel_index] = in_depth[depth_pixel_index]; });
     }
 
     template<int N> void align_color_to_depth_bytes(void * color_aligned_to_depth, const uint16_t * in_depth, float depth_scale, const rs_intrinsics & depth_intrin, const rs_extrinsics & depth_to_color, const rs_intrinsics & color_intrin, const void * color_pixels)
     {
         auto in_color = (const bytes<N> *)(color_pixels);
         auto out_color = (bytes<N> *)(color_aligned_to_depth);
-        align_images(in_depth, depth_scale, depth_intrin, depth_to_color, color_intrin, [out_color, in_color](int depth_pixel_index, int color_pixel_index)
-        {
-            out_color[depth_pixel_index] = in_color[color_pixel_index];
-        });
+        align_images(depth_intrin, depth_to_color, color_intrin, 
+            [in_depth, depth_scale](int depth_pixel_index) { return in_depth[depth_pixel_index] * depth_scale; },            
+            [out_color, in_color](int depth_pixel_index, int color_pixel_index) { out_color[depth_pixel_index] = in_color[color_pixel_index]; });
     }
 
     void align_color_to_depth(void * color_aligned_to_depth, const void * depth_pixels, rs_format depth_format, float depth_scale, const rs_intrinsics & depth_intrin, const rs_extrinsics & depth_to_color, const rs_intrinsics & color_intrin, const void * color_pixels, rs_format color_format)
