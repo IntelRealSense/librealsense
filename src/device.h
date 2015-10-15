@@ -24,6 +24,8 @@ private:
     mutable std::vector<int>                    rectification_table;
     mutable std::vector<uint8_t>                synthetic_images[RS_STREAM_COUNT - RS_STREAM_NATIVE_COUNT];
     mutable int                                 synthetic_timestamps[RS_STREAM_COUNT - RS_STREAM_NATIVE_COUNT];
+
+    const void *                                get_aligned_image(rs_stream stream, rs_stream from, rs_stream to) const;
 protected:
     rsimpl::stream_mode                         get_current_stream_mode(rs_stream stream) const;
     const rsimpl::uvc::device &                 get_device() const { return *device; }
