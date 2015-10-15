@@ -155,6 +155,8 @@ namespace rsimpl
         // Our position is added AFTER orientation is applied, not before, so we must multiply Rthird * T to compute it
         info.stream_poses[RS_STREAM_COLOR].position = info.stream_poses[RS_STREAM_COLOR].orientation * info.stream_poses[RS_STREAM_COLOR].position;
         info.depth_scale = 0.001f;
+        info.serial = std::to_string(h.serialNumber);
+        info.firmware_version = r200::read_firmware_version(*device);
 
 		// On LibUVC backends, the R200 should use four transfer buffers
         info.num_libuvc_transfer_buffers = 4;

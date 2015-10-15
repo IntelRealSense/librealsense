@@ -104,6 +104,8 @@ namespace rsimpl
         pose stream_poses[RS_STREAM_NATIVE_COUNT];                          // Static pose of each camera on the device
         float depth_scale;                                                  // Scale of depth values
         int num_libuvc_transfer_buffers;                                    // Number of transfer buffers to use in LibUVC backend
+        std::string firmware_version;                                       // Firmware version string
+        std::string serial;                                                 // Serial number of the camera (from USB or from SPI memory)
 
         static_device_info();
 

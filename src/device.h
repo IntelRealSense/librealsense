@@ -33,8 +33,8 @@ public:
                                                 ~rs_device();
 
     const char *                                get_name() const { return device_info.name.c_str(); }
-    const char *                                get_serial() const { return ""; }
-    const char *                                get_firmware_version() const { return ""; }
+    const char *                                get_serial() const { return device_info.serial.c_str(); }
+    const char *                                get_firmware_version() const { device_info.firmware_version.c_str(); }
     rs_extrinsics                               get_extrinsics(rs_stream from, rs_stream to) const;
     float                                       get_depth_scale() const { return device_info.depth_scale; }
     bool                                        supports_option(rs_option option) const { return device_info.option_supported[option]; }

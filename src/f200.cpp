@@ -134,7 +134,8 @@ namespace rsimpl
         info.presets[RS_STREAM_DEPTH   ][RS_PRESET_HIGHEST_FRAMERATE] = {true, 640, 480, RS_FORMAT_Z16,  60};
         info.presets[RS_STREAM_COLOR   ][RS_PRESET_HIGHEST_FRAMERATE] = {true, 640, 480, RS_FORMAT_RGB8, 60};
 
-        for(int i = RS_OPTION_F200_LASER_POWER; i <= RS_OPTION_F200_CONFIDENCE_THRESHOLD; ++i) info.option_supported[i] = true;
+        for(int i = RS_OPTION_F200_LASER_POWER; i <= RS_OPTION_F200_CONFIDENCE_THRESHOLD; ++i)
+            info.option_supported[i] = true;
 
         info.stream_poses[RS_STREAM_DEPTH] = info.stream_poses[RS_STREAM_INFRARED] = {{{1,0,0},{0,1,0},{0,0,1}}, {0,0,0}};
         info.stream_poses[RS_STREAM_COLOR] = {transpose((const float3x3 &)c.Rt), (const float3 &)c.Tt * 0.001f}; // convert mm to m
@@ -161,7 +162,6 @@ namespace rsimpl
                                                                   {RS_STREAM_INFRARED, 640, 480, RS_FORMAT_Y16, 60, DEPTH_VGA}}, &unpack_inzi_to_z16_and_y16, &decode_ivcam_frame_number});
         info.subdevice_modes.push_back({1, 640, 480, 'INZI', 60, {{RS_STREAM_DEPTH,    640, 480, RS_FORMAT_Z16, 60, DEPTH_VGA},
                                                                   {RS_STREAM_INFRARED, 640, 480, RS_FORMAT_Y8,  60, DEPTH_VGA}}, &unpack_inzi_to_z16_and_y8, &decode_ivcam_frame_number});
-
         for(int i=0; i<RS_PRESET_COUNT; ++i)
         {
             info.presets[RS_STREAM_COLOR   ][i] = {true, 640, 480, RS_FORMAT_RGB8, 60};
@@ -212,7 +212,12 @@ namespace rsimpl
         f200::claim_ivcam_interface(*device);
         auto calib = f200::read_f200_calibration(*device, mutex);
         f200::enable_timestamp(*device, mutex, true, true);
-        return std::make_shared<f200_camera>(device, get_f200_info(std::get<0>(calib)), std::get<0>(calib), std::get<1>(calib), std::get<2>(calib));
+
+        auto info = get_f200_info(std::get<0>(calib));
+        f200::get_module_serial_string(*device, mutex, info.serial, 96);
+        f200::get_firmware_version_string(*device, mutex, info.firmware_version);
+
+        return std::make_shared<f200_camera>(device, info, std::get<0>(calib), std::get<1>(calib), std::get<2>(calib));
     }
 
     std::shared_ptr<rs_device> make_sr300_device(std::shared_ptr<uvc::device> device)
@@ -234,7 +239,12 @@ namespace rsimpl
         //uvc::set_pu_control(*device, 0, rs_option::RS_OPTION_COLOR_WHITE_BALANCE, 4600); // auto
         //uvc::set_pu_control(*device, 0, rs_option::RS_OPTION_COLOR_EXPOSURE, -6); // auto
 
-        return std::make_shared<f200_camera>(device, get_sr300_info(std::get<0>(calib)), std::get<0>(calib), std::get<1>(calib), std::get<2>(calib));    
+        auto info = get_sr300_info(std::get<0>(calib));
+
+        f200::get_module_serial_string(*device, mutex, info.serial, 132);
+        f200::get_firmware_version_string(*device, mutex, info.firmware_version);
+
+        return std::make_shared<f200_camera>(device, info, std::get<0>(calib), std::get<1>(calib), std::get<2>(calib));
     }
 
     f200_camera::~f200_camera()
