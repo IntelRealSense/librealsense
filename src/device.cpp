@@ -413,12 +413,8 @@ namespace rsimpl
 
 int rs_device::get_stream_mode_count(rs_stream stream) const
 {
-    switch(stream)
-    {
-    case RS_STREAM_COLOR_ALIGNED_TO_DEPTH: return 0; // Synthetic streams are not configurable
-    case RS_STREAM_DEPTH_ALIGNED_TO_COLOR: return 0; // Synthetic streams are not configurable
-    default: assert(stream < RS_STREAM_NATIVE_COUNT); return enumerate_stream_modes(device_info, stream).size();
-    }
+    if(stream < RS_STREAM_NATIVE_COUNT) return enumerate_stream_modes(device_info, stream).size();
+    return 0; // Synthetic streams have no modes and cannot have enable_stream called on it
 }
 
 void rs_device::get_stream_mode(rs_stream stream, int mode, int * width, int * height, rs_format * format, int * framerate) const

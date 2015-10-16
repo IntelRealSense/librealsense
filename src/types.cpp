@@ -165,7 +165,7 @@ namespace rsimpl
         std::ostringstream ss;
         ss << "uvc subdevice " << subdevice_index << " cannot provide";
         bool first = true;
-        for(int j = 0; j < RS_STREAM_COUNT; ++j)
+        for(int j = 0; j < RS_STREAM_NATIVE_COUNT; ++j)
         {
             if(!stream_requested[j]) continue;
             ss << (first ? " " : " and ");
@@ -183,13 +183,13 @@ namespace rsimpl
         for(int i=0; i<RS_STREAM_NATIVE_COUNT; ++i) requests[i] = reqs[i];
 
         // Check and modify requests to enforce all interstream constraints
-        for(auto & rule : interstream_rules)
+        /*for(auto & rule : interstream_rules)
         {
             auto & a = requests[rule.a], & b = requests[rule.b]; auto f = rule.field;
             if(a.enabled && b.enabled)
             {
                 // Check for incompatibility if both values specified
-                if(a.*f != 0 && b.*f != 0 && a.*f + rule.delta != b.*f)
+                if(a.*f != 0 && b.*f != 0 && a.*f + rule.delta != b.*f && a.*f + rule.delta2 != b.*f)
                 {
                     throw std::runtime_error(to_string() << "requested " << rule.a << " and " << rule.b << " settings are incompatible");
                 }
@@ -198,7 +198,7 @@ namespace rsimpl
                 if(a.*f != 0 && b.*f == 0) b.*f = a.*f + rule.delta;
                 if(a.*f == 0 && b.*f != 0) a.*f = b.*f - rule.delta;
             }
-        }
+        }*/
 
         // Select subdevice modes needed to satisfy our requests
         int num_subdevices = 0;

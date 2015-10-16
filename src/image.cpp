@@ -2,6 +2,8 @@
 #include "../include/librealsense/rsutil.h" // For projection/deprojection logic
 
 #include <cstring> // For memcpy
+#include <cmath>
+#include <algorithm>
 
 #pragma pack(push, 1) // All structs in this file are assumed to be byte-packed
 namespace rsimpl
@@ -71,13 +73,13 @@ namespace rsimpl
     
     void unpack_subrect(void * dest[], const void * source, const subdevice_mode & mode)
     {
-        assert(mode.streams.size() == 1 && mode.streams[0].width <= mode.width && mode.streams[0].height <= mode.height);
+        assert(mode.streams.size() == 1);
         auto in = reinterpret_cast<const uint8_t *>(source);
         auto out = reinterpret_cast<uint8_t *>(dest[0]);
-        const size_t in_stride = get_image_size(mode.width, 1, mode.streams[0].format), out_stride = get_image_size(mode.streams[0].width, 1, mode.streams[0].format);
-        for(int i=0; i<mode.streams[0].height; ++i)
+        const size_t in_stride = get_image_size(mode.width, 1, mode.fourcc), out_stride = get_image_size(mode.streams[0].width, 1, mode.streams[0].format);
+        for(int i=0; i<std::min(mode.height, mode.streams[0].height); ++i)
         {
-            memcpy(out, in, out_stride);
+            memcpy(out, in, std::min(in_stride, out_stride));
             out += out_stride;
             in += in_stride;            
         }

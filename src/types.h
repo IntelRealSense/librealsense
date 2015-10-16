@@ -86,11 +86,11 @@ namespace rsimpl
         bool use_serial_numbers_if_unique;  // If true, ignore frame_number_decoder and use a serial frame count if this is the only mode set
     };
 
-    struct interstream_rule // Requires a.*field + delta == b.*field
+    struct interstream_rule // Requires a.*field + delta == b.*field OR a.*field + delta2 == b.*field
     {
         rs_stream a, b;        
         int stream_request::* field;
-        int delta;
+        int delta, delta2;
     };
 
     struct static_device_info
