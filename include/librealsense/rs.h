@@ -10,12 +10,19 @@ extern "C" {
 /* public enum type definitions */
 typedef enum rs_stream
 {
-    RS_STREAM_DEPTH                         = 0,
-    RS_STREAM_COLOR                         = 1,
-    RS_STREAM_INFRARED                      = 2,
-    RS_STREAM_INFRARED2                     = 3,
-    RS_STREAM_COUNT                         = 4,
-    RS_STREAM_MAX_ENUM                      = 0x7FFFFFFF
+    RS_STREAM_DEPTH                             = 0, /* Native stream of depth data produced by RealSense device */
+    RS_STREAM_COLOR                             = 1, /* Native stream of color data captured by RealSense device */
+    RS_STREAM_INFRARED                          = 2, /* Native stream of infrared data captured by RealSense device */
+    RS_STREAM_INFRARED2                         = 3, /* Native stream of infrared data captured from a second viewpoint by RealSense device */
+    RS_STREAM_NATIVE_COUNT                      = 4,
+
+    RS_STREAM_RECTIFIED_COLOR                   = 4, /* Synthetic stream containing undistorted color data with no extrinsic rotation from the depth stream */
+    RS_STREAM_COLOR_ALIGNED_TO_DEPTH            = 5, /* Synthetic stream containing color data but sharing intrinsics of depth stream */
+    RS_STREAM_DEPTH_ALIGNED_TO_COLOR            = 6, /* Synthetic stream containing depth data but sharing intrinsics of color stream */
+    RS_STREAM_DEPTH_ALIGNED_TO_RECTIFIED_COLOR  = 7, /* Synthetic stream containing depth data but sharing intrinsics of rectified color stream */
+
+    RS_STREAM_COUNT                             = 8,
+    RS_STREAM_MAX_ENUM                          = 0x7FFFFFFF
 } rs_stream;
 
 typedef enum rs_format
@@ -102,7 +109,9 @@ void            rs_delete_context           (rs_context * context, rs_error ** e
 int             rs_get_device_count         (const rs_context * context, rs_error ** error);
 rs_device *     rs_get_device               (const rs_context * context, int index, rs_error ** error);
 
-const char *    rs_get_device_name          (const rs_device * device, rs_error ** error);
+const char *    rs_get_device_name              (const rs_device * device, rs_error ** error);
+const char *    rs_get_device_serial            (const rs_device * device, rs_error ** error);
+const char *    rs_get_device_firmware_version  (const rs_device * device, rs_error ** error);
 void            rs_get_device_extrinsics    (const rs_device * device, rs_stream from, rs_stream to, rs_extrinsics * extrin, rs_error ** error);
 float           rs_get_device_depth_scale   (const rs_device * device, rs_error ** error);
 int             rs_device_supports_option   (const rs_device * device, rs_option option, rs_error ** error);

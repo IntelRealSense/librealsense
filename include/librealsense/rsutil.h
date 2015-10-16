@@ -1,5 +1,5 @@
-#ifndef LIBREALSENSE_UTIL_INCLUDE_GUARD
-#define LIBREALSENSE_UTIL_INCLUDE_GUARD
+#ifndef LIBREALSENSE_RSUTIL_H
+#define LIBREALSENSE_RSUTIL_H
 
 #include "rs.h"
 #include "assert.h"

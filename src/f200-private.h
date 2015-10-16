@@ -69,6 +69,9 @@ namespace rsimpl { namespace f200
     std::tuple<CameraCalibrationParameters, IVCAMTemperatureData, IVCAMThermalLoopParams> read_sr300_calibration(uvc::device & device, std::timed_mutex & mutex);
     float read_mems_temp(uvc::device & device, std::timed_mutex & mutex);
     int read_ir_temp(uvc::device & device, std::timed_mutex & mutex);
+    void get_gvd(uvc::device & device, std::timed_mutex & mutex, size_t sz, char * gvd);
+    void get_firmware_version_string(uvc::device & device, std::timed_mutex & mutex, std::string & version);
+    void get_module_serial_string(uvc::device & device, std::timed_mutex & mutex, std::string & serial, int offset);
 
     // Modify device state
     void force_hardware_reset(uvc::device & device, std::timed_mutex & mutex);

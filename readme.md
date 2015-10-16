@@ -67,7 +67,7 @@ The goal of librealsense is to provide a reasonable hardware abstraction with mi
 1. Grant appropriate permissions to detach the kernel UVC driver when a device is plugged in:
   * `sudo cp config/99-uvc.rules /etc/udev/rules.d/`
   * `sudo cp config/uvc.conf /etc/modprobe.d/`
-  * Either reboot or run `udevadm control --reload-rules && udevadm trigger` to enforce the new udev rules
+  * Either reboot or run `sudo udevadm control --reload-rules && udevadm trigger` to enforce the new udev rules
 2. Ensure apt-get is up to date
   * `sudo apt-get update && apt-get upgrade`
 3. Install libusb-1.0 via apt-get
