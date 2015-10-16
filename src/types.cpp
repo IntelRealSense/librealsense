@@ -183,7 +183,7 @@ namespace rsimpl
         for(int i=0; i<RS_STREAM_NATIVE_COUNT; ++i) requests[i] = reqs[i];
 
         // Check and modify requests to enforce all interstream constraints
-        /*for(auto & rule : interstream_rules)
+        for(auto & rule : interstream_rules)
         {
             auto & a = requests[rule.a], & b = requests[rule.b]; auto f = rule.field;
             if(a.enabled && b.enabled)
@@ -198,7 +198,7 @@ namespace rsimpl
                 if(a.*f != 0 && b.*f == 0) b.*f = a.*f + rule.delta;
                 if(a.*f == 0 && b.*f != 0) a.*f = b.*f - rule.delta;
             }
-        }*/
+        }
 
         // Select subdevice modes needed to satisfy our requests
         int num_subdevices = 0;
