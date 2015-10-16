@@ -30,13 +30,9 @@ namespace rsimpl
     int decode_dinghy_frame_number(const subdevice_mode & mode, const void * frame)
     {
         // Todo: check dinghy->magicNumber against 0x08070605 (IR), 0x4030201 (Z), 0x8A8B8C8D (Third)
-        return reinterpret_cast<const r200::Dinghy *>(reinterpret_cast<const uint8_t *>(frame) + get_image_size(mode.width, mode.streams[0].height, mode.fourcc))->frameCount;
-    }
-
-    int decode_padded_dinghy_frame_number(const subdevice_mode & mode, const void * frame)
-    {
-        // Todo: check dinghy->magicNumber against 0x08070605 (IR), 0x4030201 (Z), 0x8A8B8C8D (Third)
-        return reinterpret_cast<const r200::Dinghy *>(reinterpret_cast<const uint8_t *>(frame) + get_image_size(mode.width, mode.streams[0].height-12, mode.fourcc))->frameCount;
+        auto dinghy = reinterpret_cast<const r200::Dinghy *>(reinterpret_cast<const uint8_t *>(frame) + get_image_size(mode.width, mode.height-1, mode.fourcc));
+        if(dinghy->magicNumber == 0x4030201 || dinghy->magicNumber == 0x08070605) return dinghy->frameCount;
+        return 0;
     }
 
     int decode_yuy2_frame_number(const subdevice_mode & mode, const void * frame)
@@ -104,7 +100,7 @@ namespace rsimpl
         {
             for(auto fps : {30, 60, 90})
             {
-                info.subdevice_modes.push_back({1, m.uvc_w-12, m.uvc_h-12, 'Z16 ', fps, {{RS_STREAM_DEPTH, m.w, m.h, RS_FORMAT_Z16, fps, m.lr_intrin}}, &pad_unpack<unpack_subrect>, &decode_padded_dinghy_frame_number});
+                info.subdevice_modes.push_back({1, m.uvc_w-12, m.uvc_h-12, 'Z16 ', fps, {{RS_STREAM_DEPTH, m.w, m.h, RS_FORMAT_Z16, fps, m.lr_intrin}}, &pad_unpack<unpack_subrect>, &decode_dinghy_frame_number});
                 info.subdevice_modes.push_back({1, m.uvc_w-12, m.uvc_h-12, 'Z16 ', fps, {{RS_STREAM_DEPTH, m.w-12, m.h-12, RS_FORMAT_Z16, fps, m.z_intrin}}, &unpack_subrect, &decode_dinghy_frame_number});
                 info.subdevice_modes.push_back({0, m.uvc_w, m.uvc_h, 'Y8  ', fps, {{RS_STREAM_INFRARED,  m.w, m.h, RS_FORMAT_Y8,  fps, m.lr_intrin}}, &unpack_subrect, &decode_dinghy_frame_number});
                 info.subdevice_modes.push_back({0, m.uvc_w, m.uvc_h, 'Y8  ', fps, {{RS_STREAM_INFRARED,  m.w-12, m.h-12, RS_FORMAT_Y8,  fps, m.z_intrin}}, &crop_unpack<unpack_subrect>, &decode_dinghy_frame_number});
