@@ -37,7 +37,7 @@ public:
 
     const char *                                get_name() const { return device_info.name.c_str(); }
     const char *                                get_serial() const { return device_info.serial.c_str(); }
-    const char *                                get_firmware_version() const { device_info.firmware_version.c_str(); }
+    const char *                                get_firmware_version() const { return device_info.firmware_version.c_str(); }
     rsimpl::pose                                get_pose(rs_stream stream) const;
     rs_extrinsics                               get_extrinsics(rs_stream from, rs_stream to) const;
     float                                       get_depth_scale() const { return device_info.depth_scale; }
