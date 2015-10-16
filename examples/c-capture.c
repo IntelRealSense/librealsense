@@ -76,10 +76,10 @@ int main(int argc, char * argv[])
     for (i = 0; i < rs_get_device_count(ctx, NULL); ++i)
     {
         dev = rs_get_device(ctx, i, &error); check_error();
-        //rs_enable_stream_preset(dev, RS_STREAM_DEPTH, RS_PRESET_BEST_QUALITY, &error); check_error();
+        rs_enable_stream_preset(dev, RS_STREAM_DEPTH, RS_PRESET_BEST_QUALITY, &error); check_error();
         rs_enable_stream_preset(dev, RS_STREAM_COLOR, RS_PRESET_BEST_QUALITY, &error); check_error();
-        //rs_enable_stream_preset(dev, RS_STREAM_INFRARED, RS_PRESET_BEST_QUALITY, &error); check_error();
-        //rs_enable_stream_preset(dev, RS_STREAM_INFRARED2, RS_PRESET_BEST_QUALITY, 0);
+        rs_enable_stream_preset(dev, RS_STREAM_INFRARED, RS_PRESET_BEST_QUALITY, &error); check_error();
+        rs_enable_stream_preset(dev, RS_STREAM_INFRARED2, RS_PRESET_BEST_QUALITY, 0);
         rs_start_device(dev, &error); check_error();
 
         for(j = 0; j < RS_STREAM_COUNT; ++j)

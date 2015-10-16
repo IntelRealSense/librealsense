@@ -203,13 +203,13 @@ namespace rsimpl
                 if(float depth = get_depth(depth_pixel_index))
                 {
                     // Determine the corresponding pixel location in our color image
-                    float depth_pixel[2] = {depth_x, depth_y}, depth_point[3], other_point[3], other_pixel[2];
+                    float depth_pixel[2] = {(float)depth_x, (float)depth_y}, depth_point[3], other_point[3], other_pixel[2];
                     rs_deproject_pixel_to_point(depth_point, &depth_intrin, depth_pixel, depth);
                     rs_transform_point_to_point(other_point, &depth_to_other, depth_point);
                     rs_project_point_to_pixel(other_pixel, &other_intrin, other_point);
                 
                     // If the location is outside the bounds of the image, skip to the next pixel
-                    const int other_x = (int)roundf(other_pixel[0]), other_y = (int)roundf(other_pixel[1]);
+                    const int other_x = (int)std::round(other_pixel[0]), other_y = (int)std::round(other_pixel[1]);
                     if(other_x < 0 || other_y < 0 || other_x >= other_intrin.width || other_y >= other_intrin.height)
                     {
                         continue;
