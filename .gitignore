@@ -20,6 +20,8 @@ DerivedData
 *~
 *.a
 *.o
+*.pyc
+*.class
 
 local_ignore/
 
