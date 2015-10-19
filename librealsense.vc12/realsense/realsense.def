@@ -18,14 +18,14 @@ EXPORTS
 	rs_enable_stream
 	rs_enable_stream_preset
 	rs_disable_stream
-	rs_stream_is_enabled
+	rs_is_stream_enabled
 	rs_get_stream_intrinsics
 	rs_get_stream_format
 	rs_get_stream_framerate
 	
 	rs_start_device
 	rs_stop_device
-	rs_device_is_streaming
+	rs_is_device_streaming
 	
 	rs_set_device_option
 	rs_get_device_option

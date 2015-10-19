@@ -16,10 +16,9 @@ bool color_rectification_enabled = false;
 int main(int argc, char * argv[]) try
 {
     rs::context ctx;
-    if(ctx.get_device_count() < 1) throw std::runtime_error("No device detected. Is it plugged in?");
+    if(ctx.get_device_count() == 0) throw std::runtime_error("No device detected. Is it plugged in?");
+    rs::device & dev = ctx.get_device(0);
 
-    // Configure our device
-    rs::device dev = ctx.get_device(0);
     dev.enable_stream(rs::stream::color, rs::preset::best_quality);
     dev.enable_stream(rs::stream::depth, rs::preset::best_quality);
     dev.enable_stream(rs::stream::infrared, rs::preset::best_quality);
@@ -31,8 +30,8 @@ int main(int argc, char * argv[]) try
         auto stream = rs::stream(i);
         if(!dev.is_stream_enabled(stream)) continue;
         auto intrin = dev.get_stream_intrinsics(stream);
-        std::cout << "Capturing " << stream << " at " << intrin.width() << " x " << intrin.height();
-        std::cout << std::setprecision(1) << std::fixed << ", fov = " << intrin.hfov() << " x " << intrin.vfov() << (intrin.distorted() ? " (distorted)" : " (rectilinear)") << std::endl;
+        std::cout << "Capturing " << stream << " at " << intrin.width << " x " << intrin.height;
+        std::cout << std::setprecision(1) << std::fixed << ", fov = " << intrin.hfov() << " x " << intrin.vfov() << ", distortion = " << intrin.model() << std::endl;
     }
     
     // Start our device

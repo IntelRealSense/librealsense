@@ -33,7 +33,7 @@ void draw_stream(rs_device * dev, rs_stream stream, int x, int y)
     const void * pixels;
     char buffer[1024];
 
-    if(!rs_stream_is_enabled(dev, stream, 0)) return;
+    if(!rs_is_stream_enabled(dev, stream, 0)) return;
 
     rs_get_stream_intrinsics(dev, stream, &intrin, 0);
     format = rs_get_stream_format(dev, stream, 0);
@@ -84,7 +84,7 @@ int main(int argc, char * argv[])
 
         for(j = 0; j < RS_STREAM_COUNT; ++j)
         {
-            if(!rs_stream_is_enabled(dev, (enum rs_stream)j, 0)) continue;
+            if(!rs_is_stream_enabled(dev, (enum rs_stream)j, 0)) continue;
             rs_get_stream_intrinsics(dev, (enum rs_stream)j, &intrin, &error); check_error();
             hfov = compute_fov(intrin.width, intrin.fx, intrin.ppx);
             vfov = compute_fov(intrin.height, intrin.fy, intrin.ppy);
@@ -98,7 +98,7 @@ int main(int argc, char * argv[])
     }
 
     glfwInit();
-    height = rs_stream_is_enabled(dev, RS_STREAM_INFRARED, 0) || rs_stream_is_enabled(dev, RS_STREAM_INFRARED2, 0) ? 960 : 480;
+    height = rs_is_stream_enabled(dev, RS_STREAM_INFRARED, 0) || rs_is_stream_enabled(dev, RS_STREAM_INFRARED2, 0) ? 960 : 480;
     sprintf(buffer, "C Capture Example (%s)", rs_get_device_name(dev,0));
     win = glfwCreateWindow(1280, height, buffer, 0, 0);
     glfwMakeContextCurrent(win);

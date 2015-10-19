@@ -84,11 +84,12 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="..\..\bindings\rs.cs">
+      <Link>rs.cs</Link>
+    </Compile>
     <Compile Include="..\..\examples\cs-capture.cs">
       <Link>cs-capture.cs</Link>
-    </Compile>
-    <Compile Include="..\..\include\librealsense\rs.cs">
-      <Link>rs.cs</Link>
+      <SubType>Form</SubType>
     </Compile>
   </ItemGroup>
   <ItemGroup>

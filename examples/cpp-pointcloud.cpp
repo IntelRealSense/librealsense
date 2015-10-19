@@ -14,19 +14,16 @@ struct state { double yaw, pitch, lastX, lastY; bool ml; std::vector<rs::stream>
 
 int main(int argc, char * argv[]) try
 {
-    rs::device dev;
     rs::context ctx;
-    for (int i = 0; i < ctx.get_device_count(); ++i)
-    {
-        dev = ctx.get_device(i);
-        dev.enable_stream(rs::stream::depth, rs::preset::best_quality);
-        dev.enable_stream(rs::stream::color, rs::preset::best_quality);
-        dev.enable_stream(rs::stream::infrared, rs::preset::best_quality);
-        try { dev.enable_stream(rs::stream::infrared2, rs::preset::best_quality); } catch(...) {}
-        dev.start();
-    }
-    if (!dev) throw std::runtime_error("No device detected. Is it plugged in?");
-        
+    if(ctx.get_device_count() == 0) throw std::runtime_error("No device detected. Is it plugged in?");
+    rs::device & dev = ctx.get_device(0);
+
+    dev.enable_stream(rs::stream::depth, rs::preset::best_quality);
+    dev.enable_stream(rs::stream::color, rs::preset::best_quality);
+    dev.enable_stream(rs::stream::infrared, rs::preset::best_quality);
+    try { dev.enable_stream(rs::stream::infrared2, rs::preset::best_quality); } catch(...) {}
+    dev.start();
+    
     state app_state = {0, 0, 0, 0, false, {rs::stream::color, rs::stream::depth, rs::stream::infrared}, 0, &dev};
     if(dev.is_stream_enabled(rs::stream::infrared2)) app_state.tex_streams.push_back(rs::stream::infrared2);
     
@@ -135,9 +132,9 @@ int main(int argc, char * argv[]) try
         glBegin(GL_POINTS);
         auto depth = reinterpret_cast<const uint16_t *>(dev.get_frame_data(rs::stream::depth));
         
-        for(int y=0; y<depth_intrin.height(); ++y)
+        for(int y=0; y<depth_intrin.height; ++y)
         {
-            for(int x=0; x<depth_intrin.width(); ++x)
+            for(int x=0; x<depth_intrin.width; ++x)
             {
                 if(uint16_t d = *depth++)
                 {

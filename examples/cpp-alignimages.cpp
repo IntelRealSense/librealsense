@@ -19,14 +19,11 @@ struct rgb_pixel
 int main(int argc, char * argv[]) try
 {
     rs::context ctx;
-    if(ctx.get_device_count() < 1) throw std::runtime_error("No device detected. Is it plugged in?");
+    if(ctx.get_device_count() == 0) throw std::runtime_error("No device detected. Is it plugged in?");
+    rs::device & dev = ctx.get_device(0);
 
-    // Configure our device
-    rs::device dev = ctx.get_device(0);
     dev.enable_stream(rs::stream::depth, rs::preset::best_quality);
     dev.enable_stream(rs::stream::color, 640, 480, rs::format::rgb8, 0);
-   
-    // Start our device
     dev.start();
 
     // Open a GLFW window

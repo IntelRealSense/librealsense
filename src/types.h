@@ -25,6 +25,8 @@
 #define DEBUG_ERR(...) do {} while(false)
 #endif
 
+#define RS_STREAM_NATIVE_COUNT 4
+
 namespace rsimpl
 {
     // Enumerated type support

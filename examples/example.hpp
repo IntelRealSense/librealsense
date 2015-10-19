@@ -56,7 +56,7 @@ public:
         if(timestamp != last_timestamp)
         {
             const rs::intrinsics intrin = dev.get_stream_intrinsics(stream);     
-            upload(dev.get_frame_data(stream), intrin.width(), intrin.height(), dev.get_stream_format(stream));
+            upload(dev.get_frame_data(stream), intrin.width, intrin.height, dev.get_stream_format(stream));
             last_timestamp = timestamp;
 
             ++num_frames;
@@ -90,7 +90,7 @@ public:
         upload(dev, stream);
         
         const rs::intrinsics intrin = dev.get_stream_intrinsics(stream);  
-        float h = rh, w = rh * intrin.width() / intrin.height();
+        float h = (float)rh, w = (float)rh * intrin.width / intrin.height;
         if(w > rw)
         {
             float scale = rw/w;
@@ -100,8 +100,8 @@ public:
 
         show(rx + (rw - w)/2, ry + (rh - h)/2, w, h);
 
-        std::ostringstream ss; ss << stream << ": " << intrin.width() << " x " << intrin.height() << " " << dev.get_stream_format(stream) << " (" << fps << "/" << dev.get_stream_framerate(stream) << ")";
-        ttf_print(&font, rx+8, ry+16, ss.str().c_str());
+        std::ostringstream ss; ss << stream << ": " << intrin.width << " x " << intrin.height << " " << dev.get_stream_format(stream) << " (" << fps << "/" << dev.get_stream_framerate(stream) << ")";
+        ttf_print(&font, rx+8.0f, ry+16.0f, ss.str().c_str());
     }
 
     void show(const void * data, int width, int height, rs::format format, const std::string & caption, int rx, int ry, int rw, int rh, font & font)

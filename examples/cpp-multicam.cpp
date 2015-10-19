@@ -13,7 +13,7 @@ int main(int argc, char * argv[]) try
     // Configure and start our device
     for(int i=0; i<ctx.get_device_count(); ++i)
     {
-        rs::device dev = ctx.get_device(i);
+        rs::device & dev = ctx.get_device(i);
         std::cout << "Starting " << dev.get_name() << "... ";
         dev.enable_stream(rs::stream::depth, rs::preset::best_quality);
         dev.enable_stream(rs::stream::color, rs::preset::best_quality);
@@ -58,7 +58,7 @@ int main(int argc, char * argv[]) try
         int x=0;
         for(int i=0; i<ctx.get_device_count(); ++i)
         {
-            auto dev = ctx.get_device(i);
+            rs::device & dev = ctx.get_device(i);
             const auto c = dev.get_stream_intrinsics(rs::stream::color), d = dev.get_stream_intrinsics(rs::stream::depth);
 
             buffers[i*2+0].show(dev, rs::stream::color, x, 0, 640, 480, font);

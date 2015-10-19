@@ -65,7 +65,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="..\..\include\librealsense\rs.cs">
+    <Compile Include="..\..\bindings\rs.cs">
       <Link>rs.cs</Link>
     </Compile>
     <Compile Include="Config.cs">

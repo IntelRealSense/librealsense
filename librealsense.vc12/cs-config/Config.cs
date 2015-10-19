@@ -19,12 +19,12 @@ namespace cs_config
 
             foreach (var stream in Streams) stream.Setup(d);
 
-            Text = string.Format("C# Configuration Example ({0})", device.Name);
+            Text = string.Format("C# Configuration Example ({0})", device.GetName());
         }
 
         private void button1_Click(object sender, EventArgs e)
         {
-            if (device.IsStreaming)
+            if (device.IsStreaming())
             {
                 try
                 {
@@ -49,7 +49,7 @@ namespace cs_config
                     for (int i = 0; i < 4; ++i)
                     {
                         var stream = (RealSense.Stream)i;
-                        if (device.StreamIsEnabled(stream))
+                        if (device.IsStreamEnabled(stream))
                         {
                             var intrin = device.GetStreamIntrinsics(stream);
                             buffers[i] = new BitmapBuffer(intrin.Width, intrin.Height, device.GetStreamFormat(stream));
@@ -63,13 +63,13 @@ namespace cs_config
                 }
             }
 
-            foreach (var stream in Streams) stream.Enabled = !device.IsStreaming;
+            foreach (var stream in Streams) stream.Enabled = !device.IsStreaming();
         }
 
         private void timer1_Tick(object sender, EventArgs e)
         {
             if (device == null) return;
-            if (!device.IsStreaming) return;
+            if (!device.IsStreaming()) return;
 
             timer1.Stop();
             device.WaitForFrames();

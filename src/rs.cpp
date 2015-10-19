@@ -60,7 +60,7 @@ int rs_get_device_count(const rs_context * context, rs_error ** error) try
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, context)
 
-rs_device * rs_get_device(const rs_context * context, int index, rs_error ** error) try
+rs_device * rs_get_device(rs_context * context, int index, rs_error ** error) try
 {
     VALIDATE_NOT_NULL(context);
     VALIDATE_RANGE(index, 0, (int)context->devices.size()-1);
@@ -157,7 +157,7 @@ void rs_disable_stream(rs_device * device, rs_stream stream, rs_error ** error) 
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, device, stream)
 
-int rs_stream_is_enabled(const rs_device * device, rs_stream stream, rs_error ** error) try
+int rs_is_stream_enabled(const rs_device * device, rs_stream stream, rs_error ** error) try
 {
     VALIDATE_NOT_NULL(device);
     VALIDATE_ENUM(stream);
@@ -206,7 +206,7 @@ void rs_stop_device(rs_device * device, rs_error ** error) try
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, device)
 
-int rs_device_is_streaming(const rs_device * device, rs_error ** error) try
+int rs_is_device_streaming(const rs_device * device, rs_error ** error) try
 {
     VALIDATE_NOT_NULL(device);
     return device->is_capturing();
