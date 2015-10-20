@@ -316,6 +316,8 @@ namespace rsimpl { namespace r200
             DEBUG_OUT("Camera Header Ver: " << h.cameraHeadContentsVersion);
             DEBUG_OUT("Baseline: " << h.nominalBaseline);
             DEBUG_OUT("OEM ID: " << h.OEMID);
+			if (CURRENT_CAMERA_CONTENTS_VERSION_NUMBER != h.cameraHeadContentsVersion)
+				 DEBUG_OUT("(Warning): Device camera header does not match internal struct version: " << CURRENT_CAMERA_CONTENTS_VERSION_NUMBER);
         }
 
         CameraCalibrationParameters GetCalibration() { return cameraCalibration; }
