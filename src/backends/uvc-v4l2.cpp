@@ -55,10 +55,17 @@ namespace rsimpl
 
         struct context
         {
-            // TODO: V4L2-specific information
+            libusb_context * usb_context;
 
-            context() {} // TODO: Init
-            ~context() {} // TODO: Cleanup
+            context()
+            {
+                int status = libusb_init(&usb_context);
+                if(status < 0) throw std::runtime_error(to_string() << "libusb_init(...) returned " << libusb_error_name(status));
+            }
+            ~context()
+            {
+                libusb_exit(usb_context);
+            }
         };
 
         struct subdevice
@@ -428,6 +435,35 @@ namespace rsimpl
                 }
                 devices.back()->subdevices.push_back(move(sub));
             }
+
+            // Obtain libusb_device_handle for each device
+            libusb_device ** list;
+            int status = libusb_get_device_list(context->usb_context, &list);
+            if(status < 0) throw std::runtime_error(to_string() << "libusb_get_device_list(...) returned " << libusb_error_name(status));
+            for(int i=0; list[i]; ++i)
+            {
+                libusb_device * usb_device = list[i];
+
+                libusb_device_descriptor desc;
+                status = libusb_get_device_descriptor(usb_device, &desc);
+                if(status < 0) throw std::runtime_error(to_string() << "libusb_get_device_descriptor(...) returned " << libusb_error_name(status));
+
+                for(auto & dev : devices)
+                {
+                    if(desc.idVendor == get_vendor_id(*dev) && desc.idProduct == get_product_id(*dev))
+                    {
+                        // TODO: Also make sure that we are sitting on the right bus/address
+                        // libusb_get_bus_number(usb_device);
+                        // libusb_get_device_address(usb_device);
+                        dev->usb_device = usb_device;
+                        libusb_ref_device(usb_device);
+                        status = libusb_open(usb_device, &dev->usb_handle);
+                        if(status < 0) throw std::runtime_error(to_string() << "libusb_open(...) returned " << libusb_error_name(status));
+                        break;
+                    }
+                }
+            }
+            libusb_free_device_list(list, 1);
 
             return devices;
         }
