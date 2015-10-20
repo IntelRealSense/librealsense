@@ -21,6 +21,8 @@
 #include <linux/uvcvideo.h>
 #include <linux/videodev2.h>
 
+#include <libusb.h>
+
 // debug
 #include <iostream>
 
@@ -62,7 +64,7 @@ namespace rsimpl
         struct subdevice
         {
             std::string dev_name;
-            int vid, pid;
+            int vid, pid, mi;
             int fd;
             std::vector<buffer> buffers;
 
@@ -79,17 +81,21 @@ namespace rsimpl
                 }
                 if(!S_ISCHR(st.st_mode)) throw std::runtime_error(dev_name + " is no device");
 
-                std::string path = "/sys/class/video4linux/" + name + "/device/input";
-                DIR * dir = opendir(path.c_str());
-                if(!dir) throw std::runtime_error("Could not access " + path);
-                while(dirent * entry = readdir(dir))
-                {
-                    std::string inputName = entry->d_name;
-                    if(inputName.size() < 5 || inputName.substr(0,5) != "input") continue;
-                    if(!(std::ifstream(path + "/" + inputName + "/id/vendor") >> std::hex >> vid)) throw std::runtime_error("Failed to read vendor ID");
-                    if(!(std::ifstream(path + "/" + inputName + "/id/product") >> std::hex >> pid)) throw std::runtime_error("Failed to read product ID");
-                }
-                closedir(dir);
+                std::string modalias;
+                if(!(std::ifstream("/sys/class/video4linux/" + name + "/device/modalias") >> modalias))
+                    throw std::runtime_error("Failed to read modalias");
+                if(modalias.size() < 14 || modalias.substr(0,5) != "usb:v" || modalias[9] != 'p')
+                    throw std::runtime_error("Not a usb format modalias");
+                if(!(std::istringstream(modalias.substr(5,4)) >> std::hex >> vid))
+                    throw std::runtime_error("Failed to read vendor ID");
+                if(!(std::istringstream(modalias.substr(10,4)) >> std::hex >> pid))
+                    throw std::runtime_error("Failed to read product ID");
+                if(!(std::ifstream("/sys/class/video4linux/" + name + "/device/bInterfaceNumber") >> std::hex >> mi))
+                    throw std::runtime_error("Failed to read interface number");
+
+                std::cout << dev_name << " has vendor id " << std::hex << vid << std::endl;
+                std::cout << dev_name << " has product id " << std::hex << pid << std::endl;
+                std::cout << dev_name << " provides interface number " << std::dec << mi << std::endl;
 
                 fd = open(dev_name.c_str(), O_RDWR | O_NONBLOCK, 0);
                 if(fd < 0)
@@ -155,6 +161,7 @@ namespace rsimpl
 
             int get_vid() const { return vid; }
             int get_pid() const { return pid; }
+            int get_mi() const { return mi; }
 
             void get_control(int control, void * data, size_t size)
             {
@@ -289,9 +296,11 @@ namespace rsimpl
             std::thread thread;
             volatile bool stop;
 
-            //uint32_t serialNumber;
+            libusb_device * usb_device;
+            libusb_device_handle * usb_handle;
+            std::vector<int> claimed_interfaces;
 
-            device(std::shared_ptr<context> parent) : parent(parent), stop() {} // TODO: Init
+            device(std::shared_ptr<context> parent) : parent(parent), stop(), usb_device(), usb_handle() {} // TODO: Init
             ~device()
             {
                 if(thread.joinable())
@@ -299,6 +308,23 @@ namespace rsimpl
                     stop = true;
                     thread.join();
                 }
+
+                for(auto interface_number : claimed_interfaces)
+                {
+                    int status = libusb_release_interface(usb_handle, interface_number);
+                    if(status < 0) DEBUG_ERR("libusb_release_interface(...) returned " << libusb_error_name(status));
+                }
+                if(usb_handle) libusb_close(usb_handle);
+                if(usb_device) libusb_unref_device(usb_device);
+            }
+
+            bool has_mi(int mi) const
+            {
+                for(auto & sub : subdevices)
+                {
+                    if(sub->get_mi() == mi) return true;
+                }
+                return false;
             }
         };
 
@@ -319,8 +345,18 @@ namespace rsimpl
             device.subdevices[subdevice]->set_control(ctrl, data, len);
         }
 
-        void claim_interface(device & device, const guid & interface_guid, int interface_number) {}
-        void bulk_transfer(device & device, unsigned char endpoint, void * data, int length, int *actual_length, unsigned int timeout) {}
+        void claim_interface(device & device, const guid & interface_guid, int interface_number)
+        {
+            int status = libusb_claim_interface(device.usb_handle, interface_number);
+            if(status < 0) throw std::runtime_error(to_string() << "libusb_claim_interface(...) returned " << libusb_error_name(status));
+            device.claimed_interfaces.push_back(interface_number);
+        }
+
+        void bulk_transfer(device & device, unsigned char endpoint, void * data, int length, int *actual_length, unsigned int timeout)
+        {
+            int status = libusb_bulk_transfer(device.usb_handle, endpoint, (unsigned char *)data, length, actual_length, timeout);
+            if(status < 0) throw std::runtime_error(to_string() << "libusb_bulk_transfer(...) returned " << libusb_error_name(status));
+        }
 
         void set_subdevice_mode(device & device, int subdevice_index, int width, int height, uint32_t fourcc, int fps, std::function<void(const void * frame)> callback)
         {
@@ -381,11 +417,12 @@ namespace rsimpl
             }
             closedir(dir);
 
-            // Group subdevices by vid/pid (note that this will currently see two DS4s/IVCAMs as one single device)
+            // Group subdevices by vid/pid, and start a new device if we encounter a duplicate mi
             std::vector<std::shared_ptr<device>> devices;
             for(auto & sub : subdevices)
             {
-                if(devices.empty() || sub->get_vid() != get_vendor_id(*devices.back()) || sub->get_pid() != get_product_id(*devices.back()))
+                if(devices.empty() || sub->get_vid() != get_vendor_id(*devices.back())
+                    || sub->get_pid() != get_product_id(*devices.back()) || devices.back()->has_mi(sub->mi))
                 {
                     devices.push_back(std::make_shared<device>(context));
                 }

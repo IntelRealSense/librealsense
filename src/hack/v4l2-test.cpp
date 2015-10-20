@@ -26,6 +26,8 @@
 #include <linux/uvcvideo.h>
 #include <linux/videodev2.h>
 
+#include <libusb.h>
+
 static int xioctl(int fh, int request, void *arg)
 {
     int r;
@@ -55,7 +57,7 @@ void warn_error(const char * s)
 class subdevice
 {
     std::string dev_name;
-    int vid, pid;
+    int vid, pid, mi;
     int fd;
     std::vector<buffer> buffers;
     std::function<void(const void *, size_t)> callback;
@@ -70,17 +72,21 @@ public:
         }
         if(!S_ISCHR(st.st_mode)) throw std::runtime_error(dev_name + " is no device");
 
-        std::string path = "/sys/class/video4linux/" + name + "/device/input";
-        DIR * dir = opendir(path.c_str());
-        if(!dir) throw std::runtime_error("Could not access " + path);
-        while(dirent * entry = readdir(dir))
-        {
-            std::string inputName = entry->d_name;
-            if(inputName.size() < 5 || inputName.substr(0,5) != "input") continue;
-            if(!(std::ifstream(path + "/" + inputName + "/id/vendor") >> std::hex >> vid)) throw std::runtime_error("Failed to read vendor ID");
-            if(!(std::ifstream(path + "/" + inputName + "/id/product") >> std::hex >> pid)) throw std::runtime_error("Failed to read product ID");
-        }
-        closedir(dir);
+        std::string modalias;
+        if(!(std::ifstream("/sys/class/video4linux/" + name + "/device/modalias") >> modalias))
+            throw std::runtime_error("Failed to read modalias");
+        if(modalias.size() < 14 || modalias.substr(0,5) != "usb:v" || modalias[9] != 'p')
+            throw std::runtime_error("Not a usb format modalias");
+        if(!(std::istringstream(modalias.substr(5,4)) >> std::hex >> vid))
+            throw std::runtime_error("Failed to read vendor ID");
+        if(!(std::istringstream(modalias.substr(10,4)) >> std::hex >> pid))
+            throw std::runtime_error("Failed to read product ID");
+        if(!(std::ifstream("/sys/class/video4linux/" + name + "/device/bInterfaceNumber") >> std::hex >> mi))
+            throw std::runtime_error("Failed to read interface number");
+
+        std::cout << dev_name << " has vendor id " << std::hex << vid << std::endl;
+        std::cout << dev_name << " has product id " << std::hex << pid << std::endl;
+        std::cout << dev_name << " provides interface number " << std::dec << mi << std::endl;
 
         fd = open(dev_name.c_str(), O_RDWR | O_NONBLOCK, 0);
         if(fd < 0)
@@ -290,8 +296,48 @@ public:
     }
 };
 
+bool check_usb(const char * call, int code)
+{
+    if(code < 0)
+    {
+        std::cout << "\n" << call << "(...) returned " << std::dec << code << " (" << libusb_error_name(code) << ")" << std::endl;
+        return false;
+    }
+    return true;
+}
+
+#define CHECK(C, ...) check_usb(#C, C(__VA_ARGS__))
+
+#include <iomanip>
+
 int main(int argc, char * argv[])
 {
+    libusb_context * ctx;
+    if(!CHECK(libusb_init, &ctx)) return EXIT_FAILURE;
+
+    libusb_device ** devices;
+    if(!CHECK(libusb_get_device_list, ctx, &devices)) return EXIT_FAILURE;
+
+    for(int i=0; devices[i]; ++i)
+    {
+        auto dev = devices[i];
+        libusb_device_descriptor desc;
+
+        if(!CHECK(libusb_get_device_descriptor, dev, &desc)) continue;
+        if(desc.idVendor != 0x8086) continue;
+
+        libusb_device_handle * handle;
+        if(!CHECK(libusb_open, dev, &handle)) continue;
+
+        unsigned char buffer[1024];
+        if(!CHECK(libusb_get_string_descriptor_ascii, handle, desc.iSerialNumber, buffer, 1024)) continue;
+        std::cout << std::hex << desc.idVendor << ":" << desc.idProduct;
+        std::cout << ":" << buffer << std::endl;
+
+        libusb_close(handle);
+    }
+    libusb_free_device_list(devices, 1);
+
     std::vector<std::unique_ptr<subdevice>> subdevices;
 
     DIR * dir = opendir("/sys/class/video4linux");
