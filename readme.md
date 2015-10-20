@@ -73,7 +73,7 @@ The goal of librealsense is to provide a reasonable hardware abstraction with mi
   * `brew tap homebrew/versions`
   * `brew install versions/glfw3`
 
-## Ubuntu 14.04+ Installation
+## Ubuntu 14.04 Installation (libusb backend)
 
 1. Grant appropriate permissions to detach the kernel UVC driver when a device is plugged in:
   * `sudo cp config/99-uvc.rules /etc/udev/rules.d/`
@@ -93,6 +93,9 @@ The goal of librealsense is to provide a reasonable hardware abstraction with mi
 6. Don't want to use QtCreator? We have a makefile!
   * `make && sudo make install`
   * The example executables will build into `./bin`
+
+## Ubuntu 14.04 Installation (Video4Linux2 backend)
+1. To be defined. 
 
 ## FAQ
 
