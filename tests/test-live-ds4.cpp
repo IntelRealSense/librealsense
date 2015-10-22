@@ -5,74 +5,7 @@
 
 #include <sstream>
 
-struct stream_mode { rs_stream stream; int width, height; rs_format format; int framerate; };
-
-void test_streaming(rs_device * device, std::initializer_list<stream_mode> modes)
-{
-    std::ostringstream ss;
-    for(auto & mode : modes)
-    {
-        ss << rs_stream_to_string(mode.stream) << "=" << mode.width << "x" << mode.height << " " << rs_format_to_string(mode.format) << "@" << mode.framerate << "Hz ";
-    }
-
-    SECTION( "stream " + ss.str() )
-    {
-        for(auto & mode : modes)
-        {
-            rs_enable_stream(device, mode.stream, mode.width, mode.height, mode.format, mode.framerate, require_no_error());
-            REQUIRE( rs_stream_is_enabled(device, mode.stream, require_no_error()) == 1 );
-        }
-        rs_start_device(device, require_no_error());
-        REQUIRE( rs_device_is_streaming(device, require_no_error()) == 1 );
-
-        for(auto & mode : modes)
-        {
-            REQUIRE( rs_stream_is_enabled(device, mode.stream, require_no_error()) == 1 );
-            REQUIRE( rs_get_stream_format(device, mode.stream, require_no_error()) == mode.format );
-            REQUIRE( rs_get_stream_framerate(device, mode.stream, require_no_error()) == mode.framerate );
-
-            rs_intrinsics intrin;
-            rs_get_stream_intrinsics(device, mode.stream, &intrin, require_no_error());
-            REQUIRE( intrin.width == mode.width );
-            REQUIRE( intrin.height == mode.height );
-            REQUIRE( intrin.ppx > intrin.width * 0.4f );
-            REQUIRE( intrin.ppx < intrin.width * 0.6f );
-            REQUIRE( intrin.ppy > intrin.height * 0.4f );
-            REQUIRE( intrin.ppy < intrin.height * 0.6f );
-            REQUIRE( intrin.fx > 0.0f );
-            REQUIRE( intrin.fy > 0.0f );
-        }
-
-        rs_wait_for_frames(device, require_no_error());
-        for(auto & mode : modes)
-        {
-            REQUIRE( rs_stream_is_enabled(device, mode.stream, require_no_error()) == 1 );
-            REQUIRE( rs_get_frame_data(device, mode.stream, require_no_error()) != nullptr );
-            REQUIRE( rs_get_frame_timestamp(device, mode.stream, require_no_error()) >= 0 );
-        }
-
-        for(int i=0; i<100; ++i)
-        {
-            rs_wait_for_frames(device, require_no_error());
-        }
-        for(auto & mode : modes)
-        {
-            REQUIRE( rs_stream_is_enabled(device, mode.stream, require_no_error()) == 1 );
-            REQUIRE( rs_get_frame_data(device, mode.stream, require_no_error()) != nullptr );
-            REQUIRE( rs_get_frame_timestamp(device, mode.stream, require_no_error()) >= 0 );
-        }
-
-        rs_stop_device(device, require_no_error());
-        REQUIRE( rs_device_is_streaming(device, require_no_error()) == 0 );
-        for(auto & mode : modes)
-        {
-            rs_disable_stream(device, mode.stream, require_no_error());
-            REQUIRE( rs_stream_is_enabled(device, mode.stream, require_no_error()) == 0 );
-        }
-    }
-}
-
-TEST_CASE( "a single DS4 behaves as expected", "[live] [ds4] [one-camera]" )
+TEST_CASE( "a single DS4 enumerates correctly", "[live] [ds4] [one-camera]" )
 {
     safe_context ctx;
     
@@ -126,120 +59,124 @@ TEST_CASE( "a single DS4 behaves as expected", "[live] [ds4] [one-camera]" )
         rs_device_supports_option(dev, (rs_option)-1, require_error("bad enum value for argument \"option\""));
         rs_device_supports_option(dev, RS_OPTION_COUNT, require_error("bad enum value for argument \"option\""));
     }
+}
 
-    SECTION( "no extrinsic transformation between DEPTH and INFRARED" )
+///////////////////////////////////
+// Calibration information tests //
+///////////////////////////////////
+
+TEST_CASE( "device extrinsics are sane", "[live]" )
+{
+    // Require at least one device to be plugged in
+    safe_context ctx;
+    const int device_count = rs_get_device_count(ctx, require_no_error());
+    REQUIRE(device_count > 0);
+
+    // For each device
+    for(int i=0; i<device_count; ++i)
     {
-        rs_extrinsics extrin;
-        rs_get_device_extrinsics(dev, RS_STREAM_DEPTH, RS_STREAM_INFRARED, &extrin, require_no_error());
+        rs_device * dev = rs_get_device(ctx, 0, require_no_error());    
+        REQUIRE(dev != nullptr);
 
-        require_identity_matrix(extrin.rotation);
-        for(int i=0; i<3; ++i) REQUIRE(extrin.translation[i] == 0.0f);
-    }
-
-    SECTION( "only x-axis translation (~70 mm) between DEPTH and INFRARED2" )
-    {
-        rs_extrinsics extrin;
-        rs_get_device_extrinsics(dev, RS_STREAM_DEPTH, RS_STREAM_INFRARED2, &extrin, require_no_error());
-
-        require_identity_matrix(extrin.rotation);
-        REQUIRE(extrin.translation[0] < -0.06f); // Some variation is allowed, but should report at least 60 mm in all cases
-        REQUIRE(extrin.translation[0] > -0.08f); // Some variation is allowed, but should report at most 80 mm in all cases
-        for(int i=1; i<3; ++i) REQUIRE(extrin.translation[i] == 0.0f);
-    }
-
-    SECTION( "extrinsics between DEPTH and COLOR contain a valid rotation matrix and translation vector" )
-    {
-        rs_extrinsics extrin;
-        rs_get_device_extrinsics(dev, RS_STREAM_DEPTH, RS_STREAM_COLOR, &extrin, require_no_error());
-
-        require_rotation_matrix(extrin.rotation);     
-        for(int i=0; i<3; ++i) REQUIRE(std::isfinite(extrin.translation[i]));
-    }
-
-    SECTION( "depth scale is 0.001 (by default)" )
-    {
-        float depth_scale = rs_get_device_depth_scale(dev, require_no_error());
-        REQUIRE(depth_scale == 0.001f);
-    }
-
-    SECTION( "reasonable stream modes should be available for DEPTH, COLOR, INFRARED, and INFRARED2" )
-    {
-        for(auto stream : {RS_STREAM_DEPTH, RS_STREAM_COLOR, RS_STREAM_INFRARED})
+        // For every pair of streams
+        for(int j=0; j<RS_STREAM_COUNT; ++j)
         {
-            // Require that there are modes for this stream
-            int stream_mode_count = rs_get_stream_mode_count(dev, stream, require_no_error());
-            REQUIRE(stream_mode_count > 0);
+            const rs_stream stream_a = (rs_stream)j;
 
-            // Require that INFRARED2 have the same number of modes as INFRARED
-            if(stream == RS_STREAM_INFRARED)
+            // Extrinsics from A to A should be an identity transform
+            rs_extrinsics a_to_a = {};
+            rs_get_device_extrinsics(dev, stream_a, stream_a, &a_to_a, require_no_error());
+            require_identity_matrix(a_to_a.rotation);
+            require_zero_vector(a_to_a.translation);
+
+            for(int k=j+1; k<RS_STREAM_COUNT; ++k)
             {
-                int infrared2_stream_mode_count = rs_get_stream_mode_count(dev, RS_STREAM_INFRARED2, require_no_error());
-                REQUIRE(infrared2_stream_mode_count == stream_mode_count);
+                const rs_stream stream_b = (rs_stream)k;
+            
+                // Extrinsics from A to B should have an orthonormal 3x3 rotation matrix and a translation vector of magnitude less than 10cm
+                rs_extrinsics a_to_b = {};
+                rs_get_device_extrinsics(dev, stream_a, stream_b, &a_to_b, require_no_error());
+                require_rotation_matrix(a_to_b.rotation);
+                REQUIRE( vector_length(a_to_b.translation) < 0.1f );
+
+                // Extrinsics from B to A should be the inverse of extrinsics from A to B
+                rs_extrinsics b_to_a = {};
+                rs_get_device_extrinsics(dev, stream_b, stream_a, &b_to_a, require_no_error());
+                require_transposed(a_to_b.rotation, b_to_a.rotation);
+                REQUIRE( b_to_a.rotation[0] * a_to_b.translation[0] + b_to_a.rotation[3] * a_to_b.translation[1] + b_to_a.rotation[6] * a_to_b.translation[2] == Approx(-b_to_a.translation[0]) );
+                REQUIRE( b_to_a.rotation[1] * a_to_b.translation[0] + b_to_a.rotation[4] * a_to_b.translation[1] + b_to_a.rotation[7] * a_to_b.translation[2] == Approx(-b_to_a.translation[1]) );
+                REQUIRE( b_to_a.rotation[2] * a_to_b.translation[0] + b_to_a.rotation[5] * a_to_b.translation[1] + b_to_a.rotation[8] * a_to_b.translation[2] == Approx(-b_to_a.translation[2]) );
             }
-
-            for(int i=0; i<stream_mode_count; ++i)
-            {
-                // Require that this mode has reasonable settings
-                int width=0, height=0, framerate=0;
-                rs_format format=RS_FORMAT_ANY;
-                rs_get_stream_mode(dev, stream, i, &width, &height, &format, &framerate, require_no_error());
-                REQUIRE(width >= 1);
-                REQUIRE(width <= 1920);
-                REQUIRE(height >= 1);
-                REQUIRE(height <= 1080);
-                REQUIRE(format > RS_FORMAT_ANY);
-                REQUIRE(format < RS_FORMAT_COUNT);
-                REQUIRE(framerate >= 15);
-                REQUIRE(framerate <= 90);
-
-                // Require that INFRARED2 have the exact same modes, in the same order, as INFRARED
-                if(stream == RS_STREAM_INFRARED)
-                {
-                    int width2, height2, framerate2;
-                    rs_format format2;
-                    rs_get_stream_mode(dev, RS_STREAM_INFRARED2, i, &width2, &height2, &format2, &framerate2, require_no_error());
-                    REQUIRE(width2 == width);
-                    REQUIRE(height2 == height);
-                    REQUIRE(format2 == format);
-                    REQUIRE(framerate2 == framerate);
-                }
-            }
-
-            // Require the mode requests with indices outside of [0,stream_mode_count) indicate an error
-            int width=0, height=0, framerate=0;
-            rs_format format=RS_FORMAT_ANY;
-            rs_get_stream_mode(dev, stream, -1, &width, &height, &format, &framerate, require_error("out of range value for argument \"index\""));
-            rs_get_stream_mode(dev, stream, stream_mode_count, &width, &height, &format, &framerate, require_error("out of range value for argument \"index\""));
         }
+
+        // Require no TRANSLATION (but rotation is acceptable) between RECTIFIED_COLOR and COLOR (because they come from the same imager)
+        rs_extrinsics extrin = {};
+        rs_get_device_extrinsics(dev, RS_STREAM_RECTIFIED_COLOR, RS_STREAM_COLOR, &extrin, require_no_error());
+        require_zero_vector(extrin.translation);
+
+        // Require no extrinsic transformation between COLOR_ALIGNED_TO_DEPTH and DEPTH (because, by definition, they are aligned)
+        rs_get_device_extrinsics(dev, RS_STREAM_COLOR_ALIGNED_TO_DEPTH, RS_STREAM_DEPTH, &extrin, require_no_error());
+        require_identity_matrix(extrin.rotation);
+        require_zero_vector(extrin.translation);
+
+        // Require no extrinsic transformation between DEPTH_ALIGNED_TO_COLOR and COLOR (because, by definition, they are aligned)
+        rs_get_device_extrinsics(dev, RS_STREAM_DEPTH_ALIGNED_TO_COLOR, RS_STREAM_COLOR, &extrin, require_no_error());
+        require_identity_matrix(extrin.rotation);
+        require_zero_vector(extrin.translation);
+
+        // Require no extrinsic transformation between DEPTH_ALIGNED_TO_RECTIFIED_COLOR and RECTIFIED_COLOR (because, by definition, they are aligned)
+        rs_get_device_extrinsics(dev, RS_STREAM_DEPTH_ALIGNED_TO_RECTIFIED_COLOR, RS_STREAM_RECTIFIED_COLOR, &extrin, require_no_error());
+        require_identity_matrix(extrin.rotation);
+        require_zero_vector(extrin.translation);
     }
+}
 
-    SECTION( "streaming is possible in some reasonable configurations" )
+TEST_CASE( "DS4 device extrinsics are within expected parameters", "[live] [ds4]" )
+{
+    // Require at least one device to be plugged in
+    safe_context ctx;
+    const int device_count = rs_get_device_count(ctx, require_no_error());
+    REQUIRE(device_count > 0);
+
+    // For each device
+    for(int i=0; i<device_count; ++i)
     {
-        test_streaming(dev, {
-            {RS_STREAM_DEPTH, 480, 360, RS_FORMAT_Z16, 60}
-        });
+        rs_device * dev = rs_get_device(ctx, 0, require_no_error());    
+        REQUIRE(dev != nullptr);
 
-        test_streaming(dev, {
-            {RS_STREAM_DEPTH, 480, 360, RS_FORMAT_Z16, 60},
-            {RS_STREAM_COLOR, 640, 480, RS_FORMAT_RGB8, 60}
-        });
+        SECTION( "no extrinsic transformation between DEPTH and INFRARED" )
+        {
+            rs_extrinsics extrin;
+            rs_get_device_extrinsics(dev, RS_STREAM_DEPTH, RS_STREAM_INFRARED, &extrin, require_no_error());
 
-        test_streaming(dev, {
-            {RS_STREAM_DEPTH, 480, 360, RS_FORMAT_Z16, 60},
-            {RS_STREAM_INFRARED, 480, 360, RS_FORMAT_Y8, 60}
-        });
+            require_identity_matrix(extrin.rotation);
+            require_zero_vector(extrin.translation);
+        }
 
-        test_streaming(dev, {
-            {RS_STREAM_INFRARED, 492, 372, RS_FORMAT_Y16, 60},
-            {RS_STREAM_INFRARED2, 492, 372, RS_FORMAT_Y16, 60}
-        });
+        SECTION( "only x-axis translation (~70 mm) between DEPTH and INFRARED2" )
+        {
+            rs_extrinsics extrin;
+            rs_get_device_extrinsics(dev, RS_STREAM_DEPTH, RS_STREAM_INFRARED2, &extrin, require_no_error());
 
-        test_streaming(dev, {
-            {RS_STREAM_DEPTH, 480, 360, RS_FORMAT_Z16, 60},
-            {RS_STREAM_COLOR, 640, 480, RS_FORMAT_RGB8, 60},
-            {RS_STREAM_INFRARED, 480, 360, RS_FORMAT_Y8, 60},
-            {RS_STREAM_INFRARED2, 480, 360, RS_FORMAT_Y8, 60}
-        });
+            require_identity_matrix(extrin.rotation);
+            REQUIRE( extrin.translation[0] < -0.06f ); // Some variation is allowed, but should report at least 60 mm in all cases
+            REQUIRE( extrin.translation[0] > -0.08f ); // Some variation is allowed, but should report at most 80 mm in all cases
+            REQUIRE( extrin.translation[1] == 0.0f );
+            REQUIRE( extrin.translation[2] == 0.0f );
+        }
+
+        SECTION( "only translation between DEPTH and RECTIFIED_COLOR" )
+        {
+            rs_extrinsics extrin;
+            rs_get_device_extrinsics(dev, RS_STREAM_DEPTH, RS_STREAM_RECTIFIED_COLOR, &extrin, require_no_error());
+
+            require_identity_matrix(extrin.rotation);
+        }
+
+        SECTION( "depth scale is 0.001 (by default)" )
+        {
+            REQUIRE( rs_get_device_depth_scale(dev, require_no_error()) == 0.001f );
+        }
     }
 }
 
@@ -314,6 +251,61 @@ TEST_CASE( "streaming mode intrinsics are sane", "[live]" )
             rs_get_stream_intrinsics(dev, stream, &intrin, require_error(std::string("stream not enabled: ") + rs_stream_to_string(stream)));
             rs_get_stream_format(dev, stream, require_error(std::string("stream not enabled: ") + rs_stream_to_string(stream)));
             rs_get_stream_framerate(dev, stream, require_error(std::string("stream not enabled: ") + rs_stream_to_string(stream)));
+        }
+    }
+}
+
+TEST_CASE( "DS4 infrared2 streaming modes exactly match infrared streaming modes", "[live] [ds4]" )
+{
+    // Require at least one device to be plugged in
+    safe_context ctx;
+    const int device_count = rs_get_device_count(ctx, require_no_error());
+    REQUIRE(device_count > 0);
+
+    // For each device
+    for(int i=0; i<device_count; ++i)
+    {
+        rs_device * dev = rs_get_device(ctx, 0, require_no_error());    
+        REQUIRE(dev != nullptr);
+
+        // Require that there are a nonzero amount of infrared modes, and that infrared2 has the same number of modes
+        const int infrared_mode_count = rs_get_stream_mode_count(dev, RS_STREAM_INFRARED, require_no_error());
+        REQUIRE( infrared_mode_count > 0 );
+        REQUIRE( rs_get_stream_mode_count(dev, RS_STREAM_INFRARED2, require_no_error()) == infrared_mode_count );
+
+        // For each streaming mode
+        for(int j=0; j<infrared_mode_count; ++j)
+        {
+            // Require that INFRARED and INFRARED2 streaming modes are exactly identical
+            int infrared_width = 0, infrared_height = 0, infrared_framerate = 0; rs_format infrared_format = RS_FORMAT_ANY;
+            rs_get_stream_mode(dev, RS_STREAM_INFRARED, j, &infrared_width, &infrared_height, &infrared_format, &infrared_framerate, require_no_error());
+
+            int infrared2_width = 0, infrared2_height = 0, infrared2_framerate = 0; rs_format infrared2_format = RS_FORMAT_ANY;
+            rs_get_stream_mode(dev, RS_STREAM_INFRARED2, j, &infrared2_width, &infrared2_height, &infrared2_format, &infrared2_framerate, require_no_error());
+
+            REQUIRE( infrared_width == infrared2_width );
+            REQUIRE( infrared_height == infrared2_height );
+            REQUIRE( infrared_format == infrared2_format );
+            REQUIRE( infrared_framerate == infrared2_framerate );
+
+            // Require that the intrinsics for these streaming modes match exactly
+            rs_enable_stream(dev, RS_STREAM_INFRARED, infrared_width, infrared_height, infrared_format, infrared_framerate, require_no_error());
+            rs_enable_stream(dev, RS_STREAM_INFRARED2, infrared2_width, infrared2_height, infrared2_format, infrared2_framerate, require_no_error());
+
+            REQUIRE( rs_get_stream_format(dev, RS_STREAM_INFRARED, require_no_error()) == rs_get_stream_format(dev, RS_STREAM_INFRARED2, require_no_error()) );
+            REQUIRE( rs_get_stream_framerate(dev, RS_STREAM_INFRARED, require_no_error()) == rs_get_stream_framerate(dev, RS_STREAM_INFRARED2, require_no_error()) );
+
+            rs_intrinsics infrared_intrin = {}, infrared2_intrin = {};
+            rs_get_stream_intrinsics(dev, RS_STREAM_INFRARED, &infrared_intrin, require_no_error());
+            rs_get_stream_intrinsics(dev, RS_STREAM_INFRARED2, &infrared2_intrin, require_no_error());
+            REQUIRE( infrared_intrin.width  == infrared_intrin.width  );
+            REQUIRE( infrared_intrin.height == infrared_intrin.height );
+            REQUIRE( infrared_intrin.ppx    == infrared_intrin.ppx    );
+            REQUIRE( infrared_intrin.ppy    == infrared_intrin.ppy    );
+            REQUIRE( infrared_intrin.fx     == infrared_intrin.fx     );
+            REQUIRE( infrared_intrin.fy     == infrared_intrin.fy     );
+            REQUIRE( infrared_intrin.model  == infrared_intrin.model  );
+            for(int k=0; k<5; ++k) REQUIRE( infrared_intrin.coeffs[k]  == infrared_intrin.coeffs[k] );
         }
     }
 }
@@ -420,5 +412,107 @@ TEST_CASE( "synthetic streaming mode properties are correct", "[live]" )
                 for(int l=0; l<5; ++l) REQUIRE( depth_aligned_to_rectified_color_intrin.coeffs[l]  == rectified_color_intrin.coeffs[l] );
             }
         }
+    }
+}
+
+/////////////////////
+// Streaming tests //
+/////////////////////
+
+struct stream_mode { rs_stream stream; int width, height; rs_format format; int framerate; };
+
+void test_streaming(rs_device * device, std::initializer_list<stream_mode> modes)
+{
+    std::ostringstream ss;
+    for(auto & mode : modes)
+    {
+        ss << rs_stream_to_string(mode.stream) << "=" << mode.width << "x" << mode.height << " " << rs_format_to_string(mode.format) << "@" << mode.framerate << "Hz ";
+    }
+
+    SECTION( "stream " + ss.str() )
+    {
+        for(auto & mode : modes)
+        {
+            rs_enable_stream(device, mode.stream, mode.width, mode.height, mode.format, mode.framerate, require_no_error());
+            REQUIRE( rs_stream_is_enabled(device, mode.stream, require_no_error()) == 1 );
+        }
+        rs_start_device(device, require_no_error());
+        REQUIRE( rs_device_is_streaming(device, require_no_error()) == 1 );
+
+        rs_wait_for_frames(device, require_no_error());
+        for(auto & mode : modes)
+        {
+            REQUIRE( rs_stream_is_enabled(device, mode.stream, require_no_error()) == 1 );
+            REQUIRE( rs_get_frame_data(device, mode.stream, require_no_error()) != nullptr );
+            REQUIRE( rs_get_frame_timestamp(device, mode.stream, require_no_error()) >= 0 );
+        }
+
+        for(int i=0; i<100; ++i)
+        {
+            rs_wait_for_frames(device, require_no_error());
+        }
+        for(auto & mode : modes)
+        {
+            REQUIRE( rs_stream_is_enabled(device, mode.stream, require_no_error()) == 1 );
+            REQUIRE( rs_get_frame_data(device, mode.stream, require_no_error()) != nullptr );
+            REQUIRE( rs_get_frame_timestamp(device, mode.stream, require_no_error()) >= 0 );
+        }
+
+        rs_stop_device(device, require_no_error());
+        REQUIRE( rs_device_is_streaming(device, require_no_error()) == 0 );
+        for(auto & mode : modes)
+        {
+            rs_disable_stream(device, mode.stream, require_no_error());
+            REQUIRE( rs_stream_is_enabled(device, mode.stream, require_no_error()) == 0 );
+        }
+    }
+}
+
+TEST_CASE( "a single DS4 can stream a variety of reasonable streaming mode combinations", "[live] [ds4] [one-camera]" )
+{
+    safe_context ctx;
+    
+    SECTION( "exactly one device is connected" )
+    {
+        int device_count = rs_get_device_count(ctx, require_no_error());
+        REQUIRE(device_count == 1);
+    }
+
+    rs_device * dev = rs_get_device(ctx, 0, require_no_error());
+    REQUIRE(dev != nullptr);
+
+    SECTION( "device name is Intel RealSense R200" )
+    {
+        const char * name = rs_get_device_name(dev, require_no_error());
+        REQUIRE(name == std::string("Intel RealSense R200"));
+    }
+
+    SECTION( "streaming is possible in some reasonable configurations" )
+    {
+        test_streaming(dev, {
+            {RS_STREAM_DEPTH, 480, 360, RS_FORMAT_Z16, 60}
+        });
+
+        test_streaming(dev, {
+            {RS_STREAM_DEPTH, 480, 360, RS_FORMAT_Z16, 60},
+            {RS_STREAM_COLOR, 640, 480, RS_FORMAT_RGB8, 60}
+        });
+
+        test_streaming(dev, {
+            {RS_STREAM_DEPTH, 480, 360, RS_FORMAT_Z16, 60},
+            {RS_STREAM_INFRARED, 480, 360, RS_FORMAT_Y8, 60}
+        });
+
+        test_streaming(dev, {
+            {RS_STREAM_INFRARED, 492, 372, RS_FORMAT_Y16, 60},
+            {RS_STREAM_INFRARED2, 492, 372, RS_FORMAT_Y16, 60}
+        });
+
+        test_streaming(dev, {
+            {RS_STREAM_DEPTH, 480, 360, RS_FORMAT_Z16, 60},
+            {RS_STREAM_COLOR, 640, 480, RS_FORMAT_RGB8, 60},
+            {RS_STREAM_INFRARED, 480, 360, RS_FORMAT_Y8, 60},
+            {RS_STREAM_INFRARED2, 480, 360, RS_FORMAT_Y8, 60}
+        });
     }
 }

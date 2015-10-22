@@ -1,6 +1,7 @@
 #include "catch/catch.hpp"
 #include <librealsense/rs.h>
 
+#include <cmath> // For std::sqrt
 #include <thread> // For std::this_thread::sleep_for
 
 // RAII wrapper to ensure that contexts are always cleaned up. If this is not done, subsequent 
@@ -75,11 +76,34 @@ inline float dot_product(const float (& a)[3], const float (& b)[3])
     return a[0]*b[0] + a[1]*b[1] + a[2]*b[2]; 
 }
 
+inline float vector_length(const float (& v)[3])
+{ 
+    return std::sqrt(dot_product(v, v));
+}
+
 inline void require_cross_product(const float (& r)[3], const float (& a)[3], const float (& b)[3])
 {
     REQUIRE( r[0] == Approx(a[1]*b[2] - a[2]*b[1]) );
     REQUIRE( r[1] == Approx(a[2]*b[0] - a[0]*b[2]) );
     REQUIRE( r[2] == Approx(a[0]*b[1] - a[1]*b[0]) );
+}
+
+inline void require_zero_vector(const float (& vector)[3])
+{
+    for(int i=1; i<3; ++i) REQUIRE( vector[i] == 0.0f );
+}
+
+inline void require_transposed(const float (& a)[9], const float (& b)[9])
+{
+    REQUIRE( a[0] == Approx(b[0]) );
+    REQUIRE( a[1] == Approx(b[3]) );
+    REQUIRE( a[2] == Approx(b[6]) );
+    REQUIRE( a[3] == Approx(b[1]) );
+    REQUIRE( a[4] == Approx(b[4]) );
+    REQUIRE( a[5] == Approx(b[7]) );
+    REQUIRE( a[6] == Approx(b[2]) );
+    REQUIRE( a[7] == Approx(b[5]) );
+    REQUIRE( a[8] == Approx(b[8]) );
 }
 
 inline void require_rotation_matrix(const float (& matrix)[9])
