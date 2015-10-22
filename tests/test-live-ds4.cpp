@@ -3,6 +3,7 @@
 
 #include <librealsense/rs.h>
 
+#include <sstream>
 #include <thread>
 
 // RAII wrapper to ensure that contexts are always cleaned up. If this is not done, subsequent 
@@ -62,7 +63,12 @@ class require_no_error
 public:
     require_no_error() : err() {}
     require_no_error(const require_error &) = delete;
-    ~require_no_error() NOEXCEPT_FALSE { if(!std::uncaught_exception()) REQUIRE(err == nullptr); }
+    ~require_no_error() NOEXCEPT_FALSE 
+    { 
+        if(std::uncaught_exception()) return;
+        REQUIRE(rs_get_error_message(err) == nullptr);        
+        REQUIRE(err == nullptr);
+    }
     require_no_error &  operator = (const require_no_error &) = delete;
     operator rs_error ** () { return &err; }
 };
@@ -96,6 +102,74 @@ void require_identity_matrix(const float (& matrix)[9])
 {
     static const float identity_matrix_3x3[] = {1,0,0, 0,1,0, 0,0,1};
     for(int i=0; i<9; ++i) REQUIRE( matrix[i] == identity_matrix_3x3[i] );
+}
+
+struct stream_mode { rs_stream stream; int width, height; rs_format format; int framerate; };
+
+void test_streaming(rs_device * device, std::initializer_list<stream_mode> modes)
+{
+    std::ostringstream ss;
+    for(auto & mode : modes)
+    {
+        ss << rs_stream_to_string(mode.stream) << "=" << mode.width << "x" << mode.height << " " << rs_format_to_string(mode.format) << "@" << mode.framerate << "Hz ";
+    }
+
+    SECTION( "stream " + ss.str() )
+    {
+        for(auto & mode : modes)
+        {
+            rs_enable_stream(device, mode.stream, mode.width, mode.height, mode.format, mode.framerate, require_no_error());
+            REQUIRE( rs_stream_is_enabled(device, mode.stream, require_no_error()) == 1 );
+        }
+        rs_start_device(device, require_no_error());
+        REQUIRE( rs_device_is_streaming(device, require_no_error()) == 1 );
+
+        for(auto & mode : modes)
+        {
+            REQUIRE( rs_stream_is_enabled(device, mode.stream, require_no_error()) == 1 );
+            REQUIRE( rs_get_stream_format(device, mode.stream, require_no_error()) == mode.format );
+            REQUIRE( rs_get_stream_framerate(device, mode.stream, require_no_error()) == mode.framerate );
+
+            rs_intrinsics intrin;
+            rs_get_stream_intrinsics(device, mode.stream, &intrin, require_no_error());
+            REQUIRE( intrin.width == mode.width );
+            REQUIRE( intrin.height == mode.height );
+            REQUIRE( intrin.ppx > intrin.width * 0.4f );
+            REQUIRE( intrin.ppx < intrin.width * 0.6f );
+            REQUIRE( intrin.ppy > intrin.height * 0.4f );
+            REQUIRE( intrin.ppy < intrin.height * 0.6f );
+            REQUIRE( intrin.fx > 0.0f );
+            REQUIRE( intrin.fy > 0.0f );
+            REQUIRE( intrin.fx == Approx(intrin.fy) );
+        }
+
+        rs_wait_for_frames(device, require_no_error());
+        for(auto & mode : modes)
+        {
+            REQUIRE( rs_stream_is_enabled(device, mode.stream, require_no_error()) == 1 );
+            REQUIRE( rs_get_frame_data(device, mode.stream, require_no_error()) != nullptr );
+            REQUIRE( rs_get_frame_timestamp(device, mode.stream, require_no_error()) >= 0 );
+        }
+
+        for(int i=0; i<100; ++i)
+        {
+            rs_wait_for_frames(device, require_no_error());
+        }
+        for(auto & mode : modes)
+        {
+            REQUIRE( rs_stream_is_enabled(device, mode.stream, require_no_error()) == 1 );
+            REQUIRE( rs_get_frame_data(device, mode.stream, require_no_error()) != nullptr );
+            REQUIRE( rs_get_frame_timestamp(device, mode.stream, require_no_error()) >= 0 );
+        }
+
+        rs_stop_device(device, require_no_error());
+        REQUIRE( rs_device_is_streaming(device, require_no_error()) == 0 );
+        for(auto & mode : modes)
+        {
+            rs_disable_stream(device, mode.stream, require_no_error());
+            REQUIRE( rs_stream_is_enabled(device, mode.stream, require_no_error()) == 0 );
+        }
+    }
 }
 
 TEST_CASE( "a single DS4 behaves as expected", "[live] [ds4] [one-camera]" )
@@ -237,5 +311,34 @@ TEST_CASE( "a single DS4 behaves as expected", "[live] [ds4] [one-camera]" )
             rs_get_stream_mode(dev, stream, -1, &width, &height, &format, &framerate, require_error("out of range value for argument \"index\""));
             rs_get_stream_mode(dev, stream, stream_mode_count, &width, &height, &format, &framerate, require_error("out of range value for argument \"index\""));
         }
+    }
+
+    SECTION( "streaming is possible in some reasonable configurations" )
+    {
+        test_streaming(dev, {
+            {RS_STREAM_DEPTH, 480, 360, RS_FORMAT_Z16, 60}
+        });
+
+        test_streaming(dev, {
+            {RS_STREAM_DEPTH, 480, 360, RS_FORMAT_Z16, 60},
+            {RS_STREAM_COLOR, 640, 480, RS_FORMAT_RGB8, 60}
+        });
+
+        test_streaming(dev, {
+            {RS_STREAM_DEPTH, 480, 360, RS_FORMAT_Z16, 60},
+            {RS_STREAM_INFRARED, 480, 360, RS_FORMAT_Y8, 60}
+        });
+
+        test_streaming(dev, {
+            {RS_STREAM_INFRARED, 492, 372, RS_FORMAT_Y16, 60},
+            {RS_STREAM_INFRARED2, 492, 372, RS_FORMAT_Y16, 60}
+        });
+
+        test_streaming(dev, {
+            {RS_STREAM_DEPTH, 480, 360, RS_FORMAT_Z16, 60},
+            {RS_STREAM_COLOR, 640, 480, RS_FORMAT_RGB8, 60},
+            {RS_STREAM_INFRARED, 480, 360, RS_FORMAT_Y8, 60},
+            {RS_STREAM_INFRARED2, 480, 360, RS_FORMAT_Y8, 60}
+        });
     }
 }
