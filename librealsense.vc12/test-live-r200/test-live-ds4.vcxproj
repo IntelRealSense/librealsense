@@ -22,6 +22,7 @@
     <ProjectGuid>{7B497980-3BB8-4699-A459-0F3091D24E03}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>testliveds4</RootNamespace>
+    <ProjectName>test-live-r200</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -143,7 +144,8 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\tests\test-live-ds4.cpp" />
+    <ClCompile Include="..\..\tests\test-live-r200.cpp" />
+    <ClCompile Include="..\..\tests\test-live.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\realsense\realsense.vcxproj">

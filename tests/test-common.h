@@ -2,6 +2,7 @@
 #include <librealsense/rs.h>
 
 #include <cmath> // For std::sqrt
+#include <cassert> // For assert
 #include <thread> // For std::this_thread::sleep_for
 
 // RAII wrapper to ensure that contexts are always cleaned up. If this is not done, subsequent 
@@ -32,12 +33,20 @@ public:
     operator rs_context * () const { return context; }
 };
 
+// noexcept is not accepted by Visual Studio 2013 yet, but noexcept(false) is require on throwing destructors on gcc and clang
+// It is normally advisable not to throw in a destructor, however, this usage is safe for require_error/require_no_error because
+// they will only ever be created as temporaries immediately before being passed to a C ABI function. All parameters and return
+// types are vanilla C types, and thus nothrow-copyable, and the function itself cannot throw because it is a C ABI function.
+// Therefore, when a temporary require_error/require_no_error is destructed immediately following one of these C ABI function
+// calls, we should not have any exceptions in flight, and can freely throw (perhaps indirectly by calling Catch's REQUIRE() 
+// macro) to indicate postcondition violations.
 #ifdef WIN32
 #define NOEXCEPT_FALSE
 #else
 #define NOEXCEPT_FALSE noexcept(false)
 #endif
 
+// Can be passed to rs_error ** parameters, requires that an error is indicated with the specific provided message
 class require_error
 {
     std::string message;
@@ -47,7 +56,7 @@ public:
     require_error(const require_error &) = delete;
     ~require_error() NOEXCEPT_FALSE
     {
-        if(std::uncaught_exception()) return;
+        assert(!std::uncaught_exception());
         REQUIRE(err != nullptr);
         REQUIRE(rs_get_error_message(err) == std::string(message));
     }
@@ -55,6 +64,7 @@ public:
     operator rs_error ** () { return &err; }
 };
 
+// Can be passed to rs_error ** parameters, requires that no error is indicated
 class require_no_error
 {
     rs_error * err;
@@ -63,24 +73,27 @@ public:
     require_no_error(const require_error &) = delete;
     ~require_no_error() NOEXCEPT_FALSE 
     { 
-        if(std::uncaught_exception()) return;
-        REQUIRE(rs_get_error_message(err) == nullptr);        
+        assert(!std::uncaught_exception());
+        REQUIRE(rs_get_error_message(err) == rs_get_error_message(nullptr)); // Perform this check first. If an error WAS indicated, Catch will display it, making our debugging easier.
         REQUIRE(err == nullptr);
     }
     require_no_error &  operator = (const require_no_error &) = delete;
     operator rs_error ** () { return &err; }
 };
 
+// Compute dot product of a and b
 inline float dot_product(const float (& a)[3], const float (& b)[3])
 { 
     return a[0]*b[0] + a[1]*b[1] + a[2]*b[2]; 
 }
 
+// Compute length of v
 inline float vector_length(const float (& v)[3])
 { 
     return std::sqrt(dot_product(v, v));
 }
 
+// Require that r = cross(a, b)
 inline void require_cross_product(const float (& r)[3], const float (& a)[3], const float (& b)[3])
 {
     REQUIRE( r[0] == Approx(a[1]*b[2] - a[2]*b[1]) );
@@ -88,11 +101,13 @@ inline void require_cross_product(const float (& r)[3], const float (& a)[3], co
     REQUIRE( r[2] == Approx(a[0]*b[1] - a[1]*b[0]) );
 }
 
+// Require that vector is exactly the zero vector
 inline void require_zero_vector(const float (& vector)[3])
 {
     for(int i=1; i<3; ++i) REQUIRE( vector[i] == 0.0f );
 }
 
+// Require that a == transpose(b)
 inline void require_transposed(const float (& a)[9], const float (& b)[9])
 {
     REQUIRE( a[0] == Approx(b[0]) );
@@ -106,6 +121,7 @@ inline void require_transposed(const float (& a)[9], const float (& b)[9])
     REQUIRE( a[8] == Approx(b[8]) );
 }
 
+// Require that matrix is an orthonormal 3x3 matrix
 inline void require_rotation_matrix(const float (& matrix)[9])
 {
     const float row0[] = {matrix[0], matrix[3], matrix[6]};
@@ -122,6 +138,7 @@ inline void require_rotation_matrix(const float (& matrix)[9])
     require_cross_product(row0, row1, row2); 
 }
 
+// Require that matrix is exactly the identity matrix
 inline void require_identity_matrix(const float (& matrix)[9])
 {
     static const float identity_matrix_3x3[] = {1,0,0, 0,1,0, 0,0,1};
