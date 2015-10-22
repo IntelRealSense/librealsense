@@ -38,7 +38,30 @@ TEST_CASE( "Device metadata enumerates correctly", "[live]" )
 // Calibration information tests //
 ///////////////////////////////////
 
-TEST_CASE( "device extrinsics are sane", "[live]" )
+TEST_CASE( "no extrinsic transformation between a stream and itself", "[live]" )
+{
+    // Require at least one device to be plugged in
+    safe_context ctx;
+    const int device_count = rs_get_device_count(ctx, require_no_error());
+    REQUIRE(device_count > 0);
+
+    // For each device
+    for(int i=0; i<device_count; ++i)
+    {
+        rs_device * dev = rs_get_device(ctx, 0, require_no_error());    
+        REQUIRE(dev != nullptr);
+
+        for(int j=0; j<RS_STREAM_COUNT; ++j)
+        {
+            rs_extrinsics extrin = {};
+            rs_get_device_extrinsics(dev, (rs_stream)j, (rs_stream)j, &extrin, require_no_error());
+            require_identity_matrix(extrin.rotation);
+            require_zero_vector(extrin.translation);
+        }
+    }
+}
+
+TEST_CASE( "extrinsic transformation between two streams is a rigid transform", "[live]" )
 {
     // Require at least one device to be plugged in
     safe_context ctx;
@@ -55,12 +78,6 @@ TEST_CASE( "device extrinsics are sane", "[live]" )
         for(int j=0; j<RS_STREAM_COUNT; ++j)
         {
             const rs_stream stream_a = (rs_stream)j;
-
-            // Extrinsics from A to A should be an identity transform
-            rs_extrinsics a_to_a = {};
-            rs_get_device_extrinsics(dev, stream_a, stream_a, &a_to_a, require_no_error());
-            require_identity_matrix(a_to_a.rotation);
-            require_zero_vector(a_to_a.translation);
 
             for(int k=j+1; k<RS_STREAM_COUNT; ++k)
             {
@@ -81,7 +98,69 @@ TEST_CASE( "device extrinsics are sane", "[live]" )
                 REQUIRE( b_to_a.rotation[2] * a_to_b.translation[0] + b_to_a.rotation[5] * a_to_b.translation[1] + b_to_a.rotation[8] * a_to_b.translation[2] == Approx(-b_to_a.translation[2]) );
             }
         }
+    }
+}
 
+TEST_CASE( "extrinsic transformations are transitive", "[live]" )
+{
+    // Require at least one device to be plugged in
+    safe_context ctx;
+    const int device_count = rs_get_device_count(ctx, require_no_error());
+    REQUIRE(device_count > 0);
+
+    // For each device
+    for(int i=0; i<device_count; ++i)
+    {
+        rs_device * dev = rs_get_device(ctx, 0, require_no_error());    
+        REQUIRE(dev != nullptr);
+
+        // For every pair of streams
+        for(int a=0; a<RS_STREAM_COUNT; ++a)
+        {
+            for(int b=0; b<RS_STREAM_COUNT; ++b)
+            {
+                for(int c=0; c<RS_STREAM_COUNT; ++c)
+                {
+                    // Require that the composition of a_to_b and b_to_c is equal to a_to_c
+                    rs_extrinsics a_to_b, b_to_c, a_to_c;
+                    rs_get_device_extrinsics(dev, (rs_stream)a, (rs_stream)b, &a_to_b, require_no_error());
+                    rs_get_device_extrinsics(dev, (rs_stream)b, (rs_stream)c, &b_to_c, require_no_error());
+                    rs_get_device_extrinsics(dev, (rs_stream)a, (rs_stream)c, &a_to_c, require_no_error());
+
+                    // a_to_c.rotation == a_to_b.rotation * b_to_c.rotation
+                    REQUIRE( a_to_c.rotation[0] == Approx(a_to_b.rotation[0] * b_to_c.rotation[0] + a_to_b.rotation[3] * b_to_c.rotation[1] + a_to_b.rotation[6] * b_to_c.rotation[2]) );
+                    REQUIRE( a_to_c.rotation[2] == Approx(a_to_b.rotation[2] * b_to_c.rotation[0] + a_to_b.rotation[5] * b_to_c.rotation[1] + a_to_b.rotation[8] * b_to_c.rotation[2]) );
+                    REQUIRE( a_to_c.rotation[1] == Approx(a_to_b.rotation[1] * b_to_c.rotation[0] + a_to_b.rotation[4] * b_to_c.rotation[1] + a_to_b.rotation[7] * b_to_c.rotation[2]) );
+                    REQUIRE( a_to_c.rotation[3] == Approx(a_to_b.rotation[0] * b_to_c.rotation[3] + a_to_b.rotation[3] * b_to_c.rotation[4] + a_to_b.rotation[6] * b_to_c.rotation[5]) );
+                    REQUIRE( a_to_c.rotation[4] == Approx(a_to_b.rotation[1] * b_to_c.rotation[3] + a_to_b.rotation[4] * b_to_c.rotation[4] + a_to_b.rotation[7] * b_to_c.rotation[5]) );                    
+                    REQUIRE( a_to_c.rotation[5] == Approx(a_to_b.rotation[2] * b_to_c.rotation[3] + a_to_b.rotation[5] * b_to_c.rotation[4] + a_to_b.rotation[8] * b_to_c.rotation[5]) );
+                    REQUIRE( a_to_c.rotation[6] == Approx(a_to_b.rotation[0] * b_to_c.rotation[6] + a_to_b.rotation[3] * b_to_c.rotation[7] + a_to_b.rotation[6] * b_to_c.rotation[8]) );
+                    REQUIRE( a_to_c.rotation[7] == Approx(a_to_b.rotation[1] * b_to_c.rotation[6] + a_to_b.rotation[4] * b_to_c.rotation[7] + a_to_b.rotation[7] * b_to_c.rotation[8]) );
+                    REQUIRE( a_to_c.rotation[8] == Approx(a_to_b.rotation[2] * b_to_c.rotation[6] + a_to_b.rotation[5] * b_to_c.rotation[7] + a_to_b.rotation[8] * b_to_c.rotation[8]) );
+
+                    // a_to_c.translation = a_to_b.transform(b_to_c.translation)
+                    REQUIRE( a_to_c.translation[0] == Approx(a_to_b.rotation[0] * b_to_c.translation[0] + a_to_b.rotation[3] * b_to_c.translation[1] + a_to_b.rotation[6] * b_to_c.translation[2] + a_to_b.translation[0]) );
+                    REQUIRE( a_to_c.translation[1] == Approx(a_to_b.rotation[1] * b_to_c.translation[0] + a_to_b.rotation[4] * b_to_c.translation[1] + a_to_b.rotation[7] * b_to_c.translation[2] + a_to_b.translation[1]) );
+                    REQUIRE( a_to_c.translation[2] == Approx(a_to_b.rotation[2] * b_to_c.translation[0] + a_to_b.rotation[5] * b_to_c.translation[1] + a_to_b.rotation[8] * b_to_c.translation[2] + a_to_b.translation[2]) );
+                }
+            }
+        }
+    }
+}
+
+TEST_CASE( "aligned images have no extrinsic transformation from the image they are aligned to", "[live]" )
+{
+    // Require at least one device to be plugged in
+    safe_context ctx;
+    const int device_count = rs_get_device_count(ctx, require_no_error());
+    REQUIRE(device_count > 0);
+
+    // For each device
+    for(int i=0; i<device_count; ++i)
+    {
+        rs_device * dev = rs_get_device(ctx, 0, require_no_error());    
+        REQUIRE(dev != nullptr);
+        
         // Require no TRANSLATION (but rotation is acceptable) between RECTIFIED_COLOR and COLOR (because they come from the same imager)
         rs_extrinsics extrin = {};
         rs_get_device_extrinsics(dev, RS_STREAM_RECTIFIED_COLOR, RS_STREAM_COLOR, &extrin, require_no_error());
