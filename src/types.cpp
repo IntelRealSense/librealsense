@@ -117,6 +117,10 @@ namespace rsimpl
         for(auto & s : stream_subdevices) s = -1;
         for(auto & s : presets) for(auto & p : s) p = stream_request();
         for(auto & o : option_supported) o = false;
+        for(auto & p : stream_poses)
+        {
+            p = {{{1,0,0},{0,1,0},{0,0,1}}, {0,0,0}};
+        }
     }
 
     const subdevice_mode * static_device_info::select_mode(const stream_request (& requests)[RS_STREAM_NATIVE_COUNT], int subdevice_index) const

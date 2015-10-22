@@ -1,6 +1,6 @@
-//////////////////////////////////////////////////////////////////
-// This set of tests is valid only for the R200 camera and F200 //
-//////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+// This set of tests is valid only for the R200 camera //
+/////////////////////////////////////////////////////////
 
 #define CATCH_CONFIG_MAIN
 #include "catch/catch.hpp"
@@ -168,56 +168,7 @@ TEST_CASE( "R200 infrared2 streaming modes exactly match infrared streaming mode
 // Streaming tests //
 /////////////////////
 
-struct stream_mode { rs_stream stream; int width, height; rs_format format; int framerate; };
-
-void test_streaming(rs_device * device, std::initializer_list<stream_mode> modes)
-{
-    std::ostringstream ss;
-    for(auto & mode : modes)
-    {
-        ss << rs_stream_to_string(mode.stream) << "=" << mode.width << "x" << mode.height << " " << rs_format_to_string(mode.format) << "@" << mode.framerate << "Hz ";
-    }
-
-    SECTION( "stream " + ss.str() )
-    {
-        for(auto & mode : modes)
-        {
-            rs_enable_stream(device, mode.stream, mode.width, mode.height, mode.format, mode.framerate, require_no_error());
-            REQUIRE( rs_stream_is_enabled(device, mode.stream, require_no_error()) == 1 );
-        }
-        rs_start_device(device, require_no_error());
-        REQUIRE( rs_device_is_streaming(device, require_no_error()) == 1 );
-
-        rs_wait_for_frames(device, require_no_error());
-        for(auto & mode : modes)
-        {
-            REQUIRE( rs_stream_is_enabled(device, mode.stream, require_no_error()) == 1 );
-            REQUIRE( rs_get_frame_data(device, mode.stream, require_no_error()) != nullptr );
-            REQUIRE( rs_get_frame_timestamp(device, mode.stream, require_no_error()) >= 0 );
-        }
-
-        for(int i=0; i<100; ++i)
-        {
-            rs_wait_for_frames(device, require_no_error());
-        }
-        for(auto & mode : modes)
-        {
-            REQUIRE( rs_stream_is_enabled(device, mode.stream, require_no_error()) == 1 );
-            REQUIRE( rs_get_frame_data(device, mode.stream, require_no_error()) != nullptr );
-            REQUIRE( rs_get_frame_timestamp(device, mode.stream, require_no_error()) >= 0 );
-        }
-
-        rs_stop_device(device, require_no_error());
-        REQUIRE( rs_device_is_streaming(device, require_no_error()) == 0 );
-        for(auto & mode : modes)
-        {
-            rs_disable_stream(device, mode.stream, require_no_error());
-            REQUIRE( rs_stream_is_enabled(device, mode.stream, require_no_error()) == 0 );
-        }
-    }
-}
-
-TEST_CASE( "a single DS4 can stream a variety of reasonable streaming mode combinations", "[live] [ds4] [one-camera]" )
+TEST_CASE( "a single R200 can stream a variety of reasonable streaming mode combinations", "[live] [r200] [one-camera]" )
 {
     safe_context ctx;
     
