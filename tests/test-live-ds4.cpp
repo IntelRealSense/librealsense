@@ -33,6 +33,40 @@ public:
     operator rs_context * () const { return context; }
 };
 
+#ifdef WIN32
+#define NOEXCEPT_FALSE
+#else
+#define NOEXCEPT_FALSE noexcept(false)
+#endif
+
+class require_error
+{
+    const char * message;
+    rs_error * err;
+public:
+    require_error(const char * message) : message(message), err() {}
+    require_error(const require_error &) = delete;
+    ~require_error() NOEXCEPT_FALSE
+    {
+        if(std::uncaught_exception()) return;
+        REQUIRE(err != nullptr);
+        REQUIRE(rs_get_error_message(err) == std::string(message));
+    }
+    require_error &  operator = (const require_error &) = delete;
+    operator rs_error ** () { return &err; }
+};
+
+class require_no_error
+{
+    rs_error * err;
+public:
+    require_no_error() : err() {}
+    require_no_error(const require_error &) = delete;
+    ~require_no_error() NOEXCEPT_FALSE { if(!std::uncaught_exception()) REQUIRE(err == nullptr); }
+    require_no_error &  operator = (const require_no_error &) = delete;
+    operator rs_error ** () { return &err; }
+};
+
 float dot_product(const float (& a)[3], const float (& b)[3]) { return a[0]*b[0] + a[1]*b[1] + a[2]*b[2]; }
 
 void require_cross_product(const float (& r)[3], const float (& a)[3], const float (& b)[3])
@@ -66,38 +100,33 @@ void require_identity_matrix(const float (& matrix)[9])
 
 TEST_CASE( "a single DS4 behaves as expected", "[live] [ds4] [one-camera]" )
 {
-    rs_error * err = nullptr;
     safe_context ctx;
     
     SECTION( "exactly one device is connected" )
     {
-        int device_count = rs_get_device_count(ctx, &err);
-        REQUIRE(err == nullptr);
+        int device_count = rs_get_device_count(ctx, require_no_error());
         REQUIRE(device_count == 1);
     }
 
-    rs_device * dev = rs_get_device(ctx, 0, &err);
-    REQUIRE(err == nullptr);
+    rs_device * dev = rs_get_device(ctx, 0, require_no_error());
     REQUIRE(dev != nullptr);
 
     SECTION( "device name is Intel RealSense R200" )
     {
-        const char * name = rs_get_device_name(dev, &err);
-        REQUIRE(err == nullptr);
-        REQUIRE(std::string(name) == "Intel RealSense R200");
+        const char * name = rs_get_device_name(dev, require_no_error());
+        REQUIRE(name == std::string("Intel RealSense R200"));
     }
 
     SECTION( "device serial number has ten decimal digits" )
     {
-        const char * serial = rs_get_device_serial(dev, &err);
-        REQUIRE(err == nullptr);
+        const char * serial = rs_get_device_serial(dev, require_no_error());
         REQUIRE(strlen(serial) == 10);
         for(int i=0; i<10; ++i) REQUIRE(isdigit(serial[i]));
     }
 
     SECTION( "device firmware version is a nonempty string" )
     {
-        const char * version = rs_get_device_firmware_version(dev, &err);
+        const char * version = rs_get_device_firmware_version(dev, require_no_error());
         REQUIRE(strlen(version) > 0);
     }
 
@@ -107,25 +136,27 @@ TEST_CASE( "a single DS4 behaves as expected", "[live] [ds4] [one-camera]" )
         {
             if(i >= RS_OPTION_COLOR_BACKLIGHT_COMPENSATION && i <= RS_OPTION_COLOR_WHITE_BALANCE)
             {
-                REQUIRE(rs_device_supports_option(dev, (rs_option)i, &err) == 1);
+                REQUIRE(rs_device_supports_option(dev, (rs_option)i, require_no_error()) == 1);
             }
             else if(i >= RS_OPTION_R200_LR_AUTO_EXPOSURE_ENABLED && i <= RS_OPTION_R200_DISPARITY_SHIFT)
             {
-                REQUIRE(rs_device_supports_option(dev, (rs_option)i, &err) == 1);
+                REQUIRE(rs_device_supports_option(dev, (rs_option)i, require_no_error()) == 1);
             }
             else
             {
-                REQUIRE(rs_device_supports_option(dev, (rs_option)i, &err) == 0);
+                REQUIRE(rs_device_supports_option(dev, (rs_option)i, require_no_error()) == 0);
             }
-            REQUIRE(err == nullptr);
         }
+
+        // Require the option requests with indices outside of [0,RS_OPTION_COUNT) indicate an error
+        rs_device_supports_option(dev, (rs_option)-1, require_error("bad enum value for argument \"option\""));
+        rs_device_supports_option(dev, RS_OPTION_COUNT, require_error("bad enum value for argument \"option\""));
     }
 
     SECTION( "no extrinsic transformation between DEPTH and INFRARED" )
     {
         rs_extrinsics extrin;
-        rs_get_device_extrinsics(dev, RS_STREAM_DEPTH, RS_STREAM_INFRARED, &extrin, &err);
-        REQUIRE(err == nullptr);
+        rs_get_device_extrinsics(dev, RS_STREAM_DEPTH, RS_STREAM_INFRARED, &extrin, require_no_error());
 
         require_identity_matrix(extrin.rotation);
         for(int i=0; i<3; ++i) REQUIRE(extrin.translation[i] == 0.0f);
@@ -134,8 +165,7 @@ TEST_CASE( "a single DS4 behaves as expected", "[live] [ds4] [one-camera]" )
     SECTION( "only x-axis translation (~70 mm) between DEPTH and INFRARED2" )
     {
         rs_extrinsics extrin;
-        rs_get_device_extrinsics(dev, RS_STREAM_DEPTH, RS_STREAM_INFRARED2, &extrin, &err);
-        REQUIRE(err == nullptr);
+        rs_get_device_extrinsics(dev, RS_STREAM_DEPTH, RS_STREAM_INFRARED2, &extrin, require_no_error());
 
         require_identity_matrix(extrin.rotation);
         REQUIRE(extrin.translation[0] < -0.06f); // Some variation is allowed, but should report at least 60 mm in all cases
@@ -146,8 +176,7 @@ TEST_CASE( "a single DS4 behaves as expected", "[live] [ds4] [one-camera]" )
     SECTION( "extrinsics between DEPTH and COLOR contain a valid rotation matrix and translation vector" )
     {
         rs_extrinsics extrin;
-        rs_get_device_extrinsics(dev, RS_STREAM_DEPTH, RS_STREAM_COLOR, &extrin, &err);
-        REQUIRE(err == nullptr);
+        rs_get_device_extrinsics(dev, RS_STREAM_DEPTH, RS_STREAM_COLOR, &extrin, require_no_error());
 
         require_rotation_matrix(extrin.rotation);     
         for(int i=0; i<3; ++i) REQUIRE(std::isfinite(extrin.translation[i]));
@@ -155,8 +184,7 @@ TEST_CASE( "a single DS4 behaves as expected", "[live] [ds4] [one-camera]" )
 
     SECTION( "depth scale is 0.001 (by default)" )
     {
-        float depth_scale = rs_get_device_depth_scale(dev, &err);
-        REQUIRE(err == nullptr);
+        float depth_scale = rs_get_device_depth_scale(dev, require_no_error());
         REQUIRE(depth_scale == 0.001f);
     }
 
@@ -165,25 +193,22 @@ TEST_CASE( "a single DS4 behaves as expected", "[live] [ds4] [one-camera]" )
         for(auto stream : {RS_STREAM_DEPTH, RS_STREAM_COLOR, RS_STREAM_INFRARED})
         {
             // Require that there are modes for this stream
-            int stream_mode_count = rs_get_stream_mode_count(dev, stream, &err);
-            REQUIRE(err == nullptr);
+            int stream_mode_count = rs_get_stream_mode_count(dev, stream, require_no_error());
             REQUIRE(stream_mode_count > 0);
 
             // Require that INFRARED2 have the same number of modes as INFRARED
             if(stream == RS_STREAM_INFRARED)
             {
-                int infrared2_stream_mode_count = rs_get_stream_mode_count(dev, RS_STREAM_INFRARED2, &err);
-                REQUIRE(err == nullptr);
+                int infrared2_stream_mode_count = rs_get_stream_mode_count(dev, RS_STREAM_INFRARED2, require_no_error());
                 REQUIRE(infrared2_stream_mode_count == stream_mode_count);
             }
 
             for(int i=0; i<stream_mode_count; ++i)
             {
                 // Require that this mode has reasonable settings
-                int width, height, framerate;
-                rs_format format;
-                rs_get_stream_mode(dev, stream, i, &width, &height, &format, &framerate, &err);
-                REQUIRE(err == nullptr);
+                int width=0, height=0, framerate=0;
+                rs_format format=RS_FORMAT_ANY;
+                rs_get_stream_mode(dev, stream, i, &width, &height, &format, &framerate, require_no_error());
                 REQUIRE(width >= 1);
                 REQUIRE(width <= 1920);
                 REQUIRE(height >= 1);
@@ -198,14 +223,19 @@ TEST_CASE( "a single DS4 behaves as expected", "[live] [ds4] [one-camera]" )
                 {
                     int width2, height2, framerate2;
                     rs_format format2;
-                    rs_get_stream_mode(dev, RS_STREAM_INFRARED2, i, &width2, &height2, &format2, &framerate2, &err);
-                    REQUIRE(err == nullptr);
+                    rs_get_stream_mode(dev, RS_STREAM_INFRARED2, i, &width2, &height2, &format2, &framerate2, require_no_error());
                     REQUIRE(width2 == width);
                     REQUIRE(height2 == height);
                     REQUIRE(format2 == format);
                     REQUIRE(framerate2 == framerate);
                 }
             }
+
+            // Require the mode requests with indices outside of [0,stream_mode_count) indicate an error
+            int width=0, height=0, framerate=0;
+            rs_format format=RS_FORMAT_ANY;
+            rs_get_stream_mode(dev, stream, -1, &width, &height, &format, &framerate, require_error("out of range value for argument \"index\""));
+            rs_get_stream_mode(dev, stream, stream_mode_count, &width, &height, &format, &framerate, require_error("out of range value for argument \"index\""));
         }
     }
 }
