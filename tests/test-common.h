@@ -39,10 +39,10 @@ public:
 
 class require_error
 {
-    const char * message;
+    std::string message;
     rs_error * err;
 public:
-    require_error(const char * message) : message(message), err() {}
+    require_error(std::string message) : message(move(message)), err() {}
     require_error(const require_error &) = delete;
     ~require_error() NOEXCEPT_FALSE
     {
