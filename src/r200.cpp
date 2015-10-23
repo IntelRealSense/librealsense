@@ -212,7 +212,7 @@ namespace rsimpl
     int r200_camera::convert_timestamp(int64_t timestamp) const
     { 
         int max_fps = 0;
-        for(int i=0; i<RS_STREAM_COUNT; ++i)
+        for(int i=0; i<RS_STREAM_NATIVE_COUNT; ++i)
         {
             if(is_stream_enabled((rs_stream)i))
             {

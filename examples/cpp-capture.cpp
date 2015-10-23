@@ -13,6 +13,8 @@ bool align_depth_to_color = false;
 bool align_color_to_depth = false;
 bool color_rectification_enabled = false;
 
+#include <memory>
+
 int main(int argc, char * argv[]) try
 {
     rs::context ctx;

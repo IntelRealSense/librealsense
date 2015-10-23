@@ -128,17 +128,17 @@ void rs_get_stream_mode(const rs_device * device, rs_stream stream, int index, i
 HANDLE_EXCEPTIONS_AND_RETURN(, device, stream, index, width, height, format, framerate);
 
 
-void rs_enable_stream(rs_device * device, rs_stream stream, int width, int height, rs_format format, int fps, rs_error ** error) try
+void rs_enable_stream(rs_device * device, rs_stream stream, int width, int height, rs_format format, int framerate, rs_error ** error) try
 {
     VALIDATE_NOT_NULL(device);
     VALIDATE_NATIVE_STREAM(stream);
     VALIDATE_RANGE(width, 0, INT_MAX);
     VALIDATE_RANGE(height, 0, INT_MAX);
     VALIDATE_ENUM(format);
-    VALIDATE_RANGE(fps, 0, INT_MAX);
-    device->enable_stream(stream, width, height, format, fps);
+    VALIDATE_RANGE(framerate, 0, INT_MAX);
+    device->enable_stream(stream, width, height, format, framerate);
 }
-HANDLE_EXCEPTIONS_AND_RETURN(, device, stream, width, height, format, fps)
+HANDLE_EXCEPTIONS_AND_RETURN(, device, stream, width, height, format, framerate)
 
 void rs_enable_stream_preset(rs_device * device, rs_stream stream, rs_preset preset, rs_error ** error) try
 {

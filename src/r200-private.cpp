@@ -277,6 +277,22 @@ namespace rsimpl { namespace r200
             ReadCalibrationSector();
         }
 
+        // Format a DSAPI timestamp in a human-readable fashion
+        std::string unix_timestamp_to_human(double secondsSinceEpoch)
+        {
+            time_t time = (time_t)secondsSinceEpoch;
+            char buffer[80];
+            struct tm * pTime = gmtime(&time);
+            if (pTime)
+            {
+                size_t i = strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S", gmtime(&time));
+                sprintf(buffer + i, ".%02d UTC", static_cast<int>(fmod(secondsSinceEpoch, 1.0) * 100));
+                return buffer;
+            }
+            else
+                return "";
+        }
+
     public:
 
         DS4HardwareIO(uvc::device & devh) : deviceHandle(devh)
@@ -289,15 +305,19 @@ namespace rsimpl { namespace r200
 
         }
 
-        void LogDebugInfo(CameraCalibrationParameters & p, CameraHeaderInfo & h)
+        void LogDebugInfo(uvc::device & device, CameraCalibrationParameters & p, CameraHeaderInfo & h)
         {
-            DEBUG_OUT("Calibration Version: " << p.metadata.versionNumber);
-            DEBUG_OUT("Serial: " << h.serialNumber);
             DEBUG_OUT("Model: " << h.modelNumber);
+            DEBUG_OUT("Firmware Version: " << read_firmware_version(device));
+            DEBUG_OUT("Calibration Version: " << p.metadata.versionNumber);
+            DEBUG_OUT("Calibration Date: " << unix_timestamp_to_human(h.calibrationDate));
+            DEBUG_OUT("Serial: " << h.serialNumber);
             DEBUG_OUT("Revision: " << h.revisionNumber);
-            DEBUG_OUT("Head Version: " << h.cameraHeadContentsVersion);
+            DEBUG_OUT("Camera Header Ver: " << h.cameraHeadContentsVersion);
             DEBUG_OUT("Baseline: " << h.nominalBaseline);
             DEBUG_OUT("OEM ID: " << h.OEMID);
+            if (CURRENT_CAMERA_CONTENTS_VERSION_NUMBER != h.cameraHeadContentsVersion)
+                 DEBUG_OUT("(Warning): Device camera header does not match internal struct version: " << CURRENT_CAMERA_CONTENTS_VERSION_NUMBER);
         }
 
         CameraCalibrationParameters GetCalibration() { return cameraCalibration; }
@@ -309,7 +329,7 @@ namespace rsimpl { namespace r200
         DS4HardwareIO internal(device);
         calib = internal.GetCalibration();
         header = internal.GetCameraHeader();
-        //internal.LogDebugInfo(calib, header);
+        internal.LogDebugInfo(device, calib, header);
     }
 
     std::string read_firmware_version(uvc::device & device)
