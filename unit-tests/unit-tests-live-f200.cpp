@@ -5,7 +5,7 @@
 #define CATCH_CONFIG_MAIN
 #include "catch/catch.hpp"
 
-#include "test-common.h"
+#include "unit-tests-common.h"
 
 #include <sstream>
 

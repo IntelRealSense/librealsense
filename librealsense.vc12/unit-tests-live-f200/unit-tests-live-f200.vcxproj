@@ -18,10 +18,17 @@
       <Platform>x64</Platform>
     </ProjectConfiguration>
   </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\unit-tests\unit-tests-common.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\unit-tests\unit-tests-live-f200.cpp" />
+    <ClCompile Include="..\..\unit-tests\unit-tests-live.cpp" />
+  </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{B57FBF49-D142-4CCA-AFCB-E5F1687EE217}</ProjectGuid>
+    <ProjectGuid>{D37BF473-AEE1-4097-9E0B-C1A8A5BF97EC}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
-    <RootNamespace>testoffline</RootNamespace>
+    <RootNamespace>testlivef200</RootNamespace>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -142,12 +149,6 @@
       <OptimizeReferences>true</OptimizeReferences>
     </Link>
   </ItemDefinitionGroup>
-  <ItemGroup>
-    <ClCompile Include="..\..\tests\test-offline.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="..\..\tests\test-common.h" />
-  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

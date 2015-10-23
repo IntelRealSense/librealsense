@@ -10,14 +10,14 @@ mkdir librealsense-dll\include
 mkdir librealsense-dll\bindings
 mkdir librealsense-dll\examples
 mkdir librealsense-dll\librealsense.vc12
-mkdir librealsense-dll\tests
+mkdir librealsense-dll\unit-tests
 
 xcopy bin\* librealsense-dll\bin /S
 xcopy include\* librealsense-dll\include /S
 xcopy bindings\* librealsense-dll\bindings /S
 xcopy examples\* librealsense-dll\examples /S
 xcopy librealsense.vc12\* librealsense-dll\librealsense.vc12 /S
-xcopy tests\* librealsense-dll\tests /S
+xcopy unit-tests\* librealsense-dll\unit-tests /S
 xcopy COPYING librealsense-dll\
 xcopy readme.md librealsense-dll\
 

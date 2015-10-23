@@ -2,7 +2,7 @@
 // This set of tests is valid for any number and combination of RealSense cameras, including R200 and F200 //
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-#include "test-common.h"
+#include "unit-tests-common.h"
 
 TEST_CASE( "Device metadata enumerates correctly", "[live]" )
 {
