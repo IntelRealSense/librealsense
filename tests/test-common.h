@@ -193,3 +193,29 @@ inline void test_streaming(rs_device * device, std::initializer_list<stream_mode
         }
     }
 }
+
+inline void test_option(rs_device * device, rs_option option, std::initializer_list<int> good_values, std::initializer_list<int> bad_values)
+{
+    // Test reading the current value
+    const auto first_value = rs_get_device_option(device, option, require_no_error());
+    // TODO: Check that the first value is something sane?
+
+    // Test setting good values, and that each value set can be subsequently get
+    for(auto value : good_values)
+    {
+        rs_set_device_option(device, option, value, require_no_error());
+        REQUIRE( rs_get_device_option(device, option, require_no_error()) == value );
+    }
+
+    // Test setting bad values, and verify that they do not change the value of the option
+    const auto last_good_value = rs_get_device_option(device, option, require_no_error());
+    for(auto value : bad_values)
+    {
+        rs_set_device_option(device, option, value, require_error("foo"));
+        REQUIRE( rs_get_device_option(device, option, require_no_error()) == last_good_value );
+    }
+
+    // Test that we can reset the option to its original value
+    rs_set_device_option(device, option, first_value, require_no_error());
+    REQUIRE( rs_get_device_option(device, option, require_no_error()) == first_value );
+}

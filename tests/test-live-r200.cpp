@@ -7,6 +7,7 @@
 
 #include "test-common.h"
 
+#include <climits>
 #include <sstream>
 
 TEST_CASE( "R200 metadata enumerates correctly", "[live] [r200]" )
@@ -214,5 +215,42 @@ TEST_CASE( "a single R200 can stream a variety of reasonable streaming mode comb
             {RS_STREAM_INFRARED, 480, 360, RS_FORMAT_Y8, 60},
             {RS_STREAM_INFRARED2, 480, 360, RS_FORMAT_Y8, 60}
         });
+    }
+}
+
+/////////////
+// Options //
+/////////////
+
+TEST_CASE( "R200 options can be queried and set", "[live] [r200]" )
+{
+    // Require at least one device to be plugged in
+    safe_context ctx;
+    const int device_count = rs_get_device_count(ctx, require_no_error());
+    REQUIRE(device_count > 0);
+
+    // For each device
+    for(int i=0; i<device_count; ++i)
+    {
+        rs_device * dev = rs_get_device(ctx, 0, require_no_error());    
+        REQUIRE(dev != nullptr);
+
+        rs_enable_stream_preset(dev, RS_STREAM_DEPTH, RS_PRESET_BEST_QUALITY, require_no_error());
+        rs_start_device(dev, require_no_error());        
+
+        std::this_thread::sleep_for(std::chrono::seconds(1));
+
+        test_option(dev, RS_OPTION_R200_LR_AUTO_EXPOSURE_ENABLED, {0, 1}, {});
+        test_option(dev, RS_OPTION_R200_LR_GAIN, {100, 200, 400, 800, 1600}, {}); // Gain percentage
+        test_option(dev, RS_OPTION_R200_LR_EXPOSURE, {40, 80, 160}, {}); // Tenths of milliseconds
+        test_option(dev, RS_OPTION_R200_EMITTER_ENABLED, {0, 1}, {});
+        test_option(dev, RS_OPTION_R200_DEPTH_CONTROL_PRESET, {0, 1, 2, 3, 4, 5}, {});
+        test_option(dev, RS_OPTION_R200_DEPTH_UNITS, {0, 1, 2, 3, 4, 5}, {});
+        test_option(dev, RS_OPTION_R200_DEPTH_CLAMP_MIN, {0, 500, 1000, 2000}, {});
+        test_option(dev, RS_OPTION_R200_DEPTH_CLAMP_MAX, {500, 1000, 2000, USHRT_MAX}, {});
+        test_option(dev, RS_OPTION_R200_DISPARITY_MODE_ENABLED, {0, 1}, {});        
+
+        rs_stop_device(dev, require_no_error());
+        rs_disable_stream(dev, RS_STREAM_DEPTH, require_no_error());
     }
 }
