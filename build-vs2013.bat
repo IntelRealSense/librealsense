@@ -13,7 +13,7 @@ mkdir librealsense-dll\bindings
 mkdir librealsense-dll\examples
 mkdir librealsense-dll\librealsense.vc12
 
-xcopy bin\x64\* librealsense-dll\bin /S
+xcopy bin\* librealsense-dll\bin /S
 xcopy include\* librealsense-dll\include /S
 xcopy bindings\* librealsense-dll\bindings /S
 xcopy examples\* librealsense-dll\examples /S
@@ -24,6 +24,12 @@ xcopy readme.md librealsense-dll\
 rmdir /S /Q librealsense-dll\librealsense.vc12\realsense
 del librealsense-dll\librealsense.vc12\realsense.sln
 del librealsense-dll\librealsense.vc12\.gitignore
+del librealsense-dll\librealsense.vc12\Win32\*.exp
+del librealsense-dll\librealsense.vc12\Win32\*.ilk
+del librealsense-dll\librealsense.vc12\Win32\*.pdb
+del librealsense-dll\librealsense.vc12\x64\*.exp
+del librealsense-dll\librealsense.vc12\x64\*.ilk
+del librealsense-dll\librealsense.vc12\x64\*.pdb
 
 powershell.exe -nologo -noprofile -command "& { $theDate = (Get-Date); $theDate.ToShortDateString() | Out-File -FilePath librealsense-dll\release.txt -Append; \"https://github.intel.com/PerCSystemsEngineering/librealsense/\" | Out-File -FilePath librealsense-dll\release.txt -Append;}"
 powershell.exe -nologo -noprofile -command "& { Add-Type -A 'System.IO.Compression.FileSystem'; [IO.Compression.ZipFile]::CreateFromDirectory('librealsense-dll', 'librealsense-dll.zip'); }"
