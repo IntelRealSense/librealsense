@@ -22,9 +22,9 @@ int main(int argc, char * argv[]) try
     rs::device & dev = *ctx.get_device(0);
 
     dev.enable_stream(rs::stream::color, rs::preset::best_quality);
-    dev.enable_stream(rs::stream::depth, rs::preset::best_quality);
-    dev.enable_stream(rs::stream::infrared, rs::preset::best_quality);
-    try { dev.enable_stream(rs::stream::infrared2, rs::preset::best_quality); } catch(...) {}
+    dev.enable_stream(rs::stream::depth, 492, 372, rs::format::z16, 60); // rs::preset::best_quality);
+    //dev.enable_stream(rs::stream::infrared, rs::preset::best_quality);
+    //try { dev.enable_stream(rs::stream::infrared2, rs::preset::best_quality); } catch(...) {}
 
     // Compute field of view for each enabled stream
     for(int i = 0; i < RS_STREAM_COUNT; ++i)

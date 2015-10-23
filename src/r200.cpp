@@ -23,8 +23,8 @@ namespace rsimpl
         UNPACKER(dest, source, mode);
 
         // Erase Dinghy, which will get copied over when blitting into a padded buffer
-        dest[0] = (char *)dest[0] + get_image_size(640, 468, RS_FORMAT_Z16);
-        memset(dest[0], 0, 628*2);
+        dest[0] = (char *)dest[0] + get_image_size(mode.streams[0].width, mode.height-1, RS_FORMAT_Z16);
+        memset(dest[0], 0, mode.width*2);
     }
 
     int decode_dinghy_frame_number(const subdevice_mode & mode, const void * frame)
