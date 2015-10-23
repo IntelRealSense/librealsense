@@ -15,7 +15,7 @@ int main(int argc, char * argv[]) try
 {
     rs::context ctx;
     if(ctx.get_device_count() == 0) throw std::runtime_error("No device detected. Is it plugged in?");
-    rs::device & dev = ctx.get_device(0);
+    rs::device & dev = *ctx.get_device(0);
 
     // Open a GLFW window
     glfwInit();

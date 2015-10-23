@@ -16,7 +16,7 @@ int main(int argc, char * argv[]) try
 {
     rs::context ctx;
     if(ctx.get_device_count() == 0) throw std::runtime_error("No device detected. Is it plugged in?");
-    rs::device & dev = ctx.get_device(0);
+    rs::device & dev = *ctx.get_device(0);
 
     dev.enable_stream(rs::stream::depth, rs::preset::best_quality);
     dev.enable_stream(rs::stream::color, rs::preset::best_quality);

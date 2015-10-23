@@ -147,12 +147,12 @@ namespace rs
             return r;
         }
 
-        device & get_device(int index)
+        device * get_device(int index)
         {
             rs_error * e = nullptr;
             auto r = rs_get_device(handle, index, &e);
             error::handle(e);
-            return *(device *)r;
+            return (device *)r;
         }
     };
 

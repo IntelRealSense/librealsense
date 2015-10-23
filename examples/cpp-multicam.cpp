@@ -10,14 +10,20 @@ int main(int argc, char * argv[]) try
 {
     rs::context ctx;
 
-    // Configure and start our device
+    // Enumerate all devices
+    std::vector<rs::device *> devices;
     for(int i=0; i<ctx.get_device_count(); ++i)
     {
-        rs::device & dev = ctx.get_device(i);
-        std::cout << "Starting " << dev.get_name() << "... ";
-        dev.enable_stream(rs::stream::depth, rs::preset::best_quality);
-        dev.enable_stream(rs::stream::color, rs::preset::best_quality);
-        dev.start();
+        devices.push_back(ctx.get_device(i));
+    }
+
+    // Configure and start our devices
+    for(auto dev : devices)
+    {
+        std::cout << "Starting " << dev->get_name() << "... ";
+        dev->enable_stream(rs::stream::depth, rs::preset::best_quality);
+        dev->enable_stream(rs::stream::color, rs::preset::best_quality);
+        dev->start();
         std::cout << "done." << std::endl;
     }
     buffers.resize(ctx.get_device_count()*2);
@@ -40,10 +46,7 @@ int main(int argc, char * argv[]) try
     {
         // Wait for new images
         glfwPollEvents();
-        for(int i=0; i<ctx.get_device_count(); ++i)
-        {
-            ctx.get_device(i).wait_for_frames();
-        }
+        for(auto dev : devices) dev->wait_for_frames();
         
         // Draw the images
         int w,h;
@@ -55,15 +58,13 @@ int main(int argc, char * argv[]) try
         glPushMatrix();
         glOrtho(0, w, h, 0, -1, +1);
         glPixelZoom(1, -1);
-        int x=0;
-        for(int i=0; i<ctx.get_device_count(); ++i)
+        int i=0, x=0;
+        for(auto dev : devices)
         {
-            rs::device & dev = ctx.get_device(i);
-            const auto c = dev.get_stream_intrinsics(rs::stream::color), d = dev.get_stream_intrinsics(rs::stream::depth);
-
-            buffers[i*2+0].show(dev, rs::stream::color, x, 0, 640, 480, font);
-            buffers[i*2+1].show(dev, rs::stream::depth, x, 480, 640, 480, font);
-            ttf_print(&font, x+(640 - ttf_len(&font, dev.get_name()))/2, 24, dev.get_name());
+            const auto c = dev->get_stream_intrinsics(rs::stream::color), d = dev->get_stream_intrinsics(rs::stream::depth);
+            buffers[i++].show(*dev, rs::stream::color, x, 0, 640, 480, font);
+            buffers[i++].show(*dev, rs::stream::depth, x, 480, 640, 480, font);
+            ttf_print(&font, x+(640 - ttf_len(&font, dev->get_name()))/2, 24, dev->get_name());
             x += 640;
         }
 

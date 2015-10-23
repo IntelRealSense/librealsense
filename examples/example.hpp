@@ -110,7 +110,7 @@ public:
 
         upload(data, width, height, format);
         
-        float h = rh, w = rh * width / height;
+        float h = (float)rh, w = (float)rh * width / height;
         if(w > rw)
         {
             float scale = rw/w;
@@ -121,6 +121,6 @@ public:
         show(rx + (rw - w)/2, ry + (rh - h)/2, w, h);
 
         std::ostringstream ss; ss << caption << ": " << width << " x " << height << " " << format;
-        ttf_print(&font, rx+8, ry+16, ss.str().c_str());
+        ttf_print(&font, rx+8.0f, ry+16.0f, ss.str().c_str());
     }
 };
