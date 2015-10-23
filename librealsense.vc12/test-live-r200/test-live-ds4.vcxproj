@@ -148,11 +148,6 @@
     <ClCompile Include="..\..\tests\test-live.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\realsense\realsense.vcxproj">
-      <Project>{1ae4ceb5-9a0b-4b9f-9505-824fd56bb41f}</Project>
-    </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
     <ClInclude Include="..\..\tests\test-common.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

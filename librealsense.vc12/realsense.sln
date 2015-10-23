@@ -6,14 +6,29 @@ MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "realsense", "realsense\realsense.vcxproj", "{1AE4CEB5-9A0B-4B9F-9505-824FD56BB41F}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "cpp-capture", "cpp-capture\cpp-capture.vcxproj", "{4074122F-153D-4761-9539-7B7D5E72B11D}"
+	ProjectSection(ProjectDependencies) = postProject
+		{1AE4CEB5-9A0B-4B9F-9505-824FD56BB41F} = {1AE4CEB5-9A0B-4B9F-9505-824FD56BB41F}
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "cpp-multicam", "cpp-multicam\cpp-multicam.vcxproj", "{0EE9680F-6B71-4896-A1A1-9F2790D3ECCA}"
+	ProjectSection(ProjectDependencies) = postProject
+		{1AE4CEB5-9A0B-4B9F-9505-824FD56BB41F} = {1AE4CEB5-9A0B-4B9F-9505-824FD56BB41F}
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "cpp-pointcloud", "cpp-pointcloud\cpp-pointcloud.vcxproj", "{DDC13D4E-5448-4B25-B0A0-4D8E72F4AA08}"
+	ProjectSection(ProjectDependencies) = postProject
+		{1AE4CEB5-9A0B-4B9F-9505-824FD56BB41F} = {1AE4CEB5-9A0B-4B9F-9505-824FD56BB41F}
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "c-capture", "c-capture\c-capture.vcxproj", "{E88A41C5-1622-445B-AFB1-4B8FEEC353D0}"
+	ProjectSection(ProjectDependencies) = postProject
+		{1AE4CEB5-9A0B-4B9F-9505-824FD56BB41F} = {1AE4CEB5-9A0B-4B9F-9505-824FD56BB41F}
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "c-pointcloud", "c-pointcloud\c-pointcloud.vcxproj", "{43E2D263-1BDA-4012-8B37-14203CD45FB7}"
+	ProjectSection(ProjectDependencies) = postProject
+		{1AE4CEB5-9A0B-4B9F-9505-824FD56BB41F} = {1AE4CEB5-9A0B-4B9F-9505-824FD56BB41F}
+	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "cs-capture", "cs-capture\cs-capture.csproj", "{0563A416-851F-4F25-BA30-C1E77235D3D1}"
 	ProjectSection(ProjectDependencies) = postProject
@@ -21,8 +36,14 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "cs-capture", "cs-capture\cs
 	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "cpp-restart", "cpp-restart\cpp-restart.vcxproj", "{88623555-1BB3-42B1-B6AE-1C2D077A5A57}"
+	ProjectSection(ProjectDependencies) = postProject
+		{1AE4CEB5-9A0B-4B9F-9505-824FD56BB41F} = {1AE4CEB5-9A0B-4B9F-9505-824FD56BB41F}
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "c-enumerate", "c-enumerate\c-enumerate.vcxproj", "{EB08824E-0EFF-477F-93E3-837AFCBDF18B}"
+	ProjectSection(ProjectDependencies) = postProject
+		{1AE4CEB5-9A0B-4B9F-9505-824FD56BB41F} = {1AE4CEB5-9A0B-4B9F-9505-824FD56BB41F}
+	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "cs-config", "cs-config\cs-config.csproj", "{7C43EEA2-0DD0-413E-9244-3EEE0766F4EF}"
 	ProjectSection(ProjectDependencies) = postProject
@@ -38,6 +59,9 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Library", "Library", "{29173D59-770D-49A5-BFC7-5BF564BDD7C7}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "cpp-alignimages", "cpp-alignimages\cpp-alignimages.vcxproj", "{700F2028-4212-4B25-AB9C-9DF66746F694}"
+	ProjectSection(ProjectDependencies) = postProject
+		{1AE4CEB5-9A0B-4B9F-9505-824FD56BB41F} = {1AE4CEB5-9A0B-4B9F-9505-824FD56BB41F}
+	EndProjectSection
 EndProject
 Project("{888888A0-9F3D-457C-B088-3A5042F75D52}") = "py-enumerate", "py-enumerate\py-enumerate.pyproj", "{E84148A1-2111-43AB-BDE9-10A94296A250}"
 EndProject
@@ -46,10 +70,19 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Unit Tests", "Unit Tests", "{EA2793EE-C590-43D0-A11D-02F93DA139AC}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "test-offline", "test-offline\test-offline.vcxproj", "{B57FBF49-D142-4CCA-AFCB-E5F1687EE217}"
+	ProjectSection(ProjectDependencies) = postProject
+		{1AE4CEB5-9A0B-4B9F-9505-824FD56BB41F} = {1AE4CEB5-9A0B-4B9F-9505-824FD56BB41F}
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "test-live-r200", "test-live-r200\test-live-ds4.vcxproj", "{7B497980-3BB8-4699-A459-0F3091D24E03}"
+	ProjectSection(ProjectDependencies) = postProject
+		{1AE4CEB5-9A0B-4B9F-9505-824FD56BB41F} = {1AE4CEB5-9A0B-4B9F-9505-824FD56BB41F}
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "test-live-f200", "test-live-f200\test-live-f200.vcxproj", "{D37BF473-AEE1-4097-9E0B-C1A8A5BF97EC}"
+	ProjectSection(ProjectDependencies) = postProject
+		{1AE4CEB5-9A0B-4B9F-9505-824FD56BB41F} = {1AE4CEB5-9A0B-4B9F-9505-824FD56BB41F}
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

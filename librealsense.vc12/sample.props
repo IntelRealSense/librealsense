@@ -8,12 +8,25 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)'=='Debug'">
     <TargetName>$(ProjectName)-d</TargetName>
-  </PropertyGroup>  
+  </PropertyGroup>
   <ItemDefinitionGroup>
     <ClCompile>
       <AdditionalIncludeDirectories>../../include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;NOMINMAX;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
+    <Link>
+      <AdditionalLibraryDirectories>..\..\bin\$(Platform)\</AdditionalLibraryDirectories>
+    </Link>
   </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)'=='Release'">
+    <Link>
+      <AdditionalDependencies>realsense.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>	
+  </ItemDefinitionGroup>    
+  <ItemDefinitionGroup Condition="'$(Configuration)'=='Debug'">
+    <Link>
+      <AdditionalDependencies>realsense-d.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>	
+  </ItemDefinitionGroup>  
   <ItemGroup />
 </Project>
