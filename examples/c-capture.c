@@ -59,7 +59,7 @@ void draw_stream(rs_device * dev, rs_stream stream, int x, int y)
     }
 
     sprintf(buffer, "%s: %d x %d %s", rs_stream_to_string(stream), intrin.width, intrin.height, rs_format_to_string(format));
-    ttf_print(&font, x+8, y+16, buffer);
+    ttf_print(&font, x+8.0f, y+16.0f, buffer);
 }
 
 int main(int argc, char * argv[])
@@ -128,7 +128,7 @@ int main(int argc, char * argv[])
         glfwGetWindowSize(win, &w, &h);
         glPushMatrix();
         glOrtho(0, w, h, 0, -1, +1);
-        glPixelZoom(fw/w, -fh/h);
+        glPixelZoom((float)fw/w, -(float)fh/h);
 
         draw_stream(dev, RS_STREAM_COLOR, 0, 0);
         draw_stream(dev, RS_STREAM_DEPTH, 640, 0);

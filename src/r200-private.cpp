@@ -347,12 +347,12 @@ namespace rsimpl { namespace r200
         return fw;
     }
 
-    void xu_read(const uvc::device & device, uint64_t xu_ctrl, void * buffer, uint32_t length)
+    void xu_read(const uvc::device & device, uint8_t xu_ctrl, void * buffer, uint32_t length)
     {
         get_control(device, 0, xu_ctrl, buffer, length);
     }
 
-    void xu_write(uvc::device & device, uint64_t xu_ctrl, void * buffer, uint32_t length)
+    void xu_write(uvc::device & device, uint8_t xu_ctrl, void * buffer, uint32_t length)
     {
         set_control(device, 0, xu_ctrl, buffer, length);
     }

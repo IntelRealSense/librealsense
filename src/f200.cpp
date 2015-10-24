@@ -265,7 +265,7 @@ namespace rsimpl
     {
         const float FcxSlope = base_calibration.Kc[0][0] * thermal_loop_params.FcxSlopeA + thermal_loop_params.FcxSlopeB;
         const float UxSlope = base_calibration.Kc[0][2] * thermal_loop_params.UxSlopeA + base_calibration.Kc[0][0] * thermal_loop_params.UxSlopeB + thermal_loop_params.UxSlopeC;
-        const float tempFromHFOV = (tan(thermal_loop_params.HFOVsensitivity*M_PI/360)*(1 + base_calibration.Kc[0][0]*base_calibration.Kc[0][0]))/(FcxSlope * (1 + base_calibration.Kc[0][0] * tan(thermal_loop_params.HFOVsensitivity * M_PI/360)));
+        const float tempFromHFOV = (tan(thermal_loop_params.HFOVsensitivity*(float)M_PI/360)*(1 + base_calibration.Kc[0][0]*base_calibration.Kc[0][0]))/(FcxSlope * (1 + base_calibration.Kc[0][0] * tan(thermal_loop_params.HFOVsensitivity * (float)M_PI/360)));
         float TempThreshold = thermal_loop_params.TempThreshold; //celcius degrees, the temperatures delta that above should be fixed;
         if (TempThreshold <= 0) TempThreshold = tempFromHFOV;
         if (TempThreshold > tempFromHFOV) TempThreshold = tempFromHFOV;
@@ -317,7 +317,7 @@ namespace rsimpl
                     DEBUG_OUT("updating asic with new temperature calibration coefficients");
                     update_asic_coefficients(get_device(), usbMutex, compensated_calibration);
                     set_intrinsics_thread_safe(compute_intrinsics(compensated_calibration));
-                    last_temperature_delta = weightedTempDelta;
+                    last_temperature_delta = (float)weightedTempDelta;
                 }
             }
             catch(const std::exception & e) { DEBUG_ERR("TemperatureControlLoop: " << e.what()); }

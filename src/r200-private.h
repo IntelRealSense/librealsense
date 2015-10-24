@@ -215,33 +215,37 @@ namespace rsimpl
 
         struct CommandPacket
         {
-            CommandPacket(uint32_t code_ = 0, uint32_t modifier_ = 0, uint32_t tag_ = 0, uint32_t address_ = 0, uint32_t value_ = 0)
-            : code(code_), modifier(modifier_), tag(tag_), address(address_), value(value_)
+            uint32_t code;
+            uint32_t modifier;
+            uint32_t tag;
+            uint32_t address;
+            uint32_t value;
+            uint32_t reserved[59];
+
+            CommandPacket(uint32_t code = 0, uint32_t modifier = 0, uint32_t tag = 0, uint32_t address = 0, uint32_t value = 0)
+                : code(code), modifier(modifier), tag(tag), address(address), value(value)
             {
+                memset(reserved, 0, sizeof(reserved));
             }
 
-            uint32_t code = 0;
-            uint32_t modifier = 0;
-            uint32_t tag = 0;
-            uint32_t address = 0;
-            uint32_t value = 0;
-            uint32_t reserved[59] = {};
         };
 
         struct ResponsePacket
         {
-            ResponsePacket(uint32_t code_ = 0, uint32_t modifier_ = 0, uint32_t tag_ = 0, uint32_t responseCode_ = 0, uint32_t value_ = 0)
-            : code(code_), modifier(modifier_), tag(tag_), responseCode(responseCode_), value(value_)
-            {
-            }
+            uint32_t code;
+            uint32_t modifier;
+            uint32_t tag;
+            uint32_t responseCode;
+            uint32_t value;
+            uint32_t revision[4];
+            uint32_t reserved[55];
 
-            uint32_t code = 0;
-            uint32_t modifier = 0;
-            uint32_t tag = 0;
-            uint32_t responseCode = 0;
-            uint32_t value = 0;
-            uint32_t revision[4] = {};
-            uint32_t reserved[55] = {};
+            ResponsePacket(uint32_t code = 0, uint32_t modifier = 0, uint32_t tag = 0, uint32_t responseCode = 0, uint32_t value = 0)
+                : code(code), modifier(modifier), tag(tag), responseCode(responseCode), value(value)
+            {
+                memset(revision, 0, sizeof(revision));
+                memset(reserved, 0, sizeof(reserved));
+            }
         };
         #pragma pack(pop)
 
@@ -250,8 +254,8 @@ namespace rsimpl
         std::string read_firmware_version(uvc::device & device);
         void read_camera_info(uvc::device & device, CameraCalibrationParameters & calib, CameraHeaderInfo & header);
              
-        void xu_read(const uvc::device & device, uint64_t xu_ctrl, void * buffer, uint32_t length);
-        void xu_write(uvc::device & device, uint64_t xu_ctrl, void * buffer, uint32_t length);
+        void xu_read(const uvc::device & device, uint8_t xu_ctrl, void * buffer, uint32_t length);
+        void xu_write(uvc::device & device, uint8_t xu_ctrl, void * buffer, uint32_t length);
              
         void set_stream_intent(uvc::device & device, uint8_t & intent);
         void get_stream_status(const uvc::device & device, uint8_t & status);
