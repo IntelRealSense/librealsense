@@ -1,6 +1,7 @@
 #include "r200-private.h"
 
 #include <cstring>
+#include <cmath>
 
 #define STATUS_BIT_BOOT_DIAGNOSTIC_FAULT            (1 << 3)
 #define STATUS_BIT_IFFLEY_CONSTANTS_VALID           (1 << 4)
@@ -286,7 +287,7 @@ namespace rsimpl { namespace r200
             if (pTime)
             {
                 size_t i = strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S", gmtime(&time));
-                sprintf(buffer + i, ".%02d UTC", static_cast<int>(fmod(secondsSinceEpoch, 1.0) * 100));
+                sprintf(buffer + i, ".%02d UTC", static_cast<int>(std::fmod(secondsSinceEpoch, 1.0) * 100));
                 return buffer;
             }
             else
