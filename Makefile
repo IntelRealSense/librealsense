@@ -4,7 +4,6 @@ CXXFLAGS := -std=c++11 -fPIC -pedantic -O3 -Wno-missing-field-initializers -Wno-
 # Compute list of all *.o files that participate in librealsense.so
 OBJECTS = verify uvc
 OBJECTS += $(notdir $(basename $(wildcard src/*.cpp)))
-OBJECTS += $(addprefix libuvc/, $(notdir $(basename $(wildcard src/backends/libuvc/*.c))))
 OBJECTS := $(addprefix obj/, $(addsuffix .o, $(OBJECTS)))
 
 # Sets of flags used by the example programs
@@ -50,13 +49,9 @@ lib/librealsense.so: prepare $(OBJECTS)
 obj/%.o: src/%.cpp
 	$(CXX) $< $(CXXFLAGS) -c -o $@
 
-# Special rule for building UVC backend (switch to V4L2 when ready)
-obj/uvc.o: src/backends/uvc-usb.cpp
-	$(CXX) $< $(CXXFLAGS) -c -o $@
-
-# Rules for compiling libuvc source (remove once we switch to V4L2)
-obj/libuvc/%.o: src/backends/libuvc/%.c
-	$(CC) $< $(CFLAGS) -c -o $@
+# Special rule for building UVC backend
+obj/uvc.o: src/backends/uvc-v4l2.cpp
+	$(CXX) $< `pkg-config --cflags --libs libusb-1.0` $(CXXFLAGS) -c -o $@
 
 # Special rule to verify that rs.h can be included by a C89 compiler
 obj/verify.o: src/verify.c
