@@ -23,9 +23,6 @@
 
 #include <libusb.h>
 
-// debug
-#include <iostream>
-
 namespace rsimpl
 {
     namespace uvc
@@ -39,7 +36,7 @@ namespace rsimpl
 
         static void warn_error(const char * s)
         {
-            std::cerr << s << " error " << errno << ", " << strerror(errno) << std::endl;
+            DEBUG_ERR(s << " error " << errno << ", " << strerror(errno));
         }
 
         static int xioctl(int fh, int request, void *arg)
@@ -100,10 +97,6 @@ namespace rsimpl
                 if(!(std::ifstream("/sys/class/video4linux/" + name + "/device/bInterfaceNumber") >> std::hex >> mi))
                     throw std::runtime_error("Failed to read interface number");
 
-                std::cout << dev_name << " has vendor id " << std::hex << vid << std::endl;
-                std::cout << dev_name << " has product id " << std::hex << pid << std::endl;
-                std::cout << dev_name << " provides interface number " << std::dec << mi << std::endl;
-
                 fd = open(dev_name.c_str(), O_RDWR | O_NONBLOCK, 0);
                 if(fd < 0)
                 {
@@ -162,7 +155,6 @@ namespace rsimpl
                     else throw_error("VIDIOC_REQBUFS");
                 }
 
-                std::cout << "Closing... " << fd << std::endl;
                 if(close(fd) < 0) warn_error("close");
             }
 
@@ -283,11 +275,6 @@ namespace rsimpl
                         }
                         assert(buf.index < sub->buffers.size());
 
-                        std::cout << sub->fd << " - " << buf.bytesused << std::endl;
-                        if(sub->fd == 5)
-                        {
-                            int x = 9;
-                        }
                         sub->callback(sub->buffers[buf.index].start);
 
                         if(xioctl(sub->fd, VIDIOC_QBUF, &buf) < 0) throw_error("VIDIOC_QBUF");

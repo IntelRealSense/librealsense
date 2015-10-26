@@ -116,7 +116,7 @@ int rs_get_stream_mode_count(const rs_device * device, rs_stream stream, rs_erro
     VALIDATE_ENUM(stream);
     return device->get_stream_mode_count(stream);
 }
-HANDLE_EXCEPTIONS_AND_RETURN(0, device, stream);
+HANDLE_EXCEPTIONS_AND_RETURN(0, device, stream)
 
 void rs_get_stream_mode(const rs_device * device, rs_stream stream, int index, int * width, int * height, rs_format * format, int * framerate, rs_error ** error) try
 {
@@ -125,7 +125,7 @@ void rs_get_stream_mode(const rs_device * device, rs_stream stream, int index, i
     VALIDATE_RANGE(index, 0, device->get_stream_mode_count(stream)-1);
     return device->get_stream_mode(stream, index, width, height, format, framerate);
 }
-HANDLE_EXCEPTIONS_AND_RETURN(, device, stream, index, width, height, format, framerate);
+HANDLE_EXCEPTIONS_AND_RETURN(, device, stream, index, width, height, format, framerate)
 
 
 void rs_enable_stream(rs_device * device, rs_stream stream, int width, int height, rs_format format, int fps, rs_error ** error) try
