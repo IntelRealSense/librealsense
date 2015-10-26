@@ -405,8 +405,7 @@ namespace rsimpl { namespace f200
         }
 
         length = cur_index;
-        *(uint16_t *) bufferToSend = (uint16_t)(length - header_size);// Length doesn't include header
-
+        *(uint16_t *) bufferToSend = (uint16_t)(length - header_size); // Length doesn't include header
     }
 
     void execute_usb_command(uvc::device & device, std::timed_mutex & mutex, uint8_t *out, size_t outSize, uint32_t & op, uint8_t * in, size_t & inSize)
@@ -480,7 +479,8 @@ namespace rsimpl { namespace f200
         send_hw_monitor_command(device, mutex, details);
 
         // Error/exit conditions
-        if (newCommand.oneDirection) return;
+        if (newCommand.oneDirection)
+            return;
 
         memcpy(newCommand.receivedOpcode, details.receivedOpcode, 4);
         memcpy(newCommand.receivedCommandData, details.receivedCommandData,details.receivedCommandDataLength);
@@ -491,6 +491,44 @@ namespace rsimpl { namespace f200
         if (opCodeAsUint32 != opCodeXmit)
         {
             throw std::runtime_error("opcodes do not match");
+        }
+    }
+
+    // "Get Version and Date"
+    // Reference: Commands.xml in IVCAM_DLL
+    void get_gvd(uvc::device & device, std::timed_mutex & mutex, size_t sz, char * gvd)
+    {
+        IVCAMCommand cmd(IVCAMMonitorCommand::GVD);
+        perform_and_send_monitor_command(device, mutex, cmd);
+        auto minSize = std::min((int) sz, cmd.receivedCommandDataLength);
+        memcpy(gvd, cmd.receivedCommandData, minSize);
+    }
+
+    void get_firmware_version_string(uvc::device & device, std::timed_mutex & mutex, std::string & version)
+    {
+        std::vector<char> gvd(1024);
+        get_gvd(device, mutex, 1024, gvd.data());
+        char fws[8];
+        memcpy(fws, gvd.data(), 8); // offset 0
+        version = std::string(std::to_string(fws[3]) + "." + std::to_string(fws[2]) + "." + std::to_string(fws[1]) + "." + std::to_string(fws[0]));
+    }
+
+    void get_module_serial_string(uvc::device & device, std::timed_mutex & mutex, std::string & serial, int offset)
+    {
+        std::vector<char> gvd(1024);
+        get_gvd(device, mutex, 1024, gvd.data());
+        char ss[8];
+        memcpy(ss, gvd.data() + offset, 8);
+        char formattedBuffer[64];
+        if (offset == 96)
+        {
+            sprintf(formattedBuffer, "%02X%02X%02X%02X%02X%02X", ss[0], ss[1], ss[2], ss[3], ss[4], ss[5]);
+            serial = std::string(formattedBuffer);
+        }
+        else if (offset == 132)
+        {
+            sprintf(formattedBuffer, "%02X%02X%02X%02X%02X%-02X", ss[0], ss[1], ss[2], ss[3], ss[4], ss[5]);
+            serial = std::string(formattedBuffer);
         }
     }
 
@@ -576,7 +614,7 @@ namespace rsimpl { namespace f200
         execute_usb_command(device, usbMutex, request, requestSize, responseOp, data, bytesReturned);
     }
 
-    void get_sr300_calibration_raw_data(uvc::device & device, std::timed_mutex & mutex,uint8_t * data, size_t & bytesReturned)
+    void get_sr300_calibration_raw_data(uvc::device & device, std::timed_mutex & mutex, uint8_t * data, size_t & bytesReturned)
     {
         IVCAMCommand command(IVCAMMonitorCommand::GetCalibrationTable);
         command.Param1 = (uint32_t)IVCAMDataSource::TakeFromRAM;
@@ -649,13 +687,12 @@ namespace rsimpl { namespace f200
 
             memcpy(&TesterData, bufParams, SIZE_OF_CALIB_HEADER_BYTES);
 
-            memset((uint8_t*)&TesterData+SIZE_OF_CALIB_HEADER_BYTES,0,sizeof(IVCAMTesterData) - SIZE_OF_CALIB_HEADER_BYTES);
+            memset((uint8_t*) &TesterData + SIZE_OF_CALIB_HEADER_BYTES, 0, sizeof(IVCAMTesterData) - SIZE_OF_CALIB_HEADER_BYTES);
             return std::make_tuple(calibration, TesterData.TemperatureData, TesterData.ThermalLoopParams);
         }
 
         throw std::runtime_error("calibration table is not compatible with this API");
     }
-
     
     std::tuple<CameraCalibrationParameters, IVCAMTemperatureData, IVCAMThermalLoopParams> read_f200_calibration(uvc::device & device, std::timed_mutex & mutex)
     {

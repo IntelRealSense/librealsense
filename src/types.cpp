@@ -17,6 +17,10 @@ namespace rsimpl
         CASE(COLOR)
         CASE(INFRARED)
         CASE(INFRARED2)
+        CASE(RECTIFIED_COLOR)
+        CASE(COLOR_ALIGNED_TO_DEPTH)
+        CASE(DEPTH_ALIGNED_TO_COLOR)
+        CASE(DEPTH_ALIGNED_TO_RECTIFIED_COLOR)
         default: assert(!is_valid(value)); return nullptr;
         }
         #undef CASE
@@ -115,12 +119,12 @@ namespace rsimpl
         for(auto & o : option_supported) o = false;
     }
 
-    const subdevice_mode * static_device_info::select_mode(const stream_request (& requests)[RS_STREAM_COUNT], int subdevice_index) const
+    const subdevice_mode * static_device_info::select_mode(const stream_request (& requests)[RS_STREAM_NATIVE_COUNT], int subdevice_index) const
     {
         // Determine if the user has requested any streams which are supplied by this subdevice
         bool any_stream_requested = false;
-        std::array<bool, RS_STREAM_COUNT> stream_requested = {};
-        for(int j = 0; j < RS_STREAM_COUNT; ++j)
+        std::array<bool, RS_STREAM_NATIVE_COUNT> stream_requested = {};
+        for(int j = 0; j < RS_STREAM_NATIVE_COUNT; ++j)
         {
             if(requests[j].enabled && stream_subdevices[j] == subdevice_index)
             {
@@ -161,7 +165,7 @@ namespace rsimpl
         std::ostringstream ss;
         ss << "uvc subdevice " << subdevice_index << " cannot provide";
         bool first = true;
-        for(int j = 0; j < RS_STREAM_COUNT; ++j)
+        for(int j = 0; j < RS_STREAM_NATIVE_COUNT; ++j)
         {
             if(!stream_requested[j]) continue;
             ss << (first ? " " : " and ");
@@ -172,11 +176,11 @@ namespace rsimpl
         throw std::runtime_error(ss.str());
     }
 
-    std::vector<subdevice_mode> static_device_info::select_modes(const stream_request (&reqs)[RS_STREAM_COUNT]) const
+    std::vector<subdevice_mode> static_device_info::select_modes(const stream_request (&reqs)[RS_STREAM_NATIVE_COUNT]) const
     {
         // Make a mutable copy of our array
-        stream_request requests[RS_STREAM_COUNT];
-        for(int i=0; i<RS_STREAM_COUNT; ++i) requests[i] = reqs[i];
+        stream_request requests[RS_STREAM_NATIVE_COUNT];
+        for(int i=0; i<RS_STREAM_NATIVE_COUNT; ++i) requests[i] = reqs[i];
 
         // Check and modify requests to enforce all interstream constraints
         for(auto & rule : interstream_rules)
@@ -185,7 +189,7 @@ namespace rsimpl
             if(a.enabled && b.enabled)
             {
                 // Check for incompatibility if both values specified
-                if(a.*f != 0 && b.*f != 0 && a.*f + rule.delta != b.*f)
+                if(a.*f != 0 && b.*f != 0 && a.*f + rule.delta != b.*f && a.*f + rule.delta2 != b.*f)
                 {
                     throw std::runtime_error(to_string() << "requested " << rule.a << " and " << rule.b << " settings are incompatible");
                 }

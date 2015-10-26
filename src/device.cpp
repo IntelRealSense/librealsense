@@ -1,6 +1,7 @@
 #include "device.h"
 #include "image.h"
 
+#include <cstring>
 #include <climits>
 #include <thread>
 #include <algorithm>
@@ -49,6 +50,7 @@ static_device_info rsimpl::add_standard_unpackers(const static_device_info & dev
 rs_device::rs_device(std::shared_ptr<rsimpl::uvc::device> device, const rsimpl::static_device_info & info) : device(device), device_info(add_standard_unpackers(info)), capturing(false)
 {
     for(auto & req : requests) req = rsimpl::stream_request();
+    for(auto & t : synthetic_timestamps) t = 0;
 }
 
 rs_device::~rs_device()
@@ -83,6 +85,63 @@ void rs_device::disable_stream(rs_stream stream)
     for(auto & s : streams) s.reset(); // Changing stream configuration invalidates the current stream info
 }
 
+// Where do the intrinsics for a given (possibly synthetic) stream come from?
+static rs_stream get_stream_intrinsics_native_stream(rs_stream stream)
+{
+    switch(stream)
+    {
+    case RS_STREAM_COLOR_ALIGNED_TO_DEPTH: return RS_STREAM_DEPTH;
+    case RS_STREAM_DEPTH_ALIGNED_TO_COLOR: return RS_STREAM_COLOR;
+    case RS_STREAM_DEPTH_ALIGNED_TO_RECTIFIED_COLOR: return RS_STREAM_RECTIFIED_COLOR;
+    default: assert(stream <= RS_STREAM_RECTIFIED_COLOR); return stream;
+    }
+}
+
+// Where does the pixel data for a given (possibly synthetic) stream come from?
+static rs_stream get_stream_data_native_stream(rs_stream stream)
+{
+    switch(stream)
+    {
+    case RS_STREAM_RECTIFIED_COLOR: return RS_STREAM_COLOR;
+    case RS_STREAM_COLOR_ALIGNED_TO_DEPTH: return RS_STREAM_COLOR;
+    case RS_STREAM_DEPTH_ALIGNED_TO_COLOR: return RS_STREAM_DEPTH;
+    case RS_STREAM_DEPTH_ALIGNED_TO_RECTIFIED_COLOR: return RS_STREAM_DEPTH;
+    default: assert(stream < RS_STREAM_NATIVE_COUNT); return stream;
+    }
+}
+
+
+
+bool rs_device::is_stream_enabled(rs_stream stream) const 
+{ 
+    if(stream < RS_STREAM_NATIVE_COUNT) return requests[stream].enabled;
+    else return true; // Synthetic streams always enabled?
+}
+
+rs_intrinsics rs_device::get_stream_intrinsics(rs_stream stream) const 
+{
+    std::lock_guard<std::mutex> lock(intrinsics_mutex);
+
+    stream = get_stream_intrinsics_native_stream(stream);
+    if(stream == RS_STREAM_RECTIFIED_COLOR)
+    {
+        auto intrin = intrinsics[get_current_stream_mode(RS_STREAM_COLOR).intrinsics_index];
+        intrin.model = RS_DISTORTION_NONE;
+        memset(&intrin.coeffs, 0, sizeof(intrin.coeffs));
+        return intrin;
+    }
+    else return intrinsics[get_current_stream_mode(stream).intrinsics_index];
+}
+
+rs_format rs_device::get_stream_format(rs_stream stream) const
+{ 
+    return get_current_stream_mode(get_stream_data_native_stream(stream)).format;
+}
+
+int rs_device::get_stream_framerate(rs_stream stream) const
+{ 
+    return get_current_stream_mode(get_stream_data_native_stream(stream)).fps; 
+}
 
 void rs_device::start()
 {
@@ -148,7 +207,7 @@ void rs_device::wait_all_streams()
 
     // Check if any of our streams do not have data yet, if so, wait for them to have data, and remember that we are on the first frame
     bool first_frame = false;
-    for(int i=0; i<RS_STREAM_COUNT; ++i)
+    for(int i=0; i<RS_STREAM_NATIVE_COUNT; ++i)
     {
         if(streams[i] && !streams[i]->is_front_valid())
         {
@@ -169,7 +228,7 @@ void rs_device::wait_all_streams()
         bool updated = false;
         while(true)
         {
-            for(int i=0; i<RS_STREAM_COUNT; ++i)
+            for(int i=0; i<RS_STREAM_NATIVE_COUNT; ++i)
             {
                 if(streams[i] && streams[i]->swap_front())
                 {
@@ -185,7 +244,7 @@ void rs_device::wait_all_streams()
 
     // Determine the largest change from the previous timestamp
     int frame_delta = INT_MIN;    
-    for(int i=0; i<RS_STREAM_COUNT; ++i)
+    for(int i=0; i<RS_STREAM_NATIVE_COUNT; ++i)
     {
         if(!streams[i]) continue;
         int delta = streams[i]->get_front_number() - last_stream_timestamp; // Relying on undefined behavior: 32-bit integer overflow -> wraparound
@@ -193,7 +252,7 @@ void rs_device::wait_all_streams()
     }
 
     // Wait for any stream which expects a new frame prior to the frame time
-    for(int i=0; i<RS_STREAM_COUNT; ++i)
+    for(int i=0; i<RS_STREAM_NATIVE_COUNT; ++i)
     {
         if(!streams[i]) continue;
         int next_timestamp = streams[i]->get_front_number() + streams[i]->get_front_delta();
@@ -210,7 +269,7 @@ void rs_device::wait_all_streams()
     {
         // Set time 0 to the least recent of the current frames
         base_timestamp = 0;
-        for(int i=0; i<RS_STREAM_COUNT; ++i)
+        for(int i=0; i<RS_STREAM_NATIVE_COUNT; ++i)
         {
             if(!streams[i]) continue;
             int delta = streams[i]->get_front_number() - last_stream_timestamp; // Relying on undefined behavior: 32-bit integer overflow -> wraparound
@@ -226,9 +285,69 @@ void rs_device::wait_all_streams()
 
 int rs_device::get_frame_timestamp(rs_stream stream) const 
 { 
-    if(!streams[stream]) throw std::runtime_error("stream not enabled"); 
+    stream = get_stream_data_native_stream(stream);
+    if(!streams[stream]) throw std::runtime_error(to_string() << "stream not enabled: " << stream); 
     return base_timestamp == -1 ? 0 : convert_timestamp(base_timestamp + streams[stream]->get_front_number() - last_stream_timestamp);
 }
+
+const void * rs_device::get_aligned_image(rs_stream stream, rs_stream from, rs_stream to) const
+{
+    const int index = stream - RS_STREAM_NATIVE_COUNT;
+    if(synthetic_images[index].empty() || synthetic_timestamps[index] != get_frame_timestamp(from))
+    {
+        synthetic_images[index].resize(rsimpl::get_image_size(get_stream_intrinsics(to).width, get_stream_intrinsics(to).height, get_stream_format(from)));
+        memset(synthetic_images[index].data(), 0, synthetic_images[index].size());
+        synthetic_timestamps[index] = get_frame_timestamp(from);
+
+        if(get_stream_format(from) == RS_FORMAT_Z16)
+        {
+            align_depth_to_color(synthetic_images[index].data(), (const uint16_t *)get_frame_data(from), get_depth_scale(), get_stream_intrinsics(from), get_extrinsics(from, to), get_stream_intrinsics(to));    
+        }
+        else if(get_stream_format(to) == RS_FORMAT_Z16)
+        {
+            align_color_to_depth(synthetic_images[index].data(), (const uint16_t *)get_frame_data(to), get_depth_scale(), get_stream_intrinsics(to), get_extrinsics(to, from), get_stream_intrinsics(from), get_frame_data(from), get_stream_format(from));      
+        }
+        else
+        {
+            assert(false && "Cannot align two images if neither have depth data");
+        }
+    }
+    return synthetic_images[index].data();
+}
+
+const void * rs_device::get_frame_data(rs_stream stream) const 
+{ 
+    if(stream < RS_STREAM_NATIVE_COUNT)
+    {
+        if(!streams[stream]) throw std::runtime_error(to_string() << "stream not enabled: " << stream);
+        return streams[stream]->get_front_data(); 
+    }
+
+    if(synthetic_images[stream - RS_STREAM_NATIVE_COUNT].empty() || synthetic_timestamps[stream - RS_STREAM_NATIVE_COUNT] != get_frame_timestamp(get_stream_data_native_stream(stream)))
+    {
+        if(stream == RS_STREAM_RECTIFIED_COLOR)
+        {
+            auto rect_intrin = get_stream_intrinsics(RS_STREAM_RECTIFIED_COLOR);
+            if(rectification_table.empty())
+            {
+                rectification_table = compute_rectification_table(rect_intrin, get_extrinsics(RS_STREAM_RECTIFIED_COLOR, RS_STREAM_COLOR), get_stream_intrinsics(RS_STREAM_COLOR));
+            }
+            
+            const auto format = get_stream_format(RS_STREAM_COLOR);
+            auto & rectified_color = synthetic_images[RS_STREAM_RECTIFIED_COLOR - RS_STREAM_NATIVE_COUNT];
+            rectified_color.resize(get_image_size(rect_intrin.width, rect_intrin.height, format));
+            rectify_image(rectified_color.data(), rectification_table, get_frame_data(RS_STREAM_COLOR), format);
+        }
+        
+        switch(stream)
+        {
+        case RS_STREAM_COLOR_ALIGNED_TO_DEPTH: return get_aligned_image(stream, RS_STREAM_COLOR, RS_STREAM_DEPTH);
+        case RS_STREAM_DEPTH_ALIGNED_TO_COLOR: return get_aligned_image(stream, RS_STREAM_DEPTH, RS_STREAM_COLOR);
+        case RS_STREAM_DEPTH_ALIGNED_TO_RECTIFIED_COLOR: return get_aligned_image(stream, RS_STREAM_DEPTH, RS_STREAM_RECTIFIED_COLOR);
+        }
+    }
+    return synthetic_images[stream - RS_STREAM_NATIVE_COUNT].data();
+} 
 
 rsimpl::stream_mode rs_device::get_current_stream_mode(rs_stream stream) const
 {
@@ -244,12 +363,18 @@ rsimpl::stream_mode rs_device::get_current_stream_mode(rs_stream stream) const
         }   
         throw std::logic_error("no mode found"); // Should never happen, select_modes should throw if no mode can be found
     }
-    throw std::runtime_error("stream not enabled");
+    throw std::runtime_error(to_string() << "stream not enabled: " << stream);
+}
+
+rsimpl::pose rs_device::get_pose(rs_stream stream) const
+{
+    if(stream == RS_STREAM_RECTIFIED_COLOR) return {device_info.stream_poses[RS_STREAM_DEPTH].orientation, device_info.stream_poses[RS_STREAM_COLOR].position};
+    else return device_info.stream_poses[get_stream_intrinsics_native_stream(stream)];
 }
 
 rs_extrinsics rs_device::get_extrinsics(rs_stream from, rs_stream to) const
 {
-    auto transform = inverse(device_info.stream_poses[from]) * device_info.stream_poses[to];
+    auto transform = inverse(get_pose(from)) * get_pose(to);
     rs_extrinsics extrin;
     (float3x3 &)extrin.rotation = transform.orientation;
     (float3 &)extrin.translation = transform.position;
@@ -289,7 +414,8 @@ namespace rsimpl
 
 int rs_device::get_stream_mode_count(rs_stream stream) const
 {
-    return enumerate_stream_modes(device_info, stream).size();
+    if(stream < RS_STREAM_NATIVE_COUNT) return enumerate_stream_modes(device_info, stream).size();
+    return 0; // Synthetic streams have no modes and cannot have enable_stream called on it
 }
 
 void rs_device::get_stream_mode(rs_stream stream, int mode, int * width, int * height, rs_format * format, int * framerate) const
@@ -309,7 +435,7 @@ void rs_device::set_intrinsics_thread_safe(std::vector<rs_intrinsics> new_intrin
 
 void rs_device::set_option(rs_option option, int value)
 {
-    if(!supports_option(option)) throw std::runtime_error("option not supported by this device");
+    if(!supports_option(option)) throw std::runtime_error(to_string() << "option not supported by this device - " << option);
     if(uvc::is_pu_control(option))
     {
         uvc::set_pu_control(get_device(), device_info.stream_subdevices[RS_STREAM_COLOR], option, value);
@@ -322,7 +448,7 @@ void rs_device::set_option(rs_option option, int value)
 
 int rs_device::get_option(rs_option option) const
 {
-    if(!supports_option(option)) throw std::runtime_error("option not supported by this device");
+    if(!supports_option(option)) throw std::runtime_error(to_string() << "option not supported by this device - " << option);
     if(uvc::is_pu_control(option))
     {
         return uvc::get_pu_control(get_device(), device_info.stream_subdevices[RS_STREAM_COLOR], option);

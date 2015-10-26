@@ -37,6 +37,7 @@ namespace rsimpl
 #define VALIDATE_NOT_NULL(ARG) if(!ARG) throw std::runtime_error("null pointer passed for argument \"" #ARG "\"");
 #define VALIDATE_ENUM(ARG) if(!rsimpl::is_valid(ARG)) { std::ostringstream ss; ss << "bad enum value for argument \"" #ARG "\""; throw std::runtime_error(ss.str()); }
 #define VALIDATE_RANGE(ARG, MIN, MAX) if(ARG < MIN || ARG > MAX) { std::ostringstream ss; ss << "out of range value for argument \"" #ARG "\""; throw std::runtime_error(ss.str()); }
+#define VALIDATE_NATIVE_STREAM(ARG) VALIDATE_ENUM(ARG); if(ARG >= RS_STREAM_NATIVE_COUNT) { std::ostringstream ss; ss << "argument \"" #ARG "\" must be a native stream"; throw std::runtime_error(ss.str()); }
 
 rs_context * rs_create_context(int api_version, rs_error ** error) try
 {
@@ -75,6 +76,21 @@ const char * rs_get_device_name(const rs_device * device, rs_error ** error) try
     return device->get_name();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, device)
+
+const char * rs_get_device_serial(const rs_device * device, rs_error ** error) try
+{
+    VALIDATE_NOT_NULL(device);
+    return device->get_serial();
+}
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, device)
+
+const char * rs_get_device_firmware_version(const rs_device * device, rs_error ** error) try
+{
+    VALIDATE_NOT_NULL(device);
+    return device->get_firmware_version();
+}
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, device)
+
 
 void rs_get_device_extrinsics(const rs_device * device, rs_stream from, rs_stream to, rs_extrinsics * extrin, rs_error ** error) try
 {
@@ -115,7 +131,7 @@ HANDLE_EXCEPTIONS_AND_RETURN(, device, stream, index, width, height, format, fra
 void rs_enable_stream(rs_device * device, rs_stream stream, int width, int height, rs_format format, int fps, rs_error ** error) try
 {
     VALIDATE_NOT_NULL(device);
-    VALIDATE_ENUM(stream);
+    VALIDATE_NATIVE_STREAM(stream);
     VALIDATE_RANGE(width, 0, INT_MAX);
     VALIDATE_RANGE(height, 0, INT_MAX);
     VALIDATE_ENUM(format);
@@ -127,7 +143,7 @@ HANDLE_EXCEPTIONS_AND_RETURN(, device, stream, width, height, format, fps)
 void rs_enable_stream_preset(rs_device * device, rs_stream stream, rs_preset preset, rs_error ** error) try
 {
     VALIDATE_NOT_NULL(device);
-    VALIDATE_ENUM(stream);
+    VALIDATE_NATIVE_STREAM(stream);
     VALIDATE_ENUM(preset);
     device->enable_stream_preset(stream, preset);
 }
@@ -136,7 +152,7 @@ HANDLE_EXCEPTIONS_AND_RETURN(, device, stream, preset)
 void rs_disable_stream(rs_device * device, rs_stream stream, rs_error ** error) try
 {
     VALIDATE_NOT_NULL(device);
-    VALIDATE_ENUM(stream);
+    VALIDATE_NATIVE_STREAM(stream);
     device->disable_stream(stream);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, device, stream)

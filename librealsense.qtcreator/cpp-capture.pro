@@ -16,3 +16,4 @@ HEADERS += ../examples/example.h
 LIBS += -L$$DESTDIR/ -lrealsense
 
 PRE_TARGETDEPS += $$DESTDIR/librealsense.a
+

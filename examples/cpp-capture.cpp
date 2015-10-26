@@ -5,9 +5,13 @@
 #include <iostream>
 #include <iomanip>
 #include <thread>
+#include <algorithm>
 
 font font;
 texture_buffer buffers[RS_STREAM_COUNT];
+bool align_depth_to_color = false;
+bool align_color_to_depth = false;
+bool color_rectification_enabled = false;
 
 int main(int argc, char * argv[]) try
 {
@@ -18,8 +22,8 @@ int main(int argc, char * argv[]) try
     rs::device dev = ctx.get_device(0);
     dev.enable_stream(rs::stream::color, rs::preset::best_quality);
     dev.enable_stream(rs::stream::depth, rs::preset::best_quality);
-    dev.enable_stream(rs::stream::infrared, 0, 0, rs::format::y8, 0);
-    //try { dev.enable_stream(rs::stream::infrared2, 0, 0, rs::format::any, 0); } catch(...) {}
+    dev.enable_stream(rs::stream::infrared, rs::preset::best_quality);
+    try { dev.enable_stream(rs::stream::infrared2, rs::preset::best_quality); } catch(...) {}
 
     // Compute field of view for each enabled stream
     for(int i = 0; i < RS_STREAM_COUNT; ++i)
@@ -56,6 +60,15 @@ int main(int argc, char * argv[]) try
     glfwInit();
     std::ostringstream ss; ss << "CPP Capture Example (" << dev.get_name() << ")";
     GLFWwindow * win = glfwCreateWindow(1280, 960, ss.str().c_str(), 0, 0);
+    glfwSetKeyCallback(win, [](GLFWwindow *, int key, int scancode, int action, int mods) 
+    { 
+        if(action != GLFW_RELEASE) switch(key)
+        {
+        case GLFW_KEY_R: color_rectification_enabled = !color_rectification_enabled; break;
+        case GLFW_KEY_C: align_color_to_depth = !align_color_to_depth; break;
+        case GLFW_KEY_D: align_depth_to_color = !align_depth_to_color; break;
+        }
+    });
     glfwMakeContextCurrent(win);
             
     // Load our truetype font
@@ -82,8 +95,8 @@ int main(int argc, char * argv[]) try
         glPushMatrix();
         glfwGetWindowSize(win, &w, &h);
         glOrtho(0, w, h, 0, -1, +1);
-        buffers[0].show(dev, rs::stream::color, 0, 0, w/2, h/2, font);
-        buffers[1].show(dev, rs::stream::depth, w/2, 0, w-w/2, h/2, font);
+        buffers[0].show(dev, align_color_to_depth ? rs::stream::color_aligned_to_depth : (color_rectification_enabled ? rs::stream::rectified_color : rs::stream::color), 0, 0, w/2, h/2, font);
+        buffers[1].show(dev, align_depth_to_color ? (color_rectification_enabled ? rs::stream::depth_aligned_to_rectified_color : rs::stream::depth_aligned_to_color) : rs::stream::depth, w/2, 0, w-w/2, h/2, font);
         buffers[2].show(dev, rs::stream::infrared, 0, h/2, w/2, h-h/2, font);
         buffers[3].show(dev, rs::stream::infrared2, w/2, h/2, w-w/2, h-h/2, font);
         glPopMatrix();
