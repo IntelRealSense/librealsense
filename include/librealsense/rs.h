@@ -70,7 +70,7 @@ typedef enum rs_option
     RS_OPTION_COLOR_HUE                     = 6,
     RS_OPTION_COLOR_SATURATION              = 7,
     RS_OPTION_COLOR_SHARPNESS               = 8,
-    RS_OPTION_COLOR_WHITE_BALANCE           = 9,
+    RS_OPTION_COLOR_WHITE_BALANCE           = 9, /* White balance as color temperature in Degrees Kelvin */
 
     /* Options for RealSense coded light cameras, such as the F200/SR300 */
     RS_OPTION_F200_LASER_POWER              = 10,  /* 0 - 15 */

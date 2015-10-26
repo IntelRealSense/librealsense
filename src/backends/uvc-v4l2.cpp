@@ -383,9 +383,37 @@ namespace rsimpl
                 device.stop = false;
             }
         }
+
+        static int get_cid(rs_option option)
+        {
+            switch(option)
+            {
+            case RS_OPTION_COLOR_BACKLIGHT_COMPENSATION: return V4L2_CID_BACKLIGHT_COMPENSATION;
+            case RS_OPTION_COLOR_BRIGHTNESS: return V4L2_CID_BRIGHTNESS;
+            case RS_OPTION_COLOR_CONTRAST: return V4L2_CID_CONTRAST;
+            case RS_OPTION_COLOR_EXPOSURE: return V4L2_CID_EXPOSURE;
+            case RS_OPTION_COLOR_GAIN: return V4L2_CID_GAIN;
+            case RS_OPTION_COLOR_GAMMA: return V4L2_CID_GAMMA;
+            case RS_OPTION_COLOR_HUE: return V4L2_CID_HUE;
+            case RS_OPTION_COLOR_SATURATION: return V4L2_CID_SATURATION;
+            case RS_OPTION_COLOR_SHARPNESS: return V4L2_CID_SHARPNESS;
+            case RS_OPTION_COLOR_WHITE_BALANCE: return V4L2_CID_WHITE_BALANCE_TEMPERATURE;
+            throw std::runtime_error(to_string() << "no v4l2 cid for option " << option);
+            }
+        }
         
-        void set_pu_control(device & device, int subdevice, rs_option option, int value) {}
-        int get_pu_control(const device & device, int subdevice, rs_option option) { return 0; }
+        void set_pu_control(device & device, int subdevice, rs_option option, int value)
+        {
+            struct v4l2_control control = {get_cid(option), value};
+            if (xioctl(device.subdevices[subdevice]->fd, VIDIOC_S_CTRL, &control) < 0) throw_error("VIDIOC_S_CTRL");
+        }
+
+        int get_pu_control(const device & device, int subdevice, rs_option option)
+        {
+            struct v4l2_control control = {get_cid(option)};
+            if (xioctl(device.subdevices[subdevice]->fd, VIDIOC_G_CTRL, &control) < 0) throw_error("VIDIOC_G_CTRL");
+            return control.value;
+        }
 
         /////////////
         // context //
