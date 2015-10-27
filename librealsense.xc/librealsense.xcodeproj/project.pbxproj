@@ -30,13 +30,20 @@
 		279D52E41B90FD4E007F2D73 /* rs.h in Headers */ = {isa = PBXBuildFile; fileRef = 279D52E11B90FD4E007F2D73 /* rs.h */; };
 		279D52E51B90FD4E007F2D73 /* rs.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 279D52E21B90FD4E007F2D73 /* rs.hpp */; };
 		279D52E61B90FD4E007F2D73 /* rsutil.h in Headers */ = {isa = PBXBuildFile; fileRef = 279D52E31B90FD4E007F2D73 /* rsutil.h */; };
-		8C7306D81BC5B776003BB7DE /* uvc-usb.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8C7306D71BC5B776003BB7DE /* uvc-usb.cpp */; };
-		8C7306DE1BC5B793003BB7DE /* ctrl.c in Sources */ = {isa = PBXBuildFile; fileRef = 8C7306D91BC5B793003BB7DE /* ctrl.c */; };
-		8C7306DF1BC5B793003BB7DE /* dev.c in Sources */ = {isa = PBXBuildFile; fileRef = 8C7306DA1BC5B793003BB7DE /* dev.c */; };
-		8C7306E01BC5B793003BB7DE /* diag.c in Sources */ = {isa = PBXBuildFile; fileRef = 8C7306DB1BC5B793003BB7DE /* diag.c */; };
-		8C7306E11BC5B793003BB7DE /* frame.c in Sources */ = {isa = PBXBuildFile; fileRef = 8C7306DC1BC5B793003BB7DE /* frame.c */; };
-		8C7306E21BC5B793003BB7DE /* init.c in Sources */ = {isa = PBXBuildFile; fileRef = 8C7306DD1BC5B793003BB7DE /* init.c */; };
-		8C7306E41BC5B79B003BB7DE /* stream.c in Sources */ = {isa = PBXBuildFile; fileRef = 8C7306E31BC5B79B003BB7DE /* stream.c */; };
+		8C7307131BE03102003BB7DE /* ctrl.c in Sources */ = {isa = PBXBuildFile; fileRef = 8C7307091BE03102003BB7DE /* ctrl.c */; };
+		8C7307141BE03102003BB7DE /* dev.c in Sources */ = {isa = PBXBuildFile; fileRef = 8C73070A1BE03102003BB7DE /* dev.c */; };
+		8C7307151BE03102003BB7DE /* diag.c in Sources */ = {isa = PBXBuildFile; fileRef = 8C73070B1BE03102003BB7DE /* diag.c */; };
+		8C7307161BE03102003BB7DE /* frame.c in Sources */ = {isa = PBXBuildFile; fileRef = 8C73070C1BE03102003BB7DE /* frame.c */; };
+		8C7307171BE03102003BB7DE /* init.c in Sources */ = {isa = PBXBuildFile; fileRef = 8C73070D1BE03102003BB7DE /* init.c */; };
+		8C7307181BE03102003BB7DE /* libuvc_config.h in Headers */ = {isa = PBXBuildFile; fileRef = 8C73070E1BE03102003BB7DE /* libuvc_config.h */; };
+		8C7307191BE03102003BB7DE /* libuvc_internal.h in Headers */ = {isa = PBXBuildFile; fileRef = 8C73070F1BE03102003BB7DE /* libuvc_internal.h */; };
+		8C73071A1BE03102003BB7DE /* libuvc.h in Headers */ = {isa = PBXBuildFile; fileRef = 8C7307101BE03102003BB7DE /* libuvc.h */; };
+		8C73071B1BE03102003BB7DE /* stream.c in Sources */ = {isa = PBXBuildFile; fileRef = 8C7307111BE03102003BB7DE /* stream.c */; };
+		8C73071C1BE03102003BB7DE /* utlist.h in Headers */ = {isa = PBXBuildFile; fileRef = 8C7307121BE03102003BB7DE /* utlist.h */; };
+		8C7307211BE03131003BB7DE /* uvc-libuvc.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8C73071D1BE03131003BB7DE /* uvc-libuvc.cpp */; };
+		8C7307221BE03131003BB7DE /* uvc-v4l2.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8C73071E1BE03131003BB7DE /* uvc-v4l2.cpp */; };
+		8C7307231BE03131003BB7DE /* uvc-wmf.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8C73071F1BE03131003BB7DE /* uvc-wmf.cpp */; };
+		8C7307241BE03131003BB7DE /* uvc.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8C7307201BE03131003BB7DE /* uvc.cpp */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -64,13 +71,20 @@
 		279D52E11B90FD4E007F2D73 /* rs.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = rs.h; path = ../include/librealsense/rs.h; sourceTree = SOURCE_ROOT; };
 		279D52E21B90FD4E007F2D73 /* rs.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = rs.hpp; path = ../include/librealsense/rs.hpp; sourceTree = SOURCE_ROOT; };
 		279D52E31B90FD4E007F2D73 /* rsutil.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = rsutil.h; path = ../include/librealsense/rsutil.h; sourceTree = SOURCE_ROOT; };
-		8C7306D71BC5B776003BB7DE /* uvc-usb.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = "uvc-usb.cpp"; path = "../../src/backends/uvc-usb.cpp"; sourceTree = "<group>"; };
-		8C7306D91BC5B793003BB7DE /* ctrl.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = ctrl.c; path = ../src/backends/libuvc/ctrl.c; sourceTree = "<group>"; };
-		8C7306DA1BC5B793003BB7DE /* dev.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = dev.c; path = ../src/backends/libuvc/dev.c; sourceTree = "<group>"; };
-		8C7306DB1BC5B793003BB7DE /* diag.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = diag.c; path = ../src/backends/libuvc/diag.c; sourceTree = "<group>"; };
-		8C7306DC1BC5B793003BB7DE /* frame.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = frame.c; path = ../src/backends/libuvc/frame.c; sourceTree = "<group>"; };
-		8C7306DD1BC5B793003BB7DE /* init.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = init.c; path = ../src/backends/libuvc/init.c; sourceTree = "<group>"; };
-		8C7306E31BC5B79B003BB7DE /* stream.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = stream.c; path = ../src/backends/libuvc/stream.c; sourceTree = "<group>"; };
+		8C7307091BE03102003BB7DE /* ctrl.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = ctrl.c; path = ../src/libuvc/ctrl.c; sourceTree = SOURCE_ROOT; };
+		8C73070A1BE03102003BB7DE /* dev.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = dev.c; path = ../src/libuvc/dev.c; sourceTree = SOURCE_ROOT; };
+		8C73070B1BE03102003BB7DE /* diag.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = diag.c; path = ../src/libuvc/diag.c; sourceTree = SOURCE_ROOT; };
+		8C73070C1BE03102003BB7DE /* frame.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = frame.c; path = ../src/libuvc/frame.c; sourceTree = SOURCE_ROOT; };
+		8C73070D1BE03102003BB7DE /* init.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = init.c; path = ../src/libuvc/init.c; sourceTree = SOURCE_ROOT; };
+		8C73070E1BE03102003BB7DE /* libuvc_config.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = libuvc_config.h; path = ../src/libuvc/libuvc_config.h; sourceTree = SOURCE_ROOT; };
+		8C73070F1BE03102003BB7DE /* libuvc_internal.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = libuvc_internal.h; path = ../src/libuvc/libuvc_internal.h; sourceTree = SOURCE_ROOT; };
+		8C7307101BE03102003BB7DE /* libuvc.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = libuvc.h; path = ../src/libuvc/libuvc.h; sourceTree = SOURCE_ROOT; };
+		8C7307111BE03102003BB7DE /* stream.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = stream.c; path = ../src/libuvc/stream.c; sourceTree = SOURCE_ROOT; };
+		8C7307121BE03102003BB7DE /* utlist.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = utlist.h; path = ../src/libuvc/utlist.h; sourceTree = SOURCE_ROOT; };
+		8C73071D1BE03131003BB7DE /* uvc-libuvc.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = "uvc-libuvc.cpp"; path = "../src/uvc-libuvc.cpp"; sourceTree = SOURCE_ROOT; };
+		8C73071E1BE03131003BB7DE /* uvc-v4l2.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = "uvc-v4l2.cpp"; path = "../src/uvc-v4l2.cpp"; sourceTree = SOURCE_ROOT; };
+		8C73071F1BE03131003BB7DE /* uvc-wmf.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = "uvc-wmf.cpp"; path = "../src/uvc-wmf.cpp"; sourceTree = SOURCE_ROOT; };
+		8C7307201BE03131003BB7DE /* uvc.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = uvc.cpp; path = ../src/uvc.cpp; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -115,12 +129,16 @@
 		08567BE61B5B5B2800EB6C0D /* libuvc */ = {
 			isa = PBXGroup;
 			children = (
-				8C7306D91BC5B793003BB7DE /* ctrl.c */,
-				8C7306DA1BC5B793003BB7DE /* dev.c */,
-				8C7306DB1BC5B793003BB7DE /* diag.c */,
-				8C7306DC1BC5B793003BB7DE /* frame.c */,
-				8C7306DD1BC5B793003BB7DE /* init.c */,
-				8C7306E31BC5B79B003BB7DE /* stream.c */,
+				8C7307091BE03102003BB7DE /* ctrl.c */,
+				8C73070A1BE03102003BB7DE /* dev.c */,
+				8C73070B1BE03102003BB7DE /* diag.c */,
+				8C73070C1BE03102003BB7DE /* frame.c */,
+				8C73070D1BE03102003BB7DE /* init.c */,
+				8C73070E1BE03102003BB7DE /* libuvc_config.h */,
+				8C73070F1BE03102003BB7DE /* libuvc_internal.h */,
+				8C7307101BE03102003BB7DE /* libuvc.h */,
+				8C7307111BE03102003BB7DE /* stream.c */,
+				8C7307121BE03102003BB7DE /* utlist.h */,
 			);
 			name = libuvc;
 			sourceTree = "<group>";
@@ -136,6 +154,10 @@
 		279D52E71B90FD53007F2D73 /* src */ = {
 			isa = PBXGroup;
 			children = (
+				8C73071D1BE03131003BB7DE /* uvc-libuvc.cpp */,
+				8C73071E1BE03131003BB7DE /* uvc-v4l2.cpp */,
+				8C73071F1BE03131003BB7DE /* uvc-wmf.cpp */,
+				8C7307201BE03131003BB7DE /* uvc.cpp */,
 				271E78AF1B9F83710063ECAE /* device.cpp */,
 				271E78B01B9F83710063ECAE /* device.h */,
 				279985A11B964EFF00894334 /* uvc.h */,
@@ -154,7 +176,6 @@
 				279D52A71B8E8678007F2D73 /* rs.cpp */,
 				279D52A81B8E8678007F2D73 /* types.cpp */,
 				279D52A91B8E8678007F2D73 /* types.h */,
-				8C7306D71BC5B776003BB7DE /* uvc-usb.cpp */,
 				279D52AA1B8E8678007F2D73 /* verify.c */,
 			);
 			name = src;
@@ -181,15 +202,19 @@
 				279D52B61B8E8678007F2D73 /* r200-private.h in Headers */,
 				279D52B81B8E8678007F2D73 /* r200.h in Headers */,
 				279D52E51B90FD4E007F2D73 /* rs.hpp in Headers */,
+				8C73071C1BE03102003BB7DE /* utlist.h in Headers */,
 				279D52BB1B8E8678007F2D73 /* types.h in Headers */,
+				8C7307191BE03102003BB7DE /* libuvc_internal.h in Headers */,
 				279D52B21B8E8678007F2D73 /* f200.h in Headers */,
 				279D52B41B8E8678007F2D73 /* image.h in Headers */,
 				279D52E41B90FD4E007F2D73 /* rs.h in Headers */,
 				279985A31B964EFF00894334 /* uvc.h in Headers */,
 				279D52E61B90FD4E007F2D73 /* rsutil.h in Headers */,
+				8C73071A1BE03102003BB7DE /* libuvc.h in Headers */,
 				279D52B01B8E8678007F2D73 /* f200-private.h in Headers */,
 				279D52AE1B8E8678007F2D73 /* context.h in Headers */,
 				271E78B21B9F83710063ECAE /* device.h in Headers */,
+				8C7307181BE03102003BB7DE /* libuvc_config.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -249,20 +274,23 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				8C7306E11BC5B793003BB7DE /* frame.c in Sources */,
-				8C7306E01BC5B793003BB7DE /* diag.c in Sources */,
+				8C7307161BE03102003BB7DE /* frame.c in Sources */,
+				8C7307151BE03102003BB7DE /* diag.c in Sources */,
+				8C7307241BE03131003BB7DE /* uvc.cpp in Sources */,
+				8C7307211BE03131003BB7DE /* uvc-libuvc.cpp in Sources */,
 				279D52BC1B8E8678007F2D73 /* verify.c in Sources */,
-				8C7306D81BC5B776003BB7DE /* uvc-usb.cpp in Sources */,
+				8C7307221BE03131003BB7DE /* uvc-v4l2.cpp in Sources */,
 				279D52B71B8E8678007F2D73 /* r200.cpp in Sources */,
+				8C7307231BE03131003BB7DE /* uvc-wmf.cpp in Sources */,
 				279D52AF1B8E8678007F2D73 /* f200-private.cpp in Sources */,
 				279D52B11B8E8678007F2D73 /* f200.cpp in Sources */,
 				279D52B31B8E8678007F2D73 /* image.cpp in Sources */,
-				8C7306DF1BC5B793003BB7DE /* dev.c in Sources */,
+				8C7307141BE03102003BB7DE /* dev.c in Sources */,
 				279D52B91B8E8678007F2D73 /* rs.cpp in Sources */,
 				279D52AD1B8E8678007F2D73 /* context.cpp in Sources */,
-				8C7306E41BC5B79B003BB7DE /* stream.c in Sources */,
-				8C7306E21BC5B793003BB7DE /* init.c in Sources */,
-				8C7306DE1BC5B793003BB7DE /* ctrl.c in Sources */,
+				8C73071B1BE03102003BB7DE /* stream.c in Sources */,
+				8C7307171BE03102003BB7DE /* init.c in Sources */,
+				8C7307131BE03102003BB7DE /* ctrl.c in Sources */,
 				271E78B11B9F83710063ECAE /* device.cpp in Sources */,
 				279D52B51B8E8678007F2D73 /* r200-private.cpp in Sources */,
 				279D52BA1B8E8678007F2D73 /* types.cpp in Sources */,
@@ -371,8 +399,8 @@
 				GCC_ENABLE_CPP_EXCEPTIONS = YES;
 				GCC_ENABLE_CPP_RTTI = YES;
 				GCC_PREPROCESSOR_DEFINITIONS = (
+					RS_USE_LIBUVC_BACKEND,
 					"DEBUG=1",
-					"$(inherited)",
 				);
 				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
 				HEADER_SEARCH_PATHS = (
@@ -399,6 +427,7 @@
 				EXECUTABLE_PREFIX = "";
 				GCC_ENABLE_CPP_EXCEPTIONS = YES;
 				GCC_ENABLE_CPP_RTTI = YES;
+				GCC_PREPROCESSOR_DEFINITIONS = RS_USE_LIBUVC_BACKEND;
 				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
 				HEADER_SEARCH_PATHS = (
 					"$(inherited)",
