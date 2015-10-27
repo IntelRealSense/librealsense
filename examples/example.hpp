@@ -13,6 +13,8 @@ class texture_buffer
 public:
     texture_buffer() : texture(), last_timestamp(-1), fps(), num_frames(), next_time(1000) {}
 
+    GLuint get_gl_handle() const { return texture; }
+
     void upload(const void * data, int width, int height, rs::format format)
     {
         // If the frame timestamp has changed since the last time show(...) was called, re-upload the texture
@@ -46,6 +48,8 @@ public:
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+
+        glBindTexture(GL_TEXTURE_2D, 0);
     }
 
     void upload(rs::device & dev, rs::stream stream)
@@ -66,7 +70,7 @@ public:
                 num_frames = 0;
                 next_time += 1000;
             }
-        }    
+        }
     }
 
     void show(float rx, float ry, float rw, float rh) const

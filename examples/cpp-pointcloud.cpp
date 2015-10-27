@@ -129,6 +129,7 @@ int main(int argc, char * argv[]) try
         glPointSize((float)width/640);
         glEnable(GL_DEPTH_TEST);
         glEnable(GL_TEXTURE_2D);
+        glBindTexture(GL_TEXTURE_2D, tex.get_gl_handle());
         glBegin(GL_POINTS);
         auto depth = reinterpret_cast<const uint16_t *>(dev.get_frame_data(rs::stream::depth));
         
@@ -163,6 +164,8 @@ int main(int argc, char * argv[]) try
         glPopMatrix();
 
         glfwSwapBuffers(win);
+
+        int z = 99;
     }
 
     glfwDestroyWindow(win);
