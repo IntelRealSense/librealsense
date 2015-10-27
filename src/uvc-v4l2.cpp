@@ -153,8 +153,8 @@ namespace rsimpl
                 req.memory = V4L2_MEMORY_MMAP;
                 if(xioctl(fd, VIDIOC_REQBUFS, &req) < 0)
                 {
-                    if(errno == EINVAL) throw std::runtime_error(dev_name + " does not support memory mapping");
-                    else throw_error("VIDIOC_REQBUFS");
+                    if(errno == EINVAL) DEBUG_ERR(dev_name + " does not support memory mapping");
+                    else warn_error("VIDIOC_REQBUFS");
                 }
 
                 if(close(fd) < 0) warn_error("close");

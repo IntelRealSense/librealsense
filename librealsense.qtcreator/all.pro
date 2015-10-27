@@ -9,4 +9,6 @@ SUBDIRS += \
    ./cpp-multicam.pro \
    ./cpp-pointcloud.pro \
    ./cpp-restart.pro \
-   ./v4l2-test.pro
+   ./unit-tests-live-r200.pro \
+   ./unit-tests-live-f200.pro \
+   ./unit-tests-offline.pro
