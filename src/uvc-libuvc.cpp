@@ -1,4 +1,6 @@
-#include "../uvc.h"
+#ifdef RS_USE_LIBUVC_BACKEND
+
+#include "uvc.h"
 
 #include "libuvc/libuvc.h"
 #include "libuvc/libuvc_internal.h" // For LibUSB punchthrough
@@ -300,3 +302,5 @@ namespace rsimpl
         }
     }
 }
+
+#endif

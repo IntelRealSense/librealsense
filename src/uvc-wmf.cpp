@@ -1,4 +1,6 @@
-#include "../uvc.h"
+#ifdef RS_USE_WMF_BACKEND
+
+#include "uvc.h"
 
 #include <Shlwapi.h>        // For QISearch, etc.
 #include <mfapi.h>          // For MFStartup, etc.
@@ -677,3 +679,5 @@ namespace rsimpl
         }
     }
 }
+
+#endif

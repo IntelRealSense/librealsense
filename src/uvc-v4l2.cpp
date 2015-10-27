@@ -1,4 +1,6 @@
-#include "../uvc.h"
+#ifdef RS_USE_V4L2_BACKEND
+
+#include "uvc.h"
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -175,3 +177,5 @@ namespace rsimpl
         }
     }
 }
+
+#endif
