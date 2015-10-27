@@ -261,12 +261,12 @@ namespace rsimpl { namespace f200
 
     // N.B. f200 xu_read and xu_write hard code the xu interface to the depth suvdevice. There is only a
     // single *potentially* useful XU on the color device, so let's ignore it for now.
-    void xu_read(const uvc::device & device, uint64_t xu_ctrl, void * buffer, uint32_t length)
+    void xu_read(const uvc::device & device, uint8_t xu_ctrl, void * buffer, uint32_t length)
     {
         get_control(device, 1, xu_ctrl, buffer, length);
     }
     
-    void xu_write(uvc::device & device, uint64_t xu_ctrl, void * buffer, uint32_t length)
+    void xu_write(uvc::device & device, uint8_t xu_ctrl, void * buffer, uint32_t length)
     {
         set_control(device, 1, xu_ctrl, buffer, length);
     }

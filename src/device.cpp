@@ -368,13 +368,16 @@ rsimpl::stream_mode rs_device::get_current_stream_mode(rs_stream stream) const
 
 rsimpl::pose rs_device::get_pose(rs_stream stream) const
 {
+    if(stream < RS_STREAM_NATIVE_COUNT) return device_info.stream_poses[stream];
     if(stream == RS_STREAM_RECTIFIED_COLOR) return {device_info.stream_poses[RS_STREAM_DEPTH].orientation, device_info.stream_poses[RS_STREAM_COLOR].position};
-    else return device_info.stream_poses[get_stream_intrinsics_native_stream(stream)];
+    return get_pose(get_stream_intrinsics_native_stream(stream));
 }
 
 rs_extrinsics rs_device::get_extrinsics(rs_stream from, rs_stream to) const
 {
-    auto transform = inverse(get_pose(from)) * get_pose(to);
+    auto from_pose = get_pose(from), to_pose = get_pose(to);
+    if(from_pose == to_pose) return {{1,0,0,0,1,0,0,0,1},{0,0,0}};
+    auto transform = inverse(from_pose) * to_pose;
     rs_extrinsics extrin;
     (float3x3 &)extrin.rotation = transform.orientation;
     (float3 &)extrin.translation = transform.position;

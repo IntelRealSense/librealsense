@@ -31,7 +31,19 @@
     <ClCompile Include="..\..\src\device.cpp">
       <Filter>src</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\backends\uvc-wmf.cpp">
+    <ClCompile Include="..\..\src\jni.c">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\uvc.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\uvc-v4l2.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\uvc-wmf.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\uvc-libuvc.cpp">
       <Filter>src</Filter>
     </ClCompile>
   </ItemGroup>

@@ -1,4 +1,6 @@
-#include "../uvc.h"
+#ifdef RS_USE_WMF_BACKEND
+
+#include "uvc.h"
 
 #include <Shlwapi.h>        // For QISearch, etc.
 #include <mfapi.h>          // For MFStartup, etc.
@@ -665,7 +667,7 @@ namespace rsimpl
                     devices.push_back(dev);
                 }
 
-                int subdevice_index = mi/2;
+                size_t subdevice_index = mi/2;
                 if(subdevice_index >= dev->subdevices.size()) dev->subdevices.resize(subdevice_index+1);
 
                 dev->subdevices[subdevice_index].reader_callback = new reader_callback(dev, subdevice_index);
@@ -677,3 +679,5 @@ namespace rsimpl
         }
     }
 }
+
+#endif

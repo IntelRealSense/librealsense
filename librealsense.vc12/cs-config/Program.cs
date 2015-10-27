@@ -16,17 +16,16 @@ namespace cs_config
         {
             using (var context = new RealSense.Context())
             {
-                var devices = context.Devices;
-                if (devices.Length < 1)
+                if (context.GetDeviceCount() == 0)
                 {
-                    MessageBox.Show("No RealSense devices detected. Program will now exit.", "C# Config Example", MessageBoxButtons.OK);
+                    MessageBox.Show("No RealSense devices detected. Program will now exit.", "C# Capture Example", MessageBoxButtons.OK);
                     return;
                 }
 
                 Application.EnableVisualStyles();
                 Application.SetCompatibleTextRenderingDefault(false);
                 var form = new Config();
-                form.SetDevice(devices[0]);
+                form.SetDevice(context.GetDevice(0));
                 Application.Run(form);
             }
         }

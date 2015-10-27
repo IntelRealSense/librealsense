@@ -25,7 +25,7 @@ public class Capture : Form
         depthHistogram = new uint[0x10000];
         depthImage = new byte[depthMap.Length * 3];
 
-        Text = string.Format("C# Capture Example ({0})", device.Name);
+        Text = string.Format("C# Capture Example ({0})", device.GetName());
         ClientSize = new System.Drawing.Size(colorIntrin.Width + depthIntrin.Width + 36, colorIntrin.Height + 24);
 
         colorPicture = new PictureBox { Location = new Point(12, 12), Size = new Size(colorIntrin.Width, colorIntrin.Height) };
@@ -101,18 +101,17 @@ public class Capture : Form
         {
             using (var context = new RealSense.Context())
             {
-                var devices = context.Devices;
-                if (devices.Length < 1)
+                if(context.GetDeviceCount() == 0)
                 {
                     MessageBox.Show("No RealSense devices detected. Program will now exit.", "C# Capture Example", MessageBoxButtons.OK);
                     return;
                 }
 
-                devices[0].EnableStream(RealSense.Stream.Depth, RealSense.Preset.BestQuality);
-                devices[0].EnableStream(RealSense.Stream.Color, 640, 480, RealSense.Format.BGR8, 60);
-                devices[0].Start();
-
-                Application.Run(new Capture(devices[0]));
+                var device = context.GetDevice(0);
+                device.EnableStream(RealSense.Stream.Depth, RealSense.Preset.BestQuality);
+                device.EnableStream(RealSense.Stream.Color, 640, 480, RealSense.Format.BGR8, 60);
+                device.Start();
+                Application.Run(new Capture(device));
             }
         }
         catch (RealSense.Error e)
