@@ -9,7 +9,9 @@ INCLUDEPATH += ../include
 CONFIG += link_pkgconfig
 PKGCONFIG += libusb-1.0
 LIBS += -pthread
-QMAKE_CXXFLAGS += -std=c++11 -fPIC -pedantic -Wno-missing-field-initializers -Wno-switch
+QMAKE_CXXFLAGS += -std=c++11 -fPIC -pedantic
+QMAKE_CXXFLAGS += -Wno-missing-field-initializers -Wno-switch -Wno-multichar
+QMAKE_CXXFLAGS += -DRS_USE_V4L2_BACKEND
 
-HEADERS += ../include/librealsense/* ../src/*.h ../src/backends/libuvc/*.h
-SOURCES += ../src/*.cpp ../src/verify.c ../src/backends/uvc-usb.cpp ../src/backends/libuvc/*.c
+HEADERS += ../include/librealsense/* ../src/*.h
+SOURCES += ../src/*.cpp ../src/verify.c

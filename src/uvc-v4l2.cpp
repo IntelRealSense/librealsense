@@ -2,74 +2,420 @@
 
 #include "uvc.h"
 
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <unistd.h>
-#include <fcntl.h>
+#include <cassert>
+#include <cstdlib>
+#include <cstdio>
+#include <cstring>
+
 #include <string>
 #include <sstream>
+#include <fstream>
+#include <thread>
 
+#include <dirent.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <errno.h>
+#include <sys/stat.h>
+#include <sys/mman.h>
+#include <sys/ioctl.h>
+#include <linux/usb/video.h>
 #include <linux/uvcvideo.h>
 #include <linux/videodev2.h>
-#include <linux/usb/video.h>
 
-// debug
-#include <iostream>
+#include <libusb.h>
 
 namespace rsimpl
 {
     namespace uvc
     {
+        static void throw_error(const char * s)
+        {
+            std::ostringstream ss;
+            ss << s << " error " << errno << ", " << strerror(errno);
+            throw std::runtime_error(ss.str());
+        }
+
+        static void warn_error(const char * s)
+        {
+            DEBUG_ERR(s << " error " << errno << ", " << strerror(errno));
+        }
+
+        static int xioctl(int fh, int request, void *arg)
+        {
+            int r;
+            do {
+                r = ioctl(fh, request, arg);
+            } while (r < 0 && errno == EINTR);
+            return r;
+        }
+
+        struct buffer { void * start; size_t length; };
+
         struct context
         {
-            // TODO: V4L2-specific information
+            libusb_context * usb_context;
 
-            context() {} // TODO: Init
-            ~context() {} // TODO: Cleanup
+            context()
+            {
+                int status = libusb_init(&usb_context);
+                if(status < 0) throw std::runtime_error(to_string() << "libusb_init(...) returned " << libusb_error_name(status));
+            }
+            ~context()
+            {
+                libusb_exit(usb_context);
+            }
         };
 
         struct subdevice
         {
-            // TODO: Stream-specific information
-            std::string name;
-            uint16_t camIndex;
+            std::string dev_name;
+            int vid, pid, mi;
+            int fd;
+            std::vector<buffer> buffers;
 
-            std::function<void(const void * frame)> callback;
+            int width, height, format, fps;
+            std::function<void(const void *)> callback;
+
+            subdevice(const std::string & name) : dev_name("/dev/" + name), vid(), pid(), fd(), width(), height(), format()
+            {
+                struct stat st;
+                if(stat(dev_name.c_str(), &st) < 0)
+                {
+                    std::ostringstream ss; ss << "Cannot identify '" << dev_name << "': " << errno << ", " << strerror(errno);
+                    throw std::runtime_error(ss.str());
+                }
+                if(!S_ISCHR(st.st_mode)) throw std::runtime_error(dev_name + " is no device");
+
+                std::string modalias;
+                if(!(std::ifstream("/sys/class/video4linux/" + name + "/device/modalias") >> modalias))
+                    throw std::runtime_error("Failed to read modalias");
+                if(modalias.size() < 14 || modalias.substr(0,5) != "usb:v" || modalias[9] != 'p')
+                    throw std::runtime_error("Not a usb format modalias");
+                if(!(std::istringstream(modalias.substr(5,4)) >> std::hex >> vid))
+                    throw std::runtime_error("Failed to read vendor ID");
+                if(!(std::istringstream(modalias.substr(10,4)) >> std::hex >> pid))
+                    throw std::runtime_error("Failed to read product ID");
+                if(!(std::ifstream("/sys/class/video4linux/" + name + "/device/bInterfaceNumber") >> std::hex >> mi))
+                    throw std::runtime_error("Failed to read interface number");
+
+                fd = open(dev_name.c_str(), O_RDWR | O_NONBLOCK, 0);
+                if(fd < 0)
+                {
+                    std::ostringstream ss; ss << "Cannot open '" << dev_name << "': " << errno << ", " << strerror(errno);
+                    throw std::runtime_error(ss.str());
+                }
+
+                v4l2_capability cap = {};
+                if(xioctl(fd, VIDIOC_QUERYCAP, &cap) < 0)
+                {
+                    if(errno == EINVAL) throw std::runtime_error(dev_name + " is no V4L2 device");
+                    else throw_error("VIDIOC_QUERYCAP");
+                }
+                if(!(cap.capabilities & V4L2_CAP_VIDEO_CAPTURE)) throw std::runtime_error(dev_name + " is no video capture device");
+                if(!(cap.capabilities & V4L2_CAP_STREAMING)) throw std::runtime_error(dev_name + " does not support streaming I/O");
+
+                // Select video input, video standard and tune here.
+                v4l2_cropcap cropcap = {};
+                cropcap.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+                if(xioctl(fd, VIDIOC_CROPCAP, &cropcap) == 0)
+                {
+                    v4l2_crop crop = {};
+                    crop.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+                    crop.c = cropcap.defrect; // reset to default
+                    if(xioctl(fd, VIDIOC_S_CROP, &crop) < 0)
+                    {
+                        switch (errno)
+                        {
+                        case EINVAL: break; // Cropping not supported
+                        default: break; // Errors ignored
+                        }
+                    }
+                } else {} // Errors ignored
+            }
+
+            ~subdevice()
+            {
+                v4l2_buf_type type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+
+                // Will warn for subdev fds that are not streaming
+                if(xioctl(fd, VIDIOC_STREAMOFF, &type) < 0) warn_error("VIDIOC_STREAMOFF");
+
+                for(int i = 0; i < buffers.size(); i++)
+                {
+                    if(munmap(buffers[i].start, buffers[i].length) < 0) warn_error("munmap");
+                }
+
+                // Close memory mapped IO
+                struct v4l2_requestbuffers req = {};
+                req.count = 0;
+                req.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+                req.memory = V4L2_MEMORY_MMAP;
+                if(xioctl(fd, VIDIOC_REQBUFS, &req) < 0)
+                {
+                    if(errno == EINVAL) throw std::runtime_error(dev_name + " does not support memory mapping");
+                    else throw_error("VIDIOC_REQBUFS");
+                }
+
+                if(close(fd) < 0) warn_error("close");
+            }
+
+            int get_vid() const { return vid; }
+            int get_pid() const { return pid; }
+            int get_mi() const { return mi; }
+
+            void get_control(int control, void * data, size_t size)
+            {
+                uvc_xu_control_query q = {2, control, UVC_GET_CUR, size, reinterpret_cast<uint8_t *>(data)};
+                if(xioctl(fd, UVCIOC_CTRL_QUERY, &q) < 0) throw_error("UVCIOC_CTRL_QUERY:UVC_GET_CUR");
+            }
+
+            void set_control(int control, void * data, size_t size)
+            {
+               uvc_xu_control_query q = {2, control, UVC_SET_CUR, size, reinterpret_cast<uint8_t *>(data)};
+               if(xioctl(fd, UVCIOC_CTRL_QUERY, &q) < 0) throw_error("UVCIOC_CTRL_QUERY:UVC_SET_CUR");
+            }
+
+            void set_format(int width, int height, int fourcc, int fps, std::function<void(const void * data)> callback)
+            {
+                this->width = width;
+                this->height = height;
+                this->format = fourcc;
+                this->fps = fps;
+                this->callback = callback;
+            }
+
+            void start_capture()
+            {
+                v4l2_format fmt = {};
+                fmt.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+                fmt.fmt.pix.width       = width;
+                fmt.fmt.pix.height      = height;
+                fmt.fmt.pix.pixelformat = format;
+                fmt.fmt.pix.field       = V4L2_FIELD_NONE;
+                if(xioctl(fd, VIDIOC_S_FMT, &fmt) < 0) throw_error("VIDIOC_S_FMT");
+
+                v4l2_streamparm parm = {};
+                parm.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+                if(xioctl(fd, VIDIOC_G_PARM, &parm) < 0) throw_error("VIDIOC_G_PARM");
+                parm.parm.capture.timeperframe.numerator = 1;
+                parm.parm.capture.timeperframe.denominator = fps;
+                if(xioctl(fd, VIDIOC_S_PARM, &parm) < 0) throw_error("VIDIOC_S_PARM");
+
+                // Init memory mapped IO
+                v4l2_requestbuffers req = {};
+                req.count = 4;
+                req.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+                req.memory = V4L2_MEMORY_MMAP;
+                if(xioctl(fd, VIDIOC_REQBUFS, &req) < 0)
+                {
+                    if(errno == EINVAL) throw std::runtime_error(dev_name + " does not support memory mapping");
+                    else throw_error("VIDIOC_REQBUFS");
+                }
+                if(req.count < 2)
+                {
+                    throw std::runtime_error("Insufficient buffer memory on " + dev_name);
+                }
+
+                buffers.resize(req.count);
+                for(int i=0; i<buffers.size(); ++i)
+                {
+                    v4l2_buffer buf = {};
+                    buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+                    buf.memory = V4L2_MEMORY_MMAP;
+                    buf.index = i;
+                    if(xioctl(fd, VIDIOC_QUERYBUF, &buf) < 0) throw_error("VIDIOC_QUERYBUF");
+
+                    buffers[i].length = buf.length;
+                    buffers[i].start = mmap(NULL, buf.length, PROT_READ | PROT_WRITE, MAP_SHARED, fd, buf.m.offset);
+                    if(buffers[i].start == MAP_FAILED) throw_error("mmap");
+                }
+
+                // Start capturing
+                for(int i = 0; i < buffers.size(); ++i)
+                {
+                    v4l2_buffer buf = {};
+                    buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+                    buf.memory = V4L2_MEMORY_MMAP;
+                    buf.index = i;
+                    if(xioctl(fd, VIDIOC_QBUF, &buf) < 0) throw_error("VIDIOC_QBUF");
+                }
+
+                v4l2_buf_type type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+                if(xioctl(fd, VIDIOC_STREAMON, &type) < 0) throw_error("VIDIOC_STREAMON");
+            }
+
+            static void poll(const std::vector<subdevice *> & subdevices)
+            {
+                int max_fd = 0;
+                fd_set fds;
+                FD_ZERO(&fds);
+                for(auto * sub : subdevices)
+                {
+                    FD_SET(sub->fd, &fds);
+                    max_fd = std::max(max_fd, sub->fd);
+                }
+
+                struct timeval tv = {0,10000};
+                if(select(max_fd + 1, &fds, NULL, NULL, &tv) < 0)
+                {
+                    if (errno == EINTR) return;
+                    throw_error("select");
+                }
+
+                for(auto * sub : subdevices)
+                {
+                    if(FD_ISSET(sub->fd, &fds))
+                    {
+                        v4l2_buffer buf = {};
+                        buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+                        buf.memory = V4L2_MEMORY_MMAP;
+                        if(xioctl(sub->fd, VIDIOC_DQBUF, &buf) < 0)
+                        {
+                            if(errno == EAGAIN) return;
+                            throw_error("VIDIOC_DQBUF");
+                        }
+                        assert(buf.index < sub->buffers.size());
+
+                        sub->callback(sub->buffers[buf.index].start);
+
+                        if(xioctl(sub->fd, VIDIOC_QBUF, &buf) < 0) throw_error("VIDIOC_QBUF");
+                    }
+                }
+            }
         };
 
         struct device
         {
             const std::shared_ptr<context> parent;
+            std::vector<std::unique_ptr<subdevice>> subdevices;
+            std::thread thread;
+            volatile bool stop;
 
-            // TODO: Device-specific information
-            std::vector<subdevice> subdevices;
+            libusb_device * usb_device;
+            libusb_device_handle * usb_handle;
+            std::vector<int> claimed_interfaces;
 
-            uint32_t serialNumber;
+            device(std::shared_ptr<context> parent) : parent(parent), stop(), usb_device(), usb_handle() {} // TODO: Init
+            ~device()
+            {
+                if(thread.joinable())
+                {
+                    stop = true;
+                    thread.join();
+                }
 
-            device(std::shared_ptr<context> parent) : parent(parent) {} // TODO: Init
-            ~device() {} // TODO: Cleanup
+                for(auto interface_number : claimed_interfaces)
+                {
+                    int status = libusb_release_interface(usb_handle, interface_number);
+                    if(status < 0) DEBUG_ERR("libusb_release_interface(...) returned " << libusb_error_name(status));
+                }
+                if(usb_handle) libusb_close(usb_handle);
+                if(usb_device) libusb_unref_device(usb_device);
+            }
+
+            bool has_mi(int mi) const
+            {
+                for(auto & sub : subdevices)
+                {
+                    if(sub->get_mi() == mi) return true;
+                }
+                return false;
+            }
         };
 
         ////////////
         // device //
         ////////////
 
-        int get_vendor_id(const device & device) { return 0; }
-        int get_product_id(const device & device) { return 0; }
+        int get_vendor_id(const device & device) { return device.subdevices[0]->get_vid(); }
+        int get_product_id(const device & device) { return device.subdevices[0]->get_pid(); }
 
         void init_controls(device & device, int subdevice, const guid & xu_guid) {}
-        void get_control(const device & device, int subdevice, uint8_t ctrl, void * data, int len) {}
-        void set_control(device & device, int subdevice, uint8_t ctrl, void * data, int len) {}
+        void get_control(const device & device, int subdevice, uint8_t ctrl, void * data, int len)
+        {
+            device.subdevices[subdevice]->get_control(ctrl, data, len);
+        }
+        void set_control(device & device, int subdevice, uint8_t ctrl, void * data, int len)
+        {
+            device.subdevices[subdevice]->set_control(ctrl, data, len);
+        }
 
-        void claim_interface(device & device, const guid & interface_guid, int interface_number) {}
-        void bulk_transfer(device & device, unsigned char endpoint, void * data, int length, int *actual_length, unsigned int timeout) {}
+        void claim_interface(device & device, const guid & interface_guid, int interface_number)
+        {
+            int status = libusb_claim_interface(device.usb_handle, interface_number);
+            if(status < 0) throw std::runtime_error(to_string() << "libusb_claim_interface(...) returned " << libusb_error_name(status));
+            device.claimed_interfaces.push_back(interface_number);
+        }
 
-        void set_subdevice_mode(device & device, int subdevice_index, int width, int height, uint32_t fourcc, int fps, std::function<void(const void * frame)> callback) {}
-        void start_streaming(device & device, int num_transfer_bufs) {}
-        void stop_streaming(device & device) {}
+        void bulk_transfer(device & device, unsigned char endpoint, void * data, int length, int *actual_length, unsigned int timeout)
+        {
+            int status = libusb_bulk_transfer(device.usb_handle, endpoint, (unsigned char *)data, length, actual_length, timeout);
+            if(status < 0) throw std::runtime_error(to_string() << "libusb_bulk_transfer(...) returned " << libusb_error_name(status));
+        }
+
+        void set_subdevice_mode(device & device, int subdevice_index, int width, int height, uint32_t fourcc, int fps, std::function<void(const void * frame)> callback)
+        {
+            device.subdevices[subdevice_index]->set_format(width, height, (const big_endian<int> &)fourcc, fps, callback);
+        }
+        void start_streaming(device & device, int num_transfer_bufs)
+        {
+            std::vector<subdevice *> subs;
+            for(auto & sub : device.subdevices)
+            {
+                if(sub->callback)
+                {
+                    sub->start_capture();
+                    subs.push_back(sub.get());
+                }
+            }
+
+            device.thread = std::thread([&device, subs]()
+            {
+                while(!device.stop) subdevice::poll(subs);
+            });
+
+        }
+        void stop_streaming(device & device)
+        {
+            if(device.thread.joinable())
+            {
+                device.stop = true;
+                device.thread.join();
+                device.stop = false;
+            }
+        }
+
+        static int get_cid(rs_option option)
+        {
+            switch(option)
+            {
+            case RS_OPTION_COLOR_BACKLIGHT_COMPENSATION: return V4L2_CID_BACKLIGHT_COMPENSATION;
+            case RS_OPTION_COLOR_BRIGHTNESS: return V4L2_CID_BRIGHTNESS;
+            case RS_OPTION_COLOR_CONTRAST: return V4L2_CID_CONTRAST;
+            case RS_OPTION_COLOR_EXPOSURE: return V4L2_CID_EXPOSURE;
+            case RS_OPTION_COLOR_GAIN: return V4L2_CID_GAIN;
+            case RS_OPTION_COLOR_GAMMA: return V4L2_CID_GAMMA;
+            case RS_OPTION_COLOR_HUE: return V4L2_CID_HUE;
+            case RS_OPTION_COLOR_SATURATION: return V4L2_CID_SATURATION;
+            case RS_OPTION_COLOR_SHARPNESS: return V4L2_CID_SHARPNESS;
+            case RS_OPTION_COLOR_WHITE_BALANCE: return V4L2_CID_WHITE_BALANCE_TEMPERATURE;
+            throw std::runtime_error(to_string() << "no v4l2 cid for option " << option);
+            }
+        }
         
-        void set_pu_control(device & device, int subdevice, rs_option option, int value) {}
-        int get_pu_control(const device & device, int subdevice, rs_option option) { return 0; }
+        void set_pu_control(device & device, int subdevice, rs_option option, int value)
+        {
+            struct v4l2_control control = {get_cid(option), value};
+            if (xioctl(device.subdevices[subdevice]->fd, VIDIOC_S_CTRL, &control) < 0) throw_error("VIDIOC_S_CTRL");
+        }
+
+        int get_pu_control(const device & device, int subdevice, rs_option option)
+        {
+            struct v4l2_control control = {get_cid(option)};
+            if (xioctl(device.subdevices[subdevice]->fd, VIDIOC_G_CTRL, &control) < 0) throw_error("VIDIOC_G_CTRL");
+            return control.value;
+        }
 
         /////////////
         // context //
@@ -81,97 +427,60 @@ namespace rsimpl
         }
 
         std::vector<std::shared_ptr<device>> query_devices(std::shared_ptr<context> context)
-        {
+        {                                            
+            // Enumerate all subdevices present on the system
+            std::vector<std::unique_ptr<subdevice>> subdevices;
+            DIR * dir = opendir("/sys/class/video4linux");
+            if(!dir) throw std::runtime_error("Cannot access /sys/class/video4linux");
+            while (dirent * entry = readdir(dir))
+            {
+                std::string name = entry->d_name;
+                if(name == "." || name == "..") continue;
+                std::unique_ptr<subdevice> sub(new subdevice(name));
+                subdevices.push_back(move(sub));
+            }
+            closedir(dir);
+
+            // Group subdevices by vid/pid, and start a new device if we encounter a duplicate mi
             std::vector<std::shared_ptr<device>> devices;
-
-            auto make_subdevice = [&](char * name, uint16_t & indexDepth, uint16_t & indexIR, uint16_t & indexRGB)
+            for(auto & sub : subdevices)
             {
-                auto subdev = std::make_shared<subdevice>();
-                if (std::string(name) == "Intel(R) RealSense(TM) 3D Camera (R200) Depth"))
+                if(devices.empty() || sub->get_vid() != get_vendor_id(*devices.back())
+                    || sub->get_pid() != get_product_id(*devices.back()) || devices.back()->has_mi(sub->mi))
                 {
-                    subdev.name = std::string(name);
-                    subdev.camIndex = indexDepth++;
+                    devices.push_back(std::make_shared<device>(context));
                 }
-                else if (std::string(name) == "Intel(R) RealSense(TM) 3D Camera (R200) Left-Right"))
-                {
-                    subdev.name = std::string(name);
-                    subdev.camIndex = indexIR++;
-                }
-                else if (std::string(name) == "Intel(R) RealSense(TM) 3D Camera (R200) RGB"))
-                {
-                    subdev.name = std::string(name);
-                    subdev.camIndex = indexRGB++;
-                }
-                return subdev;
-            };
+                devices.back()->subdevices.push_back(move(sub));
+            }
 
-            try
+            // Obtain libusb_device_handle for each device
+            libusb_device ** list;
+            int status = libusb_get_device_list(context->usb_context, &list);
+            if(status < 0) throw std::runtime_error(to_string() << "libusb_get_device_list(...) returned " << libusb_error_name(status));
+            for(int i=0; list[i]; ++i)
             {
-                std::stringstream ss;
-                std::string strTmpDev;
-                std::string strTmpInt;
+                libusb_device * usb_device = list[i];
 
-                struct stat vstat;
-                char buf[64] = {0};
-                int fd = 0;
-                int ret = 0;
-                char * nl = NULL;
+                libusb_device_descriptor desc;
+                status = libusb_get_device_descriptor(usb_device, &desc);
+                if(status < 0) throw std::runtime_error(to_string() << "libusb_get_device_descriptor(...) returned " << libusb_error_name(status));
 
-                uint16_t indexDepth = 0;
-                uint16_t indexIR = 0;
-                uint16_t indexRGB = 0;
-
-                int cameraCount = 0;
-
-                for (int i = 0; i < 64; ++i)
+                for(auto & dev : devices)
                 {
-                    ss.str("");
-                    ss << "/dev/video" << i;
-
-                    strTmpDev = ss.str();
-                    if (stat(strTmpDev.c_str(), &vstat) < 0 || !S_ISCHR(vstat.st_mode))
-                        break;
-
-                    ss.str("");
-                    ss << "/sys/class/video4linux/video" << i << "/device/interface";
-                    strTmpInt = ss.str();
-
-                    fd = open(strTmpInt.c_str(), O_RDONLY);
-                    if (fd < 0)
-                        continue;
-
-                    ret = read(fd, buf, sizeof(buf));
-                    close(fd);
-                    if (ret < 0)
-                        continue;
-
-                    buf[63] = 0;
-
-                    nl = strchr(buf, '\n');
-                    if (!nl)
-                        continue;
-
-                    *nl = '\0';
-
-                    if (strncmp(buf, "DS4", 3) || strncmp(buf, "Intel(R) RealSense(TM) 3D Camera (R200)", 39) == 0)
+                    if(desc.idVendor == get_vendor_id(*dev) && desc.idProduct == get_product_id(*dev))
                     {
-                        cameraCount++;
-
-                        std::cout << "Found device: " << std::string(buf) << std::endl;
-
-                        // Every 3 subdevices, add a new device
-                        if (cameraCount % 3 == 0)
-                            devices.push_back(std::make_shared<device>());
-
-                        // Heh
-                        devices.back().subdevices.push_back(make_subdevice(buf, indexDepth, indexIR, indexRGB));
+                        // TODO: Also make sure that we are sitting on the right bus/address
+                        // libusb_get_bus_number(usb_device);
+                        // libusb_get_device_address(usb_device);
+                        dev->usb_device = usb_device;
+                        libusb_ref_device(usb_device);
+                        status = libusb_open(usb_device, &dev->usb_handle);
+                        if(status < 0) throw std::runtime_error(to_string() << "libusb_open(...) returned " << libusb_error_name(status));
+                        break;
                     }
                 }
             }
-            catch (...)
-            {
-                throw std::runtime_error("failed to enumerate list of devices");
-            }
+            libusb_free_device_list(list, 1);
 
             return devices;
         }

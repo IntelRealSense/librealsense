@@ -176,7 +176,8 @@ void rs_device::start()
             std::vector<void *> dest;
             for(auto & stream : stream_list) dest.push_back(stream->get_back_data());
             mode.unpacker(dest.data(), frame, mode);
-            const int frame_number = (mode.use_serial_numbers_if_unique && only_stream) ? serial_frame_no++ : mode.frame_number_decoder(mode, frame);
+            int frame_number = (mode.use_serial_numbers_if_unique && only_stream) ? serial_frame_no++ : mode.frame_number_decoder(mode, frame);
+            if(frame_number == 0) frame_number = ++serial_frame_no; // No dinghy on LibUVC backend?
                 
             // Swap the backbuffer to the middle buffer and indicate that we have updated
             for(auto & stream : stream_list) stream->swap_back(frame_number);

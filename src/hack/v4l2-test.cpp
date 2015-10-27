@@ -26,6 +26,8 @@
 #include <linux/uvcvideo.h>
 #include <linux/videodev2.h>
 
+#include <libusb.h>
+
 static int xioctl(int fh, int request, void *arg)
 {
     int r;
@@ -55,7 +57,7 @@ void warn_error(const char * s)
 class subdevice
 {
     std::string dev_name;
-    int vid, pid;
+    int vid, pid, mi;
     int fd;
     std::vector<buffer> buffers;
     std::function<void(const void *, size_t)> callback;
@@ -70,17 +72,21 @@ public:
         }
         if(!S_ISCHR(st.st_mode)) throw std::runtime_error(dev_name + " is no device");
 
-        std::string path = "/sys/class/video4linux/" + name + "/device/input";
-        DIR * dir = opendir(path.c_str());
-        if(!dir) throw std::runtime_error("Could not access " + path);
-        while(dirent * entry = readdir(dir))
-        {
-            std::string inputName = entry->d_name;
-            if(inputName.size() < 5 || inputName.substr(0,5) != "input") continue;
-            if(!(std::ifstream(path + "/" + inputName + "/id/vendor") >> std::hex >> vid)) throw std::runtime_error("Failed to read vendor ID");
-            if(!(std::ifstream(path + "/" + inputName + "/id/product") >> std::hex >> pid)) throw std::runtime_error("Failed to read product ID");
-        }
-        closedir(dir);
+        std::string modalias;
+        if(!(std::ifstream("/sys/class/video4linux/" + name + "/device/modalias") >> modalias))
+            throw std::runtime_error("Failed to read modalias");
+        if(modalias.size() < 14 || modalias.substr(0,5) != "usb:v" || modalias[9] != 'p')
+            throw std::runtime_error("Not a usb format modalias");
+        if(!(std::istringstream(modalias.substr(5,4)) >> std::hex >> vid))
+            throw std::runtime_error("Failed to read vendor ID");
+        if(!(std::istringstream(modalias.substr(10,4)) >> std::hex >> pid))
+            throw std::runtime_error("Failed to read product ID");
+        if(!(std::ifstream("/sys/class/video4linux/" + name + "/device/bInterfaceNumber") >> std::hex >> mi))
+            throw std::runtime_error("Failed to read interface number");
+
+        std::cout << dev_name << " has vendor id " << std::hex << vid << std::endl;
+        std::cout << dev_name << " has product id " << std::hex << pid << std::endl;
+        std::cout << dev_name << " provides interface number " << std::dec << mi << std::endl;
 
         fd = open(dev_name.c_str(), O_RDWR | O_NONBLOCK, 0);
         if(fd < 0)
@@ -120,13 +126,27 @@ public:
     ~subdevice()
     {
         v4l2_buf_type type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+
+        // Will warn for subdev fds that are not streaming
         if(xioctl(fd, VIDIOC_STREAMOFF, &type) < 0) warn_error("VIDIOC_STREAMOFF");
 
-        for(int i = 0; i < buffers.size(); ++i)
+        for(int i = 0; i < buffers.size(); i++)
         {
             if(munmap(buffers[i].start, buffers[i].length) < 0) warn_error("munmap");
         }
 
+        // Close memory mapped IO
+        struct v4l2_requestbuffers req = {};
+        req.count = 0;
+        req.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+        req.memory = V4L2_MEMORY_MMAP;
+        if(xioctl(fd, VIDIOC_REQBUFS, &req) < 0)
+        {
+            if(errno == EINVAL) throw std::runtime_error(dev_name + " does not support memory mapping");
+            else throw_error("VIDIOC_REQBUFS");
+        }
+
+        std::cout << "Closing... " << fd << std::endl;
         if(close(fd) < 0) warn_error("close");
     }
 
@@ -135,14 +155,14 @@ public:
 
     void get_control(int control, void * data, size_t size)
     {
-        struct uvc_xu_control_query q = {2, control, UVC_GET_CUR, size, reinterpret_cast<uint8_t *>(data)};
+        uvc_xu_control_query q = {2, control, UVC_GET_CUR, size, reinterpret_cast<uint8_t *>(data)};
         if(xioctl(fd, UVCIOC_CTRL_QUERY, &q) < 0) throw_error("UVCIOC_CTRL_QUERY:UVC_GET_CUR");
     }
 
     void set_control(int control, void * data, size_t size)
     {
-        struct uvc_xu_control_query q = {2, control, UVC_SET_CUR, size, reinterpret_cast<uint8_t *>(data)};
-        if(xioctl(fd, UVCIOC_CTRL_QUERY, &q) < 0) throw_error("UVCIOC_CTRL_QUERY:UVC_SET_CUR");
+       uvc_xu_control_query q = {2, control, UVC_SET_CUR, size, reinterpret_cast<uint8_t *>(data)};
+       if(xioctl(fd, UVCIOC_CTRL_QUERY, &q) < 0) throw_error("UVCIOC_CTRL_QUERY:UVC_SET_CUR");
     }
 
     void start_capture(int width, int height, int fourcc, std::function<void(const void * data, size_t size)> callback)
@@ -152,7 +172,7 @@ public:
         fmt.fmt.pix.width       = width;
         fmt.fmt.pix.height      = height;
         fmt.fmt.pix.pixelformat = fourcc;
-        fmt.fmt.pix.field       = V4L2_FIELD_INTERLACED;
+        fmt.fmt.pix.field       = V4L2_FIELD_NONE;
         if(xioctl(fd, VIDIOC_S_FMT, &fmt) < 0) throw_error("VIDIOC_S_FMT");
         // Note VIDIOC_S_FMT may change width and height
 
@@ -276,8 +296,48 @@ public:
     }
 };
 
+bool check_usb(const char * call, int code)
+{
+    if(code < 0)
+    {
+        std::cout << "\n" << call << "(...) returned " << std::dec << code << " (" << libusb_error_name(code) << ")" << std::endl;
+        return false;
+    }
+    return true;
+}
+
+#define CHECK(C, ...) check_usb(#C, C(__VA_ARGS__))
+
+#include <iomanip>
+
 int main(int argc, char * argv[])
 {
+    libusb_context * ctx;
+    if(!CHECK(libusb_init, &ctx)) return EXIT_FAILURE;
+
+    libusb_device ** devices;
+    if(!CHECK(libusb_get_device_list, ctx, &devices)) return EXIT_FAILURE;
+
+    for(int i=0; devices[i]; ++i)
+    {
+        auto dev = devices[i];
+        libusb_device_descriptor desc;
+
+        if(!CHECK(libusb_get_device_descriptor, dev, &desc)) continue;
+        if(desc.idVendor != 0x8086) continue;
+
+        libusb_device_handle * handle;
+        if(!CHECK(libusb_open, dev, &handle)) continue;
+
+        unsigned char buffer[1024];
+        if(!CHECK(libusb_get_string_descriptor_ascii, handle, desc.iSerialNumber, buffer, 1024)) continue;
+        std::cout << std::hex << desc.idVendor << ":" << desc.idProduct;
+        std::cout << ":" << buffer << std::endl;
+
+        libusb_close(handle);
+    }
+    libusb_free_device_list(devices, 1);
+
     std::vector<std::unique_ptr<subdevice>> subdevices;
 
     DIR * dir = opendir("/sys/class/video4linux");
@@ -311,22 +371,29 @@ int main(int argc, char * argv[])
     {
         std::cout << "R200 detected!" << std::endl;
 
-        const int STATUS_BIT_Z_STREAMING = 1 << 0;
-        const int STATUS_BIT_LR_STREAMING = 1 << 1;
-        const int STATUS_BIT_WEB_STREAMING = 1 << 2;
-        const int CONTROL_STREAM_INTENT = 3;
-        uint8_t intent = STATUS_BIT_Z_STREAMING | STATUS_BIT_LR_STREAMING | STATUS_BIT_WEB_STREAMING;
-        subdevices[0]->set_control(CONTROL_STREAM_INTENT, &intent, sizeof(intent));
+        uint8_t intent = 5;// STATUS_BIT_Z_STREAMING | STATUS_BIT_WEB_STREAMING;
+        subdevices[0].get()->set_control(3, &intent, sizeof(uint8_t));
 
-        subdevices[1]->start_capture(480, 360, v4l2_fourcc('Z','1','6',' '), [&](const void * data, size_t size)
+        subdevices[1]->start_capture(628, 469, v4l2_fourcc('Z','1','6',' '), [&](const void * data, size_t size)
         {
-            texDepth.upload(480, 360, GL_LUMINANCE, GL_UNSIGNED_SHORT, data);
+            glPixelTransferf(GL_RED_SCALE, 64.0f);
+            texDepth.upload(628, 469, GL_LUMINANCE, GL_UNSIGNED_SHORT, data);
+            glPixelTransferf(GL_RED_SCALE, 1.0f);
         });
         subdevices[2]->start_capture(640, 480, V4L2_PIX_FMT_YUYV, [&](const void * data, size_t size)
         {
             texColor.upload(640, 480, GL_LUMINANCE_ALPHA, GL_UNSIGNED_BYTE, data);
         });
+
+        //devs = {subdevices[1].get()};
         devs = {subdevices[1].get(), subdevices[2].get()};
+
+        //const int STATUS_BIT_Z_STREAMING = 1 << 0;
+        //const int STATUS_BIT_LR_STREAMING = 1 << 1;
+        //const int STATUS_BIT_WEB_STREAMING = 1 << 2;
+        //const int CONTROL_STREAM_INTENT = 3;
+
+
     }
     else if(!subdevices.empty())
     {
@@ -338,6 +405,7 @@ int main(int argc, char * argv[])
     GLFWwindow * win = glfwCreateWindow(1280, 480, "V4L2 test", 0, 0);
     glfwMakeContextCurrent(win);
 
+    int frameCount = 0;
     // While window is open
     while (!glfwWindowShouldClose(win))
     {
@@ -355,11 +423,13 @@ int main(int argc, char * argv[])
         glOrtho(0, w, h, 0, -1, +1);
 
         texColor.draw(0, 0);
-        texDepth.draw(640, 0);
+        texDepth.draw(628, 0);
 
         glPopMatrix();
         glfwSwapBuffers(win);
+        frameCount++;
     }
+
     glfwDestroyWindow(win);
     glfwTerminate();
 

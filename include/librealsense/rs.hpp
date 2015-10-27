@@ -2,7 +2,11 @@
 #define LIBREALSENSE_RS_HPP
 
 #include "rsutil.h"
+
+#include <cmath>
+#include <cstring>
 #include <cstdint>
+#include <stdexcept>
 #include <sstream>
 
 namespace rs

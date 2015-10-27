@@ -1,0 +1,24 @@
+Presently, we have confirmed that V4L2 works correctly with the R200 camera when using Linux 4.2.3.
+
+See http://www.yourownlinux.com/2015/10/how-to-install-linux-kernel-4-2-3-in-linux.html for information on how to install Linux 4.2.3 in Ubuntu.
+
+We then needed to apply our kernel patches. We checked out the 4.2.3 sources and applied the three patches as described in the SOURCES file here:
+
+http://kernel.ubuntu.com/~kernel-ppa/mainline/v4.2.3-unstable/
+
+After that we mostly followed the instructions from the RealSense ROS patch:
+
+KBASE=`pwd`
+
+patch -p1 < $DIR/../patches/linux-lts-saucy-3_11_0.patch
+
+cp /boot/config-`uname -r` .config
+cp  /usr/src/linux-headers-`uname -r`/Module.symvers .
+make scripts oldconfig modules_prepare
+cd drivers/media/usb/uvc
+make -C $KBASE M=$KBASE/drivers/media/usb/uvc/ modules
+
+## Copy module
+sudo cp $KBASE/drivers/media/usb/uvc/uvcvideo.ko /lib/modules/`uname -r`/kernel/drivers/media/usb/uvc/uvcvideo.ko
+## Remove old module if it's inserted
+sudo rmmod uvcvideo.ko

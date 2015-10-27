@@ -56,22 +56,24 @@ typedef enum rs_distortion
 
 typedef enum rs_option
 {
-    RS_OPTION_COLOR_BACKLIGHT_COMPENSATION  = 0,  
-    RS_OPTION_COLOR_BRIGHTNESS              = 1,  
-    RS_OPTION_COLOR_CONTRAST                = 2,  
-    RS_OPTION_COLOR_EXPOSURE                = 3,  
-    RS_OPTION_COLOR_GAIN                    = 4,  
-    RS_OPTION_COLOR_GAMMA                   = 5,  
-    RS_OPTION_COLOR_HUE                     = 6,  
-    RS_OPTION_COLOR_SATURATION              = 7,  
-    RS_OPTION_COLOR_SHARPNESS               = 8,  
-    RS_OPTION_COLOR_WHITE_BALANCE           = 9,  
+    RS_OPTION_COLOR_BACKLIGHT_COMPENSATION  = 0,
+    RS_OPTION_COLOR_BRIGHTNESS              = 1,
+    RS_OPTION_COLOR_CONTRAST                = 2,
+    RS_OPTION_COLOR_EXPOSURE                = 3,
+    RS_OPTION_COLOR_GAIN                    = 4,
+    RS_OPTION_COLOR_GAMMA                   = 5,
+    RS_OPTION_COLOR_HUE                     = 6,
+    RS_OPTION_COLOR_SATURATION              = 7,
+    RS_OPTION_COLOR_SHARPNESS               = 8,
+    RS_OPTION_COLOR_WHITE_BALANCE           = 9, /* White balance as color temperature in Degrees Kelvin */
+
     RS_OPTION_F200_LASER_POWER              = 10, /* 0 - 15 */
     RS_OPTION_F200_ACCURACY                 = 11, /* 0 - 3 */
     RS_OPTION_F200_MOTION_RANGE             = 12, /* 0 - 100 */
     RS_OPTION_F200_FILTER_OPTION            = 13, /* 0 - 7 */
     RS_OPTION_F200_CONFIDENCE_THRESHOLD     = 14, /* 0 - 15 */
     RS_OPTION_F200_DYNAMIC_FPS              = 15, /* {2, 5, 15, 30, 60} */
+
     RS_OPTION_R200_LR_AUTO_EXPOSURE_ENABLED = 16, /* {0, 1} */
     RS_OPTION_R200_LR_GAIN                  = 17, /* 100 - 1600 (Units of 0.01) */
     RS_OPTION_R200_LR_EXPOSURE              = 18, /* > 0 (Units of 0.1 ms) */

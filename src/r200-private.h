@@ -4,6 +4,8 @@
 
 #include "uvc.h"
 
+#include <cstring>
+
 namespace rsimpl 
 {
     namespace r200
@@ -225,7 +227,7 @@ namespace rsimpl
             CommandPacket(uint32_t code = 0, uint32_t modifier = 0, uint32_t tag = 0, uint32_t address = 0, uint32_t value = 0)
                 : code(code), modifier(modifier), tag(tag), address(address), value(value)
             {
-                memset(reserved, 0, sizeof(reserved));
+                std::memset(reserved, 0, sizeof(reserved));
             }
 
         };
@@ -243,8 +245,8 @@ namespace rsimpl
             ResponsePacket(uint32_t code = 0, uint32_t modifier = 0, uint32_t tag = 0, uint32_t responseCode = 0, uint32_t value = 0)
                 : code(code), modifier(modifier), tag(tag), responseCode(responseCode), value(value)
             {
-                memset(revision, 0, sizeof(revision));
-                memset(reserved, 0, sizeof(reserved));
+                std::memset(revision, 0, sizeof(revision));
+                std::memset(reserved, 0, sizeof(reserved));
             }
         };
         #pragma pack(pop)
