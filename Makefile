@@ -1,14 +1,16 @@
-BACKEND := RS_USE_V4L2_BACKEND
+# Specify BACKEND=V4L2 or BACKEND=LIBUVC to build a specific backend
+BACKEND := V4L2
 
 LIBUSB_FLAGS := `pkg-config --cflags --libs libusb-1.0`
 
-CFLAGS := -std=c11 -fPIC -pedantic -D$(BACKEND) $(LIBUSB_FLAGS)
+CFLAGS := -std=c11 -fPIC -pedantic -DRS_USE_$(BACKEND)_BACKEND $(LIBUSB_FLAGS)
 CXXFLAGS := -std=c++11 -fPIC -pedantic -O3 -Wno-missing-field-initializers
-CXXFLAGS += -Wno-switch -Wno-multichar -D$(BACKEND) $(LIBUSB_FLAGS)
+CXXFLAGS += -Wno-switch -Wno-multichar -DRS_USE_$(BACKEND)_BACKEND $(LIBUSB_FLAGS)
 
 # Compute list of all *.o files that participate in librealsense.so
 OBJECTS = verify 
 OBJECTS += $(notdir $(basename $(wildcard src/*.cpp)))
+OBJECTS += $(addprefix libuvc/, $(notdir $(basename $(wildcard src/libuvc/*.c))))
 OBJECTS := $(addprefix obj/, $(addsuffix .o, $(OBJECTS)))
 
 # Sets of flags used by the example programs
@@ -53,6 +55,10 @@ lib/librealsense.so: prepare $(OBJECTS)
 # Rules for compiling librealsense source
 obj/%.o: src/%.cpp
 	$(CXX) $< $(CXXFLAGS) -c -o $@
+
+# Rules for compiling libuvc source
+obj/libuvc/%.o: src/libuvc/%.c
+	$(CC) $< $(CFLAGS) -c -o $@
 
 # Special rule to verify that rs.h can be included by a C89 compiler
 obj/verify.o: src/verify.c
