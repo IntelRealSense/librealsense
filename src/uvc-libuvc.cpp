@@ -194,7 +194,8 @@ namespace rsimpl
                 sub.ctrl = {};
                 sub.callback = {};
             }
-
+            
+            /*
             // SW reset
             if(device.id.pid == 2688)
             {
@@ -213,6 +214,7 @@ namespace rsimpl
             device.uvcdevice = create_device(device.parent->ctx, device.id);
             if(!device.uvcdevice) throw std::runtime_error("software reset failed");
             device.get_subdevice(0);
+            */
         }
 
         template<class T> void set_pu(uvc_device_handle_t * devh, int subdevice, uint8_t unit, uint8_t control, int value)
