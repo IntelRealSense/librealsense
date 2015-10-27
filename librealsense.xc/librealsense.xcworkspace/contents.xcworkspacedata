@@ -3,6 +3,22 @@
    version = "1.0">
    <Group
       location = "container:"
+      name = "unit-tests">
+      <FileRef
+         location = "group:../unit-tests/unit-tests-common.h">
+      </FileRef>
+      <FileRef
+         location = "group:unit-tests-live-f200.xcodeproj">
+      </FileRef>
+      <FileRef
+         location = "group:unit-tests-live-r200.xcodeproj">
+      </FileRef>
+      <FileRef
+         location = "group:unit-tests-offline.xcodeproj">
+      </FileRef>
+   </Group>
+   <Group
+      location = "container:"
       name = "examples">
       <FileRef
          location = "group:cpp-multicam.xcodeproj">
