@@ -58,11 +58,17 @@ int main(int argc, char * argv[]) try
     glfwSetKeyCallback(win, [](GLFWwindow * win, int key, int scancode, int action, int mods)
     {
         auto s = (state *)glfwGetWindowUserPointer(win);
-        if (action == GLFW_PRESS)
+        if (action == GLFW_RELEASE)
         {
             if (key == GLFW_KEY_ESCAPE) glfwSetWindowShouldClose(win, 1);
-            else if (key == GLFW_KEY_F1) s->dev->start();
-            else if (key == GLFW_KEY_F2) s->dev->stop();
+            else if (key == GLFW_KEY_F1)
+            {
+               if (!s->dev->is_streaming()) s->dev->start();
+            }
+            else if (key == GLFW_KEY_F2)
+            {
+               if (s->dev->is_streaming()) s->dev->stop();
+            }
         }
     });
 
