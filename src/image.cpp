@@ -52,10 +52,11 @@ namespace rsimpl
             {'Y16 ', 1, sizeof(uint16_t)       }, // DS* 16-bit left format
             {'Y8I ', 1, sizeof(uint8_t)*2      }, // DS* 8-bit left/right format
             {'Y12I', 1, sizeof(y12i_pixel)     }, // DS* 12-bit left/right format
-            {'INVR', 1, sizeof(uint16_t)       }, // IVCAM 16-bit depth format
+            {'INVR', 1, sizeof(uint16_t)       }, // IVCAM 16-bit depth format (F200)
+            {'INVZ', 1, sizeof(uint16_t)       }, // IVCAM 16-bit depth format (SR300)
             {'INVI', 1, sizeof(uint8_t)        }, // IVCAM 8-bit infrared format (NOTE: Might have an overloaded meaning on SR300, might need special logic)
             {'INRI', 1, sizeof(inri_pixel)     }, // IVCAM 16-bit depth + 8 bit infrared format
-            {'INZI', 2, 4},                       // IVCAM 16-bit depth + 16-bit infrared in a 2x1 macropixel
+            {'INZI', 2, 4                      }, // IVCAM 16-bit depth + 16-bit infrared in a 2x1 macropixel
         };
         for(auto & f : formats)
         {
