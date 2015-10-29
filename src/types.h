@@ -125,28 +125,27 @@ namespace rsimpl
         struct frame
         {
             std::vector<uint8_t>    data;
-            int                     number;
-            int                     delta;
+            int                     count;      // Value of frame counter when this frame was captured, uniquely identifies frame
+            int                     timestamp;  // DS4 frame number or IVCAM rolling timestamp, used to compute LibRealsense frame timestamp
+            int                     delta;      // Difference between the last two timestamp values, used to estimate next frame arrival time
         };
 
-        stream_mode                 mode;
+        const stream_mode           mode;
 
         frame                       frames[3];
-        int                         front, back;
-        std::atomic<int>            middle;
+        int                         front, back;        // Determine which frame is currently the "front" buffer (accessed only by app thread) and "back" buffer (accessed only by UVC thread)
+        std::atomic<int>            middle;             // Determine which frame is currently the "middle" buffer (available to be atomically swapped with from either thread)
+        std::atomic<int>            frame_counter = 0;  // Sequentially increasing frame counter, read from both threads and written by UVC thread
 
-        volatile bool               updated = false;
-        bool                        has_front = false;
         int                         last_frame_number;
-        bool                        first = true;
     public:
                                     stream_buffer(const stream_mode & mode);
 
         const stream_mode &         get_mode() const { return mode; }
         const void *                get_front_data() const { return frames[front].data.data(); }
-        int                         get_front_number() const { return frames[front].number; }
+        int                         get_front_number() const { return frames[front].timestamp; }
         int                         get_front_delta() const { return frames[front].delta; }
-        bool                        is_front_valid() const { return has_front; }
+        bool                        is_front_valid() const { return frames[front].count > 0; }
 
         void *                      get_back_data() { return frames[back].data.data(); }
         void                        swap_back(int frame_number);
