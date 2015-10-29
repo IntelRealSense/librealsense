@@ -3,15 +3,14 @@
 #define LIBREALSENSE_DEVICE_H
 
 #include "uvc.h"
-#include <mutex>
+#include <chrono>
 
 struct rs_device
 {
 private:
     const std::shared_ptr<rsimpl::uvc::device>  device;
     const rsimpl::static_device_info            device_info;
-    std::vector<rs_intrinsics>                  intrinsics;
-    mutable std::mutex                          intrinsics_mutex;           // Controls access to intrinsics, mutable so that it can be locked from const methods which only read the value of intrinsics
+    rsimpl::intrinsics_buffer                   intrinsics;
 
     rsimpl::stream_request                      requests[RS_STREAM_NATIVE_COUNT];  // Modified by enable/disable_stream calls
     std::shared_ptr<rsimpl::stream_buffer>      streams[RS_STREAM_NATIVE_COUNT];   // Set up during start(), maintains buffers to receive frames from callback
@@ -31,7 +30,7 @@ protected:
     rsimpl::stream_mode                         get_current_stream_mode(rs_stream stream) const;
     const rsimpl::uvc::device &                 get_device() const { return *device; }
     rsimpl::uvc::device &                       get_device() { return *device; }
-    void                                        set_intrinsics_thread_safe(std::vector<rs_intrinsics> new_intrinsics); // Thread-safe
+    void                                        set_intrinsics_thread_safe(std::vector<rs_intrinsics> new_intrinsics) { intrinsics.set(move(new_intrinsics)); }
 public:
                                                 rs_device(std::shared_ptr<rsimpl::uvc::device> device, const rsimpl::static_device_info & info);
                                                 ~rs_device();

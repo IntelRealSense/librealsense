@@ -180,7 +180,21 @@ namespace rsimpl
 
     class intrinsics_buffer
     {
-        
+        mutable triple_buffer<std::vector<rs_intrinsics>> buffer;
+    public:
+        intrinsics_buffer() : buffer({}) {}
+
+        rs_intrinsics get(int index) const
+        {
+            buffer.swap_front(); // We are logically const even though we check for updates, visible state will never change unless someone calls set
+            return buffer.get_front()[index];
+        }
+
+        void set(std::vector<rs_intrinsics> intrinsics)
+        {
+            buffer.get_back() = move(intrinsics);
+            buffer.swap_back();
+        }
     };
 
     // Utilities

@@ -120,17 +120,15 @@ bool rs_device::is_stream_enabled(rs_stream stream) const
 
 rs_intrinsics rs_device::get_stream_intrinsics(rs_stream stream) const 
 {
-    std::lock_guard<std::mutex> lock(intrinsics_mutex);
-
     stream = get_stream_intrinsics_native_stream(stream);
     if(stream == RS_STREAM_RECTIFIED_COLOR)
     {
-        auto intrin = intrinsics[get_current_stream_mode(RS_STREAM_COLOR).intrinsics_index];
+        auto intrin = intrinsics.get(get_current_stream_mode(RS_STREAM_COLOR).intrinsics_index);
         intrin.model = RS_DISTORTION_NONE;
         memset(&intrin.coeffs, 0, sizeof(intrin.coeffs));
         return intrin;
     }
-    else return intrinsics[get_current_stream_mode(stream).intrinsics_index];
+    else return intrinsics.get(get_current_stream_mode(stream).intrinsics_index);
 }
 
 rs_format rs_device::get_stream_format(rs_stream stream) const
@@ -428,12 +426,6 @@ void rs_device::get_stream_mode(rs_stream stream, int mode, int * width, int * h
     if(height) *height = m.height;
     if(format) *format = m.format;
     if(framerate) *framerate = m.fps;
-}
-
-void rs_device::set_intrinsics_thread_safe(std::vector<rs_intrinsics> new_intrinsics)
-{
-    std::lock_guard<std::mutex> lock(intrinsics_mutex);
-    intrinsics.swap(new_intrinsics);
 }
 
 void rs_device::set_option(rs_option option, int value)
