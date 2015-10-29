@@ -3,6 +3,7 @@
 #define LIBREALSENSE_F200_PRIVATE_H
 
 #include "uvc.h"
+#include <mutex>
 
 namespace rsimpl { namespace f200
 {

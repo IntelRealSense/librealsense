@@ -8,7 +8,7 @@
 #include <vector>                           // For vector
 #include <memory>                           // For shared_ptr
 #include <sstream>                          // For ostringstream
-#include <mutex>
+#include <atomic>
 
 //#define ENABLE_DEBUG_SPAM
 
@@ -127,14 +127,14 @@ namespace rsimpl
             std::vector<uint8_t>    data;
             int                     number;
             int                     delta;
-
-                                    frame(const stream_mode & m);
-            void                    swap(frame & r) { data.swap(r.data); std::swap(number, r.number); std::swap(delta, r.delta); }
         };
 
         stream_mode                 mode;
-        frame                       front, middle, back;
-        std::mutex                  mutex;
+
+        frame                       frames[3];
+        int                         front, back;
+        std::atomic<int>            middle;
+
         volatile bool               updated = false;
         bool                        has_front = false;
         int                         last_frame_number;
@@ -143,12 +143,12 @@ namespace rsimpl
                                     stream_buffer(const stream_mode & mode);
 
         const stream_mode &         get_mode() const { return mode; }
-        const void *                get_front_data() const { return front.data.data(); }
-        int                         get_front_number() const { return front.number; }
-        int                         get_front_delta() const { return front.delta; }
+        const void *                get_front_data() const { return frames[front].data.data(); }
+        int                         get_front_number() const { return frames[front].number; }
+        int                         get_front_delta() const { return frames[front].delta; }
         bool                        is_front_valid() const { return has_front; }
 
-        void *                      get_back_data() { return back.data.data(); }
+        void *                      get_back_data() { return frames[back].data.data(); }
         void                        swap_back(int frame_number);
         bool                        swap_front();
     };

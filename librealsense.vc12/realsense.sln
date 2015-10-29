@@ -70,10 +70,19 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Unit Tests", "Unit Tests", "{EA2793EE-C590-43D0-A11D-02F93DA139AC}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "unit-tests-offline", "unit-tests-offline\unit-tests-offline.vcxproj", "{B57FBF49-D142-4CCA-AFCB-E5F1687EE217}"
+	ProjectSection(ProjectDependencies) = postProject
+		{1AE4CEB5-9A0B-4B9F-9505-824FD56BB41F} = {1AE4CEB5-9A0B-4B9F-9505-824FD56BB41F}
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "unit-tests-live-f200", "unit-tests-live-f200\unit-tests-live-f200.vcxproj", "{D37BF473-AEE1-4097-9E0B-C1A8A5BF97EC}"
+	ProjectSection(ProjectDependencies) = postProject
+		{1AE4CEB5-9A0B-4B9F-9505-824FD56BB41F} = {1AE4CEB5-9A0B-4B9F-9505-824FD56BB41F}
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "unit-tests-live-r200", "unit-tests-live-r200\unit-tests-live-ds4.vcxproj", "{7B497980-3BB8-4699-A459-0F3091D24E03}"
+	ProjectSection(ProjectDependencies) = postProject
+		{1AE4CEB5-9A0B-4B9F-9505-824FD56BB41F} = {1AE4CEB5-9A0B-4B9F-9505-824FD56BB41F}
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

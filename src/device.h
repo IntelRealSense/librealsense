@@ -3,6 +3,7 @@
 #define LIBREALSENSE_DEVICE_H
 
 #include "uvc.h"
+#include <mutex>
 
 struct rs_device
 {

@@ -216,14 +216,20 @@ namespace rsimpl
     // stream_buffer //
     ///////////////////
 
-    stream_buffer::frame::frame(const stream_mode & m) : data(get_image_size(m.width, m.height, m.format)), number(), delta() {}
-    stream_buffer::stream_buffer(const stream_mode & mode) : mode(mode), front(mode), middle(mode), back(mode), updated(false) {}
+    stream_buffer::stream_buffer(const stream_mode & mode) : mode(mode), front(0), middle(1), back(2), updated(false) 
+    {
+        for(auto & f : frames)
+        {
+            f.data.resize(get_image_size(mode.width, mode.height, mode.format));
+            f.number = f.delta = 0;
+        }
+    }
 
     bool stream_buffer::swap_front()
     {
         if(!updated) return false;
-        std::lock_guard<std::mutex> guard(mutex);
-        front.swap(middle);
+
+        front = middle.exchange(front);
         has_front = true;
         updated = false;
         return true;
@@ -238,11 +244,10 @@ namespace rsimpl
             return;
         }
 
-        back.number = frame_number;
-        back.delta = frame_number - last_frame_number;
+        frames[back].number = frame_number;
+        frames[back].delta = frame_number - last_frame_number;
         last_frame_number = frame_number;
-        std::lock_guard<std::mutex> guard(mutex);
-        back.swap(middle);
+        back = middle.exchange(back);
         updated = true;
     }
 }

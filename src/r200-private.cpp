@@ -2,6 +2,7 @@
 
 #include <cstring>
 #include <cmath>
+#include <ctime>
 
 #define STATUS_BIT_BOOT_DIAGNOSTIC_FAULT            (1 << 3)
 #define STATUS_BIT_IFFLEY_CONSTANTS_VALID           (1 << 4)
