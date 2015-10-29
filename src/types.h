@@ -119,37 +119,51 @@ namespace rsimpl
     };
     static_device_info add_standard_unpackers(const static_device_info & device_info);
 
-    // Buffer for storing images provided by a given stream
-    class stream_buffer
+    struct frame
     {
-        struct frame
-        {
-            std::vector<uint8_t>    data;
-            int                     count;      // Value of frame counter when this frame was captured, uniquely identifies frame
-            int                     timestamp;  // DS4 frame number or IVCAM rolling timestamp, used to compute LibRealsense frame timestamp
-            int                     delta;      // Difference between the last two timestamp values, used to estimate next frame arrival time
-        };
+        std::vector<uint8_t>    data;
+        int                     timestamp;  // DS4 frame number or IVCAM rolling timestamp, used to compute LibRealsense frame timestamp
+        int                     delta;      // Difference between the last two timestamp values, used to estimate next frame arrival time
+    };
 
-        const stream_mode           mode;
-
-        frame                       frames[3];
+    class triple_buffer
+    {
+        struct { frame f; int count; } buffers[3];
         int                         front, back;        // Determine which frame is currently the "front" buffer (accessed only by app thread) and "back" buffer (accessed only by UVC thread)
         std::atomic<int>            middle;             // Determine which frame is currently the "middle" buffer (available to be atomically swapped with from either thread)
         std::atomic<int>            frame_counter = 0;  // Sequentially increasing frame counter, read from both threads and written by UVC thread
+    public:
+                                    triple_buffer(const frame & value);
 
+        const void *                get_front_data() const { return buffers[front].f.data.data(); }
+        int                         get_front_number() const { return buffers[front].f.timestamp; }
+        int                         get_front_delta() const { return buffers[front].f.delta; }
+        bool                        is_front_valid() const { return buffers[front].count > 0; }
+
+        int                         get_count() const { return frame_counter.load(std::memory_order_relaxed); }
+        frame &                     get_back() { return buffers[back].f; }
+        void                        swap_back();
+        bool                        swap_front();
+    };
+
+    // Buffer for storing images provided by a given stream
+    class stream_buffer
+    {
+        const stream_mode           mode;
+        triple_buffer               frames;
         int                         last_frame_number;
     public:
                                     stream_buffer(const stream_mode & mode);
 
         const stream_mode &         get_mode() const { return mode; }
-        const void *                get_front_data() const { return frames[front].data.data(); }
-        int                         get_front_number() const { return frames[front].timestamp; }
-        int                         get_front_delta() const { return frames[front].delta; }
-        bool                        is_front_valid() const { return frames[front].count > 0; }
+        const void *                get_front_data() const { return frames.get_front_data(); }
+        int                         get_front_number() const { return frames.get_front_number(); }
+        int                         get_front_delta() const { return frames.get_front_delta(); }
+        bool                        is_front_valid() const { return frames.is_front_valid(); }
 
-        void *                      get_back_data() { return frames[back].data.data(); }
+        void *                      get_back_data() { return frames.get_back().data.data(); }
         void                        swap_back(int frame_number);
-        bool                        swap_front();
+        bool                        swap_front() { return frames.swap_front(); }
     };
 
     // Utilities

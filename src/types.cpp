@@ -216,37 +216,43 @@ namespace rsimpl
     // stream_buffer //
     ///////////////////
 
-    stream_buffer::stream_buffer(const stream_mode & mode) : mode(mode), front(0), middle(1), back(2)
+    triple_buffer::triple_buffer(const frame & value) : front(0), middle(1), back(2)
     {
-        for(auto & f : frames)
+        for(auto & f : buffers)
         {
-            f.data.resize(get_image_size(mode.width, mode.height, mode.format));
-            f.count = f.timestamp = f.delta = 0;
+            f.f = value;
+            f.count = 0;
         }
     }
 
-    bool stream_buffer::swap_front()
+    bool triple_buffer::swap_front()
     {
         // If the "front" buffer currently has the most recent frame, return false
         auto count = frame_counter.load(std::memory_order_acquire); // Perform this load first to force UVC thread's writes to become visible
-        if(frames[front].count == count) return false;
+        if(buffers[front].count == count) return false;
 
         // Otherwise, there is a frame more recent than the "front" buffer, swap with "middle" until we have it
-        while(frames[front].count < count) front = middle.exchange(front);
+        while(buffers[front].count < count) front = middle.exchange(front);
         return true;
     }
 
-    void stream_buffer::swap_back(int frame_number)
+    void triple_buffer::swap_back()
     {
         // Compute and store the new frame counter
         int count = frame_counter.load(std::memory_order_relaxed) + 1;
-        if(count == 1) last_frame_number = frame_number;
-
-        frames[back].count = count;
-        frames[back].timestamp = frame_number;
-        frames[back].delta = frame_number - last_frame_number;
-        last_frame_number = frame_number;      
+        buffers[back].count = count;
         back = middle.exchange(back);
         frame_counter.store(count, std::memory_order_release); // Perform this store last to force writes to become visible to app thread
+    }
+
+    stream_buffer::stream_buffer(const stream_mode & mode) : mode(mode), frames({std::vector<uint8_t>(get_image_size(mode.width, mode.height, mode.format))}), last_frame_number() {}
+
+    void stream_buffer::swap_back(int frame_number) 
+    {
+        if(frames.get_count() == 0) last_frame_number = frame_number;
+        frames.get_back().timestamp = frame_number;
+        frames.get_back().delta = frame_number - last_frame_number;
+        last_frame_number = frame_number;     
+        frames.swap_back();
     }
 }
