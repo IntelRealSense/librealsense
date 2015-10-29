@@ -216,35 +216,6 @@ namespace rsimpl
     // stream_buffer //
     ///////////////////
 
-    triple_buffer::triple_buffer(const frame & value) : front(0), middle(1), back(2)
-    {
-        for(auto & f : buffers)
-        {
-            f.f = value;
-            f.count = 0;
-        }
-    }
-
-    bool triple_buffer::swap_front()
-    {
-        // If the "front" buffer currently has the most recent frame, return false
-        auto count = frame_counter.load(std::memory_order_acquire); // Perform this load first to force UVC thread's writes to become visible
-        if(buffers[front].count == count) return false;
-
-        // Otherwise, there is a frame more recent than the "front" buffer, swap with "middle" until we have it
-        while(buffers[front].count < count) front = middle.exchange(front);
-        return true;
-    }
-
-    void triple_buffer::swap_back()
-    {
-        // Compute and store the new frame counter
-        int count = frame_counter.load(std::memory_order_relaxed) + 1;
-        buffers[back].count = count;
-        back = middle.exchange(back);
-        frame_counter.store(count, std::memory_order_release); // Perform this store last to force writes to become visible to app thread
-    }
-
     stream_buffer::stream_buffer(const stream_mode & mode) : mode(mode), frames({std::vector<uint8_t>(get_image_size(mode.width, mode.height, mode.format))}), last_frame_number() {}
 
     void stream_buffer::swap_back(int frame_number) 

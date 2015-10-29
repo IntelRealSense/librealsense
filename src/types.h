@@ -119,51 +119,68 @@ namespace rsimpl
     };
     static_device_info add_standard_unpackers(const static_device_info & device_info);
 
-    struct frame
+    // Thread-safe, non-blocking, lock-free triple buffer for marshalling data from a producer thread to a consumer thread
+    template<class T> class triple_buffer
     {
-        std::vector<uint8_t>    data;
-        int                     timestamp;  // DS4 frame number or IVCAM rolling timestamp, used to compute LibRealsense frame timestamp
-        int                     delta;      // Difference between the last two timestamp values, used to estimate next frame arrival time
-    };
-
-    class triple_buffer
-    {
-        struct { frame f; int count; } buffers[3];
-        int                         front, back;        // Determine which frame is currently the "front" buffer (accessed only by app thread) and "back" buffer (accessed only by UVC thread)
-        std::atomic<int>            middle;             // Determine which frame is currently the "middle" buffer (available to be atomically swapped with from either thread)
-        std::atomic<int>            frame_counter = 0;  // Sequentially increasing frame counter, read from both threads and written by UVC thread
+        struct { T x; int id; } buffers[3]; // Three distinct values each tagged with a unique identifier
+        int front = 0, back = 2;            // Determines which buffer is currently the "front" buffer (accessed only by consumer thread) and "back" buffer (accessed only by producer thread)
+        std::atomic<int> middle = 1;        // Determines which buffer is currently the "middle" buffer (available to be atomically swapped with from either thread)
+        std::atomic<int> counter = 0;       // Sequentially increasing counter, read from both threads and written by UVC thread
     public:
-                                    triple_buffer(const frame & value);
+        triple_buffer(T value) { for(auto & b : buffers) { b.x = value; b.id = 0; } }
 
-        const void *                get_front_data() const { return buffers[front].f.data.data(); }
-        int                         get_front_number() const { return buffers[front].f.timestamp; }
-        int                         get_front_delta() const { return buffers[front].f.delta; }
-        bool                        is_front_valid() const { return buffers[front].count > 0; }
+        int get_count() const { return counter.load(std::memory_order_relaxed); }
+        T & get_back() { return buffers[back].x; }
+        void swap_back()
+        {
+            int id = counter.load(std::memory_order_relaxed) + 1;   // Compute new sequentially increasing unique ID
+            buffers[back].id = id;                                  // Tag value with this unique ID
+            back = middle.exchange(back);                           // Swap new value into middle buffer
+            counter.store(id, std::memory_order_release);           // Perform this store last to force writes to become visible to consumer thread
+        }
 
-        int                         get_count() const { return frame_counter.load(std::memory_order_relaxed); }
-        frame &                     get_back() { return buffers[back].f; }
-        void                        swap_back();
-        bool                        swap_front();
+        bool has_front() const { return buffers[front].id > 0; }
+        const T & get_front() const { return buffers[front].x; }
+        bool swap_front()
+        {
+            auto id = counter.load(std::memory_order_acquire);              // Perform this load first to force producer thread's writes to become visible
+            if(buffers[front].id == id) return false;                       // If the front buffer is up-to-date, return false
+            while(buffers[front].id < id) front = middle.exchange(front);   // Swap until we retrieve the new value
+            return true;                                                    // Return true to indicate front buffer was updated
+        }
     };
 
     // Buffer for storing images provided by a given stream
     class stream_buffer
     {
+        struct frame
+        {
+            std::vector<uint8_t>    data;
+            int                     timestamp;  // DS4 frame number or IVCAM rolling timestamp, used to compute LibRealsense frame timestamp
+            int                     delta;      // Difference between the last two timestamp values, used to estimate next frame arrival time
+        };
+
         const stream_mode           mode;
-        triple_buffer               frames;
+        triple_buffer<frame>        frames;
         int                         last_frame_number;
     public:
                                     stream_buffer(const stream_mode & mode);
 
         const stream_mode &         get_mode() const { return mode; }
-        const void *                get_front_data() const { return frames.get_front_data(); }
-        int                         get_front_number() const { return frames.get_front_number(); }
-        int                         get_front_delta() const { return frames.get_front_delta(); }
-        bool                        is_front_valid() const { return frames.is_front_valid(); }
+
+        const void *                get_front_data() const { return frames.get_front().data.data(); }
+        int                         get_front_number() const { return frames.get_front().timestamp; }
+        int                         get_front_delta() const { return frames.get_front().delta; }
+        bool                        is_front_valid() const { return frames.has_front(); }
 
         void *                      get_back_data() { return frames.get_back().data.data(); }
         void                        swap_back(int frame_number);
         bool                        swap_front() { return frames.swap_front(); }
+    };
+
+    class intrinsics_buffer
+    {
+        
     };
 
     // Utilities
