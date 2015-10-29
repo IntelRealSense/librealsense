@@ -124,10 +124,10 @@ namespace rsimpl
     {
         struct { T x; int id; } buffers[3]; // Three distinct values each tagged with a unique identifier
         int front = 0, back = 2;            // Determines which buffer is currently the "front" buffer (accessed only by consumer thread) and "back" buffer (accessed only by producer thread)
-        std::atomic<int> middle = 1;        // Determines which buffer is currently the "middle" buffer (available to be atomically swapped with from either thread)
-        std::atomic<int> counter = 0;       // Sequentially increasing counter, read from both threads and written by UVC thread
+        std::atomic<int> middle;            // Determines which buffer is currently the "middle" buffer (available to be atomically swapped with from either thread)
+        std::atomic<int> counter;           // Sequentially increasing counter, read from both threads and written by UVC thread
     public:
-        triple_buffer(T value) { for(auto & b : buffers) { b.x = value; b.id = 0; } }
+        triple_buffer(T value) : middle(1), counter(0) { for(auto & b : buffers) { b.x = value; b.id = 0; } }
 
         int get_count() const { return counter.load(std::memory_order_relaxed); }
         T & get_back() { return buffers[back].x; }
