@@ -31,7 +31,7 @@ librealsense is written in standards-conforming C++11 and relies only on the C89
 2. Ubuntu 14.04 LTS (gcc toolchain)
 3. Mac OS X 10.7+ (clang toolchain)
 
-Android support will be provided in the near future. librealsense is likely to compile and run on other platforms as well, and we appreciate any assistance in testing and debugging support for other platforms and operating system versions.
+It may be possible to compile and run librealsense on other platforms. Please let us know if you do, as well as any steps you found necessary to do so, so that we can update this list.
 
 ## Supported Languages and Frameworks
 
@@ -58,11 +58,11 @@ Our intent is to provide bindings and wrappers for as many languages and framewo
 
 The goal of librealsense is to provide a reasonable hardware abstraction with minimal dependencies. It is not a computer vision SDK.
 
-1. Streams: depth, color, infrared
-  * Of the different streaming modes + fps options available, only fairly common ones have been tested. 
-2. Intrinsic/extrinsic calibration information (inc. uv map, etc)
-3. Majority of XU-exposed functionality for each camera
-4. Full multi-camera capture, even mixing device types (F200 and R200) 
+1. Native streams: depth, color, infrared
+2. Synthetic streams: rectified images, depth aligned to color and vice versa, etc.
+3. Intrinsic/extrinsic calibration information
+4. Majority of XU-exposed functionality for each camera
+5. Full multi-camera capture, even mixing device types (F200 and R200) 
 
 ## Apple OSX Installation
 
