@@ -116,7 +116,10 @@ The goal of librealsense is to provide a reasonable hardware abstraction with mi
 
 *Q:* How is this implemented?
 
-*A:* The library communicates with RealSense devices via the UVC and USB protocols, using Media Foundation / WinUSB on Windows and libuvc / libusb on all other platforms. It does not link against DSAPI or IVCAM-DLL. 
+*A:* The library communicates with RealSense devices directly via the UVC and USB protocols. It does not link against DSAPI or IVCAM-DLL. Most of the library source code is platform agnostic, but there is a small UVC abstraction layer with platform-specific backends, including:
+  * A LibUVC backend which provides user-space access to UVC devices on Linux and Mac OS X
+  * A Video4Linux backend which provides kernel-space access to UVC devices on Linux
+  * A Windows Media Foundation backend which provides kernel-space access to UVC devices on Windows , a Video4, using Media
 
 *Q:* Is it maintained or supported?
 
