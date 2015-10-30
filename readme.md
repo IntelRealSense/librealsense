@@ -74,29 +74,42 @@ The goal of librealsense is to provide a reasonable hardware abstraction with mi
   * `brew tap homebrew/versions`
   * `brew install versions/glfw3`
 
-## Ubuntu 14.04 Installation (libusb backend)
+## Ubuntu 14.04 Installation
+
+1. Ensure apt-get is up to date
+  * `sudo apt-get update && apt-get upgrade`
+2. Install libusb-1.0 via apt-get
+  * `sudo apt-get install libusb-1.0-0-dev`
+3. glfw3 is not available in apt-get on Ubuntu 14.04. Use included installer script:
+  * `scripts/install_glfw3.sh`
+
+### Video4Linux backend
+
+1. Install a recent kernel version (4.2.3 is known to work)
+  * http://www.yourownlinux.com/2015/10/how-to-install-linux-kernel-4-2-3-in-linux.html
+2. Retrieve the Linux kernel sources
+  * http://kernel.ubuntu.com/~kernel-ppa/mainline/v4.2.3-unstable/
+3. Apply our provided kernel patch (realsense-camera-formats.patch) to the kernel sources
+4. Compile and install uvcvideo.ko
+  * Details coming shortly...
+ 
+### LibUSB backend
 
 1. Grant appropriate permissions to detach the kernel UVC driver when a device is plugged in:
   * `sudo cp config/99-uvc.rules /etc/udev/rules.d/`
   * `sudo cp config/uvc.conf /etc/modprobe.d/`
   * Either reboot or run `sudo udevadm control --reload-rules && udevadm trigger` to enforce the new udev rules
-2. Ensure apt-get is up to date
-  * `sudo apt-get update && apt-get upgrade`
-3. Install libusb-1.0 via apt-get
-  * `sudo apt-get install libusb-1.0-0-dev`
-4. glfw3 is not available in apt-get on Ubuntu 14.04. Use included installer script:
-  * `scripts/install_glfw3.sh`
-5. We use QtCreator as an IDE for Linux development on Ubuntu: 
+
+### Development
+
+1. We use QtCreator as an IDE for Linux development on Ubuntu
   * `sudo apt-get install qtcreator`
   * `sudo scripts/install_qt.sh` (we also need qmake from the full qt5 distribution)
   * `all.pro` contains librealsense and all example applications
   * Clean => Run Qmake => Build
-6. Don't want to use QtCreator? We have a makefile!
+2. We also provide a makefile if you'd prefer to use your own favorite text editor
   * `make && sudo make install`
   * The example executables will build into `./bin`
-
-## Ubuntu 14.04 Installation (Video4Linux2 backend)
-1. To be defined. 
 
 ## FAQ
 
