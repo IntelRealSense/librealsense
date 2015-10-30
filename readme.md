@@ -82,6 +82,15 @@ The goal of librealsense is to provide a reasonable hardware abstraction with mi
   * `sudo apt-get install libusb-1.0-0-dev`
 3. glfw3 is not available in apt-get on Ubuntu 14.04. Use included installer script:
   * `scripts/install_glfw3.sh`
+4. Follow the installation instructions for your desired backend (see below)
+5. We use QtCreator as an IDE for Linux development on Ubuntu
+  * `sudo apt-get install qtcreator`
+  * `sudo scripts/install_qt.sh` (we also need qmake from the full qt5 distribution)
+  * `all.pro` contains librealsense and all example applications
+  * Clean => Run Qmake => Build
+6. We also provide a makefile if you'd prefer to use your own favorite text editor
+  * `make && sudo make install`
+  * The example executables will build into `./bin`
 
 ### Video4Linux backend
 
@@ -99,17 +108,9 @@ The goal of librealsense is to provide a reasonable hardware abstraction with mi
   * `sudo cp config/99-uvc.rules /etc/udev/rules.d/`
   * `sudo cp config/uvc.conf /etc/modprobe.d/`
   * Either reboot or run `sudo udevadm control --reload-rules && udevadm trigger` to enforce the new udev rules
-
-### Development
-
-1. We use QtCreator as an IDE for Linux development on Ubuntu
-  * `sudo apt-get install qtcreator`
-  * `sudo scripts/install_qt.sh` (we also need qmake from the full qt5 distribution)
-  * `all.pro` contains librealsense and all example applications
-  * Clean => Run Qmake => Build
-2. We also provide a makefile if you'd prefer to use your own favorite text editor
-  * `make && sudo make install`
-  * The example executables will build into `./bin`
+2. Use the makefile to build the LibUVC backend
+  * `make BACKEND=LIBUVC`
+  * `sudo make install`
 
 ## FAQ
 
