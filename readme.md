@@ -96,13 +96,11 @@ The goal of librealsense is to provide a reasonable hardware abstraction with mi
 
 1. Install a recent kernel version (4.2.3 is known to work)
   * http://www.yourownlinux.com/2015/10/how-to-install-linux-kernel-4-2-3-in-linux.html
-2. Retrieve the Linux kernel sources
-  * http://kernel.ubuntu.com/~kernel-ppa/mainline/v4.2.3-unstable/
-3. Apply our provided kernel patch (realsense-camera-formats.patch) to the kernel sources
-4. Compile and install uvcvideo.ko
-  * Details coming shortly...
+2. Run the following script to patch uvcvideo.ko
+  * `scripts/patch-uvcvideo-kernel-object.sh`
+  * This script involves cloning the Linux source repository (about 1GB), and may take a while
  
-### LibUSB backend
+### LibUVC backend
 
 1. Grant appropriate permissions to detach the kernel UVC driver when a device is plugged in:
   * `sudo cp config/99-uvc.rules /etc/udev/rules.d/`
