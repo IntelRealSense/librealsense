@@ -59,17 +59,9 @@ The goal of librealsense is to provide a reasonable hardware abstraction with mi
 4. Majority of XU-exposed functionality for each camera
 5. Full multi-camera capture, even mixing device types (F200 and R200) 
 
-## Apple OSX Installation
+# Installation Guide
 
-1. Install XCode 6.0+ via the AppStore
-2. Install the Homebrew package manager via terminal - [link](http://brew.sh/)
-3. Install libusb via brew:
-  * `brew install libusb`
-4. Install glfw3 via brew:
-  * `brew tap homebrew/versions`
-  * `brew install versions/glfw3`
-
-## Ubuntu 14.04 Installation
+## Ubuntu 14.04 LTS Installation
 
 1. Ensure apt-get is up to date
   * `sudo apt-get update && apt-get upgrade`
@@ -99,9 +91,9 @@ The goal of librealsense is to provide a reasonable hardware abstraction with mi
  
 ### LibUVC backend
 
-The libuvc backend requires that the default linux uvcvideo.ko driver be unloaded before libusb can touch the device. This is because uvcvideo will attachthe moment it is unplugged in, and user-space applications do not have permission to access the device. See below regarding the udev rule workaround.
+The libuvc backend requires that the default linux uvcvideo.ko driver be unloaded before libusb can touch the device. This is because uvcvideo will own a UVC device the moment is is plugged in; user-space applications do not have permission to access the devie handle. See below regarding the udev rule workaround: 
 
-LibUVC is known to have issues with particular versions of SR300 and DS4 firmware (1.0.7x.xx are problematic). 
+LibUVC is known to have issues with particular versions of SR300 and DS4 firmware (1.0.7x.xx series of firmwares are problematic). 
 
 1. Grant appropriate permissions to detach the kernel UVC driver when a device is plugged in:
   * `sudo cp config/99-uvc.rules /etc/udev/rules.d/`
@@ -110,6 +102,24 @@ LibUVC is known to have issues with particular versions of SR300 and DS4 firmwar
 2. Use the makefile to build the LibUVC backend
   * `make BACKEND=LIBUVC`
   * `sudo make install`
+
+---
+
+## Apple OSX 
+
+1. Install XCode 6.0+ via the AppStore
+2. Install the Homebrew package manager via terminal - [link](http://brew.sh/)
+3. Install libusb via brew:
+  * `brew install libusb`
+4. Install glfw3 via brew:
+  * `brew tap homebrew/versions`
+  * `brew install versions/glfw3`
+
+---
+
+## Windows 8.1
+
+1. librealsense should compile out of the box with Visual Studio 2013 Release 5. Particular C++11 features are known to be incompatible with earlier VS2013 releases due to internal compiler errors. 
 
 ## FAQ
 
