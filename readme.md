@@ -4,6 +4,8 @@ A cross-platform library for capturing data with the RealSense F200 (IVCAM 1.0, 
 
 Dependency management for GLFW3 and libusb-1.0 is done manually at the moment (see the corresponding sections below), pending the creation of installer scripts to automate the process. 
 
+**NB:** On Linux, the libusb/libuvc backend has been deprecated in favor of the V4L2 backend.  
+
 ## Dev Notes October 20th, 2015
 1. (DS4) ALL of 640x480, 628x468, 492x372, 480x360, 332x252, 320x240 are now available for DEPTH and INFRARED streams.
 2. (DS4/IVCAM) It is safe to hardcode 640x480 or 320x240 as DEPTH or INFRARED resolutions, supported on both DS4 and IVCAM.
