@@ -91,9 +91,9 @@ The goal of librealsense is to provide a reasonable hardware abstraction with mi
  
 ### LibUVC backend
 
-The libuvc backend requires that the default linux uvcvideo.ko driver be unloaded before libusb can touch the device. This is because uvcvideo will attachthe moment it is unplugged in, and user-space applications do not have permission to access the device. See below regarding the udev rule workaround.
+The libuvc backend requires that the default linux uvcvideo.ko driver be unloaded before libusb can touch the device. This is because uvcvideo will own a UVC device the moment is is plugged in; user-space applications do not have permission to access the devie handle. See below regarding the udev rule workaround: 
 
-LibUVC is known to have issues with particular versions of SR300 and DS4 firmware (1.0.7x.xx are problematic). 
+LibUVC is known to have issues with particular versions of SR300 and DS4 firmware (1.0.7x.xx series of firmwares are problematic). 
 
 1. Grant appropriate permissions to detach the kernel UVC driver when a device is plugged in:
   * `sudo cp config/99-uvc.rules /etc/udev/rules.d/`
