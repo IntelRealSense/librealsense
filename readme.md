@@ -30,8 +30,11 @@ DS5 support will be provided in the near future. librealsense should in principa
 librealsense is written in standards-conforming C++11 and relies only on the C89 ABI for its public interface. It was developed and tested on the following platforms:
 
 1. Windows 8.1 (Visual C++ 2013)
-2. Ubuntu 14.04 LTS (gcc toolchain)
+2. Ubuntu 14.04 LTS with an updated 4.2.3 kernel (gcc toolchain)
 3. Mac OS X 10.7+ (clang toolchain)
+
+## Unsupported Platforms
+1. Neither the libuvc or V4L2 backend has been validated on Ubuntu 12.04 LTS or Ubuntu 15.10, and several attempts to bring cameras up on these platforms have revealed underlying OS bugs and issues. 
 
 It may be possible to compile and run librealsense on other platforms. Please let us know if you do, as well as any steps you found necessary to do so, so that we can update this list.
 
@@ -105,6 +108,10 @@ The goal of librealsense is to provide a reasonable hardware abstraction with mi
   * This script involves cloning the Linux source repository (about 1GB), and may take a while
  
 ### LibUVC backend
+
+The libuvc backend requires that the default linux uvcvideo.ko driver be unloaded before libusb can touch the device. This is because uvcvideo will attachthe moment it is unplugged in, and user-space applications do not have permission to access the device. See below regarding the udev rule workaround.
+
+LibUVC is known to have issues with particular versions of SR300 and DS4 firmware (1.0.7x.xx are problematic). 
 
 1. Grant appropriate permissions to detach the kernel UVC driver when a device is plugged in:
   * `sudo cp config/99-uvc.rules /etc/udev/rules.d/`
