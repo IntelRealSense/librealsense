@@ -116,8 +116,7 @@ namespace rsimpl
     };
     
     static static_device_info get_f200_info(const f200::CameraCalibrationParameters & c)
-    {     
-
+    {
         static_device_info info;
         info.name = {"Intel RealSense F200"};
 
@@ -177,23 +176,64 @@ namespace rsimpl
         return info;
     }
 
+    static const f200_mode sr300_color_modes[] = {
+        {1920, 1080, COLOR_1080P, {5,15,30}},
+        {1280,  720, COLOR_720P,  {5,15,30,60}},
+        { 960,  540, COLOR_540P,  {5,15,30,60}},
+        { 848,  480, COLOR_480P,  {5,15,30,60}},
+        { 640,  480, COLOR_VGA,   {5,15,30,60}},
+        { 640,  360, COLOR_360P,  {5,15,30,60}},
+        { 424,  240, COLOR_240P,  {5,15,30,60}},
+        { 320,  240, COLOR_QVGA,  {5,15,30,60}},
+        { 320,  180, COLOR_180P,  {5,15,30,60}}
+    };
+    static const f200_mode sr300_depth_modes[] = {
+        {640, 480, DEPTH_VGA,  {5,15,30,60}}, 
+        {640, 240, DEPTH_HVGA, {5,15,30,60,110}}
+    };
+    static const f200_mode sr300_ir_only_modes[] = {
+        {640, 480, DEPTH_VGA,  {30,60,120,200}}, 
+        {640, 240, DEPTH_HVGA, {30,60,120,200}}        
+    };    
+
     static static_device_info get_sr300_info(const f200::CameraCalibrationParameters & c)
     {
         static_device_info info;
         info.name = {"Intel RealSense SR300"};
         
+        // Color modes on subdevice 0
         info.stream_subdevices[RS_STREAM_COLOR] = 0;
-        info.subdevice_modes.push_back({0, 640, 480, 'YUY2', 60, {{RS_STREAM_COLOR, 640, 480, RS_FORMAT_YUYV, 60, COLOR_VGA}}, &unpack_subrect, &decode_ivcam_frame_number});
-        info.subdevice_modes.push_back({0, 640, 480, 'YUY2', 60, {{RS_STREAM_COLOR, 640, 480, RS_FORMAT_YUYV, 30, COLOR_VGA}}, &unpack_subrect, &decode_ivcam_frame_number});
-        info.subdevice_modes.push_back({0, 1920, 1080, 'YUY2', 30, {{RS_STREAM_COLOR, 1920, 1080, RS_FORMAT_YUYV, 30, COLOR_1080P}}, &unpack_subrect, &decode_ivcam_frame_number});
+        for(auto & m : sr300_color_modes)
+        {
+            for(auto fps : m.fps)
+            {
+                info.subdevice_modes.push_back({0, m.w, m.h, 'YUY2', fps, {{RS_STREAM_COLOR, m.w, m.h, RS_FORMAT_YUYV, fps, m.intrin}}, &unpack_subrect, &decode_ivcam_frame_number});
+            }
+        }
 
+        // Depth and IR modes on subdevice 1
         info.stream_subdevices[RS_STREAM_DEPTH] = 1;
         info.stream_subdevices[RS_STREAM_INFRARED] = 1;
-        info.subdevice_modes.push_back({1, 640, 480, 'INVZ', 60, {{RS_STREAM_DEPTH,    640, 480, RS_FORMAT_Z16, 60, DEPTH_VGA}}, &unpack_subrect, &decode_ivcam_frame_number});
-        info.subdevice_modes.push_back({1, 640, 480, 'INZI', 60, {{RS_STREAM_DEPTH,    640, 480, RS_FORMAT_Z16, 60, DEPTH_VGA},
-                                                                  {RS_STREAM_INFRARED, 640, 480, RS_FORMAT_Y16, 60, DEPTH_VGA}}, &unpack_inzi_to_z16_and_y16, &decode_ivcam_frame_number});
-        info.subdevice_modes.push_back({1, 640, 480, 'INZI', 60, {{RS_STREAM_DEPTH,    640, 480, RS_FORMAT_Z16, 60, DEPTH_VGA},
-                                                                  {RS_STREAM_INFRARED, 640, 480, RS_FORMAT_Y8,  60, DEPTH_VGA}}, &unpack_inzi_to_z16_and_y8, &decode_ivcam_frame_number});
+        for(auto & m : sr300_ir_only_modes)
+        {
+            for(auto fps : m.fps)
+            {
+                //info.subdevice_modes.push_back({1, m.w, m.h, 'INVI', fps, {{RS_STREAM_INFRARED, m.w, m.h, RS_FORMAT_Y8,  fps, m.intrin}}, &unpack_subrect, &decode_ivcam_frame_number});
+                //info.subdevice_modes.push_back({1, m.w, m.h, 'INVI', fps, {{RS_STREAM_INFRARED, m.w, m.h, RS_FORMAT_Y16, fps, m.intrin}}, &unpack_y16_from_y8, &decode_ivcam_frame_number});    
+            }
+        }
+        for(auto & m : sr300_depth_modes)
+        {
+            for(auto fps : m.fps)
+            {
+                info.subdevice_modes.push_back({1, m.w, m.h, 'INVZ', fps, {{RS_STREAM_DEPTH,    m.w, m.h, RS_FORMAT_Z16, fps, m.intrin}}, &unpack_subrect, &decode_ivcam_frame_number});       
+                info.subdevice_modes.push_back({1, m.w, m.h, 'INZI', fps, {{RS_STREAM_DEPTH,    m.w, m.h, RS_FORMAT_Z16, fps, m.intrin},
+                                                                           {RS_STREAM_INFRARED, m.w, m.h, RS_FORMAT_Y8,  fps, m.intrin}}, &unpack_inzi_to_z16_and_y8, &decode_ivcam_frame_number});
+                info.subdevice_modes.push_back({1, m.w, m.h, 'INZI', fps, {{RS_STREAM_DEPTH,    m.w, m.h, RS_FORMAT_Z16, fps, m.intrin},
+                                                                           {RS_STREAM_INFRARED, m.w, m.h, RS_FORMAT_Y16, fps, m.intrin}}, &unpack_inzi_to_z16_and_y16, &decode_ivcam_frame_number});
+            }
+        }
+
         for(int i=0; i<RS_PRESET_COUNT; ++i)
         {
             info.presets[RS_STREAM_COLOR   ][i] = {true, 640, 480, RS_FORMAT_RGB8, 60};

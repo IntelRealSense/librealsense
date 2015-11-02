@@ -46,7 +46,7 @@ namespace cs_config
 
             resComboBox.DataSource = res.Distinct().ToList();
             fmtComboBox.DataSource = fmt.Distinct().ToList();
-            fpsComboBox.DataSource = fps.Distinct().ToList();
+            fpsComboBox.DataSource = fps.Distinct().OrderByDescending(x => x).ToList();
         }
 
         public void Apply(RealSense.Device device)
