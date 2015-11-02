@@ -105,6 +105,9 @@ public:
         show(rx + (rw - w)/2, ry + (rh - h)/2, w, h);
 
         std::ostringstream ss; ss << stream << ": " << intrin.width << " x " << intrin.height << " " << dev.get_stream_format(stream) << " (" << fps << "/" << dev.get_stream_framerate(stream) << ")";
+        glColor3f(0,0,0);
+        ttf_print(&font, rx+9.0f, ry+17.0f, ss.str().c_str());
+        glColor3f(1,1,1);
         ttf_print(&font, rx+8.0f, ry+16.0f, ss.str().c_str());
     }
 
@@ -125,6 +128,9 @@ public:
         show(rx + (rw - w)/2, ry + (rh - h)/2, w, h);
 
         std::ostringstream ss; ss << caption << ": " << width << " x " << height << " " << format;
+        glColor3f(0,0,0);
+        ttf_print(&font, rx+9.0f, ry+17.0f, ss.str().c_str());
+        glColor3f(1,1,1);
         ttf_print(&font, rx+8.0f, ry+16.0f, ss.str().c_str());
     }
 };

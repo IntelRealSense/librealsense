@@ -39,7 +39,7 @@ int main(int argc, char * argv[]) try
 
             std::this_thread::sleep_for(std::chrono::milliseconds(100));
 
-            for(int j=0; j<RS_STREAM_COUNT; ++j)
+            for(int j=0; j<4; ++j)
             {
                 auto s = (rs::stream)j;
                 if(dev.is_stream_enabled(s)) dev.disable_stream(s);

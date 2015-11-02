@@ -34,6 +34,8 @@ int main()
 
         printf("Device %d - %s:\n", i, rs_get_device_name(device, &e));
         check_error(e);
+        printf("  Serial number: %s\n", rs_get_device_serial(device, &e));
+        check_error(e);
 
         /* Show which options are supported by this device */
         printf("  Supported options:\n");
