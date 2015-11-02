@@ -84,12 +84,14 @@ The goal of librealsense is to provide a reasonable hardware abstraction with mi
   * `sudo apt-get install libusb-1.0-0-dev`
 3. glfw3 is not available in apt-get on Ubuntu 14.04. Use included installer script:
   * `scripts/install_glfw3.sh`
-4. Follow the installation instructions for your desired backend (see below)
+4. **Follow the installation instructions for your desired backend (see below)**
 5. We use QtCreator as an IDE for Linux development on Ubuntu
+  * **NB:** QtCreator is presently configured to use the V4L2 backend by default
   * `sudo apt-get install qtcreator`
   * `sudo scripts/install_qt.sh` (we also need qmake from the full qt5 distribution)
   * `all.pro` contains librealsense and all example applications
-  * Clean => Run Qmake => Build
+  * From the QTCreator top menu: Clean => Run QMake => Build
+  * Built projects will be placed into `./bin/debug` or `./bin/release`
 6. We also provide a makefile if you'd prefer to use your own favorite text editor
   * `make && sudo make install`
   * The example executables will build into `./bin`
