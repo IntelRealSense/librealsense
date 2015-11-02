@@ -4,6 +4,8 @@ A cross-platform library for capturing data with the RealSense F200 (IVCAM 1.0, 
 
 Dependency management for GLFW3 and libusb-1.0 is done manually at the moment (see the corresponding sections below), pending the creation of installer scripts to automate the process. 
 
+**NB:** On Linux, the libusb/libuvc backend has been deprecated in favor of the V4L2 backend.  
+
 ## Dev Notes October 20th, 2015
 1. (DS4) ALL of 640x480, 628x468, 492x372, 480x360, 332x252, 320x240 are now available for DEPTH and INFRARED streams.
 2. (DS4/IVCAM) It is safe to hardcode 640x480 or 320x240 as DEPTH or INFRARED resolutions, supported on both DS4 and IVCAM.
@@ -28,8 +30,11 @@ DS5 support will be provided in the near future. librealsense should in principa
 librealsense is written in standards-conforming C++11 and relies only on the C89 ABI for its public interface. It was developed and tested on the following platforms:
 
 1. Windows 8.1 (Visual C++ 2013)
-2. Ubuntu 14.04 LTS (gcc toolchain)
+2. Ubuntu 14.04 LTS with an updated 4.2.3 kernel (gcc toolchain)
 3. Mac OS X 10.7+ (clang toolchain)
+
+## Unsupported Platforms
+1. Neither the libuvc or V4L2 backend has been validated on Ubuntu 12.04 LTS or Ubuntu 15.10, and several attempts to bring cameras up on these platforms have revealed underlying OS bugs and issues. 
 
 It may be possible to compile and run librealsense on other platforms. Please let us know if you do, as well as any steps you found necessary to do so, so that we can update this list.
 
@@ -43,16 +48,6 @@ It may be possible to compile and run librealsense on other platforms. Please le
 5. Python - Single source file (rs.py) wrapper using ctypes to access C API, providing classes and exceptions; out parameters converted to return values using Python tuples
 
 Our intent is to provide bindings and wrappers for as many languages and frameworks as possible. Our core library exposes its functionality via C, and we intend for our various bindings and wrappers to look and feel "native" to their respective languages, for instance, using classes to represent objects, throwing exceptions to report errors, and following established naming conventions and casing styles of the language or framework in question.
-
-## Library Dependencies
-
-* Windows:
-  * Windows SDK (WinUSB + Media Foundation)
-* Linux, OS X, Android:
-  * libusb-1.0
-* Example Programs:
-  * OpenGL 1.1+
-  * GLFW 3.0+
 
 ## Functionality
 
@@ -82,12 +77,14 @@ The goal of librealsense is to provide a reasonable hardware abstraction with mi
   * `sudo apt-get install libusb-1.0-0-dev`
 3. glfw3 is not available in apt-get on Ubuntu 14.04. Use included installer script:
   * `scripts/install_glfw3.sh`
-4. Follow the installation instructions for your desired backend (see below)
+4. **Follow the installation instructions for your desired backend (see below)**
 5. We use QtCreator as an IDE for Linux development on Ubuntu
+  * **NB:** QtCreator is presently configured to use the V4L2 backend by default
   * `sudo apt-get install qtcreator`
   * `sudo scripts/install_qt.sh` (we also need qmake from the full qt5 distribution)
   * `all.pro` contains librealsense and all example applications
-  * Clean => Run Qmake => Build
+  * From the QTCreator top menu: Clean => Run QMake => Build
+  * Built projects will be placed into `./bin/debug` or `./bin/release`
 6. We also provide a makefile if you'd prefer to use your own favorite text editor
   * `make && sudo make install`
   * The example executables will build into `./bin`
@@ -101,6 +98,10 @@ The goal of librealsense is to provide a reasonable hardware abstraction with mi
   * This script involves cloning the Linux source repository (about 1GB), and may take a while
  
 ### LibUVC backend
+
+The libuvc backend requires that the default linux uvcvideo.ko driver be unloaded before libusb can touch the device. This is because uvcvideo will attachthe moment it is unplugged in, and user-space applications do not have permission to access the device. See below regarding the udev rule workaround.
+
+LibUVC is known to have issues with particular versions of SR300 and DS4 firmware (1.0.7x.xx are problematic). 
 
 1. Grant appropriate permissions to detach the kernel UVC driver when a device is plugged in:
   * `sudo cp config/99-uvc.rules /etc/udev/rules.d/`
@@ -122,6 +123,20 @@ The goal of librealsense is to provide a reasonable hardware abstraction with mi
 *Q:* Is it maintained or supported?
 
 *A:* It is supported in the sense that bugs will be fixed if they are found and new features will be periodically added. It is not intended to replace functionality developed by other teams to support HVM (firmware updates, etc), nor materially impact SSG’s roadmap for the SDK/DCM – it is independent and outside of these major efforts. 
+
+## Example Applications
+
+Example | Platform | Description
+------------- | ------------- | -------------
+c-capture | All | Basic example using the C API to pull depth, color, and IR
+c-enumerate | All | A commandline application (no window) to describe properties and resolutions of all connected cameras
+c-pointcloud | All | Demonstration of pointcloud projection using the C API (projects all available streams)
+cpp-capture | All |  Basic example using the C++ API to pull depth, color, and IR
+cpp-multicam | All | For all connected cameras, draw depth and color streams (limited by window size)
+cpp-pointcloud | All | Demonstration of pointcloud projection using the C++ API (click to change the stream source: color, depth, or IR)
+cpp-alignimages | Windows | Shows the use of synthetic streams (color aligned to depth, depth aligned to color)
+cpp-restart | Windows | Runtime re-configuration of streaming modes (start, stop, reconfigure, start, etc)
+cs-capture | Windows | Basic example to pull depth, color, and IR images in C#. 
 
 ## License
 
