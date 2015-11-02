@@ -123,6 +123,20 @@ The goal of librealsense is to provide a reasonable hardware abstraction with mi
 
 *A:* It is supported in the sense that bugs will be fixed if they are found and new features will be periodically added. It is not intended to replace functionality developed by other teams to support HVM (firmware updates, etc), nor materially impact SSG’s roadmap for the SDK/DCM – it is independent and outside of these major efforts. 
 
+## Example Applications
+
+Example | Platform | Description
+------------- | ------------- | -------------
+c-capture | All | Basic example using the C API to pull depth, color, and IR
+c-enumerate | All | A commandline application (no window) to describe properties and resolutions of all connected cameras
+c-pointcloud | All | Demonstration of pointcloud projection using the C API (projects all available streams)
+cpp-capture | All |  Basic example using the C++ API to pull depth, color, and IR
+cpp-multicam | All | For all connected cameras, draw depth and color streams (limited by window size)
+cpp-pointcloud | All | Demonstration of pointcloud projection using the C++ API (click to change the stream source: color, depth, or IR)
+cpp-alignimages | Windows | Shows the use of synthetic streams (color aligned to depth, depth aligned to color)
+cpp-restart | Windows | Runtime re-configuration of streaming modes (start, stop, reconfigure, start, etc)
+cs-capture | Windows | Basic example to pull depth, color, and IR images in C#. 
+
 ## License
 
 For internal distribution only. 
