@@ -13,7 +13,8 @@ namespace rsimpl
                                                  
     void             unpack_y16_from_y8          (void * dest[], const void * source, const subdevice_mode & mode);
     void             unpack_y16_from_y16_10      (void * dest[], const void * source, const subdevice_mode & mode);
-                                                 
+    void             unpack_y8_from_y16_10       (void * dest[], const void * source, const subdevice_mode & mode);
+
     void             unpack_rgb_from_yuy2        (void * dest[], const void * source, const subdevice_mode & mode);
     void             unpack_rgba_from_yuy2       (void * dest[], const void * source, const subdevice_mode & mode);
     void             unpack_bgr_from_yuy2        (void * dest[], const void * source, const subdevice_mode & mode);

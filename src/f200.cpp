@@ -192,8 +192,7 @@ namespace rsimpl
         {640, 240, DEPTH_HVGA, {5,15,30,60,110}}
     };
     static const f200_mode sr300_ir_only_modes[] = {
-        {640, 480, DEPTH_VGA,  {30,60,120,200}}, 
-        {640, 240, DEPTH_HVGA, {30,60,120,200}}        
+        {640, 480, DEPTH_VGA,  {30,60,120,200}}      
     };    
 
     static static_device_info get_sr300_info(const f200::CameraCalibrationParameters & c)
@@ -218,8 +217,8 @@ namespace rsimpl
         {
             for(auto fps : m.fps)
             {
-                //info.subdevice_modes.push_back({1, m.w, m.h, 'INVI', fps, {{RS_STREAM_INFRARED, m.w, m.h, RS_FORMAT_Y8,  fps, m.intrin}}, &unpack_subrect, &decode_ivcam_frame_number});
-                //info.subdevice_modes.push_back({1, m.w, m.h, 'INVI', fps, {{RS_STREAM_INFRARED, m.w, m.h, RS_FORMAT_Y16, fps, m.intrin}}, &unpack_y16_from_y8, &decode_ivcam_frame_number});    
+                info.subdevice_modes.push_back({1, m.w, m.h, 'INVI', fps, {{RS_STREAM_INFRARED, m.w, m.h, RS_FORMAT_Y8,  fps, m.intrin}}, &unpack_y8_from_y16_10, &decode_ivcam_frame_number});    
+                info.subdevice_modes.push_back({1, m.w, m.h, 'INVI', fps, {{RS_STREAM_INFRARED, m.w, m.h, RS_FORMAT_Y16, fps, m.intrin}}, &unpack_y16_from_y16_10, &decode_ivcam_frame_number});                
             }
         }
         for(auto & m : sr300_depth_modes)

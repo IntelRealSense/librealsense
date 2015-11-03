@@ -102,6 +102,7 @@ namespace rsimpl
 
     void unpack_y16_from_y8    (void** d, const void* s, const subdevice_mode& m) { unpack_pixels(d, m, reinterpret_cast<const uint8_t  *>(s), RS_FORMAT_Y16, [](uint8_t  pixel) -> uint16_t { return pixel | pixel << 8; }); }
     void unpack_y16_from_y16_10(void** d, const void* s, const subdevice_mode& m) { unpack_pixels(d, m, reinterpret_cast<const uint16_t *>(s), RS_FORMAT_Y16, [](uint16_t pixel) -> uint16_t { return pixel << 6; }); }
+    void unpack_y8_from_y16_10 (void** d, const void* s, const subdevice_mode& m) { unpack_pixels(d, m, reinterpret_cast<const uint16_t *>(s), RS_FORMAT_Y8,  [](uint16_t pixel) -> uint8_t  { return pixel >> 2; }); }
 
     /////////////////////////////
     // YUY2 unpacking routines //
