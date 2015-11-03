@@ -140,13 +140,16 @@ Example | Platform | Description
 ------------- | ------------- | -------------
 c-capture | All | Basic example using the C API to pull depth, color, and IR
 c-enumerate | All | A commandline application (no window) to describe properties and resolutions of all connected cameras
-c-pointcloud | All | Demonstration of pointcloud projection using the C API (projects all available streams)
+c-pointcloud | All | Demonstration of pointcloud projection using the C API
 cpp-capture | All |  Basic example using the C++ API to pull depth, color, and IR
 cpp-multicam | All | For all connected cameras, draw depth and color streams (limited by window size)
 cpp-pointcloud | All | Demonstration of pointcloud projection using the C++ API (click to change the stream source: color, depth, or IR)
-cpp-alignimages | Windows | Shows the use of synthetic streams (color aligned to depth, depth aligned to color)
+cpp-alignimages | All | Shows the use of synthetic streams (color aligned to depth, depth aligned to color)
 cpp-restart | Windows | Runtime re-configuration of streaming modes (start, stop, reconfigure, start, etc)
 cs-capture | Windows | Basic example to pull depth, color, and IR images in C#. 
+cs-config | Windows | Allow user to configure which streams they want to view
+py-enumerate | All | A commandline application to describe properties and resolutions of all connected cameras
+java-enumerate | All | A commandline application to describe properties and resolutions of all connected cameras
 
 ## License
 
