@@ -1,8 +1,8 @@
 # librealsense
 
-A cross-platform library for capturing data with the RealSense F200 (IVCAM 1.0, 1.5) and RealSense R200 (DS4). This effort is aimed at supporting prototyping efforts on new platforms and form-factors (robots, drones, VR, etc). This repository hosts both the source-code and binary releases.
+A cross-platform library for capturing data from the RealSense F200, SR300 (IVCAM 1.0, 1.5) and RealSense R200 (DS4) cameras. This effort is aimed at supporting prototyping efforts on new platforms and form-factors (robots, drones, VR, etc).
 
-Dependency management for GLFW3 and libusb-1.0 is done manually at the moment (see the corresponding sections below), pending the creation of installer scripts to automate the process. 
+Dependency management for GLFW3 (example apps) and libusb-1.0 is performed through manual steps that are enumerated as part of this readme file. 
 
 **NB:** On Linux, the libusb/libuvc backend has been deprecated in favor of the V4L2 backend.  
 
@@ -51,13 +51,11 @@ Our intent is to provide bindings and wrappers for as many languages and framewo
 
 ## Functionality
 
-The goal of librealsense is to provide a reasonable hardware abstraction with minimal dependencies. It is not a computer vision SDK.
-
 1. Native streams: depth, color, infrared
 2. Synthetic streams: rectified images, depth aligned to color and vice versa, etc.
 3. Intrinsic/extrinsic calibration information
 4. Majority of XU-exposed functionality for each camera
-5. Full multi-camera capture, even mixing device types (F200 and R200) 
+5. Multi-camera capture across heterogeneous camera architectures (e.g. mix R200 and F200 in same application) 
 
 # Installation Guide
 
@@ -90,6 +88,8 @@ The goal of librealsense is to provide a reasonable hardware abstraction with mi
   * This script involves cloning the Linux source repository (about 1GB), and may take a while
  
 ### LibUVC backend
+
+**NB:** This backend has been deprecated on Linux.
 
 The libuvc backend requires that the default linux uvcvideo.ko driver be unloaded before libusb can touch the device. This is because uvcvideo will own a UVC device the moment is is plugged in; user-space applications do not have permission to access the devie handle. See below regarding the udev rule workaround: 
 
@@ -126,13 +126,9 @@ LibUVC is known to have issues with particular versions of SR300 and DS4 firmwar
 *Q:* How is this implemented?
 
 *A:* The library communicates with RealSense devices directly via the UVC and USB protocols. It does not link against DSAPI or IVCAM-DLL. Most of the library source code is platform agnostic, but there is a small UVC abstraction layer with platform-specific backends, including:
-  * A LibUVC backend which provides user-space access to UVC devices on Linux and Mac OS X
-  * A Video4Linux backend which provides kernel-space access to UVC devices on Linux
-  * A Windows Media Foundation backend which provides kernel-space access to UVC devices on Windows , a Video4, using Media
-
-*Q:* Is it maintained or supported?
-
-*A:* It is supported in the sense that bugs will be fixed if they are found and new features will be periodically added. It is not intended to replace functionality developed by other teams to support HVM (firmware updates, etc), nor materially impact SSG’s roadmap for the SDK/DCM – it is independent and outside of these major efforts. 
+  * A `libuvc` backend which provides user-space access to UVC devices on Linux and Mac OS X (built with libusb)
+  * A `video4linux2` backend which provides kernel-space access to UVC devices on Linux
+  * A `Windows Media Foundation` backend which provides kernel-space access to UVC devices on Windows
 
 ## Example Applications
 
