@@ -29,10 +29,11 @@ cp /boot/config-`uname -r` .config
 cp  /usr/src/linux-headers-`uname -r`/Module.symvers .
 make scripts oldconfig modules_prepare
 cd drivers/media/usb/uvc
+cp $KBASE/Module.symvers .
 make -C $KBASE M=$KBASE/drivers/media/usb/uvc/ modules
 
 # Install newly compiled UVC video module
-sudo rmmod uvcvideo.ko
+sudo modprobe -r uvcvideo
+sudo rm /lib/modules/`uname -r`/kernel/drivers/media/usb/uvc/uvcvideo.ko
 sudo cp $KBASE/drivers/media/usb/uvc/uvcvideo.ko /lib/modules/`uname -r`/kernel/drivers/media/usb/uvc/uvcvideo.ko
-sudo insmod uvcvideo.ko
 
