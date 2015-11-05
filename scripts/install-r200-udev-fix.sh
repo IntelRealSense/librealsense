@@ -1,11 +1,11 @@
-echo "Installing R200 connectivity workaround. Unplug any DS4 connected to your machine."
+echo "Installing R200 connectivity workaround. Unplug any R200 connected to your machine."
 echo "Press Enter to continue..."
 
 read p
 
 echo "Copying scripts"
 sudo cp ../config/usb-R200-in /usr/local/bin/
-sudo cp ../usb-R200-in_udev /usr/local/bin/
+sudo cp ../config/usb-R200-in_udev /usr/local/bin/
 
 sudo chmod 666 /usr/local/bin/usb-R200-in
 sudo chmod 666 /usr/local/bin/usb-R200-in_udev
