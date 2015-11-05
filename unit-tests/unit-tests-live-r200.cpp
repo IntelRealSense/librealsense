@@ -169,6 +169,245 @@ TEST_CASE( "R200 infrared2 streaming modes exactly match infrared streaming mode
 // Streaming tests //
 /////////////////////
 
+inline void test_r200_streaming(std::initializer_list<stream_mode> modes)
+{
+    safe_context ctx;   
+    REQUIRE(rs_get_device_count(ctx, require_no_error()) == 1);
+
+    rs_device * dev = rs_get_device(ctx, 0, require_no_error());
+    REQUIRE(dev != nullptr);
+    REQUIRE(rs_get_device_name(dev, require_no_error()) == std::string("Intel RealSense R200"));
+
+    test_streaming(dev, modes);
+}
+
+///////////////////////////
+// Depth streaming tests //
+///////////////////////////
+
+TEST_CASE( "R200 streams 480x360 depth", "[live] [r200] [one-camera]" )
+{
+    test_r200_streaming({{RS_STREAM_DEPTH, 480, 360, RS_FORMAT_Z16, 60}});
+}
+
+TEST_CASE( "R200 streams 628x468 depth", "[live] [r200] [one-camera]" )
+{
+    test_r200_streaming({{RS_STREAM_DEPTH, 628, 468, RS_FORMAT_Z16, 60}});
+}
+
+TEST_CASE( "R200 streams 320x240 depth", "[live] [r200] [one-camera]" )
+{
+    test_r200_streaming({{RS_STREAM_DEPTH, 320, 240, RS_FORMAT_Z16, 60}});
+}
+
+TEST_CASE( "R200 streams 480x360 depth (30 fps)", "[live] [r200] [one-camera]" )
+{
+    test_r200_streaming({{RS_STREAM_DEPTH, 480, 360, RS_FORMAT_Z16, 30}});
+}
+
+TEST_CASE( "R200 streams 628x468 depth (30 fps)", "[live] [r200] [one-camera]" )
+{
+    test_r200_streaming({{RS_STREAM_DEPTH, 628, 468, RS_FORMAT_Z16, 30}});
+}
+
+TEST_CASE( "R200 streams 320x240 depth (30 fps)", "[live] [r200] [one-camera]" )
+{
+    test_r200_streaming({{RS_STREAM_DEPTH, 320, 240, RS_FORMAT_Z16, 30}});
+}
+
+TEST_CASE( "R200 streams 480x360 depth (90 fps)", "[live] [r200] [one-camera]" )
+{
+    test_r200_streaming({{RS_STREAM_DEPTH, 480, 360, RS_FORMAT_Z16, 90}});
+}
+
+TEST_CASE( "R200 streams 628x468 depth (90 fps)", "[live] [r200] [one-camera]" )
+{
+    test_r200_streaming({{RS_STREAM_DEPTH, 628, 468, RS_FORMAT_Z16, 90}});
+}
+
+TEST_CASE( "R200 streams 320x240 depth (90 fps)", "[live] [r200] [one-camera]" )
+{
+    test_r200_streaming({{RS_STREAM_DEPTH, 320, 240, RS_FORMAT_Z16, 90}});
+}
+
+///////////////////////////
+// Color streaming tests //
+///////////////////////////
+
+TEST_CASE( "R200 streams HD color", "[live] [r200] [one-camera]" )
+{
+    test_r200_streaming({{RS_STREAM_COLOR, 1920, 1080, RS_FORMAT_YUYV, 30}});
+}
+
+TEST_CASE( "R200 streams VGA color", "[live] [r200] [one-camera]" )
+{
+    test_r200_streaming({{RS_STREAM_COLOR, 640, 480, RS_FORMAT_YUYV, 30}});
+}
+
+TEST_CASE( "R200 streams VGA color (60 fps)", "[live] [r200] [one-camera]" )
+{
+    test_r200_streaming({{RS_STREAM_COLOR, 640, 480, RS_FORMAT_YUYV, 60}});
+}
+
+TEST_CASE( "R200 streams 480x360 depth and HD color", "[live] [r200] [one-camera]" )
+{
+    test_r200_streaming({{RS_STREAM_DEPTH, 480, 360, RS_FORMAT_Z16, 60},
+                         {RS_STREAM_COLOR, 1920, 1080, RS_FORMAT_YUYV, 30}});
+}
+
+TEST_CASE( "R200 streams 628x468 depth and HD color", "[live] [r200] [one-camera]" )
+{
+    test_r200_streaming({{RS_STREAM_DEPTH, 628, 468, RS_FORMAT_Z16, 60},
+                         {RS_STREAM_COLOR, 1920, 1080, RS_FORMAT_YUYV, 30}});
+}
+
+TEST_CASE( "R200 streams 320x240 depth and HD color", "[live] [r200] [one-camera]" )
+{
+    test_r200_streaming({{RS_STREAM_DEPTH, 320, 240, RS_FORMAT_Z16, 60},
+                         {RS_STREAM_COLOR, 1920, 1080, RS_FORMAT_YUYV, 30}});
+}
+
+TEST_CASE( "R200 streams 480x360 depth and VGA color", "[live] [r200] [one-camera]" )
+{
+    test_r200_streaming({{RS_STREAM_DEPTH, 480, 360, RS_FORMAT_Z16, 60},
+                         {RS_STREAM_COLOR, 640, 480, RS_FORMAT_YUYV, 30}});
+}
+
+TEST_CASE( "R200 streams 628x468 depth and VGA color", "[live] [r200] [one-camera]" )
+{
+    test_r200_streaming({{RS_STREAM_DEPTH, 628, 468, RS_FORMAT_Z16, 60},
+                         {RS_STREAM_COLOR, 640, 480, RS_FORMAT_YUYV, 30}});
+}
+
+TEST_CASE( "R200 streams 320x240 depth and VGA color", "[live] [r200] [one-camera]" )
+{
+    test_r200_streaming({{RS_STREAM_DEPTH, 320, 240, RS_FORMAT_Z16, 60},
+                         {RS_STREAM_COLOR, 640, 480, RS_FORMAT_YUYV, 30}});
+}
+
+TEST_CASE( "R200 streams 480x360 depth and VGA color (60 fps)", "[live] [r200] [one-camera]" )
+{
+    test_r200_streaming({{RS_STREAM_DEPTH, 480, 360, RS_FORMAT_Z16, 60},
+                         {RS_STREAM_COLOR, 640, 480, RS_FORMAT_YUYV, 60}});
+}
+
+//////////////////////////////
+// Infrared streaming tests //
+//////////////////////////////
+
+TEST_CASE( "R200 streams 640x480 infrared (left 8 bit)", "[live] [r200] [one-camera]" )
+{
+    test_r200_streaming({{RS_STREAM_INFRARED, 640, 480, RS_FORMAT_Y8, 60}});
+}
+
+TEST_CASE( "R200 streams 640x480 infrared (left 16 bit)", "[live] [r200] [one-camera]" )
+{
+    test_r200_streaming({{RS_STREAM_INFRARED, 640, 480, RS_FORMAT_Y16, 60}});
+}
+
+TEST_CASE( "R200 streams 640x480 infrared (right 8 bit)", "[live] [r200] [one-camera]" )
+{
+    test_r200_streaming({{RS_STREAM_INFRARED2, 640, 480, RS_FORMAT_Y8, 60}});
+}
+
+TEST_CASE( "R200 streams 640x480 infrared (right 16 bit)", "[live] [r200] [one-camera]" )
+{
+    test_r200_streaming({{RS_STREAM_INFRARED2, 640, 480, RS_FORMAT_Y16, 60}});
+}
+
+TEST_CASE( "R200 streams 640x480 infrared (left+right 8 bit)", "[live] [r200] [one-camera]" )
+{
+    test_r200_streaming({{RS_STREAM_INFRARED, 640, 480, RS_FORMAT_Y8, 60},
+                         {RS_STREAM_INFRARED2, 640, 480, RS_FORMAT_Y8, 60}});
+}
+
+TEST_CASE( "R200 streams 640x480 infrared (left+right 16 bit)", "[live] [r200] [one-camera]" )
+{
+    test_r200_streaming({{RS_STREAM_INFRARED, 640, 480, RS_FORMAT_Y16, 60},
+                         {RS_STREAM_INFRARED2, 640, 480, RS_FORMAT_Y16, 60}});
+}
+
+TEST_CASE( "R200 streams 480x360 depth and 492x372 infrared (left+right 16 bit)", "[live] [r200] [one-camera]" )
+{
+    test_r200_streaming({{RS_STREAM_DEPTH, 480, 360, RS_FORMAT_Z16, 60},
+                         {RS_STREAM_INFRARED, 492, 372, RS_FORMAT_Y16, 60},
+                         {RS_STREAM_INFRARED2, 492, 372, RS_FORMAT_Y16, 60}});
+}
+
+TEST_CASE( "R200 streams 480x360 depth, VGA color, and 492x372 infrared", "[live] [r200] [one-camera]" )
+{
+    test_r200_streaming({{RS_STREAM_DEPTH, 480, 360, RS_FORMAT_Z16, 60},
+                         {RS_STREAM_COLOR, 640, 480, RS_FORMAT_YUYV, 30},
+                         {RS_STREAM_INFRARED, 492, 372, RS_FORMAT_Y16, 60},
+                         {RS_STREAM_INFRARED2, 492, 372, RS_FORMAT_Y16, 60}});
+}
+
+TEST_CASE( "R200 streams 628x468 depth, VGA color, and 640x480 infrared", "[live] [r200] [one-camera]" )
+{
+    test_r200_streaming({{RS_STREAM_DEPTH, 628, 468, RS_FORMAT_Z16, 60},
+                         {RS_STREAM_COLOR, 640, 480, RS_FORMAT_YUYV, 30},
+                         {RS_STREAM_INFRARED, 640, 480, RS_FORMAT_Y16, 60},
+                         {RS_STREAM_INFRARED2, 640, 480, RS_FORMAT_Y16, 60}});
+}
+
+TEST_CASE( "R200 streams 320x240 depth, VGA color, and 332x252 infrared", "[live] [r200] [one-camera]" )
+{
+    test_r200_streaming({{RS_STREAM_DEPTH, 320, 240, RS_FORMAT_Z16, 60},
+                         {RS_STREAM_COLOR, 640, 480, RS_FORMAT_YUYV, 30},
+                         {RS_STREAM_INFRARED, 332, 252, RS_FORMAT_Y16, 60},
+                         {RS_STREAM_INFRARED2, 332, 252, RS_FORMAT_Y16, 60}});
+}
+
+//////////////////////////////
+// Cropped and padded modes //
+//////////////////////////////
+
+TEST_CASE( "R200 streams 640x480 depth and infrared", "[live] [r200] [one-camera]" )
+{
+    test_r200_streaming({{RS_STREAM_DEPTH, 640, 480, RS_FORMAT_Z16, 60},
+                         {RS_STREAM_INFRARED, 640, 480, RS_FORMAT_Y8, 60},
+                         {RS_STREAM_INFRARED2, 640, 480, RS_FORMAT_Y8, 60}});
+}
+
+TEST_CASE( "R200 streams 628x468 depth and infrared", "[live] [r200] [one-camera]" )
+{
+    test_r200_streaming({{RS_STREAM_DEPTH, 628, 468, RS_FORMAT_Z16, 60},
+                         {RS_STREAM_INFRARED, 628, 468, RS_FORMAT_Y8, 60},
+                         {RS_STREAM_INFRARED2, 628, 468, RS_FORMAT_Y8, 60}});
+}
+
+TEST_CASE( "R200 streams 492x372 depth and infrared", "[live] [r200] [one-camera]" )
+{
+    test_r200_streaming({{RS_STREAM_DEPTH, 492, 372, RS_FORMAT_Z16, 60},
+                         {RS_STREAM_INFRARED, 492, 372, RS_FORMAT_Y8, 60},
+                         {RS_STREAM_INFRARED2, 492, 372, RS_FORMAT_Y8, 60}});
+}
+
+TEST_CASE( "R200 streams 480x360 depth and infrared", "[live] [r200] [one-camera]" )
+{
+    test_r200_streaming({{RS_STREAM_DEPTH, 480, 360, RS_FORMAT_Z16, 60},
+                         {RS_STREAM_INFRARED, 480, 360, RS_FORMAT_Y8, 60},
+                         {RS_STREAM_INFRARED2, 480, 360, RS_FORMAT_Y8, 60}});
+}
+
+TEST_CASE( "R200 streams 332x252 depth and infrared", "[live] [r200] [one-camera]" )
+{
+    test_r200_streaming({{RS_STREAM_DEPTH, 332, 252, RS_FORMAT_Z16, 60},
+                         {RS_STREAM_INFRARED, 332, 252, RS_FORMAT_Y8, 60},
+                         {RS_STREAM_INFRARED2, 332, 252, RS_FORMAT_Y8, 60}});
+}
+
+TEST_CASE( "R200 streams 320x240 depth and infrared", "[live] [r200] [one-camera]" )
+{
+    test_r200_streaming({{RS_STREAM_DEPTH, 320, 240, RS_FORMAT_Z16, 60},
+                         {RS_STREAM_INFRARED, 320, 240, RS_FORMAT_Y8, 60},
+                         {RS_STREAM_INFRARED2, 320, 240, RS_FORMAT_Y8, 60}});
+}
+
+//////////////////////////////////////////
+// Stop, reconfigure, and restart tests //
+//////////////////////////////////////////
+
 TEST_CASE( "a single R200 can stream a variety of reasonable streaming mode combinations", "[live] [r200] [one-camera]" )
 {
     safe_context ctx;
@@ -245,7 +484,7 @@ TEST_CASE( "R200 options can be queried and set", "[live] [r200]" )
         test_option(dev, RS_OPTION_R200_LR_EXPOSURE, {40, 80, 160}, {}); // Tenths of milliseconds
         test_option(dev, RS_OPTION_R200_EMITTER_ENABLED, {0, 1}, {});
         test_option(dev, RS_OPTION_R200_DEPTH_CONTROL_PRESET, {0, 1, 2, 3, 4, 5}, {});
-        test_option(dev, RS_OPTION_R200_DEPTH_UNITS, {0, 1, 2, 3, 4, 5}, {});
+        test_option(dev, RS_OPTION_R200_DEPTH_UNITS, {250, 500, 1000, 2000, 5000, 10000}, {});
         test_option(dev, RS_OPTION_R200_DEPTH_CLAMP_MIN, {0, 500, 1000, 2000}, {});
         test_option(dev, RS_OPTION_R200_DEPTH_CLAMP_MAX, {500, 1000, 2000, USHRT_MAX}, {});
         test_option(dev, RS_OPTION_R200_DISPARITY_MODE_ENABLED, {0, 1}, {});        

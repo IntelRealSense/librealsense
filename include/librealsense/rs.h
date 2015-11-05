@@ -79,7 +79,7 @@ typedef enum rs_option
     RS_OPTION_R200_LR_EXPOSURE              = 18, /* > 0 (Units of 0.1 ms) */
     RS_OPTION_R200_EMITTER_ENABLED          = 19, /* {0, 1} */
     RS_OPTION_R200_DEPTH_CONTROL_PRESET     = 20, /* {0, 5}, 0 is default, 1-5 is low to high outlier rejection */
-    RS_OPTION_R200_DEPTH_UNITS              = 21, /* > 0 */
+    RS_OPTION_R200_DEPTH_UNITS              = 21, /* Number of micrometers per unit of Z image */
     RS_OPTION_R200_DEPTH_CLAMP_MIN          = 22, /* 0 - USHORT_MAX */
     RS_OPTION_R200_DEPTH_CLAMP_MAX          = 23, /* 0 - USHORT_MAX */
     RS_OPTION_R200_DISPARITY_MODE_ENABLED   = 24, /* {0, 1} */
