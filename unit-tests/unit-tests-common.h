@@ -26,7 +26,6 @@ public:
         if(context)
         {
             rs_delete_context(context, nullptr);
-            std::this_thread::sleep_for(std::chrono::seconds(1));
         }
     }
 

@@ -11,6 +11,10 @@ struct rs_context
     std::vector<std::shared_ptr<rs_device>>         devices;
 
                                                     rs_context();
+                                                    ~rs_context();
+private:
+                                                    rs_context(int);
+    static bool                                     singleton_alive;
 };
 
 #endif

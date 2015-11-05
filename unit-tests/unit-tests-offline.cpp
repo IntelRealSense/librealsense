@@ -363,3 +363,15 @@ TEST_CASE( "rs_option_to_string() produces correct output", "[offline] [validati
     REQUIRE(rs_option_to_string(RS_OPTION_COUNT) == nullptr);
     REQUIRE(rs_option_to_string(RS_OPTION_MAX_ENUM) == nullptr);
 }
+
+TEST_CASE( "rs_create_context() returns a valid context", "[offline] [validation]" )
+{
+    safe_context ctx;
+    REQUIRE(rs_get_device_count(ctx, require_no_error()) >= 0);
+}
+
+TEST_CASE( "rs_context has singleton semantics", "[offline] [validation]" )
+{
+    safe_context ctx;
+    REQUIRE(rs_create_context(RS_API_VERSION, require_error("rs_context has singleton semantics, only one may exist at a time")) == nullptr);
+}
