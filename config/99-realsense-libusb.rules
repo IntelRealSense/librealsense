@@ -1,0 +1,4 @@
+# RealSense UVC cameras (R200, F200, SR300)
+SUBSYSTEMS=="usb", ENV{DEVTYPE}=="usb_device", ATTRS{idVendor}=="8086", ATTRS{idProduct}=="0a80", MODE="0666", GROUP="plugdev", RUN+="/usr/local/bin/usb-R200-in_udev"
+SUBSYSTEMS=="usb", ENV{DEVTYPE}=="usb_device", ATTRS{idVendor}=="8086", ATTRS{idProduct}=="0a66", MODE="0666", GROUP="plugdev"
+SUBSYSTEMS=="usb", ENV{DEVTYPE}=="usb_device", ATTRS{idVendor}=="8086", ATTRS{idProduct}=="0aa5", MODE="0666", GROUP="plugdev"

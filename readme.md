@@ -96,7 +96,7 @@ The libuvc backend requires that the default linux uvcvideo.ko driver be unloade
 LibUVC is known to have issues with particular versions of SR300 and DS4 firmware (1.0.7x.xx series of firmwares are problematic). 
 
 1. Grant appropriate permissions to detach the kernel UVC driver when a device is plugged in:
-  * `sudo cp config/99-uvc.rules /etc/udev/rules.d/`
+  * `sudo cp config/99-realsense-libusb.rules /etc/udev/rules.d/`
   * `sudo cp config/uvc.conf /etc/modprobe.d/`
   * Either reboot or run `sudo udevadm control --reload-rules && udevadm trigger` to enforce the new udev rules
 2. Use the makefile to build the LibUVC backend
