@@ -214,12 +214,12 @@ TEST_CASE( "streaming mode intrinsics are sane", "[live]" )
                 // Require that the mode settings are sane
                 REQUIRE( width >= 320 );
                 REQUIRE( width <= 1920 );
-                REQUIRE( height >= 240 );
+                REQUIRE( height >= 180 );
                 REQUIRE( height <= 1080 );
                 REQUIRE( format > RS_FORMAT_ANY );
                 REQUIRE( format < RS_FORMAT_COUNT );
-                REQUIRE( framerate >= 15 );
-                REQUIRE( framerate <= 90 );
+                REQUIRE( framerate >= 2 );
+                REQUIRE( framerate <= 300 );
 
                 // Require that we can set the stream to this mode
                 rs_enable_stream(dev, stream, width, height, format, framerate, require_no_error());
