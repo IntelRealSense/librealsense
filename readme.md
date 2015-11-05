@@ -86,6 +86,8 @@ Our intent is to provide bindings and wrappers for as many languages and framewo
 2. Run the following script to patch uvcvideo.ko
   * `scripts/patch-uvcvideo-kernel-object.sh`
   * This script involves cloning the Linux source repository (about 1GB), and may take a while
+3. For IVCAM family devices (F200, SR300, etc.), libusb is required:
+  * `sudo cp config/99-realsense-libusb.rules /etc/udev/rules.d/`
  
 ### LibUVC backend
 
