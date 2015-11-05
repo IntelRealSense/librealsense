@@ -343,6 +343,12 @@ namespace rsimpl
 
         void claim_interface(device & device, const guid & interface_guid, int interface_number)
         {
+            if(!device.usb_handle)
+            {
+                int status = libusb_open(device.usb_device, &device.usb_handle);
+                if(status < 0) throw std::runtime_error(to_string() << "libusb_open(...) returned " << libusb_error_name(status));
+            }
+
             int status = libusb_claim_interface(device.usb_handle, interface_number);
             if(status < 0) throw std::runtime_error(to_string() << "libusb_claim_interface(...) returned " << libusb_error_name(status));
             device.claimed_interfaces.push_back(interface_number);
@@ -350,6 +356,7 @@ namespace rsimpl
 
         void bulk_transfer(device & device, unsigned char endpoint, void * data, int length, int *actual_length, unsigned int timeout)
         {
+            if(!device.usb_handle) throw std::logic_error("called uvc::bulk_transfer before uvc::claim_interface");
             int status = libusb_bulk_transfer(device.usb_handle, endpoint, (unsigned char *)data, length, actual_length, timeout);
             if(status < 0) throw std::runtime_error(to_string() << "libusb_bulk_transfer(...) returned " << libusb_error_name(status));
         }
@@ -474,8 +481,6 @@ namespace rsimpl
                         // libusb_get_device_address(usb_device);
                         dev->usb_device = usb_device;
                         libusb_ref_device(usb_device);
-                        status = libusb_open(usb_device, &dev->usb_handle);
-                        if(status < 0) throw std::runtime_error(to_string() << "libusb_open(...) returned " << libusb_error_name(status));
                         break;
                     }
                 }

@@ -71,7 +71,7 @@ namespace rsimpl
     
     r200_camera::~r200_camera()
     {
-        r200::force_firmware_reset(get_device());
+
     }
 
     std::shared_ptr<rs_device> make_r200_device(std::shared_ptr<uvc::device> device)
