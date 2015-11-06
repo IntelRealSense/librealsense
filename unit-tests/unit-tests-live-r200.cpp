@@ -404,59 +404,6 @@ TEST_CASE( "R200 streams 320x240 depth and infrared", "[live] [r200] [one-camera
                          {RS_STREAM_INFRARED2, 320, 240, RS_FORMAT_Y8, 60}});
 }
 
-//////////////////////////////////////////
-// Stop, reconfigure, and restart tests //
-//////////////////////////////////////////
-
-TEST_CASE( "a single R200 can stream a variety of reasonable streaming mode combinations", "[live] [r200] [one-camera]" )
-{
-    safe_context ctx;
-    
-    SECTION( "exactly one device is connected" )
-    {
-        int device_count = rs_get_device_count(ctx, require_no_error());
-        REQUIRE(device_count == 1);
-    }
-
-    rs_device * dev = rs_get_device(ctx, 0, require_no_error());
-    REQUIRE(dev != nullptr);
-
-    SECTION( "device name is Intel RealSense R200" )
-    {
-        const char * name = rs_get_device_name(dev, require_no_error());
-        REQUIRE(name == std::string("Intel RealSense R200"));
-    }
-
-    SECTION( "streaming is possible in some reasonable configurations" )
-    {
-        test_streaming(dev, {
-            {RS_STREAM_DEPTH, 480, 360, RS_FORMAT_Z16, 60}
-        });
-
-        test_streaming(dev, {
-            {RS_STREAM_DEPTH, 480, 360, RS_FORMAT_Z16, 60},
-            {RS_STREAM_COLOR, 640, 480, RS_FORMAT_RGB8, 60}
-        });
-
-        test_streaming(dev, {
-            {RS_STREAM_DEPTH, 480, 360, RS_FORMAT_Z16, 60},
-            {RS_STREAM_INFRARED, 480, 360, RS_FORMAT_Y8, 60}
-        });
-
-        test_streaming(dev, {
-            {RS_STREAM_INFRARED, 492, 372, RS_FORMAT_Y16, 60},
-            {RS_STREAM_INFRARED2, 492, 372, RS_FORMAT_Y16, 60}
-        });
-
-        test_streaming(dev, {
-            {RS_STREAM_DEPTH, 480, 360, RS_FORMAT_Z16, 60},
-            {RS_STREAM_COLOR, 640, 480, RS_FORMAT_RGB8, 60},
-            {RS_STREAM_INFRARED, 480, 360, RS_FORMAT_Y8, 60},
-            {RS_STREAM_INFRARED2, 480, 360, RS_FORMAT_Y8, 60}
-        });
-    }
-}
-
 /////////////
 // Options //
 /////////////
@@ -539,4 +486,57 @@ TEST_CASE( "R200 supports RS_OPTION_R200_DEPTH_CLAMP_MAX", "[live] [r200]" )
 TEST_CASE( "R200 supports RS_OPTION_R200_DISPARITY_MODE_ENABLED", "[live] [r200]" )
 {
     test_r200_option(RS_OPTION_R200_DISPARITY_MODE_ENABLED, {0, 1}, BEFORE_START_DEVICE);        
+}
+
+//////////////////////////////////////////
+// Stop, reconfigure, and restart tests //
+//////////////////////////////////////////
+
+TEST_CASE( "a single R200 can stream a variety of reasonable streaming mode combinations", "[live] [r200] [one-camera]" )
+{
+    safe_context ctx;
+
+    SECTION( "exactly one device is connected" )
+    {
+        int device_count = rs_get_device_count(ctx, require_no_error());
+        REQUIRE(device_count == 1);
+    }
+
+    rs_device * dev = rs_get_device(ctx, 0, require_no_error());
+    REQUIRE(dev != nullptr);
+
+    SECTION( "device name is Intel RealSense R200" )
+    {
+        const char * name = rs_get_device_name(dev, require_no_error());
+        REQUIRE(name == std::string("Intel RealSense R200"));
+    }
+
+    SECTION( "streaming is possible in some reasonable configurations" )
+    {
+        test_streaming(dev, {
+            {RS_STREAM_DEPTH, 480, 360, RS_FORMAT_Z16, 60}
+        });
+
+        test_streaming(dev, {
+            {RS_STREAM_DEPTH, 480, 360, RS_FORMAT_Z16, 60},
+            {RS_STREAM_COLOR, 640, 480, RS_FORMAT_RGB8, 60}
+        });
+
+        test_streaming(dev, {
+            {RS_STREAM_DEPTH, 480, 360, RS_FORMAT_Z16, 60},
+            {RS_STREAM_INFRARED, 480, 360, RS_FORMAT_Y8, 60}
+        });
+
+        test_streaming(dev, {
+            {RS_STREAM_INFRARED, 492, 372, RS_FORMAT_Y16, 60},
+            {RS_STREAM_INFRARED2, 492, 372, RS_FORMAT_Y16, 60}
+        });
+
+        test_streaming(dev, {
+            {RS_STREAM_DEPTH, 480, 360, RS_FORMAT_Z16, 60},
+            {RS_STREAM_COLOR, 640, 480, RS_FORMAT_RGB8, 60},
+            {RS_STREAM_INFRARED, 480, 360, RS_FORMAT_Y8, 60},
+            {RS_STREAM_INFRARED2, 480, 360, RS_FORMAT_Y8, 60}
+        });
+    }
 }
