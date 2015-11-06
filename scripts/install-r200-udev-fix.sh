@@ -7,7 +7,7 @@ echo "Copying scripts"
 sudo cp ../config/usb-R200-in /usr/local/bin/
 sudo cp ../config/usb-R200-in_udev /usr/local/bin/
 
-sudo chmod 666 /usr/local/bin/usb-R200-in
-sudo chmod 666 /usr/local/bin/usb-R200-in_udev
+sudo chmod 755 /usr/local/bin/usb-R200-in
+sudo chmod 755 /usr/local/bin/usb-R200-in_udev
 
 echo "Done."
