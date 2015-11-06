@@ -206,7 +206,7 @@ TEST_CASE( "rs_set_device_option() validates input", "[offline] [validation]" )
     rs_set_device_option(fake_object_pointer(), RS_OPTION_MAX_ENUM,   100, require_error("bad enum value for argument \"option\""));
 
     // NOTE: Currently no validation is done for valid option ranges at the API level, though specifying an invalid option may fail at the UVC level
-    // TODO: Add some basic validation for parameter sanity (gain/exposure cannot be negative, depth clamping must be in uint16_t range, etc...)
+    // todo - Add some basic validation for parameter sanity (gain/exposure cannot be negative, depth clamping must be in uint16_t range, etc...)
 }
 
 TEST_CASE( "rs_get_device_option() validates input", "[offline] [validation]" )

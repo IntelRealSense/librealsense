@@ -3,7 +3,7 @@
 #define LIBREALSENSE_F200_H
 
 #include "device.h"
-#include "f200-private.h" // TODO: Refactor so we don't need this here
+#include "f200-private.h" // todo - refactor so we don't need this here
 
 #include <atomic>
 #include <thread>

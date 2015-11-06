@@ -342,7 +342,7 @@ namespace rsimpl
         std::unique_lock<std::mutex> lock(temperatureMutex);
         while (runTemperatureThread) 
         {
-            //@tofix, this will throw if bad, but might periodically fail anyway. try/catch
+            // todo - this will throw if bad, but might periodically fail anyway. try/catch
             try
             {
                 float IRTemp = (float)f200::read_ir_temp(get_device(), usbMutex);
@@ -364,25 +364,24 @@ namespace rsimpl
                 // Apply model
                 if (tempDetaFromLastFix >= TempThreshold)
                 {
-                    //if we are during a transition, fix for after the transition
+                    // if we are during a transition, fix for after the transition
                     double tempDeltaToUse = weightedTempDelta;
                     if (tempDeltaToUse > 0 && tempDeltaToUse < thermal_loop_params.TransitionTemp)
                     {
                         tempDeltaToUse = thermal_loop_params.TransitionTemp;
                     }
 
-                    //calculate fixed values
+                    // calculate fixed values
                     double fixed_Kc11 = Kc11 + (FcxSlope * tempDeltaToUse) + thermal_loop_params.FcxOffset;
                     double fixed_Kc13 = Kc13 + (UxSlope * tempDeltaToUse) + thermal_loop_params.UxOffset;
 
-                    //write back to intrinsic hfov and vfov
+                    // write back to intrinsic hfov and vfov
                     auto compensated_calibration = base_calibration;
                     compensated_calibration.Kc[0][0] = (float) fixed_Kc11;
                     compensated_calibration.Kc[1][1] = base_calibration.Kc[1][1] * (float)(fixed_Kc11/Kc11);
                     compensated_calibration.Kc[0][2] = (float) fixed_Kc13;
 
-                    //@tofix, qRes mode
-                    // TODO: Pass the current resolution into update_asic_coefficients
+                    // todo - Pass the current resolution into update_asic_coefficients
                     DEBUG_OUT("updating asic with new temperature calibration coefficients");
                     update_asic_coefficients(get_device(), usbMutex, compensated_calibration);
                     set_intrinsics_thread_safe(compute_intrinsics(compensated_calibration));
@@ -397,7 +396,7 @@ namespace rsimpl
 
     void f200_camera::set_xu_option(rs_option option, int value)
     {
-        // TODO: Range check value before write
+        // todo - Range check value before write
         auto val = static_cast<uint8_t>(value);
         switch(option)
         {

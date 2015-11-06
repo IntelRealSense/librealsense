@@ -211,7 +211,7 @@ void rs_device::wait_all_streams()
         {
             while(!streams[i]->swap_front())
             {
-                std::this_thread::sleep_for(std::chrono::microseconds(100)); // TODO: Use a condition variable or something to avoid this
+                std::this_thread::sleep_for(std::chrono::microseconds(100)); // todo - Use a condition variable or something to avoid this
                 if(std::chrono::high_resolution_clock::now() >= timeout) throw std::runtime_error("Timeout waiting for frames");
             }
             assert(streams[i]->is_front_valid());
@@ -235,7 +235,7 @@ void rs_device::wait_all_streams()
             }
             if(updated) break;
 
-            std::this_thread::sleep_for(std::chrono::microseconds(100)); // TODO: Use a condition variable or something to avoid this
+            std::this_thread::sleep_for(std::chrono::microseconds(100)); // todo - Use a condition variable or something to avoid this
             if(std::chrono::high_resolution_clock::now() >= timeout) throw std::runtime_error("Timeout waiting for frames");
         }
     }
@@ -258,7 +258,7 @@ void rs_device::wait_all_streams()
         if(next_delta > frame_delta) continue;
         while(!streams[i]->swap_front())
         {
-            std::this_thread::sleep_for(std::chrono::microseconds(100)); // TODO: Use a condition variable or something to avoid this
+            std::this_thread::sleep_for(std::chrono::microseconds(100)); // todo - Use a condition variable or something to avoid this
             if(std::chrono::high_resolution_clock::now() >= timeout) throw std::runtime_error("Timeout waiting for frames");
         }
     }
