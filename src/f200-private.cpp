@@ -462,8 +462,6 @@ namespace rsimpl { namespace f200
     {
         uint32_t opCodeXmit = (uint32_t) newCommand.cmd;
 
-		std::cout << "emitting: " << opCodeXmit << std::endl;
-
         IVCAMCommandDetails details;
         details.oneDirection = newCommand.oneDirection;
         details.TimeOut = newCommand.TimeOut;
