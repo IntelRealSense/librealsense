@@ -342,6 +342,8 @@ namespace rsimpl
         std::unique_lock<std::mutex> lock(temperatureMutex);
         while (runTemperatureThread) 
         {
+            temperatureCv.wait_for(lock, std::chrono::seconds(10));
+
             // todo - this will throw if bad, but might periodically fail anyway. try/catch
             try
             {
@@ -389,8 +391,6 @@ namespace rsimpl
                 }
             }
             catch(const std::exception & e) { DEBUG_ERR("TemperatureControlLoop: " << e.what()); }
-            
-            temperatureCv.wait_for(lock, std::chrono::seconds(10));
         }
     }
 

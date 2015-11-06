@@ -462,6 +462,8 @@ namespace rsimpl { namespace f200
     {
         uint32_t opCodeXmit = (uint32_t) newCommand.cmd;
 
+		std::cout << "emitting: " << opCodeXmit << std::endl;
+
         IVCAMCommandDetails details;
         details.oneDirection = newCommand.oneDirection;
         details.TimeOut = newCommand.TimeOut;
@@ -552,7 +554,7 @@ namespace rsimpl { namespace f200
          IVCAMCommand command(IVCAMMonitorCommand::UpdateCalib);
 
          memcpy(command.data, coeffs.CoefValueArray, NUM_OF_CALIBRATION_COEFFS * sizeof(float));
-         command.Param1 = 0;
+         command.Param1 = 4; // todo - 0 = Z, 4 = R
          command.Param2 = 0;
          command.Param3 = 0;
          command.Param4 = 0;
@@ -865,7 +867,7 @@ namespace rsimpl { namespace f200
     void update_asic_coefficients(uvc::device & device, std::timed_mutex & mutex, const CameraCalibrationParameters & compensated_params)
     {
         IVCAMASICCoefficients coeffs = {};
-        generate_asic_calibration_coefficients(compensated_params, {640, 480}, true, coeffs.CoefValueArray); // todo - fix hardcoded resolution parameters
+        generate_asic_calibration_coefficients(compensated_params, {640, 480}, false, coeffs.CoefValueArray); // todo - fix hardcoded resolution parameters
         set_asic_coefficients(device, mutex, coeffs);    
     }    
 
