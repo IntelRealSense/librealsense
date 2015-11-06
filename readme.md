@@ -81,18 +81,17 @@ Our intent is to provide bindings and wrappers for as many languages and framewo
 
 ### Video4Linux backend
 
-1. 2. For IVCAM family devices (F200, SR300, etc.), libusb is required:
+1. Install udev rules 
   * `sudo cp config/99-realsense-libusb.rules /etc/udev/rules.d/`
-
-Next, choose one of the following subheadings based on desired machine configuration / kernel version:
+2. (R200 only) Install connectivity workaround
+  * `sudo ./scripts/install-r200-udev-fix.sh`
+3. Next, choose one of the following subheadings based on desired machine configuration / kernel version (and remember to complete step 4 after).
+4. Reload the uvcvideo driver
+  * `sudo modprobe uvcvideo`
 
 #### Stock 3.19.xx Kernel in 14.04.03
 1. Run the following script to patch uvcvideo.ko
   * `scripts/patch-uvcvideo-ko-generic.sh`
-2. For IVCAM family devices (F200, SR300, etc.), libusb is required:
-  * `sudo cp config/99-realsense-libusb.rules /etc/udev/rules.d/
-3. Reload the uvcvideo driver
-  * `sudo modprobe uvcvideo`
 
 #### Updated 4.2.3 Unstable Kernel
 1. Install the 4.2.3 Kernel or move to step 2 if already installed. 
@@ -100,8 +99,6 @@ Next, choose one of the following subheadings based on desired machine configura
 2. Run the following script to patch uvcvideo.ko
   * `scripts/patch-uvcvideo-ko-4.2.3.sh`
   * This script involves cloning the Linux source repository (about 1GB), and may take a while
-3. Reload the uvcvideo driver
-  * `sudo modprobe uvcvideo`
 
 ### LibUVC backend
 
