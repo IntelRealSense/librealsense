@@ -9,7 +9,9 @@ rs_context::rs_context() : rs_context(0)
 
     for(auto device : query_devices(context))
     {
-        // TODO: Check vendor ID against Intel's ID
+		if (get_vendor_id(*device) != 32902)
+			throw std::runtime_error("vendor id 0x8086 could not be validated");
+				
         switch(get_product_id(*device))
         {
         case 2688: devices.push_back(rsimpl::make_r200_device(device)); break;
