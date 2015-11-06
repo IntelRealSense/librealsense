@@ -224,6 +224,20 @@ namespace rsimpl
 
     void r200_camera::set_xu_option(rs_option option, int value)
     {
+        if(is_capturing())
+        {
+            switch(option)
+            {
+            case RS_OPTION_R200_DEPTH_UNITS:
+            case RS_OPTION_R200_DEPTH_CLAMP_MIN:
+            case RS_OPTION_R200_DEPTH_CLAMP_MAX:
+            case RS_OPTION_R200_DISPARITY_MODE_ENABLED:
+            case RS_OPTION_R200_DISPARITY_MULTIPLIER:
+            case RS_OPTION_R200_DISPARITY_SHIFT:
+                throw std::runtime_error("cannot set this option before rs_start_capture(...)");
+            }
+        }
+
         //r200::auto_exposure_params aep;
         //r200::depth_params dp;
         r200::disparity_mode dm;
@@ -279,8 +293,6 @@ namespace rsimpl
 
     int r200_camera::get_xu_option(rs_option option) const
     {
-        if(!is_capturing()) throw std::runtime_error("cannot call before rs_start_capture(...)");
-
         //r200::auto_exposure_params aep;
         r200::depth_params dp;
         r200::disparity_mode dm;
@@ -294,7 +306,7 @@ namespace rsimpl
         case RS_OPTION_R200_LR_AUTO_EXPOSURE_ENABLED: r200::get_lr_exposure_mode(get_device(), u32[0]);         value = u32[0]; break;
         case RS_OPTION_R200_LR_GAIN:                  r200::get_lr_gain         (get_device(), u32[0], u32[1]); value = u32[1]; break;
         case RS_OPTION_R200_LR_EXPOSURE:              r200::get_lr_exposure     (get_device(), u32[0], u32[1]); value = u32[1]; break;
-        case RS_OPTION_R200_EMITTER_ENABLED:          r200::get_emitter_state   (get_device(), b);              value = b; break;
+        case RS_OPTION_R200_EMITTER_ENABLED:          r200::get_emitter_state   (get_device(), is_capturing(), is_stream_enabled(RS_STREAM_DEPTH), b); value = b; break;
         case RS_OPTION_R200_DEPTH_UNITS:              r200::get_depth_units     (get_device(), u32[0]);         value = u32[0]; break;
         case RS_OPTION_R200_DEPTH_CLAMP_MIN:          r200::get_min_max_depth   (get_device(), u16[0], u16[1]); value = u16[0]; break;
         case RS_OPTION_R200_DEPTH_CLAMP_MAX:          r200::get_min_max_depth   (get_device(), u16[0], u16[1]); value = u16[1]; break;

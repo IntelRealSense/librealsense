@@ -27,7 +27,7 @@ int main(int argc, char * argv[]) try
     try { dev.enable_stream(rs::stream::infrared2, rs::preset::best_quality); } catch(...) {}
 
     // Compute field of view for each enabled stream
-    for(int i = 0; i < RS_STREAM_COUNT; ++i)
+    for(int i = 0; i < 4; ++i)
     {
         auto stream = rs::stream(i);
         if(!dev.is_stream_enabled(stream)) continue;
@@ -61,13 +61,22 @@ int main(int argc, char * argv[]) try
     glfwInit();
     std::ostringstream ss; ss << "CPP Capture Example (" << dev.get_name() << ")";
     GLFWwindow * win = glfwCreateWindow(1280, 960, ss.str().c_str(), 0, 0);
-    glfwSetKeyCallback(win, [](GLFWwindow *, int key, int scancode, int action, int mods) 
+    glfwSetWindowUserPointer(win, &dev);
+    glfwSetKeyCallback(win, [](GLFWwindow * win, int key, int scancode, int action, int mods) 
     { 
+        auto dev = reinterpret_cast<rs::device *>(glfwGetWindowUserPointer(win));
         if(action != GLFW_RELEASE) switch(key)
         {
         case GLFW_KEY_R: color_rectification_enabled = !color_rectification_enabled; break;
         case GLFW_KEY_C: align_color_to_depth = !align_color_to_depth; break;
         case GLFW_KEY_D: align_depth_to_color = !align_depth_to_color; break;
+        case GLFW_KEY_E:
+            int emitter = dev->get_option(rs::option::r200_emitter_enabled);
+            std::cout << "Emitter is currently " << emitter << std::endl;
+            emitter = !emitter;
+            std::cout << "Setting emitter to " << emitter << std::endl;
+            dev->set_option(rs::option::r200_emitter_enabled, emitter);
+            break;
         }
     });
     glfwMakeContextCurrent(win);

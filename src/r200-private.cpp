@@ -386,17 +386,20 @@ namespace rsimpl { namespace r200
         catch(...) {} // xu_write always throws during a CONTROL_SW_RESET, since the firmware is unable to send a proper response
     }
 
-    void get_emitter_state(const uvc::device & device, bool & state)
+    void get_emitter_state(const uvc::device & device, bool is_streaming, bool is_depth_enabled, bool & state)
     {
         uint8_t byte = 0;
         xu_read(device, CONTROL_EMITTER, &byte, sizeof(byte));
-        if (byte & 4) state = (byte & 2 ? true : false); // TODO: Figure out what should actually be done here
+
+        if(is_streaming) state = (byte & 1 ? true : false);
+        else if(byte & 4) state = (byte & 2 ? true : false);
+        else state = is_depth_enabled;
     }
 
     void set_emitter_state(uvc::device & device, bool state)
     {
         uint8_t newEmitterState = state ? 1 : 0;
-        xu_read(device, CONTROL_EMITTER, &newEmitterState, sizeof(uint8_t));
+        xu_write(device, CONTROL_EMITTER, &newEmitterState, sizeof(uint8_t));
     }
 
     void read_temperature(const uvc::device & device, int8_t & current, int8_t & min, int8_t & max, int8_t & min_fault)

@@ -461,35 +461,74 @@ TEST_CASE( "a single R200 can stream a variety of reasonable streaming mode comb
 // Options //
 /////////////
 
-TEST_CASE( "R200 options can be queried and set", "[live] [r200]" )
+enum { BEFORE_START_DEVICE = 1, AFTER_START_DEVICE = 2 };
+inline void test_r200_option(rs_option option, std::initializer_list<int> values, int when)
 {
-    // Require at least one device to be plugged in
-    safe_context ctx;
-    const int device_count = rs_get_device_count(ctx, require_no_error());
-    REQUIRE(device_count > 0);
+    safe_context ctx;   
+    REQUIRE(rs_get_device_count(ctx, require_no_error()) == 1);
 
-    // For each device
-    for(int i=0; i<device_count; ++i)
+    rs_device * dev = rs_get_device(ctx, 0, require_no_error());
+    REQUIRE(dev != nullptr);
+    REQUIRE(rs_get_device_name(dev, require_no_error()) == std::string("Intel RealSense R200"));
+
+    if(when & BEFORE_START_DEVICE)
     {
-        rs_device * dev = rs_get_device(ctx, 0, require_no_error());    
-        REQUIRE(dev != nullptr);
-
-        rs_enable_stream_preset(dev, RS_STREAM_DEPTH, RS_PRESET_BEST_QUALITY, require_no_error());
-        rs_start_device(dev, require_no_error());        
-
-        std::this_thread::sleep_for(std::chrono::seconds(1));
-
-        test_option(dev, RS_OPTION_R200_LR_AUTO_EXPOSURE_ENABLED, {0, 1}, {});
-        test_option(dev, RS_OPTION_R200_LR_GAIN, {100, 200, 400, 800, 1600}, {}); // Gain percentage
-        test_option(dev, RS_OPTION_R200_LR_EXPOSURE, {40, 80, 160}, {}); // Tenths of milliseconds
-        test_option(dev, RS_OPTION_R200_EMITTER_ENABLED, {0, 1}, {});
-        test_option(dev, RS_OPTION_R200_DEPTH_CONTROL_PRESET, {0, 1, 2, 3, 4, 5}, {});
-        test_option(dev, RS_OPTION_R200_DEPTH_UNITS, {250, 500, 1000, 2000, 5000, 10000}, {});
-        test_option(dev, RS_OPTION_R200_DEPTH_CLAMP_MIN, {0, 500, 1000, 2000}, {});
-        test_option(dev, RS_OPTION_R200_DEPTH_CLAMP_MAX, {500, 1000, 2000, USHRT_MAX}, {});
-        test_option(dev, RS_OPTION_R200_DISPARITY_MODE_ENABLED, {0, 1}, {});        
-
-        rs_stop_device(dev, require_no_error());
-        rs_disable_stream(dev, RS_STREAM_DEPTH, require_no_error());
+        test_option(dev, option, values, {});
     }
+
+    if(when & AFTER_START_DEVICE)
+    {
+        rs_enable_stream_preset(dev, RS_STREAM_DEPTH, RS_PRESET_BEST_QUALITY, require_no_error());
+        rs_start_device(dev, require_no_error());
+
+        // Currently, setting/getting options immediately after streaming frequently raises hardware errors
+        // TODO: Internally block or retry failed calls within the first few seconds after streaming
+        std::this_thread::sleep_for(std::chrono::seconds(1));
+        test_option(dev, option, values, {});
+    }
+}
+
+TEST_CASE( "R200 supports RS_OPTION_R200_LR_AUTO_EXPOSURE_ENABLED", "[live] [r200]" )
+{
+    test_r200_option(RS_OPTION_R200_LR_AUTO_EXPOSURE_ENABLED, {0, 1}, BEFORE_START_DEVICE | AFTER_START_DEVICE);
+}
+
+TEST_CASE( "R200 supports RS_OPTION_R200_LR_GAIN", "[live] [r200]" )
+{
+    test_r200_option(RS_OPTION_R200_LR_GAIN, {100, 200, 400, 800, 1600}, BEFORE_START_DEVICE | AFTER_START_DEVICE); // Gain percentage   
+}
+
+TEST_CASE( "R200 supports RS_OPTION_R200_LR_EXPOSURE", "[live] [r200]" )
+{
+    test_r200_option(RS_OPTION_R200_LR_EXPOSURE, {40, 80, 160}, BEFORE_START_DEVICE | AFTER_START_DEVICE); // Tenths of milliseconds   
+}
+
+TEST_CASE( "R200 supports RS_OPTION_R200_EMITTER_ENABLED", "[live] [r200]" )
+{
+    test_r200_option(RS_OPTION_R200_EMITTER_ENABLED, {0, 1}, BEFORE_START_DEVICE | AFTER_START_DEVICE);
+}
+
+TEST_CASE( "R200 supports RS_OPTION_R200_DEPTH_CONTROL_PRESET", "[live] [r200]" )
+{
+    test_r200_option(RS_OPTION_R200_DEPTH_CONTROL_PRESET, {0, 1, 2, 3, 4, 5}, BEFORE_START_DEVICE | AFTER_START_DEVICE);
+}
+
+TEST_CASE( "R200 supports RS_OPTION_R200_DEPTH_UNITS", "[live] [r200]" )
+{
+    test_r200_option(RS_OPTION_R200_DEPTH_UNITS, {250, 500, 1000, 2000, 5000, 10000}, BEFORE_START_DEVICE);
+}
+
+TEST_CASE( "R200 supports RS_OPTION_R200_DEPTH_CLAMP_MIN", "[live] [r200]" )
+{
+    test_r200_option(RS_OPTION_R200_DEPTH_CLAMP_MIN, {0, 500, 1000, 2000}, BEFORE_START_DEVICE);
+}
+
+TEST_CASE( "R200 supports RS_OPTION_R200_DEPTH_CLAMP_MAX", "[live] [r200]" )
+{
+    test_r200_option(RS_OPTION_R200_DEPTH_CLAMP_MAX, {500, 1000, 2000, USHRT_MAX}, BEFORE_START_DEVICE);
+}
+
+TEST_CASE( "R200 supports RS_OPTION_R200_DISPARITY_MODE_ENABLED", "[live] [r200]" )
+{
+    test_r200_option(RS_OPTION_R200_DISPARITY_MODE_ENABLED, {0, 1}, BEFORE_START_DEVICE);        
 }

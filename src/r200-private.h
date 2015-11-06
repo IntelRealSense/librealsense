@@ -265,7 +265,7 @@ namespace rsimpl
         void get_last_error(const uvc::device & device, uint8_t & last_error);
         void force_firmware_reset(uvc::device & device);
              
-        void get_emitter_state(const uvc::device & device, bool & state);
+        void get_emitter_state(const uvc::device & device, bool is_streaming, bool is_depth_enabled, bool & state);
         void set_emitter_state(uvc::device & device, bool state);
              
         void read_temperature(const uvc::device & device, int8_t & current, int8_t & min, int8_t & max, int8_t & min_fault);
