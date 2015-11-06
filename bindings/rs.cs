@@ -26,7 +26,8 @@ namespace RealSense
         RGBA8 = 5,
         BGRA8 = 6,
         Y8 = 7,
-        Y16 = 8
+        Y16 = 8,
+        Raw10 = 9 // Four 10-bit luminance values encoded into a 5-byte macropixel
     }
 
     public enum Preset : int
@@ -66,7 +67,7 @@ namespace RealSense
         R200LRExposure = 18, // > 0 (Units of 0.1 ms)
         R200EmitterEnabled = 19, // {0, 1}
         R200DepthControlPreset = 20, // {0, 5}, 0 is default, 1-5 is low to high outlier rejection
-        R200DepthUnits = 21, // > 0
+        R200DepthUnits = 21, // micrometers per increment in integer depth values, 1000 is default (mm scale)
         R200DepthClampMin = 22, // 0 - USHORT_MAX
         R200DepthClampMax = 23, // 0 - USHORT_MAX
         R200DisparityModeEnabled = 24, // {0, 1}

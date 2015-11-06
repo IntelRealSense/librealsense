@@ -291,6 +291,11 @@ TEST_CASE( "R200 streams 480x360 depth and VGA color (60 fps)", "[live] [r200] [
                          {RS_STREAM_COLOR, 640, 480, RS_FORMAT_YUYV, 60}});
 }
 
+TEST_CASE( "R200 streams HD Raw10", "[live] [r200] [one-camera]" )
+{
+    test_r200_streaming({{RS_STREAM_COLOR, 1920, 1080, RS_FORMAT_RAW10, 30}});
+}
+
 //////////////////////////////
 // Infrared streaming tests //
 //////////////////////////////

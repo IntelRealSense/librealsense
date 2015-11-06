@@ -10,7 +10,8 @@ public enum Format
     RGBA8(5),
     BGRA8(6),
     Y8(7),
-    Y16(8);
+    Y16(8),
+    RAW10(9); // Four 10-bit luminance values encoded into a 5-byte macropixel
     public final int code;
     private Format(int code) { this.code = code; }
 }

@@ -292,6 +292,7 @@ TEST_CASE( "rs_format_to_string() produces correct output", "[offline] [validati
     REQUIRE(rs_format_to_string(RS_FORMAT_BGRA8) == std::string("BGRA8"));
     REQUIRE(rs_format_to_string(RS_FORMAT_Y8) == std::string("Y8"));
     REQUIRE(rs_format_to_string(RS_FORMAT_Y16) == std::string("Y16"));
+    REQUIRE(rs_format_to_string(RS_FORMAT_RAW10) == std::string("RAW10"));
 
     // Invalid enum values should return nullptr
     REQUIRE(rs_format_to_string((rs_format)-1) == nullptr);
