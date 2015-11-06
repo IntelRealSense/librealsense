@@ -503,9 +503,17 @@ TEST_CASE( "R200 supports RS_OPTION_R200_LR_EXPOSURE", "[live] [r200]" )
     test_r200_option(RS_OPTION_R200_LR_EXPOSURE, {40, 80, 160}, BEFORE_START_DEVICE | AFTER_START_DEVICE); // Tenths of milliseconds   
 }
 
-TEST_CASE( "R200 supports RS_OPTION_R200_EMITTER_ENABLED", "[live] [r200]" )
+// Note: The R200 firmware has some complications regarding emitter state before the device has been started
+// The emitter will never be on if the device is not streaming, but the firmware will remember and respect any
+// specified preferences for emitter enabled that are specified prior to streaming.
+TEST_CASE( "R200 supports RS_OPTION_R200_EMITTER_ENABLED before rs_start_device()", "[live] [r200]" )
 {
-    test_r200_option(RS_OPTION_R200_EMITTER_ENABLED, {0, 1}, BEFORE_START_DEVICE | AFTER_START_DEVICE);
+    test_r200_option(RS_OPTION_R200_EMITTER_ENABLED, {0, 1}, BEFORE_START_DEVICE);
+}
+
+TEST_CASE( "R200 supports RS_OPTION_R200_EMITTER_ENABLED after rs_start_device()", "[live] [r200]" )
+{
+    test_r200_option(RS_OPTION_R200_EMITTER_ENABLED, {0, 1}, AFTER_START_DEVICE);
 }
 
 TEST_CASE( "R200 supports RS_OPTION_R200_DEPTH_CONTROL_PRESET", "[live] [r200]" )
