@@ -131,9 +131,9 @@ namespace rsimpl { namespace f200
     {
         int16_t TableValidation;
         int16_t TableVarsion;
+		IVCAMTemperatureData TemperatureData;
         OACOffsetData OACOffsetData_;
         IVCAMThermalLoopParams ThermalLoopParams;
-        IVCAMTemperatureData TemperatureData;
     };
 
     struct IVCAMCalibration
@@ -668,11 +668,11 @@ namespace rsimpl { namespace f200
 
             // calprms; // breakpoint here to debug
 
-            memcpy(&TesterData,  rawCalibData, SIZE_OF_CALIB_HEADER_BYTES);  //copy the header: valid + version
+            memcpy(&TesterData, rawCalibData, SIZE_OF_CALIB_HEADER_BYTES); //copy the header: valid + version
 
             //copy the tester data from end of calibration
             int EndOfCalibratioData = SIZE_OF_CALIB_PARAM_BYTES + SIZE_OF_CALIB_HEADER_BYTES;
-            memcpy((uint8_t*)&TesterData + SIZE_OF_CALIB_HEADER_BYTES , rawCalibData + EndOfCalibratioData , sizeof(IVCAMTesterData) - SIZE_OF_CALIB_HEADER_BYTES);
+            memcpy((uint8_t*)&TesterData + SIZE_OF_CALIB_HEADER_BYTES, rawCalibData + EndOfCalibratioData, sizeof(IVCAMTesterData) - SIZE_OF_CALIB_HEADER_BYTES);
             return std::make_tuple(calibration, TesterData.TemperatureData, TesterData.ThermalLoopParams);
         }
 

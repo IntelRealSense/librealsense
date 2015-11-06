@@ -77,7 +77,7 @@ namespace rsimpl { namespace f200
     // Modify device state
     void force_hardware_reset(uvc::device & device, std::timed_mutex & mutex);
     void enable_timestamp(uvc::device & device, std::timed_mutex & mutex, bool colorEnable, bool depthEnable);
-    void update_asic_coefficients(uvc::device & device, std::timed_mutex & mutex, const CameraCalibrationParameters & compensated_params); // TODO: Allow you to specify resolution
+    void update_asic_coefficients(uvc::device & device, std::timed_mutex & mutex, const CameraCalibrationParameters & compensated_params); // todo - Allow you to specify resolution
 
     // XU read/write
     void get_laser_power(const uvc::device & device, uint8_t & laser_power);
