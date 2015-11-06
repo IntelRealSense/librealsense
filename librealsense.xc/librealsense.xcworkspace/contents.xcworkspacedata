@@ -21,6 +21,12 @@
       location = "container:"
       name = "examples">
       <FileRef
+         location = "group:c-enumerate.xcodeproj">
+      </FileRef>
+      <FileRef
+         location = "group:cpp-alignimages.xcodeproj">
+      </FileRef>
+      <FileRef
          location = "group:cpp-multicam.xcodeproj">
       </FileRef>
       <FileRef
