@@ -12,7 +12,7 @@
 
 //#define ENABLE_DEBUG_SPAM
 
-#ifdef _DEBUG
+#if defined(_DEBUG) || defined(DEBUG)
 #define ENABLE_DEBUG_OUTPUT
 #endif
 
