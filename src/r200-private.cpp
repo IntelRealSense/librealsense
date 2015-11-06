@@ -489,7 +489,8 @@ namespace rsimpl { namespace r200
 
     void set_lr_exposure_mode(uvc::device & device, uint32_t mode)
     {
-        xu_write(device, CONTROL_LR_EXPOSURE_MODE, &mode, sizeof(mode));
+        uint8_t m = mode;
+        xu_write(device, CONTROL_LR_EXPOSURE_MODE, &m, sizeof(m));
     }
 
     void get_depth_params(const uvc::device & device, depth_params & params)

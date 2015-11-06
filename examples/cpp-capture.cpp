@@ -51,12 +51,6 @@ int main(int argc, char * argv[]) try
     // Start our device
     dev.start();
 
-    // Try setting some R200-specific settings
-    std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-    /*try {
-        dev.set_option(rs::option::r200_lr_auto_exposure_enabled, 1);
-    } catch(...) {}*/
-
     // Open a GLFW window
     glfwInit();
     std::ostringstream ss; ss << "CPP Capture Example (" << dev.get_name() << ")";
@@ -64,6 +58,7 @@ int main(int argc, char * argv[]) try
     glfwSetWindowUserPointer(win, &dev);
     glfwSetKeyCallback(win, [](GLFWwindow * win, int key, int scancode, int action, int mods) 
     { 
+        int value;
         auto dev = reinterpret_cast<rs::device *>(glfwGetWindowUserPointer(win));
         if(action != GLFW_RELEASE) switch(key)
         {
@@ -71,11 +66,14 @@ int main(int argc, char * argv[]) try
         case GLFW_KEY_C: align_color_to_depth = !align_color_to_depth; break;
         case GLFW_KEY_D: align_depth_to_color = !align_depth_to_color; break;
         case GLFW_KEY_E:
-            int emitter = dev->get_option(rs::option::r200_emitter_enabled);
-            std::cout << "Emitter is currently " << emitter << std::endl;
-            emitter = !emitter;
-            std::cout << "Setting emitter to " << emitter << std::endl;
-            dev->set_option(rs::option::r200_emitter_enabled, emitter);
+            value = !dev->get_option(rs::option::r200_emitter_enabled);
+            std::cout << "Setting emitter to " << value << std::endl;
+            dev->set_option(rs::option::r200_emitter_enabled, value);
+            break;
+        case GLFW_KEY_A:
+            value = !dev->get_option(rs::option::r200_lr_auto_exposure_enabled);
+            std::cout << "Setting auto exposure to " << value << std::endl;
+            dev->set_option(rs::option::r200_lr_auto_exposure_enabled, value);
             break;
         }
     });
