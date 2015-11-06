@@ -46,6 +46,8 @@
 
 #define COMMAND_DOWNLOAD_SPI_FLASH                  0x1A
 #define COMMAND_PROTECT_FLASH                       0x1C
+#define COMMAND_PEEK                                0x11
+#define COMMAND_POKE                                0x12
 #define COMMAND_LED_ON                              0x14
 #define COMMAND_LED_OFF                             0x15
 #define COMMAND_GET_FWREVISION                      0x21
@@ -489,7 +491,8 @@ namespace rsimpl { namespace r200
 
     void set_lr_exposure_mode(uvc::device & device, uint32_t mode)
     {
-        xu_write(device, CONTROL_LR_EXPOSURE_MODE, &mode, sizeof(mode));
+        uint8_t m = mode;
+        xu_write(device, CONTROL_LR_EXPOSURE_MODE, &m, sizeof(m));
     }
 
     void get_depth_params(const uvc::device & device, depth_params & params)
@@ -520,6 +523,33 @@ namespace rsimpl { namespace r200
     void set_disparity_shift(uvc::device & device, uint32_t shift)
     {
         xu_write(device, CONTROL_DISPARITY_SHIFT, &shift, sizeof(shift));
+    }
+
+	void get_register_value(uvc::device & device, uint32_t reg, uint32_t & value)
+    {
+		CommandPacket command;
+        command.code = COMMAND_PEEK;
+        command.modifier = COMMAND_MODIFIER_DIRECT;
+        command.tag = 12;
+		command.address = reg;
+
+        ResponsePacket response;
+        send_command(device, command, response);
+
+		value = response.value; 
+    }
+
+	void set_register_value(uvc::device & device, uint32_t reg, uint32_t value)
+    {
+		CommandPacket command;
+        command.code = COMMAND_POKE;
+        command.modifier = COMMAND_MODIFIER_DIRECT;
+        command.tag = 12;
+		command.address = reg;
+		command.value = value;
+
+        ResponsePacket response;
+        send_command(device, command, response);
     }
 
     const depth_params depth_params::presets[] = {

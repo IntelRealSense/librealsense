@@ -29,7 +29,7 @@ namespace rsimpl
 
     int decode_dinghy_frame_number(const subdevice_mode & mode, const void * frame)
     {
-        // Todo: check dinghy->magicNumber against 0x08070605 (IR), 0x4030201 (Z), 0x8A8B8C8D (Third)
+        // todo - check dinghy->magicNumber against 0x08070605 (IR), 0x4030201 (Z), 0x8A8B8C8D (Third)
         auto dinghy = reinterpret_cast<const r200::Dinghy *>(reinterpret_cast<const uint8_t *>(frame) + get_image_size(mode.width, mode.height-1, mode.fourcc));
         if(dinghy->magicNumber == 0x4030201 || dinghy->magicNumber == 0x08070605) return dinghy->frameCount;
         return 0;
@@ -118,13 +118,14 @@ namespace rsimpl
             }
         }
 
-        // Set up modes for third images (TODO: 15 FPS?)
+        // Set up modes for third images
 		info.subdevice_modes.push_back({2,  320,  240, 'YUY2', 60, {{RS_STREAM_COLOR,  320,  240, RS_FORMAT_YUYV, 60, THIRD_QRES}}, &unpack_subrect, &decode_yuy2_frame_number, true});
         info.subdevice_modes.push_back({2,  320,  240, 'YUY2', 30, {{RS_STREAM_COLOR,  320,  240, RS_FORMAT_YUYV, 30, THIRD_QRES}}, &unpack_subrect, &decode_yuy2_frame_number, true});
         info.subdevice_modes.push_back({2,  640,  480, 'YUY2', 60, {{RS_STREAM_COLOR,  640,  480, RS_FORMAT_YUYV, 60, THIRD_VGA}}, &unpack_subrect, &decode_yuy2_frame_number, true});
         info.subdevice_modes.push_back({2,  640,  480, 'YUY2', 30, {{RS_STREAM_COLOR,  640,  480, RS_FORMAT_YUYV, 30, THIRD_VGA}}, &unpack_subrect, &decode_yuy2_frame_number, true});
         info.subdevice_modes.push_back({2, 1920, 1080, 'YUY2', 30, {{RS_STREAM_COLOR, 1920, 1080, RS_FORMAT_YUYV, 30, THIRD_HD}}, &unpack_subrect, &decode_yuy2_frame_number, true});
         info.subdevice_modes.push_back({2, 2400, 1081, 'RW10', 30, {{RS_STREAM_COLOR, 1920, 1080, RS_FORMAT_RAW10, 30, THIRD_HD}}, &unpack_subrect, &decode_dinghy_frame_number, true});
+		// todo - add 15 fps modes
 
         // Set up interstream rules for left/right/z images
         for(auto ir : {RS_STREAM_INFRARED, RS_STREAM_INFRARED2})
@@ -245,7 +246,7 @@ namespace rsimpl
         uint32_t u32[2];
         uint16_t u16[2];
 
-        // TODO: Range check value before write
+        // todo - Range check value before write
         switch(option)
         {
         case RS_OPTION_R200_LR_AUTO_EXPOSURE_ENABLED:

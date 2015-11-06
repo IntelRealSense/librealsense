@@ -188,7 +188,8 @@ inline void test_option(rs_device * device, rs_option option, std::initializer_l
 {
     // Test reading the current value
     const auto first_value = rs_get_device_option(device, option, require_no_error());
-    // TODO: Check that the first value is something sane?
+    
+	// todo - Check that the first value is something sane?
 
     // Test setting good values, and that each value set can be subsequently get
     for(auto value : good_values)

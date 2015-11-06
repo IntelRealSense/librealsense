@@ -476,7 +476,7 @@ namespace rsimpl
                 {
                     if(desc.idVendor == get_vendor_id(*dev) && desc.idProduct == get_product_id(*dev))
                     {
-                        // TODO: Also make sure that we are sitting on the right bus/address
+                        // todo - Also make sure that we are sitting on the right bus/address
                         // libusb_get_bus_number(usb_device);
                         // libusb_get_device_address(usb_device);
                         dev->usb_device = usb_device;

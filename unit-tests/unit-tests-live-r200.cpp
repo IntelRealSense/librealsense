@@ -434,7 +434,7 @@ inline void test_r200_option(rs_option option, std::initializer_list<int> values
         rs_start_device(dev, require_no_error());
 
         // Currently, setting/getting options immediately after streaming frequently raises hardware errors
-        // TODO: Internally block or retry failed calls within the first few seconds after streaming
+        // todo - Internally block or retry failed calls within the first few seconds after streaming
         std::this_thread::sleep_for(std::chrono::seconds(1));
         test_option(dev, option, values, {});
     }

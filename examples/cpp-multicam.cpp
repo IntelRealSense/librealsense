@@ -26,13 +26,22 @@ int main(int argc, char * argv[]) try
         dev->start();
         std::cout << "done." << std::endl;
     }
-    buffers.resize(ctx.get_device_count()*2);
+
+	// Depth and color
+    buffers.resize(ctx.get_device_count() * 2);
 
     // Open a GLFW window
     glfwInit();
     std::ostringstream ss; ss << "CPP Multi-Camera Example";
     GLFWwindow * win = glfwCreateWindow(1280, 960, ss.str().c_str(), 0, 0);
     glfwMakeContextCurrent(win);
+
+	int windowWidth, windowHeight;
+    glfwGetFramebufferSize(win, &windowWidth, &windowHeight);
+
+	// Does not account for correct aspect ratios
+	auto perTextureWidth = windowWidth / devices.size();
+	auto perTextureHeight = windowHeight / devices.size();
 
     font font;
     if (auto f = find_file("examples/assets/Roboto-Bold.ttf", 3))
@@ -62,10 +71,9 @@ int main(int argc, char * argv[]) try
         for(auto dev : devices)
         {
             const auto c = dev->get_stream_intrinsics(rs::stream::color), d = dev->get_stream_intrinsics(rs::stream::depth);
-            buffers[i++].show(*dev, rs::stream::color, x, 0, 640, 480, font);
-            buffers[i++].show(*dev, rs::stream::depth, x, 480, 640, 480, font);
-            ttf_print(&font, x+(640 - ttf_len(&font, dev->get_name()))/2, 24, dev->get_name());
-            x += 640;
+            buffers[i++].show(*dev, rs::stream::color, x, 0, perTextureWidth, perTextureHeight, font);
+            buffers[i++].show(*dev, rs::stream::depth, x, perTextureHeight, perTextureWidth, perTextureHeight, font);
+            x += perTextureWidth;
         }
 
         glPopMatrix();

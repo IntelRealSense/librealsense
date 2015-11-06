@@ -245,8 +245,8 @@ namespace rsimpl
         {                      
             auto handle = device.subdevices[subdevice].handle;
             int ct_unit = 0, pu_unit = 0;
-            for(auto ct = uvc_get_input_terminals(handle); ct; ct = ct->next) ct_unit = ct->bTerminalID; // TODO: Check supported caps
-            for(auto pu = uvc_get_processing_units(handle); pu; pu = pu->next) pu_unit = pu->bUnitID; // TODO: Check supported caps
+            for(auto ct = uvc_get_input_terminals(handle); ct; ct = ct->next) ct_unit = ct->bTerminalID; // todo - Check supported caps
+            for(auto pu = uvc_get_processing_units(handle); pu; pu = pu->next) pu_unit = pu->bUnitID; // todo - Check supported caps
 
             switch(option)
             {
@@ -268,8 +268,8 @@ namespace rsimpl
         {
             auto handle = device.subdevices[subdevice].handle;
             int ct_unit = 0, pu_unit = 0;
-            for(auto ct = uvc_get_input_terminals(handle); ct; ct = ct->next) ct_unit = ct->bTerminalID; // TODO: Check supported caps
-            for(auto pu = uvc_get_processing_units(handle); pu; pu = pu->next) pu_unit = pu->bUnitID; // TODO: Check supported caps
+            for(auto ct = uvc_get_input_terminals(handle); ct; ct = ct->next) ct_unit = ct->bTerminalID; // todo - Check supported caps
+            for(auto pu = uvc_get_processing_units(handle); pu; pu = pu->next) pu_unit = pu->bUnitID; // todo - Check supported caps
 
             switch(option)
             {

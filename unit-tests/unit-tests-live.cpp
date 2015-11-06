@@ -239,7 +239,7 @@ TEST_CASE( "streaming mode intrinsics are sane", "[live]" )
                 REQUIRE( intrin.ppy > height * 0.4f );
                 REQUIRE( intrin.ppy < height * 0.6f );
 
-                // Focal length must be nonnegative (TODO: Refine requirements based on known expected FOV)
+                // Focal length must be nonnegative (todo - Refine requirements based on known expected FOV)
                 REQUIRE( intrin.fx > 0.0f );
                 REQUIRE( intrin.fy > 0.0f );
 

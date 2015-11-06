@@ -298,10 +298,13 @@ namespace rsimpl
         void get_disparity_shift(const uvc::device & device, uint32_t & shift);
         void set_disparity_shift(uvc::device & device, uint32_t shift);
 
-        //@todo - (if necessary) - get_exposure_discovery
-        //@todo - (if necessary) - set_exposure_discovery
-        //@todo - (if necessary) - get_gain_discovery
-        //@todo - (if necessary) - set_gain_discovery
+		void get_register_value(uvc::device & device, uint32_t reg, uint32_t & value);
+		void set_register_value(uvc::device & device, uint32_t reg, uint32_t value);
+        
+        //todo - (if necessary) - get_exposure_discovery
+        //todo - (if necessary) - set_exposure_discovery
+        //todo - (if necessary) - get_gain_discovery
+        //todo - (if necessary) - set_gain_discovery
     }
 }
 

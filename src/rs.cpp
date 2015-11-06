@@ -29,8 +29,8 @@ namespace rsimpl
     static void translate_exception(const char * name, std::string args, rs_error ** error)
     {
         try { throw; }
-        catch (const std::exception & e) { if (error) *error = new rs_error {e.what(), name, move(args)}; } // TODO: Handle case where THIS code throws
-        catch (...) { if (error) *error = new rs_error {"unknown error", name, move(args)}; } // TODO: Handle case where THIS code throws
+        catch (const std::exception & e) { if (error) *error = new rs_error {e.what(), name, move(args)}; } // todo - Handle case where THIS code throws
+        catch (...) { if (error) *error = new rs_error {"unknown error", name, move(args)}; } // todo - Handle case where THIS code throws
     }
 }
 #define HANDLE_EXCEPTIONS_AND_RETURN(R, ...) catch(...) { std::ostringstream ss; rsimpl::stream_args(ss, #__VA_ARGS__, __VA_ARGS__); rsimpl::translate_exception(__FUNCTION__, ss.str(), error); return R; }
