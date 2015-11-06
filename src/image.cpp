@@ -38,6 +38,7 @@ namespace rsimpl
         case RS_FORMAT_BGRA8: return width * height * 4;
         case RS_FORMAT_Y8: return width * height;
         case RS_FORMAT_Y16: return width * height * 2;
+        case RS_FORMAT_RAW10: assert(width % 4 == 0); return width * 5/4 * height;
         default: assert(false); return 0;
         }    
     }
@@ -52,6 +53,7 @@ namespace rsimpl
             {'Y16 ', 1, sizeof(uint16_t)       }, // DS* 16-bit left format
             {'Y8I ', 1, sizeof(uint8_t)*2      }, // DS* 8-bit left/right format
             {'Y12I', 1, sizeof(y12i_pixel)     }, // DS* 12-bit left/right format
+            {'RW10', 1, 1                      }, // DS* Bayer-patterned 10-bit luminance format, advertised at the UVC level via number of BYTES, not pixels
             {'INVR', 1, sizeof(uint16_t)       }, // IVCAM 16-bit depth format (F200)
             {'INVZ', 1, sizeof(uint16_t)       }, // IVCAM 16-bit depth format (SR300)
             {'INVI', 1, sizeof(uint8_t)        }, // IVCAM 8-bit infrared format (NOTE: Might have an overloaded meaning on SR300, might need special logic)

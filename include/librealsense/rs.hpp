@@ -2,11 +2,7 @@
 #define LIBREALSENSE_RS_HPP
 
 #include "rsutil.h"
-
-#include <cmath>
-#include <cstring>
 #include <cstdint>
-#include <stdexcept>
 #include <sstream>
 
 namespace rs
@@ -34,7 +30,8 @@ namespace rs
         rgba8 = 5,
         bgra8 = 6,
         y8 = 7,
-        y16 = 8
+        y16 = 8,
+        raw10 = 9 // Four 10-bit luminance values encoded into a 5-byte macropixel
     };
 
     enum class preset : int32_t
@@ -74,7 +71,7 @@ namespace rs
         r200_lr_exposure = 18, // > 0 (Units of 0.1 ms)
         r200_emitter_enabled = 19, // {0, 1}
         r200_depth_control_preset = 20, // {0, 5}, 0 is default, 1-5 is low to high outlier rejection
-        r200_depth_units = 21, // > 0
+        r200_depth_units = 21, // micrometers per increment in integer depth values, 1000 is default (mm scale)
         r200_depth_clamp_min = 22, // 0 - USHORT_MAX
         r200_depth_clamp_max = 23, // 0 - USHORT_MAX
         r200_disparity_mode_enabled = 24, // {0, 1}

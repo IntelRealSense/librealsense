@@ -33,10 +33,11 @@ int main(int argc, char * argv[]) try
         }
     }
 
-    dev.enable_stream(rs::stream::color, rs::preset::best_quality);
     dev.enable_stream(rs::stream::depth, rs::preset::best_quality);
-    dev.enable_stream(rs::stream::infrared, rs::preset::best_quality);
-    try { dev.enable_stream(rs::stream::infrared2, rs::preset::best_quality); } catch(...) {}
+    //dev.enable_stream(rs::stream::color, 640, 480, rs::format::rgb8, 30); //rs::preset::best_quality);
+    dev.enable_stream(rs::stream::color, 1920, 1080, rs::format::raw10, 30);
+    //dev.enable_stream(rs::stream::infrared, rs::preset::best_quality);
+    //try { dev.enable_stream(rs::stream::infrared2, rs::preset::best_quality); } catch(...) {}
 
     // Compute field of view for each enabled stream
     for(int i = 0; i < 4; ++i)

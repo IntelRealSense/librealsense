@@ -123,7 +123,8 @@ namespace rsimpl
         info.subdevice_modes.push_back({2,  320,  240, 'YUY2', 30, {{RS_STREAM_COLOR,  320,  240, RS_FORMAT_YUYV, 30, THIRD_QRES}}, &unpack_subrect, &decode_yuy2_frame_number, true});
         info.subdevice_modes.push_back({2,  640,  480, 'YUY2', 60, {{RS_STREAM_COLOR,  640,  480, RS_FORMAT_YUYV, 60, THIRD_VGA}}, &unpack_subrect, &decode_yuy2_frame_number, true});
         info.subdevice_modes.push_back({2,  640,  480, 'YUY2', 30, {{RS_STREAM_COLOR,  640,  480, RS_FORMAT_YUYV, 30, THIRD_VGA}}, &unpack_subrect, &decode_yuy2_frame_number, true});
-        info.subdevice_modes.push_back({2, 1920, 1080, 'YUY2', 30, {{RS_STREAM_COLOR, 1920, 1080, RS_FORMAT_YUYV, 30, THIRD_HD }}, &unpack_subrect, &decode_yuy2_frame_number, true});
+        info.subdevice_modes.push_back({2, 1920, 1080, 'YUY2', 30, {{RS_STREAM_COLOR, 1920, 1080, RS_FORMAT_YUYV, 30, THIRD_HD}}, &unpack_subrect, &decode_yuy2_frame_number, true});
+        info.subdevice_modes.push_back({2, 2400, 1081, 'RW10', 30, {{RS_STREAM_COLOR, 1920, 1080, RS_FORMAT_RAW10, 30, THIRD_HD}}, &unpack_subrect, &decode_dinghy_frame_number, true});
 
         // Set up interstream rules for left/right/z images
         for(auto ir : {RS_STREAM_INFRARED, RS_STREAM_INFRARED2})

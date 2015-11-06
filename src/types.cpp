@@ -40,6 +40,7 @@ namespace rsimpl
         CASE(BGRA8)
         CASE(Y8)
         CASE(Y16)
+        CASE(RAW10)
         default: assert(!is_valid(value)); return nullptr;
         }
         #undef CASE
