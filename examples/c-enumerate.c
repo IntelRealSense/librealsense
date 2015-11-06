@@ -25,6 +25,8 @@ int main()
 
     device_count = rs_get_device_count(context, &e);
     check_error(e);
+    
+    if (!device_count) printf("No device detected. Is it plugged in?\n");
 
     for(i = 0; i < device_count; ++i)
     {

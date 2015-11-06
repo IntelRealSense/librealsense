@@ -23,7 +23,7 @@ int main(int argc, char * argv[]) try
     rs::device & dev = *ctx.get_device(0);
 
     dev.enable_stream(rs::stream::depth, rs::preset::best_quality);
-    dev.enable_stream(rs::stream::color, 640, 480, rs::format::rgb8, 0);
+    dev.enable_stream(rs::stream::color, rs::preset::best_quality);
     dev.start();
 
     // Open a GLFW window

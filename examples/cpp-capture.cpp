@@ -21,6 +21,18 @@ int main(int argc, char * argv[]) try
     if(ctx.get_device_count() == 0) throw std::runtime_error("No device detected. Is it plugged in?");
     rs::device & dev = *ctx.get_device(0);
 
+    // Report the status of each supported option
+    for(int i = 0; i < RS_OPTION_COUNT; ++i)
+    {
+        auto option = rs::option(i);
+        if(dev.supports_option(option))
+        {
+            std::cout << "Option " << option << ": ";
+            try { std::cout << dev.get_option(option) << std::endl; }
+            catch(const std::exception & e) { std::cout << e.what() << std::endl; }
+        }
+    }
+
     dev.enable_stream(rs::stream::color, rs::preset::best_quality);
     dev.enable_stream(rs::stream::depth, rs::preset::best_quality);
     dev.enable_stream(rs::stream::infrared, rs::preset::best_quality);
@@ -44,18 +56,6 @@ int main(int argc, char * argv[]) try
     /*try {
         dev.set_option(rs::option::r200_lr_auto_exposure_enabled, 1);
     } catch(...) {}*/
-
-    // Report the status of each supported option
-    for(int i = 0; i < RS_OPTION_COUNT; ++i)
-    {
-        auto option = rs::option(i);
-        if(dev.supports_option(option))
-        {
-            std::cout << "Option " << option << ": ";
-            try { std::cout << dev.get_option(option) << std::endl; }
-            catch(const std::exception & e) { std::cout << e.what() << std::endl; }
-        }
-    }
 
     // Open a GLFW window
     glfwInit();
