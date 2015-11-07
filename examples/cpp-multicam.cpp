@@ -41,7 +41,7 @@ int main(int argc, char * argv[]) try
 
 	// Does not account for correct aspect ratios
 	auto perTextureWidth = windowWidth / devices.size();
-	auto perTextureHeight = windowHeight / devices.size();
+	auto perTextureHeight = 480;
 
     font font;
     if (auto f = find_file("examples/assets/Roboto-Bold.ttf", 3))
