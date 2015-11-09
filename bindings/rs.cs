@@ -137,6 +137,8 @@ namespace RealSense
             rs_delete_context(handle, IntPtr.Zero);
         }
 
+        /// <summary> determine number of connected devices </summary>
+        /// <returns> the count of devices </returns>
         public int GetDeviceCount()
         {
             IntPtr e = IntPtr.Zero;
@@ -145,6 +147,9 @@ namespace RealSense
             return r;
         }
 
+        /// <summary> retrieve connected device by index </summary>
+        /// <param name="index"> the zero based index of device to retrieve </param>
+        /// <returns> the requested device </returns>
         public Device GetDevice(int index)
         {
             IntPtr e = IntPtr.Zero;
@@ -164,6 +169,8 @@ namespace RealSense
         private IntPtr handle;
         public Device(IntPtr handle) { this.handle = handle; }
 
+        /// <summary> retrieve a human readable device model string </summary>
+        /// <returns> the model string, such as "Intel RealSense F200" or "Intel RealSense R200" </returns>
         public string GetName()
         {
             IntPtr e = IntPtr.Zero;
@@ -172,6 +179,8 @@ namespace RealSense
             return Marshal.PtrToStringAnsi(r);
         }
 
+        /// <summary> retrieve the unique serial number of the device </summary>
+        /// <returns> the serial number, in a format specific to the device model </returns>
         public string GetSerial()
         {
             IntPtr e = IntPtr.Zero;
@@ -180,6 +189,8 @@ namespace RealSense
             return Marshal.PtrToStringAnsi(r);
         }
 
+        /// <summary> retrieve the version of the firmware currently installed on the device </summary>
+        /// <returns> firmware version string, in a format is specific to device model </returns>
         public string GetFirmwareVersion()
         {
             IntPtr e = IntPtr.Zero;
@@ -188,6 +199,9 @@ namespace RealSense
             return Marshal.PtrToStringAnsi(r);
         }
 
+        /// <summary> retrieve extrinsic transformation between the viewpoints of two different streams </summary>
+        /// <param name="fromStream"> stream whose coordinate space we will transform from </param>
+        /// <param name="toStream"> the transformation between the two streams </param>
         public Extrinsics GetExtrinsics(Stream fromStream, Stream toStream)
         {
             IntPtr e = IntPtr.Zero;
@@ -197,6 +211,8 @@ namespace RealSense
             return extrin;
         }
 
+        /// <summary> retrieve mapping between the units of the depth image and meters </summary>
+        /// <returns> depth in meters corresponding to a depth value of 1 </returns>
         public float GetDepthScale()
         {
             IntPtr e = IntPtr.Zero;
@@ -205,6 +221,9 @@ namespace RealSense
             return r;
         }
 
+        /// <summary> determine if the device allows a specific option to be queried and set </summary>
+        /// <param name="option"> the option to check for support </param>
+        /// <returns> true if the option can be queried and set </returns>
         public bool SupportsOption(Option option)
         {
             IntPtr e = IntPtr.Zero;
@@ -213,6 +232,9 @@ namespace RealSense
             return r != 0;
         }
 
+        /// <summary> determine the number of streaming modes available for a given stream </summary>
+        /// <param name="stream"> the stream whose modes will be enumerated </param>
+        /// <returns> the count of available modes </returns>
         public int GetStreamModeCount(Stream stream)
         {
             IntPtr e = IntPtr.Zero;
@@ -221,6 +243,9 @@ namespace RealSense
             return r;
         }
 
+        /// <summary> determine the properties of a specific streaming mode </summary>
+        /// <param name="stream"> the stream whose mode will be queried </param>
+        /// <param name="index"> the number of frames which will be streamed per second </param>
         public void GetStreamMode(Stream stream, int index, out int width, out int height, out Format format, out int framerate)
         {
             IntPtr e = IntPtr.Zero;
@@ -228,6 +253,12 @@ namespace RealSense
             Error.Handle(e);
         }
 
+        /// <summary> enable a specific stream and request specific properties </summary>
+        /// <param name="stream"> the stream to enable </param>
+        /// <param name="width"> the desired width of a frame image in pixels, or 0 if any width is acceptable </param>
+        /// <param name="height"> the desired height of a frame image in pixels, or 0 if any height is acceptable </param>
+        /// <param name="format"> the pixel format of a frame image, or ANY if any format is acceptable </param>
+        /// <param name="framerate"> the number of frames which will be streamed per second, or 0 if any framerate is acceptable </param>
         public void EnableStream(Stream stream, int width, int height, Format format, int framerate)
         {
             IntPtr e = IntPtr.Zero;
@@ -235,6 +266,9 @@ namespace RealSense
             Error.Handle(e);
         }
 
+        /// <summary> enable a specific stream and request properties using a preset </summary>
+        /// <param name="stream"> the stream to enable </param>
+        /// <param name="preset"> the preset to use to enable the stream </param>
         public void EnableStream(Stream stream, Preset preset)
         {
             IntPtr e = IntPtr.Zero;
@@ -242,6 +276,8 @@ namespace RealSense
             Error.Handle(e);
         }
 
+        /// <summary> disable a specific stream </summary>
+        /// <param name="stream"> the stream to disable </param>
         public void DisableStream(Stream stream)
         {
             IntPtr e = IntPtr.Zero;
@@ -249,6 +285,9 @@ namespace RealSense
             Error.Handle(e);
         }
 
+        /// <summary> determine if a specific stream is enabled </summary>
+        /// <param name="stream"> the stream to check </param>
+        /// <returns> true if the stream is currently enabled </returns>
         public bool IsStreamEnabled(Stream stream)
         {
             IntPtr e = IntPtr.Zero;
@@ -257,6 +296,8 @@ namespace RealSense
             return r != 0;
         }
 
+        /// <summary> retrieve intrinsic camera parameters for a specific stream </summary>
+        /// <param name="stream"> the intrinsic parameters of the stream </param>
         public Intrinsics GetStreamIntrinsics(Stream stream)
         {
             IntPtr e = IntPtr.Zero;
@@ -266,6 +307,9 @@ namespace RealSense
             return intrin;
         }
 
+        /// <summary> retrieve the pixel format for a specific stream </summary>
+        /// <param name="stream"> the stream whose format to retrieve </param>
+        /// <returns> the pixel format of the stream </returns>
         public Format GetStreamFormat(Stream stream)
         {
             IntPtr e = IntPtr.Zero;
@@ -274,6 +318,9 @@ namespace RealSense
             return r;
         }
 
+        /// <summary> retrieve the framerate for a specific stream </summary>
+        /// <param name="stream"> the stream whose framerate to retrieve </param>
+        /// <returns> the framerate of the stream, in frames per second </returns>
         public int GetStreamFramerate(Stream stream)
         {
             IntPtr e = IntPtr.Zero;
@@ -282,6 +329,7 @@ namespace RealSense
             return r;
         }
 
+        /// <summary> begin streaming on all enabled streams for this device </summary>
         public void Start()
         {
             IntPtr e = IntPtr.Zero;
@@ -289,6 +337,7 @@ namespace RealSense
             Error.Handle(e);
         }
 
+        /// <summary> end streaming on all streams for this device </summary>
         public void Stop()
         {
             IntPtr e = IntPtr.Zero;
@@ -296,6 +345,8 @@ namespace RealSense
             Error.Handle(e);
         }
 
+        /// <summary> determine if the device is currently streaming </summary>
+        /// <returns> true if the device is currently streaming </returns>
         public bool IsStreaming()
         {
             IntPtr e = IntPtr.Zero;
@@ -304,6 +355,9 @@ namespace RealSense
             return r != 0;
         }
 
+        /// <summary> set the value of a specific device option </summary>
+        /// <param name="option"> the option whose value to set </param>
+        /// <param name="value"> the desired value to set </param>
         public void SetOption(Option option, int value)
         {
             IntPtr e = IntPtr.Zero;
@@ -311,6 +365,9 @@ namespace RealSense
             Error.Handle(e);
         }
 
+        /// <summary> query the current value of a specific device option </summary>
+        /// <param name="option"> the option whose value to retrieve </param>
+        /// <returns> the current value of the option </returns>
         public int GetOption(Option option)
         {
             IntPtr e = IntPtr.Zero;
@@ -319,6 +376,7 @@ namespace RealSense
             return r;
         }
 
+        /// <summary> block until new frames are available </summary>
         public void WaitForFrames()
         {
             IntPtr e = IntPtr.Zero;
@@ -326,6 +384,9 @@ namespace RealSense
             Error.Handle(e);
         }
 
+        /// <summary> retrieve the time at which the latest frame on a stream was captured </summary>
+        /// <param name="stream"> the stream whose latest frame we are interested in </param>
+        /// <returns> the timestamp of the frame, in milliseconds since the device was started </returns>
         public int GetFrameTimestamp(Stream stream)
         {
             IntPtr e = IntPtr.Zero;
@@ -334,6 +395,9 @@ namespace RealSense
             return r;
         }
 
+        /// <summary> retrieve the contents of the latest frame on a stream </summary>
+        /// <param name="stream"> the stream whose latest frame we are interested in </param>
+        /// <returns> the pointer to the start of the frame data </returns>
         public IntPtr GetFrameData(Stream stream)
         {
             IntPtr e = IntPtr.Zero;
