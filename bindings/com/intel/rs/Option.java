@@ -22,7 +22,7 @@ public enum Option
     R200_LR_GAIN(17), // 100 - 1600 (Units of 0.01)
     R200_LR_EXPOSURE(18), // > 0 (Units of 0.1 ms)
     R200_EMITTER_ENABLED(19), // {0, 1}
-    R200_DEPTH_CONTROL_PRESET(20), // {0, 5}, 0 is default, 1-5 is low to high outlier rejection
+    R200_DEPTH_CONTROL_PRESET(20), // 0 - 5, 0 is default, 1-5 is low to high outlier rejection
     R200_DEPTH_UNITS(21), // micrometers per increment in integer depth values, 1000 is default (mm scale)
     R200_DEPTH_CLAMP_MIN(22), // 0 - USHORT_MAX
     R200_DEPTH_CLAMP_MAX(23), // 0 - USHORT_MAX

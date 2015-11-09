@@ -66,7 +66,7 @@ namespace RealSense
         R200LRGain = 17, // 100 - 1600 (Units of 0.01)
         R200LRExposure = 18, // > 0 (Units of 0.1 ms)
         R200EmitterEnabled = 19, // {0, 1}
-        R200DepthControlPreset = 20, // {0, 5}, 0 is default, 1-5 is low to high outlier rejection
+        R200DepthControlPreset = 20, // 0 - 5, 0 is default, 1-5 is low to high outlier rejection
         R200DepthUnits = 21, // micrometers per increment in integer depth values, 1000 is default (mm scale)
         R200DepthClampMin = 22, // 0 - USHORT_MAX
         R200DepthClampMax = 23, // 0 - USHORT_MAX
