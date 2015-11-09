@@ -10,7 +10,7 @@ rs_context::rs_context() : rs_context(0)
     for(auto device : query_devices(context))
     {
 		if (get_vendor_id(*device) != 32902)
-			throw std::runtime_error("vendor id 0x8086 could not be validated");
+			continue;
 				
         switch(get_product_id(*device))
         {

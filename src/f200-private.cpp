@@ -131,9 +131,9 @@ namespace rsimpl { namespace f200
     {
         int16_t TableValidation;
         int16_t TableVarsion;
+		IVCAMTemperatureData TemperatureData;
         OACOffsetData OACOffsetData_;
         IVCAMThermalLoopParams ThermalLoopParams;
-        IVCAMTemperatureData TemperatureData;
     };
 
     struct IVCAMCalibration
@@ -552,7 +552,7 @@ namespace rsimpl { namespace f200
          IVCAMCommand command(IVCAMMonitorCommand::UpdateCalib);
 
          memcpy(command.data, coeffs.CoefValueArray, NUM_OF_CALIBRATION_COEFFS * sizeof(float));
-         command.Param1 = 0;
+         command.Param1 = 4; // todo - 0 = Z, 4 = R
          command.Param2 = 0;
          command.Param3 = 0;
          command.Param4 = 0;
@@ -668,11 +668,11 @@ namespace rsimpl { namespace f200
 
             // calprms; // breakpoint here to debug
 
-            memcpy(&TesterData,  rawCalibData, SIZE_OF_CALIB_HEADER_BYTES);  //copy the header: valid + version
+            memcpy(&TesterData, rawCalibData, SIZE_OF_CALIB_HEADER_BYTES); //copy the header: valid + version
 
             //copy the tester data from end of calibration
             int EndOfCalibratioData = SIZE_OF_CALIB_PARAM_BYTES + SIZE_OF_CALIB_HEADER_BYTES;
-            memcpy((uint8_t*)&TesterData + SIZE_OF_CALIB_HEADER_BYTES , rawCalibData + EndOfCalibratioData , sizeof(IVCAMTesterData) - SIZE_OF_CALIB_HEADER_BYTES);
+            memcpy((uint8_t*)&TesterData + SIZE_OF_CALIB_HEADER_BYTES, rawCalibData + EndOfCalibratioData, sizeof(IVCAMTesterData) - SIZE_OF_CALIB_HEADER_BYTES);
             return std::make_tuple(calibration, TesterData.TemperatureData, TesterData.ThermalLoopParams);
         }
 
@@ -865,7 +865,7 @@ namespace rsimpl { namespace f200
     void update_asic_coefficients(uvc::device & device, std::timed_mutex & mutex, const CameraCalibrationParameters & compensated_params)
     {
         IVCAMASICCoefficients coeffs = {};
-        generate_asic_calibration_coefficients(compensated_params, {640, 480}, true, coeffs.CoefValueArray); // todo - fix hardcoded resolution parameters
+        generate_asic_calibration_coefficients(compensated_params, {640, 480}, false, coeffs.CoefValueArray); // todo - fix hardcoded resolution parameters
         set_asic_coefficients(device, mutex, coeffs);    
     }    
 
