@@ -2,9 +2,9 @@
 #define LIBREALSENSE_RS_HPP
 
 #include "rsutil.h"
+#include <cmath>
 #include <cstdint>
 #include <sstream>
-#include <math.h>
 
 namespace rs
 {
@@ -142,7 +142,7 @@ namespace rs
         }
 
         /// determine number of connected devices
-        /// \return    the count of devices
+        /// \return  the count of devices
         int get_device_count() const
         {
             rs_error * e = nullptr;
@@ -152,8 +152,8 @@ namespace rs
         }
 
         /// retrieve connected device by index
-        /// \param[in] index   the zero based index of device to retrieve
-        /// \return            the requested device
+        /// \param[in] index  the zero based index of device to retrieve
+        /// \return           the requested device
         device * get_device(int index)
         {
             rs_error * e = nullptr;
@@ -171,7 +171,7 @@ namespace rs
         ~device() = delete;
     public:
         /// retrieve a human readable device model string
-        /// \return    the model string, such as "Intel RealSense F200" or "Intel RealSense R200"
+        /// \return  the model string, such as "Intel RealSense F200" or "Intel RealSense R200"
         const char * get_name() const
         {
             rs_error * e = nullptr;
@@ -181,7 +181,7 @@ namespace rs
         }
 
         /// retrieve the unique serial number of the device
-        /// \return    the serial number, in a format specific to the device model
+        /// \return  the serial number, in a format specific to the device model
         const char * get_serial() const
         {
             rs_error * e = nullptr;
@@ -191,7 +191,7 @@ namespace rs
         }
 
         /// retrieve the version of the firmware currently installed on the device
-        /// \return    firmware version string, in a format is specific to device model
+        /// \return  firmware version string, in a format is specific to device model
         const char * get_firmware_version() const
         {
             rs_error * e = nullptr;
@@ -201,8 +201,8 @@ namespace rs
         }
 
         /// retrieve extrinsic transformation between the viewpoints of two different streams
-        /// \param[in] from_stream   stream whose coordinate space we will transform from
-        /// \param[in] to_stream     the transformation between the two streams
+        /// \param[in] from_stream  stream whose coordinate space we will transform from
+        /// \param[in] to_stream    the transformation between the two streams
         extrinsics get_extrinsics(stream from_stream, stream to_stream) const
         {
             rs_error * e = nullptr;
@@ -213,7 +213,7 @@ namespace rs
         }
 
         /// retrieve mapping between the units of the depth image and meters
-        /// \return    depth in meters corresponding to a depth value of 1
+        /// \return  depth in meters corresponding to a depth value of 1
         float get_depth_scale() const
         {
             rs_error * e = nullptr;
@@ -223,8 +223,8 @@ namespace rs
         }
 
         /// determine if the device allows a specific option to be queried and set
-        /// \param[in] option   the option to check for support
-        /// \return             true if the option can be queried and set
+        /// \param[in] option  the option to check for support
+        /// \return            true if the option can be queried and set
         bool supports_option(option option) const
         {
             rs_error * e = nullptr;
@@ -234,8 +234,8 @@ namespace rs
         }
 
         /// determine the number of streaming modes available for a given stream
-        /// \param[in] stream   the stream whose modes will be enumerated
-        /// \return             the count of available modes
+        /// \param[in] stream  the stream whose modes will be enumerated
+        /// \return            the count of available modes
         int get_stream_mode_count(stream stream) const
         {
             rs_error * e = nullptr;
@@ -245,8 +245,8 @@ namespace rs
         }
 
         /// determine the properties of a specific streaming mode
-        /// \param[in] stream   the stream whose mode will be queried
-        /// \param[in] index    the number of frames which will be streamed per second
+        /// \param[in] stream  the stream whose mode will be queried
+        /// \param[in] index   the number of frames which will be streamed per second
         void get_stream_mode(stream stream, int index, int & width, int & height, format & format, int & framerate) const
         {
             rs_error * e = nullptr;
@@ -255,11 +255,11 @@ namespace rs
         }
 
         /// enable a specific stream and request specific properties
-        /// \param[in] stream      the stream to enable
-        /// \param[in] width       the desired width of a frame image in pixels, or 0 if any width is acceptable
-        /// \param[in] height      the desired height of a frame image in pixels, or 0 if any height is acceptable
-        /// \param[in] format      the pixel format of a frame image, or ANY if any format is acceptable
-        /// \param[in] framerate   the number of frames which will be streamed per second, or 0 if any framerate is acceptable
+        /// \param[in] stream     the stream to enable
+        /// \param[in] width      the desired width of a frame image in pixels, or 0 if any width is acceptable
+        /// \param[in] height     the desired height of a frame image in pixels, or 0 if any height is acceptable
+        /// \param[in] format     the pixel format of a frame image, or ANY if any format is acceptable
+        /// \param[in] framerate  the number of frames which will be streamed per second, or 0 if any framerate is acceptable
         void enable_stream(stream stream, int width, int height, format format, int framerate)
         {
             rs_error * e = nullptr;
@@ -268,8 +268,8 @@ namespace rs
         }
 
         /// enable a specific stream and request properties using a preset
-        /// \param[in] stream   the stream to enable
-        /// \param[in] preset   the preset to use to enable the stream
+        /// \param[in] stream  the stream to enable
+        /// \param[in] preset  the preset to use to enable the stream
         void enable_stream(stream stream, preset preset)
         {
             rs_error * e = nullptr;
@@ -278,7 +278,7 @@ namespace rs
         }
 
         /// disable a specific stream
-        /// \param[in] stream   the stream to disable
+        /// \param[in] stream  the stream to disable
         void disable_stream(stream stream)
         {
             rs_error * e = nullptr;
@@ -287,8 +287,8 @@ namespace rs
         }
 
         /// determine if a specific stream is enabled
-        /// \param[in] stream   the stream to check
-        /// \return             true if the stream is currently enabled
+        /// \param[in] stream  the stream to check
+        /// \return            true if the stream is currently enabled
         bool is_stream_enabled(stream stream) const
         {
             rs_error * e = nullptr;
@@ -298,7 +298,7 @@ namespace rs
         }
 
         /// retrieve intrinsic camera parameters for a specific stream
-        /// \param[in] stream   the intrinsic parameters of the stream
+        /// \param[in] stream  the intrinsic parameters of the stream
         intrinsics get_stream_intrinsics(stream stream) const
         {
             rs_error * e = nullptr;
@@ -309,8 +309,8 @@ namespace rs
         }
 
         /// retrieve the pixel format for a specific stream
-        /// \param[in] stream   the stream whose format to retrieve
-        /// \return             the pixel format of the stream
+        /// \param[in] stream  the stream whose format to retrieve
+        /// \return            the pixel format of the stream
         format get_stream_format(stream stream) const
         {
             rs_error * e = nullptr;
@@ -320,8 +320,8 @@ namespace rs
         }
 
         /// retrieve the framerate for a specific stream
-        /// \param[in] stream   the stream whose framerate to retrieve
-        /// \return             the framerate of the stream, in frames per second
+        /// \param[in] stream  the stream whose framerate to retrieve
+        /// \return            the framerate of the stream, in frames per second
         int get_stream_framerate(stream stream) const
         {
             rs_error * e = nullptr;
@@ -349,7 +349,7 @@ namespace rs
         }
 
         /// determine if the device is currently streaming
-        /// \return    true if the device is currently streaming
+        /// \return  true if the device is currently streaming
         bool is_streaming() const
         {
             rs_error * e = nullptr;
@@ -359,8 +359,8 @@ namespace rs
         }
 
         /// set the value of a specific device option
-        /// \param[in] option   the option whose value to set
-        /// \param[in] value    the desired value to set
+        /// \param[in] option  the option whose value to set
+        /// \param[in] value   the desired value to set
         void set_option(option option, int value)
         {
             rs_error * e = nullptr;
@@ -369,8 +369,8 @@ namespace rs
         }
 
         /// query the current value of a specific device option
-        /// \param[in] option   the option whose value to retrieve
-        /// \return             the current value of the option
+        /// \param[in] option  the option whose value to retrieve
+        /// \return            the current value of the option
         int get_option(option option) const
         {
             rs_error * e = nullptr;
@@ -389,8 +389,8 @@ namespace rs
         }
 
         /// retrieve the time at which the latest frame on a stream was captured
-        /// \param[in] stream   the stream whose latest frame we are interested in
-        /// \return             the timestamp of the frame, in milliseconds since the device was started
+        /// \param[in] stream  the stream whose latest frame we are interested in
+        /// \return            the timestamp of the frame, in milliseconds since the device was started
         int get_frame_timestamp(stream stream) const
         {
             rs_error * e = nullptr;
@@ -400,8 +400,8 @@ namespace rs
         }
 
         /// retrieve the contents of the latest frame on a stream
-        /// \param[in] stream   the stream whose latest frame we are interested in
-        /// \return             the pointer to the start of the frame data
+        /// \param[in] stream  the stream whose latest frame we are interested in
+        /// \return            the pointer to the start of the frame data
         const void * get_frame_data(stream stream) const
         {
             rs_error * e = nullptr;
