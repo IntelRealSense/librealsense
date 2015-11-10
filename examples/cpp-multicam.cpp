@@ -37,7 +37,7 @@ int main(int argc, char * argv[]) try
     glfwMakeContextCurrent(win);
 
 	int windowWidth, windowHeight;
-    glfwGetFramebufferSize(win, &windowWidth, &windowHeight);
+    glfwGetWindowSize(win, &windowWidth, &windowHeight);
 
 	// Does not account for correct aspect ratios
 	auto perTextureWidth = windowWidth / devices.size();
