@@ -6,7 +6,12 @@ Dependency management for GLFW3 (example apps) and libusb-1.0 is performed throu
 
 **NB:** On Linux, the libusb/libuvc backend has been deprecated in favor of the V4L2 backend.  
 
-## Dev Notes October 20th, 2015
+# Table of Contents
+* [Developer Notes](#dev-notes)
+
+
+## Dev Notes 
+October 20th, 2015
 1. (DS4) ALL of 640x480, 628x468, 492x372, 480x360, 332x252, 320x240 are now available for DEPTH and INFRARED streams.
 2. (DS4/IVCAM) It is safe to hardcode 640x480 or 320x240 as DEPTH or INFRARED resolutions, supported on both DS4 and IVCAM.
 3. (DS4) For the resolutions which are 12 pixels larger than the native depth resolution, the depth image is centered and padded.
