@@ -110,49 +110,208 @@ typedef struct rs_context rs_context;
 typedef struct rs_device rs_device;
 typedef struct rs_error rs_error;
 
-rs_context * rs_create_context              (int api_version, rs_error ** error);
-void         rs_delete_context              (rs_context * context, rs_error ** error);
-int          rs_get_device_count            (const rs_context * context, rs_error ** error);
-rs_device *  rs_get_device                  (rs_context * context, int index, rs_error ** error);
-                                            
-const char * rs_get_device_name             (const rs_device * device, rs_error ** error);
-const char * rs_get_device_serial           (const rs_device * device, rs_error ** error);
-const char * rs_get_device_firmware_version (const rs_device * device, rs_error ** error);
-void         rs_get_device_extrinsics       (const rs_device * device, rs_stream from_stream, rs_stream to_stream, rs_extrinsics * extrin, rs_error ** error);
-float        rs_get_device_depth_scale      (const rs_device * device, rs_error ** error);
-int          rs_device_supports_option      (const rs_device * device, rs_option option, rs_error ** error);
-int          rs_get_stream_mode_count       (const rs_device * device, rs_stream stream, rs_error ** error);
-void         rs_get_stream_mode             (const rs_device * device, rs_stream stream, int index, int * width, int * height, rs_format * format, int * framerate, rs_error ** error);
-                                            
-void         rs_enable_stream               (rs_device * device, rs_stream stream, int width, int height, rs_format format, int framerate, rs_error ** error);
-void         rs_enable_stream_preset        (rs_device * device, rs_stream stream, rs_preset preset, rs_error ** error);
-void         rs_disable_stream              (rs_device * device, rs_stream stream, rs_error ** error);
-int          rs_is_stream_enabled           (const rs_device * device, rs_stream stream, rs_error ** error);
-void         rs_get_stream_intrinsics       (const rs_device * device, rs_stream stream, rs_intrinsics * intrin, rs_error ** error);
-rs_format    rs_get_stream_format           (const rs_device * device, rs_stream stream, rs_error ** error);
-int          rs_get_stream_framerate        (const rs_device * device, rs_stream stream, rs_error ** error);
-                                            
-void         rs_start_device                (rs_device * device, rs_error ** error);
-void         rs_stop_device                 (rs_device * device, rs_error ** error);
-int          rs_is_device_streaming         (const rs_device * device, rs_error ** error);
-                                            
-void         rs_set_device_option           (rs_device * device, rs_option option, int value, rs_error ** error);
-int          rs_get_device_option           (const rs_device * device, rs_option option, rs_error ** error);
-                                            
-void         rs_wait_for_frames             (rs_device * device, rs_error ** error);
-int          rs_get_frame_timestamp         (const rs_device * device, rs_stream stream, rs_error ** error);
-const void * rs_get_frame_data              (const rs_device * device, rs_stream stream, rs_error ** error);
-                                            
-const char * rs_get_failed_function         (const rs_error * error);
-const char * rs_get_failed_args             (const rs_error * error);
-const char * rs_get_error_message           (const rs_error * error);
-void         rs_free_error                  (rs_error * error);
-                                            
-const char * rs_stream_to_string            (rs_stream stream);
-const char * rs_format_to_string            (rs_format format);
-const char * rs_preset_to_string            (rs_preset preset);
-const char * rs_distortion_to_string        (rs_distortion distortion);
-const char * rs_option_to_string            (rs_option option);
+rs_context * rs_create_context(int api_version, rs_error ** error);
+void rs_delete_context(rs_context * context, rs_error ** error);
+
+/**
+ * determine number of connected devices
+ * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+ * \return            the count of devices
+ */
+int rs_get_device_count(const rs_context * context, rs_error ** error);
+
+/**
+ * retrieve connected device by index
+ * \param[in] index   the zero based index of device to retrieve
+ * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+ * \return            the requested device
+ */
+rs_device * rs_get_device(rs_context * context, int index, rs_error ** error);
+
+/**
+ * retrieve a human readable device model string
+ * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+ * \return            the model string, such as "Intel RealSense F200" or "Intel RealSense R200"
+ */
+const char * rs_get_device_name(const rs_device * device, rs_error ** error);
+
+/**
+ * retrieve the unique serial number of the device
+ * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+ * \return            the serial number, in a format specific to the device model
+ */
+const char * rs_get_device_serial(const rs_device * device, rs_error ** error);
+
+/**
+ * retrieve the version of the firmware currently installed on the device
+ * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+ * \return            firmware version string, in a format is specific to device model
+ */
+const char * rs_get_device_firmware_version(const rs_device * device, rs_error ** error);
+
+/**
+ * retrieve extrinsic transformation between the viewpoints of two different streams
+ * \param[in] from_stream  stream whose coordinate space we will transform from
+ * \param[in] to_stream    the transformation between the two streams
+ * \param[out] error       if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+ */
+void rs_get_device_extrinsics(const rs_device * device, rs_stream from_stream, rs_stream to_stream, rs_extrinsics * extrin, rs_error ** error);
+
+/**
+ * retrieve mapping between the units of the depth image and meters
+ * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+ * \return            depth in meters corresponding to a depth value of 1
+ */
+float rs_get_device_depth_scale(const rs_device * device, rs_error ** error);
+
+/**
+ * determine if the device allows a specific option to be queried and set
+ * \param[in] option  the option to check for support
+ * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+ * \return            true if the option can be queried and set
+ */
+int rs_device_supports_option(const rs_device * device, rs_option option, rs_error ** error);
+
+/**
+ * determine the number of streaming modes available for a given stream
+ * \param[in] stream  the stream whose modes will be enumerated
+ * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+ * \return            the count of available modes
+ */
+int rs_get_stream_mode_count(const rs_device * device, rs_stream stream, rs_error ** error);
+
+/**
+ * determine the properties of a specific streaming mode
+ * \param[in] stream  the stream whose mode will be queried
+ * \param[in] index   the number of frames which will be streamed per second
+ * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+ */
+void rs_get_stream_mode(const rs_device * device, rs_stream stream, int index, int * width, int * height, rs_format * format, int * framerate, rs_error ** error);
+
+/**
+ * enable a specific stream and request specific properties
+ * \param[in] stream     the stream to enable
+ * \param[in] width      the desired width of a frame image in pixels, or 0 if any width is acceptable
+ * \param[in] height     the desired height of a frame image in pixels, or 0 if any height is acceptable
+ * \param[in] format     the pixel format of a frame image, or ANY if any format is acceptable
+ * \param[in] framerate  the number of frames which will be streamed per second, or 0 if any framerate is acceptable
+ * \param[out] error     if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+ */
+void rs_enable_stream(rs_device * device, rs_stream stream, int width, int height, rs_format format, int framerate, rs_error ** error);
+
+/**
+ * enable a specific stream and request properties using a preset
+ * \param[in] stream  the stream to enable
+ * \param[in] preset  the preset to use to enable the stream
+ * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+ */
+void rs_enable_stream_preset(rs_device * device, rs_stream stream, rs_preset preset, rs_error ** error);
+
+/**
+ * disable a specific stream
+ * \param[in] stream  the stream to disable
+ * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+ */
+void rs_disable_stream(rs_device * device, rs_stream stream, rs_error ** error);
+
+/**
+ * determine if a specific stream is enabled
+ * \param[in] stream  the stream to check
+ * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+ * \return            true if the stream is currently enabled
+ */
+int rs_is_stream_enabled(const rs_device * device, rs_stream stream, rs_error ** error);
+
+/**
+ * retrieve intrinsic camera parameters for a specific stream
+ * \param[in] stream  the intrinsic parameters of the stream
+ * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+ */
+void rs_get_stream_intrinsics(const rs_device * device, rs_stream stream, rs_intrinsics * intrin, rs_error ** error);
+
+/**
+ * retrieve the pixel format for a specific stream
+ * \param[in] stream  the stream whose format to retrieve
+ * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+ * \return            the pixel format of the stream
+ */
+rs_format rs_get_stream_format(const rs_device * device, rs_stream stream, rs_error ** error);
+
+/**
+ * retrieve the framerate for a specific stream
+ * \param[in] stream  the stream whose framerate to retrieve
+ * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+ * \return            the framerate of the stream, in frames per second
+ */
+int rs_get_stream_framerate(const rs_device * device, rs_stream stream, rs_error ** error);
+
+/**
+ * begin streaming on all enabled streams for this device
+ * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+ */
+void rs_start_device(rs_device * device, rs_error ** error);
+
+/**
+ * end streaming on all streams for this device
+ * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+ */
+void rs_stop_device(rs_device * device, rs_error ** error);
+
+/**
+ * determine if the device is currently streaming
+ * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+ * \return            true if the device is currently streaming
+ */
+int rs_is_device_streaming(const rs_device * device, rs_error ** error);
+
+/**
+ * set the value of a specific device option
+ * \param[in] option  the option whose value to set
+ * \param[in] value   the desired value to set
+ * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+ */
+void rs_set_device_option(rs_device * device, rs_option option, int value, rs_error ** error);
+
+/**
+ * query the current value of a specific device option
+ * \param[in] option  the option whose value to retrieve
+ * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+ * \return            the current value of the option
+ */
+int rs_get_device_option(const rs_device * device, rs_option option, rs_error ** error);
+
+/**
+ * block until new frames are available
+ * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+ */
+void rs_wait_for_frames(rs_device * device, rs_error ** error);
+
+/**
+ * retrieve the time at which the latest frame on a stream was captured
+ * \param[in] stream  the stream whose latest frame we are interested in
+ * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+ * \return            the timestamp of the frame, in milliseconds since the device was started
+ */
+int rs_get_frame_timestamp(const rs_device * device, rs_stream stream, rs_error ** error);
+
+/**
+ * retrieve the contents of the latest frame on a stream
+ * \param[in] stream  the stream whose latest frame we are interested in
+ * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+ * \return            the pointer to the start of the frame data
+ */
+const void * rs_get_frame_data(const rs_device * device, rs_stream stream, rs_error ** error);
+                                     
+const char * rs_get_failed_function  (const rs_error * error);
+const char * rs_get_failed_args      (const rs_error * error);
+const char * rs_get_error_message    (const rs_error * error);
+void         rs_free_error           (rs_error * error);
+                                     
+const char * rs_stream_to_string     (rs_stream stream);
+const char * rs_format_to_string     (rs_format format);
+const char * rs_preset_to_string     (rs_preset preset);
+const char * rs_distortion_to_string (rs_distortion distortion);
+const char * rs_option_to_string     (rs_option option);
 
 #ifdef __cplusplus
 }
