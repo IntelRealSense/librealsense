@@ -5,9 +5,6 @@
       location = "container:"
       name = "unit-tests">
       <FileRef
-         location = "group:../unit-tests/unit-tests-common.h">
-      </FileRef>
-      <FileRef
          location = "group:unit-tests-live-f200.xcodeproj">
       </FileRef>
       <FileRef

@@ -278,6 +278,7 @@
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(SRCROOT)/../librealsense/build/Debug",
+					"$(SRCROOT)/../bin",
 					/usr/local/Cellar/glfw3/3.1.1/lib,
 					/usr/local/Cellar/libusb/1.0.19/lib,
 					"$(USER_LIBRARY_DIR)/Developer/Xcode/DerivedData/bin/Debug",
@@ -300,6 +301,7 @@
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(SRCROOT)/../librealsense/build/Debug",
+					"$(SRCROOT)/../bin",
 					/usr/local/Cellar/glfw3/3.1.1/lib,
 					/usr/local/Cellar/libusb/1.0.19/lib,
 					"$(USER_LIBRARY_DIR)/Developer/Xcode/DerivedData/bin/Debug",

@@ -278,6 +278,7 @@
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(SRCROOT)/../librealsense/build/Debug",
+					"$(SRCROOT)/../bin",
 					/usr/local/Cellar/glfw3/3.1.1/lib,
 					/usr/local/Cellar/libusb/1.0.19/lib,
 					"$(USER_LIBRARY_DIR)/Developer/Xcode/DerivedData/bin/Debug",
@@ -292,9 +293,10 @@
 			buildSettings = {
 				HEADER_SEARCH_PATHS = (
 					"$(inherited)",
-					"$(SRCROOT)/../include",
-					/usr/local/Cellar/libusb/1.0.19/include/,
-					/usr/local/Cellar/glfw3/3.1.1/include/,
+					"$(SRCROOT)/../librealsense/build/Debug",
+					"$(SRCROOT)/../bin",
+					/usr/local/Cellar/glfw3/3.1.1/lib,
+					/usr/local/Cellar/libusb/1.0.19/lib,
 					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
 				);
 				LIBRARY_SEARCH_PATHS = (

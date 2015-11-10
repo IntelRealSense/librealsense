@@ -16,6 +16,7 @@ xcuserdata
 *.moved-aside
 DerivedData
 *.xcuserstate
+librealsense.xc/build
 
 *~
 *.a

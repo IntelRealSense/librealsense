@@ -257,6 +257,7 @@
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(SRCROOT)/../librealsense/build/Debug",
+					"$(SRCROOT)/../bin",
 					/usr/local/Cellar/libusb/1.0.19/lib,
 					"$(USER_LIBRARY_DIR)/Developer/Xcode/DerivedData/bin/Debug",
 					"$(PROJECT_DIR)/build/Debug",
@@ -277,6 +278,7 @@
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(SRCROOT)/../librealsense/build/Debug",
+					"$(SRCROOT)/../bin",
 					/usr/local/Cellar/libusb/1.0.19/lib,
 					"$(USER_LIBRARY_DIR)/Developer/Xcode/DerivedData/bin/Debug",
 					"$(PROJECT_DIR)/build/Debug",
