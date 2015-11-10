@@ -9,14 +9,14 @@ extern "C" {
 
 typedef enum rs_stream
 {
-    RS_STREAM_DEPTH                            = 0, /* Native stream of depth data produced by RealSense device */
-    RS_STREAM_COLOR                            = 1, /* Native stream of color data captured by RealSense device */
-    RS_STREAM_INFRARED                         = 2, /* Native stream of infrared data captured by RealSense device */
-    RS_STREAM_INFRARED2                        = 3, /* Native stream of infrared data captured from a second viewpoint by RealSense device */
-    RS_STREAM_RECTIFIED_COLOR                  = 4, /* Synthetic stream containing undistorted color data with no extrinsic rotation from the depth stream */
-    RS_STREAM_COLOR_ALIGNED_TO_DEPTH           = 5, /* Synthetic stream containing color data but sharing intrinsics of depth stream */
-    RS_STREAM_DEPTH_ALIGNED_TO_COLOR           = 6, /* Synthetic stream containing depth data but sharing intrinsics of color stream */
-    RS_STREAM_DEPTH_ALIGNED_TO_RECTIFIED_COLOR = 7, /* Synthetic stream containing depth data but sharing intrinsics of rectified color stream */
+    RS_STREAM_DEPTH                            = 0, /**< Native stream of depth data produced by RealSense device */
+    RS_STREAM_COLOR                            = 1, /**< Native stream of color data captured by RealSense device */
+    RS_STREAM_INFRARED                         = 2, /**< Native stream of infrared data captured by RealSense device */
+    RS_STREAM_INFRARED2                        = 3, /**< Native stream of infrared data captured from a second viewpoint by RealSense device */
+    RS_STREAM_RECTIFIED_COLOR                  = 4, /**< Synthetic stream containing undistorted color data with no extrinsic rotation from the depth stream */
+    RS_STREAM_COLOR_ALIGNED_TO_DEPTH           = 5, /**< Synthetic stream containing color data but sharing intrinsics of depth stream */
+    RS_STREAM_DEPTH_ALIGNED_TO_COLOR           = 6, /**< Synthetic stream containing depth data but sharing intrinsics of color stream */
+    RS_STREAM_DEPTH_ALIGNED_TO_RECTIFIED_COLOR = 7, /**< Synthetic stream containing depth data but sharing intrinsics of rectified color stream */
     RS_STREAM_COUNT                            = 8, 
     RS_STREAM_MAX_ENUM = 0x7FFFFFFF
 } rs_stream;
@@ -32,7 +32,7 @@ typedef enum rs_format
     RS_FORMAT_BGRA8 = 6,  
     RS_FORMAT_Y8    = 7,  
     RS_FORMAT_Y16   = 8,  
-    RS_FORMAT_RAW10 = 9,  /* Four 10-bit luminance values encoded into a 5-byte macropixel */
+    RS_FORMAT_RAW10 = 9,  /**< Four 10-bit luminance values encoded into a 5-byte macropixel */
     RS_FORMAT_COUNT = 10, 
     RS_FORMAT_MAX_ENUM = 0x7FFFFFFF
 } rs_format;
@@ -48,9 +48,9 @@ typedef enum rs_preset
 
 typedef enum rs_distortion
 {
-    RS_DISTORTION_NONE                   = 0, /* Rectilinear images, no distortion compensation required */
-    RS_DISTORTION_MODIFIED_BROWN_CONRADY = 1, /* Equivalent to Brown-Conrady distortion, except that tangential distortion is applied to radially distorted points */
-    RS_DISTORTION_INVERSE_BROWN_CONRADY  = 2, /* Equivalent to Brown-Conrady distortion, except undistorts image instead of distorting it */
+    RS_DISTORTION_NONE                   = 0, /**< Rectilinear images, no distortion compensation required */
+    RS_DISTORTION_MODIFIED_BROWN_CONRADY = 1, /**< Equivalent to Brown-Conrady distortion, except that tangential distortion is applied to radially distorted points */
+    RS_DISTORTION_INVERSE_BROWN_CONRADY  = 2, /**< Equivalent to Brown-Conrady distortion, except undistorts image instead of distorting it */
     RS_DISTORTION_COUNT                  = 3, 
     RS_DISTORTION_MAX_ENUM = 0x7FFFFFFF
 } rs_distortion;
@@ -67,21 +67,21 @@ typedef enum rs_option
     RS_OPTION_COLOR_SATURATION              = 7,  
     RS_OPTION_COLOR_SHARPNESS               = 8,  
     RS_OPTION_COLOR_WHITE_BALANCE           = 9,  
-    RS_OPTION_F200_LASER_POWER              = 10, /* 0 - 15 */
-    RS_OPTION_F200_ACCURACY                 = 11, /* 0 - 3 */
-    RS_OPTION_F200_MOTION_RANGE             = 12, /* 0 - 100 */
-    RS_OPTION_F200_FILTER_OPTION            = 13, /* 0 - 7 */
-    RS_OPTION_F200_CONFIDENCE_THRESHOLD     = 14, /* 0 - 15 */
-    RS_OPTION_F200_DYNAMIC_FPS              = 15, /* {2, 5, 15, 30, 60} */
-    RS_OPTION_R200_LR_AUTO_EXPOSURE_ENABLED = 16, /* {0, 1} */
-    RS_OPTION_R200_LR_GAIN                  = 17, /* 100 - 1600 (Units of 0.01) */
-    RS_OPTION_R200_LR_EXPOSURE              = 18, /* > 0 (Units of 0.1 ms) */
-    RS_OPTION_R200_EMITTER_ENABLED          = 19, /* {0, 1} */
-    RS_OPTION_R200_DEPTH_CONTROL_PRESET     = 20, /* 0 - 5, 0 is default, 1-5 is low to high outlier rejection */
-    RS_OPTION_R200_DEPTH_UNITS              = 21, /* micrometers per increment in integer depth values, 1000 is default (mm scale) */
-    RS_OPTION_R200_DEPTH_CLAMP_MIN          = 22, /* 0 - USHORT_MAX */
-    RS_OPTION_R200_DEPTH_CLAMP_MAX          = 23, /* 0 - USHORT_MAX */
-    RS_OPTION_R200_DISPARITY_MODE_ENABLED   = 24, /* {0, 1} */
+    RS_OPTION_F200_LASER_POWER              = 10, /**< 0 - 15 */
+    RS_OPTION_F200_ACCURACY                 = 11, /**< 0 - 3 */
+    RS_OPTION_F200_MOTION_RANGE             = 12, /**< 0 - 100 */
+    RS_OPTION_F200_FILTER_OPTION            = 13, /**< 0 - 7 */
+    RS_OPTION_F200_CONFIDENCE_THRESHOLD     = 14, /**< 0 - 15 */
+    RS_OPTION_F200_DYNAMIC_FPS              = 15, /**< {2, 5, 15, 30, 60} */
+    RS_OPTION_R200_LR_AUTO_EXPOSURE_ENABLED = 16, /**< {0, 1} */
+    RS_OPTION_R200_LR_GAIN                  = 17, /**< 100 - 1600 (Units of 0.01) */
+    RS_OPTION_R200_LR_EXPOSURE              = 18, /**< > 0 (Units of 0.1 ms) */
+    RS_OPTION_R200_EMITTER_ENABLED          = 19, /**< {0, 1} */
+    RS_OPTION_R200_DEPTH_CONTROL_PRESET     = 20, /**< 0 - 5, 0 is default, 1-5 is low to high outlier rejection */
+    RS_OPTION_R200_DEPTH_UNITS              = 21, /**< micrometers per increment in integer depth values, 1000 is default (mm scale) */
+    RS_OPTION_R200_DEPTH_CLAMP_MIN          = 22, /**< 0 - USHORT_MAX */
+    RS_OPTION_R200_DEPTH_CLAMP_MAX          = 23, /**< 0 - USHORT_MAX */
+    RS_OPTION_R200_DISPARITY_MODE_ENABLED   = 24, /**< {0, 1} */
     RS_OPTION_R200_DISPARITY_MULTIPLIER     = 25, 
     RS_OPTION_R200_DISPARITY_SHIFT          = 26, 
     RS_OPTION_COUNT                         = 27, 

@@ -11,73 +11,73 @@ namespace rs
 
     enum class stream : int32_t
     {
-        depth = 0, // Native stream of depth data produced by RealSense device
-        color = 1, // Native stream of color data captured by RealSense device
-        infrared = 2, // Native stream of infrared data captured by RealSense device
-        infrared2 = 3, // Native stream of infrared data captured from a second viewpoint by RealSense device
-        rectified_color = 4, // Synthetic stream containing undistorted color data with no extrinsic rotation from the depth stream
-        color_aligned_to_depth = 5, // Synthetic stream containing color data but sharing intrinsics of depth stream
-        depth_aligned_to_color = 6, // Synthetic stream containing depth data but sharing intrinsics of color stream
-        depth_aligned_to_rectified_color = 7 // Synthetic stream containing depth data but sharing intrinsics of rectified color stream
+        depth                            = 0, ///< Native stream of depth data produced by RealSense device
+        color                            = 1, ///< Native stream of color data captured by RealSense device
+        infrared                         = 2, ///< Native stream of infrared data captured by RealSense device
+        infrared2                        = 3, ///< Native stream of infrared data captured from a second viewpoint by RealSense device
+        rectified_color                  = 4, ///< Synthetic stream containing undistorted color data with no extrinsic rotation from the depth stream
+        color_aligned_to_depth           = 5, ///< Synthetic stream containing color data but sharing intrinsics of depth stream
+        depth_aligned_to_color           = 6, ///< Synthetic stream containing depth data but sharing intrinsics of color stream
+        depth_aligned_to_rectified_color = 7  ///< Synthetic stream containing depth data but sharing intrinsics of rectified color stream
     };
 
     enum class format : int32_t
     {
-        any = 0,
-        z16 = 1,
-        yuyv = 2,
-        rgb8 = 3,
-        bgr8 = 4,
-        rgba8 = 5,
-        bgra8 = 6,
-        y8 = 7,
-        y16 = 8,
-        raw10 = 9 // Four 10-bit luminance values encoded into a 5-byte macropixel
+        any   = 0, 
+        z16   = 1, 
+        yuyv  = 2, 
+        rgb8  = 3, 
+        bgr8  = 4, 
+        rgba8 = 5, 
+        bgra8 = 6, 
+        y8    = 7, 
+        y16   = 8, 
+        raw10 = 9  ///< Four 10-bit luminance values encoded into a 5-byte macropixel
     };
 
     enum class preset : int32_t
     {
-        best_quality = 0,
-        largest_image = 1,
-        highest_framerate = 2
+        best_quality      = 0, 
+        largest_image     = 1, 
+        highest_framerate = 2  
     };
 
     enum class distortion : int32_t
     {
-        none = 0, // Rectilinear images, no distortion compensation required
-        modified_brown_conrady = 1, // Equivalent to Brown-Conrady distortion, except that tangential distortion is applied to radially distorted points
-        inverse_brown_conrady = 2 // Equivalent to Brown-Conrady distortion, except undistorts image instead of distorting it
+        none                   = 0, ///< Rectilinear images, no distortion compensation required
+        modified_brown_conrady = 1, ///< Equivalent to Brown-Conrady distortion, except that tangential distortion is applied to radially distorted points
+        inverse_brown_conrady  = 2  ///< Equivalent to Brown-Conrady distortion, except undistorts image instead of distorting it
     };
 
     enum class option : int32_t
     {
-        color_backlight_compensation = 0,
-        color_brightness = 1,
-        color_contrast = 2,
-        color_exposure = 3,
-        color_gain = 4,
-        color_gamma = 5,
-        color_hue = 6,
-        color_saturation = 7,
-        color_sharpness = 8,
-        color_white_balance = 9,
-        f200_laser_power = 10, // 0 - 15
-        f200_accuracy = 11, // 0 - 3
-        f200_motion_range = 12, // 0 - 100
-        f200_filter_option = 13, // 0 - 7
-        f200_confidence_threshold = 14, // 0 - 15
-        f200_dynamic_fps = 15, // {2, 5, 15, 30, 60}
-        r200_lr_auto_exposure_enabled = 16, // {0, 1}
-        r200_lr_gain = 17, // 100 - 1600 (Units of 0.01)
-        r200_lr_exposure = 18, // > 0 (Units of 0.1 ms)
-        r200_emitter_enabled = 19, // {0, 1}
-        r200_depth_control_preset = 20, // 0 - 5, 0 is default, 1-5 is low to high outlier rejection
-        r200_depth_units = 21, // micrometers per increment in integer depth values, 1000 is default (mm scale)
-        r200_depth_clamp_min = 22, // 0 - USHORT_MAX
-        r200_depth_clamp_max = 23, // 0 - USHORT_MAX
-        r200_disparity_mode_enabled = 24, // {0, 1}
-        r200_disparity_multiplier = 25,
-        r200_disparity_shift = 26
+        color_backlight_compensation  = 0,  
+        color_brightness              = 1,  
+        color_contrast                = 2,  
+        color_exposure                = 3,  
+        color_gain                    = 4,  
+        color_gamma                   = 5,  
+        color_hue                     = 6,  
+        color_saturation              = 7,  
+        color_sharpness               = 8,  
+        color_white_balance           = 9,  
+        f200_laser_power              = 10, ///< 0 - 15
+        f200_accuracy                 = 11, ///< 0 - 3
+        f200_motion_range             = 12, ///< 0 - 100
+        f200_filter_option            = 13, ///< 0 - 7
+        f200_confidence_threshold     = 14, ///< 0 - 15
+        f200_dynamic_fps              = 15, ///< {2, 5, 15, 30, 60}
+        r200_lr_auto_exposure_enabled = 16, ///< {0, 1}
+        r200_lr_gain                  = 17, ///< 100 - 1600 (Units of 0.01)
+        r200_lr_exposure              = 18, ///< > 0 (Units of 0.1 ms)
+        r200_emitter_enabled          = 19, ///< {0, 1}
+        r200_depth_control_preset     = 20, ///< 0 - 5, 0 is default, 1-5 is low to high outlier rejection
+        r200_depth_units              = 21, ///< micrometers per increment in integer depth values, 1000 is default (mm scale)
+        r200_depth_clamp_min          = 22, ///< 0 - USHORT_MAX
+        r200_depth_clamp_max          = 23, ///< 0 - USHORT_MAX
+        r200_disparity_mode_enabled   = 24, ///< {0, 1}
+        r200_disparity_multiplier     = 25, 
+        r200_disparity_shift          = 26  
     };
 
     struct float2 { float x,y; };
