@@ -142,6 +142,8 @@ libuvc is known to have issues with some versions of SR300 and R200 firmware (1.
 
 ## Example Applications
 
+**Note:** Many example applications have various runtime features that are exposed through different mouse click and key events.
+
 Example | Platform | Description
 ------------- | ------------- | -------------
 c-capture | All | Basic example using the C API to pull depth, color, and IR
