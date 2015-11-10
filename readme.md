@@ -66,7 +66,7 @@ Our intent is to provide bindings and wrappers for as many languages and framewo
   * `scripts/install_glfw3.sh`
 4. **Follow the installation instructions for your desired backend (see below)**
 5. We use QtCreator as an IDE for Linux development on Ubuntu
-  * **NB:** QtCreator is presently configured to use the V4L2 backend by default
+  * **Note:** QtCreator is presently configured to use the V4L2 backend by default
   * `sudo apt-get install qtcreator`
   * `sudo scripts/install_qt.sh` (we also need qmake from the full qt5 distribution)
   * `all.pro` contains librealsense and all example applications
@@ -99,7 +99,7 @@ Our intent is to provide bindings and wrappers for as many languages and framewo
 
 ### LibUVC backend
 
-**NB:** This backend has been deprecated on Linux.
+**Note:** This backend has been deprecated on Linux.
 
 The libuvc backend requires that the default linux uvcvideo.ko driver be unloaded before libusb can touch the device. This is because uvcvideo will own a UVC device the moment is is plugged in; user-space applications do not have permission to access the devie handle. See below regarding the udev rule workaround: 
 
