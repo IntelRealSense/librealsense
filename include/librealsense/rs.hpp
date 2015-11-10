@@ -4,7 +4,9 @@
 #include "rsutil.h"
 #include <cmath>
 #include <cstdint>
+#include <cstring>
 #include <sstream>
+#include <stdexcept>
 
 namespace rs
 {
