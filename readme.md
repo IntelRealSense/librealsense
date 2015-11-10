@@ -8,21 +8,24 @@ Dependency management for GLFW3 (example apps) and libusb-1.0 is performed throu
 
 # Table of Contents
 * [Developer Notes](#dev-notes)
+* [Supported Devices](#supported-devices)
 * [Supported Platforms](#supported-platforms)
 * [Functionality](#functionality)
 * [Installation Guide](#installation-guide)
-  * [Linux](#ubuntu-14.04-lts-installation)
+  * [Linux](#ubuntu-1404-lts-installation)
   * [OSX](#apple-osx)
-  * [Windows](#windows8.1)
+  * [Windows](#windows-81)
 * [FAQ](#faq)
 * [Example Applications](#example-applications)
 
 ## Dev Notes 
+
 October 20th, 2015
-1. (DS4) ALL of 640x480, 628x468, 492x372, 480x360, 332x252, 320x240 are now available for DEPTH and INFRARED streams.
-2. (DS4/IVCAM) It is safe to hardcode 640x480 or 320x240 as DEPTH or INFRARED resolutions, supported on both DS4 and IVCAM.
-3. (DS4) For the resolutions which are 12 pixels larger than the native depth resolution, the depth image is centered and padded.
-4. (DS4) For the resolutions which are 12 pixels smaller than the native infrared resolution, the IR image is cropped and centered.
+
+1. (R200) ALL of 640x480, 628x468, 492x372, 480x360, 332x252, 320x240 are now available for DEPTH and INFRARED streams.
+2. (R200/F200) It is safe to hardcode 640x480 or 320x240 as DEPTH or INFRARED resolutions, supported on both DS4 and IVCAM.
+3. (R200) For the resolutions which are 12 pixels larger than the native depth resolution, the depth image is centered and padded.
+4. (R200) For the resolutions which are 12 pixels smaller than the native infrared resolution, the IR image is cropped and centered.
 5. (All) If the same resolution is requested for DEPTH and INFRARED streams, they will be pixel-for-pixel aligned and have the same intrinsics.
 6. New stream mode: RECTIFIED_COLOR – Equivalent to DSAPI’s rectified third modes, removes COLOR image distortion and cancels out rotation relative to DEPTH stream.
   * Suitable for use as a background for augmented reality rendering, images produced via rectilinear perspective projection will overlay RECTIFIED_COLOR images correctly.
@@ -31,11 +34,9 @@ October 20th, 2015
 
 ## Supported Devices
 
-1. RealSense R200 (DS4)
-2. RealSense F200 (IVCAM 1.0)
-3. RealSense SR300 (IVCAM 1.5)
-	
-DS5 support will be provided in the near future. librealsense should in principal be able to support any 3D camera which exposes a UVC interface and which chiefly relies on UVC XU commands and USB sidechannel traffic for controls and calibration information.
+1. RealSense R200
+2. RealSense F200
+3. RealSense SR300
 
 ## Supported Platforms
 
@@ -45,10 +46,7 @@ librealsense is written in standards-conforming C++11 and relies only on the C89
 2. Ubuntu 14.04 LTS with an updated 4.2.3 kernel (gcc toolchain)
 3. Mac OS X 10.7+ (clang toolchain)
 
-## Unsupported Platforms
-1. Neither the libuvc or V4L2 backend has been validated on Ubuntu 12.04 LTS or Ubuntu 15.10, and several attempts to bring cameras up on these platforms have revealed underlying OS bugs and issues. 
-
-It may be possible to compile and run librealsense on other platforms. Please let us know if you do, as well as any steps you found necessary to do so, so that we can update this list.
+Neither the libuvc or V4L2 backend has been validated on Ubuntu 12.04 LTS or Ubuntu 15.10, and several attempts to bring cameras up on these platforms have revealed underlying OS bugs and issues. It may be possible to compile and run librealsense on other platforms. Please let us know if you do, as well as any steps you found necessary to do so, so that we can update this list.
 
 ## Supported Languages and Frameworks
 
@@ -150,7 +148,7 @@ LibUVC is known to have issues with particular versions of SR300 and DS4 firmwar
 
 *Q:* How is this implemented?
 
-*A:* The library communicates with RealSense devices directly via the UVC and USB protocols. It does not link against DSAPI or IVCAM-DLL. Most of the library source code is platform agnostic, but there is a small UVC abstraction layer with platform-specific backends, including:
+*A:* The library communicates with RealSense devices directly via the UVC and USB protocols. It does not link against the RealSense SDK. Most of the library source code is platform agnostic, but there is a small UVC abstraction layer with platform-specific backends, including:
   * A `libuvc` backend which provides user-space access to UVC devices on Linux and Mac OS X (built with libusb)
   * A `video4linux2` backend which provides kernel-space access to UVC devices on Linux
   * A `Windows Media Foundation` backend which provides kernel-space access to UVC devices on Windows
