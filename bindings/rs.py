@@ -181,7 +181,8 @@ class Device:
 
     ## retrieve extrinsic transformation between the viewpoints of two different streams
     # @param from_stream  stream whose coordinate space we will transform from
-    # @param to_stream    the transformation between the two streams
+    # @param to_stream    stream whose coordinate space we will transform to
+    # @return             the transformation between the two streams
     def get_extrinsics(self, from_stream, to_stream):
         e = c_void_p(0)
         extrin = Extrinsics()
@@ -217,7 +218,11 @@ class Device:
 
     ## determine the properties of a specific streaming mode
     # @param stream  the stream whose mode will be queried
-    # @param index   the number of frames which will be streamed per second
+    # @param index   the zero based index of the streaming mode
+    # @return        the width of a frame image in pixels
+    # @return        the height of a frame image in pixels
+    # @return        the pixel format of a frame image
+    # @return        the number of frames which will be streamed per second
     def get_stream_mode(self, stream, index):
         e = c_void_p(0)
         width = c_int()
@@ -264,7 +269,8 @@ class Device:
         return r
 
     ## retrieve intrinsic camera parameters for a specific stream
-    # @param stream  the intrinsic parameters of the stream
+    # @param stream  the stream whose parameters to retrieve
+    # @return        the intrinsic parameters of the stream
     def get_stream_intrinsics(self, stream):
         e = c_void_p(0)
         intrin = Intrinsics()

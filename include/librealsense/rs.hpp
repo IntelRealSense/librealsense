@@ -202,7 +202,8 @@ namespace rs
 
         /// retrieve extrinsic transformation between the viewpoints of two different streams
         /// \param[in] from_stream  stream whose coordinate space we will transform from
-        /// \param[in] to_stream    the transformation between the two streams
+        /// \param[in] to_stream    stream whose coordinate space we will transform to
+        /// \return                 the transformation between the two streams
         extrinsics get_extrinsics(stream from_stream, stream to_stream) const
         {
             rs_error * e = nullptr;
@@ -245,8 +246,12 @@ namespace rs
         }
 
         /// determine the properties of a specific streaming mode
-        /// \param[in] stream  the stream whose mode will be queried
-        /// \param[in] index   the number of frames which will be streamed per second
+        /// \param[in] stream      the stream whose mode will be queried
+        /// \param[in] index       the zero based index of the streaming mode
+        /// \param[out] width      the width of a frame image in pixels
+        /// \param[out] height     the height of a frame image in pixels
+        /// \param[out] format     the pixel format of a frame image
+        /// \param[out] framerate  the number of frames which will be streamed per second
         void get_stream_mode(stream stream, int index, int & width, int & height, format & format, int & framerate) const
         {
             rs_error * e = nullptr;
@@ -298,7 +303,8 @@ namespace rs
         }
 
         /// retrieve intrinsic camera parameters for a specific stream
-        /// \param[in] stream  the intrinsic parameters of the stream
+        /// \param[in] stream  the stream whose parameters to retrieve
+        /// \return            the intrinsic parameters of the stream
         intrinsics get_stream_intrinsics(stream stream) const
         {
             rs_error * e = nullptr;

@@ -28,7 +28,8 @@ public class Device
     /**
      * retrieve extrinsic transformation between the viewpoints of two different streams
      * @param fromStream  stream whose coordinate space we will transform from
-     * @param toStream    the transformation between the two streams
+     * @param toStream    stream whose coordinate space we will transform to
+     * @param extrin      the transformation between the two streams
      */
     public native void getExtrinsics(Stream fromStream, Stream toStream, Extrinsics extrin);
 
@@ -54,8 +55,12 @@ public class Device
 
     /**
      * determine the properties of a specific streaming mode
-     * @param stream  the stream whose mode will be queried
-     * @param index   the number of frames which will be streamed per second
+     * @param stream     the stream whose mode will be queried
+     * @param index      the zero based index of the streaming mode
+     * @param width      the width of a frame image in pixels
+     * @param height     the height of a frame image in pixels
+     * @param format     the pixel format of a frame image
+     * @param framerate  the number of frames which will be streamed per second
      */
     public native void getStreamMode(Stream stream, int index, Out<Integer> width, Out<Integer> height, Out<Format> format, Out<Integer> framerate);
 
@@ -91,7 +96,8 @@ public class Device
 
     /**
      * retrieve intrinsic camera parameters for a specific stream
-     * @param stream  the intrinsic parameters of the stream
+     * @param stream  the stream whose parameters to retrieve
+     * @param intrin  the intrinsic parameters of the stream
      */
     public native void getStreamIntrinsics(Stream stream, Intrinsics intrin);
 

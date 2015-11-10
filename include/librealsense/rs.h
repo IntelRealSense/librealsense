@@ -152,7 +152,8 @@ const char * rs_get_device_firmware_version(const rs_device * device, rs_error *
 /**
  * retrieve extrinsic transformation between the viewpoints of two different streams
  * \param[in] from_stream  stream whose coordinate space we will transform from
- * \param[in] to_stream    the transformation between the two streams
+ * \param[in] to_stream    stream whose coordinate space we will transform to
+ * \param[out] extrin      the transformation between the two streams
  * \param[out] error       if non-null, receives any error that occurs during this call, otherwise, errors are ignored
  */
 void rs_get_device_extrinsics(const rs_device * device, rs_stream from_stream, rs_stream to_stream, rs_extrinsics * extrin, rs_error ** error);
@@ -182,9 +183,13 @@ int rs_get_stream_mode_count(const rs_device * device, rs_stream stream, rs_erro
 
 /**
  * determine the properties of a specific streaming mode
- * \param[in] stream  the stream whose mode will be queried
- * \param[in] index   the number of frames which will be streamed per second
- * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+ * \param[in] stream      the stream whose mode will be queried
+ * \param[in] index       the zero based index of the streaming mode
+ * \param[out] width      the width of a frame image in pixels
+ * \param[out] height     the height of a frame image in pixels
+ * \param[out] format     the pixel format of a frame image
+ * \param[out] framerate  the number of frames which will be streamed per second
+ * \param[out] error      if non-null, receives any error that occurs during this call, otherwise, errors are ignored
  */
 void rs_get_stream_mode(const rs_device * device, rs_stream stream, int index, int * width, int * height, rs_format * format, int * framerate, rs_error ** error);
 
@@ -224,8 +229,9 @@ int rs_is_stream_enabled(const rs_device * device, rs_stream stream, rs_error **
 
 /**
  * retrieve intrinsic camera parameters for a specific stream
- * \param[in] stream  the intrinsic parameters of the stream
- * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+ * \param[in] stream   the stream whose parameters to retrieve
+ * \param[out] intrin  the intrinsic parameters of the stream
+ * \param[out] error   if non-null, receives any error that occurs during this call, otherwise, errors are ignored
  */
 void rs_get_stream_intrinsics(const rs_device * device, rs_stream stream, rs_intrinsics * intrin, rs_error ** error);
 

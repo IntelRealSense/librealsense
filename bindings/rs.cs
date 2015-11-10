@@ -201,7 +201,8 @@ namespace RealSense
 
         /// <summary> retrieve extrinsic transformation between the viewpoints of two different streams </summary>
         /// <param name="fromStream"> stream whose coordinate space we will transform from </param>
-        /// <param name="toStream"> the transformation between the two streams </param>
+        /// <param name="toStream"> stream whose coordinate space we will transform to </param>
+        /// <returns> the transformation between the two streams </returns>
         public Extrinsics GetExtrinsics(Stream fromStream, Stream toStream)
         {
             IntPtr e = IntPtr.Zero;
@@ -245,7 +246,11 @@ namespace RealSense
 
         /// <summary> determine the properties of a specific streaming mode </summary>
         /// <param name="stream"> the stream whose mode will be queried </param>
-        /// <param name="index"> the number of frames which will be streamed per second </param>
+        /// <param name="index"> the zero based index of the streaming mode </param>
+        /// <param name="width"> the width of a frame image in pixels </param>
+        /// <param name="height"> the height of a frame image in pixels </param>
+        /// <param name="format"> the pixel format of a frame image </param>
+        /// <param name="framerate"> the number of frames which will be streamed per second </param>
         public void GetStreamMode(Stream stream, int index, out int width, out int height, out Format format, out int framerate)
         {
             IntPtr e = IntPtr.Zero;
@@ -297,7 +302,8 @@ namespace RealSense
         }
 
         /// <summary> retrieve intrinsic camera parameters for a specific stream </summary>
-        /// <param name="stream"> the intrinsic parameters of the stream </param>
+        /// <param name="stream"> the stream whose parameters to retrieve </param>
+        /// <returns> the intrinsic parameters of the stream </returns>
         public Intrinsics GetStreamIntrinsics(Stream stream)
         {
             IntPtr e = IntPtr.Zero;
