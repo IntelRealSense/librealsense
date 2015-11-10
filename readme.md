@@ -1,15 +1,16 @@
 # librealsense
 
-A cross-platform library for capturing data from the RealSense F200, SR300 (IVCAM 1.0, 1.5) and RealSense R200 (DS4) cameras. This effort is aimed at supporting prototyping efforts on new platforms and form-factors (robots, drones, VR, etc).
+A cross-platform library for capturing data from the RealSense F200, SR300 and R200 cameras. This effort is aimed at supporting prototyping efforts on new platforms and form-factors (robots, drones, VR, etc).
 
-Dependency management for GLFW3 (example apps) and libusb-1.0 is performed through manual steps that are enumerated as part of this readme file. 
+Dependency management for GLFW3 (example apps) and libusb-1.0 is performed through manual steps that are enumerated as part of this readme file (i.e. these packages must be installed through apt-get on Linux and Homebrew on OSX).
 
-**NB:** On Linux, the libusb/libuvc backend has been deprecated in favor of the V4L2 backend.  
+**Note:** On Linux, the libusb/libuvc backend has been deprecated in favor of the V4L2 backend.  
 
 # Table of Contents
 * [Developer Notes](#dev-notes)
 * [Supported Devices](#supported-devices)
 * [Supported Platforms](#supported-platforms)
+* [Supported Languages](#supported-languages-and-frameworks)
 * [Functionality](#functionality)
 * [Installation Guide](#installation-guide)
   * [Linux](#ubuntu-1404-lts-installation)
@@ -23,7 +24,7 @@ Dependency management for GLFW3 (example apps) and libusb-1.0 is performed throu
 October 20th, 2015
 
 1. (R200) ALL of 640x480, 628x468, 492x372, 480x360, 332x252, 320x240 are now available for DEPTH and INFRARED streams.
-2. (R200/F200) It is safe to hardcode 640x480 or 320x240 as DEPTH or INFRARED resolutions, supported on both DS4 and IVCAM.
+2. (R200/F200) It is safe to hardcode 640x480 or 320x240 as DEPTH or INFRARED resolutions, supported on both R200 and F200.
 3. (R200) For the resolutions which are 12 pixels larger than the native depth resolution, the depth image is centered and padded.
 4. (R200) For the resolutions which are 12 pixels smaller than the native infrared resolution, the IR image is cropped and centered.
 5. (All) If the same resolution is requested for DEPTH and INFRARED streams, they will be pixel-for-pixel aligned and have the same intrinsics.
@@ -116,7 +117,7 @@ Our intent is to provide bindings and wrappers for as many languages and framewo
 
 The libuvc backend requires that the default linux uvcvideo.ko driver be unloaded before libusb can touch the device. This is because uvcvideo will own a UVC device the moment is is plugged in; user-space applications do not have permission to access the devie handle. See below regarding the udev rule workaround: 
 
-LibUVC is known to have issues with particular versions of SR300 and DS4 firmware (1.0.7x.xx series of firmwares are problematic). 
+libuvc is known to have issues with some versions of SR300 and R200 firmware (1.0.71.xx series of firmwares are problematic). 
 
 1. Grant appropriate permissions to detach the kernel UVC driver when a device is plugged in:
   * `sudo cp config/99-realsense-libusb.rules /etc/udev/rules.d/`
@@ -169,5 +170,7 @@ cs-capture | Windows | Basic example to pull depth, color, and IR images in C#.
 cs-config | Windows | Allow user to configure which streams they want to view
 py-enumerate | All | A commandline application to describe properties and resolutions of all connected cameras
 java-enumerate | All | A commandline application to describe properties and resolutions of all connected cameras
+
+---
 
 Copyright © 2015 Intel Corporation. All rights reserved.
