@@ -131,12 +131,17 @@ class Context:
     def free(self):
         realsense.rs_delete_context(self.handle, c_void_p(0))
 
+    ## determine number of connected devices
+    # @return  the count of devices
     def get_device_count(self):
         e = c_void_p(0)
         r = realsense.rs_get_device_count(self.handle, byref(e))
         check_error(e)
         return r
 
+    ## retrieve connected device by index
+    # @param index  the zero based index of device to retrieve
+    # @return       the requested device
     def get_device(self, index):
         e = c_void_p(0)
         r = realsense.rs_get_device(self.handle, index, byref(e))
@@ -147,24 +152,33 @@ class Device:
     def __init__(self, handle):
         self.handle = handle
 
+    ## retrieve a human readable device model string
+    # @return  the model string, such as "Intel RealSense F200" or "Intel RealSense R200"
     def get_name(self):
         e = c_void_p(0)
         r = realsense.rs_get_device_name(self.handle, byref(e))
         check_error(e)
         return r.decode('utf-8', 'strict')
 
+    ## retrieve the unique serial number of the device
+    # @return  the serial number, in a format specific to the device model
     def get_serial(self):
         e = c_void_p(0)
         r = realsense.rs_get_device_serial(self.handle, byref(e))
         check_error(e)
         return r.decode('utf-8', 'strict')
 
+    ## retrieve the version of the firmware currently installed on the device
+    # @return  firmware version string, in a format is specific to device model
     def get_firmware_version(self):
         e = c_void_p(0)
         r = realsense.rs_get_device_firmware_version(self.handle, byref(e))
         check_error(e)
         return r.decode('utf-8', 'strict')
 
+    ## retrieve extrinsic transformation between the viewpoints of two different streams
+    # @param from_stream  stream whose coordinate space we will transform from
+    # @param to_stream    the transformation between the two streams
     def get_extrinsics(self, from_stream, to_stream):
         e = c_void_p(0)
         extrin = Extrinsics()
@@ -172,24 +186,35 @@ class Device:
         check_error(e)
         return (extrin)
 
+    ## retrieve mapping between the units of the depth image and meters
+    # @return  depth in meters corresponding to a depth value of 1
     def get_depth_scale(self):
         e = c_void_p(0)
         r = realsense.rs_get_device_depth_scale(self.handle, byref(e))
         check_error(e)
         return r
 
+    ## determine if the device allows a specific option to be queried and set
+    # @param option  the option to check for support
+    # @return        true if the option can be queried and set
     def supports_option(self, option):
         e = c_void_p(0)
         r = realsense.rs_device_supports_option(self.handle, option, byref(e))
         check_error(e)
         return r
 
+    ## determine the number of streaming modes available for a given stream
+    # @param stream  the stream whose modes will be enumerated
+    # @return        the count of available modes
     def get_stream_mode_count(self, stream):
         e = c_void_p(0)
         r = realsense.rs_get_stream_mode_count(self.handle, stream, byref(e))
         check_error(e)
         return r
 
+    ## determine the properties of a specific streaming mode
+    # @param stream  the stream whose mode will be queried
+    # @param index   the number of frames which will be streamed per second
     def get_stream_mode(self, stream, index):
         e = c_void_p(0)
         width = c_int()
@@ -200,27 +225,43 @@ class Device:
         check_error(e)
         return (width.value, height.value, format.value, framerate.value)
 
+    ## enable a specific stream and request specific properties
+    # @param stream     the stream to enable
+    # @param width      the desired width of a frame image in pixels, or 0 if any width is acceptable
+    # @param height     the desired height of a frame image in pixels, or 0 if any height is acceptable
+    # @param format     the pixel format of a frame image, or ANY if any format is acceptable
+    # @param framerate  the number of frames which will be streamed per second, or 0 if any framerate is acceptable
     def enable_stream(self, stream, width, height, format, framerate):
         e = c_void_p(0)
         realsense.rs_enable_stream(self.handle, stream, width, height, format, framerate, byref(e))
         check_error(e)
 
+    ## enable a specific stream and request properties using a preset
+    # @param stream  the stream to enable
+    # @param preset  the preset to use to enable the stream
     def enable_stream(self, stream, preset):
         e = c_void_p(0)
         realsense.rs_enable_stream_preset(self.handle, stream, preset, byref(e))
         check_error(e)
 
+    ## disable a specific stream
+    # @param stream  the stream to disable
     def disable_stream(self, stream):
         e = c_void_p(0)
         realsense.rs_disable_stream(self.handle, stream, byref(e))
         check_error(e)
 
+    ## determine if a specific stream is enabled
+    # @param stream  the stream to check
+    # @return        true if the stream is currently enabled
     def is_stream_enabled(self, stream):
         e = c_void_p(0)
         r = realsense.rs_is_stream_enabled(self.handle, stream, byref(e))
         check_error(e)
         return r
 
+    ## retrieve intrinsic camera parameters for a specific stream
+    # @param stream  the intrinsic parameters of the stream
     def get_stream_intrinsics(self, stream):
         e = c_void_p(0)
         intrin = Intrinsics()
@@ -228,56 +269,79 @@ class Device:
         check_error(e)
         return (intrin)
 
+    ## retrieve the pixel format for a specific stream
+    # @param stream  the stream whose format to retrieve
+    # @return        the pixel format of the stream
     def get_stream_format(self, stream):
         e = c_void_p(0)
         r = realsense.rs_get_stream_format(self.handle, stream, byref(e))
         check_error(e)
         return r
 
+    ## retrieve the framerate for a specific stream
+    # @param stream  the stream whose framerate to retrieve
+    # @return        the framerate of the stream, in frames per second
     def get_stream_framerate(self, stream):
         e = c_void_p(0)
         r = realsense.rs_get_stream_framerate(self.handle, stream, byref(e))
         check_error(e)
         return r
 
+    ## begin streaming on all enabled streams for this device
     def start(self):
         e = c_void_p(0)
         realsense.rs_start_device(self.handle, byref(e))
         check_error(e)
 
+    ## end streaming on all streams for this device
     def stop(self):
         e = c_void_p(0)
         realsense.rs_stop_device(self.handle, byref(e))
         check_error(e)
 
+    ## determine if the device is currently streaming
+    # @return  true if the device is currently streaming
     def is_streaming(self):
         e = c_void_p(0)
         r = realsense.rs_is_device_streaming(self.handle, byref(e))
         check_error(e)
         return r
 
+    ## set the value of a specific device option
+    # @param option  the option whose value to set
+    # @param value   the desired value to set
     def set_option(self, option, value):
         e = c_void_p(0)
         realsense.rs_set_device_option(self.handle, option, value, byref(e))
         check_error(e)
 
+    ## query the current value of a specific device option
+    # @param option  the option whose value to retrieve
+    # @return        the current value of the option
     def get_option(self, option):
         e = c_void_p(0)
         r = realsense.rs_get_device_option(self.handle, option, byref(e))
         check_error(e)
         return r
 
+    ## block until new frames are available
     def wait_for_frames(self):
         e = c_void_p(0)
         realsense.rs_wait_for_frames(self.handle, byref(e))
         check_error(e)
 
+    ## retrieve the time at which the latest frame on a stream was captured
+    # @param stream  the stream whose latest frame we are interested in
+    # @return        the timestamp of the frame, in milliseconds since the device was started
     def get_frame_timestamp(self, stream):
         e = c_void_p(0)
         r = realsense.rs_get_frame_timestamp(self.handle, stream, byref(e))
         check_error(e)
         return r
 
+    ## retrieve the contents of the latest frame on a stream
+    # @param stream  the stream whose latest frame we are interested in
+    # @return        the pointer to the start of the frame data
     def get_frame_data(self, stream):
         e = c_void_p(0)
         r = realsense.rs_get_frame_data(self.handle, stream, byref(e))
@@ -298,4 +362,3 @@ def distortion_to_string(distortion):
 
 def option_to_string(option):
     return realsense.rs_option_to_string(option).decode('utf-8', 'strict')
-
