@@ -7,7 +7,6 @@ Dependency management for GLFW3 (example apps) and libusb-1.0 is performed throu
 **Note:** On Linux, the libusb/libuvc backend has been deprecated in favor of the V4L2 backend.  
 
 # Table of Contents
-* [Developer Notes](#dev-notes)
 * [Supported Devices](#supported-devices)
 * [Supported Platforms](#supported-platforms)
 * [Supported Languages](#supported-languages-and-frameworks)
@@ -18,20 +17,7 @@ Dependency management for GLFW3 (example apps) and libusb-1.0 is performed throu
   * [Windows](#windows-81)
 * [FAQ](#faq)
 * [Example Applications](#example-applications)
-
-## Dev Notes 
-
-October 20th, 2015
-
-1. (R200) ALL of 640x480, 628x468, 492x372, 480x360, 332x252, 320x240 are now available for DEPTH and INFRARED streams.
-2. (R200/F200) It is safe to hardcode 640x480 or 320x240 as DEPTH or INFRARED resolutions, supported on both R200 and F200.
-3. (R200) For the resolutions which are 12 pixels larger than the native depth resolution, the depth image is centered and padded.
-4. (R200) For the resolutions which are 12 pixels smaller than the native infrared resolution, the IR image is cropped and centered.
-5. (All) If the same resolution is requested for DEPTH and INFRARED streams, they will be pixel-for-pixel aligned and have the same intrinsics.
-6. New stream mode: RECTIFIED_COLOR – Equivalent to DSAPI’s rectified third modes, removes COLOR image distortion and cancels out rotation relative to DEPTH stream.
-  * Suitable for use as a background for augmented reality rendering, images produced via rectilinear perspective projection will overlay RECTIFIED_COLOR images correctly.
-7. New stream mode: DEPTH_ALIGNED_TO_RECTIFIED_COLOR – Maps data coming from the DEPTH stream to match the intrinsic and extrinsic camera properties of the DEPTH stream.
-  * Suitable for pre-loading the depth map for augmented reality rendering, or performing tracking that needs to be pixel accurate with the RECTIFIED_COLOR image.
+* [Developer Notes](#dev-notes)
 
 ## Supported Devices
 
@@ -44,7 +30,7 @@ October 20th, 2015
 librealsense is written in standards-conforming C++11 and relies only on the C89 ABI for its public interface. It was developed and tested on the following platforms:
 
 1. Windows 8.1 (Visual C++ 2013)
-2. Ubuntu 14.04 LTS with an updated 4.2.3 kernel (gcc toolchain)
+2. Ubuntu 14.04 LTS (gcc toolchain)
 3. Mac OS X 10.7+ (clang toolchain)
 
 Neither the libuvc or V4L2 backend has been validated on Ubuntu 12.04 LTS or Ubuntu 15.10, and several attempts to bring cameras up on these platforms have revealed underlying OS bugs and issues. It may be possible to compile and run librealsense on other platforms. Please let us know if you do, as well as any steps you found necessary to do so, so that we can update this list.
@@ -84,8 +70,8 @@ Our intent is to provide bindings and wrappers for as many languages and framewo
   * `sudo apt-get install qtcreator`
   * `sudo scripts/install_qt.sh` (we also need qmake from the full qt5 distribution)
   * `all.pro` contains librealsense and all example applications
-  * From the QTCreator top menu: Clean => Run QMake => Build
-  * Built projects will be placed into `./bin/debug` or `./bin/release`
+  * From the QtCreator top menu: Clean => Run QMake => Build
+  * Built QtCreator projects will be placed into `./bin/debug` or `./bin/release`
 6. We also provide a makefile if you'd prefer to use your own favorite text editor
   * `make && sudo make install`
   * The example executables will build into `./bin`
@@ -170,6 +156,20 @@ cs-capture | Windows | Basic example to pull depth, color, and IR images in C#.
 cs-config | Windows | Allow user to configure which streams they want to view
 py-enumerate | All | A commandline application to describe properties and resolutions of all connected cameras
 java-enumerate | All | A commandline application to describe properties and resolutions of all connected cameras
+
+## Dev Notes 
+
+October 20th, 2015
+
+1. (R200) ALL of 640x480, 628x468, 492x372, 480x360, 332x252, 320x240 are now available for DEPTH and INFRARED streams.
+2. (All) It is safe to hardcode 640x480 or 320x240 as DEPTH or INFRARED resolutions.
+3. (R200) For the resolutions which are 12 pixels larger than the native depth resolution, the depth image is centered and padded.
+4. (R200) For the resolutions which are 12 pixels smaller than the native infrared resolution, the IR image is cropped and centered.
+5. (All) If the same resolution is requested for DEPTH and INFRARED streams, they will be pixel-for-pixel aligned and have the same intrinsics.
+6. New stream mode: RECTIFIED_COLOR – Equivalent to DSAPI’s rectified third modes, removes COLOR image distortion and cancels out rotation relative to DEPTH stream.
+  * Suitable for use as a background for augmented reality rendering, images produced via rectilinear perspective projection will overlay RECTIFIED_COLOR images correctly.
+7. New stream mode: DEPTH_ALIGNED_TO_RECTIFIED_COLOR – Maps data coming from the DEPTH stream to match the intrinsic and extrinsic camera properties of the DEPTH stream.
+  * Suitable for pre-loading the depth map for augmented reality rendering, or performing tracking that needs to be pixel accurate with the RECTIFIED_COLOR image.
 
 ---
 
