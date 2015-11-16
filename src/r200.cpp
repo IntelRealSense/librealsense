@@ -10,8 +10,7 @@ namespace rsimpl
     template<void (*UNPACKER)(void * dest[], const void * source, const subdevice_mode & mode)> 
     void crop_unpack(void * dest[], const void * source, const subdevice_mode & mode)
     {
-        source = (char *)source + mode.pf->get_image_size(mode.width, 6) + mode.pf->get_image_size(6, 1);
-        UNPACKER(dest, source, mode);
+        UNPACKER(dest, (char *)source + mode.pf->get_crop_offset(mode.width, 6), mode);
     }
 
     static int amount = 0;

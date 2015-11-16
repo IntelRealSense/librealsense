@@ -33,18 +33,18 @@ namespace rsimpl
     std::vector<int> compute_rectification_table (const rs_intrinsics & rect_intrin, const rs_extrinsics & rect_to_unrect, const rs_intrinsics & unrect_intrin);
     void             rectify_image               (void * rect_pixels, const std::vector<int> & rectification_table, const void * unrect_pixels, rs_format format);
 
-    extern const native_pixel_format pf_rw10;
-    extern const native_pixel_format pf_yuy2;
-    extern const native_pixel_format pf_y8;
-    extern const native_pixel_format pf_y8i;
-    extern const native_pixel_format pf_y16;
-    extern const native_pixel_format pf_y12i;
-    extern const native_pixel_format pf_z16;
-    extern const native_pixel_format pf_invz;
-    extern const native_pixel_format pf_f200_invi;
-    extern const native_pixel_format pf_f200_inzi;
-    extern const native_pixel_format pf_sr300_invi;
-    extern const native_pixel_format pf_sr300_inzi;
+    extern const native_pixel_format pf_rw10;       // Four 10 bit luminance values in one 40 bit macropixel
+    extern const native_pixel_format pf_yuy2;       // Y0 U Y1 V ordered chroma subsampled macropixel
+    extern const native_pixel_format pf_y8;         // 8 bit (left) IR image
+    extern const native_pixel_format pf_y8i;        // 8 bits left IR + 8 bits right IR per pixel
+    extern const native_pixel_format pf_y16;        // 16 bit (left) IR image
+    extern const native_pixel_format pf_y12i;       // 12 bits left IR + 12 bits right IR per pixel
+    extern const native_pixel_format pf_z16;        // 16 bit Z image
+    extern const native_pixel_format pf_invz;       // 16 bit Z image
+    extern const native_pixel_format pf_f200_invi;  // 8-bit IR image
+    extern const native_pixel_format pf_f200_inzi;  // 16-bit Z + 8 bit IR per pixel
+    extern const native_pixel_format pf_sr300_invi; // 16-bit IR image
+    extern const native_pixel_format pf_sr300_inzi; // Planar 16-bit IR image followed by 16-bit Z image
 }
 
 #endif

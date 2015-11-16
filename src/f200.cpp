@@ -8,62 +8,22 @@
 
 namespace rsimpl
 {
-    #pragma pack(push, 1)
-    struct inzi_pixel { uint16_t value; uint16_t empty; };
-    #pragma pack(pop)
-
     void unpack_inzi_to_z16_and_y16(void * dest[], const void * frame, const subdevice_mode & mode)
     {
-        auto in = reinterpret_cast<const inzi_pixel *>(frame);
+        auto in = reinterpret_cast<const uint16_t *>(frame);
         auto out_depth = reinterpret_cast<uint16_t *>(dest[0]);
-        auto out_ir = reinterpret_cast<uint16_t *>(dest[1]);
-        for(int y=0; y<mode.height; ++y)
-        {
-            for(int x=0; x<mode.streams[0].width; x+=2)
-            {
-                *out_ir++ = in->value << 6;
-                *out_ir++ = in->value << 6;
-                ++in;
-            }
-            //in += (mode.width - mode.streams[0].width);
-        }
-        for(int y=0; y<mode.height; ++y)
-        {
-            for(int x=0; x<mode.streams[0].width; x+=2)
-            {
-                *out_depth++ = in->value;
-                *out_depth++ = in->value;
-                ++in;
-            }
-            //in += (mode.width - mode.streams[0].width);
-        }
+        auto out_ir = reinterpret_cast<uint16_t *>(dest[1]);            
+        for(int i=0, n=mode.width*mode.height; i<n; ++i) *out_ir++ = *in++ << 6;
+        memcpy(out_depth, in, mode.width*mode.height*2);
     }
 
     void unpack_inzi_to_z16_and_y8(void * dest[], const void * frame, const subdevice_mode & mode)
     {
-        auto in = reinterpret_cast<const inzi_pixel *>(frame);
+        auto in = reinterpret_cast<const uint16_t *>(frame);
         auto out_depth = reinterpret_cast<uint16_t *>(dest[0]);
-        auto out_ir = reinterpret_cast<uint8_t *>(dest[1]);
-        for(int y=0; y<mode.height; ++y)
-        {
-            for(int x=0; x<mode.streams[0].width; x+=2)
-            {
-                *out_ir++ = in->value >> 2;
-                *out_ir++ = in->value >> 2;
-                ++in;
-            }
-            //in += (mode.width - mode.streams[0].width);
-        }
-        for(int y=0; y<mode.height; ++y)
-        {
-            for(int x=0; x<mode.streams[0].width; x+=2)
-            {
-                *out_depth++ = in->value;
-                *out_depth++ = in->value;
-                ++in;
-            }
-            //in += (mode.width - mode.streams[0].width);
-        }
+        auto out_ir = reinterpret_cast<uint8_t *>(dest[1]);            
+        for(int i=0, n=mode.width*mode.height; i<n; ++i) *out_ir++ = *in++ >> 2;
+        memcpy(out_depth, in, mode.width*mode.height*2);
     }
 
     static rs_intrinsics MakeDepthIntrinsics(const f200::CameraCalibrationParameters & c, int w, int h)

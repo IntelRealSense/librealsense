@@ -43,18 +43,18 @@ namespace rsimpl
         }    
     }
 
-    const native_pixel_format pf_rw10        = {'RW10', 1, 1};
-    const native_pixel_format pf_yuy2        = {'YUY2', 2, sizeof(yuy2_macropixel)};
-    const native_pixel_format pf_y8          = {'Y8  ', 1, sizeof(uint8_t)};
-    const native_pixel_format pf_y8i         = {'Y8I ', 1, sizeof(uint8_t)*2};
-    const native_pixel_format pf_y16         = {'Y16 ', 1, sizeof(uint16_t)};
-    const native_pixel_format pf_y12i        = {'Y12I', 1, sizeof(y12i_pixel)};
-    const native_pixel_format pf_z16         = {'Z16 ', 1, sizeof(uint16_t)};
-    const native_pixel_format pf_invz        = {'INVZ', 1, sizeof(uint16_t)};
-    const native_pixel_format pf_f200_invi   = {'INVI', 1, sizeof(uint8_t)};
-    const native_pixel_format pf_f200_inzi   = {'INZI', 1, sizeof(inri_pixel)};
-    const native_pixel_format pf_sr300_invi  = {'INVI', 1, sizeof(uint16_t)};
-    const native_pixel_format pf_sr300_inzi  = {'INZI', 1, 1}; // TODO: Figure out this format for real
+    const native_pixel_format pf_rw10        = {'RW10', 1, 1, 1};
+    const native_pixel_format pf_yuy2        = {'YUY2', 1, 2, sizeof(yuy2_macropixel)};
+    const native_pixel_format pf_y8          = {'Y8  ', 1, 1, sizeof(uint8_t)};
+    const native_pixel_format pf_y8i         = {'Y8I ', 1, 1, sizeof(uint8_t)*2};
+    const native_pixel_format pf_y16         = {'Y16 ', 1, 1, sizeof(uint16_t)};
+    const native_pixel_format pf_y12i        = {'Y12I', 1, 1, sizeof(y12i_pixel)};
+    const native_pixel_format pf_z16         = {'Z16 ', 1, 1, sizeof(uint16_t)};
+    const native_pixel_format pf_invz        = {'INVZ', 1, 1, sizeof(uint16_t)};
+    const native_pixel_format pf_f200_invi   = {'INVI', 1, 1, sizeof(uint8_t)};
+    const native_pixel_format pf_f200_inzi   = {'INZI', 1, 1, sizeof(inri_pixel)};
+    const native_pixel_format pf_sr300_invi  = {'INVI', 1, 1, sizeof(uint16_t)};
+    const native_pixel_format pf_sr300_inzi  = {'INZI', 2, 1, sizeof(uint16_t)};
 
     //////////////////////////////
     // Naive unpacking routines //

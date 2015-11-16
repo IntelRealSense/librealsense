@@ -82,12 +82,18 @@ namespace rsimpl
     struct native_pixel_format
     {
         uint32_t fourcc;
+        int plane_count;
         int macropixel_width;
         size_t macropixel_size;
         size_t get_image_size(int width, int height) const
         {
             assert(width % macropixel_width == 0);
-            return (width / macropixel_width) * height * macropixel_size;
+            return (width / macropixel_width) * height * macropixel_size * plane_count;
+        }
+        size_t get_crop_offset(int width, int crop) const
+        {
+            assert(plane_count == 1);
+            return get_image_size(width, crop) + get_image_size(crop, 1);
         }
     };
 
