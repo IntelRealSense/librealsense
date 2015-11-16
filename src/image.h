@@ -7,7 +7,6 @@
 namespace rsimpl
 {
     size_t           get_image_size              (int width, int height, rs_format format);
-    size_t           get_image_size              (int width, int height, uint32_t fourcc);
                                                  
     void             unpack_subrect              (void * dest[], const void * source, const subdevice_mode & mode);
                                                  
@@ -33,6 +32,19 @@ namespace rsimpl
 
     std::vector<int> compute_rectification_table (const rs_intrinsics & rect_intrin, const rs_extrinsics & rect_to_unrect, const rs_intrinsics & unrect_intrin);
     void             rectify_image               (void * rect_pixels, const std::vector<int> & rectification_table, const void * unrect_pixels, rs_format format);
+
+    extern const native_pixel_format pf_rw10;
+    extern const native_pixel_format pf_yuy2;
+    extern const native_pixel_format pf_y8;
+    extern const native_pixel_format pf_y8i;
+    extern const native_pixel_format pf_y16;
+    extern const native_pixel_format pf_y12i;
+    extern const native_pixel_format pf_z16;
+    extern const native_pixel_format pf_invz;
+    extern const native_pixel_format pf_f200_invi;
+    extern const native_pixel_format pf_f200_inzi;
+    extern const native_pixel_format pf_sr300_invi;
+    extern const native_pixel_format pf_sr300_inzi;
 }
 
 #endif

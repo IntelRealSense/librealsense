@@ -79,11 +79,23 @@ namespace rsimpl
         int intrinsics_index;       // Index of image intrinsics
     };
 
+    struct native_pixel_format
+    {
+        uint32_t fourcc;
+        int macropixel_width;
+        size_t macropixel_size;
+        size_t get_image_size(int width, int height) const
+        {
+            assert(width % macropixel_width == 0);
+            return (width / macropixel_width) * height * macropixel_size;
+        }
+    };
+
     struct subdevice_mode
     {
         int subdevice;                      // 0, 1, 2, etc...
         int width, height;                  // Resolution advertised over UVC
-        uint32_t fourcc;                    // Pixel format advertised over UVC
+        const native_pixel_format * pf;     // Pixel format advertised over UVC
         int fps;                            // Framerate advertised over UVC
         std::vector<stream_mode> streams;   // Modes for streams which can be supported by this device mode
         void (* unpacker)(void * dest[], const void * source, const subdevice_mode & mode);
