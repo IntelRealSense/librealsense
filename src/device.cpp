@@ -171,9 +171,9 @@ void rs_device::start()
         set_subdevice_mode(*device, mode.subdevice, mode.width, mode.height, mode.pf->fourcc, mode.fps, [mode, stream_list, only_stream, serial_frame_no](const void * frame) mutable
         {
             // Unpack the image into the user stream interface back buffer
-            std::vector<void *> dest;
+            std::vector<byte *> dest;
             for(auto & stream : stream_list) dest.push_back(stream->get_back_data());
-            mode.unpacker(dest.data(), frame, mode);
+            mode.unpacker(dest.data(), reinterpret_cast<const byte *>(frame), mode);
             int frame_number = (mode.use_serial_numbers_if_unique && only_stream) ? serial_frame_no++ : mode.frame_number_decoder(mode, frame);
             if(frame_number == 0) frame_number = ++serial_frame_no; // No dinghy on LibUVC backend?
                 
@@ -288,7 +288,7 @@ int rs_device::get_frame_timestamp(rs_stream stream) const
     return base_timestamp == -1 ? 0 : convert_timestamp(base_timestamp + streams[stream]->get_front_number() - last_stream_timestamp);
 }
 
-const void * rs_device::get_aligned_image(rs_stream stream, rs_stream from, rs_stream to) const
+const byte * rs_device::get_aligned_image(rs_stream stream, rs_stream from, rs_stream to) const
 {
     const int index = stream - RS_STREAM_NATIVE_COUNT;
     if(synthetic_images[index].empty() || synthetic_timestamps[index] != get_frame_timestamp(from))
@@ -313,7 +313,7 @@ const void * rs_device::get_aligned_image(rs_stream stream, rs_stream from, rs_s
     return synthetic_images[index].data();
 }
 
-const void * rs_device::get_frame_data(rs_stream stream) const 
+const byte * rs_device::get_frame_data(rs_stream stream) const 
 { 
     if(stream < RS_STREAM_NATIVE_COUNT)
     {

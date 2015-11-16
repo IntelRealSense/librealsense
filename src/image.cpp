@@ -60,21 +60,19 @@ namespace rsimpl
     // Naive unpacking routines //
     //////////////////////////////
     
-    void unpack_subrect(void * dest[], const void * source, const subdevice_mode & mode)
+    void unpack_subrect(byte * dest[], const byte * source, const subdevice_mode & mode)
     {
         assert(mode.streams.size() == 1);
-        auto in = reinterpret_cast<const uint8_t *>(source);
-        auto out = reinterpret_cast<uint8_t *>(dest[0]);
         const size_t in_stride = mode.pf->get_image_size(mode.width, 1), out_stride = get_image_size(mode.streams[0].width, 1, mode.streams[0].format);
         for(int i=0; i<std::min(mode.height, mode.streams[0].height); ++i)
         {
-            memcpy(out, in, std::min(in_stride, out_stride));
-            out += out_stride;
-            in += in_stride;            
+            memcpy(dest[0], source, std::min(in_stride, out_stride));
+            dest[0] += out_stride;
+            source += in_stride;            
         }
     }
 
-    template<class SOURCE, class UNPACK> void unpack_pixels(void * dest[], const subdevice_mode & mode, const SOURCE * source, rs_format format, UNPACK unpack)
+    template<class SOURCE, class UNPACK> void unpack_pixels(byte * dest[], const subdevice_mode & mode, const SOURCE * source, rs_format format, UNPACK unpack)
     {
         assert(mode.streams.size() == 1 && mode.streams[0].width <= mode.width && mode.streams[0].height <= mode.height && mode.streams[0].format == format);
         auto out = reinterpret_cast<decltype(unpack(SOURCE())) *>(dest[0]);
@@ -88,15 +86,15 @@ namespace rsimpl
         }       
     }
 
-    void unpack_y16_from_y8    (void** d, const void* s, const subdevice_mode& m) { unpack_pixels(d, m, reinterpret_cast<const uint8_t  *>(s), RS_FORMAT_Y16, [](uint8_t  pixel) -> uint16_t { return pixel | pixel << 8; }); }
-    void unpack_y16_from_y16_10(void** d, const void* s, const subdevice_mode& m) { unpack_pixels(d, m, reinterpret_cast<const uint16_t *>(s), RS_FORMAT_Y16, [](uint16_t pixel) -> uint16_t { return pixel << 6; }); }
-    void unpack_y8_from_y16_10 (void** d, const void* s, const subdevice_mode& m) { unpack_pixels(d, m, reinterpret_cast<const uint16_t *>(s), RS_FORMAT_Y8,  [](uint16_t pixel) -> uint8_t  { return pixel >> 2; }); }
+    void unpack_y16_from_y8    (byte * d[], const byte * s, const subdevice_mode & m) { unpack_pixels(d, m, reinterpret_cast<const uint8_t  *>(s), RS_FORMAT_Y16, [](uint8_t  pixel) -> uint16_t { return pixel | pixel << 8; }); }
+    void unpack_y16_from_y16_10(byte * d[], const byte * s, const subdevice_mode & m) { unpack_pixels(d, m, reinterpret_cast<const uint16_t *>(s), RS_FORMAT_Y16, [](uint16_t pixel) -> uint16_t { return pixel << 6; }); }
+    void unpack_y8_from_y16_10 (byte * d[], const byte * s, const subdevice_mode & m) { unpack_pixels(d, m, reinterpret_cast<const uint16_t *>(s), RS_FORMAT_Y8,  [](uint16_t pixel) -> uint8_t  { return pixel >> 2; }); }
 
     /////////////////////////////
     // YUY2 unpacking routines //
     /////////////////////////////
 
-    template<class UNPACK> void unpack_from_yuy2(void * dest[], const void * source, const subdevice_mode & mode, rs_format format, UNPACK unpack)
+    template<class UNPACK> void unpack_from_yuy2(byte * dest[], const byte * source, const subdevice_mode & mode, rs_format format, UNPACK unpack)
     {
         assert(mode.pf == &pf_yuy2 && mode.streams.size() == 1 && mode.streams[0].width <= mode.width && mode.streams[0].height <= mode.height && mode.streams[0].format == format);
         auto in = reinterpret_cast<const yuy2_macropixel *>(source);
@@ -119,16 +117,16 @@ namespace rsimpl
     inline uint8_t yuv_to_b(int y, int u, int v) { return clamp_byte((128 + 298 * y + 516 * u          ) >> 8); }
     
     struct byte3 { uint8_t a,b,c; }; struct byte4 { uint8_t a,b,c,d; };
-    void unpack_rgb_from_yuy2 (void** d, const void* s, const subdevice_mode& m) { unpack_from_yuy2(d, s, m, RS_FORMAT_RGB8,  [](int y, int u, int v) { return byte3{yuv_to_r(y, u, v), yuv_to_g(y, u, v), yuv_to_b(y, u, v)     }; }); }
-    void unpack_rgba_from_yuy2(void** d, const void* s, const subdevice_mode& m) { unpack_from_yuy2(d, s, m, RS_FORMAT_RGBA8, [](int y, int u, int v) { return byte4{yuv_to_r(y, u, v), yuv_to_g(y, u, v), yuv_to_b(y, u, v), 255}; }); }
-    void unpack_bgr_from_yuy2 (void** d, const void* s, const subdevice_mode& m) { unpack_from_yuy2(d, s, m, RS_FORMAT_BGR8,  [](int y, int u, int v) { return byte3{yuv_to_b(y, u, v), yuv_to_g(y, u, v), yuv_to_r(y, u, v)     }; }); }
-    void unpack_bgra_from_yuy2(void** d, const void* s, const subdevice_mode& m) { unpack_from_yuy2(d, s, m, RS_FORMAT_BGRA8, [](int y, int u, int v) { return byte4{yuv_to_b(y, u, v), yuv_to_g(y, u, v), yuv_to_r(y, u, v), 255}; }); }
+    void unpack_rgb_from_yuy2 (byte** d, const byte* s, const subdevice_mode& m) { unpack_from_yuy2(d, s, m, RS_FORMAT_RGB8,  [](int y, int u, int v) { return byte3{yuv_to_r(y, u, v), yuv_to_g(y, u, v), yuv_to_b(y, u, v)     }; }); }
+    void unpack_rgba_from_yuy2(byte** d, const byte* s, const subdevice_mode& m) { unpack_from_yuy2(d, s, m, RS_FORMAT_RGBA8, [](int y, int u, int v) { return byte4{yuv_to_r(y, u, v), yuv_to_g(y, u, v), yuv_to_b(y, u, v), 255}; }); }
+    void unpack_bgr_from_yuy2 (byte** d, const byte* s, const subdevice_mode& m) { unpack_from_yuy2(d, s, m, RS_FORMAT_BGR8,  [](int y, int u, int v) { return byte3{yuv_to_b(y, u, v), yuv_to_g(y, u, v), yuv_to_r(y, u, v)     }; }); }
+    void unpack_bgra_from_yuy2(byte** d, const byte* s, const subdevice_mode& m) { unpack_from_yuy2(d, s, m, RS_FORMAT_BGRA8, [](int y, int u, int v) { return byte4{yuv_to_b(y, u, v), yuv_to_g(y, u, v), yuv_to_r(y, u, v), 255}; }); }
 
     //////////////////////////////////////
     // 2-in-1 format splitting routines //
     //////////////////////////////////////
 
-    template<class SOURCE, class SPLIT_A, class SPLIT_B> void split_frame(void * dest[], const subdevice_mode & mode, const SOURCE * source, const native_pixel_format & pf, rs_format format_a, rs_format format_b, SPLIT_A split_a, SPLIT_B split_b)
+    template<class SOURCE, class SPLIT_A, class SPLIT_B> void split_frame(byte * dest[], const subdevice_mode & mode, const SOURCE * source, const native_pixel_format & pf, rs_format format_a, rs_format format_b, SPLIT_A split_a, SPLIT_B split_b)
     {
         assert(mode.pf == &pf && mode.streams.size() == 2 && mode.streams[0].format == format_a && mode.streams[1].format == format_b
             && mode.streams[0].width == mode.streams[1].width && mode.streams[0].height == mode.streams[1].height && mode.streams[0].width <= mode.width && mode.streams[0].height <= mode.height);
@@ -145,7 +143,7 @@ namespace rsimpl
         }    
     }
 
-    void unpack_y8_y8_from_y8i(void * dest[], const void * source, const subdevice_mode & mode)
+    void unpack_y8_y8_from_y8i(byte * dest[], const byte * source, const subdevice_mode & mode)
     {
         struct y8i_pixel { uint8_t l, r; };
         split_frame(dest, mode, reinterpret_cast<const y8i_pixel *>(source), pf_y8i, RS_FORMAT_Y8, RS_FORMAT_Y8,
@@ -153,28 +151,28 @@ namespace rsimpl
             [](const y8i_pixel & p) -> uint8_t { return p.r; });
     }
 
-    void unpack_y16_y16_from_y12i_10(void * dest[], const void * source, const subdevice_mode & mode)
+    void unpack_y16_y16_from_y12i_10(byte * dest[], const byte * source, const subdevice_mode & mode)
     {
         split_frame(dest, mode, reinterpret_cast<const y12i_pixel *>(source), pf_y12i, RS_FORMAT_Y16, RS_FORMAT_Y16,
             [](const y12i_pixel & p) -> uint16_t { return p.l() << 6 | p.l() >> 4; },  // We want to convert 10-bit data to 16-bit data
             [](const y12i_pixel & p) -> uint16_t { return p.r() << 6 | p.r() >> 4; }); // Multiply by 64 1/16 to efficiently approximate 65535/1023
     }
 
-    void unpack_z16_y8_from_f200_inzi(void * dest[], const void * source, const subdevice_mode & mode)
+    void unpack_z16_y8_from_f200_inzi(byte * dest[], const byte * source, const subdevice_mode & mode)
     {
         split_frame(dest, mode, reinterpret_cast<const inri_pixel *>(source), pf_f200_inzi, RS_FORMAT_Z16, RS_FORMAT_Y8,
             [](const inri_pixel & p) -> uint16_t { return p.z16; },
             [](const inri_pixel & p) -> uint8_t { return p.y8; });
     }
 
-    void unpack_z16_y16_from_f200_inzi(void * dest[], const void * source, const subdevice_mode & mode)
+    void unpack_z16_y16_from_f200_inzi(byte * dest[], const byte * source, const subdevice_mode & mode)
     {
         split_frame(dest, mode, reinterpret_cast<const inri_pixel *>(source), pf_f200_inzi, RS_FORMAT_Z16, RS_FORMAT_Y16,
             [](const inri_pixel & p) -> uint16_t { return p.z16; },
             [](const inri_pixel & p) -> uint16_t { return p.y8 | p.y8 << 8; });
     }
 
-    void unpack_z16_y8_from_sr300_inzi(void * dest[], const void * source, const subdevice_mode & mode)
+    void unpack_z16_y8_from_sr300_inzi(byte * dest[], const byte * source, const subdevice_mode & mode)
     {
         auto in = reinterpret_cast<const uint16_t *>(source);
         auto out_depth = reinterpret_cast<uint16_t *>(dest[0]);
@@ -183,7 +181,7 @@ namespace rsimpl
         memcpy(out_depth, in, mode.width*mode.height*2);
     }
 
-    void unpack_z16_y16_from_sr300_inzi (void * dest[], const void * source, const subdevice_mode & mode)
+    void unpack_z16_y16_from_sr300_inzi (byte * dest[], const byte * source, const subdevice_mode & mode)
     {
         auto in = reinterpret_cast<const uint16_t *>(source);
         auto out_depth = reinterpret_cast<uint16_t *>(dest[0]);
@@ -230,7 +228,7 @@ namespace rsimpl
         }    
     }
 
-    void align_depth_to_color(void * depth_aligned_to_color, const uint16_t * depth_pixels, float depth_scale, const rs_intrinsics & depth_intrin, const rs_extrinsics & depth_to_color, const rs_intrinsics & color_intrin)
+    void align_depth_to_color(byte * depth_aligned_to_color, const uint16_t * depth_pixels, float depth_scale, const rs_intrinsics & depth_intrin, const rs_extrinsics & depth_to_color, const rs_intrinsics & color_intrin)
     {
         auto out_depth = (uint16_t *)(depth_aligned_to_color);
         align_images(depth_intrin, depth_to_color, color_intrin, 
@@ -238,7 +236,7 @@ namespace rsimpl
             [out_depth, depth_pixels](int depth_pixel_index, int color_pixel_index) { out_depth[color_pixel_index] = depth_pixels[depth_pixel_index]; });
     }
 
-    template<int N> void align_color_to_depth_bytes(void * color_aligned_to_depth, const uint16_t * depth_pixels, float depth_scale, const rs_intrinsics & depth_intrin, const rs_extrinsics & depth_to_color, const rs_intrinsics & color_intrin, const void * color_pixels)
+    template<int N> void align_color_to_depth_bytes(byte * color_aligned_to_depth, const uint16_t * depth_pixels, float depth_scale, const rs_intrinsics & depth_intrin, const rs_extrinsics & depth_to_color, const rs_intrinsics & color_intrin, const byte * color_pixels)
     {
         auto in_color = (const bytes<N> *)(color_pixels);
         auto out_color = (bytes<N> *)(color_aligned_to_depth);
@@ -247,7 +245,7 @@ namespace rsimpl
             [out_color, in_color](int depth_pixel_index, int color_pixel_index) { out_color[depth_pixel_index] = in_color[color_pixel_index]; });
     }
 
-    void align_color_to_depth(void * color_aligned_to_depth, const uint16_t * depth_pixels, float depth_scale, const rs_intrinsics & depth_intrin, const rs_extrinsics & depth_to_color, const rs_intrinsics & color_intrin, const void * color_pixels, rs_format color_format)
+    void align_color_to_depth(byte * color_aligned_to_depth, const uint16_t * depth_pixels, float depth_scale, const rs_intrinsics & depth_intrin, const rs_extrinsics & depth_to_color, const rs_intrinsics & color_intrin, const byte * color_pixels, rs_format color_format)
     {
         switch(color_format)
         {
@@ -282,7 +280,7 @@ namespace rsimpl
         for(auto entry : rectification_table) *rect_pixels++ = unrect_pixels[entry];
     }
 
-    void rectify_image(void * rect_pixels, const std::vector<int> & rectification_table, const void * unrect_pixels, rs_format format)
+    void rectify_image(byte * rect_pixels, const std::vector<int> & rectification_table, const byte * unrect_pixels, rs_format format)
     {
         switch(format)
         {

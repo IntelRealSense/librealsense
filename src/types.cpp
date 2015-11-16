@@ -217,7 +217,7 @@ namespace rsimpl
     // stream_buffer //
     ///////////////////
 
-    stream_buffer::stream_buffer(const stream_mode & mode) : mode(mode), frames({std::vector<uint8_t>(get_image_size(mode.width, mode.height, mode.format))}), last_frame_number() {}
+    stream_buffer::stream_buffer(const stream_mode & mode) : mode(mode), frames({std::vector<byte>(get_image_size(mode.width, mode.height, mode.format))}), last_frame_number() {}
 
     void stream_buffer::swap_back(int frame_number) 
     {

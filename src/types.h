@@ -29,6 +29,8 @@
 
 namespace rsimpl
 {
+    enum class byte : uint8_t {};
+
     // Enumerated type support
     #define RS_ENUM_HELPERS(TYPE, PREFIX) const char * get_string(TYPE value); \
         inline bool is_valid(TYPE value) { return value >= 0 && value < RS_##PREFIX##_COUNT; } \
@@ -104,7 +106,7 @@ namespace rsimpl
         const native_pixel_format * pf;     // Pixel format advertised over UVC
         int fps;                            // Framerate advertised over UVC
         std::vector<stream_mode> streams;   // Modes for streams which can be supported by this device mode
-        void (* unpacker)(void * dest[], const void * source, const subdevice_mode & mode);
+        void (* unpacker)(byte * dest[], const byte * source, const subdevice_mode & mode);
         int (* frame_number_decoder)(const subdevice_mode & mode, const void * frame);
         bool use_serial_numbers_if_unique;  // If true, ignore frame_number_decoder and use a serial frame count if this is the only mode set
     };
@@ -173,7 +175,7 @@ namespace rsimpl
     {
         struct frame
         {
-            std::vector<uint8_t>    data;
+            std::vector<byte>       data;
             int                     timestamp;  // DS4 frame number or IVCAM rolling timestamp, used to compute LibRealsense frame timestamp
             int                     delta;      // Difference between the last two timestamp values, used to estimate next frame arrival time
         };
@@ -186,12 +188,12 @@ namespace rsimpl
 
         const stream_mode &         get_mode() const { return mode; }
 
-        const void *                get_front_data() const { return frames.get_front().data.data(); }
+        const byte *                get_front_data() const { return frames.get_front().data.data(); }
         int                         get_front_number() const { return frames.get_front().timestamp; }
         int                         get_front_delta() const { return frames.get_front().delta; }
         bool                        is_front_valid() const { return frames.has_front(); }
 
-        void *                      get_back_data() { return frames.get_back().data.data(); }
+        byte *                      get_back_data() { return frames.get_back().data.data(); }
         void                        swap_back(int frame_number);
         bool                        swap_front() { return frames.swap_front(); }
     };

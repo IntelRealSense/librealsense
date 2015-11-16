@@ -7,31 +7,29 @@
 
 namespace rsimpl
 {
-    template<void (*UNPACKER)(void * dest[], const void * source, const subdevice_mode & mode)> 
-    void crop_unpack(void * dest[], const void * source, const subdevice_mode & mode)
+    template<void (*UNPACKER)(byte * dest[], const byte * source, const subdevice_mode & mode)> 
+    void crop_unpack(byte * dest[], const byte * source, const subdevice_mode & mode)
     {
-        UNPACKER(dest, (char *)source + mode.pf->get_crop_offset(mode.width, 6), mode);
+        UNPACKER(dest, source + mode.pf->get_crop_offset(mode.width, 6), mode);
     }
 
     static int amount = 0;
 
-    template<void (*UNPACKER)(void * dest[], const void * source, const subdevice_mode & mode)> 
-    void pad_unpack(void * dest[], const void * source, const subdevice_mode & mode)
+    template<void (*UNPACKER)(byte * dest[], const byte * source, const subdevice_mode & mode)> 
+    void pad_unpack(byte * dest[], const byte * source, const subdevice_mode & mode)
     {
-        dest[0] = (char *)dest[0] + get_image_size(mode.streams[0].width, 6, mode.streams[0].format) + get_image_size(6, 1, mode.streams[0].format);
+        dest[0] += get_image_size(mode.streams[0].width, 6, mode.streams[0].format) + get_image_size(6, 1, mode.streams[0].format);
         UNPACKER(dest, source, mode);
 
         // Erase Dinghy, which will get copied over when blitting into a padded buffer
-        dest[0] = (char *)dest[0] + get_image_size(mode.streams[0].width, mode.height-1, RS_FORMAT_Z16);
-        memset(dest[0], 0, mode.width*2);
+        memset(dest[0] + get_image_size(mode.streams[0].width, mode.height-1, RS_FORMAT_Z16), 0, mode.width*2);
     }
 
+    template<int MAGIC_NUMBER>
     int decode_dinghy_frame_number(const subdevice_mode & mode, const void * frame)
     {
-        // todo - check dinghy->magicNumber against 0x08070605 (IR), 0x4030201 (Z), 0x8A8B8C8D (Third)
         auto dinghy = reinterpret_cast<const r200::Dinghy *>(reinterpret_cast<const uint8_t *>(frame) + mode.pf->get_image_size(mode.width, mode.height-1));
-        if(dinghy->magicNumber == 0x4030201 || dinghy->magicNumber == 0x08070605) return dinghy->frameCount;
-        return 0;
+        if(dinghy->magicNumber == MAGIC_NUMBER) return dinghy->magicNumber == MAGIC_NUMBER ? dinghy->frameCount : 0;
     }
 
     int decode_yuy2_frame_number(const subdevice_mode & mode, const void * frame)
@@ -92,28 +90,28 @@ namespace rsimpl
         info.stream_subdevices[RS_STREAM_DEPTH] = 1;
         info.stream_subdevices[RS_STREAM_COLOR] = 2;
         info.stream_subdevices[RS_STREAM_INFRARED ] = 0;
-        info.stream_subdevices[RS_STREAM_INFRARED2] = 0;            
+        info.stream_subdevices[RS_STREAM_INFRARED2] = 0;
 
         // Set up modes for left/right/z images
         for(auto m : lrz_modes)
         {
             for(auto fps : {30, 60, 90})
             {
-                info.subdevice_modes.push_back({1, m.uvc_w-12, m.uvc_h-12, &pf_z16, fps, {{RS_STREAM_DEPTH, m.w, m.h, RS_FORMAT_Z16, fps, m.lr_intrin}}, &pad_unpack<unpack_subrect>, &decode_dinghy_frame_number});
-                info.subdevice_modes.push_back({1, m.uvc_w-12, m.uvc_h-12, &pf_z16, fps, {{RS_STREAM_DEPTH, m.w-12, m.h-12, RS_FORMAT_Z16, fps, m.z_intrin}}, &unpack_subrect, &decode_dinghy_frame_number});
-                info.subdevice_modes.push_back({0, m.uvc_w, m.uvc_h, &pf_y8 , fps,  {{RS_STREAM_INFRARED,  m.w, m.h, RS_FORMAT_Y8,  fps, m.lr_intrin}}, &unpack_subrect, &decode_dinghy_frame_number});
-                info.subdevice_modes.push_back({0, m.uvc_w, m.uvc_h, &pf_y8 , fps,  {{RS_STREAM_INFRARED,  m.w-12, m.h-12, RS_FORMAT_Y8,  fps, m.z_intrin}}, &crop_unpack<unpack_subrect>, &decode_dinghy_frame_number});
+                info.subdevice_modes.push_back({1, m.uvc_w-12, m.uvc_h-12, &pf_z16, fps, {{RS_STREAM_DEPTH, m.w, m.h, RS_FORMAT_Z16, fps, m.lr_intrin}}, &pad_unpack<unpack_subrect>, &decode_dinghy_frame_number<0x4030201>});
+                info.subdevice_modes.push_back({1, m.uvc_w-12, m.uvc_h-12, &pf_z16, fps, {{RS_STREAM_DEPTH, m.w-12, m.h-12, RS_FORMAT_Z16, fps, m.z_intrin}}, &unpack_subrect, &decode_dinghy_frame_number<0x4030201>});
+                info.subdevice_modes.push_back({0, m.uvc_w, m.uvc_h, &pf_y8 , fps,  {{RS_STREAM_INFRARED,  m.w, m.h, RS_FORMAT_Y8,  fps, m.lr_intrin}}, &unpack_subrect, &decode_dinghy_frame_number<0x08070605>});
+                info.subdevice_modes.push_back({0, m.uvc_w, m.uvc_h, &pf_y8 , fps,  {{RS_STREAM_INFRARED,  m.w-12, m.h-12, RS_FORMAT_Y8,  fps, m.z_intrin}}, &crop_unpack<unpack_subrect>, &decode_dinghy_frame_number<0x08070605>});
                 info.subdevice_modes.push_back({0, m.uvc_w, m.uvc_h, &pf_y8i, fps,  {{RS_STREAM_INFRARED,  m.w, m.h, RS_FORMAT_Y8,  fps, m.lr_intrin},
-                                                                                     {RS_STREAM_INFRARED2, m.w, m.h, RS_FORMAT_Y8,  fps, m.lr_intrin}}, &unpack_y8_y8_from_y8i, &decode_dinghy_frame_number});
+                                                                                     {RS_STREAM_INFRARED2, m.w, m.h, RS_FORMAT_Y8,  fps, m.lr_intrin}}, &unpack_y8_y8_from_y8i, &decode_dinghy_frame_number<0x08070605>});
                 info.subdevice_modes.push_back({0, m.uvc_w, m.uvc_h, &pf_y8i, fps,  {{RS_STREAM_INFRARED,  m.w-12, m.h-12, RS_FORMAT_Y8,  fps, m.z_intrin},
-                                                                                     {RS_STREAM_INFRARED2, m.w-12, m.h-12, RS_FORMAT_Y8,  fps, m.z_intrin}}, &crop_unpack<unpack_y8_y8_from_y8i>, &decode_dinghy_frame_number});
+                                                                                     {RS_STREAM_INFRARED2, m.w-12, m.h-12, RS_FORMAT_Y8,  fps, m.z_intrin}}, &crop_unpack<unpack_y8_y8_from_y8i>, &decode_dinghy_frame_number<0x08070605>});
                                                                      
-                info.subdevice_modes.push_back({0, m.uvc_w, m.uvc_h, &pf_y16, fps,  {{RS_STREAM_INFRARED,  m.w, m.h, RS_FORMAT_Y16, fps, m.lr_intrin}}, &unpack_y16_from_y16_10, &decode_dinghy_frame_number});
-                info.subdevice_modes.push_back({0, m.uvc_w, m.uvc_h, &pf_y16, fps,  {{RS_STREAM_INFRARED,  m.w-12, m.h-12, RS_FORMAT_Y16, fps, m.z_intrin}}, &crop_unpack<unpack_y16_from_y16_10>, &decode_dinghy_frame_number});
+                info.subdevice_modes.push_back({0, m.uvc_w, m.uvc_h, &pf_y16, fps,  {{RS_STREAM_INFRARED,  m.w, m.h, RS_FORMAT_Y16, fps, m.lr_intrin}}, &unpack_y16_from_y16_10, &decode_dinghy_frame_number<0x08070605>});
+                info.subdevice_modes.push_back({0, m.uvc_w, m.uvc_h, &pf_y16, fps,  {{RS_STREAM_INFRARED,  m.w-12, m.h-12, RS_FORMAT_Y16, fps, m.z_intrin}}, &crop_unpack<unpack_y16_from_y16_10>, &decode_dinghy_frame_number<0x08070605>});
                 info.subdevice_modes.push_back({0, m.uvc_w, m.uvc_h, &pf_y12i, fps, {{RS_STREAM_INFRARED,  m.w, m.h, RS_FORMAT_Y16, fps, m.lr_intrin},
-                                                                                     {RS_STREAM_INFRARED2, m.w, m.h, RS_FORMAT_Y16, fps, m.lr_intrin}}, &unpack_y16_y16_from_y12i_10, &decode_dinghy_frame_number});
+                                                                                     {RS_STREAM_INFRARED2, m.w, m.h, RS_FORMAT_Y16, fps, m.lr_intrin}}, &unpack_y16_y16_from_y12i_10, &decode_dinghy_frame_number<0x08070605>});
                 info.subdevice_modes.push_back({0, m.uvc_w, m.uvc_h, &pf_y12i, fps, {{RS_STREAM_INFRARED,  m.w-12, m.h-12, RS_FORMAT_Y16, fps, m.z_intrin},
-                                                                                     {RS_STREAM_INFRARED2, m.w-12, m.h-12, RS_FORMAT_Y16, fps, m.z_intrin}}, &crop_unpack<unpack_y16_y16_from_y12i_10>, &decode_dinghy_frame_number});
+                                                                                     {RS_STREAM_INFRARED2, m.w-12, m.h-12, RS_FORMAT_Y16, fps, m.z_intrin}}, &crop_unpack<unpack_y16_y16_from_y12i_10>, &decode_dinghy_frame_number<0x08070605>});
             }
         }
 
@@ -123,7 +121,7 @@ namespace rsimpl
         info.subdevice_modes.push_back({2,  640,  480, &pf_yuy2, 60, {{RS_STREAM_COLOR,  640,  480, RS_FORMAT_YUYV, 60, THIRD_VGA}}, &unpack_subrect, &decode_yuy2_frame_number, true});
         info.subdevice_modes.push_back({2,  640,  480, &pf_yuy2, 30, {{RS_STREAM_COLOR,  640,  480, RS_FORMAT_YUYV, 30, THIRD_VGA}}, &unpack_subrect, &decode_yuy2_frame_number, true});
         info.subdevice_modes.push_back({2, 1920, 1080, &pf_yuy2, 30, {{RS_STREAM_COLOR, 1920, 1080, RS_FORMAT_YUYV, 30, THIRD_HD}}, &unpack_subrect, &decode_yuy2_frame_number, true});
-        info.subdevice_modes.push_back({2, 2400, 1081, &pf_rw10, 30, {{RS_STREAM_COLOR, 1920, 1080, RS_FORMAT_RAW10, 30, THIRD_HD}}, &unpack_subrect, &decode_dinghy_frame_number, true});
+        info.subdevice_modes.push_back({2, 2400, 1081, &pf_rw10, 30, {{RS_STREAM_COLOR, 1920, 1080, RS_FORMAT_RAW10, 30, THIRD_HD}}, &unpack_subrect, &decode_dinghy_frame_number<0x8A8B8C8D>, true});
 		// todo - add 15 fps modes
 
         // Set up interstream rules for left/right/z images

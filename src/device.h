@@ -22,10 +22,10 @@ private:
     int                                         last_stream_timestamp;
 
     mutable std::vector<int>                    rectification_table;
-    mutable std::vector<uint8_t>                synthetic_images[RS_STREAM_COUNT - RS_STREAM_NATIVE_COUNT];
+    mutable std::vector<rsimpl::byte>           synthetic_images[RS_STREAM_COUNT - RS_STREAM_NATIVE_COUNT];
     mutable int                                 synthetic_timestamps[RS_STREAM_COUNT - RS_STREAM_NATIVE_COUNT];
 
-    const void *                                get_aligned_image(rs_stream stream, rs_stream from, rs_stream to) const;
+    const rsimpl::byte *                        get_aligned_image(rs_stream stream, rs_stream from, rs_stream to) const;
 protected:
     rsimpl::stream_mode                         get_current_stream_mode(rs_stream stream) const;
     const rsimpl::uvc::device &                 get_device() const { return *device; }
@@ -60,7 +60,7 @@ public:
     
     void                                        wait_all_streams();
     int                                         get_frame_timestamp(rs_stream stream) const;
-    const void *                                get_frame_data(rs_stream stream) const;
+    const rsimpl::byte *                        get_frame_data(rs_stream stream) const;
 
     void                                        set_option(rs_option option, int value);
     int                                         get_option(rs_option option) const;
