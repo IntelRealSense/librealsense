@@ -47,9 +47,8 @@ static_device_info rsimpl::add_standard_unpackers(const static_device_info & dev
     return info;
 }
 
-rs_device::rs_device(std::shared_ptr<rsimpl::uvc::device> device, const rsimpl::static_device_info & info) : device(device), device_info(add_standard_unpackers(info)), capturing(false)
+rs_device::rs_device(std::shared_ptr<rsimpl::uvc::device> device, const rsimpl::static_device_info & info) : device(device), config(add_standard_unpackers(info)), capturing(false)
 {
-    for(auto & req : requests) req = rsimpl::stream_request();
     for(auto & t : synthetic_timestamps) t = 0;
 }
 
@@ -61,27 +60,27 @@ rs_device::~rs_device()
 void rs_device::enable_stream(rs_stream stream, int width, int height, rs_format format, int fps)
 {
     if(capturing) throw std::runtime_error("streams cannot be reconfigured after having called rs_start_device()");
-    if(device_info.stream_subdevices[stream] == -1) throw std::runtime_error("unsupported stream");
+    if(config.info.stream_subdevices[stream] == -1) throw std::runtime_error("unsupported stream");
 
-    requests[stream] = {true, width, height, format, fps};
+    config.requests[stream] = {true, width, height, format, fps};
     for(auto & s : native_streams) s.buffer.reset(); // Changing stream configuration invalidates the current stream info
 }
 
 void rs_device::enable_stream_preset(rs_stream stream, rs_preset preset)
 {
     if(capturing) throw std::runtime_error("streams cannot be reconfigured after having called rs_start_device()");
-    if(!device_info.presets[stream][preset].enabled) throw std::runtime_error("unsupported stream");
+    if(!config.info.presets[stream][preset].enabled) throw std::runtime_error("unsupported stream");
 
-    requests[stream] = device_info.presets[stream][preset];
+    config.requests[stream] = config.info.presets[stream][preset];
     for(auto & s : native_streams) s.buffer.reset(); // Changing stream configuration invalidates the current stream info
 }
 
 void rs_device::disable_stream(rs_stream stream)
 {
     if(capturing) throw std::runtime_error("streams cannot be reconfigured after having called rs_start_device()");
-    if(device_info.stream_subdevices[stream] == -1) throw std::runtime_error("unsupported stream");
+    if(config.info.stream_subdevices[stream] == -1) throw std::runtime_error("unsupported stream");
 
-    requests[stream] = {};
+    config.requests[stream] = {};
     for(auto & s : native_streams) s.buffer.reset(); // Changing stream configuration invalidates the current stream info
 }
 
@@ -114,7 +113,7 @@ static rs_stream get_stream_data_native_stream(rs_stream stream)
 
 bool rs_device::is_stream_enabled(rs_stream stream) const 
 { 
-    if(stream < RS_STREAM_NATIVE_COUNT) return requests[stream].enabled;
+    if(stream < RS_STREAM_NATIVE_COUNT) return config.requests[stream].enabled;
     else return true; // Synthetic streams always enabled?
 }
 
@@ -123,12 +122,12 @@ rs_intrinsics rs_device::get_stream_intrinsics(rs_stream stream) const
     stream = get_stream_intrinsics_native_stream(stream);
     if(stream == RS_STREAM_RECTIFIED_COLOR)
     {
-        auto intrin = intrinsics.get(get_current_stream_mode(RS_STREAM_COLOR).intrinsics_index);
+        auto intrin = config.intrinsics.get(get_current_stream_mode(RS_STREAM_COLOR).intrinsics_index);
         intrin.model = RS_DISTORTION_NONE;
         memset(&intrin.coeffs, 0, sizeof(intrin.coeffs));
         return intrin;
     }
-    else return intrinsics.get(get_current_stream_mode(stream).intrinsics_index);
+    else return config.intrinsics.get(get_current_stream_mode(stream).intrinsics_index);
 }
 
 rs_format rs_device::get_stream_format(rs_stream stream) const
@@ -145,7 +144,7 @@ void rs_device::start()
 {
     if(capturing) throw std::runtime_error("cannot restart device without first stopping device");
         
-    auto selected_modes = device_info.select_modes(requests);
+    auto selected_modes = config.info.select_modes(config.requests);
 
     for(auto & s : native_streams) s.buffer.reset(); // Starting capture invalidates the current stream info, if any exists from previous capture
 
@@ -162,7 +161,7 @@ void rs_device::start()
             stream_list.push_back(stream);
                     
             // If this is one of the streams requested by the user, store the buffer so they can access it
-            if(requests[stream_mode.stream].enabled) native_streams[stream_mode.stream].buffer = stream;
+            if(config.requests[stream_mode.stream].enabled) native_streams[stream_mode.stream].buffer = stream;
         }
                 
         // Initialize the subdevice and set it to the selected mode
@@ -183,7 +182,7 @@ void rs_device::start()
     }
     
     on_before_start(selected_modes);
-    start_streaming(*device, device_info.num_libuvc_transfer_buffers);
+    start_streaming(*device, config.info.num_libuvc_transfer_buffers);
     capture_started = std::chrono::high_resolution_clock::now();
     capturing = true;
     base_timestamp = 0;
@@ -350,9 +349,9 @@ const byte * rs_device::get_frame_data(rs_stream stream) const
 rsimpl::stream_mode rs_device::get_current_stream_mode(rs_stream stream) const
 {
     if(native_streams[stream].buffer) return native_streams[stream].buffer->get_mode();
-    if(requests[stream].enabled)
+    if(config.requests[stream].enabled)
     {
-        for(auto subdevice_mode : device_info.select_modes(requests))
+        for(auto subdevice_mode : config.info.select_modes(config.requests))
         {
             for(auto stream_mode : subdevice_mode.streams)
             {
@@ -366,8 +365,8 @@ rsimpl::stream_mode rs_device::get_current_stream_mode(rs_stream stream) const
 
 rsimpl::pose rs_device::get_pose(rs_stream stream) const
 {
-    if(stream < RS_STREAM_NATIVE_COUNT) return device_info.stream_poses[stream];
-    if(stream == RS_STREAM_RECTIFIED_COLOR) return {device_info.stream_poses[RS_STREAM_DEPTH].orientation, device_info.stream_poses[RS_STREAM_COLOR].position};
+    if(stream < RS_STREAM_NATIVE_COUNT) return config.info.stream_poses[stream];
+    if(stream == RS_STREAM_RECTIFIED_COLOR) return {config.info.stream_poses[RS_STREAM_DEPTH].orientation, config.info.stream_poses[RS_STREAM_COLOR].position};
     return get_pose(get_stream_intrinsics_native_stream(stream));
 }
 
@@ -415,13 +414,13 @@ namespace rsimpl
 
 int rs_device::get_stream_mode_count(rs_stream stream) const
 {
-    if(stream < RS_STREAM_NATIVE_COUNT) return enumerate_stream_modes(device_info, stream).size();
+    if(stream < RS_STREAM_NATIVE_COUNT) return enumerate_stream_modes(config.info, stream).size();
     return 0; // Synthetic streams have no modes and cannot have enable_stream called on it
 }
 
 void rs_device::get_stream_mode(rs_stream stream, int mode, int * width, int * height, rs_format * format, int * framerate) const
 {
-    auto m = enumerate_stream_modes(device_info, stream)[mode];
+    auto m = enumerate_stream_modes(config.info, stream)[mode];
     if(width) *width = m.width;
     if(height) *height = m.height;
     if(format) *format = m.format;
@@ -433,7 +432,7 @@ void rs_device::set_option(rs_option option, int value)
     if(!supports_option(option)) throw std::runtime_error(to_string() << "option not supported by this device - " << option);
     if(uvc::is_pu_control(option))
     {
-        uvc::set_pu_control(get_device(), device_info.stream_subdevices[RS_STREAM_COLOR], option, value);
+        uvc::set_pu_control(get_device(), config.info.stream_subdevices[RS_STREAM_COLOR], option, value);
     }
     else
     {
@@ -446,7 +445,7 @@ int rs_device::get_option(rs_option option) const
     if(!supports_option(option)) throw std::runtime_error(to_string() << "option not supported by this device - " << option);
     if(uvc::is_pu_control(option))
     {
-        return uvc::get_pu_control(get_device(), device_info.stream_subdevices[RS_STREAM_COLOR], option);
+        return uvc::get_pu_control(get_device(), config.info.stream_subdevices[RS_STREAM_COLOR], option);
     }
     else
     {

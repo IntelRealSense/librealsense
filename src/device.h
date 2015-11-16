@@ -5,6 +5,15 @@
 #include "uvc.h"
 #include <chrono>
 
+struct device_config
+{
+    const rsimpl::static_device_info            info;
+    rsimpl::intrinsics_buffer                   intrinsics;
+    rsimpl::stream_request                      requests[RS_STREAM_NATIVE_COUNT];  // Modified by enable/disable_stream calls
+
+    device_config(const rsimpl::static_device_info & info) : info(info) { for(auto & req : requests) req = rsimpl::stream_request(); }
+};
+
 struct stream_interface
 {
     virtual bool                                is_enabled() const = 0;
@@ -25,10 +34,7 @@ struct rs_device
 {
 private:
     const std::shared_ptr<rsimpl::uvc::device>  device;
-    const rsimpl::static_device_info            device_info;
-    rsimpl::intrinsics_buffer                   intrinsics;
-
-    rsimpl::stream_request                      requests[RS_STREAM_NATIVE_COUNT];  // Modified by enable/disable_stream calls
+    device_config                               config;
     native_stream                               native_streams[RS_STREAM_NATIVE_COUNT];
 
     bool                                        capturing;
@@ -46,18 +52,18 @@ protected:
     rsimpl::stream_mode                         get_current_stream_mode(rs_stream stream) const;
     const rsimpl::uvc::device &                 get_device() const { return *device; }
     rsimpl::uvc::device &                       get_device() { return *device; }
-    void                                        set_intrinsics_thread_safe(std::vector<rs_intrinsics> new_intrinsics) { intrinsics.set(move(new_intrinsics)); }
+    void                                        set_intrinsics_thread_safe(std::vector<rs_intrinsics> new_intrinsics) { config.intrinsics.set(move(new_intrinsics)); }
 public:
                                                 rs_device(std::shared_ptr<rsimpl::uvc::device> device, const rsimpl::static_device_info & info);
                                                 ~rs_device();
 
-    const char *                                get_name() const { return device_info.name.c_str(); }
-    const char *                                get_serial() const { return device_info.serial.c_str(); }
-    const char *                                get_firmware_version() const { return device_info.firmware_version.c_str(); }
+    const char *                                get_name() const { return config.info.name.c_str(); }
+    const char *                                get_serial() const { return config.info.serial.c_str(); }
+    const char *                                get_firmware_version() const { return config.info.firmware_version.c_str(); }
     rsimpl::pose                                get_pose(rs_stream stream) const;
     rs_extrinsics                               get_extrinsics(rs_stream from, rs_stream to) const;
-    float                                       get_depth_scale() const { return device_info.depth_scale; }
-    bool                                        supports_option(rs_option option) const { return device_info.option_supported[option]; }
+    float                                       get_depth_scale() const { return config.info.depth_scale; }
+    bool                                        supports_option(rs_option option) const { return config.info.option_supported[option]; }
     int                                         get_stream_mode_count(rs_stream stream) const;
     void                                        get_stream_mode(rs_stream stream, int mode, int * width, int * height, rs_format * format, int * framerate) const;
 
