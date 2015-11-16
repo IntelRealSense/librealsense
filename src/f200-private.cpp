@@ -550,10 +550,20 @@ namespace rsimpl { namespace f200
 
     void set_asic_coefficients(uvc::device & device, std::timed_mutex & mutex, const IVCAMASICCoefficients & coeffs)
     {
+        // command.Param1 =
+        // 0 - INVZ VGA (640x480)
+        // 1 - INVZ QVGA (Possibly 320x240?)
+        // 2 - INVZ HVGA (640x240)
+        // 3 - INVZ 640x360
+        // 4 - INVR VGA (640x480)
+        // 5 - INVR QVGA (Possibly 320x240?)
+        // 6 - INVR HVGA (640x240)
+        // 7 - INVR 640x360
+
          IVCAMCommand command(IVCAMMonitorCommand::UpdateCalib);
 
          memcpy(command.data, coeffs.CoefValueArray, NUM_OF_CALIBRATION_COEFFS * sizeof(float));
-         command.Param1 = 4; // todo - 0 = Z, 4 = R
+         command.Param1 = 0; // todo - Send appropriate value at appropriate times, see above
          command.Param2 = 0;
          command.Param3 = 0;
          command.Param4 = 0;
