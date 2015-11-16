@@ -160,18 +160,36 @@ namespace rsimpl
             [](const y12i_pixel & p) -> uint16_t { return p.r() << 6 | p.r() >> 4; }); // Multiply by 64 1/16 to efficiently approximate 65535/1023
     }
 
-    void unpack_z16_y8_from_inri(void * dest[], const void * source, const subdevice_mode & mode)
+    void unpack_z16_y8_from_f200_inzi(void * dest[], const void * source, const subdevice_mode & mode)
     {
         split_frame(dest, mode, reinterpret_cast<const inri_pixel *>(source), pf_f200_inzi, RS_FORMAT_Z16, RS_FORMAT_Y8,
             [](const inri_pixel & p) -> uint16_t { return p.z16; },
             [](const inri_pixel & p) -> uint8_t { return p.y8; });
     }
 
-    void unpack_z16_y16_from_inri(void * dest[], const void * source, const subdevice_mode & mode)
+    void unpack_z16_y16_from_f200_inzi(void * dest[], const void * source, const subdevice_mode & mode)
     {
         split_frame(dest, mode, reinterpret_cast<const inri_pixel *>(source), pf_f200_inzi, RS_FORMAT_Z16, RS_FORMAT_Y16,
             [](const inri_pixel & p) -> uint16_t { return p.z16; },
             [](const inri_pixel & p) -> uint16_t { return p.y8 | p.y8 << 8; });
+    }
+
+    void unpack_z16_y8_from_sr300_inzi(void * dest[], const void * source, const subdevice_mode & mode)
+    {
+        auto in = reinterpret_cast<const uint16_t *>(source);
+        auto out_depth = reinterpret_cast<uint16_t *>(dest[0]);
+        auto out_ir = reinterpret_cast<uint8_t *>(dest[1]);            
+        for(int i=0, n=mode.width*mode.height; i<n; ++i) *out_ir++ = *in++ >> 2;
+        memcpy(out_depth, in, mode.width*mode.height*2);
+    }
+
+    void unpack_z16_y16_from_sr300_inzi (void * dest[], const void * source, const subdevice_mode & mode)
+    {
+        auto in = reinterpret_cast<const uint16_t *>(source);
+        auto out_depth = reinterpret_cast<uint16_t *>(dest[0]);
+        auto out_ir = reinterpret_cast<uint16_t *>(dest[1]);            
+        for(int i=0, n=mode.width*mode.height; i<n; ++i) *out_ir++ = *in++ << 6;
+        memcpy(out_depth, in, mode.width*mode.height*2);
     }
 
     /////////////////////
