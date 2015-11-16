@@ -29,7 +29,7 @@ namespace rsimpl
     int decode_dinghy_frame_number(const subdevice_mode & mode, const void * frame)
     {
         auto dinghy = reinterpret_cast<const r200::Dinghy *>(reinterpret_cast<const uint8_t *>(frame) + mode.pf->get_image_size(mode.width, mode.height-1));
-        if(dinghy->magicNumber == MAGIC_NUMBER) return dinghy->magicNumber == MAGIC_NUMBER ? dinghy->frameCount : 0;
+        return dinghy->magicNumber == MAGIC_NUMBER ? dinghy->frameCount : 0;
     }
 
     int decode_yuy2_frame_number(const subdevice_mode & mode, const void * frame)

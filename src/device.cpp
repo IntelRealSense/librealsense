@@ -64,7 +64,7 @@ void rs_device::enable_stream(rs_stream stream, int width, int height, rs_format
     if(device_info.stream_subdevices[stream] == -1) throw std::runtime_error("unsupported stream");
 
     requests[stream] = {true, width, height, format, fps};
-    for(auto & s : streams) s.reset(); // Changing stream configuration invalidates the current stream info
+    for(auto & s : native_streams) s.buffer.reset(); // Changing stream configuration invalidates the current stream info
 }
 
 void rs_device::enable_stream_preset(rs_stream stream, rs_preset preset)
@@ -73,7 +73,7 @@ void rs_device::enable_stream_preset(rs_stream stream, rs_preset preset)
     if(!device_info.presets[stream][preset].enabled) throw std::runtime_error("unsupported stream");
 
     requests[stream] = device_info.presets[stream][preset];
-    for(auto & s : streams) s.reset(); // Changing stream configuration invalidates the current stream info
+    for(auto & s : native_streams) s.buffer.reset(); // Changing stream configuration invalidates the current stream info
 }
 
 void rs_device::disable_stream(rs_stream stream)
@@ -82,7 +82,7 @@ void rs_device::disable_stream(rs_stream stream)
     if(device_info.stream_subdevices[stream] == -1) throw std::runtime_error("unsupported stream");
 
     requests[stream] = {};
-    for(auto & s : streams) s.reset(); // Changing stream configuration invalidates the current stream info
+    for(auto & s : native_streams) s.buffer.reset(); // Changing stream configuration invalidates the current stream info
 }
 
 // Where do the intrinsics for a given (possibly synthetic) stream come from?
@@ -147,7 +147,7 @@ void rs_device::start()
         
     auto selected_modes = device_info.select_modes(requests);
 
-    for(auto & s : streams) s.reset(); // Starting capture invalidates the current stream info, if any exists from previous capture
+    for(auto & s : native_streams) s.buffer.reset(); // Starting capture invalidates the current stream info, if any exists from previous capture
 
     // Satisfy stream_requests as necessary for each subdevice, calling set_mode and
     // dispatching the uvc configuration for a requested stream to the hardware
@@ -162,7 +162,7 @@ void rs_device::start()
             stream_list.push_back(stream);
                     
             // If this is one of the streams requested by the user, store the buffer so they can access it
-            if(requests[stream_mode.stream].enabled) streams[stream_mode.stream] = stream;
+            if(requests[stream_mode.stream].enabled) native_streams[stream_mode.stream].buffer = stream;
         }
                 
         // Initialize the subdevice and set it to the selected mode
@@ -207,15 +207,15 @@ void rs_device::wait_all_streams()
     bool first_frame = false;
     for(int i=0; i<RS_STREAM_NATIVE_COUNT; ++i)
     {
-        if(streams[i] && !streams[i]->is_front_valid())
+        if(native_streams[i].buffer && !native_streams[i].buffer->is_front_valid())
         {
-            while(!streams[i]->swap_front())
+            while(!native_streams[i].buffer->swap_front())
             {
                 std::this_thread::sleep_for(std::chrono::microseconds(100)); // todo - Use a condition variable or something to avoid this
                 if(std::chrono::high_resolution_clock::now() >= timeout) throw std::runtime_error("Timeout waiting for frames");
             }
-            assert(streams[i]->is_front_valid());
-            last_stream_timestamp = streams[i]->get_front_number();
+            assert(native_streams[i].buffer->is_front_valid());
+            last_stream_timestamp = native_streams[i].buffer->get_front_number();
             first_frame = true;
         }
     }
@@ -228,7 +228,7 @@ void rs_device::wait_all_streams()
         {
             for(int i=0; i<RS_STREAM_NATIVE_COUNT; ++i)
             {
-                if(streams[i] && streams[i]->swap_front())
+                if(native_streams[i].buffer && native_streams[i].buffer->swap_front())
                 {
                     updated = true;
                 }
@@ -244,19 +244,19 @@ void rs_device::wait_all_streams()
     int frame_delta = INT_MIN;    
     for(int i=0; i<RS_STREAM_NATIVE_COUNT; ++i)
     {
-        if(!streams[i]) continue;
-        int delta = streams[i]->get_front_number() - last_stream_timestamp; // Relying on undefined behavior: 32-bit integer overflow -> wraparound
+        if(!native_streams[i].buffer) continue;
+        int delta = native_streams[i].buffer->get_front_number() - last_stream_timestamp; // Relying on undefined behavior: 32-bit integer overflow -> wraparound
         frame_delta = std::max(frame_delta, delta);
     }
 
     // Wait for any stream which expects a new frame prior to the frame time
     for(int i=0; i<RS_STREAM_NATIVE_COUNT; ++i)
     {
-        if(!streams[i]) continue;
-        int next_timestamp = streams[i]->get_front_number() + streams[i]->get_front_delta();
+        if(!native_streams[i].buffer) continue;
+        int next_timestamp = native_streams[i].buffer->get_front_number() + native_streams[i].buffer->get_front_delta();
         int next_delta = next_timestamp - last_stream_timestamp;
         if(next_delta > frame_delta) continue;
-        while(!streams[i]->swap_front())
+        while(!native_streams[i].buffer->swap_front())
         {
             std::this_thread::sleep_for(std::chrono::microseconds(100)); // todo - Use a condition variable or something to avoid this
             if(std::chrono::high_resolution_clock::now() >= timeout) throw std::runtime_error("Timeout waiting for frames");
@@ -269,9 +269,9 @@ void rs_device::wait_all_streams()
         base_timestamp = 0;
         for(int i=0; i<RS_STREAM_NATIVE_COUNT; ++i)
         {
-            if(!streams[i]) continue;
-            int delta = streams[i]->get_front_number() - last_stream_timestamp; // Relying on undefined behavior: 32-bit integer overflow -> wraparound
-            if(delta < 0) last_stream_timestamp = streams[i]->get_front_number();
+            if(!native_streams[i].buffer) continue;
+            int delta = native_streams[i].buffer->get_front_number() - last_stream_timestamp; // Relying on undefined behavior: 32-bit integer overflow -> wraparound
+            if(delta < 0) last_stream_timestamp = native_streams[i].buffer->get_front_number();
         }
     }
     else
@@ -284,8 +284,8 @@ void rs_device::wait_all_streams()
 int rs_device::get_frame_timestamp(rs_stream stream) const 
 { 
     stream = get_stream_data_native_stream(stream);
-    if(!streams[stream]) throw std::runtime_error(to_string() << "stream not enabled: " << stream); 
-    return base_timestamp == -1 ? 0 : convert_timestamp(base_timestamp + streams[stream]->get_front_number() - last_stream_timestamp);
+    if(!native_streams[stream].is_enabled()) throw std::runtime_error(to_string() << "stream not enabled: " << stream); 
+    return base_timestamp == -1 ? 0 : convert_timestamp(base_timestamp + native_streams[stream].get_frame_number() - last_stream_timestamp);
 }
 
 const byte * rs_device::get_aligned_image(rs_stream stream, rs_stream from, rs_stream to) const
@@ -317,8 +317,8 @@ const byte * rs_device::get_frame_data(rs_stream stream) const
 { 
     if(stream < RS_STREAM_NATIVE_COUNT)
     {
-        if(!streams[stream]) throw std::runtime_error(to_string() << "stream not enabled: " << stream);
-        return streams[stream]->get_front_data(); 
+        if(!native_streams[stream].is_enabled()) throw std::runtime_error(to_string() << "stream not enabled: " << stream);
+        return native_streams[stream].get_frame_data();
     }
 
     if(synthetic_images[stream - RS_STREAM_NATIVE_COUNT].empty() || synthetic_timestamps[stream - RS_STREAM_NATIVE_COUNT] != get_frame_timestamp(get_stream_data_native_stream(stream)))
@@ -349,7 +349,7 @@ const byte * rs_device::get_frame_data(rs_stream stream) const
 
 rsimpl::stream_mode rs_device::get_current_stream_mode(rs_stream stream) const
 {
-    if(streams[stream]) return streams[stream]->get_mode();
+    if(native_streams[stream].buffer) return native_streams[stream].buffer->get_mode();
     if(requests[stream].enabled)
     {
         for(auto subdevice_mode : device_info.select_modes(requests))

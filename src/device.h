@@ -5,6 +5,22 @@
 #include "uvc.h"
 #include <chrono>
 
+struct stream_interface
+{
+    virtual bool                                is_enabled() const = 0;
+    virtual int                                 get_frame_number() const = 0;
+    virtual const rsimpl::byte *                get_frame_data() const = 0;
+};
+
+struct native_stream : stream_interface
+{
+    std::shared_ptr<rsimpl::stream_buffer>      buffer;
+
+    bool                                        is_enabled() const { return static_cast<bool>(buffer); }
+    int                                         get_frame_number() const { return buffer->get_front_number(); }
+    const rsimpl::byte *                        get_frame_data() const { return buffer->get_front_data(); }
+};
+
 struct rs_device
 {
 private:
@@ -13,7 +29,7 @@ private:
     rsimpl::intrinsics_buffer                   intrinsics;
 
     rsimpl::stream_request                      requests[RS_STREAM_NATIVE_COUNT];  // Modified by enable/disable_stream calls
-    std::shared_ptr<rsimpl::stream_buffer>      streams[RS_STREAM_NATIVE_COUNT];   // Set up during start(), maintains buffers to receive frames from callback
+    native_stream                               native_streams[RS_STREAM_NATIVE_COUNT];
 
     bool                                        capturing;
     std::chrono::high_resolution_clock::time_point capture_started;  
