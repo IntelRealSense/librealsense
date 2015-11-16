@@ -1,3 +1,4 @@
+
 #include "f200-private.h"
 
 #include <cstring>
@@ -865,7 +866,7 @@ namespace rsimpl { namespace f200
     void update_asic_coefficients(uvc::device & device, std::timed_mutex & mutex, const CameraCalibrationParameters & compensated_params)
     {
         IVCAMASICCoefficients coeffs = {};
-        generate_asic_calibration_coefficients(compensated_params, {640, 480}, false, coeffs.CoefValueArray); // todo - fix hardcoded resolution parameters
+        generate_asic_calibration_coefficients(compensated_params, {640, 480}, true, coeffs.CoefValueArray); // todo - fix hardcoded resolution parameters
         set_asic_coefficients(device, mutex, coeffs);    
     }    
 

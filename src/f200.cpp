@@ -145,10 +145,10 @@ namespace rsimpl
         {
             for(auto fps : m.fps)
             {
-                info.subdevice_modes.push_back({1, m.w, m.h, 'INVR', fps, {{RS_STREAM_DEPTH,    m.w, m.h, RS_FORMAT_Z16, fps, m.intrin}}, &unpack_subrect, &decode_ivcam_frame_number});       
-                info.subdevice_modes.push_back({1, m.w, m.h, 'INRI', fps, {{RS_STREAM_DEPTH,    m.w, m.h, RS_FORMAT_Z16, fps, m.intrin},
+                info.subdevice_modes.push_back({1, m.w, m.h, 'INVZ', fps, {{RS_STREAM_DEPTH,    m.w, m.h, RS_FORMAT_Z16, fps, m.intrin}}, &unpack_subrect, &decode_ivcam_frame_number});       
+                info.subdevice_modes.push_back({1, m.w, m.h, 'INZI', fps, {{RS_STREAM_DEPTH,    m.w, m.h, RS_FORMAT_Z16, fps, m.intrin},
                                                                            {RS_STREAM_INFRARED, m.w, m.h, RS_FORMAT_Y8,  fps, m.intrin}}, &unpack_z16_y8_from_inri, &decode_ivcam_frame_number});
-                info.subdevice_modes.push_back({1, m.w, m.h, 'INRI', fps, {{RS_STREAM_DEPTH,    m.w, m.h, RS_FORMAT_Z16, fps, m.intrin},
+                info.subdevice_modes.push_back({1, m.w, m.h, 'INZI', fps, {{RS_STREAM_DEPTH,    m.w, m.h, RS_FORMAT_Z16, fps, m.intrin},
                                                                            {RS_STREAM_INFRARED, m.w, m.h, RS_FORMAT_Y16, fps, m.intrin}}, &unpack_z16_y16_from_inri, &decode_ivcam_frame_number});
             }
         }
