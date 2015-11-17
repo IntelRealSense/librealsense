@@ -9,7 +9,7 @@ namespace rsimpl
     class r200_camera : public rs_device
     {
     public:
-        r200_camera(std::shared_ptr<uvc::device> device, const static_device_info & info, std::vector<rs_intrinsics> intrinsics);
+        r200_camera(std::shared_ptr<uvc::device> device, const static_device_info & info, std::vector<rs_intrinsics> intrinsics, std::vector<rs_intrinsics> rect_intrinsics);
         ~r200_camera();
 
         void on_before_start(const std::vector<subdevice_mode> & selected_modes) override final;

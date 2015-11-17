@@ -5,6 +5,7 @@
 #include "../include/librealsense/rs.h"
 
 #include <cassert>                          // For assert
+#include <cstring>                          // For memcmp
 #include <vector>                           // For vector
 #include <memory>                           // For shared_ptr
 #include <sstream>                          // For ostringstream
@@ -29,6 +30,8 @@
 
 namespace rsimpl
 {
+    enum class byte : uint8_t {};
+
     // Enumerated type support
     #define RS_ENUM_HELPERS(TYPE, PREFIX) const char * get_string(TYPE value); \
         inline bool is_valid(TYPE value) { return value >= 0 && value < RS_##PREFIX##_COUNT; } \
@@ -56,6 +59,8 @@ namespace rsimpl
     inline pose operator * (const pose & a, const pose & b) { return {a.orientation * b.orientation, a * b.position}; }
     inline pose inverse(const pose & a) { auto inv = transpose(a.orientation); return {inv, inv * a.position * -1}; }
 
+    inline bool operator == (const rs_intrinsics & a, const rs_intrinsics & b) { return std::memcmp(&a, &b, sizeof(a)) == 0; }
+
     inline uint32_t pack(uint8_t c0, uint8_t c1, uint8_t c2, uint8_t c3)
     {
         return (c0 << 24) | (c1 << 16) | (c2 << 8) | c3;
@@ -79,14 +84,32 @@ namespace rsimpl
         int intrinsics_index;       // Index of image intrinsics
     };
 
+    struct native_pixel_format
+    {
+        uint32_t fourcc;
+        int plane_count;
+        int macropixel_width;
+        size_t macropixel_size;
+        size_t get_image_size(int width, int height) const
+        {
+            assert(width % macropixel_width == 0);
+            return (width / macropixel_width) * height * macropixel_size * plane_count;
+        }
+        size_t get_crop_offset(int width, int crop) const
+        {
+            assert(plane_count == 1);
+            return get_image_size(width, crop) + get_image_size(crop, 1);
+        }
+    };
+
     struct subdevice_mode
     {
         int subdevice;                      // 0, 1, 2, etc...
         int width, height;                  // Resolution advertised over UVC
-        uint32_t fourcc;                    // Pixel format advertised over UVC
+        const native_pixel_format * pf;     // Pixel format advertised over UVC
         int fps;                            // Framerate advertised over UVC
         std::vector<stream_mode> streams;   // Modes for streams which can be supported by this device mode
-        void (* unpacker)(void * dest[], const void * source, const subdevice_mode & mode);
+        void (* unpacker)(byte * dest[], const byte * source, const subdevice_mode & mode);
         int (* frame_number_decoder)(const subdevice_mode & mode, const void * frame);
         bool use_serial_numbers_if_unique;  // If true, ignore frame_number_decoder and use a serial frame count if this is the only mode set
     };
@@ -155,7 +178,7 @@ namespace rsimpl
     {
         struct frame
         {
-            std::vector<uint8_t>    data;
+            std::vector<byte>       data;
             int                     timestamp;  // DS4 frame number or IVCAM rolling timestamp, used to compute LibRealsense frame timestamp
             int                     delta;      // Difference between the last two timestamp values, used to estimate next frame arrival time
         };
@@ -168,33 +191,58 @@ namespace rsimpl
 
         const stream_mode &         get_mode() const { return mode; }
 
-        const void *                get_front_data() const { return frames.get_front().data.data(); }
+        const byte *                get_front_data() const { return frames.get_front().data.data(); }
         int                         get_front_number() const { return frames.get_front().timestamp; }
         int                         get_front_delta() const { return frames.get_front().delta; }
         bool                        is_front_valid() const { return frames.has_front(); }
 
-        void *                      get_back_data() { return frames.get_back().data.data(); }
+        byte *                      get_back_data() { return frames.get_back().data.data(); }
         void                        swap_back(int frame_number);
         bool                        swap_front() { return frames.swap_front(); }
     };
 
     class intrinsics_buffer
     {
-        mutable triple_buffer<std::vector<rs_intrinsics>> buffer;
+        struct state { std::vector<rs_intrinsics> intrin, rect_intrin; };
+        mutable triple_buffer<state> buffer;
     public:
         intrinsics_buffer() : buffer({}) {}
 
         rs_intrinsics get(int index) const
         {
             buffer.swap_front(); // We are logically const even though we check for updates, visible state will never change unless someone calls set
-            return buffer.get_front()[index];
+            return buffer.get_front().intrin[index];
+        }
+
+        rs_intrinsics get_rect(int index) const
+        {
+            buffer.swap_front(); // We are logically const even though we check for updates, visible state will never change unless someone calls set
+            return buffer.get_front().rect_intrin[index];
         }
 
         void set(std::vector<rs_intrinsics> intrinsics)
         {
-            buffer.get_back() = move(intrinsics);
+            buffer.get_back().intrin = buffer.get_back().rect_intrin = move(intrinsics);
             buffer.swap_back();
         }
+
+        void set(std::vector<rs_intrinsics> intrinsics, std::vector<rs_intrinsics> rect_intrinsics)
+        {
+            buffer.get_back().intrin = move(intrinsics);
+            buffer.get_back().rect_intrin = move(rect_intrinsics);
+            buffer.swap_back();
+        }
+    };
+
+    struct device_config
+    {
+        const static_device_info            info;
+        intrinsics_buffer                   intrinsics;
+        stream_request                      requests[RS_STREAM_NATIVE_COUNT];  // Modified by enable/disable_stream calls
+
+                                            device_config(const rsimpl::static_device_info & info) : info(info) { for(auto & req : requests) req = rsimpl::stream_request(); }
+
+        std::vector<subdevice_mode>         select_modes() const { return info.select_modes(requests); }
     };
 
     // Utilities
