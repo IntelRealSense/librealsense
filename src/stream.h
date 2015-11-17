@@ -22,6 +22,8 @@ struct stream_interface
     rs_extrinsics                               get_extrinsics_to(const stream_interface & r) const;
     virtual rsimpl::pose                        get_pose() const = 0;
     virtual float                               get_depth_scale() const = 0;
+    virtual int                                 get_mode_count() const { return 0; }
+    virtual const rsimpl::stream_mode &         get_mode(int mode) const { throw std::logic_error("no modes"); }
 
     virtual bool                                is_enabled() const = 0;
     virtual rs_intrinsics                       get_intrinsics() const = 0;
@@ -36,12 +38,15 @@ struct native_stream : public stream_interface
 {
     const device_config &                       config;
     const rs_stream                             stream;
+    std::vector<rsimpl::stream_mode>            modes;
     std::shared_ptr<rsimpl::stream_buffer>      buffer;
 
-                                                native_stream(device_config & config, rs_stream stream) : config(config), stream(stream) {}
+                                                native_stream(device_config & config, rs_stream stream);
 
     rsimpl::pose                                get_pose() const { return config.info.stream_poses[stream]; }
     float                                       get_depth_scale() const { return config.info.depth_scale; }
+    int                                         get_mode_count() const { return modes.size(); }
+    const rsimpl::stream_mode &                 get_mode(int mode) const { throw modes[mode]; }
 
     bool                                        is_enabled() const { return static_cast<bool>(buffer); }
     rsimpl::stream_mode                         get_mode() const;

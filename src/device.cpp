@@ -268,46 +268,14 @@ rs_extrinsics rs_device::get_extrinsics(rs_stream from, rs_stream to) const
     return streams[from]->get_extrinsics_to(*streams[to]);
 }
 
-namespace rsimpl
-{
-    std::vector<stream_mode> enumerate_stream_modes(const static_device_info & device_info, rs_stream stream)
-    {
-        std::vector<stream_mode> modes;
-        for(auto & subdevice_mode : device_info.subdevice_modes)
-        {
-            for(auto & stream_mode : subdevice_mode.streams)
-            {
-                if(stream_mode.stream == stream)
-                {
-                    modes.push_back(stream_mode);
-                }
-            }
-        }
-
-        std::sort(begin(modes), end(modes), [](const stream_mode & a, const stream_mode & b)
-        {
-            return std::make_tuple(-a.width, -a.height, -a.fps, a.format) < std::make_tuple(-b.width, -b.height, -b.fps, b.format);
-        });
-
-        auto it = std::unique(begin(modes), end(modes), [](const stream_mode & a, const stream_mode & b)
-        {
-            return std::make_tuple(a.width, a.height, a.fps, a.format) == std::make_tuple(b.width, b.height, b.fps, b.format);
-        });
-        if(it != end(modes)) modes.erase(it, end(modes));
-
-        return modes;
-    }
-}
-
 int rs_device::get_stream_mode_count(rs_stream stream) const
 {
-    if(stream < RS_STREAM_NATIVE_COUNT) return enumerate_stream_modes(config.info, stream).size();
-    return 0; // Synthetic streams have no modes and cannot have enable_stream called on it
+    return streams[stream]->get_mode_count();
 }
 
 void rs_device::get_stream_mode(rs_stream stream, int mode, int * width, int * height, rs_format * format, int * framerate) const
 {
-    auto m = enumerate_stream_modes(config.info, stream)[mode];
+    auto & m = streams[stream]->get_mode(mode);
     if(width) *width = m.width;
     if(height) *height = m.height;
     if(format) *format = m.format;

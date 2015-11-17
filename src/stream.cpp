@@ -1,5 +1,7 @@
 #include "stream.h"
 #include "image.h"
+#include <algorithm>    // For sort
+#include <tuple>        // For make_tuple
 
 using namespace rsimpl;
 
@@ -12,6 +14,31 @@ rs_extrinsics stream_interface::get_extrinsics_to(const stream_interface & r) co
     (float3x3 &)extrin.rotation = transform.orientation;
     (float3 &)extrin.translation = transform.position;
     return extrin;
+}
+
+native_stream::native_stream(device_config & config, rs_stream stream) : config(config), stream(stream) 
+{
+    for(auto & subdevice_mode : config.info.subdevice_modes)
+    {
+        for(auto & stream_mode : subdevice_mode.streams)
+        {
+            if(stream_mode.stream == stream)
+            {
+                modes.push_back(stream_mode);
+            }
+        }
+    }
+
+    std::sort(begin(modes), end(modes), [](const stream_mode & a, const stream_mode & b)
+    {
+        return std::make_tuple(-a.width, -a.height, -a.fps, a.format) < std::make_tuple(-b.width, -b.height, -b.fps, b.format);
+    });
+
+    auto it = std::unique(begin(modes), end(modes), [](const stream_mode & a, const stream_mode & b)
+    {
+        return std::make_tuple(a.width, a.height, a.fps, a.format) == std::make_tuple(b.width, b.height, b.fps, b.format);
+    });
+    if(it != end(modes)) modes.erase(it, end(modes));
 }
 
 stream_mode native_stream::get_mode() const
