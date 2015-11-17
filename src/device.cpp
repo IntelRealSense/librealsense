@@ -8,6 +8,45 @@
 
 using namespace rsimpl;
 
+stream_mode native_stream::get_mode() const
+{
+    if(buffer) return buffer->get_mode();
+    if(config.requests[stream].enabled)
+    {
+        for(auto subdevice_mode : config.select_modes())
+        {
+            for(auto stream_mode : subdevice_mode.streams)
+            {
+                if(stream_mode.stream == stream) return stream_mode;
+            }
+        }   
+        throw std::logic_error("no mode found"); // Should never happen, select_modes should throw if no mode can be found
+    }
+    throw std::runtime_error(to_string() << "stream not enabled: " << stream);
+}
+
+static rs_extrinsics make_extrinsics(const rsimpl::pose & from, const rsimpl::pose & to)
+{
+    if(from == to) return {{1,0,0,0,1,0,0,0,1},{0,0,0}};
+    auto transform = inverse(from) * to;
+    rs_extrinsics extrin;
+    (float3x3 &)extrin.rotation = transform.orientation;
+    (float3 &)extrin.translation = transform.position;
+    return extrin;
+}
+
+const rsimpl::byte * rectified_stream::get_frame_data() const
+{
+    if(image.empty() || number != get_frame_number())
+    {
+        auto rect_intrin = get_intrinsics();
+        if(table.empty()) table = compute_rectification_table(rect_intrin, make_extrinsics(get_pose(), source->get_pose()), source->get_intrinsics());
+        image.resize(get_image_size(rect_intrin.width, rect_intrin.height, get_format()));
+        rectify_image(image.data(), table, source->get_frame_data(), get_format());
+    }
+    return image.data();
+}
+
 static_device_info rsimpl::add_standard_unpackers(const static_device_info & device_info)
 {
     static_device_info info = device_info;
@@ -49,6 +88,11 @@ static_device_info rsimpl::add_standard_unpackers(const static_device_info & dev
 
 rs_device::rs_device(std::shared_ptr<rsimpl::uvc::device> device, const rsimpl::static_device_info & info) : device(device), config(add_standard_unpackers(info)), capturing(false)
 {
+    streams[RS_STREAM_DEPTH    ] = native_streams[RS_STREAM_DEPTH]     = std::make_shared<native_stream>(config, RS_STREAM_DEPTH);
+    streams[RS_STREAM_COLOR    ] = native_streams[RS_STREAM_COLOR]     = std::make_shared<native_stream>(config, RS_STREAM_COLOR);
+    streams[RS_STREAM_INFRARED ] = native_streams[RS_STREAM_INFRARED]  = std::make_shared<native_stream>(config, RS_STREAM_INFRARED);
+    streams[RS_STREAM_INFRARED2] = native_streams[RS_STREAM_INFRARED2] = std::make_shared<native_stream>(config, RS_STREAM_INFRARED2);
+    streams[RS_STREAM_RECTIFIED_COLOR]                                 = std::make_shared<rectified_stream>(streams[RS_STREAM_COLOR]);
     for(auto & t : synthetic_timestamps) t = 0;
 }
 
@@ -63,7 +107,7 @@ void rs_device::enable_stream(rs_stream stream, int width, int height, rs_format
     if(config.info.stream_subdevices[stream] == -1) throw std::runtime_error("unsupported stream");
 
     config.requests[stream] = {true, width, height, format, fps};
-    for(auto & s : native_streams) s.buffer.reset(); // Changing stream configuration invalidates the current stream info
+    for(auto & s : native_streams) s->buffer.reset(); // Changing stream configuration invalidates the current stream info
 }
 
 void rs_device::enable_stream_preset(rs_stream stream, rs_preset preset)
@@ -72,7 +116,7 @@ void rs_device::enable_stream_preset(rs_stream stream, rs_preset preset)
     if(!config.info.presets[stream][preset].enabled) throw std::runtime_error("unsupported stream");
 
     config.requests[stream] = config.info.presets[stream][preset];
-    for(auto & s : native_streams) s.buffer.reset(); // Changing stream configuration invalidates the current stream info
+    for(auto & s : native_streams) s->buffer.reset(); // Changing stream configuration invalidates the current stream info
 }
 
 void rs_device::disable_stream(rs_stream stream)
@@ -81,7 +125,7 @@ void rs_device::disable_stream(rs_stream stream)
     if(config.info.stream_subdevices[stream] == -1) throw std::runtime_error("unsupported stream");
 
     config.requests[stream] = {};
-    for(auto & s : native_streams) s.buffer.reset(); // Changing stream configuration invalidates the current stream info
+    for(auto & s : native_streams) s->buffer.reset(); // Changing stream configuration invalidates the current stream info
 }
 
 // Where do the intrinsics for a given (possibly synthetic) stream come from?
@@ -120,24 +164,17 @@ bool rs_device::is_stream_enabled(rs_stream stream) const
 rs_intrinsics rs_device::get_stream_intrinsics(rs_stream stream) const 
 {
     stream = get_stream_intrinsics_native_stream(stream);
-    if(stream == RS_STREAM_RECTIFIED_COLOR)
-    {
-        auto intrin = config.intrinsics.get(get_current_stream_mode(RS_STREAM_COLOR).intrinsics_index);
-        intrin.model = RS_DISTORTION_NONE;
-        memset(&intrin.coeffs, 0, sizeof(intrin.coeffs));
-        return intrin;
-    }
-    else return config.intrinsics.get(get_current_stream_mode(stream).intrinsics_index);
+    return streams[stream]->get_intrinsics();
 }
 
 rs_format rs_device::get_stream_format(rs_stream stream) const
 { 
-    return get_current_stream_mode(get_stream_data_native_stream(stream)).format;
+    return streams[get_stream_data_native_stream(stream)]->get_format();
 }
 
 int rs_device::get_stream_framerate(rs_stream stream) const
 { 
-    return get_current_stream_mode(get_stream_data_native_stream(stream)).fps; 
+    return streams[get_stream_data_native_stream(stream)]->get_framerate();
 }
 
 void rs_device::start()
@@ -146,7 +183,7 @@ void rs_device::start()
         
     auto selected_modes = config.info.select_modes(config.requests);
 
-    for(auto & s : native_streams) s.buffer.reset(); // Starting capture invalidates the current stream info, if any exists from previous capture
+    for(auto & s : native_streams) s->buffer.reset(); // Starting capture invalidates the current stream info, if any exists from previous capture
 
     // Satisfy stream_requests as necessary for each subdevice, calling set_mode and
     // dispatching the uvc configuration for a requested stream to the hardware
@@ -161,7 +198,7 @@ void rs_device::start()
             stream_list.push_back(stream);
                     
             // If this is one of the streams requested by the user, store the buffer so they can access it
-            if(config.requests[stream_mode.stream].enabled) native_streams[stream_mode.stream].buffer = stream;
+            if(config.requests[stream_mode.stream].enabled) native_streams[stream_mode.stream]->buffer = stream;
         }
                 
         // Initialize the subdevice and set it to the selected mode
@@ -206,15 +243,15 @@ void rs_device::wait_all_streams()
     bool first_frame = false;
     for(int i=0; i<RS_STREAM_NATIVE_COUNT; ++i)
     {
-        if(native_streams[i].buffer && !native_streams[i].buffer->is_front_valid())
+        if(native_streams[i]->buffer && !native_streams[i]->buffer->is_front_valid())
         {
-            while(!native_streams[i].buffer->swap_front())
+            while(!native_streams[i]->buffer->swap_front())
             {
                 std::this_thread::sleep_for(std::chrono::microseconds(100)); // todo - Use a condition variable or something to avoid this
                 if(std::chrono::high_resolution_clock::now() >= timeout) throw std::runtime_error("Timeout waiting for frames");
             }
-            assert(native_streams[i].buffer->is_front_valid());
-            last_stream_timestamp = native_streams[i].buffer->get_front_number();
+            assert(native_streams[i]->buffer->is_front_valid());
+            last_stream_timestamp = native_streams[i]->buffer->get_front_number();
             first_frame = true;
         }
     }
@@ -227,7 +264,7 @@ void rs_device::wait_all_streams()
         {
             for(int i=0; i<RS_STREAM_NATIVE_COUNT; ++i)
             {
-                if(native_streams[i].buffer && native_streams[i].buffer->swap_front())
+                if(native_streams[i]->buffer && native_streams[i]->buffer->swap_front())
                 {
                     updated = true;
                 }
@@ -243,19 +280,19 @@ void rs_device::wait_all_streams()
     int frame_delta = INT_MIN;    
     for(int i=0; i<RS_STREAM_NATIVE_COUNT; ++i)
     {
-        if(!native_streams[i].buffer) continue;
-        int delta = native_streams[i].buffer->get_front_number() - last_stream_timestamp; // Relying on undefined behavior: 32-bit integer overflow -> wraparound
+        if(!native_streams[i]->buffer) continue;
+        int delta = native_streams[i]->buffer->get_front_number() - last_stream_timestamp; // Relying on undefined behavior: 32-bit integer overflow -> wraparound
         frame_delta = std::max(frame_delta, delta);
     }
 
     // Wait for any stream which expects a new frame prior to the frame time
     for(int i=0; i<RS_STREAM_NATIVE_COUNT; ++i)
     {
-        if(!native_streams[i].buffer) continue;
-        int next_timestamp = native_streams[i].buffer->get_front_number() + native_streams[i].buffer->get_front_delta();
+        if(!native_streams[i]->buffer) continue;
+        int next_timestamp = native_streams[i]->buffer->get_front_number() + native_streams[i]->buffer->get_front_delta();
         int next_delta = next_timestamp - last_stream_timestamp;
         if(next_delta > frame_delta) continue;
-        while(!native_streams[i].buffer->swap_front())
+        while(!native_streams[i]->buffer->swap_front())
         {
             std::this_thread::sleep_for(std::chrono::microseconds(100)); // todo - Use a condition variable or something to avoid this
             if(std::chrono::high_resolution_clock::now() >= timeout) throw std::runtime_error("Timeout waiting for frames");
@@ -268,9 +305,9 @@ void rs_device::wait_all_streams()
         base_timestamp = 0;
         for(int i=0; i<RS_STREAM_NATIVE_COUNT; ++i)
         {
-            if(!native_streams[i].buffer) continue;
-            int delta = native_streams[i].buffer->get_front_number() - last_stream_timestamp; // Relying on undefined behavior: 32-bit integer overflow -> wraparound
-            if(delta < 0) last_stream_timestamp = native_streams[i].buffer->get_front_number();
+            if(!native_streams[i]->buffer) continue;
+            int delta = native_streams[i]->buffer->get_front_number() - last_stream_timestamp; // Relying on undefined behavior: 32-bit integer overflow -> wraparound
+            if(delta < 0) last_stream_timestamp = native_streams[i]->buffer->get_front_number();
         }
     }
     else
@@ -283,8 +320,8 @@ void rs_device::wait_all_streams()
 int rs_device::get_frame_timestamp(rs_stream stream) const 
 { 
     stream = get_stream_data_native_stream(stream);
-    if(!native_streams[stream].is_enabled()) throw std::runtime_error(to_string() << "stream not enabled: " << stream); 
-    return base_timestamp == -1 ? 0 : convert_timestamp(base_timestamp + native_streams[stream].get_frame_number() - last_stream_timestamp);
+    if(!native_streams[stream]->is_enabled()) throw std::runtime_error(to_string() << "stream not enabled: " << stream); 
+    return base_timestamp == -1 ? 0 : convert_timestamp(base_timestamp + native_streams[stream]->get_frame_number() - last_stream_timestamp);
 }
 
 const byte * rs_device::get_aligned_image(rs_stream stream, rs_stream from, rs_stream to) const
@@ -314,28 +351,14 @@ const byte * rs_device::get_aligned_image(rs_stream stream, rs_stream from, rs_s
 
 const byte * rs_device::get_frame_data(rs_stream stream) const 
 { 
-    if(stream < RS_STREAM_NATIVE_COUNT)
+    if(stream <= RS_STREAM_RECTIFIED_COLOR)
     {
-        if(!native_streams[stream].is_enabled()) throw std::runtime_error(to_string() << "stream not enabled: " << stream);
-        return native_streams[stream].get_frame_data();
+        if(!streams[stream]->is_enabled()) throw std::runtime_error(to_string() << "stream not enabled: " << stream);
+        return streams[stream]->get_frame_data();
     }
 
     if(synthetic_images[stream - RS_STREAM_NATIVE_COUNT].empty() || synthetic_timestamps[stream - RS_STREAM_NATIVE_COUNT] != get_frame_timestamp(get_stream_data_native_stream(stream)))
-    {
-        if(stream == RS_STREAM_RECTIFIED_COLOR)
-        {
-            auto rect_intrin = get_stream_intrinsics(RS_STREAM_RECTIFIED_COLOR);
-            if(rectification_table.empty())
-            {
-                rectification_table = compute_rectification_table(rect_intrin, get_extrinsics(RS_STREAM_RECTIFIED_COLOR, RS_STREAM_COLOR), get_stream_intrinsics(RS_STREAM_COLOR));
-            }
-            
-            const auto format = get_stream_format(RS_STREAM_COLOR);
-            auto & rectified_color = synthetic_images[RS_STREAM_RECTIFIED_COLOR - RS_STREAM_NATIVE_COUNT];
-            rectified_color.resize(get_image_size(rect_intrin.width, rect_intrin.height, format));
-            rectify_image(rectified_color.data(), rectification_table, get_frame_data(RS_STREAM_COLOR), format);
-        }
-        
+    {       
         switch(stream)
         {
         case RS_STREAM_COLOR_ALIGNED_TO_DEPTH: return get_aligned_image(stream, RS_STREAM_COLOR, RS_STREAM_DEPTH);
@@ -344,41 +367,17 @@ const byte * rs_device::get_frame_data(rs_stream stream) const
         }
     }
     return synthetic_images[stream - RS_STREAM_NATIVE_COUNT].data();
-} 
-
-rsimpl::stream_mode rs_device::get_current_stream_mode(rs_stream stream) const
-{
-    if(native_streams[stream].buffer) return native_streams[stream].buffer->get_mode();
-    if(config.requests[stream].enabled)
-    {
-        for(auto subdevice_mode : config.info.select_modes(config.requests))
-        {
-            for(auto stream_mode : subdevice_mode.streams)
-            {
-                if(stream_mode.stream == stream) return stream_mode;
-            }
-        }   
-        throw std::logic_error("no mode found"); // Should never happen, select_modes should throw if no mode can be found
-    }
-    throw std::runtime_error(to_string() << "stream not enabled: " << stream);
 }
 
 rsimpl::pose rs_device::get_pose(rs_stream stream) const
 {
-    if(stream < RS_STREAM_NATIVE_COUNT) return config.info.stream_poses[stream];
-    if(stream == RS_STREAM_RECTIFIED_COLOR) return {config.info.stream_poses[RS_STREAM_DEPTH].orientation, config.info.stream_poses[RS_STREAM_COLOR].position};
+    if(stream <= RS_STREAM_RECTIFIED_COLOR) return streams[stream]->get_pose();
     return get_pose(get_stream_intrinsics_native_stream(stream));
 }
 
 rs_extrinsics rs_device::get_extrinsics(rs_stream from, rs_stream to) const
 {
-    auto from_pose = get_pose(from), to_pose = get_pose(to);
-    if(from_pose == to_pose) return {{1,0,0,0,1,0,0,0,1},{0,0,0}};
-    auto transform = inverse(from_pose) * to_pose;
-    rs_extrinsics extrin;
-    (float3x3 &)extrin.rotation = transform.orientation;
-    (float3 &)extrin.translation = transform.position;
-    return extrin;
+    return make_extrinsics(get_pose(from), get_pose(to));
 }
 
 namespace rsimpl

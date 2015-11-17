@@ -11,23 +11,64 @@ struct device_config
     rsimpl::intrinsics_buffer                   intrinsics;
     rsimpl::stream_request                      requests[RS_STREAM_NATIVE_COUNT];  // Modified by enable/disable_stream calls
 
-    device_config(const rsimpl::static_device_info & info) : info(info) { for(auto & req : requests) req = rsimpl::stream_request(); }
+                                                device_config(const rsimpl::static_device_info & info) : info(info) { for(auto & req : requests) req = rsimpl::stream_request(); }
+
+    std::vector<rsimpl::subdevice_mode>         select_modes() const { return info.select_modes(requests); }
 };
 
 struct stream_interface
 {
+    virtual                                     ~stream_interface() = default;
+
+    virtual rsimpl::pose                        get_pose() const = 0;
+
     virtual bool                                is_enabled() const = 0;
+    virtual rs_intrinsics                       get_intrinsics() const = 0;
+    virtual rs_format                           get_format() const = 0;
+    virtual int                                 get_framerate() const = 0;
+
     virtual int                                 get_frame_number() const = 0;
     virtual const rsimpl::byte *                get_frame_data() const = 0;
 };
 
 struct native_stream : stream_interface
 {
+    device_config &                             config;
+    rs_stream                                   stream;
     std::shared_ptr<rsimpl::stream_buffer>      buffer;
 
+                                                native_stream(device_config & config, rs_stream stream) : config(config), stream(stream) {}
+
+    rsimpl::pose                                get_pose() const { return config.info.stream_poses[stream]; }
+
     bool                                        is_enabled() const { return static_cast<bool>(buffer); }
+    rsimpl::stream_mode                         get_mode() const;
+    rs_intrinsics                               get_intrinsics() const { return config.intrinsics.get(get_mode().intrinsics_index); }
+    rs_format                                   get_format() const { return get_mode().format; }
+    int                                         get_framerate() const { return get_mode().fps; }
+
     int                                         get_frame_number() const { return buffer->get_front_number(); }
     const rsimpl::byte *                        get_frame_data() const { return buffer->get_front_data(); }
+};
+
+struct rectified_stream : stream_interface
+{
+    std::shared_ptr<stream_interface>           source;
+    mutable std::vector<int>                    table;
+    mutable std::vector<rsimpl::byte>           image;
+    mutable int                                 number;
+
+                                                rectified_stream(std::shared_ptr<stream_interface> source) : source(source), number() {}
+
+    rsimpl::pose                                get_pose() const { return {{{1,0,0},{0,1,0},{0,0,1}}, source->get_pose().position}; }
+
+    bool                                        is_enabled() const { return source->is_enabled(); }
+    rs_intrinsics                               get_intrinsics() const { auto i = source->get_intrinsics(); i.model = RS_DISTORTION_NONE; for(auto & f : i.coeffs) f = 0; return i; }
+    rs_format                                   get_format() const { return source->get_format(); }
+    int                                         get_framerate() const { return source->get_framerate(); }
+
+    int                                         get_frame_number() const { return source->get_frame_number(); }
+    const rsimpl::byte *                        get_frame_data() const;
 };
 
 struct rs_device
@@ -35,7 +76,9 @@ struct rs_device
 private:
     const std::shared_ptr<rsimpl::uvc::device>  device;
     device_config                               config;
-    native_stream                               native_streams[RS_STREAM_NATIVE_COUNT];
+
+    std::shared_ptr<native_stream>              native_streams[RS_STREAM_NATIVE_COUNT];
+    std::shared_ptr<stream_interface>           streams[RS_STREAM_COUNT];
 
     bool                                        capturing;
     std::chrono::high_resolution_clock::time_point capture_started;  
@@ -43,13 +86,11 @@ private:
     int64_t                                     base_timestamp;
     int                                         last_stream_timestamp;
 
-    mutable std::vector<int>                    rectification_table;
     mutable std::vector<rsimpl::byte>           synthetic_images[RS_STREAM_COUNT - RS_STREAM_NATIVE_COUNT];
     mutable int                                 synthetic_timestamps[RS_STREAM_COUNT - RS_STREAM_NATIVE_COUNT];
 
     const rsimpl::byte *                        get_aligned_image(rs_stream stream, rs_stream from, rs_stream to) const;
 protected:
-    rsimpl::stream_mode                         get_current_stream_mode(rs_stream stream) const;
     const rsimpl::uvc::device &                 get_device() const { return *device; }
     rsimpl::uvc::device &                       get_device() { return *device; }
     void                                        set_intrinsics_thread_safe(std::vector<rs_intrinsics> new_intrinsics) { config.intrinsics.set(move(new_intrinsics)); }
