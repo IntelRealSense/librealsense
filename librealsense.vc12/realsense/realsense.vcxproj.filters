@@ -46,6 +46,9 @@
     <ClCompile Include="..\..\src\uvc-libuvc.cpp">
       <Filter>src</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\stream.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\src\context.h">
@@ -82,6 +85,9 @@
       <Filter>include</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\device.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\stream.h">
       <Filter>src</Filter>
     </ClInclude>
   </ItemGroup>
