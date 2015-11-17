@@ -62,9 +62,9 @@ const rsimpl::byte * rectified_stream::get_frame_data() const
 {
     if(image.empty() || number != get_frame_number())
     {
-        if(table.empty()) table = compute_rectification_table(get_intrinsics(), get_extrinsics_to(*source), source->get_intrinsics());
+        if(table.empty()) table = compute_rectification_table(get_intrinsics(), get_extrinsics_to(source), source.get_intrinsics());
         image.resize(get_image_size(get_intrinsics().width, get_intrinsics().height, get_format()));
-        rectify_image(image.data(), table, source->get_frame_data(), get_format());
+        rectify_image(image.data(), table, source.get_frame_data(), get_format());
         number = get_frame_number();
     }
     return image.data();
@@ -76,8 +76,8 @@ const rsimpl::byte * aligned_stream::get_frame_data() const
     {
         image.resize(get_image_size(get_intrinsics().width, get_intrinsics().height, get_format()));
         memset(image.data(), 0, image.size());
-        if(from->get_format() == RS_FORMAT_Z16) align_depth_to_color(image.data(), (const uint16_t *)from->get_frame_data(), from->get_depth_scale(), from->get_intrinsics(), from->get_extrinsics_to(*to), to->get_intrinsics());
-        else if(to->get_format() == RS_FORMAT_Z16) align_color_to_depth(image.data(), (const uint16_t *)to->get_frame_data(), to->get_depth_scale(), to->get_intrinsics(), to->get_extrinsics_to(*from), from->get_intrinsics(), from->get_frame_data(), from->get_format());
+        if(from.get_format() == RS_FORMAT_Z16) align_depth_to_color(image.data(), (const uint16_t *)from.get_frame_data(), from.get_depth_scale(), from.get_intrinsics(), from.get_extrinsics_to(to), to.get_intrinsics());
+        else if(to.get_format() == RS_FORMAT_Z16) align_color_to_depth(image.data(), (const uint16_t *)to.get_frame_data(), to.get_depth_scale(), to.get_intrinsics(), to.get_extrinsics_to(from), from.get_intrinsics(), from.get_frame_data(), from.get_format());
         else assert(false && "Cannot align two images if neither have depth data");
         number = get_frame_number();
     }

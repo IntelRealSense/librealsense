@@ -47,16 +47,18 @@ static_device_info rsimpl::add_standard_unpackers(const static_device_info & dev
     return info;
 }
 
-rs_device::rs_device(std::shared_ptr<rsimpl::uvc::device> device, const rsimpl::static_device_info & info) : device(device), config(add_standard_unpackers(info)), capturing(false)
+rs_device::rs_device(std::shared_ptr<rsimpl::uvc::device> device, const rsimpl::static_device_info & info) : device(device), config(add_standard_unpackers(info)), capturing(false),
+    depth(config, RS_STREAM_DEPTH), color(config, RS_STREAM_COLOR), infrared(config, RS_STREAM_INFRARED), infrared2(config, RS_STREAM_INFRARED2),
+    rect_color(color), color_to_depth(color, depth), depth_to_color(depth, color), depth_to_rect_color(depth, rect_color)
 {
-    streams[RS_STREAM_DEPTH    ] = native_streams[RS_STREAM_DEPTH]     = std::make_shared<native_stream>(config, RS_STREAM_DEPTH);
-    streams[RS_STREAM_COLOR    ] = native_streams[RS_STREAM_COLOR]     = std::make_shared<native_stream>(config, RS_STREAM_COLOR);
-    streams[RS_STREAM_INFRARED ] = native_streams[RS_STREAM_INFRARED]  = std::make_shared<native_stream>(config, RS_STREAM_INFRARED);
-    streams[RS_STREAM_INFRARED2] = native_streams[RS_STREAM_INFRARED2] = std::make_shared<native_stream>(config, RS_STREAM_INFRARED2);
-    streams[RS_STREAM_RECTIFIED_COLOR]                                 = std::make_shared<rectified_stream>(streams[RS_STREAM_COLOR]);
-    streams[RS_STREAM_COLOR_ALIGNED_TO_DEPTH]                          = std::make_shared<aligned_stream>(streams[RS_STREAM_COLOR], streams[RS_STREAM_DEPTH]);
-    streams[RS_STREAM_DEPTH_ALIGNED_TO_COLOR]                          = std::make_shared<aligned_stream>(streams[RS_STREAM_DEPTH], streams[RS_STREAM_COLOR]);
-    streams[RS_STREAM_DEPTH_ALIGNED_TO_RECTIFIED_COLOR]                = std::make_shared<aligned_stream>(streams[RS_STREAM_DEPTH], streams[RS_STREAM_RECTIFIED_COLOR]);
+    streams[RS_STREAM_DEPTH    ] = native_streams[RS_STREAM_DEPTH]     = &depth;
+    streams[RS_STREAM_COLOR    ] = native_streams[RS_STREAM_COLOR]     = &color;
+    streams[RS_STREAM_INFRARED ] = native_streams[RS_STREAM_INFRARED]  = &infrared;
+    streams[RS_STREAM_INFRARED2] = native_streams[RS_STREAM_INFRARED2] = &infrared2;
+    streams[RS_STREAM_RECTIFIED_COLOR]                                 = &rect_color;
+    streams[RS_STREAM_COLOR_ALIGNED_TO_DEPTH]                          = &color_to_depth;
+    streams[RS_STREAM_DEPTH_ALIGNED_TO_COLOR]                          = &depth_to_color;
+    streams[RS_STREAM_DEPTH_ALIGNED_TO_RECTIFIED_COLOR]                = &depth_to_rect_color;
 }
 
 rs_device::~rs_device()

@@ -49,42 +49,42 @@ namespace rsimpl
 
     class rectified_stream : public stream_interface
     {
-        std::shared_ptr<const stream_interface> source;
+        const stream_interface &                source;
         mutable std::vector<int>                table;
         mutable std::vector<byte>               image;
         mutable int                             number;
     public:
-                                                rectified_stream(std::shared_ptr<const stream_interface> source) : source(source), number() {}
+                                                rectified_stream(const stream_interface & source) : source(source), number() {}
 
-        pose                                    get_pose() const { return {{{1,0,0},{0,1,0},{0,0,1}}, source->get_pose().position}; }
-        float                                   get_depth_scale() const { return source->get_depth_scale(); }
+        pose                                    get_pose() const { return {{{1,0,0},{0,1,0},{0,0,1}}, source.get_pose().position}; }
+        float                                   get_depth_scale() const { return source.get_depth_scale(); }
 
-        bool                                    is_enabled() const { return source->is_enabled(); }
-        rs_intrinsics                           get_intrinsics() const { auto i = source->get_intrinsics(); i.model = RS_DISTORTION_NONE; for(auto & f : i.coeffs) f = 0; return i; } // TODO: Take advantage of precalculated intrinsics when possible (i.e. R200)
-        rs_format                               get_format() const { return source->get_format(); }
-        int                                     get_framerate() const { return source->get_framerate(); }
+        bool                                    is_enabled() const { return source.is_enabled(); }
+        rs_intrinsics                           get_intrinsics() const { auto i = source.get_intrinsics(); i.model = RS_DISTORTION_NONE; for(auto & f : i.coeffs) f = 0; return i; } // TODO: Take advantage of precalculated intrinsics when possible (i.e. R200)
+        rs_format                               get_format() const { return source.get_format(); }
+        int                                     get_framerate() const { return source.get_framerate(); }
 
-        int                                     get_frame_number() const { return source->get_frame_number(); }
+        int                                     get_frame_number() const { return source.get_frame_number(); }
         const byte *                            get_frame_data() const;
     };
 
     class aligned_stream : public stream_interface
     {
-        std::shared_ptr<const stream_interface> from, to;
+        const stream_interface &                from, & to;
         mutable std::vector<byte>               image;
         mutable int                             number;
     public:
-                                                aligned_stream(std::shared_ptr<const stream_interface> from, std::shared_ptr<const stream_interface> to) : from(from), to(to), number() {}
+                                                aligned_stream(const stream_interface & from, const stream_interface & to) : from(from), to(to), number() {}
 
-        pose                                    get_pose() const { return to->get_pose(); }
-        float                                   get_depth_scale() const { return to->get_depth_scale(); }
+        pose                                    get_pose() const { return to.get_pose(); }
+        float                                   get_depth_scale() const { return to.get_depth_scale(); }
 
-        bool                                    is_enabled() const { return from->is_enabled() && to->is_enabled(); }
-        rs_intrinsics                           get_intrinsics() const { return to->get_intrinsics(); }
-        rs_format                               get_format() const { return from->get_format(); }
-        int                                     get_framerate() const { return from->get_framerate(); }
+        bool                                    is_enabled() const { return from.is_enabled() && to.is_enabled(); }
+        rs_intrinsics                           get_intrinsics() const { return to.get_intrinsics(); }
+        rs_format                               get_format() const { return from.get_format(); }
+        int                                     get_framerate() const { return from.get_framerate(); }
 
-        int                                     get_frame_number() const { return from->get_frame_number(); }
+        int                                     get_frame_number() const { return from.get_frame_number(); }
         const byte *                            get_frame_data() const;
     };
 }
