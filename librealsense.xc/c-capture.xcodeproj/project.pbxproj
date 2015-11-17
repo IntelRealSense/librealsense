@@ -36,7 +36,7 @@
 		08567C0E1B5B899B00EB6C0D /* OpenGL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenGL.framework; path = System/Library/Frameworks/OpenGL.framework; sourceTree = SDKROOT; };
 		2799858E1B95088B00894334 /* librealsense.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = librealsense.dylib; path = librealsense.xc/build/Debug/librealsense.dylib; sourceTree = "<group>"; };
 		279D52D91B8E86FB007F2D73 /* c-capture.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = "c-capture.c"; path = "../examples/c-capture.c"; sourceTree = SOURCE_ROOT; };
-		279D52DD1B8E8866007F2D73 /* libglfw3.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libglfw3.dylib; path = /usr/local/Cellar/glfw3/3.1.1/lib/libglfw3.dylib; sourceTree = "<group>"; };
+		279D52DD1B8E8866007F2D73 /* libglfw3.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libglfw3.dylib; path = /usr/local/lib/libglfw3.dylib; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -271,16 +271,14 @@
 				HEADER_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(SRCROOT)/../include",
-					/usr/local/Cellar/libusb/1.0.19/include/,
-					/usr/local/Cellar/glfw3/3.1.1/include/,
+					/usr/local/include/,
 					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
 				);
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(SRCROOT)/../librealsense/build/Debug",
 					"$(SRCROOT)/../bin",
-					/usr/local/Cellar/glfw3/3.1.1/lib,
-					/usr/local/Cellar/libusb/1.0.19/lib,
+					/usr/local/lib,
 					"$(USER_LIBRARY_DIR)/Developer/Xcode/DerivedData/bin/Debug",
 					"$(PROJECT_DIR)/build/Debug",
 				);
@@ -294,16 +292,14 @@
 				HEADER_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(SRCROOT)/../include",
-					/usr/local/Cellar/libusb/1.0.19/include/,
-					/usr/local/Cellar/glfw3/3.1.1/include/,
+					/usr/local/include/,
 					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
 				);
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(SRCROOT)/../librealsense/build/Debug",
 					"$(SRCROOT)/../bin",
-					/usr/local/Cellar/glfw3/3.1.1/lib,
-					/usr/local/Cellar/libusb/1.0.19/lib,
+					/usr/local/lib,
 					"$(USER_LIBRARY_DIR)/Developer/Xcode/DerivedData/bin/Debug",
 					"$(PROJECT_DIR)/build/Debug",
 				);
