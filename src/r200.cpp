@@ -7,22 +7,23 @@
 
 namespace rsimpl
 {
-    template<void (*UNPACKER)(byte * dest[], const byte * source, const subdevice_mode & mode)> 
-    void crop_unpack(byte * dest[], const byte * source, const subdevice_mode & mode)
+    template<void (*UNPACKER)(byte * const dest[], const byte * source, const subdevice_mode & mode)> 
+    void crop_unpack(byte * const dest[], const byte * source, const subdevice_mode & mode)
     {
         UNPACKER(dest, source + mode.pf->get_crop_offset(mode.width, 6), mode);
     }
 
     static int amount = 0;
 
-    template<void (*UNPACKER)(byte * dest[], const byte * source, const subdevice_mode & mode)> 
-    void pad_unpack(byte * dest[], const byte * source, const subdevice_mode & mode)
+    template<void (*UNPACKER)(byte * const dest[], const byte * source, const subdevice_mode & mode)> 
+    void pad_unpack(byte * const dest[], const byte * source, const subdevice_mode & mode)
     {
-        dest[0] += get_image_size(mode.streams[0].width, 6, mode.streams[0].format) + get_image_size(6, 1, mode.streams[0].format);
-        UNPACKER(dest, source, mode);
+        assert(mode.streams.size() == 1);
+        byte * out = dest[0] + get_image_size(mode.streams[0].width, 6, mode.streams[0].format) + get_image_size(6, 1, mode.streams[0].format);
+        UNPACKER(&out, source, mode);
 
         // Erase Dinghy, which will get copied over when blitting into a padded buffer
-        memset(dest[0] + get_image_size(mode.streams[0].width, mode.height-1, RS_FORMAT_Z16), 0, mode.width*2);
+        memset(out + get_image_size(mode.streams[0].width, mode.height-1, RS_FORMAT_Z16), 0, get_image_size(mode.width, 1, mode.streams[0].format));
     }
 
     template<unsigned MAGIC_NUMBER>
