@@ -263,14 +263,14 @@
 				HEADER_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(SRCROOT)/../include",
-					/usr/local/Cellar/libusb/1.0.19/include/,
+					/usr/local/include,
 					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
 				);
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(SRCROOT)/../librealsense/build/Debug",
 					"$(SRCROOT)/../bin",
-					/usr/local/Cellar/libusb/1.0.19/lib,
+					/usr/local/lib,
 					"$(USER_LIBRARY_DIR)/Developer/Xcode/DerivedData/bin/Debug",
 					"$(PROJECT_DIR)/build/Debug",
 				);
@@ -284,14 +284,14 @@
 				HEADER_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(SRCROOT)/../include",
-					/usr/local/Cellar/libusb/1.0.19/include/,
+					/usr/local/include,
 					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
 				);
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(SRCROOT)/../librealsense/build/Debug",
 					"$(SRCROOT)/../bin",
-					/usr/local/Cellar/libusb/1.0.19/lib,
+					/usr/local/lib,
 					"$(USER_LIBRARY_DIR)/Developer/Xcode/DerivedData/bin/Debug",
 					"$(PROJECT_DIR)/build/Debug",
 				);

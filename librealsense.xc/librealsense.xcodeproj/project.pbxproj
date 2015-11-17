@@ -50,7 +50,7 @@
 		08567BC41B5B5A0200EB6C0D /* librealsense.dylib */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = librealsense.dylib; sourceTree = BUILT_PRODUCTS_DIR; };
 		271E78AF1B9F83710063ECAE /* device.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = device.cpp; path = ../src/device.cpp; sourceTree = SOURCE_ROOT; };
 		271E78B01B9F83710063ECAE /* device.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = device.h; path = ../src/device.h; sourceTree = SOURCE_ROOT; };
-		279985831B95074500894334 /* libusb-1.0.0.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = "libusb-1.0.0.dylib"; path = "/usr/local/Cellar/libusb/1.0.19/lib/libusb-1.0.0.dylib"; sourceTree = "<absolute>"; };
+		279985831B95074500894334 /* libusb-1.0.0.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = "libusb-1.0.0.dylib"; path = "/usr/local/lib/libusb-1.0.0.dylib"; sourceTree = "<absolute>"; };
 		279985A11B964EFF00894334 /* uvc.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = uvc.h; path = ../src/uvc.h; sourceTree = SOURCE_ROOT; };
 		279D529B1B8E8678007F2D73 /* context.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = context.cpp; path = ../src/context.cpp; sourceTree = SOURCE_ROOT; };
 		279D529C1B8E8678007F2D73 /* context.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = context.h; path = ../src/context.h; sourceTree = SOURCE_ROOT; };
@@ -337,9 +337,9 @@
 					"$(inherited)",
 					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
 					"$(SRCROOT)/../third_party/libuvc/include",
-					/usr/local/Cellar/libusb/1.0.19/include/,
+					/usr/local/include,
 				);
-				LIBRARY_SEARCH_PATHS = /usr/local/Cellar/libusb/1.0.19/lib;
+				LIBRARY_SEARCH_PATHS = /usr/local/lib;
 				MACH_O_TYPE = mh_dylib;
 				MACOSX_DEPLOYMENT_TARGET = 10.10;
 				MTL_ENABLE_DEBUG_INFO = YES;
@@ -380,9 +380,9 @@
 					"$(inherited)",
 					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
 					"$(SRCROOT)/../third_party/libuvc/include",
-					/usr/local/Cellar/libusb/1.0.19/include/,
+					/usr/local/include,
 				);
-				LIBRARY_SEARCH_PATHS = /usr/local/Cellar/libusb/1.0.19/lib;
+				LIBRARY_SEARCH_PATHS = /usr/local/lib;
 				MACH_O_TYPE = mh_dylib;
 				MACOSX_DEPLOYMENT_TARGET = 10.10;
 				MTL_ENABLE_DEBUG_INFO = NO;
@@ -407,12 +407,12 @@
 					"$(inherited)",
 					"$(SRCROOT)/../include/**",
 					"$(SRCROOT)/../third_party/libuvc/include",
-					/usr/local/Cellar/libusb/1.0.19/include/,
+					/usr/local/include,
 					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
 				);
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",
-					/usr/local/Cellar/libusb/1.0.19/lib,
+					/usr/local/lib,
 				);
 				MACH_O_TYPE = mh_dylib;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -433,12 +433,12 @@
 					"$(inherited)",
 					"$(SRCROOT)/../include/**",
 					"$(SRCROOT)/../third_party/libuvc/include",
-					/usr/local/Cellar/libusb/1.0.19/include/,
+					/usr/local/include,
 					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
 				);
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",
-					/usr/local/Cellar/libusb/1.0.19/lib,
+					/usr/local/lib,
 				);
 				MACH_O_TYPE = mh_dylib;
 				PRODUCT_NAME = "$(TARGET_NAME)";
