@@ -217,6 +217,17 @@ namespace rsimpl
         }
     };
 
+    struct device_config
+    {
+        const static_device_info            info;
+        intrinsics_buffer                   intrinsics;
+        stream_request                      requests[RS_STREAM_NATIVE_COUNT];  // Modified by enable/disable_stream calls
+
+                                            device_config(const rsimpl::static_device_info & info) : info(info) { for(auto & req : requests) req = rsimpl::stream_request(); }
+
+        std::vector<subdevice_mode>         select_modes() const { return info.select_modes(requests); }
+    };
+
     // Utilities
     struct to_string
     {

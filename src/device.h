@@ -10,10 +10,10 @@ struct rs_device
 {
 private:
     const std::shared_ptr<rsimpl::uvc::device>  device;
-    device_config                               config;
+    rsimpl::device_config                       config;
 
-    std::shared_ptr<native_stream>              native_streams[RS_STREAM_NATIVE_COUNT];
-    std::shared_ptr<stream_interface>           streams[RS_STREAM_COUNT];
+    std::shared_ptr<rsimpl::native_stream>      native_streams[RS_STREAM_NATIVE_COUNT];
+    std::shared_ptr<rsimpl::stream_interface>   streams[RS_STREAM_COUNT];
 
     bool                                        capturing;
     std::chrono::high_resolution_clock::time_point capture_started;  
