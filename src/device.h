@@ -21,6 +21,7 @@ struct stream_interface
     virtual                                     ~stream_interface() = default;
 
     virtual rsimpl::pose                        get_pose() const = 0;
+    virtual float                               get_depth_scale() const = 0;
 
     virtual bool                                is_enabled() const = 0;
     virtual rs_intrinsics                       get_intrinsics() const = 0;
@@ -40,6 +41,7 @@ struct native_stream : stream_interface
                                                 native_stream(device_config & config, rs_stream stream) : config(config), stream(stream) {}
 
     rsimpl::pose                                get_pose() const { return config.info.stream_poses[stream]; }
+    float                                       get_depth_scale() const { return config.info.depth_scale; }
 
     bool                                        is_enabled() const { return static_cast<bool>(buffer); }
     rsimpl::stream_mode                         get_mode() const;
@@ -61,6 +63,7 @@ struct rectified_stream : stream_interface
                                                 rectified_stream(std::shared_ptr<stream_interface> source) : source(source), number() {}
 
     rsimpl::pose                                get_pose() const { return {{{1,0,0},{0,1,0},{0,0,1}}, source->get_pose().position}; }
+    float                                       get_depth_scale() const { return source->get_depth_scale(); }
 
     bool                                        is_enabled() const { return source->is_enabled(); }
     rs_intrinsics                               get_intrinsics() const { auto i = source->get_intrinsics(); i.model = RS_DISTORTION_NONE; for(auto & f : i.coeffs) f = 0; return i; }
@@ -68,6 +71,26 @@ struct rectified_stream : stream_interface
     int                                         get_framerate() const { return source->get_framerate(); }
 
     int                                         get_frame_number() const { return source->get_frame_number(); }
+    const rsimpl::byte *                        get_frame_data() const;
+};
+
+struct aligned_stream : stream_interface
+{
+    std::shared_ptr<stream_interface>           from, to;
+    mutable std::vector<rsimpl::byte>           image;
+    mutable int                                 number;
+
+                                                aligned_stream(std::shared_ptr<stream_interface> from, std::shared_ptr<stream_interface> to) : from(from), to(to), number() {}
+
+    rsimpl::pose                                get_pose() const { return to->get_pose(); }
+    float                                       get_depth_scale() const { return to->get_depth_scale(); }
+
+    bool                                        is_enabled() const { return from->is_enabled() && to->is_enabled(); }
+    rs_intrinsics                               get_intrinsics() const { return to->get_intrinsics(); }
+    rs_format                                   get_format() const { return from->get_format(); }
+    int                                         get_framerate() const { return from->get_framerate(); }
+
+    int                                         get_frame_number() const { return from->get_frame_number(); }
     const rsimpl::byte *                        get_frame_data() const;
 };
 
@@ -85,11 +108,6 @@ private:
 
     int64_t                                     base_timestamp;
     int                                         last_stream_timestamp;
-
-    mutable std::vector<rsimpl::byte>           synthetic_images[RS_STREAM_COUNT - RS_STREAM_NATIVE_COUNT];
-    mutable int                                 synthetic_timestamps[RS_STREAM_COUNT - RS_STREAM_NATIVE_COUNT];
-
-    const rsimpl::byte *                        get_aligned_image(rs_stream stream, rs_stream from, rs_stream to) const;
 protected:
     const rsimpl::uvc::device &                 get_device() const { return *device; }
     rsimpl::uvc::device &                       get_device() { return *device; }
