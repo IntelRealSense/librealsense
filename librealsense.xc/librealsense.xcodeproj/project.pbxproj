@@ -30,6 +30,8 @@
 		279D52E41B90FD4E007F2D73 /* rs.h in Headers */ = {isa = PBXBuildFile; fileRef = 279D52E11B90FD4E007F2D73 /* rs.h */; };
 		279D52E51B90FD4E007F2D73 /* rs.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 279D52E21B90FD4E007F2D73 /* rs.hpp */; };
 		279D52E61B90FD4E007F2D73 /* rsutil.h in Headers */ = {isa = PBXBuildFile; fileRef = 279D52E31B90FD4E007F2D73 /* rsutil.h */; };
+		27B9FE7E1BFBE46D0095505F /* stream.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 27B9FE7C1BFBE46D0095505F /* stream.cpp */; };
+		27B9FE7F1BFBE46D0095505F /* stream.h in Headers */ = {isa = PBXBuildFile; fileRef = 27B9FE7D1BFBE46D0095505F /* stream.h */; };
 		8C7307131BE03102003BB7DE /* ctrl.c in Sources */ = {isa = PBXBuildFile; fileRef = 8C7307091BE03102003BB7DE /* ctrl.c */; };
 		8C7307141BE03102003BB7DE /* dev.c in Sources */ = {isa = PBXBuildFile; fileRef = 8C73070A1BE03102003BB7DE /* dev.c */; };
 		8C7307151BE03102003BB7DE /* diag.c in Sources */ = {isa = PBXBuildFile; fileRef = 8C73070B1BE03102003BB7DE /* diag.c */; };
@@ -71,6 +73,8 @@
 		279D52E11B90FD4E007F2D73 /* rs.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = rs.h; path = ../include/librealsense/rs.h; sourceTree = SOURCE_ROOT; };
 		279D52E21B90FD4E007F2D73 /* rs.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = rs.hpp; path = ../include/librealsense/rs.hpp; sourceTree = SOURCE_ROOT; };
 		279D52E31B90FD4E007F2D73 /* rsutil.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = rsutil.h; path = ../include/librealsense/rsutil.h; sourceTree = SOURCE_ROOT; };
+		27B9FE7C1BFBE46D0095505F /* stream.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = stream.cpp; path = ../src/stream.cpp; sourceTree = "<group>"; };
+		27B9FE7D1BFBE46D0095505F /* stream.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = stream.h; path = ../src/stream.h; sourceTree = "<group>"; };
 		8C7307091BE03102003BB7DE /* ctrl.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = ctrl.c; path = ../src/libuvc/ctrl.c; sourceTree = SOURCE_ROOT; };
 		8C73070A1BE03102003BB7DE /* dev.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = dev.c; path = ../src/libuvc/dev.c; sourceTree = SOURCE_ROOT; };
 		8C73070B1BE03102003BB7DE /* diag.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = diag.c; path = ../src/libuvc/diag.c; sourceTree = SOURCE_ROOT; };
@@ -124,7 +128,7 @@
 				279D52E71B90FD53007F2D73 /* src */,
 			);
 			path = librealsense;
-			sourceTree = "<group>";
+			sourceTree = SOURCE_ROOT;
 		};
 		08567BE61B5B5B2800EB6C0D /* libuvc */ = {
 			isa = PBXGroup;
@@ -154,6 +158,8 @@
 		279D52E71B90FD53007F2D73 /* src */ = {
 			isa = PBXGroup;
 			children = (
+				27B9FE7C1BFBE46D0095505F /* stream.cpp */,
+				27B9FE7D1BFBE46D0095505F /* stream.h */,
 				8C73071D1BE03131003BB7DE /* uvc-libuvc.cpp */,
 				8C73071E1BE03131003BB7DE /* uvc-v4l2.cpp */,
 				8C73071F1BE03131003BB7DE /* uvc-wmf.cpp */,
@@ -179,7 +185,7 @@
 				279D52AA1B8E8678007F2D73 /* verify.c */,
 			);
 			name = src;
-			sourceTree = "<group>";
+			sourceTree = SOURCE_ROOT;
 		};
 		279D52E81B90FD62007F2D73 /* include */ = {
 			isa = PBXGroup;
@@ -190,7 +196,7 @@
 			);
 			name = include;
 			path = ..;
-			sourceTree = "<group>";
+			sourceTree = SOURCE_ROOT;
 		};
 /* End PBXGroup section */
 
@@ -203,6 +209,7 @@
 				279D52B81B8E8678007F2D73 /* r200.h in Headers */,
 				279D52E51B90FD4E007F2D73 /* rs.hpp in Headers */,
 				8C73071C1BE03102003BB7DE /* utlist.h in Headers */,
+				27B9FE7F1BFBE46D0095505F /* stream.h in Headers */,
 				279D52BB1B8E8678007F2D73 /* types.h in Headers */,
 				8C7307191BE03102003BB7DE /* libuvc_internal.h in Headers */,
 				279D52B21B8E8678007F2D73 /* f200.h in Headers */,
@@ -294,6 +301,7 @@
 				271E78B11B9F83710063ECAE /* device.cpp in Sources */,
 				279D52B51B8E8678007F2D73 /* r200-private.cpp in Sources */,
 				279D52BA1B8E8678007F2D73 /* types.cpp in Sources */,
+				27B9FE7E1BFBE46D0095505F /* stream.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
