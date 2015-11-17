@@ -60,7 +60,7 @@ namespace rsimpl
         float                                   get_depth_scale() const { return source->get_depth_scale(); }
 
         bool                                    is_enabled() const { return source->is_enabled(); }
-        rs_intrinsics                           get_intrinsics() const { auto i = source->get_intrinsics(); i.model = RS_DISTORTION_NONE; for(auto & f : i.coeffs) f = 0; return i; }
+        rs_intrinsics                           get_intrinsics() const { auto i = source->get_intrinsics(); i.model = RS_DISTORTION_NONE; for(auto & f : i.coeffs) f = 0; return i; } // TODO: Take advantage of precalculated intrinsics when possible (i.e. R200)
         rs_format                               get_format() const { return source->get_format(); }
         int                                     get_framerate() const { return source->get_framerate(); }
 

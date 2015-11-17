@@ -28,24 +28,17 @@ public:
                                                 rs_device(std::shared_ptr<rsimpl::uvc::device> device, const rsimpl::static_device_info & info);
                                                 ~rs_device();
 
+    const rsimpl::stream_interface &            get_stream_interface(rs_stream stream) const { return *streams[stream]; }
+
     const char *                                get_name() const { return config.info.name.c_str(); }
     const char *                                get_serial() const { return config.info.serial.c_str(); }
     const char *                                get_firmware_version() const { return config.info.firmware_version.c_str(); }
-    rsimpl::pose                                get_pose(rs_stream stream) const;
-    rs_extrinsics                               get_extrinsics(rs_stream from, rs_stream to) const;
     float                                       get_depth_scale() const { return config.info.depth_scale; }
     bool                                        supports_option(rs_option option) const { return config.info.option_supported[option]; }
-    int                                         get_stream_mode_count(rs_stream stream) const;
-    void                                        get_stream_mode(rs_stream stream, int mode, int * width, int * height, rs_format * format, int * framerate) const;
 
     void                                        enable_stream(rs_stream stream, int width, int height, rs_format format, int fps);
     void                                        enable_stream_preset(rs_stream stream, rs_preset preset);    
     void                                        disable_stream(rs_stream stream);
-    bool                                        is_stream_enabled(rs_stream stream) const;
-
-    rs_intrinsics                               get_stream_intrinsics(rs_stream stream) const;
-    rs_format                                   get_stream_format(rs_stream stream) const;
-    int                                         get_stream_framerate(rs_stream stream) const;
 
     void                                        start();
     void                                        stop();

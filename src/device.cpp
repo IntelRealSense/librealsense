@@ -91,26 +91,6 @@ void rs_device::disable_stream(rs_stream stream)
     for(auto & s : native_streams) s->buffer.reset(); // Changing stream configuration invalidates the current stream info
 }
 
-bool rs_device::is_stream_enabled(rs_stream stream) const 
-{ 
-    return streams[stream]->is_enabled();
-}
-
-rs_intrinsics rs_device::get_stream_intrinsics(rs_stream stream) const 
-{
-    return streams[stream]->get_intrinsics();
-}
-
-rs_format rs_device::get_stream_format(rs_stream stream) const
-{ 
-    return streams[stream]->get_format();
-}
-
-int rs_device::get_stream_framerate(rs_stream stream) const
-{ 
-    return streams[stream]->get_framerate();
-}
-
 void rs_device::start()
 {
     if(capturing) throw std::runtime_error("cannot restart device without first stopping device");
@@ -261,25 +241,6 @@ const byte * rs_device::get_frame_data(rs_stream stream) const
 { 
     if(!streams[stream]->is_enabled()) throw std::runtime_error(to_string() << "stream not enabled: " << stream);
     return streams[stream]->get_frame_data();
-}
-
-rs_extrinsics rs_device::get_extrinsics(rs_stream from, rs_stream to) const
-{
-    return streams[from]->get_extrinsics_to(*streams[to]);
-}
-
-int rs_device::get_stream_mode_count(rs_stream stream) const
-{
-    return streams[stream]->get_mode_count();
-}
-
-void rs_device::get_stream_mode(rs_stream stream, int mode, int * width, int * height, rs_format * format, int * framerate) const
-{
-    auto & m = streams[stream]->get_mode(mode);
-    if(width) *width = m.width;
-    if(height) *height = m.height;
-    if(format) *format = m.format;
-    if(framerate) *framerate = m.fps;
 }
 
 void rs_device::set_option(rs_option option, int value)

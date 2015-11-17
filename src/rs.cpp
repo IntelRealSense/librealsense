@@ -98,7 +98,7 @@ void rs_get_device_extrinsics(const rs_device * device, rs_stream from, rs_strea
     VALIDATE_ENUM(from);
     VALIDATE_ENUM(to);
     VALIDATE_NOT_NULL(extrin);
-    *extrin = device->get_extrinsics(from, to);
+    *extrin = device->get_stream_interface(from).get_extrinsics_to(device->get_stream_interface(to));
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, device, from, to, extrin)
 
@@ -114,7 +114,7 @@ int rs_get_stream_mode_count(const rs_device * device, rs_stream stream, rs_erro
 {
     VALIDATE_NOT_NULL(device);
     VALIDATE_ENUM(stream);
-    return device->get_stream_mode_count(stream);
+    return device->get_stream_interface(stream).get_mode_count();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, device, stream)
 
@@ -122,8 +122,13 @@ void rs_get_stream_mode(const rs_device * device, rs_stream stream, int index, i
 {
     VALIDATE_NOT_NULL(device);
     VALIDATE_ENUM(stream);
-    VALIDATE_RANGE(index, 0, device->get_stream_mode_count(stream)-1);
-    return device->get_stream_mode(stream, index, width, height, format, framerate);
+    auto & s = device->get_stream_interface(stream);
+    VALIDATE_RANGE(index, 0, s.get_mode_count()-1);
+    auto & m = s.get_mode(index);
+    if(width) *width = m.width;
+    if(height) *height = m.height;
+    if(format) *format = m.format;
+    if(framerate) *framerate = m.fps;
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, device, stream, index, width, height, format, framerate)
 
@@ -161,7 +166,7 @@ int rs_is_stream_enabled(const rs_device * device, rs_stream stream, rs_error **
 {
     VALIDATE_NOT_NULL(device);
     VALIDATE_ENUM(stream);
-    return device->is_stream_enabled(stream);
+    return device->get_stream_interface(stream).is_enabled();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, device, stream)
 
@@ -170,7 +175,7 @@ void rs_get_stream_intrinsics(const rs_device * device, rs_stream stream, rs_int
     VALIDATE_NOT_NULL(device);
     VALIDATE_ENUM(stream);
     VALIDATE_NOT_NULL(intrin);
-    *intrin = device->get_stream_intrinsics(stream);
+    *intrin = device->get_stream_interface(stream).get_intrinsics();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, device, stream, intrin)
 
@@ -178,7 +183,7 @@ rs_format rs_get_stream_format(const rs_device * device, rs_stream stream, rs_er
 {
     VALIDATE_NOT_NULL(device);
     VALIDATE_ENUM(stream);
-    return device->get_stream_format(stream);
+    return device->get_stream_interface(stream).get_format();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(RS_FORMAT_ANY, device, stream)
 
@@ -186,7 +191,7 @@ int rs_get_stream_framerate(const rs_device * device, rs_stream stream, rs_error
 {
     VALIDATE_NOT_NULL(device);
     VALIDATE_ENUM(stream);
-    return device->get_stream_framerate(stream);
+    return device->get_stream_interface(stream).get_framerate();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(RS_FORMAT_ANY, device, stream)
 

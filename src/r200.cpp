@@ -213,9 +213,9 @@ namespace rsimpl
         int max_fps = 0;
         for(int i=0; i<RS_STREAM_NATIVE_COUNT; ++i)
         {
-            if(is_stream_enabled((rs_stream)i))
+            if(get_stream_interface((rs_stream)i).is_enabled())
             {
-                max_fps = std::max(max_fps, get_stream_framerate((rs_stream)i));
+                max_fps = std::max(max_fps, get_stream_interface((rs_stream)i).get_framerate());
             }
         }
         return static_cast<int>(timestamp * 1000 / max_fps);
@@ -305,7 +305,7 @@ namespace rsimpl
         case RS_OPTION_R200_LR_AUTO_EXPOSURE_ENABLED: r200::get_lr_exposure_mode(get_device(), u32[0]);         value = u32[0]; break;
         case RS_OPTION_R200_LR_GAIN:                  r200::get_lr_gain         (get_device(), u32[0], u32[1]); value = u32[1]; break;
         case RS_OPTION_R200_LR_EXPOSURE:              r200::get_lr_exposure     (get_device(), u32[0], u32[1]); value = u32[1]; break;
-        case RS_OPTION_R200_EMITTER_ENABLED:          r200::get_emitter_state   (get_device(), is_capturing(), is_stream_enabled(RS_STREAM_DEPTH), b); value = b; break;
+        case RS_OPTION_R200_EMITTER_ENABLED:          r200::get_emitter_state   (get_device(), is_capturing(), get_stream_interface(RS_STREAM_DEPTH).is_enabled(), b); value = b; break;
         case RS_OPTION_R200_DEPTH_UNITS:              r200::get_depth_units     (get_device(), u32[0]);         value = u32[0]; break;
         case RS_OPTION_R200_DEPTH_CLAMP_MIN:          r200::get_min_max_depth   (get_device(), u16[0], u16[1]); value = u16[0]; break;
         case RS_OPTION_R200_DEPTH_CLAMP_MAX:          r200::get_min_max_depth   (get_device(), u16[0], u16[1]); value = u16[1]; break;
