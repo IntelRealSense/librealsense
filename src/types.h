@@ -58,6 +58,8 @@ namespace rsimpl
     inline pose operator * (const pose & a, const pose & b) { return {a.orientation * b.orientation, a * b.position}; }
     inline pose inverse(const pose & a) { auto inv = transpose(a.orientation); return {inv, inv * a.position * -1}; }
 
+    inline bool operator == (const rs_intrinsics & a, const rs_intrinsics & b) { return memcmp(&a, &b, sizeof(a)) == 0; }
+
     inline uint32_t pack(uint8_t c0, uint8_t c1, uint8_t c2, uint8_t c3)
     {
         return (c0 << 24) | (c1 << 16) | (c2 << 8) | c3;
@@ -200,19 +202,33 @@ namespace rsimpl
 
     class intrinsics_buffer
     {
-        mutable triple_buffer<std::vector<rs_intrinsics>> buffer;
+        struct state { std::vector<rs_intrinsics> intrin, rect_intrin; };
+        mutable triple_buffer<state> buffer;
     public:
         intrinsics_buffer() : buffer({}) {}
 
         rs_intrinsics get(int index) const
         {
             buffer.swap_front(); // We are logically const even though we check for updates, visible state will never change unless someone calls set
-            return buffer.get_front()[index];
+            return buffer.get_front().intrin[index];
+        }
+
+        rs_intrinsics get_rect(int index) const
+        {
+            buffer.swap_front(); // We are logically const even though we check for updates, visible state will never change unless someone calls set
+            return buffer.get_front().rect_intrin[index];
         }
 
         void set(std::vector<rs_intrinsics> intrinsics)
         {
-            buffer.get_back() = move(intrinsics);
+            buffer.get_back().intrin = buffer.get_back().rect_intrin = move(intrinsics);
+            buffer.swap_back();
+        }
+
+        void set(std::vector<rs_intrinsics> intrinsics, std::vector<rs_intrinsics> rect_intrinsics)
+        {
+            buffer.get_back().intrin = move(intrinsics);
+            buffer.get_back().rect_intrin = move(rect_intrinsics);
             buffer.swap_back();
         }
     };

@@ -10,8 +10,9 @@ struct rs_device
 {
 private:
     const std::shared_ptr<rsimpl::uvc::device>  device;
+protected:
     rsimpl::device_config                       config;
-
+private:
     rsimpl::native_stream                       depth, color, infrared, infrared2;
     rsimpl::rectified_stream                    rect_color;
     rsimpl::aligned_stream                      color_to_depth, depth_to_color, depth_to_rect_color;
@@ -26,7 +27,6 @@ private:
 protected:
     const rsimpl::uvc::device &                 get_device() const { return *device; }
     rsimpl::uvc::device &                       get_device() { return *device; }
-    void                                        set_intrinsics_thread_safe(std::vector<rs_intrinsics> new_intrinsics) { config.intrinsics.set(move(new_intrinsics)); }
 public:
                                                 rs_device(std::shared_ptr<rsimpl::uvc::device> device, const rsimpl::static_device_info & info);
                                                 ~rs_device();

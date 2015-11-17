@@ -60,6 +60,9 @@ stream_mode native_stream::get_mode() const
 
 const rsimpl::byte * rectified_stream::get_frame_data() const
 {
+    // If source image is already rectified, just return it without doing any work
+    if(get_pose() == source.get_pose() && get_intrinsics() == source.get_intrinsics()) return source.get_frame_data();
+
     if(image.empty() || number != get_frame_number())
     {
         if(table.empty()) table = compute_rectification_table(get_intrinsics(), get_extrinsics_to(source), source.get_intrinsics());

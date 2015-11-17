@@ -16,6 +16,7 @@ namespace rsimpl
 
         virtual bool                            is_enabled() const = 0;
         virtual rs_intrinsics                   get_intrinsics() const = 0;
+        virtual rs_intrinsics                   get_rectified_intrinsics() const = 0;
         virtual rs_format                       get_format() const = 0;
         virtual int                             get_framerate() const = 0;
 
@@ -40,6 +41,7 @@ namespace rsimpl
         bool                                    is_enabled() const { return static_cast<bool>(buffer); }
         stream_mode                             get_mode() const;
         rs_intrinsics                           get_intrinsics() const { return config.intrinsics.get(get_mode().intrinsics_index); }
+        rs_intrinsics                           get_rectified_intrinsics() const { return config.intrinsics.get_rect(get_mode().intrinsics_index); }
         rs_format                               get_format() const { return get_mode().format; }
         int                                     get_framerate() const { return get_mode().fps; }
 
@@ -60,7 +62,8 @@ namespace rsimpl
         float                                   get_depth_scale() const { return source.get_depth_scale(); }
 
         bool                                    is_enabled() const { return source.is_enabled(); }
-        rs_intrinsics                           get_intrinsics() const { auto i = source.get_intrinsics(); i.model = RS_DISTORTION_NONE; for(auto & f : i.coeffs) f = 0; return i; } // TODO: Take advantage of precalculated intrinsics when possible (i.e. R200)
+        rs_intrinsics                           get_intrinsics() const { return source.get_rectified_intrinsics(); }
+        rs_intrinsics                           get_rectified_intrinsics() const { return source.get_rectified_intrinsics(); }
         rs_format                               get_format() const { return source.get_format(); }
         int                                     get_framerate() const { return source.get_framerate(); }
 
@@ -81,6 +84,7 @@ namespace rsimpl
 
         bool                                    is_enabled() const { return from.is_enabled() && to.is_enabled(); }
         rs_intrinsics                           get_intrinsics() const { return to.get_intrinsics(); }
+        rs_intrinsics                           get_rectified_intrinsics() const { return to.get_rectified_intrinsics(); }
         rs_format                               get_format() const { return from.get_format(); }
         int                                     get_framerate() const { return from.get_framerate(); }
 

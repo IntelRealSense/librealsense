@@ -63,9 +63,9 @@ namespace rsimpl
             UnrectifiedIntrinsics intrinsicsThird[MAX_NUM_INTRINSICS_THIRD];
             UnrectifiedIntrinsics intrinsicsPlatform[MAX_NUM_INTRINSICS_PLATFORM];
 
-            RectifiedIntrinsics modesLR[MAX_NUM_INTRINSICS_RIGHT * MAX_NUM_RECTIFIED_MODES_LR];
-            RectifiedIntrinsics modesThird[MAX_NUM_INTRINSICS_RIGHT * MAX_NUM_INTRINSICS_THIRD * MAX_NUM_RECTIFIED_MODES_THIRD];
-            RectifiedIntrinsics modesPlatform[MAX_NUM_INTRINSICS_RIGHT * MAX_NUM_INTRINSICS_PLATFORM * MAX_NUM_RECTIFIED_MODES_PLATFORM];
+            RectifiedIntrinsics modesLR[MAX_NUM_INTRINSICS_RIGHT][MAX_NUM_RECTIFIED_MODES_LR];
+            RectifiedIntrinsics modesThird[MAX_NUM_INTRINSICS_RIGHT][MAX_NUM_INTRINSICS_THIRD][MAX_NUM_RECTIFIED_MODES_THIRD];
+            RectifiedIntrinsics modesPlatform[MAX_NUM_INTRINSICS_RIGHT][MAX_NUM_INTRINSICS_PLATFORM][MAX_NUM_RECTIFIED_MODES_PLATFORM];
 
             big_endian<float> Rleft[MAX_NUM_INTRINSICS_RIGHT][9];
             big_endian<float> Rright[MAX_NUM_INTRINSICS_RIGHT][9];
