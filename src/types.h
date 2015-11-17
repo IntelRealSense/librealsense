@@ -5,6 +5,7 @@
 #include "../include/librealsense/rs.h"
 
 #include <cassert>                          // For assert
+#include <cstring>                          // For memcmp
 #include <vector>                           // For vector
 #include <memory>                           // For shared_ptr
 #include <sstream>                          // For ostringstream
@@ -58,7 +59,7 @@ namespace rsimpl
     inline pose operator * (const pose & a, const pose & b) { return {a.orientation * b.orientation, a * b.position}; }
     inline pose inverse(const pose & a) { auto inv = transpose(a.orientation); return {inv, inv * a.position * -1}; }
 
-    inline bool operator == (const rs_intrinsics & a, const rs_intrinsics & b) { return memcmp(&a, &b, sizeof(a)) == 0; }
+    inline bool operator == (const rs_intrinsics & a, const rs_intrinsics & b) { return std::memcmp(&a, &b, sizeof(a)) == 0; }
 
     inline uint32_t pack(uint8_t c0, uint8_t c1, uint8_t c2, uint8_t c3)
     {

@@ -25,7 +25,7 @@ namespace rsimpl
         memset(dest[0] + get_image_size(mode.streams[0].width, mode.height-1, RS_FORMAT_Z16), 0, mode.width*2);
     }
 
-    template<int MAGIC_NUMBER>
+    template<unsigned MAGIC_NUMBER>
     int decode_dinghy_frame_number(const subdevice_mode & mode, const void * frame)
     {
         auto dinghy = reinterpret_cast<const r200::Dinghy *>(reinterpret_cast<const uint8_t *>(frame) + mode.pf->get_image_size(mode.width, mode.height-1));
@@ -126,7 +126,7 @@ namespace rsimpl
         info.subdevice_modes.push_back({2,  640,  480, &pf_yuy2, 60, {{RS_STREAM_COLOR,  640,  480, RS_FORMAT_YUYV, 60, THIRD_VGA}}, &unpack_subrect, &decode_yuy2_frame_number, true});
         info.subdevice_modes.push_back({2,  640,  480, &pf_yuy2, 30, {{RS_STREAM_COLOR,  640,  480, RS_FORMAT_YUYV, 30, THIRD_VGA}}, &unpack_subrect, &decode_yuy2_frame_number, true});
         info.subdevice_modes.push_back({2, 1920, 1080, &pf_yuy2, 30, {{RS_STREAM_COLOR, 1920, 1080, RS_FORMAT_YUYV, 30, THIRD_HD}}, &unpack_subrect, &decode_yuy2_frame_number, true});
-        info.subdevice_modes.push_back({2, 2400, 1081, &pf_rw10, 30, {{RS_STREAM_COLOR, 1920, 1080, RS_FORMAT_RAW10, 30, THIRD_HD}}, &unpack_subrect, &decode_dinghy_frame_number<0x8A8B8C8D>, true});
+        info.subdevice_modes.push_back(subdevice_mode{2, 2400, 1081, &pf_rw10, 30, {{RS_STREAM_COLOR, 1920, 1080, RS_FORMAT_RAW10, 30, THIRD_HD}}, &unpack_subrect, &decode_dinghy_frame_number<0x8A8B8C8D>, true});
 		// todo - add 15 fps modes
 
         // Set up interstream rules for left/right/z images
