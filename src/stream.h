@@ -36,9 +36,9 @@ namespace rsimpl
         pose                                    get_pose() const override { return config.info.stream_poses[stream]; }
         float                                   get_depth_scale() const override { return config.info.depth_scale; }
         int                                     get_mode_count() const override { return (int)modes.size(); }
-        const stream_mode &                     get_mode(int mode) const override { throw modes[mode]; }
+        const stream_mode &                     get_mode(int mode) const override { return modes[mode]; }
 
-        bool                                    is_enabled() const override { return static_cast<bool>(buffer); }
+        bool                                    is_enabled() const override { return buffer || config.requests[stream].enabled; }
         stream_mode                             get_mode() const;
         rs_intrinsics                           get_intrinsics() const override { return config.intrinsics.get(get_mode().intrinsics_index); }
         rs_intrinsics                           get_rectified_intrinsics() const override { return config.intrinsics.get_rect(get_mode().intrinsics_index); }
