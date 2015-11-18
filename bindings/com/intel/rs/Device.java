@@ -47,6 +47,14 @@ public class Device
     public native boolean supportsOption(Option option);
 
     /**
+     * determine the range of acceptable values for an option on this device
+     * @param option  the option whose range to query
+     * @param min     the minimum acceptable value, attempting to set a value below this will take no effect and raise an error
+     * @param max     the maximum acceptable value, attempting to set a value above this will take no effect and raise an error
+     */
+    public native void getOptionRange(Option option, Out<Integer> min, Out<Integer> max);
+
+    /**
      * determine the number of streaming modes available for a given stream
      * @param stream  the stream whose modes will be enumerated
      * @return        the count of available modes

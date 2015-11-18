@@ -16,7 +16,7 @@ int main()
     rs_format format;
     rs_intrinsics intrin;
     int i, j, k, device_count, mode_count;
-    int width, height, framerate;
+    int width, height, framerate, supported, min, max;
     float hfov, vfov;
 
     /* Obtain a list of devices currently present on the system */
@@ -44,8 +44,14 @@ int main()
         for(j = 0; j < RS_OPTION_COUNT; ++j)
         {
             option = (rs_option)j;
-            if(rs_device_supports_option(device, option, &e)) printf("    %s\n", rs_option_to_string(option));
+            supported = rs_device_supports_option(device, option, &e);
             check_error(e);
+            if(supported)
+            {
+                rs_get_device_option_range(device, option, &min, &max, &e);
+                check_error(e);
+                printf("    %s : [%d, %d]\n", rs_option_to_string(option));
+            }
         }
 
         /* Show which streams are supported by this device */

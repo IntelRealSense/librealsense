@@ -164,6 +164,17 @@ JNIEXPORT jboolean JNICALL Java_com_intel_rs_Device_supportsOption(JNIEnv * env,
     return r;
 }
 
+JNIEXPORT void JNICALL Java_com_intel_rs_Device_getOptionRange(JNIEnv * env, jobject self, jobject option, jobject min, jobject max)
+{
+    rs_error * e = NULL;
+    int c_min;
+    int c_max;
+    rs_get_device_option_range(get_object(env, self), get_enum(env, option), &c_min, &c_max, &e);
+    handle_error(env, e);
+    set_out_param(env, min, make_integer(env, c_min));
+    set_out_param(env, max, make_integer(env, c_max));
+}
+
 JNIEXPORT jint JNICALL Java_com_intel_rs_Device_getStreamModeCount(JNIEnv * env, jobject self, jobject stream)
 {
     rs_error * e = NULL;

@@ -14,6 +14,7 @@ realsense.rs_get_device_firmware_version.restype = c_char_p
 realsense.rs_get_device_extrinsics.restype = None
 realsense.rs_get_device_depth_scale.restype = c_float
 realsense.rs_device_supports_option.restype = c_int
+realsense.rs_get_device_option_range.restype = None
 realsense.rs_get_stream_mode_count.restype = c_int
 realsense.rs_get_stream_mode.restype = None
 realsense.rs_enable_stream.restype = None
@@ -206,6 +207,18 @@ class Device:
         r = realsense.rs_device_supports_option(self.handle, option, byref(e))
         check_error(e)
         return r
+
+    ## determine the range of acceptable values for an option on this device
+    # @param option  the option whose range to query
+    # @return        the minimum acceptable value, attempting to set a value below this will take no effect and raise an error
+    # @return        the maximum acceptable value, attempting to set a value above this will take no effect and raise an error
+    def get_option_range(self, option):
+        e = c_void_p(0)
+        min = c_int()
+        max = c_int()
+        realsense.rs_get_device_option_range(self.handle, option, byref(min), byref(max), byref(e))
+        check_error(e)
+        return (min.value, max.value)
 
     ## determine the number of streaming modes available for a given stream
     # @param stream  the stream whose modes will be enumerated
