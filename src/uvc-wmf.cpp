@@ -600,6 +600,32 @@ namespace rsimpl
             throw std::runtime_error("unsupported control");
         }
 
+        int win_to_uvc_exposure(int value) { return static_cast<int>(std::round(exp2(static_cast<double>(value)) * 10000)); }
+
+        void get_pu_control_range(const device & device, int subdevice, rs_option option, int * min, int * max)
+        {
+            auto & sub = device.subdevices[subdevice];
+            long minVal=0, maxVal=0, steppingDelta=0, defVal=0, capsFlag=0;
+            if(option == RS_OPTION_COLOR_EXPOSURE)
+            {
+                check("IAMCameraControl::Get", sub.am_camera_control->GetRange(CameraControl_Exposure, &minVal, &maxVal, &steppingDelta, &defVal, &capsFlag));
+                if(min) *min = win_to_uvc_exposure(minVal);
+                if(max) *max = win_to_uvc_exposure(maxVal);
+                return;
+            }
+            for(auto & pu : pu_controls)
+            {
+                if(option == pu.option)
+                {
+                    check("IAMVideoProcAmp::GetRange", sub.am_video_proc_amp->GetRange(pu.property, &minVal, &maxVal, &steppingDelta, &defVal, &capsFlag));
+                    if(min) *min = static_cast<int>(minVal);
+                    if(max) *max = static_cast<int>(maxVal);
+                    return;
+                }
+            }
+            throw std::runtime_error("unsupported control");
+        }
+
         int get_pu_control(const device & device, int subdevice, rs_option option)
         {
             auto & sub = device.subdevices[subdevice];
@@ -607,7 +633,7 @@ namespace rsimpl
             if(option == RS_OPTION_COLOR_EXPOSURE)
             {
                 check("IAMCameraControl::Get", sub.am_camera_control->Get(CameraControl_Exposure, &value, &flags));
-                return static_cast<int>(std::round(exp2(static_cast<double>(value)) * 10000));
+                return win_to_uvc_exposure(value);
             }
             for(auto & pu : pu_controls)
             {

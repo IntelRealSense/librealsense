@@ -301,6 +301,39 @@ namespace rsimpl
         }
     }
 
+    void r200_camera::get_xu_range(rs_option option, int * min, int * max) const
+    {
+        int max_fps = 30;
+        for(int i=0; i<RS_STREAM_NATIVE_COUNT; ++i)
+        {
+            if(get_stream_interface((rs_stream)i).is_enabled())
+            {
+                max_fps = std::max(max_fps, get_stream_interface((rs_stream)i).get_framerate());
+            }
+        }
+        const struct { rs_option option; int min, max; } ranges[] = {
+            {RS_OPTION_R200_LR_AUTO_EXPOSURE_ENABLED, 0, 1},
+            {RS_OPTION_R200_LR_GAIN, 100, 1600},
+            {RS_OPTION_R200_LR_EXPOSURE, 0, 10000/max_fps},
+            {RS_OPTION_R200_EMITTER_ENABLED, 0, 1},
+            {RS_OPTION_R200_DEPTH_CONTROL_PRESET, 0, 5},
+            {RS_OPTION_R200_DEPTH_UNITS, 1, INT_MAX}, // What is the real range?
+            {RS_OPTION_R200_DEPTH_CLAMP_MIN, 0, USHRT_MAX},
+            {RS_OPTION_R200_DEPTH_CLAMP_MAX, 0, USHRT_MAX},
+            {RS_OPTION_R200_DISPARITY_MODE_ENABLED, 0, 1},
+            {RS_OPTION_R200_DISPARITY_MULTIPLIER, 1, 1024}, // What is the real range?
+            {RS_OPTION_R200_DISPARITY_SHIFT, 0, 0},
+        };
+        for(auto & r : ranges)
+        {
+            if(option != r.option) continue;
+            if(min) *min = r.min;
+            if(max) *max = r.max;
+            return;
+        }
+        throw std::logic_error("range not specified");
+    }
+
     int r200_camera::get_xu_option(rs_option option) const
     {
         //r200::auto_exposure_params aep;

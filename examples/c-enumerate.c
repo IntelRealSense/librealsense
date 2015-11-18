@@ -50,7 +50,7 @@ int main()
             {
                 rs_get_device_option_range(device, option, &min, &max, &e);
                 check_error(e);
-                printf("    %s : [%d, %d]\n", rs_option_to_string(option));
+                printf("    %s : [%d, %d]\n", rs_option_to_string(option), min, max);
             }
         }
 

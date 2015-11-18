@@ -13,6 +13,7 @@ namespace rsimpl
         ~r200_camera();
 
         void on_before_start(const std::vector<subdevice_mode> & selected_modes) override final;
+        void get_xu_range(rs_option option, int * min, int * max) const override final;
         void set_xu_option(rs_option option, int value) override final;
         int get_xu_option(rs_option option) const override final;
         int convert_timestamp(int64_t timestamp) const override final;
