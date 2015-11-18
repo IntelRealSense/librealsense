@@ -36,7 +36,7 @@ public:
     const char *                                get_name() const { return config.info.name.c_str(); }
     const char *                                get_serial() const { return config.info.serial.c_str(); }
     const char *                                get_firmware_version() const { return config.info.firmware_version.c_str(); }
-    float                                       get_depth_scale() const { return config.info.depth_scale; }
+    float                                       get_depth_scale() const { return config.depth_scale; }
     bool                                        supports_option(rs_option option) const { return config.info.option_supported[option]; }
 
     void                                        enable_stream(rs_stream stream, int width, int height, rs_format format, int fps);

@@ -34,7 +34,7 @@ namespace rsimpl
                                                 native_stream(device_config & config, rs_stream stream);
 
         pose                                    get_pose() const override { return config.info.stream_poses[stream]; }
-        float                                   get_depth_scale() const override { return config.info.depth_scale; }
+        float                                   get_depth_scale() const override { return config.depth_scale; }
         int                                     get_mode_count() const override { return (int)modes.size(); }
         const stream_mode &                     get_mode(int mode) const override { return modes[mode]; }
 

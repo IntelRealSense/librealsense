@@ -70,6 +70,7 @@ namespace rsimpl
     r200_camera::r200_camera(std::shared_ptr<uvc::device> device, const static_device_info & info, std::vector<rs_intrinsics> intrinsics, std::vector<rs_intrinsics> rect_intrinsics) : rs_device(device, info)
     {
         config.intrinsics.set(intrinsics, rect_intrinsics);
+        config.depth_scale = (float)get_xu_option(RS_OPTION_R200_DEPTH_UNITS) / 1000000; // Convert from micrometers to meters
     }
     
     r200_camera::~r200_camera()
@@ -192,7 +193,7 @@ namespace rsimpl
 
         // Our position is added AFTER orientation is applied, not before, so we must multiply Rthird * T to compute it
         info.stream_poses[RS_STREAM_COLOR].position = info.stream_poses[RS_STREAM_COLOR].orientation * info.stream_poses[RS_STREAM_COLOR].position;
-        info.depth_scale = 0.001f;
+        info.nominal_depth_scale = 0.001f;
         info.serial = std::to_string(h.serialNumber);
         info.firmware_version = r200::read_firmware_version(*device);
 
@@ -274,6 +275,7 @@ namespace rsimpl
             break;
         case RS_OPTION_R200_DEPTH_UNITS:
             r200::set_depth_units(get_device(), value);
+            config.depth_scale = (float)value / 1000000; // Convert from micrometers to meters
             break;
         case RS_OPTION_R200_DEPTH_CLAMP_MIN:
             r200::get_min_max_depth(get_device(), u16[0], u16[1]);
