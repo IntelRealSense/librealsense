@@ -568,7 +568,7 @@ namespace rsimpl
         void start_streaming(device & device, int num_transfer_bufs) { device.start_streaming(); }
         void stop_streaming(device & device) { device.stop_streaming(); }
 
-        struct pu_control { rs_option option; long property; };
+        struct pu_control { rs_option option; long property; bool enable_auto; };
         static const pu_control pu_controls[] = {
             {RS_OPTION_COLOR_BACKLIGHT_COMPENSATION, VideoProcAmp_BacklightCompensation},
             {RS_OPTION_COLOR_BRIGHTNESS, VideoProcAmp_Brightness},
@@ -579,6 +579,9 @@ namespace rsimpl
             {RS_OPTION_COLOR_SATURATION, VideoProcAmp_Saturation},
             {RS_OPTION_COLOR_SHARPNESS, VideoProcAmp_Sharpness},
             {RS_OPTION_COLOR_WHITE_BALANCE, VideoProcAmp_WhiteBalance},
+            {RS_OPTION_COLOR_ENABLE_AUTO_CONTRAST, VideoProcAmp_Contrast, true},
+            {RS_OPTION_COLOR_ENABLE_AUTO_HUE, VideoProcAmp_Hue, true},
+            {RS_OPTION_COLOR_ENABLE_AUTO_WHITE_BALANCE, VideoProcAmp_WhiteBalance, true},
         };
 
         void set_pu_control(device & device, int subdevice, rs_option option, int value)
@@ -589,11 +592,32 @@ namespace rsimpl
                 check("IAMCameraControl::Set", sub.am_camera_control->Set(CameraControl_Exposure, static_cast<int>(std::round(log2(static_cast<double>(value) / 10000))), CameraControl_Flags_Manual));
                 return;
             }
+            if(option == RS_OPTION_COLOR_ENABLE_AUTO_EXPOSURE)
+            {
+                if(value) check("IAMCameraControl::Set", sub.am_camera_control->Set(CameraControl_Exposure, 0, CameraControl_Flags_Auto));
+                else
+                {
+                    long def;
+                    check("IAMCameraControl::GetRange", sub.am_camera_control->GetRange(CameraControl_Exposure, nullptr, nullptr, nullptr, &def, nullptr));
+                    check("IAMCameraControl::Set", sub.am_camera_control->Set(CameraControl_Exposure, def, CameraControl_Flags_Manual));
+                }
+                return;
+            }
             for(auto & pu : pu_controls)
             {
                 if(option == pu.option)
                 {
-                    check("IAMVideoProcAmp::Set", sub.am_video_proc_amp->Set(pu.property, value, VideoProcAmp_Flags_Manual));
+                    if(pu.enable_auto)
+                    {
+                        if(value) check("IAMVideoProcAmp::Set", sub.am_video_proc_amp->Set(pu.property, 0, VideoProcAmp_Flags_Auto));
+                        else
+                        {
+                            long def;
+                            check("IAMVideoProcAmp::GetRange", sub.am_video_proc_amp->GetRange(pu.property, nullptr, nullptr, nullptr, &def, nullptr));
+                            check("IAMVideoProcAmp::Set", sub.am_video_proc_amp->Set(pu.property, value, VideoProcAmp_Flags_Manual));    
+                        }
+                    }
+                    else check("IAMVideoProcAmp::Set", sub.am_video_proc_amp->Set(pu.property, value, VideoProcAmp_Flags_Manual));
                     return;
                 }
             }
@@ -635,12 +659,18 @@ namespace rsimpl
                 check("IAMCameraControl::Get", sub.am_camera_control->Get(CameraControl_Exposure, &value, &flags));
                 return win_to_uvc_exposure(value);
             }
+            if(option == RS_OPTION_COLOR_ENABLE_AUTO_EXPOSURE)
+            {
+                check("IAMCameraControl::Get", sub.am_camera_control->Get(CameraControl_Exposure, &value, &flags));
+                return flags == CameraControl_Flags_Auto;          
+            }
             for(auto & pu : pu_controls)
             {
                 if(option == pu.option)
                 {
                     check("IAMVideoProcAmp::Get", sub.am_video_proc_amp->Get(pu.property, &value, &flags));
-                    return value;
+                    if(pu.enable_auto) return flags == VideoProcAmp_Flags_Auto;
+                    else return value;
                 }
             }
             throw std::runtime_error("unsupported control");

@@ -9,7 +9,7 @@ namespace rsimpl
     size_t           get_image_size                 (int width, int height, rs_format format);
                                                     
     void             unpack_subrect                 (byte * const dest[], const byte * source, const subdevice_mode & mode);
-                                                             
+
     void             unpack_y16_from_y8             (byte * const dest[], const byte * source, const subdevice_mode & mode);
     void             unpack_y16_from_y16_10         (byte * const dest[], const byte * source, const subdevice_mode & mode);
     void             unpack_y8_from_y16_10          (byte * const dest[], const byte * source, const subdevice_mode & mode);

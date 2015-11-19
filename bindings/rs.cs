@@ -20,15 +20,16 @@ namespace RealSense
     {
         Any = 0,
         Z16 = 1, // 16 bit linear depth values. The depth is meters is equal to depth scale * pixel value
-        Disparity16 = 2, // 16 bit linear disparity values. The depth in meters is equal to depth scale / pixel value
-        YUYV = 3,
-        RGB8 = 4,
-        BGR8 = 5,
-        RGBA8 = 6,
-        BGRA8 = 7,
-        Y8 = 8,
-        Y16 = 9,
-        Raw10 = 10 // Four 10-bit luminance values encoded into a 5-byte macropixel
+        XYZ32F = 2, // 32 bit floating point 3D coordinates. The depth in meters is equal to the Z coordinate
+        Disparity16 = 3, // 16 bit linear disparity values. The depth in meters is equal to depth scale / pixel value
+        YUYV = 4,
+        RGB8 = 5,
+        BGR8 = 6,
+        RGBA8 = 7,
+        BGRA8 = 8,
+        Y8 = 9,
+        Y16 = 10,
+        Raw10 = 11 // Four 10-bit luminance values encoded into a 5-byte macropixel
     }
 
     public enum Preset : int
@@ -49,30 +50,34 @@ namespace RealSense
     {
         ColorBacklightCompensation = 0,
         ColorBrightness = 1,
-        ColorContrast = 2,
-        ColorExposure = 3,
+        ColorContrast = 2, // Controls contrast of color image. Setting any value will disable auto contrast.
+        ColorExposure = 3, // Controls exposure time of color camera. Setting any value will disable auto exposure.
         ColorGain = 4,
         ColorGamma = 5,
-        ColorHue = 6,
+        ColorHue = 6, // Controls hue of color image. Setting any value will disable auto hue.
         ColorSaturation = 7,
         ColorSharpness = 8,
-        ColorWhiteBalance = 9,
-        F200LaserPower = 10, // 0 - 15
-        F200Accuracy = 11, // 0 - 3
-        F200MotionRange = 12, // 0 - 100
-        F200FilterOption = 13, // 0 - 7
-        F200ConfidenceThreshold = 14, // 0 - 15
-        F200DynamicFPS = 15, // {2, 5, 15, 30, 60}
-        R200LRAutoExposureEnabled = 16, // {0, 1}
-        R200LRGain = 17, // 100 - 1600 (Units of 0.01)
-        R200LRExposure = 18, // > 0 (Units of 0.1 ms)
-        R200EmitterEnabled = 19, // {0, 1}
-        R200DepthControlPreset = 20, // 0 - 5, 0 is default, 1-5 is low to high outlier rejection
-        R200DepthUnits = 21, // micrometers per increment in integer depth values, 1000 is default (mm scale)
-        R200DepthClampMin = 22, // 0 - USHORT_MAX
-        R200DepthClampMax = 23, // 0 - USHORT_MAX
-        R200DisparityMultiplier = 24, // 0 - 1000, the increments in integer disparity values corresponding to one pixel of disparity
-        R200DisparityShift = 25
+        ColorWhiteBalance = 9, // Controls white balance of color image. Setting any value will disable auto white balance.
+        ColorEnableAutoContrast = 10, // Set to 1 to enable automatic contrast control, or 0 to return to manual control
+        ColorEnableAutoExposure = 11, // Set to 1 to enable automatic exposure control, or 0 to return to manual control
+        ColorEnableAutoHue = 12, // Set to 1 to enable automatic hue control, or 0 to return to manual control
+        ColorEnableAutoWhiteBalance = 13, // Set to 1 to enable automatic white balance control, or 0 to return to manual control
+        F200LaserPower = 14, // 0 - 15
+        F200Accuracy = 15, // 0 - 3
+        F200MotionRange = 16, // 0 - 100
+        F200FilterOption = 17, // 0 - 7
+        F200ConfidenceThreshold = 18, // 0 - 15
+        F200DynamicFPS = 19, // {2, 5, 15, 30, 60}
+        R200LRAutoExposureEnabled = 20, // {0, 1}
+        R200LRGain = 21, // 100 - 1600 (Units of 0.01)
+        R200LRExposure = 22, // > 0 (Units of 0.1 ms)
+        R200EmitterEnabled = 23, // {0, 1}
+        R200DepthControlPreset = 24, // 0 - 5, 0 is default, 1-5 is low to high outlier rejection
+        R200DepthUnits = 25, // micrometers per increment in integer depth values, 1000 is default (mm scale)
+        R200DepthClampMin = 26, // 0 - USHORT_MAX
+        R200DepthClampMax = 27, // 0 - USHORT_MAX
+        R200DisparityMultiplier = 28, // 0 - 1000, the increments in integer disparity values corresponding to one pixel of disparity
+        R200DisparityShift = 29
     }
 
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
@@ -128,7 +133,7 @@ namespace RealSense
         public Context()
         {
             IntPtr e = IntPtr.Zero;
-            handle = rs_create_context(3, ref e);
+            handle = rs_create_context(4, ref e);
             Error.Handle(e);
         }
 

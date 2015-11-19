@@ -89,7 +89,7 @@ static void handle_error(JNIEnv * env, rs_error * e)
 JNIEXPORT jlong JNICALL Java_com_intel_rs_Context_create(JNIEnv * env, jobject self)
 {
     rs_error * e = NULL;
-    rs_context * r = rs_create_context(3, &e);
+    rs_context * r = rs_create_context(4, &e);
     handle_error(env, e);
     return (jlong)r;
 }
