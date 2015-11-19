@@ -597,8 +597,8 @@ namespace rsimpl
                 if(value) check("IAMCameraControl::Set", sub.am_camera_control->Set(CameraControl_Exposure, 0, CameraControl_Flags_Auto));
                 else
                 {
-                    long def;
-                    check("IAMCameraControl::GetRange", sub.am_camera_control->GetRange(CameraControl_Exposure, nullptr, nullptr, nullptr, &def, nullptr));
+                    long min, max, step, def, caps;
+                    check("IAMCameraControl::GetRange", sub.am_camera_control->GetRange(CameraControl_Exposure, &min, &max, &step, &def, &caps));
                     check("IAMCameraControl::Set", sub.am_camera_control->Set(CameraControl_Exposure, def, CameraControl_Flags_Manual));
                 }
                 return;
@@ -612,8 +612,8 @@ namespace rsimpl
                         if(value) check("IAMVideoProcAmp::Set", sub.am_video_proc_amp->Set(pu.property, 0, VideoProcAmp_Flags_Auto));
                         else
                         {
-                            long def;
-                            check("IAMVideoProcAmp::GetRange", sub.am_video_proc_amp->GetRange(pu.property, nullptr, nullptr, nullptr, &def, nullptr));
+                            long min, max, step, def, caps;
+                            check("IAMVideoProcAmp::GetRange", sub.am_video_proc_amp->GetRange(pu.property, &min, &max, &step, &def, &caps));
                             check("IAMVideoProcAmp::Set", sub.am_video_proc_amp->Set(pu.property, value, VideoProcAmp_Flags_Manual));    
                         }
                     }
