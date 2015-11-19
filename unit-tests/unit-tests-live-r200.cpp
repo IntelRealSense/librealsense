@@ -620,11 +620,6 @@ TEST_CASE( "R200 supports RS_OPTION_R200_DEPTH_CLAMP_MAX", "[live] [r200]" )
     test_r200_option(RS_OPTION_R200_DEPTH_CLAMP_MAX, {500, 1000, 2000, USHRT_MAX}, BEFORE_START_DEVICE);
 }
 
-TEST_CASE( "R200 supports RS_OPTION_R200_DISPARITY_MODE_ENABLED", "[live] [r200]" )
-{
-    test_r200_option(RS_OPTION_R200_DISPARITY_MODE_ENABLED, {0, 1}, BEFORE_START_DEVICE);        
-}
-
 //////////////////////////////////////////
 // Stop, reconfigure, and restart tests //
 //////////////////////////////////////////

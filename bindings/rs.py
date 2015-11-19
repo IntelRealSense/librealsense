@@ -52,17 +52,18 @@ STREAM_DEPTH_ALIGNED_TO_COLOR           = 6  ##< Synthetic stream containing dep
 STREAM_DEPTH_ALIGNED_TO_RECTIFIED_COLOR = 7  ##< Synthetic stream containing depth data but sharing intrinsics of rectified color stream
 STREAM_COUNT                            = 8 
 
-FORMAT_ANY   = 0  
-FORMAT_Z16   = 1  
-FORMAT_YUYV  = 2  
-FORMAT_RGB8  = 3  
-FORMAT_BGR8  = 4  
-FORMAT_RGBA8 = 5  
-FORMAT_BGRA8 = 6  
-FORMAT_Y8    = 7  
-FORMAT_Y16   = 8  
-FORMAT_RAW10 = 9   ##< Four 10-bit luminance values encoded into a 5-byte macropixel
-FORMAT_COUNT = 10 
+FORMAT_ANY         = 0  
+FORMAT_Z16         = 1   ##< 16 bit linear depth values. The depth is meters is equal to depth scale * pixel value
+FORMAT_DISPARITY16 = 2   ##< 16 bit linear disparity values. The depth in meters is equal to depth scale / pixel value
+FORMAT_YUYV        = 3  
+FORMAT_RGB8        = 4  
+FORMAT_BGR8        = 5  
+FORMAT_RGBA8       = 6  
+FORMAT_BGRA8       = 7  
+FORMAT_Y8          = 8  
+FORMAT_Y16         = 9  
+FORMAT_RAW10       = 10  ##< Four 10-bit luminance values encoded into a 5-byte macropixel
+FORMAT_COUNT       = 11 
 
 PRESET_BEST_QUALITY      = 0 
 PRESET_LARGEST_IMAGE     = 1 
@@ -98,10 +99,9 @@ OPTION_R200_DEPTH_CONTROL_PRESET     = 20  ##< 0 - 5, 0 is default, 1-5 is low t
 OPTION_R200_DEPTH_UNITS              = 21  ##< micrometers per increment in integer depth values, 1000 is default (mm scale)
 OPTION_R200_DEPTH_CLAMP_MIN          = 22  ##< 0 - USHORT_MAX
 OPTION_R200_DEPTH_CLAMP_MAX          = 23  ##< 0 - USHORT_MAX
-OPTION_R200_DISPARITY_MODE_ENABLED   = 24  ##< {0, 1}
-OPTION_R200_DISPARITY_MULTIPLIER     = 25 
-OPTION_R200_DISPARITY_SHIFT          = 26 
-OPTION_COUNT                         = 27 
+OPTION_R200_DISPARITY_MULTIPLIER     = 24  ##< 0 - 1000, the increments in integer disparity values corresponding to one pixel of disparity
+OPTION_R200_DISPARITY_SHIFT          = 25 
+OPTION_COUNT                         = 26 
 
 class Intrinsics(Structure):
     _fields_ = [("width", c_int),

@@ -285,6 +285,7 @@ TEST_CASE( "rs_format_to_string() produces correct output", "[offline] [validati
     // Valid enum values should return the text that follows the type prefix
     REQUIRE(rs_format_to_string(RS_FORMAT_ANY) == std::string("ANY"));
     REQUIRE(rs_format_to_string(RS_FORMAT_Z16) == std::string("Z16"));
+    REQUIRE(rs_format_to_string(RS_FORMAT_DISPARITY16) == std::string("DISPARITY16"));
     REQUIRE(rs_format_to_string(RS_FORMAT_YUYV) == std::string("YUYV"));
     REQUIRE(rs_format_to_string(RS_FORMAT_RGB8) == std::string("RGB8"));
     REQUIRE(rs_format_to_string(RS_FORMAT_BGR8) == std::string("BGR8"));
@@ -355,7 +356,6 @@ TEST_CASE( "rs_option_to_string() produces correct output", "[offline] [validati
     REQUIRE(rs_option_to_string(RS_OPTION_R200_DEPTH_UNITS) == std::string("R200_DEPTH_UNITS")); 
     REQUIRE(rs_option_to_string(RS_OPTION_R200_DEPTH_CLAMP_MIN) == std::string("R200_DEPTH_CLAMP_MIN")); 
     REQUIRE(rs_option_to_string(RS_OPTION_R200_DEPTH_CLAMP_MAX) == std::string("R200_DEPTH_CLAMP_MAX")); 
-    REQUIRE(rs_option_to_string(RS_OPTION_R200_DISPARITY_MODE_ENABLED) == std::string("R200_DISPARITY_MODE_ENABLED")); 
     REQUIRE(rs_option_to_string(RS_OPTION_R200_DISPARITY_MULTIPLIER) == std::string("R200_DISPARITY_MULTIPLIER")); 
     REQUIRE(rs_option_to_string(RS_OPTION_R200_DISPARITY_SHIFT) == std::string("R200_DISPARITY_SHIFT")); 
 

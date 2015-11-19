@@ -19,15 +19,16 @@ namespace RealSense
     public enum Format : int
     {
         Any = 0,
-        Z16 = 1,
-        YUYV = 2,
-        RGB8 = 3,
-        BGR8 = 4,
-        RGBA8 = 5,
-        BGRA8 = 6,
-        Y8 = 7,
-        Y16 = 8,
-        Raw10 = 9 // Four 10-bit luminance values encoded into a 5-byte macropixel
+        Z16 = 1, // 16 bit linear depth values. The depth is meters is equal to depth scale * pixel value
+        Disparity16 = 2, // 16 bit linear disparity values. The depth in meters is equal to depth scale / pixel value
+        YUYV = 3,
+        RGB8 = 4,
+        BGR8 = 5,
+        RGBA8 = 6,
+        BGRA8 = 7,
+        Y8 = 8,
+        Y16 = 9,
+        Raw10 = 10 // Four 10-bit luminance values encoded into a 5-byte macropixel
     }
 
     public enum Preset : int
@@ -70,9 +71,8 @@ namespace RealSense
         R200DepthUnits = 21, // micrometers per increment in integer depth values, 1000 is default (mm scale)
         R200DepthClampMin = 22, // 0 - USHORT_MAX
         R200DepthClampMax = 23, // 0 - USHORT_MAX
-        R200DisparityModeEnabled = 24, // {0, 1}
-        R200DisparityMultiplier = 25,
-        R200DisparityShift = 26
+        R200DisparityMultiplier = 24, // 0 - 1000, the increments in integer disparity values corresponding to one pixel of disparity
+        R200DisparityShift = 25
     }
 
     [StructLayout(LayoutKind.Sequential, Pack = 1)]

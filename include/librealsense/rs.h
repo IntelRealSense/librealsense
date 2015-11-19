@@ -23,17 +23,18 @@ typedef enum rs_stream
 
 typedef enum rs_format
 {
-    RS_FORMAT_ANY   = 0,  
-    RS_FORMAT_Z16   = 1,  
-    RS_FORMAT_YUYV  = 2,  
-    RS_FORMAT_RGB8  = 3,  
-    RS_FORMAT_BGR8  = 4,  
-    RS_FORMAT_RGBA8 = 5,  
-    RS_FORMAT_BGRA8 = 6,  
-    RS_FORMAT_Y8    = 7,  
-    RS_FORMAT_Y16   = 8,  
-    RS_FORMAT_RAW10 = 9,  /**< Four 10-bit luminance values encoded into a 5-byte macropixel */
-    RS_FORMAT_COUNT = 10, 
+    RS_FORMAT_ANY         = 0,  
+    RS_FORMAT_Z16         = 1,  /**< 16 bit linear depth values. The depth is meters is equal to depth scale * pixel value */
+    RS_FORMAT_DISPARITY16 = 2,  /**< 16 bit linear disparity values. The depth in meters is equal to depth scale / pixel value */
+    RS_FORMAT_YUYV        = 3,  
+    RS_FORMAT_RGB8        = 4,  
+    RS_FORMAT_BGR8        = 5,  
+    RS_FORMAT_RGBA8       = 6,  
+    RS_FORMAT_BGRA8       = 7,  
+    RS_FORMAT_Y8          = 8,  
+    RS_FORMAT_Y16         = 9,  
+    RS_FORMAT_RAW10       = 10, /**< Four 10-bit luminance values encoded into a 5-byte macropixel */
+    RS_FORMAT_COUNT       = 11, 
     RS_FORMAT_MAX_ENUM = 0x7FFFFFFF
 } rs_format;
 
@@ -81,10 +82,9 @@ typedef enum rs_option
     RS_OPTION_R200_DEPTH_UNITS              = 21, /**< micrometers per increment in integer depth values, 1000 is default (mm scale) */
     RS_OPTION_R200_DEPTH_CLAMP_MIN          = 22, /**< 0 - USHORT_MAX */
     RS_OPTION_R200_DEPTH_CLAMP_MAX          = 23, /**< 0 - USHORT_MAX */
-    RS_OPTION_R200_DISPARITY_MODE_ENABLED   = 24, /**< {0, 1} */
-    RS_OPTION_R200_DISPARITY_MULTIPLIER     = 25, 
-    RS_OPTION_R200_DISPARITY_SHIFT          = 26, 
-    RS_OPTION_COUNT                         = 27, 
+    RS_OPTION_R200_DISPARITY_MULTIPLIER     = 24, /**< 0 - 1000, the increments in integer disparity values corresponding to one pixel of disparity */
+    RS_OPTION_R200_DISPARITY_SHIFT          = 25, 
+    RS_OPTION_COUNT                         = 26, 
     RS_OPTION_MAX_ENUM = 0x7FFFFFFF
 } rs_option;
 

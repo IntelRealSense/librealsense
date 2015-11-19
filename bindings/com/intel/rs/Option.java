@@ -26,9 +26,8 @@ public enum Option
     R200_DEPTH_UNITS(21), // micrometers per increment in integer depth values, 1000 is default (mm scale)
     R200_DEPTH_CLAMP_MIN(22), // 0 - USHORT_MAX
     R200_DEPTH_CLAMP_MAX(23), // 0 - USHORT_MAX
-    R200_DISPARITY_MODE_ENABLED(24), // {0, 1}
-    R200_DISPARITY_MULTIPLIER(25),
-    R200_DISPARITY_SHIFT(26);
+    R200_DISPARITY_MULTIPLIER(24), // 0 - 1000, the increments in integer disparity values corresponding to one pixel of disparity
+    R200_DISPARITY_SHIFT(25);
     public final int code;
     private Option(int code) { this.code = code; }
 }

@@ -30,8 +30,12 @@ namespace rsimpl
 
     void             align_depth_to_color           (byte * depth_aligned_to_color, const uint16_t * depth_pixels, float depth_scale, const rs_intrinsics & depth_intrin, 
                                                      const rs_extrinsics & depth_to_color, const rs_intrinsics & color_intrin);
+    void             align_disparity_to_color       (byte * disparity_aligned_to_color, const uint16_t * disparity_pixels, float disparity_scale, const rs_intrinsics & disparity_intrin, 
+                                                     const rs_extrinsics & disparity_to_color, const rs_intrinsics & color_intrin);
     void             align_color_to_depth           (byte * color_aligned_to_depth, const uint16_t * depth_pixels, float depth_scale, const rs_intrinsics & depth_intrin, 
                                                      const rs_extrinsics & depth_to_color, const rs_intrinsics & color_intrin, const byte * color_pixels, rs_format color_format);
+    void             align_color_to_disparity       (byte * color_aligned_to_disparity, const uint16_t * disparity_pixels, float disparity_scale, const rs_intrinsics & disparity_intrin, 
+                                                     const rs_extrinsics & disparity_to_color, const rs_intrinsics & color_intrin, const byte * color_pixels, rs_format color_format);
 
     std::vector<int> compute_rectification_table    (const rs_intrinsics & rect_intrin, const rs_extrinsics & rect_to_unrect, const rs_intrinsics & unrect_intrin);
     void             rectify_image                  (byte * rect_pixels, const std::vector<int> & rectification_table, const byte * unrect_pixels, rs_format format);

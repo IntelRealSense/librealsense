@@ -25,16 +25,17 @@ namespace rs
 
     enum class format : int32_t
     {
-        any   = 0, 
-        z16   = 1, 
-        yuyv  = 2, 
-        rgb8  = 3, 
-        bgr8  = 4, 
-        rgba8 = 5, 
-        bgra8 = 6, 
-        y8    = 7, 
-        y16   = 8, 
-        raw10 = 9  ///< Four 10-bit luminance values encoded into a 5-byte macropixel
+        any         = 0, 
+        z16         = 1, ///< 16 bit linear depth values. The depth is meters is equal to depth scale * pixel value
+        disparity16 = 2, ///< 16 bit linear disparity values. The depth in meters is equal to depth scale / pixel value
+        yuyv        = 3, 
+        rgb8        = 4, 
+        bgr8        = 5, 
+        rgba8       = 6, 
+        bgra8       = 7, 
+        y8          = 8, 
+        y16         = 9, 
+        raw10       = 10 ///< Four 10-bit luminance values encoded into a 5-byte macropixel
     };
 
     enum class preset : int32_t
@@ -77,9 +78,8 @@ namespace rs
         r200_depth_units              = 21, ///< micrometers per increment in integer depth values, 1000 is default (mm scale)
         r200_depth_clamp_min          = 22, ///< 0 - USHORT_MAX
         r200_depth_clamp_max          = 23, ///< 0 - USHORT_MAX
-        r200_disparity_mode_enabled   = 24, ///< {0, 1}
-        r200_disparity_multiplier     = 25, 
-        r200_disparity_shift          = 26  
+        r200_disparity_multiplier     = 24, ///< 0 - 1000, the increments in integer disparity values corresponding to one pixel of disparity
+        r200_disparity_shift          = 25  
     };
 
     struct float2 { float x,y; };
