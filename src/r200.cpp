@@ -70,7 +70,7 @@ namespace rsimpl
     r200_camera::r200_camera(std::shared_ptr<uvc::device> device, const static_device_info & info, std::vector<rs_intrinsics> intrinsics, std::vector<rs_intrinsics> rect_intrinsics) : rs_device(device, info)
     {
         config.intrinsics.set(intrinsics, rect_intrinsics);
-        config.depth_scale = (float)get_xu_option(RS_OPTION_R200_DEPTH_UNITS) / 1000000; // Convert from micrometers to meters
+        on_update_depth_units(get_xu_option(RS_OPTION_R200_DEPTH_UNITS));
     }
     
     r200_camera::~r200_camera()
@@ -205,6 +205,26 @@ namespace rsimpl
         return std::make_shared<r200_camera>(device, info, intrinsics, rect_intrinsics);
     }
 
+    bool r200_camera::is_disparity_mode_enabled() const
+    {
+        auto & depth = get_stream_interface(RS_STREAM_DEPTH);
+        return depth.is_enabled() && depth.get_format() == RS_FORMAT_DISPARITY16;
+    }
+
+    void r200_camera::on_update_depth_units(int units)
+    {
+        if(is_disparity_mode_enabled()) return;
+        config.depth_scale = (float)units / 1000000; // Convert from micrometers to meters
+    }
+
+    void r200_camera::on_update_disparity_multiplier(float multiplier)
+    {
+        if(!is_disparity_mode_enabled()) return;
+        auto & depth = get_stream_interface(RS_STREAM_DEPTH);
+        float baseline = get_stream_interface(RS_STREAM_INFRARED2).get_extrinsics_to(depth).translation[0];
+        config.depth_scale = depth.get_intrinsics().fx * baseline * multiplier;
+    }
+
     void r200_camera::on_before_start(const std::vector<subdevice_mode> & selected_modes)
     {
         uint8_t streamIntent = 0;
@@ -223,12 +243,11 @@ namespace rsimpl
                 default: throw std::logic_error("unsupported R200 depth format");
                 case RS_FORMAT_Z16: 
                     dm.is_disparity_enabled = 0;
-                    config.depth_scale = (float)get_xu_option(RS_OPTION_R200_DEPTH_UNITS) / 1000000; // Convert from micrometers to meters
+                    on_update_depth_units(get_xu_option(RS_OPTION_R200_DEPTH_UNITS));
                     break;
                 case RS_FORMAT_DISPARITY16: 
-                    dm.is_disparity_enabled = 1; 
-                    float baseline = get_stream_interface(RS_STREAM_INFRARED2).get_extrinsics_to(get_stream_interface(RS_STREAM_INFRARED)).translation[0];
-                    config.depth_scale = config.intrinsics.get(m.streams[0].intrinsics_index).fx * baseline * dm.disparity_multiplier;
+                    dm.is_disparity_enabled = 1;
+                    on_update_disparity_multiplier(dm.disparity_multiplier);
                     break;
                 }
                 r200::set_disparity_mode(get_device(), dm);
@@ -291,7 +310,7 @@ namespace rsimpl
             break;
         case RS_OPTION_R200_DEPTH_UNITS:
             r200::set_depth_units(get_device(), value);
-            config.depth_scale = (float)value / 1000000; // Convert from micrometers to meters
+            on_update_depth_units(value);
             break;
         case RS_OPTION_R200_DEPTH_CLAMP_MIN:
             r200::get_min_max_depth(get_device(), u16[0], u16[1]);
@@ -305,6 +324,7 @@ namespace rsimpl
             r200::get_disparity_mode(get_device(), dm);
             dm.disparity_multiplier = value;
             r200::set_disparity_mode(get_device(), dm);
+            on_update_disparity_multiplier(value);
             break;
         case RS_OPTION_R200_DISPARITY_SHIFT:
             r200::set_disparity_shift(get_device(), value);
