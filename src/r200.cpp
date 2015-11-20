@@ -270,6 +270,16 @@ namespace rsimpl
         return static_cast<int>(timestamp * 1000 / max_fps);
     }
 
+    int r200_camera::get_lr_framerate() const
+    {
+        for(auto s : {RS_STREAM_DEPTH, RS_STREAM_INFRARED, RS_STREAM_INFRARED2})
+        {
+            auto & stream = get_stream_interface(s);
+            if(stream.is_enabled()) return stream.get_framerate();
+        }
+        return 30;
+    }
+
     void r200_camera::set_xu_option(rs_option option, int value)
     {
         if(is_capturing())
@@ -295,12 +305,10 @@ namespace rsimpl
             r200::set_lr_exposure_mode(get_device(), value);
             break;
         case RS_OPTION_R200_LR_GAIN:
-            r200::get_lr_gain(get_device(), u32[0], u32[1]);
-            r200::set_lr_gain(get_device(), u32[0], value);
+            r200::set_lr_gain(get_device(), get_lr_framerate(), value); // TODO: May need to set this on start if framerate changes
             break;
         case RS_OPTION_R200_LR_EXPOSURE:
-            r200::get_lr_exposure(get_device(), u32[0], u32[1]);
-            r200::set_lr_exposure(get_device(), u32[0], value);
+            r200::set_lr_exposure(get_device(), get_lr_framerate(), value); // TODO: May need to set this on start if framerate changes
             break;
         case RS_OPTION_R200_EMITTER_ENABLED:
             r200::set_emitter_state(get_device(), !!value);

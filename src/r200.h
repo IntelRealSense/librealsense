@@ -11,6 +11,7 @@ namespace rsimpl
         bool is_disparity_mode_enabled() const;
         void on_update_depth_units(int units);
         void on_update_disparity_multiplier(float multiplier);
+        int get_lr_framerate() const;
     public:
         r200_camera(std::shared_ptr<uvc::device> device, const static_device_info & info, std::vector<rs_intrinsics> intrinsics, std::vector<rs_intrinsics> rect_intrinsics);
         ~r200_camera();
