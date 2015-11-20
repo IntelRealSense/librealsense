@@ -173,6 +173,8 @@ October 20th, 2015
 7. New stream mode: DEPTH_ALIGNED_TO_RECTIFIED_COLOR – Maps data coming from the DEPTH stream to match the intrinsic and extrinsic camera properties of the DEPTH stream.
   * Suitable for pre-loading the depth map for augmented reality rendering, or performing tracking that needs to be pixel accurate with the RECTIFIED_COLOR image.
 
----
+## License
+
+Please refer to the LICENSE file for details regarding terms of the pre-release evaulation license.
 
 Copyright © 2015 Intel Corporation. All rights reserved.
