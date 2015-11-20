@@ -598,7 +598,24 @@ TEST_CASE( "R200 supports RS_OPTION_R200_DEPTH_CONTROL_PRESET", "[live] [r200]" 
 
 TEST_CASE( "R200 supports RS_OPTION_R200_DEPTH_UNITS", "[live] [r200]" )
 {
-    test_r200_option(RS_OPTION_R200_DEPTH_UNITS, {250, 500, 1000, 2000, 5000, 10000}, BEFORE_START_DEVICE);
+    safe_context ctx;   
+    REQUIRE(rs_get_device_count(ctx, require_no_error()) == 1);
+
+    rs_device * dev = rs_get_device(ctx, 0, require_no_error());
+    REQUIRE(dev != nullptr);
+    REQUIRE(rs_get_device_name(dev, require_no_error()) == std::string("Intel RealSense R200"));
+
+    // By default, depth unit is 1000 micrometers (1 mm)
+    REQUIRE(rs_get_device_option(dev, RS_OPTION_R200_DEPTH_UNITS, require_no_error()) == 1000);
+    REQUIRE(rs_get_device_depth_scale(dev, require_no_error()) == 0.001f);
+
+    for(int value : {100, 500, 1000, 2000, 10000})
+    {
+        // Set depth units (specified in micrometers) and verify that depth scale (specified in meters) changes appropriately
+        rs_set_device_option(dev, RS_OPTION_R200_DEPTH_UNITS, value, require_no_error());
+        REQUIRE(rs_get_device_option(dev, RS_OPTION_R200_DEPTH_UNITS, require_no_error()) == value);
+        REQUIRE(rs_get_device_depth_scale(dev, require_no_error()) == (float)value/1000000);
+    }
 }
 
 TEST_CASE( "R200 supports RS_OPTION_R200_DEPTH_CLAMP_MIN", "[live] [r200]" )

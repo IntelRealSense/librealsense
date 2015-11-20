@@ -15,22 +15,23 @@
 
 namespace rsimpl
 {
-    template<void (*UNPACKER)(byte * dest[], const byte * source, const subdevice_mode & mode)> 
-    void crop_unpack(byte * dest[], const byte * source, const subdevice_mode & mode)
+    template<void (*UNPACKER)(byte * const dest[], const byte * source, const subdevice_mode & mode)> 
+    void crop_unpack(byte * const dest[], const byte * source, const subdevice_mode & mode)
     {
         UNPACKER(dest, source + mode.pf->get_crop_offset(mode.width, 6), mode);
     }
 
     static int amount = 0;
 
-    template<void (*UNPACKER)(byte * dest[], const byte * source, const subdevice_mode & mode)> 
-    void pad_unpack(byte * dest[], const byte * source, const subdevice_mode & mode)
+    template<void (*UNPACKER)(byte * const dest[], const byte * source, const subdevice_mode & mode)> 
+    void pad_unpack(byte * const dest[], const byte * source, const subdevice_mode & mode)
     {
-        dest[0] += get_image_size(mode.streams[0].width, 6, mode.streams[0].format) + get_image_size(6, 1, mode.streams[0].format);
-        UNPACKER(dest, source, mode);
+        assert(mode.streams.size() == 1);
+        byte * out = dest[0] + get_image_size(mode.streams[0].width, 6, mode.streams[0].format) + get_image_size(6, 1, mode.streams[0].format);
+        UNPACKER(&out, source, mode);
 
         // Erase Dinghy, which will get copied over when blitting into a padded buffer
-        memset(dest[0] + get_image_size(mode.streams[0].width, mode.height-1, RS_FORMAT_Z16), 0, mode.width*2);
+        memset(out + get_image_size(mode.streams[0].width, mode.height-1, RS_FORMAT_Z16), 0, get_image_size(mode.width, 1, mode.streams[0].format));
     }
 
     template<unsigned MAGIC_NUMBER>
@@ -77,6 +78,7 @@ namespace rsimpl
     r200_camera::r200_camera(std::shared_ptr<uvc::device> device, const static_device_info & info, std::vector<rs_intrinsics> intrinsics, std::vector<rs_intrinsics> rect_intrinsics) : rs_device(device, info)
     {
         config.intrinsics.set(intrinsics, rect_intrinsics);
+        config.depth_scale = (float)get_xu_option(RS_OPTION_R200_DEPTH_UNITS) / 1000000; // Convert from micrometers to meters
     }
     
     r200_camera::~r200_camera()
@@ -199,7 +201,7 @@ namespace rsimpl
 
         // Our position is added AFTER orientation is applied, not before, so we must multiply Rthird * T to compute it
         info.stream_poses[RS_STREAM_COLOR].position = info.stream_poses[RS_STREAM_COLOR].orientation * info.stream_poses[RS_STREAM_COLOR].position;
-        info.depth_scale = 0.001f;
+        info.nominal_depth_scale = 0.001f;
         info.serial = std::to_string(h.serialNumber);
         info.firmware_version = r200::read_firmware_version(*device);
 
@@ -281,6 +283,7 @@ namespace rsimpl
             break;
         case RS_OPTION_R200_DEPTH_UNITS:
             r200::set_depth_units(get_device(), value);
+            config.depth_scale = (float)value / 1000000; // Convert from micrometers to meters
             break;
         case RS_OPTION_R200_DEPTH_CLAMP_MIN:
             r200::get_min_max_depth(get_device(), u16[0], u16[1]);

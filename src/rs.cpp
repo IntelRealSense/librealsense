@@ -130,9 +130,8 @@ void rs_get_stream_mode(const rs_device * device, rs_stream stream, int index, i
 {
     VALIDATE_NOT_NULL(device);
     VALIDATE_ENUM(stream);
-    auto & s = device->get_stream_interface(stream);
-    VALIDATE_RANGE(index, 0, s.get_mode_count()-1);
-    auto & m = s.get_mode(index);
+    VALIDATE_RANGE(index, 0, device->get_stream_interface(stream).get_mode_count()-1);
+    auto & m = device->get_stream_interface(stream).get_mode(index);
     if(width) *width = m.width;
     if(height) *height = m.height;
     if(format) *format = m.format;

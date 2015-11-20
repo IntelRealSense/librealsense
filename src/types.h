@@ -117,7 +117,7 @@ namespace rsimpl
         const native_pixel_format * pf;     // Pixel format advertised over UVC
         int fps;                            // Framerate advertised over UVC
         std::vector<stream_mode> streams;   // Modes for streams which can be supported by this device mode
-        void (* unpacker)(byte * dest[], const byte * source, const subdevice_mode & mode);
+        void (* unpacker)(byte * const dest[], const byte * source, const subdevice_mode & mode);
         int (* frame_number_decoder)(const subdevice_mode & mode, const void * frame);
         bool use_serial_numbers_if_unique;  // If true, ignore frame_number_decoder and use a serial frame count if this is the only mode set
     };
@@ -138,10 +138,10 @@ namespace rsimpl
         stream_request presets[RS_STREAM_NATIVE_COUNT][RS_PRESET_COUNT];    // Presets available for each stream
         bool option_supported[RS_OPTION_COUNT];                             // Whether or not a given option is supported on this camera
         pose stream_poses[RS_STREAM_NATIVE_COUNT];                          // Static pose of each camera on the device
-        float depth_scale;                                                  // Scale of depth values
         int num_libuvc_transfer_buffers;                                    // Number of transfer buffers to use in LibUVC backend
         std::string firmware_version;                                       // Firmware version string
         std::string serial;                                                 // Serial number of the camera (from USB or from SPI memory)
+        float nominal_depth_scale;                                          // Default scale
 
         static_device_info();
 
@@ -247,8 +247,9 @@ namespace rsimpl
         const static_device_info            info;
         intrinsics_buffer                   intrinsics;
         stream_request                      requests[RS_STREAM_NATIVE_COUNT];  // Modified by enable/disable_stream calls
+        float                               depth_scale;                       // Scale of depth values
 
-                                            device_config(const rsimpl::static_device_info & info) : info(info) { for(auto & req : requests) req = rsimpl::stream_request(); }
+                                            device_config(const rsimpl::static_device_info & info) : info(info), depth_scale(info.nominal_depth_scale) { for(auto & req : requests) req = rsimpl::stream_request(); }
 
         std::vector<subdevice_mode>         select_modes() const { return info.select_modes(requests); }
     };
