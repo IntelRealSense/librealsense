@@ -35,7 +35,7 @@ struct font
     stbtt_bakedchar cdata[96]; // ASCII 32..126 is 95 glyph
 };
 
-static struct font ttf_create(FILE * f)
+static struct font ttf_create(FILE * f, float height)
 {
     int buffer_size;
     void * buffer;
@@ -49,7 +49,7 @@ static struct font ttf_create(FILE * f)
     fseek(f, 0, SEEK_SET);
     fread(buffer, 1, buffer_size, f);
     
-    stbtt_BakeFontBitmap((unsigned char*)buffer,0, 20.0, temp_bitmap, 512,512, 32,96, fn.cdata); // no guarantee this fits!
+    stbtt_BakeFontBitmap((unsigned char*)buffer,0, height, temp_bitmap, 512,512, 32,96, fn.cdata); // no guarantee this fits!
     free(buffer);
     
     glGenTextures(1, &fn.tex);

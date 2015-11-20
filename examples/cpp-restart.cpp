@@ -26,7 +26,7 @@ int main(int argc, char * argv[]) try
     // Load our truetype font
     if (auto f = find_file("examples/assets/Roboto-Bold.ttf", 3))
     {
-        font = ttf_create(f);
+        font = ttf_create(f,20);
         fclose(f);
     }
     else throw std::runtime_error("Unable to open examples/assets/Roboto-Bold.ttf");

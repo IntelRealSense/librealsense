@@ -107,7 +107,7 @@ int main(int argc, char * argv[])
     FILE * fontFile = 0;
     if ((fontFile = find_file("examples/assets/Roboto-Bold.ttf", 3)))
     {
-        font = ttf_create(fontFile);
+        font = ttf_create(fontFile,20);
         fclose(fontFile);
     }
     else
