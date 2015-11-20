@@ -248,7 +248,7 @@ const byte * rs_device::get_frame_data(rs_stream stream) const
 void rs_device::get_option_range(rs_option option, int * min, int * max) const
 {
     if(!supports_option(option)) throw std::runtime_error(to_string() << "option not supported by this device - " << option);
-    if(option >= RS_OPTION_COLOR_ENABLE_AUTO_CONTRAST && option <= RS_OPTION_COLOR_ENABLE_AUTO_WHITE_BALANCE)
+    if(option >= RS_OPTION_COLOR_ENABLE_AUTO_EXPOSURE && option <= RS_OPTION_COLOR_ENABLE_AUTO_WHITE_BALANCE)
     {
         if(min) *min = 0;
         if(max) *max = 1;

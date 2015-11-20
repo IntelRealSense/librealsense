@@ -482,6 +482,8 @@ namespace rsimpl
 
         void get_control(const device & device, int subdevice, uint8_t ctrl, void *data, int len)
         {
+            if(!device.subdevices[subdevice].ks_control) const_cast<uvc::device &>(device).get_media_source(subdevice); // TODO: This should actually happen somewhere else
+
             KSP_NODE node;
             memset(&node, 0, sizeof(KSP_NODE));
             node.Property.Set = device.subdevices[subdevice].ks_property_set; //{0x18682d34, 0xdd2c, 0x4073, {0xad, 0x23, 0x72, 0x14, 0x73, 0x9a, 0x07, 0x4c}}; // GUID_EXTENSION_UNIT_DESCRIPTOR
@@ -579,7 +581,6 @@ namespace rsimpl
             {RS_OPTION_COLOR_SATURATION, VideoProcAmp_Saturation},
             {RS_OPTION_COLOR_SHARPNESS, VideoProcAmp_Sharpness},
             {RS_OPTION_COLOR_WHITE_BALANCE, VideoProcAmp_WhiteBalance},
-            {RS_OPTION_COLOR_ENABLE_AUTO_CONTRAST, VideoProcAmp_Contrast, true},
             {RS_OPTION_COLOR_ENABLE_AUTO_HUE, VideoProcAmp_Hue, true},
             {RS_OPTION_COLOR_ENABLE_AUTO_WHITE_BALANCE, VideoProcAmp_WhiteBalance, true},
         };

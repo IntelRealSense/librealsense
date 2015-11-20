@@ -146,7 +146,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\examples\cpp-config.cpp" />
+    <ClCompile Include="..\..\examples\cpp-config-ui.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

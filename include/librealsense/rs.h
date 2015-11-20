@@ -25,17 +25,16 @@ typedef enum rs_format
 {
     RS_FORMAT_ANY         = 0,  
     RS_FORMAT_Z16         = 1,  /**< 16 bit linear depth values. The depth is meters is equal to depth scale * pixel value */
-    RS_FORMAT_XYZ32F      = 2,  /**< 32 bit floating point 3D coordinates. The depth in meters is equal to the Z coordinate */
-    RS_FORMAT_DISPARITY16 = 3,  /**< 16 bit linear disparity values. The depth in meters is equal to depth scale / pixel value */
-    RS_FORMAT_YUYV        = 4,  
-    RS_FORMAT_RGB8        = 5,  
-    RS_FORMAT_BGR8        = 6,  
-    RS_FORMAT_RGBA8       = 7,  
-    RS_FORMAT_BGRA8       = 8,  
-    RS_FORMAT_Y8          = 9,  
-    RS_FORMAT_Y16         = 10, 
-    RS_FORMAT_RAW10       = 11, /**< Four 10-bit luminance values encoded into a 5-byte macropixel */
-    RS_FORMAT_COUNT       = 12, 
+    RS_FORMAT_DISPARITY16 = 2,  /**< 16 bit linear disparity values. The depth in meters is equal to depth scale / pixel value */
+    RS_FORMAT_YUYV        = 3,  
+    RS_FORMAT_RGB8        = 4,  
+    RS_FORMAT_BGR8        = 5,  
+    RS_FORMAT_RGBA8       = 6,  
+    RS_FORMAT_BGRA8       = 7,  
+    RS_FORMAT_Y8          = 8,  
+    RS_FORMAT_Y16         = 9,  
+    RS_FORMAT_RAW10       = 10, /**< Four 10-bit luminance values encoded into a 5-byte macropixel */
+    RS_FORMAT_COUNT       = 11, 
     RS_FORMAT_MAX_ENUM = 0x7FFFFFFF
 } rs_format;
 
@@ -61,7 +60,7 @@ typedef enum rs_option
 {
     RS_OPTION_COLOR_BACKLIGHT_COMPENSATION    = 0,  
     RS_OPTION_COLOR_BRIGHTNESS                = 1,  
-    RS_OPTION_COLOR_CONTRAST                  = 2,  /**< Controls contrast of color image. Setting any value will disable auto contrast. */
+    RS_OPTION_COLOR_CONTRAST                  = 2,  
     RS_OPTION_COLOR_EXPOSURE                  = 3,  /**< Controls exposure time of color camera. Setting any value will disable auto exposure. */
     RS_OPTION_COLOR_GAIN                      = 4,  
     RS_OPTION_COLOR_GAMMA                     = 5,  
@@ -69,27 +68,26 @@ typedef enum rs_option
     RS_OPTION_COLOR_SATURATION                = 7,  
     RS_OPTION_COLOR_SHARPNESS                 = 8,  
     RS_OPTION_COLOR_WHITE_BALANCE             = 9,  /**< Controls white balance of color image. Setting any value will disable auto white balance. */
-    RS_OPTION_COLOR_ENABLE_AUTO_CONTRAST      = 10, /**< Set to 1 to enable automatic contrast control, or 0 to return to manual control */
-    RS_OPTION_COLOR_ENABLE_AUTO_EXPOSURE      = 11, /**< Set to 1 to enable automatic exposure control, or 0 to return to manual control */
-    RS_OPTION_COLOR_ENABLE_AUTO_HUE           = 12, /**< Set to 1 to enable automatic hue control, or 0 to return to manual control */
-    RS_OPTION_COLOR_ENABLE_AUTO_WHITE_BALANCE = 13, /**< Set to 1 to enable automatic white balance control, or 0 to return to manual control */
-    RS_OPTION_F200_LASER_POWER                = 14, /**< 0 - 15 */
-    RS_OPTION_F200_ACCURACY                   = 15, /**< 0 - 3 */
-    RS_OPTION_F200_MOTION_RANGE               = 16, /**< 0 - 100 */
-    RS_OPTION_F200_FILTER_OPTION              = 17, /**< 0 - 7 */
-    RS_OPTION_F200_CONFIDENCE_THRESHOLD       = 18, /**< 0 - 15 */
-    RS_OPTION_F200_DYNAMIC_FPS                = 19, /**< {2, 5, 15, 30, 60} */
-    RS_OPTION_R200_LR_AUTO_EXPOSURE_ENABLED   = 20, /**< {0, 1} */
-    RS_OPTION_R200_LR_GAIN                    = 21, /**< 100 - 1600 (Units of 0.01) */
-    RS_OPTION_R200_LR_EXPOSURE                = 22, /**< > 0 (Units of 0.1 ms) */
-    RS_OPTION_R200_EMITTER_ENABLED            = 23, /**< {0, 1} */
-    RS_OPTION_R200_DEPTH_CONTROL_PRESET       = 24, /**< 0 - 5, 0 is default, 1-5 is low to high outlier rejection */
-    RS_OPTION_R200_DEPTH_UNITS                = 25, /**< micrometers per increment in integer depth values, 1000 is default (mm scale) */
-    RS_OPTION_R200_DEPTH_CLAMP_MIN            = 26, /**< 0 - USHORT_MAX */
-    RS_OPTION_R200_DEPTH_CLAMP_MAX            = 27, /**< 0 - USHORT_MAX */
-    RS_OPTION_R200_DISPARITY_MULTIPLIER       = 28, /**< 0 - 1000, the increments in integer disparity values corresponding to one pixel of disparity */
-    RS_OPTION_R200_DISPARITY_SHIFT            = 29, 
-    RS_OPTION_COUNT                           = 30, 
+    RS_OPTION_COLOR_ENABLE_AUTO_EXPOSURE      = 10, /**< Set to 1 to enable automatic exposure control, or 0 to return to manual control */
+    RS_OPTION_COLOR_ENABLE_AUTO_HUE           = 11, /**< Set to 1 to enable automatic hue control, or 0 to return to manual control */
+    RS_OPTION_COLOR_ENABLE_AUTO_WHITE_BALANCE = 12, /**< Set to 1 to enable automatic white balance control, or 0 to return to manual control */
+    RS_OPTION_F200_LASER_POWER                = 13, /**< 0 - 15 */
+    RS_OPTION_F200_ACCURACY                   = 14, /**< 0 - 3 */
+    RS_OPTION_F200_MOTION_RANGE               = 15, /**< 0 - 100 */
+    RS_OPTION_F200_FILTER_OPTION              = 16, /**< 0 - 7 */
+    RS_OPTION_F200_CONFIDENCE_THRESHOLD       = 17, /**< 0 - 15 */
+    RS_OPTION_F200_DYNAMIC_FPS                = 18, /**< {2, 5, 15, 30, 60} */
+    RS_OPTION_R200_LR_AUTO_EXPOSURE_ENABLED   = 19, /**< {0, 1} */
+    RS_OPTION_R200_LR_GAIN                    = 20, /**< 100 - 1600 (Units of 0.01) */
+    RS_OPTION_R200_LR_EXPOSURE                = 21, /**< > 0 (Units of 0.1 ms) */
+    RS_OPTION_R200_EMITTER_ENABLED            = 22, /**< {0, 1} */
+    RS_OPTION_R200_DEPTH_CONTROL_PRESET       = 23, /**< 0 - 5, 0 is default, 1-5 is low to high outlier rejection */
+    RS_OPTION_R200_DEPTH_UNITS                = 24, /**< micrometers per increment in integer depth values, 1000 is default (mm scale) */
+    RS_OPTION_R200_DEPTH_CLAMP_MIN            = 25, /**< 0 - USHORT_MAX */
+    RS_OPTION_R200_DEPTH_CLAMP_MAX            = 26, /**< 0 - USHORT_MAX */
+    RS_OPTION_R200_DISPARITY_MULTIPLIER       = 27, /**< 0 - 1000, the increments in integer disparity values corresponding to one pixel of disparity */
+    RS_OPTION_R200_DISPARITY_SHIFT            = 28, 
+    RS_OPTION_COUNT                           = 29, 
     RS_OPTION_MAX_ENUM = 0x7FFFFFFF
 } rs_option;
 

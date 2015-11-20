@@ -25,18 +25,17 @@ namespace rs
 
     enum class format : int32_t
     {
-        any         = 0,  
-        z16         = 1,  ///< 16 bit linear depth values. The depth is meters is equal to depth scale * pixel value
-        xyz32f      = 2,  ///< 32 bit floating point 3D coordinates. The depth in meters is equal to the Z coordinate
-        disparity16 = 3,  ///< 16 bit linear disparity values. The depth in meters is equal to depth scale / pixel value
-        yuyv        = 4,  
-        rgb8        = 5,  
-        bgr8        = 6,  
-        rgba8       = 7,  
-        bgra8       = 8,  
-        y8          = 9,  
-        y16         = 10, 
-        raw10       = 11  ///< Four 10-bit luminance values encoded into a 5-byte macropixel
+        any         = 0, 
+        z16         = 1, ///< 16 bit linear depth values. The depth is meters is equal to depth scale * pixel value
+        disparity16 = 2, ///< 16 bit linear disparity values. The depth in meters is equal to depth scale / pixel value
+        yuyv        = 3, 
+        rgb8        = 4, 
+        bgr8        = 5, 
+        rgba8       = 6, 
+        bgra8       = 7, 
+        y8          = 8, 
+        y16         = 9, 
+        raw10       = 10 ///< Four 10-bit luminance values encoded into a 5-byte macropixel
     };
 
     enum class preset : int32_t
@@ -57,7 +56,7 @@ namespace rs
     {
         color_backlight_compensation    = 0,  
         color_brightness                = 1,  
-        color_contrast                  = 2,  ///< Controls contrast of color image. Setting any value will disable auto contrast.
+        color_contrast                  = 2,  
         color_exposure                  = 3,  ///< Controls exposure time of color camera. Setting any value will disable auto exposure.
         color_gain                      = 4,  
         color_gamma                     = 5,  
@@ -65,26 +64,25 @@ namespace rs
         color_saturation                = 7,  
         color_sharpness                 = 8,  
         color_white_balance             = 9,  ///< Controls white balance of color image. Setting any value will disable auto white balance.
-        color_enable_auto_contrast      = 10, ///< Set to 1 to enable automatic contrast control, or 0 to return to manual control
-        color_enable_auto_exposure      = 11, ///< Set to 1 to enable automatic exposure control, or 0 to return to manual control
-        color_enable_auto_hue           = 12, ///< Set to 1 to enable automatic hue control, or 0 to return to manual control
-        color_enable_auto_white_balance = 13, ///< Set to 1 to enable automatic white balance control, or 0 to return to manual control
-        f200_laser_power                = 14, ///< 0 - 15
-        f200_accuracy                   = 15, ///< 0 - 3
-        f200_motion_range               = 16, ///< 0 - 100
-        f200_filter_option              = 17, ///< 0 - 7
-        f200_confidence_threshold       = 18, ///< 0 - 15
-        f200_dynamic_fps                = 19, ///< {2, 5, 15, 30, 60}
-        r200_lr_auto_exposure_enabled   = 20, ///< {0, 1}
-        r200_lr_gain                    = 21, ///< 100 - 1600 (Units of 0.01)
-        r200_lr_exposure                = 22, ///< > 0 (Units of 0.1 ms)
-        r200_emitter_enabled            = 23, ///< {0, 1}
-        r200_depth_control_preset       = 24, ///< 0 - 5, 0 is default, 1-5 is low to high outlier rejection
-        r200_depth_units                = 25, ///< micrometers per increment in integer depth values, 1000 is default (mm scale)
-        r200_depth_clamp_min            = 26, ///< 0 - USHORT_MAX
-        r200_depth_clamp_max            = 27, ///< 0 - USHORT_MAX
-        r200_disparity_multiplier       = 28, ///< 0 - 1000, the increments in integer disparity values corresponding to one pixel of disparity
-        r200_disparity_shift            = 29  
+        color_enable_auto_exposure      = 10, ///< Set to 1 to enable automatic exposure control, or 0 to return to manual control
+        color_enable_auto_hue           = 11, ///< Set to 1 to enable automatic hue control, or 0 to return to manual control
+        color_enable_auto_white_balance = 12, ///< Set to 1 to enable automatic white balance control, or 0 to return to manual control
+        f200_laser_power                = 13, ///< 0 - 15
+        f200_accuracy                   = 14, ///< 0 - 3
+        f200_motion_range               = 15, ///< 0 - 100
+        f200_filter_option              = 16, ///< 0 - 7
+        f200_confidence_threshold       = 17, ///< 0 - 15
+        f200_dynamic_fps                = 18, ///< {2, 5, 15, 30, 60}
+        r200_lr_auto_exposure_enabled   = 19, ///< {0, 1}
+        r200_lr_gain                    = 20, ///< 100 - 1600 (Units of 0.01)
+        r200_lr_exposure                = 21, ///< > 0 (Units of 0.1 ms)
+        r200_emitter_enabled            = 22, ///< {0, 1}
+        r200_depth_control_preset       = 23, ///< 0 - 5, 0 is default, 1-5 is low to high outlier rejection
+        r200_depth_units                = 24, ///< micrometers per increment in integer depth values, 1000 is default (mm scale)
+        r200_depth_clamp_min            = 25, ///< 0 - USHORT_MAX
+        r200_depth_clamp_max            = 26, ///< 0 - USHORT_MAX
+        r200_disparity_multiplier       = 27, ///< 0 - 1000, the increments in integer disparity values corresponding to one pixel of disparity
+        r200_disparity_shift            = 28  
     };
 
     struct float2 { float x,y; };

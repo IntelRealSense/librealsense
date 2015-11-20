@@ -2,6 +2,7 @@
 #include "example.hpp"
 
 #include <cstdarg>
+#include <thread>
 #include <iostream>
 #include <algorithm>
 #pragma comment(lib, "opengl32.lib")
@@ -21,6 +22,8 @@ struct gui
     int2 cursor, clicked_offset, scroll_vec;
     bool click, mouse_down;
     int clicked_id;
+
+    gui() : scroll_vec({0,0}), click(), mouse_down(), clicked_id() {}
 
     void label(const int2 & p, const color & c, const char * format, ...)
     {
@@ -47,9 +50,9 @@ struct gui
     bool button(const rect & r, const std::string & label)
     {
         fill_rect(r, {1,1,1});
-        fill_rect(r.shrink(2), mouse_down && r.contains(cursor) ? color{0.3f,0.3f,0.3f} : color{0.5f,0.5f,0.5f});
+        fill_rect(r.shrink(2), r.contains(cursor) ? (mouse_down ? color{0.3f,0.3f,0.3f} : color{0.4f,0.4f,0.4f}) : color{0.5f,0.5f,0.5f});
         glColor3f(1,1,1);
-        ttf_print(&fn, r.x0 + 4, r.y1 - 5, label.c_str());
+        ttf_print(&fn, r.x0 + 4, r.y1 - 8, label.c_str());
         return click && r.contains(cursor);
     }
 
@@ -93,12 +96,10 @@ struct gui
 
     void vscroll(const rect & r, int client_height, int & offset)
     {
-        if(r.contains(cursor))
-        {
-            offset -= scroll_vec.y * 20;
-            offset = std::min(offset, client_height - (r.y1 - r.y0));
-            offset = std::max(offset, 0);            
-        }
+        if(r.contains(cursor)) offset -= scroll_vec.y * 20;
+        offset = std::min(offset, client_height - (r.y1 - r.y0));
+        offset = std::max(offset, 0);
+        if(client_height <= r.y1 - r.y0) return;
         auto bar = r; bar.x0 = bar.x1 - 10;
         auto dragger = bar;
         dragger.y0 = bar.y0 + offset * (r.y1 - r.y0) / client_height;
@@ -108,12 +109,14 @@ struct gui
     }
 };
 
+texture_buffer buffers[4];
+
 int main(int argc, char * argv[]) try
 {
     gui g;
 
     glfwInit();
-    auto win = glfwCreateWindow(640, 480, "CPP Configuration Example", nullptr, nullptr);
+    auto win = glfwCreateWindow(1550, 960, "CPP Configuration Example", nullptr, nullptr);
     glfwSetWindowUserPointer(win, &g);
     glfwSetCursorPosCallback(win, [](GLFWwindow * w, double cx, double cy) { reinterpret_cast<gui *>(glfwGetWindowUserPointer(w))->cursor = {(int)cx, (int)cy}; });
     glfwSetScrollCallback(win, [](GLFWwindow * w, double x, double y) { reinterpret_cast<gui *>(glfwGetWindowUserPointer(w))->scroll_vec = {(int)x, (int)y}; });
@@ -138,7 +141,14 @@ int main(int argc, char * argv[]) try
 
     rs::context ctx;
     if(ctx.get_device_count() < 1) throw std::runtime_error("No device found. Is it plugged in?");
+
     rs::device * dev = ctx.get_device(0);
+    dev->enable_stream(rs::stream::depth, rs::preset::best_quality);
+    dev->enable_stream(rs::stream::color, rs::preset::best_quality);
+    dev->enable_stream(rs::stream::infrared, rs::preset::best_quality);
+    try { dev->enable_stream(rs::stream::infrared2, rs::preset::best_quality); } catch(...) {}
+
+    //std::this_thread::sleep_for(std::chrono::seconds(1));
 
     struct option { rs::option opt; int min, max, value; };
     std::vector<option> options;
@@ -152,11 +162,12 @@ int main(int argc, char * argv[]) try
         options.push_back(o);
     }
 
-    int offset = 0;
+    int offset = 0, panel_height = 1;
     while(!glfwWindowShouldClose(win))
     {
         glfwPollEvents();
-
+        if(dev->is_streaming()) dev->wait_for_frames();
+        
         int w, h;
         glfwGetFramebufferSize(win, &w, &h);
         glViewport(0, 0, w, h);
@@ -166,14 +177,50 @@ int main(int argc, char * argv[]) try
         glLoadIdentity();
         glOrtho(0, w, h, 0, -1, +1);
 
-        g.vscroll({w-270, 0, w, h}, options.size()*38 + 20, offset);
+        g.vscroll({w-270, 0, w, h}, panel_height, offset);
         int y = 10 - offset;
+
+        if(dev->is_streaming())
+        {
+            if(g.button({w-260, y, w-20, y+24}, "Stop Capture")) dev->stop();
+        }
+        else
+        {
+            if(g.button({w-260, y, w-20, y+24}, "Start Capture")) dev->start();
+        }
+        y += 34;
+        if(!dev->is_streaming())
+        {
+            for(int i=0; i<4; ++i)
+            {
+                auto s = (rs::stream)i;
+                bool enable = dev->is_stream_enabled(s);
+                if(g.checkbox({w-260, y, w-240, y+20}, enable))
+                {
+                    if(enable) dev->enable_stream(s, rs::preset::best_quality);
+                    else dev->disable_stream(s);
+                }
+                g.label({w-234, y+13}, {1,1,1}, "Enable %s", rs_stream_to_string((rs_stream)i));
+                y += 30;
+            }
+        }
+
         for(auto & o : options)
         {
             std::ostringstream ss; ss << o.opt << ": " << o.value;
             g.label({w-260,y+12}, {1,1,1}, ss.str().c_str());
             if(g.slider((int)o.opt + 1, {w-260,y+16,w-20,y+36}, o.min, o.max, o.value)) dev->set_option(o.opt, o.value);
             y += 38;
+        }
+        panel_height = y + 10 + offset;
+        
+        if(dev->is_streaming())
+        {
+            w-=270;
+            buffers[0].show(*dev, rs::stream::color, 0, 0, w/2, h/2, g.fn);
+            buffers[1].show(*dev, rs::stream::depth, w/2, 0, w-w/2, h/2, g.fn);
+            buffers[2].show(*dev, rs::stream::infrared, 0, h/2, w/2, h-h/2, g.fn);
+            buffers[3].show(*dev, rs::stream::infrared2, w/2, h/2, w-w/2, h-h/2, g.fn);
         }
 
         glfwSwapBuffers(win);
