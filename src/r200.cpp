@@ -11,6 +11,7 @@
 #include "image.h"
 
 #include <cstring>
+#include <climits>
 #include <algorithm>
 
 namespace rsimpl

@@ -637,6 +637,13 @@ namespace rsimpl
 
         void get_pu_control_range(const device & device, int subdevice, rs_option option, int * min, int * max)
         {
+            if(option >= RS_OPTION_COLOR_ENABLE_AUTO_EXPOSURE && option <= RS_OPTION_COLOR_ENABLE_AUTO_WHITE_BALANCE)
+            {
+                if(min) *min = 0;
+                if(max) *max = 1;
+                return;
+            }
+
             auto & sub = device.subdevices[subdevice];
             long minVal=0, maxVal=0, steppingDelta=0, defVal=0, capsFlag=0;
             if(option == RS_OPTION_COLOR_EXPOSURE)
