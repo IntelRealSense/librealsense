@@ -86,7 +86,7 @@ Our intent is to provide bindings and wrappers for as many languages and framewo
     * Run the following script to patch uvcvideo.ko
         * `scripts/patch-uvcvideo-ko-generic.sh`
     * (R200 Only) Install connectivity workaround
-      * `sudo ./scripts/install-r200-udev-fix.sh`
+      * `cd scripts && ./install-r200-udev-fix.sh`
       * This udev fix is not necessary for kernels >= 4.2.3
   * **(OR) Updated 4.2.3 Unstable Kernel**
     * Install the 4.2.3 Kernel or move to step 2 if already installed. 
