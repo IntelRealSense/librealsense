@@ -145,7 +145,7 @@ libuvc is known to have issues with some versions of SR300 and R200 firmware (1.
 
 Documentation for librealsense is still incomplete, and may contain inaccuracies. Please send us feedback about things that are unclear or which need to be improved. For now, the following documentation is available:
   * [The librealsense C API](./include/librealsense/rs.h) - Doxygen style comments are provided for all functions, data types, and most constants
-  * [Projection in librealsense](./PROJECTION.md) - A guide on coordinate systems, calibration information, and projection APIs.
+  * [Projection in librealsense](./projection.md) - A guide on coordinate systems, calibration information, and projection APIs.
 
 ## Example Applications
 
