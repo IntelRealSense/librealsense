@@ -18,6 +18,9 @@
       location = "container:"
       name = "examples">
       <FileRef
+         location = "group:cpp-config-ui.xcodeproj">
+      </FileRef>
+      <FileRef
          location = "group:c-enumerate.xcodeproj">
       </FileRef>
       <FileRef
