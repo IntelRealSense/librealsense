@@ -82,3 +82,16 @@ It is not necessary to know what model of RealSense device is plugged in to succ
   * The two infrared streams have no distortion
   * There is no rotation between left and right infrared images (identity matrix)
   * There is translation on only one axis between left and right infrared images (`translation[1]` and `translation[2]` are zero)
+  * Therefore, the `y` component of pixel coordinates can be used interchangeably between these two streams
+
+4. R200 depth images are pixel aligned with the first infrared stream except for an optional 6 pixel offset
+  * Native depth images are six pixels smaller on all four sides, but are otherwise pixel aligned with infrared
+  * `librealsense` will pad the depth image or crop the infrared image if you request matching resolutions
+  * If you request matching resolutions, depth and infrared will use the exact same intrinsics
+  * If not, pixel coordinates can be mapped by adding or subtracting six pixels from both components
+
+5. R200 color images use Modified Brown-Conrady Distortion, but can be rectified in software
+  * Request frames from the rectified color stream to received images with no distortion
+  * There is no rotation between depth/infrared and rectified color (identity matrix)
+  * There can be translation in all three axes between depth/infrared and rectified color
+  * Therefore, the `x` and `y` component of pixel coordinates can be mapped independently between depth/infrared and rectified color
