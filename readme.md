@@ -16,6 +16,7 @@ Dependency management for GLFW3 (example apps) and libusb-1.0 is performed throu
   * [OSX](#apple-osx)
   * [Windows](#windows-81)
 * [FAQ](#faq)
+* [Documentation](#documentation)
 * [Example Applications](#example-applications)
 * [Developer Notes](#dev-notes)
 
@@ -139,6 +140,12 @@ libuvc is known to have issues with some versions of SR300 and R200 firmware (1.
   * A `libuvc` backend which provides user-space access to UVC devices on Linux and Mac OS X (built with libusb)
   * A `video4linux2` backend which provides kernel-space access to UVC devices on Linux
   * A `Windows Media Foundation` backend which provides kernel-space access to UVC devices on Windows
+
+## Documentation
+
+Documentation for librealsense is still incomplete, and may contain inaccuracies. Please send us feedback about things that are unclear or which need to be improved. For now, the following documentation is available:
+  * [The librealsense C API](./include/librealsense/rs.h) - Doxygen style comments are provided for all functions, data types, and most constants
+  * [Projection in librealsense](./PROJECTION.md) - A guide on coordinate systems, calibration information, and projection APIs.
 
 ## Example Applications
 
