@@ -32,6 +32,8 @@ Knowing the intrinsic camera parameters of an images allows you to carry out two
 2. Deprojection
   * Deprojection takes a 2D pixel location on a stream's images, as well as a depth, specified in meters, and maps it to a 3D point location within the stream's associated 3D coordinate space. It is provided by the header-only function `rs_deproject_pixel_to_point`.
 
+Intrinsic parameters can be retrieved via a call to `rs_get_stream_intrinsics` for any stream which has been enabled with a call to `rs_enable_stream` or `rs_enable_stream_preset`. This is because the intrinsic parameters may be different depending on the resolution/aspect ratio of the requested images.
+
 ### Distortion models
 
 Based on the design of each model of RealSense device, the different streams may be exposed via different distortion models.
@@ -44,3 +46,18 @@ Based on the design of each model of RealSense device, the different streams may
   * An image is distorted, and has been calibrated according to the inverse of the Brown-Conrady Distortion model. This model provides a closed-form formula to map from distorted points to undistored points, while mapping in the other direction requires iteration or lookup tables. Therefore, images with Inverse Brown-Conrady Distortion can only be used with `rs_pderoject_pixel_to_point`. This model is used by the RealSense F200 and SR300's depth and infrared image streams.
 
 Although it is inconvenient that projection and deprojection cannot always be applied to an image, the inconvenience is minimized by the fact that RealSense devices always support calling `rs_project_deprojection from depth images, and always support projection to color images. Therefore, it is always possible to map a depth image into a set of 3D points (a point cloud), and it is always possible to discover where a 3D object would appear on the color image.
+
+## Extrinsic camera parameters
+
+The 3D coordinate systems of each stream may in general be distinct. For instance, it is common for depth to be generated from one or more infrared imagers, while the color stream is provided by a separate color imager. The relationship between the separate 3D coordinate systems of separate streams is described by their extrinsic parameters, contained in the `rs_extrinsics` struct. The basic set of assumptions is described below:
+
+1. Imagers may be in separate locations, but are rigidly mounted on the same physical device
+  * The `translation` field contains the 3D translation between the imager's physical positions, specified in meters
+2. Imagers may be oriented differently, but are rigidly mounted on the same physical device
+  * The `rotation` field contains a 3x3 orthonormal rotation matrix between the imager's physical orientations
+3. All 3D coordinate systems are specified in meters
+  * There is no need for any sort of scaling in the transformation between two coordinate systems
+4. All coordinate systems are right handed and have an orthogonal basis
+  * There is no need for any sort of mirroring/skewing in the transformation between two coordinate systems
+
+Extrinsic parameters can be retrieved via a call to `rs_get_device_extrinsics` between any two streams which are supported by the device. One does not need to enable any streams beforehand, the device extrinsics are assumed to be independent of the content of the streams' images and constant for a given device for the lifetime of the program.
