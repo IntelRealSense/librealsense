@@ -80,11 +80,22 @@ Extrinsic parameters can be retrieved via a call to `rs_get_device_extrinsics(..
 As mentioned above, mapping from 2D pixel coordinates to 3D point coordinates via the `rs_intrinsics` structure and the `rs_deproject_pixel_to_point(...)` function requires knowledge of the depth of that pixel in meters. Certain pixel formats exposed by `librealsense` contain per-pixel depth information, and can be immediately used with this function. Other images do not contain per-pixel depth information, and thus would typically be projected into instead of deprojected from.
 
 1. `RS_FORMAT_Z16` or `rs::format::z16`
-  * Depth is stored as one unsigned 16-bit integer per pixel, in camera-specific units. The distance, in meters, corresponding to one integer increment in depth values can be queried via `rs_get_device_depth_scale(...)`. The following pseudocode shows how to retrieve the depth of a pixel in meters:
+  * Depth is stored as one unsigned 16-bit integer per pixel, mapped linearly to depth in camera-specific units. The distance, in meters, corresponding to one integer increment in depth values can be queried via `rs_get_device_depth_scale(...)`. The following pseudocode shows how to retrieve the depth of a pixel in meters:
     * `const float scale = rs_get_device_depth_scale(dev, NULL);`
     * `const uint16_t * image = (const uint16_t *)rs_get_frame_data(dev, RS_STREAM_DEPTH, NULL);`
     * `float depth_in_meters = scale * image[pixel_index];`
+  * If a device fails to determine the depth of a given image pixel, a value of zero will be stored in the depth image. This is a reasonable sentinel for "no depth" because all pixels with a depth of zero would correspond to the same physical location, the location of the imager itself.
+  * The default scale of an F200 or SR300 device is 1/32th of a millimeter, allowing for a maximum expressive range of two meters. However, the scale is encoded into the camera's calibration information, potentially allowing for long-range models to use a different scaling factor.
+  * The default scale of an R200 device is one millimeter, allowing for a maximum expressive range of ~65 meters. The depth scale can be modified by calling `rs_set_device_option(...)` with `RS_OPTION_R200_DEPTH_UNITS`, which specifies the number of micrometers per one increment of depth. 1000 would indicate millimeter scale, 10000 would indicate centimeter scale, while 31 would roughly approximate the F200's 1/32th of a millimeter scale.
 
+2. `RS_FORMAT_DISPARITY16` or `rs::format::disparity16`
+  * Depth is stored as one unsigned 16-bit integer, as a fixed point representation of pixels of disparity. Stereo disparity is related to depth via an inverse linear relationship, and the distance of a point which registers a disparity of 1 can be queried via `rs_get_device_depth_scale(...)`. The following pseudocode shows how to retrieve the depth of a pixel in meters:
+    * `const float scale = rs_get_device_depth_scale(dev, NULL);`
+    * `const uint16_t * image = (const uint16_t *)rs_get_frame_data(dev, RS_STREAM_DEPTH, NULL);`
+    * `float depth_in_meters = scale / image[pixel_index];`
+  * Unlike `RS_FORMAT_Z16`, a disparity value of zero is meaningful. A stereo match with zero disparity will occur for objects "at infinity", objects which are so far away that the parallax between the two imagers is negligible. By contrast, there is a maximum possible disparity. The R200 only matches up to 63 pixels of disparity in hardware, and even if a software stereo search were run on an image, you would never see a disparity greater than the total width of the stereo image. Therefore, when the device fails to find a stereo match for a given pixel, a value of `0xFFFF` will be stored in the depth image as a sentinel.
+  * Disparity is currently only available on the R200, which by default uses a ratio of 32 units in the disparity map to one pixel of disparity. The ratio of disparity units to pixels of disparity can be modified by calling `rs_set_device_option(...)` with `RS_OPTION_R200_DISPARITY_MULTIPLIER`. For instance, setting it to 100 would indicate that 100 units in the disparity map are equivalent to one pixel of disparity.
+  
 ## Appendix: Model Specific Details
 
 It is not necessary to know what model of RealSense device is plugged in to successfully make use of the projection capabilities of `librealsense`, developers can take advantage of certain known properties of given devices.
