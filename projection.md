@@ -1,6 +1,6 @@
 # Projection and Deprojection in librealsense
 
-This document describes the projection mathematics relating the images provided by `librealsense` to their associated 3D coordinate systems, as well as the relationships between those coordinate systems.
+This document describes the projection mathematics relating the images provided by `librealsense` to their associated 3D coordinate systems, as well as the relationships between those coordinate systems. These facilities are mathematically equivalent to those provided by previous APIs and SDKs, but may use slightly different phrasing of coefficients and formulas.
 
 ## Pixel coordinates
 
