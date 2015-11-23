@@ -2,15 +2,23 @@
 
 This document describes the projection mathematics relating the images provided by `librealsense` to their associated 3D coordinate systems, as well as the relationships between those coordinate systems. These facilities are mathematically equivalent to those provided by previous APIs and SDKs, but may use slightly different phrasing of coefficients and formulas.
 
-## Pixel coordinates
+# Table of Contents
+* [Pixel Coordinates](#pixel-coordinates)
+* [Point Coordinates](#point-coordinates)
+* [Intrinsic Camera Parameters](#intrinsic-camera-parameters)
+  * [Distortion Models](#distortion-models)
+* [Extrinsic Camera Parameters](#extrinsics-camera-parameters)
+* [Appendix: Model Specific Details](#appendix-model-specific-details)
+
+## Pixel Coordinates
 
 Each stream of images provided by `librealsense` is associated with a separate 2D coordinate space, specified in pixels, with the coordinate `[0,0]` referring to the center of the top left pixel in the image, and `[w-1,h-1]` referring to the center of the bottom right pixel in an image containing exactly `w` columns and `h` rows. That is, from the perspective of the camera, the x-axis points to the right and the y-axis points down. Coordinates within this space are referred to as "pixel coordinates", and are used to index into images to find the content of particular pixels.
 
-## Point coordinates
+## Point Coordinates
 
 Each stream of images provided by `librealsense` is also associated with a separate 3D coordinate space, specified in meters, with the coordinate `[0,0,0]` referring to the center of the physical imager. Within this space, the positive x-axis points to the right, the positive y-axis points down, and the positive z-axis points forward. Coordinates within this space are referred to as "points", and are used to describe locations within 3D space that might be visible within a particular image.
 
-## Intrinsic camera parameters
+## Intrinsic Camera Parameters
 
 The relationship between a stream's 2D and 3D coordinate systems is described by its intrinsic camera parameters, contained in the `rs_intrinsics` struct. Each model of RealSense device is somewhat different, and the `rs_intrinsics` struct must be capable of describing the images produced by all of them. The basic set of assumptions is described below:
 
@@ -34,7 +42,7 @@ Knowing the intrinsic camera parameters of an images allows you to carry out two
 
 Intrinsic parameters can be retrieved via a call to `rs_get_stream_intrinsics` for any stream which has been enabled with a call to `rs_enable_stream` or `rs_enable_stream_preset`. This is because the intrinsic parameters may be different depending on the resolution/aspect ratio of the requested images.
 
-#### Distortion models
+#### Distortion Models
 
 Based on the design of each model of RealSense device, the different streams may be exposed via different distortion models.
 
@@ -47,7 +55,7 @@ Based on the design of each model of RealSense device, the different streams may
 
 Although it is inconvenient that projection and deprojection cannot always be applied to an image, the inconvenience is minimized by the fact that RealSense devices always support calling `rs_project_deprojection from depth images, and always support projection to color images. Therefore, it is always possible to map a depth image into a set of 3D points (a point cloud), and it is always possible to discover where a 3D object would appear on the color image.
 
-## Extrinsic camera parameters
+## Extrinsic Camera Parameters
 
 The 3D coordinate systems of each stream may in general be distinct. For instance, it is common for depth to be generated from one or more infrared imagers, while the color stream is provided by a separate color imager. The relationship between the separate 3D coordinate systems of separate streams is described by their extrinsic parameters, contained in the `rs_extrinsics` struct. The basic set of assumptions is described below:
 
@@ -64,7 +72,7 @@ Knowing the extrinsic parameters between two streams allows you to transform poi
 
 Extrinsic parameters can be retrieved via a call to `rs_get_device_extrinsics` between any two streams which are supported by the device. One does not need to enable any streams beforehand, the device extrinsics are assumed to be independent of the content of the streams' images and constant for a given device for the lifetime of the program.
 
-## Model specific details
+## Appendix: Model Specific Details
 
 It is not necessary to know what model of RealSense device is plugged in to successfully make use of the projection capabilities of `librealsense`, developers can take advantage of certain known properties of given devices.
 
