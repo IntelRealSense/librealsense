@@ -9,7 +9,7 @@ This document describes the projection mathematics relating the images provided 
   * [Distortion Models](#distortion-models)
 * [Extrinsic Camera Parameters](#extrinsic-camera-parameters)
 * [Appendix: Model Specific Details](#appendix-model-specific-details)
-  * [F200/SR300](#f200-sr300)
+  * [F200 and SR300](#f200-and-sr300)
   * [R200](#r200)
 
 ## Pixel Coordinates
@@ -78,7 +78,7 @@ Extrinsic parameters can be retrieved via a call to `rs_get_device_extrinsics` b
 
 It is not necessary to know what model of RealSense device is plugged in to successfully make use of the projection capabilities of `librealsense`, developers can take advantage of certain known properties of given devices.
 
-#### F200 / SR300
+#### F200 and SR300
 
 1. Depth images are always pixel-aligned with infrared images
   * The depth and infrared images have identical intrinsics
