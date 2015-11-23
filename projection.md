@@ -2,7 +2,7 @@
 
 This document describes the projection mathematics relating the images provided by `librealsense` to their associated 3D coordinate systems, as well as the relationships between those coordinate systems. These facilities are mathematically equivalent to those provided by previous APIs and SDKs, but may use slightly different phrasing of coefficients and formulas.
 
-# Table of Contents
+## Table of Contents
 * [Pixel Coordinates](#pixel-coordinates)
 * [Point Coordinates](#point-coordinates)
 * [Intrinsic Camera Parameters](#intrinsic-camera-parameters)
