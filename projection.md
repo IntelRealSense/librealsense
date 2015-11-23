@@ -7,7 +7,7 @@ This document describes the projection mathematics relating the images provided 
 * [Point Coordinates](#point-coordinates)
 * [Intrinsic Camera Parameters](#intrinsic-camera-parameters)
   * [Distortion Models](#distortion-models)
-* [Extrinsic Camera Parameters](#extrinsics-camera-parameters)
+* [Extrinsic Camera Parameters](#extrinsic-camera-parameters)
 * [Appendix: Model Specific Details](#appendix-model-specific-details)
 
 ## Pixel Coordinates
