@@ -9,6 +9,8 @@ This document describes the projection mathematics relating the images provided 
   * [Distortion Models](#distortion-models)
 * [Extrinsic Camera Parameters](#extrinsic-camera-parameters)
 * [Appendix: Model Specific Details](#appendix-model-specific-details)
+  * [F200/SR300](#f200-sr300)
+  * [R200](#r200)
 
 ## Pixel Coordinates
 
@@ -76,23 +78,27 @@ Extrinsic parameters can be retrieved via a call to `rs_get_device_extrinsics` b
 
 It is not necessary to know what model of RealSense device is plugged in to successfully make use of the projection capabilities of `librealsense`, developers can take advantage of certain known properties of given devices.
 
-1. F200 and SR300 depth images are always pixel-aligned with infrared images
+#### F200 / SR300
+
+1. Depth images are always pixel-aligned with infrared images
   * The depth and infrared images have identical intrinsics
   * The depth and infrared images will always use the Inverse Brown-Conrady distortion model
   * The extrinsic transformation between depth and infrared is the identity transform
   * Pixel coordinates can be used interchangeably between these two streams
 
-2. F200 and SR300 color images have no distortion
+2. Color images have no distortion
   * When projecting to the color image on these devices, the distortion step can be skipped entirely
 
-3. R200 left and right infrared images are rectified
+#### R200
+
+1. Left and right infrared images are rectified
   * The two infrared streams have identical intrinsics
   * The two infrared streams have no distortion
   * There is no rotation between left and right infrared images (identity matrix)
   * There is translation on only one axis between left and right infrared images (`translation[1]` and `translation[2]` are zero)
   * Therefore, the `y` component of pixel coordinates can be used interchangeably between these two streams
 
-4. R200 depth images are pixel aligned with the first infrared stream except for an optional 6 pixel offset
+2. Depth images are pixel aligned with the first infrared stream except for an optional 6 pixel offset
   * Native depth images are six pixels smaller on all four sides, but are otherwise pixel aligned with infrared
   * `librealsense` will pad the depth image or crop the infrared image if you request matching resolutions
   * If you request matching resolutions, depth and infrared will use the exact same intrinsics
