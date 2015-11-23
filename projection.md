@@ -1,14 +1,14 @@
 # Projection and Deprojection in librealsense
 
-This document describes the projection mathematics relating the images provided by librealsense to their associated 3D coordinate systems, as well as the relationships between those coordinate systems.
+This document describes the projection mathematics relating the images provided by `librealsense` to their associated 3D coordinate systems, as well as the relationships between those coordinate systems.
 
 ## Pixel coordinates
 
-Each stream of images provided by librealsense is associated with a separate 2D coordinate space, specified in pixels, with the coordinate `[0,0]` referring to the center of the top left pixel in the image, and `[w-1,h-1]` referring to the center of the bottom right pixel in an image containing exactly `w` columns and `h` rows. That is, from the perspective of the camera, the x-axis points to the right and the y-axis points down. Coordinates within this space are referred to as "pixel coordinates", and are used to index into images to find the content of particular pixels.
+Each stream of images provided by `librealsense` is associated with a separate 2D coordinate space, specified in pixels, with the coordinate `[0,0]` referring to the center of the top left pixel in the image, and `[w-1,h-1]` referring to the center of the bottom right pixel in an image containing exactly `w` columns and `h` rows. That is, from the perspective of the camera, the x-axis points to the right and the y-axis points down. Coordinates within this space are referred to as "pixel coordinates", and are used to index into images to find the content of particular pixels.
 
 ## Point coordinates
 
-Each stream of images provided by librealsense is also associated with a separate 3D coordinate space, specified in meters, with the coordinate `[0,0,0]` referring to the center of the physical imager. Within this space, the positive x-axis points to the right, the positive y-axis points down, and the positive z-axis points forward. Coordinates within this space are referred to as "points", and are used to describe locations within 3D space that might be visible within a particular image.
+Each stream of images provided by `librealsense` is also associated with a separate 3D coordinate space, specified in meters, with the coordinate `[0,0,0]` referring to the center of the physical imager. Within this space, the positive x-axis points to the right, the positive y-axis points down, and the positive z-axis points forward. Coordinates within this space are referred to as "points", and are used to describe locations within 3D space that might be visible within a particular image.
 
 ## Intrinsic camera parameters
 
@@ -34,7 +34,7 @@ Knowing the intrinsic camera parameters of an images allows you to carry out two
 
 Intrinsic parameters can be retrieved via a call to `rs_get_stream_intrinsics` for any stream which has been enabled with a call to `rs_enable_stream` or `rs_enable_stream_preset`. This is because the intrinsic parameters may be different depending on the resolution/aspect ratio of the requested images.
 
-### Distortion models
+#### Distortion models
 
 Based on the design of each model of RealSense device, the different streams may be exposed via different distortion models.
 
@@ -60,4 +60,25 @@ The 3D coordinate systems of each stream may in general be distinct. For instanc
 4. All coordinate systems are right handed and have an orthogonal basis
   * There is no need for any sort of mirroring/skewing in the transformation between two coordinate systems
 
+Knowing the extrinsic parameters between two streams allows you to transform points from one coordinate space to another, which can be done by calling `rs_transform_point_to_point`. This operation is defined as a standard affine transformation using a 3x3 rotation matrix and a 3-component translation vector.
+
 Extrinsic parameters can be retrieved via a call to `rs_get_device_extrinsics` between any two streams which are supported by the device. One does not need to enable any streams beforehand, the device extrinsics are assumed to be independent of the content of the streams' images and constant for a given device for the lifetime of the program.
+
+## Model specific details
+
+It is not necessary to know what model of RealSense device is plugged in to successfully make use of the projection capabilities of `librealsense`, developers can take advantage of certain known properties of given devices.
+
+1. F200 and SR300 depth images are always pixel-aligned with infrared images
+  * The depth and infrared images have identical intrinsics
+  * The depth and infrared images will always use the Inverse Brown-Conrady distortion model
+  * The extrinsic transformation between depth and infrared is the identity transform
+  * Pixel coordinates can be used interchangeably between these two streams
+
+2. F200 and SR300 color images have no distortion
+  * When projecting to the color image on these devices, the distortion step can be skipped entirely
+
+3. R200 left and right infrared images are rectified
+  * The two infrared streams have identical intrinsics
+  * The two infrared streams have no distortion
+  * There is no rotation between left and right infrared images (identity matrix)
+  * There is translation on only one axis between left and right infrared images (`translation[1]` and `translation[2]` are zero)
