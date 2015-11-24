@@ -254,7 +254,7 @@ namespace rsimpl
 
         void get_pu_control_range(const device & device, int subdevice, rs_option option, int * min, int * max)
         {
-            auto handle = device.subdevices[subdevice].handle;
+            auto handle = const_cast<uvc::device &>(device).get_subdevice(subdevice).handle;
             int ct_unit = 0, pu_unit = 0;
             for(auto ct = uvc_get_input_terminals(handle); ct; ct = ct->next) ct_unit = ct->bTerminalID; // todo - Check supported caps
             for(auto pu = uvc_get_processing_units(handle); pu; pu = pu->next) pu_unit = pu->bUnitID; // todo - Check supported caps
@@ -267,20 +267,19 @@ namespace rsimpl
             case RS_OPTION_COLOR_EXPOSURE: return get_pu_range<uint32_t>(handle, subdevice, ct_unit, UVC_CT_EXPOSURE_TIME_ABSOLUTE_CONTROL, min, max);
             case RS_OPTION_COLOR_GAIN: return get_pu_range<uint16_t>(handle, subdevice, pu_unit, UVC_PU_GAIN_CONTROL, min, max);
             case RS_OPTION_COLOR_GAMMA: return get_pu_range<uint16_t>(handle, subdevice, pu_unit, UVC_PU_GAMMA_CONTROL, min, max);
-            case RS_OPTION_COLOR_HUE: return get_pu_range<int16_t>(handle, subdevice, pu_unit, UVC_PU_HUE_CONTROL, min, max);
+            case RS_OPTION_COLOR_HUE: if(min) *min = 0; if(max) *max = 0; return; //return get_pu_range<int16_t>(handle, subdevice, pu_unit, UVC_PU_HUE_CONTROL, min, max);
             case RS_OPTION_COLOR_SATURATION: return get_pu_range<uint16_t>(handle, subdevice, pu_unit, UVC_PU_SATURATION_CONTROL, min, max);
             case RS_OPTION_COLOR_SHARPNESS: return get_pu_range<uint16_t>(handle, subdevice, pu_unit, UVC_PU_SHARPNESS_CONTROL, min, max);
             case RS_OPTION_COLOR_WHITE_BALANCE: return get_pu_range<uint16_t>(handle, subdevice, pu_unit, UVC_PU_WHITE_BALANCE_TEMPERATURE_CONTROL, min, max);
-            case RS_OPTION_COLOR_ENABLE_AUTO_EXPOSURE: { *min = 0; *max = 0; return; }; // TODO
-            case RS_OPTION_COLOR_ENABLE_AUTO_HUE: { *min = 0; *max = 0; return; }; // TODO
-            case RS_OPTION_COLOR_ENABLE_AUTO_WHITE_BALANCE: { *min = 0; *max = 0; return; }; // TODO
+            case RS_OPTION_COLOR_ENABLE_AUTO_EXPOSURE: if(min) *min = 0; if(max) *max = 1; return; // The next 2 options do not support range operations
+            case RS_OPTION_COLOR_ENABLE_AUTO_WHITE_BALANCE: if(min) *min = 0; if(max) *max = 1; return;
             }
             throw std::logic_error("invalid option");
         }
         
         void set_pu_control(device & device, int subdevice, rs_option option, int value)
         {                      
-            auto handle = device.subdevices[subdevice].handle;
+            auto handle = device.get_subdevice(subdevice).handle;
             int ct_unit = 0, pu_unit = 0;
             for(auto ct = uvc_get_input_terminals(handle); ct; ct = ct->next) ct_unit = ct->bTerminalID; // todo - Check supported caps
             for(auto pu = uvc_get_processing_units(handle); pu; pu = pu->next) pu_unit = pu->bUnitID; // todo - Check supported caps
@@ -293,17 +292,19 @@ namespace rsimpl
             case RS_OPTION_COLOR_EXPOSURE: return set_pu<uint32_t>(handle, subdevice, ct_unit, UVC_CT_EXPOSURE_TIME_ABSOLUTE_CONTROL, value);
             case RS_OPTION_COLOR_GAIN: return set_pu<uint16_t>(handle, subdevice, pu_unit, UVC_PU_GAIN_CONTROL, value);
             case RS_OPTION_COLOR_GAMMA: return set_pu<uint16_t>(handle, subdevice, pu_unit, UVC_PU_GAMMA_CONTROL, value);
-            case RS_OPTION_COLOR_HUE: return set_pu<int16_t>(handle, subdevice, pu_unit, UVC_PU_HUE_CONTROL, value);
+            case RS_OPTION_COLOR_HUE: return; // set_pu<int16_t>(handle, subdevice, pu_unit, UVC_PU_HUE_CONTROL, value); // Causes LIBUSB_ERROR_PIPE, may be related to not being able to set UVC_PU_HUE_AUTO_CONTROL
             case RS_OPTION_COLOR_SATURATION: return set_pu<uint16_t>(handle, subdevice, pu_unit, UVC_PU_SATURATION_CONTROL, value);
             case RS_OPTION_COLOR_SHARPNESS: return set_pu<uint16_t>(handle, subdevice, pu_unit, UVC_PU_SHARPNESS_CONTROL, value);
             case RS_OPTION_COLOR_WHITE_BALANCE: return set_pu<uint16_t>(handle, subdevice, pu_unit, UVC_PU_WHITE_BALANCE_TEMPERATURE_CONTROL, value);
+            case RS_OPTION_COLOR_ENABLE_AUTO_EXPOSURE: return set_pu<uint8_t>(handle, subdevice, ct_unit, UVC_CT_AE_MODE_CONTROL, value ? 2 : 1); // Modes - (1: manual) (2: auto) (4: shutter priority) (8: aperture priority)
+            case RS_OPTION_COLOR_ENABLE_AUTO_WHITE_BALANCE: return set_pu<uint8_t>(handle, subdevice, pu_unit, UVC_PU_WHITE_BALANCE_TEMPERATURE_AUTO_CONTROL, value);
             }
             throw std::logic_error("invalid option");
         }
 
         int get_pu_control(const device & device, int subdevice, rs_option option)
         {
-            auto handle = device.subdevices[subdevice].handle;
+            auto handle = const_cast<uvc::device &>(device).get_subdevice(subdevice).handle;
             int ct_unit = 0, pu_unit = 0;
             for(auto ct = uvc_get_input_terminals(handle); ct; ct = ct->next) ct_unit = ct->bTerminalID; // todo - Check supported caps
             for(auto pu = uvc_get_processing_units(handle); pu; pu = pu->next) pu_unit = pu->bUnitID; // todo - Check supported caps
@@ -316,13 +317,12 @@ namespace rsimpl
             case RS_OPTION_COLOR_EXPOSURE: return get_pu<uint32_t>(handle, subdevice, ct_unit, UVC_CT_EXPOSURE_TIME_ABSOLUTE_CONTROL, UVC_GET_CUR);
             case RS_OPTION_COLOR_GAIN: return get_pu<uint16_t>(handle, subdevice, pu_unit, UVC_PU_GAIN_CONTROL, UVC_GET_CUR);
             case RS_OPTION_COLOR_GAMMA: return get_pu<uint16_t>(handle, subdevice, pu_unit, UVC_PU_GAMMA_CONTROL, UVC_GET_CUR);
-            case RS_OPTION_COLOR_HUE: return get_pu<int16_t>(handle, subdevice, pu_unit, UVC_PU_HUE_CONTROL, UVC_GET_CUR);
+            case RS_OPTION_COLOR_HUE: return 0; //get_pu<int16_t>(handle, subdevice, pu_unit, UVC_PU_HUE_CONTROL, UVC_GET_CUR);
             case RS_OPTION_COLOR_SATURATION: return get_pu<uint16_t>(handle, subdevice, pu_unit, UVC_PU_SATURATION_CONTROL, UVC_GET_CUR);
             case RS_OPTION_COLOR_SHARPNESS: return get_pu<uint16_t>(handle, subdevice, pu_unit, UVC_PU_SHARPNESS_CONTROL, UVC_GET_CUR);
             case RS_OPTION_COLOR_WHITE_BALANCE: return get_pu<uint16_t>(handle, subdevice, pu_unit, UVC_PU_WHITE_BALANCE_TEMPERATURE_CONTROL, UVC_GET_CUR);
-            case RS_OPTION_COLOR_ENABLE_AUTO_EXPOSURE: { return -1; }; // TODO
-            case RS_OPTION_COLOR_ENABLE_AUTO_HUE: { return -1; }; // TODO
-            case RS_OPTION_COLOR_ENABLE_AUTO_WHITE_BALANCE: { return -1;}; // TODO
+            case RS_OPTION_COLOR_ENABLE_AUTO_EXPOSURE: return get_pu<uint8_t>(handle, subdevice, ct_unit, UVC_CT_AE_MODE_CONTROL, UVC_GET_CUR) > 1; // Modes - (1: manual) (2: auto) (4: shutter priority) (8: aperture priority)
+            case RS_OPTION_COLOR_ENABLE_AUTO_WHITE_BALANCE: return get_pu<uint8_t>(handle, subdevice, pu_unit, UVC_PU_WHITE_BALANCE_TEMPERATURE_AUTO_CONTROL, UVC_GET_CUR);
             }
             throw std::logic_error("invalid option");
         }
