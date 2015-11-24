@@ -13,33 +13,6 @@
 #include <cassert> // For assert
 #include <thread> // For std::this_thread::sleep_for
 
-// RAII wrapper to ensure that contexts are always cleaned up. If this is not done, subsequent 
-// contexts may not enumerate devices correctly. Long term, we should probably try to remove 
-// this requirement, or at least throw an error if the user attempts to open multiple contexts at once.
-class safe_context
-{
-    rs_context * context;
-    safe_context(int) : context() {}
-public:
-    safe_context() : safe_context(1) 
-    {
-        rs_error * error = nullptr;
-        context = rs_create_context(RS_API_VERSION, &error);  
-        REQUIRE(error == nullptr);
-        REQUIRE(context != nullptr);
-    }
-
-    ~safe_context()
-    {
-        if(context)
-        {
-            rs_delete_context(context, nullptr);
-        }
-    }
-
-    operator rs_context * () const { return context; }
-};
-
 // noexcept is not accepted by Visual Studio 2013 yet, but noexcept(false) is require on throwing destructors on gcc and clang
 // It is normally advisable not to throw in a destructor, however, this usage is safe for require_error/require_no_error because
 // they will only ever be created as temporaries immediately before being passed to a C ABI function. All parameters and return
@@ -87,6 +60,31 @@ public:
     require_no_error &  operator = (const require_no_error &) = delete;
     operator rs_error ** () { return &err; }
 };
+
+// RAII wrapper to ensure that contexts are always cleaned up. rs_context has singleton
+// semantics, and creation will fail if an undeleted previous context still exists.
+class safe_context
+{
+    rs_context * context;
+    safe_context(int) : context() {}
+public:
+    safe_context() : safe_context(1)
+    {
+        context = rs_create_context(RS_API_VERSION, require_no_error());
+        REQUIRE(context != nullptr);
+    }
+
+    ~safe_context()
+    {
+        if(context)
+        {
+            rs_delete_context(context, nullptr);
+        }
+    }
+
+    operator rs_context * () const { return context; }
+};
+
 
 // Compute dot product of a and b
 inline float dot_product(const float (& a)[3], const float (& b)[3])

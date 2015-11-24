@@ -12,7 +12,7 @@
 		08567C0D1B5B899200EB6C0D /* IOKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 08567C0C1B5B899200EB6C0D /* IOKit.framework */; };
 		08567C0F1B5B899B00EB6C0D /* OpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 08567C0E1B5B899B00EB6C0D /* OpenGL.framework */; };
 		279985891B95083000894334 /* librealsense.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 279985881B95083000894334 /* librealsense.dylib */; };
-		279D52DC1B8E8776007F2D73 /* cpp-restart.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 279D52DB1B8E8776007F2D73 /* cpp-restart.cpp */; };
+		279D52DC1B8E8776007F2D73 /* cpp-config-ui.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 279D52DB1B8E8776007F2D73 /* cpp-config-ui.cpp */; };
 		279D52E01B8E886D007F2D73 /* libglfw3.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 279D52DF1B8E886D007F2D73 /* libglfw3.dylib */; };
 /* End PBXBuildFile section */
 
@@ -29,13 +29,13 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		08567BB11B5B59E800EB6C0D /* cpp-restart */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = "cpp-restart"; sourceTree = BUILT_PRODUCTS_DIR; };
+		08567BB11B5B59E800EB6C0D /* cpp-config-ui */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = "cpp-config-ui"; sourceTree = BUILT_PRODUCTS_DIR; };
 		08567C081B5B898400EB6C0D /* Cocoa.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cocoa.framework; path = System/Library/Frameworks/Cocoa.framework; sourceTree = SDKROOT; };
 		08567C0A1B5B898C00EB6C0D /* CoreVideo.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreVideo.framework; path = System/Library/Frameworks/CoreVideo.framework; sourceTree = SDKROOT; };
 		08567C0C1B5B899200EB6C0D /* IOKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = IOKit.framework; path = System/Library/Frameworks/IOKit.framework; sourceTree = SDKROOT; };
 		08567C0E1B5B899B00EB6C0D /* OpenGL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenGL.framework; path = System/Library/Frameworks/OpenGL.framework; sourceTree = SDKROOT; };
 		279985881B95083000894334 /* librealsense.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = librealsense.dylib; path = librealsense.xc/build/Debug/librealsense.dylib; sourceTree = "<group>"; };
-		279D52DB1B8E8776007F2D73 /* cpp-restart.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = "cpp-restart.cpp"; path = "../examples/cpp-restart.cpp"; sourceTree = SOURCE_ROOT; };
+		279D52DB1B8E8776007F2D73 /* cpp-config-ui.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = "cpp-config-ui.cpp"; path = "../examples/cpp-config-ui.cpp"; sourceTree = SOURCE_ROOT; };
 		279D52DF1B8E886D007F2D73 /* libglfw3.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libglfw3.dylib; path = /usr/local/lib/libglfw3.dylib; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -68,7 +68,7 @@
 		08567BB21B5B59E800EB6C0D /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				08567BB11B5B59E800EB6C0D /* cpp-restart */,
+				08567BB11B5B59E800EB6C0D /* cpp-config-ui */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -76,7 +76,7 @@
 		08567BB31B5B59E800EB6C0D /* src */ = {
 			isa = PBXGroup;
 			children = (
-				279D52DB1B8E8776007F2D73 /* cpp-restart.cpp */,
+				279D52DB1B8E8776007F2D73 /* cpp-config-ui.cpp */,
 			);
 			name = src;
 			path = CameraDev;
@@ -115,9 +115,9 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		08567BB01B5B59E800EB6C0D /* cpp-restart */ = {
+		08567BB01B5B59E800EB6C0D /* cpp-config-ui */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 08567BB81B5B59E800EB6C0D /* Build configuration list for PBXNativeTarget "cpp-restart" */;
+			buildConfigurationList = 08567BB81B5B59E800EB6C0D /* Build configuration list for PBXNativeTarget "cpp-config-ui" */;
 			buildPhases = (
 				08567BAD1B5B59E800EB6C0D /* Sources */,
 				08567BAE1B5B59E800EB6C0D /* Frameworks */,
@@ -127,9 +127,9 @@
 			);
 			dependencies = (
 			);
-			name = "cpp-restart";
+			name = "cpp-config-ui";
 			productName = CameraDev;
-			productReference = 08567BB11B5B59E800EB6C0D /* cpp-restart */;
+			productReference = 08567BB11B5B59E800EB6C0D /* cpp-config-ui */;
 			productType = "com.apple.product-type.tool";
 		};
 /* End PBXNativeTarget section */
@@ -146,7 +146,7 @@
 					};
 				};
 			};
-			buildConfigurationList = 08567BAC1B5B59E800EB6C0D /* Build configuration list for PBXProject "cpp-restart" */;
+			buildConfigurationList = 08567BAC1B5B59E800EB6C0D /* Build configuration list for PBXProject "cpp-config-ui" */;
 			compatibilityVersion = "Xcode 3.2";
 			developmentRegion = English;
 			hasScannedForEncodings = 0;
@@ -158,7 +158,7 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				08567BB01B5B59E800EB6C0D /* cpp-restart */,
+				08567BB01B5B59E800EB6C0D /* cpp-config-ui */,
 			);
 		};
 /* End PBXProject section */
@@ -168,7 +168,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				279D52DC1B8E8776007F2D73 /* cpp-restart.cpp in Sources */,
+				279D52DC1B8E8776007F2D73 /* cpp-config-ui.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -271,7 +271,7 @@
 				HEADER_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(SRCROOT)/../include",
-					/usr/local/include/,
+					/usr/local/include,
 					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
 				);
 				LIBRARY_SEARCH_PATHS = (
@@ -282,7 +282,7 @@
 					"$(USER_LIBRARY_DIR)/Developer/Xcode/DerivedData/bin/Debug",
 					"$(PROJECT_DIR)/build/Debug",
 				);
-				PRODUCT_NAME = "cpp-restart";
+				PRODUCT_NAME = "cpp-config-ui";
 			};
 			name = Debug;
 		};
@@ -291,27 +291,25 @@
 			buildSettings = {
 				HEADER_SEARCH_PATHS = (
 					"$(inherited)",
-					"$(SRCROOT)/../librealsense/build/Debug",
 					"$(SRCROOT)/../bin",
-					/usr/local/include/,
+					/usr/local/include,
 					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
 				);
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",
-					"$(SRCROOT)/../librealsense/build/Debug",
 					"$(SRCROOT)/../bin",
 					/usr/local/lib,
 					"$(USER_LIBRARY_DIR)/Developer/Xcode/DerivedData/bin/Debug",
 					"$(PROJECT_DIR)/build/Debug",
 				);
-				PRODUCT_NAME = "cpp-restart";
+				PRODUCT_NAME = "cpp-config-ui";
 			};
 			name = Release;
 		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		08567BAC1B5B59E800EB6C0D /* Build configuration list for PBXProject "cpp-restart" */ = {
+		08567BAC1B5B59E800EB6C0D /* Build configuration list for PBXProject "cpp-config-ui" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				08567BB61B5B59E800EB6C0D /* Debug */,
@@ -320,7 +318,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		08567BB81B5B59E800EB6C0D /* Build configuration list for PBXNativeTarget "cpp-restart" */ = {
+		08567BB81B5B59E800EB6C0D /* Build configuration list for PBXNativeTarget "cpp-config-ui" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				08567BB91B5B59E800EB6C0D /* Debug */,

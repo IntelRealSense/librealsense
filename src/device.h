@@ -46,6 +46,7 @@ public:
     const char *                                get_firmware_version() const { return config.info.firmware_version.c_str(); }
     float                                       get_depth_scale() const { return config.depth_scale; }
     bool                                        supports_option(rs_option option) const { return config.info.option_supported[option]; }
+    void                                        get_option_range(rs_option option, int * min, int * max) const;
 
     void                                        enable_stream(rs_stream stream, int width, int height, rs_format format, int fps);
     void                                        enable_stream_preset(rs_stream stream, rs_preset preset);    
@@ -63,6 +64,7 @@ public:
     int                                         get_option(rs_option option) const;
 
     virtual void                                on_before_start(const std::vector<rsimpl::subdevice_mode> & selected_modes) {}
+    virtual void                                get_xu_range(rs_option option, int * min, int * max) const = 0;
     virtual void                                set_xu_option(rs_option option, int value) = 0;
     virtual int                                 get_xu_option(rs_option option) const = 0;
     virtual int                                 convert_timestamp(int64_t timestamp) const = 0;

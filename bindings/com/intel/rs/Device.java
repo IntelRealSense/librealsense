@@ -1,11 +1,3 @@
-/*
-    INTEL CORPORATION PROPRIETARY INFORMATION This software is supplied under the
-    terms of a license agreement or nondisclosure agreement with Intel Corporation
-    and may not be copied or disclosed except in accordance with the terms of that
-    agreement.
-    Copyright(c) 2015 Intel Corporation. All Rights Reserved.
-*/
-
 package com.intel.rs;
 
 public class Device
@@ -53,6 +45,14 @@ public class Device
      * @return        true if the option can be queried and set
      */
     public native boolean supportsOption(Option option);
+
+    /**
+     * determine the range of acceptable values for an option on this device
+     * @param option  the option whose range to query
+     * @param min     the minimum acceptable value, attempting to set a value below this will take no effect and raise an error
+     * @param max     the maximum acceptable value, attempting to set a value above this will take no effect and raise an error
+     */
+    public native void getOptionRange(Option option, Out<Integer> min, Out<Integer> max);
 
     /**
      * determine the number of streaming modes available for a given stream

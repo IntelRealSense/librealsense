@@ -118,6 +118,14 @@ int rs_device_supports_option(const rs_device * device, rs_option option, rs_err
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, device, option)
 
+void rs_get_device_option_range(const rs_device * device, rs_option option, int * min, int * max, rs_error ** error) try
+{
+    VALIDATE_NOT_NULL(device);
+    VALIDATE_ENUM(option);
+    device->get_option_range(option, min, max);
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, device, option, min, max)
+
 int rs_get_stream_mode_count(const rs_device * device, rs_stream stream, rs_error ** error) try
 {
     VALIDATE_NOT_NULL(device);

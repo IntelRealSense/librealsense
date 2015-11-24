@@ -41,6 +41,7 @@ namespace rsimpl
         {
         CASE(ANY)
         CASE(Z16)
+        CASE(DISPARITY16)
         CASE(YUYV)
         CASE(RGB8)
         CASE(BGR8)
@@ -95,6 +96,8 @@ namespace rsimpl
         CASE(COLOR_SATURATION)
         CASE(COLOR_SHARPNESS)
         CASE(COLOR_WHITE_BALANCE)
+        CASE(COLOR_ENABLE_AUTO_EXPOSURE)
+        CASE(COLOR_ENABLE_AUTO_WHITE_BALANCE)
         CASE(F200_LASER_POWER)
         CASE(F200_ACCURACY)
         CASE(F200_MOTION_RANGE)
@@ -109,7 +112,6 @@ namespace rsimpl
         CASE(R200_DEPTH_UNITS)
         CASE(R200_DEPTH_CLAMP_MIN)
         CASE(R200_DEPTH_CLAMP_MAX)
-        CASE(R200_DISPARITY_MODE_ENABLED)
         CASE(R200_DISPARITY_MULTIPLIER)
         CASE(R200_DISPARITY_SHIFT)
         default: assert(!is_valid(value)); return nullptr;

@@ -271,7 +271,7 @@
 				HEADER_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(SRCROOT)/../include",
-					/usr/local/include
+					/usr/local/include,
 					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
 				);
 				LIBRARY_SEARCH_PATHS = (
@@ -294,7 +294,6 @@
 					"$(SRCROOT)/../librealsense/build/Debug",
 					"$(SRCROOT)/../bin",
 					/usr/local/include,
-					/usr/local/Cellar/libusb/1.0.19/lib,
 					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
 				);
 				LIBRARY_SEARCH_PATHS = (

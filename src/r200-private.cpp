@@ -11,6 +11,7 @@
 #include <cstring>
 #include <cmath>
 #include <ctime>
+#include <thread>
 
 #define STATUS_BIT_BOOT_DIAGNOSTIC_FAULT            (1 << 3)
 #define STATUS_BIT_IFFLEY_CONSTANTS_VALID           (1 << 4)
@@ -361,11 +362,23 @@ namespace rsimpl { namespace r200
 
     void xu_read(const uvc::device & device, uint8_t xu_ctrl, void * buffer, uint32_t length)
     {
+        // Try reading an XU control, if it fails, retry several times
+        for(int i=0; i<20; ++i)
+        {
+            try { get_control(device, 0, xu_ctrl, buffer, length); return; }
+            catch(...) { std::this_thread::sleep_for(std::chrono::milliseconds(50)); }
+        }
         get_control(device, 0, xu_ctrl, buffer, length);
     }
 
     void xu_write(uvc::device & device, uint8_t xu_ctrl, void * buffer, uint32_t length)
     {
+        // Try writing an XU control, if it fails, retry several times
+        for(int i=0; i<20; ++i)
+        {
+            try { set_control(device, 0, xu_ctrl, buffer, length); return; }
+            catch(...) { std::this_thread::sleep_for(std::chrono::milliseconds(50)); }
+        }
         set_control(device, 0, xu_ctrl, buffer, length);
     }
 

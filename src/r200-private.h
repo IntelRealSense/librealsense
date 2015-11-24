@@ -211,16 +211,10 @@ namespace rsimpl
             static const depth_params presets[MAX_PRESETS];
         };
 
-        enum class range_format : uint32_t
-        {
-            RANGE_FORMAT_DISPARITY,
-            RANGE_FORMAT_DISTANCE
-        };
-
         struct disparity_mode
         {
-            range_format format;
-            uint64_t multiplier;
+            uint32_t is_disparity_enabled;
+            double disparity_multiplier;
         };
 
         struct CommandPacket

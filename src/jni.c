@@ -1,11 +1,3 @@
-/*
-    INTEL CORPORATION PROPRIETARY INFORMATION This software is supplied under the
-    terms of a license agreement or nondisclosure agreement with Intel Corporation
-    and may not be copied or disclosed except in accordance with the terms of that
-    agreement.
-    Copyright(c) 2015 Intel Corporation. All Rights Reserved.
-*/
-
 #include <jni.h>
 #ifndef NO_JDK
 #include "../include/librealsense/rs.h"
@@ -97,7 +89,7 @@ static void handle_error(JNIEnv * env, rs_error * e)
 JNIEXPORT jlong JNICALL Java_com_intel_rs_Context_create(JNIEnv * env, jobject self)
 {
     rs_error * e = NULL;
-    rs_context * r = rs_create_context(3, &e);
+    rs_context * r = rs_create_context(4, &e);
     handle_error(env, e);
     return (jlong)r;
 }
@@ -170,6 +162,17 @@ JNIEXPORT jboolean JNICALL Java_com_intel_rs_Device_supportsOption(JNIEnv * env,
     int r = rs_device_supports_option(get_object(env, self), get_enum(env, option), &e);
     handle_error(env, e);
     return r;
+}
+
+JNIEXPORT void JNICALL Java_com_intel_rs_Device_getOptionRange(JNIEnv * env, jobject self, jobject option, jobject min, jobject max)
+{
+    rs_error * e = NULL;
+    int c_min;
+    int c_max;
+    rs_get_device_option_range(get_object(env, self), get_enum(env, option), &c_min, &c_max, &e);
+    handle_error(env, e);
+    set_out_param(env, min, make_integer(env, c_min));
+    set_out_param(env, max, make_integer(env, c_max));
 }
 
 JNIEXPORT jint JNICALL Java_com_intel_rs_Device_getStreamModeCount(JNIEnv * env, jobject self, jobject stream)

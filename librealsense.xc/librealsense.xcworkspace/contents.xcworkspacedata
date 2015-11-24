@@ -40,6 +40,9 @@
       </FileRef>
    </Group>
    <FileRef
+      location = "group:cpp-config-ui.xcodeproj">
+   </FileRef>
+   <FileRef
       location = "container:librealsense.xcodeproj">
    </FileRef>
 </Workspace>

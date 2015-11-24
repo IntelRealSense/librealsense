@@ -1,11 +1,3 @@
-'''
-    INTEL CORPORATION PROPRIETARY INFORMATION This software is supplied under the
-    terms of a license agreement or nondisclosure agreement with Intel Corporation
-    and may not be copied or disclosed except in accordance with the terms of that
-    agreement.
-    Copyright(c) 2015 Intel Corporation. All Rights Reserved.
-'''
-
 ''' LibRealSense bindings for Python
 '''
 
@@ -22,6 +14,7 @@ realsense.rs_get_device_firmware_version.restype = c_char_p
 realsense.rs_get_device_extrinsics.restype = None
 realsense.rs_get_device_depth_scale.restype = c_float
 realsense.rs_device_supports_option.restype = c_int
+realsense.rs_get_device_option_range.restype = None
 realsense.rs_get_stream_mode_count.restype = c_int
 realsense.rs_get_stream_mode.restype = None
 realsense.rs_enable_stream.restype = None
@@ -59,17 +52,18 @@ STREAM_DEPTH_ALIGNED_TO_COLOR           = 6  ##< Synthetic stream containing dep
 STREAM_DEPTH_ALIGNED_TO_RECTIFIED_COLOR = 7  ##< Synthetic stream containing depth data but sharing intrinsics of rectified color stream
 STREAM_COUNT                            = 8 
 
-FORMAT_ANY   = 0  
-FORMAT_Z16   = 1  
-FORMAT_YUYV  = 2  
-FORMAT_RGB8  = 3  
-FORMAT_BGR8  = 4  
-FORMAT_RGBA8 = 5  
-FORMAT_BGRA8 = 6  
-FORMAT_Y8    = 7  
-FORMAT_Y16   = 8  
-FORMAT_RAW10 = 9   ##< Four 10-bit luminance values encoded into a 5-byte macropixel
-FORMAT_COUNT = 10 
+FORMAT_ANY         = 0  
+FORMAT_Z16         = 1   ##< 16 bit linear depth values. The depth is meters is equal to depth scale * pixel value
+FORMAT_DISPARITY16 = 2   ##< 16 bit linear disparity values. The depth in meters is equal to depth scale / pixel value
+FORMAT_YUYV        = 3  
+FORMAT_RGB8        = 4  
+FORMAT_BGR8        = 5  
+FORMAT_RGBA8       = 6  
+FORMAT_BGRA8       = 7  
+FORMAT_Y8          = 8  
+FORMAT_Y16         = 9  
+FORMAT_RAW10       = 10  ##< Four 10-bit luminance values encoded into a 5-byte macropixel
+FORMAT_COUNT       = 11 
 
 PRESET_BEST_QUALITY      = 0 
 PRESET_LARGEST_IMAGE     = 1 
@@ -81,34 +75,35 @@ DISTORTION_MODIFIED_BROWN_CONRADY = 1  ##< Equivalent to Brown-Conrady distortio
 DISTORTION_INVERSE_BROWN_CONRADY  = 2  ##< Equivalent to Brown-Conrady distortion, except undistorts image instead of distorting it
 DISTORTION_COUNT                  = 3 
 
-OPTION_COLOR_BACKLIGHT_COMPENSATION  = 0  
-OPTION_COLOR_BRIGHTNESS              = 1  
-OPTION_COLOR_CONTRAST                = 2  
-OPTION_COLOR_EXPOSURE                = 3  
-OPTION_COLOR_GAIN                    = 4  
-OPTION_COLOR_GAMMA                   = 5  
-OPTION_COLOR_HUE                     = 6  
-OPTION_COLOR_SATURATION              = 7  
-OPTION_COLOR_SHARPNESS               = 8  
-OPTION_COLOR_WHITE_BALANCE           = 9  
-OPTION_F200_LASER_POWER              = 10  ##< 0 - 15
-OPTION_F200_ACCURACY                 = 11  ##< 0 - 3
-OPTION_F200_MOTION_RANGE             = 12  ##< 0 - 100
-OPTION_F200_FILTER_OPTION            = 13  ##< 0 - 7
-OPTION_F200_CONFIDENCE_THRESHOLD     = 14  ##< 0 - 15
-OPTION_F200_DYNAMIC_FPS              = 15  ##< {2, 5, 15, 30, 60}
-OPTION_R200_LR_AUTO_EXPOSURE_ENABLED = 16  ##< {0, 1}
-OPTION_R200_LR_GAIN                  = 17  ##< 100 - 1600 (Units of 0.01)
-OPTION_R200_LR_EXPOSURE              = 18  ##< > 0 (Units of 0.1 ms)
-OPTION_R200_EMITTER_ENABLED          = 19  ##< {0, 1}
-OPTION_R200_DEPTH_CONTROL_PRESET     = 20  ##< 0 - 5, 0 is default, 1-5 is low to high outlier rejection
-OPTION_R200_DEPTH_UNITS              = 21  ##< micrometers per increment in integer depth values, 1000 is default (mm scale)
-OPTION_R200_DEPTH_CLAMP_MIN          = 22  ##< 0 - USHORT_MAX
-OPTION_R200_DEPTH_CLAMP_MAX          = 23  ##< 0 - USHORT_MAX
-OPTION_R200_DISPARITY_MODE_ENABLED   = 24  ##< {0, 1}
-OPTION_R200_DISPARITY_MULTIPLIER     = 25 
-OPTION_R200_DISPARITY_SHIFT          = 26 
-OPTION_COUNT                         = 27 
+OPTION_COLOR_BACKLIGHT_COMPENSATION    = 0  
+OPTION_COLOR_BRIGHTNESS                = 1  
+OPTION_COLOR_CONTRAST                  = 2  
+OPTION_COLOR_EXPOSURE                  = 3   ##< Controls exposure time of color camera. Setting any value will disable auto exposure.
+OPTION_COLOR_GAIN                      = 4  
+OPTION_COLOR_GAMMA                     = 5  
+OPTION_COLOR_HUE                       = 6  
+OPTION_COLOR_SATURATION                = 7  
+OPTION_COLOR_SHARPNESS                 = 8  
+OPTION_COLOR_WHITE_BALANCE             = 9   ##< Controls white balance of color image. Setting any value will disable auto white balance.
+OPTION_COLOR_ENABLE_AUTO_EXPOSURE      = 10  ##< Set to 1 to enable automatic exposure control, or 0 to return to manual control
+OPTION_COLOR_ENABLE_AUTO_WHITE_BALANCE = 11  ##< Set to 1 to enable automatic white balance control, or 0 to return to manual control
+OPTION_F200_LASER_POWER                = 12  ##< 0 - 15
+OPTION_F200_ACCURACY                   = 13  ##< 0 - 3
+OPTION_F200_MOTION_RANGE               = 14  ##< 0 - 100
+OPTION_F200_FILTER_OPTION              = 15  ##< 0 - 7
+OPTION_F200_CONFIDENCE_THRESHOLD       = 16  ##< 0 - 15
+OPTION_F200_DYNAMIC_FPS                = 17  ##< {2, 5, 15, 30, 60}
+OPTION_R200_LR_AUTO_EXPOSURE_ENABLED   = 18  ##< {0, 1}
+OPTION_R200_LR_GAIN                    = 19  ##< 100 - 1600 (Units of 0.01)
+OPTION_R200_LR_EXPOSURE                = 20  ##< > 0 (Units of 0.1 ms)
+OPTION_R200_EMITTER_ENABLED            = 21  ##< {0, 1}
+OPTION_R200_DEPTH_CONTROL_PRESET       = 22  ##< 0 - 5, 0 is default, 1-5 is low to high outlier rejection
+OPTION_R200_DEPTH_UNITS                = 23  ##< micrometers per increment in integer depth values, 1000 is default (mm scale)
+OPTION_R200_DEPTH_CLAMP_MIN            = 24  ##< 0 - USHORT_MAX
+OPTION_R200_DEPTH_CLAMP_MAX            = 25  ##< 0 - USHORT_MAX
+OPTION_R200_DISPARITY_MULTIPLIER       = 26  ##< 0 - 1000, the increments in integer disparity values corresponding to one pixel of disparity
+OPTION_R200_DISPARITY_SHIFT            = 27 
+OPTION_COUNT                           = 28 
 
 class Intrinsics(Structure):
     _fields_ = [("width", c_int),
@@ -136,7 +131,7 @@ def check_error(e):
 class Context:
     def __init__(self):
         e = c_void_p(0)
-        self.handle = realsense.rs_create_context(3, byref(e))
+        self.handle = realsense.rs_create_context(4, byref(e))
         check_error(e)
 
     def free(self):
@@ -214,6 +209,18 @@ class Device:
         r = realsense.rs_device_supports_option(self.handle, option, byref(e))
         check_error(e)
         return r
+
+    ## determine the range of acceptable values for an option on this device
+    # @param option  the option whose range to query
+    # @return        the minimum acceptable value, attempting to set a value below this will take no effect and raise an error
+    # @return        the maximum acceptable value, attempting to set a value above this will take no effect and raise an error
+    def get_option_range(self, option):
+        e = c_void_p(0)
+        min = c_int()
+        max = c_int()
+        realsense.rs_get_device_option_range(self.handle, option, byref(min), byref(max), byref(e))
+        check_error(e)
+        return (min.value, max.value)
 
     ## determine the number of streaming modes available for a given stream
     # @param stream  the stream whose modes will be enumerated

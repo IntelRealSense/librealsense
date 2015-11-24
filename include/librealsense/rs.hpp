@@ -1,18 +1,12 @@
-/*
-    INTEL CORPORATION PROPRIETARY INFORMATION This software is supplied under the
-    terms of a license agreement or nondisclosure agreement with Intel Corporation
-    and may not be copied or disclosed except in accordance with the terms of that
-    agreement.
-    Copyright(c) 2015 Intel Corporation. All Rights Reserved.
-*/
-
 #ifndef LIBREALSENSE_RS_HPP
 #define LIBREALSENSE_RS_HPP
 
 #include "rsutil.h"
 #include <cmath>
 #include <cstdint>
+#include <cstring>
 #include <sstream>
+#include <stdexcept>
 
 namespace rs
 {
@@ -31,16 +25,17 @@ namespace rs
 
     enum class format : int32_t
     {
-        any   = 0, 
-        z16   = 1, 
-        yuyv  = 2, 
-        rgb8  = 3, 
-        bgr8  = 4, 
-        rgba8 = 5, 
-        bgra8 = 6, 
-        y8    = 7, 
-        y16   = 8, 
-        raw10 = 9  ///< Four 10-bit luminance values encoded into a 5-byte macropixel
+        any         = 0, 
+        z16         = 1, ///< 16 bit linear depth values. The depth is meters is equal to depth scale * pixel value
+        disparity16 = 2, ///< 16 bit linear disparity values. The depth in meters is equal to depth scale / pixel value
+        yuyv        = 3, 
+        rgb8        = 4, 
+        bgr8        = 5, 
+        rgba8       = 6, 
+        bgra8       = 7, 
+        y8          = 8, 
+        y16         = 9, 
+        raw10       = 10 ///< Four 10-bit luminance values encoded into a 5-byte macropixel
     };
 
     enum class preset : int32_t
@@ -59,33 +54,34 @@ namespace rs
 
     enum class option : int32_t
     {
-        color_backlight_compensation  = 0,  
-        color_brightness              = 1,  
-        color_contrast                = 2,  
-        color_exposure                = 3,  
-        color_gain                    = 4,  
-        color_gamma                   = 5,  
-        color_hue                     = 6,  
-        color_saturation              = 7,  
-        color_sharpness               = 8,  
-        color_white_balance           = 9,  
-        f200_laser_power              = 10, ///< 0 - 15
-        f200_accuracy                 = 11, ///< 0 - 3
-        f200_motion_range             = 12, ///< 0 - 100
-        f200_filter_option            = 13, ///< 0 - 7
-        f200_confidence_threshold     = 14, ///< 0 - 15
-        f200_dynamic_fps              = 15, ///< {2, 5, 15, 30, 60}
-        r200_lr_auto_exposure_enabled = 16, ///< {0, 1}
-        r200_lr_gain                  = 17, ///< 100 - 1600 (Units of 0.01)
-        r200_lr_exposure              = 18, ///< > 0 (Units of 0.1 ms)
-        r200_emitter_enabled          = 19, ///< {0, 1}
-        r200_depth_control_preset     = 20, ///< 0 - 5, 0 is default, 1-5 is low to high outlier rejection
-        r200_depth_units              = 21, ///< micrometers per increment in integer depth values, 1000 is default (mm scale)
-        r200_depth_clamp_min          = 22, ///< 0 - USHORT_MAX
-        r200_depth_clamp_max          = 23, ///< 0 - USHORT_MAX
-        r200_disparity_mode_enabled   = 24, ///< {0, 1}
-        r200_disparity_multiplier     = 25, 
-        r200_disparity_shift          = 26  
+        color_backlight_compensation    = 0,  
+        color_brightness                = 1,  
+        color_contrast                  = 2,  
+        color_exposure                  = 3,  ///< Controls exposure time of color camera. Setting any value will disable auto exposure.
+        color_gain                      = 4,  
+        color_gamma                     = 5,  
+        color_hue                       = 6,  
+        color_saturation                = 7,  
+        color_sharpness                 = 8,  
+        color_white_balance             = 9,  ///< Controls white balance of color image. Setting any value will disable auto white balance.
+        color_enable_auto_exposure      = 10, ///< Set to 1 to enable automatic exposure control, or 0 to return to manual control
+        color_enable_auto_white_balance = 11, ///< Set to 1 to enable automatic white balance control, or 0 to return to manual control
+        f200_laser_power                = 12, ///< 0 - 15
+        f200_accuracy                   = 13, ///< 0 - 3
+        f200_motion_range               = 14, ///< 0 - 100
+        f200_filter_option              = 15, ///< 0 - 7
+        f200_confidence_threshold       = 16, ///< 0 - 15
+        f200_dynamic_fps                = 17, ///< {2, 5, 15, 30, 60}
+        r200_lr_auto_exposure_enabled   = 18, ///< {0, 1}
+        r200_lr_gain                    = 19, ///< 100 - 1600 (Units of 0.01)
+        r200_lr_exposure                = 20, ///< > 0 (Units of 0.1 ms)
+        r200_emitter_enabled            = 21, ///< {0, 1}
+        r200_depth_control_preset       = 22, ///< 0 - 5, 0 is default, 1-5 is low to high outlier rejection
+        r200_depth_units                = 23, ///< micrometers per increment in integer depth values, 1000 is default (mm scale)
+        r200_depth_clamp_min            = 24, ///< 0 - USHORT_MAX
+        r200_depth_clamp_max            = 25, ///< 0 - USHORT_MAX
+        r200_disparity_multiplier       = 26, ///< 0 - 1000, the increments in integer disparity values corresponding to one pixel of disparity
+        r200_disparity_shift            = 27  
     };
 
     struct float2 { float x,y; };
@@ -140,7 +136,7 @@ namespace rs
         context()
         {
             rs_error * e = nullptr;
-            handle = rs_create_context(3, &e);
+            handle = rs_create_context(4, &e);
             error::handle(e);
         }
 
@@ -240,6 +236,17 @@ namespace rs
             auto r = rs_device_supports_option((const rs_device *)this, (rs_option)option, &e);
             error::handle(e);
             return r != 0;
+        }
+
+        /// determine the range of acceptable values for an option on this device
+        /// \param[in] option  the option whose range to query
+        /// \param[out] min    the minimum acceptable value, attempting to set a value below this will take no effect and raise an error
+        /// \param[out] max    the maximum acceptable value, attempting to set a value above this will take no effect and raise an error
+        void get_option_range(option option, int & min, int & max) const
+        {
+            rs_error * e = nullptr;
+            rs_get_device_option_range((const rs_device *)this, (rs_option)option, &min, &max, &e);
+            error::handle(e);
         }
 
         /// determine the number of streaming modes available for a given stream

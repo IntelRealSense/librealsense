@@ -48,7 +48,7 @@ TEST_CASE( "R200 metadata enumerates correctly", "[live] [r200]" )
         {
             for(int i=0; i<RS_OPTION_COUNT; ++i)
             {
-                if(i >= RS_OPTION_COLOR_BACKLIGHT_COMPENSATION && i <= RS_OPTION_COLOR_WHITE_BALANCE)
+                if(i >= RS_OPTION_COLOR_BACKLIGHT_COMPENSATION && i <= RS_OPTION_COLOR_ENABLE_AUTO_WHITE_BALANCE)
                 {
                     REQUIRE(rs_device_supports_option(dev, (rs_option)i, require_no_error()) == 1);
                 }
@@ -626,11 +626,6 @@ TEST_CASE( "R200 supports RS_OPTION_R200_DEPTH_CLAMP_MIN", "[live] [r200]" )
 TEST_CASE( "R200 supports RS_OPTION_R200_DEPTH_CLAMP_MAX", "[live] [r200]" )
 {
     test_r200_option(RS_OPTION_R200_DEPTH_CLAMP_MAX, {500, 1000, 2000, USHRT_MAX}, BEFORE_START_DEVICE);
-}
-
-TEST_CASE( "R200 supports RS_OPTION_R200_DISPARITY_MODE_ENABLED", "[live] [r200]" )
-{
-    test_r200_option(RS_OPTION_R200_DISPARITY_MODE_ENABLED, {0, 1}, BEFORE_START_DEVICE);        
 }
 
 //////////////////////////////////////////

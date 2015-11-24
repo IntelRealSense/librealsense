@@ -11,6 +11,7 @@
 #include "image.h"
 
 #include <cstring>
+#include <climits>
 #include <algorithm>
 
 namespace rsimpl
@@ -31,7 +32,7 @@ namespace rsimpl
         UNPACKER(&out, source, mode);
 
         // Erase Dinghy, which will get copied over when blitting into a padded buffer
-        memset(out + get_image_size(mode.streams[0].width, mode.height-1, RS_FORMAT_Z16), 0, get_image_size(mode.width, 1, mode.streams[0].format));
+        memset(out + get_image_size(mode.streams[0].width, mode.height-1, mode.streams[0].format), 0, get_image_size(mode.width, 1, mode.streams[0].format));
     }
 
     template<unsigned MAGIC_NUMBER>
@@ -78,7 +79,7 @@ namespace rsimpl
     r200_camera::r200_camera(std::shared_ptr<uvc::device> device, const static_device_info & info, std::vector<rs_intrinsics> intrinsics, std::vector<rs_intrinsics> rect_intrinsics) : rs_device(device, info)
     {
         config.intrinsics.set(intrinsics, rect_intrinsics);
-        config.depth_scale = (float)get_xu_option(RS_OPTION_R200_DEPTH_UNITS) / 1000000; // Convert from micrometers to meters
+        on_update_depth_units(get_xu_option(RS_OPTION_R200_DEPTH_UNITS));
     }
     
     r200_camera::~r200_camera()
@@ -114,6 +115,8 @@ namespace rsimpl
             {
                 info.subdevice_modes.push_back({1, m.uvc_w-12, m.uvc_h-12, &pf_z16, fps, {{RS_STREAM_DEPTH, m.w, m.h, RS_FORMAT_Z16, fps, m.lr_intrin}}, &pad_unpack<unpack_subrect>, &decode_dinghy_frame_number<0x4030201>});
                 info.subdevice_modes.push_back({1, m.uvc_w-12, m.uvc_h-12, &pf_z16, fps, {{RS_STREAM_DEPTH, m.w-12, m.h-12, RS_FORMAT_Z16, fps, m.z_intrin}}, &unpack_subrect, &decode_dinghy_frame_number<0x4030201>});
+                info.subdevice_modes.push_back({1, m.uvc_w-12, m.uvc_h-12, &pf_z16, fps, {{RS_STREAM_DEPTH, m.w, m.h, RS_FORMAT_DISPARITY16, fps, m.lr_intrin}}, &pad_unpack<unpack_subrect>, &decode_dinghy_frame_number<0x4030201>});
+                info.subdevice_modes.push_back({1, m.uvc_w-12, m.uvc_h-12, &pf_z16, fps, {{RS_STREAM_DEPTH, m.w-12, m.h-12, RS_FORMAT_DISPARITY16, fps, m.z_intrin}}, &unpack_subrect, &decode_dinghy_frame_number<0x4030201>});
                 info.subdevice_modes.push_back({0, m.uvc_w, m.uvc_h, &pf_y8 , fps,  {{RS_STREAM_INFRARED,  m.w, m.h, RS_FORMAT_Y8,  fps, m.lr_intrin}}, &unpack_subrect, &decode_dinghy_frame_number<0x08070605>});
                 info.subdevice_modes.push_back({0, m.uvc_w, m.uvc_h, &pf_y8 , fps,  {{RS_STREAM_INFRARED,  m.w-12, m.h-12, RS_FORMAT_Y8,  fps, m.z_intrin}}, &crop_unpack<unpack_subrect>, &decode_dinghy_frame_number<0x08070605>});
                 info.subdevice_modes.push_back({0, m.uvc_w, m.uvc_h, &pf_y8i, fps,  {{RS_STREAM_INFRARED,  m.w, m.h, RS_FORMAT_Y8,  fps, m.lr_intrin},
@@ -211,6 +214,26 @@ namespace rsimpl
         return std::make_shared<r200_camera>(device, info, intrinsics, rect_intrinsics);
     }
 
+    bool r200_camera::is_disparity_mode_enabled() const
+    {
+        auto & depth = get_stream_interface(RS_STREAM_DEPTH);
+        return depth.is_enabled() && depth.get_format() == RS_FORMAT_DISPARITY16;
+    }
+
+    void r200_camera::on_update_depth_units(int units)
+    {
+        if(is_disparity_mode_enabled()) return;
+        config.depth_scale = (float)units / 1000000; // Convert from micrometers to meters
+    }
+
+    void r200_camera::on_update_disparity_multiplier(float multiplier)
+    {
+        if(!is_disparity_mode_enabled()) return;
+        auto & depth = get_stream_interface(RS_STREAM_DEPTH);
+        float baseline = get_stream_interface(RS_STREAM_INFRARED2).get_extrinsics_to(depth).translation[0];
+        config.depth_scale = depth.get_intrinsics().fx * baseline * multiplier;
+    }
+
     void r200_camera::on_before_start(const std::vector<subdevice_mode> & selected_modes)
     {
         uint8_t streamIntent = 0;
@@ -219,8 +242,25 @@ namespace rsimpl
             switch(m.subdevice)
             {
             case 0: streamIntent |= r200::STATUS_BIT_LR_STREAMING; break;
-            case 1: streamIntent |= r200::STATUS_BIT_Z_STREAMING; break;
             case 2: streamIntent |= r200::STATUS_BIT_WEB_STREAMING; break;
+            case 1: 
+                streamIntent |= r200::STATUS_BIT_Z_STREAMING; 
+                r200::disparity_mode dm;        
+                r200::get_disparity_mode(get_device(), dm);
+                switch(m.streams[0].format)
+                {
+                default: throw std::logic_error("unsupported R200 depth format");
+                case RS_FORMAT_Z16: 
+                    dm.is_disparity_enabled = 0;
+                    on_update_depth_units(get_xu_option(RS_OPTION_R200_DEPTH_UNITS));
+                    break;
+                case RS_FORMAT_DISPARITY16: 
+                    dm.is_disparity_enabled = 1;
+                    on_update_disparity_multiplier(dm.disparity_multiplier);
+                    break;
+                }
+                r200::set_disparity_mode(get_device(), dm);
+                break;
             }
         }
         r200::set_stream_intent(get_device(), streamIntent);
@@ -239,6 +279,16 @@ namespace rsimpl
         return static_cast<int>(timestamp * 1000 / max_fps);
     }
 
+    int r200_camera::get_lr_framerate() const
+    {
+        for(auto s : {RS_STREAM_DEPTH, RS_STREAM_INFRARED, RS_STREAM_INFRARED2})
+        {
+            auto & stream = get_stream_interface(s);
+            if(stream.is_enabled()) return stream.get_framerate();
+        }
+        return 30;
+    }
+
     void r200_camera::set_xu_option(rs_option option, int value)
     {
         if(is_capturing())
@@ -248,15 +298,11 @@ namespace rsimpl
             case RS_OPTION_R200_DEPTH_UNITS:
             case RS_OPTION_R200_DEPTH_CLAMP_MIN:
             case RS_OPTION_R200_DEPTH_CLAMP_MAX:
-            case RS_OPTION_R200_DISPARITY_MODE_ENABLED:
             case RS_OPTION_R200_DISPARITY_MULTIPLIER:
             case RS_OPTION_R200_DISPARITY_SHIFT:
-                throw std::runtime_error("cannot set this option before rs_start_capture(...)");
+                throw std::runtime_error("cannot set this option after rs_start_capture(...)");
             }
         }
-
-        //r200::auto_exposure_params aep;
-        //r200::depth_params dp;
         r200::disparity_mode dm;
         uint32_t u32[2];
         uint16_t u16[2];
@@ -268,12 +314,10 @@ namespace rsimpl
             r200::set_lr_exposure_mode(get_device(), value);
             break;
         case RS_OPTION_R200_LR_GAIN:
-            r200::get_lr_gain(get_device(), u32[0], u32[1]);
-            r200::set_lr_gain(get_device(), u32[0], value);
+            r200::set_lr_gain(get_device(), get_lr_framerate(), value); // TODO: May need to set this on start if framerate changes
             break;
         case RS_OPTION_R200_LR_EXPOSURE:
-            r200::get_lr_exposure(get_device(), u32[0], u32[1]);
-            r200::set_lr_exposure(get_device(), u32[0], value);
+            r200::set_lr_exposure(get_device(), get_lr_framerate(), value); // TODO: May need to set this on start if framerate changes
             break;
         case RS_OPTION_R200_EMITTER_ENABLED:
             r200::set_emitter_state(get_device(), !!value);
@@ -283,7 +327,7 @@ namespace rsimpl
             break;
         case RS_OPTION_R200_DEPTH_UNITS:
             r200::set_depth_units(get_device(), value);
-            config.depth_scale = (float)value / 1000000; // Convert from micrometers to meters
+            on_update_depth_units(value);
             break;
         case RS_OPTION_R200_DEPTH_CLAMP_MIN:
             r200::get_min_max_depth(get_device(), u16[0], u16[1]);
@@ -293,20 +337,48 @@ namespace rsimpl
             r200::get_min_max_depth(get_device(), u16[0], u16[1]);
             r200::set_min_max_depth(get_device(), u16[0], value);
             break;
-        case RS_OPTION_R200_DISPARITY_MODE_ENABLED:
-            r200::get_disparity_mode(get_device(), dm);
-            dm.format = value ? r200::range_format::RANGE_FORMAT_DISPARITY : r200::range_format::RANGE_FORMAT_DISTANCE;
-            r200::set_disparity_mode(get_device(), dm);
-            break;
         case RS_OPTION_R200_DISPARITY_MULTIPLIER:
             r200::get_disparity_mode(get_device(), dm);
-            dm.multiplier = value;
+            dm.disparity_multiplier = value;
             r200::set_disparity_mode(get_device(), dm);
+            on_update_disparity_multiplier(value);
             break;
         case RS_OPTION_R200_DISPARITY_SHIFT:
             r200::set_disparity_shift(get_device(), value);
             break;
         }
+    }
+
+    void r200_camera::get_xu_range(rs_option option, int * min, int * max) const
+    {
+        int max_fps = 30;
+        for(int i=0; i<RS_STREAM_NATIVE_COUNT; ++i)
+        {
+            if(get_stream_interface((rs_stream)i).is_enabled())
+            {
+                max_fps = std::max(max_fps, get_stream_interface((rs_stream)i).get_framerate());
+            }
+        }
+        const struct { rs_option option; int min, max; } ranges[] = {
+            {RS_OPTION_R200_LR_AUTO_EXPOSURE_ENABLED, 0, 1},
+            {RS_OPTION_R200_LR_GAIN, 100, 1600},
+            {RS_OPTION_R200_LR_EXPOSURE, 0, 10000/max_fps},
+            {RS_OPTION_R200_EMITTER_ENABLED, 0, 1},
+            {RS_OPTION_R200_DEPTH_CONTROL_PRESET, 0, 5},
+            {RS_OPTION_R200_DEPTH_UNITS, 1, INT_MAX}, // What is the real range?
+            {RS_OPTION_R200_DEPTH_CLAMP_MIN, 0, USHRT_MAX},
+            {RS_OPTION_R200_DEPTH_CLAMP_MAX, 0, USHRT_MAX},
+            {RS_OPTION_R200_DISPARITY_MULTIPLIER, 1, 1000},
+            {RS_OPTION_R200_DISPARITY_SHIFT, 0, 0},
+        };
+        for(auto & r : ranges)
+        {
+            if(option != r.option) continue;
+            if(min) *min = r.min;
+            if(max) *max = r.max;
+            return;
+        }
+        throw std::logic_error("range not specified");
     }
 
     int r200_camera::get_xu_option(rs_option option) const
@@ -328,8 +400,7 @@ namespace rsimpl
         case RS_OPTION_R200_DEPTH_UNITS:              r200::get_depth_units     (get_device(), u32[0]);         value = u32[0]; break;
         case RS_OPTION_R200_DEPTH_CLAMP_MIN:          r200::get_min_max_depth   (get_device(), u16[0], u16[1]); value = u16[0]; break;
         case RS_OPTION_R200_DEPTH_CLAMP_MAX:          r200::get_min_max_depth   (get_device(), u16[0], u16[1]); value = u16[1]; break;
-        case RS_OPTION_R200_DISPARITY_MODE_ENABLED:   r200::get_disparity_mode  (get_device(), dm);             value = dm.format == r200::range_format::RANGE_FORMAT_DISPARITY; break;
-        case RS_OPTION_R200_DISPARITY_MULTIPLIER:     r200::get_disparity_mode  (get_device(), dm);             value = static_cast<int>(dm.multiplier); break;
+        case RS_OPTION_R200_DISPARITY_MULTIPLIER:     r200::get_disparity_mode  (get_device(), dm);             value = static_cast<int>(dm.disparity_multiplier); break;
         case RS_OPTION_R200_DISPARITY_SHIFT:          r200::get_disparity_shift (get_device(), u32[0]);         value = u32[0]; break;
         case RS_OPTION_R200_DEPTH_CONTROL_PRESET:
             r200::get_depth_params(get_device(), dp);

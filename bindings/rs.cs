@@ -1,11 +1,3 @@
-/*
-    INTEL CORPORATION PROPRIETARY INFORMATION This software is supplied under the
-    terms of a license agreement or nondisclosure agreement with Intel Corporation
-    and may not be copied or disclosed except in accordance with the terms of that
-    agreement.
-    Copyright(c) 2015 Intel Corporation. All Rights Reserved.
-*/
-
 using System;
 using System.Runtime.InteropServices;
 
@@ -27,15 +19,16 @@ namespace RealSense
     public enum Format : int
     {
         Any = 0,
-        Z16 = 1,
-        YUYV = 2,
-        RGB8 = 3,
-        BGR8 = 4,
-        RGBA8 = 5,
-        BGRA8 = 6,
-        Y8 = 7,
-        Y16 = 8,
-        Raw10 = 9 // Four 10-bit luminance values encoded into a 5-byte macropixel
+        Z16 = 1, // 16 bit linear depth values. The depth is meters is equal to depth scale * pixel value
+        Disparity16 = 2, // 16 bit linear disparity values. The depth in meters is equal to depth scale / pixel value
+        YUYV = 3,
+        RGB8 = 4,
+        BGR8 = 5,
+        RGBA8 = 6,
+        BGRA8 = 7,
+        Y8 = 8,
+        Y16 = 9,
+        Raw10 = 10 // Four 10-bit luminance values encoded into a 5-byte macropixel
     }
 
     public enum Preset : int
@@ -57,30 +50,31 @@ namespace RealSense
         ColorBacklightCompensation = 0,
         ColorBrightness = 1,
         ColorContrast = 2,
-        ColorExposure = 3,
+        ColorExposure = 3, // Controls exposure time of color camera. Setting any value will disable auto exposure.
         ColorGain = 4,
         ColorGamma = 5,
         ColorHue = 6,
         ColorSaturation = 7,
         ColorSharpness = 8,
-        ColorWhiteBalance = 9,
-        F200LaserPower = 10, // 0 - 15
-        F200Accuracy = 11, // 0 - 3
-        F200MotionRange = 12, // 0 - 100
-        F200FilterOption = 13, // 0 - 7
-        F200ConfidenceThreshold = 14, // 0 - 15
-        F200DynamicFPS = 15, // {2, 5, 15, 30, 60}
-        R200LRAutoExposureEnabled = 16, // {0, 1}
-        R200LRGain = 17, // 100 - 1600 (Units of 0.01)
-        R200LRExposure = 18, // > 0 (Units of 0.1 ms)
-        R200EmitterEnabled = 19, // {0, 1}
-        R200DepthControlPreset = 20, // 0 - 5, 0 is default, 1-5 is low to high outlier rejection
-        R200DepthUnits = 21, // micrometers per increment in integer depth values, 1000 is default (mm scale)
-        R200DepthClampMin = 22, // 0 - USHORT_MAX
-        R200DepthClampMax = 23, // 0 - USHORT_MAX
-        R200DisparityModeEnabled = 24, // {0, 1}
-        R200DisparityMultiplier = 25,
-        R200DisparityShift = 26
+        ColorWhiteBalance = 9, // Controls white balance of color image. Setting any value will disable auto white balance.
+        ColorEnableAutoExposure = 10, // Set to 1 to enable automatic exposure control, or 0 to return to manual control
+        ColorEnableAutoWhiteBalance = 11, // Set to 1 to enable automatic white balance control, or 0 to return to manual control
+        F200LaserPower = 12, // 0 - 15
+        F200Accuracy = 13, // 0 - 3
+        F200MotionRange = 14, // 0 - 100
+        F200FilterOption = 15, // 0 - 7
+        F200ConfidenceThreshold = 16, // 0 - 15
+        F200DynamicFPS = 17, // {2, 5, 15, 30, 60}
+        R200LRAutoExposureEnabled = 18, // {0, 1}
+        R200LRGain = 19, // 100 - 1600 (Units of 0.01)
+        R200LRExposure = 20, // > 0 (Units of 0.1 ms)
+        R200EmitterEnabled = 21, // {0, 1}
+        R200DepthControlPreset = 22, // 0 - 5, 0 is default, 1-5 is low to high outlier rejection
+        R200DepthUnits = 23, // micrometers per increment in integer depth values, 1000 is default (mm scale)
+        R200DepthClampMin = 24, // 0 - USHORT_MAX
+        R200DepthClampMax = 25, // 0 - USHORT_MAX
+        R200DisparityMultiplier = 26, // 0 - 1000, the increments in integer disparity values corresponding to one pixel of disparity
+        R200DisparityShift = 27
     }
 
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
@@ -136,7 +130,7 @@ namespace RealSense
         public Context()
         {
             IntPtr e = IntPtr.Zero;
-            handle = rs_create_context(3, ref e);
+            handle = rs_create_context(4, ref e);
             Error.Handle(e);
         }
 
@@ -239,6 +233,17 @@ namespace RealSense
             var r = rs_device_supports_option(handle, option, ref e);
             Error.Handle(e);
             return r != 0;
+        }
+
+        /// <summary> determine the range of acceptable values for an option on this device </summary>
+        /// <param name="option"> the option whose range to query </param>
+        /// <param name="min"> the minimum acceptable value, attempting to set a value below this will take no effect and raise an error </param>
+        /// <param name="max"> the maximum acceptable value, attempting to set a value above this will take no effect and raise an error </param>
+        public void GetOptionRange(Option option, out int min, out int max)
+        {
+            IntPtr e = IntPtr.Zero;
+            rs_get_device_option_range(handle, option, out min, out max, ref e);
+            Error.Handle(e);
         }
 
         /// <summary> determine the number of streaming modes available for a given stream </summary>
@@ -426,6 +431,7 @@ namespace RealSense
         [DllImport("realsense")] private static extern void rs_get_device_extrinsics(IntPtr device, Stream from_stream, Stream to_stream, out Extrinsics extrin, ref IntPtr error);
         [DllImport("realsense")] private static extern float rs_get_device_depth_scale(IntPtr device, ref IntPtr error);
         [DllImport("realsense")] private static extern int rs_device_supports_option(IntPtr device, Option option, ref IntPtr error);
+        [DllImport("realsense")] private static extern void rs_get_device_option_range(IntPtr device, Option option, out int min, out int max, ref IntPtr error);
         [DllImport("realsense")] private static extern int rs_get_stream_mode_count(IntPtr device, Stream stream, ref IntPtr error);
         [DllImport("realsense")] private static extern void rs_get_stream_mode(IntPtr device, Stream stream, int index, out int width, out int height, out Format format, out int framerate, ref IntPtr error);
         [DllImport("realsense")] private static extern void rs_enable_stream(IntPtr device, Stream stream, int width, int height, Format format, int framerate, ref IntPtr error);

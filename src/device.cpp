@@ -253,6 +253,19 @@ const byte * rs_device::get_frame_data(rs_stream stream) const
     return streams[stream]->get_frame_data();
 }
 
+void rs_device::get_option_range(rs_option option, int * min, int * max) const
+{
+    if(!supports_option(option)) throw std::runtime_error(to_string() << "option not supported by this device - " << option);
+    if(uvc::is_pu_control(option))
+    {           
+        uvc::get_pu_control_range(get_device(), config.info.stream_subdevices[RS_STREAM_COLOR], option, min, max);
+    }
+    else
+    {
+        get_xu_range(option, min, max);
+    }
+}
+
 void rs_device::set_option(rs_option option, int value)
 {
     if(!supports_option(option)) throw std::runtime_error(to_string() << "option not supported by this device - " << option);

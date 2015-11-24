@@ -29,10 +29,10 @@ int main(int argc, char * argv[]) try
     if(ctx.get_device_count() == 0) throw std::runtime_error("No device detected. Is it plugged in?");
     rs::device & dev = *ctx.get_device(0);
 
-    dev.enable_stream(rs::stream::depth, 640, 480, rs::format::z16, 60); // rs::preset::best_quality);
+    dev.enable_stream(rs::stream::depth, rs::preset::best_quality);
     dev.enable_stream(rs::stream::color, rs::preset::best_quality);
-    dev.enable_stream(rs::stream::infrared, 0, 0, rs::format::y8, 0);
-    //try { dev.enable_stream(rs::stream::infrared2, rs::preset::best_quality); } catch(...) {}
+    dev.enable_stream(rs::stream::infrared, rs::preset::best_quality);
+    try { dev.enable_stream(rs::stream::infrared2, rs::preset::best_quality); } catch(...) {}
 
     // Compute field of view for each enabled stream
     for(int i = 0; i < 4; ++i)
@@ -94,7 +94,7 @@ int main(int argc, char * argv[]) try
     // Load our truetype font
     if (auto f = find_file("examples/assets/Roboto-Bold.ttf", 3))
     {
-        font = ttf_create(f);
+        font = ttf_create(f,20);
         fclose(f);
     }
     else throw std::runtime_error("Unable to open examples/assets/Roboto-Bold.ttf");

@@ -1,11 +1,3 @@
-/*
-    INTEL CORPORATION PROPRIETARY INFORMATION This software is supplied under the
-    terms of a license agreement or nondisclosure agreement with Intel Corporation
-    and may not be copied or disclosed except in accordance with the terms of that
-    agreement.
-    Copyright(c) 2015 Intel Corporation. All Rights Reserved.
-*/
-
 #ifndef LIBREALSENSE_RS_H
 #define LIBREALSENSE_RS_H
 
@@ -13,7 +5,7 @@
 extern "C" {
 #endif
 
-#define RS_API_VERSION 3
+#define RS_API_VERSION 4
 
 typedef enum rs_stream
 {
@@ -31,17 +23,18 @@ typedef enum rs_stream
 
 typedef enum rs_format
 {
-    RS_FORMAT_ANY   = 0,  
-    RS_FORMAT_Z16   = 1,  
-    RS_FORMAT_YUYV  = 2,  
-    RS_FORMAT_RGB8  = 3,  
-    RS_FORMAT_BGR8  = 4,  
-    RS_FORMAT_RGBA8 = 5,  
-    RS_FORMAT_BGRA8 = 6,  
-    RS_FORMAT_Y8    = 7,  
-    RS_FORMAT_Y16   = 8,  
-    RS_FORMAT_RAW10 = 9,  /**< Four 10-bit luminance values encoded into a 5-byte macropixel */
-    RS_FORMAT_COUNT = 10, 
+    RS_FORMAT_ANY         = 0,  
+    RS_FORMAT_Z16         = 1,  /**< 16 bit linear depth values. The depth is meters is equal to depth scale * pixel value */
+    RS_FORMAT_DISPARITY16 = 2,  /**< 16 bit linear disparity values. The depth in meters is equal to depth scale / pixel value */
+    RS_FORMAT_YUYV        = 3,  
+    RS_FORMAT_RGB8        = 4,  
+    RS_FORMAT_BGR8        = 5,  
+    RS_FORMAT_RGBA8       = 6,  
+    RS_FORMAT_BGRA8       = 7,  
+    RS_FORMAT_Y8          = 8,  
+    RS_FORMAT_Y16         = 9,  
+    RS_FORMAT_RAW10       = 10, /**< Four 10-bit luminance values encoded into a 5-byte macropixel */
+    RS_FORMAT_COUNT       = 11, 
     RS_FORMAT_MAX_ENUM = 0x7FFFFFFF
 } rs_format;
 
@@ -65,34 +58,35 @@ typedef enum rs_distortion
 
 typedef enum rs_option
 {
-    RS_OPTION_COLOR_BACKLIGHT_COMPENSATION  = 0,  
-    RS_OPTION_COLOR_BRIGHTNESS              = 1,  
-    RS_OPTION_COLOR_CONTRAST                = 2,  
-    RS_OPTION_COLOR_EXPOSURE                = 3,  
-    RS_OPTION_COLOR_GAIN                    = 4,  
-    RS_OPTION_COLOR_GAMMA                   = 5,  
-    RS_OPTION_COLOR_HUE                     = 6,  
-    RS_OPTION_COLOR_SATURATION              = 7,  
-    RS_OPTION_COLOR_SHARPNESS               = 8,  
-    RS_OPTION_COLOR_WHITE_BALANCE           = 9,  
-    RS_OPTION_F200_LASER_POWER              = 10, /**< 0 - 15 */
-    RS_OPTION_F200_ACCURACY                 = 11, /**< 0 - 3 */
-    RS_OPTION_F200_MOTION_RANGE             = 12, /**< 0 - 100 */
-    RS_OPTION_F200_FILTER_OPTION            = 13, /**< 0 - 7 */
-    RS_OPTION_F200_CONFIDENCE_THRESHOLD     = 14, /**< 0 - 15 */
-    RS_OPTION_F200_DYNAMIC_FPS              = 15, /**< {2, 5, 15, 30, 60} */
-    RS_OPTION_R200_LR_AUTO_EXPOSURE_ENABLED = 16, /**< {0, 1} */
-    RS_OPTION_R200_LR_GAIN                  = 17, /**< 100 - 1600 (Units of 0.01) */
-    RS_OPTION_R200_LR_EXPOSURE              = 18, /**< > 0 (Units of 0.1 ms) */
-    RS_OPTION_R200_EMITTER_ENABLED          = 19, /**< {0, 1} */
-    RS_OPTION_R200_DEPTH_CONTROL_PRESET     = 20, /**< 0 - 5, 0 is default, 1-5 is low to high outlier rejection */
-    RS_OPTION_R200_DEPTH_UNITS              = 21, /**< micrometers per increment in integer depth values, 1000 is default (mm scale) */
-    RS_OPTION_R200_DEPTH_CLAMP_MIN          = 22, /**< 0 - USHORT_MAX */
-    RS_OPTION_R200_DEPTH_CLAMP_MAX          = 23, /**< 0 - USHORT_MAX */
-    RS_OPTION_R200_DISPARITY_MODE_ENABLED   = 24, /**< {0, 1} */
-    RS_OPTION_R200_DISPARITY_MULTIPLIER     = 25, 
-    RS_OPTION_R200_DISPARITY_SHIFT          = 26, 
-    RS_OPTION_COUNT                         = 27, 
+    RS_OPTION_COLOR_BACKLIGHT_COMPENSATION    = 0,  
+    RS_OPTION_COLOR_BRIGHTNESS                = 1,  
+    RS_OPTION_COLOR_CONTRAST                  = 2,  
+    RS_OPTION_COLOR_EXPOSURE                  = 3,  /**< Controls exposure time of color camera. Setting any value will disable auto exposure. */
+    RS_OPTION_COLOR_GAIN                      = 4,  
+    RS_OPTION_COLOR_GAMMA                     = 5,  
+    RS_OPTION_COLOR_HUE                       = 6,  
+    RS_OPTION_COLOR_SATURATION                = 7,  
+    RS_OPTION_COLOR_SHARPNESS                 = 8,  
+    RS_OPTION_COLOR_WHITE_BALANCE             = 9,  /**< Controls white balance of color image. Setting any value will disable auto white balance. */
+    RS_OPTION_COLOR_ENABLE_AUTO_EXPOSURE      = 10, /**< Set to 1 to enable automatic exposure control, or 0 to return to manual control */
+    RS_OPTION_COLOR_ENABLE_AUTO_WHITE_BALANCE = 11, /**< Set to 1 to enable automatic white balance control, or 0 to return to manual control */
+    RS_OPTION_F200_LASER_POWER                = 12, /**< 0 - 15 */
+    RS_OPTION_F200_ACCURACY                   = 13, /**< 0 - 3 */
+    RS_OPTION_F200_MOTION_RANGE               = 14, /**< 0 - 100 */
+    RS_OPTION_F200_FILTER_OPTION              = 15, /**< 0 - 7 */
+    RS_OPTION_F200_CONFIDENCE_THRESHOLD       = 16, /**< 0 - 15 */
+    RS_OPTION_F200_DYNAMIC_FPS                = 17, /**< {2, 5, 15, 30, 60} */
+    RS_OPTION_R200_LR_AUTO_EXPOSURE_ENABLED   = 18, /**< {0, 1} */
+    RS_OPTION_R200_LR_GAIN                    = 19, /**< 100 - 1600 (Units of 0.01) */
+    RS_OPTION_R200_LR_EXPOSURE                = 20, /**< > 0 (Units of 0.1 ms) */
+    RS_OPTION_R200_EMITTER_ENABLED            = 21, /**< {0, 1} */
+    RS_OPTION_R200_DEPTH_CONTROL_PRESET       = 22, /**< 0 - 5, 0 is default, 1-5 is low to high outlier rejection */
+    RS_OPTION_R200_DEPTH_UNITS                = 23, /**< micrometers per increment in integer depth values, 1000 is default (mm scale) */
+    RS_OPTION_R200_DEPTH_CLAMP_MIN            = 24, /**< 0 - USHORT_MAX */
+    RS_OPTION_R200_DEPTH_CLAMP_MAX            = 25, /**< 0 - USHORT_MAX */
+    RS_OPTION_R200_DISPARITY_MULTIPLIER       = 26, /**< 0 - 1000, the increments in integer disparity values corresponding to one pixel of disparity */
+    RS_OPTION_R200_DISPARITY_SHIFT            = 27, 
+    RS_OPTION_COUNT                           = 28, 
     RS_OPTION_MAX_ENUM = 0x7FFFFFFF
 } rs_option;
 
@@ -180,6 +174,15 @@ float rs_get_device_depth_scale(const rs_device * device, rs_error ** error);
  * \return            true if the option can be queried and set
  */
 int rs_device_supports_option(const rs_device * device, rs_option option, rs_error ** error);
+
+/**
+ * determine the range of acceptable values for an option on this device
+ * \param[in] option  the option whose range to query
+ * \param[out] min    the minimum acceptable value, attempting to set a value below this will take no effect and raise an error
+ * \param[out] max    the maximum acceptable value, attempting to set a value above this will take no effect and raise an error
+ * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+ */
+void rs_get_device_option_range(const rs_device * device, rs_option option, int * min, int * max, rs_error ** error);
 
 /**
  * determine the number of streaming modes available for a given stream
