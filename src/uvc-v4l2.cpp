@@ -233,6 +233,13 @@ namespace rsimpl
                     }
 
                     v4l2_buf_type type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+                    for(int i=0; i<10; ++i)
+                    {
+                        if(xioctl(fd, VIDIOC_STREAMON, &type) < 0)
+                        {
+                            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+                        }
+                    }
                     if(xioctl(fd, VIDIOC_STREAMON, &type) < 0) throw_error("VIDIOC_STREAMON");
 
                     is_capturing = true;
