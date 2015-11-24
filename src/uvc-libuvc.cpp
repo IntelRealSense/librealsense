@@ -271,6 +271,9 @@ namespace rsimpl
             case RS_OPTION_COLOR_SATURATION: return get_pu_range<uint16_t>(handle, subdevice, pu_unit, UVC_PU_SATURATION_CONTROL, min, max);
             case RS_OPTION_COLOR_SHARPNESS: return get_pu_range<uint16_t>(handle, subdevice, pu_unit, UVC_PU_SHARPNESS_CONTROL, min, max);
             case RS_OPTION_COLOR_WHITE_BALANCE: return get_pu_range<uint16_t>(handle, subdevice, pu_unit, UVC_PU_WHITE_BALANCE_TEMPERATURE_CONTROL, min, max);
+            case RS_OPTION_COLOR_ENABLE_AUTO_EXPOSURE: { *min = 0; *max = 0; return; }; // TODO
+            case RS_OPTION_COLOR_ENABLE_AUTO_HUE: { *min = 0; *max = 0; return; }; // TODO
+            case RS_OPTION_COLOR_ENABLE_AUTO_WHITE_BALANCE: { *min = 0; *max = 0; return; }; // TODO
             }
             throw std::logic_error("invalid option");
         }
@@ -317,6 +320,9 @@ namespace rsimpl
             case RS_OPTION_COLOR_SATURATION: return get_pu<uint16_t>(handle, subdevice, pu_unit, UVC_PU_SATURATION_CONTROL, UVC_GET_CUR);
             case RS_OPTION_COLOR_SHARPNESS: return get_pu<uint16_t>(handle, subdevice, pu_unit, UVC_PU_SHARPNESS_CONTROL, UVC_GET_CUR);
             case RS_OPTION_COLOR_WHITE_BALANCE: return get_pu<uint16_t>(handle, subdevice, pu_unit, UVC_PU_WHITE_BALANCE_TEMPERATURE_CONTROL, UVC_GET_CUR);
+            case RS_OPTION_COLOR_ENABLE_AUTO_EXPOSURE: { return -1; }; // TODO
+            case RS_OPTION_COLOR_ENABLE_AUTO_HUE: { return -1; }; // TODO
+            case RS_OPTION_COLOR_ENABLE_AUTO_WHITE_BALANCE: { return -1;}; // TODO
             }
             throw std::logic_error("invalid option");
         }
