@@ -349,7 +349,6 @@ TEST_CASE( "rs_option_to_string() produces correct output", "[offline] [validati
     REQUIRE(rs_option_to_string(RS_OPTION_COLOR_SHARPNESS) == std::string("COLOR_SHARPNESS")); 
     REQUIRE(rs_option_to_string(RS_OPTION_COLOR_WHITE_BALANCE) == std::string("COLOR_WHITE_BALANCE")); 
     REQUIRE(rs_option_to_string(RS_OPTION_COLOR_ENABLE_AUTO_EXPOSURE) == std::string("COLOR_ENABLE_AUTO_EXPOSURE")); 
-    REQUIRE(rs_option_to_string(RS_OPTION_COLOR_ENABLE_AUTO_HUE) == std::string("COLOR_ENABLE_AUTO_HUE")); 
     REQUIRE(rs_option_to_string(RS_OPTION_COLOR_ENABLE_AUTO_WHITE_BALANCE) == std::string("COLOR_ENABLE_AUTO_WHITE_BALANCE")); 
 
     REQUIRE(rs_option_to_string(RS_OPTION_F200_LASER_POWER) == std::string("F200_LASER_POWER")); 

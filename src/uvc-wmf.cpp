@@ -589,7 +589,6 @@ namespace rsimpl
             {RS_OPTION_COLOR_SATURATION, VideoProcAmp_Saturation},
             {RS_OPTION_COLOR_SHARPNESS, VideoProcAmp_Sharpness},
             {RS_OPTION_COLOR_WHITE_BALANCE, VideoProcAmp_WhiteBalance},
-            {RS_OPTION_COLOR_ENABLE_AUTO_HUE, VideoProcAmp_Hue, true},
             {RS_OPTION_COLOR_ENABLE_AUTO_WHITE_BALANCE, VideoProcAmp_WhiteBalance, true},
         };
 
