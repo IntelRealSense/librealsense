@@ -1,11 +1,3 @@
-/*
-    INTEL CORPORATION PROPRIETARY INFORMATION This software is supplied under the
-    terms of a license agreement or nondisclosure agreement with Intel Corporation
-    and may not be copied or disclosed except in accordance with the terms of that
-    agreement.
-    Copyright(c) 2015 Intel Corporation. All Rights Reserved.
-*/
-
 #ifndef LIBREALSENSE_RS_H
 #define LIBREALSENSE_RS_H
 
@@ -72,30 +64,29 @@ typedef enum rs_option
     RS_OPTION_COLOR_EXPOSURE                  = 3,  /**< Controls exposure time of color camera. Setting any value will disable auto exposure. */
     RS_OPTION_COLOR_GAIN                      = 4,  
     RS_OPTION_COLOR_GAMMA                     = 5,  
-    RS_OPTION_COLOR_HUE                       = 6,  /**< Controls hue of color image. Setting any value will disable auto hue. */
+    RS_OPTION_COLOR_HUE                       = 6,  
     RS_OPTION_COLOR_SATURATION                = 7,  
     RS_OPTION_COLOR_SHARPNESS                 = 8,  
     RS_OPTION_COLOR_WHITE_BALANCE             = 9,  /**< Controls white balance of color image. Setting any value will disable auto white balance. */
     RS_OPTION_COLOR_ENABLE_AUTO_EXPOSURE      = 10, /**< Set to 1 to enable automatic exposure control, or 0 to return to manual control */
-    RS_OPTION_COLOR_ENABLE_AUTO_HUE           = 11, /**< Set to 1 to enable automatic hue control, or 0 to return to manual control */
-    RS_OPTION_COLOR_ENABLE_AUTO_WHITE_BALANCE = 12, /**< Set to 1 to enable automatic white balance control, or 0 to return to manual control */
-    RS_OPTION_F200_LASER_POWER                = 13, /**< 0 - 15 */
-    RS_OPTION_F200_ACCURACY                   = 14, /**< 0 - 3 */
-    RS_OPTION_F200_MOTION_RANGE               = 15, /**< 0 - 100 */
-    RS_OPTION_F200_FILTER_OPTION              = 16, /**< 0 - 7 */
-    RS_OPTION_F200_CONFIDENCE_THRESHOLD       = 17, /**< 0 - 15 */
-    RS_OPTION_F200_DYNAMIC_FPS                = 18, /**< {2, 5, 15, 30, 60} */
-    RS_OPTION_R200_LR_AUTO_EXPOSURE_ENABLED   = 19, /**< {0, 1} */
-    RS_OPTION_R200_LR_GAIN                    = 20, /**< 100 - 1600 (Units of 0.01) */
-    RS_OPTION_R200_LR_EXPOSURE                = 21, /**< > 0 (Units of 0.1 ms) */
-    RS_OPTION_R200_EMITTER_ENABLED            = 22, /**< {0, 1} */
-    RS_OPTION_R200_DEPTH_CONTROL_PRESET       = 23, /**< 0 - 5, 0 is default, 1-5 is low to high outlier rejection */
-    RS_OPTION_R200_DEPTH_UNITS                = 24, /**< micrometers per increment in integer depth values, 1000 is default (mm scale) */
-    RS_OPTION_R200_DEPTH_CLAMP_MIN            = 25, /**< 0 - USHORT_MAX */
-    RS_OPTION_R200_DEPTH_CLAMP_MAX            = 26, /**< 0 - USHORT_MAX */
-    RS_OPTION_R200_DISPARITY_MULTIPLIER       = 27, /**< 0 - 1000, the increments in integer disparity values corresponding to one pixel of disparity */
-    RS_OPTION_R200_DISPARITY_SHIFT            = 28, 
-    RS_OPTION_COUNT                           = 29, 
+    RS_OPTION_COLOR_ENABLE_AUTO_WHITE_BALANCE = 11, /**< Set to 1 to enable automatic white balance control, or 0 to return to manual control */
+    RS_OPTION_F200_LASER_POWER                = 12, /**< 0 - 15 */
+    RS_OPTION_F200_ACCURACY                   = 13, /**< 0 - 3 */
+    RS_OPTION_F200_MOTION_RANGE               = 14, /**< 0 - 100 */
+    RS_OPTION_F200_FILTER_OPTION              = 15, /**< 0 - 7 */
+    RS_OPTION_F200_CONFIDENCE_THRESHOLD       = 16, /**< 0 - 15 */
+    RS_OPTION_F200_DYNAMIC_FPS                = 17, /**< {2, 5, 15, 30, 60} */
+    RS_OPTION_R200_LR_AUTO_EXPOSURE_ENABLED   = 18, /**< {0, 1} */
+    RS_OPTION_R200_LR_GAIN                    = 19, /**< 100 - 1600 (Units of 0.01) */
+    RS_OPTION_R200_LR_EXPOSURE                = 20, /**< > 0 (Units of 0.1 ms) */
+    RS_OPTION_R200_EMITTER_ENABLED            = 21, /**< {0, 1} */
+    RS_OPTION_R200_DEPTH_CONTROL_PRESET       = 22, /**< 0 - 5, 0 is default, 1-5 is low to high outlier rejection */
+    RS_OPTION_R200_DEPTH_UNITS                = 23, /**< micrometers per increment in integer depth values, 1000 is default (mm scale) */
+    RS_OPTION_R200_DEPTH_CLAMP_MIN            = 24, /**< 0 - USHORT_MAX */
+    RS_OPTION_R200_DEPTH_CLAMP_MAX            = 25, /**< 0 - USHORT_MAX */
+    RS_OPTION_R200_DISPARITY_MULTIPLIER       = 26, /**< 0 - 1000, the increments in integer disparity values corresponding to one pixel of disparity */
+    RS_OPTION_R200_DISPARITY_SHIFT            = 27, 
+    RS_OPTION_COUNT                           = 28, 
     RS_OPTION_MAX_ENUM = 0x7FFFFFFF
 } rs_option;
 

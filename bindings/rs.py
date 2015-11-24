@@ -1,11 +1,3 @@
-'''
-    INTEL CORPORATION PROPRIETARY INFORMATION This software is supplied under the
-    terms of a license agreement or nondisclosure agreement with Intel Corporation
-    and may not be copied or disclosed except in accordance with the terms of that
-    agreement.
-    Copyright(c) 2015 Intel Corporation. All Rights Reserved.
-'''
-
 ''' LibRealSense bindings for Python
 '''
 
@@ -89,30 +81,29 @@ OPTION_COLOR_CONTRAST                  = 2
 OPTION_COLOR_EXPOSURE                  = 3   ##< Controls exposure time of color camera. Setting any value will disable auto exposure.
 OPTION_COLOR_GAIN                      = 4  
 OPTION_COLOR_GAMMA                     = 5  
-OPTION_COLOR_HUE                       = 6   ##< Controls hue of color image. Setting any value will disable auto hue.
+OPTION_COLOR_HUE                       = 6  
 OPTION_COLOR_SATURATION                = 7  
 OPTION_COLOR_SHARPNESS                 = 8  
 OPTION_COLOR_WHITE_BALANCE             = 9   ##< Controls white balance of color image. Setting any value will disable auto white balance.
 OPTION_COLOR_ENABLE_AUTO_EXPOSURE      = 10  ##< Set to 1 to enable automatic exposure control, or 0 to return to manual control
-OPTION_COLOR_ENABLE_AUTO_HUE           = 11  ##< Set to 1 to enable automatic hue control, or 0 to return to manual control
-OPTION_COLOR_ENABLE_AUTO_WHITE_BALANCE = 12  ##< Set to 1 to enable automatic white balance control, or 0 to return to manual control
-OPTION_F200_LASER_POWER                = 13  ##< 0 - 15
-OPTION_F200_ACCURACY                   = 14  ##< 0 - 3
-OPTION_F200_MOTION_RANGE               = 15  ##< 0 - 100
-OPTION_F200_FILTER_OPTION              = 16  ##< 0 - 7
-OPTION_F200_CONFIDENCE_THRESHOLD       = 17  ##< 0 - 15
-OPTION_F200_DYNAMIC_FPS                = 18  ##< {2, 5, 15, 30, 60}
-OPTION_R200_LR_AUTO_EXPOSURE_ENABLED   = 19  ##< {0, 1}
-OPTION_R200_LR_GAIN                    = 20  ##< 100 - 1600 (Units of 0.01)
-OPTION_R200_LR_EXPOSURE                = 21  ##< > 0 (Units of 0.1 ms)
-OPTION_R200_EMITTER_ENABLED            = 22  ##< {0, 1}
-OPTION_R200_DEPTH_CONTROL_PRESET       = 23  ##< 0 - 5, 0 is default, 1-5 is low to high outlier rejection
-OPTION_R200_DEPTH_UNITS                = 24  ##< micrometers per increment in integer depth values, 1000 is default (mm scale)
-OPTION_R200_DEPTH_CLAMP_MIN            = 25  ##< 0 - USHORT_MAX
-OPTION_R200_DEPTH_CLAMP_MAX            = 26  ##< 0 - USHORT_MAX
-OPTION_R200_DISPARITY_MULTIPLIER       = 27  ##< 0 - 1000, the increments in integer disparity values corresponding to one pixel of disparity
-OPTION_R200_DISPARITY_SHIFT            = 28 
-OPTION_COUNT                           = 29 
+OPTION_COLOR_ENABLE_AUTO_WHITE_BALANCE = 11  ##< Set to 1 to enable automatic white balance control, or 0 to return to manual control
+OPTION_F200_LASER_POWER                = 12  ##< 0 - 15
+OPTION_F200_ACCURACY                   = 13  ##< 0 - 3
+OPTION_F200_MOTION_RANGE               = 14  ##< 0 - 100
+OPTION_F200_FILTER_OPTION              = 15  ##< 0 - 7
+OPTION_F200_CONFIDENCE_THRESHOLD       = 16  ##< 0 - 15
+OPTION_F200_DYNAMIC_FPS                = 17  ##< {2, 5, 15, 30, 60}
+OPTION_R200_LR_AUTO_EXPOSURE_ENABLED   = 18  ##< {0, 1}
+OPTION_R200_LR_GAIN                    = 19  ##< 100 - 1600 (Units of 0.01)
+OPTION_R200_LR_EXPOSURE                = 20  ##< > 0 (Units of 0.1 ms)
+OPTION_R200_EMITTER_ENABLED            = 21  ##< {0, 1}
+OPTION_R200_DEPTH_CONTROL_PRESET       = 22  ##< 0 - 5, 0 is default, 1-5 is low to high outlier rejection
+OPTION_R200_DEPTH_UNITS                = 23  ##< micrometers per increment in integer depth values, 1000 is default (mm scale)
+OPTION_R200_DEPTH_CLAMP_MIN            = 24  ##< 0 - USHORT_MAX
+OPTION_R200_DEPTH_CLAMP_MAX            = 25  ##< 0 - USHORT_MAX
+OPTION_R200_DISPARITY_MULTIPLIER       = 26  ##< 0 - 1000, the increments in integer disparity values corresponding to one pixel of disparity
+OPTION_R200_DISPARITY_SHIFT            = 27 
+OPTION_COUNT                           = 28 
 
 class Intrinsics(Structure):
     _fields_ = [("width", c_int),

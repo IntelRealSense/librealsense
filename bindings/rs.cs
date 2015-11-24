@@ -1,11 +1,3 @@
-/*
-    INTEL CORPORATION PROPRIETARY INFORMATION This software is supplied under the
-    terms of a license agreement or nondisclosure agreement with Intel Corporation
-    and may not be copied or disclosed except in accordance with the terms of that
-    agreement.
-    Copyright(c) 2015 Intel Corporation. All Rights Reserved.
-*/
-
 using System;
 using System.Runtime.InteropServices;
 
@@ -61,29 +53,28 @@ namespace RealSense
         ColorExposure = 3, // Controls exposure time of color camera. Setting any value will disable auto exposure.
         ColorGain = 4,
         ColorGamma = 5,
-        ColorHue = 6, // Controls hue of color image. Setting any value will disable auto hue.
+        ColorHue = 6,
         ColorSaturation = 7,
         ColorSharpness = 8,
         ColorWhiteBalance = 9, // Controls white balance of color image. Setting any value will disable auto white balance.
         ColorEnableAutoExposure = 10, // Set to 1 to enable automatic exposure control, or 0 to return to manual control
-        ColorEnableAutoHue = 11, // Set to 1 to enable automatic hue control, or 0 to return to manual control
-        ColorEnableAutoWhiteBalance = 12, // Set to 1 to enable automatic white balance control, or 0 to return to manual control
-        F200LaserPower = 13, // 0 - 15
-        F200Accuracy = 14, // 0 - 3
-        F200MotionRange = 15, // 0 - 100
-        F200FilterOption = 16, // 0 - 7
-        F200ConfidenceThreshold = 17, // 0 - 15
-        F200DynamicFPS = 18, // {2, 5, 15, 30, 60}
-        R200LRAutoExposureEnabled = 19, // {0, 1}
-        R200LRGain = 20, // 100 - 1600 (Units of 0.01)
-        R200LRExposure = 21, // > 0 (Units of 0.1 ms)
-        R200EmitterEnabled = 22, // {0, 1}
-        R200DepthControlPreset = 23, // 0 - 5, 0 is default, 1-5 is low to high outlier rejection
-        R200DepthUnits = 24, // micrometers per increment in integer depth values, 1000 is default (mm scale)
-        R200DepthClampMin = 25, // 0 - USHORT_MAX
-        R200DepthClampMax = 26, // 0 - USHORT_MAX
-        R200DisparityMultiplier = 27, // 0 - 1000, the increments in integer disparity values corresponding to one pixel of disparity
-        R200DisparityShift = 28
+        ColorEnableAutoWhiteBalance = 11, // Set to 1 to enable automatic white balance control, or 0 to return to manual control
+        F200LaserPower = 12, // 0 - 15
+        F200Accuracy = 13, // 0 - 3
+        F200MotionRange = 14, // 0 - 100
+        F200FilterOption = 15, // 0 - 7
+        F200ConfidenceThreshold = 16, // 0 - 15
+        F200DynamicFPS = 17, // {2, 5, 15, 30, 60}
+        R200LRAutoExposureEnabled = 18, // {0, 1}
+        R200LRGain = 19, // 100 - 1600 (Units of 0.01)
+        R200LRExposure = 20, // > 0 (Units of 0.1 ms)
+        R200EmitterEnabled = 21, // {0, 1}
+        R200DepthControlPreset = 22, // 0 - 5, 0 is default, 1-5 is low to high outlier rejection
+        R200DepthUnits = 23, // micrometers per increment in integer depth values, 1000 is default (mm scale)
+        R200DepthClampMin = 24, // 0 - USHORT_MAX
+        R200DepthClampMax = 25, // 0 - USHORT_MAX
+        R200DisparityMultiplier = 26, // 0 - 1000, the increments in integer disparity values corresponding to one pixel of disparity
+        R200DisparityShift = 27
     }
 
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
