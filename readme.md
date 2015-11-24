@@ -16,6 +16,7 @@ Dependency management for GLFW3 (example apps) and libusb-1.0 is performed throu
   * [OSX](#apple-osx)
   * [Windows](#windows-81)
 * [FAQ](#faq)
+* [Documentation](#documentation)
 * [Example Applications](#example-applications)
 * [Developer Notes](#dev-notes)
 
@@ -86,7 +87,7 @@ Our intent is to provide bindings and wrappers for as many languages and framewo
     * Run the following script to patch uvcvideo.ko
         * `scripts/patch-uvcvideo-ko-generic.sh`
     * (R200 Only) Install connectivity workaround
-      * `sudo ./scripts/install-r200-udev-fix.sh`
+      * `cd scripts && ./install-r200-udev-fix.sh`
       * This udev fix is not necessary for kernels >= 4.2.3
   * **(OR) Updated 4.2.3 Unstable Kernel**
     * Install the 4.2.3 Kernel or move to step 2 if already installed. 
@@ -139,6 +140,12 @@ libuvc is known to have issues with some versions of SR300 and R200 firmware (1.
   * A `libuvc` backend which provides user-space access to UVC devices on Linux and Mac OS X (built with libusb)
   * A `video4linux2` backend which provides kernel-space access to UVC devices on Linux
   * A `Windows Media Foundation` backend which provides kernel-space access to UVC devices on Windows
+
+## Documentation
+
+Documentation for librealsense is still incomplete, and may contain inaccuracies. Please send us feedback about things that are unclear or which need to be improved. For now, the following documentation is available:
+  * [The librealsense C API](./include/librealsense/rs.h) - Doxygen style comments are provided for all functions, data types, and most constants
+  * [Projection in librealsense](./projection.md) - A guide on coordinate systems, calibration information, and projection APIs.
 
 ## Example Applications
 
