@@ -84,8 +84,9 @@ namespace rsimpl
 
             int width, height, format, fps;
             std::function<void(const void *)> callback;
+            bool is_capturing;
 
-            subdevice(const std::string & name) : dev_name("/dev/" + name), vid(), pid(), fd(), width(), height(), format()
+            subdevice(const std::string & name) : dev_name("/dev/" + name), vid(), pid(), fd(), width(), height(), format(), is_capturing()
             {
                 struct stat st;
                 if(stat(dev_name.c_str(), &st) < 0)
@@ -175,84 +176,94 @@ namespace rsimpl
 
             void start_capture()
             {
-                v4l2_format fmt = {};
-                fmt.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-                fmt.fmt.pix.width       = width;
-                fmt.fmt.pix.height      = height;
-                fmt.fmt.pix.pixelformat = format;
-                fmt.fmt.pix.field       = V4L2_FIELD_NONE;
-                if(xioctl(fd, VIDIOC_S_FMT, &fmt) < 0) throw_error("VIDIOC_S_FMT");
-
-                v4l2_streamparm parm = {};
-                parm.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-                if(xioctl(fd, VIDIOC_G_PARM, &parm) < 0) throw_error("VIDIOC_G_PARM");
-                parm.parm.capture.timeperframe.numerator = 1;
-                parm.parm.capture.timeperframe.denominator = fps;
-                if(xioctl(fd, VIDIOC_S_PARM, &parm) < 0) throw_error("VIDIOC_S_PARM");
-
-                // Init memory mapped IO
-                v4l2_requestbuffers req = {};
-                req.count = 4;
-                req.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-                req.memory = V4L2_MEMORY_MMAP;
-                if(xioctl(fd, VIDIOC_REQBUFS, &req) < 0)
+                if(!is_capturing)
                 {
-                    if(errno == EINVAL) throw std::runtime_error(dev_name + " does not support memory mapping");
-                    else throw_error("VIDIOC_REQBUFS");
-                }
-                if(req.count < 2)
-                {
-                    throw std::runtime_error("Insufficient buffer memory on " + dev_name);
-                }
+                    v4l2_format fmt = {};
+                    fmt.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+                    fmt.fmt.pix.width       = width;
+                    fmt.fmt.pix.height      = height;
+                    fmt.fmt.pix.pixelformat = format;
+                    fmt.fmt.pix.field       = V4L2_FIELD_NONE;
+                    if(xioctl(fd, VIDIOC_S_FMT, &fmt) < 0) throw_error("VIDIOC_S_FMT");
 
-                buffers.resize(req.count);
-                for(int i=0; i<buffers.size(); ++i)
-                {
-                    v4l2_buffer buf = {};
-                    buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-                    buf.memory = V4L2_MEMORY_MMAP;
-                    buf.index = i;
-                    if(xioctl(fd, VIDIOC_QUERYBUF, &buf) < 0) throw_error("VIDIOC_QUERYBUF");
+                    v4l2_streamparm parm = {};
+                    parm.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+                    if(xioctl(fd, VIDIOC_G_PARM, &parm) < 0) throw_error("VIDIOC_G_PARM");
+                    parm.parm.capture.timeperframe.numerator = 1;
+                    parm.parm.capture.timeperframe.denominator = fps;
+                    if(xioctl(fd, VIDIOC_S_PARM, &parm) < 0) throw_error("VIDIOC_S_PARM");
 
-                    buffers[i].length = buf.length;
-                    buffers[i].start = mmap(NULL, buf.length, PROT_READ | PROT_WRITE, MAP_SHARED, fd, buf.m.offset);
-                    if(buffers[i].start == MAP_FAILED) throw_error("mmap");
+                    // Init memory mapped IO
+                    v4l2_requestbuffers req = {};
+                    req.count = 4;
+                    req.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+                    req.memory = V4L2_MEMORY_MMAP;
+                    if(xioctl(fd, VIDIOC_REQBUFS, &req) < 0)
+                    {
+                        if(errno == EINVAL) throw std::runtime_error(dev_name + " does not support memory mapping");
+                        else throw_error("VIDIOC_REQBUFS");
+                    }
+                    if(req.count < 2)
+                    {
+                        throw std::runtime_error("Insufficient buffer memory on " + dev_name);
+                    }
+
+                    buffers.resize(req.count);
+                    for(int i=0; i<buffers.size(); ++i)
+                    {
+                        v4l2_buffer buf = {};
+                        buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+                        buf.memory = V4L2_MEMORY_MMAP;
+                        buf.index = i;
+                        if(xioctl(fd, VIDIOC_QUERYBUF, &buf) < 0) throw_error("VIDIOC_QUERYBUF");
+
+                        buffers[i].length = buf.length;
+                        buffers[i].start = mmap(NULL, buf.length, PROT_READ | PROT_WRITE, MAP_SHARED, fd, buf.m.offset);
+                        if(buffers[i].start == MAP_FAILED) throw_error("mmap");
+                    }
+
+                    // Start capturing
+                    for(int i = 0; i < buffers.size(); ++i)
+                    {
+                        v4l2_buffer buf = {};
+                        buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+                        buf.memory = V4L2_MEMORY_MMAP;
+                        buf.index = i;
+                        if(xioctl(fd, VIDIOC_QBUF, &buf) < 0) throw_error("VIDIOC_QBUF");
+                    }
+
+                    v4l2_buf_type type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+                    if(xioctl(fd, VIDIOC_STREAMON, &type) < 0) throw_error("VIDIOC_STREAMON");
+
+                    is_capturing = true;
                 }
-
-                // Start capturing
-                for(int i = 0; i < buffers.size(); ++i)
-                {
-                    v4l2_buffer buf = {};
-                    buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-                    buf.memory = V4L2_MEMORY_MMAP;
-                    buf.index = i;
-                    if(xioctl(fd, VIDIOC_QBUF, &buf) < 0) throw_error("VIDIOC_QBUF");
-                }
-
-                v4l2_buf_type type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-                if(xioctl(fd, VIDIOC_STREAMON, &type) < 0) throw_error("VIDIOC_STREAMON");
             }
 
             void stop_capture()
             {
-                // Will warn for subdev fds that are not streaming
-                v4l2_buf_type type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-                if(xioctl(fd, VIDIOC_STREAMOFF, &type) < 0) warn_error("VIDIOC_STREAMOFF");
-
-                for(int i = 0; i < buffers.size(); i++)
+                if(is_capturing)
                 {
-                    if(munmap(buffers[i].start, buffers[i].length) < 0) warn_error("munmap");
-                }
+                    // Stop streamining
+                    v4l2_buf_type type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+                    if(xioctl(fd, VIDIOC_STREAMOFF, &type) < 0) warn_error("VIDIOC_STREAMOFF");
 
-                // Close memory mapped IO
-                struct v4l2_requestbuffers req = {};
-                req.count = 0;
-                req.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-                req.memory = V4L2_MEMORY_MMAP;
-                if(xioctl(fd, VIDIOC_REQBUFS, &req) < 0)
-                {
-                    if(errno == EINVAL) DEBUG_ERR(dev_name + " does not support memory mapping");
-                    else warn_error("VIDIOC_REQBUFS");
+                    for(int i = 0; i < buffers.size(); i++)
+                    {
+                        if(munmap(buffers[i].start, buffers[i].length) < 0) warn_error("munmap");
+                    }
+
+                    // Close memory mapped IO
+                    struct v4l2_requestbuffers req = {};
+                    req.count = 0;
+                    req.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+                    req.memory = V4L2_MEMORY_MMAP;
+                    if(xioctl(fd, VIDIOC_REQBUFS, &req) < 0)
+                    {
+                        if(errno == EINVAL) DEBUG_ERR(dev_name + " does not support memory mapping");
+                        else warn_error("VIDIOC_REQBUFS");
+                    }
+
+                    is_capturing = false;
                 }
             }
 
@@ -356,13 +367,7 @@ namespace rsimpl
                     thread.join();
                     stop = false;
 
-                    for(auto & sub : subdevices)
-                    {
-                        if(sub->callback)
-                        {
-                            sub->stop_capture();
-                        }
-                    }
+                    for(auto & sub : subdevices) sub->stop_capture();
                 }
             }
         };
