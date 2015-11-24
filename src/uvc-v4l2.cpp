@@ -446,7 +446,6 @@ namespace rsimpl
             case RS_OPTION_COLOR_SHARPNESS: return V4L2_CID_SHARPNESS;
             case RS_OPTION_COLOR_WHITE_BALANCE: return V4L2_CID_WHITE_BALANCE_TEMPERATURE;
             case RS_OPTION_COLOR_ENABLE_AUTO_EXPOSURE: return V4L2_CID_AUTOGAIN; // Automatic gain/exposure control
-            case RS_OPTION_COLOR_ENABLE_AUTO_HUE: return V4L2_CID_HUE_AUTO;
             case RS_OPTION_COLOR_ENABLE_AUTO_WHITE_BALANCE: return V4L2_CID_AUTO_WHITE_BALANCE;
             default: throw std::runtime_error(to_string() << "no v4l2 cid for option " << option);
             }
