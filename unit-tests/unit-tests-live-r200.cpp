@@ -48,7 +48,7 @@ TEST_CASE( "R200 metadata enumerates correctly", "[live] [r200]" )
         {
             for(int i=0; i<RS_OPTION_COUNT; ++i)
             {
-                if(i >= RS_OPTION_COLOR_BACKLIGHT_COMPENSATION && i <= RS_OPTION_COLOR_WHITE_BALANCE)
+                if(i >= RS_OPTION_COLOR_BACKLIGHT_COMPENSATION && i <= RS_OPTION_COLOR_ENABLE_AUTO_WHITE_BALANCE)
                 {
                     REQUIRE(rs_device_supports_option(dev, (rs_option)i, require_no_error()) == 1);
                 }
