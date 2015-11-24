@@ -1,11 +1,3 @@
-/*
-    INTEL CORPORATION PROPRIETARY INFORMATION This software is supplied under the
-    terms of a license agreement or nondisclosure agreement with Intel Corporation
-    and may not be copied or disclosed except in accordance with the terms of that
-    agreement.
-    Copyright(c) 2015 Intel Corporation. All Rights Reserved.
-*/
-
 #ifndef LIBREALSENSE_RS_HPP
 #define LIBREALSENSE_RS_HPP
 
@@ -68,29 +60,28 @@ namespace rs
         color_exposure                  = 3,  ///< Controls exposure time of color camera. Setting any value will disable auto exposure.
         color_gain                      = 4,  
         color_gamma                     = 5,  
-        color_hue                       = 6,  ///< Controls hue of color image. Setting any value will disable auto hue.
+        color_hue                       = 6,  
         color_saturation                = 7,  
         color_sharpness                 = 8,  
         color_white_balance             = 9,  ///< Controls white balance of color image. Setting any value will disable auto white balance.
         color_enable_auto_exposure      = 10, ///< Set to 1 to enable automatic exposure control, or 0 to return to manual control
-        color_enable_auto_hue           = 11, ///< Set to 1 to enable automatic hue control, or 0 to return to manual control
-        color_enable_auto_white_balance = 12, ///< Set to 1 to enable automatic white balance control, or 0 to return to manual control
-        f200_laser_power                = 13, ///< 0 - 15
-        f200_accuracy                   = 14, ///< 0 - 3
-        f200_motion_range               = 15, ///< 0 - 100
-        f200_filter_option              = 16, ///< 0 - 7
-        f200_confidence_threshold       = 17, ///< 0 - 15
-        f200_dynamic_fps                = 18, ///< {2, 5, 15, 30, 60}
-        r200_lr_auto_exposure_enabled   = 19, ///< {0, 1}
-        r200_lr_gain                    = 20, ///< 100 - 1600 (Units of 0.01)
-        r200_lr_exposure                = 21, ///< > 0 (Units of 0.1 ms)
-        r200_emitter_enabled            = 22, ///< {0, 1}
-        r200_depth_control_preset       = 23, ///< 0 - 5, 0 is default, 1-5 is low to high outlier rejection
-        r200_depth_units                = 24, ///< micrometers per increment in integer depth values, 1000 is default (mm scale)
-        r200_depth_clamp_min            = 25, ///< 0 - USHORT_MAX
-        r200_depth_clamp_max            = 26, ///< 0 - USHORT_MAX
-        r200_disparity_multiplier       = 27, ///< 0 - 1000, the increments in integer disparity values corresponding to one pixel of disparity
-        r200_disparity_shift            = 28  
+        color_enable_auto_white_balance = 11, ///< Set to 1 to enable automatic white balance control, or 0 to return to manual control
+        f200_laser_power                = 12, ///< 0 - 15
+        f200_accuracy                   = 13, ///< 0 - 3
+        f200_motion_range               = 14, ///< 0 - 100
+        f200_filter_option              = 15, ///< 0 - 7
+        f200_confidence_threshold       = 16, ///< 0 - 15
+        f200_dynamic_fps                = 17, ///< {2, 5, 15, 30, 60}
+        r200_lr_auto_exposure_enabled   = 18, ///< {0, 1}
+        r200_lr_gain                    = 19, ///< 100 - 1600 (Units of 0.01)
+        r200_lr_exposure                = 20, ///< > 0 (Units of 0.1 ms)
+        r200_emitter_enabled            = 21, ///< {0, 1}
+        r200_depth_control_preset       = 22, ///< 0 - 5, 0 is default, 1-5 is low to high outlier rejection
+        r200_depth_units                = 23, ///< micrometers per increment in integer depth values, 1000 is default (mm scale)
+        r200_depth_clamp_min            = 24, ///< 0 - USHORT_MAX
+        r200_depth_clamp_max            = 25, ///< 0 - USHORT_MAX
+        r200_disparity_multiplier       = 26, ///< 0 - 1000, the increments in integer disparity values corresponding to one pixel of disparity
+        r200_disparity_shift            = 27  
     };
 
     struct float2 { float x,y; };
