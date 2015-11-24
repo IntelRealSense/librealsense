@@ -18,9 +18,6 @@
       location = "container:"
       name = "examples">
       <FileRef
-         location = "group:cpp-config-ui.xcodeproj">
-      </FileRef>
-      <FileRef
          location = "group:c-enumerate.xcodeproj">
       </FileRef>
       <FileRef
@@ -42,6 +39,9 @@
          location = "group:cpp-pointcloud.xcodeproj">
       </FileRef>
    </Group>
+   <FileRef
+      location = "group:cpp-config-ui.xcodeproj">
+   </FileRef>
    <FileRef
       location = "container:librealsense.xcodeproj">
    </FileRef>

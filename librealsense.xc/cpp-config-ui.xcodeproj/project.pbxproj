@@ -7,17 +7,17 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		27B5CDE61C03DA2500B7109B /* cpp-config-ui.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 27B5CDE51C03DA2500B7109B /* cpp-config-ui.cpp */; };
-		27B5CDE81C03DB8600B7109B /* OpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 27B5CDE71C03DB8600B7109B /* OpenGL.framework */; };
-		27B5CDEA1C03DB9B00B7109B /* CoreVideo.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 27B5CDE91C03DB9B00B7109B /* CoreVideo.framework */; };
-		27B5CDEC1C03DBAD00B7109B /* IOKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 27B5CDEB1C03DBAD00B7109B /* IOKit.framework */; };
-		27B5CDEE1C03DBB900B7109B /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 27B5CDED1C03DBB900B7109B /* Cocoa.framework */; };
-		27B5CDF01C03DBE200B7109B /* libglfw3.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 27B5CDEF1C03DBE200B7109B /* libglfw3.dylib */; };
-		27B5CDF61C03DCB900B7109B /* librealsense.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 27B5CDF51C03DCB900B7109B /* librealsense.dylib */; };
+		08567C091B5B898400EB6C0D /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 08567C081B5B898400EB6C0D /* Cocoa.framework */; };
+		08567C0B1B5B898C00EB6C0D /* CoreVideo.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 08567C0A1B5B898C00EB6C0D /* CoreVideo.framework */; };
+		08567C0D1B5B899200EB6C0D /* IOKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 08567C0C1B5B899200EB6C0D /* IOKit.framework */; };
+		08567C0F1B5B899B00EB6C0D /* OpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 08567C0E1B5B899B00EB6C0D /* OpenGL.framework */; };
+		279985891B95083000894334 /* librealsense.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 279985881B95083000894334 /* librealsense.dylib */; };
+		279D52DC1B8E8776007F2D73 /* cpp-config-ui.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 279D52DB1B8E8776007F2D73 /* cpp-config-ui.cpp */; };
+		279D52E01B8E886D007F2D73 /* libglfw3.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 279D52DF1B8E886D007F2D73 /* libglfw3.dylib */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
-		27B5CDD91C03D99600B7109B /* CopyFiles */ = {
+		08567BAF1B5B59E800EB6C0D /* CopyFiles */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
 			dstPath = /usr/share/man/man1/;
@@ -29,151 +29,153 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		27B5CDDB1C03D99600B7109B /* cpp-config-ui */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = "cpp-config-ui"; sourceTree = BUILT_PRODUCTS_DIR; };
-		27B5CDE51C03DA2500B7109B /* cpp-config-ui.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = "cpp-config-ui.cpp"; path = "../examples/cpp-config-ui.cpp"; sourceTree = SOURCE_ROOT; };
-		27B5CDE71C03DB8600B7109B /* OpenGL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenGL.framework; path = ../../../../../Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.10.sdk/System/Library/Frameworks/OpenGL.framework; sourceTree = SOURCE_ROOT; };
-		27B5CDE91C03DB9B00B7109B /* CoreVideo.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreVideo.framework; path = ../../../../../Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.10.sdk/System/Library/Frameworks/CoreVideo.framework; sourceTree = SOURCE_ROOT; };
-		27B5CDEB1C03DBAD00B7109B /* IOKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = IOKit.framework; path = ../../../../../Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.10.sdk/System/Library/Frameworks/IOKit.framework; sourceTree = SOURCE_ROOT; };
-		27B5CDED1C03DBB900B7109B /* Cocoa.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cocoa.framework; path = ../../../../../Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.10.sdk/System/Library/Frameworks/Cocoa.framework; sourceTree = SOURCE_ROOT; };
-		27B5CDEF1C03DBE200B7109B /* libglfw3.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libglfw3.dylib; path = ../../../../../usr/local/lib/libglfw3.dylib; sourceTree = SOURCE_ROOT; };
-		27B5CDF51C03DCB900B7109B /* librealsense.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = librealsense.dylib; path = build/Debug/librealsense.dylib; sourceTree = SOURCE_ROOT; };
+		08567BB11B5B59E800EB6C0D /* cpp-config-ui */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = "cpp-config-ui"; sourceTree = BUILT_PRODUCTS_DIR; };
+		08567C081B5B898400EB6C0D /* Cocoa.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cocoa.framework; path = System/Library/Frameworks/Cocoa.framework; sourceTree = SDKROOT; };
+		08567C0A1B5B898C00EB6C0D /* CoreVideo.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreVideo.framework; path = System/Library/Frameworks/CoreVideo.framework; sourceTree = SDKROOT; };
+		08567C0C1B5B899200EB6C0D /* IOKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = IOKit.framework; path = System/Library/Frameworks/IOKit.framework; sourceTree = SDKROOT; };
+		08567C0E1B5B899B00EB6C0D /* OpenGL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenGL.framework; path = System/Library/Frameworks/OpenGL.framework; sourceTree = SDKROOT; };
+		279985881B95083000894334 /* librealsense.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = librealsense.dylib; path = librealsense.xc/build/Debug/librealsense.dylib; sourceTree = "<group>"; };
+		279D52DB1B8E8776007F2D73 /* cpp-config-ui.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = "cpp-config-ui.cpp"; path = "../examples/cpp-config-ui.cpp"; sourceTree = SOURCE_ROOT; };
+		279D52DF1B8E886D007F2D73 /* libglfw3.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libglfw3.dylib; path = /usr/local/lib/libglfw3.dylib; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
-		27B5CDD81C03D99600B7109B /* Frameworks */ = {
+		08567BAE1B5B59E800EB6C0D /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				27B5CDEE1C03DBB900B7109B /* Cocoa.framework in Frameworks */,
-				27B5CDF61C03DCB900B7109B /* librealsense.dylib in Frameworks */,
-				27B5CDF01C03DBE200B7109B /* libglfw3.dylib in Frameworks */,
-				27B5CDE81C03DB8600B7109B /* OpenGL.framework in Frameworks */,
-				27B5CDEA1C03DB9B00B7109B /* CoreVideo.framework in Frameworks */,
-				27B5CDEC1C03DBAD00B7109B /* IOKit.framework in Frameworks */,
+				279985891B95083000894334 /* librealsense.dylib in Frameworks */,
+				279D52E01B8E886D007F2D73 /* libglfw3.dylib in Frameworks */,
+				08567C0F1B5B899B00EB6C0D /* OpenGL.framework in Frameworks */,
+				08567C0D1B5B899200EB6C0D /* IOKit.framework in Frameworks */,
+				08567C0B1B5B898C00EB6C0D /* CoreVideo.framework in Frameworks */,
+				08567C091B5B898400EB6C0D /* Cocoa.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		27B5CDD21C03D99600B7109B = {
+		08567BA81B5B59E800EB6C0D = {
 			isa = PBXGroup;
 			children = (
-				27B5CDF21C03DC6800B7109B /* third_party */,
-				27B5CDF11C03DC5C00B7109B /* src */,
-				27B5CDDC1C03D99600B7109B /* Products */,
+				08567BD41B5B5A5400EB6C0D /* third_party */,
+				08567BB31B5B59E800EB6C0D /* src */,
+				08567BB21B5B59E800EB6C0D /* Products */,
 			);
 			sourceTree = "<group>";
 		};
-		27B5CDDC1C03D99600B7109B /* Products */ = {
+		08567BB21B5B59E800EB6C0D /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				27B5CDDB1C03D99600B7109B /* cpp-config-ui */,
+				08567BB11B5B59E800EB6C0D /* cpp-config-ui */,
 			);
 			name = Products;
 			sourceTree = "<group>";
 		};
-		27B5CDF11C03DC5C00B7109B /* src */ = {
+		08567BB31B5B59E800EB6C0D /* src */ = {
 			isa = PBXGroup;
 			children = (
-				27B5CDE51C03DA2500B7109B /* cpp-config-ui.cpp */,
+				279D52DB1B8E8776007F2D73 /* cpp-config-ui.cpp */,
 			);
 			name = src;
+			path = CameraDev;
 			sourceTree = "<group>";
 		};
-		27B5CDF21C03DC6800B7109B /* third_party */ = {
+		08567BD41B5B5A5400EB6C0D /* third_party */ = {
 			isa = PBXGroup;
 			children = (
-				27B5CDF41C03DC8000B7109B /* libs */,
-				27B5CDF31C03DC7000B7109B /* frameworks */,
+				08567C2E1B61D82D00EB6C0D /* frameworks */,
+				08567C2D1B61D82000EB6C0D /* libs */,
 			);
 			name = third_party;
 			sourceTree = "<group>";
 		};
-		27B5CDF31C03DC7000B7109B /* frameworks */ = {
+		08567C2D1B61D82000EB6C0D /* libs */ = {
 			isa = PBXGroup;
 			children = (
-				27B5CDED1C03DBB900B7109B /* Cocoa.framework */,
-				27B5CDEB1C03DBAD00B7109B /* IOKit.framework */,
-				27B5CDE91C03DB9B00B7109B /* CoreVideo.framework */,
-				27B5CDE71C03DB8600B7109B /* OpenGL.framework */,
-			);
-			name = frameworks;
-			sourceTree = "<group>";
-		};
-		27B5CDF41C03DC8000B7109B /* libs */ = {
-			isa = PBXGroup;
-			children = (
-				27B5CDF51C03DCB900B7109B /* librealsense.dylib */,
-				27B5CDEF1C03DBE200B7109B /* libglfw3.dylib */,
+				279D52DF1B8E886D007F2D73 /* libglfw3.dylib */,
+				279985881B95083000894334 /* librealsense.dylib */,
 			);
 			name = libs;
+			path = ..;
+			sourceTree = "<group>";
+		};
+		08567C2E1B61D82D00EB6C0D /* frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				08567C0E1B5B899B00EB6C0D /* OpenGL.framework */,
+				08567C0C1B5B899200EB6C0D /* IOKit.framework */,
+				08567C0A1B5B898C00EB6C0D /* CoreVideo.framework */,
+				08567C081B5B898400EB6C0D /* Cocoa.framework */,
+			);
+			name = frameworks;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		27B5CDDA1C03D99600B7109B /* cpp-config-ui */ = {
+		08567BB01B5B59E800EB6C0D /* cpp-config-ui */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 27B5CDE21C03D99600B7109B /* Build configuration list for PBXNativeTarget "cpp-config-ui" */;
+			buildConfigurationList = 08567BB81B5B59E800EB6C0D /* Build configuration list for PBXNativeTarget "cpp-config-ui" */;
 			buildPhases = (
-				27B5CDD71C03D99600B7109B /* Sources */,
-				27B5CDD81C03D99600B7109B /* Frameworks */,
-				27B5CDD91C03D99600B7109B /* CopyFiles */,
+				08567BAD1B5B59E800EB6C0D /* Sources */,
+				08567BAE1B5B59E800EB6C0D /* Frameworks */,
+				08567BAF1B5B59E800EB6C0D /* CopyFiles */,
 			);
 			buildRules = (
 			);
 			dependencies = (
 			);
 			name = "cpp-config-ui";
-			productName = "cpp-config-ui";
-			productReference = 27B5CDDB1C03D99600B7109B /* cpp-config-ui */;
+			productName = CameraDev;
+			productReference = 08567BB11B5B59E800EB6C0D /* cpp-config-ui */;
 			productType = "com.apple.product-type.tool";
 		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
-		27B5CDD31C03D99600B7109B /* Project object */ = {
+		08567BA91B5B59E800EB6C0D /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
-				LastUpgradeCheck = 0640;
-				ORGANIZATIONNAME = "PerC Systems Engineering";
+				LastUpgradeCheck = 0620;
+				ORGANIZATIONNAME = "Dimitri Diakopoulos";
 				TargetAttributes = {
-					27B5CDDA1C03D99600B7109B = {
-						CreatedOnToolsVersion = 6.4;
+					08567BB01B5B59E800EB6C0D = {
+						CreatedOnToolsVersion = 6.2;
 					};
 				};
 			};
-			buildConfigurationList = 27B5CDD61C03D99600B7109B /* Build configuration list for PBXProject "cpp-config-ui" */;
+			buildConfigurationList = 08567BAC1B5B59E800EB6C0D /* Build configuration list for PBXProject "cpp-config-ui" */;
 			compatibilityVersion = "Xcode 3.2";
 			developmentRegion = English;
 			hasScannedForEncodings = 0;
 			knownRegions = (
 				en,
 			);
-			mainGroup = 27B5CDD21C03D99600B7109B;
-			productRefGroup = 27B5CDDC1C03D99600B7109B /* Products */;
+			mainGroup = 08567BA81B5B59E800EB6C0D;
+			productRefGroup = 08567BB21B5B59E800EB6C0D /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				27B5CDDA1C03D99600B7109B /* cpp-config-ui */,
+				08567BB01B5B59E800EB6C0D /* cpp-config-ui */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXSourcesBuildPhase section */
-		27B5CDD71C03D99600B7109B /* Sources */ = {
+		08567BAD1B5B59E800EB6C0D /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				27B5CDE61C03DA2500B7109B /* cpp-config-ui.cpp in Sources */,
+				279D52DC1B8E8776007F2D73 /* cpp-config-ui.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin XCBuildConfiguration section */
-		27B5CDE01C03D99600B7109B /* Debug */ = {
+		08567BB61B5B59E800EB6C0D /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
@@ -191,11 +193,9 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				DEBUG_INFORMATION_FORMAT = dwarf;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu99;
 				GCC_DYNAMIC_NO_PIC = NO;
-				GCC_NO_COMMON_BLOCKS = YES;
 				GCC_OPTIMIZATION_LEVEL = 0;
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					"DEBUG=1",
@@ -210,17 +210,11 @@
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				HEADER_SEARCH_PATHS = (
 					"$(inherited)",
-					"$(SRCROOT)/../include",
-					/usr/local/include,
 					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
-				);
-				LIBRARY_SEARCH_PATHS = (
-					"$(inherited)",
-					"$(SRCROOT)/../librealsense/build/Debug",
-					"$(SRCROOT)/../bin",
-					/usr/local/lib,
-					"$(USER_LIBRARY_DIR)/Developer/Xcode/DerivedData/bin/Debug",
-					"$(PROJECT_DIR)/build/Debug",
+					"$(SRCROOT)/../third_party/libuvc/include",
+					"$(SRCROOT)/../third_party/glfw",
+					"$(SRCROOT)/../third_party/catch",
+					"$(SRCROOT)/../include",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 10.10;
 				MTL_ENABLE_DEBUG_INFO = YES;
@@ -229,7 +223,7 @@
 			};
 			name = Debug;
 		};
-		27B5CDE11C03D99600B7109B /* Release */ = {
+		08567BB71B5B59E800EB6C0D /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
@@ -251,13 +245,29 @@
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu99;
-				GCC_NO_COMMON_BLOCKS = YES;
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
 				GCC_WARN_UNDECLARED_SELECTOR = YES;
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
+					"$(SRCROOT)/../third_party/libuvc/include",
+					"$(SRCROOT)/../third_party/glfw",
+					"$(SRCROOT)/../third_party/catch",
+					"$(SRCROOT)/../include",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 10.10;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				SDKROOT = macosx;
+			};
+			name = Release;
+		};
+		08567BB91B5B59E800EB6C0D /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
 				HEADER_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(SRCROOT)/../include",
@@ -272,56 +282,52 @@
 					"$(USER_LIBRARY_DIR)/Developer/Xcode/DerivedData/bin/Debug",
 					"$(PROJECT_DIR)/build/Debug",
 				);
-				MACOSX_DEPLOYMENT_TARGET = 10.10;
-				MTL_ENABLE_DEBUG_INFO = NO;
-				SDKROOT = macosx;
-			};
-			name = Release;
-		};
-		27B5CDE31C03D99600B7109B /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				LIBRARY_SEARCH_PATHS = (
-					"$(inherited)",
-					"$(PROJECT_DIR)/build/Debug",
-				);
-				PRODUCT_NAME = "$(TARGET_NAME)";
+				PRODUCT_NAME = "cpp-config-ui";
 			};
 			name = Debug;
 		};
-		27B5CDE41C03D99600B7109B /* Release */ = {
+		08567BBA1B5B59E800EB6C0D /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(SRCROOT)/../bin",
+					/usr/local/include,
+					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
+				);
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",
+					"$(SRCROOT)/../bin",
+					/usr/local/lib,
+					"$(USER_LIBRARY_DIR)/Developer/Xcode/DerivedData/bin/Debug",
 					"$(PROJECT_DIR)/build/Debug",
 				);
-				PRODUCT_NAME = "$(TARGET_NAME)";
+				PRODUCT_NAME = "cpp-config-ui";
 			};
 			name = Release;
 		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		27B5CDD61C03D99600B7109B /* Build configuration list for PBXProject "cpp-config-ui" */ = {
+		08567BAC1B5B59E800EB6C0D /* Build configuration list for PBXProject "cpp-config-ui" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				27B5CDE01C03D99600B7109B /* Debug */,
-				27B5CDE11C03D99600B7109B /* Release */,
+				08567BB61B5B59E800EB6C0D /* Debug */,
+				08567BB71B5B59E800EB6C0D /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		27B5CDE21C03D99600B7109B /* Build configuration list for PBXNativeTarget "cpp-config-ui" */ = {
+		08567BB81B5B59E800EB6C0D /* Build configuration list for PBXNativeTarget "cpp-config-ui" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				27B5CDE31C03D99600B7109B /* Debug */,
-				27B5CDE41C03D99600B7109B /* Release */,
+				08567BB91B5B59E800EB6C0D /* Debug */,
+				08567BBA1B5B59E800EB6C0D /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 	};
-	rootObject = 27B5CDD31C03D99600B7109B /* Project object */;
+	rootObject = 08567BA91B5B59E800EB6C0D /* Project object */;
 }
