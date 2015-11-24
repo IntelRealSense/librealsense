@@ -253,6 +253,11 @@ namespace rsimpl
                 if(xioctl(fd, VIDIOC_STREAMON, &type) < 0) throw_error("VIDIOC_STREAMON");
             }
 
+            void stop_capture()
+            {
+
+            }
+
             static void poll(const std::vector<subdevice *> & subdevices)
             {
                 int max_fd = 0;
@@ -307,11 +312,7 @@ namespace rsimpl
             device(std::shared_ptr<context> parent) : parent(parent), stop(), usb_device(), usb_handle() {} // TODO: Init
             ~device()
             {
-                if(thread.joinable())
-                {
-                    stop = true;
-                    thread.join();
-                }
+                stop_streaming();
 
                 for(auto interface_number : claimed_interfaces)
                 {
@@ -329,6 +330,42 @@ namespace rsimpl
                     if(sub->get_mi() == mi) return true;
                 }
                 return false;
+            }
+
+            void start_streaming()
+            {
+                std::vector<subdevice *> subs;
+                for(auto & sub : subdevices)
+                {
+                    if(sub->callback)
+                    {
+                        sub->start_capture();
+                        subs.push_back(sub.get());
+                    }
+                }
+
+                thread = std::thread([this, subs]()
+                {
+                    while(!stop) subdevice::poll(subs);
+                });
+            }
+
+            void stop_streaming()
+            {
+                if(thread.joinable())
+                {
+                    stop = true;
+                    thread.join();
+                    stop = false;
+
+                    for(auto & sub : subdevices)
+                    {
+                        if(sub->callback)
+                        {
+                            sub->stop_capture();
+                        }
+                    }
+                }
             }
         };
 
@@ -373,32 +410,15 @@ namespace rsimpl
         {
             device.subdevices[subdevice_index]->set_format(width, height, (const big_endian<int> &)fourcc, fps, callback);
         }
+
         void start_streaming(device & device, int num_transfer_bufs)
         {
-            std::vector<subdevice *> subs;
-            for(auto & sub : device.subdevices)
-            {
-                if(sub->callback)
-                {
-                    sub->start_capture();
-                    subs.push_back(sub.get());
-                }
-            }
-
-            device.thread = std::thread([&device, subs]()
-            {
-                while(!device.stop) subdevice::poll(subs);
-            });
-
+            device.start_streaming();
         }
+
         void stop_streaming(device & device)
         {
-            if(device.thread.joinable())
-            {
-                device.stop = true;
-                device.thread.join();
-                device.stop = false;
-            }
+            device.stop_streaming();
         }        
 
         static int get_cid(rs_option option)
