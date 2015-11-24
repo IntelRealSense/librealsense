@@ -144,27 +144,7 @@ namespace rsimpl
 
             ~subdevice()
             {
-                v4l2_buf_type type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-
-                // Will warn for subdev fds that are not streaming
-                if(xioctl(fd, VIDIOC_STREAMOFF, &type) < 0) warn_error("VIDIOC_STREAMOFF");
-
-                for(int i = 0; i < buffers.size(); i++)
-                {
-                    if(munmap(buffers[i].start, buffers[i].length) < 0) warn_error("munmap");
-                }
-
-                // Close memory mapped IO
-                struct v4l2_requestbuffers req = {};
-                req.count = 0;
-                req.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-                req.memory = V4L2_MEMORY_MMAP;
-                if(xioctl(fd, VIDIOC_REQBUFS, &req) < 0)
-                {
-                    if(errno == EINVAL) DEBUG_ERR(dev_name + " does not support memory mapping");
-                    else warn_error("VIDIOC_REQBUFS");
-                }
-
+                stop_capture();
                 if(close(fd) < 0) warn_error("close");
             }
 
@@ -255,7 +235,25 @@ namespace rsimpl
 
             void stop_capture()
             {
+                // Will warn for subdev fds that are not streaming
+                v4l2_buf_type type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+                if(xioctl(fd, VIDIOC_STREAMOFF, &type) < 0) warn_error("VIDIOC_STREAMOFF");
 
+                for(int i = 0; i < buffers.size(); i++)
+                {
+                    if(munmap(buffers[i].start, buffers[i].length) < 0) warn_error("munmap");
+                }
+
+                // Close memory mapped IO
+                struct v4l2_requestbuffers req = {};
+                req.count = 0;
+                req.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+                req.memory = V4L2_MEMORY_MMAP;
+                if(xioctl(fd, VIDIOC_REQBUFS, &req) < 0)
+                {
+                    if(errno == EINVAL) DEBUG_ERR(dev_name + " does not support memory mapping");
+                    else warn_error("VIDIOC_REQBUFS");
+                }
             }
 
             static void poll(const std::vector<subdevice *> & subdevices)
