@@ -119,6 +119,12 @@ namespace rsimpl
         #undef CASE
     }
 
+    size_t subdevice_mode_selection::get_image_size(rs_stream stream) const
+    {
+        auto m = get_stream_mode(stream);
+        return m ? rsimpl::get_image_size(m->width, m->height, m->format) : 0;
+    }
+
     ////////////////////////
     // static_device_info //
     ////////////////////////
@@ -134,7 +140,7 @@ namespace rsimpl
         }
     }
 
-    const subdevice_mode * static_device_info::select_mode(const stream_request (& requests)[RS_STREAM_NATIVE_COUNT], int subdevice_index) const
+    subdevice_mode_selection static_device_info::select_mode(const stream_request (& requests)[RS_STREAM_NATIVE_COUNT], int subdevice_index) const
     {
         // Determine if the user has requested any streams which are supplied by this subdevice
         bool any_stream_requested = false;
@@ -149,7 +155,7 @@ namespace rsimpl
         }
 
         // If no streams were requested, skip to the next subdevice
-        if(!any_stream_requested) return nullptr;
+        if(!any_stream_requested) return {nullptr};
 
         // Look for an appropriate mode
         for(auto & subdevice_mode : subdevice_modes)
@@ -173,7 +179,7 @@ namespace rsimpl
 
             // If any requested streams are still unsatisfied, skip to the next mode
             if(std::any_of(begin(stream_unsatisfied), end(stream_unsatisfied), [](bool b) { return b; })) continue;
-            return &subdevice_mode;
+            return {&subdevice_mode};
         }
 
         // If we did not find an appropriate mode, report an error
@@ -191,7 +197,7 @@ namespace rsimpl
         throw std::runtime_error(ss.str());
     }
 
-    std::vector<subdevice_mode> static_device_info::select_modes(const stream_request (&reqs)[RS_STREAM_NATIVE_COUNT]) const
+    std::vector<subdevice_mode_selection> static_device_info::select_modes(const stream_request (&reqs)[RS_STREAM_NATIVE_COUNT]) const
     {
         // Make a mutable copy of our array
         stream_request requests[RS_STREAM_NATIVE_COUNT];
@@ -218,8 +224,12 @@ namespace rsimpl
         // Select subdevice modes needed to satisfy our requests
         int num_subdevices = 0;
         for(auto & mode : subdevice_modes) num_subdevices = std::max(num_subdevices, mode.subdevice+1);
-        std::vector<subdevice_mode> selected_modes;
-        for(int i = 0; i < num_subdevices; ++i) if(auto * m = select_mode(requests, i)) selected_modes.push_back(*m);
+        std::vector<subdevice_mode_selection> selected_modes;
+        for(int i = 0; i < num_subdevices; ++i)
+        {
+            auto selection = select_mode(requests, i);
+            if(selection.mode) selected_modes.push_back(selection);
+        }
         return selected_modes;
     }
 
@@ -227,7 +237,8 @@ namespace rsimpl
     // stream_buffer //
     ///////////////////
 
-    stream_buffer::stream_buffer(const stream_mode & mode) : mode(mode), frames({std::vector<byte>(get_image_size(mode.width, mode.height, mode.format))}), last_frame_number() {}
+    stream_buffer::stream_buffer(subdevice_mode_selection selection, rs_stream stream)
+        : selection(selection), frames({std::vector<byte>(selection.get_image_size(stream))}), last_frame_number() {}
 
     void stream_buffer::swap_back(int frame_number) 
     {

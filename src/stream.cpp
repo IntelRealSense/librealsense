@@ -49,17 +49,14 @@ native_stream::native_stream(device_config & config, rs_stream stream) : config(
     if(it != end(modes)) modes.erase(it, end(modes));
 }
 
-stream_mode native_stream::get_mode() const
+subdevice_mode_selection native_stream::get_mode() const
 {
     if(buffer) return buffer->get_mode();
     if(config.requests[stream].enabled)
     {
         for(auto subdevice_mode : config.select_modes())
         {
-            for(auto stream_mode : subdevice_mode.streams)
-            {
-                if(stream_mode.stream == stream) return stream_mode;
-            }
+            if(subdevice_mode.provides_stream(stream)) return subdevice_mode;
         }   
         throw std::logic_error("no mode found"); // Should never happen, select_modes should throw if no mode can be found
     }

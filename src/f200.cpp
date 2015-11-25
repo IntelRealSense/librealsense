@@ -279,7 +279,7 @@ namespace rsimpl
             temperatureThread.join();        
     }
 
-    void f200_camera::on_before_start(const std::vector<subdevice_mode> & selected_modes)
+    void f200_camera::on_before_start(const std::vector<subdevice_mode_selection> & selected_modes)
     {
 
     }

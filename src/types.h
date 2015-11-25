@@ -122,6 +122,19 @@ namespace rsimpl
         bool use_serial_numbers_if_unique;  // If true, ignore frame_number_decoder and use a serial frame count if this is the only mode set
     };
 
+    struct subdevice_mode_selection
+    {
+        const subdevice_mode * mode;
+
+        const stream_mode * get_stream_mode(rs_stream stream) const { for(auto & s : mode->streams) if(s.stream == stream) return &s; return nullptr; }
+        size_t get_image_size(rs_stream stream) const;
+
+        bool provides_stream(rs_stream stream) const { return get_stream_mode(stream) != nullptr; }
+        int get_intrinsics_index(rs_stream stream) const { return get_stream_mode(stream)->intrinsics_index; }
+        rs_format get_format(rs_stream stream) const { return get_stream_mode(stream)->format; }
+        int get_framerate(rs_stream stream) const { return get_stream_mode(stream)->fps; }
+    };
+
     struct interstream_rule // Requires a.*field + delta == b.*field OR a.*field + delta2 == b.*field
     {
         rs_stream a, b;        
@@ -145,8 +158,8 @@ namespace rsimpl
 
         static_device_info();
 
-        const subdevice_mode * select_mode(const stream_request (&requests)[RS_STREAM_NATIVE_COUNT], int subdevice_index) const;
-        std::vector<subdevice_mode> select_modes(const stream_request (&requests)[RS_STREAM_NATIVE_COUNT]) const;
+        subdevice_mode_selection select_mode(const stream_request (&requests)[RS_STREAM_NATIVE_COUNT], int subdevice_index) const;
+        std::vector<subdevice_mode_selection> select_modes(const stream_request (&requests)[RS_STREAM_NATIVE_COUNT]) const;
     };
     static_device_info add_standard_unpackers(const static_device_info & device_info);
 
@@ -186,27 +199,27 @@ namespace rsimpl
     {
         struct frame
         {
-            std::vector<byte>       data;
-            int                     timestamp;  // DS4 frame number or IVCAM rolling timestamp, used to compute LibRealsense frame timestamp
-            int                     delta;      // Difference between the last two timestamp values, used to estimate next frame arrival time
+            std::vector<byte>               data;
+            int                             timestamp;  // DS4 frame number or IVCAM rolling timestamp, used to compute LibRealsense frame timestamp
+            int                             delta;      // Difference between the last two timestamp values, used to estimate next frame arrival time
         };
 
-        const stream_mode           mode;
-        triple_buffer<frame>        frames;
-        int                         last_frame_number;
+        subdevice_mode_selection            selection;
+        triple_buffer<frame>                frames;
+        int                                 last_frame_number;
     public:
-                                    stream_buffer(const stream_mode & mode);
+                                            stream_buffer(subdevice_mode_selection selection, rs_stream stream);
 
-        const stream_mode &         get_mode() const { return mode; }
+        const subdevice_mode_selection &    get_mode() const { return selection; }
 
-        const byte *                get_front_data() const { return frames.get_front().data.data(); }
-        int                         get_front_number() const { return frames.get_front().timestamp; }
-        int                         get_front_delta() const { return frames.get_front().delta; }
-        bool                        is_front_valid() const { return frames.has_front(); }
+        const byte *                        get_front_data() const { return frames.get_front().data.data(); }
+        int                                 get_front_number() const { return frames.get_front().timestamp; }
+        int                                 get_front_delta() const { return frames.get_front().delta; }
+        bool                                is_front_valid() const { return frames.has_front(); }
 
-        byte *                      get_back_data() { return frames.get_back().data.data(); }
-        void                        swap_back(int frame_number);
-        bool                        swap_front() { return frames.swap_front(); }
+        byte *                              get_back_data() { return frames.get_back().data.data(); }
+        void                                swap_back(int frame_number);
+        bool                                swap_front() { return frames.swap_front(); }
     };
 
     class intrinsics_buffer
@@ -251,7 +264,7 @@ namespace rsimpl
 
                                             device_config(const rsimpl::static_device_info & info) : info(info), depth_scale(info.nominal_depth_scale) { for(auto & req : requests) req = rsimpl::stream_request(); }
 
-        std::vector<subdevice_mode>         select_modes() const { return info.select_modes(requests); }
+        std::vector<subdevice_mode_selection> select_modes() const { return info.select_modes(requests); }
     };
 
     // Utilities

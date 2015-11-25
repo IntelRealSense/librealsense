@@ -234,12 +234,12 @@ namespace rsimpl
         config.depth_scale = depth.get_intrinsics().fx * baseline * multiplier;
     }
 
-    void r200_camera::on_before_start(const std::vector<subdevice_mode> & selected_modes)
+    void r200_camera::on_before_start(const std::vector<subdevice_mode_selection> & selected_modes)
     {
         uint8_t streamIntent = 0;
         for(const auto & m : selected_modes)
         {
-            switch(m.subdevice)
+            switch(m.mode->subdevice)
             {
             case 0: streamIntent |= r200::STATUS_BIT_LR_STREAMING; break;
             case 2: streamIntent |= r200::STATUS_BIT_WEB_STREAMING; break;
@@ -247,7 +247,7 @@ namespace rsimpl
                 streamIntent |= r200::STATUS_BIT_Z_STREAMING; 
                 r200::disparity_mode dm;        
                 r200::get_disparity_mode(get_device(), dm);
-                switch(m.streams[0].format)
+                switch(m.mode->streams[0].format)
                 {
                 default: throw std::logic_error("unsupported R200 depth format");
                 case RS_FORMAT_Z16: 
