@@ -21,11 +21,8 @@ namespace rsimpl
     void             unpack_y16_from_y8             (byte * const dest[], const byte * source, const subdevice_mode & mode);
     void             unpack_y16_from_y16_10         (byte * const dest[], const byte * source, const subdevice_mode & mode);
     void             unpack_y8_from_y16_10          (byte * const dest[], const byte * source, const subdevice_mode & mode);
-                                                             
-    void             unpack_rgb_from_yuy2           (byte * const dest[], const byte * source, const subdevice_mode & mode);
-    void             unpack_rgba_from_yuy2          (byte * const dest[], const byte * source, const subdevice_mode & mode);
-    void             unpack_bgr_from_yuy2           (byte * const dest[], const byte * source, const subdevice_mode & mode);
-    void             unpack_bgra_from_yuy2          (byte * const dest[], const byte * source, const subdevice_mode & mode);
+    
+    void             unpack_from_yuy2               (byte * const dest[], const byte * source, const subdevice_mode & mode);
                                                              
     void             unpack_y8_y8_from_y8i          (byte * const dest[], const byte * source, const subdevice_mode & mode);
     void             unpack_y16_y16_from_y12i_10    (byte * const dest[], const byte * source, const subdevice_mode & mode);
