@@ -21,25 +21,16 @@ static_device_info rsimpl::add_standard_unpackers(const static_device_info & dev
     static_device_info info = device_info;
     for(auto & mode : device_info.subdevice_modes)
     {
-        // Unstrided YUYV modes can be unpacked into RGB and BGR
+        // Unstrided YUYV modes can be unpacked into several useful formats
         if(mode.pf->fourcc == 'YUY2' && mode.unpacker == &unpack_subrect && mode.width == mode.streams[0].width && mode.height == mode.streams[0].height)
         {
-            auto m = mode;
-            m.streams[0].format = RS_FORMAT_RGB8;
-            m.unpacker = &unpack_rgb_from_yuy2;
-            info.subdevice_modes.push_back(m);
-
-            m.streams[0].format = RS_FORMAT_BGR8;
-            m.unpacker = &unpack_bgr_from_yuy2;
-            info.subdevice_modes.push_back(m);
-
-            m.streams[0].format = RS_FORMAT_RGBA8;
-            m.unpacker = &unpack_rgba_from_yuy2;
-            info.subdevice_modes.push_back(m);
-
-            m.streams[0].format = RS_FORMAT_BGRA8;
-            m.unpacker = &unpack_bgra_from_yuy2;
-            info.subdevice_modes.push_back(m);
+            for(auto fmt : {RS_FORMAT_Y8, RS_FORMAT_Y16, RS_FORMAT_RGB8, RS_FORMAT_RGBA8, RS_FORMAT_BGR8, RS_FORMAT_BGRA8})
+            {
+                auto m = mode;
+                m.streams[0].format = fmt;
+                m.unpacker = &unpack_from_yuy2;
+                info.subdevice_modes.push_back(m);
+            }
         }
     }
 
