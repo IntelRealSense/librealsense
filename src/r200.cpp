@@ -78,11 +78,6 @@ namespace rsimpl
         init_controls(*device, 0, R200_LEFT_RIGHT_XU);
 
         enum { LR_FULL, LR_BIG, LR_QRES, Z_FULL, Z_BIG, Z_QRES, THIRD_HD, THIRD_VGA, THIRD_QRES, NUM_INTRINSICS };
-        const static struct { int w, h, uvc_w, uvc_h, lr_intrin, z_intrin; } lrz_modes[] = {
-            {640, 480,   640, 481,  LR_FULL, Z_FULL},
-            {492, 372,   640, 373,  LR_BIG,  Z_BIG },
-            {332, 252,   640, 254,  LR_QRES, Z_QRES}
-        };
 
         static_device_info info;
         info.name = {"Intel RealSense R200"};
@@ -92,19 +87,23 @@ namespace rsimpl
         info.stream_subdevices[RS_STREAM_INFRARED2] = 0;
 
         // Set up modes for left/right/z images
-        for(auto m : lrz_modes)
+        for(auto fps : {30, 60, 90})
         {
-            for(auto fps : {30, 60, 90})
+            // Subdevice 0 can provide left/right infrared via four pixel formats, in three resolutions, which can either be uncropped or cropped to match Z
+            for(auto pf : {&pf_y8, &pf_y8i, &pf_y16, &pf_y12i})
             {
-                info.subdevice_modes.push_back({1, m.uvc_w-12, m.uvc_h-12, &pf_z16,  fps, {m.w-12, m.h-12}, {{+6, m.lr_intrin}, {0, m.z_intrin}}, &decode_dinghy_frame_number<0x4030201>});
-                info.subdevice_modes.push_back({0, m.uvc_w,    m.uvc_h,    &pf_y8,   fps, {m.w,    m.h   }, {{0, m.lr_intrin}, {-6, m.z_intrin}}, &decode_dinghy_frame_number<0x08070605>});
-                info.subdevice_modes.push_back({0, m.uvc_w,    m.uvc_h,    &pf_y8i,  fps, {m.w,    m.h   }, {{0, m.lr_intrin}, {-6, m.z_intrin}}, &decode_dinghy_frame_number<0x08070605>});          
-                info.subdevice_modes.push_back({0, m.uvc_w,    m.uvc_h,    &pf_y16,  fps, {m.w,    m.h   }, {{0, m.lr_intrin}, {-6, m.z_intrin}}, &decode_dinghy_frame_number<0x08070605>});
-                info.subdevice_modes.push_back({0, m.uvc_w,    m.uvc_h,    &pf_y12i, fps, {m.w,    m.h   }, {{0, m.lr_intrin}, {-6, m.z_intrin}}, &decode_dinghy_frame_number<0x08070605>});
+                info.subdevice_modes.push_back({0, 640, 481, pf, fps, {640, 480}, {{0, LR_FULL}, {-6, Z_FULL}}, &decode_dinghy_frame_number<0x08070605>});  
+                info.subdevice_modes.push_back({0, 640, 373, pf, fps, {492, 372}, {{0, LR_BIG }, {-6, Z_BIG }}, &decode_dinghy_frame_number<0x08070605>});  
+                info.subdevice_modes.push_back({0, 640, 254, pf, fps, {332, 252}, {{0, LR_QRES}, {-6, Z_QRES}}, &decode_dinghy_frame_number<0x08070605>});  
             }
+
+            // Subdevice 1 can provide depth, in three resolutions, which can either be unpadded or padded to match left/right
+            info.subdevice_modes.push_back({1, 628, 469, &pf_z16,  fps, {628, 468}, {{0, Z_FULL}, {+6, LR_FULL}}, &decode_dinghy_frame_number<0x4030201>});
+            info.subdevice_modes.push_back({1, 628, 361, &pf_z16,  fps, {480, 360}, {{0, Z_BIG }, {+6, LR_BIG }}, &decode_dinghy_frame_number<0x4030201>});
+            info.subdevice_modes.push_back({1, 628, 242, &pf_z16,  fps, {320, 240}, {{0, Z_QRES}, {+6, LR_QRES}}, &decode_dinghy_frame_number<0x4030201>});
         }
 
-        // Set up modes for third images
+        // Subdevice 2 can provide color, in several formats and framerates
         info.subdevice_modes.push_back({2,  320,  240, &pf_yuy2, 60, { 320,  240}, {{0, THIRD_QRES}}, &decode_yuy2_frame_number, true});
         info.subdevice_modes.push_back({2,  320,  240, &pf_yuy2, 30, { 320,  240}, {{0, THIRD_QRES}}, &decode_yuy2_frame_number, true});
         info.subdevice_modes.push_back({2,  640,  480, &pf_yuy2, 60, { 640,  480}, {{0, THIRD_VGA }}, &decode_yuy2_frame_number, true});
