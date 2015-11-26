@@ -63,15 +63,15 @@ namespace rsimpl
         memcpy(dest[0], source, SIZE * count);
     }
 
-    template<class SOURCE, class UNPACK> void unpack_pixels(byte * const dest[], int count, const SOURCE * source, rs_format format, UNPACK unpack)
+    template<class SOURCE, class UNPACK> void unpack_pixels(byte * const dest[], int count, const SOURCE * source, UNPACK unpack)
     {
         auto out = reinterpret_cast<decltype(unpack(SOURCE())) *>(dest[0]);
         for(int i=0; i<count; ++i) *out++ = unpack(*source++);
     }
 
-    void unpack_y16_from_y8    (byte * const d[], const byte * s, int n) { unpack_pixels(d, n, reinterpret_cast<const uint8_t  *>(s), RS_FORMAT_Y16, [](uint8_t  pixel) -> uint16_t { return pixel | pixel << 8; }); }
-    void unpack_y16_from_y16_10(byte * const d[], const byte * s, int n) { unpack_pixels(d, n, reinterpret_cast<const uint16_t *>(s), RS_FORMAT_Y16, [](uint16_t pixel) -> uint16_t { return pixel << 6; }); }
-    void unpack_y8_from_y16_10 (byte * const d[], const byte * s, int n) { unpack_pixels(d, n, reinterpret_cast<const uint16_t *>(s), RS_FORMAT_Y8,  [](uint16_t pixel) -> uint8_t  { return pixel >> 2; }); }
+    void unpack_y16_from_y8    (byte * const d[], const byte * s, int n) { unpack_pixels(d, n, reinterpret_cast<const uint8_t  *>(s), [](uint8_t  pixel) -> uint16_t { return pixel | pixel << 8; }); }
+    void unpack_y16_from_y16_10(byte * const d[], const byte * s, int n) { unpack_pixels(d, n, reinterpret_cast<const uint16_t *>(s), [](uint16_t pixel) -> uint16_t { return pixel << 6; }); }
+    void unpack_y8_from_y16_10 (byte * const d[], const byte * s, int n) { unpack_pixels(d, n, reinterpret_cast<const uint16_t *>(s), [](uint16_t pixel) -> uint8_t  { return pixel >> 2; }); }
 
     /////////////////////////////
     // YUY2 unpacking routines //
@@ -230,7 +230,7 @@ namespace rsimpl
     // 2-in-1 format splitting routines //
     //////////////////////////////////////
 
-    template<class SOURCE, class SPLIT_A, class SPLIT_B> void split_frame(byte * const dest[], int count, const SOURCE * source, const native_pixel_format & pf, rs_format format_a, rs_format format_b, SPLIT_A split_a, SPLIT_B split_b)
+    template<class SOURCE, class SPLIT_A, class SPLIT_B> void split_frame(byte * const dest[], int count, const SOURCE * source, SPLIT_A split_a, SPLIT_B split_b)
     {
         auto a = reinterpret_cast<decltype(split_a(SOURCE())) *>(dest[0]);
         auto b = reinterpret_cast<decltype(split_b(SOURCE())) *>(dest[1]);
@@ -244,28 +244,28 @@ namespace rsimpl
     void unpack_y8_y8_from_y8i(byte * const dest[], const byte * source, int count)
     {
         struct y8i_pixel { uint8_t l, r; };
-        split_frame(dest, count, reinterpret_cast<const y8i_pixel *>(source), pf_y8i, RS_FORMAT_Y8, RS_FORMAT_Y8,
+        split_frame(dest, count, reinterpret_cast<const y8i_pixel *>(source),
             [](const y8i_pixel & p) -> uint8_t { return p.l; },
             [](const y8i_pixel & p) -> uint8_t { return p.r; });
     }
 
     void unpack_y16_y16_from_y12i_10(byte * const dest[], const byte * source, int count)
     {
-        split_frame(dest, count, reinterpret_cast<const y12i_pixel *>(source), pf_y12i, RS_FORMAT_Y16, RS_FORMAT_Y16,
+        split_frame(dest, count, reinterpret_cast<const y12i_pixel *>(source),
             [](const y12i_pixel & p) -> uint16_t { return p.l() << 6 | p.l() >> 4; },  // We want to convert 10-bit data to 16-bit data
             [](const y12i_pixel & p) -> uint16_t { return p.r() << 6 | p.r() >> 4; }); // Multiply by 64 1/16 to efficiently approximate 65535/1023
     }
 
     void unpack_z16_y8_from_f200_inzi(byte * const dest[], const byte * source, int count)
     {
-        split_frame(dest, count, reinterpret_cast<const inri_pixel *>(source), pf_f200_inzi, RS_FORMAT_Z16, RS_FORMAT_Y8,
+        split_frame(dest, count, reinterpret_cast<const inri_pixel *>(source),
             [](const inri_pixel & p) -> uint16_t { return p.z16; },
             [](const inri_pixel & p) -> uint8_t { return p.y8; });
     }
 
     void unpack_z16_y16_from_f200_inzi(byte * const dest[], const byte * source, int count)
     {
-        split_frame(dest, count, reinterpret_cast<const inri_pixel *>(source), pf_f200_inzi, RS_FORMAT_Z16, RS_FORMAT_Y16,
+        split_frame(dest, count, reinterpret_cast<const inri_pixel *>(source),
             [](const inri_pixel & p) -> uint16_t { return p.z16; },
             [](const inri_pixel & p) -> uint16_t { return p.y8 | p.y8 << 8; });
     }
@@ -439,7 +439,5 @@ namespace rsimpl
         }
     }
 }
-
-
 
 #pragma pack(pop)
