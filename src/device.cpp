@@ -125,7 +125,7 @@ void rs_device::start()
             // Unpack the image into the user stream interface back buffer
             std::vector<byte *> dest;
             for(auto & stream : stream_list) dest.push_back(stream->get_back_data());
-            mode_selection.mode->unpacker(dest.data(), reinterpret_cast<const byte *>(frame), *mode_selection.mode);
+            mode_selection.unpack(dest.data(), reinterpret_cast<const byte *>(frame));
             int frame_number = (mode_selection.mode->use_serial_numbers_if_unique && only_stream) ? serial_frame_no++ : mode_selection.mode->frame_number_decoder(*mode_selection.mode, frame);
             if(frame_number == 0) frame_number = ++serial_frame_no; // No dinghy on LibUVC backend?
                 

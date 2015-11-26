@@ -121,7 +121,28 @@ namespace rsimpl
 
     size_t subdevice_mode_selection::get_image_size(rs_stream stream) const
     {
-        return rsimpl::get_image_size(mode->content_size.x, mode->content_size.y, get_format(stream));
+        return rsimpl::get_image_size(get_width(), get_height(), get_format(stream));
+    }
+
+    void subdevice_mode_selection::unpack(byte * const dest[], const byte * source) const
+    {
+        const int pad_crop = get_pad_crop();
+
+        subdevice_mode m = *mode;
+        m.content_size.x = get_width();
+        m.content_size.y = get_height();
+
+        if(pad_crop < 0) source += m.pf->get_crop_offset(m.width, -pad_crop);
+
+        byte * d = 0;
+        if(pad_crop > 0)
+        {
+            assert(mode->streams.size() == 1);
+            d = dest[0] + rsimpl::get_image_size(m.content_size.x, pad_crop, mode->streams[0].format) + rsimpl::get_image_size(pad_crop, 1, mode->streams[0].format);
+            dest = &d;
+        }
+
+        mode->unpacker(dest, source, m);
     }
 
     ////////////////////////
@@ -154,7 +175,7 @@ namespace rsimpl
         }
 
         // If no streams were requested, skip to the next subdevice
-        if(!any_stream_requested) return {nullptr};
+        if(!any_stream_requested) return subdevice_mode_selection(nullptr,0);
 
         // Look for an appropriate mode
         for(auto & subdevice_mode : subdevice_modes)
@@ -162,23 +183,28 @@ namespace rsimpl
             // Skip modes that apply to other subdevices
             if(subdevice_mode.subdevice != subdevice_index) continue;
 
-            // Determine if this mode satisfies the requirements on our requested streams
-            auto stream_unsatisfied = stream_requested;
-            for(auto & stream_mode : subdevice_mode.streams)
+            for(size_t i=0; i<subdevice_mode.pad_crop.size(); ++i)
             {
-                const auto & req = requests[stream_mode.stream];
-                if(req.enabled && (req.width == 0 || req.width == subdevice_mode.content_size.x)
-                               && (req.height == 0 || req.height == subdevice_mode.content_size.y)
-                               && (req.format == RS_FORMAT_ANY || req.format == stream_mode.format)
-                               && (req.fps == 0 || req.fps == subdevice_mode.fps))
-                {
-                    stream_unsatisfied[stream_mode.stream] = false;
-                }
-            }
+                auto selection = subdevice_mode_selection(&subdevice_mode, i);
 
-            // If any requested streams are still unsatisfied, skip to the next mode
-            if(std::any_of(begin(stream_unsatisfied), end(stream_unsatisfied), [](bool b) { return b; })) continue;
-            return {&subdevice_mode};
+                // Determine if this mode satisfies the requirements on our requested streams
+                auto stream_unsatisfied = stream_requested;
+                for(auto & stream_mode : subdevice_mode.streams)
+                {
+                    const auto & req = requests[stream_mode.stream];
+                    if(req.enabled && (req.width == 0 || req.width == selection.get_width())
+                                   && (req.height == 0 || req.height == selection.get_height())
+                                   && (req.format == RS_FORMAT_ANY || req.format == stream_mode.format)
+                                   && (req.fps == 0 || req.fps == subdevice_mode.fps))
+                    {
+                        stream_unsatisfied[stream_mode.stream] = false;
+                    }
+                }
+
+                // If any requested streams are still unsatisfied, skip to the next mode
+                if(std::any_of(begin(stream_unsatisfied), end(stream_unsatisfied), [](bool b) { return b; })) continue;
+                return selection;
+            }
         }
 
         // If we did not find an appropriate mode, report an error

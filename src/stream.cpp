@@ -28,8 +28,11 @@ native_stream::native_stream(device_config & config, rs_stream stream) : config(
 {
     for(auto & subdevice_mode : config.info.subdevice_modes)
     {
-        subdevice_mode_selection selection = {&subdevice_mode};
-        if(selection.provides_stream(stream)) modes.push_back(selection);
+        for(size_t pad_crop=0; pad_crop < subdevice_mode.pad_crop.size(); ++pad_crop)
+        {
+            auto selection = subdevice_mode_selection(&subdevice_mode, pad_crop);
+            if(selection.provides_stream(stream)) modes.push_back(selection);
+        }
     }
 
     auto get_tuple = [&config, stream](const subdevice_mode_selection & selection)
