@@ -54,27 +54,13 @@ namespace rsimpl
         }    
     }
 
-    const native_pixel_format pf_rw10        = {'RW10', 1, 1, 1};
-    const native_pixel_format pf_yuy2        = {'YUY2', 1, 2, sizeof(yuy2_macropixel)};
-    const native_pixel_format pf_y8          = {'Y8  ', 1, 1, sizeof(uint8_t)};
-    const native_pixel_format pf_y8i         = {'Y8I ', 1, 1, sizeof(uint8_t)*2};
-    const native_pixel_format pf_y16         = {'Y16 ', 1, 1, sizeof(uint16_t)};
-    const native_pixel_format pf_y12i        = {'Y12I', 1, 1, sizeof(y12i_pixel)};
-    const native_pixel_format pf_z16         = {'Z16 ', 1, 1, sizeof(uint16_t)};
-    const native_pixel_format pf_invz        = {'INVZ', 1, 1, sizeof(uint16_t)};
-    const native_pixel_format pf_f200_invi   = {'INVI', 1, 1, sizeof(uint8_t)};
-    const native_pixel_format pf_f200_inzi   = {'INZI', 1, 1, sizeof(inri_pixel)};
-    const native_pixel_format pf_sr300_invi  = {'INVI', 1, 1, sizeof(uint16_t)};
-    const native_pixel_format pf_sr300_inzi  = {'INZI', 2, 1, sizeof(uint16_t)};
-
     //////////////////////////////
     // Naive unpacking routines //
     //////////////////////////////
     
     void unpack_subrect(byte * const dest[], const byte * source, const subdevice_mode & mode)
     {
-        assert(mode.streams.size() == 1);
-        const size_t in_stride = mode.pf->get_image_size(mode.width, 1), out_stride = get_image_size(mode.content_size.x, 1, mode.streams[0].format);
+        const size_t in_stride = mode.pf->get_image_size(mode.width, 1), out_stride = mode.pf->get_image_size(mode.content_size.x, 1);
         auto out = dest[0];
         for(int i=0; i<std::min(mode.height, mode.content_size.y); ++i)
         {
@@ -86,7 +72,7 @@ namespace rsimpl
 
     template<class SOURCE, class UNPACK> void unpack_pixels(byte * const dest[], const subdevice_mode & mode, const SOURCE * source, rs_format format, UNPACK unpack)
     {
-        assert(mode.streams.size() == 1 && mode.content_size.x <= mode.width && mode.content_size.y <= mode.height && mode.streams[0].format == format);
+        assert(mode.content_size.x <= mode.width && mode.content_size.y <= mode.height);
         auto out = reinterpret_cast<decltype(unpack(SOURCE())) *>(dest[0]);
         for(int y = 0; y < mode.content_size.y; ++y)
         {
@@ -257,7 +243,7 @@ namespace rsimpl
     
     void unpack_from_yuy2(byte * const dest[], const byte * source, const subdevice_mode & mode)
     {
-        assert(mode.pf == &pf_yuy2 && mode.streams.size() == 1 && mode.content_size.x == mode.width && mode.content_size.y == mode.height);
+        /*assert(mode.pf == &pf_yuy2 && mode.streams.size() == 1 && mode.content_size.x == mode.width && mode.content_size.y == mode.height);
         switch(mode.streams[0].format)
         {
         case RS_FORMAT_Y8   : unpack_yuy2_sse<RS_FORMAT_Y8   >(dest[0], source, mode.width * mode.height); break;
@@ -266,8 +252,10 @@ namespace rsimpl
         case RS_FORMAT_RGBA8: unpack_yuy2_sse<RS_FORMAT_RGBA8>(dest[0], source, mode.width * mode.height); break;
         case RS_FORMAT_BGR8 : unpack_yuy2_sse<RS_FORMAT_BGR8 >(dest[0], source, mode.width * mode.height); break;
         case RS_FORMAT_BGRA8: unpack_yuy2_sse<RS_FORMAT_BGRA8>(dest[0], source, mode.width * mode.height); break;
-        }
+        }*/
     }
+
+    template<rs_format FORMAT> void unpack_fmt_from_yuy2(byte * const dest[], const byte * source, const subdevice_mode & mode) { unpack_yuy2_sse<FORMAT>(dest[0], source, mode.width * mode.height); }
 
     //////////////////////////////////////
     // 2-in-1 format splitting routines //
@@ -275,8 +263,7 @@ namespace rsimpl
 
     template<class SOURCE, class SPLIT_A, class SPLIT_B> void split_frame(byte * const dest[], const subdevice_mode & mode, const SOURCE * source, const native_pixel_format & pf, rs_format format_a, rs_format format_b, SPLIT_A split_a, SPLIT_B split_b)
     {
-        assert(mode.pf == &pf && mode.streams.size() == 2 && mode.streams[0].format == format_a && mode.streams[1].format == format_b
-            && mode.content_size.x <= mode.width && mode.content_size.y <= mode.height);
+        assert(mode.pf == &pf && mode.content_size.x <= mode.width && mode.content_size.y <= mode.height);
         auto a = reinterpret_cast<decltype(split_a(SOURCE())) *>(dest[0]);
         auto b = reinterpret_cast<decltype(split_b(SOURCE())) *>(dest[1]);
         for(int y = 0; y < mode.content_size.y; ++y)
@@ -460,5 +447,36 @@ namespace rsimpl
             assert(false); // NOTE: rectify_image_pixels(...) is not appropriate for RS_FORMAT_YUYV images, no logic prevents U/V channels from being written to one another
         }
     }
+
+    //////////////////////////
+    // Native pixel formats //
+    //////////////////////////
+
+    const native_pixel_format pf_rw10        = {'RW10', 1, 1, 1,                       {{&unpack_subrect,                        {{RS_STREAM_COLOR,    RS_FORMAT_RAW10      }}}}};
+    const native_pixel_format pf_yuy2        = {'YUY2', 1, 2, sizeof(yuy2_macropixel), {{&unpack_subrect,                        {{RS_STREAM_COLOR,    RS_FORMAT_YUYV       }}},
+                                                                                        {&unpack_fmt_from_yuy2<RS_FORMAT_Y8   >, {{RS_STREAM_COLOR,    RS_FORMAT_Y8         }}},
+                                                                                        {&unpack_fmt_from_yuy2<RS_FORMAT_Y16  >, {{RS_STREAM_COLOR,    RS_FORMAT_Y16        }}},
+                                                                                        {&unpack_fmt_from_yuy2<RS_FORMAT_RGB8 >, {{RS_STREAM_COLOR,    RS_FORMAT_RGB8       }}},
+                                                                                        {&unpack_fmt_from_yuy2<RS_FORMAT_RGBA8>, {{RS_STREAM_COLOR,    RS_FORMAT_RGBA8      }}},
+                                                                                        {&unpack_fmt_from_yuy2<RS_FORMAT_BGR8 >, {{RS_STREAM_COLOR,    RS_FORMAT_BGR8       }}},
+                                                                                        {&unpack_fmt_from_yuy2<RS_FORMAT_BGRA8>, {{RS_STREAM_COLOR,    RS_FORMAT_BGRA8      }}}}};
+    const native_pixel_format pf_y8          = {'Y8  ', 1, 1, sizeof(uint8_t),         {{&unpack_subrect,                        {{RS_STREAM_INFRARED, RS_FORMAT_Y8         }}}}};
+    const native_pixel_format pf_y8i         = {'Y8I ', 1, 1, sizeof(uint8_t)*2,       {{&unpack_y8_y8_from_y8i,                 {{RS_STREAM_INFRARED, RS_FORMAT_Y8         }, {RS_STREAM_INFRARED2, RS_FORMAT_Y8}}}}};
+    const native_pixel_format pf_y16         = {'Y16 ', 1, 1, sizeof(uint16_t),        {{&unpack_y16_from_y16_10,                {{RS_STREAM_INFRARED, RS_FORMAT_Y16        }}}}};
+    const native_pixel_format pf_y12i        = {'Y12I', 1, 1, sizeof(y12i_pixel),      {{&unpack_y16_y16_from_y12i_10,           {{RS_STREAM_INFRARED, RS_FORMAT_Y16        }, {RS_STREAM_INFRARED2, RS_FORMAT_Y16}}}}};
+    const native_pixel_format pf_z16         = {'Z16 ', 1, 1, sizeof(uint16_t),        {{&unpack_subrect,                        {{RS_STREAM_DEPTH,    RS_FORMAT_Z16        }}},
+                                                                                        {&unpack_subrect,                        {{RS_STREAM_DEPTH,    RS_FORMAT_DISPARITY16}}}}};
+    const native_pixel_format pf_invz        = {'INVZ', 1, 1, sizeof(uint16_t),        {{&unpack_subrect,                        {{RS_STREAM_DEPTH,    RS_FORMAT_Z16        }}}}};
+    const native_pixel_format pf_f200_invi   = {'INVI', 1, 1, sizeof(uint8_t),         {{&unpack_subrect,                        {{RS_STREAM_INFRARED, RS_FORMAT_Y8         }}},
+                                                                                        {&unpack_y16_from_y8,                    {{RS_STREAM_INFRARED, RS_FORMAT_Y16        }}}}};
+    const native_pixel_format pf_f200_inzi   = {'INZI', 1, 1, sizeof(inri_pixel),      {{&unpack_z16_y8_from_f200_inzi,          {{RS_STREAM_DEPTH,    RS_FORMAT_Z16        }, {RS_STREAM_INFRARED, RS_FORMAT_Y8}}},
+                                                                                        {&unpack_z16_y16_from_f200_inzi,         {{RS_STREAM_DEPTH,    RS_FORMAT_Z16        }, {RS_STREAM_INFRARED, RS_FORMAT_Y16}}}}};
+    const native_pixel_format pf_sr300_invi  = {'INVI', 1, 1, sizeof(uint16_t),        {{&unpack_y8_from_y16_10,                 {{RS_STREAM_INFRARED, RS_FORMAT_Y8         }}},
+                                                                                        {&unpack_y16_from_y16_10,                {{RS_STREAM_INFRARED, RS_FORMAT_Y16        }}}}};
+    const native_pixel_format pf_sr300_inzi  = {'INZI', 2, 1, sizeof(uint16_t),        {{&unpack_z16_y8_from_sr300_inzi,         {{RS_STREAM_DEPTH,    RS_FORMAT_Z16        }, {RS_STREAM_INFRARED, RS_FORMAT_Y8}}},
+                                                                                        {&unpack_z16_y16_from_sr300_inzi,        {{RS_STREAM_DEPTH,    RS_FORMAT_Z16        }, {RS_STREAM_INFRARED, RS_FORMAT_Y16}}}}};
 }
+
+
+
 #pragma pack(pop)

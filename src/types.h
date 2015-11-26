@@ -83,10 +83,15 @@ namespace rsimpl
         int fps;
     };
 
-    struct stream_mode
+    struct subdevice_mode;
+    
+    struct unpacker_setting
     {
-        rs_stream stream;           // RS_DEPTH, RS_COLOR, RS_INFRARED, RS_INFRARED_2, etc.
-        rs_format format;           // Pixel format visible to the client library
+        void (* unpacker)(byte * const dest[], const byte * source, const subdevice_mode & mode);
+        std::vector<std::pair<rs_stream, rs_format>> outputs;
+
+        bool provides_stream(rs_stream stream) const { for(auto & o : outputs) if(o.first == stream) return true; return false; }
+        rs_format get_format(rs_stream stream) const { for(auto & o : outputs) if(o.first == stream) return o.second; throw std::logic_error("missing output"); }
     };
 
     struct native_pixel_format
@@ -95,6 +100,8 @@ namespace rsimpl
         int plane_count;
         int macropixel_width;
         size_t macropixel_size;
+        std::vector<unpacker_setting> unpackers;
+
         size_t get_image_size(int width, int height) const
         {
             assert(width % macropixel_width == 0);
@@ -119,8 +126,6 @@ namespace rsimpl
         int fps;                                // Framerate advertised over UVC
         int2 content_size;                      // Size of image content, may be different from UVC frame size
         std::vector<pad_crop_setting> pad_crop; // Acceptable padding/cropping values
-        std::vector<stream_mode> streams;       // Modes for streams which can be supported by this device mode
-        void (* unpacker)(byte * const dest[], const byte * source, const subdevice_mode & mode);
         int (* frame_number_decoder)(const subdevice_mode & mode, const void * frame);
         bool use_serial_numbers_if_unique;  // If true, ignore frame_number_decoder and use a serial frame count if this is the only mode set
     };
@@ -129,18 +134,18 @@ namespace rsimpl
     {
         const subdevice_mode * mode;
         size_t pad_crop_index;
+        size_t unpacker_index;
 
-        subdevice_mode_selection(const subdevice_mode * mode, size_t pad_crop_index) : mode(mode), pad_crop_index(pad_crop_index) {}
-    private:
-        const stream_mode * get_stream_mode(rs_stream stream) const { for(auto & s : mode->streams) if(s.stream == stream) return &s; return nullptr; }
-    public:
+        subdevice_mode_selection(const subdevice_mode * mode, size_t pad_crop_index, size_t unpacker_index) : mode(mode), pad_crop_index(pad_crop_index), unpacker_index(unpacker_index) {}
+
+        const std::vector<std::pair<rs_stream, rs_format>> & get_outputs() const { return mode->pf->unpackers[unpacker_index].outputs; }
         int get_pad_crop() const { return mode->pad_crop[pad_crop_index].pad_crop; }
         int get_width() const { return mode->content_size.x + get_pad_crop() * 2; }
         int get_height() const { return mode->content_size.y + get_pad_crop() * 2; }
         size_t get_image_size(rs_stream stream) const;
-        bool provides_stream(rs_stream stream) const { return get_stream_mode(stream) != nullptr; }
+        bool provides_stream(rs_stream stream) const { return mode->pf->unpackers[unpacker_index].provides_stream(stream); }
         int get_intrinsics_index(rs_stream stream) const { return mode->pad_crop[pad_crop_index].intrinsics_index; }
-        rs_format get_format(rs_stream stream) const { return get_stream_mode(stream)->format; }
+        rs_format get_format(rs_stream stream) const { return mode->pf->unpackers[unpacker_index].get_format(stream); }
         int get_framerate(rs_stream stream) const { return mode->fps; }
         void unpack(byte * const dest[], const byte * source) const;
     };

@@ -18,23 +18,8 @@ using namespace rsimpl;
 
 static_device_info rsimpl::add_standard_unpackers(const static_device_info & device_info)
 {
-    static_device_info info = device_info;
-    for(auto & mode : device_info.subdevice_modes)
-    {
-        // Unstrided YUYV modes can be unpacked into several useful formats
-        if(mode.pf->fourcc == 'YUY2' && mode.unpacker == &unpack_subrect && mode.width == mode.content_size.x && mode.height == mode.content_size.y)
-        {
-            for(auto fmt : {RS_FORMAT_Y8, RS_FORMAT_Y16, RS_FORMAT_RGB8, RS_FORMAT_RGBA8, RS_FORMAT_BGR8, RS_FORMAT_BGRA8})
-            {
-                auto m = mode;
-                m.streams[0].format = fmt;
-                m.unpacker = &unpack_from_yuy2;
-                info.subdevice_modes.push_back(m);
-            }
-        }
-    }
-
     // Flag all standard options as supported
+    static_device_info info = device_info;
     for(int i=0; i<RS_OPTION_COUNT; ++i)
     {
         if(uvc::is_pu_control((rs_option)i))
@@ -42,7 +27,6 @@ static_device_info rsimpl::add_standard_unpackers(const static_device_info & dev
             info.option_supported[i] = true;
         }
     }
-
     return info;
 }
 
@@ -106,14 +90,14 @@ void rs_device::start()
     {
         // Create a stream buffer for each stream served by this subdevice mode
         std::vector<std::shared_ptr<stream_buffer>> stream_list;
-        for(auto & stream_mode : mode_selection.mode->streams)
+        for(auto & stream_mode : mode_selection.get_outputs())
         {
             // Create a buffer to receive the images from this stream
-            auto stream = std::make_shared<stream_buffer>(mode_selection, stream_mode.stream);
+            auto stream = std::make_shared<stream_buffer>(mode_selection, stream_mode.first);
             stream_list.push_back(stream);
                     
             // If this is one of the streams requested by the user, store the buffer so they can access it
-            if(config.requests[stream_mode.stream].enabled) native_streams[stream_mode.stream]->buffer = stream;
+            if(config.requests[stream_mode.first].enabled) native_streams[stream_mode.first]->buffer = stream;
         }
                 
         // Initialize the subdevice and set it to the selected mode

@@ -96,22 +96,21 @@ namespace rsimpl
         {
             for(auto fps : {30, 60, 90})
             {
-                info.subdevice_modes.push_back({1, m.uvc_w-12, m.uvc_h-12, &pf_z16,  fps, {m.w-12, m.h-12}, {{+6, m.lr_intrin}, {0, m.z_intrin}}, {{RS_STREAM_DEPTH, RS_FORMAT_Z16}}, &unpack_subrect, &decode_dinghy_frame_number<0x4030201>});
-                info.subdevice_modes.push_back({1, m.uvc_w-12, m.uvc_h-12, &pf_z16,  fps, {m.w-12, m.h-12}, {{+6, m.lr_intrin}, {0, m.z_intrin}}, {{RS_STREAM_DEPTH, RS_FORMAT_DISPARITY16}}, &unpack_subrect, &decode_dinghy_frame_number<0x4030201>});
-                info.subdevice_modes.push_back({0, m.uvc_w,    m.uvc_h,    &pf_y8,   fps, {m.w,    m.h   }, {{0, m.lr_intrin}, {-6, m.z_intrin}}, {{RS_STREAM_INFRARED, RS_FORMAT_Y8}}, &unpack_subrect, &decode_dinghy_frame_number<0x08070605>});
-                info.subdevice_modes.push_back({0, m.uvc_w,    m.uvc_h,    &pf_y8i,  fps, {m.w,    m.h   }, {{0, m.lr_intrin}, {-6, m.z_intrin}}, {{RS_STREAM_INFRARED, RS_FORMAT_Y8}, {RS_STREAM_INFRARED2, RS_FORMAT_Y8}}, &unpack_y8_y8_from_y8i, &decode_dinghy_frame_number<0x08070605>});          
-                info.subdevice_modes.push_back({0, m.uvc_w,    m.uvc_h,    &pf_y16,  fps, {m.w,    m.h   }, {{0, m.lr_intrin}, {-6, m.z_intrin}}, {{RS_STREAM_INFRARED, RS_FORMAT_Y16}}, &unpack_y16_from_y16_10, &decode_dinghy_frame_number<0x08070605>});
-                info.subdevice_modes.push_back({0, m.uvc_w,    m.uvc_h,    &pf_y12i, fps, {m.w,    m.h   }, {{0, m.lr_intrin}, {-6, m.z_intrin}}, {{RS_STREAM_INFRARED, RS_FORMAT_Y16}, {RS_STREAM_INFRARED2, RS_FORMAT_Y16}}, &unpack_y16_y16_from_y12i_10, &decode_dinghy_frame_number<0x08070605>});
+                info.subdevice_modes.push_back({1, m.uvc_w-12, m.uvc_h-12, &pf_z16,  fps, {m.w-12, m.h-12}, {{+6, m.lr_intrin}, {0, m.z_intrin}}, &decode_dinghy_frame_number<0x4030201>});
+                info.subdevice_modes.push_back({0, m.uvc_w,    m.uvc_h,    &pf_y8,   fps, {m.w,    m.h   }, {{0, m.lr_intrin}, {-6, m.z_intrin}}, &decode_dinghy_frame_number<0x08070605>});
+                info.subdevice_modes.push_back({0, m.uvc_w,    m.uvc_h,    &pf_y8i,  fps, {m.w,    m.h   }, {{0, m.lr_intrin}, {-6, m.z_intrin}}, &decode_dinghy_frame_number<0x08070605>});          
+                info.subdevice_modes.push_back({0, m.uvc_w,    m.uvc_h,    &pf_y16,  fps, {m.w,    m.h   }, {{0, m.lr_intrin}, {-6, m.z_intrin}}, &decode_dinghy_frame_number<0x08070605>});
+                info.subdevice_modes.push_back({0, m.uvc_w,    m.uvc_h,    &pf_y12i, fps, {m.w,    m.h   }, {{0, m.lr_intrin}, {-6, m.z_intrin}}, &decode_dinghy_frame_number<0x08070605>});
             }
         }
 
         // Set up modes for third images
-        info.subdevice_modes.push_back({2,  320,  240, &pf_yuy2, 60, { 320,  240}, {{0, THIRD_QRES}}, {{RS_STREAM_COLOR, RS_FORMAT_YUYV}}, &unpack_subrect, &decode_yuy2_frame_number, true});
-        info.subdevice_modes.push_back({2,  320,  240, &pf_yuy2, 30, { 320,  240}, {{0, THIRD_QRES}}, {{RS_STREAM_COLOR, RS_FORMAT_YUYV}}, &unpack_subrect, &decode_yuy2_frame_number, true});
-        info.subdevice_modes.push_back({2,  640,  480, &pf_yuy2, 60, { 640,  480}, {{0, THIRD_VGA }}, {{RS_STREAM_COLOR, RS_FORMAT_YUYV}}, &unpack_subrect, &decode_yuy2_frame_number, true});
-        info.subdevice_modes.push_back({2,  640,  480, &pf_yuy2, 30, { 640,  480}, {{0, THIRD_VGA }}, {{RS_STREAM_COLOR, RS_FORMAT_YUYV}}, &unpack_subrect, &decode_yuy2_frame_number, true});
-        info.subdevice_modes.push_back({2, 1920, 1080, &pf_yuy2, 30, {1920, 1080}, {{0, THIRD_HD  }}, {{RS_STREAM_COLOR, RS_FORMAT_YUYV}}, &unpack_subrect, &decode_yuy2_frame_number, true});
-        info.subdevice_modes.push_back({2, 2400, 1081, &pf_rw10, 30, {1920, 1080}, {{0, THIRD_HD  }}, {{RS_STREAM_COLOR, RS_FORMAT_RAW10}}, &unpack_subrect, &decode_dinghy_frame_number<0x8A8B8C8D>, true});
+        info.subdevice_modes.push_back({2,  320,  240, &pf_yuy2, 60, { 320,  240}, {{0, THIRD_QRES}}, &decode_yuy2_frame_number, true});
+        info.subdevice_modes.push_back({2,  320,  240, &pf_yuy2, 30, { 320,  240}, {{0, THIRD_QRES}}, &decode_yuy2_frame_number, true});
+        info.subdevice_modes.push_back({2,  640,  480, &pf_yuy2, 60, { 640,  480}, {{0, THIRD_VGA }}, &decode_yuy2_frame_number, true});
+        info.subdevice_modes.push_back({2,  640,  480, &pf_yuy2, 30, { 640,  480}, {{0, THIRD_VGA }}, &decode_yuy2_frame_number, true});
+        info.subdevice_modes.push_back({2, 1920, 1080, &pf_yuy2, 30, {1920, 1080}, {{0, THIRD_HD  }}, &decode_yuy2_frame_number, true});
+        info.subdevice_modes.push_back({2, 2400, 1081, &pf_rw10, 30, {1920, 1080}, {{0, THIRD_HD  }}, &decode_dinghy_frame_number<0x8A8B8C8D>, true});
 		// todo - add 15 fps modes
 
         // Set up interstream rules for left/right/z images
@@ -219,7 +218,7 @@ namespace rsimpl
                 streamIntent |= r200::STATUS_BIT_Z_STREAMING; 
                 r200::disparity_mode dm;        
                 r200::get_disparity_mode(get_device(), dm);
-                switch(m.mode->streams[0].format)
+                switch(m.get_format(RS_STREAM_DEPTH))
                 {
                 default: throw std::logic_error("unsupported R200 depth format");
                 case RS_FORMAT_Z16: 
