@@ -28,25 +28,29 @@ native_stream::native_stream(device_config & config, rs_stream stream) : config(
 {
     for(auto & subdevice_mode : config.info.subdevice_modes)
     {
-        for(auto & stream_mode : subdevice_mode.streams)
-        {
-            if(stream_mode.stream == stream)
-            {
-                modes.push_back(stream_mode);
-            }
-        }
+        subdevice_mode_selection selection = {&subdevice_mode};
+        if(selection.provides_stream(stream)) modes.push_back(selection);
     }
 
-    std::sort(begin(modes), end(modes), [](const stream_mode & a, const stream_mode & b)
+    auto get_tuple = [&config, stream](const subdevice_mode_selection & selection)
     {
-        return std::make_tuple(-a.width, -a.height, -a.fps, a.format) < std::make_tuple(-b.width, -b.height, -b.fps, b.format);
-    });
+        auto intrin = config.intrinsics.get(selection.get_intrinsics_index(stream));
+        return std::make_tuple(-intrin.width, -intrin.height, -selection.get_framerate(stream), selection.get_format(stream));
+    };
 
-    auto it = std::unique(begin(modes), end(modes), [](const stream_mode & a, const stream_mode & b)
-    {
-        return std::make_tuple(a.width, a.height, a.fps, a.format) == std::make_tuple(b.width, b.height, b.fps, b.format);
-    });
+    std::sort(begin(modes), end(modes), [get_tuple](const subdevice_mode_selection & a, const subdevice_mode_selection & b) { return get_tuple(a) < get_tuple(b); });
+    auto it = std::unique(begin(modes), end(modes), [get_tuple](const subdevice_mode_selection & a, const subdevice_mode_selection & b) { return get_tuple(a) == get_tuple(b); });
     if(it != end(modes)) modes.erase(it, end(modes));
+}
+
+void native_stream::get_mode(int mode, int * w, int * h, rs_format * f, int * fps) const
+{
+    auto & selection = modes[mode];
+    auto intrin = config.intrinsics.get(selection.get_intrinsics_index(stream));
+    if(w) *w = intrin.width;
+    if(h) *h = intrin.height;
+    if(f) *f = selection.get_format(stream);
+    if(fps) *fps = selection.get_framerate(stream);
 }
 
 subdevice_mode_selection native_stream::get_mode() const

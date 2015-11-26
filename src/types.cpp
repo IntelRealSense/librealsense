@@ -171,7 +171,7 @@ namespace rsimpl
                 if(req.enabled && (req.width == 0 || req.width == stream_mode.width) 
                                && (req.height == 0 || req.height == stream_mode.height)
                                && (req.format == RS_FORMAT_ANY || req.format == stream_mode.format)
-                               && (req.fps == 0 || req.fps == stream_mode.fps))
+                               && (req.fps == 0 || req.fps == subdevice_mode.fps))
                 {
                     stream_unsatisfied[stream_mode.stream] = false;
                 }

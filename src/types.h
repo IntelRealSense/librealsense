@@ -88,7 +88,6 @@ namespace rsimpl
         rs_stream stream;           // RS_DEPTH, RS_COLOR, RS_INFRARED, RS_INFRARED_2, etc.
         int width, height;          // Resolution visible to the client library
         rs_format format;           // Pixel format visible to the client library
-        int fps;                    // Framerate visible to the client library
         int intrinsics_index;       // Index of image intrinsics
     };
 
@@ -132,7 +131,7 @@ namespace rsimpl
         bool provides_stream(rs_stream stream) const { return get_stream_mode(stream) != nullptr; }
         int get_intrinsics_index(rs_stream stream) const { return get_stream_mode(stream)->intrinsics_index; }
         rs_format get_format(rs_stream stream) const { return get_stream_mode(stream)->format; }
-        int get_framerate(rs_stream stream) const { return get_stream_mode(stream)->fps; }
+        int get_framerate(rs_stream stream) const { return mode->fps; }
     };
 
     struct interstream_rule // Requires a.*field + delta == b.*field OR a.*field + delta2 == b.*field
@@ -262,7 +261,11 @@ namespace rsimpl
         stream_request                      requests[RS_STREAM_NATIVE_COUNT];  // Modified by enable/disable_stream calls
         float                               depth_scale;                       // Scale of depth values
 
-                                            device_config(const rsimpl::static_device_info & info) : info(info), depth_scale(info.nominal_depth_scale) { for(auto & req : requests) req = rsimpl::stream_request(); }
+                                            device_config(const rsimpl::static_device_info & info, std::vector<rs_intrinsics> intrin, std::vector<rs_intrinsics> rect_intrin) : info(info), depth_scale(info.nominal_depth_scale) 
+                                            { 
+                                                for(auto & req : requests) req = rsimpl::stream_request(); 
+                                                intrinsics.set(intrin, rect_intrin);
+                                            }
 
         std::vector<subdevice_mode_selection> select_modes() const { return info.select_modes(requests); }
     };
