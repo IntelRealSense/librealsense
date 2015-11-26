@@ -121,8 +121,7 @@ namespace rsimpl
 
     size_t subdevice_mode_selection::get_image_size(rs_stream stream) const
     {
-        auto m = get_stream_mode(stream);
-        return m ? rsimpl::get_image_size(m->width, m->height, m->format) : 0;
+        return rsimpl::get_image_size(mode->content_size.x, mode->content_size.y, get_format(stream));
     }
 
     ////////////////////////
@@ -168,8 +167,8 @@ namespace rsimpl
             for(auto & stream_mode : subdevice_mode.streams)
             {
                 const auto & req = requests[stream_mode.stream];
-                if(req.enabled && (req.width == 0 || req.width == stream_mode.width) 
-                               && (req.height == 0 || req.height == stream_mode.height)
+                if(req.enabled && (req.width == 0 || req.width == subdevice_mode.content_size.x)
+                               && (req.height == 0 || req.height == subdevice_mode.content_size.y)
                                && (req.format == RS_FORMAT_ANY || req.format == stream_mode.format)
                                && (req.fps == 0 || req.fps == subdevice_mode.fps))
                 {

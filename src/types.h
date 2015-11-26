@@ -86,7 +86,6 @@ namespace rsimpl
     struct stream_mode
     {
         rs_stream stream;           // RS_DEPTH, RS_COLOR, RS_INFRARED, RS_INFRARED_2, etc.
-        int width, height;          // Resolution visible to the client library
         rs_format format;           // Pixel format visible to the client library
     };
 
@@ -108,12 +107,15 @@ namespace rsimpl
         }
     };
 
+    struct int2 { int x,y; };
+
     struct subdevice_mode
     {
         int subdevice;                      // 0, 1, 2, etc...
         int width, height;                  // Resolution advertised over UVC
         const native_pixel_format * pf;     // Pixel format advertised over UVC
         int fps;                            // Framerate advertised over UVC
+        int2 content_size;                  // Size of image content, may be different from UVC frame size
         int intrinsics_index;               // Intrinsics of image content
         std::vector<stream_mode> streams;   // Modes for streams which can be supported by this device mode
         void (* unpacker)(byte * const dest[], const byte * source, const subdevice_mode & mode);
@@ -124,10 +126,10 @@ namespace rsimpl
     struct subdevice_mode_selection
     {
         const subdevice_mode * mode;
-
+    private:
         const stream_mode * get_stream_mode(rs_stream stream) const { for(auto & s : mode->streams) if(s.stream == stream) return &s; return nullptr; }
+    public:
         size_t get_image_size(rs_stream stream) const;
-
         bool provides_stream(rs_stream stream) const { return get_stream_mode(stream) != nullptr; }
         int get_intrinsics_index(rs_stream stream) const { return mode->intrinsics_index; }
         rs_format get_format(rs_stream stream) const { return get_stream_mode(stream)->format; }

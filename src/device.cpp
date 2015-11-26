@@ -22,7 +22,7 @@ static_device_info rsimpl::add_standard_unpackers(const static_device_info & dev
     for(auto & mode : device_info.subdevice_modes)
     {
         // Unstrided YUYV modes can be unpacked into several useful formats
-        if(mode.pf->fourcc == 'YUY2' && mode.unpacker == &unpack_subrect && mode.width == mode.streams[0].width && mode.height == mode.streams[0].height)
+        if(mode.pf->fourcc == 'YUY2' && mode.unpacker == &unpack_subrect && mode.width == mode.content_size.x && mode.height == mode.content_size.y)
         {
             for(auto fmt : {RS_FORMAT_Y8, RS_FORMAT_Y16, RS_FORMAT_RGB8, RS_FORMAT_RGBA8, RS_FORMAT_BGR8, RS_FORMAT_BGRA8})
             {

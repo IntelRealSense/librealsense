@@ -74,9 +74,9 @@ namespace rsimpl
     void unpack_subrect(byte * const dest[], const byte * source, const subdevice_mode & mode)
     {
         assert(mode.streams.size() == 1);
-        const size_t in_stride = mode.pf->get_image_size(mode.width, 1), out_stride = get_image_size(mode.streams[0].width, 1, mode.streams[0].format);
+        const size_t in_stride = mode.pf->get_image_size(mode.width, 1), out_stride = get_image_size(mode.content_size.x, 1, mode.streams[0].format);
         auto out = dest[0];
-        for(int i=0; i<std::min(mode.height, mode.streams[0].height); ++i)
+        for(int i=0; i<std::min(mode.height, mode.content_size.y); ++i)
         {
             memcpy(out, source, std::min(in_stride, out_stride));
             out += out_stride;
@@ -86,15 +86,15 @@ namespace rsimpl
 
     template<class SOURCE, class UNPACK> void unpack_pixels(byte * const dest[], const subdevice_mode & mode, const SOURCE * source, rs_format format, UNPACK unpack)
     {
-        assert(mode.streams.size() == 1 && mode.streams[0].width <= mode.width && mode.streams[0].height <= mode.height && mode.streams[0].format == format);
+        assert(mode.streams.size() == 1 && mode.content_size.x <= mode.width && mode.content_size.y <= mode.height && mode.streams[0].format == format);
         auto out = reinterpret_cast<decltype(unpack(SOURCE())) *>(dest[0]);
-        for(int y = 0; y < mode.streams[0].height; ++y)
+        for(int y = 0; y < mode.content_size.y; ++y)
         {
-            for(int x = 0; x < mode.streams[0].width; ++x)
+            for(int x = 0; x < mode.content_size.x; ++x)
             {
                 *out++ = unpack(*source++);
             }
-            source += mode.width - mode.streams[0].width;
+            source += mode.width - mode.content_size.x;
         }       
     }
 
@@ -257,7 +257,7 @@ namespace rsimpl
     
     void unpack_from_yuy2(byte * const dest[], const byte * source, const subdevice_mode & mode)
     {
-        assert(mode.pf == &pf_yuy2 && mode.streams.size() == 1 && mode.streams[0].width == mode.width && mode.streams[0].height == mode.height);
+        assert(mode.pf == &pf_yuy2 && mode.streams.size() == 1 && mode.content_size.x == mode.width && mode.content_size.y == mode.height);
         switch(mode.streams[0].format)
         {
         case RS_FORMAT_Y8   : unpack_yuy2_sse<RS_FORMAT_Y8   >(dest[0], source, mode.width * mode.height); break;
@@ -276,17 +276,17 @@ namespace rsimpl
     template<class SOURCE, class SPLIT_A, class SPLIT_B> void split_frame(byte * const dest[], const subdevice_mode & mode, const SOURCE * source, const native_pixel_format & pf, rs_format format_a, rs_format format_b, SPLIT_A split_a, SPLIT_B split_b)
     {
         assert(mode.pf == &pf && mode.streams.size() == 2 && mode.streams[0].format == format_a && mode.streams[1].format == format_b
-            && mode.streams[0].width == mode.streams[1].width && mode.streams[0].height == mode.streams[1].height && mode.streams[0].width <= mode.width && mode.streams[0].height <= mode.height);
+            && mode.content_size.x <= mode.width && mode.content_size.y <= mode.height);
         auto a = reinterpret_cast<decltype(split_a(SOURCE())) *>(dest[0]);
         auto b = reinterpret_cast<decltype(split_b(SOURCE())) *>(dest[1]);
-        for(int y = 0; y < mode.streams[0].height; ++y)
+        for(int y = 0; y < mode.content_size.y; ++y)
         {
-            for(int x = 0; x < mode.streams[0].width; ++x)
+            for(int x = 0; x < mode.content_size.x; ++x)
             {
                 *a++ = split_a(*source);
                 *b++ = split_b(*source++);
             }
-            source += mode.width - mode.streams[0].width;
+            source += mode.width - mode.content_size.x;
         }    
     }
 
