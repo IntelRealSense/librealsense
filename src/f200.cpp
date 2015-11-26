@@ -76,7 +76,7 @@ namespace rsimpl
         {
             for(auto fps : m.fps)
             {
-                info.subdevice_modes.push_back({0, m.w, m.h, &pf_yuy2, fps, {{RS_STREAM_COLOR, m.w, m.h, RS_FORMAT_YUYV, m.intrin}}, &unpack_subrect, &decode_ivcam_frame_number});
+                info.subdevice_modes.push_back({0, m.w, m.h, &pf_yuy2, fps, m.intrin, {{RS_STREAM_COLOR, m.w, m.h, RS_FORMAT_YUYV}}, &unpack_subrect, &decode_ivcam_frame_number});
             }
         }
 
@@ -87,19 +87,19 @@ namespace rsimpl
         {
             for(auto fps : m.fps)
             {
-                info.subdevice_modes.push_back({1, m.w, m.h, &pf_f200_invi, fps, {{RS_STREAM_INFRARED, m.w, m.h, RS_FORMAT_Y8,  m.intrin}}, &unpack_subrect, &decode_ivcam_frame_number});
-                info.subdevice_modes.push_back({1, m.w, m.h, &pf_f200_invi, fps, {{RS_STREAM_INFRARED, m.w, m.h, RS_FORMAT_Y16, m.intrin}}, &unpack_y16_from_y8, &decode_ivcam_frame_number});    
+                info.subdevice_modes.push_back({1, m.w, m.h, &pf_f200_invi, fps, m.intrin, {{RS_STREAM_INFRARED, m.w, m.h, RS_FORMAT_Y8 }}, &unpack_subrect, &decode_ivcam_frame_number});
+                info.subdevice_modes.push_back({1, m.w, m.h, &pf_f200_invi, fps, m.intrin, {{RS_STREAM_INFRARED, m.w, m.h, RS_FORMAT_Y16}}, &unpack_y16_from_y8, &decode_ivcam_frame_number});    
             }
         }
         for(auto & m : f200_depth_modes)
         {
             for(auto fps : m.fps)
             {
-                info.subdevice_modes.push_back({1, m.w, m.h, &pf_invz, fps, {{RS_STREAM_DEPTH,    m.w, m.h, RS_FORMAT_Z16, m.intrin}}, &unpack_subrect, &decode_ivcam_frame_number});       
-                info.subdevice_modes.push_back({1, m.w, m.h, &pf_f200_inzi, fps, {{RS_STREAM_DEPTH,    m.w, m.h, RS_FORMAT_Z16, m.intrin},
-                                                                                  {RS_STREAM_INFRARED, m.w, m.h, RS_FORMAT_Y8,  m.intrin}}, &unpack_z16_y8_from_f200_inzi, &decode_ivcam_frame_number});
-                info.subdevice_modes.push_back({1, m.w, m.h, &pf_f200_inzi, fps, {{RS_STREAM_DEPTH,    m.w, m.h, RS_FORMAT_Z16, m.intrin},
-                                                                                  {RS_STREAM_INFRARED, m.w, m.h, RS_FORMAT_Y16, m.intrin}}, &unpack_z16_y16_from_f200_inzi, &decode_ivcam_frame_number});
+                info.subdevice_modes.push_back({1, m.w, m.h, &pf_invz, fps, m.intrin, {{RS_STREAM_DEPTH,    m.w, m.h, RS_FORMAT_Z16}}, &unpack_subrect, &decode_ivcam_frame_number});       
+                info.subdevice_modes.push_back({1, m.w, m.h, &pf_f200_inzi, fps, m.intrin, {{RS_STREAM_DEPTH,    m.w, m.h, RS_FORMAT_Z16},
+                                                                                            {RS_STREAM_INFRARED, m.w, m.h, RS_FORMAT_Y8 }}, &unpack_z16_y8_from_f200_inzi, &decode_ivcam_frame_number});
+                info.subdevice_modes.push_back({1, m.w, m.h, &pf_f200_inzi, fps, m.intrin, {{RS_STREAM_DEPTH,    m.w, m.h, RS_FORMAT_Z16},
+                                                                                            {RS_STREAM_INFRARED, m.w, m.h, RS_FORMAT_Y16}}, &unpack_z16_y16_from_f200_inzi, &decode_ivcam_frame_number});
             }
         }
 
@@ -158,7 +158,7 @@ namespace rsimpl
         {
             for(auto fps : m.fps)
             {
-                info.subdevice_modes.push_back({0, m.w, m.h, &pf_yuy2, fps, {{RS_STREAM_COLOR, m.w, m.h, RS_FORMAT_YUYV, m.intrin}}, &unpack_subrect, &decode_ivcam_frame_number});
+                info.subdevice_modes.push_back({0, m.w, m.h, &pf_yuy2, fps, m.intrin, {{RS_STREAM_COLOR, m.w, m.h, RS_FORMAT_YUYV}}, &unpack_subrect, &decode_ivcam_frame_number});
             }
         }
 
@@ -169,19 +169,19 @@ namespace rsimpl
         {
             for(auto fps : m.fps)
             {
-                info.subdevice_modes.push_back({1, m.w, m.h, &pf_sr300_invi, fps, {{RS_STREAM_INFRARED, m.w, m.h, RS_FORMAT_Y8,  m.intrin}}, &unpack_y8_from_y16_10, &decode_ivcam_frame_number});    
-                info.subdevice_modes.push_back({1, m.w, m.h, &pf_sr300_invi, fps, {{RS_STREAM_INFRARED, m.w, m.h, RS_FORMAT_Y16, m.intrin}}, &unpack_y16_from_y16_10, &decode_ivcam_frame_number});                
+                info.subdevice_modes.push_back({1, m.w, m.h, &pf_sr300_invi, fps, m.intrin, {{RS_STREAM_INFRARED, m.w, m.h, RS_FORMAT_Y8 }}, &unpack_y8_from_y16_10, &decode_ivcam_frame_number});    
+                info.subdevice_modes.push_back({1, m.w, m.h, &pf_sr300_invi, fps, m.intrin, {{RS_STREAM_INFRARED, m.w, m.h, RS_FORMAT_Y16}}, &unpack_y16_from_y16_10, &decode_ivcam_frame_number});                
             }
         }
         for(auto & m : sr300_depth_modes)
         {
             for(auto fps : m.fps)
             {
-                info.subdevice_modes.push_back({1, m.w, m.h, &pf_invz, fps, {{RS_STREAM_DEPTH,    m.w, m.h, RS_FORMAT_Z16, m.intrin}}, &unpack_subrect, &decode_ivcam_frame_number});       
-                info.subdevice_modes.push_back({1, m.w, m.h, &pf_sr300_inzi, fps, {{RS_STREAM_DEPTH,    m.w, m.h, RS_FORMAT_Z16, m.intrin},
-                                                                                   {RS_STREAM_INFRARED, m.w, m.h, RS_FORMAT_Y8,  m.intrin}}, &unpack_z16_y8_from_sr300_inzi, &decode_ivcam_frame_number});
-                info.subdevice_modes.push_back({1, m.w, m.h, &pf_sr300_inzi, fps, {{RS_STREAM_DEPTH,    m.w, m.h, RS_FORMAT_Z16, m.intrin},
-                                                                                   {RS_STREAM_INFRARED, m.w, m.h, RS_FORMAT_Y16, m.intrin}}, &unpack_z16_y16_from_sr300_inzi, &decode_ivcam_frame_number});
+                info.subdevice_modes.push_back({1, m.w, m.h, &pf_invz, fps, m.intrin, {{RS_STREAM_DEPTH, m.w, m.h, RS_FORMAT_Z16}}, &unpack_subrect, &decode_ivcam_frame_number});       
+                info.subdevice_modes.push_back({1, m.w, m.h, &pf_sr300_inzi, fps, m.intrin, {{RS_STREAM_DEPTH,    m.w, m.h, RS_FORMAT_Z16},
+                                                                                             {RS_STREAM_INFRARED, m.w, m.h, RS_FORMAT_Y8 }}, &unpack_z16_y8_from_sr300_inzi, &decode_ivcam_frame_number});
+                info.subdevice_modes.push_back({1, m.w, m.h, &pf_sr300_inzi, fps, m.intrin, {{RS_STREAM_DEPTH,    m.w, m.h, RS_FORMAT_Z16},
+                                                                                             {RS_STREAM_INFRARED, m.w, m.h, RS_FORMAT_Y16}}, &unpack_z16_y16_from_sr300_inzi, &decode_ivcam_frame_number});
             }
         }
 
