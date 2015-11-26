@@ -87,7 +87,7 @@ namespace rsimpl
     
     struct unpacker_setting
     {
-        void (* unpacker)(byte * const dest[], const byte * source, const subdevice_mode & mode);
+        void (* unpacker)(byte * const dest[], const byte * source, int count);
         std::vector<std::pair<rs_stream, rs_format>> outputs;
 
         bool provides_stream(rs_stream stream) const { for(auto & o : outputs) if(o.first == stream) return true; return false; }

@@ -126,24 +126,43 @@ namespace rsimpl
 
     void subdevice_mode_selection::unpack(byte * const dest[], const byte * source) const
     {
+        const int MAX_OUTPUTS = 2;
+        const auto & outputs = get_outputs();        
+        assert(outputs.size() <= MAX_OUTPUTS);
+
+        // Determine input stride (and apply cropping)
         const int pad_crop = get_pad_crop();
+        const byte * in = source;
+        size_t in_stride = mode->pf->get_image_size(mode->width, 1);
+        if(pad_crop < 0) in += in_stride * -pad_crop + mode->pf->get_image_size(-pad_crop, 1);
 
-        subdevice_mode m = *mode;
-        m.content_size.x = get_width();
-        m.content_size.y = get_height();
-
-        if(pad_crop < 0) source += m.pf->get_crop_offset(m.width, -pad_crop);
-
-        byte * d = 0;
-        if(pad_crop > 0)
+        // Determine output stride (and apply padding)
+        byte * out[MAX_OUTPUTS];
+        size_t out_stride[MAX_OUTPUTS];
+        for(size_t i=0; i<outputs.size(); ++i)
         {
-            assert(mode->pf->unpackers[unpacker_index].outputs.size() == 1);
-            auto format = mode->pf->unpackers[unpacker_index].outputs[0].second;
-            d = dest[0] + rsimpl::get_image_size(m.content_size.x, pad_crop, format) + rsimpl::get_image_size(pad_crop, 1, format);
-            dest = &d;
+            out[i] = dest[i];
+            out_stride[i] = rsimpl::get_image_size(get_width(), 1, outputs[i].second);
+            if(pad_crop > 0) out[i] += out_stride[i] * pad_crop + rsimpl::get_image_size(pad_crop, 1, outputs[i].second);
         }
 
-        mode->pf->unpackers[unpacker_index].unpacker(dest, source, m);
+        // Unpack (potentially a subrect of) the source image into (potentially a subrect of) the destination buffers
+        const int unpack_width = std::min(mode->content_size.x, get_width()), unpack_height = std::min(mode->content_size.y, get_height());
+        if(mode->width == get_width())
+        {
+            // If not strided, unpack as though it were a single long row
+            mode->pf->unpackers[unpacker_index].unpacker(out, in, unpack_width * unpack_height);
+        }
+        else
+        {
+            // Otherwise unpack one row at a time
+            for(int i=0; i<unpack_height; ++i)
+            {
+                mode->pf->unpackers[unpacker_index].unpacker(out, in, unpack_width);
+                for(size_t i=0; i<outputs.size(); ++i) out[i] += out_stride[i];
+                in += in_stride;
+            }
+        }
     }
 
     ////////////////////////
