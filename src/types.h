@@ -143,18 +143,16 @@ namespace rsimpl
     struct subdevice_mode_selection
     {
         const subdevice_mode * mode;
-        size_t pad_crop_index;
+        int pad_crop;
         size_t unpacker_index;
 
-        subdevice_mode_selection(const subdevice_mode * mode, size_t pad_crop_index, size_t unpacker_index) : mode(mode), pad_crop_index(pad_crop_index), unpacker_index(unpacker_index) {}
+        subdevice_mode_selection(const subdevice_mode * mode, int pad_crop, size_t unpacker_index) : mode(mode), pad_crop(pad_crop), unpacker_index(unpacker_index) {}
 
         const std::vector<std::pair<rs_stream, rs_format>> & get_outputs() const { return mode->pf->unpackers[unpacker_index].outputs; }
-        int get_pad_crop() const { return mode->pad_crop_options[pad_crop_index]; }
-        int get_width() const { return mode->content_size.x + get_pad_crop() * 2; }
-        int get_height() const { return mode->content_size.y + get_pad_crop() * 2; }
+        int get_width() const { return mode->content_size.x + pad_crop * 2; }
+        int get_height() const { return mode->content_size.y + pad_crop * 2; }
         size_t get_image_size(rs_stream stream) const;
         bool provides_stream(rs_stream stream) const { return mode->pf->unpackers[unpacker_index].provides_stream(stream); }
-        //int get_intrinsics_index(rs_stream stream) const { return mode->pad_crop_options[pad_crop_index].intrinsics_index; }
         rs_format get_format(rs_stream stream) const { return mode->pf->unpackers[unpacker_index].get_format(stream); }
         int get_framerate(rs_stream stream) const { return mode->fps; }
         void unpack(byte * const dest[], const byte * source) const;

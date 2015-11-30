@@ -131,7 +131,6 @@ namespace rsimpl
         assert(outputs.size() <= MAX_OUTPUTS);
 
         // Determine input stride (and apply cropping)
-        const int pad_crop = get_pad_crop();
         const byte * in = source;
         size_t in_stride = mode->pf->get_image_size(mode->width, 1);
         if(pad_crop < 0) in += in_stride * -pad_crop + mode->pf->get_image_size(-pad_crop, 1);
@@ -203,11 +202,11 @@ namespace rsimpl
             // Skip modes that apply to other subdevices
             if(subdevice_mode.subdevice != subdevice_index) continue;
 
-            for(size_t i=0; i<subdevice_mode.pad_crop_options.size(); ++i)
+            for(auto pad_crop : subdevice_mode.pad_crop_options)
             {
                 for(size_t j=0; j<subdevice_mode.pf->unpackers.size(); ++j)
                 {
-                    auto selection = subdevice_mode_selection(&subdevice_mode, i, j);
+                    auto selection = subdevice_mode_selection(&subdevice_mode, pad_crop, j);
 
                     // Determine if this mode satisfies the requirements on our requested streams
                     auto stream_unsatisfied = stream_requested;
