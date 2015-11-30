@@ -40,6 +40,30 @@ namespace rsimpl
 {
     enum class byte : uint8_t {};
 
+    struct unpacker_setting
+    {
+        void (* unpacker)(byte * const dest[], const byte * source, int count);
+        std::vector<std::pair<rs_stream, rs_format>> outputs;
+
+        bool provides_stream(rs_stream stream) const { for(auto & o : outputs) if(o.first == stream) return true; return false; }
+        rs_format get_format(rs_stream stream) const { for(auto & o : outputs) if(o.first == stream) return o.second; throw std::logic_error("missing output"); }
+    };
+
+    struct native_pixel_format
+    {
+        uint32_t fourcc;
+        int plane_count;
+        int macropixel_width;
+        size_t macropixel_size;
+        std::vector<unpacker_setting> unpackers;
+
+        size_t get_image_size(int width, int height) const
+        {
+            assert(width % macropixel_width == 0);
+            return (width / macropixel_width) * height * macropixel_size * plane_count;
+        }
+    };
+
     // Enumerated type support
     #define RS_ENUM_HELPERS(TYPE, PREFIX) const char * get_string(TYPE value); \
         inline bool is_valid(TYPE value) { return value >= 0 && value < RS_##PREFIX##_COUNT; } \
@@ -63,6 +87,7 @@ namespace rsimpl
     }
 
     // World's tiniest linear algebra library
+    struct int2 { int x,y; };
     struct float3 { float x,y,z; float & operator [] (int i) { return (&x)[i]; } };
     struct float3x3 { float3 x,y,z; float & operator () (int i, int j) { return (&x)[j][i]; } }; // column-major
     struct pose { float3x3 orientation; float3 position; };
@@ -92,40 +117,7 @@ namespace rsimpl
         int width, height;
         rs_format format;
         int fps;
-    };
-
-    struct subdevice_mode;
-    
-    struct unpacker_setting
-    {
-        void (* unpacker)(byte * const dest[], const byte * source, int count);
-        std::vector<std::pair<rs_stream, rs_format>> outputs;
-
-        bool provides_stream(rs_stream stream) const { for(auto & o : outputs) if(o.first == stream) return true; return false; }
-        rs_format get_format(rs_stream stream) const { for(auto & o : outputs) if(o.first == stream) return o.second; throw std::logic_error("missing output"); }
-    };
-
-    struct native_pixel_format
-    {
-        uint32_t fourcc;
-        int plane_count;
-        int macropixel_width;
-        size_t macropixel_size;
-        std::vector<unpacker_setting> unpackers;
-
-        size_t get_image_size(int width, int height) const
-        {
-            assert(width % macropixel_width == 0);
-            return (width / macropixel_width) * height * macropixel_size * plane_count;
-        }
-        size_t get_crop_offset(int width, int crop) const
-        {
-            assert(plane_count == 1);
-            return get_image_size(width, crop) + get_image_size(crop, 1);
-        }
-    };
-
-    struct int2 { int x,y; };
+    };    
     
     struct subdevice_mode
     {
@@ -217,34 +209,6 @@ namespace rsimpl
         }
     };
 
-    // Buffer for storing images provided by a given stream
-    class stream_buffer
-    {
-        struct frame
-        {
-            std::vector<byte>               data;
-            int                             timestamp;  // DS4 frame number or IVCAM rolling timestamp, used to compute LibRealsense frame timestamp
-            int                             delta;      // Difference between the last two timestamp values, used to estimate next frame arrival time
-        };
-
-        subdevice_mode_selection            selection;
-        triple_buffer<frame>                frames;
-        int                                 last_frame_number;
-    public:
-                                            stream_buffer(subdevice_mode_selection selection, rs_stream stream);
-
-        const subdevice_mode_selection &    get_mode() const { return selection; }
-
-        const byte *                        get_front_data() const { return frames.get_front().data.data(); }
-        int                                 get_front_number() const { return frames.get_front().timestamp; }
-        int                                 get_front_delta() const { return frames.get_front().delta; }
-        bool                                is_front_valid() const { return frames.has_front(); }
-
-        byte *                              get_back_data() { return frames.get_back().data.data(); }
-        void                                swap_back(int frame_number);
-        bool                                swap_front() { return frames.swap_front(); }
-    };
-
     struct intrinsics_channel
     {
         rs_intrinsics native;       // Actual intrinsics of image sent over UVC by the device hardware
@@ -287,6 +251,34 @@ namespace rsimpl
                                             }
 
         std::vector<subdevice_mode_selection> select_modes() const { return info.select_modes(requests); }
+    };
+
+    // Buffer for storing images provided by a given stream
+    class stream_buffer
+    {
+        struct frame
+        {
+            std::vector<byte>               data;
+            int                             timestamp;  // DS4 frame number or IVCAM rolling timestamp, used to compute LibRealsense frame timestamp
+            int                             delta;      // Difference between the last two timestamp values, used to estimate next frame arrival time
+        };
+
+        subdevice_mode_selection            selection;
+        triple_buffer<frame>                frames;
+        int                                 last_frame_number;
+    public:
+                                            stream_buffer(subdevice_mode_selection selection, rs_stream stream);
+
+        const subdevice_mode_selection &    get_mode() const { return selection; }
+
+        const byte *                        get_front_data() const { return frames.get_front().data.data(); }
+        int                                 get_front_number() const { return frames.get_front().timestamp; }
+        int                                 get_front_delta() const { return frames.get_front().delta; }
+        bool                                is_front_valid() const { return frames.has_front(); }
+
+        byte *                              get_back_data() { return frames.get_back().data.data(); }
+        void                                swap_back(int frame_number);
+        bool                                swap_front() { return frames.swap_front(); }
     };
 
     // Utilities
