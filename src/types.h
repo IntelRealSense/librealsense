@@ -40,9 +40,9 @@ namespace rsimpl
 {
     enum class byte : uint8_t {};
 
-    struct unpacker_setting
+    struct pixel_format_unpacker
     {
-        void (* unpacker)(byte * const dest[], const byte * source, int count);
+        void (* unpack)(byte * const dest[], const byte * source, int count);
         std::vector<std::pair<rs_stream, rs_format>> outputs;
 
         bool provides_stream(rs_stream stream) const { for(auto & o : outputs) if(o.first == stream) return true; return false; }
@@ -53,15 +53,10 @@ namespace rsimpl
     {
         uint32_t fourcc;
         int plane_count;
-        int macropixel_width;
-        size_t macropixel_size;
-        std::vector<unpacker_setting> unpackers;
+        size_t bytes_per_pixel;
+        std::vector<pixel_format_unpacker> unpackers;
 
-        size_t get_image_size(int width, int height) const
-        {
-            assert(width % macropixel_width == 0);
-            return (width / macropixel_width) * height * macropixel_size * plane_count;
-        }
+        size_t get_image_size(int width, int height) const { return width * height * plane_count * bytes_per_pixel; }
     };
 
     // Enumerated type support
@@ -136,9 +131,9 @@ namespace rsimpl
     {
         const subdevice_mode * mode;            // The streaming mode in which to place the hardware
         int pad_crop;                           // The number of pixels of padding (positive values) or cropping (negative values) to apply to all four edges of the image
-        const unpacker_setting * unpacker;      // The specific unpacker used to unpack the encoded format into the desired output formats
+        const pixel_format_unpacker * unpacker; // The specific unpacker used to unpack the encoded format into the desired output formats
 
-        subdevice_mode_selection(const subdevice_mode * mode, int pad_crop, const unpacker_setting * unpacker) : mode(mode), pad_crop(pad_crop), unpacker(unpacker) {}
+        subdevice_mode_selection(const subdevice_mode * mode, int pad_crop, const pixel_format_unpacker * unpacker) : mode(mode), pad_crop(pad_crop), unpacker(unpacker) {}
 
         const std::vector<std::pair<rs_stream, rs_format>> & get_outputs() const { return unpacker->outputs; }
         int get_width() const { return mode->content_size.x + pad_crop * 2; }

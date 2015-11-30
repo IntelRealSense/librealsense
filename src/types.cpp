@@ -150,14 +150,15 @@ namespace rsimpl
         if(mode->width == get_width())
         {
             // If not strided, unpack as though it were a single long row
-            unpacker->unpacker(out, in, unpack_width * unpack_height);
+            unpacker->unpack(out, in, unpack_width * unpack_height);
         }
         else
         {
             // Otherwise unpack one row at a time
+            assert(mode->pf->plane_count == 1); // Can't unpack planar formats row-by-row (at least not with the current architecture, would need to pass multiple source ptrs to unpack)
             for(int i=0; i<unpack_height; ++i)
             {
-                unpacker->unpacker(out, in, unpack_width);
+                unpacker->unpack(out, in, unpack_width);
                 for(size_t i=0; i<outputs.size(); ++i) out[i] += out_stride[i];
                 in += in_stride;
             }

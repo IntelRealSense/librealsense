@@ -279,29 +279,29 @@ namespace rsimpl
     // Native pixel formats //
     //////////////////////////
 
-    const native_pixel_format pf_rw10       = {'RW10', 1, 1, 1, {{&copy_pixels<1>,                 {{RS_STREAM_COLOR,    RS_FORMAT_RAW10}}}}};
-    const native_pixel_format pf_yuy2       = {'YUY2', 1, 2, 4, {{&copy_pixels<2>,                 {{RS_STREAM_COLOR,    RS_FORMAT_YUYV }}},
-                                                                 {&unpack_yuy2<RS_FORMAT_Y8   >,   {{RS_STREAM_COLOR,    RS_FORMAT_Y8   }}},
-                                                                 {&unpack_yuy2<RS_FORMAT_Y16  >,   {{RS_STREAM_COLOR,    RS_FORMAT_Y16  }}},
-                                                                 {&unpack_yuy2<RS_FORMAT_RGB8 >,   {{RS_STREAM_COLOR,    RS_FORMAT_RGB8 }}},
-                                                                 {&unpack_yuy2<RS_FORMAT_RGBA8>,   {{RS_STREAM_COLOR,    RS_FORMAT_RGBA8}}},
-                                                                 {&unpack_yuy2<RS_FORMAT_BGR8 >,   {{RS_STREAM_COLOR,    RS_FORMAT_BGR8 }}},
-                                                                 {&unpack_yuy2<RS_FORMAT_BGRA8>,   {{RS_STREAM_COLOR,    RS_FORMAT_BGRA8}}}}};
-    const native_pixel_format pf_y8         = {'Y8  ', 1, 1, 1, {{&copy_pixels<1>,                 {{RS_STREAM_INFRARED, RS_FORMAT_Y8   }}}}};
-    const native_pixel_format pf_y16        = {'Y16 ', 1, 1, 2, {{&unpack_y16_from_y16_10,         {{RS_STREAM_INFRARED, RS_FORMAT_Y16  }}}}};
-    const native_pixel_format pf_y8i        = {'Y8I ', 1, 1, 2, {{&unpack_y8_y8_from_y8i,          {{RS_STREAM_INFRARED, RS_FORMAT_Y8   }, {RS_STREAM_INFRARED2, RS_FORMAT_Y8}}}}};
-    const native_pixel_format pf_y12i       = {'Y12I', 1, 1, 3, {{&unpack_y16_y16_from_y12i_10,    {{RS_STREAM_INFRARED, RS_FORMAT_Y16  }, {RS_STREAM_INFRARED2, RS_FORMAT_Y16}}}}};
-    const native_pixel_format pf_z16        = {'Z16 ', 1, 1, 2, {{&copy_pixels<2>,                 {{RS_STREAM_DEPTH,    RS_FORMAT_Z16  }}},
-                                                                 {&copy_pixels<2>,                 {{RS_STREAM_DEPTH,    RS_FORMAT_DISPARITY16}}}}};
-    const native_pixel_format pf_invz       = {'INVZ', 1, 1, 2, {{&copy_pixels<2>,                 {{RS_STREAM_DEPTH,    RS_FORMAT_Z16  }}}}};
-    const native_pixel_format pf_f200_invi  = {'INVI', 1, 1, 1, {{&copy_pixels<1>,                 {{RS_STREAM_INFRARED, RS_FORMAT_Y8   }}},
-                                                                 {&unpack_y16_from_y8,             {{RS_STREAM_INFRARED, RS_FORMAT_Y16  }}}}};
-    const native_pixel_format pf_f200_inzi  = {'INZI', 1, 1, 3, {{&unpack_z16_y8_from_f200_inzi,   {{RS_STREAM_DEPTH,    RS_FORMAT_Z16  }, {RS_STREAM_INFRARED, RS_FORMAT_Y8}}},
-                                                                 {&unpack_z16_y16_from_f200_inzi,  {{RS_STREAM_DEPTH,    RS_FORMAT_Z16  }, {RS_STREAM_INFRARED, RS_FORMAT_Y16}}}}};
-    const native_pixel_format pf_sr300_invi = {'INVI', 1, 1, 2, {{&unpack_y8_from_y16_10,          {{RS_STREAM_INFRARED, RS_FORMAT_Y8   }}},
-                                                                 {&unpack_y16_from_y16_10,         {{RS_STREAM_INFRARED, RS_FORMAT_Y16  }}}}};
-    const native_pixel_format pf_sr300_inzi = {'INZI', 2, 1, 2, {{&unpack_z16_y8_from_sr300_inzi,  {{RS_STREAM_DEPTH,    RS_FORMAT_Z16  }, {RS_STREAM_INFRARED, RS_FORMAT_Y8}}},
-                                                                 {&unpack_z16_y16_from_sr300_inzi, {{RS_STREAM_DEPTH,    RS_FORMAT_Z16  }, {RS_STREAM_INFRARED, RS_FORMAT_Y16}}}}};
+    const native_pixel_format pf_rw10       = {'RW10', 1, 1, {{&copy_pixels<1>,                 {{RS_STREAM_COLOR,    RS_FORMAT_RAW10}}}}};
+    const native_pixel_format pf_yuy2       = {'YUY2', 1, 2, {{&copy_pixels<2>,                 {{RS_STREAM_COLOR,    RS_FORMAT_YUYV }}},
+                                                              {&unpack_yuy2<RS_FORMAT_Y8   >,   {{RS_STREAM_COLOR,    RS_FORMAT_Y8   }}},
+                                                              {&unpack_yuy2<RS_FORMAT_Y16  >,   {{RS_STREAM_COLOR,    RS_FORMAT_Y16  }}},
+                                                              {&unpack_yuy2<RS_FORMAT_RGB8 >,   {{RS_STREAM_COLOR,    RS_FORMAT_RGB8 }}},
+                                                              {&unpack_yuy2<RS_FORMAT_RGBA8>,   {{RS_STREAM_COLOR,    RS_FORMAT_RGBA8}}},
+                                                              {&unpack_yuy2<RS_FORMAT_BGR8 >,   {{RS_STREAM_COLOR,    RS_FORMAT_BGR8 }}},
+                                                              {&unpack_yuy2<RS_FORMAT_BGRA8>,   {{RS_STREAM_COLOR,    RS_FORMAT_BGRA8}}}}};
+    const native_pixel_format pf_y8         = {'Y8  ', 1, 1, {{&copy_pixels<1>,                 {{RS_STREAM_INFRARED, RS_FORMAT_Y8   }}}}};
+    const native_pixel_format pf_y16        = {'Y16 ', 1, 2, {{&unpack_y16_from_y16_10,         {{RS_STREAM_INFRARED, RS_FORMAT_Y16  }}}}};
+    const native_pixel_format pf_y8i        = {'Y8I ', 1, 2, {{&unpack_y8_y8_from_y8i,          {{RS_STREAM_INFRARED, RS_FORMAT_Y8   }, {RS_STREAM_INFRARED2, RS_FORMAT_Y8}}}}};
+    const native_pixel_format pf_y12i       = {'Y12I', 1, 3, {{&unpack_y16_y16_from_y12i_10,    {{RS_STREAM_INFRARED, RS_FORMAT_Y16  }, {RS_STREAM_INFRARED2, RS_FORMAT_Y16}}}}};
+    const native_pixel_format pf_z16        = {'Z16 ', 1, 2, {{&copy_pixels<2>,                 {{RS_STREAM_DEPTH,    RS_FORMAT_Z16  }}},
+                                                              {&copy_pixels<2>,                 {{RS_STREAM_DEPTH,    RS_FORMAT_DISPARITY16}}}}};
+    const native_pixel_format pf_invz       = {'INVZ', 1, 2, {{&copy_pixels<2>,                 {{RS_STREAM_DEPTH,    RS_FORMAT_Z16  }}}}};
+    const native_pixel_format pf_f200_invi  = {'INVI', 1, 1, {{&copy_pixels<1>,                 {{RS_STREAM_INFRARED, RS_FORMAT_Y8   }}},
+                                                              {&unpack_y16_from_y8,             {{RS_STREAM_INFRARED, RS_FORMAT_Y16  }}}}};
+    const native_pixel_format pf_f200_inzi  = {'INZI', 1, 3, {{&unpack_z16_y8_from_f200_inzi,   {{RS_STREAM_DEPTH,    RS_FORMAT_Z16  }, {RS_STREAM_INFRARED, RS_FORMAT_Y8}}},
+                                                              {&unpack_z16_y16_from_f200_inzi,  {{RS_STREAM_DEPTH,    RS_FORMAT_Z16  }, {RS_STREAM_INFRARED, RS_FORMAT_Y16}}}}};
+    const native_pixel_format pf_sr300_invi = {'INVI', 1, 2, {{&unpack_y8_from_y16_10,          {{RS_STREAM_INFRARED, RS_FORMAT_Y8   }}},
+                                                              {&unpack_y16_from_y16_10,         {{RS_STREAM_INFRARED, RS_FORMAT_Y16  }}}}};
+    const native_pixel_format pf_sr300_inzi = {'INZI', 2, 2, {{&unpack_z16_y8_from_sr300_inzi,  {{RS_STREAM_DEPTH,    RS_FORMAT_Z16  }, {RS_STREAM_INFRARED, RS_FORMAT_Y8}}},
+                                                              {&unpack_z16_y16_from_sr300_inzi, {{RS_STREAM_DEPTH,    RS_FORMAT_Z16  }, {RS_STREAM_INFRARED, RS_FORMAT_Y16}}}}};
 
 
     /////////////////////
