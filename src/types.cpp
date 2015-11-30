@@ -150,14 +150,14 @@ namespace rsimpl
         if(mode->width == get_width())
         {
             // If not strided, unpack as though it were a single long row
-            mode->pf->unpackers[unpacker_index].unpacker(out, in, unpack_width * unpack_height);
+            unpacker->unpacker(out, in, unpack_width * unpack_height);
         }
         else
         {
             // Otherwise unpack one row at a time
             for(int i=0; i<unpack_height; ++i)
             {
-                mode->pf->unpackers[unpacker_index].unpacker(out, in, unpack_width);
+                unpacker->unpacker(out, in, unpack_width);
                 for(size_t i=0; i<outputs.size(); ++i) out[i] += out_stride[i];
                 in += in_stride;
             }
@@ -194,7 +194,7 @@ namespace rsimpl
         }
 
         // If no streams were requested, skip to the next subdevice
-        if(!any_stream_requested) return subdevice_mode_selection(nullptr,0,0);
+        if(!any_stream_requested) return subdevice_mode_selection(nullptr,0,nullptr);
 
         // Look for an appropriate mode
         for(auto & subdevice_mode : subdevice_modes)
@@ -204,13 +204,13 @@ namespace rsimpl
 
             for(auto pad_crop : subdevice_mode.pad_crop_options)
             {
-                for(size_t j=0; j<subdevice_mode.pf->unpackers.size(); ++j)
+                for(auto & unpacker : subdevice_mode.pf->unpackers)
                 {
-                    auto selection = subdevice_mode_selection(&subdevice_mode, pad_crop, j);
+                    auto selection = subdevice_mode_selection(&subdevice_mode, pad_crop, &unpacker);
 
                     // Determine if this mode satisfies the requirements on our requested streams
                     auto stream_unsatisfied = stream_requested;
-                    for(auto & output : subdevice_mode.pf->unpackers[j].outputs)
+                    for(auto & output : unpacker.outputs)
                     {
                         const auto & req = requests[output.first];
                         if(req.enabled && (req.width == 0 || req.width == selection.get_width())

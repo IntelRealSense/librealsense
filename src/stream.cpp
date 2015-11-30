@@ -30,9 +30,9 @@ native_stream::native_stream(device_config & config, rs_stream stream) : config(
     {
         for(auto pad_crop : subdevice_mode.pad_crop_options)
         {
-            for(size_t unpacker=0; unpacker < subdevice_mode.pf->unpackers.size(); ++unpacker)
+            for(auto & unpacker : subdevice_mode.pf->unpackers)
             {
-                auto selection = subdevice_mode_selection(&subdevice_mode, pad_crop, unpacker);
+                auto selection = subdevice_mode_selection(&subdevice_mode, pad_crop, &unpacker);
                 if(selection.provides_stream(stream)) modes.push_back(selection);
             }
         }
