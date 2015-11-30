@@ -36,23 +36,19 @@ namespace rsimpl
 
         struct UnrectifiedIntrinsics
         {
-            big_endian<float> fx;
-            big_endian<float> fy;
-            big_endian<float> px;
-            big_endian<float> py;
+            big_endian<float> fx, fy;
+            big_endian<float> px, py;
             big_endian<float> k[5];
-            big_endian<uint32_t> w;
-            big_endian<uint32_t> h;
+            big_endian<uint32_t> w, h;
+            operator rs_intrinsics () const { return {(int)w, (int)h, px, py, fx, fy, RS_DISTORTION_MODIFIED_BROWN_CONRADY, {k[0],k[1],k[2],k[3],k[4]}}; }
         };
 
         struct RectifiedIntrinsics
         {
-            big_endian<float> rfx;
-            big_endian<float> rfy;
-            big_endian<float> rpx;
-            big_endian<float> rpy;
-            big_endian<uint32_t> rw;
-            big_endian<uint32_t> rh;
+            big_endian<float> rfx, rfy;
+            big_endian<float> rpx, rpy;
+            big_endian<uint32_t> rw, rh;
+            operator rs_intrinsics () const { return {(int)rw, (int)rh, rpx, rpy, rfx, rfy, RS_DISTORTION_NONE, {0,0,0,0,0}}; }
         };
 
         struct CameraCalibrationParameters

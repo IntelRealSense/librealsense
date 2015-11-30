@@ -39,26 +39,6 @@ namespace rsimpl
         return number;
     }
 
-    static rs_intrinsics MakeLeftRightIntrinsics(const r200::RectifiedIntrinsics & i)
-    {
-        return {(int)i.rw, (int)i.rh, i.rpx, i.rpy, i.rfx, i.rfy, RS_DISTORTION_NONE, {0,0,0,0,0}};
-    }
-
-    static rs_intrinsics MakeDepthIntrinsics(const r200::RectifiedIntrinsics & i)
-    {
-        return {(int)i.rw-12, (int)i.rh-12, i.rpx-6, i.rpy-6, i.rfx, i.rfy, RS_DISTORTION_NONE, {0,0,0,0,0}};
-    }
-
-    static rs_intrinsics MakeColorIntrinsics(const r200::UnrectifiedIntrinsics & i, int denom)
-    {
-        return {(int)i.w/denom, (int)i.h/denom, i.px/denom, i.py/denom, i.fx/denom, i.fy/denom, RS_DISTORTION_MODIFIED_BROWN_CONRADY, {i.k[0],i.k[1],i.k[2],i.k[3],i.k[4]}};
-    }
-
-    static rs_intrinsics MakeColorIntrinsics(const r200::RectifiedIntrinsics & i, int denom)
-    {
-        return {(int)i.rw/denom, (int)i.rh/denom, i.rpx/denom, i.rpy/denom, i.rfx/denom, i.rfy/denom, RS_DISTORTION_NONE, {0,0,0,0,0}};
-    }
-
     r200_camera::r200_camera(std::shared_ptr<uvc::device> device, const static_device_info & info, std::vector<rs_intrinsics> intrinsics, std::vector<rs_intrinsics> rect_intrinsics) : rs_device(device, info, intrinsics, rect_intrinsics)
     {
         //config.intrinsics.set(intrinsics, rect_intrinsics);
@@ -146,18 +126,18 @@ namespace rsimpl
             throw std::runtime_error("only supported calibration struct is version 2. got (" + std::to_string(c.metadata.versionNumber) + ").");
 
         std::vector<rs_intrinsics> intrinsics(NUM_INTRINSICS), rect_intrinsics(NUM_INTRINSICS);
-        rect_intrinsics[LR_FULL] = intrinsics[LR_FULL] = MakeLeftRightIntrinsics(c.modesLR[0][0]);
-        rect_intrinsics[LR_BIG ] = intrinsics[LR_BIG ] = MakeLeftRightIntrinsics(c.modesLR[0][1]);
-        rect_intrinsics[LR_QRES] = intrinsics[LR_QRES] = MakeLeftRightIntrinsics(c.modesLR[0][2]);
-        rect_intrinsics[Z_FULL ] = intrinsics[Z_FULL ] = MakeDepthIntrinsics(c.modesLR[0][0]);
-        rect_intrinsics[Z_BIG  ] = intrinsics[Z_BIG  ] = MakeDepthIntrinsics(c.modesLR[0][1]);
-        rect_intrinsics[Z_QRES ] = intrinsics[Z_QRES ] = MakeDepthIntrinsics(c.modesLR[0][2]);
-        intrinsics[THIRD_HD  ] = MakeColorIntrinsics(c.intrinsicsThird[0],1);
-        intrinsics[THIRD_VGA ] = MakeColorIntrinsics(c.intrinsicsThird[1],1);
-        intrinsics[THIRD_QRES] = MakeColorIntrinsics(c.intrinsicsThird[1],2);
-        rect_intrinsics[THIRD_HD  ] = MakeColorIntrinsics(c.modesThird[0][0][0],1);
-        rect_intrinsics[THIRD_VGA ] = MakeColorIntrinsics(c.modesThird[0][1][0],1);
-        rect_intrinsics[THIRD_QRES] = MakeColorIntrinsics(c.modesThird[0][1][0],2);
+        rect_intrinsics[LR_FULL] = intrinsics[LR_FULL] = c.modesLR[0][0];
+        rect_intrinsics[LR_BIG ] = intrinsics[LR_BIG ] = c.modesLR[0][1];
+        rect_intrinsics[LR_QRES] = intrinsics[LR_QRES] = c.modesLR[0][2];
+        rect_intrinsics[Z_FULL ] = intrinsics[Z_FULL ] = pad_crop_intrinsics(c.modesLR[0][0], -6);
+        rect_intrinsics[Z_BIG  ] = intrinsics[Z_BIG  ] = pad_crop_intrinsics(c.modesLR[0][1], -6);
+        rect_intrinsics[Z_QRES ] = intrinsics[Z_QRES ] = pad_crop_intrinsics(c.modesLR[0][2], -6);
+        intrinsics[THIRD_HD  ] = c.intrinsicsThird[0];
+        intrinsics[THIRD_VGA ] = c.intrinsicsThird[1];
+        intrinsics[THIRD_QRES] = scale_intrinsics(c.intrinsicsThird[1], 320, 240);
+        rect_intrinsics[THIRD_HD  ] = c.modesThird[0][0][0];
+        rect_intrinsics[THIRD_VGA ] = c.modesThird[0][1][0];
+        rect_intrinsics[THIRD_QRES] = scale_intrinsics(c.modesThird[0][1][0], 320, 240); // TODO: Is 0,1,1 suitable for these purposes?
 
         // We select the depth/left infrared camera's viewpoint to be the origin
         info.stream_poses[RS_STREAM_DEPTH] = {{{1,0,0},{0,1,0},{0,0,1}}, {0,0,0}};

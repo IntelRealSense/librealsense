@@ -51,6 +51,17 @@ namespace rsimpl
     RS_ENUM_HELPERS(rs_option, OPTION)
     #undef RS_ENUM_HELPERS
 
+    inline rs_intrinsics pad_crop_intrinsics(const rs_intrinsics & i, int pad_crop)
+    {
+        return {i.width+pad_crop*2, i.height+pad_crop*2, i.ppx+pad_crop, i.ppy+pad_crop, i.fx, i.fy, i.model, {i.coeffs[0], i.coeffs[1], i.coeffs[2], i.coeffs[3], i.coeffs[4]}};
+    }
+
+    inline rs_intrinsics scale_intrinsics(const rs_intrinsics & i, int width, int height)
+    {
+        const float sx = (float)width/i.width, sy = (float)height/i.height;
+        return {width, height, i.ppx*sx, i.ppy*sy, i.fx*sx, i.fy*sy, i.model, {i.coeffs[0], i.coeffs[1], i.coeffs[2], i.coeffs[3], i.coeffs[4]}};
+    }
+
     // World's tiniest linear algebra library
     struct float3 { float x,y,z; float & operator [] (int i) { return (&x)[i]; } };
     struct float3x3 { float3 x,y,z; float & operator () (int i, int j) { return (&x)[j][i]; } }; // column-major

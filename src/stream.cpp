@@ -73,6 +73,16 @@ subdevice_mode_selection native_stream::get_mode() const
     throw std::runtime_error(to_string() << "stream not enabled: " << stream);
 }
 
+rs_intrinsics native_stream::get_intrinsics() const 
+{
+    return config.intrinsics.get(get_mode().get_intrinsics_index(stream));
+}
+
+rs_intrinsics native_stream::get_rectified_intrinsics() const
+{
+    return config.intrinsics.get_rect(get_mode().get_intrinsics_index(stream));
+}
+
 const rsimpl::byte * rectified_stream::get_frame_data() const
 {
     // If source image is already rectified, just return it without doing any work
