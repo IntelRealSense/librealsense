@@ -18,19 +18,6 @@
 #pragma pack(push, 1) // All structs in this file are assumed to be byte-packed
 namespace rsimpl
 {
-    struct yuy2_macropixel { uint8_t y0,u,y1,v; };
-    static_assert(sizeof(yuy2_macropixel) == 4, "packing error");
-
-    struct y12i_pixel
-    { 
-        uint8_t rl : 8, rh : 4, ll : 4, lh : 8; 
-        int l() const { return lh << 4 | ll; }
-        int r() const { return rh << 8 | rl; }
-    };
-    static_assert(sizeof(y12i_pixel) == 3, "packing error");
-
-    struct inri_pixel { uint16_t z16; uint8_t y8; };
-    static_assert(sizeof(inri_pixel) == 3, "packing error");
 
     ////////////////////////////
     // Image size computation //
@@ -241,14 +228,15 @@ namespace rsimpl
         }    
     }
 
+    struct y8i_pixel { uint8_t l, r; };
     void unpack_y8_y8_from_y8i(byte * const dest[], const byte * source, int count)
     {
-        struct y8i_pixel { uint8_t l, r; };
         split_frame(dest, count, reinterpret_cast<const y8i_pixel *>(source),
             [](const y8i_pixel & p) -> uint8_t { return p.l; },
             [](const y8i_pixel & p) -> uint8_t { return p.r; });
     }
 
+    struct y12i_pixel { uint8_t rl : 8, rh : 4, ll : 4, lh : 8; int l() const { return lh << 4 | ll; } int r() const { return rh << 8 | rl; } };
     void unpack_y16_y16_from_y12i_10(byte * const dest[], const byte * source, int count)
     {
         split_frame(dest, count, reinterpret_cast<const y12i_pixel *>(source),
@@ -256,18 +244,19 @@ namespace rsimpl
             [](const y12i_pixel & p) -> uint16_t { return p.r() << 6 | p.r() >> 4; }); // Multiply by 64 1/16 to efficiently approximate 65535/1023
     }
 
+    struct f200_inzi_pixel { uint16_t z16; uint8_t y8; };
     void unpack_z16_y8_from_f200_inzi(byte * const dest[], const byte * source, int count)
     {
-        split_frame(dest, count, reinterpret_cast<const inri_pixel *>(source),
-            [](const inri_pixel & p) -> uint16_t { return p.z16; },
-            [](const inri_pixel & p) -> uint8_t { return p.y8; });
+        split_frame(dest, count, reinterpret_cast<const f200_inzi_pixel *>(source),
+            [](const f200_inzi_pixel & p) -> uint16_t { return p.z16; },
+            [](const f200_inzi_pixel & p) -> uint8_t { return p.y8; });
     }
 
     void unpack_z16_y16_from_f200_inzi(byte * const dest[], const byte * source, int count)
     {
-        split_frame(dest, count, reinterpret_cast<const inri_pixel *>(source),
-            [](const inri_pixel & p) -> uint16_t { return p.z16; },
-            [](const inri_pixel & p) -> uint16_t { return p.y8 | p.y8 << 8; });
+        split_frame(dest, count, reinterpret_cast<const f200_inzi_pixel *>(source),
+            [](const f200_inzi_pixel & p) -> uint16_t { return p.z16; },
+            [](const f200_inzi_pixel & p) -> uint16_t { return p.y8 | p.y8 << 8; });
     }
 
     void unpack_z16_y8_from_sr300_inzi(byte * const dest[], const byte * source, int count)
@@ -290,38 +279,34 @@ namespace rsimpl
     // Native pixel formats //
     //////////////////////////
 
-    const native_pixel_format pf_rw10        = {'RW10', 1, 1, 1, {{&copy_pixels<1>,                 {{RS_STREAM_COLOR,    RS_FORMAT_RAW10}}}}};
-    const native_pixel_format pf_yuy2        = {'YUY2', 1, 2, 4, {{&copy_pixels<2>,                 {{RS_STREAM_COLOR,    RS_FORMAT_YUYV }}},
-                                                                  {&unpack_yuy2<RS_FORMAT_Y8   >,   {{RS_STREAM_COLOR,    RS_FORMAT_Y8   }}},
-                                                                  {&unpack_yuy2<RS_FORMAT_Y16  >,   {{RS_STREAM_COLOR,    RS_FORMAT_Y16  }}},
-                                                                  {&unpack_yuy2<RS_FORMAT_RGB8 >,   {{RS_STREAM_COLOR,    RS_FORMAT_RGB8 }}},
-                                                                  {&unpack_yuy2<RS_FORMAT_RGBA8>,   {{RS_STREAM_COLOR,    RS_FORMAT_RGBA8}}},
-                                                                  {&unpack_yuy2<RS_FORMAT_BGR8 >,   {{RS_STREAM_COLOR,    RS_FORMAT_BGR8 }}},
-                                                                  {&unpack_yuy2<RS_FORMAT_BGRA8>,   {{RS_STREAM_COLOR,    RS_FORMAT_BGRA8}}}}};
-    const native_pixel_format pf_y8          = {'Y8  ', 1, 1, 1, {{&copy_pixels<1>,                 {{RS_STREAM_INFRARED, RS_FORMAT_Y8   }}}}};
-    const native_pixel_format pf_y8i         = {'Y8I ', 1, 1, 2, {{&unpack_y8_y8_from_y8i,          {{RS_STREAM_INFRARED, RS_FORMAT_Y8   }, {RS_STREAM_INFRARED2, RS_FORMAT_Y8}}}}};
-    const native_pixel_format pf_y16         = {'Y16 ', 1, 1, 2, {{&unpack_y16_from_y16_10,         {{RS_STREAM_INFRARED, RS_FORMAT_Y16  }}}}};
-    const native_pixel_format pf_y12i        = {'Y12I', 1, 1, 3, {{&unpack_y16_y16_from_y12i_10,    {{RS_STREAM_INFRARED, RS_FORMAT_Y16  }, {RS_STREAM_INFRARED2, RS_FORMAT_Y16}}}}};
-    const native_pixel_format pf_z16         = {'Z16 ', 1, 1, 2, {{&copy_pixels<2>,                 {{RS_STREAM_DEPTH,    RS_FORMAT_Z16  }}},
-                                                                  {&copy_pixels<2>,                 {{RS_STREAM_DEPTH,    RS_FORMAT_DISPARITY16}}}}};
-    const native_pixel_format pf_invz        = {'INVZ', 1, 1, 2, {{&copy_pixels<2>,                 {{RS_STREAM_DEPTH,    RS_FORMAT_Z16  }}}}};
-    const native_pixel_format pf_f200_invi   = {'INVI', 1, 1, 1, {{&copy_pixels<1>,                 {{RS_STREAM_INFRARED, RS_FORMAT_Y8   }}},
-                                                                  {&unpack_y16_from_y8,             {{RS_STREAM_INFRARED, RS_FORMAT_Y16  }}}}};
-    const native_pixel_format pf_f200_inzi   = {'INZI', 1, 1, 3, {{&unpack_z16_y8_from_f200_inzi,   {{RS_STREAM_DEPTH,    RS_FORMAT_Z16  }, {RS_STREAM_INFRARED, RS_FORMAT_Y8}}},
-                                                                  {&unpack_z16_y16_from_f200_inzi,  {{RS_STREAM_DEPTH,    RS_FORMAT_Z16  }, {RS_STREAM_INFRARED, RS_FORMAT_Y16}}}}};
-    const native_pixel_format pf_sr300_invi  = {'INVI', 1, 1, 2, {{&unpack_y8_from_y16_10,          {{RS_STREAM_INFRARED, RS_FORMAT_Y8   }}},
-                                                                  {&unpack_y16_from_y16_10,         {{RS_STREAM_INFRARED, RS_FORMAT_Y16  }}}}};
-    const native_pixel_format pf_sr300_inzi  = {'INZI', 2, 1, 2, {{&unpack_z16_y8_from_sr300_inzi,  {{RS_STREAM_DEPTH,    RS_FORMAT_Z16  }, {RS_STREAM_INFRARED, RS_FORMAT_Y8}}},
-                                                                  {&unpack_z16_y16_from_sr300_inzi, {{RS_STREAM_DEPTH,    RS_FORMAT_Z16  }, {RS_STREAM_INFRARED, RS_FORMAT_Y16}}}}};
+    const native_pixel_format pf_rw10       = {'RW10', 1, 1, 1, {{&copy_pixels<1>,                 {{RS_STREAM_COLOR,    RS_FORMAT_RAW10}}}}};
+    const native_pixel_format pf_yuy2       = {'YUY2', 1, 2, 4, {{&copy_pixels<2>,                 {{RS_STREAM_COLOR,    RS_FORMAT_YUYV }}},
+                                                                 {&unpack_yuy2<RS_FORMAT_Y8   >,   {{RS_STREAM_COLOR,    RS_FORMAT_Y8   }}},
+                                                                 {&unpack_yuy2<RS_FORMAT_Y16  >,   {{RS_STREAM_COLOR,    RS_FORMAT_Y16  }}},
+                                                                 {&unpack_yuy2<RS_FORMAT_RGB8 >,   {{RS_STREAM_COLOR,    RS_FORMAT_RGB8 }}},
+                                                                 {&unpack_yuy2<RS_FORMAT_RGBA8>,   {{RS_STREAM_COLOR,    RS_FORMAT_RGBA8}}},
+                                                                 {&unpack_yuy2<RS_FORMAT_BGR8 >,   {{RS_STREAM_COLOR,    RS_FORMAT_BGR8 }}},
+                                                                 {&unpack_yuy2<RS_FORMAT_BGRA8>,   {{RS_STREAM_COLOR,    RS_FORMAT_BGRA8}}}}};
+    const native_pixel_format pf_y8         = {'Y8  ', 1, 1, 1, {{&copy_pixels<1>,                 {{RS_STREAM_INFRARED, RS_FORMAT_Y8   }}}}};
+    const native_pixel_format pf_y16        = {'Y16 ', 1, 1, 2, {{&unpack_y16_from_y16_10,         {{RS_STREAM_INFRARED, RS_FORMAT_Y16  }}}}};
+    const native_pixel_format pf_y8i        = {'Y8I ', 1, 1, 2, {{&unpack_y8_y8_from_y8i,          {{RS_STREAM_INFRARED, RS_FORMAT_Y8   }, {RS_STREAM_INFRARED2, RS_FORMAT_Y8}}}}};
+    const native_pixel_format pf_y12i       = {'Y12I', 1, 1, 3, {{&unpack_y16_y16_from_y12i_10,    {{RS_STREAM_INFRARED, RS_FORMAT_Y16  }, {RS_STREAM_INFRARED2, RS_FORMAT_Y16}}}}};
+    const native_pixel_format pf_z16        = {'Z16 ', 1, 1, 2, {{&copy_pixels<2>,                 {{RS_STREAM_DEPTH,    RS_FORMAT_Z16  }}},
+                                                                 {&copy_pixels<2>,                 {{RS_STREAM_DEPTH,    RS_FORMAT_DISPARITY16}}}}};
+    const native_pixel_format pf_invz       = {'INVZ', 1, 1, 2, {{&copy_pixels<2>,                 {{RS_STREAM_DEPTH,    RS_FORMAT_Z16  }}}}};
+    const native_pixel_format pf_f200_invi  = {'INVI', 1, 1, 1, {{&copy_pixels<1>,                 {{RS_STREAM_INFRARED, RS_FORMAT_Y8   }}},
+                                                                 {&unpack_y16_from_y8,             {{RS_STREAM_INFRARED, RS_FORMAT_Y16  }}}}};
+    const native_pixel_format pf_f200_inzi  = {'INZI', 1, 1, 3, {{&unpack_z16_y8_from_f200_inzi,   {{RS_STREAM_DEPTH,    RS_FORMAT_Z16  }, {RS_STREAM_INFRARED, RS_FORMAT_Y8}}},
+                                                                 {&unpack_z16_y16_from_f200_inzi,  {{RS_STREAM_DEPTH,    RS_FORMAT_Z16  }, {RS_STREAM_INFRARED, RS_FORMAT_Y16}}}}};
+    const native_pixel_format pf_sr300_invi = {'INVI', 1, 1, 2, {{&unpack_y8_from_y16_10,          {{RS_STREAM_INFRARED, RS_FORMAT_Y8   }}},
+                                                                 {&unpack_y16_from_y16_10,         {{RS_STREAM_INFRARED, RS_FORMAT_Y16  }}}}};
+    const native_pixel_format pf_sr300_inzi = {'INZI', 2, 1, 2, {{&unpack_z16_y8_from_sr300_inzi,  {{RS_STREAM_DEPTH,    RS_FORMAT_Z16  }, {RS_STREAM_INFRARED, RS_FORMAT_Y8}}},
+                                                                 {&unpack_z16_y16_from_sr300_inzi, {{RS_STREAM_DEPTH,    RS_FORMAT_Z16  }, {RS_STREAM_INFRARED, RS_FORMAT_Y16}}}}};
 
 
     /////////////////////
     // Image alignment //
     /////////////////////
-
-    #pragma pack(push, 1)
-    template<int N> struct bytes { char b[N]; };
-    #pragma pack(pop)
 
     template<class GET_DEPTH, class TRANSFER_PIXEL> void align_images(const rs_intrinsics & depth_intrin, const rs_extrinsics & depth_to_other, const rs_intrinsics & other_intrin, GET_DEPTH get_depth, TRANSFER_PIXEL transfer_pixel)
     {
@@ -369,6 +354,7 @@ namespace rsimpl
             [out_disparity, disparity_pixels](int disparity_pixel_index, int color_pixel_index) { out_disparity[color_pixel_index] = disparity_pixels[disparity_pixel_index]; });
     }
 
+    template<int N> struct bytes { char b[N]; };
     template<int N, class GET_DEPTH> void align_color_to_depth_bytes(byte * color_aligned_to_depth, GET_DEPTH get_depth, const rs_intrinsics & depth_intrin, const rs_extrinsics & depth_to_color, const rs_intrinsics & color_intrin, const byte * color_pixels)
     {
         auto in_color = (const bytes<N> *)(color_pixels);
