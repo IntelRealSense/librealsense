@@ -142,9 +142,9 @@ namespace rsimpl
 
     struct subdevice_mode_selection
     {
-        const subdevice_mode * mode;
-        int pad_crop;
-        const unpacker_setting * unpacker;
+        const subdevice_mode * mode;            // The streaming mode in which to place the hardware
+        int pad_crop;                           // The number of pixels of padding (positive values) or cropping (negative values) to apply to all four edges of the image
+        const unpacker_setting * unpacker;      // The specific unpacker used to unpack the encoded format into the desired output formats
 
         subdevice_mode_selection(const subdevice_mode * mode, int pad_crop, const unpacker_setting * unpacker) : mode(mode), pad_crop(pad_crop), unpacker(unpacker) {}
 
@@ -245,35 +245,30 @@ namespace rsimpl
         bool                                swap_front() { return frames.swap_front(); }
     };
 
+    struct intrinsics_channel
+    {
+        rs_intrinsics native;       // Actual intrinsics of image sent over UVC by the device hardware
+        rs_intrinsics rectified;    // Desired intrinsics of image after being rectified in software by librealsense
+        intrinsics_channel() : native{}, rectified{} {}
+        intrinsics_channel(const rs_intrinsics & native) : native(native), rectified(native) {}
+        intrinsics_channel(const rs_intrinsics & native, const rs_intrinsics & rectified) : native(native), rectified(rectified) {}
+    };
+
     class intrinsics_buffer
     {
-        struct state { std::vector<rs_intrinsics> intrin, rect_intrin; };
-        mutable triple_buffer<state> buffer;
+        mutable triple_buffer<std::vector<intrinsics_channel>> buffer;
     public:
         intrinsics_buffer() : buffer({}) {}
 
-        rs_intrinsics get(int index) const
+        intrinsics_channel get(int index) const
         {
             buffer.swap_front(); // We are logically const even though we check for updates, visible state will never change unless someone calls set
-            return buffer.get_front().intrin[index];
+            return buffer.get_front()[index];
         }
 
-        rs_intrinsics get_rect(int index) const
+        void set(std::vector<intrinsics_channel> intrinsics)
         {
-            buffer.swap_front(); // We are logically const even though we check for updates, visible state will never change unless someone calls set
-            return buffer.get_front().rect_intrin[index];
-        }
-
-        void set(std::vector<rs_intrinsics> intrinsics)
-        {
-            buffer.get_back().intrin = buffer.get_back().rect_intrin = move(intrinsics);
-            buffer.swap_back();
-        }
-
-        void set(std::vector<rs_intrinsics> intrinsics, std::vector<rs_intrinsics> rect_intrinsics)
-        {
-            buffer.get_back().intrin = move(intrinsics);
-            buffer.get_back().rect_intrin = move(rect_intrinsics);
+            buffer.get_back() = move(intrinsics);
             buffer.swap_back();
         }
     };
@@ -285,10 +280,10 @@ namespace rsimpl
         stream_request                      requests[RS_STREAM_NATIVE_COUNT];  // Modified by enable/disable_stream calls
         float                               depth_scale;                       // Scale of depth values
 
-                                            device_config(const rsimpl::static_device_info & info, std::vector<rs_intrinsics> intrin, std::vector<rs_intrinsics> rect_intrin) : info(info), depth_scale(info.nominal_depth_scale) 
+                                            device_config(const rsimpl::static_device_info & info, std::vector<intrinsics_channel> intrin) : info(info), depth_scale(info.nominal_depth_scale) 
                                             { 
                                                 for(auto & req : requests) req = rsimpl::stream_request(); 
-                                                intrinsics.set(intrin, rect_intrin);
+                                                intrinsics.set(intrin);
                                             }
 
         std::vector<subdevice_mode_selection> select_modes() const { return info.select_modes(requests); }

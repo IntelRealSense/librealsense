@@ -74,13 +74,13 @@ subdevice_mode_selection native_stream::get_mode() const
 rs_intrinsics native_stream::get_intrinsics() const 
 {
     const auto m = get_mode();
-    return pad_crop_intrinsics(config.intrinsics.get(m.mode->intrinsics_index), m.pad_crop);
+    return pad_crop_intrinsics(config.intrinsics.get(m.mode->intrinsics_index).native, m.pad_crop);
 }
 
 rs_intrinsics native_stream::get_rectified_intrinsics() const
 {
     const auto m = get_mode();
-    return pad_crop_intrinsics(config.intrinsics.get_rect(m.mode->intrinsics_index), m.pad_crop);
+    return pad_crop_intrinsics(config.intrinsics.get(m.mode->intrinsics_index).rectified, m.pad_crop);
 }
 
 const rsimpl::byte * rectified_stream::get_frame_data() const

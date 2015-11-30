@@ -39,7 +39,7 @@ namespace rsimpl
         return number;
     }
 
-    r200_camera::r200_camera(std::shared_ptr<uvc::device> device, const static_device_info & info, std::vector<rs_intrinsics> intrinsics, std::vector<rs_intrinsics> rect_intrinsics) : rs_device(device, info, intrinsics, rect_intrinsics)
+    r200_camera::r200_camera(std::shared_ptr<uvc::device> device, const static_device_info & info, std::vector<intrinsics_channel> intrinsics) : rs_device(device, info, intrinsics)
     {
         //config.intrinsics.set(intrinsics, rect_intrinsics);
         on_update_depth_units(get_xu_option(RS_OPTION_R200_DEPTH_UNITS));
@@ -125,19 +125,16 @@ namespace rsimpl
         if (c.metadata.versionNumber != 2)
             throw std::runtime_error("only supported calibration struct is version 2. got (" + std::to_string(c.metadata.versionNumber) + ").");
 
-        std::vector<rs_intrinsics> intrinsics(NUM_INTRINSICS), rect_intrinsics(NUM_INTRINSICS);
-        rect_intrinsics[LR_FULL] = intrinsics[LR_FULL] = c.modesLR[0][0];
-        rect_intrinsics[LR_BIG ] = intrinsics[LR_BIG ] = c.modesLR[0][1];
-        rect_intrinsics[LR_QRES] = intrinsics[LR_QRES] = c.modesLR[0][2];
-        rect_intrinsics[Z_FULL ] = intrinsics[Z_FULL ] = pad_crop_intrinsics(c.modesLR[0][0], -6);
-        rect_intrinsics[Z_BIG  ] = intrinsics[Z_BIG  ] = pad_crop_intrinsics(c.modesLR[0][1], -6);
-        rect_intrinsics[Z_QRES ] = intrinsics[Z_QRES ] = pad_crop_intrinsics(c.modesLR[0][2], -6);
-        intrinsics[THIRD_HD  ] = c.intrinsicsThird[0];
-        intrinsics[THIRD_VGA ] = c.intrinsicsThird[1];
-        intrinsics[THIRD_QRES] = scale_intrinsics(c.intrinsicsThird[1], 320, 240);
-        rect_intrinsics[THIRD_HD  ] = c.modesThird[0][0][0];
-        rect_intrinsics[THIRD_VGA ] = c.modesThird[0][1][0];
-        rect_intrinsics[THIRD_QRES] = scale_intrinsics(c.modesThird[0][1][0], 320, 240); // TODO: Is 0,1,1 suitable for these purposes?
+        std::vector<intrinsics_channel> intrinsics(NUM_INTRINSICS);
+        intrinsics[LR_FULL] = intrinsics_channel(c.modesLR[0][0]);
+        intrinsics[LR_BIG ] = intrinsics_channel(c.modesLR[0][1]);
+        intrinsics[LR_QRES] = intrinsics_channel(c.modesLR[0][2]);
+        intrinsics[Z_FULL ] = intrinsics_channel(pad_crop_intrinsics(c.modesLR[0][0], -6));
+        intrinsics[Z_BIG  ] = intrinsics_channel(pad_crop_intrinsics(c.modesLR[0][1], -6));
+        intrinsics[Z_QRES ] = intrinsics_channel(pad_crop_intrinsics(c.modesLR[0][2], -6));
+        intrinsics[THIRD_HD  ] = intrinsics_channel(c.intrinsicsThird[0], c.modesThird[0][0][0]);
+        intrinsics[THIRD_VGA ] = intrinsics_channel(c.intrinsicsThird[1], c.modesThird[0][1][0]);
+        intrinsics[THIRD_QRES] = intrinsics_channel(scale_intrinsics(c.intrinsicsThird[1], 320, 240), scale_intrinsics(c.modesThird[0][1][0], 320, 240));
 
         // We select the depth/left infrared camera's viewpoint to be the origin
         info.stream_poses[RS_STREAM_DEPTH] = {{{1,0,0},{0,1,0},{0,0,1}}, {0,0,0}};
@@ -161,7 +158,7 @@ namespace rsimpl
 		// On LibUVC backends, the R200 should use four transfer buffers
         info.num_libuvc_transfer_buffers = 4;
 
-        return std::make_shared<r200_camera>(device, info, intrinsics, rect_intrinsics);
+        return std::make_shared<r200_camera>(device, info, intrinsics);
     }
 
     bool r200_camera::is_disparity_mode_enabled() const

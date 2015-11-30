@@ -36,7 +36,7 @@ protected:
     const rsimpl::uvc::device &                 get_device() const { return *device; }
     rsimpl::uvc::device &                       get_device() { return *device; }
 public:
-                                                rs_device(std::shared_ptr<rsimpl::uvc::device> device, const rsimpl::static_device_info & info, std::vector<rs_intrinsics> intrinsics, std::vector<rs_intrinsics> rect_intrinsics);
+                                                rs_device(std::shared_ptr<rsimpl::uvc::device> device, const rsimpl::static_device_info & info, std::vector<rsimpl::intrinsics_channel> intrinsics);
                                                 ~rs_device();
 
     const rsimpl::stream_interface &            get_stream_interface(rs_stream stream) const { return *streams[stream]; }
