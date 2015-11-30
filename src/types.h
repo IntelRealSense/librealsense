@@ -126,9 +126,7 @@ namespace rsimpl
     };
 
     struct int2 { int x,y; };
-
-    struct pad_crop_setting { int pad_crop, intrinsics_index; };
-
+    
     struct subdevice_mode
     {
         int subdevice;                          // 0, 1, 2, etc...
@@ -136,7 +134,8 @@ namespace rsimpl
         const native_pixel_format * pf;         // Pixel format advertised over UVC
         int fps;                                // Framerate advertised over UVC
         int2 content_size;                      // Size of image content, may be different from UVC frame size
-        std::vector<pad_crop_setting> pad_crop; // Acceptable padding/cropping values
+        int intrinsics_index;                   // Index of intrinsics structure corresponding to this content
+        std::vector<int> pad_crop_options;      // Acceptable padding/cropping values
         int (* frame_number_decoder)(const subdevice_mode & mode, const void * frame);
         bool use_serial_numbers_if_unique;  // If true, ignore frame_number_decoder and use a serial frame count if this is the only mode set
     };
@@ -150,12 +149,12 @@ namespace rsimpl
         subdevice_mode_selection(const subdevice_mode * mode, size_t pad_crop_index, size_t unpacker_index) : mode(mode), pad_crop_index(pad_crop_index), unpacker_index(unpacker_index) {}
 
         const std::vector<std::pair<rs_stream, rs_format>> & get_outputs() const { return mode->pf->unpackers[unpacker_index].outputs; }
-        int get_pad_crop() const { return mode->pad_crop[pad_crop_index].pad_crop; }
+        int get_pad_crop() const { return mode->pad_crop_options[pad_crop_index]; }
         int get_width() const { return mode->content_size.x + get_pad_crop() * 2; }
         int get_height() const { return mode->content_size.y + get_pad_crop() * 2; }
         size_t get_image_size(rs_stream stream) const;
         bool provides_stream(rs_stream stream) const { return mode->pf->unpackers[unpacker_index].provides_stream(stream); }
-        int get_intrinsics_index(rs_stream stream) const { return mode->pad_crop[pad_crop_index].intrinsics_index; }
+        //int get_intrinsics_index(rs_stream stream) const { return mode->pad_crop_options[pad_crop_index].intrinsics_index; }
         rs_format get_format(rs_stream stream) const { return mode->pf->unpackers[unpacker_index].get_format(stream); }
         int get_framerate(rs_stream stream) const { return mode->fps; }
         void unpack(byte * const dest[], const byte * source) const;

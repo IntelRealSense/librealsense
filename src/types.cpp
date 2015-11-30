@@ -203,7 +203,7 @@ namespace rsimpl
             // Skip modes that apply to other subdevices
             if(subdevice_mode.subdevice != subdevice_index) continue;
 
-            for(size_t i=0; i<subdevice_mode.pad_crop.size(); ++i)
+            for(size_t i=0; i<subdevice_mode.pad_crop_options.size(); ++i)
             {
                 for(size_t j=0; j<subdevice_mode.pf->unpackers.size(); ++j)
                 {
