@@ -82,18 +82,19 @@ Our intent is to provide bindings and wrappers for as many languages and framewo
 1. Ensure no cameras are presently plugged into the system.
 2. Install udev rules 
   * `sudo cp config/99-realsense-libusb.rules /etc/udev/rules.d/`
+  * Reboot or run `sudo udevadm control --reload-rules && udevadm trigger` to enforce the new udev rules
 3. Next, choose one of the following subheadings based on desired machine configuration / kernel version (and remember to complete step 4 after).
   * **Stock 3.19.xx Kernel in 14.04.03** 
     * Run the following script to patch uvcvideo.ko
-        * `cd scripts && ./patch-uvcvideo-ko-generic.sh`
+        * `./scripts/patch-uvcvideo-ko-generic.sh`
     * (R200 Only) Install connectivity workaround
-      * `cd scripts && ./install-r200-udev-fix.sh`
+      * `./scripts/install-r200-udev-fix.sh`
       * This udev fix is not necessary for kernels >= 4.2.3
   * **(OR) Updated 4.2.3 Unstable Kernel**
     * Install the 4.2.3 Kernel or move to step 2 if already installed. 
       * [Tutorial](http://www.yourownlinux.com/2015/10/how-to-install-linux-kernel-4-2-3-in-linux.html)
     * Run the following script to patch uvcvideo.ko
-      * `cd scripts && ./patch-uvcvideo-ko-4.2.3.sh`
+      * `./scripts/patch-uvcvideo-ko-4.2.3.sh`
       * This script involves cloning the Linux source repository (about 1GB), and may take a while
 4. Reload the uvcvideo driver
   * `sudo modprobe uvcvideo`
