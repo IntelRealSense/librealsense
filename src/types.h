@@ -117,7 +117,7 @@ namespace rsimpl
     struct subdevice_mode
     {
         int subdevice;                          // 0, 1, 2, etc...
-        int width, height;                      // Resolution advertised over UVC
+        int2 native_dims;                       // Resolution advertised over UVC
         const native_pixel_format * pf;         // Pixel format advertised over UVC
         int fps;                                // Framerate advertised over UVC
         int2 content_size;                      // Size of image content, may be different from UVC frame size

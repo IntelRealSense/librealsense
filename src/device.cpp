@@ -103,7 +103,7 @@ void rs_device::start()
         // Initialize the subdevice and set it to the selected mode
         int serial_frame_no = 0;
         bool only_stream = selected_modes.size() == 1;
-        set_subdevice_mode(*device, mode_selection.mode->subdevice, mode_selection.mode->width, mode_selection.mode->height, mode_selection.mode->pf->fourcc, mode_selection.mode->fps, 
+        set_subdevice_mode(*device, mode_selection.mode->subdevice, mode_selection.mode->native_dims.x, mode_selection.mode->native_dims.y, mode_selection.mode->pf->fourcc, mode_selection.mode->fps, 
             [mode_selection, stream_list, only_stream, serial_frame_no](const void * frame) mutable
         {
             // Unpack the image into the user stream interface back buffer

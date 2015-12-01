@@ -132,7 +132,7 @@ namespace rsimpl
 
         // Determine input stride (and apply cropping)
         const byte * in = source;
-        size_t in_stride = mode->pf->get_image_size(mode->width, 1);
+        size_t in_stride = mode->pf->get_image_size(mode->native_dims.x, 1);
         if(pad_crop < 0) in += in_stride * -pad_crop + mode->pf->get_image_size(-pad_crop, 1);
 
         // Determine output stride (and apply padding)
@@ -147,7 +147,7 @@ namespace rsimpl
 
         // Unpack (potentially a subrect of) the source image into (potentially a subrect of) the destination buffers
         const int unpack_width = std::min(mode->content_size.x, get_width()), unpack_height = std::min(mode->content_size.y, get_height());
-        if(mode->width == get_width())
+        if(mode->native_dims.x == get_width())
         {
             // If not strided, unpack as though it were a single long row
             unpacker->unpack(out, in, unpack_width * unpack_height);

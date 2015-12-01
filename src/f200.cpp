@@ -44,25 +44,25 @@ namespace rsimpl
     }
 
     enum { COLOR_1080P, COLOR_720P, COLOR_540P, COLOR_480P, COLOR_VGA, COLOR_360P, COLOR_240P, COLOR_QVGA, COLOR_180P, DEPTH_VGA, DEPTH_HVGA, NUM_INTRINSICS };
-    struct f200_mode { int w, h, intrin; std::vector<int> fps; };
+    struct f200_mode { int2 dims; int intrin; std::vector<int> fps; };
     static const f200_mode f200_color_modes[] = {
-        {1920, 1080, COLOR_1080P, {2,5,15,30}},
-        {1280,  720, COLOR_720P,  {2,5,15,30}},
-        { 960,  540, COLOR_540P,  {2,5,15,30,60}},
-        { 848,  480, COLOR_480P,  {2,5,15,30,60}},
-        { 640,  480, COLOR_VGA,   {2,5,15,30,60}},
-        { 640,  360, COLOR_360P,  {2,5,15,30,60}},
-        { 424,  240, COLOR_240P,  {2,5,15,30,60}},
-        { 320,  240, COLOR_QVGA,  {2,5,15,30,60}},
-        { 320,  180, COLOR_180P,  {2,5,15,30,60}}
+        {{1920, 1080}, COLOR_1080P, {2,5,15,30}},
+        {{1280,  720}, COLOR_720P,  {2,5,15,30}},
+        {{ 960,  540}, COLOR_540P,  {2,5,15,30,60}},
+        {{ 848,  480}, COLOR_480P,  {2,5,15,30,60}},
+        {{ 640,  480}, COLOR_VGA,   {2,5,15,30,60}},
+        {{ 640,  360}, COLOR_360P,  {2,5,15,30,60}},
+        {{ 424,  240}, COLOR_240P,  {2,5,15,30,60}},
+        {{ 320,  240}, COLOR_QVGA,  {2,5,15,30,60}},
+        {{ 320,  180}, COLOR_180P,  {2,5,15,30,60}}
     };
     static const f200_mode f200_depth_modes[] = {
-        {640, 480, DEPTH_VGA,  {2,5,15,30,60}}, 
-        {640, 240, DEPTH_HVGA, {2,5,15,30,60,110}}
+        {{640, 480}, DEPTH_VGA,  {2,5,15,30,60}}, 
+        {{640, 240}, DEPTH_HVGA, {2,5,15,30,60,110}}
     };
     static const f200_mode f200_ir_only_modes[] = {
-        {640, 480, DEPTH_VGA,  {30,60,120,240,300}}, 
-        {640, 240, DEPTH_HVGA, {30,60,120,240,300}}        
+        {{640, 480}, DEPTH_VGA,  {30,60,120,240,300}}, 
+        {{640, 240}, DEPTH_HVGA, {30,60,120,240,300}}        
     };
     
     static static_device_info get_f200_info(const f200::CameraCalibrationParameters & c)
@@ -76,7 +76,7 @@ namespace rsimpl
         {
             for(auto fps : m.fps)
             {
-                info.subdevice_modes.push_back({0, m.w, m.h, &pf_yuy2, fps, {m.w, m.h}, m.intrin, {{0,m.intrin}}, &decode_ivcam_frame_number});
+                info.subdevice_modes.push_back({0, m.dims, &pf_yuy2, fps, m.dims, m.intrin, {0}, &decode_ivcam_frame_number});
             }
         }
 
@@ -87,15 +87,15 @@ namespace rsimpl
         {
             for(auto fps : m.fps)
             {
-                info.subdevice_modes.push_back({1, m.w, m.h, &pf_f200_invi, fps, {m.w, m.h}, m.intrin, {{0,m.intrin}}, &decode_ivcam_frame_number});
+                info.subdevice_modes.push_back({1, m.dims, &pf_f200_invi, fps, m.dims, m.intrin, {0}, &decode_ivcam_frame_number});
             }
         }
         for(auto & m : f200_depth_modes)
         {
             for(auto fps : m.fps)
             {
-                info.subdevice_modes.push_back({1, m.w, m.h, &pf_invz, fps, {m.w, m.h}, m.intrin, {{0,m.intrin}}, &decode_ivcam_frame_number});       
-                info.subdevice_modes.push_back({1, m.w, m.h, &pf_f200_inzi, fps, {m.w, m.h}, m.intrin, {{0,m.intrin}}, &decode_ivcam_frame_number});
+                info.subdevice_modes.push_back({1, m.dims, &pf_invz, fps, m.dims, m.intrin, {0}, &decode_ivcam_frame_number});       
+                info.subdevice_modes.push_back({1, m.dims, &pf_f200_inzi, fps, m.dims, m.intrin, {0}, &decode_ivcam_frame_number});
             }
         }
 
@@ -154,7 +154,7 @@ namespace rsimpl
         {
             for(auto fps : m.fps)
             {
-                info.subdevice_modes.push_back({0, m.w, m.h, &pf_yuy2, fps, {m.w, m.h}, m.intrin, {{0,m.intrin}}, &decode_ivcam_frame_number});
+                info.subdevice_modes.push_back({0, m.dims, &pf_yuy2, fps, m.dims, m.intrin, {0}, &decode_ivcam_frame_number});
             }
         }
 
@@ -165,15 +165,15 @@ namespace rsimpl
         {
             for(auto fps : m.fps)
             {
-                info.subdevice_modes.push_back({1, m.w, m.h, &pf_sr300_invi, fps, {m.w, m.h}, m.intrin, {{0,m.intrin}}, &decode_ivcam_frame_number});             
+                info.subdevice_modes.push_back({1, m.dims, &pf_sr300_invi, fps, m.dims, m.intrin, {0}, &decode_ivcam_frame_number});             
             }
         }
         for(auto & m : sr300_depth_modes)
         {
             for(auto fps : m.fps)
             {
-                info.subdevice_modes.push_back({1, m.w, m.h, &pf_invz, fps, {m.w, m.h}, m.intrin, {{0,m.intrin}}, &decode_ivcam_frame_number});       
-                info.subdevice_modes.push_back({1, m.w, m.h, &pf_sr300_inzi, fps, {m.w, m.h}, m.intrin, {{0,m.intrin}}, &decode_ivcam_frame_number});
+                info.subdevice_modes.push_back({1, m.dims, &pf_invz, fps, m.dims, m.intrin, {0}, &decode_ivcam_frame_number});       
+                info.subdevice_modes.push_back({1, m.dims, &pf_sr300_inzi, fps, m.dims, m.intrin, {0}, &decode_ivcam_frame_number});
             }
         }
 
@@ -199,8 +199,8 @@ namespace rsimpl
     std::vector<intrinsics_channel> compute_intrinsics(const f200::CameraCalibrationParameters & calibration)
     {
         std::vector<intrinsics_channel> intrinsics(NUM_INTRINSICS);
-        for(auto & m : f200_color_modes) intrinsics[m.intrin] = MakeColorIntrinsics(calibration, m.w, m.h);
-        for(auto & m : f200_depth_modes) intrinsics[m.intrin] = MakeDepthIntrinsics(calibration, m.w, m.h);
+        for(auto & m : f200_color_modes) intrinsics[m.intrin] = MakeColorIntrinsics(calibration, m.dims.x, m.dims.y);
+        for(auto & m : f200_depth_modes) intrinsics[m.intrin] = MakeDepthIntrinsics(calibration, m.dims.x, m.dims.y);
         return intrinsics;
     }
 
