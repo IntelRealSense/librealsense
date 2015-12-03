@@ -16,29 +16,12 @@
 
 namespace rsimpl
 {
-    template<void (*UNPACKER)(byte * const dest[], const byte * source, const subdevice_mode & mode)> 
-    void crop_unpack(byte * const dest[], const byte * source, const subdevice_mode & mode)
-    {
-        UNPACKER(dest, source + mode.pf->get_crop_offset(mode.width, 6), mode);
-    }
-
     static int amount = 0;
-
-    template<void (*UNPACKER)(byte * const dest[], const byte * source, const subdevice_mode & mode)> 
-    void pad_unpack(byte * const dest[], const byte * source, const subdevice_mode & mode)
-    {
-        assert(mode.streams.size() == 1);
-        byte * out = dest[0] + get_image_size(mode.streams[0].width, 6, mode.streams[0].format) + get_image_size(6, 1, mode.streams[0].format);
-        UNPACKER(&out, source, mode);
-
-        // Erase Dinghy, which will get copied over when blitting into a padded buffer
-        memset(out + get_image_size(mode.streams[0].width, mode.height-1, mode.streams[0].format), 0, get_image_size(mode.width, 1, mode.streams[0].format));
-    }
 
     template<unsigned MAGIC_NUMBER>
     int decode_dinghy_frame_number(const subdevice_mode & mode, const void * frame)
     {
-        auto dinghy = reinterpret_cast<const r200::Dinghy *>(reinterpret_cast<const uint8_t *>(frame) + mode.pf->get_image_size(mode.width, mode.height-1));
+        auto dinghy = reinterpret_cast<const r200::Dinghy *>(reinterpret_cast<const uint8_t *>(frame) + mode.pf->get_image_size(mode.native_dims.x, mode.native_dims.y-1));
         return dinghy->magicNumber == MAGIC_NUMBER ? dinghy->frameCount : 0;
     }
 
@@ -46,7 +29,7 @@ namespace rsimpl
     {
         assert(mode.pf == &pf_yuy2);
 
-        auto data = reinterpret_cast<const uint8_t *>(frame) + ((mode.width * mode.height) - 32) * 2;
+        auto data = reinterpret_cast<const uint8_t *>(frame) + ((mode.native_dims.x * mode.native_dims.y) - 32) * 2;
         int number = 0;
         for(int i = 0; i < 32; ++i)
         {
@@ -56,29 +39,9 @@ namespace rsimpl
         return number;
     }
 
-    static rs_intrinsics MakeLeftRightIntrinsics(const r200::RectifiedIntrinsics & i)
+    r200_camera::r200_camera(std::shared_ptr<uvc::device> device, const static_device_info & info, std::vector<intrinsics_channel> intrinsics) : rs_device(device, info, intrinsics)
     {
-        return {(int)i.rw, (int)i.rh, i.rpx, i.rpy, i.rfx, i.rfy, RS_DISTORTION_NONE, {0,0,0,0,0}};
-    }
-
-    static rs_intrinsics MakeDepthIntrinsics(const r200::RectifiedIntrinsics & i)
-    {
-        return {(int)i.rw-12, (int)i.rh-12, i.rpx-6, i.rpy-6, i.rfx, i.rfy, RS_DISTORTION_NONE, {0,0,0,0,0}};
-    }
-
-    static rs_intrinsics MakeColorIntrinsics(const r200::UnrectifiedIntrinsics & i, int denom)
-    {
-        return {(int)i.w/denom, (int)i.h/denom, i.px/denom, i.py/denom, i.fx/denom, i.fy/denom, RS_DISTORTION_MODIFIED_BROWN_CONRADY, {i.k[0],i.k[1],i.k[2],i.k[3],i.k[4]}};
-    }
-
-    static rs_intrinsics MakeColorIntrinsics(const r200::RectifiedIntrinsics & i, int denom)
-    {
-        return {(int)i.rw/denom, (int)i.rh/denom, i.rpx/denom, i.rpy/denom, i.rfx/denom, i.rfy/denom, RS_DISTORTION_NONE, {0,0,0,0,0}};
-    }
-
-    r200_camera::r200_camera(std::shared_ptr<uvc::device> device, const static_device_info & info, std::vector<rs_intrinsics> intrinsics, std::vector<rs_intrinsics> rect_intrinsics) : rs_device(device, info)
-    {
-        config.intrinsics.set(intrinsics, rect_intrinsics);
+        //config.intrinsics.set(intrinsics, rect_intrinsics);
         on_update_depth_units(get_xu_option(RS_OPTION_R200_DEPTH_UNITS));
     }
     
@@ -95,11 +58,6 @@ namespace rsimpl
         init_controls(*device, 0, R200_LEFT_RIGHT_XU);
 
         enum { LR_FULL, LR_BIG, LR_QRES, Z_FULL, Z_BIG, Z_QRES, THIRD_HD, THIRD_VGA, THIRD_QRES, NUM_INTRINSICS };
-        const static struct { int w, h, uvc_w, uvc_h, lr_intrin, z_intrin; } lrz_modes[] = {
-            {640, 480,   640, 481,  LR_FULL, Z_FULL},
-            {492, 372,   640, 373,  LR_BIG,  Z_BIG },
-            {332, 252,   640, 254,  LR_QRES, Z_QRES}
-        };
 
         static_device_info info;
         info.name = {"Intel RealSense R200"};
@@ -109,37 +67,29 @@ namespace rsimpl
         info.stream_subdevices[RS_STREAM_INFRARED2] = 0;
 
         // Set up modes for left/right/z images
-        for(auto m : lrz_modes)
+        for(auto fps : {30, 60, 90})
         {
-            for(auto fps : {30, 60, 90})
+            // Subdevice 0 can provide left/right infrared via four pixel formats, in three resolutions, which can either be uncropped or cropped to match Z
+            for(auto pf : {&pf_y8, &pf_y8i, &pf_y16, &pf_y12i})
             {
-                info.subdevice_modes.push_back({1, m.uvc_w-12, m.uvc_h-12, &pf_z16, fps, {{RS_STREAM_DEPTH, m.w, m.h, RS_FORMAT_Z16, fps, m.lr_intrin}}, &pad_unpack<unpack_subrect>, &decode_dinghy_frame_number<0x4030201>});
-                info.subdevice_modes.push_back({1, m.uvc_w-12, m.uvc_h-12, &pf_z16, fps, {{RS_STREAM_DEPTH, m.w-12, m.h-12, RS_FORMAT_Z16, fps, m.z_intrin}}, &unpack_subrect, &decode_dinghy_frame_number<0x4030201>});
-                info.subdevice_modes.push_back({1, m.uvc_w-12, m.uvc_h-12, &pf_z16, fps, {{RS_STREAM_DEPTH, m.w, m.h, RS_FORMAT_DISPARITY16, fps, m.lr_intrin}}, &pad_unpack<unpack_subrect>, &decode_dinghy_frame_number<0x4030201>});
-                info.subdevice_modes.push_back({1, m.uvc_w-12, m.uvc_h-12, &pf_z16, fps, {{RS_STREAM_DEPTH, m.w-12, m.h-12, RS_FORMAT_DISPARITY16, fps, m.z_intrin}}, &unpack_subrect, &decode_dinghy_frame_number<0x4030201>});
-                info.subdevice_modes.push_back({0, m.uvc_w, m.uvc_h, &pf_y8 , fps,  {{RS_STREAM_INFRARED,  m.w, m.h, RS_FORMAT_Y8,  fps, m.lr_intrin}}, &unpack_subrect, &decode_dinghy_frame_number<0x08070605>});
-                info.subdevice_modes.push_back({0, m.uvc_w, m.uvc_h, &pf_y8 , fps,  {{RS_STREAM_INFRARED,  m.w-12, m.h-12, RS_FORMAT_Y8,  fps, m.z_intrin}}, &crop_unpack<unpack_subrect>, &decode_dinghy_frame_number<0x08070605>});
-                info.subdevice_modes.push_back({0, m.uvc_w, m.uvc_h, &pf_y8i, fps,  {{RS_STREAM_INFRARED,  m.w, m.h, RS_FORMAT_Y8,  fps, m.lr_intrin},
-                                                                                     {RS_STREAM_INFRARED2, m.w, m.h, RS_FORMAT_Y8,  fps, m.lr_intrin}}, &unpack_y8_y8_from_y8i, &decode_dinghy_frame_number<0x08070605>});
-                info.subdevice_modes.push_back({0, m.uvc_w, m.uvc_h, &pf_y8i, fps,  {{RS_STREAM_INFRARED,  m.w-12, m.h-12, RS_FORMAT_Y8,  fps, m.z_intrin},
-                                                                                     {RS_STREAM_INFRARED2, m.w-12, m.h-12, RS_FORMAT_Y8,  fps, m.z_intrin}}, &crop_unpack<unpack_y8_y8_from_y8i>, &decode_dinghy_frame_number<0x08070605>});
-                                                                     
-                info.subdevice_modes.push_back({0, m.uvc_w, m.uvc_h, &pf_y16, fps,  {{RS_STREAM_INFRARED,  m.w, m.h, RS_FORMAT_Y16, fps, m.lr_intrin}}, &unpack_y16_from_y16_10, &decode_dinghy_frame_number<0x08070605>});
-                info.subdevice_modes.push_back({0, m.uvc_w, m.uvc_h, &pf_y16, fps,  {{RS_STREAM_INFRARED,  m.w-12, m.h-12, RS_FORMAT_Y16, fps, m.z_intrin}}, &crop_unpack<unpack_y16_from_y16_10>, &decode_dinghy_frame_number<0x08070605>});
-                info.subdevice_modes.push_back({0, m.uvc_w, m.uvc_h, &pf_y12i, fps, {{RS_STREAM_INFRARED,  m.w, m.h, RS_FORMAT_Y16, fps, m.lr_intrin},
-                                                                                     {RS_STREAM_INFRARED2, m.w, m.h, RS_FORMAT_Y16, fps, m.lr_intrin}}, &unpack_y16_y16_from_y12i_10, &decode_dinghy_frame_number<0x08070605>});
-                info.subdevice_modes.push_back({0, m.uvc_w, m.uvc_h, &pf_y12i, fps, {{RS_STREAM_INFRARED,  m.w-12, m.h-12, RS_FORMAT_Y16, fps, m.z_intrin},
-                                                                                     {RS_STREAM_INFRARED2, m.w-12, m.h-12, RS_FORMAT_Y16, fps, m.z_intrin}}, &crop_unpack<unpack_y16_y16_from_y12i_10>, &decode_dinghy_frame_number<0x08070605>});
+                info.subdevice_modes.push_back({0, {640, 481}, pf, fps, {640, 480}, LR_FULL, {0, -6}, &decode_dinghy_frame_number<0x08070605>});  
+                info.subdevice_modes.push_back({0, {640, 373}, pf, fps, {492, 372}, LR_BIG , {0, -6}, &decode_dinghy_frame_number<0x08070605>});  
+                info.subdevice_modes.push_back({0, {640, 254}, pf, fps, {332, 252}, LR_QRES, {0, -6}, &decode_dinghy_frame_number<0x08070605>});  
             }
+
+            // Subdevice 1 can provide depth, in three resolutions, which can either be unpadded or padded to match left/right
+            info.subdevice_modes.push_back({1, {628, 469}, &pf_z16,  fps, {628, 468}, Z_FULL, {0, +6}, &decode_dinghy_frame_number<0x4030201>});
+            info.subdevice_modes.push_back({1, {628, 361}, &pf_z16,  fps, {480, 360}, Z_BIG , {0, +6}, &decode_dinghy_frame_number<0x4030201>});
+            info.subdevice_modes.push_back({1, {628, 242}, &pf_z16,  fps, {320, 240}, Z_QRES, {0, +6}, &decode_dinghy_frame_number<0x4030201>});
         }
 
-        // Set up modes for third images
-		info.subdevice_modes.push_back({2,  320,  240, &pf_yuy2, 60, {{RS_STREAM_COLOR,  320,  240, RS_FORMAT_YUYV, 60, THIRD_QRES}}, &unpack_subrect, &decode_yuy2_frame_number, true});
-        info.subdevice_modes.push_back({2,  320,  240, &pf_yuy2, 30, {{RS_STREAM_COLOR,  320,  240, RS_FORMAT_YUYV, 30, THIRD_QRES}}, &unpack_subrect, &decode_yuy2_frame_number, true});
-        info.subdevice_modes.push_back({2,  640,  480, &pf_yuy2, 60, {{RS_STREAM_COLOR,  640,  480, RS_FORMAT_YUYV, 60, THIRD_VGA}}, &unpack_subrect, &decode_yuy2_frame_number, true});
-        info.subdevice_modes.push_back({2,  640,  480, &pf_yuy2, 30, {{RS_STREAM_COLOR,  640,  480, RS_FORMAT_YUYV, 30, THIRD_VGA}}, &unpack_subrect, &decode_yuy2_frame_number, true});
-        info.subdevice_modes.push_back({2, 1920, 1080, &pf_yuy2, 30, {{RS_STREAM_COLOR, 1920, 1080, RS_FORMAT_YUYV, 30, THIRD_HD}}, &unpack_subrect, &decode_yuy2_frame_number, true});
-        info.subdevice_modes.push_back(subdevice_mode{2, 2400, 1081, &pf_rw10, 30, {{RS_STREAM_COLOR, 1920, 1080, RS_FORMAT_RAW10, 30, THIRD_HD}}, &unpack_subrect, &decode_dinghy_frame_number<0x8A8B8C8D>, true});
+        // Subdevice 2 can provide color, in several formats and framerates
+        info.subdevice_modes.push_back({2, { 320,  240}, &pf_yuy2, 60, { 320,  240}, THIRD_QRES, {0}, &decode_yuy2_frame_number, true});
+        info.subdevice_modes.push_back({2, { 320,  240}, &pf_yuy2, 30, { 320,  240}, THIRD_QRES, {0}, &decode_yuy2_frame_number, true});
+        info.subdevice_modes.push_back({2, { 640,  480}, &pf_yuy2, 60, { 640,  480}, THIRD_VGA , {0}, &decode_yuy2_frame_number, true});
+        info.subdevice_modes.push_back({2, { 640,  480}, &pf_yuy2, 30, { 640,  480}, THIRD_VGA , {0}, &decode_yuy2_frame_number, true});
+        info.subdevice_modes.push_back({2, {1920, 1080}, &pf_yuy2, 30, {1920, 1080}, THIRD_HD  , {0}, &decode_yuy2_frame_number, true});
+        info.subdevice_modes.push_back({2, {2400, 1081}, &pf_rw10, 30, {1920, 1080}, THIRD_HD  , {0}, &decode_dinghy_frame_number<0x8A8B8C8D>, true});
 		// todo - add 15 fps modes
 
         // Set up interstream rules for left/right/z images
@@ -175,19 +125,16 @@ namespace rsimpl
         if (c.metadata.versionNumber != 2)
             throw std::runtime_error("only supported calibration struct is version 2. got (" + std::to_string(c.metadata.versionNumber) + ").");
 
-        std::vector<rs_intrinsics> intrinsics(NUM_INTRINSICS), rect_intrinsics(NUM_INTRINSICS);
-        rect_intrinsics[LR_FULL] = intrinsics[LR_FULL] = MakeLeftRightIntrinsics(c.modesLR[0][0]);
-        rect_intrinsics[LR_BIG ] = intrinsics[LR_BIG ] = MakeLeftRightIntrinsics(c.modesLR[0][1]);
-        rect_intrinsics[LR_QRES] = intrinsics[LR_QRES] = MakeLeftRightIntrinsics(c.modesLR[0][2]);
-        rect_intrinsics[Z_FULL ] = intrinsics[Z_FULL ] = MakeDepthIntrinsics(c.modesLR[0][0]);
-        rect_intrinsics[Z_BIG  ] = intrinsics[Z_BIG  ] = MakeDepthIntrinsics(c.modesLR[0][1]);
-        rect_intrinsics[Z_QRES ] = intrinsics[Z_QRES ] = MakeDepthIntrinsics(c.modesLR[0][2]);
-        intrinsics[THIRD_HD  ] = MakeColorIntrinsics(c.intrinsicsThird[0],1);
-        intrinsics[THIRD_VGA ] = MakeColorIntrinsics(c.intrinsicsThird[1],1);
-        intrinsics[THIRD_QRES] = MakeColorIntrinsics(c.intrinsicsThird[1],2);
-        rect_intrinsics[THIRD_HD  ] = MakeColorIntrinsics(c.modesThird[0][0][0],1);
-        rect_intrinsics[THIRD_VGA ] = MakeColorIntrinsics(c.modesThird[0][1][0],1);
-        rect_intrinsics[THIRD_QRES] = MakeColorIntrinsics(c.modesThird[0][1][0],2);
+        std::vector<intrinsics_channel> intrinsics(NUM_INTRINSICS);
+        intrinsics[LR_FULL] = intrinsics_channel(c.modesLR[0][0]);
+        intrinsics[LR_BIG ] = intrinsics_channel(c.modesLR[0][1]);
+        intrinsics[LR_QRES] = intrinsics_channel(c.modesLR[0][2]);
+        intrinsics[Z_FULL ] = intrinsics_channel(pad_crop_intrinsics(c.modesLR[0][0], -6));
+        intrinsics[Z_BIG  ] = intrinsics_channel(pad_crop_intrinsics(c.modesLR[0][1], -6));
+        intrinsics[Z_QRES ] = intrinsics_channel(pad_crop_intrinsics(c.modesLR[0][2], -6));
+        intrinsics[THIRD_HD  ] = intrinsics_channel(c.intrinsicsThird[0], c.modesThird[0][0][0]);
+        intrinsics[THIRD_VGA ] = intrinsics_channel(c.intrinsicsThird[1], c.modesThird[0][1][0]);
+        intrinsics[THIRD_QRES] = intrinsics_channel(scale_intrinsics(c.intrinsicsThird[1], 320, 240), scale_intrinsics(c.modesThird[0][1][0], 320, 240));
 
         // We select the depth/left infrared camera's viewpoint to be the origin
         info.stream_poses[RS_STREAM_DEPTH] = {{{1,0,0},{0,1,0},{0,0,1}}, {0,0,0}};
@@ -211,7 +158,7 @@ namespace rsimpl
 		// On LibUVC backends, the R200 should use four transfer buffers
         info.num_libuvc_transfer_buffers = 4;
 
-        return std::make_shared<r200_camera>(device, info, intrinsics, rect_intrinsics);
+        return std::make_shared<r200_camera>(device, info, intrinsics);
     }
 
     bool r200_camera::is_disparity_mode_enabled() const
@@ -234,12 +181,12 @@ namespace rsimpl
         config.depth_scale = depth.get_intrinsics().fx * baseline * multiplier;
     }
 
-    void r200_camera::on_before_start(const std::vector<subdevice_mode> & selected_modes)
+    void r200_camera::on_before_start(const std::vector<subdevice_mode_selection> & selected_modes)
     {
         uint8_t streamIntent = 0;
         for(const auto & m : selected_modes)
         {
-            switch(m.subdevice)
+            switch(m.mode->subdevice)
             {
             case 0: streamIntent |= r200::STATUS_BIT_LR_STREAMING; break;
             case 2: streamIntent |= r200::STATUS_BIT_WEB_STREAMING; break;
@@ -247,7 +194,7 @@ namespace rsimpl
                 streamIntent |= r200::STATUS_BIT_Z_STREAMING; 
                 r200::disparity_mode dm;        
                 r200::get_disparity_mode(get_device(), dm);
-                switch(m.streams[0].format)
+                switch(m.get_format(RS_STREAM_DEPTH))
                 {
                 default: throw std::logic_error("unsupported R200 depth format");
                 case RS_FORMAT_Z16: 

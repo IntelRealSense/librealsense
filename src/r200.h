@@ -21,10 +21,10 @@ namespace rsimpl
         void on_update_disparity_multiplier(float multiplier);
         int get_lr_framerate() const;
     public:
-        r200_camera(std::shared_ptr<uvc::device> device, const static_device_info & info, std::vector<rs_intrinsics> intrinsics, std::vector<rs_intrinsics> rect_intrinsics);
+        r200_camera(std::shared_ptr<uvc::device> device, const static_device_info & info, std::vector<intrinsics_channel> intrinsics);
         ~r200_camera();
 
-        void on_before_start(const std::vector<subdevice_mode> & selected_modes) override final;
+        void on_before_start(const std::vector<subdevice_mode_selection> & selected_modes) override final;
         void get_xu_range(rs_option option, int * min, int * max) const override final;
         void set_xu_option(rs_option option, int value) override final;
         int get_xu_option(rs_option option) const override final;

@@ -119,6 +119,52 @@ namespace rsimpl
         #undef CASE
     }
 
+    size_t subdevice_mode_selection::get_image_size(rs_stream stream) const
+    {
+        return rsimpl::get_image_size(get_width(), get_height(), get_format(stream));
+    }
+
+    void subdevice_mode_selection::unpack(byte * const dest[], const byte * source) const
+    {
+        const int MAX_OUTPUTS = 2;
+        const auto & outputs = get_outputs();        
+        assert(outputs.size() <= MAX_OUTPUTS);
+
+        // Determine input stride (and apply cropping)
+        const byte * in = source;
+        size_t in_stride = mode->pf->get_image_size(mode->native_dims.x, 1);
+        if(pad_crop < 0) in += in_stride * -pad_crop + mode->pf->get_image_size(-pad_crop, 1);
+
+        // Determine output stride (and apply padding)
+        byte * out[MAX_OUTPUTS];
+        size_t out_stride[MAX_OUTPUTS];
+        for(size_t i=0; i<outputs.size(); ++i)
+        {
+            out[i] = dest[i];
+            out_stride[i] = rsimpl::get_image_size(get_width(), 1, outputs[i].second);
+            if(pad_crop > 0) out[i] += out_stride[i] * pad_crop + rsimpl::get_image_size(pad_crop, 1, outputs[i].second);
+        }
+
+        // Unpack (potentially a subrect of) the source image into (potentially a subrect of) the destination buffers
+        const int unpack_width = std::min(mode->content_size.x, get_width()), unpack_height = std::min(mode->content_size.y, get_height());
+        if(mode->native_dims.x == get_width())
+        {
+            // If not strided, unpack as though it were a single long row
+            unpacker->unpack(out, in, unpack_width * unpack_height);
+        }
+        else
+        {
+            // Otherwise unpack one row at a time
+            assert(mode->pf->plane_count == 1); // Can't unpack planar formats row-by-row (at least not with the current architecture, would need to pass multiple source ptrs to unpack)
+            for(int i=0; i<unpack_height; ++i)
+            {
+                unpacker->unpack(out, in, unpack_width);
+                for(size_t i=0; i<outputs.size(); ++i) out[i] += out_stride[i];
+                in += in_stride;
+            }
+        }
+    }
+
     ////////////////////////
     // static_device_info //
     ////////////////////////
@@ -134,7 +180,7 @@ namespace rsimpl
         }
     }
 
-    const subdevice_mode * static_device_info::select_mode(const stream_request (& requests)[RS_STREAM_NATIVE_COUNT], int subdevice_index) const
+    subdevice_mode_selection static_device_info::select_mode(const stream_request (& requests)[RS_STREAM_NATIVE_COUNT], int subdevice_index) const
     {
         // Determine if the user has requested any streams which are supplied by this subdevice
         bool any_stream_requested = false;
@@ -149,7 +195,7 @@ namespace rsimpl
         }
 
         // If no streams were requested, skip to the next subdevice
-        if(!any_stream_requested) return nullptr;
+        if(!any_stream_requested) return subdevice_mode_selection(nullptr,0,nullptr);
 
         // Look for an appropriate mode
         for(auto & subdevice_mode : subdevice_modes)
@@ -157,23 +203,31 @@ namespace rsimpl
             // Skip modes that apply to other subdevices
             if(subdevice_mode.subdevice != subdevice_index) continue;
 
-            // Determine if this mode satisfies the requirements on our requested streams
-            auto stream_unsatisfied = stream_requested;
-            for(auto & stream_mode : subdevice_mode.streams)
+            for(auto pad_crop : subdevice_mode.pad_crop_options)
             {
-                const auto & req = requests[stream_mode.stream];
-                if(req.enabled && (req.width == 0 || req.width == stream_mode.width) 
-                               && (req.height == 0 || req.height == stream_mode.height)
-                               && (req.format == RS_FORMAT_ANY || req.format == stream_mode.format)
-                               && (req.fps == 0 || req.fps == stream_mode.fps))
+                for(auto & unpacker : subdevice_mode.pf->unpackers)
                 {
-                    stream_unsatisfied[stream_mode.stream] = false;
+                    auto selection = subdevice_mode_selection(&subdevice_mode, pad_crop, &unpacker);
+
+                    // Determine if this mode satisfies the requirements on our requested streams
+                    auto stream_unsatisfied = stream_requested;
+                    for(auto & output : unpacker.outputs)
+                    {
+                        const auto & req = requests[output.first];
+                        if(req.enabled && (req.width == 0 || req.width == selection.get_width())
+                                       && (req.height == 0 || req.height == selection.get_height())
+                                       && (req.format == RS_FORMAT_ANY || req.format == selection.get_format(output.first))
+                                       && (req.fps == 0 || req.fps == subdevice_mode.fps))
+                        {
+                            stream_unsatisfied[output.first] = false;
+                        }
+                    }
+
+                    // If any requested streams are still unsatisfied, skip to the next mode
+                    if(std::any_of(begin(stream_unsatisfied), end(stream_unsatisfied), [](bool b) { return b; })) continue;
+                    return selection;
                 }
             }
-
-            // If any requested streams are still unsatisfied, skip to the next mode
-            if(std::any_of(begin(stream_unsatisfied), end(stream_unsatisfied), [](bool b) { return b; })) continue;
-            return &subdevice_mode;
         }
 
         // If we did not find an appropriate mode, report an error
@@ -191,7 +245,7 @@ namespace rsimpl
         throw std::runtime_error(ss.str());
     }
 
-    std::vector<subdevice_mode> static_device_info::select_modes(const stream_request (&reqs)[RS_STREAM_NATIVE_COUNT]) const
+    std::vector<subdevice_mode_selection> static_device_info::select_modes(const stream_request (&reqs)[RS_STREAM_NATIVE_COUNT]) const
     {
         // Make a mutable copy of our array
         stream_request requests[RS_STREAM_NATIVE_COUNT];
@@ -218,8 +272,12 @@ namespace rsimpl
         // Select subdevice modes needed to satisfy our requests
         int num_subdevices = 0;
         for(auto & mode : subdevice_modes) num_subdevices = std::max(num_subdevices, mode.subdevice+1);
-        std::vector<subdevice_mode> selected_modes;
-        for(int i = 0; i < num_subdevices; ++i) if(auto * m = select_mode(requests, i)) selected_modes.push_back(*m);
+        std::vector<subdevice_mode_selection> selected_modes;
+        for(int i = 0; i < num_subdevices; ++i)
+        {
+            auto selection = select_mode(requests, i);
+            if(selection.mode) selected_modes.push_back(selection);
+        }
         return selected_modes;
     }
 
@@ -227,7 +285,8 @@ namespace rsimpl
     // stream_buffer //
     ///////////////////
 
-    stream_buffer::stream_buffer(const stream_mode & mode) : mode(mode), frames({std::vector<byte>(get_image_size(mode.width, mode.height, mode.format))}), last_frame_number() {}
+    stream_buffer::stream_buffer(subdevice_mode_selection selection, rs_stream stream)
+        : selection(selection), frames({std::vector<byte>(selection.get_image_size(stream))}), last_frame_number() {}
 
     void stream_buffer::swap_back(int frame_number) 
     {

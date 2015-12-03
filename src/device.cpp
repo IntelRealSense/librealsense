@@ -18,23 +18,8 @@ using namespace rsimpl;
 
 static_device_info rsimpl::add_standard_unpackers(const static_device_info & device_info)
 {
-    static_device_info info = device_info;
-    for(auto & mode : device_info.subdevice_modes)
-    {
-        // Unstrided YUYV modes can be unpacked into several useful formats
-        if(mode.pf->fourcc == 'YUY2' && mode.unpacker == &unpack_subrect && mode.width == mode.streams[0].width && mode.height == mode.streams[0].height)
-        {
-            for(auto fmt : {RS_FORMAT_Y8, RS_FORMAT_Y16, RS_FORMAT_RGB8, RS_FORMAT_RGBA8, RS_FORMAT_BGR8, RS_FORMAT_BGRA8})
-            {
-                auto m = mode;
-                m.streams[0].format = fmt;
-                m.unpacker = &unpack_from_yuy2;
-                info.subdevice_modes.push_back(m);
-            }
-        }
-    }
-
     // Flag all standard options as supported
+    static_device_info info = device_info;
     for(int i=0; i<RS_OPTION_COUNT; ++i)
     {
         if(uvc::is_pu_control((rs_option)i))
@@ -42,11 +27,10 @@ static_device_info rsimpl::add_standard_unpackers(const static_device_info & dev
             info.option_supported[i] = true;
         }
     }
-
     return info;
 }
 
-rs_device::rs_device(std::shared_ptr<rsimpl::uvc::device> device, const rsimpl::static_device_info & info) : device(device), config(add_standard_unpackers(info)), capturing(false),
+rs_device::rs_device(std::shared_ptr<rsimpl::uvc::device> device, const rsimpl::static_device_info & info, std::vector<intrinsics_channel> intrinsics) : device(device), config(add_standard_unpackers(info), intrinsics), capturing(false),
     depth(config, RS_STREAM_DEPTH), color(config, RS_STREAM_COLOR), infrared(config, RS_STREAM_INFRARED), infrared2(config, RS_STREAM_INFRARED2),
     rect_color(color), color_to_depth(color, depth), depth_to_color(depth, color), depth_to_rect_color(depth, rect_color)
 {
@@ -102,30 +86,31 @@ void rs_device::start()
 
     // Satisfy stream_requests as necessary for each subdevice, calling set_mode and
     // dispatching the uvc configuration for a requested stream to the hardware
-    for(auto mode : selected_modes)
+    for(auto mode_selection : selected_modes)
     {
         // Create a stream buffer for each stream served by this subdevice mode
         std::vector<std::shared_ptr<stream_buffer>> stream_list;
-        for(auto & stream_mode : mode.streams)
+        for(auto & stream_mode : mode_selection.get_outputs())
         {
             // Create a buffer to receive the images from this stream
-            auto stream = std::make_shared<stream_buffer>(stream_mode);
+            auto stream = std::make_shared<stream_buffer>(mode_selection, stream_mode.first);
             stream_list.push_back(stream);
                     
             // If this is one of the streams requested by the user, store the buffer so they can access it
-            if(config.requests[stream_mode.stream].enabled) native_streams[stream_mode.stream]->buffer = stream;
+            if(config.requests[stream_mode.first].enabled) native_streams[stream_mode.first]->buffer = stream;
         }
                 
         // Initialize the subdevice and set it to the selected mode
         int serial_frame_no = 0;
         bool only_stream = selected_modes.size() == 1;
-        set_subdevice_mode(*device, mode.subdevice, mode.width, mode.height, mode.pf->fourcc, mode.fps, [mode, stream_list, only_stream, serial_frame_no](const void * frame) mutable
+        set_subdevice_mode(*device, mode_selection.mode->subdevice, mode_selection.mode->native_dims.x, mode_selection.mode->native_dims.y, mode_selection.mode->pf->fourcc, mode_selection.mode->fps, 
+            [mode_selection, stream_list, only_stream, serial_frame_no](const void * frame) mutable
         {
             // Unpack the image into the user stream interface back buffer
             std::vector<byte *> dest;
             for(auto & stream : stream_list) dest.push_back(stream->get_back_data());
-            mode.unpacker(dest.data(), reinterpret_cast<const byte *>(frame), mode);
-            int frame_number = (mode.use_serial_numbers_if_unique && only_stream) ? serial_frame_no++ : mode.frame_number_decoder(mode, frame);
+            mode_selection.unpack(dest.data(), reinterpret_cast<const byte *>(frame));
+            int frame_number = (mode_selection.mode->use_serial_numbers_if_unique && only_stream) ? serial_frame_no++ : mode_selection.mode->frame_number_decoder(*mode_selection.mode, frame);
             if(frame_number == 0) frame_number = ++serial_frame_no; // No dinghy on LibUVC backend?
                 
             // Swap the backbuffer to the middle buffer and indicate that we have updated

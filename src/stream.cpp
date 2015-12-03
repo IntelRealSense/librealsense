@@ -28,42 +28,59 @@ native_stream::native_stream(device_config & config, rs_stream stream) : config(
 {
     for(auto & subdevice_mode : config.info.subdevice_modes)
     {
-        for(auto & stream_mode : subdevice_mode.streams)
+        for(auto pad_crop : subdevice_mode.pad_crop_options)
         {
-            if(stream_mode.stream == stream)
+            for(auto & unpacker : subdevice_mode.pf->unpackers)
             {
-                modes.push_back(stream_mode);
+                auto selection = subdevice_mode_selection(&subdevice_mode, pad_crop, &unpacker);
+                if(selection.provides_stream(stream)) modes.push_back(selection);
             }
         }
     }
 
-    std::sort(begin(modes), end(modes), [](const stream_mode & a, const stream_mode & b)
-    {
-        return std::make_tuple(-a.width, -a.height, -a.fps, a.format) < std::make_tuple(-b.width, -b.height, -b.fps, b.format);
-    });
+    auto get_tuple = [stream](const subdevice_mode_selection & selection)
+    {     
+        return std::make_tuple(-selection.get_width(), -selection.get_height(), -selection.get_framerate(stream), selection.get_format(stream));
+    };
 
-    auto it = std::unique(begin(modes), end(modes), [](const stream_mode & a, const stream_mode & b)
-    {
-        return std::make_tuple(a.width, a.height, a.fps, a.format) == std::make_tuple(b.width, b.height, b.fps, b.format);
-    });
+    std::sort(begin(modes), end(modes), [get_tuple](const subdevice_mode_selection & a, const subdevice_mode_selection & b) { return get_tuple(a) < get_tuple(b); });
+    auto it = std::unique(begin(modes), end(modes), [get_tuple](const subdevice_mode_selection & a, const subdevice_mode_selection & b) { return get_tuple(a) == get_tuple(b); });
     if(it != end(modes)) modes.erase(it, end(modes));
 }
 
-stream_mode native_stream::get_mode() const
+void native_stream::get_mode(int mode, int * w, int * h, rs_format * f, int * fps) const
+{
+    auto & selection = modes[mode];
+    if(w) *w = selection.get_width();
+    if(h) *h = selection.get_height();
+    if(f) *f = selection.get_format(stream);
+    if(fps) *fps = selection.get_framerate(stream);
+}
+
+subdevice_mode_selection native_stream::get_mode() const
 {
     if(buffer) return buffer->get_mode();
     if(config.requests[stream].enabled)
     {
         for(auto subdevice_mode : config.select_modes())
         {
-            for(auto stream_mode : subdevice_mode.streams)
-            {
-                if(stream_mode.stream == stream) return stream_mode;
-            }
+            if(subdevice_mode.provides_stream(stream)) return subdevice_mode;
         }   
         throw std::logic_error("no mode found"); // Should never happen, select_modes should throw if no mode can be found
     }
     throw std::runtime_error(to_string() << "stream not enabled: " << stream);
+}
+
+rs_intrinsics native_stream::get_intrinsics() const 
+{
+    const auto m = get_mode();
+    return pad_crop_intrinsics(config.intrinsics.get(m.mode->intrinsics_index).native, m.pad_crop);
+}
+
+rs_intrinsics native_stream::get_rectified_intrinsics() const
+{
+    const auto m = get_mode();
+    return pad_crop_intrinsics(config.intrinsics.get(m.mode->intrinsics_index).rectified, m.pad_crop);
 }
 
 const rsimpl::byte * rectified_stream::get_frame_data() const

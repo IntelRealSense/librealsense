@@ -36,7 +36,7 @@ protected:
     const rsimpl::uvc::device &                 get_device() const { return *device; }
     rsimpl::uvc::device &                       get_device() { return *device; }
 public:
-                                                rs_device(std::shared_ptr<rsimpl::uvc::device> device, const rsimpl::static_device_info & info);
+                                                rs_device(std::shared_ptr<rsimpl::uvc::device> device, const rsimpl::static_device_info & info, std::vector<rsimpl::intrinsics_channel> intrinsics);
                                                 ~rs_device();
 
     const rsimpl::stream_interface &            get_stream_interface(rs_stream stream) const { return *streams[stream]; }
@@ -63,7 +63,7 @@ public:
     void                                        set_option(rs_option option, int value);
     int                                         get_option(rs_option option) const;
 
-    virtual void                                on_before_start(const std::vector<rsimpl::subdevice_mode> & selected_modes) {}
+    virtual void                                on_before_start(const std::vector<rsimpl::subdevice_mode_selection> & selected_modes) {}
     virtual void                                get_xu_range(rs_option option, int * min, int * max) const = 0;
     virtual void                                set_xu_option(rs_option option, int value) = 0;
     virtual int                                 get_xu_option(rs_option option) const = 0;

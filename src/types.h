@@ -40,6 +40,25 @@ namespace rsimpl
 {
     enum class byte : uint8_t {};
 
+    struct pixel_format_unpacker
+    {
+        void (* unpack)(byte * const dest[], const byte * source, int count);
+        std::vector<std::pair<rs_stream, rs_format>> outputs;
+
+        bool provides_stream(rs_stream stream) const { for(auto & o : outputs) if(o.first == stream) return true; return false; }
+        rs_format get_format(rs_stream stream) const { for(auto & o : outputs) if(o.first == stream) return o.second; throw std::logic_error("missing output"); }
+    };
+
+    struct native_pixel_format
+    {
+        uint32_t fourcc;
+        int plane_count;
+        size_t bytes_per_pixel;
+        std::vector<pixel_format_unpacker> unpackers;
+
+        size_t get_image_size(int width, int height) const { return width * height * plane_count * bytes_per_pixel; }
+    };
+
     // Enumerated type support
     #define RS_ENUM_HELPERS(TYPE, PREFIX) const char * get_string(TYPE value); \
         inline bool is_valid(TYPE value) { return value >= 0 && value < RS_##PREFIX##_COUNT; } \
@@ -51,7 +70,19 @@ namespace rsimpl
     RS_ENUM_HELPERS(rs_option, OPTION)
     #undef RS_ENUM_HELPERS
 
+    inline rs_intrinsics pad_crop_intrinsics(const rs_intrinsics & i, int pad_crop)
+    {
+        return {i.width+pad_crop*2, i.height+pad_crop*2, i.ppx+pad_crop, i.ppy+pad_crop, i.fx, i.fy, i.model, {i.coeffs[0], i.coeffs[1], i.coeffs[2], i.coeffs[3], i.coeffs[4]}};
+    }
+
+    inline rs_intrinsics scale_intrinsics(const rs_intrinsics & i, int width, int height)
+    {
+        const float sx = (float)width/i.width, sy = (float)height/i.height;
+        return {width, height, i.ppx*sx, i.ppy*sy, i.fx*sx, i.fy*sy, i.model, {i.coeffs[0], i.coeffs[1], i.coeffs[2], i.coeffs[3], i.coeffs[4]}};
+    }
+
     // World's tiniest linear algebra library
+    struct int2 { int x,y; };
     struct float3 { float x,y,z; float & operator [] (int i) { return (&x)[i]; } };
     struct float3x3 { float3 x,y,z; float & operator () (int i, int j) { return (&x)[j][i]; } }; // column-major
     struct pose { float3x3 orientation; float3 position; };
@@ -81,45 +112,37 @@ namespace rsimpl
         int width, height;
         rs_format format;
         int fps;
-    };
-
-    struct stream_mode
-    {
-        rs_stream stream;           // RS_DEPTH, RS_COLOR, RS_INFRARED, RS_INFRARED_2, etc.
-        int width, height;          // Resolution visible to the client library
-        rs_format format;           // Pixel format visible to the client library
-        int fps;                    // Framerate visible to the client library
-        int intrinsics_index;       // Index of image intrinsics
-    };
-
-    struct native_pixel_format
-    {
-        uint32_t fourcc;
-        int plane_count;
-        int macropixel_width;
-        size_t macropixel_size;
-        size_t get_image_size(int width, int height) const
-        {
-            assert(width % macropixel_width == 0);
-            return (width / macropixel_width) * height * macropixel_size * plane_count;
-        }
-        size_t get_crop_offset(int width, int crop) const
-        {
-            assert(plane_count == 1);
-            return get_image_size(width, crop) + get_image_size(crop, 1);
-        }
-    };
-
+    };    
+    
     struct subdevice_mode
     {
-        int subdevice;                      // 0, 1, 2, etc...
-        int width, height;                  // Resolution advertised over UVC
-        const native_pixel_format * pf;     // Pixel format advertised over UVC
-        int fps;                            // Framerate advertised over UVC
-        std::vector<stream_mode> streams;   // Modes for streams which can be supported by this device mode
-        void (* unpacker)(byte * const dest[], const byte * source, const subdevice_mode & mode);
+        int subdevice;                          // 0, 1, 2, etc...
+        int2 native_dims;                       // Resolution advertised over UVC
+        const native_pixel_format * pf;         // Pixel format advertised over UVC
+        int fps;                                // Framerate advertised over UVC
+        int2 content_size;                      // Size of image content, may be different from UVC frame size
+        int intrinsics_index;                   // Index of intrinsics structure corresponding to this content
+        std::vector<int> pad_crop_options;      // Acceptable padding/cropping values
         int (* frame_number_decoder)(const subdevice_mode & mode, const void * frame);
         bool use_serial_numbers_if_unique;  // If true, ignore frame_number_decoder and use a serial frame count if this is the only mode set
+    };
+
+    struct subdevice_mode_selection
+    {
+        const subdevice_mode * mode;            // The streaming mode in which to place the hardware
+        int pad_crop;                           // The number of pixels of padding (positive values) or cropping (negative values) to apply to all four edges of the image
+        const pixel_format_unpacker * unpacker; // The specific unpacker used to unpack the encoded format into the desired output formats
+
+        subdevice_mode_selection(const subdevice_mode * mode, int pad_crop, const pixel_format_unpacker * unpacker) : mode(mode), pad_crop(pad_crop), unpacker(unpacker) {}
+
+        const std::vector<std::pair<rs_stream, rs_format>> & get_outputs() const { return unpacker->outputs; }
+        int get_width() const { return mode->content_size.x + pad_crop * 2; }
+        int get_height() const { return mode->content_size.y + pad_crop * 2; }
+        size_t get_image_size(rs_stream stream) const;
+        bool provides_stream(rs_stream stream) const { return unpacker->provides_stream(stream); }
+        rs_format get_format(rs_stream stream) const { return unpacker->get_format(stream); }
+        int get_framerate(rs_stream stream) const { return mode->fps; }
+        void unpack(byte * const dest[], const byte * source) const;
     };
 
     struct interstream_rule // Requires a.*field + delta == b.*field OR a.*field + delta2 == b.*field
@@ -145,8 +168,8 @@ namespace rsimpl
 
         static_device_info();
 
-        const subdevice_mode * select_mode(const stream_request (&requests)[RS_STREAM_NATIVE_COUNT], int subdevice_index) const;
-        std::vector<subdevice_mode> select_modes(const stream_request (&requests)[RS_STREAM_NATIVE_COUNT]) const;
+        subdevice_mode_selection select_mode(const stream_request (&requests)[RS_STREAM_NATIVE_COUNT], int subdevice_index) const;
+        std::vector<subdevice_mode_selection> select_modes(const stream_request (&requests)[RS_STREAM_NATIVE_COUNT]) const;
     };
     static_device_info add_standard_unpackers(const static_device_info & device_info);
 
@@ -181,63 +204,30 @@ namespace rsimpl
         }
     };
 
-    // Buffer for storing images provided by a given stream
-    class stream_buffer
+    struct intrinsics_channel
     {
-        struct frame
-        {
-            std::vector<byte>       data;
-            int                     timestamp;  // DS4 frame number or IVCAM rolling timestamp, used to compute LibRealsense frame timestamp
-            int                     delta;      // Difference between the last two timestamp values, used to estimate next frame arrival time
-        };
-
-        const stream_mode           mode;
-        triple_buffer<frame>        frames;
-        int                         last_frame_number;
-    public:
-                                    stream_buffer(const stream_mode & mode);
-
-        const stream_mode &         get_mode() const { return mode; }
-
-        const byte *                get_front_data() const { return frames.get_front().data.data(); }
-        int                         get_front_number() const { return frames.get_front().timestamp; }
-        int                         get_front_delta() const { return frames.get_front().delta; }
-        bool                        is_front_valid() const { return frames.has_front(); }
-
-        byte *                      get_back_data() { return frames.get_back().data.data(); }
-        void                        swap_back(int frame_number);
-        bool                        swap_front() { return frames.swap_front(); }
+        rs_intrinsics native;       // Actual intrinsics of image sent over UVC by the device hardware
+        rs_intrinsics rectified;    // Desired intrinsics of image after being rectified in software by librealsense
+        intrinsics_channel() : native{}, rectified{} {}
+        intrinsics_channel(const rs_intrinsics & native) : native(native), rectified(native) {}
+        intrinsics_channel(const rs_intrinsics & native, const rs_intrinsics & rectified) : native(native), rectified(rectified) {}
     };
 
     class intrinsics_buffer
     {
-        struct state { std::vector<rs_intrinsics> intrin, rect_intrin; };
-        mutable triple_buffer<state> buffer;
+        mutable triple_buffer<std::vector<intrinsics_channel>> buffer;
     public:
         intrinsics_buffer() : buffer({}) {}
 
-        rs_intrinsics get(int index) const
+        intrinsics_channel get(int index) const
         {
             buffer.swap_front(); // We are logically const even though we check for updates, visible state will never change unless someone calls set
-            return buffer.get_front().intrin[index];
+            return buffer.get_front()[index];
         }
 
-        rs_intrinsics get_rect(int index) const
+        void set(std::vector<intrinsics_channel> intrinsics)
         {
-            buffer.swap_front(); // We are logically const even though we check for updates, visible state will never change unless someone calls set
-            return buffer.get_front().rect_intrin[index];
-        }
-
-        void set(std::vector<rs_intrinsics> intrinsics)
-        {
-            buffer.get_back().intrin = buffer.get_back().rect_intrin = move(intrinsics);
-            buffer.swap_back();
-        }
-
-        void set(std::vector<rs_intrinsics> intrinsics, std::vector<rs_intrinsics> rect_intrinsics)
-        {
-            buffer.get_back().intrin = move(intrinsics);
-            buffer.get_back().rect_intrin = move(rect_intrinsics);
+            buffer.get_back() = move(intrinsics);
             buffer.swap_back();
         }
     };
@@ -249,9 +239,41 @@ namespace rsimpl
         stream_request                      requests[RS_STREAM_NATIVE_COUNT];  // Modified by enable/disable_stream calls
         float                               depth_scale;                       // Scale of depth values
 
-                                            device_config(const rsimpl::static_device_info & info) : info(info), depth_scale(info.nominal_depth_scale) { for(auto & req : requests) req = rsimpl::stream_request(); }
+                                            device_config(const rsimpl::static_device_info & info, std::vector<intrinsics_channel> intrin) : info(info), depth_scale(info.nominal_depth_scale) 
+                                            { 
+                                                for(auto & req : requests) req = rsimpl::stream_request(); 
+                                                intrinsics.set(intrin);
+                                            }
 
-        std::vector<subdevice_mode>         select_modes() const { return info.select_modes(requests); }
+        std::vector<subdevice_mode_selection> select_modes() const { return info.select_modes(requests); }
+    };
+
+    // Buffer for storing images provided by a given stream
+    class stream_buffer
+    {
+        struct frame
+        {
+            std::vector<byte>               data;
+            int                             timestamp;  // DS4 frame number or IVCAM rolling timestamp, used to compute LibRealsense frame timestamp
+            int                             delta;      // Difference between the last two timestamp values, used to estimate next frame arrival time
+        };
+
+        subdevice_mode_selection            selection;
+        triple_buffer<frame>                frames;
+        int                                 last_frame_number;
+    public:
+                                            stream_buffer(subdevice_mode_selection selection, rs_stream stream);
+
+        const subdevice_mode_selection &    get_mode() const { return selection; }
+
+        const byte *                        get_front_data() const { return frames.get_front().data.data(); }
+        int                                 get_front_number() const { return frames.get_front().timestamp; }
+        int                                 get_front_delta() const { return frames.get_front().delta; }
+        bool                                is_front_valid() const { return frames.has_front(); }
+
+        byte *                              get_back_data() { return frames.get_back().data.data(); }
+        void                                swap_back(int frame_number);
+        bool                                swap_front() { return frames.swap_front(); }
     };
 
     // Utilities
