@@ -47,7 +47,7 @@ TEST_CASE( "F200 metadata enumerates correctly", "[live] [f200]" )
         {
             for(int i=0; i<RS_OPTION_COUNT; ++i)
             {
-                if(i >= RS_OPTION_COLOR_BACKLIGHT_COMPENSATION && i <= RS_OPTION_COLOR_WHITE_BALANCE)
+                if(i >= RS_OPTION_COLOR_BACKLIGHT_COMPENSATION && i <= RS_OPTION_COLOR_ENABLE_AUTO_WHITE_BALANCE)
                 {
                     REQUIRE(rs_device_supports_option(dev, (rs_option)i, require_no_error()) == 1);
                 }
@@ -88,14 +88,6 @@ TEST_CASE( "F200 device extrinsics are within expected parameters", "[live] [f20
 
             require_identity_matrix(extrin.rotation);
             require_zero_vector(extrin.translation);
-        }
-
-        SECTION( "only translation between DEPTH and RECTIFIED_COLOR" )
-        {
-            rs_extrinsics extrin;
-            rs_get_device_extrinsics(dev, RS_STREAM_DEPTH, RS_STREAM_RECTIFIED_COLOR, &extrin, require_no_error());
-
-            require_identity_matrix(extrin.rotation);
         }
 
         SECTION( "depth scale is 1/32 mm" )
