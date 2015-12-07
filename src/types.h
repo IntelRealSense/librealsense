@@ -113,15 +113,6 @@ namespace rsimpl
         rs_format format;
         int fps;
     };    
-    
-    struct intrinsics_channel
-    {
-        rs_intrinsics native;       // Actual intrinsics of image sent over UVC by the device hardware
-        rs_intrinsics rectified;    // Desired intrinsics of image after being rectified in software by librealsense
-        intrinsics_channel() : native{}, rectified{} {}
-        intrinsics_channel(const rs_intrinsics & native) : native(native), rectified(native) {}
-        intrinsics_channel(const rs_intrinsics & native, const rs_intrinsics & rectified) : native(native), rectified(rectified) {}
-    };
 
     struct subdevice_mode
     {
@@ -129,7 +120,8 @@ namespace rsimpl
         int2 native_dims;                       // Resolution advertised over UVC
         const native_pixel_format * pf;         // Pixel format advertised over UVC
         int fps;                                // Framerate advertised over UVC
-        intrinsics_channel intrinsics;          // Intrinsics structure corresponding to the content of image (Note: width,height may be subset of native_dims)
+        rs_intrinsics native_intrinsics;        // Intrinsics structure corresponding to the content of image (Note: width,height may be subset of native_dims)
+        std::vector<rs_intrinsics> rect_modes;  // Potential intrinsics of image after being rectified in software by librealsense
         std::vector<int> pad_crop_options;      // Acceptable padding/cropping values
         int (* frame_number_decoder)(const subdevice_mode & mode, const void * frame);
         bool use_serial_numbers_if_unique;  // If true, ignore frame_number_decoder and use a serial frame count if this is the only mode set
@@ -144,8 +136,8 @@ namespace rsimpl
         subdevice_mode_selection(const subdevice_mode * mode, int pad_crop, const pixel_format_unpacker * unpacker) : mode(mode), pad_crop(pad_crop), unpacker(unpacker) {}
 
         const std::vector<std::pair<rs_stream, rs_format>> & get_outputs() const { return unpacker->outputs; }
-        int get_width() const { return mode->intrinsics.native.width + pad_crop * 2; }
-        int get_height() const { return mode->intrinsics.native.height + pad_crop * 2; }
+        int get_width() const { return mode->native_intrinsics.width + pad_crop * 2; }
+        int get_height() const { return mode->native_intrinsics.height + pad_crop * 2; }
         size_t get_image_size(rs_stream stream) const;
         bool provides_stream(rs_stream stream) const { return unpacker->provides_stream(stream); }
         rs_format get_format(rs_stream stream) const { return unpacker->get_format(stream); }

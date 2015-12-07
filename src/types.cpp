@@ -146,7 +146,7 @@ namespace rsimpl
         }
 
         // Unpack (potentially a subrect of) the source image into (potentially a subrect of) the destination buffers
-        const int unpack_width = std::min(mode->intrinsics.native.width, get_width()), unpack_height = std::min(mode->intrinsics.native.height, get_height());
+        const int unpack_width = std::min(mode->native_intrinsics.width, get_width()), unpack_height = std::min(mode->native_intrinsics.height, get_height());
         if(mode->native_dims.x == get_width())
         {
             // If not strided, unpack as though it were a single long row

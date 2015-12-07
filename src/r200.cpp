@@ -70,40 +70,30 @@ namespace rsimpl
         if (c.metadata.versionNumber != 2)
             throw std::runtime_error("only supported calibration struct is version 2. got (" + std::to_string(c.metadata.versionNumber) + ").");
 
-        const auto LR_FULL    = intrinsics_channel(c.modesLR[0][0]);
-        const auto LR_BIG     = intrinsics_channel(c.modesLR[0][1]);
-        const auto LR_QRES    = intrinsics_channel(c.modesLR[0][2]);
-        const auto Z_FULL     = intrinsics_channel(pad_crop_intrinsics(c.modesLR[0][0], -6));
-        const auto Z_BIG      = intrinsics_channel(pad_crop_intrinsics(c.modesLR[0][1], -6));
-        const auto Z_QRES     = intrinsics_channel(pad_crop_intrinsics(c.modesLR[0][2], -6));
-        const auto THIRD_HD   = intrinsics_channel(c.intrinsicsThird[0], c.modesThird[0][0][0]);
-        const auto THIRD_VGA  = intrinsics_channel(c.intrinsicsThird[1], c.modesThird[0][1][0]);
-        const auto THIRD_QRES = intrinsics_channel(scale_intrinsics(c.intrinsicsThird[1], 320, 240), scale_intrinsics(c.modesThird[0][1][0], 320, 240));
-
         // Set up modes for left/right/z images
         for(auto fps : {30, 60, 90})
         {
             // Subdevice 0 can provide left/right infrared via four pixel formats, in three resolutions, which can either be uncropped or cropped to match Z
             for(auto pf : {&pf_y8, &pf_y8i, &pf_y16, &pf_y12i})
             {
-                info.subdevice_modes.push_back({0, {640, 481}, pf, fps, LR_FULL, {0, -6}, &decode_dinghy_frame_number<0x08070605>});  
-                info.subdevice_modes.push_back({0, {640, 373}, pf, fps, LR_BIG , {0, -6}, &decode_dinghy_frame_number<0x08070605>});  
-                info.subdevice_modes.push_back({0, {640, 254}, pf, fps, LR_QRES, {0, -6}, &decode_dinghy_frame_number<0x08070605>});  
+                info.subdevice_modes.push_back({0, {640, 481}, pf, fps, c.modesLR[0][0], {}, {0, -6}, &decode_dinghy_frame_number<0x08070605>});  
+                info.subdevice_modes.push_back({0, {640, 373}, pf, fps, c.modesLR[0][1], {}, {0, -6}, &decode_dinghy_frame_number<0x08070605>});  
+                info.subdevice_modes.push_back({0, {640, 254}, pf, fps, c.modesLR[0][2], {}, {0, -6}, &decode_dinghy_frame_number<0x08070605>});  
             }
 
             // Subdevice 1 can provide depth, in three resolutions, which can either be unpadded or padded to match left/right
-            info.subdevice_modes.push_back({1, {628, 469}, &pf_z16,  fps, Z_FULL, {0, +6}, &decode_dinghy_frame_number<0x4030201>});
-            info.subdevice_modes.push_back({1, {628, 361}, &pf_z16,  fps, Z_BIG , {0, +6}, &decode_dinghy_frame_number<0x4030201>});
-            info.subdevice_modes.push_back({1, {628, 242}, &pf_z16,  fps, Z_QRES, {0, +6}, &decode_dinghy_frame_number<0x4030201>});
+            info.subdevice_modes.push_back({1, {628, 469}, &pf_z16,  fps, pad_crop_intrinsics(c.modesLR[0][0], -6), {}, {0, +6}, &decode_dinghy_frame_number<0x4030201>});
+            info.subdevice_modes.push_back({1, {628, 361}, &pf_z16,  fps, pad_crop_intrinsics(c.modesLR[0][1], -6), {}, {0, +6}, &decode_dinghy_frame_number<0x4030201>});
+            info.subdevice_modes.push_back({1, {628, 242}, &pf_z16,  fps, pad_crop_intrinsics(c.modesLR[0][2], -6), {}, {0, +6}, &decode_dinghy_frame_number<0x4030201>});
         }
 
         // Subdevice 2 can provide color, in several formats and framerates
-        info.subdevice_modes.push_back({2, { 320,  240}, &pf_yuy2, 60, THIRD_QRES, {0}, &decode_yuy2_frame_number, true});
-        info.subdevice_modes.push_back({2, { 320,  240}, &pf_yuy2, 30, THIRD_QRES, {0}, &decode_yuy2_frame_number, true});
-        info.subdevice_modes.push_back({2, { 640,  480}, &pf_yuy2, 60, THIRD_VGA , {0}, &decode_yuy2_frame_number, true});
-        info.subdevice_modes.push_back({2, { 640,  480}, &pf_yuy2, 30, THIRD_VGA , {0}, &decode_yuy2_frame_number, true});
-        info.subdevice_modes.push_back({2, {1920, 1080}, &pf_yuy2, 30, THIRD_HD  , {0}, &decode_yuy2_frame_number, true});
-        info.subdevice_modes.push_back({2, {2400, 1081}, &pf_rw10, 30, THIRD_HD  , {0}, &decode_dinghy_frame_number<0x8A8B8C8D>, true});
+        info.subdevice_modes.push_back({2, { 320,  240}, &pf_yuy2, 60, scale_intrinsics(c.intrinsicsThird[1], 320, 240), {scale_intrinsics(c.modesThird[0][1][0], 320, 240)}, {0}, &decode_yuy2_frame_number, true});
+        info.subdevice_modes.push_back({2, { 320,  240}, &pf_yuy2, 30, scale_intrinsics(c.intrinsicsThird[1], 320, 240), {scale_intrinsics(c.modesThird[0][1][0], 320, 240)}, {0}, &decode_yuy2_frame_number, true});
+        info.subdevice_modes.push_back({2, { 640,  480}, &pf_yuy2, 60, c.intrinsicsThird[1], {c.modesThird[0][1][0]}, {0}, &decode_yuy2_frame_number, true});
+        info.subdevice_modes.push_back({2, { 640,  480}, &pf_yuy2, 30, c.intrinsicsThird[1], {c.modesThird[0][1][0]}, {0}, &decode_yuy2_frame_number, true});
+        info.subdevice_modes.push_back({2, {1920, 1080}, &pf_yuy2, 30, c.intrinsicsThird[0], {c.modesThird[0][0][0]}, {0}, &decode_yuy2_frame_number, true});
+        info.subdevice_modes.push_back({2, {2400, 1081}, &pf_rw10, 30, c.intrinsicsThird[0], {c.modesThird[0][0][0]}, {0}, &decode_dinghy_frame_number<0x8A8B8C8D>, true});
 		// todo - add 15 fps modes
 
         // Set up interstream rules for left/right/z images
