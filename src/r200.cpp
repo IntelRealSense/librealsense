@@ -39,9 +39,8 @@ namespace rsimpl
         return number;
     }
 
-    r200_camera::r200_camera(std::shared_ptr<uvc::device> device, const static_device_info & info, std::vector<intrinsics_channel> intrinsics) : rs_device(device, info, intrinsics)
+    r200_camera::r200_camera(std::shared_ptr<uvc::device> device, const static_device_info & info) : rs_device(device, info)
     {
-        //config.intrinsics.set(intrinsics, rect_intrinsics);
         on_update_depth_units(get_xu_option(RS_OPTION_R200_DEPTH_UNITS));
     }
     
@@ -157,8 +156,8 @@ namespace rsimpl
 
 		// On LibUVC backends, the R200 should use four transfer buffers
         info.num_libuvc_transfer_buffers = 4;
-
-        return std::make_shared<r200_camera>(device, info, intrinsics);
+        info.intrinsics = intrinsics;
+        return std::make_shared<r200_camera>(device, info);
     }
 
     bool r200_camera::is_disparity_mode_enabled() const

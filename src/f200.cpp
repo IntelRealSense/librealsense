@@ -121,6 +121,9 @@ namespace rsimpl
         info.nominal_depth_scale = (c.Rmax / 0xFFFF) * 0.001f; // convert mm to m
         info.num_libuvc_transfer_buffers = 1;
 
+        info.intrinsics.resize(NUM_INTRINSICS);
+        for(auto & m : f200_color_modes) info.intrinsics[m.intrin] = MakeColorIntrinsics(c, m.dims.x, m.dims.y);
+        for(auto & m : f200_depth_modes) info.intrinsics[m.intrin] = MakeDepthIntrinsics(c, m.dims.x, m.dims.y);
         return info;
     }
 
@@ -193,22 +196,15 @@ namespace rsimpl
         info.nominal_depth_scale = (c.Rmax / 0xFFFF) * 0.001f; // convert mm to m
         info.num_libuvc_transfer_buffers = 1;
 
+        info.intrinsics.resize(NUM_INTRINSICS);
+        for(auto & m : f200_color_modes) info.intrinsics[m.intrin] = MakeColorIntrinsics(c, m.dims.x, m.dims.y);
+        for(auto & m : f200_depth_modes) info.intrinsics[m.intrin] = MakeDepthIntrinsics(c, m.dims.x, m.dims.y);
         return info;
     }
 
-    std::vector<intrinsics_channel> compute_intrinsics(const f200::CameraCalibrationParameters & calibration)
-    {
-        std::vector<intrinsics_channel> intrinsics(NUM_INTRINSICS);
-        for(auto & m : f200_color_modes) intrinsics[m.intrin] = MakeColorIntrinsics(calibration, m.dims.x, m.dims.y);
-        for(auto & m : f200_depth_modes) intrinsics[m.intrin] = MakeDepthIntrinsics(calibration, m.dims.x, m.dims.y);
-        return intrinsics;
-    }
-
     f200_camera::f200_camera(std::shared_ptr<uvc::device> device, const static_device_info & info, const f200::CameraCalibrationParameters & calib, const f200::IVCAMTemperatureData & temp, const f200::IVCAMThermalLoopParams & params) :
-        rs_device(device, info, compute_intrinsics(calib)), base_calibration(calib), base_temperature_data(temp), thermal_loop_params(params), last_temperature_delta(std::numeric_limits<float>::infinity())
+        rs_device(device, info), base_calibration(calib), base_temperature_data(temp), thermal_loop_params(params), last_temperature_delta(std::numeric_limits<float>::infinity())
     {
-        //config.intrinsics.set(compute_intrinsics(base_calibration));
-
         // If thermal control loop requested, start up thread to handle it
 		if(thermal_loop_params.IRThermalLoopEnable)
         {
@@ -332,7 +328,6 @@ namespace rsimpl
                     // todo - Pass the current resolution into update_asic_coefficients
                     DEBUG_OUT("updating asic with new temperature calibration coefficients");
                     update_asic_coefficients(get_device(), usbMutex, compensated_calibration);
-                    config.intrinsics.set(compute_intrinsics(compensated_calibration));
                     last_temperature_delta = (float)weightedTempDelta;
                 }
             }

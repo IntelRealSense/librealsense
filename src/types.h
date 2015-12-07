@@ -152,6 +152,15 @@ namespace rsimpl
         int delta, delta2;
     };
 
+    struct intrinsics_channel
+    {
+        rs_intrinsics native;       // Actual intrinsics of image sent over UVC by the device hardware
+        rs_intrinsics rectified;    // Desired intrinsics of image after being rectified in software by librealsense
+        intrinsics_channel() : native{}, rectified{} {}
+        intrinsics_channel(const rs_intrinsics & native) : native(native), rectified(native) {}
+        intrinsics_channel(const rs_intrinsics & native, const rs_intrinsics & rectified) : native(native), rectified(rectified) {}
+    };
+
     struct static_device_info
     {
         std::string name;                                                   // Model name of the camera
@@ -165,6 +174,7 @@ namespace rsimpl
         std::string firmware_version;                                       // Firmware version string
         std::string serial;                                                 // Serial number of the camera (from USB or from SPI memory)
         float nominal_depth_scale;                                          // Default scale
+        std::vector<intrinsics_channel> intrinsics;                         
 
         static_device_info();
 
@@ -204,45 +214,15 @@ namespace rsimpl
         }
     };
 
-    struct intrinsics_channel
-    {
-        rs_intrinsics native;       // Actual intrinsics of image sent over UVC by the device hardware
-        rs_intrinsics rectified;    // Desired intrinsics of image after being rectified in software by librealsense
-        intrinsics_channel() : native{}, rectified{} {}
-        intrinsics_channel(const rs_intrinsics & native) : native(native), rectified(native) {}
-        intrinsics_channel(const rs_intrinsics & native, const rs_intrinsics & rectified) : native(native), rectified(rectified) {}
-    };
-
-    class intrinsics_buffer
-    {
-        mutable triple_buffer<std::vector<intrinsics_channel>> buffer;
-    public:
-        intrinsics_buffer() : buffer({}) {}
-
-        intrinsics_channel get(int index) const
-        {
-            buffer.swap_front(); // We are logically const even though we check for updates, visible state will never change unless someone calls set
-            return buffer.get_front()[index];
-        }
-
-        void set(std::vector<intrinsics_channel> intrinsics)
-        {
-            buffer.get_back() = move(intrinsics);
-            buffer.swap_back();
-        }
-    };
-
     struct device_config
     {
         const static_device_info            info;
-        intrinsics_buffer                   intrinsics;
         stream_request                      requests[RS_STREAM_NATIVE_COUNT];  // Modified by enable/disable_stream calls
         float                               depth_scale;                       // Scale of depth values
 
-                                            device_config(const rsimpl::static_device_info & info, std::vector<intrinsics_channel> intrin) : info(info), depth_scale(info.nominal_depth_scale) 
+                                            device_config(const rsimpl::static_device_info & info) : info(info), depth_scale(info.nominal_depth_scale) 
                                             { 
                                                 for(auto & req : requests) req = rsimpl::stream_request(); 
-                                                intrinsics.set(intrin);
                                             }
 
         std::vector<subdevice_mode_selection> select_modes() const { return info.select_modes(requests); }
