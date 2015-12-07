@@ -114,6 +114,15 @@ namespace rsimpl
         int fps;
     };    
     
+    struct intrinsics_channel
+    {
+        rs_intrinsics native;       // Actual intrinsics of image sent over UVC by the device hardware
+        rs_intrinsics rectified;    // Desired intrinsics of image after being rectified in software by librealsense
+        intrinsics_channel() : native{}, rectified{} {}
+        intrinsics_channel(const rs_intrinsics & native) : native(native), rectified(native) {}
+        intrinsics_channel(const rs_intrinsics & native, const rs_intrinsics & rectified) : native(native), rectified(rectified) {}
+    };
+
     struct subdevice_mode
     {
         int subdevice;                          // 0, 1, 2, etc...
@@ -121,7 +130,7 @@ namespace rsimpl
         const native_pixel_format * pf;         // Pixel format advertised over UVC
         int fps;                                // Framerate advertised over UVC
         int2 content_size;                      // Size of image content, may be different from UVC frame size
-        int intrinsics_index;                   // Index of intrinsics structure corresponding to this content
+        intrinsics_channel intrinsics;          // Intrinsics structure corresponding to this content
         std::vector<int> pad_crop_options;      // Acceptable padding/cropping values
         int (* frame_number_decoder)(const subdevice_mode & mode, const void * frame);
         bool use_serial_numbers_if_unique;  // If true, ignore frame_number_decoder and use a serial frame count if this is the only mode set
@@ -152,15 +161,6 @@ namespace rsimpl
         int delta, delta2;
     };
 
-    struct intrinsics_channel
-    {
-        rs_intrinsics native;       // Actual intrinsics of image sent over UVC by the device hardware
-        rs_intrinsics rectified;    // Desired intrinsics of image after being rectified in software by librealsense
-        intrinsics_channel() : native{}, rectified{} {}
-        intrinsics_channel(const rs_intrinsics & native) : native(native), rectified(native) {}
-        intrinsics_channel(const rs_intrinsics & native, const rs_intrinsics & rectified) : native(native), rectified(rectified) {}
-    };
-
     struct static_device_info
     {
         std::string name;                                                   // Model name of the camera
@@ -174,7 +174,7 @@ namespace rsimpl
         std::string firmware_version;                                       // Firmware version string
         std::string serial;                                                 // Serial number of the camera (from USB or from SPI memory)
         float nominal_depth_scale;                                          // Default scale
-        std::vector<intrinsics_channel> intrinsics;                         
+        //std::vector<intrinsics_channel> intrinsics;                         
 
         static_device_info();
 
