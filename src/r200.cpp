@@ -86,24 +86,24 @@ namespace rsimpl
             // Subdevice 0 can provide left/right infrared via four pixel formats, in three resolutions, which can either be uncropped or cropped to match Z
             for(auto pf : {&pf_y8, &pf_y8i, &pf_y16, &pf_y12i})
             {
-                info.subdevice_modes.push_back({0, {640, 481}, pf, fps, {640, 480}, LR_FULL, {0, -6}, &decode_dinghy_frame_number<0x08070605>});  
-                info.subdevice_modes.push_back({0, {640, 373}, pf, fps, {492, 372}, LR_BIG , {0, -6}, &decode_dinghy_frame_number<0x08070605>});  
-                info.subdevice_modes.push_back({0, {640, 254}, pf, fps, {332, 252}, LR_QRES, {0, -6}, &decode_dinghy_frame_number<0x08070605>});  
+                info.subdevice_modes.push_back({0, {640, 481}, pf, fps, LR_FULL, {0, -6}, &decode_dinghy_frame_number<0x08070605>});  
+                info.subdevice_modes.push_back({0, {640, 373}, pf, fps, LR_BIG , {0, -6}, &decode_dinghy_frame_number<0x08070605>});  
+                info.subdevice_modes.push_back({0, {640, 254}, pf, fps, LR_QRES, {0, -6}, &decode_dinghy_frame_number<0x08070605>});  
             }
 
             // Subdevice 1 can provide depth, in three resolutions, which can either be unpadded or padded to match left/right
-            info.subdevice_modes.push_back({1, {628, 469}, &pf_z16,  fps, {628, 468}, Z_FULL, {0, +6}, &decode_dinghy_frame_number<0x4030201>});
-            info.subdevice_modes.push_back({1, {628, 361}, &pf_z16,  fps, {480, 360}, Z_BIG , {0, +6}, &decode_dinghy_frame_number<0x4030201>});
-            info.subdevice_modes.push_back({1, {628, 242}, &pf_z16,  fps, {320, 240}, Z_QRES, {0, +6}, &decode_dinghy_frame_number<0x4030201>});
+            info.subdevice_modes.push_back({1, {628, 469}, &pf_z16,  fps, Z_FULL, {0, +6}, &decode_dinghy_frame_number<0x4030201>});
+            info.subdevice_modes.push_back({1, {628, 361}, &pf_z16,  fps, Z_BIG , {0, +6}, &decode_dinghy_frame_number<0x4030201>});
+            info.subdevice_modes.push_back({1, {628, 242}, &pf_z16,  fps, Z_QRES, {0, +6}, &decode_dinghy_frame_number<0x4030201>});
         }
 
         // Subdevice 2 can provide color, in several formats and framerates
-        info.subdevice_modes.push_back({2, { 320,  240}, &pf_yuy2, 60, { 320,  240}, THIRD_QRES, {0}, &decode_yuy2_frame_number, true});
-        info.subdevice_modes.push_back({2, { 320,  240}, &pf_yuy2, 30, { 320,  240}, THIRD_QRES, {0}, &decode_yuy2_frame_number, true});
-        info.subdevice_modes.push_back({2, { 640,  480}, &pf_yuy2, 60, { 640,  480}, THIRD_VGA , {0}, &decode_yuy2_frame_number, true});
-        info.subdevice_modes.push_back({2, { 640,  480}, &pf_yuy2, 30, { 640,  480}, THIRD_VGA , {0}, &decode_yuy2_frame_number, true});
-        info.subdevice_modes.push_back({2, {1920, 1080}, &pf_yuy2, 30, {1920, 1080}, THIRD_HD  , {0}, &decode_yuy2_frame_number, true});
-        info.subdevice_modes.push_back({2, {2400, 1081}, &pf_rw10, 30, {1920, 1080}, THIRD_HD  , {0}, &decode_dinghy_frame_number<0x8A8B8C8D>, true});
+        info.subdevice_modes.push_back({2, { 320,  240}, &pf_yuy2, 60, THIRD_QRES, {0}, &decode_yuy2_frame_number, true});
+        info.subdevice_modes.push_back({2, { 320,  240}, &pf_yuy2, 30, THIRD_QRES, {0}, &decode_yuy2_frame_number, true});
+        info.subdevice_modes.push_back({2, { 640,  480}, &pf_yuy2, 60, THIRD_VGA , {0}, &decode_yuy2_frame_number, true});
+        info.subdevice_modes.push_back({2, { 640,  480}, &pf_yuy2, 30, THIRD_VGA , {0}, &decode_yuy2_frame_number, true});
+        info.subdevice_modes.push_back({2, {1920, 1080}, &pf_yuy2, 30, THIRD_HD  , {0}, &decode_yuy2_frame_number, true});
+        info.subdevice_modes.push_back({2, {2400, 1081}, &pf_rw10, 30, THIRD_HD  , {0}, &decode_dinghy_frame_number<0x8A8B8C8D>, true});
 		// todo - add 15 fps modes
 
         // Set up interstream rules for left/right/z images

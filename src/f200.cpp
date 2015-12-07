@@ -16,25 +16,25 @@
 
 namespace rsimpl
 {
-    static rs_intrinsics MakeDepthIntrinsics(const f200::CameraCalibrationParameters & c, int w, int h)
+    static rs_intrinsics MakeDepthIntrinsics(const f200::CameraCalibrationParameters & c, const int2 & dims)
     {
-        return {w, h, (c.Kc[0][2]*0.5f + 0.5f) * w, (c.Kc[1][2]*0.5f + 0.5f) * h, c.Kc[0][0]*0.5f * w, c.Kc[1][1]*0.5f * h,
+        return {dims.x, dims.y, (c.Kc[0][2]*0.5f + 0.5f) * dims.x, (c.Kc[1][2]*0.5f + 0.5f) * dims.y, c.Kc[0][0]*0.5f * dims.x, c.Kc[1][1]*0.5f * dims.y,
             RS_DISTORTION_INVERSE_BROWN_CONRADY, {c.Invdistc[0], c.Invdistc[1], c.Invdistc[2], c.Invdistc[3], c.Invdistc[4]}};
     }
 
-    static rs_intrinsics MakeColorIntrinsics(const f200::CameraCalibrationParameters & c, int w, int h)
+    static rs_intrinsics MakeColorIntrinsics(const f200::CameraCalibrationParameters & c, const int2 & dims)
     {
-        rs_intrinsics intrin = {w, h, c.Kt[0][2]*0.5f + 0.5f, c.Kt[1][2]*0.5f + 0.5f, c.Kt[0][0]*0.5f, c.Kt[1][1]*0.5f, RS_DISTORTION_NONE};
-        if(w*3 == h*4) // If using a 4:3 aspect ratio, adjust intrinsics (defaults to 16:9)
+        rs_intrinsics intrin = {dims.x, dims.y, c.Kt[0][2]*0.5f + 0.5f, c.Kt[1][2]*0.5f + 0.5f, c.Kt[0][0]*0.5f, c.Kt[1][1]*0.5f, RS_DISTORTION_NONE};
+        if(dims.x*3 == dims.y*4) // If using a 4:3 aspect ratio, adjust intrinsics (defaults to 16:9)
         {
             intrin.fx *= 4.0f/3;
             intrin.ppx *= 4.0f/3;
             intrin.ppx -= 1.0f/6;
         }
-        intrin.fx *= w;
-        intrin.fy *= h;
-        intrin.ppx *= w;
-        intrin.ppy *= h;
+        intrin.fx *= dims.x;
+        intrin.fy *= dims.y;
+        intrin.ppx *= dims.x;
+        intrin.ppy *= dims.y;
         return intrin;
     }
 
@@ -75,7 +75,7 @@ namespace rsimpl
         {
             for(auto fps : m.fps)
             {
-                info.subdevice_modes.push_back({0, m.dims, &pf_yuy2, fps, m.dims, MakeColorIntrinsics(c, m.dims.x, m.dims.y), {0}, &decode_ivcam_frame_number});
+                info.subdevice_modes.push_back({0, m.dims, &pf_yuy2, fps, MakeColorIntrinsics(c, m.dims), {0}, &decode_ivcam_frame_number});
             }
         }
 
@@ -86,15 +86,15 @@ namespace rsimpl
         {
             for(auto fps : m.fps)
             {
-                info.subdevice_modes.push_back({1, m.dims, &pf_f200_invi, fps, m.dims, MakeDepthIntrinsics(c, m.dims.x, m.dims.y), {0}, &decode_ivcam_frame_number});
+                info.subdevice_modes.push_back({1, m.dims, &pf_f200_invi, fps, MakeDepthIntrinsics(c, m.dims), {0}, &decode_ivcam_frame_number});
             }
         }
         for(auto & m : f200_depth_modes)
         {
             for(auto fps : m.fps)
             {
-                info.subdevice_modes.push_back({1, m.dims, &pf_invz, fps, m.dims, MakeDepthIntrinsics(c, m.dims.x, m.dims.y), {0}, &decode_ivcam_frame_number});       
-                info.subdevice_modes.push_back({1, m.dims, &pf_f200_inzi, fps, m.dims, MakeDepthIntrinsics(c, m.dims.x, m.dims.y), {0}, &decode_ivcam_frame_number});
+                info.subdevice_modes.push_back({1, m.dims, &pf_invz, fps, MakeDepthIntrinsics(c, m.dims), {0}, &decode_ivcam_frame_number});       
+                info.subdevice_modes.push_back({1, m.dims, &pf_f200_inzi, fps, MakeDepthIntrinsics(c, m.dims), {0}, &decode_ivcam_frame_number});
             }
         }
 
@@ -152,7 +152,7 @@ namespace rsimpl
         {
             for(auto fps : m.fps)
             {
-                info.subdevice_modes.push_back({0, m.dims, &pf_yuy2, fps, m.dims, MakeColorIntrinsics(c, m.dims.x, m.dims.y), {0}, &decode_ivcam_frame_number});
+                info.subdevice_modes.push_back({0, m.dims, &pf_yuy2, fps, MakeColorIntrinsics(c, m.dims), {0}, &decode_ivcam_frame_number});
             }
         }
 
@@ -163,15 +163,15 @@ namespace rsimpl
         {
             for(auto fps : m.fps)
             {
-                info.subdevice_modes.push_back({1, m.dims, &pf_sr300_invi, fps, m.dims, MakeDepthIntrinsics(c, m.dims.x, m.dims.y), {0}, &decode_ivcam_frame_number});             
+                info.subdevice_modes.push_back({1, m.dims, &pf_sr300_invi, fps, MakeDepthIntrinsics(c, m.dims), {0}, &decode_ivcam_frame_number});             
             }
         }
         for(auto & m : sr300_depth_modes)
         {
             for(auto fps : m.fps)
             {
-                info.subdevice_modes.push_back({1, m.dims, &pf_invz, fps, m.dims, MakeDepthIntrinsics(c, m.dims.x, m.dims.y), {0}, &decode_ivcam_frame_number});       
-                info.subdevice_modes.push_back({1, m.dims, &pf_sr300_inzi, fps, m.dims, MakeDepthIntrinsics(c, m.dims.x, m.dims.y), {0}, &decode_ivcam_frame_number});
+                info.subdevice_modes.push_back({1, m.dims, &pf_invz, fps, MakeDepthIntrinsics(c, m.dims), {0}, &decode_ivcam_frame_number});       
+                info.subdevice_modes.push_back({1, m.dims, &pf_sr300_inzi, fps, MakeDepthIntrinsics(c, m.dims), {0}, &decode_ivcam_frame_number});
             }
         }
 

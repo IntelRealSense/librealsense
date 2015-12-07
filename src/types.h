@@ -129,8 +129,7 @@ namespace rsimpl
         int2 native_dims;                       // Resolution advertised over UVC
         const native_pixel_format * pf;         // Pixel format advertised over UVC
         int fps;                                // Framerate advertised over UVC
-        int2 content_size;                      // Size of image content, may be different from UVC frame size
-        intrinsics_channel intrinsics;          // Intrinsics structure corresponding to this content
+        intrinsics_channel intrinsics;          // Intrinsics structure corresponding to the content of image (Note: width,height may be subset of native_dims)
         std::vector<int> pad_crop_options;      // Acceptable padding/cropping values
         int (* frame_number_decoder)(const subdevice_mode & mode, const void * frame);
         bool use_serial_numbers_if_unique;  // If true, ignore frame_number_decoder and use a serial frame count if this is the only mode set
@@ -145,8 +144,8 @@ namespace rsimpl
         subdevice_mode_selection(const subdevice_mode * mode, int pad_crop, const pixel_format_unpacker * unpacker) : mode(mode), pad_crop(pad_crop), unpacker(unpacker) {}
 
         const std::vector<std::pair<rs_stream, rs_format>> & get_outputs() const { return unpacker->outputs; }
-        int get_width() const { return mode->content_size.x + pad_crop * 2; }
-        int get_height() const { return mode->content_size.y + pad_crop * 2; }
+        int get_width() const { return mode->intrinsics.native.width + pad_crop * 2; }
+        int get_height() const { return mode->intrinsics.native.height + pad_crop * 2; }
         size_t get_image_size(rs_stream stream) const;
         bool provides_stream(rs_stream stream) const { return unpacker->provides_stream(stream); }
         rs_format get_format(rs_stream stream) const { return unpacker->get_format(stream); }
@@ -174,7 +173,6 @@ namespace rsimpl
         std::string firmware_version;                                       // Firmware version string
         std::string serial;                                                 // Serial number of the camera (from USB or from SPI memory)
         float nominal_depth_scale;                                          // Default scale
-        //std::vector<intrinsics_channel> intrinsics;                         
 
         static_device_info();
 
