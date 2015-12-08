@@ -298,18 +298,18 @@ namespace rsimpl
 
     void r200_camera::get_xu_range(rs_option option, int * min, int * max) const
     {
-        int max_fps = 30;
-        for(int i=0; i<RS_STREAM_NATIVE_COUNT; ++i)
+        int max_lrz_fps = 30;
+        for(auto s : {RS_STREAM_DEPTH, RS_STREAM_INFRARED, RS_STREAM_INFRARED2})
         {
-            if(get_stream_interface((rs_stream)i).is_enabled())
+            if(get_stream_interface(s).is_enabled())
             {
-                max_fps = std::max(max_fps, get_stream_interface((rs_stream)i).get_framerate());
+                max_lrz_fps = std::max(max_lrz_fps, get_stream_interface(s).get_framerate());
             }
         }
         const struct { rs_option option; int min, max; } ranges[] = {
             {RS_OPTION_R200_LR_AUTO_EXPOSURE_ENABLED, 0, 1},
             {RS_OPTION_R200_LR_GAIN, 100, 1600},
-            {RS_OPTION_R200_LR_EXPOSURE, 0, 10000/max_fps},
+            {RS_OPTION_R200_LR_EXPOSURE, 0, 10000/max_lrz_fps},
             {RS_OPTION_R200_EMITTER_ENABLED, 0, 1},
             {RS_OPTION_R200_DEPTH_CONTROL_PRESET, 0, 5},
             {RS_OPTION_R200_DEPTH_UNITS, 1, INT_MAX}, // What is the real range?
