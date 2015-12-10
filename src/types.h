@@ -113,15 +113,15 @@ namespace rsimpl
         rs_format format;
         int fps;
     };    
-    
+
     struct subdevice_mode
     {
         int subdevice;                          // 0, 1, 2, etc...
         int2 native_dims;                       // Resolution advertised over UVC
         const native_pixel_format * pf;         // Pixel format advertised over UVC
         int fps;                                // Framerate advertised over UVC
-        int2 content_size;                      // Size of image content, may be different from UVC frame size
-        int intrinsics_index;                   // Index of intrinsics structure corresponding to this content
+        rs_intrinsics native_intrinsics;        // Intrinsics structure corresponding to the content of image (Note: width,height may be subset of native_dims)
+        std::vector<rs_intrinsics> rect_modes;  // Potential intrinsics of image after being rectified in software by librealsense
         std::vector<int> pad_crop_options;      // Acceptable padding/cropping values
         int (* frame_number_decoder)(const subdevice_mode & mode, const void * frame);
         bool use_serial_numbers_if_unique;  // If true, ignore frame_number_decoder and use a serial frame count if this is the only mode set
@@ -136,8 +136,8 @@ namespace rsimpl
         subdevice_mode_selection(const subdevice_mode * mode, int pad_crop, const pixel_format_unpacker * unpacker) : mode(mode), pad_crop(pad_crop), unpacker(unpacker) {}
 
         const std::vector<std::pair<rs_stream, rs_format>> & get_outputs() const { return unpacker->outputs; }
-        int get_width() const { return mode->content_size.x + pad_crop * 2; }
-        int get_height() const { return mode->content_size.y + pad_crop * 2; }
+        int get_width() const { return mode->native_intrinsics.width + pad_crop * 2; }
+        int get_height() const { return mode->native_intrinsics.height + pad_crop * 2; }
         size_t get_image_size(rs_stream stream) const;
         bool provides_stream(rs_stream stream) const { return unpacker->provides_stream(stream); }
         rs_format get_format(rs_stream stream) const { return unpacker->get_format(stream); }
@@ -204,45 +204,15 @@ namespace rsimpl
         }
     };
 
-    struct intrinsics_channel
-    {
-        rs_intrinsics native;       // Actual intrinsics of image sent over UVC by the device hardware
-        rs_intrinsics rectified;    // Desired intrinsics of image after being rectified in software by librealsense
-        intrinsics_channel() : native{}, rectified{} {}
-        intrinsics_channel(const rs_intrinsics & native) : native(native), rectified(native) {}
-        intrinsics_channel(const rs_intrinsics & native, const rs_intrinsics & rectified) : native(native), rectified(rectified) {}
-    };
-
-    class intrinsics_buffer
-    {
-        mutable triple_buffer<std::vector<intrinsics_channel>> buffer;
-    public:
-        intrinsics_buffer() : buffer({}) {}
-
-        intrinsics_channel get(int index) const
-        {
-            buffer.swap_front(); // We are logically const even though we check for updates, visible state will never change unless someone calls set
-            return buffer.get_front()[index];
-        }
-
-        void set(std::vector<intrinsics_channel> intrinsics)
-        {
-            buffer.get_back() = move(intrinsics);
-            buffer.swap_back();
-        }
-    };
-
     struct device_config
     {
         const static_device_info            info;
-        intrinsics_buffer                   intrinsics;
         stream_request                      requests[RS_STREAM_NATIVE_COUNT];  // Modified by enable/disable_stream calls
         float                               depth_scale;                       // Scale of depth values
 
-                                            device_config(const rsimpl::static_device_info & info, std::vector<intrinsics_channel> intrin) : info(info), depth_scale(info.nominal_depth_scale) 
+                                            device_config(const rsimpl::static_device_info & info) : info(info), depth_scale(info.nominal_depth_scale) 
                                             { 
                                                 for(auto & req : requests) req = rsimpl::stream_request(); 
-                                                intrinsics.set(intrin);
                                             }
 
         std::vector<subdevice_mode_selection> select_modes() const { return info.select_modes(requests); }
