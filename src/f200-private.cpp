@@ -64,23 +64,28 @@ namespace rsimpl { namespace f200
 {
     enum class IVCAMMonitorCommand : uint32_t
     {
-        UpdateCalib         = 0xBC,
-        GetIRTemp           = 0x52,
-        GetMEMSTemp         = 0x0A,
-        HWReset             = 0x28,
-        GVD                 = 0x3B,
-        BIST                = 0xFF,
-        GoToDFU             = 0x80,
-        GetCalibrationTable = 0x3D,
-        DebugFormat         = 0x0B,
-        TimeStampEnable     = 0x0C,
-        GetPowerGearState   = 0xFF,
-        SetDefaultControls  = 0xA6,
-        GetDefaultControls  = 0xA7,
-        GetFWLastError      = 0x0E,
-        CheckI2cConnect     = 0x4A,
-        CheckRGBConnect     = 0x4B,
-        CheckDPTConnect     = 0x4C
+        UpdateCalib                = 0xBC,
+        GetIRTemp                  = 0x52,
+        GetMEMSTemp                = 0x0A,
+        HWReset                    = 0x28,
+        GVD                        = 0x3B,
+        BIST                       = 0xFF,
+        GoToDFU                    = 0x80,
+        GetCalibrationTable        = 0x3D,
+        DebugFormat                = 0x0B,
+        TimeStampEnable            = 0x0C,
+        GetPowerGearState          = 0xFF,
+        SetDefaultControls         = 0xA6,
+        GetDefaultControls         = 0xA7,
+        GetFWLastError             = 0x0E,
+        CheckI2cConnect            = 0x4A,
+        CheckRGBConnect            = 0x4B,
+        CheckDPTConnect            = 0x4C,
+		SetAutoRange			   = 0xA6,
+		OnSuspendResume			   = 0x91,
+		GetWakeReason			   = 0x93,
+		GetWakeConfidence		   = 0x92,
+		AutoRangeSetParamsforDebug = 0xb3
     };
 
     struct IVCAMCommand
@@ -579,6 +584,37 @@ namespace rsimpl { namespace f200
          command.TimeOut = 5000;
 
          perform_and_send_monitor_command(device, mutex, command);
+    }
+
+    void set_auto_range(uvc::device & device, std::timed_mutex & mutex, int enableMvR, int16_t minMvR, int16_t maxMvR, int16_t startMvR, int enableLaser, int16_t minLaser, int16_t maxLaser, int16_t startLaser, int16_t ARUpperTH, int16_t ARLowerTH)
+    {
+	    IVCAMCommand CommandParameters(IVCAMMonitorCommand::SetAutoRange);
+	    CommandParameters.Param1 = enableMvR;
+	    CommandParameters.Param2 = enableLaser;
+
+	    auto data = reinterpret_cast<int16_t *>(CommandParameters.data);
+	    data[0] = minMvR;
+	    data[1] = maxMvR;
+	    data[2] = startMvR;
+	    data[3] = minLaser;
+	    data[4] = maxLaser;
+	    data[5] = startLaser;
+	    auto size = 12;
+
+	    if (ARUpperTH != -1)
+	    {
+		    data[6] = ARUpperTH;
+		    size += 2;
+	    }	
+
+	    if (ARLowerTH != -1)
+	    {
+		    data[7] = ARLowerTH;
+		    size += 2;
+	    }
+		
+	    CommandParameters.sizeOfSendCommandData = size;
+        perform_and_send_monitor_command(device, mutex, CommandParameters);
     }
 
     FirmwareError get_fw_last_error(uvc::device & device, std::timed_mutex & mutex)

@@ -86,6 +86,7 @@ namespace rsimpl { namespace f200
     void force_hardware_reset(uvc::device & device, std::timed_mutex & mutex);
     void enable_timestamp(uvc::device & device, std::timed_mutex & mutex, bool colorEnable, bool depthEnable);
     void update_asic_coefficients(uvc::device & device, std::timed_mutex & mutex, const CameraCalibrationParameters & compensated_params); // todo - Allow you to specify resolution
+    void set_auto_range(uvc::device & device, std::timed_mutex & mutex, int enableMvR, int16_t minMvR, int16_t maxMvR, int16_t startMvR, int enableLaser, int16_t minLaser, int16_t maxLaser, int16_t startLaser, int16_t ARUpperTH, int16_t ARLowerTH);
 
     // XU read/write
     void get_laser_power(const uvc::device & device, uint8_t & laser_power);
