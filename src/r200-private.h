@@ -23,67 +23,6 @@ namespace rsimpl
         const int STATUS_BIT_WEB_STREAMING = 1 << 2;
 
         #pragma pack(push, 1)
-        struct CalibrationMetadata
-        {
-            big_endian<uint32_t> versionNumber;
-            big_endian<uint16_t> numIntrinsicsRight;
-            big_endian<uint16_t> numIntrinsicsThird;
-            big_endian<uint16_t> numIntrinsicsPlatform;
-            big_endian<uint16_t> numRectifiedModesLR;
-            big_endian<uint16_t> numRectifiedModesThird;
-            big_endian<uint16_t> numRectifiedModesPlatform;
-        };
-
-        struct UnrectifiedIntrinsics
-        {
-            big_endian<float> fx, fy;
-            big_endian<float> px, py;
-            big_endian<float> k[5];
-            big_endian<uint32_t> w, h;
-            operator rs_intrinsics () const { return {(int)w, (int)h, px, py, fx, fy, RS_DISTORTION_MODIFIED_BROWN_CONRADY, {k[0],k[1],k[2],k[3],k[4]}}; }
-        };
-
-        struct RectifiedIntrinsics
-        {
-            big_endian<float> rfx, rfy;
-            big_endian<float> rpx, rpy;
-            big_endian<uint32_t> rw, rh;
-            operator rs_intrinsics () const { return {(int)rw, (int)rh, rpx, rpy, rfx, rfy, RS_DISTORTION_NONE, {0,0,0,0,0}}; }
-        };
-
-        struct CameraCalibrationParameters
-        {
-            static const int MAX_NUM_INTRINSICS_RIGHT = 2; // Max number right cameras supported (e.g. one or two, two would support a multi-baseline unit)
-            static const int MAX_NUM_INTRINSICS_THIRD = 3; // Max number native resolutions the third camera can have (e.g. 1920x1080 and 640x480)
-            static const int MAX_NUM_INTRINSICS_PLATFORM = 4; // Max number native resolutions the platform camera can have
-            static const int MAX_NUM_RECTIFIED_MODES_LR = 4; // Max number rectified LR resolution modes the structure supports (e.g. 640x480, 492x372 and 332x252)
-            static const int MAX_NUM_RECTIFIED_MODES_THIRD = 3; // Max number rectified Third resolution modes the structure supports (e.g. 1920x1080, 1280x720, etc)
-            static const int MAX_NUM_RECTIFIED_MODES_PLATFORM = 1; // Max number rectified Platform resolution modes the structure supports
-
-            CalibrationMetadata metadata;
-
-            UnrectifiedIntrinsics intrinsicsLeft;
-            UnrectifiedIntrinsics intrinsicsRight[MAX_NUM_INTRINSICS_RIGHT];
-            UnrectifiedIntrinsics intrinsicsThird[MAX_NUM_INTRINSICS_THIRD];
-            UnrectifiedIntrinsics intrinsicsPlatform[MAX_NUM_INTRINSICS_PLATFORM];
-
-            RectifiedIntrinsics modesLR[MAX_NUM_INTRINSICS_RIGHT][MAX_NUM_RECTIFIED_MODES_LR];
-            RectifiedIntrinsics modesThird[MAX_NUM_INTRINSICS_RIGHT][MAX_NUM_INTRINSICS_THIRD][MAX_NUM_RECTIFIED_MODES_THIRD];
-            RectifiedIntrinsics modesPlatform[MAX_NUM_INTRINSICS_RIGHT][MAX_NUM_INTRINSICS_PLATFORM][MAX_NUM_RECTIFIED_MODES_PLATFORM];
-
-            big_endian<float> Rleft[MAX_NUM_INTRINSICS_RIGHT][9];
-            big_endian<float> Rright[MAX_NUM_INTRINSICS_RIGHT][9];
-            big_endian<float> Rthird[MAX_NUM_INTRINSICS_RIGHT][9];
-            big_endian<float> Rplatform[MAX_NUM_INTRINSICS_RIGHT][9];
-
-            big_endian<float> B[MAX_NUM_INTRINSICS_RIGHT];
-            big_endian<float> T[MAX_NUM_INTRINSICS_RIGHT][3];
-            big_endian<float> Tplatform[MAX_NUM_INTRINSICS_RIGHT][3];
-
-            big_endian<float> Rworld[9];
-            big_endian<float> Tworld[3];
-        };
-
         const int CURRENT_CAMERA_CONTENTS_VERSION_NUMBER = 12;
 
         struct CameraHeaderInfo
@@ -249,10 +188,19 @@ namespace rsimpl
         };
         #pragma pack(pop)
 
+        struct r200_calibration
+        {
+            int version;
+            rs_intrinsics modesLR[3];
+            rs_intrinsics intrinsicsThird[2];
+            rs_intrinsics modesThird[2][2];
+            float Rthird[9], T[3], B;
+        };
+
         void send_command(uvc::device & device, CommandPacket & command, ResponsePacket & response);
 
         std::string read_firmware_version(uvc::device & device);
-        void read_camera_info(uvc::device & device, CameraCalibrationParameters & calib, CameraHeaderInfo & header);
+        void read_camera_info(uvc::device & device, r200_calibration & calib, CameraHeaderInfo & header);
              
         void xu_read(const uvc::device & device, uint8_t xu_ctrl, void * buffer, uint32_t length);
         void xu_write(uvc::device & device, uint8_t xu_ctrl, void * buffer, uint32_t length);

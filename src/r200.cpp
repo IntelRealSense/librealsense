@@ -63,37 +63,34 @@ namespace rsimpl
         info.stream_subdevices[RS_STREAM_INFRARED ] = 0;
         info.stream_subdevices[RS_STREAM_INFRARED2] = 0;
 
-        r200::CameraCalibrationParameters c;
+        r200::r200_calibration c;
         r200::CameraHeaderInfo h;
         r200::read_camera_info(*device, c, h);
         
-        if (c.metadata.versionNumber != 2)
-            throw std::runtime_error("only supported calibration struct is version 2. got (" + std::to_string(c.metadata.versionNumber) + ").");
-
         // Set up modes for left/right/z images
         for(auto fps : {30, 60, 90})
         {
             // Subdevice 0 can provide left/right infrared via four pixel formats, in three resolutions, which can either be uncropped or cropped to match Z
             for(auto pf : {&pf_y8, &pf_y8i, &pf_y16, &pf_y12i})
             {
-                info.subdevice_modes.push_back({0, {640, 481}, pf, fps, c.modesLR[0][0], {}, {0, -6}, &decode_dinghy_frame_number<0x08070605>});  
-                info.subdevice_modes.push_back({0, {640, 373}, pf, fps, c.modesLR[0][1], {}, {0, -6}, &decode_dinghy_frame_number<0x08070605>});  
-                info.subdevice_modes.push_back({0, {640, 254}, pf, fps, c.modesLR[0][2], {}, {0, -6}, &decode_dinghy_frame_number<0x08070605>});  
+                info.subdevice_modes.push_back({0, {640, 481}, pf, fps, c.modesLR[0], {}, {0, -6}, &decode_dinghy_frame_number<0x08070605>});  
+                info.subdevice_modes.push_back({0, {640, 373}, pf, fps, c.modesLR[1], {}, {0, -6}, &decode_dinghy_frame_number<0x08070605>});  
+                info.subdevice_modes.push_back({0, {640, 254}, pf, fps, c.modesLR[2], {}, {0, -6}, &decode_dinghy_frame_number<0x08070605>});  
             }
 
             // Subdevice 1 can provide depth, in three resolutions, which can either be unpadded or padded to match left/right
-            info.subdevice_modes.push_back({1, {628, 469}, &pf_z16,  fps, pad_crop_intrinsics(c.modesLR[0][0], -6), {}, {0, +6}, &decode_dinghy_frame_number<0x4030201>});
-            info.subdevice_modes.push_back({1, {628, 361}, &pf_z16,  fps, pad_crop_intrinsics(c.modesLR[0][1], -6), {}, {0, +6}, &decode_dinghy_frame_number<0x4030201>});
-            info.subdevice_modes.push_back({1, {628, 242}, &pf_z16,  fps, pad_crop_intrinsics(c.modesLR[0][2], -6), {}, {0, +6}, &decode_dinghy_frame_number<0x4030201>});
+            info.subdevice_modes.push_back({1, {628, 469}, &pf_z16,  fps, pad_crop_intrinsics(c.modesLR[0], -6), {}, {0, +6}, &decode_dinghy_frame_number<0x4030201>});
+            info.subdevice_modes.push_back({1, {628, 361}, &pf_z16,  fps, pad_crop_intrinsics(c.modesLR[1], -6), {}, {0, +6}, &decode_dinghy_frame_number<0x4030201>});
+            info.subdevice_modes.push_back({1, {628, 242}, &pf_z16,  fps, pad_crop_intrinsics(c.modesLR[2], -6), {}, {0, +6}, &decode_dinghy_frame_number<0x4030201>});
         }
 
         // Subdevice 2 can provide color, in several formats and framerates
-        info.subdevice_modes.push_back({2, { 320,  240}, &pf_yuy2, 60, scale_intrinsics(c.intrinsicsThird[1], 320, 240), {scale_intrinsics(c.modesThird[0][1][0], 320, 240)}, {0}, &decode_yuy2_frame_number, true});
-        info.subdevice_modes.push_back({2, { 320,  240}, &pf_yuy2, 30, scale_intrinsics(c.intrinsicsThird[1], 320, 240), {scale_intrinsics(c.modesThird[0][1][0], 320, 240)}, {0}, &decode_yuy2_frame_number, true});
-        info.subdevice_modes.push_back({2, { 640,  480}, &pf_yuy2, 60, c.intrinsicsThird[1], {c.modesThird[0][1][0]}, {0}, &decode_yuy2_frame_number, true});
-        info.subdevice_modes.push_back({2, { 640,  480}, &pf_yuy2, 30, c.intrinsicsThird[1], {c.modesThird[0][1][0]}, {0}, &decode_yuy2_frame_number, true});
-        info.subdevice_modes.push_back({2, {1920, 1080}, &pf_yuy2, 30, c.intrinsicsThird[0], {c.modesThird[0][0][0]}, {0}, &decode_yuy2_frame_number, true});
-        info.subdevice_modes.push_back({2, {2400, 1081}, &pf_rw10, 30, c.intrinsicsThird[0], {c.modesThird[0][0][0]}, {0}, &decode_dinghy_frame_number<0x8A8B8C8D>, true});
+        info.subdevice_modes.push_back({2, { 320,  240}, &pf_yuy2, 60, scale_intrinsics(c.intrinsicsThird[1], 320, 240), {scale_intrinsics(c.modesThird[1][0], 320, 240)}, {0}, &decode_yuy2_frame_number, true});
+        info.subdevice_modes.push_back({2, { 320,  240}, &pf_yuy2, 30, scale_intrinsics(c.intrinsicsThird[1], 320, 240), {scale_intrinsics(c.modesThird[1][0], 320, 240)}, {0}, &decode_yuy2_frame_number, true});
+        info.subdevice_modes.push_back({2, { 640,  480}, &pf_yuy2, 60, c.intrinsicsThird[1], {c.modesThird[1][0]}, {0}, &decode_yuy2_frame_number, true});
+        info.subdevice_modes.push_back({2, { 640,  480}, &pf_yuy2, 30, c.intrinsicsThird[1], {c.modesThird[1][0]}, {0}, &decode_yuy2_frame_number, true});
+        info.subdevice_modes.push_back({2, {1920, 1080}, &pf_yuy2, 30, c.intrinsicsThird[0], {c.modesThird[0][0]}, {0}, &decode_yuy2_frame_number, true});
+        info.subdevice_modes.push_back({2, {2400, 1081}, &pf_rw10, 30, c.intrinsicsThird[0], {c.modesThird[0][0]}, {0}, &decode_dinghy_frame_number<0x8A8B8C8D>, true});
 		// todo - add 15 fps modes
 
         // Set up interstream rules for left/right/z images
@@ -127,13 +124,13 @@ namespace rsimpl
         info.stream_poses[RS_STREAM_INFRARED] = {{{1,0,0},{0,1,0},{0,0,1}}, {0,0,0}};
 
         // The right infrared camera is offset along the +x axis by the baseline (B)
-        info.stream_poses[RS_STREAM_INFRARED2] = {{{1,0,0},{0,1,0},{0,0,1}}, {c.B[0] * 0.001f, 0, 0}}; // Sterling comment
+        info.stream_poses[RS_STREAM_INFRARED2] = {{{1,0,0},{0,1,0},{0,0,1}}, {c.B * 0.001f, 0, 0}}; // Sterling comment
 
 		// The transformation between the depth camera and third camera is described by a translation vector (T), followed by rotation matrix (Rthird)
         for(int i=0; i<3; ++i) for(int j=0; j<3; ++j) 
-			info.stream_poses[RS_STREAM_COLOR].orientation(i,j) = c.Rthird[0][i*3+j];
+			info.stream_poses[RS_STREAM_COLOR].orientation(i,j) = c.Rthird[i*3+j];
         for(int i=0; i<3; ++i) 
-			info.stream_poses[RS_STREAM_COLOR].position[i] = c.T[0][i] * 0.001f;
+			info.stream_poses[RS_STREAM_COLOR].position[i] = c.T[i] * 0.001f;
 
         // Our position is added AFTER orientation is applied, not before, so we must multiply Rthird * T to compute it
         info.stream_poses[RS_STREAM_COLOR].position = info.stream_poses[RS_STREAM_COLOR].orientation * info.stream_poses[RS_STREAM_COLOR].position;
