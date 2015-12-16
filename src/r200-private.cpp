@@ -141,7 +141,7 @@ namespace rsimpl { namespace r200
 
     class DS4HardwareIO
     {
-        CameraCalibrationParameters cameraCalibration;
+        r200_calibration cameraCalib;
         CameraHeaderInfo cameraInfo;
 
         uvc::device & deviceHandle;
@@ -153,9 +153,137 @@ namespace rsimpl { namespace r200
             if (!read_admin_sector(flashDataBuffer, NV_CALIBRATION_DATA_ADDRESS_INDEX))
                 throw std::runtime_error("Could not read calibration sector");
 
-            assert(sizeof(cameraCalibration) <= CAM_INFO_BLOCK_LEN);
-            memcpy(&cameraCalibration, flashDataBuffer, CAM_INFO_BLOCK_LEN);
             memcpy(&cameraInfo, flashDataBuffer + CAM_INFO_BLOCK_LEN, sizeof(cameraInfo));
+
+            #pragma pack(push, 1)
+            struct RectifiedIntrinsics
+            {
+                big_endian<float> rfx, rfy;
+                big_endian<float> rpx, rpy;
+                big_endian<uint32_t> rw, rh;
+                operator rs_intrinsics () const { return {(int)rw, (int)rh, rpx, rpy, rfx, rfy, RS_DISTORTION_NONE, {0,0,0,0,0}}; }
+            };
+
+            cameraCalib.version = reinterpret_cast<const big_endian<uint32_t> &>(flashDataBuffer);
+            if(cameraCalib.version == 0)
+            {
+                struct UnrectifiedIntrinsicsV0
+                {
+                    big_endian<float> fx, fy;
+                    big_endian<float> px, py;
+                    big_endian<double> k[5];
+                    big_endian<uint32_t> w, h;
+                    operator rs_intrinsics () const { return {(int)w, (int)h, px, py, fx, fy, RS_DISTORTION_MODIFIED_BROWN_CONRADY, {k[0],k[1],k[2],k[3],k[4]}}; }
+                };
+
+                struct CameraCalibrationParametersV0
+                {
+                    enum { MAX_INTRIN_RIGHT = 2 };      ///< Max number right cameras supported (e.g. one or two, two would support a multi-baseline unit)
+                    enum { MAX_INTRIN_THIRD = 3 };      ///< Max number native resolutions the third camera can have (e.g. 1920x1080 and 640x480)
+                    enum { MAX_MODES_LR = 4 };    ///< Max number rectified LR resolution modes the structure supports (e.g. 640x480, 492x372 and 332x252)
+                    enum { MAX_MODES_THIRD = 4 }; ///< Max number rectified Third resolution modes the structure supports (e.g. 1920x1080, 1280x720, 640x480 and 320x240)
+
+                    big_endian<uint32_t> versionNumber;
+                    big_endian<uint16_t> numIntrinsicsRight;     ///< Number of right cameras < MAX_INTRIN_RIGHT_V0
+                    big_endian<uint16_t> numIntrinsicsThird;     ///< Number of native resolutions of third camera < MAX_INTRIN_THIRD_V0
+                    big_endian<uint16_t> numRectifiedModesLR;    ///< Number of rectified LR resolution modes < MAX_MODES_LR_V0
+                    big_endian<uint16_t> numRectifiedModesThird; ///< Number of rectified Third resolution modes < MAX_MODES_THIRD_V0
+
+                    UnrectifiedIntrinsicsV0 intrinsicsLeft;
+                    UnrectifiedIntrinsicsV0 intrinsicsRight[MAX_INTRIN_RIGHT];
+                    UnrectifiedIntrinsicsV0 intrinsicsThird[MAX_INTRIN_THIRD];
+
+                    RectifiedIntrinsics modesLR[MAX_INTRIN_RIGHT][MAX_MODES_LR];
+                    RectifiedIntrinsics modesThird[MAX_INTRIN_RIGHT][MAX_INTRIN_THIRD][MAX_MODES_THIRD];
+
+                    big_endian<double> Rleft[MAX_INTRIN_RIGHT][9];
+                    big_endian<double> Rright[MAX_INTRIN_RIGHT][9];
+                    big_endian<double> Rthird[MAX_INTRIN_RIGHT][9];
+
+                    big_endian<float> B[MAX_INTRIN_RIGHT];
+                    big_endian<float> T[MAX_INTRIN_RIGHT][3];
+
+                    big_endian<double> Rworld[9];
+                    big_endian<float> Tworld[3];
+                };
+
+                const auto & calib = reinterpret_cast<const CameraCalibrationParametersV0 &>(flashDataBuffer);
+                for(int i=0; i<3; ++i) cameraCalib.modesLR[i] = calib.modesLR[0][i];
+                for(int i=0; i<2; ++i)
+                {
+                    cameraCalib.intrinsicsThird[i] = calib.intrinsicsThird[i];
+                    for(int j=0; j<2; ++j) cameraCalib.modesThird[i][j] = calib.modesThird[0][i][j];
+                }
+                for(int i=0; i<9; ++i) cameraCalib.Rthird[i] = calib.Rthird[0][i];
+                for(int i=0; i<3; ++i) cameraCalib.T[i] = calib.T[0][i];
+                cameraCalib.B = calib.B[0];
+            }
+            else if(cameraCalib.version == 1 || cameraCalib.version == 2)
+            {
+                struct UnrectifiedIntrinsicsV2
+                {
+                    big_endian<float> fx, fy;
+                    big_endian<float> px, py;
+                    big_endian<float> k[5];
+                    big_endian<uint32_t> w, h;
+                    operator rs_intrinsics () const { return {(int)w, (int)h, px, py, fx, fy, RS_DISTORTION_MODIFIED_BROWN_CONRADY, {k[0],k[1],k[2],k[3],k[4]}}; }
+                };
+
+                struct CameraCalibrationParametersV2
+                {
+                    enum { MAX_INTRIN_RIGHT = 2 }; // Max number right cameras supported (e.g. one or two, two would support a multi-baseline unit)
+                    enum { MAX_INTRIN_THIRD = 3 }; // Max number native resolutions the third camera can have (e.g. 1920x1080 and 640x480)
+                    enum { MAX_INTRIN_PLATFORM = 4 }; // Max number native resolutions the platform camera can have
+                    enum { MAX_MODES_LR = 4 }; // Max number rectified LR resolution modes the structure supports (e.g. 640x480, 492x372 and 332x252)
+                    enum { MAX_MODES_THIRD = 3 }; // Max number rectified Third resolution modes the structure supports (e.g. 1920x1080, 1280x720, etc)
+                    enum { MAX_MODES_PLATFORM = 1 }; // Max number rectified Platform resolution modes the structure supports
+
+                    big_endian<uint32_t> versionNumber;
+                    big_endian<uint16_t> numIntrinsicsRight;
+                    big_endian<uint16_t> numIntrinsicsThird;
+                    big_endian<uint16_t> numIntrinsicsPlatform;
+                    big_endian<uint16_t> numRectifiedModesLR;
+                    big_endian<uint16_t> numRectifiedModesThird;
+                    big_endian<uint16_t> numRectifiedModesPlatform;
+
+                    UnrectifiedIntrinsicsV2 intrinsicsLeft;
+                    UnrectifiedIntrinsicsV2 intrinsicsRight[MAX_INTRIN_RIGHT];
+                    UnrectifiedIntrinsicsV2 intrinsicsThird[MAX_INTRIN_THIRD];
+                    UnrectifiedIntrinsicsV2 intrinsicsPlatform[MAX_INTRIN_PLATFORM];
+
+                    RectifiedIntrinsics modesLR[MAX_INTRIN_RIGHT][MAX_MODES_LR];
+                    RectifiedIntrinsics modesThird[MAX_INTRIN_RIGHT][MAX_INTRIN_THIRD][MAX_MODES_THIRD];
+                    RectifiedIntrinsics modesPlatform[MAX_INTRIN_RIGHT][MAX_INTRIN_PLATFORM][MAX_MODES_PLATFORM];
+
+                    big_endian<float> Rleft[MAX_INTRIN_RIGHT][9];
+                    big_endian<float> Rright[MAX_INTRIN_RIGHT][9];
+                    big_endian<float> Rthird[MAX_INTRIN_RIGHT][9];
+                    big_endian<float> Rplatform[MAX_INTRIN_RIGHT][9];
+
+                    big_endian<float> B[MAX_INTRIN_RIGHT];
+                    big_endian<float> T[MAX_INTRIN_RIGHT][3];
+                    big_endian<float> Tplatform[MAX_INTRIN_RIGHT][3];
+
+                    big_endian<float> Rworld[9];
+                    big_endian<float> Tworld[3];
+                };
+
+                const auto & calib = reinterpret_cast<const CameraCalibrationParametersV2 &>(flashDataBuffer);
+                for(int i=0; i<3; ++i) cameraCalib.modesLR[i] = calib.modesLR[0][i];
+                for(int i=0; i<2; ++i)
+                {
+                    cameraCalib.intrinsicsThird[i] = calib.intrinsicsThird[i];
+                    for(int j=0; j<2; ++j) cameraCalib.modesThird[i][j] = calib.modesThird[0][i][j];
+                }
+                for(int i=0; i<9; ++i) cameraCalib.Rthird[i] = calib.Rthird[0][i];
+                for(int i=0; i<3; ++i) cameraCalib.T[i] = calib.T[0][i];
+                cameraCalib.B = calib.B[0];
+            }
+            else
+            {
+                throw std::runtime_error(to_string() << "Unsupported calibration version: " << cameraCalib.version);
+            }
+            #pragma pack(pop)
         }
 
         bool read_pages(uint32_t address, unsigned char * buffer, uint32_t nPages)
@@ -318,11 +446,11 @@ namespace rsimpl { namespace r200
 
         }
 
-        void LogDebugInfo(uvc::device & device, CameraCalibrationParameters & p, CameraHeaderInfo & h)
+        void LogDebugInfo(uvc::device & device, r200_calibration & p, CameraHeaderInfo & h)
         {
             DEBUG_OUT("Model: " << h.modelNumber);
             DEBUG_OUT("Firmware Version: " << read_firmware_version(device));
-            DEBUG_OUT("Calibration Version: " << p.metadata.versionNumber);
+            DEBUG_OUT("Calibration Version: " << p.version);
             DEBUG_OUT("Calibration Date: " << unix_timestamp_to_human(h.calibrationDate));
             DEBUG_OUT("Serial: " << h.serialNumber);
             DEBUG_OUT("Revision: " << h.revisionNumber);
@@ -333,11 +461,11 @@ namespace rsimpl { namespace r200
                  DEBUG_OUT("(Warning): Device camera header does not match internal struct version: " << CURRENT_CAMERA_CONTENTS_VERSION_NUMBER);
         }
 
-        CameraCalibrationParameters GetCalibration() { return cameraCalibration; }
+        r200_calibration GetCalibration() { return cameraCalib; }
         CameraHeaderInfo GetCameraHeader() { return cameraInfo; }
     };
 
-    void read_camera_info(uvc::device & device, CameraCalibrationParameters & calib, CameraHeaderInfo & header)
+    void read_camera_info(uvc::device & device, r200_calibration & calib, CameraHeaderInfo & header)
     {
         DS4HardwareIO internal(device);
         calib = internal.GetCalibration();
