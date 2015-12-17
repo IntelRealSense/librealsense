@@ -66,6 +66,8 @@ namespace rsimpl
     
     static static_device_info get_f200_info(const f200::CameraCalibrationParameters & c)
     {
+        LOG_INFO("Connecting to Intel RealSense F200");
+
         static_device_info info;
         info.name = {"Intel RealSense F200"};
 
@@ -143,6 +145,8 @@ namespace rsimpl
 
     static static_device_info get_sr300_info(const f200::CameraCalibrationParameters & c)
     {
+        LOG_INFO("Connecting to Intel RealSense SR300");
+
         static_device_info info;
         info.name = {"Intel RealSense SR300"};
         

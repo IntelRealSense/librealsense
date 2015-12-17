@@ -17,6 +17,8 @@ rs_context::rs_context() : rs_context(0)
 
     for(auto device : query_devices(context))
     {
+        LOG_INFO("UVC device detected with VID = 0x" << std::hex << get_vendor_id(*device) << " PID = 0x" << get_product_id(*device));
+
 		if (get_vendor_id(*device) != 32902)
 			continue;
 				

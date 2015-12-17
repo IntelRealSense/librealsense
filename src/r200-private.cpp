@@ -126,351 +126,271 @@ namespace rsimpl { namespace r200
             default: return "RESPONSE_UNKNOWN";
         }
     }
-
-    typedef struct
-    {
-        RoutineDescription rd[MAX_ROUTINES]; // Partition Table
-        unsigned short erasedTable[SPI_FLASH_SECTORS_RESERVED_FOR_ROUTINES];
-        unsigned short preserveTable[SPI_FLASH_SECTORS_RESERVED_FOR_ROUTINES];
-    } RoutineStorageTables;
-
+    
     // Bus group
     #define COMMAND_MODIFIER_DIRECT 0x00000010
 
     #define CAM_INFO_BLOCK_LEN 2048
 
-    class DS4HardwareIO
+    bool read_device_pages(uvc::device & dev, uint32_t address, unsigned char * buffer, uint32_t nPages)
     {
-        r200_calibration cameraCalib;
-        CameraHeaderInfo cameraInfo;
+        int addressTest = SPI_FLASH_TOTAL_SIZE_IN_BYTES - address - nPages * SPI_FLASH_PAGE_SIZE_IN_BYTES;
 
-        uvc::device & deviceHandle;
+        if (!nPages || addressTest < 0)
+            return false;
 
-        void ReadCalibrationSector()
+        // This command allows the host to read a block of data from the SPI flash.
+        // Once this command is processed by the DS4, further command messages will be treated as SPI data
+        // and therefore will be read from flash. The size of the SPI data must be a multiple of 256 bytes.
+        // This will repeat until the number of bytes specified in the ‘value’ field of the original command
+        // message has been read.  At that point the DS4 will process command messages as expected.
+
+        CommandPacket command;
+        command.code = COMMAND_DOWNLOAD_SPI_FLASH;
+        command.modifier = COMMAND_MODIFIER_DIRECT;
+        command.tag = 12;
+        command.address = address;
+        command.value = nPages * SPI_FLASH_PAGE_SIZE_IN_BYTES;
+
+        ResponsePacket response;
+
+        send_command(dev, command, response);
+
+        uint8_t *p = buffer;
+        uint16_t spiLength = SPI_FLASH_PAGE_SIZE_IN_BYTES;
+        for (unsigned int i = 0; i < nPages; ++i)
         {
-            uint8_t flashDataBuffer[SPI_FLASH_SECTOR_SIZE_IN_BYTES];
+            xu_read(dev, CONTROL_COMMAND_RESPONSE, p, spiLength);
+            p += SPI_FLASH_PAGE_SIZE_IN_BYTES;
+        }
+        return true;
+    }
 
-            if (!read_admin_sector(flashDataBuffer, NV_CALIBRATION_DATA_ADDRESS_INDEX))
-                throw std::runtime_error("Could not read calibration sector");
+    void read_arbitrary_chunk(uvc::device & dev, uint32_t address, void * dataIn, int lengthInBytesIn)
+    {
+        unsigned char * data = (unsigned char *)dataIn;
+        int lengthInBytes = lengthInBytesIn;
+        unsigned char page[SPI_FLASH_PAGE_SIZE_IN_BYTES];
+        int nPagesToRead;
+        uint32_t startAddress = address;
+        if (startAddress & 0xff)
+        {
+            // we are not on a page boundary
+            startAddress = startAddress & ~0xff;
+            uint32_t startInPage = address - startAddress;
+            uint32_t lengthToCopy = SPI_FLASH_PAGE_SIZE_IN_BYTES - startInPage;
+            if (lengthToCopy > (uint32_t)lengthInBytes)
+                lengthToCopy = lengthInBytes;
+            read_device_pages(dev, startAddress, page, 1);
+            memcpy(data, page + startInPage, lengthToCopy);
+            lengthInBytes -= lengthToCopy;
+            data += lengthToCopy;
+            startAddress += SPI_FLASH_PAGE_SIZE_IN_BYTES;
+        }
 
-            memcpy(&cameraInfo, flashDataBuffer + CAM_INFO_BLOCK_LEN, sizeof(cameraInfo));
+        nPagesToRead = lengthInBytes / SPI_FLASH_PAGE_SIZE_IN_BYTES;
 
-            #pragma pack(push, 1)
-            struct RectifiedIntrinsics
+        if (nPagesToRead > 0)
+            read_device_pages(dev, startAddress, data, nPagesToRead);
+
+        lengthInBytes -= (nPagesToRead * SPI_FLASH_PAGE_SIZE_IN_BYTES);
+
+        if (lengthInBytes)
+        {
+            // means we still have a remainder
+            data += (nPagesToRead * SPI_FLASH_PAGE_SIZE_IN_BYTES);
+            startAddress += (nPagesToRead * SPI_FLASH_PAGE_SIZE_IN_BYTES);
+            read_device_pages(dev, startAddress, page, 1);
+            memcpy(data, page, lengthInBytes);
+        }
+    }
+
+    bool read_admin_sector(uvc::device & dev, unsigned char data[SPI_FLASH_SECTOR_SIZE_IN_BYTES], int whichAdminSector)
+    {
+        uint32_t adminSectorAddresses[NV_ADMIN_DATA_N_ENTRIES];
+
+        read_arbitrary_chunk(dev, NV_NON_FIRMWARE_ROOT_ADDRESS, adminSectorAddresses, NV_ADMIN_DATA_N_ENTRIES * sizeof(adminSectorAddresses[0]));
+
+        if (whichAdminSector >= 0 && whichAdminSector < NV_ADMIN_DATA_N_ENTRIES)
+        {
+            uint32_t pageAddressInBytes = adminSectorAddresses[whichAdminSector];
+            return read_device_pages(dev, pageAddressInBytes, data, SPI_FLASH_PAGES_PER_SECTOR);
+        }
+
+        return false;
+    }
+
+    void ReadCalibrationSector(uvc::device & deviceHandle, r200_calibration & cameraCalib, CameraHeaderInfo & cameraInfo)
+    {
+        uint8_t flashDataBuffer[SPI_FLASH_SECTOR_SIZE_IN_BYTES];
+
+        if (!read_admin_sector(deviceHandle, flashDataBuffer, NV_CALIBRATION_DATA_ADDRESS_INDEX))
+            throw std::runtime_error("Could not read calibration sector");
+
+        memcpy(&cameraInfo, flashDataBuffer + CAM_INFO_BLOCK_LEN, sizeof(cameraInfo));
+
+        #pragma pack(push, 1)
+        struct RectifiedIntrinsics
+        {
+            big_endian<float> rfx, rfy;
+            big_endian<float> rpx, rpy;
+            big_endian<uint32_t> rw, rh;
+            operator rs_intrinsics () const { return {(int)rw, (int)rh, rpx, rpy, rfx, rfy, RS_DISTORTION_NONE, {0,0,0,0,0}}; }
+        };
+
+        cameraCalib.version = reinterpret_cast<const big_endian<uint32_t> &>(flashDataBuffer);
+        if(cameraCalib.version == 0)
+        {
+            struct UnrectifiedIntrinsicsV0
             {
-                big_endian<float> rfx, rfy;
-                big_endian<float> rpx, rpy;
-                big_endian<uint32_t> rw, rh;
-                operator rs_intrinsics () const { return {(int)rw, (int)rh, rpx, rpy, rfx, rfy, RS_DISTORTION_NONE, {0,0,0,0,0}}; }
+                big_endian<float> fx, fy;
+                big_endian<float> px, py;
+                big_endian<double> k[5];
+                big_endian<uint32_t> w, h;
+                operator rs_intrinsics () const { return {(int)w, (int)h, px, py, fx, fy, RS_DISTORTION_MODIFIED_BROWN_CONRADY, {k[0],k[1],k[2],k[3],k[4]}}; }
             };
 
-            cameraCalib.version = reinterpret_cast<const big_endian<uint32_t> &>(flashDataBuffer);
-            if(cameraCalib.version == 0)
+            struct CameraCalibrationParametersV0
             {
-                struct UnrectifiedIntrinsicsV0
-                {
-                    big_endian<float> fx, fy;
-                    big_endian<float> px, py;
-                    big_endian<double> k[5];
-                    big_endian<uint32_t> w, h;
-                    operator rs_intrinsics () const { return {(int)w, (int)h, px, py, fx, fy, RS_DISTORTION_MODIFIED_BROWN_CONRADY, {k[0],k[1],k[2],k[3],k[4]}}; }
-                };
+                enum { MAX_INTRIN_RIGHT = 2 };      ///< Max number right cameras supported (e.g. one or two, two would support a multi-baseline unit)
+                enum { MAX_INTRIN_THIRD = 3 };      ///< Max number native resolutions the third camera can have (e.g. 1920x1080 and 640x480)
+                enum { MAX_MODES_LR = 4 };    ///< Max number rectified LR resolution modes the structure supports (e.g. 640x480, 492x372 and 332x252)
+                enum { MAX_MODES_THIRD = 4 }; ///< Max number rectified Third resolution modes the structure supports (e.g. 1920x1080, 1280x720, 640x480 and 320x240)
 
-                struct CameraCalibrationParametersV0
-                {
-                    enum { MAX_INTRIN_RIGHT = 2 };      ///< Max number right cameras supported (e.g. one or two, two would support a multi-baseline unit)
-                    enum { MAX_INTRIN_THIRD = 3 };      ///< Max number native resolutions the third camera can have (e.g. 1920x1080 and 640x480)
-                    enum { MAX_MODES_LR = 4 };    ///< Max number rectified LR resolution modes the structure supports (e.g. 640x480, 492x372 and 332x252)
-                    enum { MAX_MODES_THIRD = 4 }; ///< Max number rectified Third resolution modes the structure supports (e.g. 1920x1080, 1280x720, 640x480 and 320x240)
+                big_endian<uint32_t> versionNumber;
+                big_endian<uint16_t> numIntrinsicsRight;     ///< Number of right cameras < MAX_INTRIN_RIGHT_V0
+                big_endian<uint16_t> numIntrinsicsThird;     ///< Number of native resolutions of third camera < MAX_INTRIN_THIRD_V0
+                big_endian<uint16_t> numRectifiedModesLR;    ///< Number of rectified LR resolution modes < MAX_MODES_LR_V0
+                big_endian<uint16_t> numRectifiedModesThird; ///< Number of rectified Third resolution modes < MAX_MODES_THIRD_V0
 
-                    big_endian<uint32_t> versionNumber;
-                    big_endian<uint16_t> numIntrinsicsRight;     ///< Number of right cameras < MAX_INTRIN_RIGHT_V0
-                    big_endian<uint16_t> numIntrinsicsThird;     ///< Number of native resolutions of third camera < MAX_INTRIN_THIRD_V0
-                    big_endian<uint16_t> numRectifiedModesLR;    ///< Number of rectified LR resolution modes < MAX_MODES_LR_V0
-                    big_endian<uint16_t> numRectifiedModesThird; ///< Number of rectified Third resolution modes < MAX_MODES_THIRD_V0
+                UnrectifiedIntrinsicsV0 intrinsicsLeft;
+                UnrectifiedIntrinsicsV0 intrinsicsRight[MAX_INTRIN_RIGHT];
+                UnrectifiedIntrinsicsV0 intrinsicsThird[MAX_INTRIN_THIRD];
 
-                    UnrectifiedIntrinsicsV0 intrinsicsLeft;
-                    UnrectifiedIntrinsicsV0 intrinsicsRight[MAX_INTRIN_RIGHT];
-                    UnrectifiedIntrinsicsV0 intrinsicsThird[MAX_INTRIN_THIRD];
+                RectifiedIntrinsics modesLR[MAX_INTRIN_RIGHT][MAX_MODES_LR];
+                RectifiedIntrinsics modesThird[MAX_INTRIN_RIGHT][MAX_INTRIN_THIRD][MAX_MODES_THIRD];
 
-                    RectifiedIntrinsics modesLR[MAX_INTRIN_RIGHT][MAX_MODES_LR];
-                    RectifiedIntrinsics modesThird[MAX_INTRIN_RIGHT][MAX_INTRIN_THIRD][MAX_MODES_THIRD];
+                big_endian<double> Rleft[MAX_INTRIN_RIGHT][9];
+                big_endian<double> Rright[MAX_INTRIN_RIGHT][9];
+                big_endian<double> Rthird[MAX_INTRIN_RIGHT][9];
 
-                    big_endian<double> Rleft[MAX_INTRIN_RIGHT][9];
-                    big_endian<double> Rright[MAX_INTRIN_RIGHT][9];
-                    big_endian<double> Rthird[MAX_INTRIN_RIGHT][9];
+                big_endian<float> B[MAX_INTRIN_RIGHT];
+                big_endian<float> T[MAX_INTRIN_RIGHT][3];
 
-                    big_endian<float> B[MAX_INTRIN_RIGHT];
-                    big_endian<float> T[MAX_INTRIN_RIGHT][3];
+                big_endian<double> Rworld[9];
+                big_endian<float> Tworld[3];
+            };
 
-                    big_endian<double> Rworld[9];
-                    big_endian<float> Tworld[3];
-                };
-
-                const auto & calib = reinterpret_cast<const CameraCalibrationParametersV0 &>(flashDataBuffer);
-                for(int i=0; i<3; ++i) cameraCalib.modesLR[i] = calib.modesLR[0][i];
-                for(int i=0; i<2; ++i)
-                {
-                    cameraCalib.intrinsicsThird[i] = calib.intrinsicsThird[i];
-                    for(int j=0; j<2; ++j) cameraCalib.modesThird[i][j] = calib.modesThird[0][i][j];
-                }
-                for(int i=0; i<9; ++i) cameraCalib.Rthird[i] = calib.Rthird[0][i];
-                for(int i=0; i<3; ++i) cameraCalib.T[i] = calib.T[0][i];
-                cameraCalib.B = calib.B[0];
-            }
-            else if(cameraCalib.version == 1 || cameraCalib.version == 2)
+            const auto & calib = reinterpret_cast<const CameraCalibrationParametersV0 &>(flashDataBuffer);
+            for(int i=0; i<3; ++i) cameraCalib.modesLR[i] = calib.modesLR[0][i];
+            for(int i=0; i<2; ++i)
             {
-                struct UnrectifiedIntrinsicsV2
-                {
-                    big_endian<float> fx, fy;
-                    big_endian<float> px, py;
-                    big_endian<float> k[5];
-                    big_endian<uint32_t> w, h;
-                    operator rs_intrinsics () const { return {(int)w, (int)h, px, py, fx, fy, RS_DISTORTION_MODIFIED_BROWN_CONRADY, {k[0],k[1],k[2],k[3],k[4]}}; }
-                };
-
-                struct CameraCalibrationParametersV2
-                {
-                    enum { MAX_INTRIN_RIGHT = 2 }; // Max number right cameras supported (e.g. one or two, two would support a multi-baseline unit)
-                    enum { MAX_INTRIN_THIRD = 3 }; // Max number native resolutions the third camera can have (e.g. 1920x1080 and 640x480)
-                    enum { MAX_INTRIN_PLATFORM = 4 }; // Max number native resolutions the platform camera can have
-                    enum { MAX_MODES_LR = 4 }; // Max number rectified LR resolution modes the structure supports (e.g. 640x480, 492x372 and 332x252)
-                    enum { MAX_MODES_THIRD = 3 }; // Max number rectified Third resolution modes the structure supports (e.g. 1920x1080, 1280x720, etc)
-                    enum { MAX_MODES_PLATFORM = 1 }; // Max number rectified Platform resolution modes the structure supports
-
-                    big_endian<uint32_t> versionNumber;
-                    big_endian<uint16_t> numIntrinsicsRight;
-                    big_endian<uint16_t> numIntrinsicsThird;
-                    big_endian<uint16_t> numIntrinsicsPlatform;
-                    big_endian<uint16_t> numRectifiedModesLR;
-                    big_endian<uint16_t> numRectifiedModesThird;
-                    big_endian<uint16_t> numRectifiedModesPlatform;
-
-                    UnrectifiedIntrinsicsV2 intrinsicsLeft;
-                    UnrectifiedIntrinsicsV2 intrinsicsRight[MAX_INTRIN_RIGHT];
-                    UnrectifiedIntrinsicsV2 intrinsicsThird[MAX_INTRIN_THIRD];
-                    UnrectifiedIntrinsicsV2 intrinsicsPlatform[MAX_INTRIN_PLATFORM];
-
-                    RectifiedIntrinsics modesLR[MAX_INTRIN_RIGHT][MAX_MODES_LR];
-                    RectifiedIntrinsics modesThird[MAX_INTRIN_RIGHT][MAX_INTRIN_THIRD][MAX_MODES_THIRD];
-                    RectifiedIntrinsics modesPlatform[MAX_INTRIN_RIGHT][MAX_INTRIN_PLATFORM][MAX_MODES_PLATFORM];
-
-                    big_endian<float> Rleft[MAX_INTRIN_RIGHT][9];
-                    big_endian<float> Rright[MAX_INTRIN_RIGHT][9];
-                    big_endian<float> Rthird[MAX_INTRIN_RIGHT][9];
-                    big_endian<float> Rplatform[MAX_INTRIN_RIGHT][9];
-
-                    big_endian<float> B[MAX_INTRIN_RIGHT];
-                    big_endian<float> T[MAX_INTRIN_RIGHT][3];
-                    big_endian<float> Tplatform[MAX_INTRIN_RIGHT][3];
-
-                    big_endian<float> Rworld[9];
-                    big_endian<float> Tworld[3];
-                };
-
-                const auto & calib = reinterpret_cast<const CameraCalibrationParametersV2 &>(flashDataBuffer);
-                for(int i=0; i<3; ++i) cameraCalib.modesLR[i] = calib.modesLR[0][i];
-                for(int i=0; i<2; ++i)
-                {
-                    cameraCalib.intrinsicsThird[i] = calib.intrinsicsThird[i];
-                    for(int j=0; j<2; ++j) cameraCalib.modesThird[i][j] = calib.modesThird[0][i][j];
-                }
-                for(int i=0; i<9; ++i) cameraCalib.Rthird[i] = calib.Rthird[0][i];
-                for(int i=0; i<3; ++i) cameraCalib.T[i] = calib.T[0][i];
-                cameraCalib.B = calib.B[0];
+                cameraCalib.intrinsicsThird[i] = calib.intrinsicsThird[i];
+                for(int j=0; j<2; ++j) cameraCalib.modesThird[i][j] = calib.modesThird[0][i][j];
             }
-            else
+            for(int i=0; i<9; ++i) cameraCalib.Rthird[i] = calib.Rthird[0][i];
+            for(int i=0; i<3; ++i) cameraCalib.T[i] = calib.T[0][i];
+            cameraCalib.B = calib.B[0];
+        }
+        else if(cameraCalib.version == 1 || cameraCalib.version == 2)
+        {
+            struct UnrectifiedIntrinsicsV2
             {
-                throw std::runtime_error(to_string() << "Unsupported calibration version: " << cameraCalib.version);
-            }
-            #pragma pack(pop)
-        }
+                big_endian<float> fx, fy;
+                big_endian<float> px, py;
+                big_endian<float> k[5];
+                big_endian<uint32_t> w, h;
+                operator rs_intrinsics () const { return {(int)w, (int)h, px, py, fx, fy, RS_DISTORTION_MODIFIED_BROWN_CONRADY, {k[0],k[1],k[2],k[3],k[4]}}; }
+            };
 
-        bool read_pages(uint32_t address, unsigned char * buffer, uint32_t nPages)
-        {
-            int addressTest = SPI_FLASH_TOTAL_SIZE_IN_BYTES - address - nPages * SPI_FLASH_PAGE_SIZE_IN_BYTES;
-
-            if (!nPages || addressTest < 0)
-                return false;
-
-            // This command allows the host to read a block of data from the SPI flash.
-            // Once this command is processed by the DS4, further command messages will be treated as SPI data
-            // and therefore will be read from flash. The size of the SPI data must be a multiple of 256 bytes.
-            // This will repeat until the number of bytes specified in the ‘value’ field of the original command
-            // message has been read.  At that point the DS4 will process command messages as expected.
-
-            CommandPacket command;
-            command.code = COMMAND_DOWNLOAD_SPI_FLASH;
-            command.modifier = COMMAND_MODIFIER_DIRECT;
-            command.tag = 12;
-            command.address = address;
-            command.value = nPages * SPI_FLASH_PAGE_SIZE_IN_BYTES;
-
-            ResponsePacket response;
-
-            send_command(deviceHandle, command, response);
-
-            uint8_t *p = buffer;
-            uint16_t spiLength = SPI_FLASH_PAGE_SIZE_IN_BYTES;
-            for (unsigned int i = 0; i < nPages; ++i)
+            struct CameraCalibrationParametersV2
             {
-                xu_read(deviceHandle, CONTROL_COMMAND_RESPONSE, p, spiLength);
-                p += SPI_FLASH_PAGE_SIZE_IN_BYTES;
-            }
-            return true;
-        }
+                enum { MAX_INTRIN_RIGHT = 2 }; // Max number right cameras supported (e.g. one or two, two would support a multi-baseline unit)
+                enum { MAX_INTRIN_THIRD = 3 }; // Max number native resolutions the third camera can have (e.g. 1920x1080 and 640x480)
+                enum { MAX_INTRIN_PLATFORM = 4 }; // Max number native resolutions the platform camera can have
+                enum { MAX_MODES_LR = 4 }; // Max number rectified LR resolution modes the structure supports (e.g. 640x480, 492x372 and 332x252)
+                enum { MAX_MODES_THIRD = 3 }; // Max number rectified Third resolution modes the structure supports (e.g. 1920x1080, 1280x720, etc)
+                enum { MAX_MODES_PLATFORM = 1 }; // Max number rectified Platform resolution modes the structure supports
 
-        void read_arbitrary_chunk(uint32_t address, void * dataIn, int lengthInBytesIn)
-        {
-            unsigned char * data = (unsigned char *)dataIn;
-            int lengthInBytes = lengthInBytesIn;
-            unsigned char page[SPI_FLASH_PAGE_SIZE_IN_BYTES];
-            int nPagesToRead;
-            uint32_t startAddress = address;
-            if (startAddress & 0xff)
+                big_endian<uint32_t> versionNumber;
+                big_endian<uint16_t> numIntrinsicsRight;
+                big_endian<uint16_t> numIntrinsicsThird;
+                big_endian<uint16_t> numIntrinsicsPlatform;
+                big_endian<uint16_t> numRectifiedModesLR;
+                big_endian<uint16_t> numRectifiedModesThird;
+                big_endian<uint16_t> numRectifiedModesPlatform;
+
+                UnrectifiedIntrinsicsV2 intrinsicsLeft;
+                UnrectifiedIntrinsicsV2 intrinsicsRight[MAX_INTRIN_RIGHT];
+                UnrectifiedIntrinsicsV2 intrinsicsThird[MAX_INTRIN_THIRD];
+                UnrectifiedIntrinsicsV2 intrinsicsPlatform[MAX_INTRIN_PLATFORM];
+
+                RectifiedIntrinsics modesLR[MAX_INTRIN_RIGHT][MAX_MODES_LR];
+                RectifiedIntrinsics modesThird[MAX_INTRIN_RIGHT][MAX_INTRIN_THIRD][MAX_MODES_THIRD];
+                RectifiedIntrinsics modesPlatform[MAX_INTRIN_RIGHT][MAX_INTRIN_PLATFORM][MAX_MODES_PLATFORM];
+
+                big_endian<float> Rleft[MAX_INTRIN_RIGHT][9];
+                big_endian<float> Rright[MAX_INTRIN_RIGHT][9];
+                big_endian<float> Rthird[MAX_INTRIN_RIGHT][9];
+                big_endian<float> Rplatform[MAX_INTRIN_RIGHT][9];
+
+                big_endian<float> B[MAX_INTRIN_RIGHT];
+                big_endian<float> T[MAX_INTRIN_RIGHT][3];
+                big_endian<float> Tplatform[MAX_INTRIN_RIGHT][3];
+
+                big_endian<float> Rworld[9];
+                big_endian<float> Tworld[3];
+            };
+
+            const auto & calib = reinterpret_cast<const CameraCalibrationParametersV2 &>(flashDataBuffer);
+            for(int i=0; i<3; ++i) cameraCalib.modesLR[i] = calib.modesLR[0][i];
+            for(int i=0; i<2; ++i)
             {
-                // we are not on a page boundary
-                startAddress = startAddress & ~0xff;
-                uint32_t startInPage = address - startAddress;
-                uint32_t lengthToCopy = SPI_FLASH_PAGE_SIZE_IN_BYTES - startInPage;
-                if (lengthToCopy > (uint32_t)lengthInBytes)
-                    lengthToCopy = lengthInBytes;
-                read_pages(startAddress, page, 1);
-                memcpy(data, page + startInPage, lengthToCopy);
-                lengthInBytes -= lengthToCopy;
-                data += lengthToCopy;
-                startAddress += SPI_FLASH_PAGE_SIZE_IN_BYTES;
+                cameraCalib.intrinsicsThird[i] = calib.intrinsicsThird[i];
+                for(int j=0; j<2; ++j) cameraCalib.modesThird[i][j] = calib.modesThird[0][i][j];
             }
-
-            nPagesToRead = lengthInBytes / SPI_FLASH_PAGE_SIZE_IN_BYTES;
-
-            if (nPagesToRead > 0)
-                read_pages(startAddress, data, nPagesToRead);
-
-            lengthInBytes -= (nPagesToRead * SPI_FLASH_PAGE_SIZE_IN_BYTES);
-
-            if (lengthInBytes)
-            {
-                // means we still have a remainder
-                data += (nPagesToRead * SPI_FLASH_PAGE_SIZE_IN_BYTES);
-                startAddress += (nPagesToRead * SPI_FLASH_PAGE_SIZE_IN_BYTES);
-                read_pages(startAddress, page, 1);
-                memcpy(data, page, lengthInBytes);
-            }
+            for(int i=0; i<9; ++i) cameraCalib.Rthird[i] = calib.Rthird[0][i];
+            for(int i=0; i<3; ++i) cameraCalib.T[i] = calib.T[0][i];
+            cameraCalib.B = calib.B[0];
         }
-
-        bool read_admin_sector(unsigned char data[SPI_FLASH_SECTOR_SIZE_IN_BYTES], int whichAdminSector)
+        else
         {
-            uint32_t adminSectorAddresses[NV_ADMIN_DATA_N_ENTRIES];
-
-            read_arbitrary_chunk(NV_NON_FIRMWARE_ROOT_ADDRESS, adminSectorAddresses, NV_ADMIN_DATA_N_ENTRIES * sizeof(adminSectorAddresses[0]));
-
-            if (whichAdminSector >= 0 && whichAdminSector < NV_ADMIN_DATA_N_ENTRIES)
-            {
-                uint32_t pageAddressInBytes = adminSectorAddresses[whichAdminSector];
-                return read_pages(pageAddressInBytes, data, SPI_FLASH_PAGES_PER_SECTOR);
-            }
-
-            return false;
+            throw std::runtime_error(to_string() << "Unsupported calibration version: " << cameraCalib.version);
         }
+        #pragma pack(pop)
+    }
 
-        int get_admin_sector_unused_copies(uint32_t sectorAddress, uint32_t * unusedCopiesPtr)
+    // Format a DSAPI timestamp in a human-readable fashion
+    std::string unix_timestamp_to_human(double secondsSinceEpoch)
+    {
+        time_t time = (time_t)secondsSinceEpoch;
+        char buffer[80];
+        struct tm * pTime = gmtime(&time);
+        if (pTime)
         {
-            const uint32_t UNUSED_BITS_OFFSET = SPI_FLASH_SECTOR_SIZE_IN_BYTES - sizeof(uint32_t) - sizeof(uint32_t);
-
-            uint32_t unusedCopies;
-            uint32_t usedCopies;
-            int usedCopiesCount = 0;
-            uint32_t addressOfUnusedBits = sectorAddress + UNUSED_BITS_OFFSET;
-            unsigned int i;
-
-            read_arbitrary_chunk(addressOfUnusedBits, &unusedCopies, sizeof(uint32_t));
-            usedCopies = ~unusedCopies;
-
-            for (i = 0; i < (sizeof(uint32_t) * 8); i++)
-            {
-                if (usedCopies & (1 << i)) usedCopiesCount++;
-            }
-
-            *unusedCopiesPtr = unusedCopies;
-            return usedCopiesCount;
+            size_t i = strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S", gmtime(&time));
+            sprintf(buffer + i, ".%02d UTC", static_cast<int>(std::fmod(secondsSinceEpoch, 1.0) * 100));
+            return buffer;
         }
-
-        void read_admin_table(int blockLength, void * data, int offset, int lengthToRead)
-        {
-            uint32_t address = NV_IFFLEY_ROUTINE_TABLE_ADDRESS_INDEX;
-            uint32_t dummy;
-            int usedCopiesCount = get_admin_sector_unused_copies(address, &dummy);
-            uint32_t addressInSector = address + (usedCopiesCount - 1) * blockLength + offset;
-            read_arbitrary_chunk(addressInSector, data, lengthToRead);
-        }
-
-        void read_spi_flash_memory()
-        {
-            RoutineStorageTables rst = {0};
-
-            // Setup admin table
-            read_admin_table(SIZEOF_ROUTINE_DESCRIPTION_ERASED_AND_PRESERVE_TABLE,
-                             rst.rd,
-                             ROUTINE_DESCRIPTION_OFFSET,
-                             SIZEOF_ROUTINE_DESCRIPTION_TABLE);
-
-            ReadCalibrationSector();
-        }
-
-        // Format a DSAPI timestamp in a human-readable fashion
-        std::string unix_timestamp_to_human(double secondsSinceEpoch)
-        {
-            time_t time = (time_t)secondsSinceEpoch;
-            char buffer[80];
-            struct tm * pTime = gmtime(&time);
-            if (pTime)
-            {
-                size_t i = strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S", gmtime(&time));
-                sprintf(buffer + i, ".%02d UTC", static_cast<int>(std::fmod(secondsSinceEpoch, 1.0) * 100));
-                return buffer;
-            }
-            else
-                return "";
-        }
-
-    public:
-
-        DS4HardwareIO(uvc::device & devh) : deviceHandle(devh)
-        {
-            read_spi_flash_memory();
-        }
-
-        ~DS4HardwareIO()
-        {
-
-        }
-
-        void LogDebugInfo(uvc::device & device, r200_calibration & p, CameraHeaderInfo & h)
-        {
-            LOG_INFO("Model: " << h.modelNumber);
-            LOG_INFO("Firmware Version: " << read_firmware_version(device));
-            LOG_INFO("Calibration Version: " << p.version);
-            LOG_INFO("Calibration Date: " << unix_timestamp_to_human(h.calibrationDate));
-            LOG_INFO("Serial: " << h.serialNumber);
-            LOG_INFO("Revision: " << h.revisionNumber);
-            LOG_INFO("Camera Header Ver: " << h.cameraHeadContentsVersion);
-            LOG_INFO("Baseline: " << h.nominalBaseline);
-            LOG_INFO("OEM ID: " << h.OEMID);
-            if (CURRENT_CAMERA_CONTENTS_VERSION_NUMBER != h.cameraHeadContentsVersion)
-                 LOG_WARNING("Device camera header does not match internal struct version: " << CURRENT_CAMERA_CONTENTS_VERSION_NUMBER);
-        }
-
-        r200_calibration GetCalibration() { return cameraCalib; }
-        CameraHeaderInfo GetCameraHeader() { return cameraInfo; }
-    };
+        else
+            return "";
+    }
 
     void read_camera_info(uvc::device & device, r200_calibration & calib, CameraHeaderInfo & header)
     {
-        DS4HardwareIO internal(device);
-        calib = internal.GetCalibration();
-        header = internal.GetCameraHeader();
-        internal.LogDebugInfo(device, calib, header);
+        ReadCalibrationSector(device, calib, header);
+
+        LOG_INFO("Model: " << header.modelNumber);
+        LOG_INFO("Firmware Version: " << read_firmware_version(device));
+        LOG_INFO("Calibration Version: " << calib.version);
+        LOG_INFO("Calibration Date: " << unix_timestamp_to_human(header.calibrationDate));
+        LOG_INFO("Serial: " << header.serialNumber);
+        LOG_INFO("Revision: " << header.revisionNumber);
+        LOG_INFO("Camera Header Ver: " << header.cameraHeadContentsVersion);
+        LOG_INFO("Baseline: " << header.nominalBaseline);
+        LOG_INFO("OEM ID: " << header.OEMID);
+        if (CURRENT_CAMERA_CONTENTS_VERSION_NUMBER != header.cameraHeadContentsVersion)
+                LOG_WARNING("Device camera header does not match internal struct version: " << CURRENT_CAMERA_CONTENTS_VERSION_NUMBER);
     }
 
     std::string read_firmware_version(uvc::device & device)

@@ -34,12 +34,12 @@ namespace rsimpl
     void log(log_severity severity, const std::string & message);
     extern int minimum_log_severity;
 
-    #define LOG(SEVERITY, ...) do { if(static_cast<int>(SEVERITY) >= minimum_log_severity) { std::ostringstream ss; ss << __VA_ARGS__; log(SEVERITY, ss.str()); } } while(false)
-    #define LOG_DEBUG(...)   LOG(log_severity::debug,   __VA_ARGS__)
-    #define LOG_INFO(...)    LOG(log_severity::info,    __VA_ARGS__)
-    #define LOG_WARNING(...) LOG(log_severity::warning, __VA_ARGS__)
-    #define LOG_ERROR(...)   LOG(log_severity::error,   __VA_ARGS__)
-    #define LOG_FATAL(...)   LOG(log_severity::fatal,   __VA_ARGS__)
+    #define LOG(SEVERITY, ...) do { if(static_cast<int>(SEVERITY) >= rsimpl::minimum_log_severity) { std::ostringstream ss; ss << __VA_ARGS__; rsimpl::log(SEVERITY, ss.str()); } } while(false)
+    #define LOG_DEBUG(...)   LOG(rsimpl::log_severity::debug,   __VA_ARGS__)
+    #define LOG_INFO(...)    LOG(rsimpl::log_severity::info,    __VA_ARGS__)
+    #define LOG_WARNING(...) LOG(rsimpl::log_severity::warning, __VA_ARGS__)
+    #define LOG_ERROR(...)   LOG(rsimpl::log_severity::error,   __VA_ARGS__)
+    #define LOG_FATAL(...)   LOG(rsimpl::log_severity::fatal,   __VA_ARGS__)
 
     enum class byte : uint8_t {};
 
