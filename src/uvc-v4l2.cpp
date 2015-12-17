@@ -46,7 +46,7 @@ namespace rsimpl
 
         static void warn_error(const char * s)
         {
-            DEBUG_ERR(s << " error " << errno << ", " << strerror(errno));
+            LOG_ERROR(s << " error " << errno << ", " << strerror(errno));
         }
 
         static int xioctl(int fh, int request, void *arg)
@@ -266,7 +266,7 @@ namespace rsimpl
                     req.memory = V4L2_MEMORY_MMAP;
                     if(xioctl(fd, VIDIOC_REQBUFS, &req) < 0)
                     {
-                        if(errno == EINVAL) DEBUG_ERR(dev_name + " does not support memory mapping");
+                        if(errno == EINVAL) LOG_ERROR(dev_name + " does not support memory mapping");
                         else warn_error("VIDIOC_REQBUFS");
                     }
 
@@ -333,7 +333,7 @@ namespace rsimpl
                 for(auto interface_number : claimed_interfaces)
                 {
                     int status = libusb_release_interface(usb_handle, interface_number);
-                    if(status < 0) DEBUG_ERR("libusb_release_interface(...) returned " << libusb_error_name(status));
+                    if(status < 0) LOG_ERROR("libusb_release_interface(...) returned " << libusb_error_name(status));
                 }
                 if(usb_handle) libusb_close(usb_handle);
                 if(usb_device) libusb_unref_device(usb_device);

@@ -8,6 +8,8 @@
 
 #ifdef RS_USE_LIBUVC_BACKEND
 
+//#define ENABLE_DEBUG_SPAM
+
 #include "uvc.h"
 #include "libuvc/libuvc.h"
 #include "libuvc/libuvc_internal.h" // For LibUSB punchthrough
@@ -96,7 +98,7 @@ namespace rsimpl
                 for(auto interface_number : claimed_interfaces)
                 {
                     int status = libusb_release_interface(get_subdevice(0).handle->usb_devh, interface_number);
-                    if(status < 0) DEBUG_ERR("libusb_release_interface(...) returned " << libusb_error_name(status));
+                    if(status < 0) LOG_ERROR("libusb_release_interface(...) returned " << libusb_error_name(status));
                 }
 
                 for(auto & sub : subdevices) if(sub.handle) uvc_close(sub.handle);
@@ -132,7 +134,7 @@ namespace rsimpl
                 if(memcmp(&xu_guid, xu->guidExtensionCode, sizeof(guid)) == 0)
                 {
                     device.subdevices[subdevice].unit = xu->bUnitID;
-                    DEBUG_OUT("subdevice " << subdevice << " uses control unit " << (int)xu->bUnitID);
+                    LOG_DEBUG("subdevice " << subdevice << " uses control unit " << (int)xu->bUnitID);
                     return;
                 }
                 xu = xu->next;

@@ -448,17 +448,17 @@ namespace rsimpl { namespace r200
 
         void LogDebugInfo(uvc::device & device, r200_calibration & p, CameraHeaderInfo & h)
         {
-            DEBUG_OUT("Model: " << h.modelNumber);
-            DEBUG_OUT("Firmware Version: " << read_firmware_version(device));
-            DEBUG_OUT("Calibration Version: " << p.version);
-            DEBUG_OUT("Calibration Date: " << unix_timestamp_to_human(h.calibrationDate));
-            DEBUG_OUT("Serial: " << h.serialNumber);
-            DEBUG_OUT("Revision: " << h.revisionNumber);
-            DEBUG_OUT("Camera Header Ver: " << h.cameraHeadContentsVersion);
-            DEBUG_OUT("Baseline: " << h.nominalBaseline);
-            DEBUG_OUT("OEM ID: " << h.OEMID);
+            LOG_INFO("Model: " << h.modelNumber);
+            LOG_INFO("Firmware Version: " << read_firmware_version(device));
+            LOG_INFO("Calibration Version: " << p.version);
+            LOG_INFO("Calibration Date: " << unix_timestamp_to_human(h.calibrationDate));
+            LOG_INFO("Serial: " << h.serialNumber);
+            LOG_INFO("Revision: " << h.revisionNumber);
+            LOG_INFO("Camera Header Ver: " << h.cameraHeadContentsVersion);
+            LOG_INFO("Baseline: " << h.nominalBaseline);
+            LOG_INFO("OEM ID: " << h.OEMID);
             if (CURRENT_CAMERA_CONTENTS_VERSION_NUMBER != h.cameraHeadContentsVersion)
-                 DEBUG_OUT("(Warning): Device camera header does not match internal struct version: " << CURRENT_CAMERA_CONTENTS_VERSION_NUMBER);
+                 LOG_WARNING("Device camera header does not match internal struct version: " << CURRENT_CAMERA_CONTENTS_VERSION_NUMBER);
         }
 
         r200_calibration GetCalibration() { return cameraCalib; }

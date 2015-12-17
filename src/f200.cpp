@@ -317,12 +317,12 @@ namespace rsimpl
                     compensated_calibration.Kc[0][2] = (float) fixed_Kc13;
 
                     // todo - Pass the current resolution into update_asic_coefficients
-                    DEBUG_OUT("updating asic with new temperature calibration coefficients");
+                    LOG_INFO("updating asic with new temperature calibration coefficients");
                     update_asic_coefficients(get_device(), usbMutex, compensated_calibration);
                     last_temperature_delta = (float)weightedTempDelta;
                 }
             }
-            catch(const std::exception & e) { DEBUG_ERR("TemperatureControlLoop: " << e.what()); }
+            catch(const std::exception & e) { LOG_ERROR("TemperatureControlLoop: " << e.what()); }
         }
     }
 

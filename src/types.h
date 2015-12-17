@@ -19,25 +19,28 @@
 #include <sstream>                          // For ostringstream
 #include <atomic>
 
-//#define ENABLE_DEBUG_SPAM
-
-#if defined(_DEBUG) || defined(DEBUG)
-#define ENABLE_DEBUG_OUTPUT
-#endif
-
-#ifdef ENABLE_DEBUG_OUTPUT
-#include <iostream> // For cout, cerr, endl. DO NOT INCLUDE ANYWHERE ELSE IN LIBREALSENSE 
-#define DEBUG_OUT(...) std::cout << "[debug] " << __VA_ARGS__ << std::endl
-#define DEBUG_ERR(...) std::cerr << "[error] " << __VA_ARGS__ << std::endl
-#else
-#define DEBUG_OUT(...) do {} while(false)
-#define DEBUG_ERR(...) do {} while(false)
-#endif
-
 #define RS_STREAM_NATIVE_COUNT 4
 
 namespace rsimpl
 {
+    enum class log_severity
+    {
+        debug   = 0, // Detailed information about ordinary operations
+        info    = 1, // Terse information about ordinary operations
+        warning = 2, // Indication of possible failure
+        error   = 3, // Indication of definite failure
+        fatal   = 4, // Indication of unrecoverable failure
+    };
+    void log(log_severity severity, const std::string & message);
+    extern int minimum_log_severity;
+
+    #define LOG(SEVERITY, ...) do { if(static_cast<int>(SEVERITY) >= minimum_log_severity) { std::ostringstream ss; ss << __VA_ARGS__; log(SEVERITY, ss.str()); } } while(false)
+    #define LOG_DEBUG(...)   LOG(log_severity::debug,   __VA_ARGS__)
+    #define LOG_INFO(...)    LOG(log_severity::info,    __VA_ARGS__)
+    #define LOG_WARNING(...) LOG(log_severity::warning, __VA_ARGS__)
+    #define LOG_ERROR(...)   LOG(log_severity::error,   __VA_ARGS__)
+    #define LOG_FATAL(...)   LOG(log_severity::fatal,   __VA_ARGS__)
+
     enum class byte : uint8_t {};
 
     struct pixel_format_unpacker
