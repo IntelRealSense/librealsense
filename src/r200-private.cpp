@@ -16,32 +16,6 @@
 
 #pragma pack(push, 1) // All structs in this file are byte-aligend
 
-enum class control // UVC extension control codes
-{
-    command_response           = 1,
-    iffley                     = 2,
-    stream_intent              = 3,
-    depth_units                = 4,
-    min_max                    = 5,
-    disparity                  = 6,
-    rectification              = 7,
-    emitter                    = 8,
-    temperature                = 9,
-    depth_params               = 10,
-    last_error                 = 12,
-    embedded_count             = 13,
-    lr_exposure                = 14,
-    lr_autoexposure_parameters = 15,
-    sw_reset                   = 16,
-    lr_gain                    = 17,
-    lr_exposure_mode           = 18,
-    disparity_shift            = 19,
-    status                     = 20,
-    lr_exposure_discovery      = 21,
-    lr_gain_discovery          = 22,
-    hw_timestamp               = 23,
-};
-
 enum class command : uint32_t // Command/response codes
 {
     peek               = 0x11,
@@ -433,7 +407,7 @@ namespace rsimpl { namespace r200
 
     void set_stream_intent(uvc::device & device, uint8_t & intent)
     {
-        xu_write(device, control::stream_intent, &intent, sizeof(intent));
+        xu_write(device, control::stream_intent, intent);
     }
 
     void get_stream_status(const uvc::device & device, int & status)
@@ -441,11 +415,6 @@ namespace rsimpl { namespace r200
         uint8_t s[4] = {255, 255, 255, 255};
         xu_read(device, control::status, s, sizeof(uint32_t));
         status = rsimpl::pack(s[0], s[1], s[2], s[3]);
-    }
-
-    void get_last_error(const uvc::device & device, uint8_t & last_error)
-    {
-        xu_read(device, control::last_error, &last_error, sizeof(uint8_t));
     }
 
     void force_firmware_reset(uvc::device & device)
@@ -458,141 +427,17 @@ namespace rsimpl { namespace r200
         catch(...) {} // xu_write always throws during a control::SW_RESET, since the firmware is unable to send a proper response
     }
 
-    void get_emitter_state(const uvc::device & device, bool is_streaming, bool is_depth_enabled, bool & state)
+    bool get_emitter_state(const uvc::device & device, bool is_streaming, bool is_depth_enabled)
     {
-        uint8_t byte = 0;
-        xu_read(device, control::emitter, &byte, sizeof(byte));
-
-        if(is_streaming) state = (byte & 1 ? true : false);
-        else if(byte & 4) state = (byte & 2 ? true : false);
-        else state = is_depth_enabled;
+        auto byte = xu_read<uint8_t>(device, control::emitter);
+        if(is_streaming) return (byte & 1 ? true : false);
+        else if(byte & 4) return (byte & 2 ? true : false);
+        else return is_depth_enabled;
     }
 
     void set_emitter_state(uvc::device & device, bool state)
     {
-        uint8_t newEmitterState = state ? 1 : 0;
-        xu_write(device, control::emitter, &newEmitterState, sizeof(uint8_t));
-    }
-
-    void read_temperature(const uvc::device & device, int8_t & current, int8_t & min, int8_t & max, int8_t & min_fault)
-    {
-        uint8_t buf[4] = {0};
-        xu_read(device, control::temperature, buf, sizeof(buf));
-        current = buf[0];
-        min = buf[1];
-        max = buf[2];
-        min_fault = buf[3];
-    }
-
-    void reset_temperature(uvc::device & device)
-    {
-        uint8_t buf[4] = {0};
-        xu_write(device, control::temperature, buf, sizeof(buf));
-    }
-
-    void get_depth_units(const uvc::device & device, uint32_t & units)
-    {
-        xu_read(device, control::depth_units, &units, sizeof(units));
-    }
-
-    void set_depth_units(uvc::device & device, uint32_t units)
-    {
-        xu_write(device, control::depth_units, &units, sizeof(units));
-    }
-
-    void set_min_max_depth(uvc::device & device, uint16_t min_depth, uint16_t max_depth)
-    {
-        uint16_t values[] = {min_depth, max_depth};
-        xu_write(device, control::min_max, values, sizeof(values));
-    }
-
-    void get_min_max_depth(const uvc::device & device, uint16_t & min_depth, uint16_t & max_depth)
-    {
-        uint16_t values[] = {0, 0};
-        xu_read(device, control::min_max, values, sizeof(values));
-        min_depth = values[0];
-        max_depth = values[1];
-    }
-
-    void get_lr_gain(const uvc::device & device, uint32_t & rate, uint32_t & gain)
-    {
-        uint32_t values[] = {0, 0};
-        xu_read(device, control::lr_gain, values, sizeof(values));
-        rate = values[0];
-        gain = values[1];
-    }
-
-    void set_lr_gain(uvc::device & device, uint32_t rate, uint32_t gain)
-    {
-        uint32_t values[] = {rate, gain};
-        xu_write(device, control::lr_gain, values, sizeof(values));
-    }
-
-    void get_lr_exposure(const uvc::device & device, uint32_t & rate, uint32_t & exposure)
-    {
-        uint32_t values[] = {0, 0};
-        xu_read(device, control::lr_exposure, values, sizeof(values));
-        rate = values[0];
-        exposure = values[1];
-    }
-
-    void set_lr_exposure(uvc::device & device, uint32_t rate, uint32_t exposure)
-    {
-        uint32_t values[] = {rate, exposure};
-        xu_write(device, control::lr_exposure, values, sizeof(values));
-    }
-
-    void get_lr_auto_exposure_params(const uvc::device & device, auto_exposure_params & params)
-    {
-        xu_read(device, control::lr_autoexposure_parameters, &params, sizeof(params));
-    }
-
-    void set_lr_auto_exposure_params(uvc::device & device, auto_exposure_params params)
-    {
-        xu_write(device, control::lr_autoexposure_parameters, &params, sizeof(params));
-    }
-
-    void get_lr_exposure_mode(const uvc::device & device, uint32_t & mode)
-    {
-        uint8_t m; // 0 = EXPOSURE_MANUAL, 1 = EXPOSURE_AUTO
-        xu_read(device, control::lr_exposure_mode, &m, sizeof(m));
-        mode = m;
-    }
-
-    void set_lr_exposure_mode(uvc::device & device, uint32_t mode)
-    {
-        uint8_t m = mode;
-        xu_write(device, control::lr_exposure_mode, &m, sizeof(m));
-    }
-
-    void get_depth_params(const uvc::device & device, depth_params & params)
-    {
-        xu_read(device, control::depth_params, &params, sizeof(params));
-    }
-
-    void set_depth_params(uvc::device & device, depth_params params)
-    {
-        xu_write(device, control::depth_params, &params, sizeof(params));
-    }
-
-    void get_disparity_mode(const uvc::device & device, disparity_mode & mode)
-    {
-        xu_read(device, control::disparity, &mode, sizeof(mode));
-    }
-
-    void set_disparity_mode(uvc::device & device, disparity_mode mode)
-    {
-        xu_write(device, control::disparity, &mode, sizeof(mode));
-    }
-
-    void get_disparity_shift(const uvc::device & device, uint32_t & shift)
-    {
-        xu_read(device, control::disparity_shift, &shift, sizeof(shift));
-    }
-
-    void set_disparity_shift(uvc::device & device, uint32_t shift)
-    {
-        xu_write(device, control::disparity_shift, &shift, sizeof(shift));
+        xu_write(device, control::emitter, uint8_t(state ? 1 : 0));
     }
 
 	void get_register_value(uvc::device & device, uint32_t reg, uint32_t & value)
@@ -605,7 +450,7 @@ namespace rsimpl { namespace r200
 		send_command_and_receive_response(device, CommandResponsePacket(command::poke, reg, value));
     }
 
-    const depth_params depth_params::presets[] = {
+    const dc_params dc_params::presets[] = {
         {5, 5, 192,  1,  512, 6, 24, 27,  7,   24}, // (DEFAULT) Default settings on chip. Similiar to the medium setting and best for outdoors.
         {5, 5,   0,  0, 1023, 0,  0,  0,  0, 2047}, // (OFF) Disable almost all hardware-based outlier removal
         {5, 5, 115,  1,  512, 6, 18, 25,  3,   24}, // (LOW) Provide a depthmap with a lower number of outliers removed, which has minimal false negatives.
