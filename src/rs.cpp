@@ -283,6 +283,7 @@ void rs_set_auto_range_parameters(rs_device * device, const rs_f200_auto_range_p
 {
     VALIDATE_NOT_NULL(device);
     VALIDATE_NOT_NULL(parameters);
+    device->set_auto_range_parameters(*parameters);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, device, parameters)
 
@@ -290,6 +291,7 @@ void rs_get_auto_range_parameters(const rs_device * device, rs_f200_auto_range_p
 {
     VALIDATE_NOT_NULL(device);
     VALIDATE_NOT_NULL(parameters);
+    *parameters = device->get_auto_range_parameters();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, device, parameters)
 
@@ -297,6 +299,7 @@ void rs_set_lr_auto_exposure_parameters(rs_device * device, const rs_r200_lr_aut
 {
     VALIDATE_NOT_NULL(device);
     VALIDATE_NOT_NULL(parameters);
+    device->set_lr_auto_exposure_parameters(*parameters);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, device, parameters)
 
@@ -304,6 +307,7 @@ void rs_get_lr_auto_exposure_parameters(const rs_device * device, rs_r200_lr_aut
 {
     VALIDATE_NOT_NULL(device);
     VALIDATE_NOT_NULL(parameters);
+    *parameters = device->get_lr_auto_exposure_parameters();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, device, parameters)
 
@@ -311,6 +315,7 @@ void rs_set_depth_control_parameters(rs_device * device, const rs_r200_depth_con
 {
     VALIDATE_NOT_NULL(device);
     VALIDATE_NOT_NULL(parameters);
+    device->set_depth_control_parameters(*parameters);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, device, parameters)
 
@@ -318,6 +323,7 @@ void rs_get_depth_control_parameters(const rs_device * device, rs_r200_depth_con
 {
     VALIDATE_NOT_NULL(device);
     VALIDATE_NOT_NULL(parameters);
+    *parameters = device->get_depth_control_parameters();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, device, parameters)
 

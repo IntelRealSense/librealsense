@@ -62,6 +62,16 @@ static void rs_transform_point_to_point(float to_point[3], const struct rs_extri
     to_point[2] = extrin->rotation[2] * from_point[0] + extrin->rotation[5] * from_point[1] + extrin->rotation[8] * from_point[2] + extrin->translation[2];
 }
 
+
+void rs_set_ivcam_middleware_preset(rs_device * dev, int preset)
+{
+    switch(preset)
+    {
+    case 4:
+    }
+}
+
+
 /* Provide access to several recommend sets of depth control parameters */
 void rs_get_depth_control_parameters_preset(int preset, rs_r200_depth_control_parameters * parameters)
 {

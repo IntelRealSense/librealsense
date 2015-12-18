@@ -361,8 +361,7 @@ TEST_CASE( "rs_option_to_string() produces correct output", "[offline] [validati
     REQUIRE(rs_option_to_string(RS_OPTION_R200_LR_AUTO_EXPOSURE_ENABLED) == std::string("R200_LR_AUTO_EXPOSURE_ENABLED")); 
     REQUIRE(rs_option_to_string(RS_OPTION_R200_LR_GAIN) == std::string("R200_LR_GAIN")); 
     REQUIRE(rs_option_to_string(RS_OPTION_R200_LR_EXPOSURE) == std::string("R200_LR_EXPOSURE")); 
-    REQUIRE(rs_option_to_string(RS_OPTION_R200_EMITTER_ENABLED) == std::string("R200_EMITTER_ENABLED")); 
-    REQUIRE(rs_option_to_string(RS_OPTION_R200_DEPTH_CONTROL_PRESET) == std::string("R200_DEPTH_CONTROL_PRESET")); 
+    REQUIRE(rs_option_to_string(RS_OPTION_R200_EMITTER_ENABLED) == std::string("R200_EMITTER_ENABLED"));
     REQUIRE(rs_option_to_string(RS_OPTION_R200_DEPTH_UNITS) == std::string("R200_DEPTH_UNITS")); 
     REQUIRE(rs_option_to_string(RS_OPTION_R200_DEPTH_CLAMP_MIN) == std::string("R200_DEPTH_CLAMP_MIN")); 
     REQUIRE(rs_option_to_string(RS_OPTION_R200_DEPTH_CLAMP_MAX) == std::string("R200_DEPTH_CLAMP_MAX")); 

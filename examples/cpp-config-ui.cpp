@@ -161,6 +161,7 @@ int main(int argc, char * argv[]) try
         o.value = dev->get_option(o.opt);
         options.push_back(o);
     }
+    int dc_preset = 0;
 
     int offset = 0, panel_height = 1;
     while(!glfwWindowShouldClose(win))
@@ -212,6 +213,11 @@ int main(int argc, char * argv[]) try
             if(g.slider((int)o.opt + 1, {w-260,y+16,w-20,y+36}, o.min, o.max, o.value)) dev->set_option(o.opt, o.value);
             y += 38;
         }
+        std::ostringstream ss; ss << "Depth control parameters preset: " << dc_preset;
+        g.label({w-260,y+12}, {1,1,1}, "Depth control parameters preset");
+        if(g.slider(100, {w-260,y+16,w-20,y+36}, 0, 5, dc_preset)) dev->set_depth_control_parameters(rs::r200_depth_control_parameters::get_preset(dc_preset));
+        y += 38;
+        
         panel_height = y + 10 + offset;
         
         if(dev->is_streaming())
