@@ -65,9 +65,7 @@ namespace rsimpl
         info.stream_subdevices[RS_STREAM_INFRARED ] = 0;
         info.stream_subdevices[RS_STREAM_INFRARED2] = 0;
 
-        r200::r200_calibration c;
-        r200::CameraHeaderInfo h;
-        r200::read_camera_info(*device, c, h);
+        auto c = r200::read_camera_info(*device);
         
         // Set up modes for left/right/z images
         for(auto fps : {30, 60, 90})
@@ -137,7 +135,7 @@ namespace rsimpl
         // Our position is added AFTER orientation is applied, not before, so we must multiply Rthird * T to compute it
         info.stream_poses[RS_STREAM_COLOR].position = info.stream_poses[RS_STREAM_COLOR].orientation * info.stream_poses[RS_STREAM_COLOR].position;
         info.nominal_depth_scale = 0.001f;
-        info.serial = std::to_string(h.serialNumber);
+        info.serial = std::to_string(c.serial_number);
         info.firmware_version = r200::read_firmware_version(*device);
 
 		// On LibUVC backends, the R200 should use four transfer buffers

@@ -23,79 +23,6 @@ namespace rsimpl
         const int STATUS_BIT_WEB_STREAMING = 1 << 2;
 
         #pragma pack(push, 1)
-        const int CURRENT_CAMERA_CONTENTS_VERSION_NUMBER = 12;
-
-        struct CameraHeaderInfo
-        {
-            uint32_t serialNumber;
-            uint32_t modelNumber;
-            uint32_t revisionNumber;
-            uint8_t modelData[64];
-            double buildDate;
-            double firstProgramDate;
-            double focusAndAlignmentDate;
-            uint32_t nominalBaselineThird;
-            uint8_t moduleVersion;
-            uint8_t moduleMajorVersion;
-            uint8_t moduleMinorVersion;
-            uint8_t moduleSkew;
-            uint32_t lensTypeThird;
-            uint32_t OEMID;
-            uint32_t lensCoatingTypeThird;
-            uint8_t platformCameraSupport;
-            uint8_t reserved1[3];
-            uint32_t emitterType;
-            uint8_t reserved2[4];
-            uint32_t cameraFPGAVersion;
-            uint32_t platformCameraFocus; // This is the value during calibration
-            double calibrationDate;
-            uint32_t calibrationType;
-            double calibrationXError;
-            double calibrationYError;
-            double rectificationDataQres[54];
-            double rectificationDataPadding[26];
-            double CxQres;
-            double CyQres;
-            double CzQres;
-            double KxQres;
-            double KyQres;
-            uint32_t cameraHeadContentsVersion;
-            uint32_t cameraHeadContentsSizeInBytes;
-            double CxBig;
-            double CyBig;
-            double CzBig;
-            double KxBig;
-            double KyBig;
-            double CxSpecial;
-            double CySpecial;
-            double CzSpecial;
-            double KxSpecial;
-            double KySpecial;
-            uint8_t cameraHeadDataLittleEndian;
-            double rectificationDataBig[54];
-            double rectificationDataSpecial[54];
-            uint8_t cameraOptions1;
-            uint8_t cameraOptions2;
-            uint8_t bodySerialNumber[20];
-            double Dx;
-            double Dy;
-            double Dz;
-            double ThetaX;
-            double ThetaY;
-            double ThetaZ;
-            double registrationDate;
-            double registrationRotation[9];
-            double registrationTranslation[3];
-            uint32_t nominalBaseline;
-            uint32_t lensType;
-            uint32_t lensCoating;
-            int32_t nominalBaselinePlatform[3]; // NOTE: Signed, since platform camera can be mounted anywhere
-            uint32_t lensTypePlatform;
-            uint32_t imagerTypePlatform;
-            uint32_t theLastWord;
-            uint8_t reserved3[37];
-        };
-
         struct Dinghy
         {
             uint32_t magicNumber;
@@ -156,17 +83,15 @@ namespace rsimpl
         struct r200_calibration
         {
             int version;
+            int serial_number;
             rs_intrinsics modesLR[3];
             rs_intrinsics intrinsicsThird[2];
             rs_intrinsics modesThird[2][2];
             float Rthird[9], T[3], B;
         };
 
+        r200_calibration read_camera_info(uvc::device & device);
         std::string read_firmware_version(uvc::device & device);
-        void read_camera_info(uvc::device & device, r200_calibration & calib, CameraHeaderInfo & header);
-             
-        //void xu_read(const uvc::device & device, uint8_t xu_ctrl, void * buffer, uint32_t length);
-        //void xu_write(uvc::device & device, uint8_t xu_ctrl, void * buffer, uint32_t length);
              
         void set_stream_intent(uvc::device & device, uint8_t & intent);
         void get_stream_status(const uvc::device & device, uint8_t & status);

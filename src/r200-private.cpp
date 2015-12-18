@@ -12,6 +12,9 @@
 #include <cmath>
 #include <ctime>
 #include <thread>
+#include <iomanip>
+
+#pragma pack(push, 1) // All structs in this file are byte-aligend
 
 enum class control // UVC extension control codes
 {
@@ -47,7 +50,7 @@ enum class command : uint32_t // Command/response codes
     get_fwrevision     = 0x21,
 };
 
-enum class command_modifier : uint32_t { direct = 0x10 };
+enum class command_modifier : uint32_t { direct = 0x10 }; // Command/response modifiers
 
 #define SPI_FLASH_PAGE_SIZE_IN_BYTES                0x100
 #define SPI_FLASH_SECTOR_SIZE_IN_BYTES              0x1000
@@ -85,46 +88,23 @@ namespace rsimpl { namespace r200
         set_control(device, 0, static_cast<int>(xu_ctrl), buffer, length);
     }
 
-    #pragma pack(push, 1)
-    struct CommandPacket
+    struct CommandResponsePacket
     {
-        command code;
-        command_modifier modifier;
-        uint32_t tag;
-        uint32_t address;
-        uint32_t value;
-        uint32_t reserved[59];
-
-        CommandPacket(command code, uint32_t address=0, uint32_t value=0) : code(code), modifier(command_modifier::direct), tag(12), address(address), value(value)
+        command code; command_modifier modifier;
+        uint32_t tag, address, value, reserved[59];
+        CommandResponsePacket() { std::memset(this, 0, sizeof(this)); }
+        CommandResponsePacket(command code, uint32_t address=0, uint32_t value=0) : code(code), modifier(command_modifier::direct), tag(12), address(address), value(value)
         {
             std::memset(reserved, 0, sizeof(reserved));
         }
-
     };
 
-    struct ResponsePacket
+    CommandResponsePacket send_command_and_receive_response(uvc::device & device, const CommandResponsePacket & command)
     {
-        uint32_t code;
-        uint32_t modifier;
-        uint32_t tag;
-        uint32_t responseCode;
-        uint32_t value;
-        uint32_t revision[4];
-        uint32_t reserved[55];
-
-        ResponsePacket(uint32_t code = 0, uint32_t modifier = 0, uint32_t tag = 0, uint32_t responseCode = 0, uint32_t value = 0)
-            : code(code), modifier(modifier), tag(tag), responseCode(responseCode), value(value)
-        {
-            std::memset(revision, 0, sizeof(revision));
-            std::memset(reserved, 0, sizeof(reserved));
-        }
-    };
-    #pragma pack(pop)
-
-    void send_command(uvc::device & device, CommandPacket & command, ResponsePacket & response)
-    {
-        set_control(device, 0, static_cast<int>(control::command_response), &command, sizeof(command));
-        get_control(device, 0, static_cast<int>(control::command_response), &response, sizeof(response));
+        CommandResponsePacket c = command, r;
+        set_control(device, 0, static_cast<int>(control::command_response), &c, sizeof(c));
+        get_control(device, 0, static_cast<int>(control::command_response), &r, sizeof(r));
+        return r;
     }
 
     bool read_device_pages(uvc::device & dev, uint32_t address, unsigned char * buffer, uint32_t nPages)
@@ -140,12 +120,7 @@ namespace rsimpl { namespace r200
         // This will repeat until the number of bytes specified in the ‘value’ field of the original command
         // message has been read.  At that point the DS4 will process command messages as expected.
 
-        CommandPacket command(command::download_spi_flash, address);
-        command.value = nPages * SPI_FLASH_PAGE_SIZE_IN_BYTES;
-
-        ResponsePacket response;
-
-        send_command(dev, command, response);
+        send_command_and_receive_response(dev, CommandResponsePacket(command::download_spi_flash, address, nPages * SPI_FLASH_PAGE_SIZE_IN_BYTES));
 
         uint8_t *p = buffer;
         uint16_t spiLength = SPI_FLASH_PAGE_SIZE_IN_BYTES;
@@ -211,16 +186,8 @@ namespace rsimpl { namespace r200
         return false;
     }
 
-    void ReadCalibrationSector(uvc::device & deviceHandle, r200_calibration & cameraCalib, CameraHeaderInfo & cameraInfo)
+    r200_calibration read_calibration_and_rectification_parameters(const uint8_t (& flash_data_buffer)[SPI_FLASH_SECTOR_SIZE_IN_BYTES])
     {
-        uint8_t flashDataBuffer[SPI_FLASH_SECTOR_SIZE_IN_BYTES];
-
-        if (!read_admin_sector(deviceHandle, flashDataBuffer, NV_CALIBRATION_DATA_ADDRESS_INDEX))
-            throw std::runtime_error("Could not read calibration sector");
-
-        memcpy(&cameraInfo, flashDataBuffer + CAM_INFO_BLOCK_LEN, sizeof(cameraInfo));
-
-        #pragma pack(push, 1)
         struct RectifiedIntrinsics
         {
             big_endian<float> rfx, rfy;
@@ -229,7 +196,8 @@ namespace rsimpl { namespace r200
             operator rs_intrinsics () const { return {(int)rw, (int)rh, rpx, rpy, rfx, rfy, RS_DISTORTION_NONE, {0,0,0,0,0}}; }
         };
 
-        cameraCalib.version = reinterpret_cast<const big_endian<uint32_t> &>(flashDataBuffer);
+        r200_calibration cameraCalib;
+        cameraCalib.version = reinterpret_cast<const big_endian<uint32_t> &>(flash_data_buffer);
         if(cameraCalib.version == 0)
         {
             struct UnrectifiedIntrinsicsV0
@@ -272,7 +240,7 @@ namespace rsimpl { namespace r200
                 big_endian<float> Tworld[3];
             };
 
-            const auto & calib = reinterpret_cast<const CameraCalibrationParametersV0 &>(flashDataBuffer);
+            const auto & calib = reinterpret_cast<const CameraCalibrationParametersV0 &>(flash_data_buffer);
             for(int i=0; i<3; ++i) cameraCalib.modesLR[i] = calib.modesLR[0][i];
             for(int i=0; i<2; ++i)
             {
@@ -333,7 +301,7 @@ namespace rsimpl { namespace r200
                 big_endian<float> Tworld[3];
             };
 
-            const auto & calib = reinterpret_cast<const CameraCalibrationParametersV2 &>(flashDataBuffer);
+            const auto & calib = reinterpret_cast<const CameraCalibrationParametersV2 &>(flash_data_buffer);
             for(int i=0; i<3; ++i) cameraCalib.modesLR[i] = calib.modesLR[0][i];
             for(int i=0; i<2; ++i)
             {
@@ -348,52 +316,119 @@ namespace rsimpl { namespace r200
         {
             throw std::runtime_error(to_string() << "Unsupported calibration version: " << cameraCalib.version);
         }
-        #pragma pack(pop)
+
+        return cameraCalib;
     }
 
-    // Format a DSAPI timestamp in a human-readable fashion
-    std::string unix_timestamp_to_human(double secondsSinceEpoch)
+    void read_camera_head_contents(const uint8_t (& flash_data_buffer)[SPI_FLASH_SECTOR_SIZE_IN_BYTES], int & serial_number)
     {
-        time_t time = (time_t)secondsSinceEpoch;
-        char buffer[80];
-        struct tm * pTime = gmtime(&time);
-        if (pTime)
+        struct CameraHeadContents
         {
-            size_t i = strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S", gmtime(&time));
-            sprintf(buffer + i, ".%02d UTC", static_cast<int>(std::fmod(secondsSinceEpoch, 1.0) * 100));
-            return buffer;
-        }
-        else
-            return "";
+            enum { VERSION_NUMBER = 12 };
+            uint32_t serialNumber;
+            uint32_t modelNumber;
+            uint32_t revisionNumber;
+            uint8_t modelData[64];
+            double buildDate;
+            double firstProgramDate;
+            double focusAndAlignmentDate;
+            uint32_t nominalBaselineThird;
+            uint8_t moduleVersion;
+            uint8_t moduleMajorVersion;
+            uint8_t moduleMinorVersion;
+            uint8_t moduleSkew;
+            uint32_t lensTypeThird;
+            uint32_t OEMID;
+            uint32_t lensCoatingTypeThird;
+            uint8_t platformCameraSupport;
+            uint8_t reserved1[3];
+            uint32_t emitterType;
+            uint8_t reserved2[4];
+            uint32_t cameraFPGAVersion;
+            uint32_t platformCameraFocus; // This is the value during calibration
+            double calibrationDate;
+            uint32_t calibrationType;
+            double calibrationXError;
+            double calibrationYError;
+            double rectificationDataQres[54];
+            double rectificationDataPadding[26];
+            double CxQres;
+            double CyQres;
+            double CzQres;
+            double KxQres;
+            double KyQres;
+            uint32_t cameraHeadContentsVersion;
+            uint32_t cameraHeadContentsSizeInBytes;
+            double CxBig;
+            double CyBig;
+            double CzBig;
+            double KxBig;
+            double KyBig;
+            double CxSpecial;
+            double CySpecial;
+            double CzSpecial;
+            double KxSpecial;
+            double KySpecial;
+            uint8_t cameraHeadDataLittleEndian;
+            double rectificationDataBig[54];
+            double rectificationDataSpecial[54];
+            uint8_t cameraOptions1;
+            uint8_t cameraOptions2;
+            uint8_t bodySerialNumber[20];
+            double Dx;
+            double Dy;
+            double Dz;
+            double ThetaX;
+            double ThetaY;
+            double ThetaZ;
+            double registrationDate;
+            double registrationRotation[9];
+            double registrationTranslation[3];
+            uint32_t nominalBaseline;
+            uint32_t lensType;
+            uint32_t lensCoating;
+            int32_t nominalBaselinePlatform[3]; // NOTE: Signed, since platform camera can be mounted anywhere
+            uint32_t lensTypePlatform;
+            uint32_t imagerTypePlatform;
+            uint32_t theLastWord;
+            uint8_t reserved3[37];
+        };
+
+        auto header = reinterpret_cast<const CameraHeadContents &>(flash_data_buffer[CAM_INFO_BLOCK_LEN]);
+        serial_number = header.serialNumber;
+
+        auto build_date = time_t(header.buildDate), calib_date = time_t(header.calibrationDate);
+        LOG_INFO("Serial number                       = " << header.serialNumber);
+        LOG_INFO("Model number                        = " << header.modelNumber);
+        LOG_INFO("Revision number                     = " << header.revisionNumber);
+        LOG_INFO("Camera head contents version        = " << header.cameraHeadContentsVersion);
+        if(header.cameraHeadContentsVersion != CameraHeadContents::VERSION_NUMBER) LOG_WARNING("Camera head contents version != 12, data may be missing/incorrect");
+        LOG_INFO("Module version                      = " << (int)header.moduleVersion << "." << (int)header.moduleMajorVersion << "." << (int)header.moduleMinorVersion << "." << (int)header.moduleSkew);
+        LOG_INFO("OEM ID                              = " << header.OEMID);        
+        LOG_INFO("Lens type for left/right imagers    = " << header.lensType);
+        LOG_INFO("Lens type for third imager          = " << header.lensTypeThird);
+        LOG_INFO("Lens coating for left/right imagers = " << header.lensCoating);
+        LOG_INFO("Lens coating for third imager       = " << header.lensCoatingTypeThird);
+        LOG_INFO("Nominal baseline (left to right)    = " << header.nominalBaseline << " mm");
+        LOG_INFO("Nominal baseline (left to third)    = " << header.nominalBaselineThird << " mm");
+        if(std::isfinite(header.buildDate)) LOG_INFO("Built on " << std::put_time(std::gmtime(&build_date), "%Y-%m-%d %H:%M:%S") << " UTC");
+        if(std::isfinite(header.calibrationDate)) LOG_INFO("Calibrated on " << std::put_time(std::gmtime(&calib_date), "%Y-%m-%d %H:%M:%S") << " UTC");
     }
 
-    void read_camera_info(uvc::device & device, r200_calibration & calib, CameraHeaderInfo & header)
+    r200_calibration read_camera_info(uvc::device & device)
     {
-        ReadCalibrationSector(device, calib, header);
+        uint8_t flashDataBuffer[SPI_FLASH_SECTOR_SIZE_IN_BYTES];
+        if(!read_admin_sector(device, flashDataBuffer, NV_CALIBRATION_DATA_ADDRESS_INDEX)) throw std::runtime_error("Could not read calibration sector");
 
-        LOG_INFO("Model: " << header.modelNumber);
-        LOG_INFO("Firmware Version: " << read_firmware_version(device));
-        LOG_INFO("Calibration Version: " << calib.version);
-        LOG_INFO("Calibration Date: " << unix_timestamp_to_human(header.calibrationDate));
-        LOG_INFO("Serial: " << header.serialNumber);
-        LOG_INFO("Revision: " << header.revisionNumber);
-        LOG_INFO("Camera Header Ver: " << header.cameraHeadContentsVersion);
-        LOG_INFO("Baseline: " << header.nominalBaseline);
-        LOG_INFO("OEM ID: " << header.OEMID);
-        if (CURRENT_CAMERA_CONTENTS_VERSION_NUMBER != header.cameraHeadContentsVersion)
-                LOG_WARNING("Device camera header does not match internal struct version: " << CURRENT_CAMERA_CONTENTS_VERSION_NUMBER);
+        auto calib = read_calibration_and_rectification_parameters(flashDataBuffer);
+        read_camera_head_contents(flashDataBuffer, calib.serial_number);
+        return calib;
     }
 
     std::string read_firmware_version(uvc::device & device)
     {
-        CommandPacket command(command::get_fwrevision);
-
-        ResponsePacket response;
-        send_command(device, command, response);
-
-        char fw[16];
-        memcpy(fw, &response.revision, 16);
-        return fw;
+        auto response = send_command_and_receive_response(device, CommandResponsePacket(command::get_fwrevision));
+        return reinterpret_cast<const char *>(response.reserved);
     }
 
     void set_stream_intent(uvc::device & device, uint8_t & intent)
@@ -562,19 +597,12 @@ namespace rsimpl { namespace r200
 
 	void get_register_value(uvc::device & device, uint32_t reg, uint32_t & value)
     {
-		CommandPacket command(command::peek, reg);
-
-        ResponsePacket response;
-        send_command(device, command, response);
-
-		value = response.value; 
+        value = send_command_and_receive_response(device, CommandResponsePacket(command::peek, reg)).value;
     }
 
 	void set_register_value(uvc::device & device, uint32_t reg, uint32_t value)
     {
-		CommandPacket command(command::poke, reg, value);
-        ResponsePacket response;
-        send_command(device, command, response);
+		send_command_and_receive_response(device, CommandResponsePacket(command::poke, reg, value));
     }
 
     const depth_params depth_params::presets[] = {
@@ -587,3 +615,5 @@ namespace rsimpl { namespace r200
     };
 
 } } // namespace rsimpl::r200
+
+#pragma pack(pop)
