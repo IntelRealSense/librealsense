@@ -29,6 +29,12 @@ realsense.rs_stop_device.restype = None
 realsense.rs_is_device_streaming.restype = c_int
 realsense.rs_set_device_option.restype = None
 realsense.rs_get_device_option.restype = c_int
+realsense.rs_set_auto_range_parameters.restype = None
+realsense.rs_get_auto_range_parameters.restype = None
+realsense.rs_set_lr_auto_exposure_parameters.restype = None
+realsense.rs_get_lr_auto_exposure_parameters.restype = None
+realsense.rs_set_depth_control_parameters.restype = None
+realsense.rs_get_depth_control_parameters.restype = None
 realsense.rs_wait_for_frames.restype = None
 realsense.rs_get_frame_timestamp.restype = c_int
 realsense.rs_get_frame_data.restype = c_void_p
@@ -97,13 +103,12 @@ OPTION_R200_LR_AUTO_EXPOSURE_ENABLED   = 18  ##< {0, 1}
 OPTION_R200_LR_GAIN                    = 19  ##< 100 - 1600 (Units of 0.01)
 OPTION_R200_LR_EXPOSURE                = 20  ##< > 0 (Units of 0.1 ms)
 OPTION_R200_EMITTER_ENABLED            = 21  ##< {0, 1}
-OPTION_R200_DEPTH_CONTROL_PRESET       = 22  ##< 0 - 5, 0 is default, 1-5 is low to high outlier rejection
-OPTION_R200_DEPTH_UNITS                = 23  ##< micrometers per increment in integer depth values, 1000 is default (mm scale)
-OPTION_R200_DEPTH_CLAMP_MIN            = 24  ##< 0 - USHORT_MAX
-OPTION_R200_DEPTH_CLAMP_MAX            = 25  ##< 0 - USHORT_MAX
-OPTION_R200_DISPARITY_MULTIPLIER       = 26  ##< 0 - 1000, the increments in integer disparity values corresponding to one pixel of disparity
-OPTION_R200_DISPARITY_SHIFT            = 27 
-OPTION_COUNT                           = 28 
+OPTION_R200_DEPTH_UNITS                = 22  ##< micrometers per increment in integer depth values, 1000 is default (mm scale)
+OPTION_R200_DEPTH_CLAMP_MIN            = 23  ##< 0 - USHORT_MAX
+OPTION_R200_DEPTH_CLAMP_MAX            = 24  ##< 0 - USHORT_MAX
+OPTION_R200_DISPARITY_MULTIPLIER       = 25  ##< 0 - 1000, the increments in integer disparity values corresponding to one pixel of disparity
+OPTION_R200_DISPARITY_SHIFT            = 26 
+OPTION_COUNT                           = 27 
 
 class Intrinsics(Structure):
     _fields_ = [("width", c_int),
@@ -118,6 +123,41 @@ class Intrinsics(Structure):
 class Extrinsics(Structure):
     _fields_ = [("rotation", c_float * 9),
                 ("translation", c_float * 3)]
+
+class F200AutoRangeParameters(Structure):
+    _fields_ = [("enable_motion_versus_range", c_int),
+                ("enable_laser", c_int),
+                ("min_motion_versus_range", c_int),
+                ("max_motion_versus_range", c_int),
+                ("start_motion_versus_range", c_int),
+                ("min_laser", c_int),
+                ("max_laser", c_int),
+                ("start_laser", c_int),
+                ("auto_range_upper_threshold", c_int),
+                ("auto_range_lower_threshold", c_int)]
+
+class R200LRAutoExposureParameters(Structure):
+    _fields_ = [("mean_intensity_set_point", c_float),
+                ("bright_ratio_set_point", c_float),
+                ("kp_gain", c_float),
+                ("kp_exposure", c_float),
+                ("kp_dark_threshold", c_float),
+                ("exposure_top_edge", c_int),
+                ("exposure_bottom_edge", c_int),
+                ("exposure_left_edge", c_int),
+                ("exposure_right_edge", c_int)]
+
+class R200DepthControlParameters(Structure):
+    _fields_ = [("estimate_median_decrement", c_int),
+                ("estimate_median_increment", c_int),
+                ("median_threshold", c_int),
+                ("score_minimum_threshold", c_int),
+                ("score_maximum_threshold", c_int),
+                ("texture_count_threshold", c_int),
+                ("texture_difference_threshold", c_int),
+                ("second_peak_threshold", c_int),
+                ("neighbor_threshold", c_int),
+                ("lr_threshold", c_int)]
 
 def check_error(e):
     if(e):
@@ -347,6 +387,42 @@ class Device:
         r = realsense.rs_get_device_option(self.handle, option, byref(e))
         check_error(e)
         return r
+
+    def set_auto_range_parameters(self, parameters):
+        e = c_void_p(0)
+        realsense.rs_set_auto_range_parameters(self.handle, parameters, byref(e))
+        check_error(e)
+
+    def get_auto_range_parameters(self):
+        e = c_void_p(0)
+        parameters = F200AutoRangeParameters()
+        realsense.rs_get_auto_range_parameters(self.handle, byref(parameters), byref(e))
+        check_error(e)
+        return (parameters)
+
+    def set_lr_auto_exposure_parameters(self, parameters):
+        e = c_void_p(0)
+        realsense.rs_set_lr_auto_exposure_parameters(self.handle, parameters, byref(e))
+        check_error(e)
+
+    def get_lr_auto_exposure_parameters(self):
+        e = c_void_p(0)
+        parameters = R200LRAutoExposureParameters()
+        realsense.rs_get_lr_auto_exposure_parameters(self.handle, byref(parameters), byref(e))
+        check_error(e)
+        return (parameters)
+
+    def set_depth_control_parameters(self, parameters):
+        e = c_void_p(0)
+        realsense.rs_set_depth_control_parameters(self.handle, parameters, byref(e))
+        check_error(e)
+
+    def get_depth_control_parameters(self):
+        e = c_void_p(0)
+        parameters = R200DepthControlParameters()
+        realsense.rs_get_depth_control_parameters(self.handle, byref(parameters), byref(e))
+        check_error(e)
+        return (parameters)
 
     ## block until new frames are available
     def wait_for_frames(self):

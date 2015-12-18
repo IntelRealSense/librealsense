@@ -279,6 +279,48 @@ int rs_get_device_option(const rs_device * device, rs_option option, rs_error **
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, device, option)
 
+void rs_set_auto_range_parameters(rs_device * device, const rs_f200_auto_range_parameters * parameters, rs_error ** error) try
+{
+    VALIDATE_NOT_NULL(device);
+    VALIDATE_NOT_NULL(parameters);
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, device, parameters)
+
+void rs_get_auto_range_parameters(const rs_device * device, rs_f200_auto_range_parameters * parameters, rs_error ** error) try
+{
+    VALIDATE_NOT_NULL(device);
+    VALIDATE_NOT_NULL(parameters);
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, device, parameters)
+
+void rs_set_lr_auto_exposure_parameters(rs_device * device, const rs_r200_lr_auto_exposure_parameters * parameters, rs_error ** error) try
+{
+    VALIDATE_NOT_NULL(device);
+    VALIDATE_NOT_NULL(parameters);
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, device, parameters)
+
+void rs_get_lr_auto_exposure_parameters(const rs_device * device, rs_r200_lr_auto_exposure_parameters * parameters, rs_error ** error) try
+{
+    VALIDATE_NOT_NULL(device);
+    VALIDATE_NOT_NULL(parameters);
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, device, parameters)
+
+void rs_set_depth_control_parameters(rs_device * device, const rs_r200_depth_control_parameters * parameters, rs_error ** error) try
+{
+    VALIDATE_NOT_NULL(device);
+    VALIDATE_NOT_NULL(parameters);
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, device, parameters)
+
+void rs_get_depth_control_parameters(const rs_device * device, rs_r200_depth_control_parameters * parameters, rs_error ** error) try
+{
+    VALIDATE_NOT_NULL(device);
+    VALIDATE_NOT_NULL(parameters);
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, device, parameters)
+
 
 
 const char * rs_get_stream_name(rs_stream stream, rs_error ** error) try

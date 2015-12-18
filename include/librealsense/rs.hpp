@@ -76,12 +76,11 @@ namespace rs
         r200_lr_gain                    = 19, ///< 100 - 1600 (Units of 0.01)
         r200_lr_exposure                = 20, ///< > 0 (Units of 0.1 ms)
         r200_emitter_enabled            = 21, ///< {0, 1}
-        r200_depth_control_preset       = 22, ///< 0 - 5, 0 is default, 1-5 is low to high outlier rejection
-        r200_depth_units                = 23, ///< micrometers per increment in integer depth values, 1000 is default (mm scale)
-        r200_depth_clamp_min            = 24, ///< 0 - USHORT_MAX
-        r200_depth_clamp_max            = 25, ///< 0 - USHORT_MAX
-        r200_disparity_multiplier       = 26, ///< 0 - 1000, the increments in integer disparity values corresponding to one pixel of disparity
-        r200_disparity_shift            = 27  
+        r200_depth_units                = 22, ///< micrometers per increment in integer depth values, 1000 is default (mm scale)
+        r200_depth_clamp_min            = 23, ///< 0 - USHORT_MAX
+        r200_depth_clamp_max            = 24, ///< 0 - USHORT_MAX
+        r200_disparity_multiplier       = 25, ///< 0 - 1000, the increments in integer disparity values corresponding to one pixel of disparity
+        r200_disparity_shift            = 26  
     };
 
     struct float2 { float x,y; };
@@ -106,14 +105,23 @@ namespace rs
         float2      project_to_texcoord(const float3 & point) const                     { return pixel_to_texcoord(project(point)); }
 
         bool        operator == (const intrinsics & r) const                            { return memcmp(this, &r, sizeof(r)) == 0; }
-
     };
+
     struct extrinsics : rs_extrinsics
     {
         bool        is_identity() const                                                 { return rotation[0] == 1 && rotation[4] == 1 && translation[0] == 0 && translation[1] == 0 && translation[2] == 0; }
         float3      transform(const float3 & point) const                               { float3 p; rs_transform_point_to_point(&p.x, this, &point.x); return p; }
-
     };
+
+    struct f200_auto_range_parameters : rs_f200_auto_range_parameters{};
+
+    struct r200_lr_auto_exposure_parameters : rs_r200_lr_auto_exposure_parameters{};
+
+    struct r200_depth_control_parameters : rs_r200_depth_control_parameters
+    {
+        static r200_depth_control_parameters get_preset(int preset) { r200_depth_control_parameters p; rs_get_depth_control_parameters_preset(preset, &p); return p; }
+    };
+
     class context;
     class device;
     
@@ -398,6 +406,54 @@ namespace rs
             auto r = rs_get_device_option((const rs_device *)this, (rs_option)option, &e);
             error::handle(e);
             return r;
+        }
+
+        void set_auto_range_parameters(const f200_auto_range_parameters & parameters)
+        {
+            rs_error * e = nullptr;
+            rs_set_auto_range_parameters((rs_device *)this, (const rs_f200_auto_range_parameters *)&parameters, &e);
+            error::handle(e);
+        }
+
+        f200_auto_range_parameters get_auto_range_parameters() const
+        {
+            rs_error * e = nullptr;
+            f200_auto_range_parameters parameters;
+            rs_get_auto_range_parameters((const rs_device *)this, &parameters, &e);
+            error::handle(e);
+            return parameters;
+        }
+
+        void set_lr_auto_exposure_parameters(const r200_lr_auto_exposure_parameters & parameters)
+        {
+            rs_error * e = nullptr;
+            rs_set_lr_auto_exposure_parameters((rs_device *)this, (const rs_r200_lr_auto_exposure_parameters *)&parameters, &e);
+            error::handle(e);
+        }
+
+        r200_lr_auto_exposure_parameters get_lr_auto_exposure_parameters() const
+        {
+            rs_error * e = nullptr;
+            r200_lr_auto_exposure_parameters parameters;
+            rs_get_lr_auto_exposure_parameters((const rs_device *)this, &parameters, &e);
+            error::handle(e);
+            return parameters;
+        }
+
+        void set_depth_control_parameters(const r200_depth_control_parameters & parameters)
+        {
+            rs_error * e = nullptr;
+            rs_set_depth_control_parameters((rs_device *)this, (const rs_r200_depth_control_parameters *)&parameters, &e);
+            error::handle(e);
+        }
+
+        r200_depth_control_parameters get_depth_control_parameters() const
+        {
+            rs_error * e = nullptr;
+            r200_depth_control_parameters parameters;
+            rs_get_depth_control_parameters((const rs_device *)this, &parameters, &e);
+            error::handle(e);
+            return parameters;
         }
 
         /// block until new frames are available

@@ -247,9 +247,6 @@ namespace rsimpl
         case RS_OPTION_R200_EMITTER_ENABLED:
             r200::set_emitter_state(get_device(), !!value);
             break;
-        case RS_OPTION_R200_DEPTH_CONTROL_PRESET:
-            r200::set_depth_params(get_device(), r200::dc_params::presets[value]);
-            break;
         case RS_OPTION_R200_DEPTH_UNITS:
             r200::set_depth_units(get_device(), value);
             on_update_depth_units(value);
@@ -285,7 +282,6 @@ namespace rsimpl
             {RS_OPTION_R200_LR_GAIN, 100, 1600},
             {RS_OPTION_R200_LR_EXPOSURE, 0, 10000/max_lrz_fps},
             {RS_OPTION_R200_EMITTER_ENABLED, 0, 1},
-            {RS_OPTION_R200_DEPTH_CONTROL_PRESET, 0, 5},
             {RS_OPTION_R200_DEPTH_UNITS, 1, INT_MAX}, // What is the real range?
             {RS_OPTION_R200_DEPTH_CLAMP_MIN, 0, USHRT_MAX},
             {RS_OPTION_R200_DEPTH_CLAMP_MAX, 0, USHRT_MAX},
@@ -315,18 +311,6 @@ namespace rsimpl
         case RS_OPTION_R200_DEPTH_CLAMP_MAX:          return r200::get_min_max_depth(get_device()).max;
         case RS_OPTION_R200_DISPARITY_MULTIPLIER:     return static_cast<int>(r200::get_disparity_mode(get_device()).disparity_multiplier);
         case RS_OPTION_R200_DISPARITY_SHIFT:          return r200::get_disparity_shift (get_device());
-        case RS_OPTION_R200_DEPTH_CONTROL_PRESET:
-            {
-                auto dp = r200::get_depth_params(get_device());
-                for(int i=0; i<r200::dc_params::MAX_PRESETS; ++i)
-                {
-                    if(memcmp(&dp, &r200::dc_params::presets[i], sizeof(dp)) == 0)
-                    {
-                        return i;
-                    }
-                }
-            }
-            return 0;
         default: return 0;
         }
     }
