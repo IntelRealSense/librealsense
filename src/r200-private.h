@@ -109,6 +109,7 @@ namespace rsimpl
         struct disp_mode { uint32_t is_disparity_enabled; double disparity_multiplier; };
         struct rate_value { uint32_t rate, value; }; // Framerate dependent value, such as exposure or gain
         struct temperature { int8_t current, min, max, min_fault; };
+        struct discovery { uint32_t fps, min, max, default_value, resolution; }; // Fields other than fps are in same units as field (exposure in tenths of a millisecond, gain as percent)
         #pragma pack(pop)
 
         void set_stream_intent(uvc::device & device, uint8_t & intent);
@@ -128,6 +129,8 @@ namespace rsimpl
         inline rate_value   get_lr_gain                 (const uvc::device & device) { return xu_read<rate_value >(device, control::lr_gain); }
         inline uint8_t      get_lr_exposure_mode        (const uvc::device & device) { return xu_read<uint8_t    >(device, control::lr_exposure_mode); }
         inline uint32_t     get_disparity_shift         (const uvc::device & device) { return xu_read<uint32_t   >(device, control::disparity_shift); }
+        inline discovery    get_lr_exposure_discovery   (const uvc::device & device) { return xu_read<discovery  >(device, control::lr_exposure_discovery); }
+        inline discovery    get_lr_gain_discovery       (const uvc::device & device) { return xu_read<discovery  >(device, control::lr_gain_discovery); }
 
         inline void         set_depth_units             (uvc::device & device, uint32_t units)      { xu_write(device, control::depth_units, units); }
         inline void         set_min_max_depth           (uvc::device & device, range min_max)       { xu_write(device, control::min_max, min_max); }       
@@ -139,11 +142,8 @@ namespace rsimpl
         inline void         set_lr_gain                 (uvc::device & device, rate_value gain)     { xu_write(device, control::lr_gain, gain); }
         inline void         set_lr_exposure_mode        (uvc::device & device, uint8_t mode)        { xu_write(device, control::lr_exposure_mode, mode); }
         inline void         set_disparity_shift         (uvc::device & device, uint32_t shift)      { xu_write(device, control::disparity_shift, shift); }
-        
-        // todo - (if necessary) - get_exposure_discovery
-        // todo - (if necessary) - set_exposure_discovery
-        // todo - (if necessary) - get_gain_discovery
-        // todo - (if necessary) - set_gain_discovery
+        inline void         set_lr_exposure_discovery   (uvc::device & device, discovery disc)      { xu_write(device, control::lr_exposure_discovery, disc); }
+        inline void         set_lr_gain_discovery       (uvc::device & device, discovery disc)      { xu_write(device, control::lr_gain_discovery, disc); }
 
         ///////////////
         // Streaming //
