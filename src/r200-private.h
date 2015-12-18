@@ -151,41 +151,6 @@ namespace rsimpl
             uint32_t is_disparity_enabled;
             double disparity_multiplier;
         };
-
-        struct CommandPacket
-        {
-            uint32_t code;
-            uint32_t modifier;
-            uint32_t tag;
-            uint32_t address;
-            uint32_t value;
-            uint32_t reserved[59];
-
-            CommandPacket(uint32_t code = 0, uint32_t modifier = 0, uint32_t tag = 0, uint32_t address = 0, uint32_t value = 0)
-                : code(code), modifier(modifier), tag(tag), address(address), value(value)
-            {
-                std::memset(reserved, 0, sizeof(reserved));
-            }
-
-        };
-
-        struct ResponsePacket
-        {
-            uint32_t code;
-            uint32_t modifier;
-            uint32_t tag;
-            uint32_t responseCode;
-            uint32_t value;
-            uint32_t revision[4];
-            uint32_t reserved[55];
-
-            ResponsePacket(uint32_t code = 0, uint32_t modifier = 0, uint32_t tag = 0, uint32_t responseCode = 0, uint32_t value = 0)
-                : code(code), modifier(modifier), tag(tag), responseCode(responseCode), value(value)
-            {
-                std::memset(revision, 0, sizeof(revision));
-                std::memset(reserved, 0, sizeof(reserved));
-            }
-        };
         #pragma pack(pop)
 
         struct r200_calibration
@@ -197,13 +162,11 @@ namespace rsimpl
             float Rthird[9], T[3], B;
         };
 
-        void send_command(uvc::device & device, CommandPacket & command, ResponsePacket & response);
-
         std::string read_firmware_version(uvc::device & device);
         void read_camera_info(uvc::device & device, r200_calibration & calib, CameraHeaderInfo & header);
              
-        void xu_read(const uvc::device & device, uint8_t xu_ctrl, void * buffer, uint32_t length);
-        void xu_write(uvc::device & device, uint8_t xu_ctrl, void * buffer, uint32_t length);
+        //void xu_read(const uvc::device & device, uint8_t xu_ctrl, void * buffer, uint32_t length);
+        //void xu_write(uvc::device & device, uint8_t xu_ctrl, void * buffer, uint32_t length);
              
         void set_stream_intent(uvc::device & device, uint8_t & intent);
         void get_stream_status(const uvc::device & device, uint8_t & status);
