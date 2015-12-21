@@ -103,11 +103,18 @@ public class Device
     public native boolean isStreamEnabled(Stream stream);
 
     /**
-     * retrieve intrinsic camera parameters for a specific stream
-     * @param stream  the stream whose parameters to retrieve
-     * @param intrin  the intrinsic parameters of the stream
+     * retrieve the width in pixels of a specific stream, equivalent to the width field from the stream's intrinsics
+     * @param stream  the stream whose width to retrieve
+     * @return        the width in pixels of images from this stream
      */
-    public native void getStreamIntrinsics(Stream stream, Intrinsics intrin);
+    public native int getStreamWidth(Stream stream);
+
+    /**
+     * retrieve the height in pixels of a specific stream, equivalent to the height field from the stream's intrinsics
+     * @param stream  the stream whose height to retrieve
+     * @return        the height in pixels of images from this stream
+     */
+    public native int getStreamHeight(Stream stream);
 
     /**
      * retrieve the pixel format for a specific stream
@@ -122,6 +129,13 @@ public class Device
      * @return        the framerate of the stream, in frames per second
      */
     public native int getStreamFramerate(Stream stream);
+
+    /**
+     * retrieve intrinsic camera parameters for a specific stream
+     * @param stream  the stream whose parameters to retrieve
+     * @param intrin  the intrinsic parameters of the stream
+     */
+    public native void getStreamIntrinsics(Stream stream, Intrinsics intrin);
 
     /**
      * begin streaming on all enabled streams for this device

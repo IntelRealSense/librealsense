@@ -317,16 +317,26 @@ namespace rs
             return r != 0;
         }
 
-        /// retrieve intrinsic camera parameters for a specific stream
-        /// \param[in] stream  the stream whose parameters to retrieve
-        /// \return            the intrinsic parameters of the stream
-        intrinsics get_stream_intrinsics(stream stream) const
+        /// retrieve the width in pixels of a specific stream, equivalent to the width field from the stream's intrinsics
+        /// \param[in] stream  the stream whose width to retrieve
+        /// \return            the width in pixels of images from this stream
+        int get_stream_width(stream stream) const
         {
             rs_error * e = nullptr;
-            intrinsics intrin;
-            rs_get_stream_intrinsics((const rs_device *)this, (rs_stream)stream, &intrin, &e);
+            auto r = rs_get_stream_width((const rs_device *)this, (rs_stream)stream, &e);
             error::handle(e);
-            return intrin;
+            return r;
+        }
+
+        /// retrieve the height in pixels of a specific stream, equivalent to the height field from the stream's intrinsics
+        /// \param[in] stream  the stream whose height to retrieve
+        /// \return            the height in pixels of images from this stream
+        int get_stream_height(stream stream) const
+        {
+            rs_error * e = nullptr;
+            auto r = rs_get_stream_height((const rs_device *)this, (rs_stream)stream, &e);
+            error::handle(e);
+            return r;
         }
 
         /// retrieve the pixel format for a specific stream
@@ -349,6 +359,18 @@ namespace rs
             auto r = rs_get_stream_framerate((const rs_device *)this, (rs_stream)stream, &e);
             error::handle(e);
             return r;
+        }
+
+        /// retrieve intrinsic camera parameters for a specific stream
+        /// \param[in] stream  the stream whose parameters to retrieve
+        /// \return            the intrinsic parameters of the stream
+        intrinsics get_stream_intrinsics(stream stream) const
+        {
+            rs_error * e = nullptr;
+            intrinsics intrin;
+            rs_get_stream_intrinsics((const rs_device *)this, (rs_stream)stream, &intrin, &e);
+            error::handle(e);
+            return intrin;
         }
 
         /// begin streaming on all enabled streams for this device

@@ -84,8 +84,7 @@ public:
         const int timestamp = dev.get_frame_timestamp(stream);
         if(timestamp != last_timestamp)
         {
-            const rs::intrinsics intrin = dev.get_stream_intrinsics(stream);     
-            upload(dev.get_frame_data(stream), intrin.width, intrin.height, dev.get_stream_format(stream));
+            upload(dev.get_frame_data(stream), dev.get_stream_width(stream), dev.get_stream_height(stream), dev.get_stream_format(stream));
             last_timestamp = timestamp;
 
             ++num_frames;
@@ -118,8 +117,8 @@ public:
 
         upload(dev, stream);
         
-        const rs::intrinsics intrin = dev.get_stream_intrinsics(stream);  
-        float h = (float)rh, w = (float)rh * intrin.width / intrin.height;
+        int width = dev.get_stream_width(stream), height = dev.get_stream_height(stream);
+        float h = (float)rh, w = (float)rh * width / height;
         if(w > rw)
         {
             float scale = rw/w;
@@ -129,7 +128,7 @@ public:
 
         show(rx + (rw - w)/2, ry + (rh - h)/2, w, h);
 
-        std::ostringstream ss; ss << stream << ": " << intrin.width << " x " << intrin.height << " " << dev.get_stream_format(stream) << " (" << fps << "/" << dev.get_stream_framerate(stream) << ")";
+        std::ostringstream ss; ss << stream << ": " << width << " x " << height << " " << dev.get_stream_format(stream) << " (" << fps << "/" << dev.get_stream_framerate(stream) << ")";
         glColor3f(0,0,0);
         ttf_print(&font, rx+9.0f, ry+17.0f, ss.str().c_str());
         glColor3f(1,1,1);

@@ -181,14 +181,21 @@ int rs_is_stream_enabled(const rs_device * device, rs_stream stream, rs_error **
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, device, stream)
 
-void rs_get_stream_intrinsics(const rs_device * device, rs_stream stream, rs_intrinsics * intrin, rs_error ** error) try
+int rs_get_stream_width(const rs_device * device, rs_stream stream, rs_error ** error) try
 {
     VALIDATE_NOT_NULL(device);
     VALIDATE_ENUM(stream);
-    VALIDATE_NOT_NULL(intrin);
-    *intrin = device->get_stream_interface(stream).get_intrinsics();
+    return device->get_stream_interface(stream).get_intrinsics().width;
 }
-HANDLE_EXCEPTIONS_AND_RETURN(, device, stream, intrin)
+HANDLE_EXCEPTIONS_AND_RETURN(0, device, stream)
+
+int rs_get_stream_height(const rs_device * device, rs_stream stream, rs_error ** error) try
+{
+    VALIDATE_NOT_NULL(device);
+    VALIDATE_ENUM(stream);
+    return device->get_stream_interface(stream).get_intrinsics().height;
+}
+HANDLE_EXCEPTIONS_AND_RETURN(0, device, stream)
 
 rs_format rs_get_stream_format(const rs_device * device, rs_stream stream, rs_error ** error) try
 {
@@ -205,6 +212,15 @@ int rs_get_stream_framerate(const rs_device * device, rs_stream stream, rs_error
     return device->get_stream_interface(stream).get_framerate();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(RS_FORMAT_ANY, device, stream)
+
+void rs_get_stream_intrinsics(const rs_device * device, rs_stream stream, rs_intrinsics * intrin, rs_error ** error) try
+{
+    VALIDATE_NOT_NULL(device);
+    VALIDATE_ENUM(stream);
+    VALIDATE_NOT_NULL(intrin);
+    *intrin = device->get_stream_interface(stream).get_intrinsics();
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, device, stream, intrin)
 
 
 

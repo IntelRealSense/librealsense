@@ -227,13 +227,20 @@ JNIEXPORT jboolean JNICALL Java_com_intel_rs_Device_isStreamEnabled(JNIEnv * env
     return r;
 }
 
-JNIEXPORT void JNICALL Java_com_intel_rs_Device_getStreamIntrinsics(JNIEnv * env, jobject self, jobject stream, jobject intrin)
+JNIEXPORT jint JNICALL Java_com_intel_rs_Device_getStreamWidth(JNIEnv * env, jobject self, jobject stream)
 {
     rs_error * e = NULL;
-    rs_intrinsics c_intrin;
-    rs_get_stream_intrinsics(get_object(env, self), get_enum(env, stream), &c_intrin, &e);
+    int r = rs_get_stream_width(get_object(env, self), get_enum(env, stream), &e);
     handle_error(env, e);
-    write_intrinsics(env, intrin, &c_intrin);
+    return r;
+}
+
+JNIEXPORT jint JNICALL Java_com_intel_rs_Device_getStreamHeight(JNIEnv * env, jobject self, jobject stream)
+{
+    rs_error * e = NULL;
+    int r = rs_get_stream_height(get_object(env, self), get_enum(env, stream), &e);
+    handle_error(env, e);
+    return r;
 }
 
 JNIEXPORT jobject JNICALL Java_com_intel_rs_Device_getStreamFormat(JNIEnv * env, jobject self, jobject stream)
@@ -250,6 +257,15 @@ JNIEXPORT jint JNICALL Java_com_intel_rs_Device_getStreamFramerate(JNIEnv * env,
     int r = rs_get_stream_framerate(get_object(env, self), get_enum(env, stream), &e);
     handle_error(env, e);
     return r;
+}
+
+JNIEXPORT void JNICALL Java_com_intel_rs_Device_getStreamIntrinsics(JNIEnv * env, jobject self, jobject stream, jobject intrin)
+{
+    rs_error * e = NULL;
+    rs_intrinsics c_intrin;
+    rs_get_stream_intrinsics(get_object(env, self), get_enum(env, stream), &c_intrin, &e);
+    handle_error(env, e);
+    write_intrinsics(env, intrin, &c_intrin);
 }
 
 JNIEXPORT void JNICALL Java_com_intel_rs_Device_start(JNIEnv * env, jobject self)

@@ -20,9 +20,11 @@ EXPORTS
 	rs_enable_stream_preset
 	rs_disable_stream
 	rs_is_stream_enabled
-	rs_get_stream_intrinsics
+	rs_get_stream_width
+	rs_get_stream_height
 	rs_get_stream_format
 	rs_get_stream_framerate
+	rs_get_stream_intrinsics
 	
 	rs_start_device
 	rs_stop_device

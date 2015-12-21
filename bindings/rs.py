@@ -21,9 +21,11 @@ realsense.rs_enable_stream.restype = None
 realsense.rs_enable_stream.restype = None
 realsense.rs_disable_stream.restype = None
 realsense.rs_is_stream_enabled.restype = c_int
-realsense.rs_get_stream_intrinsics.restype = None
+realsense.rs_get_stream_width.restype = c_int
+realsense.rs_get_stream_height.restype = c_int
 realsense.rs_get_stream_format.restype = c_int
 realsense.rs_get_stream_framerate.restype = c_int
+realsense.rs_get_stream_intrinsics.restype = None
 realsense.rs_start_device.restype = None
 realsense.rs_stop_device.restype = None
 realsense.rs_is_device_streaming.restype = c_int
@@ -283,15 +285,23 @@ class Device:
         check_error(e)
         return r
 
-    ## retrieve intrinsic camera parameters for a specific stream
-    # @param stream  the stream whose parameters to retrieve
-    # @return        the intrinsic parameters of the stream
-    def get_stream_intrinsics(self, stream):
+    ## retrieve the width in pixels of a specific stream, equivalent to the width field from the stream's intrinsics
+    # @param stream  the stream whose width to retrieve
+    # @return        the width in pixels of images from this stream
+    def get_stream_width(self, stream):
         e = c_void_p(0)
-        intrin = Intrinsics()
-        realsense.rs_get_stream_intrinsics(self.handle, stream, byref(intrin), byref(e))
+        r = realsense.rs_get_stream_width(self.handle, stream, byref(e))
         check_error(e)
-        return (intrin)
+        return r
+
+    ## retrieve the height in pixels of a specific stream, equivalent to the height field from the stream's intrinsics
+    # @param stream  the stream whose height to retrieve
+    # @return        the height in pixels of images from this stream
+    def get_stream_height(self, stream):
+        e = c_void_p(0)
+        r = realsense.rs_get_stream_height(self.handle, stream, byref(e))
+        check_error(e)
+        return r
 
     ## retrieve the pixel format for a specific stream
     # @param stream  the stream whose format to retrieve
@@ -310,6 +320,16 @@ class Device:
         r = realsense.rs_get_stream_framerate(self.handle, stream, byref(e))
         check_error(e)
         return r
+
+    ## retrieve intrinsic camera parameters for a specific stream
+    # @param stream  the stream whose parameters to retrieve
+    # @return        the intrinsic parameters of the stream
+    def get_stream_intrinsics(self, stream):
+        e = c_void_p(0)
+        intrin = Intrinsics()
+        realsense.rs_get_stream_intrinsics(self.handle, stream, byref(intrin), byref(e))
+        check_error(e)
+        return (intrin)
 
     ## begin streaming on all enabled streams for this device
     def start(self):

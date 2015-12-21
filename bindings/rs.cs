@@ -314,16 +314,26 @@ namespace RealSense
             return r != 0;
         }
 
-        /// <summary> retrieve intrinsic camera parameters for a specific stream </summary>
-        /// <param name="stream"> the stream whose parameters to retrieve </param>
-        /// <returns> the intrinsic parameters of the stream </returns>
-        public Intrinsics GetStreamIntrinsics(Stream stream)
+        /// <summary> retrieve the width in pixels of a specific stream, equivalent to the width field from the stream's intrinsics </summary>
+        /// <param name="stream"> the stream whose width to retrieve </param>
+        /// <returns> the width in pixels of images from this stream </returns>
+        public int GetStreamWidth(Stream stream)
         {
             IntPtr e = IntPtr.Zero;
-            Intrinsics intrin;
-            rs_get_stream_intrinsics(handle, stream, out intrin, ref e);
+            var r = rs_get_stream_width(handle, stream, ref e);
             Error.Handle(e);
-            return intrin;
+            return r;
+        }
+
+        /// <summary> retrieve the height in pixels of a specific stream, equivalent to the height field from the stream's intrinsics </summary>
+        /// <param name="stream"> the stream whose height to retrieve </param>
+        /// <returns> the height in pixels of images from this stream </returns>
+        public int GetStreamHeight(Stream stream)
+        {
+            IntPtr e = IntPtr.Zero;
+            var r = rs_get_stream_height(handle, stream, ref e);
+            Error.Handle(e);
+            return r;
         }
 
         /// <summary> retrieve the pixel format for a specific stream </summary>
@@ -346,6 +356,18 @@ namespace RealSense
             var r = rs_get_stream_framerate(handle, stream, ref e);
             Error.Handle(e);
             return r;
+        }
+
+        /// <summary> retrieve intrinsic camera parameters for a specific stream </summary>
+        /// <param name="stream"> the stream whose parameters to retrieve </param>
+        /// <returns> the intrinsic parameters of the stream </returns>
+        public Intrinsics GetStreamIntrinsics(Stream stream)
+        {
+            IntPtr e = IntPtr.Zero;
+            Intrinsics intrin;
+            rs_get_stream_intrinsics(handle, stream, out intrin, ref e);
+            Error.Handle(e);
+            return intrin;
         }
 
         /// <summary> begin streaming on all enabled streams for this device </summary>
@@ -438,9 +460,11 @@ namespace RealSense
         [DllImport("realsense")] private static extern void rs_enable_stream_preset(IntPtr device, Stream stream, Preset preset, ref IntPtr error);
         [DllImport("realsense")] private static extern void rs_disable_stream(IntPtr device, Stream stream, ref IntPtr error);
         [DllImport("realsense")] private static extern int rs_is_stream_enabled(IntPtr device, Stream stream, ref IntPtr error);
-        [DllImport("realsense")] private static extern void rs_get_stream_intrinsics(IntPtr device, Stream stream, out Intrinsics intrin, ref IntPtr error);
+        [DllImport("realsense")] private static extern int rs_get_stream_width(IntPtr device, Stream stream, ref IntPtr error);
+        [DllImport("realsense")] private static extern int rs_get_stream_height(IntPtr device, Stream stream, ref IntPtr error);
         [DllImport("realsense")] private static extern Format rs_get_stream_format(IntPtr device, Stream stream, ref IntPtr error);
         [DllImport("realsense")] private static extern int rs_get_stream_framerate(IntPtr device, Stream stream, ref IntPtr error);
+        [DllImport("realsense")] private static extern void rs_get_stream_intrinsics(IntPtr device, Stream stream, out Intrinsics intrin, ref IntPtr error);
         [DllImport("realsense")] private static extern void rs_start_device(IntPtr device, ref IntPtr error);
         [DllImport("realsense")] private static extern void rs_stop_device(IntPtr device, ref IntPtr error);
         [DllImport("realsense")] private static extern int rs_is_device_streaming(IntPtr device, ref IntPtr error);

@@ -239,12 +239,20 @@ void rs_disable_stream(rs_device * device, rs_stream stream, rs_error ** error);
 int rs_is_stream_enabled(const rs_device * device, rs_stream stream, rs_error ** error);
 
 /**
- * retrieve intrinsic camera parameters for a specific stream
- * \param[in] stream   the stream whose parameters to retrieve
- * \param[out] intrin  the intrinsic parameters of the stream
- * \param[out] error   if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+ * retrieve the width in pixels of a specific stream, equivalent to the width field from the stream's intrinsics
+ * \param[in] stream  the stream whose width to retrieve
+ * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+ * \return            the width in pixels of images from this stream
  */
-void rs_get_stream_intrinsics(const rs_device * device, rs_stream stream, rs_intrinsics * intrin, rs_error ** error);
+int rs_get_stream_width(const rs_device * device, rs_stream stream, rs_error ** error);
+
+/**
+ * retrieve the height in pixels of a specific stream, equivalent to the height field from the stream's intrinsics
+ * \param[in] stream  the stream whose height to retrieve
+ * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+ * \return            the height in pixels of images from this stream
+ */
+int rs_get_stream_height(const rs_device * device, rs_stream stream, rs_error ** error);
 
 /**
  * retrieve the pixel format for a specific stream
@@ -261,6 +269,14 @@ rs_format rs_get_stream_format(const rs_device * device, rs_stream stream, rs_er
  * \return            the framerate of the stream, in frames per second
  */
 int rs_get_stream_framerate(const rs_device * device, rs_stream stream, rs_error ** error);
+
+/**
+ * retrieve intrinsic camera parameters for a specific stream
+ * \param[in] stream   the stream whose parameters to retrieve
+ * \param[out] intrin  the intrinsic parameters of the stream
+ * \param[out] error   if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+ */
+void rs_get_stream_intrinsics(const rs_device * device, rs_stream stream, rs_intrinsics * intrin, rs_error ** error);
 
 /**
  * begin streaming on all enabled streams for this device
