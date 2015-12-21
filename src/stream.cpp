@@ -84,6 +84,27 @@ rs_intrinsics native_stream::get_rectified_intrinsics() const
     return pad_crop_intrinsics(m.mode->rect_modes[0], m.pad_crop);
 }
 
+const rsimpl::byte * point_stream::get_frame_data() const
+{
+    if(image.empty() || number != get_frame_number())
+    {
+        image.resize(get_image_size(get_intrinsics().width, get_intrinsics().height, get_format()));
+
+        if(source.get_format() == RS_FORMAT_Z16)
+        {
+            deproject_z(reinterpret_cast<float *>(image.data()), get_intrinsics(), reinterpret_cast<const uint16_t *>(source.get_frame_data()), get_depth_scale());
+        }
+        else if(source.get_format() == RS_FORMAT_DISPARITY16)
+        {
+            deproject_disparity(reinterpret_cast<float *>(image.data()), get_intrinsics(), reinterpret_cast<const uint16_t *>(source.get_frame_data()), get_depth_scale());
+        }
+        else assert(false && "Cannot deproject image from a non-depth format");
+
+        number = get_frame_number();
+    }
+    return image.data();
+}
+
 const rsimpl::byte * rectified_stream::get_frame_data() const
 {
     // If source image is already rectified, just return it without doing any work

@@ -57,6 +57,27 @@ namespace rsimpl
         const byte *                            get_frame_data() const override { return buffer->get_front_data(); }
     };
 
+    class point_stream final : public stream_interface
+    {
+        const stream_interface &                source;
+        mutable std::vector<byte>               image;
+        mutable int                             number;
+    public:
+                                                point_stream(const stream_interface & source) : source(source), number() {}
+
+        pose                                    get_pose() const override { return {{{1,0,0},{0,1,0},{0,0,1}}, source.get_pose().position}; }
+        float                                   get_depth_scale() const override { return source.get_depth_scale(); }
+
+        bool                                    is_enabled() const override { return source.is_enabled(); }
+        rs_intrinsics                           get_intrinsics() const override { return source.get_intrinsics(); }
+        rs_intrinsics                           get_rectified_intrinsics() const override { return source.get_rectified_intrinsics(); }
+        rs_format                               get_format() const override { return RS_FORMAT_XYZ32F; }
+        int                                     get_framerate() const override { return source.get_framerate(); }
+
+        int                                     get_frame_number() const override { return source.get_frame_number(); }
+        const byte *                            get_frame_data() const override;
+    };
+
     class rectified_stream final : public stream_interface
     {
         const stream_interface &                source;

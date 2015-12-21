@@ -29,6 +29,7 @@ namespace rsimpl
         {
         case RS_FORMAT_Z16: return width * height * 2;
         case RS_FORMAT_DISPARITY16: return width * height * 2;
+        case RS_FORMAT_XYZ32F: return width * height * 12;
         case RS_FORMAT_YUYV: assert(width % 2 == 0); return width * height * 2;
         case RS_FORMAT_RGB8: return width * height * 3;
         case RS_FORMAT_BGR8: return width * height * 3;
@@ -303,6 +304,32 @@ namespace rsimpl
     const native_pixel_format pf_sr300_inzi = {'INZI', 2, 2, {{&unpack_z16_y8_from_sr300_inzi,  {{RS_STREAM_DEPTH,    RS_FORMAT_Z16  }, {RS_STREAM_INFRARED, RS_FORMAT_Y8}}},
                                                               {&unpack_z16_y16_from_sr300_inzi, {{RS_STREAM_DEPTH,    RS_FORMAT_Z16  }, {RS_STREAM_INFRARED, RS_FORMAT_Y16}}}}};
 
+    //////////////////
+    // Deprojection //
+    //////////////////
+
+    template<class MAP_DEPTH> void deproject_depth(float * points, const rs_intrinsics & intrin, const uint16_t * depth, MAP_DEPTH map_depth)
+    {
+        for(int y=0; y<intrin.height; ++y)
+        {
+            for(int x=0; x<intrin.width; ++x)
+            {
+                const float pixel[] = {x,y};
+                rs_deproject_pixel_to_point(points, &intrin, pixel, map_depth(*depth++));
+                points += 3;                
+            }
+        }    
+    }
+
+    void deproject_z(float * points, const rs_intrinsics & z_intrin, const uint16_t * z_pixels, float z_scale)
+    {
+        deproject_depth(points, z_intrin, z_pixels, [z_scale](uint16_t z) { return z_scale * z; });
+    }
+
+    void deproject_disparity(float * points, const rs_intrinsics & disparity_intrin, const uint16_t * disparity_pixels, float disparity_scale)
+    {
+        deproject_depth(points, disparity_intrin, disparity_pixels, [disparity_scale](uint16_t disparity) { return disparity_scale / disparity; });
+    }
 
     /////////////////////
     // Image alignment //

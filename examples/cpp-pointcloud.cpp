@@ -145,18 +145,21 @@ int main(int argc, char * argv[]) try
         glEnable(GL_TEXTURE_2D);
         glBindTexture(GL_TEXTURE_2D, tex.get_gl_handle());
         glBegin(GL_POINTS);
+
+        auto points = reinterpret_cast<const rs::float3 *>(dev.get_frame_data(rs::stream::points));
         auto depth = reinterpret_cast<const uint16_t *>(dev.get_frame_data(rs::stream::depth));
         
         for(int y=0; y<depth_intrin.height; ++y)
         {
             for(int x=0; x<depth_intrin.width; ++x)
             {
-                if(uint16_t d = *depth++)
+                if(points->z) //if(uint16_t d = *depth++)
                 {
-                    const rs::float3 point = depth_intrin.deproject({static_cast<float>(x),static_cast<float>(y)}, d*depth_scale);
-                    glTexCoord(identical ? tex_intrin.pixel_to_texcoord({static_cast<float>(x),static_cast<float>(y)}) : tex_intrin.project_to_texcoord(extrin.transform(point)));
-                    glVertex(point);
+                    //const rs::float3 point = depth_intrin.deproject({static_cast<float>(x),static_cast<float>(y)}, d*depth_scale);
+                    glTexCoord(identical ? tex_intrin.pixel_to_texcoord({static_cast<float>(x),static_cast<float>(y)}) : tex_intrin.project_to_texcoord(extrin.transform(*points)));
+                    glVertex(*points);
                 }
+                ++points;
             }
         }
         glEnd();

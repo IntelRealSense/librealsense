@@ -16,6 +16,9 @@ namespace rsimpl
 {
     size_t           get_image_size                 (int width, int height, rs_format format);
 
+    void             deproject_z(float * points, const rs_intrinsics & z_intrin, const uint16_t * z_pixels, float z_scale);
+    void             deproject_disparity(float * points, const rs_intrinsics & disparity_intrin, const uint16_t * disparity_pixels, float disparity_scale);
+
     void             align_z_to_color               (byte * z_aligned_to_color, const uint16_t * z_pixels, float z_scale, const rs_intrinsics & z_intrin, 
                                                      const rs_extrinsics & z_to_color, const rs_intrinsics & color_intrin);
     void             align_disparity_to_color       (byte * disparity_aligned_to_color, const uint16_t * disparity_pixels, float disparity_scale, const rs_intrinsics & disparity_intrin, 

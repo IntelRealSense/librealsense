@@ -22,6 +22,7 @@ protected:
     rsimpl::device_config                       config;
 private:
     rsimpl::native_stream                       depth, color, infrared, infrared2;
+    rsimpl::point_stream                        points;
     rsimpl::rectified_stream                    rect_color;
     rsimpl::aligned_stream                      color_to_depth, depth_to_color, depth_to_rect_color;
     rsimpl::native_stream *                     native_streams[RS_STREAM_NATIVE_COUNT];
