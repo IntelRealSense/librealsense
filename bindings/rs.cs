@@ -71,12 +71,11 @@ namespace RealSense
         R200LRGain = 19, // 100 - 1600 (Units of 0.01)
         R200LRExposure = 20, // > 0 (Units of 0.1 ms)
         R200EmitterEnabled = 21, // {0, 1}
-        R200DepthControlPreset = 22, // 0 - 5, 0 is default, 1-5 is low to high outlier rejection
-        R200DepthUnits = 23, // micrometers per increment in integer depth values, 1000 is default (mm scale)
-        R200DepthClampMin = 24, // 0 - USHORT_MAX
-        R200DepthClampMax = 25, // 0 - USHORT_MAX
-        R200DisparityMultiplier = 26, // 0 - 1000, the increments in integer disparity values corresponding to one pixel of disparity
-        R200DisparityShift = 27
+        R200DepthUnits = 22, // micrometers per increment in integer depth values, 1000 is default (mm scale)
+        R200DepthClampMin = 23, // 0 - USHORT_MAX
+        R200DepthClampMax = 24, // 0 - USHORT_MAX
+        R200DisparityMultiplier = 25, // 0 - 1000, the increments in integer disparity values corresponding to one pixel of disparity
+        R200DisparityShift = 26
     }
 
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
@@ -97,6 +96,50 @@ namespace RealSense
     {
         [MarshalAs(UnmanagedType.ByValArray, SizeConst = 9)] public float[] Rotation; // column-major 3x3 rotation matrix
         [MarshalAs(UnmanagedType.ByValArray, SizeConst = 3)] public float[] Translation; // 3 element translation vector, in meters
+    }
+
+    [StructLayout(LayoutKind.Sequential, Pack = 1)]
+    public struct F200AutoRangeParameters
+    {
+        public int EnableMotionVersusRange; // 
+        public int EnableLaser; // 
+        public int MinMotionVersusRange; // 
+        public int MaxMotionVersusRange; // 
+        public int StartMotionVersusRange; // 
+        public int MinLaser; // 
+        public int MaxLaser; // 
+        public int StartLaser; // 
+        public int AutoRangeUpperThreshold; // 
+        public int AutoRangeLowerThreshold; // 
+    }
+
+    [StructLayout(LayoutKind.Sequential, Pack = 1)]
+    public struct R200LRAutoExposureParameters
+    {
+        public float MeanIntensitySetPoint; // 
+        public float BrightRatioSetPoint; // 
+        public float KPGain; // 
+        public float KPExposure; // 
+        public float KPDarkThreshold; // 
+        public int ExposureTopEdge; // 
+        public int ExposureBottomEdge; // 
+        public int ExposureLeftEdge; // 
+        public int ExposureRightEdge; // 
+    }
+
+    [StructLayout(LayoutKind.Sequential, Pack = 1)]
+    public struct R200DepthControlParameters
+    {
+        public int EstimateMedianDecrement; // 
+        public int EstimateMedianIncrement; // 
+        public int MedianThreshold; // 
+        public int ScoreMinimumThreshold; // 
+        public int ScoreMaximumThreshold; // 
+        public int TextureCountThreshold; // 
+        public int TextureDifferenceThreshold; // 
+        public int SecondPeakThreshold; // 
+        public int NeighborThreshold; // 
+        public int LRThreshold; // 
     }
 
 
@@ -419,6 +462,54 @@ namespace RealSense
             return r;
         }
 
+        public void SetAutoRangeParameters(F200AutoRangeParameters parameters)
+        {
+            IntPtr e = IntPtr.Zero;
+            rs_set_auto_range_parameters(handle, ref parameters, ref e);
+            Error.Handle(e);
+        }
+
+        public F200AutoRangeParameters GetAutoRangeParameters()
+        {
+            IntPtr e = IntPtr.Zero;
+            F200AutoRangeParameters parameters;
+            rs_get_auto_range_parameters(handle, out parameters, ref e);
+            Error.Handle(e);
+            return parameters;
+        }
+
+        public void SetLRAutoExposureParameters(R200LRAutoExposureParameters parameters)
+        {
+            IntPtr e = IntPtr.Zero;
+            rs_set_lr_auto_exposure_parameters(handle, ref parameters, ref e);
+            Error.Handle(e);
+        }
+
+        public R200LRAutoExposureParameters GetLRAutoExposureParameters()
+        {
+            IntPtr e = IntPtr.Zero;
+            R200LRAutoExposureParameters parameters;
+            rs_get_lr_auto_exposure_parameters(handle, out parameters, ref e);
+            Error.Handle(e);
+            return parameters;
+        }
+
+        public void SetDepthControlParameters(R200DepthControlParameters parameters)
+        {
+            IntPtr e = IntPtr.Zero;
+            rs_set_depth_control_parameters(handle, ref parameters, ref e);
+            Error.Handle(e);
+        }
+
+        public R200DepthControlParameters GetDepthControlParameters()
+        {
+            IntPtr e = IntPtr.Zero;
+            R200DepthControlParameters parameters;
+            rs_get_depth_control_parameters(handle, out parameters, ref e);
+            Error.Handle(e);
+            return parameters;
+        }
+
         /// <summary> block until new frames are available </summary>
         public void WaitForFrames()
         {
@@ -472,6 +563,12 @@ namespace RealSense
         [DllImport("realsense")] private static extern void rs_get_device_option_range(IntPtr device, Option option, out int min, out int max, ref IntPtr error);
         [DllImport("realsense")] private static extern void rs_set_device_option(IntPtr device, Option option, int value, ref IntPtr error);
         [DllImport("realsense")] private static extern int rs_get_device_option(IntPtr device, Option option, ref IntPtr error);
+        [DllImport("realsense")] private static extern void rs_set_auto_range_parameters(IntPtr device, ref F200AutoRangeParameters parameters, ref IntPtr error);
+        [DllImport("realsense")] private static extern void rs_get_auto_range_parameters(IntPtr device, out F200AutoRangeParameters parameters, ref IntPtr error);
+        [DllImport("realsense")] private static extern void rs_set_lr_auto_exposure_parameters(IntPtr device, ref R200LRAutoExposureParameters parameters, ref IntPtr error);
+        [DllImport("realsense")] private static extern void rs_get_lr_auto_exposure_parameters(IntPtr device, out R200LRAutoExposureParameters parameters, ref IntPtr error);
+        [DllImport("realsense")] private static extern void rs_set_depth_control_parameters(IntPtr device, ref R200DepthControlParameters parameters, ref IntPtr error);
+        [DllImport("realsense")] private static extern void rs_get_depth_control_parameters(IntPtr device, out R200DepthControlParameters parameters, ref IntPtr error);
         [DllImport("realsense")] private static extern void rs_wait_for_frames(IntPtr device, ref IntPtr error);
         [DllImport("realsense")] private static extern int rs_get_frame_timestamp(IntPtr device, Stream stream, ref IntPtr error);
         [DllImport("realsense")] private static extern IntPtr rs_get_frame_data(IntPtr device, Stream stream, ref IntPtr error);

@@ -166,6 +166,12 @@ public class Device
      * @return        the current value of the option
      */
     public native int getOption(Option option);
+    public native void setAutoRangeParameters(F200AutoRangeParameters parameters);
+    public native void getAutoRangeParameters(F200AutoRangeParameters parameters);
+    public native void setLRAutoExposureParameters(R200LRAutoExposureParameters parameters);
+    public native void getLRAutoExposureParameters(R200LRAutoExposureParameters parameters);
+    public native void setDepthControlParameters(R200DepthControlParameters parameters);
+    public native void getDepthControlParameters(R200DepthControlParameters parameters);
 
     /**
      * block until new frames are available

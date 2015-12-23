@@ -184,7 +184,7 @@ namespace rsimpl
                     break;
                 case RS_FORMAT_DISPARITY16: 
                     dm.is_disparity_enabled = 1;
-                    on_update_disparity_multiplier(dm.disparity_multiplier);
+                    on_update_disparity_multiplier(static_cast<float>(dm.disparity_multiplier));
                     break;
                 }
                 r200::set_disparity_mode(get_device(), dm);
@@ -247,9 +247,6 @@ namespace rsimpl
         case RS_OPTION_R200_EMITTER_ENABLED:
             r200::set_emitter_state(get_device(), !!value);
             break;
-        case RS_OPTION_R200_DEPTH_CONTROL_PRESET:
-            r200::set_depth_params(get_device(), r200::dc_params::presets[value]);
-            break;
         case RS_OPTION_R200_DEPTH_UNITS:
             r200::set_depth_units(get_device(), value);
             on_update_depth_units(value);
@@ -295,7 +292,6 @@ namespace rsimpl
         const struct { rs_option option; int min, max; } ranges[] = {
             {RS_OPTION_R200_LR_AUTO_EXPOSURE_ENABLED, 0, 1},
             {RS_OPTION_R200_EMITTER_ENABLED, 0, 1},
-            {RS_OPTION_R200_DEPTH_CONTROL_PRESET, 0, 5},
             {RS_OPTION_R200_DEPTH_UNITS, 1, INT_MAX}, // What is the real range?
             {RS_OPTION_R200_DEPTH_CLAMP_MIN, 0, USHRT_MAX},
             {RS_OPTION_R200_DEPTH_CLAMP_MAX, 0, USHRT_MAX},
@@ -329,20 +325,37 @@ namespace rsimpl
         case RS_OPTION_R200_DEPTH_CLAMP_MAX:          return r200::get_min_max_depth(get_device()).max;
         case RS_OPTION_R200_DISPARITY_MULTIPLIER:     return static_cast<int>(r200::get_disparity_mode(get_device()).disparity_multiplier);
         case RS_OPTION_R200_DISPARITY_SHIFT:          return r200::get_disparity_shift (get_device());
-        case RS_OPTION_R200_DEPTH_CONTROL_PRESET:
-            {
-                auto dp = r200::get_depth_params(get_device());
-                for(int i=0; i<r200::dc_params::MAX_PRESETS; ++i)
-                {
-                    if(memcmp(&dp, &r200::dc_params::presets[i], sizeof(dp)) == 0)
-                    {
-                        return i;
-                    }
-                }
-            }
-            return 0;
         default: return 0;
         }
     }
-    
+
+    // Note: The external and internal algorithm structs have been deliberately left as separate types. The internal structs are intended to be 1:1
+    // representations of the exact binary data transferred to the UVC extension unit control. We want to allow for these structs to change with
+    // future firmware versions or devices without affecting the API of the library.
+ 
+    void r200_camera::set_lr_auto_exposure_parameters(const rs_r200_lr_auto_exposure_parameters & p)
+    {
+        r200::set_lr_auto_exposure_params(get_device(), {p.mean_intensity_set_point, p.bright_ratio_set_point, p.kp_gain, p.kp_exposure, p.kp_dark_threshold,
+            p.exposure_top_edge, p.exposure_bottom_edge, p.exposure_left_edge, p.exposure_right_edge});
+    }
+
+    rs_r200_lr_auto_exposure_parameters r200_camera::get_lr_auto_exposure_parameters() const
+    {
+        auto p = r200::get_lr_auto_exposure_params(get_device());
+        return {p.mean_intensity_set_point, p.bright_ratio_set_point, p.kp_gain, p.kp_exposure, p.kp_dark_threshold,
+            p.exposure_top_edge, p.exposure_bottom_edge, p.exposure_left_edge, p.exposure_right_edge};
+    }
+
+    void r200_camera::set_depth_control_parameters(const rs_r200_depth_control_parameters & p)
+    {
+        r200::set_depth_params(get_device(), {p.estimate_median_decrement, p.estimate_median_increment, p.median_threshold, p.score_minimum_threshold, p.score_maximum_threshold,
+            p.texture_count_threshold, p.texture_difference_threshold, p.second_peak_threshold, p.neighbor_threshold, p.lr_threshold});
+    }
+
+    rs_r200_depth_control_parameters r200_camera::get_depth_control_parameters() const
+    {
+        const auto p = r200::get_depth_params(get_device());
+        return {p.robbins_munroe_minus_inc, p.robbins_munroe_plus_inc, p.median_thresh, p.score_min_thresh, p.score_max_thresh,
+            p.texture_count_thresh, p.texture_diff_thresh, p.second_peak_thresh, p.neighbor_thresh, p.lr_thresh};
+    }
 }

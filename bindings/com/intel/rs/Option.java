@@ -24,12 +24,11 @@ public enum Option
     R200_LR_GAIN(19), // 100 - 1600 (Units of 0.01)
     R200_LR_EXPOSURE(20), // > 0 (Units of 0.1 ms)
     R200_EMITTER_ENABLED(21), // {0, 1}
-    R200_DEPTH_CONTROL_PRESET(22), // 0 - 5, 0 is default, 1-5 is low to high outlier rejection
-    R200_DEPTH_UNITS(23), // micrometers per increment in integer depth values, 1000 is default (mm scale)
-    R200_DEPTH_CLAMP_MIN(24), // 0 - USHORT_MAX
-    R200_DEPTH_CLAMP_MAX(25), // 0 - USHORT_MAX
-    R200_DISPARITY_MULTIPLIER(26), // 0 - 1000, the increments in integer disparity values corresponding to one pixel of disparity
-    R200_DISPARITY_SHIFT(27);
+    R200_DEPTH_UNITS(22), // micrometers per increment in integer depth values, 1000 is default (mm scale)
+    R200_DEPTH_CLAMP_MIN(23), // 0 - USHORT_MAX
+    R200_DEPTH_CLAMP_MAX(24), // 0 - USHORT_MAX
+    R200_DISPARITY_MULTIPLIER(25), // 0 - 1000, the increments in integer disparity values corresponding to one pixel of disparity
+    R200_DISPARITY_SHIFT(26);
     public final int code;
     private Option(int code) { this.code = code; }
 }

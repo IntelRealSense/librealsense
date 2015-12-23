@@ -591,11 +591,6 @@ TEST_CASE( "R200 emitter can be turned on and off after streaming has begun", "[
     REQUIRE(rs_get_device_option(dev, RS_OPTION_R200_EMITTER_ENABLED, require_no_error()) == 1);
 }
 
-TEST_CASE( "R200 supports RS_OPTION_R200_DEPTH_CONTROL_PRESET", "[live] [r200]" )
-{
-    test_r200_option(RS_OPTION_R200_DEPTH_CONTROL_PRESET, {0, 1, 2, 3, 4, 5}, BEFORE_START_DEVICE | AFTER_START_DEVICE);
-}
-
 TEST_CASE( "R200 supports RS_OPTION_R200_DEPTH_UNITS", "[live] [r200]" )
 {
     safe_context ctx;   

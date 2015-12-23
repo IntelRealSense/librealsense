@@ -77,15 +77,15 @@ namespace rsimpl
         #pragma pack(push, 1)
         struct ae_params // Auto-exposure algorithm parameters
         {
-            float mean_intensity;
-            float bright_ratio;
-            float kp_gain;
-            float kp_exposure;
-            float kp_dark_threshold;
-            uint16_t region_of_interest_top_left;
-            uint16_t region_of_interest_top_right;
-            uint16_t region_of_interest_bottom_left;
-            uint16_t region_of_interest_bottom_right;
+            float mean_intensity_set_point;
+            float bright_ratio_set_point;  
+            float kp_gain;                 
+            float kp_exposure;             
+            float kp_dark_threshold;       
+            uint16_t exposure_top_edge;    
+            uint16_t exposure_bottom_edge; 
+            uint16_t exposure_left_edge;   
+            uint16_t exposure_right_edge;  
         };
 
         struct dc_params // Depth control algorithm parameters

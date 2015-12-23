@@ -64,6 +64,13 @@ public:
     void                                        set_option(rs_option option, int value);
     int                                         get_option(rs_option option);
 
+    virtual void                                set_auto_range_parameters(const rs_f200_auto_range_parameters & parameters) {}
+    virtual rs_f200_auto_range_parameters       get_auto_range_parameters() const { return {}; }
+    virtual void                                set_lr_auto_exposure_parameters(const rs_r200_lr_auto_exposure_parameters & parameters) {}
+    virtual rs_r200_lr_auto_exposure_parameters get_lr_auto_exposure_parameters() const { return {}; }
+    virtual void                                set_depth_control_parameters(const rs_r200_depth_control_parameters & parameters) {}
+    virtual rs_r200_depth_control_parameters    get_depth_control_parameters() const { return {}; }
+
     virtual void                                on_before_start(const std::vector<rsimpl::subdevice_mode_selection> & selected_modes) {}
     virtual void                                get_xu_range(rs_option option, int * min, int * max) = 0;
     virtual void                                set_xu_option(rs_option option, int value) = 0;
