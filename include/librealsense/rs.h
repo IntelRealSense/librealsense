@@ -178,15 +178,6 @@ float rs_get_device_depth_scale(const rs_device * device, rs_error ** error);
 int rs_device_supports_option(const rs_device * device, rs_option option, rs_error ** error);
 
 /**
- * determine the range of acceptable values for an option on this device
- * \param[in] option  the option whose range to query
- * \param[out] min    the minimum acceptable value, attempting to set a value below this will take no effect and raise an error
- * \param[out] max    the maximum acceptable value, attempting to set a value above this will take no effect and raise an error
- * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
- */
-void rs_get_device_option_range(const rs_device * device, rs_option option, int * min, int * max, rs_error ** error);
-
-/**
  * determine the number of streaming modes available for a given stream
  * \param[in] stream  the stream whose modes will be enumerated
  * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
@@ -300,6 +291,15 @@ void rs_stop_device(rs_device * device, rs_error ** error);
 int rs_is_device_streaming(const rs_device * device, rs_error ** error);
 
 /**
+ * determine the range of acceptable values for an option on this device
+ * \param[in] option  the option whose range to query
+ * \param[out] min    the minimum acceptable value, attempting to set a value below this will take no effect and raise an error
+ * \param[out] max    the maximum acceptable value, attempting to set a value above this will take no effect and raise an error
+ * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+ */
+void rs_get_device_option_range(rs_device * device, rs_option option, int * min, int * max, rs_error ** error);
+
+/**
  * set the value of a specific device option
  * \param[in] option  the option whose value to set
  * \param[in] value   the desired value to set
@@ -313,7 +313,7 @@ void rs_set_device_option(rs_device * device, rs_option option, int value, rs_er
  * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
  * \return            the current value of the option
  */
-int rs_get_device_option(const rs_device * device, rs_option option, rs_error ** error);
+int rs_get_device_option(rs_device * device, rs_option option, rs_error ** error);
 
 /**
  * block until new frames are available

@@ -237,17 +237,6 @@ namespace RealSense
             return r != 0;
         }
 
-        /// <summary> determine the range of acceptable values for an option on this device </summary>
-        /// <param name="option"> the option whose range to query </param>
-        /// <param name="min"> the minimum acceptable value, attempting to set a value below this will take no effect and raise an error </param>
-        /// <param name="max"> the maximum acceptable value, attempting to set a value above this will take no effect and raise an error </param>
-        public void GetOptionRange(Option option, out int min, out int max)
-        {
-            IntPtr e = IntPtr.Zero;
-            rs_get_device_option_range(handle, option, out min, out max, ref e);
-            Error.Handle(e);
-        }
-
         /// <summary> determine the number of streaming modes available for a given stream </summary>
         /// <param name="stream"> the stream whose modes will be enumerated </param>
         /// <returns> the count of available modes </returns>
@@ -398,6 +387,17 @@ namespace RealSense
             return r != 0;
         }
 
+        /// <summary> determine the range of acceptable values for an option on this device </summary>
+        /// <param name="option"> the option whose range to query </param>
+        /// <param name="min"> the minimum acceptable value, attempting to set a value below this will take no effect and raise an error </param>
+        /// <param name="max"> the maximum acceptable value, attempting to set a value above this will take no effect and raise an error </param>
+        public void GetOptionRange(Option option, out int min, out int max)
+        {
+            IntPtr e = IntPtr.Zero;
+            rs_get_device_option_range(handle, option, out min, out max, ref e);
+            Error.Handle(e);
+        }
+
         /// <summary> set the value of a specific device option </summary>
         /// <param name="option"> the option whose value to set </param>
         /// <param name="value"> the desired value to set </param>
@@ -455,7 +455,6 @@ namespace RealSense
         [DllImport("realsense")] private static extern void rs_get_device_extrinsics(IntPtr device, Stream from_stream, Stream to_stream, out Extrinsics extrin, ref IntPtr error);
         [DllImport("realsense")] private static extern float rs_get_device_depth_scale(IntPtr device, ref IntPtr error);
         [DllImport("realsense")] private static extern int rs_device_supports_option(IntPtr device, Option option, ref IntPtr error);
-        [DllImport("realsense")] private static extern void rs_get_device_option_range(IntPtr device, Option option, out int min, out int max, ref IntPtr error);
         [DllImport("realsense")] private static extern int rs_get_stream_mode_count(IntPtr device, Stream stream, ref IntPtr error);
         [DllImport("realsense")] private static extern void rs_get_stream_mode(IntPtr device, Stream stream, int index, out int width, out int height, out Format format, out int framerate, ref IntPtr error);
         [DllImport("realsense")] private static extern void rs_enable_stream(IntPtr device, Stream stream, int width, int height, Format format, int framerate, ref IntPtr error);
@@ -470,6 +469,7 @@ namespace RealSense
         [DllImport("realsense")] private static extern void rs_start_device(IntPtr device, ref IntPtr error);
         [DllImport("realsense")] private static extern void rs_stop_device(IntPtr device, ref IntPtr error);
         [DllImport("realsense")] private static extern int rs_is_device_streaming(IntPtr device, ref IntPtr error);
+        [DllImport("realsense")] private static extern void rs_get_device_option_range(IntPtr device, Option option, out int min, out int max, ref IntPtr error);
         [DllImport("realsense")] private static extern void rs_set_device_option(IntPtr device, Option option, int value, ref IntPtr error);
         [DllImport("realsense")] private static extern int rs_get_device_option(IntPtr device, Option option, ref IntPtr error);
         [DllImport("realsense")] private static extern void rs_wait_for_frames(IntPtr device, ref IntPtr error);

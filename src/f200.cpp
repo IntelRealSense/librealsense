@@ -330,7 +330,7 @@ namespace rsimpl
         }
     }
 
-    void f200_camera::get_xu_range(rs_option option, int * min, int * max) const
+    void f200_camera::get_xu_range(rs_option option, int * min, int * max)
     {
         const struct { rs_option option; int min, max; } ranges[] = {
             {RS_OPTION_F200_LASER_POWER, 0, 15},
@@ -365,7 +365,7 @@ namespace rsimpl
         }
     }
 
-    int f200_camera::get_xu_option(rs_option option) const
+    int f200_camera::get_xu_option(rs_option option)
     {
         uint8_t value = 0;
         switch(option)

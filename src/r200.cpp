@@ -270,20 +270,30 @@ namespace rsimpl
         }
     }
 
-    void r200_camera::get_xu_range(rs_option option, int * min, int * max) const
+    void r200_camera::get_xu_range(rs_option option, int * min, int * max)
     {
-        int max_lrz_fps = 30;
-        for(auto s : {RS_STREAM_DEPTH, RS_STREAM_INFRARED, RS_STREAM_INFRARED2})
+        // Gain min/max is framerate dependent
+        if(option == RS_OPTION_R200_LR_GAIN)
         {
-            if(get_stream_interface(s).is_enabled())
-            {
-                max_lrz_fps = std::max(max_lrz_fps, get_stream_interface(s).get_framerate());
-            }
+            r200::set_lr_gain_discovery(get_device(), {get_lr_framerate()});
+            auto disc = r200::get_lr_gain_discovery(get_device());
+            if(min) *min = disc.min;
+            if(max) *max = disc.max;
+            return;
         }
+
+        // Exposure min/max is framerate dependent
+        if(option == RS_OPTION_R200_LR_EXPOSURE)
+        {
+            r200::set_lr_exposure_discovery(get_device(), {get_lr_framerate()});
+            auto disc = r200::get_lr_exposure_discovery(get_device());
+            if(min) *min = disc.min;
+            if(max) *max = disc.max;
+            return;
+        }
+
         const struct { rs_option option; int min, max; } ranges[] = {
             {RS_OPTION_R200_LR_AUTO_EXPOSURE_ENABLED, 0, 1},
-            {RS_OPTION_R200_LR_GAIN, 100, 1600},
-            {RS_OPTION_R200_LR_EXPOSURE, 0, 10000/max_lrz_fps},
             {RS_OPTION_R200_EMITTER_ENABLED, 0, 1},
             {RS_OPTION_R200_DEPTH_CONTROL_PRESET, 0, 5},
             {RS_OPTION_R200_DEPTH_UNITS, 1, INT_MAX}, // What is the real range?
@@ -302,13 +312,17 @@ namespace rsimpl
         throw std::logic_error("range not specified");
     }
 
-    int r200_camera::get_xu_option(rs_option option) const
+    int r200_camera::get_xu_option(rs_option option)
     {
         switch(option)
         {
         case RS_OPTION_R200_LR_AUTO_EXPOSURE_ENABLED: return r200::get_lr_exposure_mode(get_device());
-        case RS_OPTION_R200_LR_GAIN:                  return r200::get_lr_gain(get_device()).value;
-        case RS_OPTION_R200_LR_EXPOSURE:              return r200::get_lr_exposure(get_device()).value;
+        case RS_OPTION_R200_LR_GAIN: // Gain is framerate dependent
+            r200::set_lr_gain_discovery(get_device(), {get_lr_framerate()});
+            return r200::get_lr_gain(get_device()).value;
+        case RS_OPTION_R200_LR_EXPOSURE: // Exposure is framerate dependent
+            r200::set_lr_exposure_discovery(get_device(), {get_lr_framerate()});
+            return r200::get_lr_exposure(get_device()).value;
         case RS_OPTION_R200_EMITTER_ENABLED:          return r200::get_emitter_state(get_device(), is_capturing(), get_stream_interface(RS_STREAM_DEPTH).is_enabled());
         case RS_OPTION_R200_DEPTH_UNITS:              return r200::get_depth_units(get_device());
         case RS_OPTION_R200_DEPTH_CLAMP_MIN:          return r200::get_min_max_depth(get_device()).min;

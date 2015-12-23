@@ -12,7 +12,6 @@ EXPORTS
 	rs_get_device_extrinsics
 	rs_get_device_depth_scale
 	rs_device_supports_option
-	rs_get_device_option_range
 	rs_get_stream_mode_count
 	rs_get_stream_mode
 	
@@ -30,6 +29,7 @@ EXPORTS
 	rs_stop_device
 	rs_is_device_streaming
 	
+	rs_get_device_option_range
 	rs_set_device_option
 	rs_get_device_option
 	

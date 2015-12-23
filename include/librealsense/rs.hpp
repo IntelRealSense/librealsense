@@ -240,17 +240,6 @@ namespace rs
             return r != 0;
         }
 
-        /// determine the range of acceptable values for an option on this device
-        /// \param[in] option  the option whose range to query
-        /// \param[out] min    the minimum acceptable value, attempting to set a value below this will take no effect and raise an error
-        /// \param[out] max    the maximum acceptable value, attempting to set a value above this will take no effect and raise an error
-        void get_option_range(option option, int & min, int & max) const
-        {
-            rs_error * e = nullptr;
-            rs_get_device_option_range((const rs_device *)this, (rs_option)option, &min, &max, &e);
-            error::handle(e);
-        }
-
         /// determine the number of streaming modes available for a given stream
         /// \param[in] stream  the stream whose modes will be enumerated
         /// \return            the count of available modes
@@ -403,6 +392,17 @@ namespace rs
             return r != 0;
         }
 
+        /// determine the range of acceptable values for an option on this device
+        /// \param[in] option  the option whose range to query
+        /// \param[out] min    the minimum acceptable value, attempting to set a value below this will take no effect and raise an error
+        /// \param[out] max    the maximum acceptable value, attempting to set a value above this will take no effect and raise an error
+        void get_option_range(option option, int & min, int & max)
+        {
+            rs_error * e = nullptr;
+            rs_get_device_option_range((rs_device *)this, (rs_option)option, &min, &max, &e);
+            error::handle(e);
+        }
+
         /// set the value of a specific device option
         /// \param[in] option  the option whose value to set
         /// \param[in] value   the desired value to set
@@ -416,10 +416,10 @@ namespace rs
         /// query the current value of a specific device option
         /// \param[in] option  the option whose value to retrieve
         /// \return            the current value of the option
-        int get_option(option option) const
+        int get_option(option option)
         {
             rs_error * e = nullptr;
-            auto r = rs_get_device_option((const rs_device *)this, (rs_option)option, &e);
+            auto r = rs_get_device_option((rs_device *)this, (rs_option)option, &e);
             error::handle(e);
             return r;
         }
