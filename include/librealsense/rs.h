@@ -87,7 +87,19 @@ typedef enum rs_option
     RS_OPTION_R200_DEPTH_CLAMP_MAX            = 24, /**< 0 - USHORT_MAX */
     RS_OPTION_R200_DISPARITY_MULTIPLIER       = 25, /**< 0 - 1000, the increments in integer disparity values corresponding to one pixel of disparity */
     RS_OPTION_R200_DISPARITY_SHIFT            = 26, 
-    RS_OPTION_COUNT                           = 27, 
+
+    RS_OPTION_R200_DEPTH_CONTROL_ESTIMATE_MEDIAN_DECREMENT,    /*  */
+    RS_OPTION_R200_DEPTH_CONTROL_ESTIMATE_MEDIAN_INCREMENT,    /*  */
+    RS_OPTION_R200_DEPTH_CONTROL_MEDIAN_THRESHOLD,             /*  */
+    RS_OPTION_R200_DEPTH_CONTROL_SCORE_MINIMUM_THRESHOLD,      /*  */
+    RS_OPTION_R200_DEPTH_CONTROL_SCORE_MAXIMUM_THRESHOLD,      /*  */
+    RS_OPTION_R200_DEPTH_CONTROL_TEXTURE_COUNT_THRESHOLD,      /*  */
+    RS_OPTION_R200_DEPTH_CONTROL_TEXTURE_DIFFERENCE_THRESHOLD, /*  */
+    RS_OPTION_R200_DEPTH_CONTROL_SECOND_PEAK_THRESHOLD,        /*  */
+    RS_OPTION_R200_DEPTH_CONTROL_NEIGHBOR_THRESHOLD,           /*  */
+    RS_OPTION_R200_DEPTH_CONTROL_LR_THRESHOLD,                 /*  */
+
+    RS_OPTION_COUNT                           = 37, 
     RS_OPTION_MAX_ENUM = 0x7FFFFFFF
 } rs_option;
 
@@ -329,6 +341,10 @@ void rs_stop_device(rs_device * device, rs_error ** error);
  * \return            true if the device is currently streaming
  */
 int rs_is_device_streaming(const rs_device * device, rs_error ** error);
+
+void rs_get_option_range(rs_device * dev, rs_option option, double * min, double * max, double * step, rs_error ** error);
+void rs_get_options(rs_device * dev, const rs_option options[], int count, double values[], rs_error ** error);
+void rs_set_options(rs_device * dev, const rs_option options[], int count, const double values[], rs_error ** error);
 
 /**
  * determine the range of acceptable values for an option on this device

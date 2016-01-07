@@ -215,7 +215,10 @@ int main(int argc, char * argv[]) try
         }
         std::ostringstream ss; ss << "Depth control parameters preset: " << dc_preset;
         g.label({w-260,y+12}, {1,1,1}, "Depth control parameters preset");
-        if(g.slider(100, {w-260,y+16,w-20,y+36}, 0, 5, dc_preset)) dev->set_depth_control_parameters(rs::r200_depth_control_parameters::get_preset(dc_preset));
+        if(g.slider(100, {w-260,y+16,w-20,y+36}, 0, 5, dc_preset))
+        {
+            rs_apply_depth_control_preset((rs_device *)dev, dc_preset);
+        }
         y += 38;
         
         panel_height = y + 10 + offset;

@@ -70,6 +70,10 @@ void draw_stream(rs_device * dev, rs_stream stream, int x, int y)
     ttf_print(&font, x+8.0f, y+16.0f, buffer);
 }
 
+void rs_get_option_range(rs_device * dev, rs_option option, double * min, double * max, double * step);
+void rs_get_options(rs_device * dev, const rs_option options[], int count, double values[]);
+void rs_set_options(rs_device * dev, const rs_option options[], int count, const double values[]);
+
 int main(int argc, char * argv[])
 {
     rs_context * ctx;
@@ -79,6 +83,11 @@ int main(int argc, char * argv[])
     char buffer[1024];
     GLFWwindow * win;
     int i, j, height;
+
+    rs_option opts[] = {RS_OPTION_R200_LR_GAIN, RS_OPTION_R200_LR_EXPOSURE};
+    double vals[] = {2.0, 0.0163};
+    rs_set_options(dev, opts, 2, vals);
+
 
     ctx = rs_create_context(RS_API_VERSION, &error); check_error();
     for (i = 0; i < rs_get_device_count(ctx, NULL); ++i)

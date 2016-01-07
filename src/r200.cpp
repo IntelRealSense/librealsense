@@ -163,6 +163,80 @@ namespace rsimpl
         config.depth_scale = depth.get_intrinsics().fx * baseline * multiplier;
     }
 
+    // This class is used to buffer up several writes to a structure-valued XU control, and send the entire structure all at once
+    // Additionally, it will ensure that any fields not set in a given struct will retain their original values
+    template<class T> struct struct_writer
+    {
+        uvc::device & dev;
+        T (*reader)(const uvc::device &);
+        void (*writer)(uvc::device &, T);
+        T struct_;
+        bool write;
+
+        struct_writer(uvc::device & dev, T (*reader)(const uvc::device &), void (*writer)(uvc::device &, T)) : dev(dev), reader(reader), writer(writer), write(false) {}
+
+        template<class U> void set(U T::* field, double value)
+        {
+            if(!write)
+            {
+                struct_ = reader(dev);
+                write = true;
+            }
+            struct_.*field = static_cast<U>(value);
+        }
+
+        void commit()
+        {
+            if(write)
+            {
+                writer(dev, struct_);
+            }
+        }
+    };
+
+    void r200_camera::set_options(const rs_option options[], int count, const double values[])
+    {
+        struct_writer<r200::range    > minmax_writer (get_device(), &r200::get_min_max_depth,  &r200::set_min_max_depth );
+        struct_writer<r200::disp_mode> disp_writer   (get_device(), &r200::get_disparity_mode, &r200::set_disparity_mode);
+        struct_writer<r200::dc_params> dc_writer     (get_device(), &r200::get_depth_params,   &r200::set_depth_params  );
+
+        for(int i=0; i<count; ++i)
+        {
+            switch(options[i])
+            {
+            case RS_OPTION_R200_LR_AUTO_EXPOSURE_ENABLED:                   r200::set_lr_exposure_mode(get_device(), values[i]); break;
+            case RS_OPTION_R200_LR_GAIN:                                    r200::set_lr_gain(get_device(), {get_lr_framerate(), values[i]}); break; // TODO: May need to set this on start if framerate changes
+            case RS_OPTION_R200_LR_EXPOSURE:                                r200::set_lr_exposure(get_device(), {get_lr_framerate(), values[i]}); break; // TODO: May need to set this on start if framerate changes
+            case RS_OPTION_R200_EMITTER_ENABLED:                            r200::set_emitter_state(get_device(), !!values[i]); break;
+            case RS_OPTION_R200_DEPTH_UNITS:                                r200::set_depth_units(get_device(), values[i]); on_update_depth_units(values[i]); break;
+
+            case RS_OPTION_R200_DEPTH_CLAMP_MIN:                            minmax_writer.set(&r200::range::min, values[i]); break;
+            case RS_OPTION_R200_DEPTH_CLAMP_MAX:                            minmax_writer.set(&r200::range::max, values[i]); break;
+
+            case RS_OPTION_R200_DISPARITY_MULTIPLIER:                       disp_writer.set(&r200::disp_mode::disparity_multiplier, values[i]); break;
+            case RS_OPTION_R200_DISPARITY_SHIFT:                            r200::set_disparity_shift(get_device(), values[i]); break;
+
+            case RS_OPTION_R200_DEPTH_CONTROL_ESTIMATE_MEDIAN_DECREMENT:    dc_writer.set(&r200::dc_params::robbins_munroe_minus_inc, values[i]); break;
+            case RS_OPTION_R200_DEPTH_CONTROL_ESTIMATE_MEDIAN_INCREMENT:    dc_writer.set(&r200::dc_params::robbins_munroe_plus_inc,  values[i]); break;
+            case RS_OPTION_R200_DEPTH_CONTROL_MEDIAN_THRESHOLD:             dc_writer.set(&r200::dc_params::median_thresh,            values[i]); break;
+            case RS_OPTION_R200_DEPTH_CONTROL_SCORE_MINIMUM_THRESHOLD:      dc_writer.set(&r200::dc_params::score_min_thresh,         values[i]); break;
+            case RS_OPTION_R200_DEPTH_CONTROL_SCORE_MAXIMUM_THRESHOLD:      dc_writer.set(&r200::dc_params::score_max_thresh,         values[i]); break;
+            case RS_OPTION_R200_DEPTH_CONTROL_TEXTURE_COUNT_THRESHOLD:      dc_writer.set(&r200::dc_params::texture_count_thresh,     values[i]); break;
+            case RS_OPTION_R200_DEPTH_CONTROL_TEXTURE_DIFFERENCE_THRESHOLD: dc_writer.set(&r200::dc_params::texture_diff_thresh,      values[i]); break;
+            case RS_OPTION_R200_DEPTH_CONTROL_SECOND_PEAK_THRESHOLD:        dc_writer.set(&r200::dc_params::second_peak_thresh,       values[i]); break;
+            case RS_OPTION_R200_DEPTH_CONTROL_NEIGHBOR_THRESHOLD:           dc_writer.set(&r200::dc_params::neighbor_thresh,          values[i]); break;
+            case RS_OPTION_R200_DEPTH_CONTROL_LR_THRESHOLD:                 dc_writer.set(&r200::dc_params::lr_thresh,                values[i]); break;
+
+            default: LOG_WARNING("Cannot set " << options[i] << " to " << values[i] << " on " << get_name()); break;
+            }
+        }
+
+        minmax_writer.commit();
+        disp_writer.commit();
+        if(disp_writer.write) on_update_disparity_multiplier(disp_writer.struct_.disparity_multiplier);
+        dc_writer.commit();
+    }
+
     void r200_camera::on_before_start(const std::vector<subdevice_mode_selection> & selected_modes)
     {
         uint8_t streamIntent = 0;

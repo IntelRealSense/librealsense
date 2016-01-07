@@ -121,7 +121,7 @@ namespace rs
 
     struct r200_depth_control_parameters : rs_r200_depth_control_parameters
     {
-        static r200_depth_control_parameters get_preset(int preset) { r200_depth_control_parameters p; rs_get_depth_control_parameters_preset(preset, &p); return p; }
+        //static r200_depth_control_parameters get_preset(int preset) { r200_depth_control_parameters p; rs_get_depth_control_parameters_preset(preset, &p); return p; }
     };
 
     class context;

@@ -63,9 +63,21 @@ static void rs_transform_point_to_point(float to_point[3], const struct rs_extri
 }
 
 /* Provide access to several recommend sets of depth control parameters */
-void rs_get_depth_control_parameters_preset(int preset, rs_r200_depth_control_parameters * parameters)
+void rs_apply_depth_control_preset(rs_device * device, int preset)
 {
-    static const rs_r200_depth_control_parameters presets[] = {
+    static const rs_option depth_control_options[10] = {
+        RS_OPTION_R200_DEPTH_CONTROL_ESTIMATE_MEDIAN_DECREMENT,
+        RS_OPTION_R200_DEPTH_CONTROL_ESTIMATE_MEDIAN_INCREMENT,
+        RS_OPTION_R200_DEPTH_CONTROL_MEDIAN_THRESHOLD,
+        RS_OPTION_R200_DEPTH_CONTROL_SCORE_MINIMUM_THRESHOLD,
+        RS_OPTION_R200_DEPTH_CONTROL_SCORE_MAXIMUM_THRESHOLD,
+        RS_OPTION_R200_DEPTH_CONTROL_TEXTURE_COUNT_THRESHOLD, 
+        RS_OPTION_R200_DEPTH_CONTROL_TEXTURE_DIFFERENCE_THRESHOLD,
+        RS_OPTION_R200_DEPTH_CONTROL_SECOND_PEAK_THRESHOLD,
+        RS_OPTION_R200_DEPTH_CONTROL_NEIGHBOR_THRESHOLD,
+        RS_OPTION_R200_DEPTH_CONTROL_LR_THRESHOLD
+    };
+    double depth_control_presets[6][10] = {
         {5, 5, 192,  1,  512, 6, 24, 27,  7,   24}, /* (DEFAULT)   Default settings on chip. Similiar to the medium setting and best for outdoors. */
         {5, 5,   0,  0, 1023, 0,  0,  0,  0, 2047}, /* (OFF)       Disable almost all hardware-based outlier removal */
         {5, 5, 115,  1,  512, 6, 18, 25,  3,   24}, /* (LOW)       Provide a depthmap with a lower number of outliers removed, which has minimal false negatives. */
@@ -73,7 +85,7 @@ void rs_get_depth_control_parameters_preset(int preset, rs_r200_depth_control_pa
         {5, 5, 175, 24,  430, 6, 48, 47, 24,   12}, /* (OPTIMIZED) Provide a depthmap with a medium/high number of outliers removed. Derived from an optimization function. */
         {5, 5, 235, 27,  420, 8, 80, 70, 90,   12}, /* (HIGH)      Provide a depthmap with a higher number of outliers removed, which has minimal false positives. */
     };
-    *parameters = presets[preset];
+    rs_set_options(device, depth_control_options, 10, depth_control_presets[preset], nullptr);
 }
 
 #endif

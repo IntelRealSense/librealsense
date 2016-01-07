@@ -382,6 +382,24 @@ HANDLE_EXCEPTIONS_AND_RETURN(nullptr, option)
 
 
 
+void rs_get_option_range(rs_device * dev, rs_option option, double * min, double * max, double * step, rs_error ** error) try
+{
+
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, dev, option, min, max, step)
+
+void rs_get_options(rs_device * dev, const rs_option options[], int count, double values[], rs_error ** error) try
+{
+
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, dev, options, count, values)
+
+void rs_set_options(rs_device * dev, const rs_option options[], int count, const double values[], rs_error ** error) try
+{
+    dev->set_options(options, count, values);
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, dev, options, count, values)
+
 void rs_free_error(rs_error * error) { if (error) delete error; }
 const char * rs_get_failed_function(const rs_error * error) { return error ? error->function : nullptr; }
 const char * rs_get_failed_args(const rs_error * error) { return error ? error->args.c_str() : nullptr; }

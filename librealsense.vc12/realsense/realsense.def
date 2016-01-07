@@ -53,3 +53,7 @@ EXPORTS
 	rs_preset_to_string
 	rs_distortion_to_string
 	rs_option_to_string
+
+	rs_get_option_range
+	rs_get_options
+	rs_set_options
