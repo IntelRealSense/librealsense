@@ -88,4 +88,21 @@ void rs_apply_depth_control_preset(rs_device * device, int preset)
     rs_set_options(device, depth_control_options, 10, depth_control_presets[preset], 0);
 }
 
+void rs_apply_ivcam_preset(rs_device * device, int preset)
+{
+    /*const PresetModeSettings PresetModeSettings::modes[9] = {
+        // ========= Name ========   ==== IVCAM Property ====   ======================== Auto Range Request ========================
+        // -----------------------   Acc, Mvr, Flt, DCT, Pwr,   MvrP  LsrP  MvrOn  LsrOn  mmn   mmx   mst  lmn  lmx  lst  up    lo
+        {                "Common",     1, NIL,   5,   1,   1,   {  1,    1,     1,     1, 180,  605,  303,   2,  16,  -1, 1250, 650}},
+        {            "ShortRange",     1, NIL,   5,   1,   1,   {  1,    1,     1,     1, 180,  303,  180,   2,  16,  -1, 1000, 450}},
+        {             "LongRange",     1, NIL,   7,   0,   1,   {  1,    1,     1,     0, 303,  605,  303,  -1,  -1,  -1, 1250, 975}},
+        {"BackgroundSegmentation",     1,  22,   6,   0,  16,   {  0,    0,     0,     0,  -1,   -1,   -1,  -1,  -1,  -1,   -1,  -1}},
+        {    "GestureRecognition",     1, NIL,   6,   3,   1,   {  1,    1,     1,     1, 100,  179,  100,   2,  16,  -1, 1000, 450}},
+        {        "ObjectScanning",     1,   9,   3,   1,   1,   {  1,    1,     0,     1,  -1,   -1,   -1,   2,  16,  16, 1000, 450}},
+        {                "FaceMW",     1,  22,   5,   1,  16,   {  0,    0,     0,     0,  -1,   -1,   -1,  -1,  -1,  -1,   -1,  -1}},
+        {             "FaceLogin",   NIL, NIL, NIL, NIL,   1,   {  1,    1,     2,     0,  40, 1600,  800,  -1,  -1,  -1,   -1,  -1}},
+        {          "GRCursorMode",     1, NIL,   6,   1,   1,   {  1,    1,     1,     1, 100,  179,  179,   2,  16,  -1, 1000, 450}}
+    };*/
+}
+
 #endif

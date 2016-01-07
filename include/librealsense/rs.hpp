@@ -115,8 +115,6 @@ namespace rs
         float3      transform(const float3 & point) const                               { float3 p; rs_transform_point_to_point(&p.x, this, &point.x); return p; }
     };
 
-    struct f200_auto_range_parameters : rs_f200_auto_range_parameters{};
-
     class context;
     class device;
     
@@ -391,22 +389,6 @@ namespace rs
             auto r = rs_is_device_streaming((const rs_device *)this, &e);
             error::handle(e);
             return r != 0;
-        }
-
-        void set_auto_range_parameters(const f200_auto_range_parameters & parameters)
-        {
-            rs_error * e = nullptr;
-            rs_set_auto_range_parameters((rs_device *)this, (const rs_f200_auto_range_parameters *)&parameters, &e);
-            error::handle(e);
-        }
-
-        f200_auto_range_parameters get_auto_range_parameters() const
-        {
-            rs_error * e = nullptr;
-            f200_auto_range_parameters parameters;
-            rs_get_auto_range_parameters((const rs_device *)this, &parameters, &e);
-            error::handle(e);
-            return parameters;
         }
 
         /// block until new frames are available

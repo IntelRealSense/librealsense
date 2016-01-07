@@ -112,8 +112,13 @@ namespace rsimpl
         info.presets[RS_STREAM_DEPTH   ][RS_PRESET_HIGHEST_FRAMERATE] = {true, 640, 480, RS_FORMAT_Z16,  60};
         info.presets[RS_STREAM_COLOR   ][RS_PRESET_HIGHEST_FRAMERATE] = {true, 640, 480, RS_FORMAT_RGB8, 60};
 
-        for(int i = RS_OPTION_F200_LASER_POWER; i <= RS_OPTION_F200_CONFIDENCE_THRESHOLD; ++i)
-            info.option_supported[i] = true;
+        info.options = {
+            {RS_OPTION_F200_LASER_POWER,          0, 15,  1},
+            {RS_OPTION_F200_ACCURACY,             0, 3,   1},
+            {RS_OPTION_F200_MOTION_RANGE,         0, 100, 1},
+            {RS_OPTION_F200_FILTER_OPTION,        0, 7,   1},
+            {RS_OPTION_F200_CONFIDENCE_THRESHOLD, 0, 15,  1}
+        };
 
         rsimpl::pose depth_to_color = {transpose((const float3x3 &)c.Rt), (const float3 &)c.Tt * 0.001f}; // convert mm to m
         info.stream_poses[RS_STREAM_DEPTH] = info.stream_poses[RS_STREAM_INFRARED] = inverse(depth_to_color);
@@ -186,7 +191,25 @@ namespace rsimpl
             info.presets[RS_STREAM_INFRARED][i] = {true, 640, 480, RS_FORMAT_Y16, 60};
         }
 
-        for(int i = RS_OPTION_F200_LASER_POWER; i < RS_OPTION_F200_DYNAMIC_FPS; ++i) info.option_supported[i] = true;
+        info.options = {
+            {RS_OPTION_F200_LASER_POWER,                            0,        15,        1},
+            {RS_OPTION_F200_ACCURACY,                               0,        3,         1},
+            {RS_OPTION_F200_MOTION_RANGE,                           0,        100,       1},
+            {RS_OPTION_F200_FILTER_OPTION,                          0,        7,         1},
+            {RS_OPTION_F200_CONFIDENCE_THRESHOLD,                   0,        15,        1},
+
+            {RS_OPTION_SR300_DYNAMIC_FPS,                           2,        60,        1},
+            {RS_OPTION_SR300_AUTO_RANGE_ENABLE_MOTION_VERSUS_RANGE, 0,        2,         1},
+            {RS_OPTION_SR300_AUTO_RANGE_ENABLE_LASER,               0,        1,         1},  
+            {RS_OPTION_SR300_AUTO_RANGE_MIN_MOTION_VERSUS_RANGE,    SHRT_MIN, SHRT_MAX,  1}, 
+            {RS_OPTION_SR300_AUTO_RANGE_MAX_MOTION_VERSUS_RANGE,    SHRT_MIN, SHRT_MAX,  1}, 
+            {RS_OPTION_SR300_AUTO_RANGE_START_MOTION_VERSUS_RANGE,  SHRT_MIN, SHRT_MAX,  1}, 
+            {RS_OPTION_SR300_AUTO_RANGE_MIN_LASER,                  SHRT_MIN, SHRT_MAX,  1}, 
+            {RS_OPTION_SR300_AUTO_RANGE_MAX_LASER,                  SHRT_MIN, SHRT_MAX,  1}, 
+            {RS_OPTION_SR300_AUTO_RANGE_START_LASER,                SHRT_MIN, SHRT_MAX,  1}, 
+            {RS_OPTION_SR300_AUTO_RANGE_UPPER_THRESHOLD,            0,        USHRT_MAX, 1},
+            {RS_OPTION_SR300_AUTO_RANGE_LOWER_THRESHOLD,            0,        USHRT_MAX, 1},
+        };
 
         rsimpl::pose depth_to_color = {transpose((const float3x3 &)c.Rt), (const float3 &)c.Tt * 0.001f}; // convert mm to m
         info.stream_poses[RS_STREAM_DEPTH] = info.stream_poses[RS_STREAM_INFRARED] = inverse(depth_to_color);
@@ -206,6 +229,18 @@ namespace rsimpl
             runTemperatureThread = true;
             temperatureThread = std::thread(&f200_camera::temperature_control_loop, this);
         }
+
+        // These settings come from the "Common" preset. There is no actual way to read the current values off the device.
+        arr.enableMvR = 1;
+        arr.enableLaser = 1;
+        arr.minMvR = 180;
+        arr.maxMvR = 605;
+        arr.startMvR = 303;
+        arr.minLaser = 2;
+        arr.maxLaser = 16;
+        arr.startLaser = -1;
+        arr.ARUpperTh = 1250;
+        arr.ARLowerTh = 650;
     }
 
     const uvc::guid IVCAM_DEPTH_XU = {0xA55751A1,0xF3C5,0x4A5E,{0x8D,0x5A,0x68,0x54,0xB8,0xFA,0x27,0x16}};
@@ -330,55 +365,86 @@ namespace rsimpl
         }
     }
 
-    /*void f200_camera::get_xu_range(rs_option option, int * min, int * max)
+    void f200_camera::set_options(const rs_option options[], int count, const double values[])
     {
-        const struct { rs_option option; int min, max; } ranges[] = {
-            {RS_OPTION_F200_LASER_POWER, 0, 15},
-            {RS_OPTION_F200_ACCURACY, 0, 3},
-            {RS_OPTION_F200_MOTION_RANGE, 0, 100},
-            {RS_OPTION_F200_FILTER_OPTION, 0, 7},
-            {RS_OPTION_F200_CONFIDENCE_THRESHOLD, 0, 15},
-            {RS_OPTION_F200_DYNAMIC_FPS, 2, 60}
-        };
-        for(auto & r : ranges)
-        {
-            if(option != r.option) continue;
-            if(min) *min = r.min;
-            if(max) *max = r.max;
-            return;
-        }
-        throw std::logic_error("range not specified");
-    }*/
+        auto arr_writer = make_struct_interface<f200::IVCAMAutoRangeRequest>([this]() { return arr; }, [this](f200::IVCAMAutoRangeRequest r) {
+                f200::set_auto_range(get_device(), usbMutex, r.enableMvR, r.minMvR, r.maxMvR, r.startMvR, r.enableLaser, r.minLaser, r.maxLaser, r.startLaser, r.ARUpperTh, r.ARLowerTh);
+        });
 
-    /*void f200_camera::set_xu_option(rs_option option, int value)
-    {
-        // todo - Range check value before write
-        auto val = static_cast<uint8_t>(value);
-        switch(option)
+        for(int i=0; i<count; ++i)
         {
-        case RS_OPTION_F200_LASER_POWER:          f200::set_laser_power(get_device(), val); break;
-        case RS_OPTION_F200_ACCURACY:             f200::set_accuracy(get_device(), val); break;
-        case RS_OPTION_F200_MOTION_RANGE:         f200::set_motion_range(get_device(), val); break;
-        case RS_OPTION_F200_FILTER_OPTION:        f200::set_filter_option(get_device(), val); break;
-        case RS_OPTION_F200_CONFIDENCE_THRESHOLD: f200::set_confidence_threshold(get_device(), val); break;
-        case RS_OPTION_F200_DYNAMIC_FPS:          f200::set_dynamic_fps(get_device(), val); break; // IVCAM 1.5 Only
+            if(uvc::is_pu_control(options[i]))
+            {
+                uvc::set_pu_control(get_device(), 0, options[i], static_cast<int>(values[i]));
+                continue;
+            }
+
+            switch(options[i])
+            {
+            case RS_OPTION_F200_LASER_POWER:          f200::set_laser_power(get_device(), static_cast<uint8_t>(values[i])); break;
+            case RS_OPTION_F200_ACCURACY:             f200::set_accuracy(get_device(), static_cast<uint8_t>(values[i])); break;
+            case RS_OPTION_F200_MOTION_RANGE:         f200::set_motion_range(get_device(), static_cast<uint8_t>(values[i])); break;
+            case RS_OPTION_F200_FILTER_OPTION:        f200::set_filter_option(get_device(), static_cast<uint8_t>(values[i])); break;
+            case RS_OPTION_F200_CONFIDENCE_THRESHOLD: f200::set_confidence_threshold(get_device(), static_cast<uint8_t>(values[i])); break;
+            case RS_OPTION_SR300_DYNAMIC_FPS:         f200::set_dynamic_fps(get_device(), static_cast<uint8_t>(values[i])); break; // IVCAM 1.5 Only
+
+            case RS_OPTION_SR300_AUTO_RANGE_ENABLE_MOTION_VERSUS_RANGE: arr_writer.set(&f200::IVCAMAutoRangeRequest::enableMvR, values[i]); break; 
+            case RS_OPTION_SR300_AUTO_RANGE_ENABLE_LASER:               arr_writer.set(&f200::IVCAMAutoRangeRequest::enableLaser, values[i]); break;
+            case RS_OPTION_SR300_AUTO_RANGE_MIN_MOTION_VERSUS_RANGE:    arr_writer.set(&f200::IVCAMAutoRangeRequest::minMvR, values[i]); break;
+            case RS_OPTION_SR300_AUTO_RANGE_MAX_MOTION_VERSUS_RANGE:    arr_writer.set(&f200::IVCAMAutoRangeRequest::maxMvR, values[i]); break;
+            case RS_OPTION_SR300_AUTO_RANGE_START_MOTION_VERSUS_RANGE:  arr_writer.set(&f200::IVCAMAutoRangeRequest::startMvR, values[i]); break;
+            case RS_OPTION_SR300_AUTO_RANGE_MIN_LASER:                  arr_writer.set(&f200::IVCAMAutoRangeRequest::minLaser, values[i]); break;
+            case RS_OPTION_SR300_AUTO_RANGE_MAX_LASER:                  arr_writer.set(&f200::IVCAMAutoRangeRequest::maxLaser, values[i]); break;
+            case RS_OPTION_SR300_AUTO_RANGE_START_LASER:                arr_writer.set(&f200::IVCAMAutoRangeRequest::startLaser, values[i]); break;
+            case RS_OPTION_SR300_AUTO_RANGE_UPPER_THRESHOLD:            arr_writer.set(&f200::IVCAMAutoRangeRequest::ARUpperTh, values[i]); break;
+            case RS_OPTION_SR300_AUTO_RANGE_LOWER_THRESHOLD:            arr_writer.set(&f200::IVCAMAutoRangeRequest::ARLowerTh, values[i]); break;
+
+            default: LOG_WARNING("Cannot set " << options[i] << " to " << values[i] << " on " << get_name()); break;
+            }
+
+            arr_writer.commit();
         }
     }
 
-    int f200_camera::get_xu_option(rs_option option)
+    void f200_camera::get_options(const rs_option options[], int count, double values[])
     {
-        uint8_t value = 0;
-        switch(option)
+        auto arr_reader = make_struct_interface<f200::IVCAMAutoRangeRequest>([this]() { return arr; }, [this](f200::IVCAMAutoRangeRequest r) {});
+
+        for(int i=0; i<count; ++i)
         {
-        case RS_OPTION_F200_LASER_POWER:          f200::get_laser_power(get_device(), value); break;
-        case RS_OPTION_F200_ACCURACY:             f200::get_accuracy(get_device(), value); break;
-        case RS_OPTION_F200_MOTION_RANGE:         f200::get_motion_range(get_device(), value); break;
-        case RS_OPTION_F200_FILTER_OPTION:        f200::get_filter_option(get_device(), value); break;
-        case RS_OPTION_F200_CONFIDENCE_THRESHOLD: f200::get_confidence_threshold(get_device(), value); break;
-        case RS_OPTION_F200_DYNAMIC_FPS:          f200::get_dynamic_fps(get_device(), value); break; // IVCAM 1.5 Only
+            LOG_INFO("Reading option " << options[i]);
+
+            if(uvc::is_pu_control(options[i]))
+            {
+                values[i] = uvc::get_pu_control(get_device(), 0, options[i]);
+                continue;
+            }
+
+            uint8_t val=0;
+            switch(options[i])
+            {
+            case RS_OPTION_F200_LASER_POWER:          f200::get_laser_power         (get_device(), val); values[i] = val; break;
+            case RS_OPTION_F200_ACCURACY:             f200::get_accuracy            (get_device(), val); values[i] = val; break;
+            case RS_OPTION_F200_MOTION_RANGE:         f200::get_motion_range        (get_device(), val); values[i] = val; break;
+            case RS_OPTION_F200_FILTER_OPTION:        f200::get_filter_option       (get_device(), val); values[i] = val; break;
+            case RS_OPTION_F200_CONFIDENCE_THRESHOLD: f200::get_confidence_threshold(get_device(), val); values[i] = val; break;
+            case RS_OPTION_SR300_DYNAMIC_FPS:         /*f200::get_dynamic_fps         (get_device(), val);*/ values[i] = val; break; // IVCAM 1.5 Only
+
+            case RS_OPTION_SR300_AUTO_RANGE_ENABLE_MOTION_VERSUS_RANGE: values[i] = arr_reader.get(&f200::IVCAMAutoRangeRequest::enableMvR); break; 
+            case RS_OPTION_SR300_AUTO_RANGE_ENABLE_LASER:               values[i] = arr_reader.get(&f200::IVCAMAutoRangeRequest::enableLaser); break;
+            case RS_OPTION_SR300_AUTO_RANGE_MIN_MOTION_VERSUS_RANGE:    values[i] = arr_reader.get(&f200::IVCAMAutoRangeRequest::minMvR); break;
+            case RS_OPTION_SR300_AUTO_RANGE_MAX_MOTION_VERSUS_RANGE:    values[i] = arr_reader.get(&f200::IVCAMAutoRangeRequest::maxMvR); break;
+            case RS_OPTION_SR300_AUTO_RANGE_START_MOTION_VERSUS_RANGE:  values[i] = arr_reader.get(&f200::IVCAMAutoRangeRequest::startMvR); break;
+            case RS_OPTION_SR300_AUTO_RANGE_MIN_LASER:                  values[i] = arr_reader.get(&f200::IVCAMAutoRangeRequest::minLaser); break;
+            case RS_OPTION_SR300_AUTO_RANGE_MAX_LASER:                  values[i] = arr_reader.get(&f200::IVCAMAutoRangeRequest::maxLaser); break;
+            case RS_OPTION_SR300_AUTO_RANGE_START_LASER:                values[i] = arr_reader.get(&f200::IVCAMAutoRangeRequest::startLaser); break;
+            case RS_OPTION_SR300_AUTO_RANGE_UPPER_THRESHOLD:            values[i] = arr_reader.get(&f200::IVCAMAutoRangeRequest::ARUpperTh); break;
+            case RS_OPTION_SR300_AUTO_RANGE_LOWER_THRESHOLD:            values[i] = arr_reader.get(&f200::IVCAMAutoRangeRequest::ARLowerTh); break;
+
+            default: LOG_WARNING("Cannot get " << options[i] << " on " << get_name()); break;
+            }
         }
-        return value;
-    }*/
+    }
 
 } // namespace rsimpl::f200
 

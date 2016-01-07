@@ -74,21 +74,6 @@ static void write_extrinsics(JNIEnv * env, jobject obj, const rs_extrinsics * va
     (*env)->SetObjectField(env, obj, (*env)->GetFieldID(env, cl, "translation", "[F"), make_float_array(env, val->translation, 3));
 }
 
-static void write_f200_auto_range_parameters(JNIEnv * env, jobject obj, const rs_f200_auto_range_parameters * val)
-{
-    jclass cl = (*env)->GetObjectClass(env, obj);
-    (*env)->SetIntField(env, obj, (*env)->GetFieldID(env, cl, "enableMotionVersusRange", "I"), val->enable_motion_versus_range);
-    (*env)->SetIntField(env, obj, (*env)->GetFieldID(env, cl, "enableLaser", "I"), val->enable_laser);
-    (*env)->SetIntField(env, obj, (*env)->GetFieldID(env, cl, "minMotionVersusRange", "I"), val->min_motion_versus_range);
-    (*env)->SetIntField(env, obj, (*env)->GetFieldID(env, cl, "maxMotionVersusRange", "I"), val->max_motion_versus_range);
-    (*env)->SetIntField(env, obj, (*env)->GetFieldID(env, cl, "startMotionVersusRange", "I"), val->start_motion_versus_range);
-    (*env)->SetIntField(env, obj, (*env)->GetFieldID(env, cl, "minLaser", "I"), val->min_laser);
-    (*env)->SetIntField(env, obj, (*env)->GetFieldID(env, cl, "maxLaser", "I"), val->max_laser);
-    (*env)->SetIntField(env, obj, (*env)->GetFieldID(env, cl, "startLaser", "I"), val->start_laser);
-    (*env)->SetIntField(env, obj, (*env)->GetFieldID(env, cl, "autoRangeUpperThreshold", "I"), val->auto_range_upper_threshold);
-    (*env)->SetIntField(env, obj, (*env)->GetFieldID(env, cl, "autoRangeLowerThreshold", "I"), val->auto_range_lower_threshold);
-}
-
 static void handle_error(JNIEnv * env, rs_error * e)
 {
     if(e)
@@ -292,22 +277,6 @@ JNIEXPORT jboolean JNICALL Java_com_intel_rs_Device_isStreaming(JNIEnv * env, jo
     int r = rs_is_device_streaming(get_object(env, self), &e);
     handle_error(env, e);
     return r;
-}
-
-JNIEXPORT void JNICALL Java_com_intel_rs_Device_setAutoRangeParameters(JNIEnv * env, jobject self, jobject parameters)
-{
-    rs_error * e = NULL;
-    //rs_set_auto_range_parameters(get_object(env, self), parameters, &e);
-    handle_error(env, e);
-}
-
-JNIEXPORT void JNICALL Java_com_intel_rs_Device_getAutoRangeParameters(JNIEnv * env, jobject self, jobject parameters)
-{
-    rs_error * e = NULL;
-    rs_f200_auto_range_parameters c_parameters;
-    rs_get_auto_range_parameters(get_object(env, self), &c_parameters, &e);
-    handle_error(env, e);
-    write_f200_auto_range_parameters(env, parameters, &c_parameters);
 }
 
 JNIEXPORT void JNICALL Java_com_intel_rs_Device_waitForFrames(JNIEnv * env, jobject self)

@@ -29,9 +29,6 @@ EXPORTS
 	rs_stop_device
 	rs_is_device_streaming
 	
-	rs_set_auto_range_parameters
-	rs_get_auto_range_parameters
-	
 	rs_wait_for_frames
 	rs_get_frame_timestamp
 	rs_get_frame_data

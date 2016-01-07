@@ -72,21 +72,34 @@ typedef enum rs_option
     RS_OPTION_COLOR_WHITE_BALANCE             = 9,  /**< Controls white balance of color image. Setting any value will disable auto white balance. */
     RS_OPTION_COLOR_ENABLE_AUTO_EXPOSURE      = 10, /**< Set to 1 to enable automatic exposure control, or 0 to return to manual control */
     RS_OPTION_COLOR_ENABLE_AUTO_WHITE_BALANCE = 11, /**< Set to 1 to enable automatic white balance control, or 0 to return to manual control */
+
     RS_OPTION_F200_LASER_POWER                = 12, /**< 0 - 15 */
     RS_OPTION_F200_ACCURACY                   = 13, /**< 0 - 3 */
     RS_OPTION_F200_MOTION_RANGE               = 14, /**< 0 - 100 */
     RS_OPTION_F200_FILTER_OPTION              = 15, /**< 0 - 7 */
     RS_OPTION_F200_CONFIDENCE_THRESHOLD       = 16, /**< 0 - 15 */
-    RS_OPTION_F200_DYNAMIC_FPS                = 17, /**< {2, 5, 15, 30, 60} */
-    RS_OPTION_R200_LR_AUTO_EXPOSURE_ENABLED   = 18, /**< {0, 1} */
-    RS_OPTION_R200_LR_GAIN                    = 19, /**< 100 - 1600 (Units of 0.01) */
-    RS_OPTION_R200_LR_EXPOSURE                = 20, /**< > 0 (Units of 0.1 ms) */
-    RS_OPTION_R200_EMITTER_ENABLED            = 21, /**< {0, 1} */
-    RS_OPTION_R200_DEPTH_UNITS                = 22, /**< micrometers per increment in integer depth values, 1000 is default (mm scale) */
-    RS_OPTION_R200_DEPTH_CLAMP_MIN            = 23, /**< 0 - USHORT_MAX */
-    RS_OPTION_R200_DEPTH_CLAMP_MAX            = 24, /**< 0 - USHORT_MAX */
-    RS_OPTION_R200_DISPARITY_MULTIPLIER       = 25, /**< 0 - 1000, the increments in integer disparity values corresponding to one pixel of disparity */
-    RS_OPTION_R200_DISPARITY_SHIFT            = 26, 
+
+    RS_OPTION_SR300_DYNAMIC_FPS                = 17, /**< {2, 5, 15, 30, 60} */
+    RS_OPTION_SR300_AUTO_RANGE_ENABLE_MOTION_VERSUS_RANGE, 
+    RS_OPTION_SR300_AUTO_RANGE_ENABLE_LASER,               
+    RS_OPTION_SR300_AUTO_RANGE_MIN_MOTION_VERSUS_RANGE,    
+    RS_OPTION_SR300_AUTO_RANGE_MAX_MOTION_VERSUS_RANGE,    
+    RS_OPTION_SR300_AUTO_RANGE_START_MOTION_VERSUS_RANGE,  
+    RS_OPTION_SR300_AUTO_RANGE_MIN_LASER,                  
+    RS_OPTION_SR300_AUTO_RANGE_MAX_LASER,                  
+    RS_OPTION_SR300_AUTO_RANGE_START_LASER,                
+    RS_OPTION_SR300_AUTO_RANGE_UPPER_THRESHOLD, 
+    RS_OPTION_SR300_AUTO_RANGE_LOWER_THRESHOLD, 
+
+    RS_OPTION_R200_LR_AUTO_EXPOSURE_ENABLED, /**< {0, 1} */
+    RS_OPTION_R200_LR_GAIN                 , /**< 100 - 1600 (Units of 0.01) */
+    RS_OPTION_R200_LR_EXPOSURE             , /**< > 0 (Units of 0.1 ms) */
+    RS_OPTION_R200_EMITTER_ENABLED         , /**< {0, 1} */
+    RS_OPTION_R200_DEPTH_UNITS             , /**< micrometers per increment in integer depth values, 1000 is default (mm scale) */
+    RS_OPTION_R200_DEPTH_CLAMP_MIN         , /**< 0 - USHORT_MAX */
+    RS_OPTION_R200_DEPTH_CLAMP_MAX         , /**< 0 - USHORT_MAX */
+    RS_OPTION_R200_DISPARITY_MULTIPLIER    , /**< 0 - 1000, the increments in integer disparity values corresponding to one pixel of disparity */
+    RS_OPTION_R200_DISPARITY_SHIFT         , 
 
     RS_OPTION_R200_AUTO_EXPOSURE_MEAN_INTENSITY_SET_POINT,
     RS_OPTION_R200_AUTO_EXPOSURE_BRIGHT_RATIO_SET_POINT,  
@@ -109,7 +122,7 @@ typedef enum rs_option
     RS_OPTION_R200_DEPTH_CONTROL_NEIGHBOR_THRESHOLD,          
     RS_OPTION_R200_DEPTH_CONTROL_LR_THRESHOLD,                
 
-    RS_OPTION_COUNT                           = 46, 
+    RS_OPTION_COUNT                           = 56, 
     RS_OPTION_MAX_ENUM = 0x7FFFFFFF
 } rs_option;
 
@@ -130,20 +143,6 @@ typedef struct rs_extrinsics
     float rotation[9];    /* column-major 3x3 rotation matrix */
     float translation[3]; /* 3 element translation vector, in meters */
 } rs_extrinsics;
-
-typedef struct rs_f200_auto_range_parameters
-{
-    int enable_motion_versus_range; /*  */
-    int enable_laser;               /*  */
-    int min_motion_versus_range;    /*  */
-    int max_motion_versus_range;    /*  */
-    int start_motion_versus_range;  /*  */
-    int min_laser;                  /*  */
-    int max_laser;                  /*  */
-    int start_laser;                /*  */
-    int auto_range_upper_threshold; /*  */
-    int auto_range_lower_threshold; /*  */
-} rs_f200_auto_range_parameters;
 
 typedef struct rs_context rs_context;
 typedef struct rs_device rs_device;
@@ -335,9 +334,6 @@ void rs_set_options(rs_device * dev, const rs_option options[], int count, const
 /* These functions are simply convenience forms of the above multi-get and multi-set functions */
 double rs_get_option(rs_device * dev, rs_option option, rs_error ** error);
 void rs_set_option(rs_device * dev, rs_option option, double value, rs_error ** error);
-
-void rs_set_auto_range_parameters(rs_device * device, const rs_f200_auto_range_parameters * parameters, rs_error ** error);
-void rs_get_auto_range_parameters(const rs_device * device, rs_f200_auto_range_parameters * parameters, rs_error ** error);
 
 /**
  * block until new frames are available

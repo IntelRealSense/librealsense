@@ -52,7 +52,7 @@ int main(int argc, char * argv[]) try
     std::this_thread::sleep_for(std::chrono::milliseconds(1000));
         
     // Report the status of each supported option
-    for(int i = 0; i < RS_OPTION_COUNT; ++i)
+    /*for(int i = 0; i < RS_OPTION_COUNT; ++i)
     {
         auto option = rs::option(i);
         if(dev.supports_option(option))
@@ -61,7 +61,7 @@ int main(int argc, char * argv[]) try
             try { std::cout << dev.get_option(option) << std::endl; }
             catch(const std::exception & e) { std::cout << e.what() << std::endl; }
         }
-    }
+    }*/
 
     // Open a GLFW window
     glfwInit();
@@ -77,7 +77,7 @@ int main(int argc, char * argv[]) try
         case GLFW_KEY_R: color_rectification_enabled = !color_rectification_enabled; break;
         case GLFW_KEY_C: align_color_to_depth = !align_color_to_depth; break;
         case GLFW_KEY_D: align_depth_to_color = !align_depth_to_color; break;
-        case GLFW_KEY_E:
+        /*case GLFW_KEY_E:
             value = !dev->get_option(rs::option::r200_emitter_enabled);
             std::cout << "Setting emitter to " << value << std::endl;
             dev->set_option(rs::option::r200_emitter_enabled, value);
@@ -86,7 +86,7 @@ int main(int argc, char * argv[]) try
             value = !dev->get_option(rs::option::r200_lr_auto_exposure_enabled);
             std::cout << "Setting auto exposure to " << value << std::endl;
             dev->set_option(rs::option::r200_lr_auto_exposure_enabled, value);
-            break;
+            break;*/
         }
     });
     glfwMakeContextCurrent(win);

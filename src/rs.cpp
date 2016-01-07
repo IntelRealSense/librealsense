@@ -269,22 +269,6 @@ const void * rs_get_frame_data(const rs_device * device, rs_stream stream, rs_er
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, device, stream)
 
-void rs_set_auto_range_parameters(rs_device * device, const rs_f200_auto_range_parameters * parameters, rs_error ** error) try
-{
-    VALIDATE_NOT_NULL(device);
-    VALIDATE_NOT_NULL(parameters);
-    device->set_auto_range_parameters(*parameters);
-}
-HANDLE_EXCEPTIONS_AND_RETURN(, device, parameters)
-
-void rs_get_auto_range_parameters(const rs_device * device, rs_f200_auto_range_parameters * parameters, rs_error ** error) try
-{
-    VALIDATE_NOT_NULL(device);
-    VALIDATE_NOT_NULL(parameters);
-    *parameters = device->get_auto_range_parameters();
-}
-HANDLE_EXCEPTIONS_AND_RETURN(, device, parameters)
-
 
 
 const char * rs_get_stream_name(rs_stream stream, rs_error ** error) try

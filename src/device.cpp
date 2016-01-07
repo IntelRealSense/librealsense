@@ -16,21 +16,7 @@
 
 using namespace rsimpl;
 
-static_device_info rsimpl::add_standard_unpackers(const static_device_info & device_info)
-{
-    // Flag all standard options as supported
-    static_device_info info = device_info;
-    for(int i=0; i<RS_OPTION_COUNT; ++i)
-    {
-        if(uvc::is_pu_control((rs_option)i))
-        {
-            info.option_supported[i] = true;
-        }
-    }
-    return info;
-}
-
-rs_device::rs_device(std::shared_ptr<rsimpl::uvc::device> device, const rsimpl::static_device_info & info) : device(device), config(add_standard_unpackers(info)), capturing(false),
+rs_device::rs_device(std::shared_ptr<rsimpl::uvc::device> device, const rsimpl::static_device_info & info) : device(device), config(info), capturing(false),
     depth(config, RS_STREAM_DEPTH), color(config, RS_STREAM_COLOR), infrared(config, RS_STREAM_INFRARED), infrared2(config, RS_STREAM_INFRARED2),
     points(depth), rect_color(color), color_to_depth(color, depth), depth_to_color(depth, color), depth_to_rect_color(depth, rect_color)
 {
@@ -48,6 +34,13 @@ rs_device::rs_device(std::shared_ptr<rsimpl::uvc::device> device, const rsimpl::
 rs_device::~rs_device()
 {
 
+}
+
+bool rs_device::supports_option(rs_option option) const 
+{ 
+    if(uvc::is_pu_control(option)) return true;
+    for(auto & o : config.info.options) if(o.option == option) return true;
+    return false; 
 }
 
 void rs_device::enable_stream(rs_stream stream, int width, int height, rs_format format, int fps)
@@ -228,4 +221,30 @@ const byte * rs_device::get_frame_data(rs_stream stream) const
 { 
     if(!streams[stream]->is_enabled()) throw std::runtime_error(to_string() << "stream not enabled: " << stream);
     return streams[stream]->get_frame_data();
+}
+
+void rs_device::get_option_range(rs_option option, double & min, double & max, double & step)
+{
+    if(uvc::is_pu_control(option))
+    {
+        int mn, mx;
+        uvc::get_pu_control_range(get_device(), config.info.stream_subdevices[RS_STREAM_COLOR], option, &mn, &mx);
+        min = mn;
+        max = mx;
+        step = 1;
+        return;
+    }
+
+    for(auto & o : config.info.options)
+    {
+        if(o.option == option)
+        {
+            min = o.min;
+            max = o.max;
+            step = o.step;
+            return;
+        }
+    }
+
+    throw std::logic_error("range not specified");
 }

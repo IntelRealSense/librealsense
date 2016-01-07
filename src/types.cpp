@@ -105,7 +105,17 @@ namespace rsimpl
         CASE(F200_MOTION_RANGE)
         CASE(F200_FILTER_OPTION)
         CASE(F200_CONFIDENCE_THRESHOLD)
-        CASE(F200_DYNAMIC_FPS)
+        CASE(SR300_DYNAMIC_FPS)
+        CASE(SR300_AUTO_RANGE_ENABLE_MOTION_VERSUS_RANGE) 
+        CASE(SR300_AUTO_RANGE_ENABLE_LASER)               
+        CASE(SR300_AUTO_RANGE_MIN_MOTION_VERSUS_RANGE)    
+        CASE(SR300_AUTO_RANGE_MAX_MOTION_VERSUS_RANGE)    
+        CASE(SR300_AUTO_RANGE_START_MOTION_VERSUS_RANGE)  
+        CASE(SR300_AUTO_RANGE_MIN_LASER)                  
+        CASE(SR300_AUTO_RANGE_MAX_LASER)                  
+        CASE(SR300_AUTO_RANGE_START_LASER)                
+        CASE(SR300_AUTO_RANGE_UPPER_THRESHOLD) 
+        CASE(SR300_AUTO_RANGE_LOWER_THRESHOLD) 
         CASE(R200_LR_AUTO_EXPOSURE_ENABLED)
         CASE(R200_LR_GAIN)
         CASE(R200_LR_EXPOSURE)
@@ -193,7 +203,6 @@ namespace rsimpl
     {
         for(auto & s : stream_subdevices) s = -1;
         for(auto & s : presets) for(auto & p : s) p = stream_request();
-        for(auto & o : option_supported) o = false;
         for(auto & p : stream_poses)
         {
             p = {{{1,0,0},{0,1,0},{0,0,1}}, {0,0,0}};

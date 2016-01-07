@@ -118,8 +118,36 @@ namespace rsimpl
         for(int i=0; i<RS_PRESET_COUNT; ++i) 
 			info.presets[RS_STREAM_INFRARED2][i] = info.presets[RS_STREAM_INFRARED][i];
 
-        for(int i = RS_OPTION_R200_LR_AUTO_EXPOSURE_ENABLED; i <= RS_OPTION_R200_DEPTH_CONTROL_LR_THRESHOLD; ++i)
-			info.option_supported[i] = true;
+        info.options = {
+            {RS_OPTION_R200_LR_AUTO_EXPOSURE_ENABLED,                   0, 1,           1},
+            {RS_OPTION_R200_EMITTER_ENABLED,                            0, 1,           1},
+            {RS_OPTION_R200_DEPTH_UNITS,                                1, INT_MAX,     1}, // What is the real range?
+            {RS_OPTION_R200_DEPTH_CLAMP_MIN,                            0, USHRT_MAX,   1},
+            {RS_OPTION_R200_DEPTH_CLAMP_MAX,                            0, USHRT_MAX,   1},
+            {RS_OPTION_R200_DISPARITY_MULTIPLIER,                       1, 1000,        1},
+            {RS_OPTION_R200_DISPARITY_SHIFT,                            0, 0,           1},
+
+            {RS_OPTION_R200_AUTO_EXPOSURE_MEAN_INTENSITY_SET_POINT,     0, 4095,        0},
+            {RS_OPTION_R200_AUTO_EXPOSURE_BRIGHT_RATIO_SET_POINT,       0, 1,           0},
+            {RS_OPTION_R200_AUTO_EXPOSURE_KP_GAIN,                      0, 1000,        0},
+            {RS_OPTION_R200_AUTO_EXPOSURE_KP_EXPOSURE,                  0, 1000,        0},
+            {RS_OPTION_R200_AUTO_EXPOSURE_KP_DARK_THRESHOLD,            0, 1000,        0},
+            {RS_OPTION_R200_AUTO_EXPOSURE_EXPOSURE_TOP_EDGE,            0, USHRT_MAX,   1},
+            {RS_OPTION_R200_AUTO_EXPOSURE_EXPOSURE_BOTTOM_EDGE,         0, USHRT_MAX,   1},
+            {RS_OPTION_R200_AUTO_EXPOSURE_EXPOSURE_LEFT_EDGE,           0, USHRT_MAX,   1},
+            {RS_OPTION_R200_AUTO_EXPOSURE_EXPOSURE_RIGHT_EDGE,          0, USHRT_MAX,   1},
+
+            {RS_OPTION_R200_DEPTH_CONTROL_ESTIMATE_MEDIAN_DECREMENT,    0, 0xFF,        1},
+            {RS_OPTION_R200_DEPTH_CONTROL_ESTIMATE_MEDIAN_INCREMENT,    0, 0xFF,        1},
+            {RS_OPTION_R200_DEPTH_CONTROL_MEDIAN_THRESHOLD,             0, 0x3FF,       1},
+            {RS_OPTION_R200_DEPTH_CONTROL_SCORE_MINIMUM_THRESHOLD,      0, 0x3FF,       1},
+            {RS_OPTION_R200_DEPTH_CONTROL_SCORE_MAXIMUM_THRESHOLD,      0, 0x3FF,       1},
+            {RS_OPTION_R200_DEPTH_CONTROL_TEXTURE_COUNT_THRESHOLD,      0, 0x1F,        1},
+            {RS_OPTION_R200_DEPTH_CONTROL_TEXTURE_DIFFERENCE_THRESHOLD, 0, 0x3FF,       1},
+            {RS_OPTION_R200_DEPTH_CONTROL_SECOND_PEAK_THRESHOLD,        0, 0x3FF,       1},
+            {RS_OPTION_R200_DEPTH_CONTROL_NEIGHBOR_THRESHOLD,           0, 0x3FF,       1},
+            {RS_OPTION_R200_DEPTH_CONTROL_LR_THRESHOLD,                 0, 0x7FF,       1},
+        };
 
         // We select the depth/left infrared camera's viewpoint to be the origin
         info.stream_poses[RS_STREAM_DEPTH] = {{{1,0,0},{0,1,0},{0,0,1}}, {0,0,0}};
@@ -165,73 +193,24 @@ namespace rsimpl
         config.depth_scale = depth.get_intrinsics().fx * baseline * multiplier;
     }
 
-    // This class is used to buffer up several writes to a structure-valued XU control, and send the entire structure all at once
-    // Additionally, it will ensure that any fields not set in a given struct will retain their original values
-    template<class T> struct struct_interface
-    {
-        uvc::device & dev;
-        T (*reader)(const uvc::device &);
-        void (*writer)(uvc::device &, T);
-        T struct_;
-        bool active;
-
-        struct_interface(uvc::device & dev, T (*reader)(const uvc::device &), void (*writer)(uvc::device &, T) = nullptr) : dev(dev), reader(reader), writer(writer), active(false) {}
-
-        template<class U> double get(U T::* field)
-        {
-            if(!active)
-            {
-                struct_ = reader(dev);
-                active = true;
-            }
-            return struct_.*field;
-        }
-
-        template<class U> void set(U T::* field, double value)
-        {
-            if(!active)
-            {
-                struct_ = reader(dev);
-                active = true;
-            }
-            struct_.*field = static_cast<U>(value);
-        }
-
-        void commit()
-        {
-            if(active)
-            {
-                writer(dev, struct_);
-            }
-        }
-    };
-
     void r200_camera::set_options(const rs_option options[], int count, const double values[])
     {
-        struct_interface<r200::range    > minmax_writer (get_device(), &r200::get_min_max_depth,           &r200::set_min_max_depth          );
-        struct_interface<r200::disp_mode> disp_writer   (get_device(), &r200::get_disparity_mode,          &r200::set_disparity_mode         );
-        struct_interface<r200::ae_params> ae_writer     (get_device(), &r200::get_lr_auto_exposure_params, &r200::set_lr_auto_exposure_params);
-        struct_interface<r200::dc_params> dc_writer     (get_device(), &r200::get_depth_params,            &r200::set_depth_params           );
+        auto & dev = get_device();
+        auto minmax_writer = make_struct_interface<r200::range    >([&dev]() { return r200::get_min_max_depth(dev);           }, [&dev](r200::range     v) { r200::set_min_max_depth(dev,v);           });
+        auto disp_writer   = make_struct_interface<r200::disp_mode>([&dev]() { return r200::get_disparity_mode(dev);          }, [&dev](r200::disp_mode v) { r200::set_disparity_mode(dev,v);          });
+        auto ae_writer     = make_struct_interface<r200::ae_params>([&dev]() { return r200::get_lr_auto_exposure_params(dev); }, [&dev](r200::ae_params v) { r200::set_lr_auto_exposure_params(dev,v); });
+        auto dc_writer     = make_struct_interface<r200::dc_params>([&dev]() { return r200::get_depth_params(dev);            }, [&dev](r200::dc_params v) { r200::set_depth_params(dev,v);            });
 
         for(int i=0; i<count; ++i)
         {
+            if(uvc::is_pu_control(options[i]))
+            {
+                uvc::set_pu_control(get_device(), 2, options[i], static_cast<int>(values[i]));
+                continue;
+            }
+
             switch(options[i])
             {
-            case RS_OPTION_COLOR_BACKLIGHT_COMPENSATION    : 
-            case RS_OPTION_COLOR_BRIGHTNESS                : 
-            case RS_OPTION_COLOR_CONTRAST                  : 
-            case RS_OPTION_COLOR_EXPOSURE                  : 
-            case RS_OPTION_COLOR_GAIN                      : 
-            case RS_OPTION_COLOR_GAMMA                     : 
-            case RS_OPTION_COLOR_HUE                       : 
-            case RS_OPTION_COLOR_SATURATION                : 
-            case RS_OPTION_COLOR_SHARPNESS                 : 
-            case RS_OPTION_COLOR_WHITE_BALANCE             : 
-            case RS_OPTION_COLOR_ENABLE_AUTO_EXPOSURE      : 
-            case RS_OPTION_COLOR_ENABLE_AUTO_WHITE_BALANCE : 
-                uvc::set_pu_control(get_device(), 2, options[i], static_cast<int>(values[i]));
-                break;
-
             case RS_OPTION_R200_LR_AUTO_EXPOSURE_ENABLED:                   r200::set_lr_exposure_mode(get_device(), values[i]); break;
             case RS_OPTION_R200_LR_GAIN:                                    r200::set_lr_gain(get_device(), {get_lr_framerate(), values[i]}); break; // TODO: May need to set this on start if framerate changes
             case RS_OPTION_R200_LR_EXPOSURE:                                r200::set_lr_exposure(get_device(), {get_lr_framerate(), values[i]}); break; // TODO: May need to set this on start if framerate changes
@@ -278,30 +257,22 @@ namespace rsimpl
 
     void r200_camera::get_options(const rs_option options[], int count, double values[])
     {
-        struct_interface<r200::range    > minmax_reader (get_device(), &r200::get_min_max_depth          );
-        struct_interface<r200::disp_mode> disp_reader   (get_device(), &r200::get_disparity_mode         );
-        struct_interface<r200::ae_params> ae_reader     (get_device(), &r200::get_lr_auto_exposure_params);
-        struct_interface<r200::dc_params> dc_reader     (get_device(), &r200::get_depth_params           );    
+        auto & dev = get_device();
+        auto minmax_reader = make_struct_interface<r200::range    >([&dev]() { return r200::get_min_max_depth(dev);           }, [&dev](r200::range     v) { r200::set_min_max_depth(dev,v);           });
+        auto disp_reader   = make_struct_interface<r200::disp_mode>([&dev]() { return r200::get_disparity_mode(dev);          }, [&dev](r200::disp_mode v) { r200::set_disparity_mode(dev,v);          });
+        auto ae_reader     = make_struct_interface<r200::ae_params>([&dev]() { return r200::get_lr_auto_exposure_params(dev); }, [&dev](r200::ae_params v) { r200::set_lr_auto_exposure_params(dev,v); });
+        auto dc_reader     = make_struct_interface<r200::dc_params>([&dev]() { return r200::get_depth_params(dev);            }, [&dev](r200::dc_params v) { r200::set_depth_params(dev,v);            }); 
 
         for(int i=0; i<count; ++i)
         {
+            if(uvc::is_pu_control(options[i]))
+            {
+                values[i] = uvc::get_pu_control(get_device(), 2, options[i]);
+                continue;
+            }
+
             switch(options[i])
             {
-            case RS_OPTION_COLOR_BACKLIGHT_COMPENSATION    : 
-            case RS_OPTION_COLOR_BRIGHTNESS                : 
-            case RS_OPTION_COLOR_CONTRAST                  : 
-            case RS_OPTION_COLOR_EXPOSURE                  : 
-            case RS_OPTION_COLOR_GAIN                      : 
-            case RS_OPTION_COLOR_GAMMA                     : 
-            case RS_OPTION_COLOR_HUE                       : 
-            case RS_OPTION_COLOR_SATURATION                : 
-            case RS_OPTION_COLOR_SHARPNESS                 : 
-            case RS_OPTION_COLOR_WHITE_BALANCE             : 
-            case RS_OPTION_COLOR_ENABLE_AUTO_EXPOSURE      : 
-            case RS_OPTION_COLOR_ENABLE_AUTO_WHITE_BALANCE : 
-                values[i] = uvc::get_pu_control(get_device(), 2, options[i]);
-                break;
-
             case RS_OPTION_R200_LR_AUTO_EXPOSURE_ENABLED:                   values[i] = r200::get_lr_exposure_mode(get_device()); break;
             
             case RS_OPTION_R200_LR_GAIN: // Gain is framerate dependent
@@ -345,7 +316,7 @@ namespace rsimpl
             case RS_OPTION_R200_DEPTH_CONTROL_NEIGHBOR_THRESHOLD:           values[i] = dc_reader.get(&r200::dc_params::neighbor_thresh         ); break;
             case RS_OPTION_R200_DEPTH_CONTROL_LR_THRESHOLD:                 values[i] = dc_reader.get(&r200::dc_params::lr_thresh               ); break;
 
-            default: LOG_WARNING("Cannot set " << options[i] << " to " << values[i] << " on " << get_name()); break;
+            default: LOG_WARNING("Cannot get " << options[i] << " on " << get_name()); break;
             }
         }
     }
@@ -423,20 +394,9 @@ namespace rsimpl
             }
         }
     }*/
-
     
     void r200_camera::get_option_range(rs_option option, double & min, double & max, double & step)
     {
-        if(uvc::is_pu_control(option))
-        {
-            int mn, mx;
-            uvc::get_pu_control_range(get_device(), 2, option, &mn, &mx);
-            min = mn;
-            max = mx;
-            step = 1;
-            return;
-        }
-
         // Gain min/max is framerate dependent
         if(option == RS_OPTION_R200_LR_GAIN)
         {
@@ -459,44 +419,7 @@ namespace rsimpl
             return;
         }
 
-        const struct { rs_option option; double min, max, step; } ranges[] = {
-            {RS_OPTION_R200_LR_AUTO_EXPOSURE_ENABLED,                   0, 1,           1},
-            {RS_OPTION_R200_EMITTER_ENABLED,                            0, 1,           1},
-            {RS_OPTION_R200_DEPTH_UNITS,                                1, INT_MAX,     1}, // What is the real range?
-            {RS_OPTION_R200_DEPTH_CLAMP_MIN,                            0, USHRT_MAX,   1},
-            {RS_OPTION_R200_DEPTH_CLAMP_MAX,                            0, USHRT_MAX,   1},
-            {RS_OPTION_R200_DISPARITY_MULTIPLIER,                       1, 1000,        1},
-            {RS_OPTION_R200_DISPARITY_SHIFT,                            0, 0,           1},
-
-            {RS_OPTION_R200_AUTO_EXPOSURE_MEAN_INTENSITY_SET_POINT,     0, 4095,        0},
-            {RS_OPTION_R200_AUTO_EXPOSURE_BRIGHT_RATIO_SET_POINT,       0, 1,           0},
-            {RS_OPTION_R200_AUTO_EXPOSURE_KP_GAIN,                      0, 1000,        0},
-            {RS_OPTION_R200_AUTO_EXPOSURE_KP_EXPOSURE,                  0, 1000,        0},
-            {RS_OPTION_R200_AUTO_EXPOSURE_KP_DARK_THRESHOLD,            0, 1000,        0},
-            {RS_OPTION_R200_AUTO_EXPOSURE_EXPOSURE_TOP_EDGE,            0, USHRT_MAX,   1},
-            {RS_OPTION_R200_AUTO_EXPOSURE_EXPOSURE_BOTTOM_EDGE,         0, USHRT_MAX,   1},
-            {RS_OPTION_R200_AUTO_EXPOSURE_EXPOSURE_LEFT_EDGE,           0, USHRT_MAX,   1},
-            {RS_OPTION_R200_AUTO_EXPOSURE_EXPOSURE_RIGHT_EDGE,          0, USHRT_MAX,   1},
-
-            {RS_OPTION_R200_DEPTH_CONTROL_ESTIMATE_MEDIAN_DECREMENT,    0, 0xFF,        1},
-            {RS_OPTION_R200_DEPTH_CONTROL_ESTIMATE_MEDIAN_INCREMENT,    0, 0xFF,        1},
-            {RS_OPTION_R200_DEPTH_CONTROL_MEDIAN_THRESHOLD,             0, 0x3FF,       1},
-            {RS_OPTION_R200_DEPTH_CONTROL_SCORE_MINIMUM_THRESHOLD,      0, 0x3FF,       1},
-            {RS_OPTION_R200_DEPTH_CONTROL_SCORE_MAXIMUM_THRESHOLD,      0, 0x3FF,       1},
-            {RS_OPTION_R200_DEPTH_CONTROL_TEXTURE_COUNT_THRESHOLD,      0, 0x1F,        1},
-            {RS_OPTION_R200_DEPTH_CONTROL_TEXTURE_DIFFERENCE_THRESHOLD, 0, 0x3FF,       1},
-            {RS_OPTION_R200_DEPTH_CONTROL_SECOND_PEAK_THRESHOLD,        0, 0x3FF,       1},
-            {RS_OPTION_R200_DEPTH_CONTROL_NEIGHBOR_THRESHOLD,           0, 0x3FF,       1},
-            {RS_OPTION_R200_DEPTH_CONTROL_LR_THRESHOLD,                 0, 0x7FF,       1},
-        };
-        for(auto & r : ranges)
-        {
-            if(option != r.option) continue;
-            min = r.min;
-            max = r.max;
-            step = r.step;
-            return;
-        }
-        throw std::logic_error("range not specified");
+        // Default to parent implementation
+        rs_device::get_option_range(option, min, max, step);
     }
 }

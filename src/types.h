@@ -108,6 +108,12 @@ namespace rsimpl
         return (c0 << 24) | (c1 << 16) | (c2 << 8) | c3;
     }
 
+    struct supported_option
+    { 
+        rs_option option;
+        double min, max, step; 
+    };
+
     // Static camera info
     struct stream_request
     {
@@ -162,7 +168,7 @@ namespace rsimpl
         std::vector<subdevice_mode> subdevice_modes;                        // A list of available modes each subdevice can be put into
         std::vector<interstream_rule> interstream_rules;                    // Rules which constrain the set of available modes
         stream_request presets[RS_STREAM_NATIVE_COUNT][RS_PRESET_COUNT];    // Presets available for each stream
-        bool option_supported[RS_OPTION_COUNT];                             // Whether or not a given option is supported on this camera
+        std::vector<supported_option> options;
         pose stream_poses[RS_STREAM_NATIVE_COUNT];                          // Static pose of each camera on the device
         int num_libuvc_transfer_buffers;                                    // Number of transfer buffers to use in LibUVC backend
         std::string firmware_version;                                       // Firmware version string
@@ -174,7 +180,6 @@ namespace rsimpl
         subdevice_mode_selection select_mode(const stream_request (&requests)[RS_STREAM_NATIVE_COUNT], int subdevice_index) const;
         std::vector<subdevice_mode_selection> select_modes(const stream_request (&requests)[RS_STREAM_NATIVE_COUNT]) const;
     };
-    static_device_info add_standard_unpackers(const static_device_info & device_info);
 
     // Thread-safe, non-blocking, lock-free triple buffer for marshalling data from a producer thread to a consumer thread
     template<class T> class triple_buffer

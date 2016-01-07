@@ -46,7 +46,7 @@ public:
     const char *                                get_serial() const { return config.info.serial.c_str(); }
     const char *                                get_firmware_version() const { return config.info.firmware_version.c_str(); }
     float                                       get_depth_scale() const { return config.depth_scale; }
-    bool                                        supports_option(rs_option option) const { return config.info.option_supported[option]; }
+    bool                                        supports_option(rs_option option) const;
 
     void                                        enable_stream(rs_stream stream, int width, int height, rs_format format, int fps);
     void                                        enable_stream_preset(rs_stream stream, rs_preset preset);    
@@ -60,15 +60,34 @@ public:
     int                                         get_frame_timestamp(rs_stream stream) const;
     const rsimpl::byte *                        get_frame_data(rs_stream stream) const;
     
-    virtual void                                get_option_range(rs_option option, double & min, double & max, double & step) {}
+    virtual void                                get_option_range(rs_option option, double & min, double & max, double & step);
     virtual void                                set_options(const rs_option options[], int count, const double values[]) {}
     virtual void                                get_options(const rs_option options[], int count, double values[]) {}
-
-    virtual void                                set_auto_range_parameters(const rs_f200_auto_range_parameters & parameters) {}
-    virtual rs_f200_auto_range_parameters       get_auto_range_parameters() const { return {}; }
 
     virtual void                                on_before_start(const std::vector<rsimpl::subdevice_mode_selection> & selected_modes) {}
     virtual int                                 convert_timestamp(int64_t timestamp) const = 0;
 };
+
+namespace rsimpl
+{
+    // This class is used to buffer up several writes to a structure-valued XU control, and send the entire structure all at once
+    // Additionally, it will ensure that any fields not set in a given struct will retain their original values
+    template<class T, class R, class W> struct struct_interface
+    {
+        T struct_;
+        R reader;
+        W writer;        
+        bool active;
+
+        struct_interface(R r, W w) : reader(r), writer(w), active(false) {}
+
+        void activate() { if(!active) { struct_ = reader(); active = true; } }
+        template<class U> double get(U T::* field) { activate(); return struct_.*field; }
+        template<class U> void set(U T::* field, double value) { activate(); struct_.*field = static_cast<U>(value); }
+        void commit() { if(active) writer(struct_); }
+    };
+
+    template<class T, class R, class W> struct_interface<T,R,W> make_struct_interface(R r, W w) { return {r,w}; }
+}
 
 #endif
