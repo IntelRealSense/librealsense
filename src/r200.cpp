@@ -165,29 +165,39 @@ namespace rsimpl
 
     // This class is used to buffer up several writes to a structure-valued XU control, and send the entire structure all at once
     // Additionally, it will ensure that any fields not set in a given struct will retain their original values
-    template<class T> struct struct_writer
+    template<class T> struct struct_interface
     {
         uvc::device & dev;
         T (*reader)(const uvc::device &);
         void (*writer)(uvc::device &, T);
         T struct_;
-        bool write;
+        bool active;
 
-        struct_writer(uvc::device & dev, T (*reader)(const uvc::device &), void (*writer)(uvc::device &, T)) : dev(dev), reader(reader), writer(writer), write(false) {}
+        struct_interface(uvc::device & dev, T (*reader)(const uvc::device &), void (*writer)(uvc::device &, T) = nullptr) : dev(dev), reader(reader), writer(writer), active(false) {}
+
+        template<class U> double get(U T::* field)
+        {
+            if(!active)
+            {
+                struct_ = reader(dev);
+                active = true;
+            }
+            return struct_.*field;
+        }
 
         template<class U> void set(U T::* field, double value)
         {
-            if(!write)
+            if(!active)
             {
                 struct_ = reader(dev);
-                write = true;
+                active = true;
             }
             struct_.*field = static_cast<U>(value);
         }
 
         void commit()
         {
-            if(write)
+            if(active)
             {
                 writer(dev, struct_);
             }
@@ -196,9 +206,9 @@ namespace rsimpl
 
     void r200_camera::set_options(const rs_option options[], int count, const double values[])
     {
-        struct_writer<r200::range    > minmax_writer (get_device(), &r200::get_min_max_depth,  &r200::set_min_max_depth );
-        struct_writer<r200::disp_mode> disp_writer   (get_device(), &r200::get_disparity_mode, &r200::set_disparity_mode);
-        struct_writer<r200::dc_params> dc_writer     (get_device(), &r200::get_depth_params,   &r200::set_depth_params  );
+        struct_interface<r200::range    > minmax_writer (get_device(), &r200::get_min_max_depth,  &r200::set_min_max_depth );
+        struct_interface<r200::disp_mode> disp_writer   (get_device(), &r200::get_disparity_mode, &r200::set_disparity_mode);
+        struct_interface<r200::dc_params> dc_writer     (get_device(), &r200::get_depth_params,   &r200::set_depth_params  );
 
         for(int i=0; i<count; ++i)
         {
@@ -248,8 +258,71 @@ namespace rsimpl
 
         minmax_writer.commit();
         disp_writer.commit();
-        if(disp_writer.write) on_update_disparity_multiplier(disp_writer.struct_.disparity_multiplier);
+        if(disp_writer.active) on_update_disparity_multiplier(disp_writer.struct_.disparity_multiplier);
         dc_writer.commit();
+    }
+
+    void r200_camera::get_options(const rs_option options[], int count, double values[])
+    {
+        struct_interface<r200::range    > minmax_reader (get_device(), &r200::get_min_max_depth );
+        struct_interface<r200::disp_mode> disp_reader   (get_device(), &r200::get_disparity_mode);
+        struct_interface<r200::dc_params> dc_reader     (get_device(), &r200::get_depth_params  );    
+
+        for(int i=0; i<count; ++i)
+        {
+            switch(options[i])
+            {
+            case RS_OPTION_COLOR_BACKLIGHT_COMPENSATION    : 
+            case RS_OPTION_COLOR_BRIGHTNESS                : 
+            case RS_OPTION_COLOR_CONTRAST                  : 
+            case RS_OPTION_COLOR_EXPOSURE                  : 
+            case RS_OPTION_COLOR_GAIN                      : 
+            case RS_OPTION_COLOR_GAMMA                     : 
+            case RS_OPTION_COLOR_HUE                       : 
+            case RS_OPTION_COLOR_SATURATION                : 
+            case RS_OPTION_COLOR_SHARPNESS                 : 
+            case RS_OPTION_COLOR_WHITE_BALANCE             : 
+            case RS_OPTION_COLOR_ENABLE_AUTO_EXPOSURE      : 
+            case RS_OPTION_COLOR_ENABLE_AUTO_WHITE_BALANCE : 
+                values[i] = uvc::get_pu_control(get_device(), 2, options[i]);
+                break;
+
+            case RS_OPTION_R200_LR_AUTO_EXPOSURE_ENABLED:                   values[i] = r200::get_lr_exposure_mode(get_device()); break;
+            
+            case RS_OPTION_R200_LR_GAIN: // Gain is framerate dependent
+                r200::set_lr_gain_discovery(get_device(), {get_lr_framerate()});
+                values[i] = r200::get_lr_gain(get_device()).value;
+                break;
+            case RS_OPTION_R200_LR_EXPOSURE: // Exposure is framerate dependent
+                r200::set_lr_exposure_discovery(get_device(), {get_lr_framerate()});
+                values[i] = r200::get_lr_exposure(get_device()).value;
+                break;
+            case RS_OPTION_R200_EMITTER_ENABLED:
+                values[i] = r200::get_emitter_state(get_device(), is_capturing(), get_stream_interface(RS_STREAM_DEPTH).is_enabled());
+                break;
+
+            case RS_OPTION_R200_DEPTH_UNITS:                                values[i] = r200::get_depth_units(get_device());  break;
+
+            case RS_OPTION_R200_DEPTH_CLAMP_MIN:                            values[i] = minmax_reader.get(&r200::range::min); break;
+            case RS_OPTION_R200_DEPTH_CLAMP_MAX:                            values[i] = minmax_reader.get(&r200::range::max); break;
+
+            case RS_OPTION_R200_DISPARITY_MULTIPLIER:                       values[i] = disp_reader.get(&r200::disp_mode::disparity_multiplier); break;
+            case RS_OPTION_R200_DISPARITY_SHIFT:                            values[i] = r200::get_disparity_shift(get_device()); break;
+
+            case RS_OPTION_R200_DEPTH_CONTROL_ESTIMATE_MEDIAN_DECREMENT:    values[i] = dc_reader.get(&r200::dc_params::robbins_munroe_minus_inc); break;
+            case RS_OPTION_R200_DEPTH_CONTROL_ESTIMATE_MEDIAN_INCREMENT:    values[i] = dc_reader.get(&r200::dc_params::robbins_munroe_plus_inc ); break;
+            case RS_OPTION_R200_DEPTH_CONTROL_MEDIAN_THRESHOLD:             values[i] = dc_reader.get(&r200::dc_params::median_thresh           ); break;
+            case RS_OPTION_R200_DEPTH_CONTROL_SCORE_MINIMUM_THRESHOLD:      values[i] = dc_reader.get(&r200::dc_params::score_min_thresh        ); break;
+            case RS_OPTION_R200_DEPTH_CONTROL_SCORE_MAXIMUM_THRESHOLD:      values[i] = dc_reader.get(&r200::dc_params::score_max_thresh        ); break;
+            case RS_OPTION_R200_DEPTH_CONTROL_TEXTURE_COUNT_THRESHOLD:      values[i] = dc_reader.get(&r200::dc_params::texture_count_thresh    ); break;
+            case RS_OPTION_R200_DEPTH_CONTROL_TEXTURE_DIFFERENCE_THRESHOLD: values[i] = dc_reader.get(&r200::dc_params::texture_diff_thresh     ); break;
+            case RS_OPTION_R200_DEPTH_CONTROL_SECOND_PEAK_THRESHOLD:        values[i] = dc_reader.get(&r200::dc_params::second_peak_thresh      ); break;
+            case RS_OPTION_R200_DEPTH_CONTROL_NEIGHBOR_THRESHOLD:           values[i] = dc_reader.get(&r200::dc_params::neighbor_thresh         ); break;
+            case RS_OPTION_R200_DEPTH_CONTROL_LR_THRESHOLD:                 values[i] = dc_reader.get(&r200::dc_params::lr_thresh               ); break;
+
+            default: LOG_WARNING("Cannot set " << options[i] << " to " << values[i] << " on " << get_name()); break;
+            }
+        }
     }
 
     void r200_camera::on_before_start(const std::vector<subdevice_mode_selection> & selected_modes)

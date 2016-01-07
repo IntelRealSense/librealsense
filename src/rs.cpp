@@ -390,7 +390,7 @@ HANDLE_EXCEPTIONS_AND_RETURN(, dev, option, min, max, step)
 
 void rs_get_options(rs_device * dev, const rs_option options[], int count, double values[], rs_error ** error) try
 {
-
+    dev->get_options(options, count, values);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, dev, options, count, values)
 

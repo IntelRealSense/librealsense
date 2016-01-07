@@ -65,6 +65,7 @@ public:
     int                                         get_option(rs_option option);
 
     virtual void                                set_options(const rs_option options[], int count, const double values[]) {}
+    virtual void                                get_options(const rs_option options[], int count, double values[]) {}
 
     virtual void                                set_auto_range_parameters(const rs_f200_auto_range_parameters & parameters) {}
     virtual rs_f200_auto_range_parameters       get_auto_range_parameters() const { return {}; }

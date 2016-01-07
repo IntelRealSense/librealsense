@@ -158,7 +158,11 @@ int main(int argc, char * argv[]) try
         if(!dev->supports_option(o.opt)) continue;
         dev->get_option_range(o.opt, o.min, o.max);
         if(o.min == o.max) continue;
-        o.value = dev->get_option(o.opt);
+
+        double val;
+        rs_get_options((rs_device *)dev, (const rs_option *)&o.opt, 1, &val, nullptr);
+        o.value = val;
+        //o.value = dev->get_option(o.opt);
         options.push_back(o);
     }
     int dc_preset = 0;

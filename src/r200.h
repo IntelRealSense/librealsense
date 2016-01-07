@@ -30,6 +30,7 @@ namespace rsimpl
         rs_r200_depth_control_parameters get_depth_control_parameters() const override final;
 
         void set_options(const rs_option options[], int count, const double values[]) override;
+        void get_options(const rs_option options[], int count, double values[]) override;
 
         void on_before_start(const std::vector<subdevice_mode_selection> & selected_modes) override;
         void get_xu_range(rs_option option, int * min, int * max) override;
