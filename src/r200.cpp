@@ -116,7 +116,7 @@ namespace rsimpl
         for(int i=0; i<RS_PRESET_COUNT; ++i) 
 			info.presets[RS_STREAM_INFRARED2][i] = info.presets[RS_STREAM_INFRARED][i];
 
-        for(int i = RS_OPTION_R200_LR_AUTO_EXPOSURE_ENABLED; i <= RS_OPTION_R200_DISPARITY_SHIFT; ++i)
+        for(int i = RS_OPTION_R200_LR_AUTO_EXPOSURE_ENABLED; i <= RS_OPTION_R200_DEPTH_CONTROL_LR_THRESHOLD; ++i)
 			info.option_supported[i] = true;
 
         // We select the depth/left infrared camera's viewpoint to be the origin
@@ -204,6 +204,21 @@ namespace rsimpl
         {
             switch(options[i])
             {
+            case RS_OPTION_COLOR_BACKLIGHT_COMPENSATION    : 
+            case RS_OPTION_COLOR_BRIGHTNESS                : 
+            case RS_OPTION_COLOR_CONTRAST                  : 
+            case RS_OPTION_COLOR_EXPOSURE                  : 
+            case RS_OPTION_COLOR_GAIN                      : 
+            case RS_OPTION_COLOR_GAMMA                     : 
+            case RS_OPTION_COLOR_HUE                       : 
+            case RS_OPTION_COLOR_SATURATION                : 
+            case RS_OPTION_COLOR_SHARPNESS                 : 
+            case RS_OPTION_COLOR_WHITE_BALANCE             : 
+            case RS_OPTION_COLOR_ENABLE_AUTO_EXPOSURE      : 
+            case RS_OPTION_COLOR_ENABLE_AUTO_WHITE_BALANCE : 
+                uvc::set_pu_control(get_device(), 2, options[i], static_cast<int>(values[i]));
+                break;
+
             case RS_OPTION_R200_LR_AUTO_EXPOSURE_ENABLED:                   r200::set_lr_exposure_mode(get_device(), values[i]); break;
             case RS_OPTION_R200_LR_GAIN:                                    r200::set_lr_gain(get_device(), {get_lr_framerate(), values[i]}); break; // TODO: May need to set this on start if framerate changes
             case RS_OPTION_R200_LR_EXPOSURE:                                r200::set_lr_exposure(get_device(), {get_lr_framerate(), values[i]}); break; // TODO: May need to set this on start if framerate changes
@@ -371,6 +386,17 @@ namespace rsimpl
             {RS_OPTION_R200_DEPTH_CLAMP_MAX, 0, USHRT_MAX},
             {RS_OPTION_R200_DISPARITY_MULTIPLIER, 1, 1000},
             {RS_OPTION_R200_DISPARITY_SHIFT, 0, 0},
+
+            {RS_OPTION_R200_DEPTH_CONTROL_ESTIMATE_MEDIAN_DECREMENT,    0, 0xFF },
+            {RS_OPTION_R200_DEPTH_CONTROL_ESTIMATE_MEDIAN_INCREMENT,    0, 0xFF },
+            {RS_OPTION_R200_DEPTH_CONTROL_MEDIAN_THRESHOLD,             0, 0x3FF},
+            {RS_OPTION_R200_DEPTH_CONTROL_SCORE_MINIMUM_THRESHOLD,      0, 0x3FF},
+            {RS_OPTION_R200_DEPTH_CONTROL_SCORE_MAXIMUM_THRESHOLD,      0, 0x3FF},
+            {RS_OPTION_R200_DEPTH_CONTROL_TEXTURE_COUNT_THRESHOLD,      0, 0x1F },
+            {RS_OPTION_R200_DEPTH_CONTROL_TEXTURE_DIFFERENCE_THRESHOLD, 0, 0x3FF},
+            {RS_OPTION_R200_DEPTH_CONTROL_SECOND_PEAK_THRESHOLD,        0, 0x3FF},
+            {RS_OPTION_R200_DEPTH_CONTROL_NEIGHBOR_THRESHOLD,           0, 0x3FF},
+            {RS_OPTION_R200_DEPTH_CONTROL_LR_THRESHOLD,                 0, 0x7FF},
         };
         for(auto & r : ranges)
         {

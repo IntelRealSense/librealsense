@@ -210,7 +210,12 @@ int main(int argc, char * argv[]) try
         {
             std::ostringstream ss; ss << o.opt << ": " << o.value;
             g.label({w-260,y+12}, {1,1,1}, ss.str().c_str());
-            if(g.slider((int)o.opt + 1, {w-260,y+16,w-20,y+36}, o.min, o.max, o.value)) dev->set_option(o.opt, o.value);
+            if(g.slider((int)o.opt + 1, {w-260,y+16,w-20,y+36}, o.min, o.max, o.value))
+            {
+                double val = o.value;
+                rs_set_options((rs_device *)dev, (const rs_option *)&o.opt, 1, &val, nullptr);
+                //dev->set_option(o.opt, o.value);
+            }
             y += 38;
         }
         std::ostringstream ss; ss << "Depth control parameters preset: " << dc_preset;
