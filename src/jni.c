@@ -334,21 +334,6 @@ JNIEXPORT void JNICALL Java_com_intel_rs_Device_getOptionRange(JNIEnv * env, job
     set_out_param(env, max, make_integer(env, c_max));
 }
 
-JNIEXPORT void JNICALL Java_com_intel_rs_Device_setOption(JNIEnv * env, jobject self, jobject option, jint value)
-{
-    rs_error * e = NULL;
-    rs_set_device_option(get_object(env, self), get_enum(env, option), value, &e);
-    handle_error(env, e);
-}
-
-JNIEXPORT jint JNICALL Java_com_intel_rs_Device_getOption(JNIEnv * env, jobject self, jobject option)
-{
-    rs_error * e = NULL;
-    int r = rs_get_device_option(get_object(env, self), get_enum(env, option), &e);
-    handle_error(env, e);
-    return r;
-}
-
 JNIEXPORT void JNICALL Java_com_intel_rs_Device_setAutoRangeParameters(JNIEnv * env, jobject self, jobject parameters)
 {
     rs_error * e = NULL;

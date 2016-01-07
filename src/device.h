@@ -61,8 +61,6 @@ public:
     const rsimpl::byte *                        get_frame_data(rs_stream stream) const;
 
     void                                        get_option_range(rs_option option, int * min, int * max);
-    void                                        set_option(rs_option option, int value);
-    int                                         get_option(rs_option option);
 
     virtual void                                set_options(const rs_option options[], int count, const double values[]) {}
     virtual void                                get_options(const rs_option options[], int count, double values[]) {}
@@ -76,8 +74,6 @@ public:
 
     virtual void                                on_before_start(const std::vector<rsimpl::subdevice_mode_selection> & selected_modes) {}
     virtual void                                get_xu_range(rs_option option, int * min, int * max) = 0;
-    virtual void                                set_xu_option(rs_option option, int value) = 0;
-    virtual int                                 get_xu_option(rs_option option) = 0;
     virtual int                                 convert_timestamp(int64_t timestamp) const = 0;
 };
 

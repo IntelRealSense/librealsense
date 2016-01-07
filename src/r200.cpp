@@ -41,7 +41,9 @@ namespace rsimpl
 
     r200_camera::r200_camera(std::shared_ptr<uvc::device> device, const static_device_info & info) : rs_device(device, info)
     {
-        on_update_depth_units(get_xu_option(RS_OPTION_R200_DEPTH_UNITS));
+        rs_option opt[] = {RS_OPTION_R200_DEPTH_UNITS}; double units;
+        get_options(opt, 1, &units);
+        on_update_depth_units(static_cast<int>(units));
     }
     
     r200_camera::~r200_camera()
@@ -327,6 +329,9 @@ namespace rsimpl
 
     void r200_camera::on_before_start(const std::vector<subdevice_mode_selection> & selected_modes)
     {
+        rs_option depth_units_option = RS_OPTION_R200_DEPTH_UNITS;
+        double depth_units;
+
         uint8_t streamIntent = 0;
         for(const auto & m : selected_modes)
         {
@@ -342,7 +347,8 @@ namespace rsimpl
                 default: throw std::logic_error("unsupported R200 depth format");
                 case RS_FORMAT_Z16: 
                     dm.is_disparity_enabled = 0;
-                    on_update_depth_units(get_xu_option(RS_OPTION_R200_DEPTH_UNITS));
+                    get_options(&depth_units_option, 1, &depth_units);
+                    on_update_depth_units(static_cast<int>(depth_units));
                     break;
                 case RS_FORMAT_DISPARITY16: 
                     dm.is_disparity_enabled = 1;
@@ -379,7 +385,7 @@ namespace rsimpl
         return 30;
     }
 
-    void r200_camera::set_xu_option(rs_option option, int value)
+    /*void r200_camera::set_xu_option(rs_option option, int value)
     {
         if(is_capturing())
         {
@@ -427,7 +433,7 @@ namespace rsimpl
             r200::set_disparity_shift(get_device(), value);
             break;
         }
-    }
+    }*/
 
     void r200_camera::get_xu_range(rs_option option, int * min, int * max)
     {
@@ -479,27 +485,6 @@ namespace rsimpl
             return;
         }
         throw std::logic_error("range not specified");
-    }
-
-    int r200_camera::get_xu_option(rs_option option)
-    {
-        switch(option)
-        {
-        case RS_OPTION_R200_LR_AUTO_EXPOSURE_ENABLED: return r200::get_lr_exposure_mode(get_device());
-        case RS_OPTION_R200_LR_GAIN: // Gain is framerate dependent
-            r200::set_lr_gain_discovery(get_device(), {get_lr_framerate()});
-            return r200::get_lr_gain(get_device()).value;
-        case RS_OPTION_R200_LR_EXPOSURE: // Exposure is framerate dependent
-            r200::set_lr_exposure_discovery(get_device(), {get_lr_framerate()});
-            return r200::get_lr_exposure(get_device()).value;
-        case RS_OPTION_R200_EMITTER_ENABLED:          return r200::get_emitter_state(get_device(), is_capturing(), get_stream_interface(RS_STREAM_DEPTH).is_enabled());
-        case RS_OPTION_R200_DEPTH_UNITS:              return r200::get_depth_units(get_device());
-        case RS_OPTION_R200_DEPTH_CLAMP_MIN:          return r200::get_min_max_depth(get_device()).min;
-        case RS_OPTION_R200_DEPTH_CLAMP_MAX:          return r200::get_min_max_depth(get_device()).max;
-        case RS_OPTION_R200_DISPARITY_MULTIPLIER:     return static_cast<int>(r200::get_disparity_mode(get_device()).disparity_multiplier);
-        case RS_OPTION_R200_DISPARITY_SHIFT:          return r200::get_disparity_shift (get_device());
-        default: return 0;
-        }
     }
 
     // Note: The external and internal algorithm structs have been deliberately left as separate types. The internal structs are intended to be 1:1

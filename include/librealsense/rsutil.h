@@ -85,7 +85,7 @@ void rs_apply_depth_control_preset(rs_device * device, int preset)
         {5, 5, 175, 24,  430, 6, 48, 47, 24,   12}, /* (OPTIMIZED) Provide a depthmap with a medium/high number of outliers removed. Derived from an optimization function. */
         {5, 5, 235, 27,  420, 8, 80, 70, 90,   12}, /* (HIGH)      Provide a depthmap with a higher number of outliers removed, which has minimal false positives. */
     };
-    rs_set_options(device, depth_control_options, 10, depth_control_presets[preset], nullptr);
+    rs_set_options(device, depth_control_options, 10, depth_control_presets[preset], 0);
 }
 
 #endif

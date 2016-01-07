@@ -279,22 +279,6 @@ void rs_get_device_option_range(rs_device * device, rs_option option, int * min,
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, device, option, min, max)
 
-void rs_set_device_option(rs_device * device, rs_option option, int value, rs_error ** error) try
-{
-    VALIDATE_NOT_NULL(device);
-    VALIDATE_ENUM(option);
-    device->set_option(option, value);
-}
-HANDLE_EXCEPTIONS_AND_RETURN(, device, option, value)
-
-int rs_get_device_option(rs_device * device, rs_option option, rs_error ** error) try
-{
-    VALIDATE_NOT_NULL(device);
-    VALIDATE_ENUM(option);
-    return device->get_option(option);
-}
-HANDLE_EXCEPTIONS_AND_RETURN(0, device, option)
-
 void rs_set_auto_range_parameters(rs_device * device, const rs_f200_auto_range_parameters * parameters, rs_error ** error) try
 {
     VALIDATE_NOT_NULL(device);

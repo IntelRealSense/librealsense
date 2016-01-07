@@ -342,9 +342,15 @@ void rs_stop_device(rs_device * device, rs_error ** error);
  */
 int rs_is_device_streaming(const rs_device * device, rs_error ** error);
 
+
+
+
 void rs_get_option_range(rs_device * dev, rs_option option, double * min, double * max, double * step, rs_error ** error);
 void rs_get_options(rs_device * dev, const rs_option options[], int count, double values[], rs_error ** error);
 void rs_set_options(rs_device * dev, const rs_option options[], int count, const double values[], rs_error ** error);
+
+
+
 
 /**
  * determine the range of acceptable values for an option on this device
@@ -355,21 +361,7 @@ void rs_set_options(rs_device * dev, const rs_option options[], int count, const
  */
 void rs_get_device_option_range(rs_device * device, rs_option option, int * min, int * max, rs_error ** error);
 
-/**
- * set the value of a specific device option
- * \param[in] option  the option whose value to set
- * \param[in] value   the desired value to set
- * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
- */
-void rs_set_device_option(rs_device * device, rs_option option, int value, rs_error ** error);
 
-/**
- * query the current value of a specific device option
- * \param[in] option  the option whose value to retrieve
- * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
- * \return            the current value of the option
- */
-int rs_get_device_option(rs_device * device, rs_option option, rs_error ** error);
 void rs_set_auto_range_parameters(rs_device * device, const rs_f200_auto_range_parameters * parameters, rs_error ** error);
 void rs_get_auto_range_parameters(const rs_device * device, rs_f200_auto_range_parameters * parameters, rs_error ** error);
 void rs_set_lr_auto_exposure_parameters(rs_device * device, const rs_r200_lr_auto_exposure_parameters * parameters, rs_error ** error);

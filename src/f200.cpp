@@ -350,7 +350,7 @@ namespace rsimpl
         throw std::logic_error("range not specified");
     }
 
-    void f200_camera::set_xu_option(rs_option option, int value)
+    /*void f200_camera::set_xu_option(rs_option option, int value)
     {
         // todo - Range check value before write
         auto val = static_cast<uint8_t>(value);
@@ -378,7 +378,7 @@ namespace rsimpl
         case RS_OPTION_F200_DYNAMIC_FPS:          f200::get_dynamic_fps(get_device(), value); break; // IVCAM 1.5 Only
         }
         return value;
-    }
+    }*/
 
 } // namespace rsimpl::f200
 

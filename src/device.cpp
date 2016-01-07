@@ -242,29 +242,3 @@ void rs_device::get_option_range(rs_option option, int * min, int * max)
         get_xu_range(option, min, max);
     }
 }
-
-void rs_device::set_option(rs_option option, int value)
-{
-    if(!supports_option(option)) throw std::runtime_error(to_string() << "option not supported by this device - " << option);
-    if(uvc::is_pu_control(option))
-    {
-        uvc::set_pu_control(get_device(), config.info.stream_subdevices[RS_STREAM_COLOR], option, value);
-    }
-    else
-    {
-        set_xu_option(option, value);
-    }
-}
-
-int rs_device::get_option(rs_option option)
-{
-    if(!supports_option(option)) throw std::runtime_error(to_string() << "option not supported by this device - " << option);
-    if(uvc::is_pu_control(option))
-    {
-        return uvc::get_pu_control(get_device(), config.info.stream_subdevices[RS_STREAM_COLOR], option);
-    }
-    else
-    {
-        return get_xu_option(option);
-    }
-}

@@ -34,8 +34,6 @@ namespace rsimpl
 
         void on_before_start(const std::vector<subdevice_mode_selection> & selected_modes) override;
         void get_xu_range(rs_option option, int * min, int * max) override;
-        void set_xu_option(rs_option option, int value) override;
-        int get_xu_option(rs_option option) override;
         int convert_timestamp(int64_t timestamp) const override;
     };
 

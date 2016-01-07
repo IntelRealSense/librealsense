@@ -411,27 +411,6 @@ namespace rs
             error::handle(e);
         }
 
-        /// set the value of a specific device option
-        /// \param[in] option  the option whose value to set
-        /// \param[in] value   the desired value to set
-        void set_option(option option, int value)
-        {
-            rs_error * e = nullptr;
-            rs_set_device_option((rs_device *)this, (rs_option)option, value, &e);
-            error::handle(e);
-        }
-
-        /// query the current value of a specific device option
-        /// \param[in] option  the option whose value to retrieve
-        /// \return            the current value of the option
-        int get_option(option option)
-        {
-            rs_error * e = nullptr;
-            auto r = rs_get_device_option((rs_device *)this, (rs_option)option, &e);
-            error::handle(e);
-            return r;
-        }
-
         void set_auto_range_parameters(const f200_auto_range_parameters & parameters)
         {
             rs_error * e = nullptr;
