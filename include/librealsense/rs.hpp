@@ -117,13 +117,6 @@ namespace rs
 
     struct f200_auto_range_parameters : rs_f200_auto_range_parameters{};
 
-    struct r200_lr_auto_exposure_parameters : rs_r200_lr_auto_exposure_parameters{};
-
-    struct r200_depth_control_parameters : rs_r200_depth_control_parameters
-    {
-        //static r200_depth_control_parameters get_preset(int preset) { r200_depth_control_parameters p; rs_get_depth_control_parameters_preset(preset, &p); return p; }
-    };
-
     class context;
     class device;
     
@@ -400,17 +393,6 @@ namespace rs
             return r != 0;
         }
 
-        /// determine the range of acceptable values for an option on this device
-        /// \param[in] option  the option whose range to query
-        /// \param[out] min    the minimum acceptable value, attempting to set a value below this will take no effect and raise an error
-        /// \param[out] max    the maximum acceptable value, attempting to set a value above this will take no effect and raise an error
-        void get_option_range(option option, int & min, int & max)
-        {
-            rs_error * e = nullptr;
-            rs_get_device_option_range((rs_device *)this, (rs_option)option, &min, &max, &e);
-            error::handle(e);
-        }
-
         void set_auto_range_parameters(const f200_auto_range_parameters & parameters)
         {
             rs_error * e = nullptr;
@@ -423,38 +405,6 @@ namespace rs
             rs_error * e = nullptr;
             f200_auto_range_parameters parameters;
             rs_get_auto_range_parameters((const rs_device *)this, &parameters, &e);
-            error::handle(e);
-            return parameters;
-        }
-
-        void set_lr_auto_exposure_parameters(const r200_lr_auto_exposure_parameters & parameters)
-        {
-            rs_error * e = nullptr;
-            rs_set_lr_auto_exposure_parameters((rs_device *)this, (const rs_r200_lr_auto_exposure_parameters *)&parameters, &e);
-            error::handle(e);
-        }
-
-        r200_lr_auto_exposure_parameters get_lr_auto_exposure_parameters() const
-        {
-            rs_error * e = nullptr;
-            r200_lr_auto_exposure_parameters parameters;
-            rs_get_lr_auto_exposure_parameters((const rs_device *)this, &parameters, &e);
-            error::handle(e);
-            return parameters;
-        }
-
-        void set_depth_control_parameters(const r200_depth_control_parameters & parameters)
-        {
-            rs_error * e = nullptr;
-            rs_set_depth_control_parameters((rs_device *)this, (const rs_r200_depth_control_parameters *)&parameters, &e);
-            error::handle(e);
-        }
-
-        r200_depth_control_parameters get_depth_control_parameters() const
-        {
-            rs_error * e = nullptr;
-            r200_depth_control_parameters parameters;
-            rs_get_depth_control_parameters((const rs_device *)this, &parameters, &e);
             error::handle(e);
             return parameters;
         }

@@ -24,16 +24,11 @@ namespace rsimpl
         r200_camera(std::shared_ptr<uvc::device> device, const static_device_info & info);
         ~r200_camera();
 
-        void set_lr_auto_exposure_parameters(const rs_r200_lr_auto_exposure_parameters & parameters) override final;
-        rs_r200_lr_auto_exposure_parameters get_lr_auto_exposure_parameters() const override final;
-        void set_depth_control_parameters(const rs_r200_depth_control_parameters & parameters) override final;
-        rs_r200_depth_control_parameters get_depth_control_parameters() const override final;
-
+        void get_option_range(rs_option option, double & min, double & max, double & step) override;
         void set_options(const rs_option options[], int count, const double values[]) override;
         void get_options(const rs_option options[], int count, double values[]) override;
 
         void on_before_start(const std::vector<subdevice_mode_selection> & selected_modes) override;
-        void get_xu_range(rs_option option, int * min, int * max) override;
         int convert_timestamp(int64_t timestamp) const override;
     };
 

@@ -88,18 +88,28 @@ typedef enum rs_option
     RS_OPTION_R200_DISPARITY_MULTIPLIER       = 25, /**< 0 - 1000, the increments in integer disparity values corresponding to one pixel of disparity */
     RS_OPTION_R200_DISPARITY_SHIFT            = 26, 
 
-    RS_OPTION_R200_DEPTH_CONTROL_ESTIMATE_MEDIAN_DECREMENT,    /*  */
-    RS_OPTION_R200_DEPTH_CONTROL_ESTIMATE_MEDIAN_INCREMENT,    /*  */
-    RS_OPTION_R200_DEPTH_CONTROL_MEDIAN_THRESHOLD,             /*  */
-    RS_OPTION_R200_DEPTH_CONTROL_SCORE_MINIMUM_THRESHOLD,      /*  */
-    RS_OPTION_R200_DEPTH_CONTROL_SCORE_MAXIMUM_THRESHOLD,      /*  */
-    RS_OPTION_R200_DEPTH_CONTROL_TEXTURE_COUNT_THRESHOLD,      /*  */
-    RS_OPTION_R200_DEPTH_CONTROL_TEXTURE_DIFFERENCE_THRESHOLD, /*  */
-    RS_OPTION_R200_DEPTH_CONTROL_SECOND_PEAK_THRESHOLD,        /*  */
-    RS_OPTION_R200_DEPTH_CONTROL_NEIGHBOR_THRESHOLD,           /*  */
-    RS_OPTION_R200_DEPTH_CONTROL_LR_THRESHOLD,                 /*  */
+    RS_OPTION_R200_AUTO_EXPOSURE_MEAN_INTENSITY_SET_POINT,
+    RS_OPTION_R200_AUTO_EXPOSURE_BRIGHT_RATIO_SET_POINT,  
+    RS_OPTION_R200_AUTO_EXPOSURE_KP_GAIN,                 
+    RS_OPTION_R200_AUTO_EXPOSURE_KP_EXPOSURE,             
+    RS_OPTION_R200_AUTO_EXPOSURE_KP_DARK_THRESHOLD,       
+    RS_OPTION_R200_AUTO_EXPOSURE_EXPOSURE_TOP_EDGE,       
+    RS_OPTION_R200_AUTO_EXPOSURE_EXPOSURE_BOTTOM_EDGE,    
+    RS_OPTION_R200_AUTO_EXPOSURE_EXPOSURE_LEFT_EDGE,      
+    RS_OPTION_R200_AUTO_EXPOSURE_EXPOSURE_RIGHT_EDGE,     
 
-    RS_OPTION_COUNT                           = 37, 
+    RS_OPTION_R200_DEPTH_CONTROL_ESTIMATE_MEDIAN_DECREMENT,   
+    RS_OPTION_R200_DEPTH_CONTROL_ESTIMATE_MEDIAN_INCREMENT,   
+    RS_OPTION_R200_DEPTH_CONTROL_MEDIAN_THRESHOLD,            
+    RS_OPTION_R200_DEPTH_CONTROL_SCORE_MINIMUM_THRESHOLD,     
+    RS_OPTION_R200_DEPTH_CONTROL_SCORE_MAXIMUM_THRESHOLD,     
+    RS_OPTION_R200_DEPTH_CONTROL_TEXTURE_COUNT_THRESHOLD,     
+    RS_OPTION_R200_DEPTH_CONTROL_TEXTURE_DIFFERENCE_THRESHOLD,
+    RS_OPTION_R200_DEPTH_CONTROL_SECOND_PEAK_THRESHOLD,       
+    RS_OPTION_R200_DEPTH_CONTROL_NEIGHBOR_THRESHOLD,          
+    RS_OPTION_R200_DEPTH_CONTROL_LR_THRESHOLD,                
+
+    RS_OPTION_COUNT                           = 46, 
     RS_OPTION_MAX_ENUM = 0x7FFFFFFF
 } rs_option;
 
@@ -134,33 +144,6 @@ typedef struct rs_f200_auto_range_parameters
     int auto_range_upper_threshold; /*  */
     int auto_range_lower_threshold; /*  */
 } rs_f200_auto_range_parameters;
-
-typedef struct rs_r200_lr_auto_exposure_parameters
-{
-    float mean_intensity_set_point; /*  */
-    float bright_ratio_set_point;   /*  */
-    float kp_gain;                  /*  */
-    float kp_exposure;              /*  */
-    float kp_dark_threshold;        /*  */
-    int   exposure_top_edge;        /*  */
-    int   exposure_bottom_edge;     /*  */
-    int   exposure_left_edge;       /*  */
-    int   exposure_right_edge;      /*  */
-} rs_r200_lr_auto_exposure_parameters;
-
-typedef struct rs_r200_depth_control_parameters
-{
-    int estimate_median_decrement;    /*  */
-    int estimate_median_increment;    /*  */
-    int median_threshold;             /*  */
-    int score_minimum_threshold;      /*  */
-    int score_maximum_threshold;      /*  */
-    int texture_count_threshold;      /*  */
-    int texture_difference_threshold; /*  */
-    int second_peak_threshold;        /*  */
-    int neighbor_threshold;           /*  */
-    int lr_threshold;                 /*  */
-} rs_r200_depth_control_parameters;
 
 typedef struct rs_context rs_context;
 typedef struct rs_device rs_device;
@@ -349,25 +332,12 @@ void rs_get_option_range(rs_device * dev, rs_option option, double * min, double
 void rs_get_options(rs_device * dev, const rs_option options[], int count, double values[], rs_error ** error);
 void rs_set_options(rs_device * dev, const rs_option options[], int count, const double values[], rs_error ** error);
 
-
-
-
-/**
- * determine the range of acceptable values for an option on this device
- * \param[in] option  the option whose range to query
- * \param[out] min    the minimum acceptable value, attempting to set a value below this will take no effect and raise an error
- * \param[out] max    the maximum acceptable value, attempting to set a value above this will take no effect and raise an error
- * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
- */
-void rs_get_device_option_range(rs_device * device, rs_option option, int * min, int * max, rs_error ** error);
-
+/* These functions are simply convenience forms of the above multi-get and multi-set functions */
+double rs_get_option(rs_device * dev, rs_option option, rs_error ** error);
+void rs_set_option(rs_device * dev, rs_option option, double value, rs_error ** error);
 
 void rs_set_auto_range_parameters(rs_device * device, const rs_f200_auto_range_parameters * parameters, rs_error ** error);
 void rs_get_auto_range_parameters(const rs_device * device, rs_f200_auto_range_parameters * parameters, rs_error ** error);
-void rs_set_lr_auto_exposure_parameters(rs_device * device, const rs_r200_lr_auto_exposure_parameters * parameters, rs_error ** error);
-void rs_get_lr_auto_exposure_parameters(const rs_device * device, rs_r200_lr_auto_exposure_parameters * parameters, rs_error ** error);
-void rs_set_depth_control_parameters(rs_device * device, const rs_r200_depth_control_parameters * parameters, rs_error ** error);
-void rs_get_depth_control_parameters(const rs_device * device, rs_r200_depth_control_parameters * parameters, rs_error ** error);
 
 /**
  * block until new frames are available

@@ -269,16 +269,6 @@ const void * rs_get_frame_data(const rs_device * device, rs_stream stream, rs_er
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, device, stream)
 
-
-
-void rs_get_device_option_range(rs_device * device, rs_option option, int * min, int * max, rs_error ** error) try
-{
-    VALIDATE_NOT_NULL(device);
-    VALIDATE_ENUM(option);
-    device->get_option_range(option, min, max);
-}
-HANDLE_EXCEPTIONS_AND_RETURN(, device, option, min, max)
-
 void rs_set_auto_range_parameters(rs_device * device, const rs_f200_auto_range_parameters * parameters, rs_error ** error) try
 {
     VALIDATE_NOT_NULL(device);
@@ -292,38 +282,6 @@ void rs_get_auto_range_parameters(const rs_device * device, rs_f200_auto_range_p
     VALIDATE_NOT_NULL(device);
     VALIDATE_NOT_NULL(parameters);
     *parameters = device->get_auto_range_parameters();
-}
-HANDLE_EXCEPTIONS_AND_RETURN(, device, parameters)
-
-void rs_set_lr_auto_exposure_parameters(rs_device * device, const rs_r200_lr_auto_exposure_parameters * parameters, rs_error ** error) try
-{
-    VALIDATE_NOT_NULL(device);
-    VALIDATE_NOT_NULL(parameters);
-    device->set_lr_auto_exposure_parameters(*parameters);
-}
-HANDLE_EXCEPTIONS_AND_RETURN(, device, parameters)
-
-void rs_get_lr_auto_exposure_parameters(const rs_device * device, rs_r200_lr_auto_exposure_parameters * parameters, rs_error ** error) try
-{
-    VALIDATE_NOT_NULL(device);
-    VALIDATE_NOT_NULL(parameters);
-    *parameters = device->get_lr_auto_exposure_parameters();
-}
-HANDLE_EXCEPTIONS_AND_RETURN(, device, parameters)
-
-void rs_set_depth_control_parameters(rs_device * device, const rs_r200_depth_control_parameters * parameters, rs_error ** error) try
-{
-    VALIDATE_NOT_NULL(device);
-    VALIDATE_NOT_NULL(parameters);
-    device->set_depth_control_parameters(*parameters);
-}
-HANDLE_EXCEPTIONS_AND_RETURN(, device, parameters)
-
-void rs_get_depth_control_parameters(const rs_device * device, rs_r200_depth_control_parameters * parameters, rs_error ** error) try
-{
-    VALIDATE_NOT_NULL(device);
-    VALIDATE_NOT_NULL(parameters);
-    *parameters = device->get_depth_control_parameters();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, device, parameters)
 
@@ -366,23 +324,56 @@ HANDLE_EXCEPTIONS_AND_RETURN(nullptr, option)
 
 
 
-void rs_get_option_range(rs_device * dev, rs_option option, double * min, double * max, double * step, rs_error ** error) try
+void rs_get_option_range(rs_device * device, rs_option option, double * min, double * max, double * step, rs_error ** error) try
 {
-
+    VALIDATE_NOT_NULL(device);
+    VALIDATE_ENUM(option);
+    double x; // Prevent internal code from having to worry about whether nulls are passed in for min/max/step by giving it somewhere to write to
+    device->get_option_range(option, min ? *min : x, max ? *max : x, step ? *step : x);
 }
-HANDLE_EXCEPTIONS_AND_RETURN(, dev, option, min, max, step)
+HANDLE_EXCEPTIONS_AND_RETURN(, device, option, min, max, step)
 
-void rs_get_options(rs_device * dev, const rs_option options[], int count, double values[], rs_error ** error) try
+void rs_get_options(rs_device * device, const rs_option options[], int count, double values[], rs_error ** error) try
 {
-    dev->get_options(options, count, values);
+    VALIDATE_NOT_NULL(device);
+    VALIDATE_RANGE(count, 0, INT_MAX);
+    VALIDATE_NOT_NULL(options);
+    for(int i=0; i<count; ++i) VALIDATE_ENUM(options[i]);
+    VALIDATE_NOT_NULL(values);
+    device->get_options(options, count, values);
 }
-HANDLE_EXCEPTIONS_AND_RETURN(, dev, options, count, values)
+HANDLE_EXCEPTIONS_AND_RETURN(, device, options, count, values)
 
-void rs_set_options(rs_device * dev, const rs_option options[], int count, const double values[], rs_error ** error) try
+void rs_set_options(rs_device * device, const rs_option options[], int count, const double values[], rs_error ** error) try
 {
-    dev->set_options(options, count, values);
+    VALIDATE_NOT_NULL(device);
+    VALIDATE_RANGE(count, 0, INT_MAX);
+    VALIDATE_NOT_NULL(options);
+    for(int i=0; i<count; ++i) VALIDATE_ENUM(options[i]);
+    VALIDATE_NOT_NULL(values);
+    device->set_options(options, count, values);
 }
-HANDLE_EXCEPTIONS_AND_RETURN(, dev, options, count, values)
+HANDLE_EXCEPTIONS_AND_RETURN(, device, options, count, values)
+
+double rs_get_option(rs_device * device, rs_option option, rs_error ** error) try
+{
+    VALIDATE_NOT_NULL(device);
+    VALIDATE_ENUM(option);
+    double value;
+    device->get_options(&option, 1, &value);
+    return value;
+}
+HANDLE_EXCEPTIONS_AND_RETURN(0, device, option)
+
+void rs_set_option(rs_device * device, rs_option option, double value, rs_error ** error) try
+{
+    VALIDATE_NOT_NULL(device);
+    VALIDATE_ENUM(option);
+    device->set_options(&option, 1, &value);
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, device, option, value)
+
+
 
 void rs_free_error(rs_error * error) { if (error) delete error; }
 const char * rs_get_failed_function(const rs_error * error) { return error ? error->function : nullptr; }

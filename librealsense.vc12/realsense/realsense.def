@@ -29,13 +29,8 @@ EXPORTS
 	rs_stop_device
 	rs_is_device_streaming
 	
-	rs_get_device_option_range
 	rs_set_auto_range_parameters
 	rs_get_auto_range_parameters
-	rs_set_lr_auto_exposure_parameters
-	rs_get_lr_auto_exposure_parameters
-	rs_set_depth_control_parameters
-	rs_get_depth_control_parameters
 	
 	rs_wait_for_frames
 	rs_get_frame_timestamp
@@ -55,3 +50,5 @@ EXPORTS
 	rs_get_option_range
 	rs_get_options
 	rs_set_options
+	rs_get_option
+	rs_set_option

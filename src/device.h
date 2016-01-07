@@ -59,21 +59,15 @@ public:
     void                                        wait_all_streams();
     int                                         get_frame_timestamp(rs_stream stream) const;
     const rsimpl::byte *                        get_frame_data(rs_stream stream) const;
-
-    void                                        get_option_range(rs_option option, int * min, int * max);
-
+    
+    virtual void                                get_option_range(rs_option option, double & min, double & max, double & step) {}
     virtual void                                set_options(const rs_option options[], int count, const double values[]) {}
     virtual void                                get_options(const rs_option options[], int count, double values[]) {}
 
     virtual void                                set_auto_range_parameters(const rs_f200_auto_range_parameters & parameters) {}
     virtual rs_f200_auto_range_parameters       get_auto_range_parameters() const { return {}; }
-    virtual void                                set_lr_auto_exposure_parameters(const rs_r200_lr_auto_exposure_parameters & parameters) {}
-    virtual rs_r200_lr_auto_exposure_parameters get_lr_auto_exposure_parameters() const { return {}; }
-    virtual void                                set_depth_control_parameters(const rs_r200_depth_control_parameters & parameters) {}
-    virtual rs_r200_depth_control_parameters    get_depth_control_parameters() const { return {}; }
 
     virtual void                                on_before_start(const std::vector<rsimpl::subdevice_mode_selection> & selected_modes) {}
-    virtual void                                get_xu_range(rs_option option, int * min, int * max) = 0;
     virtual int                                 convert_timestamp(int64_t timestamp) const = 0;
 };
 

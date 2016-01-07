@@ -42,7 +42,6 @@ namespace rsimpl
         ~f200_camera();
 
         void on_before_start(const std::vector<subdevice_mode_selection> & selected_modes) override;
-        void get_xu_range(rs_option option, int * min, int * max) override;
         int convert_timestamp(int64_t timestamp) const override { return static_cast<int>(timestamp / 100000); }
     };
 

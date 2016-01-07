@@ -70,15 +70,16 @@ struct gui
         return changed;
     }
 
-    bool slider(int id, const rect & r, int min, int max, int & value)
+    bool slider(int id, const rect & r, double min, double max, double step, double & value)
     {
         bool changed = false;
         const int w = r.x1 - r.x0, h = r.y1 - r.y0;
-        int p = (w - h) * (value - min) / (max - min);
+        double p = (w - h) * (value - min) / (max - min);
         if(mouse_down && clicked_id == id)
         {
-            p = std::max(0, std::min(cursor.x - clicked_offset.x - r.x0, w-h));
-            const int new_value = min + p * (max - min) / (w - h);
+            p = std::max(0.0, std::min<double>(cursor.x - clicked_offset.x - r.x0, w-h));
+            double new_value = min + p * (max - min) / (w - h);
+            if(step) new_value = std::round((new_value - min) / step) * step + min;
             changed = new_value != value;
             value = new_value;
             p = (w - h) * (value - min) / (max - min);
@@ -150,22 +151,18 @@ int main(int argc, char * argv[]) try
 
     //std::this_thread::sleep_for(std::chrono::seconds(1));
 
-    struct option { rs::option opt; int min, max, value; };
+    struct option { rs::option opt; double min, max, step, value; };
     std::vector<option> options;
     for(int i=0; i<RS_OPTION_COUNT; ++i)
     {
         option o = {(rs::option)i};
         if(!dev->supports_option(o.opt)) continue;
-        dev->get_option_range(o.opt, o.min, o.max);
+        rs_get_option_range((rs_device *)dev, (rs_option)o.opt, &o.min, &o.max, &o.step, nullptr);
         if(o.min == o.max) continue;
-
-        double val;
-        rs_get_options((rs_device *)dev, (const rs_option *)&o.opt, 1, &val, nullptr);
-        o.value = val;
-        //o.value = dev->get_option(o.opt);
+        o.value = rs_get_option((rs_device *)dev, (rs_option)o.opt, nullptr);
         options.push_back(o);
     }
-    int dc_preset = 0;
+    double dc_preset = 0;
 
     int offset = 0, panel_height = 1;
     while(!glfwWindowShouldClose(win))
@@ -214,17 +211,15 @@ int main(int argc, char * argv[]) try
         {
             std::ostringstream ss; ss << o.opt << ": " << o.value;
             g.label({w-260,y+12}, {1,1,1}, ss.str().c_str());
-            if(g.slider((int)o.opt + 1, {w-260,y+16,w-20,y+36}, o.min, o.max, o.value))
+            if(g.slider((int)o.opt + 1, {w-260,y+16,w-20,y+36}, o.min, o.max, o.step, o.value))
             {
-                double val = o.value;
-                rs_set_options((rs_device *)dev, (const rs_option *)&o.opt, 1, &val, nullptr);
-                //dev->set_option(o.opt, o.value);
+                rs_set_option((rs_device *)dev, (rs_option)o.opt, o.value, nullptr);
             }
             y += 38;
         }
         std::ostringstream ss; ss << "Depth control parameters preset: " << dc_preset;
         g.label({w-260,y+12}, {1,1,1}, "Depth control parameters preset");
-        if(g.slider(100, {w-260,y+16,w-20,y+36}, 0, 5, dc_preset))
+        if(g.slider(100, {w-260,y+16,w-20,y+36}, 0, 5, 1, dc_preset))
         {
             rs_apply_depth_control_preset((rs_device *)dev, dc_preset);
         }

@@ -330,7 +330,7 @@ namespace rsimpl
         }
     }
 
-    void f200_camera::get_xu_range(rs_option option, int * min, int * max)
+    /*void f200_camera::get_xu_range(rs_option option, int * min, int * max)
     {
         const struct { rs_option option; int min, max; } ranges[] = {
             {RS_OPTION_F200_LASER_POWER, 0, 15},
@@ -348,7 +348,7 @@ namespace rsimpl
             return;
         }
         throw std::logic_error("range not specified");
-    }
+    }*/
 
     /*void f200_camera::set_xu_option(rs_option option, int value)
     {

@@ -89,35 +89,6 @@ static void write_f200_auto_range_parameters(JNIEnv * env, jobject obj, const rs
     (*env)->SetIntField(env, obj, (*env)->GetFieldID(env, cl, "autoRangeLowerThreshold", "I"), val->auto_range_lower_threshold);
 }
 
-static void write_r200_lr_auto_exposure_parameters(JNIEnv * env, jobject obj, const rs_r200_lr_auto_exposure_parameters * val)
-{
-    jclass cl = (*env)->GetObjectClass(env, obj);
-    (*env)->SetFloatField(env, obj, (*env)->GetFieldID(env, cl, "meanIntensitySetPoint", "F"), val->mean_intensity_set_point);
-    (*env)->SetFloatField(env, obj, (*env)->GetFieldID(env, cl, "brightRatioSetPoint", "F"), val->bright_ratio_set_point);
-    (*env)->SetFloatField(env, obj, (*env)->GetFieldID(env, cl, "KPGain", "F"), val->kp_gain);
-    (*env)->SetFloatField(env, obj, (*env)->GetFieldID(env, cl, "KPExposure", "F"), val->kp_exposure);
-    (*env)->SetFloatField(env, obj, (*env)->GetFieldID(env, cl, "KPDarkThreshold", "F"), val->kp_dark_threshold);
-    (*env)->SetIntField(env, obj, (*env)->GetFieldID(env, cl, "exposureTopEdge", "I"), val->exposure_top_edge);
-    (*env)->SetIntField(env, obj, (*env)->GetFieldID(env, cl, "exposureBottomEdge", "I"), val->exposure_bottom_edge);
-    (*env)->SetIntField(env, obj, (*env)->GetFieldID(env, cl, "exposureLeftEdge", "I"), val->exposure_left_edge);
-    (*env)->SetIntField(env, obj, (*env)->GetFieldID(env, cl, "exposureRightEdge", "I"), val->exposure_right_edge);
-}
-
-static void write_r200_depth_control_parameters(JNIEnv * env, jobject obj, const rs_r200_depth_control_parameters * val)
-{
-    jclass cl = (*env)->GetObjectClass(env, obj);
-    (*env)->SetIntField(env, obj, (*env)->GetFieldID(env, cl, "estimateMedianDecrement", "I"), val->estimate_median_decrement);
-    (*env)->SetIntField(env, obj, (*env)->GetFieldID(env, cl, "estimateMedianIncrement", "I"), val->estimate_median_increment);
-    (*env)->SetIntField(env, obj, (*env)->GetFieldID(env, cl, "medianThreshold", "I"), val->median_threshold);
-    (*env)->SetIntField(env, obj, (*env)->GetFieldID(env, cl, "scoreMinimumThreshold", "I"), val->score_minimum_threshold);
-    (*env)->SetIntField(env, obj, (*env)->GetFieldID(env, cl, "scoreMaximumThreshold", "I"), val->score_maximum_threshold);
-    (*env)->SetIntField(env, obj, (*env)->GetFieldID(env, cl, "textureCountThreshold", "I"), val->texture_count_threshold);
-    (*env)->SetIntField(env, obj, (*env)->GetFieldID(env, cl, "textureDifferenceThreshold", "I"), val->texture_difference_threshold);
-    (*env)->SetIntField(env, obj, (*env)->GetFieldID(env, cl, "secondPeakThreshold", "I"), val->second_peak_threshold);
-    (*env)->SetIntField(env, obj, (*env)->GetFieldID(env, cl, "neighborThreshold", "I"), val->neighbor_threshold);
-    (*env)->SetIntField(env, obj, (*env)->GetFieldID(env, cl, "LRThreshold", "I"), val->lr_threshold);
-}
-
 static void handle_error(JNIEnv * env, rs_error * e)
 {
     if(e)
@@ -323,17 +294,6 @@ JNIEXPORT jboolean JNICALL Java_com_intel_rs_Device_isStreaming(JNIEnv * env, jo
     return r;
 }
 
-JNIEXPORT void JNICALL Java_com_intel_rs_Device_getOptionRange(JNIEnv * env, jobject self, jobject option, jobject min, jobject max)
-{
-    rs_error * e = NULL;
-    int c_min;
-    int c_max;
-    rs_get_device_option_range(get_object(env, self), get_enum(env, option), &c_min, &c_max, &e);
-    handle_error(env, e);
-    set_out_param(env, min, make_integer(env, c_min));
-    set_out_param(env, max, make_integer(env, c_max));
-}
-
 JNIEXPORT void JNICALL Java_com_intel_rs_Device_setAutoRangeParameters(JNIEnv * env, jobject self, jobject parameters)
 {
     rs_error * e = NULL;
@@ -348,38 +308,6 @@ JNIEXPORT void JNICALL Java_com_intel_rs_Device_getAutoRangeParameters(JNIEnv * 
     rs_get_auto_range_parameters(get_object(env, self), &c_parameters, &e);
     handle_error(env, e);
     write_f200_auto_range_parameters(env, parameters, &c_parameters);
-}
-
-JNIEXPORT void JNICALL Java_com_intel_rs_Device_setLRAutoExposureParameters(JNIEnv * env, jobject self, jobject parameters)
-{
-    rs_error * e = NULL;
-    //rs_set_lr_auto_exposure_parameters(get_object(env, self), parameters, &e);
-    handle_error(env, e);
-}
-
-JNIEXPORT void JNICALL Java_com_intel_rs_Device_getLRAutoExposureParameters(JNIEnv * env, jobject self, jobject parameters)
-{
-    rs_error * e = NULL;
-    rs_r200_lr_auto_exposure_parameters c_parameters;
-    rs_get_lr_auto_exposure_parameters(get_object(env, self), &c_parameters, &e);
-    handle_error(env, e);
-    write_r200_lr_auto_exposure_parameters(env, parameters, &c_parameters);
-}
-
-JNIEXPORT void JNICALL Java_com_intel_rs_Device_setDepthControlParameters(JNIEnv * env, jobject self, jobject parameters)
-{
-    rs_error * e = NULL;
-    //rs_set_depth_control_parameters(get_object(env, self), parameters, &e);
-    handle_error(env, e);
-}
-
-JNIEXPORT void JNICALL Java_com_intel_rs_Device_getDepthControlParameters(JNIEnv * env, jobject self, jobject parameters)
-{
-    rs_error * e = NULL;
-    rs_r200_depth_control_parameters c_parameters;
-    rs_get_depth_control_parameters(get_object(env, self), &c_parameters, &e);
-    handle_error(env, e);
-    write_r200_depth_control_parameters(env, parameters, &c_parameters);
 }
 
 JNIEXPORT void JNICALL Java_com_intel_rs_Device_waitForFrames(JNIEnv * env, jobject self)
