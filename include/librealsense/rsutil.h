@@ -88,21 +88,42 @@ void rs_apply_depth_control_preset(rs_device * device, int preset)
     rs_set_options(device, depth_control_options, 10, depth_control_presets[preset], 0);
 }
 
+/* Provide access to several recommend sets of option presets for ivcam */
 void rs_apply_ivcam_preset(rs_device * device, int preset)
 {
-    /*const PresetModeSettings PresetModeSettings::modes[9] = {
-        // ========= Name ========   ==== IVCAM Property ====   ======================== Auto Range Request ========================
-        // -----------------------   Acc, Mvr, Flt, DCT, Pwr,   MvrP  LsrP  MvrOn  LsrOn  mmn   mmx   mst  lmn  lmx  lst  up    lo
-        {                "Common",     1, NIL,   5,   1,   1,   {  1,    1,     1,     1, 180,  605,  303,   2,  16,  -1, 1250, 650}},
-        {            "ShortRange",     1, NIL,   5,   1,   1,   {  1,    1,     1,     1, 180,  303,  180,   2,  16,  -1, 1000, 450}},
-        {             "LongRange",     1, NIL,   7,   0,   1,   {  1,    1,     1,     0, 303,  605,  303,  -1,  -1,  -1, 1250, 975}},
-        {"BackgroundSegmentation",     1,  22,   6,   0,  16,   {  0,    0,     0,     0,  -1,   -1,   -1,  -1,  -1,  -1,   -1,  -1}},
-        {    "GestureRecognition",     1, NIL,   6,   3,   1,   {  1,    1,     1,     1, 100,  179,  100,   2,  16,  -1, 1000, 450}},
-        {        "ObjectScanning",     1,   9,   3,   1,   1,   {  1,    1,     0,     1,  -1,   -1,   -1,   2,  16,  16, 1000, 450}},
-        {                "FaceMW",     1,  22,   5,   1,  16,   {  0,    0,     0,     0,  -1,   -1,   -1,  -1,  -1,  -1,   -1,  -1}},
-        {             "FaceLogin",   NIL, NIL, NIL, NIL,   1,   {  1,    1,     2,     0,  40, 1600,  800,  -1,  -1,  -1,   -1,  -1}},
-        {          "GRCursorMode",     1, NIL,   6,   1,   1,   {  1,    1,     1,     1, 100,  179,  179,   2,  16,  -1, 1000, 450}}
-    };*/
+    const rs_option arr_options[15] = {
+        RS_OPTION_SR300_AUTO_RANGE_ENABLE_MOTION_VERSUS_RANGE, 
+        RS_OPTION_SR300_AUTO_RANGE_ENABLE_LASER,               
+        RS_OPTION_SR300_AUTO_RANGE_MIN_MOTION_VERSUS_RANGE,    
+        RS_OPTION_SR300_AUTO_RANGE_MAX_MOTION_VERSUS_RANGE,    
+        RS_OPTION_SR300_AUTO_RANGE_START_MOTION_VERSUS_RANGE,  
+        RS_OPTION_SR300_AUTO_RANGE_MIN_LASER,                  
+        RS_OPTION_SR300_AUTO_RANGE_MAX_LASER,                  
+        RS_OPTION_SR300_AUTO_RANGE_START_LASER,                
+        RS_OPTION_SR300_AUTO_RANGE_UPPER_THRESHOLD, 
+        RS_OPTION_SR300_AUTO_RANGE_LOWER_THRESHOLD,
+        RS_OPTION_F200_LASER_POWER,
+        RS_OPTION_F200_ACCURACY,
+        RS_OPTION_F200_FILTER_OPTION,
+        RS_OPTION_F200_CONFIDENCE_THRESHOLD,
+        RS_OPTION_F200_MOTION_RANGE
+    };
+
+    const double arr_values[][15] = {
+        {1,     1, 180,  605,  303,   2,  16,  -1, 1250, 650,  1,  1,  5,  1, -1}, /* Common                 */
+        {1,     1, 180,  303,  180,   2,  16,  -1, 1000, 450,  1,  1,  5,  1, -1}, /* ShortRange             */
+        {1,     0, 303,  605,  303,  -1,  -1,  -1, 1250, 975,  1,  1,  7,  0, -1}, /* LongRange              */
+        {0,     0,  -1,   -1,   -1,  -1,  -1,  -1,   -1,  -1, 16,  1,  6,  0, 22}, /* BackgroundSegmentation */
+        {1,     1, 100,  179,  100,   2,  16,  -1, 1000, 450,  1,  1,  6,  3, -1}, /* GestureRecognition     */
+        {0,     1,  -1,   -1,   -1,   2,  16,  16, 1000, 450,  1,  1,  3,  1,  9}, /* ObjectScanning         */
+        {0,     0,  -1,   -1,   -1,  -1,  -1,  -1,   -1,  -1, 16,  1,  5,  1, 22}, /* FaceMW                 */
+        {2,     0,  40, 1600,  800,  -1,  -1,  -1,   -1,  -1,  1, -1, -1, -1, -1}, /* FaceLogin              */
+        {1,     1, 100,  179,  179,   2,  16,  -1, 1000, 450,  1,  1,  6,  1, -1}  /* GRCursorMode           */
+    };
+
+    if(arr_values[preset][14] != -1) rs_set_options(device, arr_options, 15, arr_values[preset], 0);
+    if(arr_values[preset][13] != -1) rs_set_options(device, arr_options, 14, arr_values[preset], 0);
+    else rs_set_options(device, arr_options, 11, arr_values[preset], 0);
 }
 
 #endif

@@ -162,7 +162,7 @@ int main(int argc, char * argv[]) try
         o.value = rs_get_option((rs_device *)dev, (rs_option)o.opt, nullptr);
         options.push_back(o);
     }
-    double dc_preset = 0;
+    double dc_preset = 0, iv_preset = 0;
 
     int offset = 0, panel_height = 1;
     while(!glfwWindowShouldClose(win))
@@ -217,12 +217,11 @@ int main(int argc, char * argv[]) try
             }
             y += 38;
         }
-        std::ostringstream ss; ss << "Depth control parameters preset: " << dc_preset;
-        g.label({w-260,y+12}, {1,1,1}, "Depth control parameters preset");
-        if(g.slider(100, {w-260,y+16,w-20,y+36}, 0, 5, 1, dc_preset))
-        {
-            rs_apply_depth_control_preset((rs_device *)dev, dc_preset);
-        }
+        g.label({w-260,y+12}, {1,1,1}, "Depth control parameters preset: %f", dc_preset);
+        if(g.slider(100, {w-260,y+16,w-20,y+36}, 0, 5, 1, dc_preset)) rs_apply_depth_control_preset((rs_device *)dev, dc_preset);
+        y += 38;
+        g.label({w-260,y+12}, {1,1,1}, "IVCAM options preset: %f", iv_preset);
+        if(g.slider(101, {w-260,y+16,w-20,y+36}, 0, 8, 1, iv_preset)) rs_apply_ivcam_preset((rs_device *)dev, iv_preset);
         y += 38;
         
         panel_height = y + 10 + offset;
