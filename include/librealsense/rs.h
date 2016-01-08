@@ -60,69 +60,64 @@ typedef enum rs_distortion
 
 typedef enum rs_option
 {
-    RS_OPTION_COLOR_BACKLIGHT_COMPENSATION    = 0,  
-    RS_OPTION_COLOR_BRIGHTNESS                = 1,  
-    RS_OPTION_COLOR_CONTRAST                  = 2,  
-    RS_OPTION_COLOR_EXPOSURE                  = 3,  /**< Controls exposure time of color camera. Setting any value will disable auto exposure. */
-    RS_OPTION_COLOR_GAIN                      = 4,  
-    RS_OPTION_COLOR_GAMMA                     = 5,  
-    RS_OPTION_COLOR_HUE                       = 6,  
-    RS_OPTION_COLOR_SATURATION                = 7,  
-    RS_OPTION_COLOR_SHARPNESS                 = 8,  
-    RS_OPTION_COLOR_WHITE_BALANCE             = 9,  /**< Controls white balance of color image. Setting any value will disable auto white balance. */
-    RS_OPTION_COLOR_ENABLE_AUTO_EXPOSURE      = 10, /**< Set to 1 to enable automatic exposure control, or 0 to return to manual control */
-    RS_OPTION_COLOR_ENABLE_AUTO_WHITE_BALANCE = 11, /**< Set to 1 to enable automatic white balance control, or 0 to return to manual control */
-
-    RS_OPTION_F200_LASER_POWER                = 12, /**< 0 - 15 */
-    RS_OPTION_F200_ACCURACY                   = 13, /**< 0 - 3 */
-    RS_OPTION_F200_MOTION_RANGE               = 14, /**< 0 - 100 */
-    RS_OPTION_F200_FILTER_OPTION              = 15, /**< 0 - 7 */
-    RS_OPTION_F200_CONFIDENCE_THRESHOLD       = 16, /**< 0 - 15 */
-
-    RS_OPTION_SR300_DYNAMIC_FPS                = 17, /**< {2, 5, 15, 30, 60} */
-    RS_OPTION_SR300_AUTO_RANGE_ENABLE_MOTION_VERSUS_RANGE, 
-    RS_OPTION_SR300_AUTO_RANGE_ENABLE_LASER,               
-    RS_OPTION_SR300_AUTO_RANGE_MIN_MOTION_VERSUS_RANGE,    
-    RS_OPTION_SR300_AUTO_RANGE_MAX_MOTION_VERSUS_RANGE,    
-    RS_OPTION_SR300_AUTO_RANGE_START_MOTION_VERSUS_RANGE,  
-    RS_OPTION_SR300_AUTO_RANGE_MIN_LASER,                  
-    RS_OPTION_SR300_AUTO_RANGE_MAX_LASER,                  
-    RS_OPTION_SR300_AUTO_RANGE_START_LASER,                
-    RS_OPTION_SR300_AUTO_RANGE_UPPER_THRESHOLD, 
-    RS_OPTION_SR300_AUTO_RANGE_LOWER_THRESHOLD, 
-
-    RS_OPTION_R200_LR_AUTO_EXPOSURE_ENABLED, /**< {0, 1} */
-    RS_OPTION_R200_LR_GAIN                 , /**< 100 - 1600 (Units of 0.01) */
-    RS_OPTION_R200_LR_EXPOSURE             , /**< > 0 (Units of 0.1 ms) */
-    RS_OPTION_R200_EMITTER_ENABLED         , /**< {0, 1} */
-    RS_OPTION_R200_DEPTH_UNITS             , /**< micrometers per increment in integer depth values, 1000 is default (mm scale) */
-    RS_OPTION_R200_DEPTH_CLAMP_MIN         , /**< 0 - USHORT_MAX */
-    RS_OPTION_R200_DEPTH_CLAMP_MAX         , /**< 0 - USHORT_MAX */
-    RS_OPTION_R200_DISPARITY_MULTIPLIER    , /**< 0 - 1000, the increments in integer disparity values corresponding to one pixel of disparity */
-    RS_OPTION_R200_DISPARITY_SHIFT         , 
-
-    RS_OPTION_R200_AUTO_EXPOSURE_MEAN_INTENSITY_SET_POINT,
-    RS_OPTION_R200_AUTO_EXPOSURE_BRIGHT_RATIO_SET_POINT,  
-    RS_OPTION_R200_AUTO_EXPOSURE_KP_GAIN,                 
-    RS_OPTION_R200_AUTO_EXPOSURE_KP_EXPOSURE,             
-    RS_OPTION_R200_AUTO_EXPOSURE_KP_DARK_THRESHOLD,       
-    RS_OPTION_R200_AUTO_EXPOSURE_EXPOSURE_TOP_EDGE,       
-    RS_OPTION_R200_AUTO_EXPOSURE_EXPOSURE_BOTTOM_EDGE,    
-    RS_OPTION_R200_AUTO_EXPOSURE_EXPOSURE_LEFT_EDGE,      
-    RS_OPTION_R200_AUTO_EXPOSURE_EXPOSURE_RIGHT_EDGE,     
-
-    RS_OPTION_R200_DEPTH_CONTROL_ESTIMATE_MEDIAN_DECREMENT,   
-    RS_OPTION_R200_DEPTH_CONTROL_ESTIMATE_MEDIAN_INCREMENT,   
-    RS_OPTION_R200_DEPTH_CONTROL_MEDIAN_THRESHOLD,            
-    RS_OPTION_R200_DEPTH_CONTROL_SCORE_MINIMUM_THRESHOLD,     
-    RS_OPTION_R200_DEPTH_CONTROL_SCORE_MAXIMUM_THRESHOLD,     
-    RS_OPTION_R200_DEPTH_CONTROL_TEXTURE_COUNT_THRESHOLD,     
-    RS_OPTION_R200_DEPTH_CONTROL_TEXTURE_DIFFERENCE_THRESHOLD,
-    RS_OPTION_R200_DEPTH_CONTROL_SECOND_PEAK_THRESHOLD,       
-    RS_OPTION_R200_DEPTH_CONTROL_NEIGHBOR_THRESHOLD,          
-    RS_OPTION_R200_DEPTH_CONTROL_LR_THRESHOLD,                
-
-    RS_OPTION_COUNT                           = 56, 
+    RS_OPTION_COLOR_BACKLIGHT_COMPENSATION                    = 0,  
+    RS_OPTION_COLOR_BRIGHTNESS                                = 1,  
+    RS_OPTION_COLOR_CONTRAST                                  = 2,  
+    RS_OPTION_COLOR_EXPOSURE                                  = 3,  /**< Controls exposure time of color camera. Setting any value will disable auto exposure. */
+    RS_OPTION_COLOR_GAIN                                      = 4,  
+    RS_OPTION_COLOR_GAMMA                                     = 5,  
+    RS_OPTION_COLOR_HUE                                       = 6,  
+    RS_OPTION_COLOR_SATURATION                                = 7,  
+    RS_OPTION_COLOR_SHARPNESS                                 = 8,  
+    RS_OPTION_COLOR_WHITE_BALANCE                             = 9,  /**< Controls white balance of color image. Setting any value will disable auto white balance. */
+    RS_OPTION_COLOR_ENABLE_AUTO_EXPOSURE                      = 10, /**< Set to 1 to enable automatic exposure control, or 0 to return to manual control */
+    RS_OPTION_COLOR_ENABLE_AUTO_WHITE_BALANCE                 = 11, /**< Set to 1 to enable automatic white balance control, or 0 to return to manual control */
+    RS_OPTION_F200_LASER_POWER                                = 12, /**< 0 - 15 */
+    RS_OPTION_F200_ACCURACY                                   = 13, /**< 0 - 3 */
+    RS_OPTION_F200_MOTION_RANGE                               = 14, /**< 0 - 100 */
+    RS_OPTION_F200_FILTER_OPTION                              = 15, /**< 0 - 7 */
+    RS_OPTION_F200_CONFIDENCE_THRESHOLD                       = 16, /**< 0 - 15 */
+    RS_OPTION_SR300_DYNAMIC_FPS                               = 17, /**< {2, 5, 15, 30, 60} */
+    RS_OPTION_SR300_AUTO_RANGE_ENABLE_MOTION_VERSUS_RANGE     = 18, 
+    RS_OPTION_SR300_AUTO_RANGE_ENABLE_LASER                   = 19, 
+    RS_OPTION_SR300_AUTO_RANGE_MIN_MOTION_VERSUS_RANGE        = 20, 
+    RS_OPTION_SR300_AUTO_RANGE_MAX_MOTION_VERSUS_RANGE        = 21, 
+    RS_OPTION_SR300_AUTO_RANGE_START_MOTION_VERSUS_RANGE      = 22, 
+    RS_OPTION_SR300_AUTO_RANGE_MIN_LASER                      = 23, 
+    RS_OPTION_SR300_AUTO_RANGE_MAX_LASER                      = 24, 
+    RS_OPTION_SR300_AUTO_RANGE_START_LASER                    = 25, 
+    RS_OPTION_SR300_AUTO_RANGE_UPPER_THRESHOLD                = 26, 
+    RS_OPTION_SR300_AUTO_RANGE_LOWER_THRESHOLD                = 27, 
+    RS_OPTION_R200_LR_AUTO_EXPOSURE_ENABLED                   = 28, /**< {0, 1} */
+    RS_OPTION_R200_LR_GAIN                                    = 29, /**< 100 - 1600 (Units of 0.01) */
+    RS_OPTION_R200_LR_EXPOSURE                                = 30, /**< > 0 (Units of 0.1 ms) */
+    RS_OPTION_R200_EMITTER_ENABLED                            = 31, /**< {0, 1} */
+    RS_OPTION_R200_DEPTH_CONTROL_PRESET                       = 32, /**< 0 - 5, 0 is default, 1-5 is low to high outlier rejection */
+    RS_OPTION_R200_DEPTH_UNITS                                = 33, /**< micrometers per increment in integer depth values, 1000 is default (mm scale) */
+    RS_OPTION_R200_DEPTH_CLAMP_MIN                            = 34, /**< 0 - USHORT_MAX */
+    RS_OPTION_R200_DEPTH_CLAMP_MAX                            = 35, /**< 0 - USHORT_MAX */
+    RS_OPTION_R200_DISPARITY_MULTIPLIER                       = 36, /**< 0 - 1000, the increments in integer disparity values corresponding to one pixel of disparity */
+    RS_OPTION_R200_DISPARITY_SHIFT                            = 37, 
+    RS_OPTION_R200_AUTO_EXPOSURE_MEAN_INTENSITY_SET_POINT     = 38, 
+    RS_OPTION_R200_AUTO_EXPOSURE_BRIGHT_RATIO_SET_POINT       = 39, 
+    RS_OPTION_R200_AUTO_EXPOSURE_KP_GAIN                      = 40, 
+    RS_OPTION_R200_AUTO_EXPOSURE_KP_EXPOSURE                  = 41, 
+    RS_OPTION_R200_AUTO_EXPOSURE_KP_DARK_THRESHOLD            = 42, 
+    RS_OPTION_R200_AUTO_EXPOSURE_EXPOSURE_TOP_EDGE            = 43, 
+    RS_OPTION_R200_AUTO_EXPOSURE_EXPOSURE_BOTTOM_EDGE         = 44, 
+    RS_OPTION_R200_AUTO_EXPOSURE_EXPOSURE_LEFT_EDGE           = 45, 
+    RS_OPTION_R200_AUTO_EXPOSURE_EXPOSURE_RIGHT_EDGE          = 46, 
+    RS_OPTION_R200_DEPTH_CONTROL_ESTIMATE_MEDIAN_DECREMENT    = 47, 
+    RS_OPTION_R200_DEPTH_CONTROL_ESTIMATE_MEDIAN_INCREMENT    = 48, 
+    RS_OPTION_R200_DEPTH_CONTROL_MEDIAN_THRESHOLD             = 49, 
+    RS_OPTION_R200_DEPTH_CONTROL_SCORE_MINIMUM_THRESHOLD      = 50, 
+    RS_OPTION_R200_DEPTH_CONTROL_SCORE_MAXIMUM_THRESHOLD      = 51, 
+    RS_OPTION_R200_DEPTH_CONTROL_TEXTURE_COUNT_THRESHOLD      = 52, 
+    RS_OPTION_R200_DEPTH_CONTROL_TEXTURE_DIFFERENCE_THRESHOLD = 53, 
+    RS_OPTION_R200_DEPTH_CONTROL_SECOND_PEAK_THRESHOLD        = 54, 
+    RS_OPTION_R200_DEPTH_CONTROL_NEIGHBOR_THRESHOLD           = 55, 
+    RS_OPTION_R200_DEPTH_CONTROL_LR_THRESHOLD                 = 56, 
+    RS_OPTION_COUNT                                           = 57, 
     RS_OPTION_MAX_ENUM = 0x7FFFFFFF
 } rs_option;
 
@@ -323,17 +318,11 @@ void rs_stop_device(rs_device * device, rs_error ** error);
  * \return            true if the device is currently streaming
  */
 int rs_is_device_streaming(const rs_device * device, rs_error ** error);
-
-
-
-
-void rs_get_option_range(rs_device * dev, rs_option option, double * min, double * max, double * step, rs_error ** error);
-void rs_get_options(rs_device * dev, const rs_option options[], int count, double values[], rs_error ** error);
-void rs_set_options(rs_device * dev, const rs_option options[], int count, const double values[], rs_error ** error);
-
-/* These functions are simply convenience forms of the above multi-get and multi-set functions */
-double rs_get_option(rs_device * dev, rs_option option, rs_error ** error);
-void rs_set_option(rs_device * dev, rs_option option, double value, rs_error ** error);
+void rs_get_option_range(rs_device * device, rs_option option, double * min, double * max, double * step, rs_error ** error);
+void rs_get_options(rs_device * device, const rs_option * options, int count, double * values, rs_error ** error);
+void rs_set_options(rs_device * device, const rs_option * options, int count, const double * values, rs_error ** error);
+double rs_get_option(rs_device * device, rs_option option, rs_error ** error);
+void rs_set_option(rs_device * device, rs_option option, double value, rs_error ** error);
 
 /**
  * block until new frames are available

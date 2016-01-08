@@ -40,6 +40,13 @@ static jobject make_integer(JNIEnv * env, int value)
     return (*env)->NewObject(env, cl, mid, (jint)value);
 }
 
+static jobject make_double(JNIEnv * env, int value)
+{
+    jclass cl = (*env)->FindClass(env, "java/lang/Double");
+    jmethodID mid = (*env)->GetMethodID(env, cl, "<init>", "(D)V");
+    return (*env)->NewObject(env, cl, mid, (jdouble)value);
+}
+
 static jobject make_float_array(JNIEnv * env, const float * values, int count)
 {
     jarray arr = (*env)->NewFloatArray(env, count);
@@ -277,6 +284,34 @@ JNIEXPORT jboolean JNICALL Java_com_intel_rs_Device_isStreaming(JNIEnv * env, jo
     int r = rs_is_device_streaming(get_object(env, self), &e);
     handle_error(env, e);
     return r;
+}
+
+JNIEXPORT void JNICALL Java_com_intel_rs_Device_getOptionRange(JNIEnv * env, jobject self, jobject option, jobject min, jobject max, jobject step)
+{
+    rs_error * e = NULL;
+    double c_min;
+    double c_max;
+    double c_step;
+    rs_get_option_range(get_object(env, self), get_enum(env, option), &c_min, &c_max, &c_step, &e);
+    handle_error(env, e);
+    set_out_param(env, min, make_double(env, c_min));
+    set_out_param(env, max, make_double(env, c_max));
+    set_out_param(env, step, make_double(env, c_step));
+}
+
+JNIEXPORT jdouble JNICALL Java_com_intel_rs_Device_getOption(JNIEnv * env, jobject self, jobject option)
+{
+    rs_error * e = NULL;
+    double r = rs_get_option(get_object(env, self), get_enum(env, option), &e);
+    handle_error(env, e);
+    return r;
+}
+
+JNIEXPORT void JNICALL Java_com_intel_rs_Device_setOption(JNIEnv * env, jobject self, jobject option, jdouble value)
+{
+    rs_error * e = NULL;
+    rs_set_option(get_object(env, self), get_enum(env, option), value, &e);
+    handle_error(env, e);
 }
 
 JNIEXPORT void JNICALL Java_com_intel_rs_Device_waitForFrames(JNIEnv * env, jobject self)

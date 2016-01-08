@@ -157,9 +157,9 @@ int main(int argc, char * argv[]) try
     {
         option o = {(rs::option)i};
         if(!dev->supports_option(o.opt)) continue;
-        rs_get_option_range((rs_device *)dev, (rs_option)o.opt, &o.min, &o.max, &o.step, nullptr);
+        dev->get_option_range(o.opt, o.min, o.max, o.step);
         if(o.min == o.max) continue;
-        o.value = rs_get_option((rs_device *)dev, (rs_option)o.opt, nullptr);
+        try { o.value = dev->get_option(o.opt); } catch(...) {}
         options.push_back(o);
     }
     double dc_preset = 0, iv_preset = 0;
@@ -213,7 +213,7 @@ int main(int argc, char * argv[]) try
             g.label({w-260,y+12}, {1,1,1}, ss.str().c_str());
             if(g.slider((int)o.opt + 1, {w-260,y+16,w-20,y+36}, o.min, o.max, o.step, o.value))
             {
-                rs_set_option((rs_device *)dev, (rs_option)o.opt, o.value, nullptr);
+                dev->set_option(o.opt, o.value);
             }
             y += 38;
         }

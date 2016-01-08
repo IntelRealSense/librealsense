@@ -56,33 +56,63 @@ namespace rs
 
     enum class option : int32_t
     {
-        color_backlight_compensation    = 0,  
-        color_brightness                = 1,  
-        color_contrast                  = 2,  
-        color_exposure                  = 3,  ///< Controls exposure time of color camera. Setting any value will disable auto exposure.
-        color_gain                      = 4,  
-        color_gamma                     = 5,  
-        color_hue                       = 6,  
-        color_saturation                = 7,  
-        color_sharpness                 = 8,  
-        color_white_balance             = 9,  ///< Controls white balance of color image. Setting any value will disable auto white balance.
-        color_enable_auto_exposure      = 10, ///< Set to 1 to enable automatic exposure control, or 0 to return to manual control
-        color_enable_auto_white_balance = 11, ///< Set to 1 to enable automatic white balance control, or 0 to return to manual control
-        f200_laser_power                = 12, ///< 0 - 15
-        f200_accuracy                   = 13, ///< 0 - 3
-        f200_motion_range               = 14, ///< 0 - 100
-        f200_filter_option              = 15, ///< 0 - 7
-        f200_confidence_threshold       = 16, ///< 0 - 15
-        f200_dynamic_fps                = 17, ///< {2, 5, 15, 30, 60}
-        r200_lr_auto_exposure_enabled   = 18, ///< {0, 1}
-        r200_lr_gain                    = 19, ///< 100 - 1600 (Units of 0.01)
-        r200_lr_exposure                = 20, ///< > 0 (Units of 0.1 ms)
-        r200_emitter_enabled            = 21, ///< {0, 1}
-        r200_depth_units                = 22, ///< micrometers per increment in integer depth values, 1000 is default (mm scale)
-        r200_depth_clamp_min            = 23, ///< 0 - USHORT_MAX
-        r200_depth_clamp_max            = 24, ///< 0 - USHORT_MAX
-        r200_disparity_multiplier       = 25, ///< 0 - 1000, the increments in integer disparity values corresponding to one pixel of disparity
-        r200_disparity_shift            = 26  
+        color_backlight_compensation                    = 0,  
+        color_brightness                                = 1,  
+        color_contrast                                  = 2,  
+        color_exposure                                  = 3,  ///< Controls exposure time of color camera. Setting any value will disable auto exposure.
+        color_gain                                      = 4,  
+        color_gamma                                     = 5,  
+        color_hue                                       = 6,  
+        color_saturation                                = 7,  
+        color_sharpness                                 = 8,  
+        color_white_balance                             = 9,  ///< Controls white balance of color image. Setting any value will disable auto white balance.
+        color_enable_auto_exposure                      = 10, ///< Set to 1 to enable automatic exposure control, or 0 to return to manual control
+        color_enable_auto_white_balance                 = 11, ///< Set to 1 to enable automatic white balance control, or 0 to return to manual control
+        f200_laser_power                                = 12, ///< 0 - 15
+        f200_accuracy                                   = 13, ///< 0 - 3
+        f200_motion_range                               = 14, ///< 0 - 100
+        f200_filter_option                              = 15, ///< 0 - 7
+        f200_confidence_threshold                       = 16, ///< 0 - 15
+        sr300_dynamic_fps                               = 17, ///< {2, 5, 15, 30, 60}
+        sr300_auto_range_enable_motion_versus_range     = 18, 
+        sr300_auto_range_enable_laser                   = 19, 
+        sr300_auto_range_min_motion_versus_range        = 20, 
+        sr300_auto_range_max_motion_versus_range        = 21, 
+        sr300_auto_range_start_motion_versus_range      = 22, 
+        sr300_auto_range_min_laser                      = 23, 
+        sr300_auto_range_max_laser                      = 24, 
+        sr300_auto_range_start_laser                    = 25, 
+        sr300_auto_range_upper_threshold                = 26, 
+        sr300_auto_range_lower_threshold                = 27, 
+        r200_lr_auto_exposure_enabled                   = 28, ///< {0, 1}
+        r200_lr_gain                                    = 29, ///< 100 - 1600 (Units of 0.01)
+        r200_lr_exposure                                = 30, ///< > 0 (Units of 0.1 ms)
+        r200_emitter_enabled                            = 31, ///< {0, 1}
+        r200_depth_control_preset                       = 32, ///< 0 - 5, 0 is default, 1-5 is low to high outlier rejection
+        r200_depth_units                                = 33, ///< micrometers per increment in integer depth values, 1000 is default (mm scale)
+        r200_depth_clamp_min                            = 34, ///< 0 - USHORT_MAX
+        r200_depth_clamp_max                            = 35, ///< 0 - USHORT_MAX
+        r200_disparity_multiplier                       = 36, ///< 0 - 1000, the increments in integer disparity values corresponding to one pixel of disparity
+        r200_disparity_shift                            = 37, 
+        r200_auto_exposure_mean_intensity_set_point     = 38, 
+        r200_auto_exposure_bright_ratio_set_point       = 39, 
+        r200_auto_exposure_kp_gain                      = 40, 
+        r200_auto_exposure_kp_exposure                  = 41, 
+        r200_auto_exposure_kp_dark_threshold            = 42, 
+        r200_auto_exposure_exposure_top_edge            = 43, 
+        r200_auto_exposure_exposure_bottom_edge         = 44, 
+        r200_auto_exposure_exposure_left_edge           = 45, 
+        r200_auto_exposure_exposure_right_edge          = 46, 
+        r200_depth_control_estimate_median_decrement    = 47, 
+        r200_depth_control_estimate_median_increment    = 48, 
+        r200_depth_control_median_threshold             = 49, 
+        r200_depth_control_score_minimum_threshold      = 50, 
+        r200_depth_control_score_maximum_threshold      = 51, 
+        r200_depth_control_texture_count_threshold      = 52, 
+        r200_depth_control_texture_difference_threshold = 53, 
+        r200_depth_control_second_peak_threshold        = 54, 
+        r200_depth_control_neighbor_threshold           = 55, 
+        r200_depth_control_lr_threshold                 = 56  
     };
 
     struct float2 { float x,y; };
@@ -107,14 +137,14 @@ namespace rs
         float2      project_to_texcoord(const float3 & point) const                     { return pixel_to_texcoord(project(point)); }
 
         bool        operator == (const intrinsics & r) const                            { return memcmp(this, &r, sizeof(r)) == 0; }
-    };
 
+    };
     struct extrinsics : rs_extrinsics
     {
         bool        is_identity() const                                                 { return rotation[0] == 1 && rotation[4] == 1 && translation[0] == 0 && translation[1] == 0 && translation[2] == 0; }
         float3      transform(const float3 & point) const                               { float3 p; rs_transform_point_to_point(&p.x, this, &point.x); return p; }
-    };
 
+    };
     class context;
     class device;
     
@@ -389,6 +419,42 @@ namespace rs
             auto r = rs_is_device_streaming((const rs_device *)this, &e);
             error::handle(e);
             return r != 0;
+        }
+
+        void get_option_range(option option, double & min, double & max, double & step)
+        {
+            rs_error * e = nullptr;
+            rs_get_option_range((rs_device *)this, (rs_option)option, &min, &max, &step, &e);
+            error::handle(e);
+        }
+
+        void get_options(const option * options, int count, double * values)
+        {
+            rs_error * e = nullptr;
+            rs_get_options((rs_device *)this, (const rs_option *)options, count, values, &e);
+            error::handle(e);
+        }
+
+        void set_options(const option * options, int count, const double * values)
+        {
+            rs_error * e = nullptr;
+            rs_set_options((rs_device *)this, (rs_option *)options, count, values, &e);
+            error::handle(e);
+        }
+
+        double get_option(option option)
+        {
+            rs_error * e = nullptr;
+            auto r = rs_get_option((rs_device *)this, (rs_option)option, &e);
+            error::handle(e);
+            return r;
+        }
+
+        void set_option(option option, double value)
+        {
+            rs_error * e = nullptr;
+            rs_set_option((rs_device *)this, (rs_option)option, value, &e);
+            error::handle(e);
         }
 
         /// block until new frames are available
