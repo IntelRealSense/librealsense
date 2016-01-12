@@ -421,6 +421,11 @@ namespace rs
             return r != 0;
         }
 
+        /// retrieve the available range of values of a supported option
+        /// \param[in] option  the option whose range should be queried
+        /// \param[out] min    the minimum value which will be accepted for this option
+        /// \param[out] max    the maximum value which will be accepted for this option
+        /// \param[out] step   the granularity of options which accept discrete values, or zero if the option accepts continuous values
         void get_option_range(option option, double & min, double & max, double & step)
         {
             rs_error * e = nullptr;
@@ -428,20 +433,31 @@ namespace rs
             error::handle(e);
         }
 
+        /// efficiently retrieve the value of an arbitrary number of options, using minimal hardware IO
+        /// \param[in] options  the array of options which should be queried
+        /// \param[in] count    the length of the options and values arrays
+        /// \param[out] values  the array which will receive the values of the queried options
         void get_options(const option * options, int count, double * values)
         {
             rs_error * e = nullptr;
-            rs_get_options((rs_device *)this, (const rs_option *)options, count, values, &e);
+            rs_get_options((rs_device *)this, (rs_option)options, count, &values, &e);
             error::handle(e);
         }
 
+        /// efficiently set the value of an arbitrary number of options, using minimal hardware IO
+        /// \param[in] options  the array of options which should be set
+        /// \param[in] count    the length of the options and values arrays
+        /// \param[in] values   the array of values to which the options should be set
         void set_options(const option * options, int count, const double * values)
         {
             rs_error * e = nullptr;
-            rs_set_options((rs_device *)this, (rs_option *)options, count, values, &e);
+            rs_set_options((rs_device *)this, (rs_option)options, count, values, &e);
             error::handle(e);
         }
 
+        /// retrieve the current value of a single option
+        /// \param[in] option  the option whose value should be retrieved
+        /// \return            the value of the option
         double get_option(option option)
         {
             rs_error * e = nullptr;
@@ -450,6 +466,9 @@ namespace rs
             return r;
         }
 
+        /// set the current value of a single option
+        /// \param[in] option  the option whose value should be set
+        /// \param[in] value   the value of the option
         void set_option(option option, double value)
         {
             rs_error * e = nullptr;

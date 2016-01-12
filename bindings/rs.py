@@ -372,6 +372,11 @@ class Device:
         check_error(e)
         return r
 
+    ## retrieve the available range of values of a supported option
+    # @param option  the option whose range should be queried
+    # @return        the minimum value which will be accepted for this option
+    # @return        the maximum value which will be accepted for this option
+    # @return        the granularity of options which accept discrete values, or zero if the option accepts continuous values
     def get_option_range(self, option):
         e = c_void_p(0)
         min = c_double()
@@ -381,12 +386,18 @@ class Device:
         check_error(e)
         return (min.value, max.value, step.value)
 
+    ## retrieve the current value of a single option
+    # @param option  the option whose value should be retrieved
+    # @return        the value of the option
     def get_option(self, option):
         e = c_void_p(0)
         r = realsense.rs_get_option(self.handle, option, byref(e))
         check_error(e)
         return r
 
+    ## set the current value of a single option
+    # @param option  the option whose value should be set
+    # @param value   the value of the option
     def set_option(self, option, value):
         e = c_void_p(0)
         realsense.rs_set_option(self.handle, option, value, byref(e))

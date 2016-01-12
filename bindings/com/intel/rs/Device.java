@@ -144,8 +144,28 @@ public class Device
      * @return  true if the device is currently streaming
      */
     public native boolean isStreaming();
+
+    /**
+     * retrieve the available range of values of a supported option
+     * @param option  the option whose range should be queried
+     * @param min     the minimum value which will be accepted for this option
+     * @param max     the maximum value which will be accepted for this option
+     * @param step    the granularity of options which accept discrete values, or zero if the option accepts continuous values
+     */
     public native void getOptionRange(Option option, Out<Double> min, Out<Double> max, Out<Double> step);
+
+    /**
+     * retrieve the current value of a single option
+     * @param option  the option whose value should be retrieved
+     * @return        the value of the option
+     */
     public native double getOption(Option option);
+
+    /**
+     * set the current value of a single option
+     * @param option  the option whose value should be set
+     * @param value   the value of the option
+     */
     public native void setOption(Option option, double value);
 
     /**

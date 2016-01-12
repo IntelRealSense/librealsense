@@ -318,10 +318,49 @@ void rs_stop_device(rs_device * device, rs_error ** error);
  * \return            true if the device is currently streaming
  */
 int rs_is_device_streaming(const rs_device * device, rs_error ** error);
+
+/**
+ * retrieve the available range of values of a supported option
+ * \param[in] option  the option whose range should be queried
+ * \param[out] min    the minimum value which will be accepted for this option
+ * \param[out] max    the maximum value which will be accepted for this option
+ * \param[out] step   the granularity of options which accept discrete values, or zero if the option accepts continuous values
+ * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+ */
 void rs_get_option_range(rs_device * device, rs_option option, double * min, double * max, double * step, rs_error ** error);
+
+/**
+ * efficiently retrieve the value of an arbitrary number of options, using minimal hardware IO
+ * \param[in] options  the array of options which should be queried
+ * \param[in] count    the length of the options and values arrays
+ * \param[out] values  the array which will receive the values of the queried options
+ * \param[out] error   if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+ */
 void rs_get_options(rs_device * device, const rs_option * options, int count, double * values, rs_error ** error);
+
+/**
+ * efficiently set the value of an arbitrary number of options, using minimal hardware IO
+ * \param[in] options  the array of options which should be set
+ * \param[in] count    the length of the options and values arrays
+ * \param[in] values   the array of values to which the options should be set
+ * \param[out] error   if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+ */
 void rs_set_options(rs_device * device, const rs_option * options, int count, const double * values, rs_error ** error);
+
+/**
+ * retrieve the current value of a single option
+ * \param[in] option  the option whose value should be retrieved
+ * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+ * \return            the value of the option
+ */
 double rs_get_option(rs_device * device, rs_option option, rs_error ** error);
+
+/**
+ * set the current value of a single option
+ * \param[in] option  the option whose value should be set
+ * \param[in] value   the value of the option
+ * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+ */
 void rs_set_option(rs_device * device, rs_option option, double value, rs_error ** error);
 
 /**

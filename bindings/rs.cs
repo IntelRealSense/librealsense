@@ -416,6 +416,11 @@ namespace RealSense
             return r != 0;
         }
 
+        /// <summary> retrieve the available range of values of a supported option </summary>
+        /// <param name="option"> the option whose range should be queried </param>
+        /// <param name="min"> the minimum value which will be accepted for this option </param>
+        /// <param name="max"> the maximum value which will be accepted for this option </param>
+        /// <param name="step"> the granularity of options which accept discrete values, or zero if the option accepts continuous values </param>
         public void GetOptionRange(Option option, out double min, out double max, out double step)
         {
             IntPtr e = IntPtr.Zero;
@@ -423,6 +428,9 @@ namespace RealSense
             Error.Handle(e);
         }
 
+        /// <summary> retrieve the current value of a single option </summary>
+        /// <param name="option"> the option whose value should be retrieved </param>
+        /// <returns> the value of the option </returns>
         public double GetOption(Option option)
         {
             IntPtr e = IntPtr.Zero;
@@ -431,6 +439,9 @@ namespace RealSense
             return r;
         }
 
+        /// <summary> set the current value of a single option </summary>
+        /// <param name="option"> the option whose value should be set </param>
+        /// <param name="value"> the value of the option </param>
         public void SetOption(Option option, double value)
         {
             IntPtr e = IntPtr.Zero;
