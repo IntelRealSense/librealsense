@@ -46,7 +46,6 @@ public:
     const char *                                get_serial() const { return config.info.serial.c_str(); }
     const char *                                get_firmware_version() const { return config.info.firmware_version.c_str(); }
     float                                       get_depth_scale() const { return config.depth_scale; }
-    bool                                        supports_option(rs_option option) const;
 
     void                                        enable_stream(rs_stream stream, int width, int height, rs_format format, int fps);
     void                                        enable_stream_preset(rs_stream stream, rs_preset preset);    
@@ -60,6 +59,7 @@ public:
     int                                         get_frame_timestamp(rs_stream stream) const;
     const rsimpl::byte *                        get_frame_data(rs_stream stream) const;
     
+    virtual bool                                supports_option(rs_option option) const;
     virtual void                                get_option_range(rs_option option, double & min, double & max, double & step);
     virtual void                                set_options(const rs_option options[], int count, const double values[]) {}
     virtual void                                get_options(const rs_option options[], int count, double values[]) {}

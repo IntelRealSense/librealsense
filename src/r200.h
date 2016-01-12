@@ -24,6 +24,7 @@ namespace rsimpl
         r200_camera(std::shared_ptr<uvc::device> device, const static_device_info & info);
         ~r200_camera();
 
+        bool supports_option(rs_option option) const override;
         void get_option_range(rs_option option, double & min, double & max, double & step) override;
         void set_options(const rs_option options[], int count, const double values[]) override;
         void get_options(const rs_option options[], int count, double values[]) override;

@@ -308,7 +308,7 @@ HANDLE_EXCEPTIONS_AND_RETURN(nullptr, option)
 
 
 
-void rs_get_option_range(rs_device * device, rs_option option, double * min, double * max, double * step, rs_error ** error) try
+void rs_get_device_option_range(rs_device * device, rs_option option, double * min, double * max, double * step, rs_error ** error) try
 {
     VALIDATE_NOT_NULL(device);
     VALIDATE_ENUM(option);
@@ -317,7 +317,7 @@ void rs_get_option_range(rs_device * device, rs_option option, double * min, dou
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, device, option, min, max, step)
 
-void rs_get_options(rs_device * device, const rs_option options[], int count, double values[], rs_error ** error) try
+void rs_get_device_options(rs_device * device, const rs_option options[], int count, double values[], rs_error ** error) try
 {
     VALIDATE_NOT_NULL(device);
     VALIDATE_RANGE(count, 0, INT_MAX);
@@ -328,7 +328,7 @@ void rs_get_options(rs_device * device, const rs_option options[], int count, do
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, device, options, count, values)
 
-void rs_set_options(rs_device * device, const rs_option options[], int count, const double values[], rs_error ** error) try
+void rs_set_device_options(rs_device * device, const rs_option options[], int count, const double values[], rs_error ** error) try
 {
     VALIDATE_NOT_NULL(device);
     VALIDATE_RANGE(count, 0, INT_MAX);
@@ -339,7 +339,7 @@ void rs_set_options(rs_device * device, const rs_option options[], int count, co
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, device, options, count, values)
 
-double rs_get_option(rs_device * device, rs_option option, rs_error ** error) try
+double rs_get_device_option(rs_device * device, rs_option option, rs_error ** error) try
 {
     VALIDATE_NOT_NULL(device);
     VALIDATE_ENUM(option);
@@ -349,7 +349,7 @@ double rs_get_option(rs_device * device, rs_option option, rs_error ** error) tr
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, device, option)
 
-void rs_set_option(rs_device * device, rs_option option, double value, rs_error ** error) try
+void rs_set_device_option(rs_device * device, rs_option option, double value, rs_error ** error) try
 {
     VALIDATE_NOT_NULL(device);
     VALIDATE_ENUM(option);

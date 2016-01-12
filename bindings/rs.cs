@@ -424,7 +424,7 @@ namespace RealSense
         public void GetOptionRange(Option option, out double min, out double max, out double step)
         {
             IntPtr e = IntPtr.Zero;
-            rs_get_option_range(handle, option, out min, out max, out step, ref e);
+            rs_get_device_option_range(handle, option, out min, out max, out step, ref e);
             Error.Handle(e);
         }
 
@@ -434,7 +434,7 @@ namespace RealSense
         public double GetOption(Option option)
         {
             IntPtr e = IntPtr.Zero;
-            var r = rs_get_option(handle, option, ref e);
+            var r = rs_get_device_option(handle, option, ref e);
             Error.Handle(e);
             return r;
         }
@@ -445,7 +445,7 @@ namespace RealSense
         public void SetOption(Option option, double value)
         {
             IntPtr e = IntPtr.Zero;
-            rs_set_option(handle, option, value, ref e);
+            rs_set_device_option(handle, option, value, ref e);
             Error.Handle(e);
         }
 
@@ -499,9 +499,9 @@ namespace RealSense
         [DllImport("realsense")] private static extern void rs_start_device(IntPtr device, ref IntPtr error);
         [DllImport("realsense")] private static extern void rs_stop_device(IntPtr device, ref IntPtr error);
         [DllImport("realsense")] private static extern int rs_is_device_streaming(IntPtr device, ref IntPtr error);
-        [DllImport("realsense")] private static extern void rs_get_option_range(IntPtr device, Option option, out double min, out double max, out double step, ref IntPtr error);
-        [DllImport("realsense")] private static extern double rs_get_option(IntPtr device, Option option, ref IntPtr error);
-        [DllImport("realsense")] private static extern void rs_set_option(IntPtr device, Option option, double value, ref IntPtr error);
+        [DllImport("realsense")] private static extern void rs_get_device_option_range(IntPtr device, Option option, out double min, out double max, out double step, ref IntPtr error);
+        [DllImport("realsense")] private static extern double rs_get_device_option(IntPtr device, Option option, ref IntPtr error);
+        [DllImport("realsense")] private static extern void rs_set_device_option(IntPtr device, Option option, double value, ref IntPtr error);
         [DllImport("realsense")] private static extern void rs_wait_for_frames(IntPtr device, ref IntPtr error);
         [DllImport("realsense")] private static extern int rs_get_frame_timestamp(IntPtr device, Stream stream, ref IntPtr error);
         [DllImport("realsense")] private static extern IntPtr rs_get_frame_data(IntPtr device, Stream stream, ref IntPtr error);

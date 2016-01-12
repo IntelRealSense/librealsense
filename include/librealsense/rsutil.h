@@ -85,7 +85,7 @@ void rs_apply_depth_control_preset(rs_device * device, int preset)
         {5, 5, 175, 24,  430, 6, 48, 47, 24,   12}, /* (OPTIMIZED) Provide a depthmap with a medium/high number of outliers removed. Derived from an optimization function. */
         {5, 5, 235, 27,  420, 8, 80, 70, 90,   12}, /* (HIGH)      Provide a depthmap with a higher number of outliers removed, which has minimal false positives. */
     };
-    rs_set_options(device, depth_control_options, 10, depth_control_presets[preset], 0);
+    rs_set_device_options(device, depth_control_options, 10, depth_control_presets[preset], 0);
 }
 
 /* Provide access to several recommend sets of option presets for ivcam */
@@ -121,9 +121,9 @@ void rs_apply_ivcam_preset(rs_device * device, int preset)
         {1,     1, 100,  179,  179,   2,  16,  -1, 1000, 450,  1,  1,  6,  1, -1}  /* GRCursorMode           */
     };
 
-    if(arr_values[preset][14] != -1) rs_set_options(device, arr_options, 15, arr_values[preset], 0);
-    if(arr_values[preset][13] != -1) rs_set_options(device, arr_options, 14, arr_values[preset], 0);
-    else rs_set_options(device, arr_options, 11, arr_values[preset], 0);
+    if(arr_values[preset][14] != -1) rs_set_device_options(device, arr_options, 15, arr_values[preset], 0);
+    if(arr_values[preset][13] != -1) rs_set_device_options(device, arr_options, 14, arr_values[preset], 0);
+    else rs_set_device_options(device, arr_options, 11, arr_values[preset], 0);
 }
 
 #endif

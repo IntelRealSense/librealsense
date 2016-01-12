@@ -395,6 +395,12 @@ namespace rsimpl
         }
     }*/
     
+    bool r200_camera::supports_option(rs_option option) const
+    {
+        // We have special logic to implement LR gain and exposure, so they do not belong to the standard option list
+        return option == RS_OPTION_R200_LR_GAIN || option == RS_OPTION_R200_LR_EXPOSURE || rs_device::supports_option(option);
+    }
+
     void r200_camera::get_option_range(rs_option option, double & min, double & max, double & step)
     {
         // Gain min/max is framerate dependent

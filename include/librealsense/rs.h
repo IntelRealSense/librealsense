@@ -327,7 +327,7 @@ int rs_is_device_streaming(const rs_device * device, rs_error ** error);
  * \param[out] step   the granularity of options which accept discrete values, or zero if the option accepts continuous values
  * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
  */
-void rs_get_option_range(rs_device * device, rs_option option, double * min, double * max, double * step, rs_error ** error);
+void rs_get_device_option_range(rs_device * device, rs_option option, double * min, double * max, double * step, rs_error ** error);
 
 /**
  * efficiently retrieve the value of an arbitrary number of options, using minimal hardware IO
@@ -336,7 +336,7 @@ void rs_get_option_range(rs_device * device, rs_option option, double * min, dou
  * \param[out] values  the array which will receive the values of the queried options
  * \param[out] error   if non-null, receives any error that occurs during this call, otherwise, errors are ignored
  */
-void rs_get_options(rs_device * device, const rs_option * options, int count, double * values, rs_error ** error);
+void rs_get_device_options(rs_device * device, const rs_option * options, int count, double * values, rs_error ** error);
 
 /**
  * efficiently set the value of an arbitrary number of options, using minimal hardware IO
@@ -345,7 +345,7 @@ void rs_get_options(rs_device * device, const rs_option * options, int count, do
  * \param[in] values   the array of values to which the options should be set
  * \param[out] error   if non-null, receives any error that occurs during this call, otherwise, errors are ignored
  */
-void rs_set_options(rs_device * device, const rs_option * options, int count, const double * values, rs_error ** error);
+void rs_set_device_options(rs_device * device, const rs_option * options, int count, const double * values, rs_error ** error);
 
 /**
  * retrieve the current value of a single option
@@ -353,7 +353,7 @@ void rs_set_options(rs_device * device, const rs_option * options, int count, co
  * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
  * \return            the value of the option
  */
-double rs_get_option(rs_device * device, rs_option option, rs_error ** error);
+double rs_get_device_option(rs_device * device, rs_option option, rs_error ** error);
 
 /**
  * set the current value of a single option
@@ -361,7 +361,7 @@ double rs_get_option(rs_device * device, rs_option option, rs_error ** error);
  * \param[in] value   the value of the option
  * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
  */
-void rs_set_option(rs_device * device, rs_option option, double value, rs_error ** error);
+void rs_set_device_option(rs_device * device, rs_option option, double value, rs_error ** error);
 
 /**
  * block until new frames are available

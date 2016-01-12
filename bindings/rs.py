@@ -28,11 +28,11 @@ realsense.rs_get_stream_intrinsics.restype = None
 realsense.rs_start_device.restype = None
 realsense.rs_stop_device.restype = None
 realsense.rs_is_device_streaming.restype = c_int
-realsense.rs_get_option_range.restype = None
-realsense.rs_get_options.restype = None
-realsense.rs_set_options.restype = None
-realsense.rs_get_option.restype = c_double
-realsense.rs_set_option.restype = None
+realsense.rs_get_device_option_range.restype = None
+realsense.rs_get_device_options.restype = None
+realsense.rs_set_device_options.restype = None
+realsense.rs_get_device_option.restype = c_double
+realsense.rs_set_device_option.restype = None
 realsense.rs_wait_for_frames.restype = None
 realsense.rs_get_frame_timestamp.restype = c_int
 realsense.rs_get_frame_data.restype = c_void_p
@@ -382,7 +382,7 @@ class Device:
         min = c_double()
         max = c_double()
         step = c_double()
-        realsense.rs_get_option_range(self.handle, option, byref(min), byref(max), byref(step), byref(e))
+        realsense.rs_get_device_option_range(self.handle, option, byref(min), byref(max), byref(step), byref(e))
         check_error(e)
         return (min.value, max.value, step.value)
 
@@ -391,7 +391,7 @@ class Device:
     # @return        the value of the option
     def get_option(self, option):
         e = c_void_p(0)
-        r = realsense.rs_get_option(self.handle, option, byref(e))
+        r = realsense.rs_get_device_option(self.handle, option, byref(e))
         check_error(e)
         return r
 
@@ -400,7 +400,7 @@ class Device:
     # @param value   the value of the option
     def set_option(self, option, value):
         e = c_void_p(0)
-        realsense.rs_set_option(self.handle, option, value, byref(e))
+        realsense.rs_set_device_option(self.handle, option, value, byref(e))
         check_error(e)
 
     ## block until new frames are available

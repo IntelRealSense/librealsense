@@ -429,7 +429,7 @@ namespace rs
         void get_option_range(option option, double & min, double & max, double & step)
         {
             rs_error * e = nullptr;
-            rs_get_option_range((rs_device *)this, (rs_option)option, &min, &max, &step, &e);
+            rs_get_device_option_range((rs_device *)this, (rs_option)option, &min, &max, &step, &e);
             error::handle(e);
         }
 
@@ -440,7 +440,7 @@ namespace rs
         void get_options(const option * options, int count, double * values)
         {
             rs_error * e = nullptr;
-            rs_get_options((rs_device *)this, (rs_option)options, count, &values, &e);
+            rs_get_device_options((rs_device *)this, (const rs_option *)options, count, values, &e);
             error::handle(e);
         }
 
@@ -451,7 +451,7 @@ namespace rs
         void set_options(const option * options, int count, const double * values)
         {
             rs_error * e = nullptr;
-            rs_set_options((rs_device *)this, (rs_option)options, count, values, &e);
+            rs_set_device_options((rs_device *)this, (const rs_option *)options, count, values, &e);
             error::handle(e);
         }
 
@@ -461,7 +461,7 @@ namespace rs
         double get_option(option option)
         {
             rs_error * e = nullptr;
-            auto r = rs_get_option((rs_device *)this, (rs_option)option, &e);
+            auto r = rs_get_device_option((rs_device *)this, (rs_option)option, &e);
             error::handle(e);
             return r;
         }
@@ -472,7 +472,7 @@ namespace rs
         void set_option(option option, double value)
         {
             rs_error * e = nullptr;
-            rs_set_option((rs_device *)this, (rs_option)option, value, &e);
+            rs_set_device_option((rs_device *)this, (rs_option)option, value, &e);
             error::handle(e);
         }
 

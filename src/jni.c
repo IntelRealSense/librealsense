@@ -292,7 +292,7 @@ JNIEXPORT void JNICALL Java_com_intel_rs_Device_getOptionRange(JNIEnv * env, job
     double c_min;
     double c_max;
     double c_step;
-    rs_get_option_range(get_object(env, self), get_enum(env, option), &c_min, &c_max, &c_step, &e);
+    rs_get_device_option_range(get_object(env, self), get_enum(env, option), &c_min, &c_max, &c_step, &e);
     handle_error(env, e);
     set_out_param(env, min, make_double(env, c_min));
     set_out_param(env, max, make_double(env, c_max));
@@ -302,7 +302,7 @@ JNIEXPORT void JNICALL Java_com_intel_rs_Device_getOptionRange(JNIEnv * env, job
 JNIEXPORT jdouble JNICALL Java_com_intel_rs_Device_getOption(JNIEnv * env, jobject self, jobject option)
 {
     rs_error * e = NULL;
-    double r = rs_get_option(get_object(env, self), get_enum(env, option), &e);
+    double r = rs_get_device_option(get_object(env, self), get_enum(env, option), &e);
     handle_error(env, e);
     return r;
 }
@@ -310,7 +310,7 @@ JNIEXPORT jdouble JNICALL Java_com_intel_rs_Device_getOption(JNIEnv * env, jobje
 JNIEXPORT void JNICALL Java_com_intel_rs_Device_setOption(JNIEnv * env, jobject self, jobject option, jdouble value)
 {
     rs_error * e = NULL;
-    rs_set_option(get_object(env, self), get_enum(env, option), value, &e);
+    rs_set_device_option(get_object(env, self), get_enum(env, option), value, &e);
     handle_error(env, e);
 }
 
