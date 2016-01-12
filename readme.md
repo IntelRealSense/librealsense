@@ -86,7 +86,7 @@ Our intent is to provide bindings and wrappers for as many languages and framewo
 3. Next, choose one of the following subheadings based on desired machine configuration / kernel version (and remember to complete step 4 after). **Note: ** Multi-camera support is currently NOT supported on 3.19.xx kernels. Please update to 4.4 stable. 
   * **Stock 3.19.xx Kernel in 14.04.xx** 
     * Run the following script to patch uvcvideo.ko
-        * `./scripts/patch-uvcvideo-3.19.sh`
+      * `./scripts/patch-uvcvideo-3.19.sh`
     * (R200 Only) Install connectivity workaround
       * `./scripts/install-r200-udev-fix.sh`
       * This udev fix is not necessary for kernels >= 4.2.3
@@ -96,9 +96,9 @@ Our intent is to provide bindings and wrappers for as many languages and framewo
     * Install an updated GCC 4.9 compiler (will not compile with stock 14.04 GCC versions!)
       * [Tutorial - First answer in this thread](http://askubuntu.com/questions/466651/how-do-i-use-the-latest-gcc-4-9-on-ubuntu-14-04)
     * Compiling the UVC video module also requires some openssl headers for some reason:
-      * sudo apt-get install libssl-dev openssl
+      * `sudo apt-get install libssl-dev openssl`
     * Run the following script to patch uvcvideo.ko
-      * `./scripts/patch-uvcvideo-4.4.sh v4.4-wily` (note the argument provided to the script)
+      * `./scripts/patch-uvcvideo-4.4.sh v4.4-wily` (note the argument provided to this version of the script)
       * This script involves shallow cloning the Linux source repository (100mb), and may take a while
 4. Reload the uvcvideo driver
   * `sudo modprobe uvcvideo`
