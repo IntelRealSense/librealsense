@@ -95,6 +95,8 @@ Our intent is to provide bindings and wrappers for as many languages and framewo
       * [Tutorial](http://linuxdaddy.com/blog/install-kernel-4-4-on-ubuntu/)
     * Install an updated GCC 4.9 compiler (will not compile with stock 14.04 GCC versions!)
       * [Tutorial - First answer in this thread](http://askubuntu.com/questions/466651/how-do-i-use-the-latest-gcc-4-9-on-ubuntu-14-04)
+    * Compiling the UVC video module also requires some openssl headers for some reason:
+      * sudo apt-get install libssl-dev openssl
     * Run the following script to patch uvcvideo.ko
       * `./scripts/patch-uvcvideo-4.4.sh v4.4-wily` (note the argument provided to the script)
       * This script involves shallow cloning the Linux source repository (100mb), and may take a while
