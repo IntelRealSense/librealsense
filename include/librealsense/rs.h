@@ -18,7 +18,9 @@ typedef enum rs_stream
     RS_STREAM_COLOR_ALIGNED_TO_DEPTH           = 6, /**< Synthetic stream containing color data but sharing intrinsics of depth stream */
     RS_STREAM_DEPTH_ALIGNED_TO_COLOR           = 7, /**< Synthetic stream containing depth data but sharing intrinsics of color stream */
     RS_STREAM_DEPTH_ALIGNED_TO_RECTIFIED_COLOR = 8, /**< Synthetic stream containing depth data but sharing intrinsics of rectified color stream */
-    RS_STREAM_COUNT                            = 9, 
+    RS_STREAM_INFRARED2_ALIGNED_TO_DEPTH       = 9, /**< Synthetic stream containing infrared2 (2nd IR viewpoint) data but sharing intrinsics of depth stream */
+    RS_STREAM_DEPTH_ALIGNED_TO_INFRARED2       =10, /**< Synthetic stream containing depth data but sharing intrinsics of infrared2 (2nd IR viewpoint) stream */
+    RS_STREAM_COUNT                            =11, 
     RS_STREAM_MAX_ENUM = 0x7FFFFFFF
 } rs_stream;
 

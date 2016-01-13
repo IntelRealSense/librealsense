@@ -24,7 +24,7 @@ private:
     rsimpl::native_stream                       depth, color, infrared, infrared2;
     rsimpl::point_stream                        points;
     rsimpl::rectified_stream                    rect_color;
-    rsimpl::aligned_stream                      color_to_depth, depth_to_color, depth_to_rect_color;
+    rsimpl::aligned_stream                      color_to_depth, depth_to_color, depth_to_rect_color, infrared2_to_depth, depth_to_infrared2;
     rsimpl::native_stream *                     native_streams[RS_STREAM_NATIVE_COUNT];
     rsimpl::stream_interface *                  streams[RS_STREAM_COUNT];
 

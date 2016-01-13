@@ -373,6 +373,14 @@ namespace rsimpl
             [out_z, z_pixels](int z_pixel_index, int color_pixel_index) { out_z[color_pixel_index] = z_pixels[z_pixel_index]; });
     }
 
+    void align_z_to_infrared2(byte * z_aligned_to_infrared2, const uint16_t * z_pixels, float z_scale, const rs_intrinsics & z_intrin, const rs_extrinsics & z_to_infrared2, const rs_intrinsics & infrared2_intrin)
+    {
+        auto out_z = (uint16_t *)(z_aligned_to_infrared2);
+        align_images(z_intrin, z_to_infrared2, infrared2_intrin, 
+            [z_pixels, z_scale](int z_pixel_index) { return z_scale * z_pixels[z_pixel_index]; },
+            [out_z, z_pixels](int z_pixel_index, int infrared2_pixel_index) { out_z[infrared2_pixel_index] = z_pixels[z_pixel_index]; });
+    }
+
     void align_disparity_to_color(byte * disparity_aligned_to_color, const uint16_t * disparity_pixels, float disparity_scale, const rs_intrinsics & disparity_intrin, const rs_extrinsics & disparity_to_color, const rs_intrinsics & color_intrin)
     {
         auto out_disparity = (uint16_t *)(disparity_aligned_to_color);
@@ -415,6 +423,32 @@ namespace rsimpl
     void align_color_to_disparity(byte * color_aligned_to_disparity, const uint16_t * disparity_pixels, float disparity_scale, const rs_intrinsics & disparity_intrin, const rs_extrinsics & disparity_to_color, const rs_intrinsics & color_intrin, const byte * color_pixels, rs_format color_format)
     {
         align_color_to_depth(color_aligned_to_disparity, [disparity_pixels, disparity_scale](int disparity_pixel_index) { return disparity_scale / disparity_pixels[disparity_pixel_index]; }, disparity_intrin, disparity_to_color, color_intrin, color_pixels, color_format);
+    }
+
+    template<int N, class GET_DEPTH> void align_infrared2_to_depth_bytes(byte * infrared2_aligned_to_depth, GET_DEPTH get_depth, const rs_intrinsics & depth_intrin, const rs_extrinsics & depth_to_infrared2, const rs_intrinsics & infrared2_intrin, const byte * infrared2_pixels)
+    {
+        auto in_infrared2 = (const bytes<N> *)(infrared2_pixels);
+        auto out_infrared2 = (bytes<N> *)(infrared2_aligned_to_depth);
+        align_images(depth_intrin, depth_to_infrared2, infrared2_intrin, get_depth,
+            [out_infrared2, in_infrared2](int depth_pixel_index, int infrared2_pixel_index) { out_infrared2[depth_pixel_index] = in_infrared2[infrared2_pixel_index]; });
+    }
+
+    template<class GET_DEPTH> void align_infrared2_to_depth(byte * infrared2_aligned_to_depth, GET_DEPTH get_depth, const rs_intrinsics & depth_intrin, const rs_extrinsics & depth_to_infrared2, const rs_intrinsics & infrared2_intrin, const byte * infrared2_pixels, rs_format infrared2_format)
+    {
+        switch(infrared2_format)
+        {
+        case RS_FORMAT_Y8: 
+            return align_infrared2_to_depth_bytes<1>(infrared2_aligned_to_depth, get_depth, depth_intrin, depth_to_infrared2, infrared2_intrin, infrared2_pixels);
+        case RS_FORMAT_Y16: case RS_FORMAT_Z16: 
+            return align_infrared2_to_depth_bytes<2>(infrared2_aligned_to_depth, get_depth, depth_intrin, depth_to_infrared2, infrared2_intrin, infrared2_pixels);
+        default: 
+            assert(false);
+        }
+    }
+
+    void align_infrared2_to_z(byte * infrared2_aligned_to_z, const uint16_t * z_pixels, float z_scale, const rs_intrinsics & z_intrin, const rs_extrinsics & z_to_infrared2, const rs_intrinsics & infrared2_intrin, const byte * infrared2_pixels, rs_format infrared2_format)
+    {
+        align_infrared2_to_depth(infrared2_aligned_to_z, [z_pixels, z_scale](int z_pixel_index) { return z_scale * z_pixels[z_pixel_index]; }, z_intrin, z_to_infrared2, infrared2_intrin, infrared2_pixels, infrared2_format);
     }
 
     /////////////////////////

@@ -21,7 +21,9 @@ namespace rs
         rectified_color                  = 5, ///< Synthetic stream containing undistorted color data with no extrinsic rotation from the depth stream
         color_aligned_to_depth           = 6, ///< Synthetic stream containing color data but sharing intrinsics of depth stream
         depth_aligned_to_color           = 7, ///< Synthetic stream containing depth data but sharing intrinsics of color stream
-        depth_aligned_to_rectified_color = 8  ///< Synthetic stream containing depth data but sharing intrinsics of rectified color stream
+        depth_aligned_to_rectified_color = 8, ///< Synthetic stream containing depth data but sharing intrinsics of rectified color stream
+        infrared2_aligned_to_depth       = 9, ///< Synthetic stream containing infrared2 (2nd IR viewpoint) data but sharing intrinsics of depth stream
+        depth_aligned_to_infrared2       = 10 ///< Synthetic stream containing depth data but sharing intrinsics of infrared2 (2nd IR viewpoint) stream
     };
 
     enum class format : int32_t
