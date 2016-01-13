@@ -59,8 +59,10 @@ Our intent is to provide bindings and wrappers for as many languages and framewo
 
 ## Ubuntu 14.04 LTS Installation
 
+**Note:** Several scripts below invoke `wget, git, add-apt-repository` which may be blocked by your IT firewall resulting in timeouts and errors. Add necessary proxy settings to config files or append scripts with appropriate switches. 
+
 1. Ensure apt-get is up to date
-  * `sudo apt-get update && apt-get upgrade`
+  * `sudo apt-get update && sudo apt-get upgrade`
 2. Install libusb-1.0 via apt-get
   * `sudo apt-get install libusb-1.0-0-dev`
 3. glfw3 is not available in apt-get on Ubuntu 14.04. Use included installer script:
@@ -84,22 +86,18 @@ Our intent is to provide bindings and wrappers for as many languages and framewo
   * `sudo cp config/99-realsense-libusb.rules /etc/udev/rules.d/`
   * Reboot or run `sudo udevadm control --reload-rules && udevadm trigger` to enforce the new udev rules
 3. Next, choose one of the following subheadings based on desired machine configuration / kernel version (and remember to complete step 4 after). **Note: ** Multi-camera support is currently NOT supported on 3.19.xx kernels. Please update to 4.4 stable. 
-  * **Stock 3.19.xx Kernel in 14.04.xx** 
+  * **Updated 4.4 Stable Kernel** (recommended)
+    * Run the following script to install necessary dependencies (GCC 4.9 compiler and openssl) and update kernel to v4.4-wily
+      * `./scripts/install_dependencies-4.4.sh`
+    * Run the following script to patch uvcvideo.ko
+      * `./scripts/patch-uvcvideo-4.4.sh v4.4-wily` (note the argument provided to this version of the script)
+      * This script involves shallow cloning the Linux source repository (100mb), and may take a while
+  * **(OR) Stock 3.19.xx Kernel in 14.04.xx** 
     * Run the following script to patch uvcvideo.ko
       * `./scripts/patch-uvcvideo-3.19.sh`
     * (R200 Only) Install connectivity workaround
       * `./scripts/install-r200-udev-fix.sh`
       * This udev fix is not necessary for kernels >= 4.2.3
-  * **(OR) Updated 4.4 Stable Kernel**
-    * Install the 4.4 Kernel or move to step 2 if already installed. 
-      * [Tutorial](http://linuxdaddy.com/blog/install-kernel-4-4-on-ubuntu/)
-    * Install an updated GCC 4.9 compiler (will not compile with stock 14.04 GCC versions!)
-      * [Tutorial - First answer in this thread](http://askubuntu.com/questions/466651/how-do-i-use-the-latest-gcc-4-9-on-ubuntu-14-04)
-    * Compiling the UVC video module also requires some openssl headers for some reason:
-      * `sudo apt-get install libssl-dev openssl`
-    * Run the following script to patch uvcvideo.ko
-      * `./scripts/patch-uvcvideo-4.4.sh v4.4-wily` (note the argument provided to this version of the script)
-      * This script involves shallow cloning the Linux source repository (100mb), and may take a while
 4. Reload the uvcvideo driver
   * `sudo modprobe uvcvideo`
 
