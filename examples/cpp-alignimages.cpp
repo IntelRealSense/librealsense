@@ -15,7 +15,7 @@
 #include <thread>
 
 font font;
-texture_buffer buffers[4];
+texture_buffer buffers[6];
 
 #pragma pack(push, 1)
 struct rgb_pixel
@@ -32,12 +32,13 @@ int main(int argc, char * argv[]) try
 
     dev.enable_stream(rs::stream::depth, rs::preset::best_quality);
     dev.enable_stream(rs::stream::color, rs::preset::best_quality);
+    dev.enable_stream(rs::stream::infrared2, rs::preset::best_quality);
     dev.start();
 
     // Open a GLFW window
     glfwInit();
     std::ostringstream ss; ss << "CPP Image Alignment Example (" << dev.get_name() << ")";
-    GLFWwindow * win = glfwCreateWindow(1280, 960, ss.str().c_str(), 0, 0);
+    GLFWwindow * win = glfwCreateWindow(1920, 960, ss.str().c_str(), 0, 0);
     glfwMakeContextCurrent(win);
             
     // Load our truetype font
@@ -64,10 +65,12 @@ int main(int argc, char * argv[]) try
         glPushMatrix();
         glfwGetWindowSize(win, &w, &h);
         glOrtho(0, w, h, 0, -1, +1);
-        buffers[0].show(dev, rs::stream::color, 0, 0, w/2, h/2, font);
-        buffers[1].show(dev, rs::stream::color_aligned_to_depth, w/2, 0, w-w/2, h/2, font);
-        buffers[2].show(dev, rs::stream::depth_aligned_to_color, 0, h/2, w/2, h-h/2, font);
-        buffers[3].show(dev, rs::stream::depth, w/2, h/2, w-w/2, h-h/2, font);
+        buffers[0].show(dev, rs::stream::color, 0, 0, w/3, h-h/2, font);
+        buffers[1].show(dev, rs::stream::color_aligned_to_depth, w/3, 0, w/3, h-h/2, font);
+        buffers[2].show(dev, rs::stream::depth_aligned_to_color, 0, h/2, w/3, h-h/2, font);
+        buffers[3].show(dev, rs::stream::depth, w/3, h/2, w/3, h-h/2, font);
+        buffers[4].show(dev, rs::stream::infrared2_aligned_to_depth, 2*w/3, 0, w/3, h-h/2, font);
+        buffers[5].show(dev, rs::stream::depth_aligned_to_infrared2, 2*w/3, h/2, w/3, h-h/2, font);
         glPopMatrix();
         glfwSwapBuffers(win);
     }
