@@ -29,14 +29,10 @@ realsense.rs_start_device.restype = None
 realsense.rs_stop_device.restype = None
 realsense.rs_is_device_streaming.restype = c_int
 realsense.rs_get_device_option_range.restype = None
+realsense.rs_get_device_options.restype = None
+realsense.rs_set_device_options.restype = None
+realsense.rs_get_device_option.restype = c_double
 realsense.rs_set_device_option.restype = None
-realsense.rs_get_device_option.restype = c_int
-realsense.rs_set_auto_range_parameters.restype = None
-realsense.rs_get_auto_range_parameters.restype = None
-realsense.rs_set_lr_auto_exposure_parameters.restype = None
-realsense.rs_get_lr_auto_exposure_parameters.restype = None
-realsense.rs_set_depth_control_parameters.restype = None
-realsense.rs_get_depth_control_parameters.restype = None
 realsense.rs_wait_for_frames.restype = None
 realsense.rs_get_frame_timestamp.restype = c_int
 realsense.rs_get_frame_data.restype = c_void_p
@@ -85,34 +81,64 @@ DISTORTION_MODIFIED_BROWN_CONRADY = 1  ##< Equivalent to Brown-Conrady distortio
 DISTORTION_INVERSE_BROWN_CONRADY  = 2  ##< Equivalent to Brown-Conrady distortion, except undistorts image instead of distorting it
 DISTORTION_COUNT                  = 3 
 
-OPTION_COLOR_BACKLIGHT_COMPENSATION    = 0  
-OPTION_COLOR_BRIGHTNESS                = 1  
-OPTION_COLOR_CONTRAST                  = 2  
-OPTION_COLOR_EXPOSURE                  = 3   ##< Controls exposure time of color camera. Setting any value will disable auto exposure.
-OPTION_COLOR_GAIN                      = 4  
-OPTION_COLOR_GAMMA                     = 5  
-OPTION_COLOR_HUE                       = 6  
-OPTION_COLOR_SATURATION                = 7  
-OPTION_COLOR_SHARPNESS                 = 8  
-OPTION_COLOR_WHITE_BALANCE             = 9   ##< Controls white balance of color image. Setting any value will disable auto white balance.
-OPTION_COLOR_ENABLE_AUTO_EXPOSURE      = 10  ##< Set to 1 to enable automatic exposure control, or 0 to return to manual control
-OPTION_COLOR_ENABLE_AUTO_WHITE_BALANCE = 11  ##< Set to 1 to enable automatic white balance control, or 0 to return to manual control
-OPTION_F200_LASER_POWER                = 12  ##< 0 - 15
-OPTION_F200_ACCURACY                   = 13  ##< 0 - 3
-OPTION_F200_MOTION_RANGE               = 14  ##< 0 - 100
-OPTION_F200_FILTER_OPTION              = 15  ##< 0 - 7
-OPTION_F200_CONFIDENCE_THRESHOLD       = 16  ##< 0 - 15
-OPTION_F200_DYNAMIC_FPS                = 17  ##< {2, 5, 15, 30, 60}
-OPTION_R200_LR_AUTO_EXPOSURE_ENABLED   = 18  ##< {0, 1}
-OPTION_R200_LR_GAIN                    = 19  ##< 100 - 1600 (Units of 0.01)
-OPTION_R200_LR_EXPOSURE                = 20  ##< > 0 (Units of 0.1 ms)
-OPTION_R200_EMITTER_ENABLED            = 21  ##< {0, 1}
-OPTION_R200_DEPTH_UNITS                = 22  ##< micrometers per increment in integer depth values, 1000 is default (mm scale)
-OPTION_R200_DEPTH_CLAMP_MIN            = 23  ##< 0 - USHORT_MAX
-OPTION_R200_DEPTH_CLAMP_MAX            = 24  ##< 0 - USHORT_MAX
-OPTION_R200_DISPARITY_MULTIPLIER       = 25  ##< 0 - 1000, the increments in integer disparity values corresponding to one pixel of disparity
-OPTION_R200_DISPARITY_SHIFT            = 26 
-OPTION_COUNT                           = 27 
+OPTION_COLOR_BACKLIGHT_COMPENSATION                    = 0  
+OPTION_COLOR_BRIGHTNESS                                = 1  
+OPTION_COLOR_CONTRAST                                  = 2  
+OPTION_COLOR_EXPOSURE                                  = 3   ##< Controls exposure time of color camera. Setting any value will disable auto exposure.
+OPTION_COLOR_GAIN                                      = 4  
+OPTION_COLOR_GAMMA                                     = 5  
+OPTION_COLOR_HUE                                       = 6  
+OPTION_COLOR_SATURATION                                = 7  
+OPTION_COLOR_SHARPNESS                                 = 8  
+OPTION_COLOR_WHITE_BALANCE                             = 9   ##< Controls white balance of color image. Setting any value will disable auto white balance.
+OPTION_COLOR_ENABLE_AUTO_EXPOSURE                      = 10  ##< Set to 1 to enable automatic exposure control, or 0 to return to manual control
+OPTION_COLOR_ENABLE_AUTO_WHITE_BALANCE                 = 11  ##< Set to 1 to enable automatic white balance control, or 0 to return to manual control
+OPTION_F200_LASER_POWER                                = 12  ##< 0 - 15
+OPTION_F200_ACCURACY                                   = 13  ##< 0 - 3
+OPTION_F200_MOTION_RANGE                               = 14  ##< 0 - 100
+OPTION_F200_FILTER_OPTION                              = 15  ##< 0 - 7
+OPTION_F200_CONFIDENCE_THRESHOLD                       = 16  ##< 0 - 15
+OPTION_SR300_DYNAMIC_FPS                               = 17  ##< {2, 5, 15, 30, 60}
+OPTION_SR300_AUTO_RANGE_ENABLE_MOTION_VERSUS_RANGE     = 18 
+OPTION_SR300_AUTO_RANGE_ENABLE_LASER                   = 19 
+OPTION_SR300_AUTO_RANGE_MIN_MOTION_VERSUS_RANGE        = 20 
+OPTION_SR300_AUTO_RANGE_MAX_MOTION_VERSUS_RANGE        = 21 
+OPTION_SR300_AUTO_RANGE_START_MOTION_VERSUS_RANGE      = 22 
+OPTION_SR300_AUTO_RANGE_MIN_LASER                      = 23 
+OPTION_SR300_AUTO_RANGE_MAX_LASER                      = 24 
+OPTION_SR300_AUTO_RANGE_START_LASER                    = 25 
+OPTION_SR300_AUTO_RANGE_UPPER_THRESHOLD                = 26 
+OPTION_SR300_AUTO_RANGE_LOWER_THRESHOLD                = 27 
+OPTION_R200_LR_AUTO_EXPOSURE_ENABLED                   = 28  ##< {0, 1}
+OPTION_R200_LR_GAIN                                    = 29  ##< 100 - 1600 (Units of 0.01)
+OPTION_R200_LR_EXPOSURE                                = 30  ##< > 0 (Units of 0.1 ms)
+OPTION_R200_EMITTER_ENABLED                            = 31  ##< {0, 1}
+OPTION_R200_DEPTH_CONTROL_PRESET                       = 32  ##< 0 - 5, 0 is default, 1-5 is low to high outlier rejection
+OPTION_R200_DEPTH_UNITS                                = 33  ##< micrometers per increment in integer depth values, 1000 is default (mm scale)
+OPTION_R200_DEPTH_CLAMP_MIN                            = 34  ##< 0 - USHORT_MAX
+OPTION_R200_DEPTH_CLAMP_MAX                            = 35  ##< 0 - USHORT_MAX
+OPTION_R200_DISPARITY_MULTIPLIER                       = 36  ##< 0 - 1000, the increments in integer disparity values corresponding to one pixel of disparity
+OPTION_R200_DISPARITY_SHIFT                            = 37 
+OPTION_R200_AUTO_EXPOSURE_MEAN_INTENSITY_SET_POINT     = 38 
+OPTION_R200_AUTO_EXPOSURE_BRIGHT_RATIO_SET_POINT       = 39 
+OPTION_R200_AUTO_EXPOSURE_KP_GAIN                      = 40 
+OPTION_R200_AUTO_EXPOSURE_KP_EXPOSURE                  = 41 
+OPTION_R200_AUTO_EXPOSURE_KP_DARK_THRESHOLD            = 42 
+OPTION_R200_AUTO_EXPOSURE_EXPOSURE_TOP_EDGE            = 43 
+OPTION_R200_AUTO_EXPOSURE_EXPOSURE_BOTTOM_EDGE         = 44 
+OPTION_R200_AUTO_EXPOSURE_EXPOSURE_LEFT_EDGE           = 45 
+OPTION_R200_AUTO_EXPOSURE_EXPOSURE_RIGHT_EDGE          = 46 
+OPTION_R200_DEPTH_CONTROL_ESTIMATE_MEDIAN_DECREMENT    = 47 
+OPTION_R200_DEPTH_CONTROL_ESTIMATE_MEDIAN_INCREMENT    = 48 
+OPTION_R200_DEPTH_CONTROL_MEDIAN_THRESHOLD             = 49 
+OPTION_R200_DEPTH_CONTROL_SCORE_MINIMUM_THRESHOLD      = 50 
+OPTION_R200_DEPTH_CONTROL_SCORE_MAXIMUM_THRESHOLD      = 51 
+OPTION_R200_DEPTH_CONTROL_TEXTURE_COUNT_THRESHOLD      = 52 
+OPTION_R200_DEPTH_CONTROL_TEXTURE_DIFFERENCE_THRESHOLD = 53 
+OPTION_R200_DEPTH_CONTROL_SECOND_PEAK_THRESHOLD        = 54 
+OPTION_R200_DEPTH_CONTROL_NEIGHBOR_THRESHOLD           = 55 
+OPTION_R200_DEPTH_CONTROL_LR_THRESHOLD                 = 56 
+OPTION_COUNT                                           = 57 
 
 class Intrinsics(Structure):
     _fields_ = [("width", c_int),
@@ -127,41 +153,6 @@ class Intrinsics(Structure):
 class Extrinsics(Structure):
     _fields_ = [("rotation", c_float * 9),
                 ("translation", c_float * 3)]
-
-class F200AutoRangeParameters(Structure):
-    _fields_ = [("enable_motion_versus_range", c_int),
-                ("enable_laser", c_int),
-                ("min_motion_versus_range", c_int),
-                ("max_motion_versus_range", c_int),
-                ("start_motion_versus_range", c_int),
-                ("min_laser", c_int),
-                ("max_laser", c_int),
-                ("start_laser", c_int),
-                ("auto_range_upper_threshold", c_int),
-                ("auto_range_lower_threshold", c_int)]
-
-class R200LRAutoExposureParameters(Structure):
-    _fields_ = [("mean_intensity_set_point", c_float),
-                ("bright_ratio_set_point", c_float),
-                ("kp_gain", c_float),
-                ("kp_exposure", c_float),
-                ("kp_dark_threshold", c_float),
-                ("exposure_top_edge", c_int),
-                ("exposure_bottom_edge", c_int),
-                ("exposure_left_edge", c_int),
-                ("exposure_right_edge", c_int)]
-
-class R200DepthControlParameters(Structure):
-    _fields_ = [("estimate_median_decrement", c_int),
-                ("estimate_median_increment", c_int),
-                ("median_threshold", c_int),
-                ("score_minimum_threshold", c_int),
-                ("score_maximum_threshold", c_int),
-                ("texture_count_threshold", c_int),
-                ("texture_difference_threshold", c_int),
-                ("second_peak_threshold", c_int),
-                ("neighbor_threshold", c_int),
-                ("lr_threshold", c_int)]
 
 def check_error(e):
     if(e):
@@ -381,70 +372,36 @@ class Device:
         check_error(e)
         return r
 
-    ## determine the range of acceptable values for an option on this device
-    # @param option  the option whose range to query
-    # @return        the minimum acceptable value, attempting to set a value below this will take no effect and raise an error
-    # @return        the maximum acceptable value, attempting to set a value above this will take no effect and raise an error
+    ## retrieve the available range of values of a supported option
+    # @param option  the option whose range should be queried
+    # @return        the minimum value which will be accepted for this option
+    # @return        the maximum value which will be accepted for this option
+    # @return        the granularity of options which accept discrete values, or zero if the option accepts continuous values
     def get_option_range(self, option):
         e = c_void_p(0)
-        min = c_int()
-        max = c_int()
-        realsense.rs_get_device_option_range(self.handle, option, byref(min), byref(max), byref(e))
+        min = c_double()
+        max = c_double()
+        step = c_double()
+        realsense.rs_get_device_option_range(self.handle, option, byref(min), byref(max), byref(step), byref(e))
         check_error(e)
-        return (min.value, max.value)
+        return (min.value, max.value, step.value)
 
-    ## set the value of a specific device option
-    # @param option  the option whose value to set
-    # @param value   the desired value to set
-    def set_option(self, option, value):
-        e = c_void_p(0)
-        realsense.rs_set_device_option(self.handle, option, value, byref(e))
-        check_error(e)
-
-    ## query the current value of a specific device option
-    # @param option  the option whose value to retrieve
-    # @return        the current value of the option
+    ## retrieve the current value of a single option
+    # @param option  the option whose value should be retrieved
+    # @return        the value of the option
     def get_option(self, option):
         e = c_void_p(0)
         r = realsense.rs_get_device_option(self.handle, option, byref(e))
         check_error(e)
         return r
 
-    def set_auto_range_parameters(self, parameters):
+    ## set the current value of a single option
+    # @param option  the option whose value should be set
+    # @param value   the value of the option
+    def set_option(self, option, value):
         e = c_void_p(0)
-        realsense.rs_set_auto_range_parameters(self.handle, parameters, byref(e))
+        realsense.rs_set_device_option(self.handle, option, value, byref(e))
         check_error(e)
-
-    def get_auto_range_parameters(self):
-        e = c_void_p(0)
-        parameters = F200AutoRangeParameters()
-        realsense.rs_get_auto_range_parameters(self.handle, byref(parameters), byref(e))
-        check_error(e)
-        return (parameters)
-
-    def set_lr_auto_exposure_parameters(self, parameters):
-        e = c_void_p(0)
-        realsense.rs_set_lr_auto_exposure_parameters(self.handle, parameters, byref(e))
-        check_error(e)
-
-    def get_lr_auto_exposure_parameters(self):
-        e = c_void_p(0)
-        parameters = R200LRAutoExposureParameters()
-        realsense.rs_get_lr_auto_exposure_parameters(self.handle, byref(parameters), byref(e))
-        check_error(e)
-        return (parameters)
-
-    def set_depth_control_parameters(self, parameters):
-        e = c_void_p(0)
-        realsense.rs_set_depth_control_parameters(self.handle, parameters, byref(e))
-        check_error(e)
-
-    def get_depth_control_parameters(self):
-        e = c_void_p(0)
-        parameters = R200DepthControlParameters()
-        realsense.rs_get_depth_control_parameters(self.handle, byref(parameters), byref(e))
-        check_error(e)
-        return (parameters)
 
     ## block until new frames are available
     def wait_for_frames(self):

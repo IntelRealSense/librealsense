@@ -16,21 +16,7 @@
 
 using namespace rsimpl;
 
-static_device_info rsimpl::add_standard_unpackers(const static_device_info & device_info)
-{
-    // Flag all standard options as supported
-    static_device_info info = device_info;
-    for(int i=0; i<RS_OPTION_COUNT; ++i)
-    {
-        if(uvc::is_pu_control((rs_option)i))
-        {
-            info.option_supported[i] = true;
-        }
-    }
-    return info;
-}
-
-rs_device::rs_device(std::shared_ptr<rsimpl::uvc::device> device, const rsimpl::static_device_info & info) : device(device), config(add_standard_unpackers(info)), capturing(false),
+rs_device::rs_device(std::shared_ptr<rsimpl::uvc::device> device, const rsimpl::static_device_info & info) : device(device), config(info), capturing(false),
     depth(config, RS_STREAM_DEPTH), color(config, RS_STREAM_COLOR), infrared(config, RS_STREAM_INFRARED), infrared2(config, RS_STREAM_INFRARED2),
     points(depth), rect_color(color), color_to_depth(color, depth), depth_to_color(depth, color), depth_to_rect_color(depth, rect_color), infrared2_to_depth(infrared2,depth), depth_to_infrared2(depth,infrared2)
 {
@@ -50,6 +36,13 @@ rs_device::rs_device(std::shared_ptr<rsimpl::uvc::device> device, const rsimpl::
 rs_device::~rs_device()
 {
 
+}
+
+bool rs_device::supports_option(rs_option option) const 
+{ 
+    if(uvc::is_pu_control(option)) return true;
+    for(auto & o : config.info.options) if(o.option == option) return true;
+    return false; 
 }
 
 void rs_device::enable_stream(rs_stream stream, int width, int height, rs_format format, int fps)
@@ -232,41 +225,28 @@ const byte * rs_device::get_frame_data(rs_stream stream) const
     return streams[stream]->get_frame_data();
 }
 
-void rs_device::get_option_range(rs_option option, int * min, int * max)
+void rs_device::get_option_range(rs_option option, double & min, double & max, double & step)
 {
-    if(!supports_option(option)) throw std::runtime_error(to_string() << "option not supported by this device - " << option);
     if(uvc::is_pu_control(option))
-    {           
-        uvc::get_pu_control_range(get_device(), config.info.stream_subdevices[RS_STREAM_COLOR], option, min, max);
-    }
-    else
     {
-        get_xu_range(option, min, max);
+        int mn, mx;
+        uvc::get_pu_control_range(get_device(), config.info.stream_subdevices[RS_STREAM_COLOR], option, &mn, &mx);
+        min = mn;
+        max = mx;
+        step = 1;
+        return;
     }
-}
 
-void rs_device::set_option(rs_option option, int value)
-{
-    if(!supports_option(option)) throw std::runtime_error(to_string() << "option not supported by this device - " << option);
-    if(uvc::is_pu_control(option))
+    for(auto & o : config.info.options)
     {
-        uvc::set_pu_control(get_device(), config.info.stream_subdevices[RS_STREAM_COLOR], option, value);
+        if(o.option == option)
+        {
+            min = o.min;
+            max = o.max;
+            step = o.step;
+            return;
+        }
     }
-    else
-    {
-        set_xu_option(option, value);
-    }
-}
 
-int rs_device::get_option(rs_option option)
-{
-    if(!supports_option(option)) throw std::runtime_error(to_string() << "option not supported by this device - " << option);
-    if(uvc::is_pu_control(option))
-    {
-        return uvc::get_pu_control(get_device(), config.info.stream_subdevices[RS_STREAM_COLOR], option);
-    }
-    else
-    {
-        return get_xu_option(option);
-    }
+    throw std::logic_error("range not specified");
 }

@@ -62,34 +62,64 @@ typedef enum rs_distortion
 
 typedef enum rs_option
 {
-    RS_OPTION_COLOR_BACKLIGHT_COMPENSATION    = 0,  
-    RS_OPTION_COLOR_BRIGHTNESS                = 1,  
-    RS_OPTION_COLOR_CONTRAST                  = 2,  
-    RS_OPTION_COLOR_EXPOSURE                  = 3,  /**< Controls exposure time of color camera. Setting any value will disable auto exposure. */
-    RS_OPTION_COLOR_GAIN                      = 4,  
-    RS_OPTION_COLOR_GAMMA                     = 5,  
-    RS_OPTION_COLOR_HUE                       = 6,  
-    RS_OPTION_COLOR_SATURATION                = 7,  
-    RS_OPTION_COLOR_SHARPNESS                 = 8,  
-    RS_OPTION_COLOR_WHITE_BALANCE             = 9,  /**< Controls white balance of color image. Setting any value will disable auto white balance. */
-    RS_OPTION_COLOR_ENABLE_AUTO_EXPOSURE      = 10, /**< Set to 1 to enable automatic exposure control, or 0 to return to manual control */
-    RS_OPTION_COLOR_ENABLE_AUTO_WHITE_BALANCE = 11, /**< Set to 1 to enable automatic white balance control, or 0 to return to manual control */
-    RS_OPTION_F200_LASER_POWER                = 12, /**< 0 - 15 */
-    RS_OPTION_F200_ACCURACY                   = 13, /**< 0 - 3 */
-    RS_OPTION_F200_MOTION_RANGE               = 14, /**< 0 - 100 */
-    RS_OPTION_F200_FILTER_OPTION              = 15, /**< 0 - 7 */
-    RS_OPTION_F200_CONFIDENCE_THRESHOLD       = 16, /**< 0 - 15 */
-    RS_OPTION_F200_DYNAMIC_FPS                = 17, /**< {2, 5, 15, 30, 60} */
-    RS_OPTION_R200_LR_AUTO_EXPOSURE_ENABLED   = 18, /**< {0, 1} */
-    RS_OPTION_R200_LR_GAIN                    = 19, /**< 100 - 1600 (Units of 0.01) */
-    RS_OPTION_R200_LR_EXPOSURE                = 20, /**< > 0 (Units of 0.1 ms) */
-    RS_OPTION_R200_EMITTER_ENABLED            = 21, /**< {0, 1} */
-    RS_OPTION_R200_DEPTH_UNITS                = 22, /**< micrometers per increment in integer depth values, 1000 is default (mm scale) */
-    RS_OPTION_R200_DEPTH_CLAMP_MIN            = 23, /**< 0 - USHORT_MAX */
-    RS_OPTION_R200_DEPTH_CLAMP_MAX            = 24, /**< 0 - USHORT_MAX */
-    RS_OPTION_R200_DISPARITY_MULTIPLIER       = 25, /**< 0 - 1000, the increments in integer disparity values corresponding to one pixel of disparity */
-    RS_OPTION_R200_DISPARITY_SHIFT            = 26, 
-    RS_OPTION_COUNT                           = 27, 
+    RS_OPTION_COLOR_BACKLIGHT_COMPENSATION                    = 0,  
+    RS_OPTION_COLOR_BRIGHTNESS                                = 1,  
+    RS_OPTION_COLOR_CONTRAST                                  = 2,  
+    RS_OPTION_COLOR_EXPOSURE                                  = 3,  /**< Controls exposure time of color camera. Setting any value will disable auto exposure. */
+    RS_OPTION_COLOR_GAIN                                      = 4,  
+    RS_OPTION_COLOR_GAMMA                                     = 5,  
+    RS_OPTION_COLOR_HUE                                       = 6,  
+    RS_OPTION_COLOR_SATURATION                                = 7,  
+    RS_OPTION_COLOR_SHARPNESS                                 = 8,  
+    RS_OPTION_COLOR_WHITE_BALANCE                             = 9,  /**< Controls white balance of color image. Setting any value will disable auto white balance. */
+    RS_OPTION_COLOR_ENABLE_AUTO_EXPOSURE                      = 10, /**< Set to 1 to enable automatic exposure control, or 0 to return to manual control */
+    RS_OPTION_COLOR_ENABLE_AUTO_WHITE_BALANCE                 = 11, /**< Set to 1 to enable automatic white balance control, or 0 to return to manual control */
+    RS_OPTION_F200_LASER_POWER                                = 12, /**< 0 - 15 */
+    RS_OPTION_F200_ACCURACY                                   = 13, /**< 0 - 3 */
+    RS_OPTION_F200_MOTION_RANGE                               = 14, /**< 0 - 100 */
+    RS_OPTION_F200_FILTER_OPTION                              = 15, /**< 0 - 7 */
+    RS_OPTION_F200_CONFIDENCE_THRESHOLD                       = 16, /**< 0 - 15 */
+    RS_OPTION_SR300_DYNAMIC_FPS                               = 17, /**< {2, 5, 15, 30, 60} */
+    RS_OPTION_SR300_AUTO_RANGE_ENABLE_MOTION_VERSUS_RANGE     = 18, 
+    RS_OPTION_SR300_AUTO_RANGE_ENABLE_LASER                   = 19, 
+    RS_OPTION_SR300_AUTO_RANGE_MIN_MOTION_VERSUS_RANGE        = 20, 
+    RS_OPTION_SR300_AUTO_RANGE_MAX_MOTION_VERSUS_RANGE        = 21, 
+    RS_OPTION_SR300_AUTO_RANGE_START_MOTION_VERSUS_RANGE      = 22, 
+    RS_OPTION_SR300_AUTO_RANGE_MIN_LASER                      = 23, 
+    RS_OPTION_SR300_AUTO_RANGE_MAX_LASER                      = 24, 
+    RS_OPTION_SR300_AUTO_RANGE_START_LASER                    = 25, 
+    RS_OPTION_SR300_AUTO_RANGE_UPPER_THRESHOLD                = 26, 
+    RS_OPTION_SR300_AUTO_RANGE_LOWER_THRESHOLD                = 27, 
+    RS_OPTION_R200_LR_AUTO_EXPOSURE_ENABLED                   = 28, /**< {0, 1} */
+    RS_OPTION_R200_LR_GAIN                                    = 29, /**< 100 - 1600 (Units of 0.01) */
+    RS_OPTION_R200_LR_EXPOSURE                                = 30, /**< > 0 (Units of 0.1 ms) */
+    RS_OPTION_R200_EMITTER_ENABLED                            = 31, /**< {0, 1} */
+    RS_OPTION_R200_DEPTH_CONTROL_PRESET                       = 32, /**< 0 - 5, 0 is default, 1-5 is low to high outlier rejection */
+    RS_OPTION_R200_DEPTH_UNITS                                = 33, /**< micrometers per increment in integer depth values, 1000 is default (mm scale) */
+    RS_OPTION_R200_DEPTH_CLAMP_MIN                            = 34, /**< 0 - USHORT_MAX */
+    RS_OPTION_R200_DEPTH_CLAMP_MAX                            = 35, /**< 0 - USHORT_MAX */
+    RS_OPTION_R200_DISPARITY_MULTIPLIER                       = 36, /**< 0 - 1000, the increments in integer disparity values corresponding to one pixel of disparity */
+    RS_OPTION_R200_DISPARITY_SHIFT                            = 37, 
+    RS_OPTION_R200_AUTO_EXPOSURE_MEAN_INTENSITY_SET_POINT     = 38, 
+    RS_OPTION_R200_AUTO_EXPOSURE_BRIGHT_RATIO_SET_POINT       = 39, 
+    RS_OPTION_R200_AUTO_EXPOSURE_KP_GAIN                      = 40, 
+    RS_OPTION_R200_AUTO_EXPOSURE_KP_EXPOSURE                  = 41, 
+    RS_OPTION_R200_AUTO_EXPOSURE_KP_DARK_THRESHOLD            = 42, 
+    RS_OPTION_R200_AUTO_EXPOSURE_EXPOSURE_TOP_EDGE            = 43, 
+    RS_OPTION_R200_AUTO_EXPOSURE_EXPOSURE_BOTTOM_EDGE         = 44, 
+    RS_OPTION_R200_AUTO_EXPOSURE_EXPOSURE_LEFT_EDGE           = 45, 
+    RS_OPTION_R200_AUTO_EXPOSURE_EXPOSURE_RIGHT_EDGE          = 46, 
+    RS_OPTION_R200_DEPTH_CONTROL_ESTIMATE_MEDIAN_DECREMENT    = 47, 
+    RS_OPTION_R200_DEPTH_CONTROL_ESTIMATE_MEDIAN_INCREMENT    = 48, 
+    RS_OPTION_R200_DEPTH_CONTROL_MEDIAN_THRESHOLD             = 49, 
+    RS_OPTION_R200_DEPTH_CONTROL_SCORE_MINIMUM_THRESHOLD      = 50, 
+    RS_OPTION_R200_DEPTH_CONTROL_SCORE_MAXIMUM_THRESHOLD      = 51, 
+    RS_OPTION_R200_DEPTH_CONTROL_TEXTURE_COUNT_THRESHOLD      = 52, 
+    RS_OPTION_R200_DEPTH_CONTROL_TEXTURE_DIFFERENCE_THRESHOLD = 53, 
+    RS_OPTION_R200_DEPTH_CONTROL_SECOND_PEAK_THRESHOLD        = 54, 
+    RS_OPTION_R200_DEPTH_CONTROL_NEIGHBOR_THRESHOLD           = 55, 
+    RS_OPTION_R200_DEPTH_CONTROL_LR_THRESHOLD                 = 56, 
+    RS_OPTION_COUNT                                           = 57, 
     RS_OPTION_MAX_ENUM = 0x7FFFFFFF
 } rs_option;
 
@@ -110,47 +140,6 @@ typedef struct rs_extrinsics
     float rotation[9];    /* column-major 3x3 rotation matrix */
     float translation[3]; /* 3 element translation vector, in meters */
 } rs_extrinsics;
-
-typedef struct rs_f200_auto_range_parameters
-{
-    int enable_motion_versus_range; /*  */
-    int enable_laser;               /*  */
-    int min_motion_versus_range;    /*  */
-    int max_motion_versus_range;    /*  */
-    int start_motion_versus_range;  /*  */
-    int min_laser;                  /*  */
-    int max_laser;                  /*  */
-    int start_laser;                /*  */
-    int auto_range_upper_threshold; /*  */
-    int auto_range_lower_threshold; /*  */
-} rs_f200_auto_range_parameters;
-
-typedef struct rs_r200_lr_auto_exposure_parameters
-{
-    float mean_intensity_set_point; /*  */
-    float bright_ratio_set_point;   /*  */
-    float kp_gain;                  /*  */
-    float kp_exposure;              /*  */
-    float kp_dark_threshold;        /*  */
-    int   exposure_top_edge;        /*  */
-    int   exposure_bottom_edge;     /*  */
-    int   exposure_left_edge;       /*  */
-    int   exposure_right_edge;      /*  */
-} rs_r200_lr_auto_exposure_parameters;
-
-typedef struct rs_r200_depth_control_parameters
-{
-    int estimate_median_decrement;    /*  */
-    int estimate_median_increment;    /*  */
-    int median_threshold;             /*  */
-    int score_minimum_threshold;      /*  */
-    int score_maximum_threshold;      /*  */
-    int texture_count_threshold;      /*  */
-    int texture_difference_threshold; /*  */
-    int second_peak_threshold;        /*  */
-    int neighbor_threshold;           /*  */
-    int lr_threshold;                 /*  */
-} rs_r200_depth_control_parameters;
 
 typedef struct rs_context rs_context;
 typedef struct rs_device rs_device;
@@ -333,35 +322,48 @@ void rs_stop_device(rs_device * device, rs_error ** error);
 int rs_is_device_streaming(const rs_device * device, rs_error ** error);
 
 /**
- * determine the range of acceptable values for an option on this device
- * \param[in] option  the option whose range to query
- * \param[out] min    the minimum acceptable value, attempting to set a value below this will take no effect and raise an error
- * \param[out] max    the maximum acceptable value, attempting to set a value above this will take no effect and raise an error
+ * retrieve the available range of values of a supported option
+ * \param[in] option  the option whose range should be queried
+ * \param[out] min    the minimum value which will be accepted for this option
+ * \param[out] max    the maximum value which will be accepted for this option
+ * \param[out] step   the granularity of options which accept discrete values, or zero if the option accepts continuous values
  * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
  */
-void rs_get_device_option_range(rs_device * device, rs_option option, int * min, int * max, rs_error ** error);
+void rs_get_device_option_range(rs_device * device, rs_option option, double * min, double * max, double * step, rs_error ** error);
 
 /**
- * set the value of a specific device option
- * \param[in] option  the option whose value to set
- * \param[in] value   the desired value to set
- * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+ * efficiently retrieve the value of an arbitrary number of options, using minimal hardware IO
+ * \param[in] options  the array of options which should be queried
+ * \param[in] count    the length of the options and values arrays
+ * \param[out] values  the array which will receive the values of the queried options
+ * \param[out] error   if non-null, receives any error that occurs during this call, otherwise, errors are ignored
  */
-void rs_set_device_option(rs_device * device, rs_option option, int value, rs_error ** error);
+void rs_get_device_options(rs_device * device, const rs_option * options, int count, double * values, rs_error ** error);
 
 /**
- * query the current value of a specific device option
- * \param[in] option  the option whose value to retrieve
- * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
- * \return            the current value of the option
+ * efficiently set the value of an arbitrary number of options, using minimal hardware IO
+ * \param[in] options  the array of options which should be set
+ * \param[in] count    the length of the options and values arrays
+ * \param[in] values   the array of values to which the options should be set
+ * \param[out] error   if non-null, receives any error that occurs during this call, otherwise, errors are ignored
  */
-int rs_get_device_option(rs_device * device, rs_option option, rs_error ** error);
-void rs_set_auto_range_parameters(rs_device * device, const rs_f200_auto_range_parameters * parameters, rs_error ** error);
-void rs_get_auto_range_parameters(const rs_device * device, rs_f200_auto_range_parameters * parameters, rs_error ** error);
-void rs_set_lr_auto_exposure_parameters(rs_device * device, const rs_r200_lr_auto_exposure_parameters * parameters, rs_error ** error);
-void rs_get_lr_auto_exposure_parameters(const rs_device * device, rs_r200_lr_auto_exposure_parameters * parameters, rs_error ** error);
-void rs_set_depth_control_parameters(rs_device * device, const rs_r200_depth_control_parameters * parameters, rs_error ** error);
-void rs_get_depth_control_parameters(const rs_device * device, rs_r200_depth_control_parameters * parameters, rs_error ** error);
+void rs_set_device_options(rs_device * device, const rs_option * options, int count, const double * values, rs_error ** error);
+
+/**
+ * retrieve the current value of a single option
+ * \param[in] option  the option whose value should be retrieved
+ * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+ * \return            the value of the option
+ */
+double rs_get_device_option(rs_device * device, rs_option option, rs_error ** error);
+
+/**
+ * set the current value of a single option
+ * \param[in] option  the option whose value should be set
+ * \param[in] value   the value of the option
+ * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+ */
+void rs_set_device_option(rs_device * device, rs_option option, double value, rs_error ** error);
 
 /**
  * block until new frames are available

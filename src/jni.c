@@ -40,6 +40,13 @@ static jobject make_integer(JNIEnv * env, int value)
     return (*env)->NewObject(env, cl, mid, (jint)value);
 }
 
+static jobject make_double(JNIEnv * env, int value)
+{
+    jclass cl = (*env)->FindClass(env, "java/lang/Double");
+    jmethodID mid = (*env)->GetMethodID(env, cl, "<init>", "(D)V");
+    return (*env)->NewObject(env, cl, mid, (jdouble)value);
+}
+
 static jobject make_float_array(JNIEnv * env, const float * values, int count)
 {
     jarray arr = (*env)->NewFloatArray(env, count);
@@ -72,50 +79,6 @@ static void write_extrinsics(JNIEnv * env, jobject obj, const rs_extrinsics * va
     jclass cl = (*env)->GetObjectClass(env, obj);
     (*env)->SetObjectField(env, obj, (*env)->GetFieldID(env, cl, "rotation", "[F"), make_float_array(env, val->rotation, 9));
     (*env)->SetObjectField(env, obj, (*env)->GetFieldID(env, cl, "translation", "[F"), make_float_array(env, val->translation, 3));
-}
-
-static void write_f200_auto_range_parameters(JNIEnv * env, jobject obj, const rs_f200_auto_range_parameters * val)
-{
-    jclass cl = (*env)->GetObjectClass(env, obj);
-    (*env)->SetIntField(env, obj, (*env)->GetFieldID(env, cl, "enableMotionVersusRange", "I"), val->enable_motion_versus_range);
-    (*env)->SetIntField(env, obj, (*env)->GetFieldID(env, cl, "enableLaser", "I"), val->enable_laser);
-    (*env)->SetIntField(env, obj, (*env)->GetFieldID(env, cl, "minMotionVersusRange", "I"), val->min_motion_versus_range);
-    (*env)->SetIntField(env, obj, (*env)->GetFieldID(env, cl, "maxMotionVersusRange", "I"), val->max_motion_versus_range);
-    (*env)->SetIntField(env, obj, (*env)->GetFieldID(env, cl, "startMotionVersusRange", "I"), val->start_motion_versus_range);
-    (*env)->SetIntField(env, obj, (*env)->GetFieldID(env, cl, "minLaser", "I"), val->min_laser);
-    (*env)->SetIntField(env, obj, (*env)->GetFieldID(env, cl, "maxLaser", "I"), val->max_laser);
-    (*env)->SetIntField(env, obj, (*env)->GetFieldID(env, cl, "startLaser", "I"), val->start_laser);
-    (*env)->SetIntField(env, obj, (*env)->GetFieldID(env, cl, "autoRangeUpperThreshold", "I"), val->auto_range_upper_threshold);
-    (*env)->SetIntField(env, obj, (*env)->GetFieldID(env, cl, "autoRangeLowerThreshold", "I"), val->auto_range_lower_threshold);
-}
-
-static void write_r200_lr_auto_exposure_parameters(JNIEnv * env, jobject obj, const rs_r200_lr_auto_exposure_parameters * val)
-{
-    jclass cl = (*env)->GetObjectClass(env, obj);
-    (*env)->SetFloatField(env, obj, (*env)->GetFieldID(env, cl, "meanIntensitySetPoint", "F"), val->mean_intensity_set_point);
-    (*env)->SetFloatField(env, obj, (*env)->GetFieldID(env, cl, "brightRatioSetPoint", "F"), val->bright_ratio_set_point);
-    (*env)->SetFloatField(env, obj, (*env)->GetFieldID(env, cl, "KPGain", "F"), val->kp_gain);
-    (*env)->SetFloatField(env, obj, (*env)->GetFieldID(env, cl, "KPExposure", "F"), val->kp_exposure);
-    (*env)->SetFloatField(env, obj, (*env)->GetFieldID(env, cl, "KPDarkThreshold", "F"), val->kp_dark_threshold);
-    (*env)->SetIntField(env, obj, (*env)->GetFieldID(env, cl, "exposureTopEdge", "I"), val->exposure_top_edge);
-    (*env)->SetIntField(env, obj, (*env)->GetFieldID(env, cl, "exposureBottomEdge", "I"), val->exposure_bottom_edge);
-    (*env)->SetIntField(env, obj, (*env)->GetFieldID(env, cl, "exposureLeftEdge", "I"), val->exposure_left_edge);
-    (*env)->SetIntField(env, obj, (*env)->GetFieldID(env, cl, "exposureRightEdge", "I"), val->exposure_right_edge);
-}
-
-static void write_r200_depth_control_parameters(JNIEnv * env, jobject obj, const rs_r200_depth_control_parameters * val)
-{
-    jclass cl = (*env)->GetObjectClass(env, obj);
-    (*env)->SetIntField(env, obj, (*env)->GetFieldID(env, cl, "estimateMedianDecrement", "I"), val->estimate_median_decrement);
-    (*env)->SetIntField(env, obj, (*env)->GetFieldID(env, cl, "estimateMedianIncrement", "I"), val->estimate_median_increment);
-    (*env)->SetIntField(env, obj, (*env)->GetFieldID(env, cl, "medianThreshold", "I"), val->median_threshold);
-    (*env)->SetIntField(env, obj, (*env)->GetFieldID(env, cl, "scoreMinimumThreshold", "I"), val->score_minimum_threshold);
-    (*env)->SetIntField(env, obj, (*env)->GetFieldID(env, cl, "scoreMaximumThreshold", "I"), val->score_maximum_threshold);
-    (*env)->SetIntField(env, obj, (*env)->GetFieldID(env, cl, "textureCountThreshold", "I"), val->texture_count_threshold);
-    (*env)->SetIntField(env, obj, (*env)->GetFieldID(env, cl, "textureDifferenceThreshold", "I"), val->texture_difference_threshold);
-    (*env)->SetIntField(env, obj, (*env)->GetFieldID(env, cl, "secondPeakThreshold", "I"), val->second_peak_threshold);
-    (*env)->SetIntField(env, obj, (*env)->GetFieldID(env, cl, "neighborThreshold", "I"), val->neighbor_threshold);
-    (*env)->SetIntField(env, obj, (*env)->GetFieldID(env, cl, "LRThreshold", "I"), val->lr_threshold);
 }
 
 static void handle_error(JNIEnv * env, rs_error * e)
@@ -323,78 +286,32 @@ JNIEXPORT jboolean JNICALL Java_com_intel_rs_Device_isStreaming(JNIEnv * env, jo
     return r;
 }
 
-JNIEXPORT void JNICALL Java_com_intel_rs_Device_getOptionRange(JNIEnv * env, jobject self, jobject option, jobject min, jobject max)
+JNIEXPORT void JNICALL Java_com_intel_rs_Device_getOptionRange(JNIEnv * env, jobject self, jobject option, jobject min, jobject max, jobject step)
 {
     rs_error * e = NULL;
-    int c_min;
-    int c_max;
-    rs_get_device_option_range(get_object(env, self), get_enum(env, option), &c_min, &c_max, &e);
+    double c_min;
+    double c_max;
+    double c_step;
+    rs_get_device_option_range(get_object(env, self), get_enum(env, option), &c_min, &c_max, &c_step, &e);
     handle_error(env, e);
-    set_out_param(env, min, make_integer(env, c_min));
-    set_out_param(env, max, make_integer(env, c_max));
+    set_out_param(env, min, make_double(env, c_min));
+    set_out_param(env, max, make_double(env, c_max));
+    set_out_param(env, step, make_double(env, c_step));
 }
 
-JNIEXPORT void JNICALL Java_com_intel_rs_Device_setOption(JNIEnv * env, jobject self, jobject option, jint value)
+JNIEXPORT jdouble JNICALL Java_com_intel_rs_Device_getOption(JNIEnv * env, jobject self, jobject option)
 {
     rs_error * e = NULL;
-    rs_set_device_option(get_object(env, self), get_enum(env, option), value, &e);
-    handle_error(env, e);
-}
-
-JNIEXPORT jint JNICALL Java_com_intel_rs_Device_getOption(JNIEnv * env, jobject self, jobject option)
-{
-    rs_error * e = NULL;
-    int r = rs_get_device_option(get_object(env, self), get_enum(env, option), &e);
+    double r = rs_get_device_option(get_object(env, self), get_enum(env, option), &e);
     handle_error(env, e);
     return r;
 }
 
-JNIEXPORT void JNICALL Java_com_intel_rs_Device_setAutoRangeParameters(JNIEnv * env, jobject self, jobject parameters)
+JNIEXPORT void JNICALL Java_com_intel_rs_Device_setOption(JNIEnv * env, jobject self, jobject option, jdouble value)
 {
     rs_error * e = NULL;
-    //rs_set_auto_range_parameters(get_object(env, self), parameters, &e);
+    rs_set_device_option(get_object(env, self), get_enum(env, option), value, &e);
     handle_error(env, e);
-}
-
-JNIEXPORT void JNICALL Java_com_intel_rs_Device_getAutoRangeParameters(JNIEnv * env, jobject self, jobject parameters)
-{
-    rs_error * e = NULL;
-    rs_f200_auto_range_parameters c_parameters;
-    rs_get_auto_range_parameters(get_object(env, self), &c_parameters, &e);
-    handle_error(env, e);
-    write_f200_auto_range_parameters(env, parameters, &c_parameters);
-}
-
-JNIEXPORT void JNICALL Java_com_intel_rs_Device_setLRAutoExposureParameters(JNIEnv * env, jobject self, jobject parameters)
-{
-    rs_error * e = NULL;
-    //rs_set_lr_auto_exposure_parameters(get_object(env, self), parameters, &e);
-    handle_error(env, e);
-}
-
-JNIEXPORT void JNICALL Java_com_intel_rs_Device_getLRAutoExposureParameters(JNIEnv * env, jobject self, jobject parameters)
-{
-    rs_error * e = NULL;
-    rs_r200_lr_auto_exposure_parameters c_parameters;
-    rs_get_lr_auto_exposure_parameters(get_object(env, self), &c_parameters, &e);
-    handle_error(env, e);
-    write_r200_lr_auto_exposure_parameters(env, parameters, &c_parameters);
-}
-
-JNIEXPORT void JNICALL Java_com_intel_rs_Device_setDepthControlParameters(JNIEnv * env, jobject self, jobject parameters)
-{
-    rs_error * e = NULL;
-    //rs_set_depth_control_parameters(get_object(env, self), parameters, &e);
-    handle_error(env, e);
-}
-
-JNIEXPORT void JNICALL Java_com_intel_rs_Device_getDepthControlParameters(JNIEnv * env, jobject self, jobject parameters)
-{
-    rs_error * e = NULL;
-    rs_r200_depth_control_parameters c_parameters;
-    rs_get_depth_control_parameters(get_object(env, self), &c_parameters, &e);
-    handle_error(env, e);
-    write_r200_depth_control_parameters(env, parameters, &c_parameters);
 }
 
 JNIEXPORT void JNICALL Java_com_intel_rs_Device_waitForFrames(JNIEnv * env, jobject self)

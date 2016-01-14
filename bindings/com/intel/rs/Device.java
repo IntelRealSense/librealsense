@@ -146,32 +146,27 @@ public class Device
     public native boolean isStreaming();
 
     /**
-     * determine the range of acceptable values for an option on this device
-     * @param option  the option whose range to query
-     * @param min     the minimum acceptable value, attempting to set a value below this will take no effect and raise an error
-     * @param max     the maximum acceptable value, attempting to set a value above this will take no effect and raise an error
+     * retrieve the available range of values of a supported option
+     * @param option  the option whose range should be queried
+     * @param min     the minimum value which will be accepted for this option
+     * @param max     the maximum value which will be accepted for this option
+     * @param step    the granularity of options which accept discrete values, or zero if the option accepts continuous values
      */
-    public native void getOptionRange(Option option, Out<Integer> min, Out<Integer> max);
+    public native void getOptionRange(Option option, Out<Double> min, Out<Double> max, Out<Double> step);
 
     /**
-     * set the value of a specific device option
-     * @param option  the option whose value to set
-     * @param value   the desired value to set
+     * retrieve the current value of a single option
+     * @param option  the option whose value should be retrieved
+     * @return        the value of the option
      */
-    public native void setOption(Option option, int value);
+    public native double getOption(Option option);
 
     /**
-     * query the current value of a specific device option
-     * @param option  the option whose value to retrieve
-     * @return        the current value of the option
+     * set the current value of a single option
+     * @param option  the option whose value should be set
+     * @param value   the value of the option
      */
-    public native int getOption(Option option);
-    public native void setAutoRangeParameters(F200AutoRangeParameters parameters);
-    public native void getAutoRangeParameters(F200AutoRangeParameters parameters);
-    public native void setLRAutoExposureParameters(R200LRAutoExposureParameters parameters);
-    public native void getLRAutoExposureParameters(R200LRAutoExposureParameters parameters);
-    public native void setDepthControlParameters(R200DepthControlParameters parameters);
-    public native void getDepthControlParameters(R200DepthControlParameters parameters);
+    public native void setOption(Option option, double value);
 
     /**
      * block until new frames are available

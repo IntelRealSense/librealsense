@@ -24,7 +24,8 @@ int main()
     rs_format format;
     rs_intrinsics intrin;
     int i, j, k, device_count, mode_count;
-    int width, height, framerate, supported, min, max;
+    int width, height, framerate, supported;
+    double min, max, step;
     float hfov, vfov;
 
     /* Obtain a list of devices currently present on the system */
@@ -56,9 +57,9 @@ int main()
             check_error(e);
             if(supported)
             {
-                rs_get_device_option_range(device, option, &min, &max, &e);
+                rs_get_device_option_range(device, option, &min, &max, &step, &e);
                 check_error(e);
-                printf("    %s : [%d, %d]\n", rs_option_to_string(option), min, max);
+                printf("    %s : %g .. %g, %g\n", rs_option_to_string(option), min, max, step);
             }
         }
 

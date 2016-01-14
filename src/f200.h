@@ -28,6 +28,7 @@ namespace rsimpl
         f200::CameraCalibrationParameters base_calibration;
         f200::IVCAMTemperatureData base_temperature_data;
         f200::IVCAMThermalLoopParams thermal_loop_params;
+        f200::IVCAMAutoRangeRequest arr;
 
         float last_temperature_delta;
 
@@ -42,10 +43,10 @@ namespace rsimpl
         ~f200_camera();
 
         void on_before_start(const std::vector<subdevice_mode_selection> & selected_modes) override;
-        void get_xu_range(rs_option option, int * min, int * max) override;
-        void set_xu_option(rs_option option, int value) override;
-        int get_xu_option(rs_option option) override;
         int convert_timestamp(int64_t timestamp) const override { return static_cast<int>(timestamp / 100000); }
+        
+        void set_options(const rs_option options[], int count, const double values[]) override;
+        void f200_camera::get_options(const rs_option options[], int count, double values[]) override;
     };
 
     std::shared_ptr<rs_device> make_f200_device(std::shared_ptr<uvc::device> device);
