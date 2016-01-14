@@ -125,7 +125,7 @@ const rsimpl::byte * aligned_stream::get_frame_data() const
     if(image.empty() || number != get_frame_number())
     {
         image.resize(get_image_size(get_intrinsics().width, get_intrinsics().height, get_format()));
-        memset(image.data(), 0, image.size());
+        memset(image.data(), from.get_format() == RS_FORMAT_DISPARITY16 ? 0xFF : 0x00, image.size());
         if(from.get_format() == RS_FORMAT_Z16)
         {
             align_z_to_other(image.data(), (const uint16_t *)from.get_frame_data(), from.get_depth_scale(), from.get_intrinsics(), from.get_extrinsics_to(to), to.get_intrinsics());
