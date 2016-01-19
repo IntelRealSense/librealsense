@@ -139,13 +139,13 @@ libuvc is known to have issues with some versions of SR300 and R200 firmware (1.
 
 ## Windows 8.1
 
-1. librealsense should compile out of the box with Visual Studio 2013 Release 5. Particular C++11 features are known to be incompatible with earlier VS2013 releases due to internal compiler errors. 
+1. librealsense should compile out of the box with Visual Studio 2013 Release 5. Particular C++11 features are known to be incompatible with earlier VS2013 releases due to internal compiler errors. GLFW is provided in the solution as a NuGet package.
 
 ## FAQ
 
 *Q:* How is this implemented?
 
-*A:* The library communicates with RealSense devices directly via the UVC and USB protocols. It does not link against the RealSense SDK. Most of the library source code is platform agnostic, but there is a small UVC abstraction layer with platform-specific backends, including:
+*A:* The library communicates with RealSense devices directly via the UVC and USB protocols. It does not link against the RealSense SDK runtime. Most of the library source code is platform agnostic, but there is a small UVC abstraction layer with platform-specific backends, including:
   * A `libuvc` backend which provides user-space access to UVC devices on Linux and Mac OS X (built with libusb)
   * A `video4linux2` backend which provides kernel-space access to UVC devices on Linux
   * A `Windows Media Foundation` backend which provides kernel-space access to UVC devices on Windows
@@ -155,7 +155,7 @@ libuvc is known to have issues with some versions of SR300 and R200 firmware (1.
 Documentation for librealsense is still incomplete, and may contain inaccuracies. Please send us feedback about things that are unclear or which need to be improved. For now, the following documentation is available:
   * [The librealsense C API](./include/librealsense/rs.h) - Doxygen style comments are provided for all functions, data types, and most constants
   * [Projection in librealsense](./doc/projection.md) - A guide on coordinate systems, calibration information, and projection APIs.
-  * [Developer Notes](./doc/dev_log.md) - Several informal notes gathered during releases while in development. 
+  * [Developer Notes](./doc/dev_log.md) - Several informal notes gathered during releases.
 
 ## License
 
