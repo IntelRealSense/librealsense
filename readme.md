@@ -1,5 +1,11 @@
 # librealsense
 
+Platform | Build Status |
+-------- | ------------ |
+Linux | Travis badge |
+OSX | Travis badge |
+Windows | Appveyor badge | 
+
 A cross-platform library for capturing data from the RealSense F200, SR300 and R200 cameras. This effort is aimed at supporting prototyping efforts on new platforms and form-factors (robots, drones, VR, etc).
 
 Dependency management for GLFW3 (example apps) and libusb-1.0 is performed through manual steps that are enumerated as part of this readme file (i.e. these packages must be installed through apt-get on Linux and Homebrew on OSX).
