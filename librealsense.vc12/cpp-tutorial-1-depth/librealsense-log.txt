@@ -1,0 +1,38 @@
+
+2016-01-19 14:32:31 PROGRAM START
+2016-01-19 14:32:31 INFO:  UVC device detected with VID = 0x8086 PID = 0xa80
+2016-01-19 14:32:31 INFO:  Connecting to Intel RealSense R200
+2016-01-19 14:32:31 INFO:  Serial number                       = 1191000080
+2016-01-19 14:32:31 INFO:  Model number                        = 31
+2016-01-19 14:32:31 INFO:  Revision number                     = 1
+2016-01-19 14:32:31 INFO:  Camera head contents version        = 8
+2016-01-19 14:32:31 WARN:  Camera head contents version != 12, data may be missing/incorrect
+2016-01-19 14:32:31 INFO:  Module version                      = 255.255.255.255
+2016-01-19 14:32:31 INFO:  OEM ID                              = 4294967295
+2016-01-19 14:32:31 INFO:  Lens type for left/right imagers    = 11
+2016-01-19 14:32:31 INFO:  Lens type for third imager          = 10
+2016-01-19 14:32:31 INFO:  Lens coating for left/right imagers = 3
+2016-01-19 14:32:31 INFO:  Lens coating for third imager       = 1
+2016-01-19 14:32:31 INFO:  Nominal baseline (left to right)    = 70 mm
+2016-01-19 14:32:31 INFO:  Nominal baseline (left to third)    = 58 mm
+2016-01-19 14:32:31 INFO:  Calibrated on 2014-06-06 01:34:28 UTC
+2016-01-19 14:32:53 PROGRAM STOP
+
+2016-01-19 14:39:39 PROGRAM START
+2016-01-19 14:39:39 INFO:  UVC device detected with VID = 0x8086 PID = 0xa80
+2016-01-19 14:39:39 INFO:  Connecting to Intel RealSense R200
+2016-01-19 14:39:39 INFO:  Serial number                       = 1191000080
+2016-01-19 14:39:39 INFO:  Model number                        = 31
+2016-01-19 14:39:39 INFO:  Revision number                     = 1
+2016-01-19 14:39:39 INFO:  Camera head contents version        = 8
+2016-01-19 14:39:39 WARN:  Camera head contents version != 12, data may be missing/incorrect
+2016-01-19 14:39:39 INFO:  Module version                      = 255.255.255.255
+2016-01-19 14:39:39 INFO:  OEM ID                              = 4294967295
+2016-01-19 14:39:39 INFO:  Lens type for left/right imagers    = 11
+2016-01-19 14:39:39 INFO:  Lens type for third imager          = 10
+2016-01-19 14:39:39 INFO:  Lens coating for left/right imagers = 3
+2016-01-19 14:39:39 INFO:  Lens coating for third imager       = 1
+2016-01-19 14:39:39 INFO:  Nominal baseline (left to right)    = 70 mm
+2016-01-19 14:39:39 INFO:  Nominal baseline (left to third)    = 58 mm
+2016-01-19 14:39:39 INFO:  Calibrated on 2014-06-06 01:34:28 UTC
+2016-01-19 14:39:41 PROGRAM STOP
