@@ -6,9 +6,9 @@ Linux | Travis badge |
 OSX | Travis badge |
 Windows | Appveyor badge | 
 
-Librealsense is a cross-platform library for capturing data from the RealSense F200, SR300 and R200 cameras. This effort was initiated to better support developers in domains such as robotics, virtual reality, and the internet of things. 
+Librealsense is a cross-platform library for capturing data from the Intel® RealSense™ F200, SR300 and R200 cameras. This effort was initiated to better support developers in domains such as robotics, virtual reality, and the internet of things. 
 
-Developer kits containing the necessary hardware to use this library are available for purchase at [this link](http://click.intel.com/realsense.html). This project is separate from the production software stack available in the the [Intel RealSense SDK](https://software.intel.com/en-us/intel-realsense-sdk), namely that librealsense only encompasses camera capture functionality without additional computer vision algorithms.
+Developer kits containing the necessary hardware to use this library are available for purchase at [this link](http://click.intel.com/realsense.html). This project is separate from the production software stack available in the the [Intel® RealSense™ SDK](https://software.intel.com/en-us/intel-realsense-sdk), namely that librealsense only encompasses camera capture functionality without additional computer vision algorithms.
 
 Librealsense is experimental and not an official Intel product. It is subject to significant incompatible API changes in future releases. Breaking API changes are noted through release numbers with [semver](http://semver.org/).
 
@@ -40,7 +40,7 @@ librealsense is written in standards-conforming C++11 and relies only on the C89
 2. Ubuntu 14.04 LTS (gcc toolchain)
 3. Mac OS X 10.7+ (clang toolchain)
 
-Neither the libuvc or V4L2 backend has been validated on Ubuntu 12.04 LTS or Ubuntu 15.10, and several attempts to bring cameras up on these platforms have revealed underlying OS bugs and issues. It may be possible to compile and run librealsense on other platforms. Please let us know if you do, as well as any steps you found necessary to do so, so that we can update this list.
+Neither the libuvc or V4L2 backend has been validated on Ubuntu 12.04 LTS or Ubuntu 15.10, and several attempts to bring cameras up on these platforms have revealed underlying OS bugs and issues. It may be possible to compile and run librealsense on other platforms. Please file an issue or submit a pull request for ....
 
 ## Supported Languages and Frameworks
 
