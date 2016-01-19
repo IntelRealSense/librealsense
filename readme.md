@@ -17,8 +17,6 @@ Dependency management for GLFW3 (example apps) and libusb-1.0 is performed throu
   * [Windows](#windows-81)
 * [FAQ](#faq)
 * [Documentation](#documentation)
-* [Example Applications](#example-applications)
-* [Developer Notes](#dev-notes)
 
 ## Supported Devices
 
@@ -149,25 +147,6 @@ libuvc is known to have issues with some versions of SR300 and R200 firmware (1.
 Documentation for librealsense is still incomplete, and may contain inaccuracies. Please send us feedback about things that are unclear or which need to be improved. For now, the following documentation is available:
   * [The librealsense C API](./include/librealsense/rs.h) - Doxygen style comments are provided for all functions, data types, and most constants
   * [Projection in librealsense](./doc/projection.md) - A guide on coordinate systems, calibration information, and projection APIs.
-
-## Example Applications
-
-**Note:** Many example applications have various runtime features that are exposed through different mouse click and key events.
-
-Example | Platform | Description
-------------- | ------------- | -------------
-c-capture | All | Basic example using the C API to pull depth, color, and IR
-c-enumerate | All | A commandline application (no window) to describe properties and resolutions of all connected cameras
-c-pointcloud | All | Demonstration of pointcloud projection using the C API
-cpp-capture | All |  Basic example using the C++ API to pull depth, color, and IR
-cpp-multicam | All | For all connected cameras, draw depth and color streams (limited by window size)
-cpp-pointcloud | All | Demonstration of pointcloud projection using the C++ API (click to change the stream source: color, depth, or IR)
-cpp-alignimages | All | Shows the use of synthetic streams (color aligned to depth, depth aligned to color)
-cpp-restart | Windows | Runtime re-configuration of streaming modes (start, stop, reconfigure, start, etc)
-cs-capture | Windows | Basic example to pull depth, color, and IR images in C#. 
-cs-config | Windows | Allow user to configure which streams they want to view
-py-enumerate | All | A commandline application to describe properties and resolutions of all connected cameras
-java-enumerate | All | A commandline application to describe properties and resolutions of all connected cameras
 
 ## License
 
