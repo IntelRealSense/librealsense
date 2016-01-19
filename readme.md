@@ -6,11 +6,14 @@ Linux | Travis badge |
 OSX | Travis badge |
 Windows | Appveyor badge | 
 
-A cross-platform library for capturing data from the RealSense F200, SR300 and R200 cameras. This effort is aimed at supporting prototyping efforts on new platforms and form-factors (robots, drones, VR, etc).
+Librealsense is a cross-platform library for capturing data from the RealSense F200, SR300 and R200 cameras. This effort was initiated to better support developers in domains such as robotics, virtual reality, and the internet of things. 
+
+Developer kits containing the necessary hardware to use this library are available for purchase at [this link](http://click.intel.com/realsense.html). This project is separate from the production software stack available in the the [Intel RealSense SDK](https://software.intel.com/en-us/intel-realsense-sdk), namely that librealsense only encompasses camera capture functionality without additional computer vision algorithms.
+
+Librealsense is experimental and not an official Intel product. It is subject to significant incompatible API changes in future releases. API breaking changes are noted in release numbers with [semver](http://semver.org/). 
 
 Dependency management for GLFW3 (example apps) and libusb-1.0 is performed through manual steps that are enumerated as part of this readme file (i.e. these packages must be installed through apt-get on Linux and Homebrew on OSX).
 
-**Note:** On Linux, the libusb/libuvc backend has been deprecated in favor of the V4L2 backend.  
 
 # Table of Contents
 * [Supported Devices](#supported-devices)
