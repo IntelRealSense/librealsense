@@ -132,8 +132,7 @@ libuvc is known to have issues with some versions of SR300 and R200 firmware (1.
 3. Install libusb via brew:
   * `brew install libusb`
 4. Install glfw3 via brew:
-  * `brew tap homebrew/versions`
-  * `brew install versions/glfw3`
+  * `brew install homebrew/versions/glfw3`
 
 ---
 
