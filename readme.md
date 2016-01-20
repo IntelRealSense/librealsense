@@ -15,38 +15,38 @@ Linux | Travis badge |
 OSX | Travis badge |
 Windows | Appveyor badge | 
 
-Librealsense is a cross-platform library (Linux, OSX, Windows) for capturing data from the Intel® RealSense™ F200, SR300 and R200 cameras. This effort was initiated to better support developers in domains such as robotics, virtual reality, and the internet of things. Several often-requested features of RealSense™ devices are implemented in librealsense, including multi-camera capture.
+Librealsense is a cross-platform library (Linux, OSX, Windows) for capturing data from the Intel® RealSense™ F200, SR300 and R200 cameras. This effort was initiated to better support researchers and developers in domains such as robotics, virtual reality, and the internet of things. Several often-requested features of RealSense™ devices are implemented in librealsense, including multi-camera capture.
 
 Developer kits containing the necessary hardware to use this library are available for purchase at [this link](http://click.intel.com/realsense.html). This project is separate from the production software stack available in the [Intel® RealSense™ SDK](https://software.intel.com/en-us/intel-realsense-sdk), namely that librealsense only encompasses camera capture functionality without additional computer vision algorithms.
 
-Librealsense is experimental and not an official Intel product. It is subject to significant incompatible API changes in future releases. Breaking API changes are noted through release numbers with [semver](http://semver.org/).
+Librealsense is experimental and not an official Intel product. It is subject to incompatible API changes in future updates. Breaking API changes are noted through release numbers with [semver](http://semver.org/).
 
 Librealsense requires two external dependencies, GLFW3 (all platforms) and libusb-1.0 (Mac/Linux). These dependencies should be gathered through manual steps that are enumerated as part of this readme file (i.e. these packages must be installed with apt-get on Linux and Homebrew on OSX).
 
 # Table of Contents
-* [Supported Devices](#supported-devices)
-* [Supported Platforms](#supported-platforms)
-* [Supported Languages](#supported-languages-and-frameworks)
+* [Compatible Devices](#compatible-devices)
+* [Supported Platforms](#compatible-platforms)
+* [Compatible Languages](#supported-languages-and-frameworks)
 * [Functionality](#functionality)
 * [Installation Guide](#installation-guide)
 * [Hardware Requirements](#hardware-requirements)
 * [Documentation](#documentation)
 
-## Supported Devices
+## Compatible Devices
 
 1. RealSense R200
 2. RealSense F200
 3. RealSense SR300
 
-## Supported Platforms
+## Compatible Platforms
 
-librealsense is written in standards-conforming C++11 and relies only on the C89 ABI for its public interface. It was developed and tested on the following platforms:
+librealsense is written in standards-conforming C++11 and relies only on the C89 ABI for its public interface. It is developed and tested on the following platforms:
 
 1. Windows 8.1 (Visual Studio 2013 Update 5)
-2. Ubuntu 14.04 LTS (GCC 4.9 toolchain)
+2. Ubuntu 14.04.03 LTS x64 (GCC 4.9 toolchain)
 3. Mac OS X 10.7+ (Clang toolchain)
 
-Neither the libuvc or V4L2 backend has been validated on Ubuntu 12.04 LTS or Ubuntu 15.10, and several attempts to bring cameras up on these platforms have revealed underlying OS bugs and issues. It may be possible to compile and run librealsense on other platforms. Please file an issue or submit a pull request is librealsense has been successfully ported to a new operating system or platform.
+Neither libuvc nor V4L2 backends have been validated on Ubuntu 12.04 LTS or Ubuntu 15.10, and several attempts to bring cameras up on these platforms have been problematic due to the requirement of a patched uvcvideo driver. It may be possible to compile and run librealsense on other platforms. Please file an issue or submit a pull request if the library has been successfully ported to a platform.
 
 ## Supported Languages and Frameworks
 
@@ -54,14 +54,14 @@ Neither the libuvc or V4L2 backend has been validated on Ubuntu 12.04 LTS or Ubu
 2. C++ - Single header file (rs.hpp) wrapper around C API, providing classes and exceptions
 3. C# - Single source file (rs.cs) wrapper for P/Invoke to C API, providing classes and exceptions
 
-Our future intent is to provide bindings and wrappers for as many languages and frameworks as possible. Our core library exposes its functionality via C, and we intend for our various bindings and wrappers to look and feel "native" to their respective languages, for instance, using classes to represent objects, throwing exceptions to report errors, and following established naming conventions and casing styles of the language or framework in question.
+Ongoing effort will be dedicated to bindings and wrappers for other languages and frameworks. The core API is expressed in C89 which enables the library to be easily wrapped into other languages.
 
 ## Functionality
 
 1. Native streams: depth, color, infrared
 2. Synthetic streams: rectified images, depth aligned to color and vice versa, etc.
 3. Intrinsic/extrinsic calibration information
-4. Majority of XU-exposed functionality for each camera
+4. Majority of hardware-specific functionality for individual camera generations (UVC XU controls)
 5. Multi-camera capture across heterogeneous camera architectures (e.g. mix R200 and F200 in same application) 
 
 ### Firmware Update
@@ -80,11 +80,14 @@ librealsense communicates with RealSense™ devices directly via the UVC and USB
 ## Hardware Requirements
 Developer kits containing the necessary hardware to use this library are available for purchase at [this link](http://click.intel.com/realsense.html). In addition, several consumer tablets and laptops with integrated cameras may also function, such as the [HP Spectre x2 with R200](http://store.hp.com/us/en/ContentView?storeId=10151&langId=-1&catalogId=10051&eSpotName=new-detachable).
 
-Developer kits require USB 3.0. Not all USB host chipsets are compatible with librealsense. An exhaustive list of incompatible hardware is not presently provided.
+Developer kits require USB 3.0. Not all USB host chipsets are compatible with librealsense, although it has been validated with recent generations of the Intel Host Controller chipset. An exhaustive list of incompatible hardware is not presently provided.
 
 ## Documentation
 
-Documentation for librealsense is still incomplete, and may contain the occasional inaccuracy. Please send us feedback about things that are unclear or which need to be improved. A comprehensive suite of sample and tutorial applications are provided in the `/examples` subdirectory.
+Formal documentation for librealsense is incomplete and may contain the occasional inaccuracy. Please send us feedback via the Github issue tracker about areas that are unclear or which need to be improved. 
+
+A comprehensive suite of sample and tutorial applications are provided in the `/examples` subdirectory. For new users, it is best to review the tutorial series of apps which are designed to progressively introduce API features.
+
   * [Installation Instructions](./doc/installation.md) - Comprehensive platform-specific installation steps
   * [The librealsense C API](./include/librealsense/rs.h) - Doxygen style comments are provided for all functions, data types, and most constants
   * [Projection in librealsense](./doc/projection.md) - A guide on coordinate systems, calibration information, and projection APIs.
