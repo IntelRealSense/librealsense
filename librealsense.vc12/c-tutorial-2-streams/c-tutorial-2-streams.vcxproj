@@ -147,6 +147,9 @@
   <ItemGroup>
     <None Include="packages.config" />
   </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\examples\c-tutorial-2-streams.c" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
     <Import Project="..\packages\glfw.redist.3.0.4.3\build\native\glfw.redist.targets" Condition="Exists('..\packages\glfw.redist.3.0.4.3\build\native\glfw.redist.targets')" />

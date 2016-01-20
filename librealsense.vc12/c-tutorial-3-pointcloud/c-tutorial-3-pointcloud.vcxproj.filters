@@ -3,4 +3,7 @@
   <ItemGroup>
     <None Include="packages.config" />
   </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\examples\c-tutorial-3-pointcloud.c" />
+  </ItemGroup>
 </Project>

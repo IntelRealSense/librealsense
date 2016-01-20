@@ -36,25 +36,34 @@ int main() try
     catch(...) { printf("Device does not provide infrared2 stream.\n"); }
     dev->start();
 
+    // Open a GLFW window to display our output
     glfwInit();
-    auto win = glfwCreateWindow(1280, 960, "librealsense tutorial #2", nullptr, nullptr);
+    GLFWwindow * win = glfwCreateWindow(1280, 960, "librealsense tutorial #2", nullptr, nullptr);
     glfwMakeContextCurrent(win);
     while(!glfwWindowShouldClose(win))
     {
+        // Wait for new frame data
         glfwPollEvents();
-
         dev->wait_for_frames();
 
         glClear(GL_COLOR_BUFFER_BIT);
         glPixelZoom(1, -1);
+
+        // Display depth data by linearly mapping depth between 0 and 2 meters to the red channel
         glRasterPos2f(-1, 1);
         glPixelTransferf(GL_RED_SCALE, 0xFFFF * dev->get_depth_scale() / 2.0f);
         glDrawPixels(640, 480, GL_RED, GL_UNSIGNED_SHORT, dev->get_frame_data(rs::stream::depth));
         glPixelTransferf(GL_RED_SCALE, 1.0f);
+
+        // Display color image as RGB triples
         glRasterPos2f(0, 1);
         glDrawPixels(640, 480, GL_RGB, GL_UNSIGNED_BYTE, dev->get_frame_data(rs::stream::color));
+
+        // Display infrared image by mapping IR intensity to visible luminance
         glRasterPos2f(-1, 0);
         glDrawPixels(640, 480, GL_LUMINANCE, GL_UNSIGNED_BYTE, dev->get_frame_data(rs::stream::infrared));
+
+        // Display second infrared image by mapping IR intensity to visible luminance
         glRasterPos2f(0, 0);
         glDrawPixels(640, 480, GL_LUMINANCE, GL_UNSIGNED_BYTE, dev->get_frame_data(rs::stream::infrared2));
 
