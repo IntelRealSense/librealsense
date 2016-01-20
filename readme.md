@@ -20,9 +20,6 @@ Librealsense requires two external dependencies, GLFW3 (all platforms) and libus
 * [Supported Languages](#supported-languages-and-frameworks)
 * [Functionality](#functionality)
 * [Installation Guide](#installation-guide)
-  * [Linux](#ubuntu-1404-lts-installation)
-  * [OSX](#apple-osx)
-  * [Windows](#windows-81)
 * [Hardware Requirements](#hardware-requirements)
 * [Documentation](#documentation)
 
@@ -36,11 +33,11 @@ Librealsense requires two external dependencies, GLFW3 (all platforms) and libus
 
 librealsense is written in standards-conforming C++11 and relies only on the C89 ABI for its public interface. It was developed and tested on the following platforms:
 
-1. Windows 8.1 (Visual C++ 2013)
-2. Ubuntu 14.04 LTS (gcc toolchain)
-3. Mac OS X 10.7+ (clang toolchain)
+1. Windows 8.1 (Visual Studio 2013 Update 5)
+2. Ubuntu 14.04 LTS (GCC 4.9 toolchain)
+3. Mac OS X 10.7+ (Clang toolchain)
 
-Neither the libuvc or V4L2 backend has been validated on Ubuntu 12.04 LTS or Ubuntu 15.10, and several attempts to bring cameras up on these platforms have revealed underlying OS bugs and issues. It may be possible to compile and run librealsense on other platforms. Please file an issue or submit a pull request for ....
+Neither the libuvc or V4L2 backend has been validated on Ubuntu 12.04 LTS or Ubuntu 15.10, and several attempts to bring cameras up on these platforms have revealed underlying OS bugs and issues. It may be possible to compile and run librealsense on other platforms. Please file an issue or submit a pull request is librealsense has been successfully ported to a new operating system or platform.
 
 ## Supported Languages and Frameworks
 
