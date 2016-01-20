@@ -71,9 +71,9 @@ int main() try
 
     std::vector<uint8_t> coloredDepth(width * height * 3);
 	normalize_depth_to_rgb(coloredDepth.data(), depth_frame, width, height);
-	stbi_write_png("cpp-headless-output-depth.png", width, height, 3, coloredDepth.data(), 3 * width) != 0;
-	stbi_write_png("cpp-headless-output-rgb.png", width, height, 3, color_frame, 3 * width) != 0;
-	stbi_write_png("cpp-headless-output-ir.png", width, height, 1, ir_frame, width) != 0;
+	stbi_write_png("cpp-headless-output-depth.png", width, height, 3, coloredDepth.data(), 3 * width);
+	stbi_write_png("cpp-headless-output-rgb.png", width, height, 3, color_frame, 3 * width);
+	stbi_write_png("cpp-headless-output-ir.png", width, height, 1, ir_frame, width);
 
 	printf("wrote frames to current working directory.\n");
     return EXIT_SUCCESS;
