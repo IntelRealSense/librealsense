@@ -106,6 +106,9 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "c-tutorial-3-pointcloud", "
 	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "cpp-headless", "cpp-headless\cpp-headless.vcxproj", "{7F7D0E8C-1614-411C-AD0A-C3D583EC5811}"
+	ProjectSection(ProjectDependencies) = postProject
+		{1AE4CEB5-9A0B-4B9F-9505-824FD56BB41F} = {1AE4CEB5-9A0B-4B9F-9505-824FD56BB41F}
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
