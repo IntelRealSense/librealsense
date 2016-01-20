@@ -3,20 +3,7 @@
    version = "1.0">
    <Group
       location = "container:"
-      name = "unit-tests">
-      <FileRef
-         location = "group:unit-tests-live-f200.xcodeproj">
-      </FileRef>
-      <FileRef
-         location = "group:unit-tests-live-r200.xcodeproj">
-      </FileRef>
-      <FileRef
-         location = "group:unit-tests-offline.xcodeproj">
-      </FileRef>
-   </Group>
-   <Group
-      location = "container:"
-      name = "examples">
+      name = "Examples">
       <FileRef
          location = "group:cpp-enumerate-devices.xcodeproj">
       </FileRef>
@@ -37,6 +24,45 @@
       </FileRef>
       <FileRef
          location = "group:cpp-pointcloud.xcodeproj">
+      </FileRef>
+   </Group>
+   <Group
+      location = "container:"
+      name = "C Tutorials">
+      <FileRef
+         location = "group:c-tutorial-1-depth.xcodeproj">
+      </FileRef>
+      <FileRef
+         location = "group:c-tutorial-2-streams.xcodeproj">
+      </FileRef>
+      <FileRef
+         location = "group:c-tutorial-3-pointcloud.xcodeproj">
+      </FileRef>
+   </Group>
+   <Group
+      location = "container:"
+      name = "CPP Tutorials">
+      <FileRef
+         location = "group:cpp-tutorial-1-depth.xcodeproj">
+      </FileRef>
+      <FileRef
+         location = "group:cpp-tutorial-2-streams.xcodeproj">
+      </FileRef>
+      <FileRef
+         location = "group:cpp-tutorial-3-pointcloud.xcodeproj">
+      </FileRef>
+   </Group>
+   <Group
+      location = "container:"
+      name = "unit-tests">
+      <FileRef
+         location = "group:unit-tests-live-f200.xcodeproj">
+      </FileRef>
+      <FileRef
+         location = "group:unit-tests-live-r200.xcodeproj">
+      </FileRef>
+      <FileRef
+         location = "group:unit-tests-offline.xcodeproj">
       </FileRef>
    </Group>
    <FileRef
