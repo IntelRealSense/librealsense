@@ -1,5 +1,5 @@
-// License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2015 Intel Corporation. All Rights Reserved.
+/* License: Apache 2.0. See LICENSE file in root directory.
+   Copyright(c) 2015 Intel Corporation. All Rights Reserved. */
 
 #ifndef LIBREALSENSE_RSUTIL_H
 #define LIBREALSENSE_RSUTIL_H
