@@ -12,7 +12,7 @@ Developer kits containing the necessary hardware to use this library are availab
 
 Librealsense is experimental and not an official Intel product. It is subject to significant incompatible API changes in future releases. Breaking API changes are noted through release numbers with [semver](http://semver.org/).
 
-Librealsense requires two dependencies, GLFW3 (all platforms) and libusb-1.0 (Mac/Linux). These dependencies should be gathered through manual steps that are enumerated as part of this readme file (i.e. these packages must be installed with apt-get on Linux and Homebrew on OSX).
+Librealsense requires two external dependencies, GLFW3 (all platforms) and libusb-1.0 (Mac/Linux). These dependencies should be gathered through manual steps that are enumerated as part of this readme file (i.e. these packages must be installed with apt-get on Linux and Homebrew on OSX).
 
 # Table of Contents
 * [Supported Devices](#supported-devices)
