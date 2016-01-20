@@ -124,9 +124,10 @@ int main()
         glEnable(GL_DEPTH_TEST);
         glBegin(GL_POINTS);
 
-        for(int dy=0; dy<depth_intrin.height; ++dy)
+	int dx, dy;
+        for(dy=0; dy<depth_intrin.height; ++dy)
         {
-            for(int dx=0; dx<depth_intrin.width; ++dx)
+            for(dx=0; dx<depth_intrin.width; ++dx)
             {
                 /* Retrieve the 16-bit depth value and map it into a depth in meters */
                 uint16_t depth_value = depth_image[dy * depth_intrin.width + dx];

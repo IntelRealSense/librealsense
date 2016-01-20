@@ -64,10 +64,10 @@ int main()
         /* Print a simple text-based representation of the image, by breaking it into 10x20 pixel regions and and approximating the coverage of pixels within one meter */
         char buffer[(640/10+1)*(480/20)+1];
         char * out = buffer;
-        int coverage[64] = {0};
-        for(int y=0; y<480; ++y)
+        int coverage[64] = {0}, x,y,i;
+        for(y=0; y<480; ++y)
         {
-            for(int x=0; x<640; ++x)
+            for(x=0; x<640; ++x)
             {
                 int depth = *depth_frame++;
                 if(depth > 0 && depth < one_meter) ++coverage[x/10];
@@ -75,7 +75,7 @@ int main()
 
             if(y%20 == 19)
             {
-                for(int i=0; i<64; ++i)
+                for(i=0; i<64; ++i)
                 {
                     *out++ = " .:nhBXWW"[coverage[i]/25];
                     coverage[i] = 0;
