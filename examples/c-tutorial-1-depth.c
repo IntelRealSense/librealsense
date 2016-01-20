@@ -37,7 +37,6 @@ int main()
     check_error();
     if(rs_get_device_count(ctx, &e) == 0) return EXIT_FAILURE;
 
-
     /* This tutorial will access only a single device, but it is trivial to extend to multiple devices */
     rs_device * dev = rs_get_device(ctx, 0, &e);
     check_error();
