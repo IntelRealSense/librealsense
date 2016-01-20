@@ -105,6 +105,15 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "c-tutorial-3-pointcloud", "
 		{1AE4CEB5-9A0B-4B9F-9505-824FD56BB41F} = {1AE4CEB5-9A0B-4B9F-9505-824FD56BB41F}
 	EndProjectSection
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "cpp-headless", "cpp-headless\cpp-headless.vcxproj", "{7F7D0E8C-1614-411C-AD0A-C3D583EC5811}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".nuget", ".nuget", "{C2E37549-1D05-4A96-8AFA-449AF027E34B}"
+	ProjectSection(SolutionItems) = preProject
+		.nuget\NuGet.Config = .nuget\NuGet.Config
+		.nuget\NuGet.exe = .nuget\NuGet.exe
+		.nuget\NuGet.targets = .nuget\NuGet.targets
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -265,6 +274,14 @@ Global
 		{F98EEEA1-7DAA-48A0-BB7B-2BDF303B0DA3}.Release|Win32.Build.0 = Release|Win32
 		{F98EEEA1-7DAA-48A0-BB7B-2BDF303B0DA3}.Release|x64.ActiveCfg = Release|x64
 		{F98EEEA1-7DAA-48A0-BB7B-2BDF303B0DA3}.Release|x64.Build.0 = Release|x64
+		{7F7D0E8C-1614-411C-AD0A-C3D583EC5811}.Debug|Win32.ActiveCfg = Debug|Win32
+		{7F7D0E8C-1614-411C-AD0A-C3D583EC5811}.Debug|Win32.Build.0 = Debug|Win32
+		{7F7D0E8C-1614-411C-AD0A-C3D583EC5811}.Debug|x64.ActiveCfg = Debug|x64
+		{7F7D0E8C-1614-411C-AD0A-C3D583EC5811}.Debug|x64.Build.0 = Debug|x64
+		{7F7D0E8C-1614-411C-AD0A-C3D583EC5811}.Release|Win32.ActiveCfg = Release|Win32
+		{7F7D0E8C-1614-411C-AD0A-C3D583EC5811}.Release|Win32.Build.0 = Release|Win32
+		{7F7D0E8C-1614-411C-AD0A-C3D583EC5811}.Release|x64.ActiveCfg = Release|x64
+		{7F7D0E8C-1614-411C-AD0A-C3D583EC5811}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -289,5 +306,6 @@ Global
 		{0E75C654-6312-4747-B439-E0125BBA03A6} = {61C9CF40-49A7-4E1B-A53D-E2D9B5F85329}
 		{D5E3A5E1-B8EE-4741-92CC-C480EAAEA28A} = {61C9CF40-49A7-4E1B-A53D-E2D9B5F85329}
 		{F98EEEA1-7DAA-48A0-BB7B-2BDF303B0DA3} = {61C9CF40-49A7-4E1B-A53D-E2D9B5F85329}
+		{7F7D0E8C-1614-411C-AD0A-C3D583EC5811} = {9CE5B9D5-05C7-4288-99B3-13ABFBE7B60C}
 	EndGlobalSection
 EndGlobal

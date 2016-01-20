@@ -31,9 +31,6 @@
     <ClCompile Include="..\..\src\device.cpp">
       <Filter>src</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\jni.c">
-      <Filter>src</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\uvc.cpp">
       <Filter>src</Filter>
     </ClCompile>
