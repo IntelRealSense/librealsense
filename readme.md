@@ -67,6 +67,8 @@ All RealSense™ cameras ship with proprietary firmware. This firmware is period
 
 ## Ubuntu 14.04 LTS Installation
 
+Installation of devices on Linux is lengthy compared to Windows or OSX due to the fact an updated kernel must be installed and the core uvcvideo driver patched with support for additional pixel formats provided by RealSense™ cameras. 
+
 **Note:** Several scripts below invoke `wget, git, add-apt-repository` which may be blocked by your IT firewall resulting in timeouts and errors. Add necessary proxy settings to config files or append scripts with appropriate switches. 
 
 1. Ensure apt-get is up to date
@@ -153,10 +155,10 @@ Developer kits require USB 3.0. Not all USB host chipsets are compatible with li
 
 *Q:* How is this implemented?
 
-*A:* The library communicates with RealSense™ devices directly via the UVC and USB protocols. It does not link against the RealSense SDK runtime. Most of the library source code is platform agnostic, but there is a small UVC abstraction layer with platform-specific backends, including:
-  * A `libuvc` backend which provides user-space access to UVC devices on Linux and Mac OS X (built with libusb)
-  * A `video4linux2` backend which provides kernel-space access to UVC devices on Linux
-  * A `Windows Media Foundation` backend which provides kernel-space access to UVC devices on Windows
+*A:* The library communicates with RealSense™ devices directly via the UVC and USB protocols. It does not link against the RealSense SDK™ runtime. Most of the library source code is platform agnostic, but there is a small UVC abstraction layer with platform-specific backends, including:
+  * A libuvc backend which provides user-space access to UVC devices on Linux and Mac OS X (built with libusb).
+  * A video4linux2 backend which provides kernel-space access to UVC devices on Linux.
+  * A Windows Media Foundation backend which provides kernel-space access to UVC devices on Windows 8.1 and above.
 
 ## Documentation
 
