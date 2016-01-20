@@ -175,7 +175,7 @@ namespace rsimpl { namespace r200
                 big_endian<float> px, py;
                 big_endian<double> k[5];
                 big_endian<uint32_t> w, h;
-                operator rs_intrinsics () const { return {(int)w, (int)h, px, py, fx, fy, RS_DISTORTION_MODIFIED_BROWN_CONRADY, {k[0],k[1],k[2],k[3],k[4]}}; }
+                operator rs_intrinsics () const { return {(int)w, (int)h, px, py, fx, fy, RS_DISTORTION_MODIFIED_BROWN_CONRADY, {(float)k[0],(float)k[1],(float)k[2],(float)k[3],(float)k[4]}}; }
             };
 
             struct CameraCalibrationParametersV0

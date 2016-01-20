@@ -207,8 +207,8 @@ namespace rsimpl
             switch(options[i])
             {
             case RS_OPTION_R200_LR_AUTO_EXPOSURE_ENABLED:                   r200::set_lr_exposure_mode(get_device(), values[i]); break;
-            case RS_OPTION_R200_LR_GAIN:                                    r200::set_lr_gain(get_device(), {get_lr_framerate(), values[i]}); break; // TODO: May need to set this on start if framerate changes
-            case RS_OPTION_R200_LR_EXPOSURE:                                r200::set_lr_exposure(get_device(), {get_lr_framerate(), values[i]}); break; // TODO: May need to set this on start if framerate changes
+            case RS_OPTION_R200_LR_GAIN:                                    r200::set_lr_gain(get_device(), {(uint32_t) get_lr_framerate(), (uint32_t) values[i]}); break; // TODO: May need to set this on start if framerate changes
+            case RS_OPTION_R200_LR_EXPOSURE:                                r200::set_lr_exposure(get_device(), {(uint32_t) get_lr_framerate(), (uint32_t) values[i]}); break; // TODO: May need to set this on start if framerate changes
             case RS_OPTION_R200_EMITTER_ENABLED:                            r200::set_emitter_state(get_device(), !!values[i]); break;
             case RS_OPTION_R200_DEPTH_UNITS:                                r200::set_depth_units(get_device(), values[i]); on_update_depth_units(values[i]); break;
 
@@ -271,11 +271,11 @@ namespace rsimpl
             case RS_OPTION_R200_LR_AUTO_EXPOSURE_ENABLED:                   values[i] = r200::get_lr_exposure_mode(get_device()); break;
             
             case RS_OPTION_R200_LR_GAIN: // Gain is framerate dependent
-                r200::set_lr_gain_discovery(get_device(), {get_lr_framerate()});
+                r200::set_lr_gain_discovery(get_device(), {(uint32_t)get_lr_framerate()});
                 values[i] = r200::get_lr_gain(get_device()).value;
                 break;
             case RS_OPTION_R200_LR_EXPOSURE: // Exposure is framerate dependent
-                r200::set_lr_exposure_discovery(get_device(), {get_lr_framerate()});
+                r200::set_lr_exposure_discovery(get_device(), {(uint32_t)get_lr_framerate()});
                 values[i] = r200::get_lr_exposure(get_device()).value;
                 break;
             case RS_OPTION_R200_EMITTER_ENABLED:
@@ -401,7 +401,7 @@ namespace rsimpl
         // Gain min/max is framerate dependent
         if(option == RS_OPTION_R200_LR_GAIN)
         {
-            r200::set_lr_gain_discovery(get_device(), {get_lr_framerate()});
+            r200::set_lr_gain_discovery(get_device(), {(uint32_t)get_lr_framerate()});
             auto disc = r200::get_lr_gain_discovery(get_device());
             min = disc.min;
             max = disc.max;
@@ -412,7 +412,7 @@ namespace rsimpl
         // Exposure min/max is framerate dependent
         if(option == RS_OPTION_R200_LR_EXPOSURE)
         {
-            r200::set_lr_exposure_discovery(get_device(), {get_lr_framerate()});
+            r200::set_lr_exposure_discovery(get_device(), {(uint32_t)get_lr_framerate()});
             auto disc = r200::get_lr_exposure_discovery(get_device());
             min = disc.min;
             max = disc.max;

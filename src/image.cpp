@@ -309,7 +309,7 @@ namespace rsimpl
         {
             for(int x=0; x<intrin.width; ++x)
             {
-                const float pixel[] = {x,y};
+                const float pixel[] = { (float) x, (float) y};
                 rs_deproject_pixel_to_point(points, &intrin, pixel, map_depth(*depth++));
                 points += 3;                
             }
