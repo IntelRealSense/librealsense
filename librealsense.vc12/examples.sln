@@ -45,6 +45,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "c-tutorial-2-streams", "c-t
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "c-tutorial-3-pointcloud", "c-tutorial-3-pointcloud\c-tutorial-3-pointcloud.vcxproj", "{F98EEEA1-7DAA-48A0-BB7B-2BDF303B0DA3}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "cpp-headless", "cpp-headless\cpp-headless.vcxproj", "{7F7D0E8C-1614-411C-AD0A-C3D583EC5811}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -189,6 +191,14 @@ Global
 		{F98EEEA1-7DAA-48A0-BB7B-2BDF303B0DA3}.Release|Win32.Build.0 = Release|Win32
 		{F98EEEA1-7DAA-48A0-BB7B-2BDF303B0DA3}.Release|x64.ActiveCfg = Release|x64
 		{F98EEEA1-7DAA-48A0-BB7B-2BDF303B0DA3}.Release|x64.Build.0 = Release|x64
+		{7F7D0E8C-1614-411C-AD0A-C3D583EC5811}.Debug|Win32.ActiveCfg = Debug|Win32
+		{7F7D0E8C-1614-411C-AD0A-C3D583EC5811}.Debug|Win32.Build.0 = Debug|Win32
+		{7F7D0E8C-1614-411C-AD0A-C3D583EC5811}.Debug|x64.ActiveCfg = Debug|x64
+		{7F7D0E8C-1614-411C-AD0A-C3D583EC5811}.Debug|x64.Build.0 = Debug|x64
+		{7F7D0E8C-1614-411C-AD0A-C3D583EC5811}.Release|Win32.ActiveCfg = Release|Win32
+		{7F7D0E8C-1614-411C-AD0A-C3D583EC5811}.Release|Win32.Build.0 = Release|Win32
+		{7F7D0E8C-1614-411C-AD0A-C3D583EC5811}.Release|x64.ActiveCfg = Release|x64
+		{7F7D0E8C-1614-411C-AD0A-C3D583EC5811}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -211,5 +221,6 @@ Global
 		{0E75C654-6312-4747-B439-E0125BBA03A6} = {8E133EA7-E14A-43DB-8A59-171DA01ABE44}
 		{D5E3A5E1-B8EE-4741-92CC-C480EAAEA28A} = {8E133EA7-E14A-43DB-8A59-171DA01ABE44}
 		{F98EEEA1-7DAA-48A0-BB7B-2BDF303B0DA3} = {8E133EA7-E14A-43DB-8A59-171DA01ABE44}
+		{7F7D0E8C-1614-411C-AD0A-C3D583EC5811} = {9CE5B9D5-05C7-4288-99B3-13ABFBE7B60C}
 	EndGlobalSection
 EndGlobal
