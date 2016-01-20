@@ -79,6 +79,7 @@ Developer kits require USB 3.0. Not all USB host chipsets are compatible with li
 ## Documentation
 
 Documentation for librealsense is still incomplete, and may contain the occasional inaccuracy. Please send us feedback about things that are unclear or which need to be improved. For now, the following documentation is available:
+  * [Installation Instructions](./doc/installation.md) - Comprehensive platform-specific installation steps
   * [The librealsense C API](./include/librealsense/rs.h) - Doxygen style comments are provided for all functions, data types, and most constants
   * [Projection in librealsense](./doc/projection.md) - A guide on coordinate systems, calibration information, and projection APIs.
   * [Developer Notes](./doc/dev_log.md) - Several informal notes gathered during internal releases.
