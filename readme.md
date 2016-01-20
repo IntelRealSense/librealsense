@@ -24,7 +24,6 @@ Librealsense requires two external dependencies, GLFW3 (all platforms) and libus
   * [OSX](#apple-osx)
   * [Windows](#windows-81)
 * [Hardware Requirements](#hardware-requirements)
-* [FAQ](#faq)
 * [Documentation](#documentation)
 
 ## Supported Devices
@@ -150,15 +149,6 @@ librealsense has not been tested with Visual Studio Community Edition.
 Developer kits containing the necessary hardware to use this library are available for purchase at [this link](http://click.intel.com/realsense.html). In addition, several consumer tablets and laptops with integrated cameras may also function, such as the [HP Spectre x2 with R200](http://store.hp.com/us/en/ContentView?storeId=10151&langId=-1&catalogId=10051&eSpotName=new-detachable).
 
 Developer kits require USB 3.0. Not all USB host chipsets are compatible with librealsense. An exhaustive list of incompatible hardware is not presently provided.
-
-## FAQ
-
-*Q:* How is this implemented?
-
-*A:* The library communicates with RealSense™ devices directly via the UVC and USB protocols. It does not link against the RealSense SDK™ runtime. Most of the library source code is platform agnostic, but there is a small UVC abstraction layer with platform-specific backends, including:
-  * A libuvc backend which provides user-space access to UVC devices on Linux and Mac OS X (built with libusb).
-  * A video4linux2 backend which provides kernel-space access to UVC devices on Linux.
-  * A Windows Media Foundation backend which provides kernel-space access to UVC devices on Windows 8.1 and above.
 
 ## Documentation
 
