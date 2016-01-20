@@ -10,7 +10,6 @@
 #include <thread>
 #include <algorithm>
 
-font font;
 texture_buffer buffers[RS_STREAM_COUNT];
 bool align_depth_to_color = false;
 bool align_color_to_depth = false;
@@ -88,14 +87,7 @@ int main(int argc, char * argv[]) try
         }
     });
     glfwMakeContextCurrent(win);
-            
-    // Load our truetype font
-    if (auto f = find_file("examples/assets/Roboto-Bold.ttf", 3))
-    {
-        font = ttf_create(f,20);
-        fclose(f);
-    }
-    else throw std::runtime_error("Unable to open examples/assets/Roboto-Bold.ttf");
+    gl_font font(20);
 
     while (!glfwWindowShouldClose(win))
     {

@@ -50,13 +50,7 @@ int main(int argc, char * argv[]) try
 	auto perTextureWidth = windowWidth / devices.size();
 	auto perTextureHeight = 480;
 
-    font font;
-    if (auto f = find_file("examples/assets/Roboto-Bold.ttf", 3))
-    {
-        font = ttf_create(f,20);
-        fclose(f);
-    }
-    else throw std::runtime_error("Unable to open examples/assets/Roboto-Bold.ttf");
+    gl_font font(20);
 
     while (!glfwWindowShouldClose(win))
     {

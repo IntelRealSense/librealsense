@@ -11,7 +11,7 @@
 #include <iomanip>
 #include <thread>
 
-font font;
+gl_font font(20);
 texture_buffer buffers[RS_STREAM_COUNT];
 
 int main(int argc, char * argv[]) try
@@ -28,14 +28,6 @@ int main(int argc, char * argv[]) try
     std::ostringstream ss; ss << "CPP Restart Example (" << dev.get_name() << ")";
     GLFWwindow * win = glfwCreateWindow(1280, 960, ss.str().c_str(), 0, 0);
     glfwMakeContextCurrent(win);
-        
-    // Load our truetype font
-    if (auto f = find_file("examples/assets/Roboto-Bold.ttf", 3))
-    {
-        font = ttf_create(f,20);
-        fclose(f);
-    }
-    else throw std::runtime_error("Unable to open examples/assets/Roboto-Bold.ttf");
 
     for(int i=0; i<20; ++i)
     {

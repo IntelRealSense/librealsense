@@ -80,14 +80,7 @@ int main(int argc, char * argv[]) try
 
     glfwMakeContextCurrent(win);
     
-    font font;
-    if (auto f = find_file("examples/assets/Roboto-Bold.ttf", 3))
-    {
-        font = ttf_create(f,20);
-        fclose(f);
-    }
-    else throw std::runtime_error("Unable to open examples/assets/Roboto-Bold.ttf");
-
+    gl_font font(20);
     texture_buffer tex;
 
     int frames = 0; float time = 0, fps = 0;
@@ -172,10 +165,10 @@ int main(int argc, char * argv[]) try
         glOrtho(0, width, height, 0, -1, +1);
         
         std::ostringstream ss; ss << dev.get_name() << " (" << app_state.tex_streams[app_state.index] << ")";
-        ttf_print(&font, (width-ttf_len(&font, ss.str().c_str()))/2, height-20.0f, ss.str().c_str());
+        font.print((width-font.width(ss.str().c_str()))/2, height-20.0f, ss.str().c_str());
 
         ss.str(""); ss << fps << " FPS";
-        ttf_print(&font, 20, 40, ss.str().c_str());
+        font.print(20, 40, ss.str().c_str());
         glPopMatrix();
 
         glfwSwapBuffers(win);
