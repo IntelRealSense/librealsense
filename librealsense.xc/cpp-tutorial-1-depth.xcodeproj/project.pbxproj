@@ -7,8 +7,11 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		2799858F1B95088B00894334 /* librealsense.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 2799858E1B95088B00894334 /* librealsense.dylib */; };
-		279D52DA1B8E86FB007F2D73 /* cpp-headless.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 279D52D91B8E86FB007F2D73 /* cpp-headless.cpp */; };
+		08567C091B5B898400EB6C0D /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 08567C081B5B898400EB6C0D /* Cocoa.framework */; };
+		08567C0B1B5B898C00EB6C0D /* CoreVideo.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 08567C0A1B5B898C00EB6C0D /* CoreVideo.framework */; };
+		08567C0D1B5B899200EB6C0D /* IOKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 08567C0C1B5B899200EB6C0D /* IOKit.framework */; };
+		2799858B1B95085000894334 /* librealsense.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 2799858A1B95085000894334 /* librealsense.dylib */; };
+		279D52DA1B8E86FB007F2D73 /* cpp-tutorial-1-depth.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 279D52D91B8E86FB007F2D73 /* cpp-tutorial-1-depth.cpp */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -24,9 +27,12 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		08567BB11B5B59E800EB6C0D /* cpp-headless */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = "cpp-headless"; sourceTree = BUILT_PRODUCTS_DIR; };
-		2799858E1B95088B00894334 /* librealsense.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = librealsense.dylib; path = librealsense.xc/build/Debug/librealsense.dylib; sourceTree = "<group>"; };
-		279D52D91B8E86FB007F2D73 /* cpp-headless.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = "cpp-headless.cpp"; path = "../examples/cpp-headless.cpp"; sourceTree = SOURCE_ROOT; };
+		08567BB11B5B59E800EB6C0D /* cpp-tutorial-1-depth */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = "cpp-tutorial-1-depth"; sourceTree = BUILT_PRODUCTS_DIR; };
+		08567C081B5B898400EB6C0D /* Cocoa.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cocoa.framework; path = System/Library/Frameworks/Cocoa.framework; sourceTree = SDKROOT; };
+		08567C0A1B5B898C00EB6C0D /* CoreVideo.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreVideo.framework; path = System/Library/Frameworks/CoreVideo.framework; sourceTree = SDKROOT; };
+		08567C0C1B5B899200EB6C0D /* IOKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = IOKit.framework; path = System/Library/Frameworks/IOKit.framework; sourceTree = SDKROOT; };
+		2799858A1B95085000894334 /* librealsense.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = librealsense.dylib; path = librealsense.xc/build/Debug/librealsense.dylib; sourceTree = "<group>"; };
+		279D52D91B8E86FB007F2D73 /* cpp-tutorial-1-depth.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = "cpp-tutorial-1-depth.cpp"; path = "../examples/cpp-tutorial-1-depth.cpp"; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -34,7 +40,10 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				2799858F1B95088B00894334 /* librealsense.dylib in Frameworks */,
+				2799858B1B95085000894334 /* librealsense.dylib in Frameworks */,
+				08567C0D1B5B899200EB6C0D /* IOKit.framework in Frameworks */,
+				08567C0B1B5B898C00EB6C0D /* CoreVideo.framework in Frameworks */,
+				08567C091B5B898400EB6C0D /* Cocoa.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -53,7 +62,7 @@
 		08567BB21B5B59E800EB6C0D /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				08567BB11B5B59E800EB6C0D /* cpp-headless */,
+				08567BB11B5B59E800EB6C0D /* cpp-tutorial-1-depth */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -61,7 +70,7 @@
 		08567BB31B5B59E800EB6C0D /* src */ = {
 			isa = PBXGroup;
 			children = (
-				279D52D91B8E86FB007F2D73 /* cpp-headless.cpp */,
+				279D52D91B8E86FB007F2D73 /* cpp-tutorial-1-depth.cpp */,
 			);
 			name = src;
 			path = "example-cpp";
@@ -79,7 +88,7 @@
 		08567C2D1B61D82000EB6C0D /* libs */ = {
 			isa = PBXGroup;
 			children = (
-				2799858E1B95088B00894334 /* librealsense.dylib */,
+				2799858A1B95085000894334 /* librealsense.dylib */,
 			);
 			name = libs;
 			path = ..;
@@ -88,6 +97,9 @@
 		08567C2E1B61D82D00EB6C0D /* frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				08567C0C1B5B899200EB6C0D /* IOKit.framework */,
+				08567C0A1B5B898C00EB6C0D /* CoreVideo.framework */,
+				08567C081B5B898400EB6C0D /* Cocoa.framework */,
 			);
 			name = frameworks;
 			sourceTree = "<group>";
@@ -95,9 +107,9 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		08567BB01B5B59E800EB6C0D /* cpp-headless */ = {
+		08567BB01B5B59E800EB6C0D /* cpp-tutorial-1-depth */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 08567BB81B5B59E800EB6C0D /* Build configuration list for PBXNativeTarget "cpp-headless" */;
+			buildConfigurationList = 08567BB81B5B59E800EB6C0D /* Build configuration list for PBXNativeTarget "cpp-tutorial-1-depth" */;
 			buildPhases = (
 				08567BAD1B5B59E800EB6C0D /* Sources */,
 				08567BAE1B5B59E800EB6C0D /* Frameworks */,
@@ -107,9 +119,9 @@
 			);
 			dependencies = (
 			);
-			name = "cpp-headless";
+			name = "cpp-tutorial-1-depth";
 			productName = "example-cpp";
-			productReference = 08567BB11B5B59E800EB6C0D /* cpp-headless */;
+			productReference = 08567BB11B5B59E800EB6C0D /* cpp-tutorial-1-depth */;
 			productType = "com.apple.product-type.tool";
 		};
 /* End PBXNativeTarget section */
@@ -126,7 +138,7 @@
 					};
 				};
 			};
-			buildConfigurationList = 08567BAC1B5B59E800EB6C0D /* Build configuration list for PBXProject "cpp-headless" */;
+			buildConfigurationList = 08567BAC1B5B59E800EB6C0D /* Build configuration list for PBXProject "cpp-tutorial-1-depth" */;
 			compatibilityVersion = "Xcode 3.2";
 			developmentRegion = English;
 			hasScannedForEncodings = 0;
@@ -138,7 +150,7 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				08567BB01B5B59E800EB6C0D /* cpp-headless */,
+				08567BB01B5B59E800EB6C0D /* cpp-tutorial-1-depth */,
 			);
 		};
 /* End PBXProject section */
@@ -148,7 +160,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				279D52DA1B8E86FB007F2D73 /* cpp-headless.cpp in Sources */,
+				279D52DA1B8E86FB007F2D73 /* cpp-tutorial-1-depth.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -192,8 +204,6 @@
 					"$(inherited)",
 					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
 					"$(SRCROOT)/../third_party/libuvc/include",
-					"$(SRCROOT)/../third_party/glfw",
-					"$(SRCROOT)/../third_party/catch",
 					"$(SRCROOT)/../include",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 10.10;
@@ -235,8 +245,6 @@
 					"$(inherited)",
 					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
 					"$(SRCROOT)/../third_party/libuvc/include",
-					"$(SRCROOT)/../third_party/glfw",
-					"$(SRCROOT)/../third_party/catch",
 					"$(SRCROOT)/../include",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 10.10;
@@ -262,7 +270,7 @@
 					"$(USER_LIBRARY_DIR)/Developer/Xcode/DerivedData/bin/Debug",
 					"$(PROJECT_DIR)/build/Debug",
 				);
-				PRODUCT_NAME = "cpp-headless";
+				PRODUCT_NAME = "cpp-tutorial-1-depth";
 			};
 			name = Debug;
 		};
@@ -283,14 +291,14 @@
 					"$(USER_LIBRARY_DIR)/Developer/Xcode/DerivedData/bin/Debug",
 					"$(PROJECT_DIR)/build/Debug",
 				);
-				PRODUCT_NAME = "cpp-headless";
+				PRODUCT_NAME = "cpp-tutorial-1-depth";
 			};
 			name = Release;
 		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		08567BAC1B5B59E800EB6C0D /* Build configuration list for PBXProject "cpp-headless" */ = {
+		08567BAC1B5B59E800EB6C0D /* Build configuration list for PBXProject "cpp-tutorial-1-depth" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				08567BB61B5B59E800EB6C0D /* Debug */,
@@ -299,7 +307,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		08567BB81B5B59E800EB6C0D /* Build configuration list for PBXNativeTarget "cpp-headless" */ = {
+		08567BB81B5B59E800EB6C0D /* Build configuration list for PBXNativeTarget "cpp-tutorial-1-depth" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				08567BB91B5B59E800EB6C0D /* Debug */,

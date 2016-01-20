@@ -7,8 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		273DEE591C50422F004A1AD6 /* cpp-enumerate-devices.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 279D52D91B8E86FB007F2D73 /* cpp-enumerate-devices.cpp */; };
 		2799858F1B95088B00894334 /* librealsense.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 2799858E1B95088B00894334 /* librealsense.dylib */; };
-		279D52DA1B8E86FB007F2D73 /* cpp-headless.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 279D52D91B8E86FB007F2D73 /* cpp-headless.cpp */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -26,7 +26,7 @@
 /* Begin PBXFileReference section */
 		08567BB11B5B59E800EB6C0D /* cpp-headless */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = "cpp-headless"; sourceTree = BUILT_PRODUCTS_DIR; };
 		2799858E1B95088B00894334 /* librealsense.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = librealsense.dylib; path = librealsense.xc/build/Debug/librealsense.dylib; sourceTree = "<group>"; };
-		279D52D91B8E86FB007F2D73 /* cpp-headless.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = "cpp-headless.cpp"; path = "../examples/cpp-headless.cpp"; sourceTree = SOURCE_ROOT; };
+		279D52D91B8E86FB007F2D73 /* cpp-enumerate-devices.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = "cpp-enumerate-devices.cpp"; path = "../examples/cpp-enumerate-devices.cpp"; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -61,7 +61,7 @@
 		08567BB31B5B59E800EB6C0D /* src */ = {
 			isa = PBXGroup;
 			children = (
-				279D52D91B8E86FB007F2D73 /* cpp-headless.cpp */,
+				279D52D91B8E86FB007F2D73 /* cpp-enumerate-devices.cpp */,
 			);
 			name = src;
 			path = "example-cpp";
@@ -126,7 +126,7 @@
 					};
 				};
 			};
-			buildConfigurationList = 08567BAC1B5B59E800EB6C0D /* Build configuration list for PBXProject "cpp-headless" */;
+			buildConfigurationList = 08567BAC1B5B59E800EB6C0D /* Build configuration list for PBXProject "cpp-enumerate-devices" */;
 			compatibilityVersion = "Xcode 3.2";
 			developmentRegion = English;
 			hasScannedForEncodings = 0;
@@ -148,7 +148,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				279D52DA1B8E86FB007F2D73 /* cpp-headless.cpp in Sources */,
+				273DEE591C50422F004A1AD6 /* cpp-enumerate-devices.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -290,7 +290,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		08567BAC1B5B59E800EB6C0D /* Build configuration list for PBXProject "cpp-headless" */ = {
+		08567BAC1B5B59E800EB6C0D /* Build configuration list for PBXProject "cpp-enumerate-devices" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				08567BB61B5B59E800EB6C0D /* Debug */,

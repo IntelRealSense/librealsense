@@ -8,7 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		2799858F1B95088B00894334 /* librealsense.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 2799858E1B95088B00894334 /* librealsense.dylib */; };
-		279D52DA1B8E86FB007F2D73 /* cpp-headless.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 279D52D91B8E86FB007F2D73 /* cpp-headless.cpp */; };
+		279D52DA1B8E86FB007F2D73 /* c-tutorial-1-depth.c in Sources */ = {isa = PBXBuildFile; fileRef = 279D52D91B8E86FB007F2D73 /* c-tutorial-1-depth.c */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -24,9 +24,9 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		08567BB11B5B59E800EB6C0D /* cpp-headless */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = "cpp-headless"; sourceTree = BUILT_PRODUCTS_DIR; };
+		08567BB11B5B59E800EB6C0D /* c-tutorial-1-depth */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = "c-tutorial-1-depth"; sourceTree = BUILT_PRODUCTS_DIR; };
 		2799858E1B95088B00894334 /* librealsense.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = librealsense.dylib; path = librealsense.xc/build/Debug/librealsense.dylib; sourceTree = "<group>"; };
-		279D52D91B8E86FB007F2D73 /* cpp-headless.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = "cpp-headless.cpp"; path = "../examples/cpp-headless.cpp"; sourceTree = SOURCE_ROOT; };
+		279D52D91B8E86FB007F2D73 /* c-tutorial-1-depth.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = "c-tutorial-1-depth.c"; path = "../examples/c-tutorial-1-depth.c"; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -53,7 +53,7 @@
 		08567BB21B5B59E800EB6C0D /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				08567BB11B5B59E800EB6C0D /* cpp-headless */,
+				08567BB11B5B59E800EB6C0D /* c-tutorial-1-depth */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -61,7 +61,7 @@
 		08567BB31B5B59E800EB6C0D /* src */ = {
 			isa = PBXGroup;
 			children = (
-				279D52D91B8E86FB007F2D73 /* cpp-headless.cpp */,
+				279D52D91B8E86FB007F2D73 /* c-tutorial-1-depth.c */,
 			);
 			name = src;
 			path = "example-cpp";
@@ -95,9 +95,9 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		08567BB01B5B59E800EB6C0D /* cpp-headless */ = {
+		08567BB01B5B59E800EB6C0D /* c-tutorial-1-depth */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 08567BB81B5B59E800EB6C0D /* Build configuration list for PBXNativeTarget "cpp-headless" */;
+			buildConfigurationList = 08567BB81B5B59E800EB6C0D /* Build configuration list for PBXNativeTarget "c-tutorial-1-depth" */;
 			buildPhases = (
 				08567BAD1B5B59E800EB6C0D /* Sources */,
 				08567BAE1B5B59E800EB6C0D /* Frameworks */,
@@ -107,9 +107,9 @@
 			);
 			dependencies = (
 			);
-			name = "cpp-headless";
+			name = "c-tutorial-1-depth";
 			productName = "example-cpp";
-			productReference = 08567BB11B5B59E800EB6C0D /* cpp-headless */;
+			productReference = 08567BB11B5B59E800EB6C0D /* c-tutorial-1-depth */;
 			productType = "com.apple.product-type.tool";
 		};
 /* End PBXNativeTarget section */
@@ -126,7 +126,7 @@
 					};
 				};
 			};
-			buildConfigurationList = 08567BAC1B5B59E800EB6C0D /* Build configuration list for PBXProject "cpp-headless" */;
+			buildConfigurationList = 08567BAC1B5B59E800EB6C0D /* Build configuration list for PBXProject "c-tutorial-1-depth" */;
 			compatibilityVersion = "Xcode 3.2";
 			developmentRegion = English;
 			hasScannedForEncodings = 0;
@@ -138,7 +138,7 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				08567BB01B5B59E800EB6C0D /* cpp-headless */,
+				08567BB01B5B59E800EB6C0D /* c-tutorial-1-depth */,
 			);
 		};
 /* End PBXProject section */
@@ -148,7 +148,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				279D52DA1B8E86FB007F2D73 /* cpp-headless.cpp in Sources */,
+				279D52DA1B8E86FB007F2D73 /* c-tutorial-1-depth.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -262,7 +262,7 @@
 					"$(USER_LIBRARY_DIR)/Developer/Xcode/DerivedData/bin/Debug",
 					"$(PROJECT_DIR)/build/Debug",
 				);
-				PRODUCT_NAME = "cpp-headless";
+				PRODUCT_NAME = "c-tutorial-1-depth";
 			};
 			name = Debug;
 		};
@@ -283,14 +283,14 @@
 					"$(USER_LIBRARY_DIR)/Developer/Xcode/DerivedData/bin/Debug",
 					"$(PROJECT_DIR)/build/Debug",
 				);
-				PRODUCT_NAME = "cpp-headless";
+				PRODUCT_NAME = "c-tutorial-1-depth";
 			};
 			name = Release;
 		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		08567BAC1B5B59E800EB6C0D /* Build configuration list for PBXProject "cpp-headless" */ = {
+		08567BAC1B5B59E800EB6C0D /* Build configuration list for PBXProject "c-tutorial-1-depth" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				08567BB61B5B59E800EB6C0D /* Debug */,
@@ -299,7 +299,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		08567BB81B5B59E800EB6C0D /* Build configuration list for PBXNativeTarget "cpp-headless" */ = {
+		08567BB81B5B59E800EB6C0D /* Build configuration list for PBXNativeTarget "c-tutorial-1-depth" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				08567BB91B5B59E800EB6C0D /* Debug */,
