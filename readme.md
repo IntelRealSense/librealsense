@@ -23,6 +23,7 @@ Dependency management for GLFW3 (example apps) and libusb-1.0 is performed throu
   * [Linux](#ubuntu-1404-lts-installation)
   * [OSX](#apple-osx)
   * [Windows](#windows-81)
+* [Hardware Requirements](#hardware-requirements)
 * [FAQ](#faq)
 * [Documentation](#documentation)
 
@@ -139,6 +140,13 @@ libuvc is known to have issues with some versions of SR300 and R200 firmware (1.
 ## Windows 8.1
 
 1. librealsense should compile out of the box with Visual Studio 2013 Release 5. Particular C++11 features are known to be incompatible with earlier VS2013 releases due to internal compiler errors. GLFW is provided in the solution as a NuGet package.
+
+librealsense has not been tested with Visual Studio Community Edition.
+
+## Hardware Requirements
+Developer kits containing the necessary hardware to use this library are available for purchase at [this link](http://click.intel.com/realsense.html). In addition, several consumer tablets and laptops with integrated cameras may also function, such as the [HP Spectre x2 with R200](http://store.hp.com/us/en/ContentView?storeId=10151&langId=-1&catalogId=10051&eSpotName=new-detachable).
+
+Developer kits require USB 3.0. Not all USB host chipsets are compatible with librealsense. An exhaustive list of incompatible hardware is not presently provided.
 
 ## FAQ
 
