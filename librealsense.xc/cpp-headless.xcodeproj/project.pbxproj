@@ -26,7 +26,7 @@
 /* Begin PBXFileReference section */
 		08567BB11B5B59E800EB6C0D /* cpp-headless */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = "cpp-headless"; sourceTree = BUILT_PRODUCTS_DIR; };
 		2799858E1B95088B00894334 /* librealsense.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = librealsense.dylib; path = librealsense.xc/build/Debug/librealsense.dylib; sourceTree = "<group>"; };
-		279D52D91B8E86FB007F2D73 /* cpp-headless.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = "cpp-headless.cpp"; path = "../examples/cpp-headless.cpp"; sourceTree = SOURCE_ROOT; };
+		279D52D91B8E86FB007F2D73 /* cpp-headless.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = "cpp-headless.cpp"; path = "../examples/cpp-headless.cpp"; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
