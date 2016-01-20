@@ -48,11 +48,8 @@ Neither the libuvc or V4L2 backend has been validated on Ubuntu 12.04 LTS or Ubu
 1. C - Core library API exposed via the C89 ABI
 2. C++ - Single header file (rs.hpp) wrapper around C API, providing classes and exceptions
 3. C# - Single source file (rs.cs) wrapper for P/Invoke to C API, providing classes and exceptions
-4. Java - Source files (com/intel/rs/*.java + rs-jni.c) providing a JNI wrapper over C API, providing classes and exceptions, out parameters emulated via Out<T> wrapper class
-	* Requires librealsense.so / realsense.dll to be compiled on a machine with the JDK installed
-5. Python - Single source file (rs.py) wrapper using ctypes to access C API, providing classes and exceptions; out parameters converted to return values using Python tuples
 
-Our intent is to provide bindings and wrappers for as many languages and frameworks as possible. Our core library exposes its functionality via C, and we intend for our various bindings and wrappers to look and feel "native" to their respective languages, for instance, using classes to represent objects, throwing exceptions to report errors, and following established naming conventions and casing styles of the language or framework in question.
+Our future intent is to provide bindings and wrappers for as many languages and frameworks as possible. Our core library exposes its functionality via C, and we intend for our various bindings and wrappers to look and feel "native" to their respective languages, for instance, using classes to represent objects, throwing exceptions to report errors, and following established naming conventions and casing styles of the language or framework in question.
 
 ## Functionality
 
