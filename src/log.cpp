@@ -2,54 +2,55 @@
 
 #include <fstream>
 #include <iostream>
-#include <iomanip>
+#include <algorithm>
 #include <ctime>
 
-int rsimpl::minimum_log_severity = static_cast<int>(rsimpl::log_severity::info);
+rs_log_severity rsimpl::minimum_log_severity = RS_LOG_SEVERITY_NONE;
+static rs_log_severity minimum_console_severity = RS_LOG_SEVERITY_NONE;
+static rs_log_severity minimum_file_severity = RS_LOG_SEVERITY_NONE;
+static std::ofstream log_file;
 
-struct logger
-{
-    std::ofstream out;
-
-    logger() : out("librealsense-log.txt", std::ofstream::app)
-    {
-        std::time_t t = std::time(nullptr); char buffer[20];
-	std::strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S", std::localtime(&t));
-        out << "\n" << buffer << " PROGRAM START" << std::endl;
-    }
-
-    ~logger()
-    {
-        std::time_t t = std::time(nullptr); char buffer[20];
-	std::strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S", std::localtime(&t));
-        out << buffer << " PROGRAM STOP" << std::endl;    
-    }
-};
-
-void rsimpl::log(log_severity severity, const std::string & message)
+void rsimpl::log(rs_log_severity severity, const std::string & message)
 {
     if(static_cast<int>(severity) < minimum_log_severity) return;
-
-    static logger the_logger;
 
     std::time_t t = std::time(nullptr); char buffer[20];
     std::strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S", std::localtime(&t));
 
-    switch(severity)
+    if(severity >= minimum_file_severity)
     {
-    case log_severity::debug:   the_logger.out << buffer << " DEBUG: " << message << std::endl; break;
-    case log_severity::info:    the_logger.out << buffer << " INFO:  " << message << std::endl; break;
-    case log_severity::warning: the_logger.out << buffer << " WARN:  " << message << std::endl; break;
-    case log_severity::error:   the_logger.out << buffer << " ERROR: " << message << std::endl; break;
-    case log_severity::fatal:   the_logger.out << buffer << " FATAL: " << message << std::endl; break;
+        switch(severity)
+        {
+        case RS_LOG_SEVERITY_DEBUG: log_file << buffer << " DEBUG: " << message << std::endl; break;
+        case RS_LOG_SEVERITY_INFO:  log_file << buffer << " INFO: " << message << std::endl; break;
+        case RS_LOG_SEVERITY_WARN:  log_file << buffer << " WARN: " << message << std::endl; break;
+        case RS_LOG_SEVERITY_ERROR: log_file << buffer << " ERROR: " << message << std::endl; break;
+        case RS_LOG_SEVERITY_FATAL: log_file << buffer << " FATAL: " << message << std::endl; break;
+        }
     }
 
-    switch(severity)
+    if(severity >= minimum_console_severity)
     {
-    case log_severity::debug:   std::cout << "[debug] "   << message << std::endl; break;
-    case log_severity::info:    std::cout << "[info] "    << message << std::endl; break;
-    case log_severity::warning: std::cout << "[warning] " << message << std::endl; break;
-    case log_severity::error:   std::cout << "[error] "   << message << std::endl; break;
-    case log_severity::fatal:   std::cout << "[fatal] "   << message << std::endl; break;
+        switch(severity)
+        {
+        case RS_LOG_SEVERITY_DEBUG: std::cout << "rs.debug: " << message << std::endl; break;
+        case RS_LOG_SEVERITY_INFO:  std::cout << "rs.info: " << message << std::endl; break;
+        case RS_LOG_SEVERITY_WARN:  std::cout << "rs.warn: " << message << std::endl; break;
+        case RS_LOG_SEVERITY_ERROR: std::cout << "rs.error: " << message << std::endl; break;
+        case RS_LOG_SEVERITY_FATAL: std::cout << "rs.fatal: " << message << std::endl; break;
+        }
     }
+}
+
+void rsimpl::log_to_console(rs_log_severity min_severity)
+{
+    minimum_console_severity = min_severity;
+    rsimpl::minimum_log_severity = std::min(minimum_console_severity, minimum_file_severity);
+}
+
+void rsimpl::log_to_file(rs_log_severity min_severity, const char * file_path)
+{
+    minimum_file_severity = min_severity;
+    log_file.open(file_path, std::ostream::out | std::ostream::app);
+    rsimpl::minimum_log_severity = std::min(minimum_console_severity, minimum_file_severity);
 }

@@ -18,12 +18,12 @@ struct color { float r,g,b; };
 
 struct gui
 {
-    font fn;
+    gl_font fn;
     int2 cursor, clicked_offset, scroll_vec;
     bool click, mouse_down;
     int clicked_id;
 
-    gui() : scroll_vec({0,0}), click(), mouse_down(), clicked_id() {}
+    gui() : fn(16), scroll_vec({0,0}), click(), mouse_down(), clicked_id() {}
 
     void label(const int2 & p, const color & c, const char * format, ...)
     {
@@ -33,7 +33,7 @@ struct gui
         vsnprintf(buffer, sizeof(buffer), format, args);
         va_end(args);
         glColor3f(c.r, c.g, c.b);
-        ttf_print(&fn, p.x, p.y, buffer);
+        fn.print(p.x, p.y, buffer);
     }
 
     void fill_rect(const rect & r, const color & c)
@@ -52,7 +52,7 @@ struct gui
         fill_rect(r, {1,1,1});
         fill_rect(r.shrink(2), r.contains(cursor) ? (mouse_down ? color{0.3f,0.3f,0.3f} : color{0.4f,0.4f,0.4f}) : color{0.5f,0.5f,0.5f});
         glColor3f(1,1,1);
-        ttf_print(&fn, r.x0 + 4, r.y1 - 8, label.c_str());
+        fn.print(r.x0 + 4, r.y1 - 8, label.c_str());
         return click && r.contains(cursor);
     }
 
@@ -114,10 +114,13 @@ texture_buffer buffers[4];
 
 int main(int argc, char * argv[]) try
 {
-    gui g;
+    rs::log_to_console(rs::log_severity::warn);
+    //rs::log_to_file(rs::log_severity::debug, "librealsense.log");
 
     glfwInit();
     auto win = glfwCreateWindow(1550, 960, "CPP Configuration Example", nullptr, nullptr);
+    glfwMakeContextCurrent(win);
+    gui g;
     glfwSetWindowUserPointer(win, &g);
     glfwSetCursorPosCallback(win, [](GLFWwindow * w, double cx, double cy) { reinterpret_cast<gui *>(glfwGetWindowUserPointer(w))->cursor = {(int)cx, (int)cy}; });
     glfwSetScrollCallback(win, [](GLFWwindow * w, double x, double y) { reinterpret_cast<gui *>(glfwGetWindowUserPointer(w))->scroll_vec = {(int)x, (int)y}; });
@@ -131,14 +134,6 @@ int main(int argc, char * argv[]) try
         }
         g->mouse_down = action != GLFW_RELEASE; 
     });
-    glfwMakeContextCurrent(win);
-
-    if(auto f = find_file("examples/assets/Roboto-Bold.ttf", 3))
-    {
-        g.fn = ttf_create(f,16);
-        fclose(f);
-    }
-    else throw std::runtime_error("Unable to open examples/assets/Roboto-Bold.ttf");
 
     rs::context ctx;
     if(ctx.get_device_count() < 1) throw std::runtime_error("No device found. Is it plugged in?");

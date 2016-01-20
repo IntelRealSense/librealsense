@@ -7,6 +7,9 @@
 
 int main() try
 {
+    rs::log_to_console(rs::log_severity::warn);
+    //rs::log_to_file(rs::log_severity::debug, "librealsense.log");
+
     // Obtain a list of devices currently present on the system
     rs::context ctx;
     int device_count = ctx.get_device_count();   

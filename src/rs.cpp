@@ -366,3 +366,17 @@ const char * rs_format_to_string(rs_format format) { return rsimpl::get_string(f
 const char * rs_preset_to_string(rs_preset preset) { return rsimpl::get_string(preset); }
 const char * rs_distortion_to_string(rs_distortion distortion) { return rsimpl::get_string(distortion); }
 const char * rs_option_to_string(rs_option option) { return rsimpl::get_string(option); }
+
+
+
+void rs_log_to_console(rs_log_severity min_severity, rs_error ** error) try
+{
+    rsimpl::log_to_console(min_severity);
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, min_severity)
+
+void rs_log_to_file(rs_log_severity min_severity, const char * file_path, rs_error ** error) try
+{
+    rsimpl::log_to_file(min_severity, file_path);
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, min_severity, file_path)

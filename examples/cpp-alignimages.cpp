@@ -9,7 +9,6 @@
 #include <iomanip>
 #include <thread>
 
-font font;
 texture_buffer buffers[6];
 
 #pragma pack(push, 1)
@@ -21,28 +20,24 @@ struct rgb_pixel
 
 int main(int argc, char * argv[]) try
 {
+    rs::log_to_console(rs::log_severity::warn);
+    //rs::log_to_file(rs::log_severity::debug, "librealsense.log");
+
     rs::context ctx;
     if(ctx.get_device_count() == 0) throw std::runtime_error("No device detected. Is it plugged in?");
     rs::device & dev = *ctx.get_device(0);
 
     dev.enable_stream(rs::stream::depth, rs::preset::best_quality);
     dev.enable_stream(rs::stream::color, rs::preset::best_quality);
-    dev.enable_stream(rs::stream::infrared2, rs::preset::best_quality);
+    try { dev.enable_stream(rs::stream::infrared2, rs::preset::best_quality); } catch(...) {}
     dev.start();
 
     // Open a GLFW window
     glfwInit();
     std::ostringstream ss; ss << "CPP Image Alignment Example (" << dev.get_name() << ")";
-    GLFWwindow * win = glfwCreateWindow(1920, 960, ss.str().c_str(), 0, 0);
-    glfwMakeContextCurrent(win);
-            
-    // Load our truetype font
-    if (auto f = find_file("examples/assets/Roboto-Bold.ttf", 3))
-    {
-        font = ttf_create(f,20);
-        fclose(f);
-    }
-    else throw std::runtime_error("Unable to open examples/assets/Roboto-Bold.ttf");
+    GLFWwindow * win = glfwCreateWindow(dev.is_stream_enabled(rs::stream::infrared2) ? 1920 : 1280, 960, ss.str().c_str(), 0, 0);
+    glfwMakeContextCurrent(win);            
+    gl_font font(20);
 
     while (!glfwWindowShouldClose(win))
     {
@@ -60,12 +55,16 @@ int main(int argc, char * argv[]) try
         glPushMatrix();
         glfwGetWindowSize(win, &w, &h);
         glOrtho(0, w, h, 0, -1, +1);
-        buffers[0].show(dev, rs::stream::color, 0, 0, w/3, h-h/2, font);
-        buffers[1].show(dev, rs::stream::color_aligned_to_depth, w/3, 0, w/3, h-h/2, font);
-        buffers[2].show(dev, rs::stream::depth_aligned_to_color, 0, h/2, w/3, h-h/2, font);
-        buffers[3].show(dev, rs::stream::depth, w/3, h/2, w/3, h-h/2, font);
-        buffers[4].show(dev, rs::stream::infrared2_aligned_to_depth, 2*w/3, 0, w/3, h-h/2, font);
-        buffers[5].show(dev, rs::stream::depth_aligned_to_infrared2, 2*w/3, h/2, w/3, h-h/2, font);
+        int s = w / (dev.is_stream_enabled(rs::stream::infrared2) ? 3 : 2);
+        buffers[0].show(dev, rs::stream::color, 0, 0, s, h-h/2, font);
+        buffers[1].show(dev, rs::stream::color_aligned_to_depth, s, 0, s, h-h/2, font);
+        buffers[2].show(dev, rs::stream::depth_aligned_to_color, 0, h/2, s, h-h/2, font);
+        buffers[3].show(dev, rs::stream::depth, s, h/2, s, h-h/2, font);
+        if(dev.is_stream_enabled(rs::stream::infrared2))
+        {
+            buffers[4].show(dev, rs::stream::infrared2_aligned_to_depth, 2*s, 0, s, h-h/2, font);
+            buffers[5].show(dev, rs::stream::depth_aligned_to_infrared2, 2*s, h/2, s, h-h/2, font);
+        }
         glPopMatrix();
         glfwSwapBuffers(win);
     }

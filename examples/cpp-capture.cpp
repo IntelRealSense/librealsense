@@ -10,7 +10,6 @@
 #include <thread>
 #include <algorithm>
 
-font font;
 texture_buffer buffers[RS_STREAM_COUNT];
 bool align_depth_to_color = false;
 bool align_color_to_depth = false;
@@ -20,6 +19,9 @@ bool color_rectification_enabled = false;
 
 int main(int argc, char * argv[]) try
 {
+    rs::log_to_console(rs::log_severity::warn);
+    //rs::log_to_file(rs::log_severity::debug, "librealsense.log");
+
     rs::context ctx;
     if(ctx.get_device_count() == 0) throw std::runtime_error("No device detected. Is it plugged in?");
     rs::device & dev = *ctx.get_device(0);
@@ -85,14 +87,7 @@ int main(int argc, char * argv[]) try
         }
     });
     glfwMakeContextCurrent(win);
-            
-    // Load our truetype font
-    if (auto f = find_file("examples/assets/Roboto-Bold.ttf", 3))
-    {
-        font = ttf_create(f,20);
-        fclose(f);
-    }
-    else throw std::runtime_error("Unable to open examples/assets/Roboto-Bold.ttf");
+    gl_font font(20);
 
     while (!glfwWindowShouldClose(win))
     {
