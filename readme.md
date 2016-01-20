@@ -62,6 +62,10 @@ Our intent is to provide bindings and wrappers for as many languages and framewo
 4. Majority of XU-exposed functionality for each camera
 5. Multi-camera capture across heterogeneous camera architectures (e.g. mix R200 and F200 in same application) 
 
+### Firmware Update
+
+All RealSense™ cameras ship with proprietary firmware. This firmware is periodically updated with critical bugfixes, however librealsense does not currently provide functionality to upload new firmware. A supported update path is available on Windows 8.1 and Windows 10 systems via the [Intel® RealSense™ DCM](https://downloadcenter.intel.com/download/25044/Intel-RealSense-Depth-Camera-Manager-DCM-) (Depth Camera Manager). Installing the DCM on a supported machine with an attached camera will automatically flash the latest firmware released by Intel.
+
 # Installation Guide
 
 ## Ubuntu 14.04 LTS Installation
