@@ -1,3 +1,6 @@
+// License: Apache 2.0. See LICENSE file in root directory.
+// Copyright(c) 2015 Intel Corporation. All Rights Reserved.
+
 #ifndef LIBREALSENSE_RS_HPP
 #define LIBREALSENSE_RS_HPP
 
@@ -101,10 +104,10 @@ namespace rs
         r200_auto_exposure_kp_gain                      = 40, 
         r200_auto_exposure_kp_exposure                  = 41, 
         r200_auto_exposure_kp_dark_threshold            = 42, 
-        r200_auto_exposure_exposure_top_edge            = 43, 
-        r200_auto_exposure_exposure_bottom_edge         = 44, 
-        r200_auto_exposure_exposure_left_edge           = 45, 
-        r200_auto_exposure_exposure_right_edge          = 46, 
+        r200_auto_exposure_top_edge                     = 43, 
+        r200_auto_exposure_bottom_edge                  = 44, 
+        r200_auto_exposure_left_edge                    = 45, 
+        r200_auto_exposure_right_edge                   = 46, 
         r200_depth_control_estimate_median_decrement    = 47, 
         r200_depth_control_estimate_median_increment    = 48, 
         r200_depth_control_median_threshold             = 49, 

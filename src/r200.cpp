@@ -127,10 +127,10 @@ namespace rsimpl
             {RS_OPTION_R200_AUTO_EXPOSURE_KP_GAIN,                      0, 1000,        0},
             {RS_OPTION_R200_AUTO_EXPOSURE_KP_EXPOSURE,                  0, 1000,        0},
             {RS_OPTION_R200_AUTO_EXPOSURE_KP_DARK_THRESHOLD,            0, 1000,        0},
-            {RS_OPTION_R200_AUTO_EXPOSURE_EXPOSURE_TOP_EDGE,            0, USHRT_MAX,   1},
-            {RS_OPTION_R200_AUTO_EXPOSURE_EXPOSURE_BOTTOM_EDGE,         0, USHRT_MAX,   1},
-            {RS_OPTION_R200_AUTO_EXPOSURE_EXPOSURE_LEFT_EDGE,           0, USHRT_MAX,   1},
-            {RS_OPTION_R200_AUTO_EXPOSURE_EXPOSURE_RIGHT_EDGE,          0, USHRT_MAX,   1},
+            {RS_OPTION_R200_AUTO_EXPOSURE_TOP_EDGE,            0, USHRT_MAX,   1},
+            {RS_OPTION_R200_AUTO_EXPOSURE_BOTTOM_EDGE,         0, USHRT_MAX,   1},
+            {RS_OPTION_R200_AUTO_EXPOSURE_LEFT_EDGE,           0, USHRT_MAX,   1},
+            {RS_OPTION_R200_AUTO_EXPOSURE_RIGHT_EDGE,          0, USHRT_MAX,   1},
 
             {RS_OPTION_R200_DEPTH_CONTROL_ESTIMATE_MEDIAN_DECREMENT,    0, 0xFF,        1},
             {RS_OPTION_R200_DEPTH_CONTROL_ESTIMATE_MEDIAN_INCREMENT,    0, 0xFF,        1},
@@ -223,10 +223,10 @@ namespace rsimpl
             case RS_OPTION_R200_AUTO_EXPOSURE_KP_GAIN:                      ae_writer.set(&r200::ae_params::kp_gain,                  values[i]); break;
             case RS_OPTION_R200_AUTO_EXPOSURE_KP_EXPOSURE:                  ae_writer.set(&r200::ae_params::kp_exposure,              values[i]); break;
             case RS_OPTION_R200_AUTO_EXPOSURE_KP_DARK_THRESHOLD:            ae_writer.set(&r200::ae_params::kp_dark_threshold,        values[i]); break;
-            case RS_OPTION_R200_AUTO_EXPOSURE_EXPOSURE_TOP_EDGE:            ae_writer.set(&r200::ae_params::exposure_top_edge,        values[i]); break;
-            case RS_OPTION_R200_AUTO_EXPOSURE_EXPOSURE_BOTTOM_EDGE:         ae_writer.set(&r200::ae_params::exposure_bottom_edge,     values[i]); break;
-            case RS_OPTION_R200_AUTO_EXPOSURE_EXPOSURE_LEFT_EDGE:           ae_writer.set(&r200::ae_params::exposure_left_edge,       values[i]); break;
-            case RS_OPTION_R200_AUTO_EXPOSURE_EXPOSURE_RIGHT_EDGE:          ae_writer.set(&r200::ae_params::exposure_right_edge,      values[i]); break;
+            case RS_OPTION_R200_AUTO_EXPOSURE_TOP_EDGE:                     ae_writer.set(&r200::ae_params::exposure_top_edge,        values[i]); break;
+            case RS_OPTION_R200_AUTO_EXPOSURE_BOTTOM_EDGE:                  ae_writer.set(&r200::ae_params::exposure_bottom_edge,     values[i]); break;
+            case RS_OPTION_R200_AUTO_EXPOSURE_LEFT_EDGE:                    ae_writer.set(&r200::ae_params::exposure_left_edge,       values[i]); break;
+            case RS_OPTION_R200_AUTO_EXPOSURE_RIGHT_EDGE:                   ae_writer.set(&r200::ae_params::exposure_right_edge,      values[i]); break;
 
             case RS_OPTION_R200_DEPTH_CONTROL_ESTIMATE_MEDIAN_DECREMENT:    dc_writer.set(&r200::dc_params::robbins_munroe_minus_inc, values[i]); break;
             case RS_OPTION_R200_DEPTH_CONTROL_ESTIMATE_MEDIAN_INCREMENT:    dc_writer.set(&r200::dc_params::robbins_munroe_plus_inc,  values[i]); break;
@@ -295,10 +295,10 @@ namespace rsimpl
             case RS_OPTION_R200_AUTO_EXPOSURE_KP_GAIN:                      values[i] = ae_reader.get(&r200::ae_params::kp_gain                 ); break;
             case RS_OPTION_R200_AUTO_EXPOSURE_KP_EXPOSURE:                  values[i] = ae_reader.get(&r200::ae_params::kp_exposure             ); break;
             case RS_OPTION_R200_AUTO_EXPOSURE_KP_DARK_THRESHOLD:            values[i] = ae_reader.get(&r200::ae_params::kp_dark_threshold       ); break;
-            case RS_OPTION_R200_AUTO_EXPOSURE_EXPOSURE_TOP_EDGE:            values[i] = ae_reader.get(&r200::ae_params::exposure_top_edge       ); break;
-            case RS_OPTION_R200_AUTO_EXPOSURE_EXPOSURE_BOTTOM_EDGE:         values[i] = ae_reader.get(&r200::ae_params::exposure_bottom_edge    ); break;
-            case RS_OPTION_R200_AUTO_EXPOSURE_EXPOSURE_LEFT_EDGE:           values[i] = ae_reader.get(&r200::ae_params::exposure_left_edge      ); break;
-            case RS_OPTION_R200_AUTO_EXPOSURE_EXPOSURE_RIGHT_EDGE:          values[i] = ae_reader.get(&r200::ae_params::exposure_right_edge     ); break;
+            case RS_OPTION_R200_AUTO_EXPOSURE_TOP_EDGE:                     values[i] = ae_reader.get(&r200::ae_params::exposure_top_edge       ); break;
+            case RS_OPTION_R200_AUTO_EXPOSURE_BOTTOM_EDGE:                  values[i] = ae_reader.get(&r200::ae_params::exposure_bottom_edge    ); break;
+            case RS_OPTION_R200_AUTO_EXPOSURE_LEFT_EDGE:                    values[i] = ae_reader.get(&r200::ae_params::exposure_left_edge      ); break;
+            case RS_OPTION_R200_AUTO_EXPOSURE_RIGHT_EDGE:                   values[i] = ae_reader.get(&r200::ae_params::exposure_right_edge     ); break;
 
             case RS_OPTION_R200_DEPTH_CONTROL_ESTIMATE_MEDIAN_DECREMENT:    values[i] = dc_reader.get(&r200::dc_params::robbins_munroe_minus_inc); break;
             case RS_OPTION_R200_DEPTH_CONTROL_ESTIMATE_MEDIAN_INCREMENT:    values[i] = dc_reader.get(&r200::dc_params::robbins_munroe_plus_inc ); break;

@@ -75,7 +75,7 @@ int main() try
 catch(const rs::error & e)
 {
     // Method calls against librealsense objects may throw exceptions of type rs::error
-    printf("rs::error was thrown when calling %s(%s):\n", e.get_failed_function(), e.get_failed_args());
+    printf("rs::error was thrown when calling %s(%s):\n", e.get_failed_function().c_str(), e.get_failed_args().c_str());
     printf("    %s\n", e.what());
     return EXIT_FAILURE;
 }

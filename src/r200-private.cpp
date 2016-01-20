@@ -380,8 +380,8 @@ namespace rsimpl { namespace r200
         LOG_INFO("Lens coating for third imager       = " << header.lensCoatingTypeThird);
         LOG_INFO("Nominal baseline (left to right)    = " << header.nominalBaseline << " mm");
         LOG_INFO("Nominal baseline (left to third)    = " << header.nominalBaselineThird << " mm");
-        if(std::isfinite(header.buildDate)) LOG_INFO("Built on " << std::put_time(std::gmtime(&build_date), "%Y-%m-%d %H:%M:%S") << " UTC");
-        if(std::isfinite(header.calibrationDate)) LOG_INFO("Calibrated on " << std::put_time(std::gmtime(&calib_date), "%Y-%m-%d %H:%M:%S") << " UTC");
+        //if(std::isfinite(header.buildDate)) LOG_INFO("Built on " << std::put_time(std::gmtime(&build_date), "%Y-%m-%d %H:%M:%S") << " UTC");
+        //if(std::isfinite(header.calibrationDate)) LOG_INFO("Calibrated on " << std::put_time(std::gmtime(&calib_date), "%Y-%m-%d %H:%M:%S") << " UTC");
     }
 
     r200_calibration read_camera_info(uvc::device & device)

@@ -13,6 +13,8 @@
 #include <cstdio>
 #include <stdint.h>
 #include <vector>
+#include <limits>
+#include <iostream>
 
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "third_party/stb_image_write.h"
@@ -77,8 +79,11 @@ int main() try
 }
 catch(const rs::error & e)
 {
-    // Method calls against librealsense objects may throw exceptions of type rs::error
-    printf("rs::error was thrown when calling %s(%s):\n", e.get_failed_function(), e.get_failed_args());
-    printf("    %s\n", e.what());
+    std::cerr << "RealSense error calling " << e.get_failed_function() << "(" << e.get_failed_args() << "):\n    " << e.what() << std::endl;
+    return EXIT_FAILURE;
+}
+catch(const std::exception & e)
+{
+    std::cerr << e.what() << std::endl;
     return EXIT_FAILURE;
 }

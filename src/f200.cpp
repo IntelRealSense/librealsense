@@ -8,6 +8,7 @@
 #define _USE_MATH_DEFINES
 #include <math.h>
 #include <limits>
+#include <climits>
 
 namespace rsimpl
 {
@@ -108,11 +109,11 @@ namespace rsimpl
         info.presets[RS_STREAM_COLOR   ][RS_PRESET_HIGHEST_FRAMERATE] = {true, 640, 480, RS_FORMAT_RGB8, 60};
 
         info.options = {
-            {RS_OPTION_F200_LASER_POWER,          0, 15,  1},
-            {RS_OPTION_F200_ACCURACY,             0, 3,   1},
-            {RS_OPTION_F200_MOTION_RANGE,         0, 100, 1},
-            {RS_OPTION_F200_FILTER_OPTION,        0, 7,   1},
-            {RS_OPTION_F200_CONFIDENCE_THRESHOLD, 0, 15,  1}
+            {RS_OPTION_F200_LASER_POWER,          0.0, 15.0,  1.0},
+            {RS_OPTION_F200_ACCURACY,             0.0, 3.0,   1.0},
+            {RS_OPTION_F200_MOTION_RANGE,         0.0, 100.0, 1.0},
+            {RS_OPTION_F200_FILTER_OPTION,        0.0, 7.0,   1.0},
+            {RS_OPTION_F200_CONFIDENCE_THRESHOLD, 0.0, 15.0,  1.0}
         };
 
         rsimpl::pose depth_to_color = {transpose((const float3x3 &)c.Rt), (const float3 &)c.Tt * 0.001f}; // convert mm to m
@@ -187,23 +188,23 @@ namespace rsimpl
         }
 
         info.options = {
-            {RS_OPTION_F200_LASER_POWER,                            0,        15,        1},
-            {RS_OPTION_F200_ACCURACY,                               0,        3,         1},
-            {RS_OPTION_F200_MOTION_RANGE,                           0,        100,       1},
-            {RS_OPTION_F200_FILTER_OPTION,                          0,        7,         1},
-            {RS_OPTION_F200_CONFIDENCE_THRESHOLD,                   0,        15,        1},
+            {RS_OPTION_F200_LASER_POWER,                            0.0,        15.0,        1.0},
+            {RS_OPTION_F200_ACCURACY,                               0.0,        3.0,         1.0},
+            {RS_OPTION_F200_MOTION_RANGE,                           0.0,        100.0,       1.0},
+            {RS_OPTION_F200_FILTER_OPTION,                          0.0,        7.0,         1.0},
+            {RS_OPTION_F200_CONFIDENCE_THRESHOLD,                   0.0,        15.0,        1.0},
 
-            {RS_OPTION_SR300_DYNAMIC_FPS,                           2,        60,        1},
-            {RS_OPTION_SR300_AUTO_RANGE_ENABLE_MOTION_VERSUS_RANGE, 0,        2,         1},
-            {RS_OPTION_SR300_AUTO_RANGE_ENABLE_LASER,               0,        1,         1},  
-            {RS_OPTION_SR300_AUTO_RANGE_MIN_MOTION_VERSUS_RANGE,    SHRT_MIN, SHRT_MAX,  1}, 
-            {RS_OPTION_SR300_AUTO_RANGE_MAX_MOTION_VERSUS_RANGE,    SHRT_MIN, SHRT_MAX,  1}, 
-            {RS_OPTION_SR300_AUTO_RANGE_START_MOTION_VERSUS_RANGE,  SHRT_MIN, SHRT_MAX,  1}, 
-            {RS_OPTION_SR300_AUTO_RANGE_MIN_LASER,                  SHRT_MIN, SHRT_MAX,  1}, 
-            {RS_OPTION_SR300_AUTO_RANGE_MAX_LASER,                  SHRT_MIN, SHRT_MAX,  1}, 
-            {RS_OPTION_SR300_AUTO_RANGE_START_LASER,                SHRT_MIN, SHRT_MAX,  1}, 
-            {RS_OPTION_SR300_AUTO_RANGE_UPPER_THRESHOLD,            0,        USHRT_MAX, 1},
-            {RS_OPTION_SR300_AUTO_RANGE_LOWER_THRESHOLD,            0,        USHRT_MAX, 1},
+            {RS_OPTION_SR300_DYNAMIC_FPS,                           2.0,        60.0,        1.0},
+            {RS_OPTION_SR300_AUTO_RANGE_ENABLE_MOTION_VERSUS_RANGE, 0.0,        2.0,         1.0},
+            {RS_OPTION_SR300_AUTO_RANGE_ENABLE_LASER,               0.0,        1.0,         1.0},  
+            {RS_OPTION_SR300_AUTO_RANGE_MIN_MOTION_VERSUS_RANGE,    (double)SHRT_MIN, (double)SHRT_MAX,  1.0}, 
+            {RS_OPTION_SR300_AUTO_RANGE_MAX_MOTION_VERSUS_RANGE,    (double)SHRT_MIN, (double)SHRT_MAX,  1.0}, 
+            {RS_OPTION_SR300_AUTO_RANGE_START_MOTION_VERSUS_RANGE,  (double)SHRT_MIN, (double)SHRT_MAX,  1.0}, 
+            {RS_OPTION_SR300_AUTO_RANGE_MIN_LASER,                  (double)SHRT_MIN, (double)SHRT_MAX,  1.0}, 
+            {RS_OPTION_SR300_AUTO_RANGE_MAX_LASER,                  (double)SHRT_MIN, (double)SHRT_MAX,  1.0}, 
+            {RS_OPTION_SR300_AUTO_RANGE_START_LASER,                (double)SHRT_MIN, (double)SHRT_MAX,  1.0}, 
+            {RS_OPTION_SR300_AUTO_RANGE_UPPER_THRESHOLD,            0.0,        (double)USHRT_MAX, 1.0},
+            {RS_OPTION_SR300_AUTO_RANGE_LOWER_THRESHOLD,            0.0,        (double)USHRT_MAX, 1.0},
         };
 
         rsimpl::pose depth_to_color = {transpose((const float3x3 &)c.Rt), (const float3 &)c.Tt * 0.001f}; // convert mm to m

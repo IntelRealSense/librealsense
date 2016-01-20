@@ -3,6 +3,7 @@
 #include <fstream>
 #include <iostream>
 #include <iomanip>
+#include <ctime>
 
 int rsimpl::minimum_log_severity = static_cast<int>(rsimpl::log_severity::info);
 
@@ -12,14 +13,16 @@ struct logger
 
     logger() : out("librealsense-log.txt", std::ofstream::app)
     {
-        std::time_t t = std::time(nullptr);
-        out << "\n" << std::put_time(std::localtime(&t), "%Y-%m-%d %H:%M:%S") << " PROGRAM START" << std::endl;
+        std::time_t t = std::time(nullptr); char buffer[20];
+	std::strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S", std::localtime(&t));
+        out << "\n" << buffer << " PROGRAM START" << std::endl;
     }
 
     ~logger()
     {
-        std::time_t t = std::time(nullptr);
-        out << std::put_time(std::localtime(&t), "%Y-%m-%d %H:%M:%S") << " PROGRAM STOP" << std::endl;    
+        std::time_t t = std::time(nullptr); char buffer[20];
+	std::strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S", std::localtime(&t));
+        out << buffer << " PROGRAM STOP" << std::endl;    
     }
 };
 
@@ -29,16 +32,16 @@ void rsimpl::log(log_severity severity, const std::string & message)
 
     static logger the_logger;
 
-    std::time_t t = std::time(nullptr);
-    auto l = std::put_time(std::localtime(&t), "%Y-%m-%d %H:%M:%S");
+    std::time_t t = std::time(nullptr); char buffer[20];
+    std::strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S", std::localtime(&t));
 
     switch(severity)
     {
-    case log_severity::debug:   the_logger.out << l << " DEBUG: " << message << std::endl; break;
-    case log_severity::info:    the_logger.out << l << " INFO:  " << message << std::endl; break;
-    case log_severity::warning: the_logger.out << l << " WARN:  " << message << std::endl; break;
-    case log_severity::error:   the_logger.out << l << " ERROR: " << message << std::endl; break;
-    case log_severity::fatal:   the_logger.out << l << " FATAL: " << message << std::endl; break;
+    case log_severity::debug:   the_logger.out << buffer << " DEBUG: " << message << std::endl; break;
+    case log_severity::info:    the_logger.out << buffer << " INFO:  " << message << std::endl; break;
+    case log_severity::warning: the_logger.out << buffer << " WARN:  " << message << std::endl; break;
+    case log_severity::error:   the_logger.out << buffer << " ERROR: " << message << std::endl; break;
+    case log_severity::fatal:   the_logger.out << buffer << " FATAL: " << message << std::endl; break;
     }
 
     switch(severity)

@@ -41,7 +41,7 @@ namespace rsimpl
         int convert_timestamp(int64_t timestamp) const override { return static_cast<int>(timestamp / 100000); }
         
         void set_options(const rs_option options[], int count, const double values[]) override;
-        void f200_camera::get_options(const rs_option options[], int count, double values[]) override;
+        void get_options(const rs_option options[], int count, double values[]) override;
     };
 
     std::shared_ptr<rs_device> make_f200_device(std::shared_ptr<uvc::device> device);
