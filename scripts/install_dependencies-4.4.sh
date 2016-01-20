@@ -23,5 +23,4 @@ dpkg -i /tmp/*.deb
 # Update grub
 update-grub
 
-# Reboot
-reboot
+echo "Finished! In order to complete the Kernel upgrade you must reboot."
