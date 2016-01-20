@@ -113,9 +113,9 @@ All RealSense™ cameras ship with proprietary firmware. This firmware is period
 
 **Note:** This backend has been deprecated on Linux.
 
-The libuvc backend requires that the default linux uvcvideo.ko driver be unloaded before libusb can touch the device. This is because uvcvideo will own a UVC device the moment is is plugged in; user-space applications do not have permission to access the devie handle. See below regarding the udev rule workaround: 
+The libuvc backend requires that the default linux uvcvideo.ko driver be unloaded before libusb can touch the device. This is because uvcvideo will own a UVC device the moment is is plugged in; user-space applications do not have permission to access the devie handle. See below regarding the udev rule workaround. 
 
-libuvc is known to have issues with some versions of SR300 and R200 firmware (1.0.71.xx series of firmwares are problematic). 
+The libuvc backend is known to have issues with some versions of SR300 and R200 firmware (1.0.71.xx series of firmwares are problematic). 
 
 1. Grant appropriate permissions to detach the kernel UVC driver when a device is plugged in:
   * `sudo cp config/99-realsense-libusb.rules /etc/udev/rules.d/`
@@ -153,17 +153,17 @@ Developer kits require USB 3.0. Not all USB host chipsets are compatible with li
 
 *Q:* How is this implemented?
 
-*A:* The library communicates with RealSense devices directly via the UVC and USB protocols. It does not link against the RealSense SDK runtime. Most of the library source code is platform agnostic, but there is a small UVC abstraction layer with platform-specific backends, including:
+*A:* The library communicates with RealSense™ devices directly via the UVC and USB protocols. It does not link against the RealSense SDK runtime. Most of the library source code is platform agnostic, but there is a small UVC abstraction layer with platform-specific backends, including:
   * A `libuvc` backend which provides user-space access to UVC devices on Linux and Mac OS X (built with libusb)
   * A `video4linux2` backend which provides kernel-space access to UVC devices on Linux
   * A `Windows Media Foundation` backend which provides kernel-space access to UVC devices on Windows
 
 ## Documentation
 
-Documentation for librealsense is still incomplete, and may contain inaccuracies. Please send us feedback about things that are unclear or which need to be improved. For now, the following documentation is available:
+Documentation for librealsense is still incomplete, and may contain the occasional inaccuracy. Please send us feedback about things that are unclear or which need to be improved. For now, the following documentation is available:
   * [The librealsense C API](./include/librealsense/rs.h) - Doxygen style comments are provided for all functions, data types, and most constants
   * [Projection in librealsense](./doc/projection.md) - A guide on coordinate systems, calibration information, and projection APIs.
-  * [Developer Notes](./doc/dev_log.md) - Several informal notes gathered during releases.
+  * [Developer Notes](./doc/dev_log.md) - Several informal notes gathered during internal releases.
 
 ## License
 
