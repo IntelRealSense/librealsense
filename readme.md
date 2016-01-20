@@ -6,7 +6,7 @@ Linux | Travis badge |
 OSX | Travis badge |
 Windows | Appveyor badge | 
 
-Librealsense is a cross-platform library for capturing data from the Intel® RealSense™ F200, SR300 and R200 cameras. This effort was initiated to better support developers in domains such as robotics, virtual reality, and the internet of things. 
+Librealsense is a cross-platform library (Linux, OSX, Windows) for capturing data from the Intel® RealSense™ F200, SR300 and R200 cameras. This effort was initiated to better support developers in domains such as robotics, virtual reality, and the internet of things. Many often-requested features of RealSense™ devices are implemented in librealsense, including multi-camera capture.
 
 Developer kits containing the necessary hardware to use this library are available for purchase at [this link](http://click.intel.com/realsense.html). This project is separate from the production software stack available in the the [Intel® RealSense™ SDK](https://software.intel.com/en-us/intel-realsense-sdk), namely that librealsense only encompasses camera capture functionality without additional computer vision algorithms.
 
