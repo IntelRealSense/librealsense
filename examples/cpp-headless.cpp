@@ -8,8 +8,8 @@
 // cpp-headless  //
 ///////////////////
 
-// This file captures 30 frames and writes a .png file of the 29th frame to disk. It can be 
-// useful for debugging an embedded system with no display. 
+// This sample captures 30 frames and writes the last frame to disk.
+// It can be useful for debugging an embedded system with no display. 
 
 #include <librealsense/rs.hpp>
 
