@@ -18,23 +18,17 @@
 
 namespace rsimpl
 {
-    enum class log_severity
-    {
-        debug   = 0, // Detailed information about ordinary operations
-        info    = 1, // Terse information about ordinary operations
-        warning = 2, // Indication of possible failure
-        error   = 3, // Indication of definite failure
-        fatal   = 4, // Indication of unrecoverable failure
-    };
-    void log(log_severity severity, const std::string & message);
-    extern int minimum_log_severity;
+    void log(rs_log_severity severity, const std::string & message);
+    void log_to_console(rs_log_severity min_severity);
+    void log_to_file(rs_log_severity min_severity, const char * file_path);
+    extern rs_log_severity minimum_log_severity;
 
     #define LOG(SEVERITY, ...) do { if(static_cast<int>(SEVERITY) >= rsimpl::minimum_log_severity) { std::ostringstream ss; ss << __VA_ARGS__; rsimpl::log(SEVERITY, ss.str()); } } while(false)
-    #define LOG_DEBUG(...)   LOG(rsimpl::log_severity::debug,   __VA_ARGS__)
-    #define LOG_INFO(...)    LOG(rsimpl::log_severity::info,    __VA_ARGS__)
-    #define LOG_WARNING(...) LOG(rsimpl::log_severity::warning, __VA_ARGS__)
-    #define LOG_ERROR(...)   LOG(rsimpl::log_severity::error,   __VA_ARGS__)
-    #define LOG_FATAL(...)   LOG(rsimpl::log_severity::fatal,   __VA_ARGS__)
+    #define LOG_DEBUG(...)   LOG(RS_LOG_SEVERITY_DEBUG, __VA_ARGS__)
+    #define LOG_INFO(...)    LOG(RS_LOG_SEVERITY_INFO,  __VA_ARGS__)
+    #define LOG_WARNING(...) LOG(RS_LOG_SEVERITY_WARN,  __VA_ARGS__)
+    #define LOG_ERROR(...)   LOG(RS_LOG_SEVERITY_ERROR, __VA_ARGS__)
+    #define LOG_FATAL(...)   LOG(RS_LOG_SEVERITY_FATAL, __VA_ARGS__)
 
     enum class byte : uint8_t {};
 

@@ -50,6 +50,12 @@ static void on_cursor_pos(GLFWwindow * win, double x, double y)
 
 int main()
 {
+    /* Turn on logging. We can separately enable logging to console or to file, and use different severity filters for each. */
+    rs_log_to_console(RS_LOG_SEVERITY_WARN, &e);
+    check_error();
+    /*rs_log_to_file(RS_LOG_SEVERITY_DEBUG, "librealsense.log", &e);
+    check_error();*/
+
     /* Create a context object. This object owns the handles to all connected realsense devices. */
     rs_context * ctx = rs_create_context(RS_API_VERSION, &e);
     check_error();

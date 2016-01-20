@@ -11,6 +11,9 @@ std::vector<texture_buffer> buffers;
 
 int main(int argc, char * argv[]) try
 {
+    rs::log_to_console(rs::log_severity::warn);
+    //rs::log_to_file(rs::log_severity::debug, "librealsense.log");
+
     rs::context ctx;
     if(ctx.get_device_count() == 0) throw std::runtime_error("No device detected. Is it plugged in?");
     

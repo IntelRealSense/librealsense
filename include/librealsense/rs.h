@@ -401,6 +401,19 @@ const char * rs_preset_to_string     (rs_preset preset);
 const char * rs_distortion_to_string (rs_distortion distortion);
 const char * rs_option_to_string     (rs_option option);
 
+typedef enum
+{
+    RS_LOG_SEVERITY_DEBUG = 0, /* Detailed information about ordinary operations */
+    RS_LOG_SEVERITY_INFO  = 1, /* Terse information about ordinary operations */
+    RS_LOG_SEVERITY_WARN  = 2, /* Indication of possible failure */
+    RS_LOG_SEVERITY_ERROR = 3, /* Indication of definite failure */
+    RS_LOG_SEVERITY_FATAL = 4, /* Indication of unrecoverable failure */
+    RS_LOG_SEVERITY_NONE  = 5, /* No logging will occur */
+    RS_LOG_SEVERITY_MAX_ENUM = 0x7FFFFFFF
+} rs_log_severity;
+void rs_log_to_console(rs_log_severity min_severity, rs_error ** error);
+void rs_log_to_file(rs_log_severity min_severity, const char * file_path, rs_error ** error);
+
 #ifdef __cplusplus
 }
 #endif

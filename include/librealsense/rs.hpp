@@ -13,7 +13,6 @@
 
 namespace rs
 {
-
     enum class stream : int32_t
     {
         depth                            = 0, ///< Native stream of depth data produced by RealSense device
@@ -518,5 +517,29 @@ namespace rs
     inline std::ostream & operator << (std::ostream & o, preset preset) { return o << rs_preset_to_string((rs_preset)preset); }
     inline std::ostream & operator << (std::ostream & o, distortion distortion) { return o << rs_distortion_to_string((rs_distortion)distortion); }
     inline std::ostream & operator << (std::ostream & o, option option) { return o << rs_option_to_string((rs_option)option); }
+
+    enum class log_severity : int32_t
+    {
+        debug = 0, // Detailed information about ordinary operations
+        info  = 1, // Terse information about ordinary operations
+        warn  = 2, // Indication of possible failure
+        error = 3, // Indication of definite failure
+        fatal = 4, // Indication of unrecoverable failure
+        none  = 5, // No logging will occur
+    };
+
+    inline void log_to_console(log_severity min_severity)
+    {
+        rs_error * e = nullptr;
+        rs_log_to_console((rs_log_severity)min_severity, &e);
+        error::handle(e);
+    }
+
+    inline void log_to_file(log_severity min_severity, const char * file_path)
+    {
+        rs_error * e = nullptr;
+        rs_log_to_file((rs_log_severity)min_severity, file_path, &e);
+        error::handle(e);
+    }
 }
 #endif

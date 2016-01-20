@@ -41,6 +41,9 @@ void normalize_depth_to_rgb(uint8_t rgb_image[640*480*3], const uint16_t depth_i
 
 int main() try
 {
+    rs::log_to_console(rs::log_severity::warn);
+    //rs::log_to_file(rs::log_severity::debug, "librealsense.log");
+
     rs::context ctx;
     printf("There are %d connected RealSense devices.\n", ctx.get_device_count());
     if(ctx.get_device_count() == 0) return EXIT_FAILURE;
