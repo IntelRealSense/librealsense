@@ -10,8 +10,7 @@ CONFIG += link_pkgconfig
 INCLUDEPATH += ../include
 LIBS += -pthread
 
-SOURCES += ../examples/c-pointcloud.c
-HEADERS += ../examples/example.h
+SOURCES += ../examples/c-tutorial-3-pointcloud.c
 
 LIBS += -L$$DESTDIR/ -lrealsense
 

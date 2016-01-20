@@ -4,14 +4,13 @@ TEMPLATE = app
 CONFIG += console
 CONFIG -= app_bundle
 CONFIG -= qt
-QMAKE_CXXFLAGS += -std=c++11
-PKGCONFIG += libusb-1.0
+QMAKE_CXXFLAGS += -std=c++11 -fpermissive
+PKGCONFIG += glfw3 gl glu libusb-1.0
 CONFIG += link_pkgconfig
 INCLUDEPATH += ../include
 LIBS += -pthread
 
-SOURCES += ../examples/c-enumerate.c
-HEADERS += ../examples/example.h
+SOURCES += ../examples/c-tutorial-1-depth.c
 
 LIBS += -L$$DESTDIR/ -lrealsense
 
