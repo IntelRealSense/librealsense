@@ -12,7 +12,8 @@ std::vector<texture_buffer> buffers;
 int main(int argc, char * argv[]) try
 {
     rs::context ctx;
-
+    if(ctx.get_device_count() == 0) throw std::runtime_error("No device detected. Is it plugged in?");
+    
     // Enumerate all devices
     std::vector<rs::device *> devices;
     for(int i=0; i<ctx.get_device_count(); ++i)

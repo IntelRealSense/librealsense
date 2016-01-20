@@ -84,7 +84,7 @@ struct gui
             value = new_value;
             p = (w - h) * (value - min) / (max - min);
         }
-        const rect dragger = {r.x0+p, r.y0, r.x0+p+h, r.y1};
+        const rect dragger = {int(r.x0+p), int(r.y0), int(r.x0+p+h), int(r.y1)};
         if(click && dragger.contains(cursor))
         {
             clicked_offset = {cursor.x - dragger.x0, cursor.y - dragger.y0};
