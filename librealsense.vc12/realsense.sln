@@ -107,13 +107,6 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "c-tutorial-3-pointcloud", "
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "cpp-headless", "cpp-headless\cpp-headless.vcxproj", "{7F7D0E8C-1614-411C-AD0A-C3D583EC5811}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".nuget", ".nuget", "{C2E37549-1D05-4A96-8AFA-449AF027E34B}"
-	ProjectSection(SolutionItems) = preProject
-		.nuget\NuGet.Config = .nuget\NuGet.Config
-		.nuget\NuGet.exe = .nuget\NuGet.exe
-		.nuget\NuGet.targets = .nuget\NuGet.targets
-	EndProjectSection
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
