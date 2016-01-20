@@ -52,7 +52,7 @@ int main() try
 		{
 			make_depth_histogram(coloredDepthHistogram.data(), reinterpret_cast<const uint16_t *>(depth_frame), depth_intrin.width, depth_intrin.height);
 			stbi_write_png("cpp-headless-output.png", depth_intrin.width, depth_intrin.height, 3, coloredDepthHistogram.data(), 3 * depth_intrin.width * depth_intrin.height) != 0;
-			printf("wrote frame to current working directory."));
+			printf("wrote frame to current working directory.");
 		}
 
     }
