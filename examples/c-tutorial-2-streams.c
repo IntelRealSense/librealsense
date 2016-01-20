@@ -94,9 +94,11 @@ int main()
         check_error();
 
         /* Display second infrared image by mapping IR intensity to visible luminance */
-        glRasterPos2f(0, 0);
-        glDrawPixels(640, 480, GL_LUMINANCE, GL_UNSIGNED_BYTE, rs_get_frame_data(dev, RS_STREAM_INFRARED2, &e));
-        check_error();
+        if(rs_is_stream_enabled(dev, RS_STREAM_INFRARED2, NULL))
+        {
+            glRasterPos2f(0, 0);
+            glDrawPixels(640, 480, GL_LUMINANCE, GL_UNSIGNED_BYTE, rs_get_frame_data(dev, RS_STREAM_INFRARED2, &e));
+        }
 
         glfwSwapBuffers(win);
     }
