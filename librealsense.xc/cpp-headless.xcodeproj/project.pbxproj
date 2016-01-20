@@ -7,13 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		08567C091B5B898400EB6C0D /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 08567C081B5B898400EB6C0D /* Cocoa.framework */; };
-		08567C0B1B5B898C00EB6C0D /* CoreVideo.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 08567C0A1B5B898C00EB6C0D /* CoreVideo.framework */; };
-		08567C0D1B5B899200EB6C0D /* IOKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 08567C0C1B5B899200EB6C0D /* IOKit.framework */; };
-		08567C0F1B5B899B00EB6C0D /* OpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 08567C0E1B5B899B00EB6C0D /* OpenGL.framework */; };
-		2799858D1B95086300894334 /* librealsense.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 2799858C1B95086300894334 /* librealsense.dylib */; };
-		279D52DA1B8E86FB007F2D73 /* c-pointcloud.c in Sources */ = {isa = PBXBuildFile; fileRef = 279D52D91B8E86FB007F2D73 /* c-pointcloud.c */; };
-		279D52DE1B8E8866007F2D73 /* libglfw3.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 279D52DD1B8E8866007F2D73 /* libglfw3.dylib */; };
+		2799858F1B95088B00894334 /* librealsense.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 2799858E1B95088B00894334 /* librealsense.dylib */; };
+		279D52DA1B8E86FB007F2D73 /* cpp-headless.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 279D52D91B8E86FB007F2D73 /* cpp-headless.cpp */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -29,14 +24,9 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		08567BB11B5B59E800EB6C0D /* c-pointcloud */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = "c-pointcloud"; sourceTree = BUILT_PRODUCTS_DIR; };
-		08567C081B5B898400EB6C0D /* Cocoa.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cocoa.framework; path = System/Library/Frameworks/Cocoa.framework; sourceTree = SDKROOT; };
-		08567C0A1B5B898C00EB6C0D /* CoreVideo.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreVideo.framework; path = System/Library/Frameworks/CoreVideo.framework; sourceTree = SDKROOT; };
-		08567C0C1B5B899200EB6C0D /* IOKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = IOKit.framework; path = System/Library/Frameworks/IOKit.framework; sourceTree = SDKROOT; };
-		08567C0E1B5B899B00EB6C0D /* OpenGL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenGL.framework; path = System/Library/Frameworks/OpenGL.framework; sourceTree = SDKROOT; };
-		2799858C1B95086300894334 /* librealsense.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = librealsense.dylib; path = librealsense.xc/build/Debug/librealsense.dylib; sourceTree = "<group>"; };
-		279D52D91B8E86FB007F2D73 /* c-pointcloud.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = "c-pointcloud.c"; path = "../examples/c-pointcloud.c"; sourceTree = SOURCE_ROOT; };
-		279D52DD1B8E8866007F2D73 /* libglfw3.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libglfw3.dylib; path = /usr/local/lib/libglfw3.dylib; sourceTree = "<group>"; };
+		08567BB11B5B59E800EB6C0D /* cpp-headless */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = "cpp-headless"; sourceTree = BUILT_PRODUCTS_DIR; };
+		2799858E1B95088B00894334 /* librealsense.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = librealsense.dylib; path = librealsense.xc/build/Debug/librealsense.dylib; sourceTree = "<group>"; };
+		279D52D91B8E86FB007F2D73 /* cpp-headless.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = "cpp-headless.cpp"; path = "../examples/cpp-headless.cpp"; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -44,12 +34,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				2799858D1B95086300894334 /* librealsense.dylib in Frameworks */,
-				279D52DE1B8E8866007F2D73 /* libglfw3.dylib in Frameworks */,
-				08567C0F1B5B899B00EB6C0D /* OpenGL.framework in Frameworks */,
-				08567C0D1B5B899200EB6C0D /* IOKit.framework in Frameworks */,
-				08567C0B1B5B898C00EB6C0D /* CoreVideo.framework in Frameworks */,
-				08567C091B5B898400EB6C0D /* Cocoa.framework in Frameworks */,
+				2799858F1B95088B00894334 /* librealsense.dylib in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -68,7 +53,7 @@
 		08567BB21B5B59E800EB6C0D /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				08567BB11B5B59E800EB6C0D /* c-pointcloud */,
+				08567BB11B5B59E800EB6C0D /* cpp-headless */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -76,7 +61,7 @@
 		08567BB31B5B59E800EB6C0D /* src */ = {
 			isa = PBXGroup;
 			children = (
-				279D52D91B8E86FB007F2D73 /* c-pointcloud.c */,
+				279D52D91B8E86FB007F2D73 /* cpp-headless.cpp */,
 			);
 			name = src;
 			path = "example-cpp";
@@ -94,8 +79,7 @@
 		08567C2D1B61D82000EB6C0D /* libs */ = {
 			isa = PBXGroup;
 			children = (
-				2799858C1B95086300894334 /* librealsense.dylib */,
-				279D52DD1B8E8866007F2D73 /* libglfw3.dylib */,
+				2799858E1B95088B00894334 /* librealsense.dylib */,
 			);
 			name = libs;
 			path = ..;
@@ -104,10 +88,6 @@
 		08567C2E1B61D82D00EB6C0D /* frameworks */ = {
 			isa = PBXGroup;
 			children = (
-				08567C0E1B5B899B00EB6C0D /* OpenGL.framework */,
-				08567C0C1B5B899200EB6C0D /* IOKit.framework */,
-				08567C0A1B5B898C00EB6C0D /* CoreVideo.framework */,
-				08567C081B5B898400EB6C0D /* Cocoa.framework */,
 			);
 			name = frameworks;
 			sourceTree = "<group>";
@@ -115,9 +95,9 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		08567BB01B5B59E800EB6C0D /* c-pointcloud */ = {
+		08567BB01B5B59E800EB6C0D /* cpp-headless */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 08567BB81B5B59E800EB6C0D /* Build configuration list for PBXNativeTarget "c-pointcloud" */;
+			buildConfigurationList = 08567BB81B5B59E800EB6C0D /* Build configuration list for PBXNativeTarget "cpp-headless" */;
 			buildPhases = (
 				08567BAD1B5B59E800EB6C0D /* Sources */,
 				08567BAE1B5B59E800EB6C0D /* Frameworks */,
@@ -127,9 +107,9 @@
 			);
 			dependencies = (
 			);
-			name = "c-pointcloud";
+			name = "cpp-headless";
 			productName = "example-cpp";
-			productReference = 08567BB11B5B59E800EB6C0D /* c-pointcloud */;
+			productReference = 08567BB11B5B59E800EB6C0D /* cpp-headless */;
 			productType = "com.apple.product-type.tool";
 		};
 /* End PBXNativeTarget section */
@@ -146,7 +126,7 @@
 					};
 				};
 			};
-			buildConfigurationList = 08567BAC1B5B59E800EB6C0D /* Build configuration list for PBXProject "c-pointcloud" */;
+			buildConfigurationList = 08567BAC1B5B59E800EB6C0D /* Build configuration list for PBXProject "cpp-headless" */;
 			compatibilityVersion = "Xcode 3.2";
 			developmentRegion = English;
 			hasScannedForEncodings = 0;
@@ -158,7 +138,7 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				08567BB01B5B59E800EB6C0D /* c-pointcloud */,
+				08567BB01B5B59E800EB6C0D /* cpp-headless */,
 			);
 		};
 /* End PBXProject section */
@@ -168,7 +148,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				279D52DA1B8E86FB007F2D73 /* c-pointcloud.c in Sources */,
+				279D52DA1B8E86FB007F2D73 /* cpp-headless.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -282,7 +262,7 @@
 					"$(USER_LIBRARY_DIR)/Developer/Xcode/DerivedData/bin/Debug",
 					"$(PROJECT_DIR)/build/Debug",
 				);
-				PRODUCT_NAME = "c-pointcloud";
+				PRODUCT_NAME = "cpp-headless";
 			};
 			name = Debug;
 		};
@@ -303,14 +283,14 @@
 					"$(USER_LIBRARY_DIR)/Developer/Xcode/DerivedData/bin/Debug",
 					"$(PROJECT_DIR)/build/Debug",
 				);
-				PRODUCT_NAME = "c-pointcloud";
+				PRODUCT_NAME = "cpp-headless";
 			};
 			name = Release;
 		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		08567BAC1B5B59E800EB6C0D /* Build configuration list for PBXProject "c-pointcloud" */ = {
+		08567BAC1B5B59E800EB6C0D /* Build configuration list for PBXProject "cpp-headless" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				08567BB61B5B59E800EB6C0D /* Debug */,
@@ -319,7 +299,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		08567BB81B5B59E800EB6C0D /* Build configuration list for PBXNativeTarget "c-pointcloud" */ = {
+		08567BB81B5B59E800EB6C0D /* Build configuration list for PBXNativeTarget "cpp-headless" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				08567BB91B5B59E800EB6C0D /* Debug */,

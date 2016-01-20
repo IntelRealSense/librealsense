@@ -15,9 +15,9 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "08567BB01B5B59E800EB6C0D"
-               BuildableName = "c-pointcloud"
-               BlueprintName = "c-pointcloud"
-               ReferencedContainer = "container:c-pointcloud.xcodeproj">
+               BuildableName = "cpp-headless"
+               BlueprintName = "cpp-headless"
+               ReferencedContainer = "container:cpp-headless.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
       </BuildActionEntries>
@@ -33,9 +33,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "08567BB01B5B59E800EB6C0D"
-            BuildableName = "c-pointcloud"
-            BlueprintName = "c-pointcloud"
-            ReferencedContainer = "container:c-pointcloud.xcodeproj">
+            BuildableName = "cpp-headless"
+            BlueprintName = "cpp-headless"
+            ReferencedContainer = "container:cpp-headless.xcodeproj">
          </BuildableReference>
       </MacroExpansion>
    </TestAction>
@@ -54,9 +54,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "08567BB01B5B59E800EB6C0D"
-            BuildableName = "c-pointcloud"
-            BlueprintName = "c-pointcloud"
-            ReferencedContainer = "container:c-pointcloud.xcodeproj">
+            BuildableName = "cpp-headless"
+            BlueprintName = "cpp-headless"
+            ReferencedContainer = "container:cpp-headless.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
       <AdditionalOptions>
@@ -73,9 +73,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "08567BB01B5B59E800EB6C0D"
-            BuildableName = "c-pointcloud"
-            BlueprintName = "c-pointcloud"
-            ReferencedContainer = "container:c-pointcloud.xcodeproj">
+            BuildableName = "cpp-headless"
+            BlueprintName = "cpp-headless"
+            ReferencedContainer = "container:cpp-headless.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </ProfileAction>
