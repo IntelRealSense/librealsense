@@ -58,7 +58,7 @@ static void rs_transform_point_to_point(float to_point[3], const struct rs_extri
 }
 
 /* Provide access to several recommend sets of depth control parameters */
-void rs_apply_depth_control_preset(rs_device * device, int preset)
+static void rs_apply_depth_control_preset(rs_device * device, int preset)
 {
     static const rs_option depth_control_options[10] = {
         RS_OPTION_R200_DEPTH_CONTROL_ESTIMATE_MEDIAN_DECREMENT,
@@ -84,7 +84,7 @@ void rs_apply_depth_control_preset(rs_device * device, int preset)
 }
 
 /* Provide access to several recommend sets of option presets for ivcam */
-void rs_apply_ivcam_preset(rs_device * device, int preset)
+static void rs_apply_ivcam_preset(rs_device * device, int preset)
 {
     const rs_option arr_options[15] = {
         RS_OPTION_SR300_AUTO_RANGE_ENABLE_MOTION_VERSUS_RANGE, 
