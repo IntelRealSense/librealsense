@@ -18,6 +18,9 @@
       location = "container:"
       name = "examples">
       <FileRef
+         location = "group:cpp-enumerate-devices.xcodeproj">
+      </FileRef>
+      <FileRef
          location = "group:cpp-headless.xcodeproj">
       </FileRef>
       <FileRef
