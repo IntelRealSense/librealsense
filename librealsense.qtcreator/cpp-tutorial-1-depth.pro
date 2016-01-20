@@ -10,8 +10,7 @@ CONFIG += link_pkgconfig
 INCLUDEPATH += ../include
 LIBS += -pthread
 
-SOURCES += ../examples/cpp-capture.cpp
-HEADERS += ../examples/example.hpp
+SOURCES += ../examples/cpp-tutorial-1-depth.cpp
 
 LIBS += -L$$DESTDIR/ -lrealsense
 
