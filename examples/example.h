@@ -135,7 +135,6 @@ static void make_depth_histogram(uint8_t rgb_image[640*480*3], const uint16_t de
     }
 }
 
-
 static void draw_depth_histogram(const uint16_t depth_image[], int width, int height)
 {
     static uint8_t rgb_image[640*480*3];

@@ -12,12 +12,33 @@
 // useful for debugging an embedded system with no display. 
 
 #include <librealsense/rs.hpp>
-#include "example.hpp"
 
 #include <cstdio>
+#include <stdint.h>
+#include <vector>
 
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "third_party/stb_image_write.h"
+
+void normalize_depth_to_rgb(uint8_t rgb_image[640*480*3], const uint16_t depth_image[], int width, int height)
+{
+    for (int i = 0; i < width * height; ++i)
+    {
+        if (auto d = depth_image[i])
+        {
+			uint8_t v = d * (255 ) / ((std::numeric_limits<uint16_t>::max()));
+            rgb_image[i*3 + 0] = 255 - v;
+            rgb_image[i*3 + 1] = 255 -v;
+            rgb_image[i*3 + 2] = 255 - v;
+        }
+        else
+        {
+            rgb_image[i*3 + 0] = 0;
+            rgb_image[i*3 + 1] = 0;
+            rgb_image[i*3 + 2] = 0;
+        }
+    }
+}
 
 int main() try
 {
@@ -32,14 +53,18 @@ int main() try
 
     // Configure depth to run at VGA resolution at 30 frames per second
     dev->enable_stream(rs::stream::depth, 640, 480, rs::format::z16, 30);
-    dev->start();
+	dev->enable_stream(rs::stream::color, 640, 480, rs::format::rgb8, 30);
+    dev->enable_stream(rs::stream::infrared, 640, 480, rs::format::y8, 30);
 
-	const rs::intrinsics depth_intrin = dev->get_stream_intrinsics(rs::stream::depth);
+	const int width = 640;
+	const int height = 480;
+
+    dev->start();
 
 	const int numFramesToCap = 30;
 
-	std::vector<uint8_t> coloredDepthHistogram;
-	coloredDepthHistogram.resize(depth_intrin.width * depth_intrin.height * 3);
+	std::vector<uint8_t> coloredDepth;
+	coloredDepth.resize(width * height * 3);
         
 	for (int i = 0; i < numFramesToCap; ++i)
     {
@@ -47,12 +72,16 @@ int main() try
 
         // Retrieve depth data, which was previously configured as a 640 x 480 image of 16-bit depth values
         const uint16_t * depth_frame = reinterpret_cast<const uint16_t *>(dev->get_frame_data(rs::stream::depth));
+		const uint8_t * color_frame = reinterpret_cast<const uint8_t *>(dev->get_frame_data(rs::stream::color));
+		const uint8_t * ir_frame = reinterpret_cast<const uint8_t *>(dev->get_frame_data(rs::stream::infrared));
 
 		if (i == numFramesToCap - 1)
 		{
-			make_depth_histogram(coloredDepthHistogram.data(), reinterpret_cast<const uint16_t *>(depth_frame), depth_intrin.width, depth_intrin.height);
-			stbi_write_png("cpp-headless-output.png", depth_intrin.width, depth_intrin.height, 3, coloredDepthHistogram.data(), 3 * depth_intrin.width * depth_intrin.height) != 0;
-			printf("wrote frame to current working directory.");
+			normalize_depth_to_rgb(coloredDepth.data(), reinterpret_cast<const uint16_t *>(depth_frame), width, height);
+			stbi_write_png("cpp-headless-output-depth.png", width, height, 3, coloredDepth.data(), 3 * width) != 0;
+			stbi_write_png("cpp-headless-output-rgb.png", width, height, 3, color_frame, 3 * width) != 0;
+			stbi_write_png("cpp-headless-output-ir.png", width, height, 1, ir_frame, width) != 0;
+			printf("wrote frames to current working directory.");
 		}
 
     }

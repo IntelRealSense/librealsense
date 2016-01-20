@@ -39,3 +39,4 @@ qrc_*.cpp
 ui_*.h
 Makefile*
 *-build-*
+librealsense-log.txt
