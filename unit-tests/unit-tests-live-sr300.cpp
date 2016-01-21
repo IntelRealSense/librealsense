@@ -309,21 +309,19 @@ TEST_CASE( "SR300 streams 640x480 infrared (200 fps), and 1080P color (30 fps)",
                           {RS_STREAM_COLOR, 1920, 1080, RS_FORMAT_RGB8, 30}});
 }
 
-/*
-
 /////////////
 // Options //
 /////////////
 
 enum { BEFORE_START_DEVICE = 1, AFTER_START_DEVICE = 2 };
-inline void test_r200_option(rs_option option, std::initializer_list<int> values, int when)
+inline void test_sr300_option(rs_option option, std::initializer_list<int> values, int when)
 {
     safe_context ctx;
     REQUIRE(rs_get_device_count(ctx, require_no_error()) == 1);
 
     rs_device * dev = rs_get_device(ctx, 0, require_no_error());
     REQUIRE(dev != nullptr);
-    REQUIRE(rs_get_device_name(dev, require_no_error()) == std::string("Intel RealSense R200"));
+    REQUIRE(rs_get_device_name(dev, require_no_error()) == std::string("Intel RealSense SR300"));
 
     if(when & BEFORE_START_DEVICE)
     {
@@ -342,186 +340,36 @@ inline void test_r200_option(rs_option option, std::initializer_list<int> values
     }
 }
 
-TEST_CASE( "R200 supports RS_OPTION_R200_LR_AUTO_EXPOSURE_ENABLED", "[live] [r200]" )
+TEST_CASE( "SR300 supports RS_OPTION_F200_LASER_POWER", "[live] [sr300]" )
 {
-    test_r200_option(RS_OPTION_R200_LR_AUTO_EXPOSURE_ENABLED, {0, 1}, BEFORE_START_DEVICE | AFTER_START_DEVICE);
+    test_sr300_option(RS_OPTION_F200_LASER_POWER, {0, 1, 2, 4, 8, 15}, AFTER_START_DEVICE);
 }
 
-TEST_CASE( "R200 supports RS_OPTION_R200_LR_GAIN", "[live] [r200]" )
+TEST_CASE( "SR300 supports RS_OPTION_F200_ACCURACY", "[live] [sr300]" )
 {
-    test_r200_option(RS_OPTION_R200_LR_GAIN, {100, 200, 400, 800, 1600}, BEFORE_START_DEVICE | AFTER_START_DEVICE); // Gain percentage
+    test_sr300_option(RS_OPTION_F200_ACCURACY, {0, 1, 2, 3}, AFTER_START_DEVICE);
 }
 
-TEST_CASE( "R200 supports RS_OPTION_R200_LR_EXPOSURE", "[live] [r200]" )
+TEST_CASE( "SR300 supports RS_OPTION_F200_MOTION_RANGE", "[live] [sr300]" )
 {
-    test_r200_option(RS_OPTION_R200_LR_EXPOSURE, {40, 80, 160}, BEFORE_START_DEVICE | AFTER_START_DEVICE); // Tenths of milliseconds
+    test_sr300_option(RS_OPTION_F200_MOTION_RANGE, {0, 1, 8, 25, 50, 100}, AFTER_START_DEVICE);
 }
 
-// Note: The R200 firmware has some complications regarding emitter state before the device has been started
-// The emitter will never be on if the device is not streaming, but the firmware will remember and respect any
-// specified preferences for emitter enabled that are specified prior to streaming.
-
-TEST_CASE( "R200 emitter defaults to off if depth is not enabled/streamed", "[live] [r200]" )
+TEST_CASE( "SR300 supports RS_OPTION_F200_FILTER_OPTION", "[live] [sr300]" )
 {
-    safe_context ctx;
-    REQUIRE(rs_get_device_count(ctx, require_no_error()) == 1);
-
-    rs_device * dev = rs_get_device(ctx, 0, require_no_error());
-    REQUIRE(dev != nullptr);
-    REQUIRE(rs_get_device_name(dev, require_no_error()) == std::string("Intel RealSense R200"));
-
-    // Emitter enabled defaults to false
-    REQUIRE(rs_get_device_option(dev, RS_OPTION_R200_EMITTER_ENABLED, require_no_error()) == 0);
-
-    // Enabling non-depth streams does not change the emitter's state
-    rs_enable_stream_preset(dev, RS_STREAM_COLOR, RS_PRESET_BEST_QUALITY, require_no_error());
-    rs_enable_stream_preset(dev, RS_STREAM_INFRARED, RS_PRESET_BEST_QUALITY, require_no_error());
-    rs_enable_stream_preset(dev, RS_STREAM_INFRARED2, RS_PRESET_BEST_QUALITY, require_no_error());
-    REQUIRE(rs_get_device_option(dev, RS_OPTION_R200_EMITTER_ENABLED, require_no_error()) == 0);
-
-    // Starting the device does not change the emitter's state
-    rs_start_device(dev, require_no_error());
-    std::this_thread::sleep_for(std::chrono::seconds(1));
-    REQUIRE(rs_get_device_option(dev, RS_OPTION_R200_EMITTER_ENABLED, require_no_error()) == 0);
+    test_sr300_option(RS_OPTION_F200_FILTER_OPTION, {0, 1, 2, 3, 4, 5, 6, 7}, AFTER_START_DEVICE);
 }
 
-TEST_CASE( "R200 emitter defaults to on if depth is enabled/streamed", "[live] [r200]" )
+TEST_CASE( "SR300 supports RS_OPTION_F200_CONFIDENCE_THRESHOLD", "[live] [sr300]" )
 {
-    safe_context ctx;
-    REQUIRE(rs_get_device_count(ctx, require_no_error()) == 1);
-
-    rs_device * dev = rs_get_device(ctx, 0, require_no_error());
-    REQUIRE(dev != nullptr);
-    REQUIRE(rs_get_device_name(dev, require_no_error()) == std::string("Intel RealSense R200"));
-
-    // Emitter enabled defaults to false
-    REQUIRE(rs_get_device_option(dev, RS_OPTION_R200_EMITTER_ENABLED, require_no_error()) == 0);
-
-    // Enabling depth stream causes the emitter to be enabled
-    rs_enable_stream_preset(dev, RS_STREAM_DEPTH, RS_PRESET_BEST_QUALITY, require_no_error());
-    REQUIRE(rs_get_device_option(dev, RS_OPTION_R200_EMITTER_ENABLED, require_no_error()) == 1);
-
-    // Starting the device does not change the emitter's state
-    rs_start_device(dev, require_no_error());
-    std::this_thread::sleep_for(std::chrono::seconds(1));
-    REQUIRE(rs_get_device_option(dev, RS_OPTION_R200_EMITTER_ENABLED, require_no_error()) == 1);
-}
-
-TEST_CASE( "R200 emitter can be enabled even if depth is not enabled/streamed", "[live] [r200]" )
-{
-    safe_context ctx;
-    REQUIRE(rs_get_device_count(ctx, require_no_error()) == 1);
-
-    rs_device * dev = rs_get_device(ctx, 0, require_no_error());
-    REQUIRE(dev != nullptr);
-    REQUIRE(rs_get_device_name(dev, require_no_error()) == std::string("Intel RealSense R200"));
-
-    // Emitter enabled defaults to false
-    REQUIRE(rs_get_device_option(dev, RS_OPTION_R200_EMITTER_ENABLED, require_no_error()) == 0);
-
-    // Enabling non-depth streams does not change the emitter's state
-    rs_enable_stream_preset(dev, RS_STREAM_COLOR, RS_PRESET_BEST_QUALITY, require_no_error());
-    rs_enable_stream_preset(dev, RS_STREAM_INFRARED, RS_PRESET_BEST_QUALITY, require_no_error());
-    rs_enable_stream_preset(dev, RS_STREAM_INFRARED2, RS_PRESET_BEST_QUALITY, require_no_error());
-    REQUIRE(rs_get_device_option(dev, RS_OPTION_R200_EMITTER_ENABLED, require_no_error()) == 0);
-
-    // The emitter can be turned on even though no depth is streamed
-    rs_set_device_option(dev, RS_OPTION_R200_EMITTER_ENABLED, 1, require_no_error());
-    REQUIRE(rs_get_device_option(dev, RS_OPTION_R200_EMITTER_ENABLED, require_no_error()) == 1);
-
-    // Starting the device does not change the emitter's state
-    rs_start_device(dev, require_no_error());
-    std::this_thread::sleep_for(std::chrono::seconds(1));
-    REQUIRE(rs_get_device_option(dev, RS_OPTION_R200_EMITTER_ENABLED, require_no_error()) == 1);
-}
-
-TEST_CASE( "R200 emitter can be turned off even if depth is enabled/streamed", "[live] [r200]" )
-{
-    safe_context ctx;
-    REQUIRE(rs_get_device_count(ctx, require_no_error()) == 1);
-
-    rs_device * dev = rs_get_device(ctx, 0, require_no_error());
-    REQUIRE(dev != nullptr);
-    REQUIRE(rs_get_device_name(dev, require_no_error()) == std::string("Intel RealSense R200"));
-
-    // Emitter enabled defaults to false
-    REQUIRE(rs_get_device_option(dev, RS_OPTION_R200_EMITTER_ENABLED, require_no_error()) == 0);
-
-    // Enabling depth stream causes the emitter to be enabled
-    rs_enable_stream_preset(dev, RS_STREAM_DEPTH, RS_PRESET_BEST_QUALITY, require_no_error());
-    REQUIRE(rs_get_device_option(dev, RS_OPTION_R200_EMITTER_ENABLED, require_no_error()) == 1);
-
-    // The emitter can be turned off even though depth is streamed
-    rs_set_device_option(dev, RS_OPTION_R200_EMITTER_ENABLED, 0, require_no_error());
-    REQUIRE(rs_get_device_option(dev, RS_OPTION_R200_EMITTER_ENABLED, require_no_error()) == 0);
-
-    // Starting the device does not change the emitter's state
-    rs_start_device(dev, require_no_error());
-    std::this_thread::sleep_for(std::chrono::seconds(1));
-    REQUIRE(rs_get_device_option(dev, RS_OPTION_R200_EMITTER_ENABLED, require_no_error()) == 0);
-}
-
-TEST_CASE( "R200 emitter can be turned on and off after streaming has begun", "[live] [r200]" )
-{
-    safe_context ctx;
-    REQUIRE(rs_get_device_count(ctx, require_no_error()) == 1);
-
-    rs_device * dev = rs_get_device(ctx, 0, require_no_error());
-    REQUIRE(dev != nullptr);
-    REQUIRE(rs_get_device_name(dev, require_no_error()) == std::string("Intel RealSense R200"));
-
-    // The emitter defaults to on when depth is streamed
-    rs_enable_stream_preset(dev, RS_STREAM_DEPTH, RS_PRESET_BEST_QUALITY, require_no_error());
-    rs_start_device(dev, require_no_error());
-    std::this_thread::sleep_for(std::chrono::seconds(1));
-    REQUIRE(rs_get_device_option(dev, RS_OPTION_R200_EMITTER_ENABLED, require_no_error()) == 1);
-
-    // The emitter can be turned off
-    rs_set_device_option(dev, RS_OPTION_R200_EMITTER_ENABLED, 0, require_no_error());
-    REQUIRE(rs_get_device_option(dev, RS_OPTION_R200_EMITTER_ENABLED, require_no_error()) == 0);
-
-    // The emitter can be turned back on
-    rs_set_device_option(dev, RS_OPTION_R200_EMITTER_ENABLED, 1, require_no_error());
-    REQUIRE(rs_get_device_option(dev, RS_OPTION_R200_EMITTER_ENABLED, require_no_error()) == 1);
-}
-
-TEST_CASE( "R200 supports RS_OPTION_R200_DEPTH_UNITS", "[live] [r200]" )
-{
-    safe_context ctx;
-    REQUIRE(rs_get_device_count(ctx, require_no_error()) == 1);
-
-    rs_device * dev = rs_get_device(ctx, 0, require_no_error());
-    REQUIRE(dev != nullptr);
-    REQUIRE(rs_get_device_name(dev, require_no_error()) == std::string("Intel RealSense R200"));
-
-    // By default, depth unit is 1000 micrometers (1 mm)
-    REQUIRE(rs_get_device_option(dev, RS_OPTION_R200_DEPTH_UNITS, require_no_error()) == 1000);
-    REQUIRE(rs_get_device_depth_scale(dev, require_no_error()) == 0.001f);
-
-    for(int value : {100, 500, 1000, 2000, 10000})
-    {
-        // Set depth units (specified in micrometers) and verify that depth scale (specified in meters) changes appropriately
-        rs_set_device_option(dev, RS_OPTION_R200_DEPTH_UNITS, value, require_no_error());
-        REQUIRE(rs_get_device_option(dev, RS_OPTION_R200_DEPTH_UNITS, require_no_error()) == value);
-        REQUIRE(rs_get_device_depth_scale(dev, require_no_error()) == (float)value/1000000);
-    }
-}
-
-TEST_CASE( "R200 supports RS_OPTION_R200_DEPTH_CLAMP_MIN", "[live] [r200]" )
-{
-    test_r200_option(RS_OPTION_R200_DEPTH_CLAMP_MIN, {0, 500, 1000, 2000}, BEFORE_START_DEVICE);
-}
-
-TEST_CASE( "R200 supports RS_OPTION_R200_DEPTH_CLAMP_MAX", "[live] [r200]" )
-{
-    test_r200_option(RS_OPTION_R200_DEPTH_CLAMP_MAX, {500, 1000, 2000, USHRT_MAX}, BEFORE_START_DEVICE);
+    test_sr300_option(RS_OPTION_F200_LASER_POWER, {0, 1, 2, 4, 8, 15}, AFTER_START_DEVICE);
 }
 
 //////////////////////////////////////////
 // Stop, reconfigure, and restart tests //
 //////////////////////////////////////////
 
-TEST_CASE( "a single R200 can stream a variety of reasonable streaming mode combinations", "[live] [r200] [one-camera]" )
+TEST_CASE( "a single SR300 can stream a variety of reasonable streaming mode combinations", "[live] [sr300] [one-camera]" )
 {
     safe_context ctx;
 
@@ -534,40 +382,32 @@ TEST_CASE( "a single R200 can stream a variety of reasonable streaming mode comb
     rs_device * dev = rs_get_device(ctx, 0, require_no_error());
     REQUIRE(dev != nullptr);
 
-    SECTION( "device name is Intel RealSense R200" )
+    SECTION( "device name is Intel RealSense SR300" )
     {
         const char * name = rs_get_device_name(dev, require_no_error());
-        REQUIRE(name == std::string("Intel RealSense R200"));
+        REQUIRE(name == std::string("Intel RealSense SR300"));
     }
 
     SECTION( "streaming is possible in some reasonable configurations" )
     {
         test_streaming(dev, {
-            {RS_STREAM_DEPTH, 480, 360, RS_FORMAT_Z16, 60}
+            {RS_STREAM_DEPTH, 640, 480, RS_FORMAT_Z16, 60}
         });
 
         test_streaming(dev, {
-            {RS_STREAM_DEPTH, 480, 360, RS_FORMAT_Z16, 60},
+            {RS_STREAM_DEPTH, 640, 480, RS_FORMAT_Z16, 60},
             {RS_STREAM_COLOR, 640, 480, RS_FORMAT_RGB8, 60}
         });
 
         test_streaming(dev, {
-            {RS_STREAM_DEPTH, 480, 360, RS_FORMAT_Z16, 60},
-            {RS_STREAM_INFRARED, 480, 360, RS_FORMAT_Y8, 60}
+            {RS_STREAM_DEPTH, 640, 480, RS_FORMAT_Z16, 60},
+            {RS_STREAM_INFRARED, 640, 480, RS_FORMAT_Y16, 60}
         });
 
         test_streaming(dev, {
-            {RS_STREAM_INFRARED, 492, 372, RS_FORMAT_Y16, 60},
-            {RS_STREAM_INFRARED2, 492, 372, RS_FORMAT_Y16, 60}
-        });
-
-        test_streaming(dev, {
-            {RS_STREAM_DEPTH, 480, 360, RS_FORMAT_Z16, 60},
+            {RS_STREAM_DEPTH, 640, 480, RS_FORMAT_Z16, 60},
             {RS_STREAM_COLOR, 640, 480, RS_FORMAT_RGB8, 60},
-            {RS_STREAM_INFRARED, 480, 360, RS_FORMAT_Y8, 60},
-            {RS_STREAM_INFRARED2, 480, 360, RS_FORMAT_Y8, 60}
+            {RS_STREAM_INFRARED, 640, 480, RS_FORMAT_Y16, 60}
         });
     }
 }
-
-*/
