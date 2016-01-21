@@ -56,6 +56,9 @@
       location = "container:"
       name = "unit-tests">
       <FileRef
+         location = "group:unit-tests-live-sr300.xcodeproj">
+      </FileRef>
+      <FileRef
          location = "group:unit-tests-live-f200.xcodeproj">
       </FileRef>
       <FileRef
