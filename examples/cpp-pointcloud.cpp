@@ -79,8 +79,6 @@ int main(int argc, char * argv[]) try
     });
 
     glfwMakeContextCurrent(win);
-    
-    gl_font font(20);
     texture_buffer tex;
 
     int frames = 0; float time = 0, fps = 0;
@@ -165,10 +163,10 @@ int main(int argc, char * argv[]) try
         glOrtho(0, width, height, 0, -1, +1);
         
         std::ostringstream ss; ss << dev.get_name() << " (" << app_state.tex_streams[app_state.index] << ")";
-        font.print((width-font.width(ss.str().c_str()))/2, height-20.0f, ss.str().c_str());
+        draw_text((width-get_text_width(ss.str().c_str()))/2, height-20.0f, ss.str().c_str());
 
         ss.str(""); ss << fps << " FPS";
-        font.print(20, 40, ss.str().c_str());
+        draw_text(20, 40, ss.str().c_str());
         glPopMatrix();
 
         glfwSwapBuffers(win);

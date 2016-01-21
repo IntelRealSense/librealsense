@@ -27,7 +27,6 @@ int main(int argc, char * argv[]) try
     std::ostringstream ss; ss << "CPP Restart Example (" << dev.get_name() << ")";
     GLFWwindow * win = glfwCreateWindow(1280, 960, ss.str().c_str(), 0, 0);
     glfwMakeContextCurrent(win);
-    gl_font font(20);
 
     for(int i=0; i<20; ++i)
     {
@@ -135,10 +134,10 @@ int main(int argc, char * argv[]) try
                 glPushMatrix();
                 glfwGetWindowSize(win, &w, &h);
                 glOrtho(0, w, h, 0, -1, +1);
-                buffers[0].show(dev, rs::stream::color, 0, 0, w/2, h/2, font);
-                buffers[1].show(dev, rs::stream::depth, w/2, 0, w-w/2, h/2, font);
-                buffers[2].show(dev, rs::stream::infrared, 0, h/2, w/2, h-h/2, font);
-                buffers[3].show(dev, rs::stream::infrared2, w/2, h/2, w-w/2, h-h/2, font);
+                buffers[0].show(dev, rs::stream::color, 0, 0, w/2, h/2);
+                buffers[1].show(dev, rs::stream::depth, w/2, 0, w-w/2, h/2);
+                buffers[2].show(dev, rs::stream::infrared, 0, h/2, w/2, h-h/2);
+                buffers[3].show(dev, rs::stream::infrared2, w/2, h/2, w-w/2, h-h/2);
                 glPopMatrix();
                 glfwSwapBuffers(win);
             }

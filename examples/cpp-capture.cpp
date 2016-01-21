@@ -87,7 +87,6 @@ int main(int argc, char * argv[]) try
         }
     });
     glfwMakeContextCurrent(win);
-    gl_font font(20);
 
     while (!glfwWindowShouldClose(win))
     {
@@ -105,10 +104,10 @@ int main(int argc, char * argv[]) try
         glPushMatrix();
         glfwGetWindowSize(win, &w, &h);
         glOrtho(0, w, h, 0, -1, +1);
-        buffers[0].show(dev, align_color_to_depth ? rs::stream::color_aligned_to_depth : (color_rectification_enabled ? rs::stream::rectified_color : rs::stream::color), 0, 0, w/2, h/2, font);
-        buffers[1].show(dev, align_depth_to_color ? (color_rectification_enabled ? rs::stream::depth_aligned_to_rectified_color : rs::stream::depth_aligned_to_color) : rs::stream::depth, w/2, 0, w-w/2, h/2, font);
-        buffers[2].show(dev, rs::stream::infrared, 0, h/2, w/2, h-h/2, font);
-        buffers[3].show(dev, rs::stream::infrared2, w/2, h/2, w-w/2, h-h/2, font);
+        buffers[0].show(dev, align_color_to_depth ? rs::stream::color_aligned_to_depth : (color_rectification_enabled ? rs::stream::rectified_color : rs::stream::color), 0, 0, w/2, h/2);
+        buffers[1].show(dev, align_depth_to_color ? (color_rectification_enabled ? rs::stream::depth_aligned_to_rectified_color : rs::stream::depth_aligned_to_color) : rs::stream::depth, w/2, 0, w-w/2, h/2);
+        buffers[2].show(dev, rs::stream::infrared, 0, h/2, w/2, h-h/2);
+        buffers[3].show(dev, rs::stream::infrared2, w/2, h/2, w-w/2, h-h/2);
         glPopMatrix();
         glfwSwapBuffers(win);
     }
