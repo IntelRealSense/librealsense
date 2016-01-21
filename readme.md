@@ -52,9 +52,6 @@ Neither libuvc nor V4L2 backends have been validated on Ubuntu 12.04 LTS or Ubun
 
 1. C - Core library API exposed via the C89 ABI
 2. C++ - Single header file (rs.hpp) wrapper around C API, providing classes and exceptions
-3. C# - Single source file (rs.cs) wrapper for P/Invoke to C API, providing classes and exceptions
-
-Ongoing effort will be dedicated to bindings and wrappers for other languages and frameworks. The core API is expressed in C89 which enables the library to be easily wrapped into other languages.
 
 ## Functionality
 
