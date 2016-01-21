@@ -37,24 +37,12 @@ namespace rsimpl { namespace r200
 {
     void xu_read(const uvc::device & device, control xu_ctrl, void * buffer, uint32_t length)
     {
-        // Try reading an XU control, if it fails, retry several times
-        for(int i=0; i<20; ++i)
-        {
-            try { get_control(device, 0, static_cast<int>(xu_ctrl), buffer, length); return; }
-            catch(...) { std::this_thread::sleep_for(std::chrono::milliseconds(50)); }
-        }
-        get_control(device, 0, static_cast<int>(xu_ctrl), buffer, length);
+        uvc::get_control_with_retry(device, 0, static_cast<int>(xu_ctrl), buffer, length);
     }
 
     void xu_write(uvc::device & device, control xu_ctrl, void * buffer, uint32_t length)
     {
-        // Try writing an XU control, if it fails, retry several times
-        for(int i=0; i<20; ++i)
-        {
-            try { set_control(device, 0, static_cast<int>(xu_ctrl), buffer, length); return; }
-            catch(...) { std::this_thread::sleep_for(std::chrono::milliseconds(50)); }
-        }
-        set_control(device, 0, static_cast<int>(xu_ctrl), buffer, length);
+        uvc::set_control_with_retry(device, 0, static_cast<int>(xu_ctrl), buffer, length);
     }
 
     struct CommandResponsePacket

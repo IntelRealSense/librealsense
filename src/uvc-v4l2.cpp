@@ -148,28 +148,28 @@ namespace rsimpl
             int get_pid() const { return pid; }
             int get_mi() const { return mi; }
 
-	    int get_xu_endpoint() const
+            int get_xu_endpoint() const
             {
-	        // Temporary workaround, it should be possible to query for this
-	        switch(get_pid())
-		{
+                // Temporary workaround, it should be possible to query for this
+                switch(get_pid())
+                {
                 case 2688: return 2; // R200
                 case 2662: return 6; // F200
                 case 2725: return 6; // SR300
-		default: return 0;
-		}
+                default: return 0;
+                }
             }
 
             void get_control(int control, void * data, size_t size)
             {
-	        uvc_xu_control_query q = {get_xu_endpoint(), control, UVC_GET_CUR, size, reinterpret_cast<uint8_t *>(data)};
+                uvc_xu_control_query q = {get_xu_endpoint(), control, UVC_GET_CUR, size, reinterpret_cast<uint8_t *>(data)};
                 if(xioctl(fd, UVCIOC_CTRL_QUERY, &q) < 0) throw_error("UVCIOC_CTRL_QUERY:UVC_GET_CUR");
             }
 
             void set_control(int control, void * data, size_t size)
             {
-	        uvc_xu_control_query q = {get_xu_endpoint(), control, UVC_SET_CUR, size, reinterpret_cast<uint8_t *>(data)};
-               if(xioctl(fd, UVCIOC_CTRL_QUERY, &q) < 0) throw_error("UVCIOC_CTRL_QUERY:UVC_SET_CUR");
+                uvc_xu_control_query q = {get_xu_endpoint(), control, UVC_SET_CUR, size, reinterpret_cast<uint8_t *>(data)};
+                if(xioctl(fd, UVCIOC_CTRL_QUERY, &q) < 0) throw_error("UVCIOC_CTRL_QUERY:UVC_SET_CUR");
             }
 
             void set_format(int width, int height, int fourcc, int fps, std::function<void(const void * data)> callback)

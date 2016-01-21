@@ -8,6 +8,7 @@
 #include "types.h"
 
 #include <functional>
+#include <thread>
 
 namespace rsimpl
 {
@@ -39,6 +40,29 @@ namespace rsimpl
         void init_controls(device & device, int subdevice, const guid & xu_guid);
         void set_control(device & device, int subdevice, uint8_t ctrl, void * data, int len);
         void get_control(const device & device, int subdevice, uint8_t ctrl, void * data, int len);
+
+        inline void set_control_with_retry(device & device, int subdevice, uint8_t ctrl, void * data, int len)
+        {
+            // Try writing a control, if it fails, retry several times
+            // TODO: We may wish to tune the retry counts and sleep times based on camera, platform, firmware, etc.
+            for(int i=0; i<20; ++i)
+            {
+                try { set_control(device, subdevice, ctrl, data, len); return; }
+                catch(...) { std::this_thread::sleep_for(std::chrono::milliseconds(50)); }
+            }
+            set_control(device, subdevice, ctrl, data, len);
+        }
+
+        inline void get_control_with_retry(const device & device, int subdevice, uint8_t ctrl, void * data, int len)
+        {
+            // Try reading a control, if it fails, retry several times
+            for(int i=0; i<20; ++i)
+            {
+                try { get_control(device, subdevice, ctrl, data, len); return; }
+                catch(...) { std::this_thread::sleep_for(std::chrono::milliseconds(50)); }
+            }
+            get_control(device, subdevice, ctrl, data, len);
+        }
 
         // Control streaming
         void set_subdevice_mode(device & device, int subdevice_index, int width, int height, uint32_t fourcc, int fps, std::function<void(const void * frame)> callback);
