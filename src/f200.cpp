@@ -109,8 +109,8 @@ namespace rsimpl
         info.presets[RS_STREAM_COLOR   ][RS_PRESET_HIGHEST_FRAMERATE] = {true, 640, 480, RS_FORMAT_RGB8, 60};
 
         info.options = {
-            {RS_OPTION_F200_LASER_POWER,          0.0, 15.0,  1.0},
-            {RS_OPTION_F200_ACCURACY,             0.0, 3.0,   1.0},
+            {RS_OPTION_F200_LASER_POWER,          0.0, 16.0,  1.0},
+            {RS_OPTION_F200_ACCURACY,             1.0, 3.0,   1.0},
             {RS_OPTION_F200_MOTION_RANGE,         0.0, 100.0, 1.0},
             {RS_OPTION_F200_FILTER_OPTION,        0.0, 7.0,   1.0},
             {RS_OPTION_F200_CONFIDENCE_THRESHOLD, 0.0, 15.0,  1.0}
@@ -188,13 +188,13 @@ namespace rsimpl
         }
 
         info.options = {
-            {RS_OPTION_F200_LASER_POWER,                            0.0,        15.0,        1.0},
-            {RS_OPTION_F200_ACCURACY,                               0.0,        3.0,         1.0},
+            {RS_OPTION_F200_LASER_POWER,                            0.0,        16.0,        1.0},
+            {RS_OPTION_F200_ACCURACY,                               1.0,        3.0,         1.0},
             {RS_OPTION_F200_MOTION_RANGE,                           0.0,        100.0,       1.0},
             {RS_OPTION_F200_FILTER_OPTION,                          0.0,        7.0,         1.0},
             {RS_OPTION_F200_CONFIDENCE_THRESHOLD,                   0.0,        15.0,        1.0},
 
-            {RS_OPTION_SR300_DYNAMIC_FPS,                           2.0,        60.0,        1.0},
+            {RS_OPTION_SR300_DYNAMIC_FPS,                           0.0f,       0.0,         0.0}, //2.0,        60.0,        1.0},
             {RS_OPTION_SR300_AUTO_RANGE_ENABLE_MOTION_VERSUS_RANGE, 0.0,        2.0,         1.0},
             {RS_OPTION_SR300_AUTO_RANGE_ENABLE_LASER,               0.0,        1.0,         1.0},  
             {RS_OPTION_SR300_AUTO_RANGE_MIN_MOTION_VERSUS_RANGE,    (double)SHRT_MIN, (double)SHRT_MAX,  1.0}, 
@@ -364,7 +364,8 @@ namespace rsimpl
     void f200_camera::set_options(const rs_option options[], int count, const double values[])
     {
         auto arr_writer = make_struct_interface<f200::IVCAMAutoRangeRequest>([this]() { return arr; }, [this](f200::IVCAMAutoRangeRequest r) {
-                f200::set_auto_range(get_device(), usbMutex, r.enableMvR, r.minMvR, r.maxMvR, r.startMvR, r.enableLaser, r.minLaser, r.maxLaser, r.startLaser, r.ARUpperTh, r.ARLowerTh);
+            f200::set_auto_range(get_device(), usbMutex, r.enableMvR, r.minMvR, r.maxMvR, r.startMvR, r.enableLaser, r.minLaser, r.maxLaser, r.startLaser, r.ARUpperTh, r.ARLowerTh);
+            arr = r;
         });
 
         for(int i=0; i<count; ++i)
@@ -397,9 +398,9 @@ namespace rsimpl
 
             default: LOG_WARNING("Cannot set " << options[i] << " to " << values[i] << " on " << get_name()); break;
             }
-
-            arr_writer.commit();
         }
+
+        arr_writer.commit();
     }
 
     void f200_camera::get_options(const rs_option options[], int count, double values[])
