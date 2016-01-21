@@ -127,10 +127,10 @@ namespace rsimpl
             {RS_OPTION_R200_AUTO_EXPOSURE_KP_GAIN,                      0, 1000,        0},
             {RS_OPTION_R200_AUTO_EXPOSURE_KP_EXPOSURE,                  0, 1000,        0},
             {RS_OPTION_R200_AUTO_EXPOSURE_KP_DARK_THRESHOLD,            0, 1000,        0},
-            {RS_OPTION_R200_AUTO_EXPOSURE_TOP_EDGE,            0, USHRT_MAX,   1},
-            {RS_OPTION_R200_AUTO_EXPOSURE_BOTTOM_EDGE,         0, USHRT_MAX,   1},
-            {RS_OPTION_R200_AUTO_EXPOSURE_LEFT_EDGE,           0, USHRT_MAX,   1},
-            {RS_OPTION_R200_AUTO_EXPOSURE_RIGHT_EDGE,          0, USHRT_MAX,   1},
+            {RS_OPTION_R200_AUTO_EXPOSURE_TOP_EDGE,                     0, USHRT_MAX,   1},
+            {RS_OPTION_R200_AUTO_EXPOSURE_BOTTOM_EDGE,                  0, USHRT_MAX,   1},
+            {RS_OPTION_R200_AUTO_EXPOSURE_LEFT_EDGE,                    0, USHRT_MAX,   1},
+            {RS_OPTION_R200_AUTO_EXPOSURE_RIGHT_EDGE,                   0, USHRT_MAX,   1},
 
             {RS_OPTION_R200_DEPTH_CONTROL_ESTIMATE_MEDIAN_DECREMENT,    0, 0xFF,        1},
             {RS_OPTION_R200_DEPTH_CONTROL_ESTIMATE_MEDIAN_INCREMENT,    0, 0xFF,        1},
@@ -174,18 +174,18 @@ namespace rsimpl
         return depth.is_enabled() && depth.get_format() == RS_FORMAT_DISPARITY16;
     }
 
-    void r200_camera::on_update_depth_units(int units)
+    void r200_camera::on_update_depth_units(uint32_t units)
     {
         if(is_disparity_mode_enabled()) return;
         config.depth_scale = (float)units / 1000000; // Convert from micrometers to meters
     }
 
-    void r200_camera::on_update_disparity_multiplier(float multiplier)
+    void r200_camera::on_update_disparity_multiplier(double multiplier)
     {
         if(!is_disparity_mode_enabled()) return;
         auto & depth = get_stream_interface(RS_STREAM_DEPTH);
         float baseline = get_stream_interface(RS_STREAM_INFRARED2).get_extrinsics_to(depth).translation[0];
-        config.depth_scale = depth.get_intrinsics().fx * baseline * multiplier;
+        config.depth_scale = static_cast<float>(depth.get_intrinsics().fx * baseline * multiplier);
     }
 
     void r200_camera::set_options(const rs_option options[], int count, const double values[])
@@ -206,17 +206,18 @@ namespace rsimpl
 
             switch(options[i])
             {
-            case RS_OPTION_R200_LR_AUTO_EXPOSURE_ENABLED:                   r200::set_lr_exposure_mode(get_device(), values[i]); break;
-            case RS_OPTION_R200_LR_GAIN:                                    r200::set_lr_gain(get_device(), {(uint32_t) get_lr_framerate(), (uint32_t) values[i]}); break; // TODO: May need to set this on start if framerate changes
-            case RS_OPTION_R200_LR_EXPOSURE:                                r200::set_lr_exposure(get_device(), {(uint32_t) get_lr_framerate(), (uint32_t) values[i]}); break; // TODO: May need to set this on start if framerate changes
+            case RS_OPTION_R200_LR_AUTO_EXPOSURE_ENABLED:                   r200::set_lr_exposure_mode(get_device(), static_cast<uint8_t>(values[i])); break;
+            case RS_OPTION_R200_LR_GAIN:                                    r200::set_lr_gain(get_device(), {get_lr_framerate(), static_cast<uint32_t>(values[i])}); break; // TODO: May need to set this on start if framerate changes
+            case RS_OPTION_R200_LR_EXPOSURE:                                r200::set_lr_exposure(get_device(), {get_lr_framerate(), static_cast<uint32_t>(values[i])}); break; // TODO: May need to set this on start if framerate changes
             case RS_OPTION_R200_EMITTER_ENABLED:                            r200::set_emitter_state(get_device(), !!values[i]); break;
-            case RS_OPTION_R200_DEPTH_UNITS:                                r200::set_depth_units(get_device(), values[i]); on_update_depth_units(values[i]); break;
+            case RS_OPTION_R200_DEPTH_UNITS:                                r200::set_depth_units(get_device(), static_cast<uint32_t>(values[i])); 
+                                                                            on_update_depth_units(static_cast<uint32_t>(values[i])); break;
 
             case RS_OPTION_R200_DEPTH_CLAMP_MIN:                            minmax_writer.set(&r200::range::min, values[i]); break;
             case RS_OPTION_R200_DEPTH_CLAMP_MAX:                            minmax_writer.set(&r200::range::max, values[i]); break;
 
             case RS_OPTION_R200_DISPARITY_MULTIPLIER:                       disp_writer.set(&r200::disp_mode::disparity_multiplier, values[i]); break;
-            case RS_OPTION_R200_DISPARITY_SHIFT:                            r200::set_disparity_shift(get_device(), values[i]); break;
+            case RS_OPTION_R200_DISPARITY_SHIFT:                            r200::set_disparity_shift(get_device(), static_cast<uint32_t>(values[i])); break;
 
             case RS_OPTION_R200_AUTO_EXPOSURE_MEAN_INTENSITY_SET_POINT:     ae_writer.set(&r200::ae_params::mean_intensity_set_point, values[i]); break;
             case RS_OPTION_R200_AUTO_EXPOSURE_BRIGHT_RATIO_SET_POINT:       ae_writer.set(&r200::ae_params::bright_ratio_set_point,   values[i]); break;
@@ -271,11 +272,11 @@ namespace rsimpl
             case RS_OPTION_R200_LR_AUTO_EXPOSURE_ENABLED:                   values[i] = r200::get_lr_exposure_mode(get_device()); break;
             
             case RS_OPTION_R200_LR_GAIN: // Gain is framerate dependent
-                r200::set_lr_gain_discovery(get_device(), {(uint32_t)get_lr_framerate()});
+                r200::set_lr_gain_discovery(get_device(), {get_lr_framerate()});
                 values[i] = r200::get_lr_gain(get_device()).value;
                 break;
             case RS_OPTION_R200_LR_EXPOSURE: // Exposure is framerate dependent
-                r200::set_lr_exposure_discovery(get_device(), {(uint32_t)get_lr_framerate()});
+                r200::set_lr_exposure_discovery(get_device(), {get_lr_framerate()});
                 values[i] = r200::get_lr_exposure(get_device()).value;
                 break;
             case RS_OPTION_R200_EMITTER_ENABLED:
@@ -364,14 +365,14 @@ namespace rsimpl
         return static_cast<int>(timestamp * 1000 / max_fps);
     }
 
-    int r200_camera::get_lr_framerate() const
+    uint32_t r200_camera::get_lr_framerate() const
     {
         for(auto s : {RS_STREAM_DEPTH, RS_STREAM_INFRARED, RS_STREAM_INFRARED2})
         {
             auto & stream = get_stream_interface(s);
-            if(stream.is_enabled()) return stream.get_framerate();
+            if(stream.is_enabled()) return static_cast<uint32_t>(stream.get_framerate());
         }
-        return 30;
+        return 30; // If no streams have yet been enabled, return the minimum possible left/right framerate, to allow the maximum possible exposure range
     }
 
     /*void r200_camera::set_xu_option(rs_option option, int value)
@@ -401,7 +402,7 @@ namespace rsimpl
         // Gain min/max is framerate dependent
         if(option == RS_OPTION_R200_LR_GAIN)
         {
-            r200::set_lr_gain_discovery(get_device(), {(uint32_t)get_lr_framerate()});
+            r200::set_lr_gain_discovery(get_device(), {get_lr_framerate()});
             auto disc = r200::get_lr_gain_discovery(get_device());
             min = disc.min;
             max = disc.max;
@@ -412,7 +413,7 @@ namespace rsimpl
         // Exposure min/max is framerate dependent
         if(option == RS_OPTION_R200_LR_EXPOSURE)
         {
-            r200::set_lr_exposure_discovery(get_device(), {(uint32_t)get_lr_framerate()});
+            r200::set_lr_exposure_discovery(get_device(), {get_lr_framerate()});
             auto disc = r200::get_lr_exposure_discovery(get_device());
             min = disc.min;
             max = disc.max;

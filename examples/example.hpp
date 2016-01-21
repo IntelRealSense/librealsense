@@ -37,87 +37,21 @@ inline void make_depth_histogram(uint8_t rgb_image[640*480*3], const uint16_t de
 // Simple font loading code //
 //////////////////////////////
 
-#define STB_TRUETYPE_IMPLEMENTATION
-#include "third_party/stb_truetype.h"
+#include "third_party/stb_easy_font.h"
 
-class gl_font
+inline int get_text_width(const char * text)
 {
-    GLuint tex;
-    stbtt_bakedchar cdata[96]; // ASCII 32..126 is 95 glyph
-public:
-    gl_font(float height) : tex()
-    {
-        FILE * f = 0;
-        std::string path = "examples/assets/Roboto-Bold.ttf";
-        for(int i=0; i<=3; ++i)
-        {
-            if(f = fopen(path.c_str(), "rb")) break;
-            path = "../" + path;
-        }
-        if(!f) throw std::runtime_error("Could not find font file!");
+    return stb_easy_font_width((char *)text);
+}
 
-        int buffer_size;
-        void * buffer;
-        unsigned char temp_bitmap[512*512];
-    
-        fseek(f, 0, SEEK_END);
-        buffer_size = ftell(f);
-    
-        buffer = malloc(buffer_size);
-        fseek(f, 0, SEEK_SET);
-        fread(buffer, 1, buffer_size, f);
-        fclose(f);
-    
-        stbtt_BakeFontBitmap((unsigned char*)buffer,0, height, temp_bitmap, 512,512, 32,96, cdata);
-        free(buffer);
-    
-        glGenTextures(1, &tex);
-        glBindTexture(GL_TEXTURE_2D, tex);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_ALPHA, 512,512, 0, GL_ALPHA, GL_UNSIGNED_BYTE, temp_bitmap);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
-    }
-
-    float width(const char * text)
-    {
-        float x=0, y=0;
-        for(; *text; ++text)
-        {
-            if (*text >= 32 && *text < 128)
-            {
-                stbtt_aligned_quad q;
-                stbtt_GetBakedQuad(cdata, 512,512, *text-32, &x,&y,&q,1);
-            }
-        }
-        return x;
-    }
-
-    void print(float x, float y, const char * text)
-    {
-        glPushAttrib(GL_ALL_ATTRIB_BITS);
-        glEnable(GL_TEXTURE_2D);
-        glBindTexture(GL_TEXTURE_2D, tex);
-        glEnable(GL_BLEND);
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-        glBegin(GL_QUADS);
-        for(; *text; ++text)
-        {
-            if (*text >= 32 && *text < 128)
-            {
-                stbtt_aligned_quad q;
-                stbtt_GetBakedQuad(cdata, 512,512, *text-32, &x,&y,&q,1);
-                glTexCoord2f(q.s0,q.t0); glVertex2f(q.x0,q.y0);
-                glTexCoord2f(q.s1,q.t0); glVertex2f(q.x1,q.y0);
-                glTexCoord2f(q.s1,q.t1); glVertex2f(q.x1,q.y1);
-                glTexCoord2f(q.s0,q.t1); glVertex2f(q.x0,q.y1);
-            }
-        }
-        glEnd();
-        glPopAttrib();    
-    }
-};
+inline void draw_text(int x, int y, const char * text)
+{
+    char buffer[20000]; // ~100 chars
+    glEnableClientState(GL_VERTEX_ARRAY);
+    glVertexPointer(2, GL_FLOAT, 16, buffer);
+    glDrawArrays(GL_QUADS, 0, 4*stb_easy_font_print((float)x, (float)(y-7), (char *)text, nullptr, buffer, sizeof(buffer)));
+    glDisableClientState(GL_VERTEX_ARRAY);
+}
 
 ////////////////////////
 // Image display code //
@@ -223,7 +157,7 @@ public:
         glBindTexture(GL_TEXTURE_2D, 0);
     }
 
-    void show(rs::device & dev, rs::stream stream, int rx, int ry, int rw, int rh, gl_font & font)
+    void show(rs::device & dev, rs::stream stream, int rx, int ry, int rw, int rh)
     {
         if(!dev.is_stream_enabled(stream)) return;
 
@@ -242,12 +176,12 @@ public:
 
         std::ostringstream ss; ss << stream << ": " << width << " x " << height << " " << dev.get_stream_format(stream) << " (" << fps << "/" << dev.get_stream_framerate(stream) << ")";
         glColor3f(0,0,0);
-        font.print(rx+9.0f, ry+17.0f, ss.str().c_str());
+        draw_text(rx+9, ry+17, ss.str().c_str());
         glColor3f(1,1,1);
-        font.print(rx+8.0f, ry+16.0f, ss.str().c_str());
+        draw_text(rx+8, ry+16, ss.str().c_str());
     }
 
-    void show(const void * data, int width, int height, rs::format format, const std::string & caption, int rx, int ry, int rw, int rh, gl_font & font)
+    void show(const void * data, int width, int height, rs::format format, const std::string & caption, int rx, int ry, int rw, int rh)
     {
         if(!data) return;
 
@@ -265,9 +199,9 @@ public:
 
         std::ostringstream ss; ss << caption << ": " << width << " x " << height << " " << format;
         glColor3f(0,0,0);
-        font.print(rx+9.0f, ry+17.0f, ss.str().c_str());
+        draw_text(rx+9, ry+17, ss.str().c_str());
         glColor3f(1,1,1);
-        font.print(rx+8.0f, ry+16.0f, ss.str().c_str());
+        draw_text(rx+8, ry+16, ss.str().c_str());
     }
 };
 

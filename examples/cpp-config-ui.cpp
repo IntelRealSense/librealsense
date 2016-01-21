@@ -18,12 +18,11 @@ struct color { float r,g,b; };
 
 struct gui
 {
-    gl_font fn;
     int2 cursor, clicked_offset, scroll_vec;
     bool click, mouse_down;
     int clicked_id;
 
-    gui() : fn(16), scroll_vec({0,0}), click(), mouse_down(), clicked_id() {}
+    gui() : scroll_vec({0,0}), click(), mouse_down(), clicked_id() {}
 
     void label(const int2 & p, const color & c, const char * format, ...)
     {
@@ -33,7 +32,7 @@ struct gui
         vsnprintf(buffer, sizeof(buffer), format, args);
         va_end(args);
         glColor3f(c.r, c.g, c.b);
-        fn.print(p.x, p.y, buffer);
+        draw_text(p.x, p.y, buffer);
     }
 
     void fill_rect(const rect & r, const color & c)
@@ -52,7 +51,7 @@ struct gui
         fill_rect(r, {1,1,1});
         fill_rect(r.shrink(2), r.contains(cursor) ? (mouse_down ? color{0.3f,0.3f,0.3f} : color{0.4f,0.4f,0.4f}) : color{0.5f,0.5f,0.5f});
         glColor3f(1,1,1);
-        fn.print(r.x0 + 4, r.y1 - 8, label.c_str());
+        draw_text(r.x0 + 4, r.y1 - 8, label.c_str());
         return click && r.contains(cursor);
     }
 
@@ -213,10 +212,10 @@ int main(int argc, char * argv[]) try
             y += 38;
         }
         g.label({w-260,y+12}, {1,1,1}, "Depth control parameters preset: %g", dc_preset);
-        if(g.slider(100, {w-260,y+16,w-20,y+36}, 0, 5, 1, dc_preset)) rs_apply_depth_control_preset((rs_device *)dev, dc_preset);
+        if(g.slider(100, {w-260,y+16,w-20,y+36}, 0, 5, 1, dc_preset)) rs_apply_depth_control_preset((rs_device *)dev, static_cast<int>(dc_preset));
         y += 38;
         g.label({w-260,y+12}, {1,1,1}, "IVCAM options preset: %g", iv_preset);
-        if(g.slider(101, {w-260,y+16,w-20,y+36}, 0, 8, 1, iv_preset)) rs_apply_ivcam_preset((rs_device *)dev, iv_preset);
+        if(g.slider(101, {w-260,y+16,w-20,y+36}, 0, 8, 1, iv_preset)) rs_apply_ivcam_preset((rs_device *)dev, static_cast<int>(iv_preset));
         y += 38;
         
         panel_height = y + 10 + offset;
@@ -224,10 +223,10 @@ int main(int argc, char * argv[]) try
         if(dev->is_streaming())
         {
             w-=270;
-            buffers[0].show(*dev, rs::stream::color, 0, 0, w/2, h/2, g.fn);
-            buffers[1].show(*dev, rs::stream::depth, w/2, 0, w-w/2, h/2, g.fn);
-            buffers[2].show(*dev, rs::stream::infrared, 0, h/2, w/2, h-h/2, g.fn);
-            buffers[3].show(*dev, rs::stream::infrared2, w/2, h/2, w-w/2, h-h/2, g.fn);
+            buffers[0].show(*dev, rs::stream::color, 0, 0, w/2, h/2);
+            buffers[1].show(*dev, rs::stream::depth, w/2, 0, w-w/2, h/2);
+            buffers[2].show(*dev, rs::stream::infrared, 0, h/2, w/2, h-h/2);
+            buffers[3].show(*dev, rs::stream::infrared2, w/2, h/2, w-w/2, h-h/2);
         }
 
         glfwSwapBuffers(win);
