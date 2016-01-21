@@ -1,10 +1,5 @@
-/*
-    INTEL CORPORATION PROPRIETARY INFORMATION This software is supplied under the
-    terms of a license agreement or nondisclosure agreement with Intel Corporation
-    and may not be copied or disclosed except in accordance with the terms of that
-    agreement.
-    Copyright(c) 2015 Intel Corporation. All Rights Reserved.
-*/
+// License: Apache 2.0. See LICENSE file in root directory.
+// Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
 #ifdef RS_USE_WMF_BACKEND
 
@@ -120,33 +115,33 @@ namespace rsimpl
             if(tokens.size() < 1 || tokens[0] != R"(\\?\usb)") return false; // Not a USB device
             if(tokens.size() < 3)
             {
-                DEBUG_ERR("malformed usb device path: " << name);
+                LOG_ERROR("malformed usb device path: " << name);
                 return false;
             }
 
             auto ids = tokenize(tokens[1], '&');
             if(ids[0].size() != 8 || ids[0].substr(0,4) != "vid_" || !(std::istringstream(ids[0].substr(4,4)) >> std::hex >> vid))
             {
-                DEBUG_ERR("malformed vid string: " << tokens[1]);
+                LOG_ERROR("malformed vid string: " << tokens[1]);
                 return false;
             }
 
             if(ids[1].size() != 8 || ids[1].substr(0,4) != "pid_" || !(std::istringstream(ids[1].substr(4,4)) >> std::hex >> pid))
             {
-                DEBUG_ERR("malformed pid string: " << tokens[1]);
+                LOG_ERROR("malformed pid string: " << tokens[1]);
                 return false;
             }
 
             if(ids[2].size() != 5 || ids[2].substr(0,3) != "mi_" || !(std::istringstream(ids[2].substr(3,2)) >> mi))
             {
-                DEBUG_ERR("malformed mi string: " << tokens[1]);
+                LOG_ERROR("malformed mi string: " << tokens[1]);
                 return false;
             }
 
             ids = tokenize(tokens[2], '&');
             if(ids.size() < 2)
             {
-                DEBUG_ERR("malformed id string: " << tokens[2]);
+                LOG_ERROR("malformed id string: " << tokens[2]);
                 return false;
             }
             unique_id = ids[1];
@@ -219,7 +214,7 @@ namespace rsimpl
                 {
                     check("IMFActivate::ActivateObject", mf_activate->ActivateObject(__uuidof(IMFMediaSource), (void **)&mf_media_source));
                     check("IMFMediaSource::QueryInterface", mf_media_source->QueryInterface(__uuidof(IAMCameraControl), (void **)&am_camera_control));
-                    if(SUCCEEDED(mf_media_source->QueryInterface(__uuidof(IAMVideoProcAmp), (void **)&am_video_proc_amp))) DEBUG_OUT("obtained IAMVideoProcAmp");                    
+                    if(SUCCEEDED(mf_media_source->QueryInterface(__uuidof(IAMVideoProcAmp), (void **)&am_video_proc_amp))) LOG_DEBUG("obtained IAMVideoProcAmp");                    
 
                     // Attempt to retrieve IKsControl
                     com_ptr<IKsTopologyInfo> ks_topology_info = NULL;
@@ -239,7 +234,7 @@ namespace rsimpl
                             check("CreateNodeInstance", ks_topology_info->CreateNodeInstance(i, IID_IUnknown, (LPVOID *)&unknown));
                             check("QueryInterface", unknown->QueryInterface(__uuidof(IKsControl), (void **)&ks_control));
                             ks_node_id = i;
-                            DEBUG_OUT("Found KS control node at location " << i << "!");
+                            LOG_DEBUG("Found KS control node at location " << i << "!");
                         }
                     }
                 }
@@ -339,7 +334,7 @@ namespace rsimpl
                     SetupDiGetDeviceInterfaceDetail(device_info, &interfaceData, nullptr, 0, &detail_data_size, nullptr);
                     if(GetLastError() != ERROR_INSUFFICIENT_BUFFER)
                     {
-                        DEBUG_ERR("SetupDiGetDeviceInterfaceDetail failed");
+                        LOG_ERROR("SetupDiGetDeviceInterfaceDetail failed");
                         continue;
                     }
                     auto alloc = std::malloc(detail_data_size);
@@ -350,7 +345,7 @@ namespace rsimpl
                     detail_data->cbSize = sizeof(SP_DEVICE_INTERFACE_DETAIL_DATA);
                     if (!SetupDiGetDeviceInterfaceDetail(device_info, &interfaceData, detail_data.get(), detail_data_size, nullptr, nullptr))
                     {
-                        DEBUG_ERR("SetupDiGetDeviceInterfaceDetail failed");
+                        LOG_ERROR("SetupDiGetDeviceInterfaceDetail failed");
                         continue;
                     }
                     if (detail_data->DevicePath == nullptr) continue;
@@ -365,7 +360,7 @@ namespace rsimpl
 
                     if(!WinUsb_Initialize(usb_file_handle, &usb_interface_handle))
                     {
-                        DEBUG_ERR("Last Error: " << GetLastError());
+                        LOG_ERROR("Last Error: " << GetLastError());
                         throw std::runtime_error("could not initialize winusb");
                     }
 
@@ -434,7 +429,7 @@ namespace rsimpl
                 {
                     auto lastError = GetLastError();
                     WinUsb_ResetPipe(usb_interface_handle, endpoint);
-                    DEBUG_ERR("WinUsb_ReadPipe failure... lastError: " << lastError);
+                    LOG_ERROR("WinUsb_ReadPipe failure... lastError: " << lastError);
                     result = false;
                 }
 
@@ -464,12 +459,12 @@ namespace rsimpl
                 switch(hr)
                 {
                 case S_OK: break;
-                case MF_E_INVALIDREQUEST: DEBUG_OUT("ReadSample returned MF_E_INVALIDREQUEST"); break;
-                case MF_E_INVALIDSTREAMNUMBER: DEBUG_OUT("ReadSample returned MF_E_INVALIDSTREAMNUMBER"); break;
-                case MF_E_NOTACCEPTING: DEBUG_OUT("ReadSample returned MF_E_NOTACCEPTING"); break;
-                case E_INVALIDARG: DEBUG_OUT("ReadSample returned E_INVALIDARG"); break;
-                case MF_E_VIDEO_RECORDING_DEVICE_INVALIDATED: DEBUG_OUT("ReadSample returned MF_E_VIDEO_RECORDING_DEVICE_INVALIDATED"); break;
-                default: DEBUG_OUT("ReadSample returned HRESULT " << std::hex << (uint32_t)hr); break;
+                case MF_E_INVALIDREQUEST: LOG_ERROR("ReadSample returned MF_E_INVALIDREQUEST"); break;
+                case MF_E_INVALIDSTREAMNUMBER: LOG_ERROR("ReadSample returned MF_E_INVALIDSTREAMNUMBER"); break;
+                case MF_E_NOTACCEPTING: LOG_ERROR("ReadSample returned MF_E_NOTACCEPTING"); break;
+                case E_INVALIDARG: LOG_ERROR("ReadSample returned E_INVALIDARG"); break;
+                case MF_E_VIDEO_RECORDING_DEVICE_INVALIDATED: LOG_ERROR("ReadSample returned MF_E_VIDEO_RECORDING_DEVICE_INVALIDATED"); break;
+                default: LOG_ERROR("ReadSample returned HRESULT " << std::hex << (uint32_t)hr); break;
                 }
             }
             return S_OK; 

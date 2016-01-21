@@ -1,10 +1,5 @@
-/*
-    INTEL CORPORATION PROPRIETARY INFORMATION This software is supplied under the
-    terms of a license agreement or nondisclosure agreement with Intel Corporation
-    and may not be copied or disclosed except in accordance with the terms of that
-    agreement.
-    Copyright(c) 2015 Intel Corporation. All Rights Reserved.
-*/
+// License: Apache 2.0. See LICENSE file in root directory.
+// Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
 #include "context.h"
 #include "device.h"
@@ -118,14 +113,6 @@ int rs_device_supports_option(const rs_device * device, rs_option option, rs_err
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, device, option)
 
-void rs_get_device_option_range(const rs_device * device, rs_option option, int * min, int * max, rs_error ** error) try
-{
-    VALIDATE_NOT_NULL(device);
-    VALIDATE_ENUM(option);
-    device->get_option_range(option, min, max);
-}
-HANDLE_EXCEPTIONS_AND_RETURN(, device, option, min, max)
-
 int rs_get_stream_mode_count(const rs_device * device, rs_stream stream, rs_error ** error) try
 {
     VALIDATE_NOT_NULL(device);
@@ -139,11 +126,7 @@ void rs_get_stream_mode(const rs_device * device, rs_stream stream, int index, i
     VALIDATE_NOT_NULL(device);
     VALIDATE_ENUM(stream);
     VALIDATE_RANGE(index, 0, device->get_stream_interface(stream).get_mode_count()-1);
-    auto & m = device->get_stream_interface(stream).get_mode(index);
-    if(width) *width = m.width;
-    if(height) *height = m.height;
-    if(format) *format = m.format;
-    if(framerate) *framerate = m.fps;
+    device->get_stream_interface(stream).get_mode(index, width, height, format, framerate);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, device, stream, index, width, height, format, framerate)
 
@@ -185,14 +168,21 @@ int rs_is_stream_enabled(const rs_device * device, rs_stream stream, rs_error **
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, device, stream)
 
-void rs_get_stream_intrinsics(const rs_device * device, rs_stream stream, rs_intrinsics * intrin, rs_error ** error) try
+int rs_get_stream_width(const rs_device * device, rs_stream stream, rs_error ** error) try
 {
     VALIDATE_NOT_NULL(device);
     VALIDATE_ENUM(stream);
-    VALIDATE_NOT_NULL(intrin);
-    *intrin = device->get_stream_interface(stream).get_intrinsics();
+    return device->get_stream_interface(stream).get_intrinsics().width;
 }
-HANDLE_EXCEPTIONS_AND_RETURN(, device, stream, intrin)
+HANDLE_EXCEPTIONS_AND_RETURN(0, device, stream)
+
+int rs_get_stream_height(const rs_device * device, rs_stream stream, rs_error ** error) try
+{
+    VALIDATE_NOT_NULL(device);
+    VALIDATE_ENUM(stream);
+    return device->get_stream_interface(stream).get_intrinsics().height;
+}
+HANDLE_EXCEPTIONS_AND_RETURN(0, device, stream)
 
 rs_format rs_get_stream_format(const rs_device * device, rs_stream stream, rs_error ** error) try
 {
@@ -209,6 +199,15 @@ int rs_get_stream_framerate(const rs_device * device, rs_stream stream, rs_error
     return device->get_stream_interface(stream).get_framerate();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(RS_FORMAT_ANY, device, stream)
+
+void rs_get_stream_intrinsics(const rs_device * device, rs_stream stream, rs_intrinsics * intrin, rs_error ** error) try
+{
+    VALIDATE_NOT_NULL(device);
+    VALIDATE_ENUM(stream);
+    VALIDATE_NOT_NULL(intrin);
+    *intrin = device->get_stream_interface(stream).get_intrinsics();
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, device, stream, intrin)
 
 
 
@@ -267,24 +266,6 @@ HANDLE_EXCEPTIONS_AND_RETURN(nullptr, device, stream)
 
 
 
-void rs_set_device_option(rs_device * device, rs_option option, int value, rs_error ** error) try
-{
-    VALIDATE_NOT_NULL(device);
-    VALIDATE_ENUM(option);
-    device->set_option(option, value);
-}
-HANDLE_EXCEPTIONS_AND_RETURN(, device, option, value)
-
-int rs_get_device_option(const rs_device * device, rs_option option, rs_error ** error) try
-{
-    VALIDATE_NOT_NULL(device);
-    VALIDATE_ENUM(option);
-    return device->get_option(option);
-}
-HANDLE_EXCEPTIONS_AND_RETURN(0, device, option)
-
-
-
 const char * rs_get_stream_name(rs_stream stream, rs_error ** error) try
 {
     VALIDATE_ENUM(stream);
@@ -322,6 +303,57 @@ HANDLE_EXCEPTIONS_AND_RETURN(nullptr, option)
 
 
 
+void rs_get_device_option_range(rs_device * device, rs_option option, double * min, double * max, double * step, rs_error ** error) try
+{
+    VALIDATE_NOT_NULL(device);
+    VALIDATE_ENUM(option);
+    double x; // Prevent internal code from having to worry about whether nulls are passed in for min/max/step by giving it somewhere to write to
+    device->get_option_range(option, min ? *min : x, max ? *max : x, step ? *step : x);
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, device, option, min, max, step)
+
+void rs_get_device_options(rs_device * device, const rs_option options[], int count, double values[], rs_error ** error) try
+{
+    VALIDATE_NOT_NULL(device);
+    VALIDATE_RANGE(count, 0, INT_MAX);
+    VALIDATE_NOT_NULL(options);
+    for(int i=0; i<count; ++i) VALIDATE_ENUM(options[i]);
+    VALIDATE_NOT_NULL(values);
+    device->get_options(options, count, values);
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, device, options, count, values)
+
+void rs_set_device_options(rs_device * device, const rs_option options[], int count, const double values[], rs_error ** error) try
+{
+    VALIDATE_NOT_NULL(device);
+    VALIDATE_RANGE(count, 0, INT_MAX);
+    VALIDATE_NOT_NULL(options);
+    for(int i=0; i<count; ++i) VALIDATE_ENUM(options[i]);
+    VALIDATE_NOT_NULL(values);
+    device->set_options(options, count, values);
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, device, options, count, values)
+
+double rs_get_device_option(rs_device * device, rs_option option, rs_error ** error) try
+{
+    VALIDATE_NOT_NULL(device);
+    VALIDATE_ENUM(option);
+    double value;
+    device->get_options(&option, 1, &value);
+    return value;
+}
+HANDLE_EXCEPTIONS_AND_RETURN(0, device, option)
+
+void rs_set_device_option(rs_device * device, rs_option option, double value, rs_error ** error) try
+{
+    VALIDATE_NOT_NULL(device);
+    VALIDATE_ENUM(option);
+    device->set_options(&option, 1, &value);
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, device, option, value)
+
+
+
 void rs_free_error(rs_error * error) { if (error) delete error; }
 const char * rs_get_failed_function(const rs_error * error) { return error ? error->function : nullptr; }
 const char * rs_get_failed_args(const rs_error * error) { return error ? error->args.c_str() : nullptr; }
@@ -334,3 +366,17 @@ const char * rs_format_to_string(rs_format format) { return rsimpl::get_string(f
 const char * rs_preset_to_string(rs_preset preset) { return rsimpl::get_string(preset); }
 const char * rs_distortion_to_string(rs_distortion distortion) { return rsimpl::get_string(distortion); }
 const char * rs_option_to_string(rs_option option) { return rsimpl::get_string(option); }
+
+
+
+void rs_log_to_console(rs_log_severity min_severity, rs_error ** error) try
+{
+    rsimpl::log_to_console(min_severity);
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, min_severity)
+
+void rs_log_to_file(rs_log_severity min_severity, const char * file_path, rs_error ** error) try
+{
+    rsimpl::log_to_file(min_severity, file_path);
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, min_severity, file_path)

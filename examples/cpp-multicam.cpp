@@ -1,10 +1,5 @@
-/*
-    INTEL CORPORATION PROPRIETARY INFORMATION This software is supplied under the
-    terms of a license agreement or nondisclosure agreement with Intel Corporation
-    and may not be copied or disclosed except in accordance with the terms of that
-    agreement.
-    Copyright(c) 2015 Intel Corporation. All Rights Reserved.
-*/
+// License: Apache 2.0. See LICENSE file in root directory.
+// Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
 #include <librealsense/rs.hpp>
 #include "example.hpp"
@@ -16,8 +11,12 @@ std::vector<texture_buffer> buffers;
 
 int main(int argc, char * argv[]) try
 {
-    rs::context ctx;
+    rs::log_to_console(rs::log_severity::warn);
+    //rs::log_to_file(rs::log_severity::debug, "librealsense.log");
 
+    rs::context ctx;
+    if(ctx.get_device_count() == 0) throw std::runtime_error("No device detected. Is it plugged in?");
+    
     // Enumerate all devices
     std::vector<rs::device *> devices;
     for(int i=0; i<ctx.get_device_count(); ++i)
@@ -51,13 +50,7 @@ int main(int argc, char * argv[]) try
 	auto perTextureWidth = windowWidth / devices.size();
 	auto perTextureHeight = 480;
 
-    font font;
-    if (auto f = find_file("examples/assets/Roboto-Bold.ttf", 3))
-    {
-        font = ttf_create(f,20);
-        fclose(f);
-    }
-    else throw std::runtime_error("Unable to open examples/assets/Roboto-Bold.ttf");
+    gl_font font(20);
 
     while (!glfwWindowShouldClose(win))
     {

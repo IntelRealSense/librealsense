@@ -1,10 +1,5 @@
-/*
-    INTEL CORPORATION PROPRIETARY INFORMATION This software is supplied under the
-    terms of a license agreement or nondisclosure agreement with Intel Corporation
-    and may not be copied or disclosed except in accordance with the terms of that
-    agreement.
-    Copyright(c) 2015 Intel Corporation. All Rights Reserved.
-*/
+// License: Apache 2.0. See LICENSE file in root directory.
+// Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
 #include "context.h"
 #include "uvc.h"
@@ -17,6 +12,8 @@ rs_context::rs_context() : rs_context(0)
 
     for(auto device : query_devices(context))
     {
+        LOG_INFO("UVC device detected with VID = 0x" << std::hex << get_vendor_id(*device) << " PID = 0x" << get_product_id(*device));
+
 		if (get_vendor_id(*device) != 32902)
 			continue;
 				

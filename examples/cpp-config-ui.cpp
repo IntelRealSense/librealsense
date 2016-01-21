@@ -18,12 +18,12 @@ struct color { float r,g,b; };
 
 struct gui
 {
-    font fn;
+    gl_font fn;
     int2 cursor, clicked_offset, scroll_vec;
     bool click, mouse_down;
     int clicked_id;
 
-    gui() : scroll_vec({0,0}), click(), mouse_down(), clicked_id() {}
+    gui() : fn(16), scroll_vec({0,0}), click(), mouse_down(), clicked_id() {}
 
     void label(const int2 & p, const color & c, const char * format, ...)
     {
@@ -33,7 +33,7 @@ struct gui
         vsnprintf(buffer, sizeof(buffer), format, args);
         va_end(args);
         glColor3f(c.r, c.g, c.b);
-        ttf_print(&fn, p.x, p.y, buffer);
+        fn.print(p.x, p.y, buffer);
     }
 
     void fill_rect(const rect & r, const color & c)
@@ -52,7 +52,7 @@ struct gui
         fill_rect(r, {1,1,1});
         fill_rect(r.shrink(2), r.contains(cursor) ? (mouse_down ? color{0.3f,0.3f,0.3f} : color{0.4f,0.4f,0.4f}) : color{0.5f,0.5f,0.5f});
         glColor3f(1,1,1);
-        ttf_print(&fn, r.x0 + 4, r.y1 - 8, label.c_str());
+        fn.print(r.x0 + 4, r.y1 - 8, label.c_str());
         return click && r.contains(cursor);
     }
 
@@ -70,20 +70,21 @@ struct gui
         return changed;
     }
 
-    bool slider(int id, const rect & r, int min, int max, int & value)
+    bool slider(int id, const rect & r, double min, double max, double step, double & value)
     {
         bool changed = false;
         const int w = r.x1 - r.x0, h = r.y1 - r.y0;
-        int p = (w - h) * (value - min) / (max - min);
+        double p = (w - h) * (value - min) / (max - min);
         if(mouse_down && clicked_id == id)
         {
-            p = std::max(0, std::min(cursor.x - clicked_offset.x - r.x0, w-h));
-            const int new_value = min + p * (max - min) / (w - h);
+            p = std::max(0.0, std::min<double>(cursor.x - clicked_offset.x - r.x0, w-h));
+            double new_value = min + p * (max - min) / (w - h);
+            if(step) new_value = std::round((new_value - min) / step) * step + min;
             changed = new_value != value;
             value = new_value;
             p = (w - h) * (value - min) / (max - min);
         }
-        const rect dragger = {r.x0+p, r.y0, r.x0+p+h, r.y1};
+        const rect dragger = {int(r.x0+p), int(r.y0), int(r.x0+p+h), int(r.y1)};
         if(click && dragger.contains(cursor))
         {
             clicked_offset = {cursor.x - dragger.x0, cursor.y - dragger.y0};
@@ -113,10 +114,13 @@ texture_buffer buffers[4];
 
 int main(int argc, char * argv[]) try
 {
-    gui g;
+    rs::log_to_console(rs::log_severity::warn);
+    //rs::log_to_file(rs::log_severity::debug, "librealsense.log");
 
     glfwInit();
     auto win = glfwCreateWindow(1550, 960, "CPP Configuration Example", nullptr, nullptr);
+    glfwMakeContextCurrent(win);
+    gui g;
     glfwSetWindowUserPointer(win, &g);
     glfwSetCursorPosCallback(win, [](GLFWwindow * w, double cx, double cy) { reinterpret_cast<gui *>(glfwGetWindowUserPointer(w))->cursor = {(int)cx, (int)cy}; });
     glfwSetScrollCallback(win, [](GLFWwindow * w, double x, double y) { reinterpret_cast<gui *>(glfwGetWindowUserPointer(w))->scroll_vec = {(int)x, (int)y}; });
@@ -130,14 +134,6 @@ int main(int argc, char * argv[]) try
         }
         g->mouse_down = action != GLFW_RELEASE; 
     });
-    glfwMakeContextCurrent(win);
-
-    if(auto f = find_file("examples/assets/Roboto-Bold.ttf", 3))
-    {
-        g.fn = ttf_create(f,16);
-        fclose(f);
-    }
-    else throw std::runtime_error("Unable to open examples/assets/Roboto-Bold.ttf");
 
     rs::context ctx;
     if(ctx.get_device_count() < 1) throw std::runtime_error("No device found. Is it plugged in?");
@@ -150,17 +146,18 @@ int main(int argc, char * argv[]) try
 
     //std::this_thread::sleep_for(std::chrono::seconds(1));
 
-    struct option { rs::option opt; int min, max, value; };
+    struct option { rs::option opt; double min, max, step, value; };
     std::vector<option> options;
     for(int i=0; i<RS_OPTION_COUNT; ++i)
     {
         option o = {(rs::option)i};
         if(!dev->supports_option(o.opt)) continue;
-        dev->get_option_range(o.opt, o.min, o.max);
+        dev->get_option_range(o.opt, o.min, o.max, o.step);
         if(o.min == o.max) continue;
-        o.value = dev->get_option(o.opt);
+        try { o.value = dev->get_option(o.opt); } catch(...) {}
         options.push_back(o);
     }
+    double dc_preset = 0, iv_preset = 0;
 
     int offset = 0, panel_height = 1;
     while(!glfwWindowShouldClose(win))
@@ -209,9 +206,19 @@ int main(int argc, char * argv[]) try
         {
             std::ostringstream ss; ss << o.opt << ": " << o.value;
             g.label({w-260,y+12}, {1,1,1}, ss.str().c_str());
-            if(g.slider((int)o.opt + 1, {w-260,y+16,w-20,y+36}, o.min, o.max, o.value)) dev->set_option(o.opt, o.value);
+            if(g.slider((int)o.opt + 1, {w-260,y+16,w-20,y+36}, o.min, o.max, o.step, o.value))
+            {
+                dev->set_option(o.opt, o.value);
+            }
             y += 38;
         }
+        g.label({w-260,y+12}, {1,1,1}, "Depth control parameters preset: %g", dc_preset);
+        if(g.slider(100, {w-260,y+16,w-20,y+36}, 0, 5, 1, dc_preset)) rs_apply_depth_control_preset((rs_device *)dev, dc_preset);
+        y += 38;
+        g.label({w-260,y+12}, {1,1,1}, "IVCAM options preset: %g", iv_preset);
+        if(g.slider(101, {w-260,y+16,w-20,y+36}, 0, 8, 1, iv_preset)) rs_apply_ivcam_preset((rs_device *)dev, iv_preset);
+        y += 38;
+        
         panel_height = y + 10 + offset;
         
         if(dev->is_streaming())

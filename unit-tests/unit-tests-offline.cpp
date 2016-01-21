@@ -1,10 +1,5 @@
-/*
-    INTEL CORPORATION PROPRIETARY INFORMATION This software is supplied under the
-    terms of a license agreement or nondisclosure agreement with Intel Corporation
-    and may not be copied or disclosed except in accordance with the terms of that
-    agreement.
-    Copyright(c) 2015 Intel Corporation. All Rights Reserved.
-*/
+// License: Apache 2.0. See LICENSE file in root directory.
+// Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
 #define CATCH_CONFIG_MAIN
 #include "catch/catch.hpp"
@@ -356,13 +351,12 @@ TEST_CASE( "rs_option_to_string() produces correct output", "[offline] [validati
     REQUIRE(rs_option_to_string(RS_OPTION_F200_MOTION_RANGE) == std::string("F200_MOTION_RANGE")); 
     REQUIRE(rs_option_to_string(RS_OPTION_F200_FILTER_OPTION) == std::string("F200_FILTER_OPTION")); 
     REQUIRE(rs_option_to_string(RS_OPTION_F200_CONFIDENCE_THRESHOLD) == std::string("F200_CONFIDENCE_THRESHOLD")); 
-    REQUIRE(rs_option_to_string(RS_OPTION_F200_DYNAMIC_FPS) == std::string("F200_DYNAMIC_FPS")); 
+    REQUIRE(rs_option_to_string(RS_OPTION_SR300_DYNAMIC_FPS) == std::string("SR300_DYNAMIC_FPS")); 
     
     REQUIRE(rs_option_to_string(RS_OPTION_R200_LR_AUTO_EXPOSURE_ENABLED) == std::string("R200_LR_AUTO_EXPOSURE_ENABLED")); 
     REQUIRE(rs_option_to_string(RS_OPTION_R200_LR_GAIN) == std::string("R200_LR_GAIN")); 
     REQUIRE(rs_option_to_string(RS_OPTION_R200_LR_EXPOSURE) == std::string("R200_LR_EXPOSURE")); 
-    REQUIRE(rs_option_to_string(RS_OPTION_R200_EMITTER_ENABLED) == std::string("R200_EMITTER_ENABLED")); 
-    REQUIRE(rs_option_to_string(RS_OPTION_R200_DEPTH_CONTROL_PRESET) == std::string("R200_DEPTH_CONTROL_PRESET")); 
+    REQUIRE(rs_option_to_string(RS_OPTION_R200_EMITTER_ENABLED) == std::string("R200_EMITTER_ENABLED"));
     REQUIRE(rs_option_to_string(RS_OPTION_R200_DEPTH_UNITS) == std::string("R200_DEPTH_UNITS")); 
     REQUIRE(rs_option_to_string(RS_OPTION_R200_DEPTH_CLAMP_MIN) == std::string("R200_DEPTH_CLAMP_MIN")); 
     REQUIRE(rs_option_to_string(RS_OPTION_R200_DEPTH_CLAMP_MAX) == std::string("R200_DEPTH_CLAMP_MAX")); 

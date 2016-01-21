@@ -11,7 +11,7 @@ INCLUDEPATH += ../include
 LIBS += -pthread
 
 SOURCES += ../examples/cpp-config-ui.cpp
-HEADERS += ../examples/example.h
+HEADERS += ../examples/example.hpp
 
 LIBS += -L$$DESTDIR/ -lrealsense
 

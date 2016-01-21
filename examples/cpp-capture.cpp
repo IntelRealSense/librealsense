@@ -1,10 +1,5 @@
-/*
-    INTEL CORPORATION PROPRIETARY INFORMATION This software is supplied under the
-    terms of a license agreement or nondisclosure agreement with Intel Corporation
-    and may not be copied or disclosed except in accordance with the terms of that
-    agreement.
-    Copyright(c) 2015 Intel Corporation. All Rights Reserved.
-*/
+// License: Apache 2.0. See LICENSE file in root directory.
+// Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
 #include <librealsense/rs.hpp>
 #include "example.hpp"
@@ -15,7 +10,6 @@
 #include <thread>
 #include <algorithm>
 
-font font;
 texture_buffer buffers[RS_STREAM_COUNT];
 bool align_depth_to_color = false;
 bool align_color_to_depth = false;
@@ -25,6 +19,9 @@ bool color_rectification_enabled = false;
 
 int main(int argc, char * argv[]) try
 {
+    rs::log_to_console(rs::log_severity::warn);
+    //rs::log_to_file(rs::log_severity::debug, "librealsense.log");
+
     rs::context ctx;
     if(ctx.get_device_count() == 0) throw std::runtime_error("No device detected. Is it plugged in?");
     rs::device & dev = *ctx.get_device(0);
@@ -32,7 +29,7 @@ int main(int argc, char * argv[]) try
     dev.enable_stream(rs::stream::depth, rs::preset::best_quality);
     dev.enable_stream(rs::stream::color, rs::preset::best_quality);
     dev.enable_stream(rs::stream::infrared, rs::preset::best_quality);
-    try { dev.enable_stream(rs::stream::infrared2, rs::preset::best_quality); } catch(...) {}
+    try { dev.enable_stream(rs::stream::infrared2, 0, 0, rs::format::any, 0); } catch(...) {}
 
     // Compute field of view for each enabled stream
     for(int i = 0; i < 4; ++i)
@@ -52,7 +49,7 @@ int main(int argc, char * argv[]) try
     std::this_thread::sleep_for(std::chrono::milliseconds(1000));
         
     // Report the status of each supported option
-    for(int i = 0; i < RS_OPTION_COUNT; ++i)
+    /*for(int i = 0; i < RS_OPTION_COUNT; ++i)
     {
         auto option = rs::option(i);
         if(dev.supports_option(option))
@@ -61,7 +58,7 @@ int main(int argc, char * argv[]) try
             try { std::cout << dev.get_option(option) << std::endl; }
             catch(const std::exception & e) { std::cout << e.what() << std::endl; }
         }
-    }
+    }*/
 
     // Open a GLFW window
     glfwInit();
@@ -77,7 +74,7 @@ int main(int argc, char * argv[]) try
         case GLFW_KEY_R: color_rectification_enabled = !color_rectification_enabled; break;
         case GLFW_KEY_C: align_color_to_depth = !align_color_to_depth; break;
         case GLFW_KEY_D: align_depth_to_color = !align_depth_to_color; break;
-        case GLFW_KEY_E:
+        /*case GLFW_KEY_E:
             value = !dev->get_option(rs::option::r200_emitter_enabled);
             std::cout << "Setting emitter to " << value << std::endl;
             dev->set_option(rs::option::r200_emitter_enabled, value);
@@ -86,18 +83,11 @@ int main(int argc, char * argv[]) try
             value = !dev->get_option(rs::option::r200_lr_auto_exposure_enabled);
             std::cout << "Setting auto exposure to " << value << std::endl;
             dev->set_option(rs::option::r200_lr_auto_exposure_enabled, value);
-            break;
+            break;*/
         }
     });
     glfwMakeContextCurrent(win);
-            
-    // Load our truetype font
-    if (auto f = find_file("examples/assets/Roboto-Bold.ttf", 3))
-    {
-        font = ttf_create(f,20);
-        fclose(f);
-    }
-    else throw std::runtime_error("Unable to open examples/assets/Roboto-Bold.ttf");
+    gl_font font(20);
 
     while (!glfwWindowShouldClose(win))
     {

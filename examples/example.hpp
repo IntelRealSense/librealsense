@@ -1,15 +1,127 @@
-/*
-    INTEL CORPORATION PROPRIETARY INFORMATION This software is supplied under the
-    terms of a license agreement or nondisclosure agreement with Intel Corporation
-    and may not be copied or disclosed except in accordance with the terms of that
-    agreement.
-    Copyright(c) 2015 Intel Corporation. All Rights Reserved.
-*/
+// License: Apache 2.0. See LICENSE file in root directory.
+// Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
-#include "example.h"
+#define GLFW_INCLUDE_GLU
+#include <GLFW/glfw3.h>
 
-#include <vector>
 #include <sstream>
+#include <vector>
+
+inline void make_depth_histogram(uint8_t rgb_image[640*480*3], const uint16_t depth_image[], int width, int height)
+{
+    static uint32_t histogram[0x10000];
+    int i, d, f;
+    memset(histogram, 0, sizeof(histogram));
+
+    for(i = 0; i < width*height; ++i) ++histogram[depth_image[i]];
+    for(i = 2; i < 0x10000; ++i) histogram[i] += histogram[i-1]; // Build a cumulative histogram for the indices in [1,0xFFFF]
+    for(i = 0; i < width*height; ++i)
+    {
+        if(d = depth_image[i])
+        {
+            f = histogram[d] * 255 / histogram[0xFFFF]; // 0-255 based on histogram location
+            rgb_image[i*3 + 0] = 255 - f;
+            rgb_image[i*3 + 1] = 0;
+            rgb_image[i*3 + 2] = f;
+        }
+        else
+        {
+            rgb_image[i*3 + 0] = 20;
+            rgb_image[i*3 + 1] = 5;
+            rgb_image[i*3 + 2] = 0;
+        }
+    }
+}
+
+//////////////////////////////
+// Simple font loading code //
+//////////////////////////////
+
+#define STB_TRUETYPE_IMPLEMENTATION
+#include "third_party/stb_truetype.h"
+
+class gl_font
+{
+    GLuint tex;
+    stbtt_bakedchar cdata[96]; // ASCII 32..126 is 95 glyph
+public:
+    gl_font(float height) : tex()
+    {
+        FILE * f = 0;
+        std::string path = "examples/assets/Roboto-Bold.ttf";
+        for(int i=0; i<=3; ++i)
+        {
+            if(f = fopen(path.c_str(), "rb")) break;
+            path = "../" + path;
+        }
+        if(!f) throw std::runtime_error("Could not find font file!");
+
+        int buffer_size;
+        void * buffer;
+        unsigned char temp_bitmap[512*512];
+    
+        fseek(f, 0, SEEK_END);
+        buffer_size = ftell(f);
+    
+        buffer = malloc(buffer_size);
+        fseek(f, 0, SEEK_SET);
+        fread(buffer, 1, buffer_size, f);
+        fclose(f);
+    
+        stbtt_BakeFontBitmap((unsigned char*)buffer,0, height, temp_bitmap, 512,512, 32,96, cdata);
+        free(buffer);
+    
+        glGenTextures(1, &tex);
+        glBindTexture(GL_TEXTURE_2D, tex);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_ALPHA, 512,512, 0, GL_ALPHA, GL_UNSIGNED_BYTE, temp_bitmap);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+    }
+
+    float width(const char * text)
+    {
+        float x=0, y=0;
+        for(; *text; ++text)
+        {
+            if (*text >= 32 && *text < 128)
+            {
+                stbtt_aligned_quad q;
+                stbtt_GetBakedQuad(cdata, 512,512, *text-32, &x,&y,&q,1);
+            }
+        }
+        return x;
+    }
+
+    void print(float x, float y, const char * text)
+    {
+        glPushAttrib(GL_ALL_ATTRIB_BITS);
+        glEnable(GL_TEXTURE_2D);
+        glBindTexture(GL_TEXTURE_2D, tex);
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        glBegin(GL_QUADS);
+        for(; *text; ++text)
+        {
+            if (*text >= 32 && *text < 128)
+            {
+                stbtt_aligned_quad q;
+                stbtt_GetBakedQuad(cdata, 512,512, *text-32, &x,&y,&q,1);
+                glTexCoord2f(q.s0,q.t0); glVertex2f(q.x0,q.y0);
+                glTexCoord2f(q.s1,q.t0); glVertex2f(q.x1,q.y0);
+                glTexCoord2f(q.s1,q.t1); glVertex2f(q.x1,q.y1);
+                glTexCoord2f(q.s0,q.t1); glVertex2f(q.x0,q.y1);
+            }
+        }
+        glEnd();
+        glPopAttrib();    
+    }
+};
+
+////////////////////////
+// Image display code //
+////////////////////////
 
 class texture_buffer
 {
@@ -84,8 +196,7 @@ public:
         const int timestamp = dev.get_frame_timestamp(stream);
         if(timestamp != last_timestamp)
         {
-            const rs::intrinsics intrin = dev.get_stream_intrinsics(stream);     
-            upload(dev.get_frame_data(stream), intrin.width, intrin.height, dev.get_stream_format(stream));
+            upload(dev.get_frame_data(stream), dev.get_stream_width(stream), dev.get_stream_height(stream), dev.get_stream_format(stream));
             last_timestamp = timestamp;
 
             ++num_frames;
@@ -112,14 +223,14 @@ public:
         glBindTexture(GL_TEXTURE_2D, 0);
     }
 
-    void show(rs::device & dev, rs::stream stream, int rx, int ry, int rw, int rh, font & font)
+    void show(rs::device & dev, rs::stream stream, int rx, int ry, int rw, int rh, gl_font & font)
     {
         if(!dev.is_stream_enabled(stream)) return;
 
         upload(dev, stream);
         
-        const rs::intrinsics intrin = dev.get_stream_intrinsics(stream);  
-        float h = (float)rh, w = (float)rh * intrin.width / intrin.height;
+        int width = dev.get_stream_width(stream), height = dev.get_stream_height(stream);
+        float h = (float)rh, w = (float)rh * width / height;
         if(w > rw)
         {
             float scale = rw/w;
@@ -129,14 +240,14 @@ public:
 
         show(rx + (rw - w)/2, ry + (rh - h)/2, w, h);
 
-        std::ostringstream ss; ss << stream << ": " << intrin.width << " x " << intrin.height << " " << dev.get_stream_format(stream) << " (" << fps << "/" << dev.get_stream_framerate(stream) << ")";
+        std::ostringstream ss; ss << stream << ": " << width << " x " << height << " " << dev.get_stream_format(stream) << " (" << fps << "/" << dev.get_stream_framerate(stream) << ")";
         glColor3f(0,0,0);
-        ttf_print(&font, rx+9.0f, ry+17.0f, ss.str().c_str());
+        font.print(rx+9.0f, ry+17.0f, ss.str().c_str());
         glColor3f(1,1,1);
-        ttf_print(&font, rx+8.0f, ry+16.0f, ss.str().c_str());
+        font.print(rx+8.0f, ry+16.0f, ss.str().c_str());
     }
 
-    void show(const void * data, int width, int height, rs::format format, const std::string & caption, int rx, int ry, int rw, int rh, font & font)
+    void show(const void * data, int width, int height, rs::format format, const std::string & caption, int rx, int ry, int rw, int rh, gl_font & font)
     {
         if(!data) return;
 
@@ -154,8 +265,15 @@ public:
 
         std::ostringstream ss; ss << caption << ": " << width << " x " << height << " " << format;
         glColor3f(0,0,0);
-        ttf_print(&font, rx+9.0f, ry+17.0f, ss.str().c_str());
+        font.print(rx+9.0f, ry+17.0f, ss.str().c_str());
         glColor3f(1,1,1);
-        ttf_print(&font, rx+8.0f, ry+16.0f, ss.str().c_str());
+        font.print(rx+8.0f, ry+16.0f, ss.str().c_str());
     }
 };
+
+inline void draw_depth_histogram(const uint16_t depth_image[], int width, int height)
+{
+    static uint8_t rgb_image[640*480*3];
+    make_depth_histogram(rgb_image, depth_image, width, height);
+    glDrawPixels(width, height, GL_RGB, GL_UNSIGNED_BYTE, rgb_image);
+}

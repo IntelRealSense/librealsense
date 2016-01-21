@@ -1,10 +1,5 @@
-/*
-    INTEL CORPORATION PROPRIETARY INFORMATION This software is supplied under the
-    terms of a license agreement or nondisclosure agreement with Intel Corporation
-    and may not be copied or disclosed except in accordance with the terms of that
-    agreement.
-    Copyright(c) 2015 Intel Corporation. All Rights Reserved.
-*/
+// License: Apache 2.0. See LICENSE file in root directory.
+// Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
 #pragma once
 #ifndef LIBREALSENSE_IMAGE_H
@@ -15,32 +10,18 @@
 namespace rsimpl
 {
     size_t           get_image_size                 (int width, int height, rs_format format);
-                                                    
-    void             unpack_subrect                 (byte * const dest[], const byte * source, const subdevice_mode & mode);
 
-    void             unpack_y16_from_y8             (byte * const dest[], const byte * source, const subdevice_mode & mode);
-    void             unpack_y16_from_y16_10         (byte * const dest[], const byte * source, const subdevice_mode & mode);
-    void             unpack_y8_from_y16_10          (byte * const dest[], const byte * source, const subdevice_mode & mode);
-    
-    void             unpack_from_yuy2               (byte * const dest[], const byte * source, const subdevice_mode & mode);
-                                                             
-    void             unpack_y8_y8_from_y8i          (byte * const dest[], const byte * source, const subdevice_mode & mode);
-    void             unpack_y16_y16_from_y12i_10    (byte * const dest[], const byte * source, const subdevice_mode & mode);
-                                                             
-    void             unpack_z16_y8_from_f200_inzi   (byte * const dest[], const byte * source, const subdevice_mode & mode);
-    void             unpack_z16_y16_from_f200_inzi  (byte * const dest[], const byte * source, const subdevice_mode & mode);
-                                                             
-    void             unpack_z16_y8_from_sr300_inzi  (byte * const dest[], const byte * source, const subdevice_mode & mode);
-    void             unpack_z16_y16_from_sr300_inzi (byte * const dest[], const byte * source, const subdevice_mode & mode);
+    void             deproject_z(float * points, const rs_intrinsics & z_intrin, const uint16_t * z_pixels, float z_scale);
+    void             deproject_disparity(float * points, const rs_intrinsics & disparity_intrin, const uint16_t * disparity_pixels, float disparity_scale);
 
-    void             align_z_to_color               (byte * z_aligned_to_color, const uint16_t * z_pixels, float z_scale, const rs_intrinsics & z_intrin, 
-                                                     const rs_extrinsics & z_to_color, const rs_intrinsics & color_intrin);
-    void             align_disparity_to_color       (byte * disparity_aligned_to_color, const uint16_t * disparity_pixels, float disparity_scale, const rs_intrinsics & disparity_intrin, 
-                                                     const rs_extrinsics & disparity_to_color, const rs_intrinsics & color_intrin);
-    void             align_color_to_z               (byte * color_aligned_to_z, const uint16_t * z_pixels, float z_scale, const rs_intrinsics & z_intrin, 
-                                                     const rs_extrinsics & z_to_color, const rs_intrinsics & color_intrin, const byte * color_pixels, rs_format color_format);
-    void             align_color_to_disparity       (byte * color_aligned_to_disparity, const uint16_t * disparity_pixels, float disparity_scale, const rs_intrinsics & disparity_intrin, 
-                                                     const rs_extrinsics & disparity_to_color, const rs_intrinsics & color_intrin, const byte * color_pixels, rs_format color_format);
+    void             align_z_to_other               (byte * z_aligned_to_other, const uint16_t * z_pixels, float z_scale, const rs_intrinsics & z_intrin, 
+                                                     const rs_extrinsics & z_to_other, const rs_intrinsics & other_intrin);
+    void             align_disparity_to_other       (byte * disparity_aligned_to_other, const uint16_t * disparity_pixels, float disparity_scale, const rs_intrinsics & disparity_intrin, 
+                                                     const rs_extrinsics & disparity_to_other, const rs_intrinsics & other_intrin);
+    void             align_other_to_z               (byte * other_aligned_to_z, const uint16_t * z_pixels, float z_scale, const rs_intrinsics & z_intrin, 
+                                                     const rs_extrinsics & z_to_other, const rs_intrinsics & other_intrin, const byte * other_pixels, rs_format other_format);
+    void             align_other_to_disparity       (byte * other_aligned_to_disparity, const uint16_t * disparity_pixels, float disparity_scale, const rs_intrinsics & disparity_intrin, 
+                                                     const rs_extrinsics & disparity_to_other, const rs_intrinsics & other_intrin, const byte * other_pixels, rs_format other_format);
 
     std::vector<int> compute_rectification_table    (const rs_intrinsics & rect_intrin, const rs_extrinsics & rect_to_unrect, const rs_intrinsics & unrect_intrin);
     void             rectify_image                  (byte * rect_pixels, const std::vector<int> & rectification_table, const byte * unrect_pixels, rs_format format);

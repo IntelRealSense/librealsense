@@ -1,10 +1,5 @@
-/*
-    INTEL CORPORATION PROPRIETARY INFORMATION This software is supplied under the
-    terms of a license agreement or nondisclosure agreement with Intel Corporation
-    and may not be copied or disclosed except in accordance with the terms of that
-    agreement.
-    Copyright(c) 2015 Intel Corporation. All Rights Reserved.
-*/
+// License: Apache 2.0. See LICENSE file in root directory.
+// Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
 #pragma once
 #ifndef LIBREALSENSE_R200_PRIVATE_H
@@ -22,145 +17,134 @@ namespace rsimpl
         const int STATUS_BIT_LR_STREAMING = 1 << 1;
         const int STATUS_BIT_WEB_STREAMING = 1 << 2;
 
+        struct r200_calibration
+        {
+            int version;
+            int serial_number;
+            rs_intrinsics modesLR[3];
+            rs_intrinsics intrinsicsThird[2];
+            rs_intrinsics modesThird[2][2];
+            float Rthird[9], T[3], B;
+        };
+
+        r200_calibration read_camera_info(uvc::device & device);
+        std::string read_firmware_version(uvc::device & device);
+             
+        void get_register_value(uvc::device & device, uint32_t reg, uint32_t & value);
+		void set_register_value(uvc::device & device, uint32_t reg, uint32_t value);
+
+        /////////////////////////////
+        // Extension unit controls //
+        /////////////////////////////
+
+        enum class control // UVC extension control codes
+        {
+            command_response           = 1,
+            iffley                     = 2,
+            stream_intent              = 3,
+            depth_units                = 4,
+            min_max                    = 5,
+            disparity                  = 6,
+            rectification              = 7,
+            emitter                    = 8,
+            temperature                = 9,
+            depth_params               = 10,
+            last_error                 = 12,
+            embedded_count             = 13,
+            lr_exposure                = 14,
+            lr_autoexposure_parameters = 15,
+            sw_reset                   = 16,
+            lr_gain                    = 17,
+            lr_exposure_mode           = 18,
+            disparity_shift            = 19,
+            status                     = 20,
+            lr_exposure_discovery      = 21,
+            lr_gain_discovery          = 22,
+            hw_timestamp               = 23,
+        };
+
+        void xu_read(const uvc::device & device, control xu_ctrl, void * buffer, uint32_t length);
+        void xu_write(uvc::device & device, control xu_ctrl, void * buffer, uint32_t length);
+
+        template<class T> T xu_read(const uvc::device & dev, control ctrl) { T val; xu_read(dev, ctrl, &val, sizeof(val)); return val; }
+        template<class T> void xu_write(uvc::device & dev, control ctrl, const T & value) { T val = value; xu_write(dev, ctrl, &val, sizeof(val)); }        
+
         #pragma pack(push, 1)
-        struct CalibrationMetadata
+        struct ae_params // Auto-exposure algorithm parameters
         {
-            big_endian<uint32_t> versionNumber;
-            big_endian<uint16_t> numIntrinsicsRight;
-            big_endian<uint16_t> numIntrinsicsThird;
-            big_endian<uint16_t> numIntrinsicsPlatform;
-            big_endian<uint16_t> numRectifiedModesLR;
-            big_endian<uint16_t> numRectifiedModesThird;
-            big_endian<uint16_t> numRectifiedModesPlatform;
+            float mean_intensity_set_point;
+            float bright_ratio_set_point;  
+            float kp_gain;                 
+            float kp_exposure;             
+            float kp_dark_threshold;       
+            uint16_t exposure_top_edge;    
+            uint16_t exposure_bottom_edge; 
+            uint16_t exposure_left_edge;   
+            uint16_t exposure_right_edge;  
         };
 
-        struct UnrectifiedIntrinsics
+        struct dc_params // Depth control algorithm parameters
         {
-            big_endian<float> fx;
-            big_endian<float> fy;
-            big_endian<float> px;
-            big_endian<float> py;
-            big_endian<float> k[5];
-            big_endian<uint32_t> w;
-            big_endian<uint32_t> h;
+            uint32_t robbins_munroe_minus_inc;
+            uint32_t robbins_munroe_plus_inc;
+            uint32_t median_thresh;
+            uint32_t score_min_thresh;
+            uint32_t score_max_thresh;
+            uint32_t texture_count_thresh;
+            uint32_t texture_diff_thresh;
+            uint32_t second_peak_thresh;
+            uint32_t neighbor_thresh;
+            uint32_t lr_thresh;
+
+            enum { MAX_PRESETS = 6 };
+            static const dc_params presets[MAX_PRESETS];
         };
+        
+        struct range { uint16_t min, max; };
+        struct disp_mode { uint32_t is_disparity_enabled; double disparity_multiplier; };
+        struct rate_value { uint32_t rate, value; }; // Framerate dependent value, such as exposure or gain
+        struct temperature { int8_t current, min, max, min_fault; };
+        struct discovery { uint32_t fps, min, max, default_value, resolution; }; // Fields other than fps are in same units as field (exposure in tenths of a millisecond, gain as percent)
+        #pragma pack(pop)
 
-        struct RectifiedIntrinsics
-        {
-            big_endian<float> rfx;
-            big_endian<float> rfy;
-            big_endian<float> rpx;
-            big_endian<float> rpy;
-            big_endian<uint32_t> rw;
-            big_endian<uint32_t> rh;
-        };
+        void set_stream_intent(uvc::device & device, uint8_t & intent);
+        void get_stream_status(const uvc::device & device, uint8_t & status);
+        void force_firmware_reset(uvc::device & device);       
+        bool get_emitter_state(const uvc::device & device, bool is_streaming, bool is_depth_enabled);
+        void set_emitter_state(uvc::device & device, bool state);
 
-        struct CameraCalibrationParameters
-        {
-            static const int MAX_NUM_INTRINSICS_RIGHT = 2; // Max number right cameras supported (e.g. one or two, two would support a multi-baseline unit)
-            static const int MAX_NUM_INTRINSICS_THIRD = 3; // Max number native resolutions the third camera can have (e.g. 1920x1080 and 640x480)
-            static const int MAX_NUM_INTRINSICS_PLATFORM = 4; // Max number native resolutions the platform camera can have
-            static const int MAX_NUM_RECTIFIED_MODES_LR = 4; // Max number rectified LR resolution modes the structure supports (e.g. 640x480, 492x372 and 332x252)
-            static const int MAX_NUM_RECTIFIED_MODES_THIRD = 3; // Max number rectified Third resolution modes the structure supports (e.g. 1920x1080, 1280x720, etc)
-            static const int MAX_NUM_RECTIFIED_MODES_PLATFORM = 1; // Max number rectified Platform resolution modes the structure supports
+        inline uint32_t     get_depth_units             (const uvc::device & device) { return xu_read<uint32_t   >(device, control::depth_units); }
+        inline range        get_min_max_depth           (const uvc::device & device) { return xu_read<range      >(device, control::min_max); }
+        inline disp_mode    get_disparity_mode          (const uvc::device & device) { return xu_read<disp_mode  >(device, control::disparity); }
+        inline temperature  get_temperature             (const uvc::device & device) { return xu_read<temperature>(device, control::temperature); }
+        inline dc_params    get_depth_params            (const uvc::device & device) { return xu_read<dc_params  >(device, control::depth_params); }
+        inline uint8_t      get_last_error              (const uvc::device & device) { return xu_read<uint8_t    >(device, control::last_error); }
+        inline rate_value   get_lr_exposure             (const uvc::device & device) { return xu_read<rate_value >(device, control::lr_exposure); }
+        inline ae_params    get_lr_auto_exposure_params (const uvc::device & device) { return xu_read<ae_params  >(device, control::lr_autoexposure_parameters); }
+        inline rate_value   get_lr_gain                 (const uvc::device & device) { return xu_read<rate_value >(device, control::lr_gain); }
+        inline uint8_t      get_lr_exposure_mode        (const uvc::device & device) { return xu_read<uint8_t    >(device, control::lr_exposure_mode); }
+        inline uint32_t     get_disparity_shift         (const uvc::device & device) { return xu_read<uint32_t   >(device, control::disparity_shift); }
+        inline discovery    get_lr_exposure_discovery   (const uvc::device & device) { return xu_read<discovery  >(device, control::lr_exposure_discovery); }
+        inline discovery    get_lr_gain_discovery       (const uvc::device & device) { return xu_read<discovery  >(device, control::lr_gain_discovery); }
 
-            CalibrationMetadata metadata;
+        inline void         set_depth_units             (uvc::device & device, uint32_t units)      { xu_write(device, control::depth_units, units); }
+        inline void         set_min_max_depth           (uvc::device & device, range min_max)       { xu_write(device, control::min_max, min_max); }       
+        inline void         set_disparity_mode          (uvc::device & device, disp_mode mode)      { xu_write(device, control::disparity, mode); }
+        inline void         set_temperature             (uvc::device & device, temperature temp)    { xu_write(device, control::temperature, temp); }
+        inline void         set_depth_params            (uvc::device & device, dc_params params)    { xu_write(device, control::depth_params, params); }
+        inline void         set_lr_exposure             (uvc::device & device, rate_value exposure) { xu_write(device, control::lr_exposure, exposure); }
+        inline void         set_lr_auto_exposure_params (uvc::device & device, ae_params params)    { xu_write(device, control::lr_autoexposure_parameters, params); }
+        inline void         set_lr_gain                 (uvc::device & device, rate_value gain)     { xu_write(device, control::lr_gain, gain); }
+        inline void         set_lr_exposure_mode        (uvc::device & device, uint8_t mode)        { xu_write(device, control::lr_exposure_mode, mode); }
+        inline void         set_disparity_shift         (uvc::device & device, uint32_t shift)      { xu_write(device, control::disparity_shift, shift); }
+        inline void         set_lr_exposure_discovery   (uvc::device & device, discovery disc)      { xu_write(device, control::lr_exposure_discovery, disc); }
+        inline void         set_lr_gain_discovery       (uvc::device & device, discovery disc)      { xu_write(device, control::lr_gain_discovery, disc); }
 
-            UnrectifiedIntrinsics intrinsicsLeft;
-            UnrectifiedIntrinsics intrinsicsRight[MAX_NUM_INTRINSICS_RIGHT];
-            UnrectifiedIntrinsics intrinsicsThird[MAX_NUM_INTRINSICS_THIRD];
-            UnrectifiedIntrinsics intrinsicsPlatform[MAX_NUM_INTRINSICS_PLATFORM];
+        ///////////////
+        // Streaming //
+        ///////////////
 
-            RectifiedIntrinsics modesLR[MAX_NUM_INTRINSICS_RIGHT][MAX_NUM_RECTIFIED_MODES_LR];
-            RectifiedIntrinsics modesThird[MAX_NUM_INTRINSICS_RIGHT][MAX_NUM_INTRINSICS_THIRD][MAX_NUM_RECTIFIED_MODES_THIRD];
-            RectifiedIntrinsics modesPlatform[MAX_NUM_INTRINSICS_RIGHT][MAX_NUM_INTRINSICS_PLATFORM][MAX_NUM_RECTIFIED_MODES_PLATFORM];
-
-            big_endian<float> Rleft[MAX_NUM_INTRINSICS_RIGHT][9];
-            big_endian<float> Rright[MAX_NUM_INTRINSICS_RIGHT][9];
-            big_endian<float> Rthird[MAX_NUM_INTRINSICS_RIGHT][9];
-            big_endian<float> Rplatform[MAX_NUM_INTRINSICS_RIGHT][9];
-
-            big_endian<float> B[MAX_NUM_INTRINSICS_RIGHT];
-            big_endian<float> T[MAX_NUM_INTRINSICS_RIGHT][3];
-            big_endian<float> Tplatform[MAX_NUM_INTRINSICS_RIGHT][3];
-
-            big_endian<float> Rworld[9];
-            big_endian<float> Tworld[3];
-        };
-
-        const int CURRENT_CAMERA_CONTENTS_VERSION_NUMBER = 12;
-
-        struct CameraHeaderInfo
-        {
-            uint32_t serialNumber;
-            uint32_t modelNumber;
-            uint32_t revisionNumber;
-            uint8_t modelData[64];
-            double buildDate;
-            double firstProgramDate;
-            double focusAndAlignmentDate;
-            uint32_t nominalBaselineThird;
-            uint8_t moduleVersion;
-            uint8_t moduleMajorVersion;
-            uint8_t moduleMinorVersion;
-            uint8_t moduleSkew;
-            uint32_t lensTypeThird;
-            uint32_t OEMID;
-            uint32_t lensCoatingTypeThird;
-            uint8_t platformCameraSupport;
-            uint8_t reserved1[3];
-            uint32_t emitterType;
-            uint8_t reserved2[4];
-            uint32_t cameraFPGAVersion;
-            uint32_t platformCameraFocus; // This is the value during calibration
-            double calibrationDate;
-            uint32_t calibrationType;
-            double calibrationXError;
-            double calibrationYError;
-            double rectificationDataQres[54];
-            double rectificationDataPadding[26];
-            double CxQres;
-            double CyQres;
-            double CzQres;
-            double KxQres;
-            double KyQres;
-            uint32_t cameraHeadContentsVersion;
-            uint32_t cameraHeadContentsSizeInBytes;
-            double CxBig;
-            double CyBig;
-            double CzBig;
-            double KxBig;
-            double KyBig;
-            double CxSpecial;
-            double CySpecial;
-            double CzSpecial;
-            double KxSpecial;
-            double KySpecial;
-            uint8_t cameraHeadDataLittleEndian;
-            double rectificationDataBig[54];
-            double rectificationDataSpecial[54];
-            uint8_t cameraOptions1;
-            uint8_t cameraOptions2;
-            uint8_t bodySerialNumber[20];
-            double Dx;
-            double Dy;
-            double Dz;
-            double ThetaX;
-            double ThetaY;
-            double ThetaZ;
-            double registrationDate;
-            double registrationRotation[9];
-            double registrationTranslation[3];
-            uint32_t nominalBaseline;
-            uint32_t lensType;
-            uint32_t lensCoating;
-            int32_t nominalBaselinePlatform[3]; // NOTE: Signed, since platform camera can be mounted anywhere
-            uint32_t lensTypePlatform;
-            uint32_t imagerTypePlatform;
-            uint32_t theLastWord;
-            uint8_t reserved3[37];
-        };
-
+        #pragma pack(push, 1)
         struct Dinghy
         {
             uint32_t magicNumber;
@@ -180,133 +164,7 @@ namespace rsimpl
             uint32_t VDFerrorStatus;
             uint32_t pad4;
         };
-
-        struct auto_exposure_params
-        {
-            float mean_intensity;
-            float bright_ratio;
-            float kp_gain;
-            float kp_exposure;
-            float kp_dark_threshold;
-            uint16_t region_of_interest_top_left;
-            uint16_t region_of_interest_top_right;
-            uint16_t region_of_interest_bottom_left;
-            uint16_t region_of_interest_bottom_right;
-        };
-
-        struct depth_params
-        {
-            uint32_t robbins_munroe_minus_inc;
-            uint32_t robbins_munroe_plus_inc;
-            uint32_t median_thresh;
-            uint32_t score_min_thresh;
-            uint32_t score_max_thresh;
-            uint32_t texture_count_thresh;
-            uint32_t texture_diff_thresh;
-            uint32_t second_peak_thresh;
-            uint32_t neighbor_thresh;
-            uint32_t lr_thresh;
-
-            enum { MAX_PRESETS = 6 };
-            static const depth_params presets[MAX_PRESETS];
-        };
-
-        struct disparity_mode
-        {
-            uint32_t is_disparity_enabled;
-            double disparity_multiplier;
-        };
-
-        struct CommandPacket
-        {
-            uint32_t code;
-            uint32_t modifier;
-            uint32_t tag;
-            uint32_t address;
-            uint32_t value;
-            uint32_t reserved[59];
-
-            CommandPacket(uint32_t code = 0, uint32_t modifier = 0, uint32_t tag = 0, uint32_t address = 0, uint32_t value = 0)
-                : code(code), modifier(modifier), tag(tag), address(address), value(value)
-            {
-                std::memset(reserved, 0, sizeof(reserved));
-            }
-
-        };
-
-        struct ResponsePacket
-        {
-            uint32_t code;
-            uint32_t modifier;
-            uint32_t tag;
-            uint32_t responseCode;
-            uint32_t value;
-            uint32_t revision[4];
-            uint32_t reserved[55];
-
-            ResponsePacket(uint32_t code = 0, uint32_t modifier = 0, uint32_t tag = 0, uint32_t responseCode = 0, uint32_t value = 0)
-                : code(code), modifier(modifier), tag(tag), responseCode(responseCode), value(value)
-            {
-                std::memset(revision, 0, sizeof(revision));
-                std::memset(reserved, 0, sizeof(reserved));
-            }
-        };
         #pragma pack(pop)
-
-        void send_command(uvc::device & device, CommandPacket & command, ResponsePacket & response);
-
-        std::string read_firmware_version(uvc::device & device);
-        void read_camera_info(uvc::device & device, CameraCalibrationParameters & calib, CameraHeaderInfo & header);
-             
-        void xu_read(const uvc::device & device, uint8_t xu_ctrl, void * buffer, uint32_t length);
-        void xu_write(uvc::device & device, uint8_t xu_ctrl, void * buffer, uint32_t length);
-             
-        void set_stream_intent(uvc::device & device, uint8_t & intent);
-        void get_stream_status(const uvc::device & device, uint8_t & status);
-             
-        void get_last_error(const uvc::device & device, uint8_t & last_error);
-        void force_firmware_reset(uvc::device & device);
-             
-        void get_emitter_state(const uvc::device & device, bool is_streaming, bool is_depth_enabled, bool & state);
-        void set_emitter_state(uvc::device & device, bool state);
-             
-        void read_temperature(const uvc::device & device, int8_t & current, int8_t & min, int8_t & max, int8_t & min_fault);
-        void reset_temperature(uvc::device & device);
-             
-        void get_depth_units(const uvc::device & device, uint32_t & units);
-        void set_depth_units(uvc::device & device, uint32_t units);
-             
-        void get_min_max_depth(const uvc::device & device, uint16_t & min_depth, uint16_t & max_depth);
-        void set_min_max_depth(uvc::device & device, uint16_t min_depth, uint16_t max_depth);
-             
-        void get_lr_gain(const uvc::device & device, uint32_t & rate, uint32_t & gain);
-        void set_lr_gain(uvc::device & device, uint32_t rate, uint32_t gain);
-             
-        void get_lr_exposure(const uvc::device & device, uint32_t & rate, uint32_t & exposure);
-        void set_lr_exposure(uvc::device & device, uint32_t rate, uint32_t exposure);
-             
-        void get_lr_auto_exposure_params(const uvc::device & device, auto_exposure_params & params);
-        void set_lr_auto_exposure_params(uvc::device & device, auto_exposure_params params);
-             
-        void get_lr_exposure_mode(const uvc::device & device, uint32_t & mode);
-        void set_lr_exposure_mode(uvc::device & device, uint32_t mode);
-             
-        void get_depth_params(const uvc::device & device, depth_params & params);
-        void set_depth_params(uvc::device & device, depth_params params);
-             
-        void get_disparity_mode(const uvc::device & device, disparity_mode & mode);
-        void set_disparity_mode(uvc::device & device, disparity_mode mode);
-             
-        void get_disparity_shift(const uvc::device & device, uint32_t & shift);
-        void set_disparity_shift(uvc::device & device, uint32_t shift);
-
-		void get_register_value(uvc::device & device, uint32_t reg, uint32_t & value);
-		void set_register_value(uvc::device & device, uint32_t reg, uint32_t value);
-        
-        // todo - (if necessary) - get_exposure_discovery
-        // todo - (if necessary) - set_exposure_discovery
-        // todo - (if necessary) - get_gain_discovery
-        // todo - (if necessary) - set_gain_discovery
     }
 }
 

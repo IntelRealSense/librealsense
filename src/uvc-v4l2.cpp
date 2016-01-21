@@ -1,10 +1,5 @@
-/*
-    INTEL CORPORATION PROPRIETARY INFORMATION This software is supplied under the
-    terms of a license agreement or nondisclosure agreement with Intel Corporation
-    and may not be copied or disclosed except in accordance with the terms of that
-    agreement.
-    Copyright(c) 2015 Intel Corporation. All Rights Reserved.
-*/
+// License: Apache 2.0. See LICENSE file in root directory.
+// Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
 #ifdef RS_USE_V4L2_BACKEND
 
@@ -46,7 +41,7 @@ namespace rsimpl
 
         static void warn_error(const char * s)
         {
-            DEBUG_ERR(s << " error " << errno << ", " << strerror(errno));
+            LOG_ERROR(s << " error " << errno << ", " << strerror(errno));
         }
 
         static int xioctl(int fh, int request, void *arg)
@@ -153,15 +148,27 @@ namespace rsimpl
             int get_pid() const { return pid; }
             int get_mi() const { return mi; }
 
+	    int get_xu_endpoint() const
+            {
+	        // Temporary workaround, it should be possible to query for this
+	        switch(get_pid())
+		{
+                case 2688: return 2; // R200
+                case 2662: return 6; // F200
+                case 2725: return 6; // SR300
+		default: return 0;
+		}
+            }
+
             void get_control(int control, void * data, size_t size)
             {
-                uvc_xu_control_query q = {2, control, UVC_GET_CUR, size, reinterpret_cast<uint8_t *>(data)};
+	        uvc_xu_control_query q = {get_xu_endpoint(), control, UVC_GET_CUR, size, reinterpret_cast<uint8_t *>(data)};
                 if(xioctl(fd, UVCIOC_CTRL_QUERY, &q) < 0) throw_error("UVCIOC_CTRL_QUERY:UVC_GET_CUR");
             }
 
             void set_control(int control, void * data, size_t size)
             {
-               uvc_xu_control_query q = {2, control, UVC_SET_CUR, size, reinterpret_cast<uint8_t *>(data)};
+	        uvc_xu_control_query q = {get_xu_endpoint(), control, UVC_SET_CUR, size, reinterpret_cast<uint8_t *>(data)};
                if(xioctl(fd, UVCIOC_CTRL_QUERY, &q) < 0) throw_error("UVCIOC_CTRL_QUERY:UVC_SET_CUR");
             }
 
@@ -266,7 +273,7 @@ namespace rsimpl
                     req.memory = V4L2_MEMORY_MMAP;
                     if(xioctl(fd, VIDIOC_REQBUFS, &req) < 0)
                     {
-                        if(errno == EINVAL) DEBUG_ERR(dev_name + " does not support memory mapping");
+                        if(errno == EINVAL) LOG_ERROR(dev_name + " does not support memory mapping");
                         else warn_error("VIDIOC_REQBUFS");
                     }
 
@@ -333,7 +340,7 @@ namespace rsimpl
                 for(auto interface_number : claimed_interfaces)
                 {
                     int status = libusb_release_interface(usb_handle, interface_number);
-                    if(status < 0) DEBUG_ERR("libusb_release_interface(...) returned " << libusb_error_name(status));
+                    if(status < 0) LOG_ERROR("libusb_release_interface(...) returned " << libusb_error_name(status));
                 }
                 if(usb_handle) libusb_close(usb_handle);
                 if(usb_device) libusb_unref_device(usb_device);

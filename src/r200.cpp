@@ -1,10 +1,5 @@
-/*
-    INTEL CORPORATION PROPRIETARY INFORMATION This software is supplied under the
-    terms of a license agreement or nondisclosure agreement with Intel Corporation
-    and may not be copied or disclosed except in accordance with the terms of that
-    agreement.
-    Copyright(c) 2015 Intel Corporation. All Rights Reserved.
-*/
+// License: Apache 2.0. See LICENSE file in root directory.
+// Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
 #include "r200.h"
 #include "r200-private.h"
@@ -16,29 +11,12 @@
 
 namespace rsimpl
 {
-    template<void (*UNPACKER)(byte * const dest[], const byte * source, const subdevice_mode & mode)> 
-    void crop_unpack(byte * const dest[], const byte * source, const subdevice_mode & mode)
-    {
-        UNPACKER(dest, source + mode.pf->get_crop_offset(mode.width, 6), mode);
-    }
-
     static int amount = 0;
-
-    template<void (*UNPACKER)(byte * const dest[], const byte * source, const subdevice_mode & mode)> 
-    void pad_unpack(byte * const dest[], const byte * source, const subdevice_mode & mode)
-    {
-        assert(mode.streams.size() == 1);
-        byte * out = dest[0] + get_image_size(mode.streams[0].width, 6, mode.streams[0].format) + get_image_size(6, 1, mode.streams[0].format);
-        UNPACKER(&out, source, mode);
-
-        // Erase Dinghy, which will get copied over when blitting into a padded buffer
-        memset(out + get_image_size(mode.streams[0].width, mode.height-1, mode.streams[0].format), 0, get_image_size(mode.width, 1, mode.streams[0].format));
-    }
 
     template<unsigned MAGIC_NUMBER>
     int decode_dinghy_frame_number(const subdevice_mode & mode, const void * frame)
     {
-        auto dinghy = reinterpret_cast<const r200::Dinghy *>(reinterpret_cast<const uint8_t *>(frame) + mode.pf->get_image_size(mode.width, mode.height-1));
+        auto dinghy = reinterpret_cast<const r200::Dinghy *>(reinterpret_cast<const uint8_t *>(frame) + mode.pf->get_image_size(mode.native_dims.x, mode.native_dims.y-1));
         return dinghy->magicNumber == MAGIC_NUMBER ? dinghy->frameCount : 0;
     }
 
@@ -46,7 +24,7 @@ namespace rsimpl
     {
         assert(mode.pf == &pf_yuy2);
 
-        auto data = reinterpret_cast<const uint8_t *>(frame) + ((mode.width * mode.height) - 32) * 2;
+        auto data = reinterpret_cast<const uint8_t *>(frame) + ((mode.native_dims.x * mode.native_dims.y) - 32) * 2;
         int number = 0;
         for(int i = 0; i < 32; ++i)
         {
@@ -56,30 +34,11 @@ namespace rsimpl
         return number;
     }
 
-    static rs_intrinsics MakeLeftRightIntrinsics(const r200::RectifiedIntrinsics & i)
+    r200_camera::r200_camera(std::shared_ptr<uvc::device> device, const static_device_info & info) : rs_device(device, info)
     {
-        return {(int)i.rw, (int)i.rh, i.rpx, i.rpy, i.rfx, i.rfy, RS_DISTORTION_NONE, {0,0,0,0,0}};
-    }
-
-    static rs_intrinsics MakeDepthIntrinsics(const r200::RectifiedIntrinsics & i)
-    {
-        return {(int)i.rw-12, (int)i.rh-12, i.rpx-6, i.rpy-6, i.rfx, i.rfy, RS_DISTORTION_NONE, {0,0,0,0,0}};
-    }
-
-    static rs_intrinsics MakeColorIntrinsics(const r200::UnrectifiedIntrinsics & i, int denom)
-    {
-        return {(int)i.w/denom, (int)i.h/denom, i.px/denom, i.py/denom, i.fx/denom, i.fy/denom, RS_DISTORTION_MODIFIED_BROWN_CONRADY, {i.k[0],i.k[1],i.k[2],i.k[3],i.k[4]}};
-    }
-
-    static rs_intrinsics MakeColorIntrinsics(const r200::RectifiedIntrinsics & i, int denom)
-    {
-        return {(int)i.rw/denom, (int)i.rh/denom, i.rpx/denom, i.rpy/denom, i.rfx/denom, i.rfy/denom, RS_DISTORTION_NONE, {0,0,0,0,0}};
-    }
-
-    r200_camera::r200_camera(std::shared_ptr<uvc::device> device, const static_device_info & info, std::vector<rs_intrinsics> intrinsics, std::vector<rs_intrinsics> rect_intrinsics) : rs_device(device, info)
-    {
-        config.intrinsics.set(intrinsics, rect_intrinsics);
-        on_update_depth_units(get_xu_option(RS_OPTION_R200_DEPTH_UNITS));
+        rs_option opt[] = {RS_OPTION_R200_DEPTH_UNITS}; double units;
+        get_options(opt, 1, &units);
+        on_update_depth_units(static_cast<int>(units));
     }
     
     r200_camera::~r200_camera()
@@ -89,18 +48,13 @@ namespace rsimpl
 
     std::shared_ptr<rs_device> make_r200_device(std::shared_ptr<uvc::device> device)
     {
+        LOG_INFO("Connecting to Intel RealSense R200");
+
 		// Retrieve the extension unit for the R200's left/right infrared camera
         // This XU is used for all commands related to retrieving calibration information and setting depth generation settings
         const uvc::guid R200_LEFT_RIGHT_XU = {0x18682d34, 0xdd2c, 0x4073, {0xad, 0x23, 0x72, 0x14, 0x73, 0x9a, 0x07, 0x4c}};
         init_controls(*device, 0, R200_LEFT_RIGHT_XU);
-
-        enum { LR_FULL, LR_BIG, LR_QRES, Z_FULL, Z_BIG, Z_QRES, THIRD_HD, THIRD_VGA, THIRD_QRES, NUM_INTRINSICS };
-        const static struct { int w, h, uvc_w, uvc_h, lr_intrin, z_intrin; } lrz_modes[] = {
-            {640, 480,   640, 481,  LR_FULL, Z_FULL},
-            {492, 372,   640, 373,  LR_BIG,  Z_BIG },
-            {332, 252,   640, 254,  LR_QRES, Z_QRES}
-        };
-
+        
         static_device_info info;
         info.name = {"Intel RealSense R200"};
         info.stream_subdevices[RS_STREAM_DEPTH] = 1;
@@ -108,38 +62,32 @@ namespace rsimpl
         info.stream_subdevices[RS_STREAM_INFRARED ] = 0;
         info.stream_subdevices[RS_STREAM_INFRARED2] = 0;
 
+        auto c = r200::read_camera_info(*device);
+        
         // Set up modes for left/right/z images
-        for(auto m : lrz_modes)
+        for(auto fps : {30, 60, 90})
         {
-            for(auto fps : {30, 60, 90})
+            // Subdevice 0 can provide left/right infrared via four pixel formats, in three resolutions, which can either be uncropped or cropped to match Z
+            for(auto pf : {&pf_y8, &pf_y8i, &pf_y16, &pf_y12i})
             {
-                info.subdevice_modes.push_back({1, m.uvc_w-12, m.uvc_h-12, &pf_z16, fps, {{RS_STREAM_DEPTH, m.w, m.h, RS_FORMAT_Z16, fps, m.lr_intrin}}, &pad_unpack<unpack_subrect>, &decode_dinghy_frame_number<0x4030201>});
-                info.subdevice_modes.push_back({1, m.uvc_w-12, m.uvc_h-12, &pf_z16, fps, {{RS_STREAM_DEPTH, m.w-12, m.h-12, RS_FORMAT_Z16, fps, m.z_intrin}}, &unpack_subrect, &decode_dinghy_frame_number<0x4030201>});
-                info.subdevice_modes.push_back({1, m.uvc_w-12, m.uvc_h-12, &pf_z16, fps, {{RS_STREAM_DEPTH, m.w, m.h, RS_FORMAT_DISPARITY16, fps, m.lr_intrin}}, &pad_unpack<unpack_subrect>, &decode_dinghy_frame_number<0x4030201>});
-                info.subdevice_modes.push_back({1, m.uvc_w-12, m.uvc_h-12, &pf_z16, fps, {{RS_STREAM_DEPTH, m.w-12, m.h-12, RS_FORMAT_DISPARITY16, fps, m.z_intrin}}, &unpack_subrect, &decode_dinghy_frame_number<0x4030201>});
-                info.subdevice_modes.push_back({0, m.uvc_w, m.uvc_h, &pf_y8 , fps,  {{RS_STREAM_INFRARED,  m.w, m.h, RS_FORMAT_Y8,  fps, m.lr_intrin}}, &unpack_subrect, &decode_dinghy_frame_number<0x08070605>});
-                info.subdevice_modes.push_back({0, m.uvc_w, m.uvc_h, &pf_y8 , fps,  {{RS_STREAM_INFRARED,  m.w-12, m.h-12, RS_FORMAT_Y8,  fps, m.z_intrin}}, &crop_unpack<unpack_subrect>, &decode_dinghy_frame_number<0x08070605>});
-                info.subdevice_modes.push_back({0, m.uvc_w, m.uvc_h, &pf_y8i, fps,  {{RS_STREAM_INFRARED,  m.w, m.h, RS_FORMAT_Y8,  fps, m.lr_intrin},
-                                                                                     {RS_STREAM_INFRARED2, m.w, m.h, RS_FORMAT_Y8,  fps, m.lr_intrin}}, &unpack_y8_y8_from_y8i, &decode_dinghy_frame_number<0x08070605>});
-                info.subdevice_modes.push_back({0, m.uvc_w, m.uvc_h, &pf_y8i, fps,  {{RS_STREAM_INFRARED,  m.w-12, m.h-12, RS_FORMAT_Y8,  fps, m.z_intrin},
-                                                                                     {RS_STREAM_INFRARED2, m.w-12, m.h-12, RS_FORMAT_Y8,  fps, m.z_intrin}}, &crop_unpack<unpack_y8_y8_from_y8i>, &decode_dinghy_frame_number<0x08070605>});
-                                                                     
-                info.subdevice_modes.push_back({0, m.uvc_w, m.uvc_h, &pf_y16, fps,  {{RS_STREAM_INFRARED,  m.w, m.h, RS_FORMAT_Y16, fps, m.lr_intrin}}, &unpack_y16_from_y16_10, &decode_dinghy_frame_number<0x08070605>});
-                info.subdevice_modes.push_back({0, m.uvc_w, m.uvc_h, &pf_y16, fps,  {{RS_STREAM_INFRARED,  m.w-12, m.h-12, RS_FORMAT_Y16, fps, m.z_intrin}}, &crop_unpack<unpack_y16_from_y16_10>, &decode_dinghy_frame_number<0x08070605>});
-                info.subdevice_modes.push_back({0, m.uvc_w, m.uvc_h, &pf_y12i, fps, {{RS_STREAM_INFRARED,  m.w, m.h, RS_FORMAT_Y16, fps, m.lr_intrin},
-                                                                                     {RS_STREAM_INFRARED2, m.w, m.h, RS_FORMAT_Y16, fps, m.lr_intrin}}, &unpack_y16_y16_from_y12i_10, &decode_dinghy_frame_number<0x08070605>});
-                info.subdevice_modes.push_back({0, m.uvc_w, m.uvc_h, &pf_y12i, fps, {{RS_STREAM_INFRARED,  m.w-12, m.h-12, RS_FORMAT_Y16, fps, m.z_intrin},
-                                                                                     {RS_STREAM_INFRARED2, m.w-12, m.h-12, RS_FORMAT_Y16, fps, m.z_intrin}}, &crop_unpack<unpack_y16_y16_from_y12i_10>, &decode_dinghy_frame_number<0x08070605>});
+                info.subdevice_modes.push_back({0, {640, 481}, pf, fps, c.modesLR[0], {}, {0, -6}, &decode_dinghy_frame_number<0x08070605>});  
+                info.subdevice_modes.push_back({0, {640, 373}, pf, fps, c.modesLR[1], {}, {0, -6}, &decode_dinghy_frame_number<0x08070605>});  
+                info.subdevice_modes.push_back({0, {640, 254}, pf, fps, c.modesLR[2], {}, {0, -6}, &decode_dinghy_frame_number<0x08070605>});  
             }
+
+            // Subdevice 1 can provide depth, in three resolutions, which can either be unpadded or padded to match left/right
+            info.subdevice_modes.push_back({1, {628, 469}, &pf_z16,  fps, pad_crop_intrinsics(c.modesLR[0], -6), {}, {0, +6}, &decode_dinghy_frame_number<0x4030201>});
+            info.subdevice_modes.push_back({1, {628, 361}, &pf_z16,  fps, pad_crop_intrinsics(c.modesLR[1], -6), {}, {0, +6}, &decode_dinghy_frame_number<0x4030201>});
+            info.subdevice_modes.push_back({1, {628, 242}, &pf_z16,  fps, pad_crop_intrinsics(c.modesLR[2], -6), {}, {0, +6}, &decode_dinghy_frame_number<0x4030201>});
         }
 
-        // Set up modes for third images
-		info.subdevice_modes.push_back({2,  320,  240, &pf_yuy2, 60, {{RS_STREAM_COLOR,  320,  240, RS_FORMAT_YUYV, 60, THIRD_QRES}}, &unpack_subrect, &decode_yuy2_frame_number, true});
-        info.subdevice_modes.push_back({2,  320,  240, &pf_yuy2, 30, {{RS_STREAM_COLOR,  320,  240, RS_FORMAT_YUYV, 30, THIRD_QRES}}, &unpack_subrect, &decode_yuy2_frame_number, true});
-        info.subdevice_modes.push_back({2,  640,  480, &pf_yuy2, 60, {{RS_STREAM_COLOR,  640,  480, RS_FORMAT_YUYV, 60, THIRD_VGA}}, &unpack_subrect, &decode_yuy2_frame_number, true});
-        info.subdevice_modes.push_back({2,  640,  480, &pf_yuy2, 30, {{RS_STREAM_COLOR,  640,  480, RS_FORMAT_YUYV, 30, THIRD_VGA}}, &unpack_subrect, &decode_yuy2_frame_number, true});
-        info.subdevice_modes.push_back({2, 1920, 1080, &pf_yuy2, 30, {{RS_STREAM_COLOR, 1920, 1080, RS_FORMAT_YUYV, 30, THIRD_HD}}, &unpack_subrect, &decode_yuy2_frame_number, true});
-        info.subdevice_modes.push_back(subdevice_mode{2, 2400, 1081, &pf_rw10, 30, {{RS_STREAM_COLOR, 1920, 1080, RS_FORMAT_RAW10, 30, THIRD_HD}}, &unpack_subrect, &decode_dinghy_frame_number<0x8A8B8C8D>, true});
+        // Subdevice 2 can provide color, in several formats and framerates
+        info.subdevice_modes.push_back({2, { 320,  240}, &pf_yuy2, 60, scale_intrinsics(c.intrinsicsThird[1], 320, 240), {scale_intrinsics(c.modesThird[1][0], 320, 240)}, {0}, &decode_yuy2_frame_number, true});
+        info.subdevice_modes.push_back({2, { 320,  240}, &pf_yuy2, 30, scale_intrinsics(c.intrinsicsThird[1], 320, 240), {scale_intrinsics(c.modesThird[1][0], 320, 240)}, {0}, &decode_yuy2_frame_number, true});
+        info.subdevice_modes.push_back({2, { 640,  480}, &pf_yuy2, 60, c.intrinsicsThird[1], {c.modesThird[1][0]}, {0}, &decode_yuy2_frame_number, true});
+        info.subdevice_modes.push_back({2, { 640,  480}, &pf_yuy2, 30, c.intrinsicsThird[1], {c.modesThird[1][0]}, {0}, &decode_yuy2_frame_number, true});
+        info.subdevice_modes.push_back({2, {1920, 1080}, &pf_yuy2, 30, c.intrinsicsThird[0], {c.modesThird[0][0]}, {0}, &decode_yuy2_frame_number, true});
+        info.subdevice_modes.push_back({2, {2400, 1081}, &pf_rw10, 30, c.intrinsicsThird[0], {c.modesThird[0][0]}, {0}, &decode_dinghy_frame_number<0x8A8B8C8D>, true});
 		// todo - add 15 fps modes
 
         // Set up interstream rules for left/right/z images
@@ -165,53 +113,59 @@ namespace rsimpl
         for(int i=0; i<RS_PRESET_COUNT; ++i) 
 			info.presets[RS_STREAM_INFRARED2][i] = info.presets[RS_STREAM_INFRARED][i];
 
-        for(int i = RS_OPTION_R200_LR_AUTO_EXPOSURE_ENABLED; i <= RS_OPTION_R200_DISPARITY_SHIFT; ++i)
-			info.option_supported[i] = true;
+        info.options = {
+            {RS_OPTION_R200_LR_AUTO_EXPOSURE_ENABLED,                   0, 1,           1},
+            {RS_OPTION_R200_EMITTER_ENABLED,                            0, 1,           1},
+            {RS_OPTION_R200_DEPTH_UNITS,                                1, INT_MAX,     1}, // What is the real range?
+            {RS_OPTION_R200_DEPTH_CLAMP_MIN,                            0, USHRT_MAX,   1},
+            {RS_OPTION_R200_DEPTH_CLAMP_MAX,                            0, USHRT_MAX,   1},
+            {RS_OPTION_R200_DISPARITY_MULTIPLIER,                       1, 1000,        1},
+            {RS_OPTION_R200_DISPARITY_SHIFT,                            0, 0,           1},
 
-        r200::CameraCalibrationParameters c;
-        r200::CameraHeaderInfo h;
-        r200::read_camera_info(*device, c, h);
-        
-        if (c.metadata.versionNumber != 2)
-            throw std::runtime_error("only supported calibration struct is version 2. got (" + std::to_string(c.metadata.versionNumber) + ").");
+            {RS_OPTION_R200_AUTO_EXPOSURE_MEAN_INTENSITY_SET_POINT,     0, 4095,        0},
+            {RS_OPTION_R200_AUTO_EXPOSURE_BRIGHT_RATIO_SET_POINT,       0, 1,           0},
+            {RS_OPTION_R200_AUTO_EXPOSURE_KP_GAIN,                      0, 1000,        0},
+            {RS_OPTION_R200_AUTO_EXPOSURE_KP_EXPOSURE,                  0, 1000,        0},
+            {RS_OPTION_R200_AUTO_EXPOSURE_KP_DARK_THRESHOLD,            0, 1000,        0},
+            {RS_OPTION_R200_AUTO_EXPOSURE_TOP_EDGE,            0, USHRT_MAX,   1},
+            {RS_OPTION_R200_AUTO_EXPOSURE_BOTTOM_EDGE,         0, USHRT_MAX,   1},
+            {RS_OPTION_R200_AUTO_EXPOSURE_LEFT_EDGE,           0, USHRT_MAX,   1},
+            {RS_OPTION_R200_AUTO_EXPOSURE_RIGHT_EDGE,          0, USHRT_MAX,   1},
 
-        std::vector<rs_intrinsics> intrinsics(NUM_INTRINSICS), rect_intrinsics(NUM_INTRINSICS);
-        rect_intrinsics[LR_FULL] = intrinsics[LR_FULL] = MakeLeftRightIntrinsics(c.modesLR[0][0]);
-        rect_intrinsics[LR_BIG ] = intrinsics[LR_BIG ] = MakeLeftRightIntrinsics(c.modesLR[0][1]);
-        rect_intrinsics[LR_QRES] = intrinsics[LR_QRES] = MakeLeftRightIntrinsics(c.modesLR[0][2]);
-        rect_intrinsics[Z_FULL ] = intrinsics[Z_FULL ] = MakeDepthIntrinsics(c.modesLR[0][0]);
-        rect_intrinsics[Z_BIG  ] = intrinsics[Z_BIG  ] = MakeDepthIntrinsics(c.modesLR[0][1]);
-        rect_intrinsics[Z_QRES ] = intrinsics[Z_QRES ] = MakeDepthIntrinsics(c.modesLR[0][2]);
-        intrinsics[THIRD_HD  ] = MakeColorIntrinsics(c.intrinsicsThird[0],1);
-        intrinsics[THIRD_VGA ] = MakeColorIntrinsics(c.intrinsicsThird[1],1);
-        intrinsics[THIRD_QRES] = MakeColorIntrinsics(c.intrinsicsThird[1],2);
-        rect_intrinsics[THIRD_HD  ] = MakeColorIntrinsics(c.modesThird[0][0][0],1);
-        rect_intrinsics[THIRD_VGA ] = MakeColorIntrinsics(c.modesThird[0][1][0],1);
-        rect_intrinsics[THIRD_QRES] = MakeColorIntrinsics(c.modesThird[0][1][0],2);
+            {RS_OPTION_R200_DEPTH_CONTROL_ESTIMATE_MEDIAN_DECREMENT,    0, 0xFF,        1},
+            {RS_OPTION_R200_DEPTH_CONTROL_ESTIMATE_MEDIAN_INCREMENT,    0, 0xFF,        1},
+            {RS_OPTION_R200_DEPTH_CONTROL_MEDIAN_THRESHOLD,             0, 0x3FF,       1},
+            {RS_OPTION_R200_DEPTH_CONTROL_SCORE_MINIMUM_THRESHOLD,      0, 0x3FF,       1},
+            {RS_OPTION_R200_DEPTH_CONTROL_SCORE_MAXIMUM_THRESHOLD,      0, 0x3FF,       1},
+            {RS_OPTION_R200_DEPTH_CONTROL_TEXTURE_COUNT_THRESHOLD,      0, 0x1F,        1},
+            {RS_OPTION_R200_DEPTH_CONTROL_TEXTURE_DIFFERENCE_THRESHOLD, 0, 0x3FF,       1},
+            {RS_OPTION_R200_DEPTH_CONTROL_SECOND_PEAK_THRESHOLD,        0, 0x3FF,       1},
+            {RS_OPTION_R200_DEPTH_CONTROL_NEIGHBOR_THRESHOLD,           0, 0x3FF,       1},
+            {RS_OPTION_R200_DEPTH_CONTROL_LR_THRESHOLD,                 0, 0x7FF,       1},
+        };
 
         // We select the depth/left infrared camera's viewpoint to be the origin
         info.stream_poses[RS_STREAM_DEPTH] = {{{1,0,0},{0,1,0},{0,0,1}}, {0,0,0}};
         info.stream_poses[RS_STREAM_INFRARED] = {{{1,0,0},{0,1,0},{0,0,1}}, {0,0,0}};
 
         // The right infrared camera is offset along the +x axis by the baseline (B)
-        info.stream_poses[RS_STREAM_INFRARED2] = {{{1,0,0},{0,1,0},{0,0,1}}, {c.B[0] * 0.001f, 0, 0}}; // Sterling comment
+        info.stream_poses[RS_STREAM_INFRARED2] = {{{1,0,0},{0,1,0},{0,0,1}}, {c.B * 0.001f, 0, 0}}; // Sterling comment
 
 		// The transformation between the depth camera and third camera is described by a translation vector (T), followed by rotation matrix (Rthird)
         for(int i=0; i<3; ++i) for(int j=0; j<3; ++j) 
-			info.stream_poses[RS_STREAM_COLOR].orientation(i,j) = c.Rthird[0][i*3+j];
+			info.stream_poses[RS_STREAM_COLOR].orientation(i,j) = c.Rthird[i*3+j];
         for(int i=0; i<3; ++i) 
-			info.stream_poses[RS_STREAM_COLOR].position[i] = c.T[0][i] * 0.001f;
+			info.stream_poses[RS_STREAM_COLOR].position[i] = c.T[i] * 0.001f;
 
         // Our position is added AFTER orientation is applied, not before, so we must multiply Rthird * T to compute it
         info.stream_poses[RS_STREAM_COLOR].position = info.stream_poses[RS_STREAM_COLOR].orientation * info.stream_poses[RS_STREAM_COLOR].position;
         info.nominal_depth_scale = 0.001f;
-        info.serial = std::to_string(h.serialNumber);
+        info.serial = std::to_string(c.serial_number);
         info.firmware_version = r200::read_firmware_version(*device);
 
 		// On LibUVC backends, the R200 should use four transfer buffers
         info.num_libuvc_transfer_buffers = 4;
-
-        return std::make_shared<r200_camera>(device, info, intrinsics, rect_intrinsics);
+        return std::make_shared<r200_camera>(device, info);
     }
 
     bool r200_camera::is_disparity_mode_enabled() const
@@ -234,29 +188,160 @@ namespace rsimpl
         config.depth_scale = depth.get_intrinsics().fx * baseline * multiplier;
     }
 
-    void r200_camera::on_before_start(const std::vector<subdevice_mode> & selected_modes)
+    void r200_camera::set_options(const rs_option options[], int count, const double values[])
     {
+        auto & dev = get_device();
+        auto minmax_writer = make_struct_interface<r200::range    >([&dev]() { return r200::get_min_max_depth(dev);           }, [&dev](r200::range     v) { r200::set_min_max_depth(dev,v);           });
+        auto disp_writer   = make_struct_interface<r200::disp_mode>([&dev]() { return r200::get_disparity_mode(dev);          }, [&dev](r200::disp_mode v) { r200::set_disparity_mode(dev,v);          });
+        auto ae_writer     = make_struct_interface<r200::ae_params>([&dev]() { return r200::get_lr_auto_exposure_params(dev); }, [&dev](r200::ae_params v) { r200::set_lr_auto_exposure_params(dev,v); });
+        auto dc_writer     = make_struct_interface<r200::dc_params>([&dev]() { return r200::get_depth_params(dev);            }, [&dev](r200::dc_params v) { r200::set_depth_params(dev,v);            });
+
+        for(int i=0; i<count; ++i)
+        {
+            if(uvc::is_pu_control(options[i]))
+            {
+                uvc::set_pu_control(get_device(), 2, options[i], static_cast<int>(values[i]));
+                continue;
+            }
+
+            switch(options[i])
+            {
+            case RS_OPTION_R200_LR_AUTO_EXPOSURE_ENABLED:                   r200::set_lr_exposure_mode(get_device(), values[i]); break;
+            case RS_OPTION_R200_LR_GAIN:                                    r200::set_lr_gain(get_device(), {(uint32_t) get_lr_framerate(), (uint32_t) values[i]}); break; // TODO: May need to set this on start if framerate changes
+            case RS_OPTION_R200_LR_EXPOSURE:                                r200::set_lr_exposure(get_device(), {(uint32_t) get_lr_framerate(), (uint32_t) values[i]}); break; // TODO: May need to set this on start if framerate changes
+            case RS_OPTION_R200_EMITTER_ENABLED:                            r200::set_emitter_state(get_device(), !!values[i]); break;
+            case RS_OPTION_R200_DEPTH_UNITS:                                r200::set_depth_units(get_device(), values[i]); on_update_depth_units(values[i]); break;
+
+            case RS_OPTION_R200_DEPTH_CLAMP_MIN:                            minmax_writer.set(&r200::range::min, values[i]); break;
+            case RS_OPTION_R200_DEPTH_CLAMP_MAX:                            minmax_writer.set(&r200::range::max, values[i]); break;
+
+            case RS_OPTION_R200_DISPARITY_MULTIPLIER:                       disp_writer.set(&r200::disp_mode::disparity_multiplier, values[i]); break;
+            case RS_OPTION_R200_DISPARITY_SHIFT:                            r200::set_disparity_shift(get_device(), values[i]); break;
+
+            case RS_OPTION_R200_AUTO_EXPOSURE_MEAN_INTENSITY_SET_POINT:     ae_writer.set(&r200::ae_params::mean_intensity_set_point, values[i]); break;
+            case RS_OPTION_R200_AUTO_EXPOSURE_BRIGHT_RATIO_SET_POINT:       ae_writer.set(&r200::ae_params::bright_ratio_set_point,   values[i]); break;
+            case RS_OPTION_R200_AUTO_EXPOSURE_KP_GAIN:                      ae_writer.set(&r200::ae_params::kp_gain,                  values[i]); break;
+            case RS_OPTION_R200_AUTO_EXPOSURE_KP_EXPOSURE:                  ae_writer.set(&r200::ae_params::kp_exposure,              values[i]); break;
+            case RS_OPTION_R200_AUTO_EXPOSURE_KP_DARK_THRESHOLD:            ae_writer.set(&r200::ae_params::kp_dark_threshold,        values[i]); break;
+            case RS_OPTION_R200_AUTO_EXPOSURE_TOP_EDGE:                     ae_writer.set(&r200::ae_params::exposure_top_edge,        values[i]); break;
+            case RS_OPTION_R200_AUTO_EXPOSURE_BOTTOM_EDGE:                  ae_writer.set(&r200::ae_params::exposure_bottom_edge,     values[i]); break;
+            case RS_OPTION_R200_AUTO_EXPOSURE_LEFT_EDGE:                    ae_writer.set(&r200::ae_params::exposure_left_edge,       values[i]); break;
+            case RS_OPTION_R200_AUTO_EXPOSURE_RIGHT_EDGE:                   ae_writer.set(&r200::ae_params::exposure_right_edge,      values[i]); break;
+
+            case RS_OPTION_R200_DEPTH_CONTROL_ESTIMATE_MEDIAN_DECREMENT:    dc_writer.set(&r200::dc_params::robbins_munroe_minus_inc, values[i]); break;
+            case RS_OPTION_R200_DEPTH_CONTROL_ESTIMATE_MEDIAN_INCREMENT:    dc_writer.set(&r200::dc_params::robbins_munroe_plus_inc,  values[i]); break;
+            case RS_OPTION_R200_DEPTH_CONTROL_MEDIAN_THRESHOLD:             dc_writer.set(&r200::dc_params::median_thresh,            values[i]); break;
+            case RS_OPTION_R200_DEPTH_CONTROL_SCORE_MINIMUM_THRESHOLD:      dc_writer.set(&r200::dc_params::score_min_thresh,         values[i]); break;
+            case RS_OPTION_R200_DEPTH_CONTROL_SCORE_MAXIMUM_THRESHOLD:      dc_writer.set(&r200::dc_params::score_max_thresh,         values[i]); break;
+            case RS_OPTION_R200_DEPTH_CONTROL_TEXTURE_COUNT_THRESHOLD:      dc_writer.set(&r200::dc_params::texture_count_thresh,     values[i]); break;
+            case RS_OPTION_R200_DEPTH_CONTROL_TEXTURE_DIFFERENCE_THRESHOLD: dc_writer.set(&r200::dc_params::texture_diff_thresh,      values[i]); break;
+            case RS_OPTION_R200_DEPTH_CONTROL_SECOND_PEAK_THRESHOLD:        dc_writer.set(&r200::dc_params::second_peak_thresh,       values[i]); break;
+            case RS_OPTION_R200_DEPTH_CONTROL_NEIGHBOR_THRESHOLD:           dc_writer.set(&r200::dc_params::neighbor_thresh,          values[i]); break;
+            case RS_OPTION_R200_DEPTH_CONTROL_LR_THRESHOLD:                 dc_writer.set(&r200::dc_params::lr_thresh,                values[i]); break;
+
+            default: LOG_WARNING("Cannot set " << options[i] << " to " << values[i] << " on " << get_name()); break;
+            }
+        }
+
+        minmax_writer.commit();
+        disp_writer.commit();
+        if(disp_writer.active) on_update_disparity_multiplier(disp_writer.struct_.disparity_multiplier);
+        ae_writer.commit();
+        dc_writer.commit();
+    }
+
+    void r200_camera::get_options(const rs_option options[], int count, double values[])
+    {
+        auto & dev = get_device();
+        auto minmax_reader = make_struct_interface<r200::range    >([&dev]() { return r200::get_min_max_depth(dev);           }, [&dev](r200::range     v) { r200::set_min_max_depth(dev,v);           });
+        auto disp_reader   = make_struct_interface<r200::disp_mode>([&dev]() { return r200::get_disparity_mode(dev);          }, [&dev](r200::disp_mode v) { r200::set_disparity_mode(dev,v);          });
+        auto ae_reader     = make_struct_interface<r200::ae_params>([&dev]() { return r200::get_lr_auto_exposure_params(dev); }, [&dev](r200::ae_params v) { r200::set_lr_auto_exposure_params(dev,v); });
+        auto dc_reader     = make_struct_interface<r200::dc_params>([&dev]() { return r200::get_depth_params(dev);            }, [&dev](r200::dc_params v) { r200::set_depth_params(dev,v);            }); 
+
+        for(int i=0; i<count; ++i)
+        {
+            if(uvc::is_pu_control(options[i]))
+            {
+                values[i] = uvc::get_pu_control(get_device(), 2, options[i]);
+                continue;
+            }
+
+            switch(options[i])
+            {
+            case RS_OPTION_R200_LR_AUTO_EXPOSURE_ENABLED:                   values[i] = r200::get_lr_exposure_mode(get_device()); break;
+            
+            case RS_OPTION_R200_LR_GAIN: // Gain is framerate dependent
+                r200::set_lr_gain_discovery(get_device(), {(uint32_t)get_lr_framerate()});
+                values[i] = r200::get_lr_gain(get_device()).value;
+                break;
+            case RS_OPTION_R200_LR_EXPOSURE: // Exposure is framerate dependent
+                r200::set_lr_exposure_discovery(get_device(), {(uint32_t)get_lr_framerate()});
+                values[i] = r200::get_lr_exposure(get_device()).value;
+                break;
+            case RS_OPTION_R200_EMITTER_ENABLED:
+                values[i] = r200::get_emitter_state(get_device(), is_capturing(), get_stream_interface(RS_STREAM_DEPTH).is_enabled());
+                break;
+
+            case RS_OPTION_R200_DEPTH_UNITS:                                values[i] = r200::get_depth_units(get_device());  break;
+
+            case RS_OPTION_R200_DEPTH_CLAMP_MIN:                            values[i] = minmax_reader.get(&r200::range::min); break;
+            case RS_OPTION_R200_DEPTH_CLAMP_MAX:                            values[i] = minmax_reader.get(&r200::range::max); break;
+
+            case RS_OPTION_R200_DISPARITY_MULTIPLIER:                       values[i] = disp_reader.get(&r200::disp_mode::disparity_multiplier); break;
+            case RS_OPTION_R200_DISPARITY_SHIFT:                            values[i] = r200::get_disparity_shift(get_device()); break;
+
+            case RS_OPTION_R200_AUTO_EXPOSURE_MEAN_INTENSITY_SET_POINT:     values[i] = ae_reader.get(&r200::ae_params::mean_intensity_set_point); break;
+            case RS_OPTION_R200_AUTO_EXPOSURE_BRIGHT_RATIO_SET_POINT:       values[i] = ae_reader.get(&r200::ae_params::bright_ratio_set_point  ); break;
+            case RS_OPTION_R200_AUTO_EXPOSURE_KP_GAIN:                      values[i] = ae_reader.get(&r200::ae_params::kp_gain                 ); break;
+            case RS_OPTION_R200_AUTO_EXPOSURE_KP_EXPOSURE:                  values[i] = ae_reader.get(&r200::ae_params::kp_exposure             ); break;
+            case RS_OPTION_R200_AUTO_EXPOSURE_KP_DARK_THRESHOLD:            values[i] = ae_reader.get(&r200::ae_params::kp_dark_threshold       ); break;
+            case RS_OPTION_R200_AUTO_EXPOSURE_TOP_EDGE:                     values[i] = ae_reader.get(&r200::ae_params::exposure_top_edge       ); break;
+            case RS_OPTION_R200_AUTO_EXPOSURE_BOTTOM_EDGE:                  values[i] = ae_reader.get(&r200::ae_params::exposure_bottom_edge    ); break;
+            case RS_OPTION_R200_AUTO_EXPOSURE_LEFT_EDGE:                    values[i] = ae_reader.get(&r200::ae_params::exposure_left_edge      ); break;
+            case RS_OPTION_R200_AUTO_EXPOSURE_RIGHT_EDGE:                   values[i] = ae_reader.get(&r200::ae_params::exposure_right_edge     ); break;
+
+            case RS_OPTION_R200_DEPTH_CONTROL_ESTIMATE_MEDIAN_DECREMENT:    values[i] = dc_reader.get(&r200::dc_params::robbins_munroe_minus_inc); break;
+            case RS_OPTION_R200_DEPTH_CONTROL_ESTIMATE_MEDIAN_INCREMENT:    values[i] = dc_reader.get(&r200::dc_params::robbins_munroe_plus_inc ); break;
+            case RS_OPTION_R200_DEPTH_CONTROL_MEDIAN_THRESHOLD:             values[i] = dc_reader.get(&r200::dc_params::median_thresh           ); break;
+            case RS_OPTION_R200_DEPTH_CONTROL_SCORE_MINIMUM_THRESHOLD:      values[i] = dc_reader.get(&r200::dc_params::score_min_thresh        ); break;
+            case RS_OPTION_R200_DEPTH_CONTROL_SCORE_MAXIMUM_THRESHOLD:      values[i] = dc_reader.get(&r200::dc_params::score_max_thresh        ); break;
+            case RS_OPTION_R200_DEPTH_CONTROL_TEXTURE_COUNT_THRESHOLD:      values[i] = dc_reader.get(&r200::dc_params::texture_count_thresh    ); break;
+            case RS_OPTION_R200_DEPTH_CONTROL_TEXTURE_DIFFERENCE_THRESHOLD: values[i] = dc_reader.get(&r200::dc_params::texture_diff_thresh     ); break;
+            case RS_OPTION_R200_DEPTH_CONTROL_SECOND_PEAK_THRESHOLD:        values[i] = dc_reader.get(&r200::dc_params::second_peak_thresh      ); break;
+            case RS_OPTION_R200_DEPTH_CONTROL_NEIGHBOR_THRESHOLD:           values[i] = dc_reader.get(&r200::dc_params::neighbor_thresh         ); break;
+            case RS_OPTION_R200_DEPTH_CONTROL_LR_THRESHOLD:                 values[i] = dc_reader.get(&r200::dc_params::lr_thresh               ); break;
+
+            default: LOG_WARNING("Cannot get " << options[i] << " on " << get_name()); break;
+            }
+        }
+    }
+
+    void r200_camera::on_before_start(const std::vector<subdevice_mode_selection> & selected_modes)
+    {
+        rs_option depth_units_option = RS_OPTION_R200_DEPTH_UNITS;
+        double depth_units;
+
         uint8_t streamIntent = 0;
         for(const auto & m : selected_modes)
         {
-            switch(m.subdevice)
+            switch(m.mode->subdevice)
             {
             case 0: streamIntent |= r200::STATUS_BIT_LR_STREAMING; break;
             case 2: streamIntent |= r200::STATUS_BIT_WEB_STREAMING; break;
             case 1: 
                 streamIntent |= r200::STATUS_BIT_Z_STREAMING; 
-                r200::disparity_mode dm;        
-                r200::get_disparity_mode(get_device(), dm);
-                switch(m.streams[0].format)
+                auto dm = r200::get_disparity_mode(get_device());
+                switch(m.get_format(RS_STREAM_DEPTH))
                 {
                 default: throw std::logic_error("unsupported R200 depth format");
                 case RS_FORMAT_Z16: 
                     dm.is_disparity_enabled = 0;
-                    on_update_depth_units(get_xu_option(RS_OPTION_R200_DEPTH_UNITS));
+                    get_options(&depth_units_option, 1, &depth_units);
+                    on_update_depth_units(static_cast<int>(depth_units));
                     break;
                 case RS_FORMAT_DISPARITY16: 
                     dm.is_disparity_enabled = 1;
-                    on_update_disparity_multiplier(dm.disparity_multiplier);
+                    on_update_disparity_multiplier(static_cast<float>(dm.disparity_multiplier));
                     break;
                 }
                 r200::set_disparity_mode(get_device(), dm);
@@ -289,7 +374,7 @@ namespace rsimpl
         return 30;
     }
 
-    void r200_camera::set_xu_option(rs_option option, int value)
+    /*void r200_camera::set_xu_option(rs_option option, int value)
     {
         if(is_capturing())
         {
@@ -303,117 +388,39 @@ namespace rsimpl
                 throw std::runtime_error("cannot set this option after rs_start_capture(...)");
             }
         }
-        r200::disparity_mode dm;
-        uint32_t u32[2];
-        uint16_t u16[2];
-
-        // todo - Range check value before write
-        switch(option)
-        {
-        case RS_OPTION_R200_LR_AUTO_EXPOSURE_ENABLED:
-            r200::set_lr_exposure_mode(get_device(), value);
-            break;
-        case RS_OPTION_R200_LR_GAIN:
-            r200::set_lr_gain(get_device(), get_lr_framerate(), value); // TODO: May need to set this on start if framerate changes
-            break;
-        case RS_OPTION_R200_LR_EXPOSURE:
-            r200::set_lr_exposure(get_device(), get_lr_framerate(), value); // TODO: May need to set this on start if framerate changes
-            break;
-        case RS_OPTION_R200_EMITTER_ENABLED:
-            r200::set_emitter_state(get_device(), !!value);
-            break;
-        case RS_OPTION_R200_DEPTH_CONTROL_PRESET:
-            r200::set_depth_params(get_device(), r200::depth_params::presets[value]);
-            break;
-        case RS_OPTION_R200_DEPTH_UNITS:
-            r200::set_depth_units(get_device(), value);
-            on_update_depth_units(value);
-            break;
-        case RS_OPTION_R200_DEPTH_CLAMP_MIN:
-            r200::get_min_max_depth(get_device(), u16[0], u16[1]);
-            r200::set_min_max_depth(get_device(), value, u16[1]);
-            break;
-        case RS_OPTION_R200_DEPTH_CLAMP_MAX:
-            r200::get_min_max_depth(get_device(), u16[0], u16[1]);
-            r200::set_min_max_depth(get_device(), u16[0], value);
-            break;
-        case RS_OPTION_R200_DISPARITY_MULTIPLIER:
-            r200::get_disparity_mode(get_device(), dm);
-            dm.disparity_multiplier = value;
-            r200::set_disparity_mode(get_device(), dm);
-            on_update_disparity_multiplier(value);
-            break;
-        case RS_OPTION_R200_DISPARITY_SHIFT:
-            r200::set_disparity_shift(get_device(), value);
-            break;
-        }
+    }*/
+    
+    bool r200_camera::supports_option(rs_option option) const
+    {
+        // We have special logic to implement LR gain and exposure, so they do not belong to the standard option list
+        return option == RS_OPTION_R200_LR_GAIN || option == RS_OPTION_R200_LR_EXPOSURE || rs_device::supports_option(option);
     }
 
-    void r200_camera::get_xu_range(rs_option option, int * min, int * max) const
+    void r200_camera::get_option_range(rs_option option, double & min, double & max, double & step)
     {
-        int max_fps = 30;
-        for(int i=0; i<RS_STREAM_NATIVE_COUNT; ++i)
+        // Gain min/max is framerate dependent
+        if(option == RS_OPTION_R200_LR_GAIN)
         {
-            if(get_stream_interface((rs_stream)i).is_enabled())
-            {
-                max_fps = std::max(max_fps, get_stream_interface((rs_stream)i).get_framerate());
-            }
-        }
-        const struct { rs_option option; int min, max; } ranges[] = {
-            {RS_OPTION_R200_LR_AUTO_EXPOSURE_ENABLED, 0, 1},
-            {RS_OPTION_R200_LR_GAIN, 100, 1600},
-            {RS_OPTION_R200_LR_EXPOSURE, 0, 10000/max_fps},
-            {RS_OPTION_R200_EMITTER_ENABLED, 0, 1},
-            {RS_OPTION_R200_DEPTH_CONTROL_PRESET, 0, 5},
-            {RS_OPTION_R200_DEPTH_UNITS, 1, INT_MAX}, // What is the real range?
-            {RS_OPTION_R200_DEPTH_CLAMP_MIN, 0, USHRT_MAX},
-            {RS_OPTION_R200_DEPTH_CLAMP_MAX, 0, USHRT_MAX},
-            {RS_OPTION_R200_DISPARITY_MULTIPLIER, 1, 1000},
-            {RS_OPTION_R200_DISPARITY_SHIFT, 0, 0},
-        };
-        for(auto & r : ranges)
-        {
-            if(option != r.option) continue;
-            if(min) *min = r.min;
-            if(max) *max = r.max;
+            r200::set_lr_gain_discovery(get_device(), {(uint32_t)get_lr_framerate()});
+            auto disc = r200::get_lr_gain_discovery(get_device());
+            min = disc.min;
+            max = disc.max;
+            step = 1;
             return;
         }
-        throw std::logic_error("range not specified");
-    }
 
-    int r200_camera::get_xu_option(rs_option option) const
-    {
-        //r200::auto_exposure_params aep;
-        r200::depth_params dp;
-        r200::disparity_mode dm;
-        uint32_t u32[2];
-        uint16_t u16[2];
-        bool b;
-
-        int value = 0;
-        switch(option)
+        // Exposure min/max is framerate dependent
+        if(option == RS_OPTION_R200_LR_EXPOSURE)
         {
-        case RS_OPTION_R200_LR_AUTO_EXPOSURE_ENABLED: r200::get_lr_exposure_mode(get_device(), u32[0]);         value = u32[0]; break;
-        case RS_OPTION_R200_LR_GAIN:                  r200::get_lr_gain         (get_device(), u32[0], u32[1]); value = u32[1]; break;
-        case RS_OPTION_R200_LR_EXPOSURE:              r200::get_lr_exposure     (get_device(), u32[0], u32[1]); value = u32[1]; break;
-        case RS_OPTION_R200_EMITTER_ENABLED:          r200::get_emitter_state   (get_device(), is_capturing(), get_stream_interface(RS_STREAM_DEPTH).is_enabled(), b); value = b; break;
-        case RS_OPTION_R200_DEPTH_UNITS:              r200::get_depth_units     (get_device(), u32[0]);         value = u32[0]; break;
-        case RS_OPTION_R200_DEPTH_CLAMP_MIN:          r200::get_min_max_depth   (get_device(), u16[0], u16[1]); value = u16[0]; break;
-        case RS_OPTION_R200_DEPTH_CLAMP_MAX:          r200::get_min_max_depth   (get_device(), u16[0], u16[1]); value = u16[1]; break;
-        case RS_OPTION_R200_DISPARITY_MULTIPLIER:     r200::get_disparity_mode  (get_device(), dm);             value = static_cast<int>(dm.disparity_multiplier); break;
-        case RS_OPTION_R200_DISPARITY_SHIFT:          r200::get_disparity_shift (get_device(), u32[0]);         value = u32[0]; break;
-        case RS_OPTION_R200_DEPTH_CONTROL_PRESET:
-            r200::get_depth_params(get_device(), dp);
-            for(int i=0; i<r200::depth_params::MAX_PRESETS; ++i)
-            {
-                if(memcmp(&dp, &r200::depth_params::presets[i], sizeof(dp)) == 0)
-                {
-                    return i;
-                }
-            }
-            break;
+            r200::set_lr_exposure_discovery(get_device(), {(uint32_t)get_lr_framerate()});
+            auto disc = r200::get_lr_exposure_discovery(get_device());
+            min = disc.min;
+            max = disc.max;
+            step = 1;
+            return;
         }
-        return value;
+
+        // Default to parent implementation
+        rs_device::get_option_range(option, min, max, step);
     }
-    
 }

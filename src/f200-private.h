@@ -1,10 +1,5 @@
-/*
-    INTEL CORPORATION PROPRIETARY INFORMATION This software is supplied under the
-    terms of a license agreement or nondisclosure agreement with Intel Corporation
-    and may not be copied or disclosed except in accordance with the terms of that
-    agreement.
-    Copyright(c) 2015 Intel Corporation. All Rights Reserved.
-*/
+// License: Apache 2.0. See LICENSE file in root directory.
+// Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
 #pragma once
 #ifndef LIBREALSENSE_F200_PRIVATE_H
@@ -70,6 +65,20 @@ namespace rsimpl { namespace f200
         float AmbientTemp;
     };
 
+    struct IVCAMAutoRangeRequest
+    {
+        int enableMvR;          // Send as IVCAMCommand::Param1
+        int enableLaser;        // Send as IVCAMCommand::Param2
+        int16_t minMvR;         // Copy into IVCAMCommand::data
+        int16_t maxMvR;         // "
+        int16_t startMvR;       // "
+        int16_t minLaser;       // "
+        int16_t maxLaser;       // "
+        int16_t startLaser;     // "
+        int16_t ARUpperTh;      // Copy into IVCAMCommand::data if not -1
+        int16_t ARLowerTh;      // "
+    };
+
     // Claim USB interface used for device
     void claim_ivcam_interface(uvc::device & device);
 
@@ -86,6 +95,7 @@ namespace rsimpl { namespace f200
     void force_hardware_reset(uvc::device & device, std::timed_mutex & mutex);
     void enable_timestamp(uvc::device & device, std::timed_mutex & mutex, bool colorEnable, bool depthEnable);
     void update_asic_coefficients(uvc::device & device, std::timed_mutex & mutex, const CameraCalibrationParameters & compensated_params); // todo - Allow you to specify resolution
+    void set_auto_range(uvc::device & device, std::timed_mutex & mutex, int enableMvR, int16_t minMvR, int16_t maxMvR, int16_t startMvR, int enableLaser, int16_t minLaser, int16_t maxLaser, int16_t startLaser, int16_t ARUpperTH, int16_t ARLowerTH);
 
     // XU read/write
     void get_laser_power(const uvc::device & device, uint8_t & laser_power);

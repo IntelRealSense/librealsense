@@ -1,10 +1,5 @@
-/*
-    INTEL CORPORATION PROPRIETARY INFORMATION This software is supplied under the
-    terms of a license agreement or nondisclosure agreement with Intel Corporation
-    and may not be copied or disclosed except in accordance with the terms of that
-    agreement.
-    Copyright(c) 2015 Intel Corporation. All Rights Reserved.
-*/
+// License: Apache 2.0. See LICENSE file in root directory.
+// Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
 #pragma once
 #ifndef LIBREALSENSE_F200_H
@@ -21,13 +16,14 @@ namespace rsimpl
 {
     namespace f200 { class IVCAMHardwareIO; }
 
-    class f200_camera : public rs_device
+    class f200_camera final : public rs_device
     {
         std::timed_mutex usbMutex;
 
         f200::CameraCalibrationParameters base_calibration;
         f200::IVCAMTemperatureData base_temperature_data;
         f200::IVCAMThermalLoopParams thermal_loop_params;
+        f200::IVCAMAutoRangeRequest arr;
 
         float last_temperature_delta;
 
@@ -41,11 +37,11 @@ namespace rsimpl
         f200_camera(std::shared_ptr<uvc::device> device, const static_device_info & info, const f200::CameraCalibrationParameters & calib, const f200::IVCAMTemperatureData & temp, const f200::IVCAMThermalLoopParams & params);
         ~f200_camera();
 
-        void on_before_start(const std::vector<subdevice_mode> & selected_modes) override final;
-        void get_xu_range(rs_option option, int * min, int * max) const override final;
-        void set_xu_option(rs_option option, int value) override final;
-        int get_xu_option(rs_option option) const override final;
-        int convert_timestamp(int64_t timestamp) const override final { return static_cast<int>(timestamp / 100000); }
+        void on_before_start(const std::vector<subdevice_mode_selection> & selected_modes) override;
+        int convert_timestamp(int64_t timestamp) const override { return static_cast<int>(timestamp / 100000); }
+        
+        void set_options(const rs_option options[], int count, const double values[]) override;
+        void get_options(const rs_option options[], int count, double values[]) override;
     };
 
     std::shared_ptr<rs_device> make_f200_device(std::shared_ptr<uvc::device> device);

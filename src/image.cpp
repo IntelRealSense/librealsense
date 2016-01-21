@@ -1,10 +1,5 @@
-/*
-    INTEL CORPORATION PROPRIETARY INFORMATION This software is supplied under the
-    terms of a license agreement or nondisclosure agreement with Intel Corporation
-    and may not be copied or disclosed except in accordance with the terms of that
-    agreement.
-    Copyright(c) 2015 Intel Corporation. All Rights Reserved.
-*/
+// License: Apache 2.0. See LICENSE file in root directory.
+// Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
 #include "image.h"
 #include "../include/librealsense/rsutil.h" // For projection/deprojection logic
@@ -18,19 +13,6 @@
 #pragma pack(push, 1) // All structs in this file are assumed to be byte-packed
 namespace rsimpl
 {
-    struct yuy2_macropixel { uint8_t y0,u,y1,v; };
-    static_assert(sizeof(yuy2_macropixel) == 4, "packing error");
-
-    struct y12i_pixel
-    { 
-        uint8_t rl : 8, rh : 4, ll : 4, lh : 8; 
-        int l() const { return lh << 4 | ll; }
-        int r() const { return rh << 8 | rl; }
-    };
-    static_assert(sizeof(y12i_pixel) == 3, "packing error");
-
-    struct inri_pixel { uint16_t z16; uint8_t y8; };
-    static_assert(sizeof(inri_pixel) == 3, "packing error");
 
     ////////////////////////////
     // Image size computation //
@@ -42,6 +24,7 @@ namespace rsimpl
         {
         case RS_FORMAT_Z16: return width * height * 2;
         case RS_FORMAT_DISPARITY16: return width * height * 2;
+        case RS_FORMAT_XYZ32F: return width * height * 12;
         case RS_FORMAT_YUYV: assert(width % 2 == 0); return width * height * 2;
         case RS_FORMAT_RGB8: return width * height * 3;
         case RS_FORMAT_BGR8: return width * height * 3;
@@ -54,53 +37,24 @@ namespace rsimpl
         }    
     }
 
-    const native_pixel_format pf_rw10        = {'RW10', 1, 1, 1};
-    const native_pixel_format pf_yuy2        = {'YUY2', 1, 2, sizeof(yuy2_macropixel)};
-    const native_pixel_format pf_y8          = {'Y8  ', 1, 1, sizeof(uint8_t)};
-    const native_pixel_format pf_y8i         = {'Y8I ', 1, 1, sizeof(uint8_t)*2};
-    const native_pixel_format pf_y16         = {'Y16 ', 1, 1, sizeof(uint16_t)};
-    const native_pixel_format pf_y12i        = {'Y12I', 1, 1, sizeof(y12i_pixel)};
-    const native_pixel_format pf_z16         = {'Z16 ', 1, 1, sizeof(uint16_t)};
-    const native_pixel_format pf_invz        = {'INVZ', 1, 1, sizeof(uint16_t)};
-    const native_pixel_format pf_f200_invi   = {'INVI', 1, 1, sizeof(uint8_t)};
-    const native_pixel_format pf_f200_inzi   = {'INZI', 1, 1, sizeof(inri_pixel)};
-    const native_pixel_format pf_sr300_invi  = {'INVI', 1, 1, sizeof(uint16_t)};
-    const native_pixel_format pf_sr300_inzi  = {'INZI', 2, 1, sizeof(uint16_t)};
-
     //////////////////////////////
     // Naive unpacking routines //
     //////////////////////////////
     
-    void unpack_subrect(byte * const dest[], const byte * source, const subdevice_mode & mode)
+    template<size_t SIZE> void copy_pixels(byte * const dest[], const byte * source, int count)
     {
-        assert(mode.streams.size() == 1);
-        const size_t in_stride = mode.pf->get_image_size(mode.width, 1), out_stride = get_image_size(mode.streams[0].width, 1, mode.streams[0].format);
-        auto out = dest[0];
-        for(int i=0; i<std::min(mode.height, mode.streams[0].height); ++i)
-        {
-            memcpy(out, source, std::min(in_stride, out_stride));
-            out += out_stride;
-            source += in_stride;            
-        }
+        memcpy(dest[0], source, SIZE * count);
     }
 
-    template<class SOURCE, class UNPACK> void unpack_pixels(byte * const dest[], const subdevice_mode & mode, const SOURCE * source, rs_format format, UNPACK unpack)
+    template<class SOURCE, class UNPACK> void unpack_pixels(byte * const dest[], int count, const SOURCE * source, UNPACK unpack)
     {
-        assert(mode.streams.size() == 1 && mode.streams[0].width <= mode.width && mode.streams[0].height <= mode.height && mode.streams[0].format == format);
         auto out = reinterpret_cast<decltype(unpack(SOURCE())) *>(dest[0]);
-        for(int y = 0; y < mode.streams[0].height; ++y)
-        {
-            for(int x = 0; x < mode.streams[0].width; ++x)
-            {
-                *out++ = unpack(*source++);
-            }
-            source += mode.width - mode.streams[0].width;
-        }       
+        for(int i=0; i<count; ++i) *out++ = unpack(*source++);
     }
 
-    void unpack_y16_from_y8    (byte * const d[], const byte * s, const subdevice_mode & m) { unpack_pixels(d, m, reinterpret_cast<const uint8_t  *>(s), RS_FORMAT_Y16, [](uint8_t  pixel) -> uint16_t { return pixel | pixel << 8; }); }
-    void unpack_y16_from_y16_10(byte * const d[], const byte * s, const subdevice_mode & m) { unpack_pixels(d, m, reinterpret_cast<const uint16_t *>(s), RS_FORMAT_Y16, [](uint16_t pixel) -> uint16_t { return pixel << 6; }); }
-    void unpack_y8_from_y16_10 (byte * const d[], const byte * s, const subdevice_mode & m) { unpack_pixels(d, m, reinterpret_cast<const uint16_t *>(s), RS_FORMAT_Y8,  [](uint16_t pixel) -> uint8_t  { return pixel >> 2; }); }
+    void unpack_y16_from_y8    (byte * const d[], const byte * s, int n) { unpack_pixels(d, n, reinterpret_cast<const uint8_t  *>(s), [](uint8_t  pixel) -> uint16_t { return pixel | pixel << 8; }); }
+    void unpack_y16_from_y16_10(byte * const d[], const byte * s, int n) { unpack_pixels(d, n, reinterpret_cast<const uint16_t *>(s), [](uint16_t pixel) -> uint16_t { return pixel << 6; }); }
+    void unpack_y8_from_y16_10 (byte * const d[], const byte * s, int n) { unpack_pixels(d, n, reinterpret_cast<const uint16_t *>(s), [](uint16_t pixel) -> uint8_t  { return pixel >> 2; }); }
 
     /////////////////////////////
     // YUY2 unpacking routines //
@@ -108,11 +62,11 @@ namespace rsimpl
     
     // This templated function unpacks YUY2 into Y8/Y16/RGB8/RGBA8/BGR8/BGRA8, depending on the compile-time parameter FORMAT.
     // It is expected that all branching outside of the loop control variable will be removed due to constant-folding.
-    template<rs_format FORMAT> void unpack_yuy2_sse(byte * d, const byte * s, int n)
+    template<rs_format FORMAT> void unpack_yuy2(byte * const d [], const byte * s, int n)
     {
         assert(n % 16 == 0); // All currently supported color resolutions are multiples of 16 pixels. Could easily extend support to other resolutions by copying final n<16 pixels into a zero-padded buffer and recursively calling self for final iteration.
         auto src = reinterpret_cast<const __m128i *>(s);
-        auto dst = reinterpret_cast<__m128i *>(d);
+        auto dst = reinterpret_cast<__m128i *>(d[0]);
         for(; n; n -= 16)
         {
             const __m128i zero = _mm_set1_epi8(0);
@@ -255,95 +209,126 @@ namespace rsimpl
         }    
     }
     
-    void unpack_from_yuy2(byte * const dest[], const byte * source, const subdevice_mode & mode)
-    {
-        assert(mode.pf == &pf_yuy2 && mode.streams.size() == 1 && mode.streams[0].width == mode.width && mode.streams[0].height == mode.height);
-        switch(mode.streams[0].format)
-        {
-        case RS_FORMAT_Y8   : unpack_yuy2_sse<RS_FORMAT_Y8   >(dest[0], source, mode.width * mode.height); break;
-        case RS_FORMAT_Y16  : unpack_yuy2_sse<RS_FORMAT_Y16  >(dest[0], source, mode.width * mode.height); break;
-        case RS_FORMAT_RGB8 : unpack_yuy2_sse<RS_FORMAT_RGB8 >(dest[0], source, mode.width * mode.height); break;
-        case RS_FORMAT_RGBA8: unpack_yuy2_sse<RS_FORMAT_RGBA8>(dest[0], source, mode.width * mode.height); break;
-        case RS_FORMAT_BGR8 : unpack_yuy2_sse<RS_FORMAT_BGR8 >(dest[0], source, mode.width * mode.height); break;
-        case RS_FORMAT_BGRA8: unpack_yuy2_sse<RS_FORMAT_BGRA8>(dest[0], source, mode.width * mode.height); break;
-        }
-    }
-
     //////////////////////////////////////
     // 2-in-1 format splitting routines //
     //////////////////////////////////////
 
-    template<class SOURCE, class SPLIT_A, class SPLIT_B> void split_frame(byte * const dest[], const subdevice_mode & mode, const SOURCE * source, const native_pixel_format & pf, rs_format format_a, rs_format format_b, SPLIT_A split_a, SPLIT_B split_b)
+    template<class SOURCE, class SPLIT_A, class SPLIT_B> void split_frame(byte * const dest[], int count, const SOURCE * source, SPLIT_A split_a, SPLIT_B split_b)
     {
-        assert(mode.pf == &pf && mode.streams.size() == 2 && mode.streams[0].format == format_a && mode.streams[1].format == format_b
-            && mode.streams[0].width == mode.streams[1].width && mode.streams[0].height == mode.streams[1].height && mode.streams[0].width <= mode.width && mode.streams[0].height <= mode.height);
         auto a = reinterpret_cast<decltype(split_a(SOURCE())) *>(dest[0]);
         auto b = reinterpret_cast<decltype(split_b(SOURCE())) *>(dest[1]);
-        for(int y = 0; y < mode.streams[0].height; ++y)
+        for(int i=0; i<count; ++i)
         {
-            for(int x = 0; x < mode.streams[0].width; ++x)
-            {
-                *a++ = split_a(*source);
-                *b++ = split_b(*source++);
-            }
-            source += mode.width - mode.streams[0].width;
+            *a++ = split_a(*source);
+            *b++ = split_b(*source++);
         }    
     }
 
-    void unpack_y8_y8_from_y8i(byte * const dest[], const byte * source, const subdevice_mode & mode)
+    struct y8i_pixel { uint8_t l, r; };
+    void unpack_y8_y8_from_y8i(byte * const dest[], const byte * source, int count)
     {
-        struct y8i_pixel { uint8_t l, r; };
-        split_frame(dest, mode, reinterpret_cast<const y8i_pixel *>(source), pf_y8i, RS_FORMAT_Y8, RS_FORMAT_Y8,
+        split_frame(dest, count, reinterpret_cast<const y8i_pixel *>(source),
             [](const y8i_pixel & p) -> uint8_t { return p.l; },
             [](const y8i_pixel & p) -> uint8_t { return p.r; });
     }
 
-    void unpack_y16_y16_from_y12i_10(byte * const dest[], const byte * source, const subdevice_mode & mode)
+    struct y12i_pixel { uint8_t rl : 8, rh : 4, ll : 4, lh : 8; int l() const { return lh << 4 | ll; } int r() const { return rh << 8 | rl; } };
+    void unpack_y16_y16_from_y12i_10(byte * const dest[], const byte * source, int count)
     {
-        split_frame(dest, mode, reinterpret_cast<const y12i_pixel *>(source), pf_y12i, RS_FORMAT_Y16, RS_FORMAT_Y16,
+        split_frame(dest, count, reinterpret_cast<const y12i_pixel *>(source),
             [](const y12i_pixel & p) -> uint16_t { return p.l() << 6 | p.l() >> 4; },  // We want to convert 10-bit data to 16-bit data
             [](const y12i_pixel & p) -> uint16_t { return p.r() << 6 | p.r() >> 4; }); // Multiply by 64 1/16 to efficiently approximate 65535/1023
     }
 
-    void unpack_z16_y8_from_f200_inzi(byte * const dest[], const byte * source, const subdevice_mode & mode)
+    struct f200_inzi_pixel { uint16_t z16; uint8_t y8; };
+    void unpack_z16_y8_from_f200_inzi(byte * const dest[], const byte * source, int count)
     {
-        split_frame(dest, mode, reinterpret_cast<const inri_pixel *>(source), pf_f200_inzi, RS_FORMAT_Z16, RS_FORMAT_Y8,
-            [](const inri_pixel & p) -> uint16_t { return p.z16; },
-            [](const inri_pixel & p) -> uint8_t { return p.y8; });
+        split_frame(dest, count, reinterpret_cast<const f200_inzi_pixel *>(source),
+            [](const f200_inzi_pixel & p) -> uint16_t { return p.z16; },
+            [](const f200_inzi_pixel & p) -> uint8_t { return p.y8; });
     }
 
-    void unpack_z16_y16_from_f200_inzi(byte * const dest[], const byte * source, const subdevice_mode & mode)
+    void unpack_z16_y16_from_f200_inzi(byte * const dest[], const byte * source, int count)
     {
-        split_frame(dest, mode, reinterpret_cast<const inri_pixel *>(source), pf_f200_inzi, RS_FORMAT_Z16, RS_FORMAT_Y16,
-            [](const inri_pixel & p) -> uint16_t { return p.z16; },
-            [](const inri_pixel & p) -> uint16_t { return p.y8 | p.y8 << 8; });
+        split_frame(dest, count, reinterpret_cast<const f200_inzi_pixel *>(source),
+            [](const f200_inzi_pixel & p) -> uint16_t { return p.z16; },
+            [](const f200_inzi_pixel & p) -> uint16_t { return p.y8 | p.y8 << 8; });
     }
 
-    void unpack_z16_y8_from_sr300_inzi(byte * const dest[], const byte * source, const subdevice_mode & mode)
+    void unpack_z16_y8_from_sr300_inzi(byte * const dest[], const byte * source, int count)
     {
         auto in = reinterpret_cast<const uint16_t *>(source);
-        auto out_depth = reinterpret_cast<uint16_t *>(dest[0]);
         auto out_ir = reinterpret_cast<uint8_t *>(dest[1]);            
-        for(int i=0, n=mode.width*mode.height; i<n; ++i) *out_ir++ = *in++ >> 2;
-        memcpy(out_depth, in, mode.width*mode.height*2);
+        for(int i=0; i<count; ++i) *out_ir++ = *in++ >> 2;
+        memcpy(dest[0], in, count*2);
     }
 
-    void unpack_z16_y16_from_sr300_inzi (byte * const dest[], const byte * source, const subdevice_mode & mode)
+    void unpack_z16_y16_from_sr300_inzi (byte * const dest[], const byte * source, int count)
     {
         auto in = reinterpret_cast<const uint16_t *>(source);
-        auto out_depth = reinterpret_cast<uint16_t *>(dest[0]);
-        auto out_ir = reinterpret_cast<uint16_t *>(dest[1]);            
-        for(int i=0, n=mode.width*mode.height; i<n; ++i) *out_ir++ = *in++ << 6;
-        memcpy(out_depth, in, mode.width*mode.height*2);
+        auto out_ir = reinterpret_cast<uint16_t *>(dest[1]);
+        for(int i=0; i<count; ++i) *out_ir++ = *in++ << 6;
+        memcpy(dest[0], in, count*2);
+    }
+
+    //////////////////////////
+    // Native pixel formats //
+    //////////////////////////
+
+    const native_pixel_format pf_rw10       = {'RW10', 1, 1, {{&copy_pixels<1>,                 {{RS_STREAM_COLOR,    RS_FORMAT_RAW10}}}}};
+    const native_pixel_format pf_yuy2       = {'YUY2', 1, 2, {{&copy_pixels<2>,                 {{RS_STREAM_COLOR,    RS_FORMAT_YUYV }}},
+                                                              {&unpack_yuy2<RS_FORMAT_Y8   >,   {{RS_STREAM_COLOR,    RS_FORMAT_Y8   }}},
+                                                              {&unpack_yuy2<RS_FORMAT_Y16  >,   {{RS_STREAM_COLOR,    RS_FORMAT_Y16  }}},
+                                                              {&unpack_yuy2<RS_FORMAT_RGB8 >,   {{RS_STREAM_COLOR,    RS_FORMAT_RGB8 }}},
+                                                              {&unpack_yuy2<RS_FORMAT_RGBA8>,   {{RS_STREAM_COLOR,    RS_FORMAT_RGBA8}}},
+                                                              {&unpack_yuy2<RS_FORMAT_BGR8 >,   {{RS_STREAM_COLOR,    RS_FORMAT_BGR8 }}},
+                                                              {&unpack_yuy2<RS_FORMAT_BGRA8>,   {{RS_STREAM_COLOR,    RS_FORMAT_BGRA8}}}}};
+    const native_pixel_format pf_y8         = {'Y8  ', 1, 1, {{&copy_pixels<1>,                 {{RS_STREAM_INFRARED, RS_FORMAT_Y8   }}}}};
+    const native_pixel_format pf_y16        = {'Y16 ', 1, 2, {{&unpack_y16_from_y16_10,         {{RS_STREAM_INFRARED, RS_FORMAT_Y16  }}}}};
+    const native_pixel_format pf_y8i        = {'Y8I ', 1, 2, {{&unpack_y8_y8_from_y8i,          {{RS_STREAM_INFRARED, RS_FORMAT_Y8   }, {RS_STREAM_INFRARED2, RS_FORMAT_Y8}}}}};
+    const native_pixel_format pf_y12i       = {'Y12I', 1, 3, {{&unpack_y16_y16_from_y12i_10,    {{RS_STREAM_INFRARED, RS_FORMAT_Y16  }, {RS_STREAM_INFRARED2, RS_FORMAT_Y16}}}}};
+    const native_pixel_format pf_z16        = {'Z16 ', 1, 2, {{&copy_pixels<2>,                 {{RS_STREAM_DEPTH,    RS_FORMAT_Z16  }}},
+                                                              {&copy_pixels<2>,                 {{RS_STREAM_DEPTH,    RS_FORMAT_DISPARITY16}}}}};
+    const native_pixel_format pf_invz       = {'INVZ', 1, 2, {{&copy_pixels<2>,                 {{RS_STREAM_DEPTH,    RS_FORMAT_Z16  }}}}};
+    const native_pixel_format pf_f200_invi  = {'INVI', 1, 1, {{&copy_pixels<1>,                 {{RS_STREAM_INFRARED, RS_FORMAT_Y8   }}},
+                                                              {&unpack_y16_from_y8,             {{RS_STREAM_INFRARED, RS_FORMAT_Y16  }}}}};
+    const native_pixel_format pf_f200_inzi  = {'INZI', 1, 3, {{&unpack_z16_y8_from_f200_inzi,   {{RS_STREAM_DEPTH,    RS_FORMAT_Z16  }, {RS_STREAM_INFRARED, RS_FORMAT_Y8}}},
+                                                              {&unpack_z16_y16_from_f200_inzi,  {{RS_STREAM_DEPTH,    RS_FORMAT_Z16  }, {RS_STREAM_INFRARED, RS_FORMAT_Y16}}}}};
+    const native_pixel_format pf_sr300_invi = {'INVI', 1, 2, {{&unpack_y8_from_y16_10,          {{RS_STREAM_INFRARED, RS_FORMAT_Y8   }}},
+                                                              {&unpack_y16_from_y16_10,         {{RS_STREAM_INFRARED, RS_FORMAT_Y16  }}}}};
+    const native_pixel_format pf_sr300_inzi = {'INZI', 2, 2, {{&unpack_z16_y8_from_sr300_inzi,  {{RS_STREAM_DEPTH,    RS_FORMAT_Z16  }, {RS_STREAM_INFRARED, RS_FORMAT_Y8}}},
+                                                              {&unpack_z16_y16_from_sr300_inzi, {{RS_STREAM_DEPTH,    RS_FORMAT_Z16  }, {RS_STREAM_INFRARED, RS_FORMAT_Y16}}}}};
+
+    //////////////////
+    // Deprojection //
+    //////////////////
+
+    template<class MAP_DEPTH> void deproject_depth(float * points, const rs_intrinsics & intrin, const uint16_t * depth, MAP_DEPTH map_depth)
+    {
+        for(int y=0; y<intrin.height; ++y)
+        {
+            for(int x=0; x<intrin.width; ++x)
+            {
+                const float pixel[] = { (float) x, (float) y};
+                rs_deproject_pixel_to_point(points, &intrin, pixel, map_depth(*depth++));
+                points += 3;                
+            }
+        }    
+    }
+
+    void deproject_z(float * points, const rs_intrinsics & z_intrin, const uint16_t * z_pixels, float z_scale)
+    {
+        deproject_depth(points, z_intrin, z_pixels, [z_scale](uint16_t z) { return z_scale * z; });
+    }
+
+    void deproject_disparity(float * points, const rs_intrinsics & disparity_intrin, const uint16_t * disparity_pixels, float disparity_scale)
+    {
+        deproject_depth(points, disparity_intrin, disparity_pixels, [disparity_scale](uint16_t disparity) { return disparity_scale / disparity; });
     }
 
     /////////////////////
     // Image alignment //
     /////////////////////
-
-    #pragma pack(push, 1)
-    template<int N> struct bytes { char b[N]; };
-    #pragma pack(pop)
 
     template<class GET_DEPTH, class TRANSFER_PIXEL> void align_images(const rs_intrinsics & depth_intrin, const rs_extrinsics & depth_to_other, const rs_intrinsics & other_intrin, GET_DEPTH get_depth, TRANSFER_PIXEL transfer_pixel)
     {
@@ -355,7 +340,7 @@ namespace rsimpl
                 // Skip over depth pixels with the value of zero, we have no depth data so we will not write anything into our aligned images
                 if(float depth = get_depth(depth_pixel_index))
                 {
-                    // Determine the corresponding pixel location in our color image
+                    // Determine the corresponding pixel location in our other image
                     float depth_pixel[2] = {(float)depth_x, (float)depth_y}, depth_point[3], other_point[3], other_pixel[2];
                     rs_deproject_pixel_to_point(depth_point, &depth_intrin, depth_pixel, depth);
                     rs_transform_point_to_point(other_point, &depth_to_other, depth_point);
@@ -375,55 +360,56 @@ namespace rsimpl
         }    
     }
 
-    void align_z_to_color(byte * z_aligned_to_color, const uint16_t * z_pixels, float z_scale, const rs_intrinsics & z_intrin, const rs_extrinsics & z_to_color, const rs_intrinsics & color_intrin)
+    void align_z_to_other(byte * z_aligned_to_other, const uint16_t * z_pixels, float z_scale, const rs_intrinsics & z_intrin, const rs_extrinsics & z_to_other, const rs_intrinsics & other_intrin)
     {
-        auto out_z = (uint16_t *)(z_aligned_to_color);
-        align_images(z_intrin, z_to_color, color_intrin, 
+        auto out_z = (uint16_t *)(z_aligned_to_other);
+        align_images(z_intrin, z_to_other, other_intrin, 
             [z_pixels, z_scale](int z_pixel_index) { return z_scale * z_pixels[z_pixel_index]; },
-            [out_z, z_pixels](int z_pixel_index, int color_pixel_index) { out_z[color_pixel_index] = z_pixels[z_pixel_index]; });
+            [out_z, z_pixels](int z_pixel_index, int other_pixel_index) { out_z[other_pixel_index] = z_pixels[z_pixel_index]; });
     }
 
-    void align_disparity_to_color(byte * disparity_aligned_to_color, const uint16_t * disparity_pixels, float disparity_scale, const rs_intrinsics & disparity_intrin, const rs_extrinsics & disparity_to_color, const rs_intrinsics & color_intrin)
+    void align_disparity_to_other(byte * disparity_aligned_to_other, const uint16_t * disparity_pixels, float disparity_scale, const rs_intrinsics & disparity_intrin, const rs_extrinsics & disparity_to_other, const rs_intrinsics & other_intrin)
     {
-        auto out_disparity = (uint16_t *)(disparity_aligned_to_color);
-        align_images(disparity_intrin, disparity_to_color, color_intrin, 
+        auto out_disparity = (uint16_t *)(disparity_aligned_to_other);
+        align_images(disparity_intrin, disparity_to_other, other_intrin, 
             [disparity_pixels, disparity_scale](int disparity_pixel_index) { return disparity_scale / disparity_pixels[disparity_pixel_index]; },
-            [out_disparity, disparity_pixels](int disparity_pixel_index, int color_pixel_index) { out_disparity[color_pixel_index] = disparity_pixels[disparity_pixel_index]; });
+            [out_disparity, disparity_pixels](int disparity_pixel_index, int other_pixel_index) { out_disparity[other_pixel_index] = disparity_pixels[disparity_pixel_index]; });
     }
 
-    template<int N, class GET_DEPTH> void align_color_to_depth_bytes(byte * color_aligned_to_depth, GET_DEPTH get_depth, const rs_intrinsics & depth_intrin, const rs_extrinsics & depth_to_color, const rs_intrinsics & color_intrin, const byte * color_pixels)
+    template<int N> struct bytes { char b[N]; };
+    template<int N, class GET_DEPTH> void align_other_to_depth_bytes(byte * other_aligned_to_depth, GET_DEPTH get_depth, const rs_intrinsics & depth_intrin, const rs_extrinsics & depth_to_other, const rs_intrinsics & other_intrin, const byte * other_pixels)
     {
-        auto in_color = (const bytes<N> *)(color_pixels);
-        auto out_color = (bytes<N> *)(color_aligned_to_depth);
-        align_images(depth_intrin, depth_to_color, color_intrin, get_depth,
-            [out_color, in_color](int depth_pixel_index, int color_pixel_index) { out_color[depth_pixel_index] = in_color[color_pixel_index]; });
+        auto in_other = (const bytes<N> *)(other_pixels);
+        auto out_other = (bytes<N> *)(other_aligned_to_depth);
+        align_images(depth_intrin, depth_to_other, other_intrin, get_depth,
+            [out_other, in_other](int depth_pixel_index, int other_pixel_index) { out_other[depth_pixel_index] = in_other[other_pixel_index]; });
     }
 
-    template<class GET_DEPTH> void align_color_to_depth(byte * color_aligned_to_depth, GET_DEPTH get_depth, const rs_intrinsics & depth_intrin, const rs_extrinsics & depth_to_color, const rs_intrinsics & color_intrin, const byte * color_pixels, rs_format color_format)
+    template<class GET_DEPTH> void align_other_to_depth(byte * other_aligned_to_depth, GET_DEPTH get_depth, const rs_intrinsics & depth_intrin, const rs_extrinsics & depth_to_other, const rs_intrinsics & other_intrin, const byte * other_pixels, rs_format other_format)
     {
-        switch(color_format)
+        switch(other_format)
         {
         case RS_FORMAT_Y8: 
-            return align_color_to_depth_bytes<1>(color_aligned_to_depth, get_depth, depth_intrin, depth_to_color, color_intrin, color_pixels);
+            return align_other_to_depth_bytes<1>(other_aligned_to_depth, get_depth, depth_intrin, depth_to_other, other_intrin, other_pixels);
         case RS_FORMAT_Y16: case RS_FORMAT_Z16: 
-            return align_color_to_depth_bytes<2>(color_aligned_to_depth, get_depth, depth_intrin, depth_to_color, color_intrin, color_pixels);
+            return align_other_to_depth_bytes<2>(other_aligned_to_depth, get_depth, depth_intrin, depth_to_other, other_intrin, other_pixels);
         case RS_FORMAT_RGB8: case RS_FORMAT_BGR8: 
-            return align_color_to_depth_bytes<3>(color_aligned_to_depth, get_depth, depth_intrin, depth_to_color, color_intrin, color_pixels);
+            return align_other_to_depth_bytes<3>(other_aligned_to_depth, get_depth, depth_intrin, depth_to_other, other_intrin, other_pixels);
         case RS_FORMAT_RGBA8: case RS_FORMAT_BGRA8: 
-            return align_color_to_depth_bytes<4>(color_aligned_to_depth, get_depth, depth_intrin, depth_to_color, color_intrin, color_pixels);
+            return align_other_to_depth_bytes<4>(other_aligned_to_depth, get_depth, depth_intrin, depth_to_other, other_intrin, other_pixels);
         default: 
-            assert(false); // NOTE: rs_align_color_to_depth_bytes<2>(...) is not appropriate for RS_FORMAT_YUYV/RS_FORMAT_RAW10 images, no logic prevents U/V channels from being written to one another
+            assert(false); // NOTE: rs_align_other_to_depth_bytes<2>(...) is not appropriate for RS_FORMAT_YUYV/RS_FORMAT_RAW10 images, no logic prevents U/V channels from being written to one another
         }
     }
 
-    void align_color_to_z(byte * color_aligned_to_z, const uint16_t * z_pixels, float z_scale, const rs_intrinsics & z_intrin, const rs_extrinsics & z_to_color, const rs_intrinsics & color_intrin, const byte * color_pixels, rs_format color_format)
+    void align_other_to_z(byte * other_aligned_to_z, const uint16_t * z_pixels, float z_scale, const rs_intrinsics & z_intrin, const rs_extrinsics & z_to_other, const rs_intrinsics & other_intrin, const byte * other_pixels, rs_format other_format)
     {
-        align_color_to_depth(color_aligned_to_z, [z_pixels, z_scale](int z_pixel_index) { return z_scale * z_pixels[z_pixel_index]; }, z_intrin, z_to_color, color_intrin, color_pixels, color_format);
+        align_other_to_depth(other_aligned_to_z, [z_pixels, z_scale](int z_pixel_index) { return z_scale * z_pixels[z_pixel_index]; }, z_intrin, z_to_other, other_intrin, other_pixels, other_format);
     }
 
-    void align_color_to_disparity(byte * color_aligned_to_disparity, const uint16_t * disparity_pixels, float disparity_scale, const rs_intrinsics & disparity_intrin, const rs_extrinsics & disparity_to_color, const rs_intrinsics & color_intrin, const byte * color_pixels, rs_format color_format)
+    void align_other_to_disparity(byte * other_aligned_to_disparity, const uint16_t * disparity_pixels, float disparity_scale, const rs_intrinsics & disparity_intrin, const rs_extrinsics & disparity_to_other, const rs_intrinsics & other_intrin, const byte * other_pixels, rs_format other_format)
     {
-        align_color_to_depth(color_aligned_to_disparity, [disparity_pixels, disparity_scale](int disparity_pixel_index) { return disparity_scale / disparity_pixels[disparity_pixel_index]; }, disparity_intrin, disparity_to_color, color_intrin, color_pixels, color_format);
+        align_other_to_depth(other_aligned_to_disparity, [disparity_pixels, disparity_scale](int disparity_pixel_index) { return disparity_scale / disparity_pixels[disparity_pixel_index]; }, disparity_intrin, disparity_to_other, other_intrin, other_pixels, other_format);
     }
 
     /////////////////////////
@@ -461,4 +447,5 @@ namespace rsimpl
         }
     }
 }
+
 #pragma pack(pop)

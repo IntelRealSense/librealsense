@@ -1,10 +1,5 @@
-/*
-    INTEL CORPORATION PROPRIETARY INFORMATION This software is supplied under the
-    terms of a license agreement or nondisclosure agreement with Intel Corporation
-    and may not be copied or disclosed except in accordance with the terms of that
-    agreement.
-    Copyright(c) 2015 Intel Corporation. All Rights Reserved.
-*/
+// License: Apache 2.0. See LICENSE file in root directory.
+// Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
 #include <librealsense/rs.hpp>
 #include "example.hpp"
@@ -22,6 +17,9 @@ struct state { double yaw, pitch, lastX, lastY; bool ml; std::vector<rs::stream>
 
 int main(int argc, char * argv[]) try
 {
+    rs::log_to_console(rs::log_severity::warn);
+    //rs::log_to_file(rs::log_severity::debug, "librealsense.log");
+
     rs::context ctx;
     if(ctx.get_device_count() == 0) throw std::runtime_error("No device detected. Is it plugged in?");
     rs::device & dev = *ctx.get_device(0);
@@ -82,14 +80,7 @@ int main(int argc, char * argv[]) try
 
     glfwMakeContextCurrent(win);
     
-    font font;
-    if (auto f = find_file("examples/assets/Roboto-Bold.ttf", 3))
-    {
-        font = ttf_create(f,20);
-        fclose(f);
-    }
-    else throw std::runtime_error("Unable to open examples/assets/Roboto-Bold.ttf");
-
+    gl_font font(20);
     texture_buffer tex;
 
     int frames = 0; float time = 0, fps = 0;
@@ -145,18 +136,21 @@ int main(int argc, char * argv[]) try
         glEnable(GL_TEXTURE_2D);
         glBindTexture(GL_TEXTURE_2D, tex.get_gl_handle());
         glBegin(GL_POINTS);
+
+        auto points = reinterpret_cast<const rs::float3 *>(dev.get_frame_data(rs::stream::points));
         auto depth = reinterpret_cast<const uint16_t *>(dev.get_frame_data(rs::stream::depth));
         
         for(int y=0; y<depth_intrin.height; ++y)
         {
             for(int x=0; x<depth_intrin.width; ++x)
             {
-                if(uint16_t d = *depth++)
+                if(points->z) //if(uint16_t d = *depth++)
                 {
-                    const rs::float3 point = depth_intrin.deproject({static_cast<float>(x),static_cast<float>(y)}, d*depth_scale);
-                    glTexCoord(identical ? tex_intrin.pixel_to_texcoord({static_cast<float>(x),static_cast<float>(y)}) : tex_intrin.project_to_texcoord(extrin.transform(point)));
-                    glVertex(point);
+                    //const rs::float3 point = depth_intrin.deproject({static_cast<float>(x),static_cast<float>(y)}, d*depth_scale);
+                    glTexCoord(identical ? tex_intrin.pixel_to_texcoord({static_cast<float>(x),static_cast<float>(y)}) : tex_intrin.project_to_texcoord(extrin.transform(*points)));
+                    glVertex(*points);
                 }
+                ++points;
             }
         }
         glEnd();
@@ -171,10 +165,10 @@ int main(int argc, char * argv[]) try
         glOrtho(0, width, height, 0, -1, +1);
         
         std::ostringstream ss; ss << dev.get_name() << " (" << app_state.tex_streams[app_state.index] << ")";
-        ttf_print(&font, (width-ttf_len(&font, ss.str().c_str()))/2, height-20.0f, ss.str().c_str());
+        font.print((width-font.width(ss.str().c_str()))/2, height-20.0f, ss.str().c_str());
 
         ss.str(""); ss << fps << " FPS";
-        ttf_print(&font, 20, 40, ss.str().c_str());
+        font.print(20, 40, ss.str().c_str());
         glPopMatrix();
 
         glfwSwapBuffers(win);
