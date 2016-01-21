@@ -1,0 +1,13 @@
+language: objective-c
+osx_image: xcode7
+
+script:
+- xctool -workspace librealsense.xc/librealsense.xcworkspace -scheme librealsense ONLY_ACTIVE_ARCH=NO
+
+before_install:
+- gem i slather --no-ri --no-rdoc
+- brew uninstall xctool; brew install xctool --HEAD;
+- brew install homebrew/versions/glfw3
+- brew install libusb
+
+after_success: slather
