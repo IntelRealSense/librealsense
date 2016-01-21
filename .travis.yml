@@ -1,3 +1,5 @@
+language: cpp
+
 os:
   - linux
   - osx
@@ -6,52 +8,42 @@ sudo: required
 dist: trusty
 osx_image: xcode7
 
-language:
-  - if [ "$TRAVIS_OS_NAME" == "linux" ]; then
-    objective-c;
-  else
-    cpp;
-  fi
-
 before_install:
-  - if [ "$TRAVIS_OS_NAME" == "linux" ]; then
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
       sudo add-apt-repository --yes ppa:ubuntu-toolchain-r/test
       sudo add-apt-repository --yes ppa:kalakris/cmake
       wget https://github.com/glfw/glfw/releases/download/3.1.1/glfw-3.1.1.zip
       sudo apt-get update -qq
-  fi
-  - if [ "$TRAVIS_OS_NAME" == "osx" ]; then
-      brew uninstall xctool; brew install xctool --HEAD;
+    fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
+      brew uninstall xctool
+      brew install xctool --HEAD
       brew install homebrew/versions/glfw3
       brew install libusb
-  fi
+    fi
 
 install:
-  - if [ "$TRAVIS_OS_NAME" == "linux" ]; then
-      sudo apt-get install build-essential xorg-dev libglu1-mesa-dev libglew-dev libglm-dev -qq
-      sudo apt-get install cmake -qq
-      sudo apt-get install gcc-4.9
-      sudo apt-get install libusb-1.0-0-dev
-      export CXX="g++-4.9"
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install build-essential xorg-dev libglu1-mesa-dev libglew-dev libglm-dev -qq; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install cmake -qq; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install gcc-4.9 -qq; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install libusb-1.0-0-dev -qq; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then export CXX="g++-4.9"; fi
 
-      # Print versions
-      $CXX --version
-      cmake --version
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then $CXX --version; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then cmake --version; fi
 
-      # GLFW
-      unzip glfw-3.1.1.zip
-      cd glfw-3.1.1/
-      sudo cmake -G "Unix Makefiles" -DBUILD_SHARED_LIBS=ON
-      sudo make
-      sudo make install
-      cd ..
-  fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then unzip glfw-3.1.1.zip; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then cd glfw-3.1.1; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo cmake -G "Unix Makefiles" -DBUILD_SHARED_LIBS=ON; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo make; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo make install; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then cd ..; fi
 
 script:
-  - if [ "$TRAVIS_OS_NAME" == "linux" ]; then
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
     uname -a
     make
-  fi
-  - if [ "$TRAVIS_OS_NAME" == "osx" ]; then
+    fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
     xctool -workspace librealsense.xc/librealsense.xcworkspace -scheme librealsense ONLY_ACTIVE_ARCH=NO
-  fi
+    fi
