@@ -26,6 +26,7 @@ void rsimpl::log(rs_log_severity severity, const std::string & message)
         case RS_LOG_SEVERITY_WARN:  log_file << buffer << " WARN: " << message << std::endl; break;
         case RS_LOG_SEVERITY_ERROR: log_file << buffer << " ERROR: " << message << std::endl; break;
         case RS_LOG_SEVERITY_FATAL: log_file << buffer << " FATAL: " << message << std::endl; break;
+        default: throw std::logic_error("not a valid severity for log message");
         }
     }
 
@@ -38,6 +39,7 @@ void rsimpl::log(rs_log_severity severity, const std::string & message)
         case RS_LOG_SEVERITY_WARN:  std::cout << "rs.warn: " << message << std::endl; break;
         case RS_LOG_SEVERITY_ERROR: std::cout << "rs.error: " << message << std::endl; break;
         case RS_LOG_SEVERITY_FATAL: std::cout << "rs.fatal: " << message << std::endl; break;
+        default: throw std::logic_error("not a valid severity for log message");
         }
     }
 }

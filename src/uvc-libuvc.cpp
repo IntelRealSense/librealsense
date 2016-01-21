@@ -196,51 +196,30 @@ namespace rsimpl
                 sub.ctrl = {};
                 sub.callback = {};
             }
-            
-            /*
-            // SW reset
-            if(device.id.pid == 2688)
-            {
-                uint8_t reset = 1;
-                const int CAMERA_XU_UNIT_ID = 2;
-                const int CONTROL_SW_RESET = 16;
-                uvc_set_ctrl(device.get_subdevice(0).handle, CAMERA_XU_UNIT_ID, CONTROL_SW_RESET, &reset, sizeof(reset));
-            }
-
-            // NOTE: We are explicitly NOT calling uvc_close(...) for each subdevice handle
-            for(auto & sub : device.subdevices) sub.handle = nullptr;
-
-            // Attempt to recreate the device
-            uvc_unref_device(device.uvcdevice);
-            std::this_thread::sleep_for(std::chrono::seconds(2));
-            device.uvcdevice = create_device(device.parent->ctx, device.id);
-            if(!device.uvcdevice) throw std::runtime_error("software reset failed");
-            device.get_subdevice(0);
-            */
         }
 
         template<class T> void set_pu(uvc_device_handle_t * devh, int subdevice, uint8_t unit, uint8_t control, int value)
         {
             const int REQ_TYPE_SET = 0x21;
-            unsigned char buffer[sizeof(T)];
-            if(sizeof(buffer)==1) buffer[0] = value;
-            if(sizeof(buffer)==2) SHORT_TO_SW(value, buffer);
-            if(sizeof(buffer)==4) INT_TO_DW(value, buffer);
-            int status = libusb_control_transfer(devh->usb_devh, REQ_TYPE_SET, UVC_SET_CUR, control << 8, unit << 8 | (subdevice*2), buffer, sizeof(buffer), 0);
+            unsigned char buffer[4];
+            if(sizeof(T)==1) buffer[0] = value;
+            if(sizeof(T)==2) SHORT_TO_SW(value, buffer);
+            if(sizeof(T)==4) INT_TO_DW(value, buffer);
+            int status = libusb_control_transfer(devh->usb_devh, REQ_TYPE_SET, UVC_SET_CUR, control << 8, unit << 8 | (subdevice*2), buffer, sizeof(T), 0);
             if(status < 0) throw std::runtime_error(to_string() << "libusb_control_transfer(...) returned " << libusb_error_name(status));
-            if(status != sizeof(buffer)) throw std::runtime_error("insufficient data written to usb");
+            if(status != sizeof(T)) throw std::runtime_error("insufficient data written to usb");
         }
 
         template<class T> int get_pu(uvc_device_handle_t * devh, int subdevice, uint8_t unit, uint8_t control, int uvc_get_thing)
         {
             const int REQ_TYPE_GET = 0xa1;
-            unsigned char buffer[sizeof(T)];
-            int status = libusb_control_transfer(devh->usb_devh, REQ_TYPE_GET, uvc_get_thing, control << 8, unit << 8 | (subdevice*2), buffer, sizeof(buffer), 0);
+            unsigned char buffer[4];
+            int status = libusb_control_transfer(devh->usb_devh, REQ_TYPE_GET, uvc_get_thing, control << 8, unit << 8 | (subdevice*2), buffer, sizeof(T), 0);
             if(status < 0) throw std::runtime_error(to_string() << "libusb_control_transfer(...) returned " << libusb_error_name(status));
-            if(status != sizeof(buffer)) throw std::runtime_error("insufficient data read from usb");
-            if(sizeof(buffer)==1) return buffer[0];
-            if(sizeof(buffer)==2) return SW_TO_SHORT(buffer);
-            if(sizeof(buffer)==4) return DW_TO_INT(buffer);
+            if(status != sizeof(T)) throw std::runtime_error("insufficient data read from usb");
+            if(sizeof(T)==1) return buffer[0];
+            if(sizeof(T)==2) return SW_TO_SHORT(buffer);
+            if(sizeof(T)==4) return DW_TO_INT(buffer);
         }
         
         template<class T> void get_pu_range(uvc_device_handle_t * devh, int subdevice, uint8_t unit, uint8_t control, int * min, int * max)
@@ -270,12 +249,12 @@ namespace rsimpl
             case RS_OPTION_COLOR_WHITE_BALANCE: return get_pu_range<uint16_t>(handle, subdevice, pu_unit, UVC_PU_WHITE_BALANCE_TEMPERATURE_CONTROL, min, max);
             case RS_OPTION_COLOR_ENABLE_AUTO_EXPOSURE: if(min) *min = 0; if(max) *max = 1; return; // The next 2 options do not support range operations
             case RS_OPTION_COLOR_ENABLE_AUTO_WHITE_BALANCE: if(min) *min = 0; if(max) *max = 1; return;
+            default: throw std::logic_error("invalid option");
             }
-            throw std::logic_error("invalid option");
         }
         
         void set_pu_control(device & device, int subdevice, rs_option option, int value)
-        {                      
+        {            
             auto handle = device.get_subdevice(subdevice).handle;
             int ct_unit = 0, pu_unit = 0;
             for(auto ct = uvc_get_input_terminals(handle); ct; ct = ct->next) ct_unit = ct->bTerminalID; // todo - Check supported caps
@@ -295,8 +274,8 @@ namespace rsimpl
             case RS_OPTION_COLOR_WHITE_BALANCE: return set_pu<uint16_t>(handle, subdevice, pu_unit, UVC_PU_WHITE_BALANCE_TEMPERATURE_CONTROL, value);
             case RS_OPTION_COLOR_ENABLE_AUTO_EXPOSURE: return set_pu<uint8_t>(handle, subdevice, ct_unit, UVC_CT_AE_MODE_CONTROL, value ? 2 : 1); // Modes - (1: manual) (2: auto) (4: shutter priority) (8: aperture priority)
             case RS_OPTION_COLOR_ENABLE_AUTO_WHITE_BALANCE: return set_pu<uint8_t>(handle, subdevice, pu_unit, UVC_PU_WHITE_BALANCE_TEMPERATURE_AUTO_CONTROL, value);
+            default: throw std::logic_error("invalid option");
             }
-            throw std::logic_error("invalid option");
         }
 
         int get_pu_control(const device & device, int subdevice, rs_option option)
@@ -320,8 +299,8 @@ namespace rsimpl
             case RS_OPTION_COLOR_WHITE_BALANCE: return get_pu<uint16_t>(handle, subdevice, pu_unit, UVC_PU_WHITE_BALANCE_TEMPERATURE_CONTROL, UVC_GET_CUR);
             case RS_OPTION_COLOR_ENABLE_AUTO_EXPOSURE: return get_pu<uint8_t>(handle, subdevice, ct_unit, UVC_CT_AE_MODE_CONTROL, UVC_GET_CUR) > 1; // Modes - (1: manual) (2: auto) (4: shutter priority) (8: aperture priority)
             case RS_OPTION_COLOR_ENABLE_AUTO_WHITE_BALANCE: return get_pu<uint8_t>(handle, subdevice, pu_unit, UVC_PU_WHITE_BALANCE_TEMPERATURE_AUTO_CONTROL, UVC_GET_CUR);
+            default: throw std::logic_error("invalid option");
             }
-            throw std::logic_error("invalid option");
         }
 
         /////////////
