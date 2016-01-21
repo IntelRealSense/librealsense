@@ -163,7 +163,7 @@ int main(int argc, char * argv[]) try
         glOrtho(0, width, height, 0, -1, +1);
         
         std::ostringstream ss; ss << dev.get_name() << " (" << app_state.tex_streams[app_state.index] << ")";
-        draw_text((width-get_text_width(ss.str().c_str()))/2, height-20.0f, ss.str().c_str());
+        draw_text((width-get_text_width(ss.str().c_str()))/2, height-20, ss.str().c_str());
 
         ss.str(""); ss << fps << " FPS";
         draw_text(20, 40, ss.str().c_str());

@@ -39,17 +39,17 @@ inline void make_depth_histogram(uint8_t rgb_image[640*480*3], const uint16_t de
 
 #include "third_party/stb_easy_font.h"
 
-inline float get_text_width(const char * text)
+inline int get_text_width(const char * text)
 {
-    return (float)stb_easy_font_width((char *)text);
+    return stb_easy_font_width((char *)text);
 }
 
-inline void draw_text(float x, float y, const char * text)
+inline void draw_text(int x, int y, const char * text)
 {
     char buffer[20000]; // ~100 chars
     glEnableClientState(GL_VERTEX_ARRAY);
     glVertexPointer(2, GL_FLOAT, 16, buffer);
-    glDrawArrays(GL_QUADS, 0, 4*stb_easy_font_print(x, y-7, (char *)text, nullptr, buffer, sizeof(buffer)));
+    glDrawArrays(GL_QUADS, 0, 4*stb_easy_font_print((float)x, (float)(y-7), (char *)text, nullptr, buffer, sizeof(buffer)));
     glDisableClientState(GL_VERTEX_ARRAY);
 }
 
@@ -176,9 +176,9 @@ public:
 
         std::ostringstream ss; ss << stream << ": " << width << " x " << height << " " << dev.get_stream_format(stream) << " (" << fps << "/" << dev.get_stream_framerate(stream) << ")";
         glColor3f(0,0,0);
-        draw_text(rx+9.0f, ry+17.0f, ss.str().c_str());
+        draw_text(rx+9, ry+17, ss.str().c_str());
         glColor3f(1,1,1);
-        draw_text(rx+8.0f, ry+16.0f, ss.str().c_str());
+        draw_text(rx+8, ry+16, ss.str().c_str());
     }
 
     void show(const void * data, int width, int height, rs::format format, const std::string & caption, int rx, int ry, int rw, int rh)
@@ -199,9 +199,9 @@ public:
 
         std::ostringstream ss; ss << caption << ": " << width << " x " << height << " " << format;
         glColor3f(0,0,0);
-        draw_text(rx+9.0f, ry+17.0f, ss.str().c_str());
+        draw_text(rx+9, ry+17, ss.str().c_str());
         glColor3f(1,1,1);
-        draw_text(rx+8.0f, ry+16.0f, ss.str().c_str());
+        draw_text(rx+8, ry+16, ss.str().c_str());
     }
 };
 

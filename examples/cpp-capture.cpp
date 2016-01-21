@@ -67,23 +67,28 @@ int main(int argc, char * argv[]) try
     glfwSetWindowUserPointer(win, &dev);
     glfwSetKeyCallback(win, [](GLFWwindow * win, int key, int scancode, int action, int mods) 
     { 
-        int value;
         auto dev = reinterpret_cast<rs::device *>(glfwGetWindowUserPointer(win));
         if(action != GLFW_RELEASE) switch(key)
         {
         case GLFW_KEY_R: color_rectification_enabled = !color_rectification_enabled; break;
         case GLFW_KEY_C: align_color_to_depth = !align_color_to_depth; break;
         case GLFW_KEY_D: align_depth_to_color = !align_depth_to_color; break;
-        /*case GLFW_KEY_E:
-            value = !dev->get_option(rs::option::r200_emitter_enabled);
-            std::cout << "Setting emitter to " << value << std::endl;
-            dev->set_option(rs::option::r200_emitter_enabled, value);
+        case GLFW_KEY_E:
+            if(dev->supports_option(rs::option::r200_emitter_enabled))
+            {
+                int value = !dev->get_option(rs::option::r200_emitter_enabled);
+                std::cout << "Setting emitter to " << value << std::endl;
+                dev->set_option(rs::option::r200_emitter_enabled, value);
+            }
             break;
         case GLFW_KEY_A:
-            value = !dev->get_option(rs::option::r200_lr_auto_exposure_enabled);
-            std::cout << "Setting auto exposure to " << value << std::endl;
-            dev->set_option(rs::option::r200_lr_auto_exposure_enabled, value);
-            break;*/
+            if(dev->supports_option(rs::option::r200_lr_auto_exposure_enabled))
+            {
+                int value = !dev->get_option(rs::option::r200_lr_auto_exposure_enabled);
+                std::cout << "Setting auto exposure to " << value << std::endl;
+                dev->set_option(rs::option::r200_lr_auto_exposure_enabled, value);
+            }
+            break;
         }
     });
     glfwMakeContextCurrent(win);
