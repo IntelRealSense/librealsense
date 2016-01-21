@@ -1,3 +1,8 @@
+# Table of Contents
+* [Ubuntu 14.04 LTS Installation](#ubuntu-1404-lts-installation)
+* [Apple OSX Installation](#apple-osx-installation)
+* [Windows 8.1 Installation](#windows-81-installation)
+
 # Ubuntu 14.04 LTS Installation
 
 Installation of devices on Linux is lengthy compared to Windows or OSX due to the fact an updated kernel must be installed and the core uvcvideo driver patched with support for additional pixel formats provided by RealSense™ cameras. 
