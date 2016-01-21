@@ -536,7 +536,7 @@ namespace rsimpl { namespace f200
         }
         else if (offset == 132)
         {
-            sprintf(formattedBuffer, "%02X%02X%02X%02X%02X%-02X", ss[0], ss[1], ss[2], ss[3], ss[4], ss[5]);
+            sprintf(formattedBuffer, "%02X%02X%02X%02X%02X%-2X", ss[0], ss[1], ss[2], ss[3], ss[4], ss[5]);
             serial = std::string(formattedBuffer);
         }
     }
@@ -715,9 +715,6 @@ namespace rsimpl { namespace f200
 
             CameraCalibrationParameters calibration;
             memcpy(&calibration, &CalibrationData.CalibrationParameters, sizeof(CameraCalibrationParameters));
-
-            // calprms; // breakpoint here to debug
-
             memcpy(&TesterData, rawCalibData, SIZE_OF_CALIB_HEADER_BYTES); //copy the header: valid + version
 
             //copy the tester data from end of calibration
@@ -732,9 +729,6 @@ namespace rsimpl { namespace f200
 
             CameraCalibrationParameters calibration;
             memcpy(&calibration, params + 1, sizeof(CameraCalibrationParameters)); // skip the first float or 2 uint16
-
-            // calprms; // breakpoint here to debug
-
             memcpy(&TesterData, bufParams, SIZE_OF_CALIB_HEADER_BYTES);
 
             memset((uint8_t*) &TesterData + SIZE_OF_CALIB_HEADER_BYTES, 0, sizeof(IVCAMTesterData) - SIZE_OF_CALIB_HEADER_BYTES);
@@ -760,7 +754,9 @@ namespace rsimpl { namespace f200
 
         SR300RawCalibration rawCalib;
         memcpy(&rawCalib, rawCalibrationBuffer, std::min(sizeof(rawCalib), bufferLength)); // Is this longer or shorter than the rawCalib struct?
-        return std::make_tuple(rawCalib.CalibrationParameters, rawCalib.TemperatureData, IVCAMThermalLoopParams()); // NOTE: Default IVCAMThermalLoopParams. Is this correct?
+        IVCAMThermalLoopParams tlp;
+        tlp.IRThermalLoopEnable = 0; // No need for SW thermal loop on SR300
+        return std::make_tuple(rawCalib.CalibrationParameters, rawCalib.TemperatureData, tlp);
     }
 
     void generate_asic_calibration_coefficients(const CameraCalibrationParameters & compensated_calibration, std::vector<int> resolution, const bool isZMode, float * values)

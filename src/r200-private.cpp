@@ -49,7 +49,7 @@ namespace rsimpl { namespace r200
     {
         command code; command_modifier modifier;
         uint32_t tag, address, value, reserved[59];
-        CommandResponsePacket() { std::memset(this, 0, sizeof(this)); }
+        CommandResponsePacket() { std::memset(this, 0, sizeof(CommandResponsePacket)); }
         CommandResponsePacket(command code, uint32_t address=0, uint32_t value=0) : code(code), modifier(command_modifier::direct), tag(12), address(address), value(value)
         {
             std::memset(reserved, 0, sizeof(reserved));
