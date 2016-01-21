@@ -325,14 +325,14 @@ namespace rsimpl
                 double IrTempDelta = IRTemp - IrBaseTemperature;
                 double liguriaTempDelta = LiguriaTemp - liguriaBaseTemperature;
                 double weightedTempDelta = liguriaTempDelta * thermal_loop_params.LiguriaTempWeight + IrTempDelta * thermal_loop_params.IrTempWeight;
-                double tempDetaFromLastFix = abs(weightedTempDelta - last_temperature_delta);
+                double tempDeltaFromLastFix = std::abs(weightedTempDelta - last_temperature_delta);
 
                 // read intrinsic from the calibration working point
                 double Kc11 = base_calibration.Kc[0][0];
                 double Kc13 = base_calibration.Kc[0][2];
 
                 // Apply model
-                if (tempDetaFromLastFix >= TempThreshold)
+                if (tempDeltaFromLastFix >= TempThreshold)
                 {
                     // if we are during a transition, fix for after the transition
                     double tempDeltaToUse = weightedTempDelta;
