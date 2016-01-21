@@ -10,16 +10,15 @@
 inline void make_depth_histogram(uint8_t rgb_image[640*480*3], const uint16_t depth_image[], int width, int height)
 {
     static uint32_t histogram[0x10000];
-    int i, d, f;
     memset(histogram, 0, sizeof(histogram));
 
-    for(i = 0; i < width*height; ++i) ++histogram[depth_image[i]];
-    for(i = 2; i < 0x10000; ++i) histogram[i] += histogram[i-1]; // Build a cumulative histogram for the indices in [1,0xFFFF]
-    for(i = 0; i < width*height; ++i)
+    for(int i = 0; i < width*height; ++i) ++histogram[depth_image[i]];
+    for(int i = 2; i < 0x10000; ++i) histogram[i] += histogram[i-1]; // Build a cumulative histogram for the indices in [1,0xFFFF]
+    for(int i = 0; i < width*height; ++i)
     {
-        if(d = depth_image[i])
+        if(uint16_t d = depth_image[i])
         {
-            f = histogram[d] * 255 / histogram[0xFFFF]; // 0-255 based on histogram location
+            int f = histogram[d] * 255 / histogram[0xFFFF]; // 0-255 based on histogram location
             rgb_image[i*3 + 0] = 255 - f;
             rgb_image[i*3 + 1] = 0;
             rgb_image[i*3 + 2] = f;

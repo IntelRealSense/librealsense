@@ -11,8 +11,6 @@
 
 namespace rsimpl
 {
-    static int amount = 0;
-
     template<unsigned MAGIC_NUMBER>
     int decode_dinghy_frame_number(const subdevice_mode & mode, const void * frame)
     {
@@ -200,7 +198,7 @@ namespace rsimpl
         {
             if(uvc::is_pu_control(options[i]))
             {
-                uvc::set_pu_control(get_device(), 2, options[i], static_cast<int>(values[i]));
+                uvc::set_pu_control_with_retry(get_device(), 2, options[i], static_cast<int>(values[i]));
                 continue;
             }
 

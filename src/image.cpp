@@ -71,7 +71,6 @@ namespace rsimpl
         {
             const __m128i zero = _mm_set1_epi8(0);
             const __m128i n100 = _mm_set1_epi16(100 << 4);
-            const __m128i n128 = _mm_set1_epi16(128 << 4); // cant currently add this 0.5 value
             const __m128i n208 = _mm_set1_epi16(208 << 4);
             const __m128i n298 = _mm_set1_epi16(298 << 4);
             const __m128i n409 = _mm_set1_epi16(409 << 4);
