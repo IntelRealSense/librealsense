@@ -16,9 +16,9 @@ before_install:
       sudo apt-get update;
     fi
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
-      brew uninstall xctool
-      brew install xctool --HEAD
-      brew install homebrew/versions/glfw3
+      brew uninstall xctool;
+      brew install xctool --HEAD;
+      brew install homebrew/versions/glfw3;
       brew install libusb;
     fi
 
