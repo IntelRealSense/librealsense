@@ -24,11 +24,8 @@ before_install:
 install:
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install -qq build-essential xorg-dev libglu1-mesa-dev libglew-dev libglm-dev; fi
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install -qq cmake; fi
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install -qq gcc-4.9; fi
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install -qq libusb-1.0-0-dev ; fi
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then export CXX="g++-4.9"; fi
 
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then $CXX --version; fi
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then cmake --version; fi
 
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then unzip glfw-3.1.1.zip; fi
