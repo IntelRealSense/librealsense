@@ -37,8 +37,8 @@ install:
 
 script:
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
-    uname -a
-    make
+    uname -a;
+    make;
     fi
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
     xctool -workspace librealsense.xc/librealsense.xcworkspace -scheme librealsense ONLY_ACTIVE_ARCH=NO;
