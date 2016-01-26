@@ -87,6 +87,7 @@ A comprehensive suite of sample and tutorial applications are provided in the `/
   * [Installation Instructions](./doc/installation.md) - Comprehensive platform-specific installation steps
   * [The librealsense C API](./include/librealsense/rs.h) - Doxygen style comments are provided for all functions, data types, and most constants
   * [Projection in librealsense](./doc/projection.md) - A guide on coordinate systems, calibration information, and projection APIs.
+  * [Camera Spec Sheet](./doc/camera_specs.md) - A brief overview of R200, F200 and SR300
   * [Developer Notes](./doc/dev_log.md) - Several informal notes gathered during internal releases.
 
 ## License
