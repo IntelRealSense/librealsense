@@ -76,7 +76,7 @@ librealsense communicates with RealSense™ devices directly via the UVC and USB
 ## Hardware Requirements
 Developer kits containing the necessary hardware to use this library are available for purchase at [this link](http://click.intel.com/realsense.html). In addition, several consumer tablets and laptops with integrated cameras may also function, such as the [HP Spectre x2 with R200](http://store.hp.com/us/en/ContentView?storeId=10151&langId=-1&catalogId=10051&eSpotName=new-detachable).
 
-Developer kits require USB 3.0. Not all USB host chipsets are compatible with librealsense, although it has been validated with recent generations of the Intel Host Controller chipset. An exhaustive list of incompatible hardware is not presently provided.
+Developer kits require USB 3.0. Not all USB host chipsets are compatible with librealsense, although it has been validated with recent generations of the Intel Host Controller chipset. An exhaustive list of incompatible hardware is not presently provided. On x86, a Haswell or newer architecture is recommended.
 
 ## Documentation
 
