@@ -28,6 +28,8 @@
 
 #include <libusb.h>
 
+#include <iostream>
+
 namespace rsimpl
 {
     namespace uvc
@@ -72,9 +74,10 @@ namespace rsimpl
 
         struct subdevice
         {
-            std::string dev_name;
-            int vid, pid, mi;
-            int fd;
+            std::string dev_name;   // Device name (typically of the form /dev/video*)
+            int busnum, devnum;     // USB device bus number and device number (needed for F200/SR300 direct USB controls)
+            int vid, pid, mi;       // Vendor ID, product ID, and multiple interface index
+            int fd;                 // File descriptor for this device
             std::vector<buffer> buffers;
 
             int width, height, format, fps;
@@ -90,6 +93,14 @@ namespace rsimpl
                     throw std::runtime_error(ss.str());
                 }
                 if(!S_ISCHR(st.st_mode)) throw std::runtime_error(dev_name + " is no device");
+
+                // TODO: Might not always be exactly three dirs up, might need to walk upwards until we find busnum and devnum
+                std::ostringstream ss; ss << "/sys/dev/char/" << major(st.st_rdev) << ":" << minor(st.st_rdev) << "/";
+                auto path = ss.str();
+                if(!(std::ifstream(path + "../../../busnum") >> busnum))
+                    throw std::runtime_error("Failed to read busnum");
+                if(!(std::ifstream(path + "../../../devnum") >> devnum))
+                    throw std::runtime_error("Failed to read devnum");
 
                 std::string modalias;
                 if(!(std::ifstream("/sys/class/video4linux/" + name + "/device/modalias") >> modalias))
@@ -529,18 +540,14 @@ namespace rsimpl
             for(int i=0; list[i]; ++i)
             {
                 libusb_device * usb_device = list[i];
+                int busnum = libusb_get_bus_number(usb_device);
+                int devnum = libusb_get_device_address(usb_device);
 
-                libusb_device_descriptor desc;
-                status = libusb_get_device_descriptor(usb_device, &desc);
-                if(status < 0) throw std::runtime_error(to_string() << "libusb_get_device_descriptor(...) returned " << libusb_error_name(status));
-
+                // Look for a video device whose busnum/devnum matches this USB device
                 for(auto & dev : devices)
-                {
-                    if(desc.idVendor == get_vendor_id(*dev) && desc.idProduct == get_product_id(*dev))
+                {                    
+                    if(busnum == dev->subdevices[0]->busnum && devnum == dev->subdevices[0]->devnum)
                     {
-                        // todo - Also make sure that we are sitting on the right bus/address
-                        // libusb_get_bus_number(usb_device);
-                        // libusb_get_device_address(usb_device);
                         dev->usb_device = usb_device;
                         libusb_ref_device(usb_device);
                         break;
