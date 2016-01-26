@@ -15,7 +15,7 @@ Depth Method | Active Stereo IR | Coded Light IR | Coded Light IR
 
 The R200 is an active stereo camera with a 70mm baseline. Indoors, the R200 uses a class-1 laser device to project additional texture into a scene for better stereo performance. The R200 works in disparity space and has a maximum search range of 63 pixels horizontally, the result of which is a 72cm minimum depth distance at the nominal 628x468 resolution. At 320x240, the minimum depth distance reduces to 32cm. The laser texture from multiple R200 devices produces constructive interference, resulting in the ability for many R200s to be colocated in the same environment. The dual IR cameras are global shutter, while 1080p RGB imager is rolling shutter. An internal clock triggers all 3 imagers as a group and librealsense provides matched frame sets.
 
-Outdoors, the laser has no effect over ambient infrared from the sun. Furthermore, at default settings, IR sensors can become oversaturated in a fully sunlit environment so gain/exposure/fps tuning might be required. 
+Outdoors, the laser has no effect over ambient infrared from the sun. Furthermore, at default settings, IR sensors can become oversaturated in a fully sunlit environment so gain/exposure/fps tuning might be required. With a 70mm baseline and 640x480 IR imagers, R200 faces a classic stereo problem where depth accuracy has a strong falloff starting around 4m.
 
 ## F200 & SR300 Notes
 
