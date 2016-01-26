@@ -1,3 +1,5 @@
+# Camera Specifications
+
      | R200 | F200 | SR300 |
 ---- | ---- | ---- | ----- |
 Indoor Range |  0.7m - 3.5m | 0.2m – 1.0m | 0.2m – 1.5m
