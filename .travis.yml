@@ -1,13 +1,46 @@
-language: objective-c
+os:
+  - linux
+  - osx
+
+language: cpp
+
+sudo: required
+dist: trusty
 osx_image: xcode7
 
-script:
-- xctool -workspace librealsense.xc/librealsense.xcworkspace -scheme librealsense ONLY_ACTIVE_ARCH=NO
-
 before_install:
-- gem i slather --no-ri --no-rdoc
-- brew uninstall xctool; brew install xctool --HEAD;
-- brew install homebrew/versions/glfw3
-- brew install libusb
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
+      sudo add-apt-repository --yes ppa:ubuntu-toolchain-r/test;
+      wget https://github.com/glfw/glfw/releases/download/3.1.1/glfw-3.1.1.zip;
+      sudo apt-get update;
+    fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
+      brew uninstall xctool;
+      brew install xctool --HEAD;
+      brew install homebrew/versions/glfw3;
+      brew install libusb;
+    fi
 
-after_success: slather
+install:
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
+      sudo apt-get install -qq build-essential xorg-dev libglu1-mesa-dev libglew-dev libglm-dev;
+      sudo apt-get install -qq cmake;
+      sudo apt-get install -qq libusb-1.0-0-dev ;
+
+      cmake --version;
+
+      unzip glfw-3.1.1.zip;
+      cd glfw-3.1.1;
+      sudo cmake -G "Unix Makefiles" -DBUILD_SHARED_LIBS=ON;
+      sudo make;
+      sudo make install;
+      cd ..;
+    fi
+script:
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
+      uname -a;
+      make;
+    fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
+      xctool -workspace librealsense.xc/librealsense.xcworkspace -scheme librealsense ONLY_ACTIVE_ARCH=NO;
+    fi

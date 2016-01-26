@@ -50,8 +50,6 @@ int main(int argc, char * argv[]) try
 	auto perTextureWidth = windowWidth / devices.size();
 	auto perTextureHeight = 480;
 
-    gl_font font(20);
-
     while (!glfwWindowShouldClose(win))
     {
         // Wait for new images
@@ -72,8 +70,8 @@ int main(int argc, char * argv[]) try
         for(auto dev : devices)
         {
             const auto c = dev->get_stream_intrinsics(rs::stream::color), d = dev->get_stream_intrinsics(rs::stream::depth);
-            buffers[i++].show(*dev, rs::stream::color, x, 0, perTextureWidth, perTextureHeight, font);
-            buffers[i++].show(*dev, rs::stream::depth, x, perTextureHeight, perTextureWidth, perTextureHeight, font);
+            buffers[i++].show(*dev, rs::stream::color, x, 0, perTextureWidth, perTextureHeight);
+            buffers[i++].show(*dev, rs::stream::depth, x, perTextureHeight, perTextureWidth, perTextureHeight);
             x += perTextureWidth;
         }
 

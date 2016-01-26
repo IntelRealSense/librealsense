@@ -265,16 +265,16 @@ namespace rsimpl
         auto calib = f200::read_sr300_calibration(*device, mutex);
         f200::enable_timestamp(*device, mutex, true, true);
 
-        uvc::set_pu_control(*device, 0, rs_option::RS_OPTION_COLOR_BACKLIGHT_COMPENSATION, 0);
-        uvc::set_pu_control(*device, 0, rs_option::RS_OPTION_COLOR_BRIGHTNESS, 0);
-        uvc::set_pu_control(*device, 0, rs_option::RS_OPTION_COLOR_CONTRAST, 50);
-        uvc::set_pu_control(*device, 0, rs_option::RS_OPTION_COLOR_GAMMA, 300);
-        uvc::set_pu_control(*device, 0, rs_option::RS_OPTION_COLOR_HUE, 0);
-        uvc::set_pu_control(*device, 0, rs_option::RS_OPTION_COLOR_SATURATION, 64);
-        uvc::set_pu_control(*device, 0, rs_option::RS_OPTION_COLOR_SHARPNESS, 50);
-        uvc::set_pu_control(*device, 0, rs_option::RS_OPTION_COLOR_GAIN, 64);
-        //uvc::set_pu_control(*device, 0, rs_option::RS_OPTION_COLOR_WHITE_BALANCE, 4600); // auto
-        //uvc::set_pu_control(*device, 0, rs_option::RS_OPTION_COLOR_EXPOSURE, -6); // auto
+        uvc::set_pu_control_with_retry(*device, 0, rs_option::RS_OPTION_COLOR_BACKLIGHT_COMPENSATION, 0);
+        uvc::set_pu_control_with_retry(*device, 0, rs_option::RS_OPTION_COLOR_BRIGHTNESS, 0);
+        uvc::set_pu_control_with_retry(*device, 0, rs_option::RS_OPTION_COLOR_CONTRAST, 50);
+        uvc::set_pu_control_with_retry(*device, 0, rs_option::RS_OPTION_COLOR_GAMMA, 300);
+        uvc::set_pu_control_with_retry(*device, 0, rs_option::RS_OPTION_COLOR_HUE, 0);
+        uvc::set_pu_control_with_retry(*device, 0, rs_option::RS_OPTION_COLOR_SATURATION, 64);
+        uvc::set_pu_control_with_retry(*device, 0, rs_option::RS_OPTION_COLOR_SHARPNESS, 50);
+        uvc::set_pu_control_with_retry(*device, 0, rs_option::RS_OPTION_COLOR_GAIN, 64);
+        //uvc::set_pu_control_with_retry(*device, 0, rs_option::RS_OPTION_COLOR_WHITE_BALANCE, 4600); // auto
+        //uvc::set_pu_control_with_retry(*device, 0, rs_option::RS_OPTION_COLOR_EXPOSURE, -6); // auto
 
         auto info = get_sr300_info(std::get<0>(calib));
 
@@ -325,14 +325,14 @@ namespace rsimpl
                 double IrTempDelta = IRTemp - IrBaseTemperature;
                 double liguriaTempDelta = LiguriaTemp - liguriaBaseTemperature;
                 double weightedTempDelta = liguriaTempDelta * thermal_loop_params.LiguriaTempWeight + IrTempDelta * thermal_loop_params.IrTempWeight;
-                double tempDetaFromLastFix = abs(weightedTempDelta - last_temperature_delta);
+                double tempDeltaFromLastFix = fabs(weightedTempDelta - last_temperature_delta);
 
                 // read intrinsic from the calibration working point
                 double Kc11 = base_calibration.Kc[0][0];
                 double Kc13 = base_calibration.Kc[0][2];
 
                 // Apply model
-                if (tempDetaFromLastFix >= TempThreshold)
+                if (tempDeltaFromLastFix >= TempThreshold)
                 {
                     // if we are during a transition, fix for after the transition
                     double tempDeltaToUse = weightedTempDelta;
@@ -372,7 +372,7 @@ namespace rsimpl
         {
             if(uvc::is_pu_control(options[i]))
             {
-                uvc::set_pu_control(get_device(), 0, options[i], static_cast<int>(values[i]));
+                uvc::set_pu_control_with_retry(get_device(), 0, options[i], static_cast<int>(values[i]));
                 continue;
             }
 

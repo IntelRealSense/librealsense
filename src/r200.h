@@ -12,9 +12,9 @@ namespace rsimpl
     class r200_camera final : public rs_device
     {
         bool is_disparity_mode_enabled() const;
-        void on_update_depth_units(int units);
-        void on_update_disparity_multiplier(float multiplier);
-        int get_lr_framerate() const;
+        void on_update_depth_units(uint32_t units);
+        void on_update_disparity_multiplier(double multiplier);
+        uint32_t get_lr_framerate() const;
     public:
         r200_camera(std::shared_ptr<uvc::device> device, const static_device_info & info);
         ~r200_camera();

@@ -49,7 +49,7 @@ namespace rsimpl { namespace r200
     {
         command code; command_modifier modifier;
         uint32_t tag, address, value, reserved[59];
-        CommandResponsePacket() { std::memset(this, 0, sizeof(this)); }
+        CommandResponsePacket() { std::memset(this, 0, sizeof(CommandResponsePacket)); }
         CommandResponsePacket(command code, uint32_t address=0, uint32_t value=0) : code(code), modifier(command_modifier::direct), tag(12), address(address), value(value)
         {
             std::memset(reserved, 0, sizeof(reserved));
@@ -204,7 +204,7 @@ namespace rsimpl { namespace r200
                 cameraCalib.intrinsicsThird[i] = calib.intrinsicsThird[i];
                 for(int j=0; j<2; ++j) cameraCalib.modesThird[i][j] = calib.modesThird[0][i][j];
             }
-            for(int i=0; i<9; ++i) cameraCalib.Rthird[i] = calib.Rthird[0][i];
+            for(int i=0; i<9; ++i) cameraCalib.Rthird[i] = static_cast<float>(calib.Rthird[0][i]);
             for(int i=0; i<3; ++i) cameraCalib.T[i] = calib.T[0][i];
             cameraCalib.B = calib.B[0];
         }
