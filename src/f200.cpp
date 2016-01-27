@@ -447,7 +447,22 @@ namespace rsimpl
     public:
         rolling_timestamp_reader() : started(), total() {}
         
-        bool validate_frame(const subdevice_mode & mode, const void * frame) const override { return true; }
+        bool validate_frame(const subdevice_mode & mode, const void * frame) const override
+        { 
+            // Validate that at least one byte of the image is nonzero
+            for(const uint8_t * it = (const uint8_t *)frame, * end = it + mode.pf->get_image_size(mode.native_dims.x, mode.native_dims.y); it != end; ++it)
+            {
+                if(*it)
+                {
+                    return true;
+                }
+            }
+
+            // F200 and SR300 can sometimes produce empty frames shortly after starting, ignore them
+            LOG_INFO("Subdevice " << mode.subdevice << " produced empty frame");
+            return false;
+        }
+
         int get_frame_timestamp(const subdevice_mode & mode, const void * frame) override 
         {
             // Timestamps are encoded within the first 32 bits of the image
