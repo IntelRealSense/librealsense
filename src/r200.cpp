@@ -350,19 +350,6 @@ namespace rsimpl
         r200::set_stream_intent(get_device(), streamIntent);
     }
 
-    int r200_camera::convert_timestamp(int64_t timestamp) const
-    { 
-        int max_fps = 0;
-        for(int i=0; i<RS_STREAM_NATIVE_COUNT; ++i)
-        {
-            if(get_stream_interface((rs_stream)i).is_enabled())
-            {
-                max_fps = std::max(max_fps, get_stream_interface((rs_stream)i).get_framerate());
-            }
-        }
-        return static_cast<int>(timestamp * 1000 / max_fps);
-    }
-
     uint32_t r200_camera::get_lr_framerate() const
     {
         for(auto s : {RS_STREAM_DEPTH, RS_STREAM_INFRARED, RS_STREAM_INFRARED2})
@@ -423,8 +410,45 @@ namespace rsimpl
         rs_device::get_option_range(option, min, max, step);
     }
 
+    class number_to_timestamp_converter : public frame_timestamp_converter
+    {
+        int max_fps;
+    public:
+        number_to_timestamp_converter(int max_fps) : max_fps(max_fps) {}
+
+        int get_frame_timestamp(int frame_number) override 
+        { 
+            return frame_number * 1000 / max_fps;
+        }
+    };
+
+    class serial_timestamp_generator : public frame_timestamp_converter
+    {
+        int fps, serial_frame_number;
+    public:
+        serial_timestamp_generator(int fps) : fps(fps), serial_frame_number() {}
+
+        int get_frame_timestamp(int) override 
+        { 
+            ++serial_frame_number;
+            return serial_frame_number * 1000 / fps;
+        }
+    };
+
     std::unique_ptr<frame_timestamp_converter> r200_camera::create_frame_timestamp_converter() const
     {
-        return std::make_unique<passthrough_converter>();
+        // If left, right, or Z streams are enabled, convert frame numbers to millisecond timestamps based on LRZ framerate
+        for(auto s : {RS_STREAM_DEPTH, RS_STREAM_INFRARED, RS_STREAM_INFRARED2})
+        {
+            auto & si = get_stream_interface(s);
+            if(si.is_enabled()) return std::make_unique<number_to_timestamp_converter>(si.get_framerate());
+        }
+
+        // If only color stream is enabled, generate serial frame timestamps (no HW frame numbers available)
+        auto & si = get_stream_interface(RS_STREAM_COLOR);
+        if(si.is_enabled()) return std::make_unique<serial_timestamp_generator>(si.get_framerate());
+
+        // No streams enabled, so no need for a timestamp converter
+        return nullptr;
     }
 }

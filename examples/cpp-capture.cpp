@@ -27,7 +27,7 @@ int main(int argc, char * argv[]) try
     rs::device & dev = *ctx.get_device(0);
 
     dev.enable_stream(rs::stream::depth, rs::preset::best_quality);
-    dev.enable_stream(rs::stream::color, rs::preset::best_quality);
+    dev.enable_stream(rs::stream::color, 640, 480, rs::format::rgb8, 30); //rs::preset::best_quality);
     dev.enable_stream(rs::stream::infrared, rs::preset::best_quality);
     try { dev.enable_stream(rs::stream::infrared2, 0, 0, rs::format::any, 0); } catch(...) {}
 
@@ -98,6 +98,8 @@ int main(int argc, char * argv[]) try
         // Wait for new images
         glfwPollEvents();
         dev.wait_for_frames();
+
+        //std::cout << dev.get_frame_timestamp(rs::stream::color) << std::endl;
 
         // Clear the framebuffer
         int w,h;

@@ -443,9 +443,34 @@ namespace rsimpl
         }
     }
 
+    // TODO: This may need to be modified for thread safety
+    class rolling_timestamp_converter : public frame_timestamp_converter
+    {
+        bool started;
+        int64_t total;
+        int last_frame_number;
+    public:
+        rolling_timestamp_converter() : started(), total() {}
+
+        int get_frame_timestamp(int frame_number) override 
+        { 
+            if(!started)
+            {
+                last_frame_number = frame_number;
+                started = true;
+            }
+
+            const int delta = frame_number - last_frame_number; // NOTE: Relies on undefined behavior: signed int wraparound
+            last_frame_number = frame_number;
+            total += delta;
+            const int timestamp = static_cast<int>(total / 100000);
+            return timestamp;
+        }
+    };
+
     std::unique_ptr<frame_timestamp_converter> f200_camera::create_frame_timestamp_converter() const
     {
-        return std::make_unique<passthrough_converter>();
+        return std::make_unique<rolling_timestamp_converter>();
     }
 
 } // namespace rsimpl::f200

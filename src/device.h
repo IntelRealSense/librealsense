@@ -38,7 +38,7 @@ private:
     rsimpl::stream_interface *                  streams[RS_STREAM_COUNT];
 
     bool                                        capturing;
-    std::chrono::high_resolution_clock::time_point capture_started;  
+    std::chrono::high_resolution_clock::time_point capture_started;
 
     int64_t                                     base_timestamp;
     int                                         last_stream_timestamp;
@@ -74,7 +74,6 @@ public:
     virtual void                                get_options(const rs_option options[], int count, double values[]) {}
 
     virtual void                                on_before_start(const std::vector<rsimpl::subdevice_mode_selection> & selected_modes) {}
-    virtual int                                 convert_timestamp(int64_t timestamp) const = 0;
     virtual std::unique_ptr<rsimpl::frame_timestamp_converter>
                                                 create_frame_timestamp_converter() const { return nullptr; }
 };
