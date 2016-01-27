@@ -54,7 +54,7 @@ void native_stream::get_mode(int mode, int * w, int * h, rs_format * f, int * fp
 
 subdevice_mode_selection native_stream::get_mode() const
 {
-    if(buffer) return buffer->get_mode();
+    if(archive && archive->is_stream_enabled(stream)) return archive->get_mode(stream);
     if(config.requests[stream].enabled)
     {
         for(auto subdevice_mode : config.select_modes())

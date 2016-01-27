@@ -46,7 +46,7 @@ void rs_device::enable_stream(rs_stream stream, int width, int height, rs_format
     if(config.info.stream_subdevices[stream] == -1) throw std::runtime_error("unsupported stream");
 
     config.requests[stream] = {true, width, height, format, fps};
-    for(auto & s : native_streams) s->buffer.reset(); // Changing stream configuration invalidates the current stream info
+    for(auto & s : native_streams) s->archive.reset(); // Changing stream configuration invalidates the current stream info
 }
 
 void rs_device::enable_stream_preset(rs_stream stream, rs_preset preset)
@@ -55,7 +55,7 @@ void rs_device::enable_stream_preset(rs_stream stream, rs_preset preset)
     if(!config.info.presets[stream][preset].enabled) throw std::runtime_error("unsupported stream");
 
     config.requests[stream] = config.info.presets[stream][preset];
-    for(auto & s : native_streams) s->buffer.reset(); // Changing stream configuration invalidates the current stream info
+    for(auto & s : native_streams) s->archive.reset(); // Changing stream configuration invalidates the current stream info
 }
 
 void rs_device::disable_stream(rs_stream stream)
@@ -64,7 +64,7 @@ void rs_device::disable_stream(rs_stream stream)
     if(config.info.stream_subdevices[stream] == -1) throw std::runtime_error("unsupported stream");
 
     config.requests[stream] = {};
-    for(auto & s : native_streams) s->buffer.reset(); // Changing stream configuration invalidates the current stream info
+    for(auto & s : native_streams) s->archive.reset(); // Changing stream configuration invalidates the current stream info
 }
 
 void rs_device::start()
@@ -72,45 +72,43 @@ void rs_device::start()
     if(capturing) throw std::runtime_error("cannot restart device without first stopping device");
         
     auto selected_modes = config.info.select_modes(config.requests);
+    auto archive = std::make_shared<frame_archive>(selected_modes);
+    auto timestamp_reader = create_frame_timestamp_reader();
 
-    std::shared_ptr<frame_timestamp_reader> timestamp_reader = create_frame_timestamp_reader();
-
-    for(auto & s : native_streams) s->buffer.reset(); // Starting capture invalidates the current stream info, if any exists from previous capture
+    for(auto & s : native_streams) s->archive.reset(); // Starting capture invalidates the current stream info, if any exists from previous capture
 
     // Satisfy stream_requests as necessary for each subdevice, calling set_mode and
     // dispatching the uvc configuration for a requested stream to the hardware
     for(auto mode_selection : selected_modes)
     {
         // Create a stream buffer for each stream served by this subdevice mode
-        std::vector<std::shared_ptr<stream_buffer>> stream_list;
         for(auto & stream_mode : mode_selection.get_outputs())
-        {
-            // Create a buffer to receive the images from this stream
-            auto stream = std::make_shared<stream_buffer>(mode_selection, stream_mode.first);
-            stream_list.push_back(stream);
-                    
+        {                    
             // If this is one of the streams requested by the user, store the buffer so they can access it
-            if(config.requests[stream_mode.first].enabled) native_streams[stream_mode.first]->buffer = stream;
+            if(config.requests[stream_mode.first].enabled) native_streams[stream_mode.first]->archive = archive;
         }
 
         // Initialize the subdevice and set it to the selected mode
         set_subdevice_mode(*device, mode_selection.mode->subdevice, mode_selection.mode->native_dims.x, mode_selection.mode->native_dims.y, mode_selection.mode->pf->fourcc, mode_selection.mode->fps, 
-            [mode_selection, stream_list, timestamp_reader](const void * frame) mutable
+            [mode_selection, archive, timestamp_reader](const void * frame) mutable
         {
             // Ignore any frames which appear corrupted or invalid
             if(!timestamp_reader->validate_frame(*mode_selection.mode, frame)) return;
 
-            // Unpack the image into the user stream interface back buffer
-            std::vector<byte *> dest;
-            for(auto & stream : stream_list) dest.push_back(stream->get_back_data());
-            mode_selection.unpack(dest.data(), reinterpret_cast<const byte *>(frame));
-            int frame_number = timestamp_reader->get_frame_timestamp(*mode_selection.mode, frame);
+            // Determine the timestamp for this frame
+            int timestamp = timestamp_reader->get_frame_timestamp(*mode_selection.mode, frame);
 
-            // Swap the backbuffer to the middle buffer and indicate that we have updated
-            for(auto & stream : stream_list) stream->swap_back(frame_number);
+            // Obtain buffers for unpacking the frame
+            std::vector<byte *> dest;
+            for(auto & output : mode_selection.unpacker->outputs) dest.push_back(archive->alloc_frame(output.first, timestamp));
+
+            // Unpack the frame and commit it to the archive
+            mode_selection.unpack(dest.data(), reinterpret_cast<const byte *>(frame));
+            for(auto & output : mode_selection.unpacker->outputs) archive->commit_frame(output.first);
         });
     }
     
+    this->archive = archive;
     on_before_start(selected_modes);
     start_streaming(*device, config.info.num_libuvc_transfer_buffers);
     capture_started = std::chrono::high_resolution_clock::now();
@@ -127,7 +125,11 @@ void rs_device::stop()
 void rs_device::wait_all_streams()
 {
     if(!capturing) return;
+    if(!archive) return;
 
+    archive->wait_for_frames();
+
+    /*
     // Determine timeout time
     const auto timeout = std::max(std::chrono::high_resolution_clock::now() + std::chrono::milliseconds(500), capture_started + std::chrono::seconds(5));
 
@@ -205,6 +207,7 @@ void rs_device::wait_all_streams()
     {
         last_stream_timestamp += frame_delta;
     }    
+    */
 }
 
 void rs_device::get_option_range(rs_option option, double & min, double & max, double & step)

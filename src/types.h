@@ -13,6 +13,8 @@
 #include <memory>                           // For shared_ptr
 #include <sstream>                          // For ostringstream
 #include <atomic>
+#include <mutex>
+#include <condition_variable>
 
 #define RS_STREAM_NATIVE_COUNT 4
 
@@ -129,6 +131,7 @@ namespace rsimpl
         int pad_crop;                           // The number of pixels of padding (positive values) or cropping (negative values) to apply to all four edges of the image
         const pixel_format_unpacker * unpacker; // The specific unpacker used to unpack the encoded format into the desired output formats
 
+        subdevice_mode_selection() : mode(), pad_crop(), unpacker() {}
         subdevice_mode_selection(const subdevice_mode * mode, int pad_crop, const pixel_format_unpacker * unpacker) : mode(mode), pad_crop(pad_crop), unpacker(unpacker) {}
 
         const std::vector<std::pair<rs_stream, rs_format>> & get_outputs() const { return unpacker->outputs; }
@@ -214,7 +217,7 @@ namespace rsimpl
     };
 
     // Buffer for storing images provided by a given stream
-    class stream_buffer
+    /*class stream_buffer
     {
         struct frame
         {
@@ -239,6 +242,50 @@ namespace rsimpl
         byte *                              get_back_data() { return frames.get_back().data.data(); }
         void                                swap_back(int frame_number);
         bool                                swap_front() { return frames.swap_front(); }
+    };*/
+
+    class frame_archive
+    {
+        // Define a movable but explicitly noncopyable buffer type to hold our frame data
+        struct frame 
+        { 
+            std::vector<byte> data;
+            int timestamp;
+
+            frame() : timestamp() {}
+            frame(const frame & r) = delete;
+            frame(frame && r) : frame() { *this = std::move(r); }
+
+            frame & operator = (const frame & r) = delete;
+            frame & operator = (frame && r) { data = move(r.data); timestamp = r.timestamp; return *this; }            
+        };
+
+        // Constant data
+        subdevice_mode_selection modes[RS_STREAM_NATIVE_COUNT];
+
+        // Application thread data
+        frame frontbuffer[RS_STREAM_NATIVE_COUNT];
+
+        // Synchronized data
+        std::vector<frame> frames[RS_STREAM_NATIVE_COUNT];
+        std::mutex mutex;
+
+        // Frame callback thread data
+        frame backbuffer[RS_STREAM_NATIVE_COUNT];
+    public:
+        frame_archive(const std::vector<subdevice_mode_selection> & selection);
+
+        bool is_stream_enabled(rs_stream stream) const { return modes[stream].mode != nullptr; }
+        const subdevice_mode_selection & get_mode(rs_stream stream) const { return modes[stream]; }
+
+        // Application thread API
+        void wait_for_frames();
+        const byte * get_frame_data(rs_stream stream) const;
+        int get_frame_timestamp(rs_stream stream) const;
+
+        // Frame callback thread API
+        byte * alloc_frame(rs_stream stream, int timestamp);
+        void commit_frame(rs_stream stream);  
     };
 
     // Utilities

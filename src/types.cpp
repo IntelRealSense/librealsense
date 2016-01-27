@@ -311,7 +311,7 @@ namespace rsimpl
     // stream_buffer //
     ///////////////////
 
-    stream_buffer::stream_buffer(subdevice_mode_selection selection, rs_stream stream)
+    /*stream_buffer::stream_buffer(subdevice_mode_selection selection, rs_stream stream)
         : selection(selection), frames({std::vector<byte>(selection.get_image_size(stream))}), last_frame_number() {}
 
     void stream_buffer::swap_back(int frame_number) 
@@ -321,5 +321,77 @@ namespace rsimpl
         frames.get_back().delta = frame_number - last_frame_number;
         last_frame_number = frame_number;     
         frames.swap_back();
+    }*/
+
+    ///////////////////
+    // frame_archive //
+    ///////////////////
+
+    frame_archive::frame_archive(const std::vector<subdevice_mode_selection> & selection)
+    {
+        for(auto & mode : selection)
+        {
+            for(auto & o : mode.unpacker->outputs)
+            {
+                modes[o.first] = mode;
+            }
+        }
+    }
+
+    void frame_archive::wait_for_frames()
+    {
+        while(true)
+        {
+            {
+                std::lock_guard<std::mutex> guard(mutex);
+
+                // Naive implementation: We are ready when a new frame is available for all streams
+                // TODO: Proper frame synchronization logic
+                bool ready = true;
+                for(int i=0; i<4; ++i)
+                {
+                    if(modes[i].mode && frames[i].empty())
+                    {
+                        ready = false;
+                        break;
+                    }
+                }
+
+                // When ready, obtain new frames
+                if(ready)
+                {
+                    for(int i=0; i<4; ++i)
+                    { 
+                        if(modes[i].mode)
+                        {
+                            frontbuffer[i] = std::move(frames[i].front());
+                            frames[i].erase(begin(frames[i]));
+                            // TODO: Store discarded frames in a freelist
+                        }
+                    }
+                    return;
+                }
+            }
+
+            // Otherwise, sleep for a while
+            std::this_thread::sleep_for(std::chrono::milliseconds(10));
+            // TODO: Implement a timeout in case the device hangs
+            // TODO: Implement a user-specifiable timeout for how long to wait?
+        }
+    }
+
+    const byte * frame_archive::get_frame_data(rs_stream stream) const { return frontbuffer[stream].data.data(); }
+    int frame_archive::get_frame_timestamp(rs_stream stream) const { return frontbuffer[stream].timestamp; }
+
+    byte * frame_archive::alloc_frame(rs_stream stream, int timestamp) 
+    { 
+        backbuffer[stream].data.resize(modes[stream].get_image_size(stream));
+        backbuffer[stream].timestamp = timestamp;
+        return backbuffer[stream].data.data();
+    }
+    void frame_archive::commit_frame(rs_stream stream) 
+    {
+        std::lock_guard<std::mutex> guard(mutex);
+        frames[stream].push_back(std::move(backbuffer[stream]));
     }
 }
