@@ -4,10 +4,11 @@
 ---- | ---- | ---- | ----- |
 Indoor Range |  0.7m - 3.5m | 0.2m – 1.0m | 0.2m – 1.5m
 Outdoor Range | 10m | N/A | N/A 
-Depth FoV | 70x59x46 | 80x68x54 | 80x68x54
+Depth FoV (DxWxH) | 70x59x46 | 80x68x54 | 80x68x54
 Depth FPS | 30, 60, 90 | 30, 60 | 30, 60 
 IR FPS | 30, 60, 90 | 30 - 300 | 30 - 300 
 Depth Method | Active Stereo IR | Coded Light IR | Coded Light IR
+Minimum F/W | 1.0.72.04 | 2.60.0.0 | - |
 
 ## R200 Notes
 
