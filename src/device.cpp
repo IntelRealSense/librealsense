@@ -98,11 +98,7 @@ void rs_device::start()
             [mode_selection, stream_list, timestamp_reader](const void * frame) mutable
         {
             // Ignore any frames which appear corrupted or invalid
-            if(!timestamp_reader->validate_frame(*mode_selection.mode, frame))
-            {
-                LOG_WARNING("Bad frame on subdevice " << mode_selection.mode->subdevice);
-                return;
-            }
+            if(!timestamp_reader->validate_frame(*mode_selection.mode, frame)) return;
 
             // Ignore blank frames, which are sometimes produced by F200 and SR300 shortly after startup
             bool empty = true;

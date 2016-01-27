@@ -395,22 +395,51 @@ namespace rsimpl
         return *reinterpret_cast<const r200::Dinghy *>(reinterpret_cast<const uint8_t *>(frame) + mode.pf->get_image_size(mode.native_dims.x, mode.native_dims.y-1));
     }
 
-    // Make sure that R200 images contain the correct magic number within their Dinghy row
-    bool validate_r200_frame(const subdevice_mode & mode, const void * frame)
-    {
-        if(mode.pf == &pf_yuy2) return true;
-
-        const uint32_t magic_numbers[] = {0x08070605, 0x04030201, 0x8A8B8C8D};
-        return get_dinghy(mode, frame).magicNumber == magic_numbers[mode.subdevice];
-    }
-
     class dinghy_timestamp_reader : public frame_timestamp_reader
     {
         int max_fps;
     public:
         dinghy_timestamp_reader(int max_fps) : max_fps(max_fps) {}
 
-        bool validate_frame(const subdevice_mode & mode, const void * frame) const override { return validate_r200_frame(mode, frame); }
+        bool validate_frame(const subdevice_mode & mode, const void * frame) const override 
+        { 
+            // No dinghy available on YUY2 images
+            if(mode.pf == &pf_yuy2) return true;
+
+            // Check magic number for all subdevices
+            auto & dinghy = get_dinghy(mode, frame);
+            const uint32_t magic_numbers[] = {0x08070605, 0x04030201, 0x8A8B8C8D};
+            if(dinghy.magicNumber != magic_numbers[mode.subdevice])
+            {
+                LOG_WARNING("Subdevice " << mode.subdevice << " bad magic number 0x" << std::hex << dinghy.magicNumber);
+                return false;
+            }
+
+            // Check frame status for left/right/Z subdevices only
+            if(dinghy.frameStatus != 0 && mode.subdevice != 2)
+            {
+                LOG_WARNING("Subdevice " << mode.subdevice << " frame status 0x" << std::hex << dinghy.frameStatus);
+                return false;
+            }
+
+            // Check VDF error status for all subdevices
+            if(dinghy.VDFerrorStatus != 0)
+            {
+                LOG_WARNING("Subdevice " << mode.subdevice << " VDF error status 0x" << std::hex << dinghy.VDFerrorStatus);
+                return false;
+            }
+
+            // Check CAM module status for left/right subdevice only
+            if (dinghy.CAMmoduleStatus != 0 && mode.subdevice == 0)
+            {
+                LOG_WARNING("Subdevice " << mode.subdevice << " CAM module status 0x" << std::hex << dinghy.CAMmoduleStatus);
+                return false;
+            }            
+            
+            // TODO: Check for missing or duplicate frame numbers
+            return true;
+        }
+
         int get_frame_timestamp(const subdevice_mode & mode, const void * frame) override 
         { 
             int frame_number = 0;
@@ -435,7 +464,7 @@ namespace rsimpl
     public:
         serial_timestamp_generator(int fps) : fps(fps), serial_frame_number() {}
 
-        bool validate_frame(const subdevice_mode & mode, const void * frame) const override { return validate_r200_frame(mode, frame); }
+        bool validate_frame(const subdevice_mode & mode, const void * frame) const override { return true; }
         int get_frame_timestamp(const subdevice_mode &, const void *) override 
         { 
             ++serial_frame_number;
