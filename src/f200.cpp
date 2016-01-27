@@ -482,9 +482,9 @@ namespace rsimpl
         }
     };
 
-    std::unique_ptr<frame_timestamp_reader> f200_camera::create_frame_timestamp_reader() const
+    std::shared_ptr<frame_timestamp_reader> f200_camera::create_frame_timestamp_reader() const
     {
-        return std::make_unique<rolling_timestamp_reader>();
+        return std::make_shared<rolling_timestamp_reader>();
     }
 
 } // namespace rsimpl::f200

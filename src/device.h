@@ -66,7 +66,7 @@ public:
     virtual void                                get_options(const rs_option options[], int count, double values[]) {}
 
     virtual void                                on_before_start(const std::vector<rsimpl::subdevice_mode_selection> & selected_modes) {}
-    virtual std::unique_ptr<rsimpl::frame_timestamp_reader>
+    virtual std::shared_ptr<rsimpl::frame_timestamp_reader>
                                                 create_frame_timestamp_reader() const { return nullptr; }
 };
 
