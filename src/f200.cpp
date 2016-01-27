@@ -443,5 +443,10 @@ namespace rsimpl
         }
     }
 
+    std::unique_ptr<frame_timestamp_converter> f200_camera::create_frame_timestamp_converter() const
+    {
+        return std::make_unique<passthrough_converter>();
+    }
+
 } // namespace rsimpl::f200
 

@@ -26,6 +26,7 @@ namespace rsimpl
 
         void on_before_start(const std::vector<subdevice_mode_selection> & selected_modes) override;
         int convert_timestamp(int64_t timestamp) const override;
+        std::unique_ptr<frame_timestamp_converter> create_frame_timestamp_converter() const override;
     };
 
     std::shared_ptr<rs_device> make_r200_device(std::shared_ptr<uvc::device> device);

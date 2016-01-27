@@ -9,6 +9,20 @@
 #include "stream.h"
 #include <chrono>
 
+namespace rsimpl
+{
+    struct frame_timestamp_converter
+    {
+        virtual int get_frame_timestamp(int frame_number) = 0;
+    };
+
+    class passthrough_converter : public frame_timestamp_converter
+    {
+    public:
+        int get_frame_timestamp(int frame_number) override { return frame_number; }
+    };
+}
+
 struct rs_device
 {
 private:
@@ -61,6 +75,8 @@ public:
 
     virtual void                                on_before_start(const std::vector<rsimpl::subdevice_mode_selection> & selected_modes) {}
     virtual int                                 convert_timestamp(int64_t timestamp) const = 0;
+    virtual std::unique_ptr<rsimpl::frame_timestamp_converter>
+                                                create_frame_timestamp_converter() const { return nullptr; }
 };
 
 namespace rsimpl

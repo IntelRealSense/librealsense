@@ -73,6 +73,8 @@ void rs_device::start()
         
     auto selected_modes = config.info.select_modes(config.requests);
 
+    std::shared_ptr<frame_timestamp_converter> converter = create_frame_timestamp_converter();
+
     for(auto & s : native_streams) s->buffer.reset(); // Starting capture invalidates the current stream info, if any exists from previous capture
 
     // Satisfy stream_requests as necessary for each subdevice, calling set_mode and
@@ -95,7 +97,7 @@ void rs_device::start()
         int serial_frame_no = 0;
         bool only_stream = selected_modes.size() == 1;
         set_subdevice_mode(*device, mode_selection.mode->subdevice, mode_selection.mode->native_dims.x, mode_selection.mode->native_dims.y, mode_selection.mode->pf->fourcc, mode_selection.mode->fps, 
-            [mode_selection, stream_list, only_stream, serial_frame_no](const void * frame) mutable
+            [mode_selection, stream_list, only_stream, serial_frame_no, converter](const void * frame) mutable
         {
             // Ignore blank frames, which are sometimes produced by F200 and SR300 shortly after startup
             bool empty = true;
@@ -115,7 +117,8 @@ void rs_device::start()
             mode_selection.unpack(dest.data(), reinterpret_cast<const byte *>(frame));
             int frame_number = (mode_selection.mode->use_serial_numbers_if_unique && only_stream) ? serial_frame_no++ : mode_selection.mode->frame_number_decoder(*mode_selection.mode, frame);
             if(frame_number == 0) frame_number = ++serial_frame_no; // No dinghy on LibUVC backend?
-                
+            frame_number = converter->get_frame_timestamp(frame_number); // Convert frame numbers
+
             // Swap the backbuffer to the middle buffer and indicate that we have updated
             for(auto & stream : stream_list) stream->swap_back(frame_number);
         });
