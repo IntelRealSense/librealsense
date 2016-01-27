@@ -73,7 +73,7 @@ void rs_device::start()
         
     auto selected_modes = config.info.select_modes(config.requests);
 
-    std::shared_ptr<frame_timestamp_converter> converter = create_frame_timestamp_converter();
+    std::shared_ptr<frame_timestamp_reader> timestamp_reader = create_frame_timestamp_reader();
 
     for(auto & s : native_streams) s->buffer.reset(); // Starting capture invalidates the current stream info, if any exists from previous capture
 
@@ -95,7 +95,7 @@ void rs_device::start()
 
         // Initialize the subdevice and set it to the selected mode
         set_subdevice_mode(*device, mode_selection.mode->subdevice, mode_selection.mode->native_dims.x, mode_selection.mode->native_dims.y, mode_selection.mode->pf->fourcc, mode_selection.mode->fps, 
-            [mode_selection, stream_list, converter](const void * frame) mutable
+            [mode_selection, stream_list, timestamp_reader](const void * frame) mutable
         {
             // Ignore blank frames, which are sometimes produced by F200 and SR300 shortly after startup
             bool empty = true;
@@ -113,7 +113,7 @@ void rs_device::start()
             std::vector<byte *> dest;
             for(auto & stream : stream_list) dest.push_back(stream->get_back_data());
             mode_selection.unpack(dest.data(), reinterpret_cast<const byte *>(frame));
-            int frame_number = converter->get_frame_timestamp(mode_selection.mode->frame_number_decoder(*mode_selection.mode, frame));
+            int frame_number = timestamp_reader->get_frame_timestamp(*mode_selection.mode, frame);
 
             // Swap the backbuffer to the middle buffer and indicate that we have updated
             for(auto & stream : stream_list) stream->swap_back(frame_number);

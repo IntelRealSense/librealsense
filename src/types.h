@@ -121,8 +121,6 @@ namespace rsimpl
         rs_intrinsics native_intrinsics;        // Intrinsics structure corresponding to the content of image (Note: width,height may be subset of native_dims)
         std::vector<rs_intrinsics> rect_modes;  // Potential intrinsics of image after being rectified in software by librealsense
         std::vector<int> pad_crop_options;      // Acceptable padding/cropping values
-        int (* frame_number_decoder)(const subdevice_mode & mode, const void * frame);
-        bool use_serial_numbers_if_unique;  // If true, ignore frame_number_decoder and use a serial frame count if this is the only mode set
     };
 
     struct subdevice_mode_selection

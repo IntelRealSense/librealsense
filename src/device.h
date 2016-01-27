@@ -11,15 +11,9 @@
 
 namespace rsimpl
 {
-    struct frame_timestamp_converter
+    struct frame_timestamp_reader
     {
-        virtual int get_frame_timestamp(int frame_number) = 0;
-    };
-
-    class passthrough_converter : public frame_timestamp_converter
-    {
-    public:
-        int get_frame_timestamp(int frame_number) override { return frame_number; }
+        virtual int get_frame_timestamp(const subdevice_mode & mode, const void * frame) = 0;
     };
 }
 
@@ -71,8 +65,8 @@ public:
     virtual void                                get_options(const rs_option options[], int count, double values[]) {}
 
     virtual void                                on_before_start(const std::vector<rsimpl::subdevice_mode_selection> & selected_modes) {}
-    virtual std::unique_ptr<rsimpl::frame_timestamp_converter>
-                                                create_frame_timestamp_converter() const { return nullptr; }
+    virtual std::unique_ptr<rsimpl::frame_timestamp_reader>
+                                                create_frame_timestamp_reader() const { return nullptr; }
 };
 
 namespace rsimpl
