@@ -22,24 +22,25 @@ before_install:
     fi
 
 install:
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install -qq build-essential xorg-dev libglu1-mesa-dev libglew-dev libglm-dev; fi
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install -qq cmake; fi
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install -qq libusb-1.0-0-dev ; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
+      sudo apt-get install -qq build-essential xorg-dev libglu1-mesa-dev libglew-dev libglm-dev;
+      sudo apt-get install -qq cmake;
+      sudo apt-get install -qq libusb-1.0-0-dev ;
 
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then cmake --version; fi
+      cmake --version;
 
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then unzip glfw-3.1.1.zip; fi
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then cd glfw-3.1.1; fi
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo cmake -G "Unix Makefiles" -DBUILD_SHARED_LIBS=ON; fi
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo make; fi
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo make install; fi
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then cd ..; fi
-
+      unzip glfw-3.1.1.zip;
+      cd glfw-3.1.1;
+      sudo cmake -G "Unix Makefiles" -DBUILD_SHARED_LIBS=ON;
+      sudo make;
+      sudo make install;
+      cd ..;
+    fi
 script:
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
-    uname -a;
-    make;
+      uname -a;
+      make;
     fi
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
-    xctool -workspace librealsense.xc/librealsense.xcworkspace -scheme librealsense ONLY_ACTIVE_ARCH=NO;
+      xctool -workspace librealsense.xc/librealsense.xcworkspace -scheme librealsense ONLY_ACTIVE_ARCH=NO;
     fi

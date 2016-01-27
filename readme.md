@@ -14,13 +14,13 @@ Platform | Build Status |
 Linux and OS X | [![Build Status](https://travis-ci.org/IntelRealSense/librealsense.svg?branch=master)](https://travis-ci.org/IntelRealSense/librealsense) |
 Windows | [![Build status](https://ci.appveyor.com/api/projects/status/y9f8qcebnb9v41y4?svg=true)](https://ci.appveyor.com/project/ddiakopoulos/librealsense) | 
 
-Librealsense is a cross-platform library (Linux, OSX, Windows) for capturing data from the Intel® RealSense™ F200, SR300 and R200 cameras. This effort was initiated to better support researchers and developers in domains such as robotics, virtual reality, and the internet of things. Several often-requested features of RealSense™ devices are implemented in librealsense, including multi-camera capture.
+Librealsense is a cross-platform library (Linux, OSX, Windows) for capturing data from the Intel® RealSense™ F200, SR300 and R200 cameras. This effort was initiated to better support researchers, creative coders, and app developers in domains such as robotics, virtual reality, and the internet of things. Several often-requested features of RealSense™ devices are implemented in librealsense, including multi-camera capture.
 
 Developer kits containing the necessary hardware to use this library are available for purchase at [this link](http://click.intel.com/realsense.html). This project is separate from the production software stack available in the [Intel® RealSense™ SDK](https://software.intel.com/en-us/intel-realsense-sdk), namely that librealsense only encompasses camera capture functionality without additional computer vision algorithms.
 
 Librealsense is experimental and not an official Intel product. It is subject to incompatible API changes in future updates. Breaking API changes are noted through release numbers with [semver](http://semver.org/).
 
-Librealsense requires two external dependencies, GLFW3 (all platforms) and libusb-1.0 (Mac/Linux). These dependencies should be gathered through manual steps that are enumerated as part of this readme file (i.e. these packages must be installed with apt-get on Linux and Homebrew on OSX).
+Librealsense requires two external dependencies, GLFW3 (all platforms) and libusb-1.0 (Mac/Linux). These dependencies should be gathered through manual steps that are enumerated as part of this readme file (i.e. these packages must be installed with apt-get on Linux and Homebrew on OSX). GLFW is not required for the core library and is only used for examples.
 
 # Table of Contents
 * [Compatible Devices](#compatible-devices)
@@ -76,7 +76,7 @@ librealsense communicates with RealSense™ devices directly via the UVC and USB
 ## Hardware Requirements
 Developer kits containing the necessary hardware to use this library are available for purchase at [this link](http://click.intel.com/realsense.html). In addition, several consumer tablets and laptops with integrated cameras may also function, such as the [HP Spectre x2 with R200](http://store.hp.com/us/en/ContentView?storeId=10151&langId=-1&catalogId=10051&eSpotName=new-detachable).
 
-Developer kits require USB 3.0. Not all USB host chipsets are compatible with librealsense, although it has been validated with recent generations of the Intel Host Controller chipset. An exhaustive list of incompatible hardware is not presently provided.
+Developer kits require USB 3.0. Not all USB host chipsets are compatible with librealsense, although it has been validated with recent generations of the Intel Host Controller chipset. An exhaustive list of incompatible hardware is not presently provided. On x86, a Haswell or newer architecture is recommended.
 
 ## Documentation
 
@@ -85,9 +85,10 @@ Formal documentation for librealsense is incomplete and may contain the occasion
 A comprehensive suite of sample and tutorial applications are provided in the `/examples` subdirectory. For new users, it is best to review the tutorial series of apps which are designed to progressively introduce API features.
 
   * [Installation Instructions](./doc/installation.md) - Comprehensive platform-specific installation steps
-  * [The librealsense C API](./include/librealsense/rs.h) - Doxygen style comments are provided for all functions, data types, and most constants
-  * [Projection in librealsense](./doc/projection.md) - A guide on coordinate systems, calibration information, and projection APIs.
-  * [Developer Notes](./doc/dev_log.md) - Several informal notes gathered during internal releases.
+  * [C API](./include/librealsense/rs.h) - With doxygen-style API comments
+  * [Projection APIs](./doc/projection.md) - A guide on coordinate systems, calibration information, and projection
+  * [Camera Spec Sheet](./doc/camera_specs.md) - A brief overview of R200, F200 and SR300
+  * [Developer Notes](./doc/dev_log.md) - Several informal notes gathered during internal releases
 
 ## License
 
