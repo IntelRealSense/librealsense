@@ -13,6 +13,7 @@ namespace rsimpl
 {
     struct frame_timestamp_reader
     {
+        virtual bool validate_frame(const subdevice_mode & mode, const void * frame) const = 0;
         virtual int get_frame_timestamp(const subdevice_mode & mode, const void * frame) = 0;
     };
 }

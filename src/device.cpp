@@ -97,6 +97,13 @@ void rs_device::start()
         set_subdevice_mode(*device, mode_selection.mode->subdevice, mode_selection.mode->native_dims.x, mode_selection.mode->native_dims.y, mode_selection.mode->pf->fourcc, mode_selection.mode->fps, 
             [mode_selection, stream_list, timestamp_reader](const void * frame) mutable
         {
+            // Ignore any frames which appear corrupted or invalid
+            if(!timestamp_reader->validate_frame(*mode_selection.mode, frame))
+            {
+                LOG_WARNING("Bad frame on subdevice " << mode_selection.mode->subdevice);
+                return;
+            }
+
             // Ignore blank frames, which are sometimes produced by F200 and SR300 shortly after startup
             bool empty = true;
             for(const uint8_t * it = (const uint8_t *)frame, * end = it + mode_selection.mode->pf->get_image_size(mode_selection.mode->native_dims.x, mode_selection.mode->native_dims.y); it != end; ++it)

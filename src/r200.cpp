@@ -389,12 +389,28 @@ namespace rsimpl
         rs_device::get_option_range(option, min, max, step);
     }
 
+    // All R200 images which are not in YUY2 format contain an extra row of pixels, called the "dinghy", which contains useful information
+    const r200::Dinghy & get_dinghy(const subdevice_mode & mode, const void * frame)
+    {
+        return *reinterpret_cast<const r200::Dinghy *>(reinterpret_cast<const uint8_t *>(frame) + mode.pf->get_image_size(mode.native_dims.x, mode.native_dims.y-1));
+    }
+
+    // Make sure that R200 images contain the correct magic number within their Dinghy row
+    bool validate_r200_frame(const subdevice_mode & mode, const void * frame)
+    {
+        if(mode.pf == &pf_yuy2) return true;
+
+        const uint32_t magic_numbers[] = {0x08070605, 0x04030201, 0x8A8B8C8D};
+        return get_dinghy(mode, frame).magicNumber == magic_numbers[mode.subdevice];
+    }
+
     class dinghy_timestamp_reader : public frame_timestamp_reader
     {
         int max_fps;
     public:
         dinghy_timestamp_reader(int max_fps) : max_fps(max_fps) {}
 
+        bool validate_frame(const subdevice_mode & mode, const void * frame) const override { return validate_r200_frame(mode, frame); }
         int get_frame_timestamp(const subdevice_mode & mode, const void * frame) override 
         { 
             int frame_number = 0;
@@ -408,17 +424,7 @@ namespace rsimpl
                     data += 2;
                 }
             }
-            else
-            {
-                // All other images have an extra "dinghy" row of pixels, which contains useful information
-                const uint32_t magic_numbers[] = {0x08070605, 0x04030201, 0x8A8B8C8D};
-                auto dinghy = reinterpret_cast<const r200::Dinghy *>(reinterpret_cast<const uint8_t *>(frame) + mode.pf->get_image_size(mode.native_dims.x, mode.native_dims.y-1));
-                if(dinghy->magicNumber != magic_numbers[mode.subdevice])
-                {
-                    // TODO: What?
-                }
-                frame_number = dinghy->frameCount;
-            }
+            else frame_number = get_dinghy(mode, frame).frameCount; // All other formats can use the frame number in the dinghy row
             return frame_number * 1000 / max_fps;
         }
     };
@@ -429,6 +435,7 @@ namespace rsimpl
     public:
         serial_timestamp_generator(int fps) : fps(fps), serial_frame_number() {}
 
+        bool validate_frame(const subdevice_mode & mode, const void * frame) const override { return validate_r200_frame(mode, frame); }
         int get_frame_timestamp(const subdevice_mode &, const void *) override 
         { 
             ++serial_frame_number;

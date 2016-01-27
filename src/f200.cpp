@@ -446,7 +446,8 @@ namespace rsimpl
         int last_timestamp;
     public:
         rolling_timestamp_reader() : started(), total() {}
-
+        
+        bool validate_frame(const subdevice_mode & mode, const void * frame) const override { return true; }
         int get_frame_timestamp(const subdevice_mode & mode, const void * frame) override 
         {
             // Timestamps are encoded within the first 32 bits of the image
