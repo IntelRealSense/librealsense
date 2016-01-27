@@ -124,7 +124,6 @@ void rs_device::start()
     start_streaming(*device, config.info.num_libuvc_transfer_buffers);
     capture_started = std::chrono::high_resolution_clock::now();
     capturing = true;
-    base_timestamp = 0;
 }
 
 void rs_device::stop()
@@ -204,7 +203,6 @@ void rs_device::wait_all_streams()
     if(first_frame)
     {
         // Set time 0 to the least recent of the current frames
-        base_timestamp = 0;
         for(int i=0; i<RS_STREAM_NATIVE_COUNT; ++i)
         {
             if(!native_streams[i]->buffer) continue;
@@ -214,21 +212,8 @@ void rs_device::wait_all_streams()
     }
     else
     {
-        base_timestamp += frame_delta;
         last_stream_timestamp += frame_delta;
     }    
-}
-
-int rs_device::get_frame_timestamp(rs_stream stream) const 
-{ 
-    if(!streams[stream]->is_enabled()) throw std::runtime_error(to_string() << "stream not enabled: " << stream); 
-    return base_timestamp == -1 ? 0 : (base_timestamp + streams[stream]->get_frame_number() - last_stream_timestamp);
-}
-
-const byte * rs_device::get_frame_data(rs_stream stream) const 
-{ 
-    if(!streams[stream]->is_enabled()) throw std::runtime_error(to_string() << "stream not enabled: " << stream);
-    return streams[stream]->get_frame_data();
 }
 
 void rs_device::get_option_range(rs_option option, double & min, double & max, double & step)

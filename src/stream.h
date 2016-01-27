@@ -48,8 +48,8 @@ namespace rsimpl
         rs_format                               get_format() const override { return get_mode().get_format(stream); }
         int                                     get_framerate() const override { return get_mode().get_framerate(stream); }
 
-        int                                     get_frame_number() const override { return buffer->get_front_number(); }
-        const byte *                            get_frame_data() const override { return buffer->get_front_data(); }
+        int                                     get_frame_number() const override { if(!is_enabled()) throw std::runtime_error(to_string() << "stream not enabled: " << stream); return buffer->get_front_number(); }
+        const byte *                            get_frame_data() const override { if(!is_enabled()) throw std::runtime_error(to_string() << "stream not enabled: " << stream); return buffer->get_front_data(); }
     };
 
     class point_stream final : public stream_interface

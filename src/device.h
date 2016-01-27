@@ -40,7 +40,6 @@ private:
     bool                                        capturing;
     std::chrono::high_resolution_clock::time_point capture_started;
 
-    int64_t                                     base_timestamp;
     int                                         last_stream_timestamp;
 protected:
     const rsimpl::uvc::device &                 get_device() const { return *device; }
@@ -65,8 +64,6 @@ public:
     bool                                        is_capturing() const { return capturing; }
     
     void                                        wait_all_streams();
-    int                                         get_frame_timestamp(rs_stream stream) const;
-    const rsimpl::byte *                        get_frame_data(rs_stream stream) const;
     
     virtual bool                                supports_option(rs_option option) const;
     virtual void                                get_option_range(rs_option option, double & min, double & max, double & step);
