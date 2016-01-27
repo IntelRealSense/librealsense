@@ -98,10 +98,10 @@ typedef enum rs_option
     RS_OPTION_R200_LR_EXPOSURE                                = 30, /**< > 0 (Units of 0.1 ms) */
     RS_OPTION_R200_EMITTER_ENABLED                            = 31, /**< {0, 1} */
     RS_OPTION_R200_DEPTH_UNITS                                = 32, /**< micrometers per increment in integer depth values, 1000 is default (mm scale) */
-    RS_OPTION_R200_DEPTH_CLAMP_MIN                            = 33, /**< 0 - USHORT_MAX */
-    RS_OPTION_R200_DEPTH_CLAMP_MAX                            = 34, /**< 0 - USHORT_MAX */
-    RS_OPTION_R200_DISPARITY_MULTIPLIER                       = 35, /**< 0 - 1000, the increments in integer disparity values corresponding to one pixel of disparity */
-    RS_OPTION_R200_DISPARITY_SHIFT                            = 36, 
+    RS_OPTION_R200_DEPTH_CLAMP_MIN                            = 33, /**< {0 - USHORT_MAX}. Can only be set before streaming starts. */
+    RS_OPTION_R200_DEPTH_CLAMP_MAX                            = 34, /**< {0 - USHORT_MAX}. Can only be set before streaming starts. */
+    RS_OPTION_R200_DISPARITY_MULTIPLIER                       = 35, /**< {0 - 1000}. The increments in integer disparity values corresponding to one pixel of disparity. Can only be set before streaming starts. */
+    RS_OPTION_R200_DISPARITY_SHIFT                            = 36, /**< {0 - 512}. Can only be set before streaming starts. */
     RS_OPTION_R200_AUTO_EXPOSURE_MEAN_INTENSITY_SET_POINT     = 37, 
     RS_OPTION_R200_AUTO_EXPOSURE_BRIGHT_RATIO_SET_POINT       = 38, 
     RS_OPTION_R200_AUTO_EXPOSURE_KP_GAIN                      = 39, 
