@@ -171,37 +171,6 @@ namespace rsimpl
         std::vector<subdevice_mode_selection> select_modes(const stream_request (&requests)[RS_STREAM_NATIVE_COUNT]) const;
     };
 
-    // Thread-safe, non-blocking, lock-free triple buffer for marshalling data from a producer thread to a consumer thread
-    template<class T> class triple_buffer
-    {
-        struct { T x; int id; } buffers[3]; // Three distinct values each tagged with a unique identifier
-        int front = 0, back = 2;            // Determines which buffer is currently the "front" buffer (accessed only by consumer thread) and "back" buffer (accessed only by producer thread)
-        std::atomic<int> middle;            // Determines which buffer is currently the "middle" buffer (available to be atomically swapped with from either thread)
-        std::atomic<int> counter;           // Sequentially increasing counter, read from both threads and written by UVC thread
-    public:
-        triple_buffer(T value) : middle(1), counter(0) { for(auto & b : buffers) { b.x = value; b.id = 0; } }
-
-        int get_count() const { return counter.load(std::memory_order_relaxed); }
-        T & get_back() { return buffers[back].x; }
-        void swap_back()
-        {
-            int id = counter.load(std::memory_order_relaxed) + 1;   // Compute new sequentially increasing unique ID
-            buffers[back].id = id;                                  // Tag value with this unique ID
-            back = middle.exchange(back);                           // Swap new value into middle buffer
-            counter.store(id, std::memory_order_release);           // Perform this store last to force writes to become visible to consumer thread
-        }
-
-        bool has_front() const { return buffers[front].id > 0; }
-        const T & get_front() const { return buffers[front].x; }
-        bool swap_front()
-        {
-            auto id = counter.load(std::memory_order_acquire);              // Perform this load first to force producer thread's writes to become visible
-            if(buffers[front].id == id) return false;                       // If the front buffer is up-to-date, return false
-            while(buffers[front].id < id) front = middle.exchange(front);   // Swap until we retrieve the new value
-            return true;                                                    // Return true to indicate front buffer was updated
-        }
-    };
-
     struct device_config
     {
         const static_device_info            info;
@@ -215,35 +184,7 @@ namespace rsimpl
 
         std::vector<subdevice_mode_selection> select_modes() const { return info.select_modes(requests); }
     };
-
-    // Buffer for storing images provided by a given stream
-    /*class stream_buffer
-    {
-        struct frame
-        {
-            std::vector<byte>               data;
-            int                             timestamp;  // DS4 frame number or IVCAM rolling timestamp, used to compute LibRealsense frame timestamp
-            int                             delta;      // Difference between the last two timestamp values, used to estimate next frame arrival time
-        };
-
-        subdevice_mode_selection            selection;
-        triple_buffer<frame>                frames;
-        int                                 last_frame_number;
-    public:
-                                            stream_buffer(subdevice_mode_selection selection, rs_stream stream);
-
-        const subdevice_mode_selection &    get_mode() const { return selection; }
-
-        const byte *                        get_front_data() const { return frames.get_front().data.data(); }
-        int                                 get_front_number() const { return frames.get_front().timestamp; }
-        int                                 get_front_delta() const { return frames.get_front().delta; }
-        bool                                is_front_valid() const { return frames.has_front(); }
-
-        byte *                              get_back_data() { return frames.get_back().data.data(); }
-        void                                swap_back(int frame_number);
-        bool                                swap_front() { return frames.swap_front(); }
-    };*/
-
+    
     class frame_archive
     {
         // Define a movable but explicitly noncopyable buffer type to hold our frame data
@@ -262,16 +203,24 @@ namespace rsimpl
 
         // Constant data
         subdevice_mode_selection modes[RS_STREAM_NATIVE_COUNT];
+        rs_stream key_stream;
+        std::vector<rs_stream> other_streams;
 
         // Application thread data
         frame frontbuffer[RS_STREAM_NATIVE_COUNT];
 
         // Synchronized data
         std::vector<frame> frames[RS_STREAM_NATIVE_COUNT];
+        std::vector<frame> freelist;
         std::mutex mutex;
+        std::condition_variable cv;
 
         // Frame callback thread data
         frame backbuffer[RS_STREAM_NATIVE_COUNT];
+
+        void dequeue_frame(rs_stream stream);
+        void discard_frame(rs_stream stream);
+        void cull_frames();
     public:
         frame_archive(const std::vector<subdevice_mode_selection> & selection);
 

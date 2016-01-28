@@ -329,6 +329,7 @@ namespace rsimpl
 
     frame_archive::frame_archive(const std::vector<subdevice_mode_selection> & selection)
     {
+        // Store the mode selection that pertains to each native stream
         for(auto & mode : selection)
         {
             for(auto & o : mode.unpacker->outputs)
@@ -336,47 +337,51 @@ namespace rsimpl
                 modes[o.first] = mode;
             }
         }
+
+        // Determine which stream will act as the key stream
+        if(is_stream_enabled(RS_STREAM_DEPTH)) key_stream = RS_STREAM_DEPTH;
+        else if(is_stream_enabled(RS_STREAM_INFRARED)) key_stream = RS_STREAM_INFRARED;
+        else if(is_stream_enabled(RS_STREAM_INFRARED2)) key_stream = RS_STREAM_INFRARED2;
+        else if(is_stream_enabled(RS_STREAM_COLOR)) key_stream = RS_STREAM_COLOR;
+        else throw std::runtime_error("must enable at least one stream");
+
+        // Enumerate all streams we need to keep synchronized with the key stream
+        for(auto s : {RS_STREAM_INFRARED, RS_STREAM_INFRARED2, RS_STREAM_COLOR})
+        {
+            if(is_stream_enabled(s) && s != key_stream) other_streams.push_back(s);
+        }
+    }
+
+    // NOTE: Must be called with mutex acquired
+    void frame_archive::dequeue_frame(rs_stream stream)
+    {
+        if(!frontbuffer[stream].data.empty()) freelist.push_back(std::move(frontbuffer[stream]));
+        frontbuffer[stream] = std::move(frames[stream].front());
+        frames[stream].erase(begin(frames[stream]));
+    }
+    void frame_archive::discard_frame(rs_stream stream)
+    {
+        freelist.push_back(std::move(frames[stream].front()));
+        frames[stream].erase(begin(frames[stream]));    
     }
 
     void frame_archive::wait_for_frames()
     {
-        while(true)
+        // TODO: Implement a timeout in case the device hangs
+        // TODO: Implement a user-specifiable timeout for how long to wait?
+
+        // Wait until at least one frame is available on the key stream, and dequeue it
+        std::unique_lock<std::mutex> lock(mutex);
+        if(frames[key_stream].empty()) cv.wait(lock);
+        dequeue_frame(key_stream);
+
+        // Dequeue from other streams if the new frame is closer to the timestamp of the key stream than the old frame
+        for(auto s : other_streams)
         {
+            if(!frames[s].empty() && abs(frames[s].front().timestamp - frontbuffer[key_stream].timestamp) <= abs(frontbuffer[s].timestamp - frontbuffer[key_stream].timestamp))
             {
-                std::lock_guard<std::mutex> guard(mutex);
-
-                // Naive implementation: We are ready when a new frame is available for all streams
-                // TODO: Proper frame synchronization logic
-                bool ready = true;
-                for(int i=0; i<4; ++i)
-                {
-                    if(modes[i].mode && frames[i].empty())
-                    {
-                        ready = false;
-                        break;
-                    }
-                }
-
-                // When ready, obtain new frames
-                if(ready)
-                {
-                    for(int i=0; i<4; ++i)
-                    { 
-                        if(modes[i].mode)
-                        {
-                            frontbuffer[i] = std::move(frames[i].front());
-                            frames[i].erase(begin(frames[i]));
-                            // TODO: Store discarded frames in a freelist
-                        }
-                    }
-                    return;
-                }
+                dequeue_frame(s);
             }
-
-            // Otherwise, sleep for a while
-            std::this_thread::sleep_for(std::chrono::milliseconds(10));
-            // TODO: Implement a timeout in case the device hangs
-            // TODO: Implement a user-specifiable timeout for how long to wait?
         }
     }
 
@@ -385,13 +390,81 @@ namespace rsimpl
 
     byte * frame_archive::alloc_frame(rs_stream stream, int timestamp) 
     { 
-        backbuffer[stream].data.resize(modes[stream].get_image_size(stream));
+        const size_t size = modes[stream].get_image_size(stream);
+
+        {
+            std::lock_guard<std::mutex> guard(mutex);
+
+            // Attempt to obtain a buffer of the appropriate size from the freelist
+            for(auto it = begin(freelist); it != end(freelist); ++it)
+            {
+                if(it->data.size() == size)
+                {
+                    backbuffer[stream] = std::move(*it);
+                    freelist.erase(it);
+                    break;
+                }
+            }
+
+            // Discard buffers that have been in the freelist for longer than 1s
+            for(auto it = begin(freelist); it != end(freelist); )
+            {
+                if(timestamp > it->timestamp + 1000) it = freelist.erase(it);
+                else ++it;
+            }
+        }
+
+        backbuffer[stream].data.resize(size); // TODO: Allow users to provide a custom allocator for frame buffers
         backbuffer[stream].timestamp = timestamp;
         return backbuffer[stream].data.data();
     }
+
+    void frame_archive::cull_frames()
+    {
+        // Cannot do any culling unless at least one frame is enqueued for each enabled stream
+        if(frames[key_stream].empty()) return;
+        for(auto s : other_streams) if(frames[s].empty()) return;
+
+        // We can discard frames from the key stream if we have at least two and the latter is closer to the most recent frame of all other streams than the former
+        while(true)
+        {
+            if(frames[key_stream].size() < 2) break;
+            const int t0 = frames[key_stream][0].timestamp, t1 = frames[key_stream][1].timestamp;
+
+            bool valid_to_skip = true;
+            for(auto s : other_streams)
+            {
+                if(abs(t0 - frames[s].back().timestamp) < abs(t1 - frames[s].back().timestamp))
+                {
+                    valid_to_skip = false;
+                    break;
+                }
+            }
+            if(!valid_to_skip) break;
+
+            discard_frame(key_stream);
+        }
+
+        // We can discard frames for other streams if we have at least two and the latter is closer to the next key stream frame than the former
+        for(auto s : other_streams)
+        {
+            while(true)
+            {
+                if(frames[s].size() < 2) break;
+                const int t0 = frames[s][0].timestamp, t1 = frames[s][1].timestamp;
+
+                if(abs(t0 - frames[key_stream].front().timestamp) < abs(t1 - frames[key_stream].front().timestamp)) break;
+                discard_frame(s);
+            }
+        }
+    }
+
     void frame_archive::commit_frame(rs_stream stream) 
     {
-        std::lock_guard<std::mutex> guard(mutex);
+        std::unique_lock<std::mutex> lock(mutex);
         frames[stream].push_back(std::move(backbuffer[stream]));
+        cull_frames();
+        lock.unlock();
+        if(!frames[key_stream].empty()) cv.notify_one();
     }
 }
