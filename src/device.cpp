@@ -2,12 +2,7 @@
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
 #include "device.h"
-#include "image.h"
-
-#include <cstring>
-#include <climits>
-#include <thread>
-#include <algorithm>
+#include "sync.h"
 
 using namespace rsimpl;
 

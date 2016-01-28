@@ -167,6 +167,7 @@
     <ClCompile Include="..\..\src\r200.cpp" />
     <ClCompile Include="..\..\src\rs.cpp" />
     <ClCompile Include="..\..\src\stream.cpp" />
+    <ClCompile Include="..\..\src\sync.cpp" />
     <ClCompile Include="..\..\src\types.cpp" />
     <ClCompile Include="..\..\src\uvc-libuvc.cpp" />
     <ClCompile Include="..\..\src\uvc-v4l2.cpp" />
@@ -186,6 +187,7 @@
     <ClInclude Include="..\..\src\r200-private.h" />
     <ClInclude Include="..\..\src\r200.h" />
     <ClInclude Include="..\..\src\stream.h" />
+    <ClInclude Include="..\..\src\sync.h" />
     <ClInclude Include="..\..\src\types.h" />
     <ClInclude Include="..\..\src\uvc.h" />
   </ItemGroup>

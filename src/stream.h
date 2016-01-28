@@ -26,6 +26,8 @@ namespace rsimpl
         virtual int                             get_frame_number() const = 0;
         virtual const byte *                    get_frame_data() const = 0;    
     };
+    
+    class frame_archive;
 
     struct native_stream final : public stream_interface
     {
@@ -41,15 +43,15 @@ namespace rsimpl
         int                                     get_mode_count() const override { return (int)modes.size(); }
         void                                    get_mode(int mode, int * w, int * h, rs_format * f, int * fps) const override;
 
-        bool                                    is_enabled() const override { return (archive && archive->is_stream_enabled(stream)) || config.requests[stream].enabled; }
+        bool                                    is_enabled() const override;
         subdevice_mode_selection                get_mode() const;
         rs_intrinsics                           get_intrinsics() const override;
         rs_intrinsics                           get_rectified_intrinsics() const override;
         rs_format                               get_format() const override { return get_mode().get_format(stream); }
         int                                     get_framerate() const override { return get_mode().get_framerate(stream); }
 
-        int                                     get_frame_number() const override { if(!is_enabled()) throw std::runtime_error(to_string() << "stream not enabled: " << stream); return archive->get_frame_timestamp(stream); }
-        const byte *                            get_frame_data() const override { if(!is_enabled()) throw std::runtime_error(to_string() << "stream not enabled: " << stream); return archive->get_frame_data(stream); }
+        int                                     get_frame_number() const override;
+        const byte *                            get_frame_data() const override;
     };
 
     class point_stream final : public stream_interface

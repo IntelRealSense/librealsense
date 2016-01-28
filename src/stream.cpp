@@ -2,7 +2,8 @@
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
 #include "stream.h"
-#include "image.h"
+#include "sync.h"       // For frame_archive
+#include "image.h"      // For image alignment, rectification, and deprojection routines
 #include <algorithm>    // For sort
 #include <tuple>        // For make_tuple
 
@@ -52,6 +53,11 @@ void native_stream::get_mode(int mode, int * w, int * h, rs_format * f, int * fp
     if(fps) *fps = selection.get_framerate(stream);
 }
 
+bool native_stream::is_enabled() const
+{ 
+    return (archive && archive->is_stream_enabled(stream)) || config.requests[stream].enabled; 
+}
+
 subdevice_mode_selection native_stream::get_mode() const
 {
     if(archive && archive->is_stream_enabled(stream)) return archive->get_mode(stream);
@@ -77,6 +83,18 @@ rs_intrinsics native_stream::get_rectified_intrinsics() const
     const auto m = get_mode();
     if(m.mode->rect_modes.empty()) return get_intrinsics();
     return pad_crop_intrinsics(m.mode->rect_modes[0], m.pad_crop);
+}
+
+int native_stream::get_frame_number() const 
+{ 
+    if(!is_enabled()) throw std::runtime_error(to_string() << "stream not enabled: " << stream);
+    return archive->get_frame_timestamp(stream);
+}
+
+const byte * native_stream::get_frame_data() const
+{
+    if(!is_enabled()) throw std::runtime_error(to_string() << "stream not enabled: " << stream);
+    return archive->get_frame_data(stream);
 }
 
 const rsimpl::byte * point_stream::get_frame_data() const
