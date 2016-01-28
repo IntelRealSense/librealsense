@@ -248,6 +248,13 @@ void rs_wait_for_frames(rs_device * device, rs_error ** error) try
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, device)
 
+int rs_poll_for_frames(rs_device * device, rs_error ** error) try
+{
+    VALIDATE_NOT_NULL(device);
+    return device->poll_all_streams();
+}
+HANDLE_EXCEPTIONS_AND_RETURN(0, device)
+
 int rs_get_frame_timestamp(const rs_device * device, rs_stream stream, rs_error ** error) try
 {
     VALIDATE_NOT_NULL(device);

@@ -374,6 +374,13 @@ void rs_set_device_option(rs_device * device, rs_option option, double value, rs
 void rs_wait_for_frames(rs_device * device, rs_error ** error);
 
 /**
+ * check if new frames are available
+ * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+ * \return            1 if new frames are available, 0 if no new frames have arrived
+ */
+int rs_poll_for_frames(rs_device * device, rs_error ** error);
+
+/**
  * retrieve the time at which the latest frame on a stream was captured
  * \param[in] stream  the stream whose latest frame we are interested in
  * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored

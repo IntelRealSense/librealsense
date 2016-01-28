@@ -59,6 +59,7 @@ public:
     bool                                        is_capturing() const { return capturing; }
     
     void                                        wait_all_streams();
+    bool                                        poll_all_streams();
     
     virtual bool                                supports_option(rs_option option) const;
     virtual void                                get_option_range(rs_option option, double & min, double & max, double & step);

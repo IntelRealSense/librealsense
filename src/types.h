@@ -229,6 +229,7 @@ namespace rsimpl
 
         // Application thread API
         void wait_for_frames();
+        bool poll_for_frames();
         const byte * get_frame_data(rs_stream stream) const;
         int get_frame_timestamp(rs_stream stream) const;
 

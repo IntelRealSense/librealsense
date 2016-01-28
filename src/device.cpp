@@ -130,6 +130,13 @@ void rs_device::wait_all_streams()
     archive->wait_for_frames();
 }
 
+bool rs_device::poll_all_streams()
+{
+    if(!capturing) return false;
+    if(!archive) return false;
+    return archive->poll_for_frames();
+}
+
 void rs_device::get_option_range(rs_option option, double & min, double & max, double & step)
 {
     if(uvc::is_pu_control(option))

@@ -350,6 +350,16 @@ namespace rsimpl
         {
             if(is_stream_enabled(s) && s != key_stream) other_streams.push_back(s);
         }
+
+        // Allocate an empty image for each stream, and move it to the frontbuffer
+        // This allows us to assume that get_frame_data/get_frame_timestamp always return valid data
+        alloc_frame(key_stream, 0);
+        frontbuffer[key_stream] = std::move(backbuffer[key_stream]);
+        for(auto s : other_streams)
+        {
+            alloc_frame(s, 0);
+            frontbuffer[s] = std::move(backbuffer[s]);
+        }
     }
 
     // NOTE: Must be called with mutex acquired
@@ -383,6 +393,24 @@ namespace rsimpl
                 dequeue_frame(s);
             }
         }
+    }
+
+    bool frame_archive::poll_for_frames()
+    {
+        // Check if least one frame is available on the key stream, and dequeue it
+        std::unique_lock<std::mutex> lock(mutex);
+        if(frames[key_stream].empty()) return false;
+        dequeue_frame(key_stream);
+
+        // Dequeue from other streams if the new frame is closer to the timestamp of the key stream than the old frame
+        for(auto s : other_streams)
+        {
+            if(!frames[s].empty() && abs(frames[s].front().timestamp - frontbuffer[key_stream].timestamp) <= abs(frontbuffer[s].timestamp - frontbuffer[key_stream].timestamp))
+            {
+                dequeue_frame(s);
+            }
+        }
+        return true;
     }
 
     const byte * frame_archive::get_frame_data(rs_stream stream) const { return frontbuffer[stream].data.data(); }
@@ -421,6 +449,15 @@ namespace rsimpl
 
     void frame_archive::cull_frames()
     {
+        // Never keep more than four frames around in any given stream, regardless of timestamps
+        for(auto s : {RS_STREAM_DEPTH, RS_STREAM_COLOR, RS_STREAM_INFRARED, RS_STREAM_INFRARED2})
+        {
+            while(frames[s].size() > 4)
+            {
+                discard_frame(s);
+            }
+        }
+
         // Cannot do any culling unless at least one frame is enqueued for each enabled stream
         if(frames[key_stream].empty()) return;
         for(auto s : other_streams) if(frames[s].empty()) return;

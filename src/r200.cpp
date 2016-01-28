@@ -434,7 +434,7 @@ namespace rsimpl
             {
                 LOG_WARNING("Subdevice " << mode.subdevice << " CAM module status 0x" << std::hex << dinghy.CAMmoduleStatus);
                 return false;
-            }            
+            }        
             
             // TODO: Check for missing or duplicate frame numbers
             return true;
