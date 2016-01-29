@@ -206,14 +206,14 @@ namespace rsimpl
         }
     }
 
-    subdevice_mode_selection static_device_info::select_mode(const stream_request (& requests)[RS_STREAM_NATIVE_COUNT], int subdevice_index) const
+    subdevice_mode_selection device_config::select_mode(const stream_request (& requests)[RS_STREAM_NATIVE_COUNT], int subdevice_index) const
     {
         // Determine if the user has requested any streams which are supplied by this subdevice
         bool any_stream_requested = false;
         std::array<bool, RS_STREAM_NATIVE_COUNT> stream_requested = {};
         for(int j = 0; j < RS_STREAM_NATIVE_COUNT; ++j)
         {
-            if(requests[j].enabled && stream_subdevices[j] == subdevice_index)
+            if(requests[j].enabled && info.stream_subdevices[j] == subdevice_index)
             {
                 stream_requested[j] = true;
                 any_stream_requested = true;
@@ -224,7 +224,7 @@ namespace rsimpl
         if(!any_stream_requested) return subdevice_mode_selection();
 
         // Look for an appropriate mode
-        for(auto & subdevice_mode : subdevice_modes)
+        for(auto & subdevice_mode : info.subdevice_modes)
         {
             // Skip modes that apply to other subdevices
             if(subdevice_mode.subdevice != subdevice_index) continue;
@@ -271,14 +271,14 @@ namespace rsimpl
         throw std::runtime_error(ss.str());
     }
 
-    std::vector<subdevice_mode_selection> static_device_info::select_modes(const stream_request (&reqs)[RS_STREAM_NATIVE_COUNT]) const
+    std::vector<subdevice_mode_selection> device_config::select_modes(const stream_request (&reqs)[RS_STREAM_NATIVE_COUNT]) const
     {
         // Make a mutable copy of our array
         stream_request requests[RS_STREAM_NATIVE_COUNT];
         for(int i=0; i<RS_STREAM_NATIVE_COUNT; ++i) requests[i] = reqs[i];
 
         // Check and modify requests to enforce all interstream constraints
-        for(auto & rule : interstream_rules)
+        for(auto & rule : info.interstream_rules)
         {
             auto & a = requests[rule.a], & b = requests[rule.b]; auto f = rule.field;
             if(a.enabled && b.enabled)
@@ -297,7 +297,7 @@ namespace rsimpl
 
         // Select subdevice modes needed to satisfy our requests
         int num_subdevices = 0;
-        for(auto & mode : subdevice_modes) num_subdevices = std::max(num_subdevices, mode.subdevice+1);
+        for(auto & mode : info.subdevice_modes) num_subdevices = std::max(num_subdevices, mode.subdevice+1);
         std::vector<subdevice_mode_selection> selected_modes;
         for(int i = 0; i < num_subdevices; ++i)
         {

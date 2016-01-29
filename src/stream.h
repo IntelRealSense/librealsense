@@ -7,6 +7,8 @@
 
 #include "types.h"
 
+#include <memory> // For shared_ptr
+
 namespace rsimpl
 {
     struct stream_interface

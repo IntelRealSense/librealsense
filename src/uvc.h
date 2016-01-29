@@ -7,8 +7,9 @@
 
 #include "types.h"
 
-#include <functional>
-#include <thread>
+#include <memory>       // For shared_ptr
+#include <functional>   // For function
+#include <thread>       // For this_thread::sleep_for
 
 namespace rsimpl
 {

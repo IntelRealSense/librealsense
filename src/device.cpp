@@ -66,7 +66,7 @@ void rs_device::start()
 {
     if(capturing) throw std::runtime_error("cannot restart device without first stopping device");
         
-    auto selected_modes = config.info.select_modes(config.requests);
+    auto selected_modes = config.select_modes();
     auto archive = std::make_shared<frame_archive>(selected_modes);
     auto timestamp_reader = create_frame_timestamp_reader();
 
