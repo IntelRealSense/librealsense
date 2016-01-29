@@ -50,9 +50,9 @@ int frame_archive::get_frame_timestamp(rs_stream stream) const
 // Block until the next coherent frameset is available
 void frame_archive::wait_for_frames()
 {
-    // TODO: Implement a timeout in case the device hangs
     std::unique_lock<std::mutex> lock(mutex);
-    if(frames[key_stream].empty()) cv.wait(lock);
+    const auto ready = [this]() { return !frames[key_stream].empty(); };
+    if(!ready() && !cv.wait_for(lock, std::chrono::seconds(5), ready)) throw std::runtime_error("Timeout waiting for frames.");
     get_next_frames();
 }
 

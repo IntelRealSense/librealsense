@@ -488,7 +488,7 @@ namespace rs
             error::handle(e);
         }
 
-        /// check if new frames are available
+        /// check if new frames are available, without blocking
         /// \return  true if new frames are available, false if no new frames have arrived
         bool poll_for_frames()
         {

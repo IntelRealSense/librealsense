@@ -374,7 +374,7 @@ void rs_set_device_option(rs_device * device, rs_option option, double value, rs
 void rs_wait_for_frames(rs_device * device, rs_error ** error);
 
 /**
- * check if new frames are available
+ * check if new frames are available, without blocking
  * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
  * \return            1 if new frames are available, 0 if no new frames have arrived
  */
