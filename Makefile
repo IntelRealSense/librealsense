@@ -3,9 +3,9 @@ BACKEND := V4L2
 
 LIBUSB_FLAGS := `pkg-config --cflags --libs libusb-1.0`
 
-CFLAGS := -std=c11 -fPIC -pedantic -DRS_USE_$(BACKEND)_BACKEND $(LIBUSB_FLAGS)
+CFLAGS := -std=c11 -fPIC -pedantic -DRS_USE_$(BACKEND)_BACKEND $(LIBUSB_FLAGS) -I/usr/local/include
 CXXFLAGS := -std=c++11 -fPIC -pedantic -mssse3 -O3 -Wno-missing-field-initializers
-CXXFLAGS += -Wno-switch -Wno-multichar -DRS_USE_$(BACKEND)_BACKEND $(LIBUSB_FLAGS)
+CXXFLAGS += -Wno-switch -Wno-multichar -DRS_USE_$(BACKEND)_BACKEND $(LIBUSB_FLAGS) -I/usr/local/include 
 
 # Compute list of all *.o files that participate in librealsense.so
 OBJECTS = verify 
@@ -15,7 +15,7 @@ OBJECTS := $(addprefix obj/, $(addsuffix .o, $(OBJECTS)))
 
 # Sets of flags used by the example programs
 REALSENSE_FLAGS := -Iinclude -Llib -lrealsense -lm
-GLFW3_FLAGS := `pkg-config --cflags --libs glfw3 gl glu`
+GLFW3_FLAGS := `pkg-config --cflags --libs glfw3` -lglfw3 -framework OpenGL
 
 # Compute a list of all example program binaries
 EXAMPLES := $(wildcard examples/*.c)
