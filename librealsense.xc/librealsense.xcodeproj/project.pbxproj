@@ -10,6 +10,8 @@
 		271E78B11B9F83710063ECAE /* device.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 271E78AF1B9F83710063ECAE /* device.cpp */; };
 		271E78B21B9F83710063ECAE /* device.h in Headers */ = {isa = PBXBuildFile; fileRef = 271E78B01B9F83710063ECAE /* device.h */; };
 		273DEE581C503F05004A1AD6 /* log.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 273DEE571C503F05004A1AD6 /* log.cpp */; };
+		2774067B1C5AEE160032830E /* sync.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2774067A1C5AEE160032830E /* sync.cpp */; };
+		2774067D1C5AEE1B0032830E /* sync.h in Headers */ = {isa = PBXBuildFile; fileRef = 2774067C1C5AEE1B0032830E /* sync.h */; };
 		279985841B95074500894334 /* libusb-1.0.0.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 279985831B95074500894334 /* libusb-1.0.0.dylib */; };
 		279985A31B964EFF00894334 /* uvc.h in Headers */ = {isa = PBXBuildFile; fileRef = 279985A11B964EFF00894334 /* uvc.h */; };
 		279D52AD1B8E8678007F2D73 /* context.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 279D529B1B8E8678007F2D73 /* context.cpp */; };
@@ -54,6 +56,8 @@
 		271E78AF1B9F83710063ECAE /* device.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = device.cpp; path = ../src/device.cpp; sourceTree = SOURCE_ROOT; };
 		271E78B01B9F83710063ECAE /* device.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = device.h; path = ../src/device.h; sourceTree = SOURCE_ROOT; };
 		273DEE571C503F05004A1AD6 /* log.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = log.cpp; path = ../src/log.cpp; sourceTree = "<group>"; };
+		2774067A1C5AEE160032830E /* sync.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = sync.cpp; path = ../src/sync.cpp; sourceTree = "<group>"; };
+		2774067C1C5AEE1B0032830E /* sync.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = sync.h; path = ../src/sync.h; sourceTree = "<group>"; };
 		279985831B95074500894334 /* libusb-1.0.0.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = "libusb-1.0.0.dylib"; path = "/usr/local/lib/libusb-1.0.0.dylib"; sourceTree = "<absolute>"; };
 		279985A11B964EFF00894334 /* uvc.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = uvc.h; path = ../src/uvc.h; sourceTree = SOURCE_ROOT; };
 		279D529B1B8E8678007F2D73 /* context.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = context.cpp; path = ../src/context.cpp; sourceTree = SOURCE_ROOT; };
@@ -160,6 +164,8 @@
 		279D52E71B90FD53007F2D73 /* src */ = {
 			isa = PBXGroup;
 			children = (
+				2774067C1C5AEE1B0032830E /* sync.h */,
+				2774067A1C5AEE160032830E /* sync.cpp */,
 				273DEE571C503F05004A1AD6 /* log.cpp */,
 				27B9FE7C1BFBE46D0095505F /* stream.cpp */,
 				27B9FE7D1BFBE46D0095505F /* stream.h */,
@@ -221,6 +227,7 @@
 				279985A31B964EFF00894334 /* uvc.h in Headers */,
 				279D52E61B90FD4E007F2D73 /* rsutil.h in Headers */,
 				8C73071A1BE03102003BB7DE /* libuvc.h in Headers */,
+				2774067D1C5AEE1B0032830E /* sync.h in Headers */,
 				279D52B01B8E8678007F2D73 /* f200-private.h in Headers */,
 				279D52AE1B8E8678007F2D73 /* context.h in Headers */,
 				271E78B21B9F83710063ECAE /* device.h in Headers */,
@@ -287,6 +294,7 @@
 				8C7307161BE03102003BB7DE /* frame.c in Sources */,
 				8C7307151BE03102003BB7DE /* diag.c in Sources */,
 				273DEE581C503F05004A1AD6 /* log.cpp in Sources */,
+				2774067B1C5AEE160032830E /* sync.cpp in Sources */,
 				8C7307241BE03131003BB7DE /* uvc.cpp in Sources */,
 				8C7307211BE03131003BB7DE /* uvc-libuvc.cpp in Sources */,
 				279D52BC1B8E8678007F2D73 /* verify.c in Sources */,
