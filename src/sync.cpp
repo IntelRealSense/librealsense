@@ -7,7 +7,7 @@ frame_archive::frame_archive(const std::vector<subdevice_mode_selection> & selec
     // Store the mode selection that pertains to each native stream
     for(auto & mode : selection)
     {
-        for(auto & o : mode.unpacker->outputs)
+        for(auto & o : mode.get_outputs())
         {
             modes[o.first] = mode;
         }

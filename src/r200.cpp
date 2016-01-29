@@ -45,7 +45,7 @@ namespace rsimpl
         for(auto fps : {30, 60, 90})
         {
             // Subdevice 0 can provide left/right infrared via four pixel formats, in three resolutions, which can either be uncropped or cropped to match Z
-            for(auto pf : {&pf_y8, &pf_y8i, &pf_y16, &pf_y12i})
+            for(auto pf : {pf_y8, pf_y8i, pf_y16, pf_y12i})
             {
                 info.subdevice_modes.push_back({0, {640, 481}, pf, fps, c.modesLR[0], {}, {0, -6}});  
                 info.subdevice_modes.push_back({0, {640, 373}, pf, fps, c.modesLR[1], {}, {0, -6}});  
@@ -53,19 +53,19 @@ namespace rsimpl
             }
 
             // Subdevice 1 can provide depth, in three resolutions, which can either be unpadded or padded to match left/right
-            info.subdevice_modes.push_back({1, {628, 469}, &pf_z16,  fps, pad_crop_intrinsics(c.modesLR[0], -6), {}, {0, +6}});
-            info.subdevice_modes.push_back({1, {628, 361}, &pf_z16,  fps, pad_crop_intrinsics(c.modesLR[1], -6), {}, {0, +6}});
-            info.subdevice_modes.push_back({1, {628, 242}, &pf_z16,  fps, pad_crop_intrinsics(c.modesLR[2], -6), {}, {0, +6}});
+            info.subdevice_modes.push_back({1, {628, 469}, pf_z16,  fps, pad_crop_intrinsics(c.modesLR[0], -6), {}, {0, +6}});
+            info.subdevice_modes.push_back({1, {628, 361}, pf_z16,  fps, pad_crop_intrinsics(c.modesLR[1], -6), {}, {0, +6}});
+            info.subdevice_modes.push_back({1, {628, 242}, pf_z16,  fps, pad_crop_intrinsics(c.modesLR[2], -6), {}, {0, +6}});
         }
 
         // Subdevice 2 can provide color, in several formats and framerates
-        info.subdevice_modes.push_back({2, { 320,  240}, &pf_yuy2, 60, scale_intrinsics(c.intrinsicsThird[1], 320, 240), {scale_intrinsics(c.modesThird[1][0], 320, 240)}, {0}});
-        info.subdevice_modes.push_back({2, { 320,  240}, &pf_yuy2, 30, scale_intrinsics(c.intrinsicsThird[1], 320, 240), {scale_intrinsics(c.modesThird[1][0], 320, 240)}, {0}});
-        info.subdevice_modes.push_back({2, { 640,  480}, &pf_yuy2, 60, c.intrinsicsThird[1], {c.modesThird[1][0]}, {0}});
-        info.subdevice_modes.push_back({2, { 640,  480}, &pf_yuy2, 30, c.intrinsicsThird[1], {c.modesThird[1][0]}, {0}});
-		info.subdevice_modes.push_back({2, {1920, 1080}, &pf_yuy2, 15, c.intrinsicsThird[0], {c.modesThird[0][0]}, {0}});
-        info.subdevice_modes.push_back({2, {1920, 1080}, &pf_yuy2, 30, c.intrinsicsThird[0], {c.modesThird[0][0]}, {0}});
-        info.subdevice_modes.push_back({2, {2400, 1081}, &pf_rw10, 30, c.intrinsicsThird[0], {c.modesThird[0][0]}, {0}});
+        info.subdevice_modes.push_back({2, { 320,  240}, pf_yuy2, 60, scale_intrinsics(c.intrinsicsThird[1], 320, 240), {scale_intrinsics(c.modesThird[1][0], 320, 240)}, {0}});
+        info.subdevice_modes.push_back({2, { 320,  240}, pf_yuy2, 30, scale_intrinsics(c.intrinsicsThird[1], 320, 240), {scale_intrinsics(c.modesThird[1][0], 320, 240)}, {0}});
+        info.subdevice_modes.push_back({2, { 640,  480}, pf_yuy2, 60, c.intrinsicsThird[1], {c.modesThird[1][0]}, {0}});
+        info.subdevice_modes.push_back({2, { 640,  480}, pf_yuy2, 30, c.intrinsicsThird[1], {c.modesThird[1][0]}, {0}});
+		info.subdevice_modes.push_back({2, {1920, 1080}, pf_yuy2, 15, c.intrinsicsThird[0], {c.modesThird[0][0]}, {0}});
+        info.subdevice_modes.push_back({2, {1920, 1080}, pf_yuy2, 30, c.intrinsicsThird[0], {c.modesThird[0][0]}, {0}});
+        info.subdevice_modes.push_back({2, {2400, 1081}, pf_rw10, 30, c.intrinsicsThird[0], {c.modesThird[0][0]}, {0}});
 
         // Set up interstream rules for left/right/z images
         for(auto ir : {RS_STREAM_INFRARED, RS_STREAM_INFRARED2})
@@ -302,7 +302,7 @@ namespace rsimpl
         uint8_t streamIntent = 0;
         for(const auto & m : selected_modes)
         {
-            switch(m.mode->subdevice)
+            switch(m.mode.subdevice)
             {
             case 0: streamIntent |= r200::STATUS_BIT_LR_STREAMING; break;
             case 2: streamIntent |= r200::STATUS_BIT_WEB_STREAMING; break;
@@ -392,7 +392,7 @@ namespace rsimpl
     // All R200 images which are not in YUY2 format contain an extra row of pixels, called the "dinghy", which contains useful information
     const r200::Dinghy & get_dinghy(const subdevice_mode & mode, const void * frame)
     {
-        return *reinterpret_cast<const r200::Dinghy *>(reinterpret_cast<const uint8_t *>(frame) + mode.pf->get_image_size(mode.native_dims.x, mode.native_dims.y-1));
+        return *reinterpret_cast<const r200::Dinghy *>(reinterpret_cast<const uint8_t *>(frame) + mode.pf.get_image_size(mode.native_dims.x, mode.native_dims.y-1));
     }
 
     class dinghy_timestamp_reader : public frame_timestamp_reader
@@ -404,7 +404,7 @@ namespace rsimpl
         bool validate_frame(const subdevice_mode & mode, const void * frame) const override 
         { 
             // No dinghy available on YUY2 images
-            if(mode.pf == &pf_yuy2) return true;
+            if(mode.pf.fourcc == pf_yuy2.fourcc) return true;
 
             // Check magic number for all subdevices
             auto & dinghy = get_dinghy(mode, frame);
@@ -443,7 +443,7 @@ namespace rsimpl
         int get_frame_timestamp(const subdevice_mode & mode, const void * frame) override 
         { 
             int frame_number = 0;
-            if(mode.pf == &pf_yuy2)
+            if(mode.pf.fourcc == pf_yuy2.fourcc)
             {
                 // YUY2 images encode the frame number in the low order bits of the final 32 bytes of the image
                 auto data = reinterpret_cast<const uint8_t *>(frame) + ((mode.native_dims.x * mode.native_dims.y) - 32) * 2;

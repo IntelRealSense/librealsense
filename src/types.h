@@ -118,7 +118,7 @@ namespace rsimpl
     {
         int subdevice;                          // 0, 1, 2, etc...
         int2 native_dims;                       // Resolution advertised over UVC
-        const native_pixel_format * pf;         // Pixel format advertised over UVC
+        native_pixel_format pf;                 // Pixel format advertised over UVC
         int fps;                                // Framerate advertised over UVC
         rs_intrinsics native_intrinsics;        // Intrinsics structure corresponding to the content of image (Note: width,height may be subset of native_dims)
         std::vector<rs_intrinsics> rect_modes;  // Potential intrinsics of image after being rectified in software by librealsense
@@ -127,20 +127,21 @@ namespace rsimpl
 
     struct subdevice_mode_selection
     {
-        const subdevice_mode * mode;            // The streaming mode in which to place the hardware
+        subdevice_mode mode;                    // The streaming mode in which to place the hardware
         int pad_crop;                           // The number of pixels of padding (positive values) or cropping (negative values) to apply to all four edges of the image
-        const pixel_format_unpacker * unpacker; // The specific unpacker used to unpack the encoded format into the desired output formats
+        int unpacker_index;                     // The specific unpacker used to unpack the encoded format into the desired output formats
 
-        subdevice_mode_selection() : mode(), pad_crop(), unpacker() {}
-        subdevice_mode_selection(const subdevice_mode * mode, int pad_crop, const pixel_format_unpacker * unpacker) : mode(mode), pad_crop(pad_crop), unpacker(unpacker) {}
+        subdevice_mode_selection() : mode({}), pad_crop(), unpacker_index() {}
+        subdevice_mode_selection(const subdevice_mode & mode, int pad_crop, int unpacker_index) : mode(mode), pad_crop(pad_crop), unpacker_index(unpacker_index) {}
 
-        const std::vector<std::pair<rs_stream, rs_format>> & get_outputs() const { return unpacker->outputs; }
-        int get_width() const { return mode->native_intrinsics.width + pad_crop * 2; }
-        int get_height() const { return mode->native_intrinsics.height + pad_crop * 2; }
+        const pixel_format_unpacker & get_unpacker() const { return mode.pf.unpackers[unpacker_index]; }
+        const std::vector<std::pair<rs_stream, rs_format>> & get_outputs() const { return get_unpacker().outputs; }
+        int get_width() const { return mode.native_intrinsics.width + pad_crop * 2; }
+        int get_height() const { return mode.native_intrinsics.height + pad_crop * 2; }
         size_t get_image_size(rs_stream stream) const;
-        bool provides_stream(rs_stream stream) const { return unpacker->provides_stream(stream); }
-        rs_format get_format(rs_stream stream) const { return unpacker->get_format(stream); }
-        int get_framerate(rs_stream stream) const { return mode->fps; }
+        bool provides_stream(rs_stream stream) const { return get_unpacker().provides_stream(stream); }
+        rs_format get_format(rs_stream stream) const { return get_unpacker().get_format(stream); }
+        int get_framerate(rs_stream stream) const { return mode.fps; }
         void unpack(byte * const dest[], const byte * source) const;
     };
 

@@ -50,7 +50,7 @@ namespace rsimpl
         frame_archive(const std::vector<subdevice_mode_selection> & selection);
 
         // Safe to call from any thread
-        bool is_stream_enabled(rs_stream stream) const { return modes[stream].mode != nullptr; }
+        bool is_stream_enabled(rs_stream stream) const { return modes[stream].mode.pf.fourcc != 0; }
         const subdevice_mode_selection & get_mode(rs_stream stream) const { return modes[stream]; }
 
         // Application thread API

@@ -84,22 +84,22 @@ void rs_device::start()
         }
 
         // Initialize the subdevice and set it to the selected mode
-        set_subdevice_mode(*device, mode_selection.mode->subdevice, mode_selection.mode->native_dims.x, mode_selection.mode->native_dims.y, mode_selection.mode->pf->fourcc, mode_selection.mode->fps, 
+        set_subdevice_mode(*device, mode_selection.mode.subdevice, mode_selection.mode.native_dims.x, mode_selection.mode.native_dims.y, mode_selection.mode.pf.fourcc, mode_selection.mode.fps, 
             [mode_selection, archive, timestamp_reader](const void * frame) mutable
         {
             // Ignore any frames which appear corrupted or invalid
-            if(!timestamp_reader->validate_frame(*mode_selection.mode, frame)) return;
+            if(!timestamp_reader->validate_frame(mode_selection.mode, frame)) return;
 
             // Determine the timestamp for this frame
-            int timestamp = timestamp_reader->get_frame_timestamp(*mode_selection.mode, frame);
+            int timestamp = timestamp_reader->get_frame_timestamp(mode_selection.mode, frame);
 
             // Obtain buffers for unpacking the frame
             std::vector<byte *> dest;
-            for(auto & output : mode_selection.unpacker->outputs) dest.push_back(archive->alloc_frame(output.first, timestamp));
+            for(auto & output : mode_selection.get_outputs()) dest.push_back(archive->alloc_frame(output.first, timestamp));
 
             // Unpack the frame and commit it to the archive
             mode_selection.unpack(dest.data(), reinterpret_cast<const byte *>(frame));
-            for(auto & output : mode_selection.unpacker->outputs) archive->commit_frame(output.first);
+            for(auto & output : mode_selection.get_outputs()) archive->commit_frame(output.first);
         });
     }
     
