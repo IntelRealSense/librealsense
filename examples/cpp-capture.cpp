@@ -99,6 +99,8 @@ int main(int argc, char * argv[]) try
         glfwPollEvents();
         dev.wait_for_frames();
 
+        std::cout << dev.get_frame_timestamp(rs::stream::depth) << " " << dev.get_frame_timestamp(rs::stream::color) << std::endl;
+
         // Clear the framebuffer
         int w,h;
         glfwGetFramebufferSize(win, &w, &h);

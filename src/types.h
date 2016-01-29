@@ -13,6 +13,8 @@
 #include <memory>                           // For shared_ptr
 #include <sstream>                          // For ostringstream
 #include <atomic>
+#include <mutex>
+#include <condition_variable>
 
 #define RS_STREAM_NATIVE_COUNT 4
 
@@ -116,30 +118,30 @@ namespace rsimpl
     {
         int subdevice;                          // 0, 1, 2, etc...
         int2 native_dims;                       // Resolution advertised over UVC
-        const native_pixel_format * pf;         // Pixel format advertised over UVC
+        native_pixel_format pf;                 // Pixel format advertised over UVC
         int fps;                                // Framerate advertised over UVC
         rs_intrinsics native_intrinsics;        // Intrinsics structure corresponding to the content of image (Note: width,height may be subset of native_dims)
         std::vector<rs_intrinsics> rect_modes;  // Potential intrinsics of image after being rectified in software by librealsense
         std::vector<int> pad_crop_options;      // Acceptable padding/cropping values
-        int (* frame_number_decoder)(const subdevice_mode & mode, const void * frame);
-        bool use_serial_numbers_if_unique;  // If true, ignore frame_number_decoder and use a serial frame count if this is the only mode set
     };
 
     struct subdevice_mode_selection
     {
-        const subdevice_mode * mode;            // The streaming mode in which to place the hardware
+        subdevice_mode mode;                    // The streaming mode in which to place the hardware
         int pad_crop;                           // The number of pixels of padding (positive values) or cropping (negative values) to apply to all four edges of the image
-        const pixel_format_unpacker * unpacker; // The specific unpacker used to unpack the encoded format into the desired output formats
+        int unpacker_index;                     // The specific unpacker used to unpack the encoded format into the desired output formats
 
-        subdevice_mode_selection(const subdevice_mode * mode, int pad_crop, const pixel_format_unpacker * unpacker) : mode(mode), pad_crop(pad_crop), unpacker(unpacker) {}
+        subdevice_mode_selection() : mode({}), pad_crop(), unpacker_index() {}
+        subdevice_mode_selection(const subdevice_mode & mode, int pad_crop, int unpacker_index) : mode(mode), pad_crop(pad_crop), unpacker_index(unpacker_index) {}
 
-        const std::vector<std::pair<rs_stream, rs_format>> & get_outputs() const { return unpacker->outputs; }
-        int get_width() const { return mode->native_intrinsics.width + pad_crop * 2; }
-        int get_height() const { return mode->native_intrinsics.height + pad_crop * 2; }
+        const pixel_format_unpacker & get_unpacker() const { return mode.pf.unpackers[unpacker_index]; }
+        const std::vector<std::pair<rs_stream, rs_format>> & get_outputs() const { return get_unpacker().outputs; }
+        int get_width() const { return mode.native_intrinsics.width + pad_crop * 2; }
+        int get_height() const { return mode.native_intrinsics.height + pad_crop * 2; }
         size_t get_image_size(rs_stream stream) const;
-        bool provides_stream(rs_stream stream) const { return unpacker->provides_stream(stream); }
-        rs_format get_format(rs_stream stream) const { return unpacker->get_format(stream); }
-        int get_framerate(rs_stream stream) const { return mode->fps; }
+        bool provides_stream(rs_stream stream) const { return get_unpacker().provides_stream(stream); }
+        rs_format get_format(rs_stream stream) const { return get_unpacker().get_format(stream); }
+        int get_framerate(rs_stream stream) const { return mode.fps; }
         void unpack(byte * const dest[], const byte * source) const;
     };
 
@@ -170,37 +172,6 @@ namespace rsimpl
         std::vector<subdevice_mode_selection> select_modes(const stream_request (&requests)[RS_STREAM_NATIVE_COUNT]) const;
     };
 
-    // Thread-safe, non-blocking, lock-free triple buffer for marshalling data from a producer thread to a consumer thread
-    template<class T> class triple_buffer
-    {
-        struct { T x; int id; } buffers[3]; // Three distinct values each tagged with a unique identifier
-        int front = 0, back = 2;            // Determines which buffer is currently the "front" buffer (accessed only by consumer thread) and "back" buffer (accessed only by producer thread)
-        std::atomic<int> middle;            // Determines which buffer is currently the "middle" buffer (available to be atomically swapped with from either thread)
-        std::atomic<int> counter;           // Sequentially increasing counter, read from both threads and written by UVC thread
-    public:
-        triple_buffer(T value) : middle(1), counter(0) { for(auto & b : buffers) { b.x = value; b.id = 0; } }
-
-        int get_count() const { return counter.load(std::memory_order_relaxed); }
-        T & get_back() { return buffers[back].x; }
-        void swap_back()
-        {
-            int id = counter.load(std::memory_order_relaxed) + 1;   // Compute new sequentially increasing unique ID
-            buffers[back].id = id;                                  // Tag value with this unique ID
-            back = middle.exchange(back);                           // Swap new value into middle buffer
-            counter.store(id, std::memory_order_release);           // Perform this store last to force writes to become visible to consumer thread
-        }
-
-        bool has_front() const { return buffers[front].id > 0; }
-        const T & get_front() const { return buffers[front].x; }
-        bool swap_front()
-        {
-            auto id = counter.load(std::memory_order_acquire);              // Perform this load first to force producer thread's writes to become visible
-            if(buffers[front].id == id) return false;                       // If the front buffer is up-to-date, return false
-            while(buffers[front].id < id) front = middle.exchange(front);   // Swap until we retrieve the new value
-            return true;                                                    // Return true to indicate front buffer was updated
-        }
-    };
-
     struct device_config
     {
         const static_device_info            info;
@@ -213,34 +184,6 @@ namespace rsimpl
                                             }
 
         std::vector<subdevice_mode_selection> select_modes() const { return info.select_modes(requests); }
-    };
-
-    // Buffer for storing images provided by a given stream
-    class stream_buffer
-    {
-        struct frame
-        {
-            std::vector<byte>               data;
-            int                             timestamp;  // DS4 frame number or IVCAM rolling timestamp, used to compute LibRealsense frame timestamp
-            int                             delta;      // Difference between the last two timestamp values, used to estimate next frame arrival time
-        };
-
-        subdevice_mode_selection            selection;
-        triple_buffer<frame>                frames;
-        int                                 last_frame_number;
-    public:
-                                            stream_buffer(subdevice_mode_selection selection, rs_stream stream);
-
-        const subdevice_mode_selection &    get_mode() const { return selection; }
-
-        const byte *                        get_front_data() const { return frames.get_front().data.data(); }
-        int                                 get_front_number() const { return frames.get_front().timestamp; }
-        int                                 get_front_delta() const { return frames.get_front().delta; }
-        bool                                is_front_valid() const { return frames.has_front(); }
-
-        byte *                              get_back_data() { return frames.get_back().data.data(); }
-        void                                swap_back(int frame_number);
-        bool                                swap_front() { return frames.swap_front(); }
     };
 
     // Utilities

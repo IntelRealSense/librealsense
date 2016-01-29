@@ -159,8 +159,8 @@ namespace rsimpl
 
         // Determine input stride (and apply cropping)
         const byte * in = source;
-        size_t in_stride = mode->pf->get_image_size(mode->native_dims.x, 1);
-        if(pad_crop < 0) in += in_stride * -pad_crop + mode->pf->get_image_size(-pad_crop, 1);
+        size_t in_stride = mode.pf.get_image_size(mode.native_dims.x, 1);
+        if(pad_crop < 0) in += in_stride * -pad_crop + mode.pf.get_image_size(-pad_crop, 1);
 
         // Determine output stride (and apply padding)
         byte * out[MAX_OUTPUTS];
@@ -173,19 +173,19 @@ namespace rsimpl
         }
 
         // Unpack (potentially a subrect of) the source image into (potentially a subrect of) the destination buffers
-        const int unpack_width = std::min(mode->native_intrinsics.width, get_width()), unpack_height = std::min(mode->native_intrinsics.height, get_height());
-        if(mode->native_dims.x == get_width())
+        const int unpack_width = std::min(mode.native_intrinsics.width, get_width()), unpack_height = std::min(mode.native_intrinsics.height, get_height());
+        if(mode.native_dims.x == get_width())
         {
             // If not strided, unpack as though it were a single long row
-            unpacker->unpack(out, in, unpack_width * unpack_height);
+            mode.pf.unpackers[unpacker_index].unpack(out, in, unpack_width * unpack_height);
         }
         else
         {
             // Otherwise unpack one row at a time
-            assert(mode->pf->plane_count == 1); // Can't unpack planar formats row-by-row (at least not with the current architecture, would need to pass multiple source ptrs to unpack)
+            assert(mode.pf.plane_count == 1); // Can't unpack planar formats row-by-row (at least not with the current architecture, would need to pass multiple source ptrs to unpack)
             for(int i=0; i<unpack_height; ++i)
             {
-                unpacker->unpack(out, in, unpack_width);
+                mode.pf.unpackers[unpacker_index].unpack(out, in, unpack_width);
                 for(size_t i=0; i<outputs.size(); ++i) out[i] += out_stride[i];
                 in += in_stride;
             }
@@ -221,7 +221,7 @@ namespace rsimpl
         }
 
         // If no streams were requested, skip to the next subdevice
-        if(!any_stream_requested) return subdevice_mode_selection(nullptr,0,nullptr);
+        if(!any_stream_requested) return subdevice_mode_selection();
 
         // Look for an appropriate mode
         for(auto & subdevice_mode : subdevice_modes)
@@ -231,9 +231,9 @@ namespace rsimpl
 
             for(auto pad_crop : subdevice_mode.pad_crop_options)
             {
-                for(auto & unpacker : subdevice_mode.pf->unpackers)
+                for(auto & unpacker : subdevice_mode.pf.unpackers)
                 {
-                    auto selection = subdevice_mode_selection(&subdevice_mode, pad_crop, &unpacker);
+                    auto selection = subdevice_mode_selection(subdevice_mode, pad_crop, &unpacker - subdevice_mode.pf.unpackers.data());
 
                     // Determine if this mode satisfies the requirements on our requested streams
                     auto stream_unsatisfied = stream_requested;
@@ -302,24 +302,8 @@ namespace rsimpl
         for(int i = 0; i < num_subdevices; ++i)
         {
             auto selection = select_mode(requests, i);
-            if(selection.mode) selected_modes.push_back(selection);
+            if(selection.mode.pf.fourcc) selected_modes.push_back(selection);
         }
         return selected_modes;
-    }
-
-    ///////////////////
-    // stream_buffer //
-    ///////////////////
-
-    stream_buffer::stream_buffer(subdevice_mode_selection selection, rs_stream stream)
-        : selection(selection), frames({std::vector<byte>(selection.get_image_size(stream))}), last_frame_number() {}
-
-    void stream_buffer::swap_back(int frame_number) 
-    {
-        if(frames.get_count() == 0) last_frame_number = frame_number;
-        frames.get_back().timestamp = frame_number;
-        frames.get_back().delta = frame_number - last_frame_number;
-        last_frame_number = frame_number;     
-        frames.swap_back();
     }
 }

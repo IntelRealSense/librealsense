@@ -248,11 +248,18 @@ void rs_wait_for_frames(rs_device * device, rs_error ** error) try
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, device)
 
+int rs_poll_for_frames(rs_device * device, rs_error ** error) try
+{
+    VALIDATE_NOT_NULL(device);
+    return device->poll_all_streams();
+}
+HANDLE_EXCEPTIONS_AND_RETURN(0, device)
+
 int rs_get_frame_timestamp(const rs_device * device, rs_stream stream, rs_error ** error) try
 {
     VALIDATE_NOT_NULL(device);
     VALIDATE_ENUM(stream);
-    return device->get_frame_timestamp(stream);
+    return device->get_stream_interface(stream).get_frame_number();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, device, stream)
 
@@ -260,7 +267,7 @@ const void * rs_get_frame_data(const rs_device * device, rs_stream stream, rs_er
 {
     VALIDATE_NOT_NULL(device);
     VALIDATE_ENUM(stream);
-    return device->get_frame_data(stream);
+    return device->get_stream_interface(stream).get_frame_data();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, device, stream)
 

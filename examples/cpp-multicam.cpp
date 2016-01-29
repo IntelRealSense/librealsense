@@ -28,8 +28,8 @@ int main(int argc, char * argv[]) try
     for(auto dev : devices)
     {
         std::cout << "Starting " << dev->get_name() << "... ";
-        dev->enable_stream(rs::stream::depth, rs::preset::best_quality);
-        dev->enable_stream(rs::stream::color, rs::preset::best_quality);
+        dev->enable_stream(rs::stream::depth, 480, 360, rs::format::z16, 30); //rs::preset::best_quality);
+        dev->enable_stream(rs::stream::color, 1920, 1080, rs::format::rgb8, 15); //rs::preset::best_quality);
         dev->start();
         std::cout << "done." << std::endl;
     }
@@ -54,7 +54,6 @@ int main(int argc, char * argv[]) try
     {
         // Wait for new images
         glfwPollEvents();
-        for(auto dev : devices) dev->wait_for_frames();
         
         // Draw the images
         int w,h;
@@ -69,6 +68,7 @@ int main(int argc, char * argv[]) try
         int i=0, x=0;
         for(auto dev : devices)
         {
+            dev->poll_for_frames();
             const auto c = dev->get_stream_intrinsics(rs::stream::color), d = dev->get_stream_intrinsics(rs::stream::depth);
             buffers[i++].show(*dev, rs::stream::color, x, 0, perTextureWidth, perTextureHeight);
             buffers[i++].show(*dev, rs::stream::depth, x, perTextureHeight, perTextureWidth, perTextureHeight);
