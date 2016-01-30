@@ -1,11 +1,25 @@
+# Detect OS
+uname_S := $(shell sh -c 'uname -s 2>/dev/null || echo not')
+
 # Specify BACKEND=V4L2 or BACKEND=LIBUVC to build a specific backend
 BACKEND := V4L2
 
+ifeq ($(uname_S),Darwin)
+# OSX defaults to libuvc instead of V4L
+BACKEND := LIBUVC
+endif
+
 LIBUSB_FLAGS := `pkg-config --cflags --libs libusb-1.0`
 
-CFLAGS := -std=c11 -fPIC -pedantic -DRS_USE_$(BACKEND)_BACKEND $(LIBUSB_FLAGS) -I/usr/local/include
+CFLAGS := -std=c11 -fPIC -pedantic -DRS_USE_$(BACKEND)_BACKEND $(LIBUSB_FLAGS) 
 CXXFLAGS := -std=c++11 -fPIC -pedantic -mssse3 -O3 -Wno-missing-field-initializers
-CXXFLAGS += -Wno-switch -Wno-multichar -DRS_USE_$(BACKEND)_BACKEND $(LIBUSB_FLAGS) -I/usr/local/include 
+CXXFLAGS += -Wno-switch -Wno-multichar -DRS_USE_$(BACKEND)_BACKEND $(LIBUSB_FLAGS) 
+
+# Add specific include paths for OSX
+ifeq ($(uname_S),Darwin)
+CFLAGS   += -I/usr/local/include
+CXXFLAGS += -I/usr/local/include
+endif
 
 # Compute list of all *.o files that participate in librealsense.so
 OBJECTS = verify 
@@ -15,7 +29,14 @@ OBJECTS := $(addprefix obj/, $(addsuffix .o, $(OBJECTS)))
 
 # Sets of flags used by the example programs
 REALSENSE_FLAGS := -Iinclude -Llib -lrealsense -lm
+
+ifeq ($(uname_S),Darwin)
+# OSX uses OpenGL as a framework
 GLFW3_FLAGS := `pkg-config --cflags --libs glfw3` -lglfw3 -framework OpenGL
+else
+# otherwise pkg-config finds OpenGL
+GLFW3_FLAGS := `pkg-config --cflags --libs glfw3 glu gl`
+endif
 
 # Compute a list of all example program binaries
 EXAMPLES := $(wildcard examples/*.c)
