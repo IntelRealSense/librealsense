@@ -277,7 +277,7 @@ namespace rsimpl { namespace r200
         return cameraCalib;
     }
 
-    void read_camera_head_contents(const uint8_t (& flash_data_buffer)[SPI_FLASH_SECTOR_SIZE_IN_BYTES], int & serial_number)
+    void read_camera_head_contents(const uint8_t (& flash_data_buffer)[SPI_FLASH_SECTOR_SIZE_IN_BYTES], uint32_t & serial_number)
     {
         struct CameraHeadContents
         {
