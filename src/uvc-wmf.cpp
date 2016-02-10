@@ -477,6 +477,7 @@ namespace rsimpl
 
         int get_vendor_id(const device & device) { return device.vid; }
         int get_product_id(const device & device) { return device.pid; }
+        std::string get_unique_id(const device & device) { return device.unique_id; }
 
         void init_controls(device & device, int subdevice, const guid & guid)
         {
