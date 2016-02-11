@@ -6,27 +6,19 @@
 
 namespace uvc = rsimpl::uvc;
 
-struct smart_device
-{
-    std::string unique_id;
-    std::shared_ptr<uvc::device> device;
-
-    bool is_connected() const { return !!device; }
-};
-
 struct smart_context
 {
     std::shared_ptr<uvc::context> ctx;
-    std::vector<smart_device> devices;
+    std::map<std::string, std::shared_ptr<uvc::device>> devices;
 
     smart_context() : ctx(uvc::create_context()) {}
 
     void list() const
     {
-        for(auto & d : devices)
+        for(auto & p : devices)
         {
-            std::cout << d.unique_id << ": ";
-            if(d.is_connected()) std::cout << "connected, vid = " << get_vendor_id(*d.device) << ", pid = " << get_product_id(*d.device) << std::endl;
+            std::cout << p.first << ": ";
+            if(!!p.second) std::cout << "connected, vid = " << get_vendor_id(*p.second) << ", pid = " << get_product_id(*p.second) << std::endl;
             else std::cout << "disconnected" << std::endl;
         }
     }
@@ -36,16 +28,16 @@ struct smart_context
         auto device_list = query_devices(ctx);
         for(auto & d : device_list)
         {
-            auto it = std::find_if(begin(devices), end(devices), [d](const smart_device & s) { return s.unique_id == get_unique_id(*d); });
+            auto it = devices.find(get_unique_id(*d));
             if(it == end(devices))
             {
                 std::cout << "Discovered new device " << get_unique_id(*d) << std::endl;
-                devices.push_back({get_unique_id(*d), d});
+                devices.insert({get_unique_id(*d), d});
             }
-            else if(!it->device)
+            else if(!it->second)
             {
                 std::cout << "\nReconnected to device " << get_unique_id(*d) << std::endl;
-                it->device = d;
+                it->second = d;
             }
             else
             {
@@ -53,35 +45,38 @@ struct smart_context
             }
         }
         
-        for(auto & s : devices)
+        for(auto & p : devices)
         {
-            if(!s.device) continue;
-            auto it = std::find_if(begin(device_list), end(device_list), [s](const std::shared_ptr<uvc::device> & d) { return s.unique_id == get_unique_id(*d); }); 
+            if(!p.second) continue;
+            auto it = std::find_if(begin(device_list), end(device_list), [p](const std::shared_ptr<uvc::device> & d) { return p.first == get_unique_id(*d); }); 
             if(it == end(device_list))
             {
-                std::cout << "\nLost connection to device " << s.unique_id << std::endl;
-                s.device = nullptr;
+                std::cout << "\nLost connection to device " << p.first << std::endl;
+                p.second = nullptr;
             }
         }
     }
 
-    void reset(int index)
+    void reset(std::string id)
     {
+        auto it = devices.find(id);
+        if(it == end(devices)) return;
+
         const uvc::guid R200_LEFT_RIGHT_XU = {0x18682d34, 0xdd2c, 0x4073, {0xad, 0x23, 0x72, 0x14, 0x73, 0x9a, 0x07, 0x4c}};
         uint8_t reset = 1;
 
-        switch(get_product_id(*devices[index].device))
+        switch(get_product_id(*it->second))
         {
         case 0xA80:
-            init_controls(*devices[index].device, 0, R200_LEFT_RIGHT_XU);
-            set_control(*devices[index].device, 0, 16, &reset, sizeof(reset));
+            init_controls(*it->second, 0, R200_LEFT_RIGHT_XU);
+            set_control(*it->second, 0, 16, &reset, sizeof(reset));
             break;
         }
 
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
         refresh();
 
-        while(!devices[index].device)
+        while(!it->second)
         {
             std::this_thread::sleep_for(std::chrono::milliseconds(100));
             refresh();
@@ -96,19 +91,23 @@ int main() try
     ctx.refresh();
     ctx.list();
 
-    for(int i=0; i<ctx.devices.size(); ++i)
+    int i=0;
+    for(auto & p : ctx.devices)
     {
-        uvc::set_subdevice_mode(*ctx.devices[i].device, 1, 628, 469, 'Z16 ', 60, [i](const void * frame) { std::cout << i; });
-        uvc::start_streaming(*ctx.devices[i].device, 0);
+        uvc::set_subdevice_mode(*p.second, 1, 628, 469, 'Z16 ', 60, [i](const void * frame) { std::cout << i; });
+        uvc::start_streaming(*p.second, 0);
+        ++i;
     }
     std::this_thread::sleep_for(std::chrono::seconds(5));
 
-    for(int i=0; i<ctx.devices.size(); ++i)
+    i=0;
+    for(auto & p : ctx.devices)
     {
-        ctx.reset(i);
+        ctx.reset(p.first);
 
-        uvc::set_subdevice_mode(*ctx.devices[i].device, 1, 628, 469, 'Z16 ', 60, [i](const void * frame) { std::cout << i; });
-        uvc::start_streaming(*ctx.devices[i].device, 0);
+        uvc::set_subdevice_mode(*p.second, 1, 628, 469, 'Z16 ', 60, [i](const void * frame) { std::cout << i; });
+        uvc::start_streaming(*p.second, 0);
+        ++i;
 
         std::this_thread::sleep_for(std::chrono::seconds(5));
     }
