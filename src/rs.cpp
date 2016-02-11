@@ -56,6 +56,13 @@ void rs_delete_context(rs_context * context, rs_error ** error) try
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, context)
 
+void rs_enumerate_devices(rs_context * context, rs_error ** error) try
+{
+    VALIDATE_NOT_NULL(context);
+    context->enumerate_devices();
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, context)
+
 int rs_get_device_count(const rs_context * context, rs_error ** error) try
 {
     VALIDATE_NOT_NULL(context);

@@ -8,7 +8,7 @@
 extern "C" {
 #endif
 
-#define RS_API_VERSION 4
+#define RS_API_VERSION 5
 
 typedef enum rs_stream
 {
@@ -149,6 +149,12 @@ typedef struct rs_error rs_error;
 
 rs_context * rs_create_context(int api_version, rs_error ** error);
 void rs_delete_context(rs_context * context, rs_error ** error);
+
+/**
+ * refresh the list of available devices associated with this context
+ * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+ */
+void rs_enumerate_devices(rs_context * context, rs_error ** error);
 
 /**
  * determine number of connected devices

@@ -3,6 +3,7 @@ LIBRARY
 EXPORTS
 	rs_create_context
 	rs_delete_context
+	rs_enumerate_devices
 	rs_get_device_count
 	rs_get_device
 	
