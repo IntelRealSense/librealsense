@@ -20,6 +20,16 @@ rsimpl::uvc::device * rs_context::get_device(const std::string & id)
     return it == end(id_to_device) ? nullptr : it->second.get();
 }
 
+void rs_context::flush_device(const std::string & id)
+{
+    auto it = id_to_device.find(id);
+    if(it != end(id_to_device))
+    {
+        it->second = nullptr;
+        LOG_INFO("Disconnected from device " << it->first);
+    }
+}
+
 void rs_context::enumerate_devices()
 {
     auto device_list = query_devices(context);
@@ -44,7 +54,7 @@ void rs_context::enumerate_devices()
         }
         else if(!it->second)
         {
-            LOG_INFO("Reconnected to device " << get_unique_id(*d));
+            LOG_INFO("Reconnected to device " << it->first);
             it->second = d;
 
             const rsimpl::uvc::guid R200_LEFT_RIGHT_XU = {0x18682d34, 0xdd2c, 0x4073, {0xad, 0x23, 0x72, 0x14, 0x73, 0x9a, 0x07, 0x4c}};

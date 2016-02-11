@@ -21,6 +21,7 @@ struct rs_context
 
     void                                                        enumerate_devices();
     rsimpl::uvc::device *                                       get_device(const std::string & id);
+    void                                                        flush_device(const std::string & id);
 private:
                                                                 rs_context(int);
     static bool                                                 singleton_alive;

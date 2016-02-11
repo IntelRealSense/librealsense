@@ -176,7 +176,7 @@ void rs_device::reset()
     // Send a hardware reset command and then let the context drop its handle to the device
     reset_hardware();
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
-    ctx.enumerate_devices();
+    ctx.flush_device(id);
 
     // Flush all internal state
     for(auto & r : config.requests) r = stream_request();
