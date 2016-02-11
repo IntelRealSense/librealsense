@@ -175,7 +175,6 @@ void rs_device::reset()
 {
     // Send a hardware reset command and then let the context drop its handle to the device
     reset_hardware();
-    std::this_thread::sleep_for(std::chrono::milliseconds(100));
     ctx.flush_device(id);
 
     // Flush all internal state
@@ -185,10 +184,12 @@ void rs_device::reset()
     archive = nullptr;
     capturing = false;
 
-    // Try to reconnect to the device (TODO: Throw after some reasonable timeout)
-    while(!ctx.get_device(id))
+    // Try to reconnect to the device
+    for(int i=0; i<10; ++i)
     {
+        if(ctx.get_device(id)) break;
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
         ctx.enumerate_devices();
     }
+    if(!ctx.get_device(id)) throw std::runtime_error("unable to reconnect to device after reset");
 }

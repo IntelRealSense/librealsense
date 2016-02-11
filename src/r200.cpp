@@ -494,5 +494,6 @@ namespace rsimpl
     void r200_camera::reset_hardware()
     {
         r200::force_firmware_reset(get_device());
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
 }

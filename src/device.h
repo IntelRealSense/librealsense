@@ -65,9 +65,9 @@ public:
     
     virtual bool                                supports_option(rs_option option) const;
     virtual void                                get_option_range(rs_option option, double & min, double & max, double & step);
-    virtual void                                set_options(const rs_option options[], int count, const double values[]) {}
-    virtual void                                get_options(const rs_option options[], int count, double values[]) {}
-    virtual void                                reset_hardware() {}
+    virtual void                                set_options(const rs_option options[], int count, const double values[]) = 0;
+    virtual void                                get_options(const rs_option options[], int count, double values[]) = 0;
+    virtual void                                reset_hardware() = 0;
 
     virtual void                                on_before_start(const std::vector<rsimpl::subdevice_mode_selection> & selected_modes) {}
     virtual std::shared_ptr<rsimpl::frame_timestamp_reader>

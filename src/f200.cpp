@@ -490,5 +490,17 @@ namespace rsimpl
         return std::make_shared<rolling_timestamp_reader>();
     }
 
+    void f200_camera::reset_hardware()
+    {
+        // Shut down thermal control loop thread
+        runTemperatureThread = false;
+        temperatureCv.notify_one();
+        if (temperatureThread.joinable())
+            temperatureThread.join();   
+
+        // Reset the IVCAM hardware
+        f200::force_hardware_reset(get_device(), usbMutex);
+        std::this_thread::sleep_for(std::chrono::seconds(2)); // TODO: Figure out the appropriate amount of time to wait
+    }
 } // namespace rsimpl::f200
 
