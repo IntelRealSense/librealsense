@@ -8,17 +8,17 @@
 #include <algorithm>
 
 std::vector<texture_buffer> buffers;
+std::vector<rs::device *> devices;
 
 int main(int argc, char * argv[]) try
 {
-    rs::log_to_console(rs::log_severity::warn);
+    rs::log_to_console(rs::log_severity::debug);
     //rs::log_to_file(rs::log_severity::debug, "librealsense.log");
 
     rs::context ctx;
     if(ctx.get_device_count() == 0) throw std::runtime_error("No device detected. Is it plugged in?");
     
     // Enumerate all devices
-    std::vector<rs::device *> devices;
     for(int i=0; i<ctx.get_device_count(); ++i)
     {
         devices.push_back(ctx.get_device(i));
@@ -41,6 +41,23 @@ int main(int argc, char * argv[]) try
     glfwInit();
     std::ostringstream ss; ss << "CPP Multi-Camera Example";
     GLFWwindow * win = glfwCreateWindow(1280, 960, ss.str().c_str(), 0, 0);
+    glfwSetKeyCallback(win, [](GLFWwindow * win, int key, int scancode, int action, int mods) 
+    { 
+        if(action != GLFW_RELEASE && key >= '0' && key <= '9')
+        {
+            size_t index = key - '0';
+            if(index < devices.size())
+            {
+                std::cout << "Resetting device " << index << " (" << devices[index]->get_name() << ")" << std::endl;
+                devices[index]->reset();
+
+                std::cout << "Device reset. Restarting streaming..." << std::endl;
+                devices[index]->enable_stream(rs::stream::depth, rs::preset::best_quality);
+                devices[index]->enable_stream(rs::stream::color, rs::preset::best_quality);
+                devices[index]->start();
+            }
+        }
+    });
     glfwMakeContextCurrent(win);
 
 	int windowWidth, windowHeight;

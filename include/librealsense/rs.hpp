@@ -519,6 +519,15 @@ namespace rs
             error::handle(e);
             return r;
         }
+
+        /// force the device hardware to reset, and block until a connection to the device can be reestablished
+        /// \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+        void reset()
+        {
+            rs_error * e = nullptr;
+            rs_reset_device((rs_device *)this, &e);
+            error::handle(e);
+        }
     };
 
     inline std::ostream & operator << (std::ostream & o, stream stream) { return o << rs_stream_to_string((rs_stream)stream); }

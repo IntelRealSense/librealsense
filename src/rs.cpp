@@ -359,6 +359,13 @@ void rs_set_device_option(rs_device * device, rs_option option, double value, rs
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, device, option, value)
 
+void rs_reset_device(rs_device * device, rs_error ** error) try
+{
+    VALIDATE_NOT_NULL(device);
+    device->reset();
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, device)
+
 
 
 void rs_free_error(rs_error * error) { if (error) delete error; }

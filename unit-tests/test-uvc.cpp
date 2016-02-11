@@ -9,13 +9,13 @@ namespace uvc = rsimpl::uvc;
 struct smart_context
 {
     std::shared_ptr<uvc::context> ctx;
-    std::map<std::string, std::shared_ptr<uvc::device>> devices;
+    std::map<std::string, std::shared_ptr<uvc::device>> id_to_device;
 
     smart_context() : ctx(uvc::create_context()) {}
 
     void list() const
     {
-        for(auto & p : devices)
+        for(auto & p : id_to_device)
         {
             std::cout << p.first << ": ";
             if(!!p.second) std::cout << "connected, vid = " << get_vendor_id(*p.second) << ", pid = " << get_product_id(*p.second) << std::endl;
@@ -28,11 +28,11 @@ struct smart_context
         auto device_list = query_devices(ctx);
         for(auto & d : device_list)
         {
-            auto it = devices.find(get_unique_id(*d));
-            if(it == end(devices))
+            auto it = id_to_device.find(get_unique_id(*d));
+            if(it == end(id_to_device))
             {
                 std::cout << "Discovered new device " << get_unique_id(*d) << std::endl;
-                devices.insert({get_unique_id(*d), d});
+                id_to_device.insert({get_unique_id(*d), d});
             }
             else if(!it->second)
             {
@@ -45,7 +45,7 @@ struct smart_context
             }
         }
         
-        for(auto & p : devices)
+        for(auto & p : id_to_device)
         {
             if(!p.second) continue;
             auto it = std::find_if(begin(device_list), end(device_list), [p](const std::shared_ptr<uvc::device> & d) { return p.first == get_unique_id(*d); }); 
@@ -59,8 +59,8 @@ struct smart_context
 
     void reset(std::string id)
     {
-        auto it = devices.find(id);
-        if(it == end(devices)) return;
+        auto it = id_to_device.find(id);
+        if(it == end(id_to_device)) return;
 
         const uvc::guid R200_LEFT_RIGHT_XU = {0x18682d34, 0xdd2c, 0x4073, {0xad, 0x23, 0x72, 0x14, 0x73, 0x9a, 0x07, 0x4c}};
         uint8_t reset = 1;
@@ -92,7 +92,7 @@ int main() try
     ctx.list();
 
     int i=0;
-    for(auto & p : ctx.devices)
+    for(auto & p : ctx.id_to_device)
     {
         uvc::set_subdevice_mode(*p.second, 1, 628, 469, 'Z16 ', 60, [i](const void * frame) { std::cout << i; });
         uvc::start_streaming(*p.second, 0);
@@ -101,7 +101,7 @@ int main() try
     std::this_thread::sleep_for(std::chrono::seconds(5));
 
     i=0;
-    for(auto & p : ctx.devices)
+    for(auto & p : ctx.id_to_device)
     {
         ctx.reset(p.first);
 

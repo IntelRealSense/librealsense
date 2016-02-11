@@ -34,7 +34,7 @@ namespace rsimpl
 
         void temperature_control_loop();
     public:      
-        f200_camera(std::shared_ptr<uvc::device> device, const static_device_info & info, const f200::CameraCalibrationParameters & calib, const f200::IVCAMTemperatureData & temp, const f200::IVCAMThermalLoopParams & params);
+        f200_camera(rs_context & ctx, const std::string & id, const static_device_info & info, const f200::CameraCalibrationParameters & calib, const f200::IVCAMTemperatureData & temp, const f200::IVCAMThermalLoopParams & params);
         ~f200_camera();
 
         void on_before_start(const std::vector<subdevice_mode_selection> & selected_modes) override;
@@ -45,8 +45,8 @@ namespace rsimpl
         std::shared_ptr<frame_timestamp_reader> create_frame_timestamp_reader() const override;
     };
 
-    std::shared_ptr<rs_device> make_f200_device(std::shared_ptr<uvc::device> device);
-    std::shared_ptr<rs_device> make_sr300_device(std::shared_ptr<uvc::device> device);
+    std::shared_ptr<rs_device> make_f200_device(rs_context & ctx, const std::string & id);
+    std::shared_ptr<rs_device> make_sr300_device(rs_context & ctx, const std::string & id);
 }
 
 #endif
