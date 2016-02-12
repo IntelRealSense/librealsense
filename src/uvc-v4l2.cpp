@@ -76,6 +76,7 @@ namespace rsimpl
         {
             std::string dev_name;   // Device name (typically of the form /dev/video*)
             int busnum, devnum;     // USB device bus number and device number (needed for F200/SR300 direct USB controls)
+            std::string serial;     // USB device serial number
             int vid, pid, mi;       // Vendor ID, product ID, and multiple interface index
             int fd;                 // File descriptor for this device
             std::vector<buffer> buffers;
@@ -101,6 +102,8 @@ namespace rsimpl
                     throw std::runtime_error("Failed to read busnum");
                 if(!(std::ifstream(path + "../../../devnum") >> devnum))
                     throw std::runtime_error("Failed to read devnum");
+                if(!(std::ifstream(path + "../../../serial") >> serial))
+                    throw std::runtime_error("Failed to read serial");
 
                 std::string modalias;
                 if(!(std::ifstream("/sys/class/video4linux/" + name + "/device/modalias") >> modalias))
@@ -320,6 +323,11 @@ namespace rsimpl
                         if(xioctl(sub->fd, VIDIOC_DQBUF, &buf) < 0)
                         {
                             if(errno == EAGAIN) return;
+                            if(errno == 19)
+                            {
+                                // No such device, connection to device has probably been lost
+                                continue; // TODO: Implement a mechanism to report failure up one level
+                            }
                             throw_error("VIDIOC_DQBUF");
                         }
                         assert(buf.index < sub->buffers.size());
@@ -403,6 +411,7 @@ namespace rsimpl
 
         int get_vendor_id(const device & device) { return device.subdevices[0]->get_vid(); }
         int get_product_id(const device & device) { return device.subdevices[0]->get_pid(); }
+        std::string get_unique_id(const device & device) { return device.subdevices[0]->serial; }
 
         void init_controls(device & device, int subdevice, const guid & xu_guid) {}
         void get_control(const device & device, int subdevice, uint8_t ctrl, void * data, int len)

@@ -15,6 +15,8 @@ namespace rsimpl
 {
     namespace uvc
     {
+        struct critical_error : public std::runtime_error { critical_error(const char * e) : runtime_error(e) {} };
+
         struct guid { uint32_t data1; uint16_t data2, data3; uint8_t data4[8]; };
         struct context; // Opaque type representing access to the underlying UVC implementation
         struct device; // Opaque type representing access to a specific UVC device
@@ -26,6 +28,7 @@ namespace rsimpl
         // Static device properties
         int get_vendor_id(const device & device);
         int get_product_id(const device & device);
+        std::string get_unique_id(const device & device);
 
         // Direct USB controls
         void claim_interface(device & device, const guid & interface_guid, int interface_number);
@@ -50,11 +53,12 @@ namespace rsimpl
         // Access CT, PU, and XU controls, and retry if failure occurs
         inline void set_pu_control_with_retry(device & device, int subdevice, rs_option option, int value)
         {
-            // Try writing a control, if it fails, retry several times
+            // Try writing a control, if it fails with a non-critical error, retry several times
             // TODO: We may wish to tune the retry counts and sleep times based on camera, platform, firmware, etc.
             for(int i=0; i<20; ++i)
             {
                 try { set_pu_control(device, subdevice, option, value); return; }
+                catch(const critical_error &) { throw; }
                 catch(...) { std::this_thread::sleep_for(std::chrono::milliseconds(50)); }
             }
             set_pu_control(device, subdevice, option, value);
@@ -62,10 +66,11 @@ namespace rsimpl
         
         inline int get_pu_control_with_retry(const device & device, int subdevice, rs_option option)
         {
-            // Try reading a control, if it fails, retry several times
+            // Try writing a control, if it fails with a non-critical error, retry several times
             for(int i=0; i<20; ++i)
             {
                 try { return get_pu_control(device, subdevice, option); }
+                catch(const critical_error &) { throw; }
                 catch(...) { std::this_thread::sleep_for(std::chrono::milliseconds(50)); }
             }
             return get_pu_control(device, subdevice, option);
@@ -73,10 +78,11 @@ namespace rsimpl
         
         inline void set_control_with_retry(device & device, int subdevice, uint8_t ctrl, void * data, int len)
         {
-            // Try writing a control, if it fails, retry several times
+            // Try writing a control, if it fails with a non-critical error, retry several times
             for(int i=0; i<20; ++i)
             {
                 try { set_control(device, subdevice, ctrl, data, len); return; }
+                catch(const critical_error &) { throw; }
                 catch(...) { std::this_thread::sleep_for(std::chrono::milliseconds(50)); }
             }
             set_control(device, subdevice, ctrl, data, len);
@@ -84,10 +90,11 @@ namespace rsimpl
         
         inline void get_control_with_retry(const device & device, int subdevice, uint8_t ctrl, void * data, int len)
         {
-            // Try reading a control, if it fails, retry several times
+            // Try writing a control, if it fails with a non-critical error, retry several times
             for(int i=0; i<20; ++i)
             {
                 try { get_control(device, subdevice, ctrl, data, len); return; }
+                catch(const critical_error &) { throw; }
                 catch(...) { std::this_thread::sleep_for(std::chrono::milliseconds(50)); }
             }
             get_control(device, subdevice, ctrl, data, len);

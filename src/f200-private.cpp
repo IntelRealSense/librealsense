@@ -543,9 +543,13 @@ namespace rsimpl { namespace f200
 
     void force_hardware_reset(uvc::device & device, std::timed_mutex & mutex)
     {
-        IVCAMCommand cmd(IVCAMMonitorCommand::HWReset);
-        cmd.oneDirection = true;
-        perform_and_send_monitor_command(device, mutex, cmd);
+        try
+        {
+            IVCAMCommand cmd(IVCAMMonitorCommand::HWReset);
+            cmd.oneDirection = true;
+            perform_and_send_monitor_command(device, mutex, cmd);
+        }
+        catch(...) {} // The read portion of this command might fail, this is fine
     }
 
     void enable_timestamp(uvc::device & device, std::timed_mutex & mutex, bool colorEnable, bool depthEnable)
