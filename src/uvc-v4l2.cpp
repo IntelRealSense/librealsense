@@ -173,13 +173,13 @@ namespace rsimpl
 
             void get_control(uint8_t control, void * data, size_t size)
             {
-                uvc_xu_control_query q = {get_xu_endpoint(), control, UVC_GET_CUR, static_cast<uint8_t>(size), reinterpret_cast<uint8_t *>(data)};
+                uvc_xu_control_query q = {get_xu_endpoint(), control, UVC_GET_CUR, static_cast<uint16_t>(size), reinterpret_cast<uint8_t *>(data)};
                 if(xioctl(fd, UVCIOC_CTRL_QUERY, &q) < 0) throw_error("UVCIOC_CTRL_QUERY:UVC_GET_CUR");
             }
 
             void set_control(uint8_t control, void * data, size_t size)
             {
-                uvc_xu_control_query q = {get_xu_endpoint(), control, UVC_SET_CUR, static_cast<uint8_t>(size), reinterpret_cast<uint8_t *>(data)};
+                uvc_xu_control_query q = {get_xu_endpoint(), control, UVC_SET_CUR, static_cast<uint16_t>(size), reinterpret_cast<uint8_t *>(data)};
                 if(xioctl(fd, UVCIOC_CTRL_QUERY, &q) < 0) throw_error("UVCIOC_CTRL_QUERY:UVC_SET_CUR");
             }
 
