@@ -403,6 +403,13 @@ namespace rsimpl
 
         int get_vendor_id(const device & device) { return device.subdevices[0]->get_vid(); }
         int get_product_id(const device & device) { return device.subdevices[0]->get_pid(); }
+        std::string get_unique_id(const device & device)
+        {
+	    std::ostringstream ss;
+            ss << device.subdevices[0]->busnum << "-" << device.subdevices[0]->devnum;
+            return ss.str();
+	}
+
 
         void init_controls(device & device, int subdevice, const guid & xu_guid) {}
         void get_control(const device & device, int subdevice, uint8_t ctrl, void * data, int len)
