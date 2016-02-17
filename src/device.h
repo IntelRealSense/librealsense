@@ -21,7 +21,8 @@ namespace rsimpl
 struct rs_device
 {
 private:
-    const std::shared_ptr<rsimpl::uvc::device>  device;
+    rs_context &                                ctx;
+    const std::string                           id;
 protected:
     rsimpl::device_config                       config;
 private:
@@ -37,10 +38,10 @@ private:
 
     std::shared_ptr<rsimpl::frame_archive>      archive;
 protected:
-    const rsimpl::uvc::device &                 get_device() const { return *device; }
-    rsimpl::uvc::device &                       get_device() { return *device; }
+    const rsimpl::uvc::device &                 get_device() const;
+    rsimpl::uvc::device &                       get_device();
 public:
-                                                rs_device(std::shared_ptr<rsimpl::uvc::device> device, const rsimpl::static_device_info & info);
+                                                rs_device(rs_context & ctx, const std::string & id, const rsimpl::static_device_info & info);
                                                 ~rs_device();
 
     const rsimpl::stream_interface &            get_stream_interface(rs_stream stream) const { return *streams[stream]; }
@@ -60,11 +61,13 @@ public:
     
     void                                        wait_all_streams();
     bool                                        poll_all_streams();
+    void                                        reset();
     
     virtual bool                                supports_option(rs_option option) const;
     virtual void                                get_option_range(rs_option option, double & min, double & max, double & step);
-    virtual void                                set_options(const rs_option options[], int count, const double values[]) {}
-    virtual void                                get_options(const rs_option options[], int count, double values[]) {}
+    virtual void                                set_options(const rs_option options[], int count, const double values[]) = 0;
+    virtual void                                get_options(const rs_option options[], int count, double values[]) = 0;
+    virtual void                                reset_hardware() = 0;
 
     virtual void                                on_before_start(const std::vector<rsimpl::subdevice_mode_selection> & selected_modes) {}
     virtual std::shared_ptr<rsimpl::frame_timestamp_reader>

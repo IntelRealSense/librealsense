@@ -2,11 +2,12 @@
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
 #include "device.h"
+#include "context.h"
 #include "sync.h"
 
 using namespace rsimpl;
 
-rs_device::rs_device(std::shared_ptr<rsimpl::uvc::device> device, const rsimpl::static_device_info & info) : device(device), config(info), capturing(false),
+rs_device::rs_device(rs_context & ctx, const std::string & id, const rsimpl::static_device_info & info) : ctx(ctx), id(id), config(info), capturing(false),
     depth(config, RS_STREAM_DEPTH), color(config, RS_STREAM_COLOR), infrared(config, RS_STREAM_INFRARED), infrared2(config, RS_STREAM_INFRARED2),
     points(depth), rect_color(color), color_to_depth(color, depth), depth_to_color(depth, color), depth_to_rect_color(depth, rect_color), infrared2_to_depth(infrared2,depth), depth_to_infrared2(depth,infrared2)
 {
@@ -26,6 +27,18 @@ rs_device::rs_device(std::shared_ptr<rsimpl::uvc::device> device, const rsimpl::
 rs_device::~rs_device()
 {
 
+}
+
+const rsimpl::uvc::device & rs_device::get_device() const 
+{ 
+    if(auto dev = ctx.get_device(id)) return *dev;
+    else throw std::runtime_error("not connected");
+}
+
+rsimpl::uvc::device & rs_device::get_device()
+{ 
+    if(auto dev = ctx.get_device(id)) return *dev;
+    else throw std::runtime_error("not connected");
 }
 
 bool rs_device::supports_option(rs_option option) const 
@@ -84,7 +97,7 @@ void rs_device::start()
         }
 
         // Initialize the subdevice and set it to the selected mode
-        set_subdevice_mode(*device, mode_selection.mode.subdevice, mode_selection.mode.native_dims.x, mode_selection.mode.native_dims.y, mode_selection.mode.pf.fourcc, mode_selection.mode.fps, 
+        set_subdevice_mode(get_device(), mode_selection.mode.subdevice, mode_selection.mode.native_dims.x, mode_selection.mode.native_dims.y, mode_selection.mode.pf.fourcc, mode_selection.mode.fps, 
             [mode_selection, archive, timestamp_reader](const void * frame) mutable
         {
             // Ignore any frames which appear corrupted or invalid
@@ -105,7 +118,7 @@ void rs_device::start()
     
     this->archive = archive;
     on_before_start(selected_modes);
-    start_streaming(*device, config.info.num_libuvc_transfer_buffers);
+    start_streaming(get_device(), config.info.num_libuvc_transfer_buffers);
     capture_started = std::chrono::high_resolution_clock::now();
     capturing = true;
 }
@@ -113,7 +126,7 @@ void rs_device::start()
 void rs_device::stop()
 {
     if(!capturing) throw std::runtime_error("cannot stop device without first starting device");
-    stop_streaming(*device);
+    stop_streaming(get_device());
     capturing = false;
 }
 
@@ -156,4 +169,27 @@ void rs_device::get_option_range(rs_option option, double & min, double & max, d
     }
 
     throw std::logic_error("range not specified");
+}
+
+void rs_device::reset()
+{
+    // Send a hardware reset command and then let the context drop its handle to the device
+    reset_hardware();
+    ctx.flush_device(id);
+
+    // Flush all internal state
+    for(auto & r : config.requests) r = stream_request();
+    config.depth_scale = config.info.nominal_depth_scale;
+    for(auto s : native_streams) s->archive = nullptr;
+    archive = nullptr;
+    capturing = false;
+
+    // Try to reconnect to the device
+    for(int i=0; i<10; ++i)
+    {
+        if(ctx.get_device(id)) break;
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        ctx.enumerate_devices();
+    }
+    if(!ctx.get_device(id)) throw std::runtime_error("unable to reconnect to device after reset");
 }

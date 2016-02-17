@@ -477,11 +477,54 @@ namespace rsimpl
 
         int get_vendor_id(const device & device) { return device.vid; }
         int get_product_id(const device & device) { return device.pid; }
+        std::string get_unique_id(const device & device) { return device.unique_id; }
 
         void init_controls(device & device, int subdevice, const guid & guid)
         {
             device.get_media_source(subdevice);
             device.subdevices[subdevice].ks_property_set = reinterpret_cast<const GUID &>(guid);
+        }
+
+        void do_ks_property(IKsControl * control, KSP_NODE & node, void * data, int len, ULONG * bytes_received)
+        {
+            // According to https://social.msdn.microsoft.com/Forums/windowsdesktop/en-US/1fa98356-7b18-4bf1-8a7f-c7a8266337de/directshow-call-to-ikscontrolksproperty-never-returns-when-the-camera-is-unplugged?forum=windowsdirectshowdevelopment
+            // it is expected behavior that calls to KsProperty can hang indefinitely under a variety of circumstances, including the disconnection of the underlying device.
+            // It is not acceptable for calls to librealsense to block forever under any circumstance. At worst, an error should be indicated.
+
+            // My initial intuition was to use std::async to invoke this command asynchronously, and to throw if std::future::wait_for return std::future_status::timeout.
+            // However, this approach is flawed, as std::async may be operating off of a finite pool of threads, and any call which "times out" will in fact be occupying the
+            // underlying thread FOREVER. My second thought was to create a std::thread for each call, but this approach is also flawed, as the created threads will still live
+            // forever, which may lead to resource starvation over time.
+
+            // Instead, we are using a very dangerous mechanism: TerminateThread. We will create a native Win32 thread for each call to KsProperty, and after a reasonable
+            // waiting period, if the thread has not completed of its own volition, we will terminate it. This is not, strictly speaking, safe. We have no idea what KsProperty
+            // is doing while it hangs forever. We are taking a calculated risk that our calls to TerminateThread will only occur while the worker thread is blocked on some
+            // sort of I/O, and that the thread is not holding any resources that will not be cleaned up via other means.
+
+            // Create a struct to hold the arguments passed to KsProperty, and the return value of the call
+            struct args { IKsControl * control; KSP_NODE & node; void * data; int len; ULONG * bytes_received; HRESULT result; };
+            args a = {control, node, data, len, bytes_received, 0};
+
+            // Create a thread to execute the call to KsProperty
+            HANDLE thread = CreateThread(NULL, 0, [](LPVOID param) -> DWORD
+            {
+                auto a = reinterpret_cast<args *>(param);
+                a->result = a->control->KsProperty((PKSPROPERTY)&a->node, sizeof(a->node), a->data, a->len, a->bytes_received);                
+                return 0;
+            }, &a, 0, NULL);
+
+            // Wait 100ms for the thread to complete, and if it does not, manually terminate it and throw a critical error.
+            // The various set_with_retry functions in uvc.h will allow critical errors to escape immediately, instead of attempting to retry.
+            if(WaitForSingleObject(thread, 100) != WAIT_OBJECT_0)
+            {
+                TerminateThread(thread, 0);
+                CloseHandle(thread);
+                throw critical_error("timeout while calling KsProperty");
+            }
+
+            // We know that the thread completed normally, so clean up our handle and return the result.
+            CloseHandle(thread);
+            check("IKsControl::KsProperty", a.result);
         }
 
         void get_control(const device & device, int subdevice, uint8_t ctrl, void *data, int len)
@@ -496,7 +539,7 @@ namespace rsimpl
             node.NodeId = device.subdevices[subdevice].ks_node_id;
 
             ULONG bytes_received = 0;
-            check("IKsControl::KsProperty", device.subdevices[subdevice].ks_control->KsProperty((PKSPROPERTY)&node, sizeof(node), data, len, &bytes_received));
+            do_ks_property(device.subdevices[subdevice].ks_control, node, data, len, &bytes_received);
             if(bytes_received != len) throw std::runtime_error("XU read did not return enough data");
         }
 
@@ -511,7 +554,7 @@ namespace rsimpl
             node.Property.Flags = KSPROPERTY_TYPE_SET | KSPROPERTY_TYPE_TOPOLOGY;
             node.NodeId = device.subdevices[subdevice].ks_node_id;
                 
-            check("IKsControl::KsProperty", device.subdevices[subdevice].ks_control->KsProperty((PKSPROPERTY)&node, sizeof(KSP_NODE), data, len, nullptr));
+            do_ks_property(device.subdevices[subdevice].ks_control, node, data, len, nullptr);
         }
 
         void claim_interface(device & device, const guid & interface_guid, int interface_number)
