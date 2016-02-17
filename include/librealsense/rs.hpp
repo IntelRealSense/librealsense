@@ -488,6 +488,16 @@ namespace rs
             error::handle(e);
         }
 
+        /// check if new frames are available, without blocking
+        /// \return  true if new frames are available, false if no new frames have arrived
+        bool poll_for_frames()
+        {
+            rs_error * e = nullptr;
+            auto r = rs_poll_for_frames((rs_device *)this, &e);
+            error::handle(e);
+            return r != 0;
+        }
+
         /// retrieve the time at which the latest frame on a stream was captured
         /// \param[in] stream  the stream whose latest frame we are interested in
         /// \return            the timestamp of the frame, in milliseconds since the device was started

@@ -36,6 +36,7 @@ EXPORTS
 	rs_set_device_option
 	
 	rs_wait_for_frames
+	rs_poll_for_frames
 	rs_get_frame_timestamp
 	rs_get_frame_data
 	

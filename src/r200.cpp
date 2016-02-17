@@ -11,27 +11,6 @@
 
 namespace rsimpl
 {
-    template<unsigned MAGIC_NUMBER>
-    int decode_dinghy_frame_number(const subdevice_mode & mode, const void * frame)
-    {
-        auto dinghy = reinterpret_cast<const r200::Dinghy *>(reinterpret_cast<const uint8_t *>(frame) + mode.pf->get_image_size(mode.native_dims.x, mode.native_dims.y-1));
-        return dinghy->magicNumber == MAGIC_NUMBER ? dinghy->frameCount : 0;
-    }
-
-    int decode_yuy2_frame_number(const subdevice_mode & mode, const void * frame)
-    {
-        assert(mode.pf == &pf_yuy2);
-
-        auto data = reinterpret_cast<const uint8_t *>(frame) + ((mode.native_dims.x * mode.native_dims.y) - 32) * 2;
-        int number = 0;
-        for(int i = 0; i < 32; ++i)
-        {
-            number |= ((*data & 1) << (i & 1 ? 32 - i : 30 - i));
-            data += 2;
-        }
-        return number;
-    }
-
     r200_camera::r200_camera(std::shared_ptr<uvc::device> device, const static_device_info & info) : rs_device(device, info)
     {
         rs_option opt[] = {RS_OPTION_R200_DEPTH_UNITS}; double units;
@@ -66,27 +45,27 @@ namespace rsimpl
         for(auto fps : {30, 60, 90})
         {
             // Subdevice 0 can provide left/right infrared via four pixel formats, in three resolutions, which can either be uncropped or cropped to match Z
-            for(auto pf : {&pf_y8, &pf_y8i, &pf_y16, &pf_y12i})
+            for(auto pf : {pf_y8, pf_y8i, pf_y16, pf_y12i})
             {
-                info.subdevice_modes.push_back({0, {640, 481}, pf, fps, c.modesLR[0], {}, {0, -6}, &decode_dinghy_frame_number<0x08070605>});  
-                info.subdevice_modes.push_back({0, {640, 373}, pf, fps, c.modesLR[1], {}, {0, -6}, &decode_dinghy_frame_number<0x08070605>});  
-                info.subdevice_modes.push_back({0, {640, 254}, pf, fps, c.modesLR[2], {}, {0, -6}, &decode_dinghy_frame_number<0x08070605>});  
+                info.subdevice_modes.push_back({0, {640, 481}, pf, fps, c.modesLR[0], {}, {0, -6}});  
+                info.subdevice_modes.push_back({0, {640, 373}, pf, fps, c.modesLR[1], {}, {0, -6}});  
+                info.subdevice_modes.push_back({0, {640, 254}, pf, fps, c.modesLR[2], {}, {0, -6}});  
             }
 
             // Subdevice 1 can provide depth, in three resolutions, which can either be unpadded or padded to match left/right
-            info.subdevice_modes.push_back({1, {628, 469}, &pf_z16,  fps, pad_crop_intrinsics(c.modesLR[0], -6), {}, {0, +6}, &decode_dinghy_frame_number<0x4030201>});
-            info.subdevice_modes.push_back({1, {628, 361}, &pf_z16,  fps, pad_crop_intrinsics(c.modesLR[1], -6), {}, {0, +6}, &decode_dinghy_frame_number<0x4030201>});
-            info.subdevice_modes.push_back({1, {628, 242}, &pf_z16,  fps, pad_crop_intrinsics(c.modesLR[2], -6), {}, {0, +6}, &decode_dinghy_frame_number<0x4030201>});
+            info.subdevice_modes.push_back({1, {628, 469}, pf_z16,  fps, pad_crop_intrinsics(c.modesLR[0], -6), {}, {0, +6}});
+            info.subdevice_modes.push_back({1, {628, 361}, pf_z16,  fps, pad_crop_intrinsics(c.modesLR[1], -6), {}, {0, +6}});
+            info.subdevice_modes.push_back({1, {628, 242}, pf_z16,  fps, pad_crop_intrinsics(c.modesLR[2], -6), {}, {0, +6}});
         }
 
         // Subdevice 2 can provide color, in several formats and framerates
-        info.subdevice_modes.push_back({2, { 320,  240}, &pf_yuy2, 60, scale_intrinsics(c.intrinsicsThird[1], 320, 240), {scale_intrinsics(c.modesThird[1][0], 320, 240)}, {0}, &decode_yuy2_frame_number, true});
-        info.subdevice_modes.push_back({2, { 320,  240}, &pf_yuy2, 30, scale_intrinsics(c.intrinsicsThird[1], 320, 240), {scale_intrinsics(c.modesThird[1][0], 320, 240)}, {0}, &decode_yuy2_frame_number, true});
-        info.subdevice_modes.push_back({2, { 640,  480}, &pf_yuy2, 60, c.intrinsicsThird[1], {c.modesThird[1][0]}, {0}, &decode_yuy2_frame_number, true});
-        info.subdevice_modes.push_back({2, { 640,  480}, &pf_yuy2, 30, c.intrinsicsThird[1], {c.modesThird[1][0]}, {0}, &decode_yuy2_frame_number, true});
-        info.subdevice_modes.push_back({2, {1920, 1080}, &pf_yuy2, 30, c.intrinsicsThird[0], {c.modesThird[0][0]}, {0}, &decode_yuy2_frame_number, true});
-        info.subdevice_modes.push_back({2, {2400, 1081}, &pf_rw10, 30, c.intrinsicsThird[0], {c.modesThird[0][0]}, {0}, &decode_dinghy_frame_number<0x8A8B8C8D>, true});
-		// todo - add 15 fps modes
+        info.subdevice_modes.push_back({2, { 320,  240}, pf_yuy2, 60, scale_intrinsics(c.intrinsicsThird[1], 320, 240), {scale_intrinsics(c.modesThird[1][0], 320, 240)}, {0}});
+        info.subdevice_modes.push_back({2, { 320,  240}, pf_yuy2, 30, scale_intrinsics(c.intrinsicsThird[1], 320, 240), {scale_intrinsics(c.modesThird[1][0], 320, 240)}, {0}});
+        info.subdevice_modes.push_back({2, { 640,  480}, pf_yuy2, 60, c.intrinsicsThird[1], {c.modesThird[1][0]}, {0}});
+        info.subdevice_modes.push_back({2, { 640,  480}, pf_yuy2, 30, c.intrinsicsThird[1], {c.modesThird[1][0]}, {0}});
+		info.subdevice_modes.push_back({2, {1920, 1080}, pf_yuy2, 15, c.intrinsicsThird[0], {c.modesThird[0][0]}, {0}});
+        info.subdevice_modes.push_back({2, {1920, 1080}, pf_yuy2, 30, c.intrinsicsThird[0], {c.modesThird[0][0]}, {0}});
+        info.subdevice_modes.push_back({2, {2400, 1081}, pf_rw10, 30, c.intrinsicsThird[0], {c.modesThird[0][0]}, {0}});
 
         // Set up interstream rules for left/right/z images
         for(auto ir : {RS_STREAM_INFRARED, RS_STREAM_INFRARED2})
@@ -323,7 +302,7 @@ namespace rsimpl
         uint8_t streamIntent = 0;
         for(const auto & m : selected_modes)
         {
-            switch(m.mode->subdevice)
+            switch(m.mode.subdevice)
             {
             case 0: streamIntent |= r200::STATUS_BIT_LR_STREAMING; break;
             case 2: streamIntent |= r200::STATUS_BIT_WEB_STREAMING; break;
@@ -348,19 +327,6 @@ namespace rsimpl
             }
         }
         r200::set_stream_intent(get_device(), streamIntent);
-    }
-
-    int r200_camera::convert_timestamp(int64_t timestamp) const
-    { 
-        int max_fps = 0;
-        for(int i=0; i<RS_STREAM_NATIVE_COUNT; ++i)
-        {
-            if(get_stream_interface((rs_stream)i).is_enabled())
-            {
-                max_fps = std::max(max_fps, get_stream_interface((rs_stream)i).get_framerate());
-            }
-        }
-        return static_cast<int>(timestamp * 1000 / max_fps);
     }
 
     uint32_t r200_camera::get_lr_framerate() const
@@ -421,5 +387,105 @@ namespace rsimpl
 
         // Default to parent implementation
         rs_device::get_option_range(option, min, max, step);
+    }
+
+    // All R200 images which are not in YUY2 format contain an extra row of pixels, called the "dinghy", which contains useful information
+    const r200::Dinghy & get_dinghy(const subdevice_mode & mode, const void * frame)
+    {
+        return *reinterpret_cast<const r200::Dinghy *>(reinterpret_cast<const uint8_t *>(frame) + mode.pf.get_image_size(mode.native_dims.x, mode.native_dims.y-1));
+    }
+
+    class dinghy_timestamp_reader : public frame_timestamp_reader
+    {
+        int max_fps;
+    public:
+        dinghy_timestamp_reader(int max_fps) : max_fps(max_fps) {}
+
+        bool validate_frame(const subdevice_mode & mode, const void * frame) const override 
+        { 
+            // No dinghy available on YUY2 images
+            if(mode.pf.fourcc == pf_yuy2.fourcc) return true;
+
+            // Check magic number for all subdevices
+            auto & dinghy = get_dinghy(mode, frame);
+            const uint32_t magic_numbers[] = {0x08070605, 0x04030201, 0x8A8B8C8D};
+            if(dinghy.magicNumber != magic_numbers[mode.subdevice])
+            {
+                LOG_WARNING("Subdevice " << mode.subdevice << " bad magic number 0x" << std::hex << dinghy.magicNumber);
+                return false;
+            }
+
+            // Check frame status for left/right/Z subdevices only
+            if(dinghy.frameStatus != 0 && mode.subdevice != 2)
+            {
+                LOG_WARNING("Subdevice " << mode.subdevice << " frame status 0x" << std::hex << dinghy.frameStatus);
+                return false;
+            }
+
+            // Check VDF error status for all subdevices
+            if(dinghy.VDFerrorStatus != 0)
+            {
+                LOG_WARNING("Subdevice " << mode.subdevice << " VDF error status 0x" << std::hex << dinghy.VDFerrorStatus);
+                return false;
+            }
+
+            // Check CAM module status for left/right subdevice only
+            if (dinghy.CAMmoduleStatus != 0 && mode.subdevice == 0)
+            {
+                LOG_WARNING("Subdevice " << mode.subdevice << " CAM module status 0x" << std::hex << dinghy.CAMmoduleStatus);
+                return false;
+            }        
+            
+            // TODO: Check for missing or duplicate frame numbers
+            return true;
+        }
+
+        int get_frame_timestamp(const subdevice_mode & mode, const void * frame) override 
+        { 
+            int frame_number = 0;
+            if(mode.pf.fourcc == pf_yuy2.fourcc)
+            {
+                // YUY2 images encode the frame number in the low order bits of the final 32 bytes of the image
+                auto data = reinterpret_cast<const uint8_t *>(frame) + ((mode.native_dims.x * mode.native_dims.y) - 32) * 2;
+                for(int i = 0; i < 32; ++i)
+                {
+                    frame_number |= ((*data & 1) << (i & 1 ? 32 - i : 30 - i));
+                    data += 2;
+                }
+            }
+            else frame_number = get_dinghy(mode, frame).frameCount; // All other formats can use the frame number in the dinghy row
+            return frame_number * 1000 / max_fps;
+        }
+    };
+
+    class serial_timestamp_generator : public frame_timestamp_reader
+    {
+        int fps, serial_frame_number;
+    public:
+        serial_timestamp_generator(int fps) : fps(fps), serial_frame_number() {}
+
+        bool validate_frame(const subdevice_mode & mode, const void * frame) const override { return true; }
+        int get_frame_timestamp(const subdevice_mode &, const void *) override 
+        { 
+            ++serial_frame_number;
+            return serial_frame_number * 1000 / fps;
+        }
+    };
+
+    std::shared_ptr<frame_timestamp_reader> r200_camera::create_frame_timestamp_reader() const
+    {
+        // If left, right, or Z streams are enabled, convert frame numbers to millisecond timestamps based on LRZ framerate
+        for(auto s : {RS_STREAM_DEPTH, RS_STREAM_INFRARED, RS_STREAM_INFRARED2})
+        {
+            auto & si = get_stream_interface(s);
+            if(si.is_enabled()) return std::make_shared<dinghy_timestamp_reader>(si.get_framerate());
+        }
+
+        // If only color stream is enabled, generate serial frame timestamps (no HW frame numbers available)
+        auto & si = get_stream_interface(RS_STREAM_COLOR);
+        if(si.is_enabled()) return std::make_shared<serial_timestamp_generator>(si.get_framerate());
+
+        // No streams enabled, so no need for a timestamp converter
+        return nullptr;
     }
 }

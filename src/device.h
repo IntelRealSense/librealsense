@@ -9,6 +9,15 @@
 #include "stream.h"
 #include <chrono>
 
+namespace rsimpl
+{
+    struct frame_timestamp_reader
+    {
+        virtual bool validate_frame(const subdevice_mode & mode, const void * frame) const = 0;
+        virtual int get_frame_timestamp(const subdevice_mode & mode, const void * frame) = 0;
+    };
+}
+
 struct rs_device
 {
 private:
@@ -24,10 +33,9 @@ private:
     rsimpl::stream_interface *                  streams[RS_STREAM_COUNT];
 
     bool                                        capturing;
-    std::chrono::high_resolution_clock::time_point capture_started;  
+    std::chrono::high_resolution_clock::time_point capture_started;
 
-    int64_t                                     base_timestamp;
-    int                                         last_stream_timestamp;
+    std::shared_ptr<rsimpl::frame_archive>      archive;
 protected:
     const rsimpl::uvc::device &                 get_device() const { return *device; }
     rsimpl::uvc::device &                       get_device() { return *device; }
@@ -51,8 +59,7 @@ public:
     bool                                        is_capturing() const { return capturing; }
     
     void                                        wait_all_streams();
-    int                                         get_frame_timestamp(rs_stream stream) const;
-    const rsimpl::byte *                        get_frame_data(rs_stream stream) const;
+    bool                                        poll_all_streams();
     
     virtual bool                                supports_option(rs_option option) const;
     virtual void                                get_option_range(rs_option option, double & min, double & max, double & step);
@@ -60,7 +67,8 @@ public:
     virtual void                                get_options(const rs_option options[], int count, double values[]) {}
 
     virtual void                                on_before_start(const std::vector<rsimpl::subdevice_mode_selection> & selected_modes) {}
-    virtual int                                 convert_timestamp(int64_t timestamp) const = 0;
+    virtual std::shared_ptr<rsimpl::frame_timestamp_reader>
+                                                create_frame_timestamp_reader() const { return nullptr; }
 };
 
 namespace rsimpl

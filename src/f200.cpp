@@ -34,11 +34,6 @@ namespace rsimpl
         return intrin;
     }
 
-    int decode_ivcam_frame_number(const subdevice_mode & mode, const void * frame)
-    {
-        return *reinterpret_cast<const int *>(frame);
-    }
-
     struct f200_mode { int2 dims; std::vector<int> fps; };
     static const f200_mode f200_color_modes[] = {
         {{1920, 1080}, {2,5,15,30}},
@@ -73,7 +68,7 @@ namespace rsimpl
         {
             for(auto fps : m.fps)
             {
-                info.subdevice_modes.push_back({0, m.dims, &pf_yuy2, fps, MakeColorIntrinsics(c, m.dims), {}, {0}, &decode_ivcam_frame_number});
+                info.subdevice_modes.push_back({0, m.dims, pf_yuy2, fps, MakeColorIntrinsics(c, m.dims), {}, {0}});
             }
         }
 
@@ -84,15 +79,15 @@ namespace rsimpl
         {
             for(auto fps : m.fps)
             {
-                info.subdevice_modes.push_back({1, m.dims, &pf_f200_invi, fps, MakeDepthIntrinsics(c, m.dims), {}, {0}, &decode_ivcam_frame_number});
+                info.subdevice_modes.push_back({1, m.dims, pf_f200_invi, fps, MakeDepthIntrinsics(c, m.dims), {}, {0}});
             }
         }
         for(auto & m : f200_depth_modes)
         {
             for(auto fps : m.fps)
             {
-                info.subdevice_modes.push_back({1, m.dims, &pf_invz, fps, MakeDepthIntrinsics(c, m.dims), {}, {0}, &decode_ivcam_frame_number});       
-                info.subdevice_modes.push_back({1, m.dims, &pf_f200_inzi, fps, MakeDepthIntrinsics(c, m.dims), {}, {0}, &decode_ivcam_frame_number});
+                info.subdevice_modes.push_back({1, m.dims, pf_invz, fps, MakeDepthIntrinsics(c, m.dims), {}, {0}});       
+                info.subdevice_modes.push_back({1, m.dims, pf_f200_inzi, fps, MakeDepthIntrinsics(c, m.dims), {}, {0}});
             }
         }
 
@@ -157,7 +152,7 @@ namespace rsimpl
         {
             for(auto fps : m.fps)
             {
-                info.subdevice_modes.push_back({0, m.dims, &pf_yuy2, fps, MakeColorIntrinsics(c, m.dims), {}, {0}, &decode_ivcam_frame_number});
+                info.subdevice_modes.push_back({0, m.dims, pf_yuy2, fps, MakeColorIntrinsics(c, m.dims), {}, {0}});
             }
         }
 
@@ -168,15 +163,15 @@ namespace rsimpl
         {
             for(auto fps : m.fps)
             {
-                info.subdevice_modes.push_back({1, m.dims, &pf_sr300_invi, fps, MakeDepthIntrinsics(c, m.dims), {}, {0}, &decode_ivcam_frame_number});             
+                info.subdevice_modes.push_back({1, m.dims, pf_sr300_invi, fps, MakeDepthIntrinsics(c, m.dims), {}, {0}});             
             }
         }
         for(auto & m : sr300_depth_modes)
         {
             for(auto fps : m.fps)
             {
-                info.subdevice_modes.push_back({1, m.dims, &pf_invz, fps, MakeDepthIntrinsics(c, m.dims), {}, {0}, &decode_ivcam_frame_number});       
-                info.subdevice_modes.push_back({1, m.dims, &pf_sr300_inzi, fps, MakeDepthIntrinsics(c, m.dims), {}, {0}, &decode_ivcam_frame_number});
+                info.subdevice_modes.push_back({1, m.dims, pf_invz, fps, MakeDepthIntrinsics(c, m.dims), {}, {0}});       
+                info.subdevice_modes.push_back({1, m.dims, pf_sr300_inzi, fps, MakeDepthIntrinsics(c, m.dims), {}, {0}});
             }
         }
 
@@ -441,6 +436,55 @@ namespace rsimpl
             default: LOG_WARNING("Cannot get " << options[i] << " on " << get_name()); break;
             }
         }
+    }
+
+    // TODO: This may need to be modified for thread safety
+    class rolling_timestamp_reader : public frame_timestamp_reader
+    {
+        bool started;
+        int64_t total;
+        int last_timestamp;
+    public:
+        rolling_timestamp_reader() : started(), total() {}
+        
+        bool validate_frame(const subdevice_mode & mode, const void * frame) const override
+        { 
+            // Validate that at least one byte of the image is nonzero
+            for(const uint8_t * it = (const uint8_t *)frame, * end = it + mode.pf.get_image_size(mode.native_dims.x, mode.native_dims.y); it != end; ++it)
+            {
+                if(*it)
+                {
+                    return true;
+                }
+            }
+
+            // F200 and SR300 can sometimes produce empty frames shortly after starting, ignore them
+            LOG_INFO("Subdevice " << mode.subdevice << " produced empty frame");
+            return false;
+        }
+
+        int get_frame_timestamp(const subdevice_mode & mode, const void * frame) override 
+        {
+            // Timestamps are encoded within the first 32 bits of the image
+            int rolling_timestamp =  *reinterpret_cast<const int32_t *>(frame);
+
+            if(!started)
+            {
+                last_timestamp = rolling_timestamp;
+                started = true;
+            }
+
+            const int delta = rolling_timestamp - last_timestamp; // NOTE: Relies on undefined behavior: signed int wraparound
+            last_timestamp = rolling_timestamp;
+            total += delta;
+            const int timestamp = static_cast<int>(total / 100000);
+            return timestamp;
+        }
+    };
+
+    std::shared_ptr<frame_timestamp_reader> f200_camera::create_frame_timestamp_reader() const
+    {
+        return std::make_shared<rolling_timestamp_reader>();
     }
 
 } // namespace rsimpl::f200

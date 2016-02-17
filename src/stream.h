@@ -7,6 +7,8 @@
 
 #include "types.h"
 
+#include <memory> // For shared_ptr
+
 namespace rsimpl
 {
     struct stream_interface
@@ -26,13 +28,15 @@ namespace rsimpl
         virtual int                             get_frame_number() const = 0;
         virtual const byte *                    get_frame_data() const = 0;    
     };
+    
+    class frame_archive;
 
     struct native_stream final : public stream_interface
     {
         const device_config &                   config;
         const rs_stream                         stream;
         std::vector<subdevice_mode_selection>   modes;
-        std::shared_ptr<stream_buffer>          buffer;
+        std::shared_ptr<frame_archive>          archive;
 
                                                 native_stream(device_config & config, rs_stream stream);
 
@@ -41,15 +45,15 @@ namespace rsimpl
         int                                     get_mode_count() const override { return (int)modes.size(); }
         void                                    get_mode(int mode, int * w, int * h, rs_format * f, int * fps) const override;
 
-        bool                                    is_enabled() const override { return buffer || config.requests[stream].enabled; }
+        bool                                    is_enabled() const override;
         subdevice_mode_selection                get_mode() const;
         rs_intrinsics                           get_intrinsics() const override;
         rs_intrinsics                           get_rectified_intrinsics() const override;
         rs_format                               get_format() const override { return get_mode().get_format(stream); }
         int                                     get_framerate() const override { return get_mode().get_framerate(stream); }
 
-        int                                     get_frame_number() const override { return buffer->get_front_number(); }
-        const byte *                            get_frame_data() const override { return buffer->get_front_data(); }
+        int                                     get_frame_number() const override;
+        const byte *                            get_frame_data() const override;
     };
 
     class point_stream final : public stream_interface

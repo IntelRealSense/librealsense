@@ -466,6 +466,7 @@ namespace rsimpl
                 case MF_E_VIDEO_RECORDING_DEVICE_INVALIDATED: LOG_ERROR("ReadSample returned MF_E_VIDEO_RECORDING_DEVICE_INVALIDATED"); break;
                 default: LOG_ERROR("ReadSample returned HRESULT " << std::hex << (uint32_t)hr); break;
                 }
+                if(hr != S_OK) streaming = false;
             }
             return S_OK; 
         }

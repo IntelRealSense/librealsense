@@ -25,7 +25,7 @@ namespace rsimpl
         void get_options(const rs_option options[], int count, double values[]) override;
 
         void on_before_start(const std::vector<subdevice_mode_selection> & selected_modes) override;
-        int convert_timestamp(int64_t timestamp) const override;
+        std::shared_ptr<frame_timestamp_reader> create_frame_timestamp_reader() const override;
     };
 
     std::shared_ptr<rs_device> make_r200_device(std::shared_ptr<uvc::device> device);

@@ -159,8 +159,8 @@ namespace rsimpl
 
         // Determine input stride (and apply cropping)
         const byte * in = source;
-        size_t in_stride = mode->pf->get_image_size(mode->native_dims.x, 1);
-        if(pad_crop < 0) in += in_stride * -pad_crop + mode->pf->get_image_size(-pad_crop, 1);
+        size_t in_stride = mode.pf.get_image_size(mode.native_dims.x, 1);
+        if(pad_crop < 0) in += in_stride * -pad_crop + mode.pf.get_image_size(-pad_crop, 1);
 
         // Determine output stride (and apply padding)
         byte * out[MAX_OUTPUTS];
@@ -173,19 +173,19 @@ namespace rsimpl
         }
 
         // Unpack (potentially a subrect of) the source image into (potentially a subrect of) the destination buffers
-        const int unpack_width = std::min(mode->native_intrinsics.width, get_width()), unpack_height = std::min(mode->native_intrinsics.height, get_height());
-        if(mode->native_dims.x == get_width())
+        const int unpack_width = std::min(mode.native_intrinsics.width, get_width()), unpack_height = std::min(mode.native_intrinsics.height, get_height());
+        if(mode.native_dims.x == get_width())
         {
             // If not strided, unpack as though it were a single long row
-            unpacker->unpack(out, in, unpack_width * unpack_height);
+            mode.pf.unpackers[unpacker_index].unpack(out, in, unpack_width * unpack_height);
         }
         else
         {
             // Otherwise unpack one row at a time
-            assert(mode->pf->plane_count == 1); // Can't unpack planar formats row-by-row (at least not with the current architecture, would need to pass multiple source ptrs to unpack)
+            assert(mode.pf.plane_count == 1); // Can't unpack planar formats row-by-row (at least not with the current architecture, would need to pass multiple source ptrs to unpack)
             for(int i=0; i<unpack_height; ++i)
             {
-                unpacker->unpack(out, in, unpack_width);
+                mode.pf.unpackers[unpacker_index].unpack(out, in, unpack_width);
                 for(size_t i=0; i<outputs.size(); ++i) out[i] += out_stride[i];
                 in += in_stride;
             }
@@ -206,14 +206,14 @@ namespace rsimpl
         }
     }
 
-    subdevice_mode_selection static_device_info::select_mode(const stream_request (& requests)[RS_STREAM_NATIVE_COUNT], int subdevice_index) const
+    subdevice_mode_selection device_config::select_mode(const stream_request (& requests)[RS_STREAM_NATIVE_COUNT], int subdevice_index) const
     {
         // Determine if the user has requested any streams which are supplied by this subdevice
         bool any_stream_requested = false;
         std::array<bool, RS_STREAM_NATIVE_COUNT> stream_requested = {};
         for(int j = 0; j < RS_STREAM_NATIVE_COUNT; ++j)
         {
-            if(requests[j].enabled && stream_subdevices[j] == subdevice_index)
+            if(requests[j].enabled && info.stream_subdevices[j] == subdevice_index)
             {
                 stream_requested[j] = true;
                 any_stream_requested = true;
@@ -221,19 +221,19 @@ namespace rsimpl
         }
 
         // If no streams were requested, skip to the next subdevice
-        if(!any_stream_requested) return subdevice_mode_selection(nullptr,0,nullptr);
+        if(!any_stream_requested) return subdevice_mode_selection();
 
         // Look for an appropriate mode
-        for(auto & subdevice_mode : subdevice_modes)
+        for(auto & subdevice_mode : info.subdevice_modes)
         {
             // Skip modes that apply to other subdevices
             if(subdevice_mode.subdevice != subdevice_index) continue;
 
             for(auto pad_crop : subdevice_mode.pad_crop_options)
             {
-                for(auto & unpacker : subdevice_mode.pf->unpackers)
+                for(auto & unpacker : subdevice_mode.pf.unpackers)
                 {
-                    auto selection = subdevice_mode_selection(&subdevice_mode, pad_crop, &unpacker);
+                    auto selection = subdevice_mode_selection(subdevice_mode, pad_crop, &unpacker - subdevice_mode.pf.unpackers.data());
 
                     // Determine if this mode satisfies the requirements on our requested streams
                     auto stream_unsatisfied = stream_requested;
@@ -271,14 +271,14 @@ namespace rsimpl
         throw std::runtime_error(ss.str());
     }
 
-    std::vector<subdevice_mode_selection> static_device_info::select_modes(const stream_request (&reqs)[RS_STREAM_NATIVE_COUNT]) const
+    std::vector<subdevice_mode_selection> device_config::select_modes(const stream_request (&reqs)[RS_STREAM_NATIVE_COUNT]) const
     {
         // Make a mutable copy of our array
         stream_request requests[RS_STREAM_NATIVE_COUNT];
         for(int i=0; i<RS_STREAM_NATIVE_COUNT; ++i) requests[i] = reqs[i];
 
         // Check and modify requests to enforce all interstream constraints
-        for(auto & rule : interstream_rules)
+        for(auto & rule : info.interstream_rules)
         {
             auto & a = requests[rule.a], & b = requests[rule.b]; auto f = rule.field;
             if(a.enabled && b.enabled)
@@ -297,29 +297,13 @@ namespace rsimpl
 
         // Select subdevice modes needed to satisfy our requests
         int num_subdevices = 0;
-        for(auto & mode : subdevice_modes) num_subdevices = std::max(num_subdevices, mode.subdevice+1);
+        for(auto & mode : info.subdevice_modes) num_subdevices = std::max(num_subdevices, mode.subdevice+1);
         std::vector<subdevice_mode_selection> selected_modes;
         for(int i = 0; i < num_subdevices; ++i)
         {
             auto selection = select_mode(requests, i);
-            if(selection.mode) selected_modes.push_back(selection);
+            if(selection.mode.pf.fourcc) selected_modes.push_back(selection);
         }
         return selected_modes;
-    }
-
-    ///////////////////
-    // stream_buffer //
-    ///////////////////
-
-    stream_buffer::stream_buffer(subdevice_mode_selection selection, rs_stream stream)
-        : selection(selection), frames({std::vector<byte>(selection.get_image_size(stream))}), last_frame_number() {}
-
-    void stream_buffer::swap_back(int frame_number) 
-    {
-        if(frames.get_count() == 0) last_frame_number = frame_number;
-        frames.get_back().timestamp = frame_number;
-        frames.get_back().delta = frame_number - last_frame_number;
-        last_frame_number = frame_number;     
-        frames.swap_back();
     }
 }
