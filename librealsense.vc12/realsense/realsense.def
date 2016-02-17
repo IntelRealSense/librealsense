@@ -3,6 +3,7 @@ LIBRARY
 EXPORTS
 	rs_create_context
 	rs_delete_context
+	rs_enumerate_devices
 	rs_get_device_count
 	rs_get_device
 	
@@ -39,6 +40,8 @@ EXPORTS
 	rs_poll_for_frames
 	rs_get_frame_timestamp
 	rs_get_frame_data
+
+	rs_reset_device
 	
 	rs_get_failed_function
 	rs_get_failed_args

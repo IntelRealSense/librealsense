@@ -4,6 +4,7 @@
 #include "f200.h"
 #include "f200-private.h"
 #include "image.h"
+#include "context.h"
 
 #define _USE_MATH_DEFINES
 #include <math.h>
@@ -211,8 +212,8 @@ namespace rsimpl
         return info;
     }
 
-    f200_camera::f200_camera(std::shared_ptr<uvc::device> device, const static_device_info & info, const f200::CameraCalibrationParameters & calib, const f200::IVCAMTemperatureData & temp, const f200::IVCAMThermalLoopParams & params) :
-        rs_device(device, info), base_calibration(calib), base_temperature_data(temp), thermal_loop_params(params), last_temperature_delta(std::numeric_limits<float>::infinity())
+    f200_camera::f200_camera(rs_context & ctx, const std::string & id, const static_device_info & info, const f200::CameraCalibrationParameters & calib, const f200::IVCAMTemperatureData & temp, const f200::IVCAMThermalLoopParams & params) :
+        rs_device(ctx, id, info), base_calibration(calib), base_temperature_data(temp), thermal_loop_params(params), last_temperature_delta(std::numeric_limits<float>::infinity())
     {
         // If thermal control loop requested, start up thread to handle it
 		if(thermal_loop_params.IRThermalLoopEnable)
@@ -237,46 +238,48 @@ namespace rsimpl
     const uvc::guid IVCAM_DEPTH_XU = {0xA55751A1,0xF3C5,0x4A5E,{0x8D,0x5A,0x68,0x54,0xB8,0xFA,0x27,0x16}};
     const uvc::guid IVCAM_COLOR_XU = {0xB8EC416E,0xA3AC,0x4580,{0x8D,0x5C,0x0B,0xEE,0x15,0x97,0xE4,0x3D}};
 
-    std::shared_ptr<rs_device> make_f200_device(std::shared_ptr<uvc::device> device)
+    std::shared_ptr<rs_device> make_f200_device(rs_context & ctx, const std::string & id)
     {
-        init_controls(*device, 1, IVCAM_DEPTH_XU);
+        auto & dev = *ctx.get_device(id);
+        init_controls(dev, 1, IVCAM_DEPTH_XU);
         std::timed_mutex mutex;
-        f200::claim_ivcam_interface(*device);
-        auto calib = f200::read_f200_calibration(*device, mutex);
-        f200::enable_timestamp(*device, mutex, true, true);
+        f200::claim_ivcam_interface(dev);
+        auto calib = f200::read_f200_calibration(dev, mutex);
+        f200::enable_timestamp(dev, mutex, true, true);
 
         auto info = get_f200_info(std::get<0>(calib));
-        f200::get_module_serial_string(*device, mutex, info.serial, 96);
-        f200::get_firmware_version_string(*device, mutex, info.firmware_version);
+        f200::get_module_serial_string(dev, mutex, info.serial, 96);
+        f200::get_firmware_version_string(dev, mutex, info.firmware_version);
 
-        return std::make_shared<f200_camera>(device, info, std::get<0>(calib), std::get<1>(calib), std::get<2>(calib));
+        return std::make_shared<f200_camera>(ctx, id, info, std::get<0>(calib), std::get<1>(calib), std::get<2>(calib));
     }
 
-    std::shared_ptr<rs_device> make_sr300_device(std::shared_ptr<uvc::device> device)
+    std::shared_ptr<rs_device> make_sr300_device(rs_context & ctx, const std::string & id)
     {
-        init_controls(*device, 1, IVCAM_DEPTH_XU);
+        auto & dev = *ctx.get_device(id);
+        init_controls(dev, 1, IVCAM_DEPTH_XU);
         std::timed_mutex mutex;
-        f200::claim_ivcam_interface(*device);
-        auto calib = f200::read_sr300_calibration(*device, mutex);
-        f200::enable_timestamp(*device, mutex, true, true);
+        f200::claim_ivcam_interface(dev);
+        auto calib = f200::read_sr300_calibration(dev, mutex);
+        f200::enable_timestamp(dev, mutex, true, true);
 
-        uvc::set_pu_control_with_retry(*device, 0, rs_option::RS_OPTION_COLOR_BACKLIGHT_COMPENSATION, 0);
-        uvc::set_pu_control_with_retry(*device, 0, rs_option::RS_OPTION_COLOR_BRIGHTNESS, 0);
-        uvc::set_pu_control_with_retry(*device, 0, rs_option::RS_OPTION_COLOR_CONTRAST, 50);
-        uvc::set_pu_control_with_retry(*device, 0, rs_option::RS_OPTION_COLOR_GAMMA, 300);
-        uvc::set_pu_control_with_retry(*device, 0, rs_option::RS_OPTION_COLOR_HUE, 0);
-        uvc::set_pu_control_with_retry(*device, 0, rs_option::RS_OPTION_COLOR_SATURATION, 64);
-        uvc::set_pu_control_with_retry(*device, 0, rs_option::RS_OPTION_COLOR_SHARPNESS, 50);
-        uvc::set_pu_control_with_retry(*device, 0, rs_option::RS_OPTION_COLOR_GAIN, 64);
-        //uvc::set_pu_control_with_retry(*device, 0, rs_option::RS_OPTION_COLOR_WHITE_BALANCE, 4600); // auto
-        //uvc::set_pu_control_with_retry(*device, 0, rs_option::RS_OPTION_COLOR_EXPOSURE, -6); // auto
+        uvc::set_pu_control_with_retry(dev, 0, rs_option::RS_OPTION_COLOR_BACKLIGHT_COMPENSATION, 0);
+        uvc::set_pu_control_with_retry(dev, 0, rs_option::RS_OPTION_COLOR_BRIGHTNESS, 0);
+        uvc::set_pu_control_with_retry(dev, 0, rs_option::RS_OPTION_COLOR_CONTRAST, 50);
+        uvc::set_pu_control_with_retry(dev, 0, rs_option::RS_OPTION_COLOR_GAMMA, 300);
+        uvc::set_pu_control_with_retry(dev, 0, rs_option::RS_OPTION_COLOR_HUE, 0);
+        uvc::set_pu_control_with_retry(dev, 0, rs_option::RS_OPTION_COLOR_SATURATION, 64);
+        uvc::set_pu_control_with_retry(dev, 0, rs_option::RS_OPTION_COLOR_SHARPNESS, 50);
+        uvc::set_pu_control_with_retry(dev, 0, rs_option::RS_OPTION_COLOR_GAIN, 64);
+        //uvc::set_pu_control_with_retry(dev, 0, rs_option::RS_OPTION_COLOR_WHITE_BALANCE, 4600); // auto
+        //uvc::set_pu_control_with_retry(dev, 0, rs_option::RS_OPTION_COLOR_EXPOSURE, -6); // auto
 
         auto info = get_sr300_info(std::get<0>(calib));
 
-        f200::get_module_serial_string(*device, mutex, info.serial, 132);
-        f200::get_firmware_version_string(*device, mutex, info.firmware_version);
+        f200::get_module_serial_string(dev, mutex, info.serial, 132);
+        f200::get_firmware_version_string(dev, mutex, info.firmware_version);
 
-        return std::make_shared<f200_camera>(device, info, std::get<0>(calib), std::get<1>(calib), std::get<2>(calib));
+        return std::make_shared<f200_camera>(ctx, id, info, std::get<0>(calib), std::get<1>(calib), std::get<2>(calib));
     }
 
     f200_camera::~f200_camera()
@@ -487,5 +490,17 @@ namespace rsimpl
         return std::make_shared<rolling_timestamp_reader>();
     }
 
+    void f200_camera::reset_hardware()
+    {
+        // Shut down thermal control loop thread
+        runTemperatureThread = false;
+        temperatureCv.notify_one();
+        if (temperatureThread.joinable())
+            temperatureThread.join();   
+
+        // Reset the IVCAM hardware
+        f200::force_hardware_reset(get_device(), usbMutex);
+        std::this_thread::sleep_for(std::chrono::seconds(2)); // TODO: Figure out the appropriate amount of time to wait
+    }
 } // namespace rsimpl::f200
 

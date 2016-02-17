@@ -56,6 +56,13 @@ void rs_delete_context(rs_context * context, rs_error ** error) try
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, context)
 
+void rs_enumerate_devices(rs_context * context, rs_error ** error) try
+{
+    VALIDATE_NOT_NULL(context);
+    context->enumerate_devices();
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, context)
+
 int rs_get_device_count(const rs_context * context, rs_error ** error) try
 {
     VALIDATE_NOT_NULL(context);
@@ -358,6 +365,13 @@ void rs_set_device_option(rs_device * device, rs_option option, double value, rs
     device->set_options(&option, 1, &value);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, device, option, value)
+
+void rs_reset_device(rs_device * device, rs_error ** error) try
+{
+    VALIDATE_NOT_NULL(device);
+    device->reset();
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, device)
 
 
 

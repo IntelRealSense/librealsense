@@ -170,13 +170,22 @@ namespace rs
         context()
         {
             rs_error * e = nullptr;
-            handle = rs_create_context(4, &e);
+            handle = rs_create_context(RS_API_VERSION, &e);
             error::handle(e);
         }
 
         ~context()
         {
             rs_delete_context(handle, nullptr);
+        }
+
+        /// refresh the list of available devices associated with this context
+        ///
+        void enumerate_devices()
+        {
+            rs_error * e = nullptr;
+            rs_enumerate_devices(handle, &e);
+            error::handle(e);
         }
 
         /// determine number of connected devices
@@ -518,6 +527,15 @@ namespace rs
             auto r = rs_get_frame_data((const rs_device *)this, (rs_stream)stream, &e);
             error::handle(e);
             return r;
+        }
+
+        /// force the device hardware to reset, and block until a connection to the device can be reestablished
+        /// \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+        void reset()
+        {
+            rs_error * e = nullptr;
+            rs_reset_device((rs_device *)this, &e);
+            error::handle(e);
         }
     };
 

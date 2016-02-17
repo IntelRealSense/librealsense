@@ -4,6 +4,7 @@
 #include "r200.h"
 #include "r200-private.h"
 #include "image.h"
+#include "context.h"
 
 #include <cstring>
 #include <climits>
@@ -11,7 +12,7 @@
 
 namespace rsimpl
 {
-    r200_camera::r200_camera(std::shared_ptr<uvc::device> device, const static_device_info & info) : rs_device(device, info)
+    r200_camera::r200_camera(rs_context & ctx, const std::string & id, const static_device_info & info) : rs_device(ctx, id, info)
     {
         rs_option opt[] = {RS_OPTION_R200_DEPTH_UNITS}; double units;
         get_options(opt, 1, &units);
@@ -23,14 +24,15 @@ namespace rsimpl
 
     }
 
-    std::shared_ptr<rs_device> make_r200_device(std::shared_ptr<uvc::device> device)
+    std::shared_ptr<rs_device> make_r200_device(rs_context & ctx, const std::string & id)
     {
-        LOG_INFO("Connecting to Intel RealSense R200");
+        auto & dev = *ctx.get_device(id);
+        LOG_INFO("Connecting to Intel RealSense R200");        
 
 		// Retrieve the extension unit for the R200's left/right infrared camera
         // This XU is used for all commands related to retrieving calibration information and setting depth generation settings
         const uvc::guid R200_LEFT_RIGHT_XU = {0x18682d34, 0xdd2c, 0x4073, {0xad, 0x23, 0x72, 0x14, 0x73, 0x9a, 0x07, 0x4c}};
-        init_controls(*device, 0, R200_LEFT_RIGHT_XU);
+        init_controls(dev, 0, R200_LEFT_RIGHT_XU);
         
         static_device_info info;
         info.name = {"Intel RealSense R200"};
@@ -39,7 +41,7 @@ namespace rsimpl
         info.stream_subdevices[RS_STREAM_INFRARED ] = 0;
         info.stream_subdevices[RS_STREAM_INFRARED2] = 0;
 
-        auto c = r200::read_camera_info(*device);
+        auto c = r200::read_camera_info(dev);
         
         // Set up modes for left/right/z images
         for(auto fps : {30, 60, 90})
@@ -138,11 +140,11 @@ namespace rsimpl
         info.stream_poses[RS_STREAM_COLOR].position = info.stream_poses[RS_STREAM_COLOR].orientation * info.stream_poses[RS_STREAM_COLOR].position;
         info.nominal_depth_scale = 0.001f;
         info.serial = std::to_string(c.serial_number);
-        info.firmware_version = r200::read_firmware_version(*device);
+        info.firmware_version = r200::read_firmware_version(dev);
 
 		// On LibUVC backends, the R200 should use four transfer buffers
         info.num_libuvc_transfer_buffers = 4;
-        return std::make_shared<r200_camera>(device, info);
+        return std::make_shared<r200_camera>(ctx, id, info);
     }
 
     bool r200_camera::is_disparity_mode_enabled() const
@@ -487,5 +489,11 @@ namespace rsimpl
 
         // No streams enabled, so no need for a timestamp converter
         return nullptr;
+    }
+
+    void r200_camera::reset_hardware()
+    {
+        r200::force_firmware_reset(get_device());
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
 }
