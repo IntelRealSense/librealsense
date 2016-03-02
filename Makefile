@@ -73,6 +73,9 @@ bin/cpp-%: examples/cpp-%.cpp library
 lib/librealsense.so: prepare $(OBJECTS)
 	$(CXX) -std=c++11 -shared $(OBJECTS) $(LIBUSB_FLAGS) -o $@
 
+lib/librealsense.a: prepare $(OBJECTS)
+	ar rvs $@ `find obj/ -name "*.o"`
+ 
 # Rules for compiling librealsense source
 obj/%.o: src/%.cpp
 	$(CXX) $< $(CXXFLAGS) -c -o $@
