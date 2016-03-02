@@ -20,45 +20,6 @@ namespace rsimpl
         }
         #define CALL_UVC(name, ...) check(#name, name(__VA_ARGS__))
 
-        struct device_id { int vid, pid; std::string serial_no; };
-
-        std::vector<device_id> enumerate_devices(uvc_context * context)
-        {
-            std::vector<device_id> refs;
-            uvc_device_t ** list;
-            CALL_UVC(uvc_get_device_list, context, &list);
-            for(auto it = list; *it; ++it)
-            {
-                uvc_device_descriptor_t * desc;
-                CALL_UVC(uvc_get_device_descriptor, *it, &desc);
-                refs.push_back({desc->idVendor, desc->idProduct, desc->serialNumber ? desc->serialNumber : ""});
-                uvc_free_device_descriptor(desc);
-            }
-            uvc_free_device_list(list, 1);
-            return refs;
-        }
-
-        uvc_device_t * create_device(uvc_context * context, const device_id & ref)
-        {
-            uvc_device_t * device = nullptr;
-            uvc_device_t ** list;
-            CALL_UVC(uvc_get_device_list, context, &list);
-            for(auto it = list; *it; ++it)
-            {
-                uvc_device_descriptor_t * desc;
-                CALL_UVC(uvc_get_device_descriptor, *it, &desc);
-                if(desc->idVendor == ref.vid && desc->idProduct == ref.pid && (desc->serialNumber ? desc->serialNumber : "") == ref.serial_no)
-                {
-                    device = *it;
-                    uvc_ref_device(device);
-                }
-                uvc_free_device_descriptor(desc);
-                if(device) break;
-            }
-            uvc_free_device_list(list, 1);
-            return device;
-        }
-
         struct context
         {
             uvc_context_t * ctx;
@@ -78,15 +39,20 @@ namespace rsimpl
         struct device
         {
             const std::shared_ptr<context> parent;
-            const device_id id;
             uvc_device_t * uvcdevice;
+            int vid, pid;
             std::vector<subdevice> subdevices;
             std::vector<int> claimed_interfaces;
 
-            device(std::shared_ptr<context> parent, device_id id) : parent(parent), id(id)
+            device(std::shared_ptr<context> parent, uvc_device_t * uvcdevice) : parent(parent), uvcdevice(uvcdevice)
             {
-                uvcdevice = create_device(parent->ctx, id);
                 get_subdevice(0);
+                
+                uvc_device_descriptor_t * desc;
+                CALL_UVC(uvc_get_device_descriptor, uvcdevice, &desc);
+                vid = desc->idVendor;
+                pid = desc->idProduct;
+                uvc_free_device_descriptor(desc);
             }
             ~device()
             {
@@ -118,8 +84,8 @@ namespace rsimpl
         // device //
         ////////////
 
-        int get_vendor_id(const device & device) { return device.id.vid; }
-        int get_product_id(const device & device) { return device.id.pid; }
+        int get_vendor_id(const device & device) { return device.vid; }
+        int get_product_id(const device & device) { return device.pid; }
 
         void init_controls(device & device, int subdevice, const guid & xu_guid)
         {
@@ -315,7 +281,11 @@ namespace rsimpl
         std::vector<std::shared_ptr<device>> query_devices(std::shared_ptr<context> context)
         {
             std::vector<std::shared_ptr<device>> devices;
-            for(auto id : enumerate_devices(context->ctx)) devices.push_back(std::make_shared<device>(context, id));
+            
+            uvc_device_t ** list;
+            CALL_UVC(uvc_get_device_list, context->ctx, &list);
+            for(auto it = list; *it; ++it) devices.push_back(std::make_shared<device>(context, *it));
+            uvc_free_device_list(list, 1);
             return devices;
         }
     }
