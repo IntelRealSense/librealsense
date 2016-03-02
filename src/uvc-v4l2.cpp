@@ -10,6 +10,7 @@
 #include <cstdio>
 #include <cstring>
 
+#include <algorithm>
 #include <string>
 #include <sstream>
 #include <fstream>
@@ -27,8 +28,6 @@
 #include <linux/videodev2.h>
 
 #include <libusb.h>
-
-#include <iostream>
 
 namespace rsimpl
 {
@@ -521,16 +520,37 @@ namespace rsimpl
             }
             closedir(dir);
 
-            // Group subdevices by vid/pid, and start a new device if we encounter a duplicate mi
+            // Note: Subdevices of a given device may not be contiguous. We can test our grouping/sorting logic by calling random_shuffle.
+            // std::random_shuffle(begin(subdevices), end(subdevices));
+
+            // Group subdevices by busnum/devnum
             std::vector<std::shared_ptr<device>> devices;
             for(auto & sub : subdevices)
             {
-                if(devices.empty() || sub->get_vid() != get_vendor_id(*devices.back())
-                    || sub->get_pid() != get_product_id(*devices.back()) || devices.back()->has_mi(sub->mi))
+                bool is_new_device = true;
+                for(auto & dev : devices)
+                {
+                    if(sub->busnum == dev->subdevices[0]->busnum && sub->devnum == dev->subdevices[0]->devnum)
+                    {
+                        dev->subdevices.push_back(move(sub));
+                        is_new_device = false;
+                        break;
+                    }
+                }
+                if(is_new_device)
                 {
                     devices.push_back(std::make_shared<device>(context));
+                    devices.back()->subdevices.push_back(move(sub));
                 }
-                devices.back()->subdevices.push_back(move(sub));
+            }
+
+            // Sort subdevices within each device by multiple-interface index
+            for(auto & dev : devices)
+            {
+                std::sort(begin(dev->subdevices), end(dev->subdevices), [](const std::unique_ptr<subdevice> & a, const std::unique_ptr<subdevice> & b)
+                {
+                    return a->mi < b->mi;
+                });
             }
 
             // Obtain libusb_device_handle for each device
