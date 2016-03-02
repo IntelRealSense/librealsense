@@ -88,7 +88,7 @@ For small-form factor usages, librealsense has been demonstrated to work on the 
 
 librealsense has been integrated with a number of third-party components and operating systems. While most of these projects are not directly supported by the librealsense team, they are useful resources for users of this library.
 
-  * [https://github.com/intel-ros/realsense](Robotic Operating System) (Intel Supported, R200 Only)
+  * [Robotic Operating System]([https://github.com/intel-ros/realsense) (Intel Supported, R200 Only)
   * [Yocto / WindRiver Linux](https://github.com/IntelRealSense/meta-intel-librealsense)
   * [Arch Linux](https://aur.archlinux.org/packages/librealsense/)
 
