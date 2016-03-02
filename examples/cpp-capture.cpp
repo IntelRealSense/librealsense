@@ -43,22 +43,6 @@ int main(int argc, char * argv[]) try
     
     // Start our device
     dev.start();
-    
-    // For the libuvc backend, this sleep is required before touching any of the camera
-    // options after a device has been .start()'d
-    std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-        
-    // Report the status of each supported option
-    /*for(int i = 0; i < RS_OPTION_COUNT; ++i)
-    {
-        auto option = rs::option(i);
-        if(dev.supports_option(option))
-        {
-            std::cout << "Option " << option << ": ";
-            try { std::cout << dev.get_option(option) << std::endl; }
-            catch(const std::exception & e) { std::cout << e.what() << std::endl; }
-        }
-    }*/
 
     // Open a GLFW window
     glfwInit();

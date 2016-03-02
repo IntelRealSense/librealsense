@@ -9,6 +9,7 @@
 #include <math.h>
 #include <limits>
 #include <climits>
+#include <algorithm>
 
 namespace rsimpl
 {
@@ -291,6 +292,26 @@ namespace rsimpl
     void f200_camera::on_before_start(const std::vector<subdevice_mode_selection> & selected_modes)
     {
 
+    }
+    
+    rs_stream f200_camera::select_key_stream(const std::vector<rsimpl::subdevice_mode_selection> & selected_modes)
+    {
+        int fps[RS_STREAM_NATIVE_COUNT] = {}, max_fps = 0;
+        for(const auto & m : selected_modes)
+        {
+            for(const auto & output : m.get_outputs())
+            {
+                fps[output.first] = m.mode.fps;
+                max_fps = std::max(max_fps, m.mode.fps);
+            }
+        }
+
+        // Prefer to sync on depth or infrared, but select the stream running at the fastest framerate
+        for(auto s : {RS_STREAM_DEPTH, RS_STREAM_INFRARED2, RS_STREAM_COLOR})
+        {
+            if(fps[s] == max_fps) return s;
+        }
+        return RS_STREAM_DEPTH;
     }
 
     void f200_camera::temperature_control_loop()

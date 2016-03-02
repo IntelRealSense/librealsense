@@ -25,6 +25,7 @@ namespace rsimpl
         void get_options(const rs_option options[], int count, double values[]) override;
 
         void on_before_start(const std::vector<subdevice_mode_selection> & selected_modes) override;
+        rs_stream select_key_stream(const std::vector<rsimpl::subdevice_mode_selection> & selected_modes) override;
         std::shared_ptr<frame_timestamp_reader> create_frame_timestamp_reader() const override;
     };
 

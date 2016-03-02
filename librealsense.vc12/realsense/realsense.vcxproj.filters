@@ -49,7 +49,9 @@
     <ClCompile Include="..\..\src\log.cpp">
       <Filter>src</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\sync.cpp" />
+    <ClCompile Include="..\..\src\sync.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\src\context.h">
@@ -91,7 +93,9 @@
     <ClInclude Include="..\..\src\stream.h">
       <Filter>src</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\sync.h" />
+    <ClInclude Include="..\..\src\sync.h">
+      <Filter>src</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="src">

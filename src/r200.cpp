@@ -329,6 +329,29 @@ namespace rsimpl
         r200::set_stream_intent(get_device(), streamIntent);
     }
 
+    rs_stream r200_camera::select_key_stream(const std::vector<rsimpl::subdevice_mode_selection> & selected_modes)
+    {
+        // When all streams are enabled at an identical framerate, R200 images are delivered in the order: Z -> Third -> L/R
+        // To maximize the chance of being able to deliver coherent framesets, we want to wait on the latest image coming from
+        // a stream running at the fastest framerate.
+        int fps[RS_STREAM_NATIVE_COUNT] = {}, max_fps = 0;
+        for(const auto & m : selected_modes)
+        {
+            for(const auto & output : m.get_outputs())
+            {
+                fps[output.first] = m.mode.fps;
+                max_fps = std::max(max_fps, m.mode.fps);
+            }
+        }
+
+        // Select the "latest arriving" stream which is running at the fastest framerate
+        for(auto s : {RS_STREAM_COLOR, RS_STREAM_INFRARED2, RS_STREAM_INFRARED})
+        {
+            if(fps[s] == max_fps) return s;
+        }
+        return RS_STREAM_DEPTH;
+    }
+
     uint32_t r200_camera::get_lr_framerate() const
     {
         for(auto s : {RS_STREAM_DEPTH, RS_STREAM_INFRARED, RS_STREAM_INFRARED2})

@@ -67,7 +67,7 @@ void rs_device::start()
     if(capturing) throw std::runtime_error("cannot restart device without first stopping device");
         
     auto selected_modes = config.select_modes();
-    auto archive = std::make_shared<frame_archive>(selected_modes);
+    auto archive = std::make_shared<frame_archive>(selected_modes, select_key_stream(selected_modes));
     auto timestamp_reader = create_frame_timestamp_reader();
 
     for(auto & s : native_streams) s->archive.reset(); // Starting capture invalidates the current stream info, if any exists from previous capture
