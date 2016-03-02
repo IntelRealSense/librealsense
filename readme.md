@@ -79,6 +79,11 @@ Developer kits containing the necessary hardware to use this library are availab
 
 Developer kits require USB 3.0. Not all USB host chipsets are compatible with librealsense, although it has been validated with recent generations of the Intel Host Controller chipset. An exhaustive list of incompatible hardware is not presently provided. On x86, a Haswell or newer architecture is recommended.
 
+For small-form factor usages, librealsense has been demonstrated to work on the following boards:
+  * [Intel Compute Stick, BOXSTK1AW32SCR](http://www.amazon.com/Intel-Compute-BOXSTK1AW32SCR-Windows-32-bit/dp/B01ASB0DJ8)
+  * [Kangaroo MD2B](http://www.amazon.com/Kangaroo-MD2B-Mobile-Desktop-Computer/dp/B017J20D8U)
+  * [UP Board](http://www.up-board.org/kickstarter/up-intel-realsense-technology/)
+
 ## Integrations
 
 librealsense has been integrated with a number of third-party components and operating systems. While most of these projects are not directly supported by the librealsense team, they are useful resources for users of this library.
