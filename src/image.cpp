@@ -331,6 +331,15 @@ namespace rsimpl
 
     template<class GET_DEPTH, class TRANSFER_PIXEL> void align_images(const rs_intrinsics & depth_intrin, const rs_extrinsics & depth_to_other, const rs_intrinsics & other_intrin, GET_DEPTH get_depth, TRANSFER_PIXEL transfer_pixel)
     {
+        // check if the target image is significantly larger than the source image
+        int filter_half_x = std::round(0.5 * (float)other_intrin.width  / (float)depth_intrin.width );
+        int filter_half_y = std::round(0.5 * (float)other_intrin.height / (float)depth_intrin.height);
+
+        if (other_intrin.width  == depth_intrin.width ) filter_half_x = 0;
+        if (other_intrin.height == depth_intrin.height) filter_half_y = 0;
+
+        //printf("upscale filter size: %dx%d\n",filter_half_x*2+1,filter_half_y*2+1);
+
         // Iterate over the pixels of the depth image    
         for(int depth_y = 0, depth_pixel_index = 0; depth_y < depth_intrin.height; ++depth_y)
         {
@@ -347,13 +356,22 @@ namespace rsimpl
                 
                     // If the location is outside the bounds of the image, skip to the next pixel
                     const int other_x = (int)std::round(other_pixel[0]), other_y = (int)std::round(other_pixel[1]);
-                    if(other_x < 0 || other_y < 0 || other_x >= other_intrin.width || other_y >= other_intrin.height)
+                    if(other_x < filter_half_x || other_y < filter_half_y || other_x >= other_intrin.width-filter_half_x || other_y >= other_intrin.height-filter_half_y)
                     {
                         continue;
                     }
 
                     // Transfer data from original images into corresponding aligned images
-                    transfer_pixel(depth_pixel_index, other_y * other_intrin.width + other_x);
+                    int index = (other_y-filter_half_y) * other_intrin.width + other_x-filter_half_x;
+
+                    // creates rectangular patch of size filter_width_{x,y}*2+1 around other_{x,y}
+                    for (int ty = -filter_half_y; ty <= filter_half_y; ty++) {
+                        for (int tx = -filter_half_x; tx <= filter_half_x; tx++) {
+                            transfer_pixel(depth_pixel_index, index);
+                            index += 1;
+                        }
+                        index += other_intrin.width - (2*filter_half_x+1);
+                   }
                 }
             }
         }    

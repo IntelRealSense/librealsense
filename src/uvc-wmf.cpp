@@ -28,7 +28,6 @@
 #include <Cfgmgr32.h>
 #include <SetupAPI.h>
 #include <WinUsb.h>
-#include <atlstr.h>
 
 #include <thread>
 #include <chrono>
@@ -737,7 +736,7 @@ namespace rsimpl
                 size_t subdevice_index = mi/2;
                 if(subdevice_index >= dev->subdevices.size()) dev->subdevices.resize(subdevice_index+1);
 
-                dev->subdevices[subdevice_index].reader_callback = new reader_callback(dev, subdevice_index);
+                dev->subdevices[subdevice_index].reader_callback = new reader_callback(dev, static_cast<int>(subdevice_index));
                 dev->subdevices[subdevice_index].mf_activate = pDevice;                
             }
             CoTaskMemFree(ppDevices);
