@@ -3,6 +3,8 @@
 * [Apple OSX Installation](#apple-osx-installation)
 * [Windows 8.1/10 Installation](#windows-81-installation)
 
+**Note:** Due to the USB 3.0 translation layer between native hardware and virtual machine, the librealsense team does not recommend or support installation in a VM. 
+
 # Ubuntu 14.04 LTS Installation
 
 Installation of cameras on Linux is lengthy compared to other supported platforms. Several upstream fixes to the uvcvideo driver have been merged in recent kernel versions, greatly enhancing stability. Once an updated kernel has been installed, one more patch must be applied to the uvcvideo driver with support for several non-standard pixel formats provided by RealSense™ cameras.
