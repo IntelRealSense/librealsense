@@ -1,7 +1,7 @@
 # Table of Contents
 * [Ubuntu 14.04 LTS Installation](#ubuntu-1404-lts-installation)
 * [Apple OSX Installation](#apple-osx-installation)
-* [Windows 8.1 Installation](#windows-81-installation)
+* [Windows 8.1/10 Installation](#windows-81-installation)
 
 # Ubuntu 14.04 LTS Installation
 
@@ -53,7 +53,7 @@ Installation of cameras on Linux is lengthy compared to other supported platform
 
 **Note:** This backend has been deprecated on Linux.
 
-The libuvc backend requires that the default linux uvcvideo.ko driver be unloaded before libusb can touch the device. This is because uvcvideo will own a UVC device the moment is is plugged in; user-space applications do not have permission to access the devie handle. See below regarding the udev rule workaround. 
+The libuvc backend requires that the default linux uvcvideo.ko driver be unloaded before libusb can touch the device. This is because uvcvideo will 'own' a UVC device the moment is is plugged in (user-space applications do not have permission to access the devuce handle). Follow the instructions below to install the udev permissions script.
 
 The libuvc backend has known incompatibilities with some versions of SR300 and R200 firmware (1.0.71.xx series of firmwares are problematic). 
 
