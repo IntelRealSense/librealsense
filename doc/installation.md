@@ -39,8 +39,8 @@ Installation of cameras on Linux is lengthy compared to other supported platform
       * `./scripts/install_dependencies-4.4.sh`
     * Run the following script to patch uvcvideo.ko
       * `./scripts/patch-uvcvideo-4.4.sh v4.4-wily` (note the argument provided to this version of the script)
-      * This script involves shallow cloning the Linux source repository (100mb), and may take a while
-  * **(OR) Stock 3.19.xx Kernel in 14.04.xx** 
+      * This script involves shallow cloning the Linux source repository (~100mb), and may take a while
+  * **(OR) Stock 3.19.xx Kernel in 14.04.xx** (not recommended)
     * Run the following script to patch uvcvideo.ko
       * `./scripts/patch-uvcvideo-3.19.sh`
     * (R200 Only) Install connectivity workaround
@@ -48,6 +48,9 @@ Installation of cameras on Linux is lengthy compared to other supported platform
       * This udev fix is not necessary for kernels >= 4.2.3
 4. Reload the uvcvideo driver
   * `sudo modprobe uvcvideo`
+5. Check installation by examining the last 50 lines of the dmesg log:
+  * `sudo dmesg | tail -n 50`
+  * The log should indicate that a new uvcvideo driver has been registered. If any errors have been noted, first attempt the patching process again, and then file an issue if not successful on the second attempt (and make sure to copy the specific error in dmesg). 
 
 ## LibUVC backend
 
