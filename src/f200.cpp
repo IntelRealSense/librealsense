@@ -235,12 +235,10 @@ namespace rsimpl
         arr.ARLowerTh = 650;
     }
 
-    const uvc::guid IVCAM_DEPTH_XU = {0xA55751A1,0xF3C5,0x4A5E,{0x8D,0x5A,0x68,0x54,0xB8,0xFA,0x27,0x16}};
-    const uvc::guid IVCAM_COLOR_XU = {0xB8EC416E,0xA3AC,0x4580,{0x8D,0x5C,0x0B,0xEE,0x15,0x97,0xE4,0x3D}};
+    //const uvc::guid IVCAM_COLOR_XU = {0xB8EC416E,0xA3AC,0x4580,{0x8D,0x5C,0x0B,0xEE,0x15,0x97,0xE4,0x3D}};
 
     std::shared_ptr<rs_device> make_f200_device(std::shared_ptr<uvc::device> device)
     {
-        init_controls(*device, 1, IVCAM_DEPTH_XU);
         std::timed_mutex mutex;
         f200::claim_ivcam_interface(*device);
         auto calib = f200::read_f200_calibration(*device, mutex);
@@ -255,7 +253,6 @@ namespace rsimpl
 
     std::shared_ptr<rs_device> make_sr300_device(std::shared_ptr<uvc::device> device)
     {
-        init_controls(*device, 1, IVCAM_DEPTH_XU);
         std::timed_mutex mutex;
         f200::claim_ivcam_interface(*device);
         auto calib = f200::read_sr300_calibration(*device, mutex);

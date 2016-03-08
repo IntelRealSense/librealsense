@@ -26,11 +26,6 @@ namespace rsimpl
     std::shared_ptr<rs_device> make_r200_device(std::shared_ptr<uvc::device> device)
     {
         LOG_INFO("Connecting to Intel RealSense R200");
-
-		// Retrieve the extension unit for the R200's left/right infrared camera
-        // This XU is used for all commands related to retrieving calibration information and setting depth generation settings
-        const uvc::guid R200_LEFT_RIGHT_XU = {0x18682d34, 0xdd2c, 0x4073, {0xad, 0x23, 0x72, 0x14, 0x73, 0x9a, 0x07, 0x4c}};
-        init_controls(*device, 0, R200_LEFT_RIGHT_XU);
         
         static_device_info info;
         info.name = {"Intel RealSense R200"};

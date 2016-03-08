@@ -268,16 +268,18 @@ namespace rsimpl { namespace f200
     // XU functions //
     //////////////////
 
+    const uvc::extension_unit depth_xu {1, 6, {0xA55751A1,0xF3C5,0x4A5E,{0x8D,0x5A,0x68,0x54,0xB8,0xFA,0x27,0x16}}};
+
     // N.B. f200 xu_read and xu_write hard code the xu interface to the depth suvdevice. There is only a
     // single *potentially* useful XU on the color device, so let's ignore it for now.
     void xu_read(const uvc::device & device, uint8_t xu_ctrl, void * buffer, uint32_t length)
     {
-        uvc::get_control_with_retry(device, 1, static_cast<int>(xu_ctrl), buffer, length);
+        uvc::get_control_with_retry(device, depth_xu, static_cast<int>(xu_ctrl), buffer, length);
     }
     
     void xu_write(uvc::device & device, uint8_t xu_ctrl, void * buffer, uint32_t length)
     {
-        uvc::set_control_with_retry(device, 1, static_cast<int>(xu_ctrl), buffer, length);
+        uvc::set_control_with_retry(device, depth_xu, static_cast<int>(xu_ctrl), buffer, length);
     }
     
     void get_laser_power(const uvc::device & device, uint8_t & laser_power)

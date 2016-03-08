@@ -203,7 +203,6 @@ namespace rsimpl
             com_ptr<IAMVideoProcAmp> am_video_proc_amp;            
             com_ptr<IKsControl> ks_control;
             int ks_node_id = 0;
-            GUID ks_property_set = {};
             com_ptr<IMFSourceReader> mf_source_reader;
             std::function<void(const void * frame)> callback;
 
@@ -477,40 +476,34 @@ namespace rsimpl
         int get_vendor_id(const device & device) { return device.vid; }
         int get_product_id(const device & device) { return device.pid; }
 
-        void init_controls(device & device, int subdevice, const guid & guid)
+        void get_control(const device & device, const extension_unit & xu, uint8_t ctrl, void *data, int len)
         {
-            device.get_media_source(subdevice);
-            device.subdevices[subdevice].ks_property_set = reinterpret_cast<const GUID &>(guid);
-        }
-
-        void get_control(const device & device, int subdevice, uint8_t ctrl, void *data, int len)
-        {
-            if(!device.subdevices[subdevice].ks_control) const_cast<uvc::device &>(device).get_media_source(subdevice); // TODO: This should actually happen somewhere else
+            if(!device.subdevices[xu.subdevice].ks_control) const_cast<uvc::device &>(device).get_media_source(xu.subdevice); // TODO: This should actually happen somewhere else
 
             KSP_NODE node;
             memset(&node, 0, sizeof(KSP_NODE));
-            node.Property.Set = device.subdevices[subdevice].ks_property_set; //{0x18682d34, 0xdd2c, 0x4073, {0xad, 0x23, 0x72, 0x14, 0x73, 0x9a, 0x07, 0x4c}}; // GUID_EXTENSION_UNIT_DESCRIPTOR
+            node.Property.Set = reinterpret_cast<const GUID &>(xu.guid);
             node.Property.Id = ctrl;
             node.Property.Flags = KSPROPERTY_TYPE_GET | KSPROPERTY_TYPE_TOPOLOGY;
-            node.NodeId = device.subdevices[subdevice].ks_node_id;
+            node.NodeId = device.subdevices[xu.subdevice].ks_node_id;
 
             ULONG bytes_received = 0;
-            check("IKsControl::KsProperty", device.subdevices[subdevice].ks_control->KsProperty((PKSPROPERTY)&node, sizeof(node), data, len, &bytes_received));
+            check("IKsControl::KsProperty", device.subdevices[xu.subdevice].ks_control->KsProperty((PKSPROPERTY)&node, sizeof(node), data, len, &bytes_received));
             if(bytes_received != len) throw std::runtime_error("XU read did not return enough data");
         }
 
-        void set_control(device & device, int subdevice, uint8_t ctrl, void *data, int len)
+        void set_control(device & device, const extension_unit & xu, uint8_t ctrl, void *data, int len)
         {        
             device.open_ks_control();
 
             KSP_NODE node;
             memset(&node, 0, sizeof(KSP_NODE));
-            node.Property.Set = device.subdevices[subdevice].ks_property_set; //{0x18682d34, 0xdd2c, 0x4073, {0xad, 0x23, 0x72, 0x14, 0x73, 0x9a, 0x07, 0x4c}}; // GUID_EXTENSION_UNIT_DESCRIPTOR
+            node.Property.Set = reinterpret_cast<const GUID &>(xu.guid);
             node.Property.Id = ctrl;
             node.Property.Flags = KSPROPERTY_TYPE_SET | KSPROPERTY_TYPE_TOPOLOGY;
-            node.NodeId = device.subdevices[subdevice].ks_node_id;
+            node.NodeId = device.subdevices[xu.subdevice].ks_node_id;
                 
-            check("IKsControl::KsProperty", device.subdevices[subdevice].ks_control->KsProperty((PKSPROPERTY)&node, sizeof(KSP_NODE), data, len, nullptr));
+            check("IKsControl::KsProperty", device.subdevices[xu.subdevice].ks_control->KsProperty((PKSPROPERTY)&node, sizeof(KSP_NODE), data, len, nullptr));
         }
 
         void claim_interface(device & device, const guid & interface_guid, int interface_number)
