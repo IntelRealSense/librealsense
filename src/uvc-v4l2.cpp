@@ -19,6 +19,7 @@
 #include <dirent.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <limits.h>
 #include <errno.h>
 #include <sys/stat.h>
 #include <sys/mman.h>
@@ -515,6 +516,18 @@ namespace rsimpl
             {
                 std::string name = entry->d_name;
                 if(name == "." || name == "..") continue;
+
+                // Resolve a pathname to ignore virtual video devices
+                std::string path = "/sys/class/video4linux/" + name;
+                char buff[PATH_MAX];
+                ssize_t len = ::readlink(path.c_str(), buff, sizeof(buff)-1);
+                if (len != -1) {
+                    buff[len] = '\0';
+                    std::string real_path = std::string(buff);
+                    if (real_path.find("virtual") != std::string::npos)
+                        continue;
+                }
+
                 std::unique_ptr<subdevice> sub(new subdevice(name));
                 subdevices.push_back(move(sub));
             }
