@@ -72,12 +72,6 @@ namespace rsimpl
                 if(!subdevices[subdevice_index].handle) check("uvc_open2", uvc_open2(uvcdevice, &subdevices[subdevice_index].handle, subdevice_index));
                 return subdevices[subdevice_index];
             }
-
-            uvc_device_handle_t * get_control_handle() const
-            {
-                if(subdevices.empty() || !subdevices[0].handle) throw std::runtime_error("unable to get control handle");
-                return subdevices[0].handle;
-            }
         };
 
         ////////////
@@ -87,44 +81,28 @@ namespace rsimpl
         int get_vendor_id(const device & device) { return device.vid; }
         int get_product_id(const device & device) { return device.pid; }
 
-        void init_controls(device & device, int subdevice, const guid & xu_guid)
+        void get_control(const device & dev, const extension_unit & xu, uint8_t ctrl, void * data, int len)
         {
-            const uvc_extension_unit_t * xu = uvc_get_extension_units(device.get_subdevice(subdevice).handle);
-            while(xu)
-            {
-                if(memcmp(&xu_guid, xu->guidExtensionCode, sizeof(guid)) == 0)
-                {
-                    device.subdevices[subdevice].unit = xu->bUnitID;
-                    LOG_DEBUG("subdevice " << subdevice << " uses control unit " << (int)xu->bUnitID);
-                    return;
-                }
-                xu = xu->next;
-            }
-            throw std::runtime_error("unable to find control unit for subdevice");
-        }
-
-        void get_control(const device & device, int subdevice, uint8_t ctrl, void * data, int len)
-        {
-            int status = uvc_get_ctrl(device.get_control_handle(), device.subdevices[subdevice].unit, ctrl, data, len, UVC_GET_CUR);
+            int status = uvc_get_ctrl(const_cast<device &>(dev).get_subdevice(xu.subdevice).handle, xu.unit, ctrl, data, len, UVC_GET_CUR);
             if(status < 0) throw std::runtime_error(to_string() << "uvc_get_ctrl(...) returned " << libusb_error_name(status));
         }
 
-        void set_control(device & device, int subdevice, uint8_t ctrl, void * data, int len)
+        void set_control(device & device, const extension_unit & xu, uint8_t ctrl, void * data, int len)
         {
-            int status = uvc_set_ctrl(device.get_control_handle(), device.subdevices[subdevice].unit, ctrl, data, len);
+            int status = uvc_set_ctrl(device.get_subdevice(xu.subdevice).handle, xu.unit, ctrl, data, len);
             if(status < 0) throw std::runtime_error(to_string() << "uvc_set_ctrl(...) returned " << libusb_error_name(status));
         }
 
         void claim_interface(device & device, const guid & interface_guid, int interface_number)
         {
-            int status = libusb_claim_interface(device.get_control_handle()->usb_devh, interface_number);
+            int status = libusb_claim_interface(device.get_subdevice(0).handle->usb_devh, interface_number);
             if(status < 0) throw std::runtime_error(to_string() << "libusb_claim_interface(...) returned " << libusb_error_name(status));
             device.claimed_interfaces.push_back(interface_number);
         }
 
         void bulk_transfer(device & device, unsigned char endpoint, void * data, int length, int *actual_length, unsigned int timeout)
         {
-            int status = libusb_bulk_transfer(device.get_control_handle()->usb_devh, endpoint, (unsigned char *)data, length, actual_length, timeout);
+            int status = libusb_bulk_transfer(device.get_subdevice(0).handle->usb_devh, endpoint, (unsigned char *)data, length, actual_length, timeout);
             if(status < 0) throw std::runtime_error(to_string() << "libusb_bulk_transfer(...) returned " << libusb_error_name(status));
         }
 
