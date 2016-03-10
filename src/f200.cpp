@@ -9,6 +9,7 @@
 #include <math.h>
 #include <limits>
 #include <climits>
+#include <algorithm>
 
 namespace rsimpl
 {
@@ -234,12 +235,10 @@ namespace rsimpl
         arr.ARLowerTh = 650;
     }
 
-    const uvc::guid IVCAM_DEPTH_XU = {0xA55751A1,0xF3C5,0x4A5E,{0x8D,0x5A,0x68,0x54,0xB8,0xFA,0x27,0x16}};
-    const uvc::guid IVCAM_COLOR_XU = {0xB8EC416E,0xA3AC,0x4580,{0x8D,0x5C,0x0B,0xEE,0x15,0x97,0xE4,0x3D}};
+    //const uvc::guid IVCAM_COLOR_XU = {0xB8EC416E,0xA3AC,0x4580,{0x8D,0x5C,0x0B,0xEE,0x15,0x97,0xE4,0x3D}};
 
     std::shared_ptr<rs_device> make_f200_device(std::shared_ptr<uvc::device> device)
     {
-        init_controls(*device, 1, IVCAM_DEPTH_XU);
         std::timed_mutex mutex;
         f200::claim_ivcam_interface(*device);
         auto calib = f200::read_f200_calibration(*device, mutex);
@@ -254,7 +253,6 @@ namespace rsimpl
 
     std::shared_ptr<rs_device> make_sr300_device(std::shared_ptr<uvc::device> device)
     {
-        init_controls(*device, 1, IVCAM_DEPTH_XU);
         std::timed_mutex mutex;
         f200::claim_ivcam_interface(*device);
         auto calib = f200::read_sr300_calibration(*device, mutex);
@@ -291,6 +289,26 @@ namespace rsimpl
     void f200_camera::on_before_start(const std::vector<subdevice_mode_selection> & selected_modes)
     {
 
+    }
+    
+    rs_stream f200_camera::select_key_stream(const std::vector<rsimpl::subdevice_mode_selection> & selected_modes)
+    {
+        int fps[RS_STREAM_NATIVE_COUNT] = {}, max_fps = 0;
+        for(const auto & m : selected_modes)
+        {
+            for(const auto & output : m.get_outputs())
+            {
+                fps[output.first] = m.mode.fps;
+                max_fps = std::max(max_fps, m.mode.fps);
+            }
+        }
+
+        // Prefer to sync on depth or infrared, but select the stream running at the fastest framerate
+        for(auto s : {RS_STREAM_DEPTH, RS_STREAM_INFRARED2, RS_STREAM_COLOR})
+        {
+            if(fps[s] == max_fps) return s;
+        }
+        return RS_STREAM_DEPTH;
     }
 
     void f200_camera::temperature_control_loop()

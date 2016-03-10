@@ -2,7 +2,7 @@
 
 using namespace rsimpl;
 
-frame_archive::frame_archive(const std::vector<subdevice_mode_selection> & selection)
+frame_archive::frame_archive(const std::vector<subdevice_mode_selection> & selection, rs_stream key_stream) : key_stream(key_stream)
 {
     // Store the mode selection that pertains to each native stream
     for(auto & mode : selection)
@@ -13,15 +13,8 @@ frame_archive::frame_archive(const std::vector<subdevice_mode_selection> & selec
         }
     }
 
-    // Determine which stream will act as the key stream
-    if(is_stream_enabled(RS_STREAM_DEPTH)) key_stream = RS_STREAM_DEPTH;
-    else if(is_stream_enabled(RS_STREAM_INFRARED)) key_stream = RS_STREAM_INFRARED;
-    else if(is_stream_enabled(RS_STREAM_INFRARED2)) key_stream = RS_STREAM_INFRARED2;
-    else if(is_stream_enabled(RS_STREAM_COLOR)) key_stream = RS_STREAM_COLOR;
-    else throw std::runtime_error("must enable at least one stream");
-
     // Enumerate all streams we need to keep synchronized with the key stream
-    for(auto s : {RS_STREAM_INFRARED, RS_STREAM_INFRARED2, RS_STREAM_COLOR})
+    for(auto s : {RS_STREAM_DEPTH, RS_STREAM_INFRARED, RS_STREAM_INFRARED2, RS_STREAM_COLOR})
     {
         if(is_stream_enabled(s) && s != key_stream) other_streams.push_back(s);
     }

@@ -20,7 +20,7 @@ namespace rsimpl
         struct r200_calibration
         {
             int version;
-            int serial_number;
+            uint32_t serial_number;
             rs_intrinsics modesLR[3];
             rs_intrinsics intrinsicsThird[2];
             rs_intrinsics modesThird[2][2];

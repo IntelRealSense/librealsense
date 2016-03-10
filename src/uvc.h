@@ -16,6 +16,8 @@ namespace rsimpl
     namespace uvc
     {
         struct guid { uint32_t data1; uint16_t data2, data3; uint8_t data4[8]; };
+        struct extension_unit { int subdevice, unit, node; guid id; };
+
         struct context; // Opaque type representing access to the underlying UVC implementation
         struct device; // Opaque type representing access to a specific UVC device
 
@@ -38,9 +40,8 @@ namespace rsimpl
         int get_pu_control(const device & device, int subdevice, rs_option option);
 
         // Access XU controls
-        void init_controls(device & device, int subdevice, const guid & xu_guid);
-        void set_control(device & device, int subdevice, uint8_t ctrl, void * data, int len);
-        void get_control(const device & device, int subdevice, uint8_t ctrl, void * data, int len);
+        void set_control(device & device, const extension_unit & xu, uint8_t ctrl, void * data, int len);
+        void get_control(const device & device, const extension_unit & xu, uint8_t ctrl, void * data, int len);
 
         // Control streaming
         void set_subdevice_mode(device & device, int subdevice_index, int width, int height, uint32_t fourcc, int fps, std::function<void(const void * frame)> callback);
@@ -71,26 +72,26 @@ namespace rsimpl
             return get_pu_control(device, subdevice, option);
         }
         
-        inline void set_control_with_retry(device & device, int subdevice, uint8_t ctrl, void * data, int len)
+        inline void set_control_with_retry(device & device, const extension_unit & xu, uint8_t ctrl, void * data, int len)
         {
             // Try writing a control, if it fails, retry several times
             for(int i=0; i<20; ++i)
             {
-                try { set_control(device, subdevice, ctrl, data, len); return; }
+                try { set_control(device, xu, ctrl, data, len); return; }
                 catch(...) { std::this_thread::sleep_for(std::chrono::milliseconds(50)); }
             }
-            set_control(device, subdevice, ctrl, data, len);
+            set_control(device, xu, ctrl, data, len);
         }
         
-        inline void get_control_with_retry(const device & device, int subdevice, uint8_t ctrl, void * data, int len)
+        inline void get_control_with_retry(const device & device, const extension_unit & xu, uint8_t ctrl, void * data, int len)
         {
             // Try reading a control, if it fails, retry several times
             for(int i=0; i<20; ++i)
             {
-                try { get_control(device, subdevice, ctrl, data, len); return; }
+                try { get_control(device, xu, ctrl, data, len); return; }
                 catch(...) { std::this_thread::sleep_for(std::chrono::milliseconds(50)); }
             }
-            get_control(device, subdevice, ctrl, data, len);
+            get_control(device, xu, ctrl, data, len);
         }
     }
 }

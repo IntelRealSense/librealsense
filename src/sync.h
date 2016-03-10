@@ -47,7 +47,7 @@ namespace rsimpl
         void discard_frame(rs_stream stream);
         void cull_frames();
     public:
-        frame_archive(const std::vector<subdevice_mode_selection> & selection);
+        frame_archive(const std::vector<subdevice_mode_selection> & selection, rs_stream key_stream);
 
         // Safe to call from any thread
         bool is_stream_enabled(rs_stream stream) const { return modes[stream].mode.pf.fourcc != 0; }

@@ -20,45 +20,6 @@ namespace rsimpl
         }
         #define CALL_UVC(name, ...) check(#name, name(__VA_ARGS__))
 
-        struct device_id { int vid, pid; std::string serial_no; };
-
-        std::vector<device_id> enumerate_devices(uvc_context * context)
-        {
-            std::vector<device_id> refs;
-            uvc_device_t ** list;
-            CALL_UVC(uvc_get_device_list, context, &list);
-            for(auto it = list; *it; ++it)
-            {
-                uvc_device_descriptor_t * desc;
-                CALL_UVC(uvc_get_device_descriptor, *it, &desc);
-                refs.push_back({desc->idVendor, desc->idProduct, desc->serialNumber ? desc->serialNumber : ""});
-                uvc_free_device_descriptor(desc);
-            }
-            uvc_free_device_list(list, 1);
-            return refs;
-        }
-
-        uvc_device_t * create_device(uvc_context * context, const device_id & ref)
-        {
-            uvc_device_t * device = nullptr;
-            uvc_device_t ** list;
-            CALL_UVC(uvc_get_device_list, context, &list);
-            for(auto it = list; *it; ++it)
-            {
-                uvc_device_descriptor_t * desc;
-                CALL_UVC(uvc_get_device_descriptor, *it, &desc);
-                if(desc->idVendor == ref.vid && desc->idProduct == ref.pid && (desc->serialNumber ? desc->serialNumber : "") == ref.serial_no)
-                {
-                    device = *it;
-                    uvc_ref_device(device);
-                }
-                uvc_free_device_descriptor(desc);
-                if(device) break;
-            }
-            uvc_free_device_list(list, 1);
-            return device;
-        }
-
         struct context
         {
             uvc_context_t * ctx;
@@ -78,15 +39,20 @@ namespace rsimpl
         struct device
         {
             const std::shared_ptr<context> parent;
-            const device_id id;
             uvc_device_t * uvcdevice;
+            int vid, pid;
             std::vector<subdevice> subdevices;
             std::vector<int> claimed_interfaces;
 
-            device(std::shared_ptr<context> parent, device_id id) : parent(parent), id(id)
+            device(std::shared_ptr<context> parent, uvc_device_t * uvcdevice) : parent(parent), uvcdevice(uvcdevice)
             {
-                uvcdevice = create_device(parent->ctx, id);
                 get_subdevice(0);
+                
+                uvc_device_descriptor_t * desc;
+                CALL_UVC(uvc_get_device_descriptor, uvcdevice, &desc);
+                vid = desc->idVendor;
+                pid = desc->idProduct;
+                uvc_free_device_descriptor(desc);
             }
             ~device()
             {
@@ -106,59 +72,37 @@ namespace rsimpl
                 if(!subdevices[subdevice_index].handle) check("uvc_open2", uvc_open2(uvcdevice, &subdevices[subdevice_index].handle, subdevice_index));
                 return subdevices[subdevice_index];
             }
-
-            uvc_device_handle_t * get_control_handle() const
-            {
-                if(subdevices.empty() || !subdevices[0].handle) throw std::runtime_error("unable to get control handle");
-                return subdevices[0].handle;
-            }
         };
 
         ////////////
         // device //
         ////////////
 
-        int get_vendor_id(const device & device) { return device.id.vid; }
-        int get_product_id(const device & device) { return device.id.pid; }
+        int get_vendor_id(const device & device) { return device.vid; }
+        int get_product_id(const device & device) { return device.pid; }
 
-        void init_controls(device & device, int subdevice, const guid & xu_guid)
+        void get_control(const device & dev, const extension_unit & xu, uint8_t ctrl, void * data, int len)
         {
-            const uvc_extension_unit_t * xu = uvc_get_extension_units(device.get_subdevice(subdevice).handle);
-            while(xu)
-            {
-                if(memcmp(&xu_guid, xu->guidExtensionCode, sizeof(guid)) == 0)
-                {
-                    device.subdevices[subdevice].unit = xu->bUnitID;
-                    LOG_DEBUG("subdevice " << subdevice << " uses control unit " << (int)xu->bUnitID);
-                    return;
-                }
-                xu = xu->next;
-            }
-            throw std::runtime_error("unable to find control unit for subdevice");
-        }
-
-        void get_control(const device & device, int subdevice, uint8_t ctrl, void * data, int len)
-        {
-            int status = uvc_get_ctrl(device.get_control_handle(), device.subdevices[subdevice].unit, ctrl, data, len, UVC_GET_CUR);
+            int status = uvc_get_ctrl(const_cast<device &>(dev).get_subdevice(xu.subdevice).handle, xu.unit, ctrl, data, len, UVC_GET_CUR);
             if(status < 0) throw std::runtime_error(to_string() << "uvc_get_ctrl(...) returned " << libusb_error_name(status));
         }
 
-        void set_control(device & device, int subdevice, uint8_t ctrl, void * data, int len)
+        void set_control(device & device, const extension_unit & xu, uint8_t ctrl, void * data, int len)
         {
-            int status = uvc_set_ctrl(device.get_control_handle(), device.subdevices[subdevice].unit, ctrl, data, len);
+            int status = uvc_set_ctrl(device.get_subdevice(xu.subdevice).handle, xu.unit, ctrl, data, len);
             if(status < 0) throw std::runtime_error(to_string() << "uvc_set_ctrl(...) returned " << libusb_error_name(status));
         }
 
         void claim_interface(device & device, const guid & interface_guid, int interface_number)
         {
-            int status = libusb_claim_interface(device.get_control_handle()->usb_devh, interface_number);
+            int status = libusb_claim_interface(device.get_subdevice(0).handle->usb_devh, interface_number);
             if(status < 0) throw std::runtime_error(to_string() << "libusb_claim_interface(...) returned " << libusb_error_name(status));
             device.claimed_interfaces.push_back(interface_number);
         }
 
         void bulk_transfer(device & device, unsigned char endpoint, void * data, int length, int *actual_length, unsigned int timeout)
         {
-            int status = libusb_bulk_transfer(device.get_control_handle()->usb_devh, endpoint, (unsigned char *)data, length, actual_length, timeout);
+            int status = libusb_bulk_transfer(device.get_subdevice(0).handle->usb_devh, endpoint, (unsigned char *)data, length, actual_length, timeout);
             if(status < 0) throw std::runtime_error(to_string() << "libusb_bulk_transfer(...) returned " << libusb_error_name(status));
         }
 
@@ -315,7 +259,11 @@ namespace rsimpl
         std::vector<std::shared_ptr<device>> query_devices(std::shared_ptr<context> context)
         {
             std::vector<std::shared_ptr<device>> devices;
-            for(auto id : enumerate_devices(context->ctx)) devices.push_back(std::make_shared<device>(context, id));
+            
+            uvc_device_t ** list;
+            CALL_UVC(uvc_get_device_list, context->ctx, &list);
+            for(auto it = list; *it; ++it) devices.push_back(std::make_shared<device>(context, *it));
+            uvc_free_device_list(list, 1);
             return devices;
         }
     }
