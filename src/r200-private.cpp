@@ -35,7 +35,7 @@ enum class command_modifier : uint32_t { direct = 0x10 }; // Command/response mo
 
 namespace rsimpl { namespace r200
 {
-    const uvc::extension_unit lr_xu = {0, 2, {0x18682d34, 0xdd2c, 0x4073, {0xad, 0x23, 0x72, 0x14, 0x73, 0x9a, 0x07, 0x4c}}};
+    const uvc::extension_unit lr_xu = {0, 2, 1, {0x18682d34, 0xdd2c, 0x4073, {0xad, 0x23, 0x72, 0x14, 0x73, 0x9a, 0x07, 0x4c}}};
 
     void xu_read(const uvc::device & device, control xu_ctrl, void * buffer, uint32_t length)
     {

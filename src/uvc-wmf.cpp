@@ -33,6 +33,7 @@
 #include <chrono>
 #include <algorithm>
 #include <regex>
+#include <map>
 
 #include <strsafe.h>
 
@@ -201,8 +202,7 @@ namespace rsimpl
             com_ptr<IMFMediaSource> mf_media_source;
             com_ptr<IAMCameraControl> am_camera_control;
             com_ptr<IAMVideoProcAmp> am_video_proc_amp;            
-            com_ptr<IKsControl> ks_control;
-            int ks_node_id = 0;
+            std::map<int, com_ptr<IKsControl>> ks_controls;
             com_ptr<IMFSourceReader> mf_source_reader;
             std::function<void(const void * frame)> callback;
 
@@ -213,30 +213,35 @@ namespace rsimpl
                     check("IMFActivate::ActivateObject", mf_activate->ActivateObject(__uuidof(IMFMediaSource), (void **)&mf_media_source));
                     check("IMFMediaSource::QueryInterface", mf_media_source->QueryInterface(__uuidof(IAMCameraControl), (void **)&am_camera_control));
                     if(SUCCEEDED(mf_media_source->QueryInterface(__uuidof(IAMVideoProcAmp), (void **)&am_video_proc_amp))) LOG_DEBUG("obtained IAMVideoProcAmp");                    
-
-                    // Attempt to retrieve IKsControl
-                    com_ptr<IKsTopologyInfo> ks_topology_info = NULL;
-                    check("QueryInterface", mf_media_source->QueryInterface(__uuidof(IKsTopologyInfo), (void **)&ks_topology_info));
-
-                    DWORD num_nodes = 0;
-                    check("get_NumNodes", ks_topology_info->get_NumNodes(&num_nodes));
-                    for(DWORD i=0; i<num_nodes; ++i)
-                    {
-                        GUID node_type;
-                        check("get_NodeType", ks_topology_info->get_NodeType(i, &node_type));
-                        const GUID KSNODETYPE_DEV_SPECIFIC_LOCAL{0x941C7AC0L, 0xC559, 0x11D0, {0x8A, 0x2B, 0x00, 0xA0, 0xC9, 0x25, 0x5A, 0xC1}};
-
-                        if (node_type == KSNODETYPE_DEV_SPECIFIC_LOCAL)
-                        {
-                            com_ptr<IUnknown> unknown;
-                            check("CreateNodeInstance", ks_topology_info->CreateNodeInstance(i, IID_IUnknown, (LPVOID *)&unknown));
-                            check("QueryInterface", unknown->QueryInterface(__uuidof(IKsControl), (void **)&ks_control));
-                            ks_node_id = i;
-                            LOG_DEBUG("Found KS control node at location " << i << "!");
-                        }
-                    }
                 }
                 return mf_media_source;
+
+
+            }
+
+            IKsControl * get_ks_control(const uvc::extension_unit & xu)
+            {
+                auto it = ks_controls.find(xu.node);
+                if(it != end(ks_controls)) return it->second;
+
+                get_media_source();
+
+                // Attempt to retrieve IKsControl
+                com_ptr<IKsTopologyInfo> ks_topology_info = NULL;
+                check("QueryInterface", mf_media_source->QueryInterface(__uuidof(IKsTopologyInfo), (void **)&ks_topology_info));
+
+                GUID node_type;
+                check("get_NodeType", ks_topology_info->get_NodeType(xu.node, &node_type));
+                const GUID KSNODETYPE_DEV_SPECIFIC_LOCAL{0x941C7AC0L, 0xC559, 0x11D0, {0x8A, 0x2B, 0x00, 0xA0, 0xC9, 0x25, 0x5A, 0xC1}};
+                if(node_type != KSNODETYPE_DEV_SPECIFIC_LOCAL) throw std::runtime_error(to_string() << "Invalid extension unit node ID: " << xu.node);
+
+                com_ptr<IUnknown> unknown;
+                check("CreateNodeInstance", ks_topology_info->CreateNodeInstance(xu.node, IID_IUnknown, (LPVOID *)&unknown));
+
+                com_ptr<IKsControl> ks_control;
+                check("QueryInterface", unknown->QueryInterface(__uuidof(IKsControl), (void **)&ks_control));
+                LOG_INFO("Obtained KS control node " << xu.node);
+                return ks_controls[xu.node] = ks_control;
             }
         };
 
@@ -258,9 +263,9 @@ namespace rsimpl
 
             ~device() { stop_streaming(); close_win_usb(); }
 
-            void open_ks_control()
+            IKsControl * get_ks_control(const uvc::extension_unit & xu)
             {
-                for(auto & subdevice : subdevices) subdevice.get_media_source();
+                return subdevices[xu.subdevice].get_ks_control(xu);
             }
 
             void start_streaming()
@@ -295,7 +300,7 @@ namespace rsimpl
                     sub.mf_source_reader = nullptr;
                     sub.am_camera_control = nullptr;
                     sub.am_video_proc_amp = nullptr;
-                    sub.ks_control = nullptr;
+                    sub.ks_controls.clear();
                     if(sub.mf_media_source)
                     {
                         sub.mf_media_source = nullptr;
@@ -478,32 +483,32 @@ namespace rsimpl
 
         void get_control(const device & device, const extension_unit & xu, uint8_t ctrl, void *data, int len)
         {
-            if(!device.subdevices[xu.subdevice].ks_control) const_cast<uvc::device &>(device).get_media_source(xu.subdevice); // TODO: This should actually happen somewhere else
+            auto ks_control = const_cast<uvc::device &>(device).get_ks_control(xu);
 
             KSP_NODE node;
             memset(&node, 0, sizeof(KSP_NODE));
             node.Property.Set = reinterpret_cast<const GUID &>(xu.guid);
             node.Property.Id = ctrl;
             node.Property.Flags = KSPROPERTY_TYPE_GET | KSPROPERTY_TYPE_TOPOLOGY;
-            node.NodeId = device.subdevices[xu.subdevice].ks_node_id;
+            node.NodeId = xu.node;
 
             ULONG bytes_received = 0;
-            check("IKsControl::KsProperty", device.subdevices[xu.subdevice].ks_control->KsProperty((PKSPROPERTY)&node, sizeof(node), data, len, &bytes_received));
+            check("IKsControl::KsProperty", ks_control->KsProperty((PKSPROPERTY)&node, sizeof(node), data, len, &bytes_received));
             if(bytes_received != len) throw std::runtime_error("XU read did not return enough data");
         }
 
         void set_control(device & device, const extension_unit & xu, uint8_t ctrl, void *data, int len)
         {        
-            device.open_ks_control();
+            auto ks_control = device.get_ks_control(xu);
 
             KSP_NODE node;
             memset(&node, 0, sizeof(KSP_NODE));
             node.Property.Set = reinterpret_cast<const GUID &>(xu.guid);
             node.Property.Id = ctrl;
             node.Property.Flags = KSPROPERTY_TYPE_SET | KSPROPERTY_TYPE_TOPOLOGY;
-            node.NodeId = device.subdevices[xu.subdevice].ks_node_id;
+            node.NodeId = xu.node;
                 
-            check("IKsControl::KsProperty", device.subdevices[xu.subdevice].ks_control->KsProperty((PKSPROPERTY)&node, sizeof(KSP_NODE), data, len, nullptr));
+            check("IKsControl::KsProperty", ks_control->KsProperty((PKSPROPERTY)&node, sizeof(KSP_NODE), data, len, nullptr));
         }
 
         void claim_interface(device & device, const guid & interface_guid, int interface_number)
@@ -583,6 +588,7 @@ namespace rsimpl
         void set_pu_control(device & device, int subdevice, rs_option option, int value)
         {
             auto & sub = device.subdevices[subdevice];
+            sub.get_media_source();
             if(option == RS_OPTION_COLOR_EXPOSURE)
             {
                 check("IAMCameraControl::Set", sub.am_camera_control->Set(CameraControl_Exposure, static_cast<int>(std::round(log2(static_cast<double>(value) / 10000))), CameraControl_Flags_Manual));
@@ -632,6 +638,7 @@ namespace rsimpl
             }
 
             auto & sub = device.subdevices[subdevice];
+            const_cast<uvc::subdevice &>(sub).get_media_source();
             long minVal=0, maxVal=0, steppingDelta=0, defVal=0, capsFlag=0;
             if(option == RS_OPTION_COLOR_EXPOSURE)
             {
@@ -733,7 +740,6 @@ namespace rsimpl
                 dev->subdevices[subdevice_index].mf_activate = pDevice;                
             }
             CoTaskMemFree(ppDevices);
-            for(auto & dev : devices) dev->open_ks_control();
             return devices;
         }
     }
