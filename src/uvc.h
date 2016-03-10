@@ -16,7 +16,7 @@ namespace rsimpl
     namespace uvc
     {
         struct guid { uint32_t data1; uint16_t data2, data3; uint8_t data4[8]; };
-        struct extension_unit { int subdevice, unit, node; guid guid; };
+        struct extension_unit { int subdevice, unit, node; guid id; };
 
         struct context; // Opaque type representing access to the underlying UVC implementation
         struct device; // Opaque type representing access to a specific UVC device

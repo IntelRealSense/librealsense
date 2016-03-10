@@ -158,27 +158,15 @@ namespace rsimpl
             int get_pid() const { return pid; }
             int get_mi() const { return mi; }
 
-            uint8_t get_xu_endpoint() const
+            void get_control(const extension_unit & xu, uint8_t control, void * data, size_t size)
             {
-                // Temporary workaround, it should be possible to query for this
-                switch(get_pid())
-                {
-                case 2688: return 2; // R200
-                case 2662: return 6; // F200
-                case 2725: return 6; // SR300
-                default: return 0;
-                }
-            }
-
-            void get_control(uint8_t control, void * data, size_t size)
-            {
-                uvc_xu_control_query q = {get_xu_endpoint(), control, UVC_GET_CUR, static_cast<uint16_t>(size), reinterpret_cast<uint8_t *>(data)};
+                uvc_xu_control_query q = {xu.unit, control, UVC_GET_CUR, static_cast<uint16_t>(size), reinterpret_cast<uint8_t *>(data)};
                 if(xioctl(fd, UVCIOC_CTRL_QUERY, &q) < 0) throw_error("UVCIOC_CTRL_QUERY:UVC_GET_CUR");
             }
 
-            void set_control(uint8_t control, void * data, size_t size)
+            void set_control(const extension_unit & xu, uint8_t control, void * data, size_t size)
             {
-                uvc_xu_control_query q = {get_xu_endpoint(), control, UVC_SET_CUR, static_cast<uint16_t>(size), reinterpret_cast<uint8_t *>(data)};
+                uvc_xu_control_query q = {xu.unit, control, UVC_SET_CUR, static_cast<uint16_t>(size), reinterpret_cast<uint8_t *>(data)};
                 if(xioctl(fd, UVCIOC_CTRL_QUERY, &q) < 0) throw_error("UVCIOC_CTRL_QUERY:UVC_SET_CUR");
             }
 
@@ -403,14 +391,13 @@ namespace rsimpl
         int get_vendor_id(const device & device) { return device.subdevices[0]->get_vid(); }
         int get_product_id(const device & device) { return device.subdevices[0]->get_pid(); }
 
-        void init_controls(device & device, int subdevice, const guid & xu_guid) {}
-        void get_control(const device & device, int subdevice, uint8_t ctrl, void * data, int len)
+        void get_control(const device & device, const extension_unit & xu, uint8_t ctrl, void * data, int len)
         {
-            device.subdevices[subdevice]->get_control(ctrl, data, len);
+            device.subdevices[xu.subdevice]->get_control(xu, ctrl, data, len);
         }
-        void set_control(device & device, int subdevice, uint8_t ctrl, void * data, int len)
+        void set_control(device & device, const extension_unit & xu, uint8_t ctrl, void * data, int len)
         {
-            device.subdevices[subdevice]->set_control(ctrl, data, len);
+            device.subdevices[xu.subdevice]->set_control(xu, ctrl, data, len);
         }
 
         void claim_interface(device & device, const guid & interface_guid, int interface_number)

@@ -487,7 +487,7 @@ namespace rsimpl
 
             KSP_NODE node;
             memset(&node, 0, sizeof(KSP_NODE));
-            node.Property.Set = reinterpret_cast<const GUID &>(xu.guid);
+            node.Property.Set = reinterpret_cast<const GUID &>(xu.id);
             node.Property.Id = ctrl;
             node.Property.Flags = KSPROPERTY_TYPE_GET | KSPROPERTY_TYPE_TOPOLOGY;
             node.NodeId = xu.node;
@@ -503,7 +503,7 @@ namespace rsimpl
 
             KSP_NODE node;
             memset(&node, 0, sizeof(KSP_NODE));
-            node.Property.Set = reinterpret_cast<const GUID &>(xu.guid);
+            node.Property.Set = reinterpret_cast<const GUID &>(xu.id);
             node.Property.Id = ctrl;
             node.Property.Flags = KSPROPERTY_TYPE_SET | KSPROPERTY_TYPE_TOPOLOGY;
             node.NodeId = xu.node;
