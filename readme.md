@@ -1,4 +1,4 @@
-# Intel RealSense Cross Platform API
+# Intel® RealSense™ Cross Platform API
 
 [ ![Release] [release-image] ] [releases]
 [ ![License] [license-image] ] [license]
