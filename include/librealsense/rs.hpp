@@ -429,10 +429,10 @@ namespace rs
         /// \param[out] min    the minimum value which will be accepted for this option
         /// \param[out] max    the maximum value which will be accepted for this option
         /// \param[out] step   the granularity of options which accept discrete values, or zero if the option accepts continuous values
-        void get_option_range(option option, double & min, double & max, double & step)
+        void get_option_range(option option, double & min, double & max, double & step, double & def)
         {
             rs_error * e = nullptr;
-            rs_get_device_option_range((rs_device *)this, (rs_option)option, &min, &max, &step, &e);
+            rs_get_device_option_range((rs_device *)this, (rs_option)option, &min, &max, &step, &def, &e);
             error::handle(e);
         }
 

@@ -310,12 +310,12 @@ HANDLE_EXCEPTIONS_AND_RETURN(nullptr, option)
 
 
 
-void rs_get_device_option_range(rs_device * device, rs_option option, double * min, double * max, double * step, rs_error ** error) try
+void rs_get_device_option_range(rs_device * device, rs_option option, double * min, double * max, double * step, double * def, rs_error ** error) try
 {
     VALIDATE_NOT_NULL(device);
     VALIDATE_ENUM(option);
     double x; // Prevent internal code from having to worry about whether nulls are passed in for min/max/step by giving it somewhere to write to
-    device->get_option_range(option, min ? *min : x, max ? *max : x, step ? *step : x);
+    device->get_option_range(option, min ? *min : x, max ? *max : x, step ? *step : x, def ? *def : x);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, device, option, min, max, step)
 
@@ -340,6 +340,24 @@ void rs_set_device_options(rs_device * device, const rs_option options[], int co
     device->set_options(options, count, values);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, device, options, count, values)
+
+void rs_reset_device_options_to_default(rs_device * device, const rs_option* options, int count, rs_error ** error) try
+{	
+	VALIDATE_NOT_NULL(device);
+	VALIDATE_RANGE(count, 0, INT_MAX);
+	VALIDATE_NOT_NULL(options);
+	for (int i = 0; i<count; ++i) VALIDATE_ENUM(options[i]);	
+
+	std::vector<double> values;
+	for (int i = 0; i < count; ++i)
+	{
+		double def;
+		rs_get_device_option_range(device, options[i], NULL, NULL, NULL, &def, 0);
+		values.push_back(def);
+	}	
+	device->set_options(options, count, values.data());
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, device, options, count)
 
 double rs_get_device_option(rs_device * device, rs_option option, rs_error ** error) try
 {

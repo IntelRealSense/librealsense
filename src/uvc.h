@@ -35,7 +35,7 @@ namespace rsimpl
 
         // Access CT and PU controls
         inline bool is_pu_control(rs_option option) { return option >= RS_OPTION_COLOR_BACKLIGHT_COMPENSATION && option <= RS_OPTION_COLOR_ENABLE_AUTO_WHITE_BALANCE; }
-        void get_pu_control_range(const device & device, int subdevice, rs_option option, int * min, int * max);
+        void get_pu_control_range(const device & device, int subdevice, rs_option option, int * min, int * max, int * step, int * def);
         void set_pu_control(device & device, int subdevice, rs_option option, int value);
         int get_pu_control(const device & device, int subdevice, rs_option option);
 
