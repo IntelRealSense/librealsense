@@ -24,6 +24,7 @@ namespace rsimpl
         f200::IVCAMTemperatureData base_temperature_data;
         f200::IVCAMThermalLoopParams thermal_loop_params;
         f200::IVCAMAutoRangeRequest arr;
+        sr300::wakeup_dev_params arr_wakeup_dev_param;
 
         float last_temperature_delta;
 
@@ -44,6 +45,10 @@ namespace rsimpl
         void get_options(const rs_option options[], int count, double values[]) override;
 
         std::shared_ptr<frame_timestamp_reader> create_frame_timestamp_reader() const override;
+
+        void set_wakeup_device(const uint32_t& phase1Period, const uint32_t& phase1FPS, const uint32_t& phase2Period, const uint32_t& phase2FPS);
+        void get_wakeup_confidence(int &nConfidence);
+        void get_wakeup_reason(sr300::wakeonusb_reason &reason);
     };
 
     std::shared_ptr<rs_device> make_f200_device(std::shared_ptr<uvc::device> device);

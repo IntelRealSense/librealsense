@@ -8,8 +8,8 @@
 #include "uvc.h"
 #include <mutex>
 
-namespace rsimpl { namespace f200
-{
+namespace rsimpl {
+namespace f200 {
     struct CameraCalibrationParameters
     {
         float Rmax;
@@ -99,9 +99,9 @@ namespace rsimpl { namespace f200
 
     // XU read/write
     void get_laser_power(const uvc::device & device, uint8_t & laser_power);
-    void set_laser_power(uvc::device & device, uint8_t laser_power);  
-    void get_accuracy(const uvc::device & device, uint8_t & accuracy);  
-    void set_accuracy(uvc::device & device, uint8_t accuracy);    
+    void set_laser_power(uvc::device & device, uint8_t laser_power);
+    void get_accuracy(const uvc::device & device, uint8_t & accuracy);
+    void set_accuracy(uvc::device & device, uint8_t accuracy);
     void get_motion_range(const uvc::device & device, uint8_t & motion_range);
     void set_motion_range(uvc::device & device, uint8_t motion_range);
     void get_filter_option(const uvc::device & device, uint8_t & filter_option);
@@ -111,8 +111,45 @@ namespace rsimpl { namespace f200
     void get_dynamic_fps(const uvc::device & device, uint8_t & dynamic_fps);
     void set_dynamic_fps(uvc::device & device, uint8_t dynamic_fps);
 
-    #define NUM_OF_CALIBRATION_COEFFS   (64)
+#define NUM_OF_CALIBRATION_COEFFS   (64)
 
-} } // namespace rsimpl::f200
+} // rsimpl::sr300
+
+namespace sr300{
+    enum class wakeonusb_reason : unsigned char
+    {
+        eNone_provided = 0,    // Wake-up performed, but FW doesn't provide a comprehensive resason
+        eUser_input = 1,    // Firmware recognized user input and performed system wake up accordingly
+        eUninitialized = 2,    // Querrying the interface before the FW had a chance to perform  ACPI wake on USB
+        eMaxWakeOnReason
+    };
+
+    enum class e_suspend_fps : uint32_t
+    {
+        eFPS_2 = 0,
+        eFPS_1,
+        eFPS_05,
+        eFPS_025,
+        eFPS_MAX
+    };
+
+    struct wakeup_dev_params
+    {
+        uint32_t phase1Period;
+        e_suspend_fps phase1FPS;
+        uint32_t phase2Period;
+        e_suspend_fps phase2FPS;
+        bool isValid() { return ((phase1FPS < e_suspend_fps::eFPS_MAX) && (phase2FPS < e_suspend_fps::eFPS_MAX)); };
+    };
+
+
+    // Wakeup device interfaces
+    void set_wakeup_device(uvc::device & device, std::timed_mutex & mutex, const uint32_t&phase1Period, const uint32_t& phase1FPS, const uint32_t&phase2Period, const uint32_t& phase2FPS);
+    void reset_wakeup_device(uvc::device & device, std::timed_mutex & mutex);
+    void get_wakeup_reason(uvc::device & device, std::timed_mutex & mutex, unsigned char &cReason);
+    void get_wakeup_confidence(uvc::device & device, std::timed_mutex & mutex, unsigned char &cConfidence);
+
+} // rsimpl::sr300
+} // namespace rsimpl
 
 #endif

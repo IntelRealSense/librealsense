@@ -50,7 +50,7 @@ TEST_CASE( "SR300 devices support all required options", "[live] [sr300]" )
 
         SECTION( "device supports standard picture options and SR300 extension options, and nothing else" )
         {
-            const int supported_options[] = {
+            std::vector<rs_option> supported_options {
                 RS_OPTION_COLOR_BACKLIGHT_COMPENSATION,
                 RS_OPTION_COLOR_BRIGHTNESS,
                 RS_OPTION_COLOR_CONTRAST,
@@ -78,7 +78,14 @@ TEST_CASE( "SR300 devices support all required options", "[live] [sr300]" )
                 RS_OPTION_SR300_AUTO_RANGE_MAX_LASER,
                 RS_OPTION_SR300_AUTO_RANGE_START_LASER,
                 RS_OPTION_SR300_AUTO_RANGE_UPPER_THRESHOLD,
-                RS_OPTION_SR300_AUTO_RANGE_LOWER_THRESHOLD
+                RS_OPTION_SR300_AUTO_RANGE_LOWER_THRESHOLD,
+                RS_OPTION_SR300_WAKEUP_DEV_PHASE1_PERIOD,
+                RS_OPTION_SR300_WAKEUP_DEV_PHASE1_FPS,
+                RS_OPTION_SR300_WAKEUP_DEV_PHASE2_PERIOD,
+                RS_OPTION_SR300_WAKEUP_DEV_PHASE2_FPS,
+                RS_OPTION_SR300_WAKEUP_DEV_RESET,
+                RS_OPTION_SR300_WAKE_ON_USB_REASON,
+                RS_OPTION_SR300_WAKE_ON_USB_CONFIDENCE
             };
 
             for(int i=0; i<RS_OPTION_COUNT; ++i)
@@ -347,7 +354,7 @@ TEST_CASE( "SR300 supports RS_OPTION_F200_LASER_POWER", "[live] [sr300]" )
 
 TEST_CASE( "SR300 supports RS_OPTION_F200_ACCURACY", "[live] [sr300]" )
 {
-    test_sr300_option(RS_OPTION_F200_ACCURACY, {0, 1, 2, 3}, AFTER_START_DEVICE);
+    test_sr300_option(RS_OPTION_F200_ACCURACY, {1, 2, 3}, AFTER_START_DEVICE);
 }
 
 TEST_CASE( "SR300 supports RS_OPTION_F200_MOTION_RANGE", "[live] [sr300]" )
@@ -410,4 +417,133 @@ TEST_CASE( "a single SR300 can stream a variety of reasonable streaming mode com
             {RS_STREAM_INFRARED, 640, 480, RS_FORMAT_Y16, 60}
         });
     }
+}
+
+inline void test_options(rs_device * device, rs_option* option_list, size_t options, std::vector<double> good_values, std::vector<double> bad_values, const char* const expected_error_msg, bool bWrite)
+{
+    if (bWrite)
+    {
+        REQUIRE(((options == good_values.size()) || (options == bad_values.size())) == true);
+
+        // Test setting good values
+        if (good_values.size() == options)
+            rs_set_device_options(device, option_list, options, good_values.data(), require_no_error());
+
+        if (bad_values.size() == options)
+            rs_set_device_options(device, option_list, options, bad_values.data(), require_error(expected_error_msg));
+    }
+    else // Read command
+    {
+        std::vector<double> vretVal;
+        vretVal.reserve(options);
+        rs_get_device_options(device, option_list, options, vretVal.data(), require_no_error());
+    }   
+}
+
+inline void test_sr300_command(std::vector<rs_option> options_list,
+    std::vector<double> good_values, std::vector<double> bad_values, const char* const expected_error_msg, int when, bool write_cmd)
+{    
+    safe_context ctx;
+    REQUIRE(rs_get_device_count(ctx, require_no_error()) == 1);
+
+    rs_device * dev = rs_get_device(ctx, 0, require_no_error());
+    REQUIRE(dev != nullptr);
+
+    for (auto opt : options_list)
+    {
+        REQUIRE(rs_device_supports_option(dev, opt, require_no_error()) == 1);
+    }
+
+    if (when & BEFORE_START_DEVICE)
+    {
+        if (write_cmd)
+            test_options(dev, options_list.data(), options_list.size(), good_values, bad_values, expected_error_msg, write_cmd);
+    }
+
+    if (when & AFTER_START_DEVICE)
+    {
+        rs_enable_stream_preset(dev, RS_STREAM_DEPTH, RS_PRESET_BEST_QUALITY, require_no_error());
+        rs_start_device(dev, require_no_error());
+
+        // Currently, setting/getting options immediately after streaming frequently raises hardware errors
+        // todo - Internally block or retry failed calls within the first few seconds after streaming
+        std::this_thread::sleep_for(std::chrono::milliseconds(50));
+        test_options(dev, options_list.data(), options_list.size(), good_values, bad_values, expected_error_msg, write_cmd);
+    }
+}
+
+TEST_CASE("SR300 Wakeup over USB function", "[live] [sr300]")
+{
+    std::vector<rs_option> vSetWakeupDevCmd = {
+        RS_OPTION_SR300_WAKEUP_DEV_PHASE1_PERIOD,
+        RS_OPTION_SR300_WAKEUP_DEV_PHASE1_FPS,
+        RS_OPTION_SR300_WAKEUP_DEV_PHASE2_PERIOD,
+        RS_OPTION_SR300_WAKEUP_DEV_PHASE2_FPS
+    };
+
+    std::vector<rs_option> vGetWakeUpDevCmd = {
+        RS_OPTION_SR300_WAKE_ON_USB_REASON,
+        RS_OPTION_SR300_WAKE_ON_USB_CONFIDENCE
+    };
+
+    //phase1Period phase1FPS phase2Period phase2FPS
+    std::vector<std::vector<double>> vGoodParams = {
+        { 500, 2, 200, 3 },                // Valid input
+        { 5000, 1, 456, 2 },                // Valid input
+    };
+
+    std::vector<std::vector<double>> vBadParams = {
+        { 1, 32, 3, 6 },                // second parameter is invalid [0-3]
+        { 1, 2, 3, 6 }                 // fourth parameter is invalid [0-3]
+    };
+
+
+    SECTION("Wakeon support verification")
+    {
+        // Require exactly one device to be plugged in
+        safe_context ctx;
+        const int device_count = rs_get_device_count(ctx, require_no_error());
+        REQUIRE(device_count == 1);
+
+        rs_device * dev = rs_get_device(ctx, 0, require_no_error());
+        REQUIRE(dev != nullptr);
+
+        REQUIRE(rs_device_supports_option(dev, rs_option::RS_OPTION_SR300_WAKEUP_DEV_PHASE1_PERIOD, require_no_error()) == 1);
+        REQUIRE(rs_device_supports_option(dev, rs_option::RS_OPTION_SR300_WAKEUP_DEV_PHASE1_FPS, require_no_error()) == 1);
+        REQUIRE(rs_device_supports_option(dev, rs_option::RS_OPTION_SR300_WAKEUP_DEV_PHASE2_PERIOD, require_no_error()) == 1);
+        REQUIRE(rs_device_supports_option(dev, rs_option::RS_OPTION_SR300_WAKEUP_DEV_PHASE2_FPS, require_no_error()) == 1);
+        REQUIRE(rs_device_supports_option(dev, rs_option::RS_OPTION_SR300_WAKE_ON_USB_REASON, require_no_error()) == 1);
+        REQUIRE(rs_device_supports_option(dev, rs_option::RS_OPTION_SR300_WAKE_ON_USB_CONFIDENCE, require_no_error()) == 1);
+    }
+
+    SECTION("Wakeon USB in Idle Mode")
+    {
+        // Apply set command in different scenarios
+		for (auto &data : vGoodParams)
+		{
+			test_sr300_command(vSetWakeupDevCmd, data, {}, "", BEFORE_START_DEVICE, true);
+			test_sr300_command(vSetWakeupDevCmd, data, {}, "", AFTER_START_DEVICE, true);
+		}
+
+		for (auto &data : vBadParams)
+		{
+			test_sr300_command(vSetWakeupDevCmd, {}, data, "invalid wake_up command parameters", BEFORE_START_DEVICE, true);
+			test_sr300_command(vSetWakeupDevCmd, {}, data, "invalid wake_up command parameters", AFTER_START_DEVICE, true);
+		}
+
+        test_sr300_command(vGetWakeUpDevCmd, {}, {}, "", BEFORE_START_DEVICE, false);
+		test_sr300_command(vGetWakeUpDevCmd, {}, {}, "", AFTER_START_DEVICE, false);
+    }
+
+	//SECTION("Wakeon USB in Streaming Mode")
+	//{
+	//	// Apply set command in different scenarios
+	//	for (auto &data : vGoodParams)
+	//		test_sr300_command(vSetWakeupDevCmd, data, {}, "", AFTER_START_DEVICE, true);
+
+	//	for (auto &data : vBadParams)
+	//		test_sr300_command(vSetWakeupDevCmd, {}, data, "invalid wake_up command parameters", BEFORE_START_DEVICE, true);
+
+	//	test_sr300_command(vGetWakeUpDevCmd, {}, {}, "", AFTER_START_DEVICE, false);
+	//}
 }

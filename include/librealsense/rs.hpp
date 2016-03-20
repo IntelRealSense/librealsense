@@ -115,7 +115,14 @@ namespace rs
         r200_depth_control_texture_difference_threshold = 52, 
         r200_depth_control_second_peak_threshold        = 53, 
         r200_depth_control_neighbor_threshold           = 54, 
-        r200_depth_control_lr_threshold                 = 55  
+        r200_depth_control_lr_threshold                 = 55,
+        sr300_wakeup_device_phase1_period               = 56,
+        sr300_wakeup_device_phase1_fps                  = 57,
+        sr300_wakeup_device_phase2_period               = 58,
+        sr300_wakeup_device_phase2_fps                  = 59,
+        sr300_wakeup_device_reset                       = 60,
+        sr300_wake_on_usb_reason                        = 61,
+        sr300_wake_on_usb_confidence                    = 62
     };
 
     struct float2 { float x,y; };

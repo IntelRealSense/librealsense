@@ -121,7 +121,14 @@ typedef enum rs_option
     RS_OPTION_R200_DEPTH_CONTROL_SECOND_PEAK_THRESHOLD        = 53, 
     RS_OPTION_R200_DEPTH_CONTROL_NEIGHBOR_THRESHOLD           = 54, 
     RS_OPTION_R200_DEPTH_CONTROL_LR_THRESHOLD                 = 55, 
-    RS_OPTION_COUNT                                           = 56, 
+    RS_OPTION_SR300_WAKEUP_DEV_PHASE1_PERIOD                  = 56,
+    RS_OPTION_SR300_WAKEUP_DEV_PHASE1_FPS                     = 57, 
+    RS_OPTION_SR300_WAKEUP_DEV_PHASE2_PERIOD                  = 58, 
+    RS_OPTION_SR300_WAKEUP_DEV_PHASE2_FPS                     = 59, 
+    RS_OPTION_SR300_WAKEUP_DEV_RESET                          = 60,
+    RS_OPTION_SR300_WAKE_ON_USB_REASON                        = 61,
+    RS_OPTION_SR300_WAKE_ON_USB_CONFIDENCE                    = 62,
+    RS_OPTION_COUNT                                           = 63, 
     RS_OPTION_MAX_ENUM = 0x7FFFFFFF
 } rs_option;
 
