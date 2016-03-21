@@ -508,7 +508,8 @@ namespace rsimpl
                 std::string path = "/sys/class/video4linux/" + name;
                 char buff[PATH_MAX];
                 ssize_t len = ::readlink(path.c_str(), buff, sizeof(buff)-1);
-                if (len != -1) {
+                if (len != -1) 
+                {
                     buff[len] = '\0';
                     std::string real_path = std::string(buff);
                     if (real_path.find("virtual") != std::string::npos)
