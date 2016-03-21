@@ -3,7 +3,7 @@
 [ ![Release] [release-image] ] [releases]
 [ ![License] [license-image] ] [license]
 
-[release-image]: http://img.shields.io/badge/release-0.9.0-blue.svg?style=flat
+[release-image]: http://img.shields.io/badge/release-0.9.1-blue.svg?style=flat
 [releases]: https://github.com/IntelRealSense/librealsense
 
 [license-image]: http://img.shields.io/badge/license-Apache--2-blue.svg?style=flat
