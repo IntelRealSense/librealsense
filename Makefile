@@ -47,6 +47,8 @@ EXAMPLES := $(addprefix bin/, $(notdir $(basename $(EXAMPLES))))
 all: examples $(EXAMPLES)
 
 install: library
+	install -m755 -d /usr/local/include/librealsense
+	cp -r include/librealsense/* /usr/local/include/librealsense
 	cp lib/librealsense.so /usr/local/lib
 	ldconfig
 
