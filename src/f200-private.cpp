@@ -526,7 +526,7 @@ namespace rsimpl { namespace f200
     {
         std::vector<char> gvd(1024);
         get_gvd(device, mutex, 1024, gvd.data());
-        char ss[8];
+        unsigned char ss[8];
         memcpy(ss, gvd.data() + offset, 8);
         char formattedBuffer[64];
         if (offset == 96)
