@@ -135,11 +135,13 @@ namespace sr300{
 
     struct wakeup_dev_params
     {
-        uint32_t phase1Period;
-        e_suspend_fps phase1FPS;
-        uint32_t phase2Period;
-        e_suspend_fps phase2FPS;
-        bool isValid() { return ((phase1FPS < e_suspend_fps::eFPS_MAX) && (phase2FPS < e_suspend_fps::eFPS_MAX)); };
+        wakeup_dev_params(void) : phase1Period(UINT32_MAX), phase1FPS(e_suspend_fps::eFPS_MAX), phase2Period(UINT32_MAX), phase2FPS(e_suspend_fps::eFPS_MAX){};
+        wakeup_dev_params(uint32_t  p1, e_suspend_fps p2, uint32_t  p3, e_suspend_fps p4) :         phase1Period(p1), phase1FPS(p2), phase2Period(p3), phase2FPS(p4){};
+        uint32_t        phase1Period;
+        e_suspend_fps   phase1FPS;
+        uint32_t        phase2Period;
+        e_suspend_fps   phase2FPS;
+        bool isValid() { return ((phase1FPS < e_suspend_fps::eFPS_MAX) && (phase2FPS < e_suspend_fps::eFPS_MAX) && (phase1Period<UINT32_MAX) && (phase2Period<UINT32_MAX)); };
     };
 
 

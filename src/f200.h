@@ -46,9 +46,6 @@ namespace rsimpl
 
         std::shared_ptr<frame_timestamp_reader> create_frame_timestamp_reader() const override;
 
-        void set_wakeup_device(const uint32_t& phase1Period, const uint32_t& phase1FPS, const uint32_t& phase2Period, const uint32_t& phase2FPS);
-        void get_wakeup_confidence(int &nConfidence);
-        void get_wakeup_reason(sr300::wakeonusb_reason &reason);
     };
 
     std::shared_ptr<rs_device> make_f200_device(std::shared_ptr<uvc::device> device);

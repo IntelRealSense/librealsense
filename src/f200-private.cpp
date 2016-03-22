@@ -927,7 +927,7 @@ namespace rsimpl {
 
             sr300::wakeup_dev_params params = { phase1Period, static_cast<sr300::e_suspend_fps>(phase1FPS), phase2Period, static_cast<sr300::e_suspend_fps>(phase2FPS) };
             if (!params.isValid())
-                throw std::logic_error("invalid wake_up command parameters");
+                throw std::logic_error("missing/invalid wake_up command parameters");
             cmd.Param1 = 1;                                                                 // TODO Specification could not be found in IVCAM
             auto trg = reinterpret_cast<sr300::wakeup_dev_params*>(cmd.data);
             *trg = params;

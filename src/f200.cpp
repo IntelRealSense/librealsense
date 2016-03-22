@@ -436,7 +436,7 @@ namespace rsimpl
         arr_wakeup_dev_writer.commit();
     }
 
-    void f200_camera::get_options(const rs_option options[], int count, double values[])
+	void f200_camera::get_options(const rs_option options[], int count, double values[])
     {
         auto arr_reader = make_struct_interface<f200::IVCAMAutoRangeRequest>([this]() { return arr; }, [this](f200::IVCAMAutoRangeRequest r) {});
 
@@ -477,28 +477,6 @@ namespace rsimpl
             default: LOG_WARNING("Cannot get " << options[i] << " on " << get_name()); break;
             }
         }
-    }
-
-    void f200_camera::set_wakeup_device(const uint32_t& phase1Period, const uint32_t& phase1FPS, const uint32_t& phase2Period, const uint32_t& phase2FPS)
-    {
-        std::timed_mutex mutex;
-        sr300::set_wakeup_device(get_device(), mutex, phase1Period, phase1FPS, phase2Period, phase2FPS);
-    }
-
-    void f200_camera::get_wakeup_reason(sr300::wakeonusb_reason &reason)
-    {
-        std::timed_mutex mutex;
-        uint8_t  tmp = (uint8_t)sr300::wakeonusb_reason::eUninitialized;
-        sr300::get_wakeup_reason(get_device(), mutex, tmp);
-        reason = static_cast<sr300::wakeonusb_reason>(tmp);
-    }
-
-    void f200_camera::get_wakeup_confidence(int &nConfidence)
-    {
-        std::timed_mutex mutex;
-        unsigned char cTmp = 0xFF;
-        sr300::get_wakeup_confidence(get_device(), mutex, cTmp);
-        nConfidence = cTmp;
     }
 
     // TODO: This may need to be modified for thread safety
