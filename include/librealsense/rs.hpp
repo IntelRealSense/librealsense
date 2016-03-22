@@ -557,5 +557,9 @@ namespace rs
         rs_log_to_file((rs_log_severity)min_severity, file_path, &e);
         error::handle(e);
     }
+
+    // Additional utilities
+    void apply_depth_control_preset(device * device, int preset) { rs_apply_depth_control_preset((rs_device *)device, preset); }
+    void apply_ivcam_preset(device * device, int preset) { rs_apply_ivcam_preset((rs_device *)device, preset); }
 }
 #endif
