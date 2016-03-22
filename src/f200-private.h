@@ -8,8 +8,8 @@
 #include "uvc.h"
 #include <mutex>
 
-namespace rsimpl {
-namespace f200 {
+namespace rsimpl { namespace f200 
+{
     struct CameraCalibrationParameters
     {
         float Rmax;
@@ -111,11 +111,12 @@ namespace f200 {
     void get_dynamic_fps(const uvc::device & device, uint8_t & dynamic_fps);
     void set_dynamic_fps(uvc::device & device, uint8_t dynamic_fps);
 
-#define NUM_OF_CALIBRATION_COEFFS   (64)
+    #define NUM_OF_CALIBRATION_COEFFS   (64)
 
-} // rsimpl::sr300
+} // rsimpl::f200
 
-namespace sr300{
+namespace sr300
+{
     enum class wakeonusb_reason : unsigned char
     {
         eNone_provided = 0,    // Wake-up performed, but FW doesn't provide a comprehensive resason

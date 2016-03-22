@@ -436,7 +436,7 @@ namespace rsimpl
         arr_wakeup_dev_writer.commit();
     }
 
-	void f200_camera::get_options(const rs_option options[], int count, double values[])
+    void f200_camera::get_options(const rs_option options[], int count, double values[])
     {
         auto arr_reader = make_struct_interface<f200::IVCAMAutoRangeRequest>([this]() { return arr; }, [this](f200::IVCAMAutoRangeRequest r) {});
 

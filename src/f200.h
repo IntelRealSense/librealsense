@@ -45,7 +45,6 @@ namespace rsimpl
         void get_options(const rs_option options[], int count, double values[]) override;
 
         std::shared_ptr<frame_timestamp_reader> create_frame_timestamp_reader() const override;
-
     };
 
     std::shared_ptr<rs_device> make_f200_device(std::shared_ptr<uvc::device> device);
