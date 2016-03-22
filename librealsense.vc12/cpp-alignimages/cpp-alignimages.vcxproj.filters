@@ -3,7 +3,4 @@
   <ItemGroup>
     <ClCompile Include="..\..\examples\cpp-alignimages.cpp" />
   </ItemGroup>
-  <ItemGroup>
-    <None Include="packages.config" />
-  </ItemGroup>
 </Project>

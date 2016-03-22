@@ -107,6 +107,10 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "unit-tests-live-sr300", "un
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "realsense-s", "realsense-s\realsense-s.vcxproj", "{622186C4-6D7D-4288-B8FD-8F08419181C2}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Third Party", "Third Party", "{A50450E7-7D7B-4A1F-8ADD-A3EBBAEFE761}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "glfw3", "..\examples\third_party\glfw\msvc120\glfw3.vcxproj", "{979D0ADD-6AB7-403A-BB17-5434615E4446}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -275,6 +279,14 @@ Global
 		{622186C4-6D7D-4288-B8FD-8F08419181C2}.Release|Win32.Build.0 = Release|Win32
 		{622186C4-6D7D-4288-B8FD-8F08419181C2}.Release|x64.ActiveCfg = Release|x64
 		{622186C4-6D7D-4288-B8FD-8F08419181C2}.Release|x64.Build.0 = Release|x64
+		{979D0ADD-6AB7-403A-BB17-5434615E4446}.Debug|Win32.ActiveCfg = Debug|Win32
+		{979D0ADD-6AB7-403A-BB17-5434615E4446}.Debug|Win32.Build.0 = Debug|Win32
+		{979D0ADD-6AB7-403A-BB17-5434615E4446}.Debug|x64.ActiveCfg = Debug|x64
+		{979D0ADD-6AB7-403A-BB17-5434615E4446}.Debug|x64.Build.0 = Debug|x64
+		{979D0ADD-6AB7-403A-BB17-5434615E4446}.Release|Win32.ActiveCfg = Release|Win32
+		{979D0ADD-6AB7-403A-BB17-5434615E4446}.Release|Win32.Build.0 = Release|Win32
+		{979D0ADD-6AB7-403A-BB17-5434615E4446}.Release|x64.ActiveCfg = Release|x64
+		{979D0ADD-6AB7-403A-BB17-5434615E4446}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -300,5 +312,6 @@ Global
 		{D17AF4AE-B93F-45CB-9F9F-068FC569B447} = {9CE5B9D5-05C7-4288-99B3-13ABFBE7B60C}
 		{1F7EC2CF-9E68-4273-8F3C-1A15E0142D5F} = {EA2793EE-C590-43D0-A11D-02F93DA139AC}
 		{622186C4-6D7D-4288-B8FD-8F08419181C2} = {29173D59-770D-49A5-BFC7-5BF564BDD7C7}
+		{979D0ADD-6AB7-403A-BB17-5434615E4446} = {A50450E7-7D7B-4A1F-8ADD-A3EBBAEFE761}
 	EndGlobalSection
 EndGlobal
