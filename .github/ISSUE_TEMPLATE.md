@@ -4,11 +4,4 @@
 | Firmware Version |   | 
 | Operating System & Version |   |
 | Kernel Version (Linux Only)  |   |
-| Build System: |  VS2013, XCode or Makefile | 
-
-
-
-
-
-
-
+| Build System |  VS2013, XCode or Makefile | 

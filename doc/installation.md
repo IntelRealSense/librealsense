@@ -1,13 +1,15 @@
 # Table of Contents
 * [Ubuntu 14.04 LTS Installation](#ubuntu-1404-lts-installation)
 * [Apple OSX Installation](#apple-osx-installation)
-* [Windows 8.1 Installation](#windows-81-installation)
+* [Windows 8.1/10 Installation](#windows-81-installation)
+
+**Note:** Due to the USB 3.0 translation layer between native hardware and virtual machine, the librealsense team does not recommend or support installation in a VM. 
 
 # Ubuntu 14.04 LTS Installation
 
-Installation of devices on Linux is lengthy compared to Windows or OSX due to the fact an updated kernel must be installed and the core uvcvideo driver patched with support for additional pixel formats provided by RealSense™ cameras. 
+Installation of cameras on Linux is lengthy compared to other supported platforms. Several upstream fixes to the uvcvideo driver have been merged in recent kernel versions, greatly enhancing stability. Once an updated kernel has been installed, one more patch must be applied to the uvcvideo driver with support for several non-standard pixel formats provided by RealSense™ cameras.
 
-**Note:** Several scripts below invoke `wget, git, add-apt-repository` which may be blocked by your IT firewall resulting in timeouts and errors. Add necessary proxy settings to config files or append scripts with appropriate switches. 
+**Note:** Several scripts below invoke `wget, git, add-apt-repository` which may be blocked by router settings or a firewall. Infrequently, apt-get mirrors or repositories may also timeout. For librealsense users behind an enterprise firewall, configuring the systemwide Ubuntu proxy generally resolves most timeout issues.
 
 1. Ensure apt-get is up to date
   * `sudo apt-get update && sudo apt-get upgrade`
@@ -39,8 +41,8 @@ Installation of devices on Linux is lengthy compared to Windows or OSX due to th
       * `./scripts/install_dependencies-4.4.sh`
     * Run the following script to patch uvcvideo.ko
       * `./scripts/patch-uvcvideo-4.4.sh v4.4-wily` (note the argument provided to this version of the script)
-      * This script involves shallow cloning the Linux source repository (100mb), and may take a while
-  * **(OR) Stock 3.19.xx Kernel in 14.04.xx** 
+      * This script involves shallow cloning the Linux source repository (~100mb), and may take a while
+  * **(OR) Stock 3.19.xx Kernel in 14.04.xx** (not recommended)
     * Run the following script to patch uvcvideo.ko
       * `./scripts/patch-uvcvideo-3.19.sh`
     * (R200 Only) Install connectivity workaround
@@ -48,12 +50,15 @@ Installation of devices on Linux is lengthy compared to Windows or OSX due to th
       * This udev fix is not necessary for kernels >= 4.2.3
 4. Reload the uvcvideo driver
   * `sudo modprobe uvcvideo`
+5. Check installation by examining the last 50 lines of the dmesg log:
+  * `sudo dmesg | tail -n 50`
+  * The log should indicate that a new uvcvideo driver has been registered. If any errors have been noted, first attempt the patching process again, and then file an issue if not successful on the second attempt (and make sure to copy the specific error in dmesg). 
 
 ## LibUVC backend
 
 **Note:** This backend has been deprecated on Linux.
 
-The libuvc backend requires that the default linux uvcvideo.ko driver be unloaded before libusb can touch the device. This is because uvcvideo will own a UVC device the moment is is plugged in; user-space applications do not have permission to access the devie handle. See below regarding the udev rule workaround. 
+The libuvc backend requires that the default linux uvcvideo.ko driver be unloaded before libusb can touch the device. This is because uvcvideo will 'own' a UVC device the moment is is plugged in (user-space applications do not have permission to access the devuce handle). Follow the instructions below to install the udev permissions script.
 
 The libuvc backend has known incompatibilities with some versions of SR300 and R200 firmware (1.0.71.xx series of firmwares are problematic). 
 
