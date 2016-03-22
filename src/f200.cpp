@@ -223,7 +223,7 @@ namespace rsimpl
         rs_device(device, info), base_calibration(calib), base_temperature_data(temp), thermal_loop_params(params), last_temperature_delta(std::numeric_limits<float>::infinity())
     {
         // If thermal control loop requested, start up thread to handle it
-        if(thermal_loop_params.IRThermalLoopEnable)
+		if(thermal_loop_params.IRThermalLoopEnable)
         {
             runTemperatureThread = true;
             temperatureThread = std::thread(&f200_camera::temperature_control_loop, this);

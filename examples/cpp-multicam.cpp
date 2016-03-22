@@ -34,7 +34,7 @@ int main(int argc, char * argv[]) try
         std::cout << "done." << std::endl;
     }
 
-	// Depth and color
+    // Depth and color
     buffers.resize(ctx.get_device_count() * 2);
 
     // Open a GLFW window
@@ -43,12 +43,12 @@ int main(int argc, char * argv[]) try
     GLFWwindow * win = glfwCreateWindow(1280, 960, ss.str().c_str(), 0, 0);
     glfwMakeContextCurrent(win);
 
-	int windowWidth, windowHeight;
+    int windowWidth, windowHeight;
     glfwGetWindowSize(win, &windowWidth, &windowHeight);
 
-	// Does not account for correct aspect ratios
-	auto perTextureWidth = windowWidth / devices.size();
-	auto perTextureHeight = 480;
+    // Does not account for correct aspect ratios
+    auto perTextureWidth = windowWidth / devices.size();
+    auto perTextureHeight = 480;
 
     while (!glfwWindowShouldClose(win))
     {

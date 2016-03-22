@@ -8,7 +8,7 @@
 #include "uvc.h"
 #include <mutex>
 
-namespace rsimpl { namespace f200 
+namespace rsimpl { namespace f200
 {
     struct CameraCalibrationParameters
     {
@@ -99,9 +99,9 @@ namespace rsimpl { namespace f200
 
     // XU read/write
     void get_laser_power(const uvc::device & device, uint8_t & laser_power);
-    void set_laser_power(uvc::device & device, uint8_t laser_power);
-    void get_accuracy(const uvc::device & device, uint8_t & accuracy);
-    void set_accuracy(uvc::device & device, uint8_t accuracy);
+    void set_laser_power(uvc::device & device, uint8_t laser_power);  
+    void get_accuracy(const uvc::device & device, uint8_t & accuracy);  
+    void set_accuracy(uvc::device & device, uint8_t accuracy);    
     void get_motion_range(const uvc::device & device, uint8_t & motion_range);
     void set_motion_range(uvc::device & device, uint8_t motion_range);
     void get_filter_option(const uvc::device & device, uint8_t & filter_option);

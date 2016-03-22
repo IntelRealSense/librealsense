@@ -22,7 +22,7 @@ TEST_CASE( "SR300 metadata enumerates correctly", "[live] [sr300]" )
     REQUIRE(device_count > 0);
 
     // For each device
-    for (int i=0; i<device_count; ++i)
+    for(int i=0; i<device_count; ++i)
     {
         rs_device * dev = rs_get_device(ctx, 0, require_no_error());
         REQUIRE(dev != nullptr);
@@ -43,7 +43,7 @@ TEST_CASE( "SR300 devices support all required options", "[live] [sr300]" )
     REQUIRE(device_count > 0);
 
     // For each device
-    for (int i=0; i<device_count; ++i)
+    for(int i=0; i<device_count; ++i)
     {
         rs_device * dev = rs_get_device(ctx, 0, require_no_error());
         REQUIRE(dev != nullptr);
@@ -88,9 +88,9 @@ TEST_CASE( "SR300 devices support all required options", "[live] [sr300]" )
                 RS_OPTION_SR300_WAKE_ON_USB_CONFIDENCE
             };
 
-            for (int i=0; i<RS_OPTION_COUNT; ++i)
+            for(int i=0; i<RS_OPTION_COUNT; ++i)
             {
-                if (std::find(std::begin(supported_options), std::end(supported_options), i) != std::end(supported_options))
+                if(std::find(std::begin(supported_options), std::end(supported_options), i) != std::end(supported_options))
                 {
                     REQUIRE(rs_device_supports_option(dev, (rs_option)i, require_no_error()) == 1);
                 }
@@ -133,7 +133,7 @@ TEST_CASE( "SR300 device extrinsics are within expected parameters", "[live] [sr
 
         SECTION( "depth scale is 0.000125 (by default)" )
         {
-            REQUIRE(rs_get_device_depth_scale(dev, require_no_error()) == Approx(0.000125f));
+            REQUIRE( rs_get_device_depth_scale(dev, require_no_error()) == Approx(0.000125f) );
         }
     }
 }
@@ -214,37 +214,37 @@ TEST_CASE( "SR300 streams VGA color (60 fps)", "[live] [sr300] [one-camera]" )
 
 TEST_CASE( "SR300 streams VGA depth and HD color", "[live] [sr300] [one-camera]" )
 {
-    test_sr300_streaming({{RS_STREAM_DEPTH, 640, 480, RS_FORMAT_Z16, 60 },
+    test_sr300_streaming({{RS_STREAM_DEPTH, 640, 480, RS_FORMAT_Z16, 60},
                           {RS_STREAM_COLOR, 1920, 1080, RS_FORMAT_YUYV, 30}});
 }
 
 TEST_CASE( "SR300 streams HVGA depth and HD color", "[live] [sr300] [one-camera]" )
 {
-    test_sr300_streaming({{RS_STREAM_DEPTH, 640, 240, RS_FORMAT_Z16, 60 },
+    test_sr300_streaming({{RS_STREAM_DEPTH, 640, 240, RS_FORMAT_Z16, 60},
                           {RS_STREAM_COLOR, 1920, 1080, RS_FORMAT_YUYV, 30}});
 }
 
 TEST_CASE( "SR300 streams VGA depth and VGA color", "[live] [sr300] [one-camera]" )
 {
-    test_sr300_streaming({{RS_STREAM_DEPTH, 640, 480, RS_FORMAT_Z16, 60 },
+    test_sr300_streaming({{RS_STREAM_DEPTH, 640, 480, RS_FORMAT_Z16, 60},
                           {RS_STREAM_COLOR, 640, 480, RS_FORMAT_YUYV, 30}});
 }
 
 TEST_CASE( "SR300 streams HVGA depth and VGA color", "[live] [sr300] [one-camera]" )
 {
-    test_sr300_streaming({{RS_STREAM_DEPTH, 640, 240, RS_FORMAT_Z16, 60 },
+    test_sr300_streaming({{RS_STREAM_DEPTH, 640, 240, RS_FORMAT_Z16, 60},
                           {RS_STREAM_COLOR, 640, 480, RS_FORMAT_YUYV, 30}});
 }
 
 TEST_CASE( "SR300 streams VGA depth and VGA color (60 fps)", "[live] [sr300] [one-camera]" )
 {
-    test_sr300_streaming({{RS_STREAM_DEPTH, 640, 480, RS_FORMAT_Z16, 60 },
+    test_sr300_streaming({{RS_STREAM_DEPTH, 640, 480, RS_FORMAT_Z16, 60},
                           {RS_STREAM_COLOR, 640, 480, RS_FORMAT_YUYV, 60}});
 }
 
 TEST_CASE( "SR300 streams HVGA depth and VGA color (60 fps)", "[live] [sr300] [one-camera]" )
 {
-    test_sr300_streaming({{RS_STREAM_DEPTH, 640, 240, RS_FORMAT_Z16, 60 },
+    test_sr300_streaming({{RS_STREAM_DEPTH, 640, 240, RS_FORMAT_Z16, 60},
                           {RS_STREAM_COLOR, 640, 480, RS_FORMAT_YUYV, 60}});
 }
 
@@ -274,45 +274,45 @@ TEST_CASE( "SR300 streams 640x480 infrared (200 fps)", "[live] [sr300] [one-came
 
 TEST_CASE( "SR300 streams 640x480 depth and infrared", "[live] [sr300] [one-camera]" )
 {
-    test_sr300_streaming({{RS_STREAM_DEPTH, 640, 480, RS_FORMAT_Z16, 60 },
+    test_sr300_streaming({{RS_STREAM_DEPTH, 640, 480, RS_FORMAT_Z16, 60},
                           {RS_STREAM_INFRARED, 640, 480, RS_FORMAT_Y16, 60}});
 }
 
 TEST_CASE( "SR300 streams 640x240 depth and infrared", "[live] [sr300] [one-camera]" )
 {
-    test_sr300_streaming({{RS_STREAM_DEPTH, 640, 240, RS_FORMAT_Z16, 60 },
+    test_sr300_streaming({{RS_STREAM_DEPTH, 640, 240, RS_FORMAT_Z16, 60},
                           {RS_STREAM_INFRARED, 640, 240, RS_FORMAT_Y16, 60}});
 }
 
 TEST_CASE( "SR300 streams 640x240 depth and infrared (110 fps)", "[live] [sr300] [one-camera]" )
 {
-    test_sr300_streaming({{RS_STREAM_DEPTH, 640, 240, RS_FORMAT_Z16, 110 },
+    test_sr300_streaming({{RS_STREAM_DEPTH, 640, 240, RS_FORMAT_Z16, 110},
                           {RS_STREAM_INFRARED, 640, 240, RS_FORMAT_Y16, 110}});
 }
 
 TEST_CASE( "SR300 streams 640x480 depth, infrared, and color", "[live] [sr300] [one-camera]" )
 {
-    test_sr300_streaming({{RS_STREAM_DEPTH, 640, 480, RS_FORMAT_Z16, 60 },
-                          {RS_STREAM_INFRARED, 640, 480, RS_FORMAT_Y16, 60 },
+    test_sr300_streaming({{RS_STREAM_DEPTH, 640, 480, RS_FORMAT_Z16, 60},
+                          {RS_STREAM_INFRARED, 640, 480, RS_FORMAT_Y16, 60},
                           {RS_STREAM_COLOR, 640, 480, RS_FORMAT_RGB8, 60}});
 }
 
 TEST_CASE( "SR300 streams 640x240 depth and infrared (110 fps), and 1080P color (30 fps)", "[live] [sr300] [one-camera]" )
 {
-    test_sr300_streaming({{RS_STREAM_DEPTH, 640, 240, RS_FORMAT_Z16, 110 },
-                          {RS_STREAM_INFRARED, 640, 240, RS_FORMAT_Y16, 110 },
+    test_sr300_streaming({{RS_STREAM_DEPTH, 640, 240, RS_FORMAT_Z16, 110},
+                          {RS_STREAM_INFRARED, 640, 240, RS_FORMAT_Y16, 110},
                           {RS_STREAM_COLOR, 1920, 1080, RS_FORMAT_RGB8, 30}});
 }
 
 TEST_CASE( "SR300 streams 640x480 infrared (200 fps), and VGA color (60 fps)", "[live] [sr300] [one-camera]" )
 {
-    test_sr300_streaming({{RS_STREAM_INFRARED, 640, 480, RS_FORMAT_Y16, 200 },
+    test_sr300_streaming({{RS_STREAM_INFRARED, 640, 480, RS_FORMAT_Y16, 200},
                           {RS_STREAM_COLOR, 640, 480, RS_FORMAT_RGB8, 60}});
 }
 
 TEST_CASE( "SR300 streams 640x480 infrared (200 fps), and 1080P color (30 fps)", "[live] [sr300] [one-camera]" )
 {
-    test_sr300_streaming({{RS_STREAM_INFRARED, 640, 480, RS_FORMAT_Y16, 200 },
+    test_sr300_streaming({{RS_STREAM_INFRARED, 640, 480, RS_FORMAT_Y16, 200},
                           {RS_STREAM_COLOR, 1920, 1080, RS_FORMAT_RGB8, 30}});
 }
 
@@ -330,12 +330,12 @@ inline void test_sr300_option(rs_option option, std::initializer_list<int> value
     REQUIRE(dev != nullptr);
     REQUIRE(rs_get_device_name(dev, require_no_error()) == std::string("Intel RealSense SR300"));
 
-    if (when & BEFORE_START_DEVICE)
+    if(when & BEFORE_START_DEVICE)
     {
         test_option(dev, option, values, {});
     }
 
-    if (when & AFTER_START_DEVICE)
+    if(when & AFTER_START_DEVICE)
     {
         rs_enable_stream_preset(dev, RS_STREAM_DEPTH, RS_PRESET_BEST_QUALITY, require_no_error());
         rs_start_device(dev, require_no_error());
@@ -349,27 +349,27 @@ inline void test_sr300_option(rs_option option, std::initializer_list<int> value
 
 TEST_CASE( "SR300 supports RS_OPTION_F200_LASER_POWER", "[live] [sr300]" )
 {
-    test_sr300_option(RS_OPTION_F200_LASER_POWER, { 0, 1, 2, 4, 8, 15 }, AFTER_START_DEVICE);
+    test_sr300_option(RS_OPTION_F200_LASER_POWER, {0, 1, 2, 4, 8, 15}, AFTER_START_DEVICE);
 }
 
 TEST_CASE( "SR300 supports RS_OPTION_F200_ACCURACY", "[live] [sr300]" )
 {
-    test_sr300_option(RS_OPTION_F200_ACCURACY, { 1, 2, 3 }, AFTER_START_DEVICE);
+    test_sr300_option(RS_OPTION_F200_ACCURACY, { 1, 2, 3}, AFTER_START_DEVICE);
 }
 
 TEST_CASE( "SR300 supports RS_OPTION_F200_MOTION_RANGE", "[live] [sr300]" )
 {
-    test_sr300_option(RS_OPTION_F200_MOTION_RANGE, { 0, 1, 8, 25, 50, 100 }, AFTER_START_DEVICE);
+    test_sr300_option(RS_OPTION_F200_MOTION_RANGE, {0, 1, 8, 25, 50, 100}, AFTER_START_DEVICE);
 }
 
 TEST_CASE( "SR300 supports RS_OPTION_F200_FILTER_OPTION", "[live] [sr300]" )
 {
-    test_sr300_option(RS_OPTION_F200_FILTER_OPTION, { 0, 1, 2, 3, 4, 5, 6, 7 }, AFTER_START_DEVICE);
+    test_sr300_option(RS_OPTION_F200_FILTER_OPTION, {0, 1, 2, 3, 4, 5, 6, 7}, AFTER_START_DEVICE);
 }
 
 TEST_CASE( "SR300 supports RS_OPTION_F200_CONFIDENCE_THRESHOLD", "[live] [sr300]" )
 {
-    test_sr300_option(RS_OPTION_F200_LASER_POWER, { 0, 1, 2, 4, 8, 15 }, AFTER_START_DEVICE);
+    test_sr300_option(RS_OPTION_F200_LASER_POWER, {0, 1, 2, 4, 8, 15}, AFTER_START_DEVICE);
 }
 
 //////////////////////////////////////////
@@ -395,7 +395,7 @@ TEST_CASE( "a single SR300 can stream a variety of reasonable streaming mode com
         REQUIRE(name == std::string("Intel RealSense SR300"));
     }
 
-    SECTION( "streaming is possible in some reasonable configurations")
+    SECTION( "streaming is possible in some reasonable configurations" )
     {
         test_streaming(dev, {
             {RS_STREAM_DEPTH, 640, 480, RS_FORMAT_Z16, 60}

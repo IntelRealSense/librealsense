@@ -61,7 +61,6 @@ namespace rsimpl { namespace f200
     enum class IVCAMMonitorCommand : uint32_t
     {
         UpdateCalib                = 0xBC,
-        UpdateCalib                = 0xBC,
         GetIRTemp                  = 0x52,
         GetMEMSTemp                = 0x0A,
         HWReset                    = 0x28,
@@ -78,11 +77,11 @@ namespace rsimpl { namespace f200
         CheckI2cConnect            = 0x4A,
         CheckRGBConnect            = 0x4B,
         CheckDPTConnect            = 0x4C,
-        SetAutoRange               = 0xA6,
-        OnSuspendResume            = 0x91,
-        GetWakeReason              = 0x93,
-        GetWakeConfidence          = 0x92,
-        AutoRangeSetParamsforDebug = 0xb3
+		SetAutoRange			   = 0xA6,
+		OnSuspendResume			   = 0x91,
+		GetWakeReason			   = 0x93,
+		GetWakeConfidence		   = 0x92,
+		AutoRangeSetParamsforDebug = 0xb3
     };
 
     struct IVCAMCommand
@@ -141,7 +140,7 @@ namespace rsimpl { namespace f200
     {
         int16_t TableValidation;
         int16_t TableVarsion;
-        IVCAMTemperatureData TemperatureData;
+		IVCAMTemperatureData TemperatureData;
         OACOffsetData OACOffsetData_;
         IVCAMThermalLoopParams ThermalLoopParams;
     };
@@ -215,7 +214,7 @@ namespace rsimpl { namespace f200
         IVCAM_PROPERTY_MF_VERSION                       =   5010,
         IVCAM_PROPERTY_MF_DEPTH_CONFIDENCE_THRESHOLD    =   5013,
         IVCAM_PROPERTY_ACCELEROMETER_READING            =   3000,   // three values
-        IVCAM_PROPERTY_PROJECTION_SERIALIZABLE          =   3003,
+        IVCAM_PROPERTY_PROJECTION_SERIALIZABLE          =   3003,   
         IVCAM_PROPERTY_CUSTOMIZED                       =   0x04000000,
     };
 
@@ -277,54 +276,67 @@ namespace rsimpl { namespace f200
     {
         uvc::get_control_with_retry(device, depth_xu, static_cast<int>(xu_ctrl), buffer, length);
     }
+    
     void xu_write(uvc::device & device, uint8_t xu_ctrl, void * buffer, uint32_t length)
     {
         uvc::set_control_with_retry(device, depth_xu, static_cast<int>(xu_ctrl), buffer, length);
     }
+    
     void get_laser_power(const uvc::device & device, uint8_t & laser_power)
     {
         xu_read(device, IVCAM_DEPTH_LASER_POWER, &laser_power, sizeof(laser_power));
     }
+    
     void set_laser_power(uvc::device & device, uint8_t laser_power)
     {
         xu_write(device, IVCAM_DEPTH_LASER_POWER, &laser_power, sizeof(laser_power));
     }
+    
     void get_accuracy(const uvc::device & device, uint8_t & accuracy)
     {
         xu_read(device, IVCAM_DEPTH_ACCURACY, &accuracy, sizeof(accuracy));
     }
+    
     void set_accuracy(uvc::device & device, uint8_t accuracy)
     {
         xu_write(device, IVCAM_DEPTH_ACCURACY, &accuracy, sizeof(accuracy));
     }
+    
     void get_motion_range(const uvc::device & device, uint8_t & motion_range)
     {
         xu_read(device, IVCAM_DEPTH_MOTION_RANGE, &motion_range, sizeof(motion_range));
     }
+    
     void set_motion_range(uvc::device & device, uint8_t motion_range)
     {
         xu_write(device, IVCAM_DEPTH_MOTION_RANGE, &motion_range, sizeof(motion_range));
     }
+    
     void get_filter_option(const uvc::device & device, uint8_t & filter_option)
     {
         xu_read(device, IVCAM_DEPTH_FILTER_OPTION, &filter_option, sizeof(filter_option));
     }
+    
     void set_filter_option(uvc::device & device, uint8_t filter_option)
     {
         xu_write(device, IVCAM_DEPTH_FILTER_OPTION, &filter_option, sizeof(filter_option));
     }
+    
     void get_confidence_threshold(const uvc::device & device, uint8_t & conf_thresh)
     {
         xu_read(device, IVCAM_DEPTH_CONFIDENCE_THRESH, &conf_thresh, sizeof(conf_thresh));
     }
+    
     void set_confidence_threshold(uvc::device & device, uint8_t conf_thresh)
     {
         xu_write(device, IVCAM_DEPTH_CONFIDENCE_THRESH, &conf_thresh, sizeof(conf_thresh));
     }
+    
     void get_dynamic_fps(const uvc::device & device, uint8_t & dynamic_fps)
     {
         return xu_read(device, IVCAM_DEPTH_DYNAMIC_FPS, &dynamic_fps, sizeof(dynamic_fps));
     }
+    
     void set_dynamic_fps(uvc::device & device, uint8_t dynamic_fps)
     {
         return xu_write(device, IVCAM_DEPTH_DYNAMIC_FPS, &dynamic_fps, sizeof(dynamic_fps));
@@ -417,7 +429,7 @@ namespace rsimpl { namespace f200
         if (!mutex.try_lock_for(std::chrono::milliseconds(IVCAM_MONITOR_MUTEX_TIMEOUT))) throw std::runtime_error("timed_mutex::try_lock_for(...) timed out");
         std::lock_guard<std::timed_mutex> guard(mutex, std::adopt_lock);
 
-        bulk_transfer(device, IVCAM_MONITOR_ENDPOINT_OUT, out, (int)outSize, &outXfer, 1000); // timeout in ms
+        bulk_transfer(device, IVCAM_MONITOR_ENDPOINT_OUT, out, (int) outSize, &outXfer, 1000); // timeout in ms
 
         // read
         if (in && inSize)
@@ -443,7 +455,7 @@ namespace rsimpl { namespace f200
         uint32_t op;
         size_t receivedCmdLen = HW_MONITOR_BUFFER_SIZE;
 
-        execute_usb_command(device, mutex, (uint8_t*)details.sendCommandData, (size_t)details.sizeOfSendCommandData, op, outputBuffer, receivedCmdLen);
+        execute_usb_command(device, mutex, (uint8_t*) details.sendCommandData, (size_t) details.sizeOfSendCommandData, op, outputBuffer, receivedCmdLen);
         details.receivedCommandDataLength = receivedCmdLen;
 
         if (details.oneDirection) return;
@@ -453,7 +465,7 @@ namespace rsimpl { namespace f200
         details.receivedCommandDataLength -= 4;
         memcpy(details.receivedOpcode, outputBuffer, 4);
 
-        if (details.receivedCommandDataLength > 0)
+        if (details.receivedCommandDataLength > 0 )
             memcpy(details.receivedCommandData, outputBuffer + 4, details.receivedCommandDataLength);
     }
 
@@ -516,7 +528,7 @@ namespace rsimpl { namespace f200
     {
         std::vector<char> gvd(1024);
         get_gvd(device, mutex, 1024, gvd.data());
-        char ss[8];
+        unsigned char ss[8];
         memcpy(ss, gvd.data() + offset, 8);
         char formattedBuffer[64];
         if (offset == 96)
@@ -558,48 +570,48 @@ namespace rsimpl { namespace f200
         // 6 - INVR HVGA (640x240)
         // 7 - INVR 640x360
 
-        IVCAMCommand command(IVCAMMonitorCommand::UpdateCalib);
+         IVCAMCommand command(IVCAMMonitorCommand::UpdateCalib);
 
-        memcpy(command.data, coeffs.CoefValueArray, NUM_OF_CALIBRATION_COEFFS * sizeof(float));
-        command.Param1 = 0; // todo - Send appropriate value at appropriate times, see above
-        command.Param2 = 0;
-        command.Param3 = 0;
-        command.Param4 = 0;
-        command.oneDirection = false;
-        command.sizeOfSendCommandData = NUM_OF_CALIBRATION_COEFFS * sizeof(float);
-        command.TimeOut = 5000;
+         memcpy(command.data, coeffs.CoefValueArray, NUM_OF_CALIBRATION_COEFFS * sizeof(float));
+         command.Param1 = 0; // todo - Send appropriate value at appropriate times, see above
+         command.Param2 = 0;
+         command.Param3 = 0;
+         command.Param4 = 0;
+         command.oneDirection = false;
+         command.sizeOfSendCommandData = NUM_OF_CALIBRATION_COEFFS * sizeof(float);
+         command.TimeOut = 5000;
 
-        perform_and_send_monitor_command(device, mutex, command);
+         perform_and_send_monitor_command(device, mutex, command);
     }
 
     void set_auto_range(uvc::device & device, std::timed_mutex & mutex, int enableMvR, int16_t minMvR, int16_t maxMvR, int16_t startMvR, int enableLaser, int16_t minLaser, int16_t maxLaser, int16_t startLaser, int16_t ARUpperTH, int16_t ARLowerTH)
     {
-        IVCAMCommand CommandParameters(IVCAMMonitorCommand::SetAutoRange);
-        CommandParameters.Param1 = enableMvR;
-        CommandParameters.Param2 = enableLaser;
+	    IVCAMCommand CommandParameters(IVCAMMonitorCommand::SetAutoRange);
+	    CommandParameters.Param1 = enableMvR;
+	    CommandParameters.Param2 = enableLaser;
 
-        auto data = reinterpret_cast<int16_t *>(CommandParameters.data);
-        data[0] = minMvR;
-        data[1] = maxMvR;
-        data[2] = startMvR;
-        data[3] = minLaser;
-        data[4] = maxLaser;
-        data[5] = startLaser;
-        auto size = 12;
+	    auto data = reinterpret_cast<int16_t *>(CommandParameters.data);
+	    data[0] = minMvR;
+	    data[1] = maxMvR;
+	    data[2] = startMvR;
+	    data[3] = minLaser;
+	    data[4] = maxLaser;
+	    data[5] = startLaser;
+	    auto size = 12;
 
-        if (ARUpperTH != -1)
-        {
-            data[6] = ARUpperTH;
-            size += 2;
-        }
+	    if (ARUpperTH != -1)
+	    {
+		    data[6] = ARUpperTH;
+		    size += 2;
+	    }	
 
-        if (ARLowerTH != -1)
-        {
-            data[7] = ARLowerTH;
-            size += 2;
-        }
-
-        CommandParameters.sizeOfSendCommandData = size;
+	    if (ARLowerTH != -1)
+	    {
+		    data[7] = ARLowerTH;
+		    size += 2;
+	    }
+		
+	    CommandParameters.sizeOfSendCommandData = size;
         perform_and_send_monitor_command(device, mutex, CommandParameters);
     }
 
@@ -649,7 +661,7 @@ namespace rsimpl { namespace f200
         size_t requestSize = sizeof(request);
         uint32_t responseOp;
 
-        if (prepare_usb_command(request, requestSize, (uint32_t)IVCAMMonitorCommand::GetCalibrationTable) <= 0)
+        if (prepare_usb_command(request, requestSize, (uint32_t) IVCAMMonitorCommand::GetCalibrationTable) <= 0) 
             throw std::runtime_error("usb transfer to retrieve calibration data failed");
         execute_usb_command(device, usbMutex, request, requestSize, responseOp, data, bytesReturned);
     }
@@ -663,18 +675,18 @@ namespace rsimpl { namespace f200
         memcpy(data, command.receivedCommandData, HW_MONITOR_BUFFER_SIZE);
         bytesReturned = command.receivedCommandDataLength;
     }
-
+    
     int bcdtoint(uint8_t * buf, int bufsize)
     {
         int r = 0;
-        for (int i = 0; i < bufsize; i++)
+        for(int i = 0; i < bufsize; i++)
             r = r * 10 + *buf++;
         return r;
     }
 
     int get_version_of_calibration(uint8_t * validation, uint8_t * version)
     {
-        uint8_t valid[2] = { 0X14, 0x0A };
+        uint8_t valid[2] = {0X14, 0x0A};
         if (memcmp(valid, validation, 2) != 0) return 0;
         else return bcdtoint(version, 2);
     }
@@ -721,17 +733,17 @@ namespace rsimpl { namespace f200
             memcpy(&calibration, params + 1, sizeof(CameraCalibrationParameters)); // skip the first float or 2 uint16
             memcpy(&TesterData, bufParams, SIZE_OF_CALIB_HEADER_BYTES);
 
-            memset((uint8_t*)&TesterData + SIZE_OF_CALIB_HEADER_BYTES, 0, sizeof(IVCAMTesterData) - SIZE_OF_CALIB_HEADER_BYTES);
+            memset((uint8_t*) &TesterData + SIZE_OF_CALIB_HEADER_BYTES, 0, sizeof(IVCAMTesterData) - SIZE_OF_CALIB_HEADER_BYTES);
             return std::make_tuple(calibration, TesterData.TemperatureData, TesterData.ThermalLoopParams);
         }
 
         throw std::runtime_error("calibration table is not compatible with this API");
     }
-
+    
     std::tuple<CameraCalibrationParameters, IVCAMTemperatureData, IVCAMThermalLoopParams> read_f200_calibration(uvc::device & device, std::timed_mutex & mutex)
     {
         uint8_t rawCalibrationBuffer[HW_MONITOR_BUFFER_SIZE];
-        size_t bufferLength = HW_MONITOR_BUFFER_SIZE;
+        size_t bufferLength = HW_MONITOR_BUFFER_SIZE;       
         get_f200_calibration_raw_data(device, mutex, rawCalibrationBuffer, bufferLength);
         return get_f200_calibration(rawCalibrationBuffer, bufferLength);
     }
@@ -739,7 +751,7 @@ namespace rsimpl { namespace f200
     std::tuple<CameraCalibrationParameters, IVCAMTemperatureData, IVCAMThermalLoopParams> read_sr300_calibration(uvc::device & device, std::timed_mutex & mutex)
     {
         uint8_t rawCalibrationBuffer[HW_MONITOR_BUFFER_SIZE];
-        size_t bufferLength = HW_MONITOR_BUFFER_SIZE;
+        size_t bufferLength = HW_MONITOR_BUFFER_SIZE;       
         get_sr300_calibration_raw_data(device, mutex, rawCalibrationBuffer, bufferLength);
 
         SR300RawCalibration rawCalib;
@@ -764,38 +776,38 @@ namespace rsimpl { namespace f200
         //generate coefficients
         int scale = 5;
 
-        float width = (float)resolution[0] * scale;
-        float height = (float)resolution[1];
+        float width = (float) resolution[0] * scale;
+        float height = (float) resolution[1];
 
         int PrecisionBits = 16;
         int CodeBits = 14;
         int TexturePrecisionBits = 12;
-        float ypscale = (float)(1 << (CodeBits + 1 - 10));
+        float ypscale = (float)(1<<(CodeBits+1-10));
         float ypoff = 0;
 
-        float s1 = (float)(1 << (PrecisionBits)) / 2047; // (range max)
-        float s2 = (float)(1 << (CodeBits)) - ypscale*0.5f;
+        float s1 = (float)(1<<(PrecisionBits)) / 2047; // (range max)
+        float s2 = (float)(1<<(CodeBits))-ypscale*0.5f;
 
-        float alpha = 2 / (width*params.Kc[0][0]);
-        float beta = -(params.Kc[0][2] + 1) / params.Kc[0][0];
-        float gamma = 2 / (height*params.Kc[1][1]);
-        float delta = -(params.Kc[1][2] + 1) / params.Kc[1][1];
+        float alpha = 2/(width*params.Kc[0][0]);
+        float beta  = -(params.Kc[0][2]+1)/params.Kc[0][0];
+        float gamma = 2/(height*params.Kc[1][1]);
+        float delta = -(params.Kc[1][2]+1)/params.Kc[1][1];
 
-        float a = alpha / gamma;
+        float a  = alpha/gamma;
         float a1 = 1;
-        float b = 0.5f*scale*a + beta / gamma;
-        float c = 0.5f*a1 + delta / gamma;
+        float b  = 0.5f*scale*a  + beta/gamma;
+        float c  = 0.5f*a1 + delta/gamma;
 
-        float d0 = 1;
-        float d1 = params.Invdistc[0] * pow(gamma, (float)2.0);
-        float d2 = params.Invdistc[1] * pow(gamma, (float)4.0);
-        float d5 = (float)((double)(params.Invdistc[4]) * pow((double)gamma, 6.0));
-        float d3 = params.Invdistc[2] * gamma;
-        float d4 = params.Invdistc[3] * gamma;
+        float d0 = 1;                 
+        float d1 = params.Invdistc[0]*pow(gamma,(float)2.0);  
+        float d2 = params.Invdistc[1]*pow(gamma,(float)4.0);  
+        float d5 = (float)( (double)(params.Invdistc[4]) * pow((double)gamma,6.0) );  
+        float d3 = params.Invdistc[2]*gamma;
+        float d4 = params.Invdistc[3]*gamma;
 
-        float q = 1 / pow(gamma, (float)2.0);
-        float p1 = params.Pp[2][3] * s1;
-        float p2 = -s1*s2*(params.Pp[1][3] + params.Pp[2][3]);
+        float q  = 1/pow(gamma,(float)2.0);
+        float p1 = params.Pp[2][3]*s1;
+        float p2 = -s1*s2*(params.Pp[1][3]+params.Pp[2][3]);
 
         if (isZMode)
         {
@@ -805,71 +817,71 @@ namespace rsimpl { namespace f200
 
         float p3 = -params.Pp[2][0];
         float p4 = -params.Pp[2][1];
-        float p5 = -params.Pp[2][2] / gamma;
-        float p6 = s2*(params.Pp[1][0] + params.Pp[2][0]);
-        float p7 = s2*(params.Pp[1][1] + params.Pp[2][1]);
-        float p8 = s2*(params.Pp[1][2] + params.Pp[2][2]) / gamma;
+        float p5 = -params.Pp[2][2]/gamma;
+        float p6 = s2*(params.Pp[1][0]+params.Pp[2][0]);
+        float p7 = s2*(params.Pp[1][1]+params.Pp[2][1]);
+        float p8 = s2*(params.Pp[1][2]+params.Pp[2][2])/gamma;
 
         //Reprojection parameters
         float sreproj = 2;
-        float ax = -(1 + params.Kp[0][2]) / params.Kp[0][0];
-        float ay = -(1 + params.Kp[1][2]) / params.Kp[1][1];
+        float ax = -(1+params.Kp[0][2])/params.Kp[0][0];
+        float ay = -(1+params.Kp[1][2])/params.Kp[1][1];
 
-        float f0 = (params.Pp[0][1] + params.Pp[2][1]) / (params.Pp[0][0] + params.Pp[2][0]) / params.Kp[0][0];
-        float f1 = (params.Pp[0][2] + params.Pp[2][2]) / (params.Pp[0][0] + params.Pp[2][0]) / gamma / params.Kp[0][0];
+        float f0 = (params.Pp[0][1]+params.Pp[2][1]) / (params.Pp[0][0]+params.Pp[2][0]) / params.Kp[0][0]; 
+        float f1 = (params.Pp[0][2]+params.Pp[2][2]) / (params.Pp[0][0]+params.Pp[2][0]) / gamma / params.Kp[0][0];
         float f2 = 0; //(Pp(2,1)+Pp(3,1)) / (Pp(1,1)+Pp(3,1)) / Kp(5);
         float f3 = 0; //(Pp(2,2)+Pp(3,2)) / (Pp(1,1)+Pp(3,1)) / Kp(5);
         float f4 = 0; //(Pp(2,3)+Pp(3,3)) / (Pp(1,1)+Pp(3,1)) / gamma / Kp(5);
-        float f5 = 2 * params.Pp[2][0] / (params.Pp[0][0] + params.Pp[2][0]) / sreproj;
-        float f6 = 2 * params.Pp[2][1] / (params.Pp[0][0] + params.Pp[2][0]) / sreproj;
-        float f7 = 2 * params.Pp[2][2] / (params.Pp[0][0] + params.Pp[2][0]) / sreproj / gamma;
-        float f8 = (float)((double)(params.Pp[0][3] + params.Pp[2][3]) / (params.Pp[0][0] + params.Pp[2][0]) * s1 / params.Kp[0][0]);
-        float f9 = (params.Pp[1][3] + params.Pp[2][3]) / (params.Pp[0][0] + params.Pp[2][0]) * s1 / params.Kp[1][1];
-        float f10 = 2 * params.Pp[2][3] / (params.Pp[0][0] + params.Pp[2][0]) * s1 / sreproj;
+        float f5 = 2*params.Pp[2][0] / (params.Pp[0][0]+params.Pp[2][0]) / sreproj;
+        float f6 = 2*params.Pp[2][1] / (params.Pp[0][0]+params.Pp[2][0]) / sreproj;
+        float f7 = 2*params.Pp[2][2] / (params.Pp[0][0]+params.Pp[2][0]) / sreproj / gamma;
+        float f8 = (float) ( (double)(params.Pp[0][3] + params.Pp[2][3]) / (params.Pp[0][0]+params.Pp[2][0]) * s1 / params.Kp[0][0] );
+        float f9 = (params.Pp[1][3] + params.Pp[2][3]) / (params.Pp[0][0]+params.Pp[2][0]) * s1 / params.Kp[1][1];
+        float f10 = 2*params.Pp[2][3] / (params.Pp[0][0]+params.Pp[2][0]) * s1 / sreproj;
         if (isZMode)
         {
-            f8 = f8  * sqrt(q);
-            f9 = 0; //f9  * sqrt(q);
+            f8  = f8  * sqrt(q);
+            f9  = 0; //f9  * sqrt(q);
             f10 = f10 * sqrt(q);
         }
         float f11 = 1 / params.Kp[0][0];
 
         // Fix projection center 
         f11 = f11 + ax*f5;
-        f0 = f0 + ax*f6;
-        f1 = f1 + ax*f7;
-        f8 = f8 + ax*f10;
-        f2 = f2 + ay*f5;
-        f3 = f3 + ay*f6;
-        f4 = f4 + ay*f7;
-        f9 = f9 + ay*f10;
+        f0  = f0  + ax*f6;
+        f1  = f1  + ax*f7;
+        f8  = f8  + ax*f10;
+        f2  = f2  + ay*f5;
+        f3  = f3  + ay*f6;
+        f4  = f4  + ay*f7;
+        f9  = f9  + ay*f10;
 
         // Texture coeffs
-        float suv = (float)((1 << TexturePrecisionBits) - 1);
+        float suv = (float) ( (1<<TexturePrecisionBits)-1 );
 
-        float h0 = (params.Pt[0][1] + params.Pt[2][1]) / (params.Pt[0][0] + params.Pt[2][0]);
-        float h1 = (params.Pt[0][2] + params.Pt[2][2]) / (params.Pt[0][0] + params.Pt[2][0]) / gamma;
-        float h2 = (params.Pt[1][0] + params.Pt[2][0]) / (params.Pt[0][0] + params.Pt[2][0]);
-        float h3 = (params.Pt[1][1] + params.Pt[2][1]) / (params.Pt[0][0] + params.Pt[2][0]);
-        float h4 = (params.Pt[1][2] + params.Pt[2][2]) / (params.Pt[0][0] + params.Pt[2][0]) / gamma;
-        float h5 = 2 * params.Pt[2][0] / (params.Pt[0][0] + params.Pt[2][0]) / suv;
-        float h6 = 2 * params.Pt[2][1] / (params.Pt[0][0] + params.Pt[2][0]) / suv;
-        float h7 = 2 * params.Pt[2][2] / (params.Pt[0][0] + params.Pt[2][0]) / suv / gamma;
-        float h8 = (params.Pt[0][3] + params.Pt[2][3]) / (params.Pt[0][0] + params.Pt[2][0]) * s1;
-        float h9 = (params.Pt[1][3] + params.Pt[2][3]) / (params.Pt[0][0] + params.Pt[2][0]) * s1;
-        float h10 = 2 * params.Pt[2][3] / (params.Pt[0][0] + params.Pt[2][0]) * s1 / suv;
+        float h0 =  (params.Pt[0][1] +  params.Pt[2][1]) / (params.Pt[0][0]+params.Pt[2][0]); 
+        float h1 =  (params.Pt[0][2] +  params.Pt[2][2]) / (params.Pt[0][0]+params.Pt[2][0]) / gamma;
+        float h2 =  (params.Pt[1][0] +  params.Pt[2][0]) / (params.Pt[0][0]+params.Pt[2][0]);
+        float h3 =  (params.Pt[1][1] +  params.Pt[2][1]) / (params.Pt[0][0]+params.Pt[2][0]);
+        float h4 =  (params.Pt[1][2] +  params.Pt[2][2]) / (params.Pt[0][0]+params.Pt[2][0]) / gamma;
+        float h5 = 2*params.Pt[2][0] / (params.Pt[0][0]  +  params.Pt[2][0]) / suv;
+        float h6 = 2*params.Pt[2][1] / (params.Pt[0][0]  +  params.Pt[2][0]) / suv;
+        float h7 = 2*params.Pt[2][2] / (params.Pt[0][0]  +  params.Pt[2][0]) / suv / gamma;
+        float h8 =  (params.Pt[0][3] +  params.Pt[2][3]) / (params.Pt[0][0]+params.Pt[2][0]) * s1;
+        float h9 =  (params.Pt[1][3] +  params.Pt[2][3]) / (params.Pt[0][0]+params.Pt[2][0]) * s1;
+        float h10 = 2*params.Pt[2][3] / (params.Pt[0][0]+params.Pt[2][0]) * s1 / suv;
         float h11 = 1;
 
         if (isZMode)
         {
-            h8 = h8  * sqrt(q);
-            h9 = h9  * sqrt(q);
+            h8  = h8  * sqrt(q);
+            h9  = h9  * sqrt(q);
             h10 = h10 * sqrt(q);
         }
 
-        float o1 = (1 + params.Kp[0][2]) / params.Kp[0][0];
-        float o2 = -(1 + params.Kp[1][2]) / params.Kp[1][1];
-        float o3 = 1 / s2 / params.Kp[1][1];
+        float o1 =  (1+params.Kp[0][2])/params.Kp[0][0];
+        float o2 = -(1+params.Kp[1][2])/params.Kp[1][1];
+        float o3 = 1/s2/params.Kp[1][1];
         float o4 = 0; //s2*(1+Kp(8));
 
         float dp1 = params.Distp[0];
@@ -878,32 +890,32 @@ namespace rsimpl { namespace f200
         float dp4 = params.Distp[3];
         float dp5 = params.Distp[4];
 
-        float ip0 = params.Kp[1][1] * s2;
-        float ip1 = (s2*params.Invdistp[0] * params.Kp[1][1]) + s2*(1 + params.Kp[1][2]);
-        float ip2 = (s2*params.Invdistp[1] * params.Kp[1][1]);
-        float ip3 = (s2*params.Invdistp[2] * params.Kp[1][1]);
-        float ip4 = (s2*params.Invdistp[3] * params.Kp[1][1]);
-        float ip5 = (s2*params.Invdistp[4] * params.Kp[1][1]);
+        float ip0 = params.Kp[1][1]*s2;
+        float ip1 = (s2*params.Invdistp[0]*params.Kp[1][1]) + s2*(1+params.Kp[1][2]);
+        float ip2 = (s2*params.Invdistp[1]*params.Kp[1][1]);
+        float ip3 = (s2*params.Invdistp[2]*params.Kp[1][1]);
+        float ip4 = (s2*params.Invdistp[3]*params.Kp[1][1]);
+        float ip5 = (s2*params.Invdistp[4]*params.Kp[1][1]);
 
         if (isQres)
             c *= 0.75;
 
         //to simplify the ordering of the coefficients, initialize it in list syntax and copy to allocated memory.
-        float coeffs[NUM_OF_CALIBRATION_COEFFS] = { 1.0f, 3.0f, a, a1, b, c, d0, d1, d2,
-            d3, d4, d5, q, p1, p2, p3, p4, p5, p6, p7, p8, h0, h1, h2, h3, h4, h5, h6, h7, h8, h9, h10, h11, f0, f1,
-            f2, f3, f4, f5, f6, f7, f8, f9, f10, f11, o1, o2, o3, o4, dp1, dp2, dp3, dp4, dp5, ip0, ip1, ip2, ip3,
-            ip4, ip5, ypscale, ypoff, 0, 0 };
+        float coeffs [NUM_OF_CALIBRATION_COEFFS] = {1.0f,3.0f,a,a1,b,c,d0,d1,d2,
+            d3,d4,d5,q,p1,p2,p3,p4,p5,p6,p7,p8,h0,h1,h2,h3,h4,h5,h6,h7,h8,h9,h10,h11,f0,f1,
+            f2,f3,f4,f5,f6,f7,f8,f9,f10,f11,o1,o2,o3,o4,dp1,dp2,dp3,dp4,dp5,ip0,ip1,ip2,ip3,
+            ip4,ip5,ypscale,ypoff,0,0};
 
         memcpy(values, coeffs, NUM_OF_CALIBRATION_COEFFS  * sizeof(float));
-        return;
+        return ;
     }
-
+    
     void update_asic_coefficients(uvc::device & device, std::timed_mutex & mutex, const CameraCalibrationParameters & compensated_params)
     {
         IVCAMASICCoefficients coeffs = {};
-        generate_asic_calibration_coefficients(compensated_params, { 640, 480 }, true, coeffs.CoefValueArray); // todo - fix hardcoded resolution parameters
-        set_asic_coefficients(device, mutex, coeffs);
-    }
+        generate_asic_calibration_coefficients(compensated_params, {640, 480}, true, coeffs.CoefValueArray); // todo - fix hardcoded resolution parameters
+        set_asic_coefficients(device, mutex, coeffs);    
+    }    
 
 }
     namespace sr300
