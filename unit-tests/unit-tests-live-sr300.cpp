@@ -449,13 +449,13 @@ inline void test_options(rs_device * device, rs_option* option_list, size_t opti
         else
             rs_get_device_options(device, option_list, (int)options, vretVal.data(), require_no_error());
 
-		// Results to be returned
-		ret_values = vretVal;		
+        // Results to be returned
+        ret_values = vretVal;       
     }
 }
 
 inline void test_sr300_command(rs_device *dev, std::vector<rs_option> options_list,
-	std::vector<double> good_values, std::vector<double> bad_values, std::vector<double>& ret_values, const std::string& expected_success_msg, const std::string& expected_error_msg, int when, bool write_cmd)
+    std::vector<double> good_values, std::vector<double> bad_values, std::vector<double>& ret_values, const std::string& expected_success_msg, const std::string& expected_error_msg, int when, bool write_cmd)
 {    
     REQUIRE(dev != nullptr);
 
@@ -466,7 +466,7 @@ inline void test_sr300_command(rs_device *dev, std::vector<rs_option> options_li
 
     if (when & BEFORE_START_DEVICE)
     {
-		test_options(dev, options_list.data(), options_list.size(), good_values, bad_values, ret_values, expected_success_msg, expected_error_msg, write_cmd);
+        test_options(dev, options_list.data(), options_list.size(), good_values, bad_values, ret_values, expected_success_msg, expected_error_msg, write_cmd);
     }
 
     if (when & AFTER_START_DEVICE)
@@ -477,10 +477,10 @@ inline void test_sr300_command(rs_device *dev, std::vector<rs_option> options_li
         // Currently, setting/getting options immediately after streaming frequently raises hardware errors
         // todo - Internally block or retry failed calls within the first few seconds after streaming
         std::this_thread::sleep_for(std::chrono::milliseconds(50));
-		test_options(dev, options_list.data(), options_list.size(), good_values, bad_values, ret_values, expected_success_msg, expected_error_msg, write_cmd);
+        test_options(dev, options_list.data(), options_list.size(), good_values, bad_values, ret_values, expected_success_msg, expected_error_msg, write_cmd);
 
-		std::this_thread::sleep_for(std::chrono::milliseconds(50));
-		rs_stop_device(dev, require_no_error());
+        std::this_thread::sleep_for(std::chrono::milliseconds(50));
+        rs_stop_device(dev, require_no_error());
     }
 }
 
@@ -491,16 +491,16 @@ TEST_CASE("SR300 Wakeup over USB function", "[live] [sr300]")
 
     std::vector<std::vector<double>> vGoodParams;
     std::vector<std::vector<double>> vBadParams;
-	std::vector<double>	vRetValues;
+    std::vector<double> vRetValues;
 
     std::string strSuccessMsg = ("");
     std::string strErrorMsg = ("missing/invalid wake_up command parameters");
 
-	safe_context ctx;
-	REQUIRE(rs_get_device_count(ctx, require_no_error()) == 1);
+    safe_context ctx;
+    REQUIRE(rs_get_device_count(ctx, require_no_error()) == 1);
 
-	rs_device * dev = rs_get_device(ctx, 0, require_no_error());
-	REQUIRE(dev != nullptr);
+    rs_device * dev = rs_get_device(ctx, 0, require_no_error());
+    REQUIRE(dev != nullptr);
 
     SECTION("Minimal Main Success Scenario")
     {
@@ -550,27 +550,24 @@ TEST_CASE("SR300 Wakeup over USB function", "[live] [sr300]")
     // Apply set command in different scenarios
     for (auto &data : vGoodParams)
     {
-		test_sr300_command(dev, vSetWakeupDevCmd, data, {}, vRetValues, strSuccessMsg, strErrorMsg, BEFORE_START_DEVICE, true);
-		test_sr300_command(dev, vSetWakeupDevCmd, data, {}, vRetValues, strSuccessMsg, strErrorMsg, AFTER_START_DEVICE, true);
+        test_sr300_command(dev, vSetWakeupDevCmd, data, {}, vRetValues, strSuccessMsg, strErrorMsg, BEFORE_START_DEVICE, true);
+        test_sr300_command(dev, vSetWakeupDevCmd, data, {}, vRetValues, strSuccessMsg, strErrorMsg, AFTER_START_DEVICE, true);
     }
 
     for (auto &data : vBadParams)
     {
-		test_sr300_command(dev, vSetWakeupDevCmd, {}, data, vRetValues, strSuccessMsg, strErrorMsg, BEFORE_START_DEVICE, true);
-		test_sr300_command(dev, vSetWakeupDevCmd, {}, data, vRetValues, strSuccessMsg, strErrorMsg, AFTER_START_DEVICE, true);
+        test_sr300_command(dev, vSetWakeupDevCmd, {}, data, vRetValues, strSuccessMsg, strErrorMsg, BEFORE_START_DEVICE, true);
+        test_sr300_command(dev, vSetWakeupDevCmd, {}, data, vRetValues, strSuccessMsg, strErrorMsg, AFTER_START_DEVICE, true);
     }
 
     // Revert to original messages
     strSuccessMsg = ("");
     strErrorMsg = ("missing/invalid wake_up command parameters");
-	
-	test_sr300_command(dev, vGetWakeUpDevCmd, {}, {}, vRetValues, strSuccessMsg, strErrorMsg, BEFORE_START_DEVICE, false);
-	test_sr300_command(dev, vGetWakeUpDevCmd, {}, {}, vRetValues, strSuccessMsg, strErrorMsg, AFTER_START_DEVICE, false);
+    
+    test_sr300_command(dev, vGetWakeUpDevCmd, {}, {}, vRetValues, strSuccessMsg, strErrorMsg, BEFORE_START_DEVICE, false);
+    test_sr300_command(dev, vGetWakeUpDevCmd, {}, {}, vRetValues, strSuccessMsg, strErrorMsg, AFTER_START_DEVICE, false);
 
-	if (vRetValues[0] != vRetValues[1])	// some meaningful values were received
-	{
-		std::cout << "Querying wakeon_usb reasoning: " << std::endl;
-		for (size_t i = 0; i < vGetWakeUpDevCmd.size(); i++)
-			std::cout << "Option : " << rs_option_to_string(vGetWakeUpDevCmd[i]) << ", Value: \t" << vRetValues[i] << std::endl;
-	}
+    REQUIRE(((vRetValues[0] == Approx(1.0)) || ((int)vRetValues[0] == Approx(0))) == true );
+    REQUIRE(((vRetValues[1] >= 0) && (vRetValues[1] <= 100) && ( 0 == (int)vRetValues[1]%10))== true);
+    
 }
