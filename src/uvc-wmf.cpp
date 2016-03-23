@@ -632,8 +632,8 @@ namespace rsimpl
         {
             if(option >= RS_OPTION_COLOR_ENABLE_AUTO_EXPOSURE && option <= RS_OPTION_COLOR_ENABLE_AUTO_WHITE_BALANCE)
             {
-                if(min)  *min  = 0;
-                if(max)  *max  = 1;
+                if(min) *min = 0;
+                if(max) *max = 1;
                 return;
             }
 
@@ -643,8 +643,8 @@ namespace rsimpl
             if(option == RS_OPTION_COLOR_EXPOSURE)
             {
                 check("IAMCameraControl::Get", sub.am_camera_control->GetRange(CameraControl_Exposure, &minVal, &maxVal, &steppingDelta, &defVal, &capsFlag));
-                if(min)  *min  = win_to_uvc_exposure(minVal);
-                if(max)  *max  = win_to_uvc_exposure(maxVal);
+                if(min) *min = win_to_uvc_exposure(minVal);
+                if(max) *max = win_to_uvc_exposure(maxVal);
                 return;
             }
             for(auto & pu : pu_controls)

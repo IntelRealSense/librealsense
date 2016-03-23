@@ -172,7 +172,7 @@ namespace rsimpl
             if(max) *max = get_pu<T>(devh, subdevice, unit, control, UVC_GET_MAX);
         }
 
-        void get_pu_control_range(const device & device, int subdevice, rs_option option, int * min, int * max, int * step, int * def)
+        void get_pu_control_range(const device & device, int subdevice, rs_option option, int * min, int * max)
         {
             auto handle = const_cast<uvc::device &>(device).get_subdevice(subdevice).handle;
             int ct_unit = 0, pu_unit = 0;
@@ -191,8 +191,8 @@ namespace rsimpl
             case RS_OPTION_COLOR_SATURATION: return get_pu_range<uint16_t>(handle, subdevice, pu_unit, UVC_PU_SATURATION_CONTROL, min, max);
             case RS_OPTION_COLOR_SHARPNESS: return get_pu_range<uint16_t>(handle, subdevice, pu_unit, UVC_PU_SHARPNESS_CONTROL, min, max);
             case RS_OPTION_COLOR_WHITE_BALANCE: return get_pu_range<uint16_t>(handle, subdevice, pu_unit, UVC_PU_WHITE_BALANCE_TEMPERATURE_CONTROL, min, max);
-            case RS_OPTION_COLOR_ENABLE_AUTO_EXPOSURE: if(min) *min = 0; if(max) *max = 1; if (step) *step = 1; return; // The next 2 options do not support range operations
-            case RS_OPTION_COLOR_ENABLE_AUTO_WHITE_BALANCE: if(min) *min = 0; if(max) *max = 1; if (step) *step = 1; return;
+            case RS_OPTION_COLOR_ENABLE_AUTO_EXPOSURE: if(min) *min = 0; if(max) *max = 1; return; // The next 2 options do not support range operations
+            case RS_OPTION_COLOR_ENABLE_AUTO_WHITE_BALANCE: if(min) *min = 0; if(max) *max = 1; return;
             default: throw std::logic_error("invalid option");
             }
         }

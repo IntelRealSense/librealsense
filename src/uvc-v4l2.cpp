@@ -479,8 +479,8 @@ namespace rsimpl
                 // TODO: Figure out what can be done about these options and make this work
                 query.minimum = query.maximum = 0;
             }
-            if(min)  *min  = query.minimum;
-            if(max)  *max  = query.maximum;
+            if(min) *min = query.minimum;
+            if(max) *max = query.maximum;
         }
 
         /////////////
