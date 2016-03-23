@@ -652,8 +652,8 @@ namespace rsimpl
                 if(option == pu.option)
                 {
                     check("IAMVideoProcAmp::GetRange", sub.am_video_proc_amp->GetRange(pu.property, &minVal, &maxVal, &steppingDelta, &defVal, &capsFlag));
-                    if(min)  *min  = static_cast<int>(minVal);
-                    if(max)  *max  = static_cast<int>(maxVal);
+                    if(min) *min = static_cast<int>(minVal);
+                    if(max) *max = static_cast<int>(maxVal);
                     return;
                 }
             }
