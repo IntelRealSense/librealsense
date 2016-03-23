@@ -628,14 +628,12 @@ namespace rsimpl
 
         int win_to_uvc_exposure(int value) { return static_cast<int>(std::round(exp2(static_cast<double>(value)) * 10000)); }
 
-        void get_pu_control_range(const device & device, int subdevice, rs_option option, int * min, int * max, int * step, int * def)
+        void get_pu_control_range(const device & device, int subdevice, rs_option option, int * min, int * max)
         {
             if(option >= RS_OPTION_COLOR_ENABLE_AUTO_EXPOSURE && option <= RS_OPTION_COLOR_ENABLE_AUTO_WHITE_BALANCE)
             {
                 if(min)  *min  = 0;
                 if(max)  *max  = 1;
-                if(step) *step = 1;
-                if(def)  *def  = 1; //TODO: Is there another way the get it?
                 return;
             }
 
@@ -647,8 +645,6 @@ namespace rsimpl
                 check("IAMCameraControl::Get", sub.am_camera_control->GetRange(CameraControl_Exposure, &minVal, &maxVal, &steppingDelta, &defVal, &capsFlag));
                 if(min)  *min  = win_to_uvc_exposure(minVal);
                 if(max)  *max  = win_to_uvc_exposure(maxVal);
-                if(step) *step = win_to_uvc_exposure(steppingDelta);
-                if(def)  *def  = win_to_uvc_exposure(defVal);
                 return;
             }
             for(auto & pu : pu_controls)
@@ -658,8 +654,6 @@ namespace rsimpl
                     check("IAMVideoProcAmp::GetRange", sub.am_video_proc_amp->GetRange(pu.property, &minVal, &maxVal, &steppingDelta, &defVal, &capsFlag));
                     if(min)  *min  = static_cast<int>(minVal);
                     if(max)  *max  = static_cast<int>(maxVal);
-                    if(step) *step = static_cast<int>(steppingDelta);
-                    if(def)  *def  = static_cast<int>(defVal);
                     return;
                 }
             }

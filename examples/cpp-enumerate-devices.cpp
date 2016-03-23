@@ -30,9 +30,9 @@ int main() try
             rs::option opt = (rs::option)j;
             if(dev->supports_option(opt))
             {
-                double min, max, step, def;
-                dev->get_option_range(opt, min, max, step, def);
-                std::cout << "    " << opt << " : " << min << " .. " << max << ", " << step << ", " << def << "\n";
+                double min, max, step;
+                dev->get_option_range(opt, min, max, step);
+                std::cout << "    " << opt << " : " << min << " .. " << max << ", " << step << "\n";
             }
         }
 

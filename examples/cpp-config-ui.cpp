@@ -145,13 +145,13 @@ int main(int argc, char * argv[]) try
 
     //std::this_thread::sleep_for(std::chrono::seconds(1));
 
-    struct option { rs::option opt; double min, max, step, value, def; };
+    struct option { rs::option opt; double min, max, step, value; };
     std::vector<option> options;
     for(int i=0; i<RS_OPTION_COUNT; ++i)
     {
         option o = {(rs::option)i};
         if(!dev->supports_option(o.opt)) continue;
-        dev->get_option_range(o.opt, o.min, o.max, o.step, o.def);
+        dev->get_option_range(o.opt, o.min, o.max, o.step);
         if(o.min == o.max) continue;
         try { o.value = dev->get_option(o.opt); } catch(...) {}
         options.push_back(o);
@@ -215,7 +215,7 @@ int main(int argc, char * argv[]) try
         if(g.slider(100, {w-260,y+16,w-20,y+36}, 0, 5, 1, dc_preset)) rs_apply_depth_control_preset((rs_device *)dev, static_cast<int>(dc_preset));
         y += 38;
         g.label({w-260,y+12}, {1,1,1}, "IVCAM options preset: %g", iv_preset);
-        if(g.slider(101, {w-260,y+16,w-20,y+36}, 0, 14, 1, iv_preset)) rs_apply_ivcam_preset((rs_device *)dev, static_cast<rs_ivcam_preset>((int)iv_preset));
+        if(g.slider(101, {w-260,y+16,w-20,y+36}, 0, 9, 1, iv_preset)) rs_apply_ivcam_preset((rs_device *)dev, static_cast<rs_ivcam_preset>((int)iv_preset));
         y += 38;
         
         panel_height = y + 10 + offset;

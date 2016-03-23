@@ -65,19 +65,17 @@ typedef enum rs_distortion
 
 typedef enum rs_ivcam_preset
 {
-	RS_IVCAM_PRESET_SHORT_RANGE = 1,
-	RS_IVCAM_PRESET_LONG_RANGE = 2,
-	RS_IVCAM_PRESET_BACKGROUND_SEGMENTATION = 3,
-	RS_IVCAM_PRESET_GESTURE_RECOGNITION = 4,
-	RS_IVCAM_PRESET_OBJECT_SCANNING = 5,
-	RS_IVCAM_PRESET_FACE_ANALYTICS = 6,
-	RS_IVCAM_PRESET_FACE_LOGIN = 7,
-	RS_IVCAM_PRESET_GR_CURSOR = 8,
-	RS_IVCAM_PRESET_CUSTOM = 9,
-	RS_IVCAM_PRESET_DEFAULT = 10,
-	RS_IVCAM_PRESET_MID_RANGE = 11,
-	RS_IVCAM_PRESET_IR_ONLY = 12,
-	RS_IVCAM_PRESET_MAX_ENUM = 0x7FFFFFFF
+    RS_IVCAM_PRESET_SHORT_RANGE = 0,
+    RS_IVCAM_PRESET_LONG_RANGE = 1,
+    RS_IVCAM_PRESET_BACKGROUND_SEGMENTATION = 2,
+    RS_IVCAM_PRESET_GESTURE_RECOGNITION = 3,
+    RS_IVCAM_PRESET_OBJECT_SCANNING = 4,
+    RS_IVCAM_PRESET_FACE_ANALYTICS = 5,
+    RS_IVCAM_PRESET_FACE_LOGIN = 6,
+    RS_IVCAM_PRESET_GR_CURSOR = 7,
+    RS_IVCAM_PRESET_MID_RANGE = 8,
+    RS_IVCAM_PRESET_IR_ONLY = 9,
+    RS_IVCAM_PRESET_MAX_ENUM = 0x7FFFFFFF
 } rs_ivcam_preset;
 
 typedef enum rs_option
@@ -348,7 +346,7 @@ int rs_is_device_streaming(const rs_device * device, rs_error ** error);
  * \param[out] step   the granularity of options which accept discrete values, or zero if the option accepts continuous values
  * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
  */
-void rs_get_device_option_range(rs_device * device, rs_option option, double * min, double * max, double * step, double * def, rs_error ** error);
+void rs_get_device_option_range(rs_device * device, rs_option option, double * min, double * max, double * step, rs_error ** error);
 
 /**
  * efficiently retrieve the value of an arbitrary number of options, using minimal hardware IO
@@ -367,15 +365,6 @@ void rs_get_device_options(rs_device * device, const rs_option * options, int co
  * \param[out] error   if non-null, receives any error that occurs during this call, otherwise, errors are ignored
  */
 void rs_set_device_options(rs_device * device, const rs_option * options, int count, const double * values, rs_error ** error);
-
-/**
-* efficiently reset the value of an arbitrary number of options to default
-* \param[in] options  the array of options which should be set to default
-* \param[in] count    the length of the options array
-* \param[out] error   if non-null, receives any error that occurs during this call, otherwise, errors are ignored
-*/
-void rs_reset_device_options_to_default(rs_device * device, const rs_option* options, int count, rs_error ** error);
-
 
 /**
  * retrieve the current value of a single option
