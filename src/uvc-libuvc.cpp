@@ -168,8 +168,8 @@ namespace rsimpl
         
         template<class T> void get_pu_range(uvc_device_handle_t * devh, int subdevice, uint8_t unit, uint8_t control, int * min, int * max)
         {
-            if(min)  *min  = get_pu<T>(devh, subdevice, unit, control, UVC_GET_MIN);
-            if(max)  *max  = get_pu<T>(devh, subdevice, unit, control, UVC_GET_MAX);
+            if(min) *min = get_pu<T>(devh, subdevice, unit, control, UVC_GET_MIN);
+            if(max) *max = get_pu<T>(devh, subdevice, unit, control, UVC_GET_MAX);
         }
 
         void get_pu_control_range(const device & device, int subdevice, rs_option option, int * min, int * max, int * step, int * def)

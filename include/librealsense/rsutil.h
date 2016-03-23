@@ -117,8 +117,8 @@ static void rs_apply_ivcam_preset(rs_device * device, rs_ivcam_preset preset)
         {2,     0,  40, 1600,  800,  -1,  -1,  -1,   -1,  -1,  1, -1, -1, -1, -1}  /* IROnly                    */
     };
 
-    if (arr_values[preset][14] != -1) rs_set_device_options(device, arr_options, 15, arr_values[preset], 0);
-    if (arr_values[preset][13] != -1) rs_set_device_options(device, arr_options, 14, arr_values[preset], 0);
+    if(arr_values[preset][14] != -1) rs_set_device_options(device, arr_options, 15, arr_values[preset], 0);
+    if(arr_values[preset][13] != -1) rs_set_device_options(device, arr_options, 14, arr_values[preset], 0);
     else rs_set_device_options(device, arr_options, 11, arr_values[preset], 0);
 }
 
