@@ -73,8 +73,9 @@ typedef enum rs_ivcam_preset
     RS_IVCAM_PRESET_FACE_ANALYTICS = 5,
     RS_IVCAM_PRESET_FACE_LOGIN = 6,
     RS_IVCAM_PRESET_GR_CURSOR = 7,
-    RS_IVCAM_PRESET_MID_RANGE = 8,
-    RS_IVCAM_PRESET_IR_ONLY = 9,
+    RS_IVCAM_PRESET_DEFAULT = 8,
+    RS_IVCAM_PRESET_MID_RANGE = 9,
+    RS_IVCAM_PRESET_IR_ONLY = 10,
     RS_IVCAM_PRESET_MAX_ENUM = 0x7FFFFFFF
 } rs_ivcam_preset;
 
@@ -97,7 +98,7 @@ typedef enum rs_option
     RS_OPTION_F200_MOTION_RANGE                               = 14, /**< 0 - 100 */
     RS_OPTION_F200_FILTER_OPTION                              = 15, /**< 0 - 7 */
     RS_OPTION_F200_CONFIDENCE_THRESHOLD                       = 16, /**< 0 - 15 */
-    RS_OPTION_SR300_DYNAMIC_FPS                               = 17, /**< {2, 5, 15, 30, 60} */
+    RS_OPTION_F200_DYNAMIC_FPS                               = 17, /**< {2, 5, 15, 30, 60} */
     RS_OPTION_SR300_AUTO_RANGE_ENABLE_MOTION_VERSUS_RANGE     = 18, 
     RS_OPTION_SR300_AUTO_RANGE_ENABLE_LASER                   = 19, 
     RS_OPTION_SR300_AUTO_RANGE_MIN_MOTION_VERSUS_RANGE        = 20, 
@@ -346,7 +347,7 @@ int rs_is_device_streaming(const rs_device * device, rs_error ** error);
  * \param[out] step   the granularity of options which accept discrete values, or zero if the option accepts continuous values
  * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
  */
-void rs_get_device_option_range(rs_device * device, rs_option option, double * min, double * max, double * step, rs_error ** error);
+void rs_get_device_option_range(rs_device * device, rs_option option, double * min, double * max, double * step,double * def, rs_error ** error);
 
 /**
  * efficiently retrieve the value of an arbitrary number of options, using minimal hardware IO
@@ -365,6 +366,14 @@ void rs_get_device_options(rs_device * device, const rs_option * options, int co
  * \param[out] error   if non-null, receives any error that occurs during this call, otherwise, errors are ignored
  */
 void rs_set_device_options(rs_device * device, const rs_option * options, int count, const double * values, rs_error ** error);
+
+/**
+* efficiently reset the value of an arbitrary number of options to default
+* \param[in] options  the array of options which should be set to default
+* \param[in] count    the length of the options array
+* \param[out] error   if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+*/
+void rs_reset_device_options_to_default(rs_device * device, const rs_option* options, int count, rs_error ** error);
 
 /**
  * retrieve the current value of a single option

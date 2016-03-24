@@ -172,27 +172,27 @@ namespace rsimpl
             if(max) *max = get_pu<T>(devh, subdevice, unit, control, UVC_GET_MAX);
         }
 
-        void get_pu_control_range(const device & device, int subdevice, rs_option option, int * min, int * max)
+        void get_pu_control_range(const device & device, int subdevice, rs_option option, int * min, int * max, int * step, int * def)
         {
             auto handle = const_cast<uvc::device &>(device).get_subdevice(subdevice).handle;
             int ct_unit = 0, pu_unit = 0;
             for(auto ct = uvc_get_input_terminals(handle); ct; ct = ct->next) ct_unit = ct->bTerminalID; // todo - Check supported caps
             for(auto pu = uvc_get_processing_units(handle); pu; pu = pu->next) pu_unit = pu->bUnitID; // todo - Check supported caps
-            
+
             switch(option)
             {
-            case RS_OPTION_COLOR_BACKLIGHT_COMPENSATION: return get_pu_range<uint16_t>(handle, subdevice, pu_unit, UVC_PU_BACKLIGHT_COMPENSATION_CONTROL, min, max);
-            case RS_OPTION_COLOR_BRIGHTNESS: return get_pu_range<int16_t>(handle, subdevice, pu_unit, UVC_PU_BRIGHTNESS_CONTROL, min, max);
-            case RS_OPTION_COLOR_CONTRAST: return get_pu_range<uint16_t>(handle, subdevice, pu_unit, UVC_PU_CONTRAST_CONTROL, min, max);
-            case RS_OPTION_COLOR_EXPOSURE: return get_pu_range<uint32_t>(handle, subdevice, ct_unit, UVC_CT_EXPOSURE_TIME_ABSOLUTE_CONTROL, min, max);
-            case RS_OPTION_COLOR_GAIN: return get_pu_range<uint16_t>(handle, subdevice, pu_unit, UVC_PU_GAIN_CONTROL, min, max);
-            case RS_OPTION_COLOR_GAMMA: return get_pu_range<uint16_t>(handle, subdevice, pu_unit, UVC_PU_GAMMA_CONTROL, min, max);
-            case RS_OPTION_COLOR_HUE: if(min) *min = 0; if(max) *max = 0; return; //return get_pu_range<int16_t>(handle, subdevice, pu_unit, UVC_PU_HUE_CONTROL, min, max);
-            case RS_OPTION_COLOR_SATURATION: return get_pu_range<uint16_t>(handle, subdevice, pu_unit, UVC_PU_SATURATION_CONTROL, min, max);
-            case RS_OPTION_COLOR_SHARPNESS: return get_pu_range<uint16_t>(handle, subdevice, pu_unit, UVC_PU_SHARPNESS_CONTROL, min, max);
-            case RS_OPTION_COLOR_WHITE_BALANCE: return get_pu_range<uint16_t>(handle, subdevice, pu_unit, UVC_PU_WHITE_BALANCE_TEMPERATURE_CONTROL, min, max);
-            case RS_OPTION_COLOR_ENABLE_AUTO_EXPOSURE: if(min) *min = 0; if(max) *max = 1; return; // The next 2 options do not support range operations
-            case RS_OPTION_COLOR_ENABLE_AUTO_WHITE_BALANCE: if(min) *min = 0; if(max) *max = 1; return;
+            case RS_OPTION_COLOR_BACKLIGHT_COMPENSATION: return get_pu_range<uint16_t>(handle, subdevice, pu_unit, UVC_PU_BACKLIGHT_COMPENSATION_CONTROL, min, max, step, def);
+            case RS_OPTION_COLOR_BRIGHTNESS: return get_pu_range<int16_t>(handle, subdevice, pu_unit, UVC_PU_BRIGHTNESS_CONTROL, min, max, step, def);
+            case RS_OPTION_COLOR_CONTRAST: return get_pu_range<uint16_t>(handle, subdevice, pu_unit, UVC_PU_CONTRAST_CONTROL, min, max, step, def);
+            case RS_OPTION_COLOR_EXPOSURE: return get_pu_range<uint32_t>(handle, subdevice, ct_unit, UVC_CT_EXPOSURE_TIME_ABSOLUTE_CONTROL, min, max, step, def);
+            case RS_OPTION_COLOR_GAIN: return get_pu_range<uint16_t>(handle, subdevice, pu_unit, UVC_PU_GAIN_CONTROL, min, max, step, def);
+            case RS_OPTION_COLOR_GAMMA: return get_pu_range<uint16_t>(handle, subdevice, pu_unit, UVC_PU_GAMMA_CONTROL, min, max, step, def);
+            case RS_OPTION_COLOR_HUE: if(min) *min = 0; if(max) *max = 0; return; //return get_pu_range<int16_t>(handle, subdevice, pu_unit, UVC_PU_HUE_CONTROL, min, max, step, def);
+            case RS_OPTION_COLOR_SATURATION: return get_pu_range<uint16_t>(handle, subdevice, pu_unit, UVC_PU_SATURATION_CONTROL, min, max, step, def);
+            case RS_OPTION_COLOR_SHARPNESS: return get_pu_range<uint16_t>(handle, subdevice, pu_unit, UVC_PU_SHARPNESS_CONTROL, min, max, step, def);
+            case RS_OPTION_COLOR_WHITE_BALANCE: return get_pu_range<uint16_t>(handle, subdevice, pu_unit, UVC_PU_WHITE_BALANCE_TEMPERATURE_CONTROL, min, max, step, def);
+            case RS_OPTION_COLOR_ENABLE_AUTO_EXPOSURE: if(min) *min = 0; if(max) *max = 1; if (step) *step = 1; if (def) *def = 1; return; // The next 2 options do not support range operations
+            case RS_OPTION_COLOR_ENABLE_AUTO_WHITE_BALANCE: if(min) *min = 0; if(max) *max = 1; if (step) *step = 1; if (def) *def = 1; return;
             default: throw std::logic_error("invalid option");
             }
         }

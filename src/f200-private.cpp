@@ -48,7 +48,7 @@
 #define IVCAM_DEPTH_ERROR               4
 #define IVCAM_DEPTH_FILTER_OPTION       5
 #define IVCAM_DEPTH_CONFIDENCE_THRESH   6
-#define IVCAM_DEPTH_DYNAMIC_FPS         7 // Only available on IVCAM 1.5 / SR300
+#define IVCAM_DEPTH_DYNAMIC_FPS         7 // Only available on IVCAM 1.0 / F200
 
 // IVCAM color XU identifiers
 #define IVCAM_COLOR_EXPOSURE_PRIORITY   1
@@ -267,8 +267,6 @@ namespace rsimpl { namespace f200
     //////////////////
     // XU functions //
     //////////////////
-
-    const uvc::extension_unit depth_xu {1, 6, 1, {0xA55751A1,0xF3C5,0x4A5E,{0x8D,0x5A,0x68,0x54,0xB8,0xFA,0x27,0x16}}};
 
     // N.B. f200 xu_read and xu_write hard code the xu interface to the depth suvdevice. There is only a
     // single *potentially* useful XU on the color device, so let's ignore it for now.

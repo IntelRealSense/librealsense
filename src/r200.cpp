@@ -379,7 +379,7 @@ namespace rsimpl
         return option == RS_OPTION_R200_LR_GAIN || option == RS_OPTION_R200_LR_EXPOSURE || rs_device::supports_option(option);
     }
 
-    void r200_camera::get_option_range(rs_option option, double & min, double & max, double & step)
+    void r200_camera::get_option_range(rs_option option, double & min, double & max, double & step, double & def)
     {
         // Gain min/max is framerate dependent
         if(option == RS_OPTION_R200_LR_GAIN)
@@ -389,6 +389,7 @@ namespace rsimpl
             min = disc.min;
             max = disc.max;
             step = 1;
+            def = disc.default_value;
             return;
         }
 
@@ -400,11 +401,12 @@ namespace rsimpl
             min = disc.min;
             max = disc.max;
             step = 1;
+            def = disc.default_value;
             return;
         }
 
         // Default to parent implementation
-        rs_device::get_option_range(option, min, max, step);
+        rs_device::get_option_range(option, min, max, step, def);
     }
 
     // All R200 images which are not in YUY2 format contain an extra row of pixels, called the "dinghy", which contains useful information

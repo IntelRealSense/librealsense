@@ -155,7 +155,7 @@ namespace rsimpl
     struct supported_option
     { 
         rs_option option;
-        double min, max, step; 
+        double min, max, step, def;
     };
 
     struct static_device_info

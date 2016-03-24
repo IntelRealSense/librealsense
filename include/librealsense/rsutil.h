@@ -113,13 +113,24 @@ static void rs_apply_ivcam_preset(rs_device * device, rs_ivcam_preset preset)
         {0,     0,  -1,   -1,   -1,  -1,  -1,  -1,   -1,  -1, 16,  1,  5,  1, 22}, /* FaceAnalytics             */
         {2,     0,  40, 1600,  800,  -1,  -1,  -1,   -1,  -1,  1, -1, -1, -1, -1}, /* FaceLogin                 */
         {1,     1, 100,  179,  179,   2,  16,  -1, 1000, 450,  1,  1,  6,  1, -1}, /* GRCursor                  */
+        {0,     0,  -1,   -1,   -1,  -1,  -1,  -1,   -1,  -1, 16,  1,  5,  3,  9}, /* Default                   */
         {1,     1, 180,  605,  303,   2,  16,  -1, 1250, 650,  1,  1,  5,  1, -1}, /* MidRange                  */
         {2,     0,  40, 1600,  800,  -1,  -1,  -1,   -1,  -1,  1, -1, -1, -1, -1}  /* IROnly                    */
     };
 
-    if(arr_values[preset][14] != -1) rs_set_device_options(device, arr_options, 15, arr_values[preset], 0);
-    if(arr_values[preset][13] != -1) rs_set_device_options(device, arr_options, 14, arr_values[preset], 0);
-    else rs_set_device_options(device, arr_options, 11, arr_values[preset], 0);
+    // The Default preset is handled differntly from all the rest,
+    // When the user applies the Default preset the camera is expected to return to
+    // Default values of depth options:
+    if(preset == RS_IVCAM_PRESET_DEFAULT)
+    {
+        rs_reset_device_options_to_default(device, arr_options, 15, 0);
+    }
+    else
+    {
+        if(arr_values[preset][14] != -1) rs_set_device_options(device, arr_options, 15, arr_values[preset], 0);
+        if(arr_values[preset][13] != -1) rs_set_device_options(device, arr_options, 14, arr_values[preset], 0);
+        else rs_set_device_options(device, arr_options, 11, arr_values[preset], 0);
+    }
 }
 
 #endif

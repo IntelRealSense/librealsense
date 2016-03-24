@@ -10,6 +10,8 @@
 
 namespace rsimpl { namespace f200
 {
+    const uvc::extension_unit depth_xu{ 1, 6, 1, { 0xA55751A1, 0xF3C5, 0x4A5E, { 0x8D, 0x5A, 0x68, 0x54, 0xB8, 0xFA, 0x27, 0x16 } } };
+
     struct CameraCalibrationParameters
     {
         float Rmax;

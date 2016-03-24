@@ -468,7 +468,7 @@ namespace rsimpl
             return control.value;
         }
 
-        void get_pu_control_range(const device & device, int subdevice, rs_option option, int * min, int * max)
+        void get_pu_control_range(const device & device, int subdevice, rs_option option, int * min, int * max, int * step, int * def)
         {
             struct v4l2_queryctrl query = {};
             query.id = get_cid(option);
@@ -479,8 +479,10 @@ namespace rsimpl
                 // TODO: Figure out what can be done about these options and make this work
                 query.minimum = query.maximum = 0;
             }
-            if(min) *min = query.minimum;
-            if(max) *max = query.maximum;
+            if(min)  *min  = query.minimum;
+            if(max)  *max  = query.maximum;
+            if(step) *step = query.step;
+            if(def)  *def  = query.default_value;
         }
 
         /////////////
