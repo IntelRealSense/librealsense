@@ -485,6 +485,69 @@ namespace rsimpl
             if(def)  *def  = query.default_value;
         }
 
+        void get_external_control_range(const device & device, const extension_unit & xu, char control, int * min, int * max, int * step, int * def)
+        {
+            //device.subdevices[subdevice]->fd
+            __u16 size = 0;
+            __u8 value = 0; /* all of the real sense extended controls are one byte,
+                            checking return value for UVC_GET_LEN and allocating
+                            appropriately might be better */
+            __u8 * data = (__u8 *)&value;
+            struct uvc_xu_control_query xquery;
+            memset(&xquery, 0, sizeof(xquery));
+            xquery.query = UVC_GET_LEN;
+            xquery.size = 2; /* size seems to always be 2 for the LEN query, but
+                             doesn't seem to be documented. Use result for size
+                             in all future queries of the same control number */
+            xquery.selector = control;
+            xquery.unit = xu.unit;
+            xquery.data = (__u8 *)&size;
+
+            if(-1 == ioctl(device.subdevices[1]->fd,UVCIOC_CTRL_QUERY,&xquery)){
+                throw std::runtime_error(to_string() << " ioctl failed on UVC_GET_LEN");
+            }
+
+            xquery.query = UVC_GET_MIN;
+            xquery.size = size;
+            xquery.selector = control;
+            xquery.unit = xu.unit;
+            xquery.data = data;
+            if(-1 == ioctl(device.subdevices[1]->fd,UVCIOC_CTRL_QUERY,&xquery)){
+                throw std::runtime_error(to_string() << " ioctl failed on UVC_GET_MIN");
+            }
+            *min = value;
+
+            xquery.query = UVC_GET_MAX;
+            xquery.size = size;
+            xquery.selector = control;
+            xquery.unit = xu.unit;
+            xquery.data = data;
+            if(-1 == ioctl(device.subdevices[1]->fd,UVCIOC_CTRL_QUERY,&xquery)){
+                throw std::runtime_error(to_string() << " ioctl failed on UVC_GET_MAX");
+            }
+            *max = value;
+
+            xquery.query = UVC_GET_DEF;
+            xquery.size = size;
+            xquery.selector = control;
+            xquery.unit = xu.unit;
+            xquery.data = data;
+            if(-1 == ioctl(device.subdevices[1]->fd,UVCIOC_CTRL_QUERY,&xquery)){
+                throw std::runtime_error(to_string() << " ioctl failed on UVC_GET_DEF");
+            }
+            *def = value;
+
+            xquery.query = UVC_GET_RES;
+            xquery.size = size;
+            xquery.selector = control;
+            xquery.unit = xu.unit;
+            xquery.data = data;
+            if(-1 == ioctl(device.subdevices[1]->fd,UVCIOC_CTRL_QUERY,&xquery)){
+                throw std::runtime_error(to_string() << " ioctl failed on UVC_GET_CUR");
+            }
+            *step = value;
+
+        }
         /////////////
         // context //
         /////////////
