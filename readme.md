@@ -65,6 +65,12 @@ Neither libuvc nor V4L2 backends have been validated on Ubuntu 12.04 LTS or Ubun
 
 All RealSense™ cameras ship with proprietary firmware. This firmware is periodically updated with critical bugfixes, however librealsense does not currently provide functionality to upload new firmware. A supported update path is available on Windows 8.1 and Windows 10 systems via the [Intel® RealSense™ DCM](https://downloadcenter.intel.com/download/25044/Intel-RealSense-Depth-Camera-Manager-DCM-) (Depth Camera Manager). Installing the DCM on a supported machine with an attached camera will automatically flash the latest firmware released by Intel.
 
+| Camera | F/W |
+| ------ | --- |
+| R200 | 1.0.72.04 |
+| F200 | 2.60.0.0 |
+| SR300 |3.10.10.0 |
+
 # Installation Guide
 
 librealsense communicates with RealSense™ devices directly via the UVC and USB protocols. It does not link against the RealSense™ SDK runtime. Most of the library source code is platform agnostic, but there is a small UVC abstraction layer with platform-specific backends, including:
