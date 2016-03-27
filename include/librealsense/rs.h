@@ -98,7 +98,7 @@ typedef enum rs_option
     RS_OPTION_F200_MOTION_RANGE                               = 14, /**< 0 - 100 */
     RS_OPTION_F200_FILTER_OPTION                              = 15, /**< 0 - 7 */
     RS_OPTION_F200_CONFIDENCE_THRESHOLD                       = 16, /**< 0 - 15 */
-    RS_OPTION_F200_DYNAMIC_FPS                               = 17, /**< {2, 5, 15, 30, 60} */
+    RS_OPTION_F200_DYNAMIC_FPS                                = 17, /**< {2, 5, 15, 30, 60} */
     RS_OPTION_SR300_AUTO_RANGE_ENABLE_MOTION_VERSUS_RANGE     = 18, 
     RS_OPTION_SR300_AUTO_RANGE_ENABLE_LASER                   = 19, 
     RS_OPTION_SR300_AUTO_RANGE_MIN_MOTION_VERSUS_RANGE        = 20, 

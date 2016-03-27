@@ -666,7 +666,7 @@ namespace rsimpl
             throw std::runtime_error("unsupported control");
         }
 
-        void get_external_control_range(const device & device, const extension_unit & xu, char control , int * min, int * max, int * step, int * def)
+        void get_extension_control_range(const device & device, const extension_unit & xu, char control , int * min, int * max, int * step, int * def)
         {
             auto ks_control = const_cast<uvc::device &>(device).get_ks_control(xu);
 

@@ -485,9 +485,8 @@ namespace rsimpl
             if(def)  *def  = query.default_value;
         }
 
-        void get_external_control_range(const device & device, const extension_unit & xu, char control, int * min, int * max, int * step, int * def)
+        void get_extension_control_range(const device & device, const extension_unit & xu, char control, int * min, int * max, int * step, int * def)
         {
-            //device.subdevices[subdevice]->fd
             __u16 size = 0;
             __u8 value = 0; /* all of the real sense extended controls are one byte,
                             checking return value for UVC_GET_LEN and allocating
@@ -503,7 +502,7 @@ namespace rsimpl
             xquery.unit = xu.unit;
             xquery.data = (__u8 *)&size;
 
-            if(-1 == ioctl(device.subdevices[1]->fd,UVCIOC_CTRL_QUERY,&xquery)){
+            if(-1 == ioctl(device.subdevices[xu.subdevice]->fd,UVCIOC_CTRL_QUERY,&xquery)){
                 throw std::runtime_error(to_string() << " ioctl failed on UVC_GET_LEN");
             }
 
@@ -512,7 +511,7 @@ namespace rsimpl
             xquery.selector = control;
             xquery.unit = xu.unit;
             xquery.data = data;
-            if(-1 == ioctl(device.subdevices[1]->fd,UVCIOC_CTRL_QUERY,&xquery)){
+            if(-1 == ioctl(device.subdevices[xu.subdevice]->fd,UVCIOC_CTRL_QUERY,&xquery)){
                 throw std::runtime_error(to_string() << " ioctl failed on UVC_GET_MIN");
             }
             *min = value;
@@ -522,7 +521,7 @@ namespace rsimpl
             xquery.selector = control;
             xquery.unit = xu.unit;
             xquery.data = data;
-            if(-1 == ioctl(device.subdevices[1]->fd,UVCIOC_CTRL_QUERY,&xquery)){
+            if(-1 == ioctl(device.subdevices[xu.subdevice]->fd,UVCIOC_CTRL_QUERY,&xquery)){
                 throw std::runtime_error(to_string() << " ioctl failed on UVC_GET_MAX");
             }
             *max = value;
@@ -532,7 +531,7 @@ namespace rsimpl
             xquery.selector = control;
             xquery.unit = xu.unit;
             xquery.data = data;
-            if(-1 == ioctl(device.subdevices[1]->fd,UVCIOC_CTRL_QUERY,&xquery)){
+            if(-1 == ioctl(device.subdevices[xu.subdevice]->fd,UVCIOC_CTRL_QUERY,&xquery)){
                 throw std::runtime_error(to_string() << " ioctl failed on UVC_GET_DEF");
             }
             *def = value;
@@ -542,7 +541,7 @@ namespace rsimpl
             xquery.selector = control;
             xquery.unit = xu.unit;
             xquery.data = data;
-            if(-1 == ioctl(device.subdevices[1]->fd,UVCIOC_CTRL_QUERY,&xquery)){
+            if(-1 == ioctl(device.subdevices[xu.subdevice]->fd,UVCIOC_CTRL_QUERY,&xquery)){
                 throw std::runtime_error(to_string() << " ioctl failed on UVC_GET_CUR");
             }
             *step = value;
