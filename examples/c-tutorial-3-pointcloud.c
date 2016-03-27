@@ -130,7 +130,7 @@ int main()
         glEnable(GL_DEPTH_TEST);
         glBegin(GL_POINTS);
 
-	int dx, dy;
+        int dx, dy;
         for(dy=0; dy<depth_intrin.height; ++dy)
         {
             for(dx=0; dx<depth_intrin.width; ++dx)

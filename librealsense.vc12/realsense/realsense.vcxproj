@@ -157,42 +157,12 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\src\device.cpp" />
-    <ClCompile Include="..\..\src\context.cpp" />
-    <ClCompile Include="..\..\src\f200-private.cpp" />
-    <ClCompile Include="..\..\src\f200.cpp" />
-    <ClCompile Include="..\..\src\image.cpp" />
-    <ClCompile Include="..\..\src\log.cpp" />
-    <ClCompile Include="..\..\src\r200-private.cpp" />
-    <ClCompile Include="..\..\src\r200.cpp" />
-    <ClCompile Include="..\..\src\rs.cpp" />
-    <ClCompile Include="..\..\src\stream.cpp" />
-    <ClCompile Include="..\..\src\sync.cpp" />
-    <ClCompile Include="..\..\src\types.cpp" />
-    <ClCompile Include="..\..\src\uvc-libuvc.cpp" />
-    <ClCompile Include="..\..\src\uvc-v4l2.cpp" />
-    <ClCompile Include="..\..\src\uvc-wmf.cpp" />
-    <ClCompile Include="..\..\src\uvc.cpp" />
-    <ClCompile Include="..\..\src\verify.c" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="..\..\include\librealsense\rs.h" />
-    <ClInclude Include="..\..\include\librealsense\rs.hpp" />
-    <ClInclude Include="..\..\include\librealsense\rsutil.h" />
-    <ClInclude Include="..\..\src\device.h" />
-    <ClInclude Include="..\..\src\context.h" />
-    <ClInclude Include="..\..\src\f200-private.h" />
-    <ClInclude Include="..\..\src\f200.h" />
-    <ClInclude Include="..\..\src\image.h" />
-    <ClInclude Include="..\..\src\r200-private.h" />
-    <ClInclude Include="..\..\src\r200.h" />
-    <ClInclude Include="..\..\src\stream.h" />
-    <ClInclude Include="..\..\src\sync.h" />
-    <ClInclude Include="..\..\src\types.h" />
-    <ClInclude Include="..\..\src\uvc.h" />
-  </ItemGroup>
-  <ItemGroup>
     <None Include="realsense.def" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\realsense-s\realsense-s.vcxproj">
+      <Project>{622186c4-6d7d-4288-b8fd-8f08419181c2}</Project>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

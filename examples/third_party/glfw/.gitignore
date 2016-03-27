@@ -1,0 +1,5 @@
+msvc120/obj/
+msvc140/obj/
+*.opensdf
+*.sdf
+*.suo
