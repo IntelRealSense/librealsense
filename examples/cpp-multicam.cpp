@@ -3,6 +3,8 @@
 
 #include <librealsense/rs.hpp>
 #include "example.hpp"
+#include <librealsense/rs.h>
+#include <librealsense/rsutil.h>
 
 #include <iostream>
 #include <algorithm>
@@ -25,30 +27,29 @@ int main(int argc, char * argv[]) try
     }
 
     // Configure and start our devices
+    int perTextureWidth = 0;
+    int perTextureHeight = 0;
+
     for(auto dev : devices)
     {
         std::cout << "Starting " << dev->get_name() << "... ";
         dev->enable_stream(rs::stream::depth, rs::preset::best_quality);
-        dev->enable_stream(rs::stream::color, rs::preset::best_quality);
         dev->start();
         std::cout << "done." << std::endl;
+        perTextureWidth = dev->get_stream_width(rs::stream::depth);
+        perTextureHeight = dev->get_stream_height(rs::stream::depth);
     }
-
     // Depth and color
-    buffers.resize(ctx.get_device_count() * 2);
+    buffers.resize(ctx.get_device_count());
 
     // Open a GLFW window
     glfwInit();
     std::ostringstream ss; ss << "CPP Multi-Camera Example";
-    GLFWwindow * win = glfwCreateWindow(1280, 960, ss.str().c_str(), 0, 0);
+    GLFWwindow * win = glfwCreateWindow(perTextureWidth, perTextureHeight, ss.str().c_str(), 0, 0);
     glfwMakeContextCurrent(win);
 
     int windowWidth, windowHeight;
     glfwGetWindowSize(win, &windowWidth, &windowHeight);
-
-    // Does not account for correct aspect ratios
-    auto perTextureWidth = windowWidth / devices.size();
-    auto perTextureHeight = 480;
 
     while (!glfwWindowShouldClose(win))
     {
@@ -65,14 +66,42 @@ int main(int argc, char * argv[]) try
         glPushMatrix();
         glOrtho(0, w, h, 0, -1, +1);
         glPixelZoom(1, -1);
-        int i=0, x=0;
         for(auto dev : devices)
         {
             dev->poll_for_frames();
-            const auto c = dev->get_stream_intrinsics(rs::stream::color), d = dev->get_stream_intrinsics(rs::stream::depth);
-            buffers[i++].show(*dev, rs::stream::color, x, 0, perTextureWidth, perTextureHeight);
-            buffers[i++].show(*dev, rs::stream::depth, x, perTextureHeight, perTextureWidth, perTextureHeight);
-            x += perTextureWidth;
+         
+            buffers[0].show(*dev, rs::stream::depth, 0, 0, (int)perTextureWidth, (int)perTextureHeight);
+           
+            const float scale = rs_get_device_depth_scale((const rs_device*)dev, NULL);
+            const uint16_t * image = (const uint16_t *)rs_get_frame_data((const rs_device*)dev, RS_STREAM_DEPTH, NULL);
+
+            for (int x =  perTextureHeight / 2;
+                    x < perTextureWidth + perTextureHeight / 2; x++){
+                float depth_in_meters = scale * image[x];
+             
+                if(depth_in_meters > 0){
+                    std::printf("%.6f \n ", depth_in_meters);
+                    std::printf("%d \n \n \n", x);
+                
+                    glBegin(GL_POINTS);
+                    glVertex3f(x % perTextureWidth, perTextureHeight / 2, 0);
+                    glEnd( );
+                    
+                }
+            }
+            int draw_y = 0;
+            for (int _y = perTextureWidth / 2; _y < ((perTextureHeight + perTextureHeight) * perTextureWidth / 2) ; _y += perTextureWidth){
+                float depth_in_meters = scale * image[_y];
+                if(depth_in_meters > 0){
+                    std::printf("%.6f \n ", depth_in_meters);
+                    std::printf("%d \n \n \n", _y);
+                
+                    glBegin(GL_POINTS);
+                    glVertex3f(perTextureWidth / 2, draw_y, 0);
+                    glEnd( );
+                }
+                draw_y++;
+            }
         }
 
         glPopMatrix();
