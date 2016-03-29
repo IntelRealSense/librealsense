@@ -23,7 +23,7 @@ wget http://kernel.ubuntu.com/~kernel-ppa/mainline/$LINUX_BRANCH/`grep 'linux-he
 sudo dpkg -i linux-headers-*.deb
 
 RAW_TAG=`echo $THE_BRANCH | cut -c 2-`
-CONFIG_LOCATION=/usr/src/linux-headers-$(uname -r)
+CONFIG_LOCATION=/usr/src/linux-headers-$RAW_TAG*-generic/
 
 # Now can get symvers from /usr/src/....
 
@@ -45,6 +45,10 @@ patch -p1 < $PATCH_C
 
 # Apply our RealSense specific patch
 patch -p1 < ../scripts/realsense-camera-formats.patch
+
+# Prepare to compile modules
+cp $CONFIG_LOCATION/.config .
+cp $CONFIG_LOCATION/Module.symvers .
 
 make scripts oldconfig modules_prepare
 
