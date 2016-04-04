@@ -87,7 +87,7 @@ namespace rsimpl
 
         void activate() { if(!active) { struct_ = reader(); active = true; } }
         template<class U> double get(U T::* field) { activate(); return struct_.*field; }
-        template<class U> void set(U T::* field, double value) { activate(); struct_.*field = static_cast<U>(value); }
+        template<class U, class V> void set(U T::* field, V value) { activate(); struct_.*field = static_cast<U>(value); }
         void commit() { if(active) writer(struct_); }
     };
 

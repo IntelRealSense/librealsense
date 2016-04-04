@@ -24,6 +24,7 @@ namespace rsimpl
         f200::IVCAMTemperatureData base_temperature_data;
         f200::IVCAMThermalLoopParams thermal_loop_params;
         f200::IVCAMAutoRangeRequest arr;
+        sr300::wakeup_dev_params arr_wakeup_dev_param;
 
         float last_temperature_delta;
 

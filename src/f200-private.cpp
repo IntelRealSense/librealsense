@@ -917,4 +917,61 @@ namespace rsimpl { namespace f200
         set_asic_coefficients(device, mutex, coeffs);    
     }    
 
-} } // namespace rsimpl::f200
+}
+    namespace sr300
+    {
+        void set_wakeup_device(uvc::device & device, std::timed_mutex & mutex, const uint32_t& phase1Period, const uint32_t& phase1FPS, const uint32_t& phase2Period, const uint32_t& phase2FPS)
+        {
+            f200::IVCAMCommand cmd(f200::IVCAMMonitorCommand::OnSuspendResume);
+
+            sr300::wakeup_dev_params params = { phase1Period, static_cast<sr300::e_suspend_fps>(phase1FPS), phase2Period, static_cast<sr300::e_suspend_fps>(phase2FPS) };
+            if (!params.isValid())
+                throw std::logic_error("missing/invalid wake_up command parameters");
+            cmd.Param1 = 1;                                                                 // TODO Specification could not be found in IVCAM
+            auto trg = reinterpret_cast<sr300::wakeup_dev_params*>(cmd.data);
+            *trg = params;
+            cmd.sizeOfSendCommandData = sizeof(sr300::wakeup_dev_params);
+
+            perform_and_send_monitor_command(device, mutex, cmd);
+        }
+
+        void reset_wakeup_device(uvc::device & device, std::timed_mutex & mutex)
+        {
+            f200::IVCAMCommand cmd(f200::IVCAMMonitorCommand::OnSuspendResume);
+
+            perform_and_send_monitor_command(device, mutex, cmd);
+        }
+
+        void get_wakeup_reason(uvc::device & device, std::timed_mutex & mutex, unsigned char &cReason)
+        {
+            f200::IVCAMCommand cmdWUReason(f200::IVCAMMonitorCommand::GetWakeReason);
+
+            perform_and_send_monitor_command(device, mutex, cmdWUReason);
+
+            if (cmdWUReason.receivedCommandDataLength >= 4)     // TODO - better guard condition ?
+            {
+                unsigned char rslt = (*reinterpret_cast<int32_t *>(cmdWUReason.receivedCommandData)) && (0xFF);
+                if (rslt >= (uint8_t)wakeonusb_reason::eMaxWakeOnReason)
+                    throw std::logic_error("undefined wakeonusb_reason provided");
+                cReason = rslt;
+            }
+            else
+                throw std::runtime_error("no valid wakeonusb_reason provided");
+        }
+
+        void get_wakeup_confidence(uvc::device & device, std::timed_mutex & mutex, unsigned char &cConfidence)
+        {
+            f200::IVCAMCommand cmdCnfd(f200::IVCAMMonitorCommand::GetWakeConfidence);
+            perform_and_send_monitor_command(device, mutex, cmdCnfd);
+
+            if (cmdCnfd.receivedCommandDataLength >= 4)
+            {
+                int32_t rslt = *reinterpret_cast<int32_t *>(cmdCnfd.receivedCommandData);
+                cConfidence = (unsigned char)(rslt & 0xFF);
+            }
+            else
+                throw std::runtime_error("no valid wakeonusb_confidence provided");
+        }
+
+    } // namespace rsimpl::sr300
+} // namespace rsimpl

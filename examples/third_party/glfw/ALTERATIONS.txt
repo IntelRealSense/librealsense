@@ -1,0 +1,6 @@
+In compliance with restriction 2 specified in COPYING.txt, this file
+indicates that this distribution has been modified. It is based on
+GLFW 3.1.2, available from http://www.glfw.org/. It has had glfw_config.h
+pre-generated and Visual Studio projects have been generated. This is to
+make it easier to use GLFW3 on Windows, where robust package management
+facilities are not broadly available.

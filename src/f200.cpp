@@ -199,8 +199,15 @@ namespace rsimpl
             {RS_OPTION_SR300_AUTO_RANGE_MIN_LASER,                  (double)SHRT_MIN, (double)SHRT_MAX,  1.0}, 
             {RS_OPTION_SR300_AUTO_RANGE_MAX_LASER,                  (double)SHRT_MIN, (double)SHRT_MAX,  1.0}, 
             {RS_OPTION_SR300_AUTO_RANGE_START_LASER,                (double)SHRT_MIN, (double)SHRT_MAX,  1.0}, 
-            {RS_OPTION_SR300_AUTO_RANGE_UPPER_THRESHOLD,            0.0,        (double)USHRT_MAX, 1.0},
-            {RS_OPTION_SR300_AUTO_RANGE_LOWER_THRESHOLD,            0.0,        (double)USHRT_MAX, 1.0},
+            {RS_OPTION_SR300_AUTO_RANGE_UPPER_THRESHOLD,            0.0,        (double)USHRT_MAX,       1.0},
+            {RS_OPTION_SR300_AUTO_RANGE_LOWER_THRESHOLD,            0.0,        (double)USHRT_MAX,       1.0},
+            {RS_OPTION_SR300_WAKEUP_DEV_PHASE1_PERIOD,              0.0,        (double)USHRT_MAX,       1.0 },
+            {RS_OPTION_SR300_WAKEUP_DEV_PHASE1_FPS,                 0.0,        ((double)sr300::e_suspend_fps::eFPS_MAX) - 1,   1.0 },
+            {RS_OPTION_SR300_WAKEUP_DEV_PHASE2_PERIOD,              0.0,        (double)USHRT_MAX,                  1.0 },
+            {RS_OPTION_SR300_WAKEUP_DEV_PHASE2_FPS,                 0.0,        ((double)sr300::e_suspend_fps::eFPS_MAX) - 1,   1.0 },
+            {RS_OPTION_SR300_WAKEUP_DEV_RESET,                      0.0,        0.0,    1.0 },
+            {RS_OPTION_SR300_WAKE_ON_USB_REASON,                    0.0,        (double)sr300::wakeonusb_reason::eMaxWakeOnReason, 1.0 },
+            {RS_OPTION_SR300_WAKE_ON_USB_CONFIDENCE,                0.0,        100.,   1.0 }  // Percentage
         };
 
         rsimpl::pose depth_to_color = {transpose((const float3x3 &)c.Rt), (const float3 &)c.Tt * 0.001f}; // convert mm to m
@@ -304,7 +311,7 @@ namespace rsimpl
         }
 
         // Prefer to sync on depth or infrared, but select the stream running at the fastest framerate
-        for(auto s : {RS_STREAM_DEPTH, RS_STREAM_INFRARED2, RS_STREAM_COLOR})
+        for (auto s : { RS_STREAM_DEPTH, RS_STREAM_INFRARED2, RS_STREAM_INFRARED, RS_STREAM_COLOR })
         {
             if(fps[s] == max_fps) return s;
         }
@@ -381,6 +388,11 @@ namespace rsimpl
             arr = r;
         });
 
+        auto arr_wakeup_dev_writer = make_struct_interface<sr300::wakeup_dev_params>([this]() { return arr_wakeup_dev_param; }, [this](sr300::wakeup_dev_params param) {
+            sr300::set_wakeup_device(get_device(), usbMutex, param.phase1Period, (uint32_t)param.phase1FPS, param.phase2Period, (uint32_t)param.phase2FPS);
+            arr_wakeup_dev_param = param;
+        });
+
         for(int i=0; i<count; ++i)
         {
             if(uvc::is_pu_control(options[i]))
@@ -398,6 +410,8 @@ namespace rsimpl
             case RS_OPTION_F200_CONFIDENCE_THRESHOLD: f200::set_confidence_threshold(get_device(), static_cast<uint8_t>(values[i])); break;
             case RS_OPTION_SR300_DYNAMIC_FPS:         f200::set_dynamic_fps(get_device(), static_cast<uint8_t>(values[i])); break; // IVCAM 1.5 Only
 
+            case RS_OPTION_SR300_WAKEUP_DEV_RESET:    sr300::reset_wakeup_device(get_device(), usbMutex); break;
+
             case RS_OPTION_SR300_AUTO_RANGE_ENABLE_MOTION_VERSUS_RANGE: arr_writer.set(&f200::IVCAMAutoRangeRequest::enableMvR, values[i]); break; 
             case RS_OPTION_SR300_AUTO_RANGE_ENABLE_LASER:               arr_writer.set(&f200::IVCAMAutoRangeRequest::enableLaser, values[i]); break;
             case RS_OPTION_SR300_AUTO_RANGE_MIN_MOTION_VERSUS_RANGE:    arr_writer.set(&f200::IVCAMAutoRangeRequest::minMvR, values[i]); break;
@@ -408,12 +422,18 @@ namespace rsimpl
             case RS_OPTION_SR300_AUTO_RANGE_START_LASER:                arr_writer.set(&f200::IVCAMAutoRangeRequest::startLaser, values[i]); break;
             case RS_OPTION_SR300_AUTO_RANGE_UPPER_THRESHOLD:            arr_writer.set(&f200::IVCAMAutoRangeRequest::ARUpperTh, values[i]); break;
             case RS_OPTION_SR300_AUTO_RANGE_LOWER_THRESHOLD:            arr_writer.set(&f200::IVCAMAutoRangeRequest::ARLowerTh, values[i]); break;
+    
+            case RS_OPTION_SR300_WAKEUP_DEV_PHASE1_PERIOD:              arr_wakeup_dev_writer.set(&sr300::wakeup_dev_params::phase1Period, values[i]); break;
+            case RS_OPTION_SR300_WAKEUP_DEV_PHASE1_FPS:                 arr_wakeup_dev_writer.set(&sr300::wakeup_dev_params::phase1FPS, (int)values[i]); break;
+            case RS_OPTION_SR300_WAKEUP_DEV_PHASE2_PERIOD:              arr_wakeup_dev_writer.set(&sr300::wakeup_dev_params::phase2Period, values[i]); break;
+            case RS_OPTION_SR300_WAKEUP_DEV_PHASE2_FPS:                 arr_wakeup_dev_writer.set(&sr300::wakeup_dev_params::phase2FPS, (int)values[i]); break;
 
             default: LOG_WARNING("Cannot set " << options[i] << " to " << values[i] << " on " << get_name()); break;
             }
         }
 
         arr_writer.commit();
+        arr_wakeup_dev_writer.commit();
     }
 
     void f200_camera::get_options(const rs_option options[], int count, double values[])
@@ -450,6 +470,9 @@ namespace rsimpl
             case RS_OPTION_SR300_AUTO_RANGE_START_LASER:                values[i] = arr_reader.get(&f200::IVCAMAutoRangeRequest::startLaser); break;
             case RS_OPTION_SR300_AUTO_RANGE_UPPER_THRESHOLD:            values[i] = arr_reader.get(&f200::IVCAMAutoRangeRequest::ARUpperTh); break;
             case RS_OPTION_SR300_AUTO_RANGE_LOWER_THRESHOLD:            values[i] = arr_reader.get(&f200::IVCAMAutoRangeRequest::ARLowerTh); break;
+
+            case RS_OPTION_SR300_WAKE_ON_USB_REASON:        sr300::get_wakeup_reason(get_device(), usbMutex, val); values[i] = val; break;
+            case RS_OPTION_SR300_WAKE_ON_USB_CONFIDENCE:    sr300::get_wakeup_confidence(get_device(), usbMutex, val); values[i] = val; break;
 
             default: LOG_WARNING("Cannot get " << options[i] << " on " << get_name()); break;
             }
@@ -506,4 +529,3 @@ namespace rsimpl
     }
 
 } // namespace rsimpl::f200
-
