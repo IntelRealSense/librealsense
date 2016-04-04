@@ -13,6 +13,7 @@ Installation of cameras on Linux is lengthy compared to other supported platform
 
 1. Ensure apt-get is up to date
   * `sudo apt-get update && sudo apt-get upgrade`
+  * **Note:** Use `sudo apt-get dist-upgrade`, instead of `sudo apt-get upgrade`, in case you have an older Ubuntu 14.04 version (with deprecated `nvidia-331*` packages installed), as this prevents the linux 4.4* kernel to compile properly.
 2. Install libusb-1.0 via apt-get
   * `sudo apt-get install libusb-1.0-0-dev`
 3. glfw3 is not available in apt-get on Ubuntu 14.04. Use included installer script:
