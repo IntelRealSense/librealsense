@@ -76,11 +76,16 @@ public:
 
         switch(format)
         {
+        case rs::format::any:
+	    throw std::runtime_error("not a valid format");
         case rs::format::z16:
         case rs::format::disparity16:
             rgb.resize(width * height * 3);
             make_depth_histogram(rgb.data(), reinterpret_cast<const uint16_t *>(data), width, height);
             glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, rgb.data());
+            break;
+        case rs::format::xyz32f:
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_FLOAT, data);
             break;
         case rs::format::yuyv: // Display YUYV by showing the luminance channel and packing chrominance into ignored alpha channel
             glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_LUMINANCE_ALPHA, GL_UNSIGNED_BYTE, data); 
