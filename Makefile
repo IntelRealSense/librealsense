@@ -9,7 +9,8 @@ ifeq ($(uname_S),Darwin)
 BACKEND := LIBUVC
 endif
 
-LIBUSB_FLAGS := `pkg-config --cflags --libs libusb-1.0`
+LIBUSB_FLAGS := `pkg-config --cflags libusb-1.0`
+LIBUSB_LDFLAGS := `pkg-config --libs libusb-1.0`
 
 CFLAGS := -std=c11 -fPIC -pedantic -DRS_USE_$(BACKEND)_BACKEND $(LIBUSB_FLAGS) 
 CXXFLAGS := -std=c++11 -fPIC -pedantic -mssse3 -O3 -Wno-missing-field-initializers
@@ -73,7 +74,7 @@ bin/cpp-%: examples/cpp-%.cpp library
 
 # Rules for building the library itself
 lib/librealsense.so: prepare $(OBJECTS)
-	$(CXX) -std=c++11 -shared $(OBJECTS) $(LIBUSB_FLAGS) -o $@
+	$(CXX) -std=c++11 -shared $(OBJECTS) $(LIBUSB_LDFLAGS) -o $@
 
 lib/librealsense.a: prepare $(OBJECTS)
 	ar rvs $@ `find obj/ -name "*.o"`
