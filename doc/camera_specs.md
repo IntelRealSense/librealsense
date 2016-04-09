@@ -4,7 +4,7 @@
 ---- | ---- | ---- | ----- |
 Indoor Range |  0.7m - 3.5m | 0.2m – 1.0m | 0.2m – 1.5m
 Outdoor Range | 10m | N/A | N/A 
-Depth FoV (DxWxH) | 70x59x46 | 80x68x54 | 80x68x54
+Depth FoV (WxH) | 56°x43° | 68°x54° | 68°x54°
 Depth FPS | 30, 60, 90 | 30, 60 | 30, 60 
 IR FPS | 30, 60, 90 | 5 - 300 | 5 - 200 
 Depth Method | Active Stereo IR | Coded Light IR | Coded Light IR
