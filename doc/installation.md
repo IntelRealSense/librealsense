@@ -80,8 +80,8 @@ The libuvc backend has known incompatibilities with some versions of SR300 and R
 
 1. Install XCode 6.0+ via the AppStore
 2. Install the Homebrew package manager via terminal - [link](http://brew.sh/)
-3. Install libusb via brew:
-  * `brew install libusb`
+3. Install pkg-config and libusb via brew:
+  * `brew install libusb pkg-config`
 4. Install glfw3 via brew:
   * `brew install homebrew/versions/glfw3`
 
