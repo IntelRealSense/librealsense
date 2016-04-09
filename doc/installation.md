@@ -87,8 +87,6 @@ The libuvc backend has known incompatibilities with some versions of SR300 and R
 
 ---
 
-# Windows 8.1 Installation
+# Windows 8.1 & Windows 10 Installation
 
-librealsense should compile out of the box with Visual Studio 2013 Release 5. Particular C++11 features are known to be incompatible with earlier VS2013 releases due to internal compiler errors. GLFW is provided in the solution as a NuGet package.
-
-librealsense has not been tested with Visual Studio Community Edition.
+librealsense should compile out of the box with Visual Studio 2013 Release 5, both Professional and Community editions. Particular C++11 features are known to be incompatible with earlier VS2013 releases due to internal compiler errors. 
