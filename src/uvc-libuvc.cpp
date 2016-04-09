@@ -63,7 +63,7 @@ namespace rsimpl
                 }
 
                 for(auto & sub : subdevices) if(sub.handle) uvc_close(sub.handle);
-                if(uvcdevice) uvc_unref_device(uvcdevice);
+                if(claimed_interfaces.size()) if(uvcdevice) uvc_unref_device(uvcdevice);
             }
 
             subdevice & get_subdevice(int subdevice_index)
