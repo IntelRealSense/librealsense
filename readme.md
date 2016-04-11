@@ -87,6 +87,7 @@ Developer kits **require** USB 3.0. RealSense™ cameras do not provide backward
 
 For small-form factor usages, librealsense has been demonstrated to work on the following boards:
   * [Intel Compute Stick, BOXSTK1AW32SCR](http://www.amazon.com/Intel-Compute-BOXSTK1AW32SCR-Windows-32-bit/dp/B01ASB0DJ8)
+  * [MinnowBoard Max] (http://minnowboard.org)
   * [Kangaroo MD2B](http://www.amazon.com/Kangaroo-MD2B-Mobile-Desktop-Computer/dp/B017J20D8U)
   * [UP Board](http://www.up-board.org/kickstarter/up-intel-realsense-technology/)
 
