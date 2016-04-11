@@ -331,15 +331,6 @@ namespace rsimpl
 
     template<class GET_DEPTH, class TRANSFER_PIXEL> void align_images(const rs_intrinsics & depth_intrin, const rs_extrinsics & depth_to_other, const rs_intrinsics & other_intrin, GET_DEPTH get_depth, TRANSFER_PIXEL transfer_pixel)
     {
-        // check if the target image is significantly larger than the source image
-        int filter_half_x = std::round(0.5 * (float)other_intrin.width  / (float)depth_intrin.width );
-        int filter_half_y = std::round(0.5 * (float)other_intrin.height / (float)depth_intrin.height);
-
-        if (other_intrin.width  == depth_intrin.width ) filter_half_x = 0;
-        if (other_intrin.height == depth_intrin.height) filter_half_y = 0;
-
-        //printf("upscale filter size: %dx%d\n",filter_half_x*2+1,filter_half_y*2+1);
-
         // Iterate over the pixels of the depth image    
         for(int depth_y = 0, depth_pixel_index = 0; depth_y < depth_intrin.height; ++depth_y)
         {
@@ -348,30 +339,24 @@ namespace rsimpl
                 // Skip over depth pixels with the value of zero, we have no depth data so we will not write anything into our aligned images
                 if(float depth = get_depth(depth_pixel_index))
                 {
-                    // Determine the corresponding pixel location in our other image
-                    float depth_pixel[2] = {(float)depth_x, (float)depth_y}, depth_point[3], other_point[3], other_pixel[2];
+                    // Map the top-left corner of the depth pixel onto the other image
+                    float depth_pixel[2] = {depth_x-0.5f, depth_y-0.5f}, depth_point[3], other_point[3], other_pixel[2];
                     rs_deproject_pixel_to_point(depth_point, &depth_intrin, depth_pixel, depth);
                     rs_transform_point_to_point(other_point, &depth_to_other, depth_point);
                     rs_project_point_to_pixel(other_pixel, &other_intrin, other_point);
-                
-                    // If the location is outside the bounds of the image, skip to the next pixel
-                    const int other_x = (int)std::round(other_pixel[0]), other_y = (int)std::round(other_pixel[1]);
-                    if(other_x < filter_half_x || other_y < filter_half_y || other_x >= other_intrin.width-filter_half_x || other_y >= other_intrin.height-filter_half_y)
-                    {
-                        continue;
-                    }
+                    const int other_x0 = std::round(other_pixel[0]), other_y0 = std::round(other_pixel[1]);
 
-                    // Transfer data from original images into corresponding aligned images
-                    int index = (other_y-filter_half_y) * other_intrin.width + other_x-filter_half_x;
+                    // Map the bottom-right corner of the depth pixel onto the other image
+                    depth_pixel[0] = depth_x+0.5f; depth_pixel[1] = depth_y+0.5f;
+                    rs_deproject_pixel_to_point(depth_point, &depth_intrin, depth_pixel, depth);
+                    rs_transform_point_to_point(other_point, &depth_to_other, depth_point);
+                    rs_project_point_to_pixel(other_pixel, &other_intrin, other_point);
+                    const int other_x1 = std::round(other_pixel[0]), other_y1 = std::round(other_pixel[1]);
 
-                    // creates rectangular patch of size filter_width_{x,y}*2+1 around other_{x,y}
-                    for (int ty = -filter_half_y; ty <= filter_half_y; ty++) {
-                        for (int tx = -filter_half_x; tx <= filter_half_x; tx++) {
-                            transfer_pixel(depth_pixel_index, index);
-                            index += 1;
-                        }
-                        index += other_intrin.width - (2*filter_half_x+1);
-                   }
+                    if(other_x0 < 0 || other_y0 < 0 || other_x1 >= other_intrin.width || other_y1 >= other_intrin.height) continue;
+
+                    // Transfer between the depth pixels and the pixels inside the rectangle on the other image
+                    for(int y=other_y0; y<=other_y1; ++y) for(int x=other_x0; x<=other_x1; ++x) transfer_pixel(depth_pixel_index, y * other_intrin.width + x);
                 }
             }
         }    
