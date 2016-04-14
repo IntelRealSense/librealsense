@@ -19,9 +19,11 @@ rs_context::rs_context() : rs_context(0)
 				
         switch(get_product_id(*device))
         {
-        case 2688: devices.push_back(rsimpl::make_r200_device(device)); break;
-        case 2662: devices.push_back(rsimpl::make_f200_device(device)); break;
-        case 2725: devices.push_back(rsimpl::make_sr300_device(device)); break;
+            case R200_PRODUCT_ID: devices.push_back(rsimpl::make_r200_device(device)); break;
+            case LR200_PRODUCT_ID: devices.push_back(rsimpl::make_lr200_device(device)); break;
+            case ZR300_PRODUCT_ID: devices.push_back(rsimpl::make_zlr300_device(device)); break;
+            case F200_PRODUCT_ID: devices.push_back(rsimpl::make_f200_device(device)); break;
+            case SR300_PRODUCT_ID: devices.push_back(rsimpl::make_sr300_device(device)); break;
         }
     }
 }

@@ -8,7 +8,12 @@
 extern "C" {
 #endif
 
-#define RS_API_VERSION 4
+#define RS_API_VERSION   4
+#define R200_PRODUCT_ID  2688
+#define LR200_PRODUCT_ID 2751
+#define ZR300_PRODUCT_ID 2763
+#define F200_PRODUCT_ID  2662
+#define SR300_PRODUCT_ID 2725
 
 typedef enum rs_stream
 {
@@ -41,7 +46,8 @@ typedef enum rs_format
     RS_FORMAT_Y8          = 9,  
     RS_FORMAT_Y16         = 10, 
     RS_FORMAT_RAW10       = 11, /**< Four 10-bit luminance values encoded into a 5-byte macropixel */
-    RS_FORMAT_COUNT       = 12, 
+    RS_FORMAT_RAW16       = 12,
+    RS_FORMAT_COUNT       = 13,
     RS_FORMAT_MAX_ENUM = 0x7FFFFFFF
 } rs_format;
 
@@ -144,7 +150,11 @@ typedef enum rs_option
     RS_OPTION_R200_DEPTH_CONTROL_SECOND_PEAK_THRESHOLD        = 60, 
     RS_OPTION_R200_DEPTH_CONTROL_NEIGHBOR_THRESHOLD           = 61, 
     RS_OPTION_R200_DEPTH_CONTROL_LR_THRESHOLD                 = 62, 
-    RS_OPTION_COUNT                                           = 63, 
+    RS_OPTION_R200_CONTROL_COMMAND_RESPONSE                   = 56,
+    RS_OPTION_R200_CONTROL_STATUS                             = 57,
+    RS_OPTION_R200_CONTROL_SW_RESET                           = 58,
+    RS_OPTION_R200_CONTROL_REC_PARAMETERS                     = 59,
+    RS_OPTION_COUNT                                           = 60,
     RS_OPTION_MAX_ENUM = 0x7FFFFFFF
 } rs_option;
 

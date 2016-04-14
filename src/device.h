@@ -45,7 +45,7 @@ public:
 
     const rsimpl::stream_interface &            get_stream_interface(rs_stream stream) const { return *streams[stream]; }
 
-    const char *                                get_name() const { return config.info.name.c_str(); }
+    const char *                                get_name() const { return config.info.name.c_str(); }    
     const char *                                get_serial() const { return config.info.serial.c_str(); }
     const char *                                get_firmware_version() const { return config.info.firmware_version.c_str(); }
     float                                       get_depth_scale() const { return config.depth_scale; }

@@ -29,7 +29,9 @@ namespace rsimpl
         std::shared_ptr<frame_timestamp_reader> create_frame_timestamp_reader() const override;
     };
 
+    std::shared_ptr<rs_device> make_zlr300_device(std::shared_ptr<uvc::device> device);
     std::shared_ptr<rs_device> make_r200_device(std::shared_ptr<uvc::device> device);
+    std::shared_ptr<rs_device> make_lr200_device(std::shared_ptr<uvc::device> device);
 }
 
 #endif

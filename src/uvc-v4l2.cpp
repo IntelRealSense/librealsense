@@ -443,14 +443,14 @@ namespace rsimpl
             case RS_OPTION_COLOR_BACKLIGHT_COMPENSATION: return V4L2_CID_BACKLIGHT_COMPENSATION;
             case RS_OPTION_COLOR_BRIGHTNESS: return V4L2_CID_BRIGHTNESS;
             case RS_OPTION_COLOR_CONTRAST: return V4L2_CID_CONTRAST;
-            case RS_OPTION_COLOR_EXPOSURE: return V4L2_CID_EXPOSURE; // Is this actually valid? I'm getting a lot of VIDIOC error 22s...
+            case RS_OPTION_COLOR_EXPOSURE: return V4L2_CID_EXPOSURE_ABSOLUTE; // Is this actually valid? I'm getting a lot of VIDIOC error 22s...
             case RS_OPTION_COLOR_GAIN: return V4L2_CID_GAIN;
             case RS_OPTION_COLOR_GAMMA: return V4L2_CID_GAMMA;
             case RS_OPTION_COLOR_HUE: return V4L2_CID_HUE;
             case RS_OPTION_COLOR_SATURATION: return V4L2_CID_SATURATION;
             case RS_OPTION_COLOR_SHARPNESS: return V4L2_CID_SHARPNESS;
             case RS_OPTION_COLOR_WHITE_BALANCE: return V4L2_CID_WHITE_BALANCE_TEMPERATURE;
-            case RS_OPTION_COLOR_ENABLE_AUTO_EXPOSURE: return V4L2_CID_AUTOGAIN; // Automatic gain/exposure control
+            case RS_OPTION_COLOR_ENABLE_AUTO_EXPOSURE: return V4L2_CID_EXPOSURE_AUTO; // Automatic gain/exposure control
             case RS_OPTION_COLOR_ENABLE_AUTO_WHITE_BALANCE: return V4L2_CID_AUTO_WHITE_BALANCE;
             default: throw std::runtime_error(to_string() << "no v4l2 cid for option " << option);
             }
