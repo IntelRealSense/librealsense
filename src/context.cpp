@@ -6,6 +6,12 @@
 #include "r200.h"
 #include "f200.h"
 
+#define R200_PRODUCT_ID  2688
+#define LR200_PRODUCT_ID 2751
+#define ZR300_PRODUCT_ID 2763
+#define F200_PRODUCT_ID  2662
+#define SR300_PRODUCT_ID 2725
+
 rs_context::rs_context() : rs_context(0)
 {
     context = rsimpl::uvc::create_context();
@@ -14,16 +20,16 @@ rs_context::rs_context() : rs_context(0)
     {
         LOG_INFO("UVC device detected with VID = 0x" << std::hex << get_vendor_id(*device) << " PID = 0x" << get_product_id(*device));
 
-		if (get_vendor_id(*device) != rs_intel_vid)
+        if (get_vendor_id(*device) != 32902)
 			continue;
 				
         switch(get_product_id(*device))
         {
-            case pid_r200: devices.push_back(rsimpl::make_r200_device(device)); break;
-            case pid_lr200: devices.push_back(rsimpl::make_lr200_device(device)); break;
-            case pid_zr_300: devices.push_back(rsimpl::make_zr300_device(device)); break;
-            case pid_f200: devices.push_back(rsimpl::make_f200_device(device)); break;
-            case pid_sr300: devices.push_back(rsimpl::make_sr300_device(device)); break;
+        case R200_PRODUCT_ID: devices.push_back(rsimpl::make_r200_device(device)); break;
+        case LR200_PRODUCT_ID: devices.push_back(rsimpl::make_lr200_device(device)); break;
+        case ZR300_PRODUCT_ID: devices.push_back(rsimpl::make_zr300_device(device)); break;
+        case F200_PRODUCT_ID: devices.push_back(rsimpl::make_f200_device(device)); break;
+        case SR300_PRODUCT_ID: devices.push_back(rsimpl::make_sr300_device(device)); break;
         }
     }
 }
