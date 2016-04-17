@@ -351,7 +351,7 @@ TEST_CASE( "rs_option_to_string() produces correct output", "[offline] [validati
     REQUIRE(rs_option_to_string(RS_OPTION_F200_MOTION_RANGE) == std::string("F200_MOTION_RANGE")); 
     REQUIRE(rs_option_to_string(RS_OPTION_F200_FILTER_OPTION) == std::string("F200_FILTER_OPTION")); 
     REQUIRE(rs_option_to_string(RS_OPTION_F200_CONFIDENCE_THRESHOLD) == std::string("F200_CONFIDENCE_THRESHOLD")); 
-    REQUIRE(rs_option_to_string(RS_OPTION_SR300_DYNAMIC_FPS) == std::string("SR300_DYNAMIC_FPS")); 
+    REQUIRE(rs_option_to_string(RS_OPTION_F200_DYNAMIC_FPS) == std::string("F200_DYNAMIC_FPS")); 
     
     REQUIRE(rs_option_to_string(RS_OPTION_R200_LR_AUTO_EXPOSURE_ENABLED) == std::string("R200_LR_AUTO_EXPOSURE_ENABLED")); 
     REQUIRE(rs_option_to_string(RS_OPTION_R200_LR_GAIN) == std::string("R200_LR_GAIN")); 

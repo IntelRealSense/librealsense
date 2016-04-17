@@ -20,7 +20,7 @@ namespace rsimpl
         ~r200_camera();
 
         bool supports_option(rs_option option) const override;
-        void get_option_range(rs_option option, double & min, double & max, double & step) override;
+        void get_option_range(rs_option option, double & min, double & max, double & step, double & def) override;
         void set_options(const rs_option options[], int count, const double values[]) override;
         void get_options(const rs_option options[], int count, double values[]) override;
 
@@ -29,7 +29,9 @@ namespace rsimpl
         std::shared_ptr<frame_timestamp_reader> create_frame_timestamp_reader() const override;
     };
 
+    std::shared_ptr<rs_device> make_zr300_device(std::shared_ptr<uvc::device> device);
     std::shared_ptr<rs_device> make_r200_device(std::shared_ptr<uvc::device> device);
+    std::shared_ptr<rs_device> make_lr200_device(std::shared_ptr<uvc::device> device);
 }
 
 #endif

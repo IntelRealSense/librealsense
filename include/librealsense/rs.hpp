@@ -41,7 +41,8 @@ namespace rs
         bgra8       = 8,  
         y8          = 9,  
         y16         = 10, 
-        raw10       = 11  ///< Four 10-bit luminance values encoded into a 5-byte macropixel
+        raw10       = 11, ///< Four 10-bit luminance values encoded into a 5-byte macropixel
+        raw16 = 12  ///< Four 10-bit luminance filled in 16 bit pixel (6 bit unused)
     };
 
     enum class preset : int32_t
@@ -77,7 +78,7 @@ namespace rs
         f200_motion_range                               = 14, ///< 0 - 100
         f200_filter_option                              = 15, ///< 0 - 7
         f200_confidence_threshold                       = 16, ///< 0 - 15
-        sr300_dynamic_fps                               = 17, ///< {2, 5, 15, 30, 60}
+        f200_dynamic_fps                                = 17, ///< {2, 5, 15, 30, 60}
         sr300_auto_range_enable_motion_versus_range     = 18, 
         sr300_auto_range_enable_laser                   = 19, 
         sr300_auto_range_min_motion_versus_range        = 20, 
@@ -436,10 +437,10 @@ namespace rs
         /// \param[out] min    the minimum value which will be accepted for this option
         /// \param[out] max    the maximum value which will be accepted for this option
         /// \param[out] step   the granularity of options which accept discrete values, or zero if the option accepts continuous values
-        void get_option_range(option option, double & min, double & max, double & step)
+        void get_option_range(option option, double & min, double & max, double & step, double & def)
         {
             rs_error * e = nullptr;
-            rs_get_device_option_range((rs_device *)this, (rs_option)option, &min, &max, &step, &e);
+            rs_get_device_option_range((rs_device *)this, (rs_option)option, &min, &max, &step, &def, &e);
             error::handle(e);
         }
 
@@ -560,6 +561,6 @@ namespace rs
 
     // Additional utilities
     void apply_depth_control_preset(device * device, int preset) { rs_apply_depth_control_preset((rs_device *)device, preset); }
-    void apply_ivcam_preset(device * device, int preset) { rs_apply_ivcam_preset((rs_device *)device, preset); }
+    void apply_ivcam_preset(device * device, rs_ivcam_preset preset) { rs_apply_ivcam_preset((rs_device *)device, preset); }
 }
 #endif
