@@ -8,7 +8,7 @@
 extern "C" {
 #endif
 
-#define RS_API_VERSION   4
+#define RS_API_VERSION 4
 
 
 typedef enum rs_stream
@@ -146,11 +146,7 @@ typedef enum rs_option
     RS_OPTION_R200_DEPTH_CONTROL_SECOND_PEAK_THRESHOLD        = 60, 
     RS_OPTION_R200_DEPTH_CONTROL_NEIGHBOR_THRESHOLD           = 61, 
     RS_OPTION_R200_DEPTH_CONTROL_LR_THRESHOLD                 = 62, 
-    RS_OPTION_R200_CONTROL_COMMAND_RESPONSE                   = 63,
-    RS_OPTION_R200_CONTROL_STATUS                             = 64,
-    RS_OPTION_R200_CONTROL_SW_RESET                           = 65,
-    RS_OPTION_R200_CONTROL_REC_PARAMETERS                     = 66,
-    RS_OPTION_COUNT                                           = 67,
+    RS_OPTION_COUNT                                           = 63,
     RS_OPTION_MAX_ENUM = 0x7FFFFFFF
 } rs_option;
 

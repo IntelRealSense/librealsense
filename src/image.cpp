@@ -276,7 +276,7 @@ namespace rsimpl
     //////////////////////////
 
     const native_pixel_format pf_rw10       = {'RW10', 1, 1, {{&copy_pixels<1>,                 {{RS_STREAM_COLOR,    RS_FORMAT_RAW10}}}}};
-    const native_pixel_format pf_rw16 = { 'RW16', 1, 2, { { &copy_pixels<2>, { { RS_STREAM_COLOR, RS_FORMAT_RAW16 } } } } };
+    const native_pixel_format pf_rw16       = {'RW16', 1, 2, {{&copy_pixels<2>,                 {{RS_STREAM_COLOR,    RS_FORMAT_RAW16}}}}};
     const native_pixel_format pf_yuy2       = {'YUY2', 1, 2, {{&copy_pixels<2>,                 {{RS_STREAM_COLOR,    RS_FORMAT_YUYV }}},
                                                               {&unpack_yuy2<RS_FORMAT_RGB8 >,   {{RS_STREAM_COLOR,    RS_FORMAT_RGB8 }}},
                                                               {&unpack_yuy2<RS_FORMAT_RGBA8>,   {{RS_STREAM_COLOR,    RS_FORMAT_RGBA8}}},

@@ -41,7 +41,7 @@ namespace rs
         bgra8       = 8,  
         y8          = 9,  
         y16         = 10, 
-        raw10       = 11,  ///< Four 10-bit luminance values encoded into a 5-byte macropixel
+        raw10       = 11, ///< Four 10-bit luminance values encoded into a 5-byte macropixel
         raw16 = 12  ///< Four 10-bit luminance filled in 16 bit pixel (6 bit unused)
     };
 
@@ -123,11 +123,7 @@ namespace rs
         r200_depth_control_texture_difference_threshold = 59, 
         r200_depth_control_second_peak_threshold        = 60, 
         r200_depth_control_neighbor_threshold           = 61, 
-        r200_depth_control_lr_threshold                 = 62,
-        r200_control_command_response                   = 63,
-        r200_control_status                             = 64,
-        r200_control_sw_reset                           = 65,
-        r200_control_recparameters                      = 66
+        r200_depth_control_lr_threshold                 = 62
     };
 
     struct float2 { float x,y; };
