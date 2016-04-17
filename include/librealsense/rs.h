@@ -9,11 +9,11 @@ extern "C" {
 #endif
 
 #define RS_API_VERSION   4
-#define R200_PRODUCT_ID  2688
-#define LR200_PRODUCT_ID 2751
-#define ZR300_PRODUCT_ID 2763
-#define F200_PRODUCT_ID  2662
-#define SR300_PRODUCT_ID 2725
+//#define R200_PRODUCT_ID  2688
+//#define LR200_PRODUCT_ID 2751
+//#define ZR300_PRODUCT_ID 2763
+//#define F200_PRODUCT_ID  2662
+//#define SR300_PRODUCT_ID 2725
 
 typedef enum rs_stream
 {
@@ -150,13 +150,24 @@ typedef enum rs_option
     RS_OPTION_R200_DEPTH_CONTROL_SECOND_PEAK_THRESHOLD        = 60, 
     RS_OPTION_R200_DEPTH_CONTROL_NEIGHBOR_THRESHOLD           = 61, 
     RS_OPTION_R200_DEPTH_CONTROL_LR_THRESHOLD                 = 62, 
-    RS_OPTION_R200_CONTROL_COMMAND_RESPONSE                   = 56,
-    RS_OPTION_R200_CONTROL_STATUS                             = 57,
-    RS_OPTION_R200_CONTROL_SW_RESET                           = 58,
-    RS_OPTION_R200_CONTROL_REC_PARAMETERS                     = 59,
-    RS_OPTION_COUNT                                           = 60,
+    RS_OPTION_R200_CONTROL_COMMAND_RESPONSE                   = 63,
+    RS_OPTION_R200_CONTROL_STATUS                             = 64,
+    RS_OPTION_R200_CONTROL_SW_RESET                           = 65,
+    RS_OPTION_R200_CONTROL_REC_PARAMETERS                     = 66,
+    RS_OPTION_COUNT                                           = 67,
     RS_OPTION_MAX_ENUM = 0x7FFFFFFF
 } rs_option;
+
+const  unsigned short rs_intel_vid = 0x8086; // Intel Vendor Id USB descriptor
+typedef enum rs_cam_pid /*USB descriptor for supported camera types*/
+{
+    pid_f200 = 0x0A66,   /* == 2662; F200 Product Id*/
+    pid_r200 = 0x0A80,   /* == 2688; R200 Product Id*/
+    pid_sr300 = 0x0AA5,  /* == 2725; SR300 Product Id*/
+    pid_lr200 = 0x0ABF,  /* == 2751; LR200 Product Id*/
+    pid_zr_300 = 0x0ACB  /* == 2763; ZR200 Product Id*/
+} rs_cam_pid;
+
 
 typedef struct rs_intrinsics
 {

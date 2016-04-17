@@ -56,7 +56,7 @@ namespace rsimpl
         {{640, 240}, {30,60,120,240,300}}        
     };
     
-    static void update_supported_options(uvc::device& dev,
+    void update_supported_options(uvc::device& dev,
                                             const uvc::extension_unit depth_xu,
                                             const std::vector <std::pair<rs_option, char>> options,
                                             std::vector<supported_option>& supported_options)

@@ -24,7 +24,7 @@ namespace rsimpl
 
     }
 
-    static std::shared_ptr<rs_device> make_device(std::shared_ptr<uvc::device> device, static_device_info& info, r200::r200_calibration& c)
+    std::shared_ptr<rs_device> make_device(std::shared_ptr<uvc::device> device, static_device_info& info, r200::r200_calibration& c)
     {
         info.stream_subdevices[RS_STREAM_DEPTH] = 1;
         info.stream_subdevices[RS_STREAM_COLOR] = 2;
@@ -246,7 +246,7 @@ namespace rsimpl
         return make_device(device, info, c);
     }
 
-    std::shared_ptr<rs_device> make_zlr300_device(std::shared_ptr<uvc::device> device)
+    std::shared_ptr<rs_device> make_zr300_device(std::shared_ptr<uvc::device> device)
     {
         LOG_INFO("Connecting to Intel RealSense ZLR300");
 
