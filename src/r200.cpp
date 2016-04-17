@@ -35,7 +35,7 @@ namespace rsimpl
         for(auto fps : {30, 60, 90})
         {
             // Subdevice 0 can provide left/right infrared via four pixel formats, in three resolutions, which can either be uncropped or cropped to match Z
-            for (auto pf : {pf_y8, pf_y8i, pf_y16, pf_y12i})
+            for(auto pf : {pf_y8, pf_y8i, pf_y16, pf_y12i})
             {
                 info.subdevice_modes.push_back({0, {640, 481}, pf, fps, c.modesLR[0], {}, {-6}});
                 info.subdevice_modes.push_back({0, {640, 373}, pf, fps, c.modesLR[1], {}, {-6}});
@@ -88,7 +88,7 @@ namespace rsimpl
             {RS_OPTION_R200_LR_AUTO_EXPOSURE_ENABLED,                   0, 1,           1},
             {RS_OPTION_R200_EMITTER_ENABLED,                            0, 1,           1},
             {RS_OPTION_R200_DEPTH_UNITS,                                1, INT_MAX,     1}, // What is the real range?
-            { RS_OPTION_R200_DEPTH_CLAMP_MIN,                           0, USHRT_MAX,   1},
+            {RS_OPTION_R200_DEPTH_CLAMP_MIN,                            0, USHRT_MAX,   1},
             {RS_OPTION_R200_DEPTH_CLAMP_MAX,                            0, USHRT_MAX,   1},
             {RS_OPTION_R200_DISPARITY_MULTIPLIER,                       1, 1000,        1},
             {RS_OPTION_R200_DISPARITY_SHIFT,                            0, 0,           1},
@@ -116,15 +116,15 @@ namespace rsimpl
         };
 
         // We select the depth/left infrared camera's viewpoint to be the origin
-        info.stream_poses[RS_STREAM_DEPTH] = {{{1, 0, 0}, {0, 1, 0}, {0, 0, 1}}, {0, 0, 0}};
-        info.stream_poses[RS_STREAM_INFRARED] = {{{1, 0, 0}, {0, 1, 0}, {0, 0, 1}}, {0, 0, 0}};
+        info.stream_poses[RS_STREAM_DEPTH] = {{{1,0,0},{0,1,0},{0,0,1}},{0,0,0}};
+        info.stream_poses[RS_STREAM_INFRARED] = {{{1,0,0},{0,1,0},{0,0,1}},{0,0,0}};
 
         // The right infrared camera is offset along the +x axis by the baseline (B)
         info.stream_poses[RS_STREAM_INFRARED2] = {{{1, 0, 0}, {0, 1, 0}, {0, 0, 1}}, {c.B * 0.001f, 0, 0}}; // Sterling comment
 
         // The transformation between the depth camera and third camera is described by a translation vector (T), followed by rotation matrix (Rthird)
         for(int i=0; i<3; ++i) for(int j=0; j<3; ++j)
-            info.stream_poses[RS_STREAM_COLOR].orientation(i, j) = c.Rthird[i*3+j];
+            info.stream_poses[RS_STREAM_COLOR].orientation(i,j) = c.Rthird[i*3+j];
         for(int i=0; i<3; ++i)
             info.stream_poses[RS_STREAM_COLOR].position[i] = c.T[i] * 0.001f;
 
@@ -162,10 +162,10 @@ namespace rsimpl
     void r200_camera::set_options(const rs_option options[], int count, const double values[])
     {
         auto & dev = get_device();
-        auto minmax_writer = make_struct_interface<r200::range    >([&dev]() { return r200::get_min_max_depth(dev);           }, [&dev](r200::range     v) { r200::set_min_max_depth(dev, v);           });
-        auto disp_writer   = make_struct_interface<r200::disp_mode>([&dev]() { return r200::get_disparity_mode(dev);          }, [&dev](r200::disp_mode v) { r200::set_disparity_mode(dev, v);          });
-        auto ae_writer     = make_struct_interface<r200::ae_params>([&dev]() { return r200::get_lr_auto_exposure_params(dev); }, [&dev](r200::ae_params v) { r200::set_lr_auto_exposure_params(dev, v); });
-        auto dc_writer     = make_struct_interface<r200::dc_params>([&dev]() { return r200::get_depth_params(dev);            }, [&dev](r200::dc_params v) { r200::set_depth_params(dev, v);            });
+        auto minmax_writer = make_struct_interface<r200::range    >([&dev]() { return r200::get_min_max_depth(dev);           }, [&dev](r200::range     v) { r200::set_min_max_depth(dev,v);           });
+        auto disp_writer   = make_struct_interface<r200::disp_mode>([&dev]() { return r200::get_disparity_mode(dev);          }, [&dev](r200::disp_mode v) { r200::set_disparity_mode(dev,v);          });
+        auto ae_writer     = make_struct_interface<r200::ae_params>([&dev]() { return r200::get_lr_auto_exposure_params(dev); }, [&dev](r200::ae_params v) { r200::set_lr_auto_exposure_params(dev,v); });
+        auto dc_writer     = make_struct_interface<r200::dc_params>([&dev]() { return r200::get_depth_params(dev);            }, [&dev](r200::dc_params v) { r200::set_depth_params(dev,v);            });
 
         for(int i=0; i<count; ++i)
         {

@@ -197,23 +197,23 @@ namespace rsimpl
         }
 
         info.options = {
-            { RS_OPTION_SR300_AUTO_RANGE_ENABLE_MOTION_VERSUS_RANGE, 0.0, 2.0, 1.0 , -1.0 },
-            { RS_OPTION_SR300_AUTO_RANGE_ENABLE_LASER, 0.0, 1.0, 1.0, -1.0 },
-            { RS_OPTION_SR300_AUTO_RANGE_MIN_MOTION_VERSUS_RANGE, (double)SHRT_MIN, (double)SHRT_MAX, 1.0, -1.0 },
-            { RS_OPTION_SR300_AUTO_RANGE_MAX_MOTION_VERSUS_RANGE, (double)SHRT_MIN, (double)SHRT_MAX, 1.0, -1.0 },
-            { RS_OPTION_SR300_AUTO_RANGE_START_MOTION_VERSUS_RANGE, (double)SHRT_MIN, (double)SHRT_MAX, 1.0, -1.0 },
-            { RS_OPTION_SR300_AUTO_RANGE_MIN_LASER, (double)SHRT_MIN, (double)SHRT_MAX, 1.0, -1.0 },
-            { RS_OPTION_SR300_AUTO_RANGE_MAX_LASER, (double)SHRT_MIN, (double)SHRT_MAX, 1.0, -1.0 },
-            { RS_OPTION_SR300_AUTO_RANGE_START_LASER, (double)SHRT_MIN, (double)SHRT_MAX, 1.0, -1.0 },
-            { RS_OPTION_SR300_AUTO_RANGE_UPPER_THRESHOLD, 0.0, (double)USHRT_MAX, 1.0, -1.0 },
-            { RS_OPTION_SR300_AUTO_RANGE_LOWER_THRESHOLD, 0.0, (double)USHRT_MAX, 1.0, -1.0 },
-            { RS_OPTION_SR300_WAKEUP_DEV_PHASE1_PERIOD, 0.0, (double)USHRT_MAX, 1.0, -1.0 },
-            { RS_OPTION_SR300_WAKEUP_DEV_PHASE1_FPS, 0.0, ((double)sr300::e_suspend_fps::eFPS_MAX) - 1, 1.0, -1.0 },
-            { RS_OPTION_SR300_WAKEUP_DEV_PHASE2_PERIOD, 0.0, (double)USHRT_MAX, 1.0, -1.0 },
-            { RS_OPTION_SR300_WAKEUP_DEV_PHASE2_FPS, 0.0, ((double)sr300::e_suspend_fps::eFPS_MAX) - 1, 1.0, -1.0 },
-            { RS_OPTION_SR300_WAKEUP_DEV_RESET, 0.0, 0.0, 1.0, -1.0 },
-            { RS_OPTION_SR300_WAKE_ON_USB_REASON, 0.0, (double)sr300::wakeonusb_reason::eMaxWakeOnReason, 1.0, -1.0 },
-            { RS_OPTION_SR300_WAKE_ON_USB_CONFIDENCE, 0.0, 100., 1.0, -1.0 }  // Percentage
+            {RS_OPTION_SR300_AUTO_RANGE_ENABLE_MOTION_VERSUS_RANGE, 0.0,              2.0,                                       1.0,   -1.0},
+            {RS_OPTION_SR300_AUTO_RANGE_ENABLE_LASER,               0.0,              1.0,                                       1.0,   -1.0},
+            {RS_OPTION_SR300_AUTO_RANGE_MIN_MOTION_VERSUS_RANGE,    (double)SHRT_MIN, (double)SHRT_MAX,                          1.0,   -1.0},
+            {RS_OPTION_SR300_AUTO_RANGE_MAX_MOTION_VERSUS_RANGE,    (double)SHRT_MIN, (double)SHRT_MAX,                          1.0,   -1.0},
+            {RS_OPTION_SR300_AUTO_RANGE_START_MOTION_VERSUS_RANGE,  (double)SHRT_MIN, (double)SHRT_MAX,                          1.0,   -1.0},
+            {RS_OPTION_SR300_AUTO_RANGE_MIN_LASER,                  (double)SHRT_MIN, (double)SHRT_MAX,                          1.0,   -1.0},
+            {RS_OPTION_SR300_AUTO_RANGE_MAX_LASER,                  (double)SHRT_MIN, (double)SHRT_MAX,                          1.0,   -1.0},
+            {RS_OPTION_SR300_AUTO_RANGE_START_LASER,                (double)SHRT_MIN, (double)SHRT_MAX,                          1.0,   -1.0},
+            {RS_OPTION_SR300_AUTO_RANGE_UPPER_THRESHOLD,            0.0,              (double)USHRT_MAX,                         1.0,   -1.0},
+            {RS_OPTION_SR300_AUTO_RANGE_LOWER_THRESHOLD,            0.0,              (double)USHRT_MAX,                         1.0,   -1.0},
+            {RS_OPTION_SR300_WAKEUP_DEV_PHASE1_PERIOD,              0.0,              (double)USHRT_MAX,                         1.0,   -1.0},
+            {RS_OPTION_SR300_WAKEUP_DEV_PHASE1_FPS,                 0.0,              ((double)sr300::e_suspend_fps::eFPS_MAX) - 1,      1.0, -1.0},
+            {RS_OPTION_SR300_WAKEUP_DEV_PHASE2_PERIOD,              0.0,              (double)USHRT_MAX, 1.0, -1.0},
+            {RS_OPTION_SR300_WAKEUP_DEV_PHASE2_FPS,                 0.0,              ((double)sr300::e_suspend_fps::eFPS_MAX) - 1,      1.0, -1.0},
+            {RS_OPTION_SR300_WAKEUP_DEV_RESET,                      0.0,              0.0,               1.0, -1.0},
+            {RS_OPTION_SR300_WAKE_ON_USB_REASON,                    0.0,              (double)sr300::wakeonusb_reason::eMaxWakeOnReason, 1.0, -1.0},
+            {RS_OPTION_SR300_WAKE_ON_USB_CONFIDENCE,                0.0,              100.,                                              1.0, -1.0}  // Percentage
         };
 
         update_supported_options(*device.get(), f200::depth_xu, eu_SR300_depth_controls, info.options);
@@ -414,7 +414,7 @@ namespace rsimpl
             case RS_OPTION_F200_MOTION_RANGE:         f200::set_motion_range(get_device(), static_cast<uint8_t>(values[i])); break;
             case RS_OPTION_F200_FILTER_OPTION:        f200::set_filter_option(get_device(), static_cast<uint8_t>(values[i])); break;
             case RS_OPTION_F200_CONFIDENCE_THRESHOLD: f200::set_confidence_threshold(get_device(), static_cast<uint8_t>(values[i])); break;
-            case RS_OPTION_F200_DYNAMIC_FPS:         f200::set_dynamic_fps(get_device(), static_cast<uint8_t>(values[i])); break; // IVCAM 1.0 Only
+            case RS_OPTION_F200_DYNAMIC_FPS:          f200::set_dynamic_fps(get_device(), static_cast<uint8_t>(values[i])); break; // IVCAM 1.0 Only
 
             case RS_OPTION_SR300_WAKEUP_DEV_RESET:    sr300::reset_wakeup_device(get_device(), usbMutex); break;
 
