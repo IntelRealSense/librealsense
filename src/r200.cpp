@@ -248,10 +248,10 @@ namespace rsimpl
 
     std::shared_ptr<rs_device> make_zr300_device(std::shared_ptr<uvc::device> device)
     {
-        LOG_INFO("Connecting to Intel RealSense ZLR300");
+        LOG_INFO("Connecting to Intel RealSense ZR300");
 
         static_device_info info;
-        info.name = { "Intel RealSense ZLR300" };
+        info.name = { "Intel RealSense ZR300" };
         auto c = r200::read_camera_info(*device);
         info.subdevice_modes.push_back({ 2, { 1920, 1080 }, pf_rw16, 30, c.intrinsicsThird[0], { c.modesThird[0][0] }, { 0 } });
 
