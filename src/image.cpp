@@ -332,7 +332,7 @@ namespace rsimpl
     template<class GET_DEPTH, class TRANSFER_PIXEL> void align_images(const rs_intrinsics & depth_intrin, const rs_extrinsics & depth_to_other, const rs_intrinsics & other_intrin, GET_DEPTH get_depth, TRANSFER_PIXEL transfer_pixel)
     {
         // Iterate over the pixels of the depth image    
-#pragma omp parallel for
+#pragma omp parallel for schedule(dynamic)
         for(int depth_y = 0; depth_y < depth_intrin.height; ++depth_y)
         {
             int depth_pixel_index = depth_y * depth_intrin.width;
