@@ -107,10 +107,10 @@ void *_uvc_handle_events(void *arg) {
  */
 uvc_error_t uvc_init(uvc_context_t **pctx, struct libusb_context *usb_ctx) {
   uvc_error_t ret = UVC_SUCCESS;
-  uvc_context_t *ctx = calloc(1, sizeof(*ctx));
+  uvc_context_t *ctx = (uvc_context_t *)calloc(1, sizeof(*ctx));
 
   if (usb_ctx == NULL) {
-    ret = libusb_init(&ctx->usb_ctx);
+    ret = (uvc_error_t)libusb_init(&ctx->usb_ctx);
     ctx->own_usb_ctx = 1;
     if (ret != UVC_SUCCESS) {
       free(ctx);

@@ -129,7 +129,7 @@ uvc_error_t uvc_query_stream_ctrl(
   }
 
   /* do the transfer */
-  err = libusb_control_transfer(
+  err = (uvc_error_t)libusb_control_transfer(
       devh->usb_devh,
       req == UVC_SET_CUR ? 0x21 : 0xA1,
       req,
@@ -498,7 +498,7 @@ void _uvc_process_payload(uvc_stream_handle_t *strmh, uint8_t *payload, size_t p
  * @param transfer Active transfer
  */
 void LIBUSB_CALL _uvc_stream_callback(struct libusb_transfer *transfer) {
-  uvc_stream_handle_t *strmh = transfer->user_data;
+  uvc_stream_handle_t *strmh = (uvc_stream_handle_t *)transfer->user_data;
 
   int resubmit = 1;
 
@@ -653,7 +653,7 @@ uvc_error_t uvc_stream_open_ctrl(uvc_device_handle_t *devh, uvc_stream_handle_t 
     goto fail;
   }
 
-  strmh = calloc(1, sizeof(*strmh));
+  strmh = (uvc_stream_handle_t *)calloc(1, sizeof(*strmh));
   if (!strmh) {
     ret = UVC_ERROR_NO_MEM;
     goto fail;
@@ -673,8 +673,8 @@ uvc_error_t uvc_stream_open_ctrl(uvc_device_handle_t *devh, uvc_stream_handle_t 
   // Set up the streaming status and data space
   strmh->running = 0;
   /** @todo take only what we need */
-  strmh->outbuf = malloc( LIBUVC_XFER_BUF_SIZE );
-  strmh->holdbuf = malloc( LIBUVC_XFER_BUF_SIZE );
+  strmh->outbuf = (uint8_t *)malloc( LIBUVC_XFER_BUF_SIZE );
+  strmh->holdbuf = (uint8_t *)malloc( LIBUVC_XFER_BUF_SIZE );
    
   pthread_mutex_init(&strmh->cb_mutex, NULL);
   pthread_cond_init(&strmh->cb_cond, NULL);
@@ -812,7 +812,7 @@ uvc_error_t uvc_stream_start(
     }
 
     /* Select the altsetting */
-    ret = libusb_set_interface_alt_setting(strmh->devh->usb_devh,
+    ret = (uvc_error_t)libusb_set_interface_alt_setting(strmh->devh->usb_devh,
                                            altsetting->bInterfaceNumber,
                                            altsetting->bAlternateSetting);
     if (ret != UVC_SUCCESS) {
@@ -822,13 +822,13 @@ uvc_error_t uvc_stream_start(
 
     /* Set up the transfers */
     strmh->num_transfer_bufs = num_transfer_buffers;
-    strmh->transfers = malloc(sizeof(struct libusb_transfer *) * num_transfer_buffers);
-    strmh->transfer_bufs = malloc(sizeof(struct uint8_t *) * num_transfer_buffers);
+    strmh->transfers = (libusb_transfer **)malloc(sizeof(struct libusb_transfer *) * num_transfer_buffers);
+    strmh->transfer_bufs = (uint8_t **)malloc(sizeof(uint8_t **) * num_transfer_buffers);
     for (transfer_id = 0; transfer_id < num_transfer_buffers; ++transfer_id)
     {
       transfer = libusb_alloc_transfer(packets_per_transfer);
       strmh->transfers[transfer_id] = transfer;      
-      strmh->transfer_bufs[transfer_id] = malloc(total_transfer_size);
+      strmh->transfer_bufs[transfer_id] = (uint8_t *)malloc(total_transfer_size);
 
       libusb_fill_iso_transfer(
         transfer, strmh->devh->usb_devh, format_desc->parent->bEndpointAddress,
@@ -842,13 +842,13 @@ uvc_error_t uvc_stream_start(
   else
   {
     strmh->num_transfer_bufs = num_transfer_buffers;
-    strmh->transfers = malloc(sizeof(struct libusb_transfer *) * num_transfer_buffers);
-    strmh->transfer_bufs = malloc(sizeof(struct uint8_t *) * num_transfer_buffers);
+    strmh->transfers = (libusb_transfer **)malloc(sizeof(struct libusb_transfer *) * num_transfer_buffers);
+    strmh->transfer_bufs = (uint8_t **)malloc(sizeof(uint8_t **) * num_transfer_buffers);
     for (transfer_id = 0; transfer_id < num_transfer_buffers; ++transfer_id)
     {
       transfer = libusb_alloc_transfer(0);
       strmh->transfers[transfer_id] = transfer;
-      strmh->transfer_bufs[transfer_id] = malloc (
+      strmh->transfer_bufs[transfer_id] = (uint8_t *)malloc (
           strmh->cur_ctrl.dwMaxPayloadTransferSize );
       libusb_fill_bulk_transfer ( transfer, strmh->devh->usb_devh,
           format_desc->parent->bEndpointAddress,
@@ -871,7 +871,7 @@ uvc_error_t uvc_stream_start(
 
   for (transfer_id = 0; transfer_id < num_transfer_buffers; transfer_id++)
   {
-    ret = libusb_submit_transfer(strmh->transfers[transfer_id]);
+    ret = (uvc_error_t)libusb_submit_transfer(strmh->transfers[transfer_id]);
     if (ret != UVC_SUCCESS)
     {
       UVC_DEBUG("libusb_submit_transfer failed");
@@ -1118,7 +1118,7 @@ uvc_error_t uvc_stream_stop(uvc_stream_handle_t *strmh) {
         pthread_join(strmh->cb_thread, NULL);
     }
     
-    return ret;
+    return (uvc_error_t)ret;
 }
 
 /** @brief Close stream.

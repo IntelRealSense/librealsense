@@ -93,7 +93,7 @@ int uvc_get_ctrl(uvc_device_handle_t *devh, uint8_t unit, uint8_t ctrl, void *da
     REQ_TYPE_GET, req_code,
     ctrl << 8,
     unit << 8,
-    data,
+    (unsigned char *)data,
     len,
     0 /* timeout */);
 }
@@ -116,7 +116,7 @@ int uvc_set_ctrl(uvc_device_handle_t *devh, uint8_t unit, uint8_t ctrl, void *da
     REQ_TYPE_SET, UVC_SET_CUR,
     ctrl << 8,
     unit << 8,
-    data,
+    (unsigned char *)data,
     len,
     0 /* timeout */);
 }
@@ -126,7 +126,7 @@ uvc_error_t uvc_get_power_mode(uvc_device_handle_t *devh, enum uvc_device_power_
   uint8_t mode_char;
   uvc_error_t ret;
 
-  ret = libusb_control_transfer(
+  ret = (uvc_error_t)libusb_control_transfer(
     devh->usb_devh,
     REQ_TYPE_GET, req_code,
     UVC_VC_VIDEO_POWER_MODE_CONTROL << 8,
@@ -136,7 +136,7 @@ uvc_error_t uvc_get_power_mode(uvc_device_handle_t *devh, enum uvc_device_power_
     0);
 
   if (ret == 1) {
-    *mode = mode_char;
+    *mode = (uvc_device_power_mode)mode_char;
     return UVC_SUCCESS;
   } else {
     return ret;
@@ -147,7 +147,7 @@ uvc_error_t uvc_set_power_mode(uvc_device_handle_t *devh, enum uvc_device_power_
   uint8_t mode_char = mode;
   uvc_error_t ret;
 
-  ret = libusb_control_transfer(
+  ret = (uvc_error_t)libusb_control_transfer(
     devh->usb_devh,
     REQ_TYPE_SET, UVC_SET_CUR,
     UVC_VC_VIDEO_POWER_MODE_CONTROL << 8,
