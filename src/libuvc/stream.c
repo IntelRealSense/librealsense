@@ -822,7 +822,7 @@ uvc_error_t uvc_stream_start(
 
     /* Set up the transfers */
     strmh->num_transfer_bufs = num_transfer_buffers;
-    strmh->transfers = (libusb_transfer **)malloc(sizeof(struct libusb_transfer *) * num_transfer_buffers);
+    strmh->transfers = (struct libusb_transfer **)malloc(sizeof(struct libusb_transfer *) * num_transfer_buffers);
     strmh->transfer_bufs = (uint8_t **)malloc(sizeof(uint8_t **) * num_transfer_buffers);
     for (transfer_id = 0; transfer_id < num_transfer_buffers; ++transfer_id)
     {
@@ -842,7 +842,7 @@ uvc_error_t uvc_stream_start(
   else
   {
     strmh->num_transfer_bufs = num_transfer_buffers;
-    strmh->transfers = (libusb_transfer **)malloc(sizeof(struct libusb_transfer *) * num_transfer_buffers);
+    strmh->transfers = (struct libusb_transfer **)malloc(sizeof(struct libusb_transfer *) * num_transfer_buffers);
     strmh->transfer_bufs = (uint8_t **)malloc(sizeof(uint8_t **) * num_transfer_buffers);
     for (transfer_id = 0; transfer_id < num_transfer_buffers; ++transfer_id)
     {

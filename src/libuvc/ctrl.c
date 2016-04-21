@@ -136,7 +136,7 @@ uvc_error_t uvc_get_power_mode(uvc_device_handle_t *devh, enum uvc_device_power_
     0);
 
   if (ret == 1) {
-    *mode = (uvc_device_power_mode)mode_char;
+    *mode = (uvc_device_power_mode_t)mode_char;
     return UVC_SUCCESS;
   } else {
     return ret;

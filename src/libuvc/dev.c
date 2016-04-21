@@ -796,7 +796,7 @@ uvc_error_t uvc_claim_if(uvc_device_handle_t *devh, int idx) {
   }
 
   UVC_EXIT(ret);
-  return (uvc_error)ret;
+  return (uvc_error_t)ret;
 }
 
 /** @internal
@@ -969,7 +969,7 @@ uvc_error_t uvc_parse_vc_input_terminal(uvc_device_t *dev,
   term = (uvc_input_terminal_t *)calloc(1, sizeof(*term));
 
   term->bTerminalID = block[3];
-  term->wTerminalType = (uvc_it_type)SW_TO_SHORT(&block[4]);
+  term->wTerminalType = (uvc_it_type_t)SW_TO_SHORT(&block[4]);
   term->wObjectiveFocalLengthMin = SW_TO_SHORT(&block[8]);
   term->wObjectiveFocalLengthMax = SW_TO_SHORT(&block[10]);
   term->wOcularFocalLength = SW_TO_SHORT(&block[12]);
@@ -1154,7 +1154,7 @@ uvc_error_t uvc_parse_vs_format_uncompressed(uvc_streaming_interface_t *stream_i
   uvc_format_desc_t *format = (uvc_format_desc_t *)calloc(1, sizeof(*format));
 
   format->parent = stream_if;
-  format->bDescriptorSubtype = (uvc_vs_desc_subtype)block[2];
+  format->bDescriptorSubtype = (uvc_vs_desc_subtype_t)block[2];
   format->bFormatIndex = block[3];
   //format->bmCapabilities = block[4];
   //format->bmFlags = block[5];
@@ -1184,7 +1184,7 @@ uvc_error_t uvc_parse_vs_frame_format(uvc_streaming_interface_t *stream_if,
   uvc_format_desc_t *format = (uvc_format_desc_t *)calloc(1, sizeof(*format));
 
   format->parent = stream_if;
-  format->bDescriptorSubtype = (uvc_vs_desc_subtype)block[2];
+  format->bDescriptorSubtype = (uvc_vs_desc_subtype_t)block[2];
   format->bFormatIndex = block[3];
   format->bNumFrameDescriptors = block[4];
   memcpy(format->guidFormat, &block[5], 16);
@@ -1214,7 +1214,7 @@ uvc_error_t uvc_parse_vs_format_mjpeg(uvc_streaming_interface_t *stream_if,
   uvc_format_desc_t *format = (uvc_format_desc_t *)calloc(1, sizeof(*format));
 
   format->parent = stream_if;
-  format->bDescriptorSubtype = (uvc_vs_desc_subtype)block[2];
+  format->bDescriptorSubtype = (uvc_vs_desc_subtype_t)block[2];
   format->bFormatIndex = block[3];
   memcpy(format->fourccFormat, "MJPG", 4);
   format->bmFlags = block[5];
@@ -1251,7 +1251,7 @@ uvc_error_t uvc_parse_vs_frame_frame(uvc_streaming_interface_t *stream_if,
 
   frame->parent = format;
 
-  frame->bDescriptorSubtype = (uvc_vs_desc_subtype)block[2];
+  frame->bDescriptorSubtype = (uvc_vs_desc_subtype_t)block[2];
   frame->bFrameIndex = block[3];
   frame->bmCapabilities = block[4];
   frame->wWidth = block[5] + (block[6] << 8);
@@ -1303,7 +1303,7 @@ uvc_error_t uvc_parse_vs_frame_uncompressed(uvc_streaming_interface_t *stream_if
 
   frame->parent = format;
 
-  frame->bDescriptorSubtype = (uvc_vs_desc_subtype)block[2];
+  frame->bDescriptorSubtype = (uvc_vs_desc_subtype_t)block[2];
   frame->bFrameIndex = block[3];
   frame->bmCapabilities = block[4];
   frame->wWidth = block[5] + (block[6] << 8);
@@ -1530,7 +1530,7 @@ void uvc_process_status_xfer(uvc_device_handle_t *devh, struct libusb_transfer *
       return;
     }
 
-    attribute = (uvc_status_attribute)transfer->buffer[4];
+    attribute = (uvc_status_attribute_t)transfer->buffer[4];
     data = transfer->buffer + 5;
     data_len = transfer->actual_length - 5;
     break;
