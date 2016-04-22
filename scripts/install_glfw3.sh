@@ -6,11 +6,9 @@ sudo apt-get update
 
 sudo apt-get install build-essential cmake git xorg-dev libglu1-mesa-dev
 
-git clone https://github.com/glfw/glfw.git /tmp/glfw
+git clone --depth 1 --branch latest https://github.com/glfw/glfw.git /tmp/glfw
 
 cd /tmp/glfw
-
-git checkout latest
 
 cmake . -DBUILD_SHARED_LIBS=ON
 
