@@ -10,6 +10,7 @@ extern "C" {
 
 #define RS_API_VERSION 4
 
+
 typedef enum rs_stream
 {
     RS_STREAM_DEPTH                            = 0,  /**< Native stream of depth data produced by RealSense device */
@@ -41,7 +42,8 @@ typedef enum rs_format
     RS_FORMAT_Y8          = 9,  
     RS_FORMAT_Y16         = 10, 
     RS_FORMAT_RAW10       = 11, /**< Four 10-bit luminance values encoded into a 5-byte macropixel */
-    RS_FORMAT_COUNT       = 12, 
+    RS_FORMAT_RAW16       = 12,
+    RS_FORMAT_COUNT       = 13,
     RS_FORMAT_MAX_ENUM = 0x7FFFFFFF
 } rs_format;
 
@@ -128,7 +130,7 @@ typedef enum rs_option
     RS_OPTION_R200_DEPTH_CONTROL_SECOND_PEAK_THRESHOLD        = 60, 
     RS_OPTION_R200_DEPTH_CONTROL_NEIGHBOR_THRESHOLD           = 61, 
     RS_OPTION_R200_DEPTH_CONTROL_LR_THRESHOLD                 = 62, 
-    RS_OPTION_COUNT                                           = 63, 
+    RS_OPTION_COUNT                                           = 63,
     RS_OPTION_MAX_ENUM = 0x7FFFFFFF
 } rs_option;
 

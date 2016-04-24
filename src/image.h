@@ -27,6 +27,7 @@ namespace rsimpl
     void             rectify_image                  (byte * rect_pixels, const std::vector<int> & rectification_table, const byte * unrect_pixels, rs_format format);
 
     extern const native_pixel_format pf_rw10;       // Four 10 bit luminance values in one 40 bit macropixel
+    extern const native_pixel_format pf_rw16;       // 10 bit in 16 bit WORD with 6 bit unused
     extern const native_pixel_format pf_yuy2;       // Y0 U Y1 V ordered chroma subsampled macropixel
     extern const native_pixel_format pf_y8;         // 8 bit (left) IR image
     extern const native_pixel_format pf_y8i;        // 8 bits left IR + 8 bits right IR per pixel

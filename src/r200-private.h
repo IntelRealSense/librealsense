@@ -108,7 +108,7 @@ namespace rsimpl
         #pragma pack(pop)
 
         void set_stream_intent(uvc::device & device, uint8_t & intent);
-        void get_stream_status(const uvc::device & device, uint8_t & status);
+        void get_stream_status(const uvc::device & device, uint32_t & status);
         void force_firmware_reset(uvc::device & device);       
         bool get_emitter_state(const uvc::device & device, bool is_streaming, bool is_depth_enabled);
         void set_emitter_state(uvc::device & device, bool state);
