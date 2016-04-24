@@ -46,8 +46,10 @@ Installation of cameras on Linux is lengthy compared to other supported platform
   * **(OR) Kernel in 14.04.xx**
     * Run the following script to patch uvcvideo.ko
       * `./scripts/patch-uvcvideo-ubuntu-mainline.sh`
-    * (R200 Only with 3.19.xx Kernel) Install connectivity workaround
-      * `./scripts/install-r200-udev-fix.sh`
+    * (R200 Only with 3.19.xx Kernel) Install connectivity workaround. Note this script needs to be run from within the scripts folder:
+      * `cd scripts` 
+      * `./install-r200-udev-fix.sh`
+      * `cd ..`
       * This udev fix is not necessary for kernels >= 4.2
       * Use of 3.19.xx Kernel is not recommended. 
   * **(OR) Kernel in 16.04.xx**
