@@ -560,7 +560,7 @@ namespace rs
     }
 
     // Additional utilities
-    void apply_depth_control_preset(device * device, int preset) { rs_apply_depth_control_preset((rs_device *)device, preset); }
-    void apply_ivcam_preset(device * device, rs_ivcam_preset preset) { rs_apply_ivcam_preset((rs_device *)device, preset); }
+    inline void apply_depth_control_preset(device * device, int preset) { rs_apply_depth_control_preset((rs_device *)device, preset); }
+    inline void apply_ivcam_preset(device * device, rs_ivcam_preset preset) { rs_apply_ivcam_preset((rs_device *)device, preset); }
 }
 #endif
