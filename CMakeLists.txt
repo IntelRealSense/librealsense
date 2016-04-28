@@ -1,44 +1,69 @@
-# This file is only used to enable the building librealsense
-# as a debian package for use with ROS (http://ros.org)
-# via catkin_make (which invokes cmake)
+cmake_minimum_required(VERSION 3.1)
 
-cmake_minimum_required(VERSION 2.8.3)
+project(Realsense)
 
-project(librealsense)
+set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/CMake)
 
-include(ExternalProject)
-
-find_package(catkin REQUIRED)
-
-externalproject_add(${PROJECT_NAME}_extern
-  PREFIX "external_proj"
-
-  SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}
-
-  CONFIGURE_COMMAND echo "No Configuration Step"
-
-  BUILD_IN_SOURCE 1
-  BUILD_COMMAND $(MAKE) lib/${PROJECT_NAME}.so
-
-  INSTALL_DIR ${CATKIN_DEVEL_PREFIX}
-  INSTALL_COMMAND cp <SOURCE_DIR>/lib/${PROJECT_NAME}.so <INSTALL_DIR>/lib/ COMMAND cp -r <SOURCE_DIR>/include/${PROJECT_NAME} <INSTALL_DIR>/include/
+set(REALSENSE_CPP 
+    src/context.cpp
+    src/device.cpp
+    src/f200-private.cpp
+    src/f200.cpp
+    src/image.cpp
+    src/log.cpp
+    src/r200-private.cpp
+    src/r200.cpp
+    src/rs.cpp
+    src/stream.cpp
+    src/sync.cpp
+    src/types.cpp
+    src/uvc-libuvc.cpp
+    src/uvc-v4l2.cpp
+    src/uvc-wmf.cpp
+    src/uvc.cpp
+    src/verify.c
 )
 
-# Need to ensure the include directory exists before the catkin_package macro
-execute_process(COMMAND mkdir -p ${CATKIN_DEVEL_PREFIX}/include/${PROJECT_NAME})
-
-# Declare this project as a catkin package
-# Export the include files and library for other packages in this workspace
-catkin_package(
-  INCLUDE_DIRS ${CATKIN_DEVEL_PREFIX}/include/${PROJECT_NAME}
-  LIBRARIES realsense
+set(REALSENSE_HPP 
+    src/context.h
+    src/device.h
+    src/f200-private.h
+    src/f200.h
+    src/image.h
+    src/r200-private.h
+    src/r200.h
+    src/stream.h
+    src/sync.h
+    src/types.h
+    src/uvc.h
 )
 
-# Install library
-install(FILES ${CATKIN_DEVEL_PREFIX}/lib/${PROJECT_NAME}.so
-  DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-)
+if(WIN32)
+    set(REALSENSE_DEF CMake/realsense.def)
+    add_definitions(-DRS_USE_WMF_BACKEND -DUNICODE)
+elseif(APPLE)
+    add_definitions(-DRS_USE_LIBUVC_BACKEND -DUNICODE)
+else()
+    find_package(LibUSB REQUIRED)
+        
+    add_definitions(-DRS_USE_V4L2_BACKEND -DUNICODE -msse3)
+    set(CMAKE_CXX_FLAGS "-fPIC -pedantic -mssse3 -Ofast -Wno-missing-field-initializers")
+endif()
 
-# Install include files
-install(DIRECTORY ${CATKIN_DEVEL_PREFIX}/include/${PROJECT_NAME}/
-  DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION})
+add_library(realsense SHARED ${REALSENSE_CPP} ${REALSENSE_HPP} ${REALSENSE_DEF})
+target_link_libraries(realsense ${LibUSB_LIBRARIES})
+target_include_directories(realsense PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include/ ${LibUSB_INCLUDE_DIRS})
+
+install( TARGETS realsense
+    RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX}/bin
+    LIBRARY DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
+)
+install(DIRECTORY ${PROJECT_SOURCE_DIR}/include/librealsense DESTINATION ${CMAKE_INSTALL_PREFIX}/include)
+
+option(BUILD_EXAMPLES "Build realsense examples." OFF)
+if(BUILD_EXAMPLES)
+  add_subdirectory(examples)
+endif()
