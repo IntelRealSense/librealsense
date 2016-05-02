@@ -604,6 +604,9 @@ namespace rsimpl
                 }
                 if(is_new_device)
                 {
+                    if (sub->vid == 1204 && sub->pid == 195)  // avoid inserting fisheye camera as a device
+                        continue;
+
                     devices.push_back(std::make_shared<device>(context));
                     devices.back()->subdevices.push_back(move(sub));
                 }
@@ -617,6 +620,24 @@ namespace rsimpl
                     return a->mi < b->mi;
                 });
             }
+
+
+            // Insert fisheye camera as subDevice of ZR300
+            for(auto & sub : subdevices)
+            {
+                if (!sub)
+                    continue;
+
+                for(auto & dev : devices)
+                {
+                    if (dev->subdevices[0]->vid == 32902 && dev->subdevices[0]->pid == 2763 && sub->vid == 1204 && sub->pid == 195)
+                    {
+                        dev->subdevices.push_back(move(sub));
+                        break;
+                    }
+                }
+            }
+
 
             // Obtain libusb_device_handle for each device
             libusb_device ** list;
