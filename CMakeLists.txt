@@ -41,15 +41,34 @@ set(REALSENSE_HPP
 )
 
 if(WIN32)
+    set(BACKEND RS_USE_WMF_BACKEND)
     set(REALSENSE_DEF CMake/realsense.def)
-    add_definitions(-DRS_USE_WMF_BACKEND -DUNICODE)
 elseif(APPLE)
-    add_definitions(-DRS_USE_LIBUVC_BACKEND -DUNICODE)
+    set(BACKEND RS_USE_LIBUVC_BACKEND)
 else()
+    set(BACKEND RS_USE_V4L2_BACKEND)
+endif()
+add_definitions(-D${BACKEND} -DUNICODE)
+
+if(UNIX)
+    list(APPEND REALSENSE_CPP
+        src/libuvc/ctrl.c
+        src/libuvc/dev.c
+        src/libuvc/diag.c
+        src/libuvc/frame.c
+        src/libuvc/init.c
+        src/libuvc/stream.c
+    )
+    list(APPEND REALSENSE_HPP
+        src/libuvc/libuvc_config.h
+        src/libuvc/libuvc.h
+        src/libuvc/libuvc_internal.h
+        src/libuvc/utlist.h
+    )
+    
     find_package(LibUSB REQUIRED)
-        
-    add_definitions(-DRS_USE_V4L2_BACKEND -DUNICODE -msse3)
-    set(CMAKE_CXX_FLAGS "-fPIC -pedantic -mssse3 -Ofast -Wno-missing-field-initializers")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC -pedantic -mssse3 -Ofast")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-switch -Wno-multichar")
 endif()
 
 add_library(realsense SHARED ${REALSENSE_CPP} ${REALSENSE_HPP} ${REALSENSE_DEF})
@@ -67,3 +86,4 @@ option(BUILD_EXAMPLES "Build realsense examples." OFF)
 if(BUILD_EXAMPLES)
   add_subdirectory(examples)
 endif()
+
