@@ -24,7 +24,7 @@ if ( PKG_CONFIG_FOUND )
 endif ( PKG_CONFIG_FOUND )
 
 if ( PKGCONFIG_LIBUSB_FOUND )
-  set ( LibUSB_INCLUDE_DIRS ${PKGCONFIG_LIBUSB_INCLUDE_DIRS} )
+  set ( LibUSB_INCLUDE_DIRS ${PKGCONFIG_LIBUSB_INCLUDEDIR} )
   foreach ( i ${PKGCONFIG_LIBUSB_LIBRARIES} )
     string ( REGEX MATCH "[^-]*" ibase "${i}" )
     find_library ( ${ibase}_LIBRARY
@@ -88,7 +88,7 @@ endif ( LibUSB_INCLUDE_DIRS AND LibUSB_LIBRARIES )
 
 if ( LibUSB_FOUND )
   set ( CMAKE_REQUIRED_INCLUDES "${LibUSB_INCLUDE_DIRS}" )
-  check_include_file ( "{LibUSB_HEADER_FILE}" LibUSB_FOUND )
+  check_include_file ( "${LibUSB_HEADER_FILE}" LibUSB_FOUND )
 endif ( LibUSB_FOUND )
 
 if ( LibUSB_FOUND )
