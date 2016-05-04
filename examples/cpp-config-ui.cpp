@@ -109,7 +109,7 @@ struct gui
     }
 };
 
-texture_buffer buffers[4];
+texture_buffer buffers[5];
 
 int main(int argc, char * argv[]) try
 {
@@ -142,6 +142,7 @@ int main(int argc, char * argv[]) try
     dev->enable_stream(rs::stream::color, rs::preset::best_quality);
     dev->enable_stream(rs::stream::infrared, rs::preset::best_quality);
     try { dev->enable_stream(rs::stream::infrared2, rs::preset::best_quality); } catch(...) {}
+    try { dev->enable_stream(rs::stream::fisheye, rs::preset::best_quality);} catch(...) {}
 
     //std::this_thread::sleep_for(std::chrono::seconds(1));
 
@@ -187,7 +188,7 @@ int main(int argc, char * argv[]) try
         y += 34;
         if(!dev->is_streaming())
         {
-            for(int i=0; i<4; ++i)
+            for(int i=0; i<5; ++i)
             {
                 auto s = (rs::stream)i;
                 bool enable = dev->is_stream_enabled(s);
@@ -223,10 +224,11 @@ int main(int argc, char * argv[]) try
         if(dev->is_streaming())
         {
             w-=270;
-            buffers[0].show(*dev, rs::stream::color, 0, 0, w/2, h/2);
-            buffers[1].show(*dev, rs::stream::depth, w/2, 0, w-w/2, h/2);
-            buffers[2].show(*dev, rs::stream::infrared, 0, h/2, w/2, h-h/2);
-            buffers[3].show(*dev, rs::stream::infrared2, w/2, h/2, w-w/2, h-h/2);
+            buffers[0].show(*dev, rs::stream::color, 0, 0, w/3, h/3);
+            buffers[1].show(*dev, rs::stream::depth, w/3, 0, w/3, h/3);
+            buffers[2].show(*dev, rs::stream::infrared, 0, h/3, w/3, h/3);
+            buffers[3].show(*dev, rs::stream::infrared2, w/3, h/3, w/3, h/3);
+            buffers[4].show(*dev, rs::stream::fisheye, 0, 2*h/3, w/3, h/3);
         }
 
         glfwSwapBuffers(win);

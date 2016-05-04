@@ -30,6 +30,8 @@
 
 #include <libusb.h>
 
+#include <iostream>
+
 namespace rsimpl
 {
     namespace uvc
@@ -311,7 +313,6 @@ namespace rsimpl
                             throw_error("VIDIOC_DQBUF");
                         }
                         assert(buf.index < sub->buffers.size());
-
                         sub->callback(sub->buffers[buf.index].start);
 
                         if(xioctl(sub->fd, VIDIOC_QBUF, &buf) < 0) throw_error("VIDIOC_QBUF");

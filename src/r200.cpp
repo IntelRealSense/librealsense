@@ -255,6 +255,12 @@ namespace rsimpl
         auto c = r200::read_camera_info(*device);
         info.subdevice_modes.push_back({ 2, { 1920, 1080 }, pf_rw16, 30, c.intrinsicsThird[0], { c.modesThird[0][0] }, { 0 } });
 
+        // TODO: need to check if there is a connected Fisheye camera
+        info.stream_subdevices[RS_STREAM_FISHEYE] = 3;
+        info.presets[RS_STREAM_FISHEYE][RS_PRESET_BEST_QUALITY] = {true, 640, 480, RS_FORMAT_RAW10,   60};
+        info.subdevice_modes.push_back({3, {640, 480}, pf_rw10, 60, c.intrinsicsThird[1], {c.modesThird[1][0]}, {0}});
+
+
         return make_device(device, info, c);
     }
 
@@ -457,7 +463,11 @@ namespace rsimpl
         dinghy_timestamp_reader(int max_fps) : max_fps(max_fps) {}
 
         bool validate_frame(const subdevice_mode & mode, const void * frame) const override 
-        { 
+        {
+            if (mode.subdevice == 3) // Fisheye camera
+                return true;
+
+
             // No dinghy available on YUY2 images
             if(mode.pf.fourcc == pf_yuy2.fourcc) return true;
 

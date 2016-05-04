@@ -27,6 +27,7 @@ namespace rsimpl
         CASE(DEPTH_ALIGNED_TO_RECTIFIED_COLOR)
         CASE(INFRARED2_ALIGNED_TO_DEPTH)
         CASE(DEPTH_ALIGNED_TO_INFRARED2)
+        CASE(FISHEYE)
         default: assert(!is_valid(value)); return nullptr;
         }
         #undef CASE
