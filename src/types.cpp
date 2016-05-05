@@ -149,7 +149,10 @@ namespace rsimpl
         CASE(SR300_WAKEUP_DEV_RESET)
         CASE(SR300_WAKE_ON_USB_REASON)
         CASE(SR300_WAKE_ON_USB_CONFIDENCE)
-
+        CASE(FISHEYE_COLOR_EXPOSURE)
+        CASE(FISHEYE_COLOR_GAIN)
+        CASE(FISHEYE_STROBE)
+        CASE(FISHEYE_EXT_TRIG)
         default: assert(!is_valid(value)); return nullptr;
         }
         #undef CASE

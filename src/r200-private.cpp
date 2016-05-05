@@ -33,19 +33,41 @@ enum class command_modifier : uint32_t { direct = 0x10 }; // Command/response mo
 #define NV_NON_FIRMWARE_ROOT_ADDRESS                NV_NON_FIRMWARE_START
 #define CAM_INFO_BLOCK_LEN 2048
 
+
+
+
 namespace rsimpl { namespace r200
 {
-    const uvc::extension_unit lr_xu = {0, 2, 1, {0x18682d34, 0xdd2c, 0x4073, {0xad, 0x23, 0x72, 0x14, 0x73, 0x9a, 0x07, 0x4c}}};
-
-    void xu_read(const uvc::device & device, control xu_ctrl, void * buffer, uint32_t length)
+    void xu_read(const uvc::device & device, uvc::extension_unit xu, control xu_ctrl, void * buffer, uint32_t length)
     {
-        uvc::get_control_with_retry(device, lr_xu, static_cast<int>(xu_ctrl), buffer, length);
+        uvc::get_control_with_retry(device, xu, static_cast<int>(xu_ctrl), buffer, length);
     }
 
-    void xu_write(uvc::device & device, control xu_ctrl, void * buffer, uint32_t length)
+    void xu_write(uvc::device & device, uvc::extension_unit xu, control xu_ctrl, void * buffer, uint32_t length)
     {
-        uvc::set_control_with_retry(device, lr_xu, static_cast<int>(xu_ctrl), buffer, length);
+        uvc::set_control_with_retry(device, xu, static_cast<int>(xu_ctrl), buffer, length);
     }
+
+    uint8_t get_strobe(const uvc::device & device)
+    {
+        return r200::xu_read<uint8_t>(device, fisheye_xu, r200::control::FISHEYE_XU_STROBE);
+    }
+
+    void set_strobe(uvc::device & device, uint8_t strobe)
+    {
+        r200::xu_write(device, fisheye_xu, r200::control::FISHEYE_XU_STROBE, &strobe, sizeof(strobe));
+    }
+
+    uint8_t get_ext_trig(const uvc::device & device)
+    {
+        return r200::xu_read<uint8_t>(device, fisheye_xu, r200::control::FISHEYE_XU_EXT_TRIG);
+    }
+
+    void set_ext_trig(uvc::device & device, uint8_t ext_trig)
+    {
+        r200::xu_write(device, fisheye_xu, r200::control::FISHEYE_XU_EXT_TRIG, &ext_trig, sizeof(ext_trig));
+    }
+
 
     struct CommandResponsePacket
     {
@@ -85,7 +107,7 @@ namespace rsimpl { namespace r200
         uint16_t spiLength = SPI_FLASH_PAGE_SIZE_IN_BYTES;
         for (unsigned int i = 0; i < nPages; ++i)
         {
-            xu_read(dev, control::command_response, p, spiLength);
+            xu_read(dev, lr_xu, control::command_response, p, spiLength);
             p += SPI_FLASH_PAGE_SIZE_IN_BYTES;
         }
         return true;
@@ -392,13 +414,13 @@ namespace rsimpl { namespace r200
 
     void set_stream_intent(uvc::device & device, uint8_t & intent)
     {
-        xu_write(device, control::stream_intent, intent);
+        xu_write(device, lr_xu, control::stream_intent, intent);
     }
 
     void get_stream_status(const uvc::device & device, int & status)
     {
         uint8_t s[4] = {255, 255, 255, 255};
-        xu_read(device, control::status, s, sizeof(uint32_t));
+        xu_read(device, lr_xu, control::status, s, sizeof(uint32_t));
         status = rsimpl::pack(s[0], s[1], s[2], s[3]);
     }
 
@@ -407,14 +429,14 @@ namespace rsimpl { namespace r200
         try
         {
             uint8_t reset = 1;
-            xu_write(device, control::sw_reset, &reset, sizeof(uint8_t));
+            xu_write(device, lr_xu, control::sw_reset, &reset, sizeof(uint8_t));
         }
         catch(...) {} // xu_write always throws during a control::SW_RESET, since the firmware is unable to send a proper response
     }
 
     bool get_emitter_state(const uvc::device & device, bool is_streaming, bool is_depth_enabled)
     {
-        auto byte = xu_read<uint8_t>(device, control::emitter);
+        auto byte = xu_read<uint8_t>(device, lr_xu, control::emitter);
         if(is_streaming) return (byte & 1 ? true : false);
         else if(byte & 4) return (byte & 2 ? true : false);
         else return is_depth_enabled;
@@ -422,7 +444,7 @@ namespace rsimpl { namespace r200
 
     void set_emitter_state(uvc::device & device, bool state)
     {
-        xu_write(device, control::emitter, uint8_t(state ? 1 : 0));
+        xu_write(device, lr_xu, control::emitter, uint8_t(state ? 1 : 0));
     }
 
 	void get_register_value(uvc::device & device, uint32_t reg, uint32_t & value)

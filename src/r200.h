@@ -15,6 +15,7 @@ namespace rsimpl
         void on_update_depth_units(uint32_t units);
         void on_update_disparity_multiplier(double multiplier);
         uint32_t get_lr_framerate() const;
+
     public:
         r200_camera(std::shared_ptr<uvc::device> device, const static_device_info & info);
         ~r200_camera();

@@ -24,6 +24,18 @@ namespace rsimpl
 
     }
 
+    bool is_fisheye_uvc_control(rs_option option)
+    {
+        return (option == RS_OPTION_FISHEYE_COLOR_EXPOSURE) ||
+               (option == RS_OPTION_FISHEYE_COLOR_GAIN);
+    }
+
+    bool is_fisheye_xu_control(rs_option option)
+    {
+        return (option == RS_OPTION_FISHEYE_STROBE) ||
+               (option == RS_OPTION_FISHEYE_EXT_TRIG);
+    }
+
     std::shared_ptr<rs_device> make_device(std::shared_ptr<uvc::device> device, static_device_info& info, r200::r200_calibration& c)
     {
         info.stream_subdevices[RS_STREAM_DEPTH] = 1;
@@ -113,7 +125,12 @@ namespace rsimpl
             {RS_OPTION_R200_DEPTH_CONTROL_SECOND_PEAK_THRESHOLD,        0, 0x3FF,       1},
             {RS_OPTION_R200_DEPTH_CONTROL_NEIGHBOR_THRESHOLD,           0, 0x3FF,       1},
             {RS_OPTION_R200_DEPTH_CONTROL_LR_THRESHOLD,                 0, 0x7FF,       1},
+            {RS_OPTION_FISHEYE_COLOR_EXPOSURE},
+            {RS_OPTION_FISHEYE_COLOR_GAIN},
+            {RS_OPTION_FISHEYE_STROBE,                                  0, 1,           1, 0},
+            {RS_OPTION_FISHEYE_EXT_TRIG,                               0, 1,           1, 0}
         };
+
 
         // We select the depth/left infrared camera's viewpoint to be the origin
         info.stream_poses[RS_STREAM_DEPTH] = {{{1,0,0},{0,1,0},{0,0,1}},{0,0,0}};
@@ -169,6 +186,12 @@ namespace rsimpl
 
         for(int i=0; i<count; ++i)
         {
+            if(is_fisheye_uvc_control(options[i]))
+            {
+                uvc::set_pu_control_with_retry(get_device(), 3, options[i], static_cast<int>(values[i]));
+                continue;
+            }
+
             if(uvc::is_pu_control(options[i]))
             {
                 uvc::set_pu_control_with_retry(get_device(), 2, options[i], static_cast<int>(values[i]));
@@ -177,6 +200,9 @@ namespace rsimpl
 
             switch(options[i])
             {
+            case RS_OPTION_FISHEYE_STROBE:             r200::set_strobe            (get_device(), static_cast<uint8_t>(values[i])); break;
+            case RS_OPTION_FISHEYE_EXT_TRIG:           r200::set_ext_trig          (get_device(), static_cast<uint8_t>(values[i])); break;
+
             case RS_OPTION_R200_LR_AUTO_EXPOSURE_ENABLED:                   r200::set_lr_exposure_mode(get_device(), static_cast<uint8_t>(values[i])); break;
             case RS_OPTION_R200_LR_GAIN:                                    r200::set_lr_gain(get_device(), {get_lr_framerate(), static_cast<uint32_t>(values[i])}); break; // TODO: May need to set this on start if framerate changes
             case RS_OPTION_R200_LR_EXPOSURE:                                r200::set_lr_exposure(get_device(), {get_lr_framerate(), static_cast<uint32_t>(values[i])}); break; // TODO: May need to set this on start if framerate changes
@@ -274,6 +300,12 @@ namespace rsimpl
 
         for(int i=0; i<count; ++i)
         {
+            if (is_fisheye_uvc_control(options[i]))
+            {
+                values[i] = uvc::get_pu_control(get_device(), 3, options[i]);
+                continue;
+            }
+
             if(uvc::is_pu_control(options[i]))
             {
                 values[i] = uvc::get_pu_control(get_device(), 2, options[i]);
@@ -282,6 +314,10 @@ namespace rsimpl
 
             switch(options[i])
             {
+
+            case RS_OPTION_FISHEYE_STROBE:             values[i] = r200::get_strobe            (get_device()); break;
+            case RS_OPTION_FISHEYE_EXT_TRIG:           values[i] = r200::get_ext_trig          (get_device()); break;
+
             case RS_OPTION_R200_LR_AUTO_EXPOSURE_ENABLED:                   values[i] = r200::get_lr_exposure_mode(get_device()); break;
             
             case RS_OPTION_R200_LR_GAIN: // Gain is framerate dependent
@@ -422,6 +458,17 @@ namespace rsimpl
 
     void r200_camera::get_option_range(rs_option option, double & min, double & max, double & step, double & def)
     {
+        if (is_fisheye_uvc_control(option))
+        {
+            int mn, mx, stp, df;
+            uvc::get_pu_control_range(get_device(), 3, option, &mn, &mx, &stp, &df);
+            min = mn;
+            max = mx;
+            step = stp;
+            def = df;
+            return;
+        }
+
         // Gain min/max is framerate dependent
         if(option == RS_OPTION_R200_LR_GAIN)
         {

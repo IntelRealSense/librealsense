@@ -13,6 +13,9 @@ namespace rsimpl
 {
     namespace r200
     {       
+        const uvc::extension_unit lr_xu = {0, 2, 1, {0x18682d34, 0xdd2c, 0x4073, {0xad, 0x23, 0x72, 0x14, 0x73, 0x9a, 0x07, 0x4c}}};
+        const uvc::extension_unit fisheye_xu = {3, 3, 1, {0xf6c3c3d1, 0x5cde, 0x4477, {0xad, 0xf0, 0x41, 0x33, 0xf5, 0x8d, 0xa6, 0xf4}}};
+
         const int STATUS_BIT_Z_STREAMING = 1 << 0;
         const int STATUS_BIT_LR_STREAMING = 1 << 1;
         const int STATUS_BIT_WEB_STREAMING = 1 << 2;
@@ -40,7 +43,9 @@ namespace rsimpl
         enum class control // UVC extension control codes
         {
             command_response           = 1,
+            FISHEYE_XU_STROBE          = 1,
             iffley                     = 2,
+            FISHEYE_XU_EXT_TRIG        = 2,
             stream_intent              = 3,
             depth_units                = 4,
             min_max                    = 5,
@@ -63,11 +68,11 @@ namespace rsimpl
             hw_timestamp               = 23,
         };
 
-        void xu_read(const uvc::device & device, control xu_ctrl, void * buffer, uint32_t length);
-        void xu_write(uvc::device & device, control xu_ctrl, void * buffer, uint32_t length);
+        void xu_read(const uvc::device & device, uvc::extension_unit xu, control xu_ctrl, void * buffer, uint32_t length);
+        void xu_write(uvc::device & device, uvc::extension_unit xu, control xu_ctrl, void * buffer, uint32_t length);
 
-        template<class T> T xu_read(const uvc::device & dev, control ctrl) { T val; xu_read(dev, ctrl, &val, sizeof(val)); return val; }
-        template<class T> void xu_write(uvc::device & dev, control ctrl, const T & value) { T val = value; xu_write(dev, ctrl, &val, sizeof(val)); }        
+        template<class T> T xu_read(const uvc::device & dev, uvc::extension_unit xu, control ctrl) { T val; xu_read(dev, xu, ctrl, &val, sizeof(val)); return val; }
+        template<class T> void xu_write(uvc::device & dev, uvc::extension_unit xu, control ctrl, const T & value) { T val = value; xu_write(dev, xu, ctrl, &val, sizeof(val)); }
 
         #pragma pack(push, 1)
         struct ae_params // Auto-exposure algorithm parameters
@@ -113,32 +118,38 @@ namespace rsimpl
         bool get_emitter_state(const uvc::device & device, bool is_streaming, bool is_depth_enabled);
         void set_emitter_state(uvc::device & device, bool state);
 
-        inline uint32_t     get_depth_units             (const uvc::device & device) { return xu_read<uint32_t   >(device, control::depth_units); }
-        inline range        get_min_max_depth           (const uvc::device & device) { return xu_read<range      >(device, control::min_max); }
-        inline disp_mode    get_disparity_mode          (const uvc::device & device) { return xu_read<disp_mode  >(device, control::disparity); }
-        inline temperature  get_temperature             (const uvc::device & device) { return xu_read<temperature>(device, control::temperature); }
-        inline dc_params    get_depth_params            (const uvc::device & device) { return xu_read<dc_params  >(device, control::depth_params); }
-        inline uint8_t      get_last_error              (const uvc::device & device) { return xu_read<uint8_t    >(device, control::last_error); }
-        inline rate_value   get_lr_exposure             (const uvc::device & device) { return xu_read<rate_value >(device, control::lr_exposure); }
-        inline ae_params    get_lr_auto_exposure_params (const uvc::device & device) { return xu_read<ae_params  >(device, control::lr_autoexposure_parameters); }
-        inline rate_value   get_lr_gain                 (const uvc::device & device) { return xu_read<rate_value >(device, control::lr_gain); }
-        inline uint8_t      get_lr_exposure_mode        (const uvc::device & device) { return xu_read<uint8_t    >(device, control::lr_exposure_mode); }
-        inline uint32_t     get_disparity_shift         (const uvc::device & device) { return xu_read<uint32_t   >(device, control::disparity_shift); }
-        inline discovery    get_lr_exposure_discovery   (const uvc::device & device) { return xu_read<discovery  >(device, control::lr_exposure_discovery); }
-        inline discovery    get_lr_gain_discovery       (const uvc::device & device) { return xu_read<discovery  >(device, control::lr_gain_discovery); }
+        inline uint32_t     get_depth_units             (const uvc::device & device) { return xu_read<uint32_t   >(device, lr_xu, control::depth_units); }
+        inline range        get_min_max_depth           (const uvc::device & device) { return xu_read<range      >(device, lr_xu, control::min_max); }
+        inline disp_mode    get_disparity_mode          (const uvc::device & device) { return xu_read<disp_mode  >(device, lr_xu, control::disparity); }
+        inline temperature  get_temperature             (const uvc::device & device) { return xu_read<temperature>(device, lr_xu, control::temperature); }
+        inline dc_params    get_depth_params            (const uvc::device & device) { return xu_read<dc_params  >(device, lr_xu, control::depth_params); }
+        inline uint8_t      get_last_error              (const uvc::device & device) { return xu_read<uint8_t    >(device, lr_xu, control::last_error); }
+        inline rate_value   get_lr_exposure             (const uvc::device & device) { return xu_read<rate_value >(device, lr_xu, control::lr_exposure); }
+        inline ae_params    get_lr_auto_exposure_params (const uvc::device & device) { return xu_read<ae_params  >(device, lr_xu, control::lr_autoexposure_parameters); }
+        inline rate_value   get_lr_gain                 (const uvc::device & device) { return xu_read<rate_value >(device, lr_xu, control::lr_gain); }
+        inline uint8_t      get_lr_exposure_mode        (const uvc::device & device) { return xu_read<uint8_t    >(device, lr_xu, control::lr_exposure_mode); }
+        inline uint32_t     get_disparity_shift         (const uvc::device & device) { return xu_read<uint32_t   >(device, lr_xu, control::disparity_shift); }
+        inline discovery    get_lr_exposure_discovery   (const uvc::device & device) { return xu_read<discovery  >(device, lr_xu, control::lr_exposure_discovery); }
+        inline discovery    get_lr_gain_discovery       (const uvc::device & device) { return xu_read<discovery  >(device, lr_xu, control::lr_gain_discovery); }
 
-        inline void         set_depth_units             (uvc::device & device, uint32_t units)      { xu_write(device, control::depth_units, units); }
-        inline void         set_min_max_depth           (uvc::device & device, range min_max)       { xu_write(device, control::min_max, min_max); }       
-        inline void         set_disparity_mode          (uvc::device & device, disp_mode mode)      { xu_write(device, control::disparity, mode); }
-        inline void         set_temperature             (uvc::device & device, temperature temp)    { xu_write(device, control::temperature, temp); }
-        inline void         set_depth_params            (uvc::device & device, dc_params params)    { xu_write(device, control::depth_params, params); }
-        inline void         set_lr_exposure             (uvc::device & device, rate_value exposure) { xu_write(device, control::lr_exposure, exposure); }
-        inline void         set_lr_auto_exposure_params (uvc::device & device, ae_params params)    { xu_write(device, control::lr_autoexposure_parameters, params); }
-        inline void         set_lr_gain                 (uvc::device & device, rate_value gain)     { xu_write(device, control::lr_gain, gain); }
-        inline void         set_lr_exposure_mode        (uvc::device & device, uint8_t mode)        { xu_write(device, control::lr_exposure_mode, mode); }
-        inline void         set_disparity_shift         (uvc::device & device, uint32_t shift)      { xu_write(device, control::disparity_shift, shift); }
-        inline void         set_lr_exposure_discovery   (uvc::device & device, discovery disc)      { xu_write(device, control::lr_exposure_discovery, disc); }
-        inline void         set_lr_gain_discovery       (uvc::device & device, discovery disc)      { xu_write(device, control::lr_gain_discovery, disc); }
+        inline void         set_depth_units             (uvc::device & device, uint32_t units)      { xu_write(device, lr_xu, control::depth_units, units); }
+        inline void         set_min_max_depth           (uvc::device & device, range min_max)       { xu_write(device, lr_xu, control::min_max, min_max); }
+        inline void         set_disparity_mode          (uvc::device & device, disp_mode mode)      { xu_write(device, lr_xu, control::disparity, mode); }
+        inline void         set_temperature             (uvc::device & device, temperature temp)    { xu_write(device, lr_xu, control::temperature, temp); }
+        inline void         set_depth_params            (uvc::device & device, dc_params params)    { xu_write(device, lr_xu, control::depth_params, params); }
+        inline void         set_lr_exposure             (uvc::device & device, rate_value exposure) { xu_write(device, lr_xu, control::lr_exposure, exposure); }
+        inline void         set_lr_auto_exposure_params (uvc::device & device, ae_params params)    { xu_write(device, lr_xu, control::lr_autoexposure_parameters, params); }
+        inline void         set_lr_gain                 (uvc::device & device, rate_value gain)     { xu_write(device, lr_xu, control::lr_gain, gain); }
+        inline void         set_lr_exposure_mode        (uvc::device & device, uint8_t mode)        { xu_write(device, lr_xu, control::lr_exposure_mode, mode); }
+        inline void         set_disparity_shift         (uvc::device & device, uint32_t shift)      { xu_write(device, lr_xu, control::disparity_shift, shift); }
+        inline void         set_lr_exposure_discovery   (uvc::device & device, discovery disc)      { xu_write(device, lr_xu, control::lr_exposure_discovery, disc); }
+        inline void         set_lr_gain_discovery       (uvc::device & device, discovery disc)      { xu_write(device, lr_xu, control::lr_gain_discovery, disc); }
+
+        uint8_t get_strobe(const uvc::device & device);
+        void set_strobe(uvc::device & device, uint8_t strobe);
+        uint8_t get_ext_trig(const uvc::device & device);
+        void set_ext_trig(uvc::device & device, uint8_t ext_trig);
+
 
         ///////////////
         // Streaming //

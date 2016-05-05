@@ -147,7 +147,11 @@ typedef enum rs_option
     RS_OPTION_R200_DEPTH_CONTROL_SECOND_PEAK_THRESHOLD        = 60, 
     RS_OPTION_R200_DEPTH_CONTROL_NEIGHBOR_THRESHOLD           = 61, 
     RS_OPTION_R200_DEPTH_CONTROL_LR_THRESHOLD                 = 62, 
-    RS_OPTION_COUNT                                           = 63,
+    RS_OPTION_FISHEYE_COLOR_EXPOSURE                          = 63,
+    RS_OPTION_FISHEYE_COLOR_GAIN                              = 64,
+    RS_OPTION_FISHEYE_STROBE                                  = 65,
+    RS_OPTION_FISHEYE_EXT_TRIG                                = 66,
+    RS_OPTION_COUNT                                           = 67,
     RS_OPTION_MAX_ENUM = 0x7FFFFFFF
 } rs_option;
 

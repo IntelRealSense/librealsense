@@ -117,7 +117,7 @@ int main(int argc, char * argv[]) try
     //rs::log_to_file(rs::log_severity::debug, "librealsense.log");
 
     glfwInit();
-    auto win = glfwCreateWindow(1550, 960, "CPP Configuration Example", nullptr, nullptr);
+    auto win = glfwCreateWindow(900, 960, "CPP Configuration Example", nullptr, nullptr);
     glfwMakeContextCurrent(win);
     gui g;
     glfwSetWindowUserPointer(win, &g);
@@ -223,7 +223,7 @@ int main(int argc, char * argv[]) try
         
         if(dev->is_streaming())
         {
-            w-=270;
+            //w-=270;
             buffers[0].show(*dev, rs::stream::color, 0, 0, w/3, h/3);
             buffers[1].show(*dev, rs::stream::depth, w/3, 0, w/3, h/3);
             buffers[2].show(*dev, rs::stream::infrared, 0, h/3, w/3, h/3);

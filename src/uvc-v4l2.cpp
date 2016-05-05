@@ -453,6 +453,8 @@ namespace rsimpl
             case RS_OPTION_COLOR_WHITE_BALANCE: return V4L2_CID_WHITE_BALANCE_TEMPERATURE;
             case RS_OPTION_COLOR_ENABLE_AUTO_EXPOSURE: return V4L2_CID_EXPOSURE_AUTO; // Automatic gain/exposure control
             case RS_OPTION_COLOR_ENABLE_AUTO_WHITE_BALANCE: return V4L2_CID_AUTO_WHITE_BALANCE;
+            case RS_OPTION_FISHEYE_COLOR_EXPOSURE: return V4L2_CID_EXPOSURE_ABSOLUTE;
+            case RS_OPTION_FISHEYE_COLOR_GAIN: return V4L2_CID_GAIN;
             default: throw std::runtime_error(to_string() << "no v4l2 cid for option " << option);
             }
         }
@@ -605,7 +607,7 @@ namespace rsimpl
                 }
                 if(is_new_device)
                 {
-                    if (sub->vid == 1204 && sub->pid == 195)  // avoid inserting fisheye camera as a device
+                    if (sub->vid == 32902 && sub->pid == 2768)  // avoid inserting fisheye camera as a device
                         continue;
 
                     devices.push_back(std::make_shared<device>(context));
@@ -631,7 +633,7 @@ namespace rsimpl
 
                 for(auto & dev : devices)
                 {
-                    if (dev->subdevices[0]->vid == 32902 && dev->subdevices[0]->pid == 2763 && sub->vid == 1204 && sub->pid == 195)
+                    if (dev->subdevices[0]->vid == 32902 && dev->subdevices[0]->pid == 2763 && sub->vid == 32902 && sub->pid == 2768)
                     {
                         dev->subdevices.push_back(move(sub));
                         break;
