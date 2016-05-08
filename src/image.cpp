@@ -58,7 +58,7 @@ namespace rsimpl
     void unpack_y8_from_y16_10 (byte * const d[], const byte * s, int n) { unpack_pixels(d, n, reinterpret_cast<const uint16_t *>(s), [](uint16_t pixel) -> uint8_t  { return pixel >> 2; }); }
     void unpack_rw10_from_rw8 (byte *  const d[], const byte * s, int n)
     {
-        unsigned short* from = (unsigned short*)s + 1;
+        unsigned short* from = (unsigned short*)s;
         byte* to = d[0];
 
         for(int i = 0; i < n; ++i)

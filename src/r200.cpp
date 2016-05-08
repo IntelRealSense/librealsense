@@ -417,7 +417,7 @@ namespace rsimpl
         }
 
         // Select the "latest arriving" stream which is running at the fastest framerate
-        for(auto s : {RS_STREAM_COLOR, RS_STREAM_INFRARED2, RS_STREAM_INFRARED})
+        for(auto s : {RS_STREAM_COLOR, RS_STREAM_INFRARED2, RS_STREAM_INFRARED, RS_STREAM_FISHEYE})
         {
             if(fps[s] == max_fps) return s;
         }
@@ -587,7 +587,7 @@ namespace rsimpl
     std::shared_ptr<frame_timestamp_reader> r200_camera::create_frame_timestamp_reader() const
     {
         // If left, right, or Z streams are enabled, convert frame numbers to millisecond timestamps based on LRZ framerate
-        for(auto s : {RS_STREAM_DEPTH, RS_STREAM_INFRARED, RS_STREAM_INFRARED2})
+        for(auto s : {RS_STREAM_DEPTH, RS_STREAM_INFRARED, RS_STREAM_INFRARED2, RS_STREAM_FISHEYE})
         {
             auto & si = get_stream_interface(s);
             if(si.is_enabled()) return std::make_shared<dinghy_timestamp_reader>(si.get_framerate());
