@@ -11,6 +11,8 @@
 #include <functional>   // For function
 #include <thread>       // For this_thread::sleep_for
 
+#define PID_INTEL_CAMERA 0x8086
+
 namespace rsimpl
 {
     namespace uvc
