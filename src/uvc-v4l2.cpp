@@ -81,7 +81,8 @@ namespace rsimpl
             std::vector<buffer> buffers;
 
             int width, height, format, fps;
-            std::function<void(const void *)> callback;
+            std::function<void(const void *)> callback;                 // calback to handle uvc stream
+            std::function<void(const void *)> channel_data_callback;    // handle non-uvc data produced by device
             bool is_capturing;
 
             subdevice(const std::string & name) : dev_name("/dev/" + name), vid(), pid(), fd(), width(), height(), format(), is_capturing()

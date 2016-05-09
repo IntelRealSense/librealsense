@@ -151,6 +151,20 @@ typedef enum rs_option
 } rs_option;
 
 
+typedef enum rs_channel_transport
+{
+    RS_USB_BULK         = 0,
+    RS_USB_INTERRUPT    = 1,
+    RS_MAX_CHANNEL_TRANSPORT
+};
+
+typedef enum rs_data_channel
+{
+    RS_HW_EVENTS        = 0,
+    RS_SENSOR_DATA      = 1,
+    RS_MAX_DATA_TYPE
+};
+
 typedef struct rs_intrinsics
 {
     int           width;     /* width of the image in pixels */
@@ -329,6 +343,41 @@ int rs_get_stream_framerate(const rs_device * device, rs_stream stream, rs_error
  * \param[out] error   if non-null, receives any error that occurs during this call, otherwise, errors are ignored
  */
 void rs_get_stream_intrinsics(const rs_device * device, rs_stream stream, rs_intrinsics * intrin, rs_error ** error);
+
+/// check whether the specific device support data aqcuisition channels
+/// \param[in] transport    the transport layer utilized by the channel:  USB, COM, etc'.
+/// \param[in] data_channel the data to acquired: sensors data, hw statuses, etc'
+bool rs_supports_channel(rs_channel_transport transport, rs_data_channel channel)
+supports_channel(channel_transport transport, data_channel channel)
+{
+    rs_error * e = nullptr;
+    auto res = rs_supports_channel((rs_device *)this, (rs_channel_transport)transport, rs_data_channel(channel));
+    error::handle(e);
+    return res;
+}
+
+/// enable a specific data channel with specific properties
+/// \param[in] transport    the transport layer utilized by the channel (USB,COM,etc')
+/// \param[in] data_format  the data format that will be handled by the channel
+/// \param[in] framerate    the number of data frames that will be published per second, or 0 if any rate is acceptable
+void enable_channel(channel_transport transport, data_channel channel,  int framerate, std::function<void(const void * data)> callback)
+{
+    rs_error * e = nullptr;
+    rs_enable_channel((rs_device *)this, (rs_channel_transport)transport, rs_data_channel(channel), framerate, callback, &e);
+    error::handle(e);
+}
+
+/// disable a specific data channel
+/// \param[in] chanel_type  the supported types ar
+/// \param[in] data_format  the data format that will be handled by the channel
+/// \param[in] framerate    the number of data frames that will be published per second, or 0 if any rate is acceptable
+void disable_channel(channel_transport transport, data_channel channel)
+{
+    rs_error * e = nullptr;
+    rs_disable_channel((rs_device *)this, (rs_channel_transport)transport, rs_data_channel(channel), &e);
+    error::handle(e);
+}
+
 
 /**
  * begin streaming on all enabled streams for this device

@@ -24,6 +24,12 @@ int main() try
 
     // Configure depth to run at VGA resolution at 30 frames per second
     dev->enable_stream(rs::stream::depth, 640, 480, rs::format::z16, 30);
+
+    // Ev - IMU data will be parsed and handled in client code
+    if (dev->provides_data_channel(channel_type::async, data_type::imu_data)
+        dev->enable_channel(imu_data, fps, config str,usr_calback_func);
+
+    // Ev modify device start to include IMU channel activation
     dev->start();
 
     // Determine depth value corresponding to one meter

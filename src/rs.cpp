@@ -209,7 +209,37 @@ void rs_get_stream_intrinsics(const rs_device * device, rs_stream stream, rs_int
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, device, stream, intrin)
 
+bool rs_supports_channel(rs_channel_transport transport, rs_data_channel channel, rs_error ** error) try
+{
+    VALIDATE_NOT_NULL(device);
+    VALIDATE_ENUM(transport);
+    VALIDATE_ENUM(channel);
 
+    return device->supports_chanel(transport, channel);
+
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, device, transport, channel)
+
+void rs_enable_channel(const rs_device * device, rs_channel_transport transport, rs_data_channel channel, int framerate, callback, &e) try
+{
+    VALIDATE_NOT_NULL(device);
+    VALIDATE_ENUM(transport);
+    VALIDATE_ENUM(channel);
+    VALIDATE_RANGE(framerate, 0, INT_MAX);  // TODO Specify the maximum allowed frame rate
+
+    device->enable_channel(transport, channel, framerate, callback);
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, device, transport, channel, framerate, callback)
+
+void rs_disable_channel(const rs_device * device, rs_channel_transport transport, rs_data_channel channel, &e) try
+{
+    VALIDATE_NOT_NULL(device);
+    VALIDATE_ENUM(transport);
+    VALIDATE_ENUM(channel);
+
+    device->disable_channel(transport, channel);
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, device, transport, channel)
 
 void rs_start_device(rs_device * device, rs_error ** error) try
 {
