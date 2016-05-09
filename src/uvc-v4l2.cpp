@@ -312,6 +312,7 @@ namespace rsimpl
                             if(errno == EAGAIN) return;
                             throw_error("VIDIOC_DQBUF");
                         }
+
                         assert(buf.index < sub->buffers.size());
                         sub->callback(sub->buffers[buf.index].start);
 
@@ -607,7 +608,7 @@ namespace rsimpl
                 }
                 if(is_new_device)
                 {
-                    if (sub->vid == 32902 && sub->pid == 2768)  // avoid inserting fisheye camera as a device
+                    if (sub->vid == 0x8086 && sub->pid == 0x0ad0)  // avoid inserting fisheye camera as a device
                         continue;
 
                     devices.push_back(std::make_shared<device>(context));
@@ -633,7 +634,7 @@ namespace rsimpl
 
                 for(auto & dev : devices)
                 {
-                    if (dev->subdevices[0]->vid == 32902 && dev->subdevices[0]->pid == 2763 && sub->vid == 32902 && sub->pid == 2768)
+                    if (dev->subdevices[0]->vid == 0x8086 && dev->subdevices[0]->pid == 0x0acb && sub->vid == 0x8086 && sub->pid == 0x0ad0)
                     {
                         dev->subdevices.push_back(move(sub));
                         break;
