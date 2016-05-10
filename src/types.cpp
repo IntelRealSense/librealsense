@@ -49,6 +49,7 @@ namespace rsimpl
         CASE(Y8)
         CASE(Y16)
         CASE(RAW10)
+        CASE(RAW16)
         default: assert(!is_valid(value)); return nullptr;
         }
         #undef CASE
@@ -102,7 +103,7 @@ namespace rsimpl
         CASE(F200_MOTION_RANGE)
         CASE(F200_FILTER_OPTION)
         CASE(F200_CONFIDENCE_THRESHOLD)
-        CASE(SR300_DYNAMIC_FPS)
+        CASE(F200_DYNAMIC_FPS)
         CASE(SR300_AUTO_RANGE_ENABLE_MOTION_VERSUS_RANGE) 
         CASE(SR300_AUTO_RANGE_ENABLE_LASER)               
         CASE(SR300_AUTO_RANGE_MIN_MOTION_VERSUS_RANGE)    

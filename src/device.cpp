@@ -132,15 +132,16 @@ bool rs_device::poll_all_streams()
     return archive->poll_for_frames();
 }
 
-void rs_device::get_option_range(rs_option option, double & min, double & max, double & step)
+void rs_device::get_option_range(rs_option option, double & min, double & max, double & step, double & def)
 {
     if(uvc::is_pu_control(option))
     {
-        int mn, mx;
-        uvc::get_pu_control_range(get_device(), config.info.stream_subdevices[RS_STREAM_COLOR], option, &mn, &mx);
-        min = mn;
-        max = mx;
-        step = 1;
+        int mn, mx, stp, df;
+        uvc::get_pu_control_range(get_device(), config.info.stream_subdevices[RS_STREAM_COLOR], option, &mn, &mx, &stp, &df);
+        min  = mn;
+        max  = mx;
+        step = stp;
+        def  = df;
         return;
     }
 
@@ -151,6 +152,7 @@ void rs_device::get_option_range(rs_option option, double & min, double & max, d
             min = o.min;
             max = o.max;
             step = o.step;
+            def = o.def;
             return;
         }
     }
