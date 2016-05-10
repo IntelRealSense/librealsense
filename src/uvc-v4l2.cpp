@@ -30,8 +30,6 @@
 
 #include <libusb.h>
 
-#include <iostream>
-
 namespace rsimpl
 {
     namespace uvc
