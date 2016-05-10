@@ -8,7 +8,7 @@
 extern "C" {
 #endif
 
-#define RS_API_VERSION 4
+#define RS_API_VERSION 5
 
 
 typedef enum rs_stream
