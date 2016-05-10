@@ -24,6 +24,9 @@ EXPORTS
 	rs_get_stream_format
 	rs_get_stream_framerate
 	rs_get_stream_intrinsics
+	rs_supports_channel
+	rs_enable_channel
+	rs_disable_channel
 	
 	rs_start_device
 	rs_stop_device

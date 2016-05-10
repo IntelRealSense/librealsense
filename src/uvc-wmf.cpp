@@ -33,6 +33,7 @@
 #include <SetupAPI.h>
 #include <WinUsb.h>
 
+#include <functional>
 #include <thread>
 #include <chrono>
 #include <algorithm>

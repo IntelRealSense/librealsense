@@ -162,13 +162,13 @@ namespace rsimpl
 
             void get_control(const extension_unit & xu, uint8_t control, void * data, size_t size)
             {
-	        uvc_xu_control_query q = {static_cast<uint8_t>(xu.unit), control, UVC_GET_CUR, static_cast<uint16_t>(size), reinterpret_cast<uint8_t *>(data)};
+            uvc_xu_control_query q = {static_cast<uint8_t>(xu.unit), control, UVC_GET_CUR, static_cast<uint16_t>(size), reinterpret_cast<uint8_t *>(data)};
                 if(xioctl(fd, UVCIOC_CTRL_QUERY, &q) < 0) throw_error("UVCIOC_CTRL_QUERY:UVC_GET_CUR");
             }
 
             void set_control(const extension_unit & xu, uint8_t control, void * data, size_t size)
             {
-	        uvc_xu_control_query q = {static_cast<uint8_t>(xu.unit), control, UVC_SET_CUR, static_cast<uint16_t>(size), reinterpret_cast<uint8_t *>(data)};
+            uvc_xu_control_query q = {static_cast<uint8_t>(xu.unit), control, UVC_SET_CUR, static_cast<uint16_t>(size), reinterpret_cast<uint8_t *>(data)};
                 if(xioctl(fd, UVCIOC_CTRL_QUERY, &q) < 0) throw_error("UVCIOC_CTRL_QUERY:UVC_SET_CUR");
             }
 
@@ -605,6 +605,9 @@ namespace rsimpl
                 }
                 if(is_new_device)
                 {
+                    // TODO Fisheye patch
+                    if (sub->vid == 0x8086 && sub->pid == 0x0ad0)  // avoid inserting fisheye camera as a device
+                        continue;
                     devices.push_back(std::make_shared<device>(context));
                     devices.back()->subdevices.push_back(move(sub));
                 }
@@ -618,6 +621,24 @@ namespace rsimpl
                     return a->mi < b->mi;
                 });
             }
+
+
+            // Insert fisheye camera as subDevice of ZR300
+            for(auto & sub : subdevices)
+            {
+                if (!sub)
+                    continue;
+
+                for(auto & dev : devices)
+                {
+                    if (dev->subdevices[0]->vid == 0x8086 && dev->subdevices[0]->pid == 0x0acb && sub->vid == 0x8086 && sub->pid == 0x0ad0)
+                    {
+                        dev->subdevices.push_back(move(sub));
+                        break;
+                    }
+                }
+            }
+
 
             // Obtain libusb_device_handle for each device
             libusb_device ** list;

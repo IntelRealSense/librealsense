@@ -151,19 +151,21 @@ typedef enum rs_option
 } rs_option;
 
 
-typedef enum rs_channel_transport
+typedef enum rs_transport
 {
-    RS_USB_BULK         = 0,
-    RS_USB_INTERRUPT    = 1,
-    RS_MAX_CHANNEL_TRANSPORT
-};
+    RS_TRANSPORT_USB_BULK         = 0,
+	RS_TRANSPORT_USB_INTERRUPT    = 1,
+	RS_TRANSPORT_COUNT,	
+	RS_TRANSPORT_MAX_ENUM = 0x7FFFFFFF
+} rs_transport;
 
-typedef enum rs_data_channel
+typedef enum rs_channel
 {
-    RS_HW_EVENTS        = 0,
-    RS_SENSOR_DATA      = 1,
-    RS_MAX_DATA_TYPE
-};
+    RS_CHANNEL_HW_EVENTS        = 0,
+	RS_CHANNEL_SENSOR_DATA      = 1,
+	RS_CHANNEL_COUNT,
+	RS_CHANNEL_MAX_ENUM = 0x7FFFFFFF
+} rs_channel;
 
 typedef struct rs_intrinsics
 {
@@ -344,40 +346,28 @@ int rs_get_stream_framerate(const rs_device * device, rs_stream stream, rs_error
  */
 void rs_get_stream_intrinsics(const rs_device * device, rs_stream stream, rs_intrinsics * intrin, rs_error ** error);
 
-/// check whether the specific device support data aqcuisition channels
-/// \param[in] transport    the transport layer utilized by the channel:  USB, COM, etc'.
-/// \param[in] data_channel the data to acquired: sensors data, hw statuses, etc'
-bool rs_supports_channel(rs_channel_transport transport, rs_data_channel channel)
-supports_channel(channel_transport transport, data_channel channel)
-{
-    rs_error * e = nullptr;
-    auto res = rs_supports_channel((rs_device *)this, (rs_channel_transport)transport, rs_data_channel(channel));
-    error::handle(e);
-    return res;
-}
+/**
+* check whether the device provides the requested data aqcuisition channels
+* \param[in] transport    the transport layer utilized by the channel:  USB, COM, etc'.
+* \param[in] data_channel the data to acquired: sensors data, hw statuses, etc'
+*/
+int rs_supports_channel(const rs_device * device, rs_transport transport, rs_channel channel, rs_error ** error);
 
-/// enable a specific data channel with specific properties
-/// \param[in] transport    the transport layer utilized by the channel (USB,COM,etc')
-/// \param[in] data_format  the data format that will be handled by the channel
-/// \param[in] framerate    the number of data frames that will be published per second, or 0 if any rate is acceptable
-void enable_channel(channel_transport transport, data_channel channel,  int framerate, std::function<void(const void * data)> callback)
-{
-    rs_error * e = nullptr;
-    rs_enable_channel((rs_device *)this, (rs_channel_transport)transport, rs_data_channel(channel), framerate, callback, &e);
-    error::handle(e);
-}
+/**
+ * enable a specific data channel with specific properties
+ * \param[in] transport    the transport layer utilized by the channel (USB,COM,etc')
+ * \param[in] data_format  the data format that will be handled by the channel
+ * \param[in] framerate    the number of data frames that will be published per second, or 0 if any rate is acceptable
+ */
+void rs_enable_channel(rs_device * device, rs_transport transport, rs_channel channel, int framerate/*, std::function<void(const void * data)> callback*/, rs_error ** error);
 
-/// disable a specific data channel
-/// \param[in] chanel_type  the supported types ar
-/// \param[in] data_format  the data format that will be handled by the channel
-/// \param[in] framerate    the number of data frames that will be published per second, or 0 if any rate is acceptable
-void disable_channel(channel_transport transport, data_channel channel)
-{
-    rs_error * e = nullptr;
-    rs_disable_channel((rs_device *)this, (rs_channel_transport)transport, rs_data_channel(channel), &e);
-    error::handle(e);
-}
-
+/**
+ * disable a specific data channel
+ * \param[in] chanel_type  the supported types ar
+ * \param[in] data_format  the data format that will be handled by the channel
+ * \param[in] framerate    the number of data frames that will be published per second, or 0 if any rate is acceptable
+ */
+void rs_disable_channel(rs_device * device, rs_transport transport, rs_channel channel, rs_error ** error);
 
 /**
  * begin streaming on all enabled streams for this device
@@ -489,6 +479,8 @@ const char * rs_format_to_string     (rs_format format);
 const char * rs_preset_to_string     (rs_preset preset);
 const char * rs_distortion_to_string (rs_distortion distortion);
 const char * rs_option_to_string     (rs_option option);
+const char * rs_transport_to_string	 (rs_transport transport);
+const char * rs_channel_to_string    (rs_channel channel);
 
 typedef enum
 {

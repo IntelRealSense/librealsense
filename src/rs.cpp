@@ -1,10 +1,13 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
+#include <functional>   // For function
+#include <climits>
+
 #include "context.h"
 #include "device.h"
 
-#include <climits>
+
 
 ////////////////////////
 // API implementation //
@@ -209,29 +212,27 @@ void rs_get_stream_intrinsics(const rs_device * device, rs_stream stream, rs_int
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, device, stream, intrin)
 
-bool rs_supports_channel(rs_channel_transport transport, rs_data_channel channel, rs_error ** error) try
+int rs_supports_channel(const rs_device * device, rs_transport transport, rs_channel channel, rs_error ** error) try
 {
     VALIDATE_NOT_NULL(device);
     VALIDATE_ENUM(transport);
     VALIDATE_ENUM(channel);
-
-    return device->supports_chanel(transport, channel);
-
+	return device->supports_channel(transport, channel);
 }
-HANDLE_EXCEPTIONS_AND_RETURN(, device, transport, channel)
+HANDLE_EXCEPTIONS_AND_RETURN( false, device, transport, channel)
 
-void rs_enable_channel(const rs_device * device, rs_channel_transport transport, rs_data_channel channel, int framerate, callback, &e) try
+void rs_enable_channel(rs_device * device, rs_transport transport, rs_channel channel, int framerate, /*std::function<void(const void * data)> callback,*/ rs_error ** error) try
 {
     VALIDATE_NOT_NULL(device);
     VALIDATE_ENUM(transport);
     VALIDATE_ENUM(channel);
-    VALIDATE_RANGE(framerate, 0, INT_MAX);  // TODO Specify the maximum allowed frame rate
+    VALIDATE_RANGE(framerate, 0, INT_MAX);			// TODO Specify the maximum allowed frame rate
 
-    device->enable_channel(transport, channel, framerate, callback);
+    device->enable_channel(transport, channel, framerate/*, callback*/);
 }
-HANDLE_EXCEPTIONS_AND_RETURN(, device, transport, channel, framerate, callback)
+HANDLE_EXCEPTIONS_AND_RETURN(, device, transport, channel, framerate)
 
-void rs_disable_channel(const rs_device * device, rs_channel_transport transport, rs_data_channel channel, &e) try
+void rs_disable_channel(rs_device * device, rs_transport transport, rs_channel channel, rs_error ** error) try
 {
     VALIDATE_NOT_NULL(device);
     VALIDATE_ENUM(transport);
@@ -338,7 +339,19 @@ const char * rs_get_option_name(rs_option option, rs_error ** error) try
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, option)
 
+const char * rs_get_transport_name(rs_transport transport, rs_error ** error) try
+{
+	VALIDATE_ENUM(transport);
+	return rsimpl::get_string(transport);
+}
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, transport)
 
+const char * rs_get_channel_name(rs_channel channel, rs_error ** error) try
+{
+	VALIDATE_ENUM(channel);
+	return rsimpl::get_string(channel);
+}
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, channel)
 
 void rs_get_device_option_range(rs_device * device, rs_option option, double * min, double * max, double * step, double * def, rs_error ** error) try
 {
@@ -421,7 +434,8 @@ const char * rs_format_to_string(rs_format format) { return rsimpl::get_string(f
 const char * rs_preset_to_string(rs_preset preset) { return rsimpl::get_string(preset); }
 const char * rs_distortion_to_string(rs_distortion distortion) { return rsimpl::get_string(distortion); }
 const char * rs_option_to_string(rs_option option) { return rsimpl::get_string(option); }
-
+const char * rs_transport_to_string(rs_transport transport) { return rsimpl::get_string(transport); }
+const char * rs_channel_to_string(rs_channel data) { return rsimpl::get_string(data); }
 
 
 void rs_log_to_console(rs_log_severity min_severity, rs_error ** error) try

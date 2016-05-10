@@ -54,6 +54,10 @@ public:
     void                                        enable_stream_preset(rs_stream stream, rs_preset preset);    
     void                                        disable_stream(rs_stream stream);
 
+	bool										supports_channel(rs_transport transport, rs_channel channel) const;
+	void										enable_channel(rs_transport transport, rs_channel channel, int fps);
+	void										disable_channel(rs_transport transport, rs_channel channel);
+
     void                                        start();
     void                                        stop();
     bool                                        is_capturing() const { return capturing; }

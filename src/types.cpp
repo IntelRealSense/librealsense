@@ -155,6 +155,34 @@ namespace rsimpl
         #undef CASE
     }
 
+    const char * get_string(rs_transport value)
+    {
+        #define CASE(X) case RS_TRANSPORT_##X: return #X;
+        switch (value)
+        {
+        CASE(USB_BULK)
+        CASE(USB_INTERRUPT)
+        CASE(COUNT)
+        CASE(MAX_ENUM)
+        default: assert(!is_valid(value)); return nullptr;
+        }
+        #undef CASE
+    }
+
+    const char * get_string(rs_channel value)
+    {
+        #define CASE(X) case RS_CHANNEL_##X: return #X;
+        switch (value)
+        {
+        CASE(HW_EVENTS)
+        CASE(SENSOR_DATA)
+        CASE(COUNT)
+        CASE(MAX_ENUM)
+        default: assert(!is_valid(value)); return nullptr;
+        }
+        #undef CASE
+    }
+
     size_t subdevice_mode_selection::get_image_size(rs_stream stream) const
     {
         return rsimpl::get_image_size(get_width(), get_height(), get_format(stream));
@@ -208,6 +236,7 @@ namespace rsimpl
     static_device_info::static_device_info()
     {
         for(auto & s : stream_subdevices) s = -1;
+		for(auto & s : data_subdevices) s = -1;		
         for(auto & s : presets) for(auto & p : s) p = stream_request();
         for(auto & p : stream_poses)
         {

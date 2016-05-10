@@ -45,14 +45,14 @@ namespace rs
         raw16 = 12  ///< Four 10-bit luminance filled in 16 bit pixel (6 bit unused)
     };
 
-    enum class data_channel : int8_t
+    enum class channel : int8_t
     {
         hw_events       = 0,
         sensor_data     = 1,
         max_data_type
     };
 
-    enum class channel_transport : int8_t
+    enum class transport : int8_t
     {
         usb_bulk        = 0,
         usb_interrupt   = 1,
@@ -421,10 +421,10 @@ namespace rs
         /// check whether the specific device support data aqcuisition channels
         /// \param[in] transport    the transport layer utilized by the channel:  USB, COM, etc'.
         /// \param[in] data_channel the data to acquired: sensors data, hw statuses, etc'
-        bool supports_channel(channel_transport transport, data_channel channel)
+        int supports_channel(transport transport, channel channel)
         {
             rs_error * e = nullptr;
-            auto res = rs_supports_channel((rs_device *)this, (rs_channel_transport)transport, rs_data_channel(channel));
+            auto res = rs_supports_channel((const rs_device *)this, (rs_transport)transport, rs_channel(channel), &e);
             error::handle(e);
             return res;
         }
@@ -433,10 +433,10 @@ namespace rs
         /// \param[in] transport    the transport layer utilized by the channel (USB,COM,etc')
         /// \param[in] data_format  the data format that will be handled by the channel
         /// \param[in] framerate    the number of data frames that will be published per second, or 0 if any rate is acceptable
-        void enable_channel(channel_transport transport, data_channel channel,  int framerate, std::function<void(const void * data)> callback)
+        void enable_channel(transport transport, channel channel,  int framerate/*, std::function<void(const void * data)> callback*/)
         {
             rs_error * e = nullptr;
-            rs_enable_channel((rs_device *)this, (rs_channel_transport)transport, rs_data_channel(channel), framerate, callback, &e);
+            rs_enable_channel((rs_device *)this, (rs_transport)transport, rs_channel(channel), framerate/*, callback*/, &e);
             error::handle(e);
         }
 
@@ -444,10 +444,10 @@ namespace rs
         /// \param[in] chanel_type  the supported types ar
         /// \param[in] data_format  the data format that will be handled by the channel
         /// \param[in] framerate    the number of data frames that will be published per second, or 0 if any rate is acceptable
-        void disable_channel(channel_transport transport, data_channel channel)
+        void disable_channel(transport transport, channel channel)
         {
             rs_error * e = nullptr;
-            rs_disable_channel((rs_device *)this, (rs_channel_transport)transport, rs_data_channel(channel), &e);
+            rs_disable_channel((rs_device *)this, (rs_transport)transport, rs_channel(channel), &e);
             error::handle(e);
         }
 
@@ -581,6 +581,8 @@ namespace rs
     inline std::ostream & operator << (std::ostream & o, preset preset) { return o << rs_preset_to_string((rs_preset)preset); }
     inline std::ostream & operator << (std::ostream & o, distortion distortion) { return o << rs_distortion_to_string((rs_distortion)distortion); }
     inline std::ostream & operator << (std::ostream & o, option option) { return o << rs_option_to_string((rs_option)option); }
+	inline std::ostream & operator << (std::ostream & o, transport transport) { return o << rs_transport_to_string((rs_transport)transport); }
+	inline std::ostream & operator << (std::ostream & o, channel data) { return o << rs_channel_to_string((rs_channel)data); }
 
     enum class log_severity : int32_t
     {

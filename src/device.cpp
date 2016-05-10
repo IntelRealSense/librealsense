@@ -62,6 +62,47 @@ void rs_device::disable_stream(rs_stream stream)
     for(auto & s : native_streams) s->archive.reset(); // Changing stream configuration invalidates the current stream info
 }
 
+bool rs_device::supports_channel(rs_transport transport, rs_channel channel) const
+{
+	bool bRes = false;
+	//TODO Evgeni
+	throw std::runtime_error("function not implemented");
+	return bRes;
+}
+
+void rs_device::enable_channel(rs_transport transport, rs_channel channel, int fps)
+{
+	if (capturing) throw std::runtime_error("channel cannot be reconfigured after having called rs_start_device()");
+	
+	bool bsuccess = false;
+	// TODO Evgeni - attach the channel interface to a specific subdevice
+	for (int i = 0; i < RS_STREAM_NATIVE_COUNT; i++) 
+		if (config.info.data_subdevices[i] != -1) 
+		{
+			config.data_requests[i] = { true, transport, channel, fps };			
+			bsuccess = true;
+			break;
+		}
+
+	if (!bsuccess)
+		throw std::runtime_error("device does not support the specified data channel");
+	
+	// TODO Evgeni - provisional reset accumulated data	
+}
+
+void rs_device::disable_channel(rs_transport transport, rs_channel channel)
+{
+	if (capturing) throw std::runtime_error("channel cannot be reconfigured after having called rs_start_device()");
+
+	// TODO Evgeni - attach the channel interface to a specific subdevice
+	for (int i = 0; i < RS_STREAM_NATIVE_COUNT; i++)
+		if (config.info.data_subdevices[i] != -1)
+		{
+			config.data_requests[i] = {  };
+			break;
+		}		
+}
+
 void rs_device::start()
 {
     if(capturing) throw std::runtime_error("cannot restart device without first stopping device");
@@ -103,6 +144,36 @@ void rs_device::start()
         });
     }
     
+	// Activate the required data channels, and provide it with user-specified data handler	
+	for (auto mode_selection : selected_modes)
+	{
+		// Create a stream buffer for each stream served by this subdevice mode
+		for (auto & stream_mode : mode_selection.get_outputs())
+		{
+			// If this is one of the streams requested by the user, store the buffer so they can access it
+			if (config.requests[stream_mode.first].enabled) native_streams[stream_mode.first]->archive = archive;
+		}
+
+		// Initialize the subdevice and set it to the selected mode
+		set_subdevice_mode(*device, mode_selection.mode.subdevice, mode_selection.mode.native_dims.x, mode_selection.mode.native_dims.y, mode_selection.mode.pf.fourcc, mode_selection.mode.fps,
+			[mode_selection, archive, timestamp_reader](const void * frame) mutable
+		{
+			// Ignore any frames which appear corrupted or invalid
+			if (!timestamp_reader->validate_frame(mode_selection.mode, frame)) return;
+
+			// Determine the timestamp for this frame
+			int timestamp = timestamp_reader->get_frame_timestamp(mode_selection.mode, frame);
+
+			// Obtain buffers for unpacking the frame
+			std::vector<byte *> dest;
+			for (auto & output : mode_selection.get_outputs()) dest.push_back(archive->alloc_frame(output.first, timestamp));
+
+			// Unpack the frame and commit it to the archive
+			mode_selection.unpack(dest.data(), reinterpret_cast<const byte *>(frame));
+			for (auto & output : mode_selection.get_outputs()) archive->commit_frame(output.first);
+		});
+	}
+
     this->archive = archive;
     on_before_start(selected_modes);
     start_streaming(*device, config.info.num_libuvc_transfer_buffers);

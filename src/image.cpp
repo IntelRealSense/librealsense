@@ -344,14 +344,14 @@ namespace rsimpl
                     rs_deproject_pixel_to_point(depth_point, &depth_intrin, depth_pixel, depth);
                     rs_transform_point_to_point(other_point, &depth_to_other, depth_point);
                     rs_project_point_to_pixel(other_pixel, &other_intrin, other_point);
-                    const int other_x0 = std::round(other_pixel[0]), other_y0 = std::round(other_pixel[1]);
+                    const int other_x0 = (int)std::round(other_pixel[0]), other_y0 = (int)std::round(other_pixel[1]);
 
                     // Map the bottom-right corner of the depth pixel onto the other image
                     depth_pixel[0] = depth_x+0.5f; depth_pixel[1] = depth_y+0.5f;
                     rs_deproject_pixel_to_point(depth_point, &depth_intrin, depth_pixel, depth);
                     rs_transform_point_to_point(other_point, &depth_to_other, depth_point);
                     rs_project_point_to_pixel(other_pixel, &other_intrin, other_point);
-                    const int other_x1 = std::round(other_pixel[0]), other_y1 = std::round(other_pixel[1]);
+                    const int other_x1 = (int)std::round(other_pixel[0]), other_y1 = (int)std::round(other_pixel[1]);
 
                     if(other_x0 < 0 || other_y0 < 0 || other_x1 >= other_intrin.width || other_y1 >= other_intrin.height) continue;
 

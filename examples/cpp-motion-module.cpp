@@ -9,6 +9,8 @@
 #include <librealsense/rs.hpp>
 #include <cstdio>
 
+using namespace rs;
+
 int main() try
 {
     // Create a context object. This object owns the handles to all connected realsense devices.
@@ -25,6 +27,11 @@ int main() try
     // Configure depth to run at VGA resolution at 30 frames per second
     dev->enable_stream(rs::stream::depth, 640, 480, rs::format::z16, 30);
 
+    // Ev - IMU data will be parsed and handled in client code
+    if (dev->supports_channel(transport::usb_interrupt, channel::sensor_data))
+        dev->enable_channel(transport::usb_interrupt, channel::sensor_data, 30/*, usr_calback_func*/);
+
+    // Ev modify device start to include IMU channel activation
     dev->start();
 
     // Determine depth value corresponding to one meter
