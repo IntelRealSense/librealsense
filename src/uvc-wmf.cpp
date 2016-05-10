@@ -3,8 +3,8 @@
 
 #ifdef RS_USE_WMF_BACKEND
 
-#if (_MSC_FULL_VER < 180040629)
-    #error At least Visual Studio 2013 Update 5 is required to compile this backend
+#if (_MSC_FULL_VER < 180031101)
+    #error At least Visual Studio 2013 Update 4 is required to compile this backend
 #endif
 
 #include "uvc.h"
