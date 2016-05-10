@@ -14,7 +14,6 @@ namespace rsimpl
     r200_camera::r200_camera(std::shared_ptr<uvc::device> device, const static_device_info & info) : rs_device(device, info)
     {
         rs_option opt[] = {RS_OPTION_R200_DEPTH_UNITS};
-        rs_option opt[] = {RS_OPTION_R200_DEPTH_UNITS};
         double units;
         get_options(opt, 1, &units);
         on_update_depth_units(static_cast<int>(units));
@@ -221,42 +220,6 @@ namespace rsimpl
         if(disp_writer.active) on_update_disparity_multiplier(disp_writer.struct_.disparity_multiplier);
         ae_writer.commit();
         dc_writer.commit();
-    }
-
-    std::shared_ptr<rs_device> make_r200_device(std::shared_ptr<uvc::device> device)
-    {
-        LOG_INFO("Connecting to Intel RealSense R200");
-
-        static_device_info info;
-        info.name = {"Intel RealSense R200"};
-        auto c = r200::read_camera_info(*device);
-        info.subdevice_modes.push_back({ 2, { 1920, 1080 }, pf_rw10, 30, c.intrinsicsThird[0], { c.modesThird[0][0] }, { 0 } });
-
-        return make_device(device, info, c);
-    }
-
-    std::shared_ptr<rs_device> make_lr200_device(std::shared_ptr<uvc::device> device)
-    {
-        LOG_INFO("Connecting to Intel RealSense LR200");
-
-        static_device_info info;
-        info.name = { "Intel RealSense LR200" };
-        auto c = r200::read_camera_info(*device);
-        info.subdevice_modes.push_back({ 2, { 1920, 1080 }, pf_rw16, 30, c.intrinsicsThird[0], { c.modesThird[0][0] }, { 0 } });
-
-        return make_device(device, info, c);
-    }
-
-    std::shared_ptr<rs_device> make_zr300_device(std::shared_ptr<uvc::device> device)
-    {
-        LOG_INFO("Connecting to Intel RealSense ZR300");
-
-        static_device_info info;
-        info.name = { "Intel RealSense ZR300" };
-        auto c = r200::read_camera_info(*device);
-        info.subdevice_modes.push_back({ 2, { 1920, 1080 }, pf_rw16, 30, c.intrinsicsThird[0], { c.modesThird[0][0] }, { 0 } });
-
-        return make_device(device, info, c);
     }
 
     std::shared_ptr<rs_device> make_r200_device(std::shared_ptr<uvc::device> device)
