@@ -11,6 +11,24 @@
 
 using namespace rs;
 
+class display_buf
+{
+public:
+    display_buf(size_t size): buf(nullptr),size(size){ buf = new char[size]; };
+    ~display_buf(void){ if (buf) delete[] buf; buf = nullptr;};
+
+    char* get_data(){ return buf;};
+    size_t get_size(){ return size;};
+
+private:
+    display_buf();  // avoid default and copy constructors
+    display_buf(const display_buf &);  // avoid default and copy constructors
+
+    char * buf;
+    size_t size;
+
+};
+
 int main() try
 {
     // Create a context object. This object owns the handles to all connected realsense devices.
@@ -25,11 +43,13 @@ int main() try
     printf("    Firmware version: %s\n", dev->get_firmware_version());
 
     // Configure depth to run at VGA resolution at 30 frames per second
-    dev->enable_stream(rs::stream::depth, 640, 480, rs::format::z16, 30);
-
+    //dev->enable_stream(rs::stream::depth, 640, 480, rs::format::z16, 30);
+    rs::stream stream_type = rs::stream::depth;
+    dev->enable_stream(stream_type, preset::best_quality);  // auto-select based on the actual camera type
     // Ev - IMU data will be parsed and handled in client code
-    if (dev->supports_channel(transport::usb_interrupt, channel::sensor_data))
-        dev->enable_channel(transport::usb_interrupt, channel::sensor_data, 30/*, usr_calback_func*/);
+    //if (dev->supports_channel(transport::usb_interrupt, channel::sensor_data))
+     //   dev->enable_channel(transport::usb_interrupt, channel::sensor_data, 30/*, usr_calback_func*/);
+
 
     // Ev modify device start to include IMU channel activation
     dev->start();
@@ -37,22 +57,36 @@ int main() try
     // Determine depth value corresponding to one meter
     const uint16_t one_meter = static_cast<uint16_t>(1.0f / dev->get_depth_scale());
 
+    // retrieve actual frame size at runtime
+    rs_intrinsics depth_intrin = dev->get_stream_intrinsics(stream_type);
+    int width = depth_intrin.width;
+    int height = depth_intrin.height;
+
+    /* Will print a simple text-based representation of the image, by breaking it into 10x20 pixel regions and and approximating the coverage of pixels within one meter */
+    int rows = (height / 20);
+    int row_lenght = (width / 20);
+    int display_size = (rows+1) * (row_lenght+1);
+
+    display_buf buffer(display_size*sizeof(char));
+
     while(true)
     {
         // This call waits until a new coherent set of frames is available on a device
         // Calls to get_frame_data(...) and get_frame_timestamp(...) on a device will return stable values until wait_for_frames(...) is called
         dev->wait_for_frames();
+        printf("Frame arrived at %d \n", (int)clock());
+
 
         // Retrieve depth data, which was previously configured as a 640 x 480 image of 16-bit depth values
         const uint16_t * depth_frame = reinterpret_cast<const uint16_t *>(dev->get_frame_data(rs::stream::depth));
 
         // Print a simple text-based representation of the image, by breaking it into 10x20 pixel regions and and approximating the coverage of pixels within one meter
-        char buffer[(640/10+1)*(480/20)+1];
-        char * out = buffer;
-        int coverage[64] = {};
-        for(int y=0; y<480; ++y)
+
+        char * out = buffer.get_data();
+        int coverage[64] = {};       //The buffer will suffice up to 256*10  pixels width
+        for(int y=0; y<height; ++y)
         {
-            for(int x=0; x<640; ++x)
+            for(int x=0; x<width; ++x)
             {
                 int depth = *depth_frame++;
                 if(depth > 0 && depth < one_meter) ++coverage[x/10];
@@ -67,9 +101,15 @@ int main() try
                 }
                 *out++ = '\n';
             }
+            printf("line %d is finished", y);
         }
         *out++ = 0;
-        printf("\n%s", buffer);
+
+        char *abc = new char[buffer.get_size()];
+        memcpy(abc,buffer.get_data(),buffer.get_size());
+        printf("\n%s", abc);
+        delete[] abc;
+        //printf("\n%s", buffer.get_data());
     }
     
     return EXIT_SUCCESS;
@@ -80,4 +120,8 @@ catch(const rs::error & e)
     printf("rs::error was thrown when calling %s(%s):\n", e.get_failed_function().c_str(), e.get_failed_args().c_str());
     printf("    %s\n", e.what());
     return EXIT_FAILURE;
+}
+catch(...)
+{
+    printf("Unhandled excepton occured'n");
 }

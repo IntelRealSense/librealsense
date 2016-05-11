@@ -606,7 +606,8 @@ namespace rsimpl
                 if(is_new_device)
                 {
                     // TODO Fisheye patch
-                    if (sub->vid == 0x8086 && sub->pid == 0x0ad0)  // avoid inserting fisheye camera as a device
+                    //if (sub->vid == 0x8086 && sub->pid == 0x0ad0)  // avoid inserting fisheye camera as a device
+                    if (sub->vid == 0x04b4 && sub->pid == 0x00c3)  // avoid inserting fisheye camera as a device
                         continue;
                     devices.push_back(std::make_shared<device>(context));
                     devices.back()->subdevices.push_back(move(sub));
@@ -631,7 +632,8 @@ namespace rsimpl
 
                 for(auto & dev : devices)
                 {
-                    if (dev->subdevices[0]->vid == 0x8086 && dev->subdevices[0]->pid == 0x0acb && sub->vid == 0x8086 && sub->pid == 0x0ad0)
+                    //if (dev->subdevices[0]->vid == 0x8086 && dev->subdevices[0]->pid == 0x0acb && sub->vid == 0x8086 && sub->pid == 0x0ad0)
+                    if (dev->subdevices[0]->vid == 0x8086 && dev->subdevices[0]->pid == 0x0acb && sub->vid == 0x04b4 && sub->pid == 0x00c3)
                     {
                         dev->subdevices.push_back(move(sub));
                         break;
