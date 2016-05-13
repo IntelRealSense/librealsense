@@ -94,20 +94,23 @@ namespace rsimpl
                 }
                 if(!S_ISCHR(st.st_mode)) throw std::runtime_error(dev_name + " is no device");
 
-                // TODO: Might not always be exactly three dirs up, might need to walk upwards until we find busnum and devnum
-                //std::ostringstream ss; ss << "/sys/dev/char/" << major(st.st_rdev) << ":" << minor(st.st_rdev) << "/";
-                //auto path = ss.str();
-                //if(!(std::ifstream(path + "../../../busnum") >> busnum))
-                //    throw std::runtime_error("Failed to read busnum");
-                //if(!(std::ifstream(path + "../../../devnum") >> devnum))
-                //    throw std::runtime_error("Failed to read devnum");
-
+                // Search directory and up to three parent directories to find busnum/devnum
                 std::ostringstream ss; ss << "/sys/dev/char/" << major(st.st_rdev) << ":" << minor(st.st_rdev) << "/device/";
                 auto path = ss.str();
-                if(!(std::ifstream(path + "../busnum") >> busnum))
-                    throw std::runtime_error("Failed to read busnum");
-                if(!(std::ifstream(path + "../devnum") >> devnum))
-                    throw std::runtime_error("Failed to read devnum");
+                bool good = false;
+                for(int i=0; i<=3; ++i)
+                {
+                    if(std::ifstream(path + "busnum") >> busnum)
+                    {
+                        if(std::ifstream(path + "devnum") >> devnum)
+                        {
+                            good = true;
+                            break;
+                        }
+                    }
+                    path += "../";
+                }
+                if(!good) throw std::runtime_error("Failed to read busnum/devnum");
 
                 std::string modalias;
                 if(!(std::ifstream("/sys/class/video4linux/" + name + "/device/modalias") >> modalias))
@@ -523,8 +526,8 @@ namespace rsimpl
                         continue;
                 }
 
-		try
-		{
+                try
+                {
                     std::unique_ptr<subdevice> sub(new subdevice(name));
                     subdevices.push_back(move(sub));
                 }
