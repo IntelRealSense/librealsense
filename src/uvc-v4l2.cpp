@@ -95,11 +95,18 @@ namespace rsimpl
                 if(!S_ISCHR(st.st_mode)) throw std::runtime_error(dev_name + " is no device");
 
                 // TODO: Might not always be exactly three dirs up, might need to walk upwards until we find busnum and devnum
-                std::ostringstream ss; ss << "/sys/dev/char/" << major(st.st_rdev) << ":" << minor(st.st_rdev) << "/";
+                //std::ostringstream ss; ss << "/sys/dev/char/" << major(st.st_rdev) << ":" << minor(st.st_rdev) << "/";
+                //auto path = ss.str();
+                //if(!(std::ifstream(path + "../../../busnum") >> busnum))
+                //    throw std::runtime_error("Failed to read busnum");
+                //if(!(std::ifstream(path + "../../../devnum") >> devnum))
+                //    throw std::runtime_error("Failed to read devnum");
+
+                std::ostringstream ss; ss << "/sys/dev/char/" << major(st.st_rdev) << ":" << minor(st.st_rdev) << "/device/";
                 auto path = ss.str();
-                if(!(std::ifstream(path + "../../../busnum") >> busnum))
+                if(!(std::ifstream(path + "../busnum") >> busnum))
                     throw std::runtime_error("Failed to read busnum");
-                if(!(std::ifstream(path + "../../../devnum") >> devnum))
+                if(!(std::ifstream(path + "../devnum") >> devnum))
                     throw std::runtime_error("Failed to read devnum");
 
                 std::string modalias;
@@ -516,8 +523,15 @@ namespace rsimpl
                         continue;
                 }
 
-                std::unique_ptr<subdevice> sub(new subdevice(name));
-                subdevices.push_back(move(sub));
+		try
+		{
+                    std::unique_ptr<subdevice> sub(new subdevice(name));
+                    subdevices.push_back(move(sub));
+                }
+                catch(const std::exception & e)
+                {
+                    LOG_INFO("Not a USB video device: " << e.what());
+                }
             }
             closedir(dir);
 
