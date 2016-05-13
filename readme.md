@@ -14,13 +14,13 @@ Platform | Build Status |
 Linux and OS X | [![Build Status](https://travis-ci.org/IntelRealSense/librealsense.svg?branch=master)](https://travis-ci.org/IntelRealSense/librealsense) |
 Windows | [![Build status](https://ci.appveyor.com/api/projects/status/y9f8qcebnb9v41y4?svg=true)](https://ci.appveyor.com/project/ddiakopoulos/librealsense) | 
 
-Librealsense is a cross-platform library (Linux, OSX, Windows) for capturing data from the Intel® RealSense™ F200, SR300 and R200 cameras. This effort was initiated to better support researchers, creative coders, and app developers in domains such as robotics, virtual reality, and the internet of things. Several often-requested features of RealSense™ devices are implemented in librealsense, including multi-camera capture.
+This project is a cross-platform library (Linux, OSX, Windows) for capturing data from the Intel® RealSense™ F200, SR300 and R200 cameras. This effort was initiated to better support researchers, creative coders, and app developers in domains such as robotics, virtual reality, and the internet of things. Several often-requested features of RealSense™ devices are implemented in this project, including multi-camera capture.
 
-Developer kits containing the necessary hardware to use this library are available for purchase at [this link](http://click.intel.com/realsense.html). This project is separate from the production software stack available in the [Intel® RealSense™ SDK](https://software.intel.com/en-us/intel-realsense-sdk), namely that librealsense only encompasses camera capture functionality without additional computer vision algorithms.
+Developer kits containing the necessary hardware to use this library are available for purchase at [this link](http://click.intel.com/realsense.html). This project is separate from the production software stack available in the [Intel® RealSense™ SDK](https://software.intel.com/en-us/intel-realsense-sdk), namely that this library only encompasses camera capture functionality without additional computer vision algorithms.
 
-Librealsense is experimental and not an official Intel product. It is subject to incompatible API changes in future updates. Breaking API changes are noted through release numbers with [semver](http://semver.org/).
+The Intel® RealSense™ Cross Platform API is experimental and not an official Intel product. It is subject to incompatible API changes in future updates. Breaking API changes are noted through release numbers with [semver](http://semver.org/).
 
-Librealsense requires two external dependencies, GLFW3 (all platforms) and libusb-1.0 (Mac/Linux). These dependencies should be gathered through manual steps that are enumerated as part of this readme file (i.e. these packages must be installed with apt-get on Linux and Homebrew on OSX). GLFW is not required for the core library and is only used for examples.
+The project requires two external dependencies, GLFW3 (all platforms) and libusb-1.0 (Mac/Linux). These dependencies should be gathered through manual steps that are enumerated as part of this readme file (i.e. these packages must be installed with apt-get on Linux and Homebrew on OSX). GLFW is not required for the core library and is only used for examples.
 
 # Table of Contents
 * [Compatible Devices](#compatible-devices)
@@ -40,13 +40,13 @@ Librealsense requires two external dependencies, GLFW3 (all platforms) and libus
 
 ## Compatible Platforms
 
-librealsense is written in standards-conforming C++11 and relies only on the C89 ABI for its public interface. It is developed and tested on the following platforms:
+The library is written in standards-conforming C++11 and relies only on the C89 ABI for its public interface. It is developed and tested on the following platforms:
 
 1. Windows 8.1 (Visual Studio 2013 Update 5)
 2. Ubuntu 14.04.03 LTS x64 (GCC 4.9 toolchain)
 3. Mac OS X 10.7+ (Clang toolchain)
 
-Neither libuvc nor V4L2 backends have been validated on Ubuntu 12.04 LTS or Ubuntu 15.10, and several attempts to bring cameras up on these platforms have been problematic due to the requirement of a patched uvcvideo driver. It may be possible to compile and run librealsense on other platforms. Please file an issue or submit a pull request if the library has been successfully ported to a platform.
+Neither libuvc nor V4L2 backends have been validated on Ubuntu 12.04 LTS or Ubuntu 15.10, and several attempts to bring cameras up on these platforms have been problematic due to the requirement of a patched uvcvideo driver. It may be possible to compile and run the library on other platforms. Please file an issue or submit a pull request if the library has been successfully ported to a platform.
 
 ## Supported Languages and Frameworks
 
@@ -63,7 +63,7 @@ Neither libuvc nor V4L2 backends have been validated on Ubuntu 12.04 LTS or Ubun
 
 ### Firmware Update
 
-All RealSense™ cameras ship with proprietary firmware. This firmware is periodically updated with critical bugfixes, however librealsense does not currently provide functionality to upload new firmware. A supported update path is available on Windows 8.1 and Windows 10 systems via the [Intel® RealSense™ DCM](https://downloadcenter.intel.com/download/25044/Intel-RealSense-Depth-Camera-Manager-DCM-) (Depth Camera Manager). Installing the DCM on a supported machine with an attached camera will automatically flash the latest firmware released by Intel.
+All RealSense™ cameras ship with proprietary firmware. This firmware is periodically updated with critical bugfixes, however the API does not currently expose functionality to upload new firmware. A supported update path is available on Windows 8.1 and Windows 10 systems via the [Intel® RealSense™ DCM](https://downloadcenter.intel.com/download/25044/Intel-RealSense-Depth-Camera-Manager-DCM-) (Depth Camera Manager). Installing the DCM on a supported machine with an attached camera will automatically flash the latest firmware released by Intel.
 
 | Camera | F/W |
 | ------ | --- |
@@ -73,7 +73,7 @@ All RealSense™ cameras ship with proprietary firmware. This firmware is period
 
 # Installation Guide
 
-librealsense communicates with RealSense™ devices directly via the UVC and USB protocols. It does not link against the RealSense™ SDK runtime. Most of the library source code is platform agnostic, but there is a small UVC abstraction layer with platform-specific backends, including:
+The Intel® RealSense™ Cross Platform API communicates with RealSense™ devices directly via the UVC and USB protocols. It does not link against the RealSense™ SDK runtime. Most of the library source code is platform agnostic, but there is a small UVC abstraction layer with platform-specific backends, including:
   * A video4linux2 backend which provides kernel-space access to UVC devices on Linux.
   * A libuvc backend which provides user-space access to UVC devices on Linux and Mac OS X (built with libusb).
   * A Windows Media Foundation backend which provides kernel-space access to UVC devices on Windows 8.1 and above.
@@ -83,16 +83,17 @@ librealsense communicates with RealSense™ devices directly via the UVC and USB
 ## Hardware Requirements
 Developer kits containing the necessary hardware to use this library are available for purchase at [this link](http://click.intel.com/realsense.html). In addition, several consumer tablets and laptops with integrated cameras may also function, such as the [HP Spectre x2 with R200](http://store.hp.com/us/en/ContentView?storeId=10151&langId=-1&catalogId=10051&eSpotName=new-detachable).
 
-Developer kits **require** USB 3.0. RealSense™ cameras do not provide backwards compatibility with USB 2.0. Not all USB host chipsets are compatible with librealsense, although it has been validated with recent generations of the Intel Host Controller chipset. An exhaustive list of incompatible hardware is not presently provided. On x86, a Haswell or newer architecture is recommended.
+Developer kits **require** USB 3.0. RealSense™ cameras do not provide backwards compatibility with USB 2.0. Not all USB host chipsets are compatible with this library, although it has been validated with recent generations of the Intel Host Controller chipset. An exhaustive list of incompatible hardware is not presently provided. On x86, a Haswell or newer architecture is recommended.
 
-For small-form factor usages, librealsense has been demonstrated to work on the following boards:
+For small-form factor usages, this library has been demonstrated to work on the following boards:
   * [Intel Compute Stick, BOXSTK1AW32SCR](http://www.amazon.com/Intel-Compute-BOXSTK1AW32SCR-Windows-32-bit/dp/B01ASB0DJ8)
+  * [MinnowBoard Max](http://minnowboard.org)
   * [Kangaroo MD2B](http://www.amazon.com/Kangaroo-MD2B-Mobile-Desktop-Computer/dp/B017J20D8U)
   * [UP Board](http://www.up-board.org/kickstarter/up-intel-realsense-technology/)
 
 ## Integrations
 
-librealsense has been integrated with a number of third-party components and operating systems. While most of these projects are not directly supported by the librealsense team, they are useful resources for users of this library.
+The library has been integrated with a number of third-party components and operating systems. While most of these projects are not directly supported by the team, they are useful resources for users of this library.
 
   * [Robotic Operating System](https://github.com/intel-ros/realsense) (Intel Supported, R200 Only)
   * [Yocto / WindRiver Linux](https://github.com/IntelRealSense/meta-intel-librealsense)

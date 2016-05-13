@@ -37,18 +37,21 @@ Installation of cameras on Linux is lengthy compared to other supported platform
   * `sudo cp config/99-realsense-libusb.rules /etc/udev/rules.d/`
   * Reboot or run `sudo udevadm control --reload-rules && udevadm trigger` to enforce the new udev rules
 3. Next, choose one of the following subheadings based on desired machine configuration / kernel version (and remember to complete step 4 after). **Note: ** Multi-camera support is currently NOT supported on 3.19.xx kernels. Please update to 4.4 stable. 
-  * **Updated 4.4 Stable Kernel** (recommended)
+  * **Updated 4.4 Stable Kernel**
     * Run the following script to install necessary dependencies (GCC 4.9 compiler and openssl) and update kernel to v4.4-wily
       * `./scripts/install_dependencies-4.4.sh`
     * Run the following script to patch uvcvideo.ko
       * `./scripts/patch-uvcvideo-4.4.sh v4.4-wily` (note the argument provided to this version of the script)
       * This script involves shallow cloning the Linux source repository (~100mb), and may take a while
-  * **(OR) Stock 3.19.xx Kernel in 14.04.xx** (not recommended)
+  * **(OR) Kernel in 14.04.xx**
     * Run the following script to patch uvcvideo.ko
-      * `./scripts/patch-uvcvideo-3.19.sh`
-    * (R200 Only) Install connectivity workaround
+      * `./scripts/patch-uvcvideo-ubuntu-mainline.sh`
+    * (R200 Only with 3.19.xx Kernel) Install connectivity workaround
       * `./scripts/install-r200-udev-fix.sh`
-      * This udev fix is not necessary for kernels >= 4.2.3
+      * This udev fix is not necessary for kernels >= 4.2
+      * Use of 3.19.xx Kernel is not recommended. 
+  * **(OR) Kernel in 16.04.xx**
+    * No action required.  Ubuntu 16.04 beta2 and newer already contains the patch 
 4. Reload the uvcvideo driver
   * `sudo modprobe uvcvideo`
 5. Check installation by examining the last 50 lines of the dmesg log:
@@ -77,15 +80,13 @@ The libuvc backend has known incompatibilities with some versions of SR300 and R
 
 1. Install XCode 6.0+ via the AppStore
 2. Install the Homebrew package manager via terminal - [link](http://brew.sh/)
-3. Install libusb via brew:
-  * `brew install libusb`
+3. Install pkg-config and libusb via brew:
+  * `brew install libusb pkg-config`
 4. Install glfw3 via brew:
   * `brew install homebrew/versions/glfw3`
 
 ---
 
-# Windows 8.1 Installation
+# Windows 8.1 & Windows 10 Installation
 
-librealsense should compile out of the box with Visual Studio 2013 Release 5. Particular C++11 features are known to be incompatible with earlier VS2013 releases due to internal compiler errors. GLFW is provided in the solution as a NuGet package.
-
-librealsense has not been tested with Visual Studio Community Edition.
+librealsense should compile out of the box with Visual Studio 2013 Release 5, both Professional and Community editions. Particular C++11 features are known to be incompatible with earlier VS2013 releases due to internal compiler errors. 
