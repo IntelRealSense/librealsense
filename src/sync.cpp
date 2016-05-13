@@ -22,22 +22,22 @@ frame_archive::frame_archive(const std::vector<subdevice_mode_selection> & selec
     // Allocate an empty image for each stream, and move it to the frontbuffer
     // This allows us to assume that get_frame_data/get_frame_timestamp always return valid data
     alloc_frame(key_stream, 0);
-    frontbuffer[key_stream] = std::move(backbuffer[key_stream]);
+    frontbuffer.place_frame(key_stream, std::move(backbuffer[key_stream]));
     for(auto s : other_streams)
     {
         alloc_frame(s, 0);
-        frontbuffer[s] = std::move(backbuffer[s]);
+        frontbuffer.place_frame(s, std::move(backbuffer[s]));
     }
 }
 
 const byte * frame_archive::get_frame_data(rs_stream stream) const 
 { 
-    return frontbuffer[stream].data.data();
+	return frontbuffer.get_frame_data(stream);
 }
 
 int frame_archive::get_frame_timestamp(rs_stream stream) const
 { 
-    return frontbuffer[stream].timestamp;
+	return frontbuffer.get_frame_timestamp(stream);
 }
 
 // Block until the next coherent frameset is available
@@ -68,7 +68,7 @@ void frame_archive::get_next_frames()
     // Dequeue from other streams if the new frame is closer to the timestamp of the key stream than the old frame
     for(auto s : other_streams)
     {
-        if(!frames[s].empty() && abs(frames[s].front().timestamp - frontbuffer[key_stream].timestamp) <= abs(frontbuffer[s].timestamp - frontbuffer[key_stream].timestamp))
+		if (!frames[s].empty() && abs(frames[s].front().timestamp - frontbuffer.get_frame_timestamp(key_stream)) <= abs(frontbuffer.get_frame_timestamp(s) - frontbuffer.get_frame_timestamp(key_stream)))
         {
             dequeue_frame(s);
         }
@@ -102,6 +102,7 @@ byte * frame_archive::alloc_frame(rs_stream stream, int timestamp)
         }
     }
 
+	backbuffer[stream].update_owner(this);
     backbuffer[stream].data.resize(size); // TODO: Allow users to provide a custom allocator for frame buffers
     backbuffer[stream].timestamp = timestamp;
     return backbuffer[stream].data.data();
@@ -170,8 +171,7 @@ void frame_archive::cull_frames()
 // Move a single frame from the head of the queue to the front buffer, while recycling the front buffer into the freelist
 void frame_archive::dequeue_frame(rs_stream stream)
 {
-    if(!frontbuffer[stream].data.empty()) freelist.push_back(std::move(frontbuffer[stream]));
-    frontbuffer[stream] = std::move(frames[stream].front());
+    frontbuffer.place_frame(stream, std::move(frames[stream].front())); // the frame will move to free list once there are no external references to it
     frames[stream].erase(begin(frames[stream]));
 }
 
