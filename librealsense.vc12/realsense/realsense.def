@@ -40,6 +40,12 @@ EXPORTS
 	rs_poll_for_frames
 	rs_get_frame_timestamp
 	rs_get_frame_data
+
+	rs_wait_for_frames_safe
+	rs_poll_for_frames_safe
+	rs_get_frame_timestamp_safe
+	rs_get_frame_data_safe
+	rs_release_frames
 	
 	rs_get_failed_function
 	rs_get_failed_args

@@ -172,6 +172,8 @@ typedef struct rs_extrinsics
 typedef struct rs_context rs_context;
 typedef struct rs_device rs_device;
 typedef struct rs_error rs_error;
+typedef struct rs_frameset rs_frameset;
+typedef struct rs_frame_ref rs_frame_ref;
 
 rs_context * rs_create_context(int api_version, rs_error ** error);
 void rs_delete_context(rs_context * context, rs_error ** error);
@@ -415,6 +417,19 @@ void rs_wait_for_frames(rs_device * device, rs_error ** error);
 int rs_poll_for_frames(rs_device * device, rs_error ** error);
 
 /**
+* TODO
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+*/
+rs_frameset* rs_wait_for_frames_safe(rs_device * device, rs_error ** error);
+
+/**
+* TODO
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return            1 if new frames are available, 0 if no new frames have arrived
+*/
+int rs_poll_for_frames_safe(rs_device * device, rs_frameset** frameset, rs_error ** error);
+
+/**
  * retrieve the time at which the latest frame on a stream was captured
  * \param[in] stream  the stream whose latest frame we are interested in
  * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
@@ -429,6 +444,25 @@ int rs_get_frame_timestamp(const rs_device * device, rs_stream stream, rs_error 
  * \return            the pointer to the start of the frame data
  */
 const void * rs_get_frame_data(const rs_device * device, rs_stream stream, rs_error ** error);
+
+/**
+* TODO
+* \param[in] stream  the stream whose latest frame we are interested in
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return            the timestamp of the frame, in milliseconds since the device was started
+*/
+int rs_get_frame_timestamp_safe(const rs_frameset * frameset, rs_stream stream, rs_error ** error);
+
+// TODO
+void rs_release_frames(rs_device * device, rs_frameset * frameset, rs_error ** error);
+
+/**
+* TODO
+* \param[in] stream  the stream whose latest frame we are interested in
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return            the pointer to the start of the frame data
+*/
+const void * rs_get_frame_data_safe(const rs_frameset * frameset, rs_stream stream, rs_error ** error);
                                      
 const char * rs_get_failed_function  (const rs_error * error);
 const char * rs_get_failed_args      (const rs_error * error);

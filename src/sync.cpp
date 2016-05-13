@@ -32,12 +32,12 @@ frame_archive::frame_archive(const std::vector<subdevice_mode_selection> & selec
 
 const byte * frame_archive::get_frame_data(rs_stream stream) const 
 { 
-	return frontbuffer.get_frame_data(stream);
+    return frontbuffer.get_frame_data(stream);
 }
 
 int frame_archive::get_frame_timestamp(rs_stream stream) const
 { 
-	return frontbuffer.get_frame_timestamp(stream);
+    return frontbuffer.get_frame_timestamp(stream);
 }
 
 // Block until the next coherent frameset is available
@@ -59,6 +59,25 @@ bool frame_archive::poll_for_frames()
     return true;
 }
 
+frame_archive::frameset* frame_archive::wait_for_frames_safe()
+{
+	std::unique_lock<std::mutex> lock(mutex);
+	const auto ready = [this]() { return !frames[key_stream].empty(); };
+	if (!ready() && !cv.wait_for(lock, std::chrono::seconds(5), ready)) throw std::runtime_error("Timeout waiting for frames.");
+	get_next_frames();
+	return clone_frontbuffer();
+}
+
+bool frame_archive::poll_for_frames_safe(frameset** frameset)
+{
+	// TODO: Implement a user-specifiable timeout for how long to wait before returning false?
+	std::unique_lock<std::mutex> lock(mutex);
+	if (frames[key_stream].empty()) return false;
+	get_next_frames();
+	*frameset = clone_frontbuffer();
+	return true;
+}
+
 // Move frames from the queues to the frontbuffers to form the next coherent frameset
 void frame_archive::get_next_frames()
 {
@@ -68,7 +87,7 @@ void frame_archive::get_next_frames()
     // Dequeue from other streams if the new frame is closer to the timestamp of the key stream than the old frame
     for(auto s : other_streams)
     {
-		if (!frames[s].empty() && abs(frames[s].front().timestamp - frontbuffer.get_frame_timestamp(key_stream)) <= abs(frontbuffer.get_frame_timestamp(s) - frontbuffer.get_frame_timestamp(key_stream)))
+        if (!frames[s].empty() && abs(frames[s].front().timestamp - frontbuffer.get_frame_timestamp(key_stream)) <= abs(frontbuffer.get_frame_timestamp(s) - frontbuffer.get_frame_timestamp(key_stream)))
         {
             dequeue_frame(s);
         }
@@ -102,7 +121,7 @@ byte * frame_archive::alloc_frame(rs_stream stream, int timestamp)
         }
     }
 
-	backbuffer[stream].update_owner(this);
+    backbuffer[stream].update_owner(this);
     backbuffer[stream].data.resize(size); // TODO: Allow users to provide a custom allocator for frame buffers
     backbuffer[stream].timestamp = timestamp;
     return backbuffer[stream].data.data();
