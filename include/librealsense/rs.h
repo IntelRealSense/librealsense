@@ -333,6 +333,15 @@ int rs_get_stream_framerate(const rs_device * device, rs_stream stream, rs_error
 void rs_get_stream_intrinsics(const rs_device * device, rs_stream stream, rs_intrinsics * intrin, rs_error ** error);
 
 /**
+ * set up a frame callback that will be called immediately when an image is available, with no synchronization logic applied
+ * \param[in] stream    the stream for whose images the callback should be registered
+ * \param[in] on_frame  the callback which will receive the frame data and timestamp
+ * \param[in] user      a user data point to be passed to the callback
+ * \param[out] error    if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+ */
+void rs_set_frame_callback(rs_device * device, rs_stream stream, void (*on_frame)(void * data, int timestamp, void * user), void * user, rs_error ** error);
+
+/**
  * begin streaming on all enabled streams for this device
  * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
  */

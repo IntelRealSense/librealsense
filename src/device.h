@@ -54,6 +54,7 @@ public:
     void                                        enable_stream_preset(rs_stream stream, rs_preset preset);    
     void                                        disable_stream(rs_stream stream);
 
+    void                                        set_stream_callback(rs_stream stream, void (*on_frame)(void * data, int timestamp, void * user), void * user);
     void                                        start();
     void                                        stop();
     bool                                        is_capturing() const { return capturing; }

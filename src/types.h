@@ -202,15 +202,27 @@ namespace rsimpl
         void unpack(byte * const dest[], const byte * source) const;
     };
 
+    class frame_callback
+    {
+        void (*on_frame)(void * data, int timestamp, void * user);
+        void * user;
+    public:
+        frame_callback() : frame_callback(nullptr, nullptr) {}
+        frame_callback(void (*on_frame)(void *, int, void *), void * user) : on_frame(on_frame), user(user) {}
+
+        void operator () (void * data, int timestamp) const { if(on_frame) on_frame(data, timestamp, user); }
+    };
+
     struct device_config
     {
         const static_device_info info;
         stream_request requests[RS_STREAM_NATIVE_COUNT];    // Modified by enable/disable_stream calls
+        frame_callback callbacks[RS_STREAM_NATIVE_COUNT];   // Modified by set_frame_callback calls
         float depth_scale;                                  // Scale of depth values
 
         device_config(const rsimpl::static_device_info & info) : info(info), depth_scale(info.nominal_depth_scale) 
         { 
-            for(auto & req : requests) req = rsimpl::stream_request(); 
+            for(auto & req : requests) req = rsimpl::stream_request();
         }
 
         subdevice_mode_selection select_mode(const stream_request (&requests)[RS_STREAM_NATIVE_COUNT], int subdevice_index) const;

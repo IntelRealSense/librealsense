@@ -560,6 +560,17 @@ namespace rs
             return intrin;
         }
 
+        /// set up a frame callback that will be called immediately when an image is available, with no synchronization logic applied
+        /// \param[in] stream    the stream for whose images the callback should be registered
+        /// \param[in] on_frame  the callback which will receive the frame data and timestamp
+        /// \param[in] user      a user data point to be passed to the callback
+        void set_frame_callback(rs::stream stream, void (*on_frame)(void * data, int timestamp, void * user), void * user)
+        {
+            rs_error * e = nullptr;
+            rs_set_frame_callback((rs_device *)this, (rs_stream)stream, on_frame, user, &e);
+            error::handle(e);
+        }
+
         /// begin streaming on all enabled streams for this device
         ///
         void start()

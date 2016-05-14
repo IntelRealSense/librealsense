@@ -4,6 +4,8 @@
 #include "device.h"
 #include "sync.h"
 
+#include <array>
+
 using namespace rsimpl;
 
 rs_device::rs_device(std::shared_ptr<rsimpl::uvc::device> device, const rsimpl::static_device_info & info) : device(device), config(info), capturing(false),
@@ -62,6 +64,11 @@ void rs_device::disable_stream(rs_stream stream)
     for(auto & s : native_streams) s->archive.reset(); // Changing stream configuration invalidates the current stream info
 }
 
+void rs_device::set_stream_callback(rs_stream stream, void (*on_frame)(void * data, int timestamp, void * user), void * user)
+{
+    config.callbacks[stream] = {on_frame, user};
+}
+
 void rs_device::start()
 {
     if(capturing) throw std::runtime_error("cannot restart device without first stopping device");
@@ -83,9 +90,13 @@ void rs_device::start()
             if(config.requests[stream_mode.first].enabled) native_streams[stream_mode.first]->archive = archive;
         }
 
+        // Copy the callbacks that apply to this stream, so that they can be captured by value
+        std::vector<frame_callback> callbacks;
+        for(auto & output : mode_selection.get_outputs()) callbacks.push_back(config.callbacks[output.first]);
+
         // Initialize the subdevice and set it to the selected mode
         set_subdevice_mode(*device, mode_selection.mode.subdevice, mode_selection.mode.native_dims.x, mode_selection.mode.native_dims.y, mode_selection.mode.pf.fourcc, mode_selection.mode.fps, 
-            [mode_selection, archive, timestamp_reader](const void * frame) mutable
+            [mode_selection, archive, timestamp_reader, callbacks](const void * frame) mutable
         {
             // Ignore any frames which appear corrupted or invalid
             if(!timestamp_reader->validate_frame(mode_selection.mode, frame)) return;
@@ -97,8 +108,13 @@ void rs_device::start()
             std::vector<byte *> dest;
             for(auto & output : mode_selection.get_outputs()) dest.push_back(archive->alloc_frame(output.first, timestamp));
 
-            // Unpack the frame and commit it to the archive
+            // Unpack the frame
             mode_selection.unpack(dest.data(), reinterpret_cast<const byte *>(frame));
+
+            // If any frame callbacks were specified, dispatch them now
+            for(size_t i=0; i<dest.size(); ++i) callbacks[i](dest[i], timestamp);
+
+            // Commit the frame to the archive
             for(auto & output : mode_selection.get_outputs()) archive->commit_frame(output.first);
         });
     }
