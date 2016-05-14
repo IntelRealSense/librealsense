@@ -134,23 +134,23 @@ bool rs_device::poll_all_streams()
 
 rs_frameset* rs_device::wait_all_streams_safe()
 {
-	if (!capturing) throw std::runtime_error("Can't call wait_for_frames_safe when the device is not capturing!");
-	if (!archive) throw std::runtime_error("Can't call wait_for_frames_safe when frame archive is not available!");
+    if (!capturing) throw std::runtime_error("Can't call wait_for_frames_safe when the device is not capturing!");
+    if (!archive) throw std::runtime_error("Can't call wait_for_frames_safe when frame archive is not available!");
 
-	return (rs_frameset*)archive->wait_for_frames_safe();
+        return (rs_frameset*)archive->wait_for_frames_safe();
 }
 
 bool rs_device::poll_all_streams_safe(rs_frameset** frames)
 {
-	if (!capturing) return false;
-	if (!archive) return false;
+    if (!capturing) return false;
+    if (!archive) return false;
 
-	return archive->poll_for_frames_safe((frame_archive::frameset**)frames);
+    return archive->poll_for_frames_safe((frame_archive::frameset**)frames);
 }
 
 void rs_device::release_frames(rs_frameset* frameset)
 {
-	archive->free_frameset((frame_archive::frameset*)frameset);
+    archive->free_frameset((frame_archive::frameset*)frameset);
 }
 
 void rs_device::get_option_range(rs_option option, double & min, double & max, double & step, double & def)

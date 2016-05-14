@@ -41,7 +41,7 @@ int main() try
     {
         // Wait for new frame data
         glfwPollEvents();
-        dev->wait_for_frames();
+        auto frames = dev->wait_for_frames_safe();
 
         glClear(GL_COLOR_BUFFER_BIT);
         glPixelZoom(1, -1);
@@ -49,27 +49,27 @@ int main() try
         // Display depth data by linearly mapping depth between 0 and 2 meters to the red channel
         glRasterPos2f(-1, 1);
         glPixelTransferf(GL_RED_SCALE, 0xFFFF * dev->get_depth_scale() / 2.0f);
-        glDrawPixels(640, 480, GL_RED, GL_UNSIGNED_SHORT, dev->get_frame_data(rs::stream::depth));
+        glDrawPixels(640, 480, GL_RED, GL_UNSIGNED_SHORT, frames.get_frame_data(rs::stream::depth));
         glPixelTransferf(GL_RED_SCALE, 1.0f);
 
         // Display color image as RGB triples
         glRasterPos2f(0, 1);
-        glDrawPixels(640, 480, GL_RGB, GL_UNSIGNED_BYTE, dev->get_frame_data(rs::stream::color));
+        glDrawPixels(640, 480, GL_RGB, GL_UNSIGNED_BYTE, frames.get_frame_data(rs::stream::color));
 
         // Display infrared image by mapping IR intensity to visible luminance
         glRasterPos2f(-1, 0);
-        glDrawPixels(640, 480, GL_LUMINANCE, GL_UNSIGNED_BYTE, dev->get_frame_data(rs::stream::infrared));
+        glDrawPixels(640, 480, GL_LUMINANCE, GL_UNSIGNED_BYTE, frames.get_frame_data(rs::stream::infrared));
 
         // Display second infrared image by mapping IR intensity to visible luminance
         if(dev->is_stream_enabled(rs::stream::infrared2))
-        {        
+        {
             glRasterPos2f(0, 0);
-            glDrawPixels(640, 480, GL_LUMINANCE, GL_UNSIGNED_BYTE, dev->get_frame_data(rs::stream::infrared2));
+            glDrawPixels(640, 480, GL_LUMINANCE, GL_UNSIGNED_BYTE, frames.get_frame_data(rs::stream::infrared2));
         }
 
         glfwSwapBuffers(win);
     }
-    
+
     return EXIT_SUCCESS;
 }
 catch(const rs::error & e)

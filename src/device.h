@@ -61,9 +61,9 @@ public:
     void                                        wait_all_streams();
     bool                                        poll_all_streams();
 
-	rs_frameset *                               wait_all_streams_safe();
-	bool                                        poll_all_streams_safe(rs_frameset ** frames);
-	void										release_frames(rs_frameset * frameset);
+    rs_frameset *                               wait_all_streams_safe();
+    bool                                        poll_all_streams_safe(rs_frameset ** frames);
+    void                                        release_frames(rs_frameset * frameset);
     
     virtual bool                                supports_option(rs_option option) const;
     virtual void                                get_option_range(rs_option option, double & min, double & max, double & step, double & def);

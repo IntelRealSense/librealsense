@@ -209,6 +209,61 @@ namespace rs
         }
     };
 
+	class frameset
+	{
+		rs_device * device;
+		rs_frameset * frames;
+		
+		frameset(const frameset &) = delete;
+
+	public:
+		frameset() : device(nullptr), frames(nullptr) {}
+		frameset(rs_device * device, rs_frameset * frames) : device(device), frames(frames) {}
+		frameset(frameset&& other) : device(other.device), frames(other.frames) { other.frames = nullptr; }
+		frameset& operator=(frameset other)
+		{
+			swap(other);
+			return *this;
+		}
+		void swap(frameset& other)
+		{
+			std::swap(device, other.device);
+			std::swap(frames, other.frames);
+		}
+
+		~frameset()
+		{
+			if (frames)
+			{
+				rs_error * e = nullptr;
+				rs_release_frames(device, frames, &e);
+				error::handle(e);
+			}
+		}
+
+		/// retrieve the time at which the TODO on a stream was captured
+		/// \param[in] stream  the stream whose latest frame we are interested in
+		/// \return            the timestamp of the frame, in milliseconds since the device was started
+		int get_frame_timestamp(stream stream) const
+		{
+			rs_error * e = nullptr;
+			auto r = rs_get_frame_timestamp_safe(frames, (rs_stream)stream, &e);
+			error::handle(e);
+			return r;
+		}
+
+		/// retrieve the contents of the TODO on a stream
+		/// \param[in] stream  the stream whose latest frame we are interested in
+		/// \return            the pointer to the start of the frame data
+		const void * get_frame_data(stream stream) const
+		{
+			rs_error * e = nullptr;
+			auto r = rs_get_frame_data_safe(frames, (rs_stream)stream, &e);
+			error::handle(e);
+			return r;
+		}
+	};
+
     class device
     {
         device() = delete;
@@ -505,6 +560,34 @@ namespace rs
             error::handle(e);
             return r != 0;
         }
+
+		/// block until new frames are available
+		///
+		frameset wait_for_frames_safe()
+		{
+			rs_error * e = nullptr;
+			auto fs = rs_wait_for_frames_safe((rs_device *)this, &e);
+			error::handle(e);
+			return std::move(frameset((rs_device *)this, fs));
+		}
+
+		/// check if new frames are available, without blocking
+		/// \return  true if new frames are available, false if no new frames have arrived
+		bool poll_for_frames_safe(frameset& result)
+		{
+			rs_error * e = nullptr;
+			rs_frameset * fs = nullptr;
+			auto r = rs_poll_for_frames_safe((rs_device *)this, &fs, &e);
+			error::handle(e);
+
+			if (fs)
+			{
+				frameset new_frames((rs_device *)this, fs);
+				result = std::move(new_frames);
+			}
+
+			return r != 0;
+		}
 
         /// retrieve the time at which the latest frame on a stream was captured
         /// \param[in] stream  the stream whose latest frame we are interested in

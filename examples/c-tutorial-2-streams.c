@@ -74,30 +74,30 @@ int main()
         glRasterPos2f(-1, 1);
         glPixelTransferf(GL_RED_SCALE, 0xFFFF * rs_get_device_depth_scale(dev, &e) / 2.0f);
         check_error();
-		glDrawPixels(640, 480, GL_RED, GL_UNSIGNED_SHORT, rs_get_frame_data_safe(frames, RS_STREAM_DEPTH, &e));
+        glDrawPixels(640, 480, GL_RED, GL_UNSIGNED_SHORT, rs_get_frame_data_safe(frames, RS_STREAM_DEPTH, &e));
         check_error();
         glPixelTransferf(GL_RED_SCALE, 1.0f);
 
         /* Display color image as RGB triples */
         glRasterPos2f(0, 1);
-		glDrawPixels(640, 480, GL_RGB, GL_UNSIGNED_BYTE, rs_get_frame_data_safe(frames, RS_STREAM_COLOR, &e));
+        glDrawPixels(640, 480, GL_RGB, GL_UNSIGNED_BYTE, rs_get_frame_data_safe(frames, RS_STREAM_COLOR, &e));
         check_error();
 
         /* Display infrared image by mapping IR intensity to visible luminance */
         glRasterPos2f(-1, 0);
-		glDrawPixels(640, 480, GL_LUMINANCE, GL_UNSIGNED_BYTE, rs_get_frame_data_safe(frames, RS_STREAM_INFRARED, &e));
+        glDrawPixels(640, 480, GL_LUMINANCE, GL_UNSIGNED_BYTE, rs_get_frame_data_safe(frames, RS_STREAM_INFRARED, &e));
         check_error();
 
         /* Display second infrared image by mapping IR intensity to visible luminance */
         if(rs_is_stream_enabled(dev, RS_STREAM_INFRARED2, NULL))
         {
             glRasterPos2f(0, 0);
-			glDrawPixels(640, 480, GL_LUMINANCE, GL_UNSIGNED_BYTE, rs_get_frame_data_safe(frames, RS_STREAM_INFRARED2, &e));
+            glDrawPixels(640, 480, GL_LUMINANCE, GL_UNSIGNED_BYTE, rs_get_frame_data_safe(frames, RS_STREAM_INFRARED2, &e));
         }
 
         glfwSwapBuffers(win);
 
-		rs_release_frames(dev, frames, &e);
+        rs_release_frames(dev, frames, &e);
     }
     
     return EXIT_SUCCESS;

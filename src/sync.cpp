@@ -45,7 +45,7 @@ void frame_archive::wait_for_frames()
 {
     std::unique_lock<std::mutex> lock(mutex);
     const auto ready = [this]() { return !frames[key_stream].empty(); };
-    if(!ready() && !cv.wait_for(lock, std::chrono::seconds(5), ready)) throw std::runtime_error("Timeout waiting for frames.");
+    if (!ready() && !cv.wait_for(lock, std::chrono::seconds(5), ready)) throw std::runtime_error("Timeout waiting for frames.");
     get_next_frames();
 }
 
@@ -61,21 +61,21 @@ bool frame_archive::poll_for_frames()
 
 frame_archive::frameset* frame_archive::wait_for_frames_safe()
 {
-	std::unique_lock<std::mutex> lock(mutex);
-	const auto ready = [this]() { return !frames[key_stream].empty(); };
-	if (!ready() && !cv.wait_for(lock, std::chrono::seconds(5), ready)) throw std::runtime_error("Timeout waiting for frames.");
-	get_next_frames();
-	return clone_frontbuffer();
+    std::unique_lock<std::mutex> lock(mutex);
+    const auto ready = [this]() { return !frames[key_stream].empty(); };
+    if (!ready() && !cv.wait_for(lock, std::chrono::seconds(5), ready)) throw std::runtime_error("Timeout waiting for frames.");
+    get_next_frames();
+    return clone_frontbuffer();
 }
 
 bool frame_archive::poll_for_frames_safe(frameset** frameset)
 {
-	// TODO: Implement a user-specifiable timeout for how long to wait before returning false?
-	std::unique_lock<std::mutex> lock(mutex);
-	if (frames[key_stream].empty()) return false;
-	get_next_frames();
-	*frameset = clone_frontbuffer();
-	return true;
+    // TODO: Implement a user-specifiable timeout for how long to wait before returning false?
+    std::unique_lock<std::mutex> lock(mutex);
+    if (frames[key_stream].empty()) return false;
+    get_next_frames();
+    *frameset = clone_frontbuffer();
+    return true;
 }
 
 // Move frames from the queues to the frontbuffers to form the next coherent frameset

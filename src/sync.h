@@ -13,7 +13,7 @@ namespace rsimpl
 {
     class frame_archive
     {
-	public:
+    public:
         template<class T, int C>
         class small_heap
         {
@@ -168,7 +168,7 @@ namespace rsimpl
             int get_frame_timestamp(rs_stream stream) const { return buffer[stream].get_frame_timestamp(); }
         };
 
-	private:
+    private:
         // This data will be left constant after creation, and accessed from all threads
         subdevice_mode_selection modes[RS_STREAM_NATIVE_COUNT];
         rs_stream key_stream;
@@ -204,8 +204,8 @@ namespace rsimpl
         void wait_for_frames();
         bool poll_for_frames();
 
-		frameset * wait_for_frames_safe();
-		bool poll_for_frames_safe(frameset ** frames);
+        frameset * wait_for_frames_safe();
+        bool poll_for_frames_safe(frameset ** frames);
 
         const byte * get_frame_data(rs_stream stream) const;
         int get_frame_timestamp(rs_stream stream) const;
