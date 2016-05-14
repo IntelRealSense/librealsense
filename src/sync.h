@@ -64,6 +64,8 @@ namespace rsimpl
 
 	        const byte * get_frame_data(rs_stream stream) const { return buffer[stream].get_frame_data(); }
             int get_frame_timestamp(rs_stream stream) const { return buffer[stream].get_frame_timestamp(); }
+
+			void cleanup();
         };
 
     private:
@@ -123,6 +125,8 @@ namespace rsimpl
         byte * alloc_frame(rs_stream stream, int timestamp);
         void commit_frame(rs_stream stream); 
 		frame_ref * track_frame(rs_stream stream);
+
+		void flush();
     };
 }
 

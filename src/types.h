@@ -260,6 +260,9 @@ namespace rsimpl
 		T buffer[C];
 		bool is_free[C];
 		std::mutex mutex;
+		bool keep_allocating = true;
+		std::condition_variable cv;
+		int size = 0;
 
 	public:
 		small_heap()
@@ -273,12 +276,16 @@ namespace rsimpl
 
 		T * allocate()
 		{
-			std::lock_guard<std::mutex> lock(mutex);
+			std::unique_lock<std::mutex> lock(mutex);
+
+			if (!keep_allocating) return nullptr;
+
 			for (auto i = 0; i < C; i++)
 			{
 				if (is_free[i])
 				{
 					is_free[i] = false;
+					size++;
 					return &buffer[i];
 				}
 			}
@@ -287,7 +294,7 @@ namespace rsimpl
 
 		void deallocate(T * item)
 		{
-			std::lock_guard<std::mutex> lock(mutex);
+			std::unique_lock<std::mutex> lock(mutex);
 			if (item < buffer || item >= buffer + C)
 			{
 				throw std::runtime_error("Trying to return item to a heap that didn't allocate it!");
@@ -295,6 +302,33 @@ namespace rsimpl
 			auto i = item - buffer;
 			is_free[i] = true;
 			buffer[i] = std::move(T());
+			size--;
+
+			if (size == 0)
+			{
+				lock.unlock();
+				cv.notify_one();
+			}
+		}
+
+		void stop_allocation()
+		{
+			std::unique_lock<std::mutex> lock(mutex);
+			keep_allocating = false;
+		}
+
+		void wait_until_empty()
+		{
+			std::unique_lock<std::mutex> lock(mutex);
+
+			const auto ready = [this]()
+			{
+				return size == 0;
+			};
+			if (!ready() && !cv.wait_for(lock, std::chrono::hours(1000), ready)) // for some reason passing std::chrono::duration::max makes it return instantly
+			{
+				throw std::runtime_error("Could not flush one of the user controlled objects!");
+			}
 		}
 	};
 

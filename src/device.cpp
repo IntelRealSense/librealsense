@@ -147,6 +147,7 @@ void rs_device::stop()
 {
     if(!capturing) throw std::runtime_error("cannot stop device without first starting device");
     stop_streaming(*device);
+	archive->flush();
     capturing = false;
 }
 

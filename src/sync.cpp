@@ -223,6 +223,20 @@ frame_archive::frame_ref* frame_archive::track_frame(rs_stream stream)
 	return nullptr;
 }
 
+void frame_archive::flush()
+{
+	published_frames.stop_allocation();
+	published_sets.stop_allocation();
+	detached_refs.stop_allocation();
+
+	frontbuffer.cleanup(); // frontbuffer also holds frame references, since its content is publicly available through get_frame_data
+
+	// wait until user is done with all the stuff he chose to borrow
+	detached_refs.wait_until_empty();
+	published_frames.wait_until_empty();
+	published_sets.wait_until_empty();
+}
+
 // Discard all frames which are older than the most recent coherent frameset
 void frame_archive::cull_frames()
 {
@@ -324,9 +338,17 @@ void frame_archive::frameset::place_frame(rs_stream stream, frame&& new_frame)
 	}
 }
 
+void frame_archive::frameset::cleanup()
+{
+	for (auto i = 0; i < RS_STREAM_NATIVE_COUNT; i++)
+	{
+		buffer[i] = frame_ref(nullptr);
+	}
+}
+
 frame_archive::frame_ref::frame_ref(frame* frame): frame_ptr(frame)
 {
-	frame->acquire();
+	if (frame) frame->acquire();
 }
 
 frame_archive::frame_ref::frame_ref(const frame_ref& other): frame_ptr(other.frame_ptr)
