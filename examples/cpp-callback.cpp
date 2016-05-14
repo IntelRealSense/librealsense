@@ -16,28 +16,24 @@ int main() try
 
     // rs::device is NOT designed to be thread safe, so you should not currently make calls
     // against it from your callback thread. If you need access to information like 
-    // intrinsics/extrinsics, formats, etc., capture them ahead of time and pass them
-    // via the user pointer.
-    struct user_data
-    {
-        rs::intrinsics depth_intrin, color_intrin;
-        rs::format depth_format, color_format;
-    } ud;
-    ud.depth_intrin = dev->get_stream_intrinsics(rs::stream::depth);
-    ud.depth_format = dev->get_stream_format(rs::stream::depth);
-    ud.color_intrin = dev->get_stream_intrinsics(rs::stream::color);
-    ud.color_format = dev->get_stream_format(rs::stream::color);
+    // intrinsics/extrinsics, formats, etc., capture them ahead of time
+    rs::intrinsics depth_intrin, color_intrin;
+    rs::format depth_format, color_format;
+    depth_intrin = dev->get_stream_intrinsics(rs::stream::depth);
+    depth_format = dev->get_stream_format(rs::stream::depth);
+    color_intrin = dev->get_stream_intrinsics(rs::stream::color);
+    color_format = dev->get_stream_format(rs::stream::color);
 
     // Set callbacks prior to calling start()
-	rs::frame_callback depth_callback([dev](rs::frame f)
+	rs::frame_callback depth_callback([depth_intrin, depth_format](rs::frame f)
 	{
-		std::cout << dev->get_stream_intrinsics(rs::stream::depth).width << "x" << dev->get_stream_intrinsics(rs::stream::depth).height 
-				  << " " << dev->get_stream_format(rs::stream::depth) << "\tat t = " << f.get_frame_timestamp() << " ms" << std::endl;
+		std::cout << depth_intrin.width << "x" << depth_intrin.height
+			<< " " << depth_format << "\tat t = " << f.get_frame_timestamp() << " ms" << std::endl;
 	});
-	rs::frame_callback color_callback([dev](rs::frame f)
+	rs::frame_callback color_callback([color_intrin, color_format](rs::frame f)
 	{
-		std::cout << dev->get_stream_intrinsics(rs::stream::depth).width << "x" << dev->get_stream_intrinsics(rs::stream::depth).height
-			<< " " << dev->get_stream_format(rs::stream::depth) << "\tat t = " << f.get_frame_timestamp() << " ms" << std::endl;
+		std::cout << color_intrin.width << "x" << color_intrin.height
+			<< " " << color_format << "\tat t = " << f.get_frame_timestamp() << " ms" << std::endl;
 	});
 
     dev->set_frame_callback(rs::stream::depth, depth_callback);
