@@ -101,8 +101,10 @@ void rs_device::start()
 
         // Initialize the subdevice and set it to the selected mode
         set_subdevice_mode(*device, mode_selection.mode.subdevice, mode_selection.mode.native_dims.x, mode_selection.mode.native_dims.y, mode_selection.mode.pf.fourcc, mode_selection.mode.fps, 
-			[mode_selection, archive, timestamp_reader, callbacks, streams](const void * frame) mutable
+			[mode_selection, archive, timestamp_reader, callbacks, streams](const void * frame, std::function<void()> continuation) mutable
         {
+			frame_continuation release_and_enqueue(continuation);
+
             // Ignore any frames which appear corrupted or invalid
             if(!timestamp_reader->validate_frame(mode_selection.mode, frame)) return;
 
