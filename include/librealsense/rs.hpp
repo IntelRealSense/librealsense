@@ -241,6 +241,22 @@ namespace rs
 			}
 		}
 
+		frameset clone()
+		{
+			rs_error * e = nullptr;
+			auto r = rs_clone_frames(device, frames, &e);
+			error::handle(e);
+			return std::move(frameset(device, r));
+		}
+
+		bool try_clone(frameset& result)
+		{
+			rs_error * e = nullptr;
+			auto r = rs_clone_frames(device, frames, &e);
+			if (!e)	result = std::move(frameset(device, r));
+			return e == nullptr;
+		}
+
 		/// retrieve the time at which the TODO on a stream was captured
 		/// \param[in] stream  the stream whose latest frame we are interested in
 		/// \return            the timestamp of the frame, in milliseconds since the device was started

@@ -453,8 +453,15 @@ const void * rs_get_frame_data(const rs_device * device, rs_stream stream, rs_er
 */
 int rs_get_frame_timestamp_safe(const rs_frameset * frameset, rs_stream stream, rs_error ** error);
 
-// TODO
+/**
+* TODO
+*/
 void rs_release_frames(rs_device * device, rs_frameset * frameset, rs_error ** error);
+
+/**
+* TODO
+*/
+rs_frameset* rs_clone_frames(rs_device * device, rs_frameset* frameset, rs_error ** error);
 
 /**
 * TODO

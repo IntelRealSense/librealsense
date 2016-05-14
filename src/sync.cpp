@@ -61,11 +61,17 @@ bool frame_archive::poll_for_frames()
 
 frame_archive::frameset* frame_archive::wait_for_frames_safe()
 {
-    std::unique_lock<std::mutex> lock(mutex);
-    const auto ready = [this]() { return !frames[key_stream].empty(); };
-    if (!ready() && !cv.wait_for(lock, std::chrono::seconds(5), ready)) throw std::runtime_error("Timeout waiting for frames.");
-    get_next_frames();
-    return clone_frontbuffer();
+	frameset * result = nullptr;
+	do
+	{
+		std::unique_lock<std::mutex> lock(mutex);
+		const auto ready = [this]() { return !frames[key_stream].empty(); };
+		if (!ready() && !cv.wait_for(lock, std::chrono::seconds(5), ready)) throw std::runtime_error("Timeout waiting for frames.");
+		get_next_frames();
+		result = clone_frontbuffer();
+	} 
+	while (!result);
+	return result;
 }
 
 bool frame_archive::poll_for_frames_safe(frameset** frameset)
@@ -74,8 +80,13 @@ bool frame_archive::poll_for_frames_safe(frameset** frameset)
     std::unique_lock<std::mutex> lock(mutex);
     if (frames[key_stream].empty()) return false;
     get_next_frames();
-    *frameset = clone_frontbuffer();
-    return true;
+	auto result = clone_frontbuffer();
+	if (result)
+	{
+		*frameset = result;
+		return true;
+	}
+	return false;
 }
 
 // Move frames from the queues to the frontbuffers to form the next coherent frameset

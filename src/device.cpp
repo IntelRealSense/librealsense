@@ -148,9 +148,16 @@ bool rs_device::poll_all_streams_safe(rs_frameset** frames)
     return archive->poll_for_frames_safe((frame_archive::frameset**)frames);
 }
 
-void rs_device::release_frames(rs_frameset* frameset)
+void rs_device::release_frames(rs_frameset * frameset)
 {
-    archive->free_frameset((frame_archive::frameset*)frameset);
+    archive->free_frameset((frame_archive::frameset *)frameset);
+}
+
+rs_frameset * rs_device::clone_frames(rs_frameset * frameset)
+{
+	auto result = archive->clone_frameset((frame_archive::frameset *)frameset);
+	if (!result) throw std::runtime_error("Not enough resources to clone frameset!");
+	return (rs_frameset*)result;
 }
 
 void rs_device::get_option_range(rs_option option, double & min, double & max, double & step, double & def)

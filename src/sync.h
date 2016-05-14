@@ -180,9 +180,9 @@ namespace rsimpl
         // This data will be read and written by all threads, and synchronized with a mutex
         std::vector<frame> frames[RS_STREAM_NATIVE_COUNT];
         std::vector<frame> freelist;
-        small_heap<frame, RS_STREAM_NATIVE_COUNT * RS_STREAM_NATIVE_COUNT> published_frames;
-        small_heap<frameset, RS_STREAM_NATIVE_COUNT * RS_STREAM_NATIVE_COUNT> published_sets;
-        small_heap<frame_ref, RS_STREAM_NATIVE_COUNT * RS_STREAM_NATIVE_COUNT> detached_refs;
+		small_heap<frame, RS_USER_QUEUE_SIZE> published_frames;
+		small_heap<frameset, RS_USER_QUEUE_SIZE> published_sets;
+		small_heap<frame_ref, RS_USER_QUEUE_SIZE> detached_refs;
         std::mutex mutex;
         std::condition_variable cv;
 
@@ -212,17 +212,21 @@ namespace rsimpl
 
         frameset * clone_frontbuffer()
         {
-            auto new_set = published_sets.allocate();
-            if (new_set)
-            {
-                *new_set = frontbuffer;
-            }
-            return new_set;
+			return clone_frameset(&frontbuffer);
         }
         void free_frameset(frameset* frameset)
         {
             published_sets.deallocate(frameset);
         }
+		frameset * clone_frameset(frameset * frameset)
+		{
+			auto new_set = published_sets.allocate();
+			if (new_set)
+			{
+				*new_set = *frameset;
+			}
+			return new_set;
+		}
 
         void unpublish_frame(frame * frame)
         {

@@ -20,6 +20,9 @@
 
 #define RS_STREAM_NATIVE_COUNT 4
 
+#define RS_USER_QUEUE_SIZE 64
+
+
 namespace rsimpl
 {
     ///////////////////////////////////

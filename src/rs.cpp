@@ -312,6 +312,14 @@ void rs_release_frames(rs_device * device, rs_frameset * frames, rs_error ** err
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, device, frames)
 
+rs_frameset* rs_clone_frames(rs_device * device, rs_frameset* frameset, rs_error ** error) try
+{
+	VALIDATE_NOT_NULL(device);
+	VALIDATE_NOT_NULL(frameset);
+	return device->clone_frames(frameset);
+}
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, device, frameset)
+
 const char * rs_get_stream_name(rs_stream stream, rs_error ** error) try
 {
     VALIDATE_ENUM(stream);
