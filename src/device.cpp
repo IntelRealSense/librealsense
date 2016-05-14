@@ -64,9 +64,9 @@ void rs_device::disable_stream(rs_stream stream)
     for(auto & s : native_streams) s->archive.reset(); // Changing stream configuration invalidates the current stream info
 }
 
-void rs_device::set_stream_callback(rs_stream stream, void (*on_frame)(void * data, int timestamp, void * user), void * user)
+void rs_device::set_stream_callback(rs_stream stream, void (*on_frame)(rs_device * device, rs_frame_ref * frame, void * user), void * user)
 {
-    config.callbacks[stream] = {on_frame, user};
+    config.callbacks[stream] = {this, on_frame, user};
 }
 
 void rs_device::start()
@@ -92,11 +92,16 @@ void rs_device::start()
 
         // Copy the callbacks that apply to this stream, so that they can be captured by value
         std::vector<frame_callback> callbacks;
-        for(auto & output : mode_selection.get_outputs()) callbacks.push_back(config.callbacks[output.first]);
+		std::vector<rs_stream> streams;
+		for (auto & output : mode_selection.get_outputs())
+		{
+			callbacks.push_back(config.callbacks[output.first]);
+			streams.push_back(output.first);
+		}
 
         // Initialize the subdevice and set it to the selected mode
         set_subdevice_mode(*device, mode_selection.mode.subdevice, mode_selection.mode.native_dims.x, mode_selection.mode.native_dims.y, mode_selection.mode.pf.fourcc, mode_selection.mode.fps, 
-            [mode_selection, archive, timestamp_reader, callbacks](const void * frame) mutable
+			[mode_selection, archive, timestamp_reader, callbacks, streams](const void * frame) mutable
         {
             // Ignore any frames which appear corrupted or invalid
             if(!timestamp_reader->validate_frame(mode_selection.mode, frame)) return;
@@ -112,10 +117,22 @@ void rs_device::start()
             mode_selection.unpack(dest.data(), reinterpret_cast<const byte *>(frame));
 
             // If any frame callbacks were specified, dispatch them now
-            for(size_t i=0; i<dest.size(); ++i) callbacks[i](dest[i], timestamp);
-
-            // Commit the frame to the archive
-            for(auto & output : mode_selection.get_outputs()) archive->commit_frame(output.first);
+			for (size_t i = 0; i < dest.size(); ++i)
+			{
+				if (callbacks[i])
+				{
+					auto frame_ref = archive->track_frame(streams[i]);
+					if (frame_ref)
+					{
+						callbacks[i]((rs_frame_ref*)frame_ref);
+					}
+				}
+				else
+				{
+					// Commit the frame to the archive
+					archive->commit_frame(streams[i]);
+				}
+			}
         });
     }
     

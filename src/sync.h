@@ -121,7 +121,8 @@ namespace rsimpl
 
 	    // Frame callback thread API
         byte * alloc_frame(rs_stream stream, int timestamp);
-        void commit_frame(rs_stream stream);  
+        void commit_frame(rs_stream stream); 
+		frame_ref * track_frame(rs_stream stream);
     };
 }
 

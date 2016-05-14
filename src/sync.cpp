@@ -209,6 +209,20 @@ void frame_archive::commit_frame(rs_stream stream)
     if(!frames[key_stream].empty()) cv.notify_one();
 }
 
+frame_archive::frame_ref* frame_archive::track_frame(rs_stream stream)
+{
+	std::unique_lock<std::mutex> lock(mutex);
+
+	auto published_frame = backbuffer[stream].publish();
+	if (published_frame)
+	{
+		frame_ref new_ref(published_frame); // allocate new frame_ref to ref-counter the now published frame
+		return clone_frame(&new_ref);
+	}
+
+	return nullptr;
+}
+
 // Discard all frames which are older than the most recent coherent frameset
 void frame_archive::cull_frames()
 {

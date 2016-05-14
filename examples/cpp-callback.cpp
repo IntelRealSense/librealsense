@@ -29,17 +29,19 @@ int main() try
     ud.color_format = dev->get_stream_format(rs::stream::color);
 
     // Set callbacks prior to calling start()
-    dev->set_frame_callback(rs::stream::depth, [](void * data, int timestamp, void * user)
-    {
-        auto & ud = *(user_data *)user;
-        std::cout << ud.depth_intrin.width << "x" << ud.depth_intrin.height << " " << ud.depth_format << "\tat t = " << timestamp << " ms" << std::endl;
-    }, &ud);
+	rs::frame_callback depth_callback([dev](rs::frame f)
+	{
+		std::cout << dev->get_stream_intrinsics(rs::stream::depth).width << "x" << dev->get_stream_intrinsics(rs::stream::depth).height 
+				  << " " << dev->get_stream_format(rs::stream::depth) << "\tat t = " << f.get_frame_timestamp() << " ms" << std::endl;
+	});
+	rs::frame_callback color_callback([dev](rs::frame f)
+	{
+		std::cout << dev->get_stream_intrinsics(rs::stream::depth).width << "x" << dev->get_stream_intrinsics(rs::stream::depth).height
+			<< " " << dev->get_stream_format(rs::stream::depth) << "\tat t = " << f.get_frame_timestamp() << " ms" << std::endl;
+	});
 
-    dev->set_frame_callback(rs::stream::color, [](void * data, int timestamp, void * user)
-    {
-        auto & ud = *(user_data *)user;
-        std::cout << ud.color_intrin.width << "x" << ud.color_intrin.height << " " << ud.color_format << "\tat t = " << timestamp << " ms" << std::endl;
-    }, &ud);
+    dev->set_frame_callback(rs::stream::depth, depth_callback);
+	dev->set_frame_callback(rs::stream::color, color_callback);
 
     // Between start() and stop(), you will receive calls to the specified callbacks from background threads
     dev->start();

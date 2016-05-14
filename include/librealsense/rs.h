@@ -339,7 +339,7 @@ void rs_get_stream_intrinsics(const rs_device * device, rs_stream stream, rs_int
  * \param[in] user      a user data point to be passed to the callback
  * \param[out] error    if non-null, receives any error that occurs during this call, otherwise, errors are ignored
  */
-void rs_set_frame_callback(rs_device * device, rs_stream stream, void (*on_frame)(void * data, int timestamp, void * user), void * user, rs_error ** error);
+void rs_set_frame_callback(rs_device * device, rs_stream stream, void (*on_frame)(rs_device * dev, rs_frame_ref * frame, void * user), void * user, rs_error ** error);
 
 /**
  * begin streaming on all enabled streams for this device

@@ -10,6 +10,7 @@
 #include <cstring>
 #include <sstream>
 #include <stdexcept>
+#include <functional>
 
 namespace rs
 {
@@ -365,6 +366,25 @@ namespace rs
         }
     };
 
+	class frame_callback_base
+	{
+	public:
+		virtual void on_frame(frame f) = 0;
+		virtual ~frame_callback_base() {};
+	};
+
+	class frame_callback : public frame_callback_base
+	{
+		std::function<void(frame)> on_frame_function;
+	public:
+		explicit frame_callback(std::function<void(frame)> on_frame) : on_frame_function(on_frame) {}
+
+		void on_frame(frame f) override
+		{
+			on_frame_function(std::move(f));
+		}
+	};
+
     class device
     {
         device() = delete;
@@ -560,14 +580,21 @@ namespace rs
             return intrin;
         }
 
-        /// set up a frame callback that will be called immediately when an image is available, with no synchronization logic applied
-        /// \param[in] stream    the stream for whose images the callback should be registered
-        /// \param[in] on_frame  the callback which will receive the frame data and timestamp
-        /// \param[in] user      a user data point to be passed to the callback
-        void set_frame_callback(rs::stream stream, void (*on_frame)(void * data, int timestamp, void * user), void * user)
+        /// TODO
+		void set_frame_callback(rs::stream stream, frame_callback_base& on_frame)
         {
             rs_error * e = nullptr;
-            rs_set_frame_callback((rs_device *)this, (rs_stream)stream, on_frame, user, &e);
+			rs_set_frame_callback((rs_device *)this, (rs_stream)stream, [](rs_device * device, rs_frame_ref * fref, void * user){
+				try
+				{
+					auto on_frame = (frame_callback_base *)user;
+					on_frame->on_frame(frame(device, fref));
+				}
+				catch (...)
+				{
+					
+				}
+			}, &on_frame, &e);
             error::handle(e);
         }
 

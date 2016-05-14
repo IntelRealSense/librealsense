@@ -204,13 +204,15 @@ namespace rsimpl
 
     class frame_callback
     {
-        void (*on_frame)(void * data, int timestamp, void * user);
+        void (*on_frame)(rs_device * dev, rs_frame_ref * frame, void * user);
         void * user;
+		rs_device * device;
     public:
-        frame_callback() : frame_callback(nullptr, nullptr) {}
-        frame_callback(void (*on_frame)(void *, int, void *), void * user) : on_frame(on_frame), user(user) {}
+        frame_callback() : frame_callback(nullptr, nullptr, nullptr) {}
+		frame_callback(rs_device * dev, void(*on_frame)(rs_device *, rs_frame_ref *, void *), void * user) : on_frame(on_frame), user(user), device(dev) {}
 
-        void operator () (void * data, int timestamp) const { if(on_frame) on_frame(data, timestamp, user); }
+		operator bool() { return on_frame != nullptr; }
+		void operator () (rs_frame_ref * frame) const { if (on_frame) on_frame(device, frame, user); }
     };
 
     struct device_config

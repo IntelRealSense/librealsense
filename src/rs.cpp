@@ -210,7 +210,7 @@ void rs_get_stream_intrinsics(const rs_device * device, rs_stream stream, rs_int
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, device, stream, intrin)
 
-void rs_set_frame_callback(rs_device * device, rs_stream stream, void (*on_frame)(void * data, int timestamp, void * user), void * user, rs_error ** error) try
+void rs_set_frame_callback(rs_device * device, rs_stream stream, void (*on_frame)(rs_device * dev, rs_frame_ref * frame, void * user), void * user, rs_error ** error) try
 {
     VALIDATE_NOT_NULL(device);
     VALIDATE_NATIVE_STREAM(stream);

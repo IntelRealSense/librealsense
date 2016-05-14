@@ -41,7 +41,7 @@ protected:
     rsimpl::uvc::device &                       get_device() { return *device; }
 public:
                                                 rs_device(std::shared_ptr<rsimpl::uvc::device> device, const rsimpl::static_device_info & info);
-                                                ~rs_device();
+                                                virtual ~rs_device();
 
     const rsimpl::stream_interface &            get_stream_interface(rs_stream stream) const { return *streams[stream]; }
 
@@ -54,7 +54,7 @@ public:
     void                                        enable_stream_preset(rs_stream stream, rs_preset preset);    
     void                                        disable_stream(rs_stream stream);
 
-    void                                        set_stream_callback(rs_stream stream, void (*on_frame)(void * data, int timestamp, void * user), void * user);
+    void                                        set_stream_callback(rs_stream stream, void (*on_frame)(rs_device * device, rs_frame_ref * frame, void * user), void * user);
     void                                        start();
     void                                        stop();
     bool                                        is_capturing() const { return capturing; }
