@@ -47,6 +47,12 @@ EXPORTS
 	rs_get_frame_data_safe
 	rs_release_frames
 	rs_clone_frames
+
+	rs_get_detached_frame_timestamp
+	rs_get_detached_frame_data
+	rs_release_frame
+	rs_detach_frame
+	rs_clone_frame
 	
 	rs_get_failed_function
 	rs_get_failed_args

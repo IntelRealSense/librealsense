@@ -214,7 +214,7 @@ namespace rsimpl
         {
 			return clone_frameset(&frontbuffer);
         }
-        void free_frameset(frameset* frameset)
+        void release_frameset(frameset* frameset)
         {
             published_sets.deallocate(frameset);
         }
@@ -252,8 +252,18 @@ namespace rsimpl
             }
             return new_ref;
         }
+		frame_ref * clone_frame(frame_ref * frameset)
+		{
+			auto new_ref = detached_refs.allocate();
+			if (new_ref)
+			{
+				*new_ref = *frameset;
+			}
+			return new_ref;
+		}
 
-        void free_frame_ref(frame_ref * ref)
+
+        void release_frame_ref(frame_ref * ref)
         {
             detached_refs.deallocate(ref);
         }

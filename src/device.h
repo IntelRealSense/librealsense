@@ -75,6 +75,9 @@ public:
     virtual rs_stream                           select_key_stream(const std::vector<rsimpl::subdevice_mode_selection> & selected_modes) = 0;
     virtual std::shared_ptr<rsimpl::frame_timestamp_reader>
                                                 create_frame_timestamp_reader() const = 0;
+	rs_frame_ref *								detach_frame(const rs_frameset * fs, rs_stream stream);
+	void										release_frame(rs_frame_ref * ref);
+	rs_frame_ref *								clone_frame(rs_frame_ref * frame);
 };
 
 namespace rsimpl

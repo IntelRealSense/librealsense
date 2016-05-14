@@ -304,6 +304,20 @@ const void * rs_get_frame_data_safe(const rs_frameset * device, rs_stream stream
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, device, stream)
 
+int rs_get_detached_frame_timestamp(const rs_frame_ref * frameset, rs_error ** error) try
+{
+	VALIDATE_NOT_NULL(frameset);
+	return ((rsimpl::frame_archive::frame_ref*)frameset)->get_frame_timestamp();
+}
+HANDLE_EXCEPTIONS_AND_RETURN(0, frameset)
+
+const void * rs_get_detached_frame_data(const rs_frame_ref * frameset, rs_error ** error) try
+{
+	VALIDATE_NOT_NULL(frameset);
+	return ((rsimpl::frame_archive::frame_ref*)frameset)->get_frame_data();
+}
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, frameset)
+
 void rs_release_frames(rs_device * device, rs_frameset * frames, rs_error ** error) try
 {
 	VALIDATE_NOT_NULL(device);
@@ -319,6 +333,31 @@ rs_frameset* rs_clone_frames(rs_device * device, rs_frameset* frameset, rs_error
 	return device->clone_frames(frameset);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, device, frameset)
+
+rs_frame_ref * rs_clone_frame(rs_device * device, rs_frame_ref* frame, rs_error ** error) try
+{
+	VALIDATE_NOT_NULL(device);
+	VALIDATE_NOT_NULL(frame);
+	return device->clone_frame(frame);
+}
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, device, frame)
+
+
+rs_frame_ref * rs_detach_frame(rs_device * device, const rs_frameset * frameset, rs_stream stream, rs_error ** error) try
+{
+	VALIDATE_NOT_NULL(frameset);
+	VALIDATE_ENUM(stream);
+	return device->detach_frame(frameset, stream);
+}
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, frameset, stream)
+
+void rs_release_frame(rs_device * device, rs_frame_ref * frame, rs_error ** error) try
+{
+	VALIDATE_NOT_NULL(device);
+	VALIDATE_NOT_NULL(frame);
+	device->release_frame(frame);
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, device, frame)
 
 const char * rs_get_stream_name(rs_stream stream, rs_error ** error) try
 {

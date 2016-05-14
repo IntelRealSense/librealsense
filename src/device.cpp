@@ -150,7 +150,7 @@ bool rs_device::poll_all_streams_safe(rs_frameset** frames)
 
 void rs_device::release_frames(rs_frameset * frameset)
 {
-    archive->free_frameset((frame_archive::frameset *)frameset);
+    archive->release_frameset((frame_archive::frameset *)frameset);
 }
 
 rs_frameset * rs_device::clone_frames(rs_frameset * frameset)
@@ -158,6 +158,26 @@ rs_frameset * rs_device::clone_frames(rs_frameset * frameset)
 	auto result = archive->clone_frameset((frame_archive::frameset *)frameset);
 	if (!result) throw std::runtime_error("Not enough resources to clone frameset!");
 	return (rs_frameset*)result;
+}
+
+
+rs_frame_ref* rs_device::detach_frame(const rs_frameset* fs, rs_stream stream)
+{
+	auto result = archive->detach_frame_ref((frame_archive::frameset *)fs, stream);
+	if (!result) throw std::runtime_error("Not enough resources to tack detached frame!");
+	return (rs_frame_ref*)result;
+}
+
+void rs_device::release_frame(rs_frame_ref* ref)
+{
+	archive->release_frame_ref((frame_archive::frame_ref *)ref);
+}
+
+rs_frame_ref* ::rs_device::clone_frame(rs_frame_ref* frame)
+{
+	auto result = archive->clone_frame((frame_archive::frame_ref *)frame);
+	if (!result) throw std::runtime_error("Not enough resources to clone frame!");
+	return (rs_frame_ref*)result;
 }
 
 void rs_device::get_option_range(rs_option option, double & min, double & max, double & step, double & def)

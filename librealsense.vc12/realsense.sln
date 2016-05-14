@@ -115,6 +115,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "cpp-multi-threading-1", "cp
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "cpp-multi-threading-2", "cpp-multi-threading-2\cpp-multi-threading-2.vcxproj", "{2BB995AD-7C93-4F0C-80CC-A422FF12C22D}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "cpp-multi-threading-3", "cpp-multi-threading-3\cpp-multi-threading-3.vcxproj", "{C3CB58F0-844A-4B8F-B3C6-159A9677E868}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -307,6 +309,14 @@ Global
 		{2BB995AD-7C93-4F0C-80CC-A422FF12C22D}.Release|Win32.Build.0 = Release|Win32
 		{2BB995AD-7C93-4F0C-80CC-A422FF12C22D}.Release|x64.ActiveCfg = Release|x64
 		{2BB995AD-7C93-4F0C-80CC-A422FF12C22D}.Release|x64.Build.0 = Release|x64
+		{C3CB58F0-844A-4B8F-B3C6-159A9677E868}.Debug|Win32.ActiveCfg = Debug|Win32
+		{C3CB58F0-844A-4B8F-B3C6-159A9677E868}.Debug|Win32.Build.0 = Debug|Win32
+		{C3CB58F0-844A-4B8F-B3C6-159A9677E868}.Debug|x64.ActiveCfg = Debug|x64
+		{C3CB58F0-844A-4B8F-B3C6-159A9677E868}.Debug|x64.Build.0 = Debug|x64
+		{C3CB58F0-844A-4B8F-B3C6-159A9677E868}.Release|Win32.ActiveCfg = Release|Win32
+		{C3CB58F0-844A-4B8F-B3C6-159A9677E868}.Release|Win32.Build.0 = Release|Win32
+		{C3CB58F0-844A-4B8F-B3C6-159A9677E868}.Release|x64.ActiveCfg = Release|x64
+		{C3CB58F0-844A-4B8F-B3C6-159A9677E868}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -335,5 +345,6 @@ Global
 		{979D0ADD-6AB7-403A-BB17-5434615E4446} = {A50450E7-7D7B-4A1F-8ADD-A3EBBAEFE761}
 		{4347C24A-A64E-4CDA-BC91-AEDE89AFBBCC} = {9CE5B9D5-05C7-4288-99B3-13ABFBE7B60C}
 		{2BB995AD-7C93-4F0C-80CC-A422FF12C22D} = {9CE5B9D5-05C7-4288-99B3-13ABFBE7B60C}
+		{C3CB58F0-844A-4B8F-B3C6-159A9677E868} = {9CE5B9D5-05C7-4288-99B3-13ABFBE7B60C}
 	EndGlobalSection
 EndGlobal

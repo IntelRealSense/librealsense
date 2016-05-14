@@ -209,6 +209,75 @@ namespace rs
         }
     };
 
+	class frame
+	{
+		rs_device * device;
+		rs_frame_ref * frame_ref;
+
+		frame(const frame &) = delete;
+
+	public:
+		frame() : device(nullptr), frame_ref(nullptr) {}
+		frame(rs_device * device, rs_frame_ref * frame_ref) : device(device), frame_ref(frame_ref) {}
+		frame(frame&& other) : device(other.device), frame_ref(other.frame_ref) { other.frame_ref = nullptr; }
+		frame& operator=(frame other)
+		{
+			swap(other);
+			return *this;
+		}
+		void swap(frame& other)
+		{
+			std::swap(device, other.device);
+			std::swap(frame_ref, other.frame_ref);
+		}
+
+		~frame()
+		{
+			if (frame_ref)
+			{
+				rs_error * e = nullptr;
+				rs_release_frame(device, frame_ref, &e);
+				error::handle(e);
+			}
+		}
+
+		frame clone()
+		{
+			rs_error * e = nullptr;
+			auto r = rs_clone_frame(device, frame_ref, &e);
+			error::handle(e);
+			return std::move(frame(device, r));
+		}
+
+		bool try_clone(frame& result)
+		{
+			rs_error * e = nullptr;
+			auto r = rs_clone_frame(device, frame_ref, &e);
+			if (!e) result = std::move(frame(device, r));
+			return e == nullptr;
+		}
+
+		/// retrieve the time at which the TODO on a stream was captured
+		/// \return            the timestamp of the frame, in milliseconds since the device was started
+		int get_frame_timestamp() const
+		{
+			rs_error * e = nullptr;
+			auto r = rs_get_detached_frame_timestamp(frame_ref, &e);
+			error::handle(e);
+			return r;
+		}
+
+		/// retrieve the contents of the TODO on a stream
+		/// \return            the pointer to the start of the frame data
+		const void * get_frame_data() const
+		{
+			rs_error * e = nullptr;
+			auto r = rs_get_detached_frame_data(frame_ref, &e);
+			error::handle(e);
+			return r;
+		}
+	};
+
     class frameset
     {
         rs_device * device;
@@ -240,6 +309,22 @@ namespace rs
                 error::handle(e);
             }
         }
+
+		frame detach_frame(stream stream)
+        {
+			rs_error * e = nullptr;
+			auto r = rs_detach_frame(device, frames, (rs_stream)stream, &e);
+			error::handle(e);
+			return std::move(frame(device, r));
+        }
+
+		bool try_detach_frame(stream stream, frame& result)
+		{
+			rs_error * e = nullptr;
+			auto r = rs_detach_frame(device, frames, (rs_stream)stream, &e);
+			if (!e) result = std::move(frame(device, r));
+			return e == nullptr;
+		}
 
         frameset clone()
         {

@@ -455,21 +455,47 @@ int rs_get_frame_timestamp_safe(const rs_frameset * frameset, rs_stream stream, 
 
 /**
 * TODO
+* \param[in] stream  the stream whose latest frame we are interested in
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return            the pointer to the start of the frame data
+*/
+const void * rs_get_frame_data_safe(const rs_frameset * frameset, rs_stream stream, rs_error ** error);
+
+/**
+* TODO
 */
 void rs_release_frames(rs_device * device, rs_frameset * frameset, rs_error ** error);
 
 /**
 * TODO
 */
-rs_frameset* rs_clone_frames(rs_device * device, rs_frameset* frameset, rs_error ** error);
+rs_frameset * rs_clone_frames(rs_device * device, rs_frameset* frameset, rs_error ** error);
 
 /**
 * TODO
-* \param[in] stream  the stream whose latest frame we are interested in
-* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
-* \return            the pointer to the start of the frame data
 */
-const void * rs_get_frame_data_safe(const rs_frameset * frameset, rs_stream stream, rs_error ** error);
+rs_frame_ref * rs_detach_frame(rs_device * device, const rs_frameset * frameset, rs_stream stream, rs_error ** error);
+
+/**
+* TODO
+*/
+void rs_release_frame(rs_device * device, rs_frame_ref * frame, rs_error ** error);
+
+
+/**
+* TODO
+*/
+int rs_get_detached_frame_timestamp(const rs_frame_ref * frame, rs_error ** error);
+
+/**
+* TODO
+*/
+const void * rs_get_detached_frame_data(const rs_frame_ref * frame, rs_error ** error);
+
+/**
+* TODO
+*/
+rs_frame_ref * rs_clone_frame(rs_device * device, rs_frame_ref* frame, rs_error ** error);
                                      
 const char * rs_get_failed_function  (const rs_error * error);
 const char * rs_get_failed_args      (const rs_error * error);
