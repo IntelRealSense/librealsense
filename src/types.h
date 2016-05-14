@@ -332,6 +332,41 @@ namespace rsimpl
 		}
 	};
 
+	class frame_continuation
+	{
+		std::function<void()> continuation;
+
+		frame_continuation(const frame_continuation &) = delete;
+		frame_continuation & operator=(const frame_continuation &) = delete;
+	public:
+		frame_continuation() : continuation([](){}) {}
+
+		explicit frame_continuation(std::function<void()> continuation) : continuation(continuation) {}
+
+		frame_continuation(frame_continuation && other) : continuation(other.continuation)
+		{
+			other.continuation = [](){};
+		}
+
+		void operator()() 
+		{
+			continuation();
+			continuation = [](){};
+		}
+
+		frame_continuation & operator=(frame_continuation && other)
+		{
+			continuation();
+			continuation = other.continuation;
+			other.continuation = [](){};
+			return *this;
+		}
+
+		~frame_continuation()
+		{
+			continuation();
+		}
+	};
 }
 
 #endif

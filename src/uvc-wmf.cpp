@@ -208,7 +208,7 @@ namespace rsimpl
             com_ptr<IAMVideoProcAmp> am_video_proc_amp;            
             std::map<int, com_ptr<IKsControl>> ks_controls;
             com_ptr<IMFSourceReader> mf_source_reader;
-            std::function<void(const void * frame)> callback;
+            std::function<void(const void * frame, std::function<void()>)> callback;
 
             com_ptr<IMFMediaSource> get_media_source()
             {
@@ -456,24 +456,31 @@ namespace rsimpl
                         BYTE * byte_buffer; DWORD max_length, current_length;
                         if(SUCCEEDED(buffer->Lock(&byte_buffer, &max_length, &current_length)))
                         {
-                            owner_ptr->subdevices[subdevice_index].callback(byte_buffer);
-                            HRESULT hr = buffer->Unlock();
+							auto continuation = [buffer, this]()
+							{
+								buffer->Unlock();
+							};
+
+							owner_ptr->subdevices[subdevice_index].callback(byte_buffer, continuation);
                         }
                     }
                 }
 
-                HRESULT hr = owner_ptr->subdevices[subdevice_index].mf_source_reader->ReadSample(MF_SOURCE_READER_FIRST_VIDEO_STREAM, 0, NULL, NULL, NULL, NULL);
-                switch(hr)
-                {
-                case S_OK: break;
-                case MF_E_INVALIDREQUEST: LOG_ERROR("ReadSample returned MF_E_INVALIDREQUEST"); break;
-                case MF_E_INVALIDSTREAMNUMBER: LOG_ERROR("ReadSample returned MF_E_INVALIDSTREAMNUMBER"); break;
-                case MF_E_NOTACCEPTING: LOG_ERROR("ReadSample returned MF_E_NOTACCEPTING"); break;
-                case E_INVALIDARG: LOG_ERROR("ReadSample returned E_INVALIDARG"); break;
-                case MF_E_VIDEO_RECORDING_DEVICE_INVALIDATED: LOG_ERROR("ReadSample returned MF_E_VIDEO_RECORDING_DEVICE_INVALIDATED"); break;
-                default: LOG_ERROR("ReadSample returned HRESULT " << std::hex << (uint32_t)hr); break;
-                }
-                if(hr != S_OK) streaming = false;
+				if (auto owner_ptr_new = owner.lock())
+				{
+					auto hr = owner_ptr_new->subdevices[subdevice_index].mf_source_reader->ReadSample(MF_SOURCE_READER_FIRST_VIDEO_STREAM, 0, NULL, NULL, NULL, NULL);
+					switch (hr)
+					{
+					case S_OK: break;
+					case MF_E_INVALIDREQUEST: LOG_ERROR("ReadSample returned MF_E_INVALIDREQUEST"); break;
+					case MF_E_INVALIDSTREAMNUMBER: LOG_ERROR("ReadSample returned MF_E_INVALIDSTREAMNUMBER"); break;
+					case MF_E_NOTACCEPTING: LOG_ERROR("ReadSample returned MF_E_NOTACCEPTING"); break;
+					case E_INVALIDARG: LOG_ERROR("ReadSample returned E_INVALIDARG"); break;
+					case MF_E_VIDEO_RECORDING_DEVICE_INVALIDATED: LOG_ERROR("ReadSample returned MF_E_VIDEO_RECORDING_DEVICE_INVALIDATED"); break;
+					default: LOG_ERROR("ReadSample returned HRESULT " << std::hex << (uint32_t)hr); break;
+					}
+					if (hr != S_OK) streaming = false;
+				}
             }
             return S_OK; 
         }
@@ -534,7 +541,7 @@ namespace rsimpl
             }
         }
 
-        void set_subdevice_mode(device & device, int subdevice_index, int width, int height, uint32_t fourcc, int fps, std::function<void(const void * frame)> callback)
+		void set_subdevice_mode(device & device, int subdevice_index, int width, int height, uint32_t fourcc, int fps, std::function<void(const void * frame, std::function<void()> continuation)> callback)
         {
             auto & sub = device.subdevices[subdevice_index];
             
