@@ -40,6 +40,11 @@ int frame_archive::get_frame_timestamp(rs_stream stream) const
     return frontbuffer.get_frame_timestamp(stream);
 }
 
+frame_archive::frameset* frame_archive::clone_frontbuffer()
+{
+	return clone_frameset(&frontbuffer);
+}
+
 // Block until the next coherent frameset is available
 void frame_archive::wait_for_frames()
 {
@@ -103,6 +108,62 @@ void frame_archive::get_next_frames()
             dequeue_frame(s);
         }
     }
+}
+
+void frame_archive::release_frameset(frameset* frameset)
+{
+	published_sets.deallocate(frameset);
+}
+
+frame_archive::frameset* frame_archive::clone_frameset(frameset* frameset)
+{
+	auto new_set = published_sets.allocate();
+	if (new_set)
+	{
+		*new_set = *frameset;
+	}
+	return new_set;
+}
+
+void frame_archive::unpublish_frame(frame* frame)
+{
+	freelist.push_back(std::move(*frame));
+	published_frames.deallocate(frame);
+}
+
+frame_archive::frame* frame_archive::publish_frame(frame&& frame)
+{
+	auto new_frame = published_frames.allocate();
+	if (new_frame)
+	{
+		*new_frame = std::move(frame);
+	}
+	return new_frame;
+}
+
+frame_archive::frame_ref* frame_archive::detach_frame_ref(frameset* frameset, rs_stream stream)
+{
+	auto new_ref = detached_refs.allocate();
+	if (new_ref)
+	{
+		*new_ref = std::move(frameset->detach_ref(stream));
+	}
+	return new_ref;
+}
+
+frame_archive::frame_ref* frame_archive::clone_frame(frame_ref* frameset)
+{
+	auto new_ref = detached_refs.allocate();
+	if (new_ref)
+	{
+		*new_ref = *frameset;
+	}
+	return new_ref;
+}
+
+void frame_archive::release_frame_ref(frame_ref* ref)
+{
+	detached_refs.deallocate(ref);
 }
 
 // Allocate a new frame in the backbuffer, potentially recycling a buffer from the freelist
@@ -210,4 +271,82 @@ void frame_archive::discard_frame(rs_stream stream)
 {
     freelist.push_back(std::move(frames[stream].front()));
     frames[stream].erase(begin(frames[stream]));    
+}
+
+frame_archive::frame& frame_archive::frame::operator=(frame&& r)
+{ 
+	data = move(r.data); 
+	timestamp = r.timestamp; 
+	owner = r.owner;
+	ref_count = r.ref_count.exchange(0);
+	return *this; 
+}
+
+void frame_archive::frame::release()
+{
+	if (ref_count.fetch_sub(1) == 1)
+	{
+		owner->unpublish_frame(this);
+	}
+}
+
+frame_archive::frame* frame_archive::frame::publish()
+{
+	return owner->publish_frame(std::move(*this));
+}
+
+frame_archive::frame_ref frame_archive::frameset::detach_ref(rs_stream stream)
+{
+	return std::move(buffer[stream]);
+}
+
+void frame_archive::frameset::place_frame(rs_stream stream, frame&& new_frame)
+{
+	auto published_frame = new_frame.publish();
+	if (published_frame)
+	{
+		frame_ref new_ref(published_frame); // allocate new frame_ref to ref-counter the now published frame
+		buffer[stream] = std::move(new_ref); // move the new handler in, release a ref count on previous frame
+	}
+}
+
+frame_archive::frame_ref::frame_ref(frame* frame): frame_ptr(frame)
+{
+	frame->acquire();
+}
+
+frame_archive::frame_ref::frame_ref(const frame_ref& other): frame_ptr(other.frame_ptr)
+{
+	if (frame_ptr) frame_ptr->acquire();
+}
+
+frame_archive::frame_ref::frame_ref(frame_ref&& other): frame_ptr(other.frame_ptr)
+{
+	other.frame_ptr = nullptr;
+}
+
+frame_archive::frame_ref& frame_archive::frame_ref::operator=(frame_ref other)
+{
+	swap(other);
+	return *this;
+}
+
+frame_archive::frame_ref::~frame_ref()
+{
+	if (frame_ptr) frame_ptr->release();
+}
+
+void frame_archive::frame_ref::swap(frame_ref& other)
+{
+	std::swap(frame_ptr, other.frame_ptr);
+}
+
+const byte* frame_archive::frame_ref::get_frame_data() const
+{
+	return frame_ptr ? frame_ptr->data.data() : nullptr;
+}
+
+int frame_archive::frame_ref::get_frame_timestamp() const
+{
+	return frame_ptr ? frame_ptr->timestamp : 0;
 }

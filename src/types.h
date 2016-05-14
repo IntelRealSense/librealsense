@@ -239,6 +239,51 @@ namespace rsimpl
     {
         return (c0 << 24) | (c1 << 16) | (c2 << 8) | c3;
     }
+
+	template<class T, int C>
+	class small_heap
+	{
+		T buffer[C];
+		bool is_free[C];
+		std::mutex mutex;
+
+	public:
+		small_heap()
+		{
+			for (auto i = 0; i < C; i++)
+			{
+				is_free[i] = true;
+				buffer[i] = std::move(T());
+			}
+		}
+
+		T * allocate()
+		{
+			std::lock_guard<std::mutex> lock(mutex);
+			for (auto i = 0; i < C; i++)
+			{
+				if (is_free[i])
+				{
+					is_free[i] = false;
+					return &buffer[i];
+				}
+			}
+			return nullptr;
+		}
+
+		void deallocate(T * item)
+		{
+			std::lock_guard<std::mutex> lock(mutex);
+			if (item < buffer || item >= buffer + C)
+			{
+				throw std::runtime_error("Trying to return item to a heap that didn't allocate it!");
+			}
+			auto i = item - buffer;
+			is_free[i] = true;
+			buffer[i] = std::move(T());
+		}
+	};
+
 }
 
 #endif
