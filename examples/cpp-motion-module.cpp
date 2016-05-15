@@ -64,7 +64,7 @@ int main() try
 
     /* Will print a simple text-based representation of the image, by breaking it into 10x20 pixel regions and and approximating the coverage of pixels within one meter */
     int rows = (height / 20);
-    int row_lenght = (width / 20);
+    int row_lenght = (width / 10);
     int display_size = (rows+1) * (row_lenght+1);
 
     display_buf buffer(display_size*sizeof(char));
@@ -74,7 +74,7 @@ int main() try
         // This call waits until a new coherent set of frames is available on a device
         // Calls to get_frame_data(...) and get_frame_timestamp(...) on a device will return stable values until wait_for_frames(...) is called
         dev->wait_for_frames();
-        printf("Frame arrived at %d \n", (int)clock());
+        //printf("Frame arrived at %d \n", (int)clock());
 
 
         // Retrieve depth data, which was previously configured as a 640 x 480 image of 16-bit depth values
@@ -83,7 +83,7 @@ int main() try
         // Print a simple text-based representation of the image, by breaking it into 10x20 pixel regions and and approximating the coverage of pixels within one meter
 
         char * out = buffer.get_data();
-        int coverage[64] = {};       //The buffer will suffice up to 256*10  pixels width
+        int coverage[row_lenght] = {};       //The buffer will suffice up to 256*10  pixels width
         for(int y=0; y<height; ++y)
         {
             for(int x=0; x<width; ++x)
@@ -101,7 +101,7 @@ int main() try
                 }
                 *out++ = '\n';
             }
-            printf("line %d is finished", y);
+            //printf("line %d is finished", y);
         }
         *out++ = 0;
 
