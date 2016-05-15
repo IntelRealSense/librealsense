@@ -102,21 +102,24 @@ void rs_device::start()
         // Initialize the subdevice and set it to the selected mode
         set_subdevice_mode(*device, mode_selection.mode.subdevice, mode_selection.mode.native_dims.x, mode_selection.mode.native_dims.y, mode_selection.mode.pf.fourcc, mode_selection.mode.fps, 
 			[mode_selection, archive, timestamp_reader, callbacks, streams](const void * frame, std::function<void()> continuation) mutable
-        {
-			frame_continuation release_and_enqueue(continuation);
+		{
+			frame_continuation release_and_enqueue(continuation, frame);
 
-            // Ignore any frames which appear corrupted or invalid
-            if(!timestamp_reader->validate_frame(mode_selection.mode, frame)) return;
+			// Ignore any frames which appear corrupted or invalid
+			if (!timestamp_reader->validate_frame(mode_selection.mode, frame)) return;
 
-            // Determine the timestamp for this frame
-            int timestamp = timestamp_reader->get_frame_timestamp(mode_selection.mode, frame);
+			// Determine the timestamp for this frame
+			int timestamp = timestamp_reader->get_frame_timestamp(mode_selection.mode, frame);
 
-            // Obtain buffers for unpacking the frame
-            std::vector<byte *> dest;
-            for(auto & output : mode_selection.get_outputs()) dest.push_back(archive->alloc_frame(output.first, timestamp, mode_selection.requires_processing() ? nullptr : frame));
+			// Obtain buffers for unpacking the frame
+			std::vector<byte *> dest;
+			for (auto & output : mode_selection.get_outputs()) dest.push_back(archive->alloc_frame(output.first, timestamp, mode_selection.requires_processing()));
 
-            // Unpack the frame
-            if (mode_selection.requires_processing()) mode_selection.unpack(dest.data(), reinterpret_cast<const byte *>(frame));
+			// Unpack the frame
+			if (mode_selection.requires_processing()) 
+			{
+				mode_selection.unpack(dest.data(), reinterpret_cast<const byte *>(frame));
+			}
 
             // If any frame callbacks were specified, dispatch them now
 			for (size_t i = 0; i < dest.size(); ++i)
@@ -133,6 +136,11 @@ void rs_device::start()
 				{
 					// Commit the frame to the archive
 					archive->commit_frame(streams[i]);
+				}
+
+				if (!mode_selection.requires_processing())
+				{
+					archive->attach_continuation(streams[i], std::move(release_and_enqueue));
 				}
 			}
         });

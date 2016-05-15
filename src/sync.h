@@ -19,17 +19,17 @@ namespace rsimpl
         private:
             // TODO: consider boost::intrusive_ptr or an alternative
             std::atomic<int> ref_count; // the reference count is on how many times this placeholder has been observed (not lifetime, not content)
-            frame_archive * owner; // pointer to the owner to be returned to by last observer
+            frame_archive * owner; // pointer to the owner to be returned to by last observe
 			frame_continuation on_release;
 
         public:
             std::vector<byte> data;
             int timestamp;
-            const void* original_data;
 
             explicit frame() : ref_count(0), owner(nullptr), timestamp() {}
             frame(const frame & r) = delete;
-            frame(frame && r) : ref_count(r.ref_count.exchange(0)), owner(r.owner) { *this = std::move(r); }
+			frame(frame && r) : ref_count(r.ref_count.exchange(0)), owner(r.owner), 
+				on_release() { *this = std::move(r); }
 
             frame & operator = (const frame & r) = delete;
 	        frame& operator =(frame&& r);
@@ -127,9 +127,10 @@ namespace rsimpl
 	    void release_frame_ref(frame_ref * ref);
 
 	    // Frame callback thread API
-        byte * alloc_frame(rs_stream stream, int timestamp, const void* frame);
-        void commit_frame(rs_stream stream); 
+        byte * alloc_frame(rs_stream stream, int timestamp, bool requires_memory);
+		void commit_frame(rs_stream stream);
 		frame_ref * track_frame(rs_stream stream);
+		void attach_continuation(rs_stream stream, frame_continuation&& continuation);
 
 		void flush();
     };

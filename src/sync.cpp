@@ -167,14 +167,14 @@ void frame_archive::release_frame_ref(frame_ref* ref)
 }
 
 // Allocate a new frame in the backbuffer, potentially recycling a buffer from the freelist
-byte * frame_archive::alloc_frame(rs_stream stream, int timestamp, const void* frame)
+byte * frame_archive::alloc_frame(rs_stream stream, int timestamp, bool requires_memory)
 { 
     const size_t size = modes[stream].get_image_size(stream);
 
     {
         std::lock_guard<std::mutex> guard(mutex);
 
-        if (!frame)
+		if (requires_memory)
         {
             // Attempt to obtain a buffer of the appropriate size from the freelist
             for(auto it = begin(freelist); it != end(freelist); ++it)
@@ -196,14 +196,9 @@ byte * frame_archive::alloc_frame(rs_stream stream, int timestamp, const void* f
         }
     }
 
-    if (frame)
-    {
-        backbuffer[stream].original_data = frame;
-    }
-    else
+	if (requires_memory)
     {
         backbuffer[stream].data.resize(size); // TODO: Allow users to provide a custom allocator for frame buffers
-        backbuffer[stream].original_data = nullptr;
     }
 
     backbuffer[stream].update_owner(this);
@@ -219,6 +214,11 @@ void frame_archive::commit_frame(rs_stream stream)
     cull_frames();
     lock.unlock();
     if(!frames[key_stream].empty()) cv.notify_one();
+}
+
+void frame_archive::attach_continuation(rs_stream stream, frame_continuation&& continuation)
+{
+	backbuffer[stream].attach_continuation(std::move(continuation));
 }
 
 frame_archive::frame_ref* frame_archive::track_frame(rs_stream stream)
@@ -319,6 +319,7 @@ frame_archive::frame& frame_archive::frame::operator=(frame&& r)
 	timestamp = r.timestamp; 
 	owner = r.owner;
 	ref_count = r.ref_count.exchange(0);
+	on_release = std::move(r.on_release);
 	return *this; 
 }
 
@@ -402,6 +403,7 @@ int frame_archive::frame_ref::get_frame_timestamp() const
 
 const byte* frame_archive::frame::get_frame_data() const
 {
-    if (original_data) return (const byte*)original_data;
+	if (on_release.get_data())
+		return (const byte*)on_release.get_data();
     return data.data();
 }
