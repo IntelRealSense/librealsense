@@ -24,6 +24,7 @@ namespace rsimpl
         public:
             std::vector<byte> data;
             int timestamp;
+			void* original_data;
 
             explicit frame() : ref_count(0), owner(nullptr), timestamp() {}
             frame(const frame & r) = delete;
@@ -122,7 +123,7 @@ namespace rsimpl
 	    void release_frame_ref(frame_ref * ref);
 
 	    // Frame callback thread API
-        byte * alloc_frame(rs_stream stream, int timestamp);
+        byte * alloc_frame(rs_stream stream, int timestamp, void* frame);
         void commit_frame(rs_stream stream); 
 		frame_ref * track_frame(rs_stream stream);
 
