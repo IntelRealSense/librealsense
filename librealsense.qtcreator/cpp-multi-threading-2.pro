@@ -11,7 +11,7 @@ INCLUDEPATH += ../include
 LIBS += -pthread
 
 SOURCES += ../examples/cpp-multi-threading-2.cpp
-HEADERS += ../examples/concurrency.hpp"
+HEADERS += ../examples/concurrency.hpp
 
 LIBS += -L$$DESTDIR/ -lrealsense
 

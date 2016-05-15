@@ -21,11 +21,11 @@ frame_archive::frame_archive(const std::vector<subdevice_mode_selection> & selec
 
     // Allocate an empty image for each stream, and move it to the frontbuffer
     // This allows us to assume that get_frame_data/get_frame_timestamp always return valid data
-    alloc_frame(key_stream, 0);
+    alloc_frame(key_stream, 0, nullptr);
     frontbuffer.place_frame(key_stream, std::move(backbuffer[key_stream]));
     for(auto s : other_streams)
     {
-        alloc_frame(s, 0);
+        alloc_frame(s, 0, nullptr);
         frontbuffer.place_frame(s, std::move(backbuffer[s]));
     }
 }
@@ -167,7 +167,7 @@ void frame_archive::release_frame_ref(frame_ref* ref)
 }
 
 // Allocate a new frame in the backbuffer, potentially recycling a buffer from the freelist
-byte * frame_archive::alloc_frame(rs_stream stream, int timestamp, void* frame) 
+byte * frame_archive::alloc_frame(rs_stream stream, int timestamp, const void* frame)
 { 
     const size_t size = modes[stream].get_image_size(stream);
 

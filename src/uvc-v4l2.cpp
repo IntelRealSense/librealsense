@@ -81,7 +81,7 @@ namespace rsimpl
             std::vector<buffer> buffers;
 
             int width, height, format, fps;
-            std::function<void(const void *)> callback;
+            std::function<void(const void *, std::function<void()>)> callback;
             bool is_capturing;
 
             subdevice(const std::string & name) : dev_name("/dev/" + name), vid(), pid(), fd(), width(), height(), format(), is_capturing()
@@ -171,7 +171,7 @@ namespace rsimpl
                 if(xioctl(fd, UVCIOC_CTRL_QUERY, &q) < 0) throw_error("UVCIOC_CTRL_QUERY:UVC_SET_CUR");
             }
 
-            void set_format(int width, int height, int fourcc, int fps, std::function<void(const void * data)> callback)
+            void set_format(int width, int height, int fourcc, int fps, std::function<void(const void * data, std::function<void()> continuation)> callback)
             {
                 this->width = width;
                 this->height = height;
@@ -312,9 +312,10 @@ namespace rsimpl
                         }
                         assert(buf.index < sub->buffers.size());
 
-                        sub->callback(sub->buffers[buf.index].start);
-
-                        if(xioctl(sub->fd, VIDIOC_QBUF, &buf) < 0) throw_error("VIDIOC_QBUF");
+                        sub->callback(sub->buffers[buf.index].start,
+                                [sub, buf]() mutable {
+                                    if(xioctl(sub->fd, VIDIOC_QBUF, &buf) < 0) throw_error("VIDIOC_QBUF");
+                                });
                     }
                 }
             }
@@ -421,7 +422,7 @@ namespace rsimpl
             if(status < 0) throw std::runtime_error(to_string() << "libusb_bulk_transfer(...) returned " << libusb_error_name(status));
         }
 
-        void set_subdevice_mode(device & device, int subdevice_index, int width, int height, uint32_t fourcc, int fps, std::function<void(const void * frame)> callback)
+        void set_subdevice_mode(device & device, int subdevice_index, int width, int height, uint32_t fourcc, int fps, std::function<void(const void * frame, std::function<void()> continuation)> callback)
         {
             device.subdevices[subdevice_index]->set_format(width, height, (const big_endian<int> &)fourcc, fps, callback);
         }

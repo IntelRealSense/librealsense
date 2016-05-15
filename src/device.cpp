@@ -113,7 +113,7 @@ void rs_device::start()
 
             // Obtain buffers for unpacking the frame
             std::vector<byte *> dest;
-            for(auto & output : mode_selection.get_outputs()) dest.push_back(archive->alloc_frame(output.first, timestamp));
+            for(auto & output : mode_selection.get_outputs()) dest.push_back(archive->alloc_frame(output.first, timestamp, frame));
 
             // Unpack the frame
             mode_selection.unpack(dest.data(), reinterpret_cast<const byte *>(frame));
