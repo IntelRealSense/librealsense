@@ -27,6 +27,7 @@ namespace rsimpl
         CASE(DEPTH_ALIGNED_TO_RECTIFIED_COLOR)
         CASE(INFRARED2_ALIGNED_TO_DEPTH)
         CASE(DEPTH_ALIGNED_TO_INFRARED2)
+        CASE(FISHEYE)
         default: assert(!is_valid(value)); return nullptr;
         }
         #undef CASE
@@ -149,7 +150,10 @@ namespace rsimpl
         CASE(SR300_WAKEUP_DEV_RESET)
         CASE(SR300_WAKE_ON_USB_REASON)
         CASE(SR300_WAKE_ON_USB_CONFIDENCE)
-
+        CASE(FISHEYE_COLOR_EXPOSURE)
+        CASE(FISHEYE_COLOR_GAIN)
+        CASE(FISHEYE_STROBE)
+        CASE(FISHEYE_EXT_TRIG)
         default: assert(!is_valid(value)); return nullptr;
         }
         #undef CASE

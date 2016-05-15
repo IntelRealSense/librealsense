@@ -7,6 +7,11 @@
 
 #include "device.h"
 
+#define R200_PRODUCT_ID  0x0a80
+#define LR200_PRODUCT_ID 0x0abf
+#define ZR300_PRODUCT_ID 0x0acb
+#define FISHEYE_PRODUCT_ID 0x0ad0
+
 namespace rsimpl
 {
     class r200_camera final : public rs_device
@@ -15,6 +20,7 @@ namespace rsimpl
         void on_update_depth_units(uint32_t units);
         void on_update_disparity_multiplier(double multiplier);
         uint32_t get_lr_framerate() const;
+
     public:
         r200_camera(std::shared_ptr<uvc::device> device, const static_device_info & info);
         ~r200_camera();

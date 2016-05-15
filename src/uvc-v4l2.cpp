@@ -310,8 +310,8 @@ namespace rsimpl
                             if(errno == EAGAIN) return;
                             throw_error("VIDIOC_DQBUF");
                         }
-                        assert(buf.index < sub->buffers.size());
 
+                        assert(buf.index < sub->buffers.size());
                         sub->callback(sub->buffers[buf.index].start);
 
                         if(xioctl(sub->fd, VIDIOC_QBUF, &buf) < 0) throw_error("VIDIOC_QBUF");
@@ -452,6 +452,8 @@ namespace rsimpl
             case RS_OPTION_COLOR_WHITE_BALANCE: return V4L2_CID_WHITE_BALANCE_TEMPERATURE;
             case RS_OPTION_COLOR_ENABLE_AUTO_EXPOSURE: return V4L2_CID_EXPOSURE_AUTO; // Automatic gain/exposure control
             case RS_OPTION_COLOR_ENABLE_AUTO_WHITE_BALANCE: return V4L2_CID_AUTO_WHITE_BALANCE;
+            case RS_OPTION_FISHEYE_COLOR_EXPOSURE: return V4L2_CID_EXPOSURE_ABSOLUTE;
+            case RS_OPTION_FISHEYE_COLOR_GAIN: return V4L2_CID_GAIN;
             default: throw std::runtime_error(to_string() << "no v4l2 cid for option " << option);
             }
         }
@@ -604,6 +606,9 @@ namespace rsimpl
                 }
                 if(is_new_device)
                 {
+                    if (sub->vid == 0x8086 && sub->pid == 0x0ad0)  // avoid inserting fisheye camera as a device
+                        continue;
+
                     devices.push_back(std::make_shared<device>(context));
                     devices.back()->subdevices.push_back(move(sub));
                 }
@@ -617,6 +622,24 @@ namespace rsimpl
                     return a->mi < b->mi;
                 });
             }
+
+
+            // Insert fisheye camera as subDevice of ZR300
+            for(auto & sub : subdevices)
+            {
+                if (!sub)
+                    continue;
+
+                for(auto & dev : devices)
+                {
+                    if (dev->subdevices[0]->vid == 0x8086 && dev->subdevices[0]->pid == 0x0acb && sub->vid == 0x8086 && sub->pid == 0x0ad0)
+                    {
+                        dev->subdevices.push_back(move(sub));
+                        break;
+                    }
+                }
+            }
+
 
             // Obtain libusb_device_handle for each device
             libusb_device ** list;
