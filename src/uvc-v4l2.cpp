@@ -559,6 +559,17 @@ namespace rsimpl
             return std::make_shared<context>();
         }
 
+        bool is_device_connected(device & device, int vid, int pid)
+        {
+            for (auto& sub : device.subdevices)
+            {
+                if (sub->vid == vid && sub->pid == pid)
+                    return true;
+            }
+
+            return false;
+        }
+
         std::vector<std::shared_ptr<device>> query_devices(std::shared_ptr<context> context)
         {                                            
             // Enumerate all subdevices present on the system

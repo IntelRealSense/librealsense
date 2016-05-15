@@ -24,6 +24,11 @@ namespace rsimpl
 
     }
 
+    bool is_fisheye_connected()
+    {
+
+    }
+
     bool is_fisheye_uvc_control(rs_option option)
     {
         return (option == RS_OPTION_FISHEYE_COLOR_EXPOSURE) ||
@@ -124,13 +129,16 @@ namespace rsimpl
 			{RS_OPTION_R200_DEPTH_CONTROL_TEXTURE_DIFFERENCE_THRESHOLD, 0, 0x3FF,       1},
 			{RS_OPTION_R200_DEPTH_CONTROL_SECOND_PEAK_THRESHOLD,        0, 0x3FF,       1},
 			{RS_OPTION_R200_DEPTH_CONTROL_NEIGHBOR_THRESHOLD,           0, 0x3FF,       1},
-			{RS_OPTION_R200_DEPTH_CONTROL_LR_THRESHOLD,                 0, 0x7FF,       1},
-            {RS_OPTION_FISHEYE_COLOR_EXPOSURE},
-            {RS_OPTION_FISHEYE_COLOR_GAIN},
-            {RS_OPTION_FISHEYE_STROBE,                                  0, 1,           1, 0},
-            {RS_OPTION_FISHEYE_EXT_TRIG,                               0, 1,           1, 0}
+            {RS_OPTION_R200_DEPTH_CONTROL_LR_THRESHOLD,                 0, 0x7FF,       1}
 		};
 
+        if (uvc::is_device_connected(*device, PID_INTEL_CAMERA, FISHEYE_PRODUCT_ID))
+        {
+            info.options.push_back({RS_OPTION_FISHEYE_COLOR_EXPOSURE});
+            info.options.push_back({RS_OPTION_FISHEYE_COLOR_GAIN});
+            info.options.push_back({RS_OPTION_FISHEYE_STROBE, 0, 1, 1, 0});
+            info.options.push_back({RS_OPTION_FISHEYE_EXT_TRIG, 0, 1, 1, 0});
+        }
 
         // We select the depth/left infrared camera's viewpoint to be the origin
         info.stream_poses[RS_STREAM_DEPTH] = {{{1,0,0},{0,1,0},{0,0,1}},{0,0,0}};
@@ -281,10 +289,13 @@ namespace rsimpl
         auto c = r200::read_camera_info(*device);
         info.subdevice_modes.push_back({ 2, { 1920, 1080 }, pf_rw16, 30, c.intrinsicsThird[0], { c.modesThird[0][0] }, { 0 } });
 
-        // TODO: need to check if there is a connected Fisheye camera
-        info.stream_subdevices[RS_STREAM_FISHEYE] = 3;
-        info.presets[RS_STREAM_FISHEYE][RS_PRESET_BEST_QUALITY] = {true, 640, 480, RS_FORMAT_RAW10,   60};
-        info.subdevice_modes.push_back({3, {640, 480}, pf_rw10, 60, c.intrinsicsThird[1], {c.modesThird[1][0]}, {0}});
+
+        if (uvc::is_device_connected(*device, PID_INTEL_CAMERA, FISHEYE_PRODUCT_ID))
+        {
+            info.stream_subdevices[RS_STREAM_FISHEYE] = 3;
+            info.presets[RS_STREAM_FISHEYE][RS_PRESET_BEST_QUALITY] = {true, 640, 480, RS_FORMAT_RAW10,   60};
+            info.subdevice_modes.push_back({3, {640, 480}, pf_rw10, 60, c.intrinsicsThird[1], {c.modesThird[1][0]}, {0}});
+        }
         // TODO: Power on Fisheye camera (mmpwr 1)
 
         return make_device(device, info, c);
