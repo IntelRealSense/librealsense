@@ -24,11 +24,6 @@ namespace rsimpl
 
     }
 
-    bool is_fisheye_connected()
-    {
-
-    }
-
     bool is_fisheye_uvc_control(rs_option option)
     {
         return (option == RS_OPTION_FISHEYE_COLOR_EXPOSURE) ||
