@@ -50,22 +50,22 @@ namespace rsimpl { namespace r200
 
     uint8_t get_strobe(const uvc::device & device)
     {
-        return r200::xu_read<uint8_t>(device, fisheye_xu, r200::control::FISHEYE_XU_STROBE);
+        return r200::xu_read<uint8_t>(device, fisheye_xu, r200::control::fisheye_xu_strobe);
     }
 
     void set_strobe(uvc::device & device, uint8_t strobe)
     {
-        r200::xu_write(device, fisheye_xu, r200::control::FISHEYE_XU_STROBE, &strobe, sizeof(strobe));
+        r200::xu_write(device, fisheye_xu, r200::control::fisheye_xu_strobe, &strobe, sizeof(strobe));
     }
 
     uint8_t get_ext_trig(const uvc::device & device)
     {
-        return r200::xu_read<uint8_t>(device, fisheye_xu, r200::control::FISHEYE_XU_EXT_TRIG);
+        return r200::xu_read<uint8_t>(device, fisheye_xu, r200::control::fisheye_xu_ext_trig);
     }
 
     void set_ext_trig(uvc::device & device, uint8_t ext_trig)
     {
-        r200::xu_write(device, fisheye_xu, r200::control::FISHEYE_XU_EXT_TRIG, &ext_trig, sizeof(ext_trig));
+        r200::xu_write(device, fisheye_xu, r200::control::fisheye_xu_ext_trig, &ext_trig, sizeof(ext_trig));
     }
 
 

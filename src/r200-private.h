@@ -43,9 +43,9 @@ namespace rsimpl
         enum class control // UVC extension control codes
         {
             command_response           = 1,
-            FISHEYE_XU_STROBE          = 1,
+            fisheye_xu_strobe          = 1,
             iffley                     = 2,
-            FISHEYE_XU_EXT_TRIG        = 2,
+            fisheye_xu_ext_trig        = 2,
             stream_intent              = 3,
             depth_units                = 4,
             min_max                    = 5,
