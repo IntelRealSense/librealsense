@@ -34,6 +34,8 @@ namespace rsimpl
             frame & operator = (const frame & r) = delete;
 	        frame& operator =(frame&& r);
 
+            const byte* get_frame_data() const;
+
 	        void acquire() { ref_count.fetch_add(1); }
 	        void release();
 	        frame* publish();

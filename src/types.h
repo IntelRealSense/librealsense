@@ -108,6 +108,7 @@ namespace rsimpl
 
     struct pixel_format_unpacker
     {
+        bool requires_processing;
         void (* unpack)(byte * const dest[], const byte * source, int count);
         std::vector<std::pair<rs_stream, rs_format>> outputs;
 
@@ -200,6 +201,8 @@ namespace rsimpl
         rs_format get_format(rs_stream stream) const { return get_unpacker().get_format(stream); }
         int get_framerate(rs_stream stream) const { return mode.fps; }
         void unpack(byte * const dest[], const byte * source) const;
+
+        bool requires_processing() const { return mode.pf.unpackers[unpacker_index].requires_processing; }
     };
 
     class frame_callback

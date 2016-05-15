@@ -174,14 +174,17 @@ byte * frame_archive::alloc_frame(rs_stream stream, int timestamp, const void* f
     {
         std::lock_guard<std::mutex> guard(mutex);
 
-        // Attempt to obtain a buffer of the appropriate size from the freelist
-        for(auto it = begin(freelist); it != end(freelist); ++it)
+        if (!frame)
         {
-            if(it->data.size() == size)
+            // Attempt to obtain a buffer of the appropriate size from the freelist
+            for(auto it = begin(freelist); it != end(freelist); ++it)
             {
-                backbuffer[stream] = std::move(*it);
-                freelist.erase(it);
-                break;
+                if(it->data.size() == size)
+                {
+                    backbuffer[stream] = std::move(*it);
+                    freelist.erase(it);
+                    break;
+                }
             }
         }
 
@@ -193,9 +196,17 @@ byte * frame_archive::alloc_frame(rs_stream stream, int timestamp, const void* f
         }
     }
 
-	backbuffer[stream].original_data = frame;
+    if (frame)
+    {
+        backbuffer[stream].original_data = frame;
+    }
+    else
+    {
+        backbuffer[stream].data.resize(size); // TODO: Allow users to provide a custom allocator for frame buffers
+        backbuffer[stream].original_data = nullptr;
+    }
+
     backbuffer[stream].update_owner(this);
-    backbuffer[stream].data.resize(size); // TODO: Allow users to provide a custom allocator for frame buffers
     backbuffer[stream].timestamp = timestamp;
     return backbuffer[stream].data.data();
 }
@@ -381,10 +392,16 @@ void frame_archive::frame_ref::swap(frame_ref& other)
 
 const byte* frame_archive::frame_ref::get_frame_data() const
 {
-	return frame_ptr ? frame_ptr->data.data() : nullptr;
+    return frame_ptr ? frame_ptr->get_frame_data() : nullptr;
 }
 
 int frame_archive::frame_ref::get_frame_timestamp() const
 {
 	return frame_ptr ? frame_ptr->timestamp : 0;
+}
+
+const byte* frame_archive::frame::get_frame_data() const
+{
+    if (original_data) return (const byte*)original_data;
+    return data.data();
 }
