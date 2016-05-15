@@ -316,6 +316,7 @@ void frame_archive::frame::release()
 	if (ref_count.fetch_sub(1) == 1)
 	{
 		owner->unpublish_frame(this);
+		on_release();
 	}
 }
 

@@ -20,6 +20,7 @@ namespace rsimpl
             // TODO: consider boost::intrusive_ptr or an alternative
             std::atomic<int> ref_count; // the reference count is on how many times this placeholder has been observed (not lifetime, not content)
             frame_archive * owner; // pointer to the owner to be returned to by last observer
+			frame_continuation on_release;
 
         public:
             std::vector<byte> data;
@@ -37,6 +38,7 @@ namespace rsimpl
 	        void release();
 	        frame* publish();
 	        void update_owner(frame_archive * new_owner) { owner = new_owner; }
+			void attach_continuation(frame_continuation&& continuation) { on_release = std::move(continuation); }
         };
 
         class frame_ref // esentially an intrusive shared_ptr<frame>
