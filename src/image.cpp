@@ -58,15 +58,19 @@ namespace rsimpl
     void unpack_y8_from_y16_10 (byte * const d[], const byte * s, int n) { unpack_pixels(d, n, reinterpret_cast<const uint16_t *>(s), [](uint16_t pixel) -> uint8_t  { return pixel >> 2; }); }
     void unpack_rw10_from_rw8 (byte *  const d[], const byte * s, int n)
     {
-        unsigned short* from = (unsigned short*)s;
-        byte* to = d[0];
+        auto src = reinterpret_cast<const __m128i *>(s);
+        auto dst = reinterpret_cast<__m128i *>(d[0]);
 
-        for(int i = 0; i < n; ++i)
+        __m128i* xin = (__m128i*)src;
+        __m128i* xout = (__m128i*) dst;
+        for (int i = 0; i < n; i += 16, ++xout, xin += 2)
         {
-            byte temp = (byte)(*from >> 2);
-            *to = temp;
-            ++from;
-            ++to;
+            __m128i  in1_16 = _mm_load_si128((__m128i*)(xin));
+            __m128i  in2_16 = _mm_load_si128((__m128i*)(xin + 1));
+            __m128i  out1_16 = _mm_srli_epi16(in1_16, 2);
+            __m128i  out2_16 = _mm_srli_epi16(in2_16, 2);
+            __m128i  out8 = _mm_packus_epi16(out1_16, out2_16);
+            _mm_store_si128(xout, out8);
         }
     }
 

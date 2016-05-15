@@ -27,6 +27,9 @@ namespace rsimpl
         std::shared_ptr<context> create_context();
         std::vector<std::shared_ptr<device>> query_devices(std::shared_ptr<context> context);
 
+        // Check for connected device
+        bool is_device_connected(device & device, int vid, int pid);
+
         // Static device properties
         int get_vendor_id(const device & device);
         int get_product_id(const device & device);
