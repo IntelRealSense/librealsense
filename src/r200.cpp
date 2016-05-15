@@ -252,8 +252,11 @@ namespace rsimpl
 
         static_device_info info;
         info.name = { "Intel RealSense ZR300" };
-        auto c = r200::read_camera_info(*device);
+        auto c = r200::read_camera_info(*device);        
         info.subdevice_modes.push_back({ 2, { 1920, 1080 }, pf_rw16, 30, c.intrinsicsThird[0], { c.modesThird[0][0] }, { 0 } });
+
+        // Aqcuire Device handle for Motion Module API
+        r200::claim_motion_module_interface(*device);
 
         return make_device(device, info, c);
     }

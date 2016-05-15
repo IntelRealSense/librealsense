@@ -31,6 +31,7 @@ namespace rsimpl
 
         // Direct USB controls
         void claim_interface(device & device, const guid & interface_guid, int interface_number);
+        void claim_aux_interface(device & device, const guid & interface_guid, int interface_number);
         void bulk_transfer(device & device, unsigned char endpoint, void * data, int length, int *actual_length, unsigned int timeout);
 
         // Access CT and PU controls

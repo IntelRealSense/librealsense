@@ -8,6 +8,7 @@
 // First include the librealsense C++ header file
 #include <librealsense/rs.hpp>
 #include <cstdio>
+#include <mutex>
 
 using namespace rs;
 
@@ -42,13 +43,15 @@ int main() try
     printf("    Serial number: %s\n", dev->get_serial());
     printf("    Firmware version: %s\n", dev->get_firmware_version());
 
-    // Configure depth to run at VGA resolution at 30 frames per second
+
     //dev->enable_stream(rs::stream::depth, 640, 480, rs::format::z16, 30);
+    // Configure depth to run at VGA resolution at best quaility
     rs::stream stream_type = rs::stream::depth;
     dev->enable_stream(stream_type, preset::best_quality);  // auto-select based on the actual camera type
-    // Ev - IMU data will be parsed and handled in client code
-    //if (dev->supports_channel(transport::usb_interrupt, channel::sensor_data))
-     //   dev->enable_channel(transport::usb_interrupt, channel::sensor_data, 30/*, usr_calback_func*/);
+
+    // Configure IMU data will be parsed and handled in client code
+    if (dev->supports_channel(transport::usb_interrupt, channel::sensor_data))
+       dev->enable_channel(transport::usb_interrupt, channel::sensor_data, 30/*, usr_calback_func*/);
 
 
     // Ev modify device start to include IMU channel activation
@@ -69,6 +72,9 @@ int main() try
 
     display_buf buffer(display_size*sizeof(char));
 
+    std::timed_mutex mutex;
+    std::string ver;
+
     while(true)
     {
         // This call waits until a new coherent set of frames is available on a device
@@ -76,7 +82,9 @@ int main() try
         dev->wait_for_frames();
         //printf("Frame arrived at %d \n", (int)clock());
 
-
+        //printf("Get GVD command, time %d \n", (int)clock());
+        //dev->get_option(option::f200_gvd);
+        
         // Retrieve depth data, which was previously configured as a 640 x 480 image of 16-bit depth values
         const uint16_t * depth_frame = reinterpret_cast<const uint16_t *>(dev->get_frame_data(rs::stream::depth));
 
@@ -105,10 +113,6 @@ int main() try
         }
         *out++ = 0;
 
-        char *abc = new char[buffer.get_size()];
-        memcpy(abc,buffer.get_data(),buffer.get_size());
-        printf("\n%s", abc);
-        delete[] abc;
         //printf("\n%s", buffer.get_data());
     }
     

@@ -149,6 +149,7 @@ namespace rsimpl
         CASE(SR300_WAKEUP_DEV_RESET)
         CASE(SR300_WAKE_ON_USB_REASON)
         CASE(SR300_WAKE_ON_USB_CONFIDENCE)
+        CASE(F200_GVD)
 
         default: assert(!is_valid(value)); return nullptr;
         }

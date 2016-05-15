@@ -63,6 +63,9 @@ namespace rsimpl
             hw_timestamp               = 23,
         };
 
+        // Claim USB interface used for motion module device
+        void claim_motion_module_interface(uvc::device & device);
+
         void xu_read(const uvc::device & device, control xu_ctrl, void * buffer, uint32_t length);
         void xu_write(uvc::device & device, control xu_ctrl, void * buffer, uint32_t length);
 

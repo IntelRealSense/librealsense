@@ -15,6 +15,7 @@
 #include <sstream>
 #include <fstream>
 #include <thread>
+#include <utility> // for pair
 
 #include <dirent.h>
 #include <fcntl.h>
@@ -318,6 +319,56 @@ namespace rsimpl
                         if(xioctl(sub->fd, VIDIOC_QBUF, &buf) < 0) throw_error("VIDIOC_QBUF");
                     }
                 }
+            }            
+
+            static void poll_interrupts(libusb_device_handle *handle, const std::vector<subdevice *> & subdevices)
+            {
+                static const unsigned char InterruptBufSize = 64;
+                uint8_t buffer[InterruptBufSize];                       /* 64 byte transfer buffer  - dedicated channel*/
+                int numBytes             = 0;                           /* Actual bytes transferred. */
+
+                uint8_t gvd_cmd[24] = { 0x14, 0x0 ,0xab, 0xcd, 0x03, 0x0, 0x0, 0x0, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+                uint8_t res_buf[1024]={0};
+                int actual_length = 0;
+                if(!handle) throw std::logic_error("called uvc::bulk_transfer before uvc::claim_interface");
+                printf("sending gvd request \n.");
+                int status = libusb_bulk_transfer(  handle, 0x1, (unsigned char *)&gvd_cmd[0], 24, &actual_length, 5000);
+                if(status < 0)
+                {
+                    perror("sending gvd request failed\n");
+                    //throw std::runtime_error(to_string() << "libusb_bulk_transfer(...) returned " << libusb_error_name(status));
+                }
+
+                printf("reading gvd reply \n");
+                status = libusb_bulk_transfer(  handle, 0x81, (unsigned char *)&res_buf[0], 1024, &actual_length, 5000);
+                if(status < 0)
+                {
+                    perror("receiving gvd result.\n");
+                    //throw std::runtime_error(to_string() << "libusb_bulk_transfer(...) returned " << libusb_error_name(status));
+                }
+                else
+                    printf("gvd reply arrived\n");
+
+                // TODO - replace hard-coded values : 0x82 and 1000
+                int res = libusb_interrupt_transfer(handle, 0x84, buffer, InterruptBufSize, &numBytes, InterruptBufSize);
+                if (0 == res)
+                {
+                    if (numBytes == InterruptBufSize)
+                    {
+                        printf("Received %d bytes, as expected!!!!!\n");
+                        //processMessage(buffer);
+                        subdevices[0]->callback(buffer);
+                    }
+                    else
+                    {
+                        printf("Received %d bytes, expected %d.\n", numBytes,InterruptBufSize);
+                    }
+                }
+                else
+                {
+                    perror("receiving interrupt_ep bytes failed");
+                    fprintf(stderr, "Error receiving message.\n");
+                }
             }
         };
 
@@ -326,13 +377,16 @@ namespace rsimpl
             const std::shared_ptr<context> parent;
             std::vector<std::unique_ptr<subdevice>> subdevices;
             std::thread thread;
+            std::thread data_channel_thread;
             volatile bool stop;
+            volatile bool data_stop;
 
-            libusb_device * usb_device;
-            libusb_device_handle * usb_handle;
+            libusb_device * usb_device, *usb_aux_device;
+            libusb_device_handle * usb_handle, * usb_aux_handle;
             std::vector<int> claimed_interfaces;
+            std::vector<std::pair<int,bool> > claimed_aux_interfaces; // the claimed interface and whether kernel driver was detached from interface 0
 
-            device(std::shared_ptr<context> parent) : parent(parent), stop(), usb_device(), usb_handle() {} // TODO: Init
+            device(std::shared_ptr<context> parent) : parent(parent), stop(), usb_device(), usb_aux_device(), usb_handle(), usb_aux_handle() {} // TODO: Init
             ~device()
             {
                 stop_streaming();
@@ -342,8 +396,24 @@ namespace rsimpl
                     int status = libusb_release_interface(usb_handle, interface_number);
                     if(status < 0) LOG_ERROR("libusb_release_interface(...) returned " << libusb_error_name(status));
                 }
+
+                for(auto interface_data : claimed_aux_interfaces)
+                {
+                    int status = libusb_release_interface(usb_aux_handle, interface_data.first);
+                    if(status < 0) LOG_ERROR("libusb_release_interface(...) returned " << libusb_error_name(status));
+
+                    // If we detached a kernel driver from interface #0 earlier, we'll now need to attach it again.
+//                    if (interface_data.second)
+//                    {
+//                        libusb_attach_kernel_driver(usb_aux_handle, 0);
+//                    }
+                }
+
+                if(usb_aux_handle) libusb_close(usb_aux_handle);
+                if(usb_aux_device) libusb_unref_device(usb_aux_device);
+
                 if(usb_handle) libusb_close(usb_handle);
-                if(usb_device) libusb_unref_device(usb_device);
+                if(usb_device) libusb_unref_device(usb_device);                
             }
 
             bool has_mi(int mi) const
@@ -362,7 +432,7 @@ namespace rsimpl
                 {
                     if(sub->callback)
                     {
-                        sub->start_capture();
+                        sub->start_capture();       // both video and motion events. TODO callback for uvc layer
                         subs.push_back(sub.get());
                     }
                 }
@@ -371,6 +441,34 @@ namespace rsimpl
                 {
                     while(!stop) subdevice::poll(subs);
                 });
+
+                // Hard-coded gvd command
+                unsigned char gvd_cmd[24] = { 0xa, 0xb ,0xc, 0xd, 0xe, 0xf, 0x10, 0x20, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+                int actual_length = 0;
+                if (claimed_aux_interfaces.size())
+                {
+                    data_channel_thread = std::thread([&/*this, subs, gvd_cmd,actual_length*/]()
+                    {                        
+                        // Polling
+                        while(!stop)
+                        {
+                            
+//                            uint8_t gvd_cmd[24] = { 0xa, 0xb ,0xc, 0xd, 0xe, 0xf, 0x10, 0x20, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+//                            int actual_length = 0;
+//                            if(!handle) throw std::logic_error("called uvc::bulk_transfer before uvc::claim_interface");
+//                            int status = libusb_bulk_transfer(  this->usb_handle, 0x81, (unsigned char *)&gvd_cmd[0], 24, &actual_length, 1000);
+//                            if(status < 0)
+//                            {
+//                                perror("receiving 64 bytes failed.");
+//                                throw std::runtime_error(to_string() << "libusb_bulk_transfer(...) returned " << libusb_error_name(status));
+//                            }
+
+                            //printf("Motion event arrived at time %d\n", clock());
+                            subdevice::poll_interrupts(this->usb_aux_handle, subs);
+                        }
+
+                    });
+                }
             }
 
             void stop_streaming()
@@ -382,6 +480,13 @@ namespace rsimpl
                     stop = false;
 
                     for(auto & sub : subdevices) sub->stop_capture();
+                }
+
+                if(data_channel_thread.joinable())
+                {
+                    data_stop = true;
+                    data_channel_thread.join();
+                    data_stop = false;
                 }
             }
         };
@@ -415,11 +520,51 @@ namespace rsimpl
             device.claimed_interfaces.push_back(interface_number);
         }
 
+        void claim_aux_interface(device & device, const guid & interface_guid, int interface_number)
+        {
+            if(!device.usb_aux_handle)
+            {
+                int status = libusb_open(device.usb_aux_device, &device.usb_aux_handle);
+                if(status < 0) throw std::runtime_error(to_string() << "libusb_open(...) returned " << libusb_error_name(status));
+            }
+
+            bool kernel_driver_detach = false;
+            /* Check whether a kernel driver is attached to interface #0. If so, we'll
+            * need to detach it.
+            */
+            if (libusb_kernel_driver_active(device.usb_aux_handle, 0))
+            {
+                int status = libusb_detach_kernel_driver(device.usb_aux_handle, 0);
+                if (status == 0)
+                {
+                    kernel_driver_detach = 1;
+                }
+                else
+                {
+                    perror("Error detaching kernel driver.");
+                    throw std::runtime_error(to_string() << "libusb_detach_kernel_driver(...) returned " << libusb_error_name(status));
+                }
+            }
+
+            int status = libusb_claim_interface(device.usb_aux_handle, interface_number);
+            if(status < 0) throw std::runtime_error(to_string() << "libusb_claim_interface(...) returned " << libusb_error_name(status));
+            std::pair<int,bool> interface_params(interface_number,kernel_driver_detach);
+            device.claimed_aux_interfaces.push_back(std::move(interface_params));
+
+        }
+
         void bulk_transfer(device & device, unsigned char endpoint, void * data, int length, int *actual_length, unsigned int timeout)
         {
             if(!device.usb_handle) throw std::logic_error("called uvc::bulk_transfer before uvc::claim_interface");
             int status = libusb_bulk_transfer(device.usb_handle, endpoint, (unsigned char *)data, length, actual_length, timeout);
             if(status < 0) throw std::runtime_error(to_string() << "libusb_bulk_transfer(...) returned " << libusb_error_name(status));
+        }
+
+        void interrupt_transfer(device & device, unsigned char endpoint, void * data, int length, int *actual_length, unsigned int timeout)
+        {
+            if(!device.usb_aux_handle) throw std::logic_error("called uvc::interrupt_transfer before uvc::claim_interface");
+            int status = libusb_interrupt_transfer(device.usb_aux_handle, endpoint, (unsigned char *)data, length, actual_length, timeout);
+            if(status < 0) throw std::runtime_error(to_string() << "libusb_interrupt_transfer(...) returned " << libusb_error_name(status));
         }
 
         void set_subdevice_mode(device & device, int subdevice_index, int width, int height, uint32_t fourcc, int fps, std::function<void(const void * frame)> callback)
@@ -654,13 +799,28 @@ namespace rsimpl
 
                 // Look for a video device whose busnum/devnum matches this USB device
                 for(auto & dev : devices)
-                {                    
+                {
+                    if (subdevices.size() >=4)      // Make sure that four subdevices present
+                    {
+                        // First, handle the special case of FishEye
+                        bool bFishEyeDevice = ((busnum == dev->subdevices[3]->busnum) && (devnum == dev->subdevices[3]->devnum));
+                        if(bFishEyeDevice)
+                        {
+                            dev->usb_aux_device = usb_device;
+                            libusb_ref_device(usb_device);
+                            break;
+                        }
+                    }
+
                     if(busnum == dev->subdevices[0]->busnum && devnum == dev->subdevices[0]->devnum)
                     {
-                        dev->usb_device = usb_device;
-                        libusb_ref_device(usb_device);
-                        break;
-                    }
+                        if (!dev->usb_device) // do not override previous configuration
+                        {
+                            dev->usb_device = usb_device;
+                            libusb_ref_device(usb_device);
+                            break;
+                        }
+                    }                    
                 }
             }
             libusb_free_device_list(list, 1);

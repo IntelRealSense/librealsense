@@ -137,7 +137,8 @@ namespace rs
         r200_depth_control_texture_difference_threshold = 59, 
         r200_depth_control_second_peak_threshold        = 60, 
         r200_depth_control_neighbor_threshold           = 61, 
-        r200_depth_control_lr_threshold                 = 62
+        r200_depth_control_lr_threshold                 = 62,
+        f200_gvd                                        = 63
     };
 
     struct float2 { float x,y; };

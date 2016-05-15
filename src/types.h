@@ -164,8 +164,8 @@ namespace rsimpl
     struct data_channel_request
     {
         bool enabled;
-		rs_transport transport;
-		rs_channel      data_type;
+        rs_transport    transport;
+        rs_channel      channel;
         int fps;
     };
 

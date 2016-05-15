@@ -464,7 +464,7 @@ namespace rsimpl
             case RS_OPTION_F200_MOTION_RANGE:         f200::get_motion_range        (get_device(), val); values[i] = val; break;
             case RS_OPTION_F200_FILTER_OPTION:        f200::get_filter_option       (get_device(), val); values[i] = val; break;
             case RS_OPTION_F200_CONFIDENCE_THRESHOLD: f200::get_confidence_threshold(get_device(), val); values[i] = val; break;
-            case RS_OPTION_F200_DYNAMIC_FPS:          f200::get_dynamic_fps         (get_device(), val); values[i] = val; break;
+            case RS_OPTION_F200_DYNAMIC_FPS:          f200::get_dynamic_fps         (get_device(), val); values[i] = val; break;            
 
             case RS_OPTION_SR300_AUTO_RANGE_ENABLE_MOTION_VERSUS_RANGE: values[i] = arr_reader.get(&f200::IVCAMAutoRangeRequest::enableMvR); break; 
             case RS_OPTION_SR300_AUTO_RANGE_ENABLE_LASER:               values[i] = arr_reader.get(&f200::IVCAMAutoRangeRequest::enableLaser); break;
@@ -479,6 +479,8 @@ namespace rsimpl
 
             case RS_OPTION_SR300_WAKE_ON_USB_REASON:        sr300::get_wakeup_reason(get_device(), usbMutex, val); values[i] = val; break;
             case RS_OPTION_SR300_WAKE_ON_USB_CONFIDENCE:    sr300::get_wakeup_confidence(get_device(), usbMutex, val); values[i] = val; break;
+
+            case RS_OPTION_F200_GVD:    { std::string strOut;        f200::get_firmware_version_string(get_device(), usbMutex, strOut); } break;
 
             default: LOG_WARNING("Cannot get " << options[i] << " on " << get_name()); break;
             }

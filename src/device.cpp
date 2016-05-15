@@ -64,9 +64,9 @@ void rs_device::disable_stream(rs_stream stream)
 
 bool rs_device::supports_channel(rs_transport transport, rs_channel channel) const
 {
-	bool bRes = false;
+    bool bRes = true;
 	//TODO Evgeni
-	throw std::runtime_error("function not implemented");
+    //throw std::runtime_error("function not implemented");
 	return bRes;
 }
 
@@ -75,9 +75,10 @@ void rs_device::enable_channel(rs_transport transport, rs_channel channel, int f
 	if (capturing) throw std::runtime_error("channel cannot be reconfigured after having called rs_start_device()");
 	
 	bool bsuccess = false;
-	// TODO Evgeni - attach the channel interface to a specific subdevice
-	for (int i = 0; i < RS_STREAM_NATIVE_COUNT; i++) 
-		if (config.info.data_subdevices[i] != -1) 
+
+    // Use the first available channel
+    for (int i = 0; i < RS_CHANNEL_NATIVE_COUNT; i++)
+        if (!config.data_requests[i].enabled)
 		{
 			config.data_requests[i] = { true, transport, channel, fps };			
 			bsuccess = true;
@@ -85,20 +86,20 @@ void rs_device::enable_channel(rs_transport transport, rs_channel channel, int f
 		}
 
 	if (!bsuccess)
-		throw std::runtime_error("device does not support the specified data channel");
-	
-	// TODO Evgeni - provisional reset accumulated data	
+        throw std::runtime_error("cannot add request for the specified data channel");
+
 }
 
 void rs_device::disable_channel(rs_transport transport, rs_channel channel)
 {
 	if (capturing) throw std::runtime_error("channel cannot be reconfigured after having called rs_start_device()");
 
-	// TODO Evgeni - attach the channel interface to a specific subdevice
+    data_channel_request data={ true, transport, channel,0 };
+
 	for (int i = 0; i < RS_STREAM_NATIVE_COUNT; i++)
-		if (config.info.data_subdevices[i] != -1)
+        if ((config.data_requests[i].enabled) && (config.data_requests[i].transport== transport) && (config.data_requests[i].channel == channel))
 		{
-			config.data_requests[i] = {  };
+            config.data_requests[i].enabled = false;
 			break;
 		}		
 }
