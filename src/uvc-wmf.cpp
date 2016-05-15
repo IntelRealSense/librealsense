@@ -780,6 +780,11 @@ namespace rsimpl
             return std::make_shared<context>();
         }
 
+        bool is_device_connected(device & device, int vid, int pid)
+        {
+            return false;
+        }
+
         std::vector<std::shared_ptr<device>> query_devices(std::shared_ptr<context> context)
         {
             IMFAttributes * pAttributes = NULL;
