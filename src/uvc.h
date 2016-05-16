@@ -45,6 +45,9 @@ namespace rsimpl
         void set_control(device & device, const extension_unit & xu, uint8_t ctrl, void * data, int len);
         void get_control(const device & device, const extension_unit & xu, uint8_t ctrl, void * data, int len);
 
+        // Control data channels
+        void set_subdevice_data_channel_handler(device & device, int subdevice_index, int fps, std::function<void(const unsigned char * data, const int& size)> callback);
+
         // Control streaming
         void set_subdevice_mode(device & device, int subdevice_index, int width, int height, uint32_t fourcc, int fps, std::function<void(const void * frame)> callback);
         void start_streaming(device & device, int num_transfer_bufs);

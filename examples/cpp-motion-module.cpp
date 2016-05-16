@@ -43,8 +43,6 @@ int main() try
     printf("    Serial number: %s\n", dev->get_serial());
     printf("    Firmware version: %s\n", dev->get_firmware_version());
 
-
-    //dev->enable_stream(rs::stream::depth, 640, 480, rs::format::z16, 30);
     // Configure depth to run at VGA resolution at best quaility
     rs::stream stream_type = rs::stream::depth;
     dev->enable_stream(stream_type, preset::best_quality);  // auto-select based on the actual camera type
@@ -72,9 +70,6 @@ int main() try
 
     display_buf buffer(display_size*sizeof(char));
 
-    std::timed_mutex mutex;
-    std::string ver;
-
     while(true)
     {
         // This call waits until a new coherent set of frames is available on a device
@@ -82,9 +77,6 @@ int main() try
         dev->wait_for_frames();
         //printf("Frame arrived at %d \n", (int)clock());
 
-        //printf("Get GVD command, time %d \n", (int)clock());
-        //dev->get_option(option::f200_gvd);
-        
         // Retrieve depth data, which was previously configured as a 640 x 480 image of 16-bit depth values
         const uint16_t * depth_frame = reinterpret_cast<const uint16_t *>(dev->get_frame_data(rs::stream::depth));
 
@@ -113,7 +105,7 @@ int main() try
         }
         *out++ = 0;
 
-        //printf("\n%s", buffer.get_data());
+        printf("\n%s", buffer.get_data());
     }
     
     return EXIT_SUCCESS;

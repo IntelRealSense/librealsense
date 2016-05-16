@@ -3,6 +3,8 @@
 
 #include "device.h"
 #include "sync.h"
+#include "iostream"
+#include "sstream"
 
 using namespace rsimpl;
 
@@ -145,35 +147,23 @@ void rs_device::start()
         });
     }
     
+
 	// Activate the required data channels, and provide it with user-specified data handler	
-	for (auto mode_selection : selected_modes)
-	{
-		// Create a stream buffer for each stream served by this subdevice mode
-		for (auto & stream_mode : mode_selection.get_outputs())
-		{
-			// If this is one of the streams requested by the user, store the buffer so they can access it
-			if (config.requests[stream_mode.first].enabled) native_streams[stream_mode.first]->archive = archive;
-		}
+    // TODO - provision for buffering the incoming data internally, e.g "lite-archive"
+    if(config.data_requests[0].enabled)
+    {
+        // Initialize the subdevice and set it to the selected mode
 
-		// Initialize the subdevice and set it to the selected mode
-		set_subdevice_mode(*device, mode_selection.mode.subdevice, mode_selection.mode.native_dims.x, mode_selection.mode.native_dims.y, mode_selection.mode.pf.fourcc, mode_selection.mode.fps,
-			[mode_selection, archive, timestamp_reader](const void * frame) mutable
-		{
-			// Ignore any frames which appear corrupted or invalid
-			if (!timestamp_reader->validate_frame(mode_selection.mode, frame)) return;
-
-			// Determine the timestamp for this frame
-			int timestamp = timestamp_reader->get_frame_timestamp(mode_selection.mode, frame);
-
-			// Obtain buffers for unpacking the frame
-			std::vector<byte *> dest;
-			for (auto & output : mode_selection.get_outputs()) dest.push_back(archive->alloc_frame(output.first, timestamp));
-
-			// Unpack the frame and commit it to the archive
-			mode_selection.unpack(dest.data(), reinterpret_cast<const byte *>(frame));
-			for (auto & output : mode_selection.get_outputs()) archive->commit_frame(output.first);
-		});
-	}
+        // TODO -replace hard-coded value 3 which stands for fisheye subdevice that is always index 3
+        set_subdevice_data_channel_handler(*device, 3, config.data_requests[0].fps,
+            [](const unsigned char * data, const int& size) mutable
+        {
+            // TODO - plugin user-defined callback
+            std::stringstream ss;
+            for (int i=0; i<size; i++) ss << std::hex << (int)data[i] << " ";
+            std::cout << ss.str() << std::endl;
+        });
+    }
 
     this->archive = archive;
     on_before_start(selected_modes);

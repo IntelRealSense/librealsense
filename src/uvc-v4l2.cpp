@@ -83,10 +83,10 @@ namespace rsimpl
 
             int width, height, format, fps;
             std::function<void(const void *)> callback;                 // calback to handle uvc stream
-            std::function<void(const void *)> channel_data_callback;    // handle non-uvc data produced by device
+            std::function<void(const unsigned char * data, const int& size)> channel_data_callback;    // handle non-uvc data produced by device
             bool is_capturing;
 
-            subdevice(const std::string & name) : dev_name("/dev/" + name), vid(), pid(), fd(), width(), height(), format(), is_capturing()
+            subdevice(const std::string & name) : dev_name("/dev/" + name), vid(), pid(), fd(), width(), height(), format(), callback(nullptr), channel_data_callback(nullptr), is_capturing()
             {
                 struct stat st;
                 if(stat(dev_name.c_str(), &st) < 0)
@@ -180,6 +180,12 @@ namespace rsimpl
                 this->format = fourcc;
                 this->fps = fps;
                 this->callback = callback;
+            }
+
+            void set_data_channel_cfg(int fps, std::function<void(const unsigned char * data, const int& size)> callback)
+            {
+                // TODO - FPS will be handled via dedicated APIs
+                this->channel_data_callback = callback;
             }
 
             void start_capture()
@@ -327,27 +333,26 @@ namespace rsimpl
                 uint8_t buffer[InterruptBufSize];                       /* 64 byte transfer buffer  - dedicated channel*/
                 int numBytes             = 0;                           /* Actual bytes transferred. */
 
-                uint8_t gvd_cmd[24] = { 0x14, 0x0 ,0xab, 0xcd, 0x03, 0x0, 0x0, 0x0, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
-                uint8_t res_buf[1024]={0};
-                int actual_length = 0;
-                if(!handle) throw std::logic_error("called uvc::bulk_transfer before uvc::claim_interface");
-                printf("sending gvd request \n.");
-                int status = libusb_bulk_transfer(  handle, 0x1, (unsigned char *)&gvd_cmd[0], 24, &actual_length, 5000);
-                if(status < 0)
+                // TODO - temporal developement hack to work with mock motion events. Use adapter board with firmware version 0.3 only!!!
                 {
-                    perror("sending gvd request failed\n");
-                    //throw std::runtime_error(to_string() << "libusb_bulk_transfer(...) returned " << libusb_error_name(status));
-                }
+                    uint8_t gvd_cmd[24] = { 0x14, 0x0 ,0xab, 0xcd, 0x03, 0x0, 0x0, 0x0, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+                    uint8_t res_buf[1024]={0};
+                    int actual_length = 0;
+                    if(!handle) throw std::logic_error("called uvc::bulk_transfer before uvc::claim_interface");
+                    int status = libusb_bulk_transfer(  handle, 0x1, (unsigned char *)&gvd_cmd[0], 24, &actual_length, 5000);
+                    if(status < 0)
+                    {
+                        perror("sending gvd request failed\n");
+                        throw std::runtime_error(to_string() << "libusb_bulk_transfer(...) returned " << libusb_error_name(status));
+                    }
 
-                printf("reading gvd reply \n");
-                status = libusb_bulk_transfer(  handle, 0x81, (unsigned char *)&res_buf[0], 1024, &actual_length, 5000);
-                if(status < 0)
-                {
-                    perror("receiving gvd result.\n");
-                    //throw std::runtime_error(to_string() << "libusb_bulk_transfer(...) returned " << libusb_error_name(status));
+                    status = libusb_bulk_transfer(  handle, 0x81, (unsigned char *)&res_buf[0], 1024, &actual_length, 5000);
+                    if(status < 0)
+                    {
+                        perror("receiving gvd result failed\n");
+                        throw std::runtime_error(to_string() << "libusb_bulk_transfer(...) returned " << libusb_error_name(status));
+                    }
                 }
-                else
-                    printf("gvd reply arrived\n");
 
                 // TODO - replace hard-coded values : 0x82 and 1000
                 int res = libusb_interrupt_transfer(handle, 0x84, buffer, InterruptBufSize, &numBytes, InterruptBufSize);
@@ -355,14 +360,17 @@ namespace rsimpl
                 {
                     if (numBytes == InterruptBufSize)
                     {
-                        printf("Received %d bytes, as expected!!!!!\n");
-                        //processMessage(buffer);
-                        subdevices[0]->callback(buffer);
+                        printf("Received %d bytes, as expected\n");
                     }
                     else
                     {
-                        printf("Received %d bytes, expected %d.\n", numBytes,InterruptBufSize);
+                        printf("Interrupt channel - received %d bytes, expected %d.\n", numBytes,InterruptBufSize);
                     }
+
+                    // Propagate the data to device layer
+                    for(auto & sub : subdevices)
+                        if (sub->channel_data_callback)
+                            sub->channel_data_callback(buffer,numBytes);
                 }
                 else
                 {
@@ -428,43 +436,38 @@ namespace rsimpl
             void start_streaming()
             {
                 std::vector<subdevice *> subs;
+                std::vector<subdevice *> data_channel_subs;
                 for(auto & sub : subdevices)
                 {
                     if(sub->callback)
                     {
-                        sub->start_capture();       // both video and motion events. TODO callback for uvc layer
+                        sub->start_capture();
                         subs.push_back(sub.get());
                     }
+
+                    if(sub->channel_data_callback)
+                    {
+                        // TODO start_capture();       // both video and motion events. TODO callback for uvc layer
+                        data_channel_subs.push_back(sub.get());
+                    }
+
                 }
+
 
                 thread = std::thread([this, subs]()
                 {
                     while(!stop) subdevice::poll(subs);
                 });
 
-                // Hard-coded gvd command
-                unsigned char gvd_cmd[24] = { 0xa, 0xb ,0xc, 0xd, 0xe, 0xf, 0x10, 0x20, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
-                int actual_length = 0;
+                // Motion events polling pipe
                 if (claimed_aux_interfaces.size())
                 {
-                    data_channel_thread = std::thread([&/*this, subs, gvd_cmd,actual_length*/]()
+                    data_channel_thread = std::thread([this, data_channel_subs]()
                     {                        
                         // Polling
                         while(!stop)
                         {
-                            
-//                            uint8_t gvd_cmd[24] = { 0xa, 0xb ,0xc, 0xd, 0xe, 0xf, 0x10, 0x20, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
-//                            int actual_length = 0;
-//                            if(!handle) throw std::logic_error("called uvc::bulk_transfer before uvc::claim_interface");
-//                            int status = libusb_bulk_transfer(  this->usb_handle, 0x81, (unsigned char *)&gvd_cmd[0], 24, &actual_length, 1000);
-//                            if(status < 0)
-//                            {
-//                                perror("receiving 64 bytes failed.");
-//                                throw std::runtime_error(to_string() << "libusb_bulk_transfer(...) returned " << libusb_error_name(status));
-//                            }
-
-                            //printf("Motion event arrived at time %d\n", clock());
-                            subdevice::poll_interrupts(this->usb_aux_handle, subs);
+                            subdevice::poll_interrupts(this->usb_aux_handle, data_channel_subs);
                         }
 
                     });
@@ -532,19 +535,19 @@ namespace rsimpl
             /* Check whether a kernel driver is attached to interface #0. If so, we'll
             * need to detach it.
             */
-            if (libusb_kernel_driver_active(device.usb_aux_handle, 0))
-            {
-                int status = libusb_detach_kernel_driver(device.usb_aux_handle, 0);
-                if (status == 0)
-                {
-                    kernel_driver_detach = 1;
-                }
-                else
-                {
-                    perror("Error detaching kernel driver.");
-                    throw std::runtime_error(to_string() << "libusb_detach_kernel_driver(...) returned " << libusb_error_name(status));
-                }
-            }
+//            if (libusb_kernel_driver_active(device.usb_aux_handle, 0))
+//            {
+//                int status = libusb_detach_kernel_driver(device.usb_aux_handle, 0);
+//                if (status == 0)
+//                {
+//                    kernel_driver_detach = 1;
+//                }
+//                else
+//                {
+//                    perror("Error detaching kernel driver.");
+//                    throw std::runtime_error(to_string() << "libusb_detach_kernel_driver(...) returned " << libusb_error_name(status));
+//                }
+//            }
 
             int status = libusb_claim_interface(device.usb_aux_handle, interface_number);
             if(status < 0) throw std::runtime_error(to_string() << "libusb_claim_interface(...) returned " << libusb_error_name(status));
@@ -570,6 +573,12 @@ namespace rsimpl
         void set_subdevice_mode(device & device, int subdevice_index, int width, int height, uint32_t fourcc, int fps, std::function<void(const void * frame)> callback)
         {
             device.subdevices[subdevice_index]->set_format(width, height, (const big_endian<int> &)fourcc, fps, callback);
+        }
+
+        void set_subdevice_data_channel_handler(device & device, int subdevice_index, int fps, std::function<void(const unsigned char * data, const int& size)> callback)
+        {
+            // TODO
+            device.subdevices[subdevice_index]->set_data_channel_cfg(fps, callback);
         }
 
         void start_streaming(device & device, int num_transfer_bufs)

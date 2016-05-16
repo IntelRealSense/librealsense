@@ -573,6 +573,11 @@ namespace rsimpl
             throw std::runtime_error("no matching media type");
         }
 
+        void set_subdevice_data_channel_handler(device & device, int subdevice_index, int fps, std::function<void(const void * data)> callback)
+        {
+            throw std::logic_error(to_string() << "set_subdevice_data_channel_handler(...) is not implemented for this backend " ;
+        }
+
         void start_streaming(device & device, int num_transfer_bufs) { device.start_streaming(); }
         void stop_streaming(device & device) { device.stop_streaming(); }
 
