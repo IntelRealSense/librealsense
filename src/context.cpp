@@ -6,12 +6,6 @@
 #include "r200.h"
 #include "f200.h"
 
-#define PID_INTEL_CAMERA 32902
-#define R200_PRODUCT_ID  2688
-#define LR200_PRODUCT_ID 2751
-#define ZR300_PRODUCT_ID 2763
-#define F200_PRODUCT_ID  2662
-#define SR300_PRODUCT_ID 2725
 
 rs_context::rs_context() : rs_context(0)
 {

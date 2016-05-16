@@ -478,9 +478,7 @@ namespace rsimpl
             case RS_OPTION_SR300_AUTO_RANGE_LOWER_THRESHOLD:            values[i] = arr_reader.get(&f200::IVCAMAutoRangeRequest::ARLowerTh); break;
 
             case RS_OPTION_SR300_WAKE_ON_USB_REASON:        sr300::get_wakeup_reason(get_device(), usbMutex, val); values[i] = val; break;
-            case RS_OPTION_SR300_WAKE_ON_USB_CONFIDENCE:    sr300::get_wakeup_confidence(get_device(), usbMutex, val); values[i] = val; break;
-
-            case RS_OPTION_F200_GVD:    { std::string strOut;        f200::get_firmware_version_string(get_device(), usbMutex, strOut); } break;
+            case RS_OPTION_SR300_WAKE_ON_USB_CONFIDENCE:    sr300::get_wakeup_confidence(get_device(), usbMutex, val); values[i] = val; break;            
 
             default: LOG_WARNING("Cannot get " << options[i] << " on " << get_name()); break;
             }

@@ -56,6 +56,23 @@ namespace rsimpl
     void unpack_y16_from_y8    (byte * const d[], const byte * s, int n) { unpack_pixels(d, n, reinterpret_cast<const uint8_t  *>(s), [](uint8_t  pixel) -> uint16_t { return pixel | pixel << 8; }); }
     void unpack_y16_from_y16_10(byte * const d[], const byte * s, int n) { unpack_pixels(d, n, reinterpret_cast<const uint16_t *>(s), [](uint16_t pixel) -> uint16_t { return pixel << 6; }); }
     void unpack_y8_from_y16_10 (byte * const d[], const byte * s, int n) { unpack_pixels(d, n, reinterpret_cast<const uint16_t *>(s), [](uint16_t pixel) -> uint8_t  { return pixel >> 2; }); }
+    void unpack_rw10_from_rw8 (byte *  const d[], const byte * s, int n)
+    {
+        auto src = reinterpret_cast<const __m128i *>(s);
+        auto dst = reinterpret_cast<__m128i *>(d[0]);
+
+        __m128i* xin = (__m128i*)src;
+        __m128i* xout = (__m128i*) dst;
+        for (int i = 0; i < n; i += 16, ++xout, xin += 2)
+        {
+            __m128i  in1_16 = _mm_load_si128((__m128i*)(xin));
+            __m128i  in2_16 = _mm_load_si128((__m128i*)(xin + 1));
+            __m128i  out1_16 = _mm_srli_epi16(in1_16, 2);
+            __m128i  out2_16 = _mm_srli_epi16(in2_16, 2);
+            __m128i  out8 = _mm_packus_epi16(out1_16, out2_16);
+            _mm_store_si128(xout, out8);
+        }
+    }
 
     /////////////////////////////
     // YUY2 unpacking routines //
@@ -275,7 +292,8 @@ namespace rsimpl
     // Native pixel formats //
     //////////////////////////
 
-    const native_pixel_format pf_rw10       = {'RW10', 1, 1, {{&copy_pixels<1>,                 {{RS_STREAM_COLOR,    RS_FORMAT_RAW10}}}}};
+    const native_pixel_format pf_rw10       = {'RW10', 1, 1, {{&copy_pixels<1>,                 {{RS_STREAM_COLOR,    RS_FORMAT_RAW10}}},
+                                                              {&unpack_rw10_from_rw8,           {{RS_STREAM_FISHEYE,  RS_FORMAT_RAW10 }}}}};
     const native_pixel_format pf_rw16       = {'RW16', 1, 2, {{&copy_pixels<2>,                 {{RS_STREAM_COLOR,    RS_FORMAT_RAW16}}}}};
     const native_pixel_format pf_yuy2       = {'YUY2', 1, 2, {{&copy_pixels<2>,                 {{RS_STREAM_COLOR,    RS_FORMAT_YUYV }}},
                                                               {&unpack_yuy2<RS_FORMAT_RGB8 >,   {{RS_STREAM_COLOR,    RS_FORMAT_RGB8 }}},
@@ -332,8 +350,10 @@ namespace rsimpl
     template<class GET_DEPTH, class TRANSFER_PIXEL> void align_images(const rs_intrinsics & depth_intrin, const rs_extrinsics & depth_to_other, const rs_intrinsics & other_intrin, GET_DEPTH get_depth, TRANSFER_PIXEL transfer_pixel)
     {
         // Iterate over the pixels of the depth image    
-        for(int depth_y = 0, depth_pixel_index = 0; depth_y < depth_intrin.height; ++depth_y)
+#pragma omp parallel for schedule(dynamic)
+        for(int depth_y = 0; depth_y < depth_intrin.height; ++depth_y)
         {
+            int depth_pixel_index = depth_y * depth_intrin.width;
             for(int depth_x = 0; depth_x < depth_intrin.width; ++depth_x, ++depth_pixel_index)
             {
                 // Skip over depth pixels with the value of zero, we have no depth data so we will not write anything into our aligned images
@@ -344,14 +364,16 @@ namespace rsimpl
                     rs_deproject_pixel_to_point(depth_point, &depth_intrin, depth_pixel, depth);
                     rs_transform_point_to_point(other_point, &depth_to_other, depth_point);
                     rs_project_point_to_pixel(other_pixel, &other_intrin, other_point);
-                    const int other_x0 = (int)std::round(other_pixel[0]), other_y0 = (int)std::round(other_pixel[1]);
+                    const int other_x0 = static_cast<int>(other_pixel[0] + 0.5f);
+                    const int other_y0 = static_cast<int>(other_pixel[1] + 0.5f);
 
                     // Map the bottom-right corner of the depth pixel onto the other image
                     depth_pixel[0] = depth_x+0.5f; depth_pixel[1] = depth_y+0.5f;
                     rs_deproject_pixel_to_point(depth_point, &depth_intrin, depth_pixel, depth);
                     rs_transform_point_to_point(other_point, &depth_to_other, depth_point);
                     rs_project_point_to_pixel(other_pixel, &other_intrin, other_point);
-                    const int other_x1 = (int)std::round(other_pixel[0]), other_y1 = (int)std::round(other_pixel[1]);
+                    const int other_x1 = static_cast<int>(other_pixel[0] + 0.5f);
+                    const int other_y1 = static_cast<int>(other_pixel[1] + 0.5f);
 
                     if(other_x0 < 0 || other_y0 < 0 || other_x1 >= other_intrin.width || other_y1 >= other_intrin.height) continue;
 

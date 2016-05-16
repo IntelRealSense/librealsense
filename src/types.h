@@ -18,7 +18,7 @@
 #include <mutex>                            // For mutex, unique_lock
 #include <condition_variable>               // For condition_variable
 
-#define RS_STREAM_NATIVE_COUNT 4
+#define RS_STREAM_NATIVE_COUNT 5
 #define RS_CHANNEL_NATIVE_COUNT 1
 
 namespace rsimpl
@@ -173,7 +173,7 @@ namespace rsimpl
     {
         std::string name;                                                   // Model name of the camera        
         int stream_subdevices[RS_STREAM_NATIVE_COUNT];                      // Which subdevice is used to support each stream, or -1 if stream is unavailable
-		int data_subdevices[RS_STREAM_NATIVE_COUNT];						// Specify whether the subdevice supports data channels in addition to streaming, -1 if data channels are unavailable
+        int data_subdevices[RS_STREAM_NATIVE_COUNT];                        // Specify whether the subdevice supports data channels in addition to streaming, -1 if data channels are unavailable
         std::vector<subdevice_mode> subdevice_modes;                        // A list of available modes each subdevice can be put into
         std::vector<interstream_rule> interstream_rules;                    // Rules which constrain the set of available modes
         stream_request presets[RS_STREAM_NATIVE_COUNT][RS_PRESET_COUNT];    // Presets available for each stream
@@ -214,9 +214,9 @@ namespace rsimpl
     struct device_config
     {
         const static_device_info info;
-        stream_request requests[RS_STREAM_NATIVE_COUNT];            // Modified by enable/disable_stream calls
-        data_channel_request data_requests[RS_CHANNEL_NATIVE_COUNT];     // Modified by enable/disable_channel calls
-        float depth_scale;                                          // Scale of depth values
+        stream_request requests[RS_STREAM_NATIVE_COUNT];                // Modified by enable/disable_stream calls
+        data_channel_request data_requests[RS_CHANNEL_NATIVE_COUNT];    // Modified by enable/disable_channel calls
+        float depth_scale;                                              // Scale of depth values
 
         device_config(const rsimpl::static_device_info & info) : info(info), depth_scale(info.nominal_depth_scale) 
         { 

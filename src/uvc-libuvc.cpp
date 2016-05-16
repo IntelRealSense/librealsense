@@ -100,6 +100,11 @@ namespace rsimpl
             device.claimed_interfaces.push_back(interface_number);
         }
 
+		void claim_aux_interface(device & device, const guid & interface_guid, int interface_number)
+		{
+			throw std::logic_error("claim_aux_interface(...) is not implemented for this backend ");
+		}
+
         void bulk_transfer(device & device, unsigned char endpoint, void * data, int length, int *actual_length, unsigned int timeout)
         {
             int status = libusb_bulk_transfer(device.get_subdevice(0).handle->usb_devh, endpoint, (unsigned char *)data, length, actual_length, timeout);
@@ -113,9 +118,9 @@ namespace rsimpl
             sub.callback = callback;
         }
 
-        void set_subdevice_data_channel_handler(device & device, int subdevice_index, int fps, std::function<void(const void * data)> callback)
+		void set_subdevice_data_channel_handler(device & device, int subdevice_index, int fps, std::function<void(const unsigned char * data, const int& size)> callback)
         {
-            throw std::logic_error(to_string() << "set_subdevice_data_channel_handler(...) is not implemented for this backend " ;
+			throw std::logic_error("set_subdevice_data_channel_handler(...) is not implemented for this backend ");
         }
 
         void start_streaming(device & device, int num_transfer_bufs)

@@ -3,8 +3,8 @@
 
 #ifdef RS_USE_WMF_BACKEND
 
-#if (_MSC_FULL_VER < 180040629)
-    #error At least Visual Studio 2013 Update 5 is required to compile this backend
+#if (_MSC_FULL_VER < 180031101)
+    #error At least Visual Studio 2013 Update 4 is required to compile this backend
 #endif
 
 #include "uvc.h"
@@ -521,6 +521,11 @@ namespace rsimpl
             device.open_win_usb(interface_guid, interface_number);
         }
 
+		void claim_aux_interface(device & device, const guid & interface_guid, int interface_number)
+		{
+			throw std::logic_error("claim_aux_interface(...) is not implemented for this backend ");
+		}
+
         void bulk_transfer(device & device, uint8_t endpoint, void * data, int length, int *actual_length, unsigned int timeout)
         {       
             if(USB_ENDPOINT_DIRECTION_OUT(endpoint))
@@ -529,8 +534,7 @@ namespace rsimpl
             }
             
             if(USB_ENDPOINT_DIRECTION_IN(endpoint))
-            {
-                auto actualLen = ULONG(actual_length);
+            {                
                 device.usb_synchronous_read(endpoint, data, length, actual_length, timeout);
             }
         }
@@ -573,9 +577,9 @@ namespace rsimpl
             throw std::runtime_error("no matching media type");
         }
 
-        void set_subdevice_data_channel_handler(device & device, int subdevice_index, int fps, std::function<void(const void * data)> callback)
-        {
-            throw std::logic_error(to_string() << "set_subdevice_data_channel_handler(...) is not implemented for this backend " ;
+		void set_subdevice_data_channel_handler(device & device, int subdevice_index, int fps, std::function<void(const unsigned char * data, const int& size)> callback)
+        {			
+            throw std::logic_error("set_subdevice_data_channel_handler(...) is not implemented for this backend ");
         }
 
         void start_streaming(device & device, int num_transfer_bufs) { device.start_streaming(); }
@@ -784,6 +788,14 @@ namespace rsimpl
         std::shared_ptr<context> create_context()
         {
             return std::make_shared<context>();
+        }
+
+        bool is_device_connected(device & device, int vid, int pid)
+        {
+            if (vid == PID_INTEL_CAMERA && pid == 0x0ad0)
+                return false;
+
+            return (device.vid == vid && device.pid == pid) ? true : false;
         }
 
         std::vector<std::shared_ptr<device>> query_devices(std::shared_ptr<context> context)

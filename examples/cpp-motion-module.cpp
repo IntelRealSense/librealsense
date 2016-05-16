@@ -12,20 +12,21 @@
 
 using namespace rs;
 
-class display_buf
+template<typename T>
+class protected_buf
 {
 public:
-    display_buf(size_t size): buf(nullptr),size(size){ buf = new char[size]; };
-    ~display_buf(void){ if (buf) delete[] buf; buf = nullptr;};
+	protected_buf(size_t size): buf(nullptr),size(size){ buf = new T[size]; };
+    ~protected_buf(void){ if (buf) delete[] buf; buf = nullptr;};
 
-    char* get_data(){ return buf;};
+    T* get_data(){ return buf;};
     size_t get_size(){ return size;};
 
 private:
-    display_buf();  // avoid default and copy constructors
-    display_buf(const display_buf &);  // avoid default and copy constructors
+	protected_buf();  // avoid default and copy constructors
+	protected_buf(const protected_buf &);  // avoid default and copy constructors
 
-    char * buf;
+    T * buf;
     size_t size;
 
 };
@@ -68,7 +69,9 @@ int main() try
     int row_lenght = (width / 10);
     int display_size = (rows+1) * (row_lenght+1);
 
-    display_buf buffer(display_size*sizeof(char));
+	protected_buf<char> buffer(display_size);
+	protected_buf<int> coverage_buf(row_lenght);
+	
 
     while(true)
     {
@@ -83,7 +86,8 @@ int main() try
         // Print a simple text-based representation of the image, by breaking it into 10x20 pixel regions and and approximating the coverage of pixels within one meter
 
         char * out = buffer.get_data();
-        int coverage[row_lenght] = {};       //The buffer will suffice up to 256*10  pixels width
+		int * coverage = coverage_buf.get_data();
+        
         for(int y=0; y<height; ++y)
         {
             for(int x=0; x<width; ++x)
@@ -94,10 +98,11 @@ int main() try
 
             if(y%20 == 19)
             {
-                for(int & c : coverage)
-                {
-                    *out++ = " .:nhBXWW"[c/25];
-                    c = 0;
+				for (int i=0; i< coverage_buf.get_size(); i++)
+                //for(int & c : coverage)
+                {					
+                    *out++ = " .:nhBXWWMM"[coverage[i]/25];
+					coverage[i] = 0;
                 }
                 *out++ = '\n';
             }

@@ -24,6 +24,18 @@ namespace rsimpl
 
     }
 
+    bool is_fisheye_uvc_control(rs_option option)
+    {
+        return (option == RS_OPTION_FISHEYE_COLOR_EXPOSURE) ||
+               (option == RS_OPTION_FISHEYE_COLOR_GAIN);
+    }
+
+    bool is_fisheye_xu_control(rs_option option)
+    {
+        return (option == RS_OPTION_FISHEYE_STROBE) ||
+               (option == RS_OPTION_FISHEYE_EXT_TRIG);
+    }
+
     std::shared_ptr<rs_device> make_device(std::shared_ptr<uvc::device> device, static_device_info& info, r200::r200_calibration& c)
     {
         info.stream_subdevices[RS_STREAM_DEPTH] = 1;
@@ -37,29 +49,29 @@ namespace rsimpl
             // Subdevice 0 can provide left/right infrared via four pixel formats, in three resolutions, which can either be uncropped or cropped to match Z
             for(auto pf : {pf_y8, pf_y8i, pf_y16, pf_y12i})
             {
-                info.subdevice_modes.push_back({0, {640, 481}, pf, fps, c.modesLR[0], {}, {-6}});
-                info.subdevice_modes.push_back({0, {640, 373}, pf, fps, c.modesLR[1], {}, {-6}});
-                info.subdevice_modes.push_back({0, {640, 254}, pf, fps, c.modesLR[2], {}, {-6}});
+                info.subdevice_modes.push_back({0, {640, 481}, pf, fps, c.modesLR[0], {}, { -6}});  
+                info.subdevice_modes.push_back({0, {640, 373}, pf, fps, c.modesLR[1], {}, { -6}});  
+                info.subdevice_modes.push_back({0, {640, 254}, pf, fps, c.modesLR[2], {}, { -6}});  
             }
 
             // Subdevice 1 can provide depth, in three resolutions, which can either be unpadded or padded to match left/right
-            info.subdevice_modes.push_back({1, {628, 469}, pf_z16, fps, pad_crop_intrinsics(c.modesLR[0], -6), {}, {0}});
-            info.subdevice_modes.push_back({1, {628, 361}, pf_z16, fps, pad_crop_intrinsics(c.modesLR[1], -6), {}, {0}});
-            info.subdevice_modes.push_back({1, {628, 242}, pf_z16, fps, pad_crop_intrinsics(c.modesLR[2], -6), {}, {0}});
+            info.subdevice_modes.push_back({1, {628, 469}, pf_z16,  fps, pad_crop_intrinsics(c.modesLR[0], -6), {}, {0}});
+            info.subdevice_modes.push_back({1, {628, 361}, pf_z16,  fps, pad_crop_intrinsics(c.modesLR[1], -6), {}, {0}});
+            info.subdevice_modes.push_back({1, {628, 242}, pf_z16,  fps, pad_crop_intrinsics(c.modesLR[2], -6), {}, {0}});
         }
 
         // Subdevice 2 can provide color, in several formats and framerates
-        info.subdevice_modes.push_back({2, {320, 240}, pf_yuy2, 60, scale_intrinsics(c.intrinsicsThird[1], 320, 240), {c.modesThird[1][1] }, {0}});
-        info.subdevice_modes.push_back({2, {320, 240}, pf_yuy2, 30, scale_intrinsics(c.intrinsicsThird[1], 320, 240), {c.modesThird[1][1] }, {0}});
-        info.subdevice_modes.push_back({2, {320, 240}, pf_yuy2, 15, scale_intrinsics(c.intrinsicsThird[1], 320, 240), {c.modesThird[1][1] }, {0}});
-        info.subdevice_modes.push_back({2, {640, 480}, pf_yuy2, 60, c.intrinsicsThird[1], {c.modesThird[1][0] }, {0}});
-        info.subdevice_modes.push_back({2, {640, 480}, pf_yuy2, 30, c.intrinsicsThird[1], {c.modesThird[1][0] }, {0}});
-        info.subdevice_modes.push_back({2, {640, 480}, pf_yuy2, 15, c.intrinsicsThird[1], {c.modesThird[1][0] }, {0}});
-        info.subdevice_modes.push_back({2, {1280, 720}, pf_yuy2, 30, scale_intrinsics(c.intrinsicsThird[0], 1280, 720), { c.modesThird[0][1]}, {0}});
-        info.subdevice_modes.push_back({2, {1280, 720}, pf_yuy2, 15, scale_intrinsics(c.intrinsicsThird[0], 1280, 720), { c.modesThird[0][1]}, {0}});
+        info.subdevice_modes.push_back({ 2, { 320, 240 }, pf_yuy2, 60, scale_intrinsics(c.intrinsicsThird[1], 320, 240), { c.modesThird[1][1] }, { 0 } });
+        info.subdevice_modes.push_back({ 2, { 320, 240 }, pf_yuy2, 30, scale_intrinsics(c.intrinsicsThird[1], 320, 240), { c.modesThird[1][1] }, { 0 } });
+        info.subdevice_modes.push_back({ 2, { 320, 240 }, pf_yuy2, 15, scale_intrinsics(c.intrinsicsThird[1], 320, 240), { c.modesThird[1][1] }, { 0 } });
+        info.subdevice_modes.push_back({ 2, { 640, 480 }, pf_yuy2, 60, c.intrinsicsThird[1], { c.modesThird[1][0] }, { 0 } });
+        info.subdevice_modes.push_back({ 2, { 640, 480 }, pf_yuy2, 30, c.intrinsicsThird[1], { c.modesThird[1][0] }, { 0 } });
+        info.subdevice_modes.push_back({ 2, { 640, 480 }, pf_yuy2, 15, c.intrinsicsThird[1], { c.modesThird[1][0] }, { 0 } });
+        info.subdevice_modes.push_back({ 2, { 1280, 720 }, pf_yuy2, 30, scale_intrinsics(c.intrinsicsThird[0], 1280, 720), { c.modesThird[0][1] }, { 0 } });
+        info.subdevice_modes.push_back({ 2, { 1280, 720 }, pf_yuy2, 15, scale_intrinsics(c.intrinsicsThird[0], 1280, 720), { c.modesThird[0][1] }, { 0 } });
 
-        info.subdevice_modes.push_back({2, {1920, 1080}, pf_yuy2, 30, c.intrinsicsThird[0], {c.modesThird[0][0]}, {0}});
-        info.subdevice_modes.push_back({2, {1920, 1080}, pf_yuy2, 15, c.intrinsicsThird[0], {c.modesThird[0][0]}, {0}});
+        info.subdevice_modes.push_back({ 2, { 1920, 1080 }, pf_yuy2, 30, c.intrinsicsThird[0], { c.modesThird[0][0] }, { 0 } });
+        info.subdevice_modes.push_back({ 2, { 1920, 1080 }, pf_yuy2, 15, c.intrinsicsThird[0], { c.modesThird[0][0] }, { 0 } });        
 
         // Set up interstream rules for left/right/z images
         for(auto ir : {RS_STREAM_INFRARED, RS_STREAM_INFRARED2})
@@ -84,36 +96,44 @@ namespace rsimpl
         for(int i=0; i<RS_PRESET_COUNT; ++i)
             info.presets[RS_STREAM_INFRARED2][i] = info.presets[RS_STREAM_INFRARED][i];
 
-        info.options = {
-            {RS_OPTION_R200_LR_AUTO_EXPOSURE_ENABLED,                   0, 1,           1},
-            {RS_OPTION_R200_EMITTER_ENABLED,                            0, 1,           1},
-            {RS_OPTION_R200_DEPTH_UNITS,                                1, INT_MAX,     1}, // What is the real range?
-            {RS_OPTION_R200_DEPTH_CLAMP_MIN,                            0, USHRT_MAX,   1},
-            {RS_OPTION_R200_DEPTH_CLAMP_MAX,                            0, USHRT_MAX,   1},
-            {RS_OPTION_R200_DISPARITY_MULTIPLIER,                       1, 1000,        1},
-            {RS_OPTION_R200_DISPARITY_SHIFT,                            0, 0,           1},
+		info.options = {
+			{RS_OPTION_R200_LR_AUTO_EXPOSURE_ENABLED,                   0, 1,           1},
+			{RS_OPTION_R200_EMITTER_ENABLED,                            0, 1,           1},
+			{RS_OPTION_R200_DEPTH_UNITS,                                1, INT_MAX,     1}, // What is the real range?
+			{RS_OPTION_R200_DEPTH_CLAMP_MIN,                            0, USHRT_MAX,   1},
+			{RS_OPTION_R200_DEPTH_CLAMP_MAX,                            0, USHRT_MAX,   1},
+			{RS_OPTION_R200_DISPARITY_MULTIPLIER,                       1, 1000,        1},
+			{RS_OPTION_R200_DISPARITY_SHIFT,                            0, 0,           1},
 
-            {RS_OPTION_R200_AUTO_EXPOSURE_MEAN_INTENSITY_SET_POINT,     0, 4095,        0},
-            {RS_OPTION_R200_AUTO_EXPOSURE_BRIGHT_RATIO_SET_POINT,       0, 1,           0},
-            {RS_OPTION_R200_AUTO_EXPOSURE_KP_GAIN,                      0, 1000,        0},
-            {RS_OPTION_R200_AUTO_EXPOSURE_KP_EXPOSURE,                  0, 1000,        0},
-            {RS_OPTION_R200_AUTO_EXPOSURE_KP_DARK_THRESHOLD,            0, 1000,        0},
-            {RS_OPTION_R200_AUTO_EXPOSURE_TOP_EDGE,                     0, USHRT_MAX,   1},
-            {RS_OPTION_R200_AUTO_EXPOSURE_BOTTOM_EDGE,                  0, USHRT_MAX,   1},
-            {RS_OPTION_R200_AUTO_EXPOSURE_LEFT_EDGE,                    0, USHRT_MAX,   1},
-            {RS_OPTION_R200_AUTO_EXPOSURE_RIGHT_EDGE,                   0, USHRT_MAX,   1},
+			{RS_OPTION_R200_AUTO_EXPOSURE_MEAN_INTENSITY_SET_POINT,     0, 4095,        0},
+			{RS_OPTION_R200_AUTO_EXPOSURE_BRIGHT_RATIO_SET_POINT,       0, 1,           0},
+			{RS_OPTION_R200_AUTO_EXPOSURE_KP_GAIN,                      0, 1000,        0},
+			{RS_OPTION_R200_AUTO_EXPOSURE_KP_EXPOSURE,                  0, 1000,        0},
+			{RS_OPTION_R200_AUTO_EXPOSURE_KP_DARK_THRESHOLD,            0, 1000,        0},
+			{RS_OPTION_R200_AUTO_EXPOSURE_TOP_EDGE,                     0, USHRT_MAX,   1},
+			{RS_OPTION_R200_AUTO_EXPOSURE_BOTTOM_EDGE,                  0, USHRT_MAX,   1},
+			{RS_OPTION_R200_AUTO_EXPOSURE_LEFT_EDGE,                    0, USHRT_MAX,   1},
+			{RS_OPTION_R200_AUTO_EXPOSURE_RIGHT_EDGE,                   0, USHRT_MAX,   1},
 
-            {RS_OPTION_R200_DEPTH_CONTROL_ESTIMATE_MEDIAN_DECREMENT,    0, 0xFF,        1},
-            {RS_OPTION_R200_DEPTH_CONTROL_ESTIMATE_MEDIAN_INCREMENT,    0, 0xFF,        1},
-            {RS_OPTION_R200_DEPTH_CONTROL_MEDIAN_THRESHOLD,             0, 0x3FF,       1},
-            {RS_OPTION_R200_DEPTH_CONTROL_SCORE_MINIMUM_THRESHOLD,      0, 0x3FF,       1},
-            {RS_OPTION_R200_DEPTH_CONTROL_SCORE_MAXIMUM_THRESHOLD,      0, 0x3FF,       1},
-            {RS_OPTION_R200_DEPTH_CONTROL_TEXTURE_COUNT_THRESHOLD,      0, 0x1F,        1},
-            {RS_OPTION_R200_DEPTH_CONTROL_TEXTURE_DIFFERENCE_THRESHOLD, 0, 0x3FF,       1},
-            {RS_OPTION_R200_DEPTH_CONTROL_SECOND_PEAK_THRESHOLD,        0, 0x3FF,       1},
-            {RS_OPTION_R200_DEPTH_CONTROL_NEIGHBOR_THRESHOLD,           0, 0x3FF,       1},
-            {RS_OPTION_R200_DEPTH_CONTROL_LR_THRESHOLD,                 0, 0x7FF,       1},
-        };
+			{RS_OPTION_R200_DEPTH_CONTROL_ESTIMATE_MEDIAN_DECREMENT,    0, 0xFF,        1},
+			{RS_OPTION_R200_DEPTH_CONTROL_ESTIMATE_MEDIAN_INCREMENT,    0, 0xFF,        1},
+			{RS_OPTION_R200_DEPTH_CONTROL_MEDIAN_THRESHOLD,             0, 0x3FF,       1},
+			{RS_OPTION_R200_DEPTH_CONTROL_SCORE_MINIMUM_THRESHOLD,      0, 0x3FF,       1},
+			{RS_OPTION_R200_DEPTH_CONTROL_SCORE_MAXIMUM_THRESHOLD,      0, 0x3FF,       1},
+			{RS_OPTION_R200_DEPTH_CONTROL_TEXTURE_COUNT_THRESHOLD,      0, 0x1F,        1},
+			{RS_OPTION_R200_DEPTH_CONTROL_TEXTURE_DIFFERENCE_THRESHOLD, 0, 0x3FF,       1},
+			{RS_OPTION_R200_DEPTH_CONTROL_SECOND_PEAK_THRESHOLD,        0, 0x3FF,       1},
+			{RS_OPTION_R200_DEPTH_CONTROL_NEIGHBOR_THRESHOLD,           0, 0x3FF,       1},
+            {RS_OPTION_R200_DEPTH_CONTROL_LR_THRESHOLD,                 0, 0x7FF,       1}
+		};
+
+        if (uvc::is_device_connected(*device, PID_INTEL_CAMERA, FISHEYE_PRODUCT_ID))
+        {
+            info.options.push_back({RS_OPTION_FISHEYE_COLOR_EXPOSURE});
+            info.options.push_back({RS_OPTION_FISHEYE_COLOR_GAIN});
+            info.options.push_back({RS_OPTION_FISHEYE_STROBE, 0, 1, 1, 0});
+            info.options.push_back({RS_OPTION_FISHEYE_EXT_TRIG, 0, 1, 1, 0});
+        }
 
         // We select the depth/left infrared camera's viewpoint to be the origin
         info.stream_poses[RS_STREAM_DEPTH] = {{{1,0,0},{0,1,0},{0,0,1}},{0,0,0}};
@@ -169,6 +189,12 @@ namespace rsimpl
 
         for(int i=0; i<count; ++i)
         {
+            if(is_fisheye_uvc_control(options[i]))
+            {
+                uvc::set_pu_control_with_retry(get_device(), 3, options[i], static_cast<int>(values[i]));
+                continue;
+            }
+
             if(uvc::is_pu_control(options[i]))
             {
                 uvc::set_pu_control_with_retry(get_device(), 2, options[i], static_cast<int>(values[i]));
@@ -177,6 +203,9 @@ namespace rsimpl
 
             switch(options[i])
             {
+            case RS_OPTION_FISHEYE_STROBE:             r200::set_strobe            (get_device(), static_cast<uint8_t>(values[i])); break;
+            case RS_OPTION_FISHEYE_EXT_TRIG:           r200::set_ext_trig          (get_device(), static_cast<uint8_t>(values[i])); break;
+
             case RS_OPTION_R200_LR_AUTO_EXPOSURE_ENABLED:                   r200::set_lr_exposure_mode(get_device(), static_cast<uint8_t>(values[i])); break;
             case RS_OPTION_R200_LR_GAIN:                                    r200::set_lr_gain(get_device(), {get_lr_framerate(), static_cast<uint32_t>(values[i])}); break; // TODO: May need to set this on start if framerate changes
             case RS_OPTION_R200_LR_EXPOSURE:                                r200::set_lr_exposure(get_device(), {get_lr_framerate(), static_cast<uint32_t>(values[i])}); break; // TODO: May need to set this on start if framerate changes
@@ -255,8 +284,17 @@ namespace rsimpl
         auto c = r200::read_camera_info(*device);        
         info.subdevice_modes.push_back({ 2, { 1920, 1080 }, pf_rw16, 30, c.intrinsicsThird[0], { c.modesThird[0][0] }, { 0 } });
 
-        // Aqcuire Device handle for Motion Module API
+        // Acquire Device handle for Motion Module API
         r200::claim_motion_module_interface(*device);
+
+
+        if (uvc::is_device_connected(*device, PID_INTEL_CAMERA, FISHEYE_PRODUCT_ID))
+        {
+            info.stream_subdevices[RS_STREAM_FISHEYE] = 3;
+            info.presets[RS_STREAM_FISHEYE][RS_PRESET_BEST_QUALITY] = {true, 640, 480, RS_FORMAT_RAW10,   60};
+            info.subdevice_modes.push_back({3, {640, 480}, pf_rw10, 60, c.intrinsicsThird[1], {c.modesThird[1][0]}, {0}});
+        }
+        // TODO: Power on Fisheye camera (mmpwr 1)
 
         return make_device(device, info, c);
     }
@@ -271,6 +309,12 @@ namespace rsimpl
 
         for(int i=0; i<count; ++i)
         {
+            if (is_fisheye_uvc_control(options[i]))
+            {
+                values[i] = uvc::get_pu_control(get_device(), 3, options[i]);
+                continue;
+            }
+
             if(uvc::is_pu_control(options[i]))
             {
                 values[i] = uvc::get_pu_control(get_device(), 2, options[i]);
@@ -279,6 +323,10 @@ namespace rsimpl
 
             switch(options[i])
             {
+
+            case RS_OPTION_FISHEYE_STROBE:             values[i] = r200::get_strobe            (get_device()); break;
+            case RS_OPTION_FISHEYE_EXT_TRIG:           values[i] = r200::get_ext_trig          (get_device()); break;
+
             case RS_OPTION_R200_LR_AUTO_EXPOSURE_ENABLED:                   values[i] = r200::get_lr_exposure_mode(get_device()); break;
             
             case RS_OPTION_R200_LR_GAIN: // Gain is framerate dependent
@@ -378,7 +426,7 @@ namespace rsimpl
         }
 
         // Select the "latest arriving" stream which is running at the fastest framerate
-        for(auto s : {RS_STREAM_COLOR, RS_STREAM_INFRARED2, RS_STREAM_INFRARED})
+        for(auto s : {RS_STREAM_COLOR, RS_STREAM_INFRARED2, RS_STREAM_INFRARED, RS_STREAM_FISHEYE})
         {
             if(fps[s] == max_fps) return s;
         }
@@ -419,6 +467,17 @@ namespace rsimpl
 
     void r200_camera::get_option_range(rs_option option, double & min, double & max, double & step, double & def)
     {
+        if (is_fisheye_uvc_control(option))
+        {
+            int mn, mx, stp, df;
+            uvc::get_pu_control_range(get_device(), 3, option, &mn, &mx, &stp, &df);
+            min = mn;
+            max = mx;
+            step = stp;
+            def = df;
+            return;
+        }
+
         // Gain min/max is framerate dependent
         if(option == RS_OPTION_R200_LR_GAIN)
         {
@@ -460,7 +519,11 @@ namespace rsimpl
         dinghy_timestamp_reader(int max_fps) : max_fps(max_fps) {}
 
         bool validate_frame(const subdevice_mode & mode, const void * frame) const override 
-        { 
+        {
+            if (mode.subdevice == 3) // Fisheye camera
+                return true;
+
+
             // No dinghy available on YUY2 images
             if(mode.pf.fourcc == pf_yuy2.fourcc) return true;
 
@@ -533,7 +596,7 @@ namespace rsimpl
     std::shared_ptr<frame_timestamp_reader> r200_camera::create_frame_timestamp_reader() const
     {
         // If left, right, or Z streams are enabled, convert frame numbers to millisecond timestamps based on LRZ framerate
-        for(auto s : {RS_STREAM_DEPTH, RS_STREAM_INFRARED, RS_STREAM_INFRARED2})
+        for(auto s : {RS_STREAM_DEPTH, RS_STREAM_INFRARED, RS_STREAM_INFRARED2, RS_STREAM_FISHEYE})
         {
             auto & si = get_stream_interface(s);
             if(si.is_enabled()) return std::make_shared<dinghy_timestamp_reader>(si.get_framerate());

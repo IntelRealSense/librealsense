@@ -36,6 +36,7 @@ EXPORTS
 	rs_get_device_option_range
 	rs_get_device_options
 	rs_set_device_options
+	rs_reset_device_options_to_default
 	rs_get_device_option
 	rs_set_device_option
 	

@@ -96,13 +96,23 @@ namespace rsimpl
                 }
                 if(!S_ISCHR(st.st_mode)) throw std::runtime_error(dev_name + " is no device");
 
-                // TODO: Might not always be exactly three dirs up, might need to walk upwards until we find busnum and devnum
-                std::ostringstream ss; ss << "/sys/dev/char/" << major(st.st_rdev) << ":" << minor(st.st_rdev) << "/";
+                // Search directory and up to three parent directories to find busnum/devnum
+                std::ostringstream ss; ss << "/sys/dev/char/" << major(st.st_rdev) << ":" << minor(st.st_rdev) << "/device/";
                 auto path = ss.str();
-                if(!(std::ifstream(path + "../../../busnum") >> busnum))
-                    throw std::runtime_error("Failed to read busnum");
-                if(!(std::ifstream(path + "../../../devnum") >> devnum))
-                    throw std::runtime_error("Failed to read devnum");
+                bool good = false;
+                for(int i=0; i<=3; ++i)
+                {
+                    if(std::ifstream(path + "busnum") >> busnum)
+                    {
+                        if(std::ifstream(path + "devnum") >> devnum)
+                        {
+                            good = true;
+                            break;
+                        }
+                    }
+                    path += "../";
+                }
+                if(!good) throw std::runtime_error("Failed to read busnum/devnum");
 
                 std::string modalias;
                 if(!(std::ifstream("/sys/class/video4linux/" + name + "/device/modalias") >> modalias))
@@ -318,8 +328,8 @@ namespace rsimpl
                             if(errno == EAGAIN) return;
                             throw_error("VIDIOC_DQBUF");
                         }
-                        assert(buf.index < sub->buffers.size());
 
+                        assert(buf.index < sub->buffers.size());
                         sub->callback(sub->buffers[buf.index].start);
 
                         if(xioctl(sub->fd, VIDIOC_QBUF, &buf) < 0) throw_error("VIDIOC_QBUF");
@@ -421,7 +431,7 @@ namespace rsimpl
                 if(usb_aux_device) libusb_unref_device(usb_aux_device);
 
                 if(usb_handle) libusb_close(usb_handle);
-                if(usb_device) libusb_unref_device(usb_device);                
+                if(usb_device) libusb_unref_device(usb_device);
             }
 
             bool has_mi(int mi) const
@@ -577,7 +587,6 @@ namespace rsimpl
 
         void set_subdevice_data_channel_handler(device & device, int subdevice_index, int fps, std::function<void(const unsigned char * data, const int& size)> callback)
         {
-            // TODO
             device.subdevices[subdevice_index]->set_data_channel_cfg(fps, callback);
         }
 
@@ -607,6 +616,8 @@ namespace rsimpl
             case RS_OPTION_COLOR_WHITE_BALANCE: return V4L2_CID_WHITE_BALANCE_TEMPERATURE;
             case RS_OPTION_COLOR_ENABLE_AUTO_EXPOSURE: return V4L2_CID_EXPOSURE_AUTO; // Automatic gain/exposure control
             case RS_OPTION_COLOR_ENABLE_AUTO_WHITE_BALANCE: return V4L2_CID_AUTO_WHITE_BALANCE;
+            case RS_OPTION_FISHEYE_COLOR_EXPOSURE: return V4L2_CID_EXPOSURE_ABSOLUTE;
+            case RS_OPTION_FISHEYE_COLOR_GAIN: return V4L2_CID_GAIN;
             default: throw std::runtime_error(to_string() << "no v4l2 cid for option " << option);
             }
         }
@@ -712,6 +723,17 @@ namespace rsimpl
             return std::make_shared<context>();
         }
 
+        bool is_device_connected(device & device, int vid, int pid)
+        {
+            for (auto& sub : device.subdevices)
+            {
+                if (sub->vid == vid && sub->pid == pid)
+                    return true;
+            }
+
+            return false;
+        }
+
         std::vector<std::shared_ptr<device>> query_devices(std::shared_ptr<context> context)
         {                                            
             // Enumerate all subdevices present on the system
@@ -735,8 +757,15 @@ namespace rsimpl
                         continue;
                 }
 
-                std::unique_ptr<subdevice> sub(new subdevice(name));
-                subdevices.push_back(move(sub));
+                try
+                {
+                    std::unique_ptr<subdevice> sub(new subdevice(name));
+                    subdevices.push_back(move(sub));
+                }
+                catch(const std::exception & e)
+                {
+                    LOG_INFO("Not a USB video device: " << e.what());
+                }
             }
             closedir(dir);
 
@@ -776,6 +805,24 @@ namespace rsimpl
                     return a->mi < b->mi;
                 });
             }
+
+
+            // Insert fisheye camera as subDevice of ZR300
+            for(auto & sub : subdevices)
+            {
+                if (!sub)
+                    continue;
+
+                for(auto & dev : devices)
+                {
+                    if (dev->subdevices[0]->vid == 0x8086 && dev->subdevices[0]->pid == 0x0acb && sub->vid == 0x8086 && sub->pid == 0x0ad0)
+                    {
+                        dev->subdevices.push_back(move(sub));
+                        break;
+                    }
+                }
+            }
+
 
 
             // Insert fisheye camera as subDevice of ZR300
