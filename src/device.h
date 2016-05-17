@@ -70,6 +70,7 @@ public:
     virtual rs_stream                           select_key_stream(const std::vector<rsimpl::subdevice_mode_selection> & selected_modes) = 0;
     virtual std::shared_ptr<rsimpl::frame_timestamp_reader>
                                                 create_frame_timestamp_reader() const = 0;
+    const char *                                get_usb_port_id() const;
 };
 
 namespace rsimpl
