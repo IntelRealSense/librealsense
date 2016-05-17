@@ -21,11 +21,13 @@ namespace rsimpl
         struct extension_unit { int subdevice, unit, node; guid id; };
 
         struct context; // Opaque type representing access to the underlying UVC implementation
-        struct device; // Opaque type representing access to a specific UVC device
+        struct device;  // Opaque type representing access to a specific UVC device
 
         // Enumerate devices
         std::shared_ptr<context> create_context();
         std::vector<std::shared_ptr<device>> query_devices(std::shared_ptr<context> context);
+
+        bool power_on_adapter_board();
 
         // Check for connected device
         bool is_device_connected(device & device, int vid, int pid);

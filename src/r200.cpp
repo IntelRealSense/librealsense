@@ -287,6 +287,8 @@ namespace rsimpl
         // Acquire Device handle for Motion Module API
         r200::claim_motion_module_interface(*device);
 
+        // Activate adapter board
+        //r200::adapter_board_power_on(*device); - TODO will be activated in later stage
 
         if (uvc::is_device_connected(*device, PID_INTEL_CAMERA, FISHEYE_PRODUCT_ID))
         {

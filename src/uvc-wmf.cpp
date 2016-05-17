@@ -526,6 +526,11 @@ namespace rsimpl
 			throw std::logic_error("claim_aux_interface(...) is not implemented for this backend ");
 		}
 
+        bool power_on_adapter_board()
+        {
+            throw std::logic_error("power_on_adapter_board(...) is not implemented for this backend ");
+        }
+
         void bulk_transfer(device & device, uint8_t endpoint, void * data, int length, int *actual_length, unsigned int timeout)
         {       
             if(USB_ENDPOINT_DIRECTION_OUT(endpoint))

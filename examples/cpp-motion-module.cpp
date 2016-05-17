@@ -9,6 +9,7 @@
 #include <librealsense/rs.hpp>
 #include <cstdio>
 #include <mutex>
+#include <vector>
 
 using namespace rs;
 
@@ -16,17 +17,17 @@ template<typename T>
 class protected_buf
 {
 public:
-	protected_buf(size_t size): buf(nullptr),size(size){ buf = new T[size]; };
-    ~protected_buf(void){ if (buf) delete[] buf; buf = nullptr;};
+    protected_buf(size_t size): data_buf(nullptr),size(size){ data_buf = new T[size]; memset(data_buf,0,size*sizeof(T)); };
+    ~protected_buf(void){ if (data_buf) delete[] data_buf; data_buf = nullptr;};
 
-    T* get_data(){ return buf;};
+    T* get_data(){ return data_buf;};
     size_t get_size(){ return size;};
 
 private:
 	protected_buf();  // avoid default and copy constructors
 	protected_buf(const protected_buf &);  // avoid default and copy constructors
 
-    T * buf;
+    T * data_buf;
     size_t size;
 
 };
@@ -53,7 +54,7 @@ int main() try
        dev->enable_channel(transport::usb_interrupt, channel::sensor_data, 30/*, usr_calback_func*/);
 
 
-    // Ev modify device start to include IMU channel activation
+    // Modified device start to include IMU channel activation
     dev->start();
 
     // Determine depth value corresponding to one meter
@@ -69,25 +70,29 @@ int main() try
     int row_lenght = (width / 10);
     int display_size = (rows+1) * (row_lenght+1);
 
-	protected_buf<char> buffer(display_size);
-	protected_buf<int> coverage_buf(row_lenght);
-	
+    //protected_buf<char> buffer(display_size);
+    std::vector<char> buffer;
+    buffer.resize(display_size);
+    //protected_buf<int> coverage_buf(row_lenght);
+
+    std::vector<int> coverage_buf;
+    coverage_buf.resize(row_lenght);
 
     while(true)
     {
         // This call waits until a new coherent set of frames is available on a device
         // Calls to get_frame_data(...) and get_frame_timestamp(...) on a device will return stable values until wait_for_frames(...) is called
-        dev->wait_for_frames();
-        //printf("Frame arrived at %d \n", (int)clock());
+        dev->wait_for_frames();        
 
         // Retrieve depth data, which was previously configured as a 640 x 480 image of 16-bit depth values
         const uint16_t * depth_frame = reinterpret_cast<const uint16_t *>(dev->get_frame_data(rs::stream::depth));
 
         // Print a simple text-based representation of the image, by breaking it into 10x20 pixel regions and and approximating the coverage of pixels within one meter
 
-        char * out = buffer.get_data();
-		int * coverage = coverage_buf.get_data();
-        
+        char * out = buffer.data();
+        //int * coverage = coverage_buf.get_data();
+        int * coverage = coverage_buf.data();
+
         for(int y=0; y<height; ++y)
         {
             for(int x=0; x<width; ++x)
@@ -98,11 +103,10 @@ int main() try
 
             if(y%20 == 19)
             {
-				for (int i=0; i< coverage_buf.get_size(); i++)
-                //for(int & c : coverage)
-                {					
-                    *out++ = " .:nhBXWWMM"[coverage[i]/25];
-					coverage[i] = 0;
+                for (size_t i=0; i< coverage_buf.size(); i++)
+                {
+                    *out++ = " .:nhBXWW"[coverage[i]/25];
+                    coverage[i] = 0;
                 }
                 *out++ = '\n';
             }
@@ -110,7 +114,7 @@ int main() try
         }
         *out++ = 0;
 
-        printf("\n%s", buffer.get_data());
+        printf("\n%s", buffer.data());
     }
     
     return EXIT_SUCCESS;

@@ -8,6 +8,7 @@
 #include <ctime>
 #include <thread>
 #include <iomanip>
+#include <mutex>
 
 #pragma pack(push, 1) // All structs in this file are byte-aligend
 
@@ -16,7 +17,7 @@ enum class command : uint32_t // Command/response codes
     peek               = 0x11,
     poke               = 0x12,
     download_spi_flash = 0x1A,
-    get_fwrevision     = 0x21,
+    get_fwrevision     = 0x21
 };
 
 enum class command_modifier : uint32_t { direct = 0x10 }; // Command/response modifiers
@@ -86,6 +87,35 @@ namespace rsimpl { namespace r200
         set_control(device, lr_xu, static_cast<int>(control::command_response), &c, sizeof(c));
         get_control(device, lr_xu, static_cast<int>(control::command_response), &r, sizeof(r));
         return r;
+    }
+
+    void bulk_usb_command(uvc::device & device, std::timed_mutex & mutex,unsigned char out_ep, uint8_t *out, size_t outSize, uint32_t & op,unsigned char in_ep, uint8_t * in, size_t & inSize, int timeout)
+    {
+        // write
+        errno = 0;
+
+        int outXfer;
+
+        if (!mutex.try_lock_for(std::chrono::milliseconds(timeout))) throw std::runtime_error("timed_mutex::try_lock_for(...) timed out");
+        std::lock_guard<std::timed_mutex> guard(mutex, std::adopt_lock);
+
+        bulk_transfer(device, out_ep, out, (int) outSize, &outXfer, timeout); // timeout in ms
+
+        // read
+        if (in && inSize)
+        {
+            uint8_t buf[1024];  // TBD the size may vary
+
+            errno = 0;
+
+            bulk_transfer(device, in_ep, buf, sizeof(buf), &outXfer, timeout);
+            if (outXfer < (int)sizeof(uint32_t)) throw std::runtime_error("incomplete bulk usb transfer");
+
+            op = *(uint32_t *)buf;
+            if (outXfer > (int)inSize) throw std::runtime_error("bulk transfer failed - user buffer too small");
+            inSize = outXfer;
+            memcpy(in, buf, inSize);
+        }
     }
 
     bool read_device_pages(uvc::device & dev, uint32_t address, unsigned char * buffer, uint32_t nPages)
@@ -410,6 +440,27 @@ namespace rsimpl { namespace r200
     {
         auto response = send_command_and_receive_response(device, CommandResponsePacket(command::get_fwrevision));
         return reinterpret_cast<const char *>(response.reserved);
+    }
+
+    bool adapter_board_power_on(uvc::device & device)
+    {
+        bool bRes= false;
+
+        std::timed_mutex mutex;
+        const unsigned char cmd_sz = 24;
+        unsigned char mmpwr_cmd[cmd_sz] = { 0x14, 0x0, 0xab, 0xcd, 0x0a, 0x0, 0x0, 0x0, 0x1, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+        unsigned char dspwr_cmd[cmd_sz] = { 0x14, 0x0, 0xab, 0xcd, 0x0b, 0x0, 0x0, 0x0, 0x1, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+        unsigned char in_endpoint = 0x81, out_endpoint = 0x1;
+        uint32_t ret_code = 0;
+        size_t ret_buf_size = 0;
+        std::vector<u_int8_t> in_buf(0x400);
+
+        // Turn on Motion Module
+        bulk_usb_command(device, mutex,in_endpoint,mmpwr_cmd,cmd_sz, ret_code, out_endpoint,in_buf.data(),ret_buf_size,5000);
+        // Turn on DS power
+        bulk_usb_command(device, mutex,in_endpoint,dspwr_cmd,cmd_sz, ret_code, out_endpoint,in_buf.data(),ret_buf_size,5000);
+
+        return bRes;
     }
 
     void claim_motion_module_interface(uvc::device & device)

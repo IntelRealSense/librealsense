@@ -16,6 +16,8 @@
 #include <fstream>
 #include <thread>
 #include <utility> // for pair
+#include <chrono>
+#include <thread>
 
 #include <dirent.h>
 #include <fcntl.h>
@@ -735,7 +737,7 @@ namespace rsimpl
         }
 
         std::vector<std::shared_ptr<device>> query_devices(std::shared_ptr<context> context)
-        {                                            
+        {
             // Enumerate all subdevices present on the system
             std::vector<std::unique_ptr<subdevice>> subdevices;
             DIR * dir = opendir("/sys/class/video4linux");
@@ -824,7 +826,6 @@ namespace rsimpl
             }
 
 
-
             // Insert fisheye camera as subDevice of ZR300
             for(auto & sub : subdevices)
             {
@@ -882,6 +883,64 @@ namespace rsimpl
             libusb_free_device_list(list, 1);
 
             return devices;
+        }
+
+        // DS4.1T Bring-up stage hack to power on camera without user interferance
+        bool power_on_adapter_board()
+        {
+            bool board_activated = false;
+            const unsigned short adpt_brd_vid = 0x04b4;
+            const unsigned short adpt_brd_pid = 0x00c3;
+
+            const unsigned short adpt_brd_ctrl_iface = 0x2;
+            const unsigned short adpt_brd_ctrl_out_ep = 0x1;
+            const unsigned short adpt_brd_ctrl_in_ep = 0x81;
+            const unsigned char cmd_sz = 24;
+            unsigned char mmpwr_cmd[cmd_sz] = { 0x14, 0x0, 0xab, 0xcd, 0x0a, 0x0, 0x0, 0x0, 0x1, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+            unsigned char dspwr_cmd[cmd_sz] = { 0x14, 0x0, 0xab, 0xcd, 0x0b, 0x0, 0x0, 0x0, 0x1, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+            unsigned int timeout = 5000;
+            const int res_buf_sz = 1024;
+
+            uint8_t res_buf[res_buf_sz]={0};
+            int actual_length = 0;
+
+            int res       = 0;                  // return codes from libusb functions
+            libusb_device_handle* handle = 0;   // handle for USB device
+
+            // Get the first device with the matching Vendor ID and Product ID.
+            if (handle = libusb_open_device_with_vid_pid(0, adpt_brd_vid, adpt_brd_pid))                // DS4.1T Adaptor board present
+            {
+                // acquire control interface
+                if (res = libusb_claim_interface(handle, adpt_brd_ctrl_iface))
+                    throw std::runtime_error(to_string() << " error claiming adaptor board interface");
+
+                // Send DS Device Power On cmd
+                if ((res = libusb_bulk_transfer(  handle, adpt_brd_ctrl_out_ep, dspwr_cmd, cmd_sz, &actual_length, timeout))<0)
+                    throw std::runtime_error(to_string() << "libusb_bulk_transfer(mm_power_on) returned " << libusb_error_name(res));
+
+                // collect response
+                if ((res = libusb_bulk_transfer(  handle, adpt_brd_ctrl_in_ep, (unsigned char *)&res_buf[0], res_buf_sz, &actual_length, timeout)) < 0)
+                    throw std::runtime_error(to_string() << "libusb_bulk_transfer(mm_power_on ack) returned " << libusb_error_name(res));
+
+                // Send Motion Module Power On cmd
+                if ((res = libusb_bulk_transfer(  handle, adpt_brd_ctrl_out_ep, (unsigned char *)&mmpwr_cmd[0], cmd_sz, &actual_length, timeout))<0)
+                    throw std::runtime_error(to_string() << "libusb_bulk_transfer(mm_power_on) returned " << libusb_error_name(res));
+
+                // get response
+                if ((res = libusb_bulk_transfer(  handle, adpt_brd_ctrl_in_ep, (unsigned char *)&res_buf[0], res_buf_sz, &actual_length, timeout)) < 0)
+                    throw std::runtime_error(to_string() << "libusb_bulk_transfer(mm_power_on ack) returned " << libusb_error_name(res));
+
+                // release control interface
+                if (res = libusb_release_interface(handle, adpt_brd_ctrl_iface))
+                throw std::runtime_error(to_string() << " error releaing adaptor board interface, error" << errno);
+
+                board_activated = true;
+
+                std::this_thread::sleep_for(std::chrono::milliseconds(2000));   // Enable the hardware to "wire up" with the host drivers
+            }
+
+            return board_activated;
+
         }
     }
 }
