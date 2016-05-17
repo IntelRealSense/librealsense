@@ -43,7 +43,8 @@ namespace rs
         y8          = 9,  
         y16         = 10, 
         raw10       = 11,  ///< Four 10-bit luminance values encoded into a 5-byte macropixel
-        raw16       = 12  ///< Four 10-bit luminance filled in 16 bit pixel (6 bit unused)
+        raw16       = 12,  ///< Four 10-bit luminance filled in 16 bit pixel (6 bit unused)
+        raw8        = 13
     };
 
     enum class preset : int32_t

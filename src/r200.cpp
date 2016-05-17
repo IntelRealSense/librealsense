@@ -288,7 +288,8 @@ namespace rsimpl
         if (uvc::is_device_connected(*device, PID_INTEL_CAMERA, FISHEYE_PRODUCT_ID))
         {
             info.stream_subdevices[RS_STREAM_FISHEYE] = 3;
-            info.presets[RS_STREAM_FISHEYE][RS_PRESET_BEST_QUALITY] = {true, 640, 480, RS_FORMAT_RAW10,   60};
+            info.presets[RS_STREAM_FISHEYE][RS_PRESET_BEST_QUALITY] = {true, 640, 480, RS_FORMAT_RAW8,   60};
+            info.subdevice_modes.push_back({3, {640, 480}, pf_rw8, 60, c.intrinsicsThird[1], {c.modesThird[1][0]}, {0}});
             info.subdevice_modes.push_back({3, {640, 480}, pf_rw10, 60, c.intrinsicsThird[1], {c.modesThird[1][0]}, {0}});
         }
         // TODO: Power on Fisheye camera (mmpwr 1)

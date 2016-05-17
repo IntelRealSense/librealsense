@@ -34,6 +34,7 @@ namespace rsimpl
         case RS_FORMAT_Y16: return width * height * 2;
         case RS_FORMAT_RAW10: assert(width % 4 == 0); return width * 5/4 * height;
         case RS_FORMAT_RAW16: return width * height * 2;
+        case RS_FORMAT_RAW8: return width * height;
         default: assert(false); return 0;
         }    
     }
@@ -291,7 +292,7 @@ namespace rsimpl
     //////////////////////////
     // Native pixel formats //
     //////////////////////////
-
+    const native_pixel_format pf_rw8        = {'RW8',  1, 1, {{&copy_pixels<1>,                 {{RS_STREAM_FISHEYE,  RS_FORMAT_RAW8 }}}}};
     const native_pixel_format pf_rw10       = {'RW10', 1, 1, {{&copy_pixels<1>,                 {{RS_STREAM_COLOR,    RS_FORMAT_RAW10}}},
                                                               {&unpack_rw10_from_rw8,           {{RS_STREAM_FISHEYE,  RS_FORMAT_RAW10 }}}}};
     const native_pixel_format pf_rw16       = {'RW16', 1, 2, {{&copy_pixels<2>,                 {{RS_STREAM_COLOR,    RS_FORMAT_RAW16}}}}};

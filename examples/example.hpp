@@ -63,6 +63,7 @@ class texture_buffer
     std::vector<uint8_t> rgb;
 
     int fps, num_frames, next_time;
+
 public:
     texture_buffer() : texture(), last_timestamp(-1), fps(), num_frames(), next_time(1000) {}
 
@@ -118,7 +119,7 @@ public:
 //            }
 //            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width/2, height/2, 0, GL_RGB, GL_UNSIGNED_BYTE, rgb.data());
 //            break;
-
+          case rs::format::raw8:
           case rs::format::raw10:
             glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE, width, height, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, data);
             break;
@@ -163,6 +164,16 @@ public:
         glEnd();    
         glDisable(GL_TEXTURE_2D);    
         glBindTexture(GL_TEXTURE_2D, 0);
+    }
+
+    void print(int x, int y, const char * text)
+    {
+        char buffer[20000]; // ~100 chars
+
+        glEnableClientState(GL_VERTEX_ARRAY);
+        glVertexPointer(2, GL_FLOAT, 16, buffer);
+        glDrawArrays(GL_QUADS, 0, 4*stb_easy_font_print((float)x, (float)y, (char *)text, nullptr, buffer, sizeof(buffer)));
+        glDisableClientState(GL_VERTEX_ARRAY);
     }
 
     void show(rs::device & dev, rs::stream stream, int rx, int ry, int rw, int rh)

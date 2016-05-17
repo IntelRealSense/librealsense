@@ -44,7 +44,8 @@ typedef enum rs_format
     RS_FORMAT_Y16         = 10, 
     RS_FORMAT_RAW10       = 11, /**< Four 10-bit luminance values encoded into a 5-byte macropixel */
     RS_FORMAT_RAW16       = 12,
-    RS_FORMAT_COUNT       = 13,
+    RS_FORMAT_RAW8        = 13,
+    RS_FORMAT_COUNT       = 14,
     RS_FORMAT_MAX_ENUM = 0x7FFFFFFF
 } rs_format;
 
