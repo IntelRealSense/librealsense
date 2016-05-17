@@ -15,11 +15,6 @@ frame_archive::frame_archive(const std::vector<subdevice_mode_selection>& select
 	}
 }
 
-void frame_archive::release_frameset(frameset* frameset)
-{
-	published_sets.deallocate(frameset);
-}
-
 frame_archive::frameset* frame_archive::clone_frameset(frameset* frameset)
 {
 	auto new_set = published_sets.allocate();
@@ -65,12 +60,6 @@ frame_archive::frame_ref* frame_archive::clone_frame(frame_ref* frameset)
 	}
 	return new_ref;
 }
-
-void frame_archive::release_frame_ref(frame_ref* ref)
-{
-	detached_refs.deallocate(ref);
-}
-
 
 // Allocate a new frame in the backbuffer, potentially recycling a buffer from the freelist
 byte * frame_archive::alloc_frame(rs_stream stream, int timestamp, bool requires_memory)
@@ -143,16 +132,6 @@ void frame_archive::flush()
 	published_sets.wait_until_empty();
 }
 
-frame_archive::frame& frame_archive::frame::operator=(frame&& r)
-{
-	data = move(r.data);
-	timestamp = r.timestamp;
-	owner = r.owner;
-	ref_count = r.ref_count.exchange(0);
-	on_release = std::move(r.on_release);
-	return *this;
-}
-
 void frame_archive::frame::release()
 {
 	if (ref_count.fetch_sub(1) == 1)
@@ -188,37 +167,6 @@ void frame_archive::frameset::cleanup()
 	{
 		buffer[i] = frame_ref(nullptr);
 	}
-}
-
-frame_archive::frame_ref::frame_ref(frame* frame) : frame_ptr(frame)
-{
-	if (frame) frame->acquire();
-}
-
-frame_archive::frame_ref::frame_ref(const frame_ref& other) : frame_ptr(other.frame_ptr)
-{
-	if (frame_ptr) frame_ptr->acquire();
-}
-
-frame_archive::frame_ref::frame_ref(frame_ref&& other) : frame_ptr(other.frame_ptr)
-{
-	other.frame_ptr = nullptr;
-}
-
-frame_archive::frame_ref& frame_archive::frame_ref::operator=(frame_ref other)
-{
-	swap(other);
-	return *this;
-}
-
-frame_archive::frame_ref::~frame_ref()
-{
-	if (frame_ptr) frame_ptr->release();
-}
-
-void frame_archive::frame_ref::swap(frame_ref& other)
-{
-	std::swap(frame_ptr, other.frame_ptr);
 }
 
 const byte* frame_archive::frame_ref::get_frame_data() const

@@ -30,13 +30,23 @@ namespace rsimpl
 
 			explicit frame() : ref_count(0), owner(nullptr), timestamp() {}
 			frame(const frame & r) = delete;
-			frame(frame && r) : ref_count(r.ref_count.exchange(0)), owner(r.owner),
-				on_release() {
+			frame(frame && r) : 
+				ref_count(r.ref_count.exchange(0)), 
+				owner(r.owner), on_release() 
+			{
 				*this = std::move(r);
 			}
 
-			frame & operator = (const frame & r) = delete;
-			frame& operator =(frame&& r);
+			frame & operator=(const frame & r) = delete;
+			frame& operator=(frame&& r)
+			{
+				data = move(r.data);
+				timestamp = r.timestamp;
+				owner = r.owner;
+				ref_count = r.ref_count.exchange(0);
+				on_release = std::move(r.on_release);
+				return *this;
+			}
 
 			const byte* get_frame_data() const;
 
@@ -52,12 +62,37 @@ namespace rsimpl
 			frame * frame_ptr;
 		public:
 			frame_ref() : frame_ptr(nullptr) {}
-			explicit frame_ref(frame* frame);
-			frame_ref(const frame_ref& other);
-			frame_ref(frame_ref&& other);
-			frame_ref& operator =(frame_ref other);
-			~frame_ref();
-			void swap(frame_ref& other);
+
+			explicit frame_ref(frame* frame) : frame_ptr(frame)
+			{
+				if (frame) frame->acquire();
+			}
+
+			frame_ref(const frame_ref& other) : frame_ptr(other.frame_ptr)
+			{
+				if (frame_ptr) frame_ptr->acquire();
+			}
+
+			frame_ref(frame_ref&& other) : frame_ptr(other.frame_ptr)
+			{
+				other.frame_ptr = nullptr;
+			}
+
+			frame_ref& operator =(frame_ref other)
+			{
+				swap(other);
+				return *this;
+			}
+
+			~frame_ref()
+			{
+				if (frame_ptr) frame_ptr->release();
+			}
+
+			void swap(frame_ref& other)
+			{
+				std::swap(frame_ptr, other.frame_ptr);
+			}
 
 			const byte* get_frame_data() const;
 			int get_frame_timestamp() const;
@@ -98,7 +133,10 @@ namespace rsimpl
 		bool is_stream_enabled(rs_stream stream) const { return modes[stream].mode.pf.fourcc != 0; }
 		const subdevice_mode_selection & get_mode(rs_stream stream) const { return modes[stream]; }
 
-		void release_frameset(frameset * frameset);
+		void release_frameset(frameset * frameset)
+		{
+			published_sets.deallocate(frameset);
+		}
 		frameset * clone_frameset(frameset * frameset);
 
 		void unpublish_frame(frame * frame);
@@ -106,7 +144,10 @@ namespace rsimpl
 
 		frame_ref * detach_frame_ref(frameset * frameset, rs_stream stream);
 		frame_ref * clone_frame(frame_ref * frameset);
-		void release_frame_ref(frame_ref * ref);
+		void release_frame_ref(frame_ref * ref)
+		{
+			detached_refs.deallocate(ref);
+		}
 
 		// Frame callback thread API
 		byte * alloc_frame(rs_stream stream, int timestamp, bool requires_memory);
