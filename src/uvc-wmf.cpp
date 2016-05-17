@@ -590,6 +590,16 @@ namespace rsimpl
         void start_streaming(device & device, int num_transfer_bufs) { device.start_streaming(); }
         void stop_streaming(device & device) { device.stop_streaming(); }
 
+		void start_data_acquisition(device & device)
+		{
+			throw std::logic_error("start_data_acquisition(...) is not implemented for this backend ");
+		}
+
+		void stop_data_acquisition(device & device)
+		{
+			throw std::logic_error("stop_data_acquisition(...) is not implemented for this backend ");
+		}
+
         struct pu_control { rs_option option; long property; bool enable_auto; };
         static const pu_control pu_controls[] = {
             {RS_OPTION_COLOR_BACKLIGHT_COMPENSATION, VideoProcAmp_BacklightCompensation},

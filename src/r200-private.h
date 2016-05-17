@@ -31,11 +31,10 @@ namespace rsimpl
         };
 
         r200_calibration read_camera_info(uvc::device & device);
-        std::string read_firmware_version(uvc::device & device);
-        bool adapter_board_power_on(uvc::device & device);
+        std::string read_firmware_version(uvc::device & device);        
              
         void get_register_value(uvc::device & device, uint32_t reg, uint32_t & value);
-		void set_register_value(uvc::device & device, uint32_t reg, uint32_t value);
+        void set_register_value(uvc::device & device, uint32_t reg, uint32_t value);
 
         /////////////////////////////
         // Extension unit controls //

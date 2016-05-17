@@ -31,11 +31,14 @@ int main() try
     dev->enable_stream(stream_type, preset::best_quality);  // auto-select based on the actual camera type
 
     // Configure IMU data will be parsed and handled in client code
-    if (dev->supports_channel(transport::usb_interrupt, channel::sensor_data))
-       dev->enable_channel(transport::usb_interrupt, channel::sensor_data, 30/*, usr_calback_func*/);
+    if (dev->supports_channel(channel::motion_data))
+       dev->enable_channel(channel::motion_data, 30/*, usr_calback_func*/);
 
     // Modified device start to include IMU channel activation
-    dev->start();
+    //dev->start();
+
+	// dedicated API to activate polling of the motion events
+	dev->start_channel(channel::motion_data);
 
     // Determine depth value corresponding to one meter
     const uint16_t one_meter = static_cast<uint16_t>(1.0f / dev->get_depth_scale());

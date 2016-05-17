@@ -45,6 +45,7 @@
     <ClInclude Include="..\..\src\device.h" />
     <ClInclude Include="..\..\src\f200-private.h" />
     <ClInclude Include="..\..\src\f200.h" />
+    <ClInclude Include="..\..\src\hw_monitor_protocol.h" />
     <ClInclude Include="..\..\src\image.h" />
     <ClInclude Include="..\..\src\r200-private.h" />
     <ClInclude Include="..\..\src\r200.h" />

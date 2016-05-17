@@ -65,7 +65,7 @@ void rs_device::disable_stream(rs_stream stream)
     for(auto & s : native_streams) s->archive.reset(); // Changing stream configuration invalidates the current stream info
 }
 
-bool rs_device::supports_channel(rs_transport transport, rs_channel channel) const
+bool rs_device::supports_channel(rs_channel channel) const
 {
     bool bRes = true;
 	//TODO Evgeni
@@ -73,9 +73,9 @@ bool rs_device::supports_channel(rs_transport transport, rs_channel channel) con
 	return bRes;
 }
 
-void rs_device::enable_channel(rs_transport transport, rs_channel channel, int fps)
+void rs_device::enable_channel(rs_channel channel, int fps)
 {
-	if (capturing) throw std::runtime_error("channel cannot be reconfigured after having called rs_start_device()");
+	if (data_acquisition_active) throw std::runtime_error("channel cannot be reconfigured after having called rs_start_device()");
 	
 	bool bsuccess = false;
 
@@ -83,28 +83,57 @@ void rs_device::enable_channel(rs_transport transport, rs_channel channel, int f
     for (int i = 0; i < RS_CHANNEL_NATIVE_COUNT; i++)
         if (!config.data_requests[i].enabled)
 		{
-			config.data_requests[i] = { true, transport, channel, fps };			
+			config.data_requests[i] = { true, rs_transport::RS_TRANSPORT_USB_INTERRUPT, channel, fps };			
 			bsuccess = true;
 			break;
 		}
 
 	if (!bsuccess)
         throw std::runtime_error("cannot add request for the specified data channel");
-
 }
 
-void rs_device::disable_channel(rs_transport transport, rs_channel channel)
+void rs_device::disable_channel(rs_channel channel)
 {
-	if (capturing) throw std::runtime_error("channel cannot be reconfigured after having called rs_start_device()");
-
-    data_channel_request data={ true, transport, channel,0 };
+	if (data_acquisition_active) throw std::runtime_error("channel cannot be reconfigured after having called rs_start_device()");
 
 	for (int i = 0; i < RS_STREAM_NATIVE_COUNT; i++)
-        if ((config.data_requests[i].enabled) && (config.data_requests[i].transport== transport) && (config.data_requests[i].channel == channel))
+        if ((config.data_requests[i].enabled) && (config.data_requests[i].transport== rs_transport::RS_TRANSPORT_USB_INTERRUPT) && (config.data_requests[i].channel == channel))
 		{
             config.data_requests[i].enabled = false;
 			break;
 		}		
+}
+
+void rs_device::start_channel(rs_channel channel)
+{
+	if (data_acquisition_active) throw std::runtime_error("cannot restart data acquisition without stopping first");
+
+	// Activate the required data channels, and provide it with user-specified data handler	
+	// TODO - provision for buffering the incoming data internally, e.g "lite-archive"
+	if (config.data_requests[0].enabled)
+	{
+		// Initialize the subdevice and set it to the selected mode
+
+		// TODO -replace hard-coded value 3 which stands for fisheye subdevice that is always index 3
+		set_subdevice_data_channel_handler(*device, 3, config.data_requests[0].fps,
+			[](const unsigned char * data, const int& size) mutable
+		{
+			// TODO - plugin user-defined callback
+			std::stringstream ss;
+			for (int i = 0; i<size; i++) ss << std::hex << (int)data[i] << " ";
+		    std::cout << ss.str() << std::endl;
+        });
+    }
+
+    stop_data_acquisition(*device);     // activate polling thread in the backend
+    data_acquisition_active = true;
+}
+
+void rs_device::stop_channel(rs_channel channel)
+{
+	if (!data_acquisition_active) throw std::runtime_error("cannot stop data acquisition - is already stopped");
+	stop_data_acquisition(*device);
+	data_acquisition_active = false;
 }
 
 void rs_device::start()

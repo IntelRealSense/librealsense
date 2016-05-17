@@ -33,6 +33,7 @@ private:
     rsimpl::stream_interface *                  streams[RS_STREAM_COUNT];
 
     bool                                        capturing;
+	bool                                        data_acquisition_active;
     std::chrono::high_resolution_clock::time_point capture_started;
 
     std::shared_ptr<rsimpl::frame_archive>      archive;
@@ -54,9 +55,12 @@ public:
     void                                        enable_stream_preset(rs_stream stream, rs_preset preset);    
     void                                        disable_stream(rs_stream stream);
 
-	bool										supports_channel(rs_transport transport, rs_channel channel) const;
-	void										enable_channel(rs_transport transport, rs_channel channel, int fps);
-	void										disable_channel(rs_transport transport, rs_channel channel);
+	bool										supports_channel(rs_channel channel) const;
+	void										enable_channel(rs_channel channel, int fps);
+	void										disable_channel(rs_channel channel);
+	void                                        start_channel(rs_channel channel);
+	void                                        stop_channel(rs_channel channel);
+	int											is_channel_active(rs_channel channel) const { return data_acquisition_active; }
 
     void                                        start();
     void                                        stop();

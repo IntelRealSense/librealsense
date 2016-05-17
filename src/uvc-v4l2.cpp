@@ -498,6 +498,42 @@ namespace rsimpl
                     data_stop = false;
                 }
             }
+
+            void start_data_acquisition()
+            {
+                std::vector<subdevice *> data_channel_subs;
+                for (auto & sub : subdevices)
+                {                   
+                    if (sub->channel_data_callback)
+                    {
+                        // TODO start_capture();       // both video and motion events. TODO callback for uvc layer
+                        data_channel_subs.push_back(sub.get());
+                    }
+                }
+                
+                // Motion events polling pipe
+                if (claimed_aux_interfaces.size())
+                {
+                    data_channel_thread = std::thread([this, data_channel_subs]()
+                    {
+                        // Polling
+                        while (!stop)
+                        {
+                            subdevice::poll_interrupts(this->usb_aux_handle, data_channel_subs);
+                        }
+                    });
+                }
+            }
+
+            void stop_data_acquisition()
+            {
+                if (data_channel_thread.joinable())
+                {
+                    data_stop = true;
+                    data_channel_thread.join();
+                    data_stop = false;
+                }
+            }
         };
 
         ////////////
@@ -574,7 +610,22 @@ namespace rsimpl
         void stop_streaming(device & device)
         {
             device.stop_streaming();
-        }        
+        }
+
+		void start_streaming(device & device, int num_transfer_bufs)
+		{
+			device.start_streaming();
+		}
+
+		void start_data_acquisition(device & device)
+		{
+			device.start_data_acquisition();
+		}
+
+		void stop_data_acquisition(device & device)
+		{
+			device.stop_data_acquisition();
+		}
 
         static uint32_t get_cid(rs_option option)
         {

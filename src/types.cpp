@@ -180,6 +180,7 @@ namespace rsimpl
         {
         CASE(HW_EVENTS)
         CASE(SENSOR_DATA)
+		CASE(MOTION_DATA)
         CASE(COUNT)
         CASE(MAX_ENUM)
         default: assert(!is_valid(value)); return nullptr;

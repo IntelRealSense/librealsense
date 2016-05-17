@@ -104,5 +104,8 @@
     <ClInclude Include="..\..\include\librealsense\rsutil.h">
       <Filter>include</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\hw_monitor_protocol.h">
+      <Filter>src</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

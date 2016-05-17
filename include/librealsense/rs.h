@@ -168,6 +168,7 @@ typedef enum rs_channel
 {
     RS_CHANNEL_HW_EVENTS        = 0,
 	RS_CHANNEL_SENSOR_DATA      = 1,
+	RS_CHANNEL_MOTION_DATA		= 2,
 	RS_CHANNEL_COUNT,
 	RS_CHANNEL_MAX_ENUM = 0x7FFFFFFF
 } rs_channel;
@@ -353,26 +354,35 @@ void rs_get_stream_intrinsics(const rs_device * device, rs_stream stream, rs_int
 
 /**
 * check whether the device provides the requested data aqcuisition channels
-* \param[in] transport    the transport layer utilized by the channel:  USB, COM, etc'.
 * \param[in] data_channel the data to acquired: sensors data, hw statuses, etc'
 */
-int rs_supports_channel(const rs_device * device, rs_transport transport, rs_channel channel, rs_error ** error);
+int rs_supports_channel(const rs_device * device, rs_channel channel, rs_error ** error);
 
 /**
  * enable a specific data channel with specific properties
- * \param[in] transport    the transport layer utilized by the channel (USB,COM,etc')
- * \param[in] data_format  the data format that will be handled by the channel
+ * \param[in] data_channel  the data format that will be handled by the channel
  * \param[in] framerate    the number of data frames that will be published per second, or 0 if any rate is acceptable
  */
-void rs_enable_channel(rs_device * device, rs_transport transport, rs_channel channel, int framerate/*, std::function<void(const void * data)> callback*/, rs_error ** error);
+void rs_enable_channel(rs_device * device, rs_channel channel, int framerate/*, std::function<void(const void * data)> callback*/, rs_error ** error);
 
 /**
  * disable a specific data channel
- * \param[in] chanel_type  the supported types ar
- * \param[in] data_format  the data format that will be handled by the channel
- * \param[in] framerate    the number of data frames that will be published per second, or 0 if any rate is acceptable
+  * \param[in] data_channel  the data format that will be handled by the channel
  */
-void rs_disable_channel(rs_device * device, rs_transport transport, rs_channel channel, rs_error ** error);
+void rs_disable_channel(rs_device * device, rs_channel channel, rs_error ** error);
+
+/**
+* start data acquisition from specific channel
+* \param[in] data_channel
+*/
+void rs_start_channel(rs_device * device, rs_channel channel, rs_error ** error);
+
+/**
+* stop data acquisition from specific channel
+* \param[in] data_channel
+*/
+void rs_stop_channel(rs_device * device, rs_channel channel, rs_error ** error);
+
 
 /**
  * begin streaming on all enabled streams for this device

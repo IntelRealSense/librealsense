@@ -212,35 +212,59 @@ void rs_get_stream_intrinsics(const rs_device * device, rs_stream stream, rs_int
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, device, stream, intrin)
 
-int rs_supports_channel(const rs_device * device, rs_transport transport, rs_channel channel, rs_error ** error) try
+int rs_supports_channel(const rs_device * device, rs_channel channel, rs_error ** error) try
 {
     VALIDATE_NOT_NULL(device);
-    VALIDATE_ENUM(transport);
     VALIDATE_ENUM(channel);
-	return device->supports_channel(transport, channel);
+	return device->supports_channel(channel);
 }
-HANDLE_EXCEPTIONS_AND_RETURN( false, device, transport, channel)
+HANDLE_EXCEPTIONS_AND_RETURN( false, device, channel)
 
-void rs_enable_channel(rs_device * device, rs_transport transport, rs_channel channel, int framerate, /*std::function<void(const void * data)> callback,*/ rs_error ** error) try
+void rs_enable_channel(rs_device * device, rs_channel channel, int framerate, /*std::function<void(const void * data)> callback,*/ rs_error ** error) try
 {
-    VALIDATE_NOT_NULL(device);
-    VALIDATE_ENUM(transport);
+    VALIDATE_NOT_NULL(device);    
     VALIDATE_ENUM(channel);
     VALIDATE_RANGE(framerate, 0, INT_MAX);			// TODO Specify the maximum allowed frame rate
 
-    device->enable_channel(transport, channel, framerate/*, callback*/);
+    device->enable_channel(channel, framerate/*, callback*/);
 }
-HANDLE_EXCEPTIONS_AND_RETURN(, device, transport, channel, framerate)
+HANDLE_EXCEPTIONS_AND_RETURN(, device, channel, framerate)
 
-void rs_disable_channel(rs_device * device, rs_transport transport, rs_channel channel, rs_error ** error) try
+void rs_disable_channel(rs_device * device, rs_channel channel, rs_error ** error) try
 {
-    VALIDATE_NOT_NULL(device);
-    VALIDATE_ENUM(transport);
+    VALIDATE_NOT_NULL(device);    
     VALIDATE_ENUM(channel);
 
-    device->disable_channel(transport, channel);
+    device->disable_channel(channel);
 }
-HANDLE_EXCEPTIONS_AND_RETURN(, device, transport, channel)
+HANDLE_EXCEPTIONS_AND_RETURN(, device, channel)
+
+void rs_start_channel(rs_device * device, rs_channel channel, rs_error ** error) try
+{
+	VALIDATE_NOT_NULL(device);
+	VALIDATE_ENUM(channel);
+
+	device->start_channel(channel);
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, device, channel)
+
+void rs_stop_channel(rs_device * device, rs_channel channel, rs_error ** error) try
+{
+	VALIDATE_NOT_NULL(device);
+	VALIDATE_ENUM(channel);
+
+	device->stop_channel(channel);
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, device, channel)
+
+int rs_is_channel_active(rs_device * device, rs_channel channel, rs_error ** error) try
+{
+	VALIDATE_NOT_NULL(device);
+	VALIDATE_ENUM(channel);
+
+	return device->is_channel_active(channel);
+}
+HANDLE_EXCEPTIONS_AND_RETURN(0, device, channel)
 
 void rs_start_device(rs_device * device, rs_error ** error) try
 {

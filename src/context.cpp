@@ -14,7 +14,6 @@ rs_context::rs_context() : rs_context(0)
     // DS4.1 bringup path- adapter board initialization. Will be removed in post Alpha stage
     rsimpl::uvc::power_on_adapter_board();
 
-
     for(auto device : query_devices(context))
     {
         LOG_INFO("UVC device detected with VID = 0x" << std::hex << get_vendor_id(*device) << " PID = 0x" << get_product_id(*device));

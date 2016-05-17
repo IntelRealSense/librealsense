@@ -1,6 +1,7 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
+#include "hw_monitor_protocol.h"
 #include "r200-private.h"
 
 #include <cstring>
@@ -40,7 +41,24 @@ namespace rsimpl { namespace r200
 
     const uvc::guid MOTION_MODULE_USB_DEVICE_GUID = {0x175695CD, 0x30D9, 0x4F87, {0x8B, 0xE3, 0x5A, 0x82, 0x70, 0xF4, 0x9A, 0x31}};    
     const unsigned short motion_module_interrupt_interface = 0x2; // endpint to pull sensors data continuously (interrupt transmit)
-	   
+
+    enum class CX3_GrossTete_MonitorCommand : uint32_t
+    {
+        IRB         = 0x01,     // Read from i2c ( 8x8 )
+        IWB         = 0x02,     // Write to i2c ( 8x8 )
+        GVD         = 0x03,     // Get Version and Date
+        IAP_IRB     = 0x04,     // Read from IAP i2c ( 8x8 )
+        IAP_IWB     = 0x05,     // Write to IAP i2c ( 8x8 )
+        FRCNT       = 0x06,     // Read frame counter
+        GLD         = 0x07,     // Get logger data
+        GPW         = 0x08,     // Write to GPIO
+        GPR         = 0x09,     // Read from GPIO
+        MMPWR       = 0x0A,     // Motion module power up/down
+        DSPWR       = 0x0B,     // DS4 power up/down
+        EXT_TRIG    = 0x0C,     // external trigger mode
+        CX3FWUPD    = 0x0D      // FW update
+    };
+       
     uint8_t get_ext_trig(const uvc::device & device)
     {
         return r200::xu_read<uint8_t>(device, fisheye_xu, r200::control::fisheye_xu_ext_trig);
@@ -442,28 +460,7 @@ namespace rsimpl { namespace r200
         return reinterpret_cast<const char *>(response.reserved);
     }
 
-    bool adapter_board_power_on(uvc::device & device)
-    {
-        bool bRes= false;
-
-        std::timed_mutex mutex;
-        const unsigned char cmd_sz = 24;
-        unsigned char mmpwr_cmd[cmd_sz] = { 0x14, 0x0, 0xab, 0xcd, 0x0a, 0x0, 0x0, 0x0, 0x1, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
-        unsigned char dspwr_cmd[cmd_sz] = { 0x14, 0x0, 0xab, 0xcd, 0x0b, 0x0, 0x0, 0x0, 0x1, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
-        unsigned char in_endpoint = 0x81, out_endpoint = 0x1;
-        uint32_t ret_code = 0;
-        size_t ret_buf_size = 0;
-        std::vector<u_int8_t> in_buf(0x400);
-
-        // Turn on Motion Module
-        bulk_usb_command(device, mutex,in_endpoint,mmpwr_cmd,cmd_sz, ret_code, out_endpoint,in_buf.data(),ret_buf_size,5000);
-        // Turn on DS power
-        bulk_usb_command(device, mutex,in_endpoint,dspwr_cmd,cmd_sz, ret_code, out_endpoint,in_buf.data(),ret_buf_size,5000);
-
-        return bRes;
-    }
-
-    void claim_motion_module_interface(uvc::device & device)
+     void claim_motion_module_interface(uvc::device & device)
     {
         claim_aux_interface(device, MOTION_MODULE_USB_DEVICE_GUID, motion_module_interrupt_interface);
     }
@@ -503,14 +500,14 @@ namespace rsimpl { namespace r200
         xu_write(device, lr_xu, control::emitter, uint8_t(state ? 1 : 0));
     }
 
-	void get_register_value(uvc::device & device, uint32_t reg, uint32_t & value)
+    void get_register_value(uvc::device & device, uint32_t reg, uint32_t & value)
     {
         value = send_command_and_receive_response(device, CommandResponsePacket(command::peek, reg)).value;
     }
 
-	void set_register_value(uvc::device & device, uint32_t reg, uint32_t value)
+    void set_register_value(uvc::device & device, uint32_t reg, uint32_t value)
     {
-		send_command_and_receive_response(device, CommandResponsePacket(command::poke, reg, value));
+        send_command_and_receive_response(device, CommandResponsePacket(command::poke, reg, value));
     }
 
     const dc_params dc_params::presets[] = {
