@@ -15,9 +15,6 @@ struct rs_context
 
                                                     rs_context();
                                                     ~rs_context();
-private:
-                                                    rs_context(int);
-    static bool                                     singleton_alive;
 };
 
 #endif
