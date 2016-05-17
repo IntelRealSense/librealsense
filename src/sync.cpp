@@ -40,7 +40,7 @@ frame_archive::frameset* syncronizing_archive::clone_frontbuffer()
 // Block until the next coherent frameset is available
 void syncronizing_archive::wait_for_frames()
 {
-    std::unique_lock<std::mutex> lock(mutex);
+    std::unique_lock<std::recursive_mutex> lock(mutex);
     const auto ready = [this]() { return !frames[key_stream].empty(); };
     if (!ready() && !cv.wait_for(lock, std::chrono::seconds(5), ready)) throw std::runtime_error("Timeout waiting for frames.");
     get_next_frames();
@@ -50,7 +50,7 @@ void syncronizing_archive::wait_for_frames()
 bool syncronizing_archive::poll_for_frames()
 {
     // TODO: Implement a user-specifiable timeout for how long to wait before returning false?
-    std::unique_lock<std::mutex> lock(mutex);
+    std::unique_lock<std::recursive_mutex> lock(mutex);
     if(frames[key_stream].empty()) return false;
     get_next_frames();
     return true;
@@ -61,7 +61,7 @@ frame_archive::frameset* syncronizing_archive::wait_for_frames_safe()
 	frameset * result = nullptr;
 	do
 	{
-		std::unique_lock<std::mutex> lock(mutex);
+		std::unique_lock<std::recursive_mutex> lock(mutex);
 		const auto ready = [this]() { return !frames[key_stream].empty(); };
 		if (!ready() && !cv.wait_for(lock, std::chrono::seconds(5), ready)) throw std::runtime_error("Timeout waiting for frames.");
 		get_next_frames();
@@ -74,7 +74,7 @@ frame_archive::frameset* syncronizing_archive::wait_for_frames_safe()
 bool syncronizing_archive::poll_for_frames_safe(frameset** frameset)
 {
     // TODO: Implement a user-specifiable timeout for how long to wait before returning false?
-    std::unique_lock<std::mutex> lock(mutex);
+    std::unique_lock<std::recursive_mutex> lock(mutex);
     if (frames[key_stream].empty()) return false;
     get_next_frames();
 	auto result = clone_frontbuffer();
@@ -105,7 +105,7 @@ void syncronizing_archive::get_next_frames()
 // Move a frame from the backbuffer to the back of the queue
 void syncronizing_archive::commit_frame(rs_stream stream)
 {
-    std::unique_lock<std::mutex> lock(mutex);
+    std::unique_lock<std::recursive_mutex> lock(mutex);
     frames[stream].push_back(std::move(backbuffer[stream]));
     cull_frames();
     lock.unlock();
@@ -179,6 +179,7 @@ void syncronizing_archive::dequeue_frame(rs_stream stream)
 // Move a single frame from the head of the queue directly to the freelist
 void syncronizing_archive::discard_frame(rs_stream stream)
 {
+	std::lock_guard<std::recursive_mutex> guard(mutex);
     freelist.push_back(std::move(frames[stream].front()));
     frames[stream].erase(begin(frames[stream]));    
 }

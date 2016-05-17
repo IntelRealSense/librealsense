@@ -3,7 +3,7 @@
 
 using namespace rsimpl;
 
-frame_archive::frame_archive(const std::vector<subdevice_mode_selection>& selection)
+frame_archive::frame_archive(const std::vector<subdevice_mode_selection>& selection) : mutex()
 {
 	// Store the mode selection that pertains to each native stream
 	for (auto & mode : selection)
@@ -27,6 +27,7 @@ frame_archive::frameset* frame_archive::clone_frameset(frameset* frameset)
 
 void frame_archive::unpublish_frame(frame* frame)
 {
+	std::lock_guard<std::recursive_mutex> lock(mutex);
 	freelist.push_back(std::move(*frame));
 	published_frames.deallocate(frame);
 }
@@ -67,7 +68,7 @@ byte * frame_archive::alloc_frame(rs_stream stream, int timestamp, bool requires
 	const size_t size = modes[stream].get_image_size(stream);
 
 	{
-		std::lock_guard<std::mutex> guard(mutex);
+		std::lock_guard<std::recursive_mutex> guard(mutex);
 
 		if (requires_memory)
 		{
@@ -108,7 +109,7 @@ void frame_archive::attach_continuation(rs_stream stream, frame_continuation&& c
 
 frame_archive::frame_ref* frame_archive::track_frame(rs_stream stream)
 {
-	std::unique_lock<std::mutex> lock(mutex);
+	std::unique_lock<std::recursive_mutex> lock(mutex);
 
 	auto published_frame = backbuffer[stream].publish();
 	if (published_frame)

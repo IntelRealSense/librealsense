@@ -19,7 +19,7 @@ namespace rsimpl
 		struct frame
 		{
 		private:
-			// TODO: consider boost::intrusive_ptr or an alternative
+			// TODO: check boost::intrusive_ptr or an alternative
 			std::atomic<int> ref_count; // the reference count is on how many times this placeholder has been observed (not lifetime, not content)
 			frame_archive * owner; // pointer to the owner to be returned to by last observe
 			frame_continuation on_release;
@@ -28,13 +28,13 @@ namespace rsimpl
 			std::vector<byte> data;
 			int timestamp;
 
-			explicit frame() : ref_count(0), owner(nullptr), timestamp() {}
+			explicit frame() : ref_count(0), owner(nullptr), timestamp(), on_release() {}
 			frame(const frame & r) = delete;
-			frame(frame && r) : 
-				ref_count(r.ref_count.exchange(0)), 
-				owner(r.owner), on_release() 
+			frame(frame && r) 
+				: ref_count(r.ref_count.exchange(0)), 
+				  owner(r.owner), on_release() 
 			{
-				*this = std::move(r);
+				*this = std::move(r); // TODO: This is not very safe, refactor later
 			}
 
 			frame & operator=(const frame & r) = delete;
@@ -119,12 +119,11 @@ namespace rsimpl
 		small_heap<frame, RS_USER_QUEUE_SIZE> published_frames;
 		small_heap<frameset, RS_USER_QUEUE_SIZE> published_sets;
 		small_heap<frame_ref, RS_USER_QUEUE_SIZE> detached_refs;
-		std::mutex mutex;
-		std::condition_variable cv;
 
 	protected:
 		frame backbuffer[RS_STREAM_NATIVE_COUNT]; // recieve frame here
 		std::vector<frame> freelist; // return frames here
+		std::recursive_mutex mutex;
 
 	public:
 		frame_archive(const std::vector<subdevice_mode_selection> & selection);

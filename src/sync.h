@@ -23,8 +23,7 @@ namespace rsimpl
 
         // This data will be read and written by all threads, and synchronized with a mutex
         std::vector<frame> frames[RS_STREAM_NATIVE_COUNT];
-        std::mutex mutex;
-        std::condition_variable cv;
+        std::condition_variable_any cv;
 
         void get_next_frames();
         void dequeue_frame(rs_stream stream);
