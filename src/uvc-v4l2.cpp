@@ -18,6 +18,7 @@
 #include <utility> // for pair
 #include <chrono>
 #include <thread>
+#include <iostream>
 
 #include <dirent.h>
 #include <fcntl.h>
@@ -888,58 +889,106 @@ namespace rsimpl
         // DS4.1T Bring-up stage hack to power on camera without user interferance
         bool power_on_adapter_board()
         {
-            bool board_activated = false;
-            const unsigned short adpt_brd_vid = 0x04b4;
-            const unsigned short adpt_brd_pid = 0x00c3;
-
-            const unsigned short adpt_brd_ctrl_iface = 0x2;
-            const unsigned short adpt_brd_ctrl_out_ep = 0x1;
-            const unsigned short adpt_brd_ctrl_in_ep = 0x81;
-            const unsigned char cmd_sz = 24;
-            unsigned char mmpwr_cmd[cmd_sz] = { 0x14, 0x0, 0xab, 0xcd, 0x0a, 0x0, 0x0, 0x0, 0x1, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
-            unsigned char dspwr_cmd[cmd_sz] = { 0x14, 0x0, 0xab, 0xcd, 0x0b, 0x0, 0x0, 0x0, 0x1, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
-            unsigned int timeout = 5000;
-            const int res_buf_sz = 1024;
-
-            uint8_t res_buf[res_buf_sz]={0};
-            int actual_length = 0;
-
-            int res       = 0;                  // return codes from libusb functions
-            libusb_device_handle* handle = 0;   // handle for USB device
-
-            // Get the first device with the matching Vendor ID and Product ID.
-            if (handle = libusb_open_device_with_vid_pid(0, adpt_brd_vid, adpt_brd_pid))                // DS4.1T Adaptor board present
+            struct device_activator
             {
-                // acquire control interface
-                if (res = libusb_claim_interface(handle, adpt_brd_ctrl_iface))
-                    throw std::runtime_error(to_string() << " error claiming adaptor board interface");
+                device_activator():
+                    adpt_brd_vid(0x04b4),       // Adapter board vid/pid
+                    adpt_brd_pid(0x00c3),
+                    ds41t_dev_vid(0x8086),      // DS4.1T vid/pid
+                    ds41t_dev_pid(0x0acb),
+                    adpt_brd_ctrl_iface(0x2),
+                    adpt_brd_ctrl_out_ep(0x1),
+                    adpt_brd_ctrl_in_ep(0x81),
+                    res(0),
+                    handle(0)
+                {
+                    // Look for adapter board descriptos
+                    if (handle = libusb_open_device_with_vid_pid(0, adpt_brd_vid, adpt_brd_pid))   // DS4.1T Adaptor board present
+                        if (res = libusb_claim_interface(handle, adpt_brd_ctrl_iface))             // Acquire control interface
+                            perror("error claiming adaptor board interface");
+                }
 
-                // Send DS Device Power On cmd
-                if ((res = libusb_bulk_transfer(  handle, adpt_brd_ctrl_out_ep, dspwr_cmd, cmd_sz, &actual_length, timeout))<0)
-                    throw std::runtime_error(to_string() << "libusb_bulk_transfer(mm_power_on) returned " << libusb_error_name(res));
+                ~device_activator()
+                {
+                    release();
+                }
 
-                // collect response
-                if ((res = libusb_bulk_transfer(  handle, adpt_brd_ctrl_in_ep, (unsigned char *)&res_buf[0], res_buf_sz, &actual_length, timeout)) < 0)
-                    throw std::runtime_error(to_string() << "libusb_bulk_transfer(mm_power_on ack) returned " << libusb_error_name(res));
+                void release()
+                {
+                    if (handle)
+                    {   // release control interface
+                        res = libusb_release_interface(handle, adpt_brd_ctrl_iface);
+                        handle = nullptr;
+                        if (res)
+                            perror("error releasing adaptor board interface");
+                    }
+                }
 
-                // Send Motion Module Power On cmd
-                if ((res = libusb_bulk_transfer(  handle, adpt_brd_ctrl_out_ep, (unsigned char *)&mmpwr_cmd[0], cmd_sz, &actual_length, timeout))<0)
-                    throw std::runtime_error(to_string() << "libusb_bulk_transfer(mm_power_on) returned " << libusb_error_name(res));
+                bool ds_device_power_on()
+                {
+                    bool activated = false;
+                    if (handle)  // Adaptor board is present
+                    {
+                        const unsigned char cmd_sz = 24;
+                        //unsigned char mmpwr_cmd[cmd_sz] = { 0x14, 0x0, 0xab, 0xcd, 0x0a, 0x0, 0x0, 0x0, 0x1, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+                        unsigned char dspwr_cmd[cmd_sz] = { 0x14, 0x0, 0xab, 0xcd, 0x0b, 0x0, 0x0, 0x0, 0x1, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+                        unsigned int timeout = 5000;
+                        const int res_buf_sz = 1024;
+                        std::uint8_t res_buf[res_buf_sz]={0};
+                        int actual_length = 0;
 
-                // get response
-                if ((res = libusb_bulk_transfer(  handle, adpt_brd_ctrl_in_ep, (unsigned char *)&res_buf[0], res_buf_sz, &actual_length, timeout)) < 0)
-                    throw std::runtime_error(to_string() << "libusb_bulk_transfer(mm_power_on ack) returned " << libusb_error_name(res));
+                        // Look for DS4.1T device. Note that this workaround assumes single DS4.1T platform
+                        libusb_device_handle *ds_handle = libusb_open_device_with_vid_pid(0, ds41t_dev_vid, ds41t_dev_pid);
 
-                // release control interface
-                if (res = libusb_release_interface(handle, adpt_brd_ctrl_iface))
-                throw std::runtime_error(to_string() << " error releaing adaptor board interface, error" << errno);
+                        // Activate on demand
+                        if (!ds_handle)
+                        {
+                            // Send DS Device Power-on cmd
+                            if ((res = libusb_bulk_transfer( handle, adpt_brd_ctrl_out_ep, dspwr_cmd, cmd_sz, &actual_length, timeout))<0)
+                                throw std::runtime_error(to_string() << "libusb_bulk_transfer(ds_power_on) returned " << libusb_error_name(res));
 
-                board_activated = true;
+                            if (cmd_sz != actual_length)
+                                throw std::logic_error(to_string() << "ds_power_on invalid transmit size, expected: "  << cmd_sz << ", actual: " << actual_length);
 
-                std::this_thread::sleep_for(std::chrono::milliseconds(2000));   // Enable the hardware to "wire up" with the host drivers
-            }
+                            // Get and verify correct firmware response
+                            if ((res = libusb_bulk_transfer( handle, adpt_brd_ctrl_in_ep, res_buf, res_buf_sz, &actual_length, timeout)) < 0)
+                                throw std::runtime_error(to_string() << "libusb_bulk_transfer(ds_power_on ack) returned " << libusb_error_name(res));
 
-            return board_activated;
+                            // Command index should appear in the fifth byte in the response buffer. (hw_monitor protocol)
+                            unsigned char requested_type = dspwr_cmd[4];
+                            unsigned char actual_type = dspwr_cmd[4];
+
+                            if (requested_type != actual_type)
+                                throw std::logic_error(to_string() << "ds_power_on ack verification failed, expecting cmd code: " << std::hex << requested_type << ", actual: " << actual_type << std::dec);
+
+                            std::this_thread::sleep_for(std::chrono::milliseconds(2000));   // Enable the hardware to "wire up" with the host drivers; will be executed only if there is no present DS4.1T device
+
+                            activated = true;
+                            std::cout << "DS device power was turned on" << std::endl;
+                        }
+                        else
+                            std::cout << "DS device power was already on, no further actions are required" << std::endl;
+                    }
+
+                    return activated;
+                }
+
+                const unsigned short adpt_brd_vid;
+                const unsigned short adpt_brd_pid;
+                const unsigned short ds41t_dev_vid;
+                const unsigned short ds41t_dev_pid;
+
+                const unsigned short adpt_brd_ctrl_iface;
+                const unsigned short adpt_brd_ctrl_out_ep;
+                const unsigned short adpt_brd_ctrl_in_ep;
+
+                int                     res;
+                libusb_device_handle * handle;                   // handle for USB device
+            };
+
+            device_activator act;
+
+            return act.ds_device_power_on();
 
         }
     }
