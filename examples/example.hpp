@@ -182,7 +182,7 @@ public:
 
         show(rx + (rw - w)/2, ry + (rh - h)/2, w, h);
 
-        std::ostringstream ss; ss << stream << ": " << width << " x " << height << " " << dev.get_stream_format(stream) << " (" << fps << "/" << dev.get_stream_framerate(stream) << ")";
+		std::ostringstream ss; ss << stream << ": " << width << " x " << height << " " << dev.get_stream_format(stream) << " (" << fps << "/" << dev.get_stream_framerate(stream) << ")" << ", F#: " << dev.get_frame_counter(stream);
         glColor3f(0,0,0);
         draw_text(rx+9, ry+17, ss.str().c_str());
         glColor3f(1,1,1);

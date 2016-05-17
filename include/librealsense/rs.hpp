@@ -522,6 +522,17 @@ namespace rs
             return r;
         }
 
+		/// retrieve the number of frame
+		/// \param[in] stream  the stream whose latest frame we are interested in
+		/// \return            the number of the frame, since the device was started
+		int get_frame_counter(stream stream) const
+		{
+			rs_error * e = nullptr;
+			auto r = rs_get_frame_counter((const rs_device *)this, (rs_stream)stream, &e);
+			error::handle(e);
+			return r;
+		}
+
         /// retrieve the contents of the latest frame on a stream
         /// \param[in] stream  the stream whose latest frame we are interested in
         /// \return            the pointer to the start of the frame data

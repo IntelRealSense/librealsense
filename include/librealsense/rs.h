@@ -8,7 +8,7 @@
 extern "C" {
 #endif
 
-#define RS_API_VERSION 5
+#define RS_API_VERSION 6
 
 
 typedef enum rs_stream
@@ -428,11 +428,20 @@ int rs_poll_for_frames(rs_device * device, rs_error ** error);
 int rs_get_frame_timestamp(const rs_device * device, rs_stream stream, rs_error ** error);
 
 /**
+* retrieve the frame counter
+* \param[in] stream  the stream whose latest frame we are interested in
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return            the frame number
+*/
+int rs_get_frame_counter(const rs_device * device, rs_stream stream, rs_error ** error);
+
+/**
  * retrieve the contents of the latest frame on a stream
  * \param[in] stream  the stream whose latest frame we are interested in
  * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
  * \return            the pointer to the start of the frame data
  */
+
 const void * rs_get_frame_data(const rs_device * device, rs_stream stream, rs_error ** error);
                                      
 const char * rs_get_failed_function  (const rs_error * error);

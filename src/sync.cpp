@@ -21,11 +21,11 @@ frame_archive::frame_archive(const std::vector<subdevice_mode_selection> & selec
 
     // Allocate an empty image for each stream, and move it to the frontbuffer
     // This allows us to assume that get_frame_data/get_frame_timestamp always return valid data
-    alloc_frame(key_stream, 0);
+    alloc_frame(key_stream, 0, 0);
     frontbuffer[key_stream] = std::move(backbuffer[key_stream]);
     for(auto s : other_streams)
     {
-        alloc_frame(s, 0);
+        alloc_frame(s, 0, 0);
         frontbuffer[s] = std::move(backbuffer[s]);
     }
 }
@@ -38,6 +38,11 @@ const byte * frame_archive::get_frame_data(rs_stream stream) const
 int frame_archive::get_frame_timestamp(rs_stream stream) const
 { 
     return frontbuffer[stream].timestamp;
+}
+
+int rsimpl::frame_archive::get_frame_counter(rs_stream stream) const
+{
+	return frontbuffer[stream].frameCounter;
 }
 
 // Block until the next coherent frameset is available
@@ -82,7 +87,7 @@ void frame_archive::get_next_frames()
 }
 
 // Allocate a new frame in the backbuffer, potentially recycling a buffer from the freelist
-byte * frame_archive::alloc_frame(rs_stream stream, int timestamp) 
+byte * frame_archive::alloc_frame(rs_stream stream, int timestamp, int frameCounter)
 { 
     const size_t size = modes[stream].get_image_size(stream);
 
@@ -113,6 +118,7 @@ byte * frame_archive::alloc_frame(rs_stream stream, int timestamp)
 
     backbuffer[stream].data.resize(size); // TODO: Allow users to provide a custom allocator for frame buffers
     backbuffer[stream].timestamp = timestamp;
+	backbuffer[stream].frameCounter = frameCounter;
     return backbuffer[stream].data.data();
 }
 
