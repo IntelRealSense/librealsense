@@ -442,42 +442,20 @@ namespace rsimpl
             void start_streaming()
             {
                 std::vector<subdevice *> subs;
-                std::vector<subdevice *> data_channel_subs;
+
                 for(auto & sub : subdevices)
                 {
                     if(sub->callback)
                     {
                         sub->start_capture();
                         subs.push_back(sub.get());
-                    }
-
-                    if(sub->channel_data_callback)
-                    {
-                        // TODO start_capture();       // both video and motion events. TODO callback for uvc layer
-                        data_channel_subs.push_back(sub.get());
-                    }
-
+                    }                
                 }
-
 
                 thread = std::thread([this, subs]()
                 {
                     while(!stop) subdevice::poll(subs);
                 });
-
-                // Motion events polling pipe
-                if (claimed_aux_interfaces.size())
-                {
-                    data_channel_thread = std::thread([this, data_channel_subs]()
-                    {                        
-                        // Polling
-                        while(!stop)
-                        {
-                            subdevice::poll_interrupts(this->usb_aux_handle, data_channel_subs);
-                        }
-
-                    });
-                }
             }
 
             void stop_streaming()
@@ -489,14 +467,7 @@ namespace rsimpl
                     stop = false;
 
                     for(auto & sub : subdevices) sub->stop_capture();
-                }
-
-                if(data_channel_thread.joinable())
-                {
-                    data_stop = true;
-                    data_channel_thread.join();
-                    data_stop = false;
-                }
+                }                
             }
 
             void start_data_acquisition()
@@ -610,12 +581,7 @@ namespace rsimpl
         void stop_streaming(device & device)
         {
             device.stop_streaming();
-        }
-
-		void start_streaming(device & device, int num_transfer_bufs)
-		{
-			device.start_streaming();
-		}
+        }		
 
 		void start_data_acquisition(device & device)
 		{

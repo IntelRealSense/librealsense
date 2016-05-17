@@ -125,7 +125,7 @@ void rs_device::start_channel(rs_channel channel)
         });
     }
 
-    stop_data_acquisition(*device);     // activate polling thread in the backend
+    start_data_acquisition(*device);     // activate polling thread in the backend
     data_acquisition_active = true;
 }
 
@@ -178,22 +178,22 @@ void rs_device::start()
     }
     
 
-	// Activate the required data channels, and provide it with user-specified data handler	
-    // TODO - provision for buffering the incoming data internally, e.g "lite-archive"
-    if(config.data_requests[0].enabled)
-    {
-        // Initialize the subdevice and set it to the selected mode
+//	// Activate the required data channels, and provide it with user-specified data handler
+//    // TODO - provision for buffering the incoming data internally, e.g "lite-archive"
+//    if(config.data_requests[0].enabled)
+//    {
+//        // Initialize the subdevice and set it to the selected mode
 
-        // TODO -replace hard-coded value 3 which stands for fisheye subdevice that is always index 3
-        set_subdevice_data_channel_handler(*device, 3, config.data_requests[0].fps,
-            [](const unsigned char * data, const int& size) mutable
-        {
-            // TODO - plugin user-defined callback
-            std::stringstream ss;
-            for (int i=0; i<size; i++) ss << std::hex << (int)data[i] << " ";
-            std::cout << ss.str() << std::endl;
-        });
-    }
+//        // TODO -replace hard-coded value 3 which stands for fisheye subdevice that is always index 3
+//        set_subdevice_data_channel_handler(*device, 3, config.data_requests[0].fps,
+//            [](const unsigned char * data, const int& size) mutable
+//        {
+//            // TODO - plugin user-defined callback
+//            std::stringstream ss;
+//            for (int i=0; i<size; i++) ss << std::hex << (int)data[i] << " ";
+//            std::cout << ss.str() << std::endl;
+//        });
+//    }
 
     this->archive = archive;
     on_before_start(selected_modes);
