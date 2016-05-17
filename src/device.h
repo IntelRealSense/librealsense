@@ -35,7 +35,7 @@ private:
     bool                                        capturing;
     std::chrono::high_resolution_clock::time_point capture_started;
 
-    std::shared_ptr<rsimpl::frame_archive>      archive;
+	std::shared_ptr<rsimpl::syncronizing_archive> archive;
 protected:
     const rsimpl::uvc::device &                 get_device() const { return *device; }
     rsimpl::uvc::device &                       get_device() { return *device; }

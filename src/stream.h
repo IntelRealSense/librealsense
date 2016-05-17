@@ -30,13 +30,14 @@ namespace rsimpl
     };
     
     class frame_archive;
+	class syncronizing_archive;
 
     struct native_stream final : public stream_interface
     {
         const device_config &                   config;
         const rs_stream                         stream;
         std::vector<subdevice_mode_selection>   modes;
-        std::shared_ptr<frame_archive>          archive;
+        std::shared_ptr<syncronizing_archive>   archive;
 
                                                 native_stream(device_config & config, rs_stream stream);
 
