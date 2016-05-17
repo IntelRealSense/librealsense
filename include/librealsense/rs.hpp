@@ -471,6 +471,15 @@ namespace rs
 			error::handle(e);
 		}
 
+        /// check if data acquisition is active
+        /// \param[in] data_channel
+        bool is_channel_active(channel channel)
+        {
+            rs_error * e = nullptr;
+            return rs_is_channel_active((rs_device *)this, rs_channel(channel), &e);
+            error::handle(e);
+        }
+
         /// begin streaming on all enabled streams for this device
         ///
         void start()

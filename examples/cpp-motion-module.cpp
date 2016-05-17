@@ -15,6 +15,27 @@
 
 using namespace rs;
 
+struct resource_wrapper
+{
+    resource_wrapper(rs::device * dev): active_dev(dev) {}
+    resource_wrapper();
+    ~resource_wrapper()
+    {
+        if (active_dev)
+        {
+            printf("Wrapper cleanup executed");
+            if (active_dev->is_streaming())
+                active_dev->stop();
+            // dedicated API to activate polling of the motion events
+            if (active_dev->is_channel_active(channel::motion_data))
+                active_dev->stop_channel(channel::motion_data);
+        }
+    }
+
+    rs::device * active_dev;
+
+};
+
 int main() try
 {
     // Create a context object. This object owns the handles to all connected realsense devices.
@@ -28,6 +49,8 @@ int main() try
     printf("    Serial number: %s\n", dev->get_serial());
     printf("    Firmware version: %s\n", dev->get_firmware_version());
 
+    // Make sure the resources will be cleaned up on exit
+    resource_wrapper guard(dev);
     // Configure depth to run at VGA resolution at best quaility
     rs::stream stream_type = rs::stream::depth;
     dev->enable_stream(stream_type, preset::best_quality);  // auto-select based on the actual camera type
@@ -40,7 +63,7 @@ int main() try
     dev->start();
 
 	// dedicated API to activate polling of the motion events
-	dev->start_channel(channel::motion_data);
+    dev->start_channel(channel::motion_data);
 
     // Determine depth value corresponding to one meter
     const uint16_t one_meter = static_cast<uint16_t>(1.0f / dev->get_depth_scale());
@@ -52,7 +75,7 @@ int main() try
 
     /* Will print a simple text-based representation of the image, by breaking it into 10x20 pixel regions and and approximating the coverage of pixels within one meter */
     int rows = (height / 10);
-    int row_lenght = (width / 5);
+    int row_lenght = (width / 10);
     int display_size = (rows+1) * (row_lenght+1);
 
     //protected_buf<char> buffer(display_size);
@@ -65,10 +88,8 @@ int main() try
 
     while(true)
     {        
-        //dev->wait_for_frames();
         if (dev->poll_for_frames())
         {
-
             // Retrieve depth data, which was previously configured as a 640 x 480 image of 16-bit depth values
             const uint16_t * depth_frame = reinterpret_cast<const uint16_t *>(dev->get_frame_data(rs::stream::depth));
 

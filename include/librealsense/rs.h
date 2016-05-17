@@ -383,6 +383,11 @@ void rs_start_channel(rs_device * device, rs_channel channel, rs_error ** error)
 */
 void rs_stop_channel(rs_device * device, rs_channel channel, rs_error ** error);
 
+/**
+* check if data acquisition is active
+* \param[in] data_channel
+*/
+int rs_is_channel_active(rs_device * device, rs_channel channel, rs_error ** error);
 
 /**
  * begin streaming on all enabled streams for this device
