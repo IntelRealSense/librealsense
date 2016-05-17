@@ -18,7 +18,6 @@
 #include <utility> // for pair
 #include <chrono>
 #include <thread>
-#include <iostream>
 
 #include <dirent.h>
 #include <fcntl.h>
@@ -405,9 +404,9 @@ namespace rsimpl
             libusb_device * usb_device, *usb_aux_device;
             libusb_device_handle * usb_handle, * usb_aux_handle;
             std::vector<int> claimed_interfaces;
-            std::vector<std::pair<int,bool> > claimed_aux_interfaces; // the claimed interface and whether kernel driver was detached from interface 0
+            std::vector<int> claimed_aux_interfaces;
 
-            device(std::shared_ptr<context> parent) : parent(parent), stop(), usb_device(), usb_aux_device(), usb_handle(), usb_aux_handle() {} // TODO: Init
+            device(std::shared_ptr<context> parent) : parent(parent), stop(), usb_device(), usb_aux_device(), usb_handle(), usb_aux_handle() {}
             ~device()
             {
                 stop_streaming();
@@ -420,14 +419,8 @@ namespace rsimpl
 
                 for(auto interface_data : claimed_aux_interfaces)
                 {
-                    int status = libusb_release_interface(usb_aux_handle, interface_data.first);
+                    int status = libusb_release_interface(usb_aux_handle, interface_data);
                     if(status < 0) LOG_ERROR("libusb_release_interface(...) returned " << libusb_error_name(status));
-
-                    // If we detached a kernel driver from interface #0 earlier, we'll now need to attach it again.
-//                    if (interface_data.second)
-//                    {
-//                        libusb_attach_kernel_driver(usb_aux_handle, 0);
-//                    }
                 }
 
                 if(usb_aux_handle) libusb_close(usb_aux_handle);
@@ -544,29 +537,9 @@ namespace rsimpl
                 if(status < 0) throw std::runtime_error(to_string() << "libusb_open(...) returned " << libusb_error_name(status));
             }
 
-            bool kernel_driver_detach = false;
-            /* Check whether a kernel driver is attached to interface #0. If so, we'll
-            * need to detach it.
-            */
-//            if (libusb_kernel_driver_active(device.usb_aux_handle, 0))
-//            {
-//                int status = libusb_detach_kernel_driver(device.usb_aux_handle, 0);
-//                if (status == 0)
-//                {
-//                    kernel_driver_detach = 1;
-//                }
-//                else
-//                {
-//                    perror("Error detaching kernel driver.");
-//                    throw std::runtime_error(to_string() << "libusb_detach_kernel_driver(...) returned " << libusb_error_name(status));
-//                }
-//            }
-
             int status = libusb_claim_interface(device.usb_aux_handle, interface_number);
-            if(status < 0) throw std::runtime_error(to_string() << "libusb_claim_interface(...) returned " << libusb_error_name(status));
-            std::pair<int,bool> interface_params(interface_number,kernel_driver_detach);
-            device.claimed_aux_interfaces.push_back(std::move(interface_params));
-
+            if(status < 0) throw std::runtime_error(to_string() << "libusb_claim_interface(...) returned " << libusb_error_name(status));            
+            device.claimed_aux_interfaces.push_back(interface_number);
         }
 
         void bulk_transfer(device & device, unsigned char endpoint, void * data, int length, int *actual_length, unsigned int timeout)
@@ -964,10 +937,7 @@ namespace rsimpl
                             std::this_thread::sleep_for(std::chrono::milliseconds(2000));   // Enable the hardware to "wire up" with the host drivers; will be executed only if there is no present DS4.1T device
 
                             activated = true;
-                            std::cout << "DS device power was turned on" << std::endl;
                         }
-                        else
-                            std::cout << "DS device power was already on, no further actions are required" << std::endl;
                     }
 
                     return activated;

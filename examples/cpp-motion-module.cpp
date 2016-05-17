@@ -13,25 +13,6 @@
 
 using namespace rs;
 
-template<typename T>
-class protected_buf
-{
-public:
-    protected_buf(size_t size): data_buf(nullptr),size(size){ data_buf = new T[size]; memset(data_buf,0,size*sizeof(T)); };
-    ~protected_buf(void){ if (data_buf) delete[] data_buf; data_buf = nullptr;};
-
-    T* get_data(){ return data_buf;};
-    size_t get_size(){ return size;};
-
-private:
-	protected_buf();  // avoid default and copy constructors
-	protected_buf(const protected_buf &);  // avoid default and copy constructors
-
-    T * data_buf;
-    size_t size;
-
-};
-
 int main() try
 {
     // Create a context object. This object owns the handles to all connected realsense devices.
@@ -52,7 +33,6 @@ int main() try
     // Configure IMU data will be parsed and handled in client code
     if (dev->supports_channel(transport::usb_interrupt, channel::sensor_data))
        dev->enable_channel(transport::usb_interrupt, channel::sensor_data, 30/*, usr_calback_func*/);
-
 
     // Modified device start to include IMU channel activation
     dev->start();
@@ -88,7 +68,6 @@ int main() try
         const uint16_t * depth_frame = reinterpret_cast<const uint16_t *>(dev->get_frame_data(rs::stream::depth));
 
         // Print a simple text-based representation of the image, by breaking it into 10x20 pixel regions and and approximating the coverage of pixels within one meter
-
         char * out = buffer.data();
         //int * coverage = coverage_buf.get_data();
         int * coverage = coverage_buf.data();
