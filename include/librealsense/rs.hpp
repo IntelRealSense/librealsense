@@ -50,10 +50,13 @@ namespace rs
 
     enum class channel : int8_t
     {
-        hw_events       = 0,
-        sensor_data     = 1,
-        motion_data     = 2,
-        max_data_type
+        hw_events = 0,
+        sensor_data,
+        motion_data,
+        timestamps_data,
+        accelerometer_data,
+        gyro_data,
+        max_channel_enum_type
     };
 
     enum class transport : int8_t

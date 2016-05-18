@@ -29,6 +29,7 @@ struct resource_wrapper
             printf("Wrapper cleanup executed");
             if (active_dev->is_streaming())
                 active_dev->stop();
+
             // dedicated API to activate polling of the motion events
             if (active_dev->is_events_proc_active(channel::motion_data))
                 active_dev->stop_events_proc(channel::motion_data);
@@ -38,6 +39,7 @@ struct resource_wrapper
     rs::device * active_dev;
 
 };
+
 
 int main() try
 {
@@ -72,13 +74,11 @@ int main() try
     // ...and pass it to the callback setter
     dev->set_events_proc_callback(channel::motion_data, motion_module_callback);
 
-    // dedicated API to activate polling of the motion events
-    dev->start_events_proc(channel::motion_data);
-
-
     // Modified device start to include IMU channel activation
     dev->start();
 
+    // dedicated API to activate polling of the motion events
+    dev->start_events_proc(channel::motion_data);
 
     // Determine depth value corresponding to one meter
     const uint16_t one_meter = static_cast<uint16_t>(1.0f / dev->get_depth_scale());
@@ -93,6 +93,7 @@ int main() try
     int row_lenght = (width / 10);
     int display_size = (rows+1) * (row_lenght+1);
 
+    // Allcoate buffers for depth representation
     std::vector<char> buffer;
     buffer.resize(display_size);
 
@@ -103,12 +104,11 @@ int main() try
     {        
         if (dev->poll_for_frames())
         {
-            // Retrieve depth data, which was previously configured as a 640 x 480 image of 16-bit depth values
+            // Retrieve depth data
             const uint16_t * depth_frame = reinterpret_cast<const uint16_t *>(dev->get_frame_data(rs::stream::depth));
 
             // Print a simple text-based representation of the image, by breaking it into 10x20 pixel regions and and approximating the coverage of pixels within one meter
             char * out = buffer.data();
-            //int * coverage = coverage_buf.get_data();
             int * coverage = coverage_buf.data();
 
             for(int y=0; y<height; ++y)
@@ -128,7 +128,6 @@ int main() try
                     }
                     *out++ = '\n';
                 }
-                //printf("line %d is finished", y);
             }
             *out++ = 0;
 
