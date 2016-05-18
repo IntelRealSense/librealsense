@@ -11,6 +11,8 @@
 #include <mutex>
 #include <vector>
 #include <chrono>
+#include <iostream>
+#include <string>
 #include <thread>
 
 using namespace rs;
@@ -18,7 +20,8 @@ using namespace rs;
 struct resource_wrapper
 {
     resource_wrapper(rs::device * dev): active_dev(dev) {}
-    resource_wrapper();
+    resource_wrapper() = delete;
+    resource_wrapper(const resource_wrapper&) = delete;
     ~resource_wrapper()
     {
         if (active_dev)
@@ -27,8 +30,8 @@ struct resource_wrapper
             if (active_dev->is_streaming())
                 active_dev->stop();
             // dedicated API to activate polling of the motion events
-            if (active_dev->is_channel_active(channel::motion_data))
-                active_dev->stop_channel(channel::motion_data);
+            if (active_dev->is_events_proc_active(channel::motion_data))
+                active_dev->stop_events_proc(channel::motion_data);
         }
     }
 
@@ -56,14 +59,24 @@ int main() try
     dev->enable_stream(stream_type, preset::best_quality);  // auto-select based on the actual camera type
 
     // Configure IMU data will be parsed and handled in client code
-    if (dev->supports_channel(channel::motion_data))
-       dev->enable_channel(channel::motion_data, 30/*, usr_calback_func*/);
+    if (dev->supports_events_proc(channel::motion_data))
+       dev->enable_events_proc(channel::motion_data, 30/*, usr_calback_func*/);
+
+	// Define event handler
+    rs::event_callback motion_module_callback([](rs::event evt)
+    {
+        std::cout << "Event arrived, timestamp: " << evt.get_timestamps() 
+                << ", size" << evt.get_size() << ", data: " << evt.to_string() << std::endl;
+    });
+
+    // ...and pass it to the callback setter
+    dev->set_events_proc_callback(channel::motion_data, motion_module_callback);
 
     // Modified device start to include IMU channel activation
     dev->start();
 
-	// dedicated API to activate polling of the motion events
-    dev->start_channel(channel::motion_data);
+    // dedicated API to activate polling of the motion events
+    dev->start_events_proc(channel::motion_data);
 
     // Determine depth value corresponding to one meter
     const uint16_t one_meter = static_cast<uint16_t>(1.0f / dev->get_depth_scale());

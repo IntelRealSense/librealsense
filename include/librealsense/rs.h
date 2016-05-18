@@ -356,38 +356,47 @@ void rs_get_stream_intrinsics(const rs_device * device, rs_stream stream, rs_int
 * check whether the device provides the requested data aqcuisition channels
 * \param[in] data_channel the data to acquired: sensors data, hw statuses, etc'
 */
-int rs_supports_channel(const rs_device * device, rs_channel channel, rs_error ** error);
+int rs_supports_events_proc(const rs_device * device, rs_channel channel, rs_error ** error);
 
 /**
  * enable a specific data channel with specific properties
  * \param[in] data_channel  the data format that will be handled by the channel
  * \param[in] framerate    the number of data frames that will be published per second, or 0 if any rate is acceptable
  */
-void rs_enable_channel(rs_device * device, rs_channel channel, int framerate/*, std::function<void(const void * data)> callback*/, rs_error ** error);
+void rs_enable_events_proc(rs_device * device, rs_channel channel, int framerate/*, std::function<void(const void * data)> callback*/, rs_error ** error);
 
 /**
  * disable a specific data channel
   * \param[in] data_channel  the data format that will be handled by the channel
  */
-void rs_disable_channel(rs_device * device, rs_channel channel, rs_error ** error);
+void rs_disable_events_proc(rs_device * device, rs_channel channel, rs_error ** error);
 
 /**
 * start data acquisition from specific channel
 * \param[in] data_channel
 */
-void rs_start_channel(rs_device * device, rs_channel channel, rs_error ** error);
+void rs_start_events_proc(rs_device * device, rs_channel channel, rs_error ** error);
 
 /**
 * stop data acquisition from specific channel
 * \param[in] data_channel
 */
-void rs_stop_channel(rs_device * device, rs_channel channel, rs_error ** error);
+void rs_stop_events_proc(rs_device * device, rs_channel channel, rs_error ** error);
 
 /**
 * check if data acquisition is active
 * \param[in] data_channel
 */
-int rs_is_channel_active(rs_device * device, rs_channel channel, rs_error ** error);
+int rs_is_events_proc_active(rs_device * device, rs_channel channel, rs_error ** error);
+
+/**
+* set up a event callback that will be called immediately when hw event is available, with no synchronization logic applied
+* \param[in] stream    the stream for whose images the callback should be registered
+* \param[in] on_event  the callback which will receive the event data and handle it
+* \param[in] user      a user data point to be passed to the callback
+* \param[out] error    if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+*/
+void rs_set_events_proc_callback(rs_device * device, rs_channel channel, void(*on_event)(rs_device * dev, /*rs_event_ref * data, */void * user), void * user, rs_error ** error);
 
 /**
  * begin streaming on all enabled streams for this device

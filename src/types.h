@@ -211,12 +211,26 @@ namespace rsimpl
         void unpack(byte * const dest[], const byte * source) const;
     };
 
+	class events_proc_callback
+	{
+		void(*on_event)(rs_device * dev, /*rs_event_ref * event_data,*/ void * user);
+		void * user;
+		rs_device * device;
+	public:
+		events_proc_callback() : events_proc_callback(nullptr, nullptr, nullptr) {}
+		events_proc_callback(rs_device * dev, void(*on_event)(rs_device *,/* rs_event_ref *, */void *), void * user) : on_event(on_event), user(user), device(dev) {}
+
+		operator bool() { return on_event != nullptr; }
+		void operator () (/*rs_event_ref * event_data*/) const { if (on_event) on_event(device, /*event_data,*/ user); }
+	};
+
     struct device_config
     {
         const static_device_info info;
-        stream_request requests[RS_STREAM_NATIVE_COUNT];                // Modified by enable/disable_stream calls
-        data_channel_request data_requests[RS_CHANNEL_NATIVE_COUNT];    // Modified by enable/disable_channel calls
-        float depth_scale;                                              // Scale of depth values
+        stream_request requests[RS_STREAM_NATIVE_COUNT];					// Modified by enable/disable_stream calls
+        data_channel_request data_requests[RS_CHANNEL_NATIVE_COUNT];		// Modified by enable/disable_events_proc calls
+		events_proc_callback event_proc_callbacks[RS_CHANNEL_NATIVE_COUNT];	// Modified by set_events_proc_callback calls
+        float depth_scale;													// Scale of depth values
 
         device_config(const rsimpl::static_device_info & info) : info(info), depth_scale(info.nominal_depth_scale) 
         { 

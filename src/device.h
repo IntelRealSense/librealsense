@@ -55,12 +55,13 @@ public:
     void                                        enable_stream_preset(rs_stream stream, rs_preset preset);    
     void                                        disable_stream(rs_stream stream);
 
-	bool										supports_channel(rs_channel channel) const;
-	void										enable_channel(rs_channel channel, int fps);
-	void										disable_channel(rs_channel channel);
-	void                                        start_channel(rs_channel channel);
-	void                                        stop_channel(rs_channel channel);
-	int											is_channel_active(rs_channel channel) const { return data_acquisition_active; }
+	bool										supports_events_proc(rs_channel channel) const;
+	void										enable_events_proc(rs_channel channel, int fps);
+	void										disable_events_proc(rs_channel channel);
+	void                                        start_events_proc(rs_channel channel);
+	void                                        stop_events_proc(rs_channel channel);
+	int											is_events_proc_active(rs_channel channel) const { return data_acquisition_active; }
+	void                                        set_events_proc_callback(rs_channel channel, void(*on_event)(rs_device * device, /*rs_event_ref * event,*/ void * user), void * user);	
 
     void                                        start();
     void                                        stop();

@@ -1,6 +1,6 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
-
+#pragma once
 #ifndef LIBREALSENSE_RS_HPP
 #define LIBREALSENSE_RS_HPP
 
@@ -10,6 +10,8 @@
 #include <cstring>
 #include <sstream>
 #include <stdexcept>
+#include <functional>
+#include <vector>
 
 namespace rs
 {
@@ -50,7 +52,7 @@ namespace rs
     {
         hw_events       = 0,
         sensor_data     = 1,
-		motion_data		= 2,
+        motion_data     = 2,
         max_data_type
     };
 
@@ -227,7 +229,58 @@ namespace rs
             error::handle(e);
             return (device *)r;
         }
-    };
+    };	
+
+	class event
+	{
+		rs_device * device;
+		//rs_event_ref * event_ref;
+		std::vector<uint8_t> inbuf;
+		uint64_t	timestamp;
+
+		event(const event &) = delete;
+
+	public:
+		event() : device(nullptr) {}
+		event(rs_device *dev) : device(dev)/*, inbuf(dev->inbuf)*/ {}
+		event(event&& other) : device(other.device), inbuf(std::move(other.inbuf)) {}
+		event& operator=(event other)
+		{
+			swap(other);
+			return *this;
+		}
+		void swap(event& other)
+		{
+			std::swap(device, other.device);
+			std::swap(inbuf, other.inbuf);
+		}
+
+		~event() { inbuf.clear(); }
+
+		uint64_t		get_timestamps(void) const { return timestamp; }
+		const char *	to_string(void) const { return std::string(inbuf.begin(), inbuf.end()).data(); }
+		const std::vector<uint8_t> & data(void) const { return inbuf; };
+		size_t			get_size(void) const { return inbuf.size(); };
+	};
+
+	class event_callback_base
+	{
+	public:
+		virtual void on_event(event e) = 0;
+		virtual ~event_callback_base() {};
+	};
+
+	class event_callback : public event_callback_base
+	{
+		std::function<void(event)> on_event_function;
+	public:
+		explicit event_callback(std::function<void(event)> on_event) : on_event_function(on_event) {}
+
+		void on_event(event e) override
+		{
+			on_event_function(std::move(e));
+		}
+	};
 
     class device
     {
@@ -426,57 +479,74 @@ namespace rs
 
         /// check whether the specific device support data aqcuisition channels        
         /// \param[in] data_channel the data to acquired: sensors data, hw statuses, etc'
-        int supports_channel(channel channel)
+        int supports_events_proc(channel channel)
         {
             rs_error * e = nullptr;
-            auto res = rs_supports_channel((const rs_device *)this, rs_channel(channel), &e);
+            auto res = rs_supports_events_proc((const rs_device *)this, rs_channel(channel), &e);
             error::handle(e);
             return res;
         }
 
         /// enable a specific data channel with specific properties
-		/// \param[in] data_channel the data to acquired: sensors data, hw statuses, etc'
+        /// \param[in] data_channel the data to acquired: sensors data, hw statuses, etc'
         /// \param[in] framerate    the number of data frames that will be published per second, or 0 if any rate is acceptable
-        void enable_channel(channel channel,  int framerate/*, std::function<void(const void * data)> callback*/)
+        void enable_events_proc(channel channel,  int framerate/*, std::function<void(const void * data)> callback*/)
         {
             rs_error * e = nullptr;
-            rs_enable_channel((rs_device *)this, rs_channel(channel), framerate/*, callback*/, &e);
+            rs_enable_events_proc((rs_device *)this, rs_channel(channel), framerate/*, callback*/, &e);
             error::handle(e);
         }
 
         /// disable a specific data channel
-		/// \param[in] data_channel
-        void disable_channel(channel channel)
+        /// \param[in] data_channel
+        void disable_events_proc(channel channel)
         {
             rs_error * e = nullptr;
-            rs_disable_channel((rs_device *)this,rs_channel(channel), &e);
+            rs_disable_events_proc((rs_device *)this,rs_channel(channel), &e);
             error::handle(e);
         }
 
-		/// start data acquisition from specific channel
-		/// \param[in] data_channel
-		void start_channel(channel channel)
-		{
-			rs_error * e = nullptr;
-			rs_start_channel((rs_device *)this, rs_channel(channel), &e);
-			error::handle(e);
-		}
+        /// start data acquisition from specific channel
+        /// \param[in] data_channel
+        void start_events_proc(channel channel)
+        {
+            rs_error * e = nullptr;
+            rs_start_events_proc((rs_device *)this, rs_channel(channel), &e);
+            error::handle(e);
+        }
 
-		/// stop data acquisition from specific channel
-		/// \param[in] data_channel
-		void stop_channel(channel channel)
-		{
-			rs_error * e = nullptr;
-			rs_stop_channel((rs_device *)this, rs_channel(channel), &e);
-			error::handle(e);
-		}
+        /// stop data acquisition from specific channel
+        /// \param[in] data_channel
+        void stop_events_proc(channel channel)
+        {
+            rs_error * e = nullptr;
+            rs_stop_events_proc((rs_device *)this, rs_channel(channel), &e);
+            error::handle(e);
+        }
 
         /// check if data acquisition is active
         /// \param[in] data_channel
-        bool is_channel_active(channel channel)
+        int is_events_proc_active(channel channel)
         {
             rs_error * e = nullptr;
-            return rs_is_channel_active((rs_device *)this, rs_channel(channel), &e);
+            return rs_is_events_proc_active((rs_device *)this, rs_channel(channel), &e);
+            error::handle(e);
+        }
+
+        void set_events_proc_callback(channel channel, event_callback_base& on_event)
+        {
+            rs_error * e = nullptr;
+            rs_set_events_proc_callback((rs_device *)this, (rs_channel)channel, [](rs_device * device, /*rs_event_ref * eref, */void * user) {
+                try
+                {
+                    auto on_event = (event_callback_base *)user;
+					on_event->on_event(event(device/*, eref*/));
+                }
+                catch (...)
+                {
+
+                }
+            }, &on_event, &e);
             error::handle(e);
         }
 
@@ -605,13 +675,14 @@ namespace rs
         }
     };
 
+
     inline std::ostream & operator << (std::ostream & o, stream stream) { return o << rs_stream_to_string((rs_stream)stream); }
     inline std::ostream & operator << (std::ostream & o, format format) { return o << rs_format_to_string((rs_format)format); }
     inline std::ostream & operator << (std::ostream & o, preset preset) { return o << rs_preset_to_string((rs_preset)preset); }
     inline std::ostream & operator << (std::ostream & o, distortion distortion) { return o << rs_distortion_to_string((rs_distortion)distortion); }
     inline std::ostream & operator << (std::ostream & o, option option) { return o << rs_option_to_string((rs_option)option); }
-	inline std::ostream & operator << (std::ostream & o, transport transport) { return o << rs_transport_to_string((rs_transport)transport); }
-	inline std::ostream & operator << (std::ostream & o, channel data) { return o << rs_channel_to_string((rs_channel)data); }
+    inline std::ostream & operator << (std::ostream & o, transport transport) { return o << rs_transport_to_string((rs_transport)transport); }
+    inline std::ostream & operator << (std::ostream & o, channel data) { return o << rs_channel_to_string((rs_channel)data); }
 
     enum class log_severity : int32_t
     {

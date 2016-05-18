@@ -65,7 +65,7 @@ void rs_device::disable_stream(rs_stream stream)
     for(auto & s : native_streams) s->archive.reset(); // Changing stream configuration invalidates the current stream info
 }
 
-bool rs_device::supports_channel(rs_channel channel) const
+bool rs_device::supports_events_proc(rs_channel channel) const
 {
     bool bRes = true;
 	//TODO Evgeni
@@ -73,7 +73,7 @@ bool rs_device::supports_channel(rs_channel channel) const
 	return bRes;
 }
 
-void rs_device::enable_channel(rs_channel channel, int fps)
+void rs_device::enable_events_proc(rs_channel channel, int fps)
 {
 	if (data_acquisition_active) throw std::runtime_error("channel cannot be reconfigured after having called rs_start_device()");
 	
@@ -92,7 +92,7 @@ void rs_device::enable_channel(rs_channel channel, int fps)
         throw std::runtime_error("cannot add request for the specified data channel");
 }
 
-void rs_device::disable_channel(rs_channel channel)
+void rs_device::disable_events_proc(rs_channel channel)
 {
 	if (data_acquisition_active) throw std::runtime_error("channel cannot be reconfigured after having called rs_start_device()");
 
@@ -104,7 +104,7 @@ void rs_device::disable_channel(rs_channel channel)
 		}		
 }
 
-void rs_device::start_channel(rs_channel channel)
+void rs_device::start_events_proc(rs_channel channel)
 {
 	if (data_acquisition_active) throw std::runtime_error("cannot restart data acquisition without stopping first");
 
@@ -129,12 +129,18 @@ void rs_device::start_channel(rs_channel channel)
     data_acquisition_active = true;
 }
 
-void rs_device::stop_channel(rs_channel channel)
+void rs_device::stop_events_proc(rs_channel channel)
 {
 	if (!data_acquisition_active) throw std::runtime_error("cannot stop data acquisition - is already stopped");
 	stop_data_acquisition(*device);
 	data_acquisition_active = false;
 }
+
+void rs_device::set_events_proc_callback(rs_channel channel, void(*on_event)(rs_device * device, /*rs_frame_ref * frame,*/ void * user), void * user)
+{
+	config.event_proc_callbacks[channel] = { this, on_event, user };
+}
+
 
 void rs_device::start()
 {
