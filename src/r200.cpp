@@ -292,8 +292,7 @@ namespace rsimpl
             info.stream_subdevices[RS_STREAM_FISHEYE] = 3;
             info.presets[RS_STREAM_FISHEYE][RS_PRESET_BEST_QUALITY] = {true, 640, 480, RS_FORMAT_RAW10,   60};
             info.subdevice_modes.push_back({3, {640, 480}, pf_rw10, 60, c.intrinsicsThird[1], {c.modesThird[1][0]}, {0}});
-        }
-        // TODO: Power on Fisheye camera (mmpwr 1)
+        }        
 
         return make_device(device, info, c);
     }
@@ -372,6 +371,29 @@ namespace rsimpl
             default: LOG_WARNING("Cannot get " << options[i] << " on " << get_name()); break;
             }
         }
+    }
+
+    void r200_camera::toggle_motion_module_power(bool bOn)
+    {
+        // Temporal patch to be replaced with is_supported.  evgeni
+        if (this->config.data_requests[0].enabled)
+            r200::toggle_adapter_board_pwr(get_device(),bOn);
+    }
+
+    // Power on Fisheye camera (mmpwr 1)
+    void r200_camera::start_events_proc(rs_channel channel)
+    {
+        toggle_motion_module_power(true);
+
+        rs_device::start_events_proc(channel);
+    }
+
+    void r200_camera::stop_events_proc(rs_channel channel)
+    {
+        rs_device::stop_events_proc(channel);
+
+        // Power down Motion Module
+        toggle_motion_module_power(false);
     }
 
     void r200_camera::on_before_start(const std::vector<subdevice_mode_selection> & selected_modes)

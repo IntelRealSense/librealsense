@@ -58,10 +58,10 @@ public:
 	bool										supports_events_proc(rs_channel channel) const;
 	void										enable_events_proc(rs_channel channel, int fps);
 	void										disable_events_proc(rs_channel channel);
-	void                                        start_events_proc(rs_channel channel);
-	void                                        stop_events_proc(rs_channel channel);
+    virtual void                                start_events_proc(rs_channel channel);
+    virtual void                                stop_events_proc(rs_channel channel);
 	int											is_events_proc_active(rs_channel channel) const { return data_acquisition_active; }
-	void                                        set_events_proc_callback(rs_channel channel, void(*on_event)(rs_device * device, /*rs_event_ref * event,*/ void * user), void * user);	
+    void                                        set_events_proc_callback(rs_channel channel, void(*on_event)(rs_device * device, rs_motion_event event, void * user), void * user);
 
     void                                        start();
     void                                        stop();

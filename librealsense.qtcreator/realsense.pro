@@ -15,4 +15,5 @@ QMAKE_CXXFLAGS += -DRS_USE_V4L2_BACKEND
 
 HEADERS += ../include/librealsense/* ../src/*.h \
     ../src/hw_monitor_protocol.h
-SOURCES += ../src/*.cpp ../src/verify.c
+SOURCES += ../src/*.cpp ../src/verify.c \
+    ../src/hw_monitor_protocol.cpp

@@ -191,9 +191,65 @@ typedef struct rs_extrinsics
     float translation[3]; /* 3 element translation vector, in meters */
 } rs_extrinsics;
 
+
+typedef struct rs_motion_event
+{
+    //rs_event_ref * event_ref;
+    unsigned char           buf[64];
+    //std::vector<uint8_t>    inbuf;
+    unsigned long           timestamp;
+
+    float                   gyro_axes[3];
+    float                   accel_axes[3];
+
+//    rs_motion_event(const rs_motion_event & other)
+//    {
+//        for (int i=0; i< 64; i++)
+//            buf[i] = other.buf[i];
+//        timestamp = other.timestamp;
+//    }
+
+//    rs_motion_event(const unsigned char * data,const unsigned int& size)
+//    {
+//        // Will copy only the size preallocated for motion buffer
+//        if (data)
+//        {
+//            unsigned int sz = (size < 64) ? size : 64;
+//            for (int i=0; i< sz; i++)
+//             buf[i] = data[i];
+
+//            // TBD parse gyro data internally
+//        }
+//    }
+
+    //rs_motion_event() /*: device(nullptr)*/ {}
+    //motion_event(rs_motion_event mo_event) : device(dev)/*, inbuf(dev->inbuf)*/ {}
+    //rs_motion_event(rs_motion_event&& other) /*: device(other.device),*/ inbuf(std::move(other.inbuf)) {}
+//    rs_motion_event& operator=(motion_event other)
+//    {
+//        swap(other);
+//        return *this;
+//    }
+//    void swap(rs_motion_event& other)
+//    {
+//        //std::swap(device, other.device);
+//        std::swap(inbuf, other.inbuf);
+//    }
+
+    //~rs_motion_event() { /*inbuf.clear();*/ }
+
+    //unsigned long   get_timestamps(void)  { return timestamp; }
+    //const char *	to_string(void) const { return "TBD";/*std::string(inbuf.begin(), inbuf.end()).data();*/ }
+    //const unsigned char * data(void) const { return buf; };
+    //unsigned int	get_size(void) const { return /*inbuf.size()*/64; };
+} rs_motion_event;
+
 typedef struct rs_context rs_context;
 typedef struct rs_device rs_device;
 typedef struct rs_error rs_error;
+typedef struct rs_motion_event rs_motion_event;
+
+
 
 rs_context * rs_create_context(int api_version, rs_error ** error);
 void rs_delete_context(rs_context * context, rs_error ** error);
@@ -396,7 +452,7 @@ int rs_is_events_proc_active(rs_device * device, rs_channel channel, rs_error **
 * \param[in] user      a user data point to be passed to the callback
 * \param[out] error    if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 */
-void rs_set_events_proc_callback(rs_device * device, rs_channel channel, void(*on_event)(rs_device * dev, /*rs_event_ref * data, */void * user), void * user, rs_error ** error);
+void rs_set_events_proc_callback(rs_device * device, rs_channel channel, void(*on_event)(rs_device * dev, rs_motion_event, void * user), void * user, rs_error ** error);
 
 /**
  * begin streaming on all enabled streams for this device

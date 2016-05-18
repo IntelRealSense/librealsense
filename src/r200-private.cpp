@@ -8,6 +8,7 @@
 #include <cmath>
 #include <ctime>
 #include <thread>
+#include <chrono>
 #include <iomanip>
 #include <mutex>
 
@@ -88,6 +89,17 @@ namespace rsimpl { namespace r200
         r200::xu_write(device, fisheye_xu, r200::control::fisheye_xu_strobe, &strobe, sizeof(strobe));
     }
 
+    void toggle_adapter_board_pwr(uvc::device & device, bool on)
+    {
+        std::timed_mutex mutex;
+        hw_mon::HWMonitorCommand cmd((uint8_t)CX3_GrossTete_MonitorCommand::MMPWR);
+        cmd.Param1 = (on)? 1 : 0;
+        cmd.oneDirection = false;
+
+        hw_mon::perform_and_send_monitor_command(device,mutex, 1, cmd);
+    }
+
+
     struct CommandResponsePacket
     {
         command code; command_modifier modifier;
@@ -107,7 +119,7 @@ namespace rsimpl { namespace r200
         return r;
     }
 
-    void bulk_usb_command(uvc::device & device, std::timed_mutex & mutex,unsigned char out_ep, uint8_t *out, size_t outSize, uint32_t & op,unsigned char in_ep, uint8_t * in, size_t & inSize, int timeout)
+    void bulk_usb_command(uvc::device & device, std::timed_mutex & mutex,unsigned char handle_id ,unsigned char out_ep, uint8_t *out, size_t outSize, uint32_t & op,unsigned char in_ep, uint8_t * in, size_t & inSize, int timeout)
     {
         // write
         errno = 0;
@@ -117,7 +129,7 @@ namespace rsimpl { namespace r200
         if (!mutex.try_lock_for(std::chrono::milliseconds(timeout))) throw std::runtime_error("timed_mutex::try_lock_for(...) timed out");
         std::lock_guard<std::timed_mutex> guard(mutex, std::adopt_lock);
 
-        bulk_transfer(device, out_ep, out, (int) outSize, &outXfer, timeout); // timeout in ms
+        bulk_transfer(device, handle_id, out_ep, out, (int) outSize, &outXfer, timeout); // timeout in ms
 
         // read
         if (in && inSize)
@@ -126,7 +138,7 @@ namespace rsimpl { namespace r200
 
             errno = 0;
 
-            bulk_transfer(device, in_ep, buf, sizeof(buf), &outXfer, timeout);
+            bulk_transfer(device, handle_id, in_ep, buf, sizeof(buf), &outXfer, timeout);
             if (outXfer < (int)sizeof(uint32_t)) throw std::runtime_error("incomplete bulk usb transfer");
 
             op = *(uint32_t *)buf;

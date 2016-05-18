@@ -458,7 +458,7 @@ namespace rsimpl
 
             if (prepare_usb_command(request, requestSize, (uint32_t)IVCAMMonitorCommand::GetCalibrationTable) <= 0)
                 throw std::runtime_error("usb transfer to retrieve calibration data failed");
-            execute_usb_command(device, usbMutex, request, requestSize, responseOp, data, bytesReturned);
+            execute_usb_command(device, usbMutex, 0, request, requestSize, responseOp, data, bytesReturned);
         }
 
         void get_sr300_calibration_raw_data(uvc::device & device, std::timed_mutex & mutex, uint8_t * data, size_t & bytesReturned)

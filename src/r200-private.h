@@ -153,6 +153,8 @@ namespace rsimpl
         uint8_t get_ext_trig(const uvc::device & device);
         void set_ext_trig(uvc::device & device, uint8_t ext_trig);
 
+        void toggle_adapter_board_pwr(uvc::device & device, bool on);
+
 
         ///////////////
         // Streaming //

@@ -30,6 +30,10 @@ namespace rsimpl
         void set_options(const rs_option options[], int count, const double values[]) override;
         void get_options(const rs_option options[], int count, double values[]) override;
 
+        void start_events_proc(rs_channel channel) override;
+        void stop_events_proc(rs_channel channel) override;
+
+        void toggle_motion_module_power(bool bOn);
         void on_before_start(const std::vector<subdevice_mode_selection> & selected_modes) override;
         rs_stream select_key_stream(const std::vector<rsimpl::subdevice_mode_selection> & selected_modes) override;
         std::shared_ptr<frame_timestamp_reader> create_frame_timestamp_reader() const override;

@@ -63,20 +63,22 @@ int main() try
        dev->enable_events_proc(channel::motion_data, 30/*, usr_calback_func*/);
 
 	// Define event handler
-    rs::event_callback motion_module_callback([](rs::event evt)
-    {
-        std::cout << "Event arrived, timestamp: " << evt.get_timestamps() 
-                << ", size" << evt.get_size() << ", data: " << evt.to_string() << std::endl;
+    rs::event_callback motion_module_callback([](rs_motion_event evt)   // TODO rs_motion event wrapper
+    {        
+        std::cout << "Event arrived, timestamp: " << evt.timestamp << std::endl;
+                //<< ", size" << evt.get_size() << ", data: " << evt.to_string() << std::endl;
     });
 
     // ...and pass it to the callback setter
     dev->set_events_proc_callback(channel::motion_data, motion_module_callback);
 
+    // dedicated API to activate polling of the motion events
+    dev->start_events_proc(channel::motion_data);
+
+
     // Modified device start to include IMU channel activation
     dev->start();
 
-    // dedicated API to activate polling of the motion events
-    dev->start_events_proc(channel::motion_data);
 
     // Determine depth value corresponding to one meter
     const uint16_t one_meter = static_cast<uint16_t>(1.0f / dev->get_depth_scale());
@@ -91,10 +93,8 @@ int main() try
     int row_lenght = (width / 10);
     int display_size = (rows+1) * (row_lenght+1);
 
-    //protected_buf<char> buffer(display_size);
     std::vector<char> buffer;
     buffer.resize(display_size);
-    //protected_buf<int> coverage_buf(row_lenght);
 
     std::vector<int> coverage_buf;
     coverage_buf.resize(row_lenght);

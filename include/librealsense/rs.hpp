@@ -231,52 +231,51 @@ namespace rs
         }
     };	
 
-	class event
-	{
-		rs_device * device;
-		//rs_event_ref * event_ref;
-		std::vector<uint8_t> inbuf;
-		uint64_t	timestamp;
+//    struct rs_motion_event
+//	{
+//        rs_device *             device;
+//		//rs_event_ref * event_ref;
+//        std::vector<uint8_t>    inbuf;
+//        uint64_t                timestamp;
 
-		event(const event &) = delete;
+//        rs_motion_event(const rs_motion_event &) = delete;
 
-	public:
-		event() : device(nullptr) {}
-		event(rs_device *dev) : device(dev)/*, inbuf(dev->inbuf)*/ {}
-		event(event&& other) : device(other.device), inbuf(std::move(other.inbuf)) {}
-		event& operator=(event other)
-		{
-			swap(other);
-			return *this;
-		}
-		void swap(event& other)
-		{
-			std::swap(device, other.device);
-			std::swap(inbuf, other.inbuf);
-		}
+//        rs_motion_event() : device(nullptr) {}
+//        //motion_event(rs_device *dev) : device(dev)/*, inbuf(dev->inbuf)*/ {}
+//        rs_motion_event(rs_motion_event&& other) : device(other.device), inbuf(std::move(other.inbuf)) {}
+//        rs_motion_event& operator=(motion_event other)
+//		{
+//			swap(other);
+//			return *this;
+//		}
+//		void swap(event& other)
+//		{
+//			std::swap(device, other.device);
+//			std::swap(inbuf, other.inbuf);
+//		}
 
-		~event() { inbuf.clear(); }
+//        ~rs_motion_event() { inbuf.clear(); }
 
-		uint64_t		get_timestamps(void) const { return timestamp; }
-		const char *	to_string(void) const { return std::string(inbuf.begin(), inbuf.end()).data(); }
-		const std::vector<uint8_t> & data(void) const { return inbuf; };
-		size_t			get_size(void) const { return inbuf.size(); };
-	};
+//		uint64_t		get_timestamps(void) const { return timestamp; }
+//		const char *	to_string(void) const { return std::string(inbuf.begin(), inbuf.end()).data(); }
+//		const std::vector<uint8_t> & data(void) const { return inbuf; };
+//		size_t			get_size(void) const { return inbuf.size(); };
+//    };
 
 	class event_callback_base
 	{
 	public:
-		virtual void on_event(event e) = 0;
+        virtual void on_event(rs_motion_event e) = 0;
 		virtual ~event_callback_base() {};
 	};
 
 	class event_callback : public event_callback_base
 	{
-		std::function<void(event)> on_event_function;
+        std::function<void(rs_motion_event)> on_event_function;
 	public:
-		explicit event_callback(std::function<void(event)> on_event) : on_event_function(on_event) {}
+        explicit event_callback(std::function<void(rs_motion_event)> on_event) : on_event_function(on_event) {}
 
-		void on_event(event e) override
+        void on_event(rs_motion_event e) override
 		{
 			on_event_function(std::move(e));
 		}
@@ -536,11 +535,11 @@ namespace rs
         void set_events_proc_callback(channel channel, event_callback_base& on_event)
         {
             rs_error * e = nullptr;
-            rs_set_events_proc_callback((rs_device *)this, (rs_channel)channel, [](rs_device * device, /*rs_event_ref * eref, */void * user) {
+            rs_set_events_proc_callback((rs_device *)this, (rs_channel)channel, [](rs_device * device, rs_motion_event mo_event, void * user) {
                 try
                 {
-                    auto on_event = (event_callback_base *)user;
-					on_event->on_event(event(device/*, eref*/));
+                    auto listener = (event_callback_base *)user;
+                    listener->on_event(mo_event);
                 }
                 catch (...)
                 {

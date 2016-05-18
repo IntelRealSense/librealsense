@@ -341,30 +341,9 @@ namespace rsimpl
 
             static void poll_interrupts(libusb_device_handle *handle, const std::vector<subdevice *> & subdevices)
             {
-                static const unsigned char InterruptBufSize = 64;
+                static const unsigned short InterruptBufSize = 0x400;
                 uint8_t buffer[InterruptBufSize];                       /* 64 byte transfer buffer  - dedicated channel*/
                 int numBytes             = 0;                           /* Actual bytes transferred. */
-
-                // TODO - temporal developement hack to work with mock motion events. Use adapter board with firmware version 0.3 only!!!
-                {
-                    uint8_t gvd_cmd[24] = { 0x14, 0x0 ,0xab, 0xcd, 0x03, 0x0, 0x0, 0x0, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
-                    uint8_t res_buf[1024]={0};
-                    int actual_length = 0;
-                    if(!handle) throw std::logic_error("called uvc::bulk_transfer before uvc::claim_interface");
-                    int status = libusb_bulk_transfer(  handle, 0x1, (unsigned char *)&gvd_cmd[0], 24, &actual_length, 5000);
-                    if(status < 0)
-                    {
-                        perror("sending gvd request failed\n");
-                        throw std::runtime_error(to_string() << "libusb_bulk_transfer(...) returned " << libusb_error_name(status));
-                    }
-
-                    status = libusb_bulk_transfer(  handle, 0x81, (unsigned char *)&res_buf[0], 1024, &actual_length, 5000);
-                    if(status < 0)
-                    {
-                        perror("receiving gvd result failed\n");
-                        throw std::runtime_error(to_string() << "libusb_bulk_transfer(...) returned " << libusb_error_name(status));
-                    }
-                }
 
                 // TODO - replace hard-coded values : 0x82 and 1000
                 int res = libusb_interrupt_transfer(handle, 0x84, buffer, InterruptBufSize, &numBytes, InterruptBufSize);
@@ -549,10 +528,11 @@ namespace rsimpl
             device.claimed_aux_interfaces.push_back(interface_number);
         }
 
-        void bulk_transfer(device & device, unsigned char endpoint, void * data, int length, int *actual_length, unsigned int timeout)
+        void bulk_transfer(device & device, unsigned char handle_id, unsigned char endpoint, void * data, int length, int *actual_length, unsigned int timeout)
         {
-            if(!device.usb_handle) throw std::logic_error("called uvc::bulk_transfer before uvc::claim_interface");
-            int status = libusb_bulk_transfer(device.usb_handle, endpoint, (unsigned char *)data, length, actual_length, timeout);
+            libusb_device_handle * handle = (handle_id==0) ?device.usb_handle : device.usb_aux_handle;
+            if(!handle) throw std::logic_error("called uvc::bulk_transfer before uvc::claim_interface");
+            int status = libusb_bulk_transfer(handle, endpoint, (unsigned char *)data, length, actual_length, timeout);
             if(status < 0) throw std::runtime_error(to_string() << "libusb_bulk_transfer(...) returned " << libusb_error_name(status));
         }
 
@@ -780,10 +760,9 @@ namespace rsimpl
                     }
                 }
                 if(is_new_device)
-                {
-                    // TODO Fisheye patch
-                    //if (sub->vid == 0x8086 && sub->pid == 0x0ad0)  // avoid inserting fisheye camera as a device
-                    if (sub->vid == 0x04b4 && sub->pid == 0x00c3)  // avoid inserting fisheye camera as a device
+                {                    
+                    //if (sub->vid == 0x04b4 && sub->pid == 0x00c3)  // avoid inserting fisheye camera as a device Bring up version
+                    if (sub->vid == 0x8086 && sub->pid == 0x0ad0)  // avoid inserting fisheye camera as a device
                         continue;
                     devices.push_back(std::make_shared<device>(context));
                     devices.back()->subdevices.push_back(move(sub));
@@ -808,25 +787,8 @@ namespace rsimpl
 
                 for(auto & dev : devices)
                 {
+                    //if (dev->subdevices[0]->vid == 0x8086 && dev->subdevices[0]->pid == 0x0acb && sub->vid == 0x04b4 && sub->pid == 0x00c3)
                     if (dev->subdevices[0]->vid == 0x8086 && dev->subdevices[0]->pid == 0x0acb && sub->vid == 0x8086 && sub->pid == 0x0ad0)
-                    {
-                        dev->subdevices.push_back(move(sub));
-                        break;
-                    }
-                }
-            }
-
-
-            // Insert fisheye camera as subDevice of ZR300
-            for(auto & sub : subdevices)
-            {
-                if (!sub)
-                    continue;
-
-                for(auto & dev : devices)
-                {
-                    //if (dev->subdevices[0]->vid == 0x8086 && dev->subdevices[0]->pid == 0x0acb && sub->vid == 0x8086 && sub->pid == 0x0ad0)
-                    if (dev->subdevices[0]->vid == 0x8086 && dev->subdevices[0]->pid == 0x0acb && sub->vid == 0x04b4 && sub->pid == 0x00c3)
                     {
                         dev->subdevices.push_back(move(sub));
                         break;
@@ -882,8 +844,8 @@ namespace rsimpl
             struct device_activator
             {
                 device_activator():
-                    adpt_brd_vid(0x04b4),       // Adapter board vid/pid
-                    adpt_brd_pid(0x00c3),
+                    adpt_brd_vid(0x8086/*0x04b4*/),       // Adapter board vid/pid
+                    adpt_brd_pid(0x0ad0/*0x00c3*/),
                     ds41t_dev_vid(0x8086),      // DS4.1T vid/pid
                     ds41t_dev_pid(0x0acb),
                     adpt_brd_ctrl_iface(0x2),
@@ -920,7 +882,7 @@ namespace rsimpl
                     if (handle)  // Adaptor board is present
                     {
                         const unsigned char cmd_sz = 24;
-                        //unsigned char mmpwr_cmd[cmd_sz] = { 0x14, 0x0, 0xab, 0xcd, 0x0a, 0x0, 0x0, 0x0, 0x1, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+                        unsigned char mmpwr_cmd[cmd_sz] = { 0x14, 0x0, 0xab, 0xcd, 0x0a, 0x0, 0x0, 0x0, 0x1, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
                         unsigned char dspwr_cmd[cmd_sz] = { 0x14, 0x0, 0xab, 0xcd, 0x0b, 0x0, 0x0, 0x0, 0x1, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
                         unsigned int timeout = 5000;
                         const int res_buf_sz = 1024;
@@ -933,6 +895,20 @@ namespace rsimpl
                         // Activate on demand
                         if (!ds_handle)
                         {
+//                            // Send DS Device Power-on cmd
+//                            if ((res = libusb_bulk_transfer( handle, adpt_brd_ctrl_out_ep, mmpwr_cmd, cmd_sz, &actual_length, timeout))<0)
+//                                throw std::runtime_error(to_string() << "libusb_bulk_transfer(ds_power_on) returned " << libusb_error_name(res));
+
+//                            if (cmd_sz != actual_length)
+//                                throw std::logic_error(to_string() << "ds_power_on invalid transmit size, expected: "  << cmd_sz << ", actual: " << actual_length);
+
+//                            // Get and verify correct firmware response
+//                            if ((res = libusb_bulk_transfer( handle, adpt_brd_ctrl_in_ep, res_buf, res_buf_sz, &actual_length, timeout)) < 0)
+//                                throw std::runtime_error(to_string() << "libusb_bulk_transfer(ds_power_on ack) returned " << libusb_error_name(res));
+
+
+
+
                             // Send DS Device Power-on cmd
                             if ((res = libusb_bulk_transfer( handle, adpt_brd_ctrl_out_ep, dspwr_cmd, cmd_sz, &actual_length, timeout))<0)
                                 throw std::runtime_error(to_string() << "libusb_bulk_transfer(ds_power_on) returned " << libusb_error_name(res));

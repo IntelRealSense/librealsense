@@ -266,7 +266,7 @@ int rs_is_events_proc_active(rs_device * device, rs_channel channel, rs_error **
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, device, channel)
 
-void rs_set_events_proc_callback(rs_device * device, rs_channel channel, void(*on_event)(rs_device * dev, /*rs_frame * data,*/ void * user), void * user, rs_error ** error) try
+void rs_set_events_proc_callback(rs_device * device, rs_channel channel, void(*on_event)(rs_device * dev, rs_motion_event event, void * user), void * user, rs_error ** error) try
 {
 	VALIDATE_NOT_NULL(device);
 	VALIDATE_ENUM(channel);
