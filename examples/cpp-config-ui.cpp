@@ -182,7 +182,6 @@ int main(int argc, char * argv[]) try
     try { dev->enable_stream(rs::stream::fisheye, rs::preset::best_quality);} catch(...) {}
 
     //std::this_thread::sleep_for(std::chrono::seconds(1));
-
     struct option { rs::option opt; double min, max, step, value, def; };
     std::vector<option> options;
     for(int i=0; i<RS_OPTION_COUNT; ++i)
@@ -225,17 +224,26 @@ int main(int argc, char * argv[]) try
         y += 34;
         if(!dev->is_streaming())
         {
-            for(int i=0; i<5; ++i)
+            for (int i = 0; i <= RS_CAPABILITIES_FISH_EYE ; ++i)
             {
                 auto s = (rs::stream)i;
-                bool enable = dev->is_stream_enabled(s);
-                if(g.checkbox({w-260, y, w-240, y+20}, enable))
+                auto cap = (rs::capabilities)i;
+
+                if (dev->supports(cap))
                 {
+                    bool enable = dev->is_stream_enabled(s);
+
                     if(enable) dev->enable_stream(s, rs::preset::best_quality);
                     else dev->disable_stream(s);
+
+                    if(g.checkbox({w-260, y, w-240, y+20}, enable))
+                    {
+                        if(enable) dev->enable_stream(s, rs::preset::best_quality);
+                        else dev->disable_stream(s);
+                    }
+                    g.label({w-234, y+13}, {1,1,1}, "Enable %s", rs_stream_to_string((rs_stream)i));
+                    y += 30;
                 }
-                g.label({w-234, y+13}, {1,1,1}, "Enable %s", rs_stream_to_string((rs_stream)i));
-                y += 30;
             }
         }
 
@@ -267,11 +275,14 @@ int main(int argc, char * argv[]) try
             buffers[3].show(*dev, rs::stream::infrared2, w/3, h/3, w/3, h/3);
             buffers[4].show(*dev, rs::stream::fisheye, 0, 2*h/3, w/3, h/3);
 
-            int x = w/3 + 5;
-            int y = 2*h/3 + 5;
-            buffers[5].print(x, y, "MM (200 Hz)");
-            buffers[5].print(x, y + 16, "Gyro: ");
-            g.indicator({x + 100, y + 26 , x + 300, y + 18}, 0, 100, 40);
+            if (dev->supports(rs::capabilities::motion_events))
+            {
+                int x = w/3 + 5;
+                int y = 2*h/3 + 5;
+                buffers[5].print(x, y, "MM (200 Hz)");
+                buffers[5].print(x, y + 16, "Gyro: ");
+                g.indicator({x + 100, y + 26 , x + 300, y + 18}, 0, 100, 40);
+            }
         }
 
         glfwSwapBuffers(win);

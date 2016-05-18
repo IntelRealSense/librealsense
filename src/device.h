@@ -61,6 +61,8 @@ public:
     void                                        wait_all_streams();
     bool                                        poll_all_streams();
     
+    virtual bool                                supports(rs_capabilities capability) const;
+
     virtual bool                                supports_option(rs_option option) const;
     virtual void                                get_option_range(rs_option option, double & min, double & max, double & step, double & def);
     virtual void                                set_options(const rs_option options[], int count, const double values[]) = 0;

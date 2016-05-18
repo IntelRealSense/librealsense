@@ -38,6 +38,11 @@ namespace rsimpl
 
     std::shared_ptr<rs_device> make_device(std::shared_ptr<uvc::device> device, static_device_info& info, r200::r200_calibration& c)
     {
+        info.capabilities_vector.push_back(RS_CAPABILITIES_COLOR);
+        info.capabilities_vector.push_back(RS_CAPABILITIES_DEPTH);
+        info.capabilities_vector.push_back(RS_CAPABILITIES_INFRARED);
+        info.capabilities_vector.push_back(RS_CAPABILITIES_INFRARED2);
+
         info.stream_subdevices[RS_STREAM_DEPTH] = 1;
         info.stream_subdevices[RS_STREAM_COLOR] = 2;
         info.stream_subdevices[RS_STREAM_INFRARED] = 0;
@@ -284,9 +289,11 @@ namespace rsimpl
         auto c = r200::read_camera_info(*device);
         info.subdevice_modes.push_back({ 2, { 1920, 1080 }, pf_rw16, 30, c.intrinsicsThird[0], { c.modesThird[0][0] }, { 0 } });
 
-
         if (uvc::is_device_connected(*device, PID_INTEL_CAMERA, FISHEYE_PRODUCT_ID))
         {
+            info.capabilities_vector.push_back(RS_CAPABILITIES_FISH_EYE);
+            info.capabilities_vector.push_back(RS_CAPABILITIES_MOTION_EVENTS);
+
             info.stream_subdevices[RS_STREAM_FISHEYE] = 3;
             info.presets[RS_STREAM_FISHEYE][RS_PRESET_BEST_QUALITY] = {true, 640, 480, RS_FORMAT_RAW8,   60};
             info.subdevice_modes.push_back({3, {640, 480}, pf_rw8, 60, c.intrinsicsThird[1], {c.modesThird[1][0]}, {0}});

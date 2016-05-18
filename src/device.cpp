@@ -133,6 +133,17 @@ bool rs_device::poll_all_streams()
     return archive->poll_for_frames();
 }
 
+bool rs_device::supports(rs_capabilities capability) const
+{
+    for (auto elem: config.info.capabilities_vector)
+    {
+        if (elem == capability)
+            return true;
+    }
+
+    return false;
+}
+
 void rs_device::get_option_range(rs_option option, double & min, double & max, double & step, double & def)
 {
     if(uvc::is_pu_control(option))
