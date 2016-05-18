@@ -12,6 +12,10 @@
 #include <thread>
 #include <condition_variable>
 
+#define F200_PRODUCT_ID  0x0a66
+#define SR300_PRODUCT_ID 0x0aa5
+
+
 const std::vector <std::pair<rs_option, char>> eu_F200_depth_controls = {{rs_option::RS_OPTION_F200_LASER_POWER,          0x01},
                                                                          {rs_option::RS_OPTION_F200_ACCURACY,             0x02},
                                                                          {rs_option::RS_OPTION_F200_MOTION_RANGE,         0x03},

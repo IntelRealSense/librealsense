@@ -9,13 +9,14 @@
 using namespace rsimpl;
 
 rs_device::rs_device(std::shared_ptr<rsimpl::uvc::device> device, const rsimpl::static_device_info & info) : device(device), config(info), capturing(false),
-    depth(config, RS_STREAM_DEPTH), color(config, RS_STREAM_COLOR), infrared(config, RS_STREAM_INFRARED), infrared2(config, RS_STREAM_INFRARED2),
+    depth(config, RS_STREAM_DEPTH), color(config, RS_STREAM_COLOR), infrared(config, RS_STREAM_INFRARED), infrared2(config, RS_STREAM_INFRARED2), fisheye(config, RS_STREAM_FISHEYE),
     points(depth), rect_color(color), color_to_depth(color, depth), depth_to_color(depth, color), depth_to_rect_color(depth, rect_color), infrared2_to_depth(infrared2,depth), depth_to_infrared2(depth,infrared2)
 {
     streams[RS_STREAM_DEPTH    ] = native_streams[RS_STREAM_DEPTH]     = &depth;
     streams[RS_STREAM_COLOR    ] = native_streams[RS_STREAM_COLOR]     = &color;
     streams[RS_STREAM_INFRARED ] = native_streams[RS_STREAM_INFRARED]  = &infrared;
     streams[RS_STREAM_INFRARED2] = native_streams[RS_STREAM_INFRARED2] = &infrared2;
+    streams[RS_STREAM_FISHEYE  ] = native_streams[RS_STREAM_FISHEYE]   = &fisheye;
     streams[RS_STREAM_POINTS]                                          = &points;
     streams[RS_STREAM_RECTIFIED_COLOR]                                 = &rect_color;
     streams[RS_STREAM_COLOR_ALIGNED_TO_DEPTH]                          = &color_to_depth;
@@ -92,57 +93,58 @@ void rs_device::start()
 
         // Copy the callbacks that apply to this stream, so that they can be captured by value
         std::vector<frame_callback> callbacks;
-		std::vector<rs_stream> streams;
-		for (auto & output : mode_selection.get_outputs())
-		{
-			callbacks.push_back(config.callbacks[output.first]);
-			streams.push_back(output.first);
-		}
+        std::vector<rs_stream> streams;
+        for (auto & output : mode_selection.get_outputs())
+        {
+            callbacks.push_back(config.callbacks[output.first]);
+            streams.push_back(output.first);
+        }
 
         // Initialize the subdevice and set it to the selected mode
         set_subdevice_mode(*device, mode_selection.mode.subdevice, mode_selection.mode.native_dims.x, mode_selection.mode.native_dims.y, mode_selection.mode.pf.fourcc, mode_selection.mode.fps, 
-			[mode_selection, archive, timestamp_reader, callbacks, streams](const void * frame, std::function<void()> continuation) mutable
-		{
-			frame_continuation release_and_enqueue(continuation, frame);
+            [mode_selection, archive, timestamp_reader, callbacks, streams](const void * frame, std::function<void()> continuation) mutable
+        {
+            frame_continuation release_and_enqueue(continuation, frame);
 
-			// Ignore any frames which appear corrupted or invalid
-			if (!timestamp_reader->validate_frame(mode_selection.mode, frame)) return;
+            // Ignore any frames which appear corrupted or invalid
+            if (!timestamp_reader->validate_frame(mode_selection.mode, frame)) return;
 
-			// Determine the timestamp for this frame
-			int timestamp = timestamp_reader->get_frame_timestamp(mode_selection.mode, frame);
+            // Determine the timestamp for this frame
+            auto timestamp = timestamp_reader->get_frame_timestamp(mode_selection.mode, frame);
+            auto frame_counter = timestamp_reader->get_frame_counter(mode_selection.mode, frame);
 
-			// Obtain buffers for unpacking the frame
-			std::vector<byte *> dest;
-			for (auto & output : mode_selection.get_outputs()) dest.push_back(archive->alloc_frame(output.first, timestamp, mode_selection.requires_processing()));
+            // Obtain buffers for unpacking the frame
+            std::vector<byte *> dest;
+            for (auto & output : mode_selection.get_outputs()) dest.push_back(archive->alloc_frame(output.first, timestamp, frame_counter, mode_selection.requires_processing()));
 
-			// Unpack the frame
-			if (mode_selection.requires_processing()) 
-			{
-				mode_selection.unpack(dest.data(), reinterpret_cast<const byte *>(frame));
-			}
+            // Unpack the frame
+            if (mode_selection.requires_processing()) 
+            {
+                mode_selection.unpack(dest.data(), reinterpret_cast<const byte *>(frame));
+            }
 
             // If any frame callbacks were specified, dispatch them now
-			for (size_t i = 0; i < dest.size(); ++i)
-			{
-				if (callbacks[i])
-				{
-					auto frame_ref = archive->track_frame(streams[i]);
-					if (frame_ref)
-					{
-						callbacks[i]((rs_frame_ref*)frame_ref);
-					}
-				}
-				else
-				{
-					// Commit the frame to the archive
-					archive->commit_frame(streams[i]);
-				}
+            for (size_t i = 0; i < dest.size(); ++i)
+            {
+                if (callbacks[i])
+                {
+                    auto frame_ref = archive->track_frame(streams[i]);
+                    if (frame_ref)
+                    {
+                        callbacks[i]((rs_frame_ref*)frame_ref);
+                    }
+                }
+                else
+                {
+                    // Commit the frame to the archive
+                    archive->commit_frame(streams[i]);
+                }
 
-				if (!mode_selection.requires_processing())
-				{
-					archive->attach_continuation(streams[i], std::move(release_and_enqueue));
-				}
-			}
+                if (!mode_selection.requires_processing())
+                {
+                    archive->attach_continuation(streams[i], std::move(release_and_enqueue));
+                }
+            }
         });
     }
     
@@ -157,7 +159,7 @@ void rs_device::stop()
 {
     if(!capturing) throw std::runtime_error("cannot stop device without first starting device");
     stop_streaming(*device);
-	archive->flush();
+    archive->flush();
     capturing = false;
 }
 
@@ -199,29 +201,29 @@ void rs_device::release_frames(rs_frameset * frameset)
 
 rs_frameset * rs_device::clone_frames(rs_frameset * frameset)
 {
-	auto result = archive->clone_frameset((frame_archive::frameset *)frameset);
-	if (!result) throw std::runtime_error("Not enough resources to clone frameset!");
-	return (rs_frameset*)result;
+    auto result = archive->clone_frameset((frame_archive::frameset *)frameset);
+    if (!result) throw std::runtime_error("Not enough resources to clone frameset!");
+    return (rs_frameset*)result;
 }
 
 
 rs_frame_ref* rs_device::detach_frame(const rs_frameset* fs, rs_stream stream)
 {
-	auto result = archive->detach_frame_ref((frame_archive::frameset *)fs, stream);
-	if (!result) throw std::runtime_error("Not enough resources to tack detached frame!");
-	return (rs_frame_ref*)result;
+    auto result = archive->detach_frame_ref((frame_archive::frameset *)fs, stream);
+    if (!result) throw std::runtime_error("Not enough resources to tack detached frame!");
+    return (rs_frame_ref*)result;
 }
 
 void rs_device::release_frame(rs_frame_ref* ref)
 {
-	archive->release_frame_ref((frame_archive::frame_ref *)ref);
+    archive->release_frame_ref((frame_archive::frame_ref *)ref);
 }
 
 rs_frame_ref* ::rs_device::clone_frame(rs_frame_ref* frame)
 {
-	auto result = archive->clone_frame((frame_archive::frame_ref *)frame);
-	if (!result) throw std::runtime_error("Not enough resources to clone frame!");
-	return (rs_frame_ref*)result;
+    auto result = archive->clone_frame((frame_archive::frame_ref *)frame);
+    if (!result) throw std::runtime_error("Not enough resources to clone frame!");
+    return (rs_frame_ref*)result;
 }
 
 void rs_device::get_option_range(rs_option option, double & min, double & max, double & step, double & def)

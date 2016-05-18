@@ -3,21 +3,21 @@
 using namespace rsimpl;
 
 syncronizing_archive::syncronizing_archive(const std::vector<subdevice_mode_selection> & selection, rs_stream key_stream)
-	: frame_archive(selection), key_stream(key_stream)
+    : frame_archive(selection), key_stream(key_stream)
 {
     // Enumerate all streams we need to keep synchronized with the key stream
-    for(auto s : {RS_STREAM_DEPTH, RS_STREAM_INFRARED, RS_STREAM_INFRARED2, RS_STREAM_COLOR})
+    for(auto s : {RS_STREAM_DEPTH, RS_STREAM_INFRARED, RS_STREAM_INFRARED2, RS_STREAM_COLOR, RS_STREAM_FISHEYE})
     {
         if(is_stream_enabled(s) && s != key_stream) other_streams.push_back(s);
     }
 
     // Allocate an empty image for each stream, and move it to the frontbuffer
     // This allows us to assume that get_frame_data/get_frame_timestamp always return valid data
-	alloc_frame(key_stream, 0, true);
+    alloc_frame(key_stream, 0, 0, true);
     frontbuffer.place_frame(key_stream, std::move(backbuffer[key_stream]));
     for(auto s : other_streams)
     {
-        alloc_frame(s, 0, true);
+        alloc_frame(s, 0, 0, true);
         frontbuffer.place_frame(s, std::move(backbuffer[s]));
     }
 }
@@ -34,7 +34,12 @@ int syncronizing_archive::get_frame_timestamp(rs_stream stream) const
 
 frame_archive::frameset* syncronizing_archive::clone_frontbuffer()
 {
-	return clone_frameset(&frontbuffer);
+    return clone_frameset(&frontbuffer);
+}
+
+int rsimpl::syncronizing_archive::get_frame_counter(rs_stream stream) const
+{
+    return frontbuffer.get_frame_counter(stream);
 }
 
 // Block until the next coherent frameset is available
@@ -58,17 +63,17 @@ bool syncronizing_archive::poll_for_frames()
 
 frame_archive::frameset* syncronizing_archive::wait_for_frames_safe()
 {
-	frameset * result = nullptr;
-	do
-	{
-		std::unique_lock<std::recursive_mutex> lock(mutex);
-		const auto ready = [this]() { return !frames[key_stream].empty(); };
-		if (!ready() && !cv.wait_for(lock, std::chrono::seconds(5), ready)) throw std::runtime_error("Timeout waiting for frames.");
-		get_next_frames();
-		result = clone_frontbuffer();
-	} 
-	while (!result);
-	return result;
+    frameset * result = nullptr;
+    do
+    {
+        std::unique_lock<std::recursive_mutex> lock(mutex);
+        const auto ready = [this]() { return !frames[key_stream].empty(); };
+        if (!ready() && !cv.wait_for(lock, std::chrono::seconds(5), ready)) throw std::runtime_error("Timeout waiting for frames.");
+        get_next_frames();
+        result = clone_frontbuffer();
+    } 
+    while (!result);
+    return result;
 }
 
 bool syncronizing_archive::poll_for_frames_safe(frameset** frameset)
@@ -77,13 +82,13 @@ bool syncronizing_archive::poll_for_frames_safe(frameset** frameset)
     std::unique_lock<std::recursive_mutex> lock(mutex);
     if (frames[key_stream].empty()) return false;
     get_next_frames();
-	auto result = clone_frontbuffer();
-	if (result)
-	{
-		*frameset = result;
-		return true;
-	}
-	return false;
+    auto result = clone_frontbuffer();
+    if (result)
+    {
+        *frameset = result;
+        return true;
+    }
+    return false;
 }
 
 // Move frames from the queues to the frontbuffers to form the next coherent frameset
@@ -95,6 +100,12 @@ void syncronizing_archive::get_next_frames()
     // Dequeue from other streams if the new frame is closer to the timestamp of the key stream than the old frame
     for(auto s : other_streams)
     {
+        if (!frames[s].empty() && s == RS_STREAM_FISHEYE) // TODO: W/O until we will achieve frame timestamp
+        {
+            dequeue_frame(s);
+            continue;
+        }
+
         if (!frames[s].empty() && abs(frames[s].front().timestamp - frontbuffer.get_frame_timestamp(key_stream)) <= abs(frontbuffer.get_frame_timestamp(s) - frontbuffer.get_frame_timestamp(key_stream)))
         {
             dequeue_frame(s);
@@ -114,8 +125,8 @@ void syncronizing_archive::commit_frame(rs_stream stream)
 
 void syncronizing_archive::flush()
 {
-	frontbuffer.cleanup(); // frontbuffer also holds frame references, since its content is publicly available through get_frame_data
-	frame_archive::flush();
+    frontbuffer.cleanup(); // frontbuffer also holds frame references, since its content is publicly available through get_frame_data
+    frame_archive::flush();
 }
 
 
@@ -123,7 +134,7 @@ void syncronizing_archive::flush()
 void syncronizing_archive::cull_frames()
 {
     // Never keep more than four frames around in any given stream, regardless of timestamps
-    for(auto s : {RS_STREAM_DEPTH, RS_STREAM_COLOR, RS_STREAM_INFRARED, RS_STREAM_INFRARED2})
+    for(auto s : {RS_STREAM_DEPTH, RS_STREAM_COLOR, RS_STREAM_INFRARED, RS_STREAM_INFRARED2, RS_STREAM_FISHEYE})
     {
         while(frames[s].size() > 4)
         {
@@ -131,7 +142,7 @@ void syncronizing_archive::cull_frames()
         }
     }
 
-    // Cannot do any culling unless at least one frame is enqueued for each enabled stream
+    // Cannot do any culling unless at least one frame is enqueued for each enabled stream    
     if(frames[key_stream].empty()) return;
     for(auto s : other_streams) if(frames[s].empty()) return;
 
@@ -144,6 +155,9 @@ void syncronizing_archive::cull_frames()
         bool valid_to_skip = true;
         for(auto s : other_streams)
         {
+            if (key_stream == RS_STREAM_FISHEYE) // TODO: W/O until we will achieve frame timestamp
+                continue;
+
             if(abs(t0 - frames[s].back().timestamp) < abs(t1 - frames[s].back().timestamp))
             {
                 valid_to_skip = false;
@@ -158,6 +172,9 @@ void syncronizing_archive::cull_frames()
     // We can discard frames for other streams if we have at least two and the latter is closer to the next key stream frame than the former
     for(auto s : other_streams)
     {
+        if (key_stream == RS_STREAM_FISHEYE) // TODO: W/O until we will achieve frame timestamp
+            continue;
+
         while(true)
         {
             if(frames[s].size() < 2) break;
@@ -179,7 +196,7 @@ void syncronizing_archive::dequeue_frame(rs_stream stream)
 // Move a single frame from the head of the queue directly to the freelist
 void syncronizing_archive::discard_frame(rs_stream stream)
 {
-	std::lock_guard<std::recursive_mutex> guard(mutex);
+    std::lock_guard<std::recursive_mutex> guard(mutex);
     freelist.push_back(std::move(frames[stream].front()));
     frames[stream].erase(begin(frames[stream]));    
 }

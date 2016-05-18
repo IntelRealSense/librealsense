@@ -6,12 +6,6 @@
 #include "r200.h"
 #include "f200.h"
 
-#define PID_INTEL_CAMERA 32902
-#define R200_PRODUCT_ID  2688
-#define LR200_PRODUCT_ID 2751
-#define ZR300_PRODUCT_ID 2763
-#define F200_PRODUCT_ID  2662
-#define SR300_PRODUCT_ID 2725
 
 rs_context::rs_context() : rs_context(0)
 {
@@ -22,8 +16,8 @@ rs_context::rs_context() : rs_context(0)
         LOG_INFO("UVC device detected with VID = 0x" << std::hex << get_vendor_id(*device) << " PID = 0x" << get_product_id(*device));
 
         if (get_vendor_id(*device) != PID_INTEL_CAMERA)
-			continue;
-				
+            continue;
+                
         switch(get_product_id(*device))
         {
             case R200_PRODUCT_ID: devices.push_back(rsimpl::make_r200_device(device)); break;

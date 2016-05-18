@@ -30,7 +30,7 @@ namespace rsimpl
         void discard_frame(rs_stream stream);
         void cull_frames();
     public:
-		syncronizing_archive(const std::vector<subdevice_mode_selection> & selection, rs_stream key_stream);
+        syncronizing_archive(const std::vector<subdevice_mode_selection> & selection, rs_stream key_stream);
 
         // Application thread API
         void wait_for_frames();
@@ -41,13 +41,14 @@ namespace rsimpl
 
         const byte * get_frame_data(rs_stream stream) const;
         int get_frame_timestamp(rs_stream stream) const;
+        int get_frame_counter(rs_stream stream) const;
 
-	    frameset * clone_frontbuffer();
+        frameset * clone_frontbuffer();
 
-	    // Frame callback thread API
-		void commit_frame(rs_stream stream);
+        // Frame callback thread API
+        void commit_frame(rs_stream stream);
 
-		void flush() override;
+        void flush() override;
     };
 }
 

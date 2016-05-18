@@ -18,7 +18,7 @@
 #include <mutex>                            // For mutex, unique_lock
 #include <condition_variable>               // For condition_variable
 
-#define RS_STREAM_NATIVE_COUNT 4
+#define RS_STREAM_NATIVE_COUNT 5
 
 #define RS_USER_QUEUE_SIZE 64
 

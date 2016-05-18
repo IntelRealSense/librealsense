@@ -56,6 +56,23 @@ namespace rsimpl
     void unpack_y16_from_y8    (byte * const d[], const byte * s, int n) { unpack_pixels(d, n, reinterpret_cast<const uint8_t  *>(s), [](uint8_t  pixel) -> uint16_t { return pixel | pixel << 8; }); }
     void unpack_y16_from_y16_10(byte * const d[], const byte * s, int n) { unpack_pixels(d, n, reinterpret_cast<const uint16_t *>(s), [](uint16_t pixel) -> uint16_t { return pixel << 6; }); }
     void unpack_y8_from_y16_10 (byte * const d[], const byte * s, int n) { unpack_pixels(d, n, reinterpret_cast<const uint16_t *>(s), [](uint16_t pixel) -> uint8_t  { return pixel >> 2; }); }
+    void unpack_rw10_from_rw8 (byte *  const d[], const byte * s, int n)
+    {
+        auto src = reinterpret_cast<const __m128i *>(s);
+        auto dst = reinterpret_cast<__m128i *>(d[0]);
+
+        __m128i* xin = (__m128i*)src;
+        __m128i* xout = (__m128i*) dst;
+        for (int i = 0; i < n; i += 16, ++xout, xin += 2)
+        {
+            __m128i  in1_16 = _mm_load_si128((__m128i*)(xin));
+            __m128i  in2_16 = _mm_load_si128((__m128i*)(xin + 1));
+            __m128i  out1_16 = _mm_srli_epi16(in1_16, 2);
+            __m128i  out2_16 = _mm_srli_epi16(in2_16, 2);
+            __m128i  out8 = _mm_packus_epi16(out1_16, out2_16);
+            _mm_store_si128(xout, out8);
+        }
+    }
 
     /////////////////////////////
     // YUY2 unpacking routines //
@@ -275,8 +292,10 @@ namespace rsimpl
     // Native pixel formats //
     //////////////////////////
 
-    const native_pixel_format pf_rw10       = {'RW10', 1, 1, {{false, &copy_pixels<1>,                 {{RS_STREAM_COLOR,    RS_FORMAT_RAW10}}}}};
+
     const native_pixel_format pf_rw16       = {'RW16', 1, 2, {{false, &copy_pixels<2>,                 {{RS_STREAM_COLOR,    RS_FORMAT_RAW16}}}}};
+    const native_pixel_format pf_rw10       = {'RW10', 1, 1, {{false, &copy_pixels<1>,				   {{RS_STREAM_COLOR,     RS_FORMAT_RAW10 }}},
+                                                              {true,  &unpack_rw10_from_rw8,           {{RS_STREAM_FISHEYE,  RS_FORMAT_RAW10 }}}}};
     const native_pixel_format pf_yuy2       = {'YUY2', 1, 2, {{false, &copy_pixels<2>,                 {{RS_STREAM_COLOR,    RS_FORMAT_YUYV }}},
                                                               {true,  &unpack_yuy2<RS_FORMAT_RGB8 >,   {{RS_STREAM_COLOR,    RS_FORMAT_RGB8 }}},
                                                               {true,  &unpack_yuy2<RS_FORMAT_RGBA8>,   {{RS_STREAM_COLOR,    RS_FORMAT_RGBA8}}},

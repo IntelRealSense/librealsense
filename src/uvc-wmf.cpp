@@ -787,6 +787,14 @@ namespace rsimpl
             return std::make_shared<context>();
         }
 
+        bool is_device_connected(device & device, int vid, int pid)
+        {
+            if (vid == PID_INTEL_CAMERA && pid == 0x0ad0)
+                return false;
+
+            return (device.vid == vid && device.pid == pid) ? true : false;
+        }
+
         std::vector<std::shared_ptr<device>> query_devices(std::shared_ptr<context> context)
         {
             IMFAttributes * pAttributes = NULL;
