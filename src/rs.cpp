@@ -287,7 +287,7 @@ int rs_get_frame_timestamp(const rs_device * device, rs_stream stream, rs_error 
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, device, stream)
 
-int rs_get_frame_counter(const rs_device * device, rs_stream stream, rs_error ** error) try
+int rs_get_frame_number(const rs_device * device, rs_stream stream, rs_error ** error) try
 {
     VALIDATE_NOT_NULL(device);
     VALIDATE_ENUM(stream);
@@ -308,6 +308,14 @@ int rs_get_frame_timestamp_safe(const rs_frameset * device, rs_stream stream, rs
     VALIDATE_NOT_NULL(device);
     VALIDATE_ENUM(stream);
     return ((rsimpl::frame_archive::frameset*)device)->get_frame_timestamp(stream);
+}
+HANDLE_EXCEPTIONS_AND_RETURN(0, device, stream)
+
+int rs_get_frame_number_safe(const rs_frameset * device, rs_stream stream, rs_error ** error) try
+{
+    VALIDATE_NOT_NULL(device);
+    VALIDATE_ENUM(stream);
+    return ((rsimpl::frame_archive::frameset*)device)->get_frame_number(stream);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, device, stream)
 
@@ -333,6 +341,13 @@ const void * rs_get_detached_frame_data(const rs_frame_ref * frameset, rs_error 
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, frameset)
 
+int rs_get_detached_frame_number(const rs_frame_ref * frame, rs_error ** error) try
+{
+    VALIDATE_NOT_NULL(frame);
+    return ((rsimpl::frame_archive::frame_ref*)frame)->get_frame_number();
+}
+HANDLE_EXCEPTIONS_AND_RETURN(0, frame)
+
 void rs_release_frames(rs_device * device, rs_frameset * frames, rs_error ** error) try
 {
     VALIDATE_NOT_NULL(device);
@@ -341,7 +356,7 @@ void rs_release_frames(rs_device * device, rs_frameset * frames, rs_error ** err
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, device, frames)
 
-rs_frameset* rs_clone_frames(rs_device * device, rs_frameset* frameset, rs_error ** error) try
+rs_frameset* rs_clone_frames_ref(rs_device * device, rs_frameset* frameset, rs_error ** error) try
 {
     VALIDATE_NOT_NULL(device);
     VALIDATE_NOT_NULL(frameset);
@@ -349,7 +364,7 @@ rs_frameset* rs_clone_frames(rs_device * device, rs_frameset* frameset, rs_error
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, device, frameset)
 
-rs_frame_ref * rs_clone_frame(rs_device * device, rs_frame_ref* frame, rs_error ** error) try
+rs_frame_ref * rs_clone_frame_ref(rs_device * device, rs_frame_ref* frame, rs_error ** error) try
 {
     VALIDATE_NOT_NULL(device);
     VALIDATE_NOT_NULL(frame);

@@ -25,6 +25,7 @@ EXPORTS
 	rs_get_stream_framerate
 	rs_get_stream_intrinsics
 	
+	rs_set_frame_callback
 	rs_start_device
 	rs_stop_device
 	rs_is_device_streaming
@@ -39,21 +40,23 @@ EXPORTS
 	rs_wait_for_frames
 	rs_poll_for_frames
 	rs_get_frame_timestamp
-	rs_get_frame_counter
+	rs_get_frame_number
 	rs_get_frame_data
 
 	rs_wait_for_frames_safe
 	rs_poll_for_frames_safe
 	rs_get_frame_timestamp_safe
 	rs_get_frame_data_safe
+    rs_get_frame_number_safe
 	rs_release_frames
-	rs_clone_frames
+	rs_clone_frames_ref
 
 	rs_get_detached_frame_timestamp
 	rs_get_detached_frame_data
+    rs_get_detached_frame_number
 	rs_release_frame
 	rs_detach_frame
-	rs_clone_frame
+	rs_clone_frame_ref
 	
 	rs_get_failed_function
 	rs_get_failed_args

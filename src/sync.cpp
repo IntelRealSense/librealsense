@@ -39,7 +39,7 @@ frame_archive::frameset* syncronizing_archive::clone_frontbuffer()
 
 int rsimpl::syncronizing_archive::get_frame_counter(rs_stream stream) const
 {
-    return frontbuffer.get_frame_counter(stream);
+    return frontbuffer.get_frame_number(stream);
 }
 
 // Block until the next coherent frameset is available

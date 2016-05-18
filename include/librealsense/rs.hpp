@@ -247,25 +247,23 @@ namespace rs
 			}
 		}
 
-		frame clone()
+		frame clone_ref()
 		{
 			rs_error * e = nullptr;
-			auto r = rs_clone_frame(device, frame_ref, &e);
+            auto r = rs_clone_frame_ref(device, frame_ref, &e);
 			error::handle(e);
 			return std::move(frame(device, r));
 		}
 
-		bool try_clone(frame& result)
+        bool try_clone_ref(frame& result)
 		{
 			rs_error * e = nullptr;
-			auto r = rs_clone_frame(device, frame_ref, &e);
+            auto r = rs_clone_frame_ref(device, frame_ref, &e);
 			if (!e) result = std::move(frame(device, r));
 			return e == nullptr;
 		}
 
-		/// retrieve the time at which the TODO on a stream was captured
-		/// \return            the timestamp of the frame, in milliseconds since the device was started
-		int get_frame_timestamp() const
+		int get_timestamp() const
 		{
 			rs_error * e = nullptr;
 			auto r = rs_get_detached_frame_timestamp(frame_ref, &e);
@@ -273,9 +271,15 @@ namespace rs
 			return r;
 		}
 
-		/// retrieve the contents of the TODO on a stream
-		/// \return            the pointer to the start of the frame data
-		const void * get_frame_data() const
+        int get_frame_number() const
+        {
+            rs_error * e = nullptr;
+            auto r = rs_get_detached_frame_number(frame_ref, &e);
+            error::handle(e);
+            return r;
+        }
+
+		const void * get_data() const
 		{
 			rs_error * e = nullptr;
 			auto r = rs_get_detached_frame_data(frame_ref, &e);
@@ -332,25 +336,22 @@ namespace rs
 			return e == nullptr;
 		}
 
-        frameset clone()
+        frameset clone_ref()
         {
             rs_error * e = nullptr;
-            auto r = rs_clone_frames(device, frames, &e);
+            auto r = rs_clone_frames_ref(device, frames, &e);
             error::handle(e);
             return std::move(frameset(device, r));
         }
 
-        bool try_clone(frameset& result)
+        bool try_clone_ref(frameset& result)
         {
             rs_error * e = nullptr;
-            auto r = rs_clone_frames(device, frames, &e);
+            auto r = rs_clone_frames_ref(device, frames, &e);
             if (!e) result = std::move(frameset(device, r));
             return e == nullptr;
         }
 
-        /// retrieve the time at which the TODO on a stream was captured
-        /// \param[in] stream  the stream whose latest frame we are interested in
-        /// \return            the timestamp of the frame, in milliseconds since the device was started
         int get_frame_timestamp(stream stream) const
         {
             rs_error * e = nullptr;
@@ -359,9 +360,14 @@ namespace rs
             return r;
         }
 
-        /// retrieve the contents of the TODO on a stream
-        /// \param[in] stream  the stream whose latest frame we are interested in
-        /// \return            the pointer to the start of the frame data
+        int get_frame_number(stream stream) const
+        {
+            rs_error * e = nullptr;
+            auto r = rs_get_frame_number_safe(frames, (rs_stream)stream, &e);
+            error::handle(e);
+            return r;
+        }
+
         const void * get_frame_data(stream stream) const
         {
             rs_error * e = nullptr;
@@ -750,7 +756,7 @@ namespace rs
 		int get_frame_counter(stream stream) const
 		{
 			rs_error * e = nullptr;
-			auto r = rs_get_frame_counter((const rs_device *)this, (rs_stream)stream, &e);
+			auto r = rs_get_frame_number((const rs_device *)this, (rs_stream)stream, &e);
 			error::handle(e);
 			return r;
 		}
