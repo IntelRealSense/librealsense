@@ -126,6 +126,11 @@ void rs_device::start()
             // If any frame callbacks were specified, dispatch them now
             for (size_t i = 0; i < dest.size(); ++i)
             {
+                if (!mode_selection.requires_processing())
+                {
+                    archive->attach_continuation(streams[i], std::move(release_and_enqueue));
+                }
+
                 if (callbacks[i])
                 {
                     auto frame_ref = archive->track_frame(streams[i]);
@@ -138,11 +143,6 @@ void rs_device::start()
                 {
                     // Commit the frame to the archive
                     archive->commit_frame(streams[i]);
-                }
-
-                if (!mode_selection.requires_processing())
-                {
-                    archive->attach_continuation(streams[i], std::move(release_and_enqueue));
                 }
             }
         });
