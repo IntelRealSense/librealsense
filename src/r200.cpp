@@ -376,7 +376,7 @@ namespace rsimpl
     void r200_camera::toggle_motion_module_power(bool bOn)
     {
         // Temporal patch to be replaced with is_supported.  evgeni
-        if (this->config.data_requests[0].enabled)
+        if (this->config.data_requests.enabled)
             r200::toggle_adapter_board_pwr(get_device(),bOn);
     }
 

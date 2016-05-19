@@ -159,26 +159,11 @@ namespace rsimpl
         #undef CASE
     }
 
-    const char * get_string(rs_transport value)
-    {
-        #define CASE(X) case RS_TRANSPORT_##X: return #X;
-        switch (value)
-        {
-        CASE(USB_BULK)
-        CASE(USB_INTERRUPT)
-        CASE(COUNT)
-        CASE(MAX_ENUM)
-        default: assert(!is_valid(value)); return nullptr;
-        }
-        #undef CASE
-    }
-
     const char * get_string(rs_channel value)
     {
         #define CASE(X) case RS_CHANNEL_##X: return #X;
         switch (value)
-        {
-        CASE(HW_EVENTS)
+        {        
 		CASE(MOTION_DATA)
         CASE(TIMESTAMP_DATA)
         CASE(COUNT)

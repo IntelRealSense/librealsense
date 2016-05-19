@@ -50,17 +50,9 @@ namespace rs
 
     enum class channel : int8_t
     {
-        hw_events = 0,
-        motion_data,
+        motion_data = 0,
         timestamps_data,
         max_channel_enum_type
-    };
-
-    enum class transport : int8_t
-    {
-        usb_bulk        = 0,
-        usb_interrupt   = 1,
-        max_channel_transport_type
     };
 
     enum class preset : int32_t
@@ -178,6 +170,23 @@ namespace rs
         float3      transform(const float3 & point) const                               { float3 p; rs_transform_point_to_point(&p.x, this, &point.x); return p; }
 
     };
+
+    enum source
+    {
+        video = 0,
+        events
+    };
+
+    struct timestamp_data : rs_timestamp_data
+    {
+        timestamp_data(rs_timestamp_data orig) : rs_timestamp_data(orig) {}
+    };
+
+    struct motion_data : rs_motion_data
+    {
+        motion_data(rs_motion_data orig) : rs_motion_data(orig) {}
+    };
+
     class context;
     class device;
     
@@ -231,39 +240,39 @@ namespace rs
         }
     };	
 
-	class motion_event_callback_base
+    class motion_callback_base
 	{
 	public:
-		virtual void on_event(rs_motion_data e) = 0;
-		virtual ~motion_event_callback_base() {};
+        virtual void on_event(motion_data e) = 0;
+        virtual ~motion_callback_base() {}
 	};
 
-	class motion_event_callback : public motion_event_callback_base
+    class motion_callback : public motion_callback_base
 	{
-        std::function<void(rs_motion_data)> on_event_function;
+        std::function<void(motion_data)> on_event_function;
 	public:
-		explicit motion_event_callback(std::function<void(rs_motion_data)> on_event) : on_event_function(on_event) {}
+        explicit motion_callback(std::function<void(motion_data)> on_event) : on_event_function(on_event) {}
 
-		void on_event(rs_motion_data e) override
+        void on_event(motion_data e) override
 		{
 			on_event_function(std::move(e));
 		}
 	};
 	
-	class timestamp_event_callback_base
+    class timestamp_callback_base
 	{
 	public:
-		virtual void on_event(rs_timestamp_data data) = 0;
-		virtual ~timestamp_event_callback_base() {};
+        virtual void on_event(timestamp_data data) = 0;
+        virtual ~timestamp_callback_base() {}
 	};
 
-	class timestamp_event_callback : public timestamp_event_callback_base
+    class timestamp_callback : public timestamp_callback_base
 	{
-		std::function<void(rs_timestamp_data)> on_event_function;
+        std::function<void(timestamp_data)> on_event_function;
 	public:
-		explicit timestamp_event_callback(std::function<void(rs_timestamp_data)> on_event) : on_event_function(on_event) {}
+        explicit timestamp_callback(std::function<void(timestamp_data)> on_event) : on_event_function(on_event) {}
 
-		void on_event(rs_timestamp_data data) override
+        void on_event(timestamp_data data) override
 		{
 			on_event_function(std::move(data));
 		}
@@ -465,35 +474,31 @@ namespace rs
         }
 
         /// check whether the specific device support data aqcuisition channels        
-        /// \param[in] data_channel the data to acquired: sensors data, hw statuses, etc'
-        int supports_events_proc(channel channel)
+        int supports_events()
         {
             rs_error * e = nullptr;
-            auto res = rs_supports_events_proc((const rs_device *)this, rs_channel(channel), &e);
+            auto res = rs_supports_events((const rs_device *)this, &e);
             error::handle(e);
             return res;
         }
 
-        /// enable a specific data channel with specific properties
-        /// \param[in] data_channel the data to acquired: sensors data, hw statuses, etc'
-        /// \param[in] framerate    the number of data frames that will be published per second, or 0 if any rate is acceptable
-        void enable_events_proc(channel channel)
+        /// notify backend to querry hw event on play
+        void enable_events()
         {
             rs_error * e = nullptr;
-            rs_enable_events_proc((rs_device *)this, rs_channel(channel), &e);
+            rs_enable_events((rs_device *)this, &e);
             error::handle(e);
         }
 
-        /// disable a specific data channel
-        /// \param[in] data_channel
-        void disable_events_proc(channel channel)
+        /// disable events polling
+        void disable_events()
         {
             rs_error * e = nullptr;
-            rs_disable_events_proc((rs_device *)this,rs_channel(channel), &e);
+            rs_disable_events((rs_device *)this, &e);
             error::handle(e);
         }
 
-        /// start data acquisition from specific channel
+        /// start data acquisition
         void start_events()
         {
             rs_error * e = nullptr;
@@ -501,7 +506,7 @@ namespace rs
             error::handle(e);
         }
 
-        /// stop data acquisition for all channels
+        /// stop data acquisition
         void stop_events()
         {
             rs_error * e = nullptr;
@@ -517,14 +522,14 @@ namespace rs
             error::handle(e);
         }
 
-		void set_motion_event_callback(channel channel, motion_event_callback_base& on_event)
+        void set_motion_callback(motion_callback_base& on_event)
         {
             rs_error * e = nullptr;
-			rs_set_motion_event_callback((rs_device *)this, (rs_channel)channel, [](rs_device * device, rs_motion_data mo_data, void * user) {
+            rs_set_motion_callback((rs_device *)this, [](rs_device * device, rs_motion_data mo_data, void * user) {
                 try
                 {
-					auto listener = (motion_event_callback_base *)user;
-					listener->on_event(mo_data);
+                    auto listener = (motion_callback_base *)user;
+                    listener->on_event((rs::motion_data)mo_data);
                 }
                 catch (...)
                 {
@@ -534,14 +539,14 @@ namespace rs
             error::handle(e);
         }
 
-		void set_timestamp_event_callback(channel channel, timestamp_event_callback_base& on_event)
+        void set_timestamp_callback(timestamp_callback_base& on_event)
 		{
 			rs_error * e = nullptr;
-			rs_set_timestamp_event_callback((rs_device *)this, (rs_channel)channel, [](rs_device * device, rs_timestamp_data ts_data, void * user) {
+            rs_set_timestamp_callback((rs_device *)this, [](rs_device * device, rs_timestamp_data ts_data, void * user) {
 				try
 				{
-					auto listener = (timestamp_event_callback_base *)user;
-					listener->on_event(ts_data);
+                    auto listener = (timestamp_callback_base *)user;
+                    listener->on_event((rs::timestamp_data)ts_data);
 				}
 				catch (...)
 				{
@@ -682,8 +687,7 @@ namespace rs
     inline std::ostream & operator << (std::ostream & o, format format) { return o << rs_format_to_string((rs_format)format); }
     inline std::ostream & operator << (std::ostream & o, preset preset) { return o << rs_preset_to_string((rs_preset)preset); }
     inline std::ostream & operator << (std::ostream & o, distortion distortion) { return o << rs_distortion_to_string((rs_distortion)distortion); }
-    inline std::ostream & operator << (std::ostream & o, option option) { return o << rs_option_to_string((rs_option)option); }
-    inline std::ostream & operator << (std::ostream & o, transport transport) { return o << rs_transport_to_string((rs_transport)transport); }
+    inline std::ostream & operator << (std::ostream & o, option option) { return o << rs_option_to_string((rs_option)option); }    
     inline std::ostream & operator << (std::ostream & o, channel data) { return o << rs_channel_to_string((rs_channel)data); }
 
     enum class log_severity : int32_t

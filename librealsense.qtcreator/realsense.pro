@@ -14,6 +14,6 @@ QMAKE_CXXFLAGS += -Wno-missing-field-initializers -Wno-switch -Wno-multichar
 QMAKE_CXXFLAGS += -DRS_USE_V4L2_BACKEND
 
 HEADERS += ../include/librealsense/* ../src/*.h \
-    ../src/hw_monitor_protocol.h
+    ../src/hw-monitor.h
 SOURCES += ../src/*.cpp ../src/verify.c \
-    ../src/hw_monitor_protocol.cpp
+    ../src/hw-monitor.cpp

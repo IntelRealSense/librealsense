@@ -67,70 +67,48 @@ void rs_device::disable_stream(rs_stream stream)
     for(auto & s : native_streams) s->archive.reset(); // Changing stream configuration invalidates the current stream info
 }
 
-bool rs_device::supports_events_proc(rs_channel channel) const
+int rs_device::supports_events() const
 {
     bool bRes = true;
     //TODO Evgeni
-    //throw std::runtime_error("function not implemented");
     return bRes;
 }
 
-void rs_device::enable_events_proc(rs_channel channel)
+void rs_device::enable_events()
 {
     if (data_acquisition_active) throw std::runtime_error("channel cannot be reconfigured after having called rs_start_device()");
-    
-    bool bsuccess = false;
 
-    // Use the first available channel
-    for (int i = 0; i < RS_CHANNEL_NATIVE_COUNT; i++)
-        if (!config.data_requests[i].enabled)
-        {
-            config.data_requests[i] = { true, channel };         
-            bsuccess = true;
-            break;
-        }
+    config.data_requests.enabled = true;
 
-    if (!bsuccess)
-        throw std::runtime_error("cannot add request for the specified data channel");
 }
 
-void rs_device::disable_events_proc(rs_channel channel)
+void rs_device::disable_events()
 {
     if (data_acquisition_active) throw std::runtime_error("channel cannot be reconfigured after having called rs_start_device()");
 
-    for (int i = 0; i < RS_STREAM_NATIVE_COUNT; i++)
-        if ((config.data_requests[i].enabled) && (config.data_requests[i].channel == channel))
-        {
-            config.data_requests[i].enabled = false;
-            break;
-        }       
+    config.data_requests.enabled = false;
 }
 
 void rs_device::start_events()
 {
     if (data_acquisition_active) throw std::runtime_error("cannot restart data acquisition without stopping first");
 
-	std::vector<motion_events_proc_callback> mo_callbacks;
-	std::vector<timestamp_events_proc_callback> ts_callbacks;
-    for (int i=0; i< RS_CHANNEL_COUNT; i++)
-    {
-        if (config.motion_callbacks[i]) mo_callbacks.push_back(config.motion_callbacks[i]);
-        if (config.timestamp_callbacks[i]) ts_callbacks.push_back(config.timestamp_callbacks[i]);
-    }
+    std::vector<motion_events_callback> mo_callbacks = config.motion_callbacks;
+    std::vector<timestamp_events_callback> ts_callbacks = config.timestamp_callbacks;
 
     motion_module_parser parser;
 
-    // Activate the required data channels, and provide it with user-specified data handler     
-    if (config.data_requests[0].enabled)
+    // Activate data polling handler
+    if (config.data_requests.enabled)
     {
-        // TODO -replace hard-coded value 3 which stands for fisheye subdevice
+        // TODO -replace hard-coded value 3 which stands for fisheye subdevice   
         set_subdevice_data_channel_handler(*device, 3,
-            [mo_callbacks, ts_callbacks, parser](const unsigned char * data, const int& size) mutable
+            [mo_callbacks, ts_callbacks, parser](const unsigned char * data, const int size) mutable
         {
             // Parse motion data
             auto events = parser(data, size);
 
-			// Hanndle events by user-provided handlers
+            // Handle events by user-provided handlers
             for (auto & entry : events)
             {		
 				// Handle Motion data packets
@@ -162,17 +140,17 @@ void rs_device::stop_events()
 {
     if (!data_acquisition_active) throw std::runtime_error("cannot stop data acquisition - is already stopped");
     stop_data_acquisition(*device);
-    data_acquisition_active = false;
+    data_acquisition_active = false; // todo
 }
 
-void rs_device::set_motion_event_callback(rs_channel channel, void(*on_event)(rs_device * device, rs_motion_data data, void * user), void * user)
+void rs_device::set_motion_callback(void(*on_event)(rs_device * device, rs_motion_data data, void * user), void * user)
 {
-	config.motion_callbacks[channel] = { this, on_event, user };
+    config.motion_callbacks.push_back({ this, on_event, user });
 }
 
-void rs_device::set_timestamp_event_callback(rs_channel channel, void(*on_event)(rs_device * device, rs_timestamp_data data, void * user), void * user)
+void rs_device::set_timestamp_callback(void(*on_event)(rs_device * device, rs_timestamp_data data, void * user), void * user)
 {
-	config.timestamp_callbacks[channel] = { this, on_event, user };
+    config.timestamp_callbacks.push_back({ this, on_event, user });
 }
 
 
@@ -274,15 +252,14 @@ void rs_device::get_option_range(rs_option option, double & min, double & max, d
     throw std::logic_error("range not specified");
 }
 
-std::vector<rs_motion_event> motion_module_parser::operator() (const unsigned char* data, const int& data_size)
+std::vector<motion_event> motion_module_parser::operator() (const unsigned char* data, const int& data_size)
 {
     const unsigned short motion_packet_size = 104; // bytes
     const unsigned short motion_packet_header_size = 8; // bytes
-    const unsigned short imu_data_offset = motion_packet_header_size; // bytes
     const unsigned short non_imu_data_offset = 56; // bytes
     unsigned short packets = data_size / motion_packet_size;
 
-    std::vector<rs_motion_event> v;
+    std::vector<motion_event> v;
 
     if (packets)
     {
@@ -290,7 +267,7 @@ std::vector<rs_motion_event> motion_module_parser::operator() (const unsigned ch
 
         for (uint8_t i = 0; i < packets; i++)
         {
-            rs_motion_event event_data;
+            motion_event event_data;
 
             cur_packet = (unsigned char*)data + (i*motion_packet_size);
 
@@ -310,7 +287,7 @@ std::vector<rs_motion_event> motion_module_parser::operator() (const unsigned ch
             // Parse non-IMU entries
             for (uint8_t j = 0; j < event_data.imu_entries_num; j++)
             {
-                event_data.non_imu_packets[j] = parse_timestamp(&cur_packet[non_imu_data_offset]);
+                parse_timestamp(&cur_packet[non_imu_data_offset],event_data.non_imu_packets[j]);
             }
 
             v.push_back(std::move(event_data));
@@ -321,23 +298,18 @@ std::vector<rs_motion_event> motion_module_parser::operator() (const unsigned ch
     
 }
 
-rs_timestamp_data motion_module_parser::parse_timestamp(const unsigned char* data)
+void motion_module_parser::parse_timestamp(const unsigned char * data,rs_timestamp_data &entry )
 {
-    rs_timestamp_data entry;
-
     // assuming msb ordering
     unsigned short  tmp     =   (data[1]<<8) | (data[0]);
 
     entry.source_id         =   rs_event_source(tmp&0x7);   // bits [0:2] - source_id
-    entry.frame_num         =   (tmp & 0x7fff)>>3;          // bits [3-14] - frame num
+    entry.frame_number         =   (tmp & 0x7fff)>>3;          // bits [3-14] - frame num
     memcpy(&entry.timestamp,&data[2],sizeof(unsigned int)); // bits [16:47] - timestamp
 
-    //std::cout << __FUNCTION__ << " TBD" << std::endl;
-    
-    return entry;
 }
 
-rs_motion_data motion_module_parser::parse_motion(const unsigned char* data)
+rs_motion_data motion_module_parser::parse_motion(const unsigned char * data)
 {
     // predefined motion devices ranges
 
@@ -350,20 +322,21 @@ rs_motion_data motion_module_parser::parse_motion(const unsigned char* data)
 
     rs_motion_data entry;
 
-    entry.timestamp = parse_timestamp(data);
+    //entry::rs_timestamp_data =
+    parse_timestamp(data, (rs_timestamp_data&)entry);
 
     entry.is_valid = data[1]& (0x80);          // bit[15]
 
     short tmp[3];
     memcpy(&tmp,&data[6],sizeof(short)*3);
 
-    unsigned data_shift = (RS_IMU_ACCEL==entry.timestamp.source_id) ? 4 : 0;
+    unsigned data_shift = (RS_IMU_ACCEL == entry.timestamp_data.source_id) ? 4 : 0;
 
     for (int i=0; i<3; i++)                     // convert axis data to physical units (m/sec^2)
     {
         entry.axes[i] = (tmp[i]>>data_shift);
-        if (RS_IMU_ACCEL==entry.timestamp.source_id) entry.axes[i] *= accelerator_transform_factor;
-        if (RS_IMU_GYRO==entry.timestamp.source_id) entry.axes[i] *= gyro_transform_factor;
+        if (RS_IMU_ACCEL == entry.timestamp_data.source_id) entry.axes[i] *= accelerator_transform_factor;
+        if (RS_IMU_GYRO == entry.timestamp_data.source_id) entry.axes[i] *= gyro_transform_factor;
 
         // TODO check and report invalid cnversion requests
     }
