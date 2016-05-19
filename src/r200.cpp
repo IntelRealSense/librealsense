@@ -8,6 +8,7 @@
 #include <cstring>
 #include <climits>
 #include <algorithm>
+#include <iostream>
 
 namespace rsimpl
 {
@@ -382,14 +383,72 @@ namespace rsimpl
         }
     }
 
-    void r200_camera::toggle_motion_module_power(bool bOn)
-    {
-        // Temporal patch to be replaced with is_supported.  evgeni
-        if (this->config.data_requests.enabled)
-            r200::toggle_adapter_board_pwr(get_device(),bOn);
+    void r200_camera::toggle_motion_module_power(bool on)
+    {        
+        bool action = false;
+
+        // Temporal patch to be replaced with is_supported.
+        if (on)
+        {
+            if ((config.info.stream_subdevices[RS_STREAM_FISHEYE]>0) && (!ds_pwr_on))
+            {
+                ds_pwr_on = true;
+                if (!mm_pwr_on)
+                    action = true;
+            }
+            else
+            {
+                if (config.data_requests.enabled && (!mm_pwr_on))
+                {
+                    mm_pwr_on = true;
+                    if (!ds_pwr_on)
+                        action = true;
+                }
+            }
+         }
+        else
+        {
+            if (ds_pwr_on)
+            {
+                ds_pwr_on = false;
+                if (!mm_pwr_on)
+                    action = true;
+            }
+            else
+            {
+                if (mm_pwr_on)
+                {
+                    mm_pwr_on = false;
+                    if (!ds_pwr_on)
+                        action = true;
+                }
+            }
+        }
+
+        if (action)
+        {
+            if (on)
+                std::this_thread::sleep_for(std::chrono::milliseconds(500));
+            r200::toggle_adapter_board_pwr(get_device(),on);
+        }
+
     }
 
-    // Power on Fisheye camera (mmpwr 1)
+    // Power on Fisheye camera (dspwr)
+    void r200_camera::start()
+    {
+        toggle_motion_module_power(true);
+        rs_device::start();
+    }
+
+    // Power off Fisheye camera
+    void r200_camera::stop()
+    {
+        rs_device::stop();
+        toggle_motion_module_power(false);
+    }
+
+    // Power on motion module (mmpwr)
     void r200_camera::start_events()
     {
         toggle_motion_module_power(true);
@@ -397,11 +456,11 @@ namespace rsimpl
         rs_device::start_events();
     }
 
+    // Power down Motion Module
     void r200_camera::stop_events()
     {
         rs_device::stop_events();
 
-        // Power down Motion Module
         toggle_motion_module_power(false);
     }
 

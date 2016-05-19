@@ -72,8 +72,8 @@ public:
     void                                        set_motion_callback(void(*on_event)(rs_device * device, rs_motion_data data, void * user), void * user);
     void                                        set_timestamp_callback(void(*on_event)(rs_device * device, rs_timestamp_data data, void * user), void * user);
 
-    void                                        start();
-    void                                        stop();
+    virtual void                                start();
+    virtual void                                stop();
     bool                                        is_capturing() const { return capturing; }
     
     void                                        wait_all_streams();

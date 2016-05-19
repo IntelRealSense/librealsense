@@ -191,11 +191,13 @@ namespace rs
     struct timestamp_data : rs_timestamp_data
     {
         timestamp_data(rs_timestamp_data orig) : rs_timestamp_data(orig) {}
+        timestamp_data() {}
     };
 
     struct motion_data : rs_motion_data
     {
         motion_data(rs_motion_data orig) : rs_motion_data(orig) {}
+        motion_data() {}
     };
 
     class context;

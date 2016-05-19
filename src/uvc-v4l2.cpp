@@ -458,7 +458,7 @@ namespace rsimpl
                     data_channel_thread = std::thread([this, data_channel_subs]()
                     {
                         // Polling
-                        while (!stop)
+                        while (!data_stop)
                         {
                             subdevice::poll_interrupts(this->usb_aux_handle, data_channel_subs);
                         }

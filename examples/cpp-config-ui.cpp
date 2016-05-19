@@ -6,6 +6,7 @@
 #include <iostream>
 #include <algorithm>
 #include <iomanip>
+#include <mutex>
 
 #pragma comment(lib, "opengl32.lib")
 
@@ -149,6 +150,26 @@ struct gui
 
 texture_buffer buffers[6];
 
+std::mutex mm_mutex;
+rs::motion_data m_gyro_data;
+rs::motion_data m_acc_data;
+
+rs::motion_callback motion_callback([](rs::motion_data entry)   // TODO rs_motion event wrapper
+{
+    std::lock_guard<std::mutex> lock(mm_mutex);
+    if (entry.timestamp_data.source_id == RS_IMU_ACCEL)
+        m_acc_data = entry;
+    if (entry.timestamp_data.source_id == RS_IMU_GYRO)
+        m_gyro_data = entry;
+
+});
+
+rs::timestamp_callback timestamp_callback([](rs::timestamp_data entry)   // TODO rs_motion event wrapper
+{
+    std::cout << "Timestamp event arrived, timestamp: " << entry.timestamp << std::endl;
+});
+
+
 
 int main(int argc, char * argv[]) try
 {
@@ -197,6 +218,12 @@ int main(int argc, char * argv[]) try
 
     if (has_motion_module)
     {
+        if (dev->supports_events())                                         // todo:move to supports interface
+           dev->enable_events();
+
+        dev->set_motion_callback(motion_callback);
+        dev->set_timestamp_callback(timestamp_callback);
+
         glfwSetWindowSize(win, 1100, 960);
     }
 
@@ -234,11 +261,23 @@ int main(int argc, char * argv[]) try
 
         if(dev->is_streaming())
         {
-            if(g.button({w-260, y, w-20, y+24}, "Stop Capture")) dev->stop();
+            if(g.button({w-260, y, w-20, y+24}, "Stop Capture"))
+            {
+                dev->stop();
+
+                if (has_motion_module)
+                    dev->stop(rs::source::events);
+            }
         }
         else
         {
-            if(g.button({w-260, y, w-20, y+24}, "Start Capture")) dev->start();
+            if(g.button({w-260, y, w-20, y+24}, "Start Capture"))
+            {
+                dev->start();
+
+                if (has_motion_module)
+                    dev->start(rs::source::events);
+            }
         }
         y += 34;
         if(!dev->is_streaming())
@@ -301,6 +340,8 @@ int main(int argc, char * argv[]) try
 
             if (has_motion_module)
             {
+                std::lock_guard<std::mutex> lock(mm_mutex);
+
                 int x = w/3 + 10;
                 int y = 2*h/3 + 5;
                 buffers[5].print(x, y, "MM (200 Hz)");
@@ -309,33 +350,33 @@ int main(int argc, char * argv[]) try
                 auto rect_y1_pos = y+28;
                 auto indicator_width = 42;
 
-                buffers[5].print(x, rect_y0_pos-10, "Gyro: ");
-                g.indicator({x + 100, rect_y0_pos , x + 300, rect_y1_pos}, -10, 10, 0);
+                buffers[5].print(x, rect_y0_pos-10, "Gyro X: ");
+                g.indicator({x + 100, rect_y0_pos , x + 300, rect_y1_pos}, -10, 10, m_gyro_data.axes[0]);
                 rect_y0_pos+=indicator_width;
                 rect_y1_pos+=indicator_width;
 
-                buffers[5].print(x, rect_y0_pos-10, "Acc1: ");
-                g.indicator({x + 100, rect_y0_pos , x + 300, rect_y1_pos}, -10, 10, 2);
+                buffers[5].print(x, rect_y0_pos-10, "Gyro Y: ");
+                g.indicator({x + 100, rect_y0_pos , x + 300, rect_y1_pos}, -10, 10, m_gyro_data.axes[1]);
                 rect_y0_pos+=indicator_width;
                 rect_y1_pos+=indicator_width;
 
-                buffers[5].print(x, rect_y0_pos-10, "Acc2: ");
-                g.indicator({x + 100, rect_y0_pos , x + 300, rect_y1_pos}, -10, 10, 4);
+                buffers[5].print(x, rect_y0_pos-10, "Gyro Z: ");
+                g.indicator({x + 100, rect_y0_pos , x + 300, rect_y1_pos}, -10, 10, m_gyro_data.axes[2]);
                 rect_y0_pos+=indicator_width;
                 rect_y1_pos+=indicator_width;
 
-                buffers[5].print(x, rect_y0_pos-10, "Acc3: ");
-                g.indicator({x + 100, rect_y0_pos , x + 300, rect_y1_pos}, -10, 10, 6);
+                buffers[5].print(x, rect_y0_pos-10, "Acc X: ");
+                g.indicator({x + 100, rect_y0_pos , x + 300, rect_y1_pos}, -10, 10, m_acc_data.axes[0]);
                 rect_y0_pos+=indicator_width;
                 rect_y1_pos+=indicator_width;
 
-                buffers[5].print(x, rect_y0_pos-10, "Acc4: ");
-                g.indicator({x + 100, rect_y0_pos , x + 300, rect_y1_pos}, -10, 10, 8);
+                buffers[5].print(x, rect_y0_pos-10, "Acc Y: ");
+                g.indicator({x + 100, rect_y0_pos , x + 300, rect_y1_pos}, -10, 10, m_acc_data.axes[1]);
                 rect_y0_pos+=indicator_width;
                 rect_y1_pos+=indicator_width;
 
-                buffers[5].print(x, rect_y0_pos-10, "Acc5: ");
-                g.indicator({x + 100, rect_y0_pos , x + 300, rect_y1_pos}, -10, 10, 10);
+                buffers[5].print(x, rect_y0_pos-10, "Acc Z: ");
+                g.indicator({x + 100, rect_y0_pos , x + 300, rect_y1_pos}, -10, 10, m_acc_data.axes[2]);
             }
         }
 

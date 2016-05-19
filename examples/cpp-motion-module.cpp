@@ -119,7 +119,7 @@ int main() try
             }
             *out++ = 0;
 
-            //printf("\n%s", buffer.data());
+            printf("\n%s", buffer.data());
         }
         else
             std::this_thread::sleep_for(std::chrono::milliseconds(10));
