@@ -381,16 +381,16 @@ namespace rsimpl
     }
 
     // Power on Fisheye camera (mmpwr 1)
-    void r200_camera::start_events_proc(rs_channel channel)
+    void r200_camera::start_events()
     {
         toggle_motion_module_power(true);
 
-        rs_device::start_events_proc(channel);
+        rs_device::start_events();
     }
 
-    void r200_camera::stop_events_proc(rs_channel channel)
+    void r200_camera::stop_events()
     {
-        rs_device::stop_events_proc(channel);
+        rs_device::stop_events();
 
         // Power down Motion Module
         toggle_motion_module_power(false);

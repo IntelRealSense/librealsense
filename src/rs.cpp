@@ -238,32 +238,29 @@ void rs_disable_events_proc(rs_device * device, rs_channel channel, rs_error ** 
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, device, channel)
 
-void rs_start_events_proc(rs_device * device, rs_channel channel, rs_error ** error) try
+void rs_start_events(rs_device * device, rs_error ** error) try
 {
 	VALIDATE_NOT_NULL(device);
-	VALIDATE_ENUM(channel);
 
-	device->start_events_proc(channel);
+    device->start_events();
 }
-HANDLE_EXCEPTIONS_AND_RETURN(, device, channel)
+HANDLE_EXCEPTIONS_AND_RETURN(, device)
 
-void rs_stop_events_proc(rs_device * device, rs_channel channel, rs_error ** error) try
+void rs_stop_events(rs_device * device, rs_error ** error) try
 {
 	VALIDATE_NOT_NULL(device);
-	VALIDATE_ENUM(channel);
 
-	device->stop_events_proc(channel);
+    device->stop_events();
 }
-HANDLE_EXCEPTIONS_AND_RETURN(, device, channel)
+HANDLE_EXCEPTIONS_AND_RETURN(, device)
 
-int rs_is_events_proc_active(rs_device * device, rs_channel channel, rs_error ** error) try
+int rs_events_active(rs_device * device, rs_error ** error) try
 {
-	VALIDATE_NOT_NULL(device);
-	VALIDATE_ENUM(channel);
+	VALIDATE_NOT_NULL(device);	
 
-	return device->is_events_proc_active(channel);
+    return device->events_active();
 }
-HANDLE_EXCEPTIONS_AND_RETURN(0, device, channel)
+HANDLE_EXCEPTIONS_AND_RETURN(0, device)
 
 void rs_set_motion_event_callback(rs_device * device, rs_channel channel, void(*on_event)(rs_device * dev, rs_motion_data data, void * user), void * user, rs_error ** error) try
 {

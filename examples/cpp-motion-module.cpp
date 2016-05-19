@@ -31,8 +31,8 @@ struct resource_wrapper
                 active_dev->stop();
 
             // dedicated API to activate polling of the motion events
-            if (active_dev->is_events_proc_active(channel::motion_data))
-                active_dev->stop_events_proc(channel::motion_data);
+            if (active_dev->events_active())
+                active_dev->stop_events();
         }
     }
 
@@ -67,7 +67,16 @@ int main() try
 	// Define event handler for motion data packets
 	rs::motion_event_callback motion_callback([](rs_motion_data entry)   // TODO rs_motion event wrapper
     {        
-		std::cout << "Motion event arrived, timestamp: " << entry.timestamp.timestamp << std::endl;
+        if (entry.timestamp.source_id==RS_IMU_GYRO)
+        {
+        std::cout << "Motion:"
+            << "timestamp: "  << entry.timestamp.timestamp
+            << "\tsource_id: "  << ((entry.timestamp.source_id==RS_IMU_ACCEL) ? " accel " : " gyro ")
+            << "\tframe_num: "  << entry.timestamp.frame_num
+            << "\tvalid: "  << (int)entry.is_valid
+            << "\tx: "  << entry.axes[0] << "\t y: "  << entry.axes[1] << "\t z: "  << entry.axes[2]
+            << std::endl;
+        }
     });
 
 	// ... and the timestamp packets (DS4.1/FishEye Frame, GPIOS...)
@@ -75,16 +84,18 @@ int main() try
 	{
 		std::cout << "Timestamp event arrived, timestamp: " << entry.timestamp << std::endl;
 	});
-	
-    // Registers callbacks with LibRealSense
-	dev->set_motion_event_callback(channel::motion_data, motion_callback);
-	//dev->set_events_proc_callback(channel::timestamps_data, timestamp_callback);
 
-    // Modified device start to include IMU channel activation
+	
+    // Next registers motion and timestamp callbacks with LibRealSense
+	dev->set_motion_event_callback(channel::motion_data, motion_callback);
+    dev->set_timestamp_event_callback(channel::timestamps_data, timestamp_callback);
+
+    // Start video streaming
     dev->start();
 
-    // dedicated API to activate polling of the motion events
-    dev->start_events_proc(channel::motion_data);
+    // Start motion and timestamp events polling
+    dev->start_events();
+
 
     // Determine depth value corresponding to one meter
     const uint16_t one_meter = static_cast<uint16_t>(1.0f / dev->get_depth_scale());
@@ -137,7 +148,7 @@ int main() try
             }
             *out++ = 0;
 
-            printf("\n%s", buffer.data());
+            //printf("\n%s", buffer.data());
         }
         else
             std::this_thread::sleep_for(std::chrono::milliseconds(10));

@@ -194,9 +194,8 @@ namespace rsimpl
                 this->callback = callback;
             }
 
-            void set_data_channel_cfg(int fps, std::function<void(const unsigned char * data, const int& size)> callback)
-            {
-                // TODO - FPS will be handled via dedicated APIs
+            void set_data_channel_cfg(std::function<void(const unsigned char * data, const int& size)> callback)
+            {                
                 this->channel_data_callback = callback;
             }
 
@@ -349,14 +348,14 @@ namespace rsimpl
                 int res = libusb_interrupt_transfer(handle, 0x84, buffer, InterruptBufSize, &numBytes, InterruptBufSize);
                 if (0 == res)
                 {
-                    if (numBytes == InterruptBufSize)
-                    {
-                        printf("Received %d bytes, as expected\n");
-                    }
-                    else
-                    {
-                        printf("Interrupt channel - received %d bytes, expected %d.\n", numBytes,InterruptBufSize);
-                    }
+//                    if (numBytes == InterruptBufSize)
+//                    {
+//                        printf("Received %d bytes, as expected\n");
+//                    }
+//                    else
+//                    {
+//                        printf("Interrupt channel - received %d bytes, expected %d.\n", numBytes,InterruptBufSize);
+//                    }
 
                     // Propagate the data to device layer
                     for(auto & sub : subdevices)
@@ -550,7 +549,7 @@ namespace rsimpl
 
         void set_subdevice_data_channel_handler(device & device, int subdevice_index, std::function<void(const unsigned char * data, const int& size)> callback)
         {
-            device.subdevices[subdevice_index]->set_data_channel_cfg(fps, callback);
+            device.subdevices[subdevice_index]->set_data_channel_cfg(callback);
         }
 
         void start_streaming(device & device, int num_transfer_bufs)

@@ -494,29 +494,26 @@ namespace rs
         }
 
         /// start data acquisition from specific channel
-        /// \param[in] data_channel
-        void start_events_proc(channel channel)
+        void start_events()
         {
             rs_error * e = nullptr;
-            rs_start_events_proc((rs_device *)this, rs_channel(channel), &e);
+            rs_start_events((rs_device *)this, &e);
             error::handle(e);
         }
 
-        /// stop data acquisition from specific channel
-        /// \param[in] data_channel
-        void stop_events_proc(channel channel)
+        /// stop data acquisition for all channels
+        void stop_events()
         {
             rs_error * e = nullptr;
-            rs_stop_events_proc((rs_device *)this, rs_channel(channel), &e);
+            rs_stop_events((rs_device *)this, &e);
             error::handle(e);
         }
 
-        /// check if data acquisition is active
-        /// \param[in] data_channel
-        int is_events_proc_active(channel channel)
+        /// check if data acquisition is active        
+        int events_active()
         {
             rs_error * e = nullptr;
-            return rs_is_events_proc_active((rs_device *)this, rs_channel(channel), &e);
+            return rs_events_active((rs_device *)this,&e);
             error::handle(e);
         }
 

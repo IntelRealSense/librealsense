@@ -167,11 +167,8 @@ typedef enum rs_transport
 typedef enum rs_channel
 {
     RS_CHANNEL_HW_EVENTS = 0,
-    RS_CHANNEL_SENSOR_DATA,
     RS_CHANNEL_MOTION_DATA,
     RS_CHANNEL_TIMESTAMP_DATA,
-    RS_CHANNEL_ACCELEROMETER_DATA,
-    RS_CHANNEL_GYRO_DATA,
     RS_CHANNEL_COUNT,
     RS_CHANNEL_MAX_ENUM = 0x7FFFFFFF
 } rs_channel;
@@ -415,19 +412,19 @@ void rs_disable_events_proc(rs_device * device, rs_channel channel, rs_error ** 
 * start data acquisition from specific channel
 * \param[in] data_channel
 */
-void rs_start_events_proc(rs_device * device, rs_channel channel, rs_error ** error);
+void rs_start_events(rs_device * device, rs_error ** error);
 
 /**
 * stop data acquisition from specific channel
 * \param[in] data_channel
 */
-void rs_stop_events_proc(rs_device * device, rs_channel channel, rs_error ** error);
+void rs_stop_events(rs_device * device, rs_error ** error);
 
 /**
 * check if data acquisition is active
 * \param[in] data_channel
 */
-int rs_is_events_proc_active(rs_device * device, rs_channel channel, rs_error ** error);
+int rs_events_active(rs_device * device, rs_error ** error);
 
 /**
 * set up a event callback that will be called immediately when hw event is available, with no synchronization logic applied

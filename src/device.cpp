@@ -106,16 +106,17 @@ void rs_device::disable_events_proc(rs_channel channel)
         }       
 }
 
-void rs_device::start_events_proc(rs_channel channel)
+void rs_device::start_events()
 {
     if (data_acquisition_active) throw std::runtime_error("cannot restart data acquisition without stopping first");
 
 	std::vector<motion_events_proc_callback> mo_callbacks;
 	std::vector<timestamp_events_proc_callback> ts_callbacks;
-	if (config.motion_callbacks[channel])
-		mo_callbacks.push_back(config.motion_callbacks[channel]);
-	if (config.timestamp_callbacks[channel])
-		ts_callbacks.push_back(config.timestamp_callbacks[channel]);
+    for (int i=0; i< RS_CHANNEL_COUNT; i++)
+    {
+        if (config.motion_callbacks[i]) mo_callbacks.push_back(config.motion_callbacks[i]);
+        if (config.timestamp_callbacks[i]) ts_callbacks.push_back(config.timestamp_callbacks[i]);
+    }
 
     motion_module_parser parser;
 
@@ -157,7 +158,7 @@ void rs_device::start_events_proc(rs_channel channel)
     data_acquisition_active = true;
 }
 
-void rs_device::stop_events_proc(rs_channel channel)
+void rs_device::stop_events()
 {
     if (!data_acquisition_active) throw std::runtime_error("cannot stop data acquisition - is already stopped");
     stop_data_acquisition(*device);
@@ -323,27 +324,49 @@ std::vector<rs_motion_event> motion_module_parser::operator() (const unsigned ch
 rs_timestamp_data motion_module_parser::parse_timestamp(const unsigned char* data)
 {
     rs_timestamp_data entry;
-    // TBD
-    entry.frame_num = 1;
-    entry.source_id = rs_event_source::RS_IMU_GYRO;
-    entry.timestamp = 3;
-    std::cout << __FUNCTION__ << " TBD" << std::endl;
+
+    // assuming msb ordering
+    unsigned short  tmp     =   (data[1]<<8) | (data[0]);
+
+    entry.source_id         =   rs_event_source(tmp&0x7);   // bits [0:2] - source_id
+    entry.frame_num         =   (tmp & 0x7fff)>>3;          // bits [3-14] - frame num
+    memcpy(&entry.timestamp,&data[2],sizeof(unsigned int)); // bits [16:47] - timestamp
+
+    //std::cout << __FUNCTION__ << " TBD" << std::endl;
     
     return entry;
 }
 
 rs_motion_data motion_module_parser::parse_motion(const unsigned char* data)
 {
+    // predefined motion devices ranges
+
+    const static float gravity = 9.871f;
+    const static float gyro_range = 2000.f;
+    const static float gyro_transform_factor = (gyro_range * 3.141527f) / (360.f * 32768.f);
+
+    const static float accel_range = 0.00195f;   // [-4..4]g
+    const static float accelerator_transform_factor = accel_range * gravity;
+
     rs_motion_data entry;
 
     entry.timestamp = parse_timestamp(data);
 
-    entry.is_valid = true;
-    entry.axes[0] = 345;
-    entry.axes[1] = -456;
-    entry.axes[3] = 555;
-    // TBD
-    std::cout << __FUNCTION__ << " TBD" << std::endl;
-    
+    entry.is_valid = data[1]& (0x80);          // bit[15]
+
+    short tmp[3];
+    memcpy(&tmp,&data[6],sizeof(short)*3);
+
+    unsigned data_shift = (RS_IMU_ACCEL==entry.timestamp.source_id) ? 4 : 0;
+
+    for (int i=0; i<3; i++)                     // convert axis data to physical units (m/sec^2)
+    {
+        entry.axes[i] = (tmp[i]>>data_shift);
+        if (RS_IMU_ACCEL==entry.timestamp.source_id) entry.axes[i] *= accelerator_transform_factor;
+        if (RS_IMU_GYRO==entry.timestamp.source_id) entry.axes[i] *= gyro_transform_factor;
+
+        // TODO check and report invalid cnversion requests
+    }
+
     return entry;
 }
