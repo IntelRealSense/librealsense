@@ -5,6 +5,8 @@
 #include <thread>
 #include <iostream>
 #include <algorithm>
+#include <iomanip>
+
 #pragma comment(lib, "opengl32.lib")
 
 struct int2 { int x,y; };
@@ -94,6 +96,41 @@ struct gui
         return changed;
     }
 
+    void indicator(const rect & r, double min, double max, double value)
+    {
+        const int w = r.x1 - r.x0, h = r.y0 - r.y1;
+        double p = (w) * (value - min) / (max - min);
+        int Xdelta = 1;
+        int Ydelta = -1;
+        if (value == max)
+        {
+            int Xdelta =  0;
+            int Ydelta = -2;
+        }
+        else if (value == min)
+        {
+            int Xdelta = 2;
+            int Ydelta = 0;
+        }
+
+        const rect dragger = {int(r.x0+p+Xdelta), int(r.y0), int(r.x0+p+Ydelta), int(r.y1)};
+        fill_rect(r, {0.5,0.5,0.5});
+        fill_rect(dragger, {1,1,1});
+        glColor3f(1,1,1);
+
+        std::ostringstream oss;
+        oss << std::setprecision(2) << std::fixed << min;
+        draw_text(r.x0 - 22, r.y1 + abs(h/2) + 3, oss.str().c_str());
+
+        oss.str("");
+        oss << std::setprecision(2) << std::fixed << max;
+        draw_text(r.x1 + 6, r.y1 + abs(h/2) + 3, oss.str().c_str());
+
+        oss.str("");
+        oss << std::setprecision(2) << std::fixed << value;
+        draw_text(dragger.x0 - 1, dragger.y0 + 12, oss.str().c_str());
+    }
+
     void vscroll(const rect & r, int client_height, int & offset)
     {
         if(r.contains(cursor)) offset -= scroll_vec.y * 20;
@@ -109,7 +146,8 @@ struct gui
     }
 };
 
-texture_buffer buffers[4];
+texture_buffer buffers[6];
+
 
 int main(int argc, char * argv[]) try
 {
@@ -118,6 +156,7 @@ int main(int argc, char * argv[]) try
 
     glfwInit();
     auto win = glfwCreateWindow(1550, 960, "CPP Configuration Example", nullptr, nullptr);
+
     glfwMakeContextCurrent(win);
     gui g;
     glfwSetWindowUserPointer(win, &g);
@@ -141,10 +180,26 @@ int main(int argc, char * argv[]) try
     dev->enable_stream(rs::stream::depth, rs::preset::best_quality);
     dev->enable_stream(rs::stream::color, rs::preset::best_quality);
     dev->enable_stream(rs::stream::infrared, rs::preset::best_quality);
-    try { dev->enable_stream(rs::stream::infrared2, rs::preset::best_quality); } catch(...) {}
+
+    bool supports_fish_eye = dev->supports(rs::capabilities::fish_eye);
+    bool supports_motion_events = dev->supports(rs::capabilities::motion_events);
+    bool has_motion_module = supports_fish_eye || supports_motion_events;
+    if(dev->supports(rs::capabilities::infrared2))
+    {
+        dev->enable_stream(rs::stream::infrared2, rs::preset::best_quality);
+    }
+
+    if(supports_fish_eye)
+    {
+        dev->enable_stream(rs::stream::fisheye, rs::preset::best_quality);
+    }
+
+    if (has_motion_module)
+    {
+        glfwSetWindowSize(win, 1100, 960);
+    }
 
     //std::this_thread::sleep_for(std::chrono::seconds(1));
-
     struct option { rs::option opt; double min, max, step, value, def; };
     std::vector<option> options;
     for(int i=0; i<RS_OPTION_COUNT; ++i)
@@ -187,17 +242,26 @@ int main(int argc, char * argv[]) try
         y += 34;
         if(!dev->is_streaming())
         {
-            for(int i=0; i<4; ++i)
+            for (int i = 0; i <= RS_CAPABILITIES_FISH_EYE ; ++i)
             {
                 auto s = (rs::stream)i;
-                bool enable = dev->is_stream_enabled(s);
-                if(g.checkbox({w-260, y, w-240, y+20}, enable))
+                auto cap = (rs::capabilities)i;
+
+                if (dev->supports(cap))
                 {
+                    bool enable = dev->is_stream_enabled(s);
+
                     if(enable) dev->enable_stream(s, rs::preset::best_quality);
                     else dev->disable_stream(s);
+
+                    if(g.checkbox({w-260, y, w-240, y+20}, enable))
+                    {
+                        if(enable) dev->enable_stream(s, rs::preset::best_quality);
+                        else dev->disable_stream(s);
+                    }
+                    g.label({w-234, y+13}, {1,1,1}, "Enable %s", rs_stream_to_string((rs_stream)i));
+                    y += 30;
                 }
-                g.label({w-234, y+13}, {1,1,1}, "Enable %s", rs_stream_to_string((rs_stream)i));
-                y += 30;
             }
         }
 
@@ -217,16 +281,31 @@ int main(int argc, char * argv[]) try
         g.label({w-260,y+12}, {1,1,1}, "IVCAM options preset: %g", iv_preset);
         if(g.slider(101, {w-260,y+16,w-20,y+36}, 0, 10, 1, iv_preset)) rs_apply_ivcam_preset((rs_device *)dev, static_cast<rs_ivcam_preset>((int)iv_preset));
         y += 38;
-        
+
         panel_height = y + 10 + offset;
         
         if(dev->is_streaming())
         {
-            w-=270;
-            buffers[0].show(*dev, rs::stream::color, 0, 0, w/2, h/2);
-            buffers[1].show(*dev, rs::stream::depth, w/2, 0, w-w/2, h/2);
-            buffers[2].show(*dev, rs::stream::infrared, 0, h/2, w/2, h-h/2);
-            buffers[3].show(*dev, rs::stream::infrared2, w/2, h/2, w-w/2, h-h/2);
+            w += (has_motion_module ? 150 : -280);
+
+            int scale_factor = (has_motion_module ? 3 : 2);
+            int fWidth = w/scale_factor;
+            int fHeight = h/scale_factor;
+
+            buffers[0].show(*dev, rs::stream::color, 0, 0, fWidth, fHeight);
+            buffers[1].show(*dev, rs::stream::depth, fWidth, 0, fWidth, fHeight);
+            buffers[2].show(*dev, rs::stream::infrared, 0, fHeight, fWidth, fHeight);
+            buffers[3].show(*dev, rs::stream::infrared2, fWidth, fHeight, fWidth, fHeight);
+            buffers[4].show(*dev, rs::stream::fisheye, 0, 2*fHeight, fWidth, fHeight);
+
+            if (has_motion_module)
+            {
+                int x = w/3 + 5;
+                int y = 2*h/3 + 5;
+                buffers[5].print(x, y, "MM (200 Hz)");
+                buffers[5].print(x, y + 16, "Gyro: ");
+                g.indicator({x + 100, y + 26 , x + 300, y + 18}, 0, 100, 40);
+            }
         }
 
         glfwSwapBuffers(win);

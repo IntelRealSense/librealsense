@@ -38,6 +38,11 @@ namespace rsimpl
 
     std::shared_ptr<rs_device> make_device(std::shared_ptr<uvc::device> device, static_device_info& info, r200::r200_calibration& c)
     {
+        info.capabilities_vector.push_back(RS_CAPABILITIES_COLOR);
+        info.capabilities_vector.push_back(RS_CAPABILITIES_DEPTH);
+        info.capabilities_vector.push_back(RS_CAPABILITIES_INFRARED);
+        info.capabilities_vector.push_back(RS_CAPABILITIES_INFRARED2);
+
         info.stream_subdevices[RS_STREAM_DEPTH] = 1;
         info.stream_subdevices[RS_STREAM_COLOR] = 2;
         info.stream_subdevices[RS_STREAM_INFRARED] = 0;
@@ -289,8 +294,12 @@ namespace rsimpl
 
         if (uvc::is_device_connected(*device, PID_INTEL_CAMERA, FISHEYE_PRODUCT_ID))
         {
+            info.capabilities_vector.push_back(RS_CAPABILITIES_FISH_EYE);
+            info.capabilities_vector.push_back(RS_CAPABILITIES_MOTION_EVENTS);
+
             info.stream_subdevices[RS_STREAM_FISHEYE] = 3;
-            info.presets[RS_STREAM_FISHEYE][RS_PRESET_BEST_QUALITY] = {true, 640, 480, RS_FORMAT_RAW10,   60};
+            info.presets[RS_STREAM_FISHEYE][RS_PRESET_BEST_QUALITY] = {true, 640, 480, RS_FORMAT_RAW8,   60};
+            info.subdevice_modes.push_back({3, {640, 480}, pf_rw8, 60, c.intrinsicsThird[1], {c.modesThird[1][0]}, {0}});
             info.subdevice_modes.push_back({3, {640, 480}, pf_rw10, 60, c.intrinsicsThird[1], {c.modesThird[1][0]}, {0}});
         }        
 
@@ -598,6 +607,22 @@ namespace rsimpl
             else frame_number = get_dinghy(mode, frame).frameCount; // All other formats can use the frame number in the dinghy row
             return frame_number * 1000 / max_fps;
         }
+		int get_frame_counter(const subdevice_mode & mode, const void * frame) override
+		{
+			int frame_number = 0;
+			if (mode.pf.fourcc == pf_yuy2.fourcc)
+			{
+				// YUY2 images encode the frame number in the low order bits of the final 32 bytes of the image
+				auto data = reinterpret_cast<const uint8_t *>(frame) + ((mode.native_dims.x * mode.native_dims.y) - 32) * 2;
+				for (int i = 0; i < 32; ++i)
+				{
+					frame_number |= ((*data & 1) << (i & 1 ? 32 - i : 30 - i));
+					data += 2;
+				}
+			}
+			else frame_number = get_dinghy(mode, frame).frameCount; // All other formats can use the frame number in the dinghy row
+			return frame_number;
+		}
     };
 
     class serial_timestamp_generator : public frame_timestamp_reader
@@ -612,6 +637,10 @@ namespace rsimpl
             ++serial_frame_number;
             return serial_frame_number * 1000 / fps;
         }
+		int get_frame_counter(const subdevice_mode &, const void *) override
+		{
+			return serial_frame_number;
+		}
     };
 
     std::shared_ptr<frame_timestamp_reader> r200_camera::create_frame_timestamp_reader() const

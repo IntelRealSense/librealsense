@@ -15,6 +15,16 @@
 
 namespace rs
 {
+    enum class capabilities : int32_t
+    {
+        depth         = 0,
+        color         = 1,
+        infrared      = 2,
+        infrared2     = 3,
+        fish_eye      = 4,
+        motion_events = 5
+    };
+
     enum class stream : int32_t
     {
         depth                            = 0,  ///< Native stream of depth data produced by RealSense device
@@ -45,7 +55,8 @@ namespace rs
         y8          = 9,  
         y16         = 10, 
         raw10       = 11,  ///< Four 10-bit luminance values encoded into a 5-byte macropixel
-        raw16       = 12  ///< Four 10-bit luminance filled in 16 bit pixel (6 bit unused)
+        raw16       = 12,  ///< Four 10-bit luminance filled in 16 bit pixel (6 bit unused)
+        raw8        = 13
     };
 
     enum class channel : int8_t
@@ -209,7 +220,7 @@ namespace rs
         context()
         {
             rs_error * e = nullptr;
-            handle = rs_create_context(5, &e);
+            handle = rs_create_context(RS_API_VERSION, &e);
             error::handle(e);
         }
 
@@ -649,6 +660,17 @@ namespace rs
             return r != 0;
         }
 
+        /// determine device capabilities
+        /// \param[in] capability  the capability to check for support
+        /// \return                true if device has this capability
+        bool supports(capabilities capability) const
+        {
+            rs_error * e = nullptr;
+            auto r = rs_supports((rs_device *)this, (rs_capabilities)capability, &e);
+            error::handle(e);
+            return r;
+        }
+
         /// retrieve the time at which the latest frame on a stream was captured
         /// \param[in] stream  the stream whose latest frame we are interested in
         /// \return            the timestamp of the frame, in milliseconds since the device was started
@@ -659,6 +681,17 @@ namespace rs
             error::handle(e);
             return r;
         }
+
+		/// retrieve the number of frame
+		/// \param[in] stream  the stream whose latest frame we are interested in
+		/// \return            the number of the frame, since the device was started
+		int get_frame_counter(stream stream) const
+		{
+			rs_error * e = nullptr;
+			auto r = rs_get_frame_counter((const rs_device *)this, (rs_stream)stream, &e);
+			error::handle(e);
+			return r;
+		}
 
         /// retrieve the contents of the latest frame on a stream
         /// \param[in] stream  the stream whose latest frame we are interested in

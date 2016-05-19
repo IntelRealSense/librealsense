@@ -91,6 +91,12 @@ int native_stream::get_frame_number() const
     return archive->get_frame_timestamp(stream);
 }
 
+int native_stream::get_frame_counter() const
+{
+	if (!is_enabled()) throw std::runtime_error(to_string() << "stream not enabled: " << stream);
+	return archive->get_frame_counter(stream);
+}
+
 const byte * native_stream::get_frame_data() const
 {
     if(!is_enabled()) throw std::runtime_error(to_string() << "stream not enabled: " << stream);

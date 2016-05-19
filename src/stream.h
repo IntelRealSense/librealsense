@@ -26,6 +26,7 @@ namespace rsimpl
         virtual int                             get_framerate() const = 0;
 
         virtual int                             get_frame_number() const = 0;
+		virtual int                             get_frame_counter() const = 0;
         virtual const byte *                    get_frame_data() const = 0;    
     };
     
@@ -53,6 +54,7 @@ namespace rsimpl
         int                                     get_framerate() const override { return get_mode().get_framerate(stream); }
 
         int                                     get_frame_number() const override;
+		int                                     get_frame_counter() const override;
         const byte *                            get_frame_data() const override;
     };
 
@@ -74,6 +76,7 @@ namespace rsimpl
         int                                     get_framerate() const override { return source.get_framerate(); }
 
         int                                     get_frame_number() const override { return source.get_frame_number(); }
+		int                                     get_frame_counter() const override { return source.get_frame_counter(); }
         const byte *                            get_frame_data() const override;
     };
 
@@ -96,6 +99,7 @@ namespace rsimpl
         int                                     get_framerate() const override { return source.get_framerate(); }
 
         int                                     get_frame_number() const override { return source.get_frame_number(); }
+		int                                     get_frame_counter() const override { return source.get_frame_counter(); }
         const byte *                            get_frame_data() const override;
     };
 
@@ -117,6 +121,7 @@ namespace rsimpl
         int                                     get_framerate() const override { return from.get_framerate(); }
 
         int                                     get_frame_number() const override { return from.get_frame_number(); }
+		int                                     get_frame_counter() const override { return from.get_frame_counter(); }
         const byte *                            get_frame_data() const override;
     };
 }

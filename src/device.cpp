@@ -184,10 +184,11 @@ void rs_device::start()
 
             // Determine the timestamp for this frame
             int timestamp = timestamp_reader->get_frame_timestamp(mode_selection.mode, frame);
+			int frameCounter = timestamp_reader->get_frame_counter(mode_selection.mode, frame);
 
             // Obtain buffers for unpacking the frame
             std::vector<byte *> dest;
-            for(auto & output : mode_selection.get_outputs()) dest.push_back(archive->alloc_frame(output.first, timestamp));
+            for(auto & output : mode_selection.get_outputs()) dest.push_back(archive->alloc_frame(output.first, timestamp, frameCounter));
 
             // Unpack the frame and commit it to the archive
             mode_selection.unpack(dest.data(), reinterpret_cast<const byte *>(frame));
@@ -222,6 +223,17 @@ bool rs_device::poll_all_streams()
     if(!capturing) return false;
     if(!archive) return false;
     return archive->poll_for_frames();
+}
+
+bool rs_device::supports(rs_capabilities capability) const
+{
+    for (auto elem: config.info.capabilities_vector)
+    {
+        if (elem == capability)
+            return true;
+    }
+
+    return false;
 }
 
 void rs_device::get_option_range(rs_option option, double & min, double & max, double & step, double & def)

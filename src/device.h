@@ -15,6 +15,7 @@ namespace rsimpl
     {
         virtual bool validate_frame(const subdevice_mode & mode, const void * frame) const = 0;
         virtual int get_frame_timestamp(const subdevice_mode & mode, const void * frame) = 0;
+		virtual int get_frame_counter(const subdevice_mode &, const void * frame) = 0;
     };
 
 	struct motion_module_parser
@@ -78,6 +79,8 @@ public:
     void                                        wait_all_streams();
     bool                                        poll_all_streams();
     
+    virtual bool                                supports(rs_capabilities capability) const;
+
     virtual bool                                supports_option(rs_option option) const;
     virtual void                                get_option_range(rs_option option, double & min, double & max, double & step, double & def);
     virtual void                                set_options(const rs_option options[], int count, const double values[]) = 0;

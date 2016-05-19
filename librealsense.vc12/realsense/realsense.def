@@ -48,6 +48,7 @@ EXPORTS
 	rs_wait_for_frames
 	rs_poll_for_frames
 	rs_get_frame_timestamp
+	rs_get_frame_counter
 	rs_get_frame_data
 	
 	rs_get_failed_function
