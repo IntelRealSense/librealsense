@@ -607,22 +607,22 @@ namespace rsimpl
             else frame_number = get_dinghy(mode, frame).frameCount; // All other formats can use the frame number in the dinghy row
             return frame_number * 1000 / max_fps;
         }
-		int get_frame_counter(const subdevice_mode & mode, const void * frame) override
-		{
-			int frame_number = 0;
-			if (mode.pf.fourcc == pf_yuy2.fourcc)
-			{
-				// YUY2 images encode the frame number in the low order bits of the final 32 bytes of the image
-				auto data = reinterpret_cast<const uint8_t *>(frame) + ((mode.native_dims.x * mode.native_dims.y) - 32) * 2;
-				for (int i = 0; i < 32; ++i)
-				{
-					frame_number |= ((*data & 1) << (i & 1 ? 32 - i : 30 - i));
-					data += 2;
-				}
-			}
-			else frame_number = get_dinghy(mode, frame).frameCount; // All other formats can use the frame number in the dinghy row
-			return frame_number;
-		}
+        int get_frame_counter(const subdevice_mode & mode, const void * frame) override
+        {
+            int frame_number = 0;
+            if (mode.pf.fourcc == pf_yuy2.fourcc)
+            {
+                // YUY2 images encode the frame number in the low order bits of the final 32 bytes of the image
+                auto data = reinterpret_cast<const uint8_t *>(frame) + ((mode.native_dims.x * mode.native_dims.y) - 32) * 2;
+                for (int i = 0; i < 32; ++i)
+                {
+                    frame_number |= ((*data & 1) << (i & 1 ? 32 - i : 30 - i));
+                    data += 2;
+                }
+            }
+            else frame_number = get_dinghy(mode, frame).frameCount; // All other formats can use the frame number in the dinghy row
+            return frame_number;
+        }
     };
 
     class serial_timestamp_generator : public frame_timestamp_reader
@@ -637,10 +637,10 @@ namespace rsimpl
             ++serial_frame_number;
             return serial_frame_number * 1000 / fps;
         }
-		int get_frame_counter(const subdevice_mode &, const void *) override
-		{
-			return serial_frame_number;
-		}
+        int get_frame_counter(const subdevice_mode &, const void *) override
+        {
+            return serial_frame_number;
+        }
     };
 
     std::shared_ptr<frame_timestamp_reader> r200_camera::create_frame_timestamp_reader() const
