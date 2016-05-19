@@ -13,6 +13,16 @@
 
 namespace rs
 {
+    enum class capabilities : int32_t
+    {
+        depth         = 0,
+        color         = 1,
+        infrared      = 2,
+        infrared2     = 3,
+        fish_eye      = 4,
+        motion_events = 5
+    };
+
     enum class stream : int32_t
     {
         depth                            = 0,  ///< Native stream of depth data produced by RealSense device
@@ -43,7 +53,8 @@ namespace rs
         y8          = 9,  
         y16         = 10, 
         raw10       = 11,  ///< Four 10-bit luminance values encoded into a 5-byte macropixel
-        raw16       = 12  ///< Four 10-bit luminance filled in 16 bit pixel (6 bit unused)
+        raw16       = 12,  ///< Four 10-bit luminance filled in 16 bit pixel (6 bit unused)
+        raw8        = 13
     };
 
     enum class preset : int32_t
@@ -509,6 +520,17 @@ namespace rs
             auto r = rs_poll_for_frames((rs_device *)this, &e);
             error::handle(e);
             return r != 0;
+        }
+
+        /// determine device capabilities
+        /// \param[in] capability  the capability to check for support
+        /// \return                true if device has this capability
+        bool supports(capabilities capability) const
+        {
+            rs_error * e = nullptr;
+            auto r = rs_supports((rs_device *)this, (rs_capabilities)capability, &e);
+            error::handle(e);
+            return r;
         }
 
         /// retrieve the time at which the latest frame on a stream was captured

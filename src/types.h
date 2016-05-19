@@ -171,6 +171,7 @@ namespace rsimpl
         std::string firmware_version;                                       // Firmware version string
         std::string serial;                                                 // Serial number of the camera (from USB or from SPI memory)
         float nominal_depth_scale;                                          // Default scale
+        std::vector<rs_capabilities> capabilities_vector;
 
         static_device_info();
     };
