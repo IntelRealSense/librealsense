@@ -6,6 +6,7 @@
 #include "sync.h"
 
 #include <climits>
+#include "archive.h"
 
 ////////////////////////
 // API implementation //
