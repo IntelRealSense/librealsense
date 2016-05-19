@@ -120,7 +120,8 @@ struct gui
 
         std::ostringstream oss;
         oss << std::setprecision(2) << std::fixed << min;
-        draw_text(r.x0 - 22, r.y1 + abs(h/2) + 3, oss.str().c_str());
+        auto delta = (min<0)?40:22;
+        draw_text(r.x0 - delta, r.y1 + abs(h/2) + 3, oss.str().c_str());
 
         oss.str("");
         oss << std::setprecision(2) << std::fixed << max;
@@ -300,11 +301,41 @@ int main(int argc, char * argv[]) try
 
             if (has_motion_module)
             {
-                int x = w/3 + 5;
+                int x = w/3 + 10;
                 int y = 2*h/3 + 5;
                 buffers[5].print(x, y, "MM (200 Hz)");
-                buffers[5].print(x, y + 16, "Gyro: ");
-                g.indicator({x + 100, y + 26 , x + 300, y + 18}, 0, 100, 40);
+
+                auto rect_y0_pos = y+36;
+                auto rect_y1_pos = y+28;
+                auto indicator_width = 42;
+
+                buffers[5].print(x, rect_y0_pos-10, "Gyro: ");
+                g.indicator({x + 100, rect_y0_pos , x + 300, rect_y1_pos}, -10, 10, 0);
+                rect_y0_pos+=indicator_width;
+                rect_y1_pos+=indicator_width;
+
+                buffers[5].print(x, rect_y0_pos-10, "Acc1: ");
+                g.indicator({x + 100, rect_y0_pos , x + 300, rect_y1_pos}, -10, 10, 2);
+                rect_y0_pos+=indicator_width;
+                rect_y1_pos+=indicator_width;
+
+                buffers[5].print(x, rect_y0_pos-10, "Acc2: ");
+                g.indicator({x + 100, rect_y0_pos , x + 300, rect_y1_pos}, -10, 10, 4);
+                rect_y0_pos+=indicator_width;
+                rect_y1_pos+=indicator_width;
+
+                buffers[5].print(x, rect_y0_pos-10, "Acc3: ");
+                g.indicator({x + 100, rect_y0_pos , x + 300, rect_y1_pos}, -10, 10, 6);
+                rect_y0_pos+=indicator_width;
+                rect_y1_pos+=indicator_width;
+
+                buffers[5].print(x, rect_y0_pos-10, "Acc4: ");
+                g.indicator({x + 100, rect_y0_pos , x + 300, rect_y1_pos}, -10, 10, 8);
+                rect_y0_pos+=indicator_width;
+                rect_y1_pos+=indicator_width;
+
+                buffers[5].print(x, rect_y0_pos-10, "Acc5: ");
+                g.indicator({x + 100, rect_y0_pos , x + 300, rect_y1_pos}, -10, 10, 10);
             }
         }
 
