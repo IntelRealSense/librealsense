@@ -16,6 +16,13 @@ namespace rsimpl
         virtual bool validate_frame(const subdevice_mode & mode, const void * frame) const = 0;
         virtual int get_frame_timestamp(const subdevice_mode & mode, const void * frame) = 0;
     };
+
+	struct motion_module_parser
+	{		
+		std::vector<rs_motion_event> operator() (const unsigned char* data, const int& data_size);
+		rs_timestamp_data parse_timestamp(const unsigned char* data);
+		rs_motion_data parse_motion(const unsigned char* data);
+	};
 }
 
 struct rs_device

@@ -3,8 +3,10 @@
 
 #include "device.h"
 #include "sync.h"
-#include "iostream"
-#include "sstream"
+
+#include <algorithm>
+#include <sstream>
+#include <iostream>
 
 using namespace rsimpl;
 
@@ -68,72 +70,88 @@ void rs_device::disable_stream(rs_stream stream)
 bool rs_device::supports_events_proc(rs_channel channel) const
 {
     bool bRes = true;
-	//TODO Evgeni
+    //TODO Evgeni
     //throw std::runtime_error("function not implemented");
-	return bRes;
+    return bRes;
 }
 
 void rs_device::enable_events_proc(rs_channel channel, int fps)
 {
-	if (data_acquisition_active) throw std::runtime_error("channel cannot be reconfigured after having called rs_start_device()");
-	
-	bool bsuccess = false;
+    if (data_acquisition_active) throw std::runtime_error("channel cannot be reconfigured after having called rs_start_device()");
+    
+    bool bsuccess = false;
 
     // Use the first available channel
     for (int i = 0; i < RS_CHANNEL_NATIVE_COUNT; i++)
         if (!config.data_requests[i].enabled)
-		{
-			config.data_requests[i] = { true, rs_transport::RS_TRANSPORT_USB_INTERRUPT, channel, fps };			
-			bsuccess = true;
-			break;
-		}
+        {
+            config.data_requests[i] = { true, rs_transport::RS_TRANSPORT_USB_INTERRUPT, channel, fps };         
+            bsuccess = true;
+            break;
+        }
 
-	if (!bsuccess)
+    if (!bsuccess)
         throw std::runtime_error("cannot add request for the specified data channel");
 }
 
 void rs_device::disable_events_proc(rs_channel channel)
 {
-	if (data_acquisition_active) throw std::runtime_error("channel cannot be reconfigured after having called rs_start_device()");
+    if (data_acquisition_active) throw std::runtime_error("channel cannot be reconfigured after having called rs_start_device()");
 
-	for (int i = 0; i < RS_STREAM_NATIVE_COUNT; i++)
+    for (int i = 0; i < RS_STREAM_NATIVE_COUNT; i++)
         if ((config.data_requests[i].enabled) && (config.data_requests[i].transport== rs_transport::RS_TRANSPORT_USB_INTERRUPT) && (config.data_requests[i].channel == channel))
-		{
+        {
             config.data_requests[i].enabled = false;
-			break;
-		}		
+            break;
+        }       
 }
 
 void rs_device::start_events_proc(rs_channel channel)
 {
-	if (data_acquisition_active) throw std::runtime_error("cannot restart data acquisition without stopping first");
+    if (data_acquisition_active) throw std::runtime_error("cannot restart data acquisition without stopping first");
 
     std::vector<events_proc_callback> callbacks;
     if (config.event_proc_callbacks[channel])
         callbacks.push_back(config.event_proc_callbacks[channel]);
 
-	// Activate the required data channels, and provide it with user-specified data handler	
-	// TODO - provision for buffering the incoming data internally, e.g "lite-archive"
-	if (config.data_requests[0].enabled)
-	{
-		// Initialize the subdevice and set it to the selected mode
+	motion_module_parser parser;
 
-		// TODO -replace hard-coded value 3 which stands for fisheye subdevice that is always index 3
-		set_subdevice_data_channel_handler(*device, 3, config.data_requests[0].fps,
-            [callbacks](const unsigned char * data, const int& size) mutable
-		{
-			// TODO - plugin user-defined callback
-			std::stringstream ss;
-			for (int i = 0; i<size; i++) ss << std::hex << (int)data[i] << " ";
-		    std::cout << ss.str() << std::endl;
+    // Activate the required data channels, and provide it with user-specified data handler     
+    if (config.data_requests[0].enabled)
+    {
+        // TODO -replace hard-coded value 3 which stands for fisheye subdevice
+        set_subdevice_data_channel_handler(*device, 3, config.data_requests[0].fps,
+            [callbacks, parser](const unsigned char * data, const int& size) mutable
+        {
+            //// TODO - plugin user-defined callback
+            //std::stringstream ss;
+            //for (int i = 0; i<size; i++) ss << std::hex << (int)data[i] << " ";
+            //   std::cout << ss.str() << std::endl;
 
-            rs_motion_event motion_event;
-            memcpy(motion_event.buf,data,std::min(64,size));
-
-            for (auto & cb : callbacks)
-            {
-                cb(motion_event);
+            //if (size >= 56) // Minimal valid IMU transmit is 56 bytes long
+            {               
+                //rs_motion_event motion_event;
+                //// Parse motion data
+                //memcpy(&motion_event.timestamp, data, sizeof(uint32_t));
+                //motion_event.error_state        = *(unsigned short*)(&data[0]);
+                //motion_event.status             = *(unsigned short*)(&data[2]);
+                //motion_event.imu_entries_num    = *(unsigned short*)(&data[4]);
+                //motion_event.imu_entries_num    = *(unsigned short*)(&data[6]);
+                //memcpy(motion_event.buf,data,std::min(64,size));
+                //for (auto & cb : callbacks)
+                //{
+                //    cb(motion_event);
+                //}
             }
+
+			auto events = parser(data, size);
+			for (auto & entry : events)
+			{
+				for (auto & cb : callbacks)
+				{
+				    cb(entry);
+				}
+			}
         });
     }
 
@@ -143,14 +161,14 @@ void rs_device::start_events_proc(rs_channel channel)
 
 void rs_device::stop_events_proc(rs_channel channel)
 {
-	if (!data_acquisition_active) throw std::runtime_error("cannot stop data acquisition - is already stopped");
-	stop_data_acquisition(*device);
-	data_acquisition_active = false;
+    if (!data_acquisition_active) throw std::runtime_error("cannot stop data acquisition - is already stopped");
+    stop_data_acquisition(*device);
+    data_acquisition_active = false;
 }
 
 void rs_device::set_events_proc_callback(rs_channel channel, void(*on_event)(rs_device * device, rs_motion_event event, void * user), void * user)
 {
-	config.event_proc_callbacks[channel] = { this, on_event, user };
+    config.event_proc_callbacks[channel] = { this, on_event, user };
 }
 
 
@@ -250,4 +268,79 @@ void rs_device::get_option_range(rs_option option, double & min, double & max, d
     }
 
     throw std::logic_error("range not specified");
+}
+
+std::vector<rs_motion_event> motion_module_parser::operator() (const unsigned char* data, const int& data_size)
+{
+    const unsigned short motion_packet_size = 104; // bytes
+    const unsigned short motion_packet_header_size = 8; // bytes
+    const unsigned short imu_data_offset = motion_packet_header_size; // bytes
+    const unsigned short non_imu_data_offset = 56; // bytes
+    unsigned short packets = data_size / motion_packet_size;
+
+    std::vector<rs_motion_event> v;
+
+    if (packets)
+    {
+        unsigned char *cur_packet = nullptr;        
+
+        for (uint8_t i = 0; i < packets; i++)
+        {
+            rs_motion_event event_data;
+
+            cur_packet = (unsigned char*)data + (i*motion_packet_size);
+
+            // extract packet info
+            memcpy(&event_data.error_state, &cur_packet[0], sizeof(unsigned short));
+            memcpy(&event_data.status,      &cur_packet[2], sizeof(unsigned short));
+            memcpy(&event_data.imu_entries_num, &cur_packet[4], sizeof(unsigned short));
+            memcpy(&event_data.non_imu_entries_num, &cur_packet[6], sizeof(unsigned short));
+
+            // Parse IMU entries
+            for (uint8_t j = 0; j < event_data.imu_entries_num; j++)
+            {
+                event_data.imu_packets[j] = parse_motion(&cur_packet[motion_packet_header_size]);
+                
+            }
+
+            // Parse non-IMU entries
+            for (uint8_t j = 0; j < event_data.imu_entries_num; j++)
+            {
+                event_data.non_imu_packets[j] = parse_timestamp(&cur_packet[non_imu_data_offset]);
+            }
+
+            v.push_back(std::move(event_data));
+        }
+    }
+    
+    return v;
+    
+}
+
+rs_timestamp_data motion_module_parser::parse_timestamp(const unsigned char* data)
+{
+    rs_timestamp_data entry;
+    // TBD
+    entry.frame_num = 1;
+    entry.source_id = rs_event_source::RS_IMU_GYRO;
+    entry.timestamp = 3;
+    std::cout << __FUNCTION__ << " TBD" << std::endl;
+    
+    return entry;
+}
+
+rs_motion_data motion_module_parser::parse_motion(const unsigned char* data)
+{
+    rs_motion_data entry;
+
+    entry.timestamp = parse_timestamp(data);
+
+    entry.is_valid = true;
+    entry.axes[0] = 345;
+    entry.axes[1] = -456;
+    entry.axes[3] = 555;
+    // TBD
+    std::cout << __FUNCTION__ << " TBD" << std::endl;
+    
+    return entry;
 }

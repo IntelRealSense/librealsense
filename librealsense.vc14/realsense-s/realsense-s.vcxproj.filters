@@ -60,6 +60,9 @@
     <ClCompile Include="..\..\src\verify.c">
       <Filter>src</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\hw_monitor_protocol.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\src\context.h">

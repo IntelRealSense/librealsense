@@ -159,9 +159,9 @@ typedef enum rs_option
 typedef enum rs_transport
 {
     RS_TRANSPORT_USB_BULK         = 0,
-	RS_TRANSPORT_USB_INTERRUPT    = 1,
-	RS_TRANSPORT_COUNT,	
-	RS_TRANSPORT_MAX_ENUM = 0x7FFFFFFF
+    RS_TRANSPORT_USB_INTERRUPT    = 1,
+    RS_TRANSPORT_COUNT, 
+    RS_TRANSPORT_MAX_ENUM = 0x7FFFFFFF
 } rs_transport;
 
 typedef enum rs_channel
@@ -172,8 +172,8 @@ typedef enum rs_channel
     RS_CHANNEL_TIMESTAMP_DATA,
     RS_CHANNEL_ACCELEROMETER_DATA,
     RS_CHANNEL_GYRO_DATA,
-	RS_CHANNEL_COUNT,
-	RS_CHANNEL_MAX_ENUM = 0x7FFFFFFF
+    RS_CHANNEL_COUNT,
+    RS_CHANNEL_MAX_ENUM = 0x7FFFFFFF
 } rs_channel;
 
 typedef struct rs_intrinsics
@@ -194,65 +194,46 @@ typedef struct rs_extrinsics
     float translation[3]; /* 3 element translation vector, in meters */
 } rs_extrinsics;
 
+typedef enum rs_event_source// : unsigned char
+{
+    RS_IMU_ACCEL        = 1,
+    RS_IMU_GYRO         = 2,
+    RS_IMU_DEPTH_CAM    = 3,
+    RS_IMU_MOTION_CAM   = 4,
+    RS_G0_SYNC          = 5,
+    RS_G1_SYNC          = 6,
+    RS_G2_SYNC          = 7
+}rs_event_source;
+
+typedef struct rs_timestamp_data
+{
+    unsigned int    timestamp;
+    rs_event_source source_id;
+    unsigned short  frame_num;  /* 12 bit; per data source */
+} rs_timestamp_data;
+
+typedef struct rs_motion_data
+{
+    rs_timestamp_data   timestamp;
+    unsigned char       is_valid;   /* boolean */
+    short               axes[3];    /* Three [x,y,z] axes; 16 bit data for Gyro, 12 bit for Accelerometer; 2's complement*/
+} rs_motion_data;
 
 typedef struct rs_motion_event
 {
-    //rs_event_ref * event_ref;
-    unsigned char           buf[64];
-    //std::vector<uint8_t>    inbuf;
-    unsigned long           timestamp;
-
-    float                   gyro_axes[3];
-    float                   accel_axes[3];
-
-//    rs_motion_event(const rs_motion_event & other)
-//    {
-//        for (int i=0; i< 64; i++)
-//            buf[i] = other.buf[i];
-//        timestamp = other.timestamp;
-//    }
-
-//    rs_motion_event(const unsigned char * data,const unsigned int& size)
-//    {
-//        // Will copy only the size preallocated for motion buffer
-//        if (data)
-//        {
-//            unsigned int sz = (size < 64) ? size : 64;
-//            for (int i=0; i< sz; i++)
-//             buf[i] = data[i];
-
-//            // TBD parse gyro data internally
-//        }
-//    }
-
-    //rs_motion_event() /*: device(nullptr)*/ {}
-    //motion_event(rs_motion_event mo_event) : device(dev)/*, inbuf(dev->inbuf)*/ {}
-    //rs_motion_event(rs_motion_event&& other) /*: device(other.device),*/ inbuf(std::move(other.inbuf)) {}
-//    rs_motion_event& operator=(motion_event other)
-//    {
-//        swap(other);
-//        return *this;
-//    }
-//    void swap(rs_motion_event& other)
-//    {
-//        //std::swap(device, other.device);
-//        std::swap(inbuf, other.inbuf);
-//    }
-
-    //~rs_motion_event() { /*inbuf.clear();*/ }
-
-    //unsigned long   get_timestamps(void)  { return timestamp; }
-    //const char *	to_string(void) const { return "TBD";/*std::string(inbuf.begin(), inbuf.end()).data();*/ }
-    //const unsigned char * data(void) const { return buf; };
-    //unsigned int	get_size(void) const { return /*inbuf.size()*/64; };
+    unsigned short      error_state;
+    unsigned short      status;
+    unsigned short      imu_entries_num;
+    unsigned short      non_imu_entries_num;    
+    unsigned long       timestamp;
+    rs_motion_data      imu_packets[4];
+    rs_timestamp_data   non_imu_packets[8];
 } rs_motion_event;
 
 typedef struct rs_context rs_context;
 typedef struct rs_device rs_device;
 typedef struct rs_error rs_error;
 typedef struct rs_motion_event rs_motion_event;
-
-
 
 rs_context * rs_create_context(int api_version, rs_error ** error);
 void rs_delete_context(rs_context * context, rs_error ** error);
@@ -567,7 +548,7 @@ const char * rs_format_to_string     (rs_format format);
 const char * rs_preset_to_string     (rs_preset preset);
 const char * rs_distortion_to_string (rs_distortion distortion);
 const char * rs_option_to_string     (rs_option option);
-const char * rs_transport_to_string	 (rs_transport transport);
+const char * rs_transport_to_string  (rs_transport transport);
 const char * rs_channel_to_string    (rs_channel channel);
 
 typedef enum

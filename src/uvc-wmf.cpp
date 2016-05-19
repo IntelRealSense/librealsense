@@ -260,6 +260,7 @@ namespace rsimpl
 
             HANDLE usb_file_handle = INVALID_HANDLE_VALUE;
             WINUSB_INTERFACE_HANDLE usb_interface_handle = INVALID_HANDLE_VALUE;
+			WINUSB_INTERFACE_HANDLE usb_aux_interface_handle = INVALID_HANDLE_VALUE;
 
             device(std::shared_ptr<context> parent, int vid, int pid, std::string unique_id) : parent(move(parent)), vid(vid), pid(pid), unique_id(move(unique_id))
             {
@@ -531,8 +532,11 @@ namespace rsimpl
             throw std::logic_error("power_on_adapter_board(...) is not implemented for this backend ");
         }
 
-        void bulk_transfer(device & device, uint8_t endpoint, void * data, int length, int *actual_length, unsigned int timeout)
+        void bulk_transfer(device & device, unsigned char handle_id, uint8_t endpoint, void * data, int length, int *actual_length, unsigned int timeout)
         {       
+			if (0 != handle_id)
+				throw std::logic_error(to_string() << "Auxillary WinUSB interface is not implemented for this backend");
+
             if(USB_ENDPOINT_DIRECTION_OUT(endpoint))
             {
                 device.usb_synchronous_write(endpoint, data, length, timeout);

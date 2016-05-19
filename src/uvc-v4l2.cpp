@@ -895,19 +895,6 @@ namespace rsimpl
                         // Activate on demand
                         if (!ds_handle)
                         {
-//                            // Send DS Device Power-on cmd
-//                            if ((res = libusb_bulk_transfer( handle, adpt_brd_ctrl_out_ep, mmpwr_cmd, cmd_sz, &actual_length, timeout))<0)
-//                                throw std::runtime_error(to_string() << "libusb_bulk_transfer(ds_power_on) returned " << libusb_error_name(res));
-
-//                            if (cmd_sz != actual_length)
-//                                throw std::logic_error(to_string() << "ds_power_on invalid transmit size, expected: "  << cmd_sz << ", actual: " << actual_length);
-
-//                            // Get and verify correct firmware response
-//                            if ((res = libusb_bulk_transfer( handle, adpt_brd_ctrl_in_ep, res_buf, res_buf_sz, &actual_length, timeout)) < 0)
-//                                throw std::runtime_error(to_string() << "libusb_bulk_transfer(ds_power_on ack) returned " << libusb_error_name(res));
-
-
-
 
                             // Send DS Device Power-on cmd
                             if ((res = libusb_bulk_transfer( handle, adpt_brd_ctrl_out_ep, dspwr_cmd, cmd_sz, &actual_length, timeout))<0)

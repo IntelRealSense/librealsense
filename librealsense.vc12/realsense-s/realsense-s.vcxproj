@@ -23,6 +23,7 @@
     <ClCompile Include="..\..\src\device.cpp" />
     <ClCompile Include="..\..\src\f200-private.cpp" />
     <ClCompile Include="..\..\src\f200.cpp" />
+    <ClCompile Include="..\..\src\hw_monitor_protocol.cpp" />
     <ClCompile Include="..\..\src\image.cpp" />
     <ClCompile Include="..\..\src\log.cpp" />
     <ClCompile Include="..\..\src\r200-private.cpp" />
