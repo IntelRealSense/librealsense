@@ -148,13 +148,15 @@ struct gui
 
 texture_buffer buffers[6];
 
+
 int main(int argc, char * argv[]) try
 {
     rs::log_to_console(rs::log_severity::warn);
     //rs::log_to_file(rs::log_severity::debug, "librealsense.log");
 
     glfwInit();
-    auto win = glfwCreateWindow(1100, 960, "CPP Configuration Example", nullptr, nullptr);
+    auto win = glfwCreateWindow(1550, 960, "CPP Configuration Example", nullptr, nullptr);
+
     glfwMakeContextCurrent(win);
     gui g;
     glfwSetWindowUserPointer(win, &g);
@@ -178,8 +180,24 @@ int main(int argc, char * argv[]) try
     dev->enable_stream(rs::stream::depth, rs::preset::best_quality);
     dev->enable_stream(rs::stream::color, rs::preset::best_quality);
     dev->enable_stream(rs::stream::infrared, rs::preset::best_quality);
-    try { dev->enable_stream(rs::stream::infrared2, rs::preset::best_quality); } catch(...) {}
-    try { dev->enable_stream(rs::stream::fisheye, rs::preset::best_quality);} catch(...) {}
+
+    bool supports_fish_eye = dev->supports(rs::capabilities::fish_eye);
+    bool supports_motion_events = dev->supports(rs::capabilities::motion_events);
+    bool has_motion_module = supports_fish_eye || supports_motion_events;
+    if(dev->supports(rs::capabilities::infrared2))
+    {
+        dev->enable_stream(rs::stream::infrared2, rs::preset::best_quality);
+    }
+
+    if(supports_fish_eye)
+    {
+        dev->enable_stream(rs::stream::fisheye, rs::preset::best_quality);
+    }
+
+    if (has_motion_module)
+    {
+        glfwSetWindowSize(win, 1100, 960);
+    }
 
     //std::this_thread::sleep_for(std::chrono::seconds(1));
     struct option { rs::option opt; double min, max, step, value, def; };
@@ -268,14 +286,19 @@ int main(int argc, char * argv[]) try
         
         if(dev->is_streaming())
         {
-            w+=150;
-            buffers[0].show(*dev, rs::stream::color, 0, 0, w/3, h/3);
-            buffers[1].show(*dev, rs::stream::depth, w/3, 0, w/3, h/3);
-            buffers[2].show(*dev, rs::stream::infrared, 0, h/3, w/3, h/3);
-            buffers[3].show(*dev, rs::stream::infrared2, w/3, h/3, w/3, h/3);
-            buffers[4].show(*dev, rs::stream::fisheye, 0, 2*h/3, w/3, h/3);
+            w += (has_motion_module ? 150 : -280);
 
-            if (dev->supports(rs::capabilities::motion_events))
+            int scale_factor = (has_motion_module ? 3 : 2);
+            int fWidth = w/scale_factor;
+            int fHeight = h/scale_factor;
+
+            buffers[0].show(*dev, rs::stream::color, 0, 0, fWidth, fHeight);
+            buffers[1].show(*dev, rs::stream::depth, fWidth, 0, fWidth, fHeight);
+            buffers[2].show(*dev, rs::stream::infrared, 0, fHeight, fWidth, fHeight);
+            buffers[3].show(*dev, rs::stream::infrared2, fWidth, fHeight, fWidth, fHeight);
+            buffers[4].show(*dev, rs::stream::fisheye, 0, 2*fHeight, fWidth, fHeight);
+
+            if (has_motion_module)
             {
                 int x = w/3 + 5;
                 int y = 2*h/3 + 5;
