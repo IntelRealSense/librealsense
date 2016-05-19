@@ -572,6 +572,7 @@ namespace rs
     inline std::ostream & operator << (std::ostream & o, preset preset) { return o << rs_preset_to_string((rs_preset)preset); }
     inline std::ostream & operator << (std::ostream & o, distortion distortion) { return o << rs_distortion_to_string((rs_distortion)distortion); }
     inline std::ostream & operator << (std::ostream & o, option option) { return o << rs_option_to_string((rs_option)option); }
+    inline std::ostream & operator << (std::ostream & o, capabilities capability) { return o << rs_capabilities_to_string((rs_capabilities)capability); }
 
     enum class log_severity : int32_t
     {

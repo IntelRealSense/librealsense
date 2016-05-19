@@ -473,6 +473,7 @@ const char * rs_format_to_string     (rs_format format);
 const char * rs_preset_to_string     (rs_preset preset);
 const char * rs_distortion_to_string (rs_distortion distortion);
 const char * rs_option_to_string     (rs_option option);
+const char * rs_capabilities_to_string(rs_capabilities capability);
 
 typedef enum
 {

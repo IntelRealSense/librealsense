@@ -323,7 +323,12 @@ const char * rs_get_option_name(rs_option option, rs_error ** error) try
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, option)
 
-
+const char * rs_get_capabilities_name(rs_capabilities capability, rs_error ** error) try
+{
+    VALIDATE_ENUM(capability);
+    return rsimpl::get_string(capability);
+}
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, capability)
 
 void rs_get_device_option_range(rs_device * device, rs_option option, double * min, double * max, double * step, double * def, rs_error ** error) try
 {
@@ -406,7 +411,7 @@ const char * rs_format_to_string(rs_format format) { return rsimpl::get_string(f
 const char * rs_preset_to_string(rs_preset preset) { return rsimpl::get_string(preset); }
 const char * rs_distortion_to_string(rs_distortion distortion) { return rsimpl::get_string(distortion); }
 const char * rs_option_to_string(rs_option option) { return rsimpl::get_string(option); }
-
+const char * rs_capabilities_to_string(rs_capabilities capability) { return rsimpl::get_string(capability); }
 
 
 void rs_log_to_console(rs_log_severity min_severity, rs_error ** error) try

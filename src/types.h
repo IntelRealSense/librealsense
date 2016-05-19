@@ -77,6 +77,7 @@ namespace rsimpl
     RS_ENUM_HELPERS(rs_preset, PRESET)
     RS_ENUM_HELPERS(rs_distortion, DISTORTION)
     RS_ENUM_HELPERS(rs_option, OPTION)
+    RS_ENUM_HELPERS(rs_capabilities, CAPABILITIES)
     #undef RS_ENUM_HELPERS
 
     ////////////////////////////////////////////

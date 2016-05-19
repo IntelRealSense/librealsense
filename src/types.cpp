@@ -160,6 +160,22 @@ namespace rsimpl
         #undef CASE
     }
 
+    const char * get_string(rs_capabilities value)
+    {
+        #define CASE(X) case RS_CAPABILITIES_##X: return #X;
+        switch(value)
+        {
+        CASE(DEPTH)
+        CASE(COLOR)
+        CASE(INFRARED)
+        CASE(INFRARED2)
+        CASE(FISH_EYE)
+        CASE(MOTION_EVENTS)
+        default: assert(!is_valid(value)); return nullptr;
+        }
+        #undef CASE
+    }
+
     size_t subdevice_mode_selection::get_image_size(rs_stream stream) const
     {
         return rsimpl::get_image_size(get_width(), get_height(), get_format(stream));
