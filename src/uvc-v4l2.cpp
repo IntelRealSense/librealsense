@@ -548,7 +548,7 @@ namespace rsimpl
             device.subdevices[subdevice_index]->set_format(width, height, (const big_endian<int> &)fourcc, fps, callback);
         }
 
-        void set_subdevice_data_channel_handler(device & device, int subdevice_index, int fps, std::function<void(const unsigned char * data, const int& size)> callback)
+        void set_subdevice_data_channel_handler(device & device, int subdevice_index, std::function<void(const unsigned char * data, const int& size)> callback)
         {
             device.subdevices[subdevice_index]->set_data_channel_cfg(fps, callback);
         }

@@ -62,17 +62,23 @@ int main() try
 
     // Configure IMU data will be parsed and handled in client code
     if (dev->supports_events_proc(channel::motion_data))
-       dev->enable_events_proc(channel::motion_data, 30/*, usr_calback_func*/);
+       dev->enable_events_proc(channel::motion_data);
 
-	// Define event handler
-    rs::event_callback motion_data_callback([](rs_motion_event evt)   // TODO rs_motion event wrapper
+	// Define event handler for motion data packets
+	rs::motion_event_callback motion_callback([](rs_motion_data entry)   // TODO rs_motion event wrapper
     {        
-        std::cout << "Event arrived, timestamp: " << evt.timestamp << std::endl;
-                //<< ", size" << evt.get_size() << ", data: " << evt.to_string() << std::endl;
+		std::cout << "Motion event arrived, timestamp: " << entry.timestamp.timestamp << std::endl;
     });
 
-    // ...and pass it to the callback setter
-    dev->set_events_proc_callback(channel::motion_data, motion_data_callback);
+	// ... and the timestamp packets (DS4.1/FishEye Frame, GPIOS...)
+	rs::timestamp_event_callback timestamp_callback([](rs_timestamp_data entry)   // TODO rs_motion event wrapper
+	{
+		std::cout << "Timestamp event arrived, timestamp: " << entry.timestamp << std::endl;
+	});
+	
+    // Registers callbacks with LibRealSense
+	dev->set_motion_event_callback(channel::motion_data, motion_callback);
+	//dev->set_events_proc_callback(channel::timestamps_data, timestamp_callback);
 
     // Modified device start to include IMU channel activation
     dev->start();

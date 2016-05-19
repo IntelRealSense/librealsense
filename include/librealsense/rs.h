@@ -403,7 +403,7 @@ int rs_supports_events_proc(const rs_device * device, rs_channel channel, rs_err
  * \param[in] data_channel  the data format that will be handled by the channel
  * \param[in] framerate    the number of data frames that will be published per second, or 0 if any rate is acceptable
  */
-void rs_enable_events_proc(rs_device * device, rs_channel channel, int framerate/*, std::function<void(const void * data)> callback*/, rs_error ** error);
+void rs_enable_events_proc(rs_device * device, rs_channel channel, rs_error ** error);
 
 /**
  * disable a specific data channel
@@ -436,7 +436,16 @@ int rs_is_events_proc_active(rs_device * device, rs_channel channel, rs_error **
 * \param[in] user      a user data point to be passed to the callback
 * \param[out] error    if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 */
-void rs_set_events_proc_callback(rs_device * device, rs_channel channel, void(*on_event)(rs_device * dev, rs_motion_event, void * user), void * user, rs_error ** error);
+void rs_set_motion_event_callback(rs_device * device, rs_channel channel, void(*on_event)(rs_device * dev, rs_motion_data, void * user), void * user, rs_error ** error);
+
+/**
+* set up a event callback that will be called immediately when hw event is available, with no synchronization logic applied
+* \param[in] stream    the stream for whose images the callback should be registered
+* \param[in] on_event  the callback which will receive the event data and handle it
+* \param[in] user      a user data point to be passed to the callback
+* \param[out] error    if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+*/
+void rs_set_timestamp_event_callback(rs_device * device, rs_channel channel, void(*on_event)(rs_device * dev, rs_timestamp_data, void * user), void * user, rs_error ** error);
 
 /**
  * begin streaming on all enabled streams for this device

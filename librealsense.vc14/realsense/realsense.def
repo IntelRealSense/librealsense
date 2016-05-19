@@ -31,7 +31,8 @@ EXPORTS
 	rs_start_events_proc
 	rs_stop_events_proc
 	rs_is_events_proc_active
-	rs_set_events_proc_callback
+	rs_set_motion_event_callback
+	rs_set_timestamp_event_callback
 	
 	rs_start_device
 	rs_stop_device

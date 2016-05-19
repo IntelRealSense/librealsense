@@ -220,15 +220,14 @@ int rs_supports_events_proc(const rs_device * device, rs_channel channel, rs_err
 }
 HANDLE_EXCEPTIONS_AND_RETURN( false, device, channel)
 
-void rs_enable_events_proc(rs_device * device, rs_channel channel, int framerate, /*std::function<void(const void * data)> callback,*/ rs_error ** error) try
+void rs_enable_events_proc(rs_device * device, rs_channel channel, rs_error ** error) try
 {
     VALIDATE_NOT_NULL(device);    
-    VALIDATE_ENUM(channel);
-    VALIDATE_RANGE(framerate, 0, INT_MAX);			// TODO Specify the maximum allowed frame rate
+    VALIDATE_ENUM(channel);    
 
-    device->enable_events_proc(channel, framerate/*, callback*/);
+    device->enable_events_proc(channel);
 }
-HANDLE_EXCEPTIONS_AND_RETURN(, device, channel, framerate)
+HANDLE_EXCEPTIONS_AND_RETURN(, device, channel)
 
 void rs_disable_events_proc(rs_device * device, rs_channel channel, rs_error ** error) try
 {
@@ -266,12 +265,21 @@ int rs_is_events_proc_active(rs_device * device, rs_channel channel, rs_error **
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, device, channel)
 
-void rs_set_events_proc_callback(rs_device * device, rs_channel channel, void(*on_event)(rs_device * dev, rs_motion_event event, void * user), void * user, rs_error ** error) try
+void rs_set_motion_event_callback(rs_device * device, rs_channel channel, void(*on_event)(rs_device * dev, rs_motion_data data, void * user), void * user, rs_error ** error) try
 {
 	VALIDATE_NOT_NULL(device);
 	VALIDATE_ENUM(channel);
 	VALIDATE_NOT_NULL(on_event);
-	device->set_events_proc_callback(channel, on_event, user);
+	device->set_motion_event_callback(channel, on_event, user);
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, device, channel, on_event, user)
+
+void rs_set_timestamp_event_callback(rs_device * device, rs_channel channel, void(*on_event)(rs_device * dev, rs_timestamp_data data, void * user), void * user, rs_error ** error) try
+{
+	VALIDATE_NOT_NULL(device);
+	VALIDATE_ENUM(channel);
+	VALIDATE_NOT_NULL(on_event);
+	device->set_timestamp_event_callback(channel, on_event, user);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, device, channel, on_event, user)
 

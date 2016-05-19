@@ -123,7 +123,7 @@ namespace rsimpl
             sub.callback = callback;
         }
 
-		void set_subdevice_data_channel_handler(device & device, int subdevice_index, int fps, std::function<void(const unsigned char * data, const int& size)> callback)
+		void set_subdevice_data_channel_handler(device & device, int subdevice_index, std::function<void(const unsigned char * data, const int& size)> callback)
         {
 			throw std::logic_error("set_subdevice_data_channel_handler(...) is not implemented for this backend ");
         }

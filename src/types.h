@@ -163,10 +163,8 @@ namespace rsimpl
         
     struct data_channel_request
     {
-        bool enabled;
-        rs_transport    transport;
-        rs_channel      channel;
-        int fps;
+        bool        enabled;
+        rs_channel  channel;
     };
 
     struct static_device_info
@@ -211,26 +209,40 @@ namespace rsimpl
         void unpack(byte * const dest[], const byte * source) const;
     };
 
-	class events_proc_callback
-	{
-        void(*on_event)(rs_device * dev, rs_motion_event evt, void * user);
+	class motion_events_proc_callback
+    {
+        void(*on_event)(rs_device * dev, rs_motion_data data, void * user);
         void        * user;
         rs_device   * device;
+    public:
+		motion_events_proc_callback() : motion_events_proc_callback(nullptr, nullptr, nullptr) {}
+		motion_events_proc_callback(rs_device * dev, void(*on_event)(rs_device *, rs_motion_data, void *), void * user) : on_event(on_event), user(user), device(dev) {}
+
+        operator bool() { return on_event != nullptr; }
+        void operator () (rs_motion_data data) const { if (on_event) on_event(device, data, user); }
+    };
+
+	class timestamp_events_proc_callback
+	{
+		void(*on_event)(rs_device * dev, rs_timestamp_data data, void * user);
+		void        * user;
+		rs_device   * device;
 	public:
-		events_proc_callback() : events_proc_callback(nullptr, nullptr, nullptr) {}
-        events_proc_callback(rs_device * dev, void(*on_event)(rs_device *, rs_motion_event ,void *), void * user) : on_event(on_event), user(user), device(dev) {}
+		timestamp_events_proc_callback() : timestamp_events_proc_callback(nullptr, nullptr, nullptr) {}
+		timestamp_events_proc_callback(rs_device * dev, void(*on_event)(rs_device *, rs_timestamp_data, void *), void * user) : on_event(on_event), user(user), device(dev) {}
 
 		operator bool() { return on_event != nullptr; }
-        void operator () (rs_motion_event event) const { if (on_event) on_event(device, event, user); }
+		void operator () (rs_timestamp_data data) const { if (on_event) on_event(device, data, user); }
 	};
 
     struct device_config
     {
         const static_device_info info;
-        stream_request requests[RS_STREAM_NATIVE_COUNT];					// Modified by enable/disable_stream calls
-        data_channel_request data_requests[RS_CHANNEL_NATIVE_COUNT];		// Modified by enable/disable_events_proc calls
-        events_proc_callback event_proc_callbacks[RS_CHANNEL_COUNT];	// Modified by set_events_proc_callback calls
-        float depth_scale;													// Scale of depth values
+        stream_request requests[RS_STREAM_NATIVE_COUNT];						// Modified by enable/disable_stream calls
+        data_channel_request data_requests[RS_CHANNEL_NATIVE_COUNT];			// Modified by enable/disable_events_proc calls
+		motion_events_proc_callback motion_callbacks[RS_CHANNEL_COUNT];			// Modified by set_events_proc_callback calls
+		timestamp_events_proc_callback timestamp_callbacks[RS_CHANNEL_COUNT];	
+        float depth_scale;														// Scale of depth values
 
         device_config(const rsimpl::static_device_info & info) : info(info), depth_scale(info.nominal_depth_scale) 
         { 

@@ -75,7 +75,7 @@ bool rs_device::supports_events_proc(rs_channel channel) const
     return bRes;
 }
 
-void rs_device::enable_events_proc(rs_channel channel, int fps)
+void rs_device::enable_events_proc(rs_channel channel)
 {
     if (data_acquisition_active) throw std::runtime_error("channel cannot be reconfigured after having called rs_start_device()");
     
@@ -85,7 +85,7 @@ void rs_device::enable_events_proc(rs_channel channel, int fps)
     for (int i = 0; i < RS_CHANNEL_NATIVE_COUNT; i++)
         if (!config.data_requests[i].enabled)
         {
-            config.data_requests[i] = { true, rs_transport::RS_TRANSPORT_USB_INTERRUPT, channel, fps };         
+            config.data_requests[i] = { true, channel };         
             bsuccess = true;
             break;
         }
@@ -99,7 +99,7 @@ void rs_device::disable_events_proc(rs_channel channel)
     if (data_acquisition_active) throw std::runtime_error("channel cannot be reconfigured after having called rs_start_device()");
 
     for (int i = 0; i < RS_STREAM_NATIVE_COUNT; i++)
-        if ((config.data_requests[i].enabled) && (config.data_requests[i].transport== rs_transport::RS_TRANSPORT_USB_INTERRUPT) && (config.data_requests[i].channel == channel))
+        if ((config.data_requests[i].enabled) && (config.data_requests[i].channel == channel))
         {
             config.data_requests[i].enabled = false;
             break;
@@ -110,29 +110,46 @@ void rs_device::start_events_proc(rs_channel channel)
 {
     if (data_acquisition_active) throw std::runtime_error("cannot restart data acquisition without stopping first");
 
-    std::vector<events_proc_callback> callbacks;
-    if (config.event_proc_callbacks[channel])
-        callbacks.push_back(config.event_proc_callbacks[channel]);
+	std::vector<motion_events_proc_callback> mo_callbacks;
+	std::vector<timestamp_events_proc_callback> ts_callbacks;
+	if (config.motion_callbacks[channel])
+		mo_callbacks.push_back(config.motion_callbacks[channel]);
+	if (config.timestamp_callbacks[channel])
+		ts_callbacks.push_back(config.timestamp_callbacks[channel]);
 
-	motion_module_parser parser;
+    motion_module_parser parser;
 
     // Activate the required data channels, and provide it with user-specified data handler     
     if (config.data_requests[0].enabled)
     {
         // TODO -replace hard-coded value 3 which stands for fisheye subdevice
-        set_subdevice_data_channel_handler(*device, 3, config.data_requests[0].fps,
-            [callbacks, parser](const unsigned char * data, const int& size) mutable
+        set_subdevice_data_channel_handler(*device, 3,
+            [mo_callbacks, ts_callbacks, parser](const unsigned char * data, const int& size) mutable
         {
-
             // Parse motion data
-			auto events = parser(data, size);
-			for (auto & entry : events)
-			{
-				for (auto & cb : callbacks)
+            auto events = parser(data, size);
+
+			// Hanndle events by user-provided handlers
+            for (auto & entry : events)
+            {		
+				// Handle Motion data packets
+				for (int i = 0; i < entry.imu_entries_num; i++)
 				{
-				    cb(entry);
+					for (auto & cb : mo_callbacks)
+					{
+						cb(entry.imu_packets[i]);
+					}
 				}
-			}
+
+				// Handle Timestamp packets
+				for (int i = 0; i < entry.non_imu_entries_num; i++)
+				{
+					for (auto & cb : ts_callbacks)
+					{
+						cb(entry.non_imu_packets[i]);
+					}
+				}
+            }
         });
     }
 
@@ -147,9 +164,14 @@ void rs_device::stop_events_proc(rs_channel channel)
     data_acquisition_active = false;
 }
 
-void rs_device::set_events_proc_callback(rs_channel channel, void(*on_event)(rs_device * device, rs_motion_event event, void * user), void * user)
+void rs_device::set_motion_event_callback(rs_channel channel, void(*on_event)(rs_device * device, rs_motion_data data, void * user), void * user)
 {
-    config.event_proc_callbacks[channel] = { this, on_event, user };
+	config.motion_callbacks[channel] = { this, on_event, user };
+}
+
+void rs_device::set_timestamp_event_callback(rs_channel channel, void(*on_event)(rs_device * device, rs_timestamp_data data, void * user), void * user)
+{
+	config.timestamp_callbacks[channel] = { this, on_event, user };
 }
 
 
