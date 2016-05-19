@@ -85,7 +85,7 @@ namespace rsimpl
 
             int width, height, format, fps;
             std::function<void(const void *)> callback;                 // calback to handle uvc stream
-            std::function<void(const unsigned char * data, const int& size)> channel_data_callback;    // handle non-uvc data produced by device
+            std::function<void(const unsigned char * data, const int size)> channel_data_callback;    // handle non-uvc data produced by device
             bool is_capturing;
 
             subdevice(const std::string & name) : dev_name("/dev/" + name), vid(), pid(), fd(), width(), height(), format(), callback(nullptr), channel_data_callback(nullptr), is_capturing()
@@ -194,7 +194,7 @@ namespace rsimpl
                 this->callback = callback;
             }
 
-            void set_data_channel_cfg(std::function<void(const unsigned char * data, const int& size)> callback)
+            void set_data_channel_cfg(std::function<void(const unsigned char * data, const int size)> callback)
             {                
                 this->channel_data_callback = callback;
             }
@@ -340,30 +340,22 @@ namespace rsimpl
 
             static void poll_interrupts(libusb_device_handle *handle, const std::vector<subdevice *> & subdevices)
             {
-                static const unsigned short InterruptBufSize = 0x400;
-                uint8_t buffer[InterruptBufSize];                       /* 64 byte transfer buffer  - dedicated channel*/
-                int numBytes             = 0;                           /* Actual bytes transferred. */
+                static const unsigned short interrupt_buf_size = 0x400;
+                uint8_t buffer[interrupt_buf_size];                       /* 64 byte transfer buffer  - dedicated channel*/
+                int num_bytes             = 0;                           /* Actual bytes transferred. */
 
                 // TODO - replace hard-coded values : 0x82 and 1000
-                int res = libusb_interrupt_transfer(handle, 0x84, buffer, InterruptBufSize, &numBytes, InterruptBufSize);
+                int res = libusb_interrupt_transfer(handle, 0x84, buffer, interrupt_buf_size, &num_bytes, interrupt_buf_size);
                 if (0 == res)
                 {
-//                    if (numBytes == InterruptBufSize)
-//                    {
-//                        printf("Received %d bytes, as expected\n");
-//                    }
-//                    else
-//                    {
-//                        printf("Interrupt channel - received %d bytes, expected %d.\n", numBytes,InterruptBufSize);
-//                    }
-
                     // Propagate the data to device layer
                     for(auto & sub : subdevices)
                         if (sub->channel_data_callback)
-                            sub->channel_data_callback(buffer,numBytes);
+                            sub->channel_data_callback(buffer, num_bytes);
                 }
                 else
                 {
+                    // todo exception
                     perror("receiving interrupt_ep bytes failed");
                     fprintf(stderr, "Error receiving message.\n");
                 }
@@ -547,7 +539,7 @@ namespace rsimpl
             device.subdevices[subdevice_index]->set_format(width, height, (const big_endian<int> &)fourcc, fps, callback);
         }
 
-        void set_subdevice_data_channel_handler(device & device, int subdevice_index, std::function<void(const unsigned char * data, const int& size)> callback)
+        void set_subdevice_data_channel_handler(device & device, int subdevice_index, std::function<void(const unsigned char * data, const int size)> callback)
         {
             device.subdevices[subdevice_index]->set_data_channel_cfg(callback);
         }

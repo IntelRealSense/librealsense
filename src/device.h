@@ -18,9 +18,9 @@ namespace rsimpl
     };
 
 	struct motion_module_parser
-	{		
-		std::vector<rs_motion_event> operator() (const unsigned char* data, const int& data_size);
-		rs_timestamp_data parse_timestamp(const unsigned char* data);
+    {
+        std::vector<motion_event> operator() (const unsigned char* data, const int& data_size);
+        void parse_timestamp(const unsigned char* data,rs_timestamp_data &);
 		rs_motion_data parse_motion(const unsigned char* data);
 	};
 }
@@ -62,14 +62,14 @@ public:
     void                                        enable_stream_preset(rs_stream stream, rs_preset preset);    
     void                                        disable_stream(rs_stream stream);
 
-	bool										supports_events_proc(rs_channel channel) const;
-	void										enable_events_proc(rs_channel channel);
-	void										disable_events_proc(rs_channel channel);
+    int                                         supports_events() const;
+    void										enable_events();
+    void										disable_events();
     virtual void                                start_events();
     virtual void                                stop_events();
     int											events_active() const { return data_acquisition_active; }
-    void                                        set_motion_event_callback(rs_channel channel, void(*on_event)(rs_device * device, rs_motion_data data, void * user), void * user);
-	void                                        set_timestamp_event_callback(rs_channel channel, void(*on_event)(rs_device * device, rs_timestamp_data data, void * user), void * user);
+    void                                        set_motion_callback(void(*on_event)(rs_device * device, rs_motion_data data, void * user), void * user);
+    void                                        set_timestamp_callback(void(*on_event)(rs_device * device, rs_timestamp_data data, void * user), void * user);
 
     void                                        start();
     void                                        stop();

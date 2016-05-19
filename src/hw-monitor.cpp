@@ -2,7 +2,7 @@
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
 
-#include "hw_monitor_protocol.h"
+#include "hw-monitor.h"
 
 namespace rsimpl
 {

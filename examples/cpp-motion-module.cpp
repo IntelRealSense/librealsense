@@ -15,32 +15,6 @@
 #include <string>
 #include <thread>
 
-using namespace rs;
-
-struct resource_wrapper
-{
-    resource_wrapper(rs::device * dev): active_dev(dev) {}
-    resource_wrapper() = delete;
-    resource_wrapper(const resource_wrapper&) = delete;
-    ~resource_wrapper()
-    {
-        if (active_dev)
-        {
-            printf("Wrapper cleanup executed");
-            if (active_dev->is_streaming())
-                active_dev->stop();
-
-            // dedicated API to activate polling of the motion events
-            if (active_dev->events_active())
-                active_dev->stop_events();
-        }
-    }
-
-    rs::device * active_dev;
-
-};
-
-
 int main() try
 {
     // Create a context object. This object owns the handles to all connected realsense devices.
@@ -54,48 +28,45 @@ int main() try
     printf("    Serial number: %s\n", dev->get_serial());
     printf("    Firmware version: %s\n", dev->get_firmware_version());
 
-    // Make sure the resources will be cleaned up on exit
-    resource_wrapper guard(dev);
     // Configure depth to run at VGA resolution at best quaility
     rs::stream stream_type = rs::stream::depth;
-    dev->enable_stream(stream_type, preset::best_quality);  // auto-select based on the actual camera type
+    dev->enable_stream(stream_type, rs::preset::best_quality);  // auto-select based on the actual camera type
 
-    // Configure IMU data will be parsed and handled in client code
-    if (dev->supports_events_proc(channel::motion_data))
-       dev->enable_events_proc(channel::motion_data);
+    // todo
+    // Put request for events polling
+    if (dev->supports_events())                                         // todo:move to supports interface
+       dev->enable_events();
 
 	// Define event handler for motion data packets
-	rs::motion_event_callback motion_callback([](rs_motion_data entry)   // TODO rs_motion event wrapper
+    rs::motion_callback motion_callback([](rs::motion_data entry)   // TODO rs_motion event wrapper
     {        
-        if (entry.timestamp.source_id==RS_IMU_GYRO)
+        if (entry.timestamp_data.source_id == RS_IMU_ACCEL)
         {
-        std::cout << "Motion:"
-            << "timestamp: "  << entry.timestamp.timestamp
-            << "\tsource_id: "  << ((entry.timestamp.source_id==RS_IMU_ACCEL) ? " accel " : " gyro ")
-            << "\tframe_num: "  << entry.timestamp.frame_num
-            << "\tvalid: "  << (int)entry.is_valid
-            << "\tx: "  << entry.axes[0] << "\t y: "  << entry.axes[1] << "\t z: "  << entry.axes[2]
-            << std::endl;
+            std::cout << "Motion:"
+                << "timestamp: "  << entry.timestamp_data.timestamp
+                << "\tsource_id: "  << ((entry.timestamp_data.source_id == RS_IMU_ACCEL) ? " accel " : " gyro ")
+                << "\tframe_num: "  << entry.timestamp_data.frame_number
+                << "\tvalid: "  << (int)entry.is_valid
+                << "\tx: "  << entry.axes[0] << "\ty: "  << entry.axes[1] << "\tz: "  << entry.axes[2]
+                << std::endl;
         }
     });
 
 	// ... and the timestamp packets (DS4.1/FishEye Frame, GPIOS...)
-	rs::timestamp_event_callback timestamp_callback([](rs_timestamp_data entry)   // TODO rs_motion event wrapper
+    rs::timestamp_callback timestamp_callback([](rs::timestamp_data entry)   // TODO rs_motion event wrapper
 	{
 		std::cout << "Timestamp event arrived, timestamp: " << entry.timestamp << std::endl;
 	});
-
 	
     // Next registers motion and timestamp callbacks with LibRealSense
-	dev->set_motion_event_callback(channel::motion_data, motion_callback);
-    dev->set_timestamp_event_callback(channel::timestamps_data, timestamp_callback);
+    dev->set_motion_callback(motion_callback);
+    dev->set_timestamp_callback(timestamp_callback);
 
-    // Start video streaming
+    // Start video streaming    
     dev->start();
 
-    // Start motion and timestamp events polling
-    dev->start_events();
-
+    // Start motion and timestamp events polling    
+    dev->start(rs::source::events);
 
     // Determine depth value corresponding to one meter
     const uint16_t one_meter = static_cast<uint16_t>(1.0f / dev->get_depth_scale());

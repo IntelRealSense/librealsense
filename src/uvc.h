@@ -53,7 +53,7 @@ namespace rsimpl
         void get_control(const device & device, const extension_unit & xu, uint8_t ctrl, void * data, int len);
 
         // Control data channels
-        void set_subdevice_data_channel_handler(device & device, int subdevice_index, std::function<void(const unsigned char * data, const int& size)> callback);
+        void set_subdevice_data_channel_handler(device & device, int subdevice_index, std::function<void(const unsigned char * data, const int size)> callback);
 		void start_data_acquisition(device & device);
 		void stop_data_acquisition(device & device);
 
