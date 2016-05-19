@@ -93,10 +93,11 @@ void rs_device::start()
 
             // Determine the timestamp for this frame
             int timestamp = timestamp_reader->get_frame_timestamp(mode_selection.mode, frame);
+			int frameCounter = timestamp_reader->get_frame_counter(mode_selection.mode, frame);
 
             // Obtain buffers for unpacking the frame
             std::vector<byte *> dest;
-            for(auto & output : mode_selection.get_outputs()) dest.push_back(archive->alloc_frame(output.first, timestamp));
+            for(auto & output : mode_selection.get_outputs()) dest.push_back(archive->alloc_frame(output.first, timestamp, frameCounter));
 
             // Unpack the frame and commit it to the archive
             mode_selection.unpack(dest.data(), reinterpret_cast<const byte *>(frame));

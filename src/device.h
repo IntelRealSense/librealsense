@@ -15,6 +15,7 @@ namespace rsimpl
     {
         virtual bool validate_frame(const subdevice_mode & mode, const void * frame) const = 0;
         virtual int get_frame_timestamp(const subdevice_mode & mode, const void * frame) = 0;
+		virtual int get_frame_counter(const subdevice_mode &, const void * frame) = 0;
     };
 }
 

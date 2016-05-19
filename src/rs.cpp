@@ -270,6 +270,14 @@ int rs_get_frame_timestamp(const rs_device * device, rs_stream stream, rs_error 
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, device, stream)
 
+int rs_get_frame_counter(const rs_device * device, rs_stream stream, rs_error ** error) try
+{
+	VALIDATE_NOT_NULL(device);
+	VALIDATE_ENUM(stream);
+	return device->get_stream_interface(stream).get_frame_counter();
+}
+HANDLE_EXCEPTIONS_AND_RETURN(0, device)
+
 const void * rs_get_frame_data(const rs_device * device, rs_stream stream, rs_error ** error) try
 {
     VALIDATE_NOT_NULL(device);
