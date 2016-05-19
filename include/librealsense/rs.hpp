@@ -496,23 +496,7 @@ namespace rs
             rs_error * e = nullptr;
             rs_disable_events((rs_device *)this, &e);
             error::handle(e);
-        }
-
-        /// start data acquisition
-        void start_events()
-        {
-            rs_error * e = nullptr;
-            rs_start_events((rs_device *)this, &e);
-            error::handle(e);
-        }
-
-        /// stop data acquisition
-        void stop_events()
-        {
-            rs_error * e = nullptr;
-            rs_stop_events((rs_device *)this, &e);
-            error::handle(e);
-        }
+        }        
 
         /// check if data acquisition is active        
         int events_active()
@@ -559,19 +543,25 @@ namespace rs
 
         /// begin streaming on all enabled streams for this device
         ///
-        void start()
-        {
+        void start(rs::source source = rs::source::video)
+        {            
             rs_error * e = nullptr;
-            rs_start_device((rs_device *)this, &e);
+            if (events==source)
+                rs_start_events((rs_device *)this, &e);
+            else
+                rs_start_device((rs_device *)this, &e);
             error::handle(e);
         }
 
         /// end streaming on all streams for this device
         ///
-        void stop()
+        void stop(rs::source source = rs::source::video)
         {
             rs_error * e = nullptr;
-            rs_stop_device((rs_device *)this, &e);
+            if (events==source)
+                rs_stop_events((rs_device *)this, &e);
+            else
+                rs_stop_device((rs_device *)this, &e);
             error::handle(e);
         }
 
@@ -682,13 +672,13 @@ namespace rs
         }
     };
 
-
     inline std::ostream & operator << (std::ostream & o, stream stream) { return o << rs_stream_to_string((rs_stream)stream); }
     inline std::ostream & operator << (std::ostream & o, format format) { return o << rs_format_to_string((rs_format)format); }
     inline std::ostream & operator << (std::ostream & o, preset preset) { return o << rs_preset_to_string((rs_preset)preset); }
     inline std::ostream & operator << (std::ostream & o, distortion distortion) { return o << rs_distortion_to_string((rs_distortion)distortion); }
     inline std::ostream & operator << (std::ostream & o, option option) { return o << rs_option_to_string((rs_option)option); }    
     inline std::ostream & operator << (std::ostream & o, channel data) { return o << rs_channel_to_string((rs_channel)data); }
+    inline std::ostream & operator << (std::ostream & o, source src) { return o << rs_source_to_string((rs_source)src); }
 
     enum class log_severity : int32_t
     {

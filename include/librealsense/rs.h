@@ -56,6 +56,16 @@ typedef enum rs_preset
     RS_PRESET_MAX_ENUM = 0x7FFFFFFF
 } rs_preset;
 
+
+typedef enum rs_source
+{
+    RS_SOURCE_VIDEO                            = 0,
+    RS_SOURCE_EVENTS                           = 1,
+    RS_SOURCE_COUNT                            = 2,
+    RS_SOURCE_MAX_ENUM = 0x7FFFFFFF
+} rs_source;
+
+
 typedef enum rs_distortion
 {
     RS_DISTORTION_NONE                   = 0, /**< Rectilinear images, no distortion compensation required */
@@ -534,6 +544,7 @@ const char * rs_preset_to_string     (rs_preset preset);
 const char * rs_distortion_to_string (rs_distortion distortion);
 const char * rs_option_to_string     (rs_option option);
 const char * rs_channel_to_string    (rs_channel channel);
+const char * rs_source_to_string     (rs_source source);
 
 typedef enum
 {

@@ -277,7 +277,7 @@ HANDLE_EXCEPTIONS_AND_RETURN(, device, on_event, user)
 
 void rs_start_device(rs_device * device, rs_error ** error) try
 {
-    VALIDATE_NOT_NULL(device);
+    VALIDATE_NOT_NULL(device);    
     device->start();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, device)
@@ -461,6 +461,7 @@ const char * rs_preset_to_string(rs_preset preset) { return rsimpl::get_string(p
 const char * rs_distortion_to_string(rs_distortion distortion) { return rsimpl::get_string(distortion); }
 const char * rs_option_to_string(rs_option option) { return rsimpl::get_string(option); }
 const char * rs_channel_to_string(rs_channel data) { return rsimpl::get_string(data); }
+const char * rs_source_to_string(rs_source source)   { return rsimpl::get_string(source); }
 
 
 void rs_log_to_console(rs_log_severity min_severity, rs_error ** error) try

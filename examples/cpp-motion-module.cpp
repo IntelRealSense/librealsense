@@ -62,13 +62,11 @@ int main() try
     dev->set_motion_callback(motion_callback);
     dev->set_timestamp_callback(timestamp_callback);
 
-    // Start video streaming
-    //dev->start(rs::source::video);
+    // Start video streaming    
     dev->start();
 
-    // Start motion and timestamp events polling
-    dev->start_events();
-    //dev->start(rs::source::events);
+    // Start motion and timestamp events polling    
+    dev->start(rs::source::events);
 
     // Determine depth value corresponding to one meter
     const uint16_t one_meter = static_cast<uint16_t>(1.0f / dev->get_depth_scale());
