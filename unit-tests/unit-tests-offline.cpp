@@ -378,5 +378,6 @@ TEST_CASE( "rs_create_context() returns a valid context", "[offline] [validation
 TEST_CASE( "rs_context has singleton semantics", "[offline] [validation]" )
 {
     safe_context ctx;
-    REQUIRE(rs_create_context(RS_API_VERSION, require_error("rs_context has singleton semantics, only one may exist at a time")) == nullptr);
+    safe_context second_ctx;
+    REQUIRE(second_ctx == ctx);
 }

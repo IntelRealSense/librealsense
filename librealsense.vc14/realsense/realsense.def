@@ -6,6 +6,7 @@ EXPORTS
 	rs_get_device_count
 	rs_get_device
 	
+	rs_supports
 	rs_get_device_name
 	rs_get_device_serial
 	rs_get_device_firmware_version

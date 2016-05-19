@@ -53,18 +53,18 @@ int main() try
                     if ((rs::stream)i == rs::stream::depth)
                     {
                         glPixelTransferf(GL_RED_SCALE, 0xFFFF * dev->get_depth_scale() / 2.0f);
-                        glDrawPixels(640, 480, GL_RED, GL_UNSIGNED_SHORT, frame.get_frame_data());
+                        glDrawPixels(640, 480, GL_RED, GL_UNSIGNED_SHORT, frame.get_data());
                         glPixelTransferf(GL_RED_SCALE, 1.0f);
                     }
 
                     if ((rs::stream)i == rs::stream::color)
                     {
-                        glDrawPixels(640, 480, GL_RGB, GL_UNSIGNED_BYTE, frame.get_frame_data());
+                        glDrawPixels(640, 480, GL_RGB, GL_UNSIGNED_BYTE, frame.get_data());
                     }
 
                     if ((rs::stream)i == rs::stream::infrared)
                     {
-                        glDrawPixels(640, 480, GL_LUMINANCE, GL_UNSIGNED_BYTE, frame.get_frame_data());
+                        glDrawPixels(640, 480, GL_LUMINANCE, GL_UNSIGNED_BYTE, frame.get_data());
                     }
 
                     glfwSwapBuffers(win);

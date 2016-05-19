@@ -10,6 +10,17 @@ extern "C" {
 
 #define RS_API_VERSION 6
 
+typedef enum rs_capabilities
+{
+    RS_CAPABILITIES_DEPTH         = 0,
+    RS_CAPABILITIES_COLOR         = 1,
+    RS_CAPABILITIES_INFRARED      = 2,
+    RS_CAPABILITIES_INFRARED2     = 3,
+    RS_CAPABILITIES_FISH_EYE      = 4,
+    RS_CAPABILITIES_MOTION_EVENTS = 5,
+    RS_CAPABILITIES_COUNT         = 6,
+    RS_CAPABILITIES_MAX_ENUM = 0x7FFFFFFF
+} rs_capabilities;
 
 typedef enum rs_stream
 {
@@ -44,7 +55,8 @@ typedef enum rs_format
     RS_FORMAT_Y16         = 10, 
     RS_FORMAT_RAW10       = 11, /**< Four 10-bit luminance values encoded into a 5-byte macropixel */
     RS_FORMAT_RAW16       = 12,
-    RS_FORMAT_COUNT       = 13,
+    RS_FORMAT_RAW8        = 13,
+    RS_FORMAT_COUNT       = 14,
     RS_FORMAT_MAX_ENUM = 0x7FFFFFFF
 } rs_format;
 
@@ -429,6 +441,13 @@ void rs_wait_for_frames(rs_device * device, rs_error ** error);
  * \return            1 if new frames are available, 0 if no new frames have arrived
  */
 int rs_poll_for_frames(rs_device * device, rs_error ** error);
+
+/**
+ * determine device capabilities
+ * \param[in] capability  the capability to check for support
+ * \return                true if device has this capability
+ */
+int rs_supports(rs_device * device, rs_capabilities capability, rs_error ** error);
 
 /**
 * block until new frames are available and return a unique handle to the resulting frameset

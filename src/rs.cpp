@@ -46,14 +46,14 @@ namespace rsimpl
 rs_context * rs_create_context(int api_version, rs_error ** error) try
 {
     if (api_version != RS_API_VERSION) throw std::runtime_error("api version mismatch");
-    return new rs_context();
+    return rs_context::acquire_instance();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, api_version)
 
 void rs_delete_context(rs_context * context, rs_error ** error) try
 {
     VALIDATE_NOT_NULL(context);
-    delete context;
+    rs_context::release_instance();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, context)
 
@@ -270,6 +270,14 @@ rs_frameset* rs_wait_for_frames_safe(rs_device * device, rs_error ** error) try
     return device->wait_all_streams_safe();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, device)
+
+int rs_supports(rs_device * device, rs_capabilities capability, rs_error ** error) try
+{
+    VALIDATE_NOT_NULL(device);
+    return device->supports(capability);
+}
+HANDLE_EXCEPTIONS_AND_RETURN(0, device)
+
 
 int rs_poll_for_frames_safe(rs_device * device, rs_frameset** frameset, rs_error ** error) try
 {

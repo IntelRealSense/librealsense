@@ -77,6 +77,8 @@ public:
         }
     }
 
+    bool operator == (const safe_context& other) const { return context == other.context; }
+
     operator rs_context * () const { return context; }
 };
 
