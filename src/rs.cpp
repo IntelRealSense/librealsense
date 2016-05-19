@@ -394,6 +394,14 @@ const char * rs_get_channel_name(rs_channel channel, rs_error ** error) try
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, channel)
 
+const char * rs_get_capabilities_name(rs_capabilities capability, rs_error ** error) try
+{
+    VALIDATE_ENUM(capability);
+    return rsimpl::get_string(capability);
+}
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, capability)
+
+
 void rs_get_device_option_range(rs_device * device, rs_option option, double * min, double * max, double * step, double * def, rs_error ** error) try
 {
     VALIDATE_NOT_NULL(device);
@@ -476,6 +484,7 @@ const char * rs_preset_to_string(rs_preset preset) { return rsimpl::get_string(p
 const char * rs_distortion_to_string(rs_distortion distortion) { return rsimpl::get_string(distortion); }
 const char * rs_option_to_string(rs_option option) { return rsimpl::get_string(option); }
 const char * rs_channel_to_string(rs_channel data) { return rsimpl::get_string(data); }
+const char * rs_capabilities_to_string(rs_capabilities capability) { return rsimpl::get_string(capability); }
 const char * rs_source_to_string(rs_source source)   { return rsimpl::get_string(source); }
 
 
