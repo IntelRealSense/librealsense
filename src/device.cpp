@@ -123,27 +123,8 @@ void rs_device::start_events_proc(rs_channel channel)
         set_subdevice_data_channel_handler(*device, 3, config.data_requests[0].fps,
             [callbacks, parser](const unsigned char * data, const int& size) mutable
         {
-            //// TODO - plugin user-defined callback
-            //std::stringstream ss;
-            //for (int i = 0; i<size; i++) ss << std::hex << (int)data[i] << " ";
-            //   std::cout << ss.str() << std::endl;
 
-            //if (size >= 56) // Minimal valid IMU transmit is 56 bytes long
-            {               
-                //rs_motion_event motion_event;
-                //// Parse motion data
-                //memcpy(&motion_event.timestamp, data, sizeof(uint32_t));
-                //motion_event.error_state        = *(unsigned short*)(&data[0]);
-                //motion_event.status             = *(unsigned short*)(&data[2]);
-                //motion_event.imu_entries_num    = *(unsigned short*)(&data[4]);
-                //motion_event.imu_entries_num    = *(unsigned short*)(&data[6]);
-                //memcpy(motion_event.buf,data,std::min(64,size));
-                //for (auto & cb : callbacks)
-                //{
-                //    cb(motion_event);
-                //}
-            }
-
+            // Parse motion data
 			auto events = parser(data, size);
 			for (auto & entry : events)
 			{

@@ -215,8 +215,8 @@ typedef struct rs_timestamp_data
 typedef struct rs_motion_data
 {
     rs_timestamp_data   timestamp;
-    unsigned char       is_valid;   /* boolean */
-    short               axes[3];    /* Three [x,y,z] axes; 16 bit data for Gyro, 12 bit for Accelerometer; 2's complement*/
+    unsigned int        is_valid;   /* boolean */
+    float               axes[3];    /* Three [x,y,z] axes; 16 bit data for Gyro, 12 bit for Accelerometer; 2's complement*/
 } rs_motion_data;
 
 typedef struct rs_motion_event

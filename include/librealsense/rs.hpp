@@ -54,8 +54,6 @@ namespace rs
         sensor_data,
         motion_data,
         timestamps_data,
-        accelerometer_data,
-        gyro_data,
         max_channel_enum_type
     };
 
@@ -233,37 +231,6 @@ namespace rs
             return (device *)r;
         }
     };	
-
-//    struct rs_motion_event
-//	{
-//        rs_device *             device;
-//		//rs_event_ref * event_ref;
-//        std::vector<uint8_t>    inbuf;
-//        uint64_t                timestamp;
-
-//        rs_motion_event(const rs_motion_event &) = delete;
-
-//        rs_motion_event() : device(nullptr) {}
-//        //motion_event(rs_device *dev) : device(dev)/*, inbuf(dev->inbuf)*/ {}
-//        rs_motion_event(rs_motion_event&& other) : device(other.device), inbuf(std::move(other.inbuf)) {}
-//        rs_motion_event& operator=(motion_event other)
-//		{
-//			swap(other);
-//			return *this;
-//		}
-//		void swap(event& other)
-//		{
-//			std::swap(device, other.device);
-//			std::swap(inbuf, other.inbuf);
-//		}
-
-//        ~rs_motion_event() { inbuf.clear(); }
-
-//		uint64_t		get_timestamps(void) const { return timestamp; }
-//		const char *	to_string(void) const { return std::string(inbuf.begin(), inbuf.end()).data(); }
-//		const std::vector<uint8_t> & data(void) const { return inbuf; };
-//		size_t			get_size(void) const { return inbuf.size(); };
-//    };
 
 	class event_callback_base
 	{

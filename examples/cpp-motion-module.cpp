@@ -65,14 +65,14 @@ int main() try
        dev->enable_events_proc(channel::motion_data, 30/*, usr_calback_func*/);
 
 	// Define event handler
-    rs::event_callback motion_module_callback([](rs_motion_event evt)   // TODO rs_motion event wrapper
+    rs::event_callback motion_data_callback([](rs_motion_event evt)   // TODO rs_motion event wrapper
     {        
         std::cout << "Event arrived, timestamp: " << evt.timestamp << std::endl;
                 //<< ", size" << evt.get_size() << ", data: " << evt.to_string() << std::endl;
     });
 
     // ...and pass it to the callback setter
-    dev->set_events_proc_callback(channel::motion_data, motion_module_callback);
+    dev->set_events_proc_callback(channel::motion_data, motion_data_callback);
 
     // Modified device start to include IMU channel activation
     dev->start();
