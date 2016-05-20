@@ -22,7 +22,7 @@ int main() try
         std::cout << "Device " << i << " - " << dev->get_name() << ":\n";
         std::cout << " Serial number: " << dev->get_serial() << "\n";
         std::cout << " Firmware version: " << dev->get_firmware_version() << "\n";
-        std::cout << " USB Port ID: " << dev->get_usb_port_id() << "\n";
+        try { std::cout << " USB Port ID: " << dev->get_usb_port_id() << "\n"; } catch (...) {}
 
         // Show which options are supported by this device
         std::cout << " Supported options:\n";
