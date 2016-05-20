@@ -8,6 +8,7 @@
 #include <cstring>
 #include <climits>
 #include <algorithm>
+#include <iostream>
 
 namespace rsimpl
 {
@@ -286,8 +287,11 @@ namespace rsimpl
 
         static_device_info info;
         info.name = { "Intel RealSense ZR300" };
-        auto c = r200::read_camera_info(*device);
+        auto c = r200::read_camera_info(*device);        
         info.subdevice_modes.push_back({ 2, { 1920, 1080 }, pf_rw16, 30, c.intrinsicsThird[0], { c.modesThird[0][0] }, { 0 } });
+
+        // Acquire Device handle for Motion Module API
+        r200::claim_motion_module_interface(*device);
 
         if (uvc::is_device_connected(*device, PID_INTEL_CAMERA, FISHEYE_PRODUCT_ID))
         {
@@ -298,8 +302,7 @@ namespace rsimpl
             info.presets[RS_STREAM_FISHEYE][RS_PRESET_BEST_QUALITY] = {true, 640, 480, RS_FORMAT_RAW8,   60};
             info.subdevice_modes.push_back({3, {640, 480}, pf_rw8, 60, c.intrinsicsThird[1], {c.modesThird[1][0]}, {0}});
             info.subdevice_modes.push_back({3, {640, 480}, pf_rw10, 60, c.intrinsicsThird[1], {c.modesThird[1][0]}, {0}});
-        }
-        // TODO: Power on Fisheye camera (mmpwr 1)
+        }        
 
         return make_device(device, info, c);
     }
@@ -378,6 +381,87 @@ namespace rsimpl
             default: LOG_WARNING("Cannot get " << options[i] << " on " << get_name()); break;
             }
         }
+    }
+
+    void r200_camera::toggle_motion_module_power(bool on)
+    {        
+        bool action = false;
+
+        // Temporal patch to be replaced with is_supported.
+        if (on)
+        {
+            if ((config.info.stream_subdevices[RS_STREAM_FISHEYE]>0) && (!ds_pwr_on))
+            {
+                ds_pwr_on = true;
+                if (!mm_pwr_on)
+                    action = true;
+            }
+            else
+            {
+                if (config.data_requests.enabled && (!mm_pwr_on))
+                {
+                    mm_pwr_on = true;
+                    if (!ds_pwr_on)
+                        action = true;
+                }
+            }
+         }
+        else
+        {
+            if (ds_pwr_on)
+            {
+                ds_pwr_on = false;
+                if (!mm_pwr_on)
+                    action = true;
+            }
+            else
+            {
+                if (mm_pwr_on)
+                {
+                    mm_pwr_on = false;
+                    if (!ds_pwr_on)
+                        action = true;
+                }
+            }
+        }
+
+        if (action)
+        {
+            if (on)
+                std::this_thread::sleep_for(std::chrono::milliseconds(500));
+            r200::toggle_adapter_board_pwr(get_device(),on);
+        }
+
+    }
+
+    // Power on Fisheye camera (dspwr)
+    void r200_camera::start()
+    {
+        toggle_motion_module_power(true);
+        rs_device::start();
+    }
+
+    // Power off Fisheye camera
+    void r200_camera::stop()
+    {
+        rs_device::stop();
+        toggle_motion_module_power(false);
+    }
+
+    // Power on motion module (mmpwr)
+    void r200_camera::start_events()
+    {
+        toggle_motion_module_power(true);
+
+        rs_device::start_events();
+    }
+
+    // Power down Motion Module
+    void r200_camera::stop_events()
+    {
+        rs_device::stop_events();
+
+        toggle_motion_module_power(false);
     }
 
     void r200_camera::on_before_start(const std::vector<subdevice_mode_selection> & selected_modes)

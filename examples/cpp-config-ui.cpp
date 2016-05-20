@@ -6,6 +6,7 @@
 #include <iostream>
 #include <algorithm>
 #include <iomanip>
+#include <mutex>
 
 #pragma comment(lib, "opengl32.lib")
 
@@ -120,7 +121,8 @@ struct gui
 
         std::ostringstream oss;
         oss << std::setprecision(2) << std::fixed << min;
-        draw_text(r.x0 - 22, r.y1 + abs(h/2) + 3, oss.str().c_str());
+        auto delta = (min<0)?40:22;
+        draw_text(r.x0 - delta, r.y1 + abs(h/2) + 3, oss.str().c_str());
 
         oss.str("");
         oss << std::setprecision(2) << std::fixed << max;
@@ -148,13 +150,35 @@ struct gui
 
 texture_buffer buffers[6];
 
+std::mutex mm_mutex;
+rs::motion_data m_gyro_data;
+rs::motion_data m_acc_data;
+
+rs::motion_callback motion_callback([](rs::motion_data entry)   // TODO rs_motion event wrapper
+{
+    std::lock_guard<std::mutex> lock(mm_mutex);
+    if (entry.timestamp_data.source_id == RS_IMU_ACCEL)
+        m_acc_data = entry;
+    if (entry.timestamp_data.source_id == RS_IMU_GYRO)
+        m_gyro_data = entry;
+
+});
+
+rs::timestamp_callback timestamp_callback([](rs::timestamp_data entry)   // TODO rs_motion event wrapper
+{
+    std::cout << "Timestamp event arrived, timestamp: " << entry.timestamp << std::endl;
+});
+
+
+
 int main(int argc, char * argv[]) try
 {
     rs::log_to_console(rs::log_severity::warn);
     //rs::log_to_file(rs::log_severity::debug, "librealsense.log");
 
     glfwInit();
-    auto win = glfwCreateWindow(1100, 960, "CPP Configuration Example", nullptr, nullptr);
+    auto win = glfwCreateWindow(1550, 960, "CPP Configuration Example", nullptr, nullptr);
+
     glfwMakeContextCurrent(win);
     gui g;
     glfwSetWindowUserPointer(win, &g);
@@ -178,8 +202,30 @@ int main(int argc, char * argv[]) try
     dev->enable_stream(rs::stream::depth, rs::preset::best_quality);
     dev->enable_stream(rs::stream::color, rs::preset::best_quality);
     dev->enable_stream(rs::stream::infrared, rs::preset::best_quality);
-    try { dev->enable_stream(rs::stream::infrared2, rs::preset::best_quality); } catch(...) {}
-    try { dev->enable_stream(rs::stream::fisheye, rs::preset::best_quality);} catch(...) {}
+
+    bool supports_fish_eye = dev->supports(rs::capabilities::fish_eye);
+    bool supports_motion_events = dev->supports(rs::capabilities::motion_events);
+    bool has_motion_module = supports_fish_eye || supports_motion_events;
+    if(dev->supports(rs::capabilities::infrared2))
+    {
+        dev->enable_stream(rs::stream::infrared2, rs::preset::best_quality);
+    }
+
+    if(supports_fish_eye)
+    {
+        dev->enable_stream(rs::stream::fisheye, rs::preset::best_quality);
+    }
+
+    if (has_motion_module)
+    {
+        if (dev->supports_events())                                         // todo:move to supports interface
+           dev->enable_events();
+
+        dev->set_motion_callback(motion_callback);
+        dev->set_timestamp_callback(timestamp_callback);
+
+        glfwSetWindowSize(win, 1100, 960);
+    }
 
     //std::this_thread::sleep_for(std::chrono::seconds(1));
     struct option { rs::option opt; double min, max, step, value, def; };
@@ -215,11 +261,23 @@ int main(int argc, char * argv[]) try
 
         if(dev->is_streaming())
         {
-            if(g.button({w-260, y, w-20, y+24}, "Stop Capture")) dev->stop();
+            if(g.button({w-260, y, w-20, y+24}, "Stop Capture"))
+            {
+                dev->stop();
+
+                if (has_motion_module)
+                    dev->stop(rs::source::events);
+            }
         }
         else
         {
-            if(g.button({w-260, y, w-20, y+24}, "Start Capture")) dev->start();
+            if(g.button({w-260, y, w-20, y+24}, "Start Capture"))
+            {
+                dev->start();
+
+                if (has_motion_module)
+                    dev->start(rs::source::events);
+            }
         }
         y += 34;
         if(!dev->is_streaming())
@@ -268,20 +326,57 @@ int main(int argc, char * argv[]) try
         
         if(dev->is_streaming())
         {
-            w+=150;
-            buffers[0].show(*dev, rs::stream::color, 0, 0, w/3, h/3);
-            buffers[1].show(*dev, rs::stream::depth, w/3, 0, w/3, h/3);
-            buffers[2].show(*dev, rs::stream::infrared, 0, h/3, w/3, h/3);
-            buffers[3].show(*dev, rs::stream::infrared2, w/3, h/3, w/3, h/3);
-            buffers[4].show(*dev, rs::stream::fisheye, 0, 2*h/3, w/3, h/3);
+            w += (has_motion_module ? 150 : -280);
 
-            if (dev->supports(rs::capabilities::motion_events))
+            int scale_factor = (has_motion_module ? 3 : 2);
+            int fWidth = w/scale_factor;
+            int fHeight = h/scale_factor;
+
+            buffers[0].show(*dev, rs::stream::color, 0, 0, fWidth, fHeight);
+            buffers[1].show(*dev, rs::stream::depth, fWidth, 0, fWidth, fHeight);
+            buffers[2].show(*dev, rs::stream::infrared, 0, fHeight, fWidth, fHeight);
+            buffers[3].show(*dev, rs::stream::infrared2, fWidth, fHeight, fWidth, fHeight);
+            buffers[4].show(*dev, rs::stream::fisheye, 0, 2*fHeight, fWidth, fHeight);
+
+            if (has_motion_module)
             {
-                int x = w/3 + 5;
+                std::lock_guard<std::mutex> lock(mm_mutex);
+
+                int x = w/3 + 10;
                 int y = 2*h/3 + 5;
                 buffers[5].print(x, y, "MM (200 Hz)");
-                buffers[5].print(x, y + 16, "Gyro: ");
-                g.indicator({x + 100, y + 26 , x + 300, y + 18}, 0, 100, 40);
+
+                auto rect_y0_pos = y+36;
+                auto rect_y1_pos = y+28;
+                auto indicator_width = 42;
+
+                buffers[5].print(x, rect_y0_pos-10, "Gyro X: ");
+                g.indicator({x + 100, rect_y0_pos , x + 300, rect_y1_pos}, -10, 10, m_gyro_data.axes[0]);
+                rect_y0_pos+=indicator_width;
+                rect_y1_pos+=indicator_width;
+
+                buffers[5].print(x, rect_y0_pos-10, "Gyro Y: ");
+                g.indicator({x + 100, rect_y0_pos , x + 300, rect_y1_pos}, -10, 10, m_gyro_data.axes[1]);
+                rect_y0_pos+=indicator_width;
+                rect_y1_pos+=indicator_width;
+
+                buffers[5].print(x, rect_y0_pos-10, "Gyro Z: ");
+                g.indicator({x + 100, rect_y0_pos , x + 300, rect_y1_pos}, -10, 10, m_gyro_data.axes[2]);
+                rect_y0_pos+=indicator_width;
+                rect_y1_pos+=indicator_width;
+
+                buffers[5].print(x, rect_y0_pos-10, "Acc X: ");
+                g.indicator({x + 100, rect_y0_pos , x + 300, rect_y1_pos}, -10, 10, m_acc_data.axes[0]);
+                rect_y0_pos+=indicator_width;
+                rect_y1_pos+=indicator_width;
+
+                buffers[5].print(x, rect_y0_pos-10, "Acc Y: ");
+                g.indicator({x + 100, rect_y0_pos , x + 300, rect_y1_pos}, -10, 10, m_acc_data.axes[1]);
+                rect_y0_pos+=indicator_width;
+                rect_y1_pos+=indicator_width;
+
+                buffers[5].print(x, rect_y0_pos-10, "Acc Z: ");
+                g.indicator({x + 100, rect_y0_pos , x + 300, rect_y1_pos}, -10, 10, m_acc_data.axes[2]);
             }
         }
 

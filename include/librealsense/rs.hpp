@@ -11,6 +11,7 @@
 #include <sstream>
 #include <stdexcept>
 #include <functional>
+#include <vector>
 
 namespace rs
 {
@@ -56,6 +57,13 @@ namespace rs
         raw10       = 11,  ///< Four 10-bit luminance values encoded into a 5-byte macropixel
         raw16       = 12,  ///< Four 10-bit luminance filled in 16 bit pixel (6 bit unused)
         raw8        = 13
+    };
+
+    enum class channel : int8_t
+    {
+        motion_data = 0,
+        timestamps_data,
+        max_channel_enum_type
     };
 
     enum class preset : int32_t
@@ -173,6 +181,25 @@ namespace rs
         float3      transform(const float3 & point) const                               { float3 p; rs_transform_point_to_point(&p.x, this, &point.x); return p; }
 
     };
+
+    enum source
+    {
+        video = 0,
+        events
+    };
+
+    struct timestamp_data : rs_timestamp_data
+    {
+        timestamp_data(rs_timestamp_data orig) : rs_timestamp_data(orig) {}
+        timestamp_data() {}
+    };
+
+    struct motion_data : rs_motion_data
+    {
+        motion_data(rs_motion_data orig) : rs_motion_data(orig) {}
+        motion_data() {}
+    };
+
     class context;
     class device;
     
@@ -224,7 +251,46 @@ namespace rs
             error::handle(e);
             return (device *)r;
         }
-    };
+    };	
+    
+    class motion_callback_base
+	{
+	public:
+        virtual void on_event(motion_data e) = 0;
+        virtual ~motion_callback_base() {}
+	};
+
+    class motion_callback : public motion_callback_base
+	{
+        std::function<void(motion_data)> on_event_function;
+	public:
+        explicit motion_callback(std::function<void(motion_data)> on_event) : on_event_function(on_event) {}
+
+        void on_event(motion_data e) override
+		{
+			on_event_function(std::move(e));
+		}
+	};
+}
+	
+    class timestamp_callback_base
+	{
+	public:
+        virtual void on_event(timestamp_data data) = 0;
+        virtual ~timestamp_callback_base() {}
+	};
+
+    class timestamp_callback : public timestamp_callback_base
+	{
+        std::function<void(timestamp_data)> on_event_function;
+	public:
+        explicit timestamp_callback(std::function<void(timestamp_data)> on_event) : on_event_function(on_event) {}
+
+        void on_event(timestamp_data data) override
+		{
+			on_event_function(std::move(data));
+		}
+	};
 
     class frame
     {
@@ -620,21 +686,77 @@ namespace rs
             error::handle(e);
         }
 
-        /// begin streaming on all enabled streams for this device
-        ///
-        void start()
+        void disable_events()
         {
             rs_error * e = nullptr;
-            rs_start_device((rs_device *)this, &e);
+            rs_disable_events((rs_device *)this, &e);
+            error::handle(e);
+        }        
+
+        /// check if data acquisition is active        
+        int events_active()
+        {
+            rs_error * e = nullptr;
+            return rs_events_active((rs_device *)this,&e);
+            error::handle(e);
+        }
+
+        void set_motion_callback(motion_callback_base& on_event)
+        {
+            rs_error * e = nullptr;
+            rs_set_motion_callback((rs_device *)this, [](rs_device * device, rs_motion_data mo_data, void * user) {
+                try
+                {
+                    auto listener = (motion_callback_base *)user;
+                    listener->on_event((rs::motion_data)mo_data);
+                }
+                catch (...)
+                {
+
+                }
+            }, &on_event, &e);
+            error::handle(e);
+        }
+
+        void set_timestamp_callback(timestamp_callback_base& on_event)
+		{
+			rs_error * e = nullptr;
+            rs_set_timestamp_callback((rs_device *)this, [](rs_device * device, rs_timestamp_data ts_data, void * user) {
+				try
+				{
+                    auto listener = (timestamp_callback_base *)user;
+                    listener->on_event((rs::timestamp_data)ts_data);
+				}
+				catch (...)
+				{
+
+				}
+			}, &on_event, &e);
+			error::handle(e);
+		}
+				
+
+        /// begin streaming on all enabled streams for this device
+        ///
+        void start(rs::source source = rs::source::video)
+        {            
+            rs_error * e = nullptr;
+            if (events==source)
+                rs_start_events((rs_device *)this, &e);
+            else
+                rs_start_device((rs_device *)this, &e);
             error::handle(e);
         }
 
         /// end streaming on all streams for this device
         ///
-        void stop()
+        void stop(rs::source source = rs::source::video)
         {
             rs_error * e = nullptr;
-            rs_stop_device((rs_device *)this, &e);
+            if (events==source)
+                rs_stop_events((rs_device *)this, &e);
+            else
+                rs_stop_device((rs_device *)this, &e);
             error::handle(e);
         }
 
@@ -799,7 +921,10 @@ namespace rs
     inline std::ostream & operator << (std::ostream & o, format format) { return o << rs_format_to_string((rs_format)format); }
     inline std::ostream & operator << (std::ostream & o, preset preset) { return o << rs_preset_to_string((rs_preset)preset); }
     inline std::ostream & operator << (std::ostream & o, distortion distortion) { return o << rs_distortion_to_string((rs_distortion)distortion); }
-    inline std::ostream & operator << (std::ostream & o, option option) { return o << rs_option_to_string((rs_option)option); }
+    inline std::ostream & operator << (std::ostream & o, option option) { return o << rs_option_to_string((rs_option)option); }    
+    inline std::ostream & operator << (std::ostream & o, capabilities capability) { return o << rs_capabilities_to_string((rs_capabilities)capability); }
+    inline std::ostream & operator << (std::ostream & o, channel data) { return o << rs_channel_to_string((rs_channel)data); }
+    inline std::ostream & operator << (std::ostream & o, source src) { return o << rs_source_to_string((rs_source)src); }
 
     enum class log_severity : int32_t
     {

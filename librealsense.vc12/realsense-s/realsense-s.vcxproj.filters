@@ -61,6 +61,9 @@
       <Filter>src</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\archive.cpp">
+          <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\hw-monitor.cpp">
       <Filter>src</Filter>
     </ClCompile>
   </ItemGroup>
@@ -108,6 +111,7 @@
       <Filter>include</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\archive.h">
+    <ClInclude Include="..\..\src\hw-monitor.h">
       <Filter>src</Filter>
     </ClInclude>
   </ItemGroup>

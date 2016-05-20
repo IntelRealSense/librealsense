@@ -33,6 +33,7 @@
 #include <SetupAPI.h>
 #include <WinUsb.h>
 
+#include <functional>
 #include <thread>
 #include <chrono>
 #include <algorithm>
@@ -259,6 +260,7 @@ namespace rsimpl
 
             HANDLE usb_file_handle = INVALID_HANDLE_VALUE;
             WINUSB_INTERFACE_HANDLE usb_interface_handle = INVALID_HANDLE_VALUE;
+			WINUSB_INTERFACE_HANDLE usb_aux_interface_handle = INVALID_HANDLE_VALUE;
 
             device(std::shared_ptr<context> parent, int vid, int pid, std::string unique_id) : parent(move(parent)), vid(vid), pid(pid), unique_id(move(unique_id))
             {
@@ -527,16 +529,28 @@ namespace rsimpl
             device.open_win_usb(interface_guid, interface_number);
         }
 
-        void bulk_transfer(device & device, uint8_t endpoint, void * data, int length, int *actual_length, unsigned int timeout)
+		void claim_aux_interface(device & device, const guid & interface_guid, int interface_number)
+		{
+			throw std::logic_error("claim_aux_interface(...) is not implemented for this backend ");
+		}
+
+        bool power_on_adapter_board()
+        {
+            throw std::logic_error("power_on_adapter_board(...) is not implemented for this backend ");
+        }
+
+        void bulk_transfer(device & device, unsigned char handle_id, uint8_t endpoint, void * data, int length, int *actual_length, unsigned int timeout)
         {       
+			if (0 != handle_id)
+				throw std::logic_error(to_string() << "Auxillary WinUSB interface is not implemented for this backend");
+
             if(USB_ENDPOINT_DIRECTION_OUT(endpoint))
             {
                 device.usb_synchronous_write(endpoint, data, length, timeout);
             }
             
             if(USB_ENDPOINT_DIRECTION_IN(endpoint))
-            {
-                auto actualLen = ULONG(actual_length);
+            {                
                 device.usb_synchronous_read(endpoint, data, length, actual_length, timeout);
             }
         }
@@ -579,8 +593,23 @@ namespace rsimpl
             throw std::runtime_error("no matching media type");
         }
 
+        void set_subdevice_data_channel_handler(device & device, int subdevice_index, std::function<void(const unsigned char * data, const int size)> callback)
+        {			
+            throw std::logic_error("set_subdevice_data_channel_handler(...) is not implemented for this backend ");
+        }
+
         void start_streaming(device & device, int num_transfer_bufs) { device.start_streaming(); }
         void stop_streaming(device & device) { device.stop_streaming(); }
+
+		void start_data_acquisition(device & device)
+		{
+			throw std::logic_error("start_data_acquisition(...) is not implemented for this backend ");
+		}
+
+		void stop_data_acquisition(device & device)
+		{
+			throw std::logic_error("stop_data_acquisition(...) is not implemented for this backend ");
+		}
 
         struct pu_control { rs_option option; long property; bool enable_auto; };
         static const pu_control pu_controls[] = {
