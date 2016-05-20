@@ -87,6 +87,13 @@ const char * rs_get_device_serial(const rs_device * device, rs_error ** error) t
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, device)
 
+const char * rs_get_device_usb_port_id(const rs_device * device, rs_error **error) try
+{
+    VALIDATE_NOT_NULL(device);
+    return device->get_usb_port_id();
+}
+HANDLE_EXCEPTIONS_AND_RETURN(0, device)
+
 const char * rs_get_device_firmware_version(const rs_device * device, rs_error ** error) try
 {
     VALIDATE_NOT_NULL(device);
