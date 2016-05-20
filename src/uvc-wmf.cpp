@@ -484,7 +484,6 @@ namespace rsimpl
 
         int get_vendor_id(const device & device) { return device.vid; }
         int get_product_id(const device & device) { return device.pid; }
-        const char * get_usb_port_id(const device & device) { return "Not Implemented"; } // Not implemented for Windows
 
         void get_control(const device & device, const extension_unit & xu, uint8_t ctrl, void *data, int len)
         {
@@ -747,6 +746,8 @@ namespace rsimpl
             CoTaskMemFree(ppDevices);
             return devices;
         }
+
+        const char * get_usb_port_id(const device & device) { throw std::exception("Not Implemented"); } // Not implemented for Windows at this point
     }
 }
 
