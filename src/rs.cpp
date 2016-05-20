@@ -17,6 +17,8 @@ struct rs_error
     std::string args;
 };
 
+static rs_context * rs_context_instance;
+
 // This facility allows for translation of exceptions to rs_error structs at the API boundary
 namespace rsimpl
 {
@@ -45,7 +47,11 @@ namespace rsimpl
 rs_context * rs_create_context(int api_version, rs_error ** error) try
 {
     if (api_version != RS_API_VERSION) throw std::runtime_error("api version mismatch");
-    return new rs_context();
+    if (rs_context_instance == NULL)
+    {
+        rs_context_instance = new rs_context();
+    }
+    return rs_context_instance;
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, api_version)
 
