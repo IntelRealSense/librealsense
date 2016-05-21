@@ -27,7 +27,7 @@ namespace rsimpl
         std::shared_ptr<context> create_context();
         std::vector<std::shared_ptr<device>> query_devices(std::shared_ptr<context> context);
 
-        bool power_on_adapter_board();
+        void power_on_adapter_board();
 
         // Check for connected device
         bool is_device_connected(device & device, int vid, int pid);

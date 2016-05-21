@@ -76,8 +76,6 @@ rs_device * rs_get_device(rs_context * context, int index, rs_error ** error) tr
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, context, index)
 
-
-
 const char * rs_get_device_name(const rs_device * device, rs_error ** error) try
 {
     VALIDATE_NOT_NULL(device);
@@ -98,7 +96,6 @@ const char * rs_get_device_firmware_version(const rs_device * device, rs_error *
     return device->get_firmware_version();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, device)
-
 
 void rs_get_device_extrinsics(const rs_device * device, rs_stream from, rs_stream to, rs_extrinsics * extrin, rs_error ** error) try
 {
@@ -232,41 +229,28 @@ HANDLE_EXCEPTIONS_AND_RETURN( false, device)
 
 void rs_enable_events(rs_device * device, rs_error ** error) try
 {
-    VALIDATE_NOT_NULL(device);    
-
+    VALIDATE_NOT_NULL(device);
     device->enable_events();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, device)
 
 void rs_disable_events(rs_device * device, rs_error ** error) try
 {
-    VALIDATE_NOT_NULL(device);    
-
+    VALIDATE_NOT_NULL(device);
     device->disable_events();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, device)
 
-void rs_set_frame_callback(rs_device * device, rs_stream stream, void (*on_frame)(rs_device * dev, rs_frame_ref * frame, void * user), void * user, rs_error ** error) try
-{
-    VALIDATE_NOT_NULL(device);
-    VALIDATE_NATIVE_STREAM(stream);
-    VALIDATE_NOT_NULL(on_frame);
-    device->set_stream_callback(stream, on_frame, user);
-}
-HANDLE_EXCEPTIONS_AND_RETURN(, device, stream, on_frame, user)
-
-
 void rs_start_events(rs_device * device, rs_error ** error) try
 {
-	VALIDATE_NOT_NULL(device);
-
+    VALIDATE_NOT_NULL(device);
     device->start_events();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, device)
 
 void rs_stop_events(rs_device * device, rs_error ** error) try
 {
-	VALIDATE_NOT_NULL(device);
+    VALIDATE_NOT_NULL(device);
 
     device->stop_events();
 }
@@ -274,7 +258,7 @@ HANDLE_EXCEPTIONS_AND_RETURN(, device)
 
 int rs_events_active(rs_device * device, rs_error ** error) try
 {
-	VALIDATE_NOT_NULL(device);	
+    VALIDATE_NOT_NULL(device);  
 
     return device->events_active();
 }
@@ -282,23 +266,23 @@ HANDLE_EXCEPTIONS_AND_RETURN(0, device)
 
 void rs_set_motion_callback(rs_device * device, void(*on_event)(rs_device * dev, rs_motion_data data, void * user), void * user, rs_error ** error) try
 {
-	VALIDATE_NOT_NULL(device);	
-	VALIDATE_NOT_NULL(on_event);
+    VALIDATE_NOT_NULL(device);
+    VALIDATE_NOT_NULL(on_event);
     device->set_motion_callback( on_event, user);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, device, on_event, user)
 
 void rs_set_timestamp_callback(rs_device * device, void(*on_event)(rs_device * dev, rs_timestamp_data data, void * user), void * user, rs_error ** error) try
 {
-	VALIDATE_NOT_NULL(device);	
-	VALIDATE_NOT_NULL(on_event);
+    VALIDATE_NOT_NULL(device);
+    VALIDATE_NOT_NULL(on_event);
     device->set_timestamp_callback(on_event, user);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, device, on_event, user)
 
 void rs_start_device(rs_device * device, rs_error ** error) try
 {
-    VALIDATE_NOT_NULL(device);    
+    VALIDATE_NOT_NULL(device);
     device->start();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, device)
@@ -511,8 +495,8 @@ HANDLE_EXCEPTIONS_AND_RETURN(nullptr, option)
 
 const char * rs_get_channel_name(rs_channel channel, rs_error ** error) try
 {
-	VALIDATE_ENUM(channel);
-	return rsimpl::get_string(channel);
+    VALIDATE_ENUM(channel);
+    return rsimpl::get_string(channel);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, channel)
 

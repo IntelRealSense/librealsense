@@ -260,7 +260,7 @@ namespace rsimpl
 
             HANDLE usb_file_handle = INVALID_HANDLE_VALUE;
             WINUSB_INTERFACE_HANDLE usb_interface_handle = INVALID_HANDLE_VALUE;
-			WINUSB_INTERFACE_HANDLE usb_aux_interface_handle = INVALID_HANDLE_VALUE;
+            WINUSB_INTERFACE_HANDLE usb_aux_interface_handle = INVALID_HANDLE_VALUE;
 
             device(std::shared_ptr<context> parent, int vid, int pid, std::string unique_id) : parent(move(parent)), vid(vid), pid(pid), unique_id(move(unique_id))
             {
@@ -458,31 +458,31 @@ namespace rsimpl
                         BYTE * byte_buffer; DWORD max_length, current_length;
                         if(SUCCEEDED(buffer->Lock(&byte_buffer, &max_length, &current_length)))
                         {
-							auto continuation = [buffer, this]()
-							{
-								buffer->Unlock();
-							};
+                            auto continuation = [buffer, this]()
+                            {
+                                buffer->Unlock();
+                            };
 
-							owner_ptr->subdevices[subdevice_index].callback(byte_buffer, continuation);
+                            owner_ptr->subdevices[subdevice_index].callback(byte_buffer, continuation);
                         }
                     }
                 }
 
-				if (auto owner_ptr_new = owner.lock())
-				{
-					auto hr = owner_ptr_new->subdevices[subdevice_index].mf_source_reader->ReadSample(MF_SOURCE_READER_FIRST_VIDEO_STREAM, 0, NULL, NULL, NULL, NULL);
-					switch (hr)
-					{
-					case S_OK: break;
-					case MF_E_INVALIDREQUEST: LOG_ERROR("ReadSample returned MF_E_INVALIDREQUEST"); break;
-					case MF_E_INVALIDSTREAMNUMBER: LOG_ERROR("ReadSample returned MF_E_INVALIDSTREAMNUMBER"); break;
-					case MF_E_NOTACCEPTING: LOG_ERROR("ReadSample returned MF_E_NOTACCEPTING"); break;
-					case E_INVALIDARG: LOG_ERROR("ReadSample returned E_INVALIDARG"); break;
-					case MF_E_VIDEO_RECORDING_DEVICE_INVALIDATED: LOG_ERROR("ReadSample returned MF_E_VIDEO_RECORDING_DEVICE_INVALIDATED"); break;
-					default: LOG_ERROR("ReadSample returned HRESULT " << std::hex << (uint32_t)hr); break;
-					}
-					if (hr != S_OK) streaming = false;
-				}
+                if (auto owner_ptr_new = owner.lock())
+                {
+                    auto hr = owner_ptr_new->subdevices[subdevice_index].mf_source_reader->ReadSample(MF_SOURCE_READER_FIRST_VIDEO_STREAM, 0, NULL, NULL, NULL, NULL);
+                    switch (hr)
+                    {
+                    case S_OK: break;
+                    case MF_E_INVALIDREQUEST: LOG_ERROR("ReadSample returned MF_E_INVALIDREQUEST"); break;
+                    case MF_E_INVALIDSTREAMNUMBER: LOG_ERROR("ReadSample returned MF_E_INVALIDSTREAMNUMBER"); break;
+                    case MF_E_NOTACCEPTING: LOG_ERROR("ReadSample returned MF_E_NOTACCEPTING"); break;
+                    case E_INVALIDARG: LOG_ERROR("ReadSample returned E_INVALIDARG"); break;
+                    case MF_E_VIDEO_RECORDING_DEVICE_INVALIDATED: LOG_ERROR("ReadSample returned MF_E_VIDEO_RECORDING_DEVICE_INVALIDATED"); break;
+                    default: LOG_ERROR("ReadSample returned HRESULT " << std::hex << (uint32_t)hr); break;
+                    }
+                    if (hr != S_OK) streaming = false;
+                }
             }
             return S_OK; 
         }
@@ -529,20 +529,20 @@ namespace rsimpl
             device.open_win_usb(interface_guid, interface_number);
         }
 
-		void claim_aux_interface(device & device, const guid & interface_guid, int interface_number)
-		{
-			throw std::logic_error("claim_aux_interface(...) is not implemented for this backend ");
-		}
-
-        bool power_on_adapter_board()
+        void claim_aux_interface(device & device, const guid & interface_guid, int interface_number)
         {
-            throw std::logic_error("power_on_adapter_board(...) is not implemented for this backend ");
+            throw std::logic_error("claim_aux_interface(...) is not implemented for this backend ");
+        }
+
+        void power_on_adapter_board()
+        {
+            //throw std::logic_error("power_on_adapter_board(...) is not implemented for this backend ");
         }
 
         void bulk_transfer(device & device, unsigned char handle_id, uint8_t endpoint, void * data, int length, int *actual_length, unsigned int timeout)
         {       
-			if (0 != handle_id)
-				throw std::logic_error(to_string() << "Auxillary WinUSB interface is not implemented for this backend");
+            if (0 != handle_id)
+                throw std::logic_error(to_string() << "Auxillary WinUSB interface is not implemented for this backend");
 
             if(USB_ENDPOINT_DIRECTION_OUT(endpoint))
             {
@@ -555,7 +555,7 @@ namespace rsimpl
             }
         }
 
-		void set_subdevice_mode(device & device, int subdevice_index, int width, int height, uint32_t fourcc, int fps, std::function<void(const void * frame, std::function<void()> continuation)> callback)
+        void set_subdevice_mode(device & device, int subdevice_index, int width, int height, uint32_t fourcc, int fps, std::function<void(const void * frame, std::function<void()> continuation)> callback)
         {
             auto & sub = device.subdevices[subdevice_index];
             
@@ -594,22 +594,22 @@ namespace rsimpl
         }
 
         void set_subdevice_data_channel_handler(device & device, int subdevice_index, std::function<void(const unsigned char * data, const int size)> callback)
-        {			
+        {           
             throw std::logic_error("set_subdevice_data_channel_handler(...) is not implemented for this backend ");
         }
 
         void start_streaming(device & device, int num_transfer_bufs) { device.start_streaming(); }
         void stop_streaming(device & device) { device.stop_streaming(); }
 
-		void start_data_acquisition(device & device)
-		{
-			throw std::logic_error("start_data_acquisition(...) is not implemented for this backend ");
-		}
+        void start_data_acquisition(device & device)
+        {
+            throw std::logic_error("start_data_acquisition(...) is not implemented for this backend ");
+        }
 
-		void stop_data_acquisition(device & device)
-		{
-			throw std::logic_error("stop_data_acquisition(...) is not implemented for this backend ");
-		}
+        void stop_data_acquisition(device & device)
+        {
+            throw std::logic_error("stop_data_acquisition(...) is not implemented for this backend ");
+        }
 
         struct pu_control { rs_option option; long property; bool enable_auto; };
         static const pu_control pu_controls[] = {

@@ -830,7 +830,7 @@ namespace rsimpl
         }
 
         // DS4.1T Bring-up stage hack to power on camera without user interferance
-        bool power_on_adapter_board()
+        void power_on_adapter_board()
         {
             struct device_activator
             {
@@ -928,9 +928,7 @@ namespace rsimpl
             };
 
             device_activator act;
-
-            return act.ds_device_power_on();
-
+            act.ds_device_power_on();
         }
     }
 }

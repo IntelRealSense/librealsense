@@ -251,46 +251,45 @@ namespace rs
             error::handle(e);
             return (device *)r;
         }
-    };	
+    };  
     
     class motion_callback_base
-	{
-	public:
+    {
+    public:
         virtual void on_event(motion_data e) = 0;
         virtual ~motion_callback_base() {}
-	};
+    };
 
     class motion_callback : public motion_callback_base
-	{
+    {
         std::function<void(motion_data)> on_event_function;
-	public:
+    public:
         explicit motion_callback(std::function<void(motion_data)> on_event) : on_event_function(on_event) {}
 
         void on_event(motion_data e) override
-		{
-			on_event_function(std::move(e));
-		}
-	};
-}
-	
+        {
+            on_event_function(std::move(e));
+        }
+    };
+    
     class timestamp_callback_base
-	{
-	public:
+    {
+    public:
         virtual void on_event(timestamp_data data) = 0;
         virtual ~timestamp_callback_base() {}
-	};
+    };
 
     class timestamp_callback : public timestamp_callback_base
-	{
+    {
         std::function<void(timestamp_data)> on_event_function;
-	public:
+    public:
         explicit timestamp_callback(std::function<void(timestamp_data)> on_event) : on_event_function(on_event) {}
 
         void on_event(timestamp_data data) override
-		{
-			on_event_function(std::move(data));
-		}
-	};
+        {
+            on_event_function(std::move(data));
+        }
+    };
 
     class frame
     {
@@ -686,6 +685,23 @@ namespace rs
             error::handle(e);
         }
 
+        /// check whether the specific device support data aqcuisition channels        
+        int supports_events()
+        {
+            rs_error * e = nullptr;
+            auto res = rs_supports_events((const rs_device *)this, &e);
+            error::handle(e);
+            return res;
+        }
+
+        /// notify backend to querry hw event on play
+        void enable_events()
+        {
+            rs_error * e = nullptr;
+            rs_enable_events((rs_device *)this, &e);
+            error::handle(e);
+        }
+
         void disable_events()
         {
             rs_error * e = nullptr;
@@ -719,22 +735,22 @@ namespace rs
         }
 
         void set_timestamp_callback(timestamp_callback_base& on_event)
-		{
-			rs_error * e = nullptr;
+        {
+            rs_error * e = nullptr;
             rs_set_timestamp_callback((rs_device *)this, [](rs_device * device, rs_timestamp_data ts_data, void * user) {
-				try
-				{
+                try
+                {
                     auto listener = (timestamp_callback_base *)user;
                     listener->on_event((rs::timestamp_data)ts_data);
-				}
-				catch (...)
-				{
+                }
+                catch (...)
+                {
 
-				}
-			}, &on_event, &e);
-			error::handle(e);
-		}
-				
+                }
+            }, &on_event, &e);
+            error::handle(e);
+        }
+                
 
         /// begin streaming on all enabled streams for this device
         ///
