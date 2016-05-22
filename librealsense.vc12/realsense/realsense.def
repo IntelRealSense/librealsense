@@ -24,7 +24,8 @@ EXPORTS
 	rs_get_stream_format
 	rs_get_stream_framerate
 	rs_get_stream_intrinsics
-	
+	rs_supports
+
 	rs_start_device
 	rs_stop_device
 	rs_is_device_streaming

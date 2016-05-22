@@ -209,6 +209,7 @@ namespace rsimpl
             std::map<int, com_ptr<IKsControl>> ks_controls;
             com_ptr<IMFSourceReader> mf_source_reader;
             std::function<void(const void * frame)> callback;
+            int vid, pid;
 
             com_ptr<IMFMediaSource> get_media_source()
             {
@@ -593,7 +594,7 @@ namespace rsimpl
         {
             auto & sub = device.subdevices[subdevice];
             sub.get_media_source();
-            if(option == RS_OPTION_COLOR_EXPOSURE)
+            if(option == RS_OPTION_COLOR_EXPOSURE || RS_OPTION_FISHEYE_COLOR_EXPOSURE)
             {
                 check("IAMCameraControl::Set", sub.am_camera_control->Set(CameraControl_Exposure, static_cast<int>(std::round(log2(static_cast<double>(value) / 10000))), CameraControl_Flags_Manual));
                 return;
@@ -646,7 +647,7 @@ namespace rsimpl
             auto & sub = device.subdevices[subdevice];
             const_cast<uvc::subdevice &>(sub).get_media_source();
             long minVal=0, maxVal=0, steppingDelta=0, defVal=0, capsFlag=0;
-            if(option == RS_OPTION_COLOR_EXPOSURE)
+            if(option == RS_OPTION_COLOR_EXPOSURE || RS_OPTION_FISHEYE_COLOR_EXPOSURE)
             {
                 check("IAMCameraControl::Get", sub.am_camera_control->GetRange(CameraControl_Exposure, &minVal, &maxVal, &steppingDelta, &defVal, &capsFlag));
                 if(min)  *min  = win_to_uvc_exposure(minVal);
@@ -749,7 +750,7 @@ namespace rsimpl
         {
             auto & sub = device.subdevices[subdevice];
             long value=0, flags=0;
-            if(option == RS_OPTION_COLOR_EXPOSURE)
+            if(option == RS_OPTION_COLOR_EXPOSURE || RS_OPTION_FISHEYE_COLOR_EXPOSURE)
             {
                 check("IAMCameraControl::Get", sub.am_camera_control->Get(CameraControl_Exposure, &value, &flags));
                 return win_to_uvc_exposure(value);
@@ -782,10 +783,13 @@ namespace rsimpl
 
         bool is_device_connected(device & device, int vid, int pid)
         {
-            if (vid == PID_INTEL_CAMERA && pid == 0x0ad0)
-                return false;
+            for(auto& dev : device.subdevices)
+            {
+                if(dev.vid == vid && dev.pid == pid)
+                    return true;
+            }
 
-            return (device.vid == vid && device.pid == pid) ? true : false;
+            return false;
         }
 
         std::vector<std::shared_ptr<device>> query_devices(std::shared_ptr<context> context)
@@ -831,7 +835,31 @@ namespace rsimpl
 
                 dev->subdevices[subdevice_index].reader_callback = new reader_callback(dev, static_cast<int>(subdevice_index));
                 dev->subdevices[subdevice_index].mf_activate = pDevice;                
+                dev->subdevices[subdevice_index].vid = vid;
+                dev->subdevices[subdevice_index].pid = pid;
             }
+
+            for(auto& devA : devices) // Look for CX3 Fisheye camera
+            {
+               if(devA->vid == 0x8086 && devA->pid == 0x0ad0)
+               {
+                    for(auto& devB : devices) // Look for DS ZR300 camera
+                    {
+                        if(devB->vid == 0x8086 && devB->pid == 0x0acb)
+                        {
+                            devB->subdevices.resize(4);
+                            devB->subdevices[3].reader_callback = new reader_callback(devB, static_cast<int>(3));
+                            devB->subdevices[3].mf_activate = devA->subdevices[0].mf_activate;
+                            devB->subdevices[3].vid = 0x8086;
+                            devB->subdevices[3].pid = 0x0ad0;
+                            devices.erase(std::remove(devices.begin(), devices.end(), devA), devices.end());
+                            break;
+                        }
+                    }
+                    break;
+                }
+            }
+
             CoTaskMemFree(ppDevices);
             return devices;
         }
