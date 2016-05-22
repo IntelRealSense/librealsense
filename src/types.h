@@ -19,6 +19,7 @@
 #include <condition_variable>               // For condition_variable
 
 #define RS_STREAM_NATIVE_COUNT 5
+#define RS_CHANNEL_NATIVE_COUNT 1
 
 namespace rsimpl
 {
@@ -43,7 +44,7 @@ namespace rsimpl
         operator T () const
         {
             T le_value = 0;
-            for(int i=0; i<sizeof(T); ++i) reinterpret_cast<char *>(&le_value)[i] = reinterpret_cast<const char *>(&be_value)[sizeof(T)-i-1];
+            for(unsigned int i=0; i<sizeof(T); ++i) reinterpret_cast<char *>(&le_value)[i] = reinterpret_cast<const char *>(&be_value)[sizeof(T)-i-1];
             return le_value;
         }
     };
@@ -76,8 +77,10 @@ namespace rsimpl
     RS_ENUM_HELPERS(rs_format, FORMAT)
     RS_ENUM_HELPERS(rs_preset, PRESET)
     RS_ENUM_HELPERS(rs_distortion, DISTORTION)
-    RS_ENUM_HELPERS(rs_option, OPTION)
+    RS_ENUM_HELPERS(rs_option, OPTION)    
+    RS_ENUM_HELPERS(rs_channel, CHANNEL)
     RS_ENUM_HELPERS(rs_capabilities, CAPABILITIES)
+    RS_ENUM_HELPERS(rs_source, SOURCE)
     #undef RS_ENUM_HELPERS
 
     ////////////////////////////////////////////
@@ -158,11 +161,17 @@ namespace rsimpl
         rs_option option;
         double min, max, step, def;
     };
+        
+    struct data_polling_request
+    {
+        bool        enabled;        
+    };
 
     struct static_device_info
     {
         std::string name;                                                   // Model name of the camera        
         int stream_subdevices[RS_STREAM_NATIVE_COUNT];                      // Which subdevice is used to support each stream, or -1 if stream is unavailable
+        int data_subdevices[RS_STREAM_NATIVE_COUNT];                        // Specify whether the subdevice supports events pipe in addition to streaming, -1 if data channels are unavailable
         std::vector<subdevice_mode> subdevice_modes;                        // A list of available modes each subdevice can be put into
         std::vector<interstream_rule> interstream_rules;                    // Rules which constrain the set of available modes
         stream_request presets[RS_STREAM_NATIVE_COUNT][RS_PRESET_COUNT];    // Presets available for each stream
@@ -175,6 +184,17 @@ namespace rsimpl
         std::vector<rs_capabilities> capabilities_vector;
 
         static_device_info();
+    };
+
+    struct motion_event
+    {
+        unsigned short      error_state;
+        unsigned short      status;
+        unsigned short      imu_entries_num;
+        unsigned short      non_imu_entries_num;
+        unsigned long       timestamp;
+        rs_motion_data      imu_packets[4];
+        rs_timestamp_data   non_imu_packets[8];
     };
 
     //////////////////////////////////
@@ -201,11 +221,40 @@ namespace rsimpl
         void unpack(byte * const dest[], const byte * source) const;
     };
 
+    class motion_events_callback
+    {
+        void(*on_event)(rs_device * dev, rs_motion_data data, void * user);
+        void        * user;
+        rs_device   * device;
+    public:
+        motion_events_callback() : motion_events_callback(nullptr, nullptr, nullptr) {}
+        motion_events_callback(rs_device * dev, void(*on_event)(rs_device *, rs_motion_data, void *), void * user) : on_event(on_event), user(user), device(dev) {}
+
+        operator bool() { return on_event != nullptr; }
+        void operator () (rs_motion_data data) const { if (on_event) on_event(device, data, user); }
+    };
+
+    class timestamp_events_callback
+	{
+		void(*on_event)(rs_device * dev, rs_timestamp_data data, void * user);
+		void        * user;
+		rs_device   * device;
+	public:
+        timestamp_events_callback() : timestamp_events_callback(nullptr, nullptr, nullptr) {}
+        timestamp_events_callback(rs_device * dev, void(*on_event)(rs_device *, rs_timestamp_data, void *), void * user) : on_event(on_event), user(user), device(dev) {}
+
+		operator bool() { return on_event != nullptr; }
+		void operator () (rs_timestamp_data data) const { if (on_event) on_event(device, data, user); }
+	};
+
     struct device_config
     {
         const static_device_info info;
-        stream_request requests[RS_STREAM_NATIVE_COUNT];    // Modified by enable/disable_stream calls
-        float depth_scale;                                  // Scale of depth values
+        stream_request          requests[RS_STREAM_NATIVE_COUNT];	// Modified by enable/disable_stream calls
+        data_polling_request    data_requests;                      // Modified by enable/disable_events calls
+        std::vector<motion_events_callback> motion_callbacks;            // Modified by set_events_callback calls
+        std::vector<timestamp_events_callback> timestamp_callbacks;
+        float depth_scale;														// Scale of depth values
 
         device_config(const rsimpl::static_device_info & info) : info(info), depth_scale(info.nominal_depth_scale) 
         { 

@@ -21,6 +21,8 @@ namespace rsimpl
         void on_update_disparity_multiplier(double multiplier);
         uint32_t get_lr_framerate() const;
 
+        bool ds_pwr_on;
+        bool mm_pwr_on;
     public:
         r200_camera(std::shared_ptr<uvc::device> device, const static_device_info & info);
         ~r200_camera();
@@ -30,6 +32,13 @@ namespace rsimpl
         void set_options(const rs_option options[], int count, const double values[]) override;
         void get_options(const rs_option options[], int count, double values[]) override;
 
+        void start_events() override;
+        void stop_events() override;
+
+        void start() override;
+        void stop() override;
+
+        void toggle_motion_module_power(bool bOn);
         void on_before_start(const std::vector<subdevice_mode_selection> & selected_modes) override;
         rs_stream select_key_stream(const std::vector<rsimpl::subdevice_mode_selection> & selected_modes) override;
         std::shared_ptr<frame_timestamp_reader> create_frame_timestamp_reader() const override;

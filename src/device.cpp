@@ -4,6 +4,10 @@
 #include "device.h"
 #include "sync.h"
 
+#include <algorithm>
+#include <sstream>
+#include <iostream>
+
 using namespace rsimpl;
 
 rs_device::rs_device(std::shared_ptr<rsimpl::uvc::device> device, const rsimpl::static_device_info & info) : device(device), config(info), capturing(false),
@@ -62,6 +66,93 @@ void rs_device::disable_stream(rs_stream stream)
     config.requests[stream] = {};
     for(auto & s : native_streams) s->archive.reset(); // Changing stream configuration invalidates the current stream info
 }
+
+int rs_device::supports_events() const
+{
+    bool bRes = true;
+    //TODO Evgeni
+    return bRes;
+}
+
+void rs_device::enable_events()
+{
+    if (data_acquisition_active) throw std::runtime_error("channel cannot be reconfigured after having called rs_start_device()");
+
+    config.data_requests.enabled = true;
+
+}
+
+void rs_device::disable_events()
+{
+    if (data_acquisition_active) throw std::runtime_error("channel cannot be reconfigured after having called rs_start_device()");
+
+    config.data_requests.enabled = false;
+}
+
+void rs_device::start_events()
+{
+    if (data_acquisition_active) throw std::runtime_error("cannot restart data acquisition without stopping first");
+
+    std::vector<motion_events_callback> mo_callbacks = config.motion_callbacks;
+    std::vector<timestamp_events_callback> ts_callbacks = config.timestamp_callbacks;
+
+    motion_module_parser parser;
+
+    // Activate data polling handler
+    if (config.data_requests.enabled)
+    {
+        // TODO -replace hard-coded value 3 which stands for fisheye subdevice   
+        set_subdevice_data_channel_handler(*device, 3,
+            [mo_callbacks, ts_callbacks, parser](const unsigned char * data, const int size) mutable
+        {
+            // Parse motion data
+            auto events = parser(data, size);
+
+            // Handle events by user-provided handlers
+            for (auto & entry : events)
+            {		
+				// Handle Motion data packets
+				for (int i = 0; i < entry.imu_entries_num; i++)
+				{
+					for (auto & cb : mo_callbacks)
+					{
+						cb(entry.imu_packets[i]);
+					}
+				}
+
+				// Handle Timestamp packets
+				for (int i = 0; i < entry.non_imu_entries_num; i++)
+				{
+					for (auto & cb : ts_callbacks)
+					{
+						cb(entry.non_imu_packets[i]);
+					}
+				}
+            }
+        });
+    }
+
+    start_data_acquisition(*device);     // activate polling thread in the backend
+    data_acquisition_active = true;
+}
+
+void rs_device::stop_events()
+{
+    if (!data_acquisition_active) throw std::runtime_error("cannot stop data acquisition - is already stopped");
+    stop_data_acquisition(*device);
+    data_acquisition_active = false; // todo
+}
+
+void rs_device::set_motion_callback(void(*on_event)(rs_device * device, rs_motion_data data, void * user), void * user)
+{
+    config.motion_callbacks.push_back({ this, on_event, user });
+}
+
+void rs_device::set_timestamp_callback(void(*on_event)(rs_device * device, rs_timestamp_data data, void * user), void * user)
+{
+    config.timestamp_callbacks.push_back({ this, on_event, user });
+}
+
 
 void rs_device::start()
 {
@@ -171,4 +262,96 @@ void rs_device::get_option_range(rs_option option, double & min, double & max, d
     }
 
     throw std::logic_error("range not specified");
+}
+
+std::vector<motion_event> motion_module_parser::operator() (const unsigned char* data, const int& data_size)
+{
+    const unsigned short motion_packet_size = 104; // bytes
+    const unsigned short motion_packet_header_size = 8; // bytes
+    const unsigned short non_imu_data_offset = 56; // bytes
+    unsigned short packets = data_size / motion_packet_size;
+
+    std::vector<motion_event> v;
+
+    if (packets)
+    {
+        unsigned char *cur_packet = nullptr;        
+
+        for (uint8_t i = 0; i < packets; i++)
+        {
+            motion_event event_data;
+
+            cur_packet = (unsigned char*)data + (i*motion_packet_size);
+
+            // extract packet info
+            memcpy(&event_data.error_state, &cur_packet[0], sizeof(unsigned short));
+            memcpy(&event_data.status,      &cur_packet[2], sizeof(unsigned short));
+            memcpy(&event_data.imu_entries_num, &cur_packet[4], sizeof(unsigned short));
+            memcpy(&event_data.non_imu_entries_num, &cur_packet[6], sizeof(unsigned short));
+
+            // Parse IMU entries
+            for (uint8_t j = 0; j < event_data.imu_entries_num; j++)
+            {
+                event_data.imu_packets[j] = parse_motion(&cur_packet[motion_packet_header_size]);
+                
+            }
+
+            // Parse non-IMU entries
+            for (uint8_t j = 0; j < event_data.imu_entries_num; j++)
+            {
+                parse_timestamp(&cur_packet[non_imu_data_offset],event_data.non_imu_packets[j]);
+            }
+
+            v.push_back(std::move(event_data));
+        }
+    }
+    
+    return v;
+    
+}
+
+void motion_module_parser::parse_timestamp(const unsigned char * data,rs_timestamp_data &entry )
+{
+    // assuming msb ordering
+    unsigned short  tmp     =   (data[1]<<8) | (data[0]);
+
+    entry.source_id         =   rs_event_source(tmp&0x7);   // bits [0:2] - source_id
+    entry.frame_number         =   (tmp & 0x7fff)>>3;          // bits [3-14] - frame num
+    memcpy(&entry.timestamp,&data[2],sizeof(unsigned int)); // bits [16:47] - timestamp
+
+}
+
+rs_motion_data motion_module_parser::parse_motion(const unsigned char * data)
+{
+    // predefined motion devices ranges
+
+    const static float gravity = 9.871f;
+    const static float gyro_range = 2000.f;
+    const static float gyro_transform_factor = (gyro_range * 3.141527f) / (360.f * 32768.f);
+
+    const static float accel_range = 0.00195f;   // [-4..4]g
+    const static float accelerator_transform_factor = accel_range * gravity;
+
+    rs_motion_data entry;
+
+    //entry::rs_timestamp_data =
+    parse_timestamp(data, (rs_timestamp_data&)entry);
+
+    entry.is_valid = data[1]& (0x80);          // bit[15]
+
+    short tmp[3];
+    memcpy(&tmp,&data[6],sizeof(short)*3);
+
+    unsigned data_shift = (RS_IMU_ACCEL == entry.timestamp_data.source_id) ? 4 : 0;
+
+    for (int i=0; i<3; i++)                     // convert axis data to physical units (m/sec^2)
+    {
+        entry.axes[i] = (tmp[i]>>data_shift);
+        if (RS_IMU_ACCEL == entry.timestamp_data.source_id) entry.axes[i] *= accelerator_transform_factor;
+        if (RS_IMU_GYRO == entry.timestamp_data.source_id) entry.axes[i] *= gyro_transform_factor;
+
+        // TODO check and report invalid cnversion requests
+    }
+
+    return entry;
 }

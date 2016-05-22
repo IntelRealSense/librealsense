@@ -17,6 +17,13 @@ namespace rsimpl
         virtual int get_frame_timestamp(const subdevice_mode & mode, const void * frame) = 0;
 		virtual int get_frame_counter(const subdevice_mode &, const void * frame) = 0;
     };
+
+	struct motion_module_parser
+    {
+        std::vector<motion_event> operator() (const unsigned char* data, const int& data_size);
+        void parse_timestamp(const unsigned char* data,rs_timestamp_data &);
+		rs_motion_data parse_motion(const unsigned char* data);
+	};
 }
 
 struct rs_device
@@ -34,6 +41,7 @@ private:
     rsimpl::stream_interface *                  streams[RS_STREAM_COUNT];
 
     bool                                        capturing;
+	bool                                        data_acquisition_active;
     std::chrono::high_resolution_clock::time_point capture_started;
 
     std::shared_ptr<rsimpl::frame_archive>      archive;
@@ -55,8 +63,17 @@ public:
     void                                        enable_stream_preset(rs_stream stream, rs_preset preset);    
     void                                        disable_stream(rs_stream stream);
 
-    void                                        start();
-    void                                        stop();
+    int                                         supports_events() const;
+    void										enable_events();
+    void										disable_events();
+    virtual void                                start_events();
+    virtual void                                stop_events();
+    int											events_active() const { return data_acquisition_active; }
+    void                                        set_motion_callback(void(*on_event)(rs_device * device, rs_motion_data data, void * user), void * user);
+    void                                        set_timestamp_callback(void(*on_event)(rs_device * device, rs_timestamp_data data, void * user), void * user);
+
+    virtual void                                start();
+    virtual void                                stop();
     bool                                        is_capturing() const { return capturing; }
     
     void                                        wait_all_streams();

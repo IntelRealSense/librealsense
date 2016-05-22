@@ -31,10 +31,10 @@ namespace rsimpl
         };
 
         r200_calibration read_camera_info(uvc::device & device);
-        std::string read_firmware_version(uvc::device & device);
+        std::string read_firmware_version(uvc::device & device);        
              
         void get_register_value(uvc::device & device, uint32_t reg, uint32_t & value);
-		void set_register_value(uvc::device & device, uint32_t reg, uint32_t value);
+        void set_register_value(uvc::device & device, uint32_t reg, uint32_t value);
 
         /////////////////////////////
         // Extension unit controls //
@@ -67,6 +67,9 @@ namespace rsimpl
             lr_gain_discovery          = 22,
             hw_timestamp               = 23,
         };
+
+        // Claim USB interface used for motion module device
+        void claim_motion_module_interface(uvc::device & device);
 
         void xu_read(const uvc::device & device, uvc::extension_unit xu, control xu_ctrl, void * buffer, uint32_t length);
         void xu_write(uvc::device & device, uvc::extension_unit xu, control xu_ctrl, void * buffer, uint32_t length);
@@ -149,6 +152,8 @@ namespace rsimpl
         void set_strobe(uvc::device & device, uint8_t strobe);
         uint8_t get_ext_trig(const uvc::device & device);
         void set_ext_trig(uvc::device & device, uint8_t ext_trig);
+
+        void toggle_adapter_board_pwr(uvc::device & device, bool on);
 
 
         ///////////////

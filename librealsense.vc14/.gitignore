@@ -2,6 +2,7 @@ ipch/
 packages/
 */obj/
 *.opendb
+*.db
 *.sdf
 *.suo
 *.user

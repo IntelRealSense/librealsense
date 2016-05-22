@@ -69,6 +69,16 @@ typedef enum rs_preset
     RS_PRESET_MAX_ENUM = 0x7FFFFFFF
 } rs_preset;
 
+
+typedef enum rs_source
+{
+    RS_SOURCE_VIDEO                            = 0,
+    RS_SOURCE_EVENTS                           = 1,
+    RS_SOURCE_COUNT                            = 2,
+    RS_SOURCE_MAX_ENUM = 0x7FFFFFFF
+} rs_source;
+
+
 typedef enum rs_distortion
 {
     RS_DISTORTION_NONE                   = 0, /**< Rectilinear images, no distortion compensation required */
@@ -158,7 +168,7 @@ typedef enum rs_option
     RS_OPTION_R200_DEPTH_CONTROL_TEXTURE_DIFFERENCE_THRESHOLD = 59, 
     RS_OPTION_R200_DEPTH_CONTROL_SECOND_PEAK_THRESHOLD        = 60, 
     RS_OPTION_R200_DEPTH_CONTROL_NEIGHBOR_THRESHOLD           = 61, 
-    RS_OPTION_R200_DEPTH_CONTROL_LR_THRESHOLD                 = 62, 
+    RS_OPTION_R200_DEPTH_CONTROL_LR_THRESHOLD                 = 62,
     RS_OPTION_FISHEYE_COLOR_EXPOSURE                          = 63,
     RS_OPTION_FISHEYE_COLOR_GAIN                              = 64,
     RS_OPTION_FISHEYE_STROBE                                  = 65,
@@ -167,6 +177,13 @@ typedef enum rs_option
     RS_OPTION_MAX_ENUM = 0x7FFFFFFF
 } rs_option;
 
+typedef enum rs_channel
+{
+    RS_CHANNEL_MOTION_DATA      = 0,
+    RS_CHANNEL_TIMESTAMP_DATA   = 1,
+    RS_CHANNEL_COUNT,
+    RS_CHANNEL_MAX_ENUM = 0x7FFFFFFF
+} rs_channel;
 
 typedef struct rs_intrinsics
 {
@@ -185,6 +202,33 @@ typedef struct rs_extrinsics
     float rotation[9];    /* column-major 3x3 rotation matrix */
     float translation[3]; /* 3 element translation vector, in meters */
 } rs_extrinsics;
+
+typedef enum rs_event_source// : unsigned char
+{
+    RS_IMU_ACCEL        = 1,
+    RS_IMU_GYRO         = 2,
+    RS_IMU_DEPTH_CAM    = 3,
+    RS_IMU_MOTION_CAM   = 4,
+    RS_G0_SYNC          = 5,
+    RS_G1_SYNC          = 6,
+    RS_G2_SYNC          = 7
+}rs_event_source;
+
+typedef struct rs_timestamp_data
+{
+    unsigned int        timestamp;
+    rs_event_source     source_id;
+    unsigned short      frame_number;  /* 12 bit; per data source */
+} rs_timestamp_data;
+
+typedef struct rs_motion_data
+{
+    rs_timestamp_data   timestamp_data;
+    unsigned int        is_valid;   /* boolean */
+    float               axes[3];    /* Three [x,y,z] axes; 16 bit data for Gyro, 12 bit for Accelerometer; 2's complement*/
+} rs_motion_data;
+
+
 
 typedef struct rs_context rs_context;
 typedef struct rs_device rs_device;
@@ -348,6 +392,61 @@ int rs_get_stream_framerate(const rs_device * device, rs_stream stream, rs_error
 void rs_get_stream_intrinsics(const rs_device * device, rs_stream stream, rs_intrinsics * intrin, rs_error ** error);
 
 /**
+* check whether the device provides the requested data aqcuisition channels
+* \param[in] data_channel the data to acquired: sensors data, hw statuses, etc'
+*/
+int rs_supports_events(const rs_device * device, rs_error ** error);
+
+/**
+ * enable a specific data channel with specific properties
+ * \param[in] data_channel  the data format that will be handled by the channel
+ * \param[in] framerate    the number of data frames that will be published per second, or 0 if any rate is acceptable
+ */
+void rs_enable_events(rs_device * device, rs_error ** error);
+
+/**
+ * disable a specific data channel
+  * \param[in] data_channel  the data format that will be handled by the channel
+ */
+void rs_disable_events(rs_device * device, rs_error ** error);
+
+/**
+* start data acquisition from specific channel
+* \param[in] data_channel
+*/
+void rs_start_events(rs_device * device, rs_error ** error);
+
+/**
+* stop data acquisition from specific channel
+* \param[in] data_channel
+*/
+void rs_stop_events(rs_device * device, rs_error ** error);
+
+/**
+* check if data acquisition is active
+* \param[in] data_channel
+*/
+int rs_events_active(rs_device * device, rs_error ** error);
+
+/**
+* set up a event callback that will be called immediately when hw event is available, with no synchronization logic applied
+* \param[in] stream    the stream for whose images the callback should be registered
+* \param[in] on_event  the callback which will receive the event data and handle it
+* \param[in] user      a user data point to be passed to the callback
+* \param[out] error    if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+*/
+void rs_set_motion_callback(rs_device * device, void(*on_event)(rs_device *, rs_motion_data, void *), void * user, rs_error ** error);
+
+/**
+* set up a event callback that will be called immediately when hw event is available, with no synchronization logic applied
+* \param[in] stream    the stream for whose images the callback should be registered
+* \param[in] on_event  the callback which will receive the event data and handle it
+* \param[in] user      a user data point to be passed to the callback
+* \param[out] error    if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+*/
+void rs_set_timestamp_callback(rs_device * device, void(*on_event)(rs_device * dev, rs_timestamp_data, void * user), void * user, rs_error ** error);
+
+/**
  * begin streaming on all enabled streams for this device
  * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
  */
@@ -473,7 +572,9 @@ const char * rs_format_to_string     (rs_format format);
 const char * rs_preset_to_string     (rs_preset preset);
 const char * rs_distortion_to_string (rs_distortion distortion);
 const char * rs_option_to_string     (rs_option option);
+const char * rs_channel_to_string    (rs_channel channel);
 const char * rs_capabilities_to_string(rs_capabilities capability);
+const char * rs_source_to_string     (rs_source source);
 
 typedef enum
 {

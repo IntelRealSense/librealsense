@@ -1,10 +1,13 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
+#include <functional>   // For function
+#include <climits>
+
 #include "context.h"
 #include "device.h"
 
-#include <climits>
+
 
 ////////////////////////
 // API implementation //
@@ -209,11 +212,72 @@ void rs_get_stream_intrinsics(const rs_device * device, rs_stream stream, rs_int
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, device, stream, intrin)
 
+int rs_supports_events(const rs_device * device, rs_error ** error) try
+{
+    VALIDATE_NOT_NULL(device);
+    return device->supports_events();
+}
+HANDLE_EXCEPTIONS_AND_RETURN( false, device)
 
+void rs_enable_events(rs_device * device, rs_error ** error) try
+{
+    VALIDATE_NOT_NULL(device);    
+
+    device->enable_events();
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, device)
+
+void rs_disable_events(rs_device * device, rs_error ** error) try
+{
+    VALIDATE_NOT_NULL(device);    
+
+    device->disable_events();
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, device)
+
+void rs_start_events(rs_device * device, rs_error ** error) try
+{
+	VALIDATE_NOT_NULL(device);
+
+    device->start_events();
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, device)
+
+void rs_stop_events(rs_device * device, rs_error ** error) try
+{
+	VALIDATE_NOT_NULL(device);
+
+    device->stop_events();
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, device)
+
+int rs_events_active(rs_device * device, rs_error ** error) try
+{
+	VALIDATE_NOT_NULL(device);	
+
+    return device->events_active();
+}
+HANDLE_EXCEPTIONS_AND_RETURN(0, device)
+
+void rs_set_motion_callback(rs_device * device, void(*on_event)(rs_device * dev, rs_motion_data data, void * user), void * user, rs_error ** error) try
+{
+	VALIDATE_NOT_NULL(device);	
+	VALIDATE_NOT_NULL(on_event);
+    device->set_motion_callback( on_event, user);
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, device, on_event, user)
+
+void rs_set_timestamp_callback(rs_device * device, void(*on_event)(rs_device * dev, rs_timestamp_data data, void * user), void * user, rs_error ** error) try
+{
+	VALIDATE_NOT_NULL(device);	
+	VALIDATE_NOT_NULL(on_event);
+    device->set_timestamp_callback(on_event, user);
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, device, on_event, user)
 
 void rs_start_device(rs_device * device, rs_error ** error) try
 {
-    VALIDATE_NOT_NULL(device);
+    VALIDATE_NOT_NULL(device);    
     device->start();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, device)
@@ -323,12 +387,20 @@ const char * rs_get_option_name(rs_option option, rs_error ** error) try
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, option)
 
+const char * rs_get_channel_name(rs_channel channel, rs_error ** error) try
+{
+	VALIDATE_ENUM(channel);
+	return rsimpl::get_string(channel);
+}
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, channel)
+
 const char * rs_get_capabilities_name(rs_capabilities capability, rs_error ** error) try
 {
     VALIDATE_ENUM(capability);
     return rsimpl::get_string(capability);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, capability)
+
 
 void rs_get_device_option_range(rs_device * device, rs_option option, double * min, double * max, double * step, double * def, rs_error ** error) try
 {
@@ -411,7 +483,9 @@ const char * rs_format_to_string(rs_format format) { return rsimpl::get_string(f
 const char * rs_preset_to_string(rs_preset preset) { return rsimpl::get_string(preset); }
 const char * rs_distortion_to_string(rs_distortion distortion) { return rsimpl::get_string(distortion); }
 const char * rs_option_to_string(rs_option option) { return rsimpl::get_string(option); }
+const char * rs_channel_to_string(rs_channel data) { return rsimpl::get_string(data); }
 const char * rs_capabilities_to_string(rs_capabilities capability) { return rsimpl::get_string(capability); }
+const char * rs_source_to_string(rs_source source)   { return rsimpl::get_string(source); }
 
 
 void rs_log_to_console(rs_log_severity min_severity, rs_error ** error) try

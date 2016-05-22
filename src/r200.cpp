@@ -8,6 +8,7 @@
 #include <cstring>
 #include <climits>
 #include <algorithm>
+#include <iostream>
 
 namespace rsimpl
 {
@@ -101,36 +102,36 @@ namespace rsimpl
         for(int i=0; i<RS_PRESET_COUNT; ++i)
             info.presets[RS_STREAM_INFRARED2][i] = info.presets[RS_STREAM_INFRARED][i];
 
-		info.options = {
-			{RS_OPTION_R200_LR_AUTO_EXPOSURE_ENABLED,                   0, 1,           1},
-			{RS_OPTION_R200_EMITTER_ENABLED,                            0, 1,           1},
-			{RS_OPTION_R200_DEPTH_UNITS,                                1, INT_MAX,     1}, // What is the real range?
-			{RS_OPTION_R200_DEPTH_CLAMP_MIN,                            0, USHRT_MAX,   1},
-			{RS_OPTION_R200_DEPTH_CLAMP_MAX,                            0, USHRT_MAX,   1},
-			{RS_OPTION_R200_DISPARITY_MULTIPLIER,                       1, 1000,        1},
-			{RS_OPTION_R200_DISPARITY_SHIFT,                            0, 0,           1},
+        info.options = {
+            {RS_OPTION_R200_LR_AUTO_EXPOSURE_ENABLED,                   0, 1,           1},
+            {RS_OPTION_R200_EMITTER_ENABLED,                            0, 1,           1},
+            {RS_OPTION_R200_DEPTH_UNITS,                                1, INT_MAX,     1}, // What is the real range?
+            {RS_OPTION_R200_DEPTH_CLAMP_MIN,                            0, USHRT_MAX,   1},
+            {RS_OPTION_R200_DEPTH_CLAMP_MAX,                            0, USHRT_MAX,   1},
+            {RS_OPTION_R200_DISPARITY_MULTIPLIER,                       1, 1000,        1},
+            {RS_OPTION_R200_DISPARITY_SHIFT,                            0, 0,           1},
 
-			{RS_OPTION_R200_AUTO_EXPOSURE_MEAN_INTENSITY_SET_POINT,     0, 4095,        0},
-			{RS_OPTION_R200_AUTO_EXPOSURE_BRIGHT_RATIO_SET_POINT,       0, 1,           0},
-			{RS_OPTION_R200_AUTO_EXPOSURE_KP_GAIN,                      0, 1000,        0},
-			{RS_OPTION_R200_AUTO_EXPOSURE_KP_EXPOSURE,                  0, 1000,        0},
-			{RS_OPTION_R200_AUTO_EXPOSURE_KP_DARK_THRESHOLD,            0, 1000,        0},
-			{RS_OPTION_R200_AUTO_EXPOSURE_TOP_EDGE,                     0, USHRT_MAX,   1},
-			{RS_OPTION_R200_AUTO_EXPOSURE_BOTTOM_EDGE,                  0, USHRT_MAX,   1},
-			{RS_OPTION_R200_AUTO_EXPOSURE_LEFT_EDGE,                    0, USHRT_MAX,   1},
-			{RS_OPTION_R200_AUTO_EXPOSURE_RIGHT_EDGE,                   0, USHRT_MAX,   1},
+            {RS_OPTION_R200_AUTO_EXPOSURE_MEAN_INTENSITY_SET_POINT,     0, 4095,        0},
+            {RS_OPTION_R200_AUTO_EXPOSURE_BRIGHT_RATIO_SET_POINT,       0, 1,           0},
+            {RS_OPTION_R200_AUTO_EXPOSURE_KP_GAIN,                      0, 1000,        0},
+            {RS_OPTION_R200_AUTO_EXPOSURE_KP_EXPOSURE,                  0, 1000,        0},
+            {RS_OPTION_R200_AUTO_EXPOSURE_KP_DARK_THRESHOLD,            0, 1000,        0},
+            {RS_OPTION_R200_AUTO_EXPOSURE_TOP_EDGE,                     0, USHRT_MAX,   1},
+            {RS_OPTION_R200_AUTO_EXPOSURE_BOTTOM_EDGE,                  0, USHRT_MAX,   1},
+            {RS_OPTION_R200_AUTO_EXPOSURE_LEFT_EDGE,                    0, USHRT_MAX,   1},
+            {RS_OPTION_R200_AUTO_EXPOSURE_RIGHT_EDGE,                   0, USHRT_MAX,   1},
 
-			{RS_OPTION_R200_DEPTH_CONTROL_ESTIMATE_MEDIAN_DECREMENT,    0, 0xFF,        1},
-			{RS_OPTION_R200_DEPTH_CONTROL_ESTIMATE_MEDIAN_INCREMENT,    0, 0xFF,        1},
-			{RS_OPTION_R200_DEPTH_CONTROL_MEDIAN_THRESHOLD,             0, 0x3FF,       1},
-			{RS_OPTION_R200_DEPTH_CONTROL_SCORE_MINIMUM_THRESHOLD,      0, 0x3FF,       1},
-			{RS_OPTION_R200_DEPTH_CONTROL_SCORE_MAXIMUM_THRESHOLD,      0, 0x3FF,       1},
-			{RS_OPTION_R200_DEPTH_CONTROL_TEXTURE_COUNT_THRESHOLD,      0, 0x1F,        1},
-			{RS_OPTION_R200_DEPTH_CONTROL_TEXTURE_DIFFERENCE_THRESHOLD, 0, 0x3FF,       1},
-			{RS_OPTION_R200_DEPTH_CONTROL_SECOND_PEAK_THRESHOLD,        0, 0x3FF,       1},
-			{RS_OPTION_R200_DEPTH_CONTROL_NEIGHBOR_THRESHOLD,           0, 0x3FF,       1},
+            {RS_OPTION_R200_DEPTH_CONTROL_ESTIMATE_MEDIAN_DECREMENT,    0, 0xFF,        1},
+            {RS_OPTION_R200_DEPTH_CONTROL_ESTIMATE_MEDIAN_INCREMENT,    0, 0xFF,        1},
+            {RS_OPTION_R200_DEPTH_CONTROL_MEDIAN_THRESHOLD,             0, 0x3FF,       1},
+            {RS_OPTION_R200_DEPTH_CONTROL_SCORE_MINIMUM_THRESHOLD,      0, 0x3FF,       1},
+            {RS_OPTION_R200_DEPTH_CONTROL_SCORE_MAXIMUM_THRESHOLD,      0, 0x3FF,       1},
+            {RS_OPTION_R200_DEPTH_CONTROL_TEXTURE_COUNT_THRESHOLD,      0, 0x1F,        1},
+            {RS_OPTION_R200_DEPTH_CONTROL_TEXTURE_DIFFERENCE_THRESHOLD, 0, 0x3FF,       1},
+            {RS_OPTION_R200_DEPTH_CONTROL_SECOND_PEAK_THRESHOLD,        0, 0x3FF,       1},
+            {RS_OPTION_R200_DEPTH_CONTROL_NEIGHBOR_THRESHOLD,           0, 0x3FF,       1},
             {RS_OPTION_R200_DEPTH_CONTROL_LR_THRESHOLD,                 0, 0x7FF,       1}
-		};
+        };
 
         if (uvc::is_device_connected(*device, PID_INTEL_CAMERA, FISHEYE_PRODUCT_ID))
         {
@@ -286,8 +287,11 @@ namespace rsimpl
 
         static_device_info info;
         info.name = { "Intel RealSense ZR300" };
-        auto c = r200::read_camera_info(*device);
+        auto c = r200::read_camera_info(*device);        
         info.subdevice_modes.push_back({ 2, { 1920, 1080 }, pf_rw16, 30, c.intrinsicsThird[0], { c.modesThird[0][0] }, { 0 } });
+
+        // Acquire Device handle for Motion Module API
+        r200::claim_motion_module_interface(*device);
 
         if (uvc::is_device_connected(*device, PID_INTEL_CAMERA, FISHEYE_PRODUCT_ID))
         {
@@ -298,8 +302,7 @@ namespace rsimpl
             info.presets[RS_STREAM_FISHEYE][RS_PRESET_BEST_QUALITY] = {true, 640, 480, RS_FORMAT_RAW8,   60};
             info.subdevice_modes.push_back({3, {640, 480}, pf_raw8, 60, c.intrinsicsThird[1], {c.modesThird[1][0]}, {0}});
             info.subdevice_modes.push_back({3, {640, 480}, pf_rw10, 60, c.intrinsicsThird[1], {c.modesThird[1][0]}, {0}});
-        }
-        // TODO: Power on Fisheye camera (mmpwr 1)
+        }        
 
         return make_device(device, info, c);
     }
@@ -378,6 +381,87 @@ namespace rsimpl
             default: LOG_WARNING("Cannot get " << options[i] << " on " << get_name()); break;
             }
         }
+    }
+
+    void r200_camera::toggle_motion_module_power(bool on)
+    {        
+        bool action = false;
+
+        // Temporal patch to be replaced with is_supported.
+        if (on)
+        {
+            if ((config.info.stream_subdevices[RS_STREAM_FISHEYE]>0) && (!ds_pwr_on))
+            {
+                ds_pwr_on = true;
+                if (!mm_pwr_on)
+                    action = true;
+            }
+            else
+            {
+                if (config.data_requests.enabled && (!mm_pwr_on))
+                {
+                    mm_pwr_on = true;
+                    if (!ds_pwr_on)
+                        action = true;
+                }
+            }
+         }
+        else
+        {
+            if (ds_pwr_on)
+            {
+                ds_pwr_on = false;
+                if (!mm_pwr_on)
+                    action = true;
+            }
+            else
+            {
+                if (mm_pwr_on)
+                {
+                    mm_pwr_on = false;
+                    if (!ds_pwr_on)
+                        action = true;
+                }
+            }
+        }
+
+        if (action)
+        {
+            if (on)
+                std::this_thread::sleep_for(std::chrono::milliseconds(500));
+            r200::toggle_adapter_board_pwr(get_device(),on);
+        }
+
+    }
+
+    // Power on Fisheye camera (dspwr)
+    void r200_camera::start()
+    {
+        toggle_motion_module_power(true);
+        rs_device::start();
+    }
+
+    // Power off Fisheye camera
+    void r200_camera::stop()
+    {
+        rs_device::stop();
+        toggle_motion_module_power(false);
+    }
+
+    // Power on motion module (mmpwr)
+    void r200_camera::start_events()
+    {
+        toggle_motion_module_power(true);
+
+        rs_device::start_events();
+    }
+
+    // Power down Motion Module
+    void r200_camera::stop_events()
+    {
+        rs_device::stop_events();
+
+        toggle_motion_module_power(false);
     }
 
     void r200_camera::on_before_start(const std::vector<subdevice_mode_selection> & selected_modes)
@@ -582,22 +666,22 @@ namespace rsimpl
             else frame_number = get_dinghy(mode, frame).frameCount; // All other formats can use the frame number in the dinghy row
             return frame_number * 1000 / max_fps;
         }
-		int get_frame_counter(const subdevice_mode & mode, const void * frame) override
-		{
-			int frame_number = 0;
-			if (mode.pf.fourcc == pf_yuy2.fourcc)
-			{
-				// YUY2 images encode the frame number in the low order bits of the final 32 bytes of the image
-				auto data = reinterpret_cast<const uint8_t *>(frame) + ((mode.native_dims.x * mode.native_dims.y) - 32) * 2;
-				for (int i = 0; i < 32; ++i)
-				{
-					frame_number |= ((*data & 1) << (i & 1 ? 32 - i : 30 - i));
-					data += 2;
-				}
-			}
-			else frame_number = get_dinghy(mode, frame).frameCount; // All other formats can use the frame number in the dinghy row
-			return frame_number;
-		}
+        int get_frame_counter(const subdevice_mode & mode, const void * frame) override
+        {
+            int frame_number = 0;
+            if (mode.pf.fourcc == pf_yuy2.fourcc)
+            {
+                // YUY2 images encode the frame number in the low order bits of the final 32 bytes of the image
+                auto data = reinterpret_cast<const uint8_t *>(frame) + ((mode.native_dims.x * mode.native_dims.y) - 32) * 2;
+                for (int i = 0; i < 32; ++i)
+                {
+                    frame_number |= ((*data & 1) << (i & 1 ? 32 - i : 30 - i));
+                    data += 2;
+                }
+            }
+            else frame_number = get_dinghy(mode, frame).frameCount; // All other formats can use the frame number in the dinghy row
+            return frame_number;
+        }
     };
 
     class serial_timestamp_generator : public frame_timestamp_reader
@@ -612,10 +696,10 @@ namespace rsimpl
             ++serial_frame_number;
             return serial_frame_number * 1000 / fps;
         }
-		int get_frame_counter(const subdevice_mode &, const void *) override
-		{
-			return serial_frame_number;
-		}
+        int get_frame_counter(const subdevice_mode &, const void *) override
+        {
+            return serial_frame_number;
+        }
     };
 
     std::shared_ptr<frame_timestamp_reader> r200_camera::create_frame_timestamp_reader() const

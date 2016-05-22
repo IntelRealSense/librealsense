@@ -15,6 +15,9 @@
 #include <sstream>
 #include <fstream>
 #include <thread>
+#include <utility> // for pair
+#include <chrono>
+#include <thread>
 
 #include <dirent.h>
 #include <fcntl.h>
@@ -81,10 +84,11 @@ namespace rsimpl
             std::vector<buffer> buffers;
 
             int width, height, format, fps;
-            std::function<void(const void *)> callback;
+            std::function<void(const void *)> callback;                 // calback to handle uvc stream
+            std::function<void(const unsigned char * data, const int size)> channel_data_callback;    // handle non-uvc data produced by device
             bool is_capturing;
 
-            subdevice(const std::string & name) : dev_name("/dev/" + name), vid(), pid(), fd(), width(), height(), format(), is_capturing()
+            subdevice(const std::string & name) : dev_name("/dev/" + name), vid(), pid(), fd(), width(), height(), format(), callback(nullptr), channel_data_callback(nullptr), is_capturing()
             {
                 struct stat st;
                 if(stat(dev_name.c_str(), &st) < 0)
@@ -171,13 +175,13 @@ namespace rsimpl
 
             void get_control(const extension_unit & xu, uint8_t control, void * data, size_t size)
             {
-	        uvc_xu_control_query q = {static_cast<uint8_t>(xu.unit), control, UVC_GET_CUR, static_cast<uint16_t>(size), reinterpret_cast<uint8_t *>(data)};
+            uvc_xu_control_query q = {static_cast<uint8_t>(xu.unit), control, UVC_GET_CUR, static_cast<uint16_t>(size), reinterpret_cast<uint8_t *>(data)};
                 if(xioctl(fd, UVCIOC_CTRL_QUERY, &q) < 0) throw_error("UVCIOC_CTRL_QUERY:UVC_GET_CUR");
             }
 
             void set_control(const extension_unit & xu, uint8_t control, void * data, size_t size)
             {
-	        uvc_xu_control_query q = {static_cast<uint8_t>(xu.unit), control, UVC_SET_CUR, static_cast<uint16_t>(size), reinterpret_cast<uint8_t *>(data)};
+            uvc_xu_control_query q = {static_cast<uint8_t>(xu.unit), control, UVC_SET_CUR, static_cast<uint16_t>(size), reinterpret_cast<uint8_t *>(data)};
                 if(xioctl(fd, UVCIOC_CTRL_QUERY, &q) < 0) throw_error("UVCIOC_CTRL_QUERY:UVC_SET_CUR");
             }
 
@@ -188,6 +192,11 @@ namespace rsimpl
                 this->format = fourcc;
                 this->fps = fps;
                 this->callback = callback;
+            }
+
+            void set_data_channel_cfg(std::function<void(const unsigned char * data, const int size)> callback)
+            {                
+                this->channel_data_callback = callback;
             }
 
             void start_capture()
@@ -327,6 +336,29 @@ namespace rsimpl
                         if(xioctl(sub->fd, VIDIOC_QBUF, &buf) < 0) throw_error("VIDIOC_QBUF");
                     }
                 }
+            }            
+
+            static void poll_interrupts(libusb_device_handle *handle, const std::vector<subdevice *> & subdevices)
+            {
+                static const unsigned short interrupt_buf_size = 0x400;
+                uint8_t buffer[interrupt_buf_size];                       /* 64 byte transfer buffer  - dedicated channel*/
+                int num_bytes             = 0;                           /* Actual bytes transferred. */
+
+                // TODO - replace hard-coded values : 0x82 and 1000
+                int res = libusb_interrupt_transfer(handle, 0x84, buffer, interrupt_buf_size, &num_bytes, interrupt_buf_size);
+                if (0 == res)
+                {
+                    // Propagate the data to device layer
+                    for(auto & sub : subdevices)
+                        if (sub->channel_data_callback)
+                            sub->channel_data_callback(buffer, num_bytes);
+                }
+                else
+                {
+                    // todo exception
+                    perror("receiving interrupt_ep bytes failed");
+                    fprintf(stderr, "Error receiving message.\n");
+                }
             }
         };
 
@@ -335,13 +367,16 @@ namespace rsimpl
             const std::shared_ptr<context> parent;
             std::vector<std::unique_ptr<subdevice>> subdevices;
             std::thread thread;
+            std::thread data_channel_thread;
             volatile bool stop;
+            volatile bool data_stop;
 
-            libusb_device * usb_device;
-            libusb_device_handle * usb_handle;
+            libusb_device * usb_device, *usb_aux_device;
+            libusb_device_handle * usb_handle, * usb_aux_handle;
             std::vector<int> claimed_interfaces;
+            std::vector<int> claimed_aux_interfaces;
 
-            device(std::shared_ptr<context> parent) : parent(parent), stop(), usb_device(), usb_handle() {} // TODO: Init
+            device(std::shared_ptr<context> parent) : parent(parent), stop(), usb_device(), usb_aux_device(), usb_handle(), usb_aux_handle() {}
             ~device()
             {
                 stop_streaming();
@@ -351,6 +386,16 @@ namespace rsimpl
                     int status = libusb_release_interface(usb_handle, interface_number);
                     if(status < 0) LOG_ERROR("libusb_release_interface(...) returned " << libusb_error_name(status));
                 }
+
+                for(auto interface_data : claimed_aux_interfaces)
+                {
+                    int status = libusb_release_interface(usb_aux_handle, interface_data);
+                    if(status < 0) LOG_ERROR("libusb_release_interface(...) returned " << libusb_error_name(status));
+                }
+
+                if(usb_aux_handle) libusb_close(usb_aux_handle);
+                if(usb_aux_device) libusb_unref_device(usb_aux_device);
+
                 if(usb_handle) libusb_close(usb_handle);
                 if(usb_device) libusb_unref_device(usb_device);
             }
@@ -367,13 +412,14 @@ namespace rsimpl
             void start_streaming()
             {
                 std::vector<subdevice *> subs;
+
                 for(auto & sub : subdevices)
                 {
                     if(sub->callback)
                     {
                         sub->start_capture();
                         subs.push_back(sub.get());
-                    }
+                    }                
                 }
 
                 thread = std::thread([this, subs]()
@@ -391,6 +437,42 @@ namespace rsimpl
                     stop = false;
 
                     for(auto & sub : subdevices) sub->stop_capture();
+                }                
+            }
+
+            void start_data_acquisition()
+            {
+                std::vector<subdevice *> data_channel_subs;
+                for (auto & sub : subdevices)
+                {                   
+                    if (sub->channel_data_callback)
+                    {
+                        // TODO start_capture();       // both video and motion events. TODO callback for uvc layer
+                        data_channel_subs.push_back(sub.get());
+                    }
+                }
+                
+                // Motion events polling pipe
+                if (claimed_aux_interfaces.size())
+                {
+                    data_channel_thread = std::thread([this, data_channel_subs]()
+                    {
+                        // Polling
+                        while (!data_stop)
+                        {
+                            subdevice::poll_interrupts(this->usb_aux_handle, data_channel_subs);
+                        }
+                    });
+                }
+            }
+
+            void stop_data_acquisition()
+            {
+                if (data_channel_thread.joinable())
+                {
+                    data_stop = true;
+                    data_channel_thread.join();
+                    data_stop = false;
                 }
             }
         };
@@ -424,16 +506,42 @@ namespace rsimpl
             device.claimed_interfaces.push_back(interface_number);
         }
 
-        void bulk_transfer(device & device, unsigned char endpoint, void * data, int length, int *actual_length, unsigned int timeout)
+        void claim_aux_interface(device & device, const guid & interface_guid, int interface_number)
         {
-            if(!device.usb_handle) throw std::logic_error("called uvc::bulk_transfer before uvc::claim_interface");
-            int status = libusb_bulk_transfer(device.usb_handle, endpoint, (unsigned char *)data, length, actual_length, timeout);
+            if(!device.usb_aux_handle)
+            {
+                int status = libusb_open(device.usb_aux_device, &device.usb_aux_handle);
+                if(status < 0) throw std::runtime_error(to_string() << "libusb_open(...) returned " << libusb_error_name(status));
+            }
+
+            int status = libusb_claim_interface(device.usb_aux_handle, interface_number);
+            if(status < 0) throw std::runtime_error(to_string() << "libusb_claim_interface(...) returned " << libusb_error_name(status));            
+            device.claimed_aux_interfaces.push_back(interface_number);
+        }
+
+        void bulk_transfer(device & device, unsigned char handle_id, unsigned char endpoint, void * data, int length, int *actual_length, unsigned int timeout)
+        {
+            libusb_device_handle * handle = (handle_id==0) ?device.usb_handle : device.usb_aux_handle;
+            if(!handle) throw std::logic_error("called uvc::bulk_transfer before uvc::claim_interface");
+            int status = libusb_bulk_transfer(handle, endpoint, (unsigned char *)data, length, actual_length, timeout);
             if(status < 0) throw std::runtime_error(to_string() << "libusb_bulk_transfer(...) returned " << libusb_error_name(status));
+        }
+
+        void interrupt_transfer(device & device, unsigned char endpoint, void * data, int length, int *actual_length, unsigned int timeout)
+        {
+            if(!device.usb_aux_handle) throw std::logic_error("called uvc::interrupt_transfer before uvc::claim_interface");
+            int status = libusb_interrupt_transfer(device.usb_aux_handle, endpoint, (unsigned char *)data, length, actual_length, timeout);
+            if(status < 0) throw std::runtime_error(to_string() << "libusb_interrupt_transfer(...) returned " << libusb_error_name(status));
         }
 
         void set_subdevice_mode(device & device, int subdevice_index, int width, int height, uint32_t fourcc, int fps, std::function<void(const void * frame)> callback)
         {
             device.subdevices[subdevice_index]->set_format(width, height, (const big_endian<int> &)fourcc, fps, callback);
+        }
+
+        void set_subdevice_data_channel_handler(device & device, int subdevice_index, std::function<void(const unsigned char * data, const int size)> callback)
+        {
+            device.subdevices[subdevice_index]->set_data_channel_cfg(callback);
         }
 
         void start_streaming(device & device, int num_transfer_bufs)
@@ -444,7 +552,17 @@ namespace rsimpl
         void stop_streaming(device & device)
         {
             device.stop_streaming();
-        }        
+        }		
+
+		void start_data_acquisition(device & device)
+		{
+			device.start_data_acquisition();
+		}
+
+		void stop_data_acquisition(device & device)
+		{
+			device.stop_data_acquisition();
+		}
 
         static uint32_t get_cid(rs_option option)
         {
@@ -581,7 +699,7 @@ namespace rsimpl
         }
 
         std::vector<std::shared_ptr<device>> query_devices(std::shared_ptr<context> context)
-        {                                            
+        {
             // Enumerate all subdevices present on the system
             std::vector<std::unique_ptr<subdevice>> subdevices;
             DIR * dir = opendir("/sys/class/video4linux");
@@ -633,10 +751,10 @@ namespace rsimpl
                     }
                 }
                 if(is_new_device)
-                {
+                {                    
+                    //if (sub->vid == 0x04b4 && sub->pid == 0x00c3)  // avoid inserting fisheye camera as a device Bring up version
                     if (sub->vid == 0x8086 && sub->pid == 0x0ad0)  // avoid inserting fisheye camera as a device
                         continue;
-
                     devices.push_back(std::make_shared<device>(context));
                     devices.back()->subdevices.push_back(move(sub));
                 }
@@ -660,6 +778,7 @@ namespace rsimpl
 
                 for(auto & dev : devices)
                 {
+                    //if (dev->subdevices[0]->vid == 0x8086 && dev->subdevices[0]->pid == 0x0acb && sub->vid == 0x04b4 && sub->pid == 0x00c3)
                     if (dev->subdevices[0]->vid == 0x8086 && dev->subdevices[0]->pid == 0x0acb && sub->vid == 0x8086 && sub->pid == 0x0ad0)
                     {
                         dev->subdevices.push_back(move(sub));
@@ -681,18 +800,137 @@ namespace rsimpl
 
                 // Look for a video device whose busnum/devnum matches this USB device
                 for(auto & dev : devices)
-                {                    
+                {
+                    if (subdevices.size() >=4)      // Make sure that four subdevices present
+                    {
+                        // First, handle the special case of FishEye
+                        bool bFishEyeDevice = ((busnum == dev->subdevices[3]->busnum) && (devnum == dev->subdevices[3]->devnum));
+                        if(bFishEyeDevice)
+                        {
+                            dev->usb_aux_device = usb_device;
+                            libusb_ref_device(usb_device);
+                            break;
+                        }
+                    }
+
                     if(busnum == dev->subdevices[0]->busnum && devnum == dev->subdevices[0]->devnum)
                     {
-                        dev->usb_device = usb_device;
-                        libusb_ref_device(usb_device);
-                        break;
-                    }
+                        if (!dev->usb_device) // do not override previous configuration
+                        {
+                            dev->usb_device = usb_device;
+                            libusb_ref_device(usb_device);
+                            break;
+                        }
+                    }                    
                 }
             }
             libusb_free_device_list(list, 1);
 
             return devices;
+        }
+
+        // DS4.1T Bring-up stage hack to power on camera without user interferance
+        bool power_on_adapter_board()
+        {
+            struct device_activator
+            {
+                device_activator():
+                    adpt_brd_vid(0x8086/*0x04b4*/),       // Adapter board vid/pid
+                    adpt_brd_pid(0x0ad0/*0x00c3*/),
+                    ds41t_dev_vid(0x8086),      // DS4.1T vid/pid
+                    ds41t_dev_pid(0x0acb),
+                    adpt_brd_ctrl_iface(0x2),
+                    adpt_brd_ctrl_out_ep(0x1),
+                    adpt_brd_ctrl_in_ep(0x81),
+                    res(0),
+                    handle(0)
+                {
+                    // Look for adapter board descriptos
+                    if (handle = libusb_open_device_with_vid_pid(0, adpt_brd_vid, adpt_brd_pid))   // DS4.1T Adaptor board present
+                        if (res = libusb_claim_interface(handle, adpt_brd_ctrl_iface))             // Acquire control interface
+                            perror("error claiming adaptor board interface");
+                }
+
+                ~device_activator()
+                {
+                    release();
+                }
+
+                void release()
+                {
+                    if (handle)
+                    {   // release control interface
+                        res = libusb_release_interface(handle, adpt_brd_ctrl_iface);
+                        handle = nullptr;
+                        if (res)
+                            perror("error releasing adaptor board interface");
+                    }
+                }
+
+                bool ds_device_power_on()
+                {
+                    bool activated = false;
+                    if (handle)  // Adaptor board is present
+                    {
+                        const unsigned char cmd_sz = 24;
+                        unsigned char mmpwr_cmd[cmd_sz] = { 0x14, 0x0, 0xab, 0xcd, 0x0a, 0x0, 0x0, 0x0, 0x1, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+                        unsigned char dspwr_cmd[cmd_sz] = { 0x14, 0x0, 0xab, 0xcd, 0x0b, 0x0, 0x0, 0x0, 0x1, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+                        unsigned int timeout = 5000;
+                        const int res_buf_sz = 1024;
+                        std::uint8_t res_buf[res_buf_sz]={0};
+                        int actual_length = 0;
+
+                        // Look for DS4.1T device. Note that this workaround assumes single DS4.1T platform
+                        libusb_device_handle *ds_handle = libusb_open_device_with_vid_pid(0, ds41t_dev_vid, ds41t_dev_pid);
+
+                        // Activate on demand
+                        if (!ds_handle)
+                        {
+
+                            // Send DS Device Power-on cmd
+                            if ((res = libusb_bulk_transfer( handle, adpt_brd_ctrl_out_ep, dspwr_cmd, cmd_sz, &actual_length, timeout))<0)
+                                throw std::runtime_error(to_string() << "libusb_bulk_transfer(ds_power_on) returned " << libusb_error_name(res));
+
+                            if (cmd_sz != actual_length)
+                                throw std::logic_error(to_string() << "ds_power_on invalid transmit size, expected: "  << cmd_sz << ", actual: " << actual_length);
+
+                            // Get and verify correct firmware response
+                            if ((res = libusb_bulk_transfer( handle, adpt_brd_ctrl_in_ep, res_buf, res_buf_sz, &actual_length, timeout)) < 0)
+                                throw std::runtime_error(to_string() << "libusb_bulk_transfer(ds_power_on ack) returned " << libusb_error_name(res));
+
+                            // Command index should appear in the fifth byte in the response buffer. (hw_monitor protocol)
+                            unsigned char requested_type = dspwr_cmd[4];
+                            unsigned char actual_type = dspwr_cmd[4];
+
+                            if (requested_type != actual_type)
+                                throw std::logic_error(to_string() << "ds_power_on ack verification failed, expecting cmd code: " << std::hex << requested_type << ", actual: " << actual_type << std::dec);
+
+                            std::this_thread::sleep_for(std::chrono::milliseconds(2000));   // Enable the hardware to "wire up" with the host drivers; will be executed only if there is no present DS4.1T device
+
+                            activated = true;
+                        }
+                    }
+
+                    return activated;
+                }
+
+                const unsigned short adpt_brd_vid;
+                const unsigned short adpt_brd_pid;
+                const unsigned short ds41t_dev_vid;
+                const unsigned short ds41t_dev_pid;
+
+                const unsigned short adpt_brd_ctrl_iface;
+                const unsigned short adpt_brd_ctrl_out_ep;
+                const unsigned short adpt_brd_ctrl_in_ep;
+
+                int                     res;
+                libusb_device_handle * handle;                   // handle for USB device
+            };
+
+            device_activator act;
+
+            return act.ds_device_power_on();
+
         }
     }
 }

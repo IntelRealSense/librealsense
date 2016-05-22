@@ -21,11 +21,13 @@ namespace rsimpl
         struct extension_unit { int subdevice, unit, node; guid id; };
 
         struct context; // Opaque type representing access to the underlying UVC implementation
-        struct device; // Opaque type representing access to a specific UVC device
+        struct device;  // Opaque type representing access to a specific UVC device
 
         // Enumerate devices
         std::shared_ptr<context> create_context();
         std::vector<std::shared_ptr<device>> query_devices(std::shared_ptr<context> context);
+
+        bool power_on_adapter_board();
 
         // Check for connected device
         bool is_device_connected(device & device, int vid, int pid);
@@ -36,7 +38,8 @@ namespace rsimpl
 
         // Direct USB controls
         void claim_interface(device & device, const guid & interface_guid, int interface_number);
-        void bulk_transfer(device & device, unsigned char endpoint, void * data, int length, int *actual_length, unsigned int timeout);
+        void claim_aux_interface(device & device, const guid & interface_guid, int interface_number);
+        void bulk_transfer(device & device, unsigned char handle_id, unsigned char endpoint, void * data, int length, int *actual_length, unsigned int timeout);
 
         // Access CT and PU controls
         inline bool is_pu_control(rs_option option) { return option >= RS_OPTION_COLOR_BACKLIGHT_COMPENSATION && option <= RS_OPTION_COLOR_ENABLE_AUTO_WHITE_BALANCE; }
@@ -48,6 +51,11 @@ namespace rsimpl
         // Access XU controls
         void set_control(device & device, const extension_unit & xu, uint8_t ctrl, void * data, int len);
         void get_control(const device & device, const extension_unit & xu, uint8_t ctrl, void * data, int len);
+
+        // Control data channels
+        void set_subdevice_data_channel_handler(device & device, int subdevice_index, std::function<void(const unsigned char * data, const int size)> callback);
+		void start_data_acquisition(device & device);
+		void stop_data_acquisition(device & device);
 
         // Control streaming
         void set_subdevice_mode(device & device, int subdevice_index, int width, int height, uint32_t fourcc, int fps, std::function<void(const void * frame)> callback);
