@@ -261,6 +261,10 @@ namespace rsimpl
         f200::get_module_serial_string(*device, mutex, info.serial, 96);
         f200::get_firmware_version_string(*device, mutex, info.firmware_version);
 
+        info.capabilities_vector.push_back(RS_CAPABILITIES_COLOR);
+        info.capabilities_vector.push_back(RS_CAPABILITIES_DEPTH);
+        info.capabilities_vector.push_back(RS_CAPABILITIES_INFRARED);
+
         return std::make_shared<f200_camera>(device, info, std::get<0>(calib), std::get<1>(calib), std::get<2>(calib));
     }
 
@@ -286,6 +290,10 @@ namespace rsimpl
 
         f200::get_module_serial_string(*device, mutex, info.serial, 132);
         f200::get_firmware_version_string(*device, mutex, info.firmware_version);
+
+        info.capabilities_vector.push_back(RS_CAPABILITIES_COLOR);
+        info.capabilities_vector.push_back(RS_CAPABILITIES_DEPTH);
+        info.capabilities_vector.push_back(RS_CAPABILITIES_INFRARED);
 
         return std::make_shared<f200_camera>(device, info, std::get<0>(calib), std::get<1>(calib), std::get<2>(calib));
     }
@@ -527,6 +535,10 @@ namespace rsimpl
             const int timestamp = static_cast<int>(total / 100000);
             return timestamp;
         }
+		int get_frame_counter(const subdevice_mode & mode, const void * frame) override
+		{
+			return 0;
+		}
     };
 
     std::shared_ptr<frame_timestamp_reader> f200_camera::create_frame_timestamp_reader() const

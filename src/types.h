@@ -77,6 +77,7 @@ namespace rsimpl
     RS_ENUM_HELPERS(rs_preset, PRESET)
     RS_ENUM_HELPERS(rs_distortion, DISTORTION)
     RS_ENUM_HELPERS(rs_option, OPTION)
+    RS_ENUM_HELPERS(rs_capabilities, CAPABILITIES)
     #undef RS_ENUM_HELPERS
 
     ////////////////////////////////////////////
@@ -171,6 +172,7 @@ namespace rsimpl
         std::string firmware_version;                                       // Firmware version string
         std::string serial;                                                 // Serial number of the camera (from USB or from SPI memory)
         float nominal_depth_scale;                                          // Default scale
+        std::vector<rs_capabilities> capabilities_vector;
 
         static_device_info();
     };

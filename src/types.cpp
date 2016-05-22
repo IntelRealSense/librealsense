@@ -51,6 +51,7 @@ namespace rsimpl
         CASE(Y16)
         CASE(RAW10)
         CASE(RAW16)
+        CASE(RAW8)
         default: assert(!is_valid(value)); return nullptr;
         }
         #undef CASE
@@ -154,6 +155,22 @@ namespace rsimpl
         CASE(FISHEYE_COLOR_GAIN)
         CASE(FISHEYE_STROBE)
         CASE(FISHEYE_EXT_TRIG)
+        default: assert(!is_valid(value)); return nullptr;
+        }
+        #undef CASE
+    }
+
+    const char * get_string(rs_capabilities value)
+    {
+        #define CASE(X) case RS_CAPABILITIES_##X: return #X;
+        switch(value)
+        {
+        CASE(DEPTH)
+        CASE(COLOR)
+        CASE(INFRARED)
+        CASE(INFRARED2)
+        CASE(FISH_EYE)
+        CASE(MOTION_EVENTS)
         default: assert(!is_valid(value)); return nullptr;
         }
         #undef CASE

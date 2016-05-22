@@ -16,13 +16,14 @@ namespace rsimpl
         { 
             std::vector<byte> data;
             int timestamp;
+			int frameCounter;
 
-            frame() : timestamp() {}
+            frame() : timestamp(), frameCounter(0) {}
             frame(const frame & r) = delete;
             frame(frame && r) : frame() { *this = std::move(r); }
 
             frame & operator = (const frame & r) = delete;
-            frame & operator = (frame && r) { data = move(r.data); timestamp = r.timestamp; return *this; }            
+            frame & operator = (frame && r) { data = move(r.data); timestamp = r.timestamp; frameCounter = r.frameCounter; return *this; }
         };
 
         // This data will be left constant after creation, and accessed from all threads
@@ -58,9 +59,10 @@ namespace rsimpl
         bool poll_for_frames();
         const byte * get_frame_data(rs_stream stream) const;
         int get_frame_timestamp(rs_stream stream) const;
+		int get_frame_counter(rs_stream stream) const;
 
         // Frame callback thread API
-        byte * alloc_frame(rs_stream stream, int timestamp);
+        byte * alloc_frame(rs_stream stream, int timestamp, int frameCounter);
         void commit_frame(rs_stream stream);  
     };
 }

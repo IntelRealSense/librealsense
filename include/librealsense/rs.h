@@ -8,8 +8,19 @@
 extern "C" {
 #endif
 
-#define RS_API_VERSION 5
+#define RS_API_VERSION 6
 
+typedef enum rs_capabilities
+{
+    RS_CAPABILITIES_DEPTH         = 0,
+    RS_CAPABILITIES_COLOR         = 1,
+    RS_CAPABILITIES_INFRARED      = 2,
+    RS_CAPABILITIES_INFRARED2     = 3,
+    RS_CAPABILITIES_FISH_EYE      = 4,
+    RS_CAPABILITIES_MOTION_EVENTS = 5,
+    RS_CAPABILITIES_COUNT         = 6,
+    RS_CAPABILITIES_MAX_ENUM = 0x7FFFFFFF
+} rs_capabilities;
 
 typedef enum rs_stream
 {
@@ -44,7 +55,8 @@ typedef enum rs_format
     RS_FORMAT_Y16         = 10, 
     RS_FORMAT_RAW10       = 11, /**< Four 10-bit luminance values encoded into a 5-byte macropixel */
     RS_FORMAT_RAW16       = 12,
-    RS_FORMAT_COUNT       = 13,
+    RS_FORMAT_RAW8        = 13,
+    RS_FORMAT_COUNT       = 14,
     RS_FORMAT_MAX_ENUM = 0x7FFFFFFF
 } rs_format;
 
@@ -420,6 +432,13 @@ void rs_wait_for_frames(rs_device * device, rs_error ** error);
 int rs_poll_for_frames(rs_device * device, rs_error ** error);
 
 /**
+ * determine device capabilities
+ * \param[in] capability  the capability to check for support
+ * \return                true if device has this capability
+ */
+int rs_supports(rs_device * device, rs_capabilities capability, rs_error ** error);
+
+/**
  * retrieve the time at which the latest frame on a stream was captured
  * \param[in] stream  the stream whose latest frame we are interested in
  * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
@@ -428,11 +447,20 @@ int rs_poll_for_frames(rs_device * device, rs_error ** error);
 int rs_get_frame_timestamp(const rs_device * device, rs_stream stream, rs_error ** error);
 
 /**
+* retrieve the frame counter
+* \param[in] stream  the stream whose latest frame we are interested in
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return            the frame number
+*/
+int rs_get_frame_counter(const rs_device * device, rs_stream stream, rs_error ** error);
+
+/**
  * retrieve the contents of the latest frame on a stream
  * \param[in] stream  the stream whose latest frame we are interested in
  * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
  * \return            the pointer to the start of the frame data
  */
+
 const void * rs_get_frame_data(const rs_device * device, rs_stream stream, rs_error ** error);
                                      
 const char * rs_get_failed_function  (const rs_error * error);
@@ -445,6 +473,7 @@ const char * rs_format_to_string     (rs_format format);
 const char * rs_preset_to_string     (rs_preset preset);
 const char * rs_distortion_to_string (rs_distortion distortion);
 const char * rs_option_to_string     (rs_option option);
+const char * rs_capabilities_to_string(rs_capabilities capability);
 
 typedef enum
 {
