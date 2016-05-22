@@ -41,3 +41,15 @@ public:
 		return q.size();
 	}
 };
+
+inline bool any_costumers_alive(const std::vector<bool>& running)
+{
+	for (auto is_running : running)
+	{
+		if (is_running)
+		{
+			return true;
+		}
+	}
+	return false;
+}

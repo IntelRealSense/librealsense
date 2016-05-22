@@ -202,20 +202,20 @@ namespace rsimpl
         int get_framerate(rs_stream stream) const { return mode.fps; }
         void unpack(byte * const dest[], const byte * source) const;
 
-        bool requires_processing() const { return mode.pf.unpackers[unpacker_index].requires_processing; }
+        bool requires_processing() const { return mode.pf.unpackers[unpacker_index].requires_processing || get_width() != mode.native_dims.x; }
     };
 
     class frame_callback
     {
         void (*on_frame)(rs_device * dev, rs_frame_ref * frame, void * user);
         void * user;
-		rs_device * device;
+        rs_device * device;
     public:
         frame_callback() : frame_callback(nullptr, nullptr, nullptr) {}
-		frame_callback(rs_device * dev, void(*on_frame)(rs_device *, rs_frame_ref *, void *), void * user) : on_frame(on_frame), user(user), device(dev) {}
+        frame_callback(rs_device * dev, void(*on_frame)(rs_device *, rs_frame_ref *, void *), void * user) : on_frame(on_frame), user(user), device(dev) {}
 
-		operator bool() { return on_frame != nullptr; }
-		void operator () (rs_frame_ref * frame) const { if (on_frame) on_frame(device, frame, user); }
+        operator bool() { return on_frame != nullptr; }
+        void operator () (rs_frame_ref * frame) const { if (on_frame) on_frame(device, frame, user); }
     };
 
     struct device_config
@@ -257,126 +257,128 @@ namespace rsimpl
         return (c0 << 24) | (c1 << 16) | (c2 << 8) | c3;
     }
 
-	template<class T, int C>
-	class small_heap
-	{
-		T buffer[C];
-		bool is_free[C];
-		std::mutex mutex;
-		bool keep_allocating = true;
-		std::condition_variable cv;
-		int size = 0;
+    template<class T, int C>
+    class small_heap
+    {
+        T buffer[C];
+        bool is_free[C];
+        std::mutex mutex;
+        bool keep_allocating = true;
+        std::condition_variable cv;
+        int size = 0;
 
-	public:
-		small_heap()
-		{
-			for (auto i = 0; i < C; i++)
-			{
-				is_free[i] = true;
-				buffer[i] = std::move(T());
-			}
-		}
+    public:
+        small_heap()
+        {
+            for (auto i = 0; i < C; i++)
+            {
+                is_free[i] = true;
+                buffer[i] = std::move(T());
+            }
+        }
 
-		T * allocate()
-		{
-			std::unique_lock<std::mutex> lock(mutex);
+        T * allocate()
+        {
+            std::unique_lock<std::mutex> lock(mutex);
+            if (!keep_allocating) return nullptr;
 
-			if (!keep_allocating) return nullptr;
+            for (auto i = 0; i < C; i++)
+            {
+                if (is_free[i])
+                {
+                    is_free[i] = false;
+                    size++;
+                    return &buffer[i];
+                }
+            }
+            return nullptr;
+        }
 
-			for (auto i = 0; i < C; i++)
-			{
-				if (is_free[i])
-				{
-					is_free[i] = false;
-					size++;
-					return &buffer[i];
-				}
-			}
-			return nullptr;
-		}
+        void deallocate(T * item)
+        {
+            auto i = item - buffer;
+            buffer[i] = std::move(T());
+            {
+                std::unique_lock<std::mutex> lock(mutex);
+                if (item < buffer || item >= buffer + C)
+                {
+                    throw std::runtime_error("Trying to return item to a heap that didn't allocate it!");
+                }
+          
+                is_free[i] = true;
+            
+                size--;
 
-		void deallocate(T * item)
-		{
-			std::unique_lock<std::mutex> lock(mutex);
-			if (item < buffer || item >= buffer + C)
-			{
-				throw std::runtime_error("Trying to return item to a heap that didn't allocate it!");
-			}
-			auto i = item - buffer;
-			is_free[i] = true;
-			buffer[i] = std::move(T());
-			size--;
+                if (size == 0)
+                {
+                    lock.unlock();
+                    cv.notify_one();
+                }
+            }
+        }
 
-			if (size == 0)
-			{
-				lock.unlock();
-				cv.notify_one();
-			}
-		}
+        void stop_allocation()
+        {
+            keep_allocating = false;
+        }
 
-		void stop_allocation()
-		{
-			std::unique_lock<std::mutex> lock(mutex);
-			keep_allocating = false;
-		}
+        void wait_until_empty()
+        {
+            std::unique_lock<std::mutex> lock(mutex);
 
-		void wait_until_empty()
-		{
-			std::unique_lock<std::mutex> lock(mutex);
+            const auto ready = [this]()
+            {
+                return size == 0;
+            };
+            if (!ready() && !cv.wait_for(lock, std::chrono::hours(1000), ready)) // for some reason passing std::chrono::duration::max makes it return instantly
+            {
+                throw std::runtime_error("Could not flush one of the user controlled objects!");
+            }
+        }
+    };
 
-			const auto ready = [this]()
-			{
-				return size == 0;
-			};
-			if (!ready() && !cv.wait_for(lock, std::chrono::hours(1000), ready)) // for some reason passing std::chrono::duration::max makes it return instantly
-			{
-				throw std::runtime_error("Could not flush one of the user controlled objects!");
-			}
-		}
-	};
+    class frame_continuation
+    {
+        std::function<void()> continuation;
+        const void* protected_data = nullptr;
 
-	class frame_continuation
-	{
-		std::function<void()> continuation;
-		const void* protected_data = nullptr;
+        frame_continuation(const frame_continuation &) = delete;
+        frame_continuation & operator=(const frame_continuation &) = delete;
+    public:
+        frame_continuation() : continuation([](){}) {}
 
-		frame_continuation(const frame_continuation &) = delete;
-		frame_continuation & operator=(const frame_continuation &) = delete;
-	public:
-		frame_continuation() : continuation([](){}) {}
+        explicit frame_continuation(std::function<void()> continuation, const void* protected_data) : continuation(continuation), protected_data(protected_data) {}
 
-		explicit frame_continuation(std::function<void()> continuation, const void* protected_data) : continuation(continuation), protected_data(protected_data) {}
+        frame_continuation(frame_continuation && other) : continuation(other.continuation), protected_data(other.protected_data)
+        {
+            other.continuation = [](){};
+            other.protected_data = nullptr;
+        }
 
-		frame_continuation(frame_continuation && other) : continuation(other.continuation), protected_data(other.protected_data)
-		{
-			other.continuation = [](){};
-			other.protected_data = nullptr;
-		}
+        void operator()() 
+        {
+            continuation();
+            continuation = [](){};
+            protected_data = nullptr;
+        }
 
-		void operator()() 
-		{
-			continuation();
-			continuation = [](){};
-			protected_data = nullptr;
-		}
+        const void* get_data() const { return protected_data; }
 
-		const void* get_data() const { return protected_data; }
+        frame_continuation & operator=(frame_continuation && other)
+        {
+            continuation();
+            protected_data = other.protected_data;
+            continuation = other.continuation;
+            other.continuation = [](){};
+            other.protected_data = nullptr;
+            return *this;
+        }
 
-		frame_continuation & operator=(frame_continuation && other)
-		{
-			continuation();
-			protected_data = other.protected_data;
-			continuation = other.continuation;
-			other.continuation = [](){};
-			other.protected_data = nullptr;
-			return *this;
-		}
-
-		~frame_continuation()
-		{
-			continuation();
-		}
-	};
+        ~frame_continuation()
+        {
+            continuation();
+        }
+    };
 }
 
 #endif
