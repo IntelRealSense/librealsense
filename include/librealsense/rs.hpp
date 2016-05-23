@@ -215,74 +215,74 @@ namespace rs
         }
     };
 
-	class frame
-	{
-		rs_device * device;
-		rs_frame_ref * frame_ref;
+    class frame
+    {
+        rs_device * device;
+        rs_frame_ref * frame_ref;
 
-		frame(const frame &) = delete;
+        frame(const frame &) = delete;
 
-	public:
-		frame() : device(nullptr), frame_ref(nullptr) {}
-		frame(rs_device * device, rs_frame_ref * frame_ref) : device(device), frame_ref(frame_ref) {}
-		frame(frame&& other) : device(other.device), frame_ref(other.frame_ref) { other.frame_ref = nullptr; }
-		frame& operator=(frame other)
-		{
-			swap(other);
-			return *this;
-		}
-		void swap(frame& other)
-		{
-			std::swap(device, other.device);
-			std::swap(frame_ref, other.frame_ref);
-		}
+    public:
+        frame() : device(nullptr), frame_ref(nullptr) {}
+        frame(rs_device * device, rs_frame_ref * frame_ref) : device(device), frame_ref(frame_ref) {}
+        frame(frame&& other) : device(other.device), frame_ref(other.frame_ref) { other.frame_ref = nullptr; }
+        frame& operator=(frame other)
+        {
+            swap(other);
+            return *this;
+        }
+        void swap(frame& other)
+        {
+            std::swap(device, other.device);
+            std::swap(frame_ref, other.frame_ref);
+        }
 
-		~frame()
-		{
-			if (frame_ref)
-			{
-				rs_error * e = nullptr;
-				rs_release_frame(device, frame_ref, &e);
-				error::handle(e);
-			}
-		}
+        ~frame()
+        {
+            if (frame_ref)
+            {
+                rs_error * e = nullptr;
+                rs_release_frame(device, frame_ref, &e);
+                error::handle(e);
+            }
+        }
 
-		frame clone()
-		{
-			rs_error * e = nullptr;
-			auto r = rs_clone_frame(device, frame_ref, &e);
-			error::handle(e);
-			return std::move(frame(device, r));
-		}
+        frame clone()
+        {
+            rs_error * e = nullptr;
+            auto r = rs_clone_frame(device, frame_ref, &e);
+            error::handle(e);
+            return std::move(frame(device, r));
+        }
 
-		bool try_clone(frame& result)
-		{
-			rs_error * e = nullptr;
-			auto r = rs_clone_frame(device, frame_ref, &e);
-			if (!e) result = std::move(frame(device, r));
-			return e == nullptr;
-		}
+        bool try_clone(frame& result)
+        {
+            rs_error * e = nullptr;
+            auto r = rs_clone_frame(device, frame_ref, &e);
+            if (!e) result = std::move(frame(device, r));
+            return e == nullptr;
+        }
 
-		/// retrieve the time at which the TODO on a stream was captured
-		/// \return            the timestamp of the frame, in milliseconds since the device was started
-		int get_frame_timestamp() const
-		{
-			rs_error * e = nullptr;
-			auto r = rs_get_detached_frame_timestamp(frame_ref, &e);
-			error::handle(e);
-			return r;
-		}
+        /// retrieve the time at which the TODO on a stream was captured
+        /// \return            the timestamp of the frame, in milliseconds since the device was started
+        int get_frame_timestamp() const
+        {
+            rs_error * e = nullptr;
+            auto r = rs_get_detached_frame_timestamp(frame_ref, &e);
+            error::handle(e);
+            return r;
+        }
 
-		/// retrieve the contents of the TODO on a stream
-		/// \return            the pointer to the start of the frame data
-		const void * get_frame_data() const
-		{
-			rs_error * e = nullptr;
-			auto r = rs_get_detached_frame_data(frame_ref, &e);
-			error::handle(e);
-			return r;
-		}
-	};
+        /// retrieve the contents of the TODO on a stream
+        /// \return            the pointer to the start of the frame data
+        const void * get_frame_data() const
+        {
+            rs_error * e = nullptr;
+            auto r = rs_get_detached_frame_data(frame_ref, &e);
+            error::handle(e);
+            return r;
+        }
+    };
 
     class frameset
     {
@@ -316,21 +316,21 @@ namespace rs
             }
         }
 
-		frame detach_frame(stream stream)
+        frame detach_frame(stream stream)
         {
-			rs_error * e = nullptr;
-			auto r = rs_detach_frame(device, frames, (rs_stream)stream, &e);
-			error::handle(e);
-			return std::move(frame(device, r));
+            rs_error * e = nullptr;
+            auto r = rs_detach_frame(device, frames, (rs_stream)stream, &e);
+            error::handle(e);
+            return std::move(frame(device, r));
         }
 
-		bool try_detach_frame(stream stream, frame& result)
-		{
-			rs_error * e = nullptr;
-			auto r = rs_detach_frame(device, frames, (rs_stream)stream, &e);
-			if (!e) result = std::move(frame(device, r));
-			return e == nullptr;
-		}
+        bool try_detach_frame(stream stream, frame& result)
+        {
+            rs_error * e = nullptr;
+            auto r = rs_detach_frame(device, frames, (rs_stream)stream, &e);
+            if (!e) result = std::move(frame(device, r));
+            return e == nullptr;
+        }
 
         frameset clone()
         {
@@ -371,24 +371,24 @@ namespace rs
         }
     };
 
-	class frame_callback_base
-	{
-	public:
-		virtual void on_frame(frame f) = 0;
-		virtual ~frame_callback_base() {};
-	};
+    class frame_callback_base
+    {
+    public:
+        virtual void on_frame(frame f) = 0;
+        virtual ~frame_callback_base() {};
+    };
 
-	class frame_callback : public frame_callback_base
-	{
-		std::function<void(frame)> on_frame_function;
-	public:
-		explicit frame_callback(std::function<void(frame)> on_frame) : on_frame_function(on_frame) {}
+    class frame_callback : public frame_callback_base
+    {
+        std::function<void(frame)> on_frame_function;
+    public:
+        explicit frame_callback(std::function<void(frame)> on_frame) : on_frame_function(on_frame) {}
 
-		void on_frame(frame f) override
-		{
-			on_frame_function(std::move(f));
-		}
-	};
+        void on_frame(frame f) override
+        {
+            on_frame_function(std::move(f));
+        }
+    };
 
     class device
     {
@@ -586,20 +586,20 @@ namespace rs
         }
 
         /// TODO
-		void set_frame_callback(rs::stream stream, frame_callback_base& on_frame)
+        void set_frame_callback(rs::stream stream, frame_callback_base& on_frame)
         {
             rs_error * e = nullptr;
-			rs_set_frame_callback((rs_device *)this, (rs_stream)stream, [](rs_device * device, rs_frame_ref * fref, void * user){
-				try
-				{
-					auto on_frame = (frame_callback_base *)user;
-					on_frame->on_frame(frame(device, fref));
-				}
-				catch (...)
-				{
-					
-				}
-			}, &on_frame, &e);
+            rs_set_frame_callback((rs_device *)this, (rs_stream)stream, [](rs_device * device, rs_frame_ref * fref, void * user){
+                try
+                {
+                    auto on_frame = (frame_callback_base *)user;
+                    on_frame->on_frame(frame(device, fref));
+                }
+                catch (...)
+                {
+                    
+                }
+            }, &on_frame, &e);
             error::handle(e);
         }
 
@@ -744,16 +744,27 @@ namespace rs
             return r;
         }
 
-		/// retrieve the frame number
-		/// \param[in] stream  the stream whose latest frame we are interested in
-		/// \return            the number of the frame, since the device was started
-		int get_frame_counter(stream stream) const
-		{
-			rs_error * e = nullptr;
-			auto r = rs_get_frame_counter((const rs_device *)this, (rs_stream)stream, &e);
-			error::handle(e);
-			return r;
-		}
+        /// retrieve the system time at which the latest frame on a stream was captured
+        /// \param[in] stream  the stream whose latest frame we are interested in
+        /// \return            the system time of the frame, in milliseconds
+        long long get_frame_system_time(stream stream) const
+        {
+            rs_error * e = nullptr;
+            auto r = rs_get_frame_system_time((const rs_device *)this, (rs_stream)stream, &e);
+            error::handle(e);
+            return r;
+        }
+
+        /// retrieve the frame number
+        /// \param[in] stream  the stream whose latest frame we are interested in
+        /// \return            the number of the frame, since the device was started
+        int get_frame_counter(stream stream) const
+        {
+            rs_error * e = nullptr;
+            auto r = rs_get_frame_counter((const rs_device *)this, (rs_stream)stream, &e);
+            error::handle(e);
+            return r;
+        }
 
         /// retrieve the contents of the latest frame on a stream
         /// \param[in] stream  the stream whose latest frame we are interested in

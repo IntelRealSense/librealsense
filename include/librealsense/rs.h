@@ -5,6 +5,10 @@
 #define LIBREALSENSE_RS_H
 
 #ifdef __cplusplus
+namespace rs{
+	enum class stream;
+}
+
 extern "C" {
 #endif
 
@@ -451,6 +455,13 @@ int rs_poll_for_frames_safe(rs_device * device, rs_frameset** frameset, rs_error
  */
 int rs_get_frame_timestamp(const rs_device * device, rs_stream stream, rs_error ** error);
 
+/**
+* retrieve the system time at which the latest frame on a stream was captured
+* \param[in] stream  the stream whose latest frame we are interested in
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return            the system time  of the frame, in milliseconds
+*/
+long long rs_get_frame_system_time(const rs_device * device, rs_stream stream, rs_error ** error);
 /**
 * retrieve the frame counter
 * \param[in] stream  the stream whose latest frame we are interested in

@@ -42,6 +42,7 @@ namespace rsimpl
         const byte * get_frame_data(rs_stream stream) const;
         int get_frame_timestamp(rs_stream stream) const;
         int get_frame_counter(rs_stream stream) const;
+		long long get_frame_system_time(rs_stream stream) const;
 
         frameset * clone_frontbuffer();
 
@@ -49,6 +50,7 @@ namespace rsimpl
         void commit_frame(rs_stream stream);
 
         void flush() override;
+
     };
 }
 

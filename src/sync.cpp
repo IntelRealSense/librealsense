@@ -13,11 +13,11 @@ syncronizing_archive::syncronizing_archive(const std::vector<subdevice_mode_sele
 
     // Allocate an empty image for each stream, and move it to the frontbuffer
     // This allows us to assume that get_frame_data/get_frame_timestamp always return valid data
-    alloc_frame(key_stream, 0, 0, true);
+    alloc_frame(key_stream, 0, 0, 0, true);
     frontbuffer.place_frame(key_stream, std::move(backbuffer[key_stream]));
     for(auto s : other_streams)
     {
-        alloc_frame(s, 0, 0, true);
+		alloc_frame(s, 0, 0, 0, true);
         frontbuffer.place_frame(s, std::move(backbuffer[s]));
     }
 }
@@ -40,6 +40,11 @@ frame_archive::frameset* syncronizing_archive::clone_frontbuffer()
 int rsimpl::syncronizing_archive::get_frame_counter(rs_stream stream) const
 {
     return frontbuffer.get_frame_counter(stream);
+}
+
+long long syncronizing_archive::get_frame_system_time(rs_stream stream) const
+{
+	return frontbuffer.get_frame_system_time(stream);
 }
 
 // Block until the next coherent frameset is available
