@@ -276,7 +276,7 @@ namespace rs
 
 		/// retrieve the time at which the TODO on a stream was captured
 		/// \return            the timestamp of the frame, in milliseconds since the device was started
-		int get_frame_timestamp() const
+		int get_timestamp() const
         {
             rs_error * e = nullptr;
             auto r = rs_get_detached_frame_timestamp(frame_ref, &e);

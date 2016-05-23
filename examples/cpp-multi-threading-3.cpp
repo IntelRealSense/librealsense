@@ -53,18 +53,18 @@ int main() try
                     if ((rs::stream)i == rs::stream::depth)
                     {
                         glPixelTransferf(GL_RED_SCALE, 0xFFFF * dev->get_depth_scale() / 2.0f);
-                        glDrawPixels(dev->get_stream_width(rs::stream::depth), dev->get_stream_height(rs::stream::depth), GL_RED, GL_UNSIGNED_SHORT, frame.get_frame_data());
+                        glDrawPixels(dev->get_stream_width(rs::stream::depth), dev->get_stream_height(rs::stream::depth), GL_RED, GL_UNSIGNED_SHORT, frame.get_data());
                         glPixelTransferf(GL_RED_SCALE, 1.0f);
                     }
 
                     if ((rs::stream)i == rs::stream::color)
                     {
-                        glDrawPixels(dev->get_stream_width(rs::stream::color), dev->get_stream_height(rs::stream::color), GL_RGB, GL_UNSIGNED_BYTE, frame.get_frame_data());
+                        glDrawPixels(dev->get_stream_width(rs::stream::color), dev->get_stream_height(rs::stream::color), GL_RGB, GL_UNSIGNED_BYTE, frame.get_data());
                     }
 
                     if ((rs::stream)i == rs::stream::infrared)
                     {
-                        glDrawPixels(dev->get_stream_width(rs::stream::infrared), dev->get_stream_height(rs::stream::infrared), GL_LUMINANCE, GL_UNSIGNED_BYTE, frame.get_frame_data());
+                        glDrawPixels(dev->get_stream_width(rs::stream::infrared), dev->get_stream_height(rs::stream::infrared), GL_LUMINANCE, GL_UNSIGNED_BYTE, frame.get_data());
                     }
 
                     glfwSwapBuffers(win);
