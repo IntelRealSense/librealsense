@@ -11,6 +11,7 @@
 #include <chrono>
 #include <iomanip>
 #include <mutex>
+#include <algorithm>
 
 #pragma pack(push, 1) // All structs in this file are byte-aligend
 
@@ -42,25 +43,8 @@ namespace rsimpl { namespace r200
 
     const uvc::guid MOTION_MODULE_USB_DEVICE_GUID = { 0xC0B55A29, 0xD7B6, 0x436E, { 0xA6, 0xEF, 0x2E, 0x76, 0xED, 0x0A, 0xBC, 0xA5 } };
     const unsigned short motion_module_interrupt_interface = 0x2; // endpint to pull sensors data continuously (interrupt transmit)
-
-    enum class CX3_GrossTete_MonitorCommand : uint32_t
-    {
-        IRB          = 0x01,     // Read from i2c ( 8x8 )
-        IWB          = 0x02,     // Write to i2c ( 8x8 )
-        GVD          = 0x03,     // Get Version and Date
-        IAP_IRB      = 0x04,     // Read from IAP i2c ( 8x8 )
-        IAP_IWB      = 0x05,     // Write to IAP i2c ( 8x8 )
-        FRCNT        = 0x06,     // Read frame counter
-        GLD          = 0x07,     // Get logger data
-        GPW          = 0x08,     // Write to GPIO
-        GPR          = 0x09,     // Read from GPIO
-        MMPWR        = 0x0A,     // Motion module power up/down
-        DSPWR        = 0x0B,     // DS4 power up/down
-        EXT_TRIG     = 0x0C,     // external trigger mode
-        CX3FWUPD     = 0x0D,     // FW update
-        UCTRL_ACTIVE = 0x0E
-    };
        
+
     uint8_t get_ext_trig(const uvc::device & device)
     {
         return r200::xu_read<uint8_t>(device, fisheye_xu, r200::control::fisheye_xu_ext_trig);
@@ -88,26 +72,6 @@ namespace rsimpl { namespace r200
     void set_strobe(uvc::device & device, uint8_t strobe)
     {
         r200::xu_write(device, fisheye_xu, r200::control::fisheye_xu_strobe, &strobe, sizeof(strobe));
-    }
-
-    void toggle_adapter_board_pwr(uvc::device & device, bool on)
-    {
-        std::timed_mutex mutex;
-        hw_mon::HWMonitorCommand cmd((uint8_t)CX3_GrossTete_MonitorCommand::MMPWR);
-        cmd.Param1 = (on)? 1 : 0;
-        cmd.oneDirection = false;
-
-        hw_mon::perform_and_send_monitor_command(device,mutex, 1, cmd);
-    }
-
-    void toggle_motion_events(uvc::device & device, bool on)
-    {
-        std::timed_mutex mutex;
-        hw_mon::HWMonitorCommand cmd((uint8_t)CX3_GrossTete_MonitorCommand::UCTRL_ACTIVE);
-        cmd.Param1 = (on) ? 1 : 0;
-        cmd.oneDirection = false;
-
-        hw_mon::perform_and_send_monitor_command(device, mutex, 1, cmd);
     }
 
     struct CommandResponsePacket

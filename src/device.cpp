@@ -67,19 +67,11 @@ void rs_device::disable_stream(rs_stream stream)
     for(auto & s : native_streams) s->archive.reset(); // Changing stream configuration invalidates the current stream info
 }
 
-int rs_device::supports_events() const
-{
-    bool bRes = true;
-    //TODO Evgeni
-    return bRes;
-}
-
 void rs_device::enable_events()
 {
     if (data_acquisition_active) throw std::runtime_error("channel cannot be reconfigured after having called rs_start_device()");
 
     config.data_requests.enabled = true;
-
 }
 
 void rs_device::disable_events()
@@ -271,6 +263,7 @@ std::vector<motion_event> motion_module_parser::operator() (const unsigned char*
     const unsigned short non_imu_data_offset = 56; // bytes
     const unsigned short non_imu_data_entries = 8;  // IMU SaS spec 3.3.2
     const unsigned short imu_data_entries = 4;
+    const unsigned short imu_entry_size = 12;   // bytes
     unsigned short packets = data_size / motion_packet_size;
 
     std::vector<motion_event> v;
@@ -283,6 +276,7 @@ std::vector<motion_event> motion_module_parser::operator() (const unsigned char*
         {
             motion_event event_data = { 0 };
 
+
             cur_packet = (unsigned char*)data + (i*motion_packet_size);
 
             // extract packet info
@@ -291,20 +285,23 @@ std::vector<motion_event> motion_module_parser::operator() (const unsigned char*
             memcpy(&event_data.imu_entries_num, &cur_packet[4], sizeof(unsigned short));
             memcpy(&event_data.non_imu_entries_num, &cur_packet[6], sizeof(unsigned short));
 
+            //std::cout << "New motion_packet arrived, imu_entries: " << event_data.imu_entries_num
+            //             << ", non-imu_entries: " << event_data.non_imu_entries_num
+            //          << std::endl;
+
             // Validate header input
-            if ((event_data.imu_entries_num <= imu_data_entries) && (event_data.imu_entries_num <= non_imu_data_entries))
+            if ((event_data.imu_entries_num <= imu_data_entries) && (event_data.non_imu_entries_num <= non_imu_data_entries))
             {
                 // Parse IMU entries
                 for (uint8_t j = 0; j < event_data.imu_entries_num; j++)
                 {
-                    event_data.imu_packets[j] = parse_motion(&cur_packet[motion_packet_header_size]);
-
+                    event_data.imu_packets[j] = parse_motion(&cur_packet[motion_packet_header_size + j*imu_entry_size]);
                 }
 
                 // Parse non-IMU entries
                 for (uint8_t j = 0; j < event_data.non_imu_entries_num; j++)
                 {
-                    parse_timestamp(&cur_packet[non_imu_data_offset], event_data.non_imu_packets[j]);
+                    parse_timestamp(&cur_packet[non_imu_data_offset+ j*imu_entry_size],event_data.non_imu_packets[j]);
                 }
                 v.push_back(std::move(event_data));
             }
@@ -312,7 +309,6 @@ std::vector<motion_event> motion_module_parser::operator() (const unsigned char*
     }
     
     return v;
-    
 }
 
 void motion_module_parser::parse_timestamp(const unsigned char * data,rs_timestamp_data &entry )
@@ -332,17 +328,16 @@ rs_motion_data motion_module_parser::parse_motion(const unsigned char * data)
 
     const static float gravity = 9.871f;
     const static float gyro_range = 2000.f;
-    const static float gyro_transform_factor = (gyro_range * 3.141527f) / (360.f * 32768.f);
+    const static float gyro_transform_factor = (gyro_range * 3.141527f) / (180.f * 32768.f);
 
     const static float accel_range = 0.00195f;   // [-4..4]g
     const static float accelerator_transform_factor = accel_range * gravity;
 
     rs_motion_data entry;
 
-    //entry::rs_timestamp_data =
     parse_timestamp(data, (rs_timestamp_data&)entry);
 
-    entry.is_valid = data[1]& (0x80);          // bit[15]
+    entry.is_valid = (data[1] >> 7);          // Isolate bit[15]
 
     short tmp[3];
     memcpy(&tmp,&data[6],sizeof(short)*3);
@@ -355,7 +350,7 @@ rs_motion_data motion_module_parser::parse_motion(const unsigned char * data)
         if (RS_IMU_ACCEL == entry.timestamp_data.source_id) entry.axes[i] *= accelerator_transform_factor;
         if (RS_IMU_GYRO == entry.timestamp_data.source_id) entry.axes[i] *= gyro_transform_factor;
 
-        // TODO check and report invalid cnversion requests
+        // TODO check and report invalid coversion requests
     }
 
     return entry;

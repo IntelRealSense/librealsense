@@ -25,8 +25,7 @@ EXPORTS
 	rs_get_stream_framerate
 	rs_get_stream_intrinsics
 
-	rs_supports
-	rs_supports_events
+	rs_supports	
 	rs_enable_events
 	rs_disable_events
 	rs_start_events

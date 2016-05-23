@@ -329,8 +329,8 @@ namespace rsimpl
                         }
                         if (isExitOnTimeout || !sts)
                         {
-                            perror("receiving interrupt_ep bytes failed");
-                            fprintf(stderr, "Error receiving message.\n");
+                            //perror("receiving interrupt_ep bytes failed");
+                            //fprintf(stderr, "Error receiving message.\n");
                             return;
                         }
                     }
