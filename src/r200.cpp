@@ -388,102 +388,11 @@ namespace rsimpl
     void r200_camera::toggle_motion_module_power(bool on)
     {        
         motion_module_ctrl.toggle_motion_module_power(on);
-//        bool action = false;
-
-//        // Temporal patch to be replaced with is_supported.
-//        if (on)
-//        {
-//            if ((config.info.stream_subdevices[RS_STREAM_FISHEYE]>0) && (!ds_pwr_on))
-//            {
-//                ds_pwr_on = true;
-//                if (!mm_pwr_on)
-//                    action = true;
-//            }
-//            else
-//            {
-//                if (config.data_requests.enabled && (!mm_pwr_on))
-//                {
-//                    mm_pwr_on = true;
-//                    if (!ds_pwr_on)
-//                        action = true;
-//                }
-//            }
-//         }
-//        else
-//        {
-//            if (ds_pwr_on)
-//            {
-//                ds_pwr_on = false;
-//                if (!mm_pwr_on)
-//                    action = true;
-//            }
-//            else
-//            {
-//                if (mm_pwr_on)
-//                {
-//                    mm_pwr_on = false;
-//                    if (!ds_pwr_on)
-//                        action = true;
-//                }
-//            }
-//        }
-
-//        if (action)
-//        {
-//            r200::toggle_motion_module_power(get_device(),on);
-//            //if (on)
-//            //    std::this_thread::sleep_for(std::chrono::milliseconds(500));
-//        }
     }
 
     void r200_camera::toggle_motion_module_events(bool on)
     {
         motion_module_ctrl.toggle_motion_module_events(on);
-//        bool action = false;
-
-//        // Temporal patch to be replaced with is_supported.
-//        if (on)
-//        {
-//            if ((config.info.stream_subdevices[RS_STREAM_FISHEYE]>0) && (!ds_pwr_on))
-//            {
-//                ds_pwr_on = true;
-//                if (!mm_pwr_on)
-//                    action = true;
-//            }
-//            else
-//            {
-//                if (config.data_requests.enabled && (!mm_pwr_on))
-//                {
-//                    mm_pwr_on = true;
-//                    if (!ds_pwr_on)
-//                        action = true;
-//                }
-//            }
-//         }
-//        else
-//        {
-//            if (ds_pwr_on)
-//            {
-//                ds_pwr_on = false;
-//                if (!mm_pwr_on)
-//                    action = true;
-//            }
-//            else
-//            {
-//                if (mm_pwr_on)
-//                {
-//                    mm_pwr_on = false;
-//                    if (!ds_pwr_on)
-//                        action = true;
-//                }
-//            }
-//        }
-
-//        if (action)
-//        {
-//            motion_module_ctrl.toggle_motion_module_power(on);
-//            r200::toggle_motion_module_power(get_device(),on);
-//        }
     }
 
     // Power on Fisheye camera (dspwr)

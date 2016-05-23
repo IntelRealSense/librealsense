@@ -73,38 +73,6 @@ namespace rsimpl { namespace r200
         r200::xu_write(device, fisheye_xu, r200::control::fisheye_xu_strobe, &strobe, sizeof(strobe));
     }
 
-//    void toggle_motion_module_power(uvc::device & device, bool on)
-//    {
-//        int cmd_param = (on);
-//        std::timed_mutex mutex;
-
-//        hw_mon::HWMonitorCommand cmd((uint8_t)CX3_GrossTete_MonitorCommand::MMPWR);
-//        cmd.Param1 = (on) ? 1 : 0;
-
-//        hw_mon::perform_and_send_monitor_command(device,mutex, 1, cmd);
-//    }
-
-//    void toggle_motion_module_events(uvc::device & device, bool on)
-//    {
-//        int cmd_param = 1;
-//        std::timed_mutex mutex;
-//        std::vector<hw_mon::HWMonitorCommand> cmd_seq = { hw_mon::HWMonitorCommand((uint8_t)CX3_GrossTete_MonitorCommand::MMPWR),
-//                                                          hw_mon::HWMonitorCommand((uint8_t)CX3_GrossTete_MonitorCommand::MM_ACTIVATE) };
-//        // execute power down sequece is reversed order
-//        if (!on)
-//        {
-//             std::reverse(cmd_seq.begin(),cmd_seq.end());
-//             cmd_param= 0;
-//        }
-
-//        for (auto & cmd : cmd_seq)
-//        {
-//            cmd.Param1 = cmd_param;
-//            hw_mon::perform_and_send_monitor_command(device,mutex, 1, cmd);
-//        }
-//    }
-
-
     struct CommandResponsePacket
     {
         command code; command_modifier modifier;

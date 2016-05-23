@@ -36,7 +36,7 @@ int main() try
     if (dev->supports(rs::capabilities::motion_events))
        dev->enable_events();
 
-	// Define event handler for motion data packets
+    // Define event handler for motion data packets
     rs::motion_callback motion_callback([](rs::motion_data entry)   // TODO rs_motion event wrapper
     {
         {
@@ -44,18 +44,18 @@ int main() try
                 << "timestamp: "  << entry.timestamp_data.timestamp
                 << "\tsource_id: "  << ((entry.timestamp_data.source_id == RS_IMU_ACCEL) ? " accel " : " gyro ")
                 << "\tframe_num: "  << entry.timestamp_data.frame_number
-                << "\tvalid: "  << (bool)entry.is_valid
+                << "\tvalid: "  << (int)entry.is_valid
                 << "\tx: "  << entry.axes[0] << "\ty: "  << entry.axes[1] << "\tz: "  << entry.axes[2]
                 << std::endl;
         }
     });
 
-	// ... and the timestamp packets (DS4.1/FishEye Frame, GPIOS...)
+    // ... and the timestamp packets (DS4.1/FishEye Frame, GPIOS...)
     rs::timestamp_callback timestamp_callback([](rs::timestamp_data entry)   // TODO rs_motion event wrapper
-	{
+    {
         std::cout << "Timestamp event arrived, timestamp: " << entry.timestamp << std::endl;
-	});
-	
+    });
+    
     // Next registers motion and timestamp callbacks with LibRealSense
     dev->set_motion_callback(motion_callback);
     dev->set_timestamp_callback(timestamp_callback);
