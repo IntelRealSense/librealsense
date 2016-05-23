@@ -134,7 +134,6 @@ void rs_device::start()
             for (size_t i = 0; i < dest.size(); ++i)
             {
 
-                if (!requires_processing)
                 {
                     archive->attach_continuation(streams[i], std::move(release_and_enqueue));
                 }
@@ -232,6 +231,17 @@ rs_frame_ref* ::rs_device::clone_frame(rs_frame_ref* frame)
     auto result = archive->clone_frame((frame_archive::frame_ref *)frame);
     if (!result) throw std::runtime_error("Not enough resources to clone frame!");
     return (rs_frame_ref*)result;
+}
+
+bool rs_device::supports(rs_capabilities capability) const
+{
+    for (auto elem: config.info.capabilities_vector)
+    {
+        if (elem == capability)
+            return true;
+    }
+
+    return false;
 }
 
 void rs_device::get_option_range(rs_option option, double & min, double & max, double & step, double & def)

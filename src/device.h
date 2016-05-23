@@ -68,6 +68,8 @@ public:
     void                                        release_frames(rs_frameset * frameset);
     rs_frameset *                               clone_frames(rs_frameset * frameset);
     
+    virtual bool                                supports(rs_capabilities capability) const;
+
     virtual bool                                supports_option(rs_option option) const;
     virtual void                                get_option_range(rs_option option, double & min, double & max, double & step, double & def);
     virtual void                                set_options(const rs_option options[], int count, const double values[]) = 0;

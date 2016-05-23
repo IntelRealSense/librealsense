@@ -114,7 +114,7 @@ namespace rsimpl
 
             const byte * get_frame_data(rs_stream stream) const { return buffer[stream].get_frame_data(); }
             int get_frame_timestamp(rs_stream stream) const { return buffer[stream].get_frame_timestamp(); }
-            int get_frame_counter(rs_stream stream) const { return buffer[stream].get_frame_number(); }
+            int get_frame_number(rs_stream stream) const { return buffer[stream].get_frame_number(); }
 			long long get_frame_system_time(rs_stream stream) const { return buffer[stream].get_frame_system_time(); }
 
             void cleanup();

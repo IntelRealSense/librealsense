@@ -28,12 +28,12 @@ int main() try
     rs::frame_callback depth_callback([depth_intrin, depth_format](rs::frame f)
     {
         std::cout << depth_intrin.width << "x" << depth_intrin.height
-            << " " << depth_format << "\tat t = " << f.get_frame_timestamp() << " ms" << std::endl;
+            << " " << depth_format << "\tat t = " << f.get_timestamp() << " ms" << std::endl;
     });
     rs::frame_callback color_callback([color_intrin, color_format](rs::frame f)
     {
         std::cout << color_intrin.width << "x" << color_intrin.height
-            << " " << color_format << "\tat t = " << f.get_frame_timestamp() << " ms" << std::endl;
+            << " " << color_format << "\tat t = " << f.get_timestamp() << " ms" << std::endl;
     });
 
     dev->set_frame_callback(rs::stream::depth, depth_callback);

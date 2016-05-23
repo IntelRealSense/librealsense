@@ -15,9 +15,13 @@ struct rs_context
 
                                                     rs_context();
                                                     ~rs_context();
+
+    static rs_context*                              acquire_instance();
+    static void                                     release_instance();
 private:
-                                                    rs_context(int);
-    static bool                                     singleton_alive;
+    static int                                      ref_count;
+    static std::mutex                               instance_lock;
+    static rs_context*                              instance;
 };
 
 #endif

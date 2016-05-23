@@ -5,15 +5,22 @@
 #define LIBREALSENSE_RS_H
 
 #ifdef __cplusplus
-namespace rs{
-	enum class stream;
-}
-
 extern "C" {
 #endif
 
 #define RS_API_VERSION 6
 
+typedef enum rs_capabilities
+{
+    RS_CAPABILITIES_DEPTH         = 0,
+    RS_CAPABILITIES_COLOR         = 1,
+    RS_CAPABILITIES_INFRARED      = 2,
+    RS_CAPABILITIES_INFRARED2     = 3,
+    RS_CAPABILITIES_FISH_EYE      = 4,
+    RS_CAPABILITIES_MOTION_EVENTS = 5,
+    RS_CAPABILITIES_COUNT         = 6,
+    RS_CAPABILITIES_MAX_ENUM = 0x7FFFFFFF
+} rs_capabilities;
 
 typedef enum rs_stream
 {
@@ -48,7 +55,8 @@ typedef enum rs_format
     RS_FORMAT_Y16         = 10, 
     RS_FORMAT_RAW10       = 11, /**< Four 10-bit luminance values encoded into a 5-byte macropixel */
     RS_FORMAT_RAW16       = 12,
-    RS_FORMAT_COUNT       = 13,
+    RS_FORMAT_RAW8        = 13,
+    RS_FORMAT_COUNT       = 14,
     RS_FORMAT_MAX_ENUM = 0x7FFFFFFF
 } rs_format;
 
@@ -435,13 +443,21 @@ void rs_wait_for_frames(rs_device * device, rs_error ** error);
 int rs_poll_for_frames(rs_device * device, rs_error ** error);
 
 /**
-* TODO
+ * determine device capabilities
+ * \param[in] capability  the capability to check for support
+ * \return                true if device has this capability
+ */
+int rs_supports(rs_device * device, rs_capabilities capability, rs_error ** error);
+
+/**
+* block until new frames are available and return a unique handle to the resulting frameset
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 */
 rs_frameset* rs_wait_for_frames_safe(rs_device * device, rs_error ** error);
 
 /**
-* TODO
+* check if new frames are available, without blocking and return a unique handle to the resulting frameset
+* \param[out] frameset  if non-null, receives a unique handle for the resulting frame-set, to be queried later
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return            1 if new frames are available, 0 if no new frames have arrived
 */
@@ -468,7 +484,7 @@ long long rs_get_frame_system_time(const rs_device * device, rs_stream stream, r
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return            the frame number
 */
-int rs_get_frame_counter(const rs_device * device, rs_stream stream, rs_error ** error);
+int rs_get_frame_number(const rs_device * device, rs_stream stream, rs_error ** error);
 
 /**
  * retrieve the contents of the latest frame on a stream
@@ -479,7 +495,7 @@ int rs_get_frame_counter(const rs_device * device, rs_stream stream, rs_error **
 const void * rs_get_frame_data(const rs_device * device, rs_stream stream, rs_error ** error);
 
 /**
-* TODO
+* retrive timestamp from safe frameset handle, returned by wait_for_frames_safe or rs_poll_for_frames_safe
 * \param[in] stream  the stream whose latest frame we are interested in
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return            the timestamp of the frame, in milliseconds since the device was started
@@ -487,7 +503,7 @@ const void * rs_get_frame_data(const rs_device * device, rs_stream stream, rs_er
 int rs_get_frame_timestamp_safe(const rs_frameset * frameset, rs_stream stream, rs_error ** error);
 
 /**
-* TODO
+* retrive frame data from safe frameset handle, returned by wait_for_frames_safe or rs_poll_for_frames_safe
 * \param[in] stream  the stream whose latest frame we are interested in
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return            the pointer to the start of the frame data
@@ -495,40 +511,76 @@ int rs_get_frame_timestamp_safe(const rs_frameset * frameset, rs_stream stream, 
 const void * rs_get_frame_data_safe(const rs_frameset * frameset, rs_stream stream, rs_error ** error);
 
 /**
-* TODO
+* retrive frame number from safe frameset handle, returned by wait_for_frames_safe or rs_poll_for_frames_safe
+* \param[in] stream  the stream whose latest frame we are interested in
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return            frame number of the frame
+*/
+int rs_get_frame_number_safe(const rs_frameset * frameset, rs_stream stream, rs_error ** error);
+
+/**
+* relases the frameset handle
+* \param[in] frameset handle returned by wait_for_frames_safe or rs_poll_for_frames_safe
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return            the pointer to the start of the frame data
 */
 void rs_release_frames(rs_device * device, rs_frameset * frameset, rs_error ** error);
 
 /**
-* TODO
+* clone frameset handle, creating new handle that is tracking the same underlying frameset object
+* \param[in] frameset handle returned by wait_for_frames_safe or rs_poll_for_frames_safe
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return            the pointer to the start of the frame data
 */
-rs_frameset * rs_clone_frames(rs_device * device, rs_frameset* frameset, rs_error ** error);
+rs_frameset * rs_clone_frames_ref(rs_device * device, rs_frameset* frameset, rs_error ** error);
 
 /**
-* TODO
+* detach individual frame reference from a frame-set.
+* \param[in] frameset handle returned by wait_for_frames_safe or rs_poll_for_frames_safe
+* \param[in] stream  the stream whose latest frame we are interested in
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return            the pointer to the start of the frame data
 */
 rs_frame_ref * rs_detach_frame(rs_device * device, const rs_frameset * frameset, rs_stream stream, rs_error ** error);
 
 /**
-* TODO
+* relases the frame handle
+* \param[in] frame handle returned either detach, clone_ref or from frame callback
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return            the pointer to the start of the frame data
 */
 void rs_release_frame(rs_device * device, rs_frame_ref * frame, rs_error ** error);
 
 
 /**
-* TODO
+* retrive timestamp from safe frame handle, returned from detach, clone_ref or from frame callback
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return            the timestamp of the frame, in milliseconds since the device was started
 */
 int rs_get_detached_frame_timestamp(const rs_frame_ref * frame, rs_error ** error);
 
 /**
-* TODO
+* retrive frame number from safe frame handle, returned from detach, clone_ref or from frame callback
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return            the frame nubmer of the frame, in milliseconds since the device was started
+*/
+int rs_get_detached_frame_number(const rs_frame_ref * frame, rs_error ** error);
+
+
+/**
+* retrive data from safe frame handle, returned from detach, clone_ref or from frame callback
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return            the pointer to the start of the frame data
 */
 const void * rs_get_detached_frame_data(const rs_frame_ref * frame, rs_error ** error);
 
 /**
-* TODO
+* clone frame handle, creating new handle that is tracking the same underlying frame object
+* \param[in] frame handle returned from detach, clone_ref or from frame callback
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return            the pointer to the start of the frame data
 */
-rs_frame_ref * rs_clone_frame(rs_device * device, rs_frame_ref* frame, rs_error ** error);
+rs_frame_ref * rs_clone_frame_ref(rs_device * device, rs_frame_ref* frame, rs_error ** error);
                                      
 const char * rs_get_failed_function  (const rs_error * error);
 const char * rs_get_failed_args      (const rs_error * error);

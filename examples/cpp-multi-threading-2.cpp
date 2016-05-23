@@ -104,7 +104,7 @@ int main() try
             // alternatively we can limit queue size:
             if (frames_queue[i].size() <= 4)
             {
-                frames_queue[i].enqueue(std::move(frames.clone()));
+                frames_queue[i].enqueue(std::move(frames.clone_ref()));
             }
         }
     }
