@@ -63,7 +63,6 @@ public:
     void                                        enable_stream_preset(rs_stream stream, rs_preset preset);    
     void                                        disable_stream(rs_stream stream);
 
-    int                                         supports_events() const;
     void										enable_events();
     void										disable_events();
     virtual void                                start_events();

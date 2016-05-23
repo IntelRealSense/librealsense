@@ -218,7 +218,7 @@ int main(int argc, char * argv[]) try
 
     if (has_motion_module)
     {
-        if (dev->supports_events())                                         // todo:move to supports interface
+        if (dev->supports(rs::capabilities::motion_events))
            dev->enable_events();
 
         dev->set_motion_callback(motion_callback);

@@ -10,7 +10,7 @@
 
 using namespace rsimpl;
 
-rs_device::rs_device(std::shared_ptr<rsimpl::uvc::device> device, const rsimpl::static_device_info & info) : device(device), config(info), capturing(false),
+rs_device::rs_device(std::shared_ptr<rsimpl::uvc::device> device, const rsimpl::static_device_info & info) : device(device), config(info), capturing(false), data_acquisition_active(false),
     depth(config, RS_STREAM_DEPTH), color(config, RS_STREAM_COLOR), infrared(config, RS_STREAM_INFRARED), infrared2(config, RS_STREAM_INFRARED2), fisheye(config, RS_STREAM_FISHEYE),
     points(depth), rect_color(color), color_to_depth(color, depth), depth_to_color(depth, color), depth_to_rect_color(depth, rect_color), infrared2_to_depth(infrared2,depth), depth_to_infrared2(depth,infrared2)
 {
@@ -67,24 +67,18 @@ void rs_device::disable_stream(rs_stream stream)
     for(auto & s : native_streams) s->archive.reset(); // Changing stream configuration invalidates the current stream info
 }
 
-int rs_device::supports_events() const
-{
-    bool bRes = true;
-    //TODO Evgeni
-    return bRes;
-}
-
 void rs_device::enable_events()
 {
-    if (data_acquisition_active) throw std::runtime_error("channel cannot be reconfigured after having called rs_start_device()");
+    if (data_acquisition_active)
+        throw std::runtime_error("channel cannot be reconfigured after having called rs_start_device()");
 
     config.data_requests.enabled = true;
-
 }
 
 void rs_device::disable_events()
 {
-    if (data_acquisition_active) throw std::runtime_error("channel cannot be reconfigured after having called rs_start_device()");
+    if (data_acquisition_active)
+        throw std::runtime_error("channel cannot be reconfigured after having called rs_start_device()");
 
     config.data_requests.enabled = false;
 }
@@ -269,6 +263,9 @@ std::vector<motion_event> motion_module_parser::operator() (const unsigned char*
     const unsigned short motion_packet_size = 104; // bytes
     const unsigned short motion_packet_header_size = 8; // bytes
     const unsigned short non_imu_data_offset = 56; // bytes
+    const unsigned short non_imu_data_entries = 8;  // IMU SaS spec 3.3.2
+    const unsigned short imu_data_entries = 4;
+    const unsigned short imu_entry_size = 12;   // bytes
     unsigned short packets = data_size / motion_packet_size;
 
     std::vector<motion_event> v;
@@ -279,7 +276,8 @@ std::vector<motion_event> motion_module_parser::operator() (const unsigned char*
 
         for (uint8_t i = 0; i < packets; i++)
         {
-            motion_event event_data;
+            motion_event event_data = { 0 };
+
 
             cur_packet = (unsigned char*)data + (i*motion_packet_size);
 
@@ -289,20 +287,27 @@ std::vector<motion_event> motion_module_parser::operator() (const unsigned char*
             memcpy(&event_data.imu_entries_num, &cur_packet[4], sizeof(unsigned short));
             memcpy(&event_data.non_imu_entries_num, &cur_packet[6], sizeof(unsigned short));
 
-            // Parse IMU entries
-            for (uint8_t j = 0; j < event_data.imu_entries_num; j++)
-            {
-                event_data.imu_packets[j] = parse_motion(&cur_packet[motion_packet_header_size]);
-                
-            }
+            //std::cout << "New motion_packet arrived, imu_entries: " << event_data.imu_entries_num
+            //             << ", non-imu_entries: " << event_data.non_imu_entries_num
+            //          << std::endl;
 
-            // Parse non-IMU entries
-            for (uint8_t j = 0; j < event_data.imu_entries_num; j++)
+            // Validate header input
+            if ((event_data.imu_entries_num <= imu_data_entries) && (event_data.non_imu_entries_num <= non_imu_data_entries))
             {
-                parse_timestamp(&cur_packet[non_imu_data_offset],event_data.non_imu_packets[j]);
-            }
+                // Parse IMU entries
+                for (uint8_t j = 0; j < event_data.imu_entries_num; j++)
+                {
+                    event_data.imu_packets[j] = parse_motion(&cur_packet[motion_packet_header_size + j*imu_entry_size]);
+                }
 
-            v.push_back(std::move(event_data));
+                // Parse non-IMU entries
+                for (uint8_t j = 0; j < event_data.non_imu_entries_num; j++)
+                {
+                    parse_timestamp(&cur_packet[non_imu_data_offset+ j*imu_entry_size],event_data.non_imu_packets[j]);
+                }
+
+                v.push_back(std::move(event_data));
+            }
         }
     }
     
@@ -327,14 +332,13 @@ rs_motion_data motion_module_parser::parse_motion(const unsigned char * data)
 
     const static float gravity = 9.871f;
     const static float gyro_range = 2000.f;
-    const static float gyro_transform_factor = (gyro_range * 3.141527f) / (360.f * 32768.f);
+    const static float gyro_transform_factor = (gyro_range * 3.141527f) / (180.f * 32768.f);
 
     const static float accel_range = 0.00195f;   // [-4..4]g
     const static float accelerator_transform_factor = accel_range * gravity;
 
     rs_motion_data entry;
 
-    //entry::rs_timestamp_data =
     parse_timestamp(data, (rs_timestamp_data&)entry);
 
     entry.is_valid = data[1]& (0x80);          // bit[15]
