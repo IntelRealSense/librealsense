@@ -224,7 +224,7 @@ namespace rsimpl
         int get_framerate(rs_stream stream) const { return mode.fps; }
         void unpack(byte * const dest[], const byte * source) const;
 
-        bool requires_processing() const { return mode.pf.unpackers[unpacker_index].requires_processing; }
+        bool requires_processing() const { return mode.pf.unpackers[unpacker_index].requires_processing || get_width() != mode.native_dims.x; }
     };
 
     class frame_callback
@@ -331,7 +331,6 @@ namespace rsimpl
         T * allocate()
         {
             std::unique_lock<std::mutex> lock(mutex);
-
             if (!keep_allocating) return nullptr;
 
             for (auto i = 0; i < C; i++)
@@ -348,13 +347,16 @@ namespace rsimpl
 
         void deallocate(T * item)
         {
-            if (item < buffer || item >= buffer + C)
+             if (item < buffer || item >= buffer + C)
             {
                 throw std::runtime_error("Trying to return item to a heap that didn't allocate it!");
             }
             auto i = item - buffer;
             buffer[i] = std::move(T());
 
+          
+
+            
             {
                 std::unique_lock<std::mutex> lock(mutex);
 

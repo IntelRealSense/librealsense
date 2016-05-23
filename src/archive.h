@@ -28,6 +28,7 @@ namespace rsimpl
             std::vector<byte> data;
             int timestamp = 0;
             int frame_number = 0;
+			long long system_time = 0;
 
             explicit frame() : ref_count(0), owner(nullptr), timestamp(), frame_number(), on_release() {}
             frame(const frame & r) = delete;
@@ -47,6 +48,7 @@ namespace rsimpl
                 ref_count = r.ref_count.exchange(0);
                 on_release = std::move(r.on_release);
                 frame_number = r.frame_number;
+				system_time = r.system_time;
                 return *this;
             }
 
@@ -99,6 +101,7 @@ namespace rsimpl
             const byte* get_frame_data() const;
             int get_frame_timestamp() const;
             int get_frame_number() const;
+	        long long get_frame_system_time() const;
         };
 
         class frameset
@@ -112,8 +115,10 @@ namespace rsimpl
             const byte * get_frame_data(rs_stream stream) const { return buffer[stream].get_frame_data(); }
             int get_frame_timestamp(rs_stream stream) const { return buffer[stream].get_frame_timestamp(); }
             int get_frame_number(rs_stream stream) const { return buffer[stream].get_frame_number(); }
+			long long get_frame_system_time(rs_stream stream) const { return buffer[stream].get_frame_system_time(); }
 
             void cleanup();
+
         };
 
     private:
@@ -153,7 +158,7 @@ namespace rsimpl
         }
 
         // Frame callback thread API
-        byte * alloc_frame(rs_stream stream, int timestamp, int frameCounter, bool requires_memory);
+        byte * alloc_frame(rs_stream stream, int timestamp, int frameCounter, long long system_time, bool requires_memory);
         frame_ref * track_frame(rs_stream stream);
         void attach_continuation(rs_stream stream, frame_continuation&& continuation);
 

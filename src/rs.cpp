@@ -356,6 +356,14 @@ int rs_get_frame_timestamp(const rs_device * device, rs_stream stream, rs_error 
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, device, stream)
 
+long long rs_get_frame_system_time(const rs_device * device, rs_stream stream, rs_error ** error) try
+{
+	VALIDATE_NOT_NULL(device);
+	VALIDATE_ENUM(stream);
+	return device->get_stream_interface(stream).get_frame_system_time();
+}
+HANDLE_EXCEPTIONS_AND_RETURN(0, device, stream)
+
 int rs_get_frame_number(const rs_device * device, rs_stream stream, rs_error ** error) try
 {
     VALIDATE_NOT_NULL(device);
