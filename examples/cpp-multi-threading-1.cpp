@@ -10,7 +10,6 @@
 #include <GLFW/glfw3.h>
 #include "concurrency.hpp"
 #include <thread>
-#include <iostream>
 
 int main() try
 {
@@ -28,8 +27,8 @@ int main() try
     // create N queues for the N consumers
     const auto consumers = 3;
     single_consumer_queue<rs::frameset> frames_queue[consumers];
+    std::vector<bool> running(consumers, true);
 
-    auto running = true;
     glfwInit();
 
     for (auto i = 0; i < consumers; i++)
@@ -51,19 +50,19 @@ int main() try
 
                     glRasterPos2f(-1, 1);
                     glPixelTransferf(GL_RED_SCALE, 0xFFFF * dev->get_depth_scale() / 2.0f);
-                    glDrawPixels(640, 480, GL_RED, GL_UNSIGNED_SHORT, frames.get_frame_data(rs::stream::depth));
+                    glDrawPixels(dev->get_stream_width(rs::stream::depth), dev->get_stream_height(rs::stream::depth), GL_RED, GL_UNSIGNED_SHORT, frames.get_frame_data(rs::stream::depth));
                     glPixelTransferf(GL_RED_SCALE, 1.0f);
 
                     glRasterPos2f(0, 1);
-                    glDrawPixels(640, 480, GL_RGB, GL_UNSIGNED_BYTE, frames.get_frame_data(rs::stream::color));
+                    glDrawPixels(dev->get_stream_width(rs::stream::color), dev->get_stream_height(rs::stream::color), GL_RGB, GL_UNSIGNED_BYTE, frames.get_frame_data(rs::stream::color));
 
                     glRasterPos2f(-1, 0);
-                    glDrawPixels(640, 480, GL_LUMINANCE, GL_UNSIGNED_BYTE, frames.get_frame_data(rs::stream::infrared));
+                    glDrawPixels(dev->get_stream_width(rs::stream::infrared), dev->get_stream_height(rs::stream::infrared), GL_LUMINANCE, GL_UNSIGNED_BYTE, frames.get_frame_data(rs::stream::infrared));
 
                     if (dev->is_stream_enabled(rs::stream::infrared2))
                     {
                         glRasterPos2f(0, 0);
-                        glDrawPixels(640, 480, GL_LUMINANCE, GL_UNSIGNED_BYTE, frames.get_frame_data(rs::stream::infrared2));
+                        glDrawPixels(dev->get_stream_width(rs::stream::infrared2), dev->get_stream_height(rs::stream::infrared2), GL_LUMINANCE, GL_UNSIGNED_BYTE, frames.get_frame_data(rs::stream::infrared2));
                     }
 
                     glfwSwapBuffers(win);
@@ -74,24 +73,27 @@ int main() try
                 printf("rs::error was thrown when calling %s(%s):\n", e.get_failed_function().c_str(), e.get_failed_args().c_str());
                 printf("    %s\n", e.what());
             }
-            running = false;
+            running[i] = false;
         });
         consumer.detach();
     }
 
-    dev->enable_stream(rs::stream::depth, 640, 480, rs::format::z16, 60);
+    dev->enable_stream(rs::stream::depth, 0, 0, rs::format::z16, 60);
     dev->enable_stream(rs::stream::color, 640, 480, rs::format::rgb8, 60);
-    dev->enable_stream(rs::stream::infrared, 640, 480, rs::format::y8, 60);
-    try { dev->enable_stream(rs::stream::infrared2, 640, 480, rs::format::y8, 60); }
+    dev->enable_stream(rs::stream::infrared, 0, 0, rs::format::y8, 60);
+    try { dev->enable_stream(rs::stream::infrared2, 0, 0, rs::format::y8, 60); }
     catch(...) { printf("Device does not provide infrared2 stream.\n"); }
+
+    
     dev->start();
 
     auto counter = 0;
-    while (running)
+    while (any_costumers_alive(running))
     {
         auto frames = dev->wait_for_frames_safe();
         auto queue_id = counter++ % consumers; // enforce fairness
-        frames_queue[queue_id].enqueue(std::move(frames)); // pass the frameset for processing to thread queue_id
+		if (running[queue_id])
+			frames_queue[queue_id].enqueue(std::move(frames)); // pass the frameset for processing to thread queue_id
     }
 
     return EXIT_SUCCESS;

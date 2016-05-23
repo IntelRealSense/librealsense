@@ -63,7 +63,7 @@ frame_archive::frame_ref* frame_archive::clone_frame(frame_ref* frameset)
 }
 
 // Allocate a new frame in the backbuffer, potentially recycling a buffer from the freelist
-byte * frame_archive::alloc_frame(rs_stream stream, int timestamp, int frame_number, bool requires_memory)
+byte * frame_archive::alloc_frame(rs_stream stream, int timestamp, int frame_number, long long system_time, bool requires_memory)
 {
     const size_t size = modes[stream].get_image_size(stream);
 
@@ -104,6 +104,7 @@ byte * frame_archive::alloc_frame(rs_stream stream, int timestamp, int frame_num
     backbuffer[stream].update_owner(this);
     backbuffer[stream].timestamp = timestamp;
     backbuffer[stream].frame_number = frame_number;
+	backbuffer[stream].system_time = system_time;
     return backbuffer[stream].data.data();
 }
 
@@ -188,6 +189,11 @@ int frame_archive::frame_ref::get_frame_timestamp() const
 int frame_archive::frame_ref::get_frame_number() const
 {
     return frame_ptr ? frame_ptr->frame_number : 0;
+}
+
+long long frame_archive::frame_ref::get_frame_system_time() const
+{
+	return frame_ptr ? frame_ptr->system_time : 0;
 }
 
 const byte* frame_archive::frame::get_frame_data() const

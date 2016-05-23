@@ -274,7 +274,9 @@ namespace rs
             return e == nullptr;
         }
 
-        int get_timestamp() const
+		/// retrieve the time at which the TODO on a stream was captured
+		/// \return            the timestamp of the frame, in milliseconds since the device was started
+		int get_timestamp() const
         {
             rs_error * e = nullptr;
             auto r = rs_get_detached_frame_timestamp(frame_ref, &e);
@@ -768,6 +770,17 @@ namespace rs
         {
             rs_error * e = nullptr;
             auto r = rs_get_frame_timestamp((const rs_device *)this, (rs_stream)stream, &e);
+            error::handle(e);
+            return r;
+        }
+
+        /// retrieve the system time at which the latest frame on a stream was captured
+        /// \param[in] stream  the stream whose latest frame we are interested in
+        /// \return            the system time of the frame, in milliseconds
+        long long get_frame_system_time(stream stream) const
+        {
+            rs_error * e = nullptr;
+            auto r = rs_get_frame_system_time((const rs_device *)this, (rs_stream)stream, &e);
             error::handle(e);
             return r;
         }

@@ -28,8 +28,8 @@ int main() try
     // create N queues for the N consumers
     const auto consumers = 3;
     single_consumer_queue<rs::frame> frames_queue[consumers];
+    std::vector<bool> running(consumers, true);
 
-    auto running = true;
     glfwInit();
 
     for (auto i = 0; i < consumers; i++)
@@ -53,18 +53,18 @@ int main() try
                     if ((rs::stream)i == rs::stream::depth)
                     {
                         glPixelTransferf(GL_RED_SCALE, 0xFFFF * dev->get_depth_scale() / 2.0f);
-                        glDrawPixels(640, 480, GL_RED, GL_UNSIGNED_SHORT, frame.get_data());
+                        glDrawPixels(dev->get_stream_width(rs::stream::depth), dev->get_stream_height(rs::stream::depth), GL_RED, GL_UNSIGNED_SHORT, frame.get_data());
                         glPixelTransferf(GL_RED_SCALE, 1.0f);
                     }
 
                     if ((rs::stream)i == rs::stream::color)
                     {
-                        glDrawPixels(640, 480, GL_RGB, GL_UNSIGNED_BYTE, frame.get_data());
+                        glDrawPixels(dev->get_stream_width(rs::stream::color), dev->get_stream_height(rs::stream::color), GL_RGB, GL_UNSIGNED_BYTE, frame.get_data());
                     }
 
                     if ((rs::stream)i == rs::stream::infrared)
                     {
-                        glDrawPixels(640, 480, GL_LUMINANCE, GL_UNSIGNED_BYTE, frame.get_data());
+                        glDrawPixels(dev->get_stream_width(rs::stream::infrared), dev->get_stream_height(rs::stream::infrared), GL_LUMINANCE, GL_UNSIGNED_BYTE, frame.get_data());
                     }
 
                     glfwSwapBuffers(win);
@@ -75,17 +75,17 @@ int main() try
                 printf("rs::error was thrown when calling %s(%s):\n", e.get_failed_function().c_str(), e.get_failed_args().c_str());
                 printf("    %s\n", e.what());
             }
-            running = false;
+            running[i] = false;
         });
         consumer.detach();
     }
 
-    dev->enable_stream(rs::stream::depth, 640, 480, rs::format::z16, 30);
+    dev->enable_stream(rs::stream::depth, 0, 0, rs::format::z16, 30);
     dev->enable_stream(rs::stream::color, 640, 480, rs::format::rgb8, 30);
-    dev->enable_stream(rs::stream::infrared, 640, 480, rs::format::y8, 30);
+    dev->enable_stream(rs::stream::infrared, 0, 0, rs::format::y8, 30);
     dev->start();
 
-    while (running)
+    while (any_costumers_alive(running))
     {
         auto frames = dev->wait_for_frames_safe();
         for (auto i = 0; i < consumers; i++)

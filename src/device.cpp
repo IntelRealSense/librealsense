@@ -5,6 +5,7 @@
 #include "sync.h"
 
 #include <array>
+#include "image.h"
 
 using namespace rsimpl;
 
@@ -104,6 +105,9 @@ void rs_device::start()
         set_subdevice_mode(*device, mode_selection.mode.subdevice, mode_selection.mode.native_dims.x, mode_selection.mode.native_dims.y, mode_selection.mode.pf.fourcc, mode_selection.mode.fps, 
             [mode_selection, archive, timestamp_reader, callbacks, streams](const void * frame, std::function<void()> continuation) mutable
         {
+			auto now = std::chrono::system_clock::now().time_since_epoch();
+			auto sys_time = std::chrono::duration_cast<std::chrono::milliseconds>(now).count();
+
             frame_continuation release_and_enqueue(continuation, frame);
 
             // Ignore any frames which appear corrupted or invalid
@@ -112,13 +116,16 @@ void rs_device::start()
             // Determine the timestamp for this frame
             auto timestamp = timestamp_reader->get_frame_timestamp(mode_selection.mode, frame);
             auto frame_counter = timestamp_reader->get_frame_counter(mode_selection.mode, frame);
+            
+            auto requires_processing = mode_selection.requires_processing();
 
+            
             // Obtain buffers for unpacking the frame
             std::vector<byte *> dest;
-            for (auto & output : mode_selection.get_outputs()) dest.push_back(archive->alloc_frame(output.first, timestamp, frame_counter, mode_selection.requires_processing()));
+			for (auto & output : mode_selection.get_outputs()) dest.push_back(archive->alloc_frame(output.first, timestamp, frame_counter, sys_time, requires_processing));
 
             // Unpack the frame
-            if (mode_selection.requires_processing()) 
+            if (requires_processing)
             {
                 mode_selection.unpack(dest.data(), reinterpret_cast<const byte *>(frame));
             }
@@ -126,7 +133,7 @@ void rs_device::start()
             // If any frame callbacks were specified, dispatch them now
             for (size_t i = 0; i < dest.size(); ++i)
             {
-                if (!mode_selection.requires_processing())
+
                 {
                     archive->attach_continuation(streams[i], std::move(release_and_enqueue));
                 }

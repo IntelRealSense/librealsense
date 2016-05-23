@@ -97,11 +97,17 @@ int native_stream::get_frame_counter() const
     return archive->get_frame_counter(stream);
 }
 
+long long native_stream::get_frame_system_time() const
+{
+	return archive->get_frame_system_time(stream);
+}
+
 const byte * native_stream::get_frame_data() const
 {
     if(!is_enabled()) throw std::runtime_error(to_string() << "stream not enabled: " << stream);
     return archive->get_frame_data(stream);
 }
+
 
 const rsimpl::byte * point_stream::get_frame_data() const
 {
