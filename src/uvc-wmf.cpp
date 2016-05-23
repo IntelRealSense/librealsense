@@ -14,6 +14,7 @@
 #include <mfidl.h>          // For MF_DEVSOURCE_*, etc.
 #include <mfreadwrite.h>    // MFCreateSourceReaderFromMediaSource
 #include <mferror.h>
+#include "hw-monitor.h"
 
 #pragma comment(lib, "Shlwapi.lib")
 #pragma comment(lib, "mf.lib")
@@ -46,6 +47,9 @@ namespace rsimpl
 {
     namespace uvc
     {
+        const auto FISHEYE_HWMONITOR_INTERFACE = 2;
+        const uvc::guid FISHEYE_WIN_USB_DEVICE_GUID = { 0xC0B55A29, 0xD7B6, 0x436E, { 0xA6, 0xEF, 0x2E, 0x76, 0xED, 0x0A, 0xBC, 0xA5 } };
+
         static std::string win_to_utf(const WCHAR * s)
         {
             int len = WideCharToMultiByte(CP_UTF8, 0, s, -1, nullptr, 0, NULL, NULL);
@@ -210,7 +214,13 @@ namespace rsimpl
             std::map<int, com_ptr<IKsControl>> ks_controls;
             com_ptr<IMFSourceReader> mf_source_reader;
             std::function<void(const void * frame)> callback;
+            std::function<void(const unsigned char * data, const int size)> channel_data_callback = nullptr;
             int vid, pid;
+
+            void set_data_channel_cfg(std::function<void(const unsigned char * data, const int size)> callback)
+            {
+                this->channel_data_callback = callback;
+            }
 
             com_ptr<IMFMediaSource> get_media_source()
             {
@@ -223,6 +233,129 @@ namespace rsimpl
                 return mf_media_source;
 
 
+            }
+
+            static bool wait_for_async_operation(WINUSB_INTERFACE_HANDLE interfaceHandle, OVERLAPPED &hOvl, ULONG &lengthTransferred)
+            {
+                if (GetOverlappedResult(interfaceHandle, &hOvl, &lengthTransferred, FALSE))
+                    return true;
+
+                auto lastResult = GetLastError();
+                if (lastResult == ERROR_IO_PENDING || lastResult == ERROR_IO_INCOMPLETE)
+                {
+                    WaitForSingleObject(hOvl.hEvent, 100);
+                    auto res = GetOverlappedResult(interfaceHandle, &hOvl, &lengthTransferred, FALSE);
+                    if (res != 1)
+                    {
+                        return false;
+                    }
+                }
+                else
+                {
+                    lengthTransferred = 0;
+                    WinUsb_ResetPipe(interfaceHandle, 0x84);
+                    return false;
+                }
+
+                return true;
+
+            }
+
+            class safe_handle
+            {
+            public:
+                safe_handle(HANDLE handle) :_handle(handle)
+                {
+
+                }
+
+                ~safe_handle()
+                {
+                    if (_handle != nullptr)
+                    {
+                        CloseHandle(_handle);
+                        _handle = nullptr;
+                    }
+                }
+
+                bool Set()
+                {
+                    if (_handle == nullptr) return false;
+                    SetEvent(_handle);
+                    return true;
+                }
+
+                bool Wait(DWORD timeout) const
+                {
+                    if (_handle == nullptr) return false;
+
+                    return WaitForSingleObject(_handle, timeout) == WAIT_OBJECT_0; // Return true only if object was signaled
+                }
+
+
+                HANDLE GetHandle() const { return _handle; }
+            private:
+                safe_handle() = delete;
+
+                // Disallow copy:
+                safe_handle(const safe_handle&) = delete;
+                safe_handle& operator=(const safe_handle&) = delete;
+
+                HANDLE _handle;
+            };
+
+            static void poll_interrupts(HANDLE *handle, const std::vector<subdevice *> & subdevices)
+            {
+                static const unsigned short interrupt_buf_size = 0x400;
+                uint8_t buffer[interrupt_buf_size];                       /* 64 byte transfer buffer  - dedicated channel*/
+                ULONG num_bytes = 0;                           /* Actual bytes transferred. */
+                OVERLAPPED hOvl;
+                safe_handle sh(CreateEvent(nullptr, false, false, nullptr));
+                hOvl.hEvent = sh.GetHandle();
+                // TODO - replace hard-coded values : 0x82 and 1000
+                int res = WinUsb_ReadPipe(*handle, 0x84, buffer, interrupt_buf_size, &num_bytes, &hOvl);
+                if (0 == res)
+                {
+                    auto lastError = GetLastError();
+                    if (lastError == ERROR_IO_PENDING)
+                    {
+                        bool isExitOnTimeout = false;
+                        auto sts = wait_for_async_operation(*handle, hOvl, num_bytes);
+                        lastError = GetLastError();
+                        if (lastError == ERROR_OPERATION_ABORTED)
+                        {
+                            perror("receiving interrupt_ep bytes failed");
+                            fprintf(stderr, "Error receiving message.\n");
+                        }
+                        if (isExitOnTimeout || !sts)
+                        {
+                            perror("receiving interrupt_ep bytes failed");
+                            fprintf(stderr, "Error receiving message.\n");
+                            return;
+                        }
+                    }
+                    else
+                    {
+                        WinUsb_ResetPipe(*handle, 0x84);
+                        perror("receiving interrupt_ep bytes failed");
+                        fprintf(stderr, "Error receiving message.\n");
+                        return;
+                    }
+
+                    if (num_bytes == 0)
+                        return;
+
+                    // Propagate the data to device layer
+                    for(auto & sub : subdevices)
+                        if (sub->channel_data_callback)
+                            sub->channel_data_callback(buffer, (unsigned long)num_bytes);
+                }
+                else
+                {
+                    // todo exception
+                    perror("receiving interrupt_ep bytes failed");
+                    fprintf(stderr, "Error receiving message.\n");
+                }
             }
 
             IKsControl * get_ks_control(const uvc::extension_unit & xu)
@@ -261,9 +394,16 @@ namespace rsimpl
 
             HANDLE usb_file_handle = INVALID_HANDLE_VALUE;
             WINUSB_INTERFACE_HANDLE usb_interface_handle = INVALID_HANDLE_VALUE;
-			WINUSB_INTERFACE_HANDLE usb_aux_interface_handle = INVALID_HANDLE_VALUE;
+            HANDLE usb_aux_file_handle = INVALID_HANDLE_VALUE;
+            WINUSB_INTERFACE_HANDLE usb_aux_interface_handle = INVALID_HANDLE_VALUE;
+            std::vector<int> claimed_interfaces;
+            std::vector<int> claimed_aux_interfaces;
+            int aux_vid, aux_pid;
+            std::string aux_unique_id;
+            std::thread data_channel_thread;
+            volatile bool data_stop;
 
-            device(std::shared_ptr<context> parent, int vid, int pid, std::string unique_id) : parent(move(parent)), vid(vid), pid(pid), unique_id(move(unique_id))
+            device(std::shared_ptr<context> parent, int vid, int pid, std::string unique_id) : parent(move(parent)), vid(vid), pid(pid), unique_id(move(unique_id)), data_stop(false), aux_pid(0), aux_vid(0)
             {
 
             }
@@ -273,6 +413,42 @@ namespace rsimpl
             IKsControl * get_ks_control(const uvc::extension_unit & xu)
             {
                 return subdevices[xu.subdevice].get_ks_control(xu);
+            }
+
+            void start_data_acquisition()
+            {
+                std::vector<subdevice *> data_channel_subs;
+                for (auto & sub : subdevices)
+                {
+                    if (sub.channel_data_callback)
+                    {
+                        // TODO start_capture();       // both video and motion events. TODO callback for uvc layer
+                        data_channel_subs.push_back(&sub);
+                    }
+                }
+
+                if (claimed_aux_interfaces.size())
+                {
+                    data_channel_thread = std::thread([this, data_channel_subs]()
+                    {
+                        // Polling
+                        while (!data_stop)
+                        {
+                            subdevice::poll_interrupts(&this->usb_aux_interface_handle, data_channel_subs);
+                        }
+                    });
+                }
+            }
+
+            void stop_data_acquisition()
+            {
+                if (data_channel_thread.joinable())
+                {
+                    data_stop = true;
+                    data_channel_thread.join();
+                    data_stop = false;
+                }
+                close_win_usb();
             }
 
             void start_streaming()
@@ -322,7 +498,7 @@ namespace rsimpl
                 return subdevices[subdevice_index].get_media_source();
             }           
 
-            void open_win_usb(const guid & interface_guid, int interface_number) try
+            void open_win_usb(int vid, int pid, std::string unique_id, const guid & interface_guid, int interface_number, bool is_usb_aux = false) try
             {    
                 static_assert(sizeof(guid) == sizeof(GUID), "struct packing error");
                 HDEVINFO device_info = SetupDiGetClassDevs((const GUID *)&interface_guid, nullptr, nullptr, DIGCF_PRESENT | DIGCF_DEVICEINTERFACE);
@@ -359,16 +535,28 @@ namespace rsimpl
                         continue;
                     }
                     if (detail_data->DevicePath == nullptr) continue;
-
                     // Check if this is our device
                     int usb_vid, usb_pid, usb_mi; std::string usb_unique_id;
                     if(!parse_usb_path(usb_vid, usb_pid, usb_mi, usb_unique_id, win_to_utf(detail_data->DevicePath))) continue;
                     if(usb_vid != vid || usb_pid != pid || usb_mi != interface_number || usb_unique_id != unique_id) continue;                    
-                        
-                    usb_file_handle = CreateFile(detail_data->DevicePath, GENERIC_WRITE | GENERIC_READ, FILE_SHARE_WRITE | FILE_SHARE_READ, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL | FILE_FLAG_OVERLAPPED, nullptr);
-                    if (usb_file_handle == INVALID_HANDLE_VALUE) throw std::runtime_error("CreateFile(...) failed");
 
-                    if(!WinUsb_Initialize(usb_file_handle, &usb_interface_handle))
+                    HANDLE* file_handle = nullptr;
+                    WINUSB_INTERFACE_HANDLE* usb_handle = nullptr;
+                    if (is_usb_aux)
+                    {
+                        file_handle = &usb_aux_file_handle;
+                        usb_handle = &usb_aux_interface_handle;
+                    }
+                    else
+                    {
+                        file_handle = &usb_file_handle;
+                        usb_handle = &usb_interface_handle;
+                    }
+
+                    *file_handle = CreateFile(detail_data->DevicePath, GENERIC_WRITE | GENERIC_READ, FILE_SHARE_WRITE | FILE_SHARE_READ, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL | FILE_FLAG_OVERLAPPED, nullptr);
+                    if (*file_handle == INVALID_HANDLE_VALUE) throw std::runtime_error("CreateFile(...) failed");
+
+                    if (!WinUsb_Initialize(*file_handle, usb_handle))
                     {
                         LOG_ERROR("Last Error: " << GetLastError());
                         throw std::runtime_error("could not initialize winusb");
@@ -400,9 +588,10 @@ namespace rsimpl
                 }
             }
 
-            bool usb_synchronous_read(uint8_t endpoint, void * buffer, int bufferLength, int * actual_length, DWORD TimeOut)
+            bool usb_synchronous_read(uint8_t endpoint, void * buffer, int bufferLength, int * actual_length, DWORD TimeOut, unsigned char handle_id)
             {
-                if (usb_interface_handle == INVALID_HANDLE_VALUE) throw std::runtime_error("winusb has not been initialized");
+                WINUSB_INTERFACE_HANDLE * usb_handle = (handle_id == 0) ? &usb_interface_handle : &usb_aux_interface_handle;
+                if (*usb_handle == INVALID_HANDLE_VALUE) throw std::runtime_error("winusb has not been initialized");
 
                 auto result = false;
 
@@ -410,14 +599,14 @@ namespace rsimpl
                 
                 ULONG lengthTransferred;
 
-                bRetVal = WinUsb_ReadPipe(usb_interface_handle, endpoint, (PUCHAR)buffer, bufferLength, &lengthTransferred, NULL);
+                bRetVal = WinUsb_ReadPipe(*usb_handle, endpoint, (PUCHAR)buffer, bufferLength, &lengthTransferred, NULL);
 
                 if (bRetVal)
                     result = true;
                 else
                 {
                     auto lastResult = GetLastError();
-                    WinUsb_ResetPipe(usb_interface_handle, endpoint);
+                    WinUsb_ResetPipe(*usb_handle, endpoint);
                     result = false;
                 }
 
@@ -425,20 +614,21 @@ namespace rsimpl
                 return result;
             }
 
-            bool usb_synchronous_write(uint8_t endpoint, void * buffer, int bufferLength, DWORD TimeOut)
+            bool usb_synchronous_write(uint8_t endpoint, void * buffer, int bufferLength, DWORD TimeOut, unsigned char handle_id)
             {
-                if (usb_interface_handle == INVALID_HANDLE_VALUE) throw std::runtime_error("winusb has not been initialized");
+                WINUSB_INTERFACE_HANDLE * usb_handle = (handle_id == 0) ? &usb_interface_handle : &usb_aux_interface_handle;
+                if (*usb_handle == INVALID_HANDLE_VALUE) throw std::runtime_error("winusb has not been initialized");
 
                 auto result = false;
 
                 ULONG lengthWritten;
-                auto bRetVal = WinUsb_WritePipe(usb_interface_handle, endpoint, (PUCHAR)buffer, bufferLength, &lengthWritten, NULL);
+                auto bRetVal = WinUsb_WritePipe(*usb_handle, endpoint, (PUCHAR)buffer, bufferLength, &lengthWritten, NULL);
                 if (bRetVal)
                     result = true;
                 else
                 {
                     auto lastError = GetLastError();
-                    WinUsb_ResetPipe(usb_interface_handle, endpoint);
+                    WinUsb_ResetPipe(*usb_handle, endpoint);
                     LOG_ERROR("WinUsb_ReadPipe failure... lastError: " << lastError);
                     result = false;
                 }
@@ -520,32 +710,73 @@ namespace rsimpl
 
         void claim_interface(device & device, const guid & interface_guid, int interface_number)
         {
-            device.open_win_usb(interface_guid, interface_number);
+            device.open_win_usb(device.vid, device.pid, device.unique_id, interface_guid, interface_number);
         }
 
-		void claim_aux_interface(device & device, const guid & interface_guid, int interface_number)
-		{
-			throw std::logic_error("claim_aux_interface(...) is not implemented for this backend ");
-		}
+        void claim_aux_interface(device & device, const guid & interface_guid, int interface_number)
+        {
+            device.open_win_usb(device.aux_vid, device.aux_pid, device.aux_unique_id, interface_guid, interface_number, true);
+            device.claimed_aux_interfaces.push_back(interface_number);
+        }
 
         bool power_on_adapter_board()
         {
-            throw std::logic_error("power_on_adapter_board(...) is not implemented for this backend ");
+            IMFAttributes * pAttributes = NULL;
+            check("MFCreateAttributes", MFCreateAttributes(&pAttributes, 1));
+            check("IMFAttributes::SetGUID", pAttributes->SetGUID(MF_DEVSOURCE_ATTRIBUTE_SOURCE_TYPE, MF_DEVSOURCE_ATTRIBUTE_SOURCE_TYPE_VIDCAP_GUID));
+
+            IMFActivate ** ppDevices;
+            UINT32 numDevices;
+            check("MFEnumDeviceSources", MFEnumDeviceSources(pAttributes, &ppDevices, &numDevices));
+
+            auto context = rsimpl::uvc::create_context();
+            std::shared_ptr<device> fish_eye_dev;
+            std::vector<std::shared_ptr<device>> devices;
+            for (UINT32 i = 0; i < numDevices; ++i)
+            {
+                com_ptr<IMFActivate> pDevice;
+                *&pDevice = ppDevices[i];
+
+                WCHAR * wchar_name = NULL; UINT32 length;
+                pDevice->GetAllocatedString(MF_DEVSOURCE_ATTRIBUTE_SOURCE_TYPE_VIDCAP_SYMBOLIC_LINK, &wchar_name, &length);
+                auto name = win_to_utf(wchar_name);
+                CoTaskMemFree(wchar_name);
+
+                int vid, pid, mi; std::string unique_id;
+                if (!parse_usb_path(vid, pid, mi, unique_id, name)) continue;
+
+                if (vid == 0x8086 && pid == 0x0ad0)
+                {
+                    fish_eye_dev = std::make_shared<device>(context, vid, pid, unique_id);
+                    break;
+                }
+            }
+
+            CoTaskMemFree(ppDevices);
+
+            if (!fish_eye_dev)
+                return false;
+
+            std::timed_mutex mutex;
+            claim_interface(*fish_eye_dev, FISHEYE_WIN_USB_DEVICE_GUID, FISHEYE_HWMONITOR_INTERFACE);
+            rsimpl::hw_mon::HWMonitorCommand cmd(0x0b);
+            cmd.Param1 = 1;
+            perform_and_send_monitor_command(*fish_eye_dev, mutex, cmd);
+            Sleep(2000);
+
+            return true;
         }
 
         void bulk_transfer(device & device, unsigned char handle_id, uint8_t endpoint, void * data, int length, int *actual_length, unsigned int timeout)
-        {       
-			if (0 != handle_id)
-				throw std::logic_error(to_string() << "Auxillary WinUSB interface is not implemented for this backend");
-
+        {
             if(USB_ENDPOINT_DIRECTION_OUT(endpoint))
             {
-                device.usb_synchronous_write(endpoint, data, length, timeout);
+                device.usb_synchronous_write(endpoint, data, length, timeout, handle_id);
             }
             
             if(USB_ENDPOINT_DIRECTION_IN(endpoint))
-            {                
-                device.usb_synchronous_read(endpoint, data, length, actual_length, timeout);
+            {
+                device.usb_synchronous_read(endpoint, data, length, actual_length, timeout, handle_id);
             }
         }
 
@@ -589,21 +820,21 @@ namespace rsimpl
 
         void set_subdevice_data_channel_handler(device & device, int subdevice_index, std::function<void(const unsigned char * data, const int size)> callback)
         {			
-            throw std::logic_error("set_subdevice_data_channel_handler(...) is not implemented for this backend ");
+            device.subdevices[subdevice_index].set_data_channel_cfg(callback);
         }
 
         void start_streaming(device & device, int num_transfer_bufs) { device.start_streaming(); }
         void stop_streaming(device & device) { device.stop_streaming(); }
 
-		void start_data_acquisition(device & device)
-		{
-			throw std::logic_error("start_data_acquisition(...) is not implemented for this backend ");
-		}
+        void start_data_acquisition(device & device)
+        {
+            device.start_data_acquisition();
+        }
 
-		void stop_data_acquisition(device & device)
-		{
-			throw std::logic_error("stop_data_acquisition(...) is not implemented for this backend ");
-		}
+        void stop_data_acquisition(device & device)
+        {
+            device.stop_data_acquisition();
+        }
 
         struct pu_control { rs_option option; long property; bool enable_auto; };
         static const pu_control pu_controls[] = {
@@ -879,8 +1110,9 @@ namespace rsimpl
                             devB->subdevices.resize(4);
                             devB->subdevices[3].reader_callback = new reader_callback(devB, static_cast<int>(3));
                             devB->subdevices[3].mf_activate = devA->subdevices[0].mf_activate;
-                            devB->subdevices[3].vid = 0x8086;
-                            devB->subdevices[3].pid = 0x0ad0;
+                            devB->subdevices[3].vid = devB->aux_vid = 0x8086;
+                            devB->subdevices[3].pid = devB->aux_pid = 0x0ad0;
+                            devB->aux_unique_id = std::string("2cee56ef"); // TODO
                             devices.erase(std::remove(devices.begin(), devices.end(), devA), devices.end());
                             break;
                         }

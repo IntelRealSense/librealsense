@@ -40,24 +40,25 @@ namespace rsimpl { namespace r200
 {
     //const uvc::extension_unit lr_xu = {0, 2, 1, {0x18682d34, 0xdd2c, 0x4073, {0xad, 0x23, 0x72, 0x14, 0x73, 0x9a, 0x07, 0x4c}}};
 
-    const uvc::guid MOTION_MODULE_USB_DEVICE_GUID = {0x175695CD, 0x30D9, 0x4F87, {0x8B, 0xE3, 0x5A, 0x82, 0x70, 0xF4, 0x9A, 0x31}};    
+    const uvc::guid MOTION_MODULE_USB_DEVICE_GUID = { 0xC0B55A29, 0xD7B6, 0x436E, { 0xA6, 0xEF, 0x2E, 0x76, 0xED, 0x0A, 0xBC, 0xA5 } };
     const unsigned short motion_module_interrupt_interface = 0x2; // endpint to pull sensors data continuously (interrupt transmit)
 
     enum class CX3_GrossTete_MonitorCommand : uint32_t
     {
-        IRB         = 0x01,     // Read from i2c ( 8x8 )
-        IWB         = 0x02,     // Write to i2c ( 8x8 )
-        GVD         = 0x03,     // Get Version and Date
-        IAP_IRB     = 0x04,     // Read from IAP i2c ( 8x8 )
-        IAP_IWB     = 0x05,     // Write to IAP i2c ( 8x8 )
-        FRCNT       = 0x06,     // Read frame counter
-        GLD         = 0x07,     // Get logger data
-        GPW         = 0x08,     // Write to GPIO
-        GPR         = 0x09,     // Read from GPIO
-        MMPWR       = 0x0A,     // Motion module power up/down
-        DSPWR       = 0x0B,     // DS4 power up/down
-        EXT_TRIG    = 0x0C,     // external trigger mode
-        CX3FWUPD    = 0x0D      // FW update
+        IRB          = 0x01,     // Read from i2c ( 8x8 )
+        IWB          = 0x02,     // Write to i2c ( 8x8 )
+        GVD          = 0x03,     // Get Version and Date
+        IAP_IRB      = 0x04,     // Read from IAP i2c ( 8x8 )
+        IAP_IWB      = 0x05,     // Write to IAP i2c ( 8x8 )
+        FRCNT        = 0x06,     // Read frame counter
+        GLD          = 0x07,     // Get logger data
+        GPW          = 0x08,     // Write to GPIO
+        GPR          = 0x09,     // Read from GPIO
+        MMPWR        = 0x0A,     // Motion module power up/down
+        DSPWR        = 0x0B,     // DS4 power up/down
+        EXT_TRIG     = 0x0C,     // external trigger mode
+        CX3FWUPD     = 0x0D,     // FW update
+        UCTRL_ACTIVE = 0x0E
     };
        
     uint8_t get_ext_trig(const uvc::device & device)
@@ -99,6 +100,15 @@ namespace rsimpl { namespace r200
         hw_mon::perform_and_send_monitor_command(device,mutex, 1, cmd);
     }
 
+    void toggle_motion_events(uvc::device & device, bool on)
+    {
+        std::timed_mutex mutex;
+        hw_mon::HWMonitorCommand cmd((uint8_t)CX3_GrossTete_MonitorCommand::UCTRL_ACTIVE);
+        cmd.Param1 = (on) ? 1 : 0;
+        cmd.oneDirection = false;
+
+        hw_mon::perform_and_send_monitor_command(device, mutex, 1, cmd);
+    }
 
     struct CommandResponsePacket
     {

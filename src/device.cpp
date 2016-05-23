@@ -10,7 +10,7 @@
 
 using namespace rsimpl;
 
-rs_device::rs_device(std::shared_ptr<rsimpl::uvc::device> device, const rsimpl::static_device_info & info) : device(device), config(info), capturing(false),
+rs_device::rs_device(std::shared_ptr<rsimpl::uvc::device> device, const rsimpl::static_device_info & info) : device(device), config(info), capturing(false), data_acquisition_active(false),
     depth(config, RS_STREAM_DEPTH), color(config, RS_STREAM_COLOR), infrared(config, RS_STREAM_INFRARED), infrared2(config, RS_STREAM_INFRARED2), fisheye(config, RS_STREAM_FISHEYE),
     points(depth), rect_color(color), color_to_depth(color, depth), depth_to_color(depth, color), depth_to_rect_color(depth, rect_color), infrared2_to_depth(infrared2,depth), depth_to_infrared2(depth,infrared2)
 {
@@ -269,6 +269,8 @@ std::vector<motion_event> motion_module_parser::operator() (const unsigned char*
     const unsigned short motion_packet_size = 104; // bytes
     const unsigned short motion_packet_header_size = 8; // bytes
     const unsigned short non_imu_data_offset = 56; // bytes
+    const unsigned short non_imu_data_entries = 8;  // IMU SaS spec 3.3.2
+    const unsigned short imu_data_entries = 4;
     unsigned short packets = data_size / motion_packet_size;
 
     std::vector<motion_event> v;
@@ -279,7 +281,7 @@ std::vector<motion_event> motion_module_parser::operator() (const unsigned char*
 
         for (uint8_t i = 0; i < packets; i++)
         {
-            motion_event event_data;
+            motion_event event_data = { 0 };
 
             cur_packet = (unsigned char*)data + (i*motion_packet_size);
 
@@ -289,20 +291,23 @@ std::vector<motion_event> motion_module_parser::operator() (const unsigned char*
             memcpy(&event_data.imu_entries_num, &cur_packet[4], sizeof(unsigned short));
             memcpy(&event_data.non_imu_entries_num, &cur_packet[6], sizeof(unsigned short));
 
-            // Parse IMU entries
-            for (uint8_t j = 0; j < event_data.imu_entries_num; j++)
+            // Validate header input
+            if ((event_data.imu_entries_num <= imu_data_entries) && (event_data.imu_entries_num <= non_imu_data_entries))
             {
-                event_data.imu_packets[j] = parse_motion(&cur_packet[motion_packet_header_size]);
-                
-            }
+                // Parse IMU entries
+                for (uint8_t j = 0; j < event_data.imu_entries_num; j++)
+                {
+                    event_data.imu_packets[j] = parse_motion(&cur_packet[motion_packet_header_size]);
 
-            // Parse non-IMU entries
-            for (uint8_t j = 0; j < event_data.imu_entries_num; j++)
-            {
-                parse_timestamp(&cur_packet[non_imu_data_offset],event_data.non_imu_packets[j]);
-            }
+                }
 
-            v.push_back(std::move(event_data));
+                // Parse non-IMU entries
+                for (uint8_t j = 0; j < event_data.non_imu_entries_num; j++)
+                {
+                    parse_timestamp(&cur_packet[non_imu_data_offset], event_data.non_imu_packets[j]);
+                }
+                v.push_back(std::move(event_data));
+            }
         }
     }
     
