@@ -212,13 +212,6 @@ void rs_get_stream_intrinsics(const rs_device * device, rs_stream stream, rs_int
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, device, stream, intrin)
 
-int rs_supports_events(const rs_device * device, rs_error ** error) try
-{
-    VALIDATE_NOT_NULL(device);
-    return device->supports_events();
-}
-HANDLE_EXCEPTIONS_AND_RETURN( false, device)
-
 void rs_enable_events(rs_device * device, rs_error ** error) try
 {
     VALIDATE_NOT_NULL(device);    

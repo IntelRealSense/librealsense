@@ -11,6 +11,7 @@
 #include <chrono>
 #include <iomanip>
 #include <mutex>
+#include <algorithm>
 
 #pragma pack(push, 1) // All structs in this file are byte-aligend
 
@@ -42,23 +43,6 @@ namespace rsimpl { namespace r200
 
     const uvc::guid MOTION_MODULE_USB_DEVICE_GUID = {0x175695CD, 0x30D9, 0x4F87, {0x8B, 0xE3, 0x5A, 0x82, 0x70, 0xF4, 0x9A, 0x31}};    
     const unsigned short motion_module_interrupt_interface = 0x2; // endpint to pull sensors data continuously (interrupt transmit)
-
-    enum class CX3_GrossTete_MonitorCommand : uint32_t
-    {
-        IRB         = 0x01,     // Read from i2c ( 8x8 )
-        IWB         = 0x02,     // Write to i2c ( 8x8 )
-        GVD         = 0x03,     // Get Version and Date
-        IAP_IRB     = 0x04,     // Read from IAP i2c ( 8x8 )
-        IAP_IWB     = 0x05,     // Write to IAP i2c ( 8x8 )
-        FRCNT       = 0x06,     // Read frame counter
-        GLD         = 0x07,     // Get logger data
-        GPW         = 0x08,     // Write to GPIO
-        GPR         = 0x09,     // Read from GPIO
-        MMPWR       = 0x0A,     // Motion module power up/down
-        DSPWR       = 0x0B,     // DS4 power up/down
-        EXT_TRIG    = 0x0C,     // external trigger mode
-        CX3FWUPD    = 0x0D      // FW update
-    };
        
     uint8_t get_ext_trig(const uvc::device & device)
     {
@@ -88,17 +72,6 @@ namespace rsimpl { namespace r200
     {
         r200::xu_write(device, fisheye_xu, r200::control::fisheye_xu_strobe, &strobe, sizeof(strobe));
     }
-
-    void toggle_adapter_board_pwr(uvc::device & device, bool on)
-    {
-        std::timed_mutex mutex;
-        hw_mon::HWMonitorCommand cmd((uint8_t)CX3_GrossTete_MonitorCommand::MMPWR);
-        cmd.Param1 = (on)? 1 : 0;
-        cmd.oneDirection = false;
-
-        hw_mon::perform_and_send_monitor_command(device,mutex, 1, cmd);
-    }
-
 
     struct CommandResponsePacket
     {

@@ -32,17 +32,15 @@ int main() try
     rs::stream stream_type = rs::stream::depth;
     dev->enable_stream(stream_type, rs::preset::best_quality);  // auto-select based on the actual camera type
 
-    // todo
     // Put request for events polling
-    if (dev->supports_events())                                         // todo:move to supports interface
+    if (dev->supports(rs::capabilities::motion_events))
        dev->enable_events();
 
-	// Define event handler for motion data packets
+    // Define event handler for motion data packets
     rs::motion_callback motion_callback([](rs::motion_data entry)   // TODO rs_motion event wrapper
-    {        
-        if (entry.timestamp_data.source_id == RS_IMU_ACCEL)
+    {
         {
-            std::cout << "Motion:"
+            std::cout << "Motion: "
                 << "timestamp: "  << entry.timestamp_data.timestamp
                 << "\tsource_id: "  << ((entry.timestamp_data.source_id == RS_IMU_ACCEL) ? " accel " : " gyro ")
                 << "\tframe_num: "  << entry.timestamp_data.frame_number
@@ -52,12 +50,12 @@ int main() try
         }
     });
 
-	// ... and the timestamp packets (DS4.1/FishEye Frame, GPIOS...)
+    // ... and the timestamp packets (DS4.1/FishEye Frame, GPIOS...)
     rs::timestamp_callback timestamp_callback([](rs::timestamp_data entry)   // TODO rs_motion event wrapper
-	{
-		std::cout << "Timestamp event arrived, timestamp: " << entry.timestamp << std::endl;
-	});
-	
+    {
+        std::cout << "Timestamp event arrived, timestamp: " << entry.timestamp << std::endl;
+    });
+    
     // Next registers motion and timestamp callbacks with LibRealSense
     dev->set_motion_callback(motion_callback);
     dev->set_timestamp_callback(timestamp_callback);
@@ -88,10 +86,13 @@ int main() try
     std::vector<int> coverage_buf;
     coverage_buf.resize(row_lenght);
 
+    int no_data = 0;
     while(true)
     {        
         if (dev->poll_for_frames())
         {
+            std::cout << "frame arrived " << std::endl;
+            no_data = 0;
             // Retrieve depth data
             const uint16_t * depth_frame = reinterpret_cast<const uint16_t *>(dev->get_frame_data(rs::stream::depth));
 
@@ -119,10 +120,17 @@ int main() try
             }
             *out++ = 0;
 
-            printf("\n%s", buffer.data());
+            //printf("\n%s", buffer.data());
         }
         else
-            std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        {
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            no_data++;
+            if (no_data > 10)
+            {
+                printf(".\t"); no_data =0;
+            }
+        }
     }
     
     return EXIT_SUCCESS;

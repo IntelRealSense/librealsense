@@ -486,15 +486,6 @@ namespace rs
             return intrin;
         }
 
-        /// check whether the specific device support data aqcuisition channels        
-        int supports_events()
-        {
-            rs_error * e = nullptr;
-            auto res = rs_supports_events((const rs_device *)this, &e);
-            error::handle(e);
-            return res;
-        }
-
         /// notify backend to querry hw event on play
         void enable_events()
         {

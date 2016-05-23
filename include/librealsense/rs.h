@@ -392,12 +392,6 @@ int rs_get_stream_framerate(const rs_device * device, rs_stream stream, rs_error
 void rs_get_stream_intrinsics(const rs_device * device, rs_stream stream, rs_intrinsics * intrin, rs_error ** error);
 
 /**
-* check whether the device provides the requested data aqcuisition channels
-* \param[in] data_channel the data to acquired: sensors data, hw statuses, etc'
-*/
-int rs_supports_events(const rs_device * device, rs_error ** error);
-
-/**
  * enable a specific data channel with specific properties
  * \param[in] data_channel  the data format that will be handled by the channel
  * \param[in] framerate    the number of data frames that will be published per second, or 0 if any rate is acceptable
