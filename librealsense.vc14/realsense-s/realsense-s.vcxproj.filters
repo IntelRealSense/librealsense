@@ -63,6 +63,9 @@
     <ClCompile Include="..\..\src\hw-monitor.cpp">
       <Filter>src</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\motion_module.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\src\context.h">
@@ -108,6 +111,9 @@
       <Filter>include</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\hw-monitor.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\motion_module.h">
       <Filter>src</Filter>
     </ClInclude>
   </ItemGroup>

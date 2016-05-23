@@ -341,7 +341,7 @@ rs_motion_data motion_module_parser::parse_motion(const unsigned char * data)
 
     parse_timestamp(data, (rs_timestamp_data&)entry);
 
-    entry.is_valid = data[1]& (0x80);          // bit[15]
+    entry.is_valid = (data[1] >> 7);          // Isolate bit[15]
 
     short tmp[3];
     memcpy(&tmp,&data[6],sizeof(short)*3);
@@ -354,7 +354,7 @@ rs_motion_data motion_module_parser::parse_motion(const unsigned char * data)
         if (RS_IMU_ACCEL == entry.timestamp_data.source_id) entry.axes[i] *= accelerator_transform_factor;
         if (RS_IMU_GYRO == entry.timestamp_data.source_id) entry.axes[i] *= gyro_transform_factor;
 
-        // TODO check and report invalid cnversion requests
+        // TODO check and report invalid coversion requests
     }
 
     return entry;
