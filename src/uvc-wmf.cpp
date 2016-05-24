@@ -854,7 +854,7 @@ namespace rsimpl
         {
             auto & sub = device.subdevices[subdevice];
             sub.get_media_source();
-            if(option == RS_OPTION_COLOR_EXPOSURE || RS_OPTION_FISHEYE_COLOR_EXPOSURE)
+            if (option == RS_OPTION_COLOR_EXPOSURE || option == RS_OPTION_FISHEYE_COLOR_EXPOSURE)
             {
                 check("IAMCameraControl::Set", sub.am_camera_control->Set(CameraControl_Exposure, static_cast<int>(std::round(log2(static_cast<double>(value) / 10000))), CameraControl_Flags_Manual));
                 return;
@@ -907,7 +907,7 @@ namespace rsimpl
             auto & sub = device.subdevices[subdevice];
             const_cast<uvc::subdevice &>(sub).get_media_source();
             long minVal=0, maxVal=0, steppingDelta=0, defVal=0, capsFlag=0;
-            if(option == RS_OPTION_COLOR_EXPOSURE || RS_OPTION_FISHEYE_COLOR_EXPOSURE)
+            if (option == RS_OPTION_COLOR_EXPOSURE || option == RS_OPTION_FISHEYE_COLOR_EXPOSURE)
             {
                 check("IAMCameraControl::Get", sub.am_camera_control->GetRange(CameraControl_Exposure, &minVal, &maxVal, &steppingDelta, &defVal, &capsFlag));
                 if(min)  *min  = win_to_uvc_exposure(minVal);
@@ -1010,7 +1010,7 @@ namespace rsimpl
         {
             auto & sub = device.subdevices[subdevice];
             long value=0, flags=0;
-            if(option == RS_OPTION_COLOR_EXPOSURE || RS_OPTION_FISHEYE_COLOR_EXPOSURE)
+            if (option == RS_OPTION_COLOR_EXPOSURE || option == RS_OPTION_FISHEYE_COLOR_EXPOSURE)
             {
                 check("IAMCameraControl::Get", sub.am_camera_control->Get(CameraControl_Exposure, &value, &flags));
                 return win_to_uvc_exposure(value);
