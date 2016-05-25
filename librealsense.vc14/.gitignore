@@ -2,7 +2,9 @@ ipch/
 packages/
 */obj/
 *.opendb
+*.opensdf
 *.db
 *.sdf
 *.suo
 *.user
+*.bak

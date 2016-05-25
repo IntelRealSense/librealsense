@@ -14,7 +14,7 @@
 #define FISHEYE_PRODUCT_ID 0x0ad0
 
 namespace rsimpl
-{            
+{
     class r200_camera final : public rs_device
     {
         bool is_disparity_mode_enabled() const;
@@ -23,8 +23,7 @@ namespace rsimpl
         uint32_t get_lr_framerate() const;
 
         motion_module_control motion_module_ctrl;
-        //bool ds_pwr_on;
-        //bool mm_pwr_on;
+        
     public:
         r200_camera(std::shared_ptr<uvc::device> device, const static_device_info & info);
         ~r200_camera();

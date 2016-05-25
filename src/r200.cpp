@@ -19,7 +19,7 @@ namespace rsimpl
         rs_option opt[] = {RS_OPTION_R200_DEPTH_UNITS};
         double units;
         get_options(opt, 1, &units);
-        on_update_depth_units(static_cast<int>(units));        
+        on_update_depth_units(static_cast<int>(units));
     }
     
     r200_camera::~r200_camera()
