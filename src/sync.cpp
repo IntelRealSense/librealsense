@@ -74,12 +74,6 @@ void frame_archive::get_next_frames()
     // Dequeue from other streams if the new frame is closer to the timestamp of the key stream than the old frame
     for(auto s : other_streams)
     {
-        if (!frames[s].empty() && s == RS_STREAM_FISHEYE) // TODO: W/O until we will achieve frame timestamp
-        {
-            dequeue_frame(s);
-            continue;
-        }
-
         if(!frames[s].empty() && abs(frames[s].front().timestamp - frontbuffer[key_stream].timestamp) <= abs(frontbuffer[s].timestamp - frontbuffer[key_stream].timestamp))
         {
             dequeue_frame(s);
@@ -107,14 +101,11 @@ byte * frame_archive::alloc_frame(rs_stream stream, int timestamp, int frameCoun
         }
 
         // Discard buffers that have been in the freelist for longer than 1s
-        if (stream != RS_STREAM_FISHEYE) // TODO: W/O until we will achieve frame timestamp
-        {
             for(auto it = begin(freelist); it != end(freelist); )
             {
                 if(timestamp > it->timestamp + 1000) it = freelist.erase(it);
                 else ++it;
             }
-        }
     }
 
     backbuffer[stream].data.resize(size); // TODO: Allow users to provide a custom allocator for frame buffers
@@ -159,9 +150,6 @@ void frame_archive::cull_frames()
         bool valid_to_skip = true;
         for(auto s : other_streams)
         {
-            if (key_stream == RS_STREAM_FISHEYE) // TODO: W/O until we will achieve frame timestamp
-                continue;
-
             if(abs(t0 - frames[s].back().timestamp) < abs(t1 - frames[s].back().timestamp))
             {
                 valid_to_skip = false;
@@ -176,9 +164,6 @@ void frame_archive::cull_frames()
     // We can discard frames for other streams if we have at least two and the latter is closer to the next key stream frame than the former
     for(auto s : other_streams)
     {
-        if (key_stream == RS_STREAM_FISHEYE) // TODO: W/O until we will achieve frame timestamp
-            continue;
-
         while(true)
         {
             if(frames[s].size() < 2) break;

@@ -571,8 +571,10 @@ namespace rsimpl
     class dinghy_timestamp_reader : public frame_timestamp_reader
     {
         int max_fps;
+        std::mutex mutex;
+        unsigned last_fisheye_counter;
     public:
-        dinghy_timestamp_reader(int max_fps) : max_fps(max_fps) {}
+        dinghy_timestamp_reader(int max_fps) : max_fps(max_fps),last_fisheye_counter(0) {}
 
         bool validate_frame(const subdevice_mode & mode, const void * frame) const override 
         {
@@ -617,14 +619,41 @@ namespace rsimpl
             return true;
         }
 
+        struct byte_wrapping{
+             unsigned char lsb : 4;
+             unsigned char msb : 4;
+         };
+
+        unsigned fix_fisheye_counter(unsigned char pixel)
+         {
+             std::lock_guard<std::mutex> guard(mutex);
+
+             auto last_counter_lsb = reinterpret_cast<byte_wrapping&>(last_fisheye_counter).lsb;
+             auto pixel_lsb = reinterpret_cast<byte_wrapping&>(pixel).lsb;
+             if (last_counter_lsb == pixel_lsb)
+                 return last_fisheye_counter;
+
+             auto last_counter_msb = (last_fisheye_counter >> 4);
+             auto wrap_around = reinterpret_cast<byte_wrapping&>(last_fisheye_counter).lsb;
+             if (wrap_around == 15)
+             {
+                 ++last_counter_msb;
+             }
+
+             auto fixed_counter = (last_counter_msb << 4) | (pixel_lsb & 0xff);
+
+             last_fisheye_counter = fixed_counter;
+             return fixed_counter;
+         }
+
         int get_frame_timestamp(const subdevice_mode & mode, const void * frame) override 
         { 
             int frame_number = 0;
-            //if (mode.subdevice == 3) // Fisheye
-            //{
-            //    TODO: retrieve Fisheye frame timestamp
-            //}
-            /*else */if(mode.pf.fourcc == pf_yuy2.fourcc)
+            if (mode.subdevice == 3) // Fisheye
+            {
+                frame_number = fix_fisheye_counter(*((unsigned char*)frame));
+            }
+            else if(mode.pf.fourcc == pf_yuy2.fourcc)
             {
                 // YUY2 images encode the frame number in the low order bits of the final 32 bytes of the image
                 auto data = reinterpret_cast<const uint8_t *>(frame) + ((mode.native_dims.x * mode.native_dims.y) - 32) * 2;
@@ -640,11 +669,11 @@ namespace rsimpl
         int get_frame_counter(const subdevice_mode & mode, const void * frame) override
         {
             int frame_number = 0;
-            //if (mode.subdevice == 3) // Fisheye
-            //{
-            //    // TODO: retrieve Fisheye frame number
-            //}
-            /*else */if (mode.pf.fourcc == pf_yuy2.fourcc)
+            if (mode.subdevice == 3) // Fisheye
+            {
+                frame_number = fix_fisheye_counter(*((unsigned char*)frame));
+            }
+            else if (mode.pf.fourcc == pf_yuy2.fourcc)
             {
                 // YUY2 images encode the frame number in the low order bits of the final 32 bytes of the image
                 auto data = reinterpret_cast<const uint8_t *>(frame) + ((mode.native_dims.x * mode.native_dims.y) - 32) * 2;
