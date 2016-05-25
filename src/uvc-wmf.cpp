@@ -848,6 +848,7 @@ namespace rsimpl
             {RS_OPTION_COLOR_SHARPNESS, VideoProcAmp_Sharpness},
             {RS_OPTION_COLOR_WHITE_BALANCE, VideoProcAmp_WhiteBalance},
             {RS_OPTION_COLOR_ENABLE_AUTO_WHITE_BALANCE, VideoProcAmp_WhiteBalance, true},
+            {RS_OPTION_FISHEYE_COLOR_GAIN, VideoProcAmp_Gain}
         };
 
         void set_pu_control(device & device, int subdevice, rs_option option, int value)
@@ -1112,7 +1113,7 @@ namespace rsimpl
                             devB->subdevices[3].mf_activate = devA->subdevices[0].mf_activate;
                             devB->subdevices[3].vid = devB->aux_vid = 0x8086;
                             devB->subdevices[3].pid = devB->aux_pid = 0x0ad0;
-                            devB->aux_unique_id = std::string("2cee56ef"); // TODO
+                            devB->aux_unique_id = devA->unique_id;
                             devices.erase(std::remove(devices.begin(), devices.end(), devA), devices.end());
                             break;
                         }

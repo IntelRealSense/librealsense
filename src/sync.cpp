@@ -50,8 +50,7 @@ void frame_archive::wait_for_frames()
 {
     std::unique_lock<std::mutex> lock(mutex);
     const auto ready = [this]() { return !frames[key_stream].empty(); };
-    // Evgeni - for debugging incrase the timeout period to 50 (instead of 5 seconds
-    if(!ready() && !cv.wait_for(lock, std::chrono::seconds(50), ready)) throw std::runtime_error("Timeout waiting for frames.");
+    if(!ready() && !cv.wait_for(lock, std::chrono::seconds(5), ready)) throw std::runtime_error("Timeout waiting for frames.");
     get_next_frames();
 }
 

@@ -69,14 +69,15 @@ void rs_device::disable_stream(rs_stream stream)
 
 void rs_device::enable_events()
 {
-    if (data_acquisition_active) throw std::runtime_error("channel cannot be reconfigured after having called rs_start_device()");
+    if (data_acquisition_active) throw std::runtime_error("events cannot be reconfigured after having called rs_start_device()");
 
     config.data_requests.enabled = true;
+
 }
 
 void rs_device::disable_events()
 {
-    if (data_acquisition_active) throw std::runtime_error("channel cannot be reconfigured after having called rs_start_device()");
+    if (data_acquisition_active) throw std::runtime_error("events cannot be reconfigured after having called rs_start_device()");
 
     config.data_requests.enabled = false;
 }
@@ -303,6 +304,7 @@ std::vector<motion_event> motion_module_parser::operator() (const unsigned char*
                 {
                     parse_timestamp(&cur_packet[non_imu_data_offset+ j*imu_entry_size],event_data.non_imu_packets[j]);
                 }
+
                 v.push_back(std::move(event_data));
             }
         }
@@ -350,7 +352,7 @@ rs_motion_data motion_module_parser::parse_motion(const unsigned char * data)
         if (RS_IMU_ACCEL == entry.timestamp_data.source_id) entry.axes[i] *= accelerator_transform_factor;
         if (RS_IMU_GYRO == entry.timestamp_data.source_id) entry.axes[i] *= gyro_transform_factor;
 
-        // TODO check and report invalid coversion requests
+        // TODO check and report invalid conversion requests
     }
 
     return entry;

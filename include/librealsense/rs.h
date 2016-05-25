@@ -203,7 +203,7 @@ typedef struct rs_extrinsics
     float translation[3]; /* 3 element translation vector, in meters */
 } rs_extrinsics;
 
-typedef enum rs_event_source// : unsigned char
+typedef enum rs_event_source
 {
     RS_IMU_ACCEL        = 1,
     RS_IMU_GYRO         = 2,

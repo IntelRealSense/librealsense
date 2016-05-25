@@ -28,10 +28,6 @@ int main() try
     printf("    Serial number: %s\n", dev->get_serial());
     printf("    Firmware version: %s\n", dev->get_firmware_version());
 
-    // Configure depth to run at VGA resolution at best quaility
-    rs::stream stream_type = rs::stream::depth;
-    dev->enable_stream(stream_type, rs::preset::best_quality);  // auto-select based on the actual camera type
-
     // Put request for events polling
     if (dev->supports(rs::capabilities::motion_events))
        dev->enable_events();
@@ -42,95 +38,30 @@ int main() try
         {
             std::cout << "Motion: "
                 << "timestamp: "  << entry.timestamp_data.timestamp
-                << "\tsource_id: "  << ((entry.timestamp_data.source_id == RS_IMU_ACCEL) ? " accel " : " gyro ")
+                << "\tsource: "  << ((entry.timestamp_data.source_id == RS_IMU_ACCEL) ? "accel" : "gyro")
                 << "\tframe_num: "  << entry.timestamp_data.frame_number
-                << "\tvalid: "  << (int)entry.is_valid
+                //<< "\tvalid: "  << (int)entry.is_valid - Not available
                 << "\tx: "  << entry.axes[0] << "\ty: "  << entry.axes[1] << "\tz: "  << entry.axes[2]
                 << std::endl;
         }
     });
 
-    // ... and the timestamp packets (DS4.1/FishEye Frame, GPIOS...)
+	// ... and the timestamp packets (DS4.1/FishEye Frame, GPIOS...)
     rs::timestamp_callback timestamp_callback([](rs::timestamp_data entry)   // TODO rs_motion event wrapper
-    {
-        std::cout << "Timestamp event arrived, timestamp: " << entry.timestamp << std::endl;
-    });
-    
+	{
+		std::cout << "Timestamp arrived, timestamp: " << entry.timestamp << std::endl;
+	});
+	
     // Next registers motion and timestamp callbacks with LibRealSense
     dev->set_motion_callback(motion_callback);
     dev->set_timestamp_callback(timestamp_callback);
 
-    // Start video streaming    
-    dev->start();
-
-    // Start motion and timestamp events polling    
+    // Start motion and timestamp events polling
     dev->start(rs::source::events);
 
-    // Determine depth value corresponding to one meter
-    const uint16_t one_meter = static_cast<uint16_t>(1.0f / dev->get_depth_scale());
-
-    // retrieve actual frame size at runtime
-    rs_intrinsics depth_intrin = dev->get_stream_intrinsics(stream_type);
-    int width = depth_intrin.width;
-    int height = depth_intrin.height;
-
-    /* Will print a simple text-based representation of the image, by breaking it into 10x20 pixel regions and and approximating the coverage of pixels within one meter */
-    int rows = (height / 10);
-    int row_lenght = (width / 10);
-    int display_size = (rows+1) * (row_lenght+1);
-
-    // Allcoate buffers for depth representation
-    std::vector<char> buffer;
-    buffer.resize(display_size);
-
-    std::vector<int> coverage_buf;
-    coverage_buf.resize(row_lenght);
-
-    int no_data = 0;
     while(true)
-    {        
-        if (dev->poll_for_frames())
-        {
-            std::cout << "frame arrived " << std::endl;
-            no_data = 0;
-            // Retrieve depth data
-            const uint16_t * depth_frame = reinterpret_cast<const uint16_t *>(dev->get_frame_data(rs::stream::depth));
-
-            // Print a simple text-based representation of the image, by breaking it into 10x20 pixel regions and and approximating the coverage of pixels within one meter
-            char * out = buffer.data();
-            int * coverage = coverage_buf.data();
-
-            for(int y=0; y<height; ++y)
-            {
-                for(int x=0; x<width; ++x)
-                {
-                    int depth = *depth_frame++;
-                    if(depth > 0 && depth < one_meter) ++coverage[x/10];
-                }
-
-                if(y%10 == 9)
-                {
-                    for (size_t i=0; i< coverage_buf.size(); i++)
-                    {
-                        *out++ = " .:nhBXWW"[coverage[i]/25];
-                        coverage[i] = 0;
-                    }
-                    *out++ = '\n';
-                }
-            }
-            *out++ = 0;
-
-            //printf("\n%s", buffer.data());
-        }
-        else
-        {
-            std::this_thread::sleep_for(std::chrono::milliseconds(100));
-            no_data++;
-            if (no_data > 10)
-            {
-                printf(".\t"); no_data =0;
-            }
-        }
+    {
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
     
     return EXIT_SUCCESS;
