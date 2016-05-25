@@ -30,10 +30,10 @@ EXPORTS
 	rs_disable_events
 	rs_start_events
 	rs_stop_events
-		
+
 	rs_set_motion_callback
 	rs_set_timestamp_callback
-	
+
 	rs_start_device
 	rs_stop_device
 	rs_is_device_streaming

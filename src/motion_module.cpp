@@ -62,32 +62,32 @@ namespace rsimpl
                 {
                     set_control(mm_video_output, true);
                     std::this_thread::sleep_for(std::chrono::milliseconds(2000));
-                    std::cout << "Switch from mm_idle to mm_streaming" << std::endl;
+                    //std::cout << "Switch from mm_idle to mm_streaming" << std::endl;
                 }
                 if (mm_eventing == new_state)
                 {
                     set_control(mm_video_output, true);
                     set_control(mm_events_output, true);
-                    std::cout << "Switch from mm_idle to mm_eventing" << std::endl;
+                    //std::cout << "Switch from mm_idle to mm_eventing" << std::endl;
                 }
                 break;
             case mm_streaming:
                 if (mm_idle == new_state)
                 {
                     set_control(mm_video_output, false);
-                    std::cout << "Switch from mm_eventing to mm_idle" << std::endl;
+                    //std::cout << "Switch from mm_eventing to mm_idle" << std::endl;
                 }
                 if (mm_full_load == new_state)
                 {
                     set_control(mm_events_output, true);
-                    std::cout << "Switch from mm_streaming to mm_full_load" << std::endl;
+                    //std::cout << "Switch from mm_streaming to mm_full_load" << std::endl;
                 }
                 break;
             case mm_eventing:
                 if (mm_idle == new_state)
                 {
                     set_control(mm_events_output, false);
-                    std::cout << "Switch from mm_eventing to mm_idle" << std::endl;
+                    //std::cout << "Switch from mm_eventing to mm_idle" << std::endl;
                 }
                 break;
             default:        // void

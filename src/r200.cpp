@@ -12,9 +12,9 @@
 
 namespace rsimpl
 {
-    r200_camera::r200_camera(std::shared_ptr<uvc::device> device, const static_device_info & info) :
-        rs_device(device, info),
-        motion_module_ctrl(device.get())
+    r200_camera::r200_camera(std::shared_ptr<uvc::device> device, const static_device_info & info) 
+    : rs_device(device, info),
+      motion_module_ctrl(device.get())
     {
         rs_option opt[] = {RS_OPTION_R200_DEPTH_UNITS};
         double units;
@@ -302,8 +302,10 @@ namespace rsimpl
 
             info.stream_subdevices[RS_STREAM_FISHEYE] = 3;
             info.presets[RS_STREAM_FISHEYE][RS_PRESET_BEST_QUALITY] = {true, 640, 480, RS_FORMAT_RAW8,   60};
-            info.subdevice_modes.push_back({3, {640, 480}, pf_rw8, 60, c.intrinsicsThird[1], {c.modesThird[1][0]}, {0}});
+            info.subdevice_modes.push_back({3, {640, 480}, pf_raw8, 60, c.intrinsicsThird[1], {c.modesThird[1][0]}, {0}});
+            info.subdevice_modes.push_back({3, {640, 480}, pf_raw8, 30, c.intrinsicsThird[1], {c.modesThird[1][0]}, {0}});
             info.subdevice_modes.push_back({3, {640, 480}, pf_rw10, 60, c.intrinsicsThird[1], {c.modesThird[1][0]}, {0}});
+            info.subdevice_modes.push_back({3, {640, 480}, pf_rw10, 30, c.intrinsicsThird[1], {c.modesThird[1][0]}, {0}});
         }        
 
         return make_device(device, info, c);
@@ -388,6 +390,7 @@ namespace rsimpl
     void r200_camera::toggle_motion_module_power(bool on)
     {        
         motion_module_ctrl.toggle_motion_module_power(on);
+
     }
 
     void r200_camera::toggle_motion_module_events(bool on)
@@ -400,6 +403,7 @@ namespace rsimpl
     {
         if ((supports(rs_capabilities::RS_CAPABILITIES_FISH_EYE)) && ((config.requests[RS_STREAM_FISHEYE].enabled)))
             toggle_motion_module_power(true);
+
         rs_device::start();
     }
 
@@ -414,7 +418,7 @@ namespace rsimpl
     // Power on motion module (mmpwr)
     void r200_camera::start_events()
     {
-        if (supports(rs_capabilities::RS_CAPABILITIES_FISH_EYE))
+        if (supports(rs_capabilities::RS_CAPABILITIES_MOTION_EVENTS))
             toggle_motion_module_events(true);
         rs_device::start_events();
     }
@@ -423,7 +427,7 @@ namespace rsimpl
     void r200_camera::stop_events()
     {
         rs_device::stop_events();
-        if (supports(rs_capabilities::RS_CAPABILITIES_FISH_EYE))
+        if (supports(rs_capabilities::RS_CAPABILITIES_MOTION_EVENTS))
             toggle_motion_module_events(false);
     }
 
@@ -616,7 +620,11 @@ namespace rsimpl
         int get_frame_timestamp(const subdevice_mode & mode, const void * frame) override 
         { 
             int frame_number = 0;
-            if(mode.pf.fourcc == pf_yuy2.fourcc)
+            //if (mode.subdevice == 3) // Fisheye
+            //{
+            //    TODO: retrieve Fisheye frame timestamp
+            //}
+            /*else */if(mode.pf.fourcc == pf_yuy2.fourcc)
             {
                 // YUY2 images encode the frame number in the low order bits of the final 32 bytes of the image
                 auto data = reinterpret_cast<const uint8_t *>(frame) + ((mode.native_dims.x * mode.native_dims.y) - 32) * 2;
@@ -632,7 +640,11 @@ namespace rsimpl
         int get_frame_counter(const subdevice_mode & mode, const void * frame) override
         {
             int frame_number = 0;
-            if (mode.pf.fourcc == pf_yuy2.fourcc)
+            //if (mode.subdevice == 3) // Fisheye
+            //{
+            //    // TODO: retrieve Fisheye frame number
+            //}
+            /*else */if (mode.pf.fourcc == pf_yuy2.fourcc)
             {
                 // YUY2 images encode the frame number in the low order bits of the final 32 bytes of the image
                 auto data = reinterpret_cast<const uint8_t *>(frame) + ((mode.native_dims.x * mode.native_dims.y) - 32) * 2;

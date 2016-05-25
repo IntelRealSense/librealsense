@@ -311,7 +311,6 @@ std::vector<motion_event> motion_module_parser::operator() (const unsigned char*
     }
     
     return v;
-    
 }
 
 void motion_module_parser::parse_timestamp(const unsigned char * data,rs_timestamp_data &entry )
