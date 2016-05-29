@@ -297,17 +297,18 @@ namespace rsimpl
 
         void deallocate(T * item)
         {
+            if (item < buffer || item >= buffer + C)
+            {
+                throw std::runtime_error("Trying to return item to a heap that didn't allocate it!");
+            }
+
             auto i = item - buffer;
             buffer[i] = std::move(T());
+
             {
                 std::unique_lock<std::mutex> lock(mutex);
-                if (item < buffer || item >= buffer + C)
-                {
-                    throw std::runtime_error("Trying to return item to a heap that didn't allocate it!");
-                }
-          
+
                 is_free[i] = true;
-            
                 size--;
 
                 if (size == 0)
@@ -349,8 +350,9 @@ namespace rsimpl
         frame_continuation() : continuation([](){}) {}
 
         explicit frame_continuation(std::function<void()> continuation, const void* protected_data) : continuation(continuation), protected_data(protected_data) {}
+        
 
-        frame_continuation(frame_continuation && other) : continuation(other.continuation), protected_data(other.protected_data)
+        frame_continuation(frame_continuation && other) : continuation(std::move(other.continuation)), protected_data(other.protected_data)
         {
             other.continuation = [](){};
             other.protected_data = nullptr;

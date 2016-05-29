@@ -29,7 +29,11 @@ rs_device::rs_device(std::shared_ptr<rsimpl::uvc::device> device, const rsimpl::
 
 rs_device::~rs_device()
 {
-
+    try
+    {
+        stop();
+    }
+    catch (...) {}
 }
 
 bool rs_device::supports_option(rs_option option) const 
@@ -100,13 +104,12 @@ void rs_device::start()
             callbacks.push_back(config.callbacks[output.first]);
             streams.push_back(output.first);
         }
-
         // Initialize the subdevice and set it to the selected mode
         set_subdevice_mode(*device, mode_selection.mode.subdevice, mode_selection.mode.native_dims.x, mode_selection.mode.native_dims.y, mode_selection.mode.pf.fourcc, mode_selection.mode.fps, 
-            [mode_selection, archive, timestamp_reader, callbacks, streams](const void * frame, std::function<void()> continuation) mutable
+        [mode_selection, archive, timestamp_reader, callbacks, streams](const void * frame, std::function<void()> continuation) mutable
         {
-			auto now = std::chrono::system_clock::now().time_since_epoch();
-			auto sys_time = std::chrono::duration_cast<std::chrono::milliseconds>(now).count();
+            auto now = std::chrono::system_clock::now().time_since_epoch();
+            auto sys_time = std::chrono::duration_cast<std::chrono::milliseconds>(now).count();
 
             frame_continuation release_and_enqueue(continuation, frame);
 
@@ -122,8 +125,8 @@ void rs_device::start()
             
             // Obtain buffers for unpacking the frame
             std::vector<byte *> dest;
-			for (auto & output : mode_selection.get_outputs()) dest.push_back(archive->alloc_frame(output.first, timestamp, frame_counter, sys_time, requires_processing));
-
+            for (auto & output : mode_selection.get_outputs()) dest.push_back(archive->alloc_frame(output.first, timestamp, frame_counter, sys_time, requires_processing));
+            
             // Unpack the frame
             if (requires_processing)
             {
@@ -134,8 +137,8 @@ void rs_device::start()
             for (size_t i = 0; i < dest.size(); ++i)
             {
 
-				if (!requires_processing)
-				{
+                if (!requires_processing)
+                {
                     archive->attach_continuation(streams[i], std::move(release_and_enqueue));
                 }
 
