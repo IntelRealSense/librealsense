@@ -2,7 +2,7 @@
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
 //////////////////////////////////////////////////////////////////////////////////////
-// librealsense Multi-threading Demo 2 - duplicating frames without extra copies    //
+// librealsense Multi-threading Demo 3 - per-frame pipeline                         //
 //////////////////////////////////////////////////////////////////////////////////////
 
 #include <librealsense/rs.hpp>
@@ -14,106 +14,98 @@
 
 int main() try
 {
-    // In this demo each frame is being rendered by several different consumers
-    // Please note that only change from the previous demo is that now we are submitting N _clones_ of the original frameset
+	// In this demo we have 4 consumers, rendering RGB, Depth, IR1 and IR2 independently of each other 
 
-    rs::context ctx;
-    printf("There are %d connected RealSense devices.\n", ctx.get_device_count());
-    if(ctx.get_device_count() == 0) return EXIT_FAILURE;
+	rs::context ctx;
+	printf("There are %d connected RealSense devices.\n", ctx.get_device_count());
+	if (ctx.get_device_count() == 0) return EXIT_FAILURE;
 
-    rs::device * dev = ctx.get_device(0);
-    printf("\nUsing device 0, an %s\n", dev->get_name());
-    printf("    Serial number: %s\n", dev->get_serial());
-    printf("    Firmware version: %s\n", dev->get_firmware_version());
+	rs::device * dev = ctx.get_device(0);
+	printf("\nUsing device 0, an %s\n", dev->get_name());
+	printf("    Serial number: %s\n", dev->get_serial());
+	printf("    Firmware version: %s\n", dev->get_firmware_version());
 
-    // create N queues for the N consumers
-    const auto consumers = 2;
-    single_consumer_queue<rs::frameset> frames_queue[consumers];
-    std::vector<bool> running(consumers, true);
+	// create N queues for the N consumers
+	const auto consumers = 3;
+	single_consumer_queue<rs::frame> frames_queue[consumers];
+	std::vector<bool> running(consumers, true);
+	std::vector<std::pair<int, int>> resolutions(static_cast<int>(rs::stream::depth_aligned_to_infrared2), { 0, 0 });
 
-    glfwInit();
+	glfwInit();
 
-    for (auto i = 0; i < consumers; i++)
-    {
-        // Each consumer will dequeue a copy of every frame produced by the device
-        std::thread consumer([dev, &frames_queue, &running, i]()
-        {
-            try
-            {
-                GLFWwindow * win = glfwCreateWindow(1280, 960, "librealsense - multi-threading demo-2", nullptr, nullptr);
-                glfwMakeContextCurrent(win);
-                while (!glfwWindowShouldClose(win))
-                {
-                    glfwPollEvents();
-                    auto frames = frames_queue[i].dequeue();
+	for (auto i = 0; i < consumers; i++)
+	{
+		std::thread consumer([dev, &frames_queue, &running, &resolutions, i]()
+		{
+			try
+			{
+				GLFWwindow * win = glfwCreateWindow(640, 480, "librealsense - multi-threading demo-2", nullptr, nullptr);
+				glfwMakeContextCurrent(win);
+				while (!glfwWindowShouldClose(win))
+				{
+					glfwPollEvents();
+					auto frame = frames_queue[i].dequeue();
 
-                    glClear(GL_COLOR_BUFFER_BIT);
-                    glPixelZoom(1, -1);
+					glClear(GL_COLOR_BUFFER_BIT);
+					glPixelZoom(1, -1);
 
-                    glRasterPos2f(-1, 1);
-                    glPixelTransferf(GL_RED_SCALE, 0xFFFF * dev->get_depth_scale() / 2.0f);
-                    glDrawPixels(dev->get_stream_width(rs::stream::depth), dev->get_stream_height(rs::stream::depth), GL_RED, GL_UNSIGNED_SHORT, frames.get_frame_data(rs::stream::depth));
-                    glPixelTransferf(GL_RED_SCALE, 1.0f);
+					glRasterPos2f(-1, 1);
 
-                    glRasterPos2f(0, 1);
-                    glDrawPixels(dev->get_stream_width(rs::stream::color), dev->get_stream_height(rs::stream::color), GL_RGB, GL_UNSIGNED_BYTE, frames.get_frame_data(rs::stream::color));
+					if ((rs::stream)i == rs::stream::depth)
+					{
+						glPixelTransferf(GL_RED_SCALE, 0xFFFF * dev->get_depth_scale() / 2.0f);
+						glDrawPixels(resolutions[static_cast<int>(rs::stream::depth)].first, resolutions[static_cast<int>(rs::stream::depth)].second, GL_RED, GL_UNSIGNED_SHORT, frame.get_data());
+						glPixelTransferf(GL_RED_SCALE, 1.0f);
+					}
 
-                    glRasterPos2f(-1, 0);
-                    glDrawPixels(dev->get_stream_width(rs::stream::infrared), dev->get_stream_height(rs::stream::infrared), GL_LUMINANCE, GL_UNSIGNED_BYTE, frames.get_frame_data(rs::stream::infrared));
+					if ((rs::stream)i == rs::stream::color)
+					{
+						glDrawPixels(resolutions[static_cast<int>(rs::stream::color)].first, resolutions[static_cast<int>(rs::stream::color)].second, GL_RGB, GL_UNSIGNED_BYTE, frame.get_data());
+					}
 
-                    if (dev->is_stream_enabled(rs::stream::infrared2))
-                    {
-                        glRasterPos2f(0, 0);
-                        glDrawPixels(dev->get_stream_width(rs::stream::infrared2), dev->get_stream_height(rs::stream::infrared2), GL_LUMINANCE, GL_UNSIGNED_BYTE, frames.get_frame_data(rs::stream::infrared2));
-                    }
+					if ((rs::stream)i == rs::stream::infrared)
+					{
+						glDrawPixels(resolutions[static_cast<int>(rs::stream::infrared)].first, resolutions[static_cast<int>(rs::stream::infrared)].second, GL_LUMINANCE, GL_UNSIGNED_BYTE, frame.get_data());
+					}
 
-                    glfwSwapBuffers(win);
-                }
-            }
-            catch (const rs::error & e)
-            {
-                printf("rs::error was thrown when calling %s(%s):\n", e.get_failed_function().c_str(), e.get_failed_args().c_str());
-                printf("    %s\n", e.what());
-            }
-            running[i] = false;
-        });
-        consumer.detach();
-    }
+					glfwSwapBuffers(win);
+				}
+			}
+			catch (const rs::error & e)
+			{
+				printf("rs::error was thrown when calling %s(%s):\n", e.get_failed_function().c_str(), e.get_failed_args().c_str());
+				printf("    %s\n", e.what());
+			}
+			running[i] = false;
+		});
+		consumer.detach();
+	}
 
-    dev->enable_stream(rs::stream::depth, 0, 0, rs::format::z16, 30);
-    dev->enable_stream(rs::stream::color, 0, 0, rs::format::rgb8, 30);
-    dev->enable_stream(rs::stream::infrared, 0, 0, rs::format::y8, 30);
-    try { dev->enable_stream(rs::stream::infrared2, 0, 0, rs::format::y8, 30); }
-    catch(...) { printf("Device does not provide infrared2 stream.\n"); }
-    dev->start();
+	dev->enable_stream(rs::stream::depth, 0, 0, rs::format::z16, 30);
+	dev->enable_stream(rs::stream::color, 640, 480, rs::format::rgb8, 30);
+	dev->enable_stream(rs::stream::infrared, 0, 0, rs::format::y8, 30);
+	dev->start();
+	resolutions[static_cast<int>(rs::stream::depth)] = { dev->get_stream_width(rs::stream::depth), dev->get_stream_height(rs::stream::depth) };
+	resolutions[static_cast<int>(rs::stream::color)] = { dev->get_stream_width(rs::stream::color), dev->get_stream_height(rs::stream::color) };
+	resolutions[static_cast<int>(rs::stream::infrared)] = { dev->get_stream_width(rs::stream::infrared), dev->get_stream_height(rs::stream::infrared) };
 
-    while (any_costumers_alive(running))
-    {
-        auto frames = dev->wait_for_frames_safe();
+	while (any_costumers_alive(running))
+	{
+		auto frames = dev->wait_for_frames_safe();
+		for (auto i = 0; i < consumers; i++)
+		{
+			if (frames_queue[i].size() <= 4)
+			{
+				frames_queue[i].enqueue(std::move(frames.detach_frame((rs::stream)i)));
+			}
+		}
+	}
 
-        for (auto i = 0; i < consumers; i++)
-        {
-            // since we are increasing the workload and hence frame lifetime sagnificatly, 
-            // clone operation might fail when there are no available frame references left (for example if the thread is stuck and the queue keeps filling up)
-            /*rs::frameset clone;
-            if (frames.try_clone(clone)) 
-            {
-                frames_queue[i].enqueue(std::move(clone));
-            }*/
-
-            // alternatively we can limit queue size:
-            if (frames_queue[i].size() <= 4)
-            {
-                frames_queue[i].enqueue(std::move(frames.clone_ref()));
-            }
-        }
-    }
-
-    return EXIT_SUCCESS;
+	return EXIT_SUCCESS;
 }
-catch(const rs::error & e)
+catch (const rs::error & e)
 {
-    printf("rs::error was thrown when calling %s(%s):\n", e.get_failed_function().c_str(), e.get_failed_args().c_str());
-    printf("    %s\n", e.what());
-    return EXIT_FAILURE;
+	printf("rs::error was thrown when calling %s(%s):\n", e.get_failed_function().c_str(), e.get_failed_args().c_str());
+	printf("    %s\n", e.what());
+	return EXIT_FAILURE;
 }
