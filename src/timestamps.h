@@ -2,7 +2,7 @@
 #ifndef LIBREALSENSE_TIMESTAMPS_H
 #define LIBREALSENSE_TIMESTAMPS_H
 
-#include "librealsense/rs.h"
+#include "../include/librealsense/rs.h"     // Inherit all type definitions in the public API
 #include <deque>
 #include <condition_variable>
 #include <mutex>
