@@ -35,6 +35,32 @@ public:
 		return std::move(item);
 	}
 
+	bool try_dequeue(T* item)
+	{
+		std::unique_lock<std::mutex> lock(mutex);
+		if(q.size()>0)
+		{
+			auto val = std::move(q.front());
+			q.pop();
+			*item = std::move(val);
+			return true;
+		}
+		return false;
+	}
+
+	void clear()
+	{
+		std::unique_lock<std::mutex> lock(mutex);
+		while (q.size() > 0)
+		{
+			const auto ready = [this]() { return !q.empty(); };
+			if (!ready() && !cv.wait_for(lock, std::chrono::seconds(5), ready)) throw std::runtime_error("Timeout waiting for queued items!");
+			auto item = std::move(q.front());
+			q.pop();
+		}
+		
+		
+	}
 	int size()
 	{
 		std::unique_lock<std::mutex> lock(mutex); 

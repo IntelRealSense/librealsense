@@ -354,6 +354,7 @@ namespace rsimpl
             auto i = item - buffer;
             buffer[i] = std::move(T());
 
+
           
 
             
@@ -403,8 +404,9 @@ namespace rsimpl
         frame_continuation() : continuation([]() {}) {}
 
         explicit frame_continuation(std::function<void()> continuation, const void* protected_data) : continuation(continuation), protected_data(protected_data) {}
+        
 
-        frame_continuation(frame_continuation && other) : continuation(other.continuation), protected_data(other.protected_data)
+        frame_continuation(frame_continuation && other) : continuation(std::move(other.continuation)), protected_data(other.protected_data)
         {
             other.continuation = []() {};
             other.protected_data = nullptr;

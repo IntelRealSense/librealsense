@@ -94,17 +94,18 @@ byte * frame_archive::alloc_frame(rs_stream stream, int timestamp, int frame_num
             }
         }
         
-    }
+    
 
+    }
+    
     if (requires_memory)
     {
         backbuffer[stream].data.resize(size); // TODO: Allow users to provide a custom allocator for frame buffers
     }
-
     backbuffer[stream].update_owner(this);
     backbuffer[stream].timestamp = timestamp;
     backbuffer[stream].frame_number = frame_number;
-	backbuffer[stream].system_time = system_time;
+    backbuffer[stream].system_time = system_time;
     return backbuffer[stream].data.data();
 }
 
@@ -141,10 +142,11 @@ void frame_archive::flush()
 
 void frame_archive::frame::release()
 {
+
     if (ref_count.fetch_sub(1) == 1)
     {
-        owner->unpublish_frame(this);
         on_release();
+        owner->unpublish_frame(this);
     }
 }
 
@@ -193,7 +195,7 @@ int frame_archive::frame_ref::get_frame_number() const
 
 long long frame_archive::frame_ref::get_frame_system_time() const
 {
-	return frame_ptr ? frame_ptr->system_time : 0;
+    return frame_ptr ? frame_ptr->system_time : 0;
 }
 
 const byte* frame_archive::frame::get_frame_data() const
