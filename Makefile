@@ -1,11 +1,11 @@
-# Detect OS
+#Detect OS
 uname_S := $(shell sh -c 'uname -s 2>/dev/null || echo not')
 
-# Specify BACKEND=V4L2 or BACKEND=LIBUVC to build a specific backend
+#Specify BACKEND = V4L2 or BACKEND = LIBUVC to build a specific backend
 BACKEND := V4L2
 
 ifeq ($(uname_S),Darwin)
-# OSX defaults to libuvc instead of V4L
+#OSX defaults to libuvc instead of V4L
 BACKEND := LIBUVC
 endif
 
@@ -13,15 +13,15 @@ LIBUSB_FLAGS := `pkg-config --cflags --libs libusb-1.0`
 
 CFLAGS := -std=c11 -fPIC -pedantic -DRS_USE_$(BACKEND)_BACKEND $(LIBUSB_FLAGS) 
 CXXFLAGS := -std=c++11 -fPIC -pedantic -mssse3 -Ofast -Wno-missing-field-initializers
-CXXFLAGS += -Wno-switch -Wno-multichar -DRS_USE_$(BACKEND)_BACKEND $(LIBUSB_FLAGS) 
+CXXFLAGS += -Wno-switch -Wno-multichar -DRS_USE_$(BACKEND)_BACKEND $(LIBUSB_FLAGS)
 
-# Add specific include paths for OSX
+#Add specific include paths for OSX
 ifeq ($(uname_S),Darwin)
 CFLAGS   += -I/usr/local/include
 CXXFLAGS += -I/usr/local/include
 endif
 
-# Compute list of all *.o files that participate in librealsense.so
+#Compute list of all*.o files that participate in librealsense.so
 OBJECTS = verify 
 OBJECTS += $(notdir $(basename $(wildcard src/*.cpp)))
 OBJECTS += $(addprefix libuvc/, $(notdir $(basename $(wildcard src/libuvc/*.c))))

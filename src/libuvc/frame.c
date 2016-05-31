@@ -39,20 +39,22 @@
 #include "libuvc_internal.h"
 
 /** @internal */
-uvc_error_t uvc_ensure_frame_size(uvc_frame_t *frame, size_t need_bytes) {
-  if (frame->library_owns_data) {
-    if (!frame->data || frame->data_bytes != need_bytes) {
-      frame->data_bytes = need_bytes;
-      frame->data = realloc(frame->data, frame->data_bytes);
+uvc_error_t uvc_ensure_frame_size(uvc_frame_t* frame, size_t need_bytes)
+{
+    if (frame->library_owns_data) {
+        if (!frame->data || frame->data_bytes != need_bytes) {
+            frame->data_bytes = need_bytes;
+            frame->data = realloc(frame->data, frame->data_bytes);
+        }
+        if (!frame->data)
+            return UVC_ERROR_NO_MEM;
+        return UVC_SUCCESS;
     }
-    if (!frame->data)
-      return UVC_ERROR_NO_MEM;
-    return UVC_SUCCESS;
-  } else {
-    if (!frame->data || frame->data_bytes < need_bytes)
-      return UVC_ERROR_NO_MEM;
-    return UVC_SUCCESS;
-  }
+    else {
+        if (!frame->data || frame->data_bytes < need_bytes)
+            return UVC_ERROR_NO_MEM;
+        return UVC_SUCCESS;
+    }
 }
 
 /** @brief Allocate a frame structure
@@ -61,27 +63,28 @@ uvc_error_t uvc_ensure_frame_size(uvc_frame_t *frame, size_t need_bytes) {
  * @param data_bytes Number of bytes to allocate, or zero
  * @return New frame, or NULL on error
  */
-uvc_frame_t *uvc_allocate_frame(size_t data_bytes) {
-  uvc_frame_t *frame = malloc(sizeof(*frame));
+uvc_frame_t* uvc_allocate_frame(size_t data_bytes)
+{
+    uvc_frame_t* frame = malloc(sizeof(*frame));
 
-  if (!frame)
-    return NULL;
+    if (!frame)
+        return NULL;
 
-  memset(frame, 0, sizeof(*frame));
+    memset(frame, 0, sizeof(*frame));
 
-  frame->library_owns_data = 1;
+    frame->library_owns_data = 1;
 
-  if (data_bytes > 0) {
-    frame->data_bytes = data_bytes;
-    frame->data = malloc(data_bytes);
+    if (data_bytes > 0) {
+        frame->data_bytes = data_bytes;
+        frame->data = malloc(data_bytes);
 
-    if (!frame->data) {
-      free(frame);
-      return NULL;
+        if (!frame->data) {
+            free(frame);
+            return NULL;
+        }
     }
-  }
 
-  return frame;
+    return frame;
 }
 
 /** @brief Free a frame structure
@@ -89,15 +92,17 @@ uvc_frame_t *uvc_allocate_frame(size_t data_bytes) {
  *
  * @param frame Frame to destroy
  */
-void uvc_free_frame(uvc_frame_t *frame) {
-  if (frame->data_bytes > 0 && frame->library_owns_data)
-    free(frame->data);
+void uvc_free_frame(uvc_frame_t* frame)
+{
+    if (frame->data_bytes > 0 && frame->library_owns_data)
+        free(frame->data);
 
-  free(frame);
+    free(frame);
 }
 
-static inline unsigned char sat(int i) {
-  return (unsigned char)( i >= 255 ? 255 : (i < 0 ? 0 : i));
+static inline unsigned char sat(int i)
+{
+    return (unsigned char)(i >= 255 ? 255 : (i < 0 ? 0 : i));
 }
 
 /** @brief Duplicate a frame, preserving color format
@@ -106,19 +111,20 @@ static inline unsigned char sat(int i) {
  * @param in Original frame
  * @param out Duplicate frame
  */
-uvc_error_t uvc_duplicate_frame(uvc_frame_t *in, uvc_frame_t *out) {
-  if (uvc_ensure_frame_size(out, in->data_bytes) < 0)
-    return UVC_ERROR_NO_MEM;
+uvc_error_t uvc_duplicate_frame(uvc_frame_t* in, uvc_frame_t* out)
+{
+    if (uvc_ensure_frame_size(out, in->data_bytes) < 0)
+        return UVC_ERROR_NO_MEM;
 
-  out->width = in->width;
-  out->height = in->height;
-  out->fourcc = in->fourcc;
-  out->step = in->step;
-  out->sequence = in->sequence;
-  out->capture_time = in->capture_time;
-  out->source = in->source;
+    out->width = in->width;
+    out->height = in->height;
+    out->fourcc = in->fourcc;
+    out->step = in->step;
+    out->sequence = in->sequence;
+    out->capture_time = in->capture_time;
+    out->source = in->source;
 
-  memcpy(out->data, in->data, in->data_bytes);
+    memcpy(out->data, in->data, in->data_bytes);
 
-  return UVC_SUCCESS;
+    return UVC_SUCCESS;
 }
