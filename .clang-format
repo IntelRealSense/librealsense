@@ -1,0 +1,33 @@
+# check https://clangformat.com/ and http://clang.llvm.org/docs/ClangFormatStyleOptions.html
+AccessModifierOffset: -4
+AlignAfterOpenBracket: DontAlign
+AlignTrailingComments: true
+AllowShortCaseLabelsOnASingleLine: true
+AllowShortFunctionsOnASingleLine: All
+AllowShortIfStatementsOnASingleLine: true
+AllowShortLoopsOnASingleLine: true
+BraceWrapping: {
+    AfterClass: 'true'
+    AfterControlStatement: 'true'
+    AfterEnum : 'true'
+    AfterFunction : 'true'
+    AfterNamespace : 'true'
+    AfterStruct : 'true'
+    AfterUnion : 'true'
+    BeforeCatch : 'true'
+    BeforeElse : 'true'
+    IndentBraces : 'false'
+}
+BreakBeforeBraces: 'Custom'
+ColumnLimit: 200
+ConstructorInitializerAllOnOneLineOrOnePerLine: true
+ContinuationIndentWidth: 4
+Cpp11BracedListStyle: true
+IndentWidth: 4
+NamespaceIndentation: All
+PointerAlignment: Middle
+SortIncludes: false
+SpaceBeforeParens: Never
+Standard : Cpp11
+UseTab: Never
+
