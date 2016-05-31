@@ -764,7 +764,7 @@ namespace rsimpl
             CoTaskMemFree(ppDevices);
 
             if (!fish_eye_dev)
-                return false;
+                return;
 
             std::timed_mutex mutex;
             claim_interface(*fish_eye_dev, FISHEYE_WIN_USB_DEVICE_GUID, FISHEYE_HWMONITOR_INTERFACE);
@@ -773,7 +773,7 @@ namespace rsimpl
             perform_and_send_monitor_command(*fish_eye_dev, mutex, cmd);
             Sleep(2000);
 
-            return true;
+            return;
         }
 
         void bulk_transfer(device & device, unsigned char handle_id, uint8_t endpoint, void * data, int length, int *actual_length, unsigned int timeout)

@@ -292,7 +292,7 @@ namespace rsimpl
     //////////////////////////
     // Native pixel formats //
     //////////////////////////
-    const native_pixel_format pf_rw8        = {'RW8',  1, 1, {{true, &copy_pixels<1>,                  {{RS_STREAM_FISHEYE,  RS_FORMAT_RAW8 }}}}};
+    const native_pixel_format pf_raw8       = {'RW8',  1, 1, {{true, &copy_pixels<1>,                  {{RS_STREAM_FISHEYE,  RS_FORMAT_RAW8 }}}}};
     const native_pixel_format pf_rw16       = {'RW16', 1, 2, {{false, &copy_pixels<2>,                 {{RS_STREAM_COLOR,    RS_FORMAT_RAW16}}}}};
     const native_pixel_format pf_rw10       = {'RW10', 1, 1, {{false, &copy_pixels<1>,                 {{RS_STREAM_COLOR,    RS_FORMAT_RAW10 }}},
                                                               {true,  &unpack_rw10_from_rw8,           {{RS_STREAM_FISHEYE,  RS_FORMAT_RAW10 }}}}};
