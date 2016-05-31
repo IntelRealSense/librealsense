@@ -177,14 +177,6 @@ typedef enum rs_option
     RS_OPTION_MAX_ENUM = 0x7FFFFFFF
 } rs_option;
 
-typedef enum rs_channel
-{
-    RS_CHANNEL_MOTION_DATA      = 0,
-    RS_CHANNEL_TIMESTAMP_DATA   = 1,
-    RS_CHANNEL_COUNT,
-    RS_CHANNEL_MAX_ENUM = 0x7FFFFFFF
-} rs_channel;
-
 typedef struct rs_intrinsics
 {
     int           width;     /* width of the image in pixels */
@@ -392,33 +384,27 @@ int rs_get_stream_framerate(const rs_device * device, rs_stream stream, rs_error
 void rs_get_stream_intrinsics(const rs_device * device, rs_stream stream, rs_intrinsics * intrin, rs_error ** error);
 
 /**
- * enable a specific data channel with specific properties
- * \param[in] data_channel  the data format that will be handled by the channel
- * \param[in] framerate    the number of data frames that will be published per second, or 0 if any rate is acceptable
+ * enable motion events
  */
 void rs_enable_events(rs_device * device, rs_error ** error);
 
 /**
- * disable a specific data channel
-  * \param[in] data_channel  the data format that will be handled by the channel
+ * disable motion events
  */
 void rs_disable_events(rs_device * device, rs_error ** error);
 
 /**
-* start data acquisition from specific channel
-* \param[in] data_channel
+* start data acquisition from motion module
 */
 void rs_start_events(rs_device * device, rs_error ** error);
 
 /**
-* stop data acquisition from specific channel
-* \param[in] data_channel
+* stop data acquisition
 */
 void rs_stop_events(rs_device * device, rs_error ** error);
 
 /**
 * check if data acquisition is active
-* \param[in] data_channel
 */
 int rs_events_active(rs_device * device, rs_error ** error);
 
@@ -566,7 +552,6 @@ const char * rs_format_to_string     (rs_format format);
 const char * rs_preset_to_string     (rs_preset preset);
 const char * rs_distortion_to_string (rs_distortion distortion);
 const char * rs_option_to_string     (rs_option option);
-const char * rs_channel_to_string    (rs_channel channel);
 const char * rs_capabilities_to_string(rs_capabilities capability);
 const char * rs_source_to_string     (rs_source source);
 
