@@ -64,7 +64,6 @@ public:
     void                                        disable_stream(rs_stream stream);
 
     void                                        set_stream_callback(rs_stream stream, void (*on_frame)(rs_device * device, rs_frame_ref * frame, void * user), void * user);
-    int                                         supports_events() const;
     void										enable_events();
     void										disable_events();
     virtual void                                start_events();

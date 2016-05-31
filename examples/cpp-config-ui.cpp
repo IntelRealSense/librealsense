@@ -10,6 +10,9 @@
 
 #pragma comment(lib, "opengl32.lib")
 
+#define MAX(x,y) ((float)(x)>(float)(y))?(x):(y)
+#define MIN(x,y) ((float)(x)<(float)(y))?(x):(y)
+
 struct int2 { int x,y; };
 struct rect 
 { 
@@ -99,6 +102,7 @@ struct gui
 
     void indicator(const rect & r, double min, double max, double value)
     {
+        value = MAX(min, MIN(max, value));
         const int w = r.x1 - r.x0, h = r.y0 - r.y1;
         double p = (w) * (value - min) / (max - min);
         int Xdelta = 1;
@@ -218,7 +222,7 @@ int main(int argc, char * argv[]) try
 
     if (has_motion_module)
     {
-        if (dev->supports_events())                                         // todo:move to supports interface
+        if (dev->supports(rs::capabilities::motion_events))
            dev->enable_events();
 
         dev->set_motion_callback(motion_callback);
@@ -344,7 +348,7 @@ int main(int argc, char * argv[]) try
 
                 int x = w/3 + 10;
                 int y = 2*h/3 + 5;
-                buffers[5].print(x, y, "MM (200 Hz)");
+                //buffers[5].print(x, y, "MM (200 Hz)");
 
                 auto rect_y0_pos = y+36;
                 auto rect_y1_pos = y+28;

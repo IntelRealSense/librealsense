@@ -168,7 +168,7 @@ namespace rsimpl
 
     struct data_polling_request
     {
-        bool        enabled;
+        bool        enabled = false;
     };
 
     struct static_device_info

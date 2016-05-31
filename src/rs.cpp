@@ -220,13 +220,6 @@ void rs_set_frame_callback(rs_device * device, rs_stream stream, void (*on_frame
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, device, stream, on_frame, user)
 
-int rs_supports_events(const rs_device * device, rs_error ** error) try
-{
-    VALIDATE_NOT_NULL(device);
-    return device->supports_events();
-}
-HANDLE_EXCEPTIONS_AND_RETURN( false, device)
-
 void rs_enable_events(rs_device * device, rs_error ** error) try
 {
     VALIDATE_NOT_NULL(device);

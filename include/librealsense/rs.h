@@ -203,7 +203,7 @@ typedef struct rs_extrinsics
     float translation[3]; /* 3 element translation vector, in meters */
 } rs_extrinsics;
 
-typedef enum rs_event_source// : unsigned char
+typedef enum rs_event_source
 {
     RS_IMU_ACCEL        = 1,
     RS_IMU_GYRO         = 2,
@@ -401,12 +401,6 @@ void rs_get_stream_intrinsics(const rs_device * device, rs_stream stream, rs_int
  * \param[out] error    if non-null, receives any error that occurs during this call, otherwise, errors are ignored
  */
 void rs_set_frame_callback(rs_device * device, rs_stream stream, void (*on_frame)(rs_device * dev, rs_frame_ref * frame, void * user), void * user, rs_error ** error);
-
-/**
-* check whether the device provides the requested data aqcuisition channels
-* \param[in] data_channel the data to acquired: sensors data, hw statuses, etc'
-*/
-int rs_supports_events(const rs_device * device, rs_error ** error);
 
 /**
  * enable a specific data channel with specific properties
