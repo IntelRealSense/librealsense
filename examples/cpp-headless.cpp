@@ -44,6 +44,8 @@ int main() try
     rs::log_to_console(rs::log_severity::warn);
     //rs::log_to_file(rs::log_severity::debug, "librealsense.log");
 
+	bool ir2supported = false;
+
     rs::context ctx;
     printf("There are %d connected RealSense devices.\n", ctx.get_device_count());
     if(ctx.get_device_count() == 0) return EXIT_FAILURE;
@@ -53,29 +55,38 @@ int main() try
     printf("    Serial number: %s\n", dev->get_serial());
     printf("    Firmware version: %s\n", dev->get_firmware_version());
 
+	const int width = 320;
+	const int height = 240;
+
     // Configure depth to run at VGA resolution at 30 frames per second
-    dev->enable_stream(rs::stream::depth, 640, 480, rs::format::z16, 30);
-    dev->enable_stream(rs::stream::color, 640, 480, rs::format::rgb8, 30);
-    dev->enable_stream(rs::stream::infrared, 640, 480, rs::format::y8, 30);
-
-    const int width = 640;
-    const int height = 480;
-
+    dev->enable_stream(rs::stream::depth, width, height, rs::format::z16, 30);
+    dev->enable_stream(rs::stream::color, width, height, rs::format::rgb8, 30);
+	dev->enable_stream(rs::stream::infrared, width, height, rs::format::y8, 30);
+	try 
+	{ 
+		dev->enable_stream(rs::stream::infrared2, width, height, rs::format::y8, 30); 
+		ir2supported = true;
+	}
+	catch (...) {}
+	
     dev->start();
 
     // Capture 30 frames to give autoexposure, etc. a chance to settle
     for (int i = 0; i < 30; ++i) dev->wait_for_frames();
 
-    // Retrieve depth data, which was previously configured as a 640 x 480 image of 16-bit depth values
+    // Retrieve depth data, which was previously configured as a 320 x 240 image of 16-bit depth values
     const uint16_t * depth_frame = reinterpret_cast<const uint16_t *>(dev->get_frame_data(rs::stream::depth));
     const uint8_t * color_frame = reinterpret_cast<const uint8_t *>(dev->get_frame_data(rs::stream::color));
     const uint8_t * ir_frame = reinterpret_cast<const uint8_t *>(dev->get_frame_data(rs::stream::infrared));
+	const uint8_t * ir2_frame =  ir2_frame = reinterpret_cast<const uint8_t *>(dev->get_frame_data(rs::stream::infrared2));
 
     std::vector<uint8_t> coloredDepth(width * height * 3);
     normalize_depth_to_rgb(coloredDepth.data(), depth_frame, width, height);
     stbi_write_png("cpp-headless-output-depth.png", width, height, 3, coloredDepth.data(), 3 * width);
     stbi_write_png("cpp-headless-output-rgb.png", width, height, 3, color_frame, 3 * width);
     stbi_write_png("cpp-headless-output-ir.png", width, height, 1, ir_frame, width);
+	if (ir2supported)
+		stbi_write_png("cpp-headless-output-ir2.png", width, height, 1, ir2_frame, width);
 
     printf("wrote frames to current working directory.\n");
     return EXIT_SUCCESS;
