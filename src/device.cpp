@@ -95,7 +95,7 @@ void rs_device::start_events()
     {
         // TODO -replace hard-coded value 3 which stands for fisheye subdevice   
         set_subdevice_data_channel_handler(*device, 3,
-            [mo_callbacks, ts_callbacks, parser](const unsigned char * data, const int size) mutable
+            [this,mo_callbacks, ts_callbacks, parser](const unsigned char * data, const int size) mutable
         {
             // Parse motion data
             auto events = parser(data, size);
@@ -116,8 +116,11 @@ void rs_device::start_events()
 				for (int i = 0; i < entry.non_imu_entries_num; i++)
 				{
 					for (auto & cb : ts_callbacks)
-					{
-						cb(entry.non_imu_packets[i]);
+                    {
+                        auto tse = entry.non_imu_packets[i];
+                        archive->on_timestamp(tse);
+
+                        cb(tse);
 					}
 				}
             }
@@ -182,8 +185,11 @@ void rs_device::start()
             std::vector<byte *> dest;
             for(auto & output : mode_selection.get_outputs()) dest.push_back(archive->alloc_frame(output.first, timestamp, frameCounter));
 
+            archive->correct_timestamp();
+
             // Unpack the frame and commit it to the archive
             mode_selection.unpack(dest.data(), reinterpret_cast<const byte *>(frame));
+
             for(auto & output : mode_selection.get_outputs()) archive->commit_frame(output.first);
         });
     }
@@ -264,6 +270,7 @@ std::vector<motion_event> motion_module_parser::operator() (const unsigned char*
     const unsigned short non_imu_data_entries = 8;  // IMU SaS spec 3.3.2
     const unsigned short imu_data_entries = 4;
     const unsigned short imu_entry_size = 12;   // bytes
+    const unsigned short non_imu_entry_size = 6;   // bytes
     unsigned short packets = data_size / motion_packet_size;
 
     std::vector<motion_event> v;
@@ -301,8 +308,9 @@ std::vector<motion_event> motion_module_parser::operator() (const unsigned char*
                 // Parse non-IMU entries
                 for (uint8_t j = 0; j < event_data.non_imu_entries_num; j++)
                 {
-                    parse_timestamp(&cur_packet[non_imu_data_offset+ j*imu_entry_size],event_data.non_imu_packets[j]);
+                    parse_timestamp(&cur_packet[non_imu_data_offset+ j*non_imu_entry_size],event_data.non_imu_packets[j]);
                 }
+
                 v.push_back(std::move(event_data));
             }
         }
@@ -319,7 +327,6 @@ void motion_module_parser::parse_timestamp(const unsigned char * data,rs_timesta
     entry.source_id         =   rs_event_source(tmp&0x7);   // bits [0:2] - source_id
     entry.frame_number         =   (tmp & 0x7fff)>>3;          // bits [3-14] - frame num
     memcpy(&entry.timestamp,&data[2],sizeof(unsigned int)); // bits [16:47] - timestamp
-
 }
 
 rs_motion_data motion_module_parser::parse_motion(const unsigned char * data)

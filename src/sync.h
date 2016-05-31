@@ -6,24 +6,29 @@
 #define LIBREALSENSE_SYNC_H
 
 #include "types.h"
+#include "timestamps.h"
 
 namespace rsimpl
 {
+    struct frame_info
+    {
+        frame_info() : timestamp(), frameCounter(0) {}
+        std::vector<byte> data;
+        int timestamp;
+        int frameCounter;
+    };
+
     class frame_archive
     {
         // Define a movable but explicitly noncopyable buffer type to hold our frame data
-        struct frame 
-        { 
-            std::vector<byte> data;
-            int timestamp;
-			int frameCounter;
-
-            frame() : timestamp(), frameCounter(0) {}
+        struct frame : frame_info
+        {
+            frame() : frame_info(){}
             frame(const frame & r) = delete;
             frame(frame && r) : frame() { *this = std::move(r); }
 
             frame & operator = (const frame & r) = delete;
-            frame & operator = (frame && r) { data = move(r.data); timestamp = r.timestamp; frameCounter = r.frameCounter; return *this; }
+            frame & operator = (frame && r) { data = std::move(r.data); timestamp = r.timestamp; frameCounter = r.frameCounter; return *this; }
         };
 
         // This data will be left constant after creation, and accessed from all threads
@@ -47,6 +52,8 @@ namespace rsimpl
         void dequeue_frame(rs_stream stream);
         void discard_frame(rs_stream stream);
         void cull_frames();
+
+        correct            corrector;
     public:
         frame_archive(const std::vector<subdevice_mode_selection> & selection, rs_stream key_stream);
 
@@ -64,6 +71,9 @@ namespace rsimpl
         // Frame callback thread API
         byte * alloc_frame(rs_stream stream, int timestamp, int frameCounter);
         void commit_frame(rs_stream stream);  
+
+        void correct_timestamp();
+        void on_timestamp(rs_timestamp_data data);
     };
 }
 

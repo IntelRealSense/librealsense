@@ -15,7 +15,9 @@ QMAKE_CXXFLAGS += -DRS_USE_V4L2_BACKEND
 
 HEADERS += ../include/librealsense/* ../src/*.h \
     ../src/hw-monitor.h \
-    ../src/motion_module.h
+    ../src/motion_module.h \
+    ../src/timestamps.h
 SOURCES += ../src/*.cpp ../src/verify.c \
     ../src/hw-monitor.cpp \
-    ../src/motion_module.cpp
+    ../src/motion_module.cpp \
+    ../src/timestamps.cpp
