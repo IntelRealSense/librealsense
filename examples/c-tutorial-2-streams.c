@@ -15,11 +15,10 @@
 #include <GLFW/glfw3.h>
 
 /* Function calls to librealsense may raise errors of type rs_error */
-rs_error * e = 0;
+rs_error* e = 0;
 void check_error()
 {
-    if(e)
-    {
+    if (e) {
         printf("rs_error was raised when calling %s(%s):\n", rs_get_failed_function(e), rs_get_failed_args(e));
         printf("    %s\n", rs_get_error_message(e));
         exit(EXIT_FAILURE);
@@ -29,14 +28,15 @@ void check_error()
 int main()
 {
     /* Create a context object. This object owns the handles to all connected realsense devices. */
-    rs_context * ctx = rs_create_context(RS_API_VERSION, &e);
+    rs_context* ctx = rs_create_context(RS_API_VERSION, &e);
     check_error();
     printf("There are %d connected RealSense devices.\n", rs_get_device_count(ctx, &e));
     check_error();
-    if(rs_get_device_count(ctx, &e) == 0) return EXIT_FAILURE;
+    if (rs_get_device_count(ctx, &e) == 0)
+        return EXIT_FAILURE;
 
     /* This tutorial will access only a single device, but it is trivial to extend to multiple devices */
-    rs_device * dev = rs_get_device(ctx, 0, &e);
+    rs_device* dev = rs_get_device(ctx, 0, &e);
     check_error();
     printf("\nUsing device 0, an %s\n", rs_get_device_name(dev, &e));
     check_error();
@@ -58,10 +58,9 @@ int main()
 
     /* Open a GLFW window to display our output */
     glfwInit();
-    GLFWwindow * win = glfwCreateWindow(1280, 960, "librealsense tutorial #2", NULL, NULL);
+    GLFWwindow* win = glfwCreateWindow(1280, 960, "librealsense tutorial #2", NULL, NULL);
     glfwMakeContextCurrent(win);
-    while(!glfwWindowShouldClose(win))
-    {
+    while (!glfwWindowShouldClose(win)) {
         /* Wait for new frame data */
         glfwPollEvents();
         rs_wait_for_frames(dev, &e);
@@ -89,14 +88,13 @@ int main()
         check_error();
 
         /* Display second infrared image by mapping IR intensity to visible luminance */
-        if(rs_is_stream_enabled(dev, RS_STREAM_INFRARED2, NULL))
-        {
+        if (rs_is_stream_enabled(dev, RS_STREAM_INFRARED2, NULL)) {
             glRasterPos2f(0, 0);
             glDrawPixels(640, 480, GL_LUMINANCE, GL_UNSIGNED_BYTE, rs_get_frame_data(dev, RS_STREAM_INFRARED2, &e));
         }
 
         glfwSwapBuffers(win);
     }
-    
+
     return EXIT_SUCCESS;
 }

@@ -9,24 +9,22 @@
 
 std::vector<texture_buffer> buffers;
 
-int main(int argc, char * argv[]) try
-{
+int main(int argc, char* argv[]) try {
     rs::log_to_console(rs::log_severity::warn);
     //rs::log_to_file(rs::log_severity::debug, "librealsense.log");
 
     rs::context ctx;
-    if(ctx.get_device_count() == 0) throw std::runtime_error("No device detected. Is it plugged in?");
-    
+    if (ctx.get_device_count() == 0)
+        throw std::runtime_error("No device detected. Is it plugged in?");
+
     // Enumerate all devices
-    std::vector<rs::device *> devices;
-    for(int i=0; i<ctx.get_device_count(); ++i)
-    {
+    std::vector<rs::device*> devices;
+    for (int i = 0; i < ctx.get_device_count(); ++i) {
         devices.push_back(ctx.get_device(i));
     }
 
     // Configure and start our devices
-    for(auto dev : devices)
-    {
+    for (auto dev : devices) {
         std::cout << "Starting " << dev->get_name() << "... ";
         dev->enable_stream(rs::stream::depth, rs::preset::best_quality);
         dev->enable_stream(rs::stream::color, rs::preset::best_quality);
@@ -39,8 +37,9 @@ int main(int argc, char * argv[]) try
 
     // Open a GLFW window
     glfwInit();
-    std::ostringstream ss; ss << "CPP Multi-Camera Example";
-    GLFWwindow * win = glfwCreateWindow(1280, 960, ss.str().c_str(), 0, 0);
+    std::ostringstream ss;
+    ss << "CPP Multi-Camera Example";
+    GLFWwindow* win = glfwCreateWindow(1280, 960, ss.str().c_str(), 0, 0);
     glfwMakeContextCurrent(win);
 
     int windowWidth, windowHeight;
@@ -50,24 +49,22 @@ int main(int argc, char * argv[]) try
     auto perTextureWidth = windowWidth / devices.size();
     auto perTextureHeight = 480;
 
-    while (!glfwWindowShouldClose(win))
-    {
+    while (!glfwWindowShouldClose(win)) {
         // Wait for new images
         glfwPollEvents();
-        
+
         // Draw the images
-        int w,h;
+        int w, h;
         glfwGetFramebufferSize(win, &w, &h);
         glViewport(0, 0, w, h);
         glClear(GL_COLOR_BUFFER_BIT);
-        
+
         glfwGetWindowSize(win, &w, &h);
         glPushMatrix();
         glOrtho(0, w, h, 0, -1, +1);
         glPixelZoom(1, -1);
-        int i=0, x=0;
-        for(auto dev : devices)
-        {
+        int i = 0, x = 0;
+        for (auto dev : devices) {
             dev->poll_for_frames();
             const auto c = dev->get_stream_intrinsics(rs::stream::color), d = dev->get_stream_intrinsics(rs::stream::depth);
             buffers[i++].show(*dev, rs::stream::color, x, 0, perTextureWidth, perTextureHeight);
@@ -83,13 +80,11 @@ int main(int argc, char * argv[]) try
     glfwTerminate();
     return EXIT_SUCCESS;
 }
-catch(const rs::error & e)
-{
+catch (const rs::error& e) {
     std::cerr << "RealSense error calling " << e.get_failed_function() << "(" << e.get_failed_args() << "):\n    " << e.what() << std::endl;
     return EXIT_FAILURE;
 }
-catch(const std::exception & e)
-{
+catch (const std::exception& e) {
     std::cerr << e.what() << std::endl;
     return EXIT_FAILURE;
 }

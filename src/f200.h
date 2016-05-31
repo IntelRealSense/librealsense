@@ -12,43 +12,44 @@
 #include <thread>
 #include <condition_variable>
 
-namespace rsimpl
-{
-    namespace f200 { class IVCAMHardwareIO; }
+namespace rsimpl {
+namespace f200 {
+    class IVCAMHardwareIO;
+}
 
-    class f200_camera final : public rs_device
-    {
-        std::timed_mutex usbMutex;
+class f200_camera final : public rs_device {
+    std::timed_mutex usbMutex;
 
-        f200::CameraCalibrationParameters base_calibration;
-        f200::IVCAMTemperatureData base_temperature_data;
-        f200::IVCAMThermalLoopParams thermal_loop_params;
-        f200::IVCAMAutoRangeRequest arr;
-        sr300::wakeup_dev_params arr_wakeup_dev_param;
+    f200::CameraCalibrationParameters base_calibration;
+    f200::IVCAMTemperatureData base_temperature_data;
+    f200::IVCAMThermalLoopParams thermal_loop_params;
+    f200::IVCAMAutoRangeRequest arr;
+    sr300::wakeup_dev_params arr_wakeup_dev_param;
 
-        float last_temperature_delta;
+    float last_temperature_delta;
 
-        std::thread temperatureThread;
-        std::atomic<bool> runTemperatureThread;
-        std::mutex temperatureMutex;
-        std::condition_variable temperatureCv;
+    std::thread temperatureThread;
+    std::atomic<bool> runTemperatureThread;
+    std::mutex temperatureMutex;
+    std::condition_variable temperatureCv;
 
-        void temperature_control_loop();
-    public:      
-        f200_camera(std::shared_ptr<uvc::device> device, const static_device_info & info, const f200::CameraCalibrationParameters & calib, const f200::IVCAMTemperatureData & temp, const f200::IVCAMThermalLoopParams & params);
-        ~f200_camera();
+    void temperature_control_loop();
 
-        void on_before_start(const std::vector<subdevice_mode_selection> & selected_modes) override;
-        rs_stream select_key_stream(const std::vector<rsimpl::subdevice_mode_selection> & selected_modes) override;
-        
-        void set_options(const rs_option options[], int count, const double values[]) override;
-        void get_options(const rs_option options[], int count, double values[]) override;
+public:
+    f200_camera(std::shared_ptr<uvc::device> device, const static_device_info& info, const f200::CameraCalibrationParameters& calib, const f200::IVCAMTemperatureData& temp, const f200::IVCAMThermalLoopParams& params);
+    ~f200_camera();
 
-        std::shared_ptr<frame_timestamp_reader> create_frame_timestamp_reader() const override;
-    };
+    void on_before_start(const std::vector<subdevice_mode_selection>& selected_modes) override;
+    rs_stream select_key_stream(const std::vector<rsimpl::subdevice_mode_selection>& selected_modes) override;
 
-    std::shared_ptr<rs_device> make_f200_device(std::shared_ptr<uvc::device> device);
-    std::shared_ptr<rs_device> make_sr300_device(std::shared_ptr<uvc::device> device);
+    void set_options(const rs_option options[], int count, const double values[]) override;
+    void get_options(const rs_option options[], int count, double values[]) override;
+
+    std::shared_ptr<frame_timestamp_reader> create_frame_timestamp_reader() const override;
+};
+
+std::shared_ptr<rs_device> make_f200_device(std::shared_ptr<uvc::device> device);
+std::shared_ptr<rs_device> make_sr300_device(std::shared_ptr<uvc::device> device);
 }
 
 #endif

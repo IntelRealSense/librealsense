@@ -13,37 +13,36 @@
 
 texture_buffer buffers[RS_STREAM_COUNT];
 
-int main(int argc, char * argv[]) try
-{
+int main(int argc, char* argv[]) try {
     rs::log_to_console(rs::log_severity::warn);
     //rs::log_to_file(rs::log_severity::debug, "librealsense.log");
 
     rs::context ctx;
-    if(ctx.get_device_count() == 0) throw std::runtime_error("No device detected. Is it plugged in?");
-    rs::device & dev = *ctx.get_device(0);
+    if (ctx.get_device_count() == 0)
+        throw std::runtime_error("No device detected. Is it plugged in?");
+    rs::device& dev = *ctx.get_device(0);
 
     // Open a GLFW window
     glfwInit();
-    std::ostringstream ss; ss << "CPP Restart Example (" << dev.get_name() << ")";
-    GLFWwindow * win = glfwCreateWindow(1280, 960, ss.str().c_str(), 0, 0);
+    std::ostringstream ss;
+    ss << "CPP Restart Example (" << dev.get_name() << ")";
+    GLFWwindow* win = glfwCreateWindow(1280, 960, ss.str().c_str(), 0, 0);
     glfwMakeContextCurrent(win);
 
-    for(int i=0; i<20; ++i)
-    {
-        try
-        {
-            if(dev.is_streaming()) dev.stop();
+    for (int i = 0; i < 20; ++i) {
+        try {
+            if (dev.is_streaming())
+                dev.stop();
 
             std::this_thread::sleep_for(std::chrono::milliseconds(100));
 
-            for(int j=0; j<4; ++j)
-            {
+            for (int j = 0; j < 4; ++j) {
                 auto s = (rs::stream)j;
-                if(dev.is_stream_enabled(s)) dev.disable_stream(s);
+                if (dev.is_stream_enabled(s))
+                    dev.disable_stream(s);
             }
 
-            switch(i)
-            {
+            switch (i) {
             case 0:
                 dev.enable_stream(rs::stream::color, 640, 480, rs::format::yuyv, 60);
                 break;
@@ -117,15 +116,15 @@ int main(int argc, char * argv[]) try
             }
 
             dev.start();
-            for(int j=0; j<120; ++j)
-            {
+            for (int j = 0; j < 120; ++j) {
                 // Wait for new images
                 glfwPollEvents();
-                if(glfwWindowShouldClose(win)) goto done;
+                if (glfwWindowShouldClose(win))
+                    goto done;
                 dev.wait_for_frames();
 
                 // Clear the framebuffer
-                int w,h;
+                int w, h;
                 glfwGetWindowSize(win, &w, &h);
                 glViewport(0, 0, w, h);
                 glClear(GL_COLOR_BUFFER_BIT);
@@ -134,16 +133,15 @@ int main(int argc, char * argv[]) try
                 glPushMatrix();
                 glfwGetWindowSize(win, &w, &h);
                 glOrtho(0, w, h, 0, -1, +1);
-                buffers[0].show(dev, rs::stream::color, 0, 0, w/2, h/2);
-                buffers[1].show(dev, rs::stream::depth, w/2, 0, w-w/2, h/2);
-                buffers[2].show(dev, rs::stream::infrared, 0, h/2, w/2, h-h/2);
-                buffers[3].show(dev, rs::stream::infrared2, w/2, h/2, w-w/2, h-h/2);
+                buffers[0].show(dev, rs::stream::color, 0, 0, w / 2, h / 2);
+                buffers[1].show(dev, rs::stream::depth, w / 2, 0, w - w / 2, h / 2);
+                buffers[2].show(dev, rs::stream::infrared, 0, h / 2, w / 2, h - h / 2);
+                buffers[3].show(dev, rs::stream::infrared2, w / 2, h / 2, w - w / 2, h - h / 2);
                 glPopMatrix();
                 glfwSwapBuffers(win);
             }
         }
-        catch(const rs::error & e)
-        {
+        catch (const rs::error& e) {
             std::cerr << "RealSense error calling " << e.get_failed_function() << "(" << e.get_failed_args() << "):\n    " << e.what() << std::endl;
             std::cout << "Skipping mode " << i << std::endl;
         }
@@ -153,13 +151,11 @@ done:
     glfwTerminate();
     return EXIT_SUCCESS;
 }
-catch(const rs::error & e)
-{
+catch (const rs::error& e) {
     std::cerr << "RealSense error calling " << e.get_failed_function() << "(" << e.get_failed_args() << "):\n    " << e.what() << std::endl;
     return EXIT_FAILURE;
 }
-catch(const std::exception & e)
-{
+catch (const std::exception& e) {
     std::cerr << e.what() << std::endl;
     return EXIT_FAILURE;
 }
