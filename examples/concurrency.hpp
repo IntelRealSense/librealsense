@@ -35,6 +35,19 @@ public:
 		return std::move(item);
 	}
 
+	bool try_dequeue(T* item)
+	{
+		std::unique_lock<std::mutex> lock(mutex);
+		if(q.size()>0)
+		{
+			auto val = std::move(q.front());
+			q.pop();
+			*item = std::move(val);
+			return true;
+		}
+		return false;
+	}
+
 	void clear()
 	{
 		std::unique_lock<std::mutex> lock(mutex);

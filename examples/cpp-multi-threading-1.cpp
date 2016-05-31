@@ -11,6 +11,8 @@
 #include "concurrency.hpp"
 #include <thread>
 
+
+
 int main() try
 {
     // In this demo the workload of rendering the frames is split equally between N consumer
@@ -26,6 +28,8 @@ int main() try
 
     // create N queues for the N consumers
     const auto consumers = 3;
+	const auto  streams = 3;
+
     single_consumer_queue<rs::frameset> frames_queue[consumers];
     std::vector<bool> running(consumers, true);
     std::vector<std::pair<int, int>> resolutions(static_cast<int>(rs::stream::depth_aligned_to_infrared2), { 0, 0 });
@@ -83,15 +87,18 @@ int main() try
     dev->enable_stream(rs::stream::depth, 0, 0, rs::format::z16, 60);
     dev->enable_stream(rs::stream::color, 640, 480, rs::format::rgb8, 60);
     dev->enable_stream(rs::stream::infrared, 0, 0, rs::format::y8, 60);
-    try { dev->enable_stream(rs::stream::infrared2, 0, 0, rs::format::y8, 60); }
-    catch(...) { printf("Device does not provide infrared2 stream.\n"); }
-
+    if (dev->supports(rs::capabilities::infrared2))
+    {
+        dev->enable_stream(rs::stream::infrared2, 0, 0, rs::format::y8, 60);
+    }
     
     dev->start();
     resolutions[static_cast<int>(rs::stream::depth)] = { dev->get_stream_width(rs::stream::depth), dev->get_stream_height(rs::stream::depth) };
     resolutions[static_cast<int>(rs::stream::color)] = { dev->get_stream_width(rs::stream::color), dev->get_stream_height(rs::stream::color) };
     resolutions[static_cast<int>(rs::stream::infrared)] = { dev->get_stream_width(rs::stream::infrared), dev->get_stream_height(rs::stream::infrared) };
-    resolutions[static_cast<int>(rs::stream::infrared2)] = { dev->get_stream_width(rs::stream::infrared2), dev->get_stream_height(rs::stream::infrared2) };
+
+    if (dev->is_stream_enabled(rs::stream::infrared2))
+        resolutions[static_cast<int>(rs::stream::infrared2)] = { dev->get_stream_width(rs::stream::infrared2), dev->get_stream_height(rs::stream::infrared2) };
 
     auto counter = 0;
     while (any_costumers_alive(running))
@@ -100,6 +107,16 @@ int main() try
         auto queue_id = counter++ % consumers; // enforce fairness
         if (running[queue_id])
            frames_queue[queue_id].enqueue(std::move(frames)); // pass the frameset for processing to thread queue_id
+    }
+    for (auto i = 0; i < consumers; i++)
+        frames_queue[i].clear();
+
+    dev->stop();
+
+    for (auto i = 0; i < streams; i++)
+    {
+        if (dev->is_stream_enabled((rs::stream)i))
+            dev->disable_stream((rs::stream)i);
     }
 
     return EXIT_SUCCESS;

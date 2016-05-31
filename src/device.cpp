@@ -31,7 +31,8 @@ rs_device::~rs_device()
 {
     try
     {
-        stop();
+        if (capturing) 
+            stop();
     }
     catch (...) {}
 }
@@ -48,7 +49,7 @@ void rs_device::enable_stream(rs_stream stream, int width, int height, rs_format
     if(capturing) throw std::runtime_error("streams cannot be reconfigured after having called rs_start_device()");
     if(config.info.stream_subdevices[stream] == -1) throw std::runtime_error("unsupported stream");
 
-    config.requests[stream] = {true, width, height, format, fps};
+	config.requests[stream] = { true, width, height, format, fps };
     for(auto & s : native_streams) s->archive.reset(); // Changing stream configuration invalidates the current stream info
 }
 
@@ -120,7 +121,7 @@ void rs_device::start()
             auto timestamp = timestamp_reader->get_frame_timestamp(mode_selection.mode, frame);
             auto frame_counter = timestamp_reader->get_frame_counter(mode_selection.mode, frame);
             
-            auto requires_processing = mode_selection.requires_processing();
+          auto requires_processing = mode_selection.requires_processing();
 
             
             // Obtain buffers for unpacking the frame
