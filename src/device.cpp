@@ -103,15 +103,15 @@ void rs_device::start_events()
 
             // Handle events by user-provided handlers
             for (auto & entry : events)
-            {		
-				// Handle Motion data packets
-				for (int i = 0; i < entry.imu_entries_num; i++)
-				{
-					for (auto & cb : mo_callbacks)
-					{
-						cb(entry.imu_packets[i]);
-					}
-				}
+            {
+                // Handle Motion data packets
+                for (int i = 0; i < entry.imu_entries_num; i++)
+                {
+                    for (auto & cb : mo_callbacks)
+                    {
+                        cb(entry.imu_packets[i]);
+                    }
+                }
 
 				// Handle Timestamp packets
 				for (int i = 0; i < entry.non_imu_entries_num; i++)
