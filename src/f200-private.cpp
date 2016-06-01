@@ -950,7 +950,7 @@ namespace rsimpl { namespace f200
 
             if (cmdWUReason.receivedCommandDataLength >= 4)     // TODO - better guard condition ?
             {
-                unsigned char rslt = (*reinterpret_cast<int32_t *>(cmdWUReason.receivedCommandData)) && (0xFF);
+                unsigned char rslt = (*reinterpret_cast<int32_t *>(cmdWUReason.receivedCommandData)) & (0xFF);
                 if (rslt >= (uint8_t)wakeonusb_reason::eMaxWakeOnReason)
                     throw std::logic_error("undefined wakeonusb_reason provided");
                 cReason = rslt;
