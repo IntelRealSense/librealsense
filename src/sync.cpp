@@ -129,13 +129,13 @@ void frame_archive::correct_timestamp()
     for(auto stream : {RS_STREAM_DEPTH, RS_STREAM_COLOR, RS_STREAM_INFRARED, RS_STREAM_INFRARED2, RS_STREAM_FISHEYE})
     {
         if (is_stream_enabled(stream))
-            corrector.correct_timestamp(backbuffer[stream]);
+            ts_corrector.correct_timestamp(backbuffer[stream]);
     }
 }
 
 void frame_archive::on_timestamp(rs_timestamp_data data)
 {
-    corrector.on_timestamp(data);
+    ts_corrector.on_timestamp(data);
 }
 
 // Discard all frames which are older than the most recent coherent frameset

@@ -53,7 +53,7 @@ namespace rsimpl
         void discard_frame(rs_stream stream);
         void cull_frames();
 
-        correct            corrector;
+        timestamp_corrector            ts_corrector;
     public:
         frame_archive(const std::vector<subdevice_mode_selection> & selection, rs_stream key_stream);
 

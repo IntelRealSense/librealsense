@@ -26,18 +26,18 @@ namespace rsimpl
 
     };
 
-    class correct_interface{
+    class timestamp_corrector_interface{
     public:
-        virtual ~correct_interface() {}
+        virtual ~timestamp_corrector_interface() {}
         virtual void on_timestamp(rs_timestamp_data data) = 0;
         virtual void correct_timestamp(frame_info& frame) = 0;
         virtual void release() = 0;
     };
 
 
-    class correct : public correct_interface{
+    class timestamp_corrector : public timestamp_corrector_interface{
     public:
-        ~correct() override;
+        ~timestamp_corrector() override;
         void on_timestamp(rs_timestamp_data data) override;
         void correct_timestamp(frame_info& frame) override;
         void release() override  {delete this;}

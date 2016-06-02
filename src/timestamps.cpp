@@ -67,10 +67,10 @@ bool concurrent_queue::update_timestamp(int frame_number, rs_timestamp_data& dat
     return false;
 }
 
-correct::~correct()
+timestamp_corrector::~timestamp_corrector()
 { }
 
-void correct::on_timestamp(rs_timestamp_data data)
+void timestamp_corrector::on_timestamp(rs_timestamp_data data)
 {
     lock_guard<mutex> lock(mtx);
 
@@ -81,7 +81,7 @@ void correct::on_timestamp(rs_timestamp_data data)
     cv.notify_one();
 }
 
-void correct::correct_timestamp(frame_info& frame)
+void timestamp_corrector::correct_timestamp(frame_info& frame)
 {
     unique_lock<mutex> lock(mtx);
 
