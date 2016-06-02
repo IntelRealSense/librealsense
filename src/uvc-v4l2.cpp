@@ -553,17 +553,17 @@ namespace rsimpl
         void stop_streaming(device & device)
         {
             device.stop_streaming();
-        }		
+        }       
 
-		void start_data_acquisition(device & device)
-		{
-			device.start_data_acquisition();
-		}
+        void start_data_acquisition(device & device)
+        {
+            device.start_data_acquisition();
+        }
 
-		void stop_data_acquisition(device & device)
-		{
-			device.stop_data_acquisition();
-		}
+        void stop_data_acquisition(device & device)
+        {
+            device.stop_data_acquisition();
+        }
 
         static uint32_t get_cid(rs_option option)
         {
