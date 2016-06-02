@@ -69,15 +69,15 @@ typedef enum rs_preset
     RS_PRESET_MAX_ENUM = 0x7FFFFFFF
 } rs_preset;
 
-
 typedef enum rs_source
 {
-    RS_SOURCE_VIDEO                            = 0,
-    RS_SOURCE_EVENTS                           = 1,
-    RS_SOURCE_COUNT                            = 2,
+	RS_SOURCE_UNDEFINED					= 0,
+    RS_SOURCE_VIDEO						= 1,
+    RS_SOURCE_MOTION_TRACKING           = 2,
+	RS_SOURCE_ALL						= 3,
+    RS_SOURCE_COUNT                     = 4,
     RS_SOURCE_MAX_ENUM = 0x7FFFFFFF
 } rs_source;
-
 
 typedef enum rs_distortion
 {
@@ -106,15 +106,15 @@ typedef enum rs_ivcam_preset
 
 typedef enum rs_option
 {
-    RS_OPTION_COLOR_BACKLIGHT_COMPENSATION                    = 0,  
-    RS_OPTION_COLOR_BRIGHTNESS                                = 1,  
-    RS_OPTION_COLOR_CONTRAST                                  = 2,  
+    RS_OPTION_COLOR_BACKLIGHT_COMPENSATION                    = 0,
+    RS_OPTION_COLOR_BRIGHTNESS                                = 1,
+    RS_OPTION_COLOR_CONTRAST                                  = 2,
     RS_OPTION_COLOR_EXPOSURE                                  = 3,  /**< Controls exposure time of color camera. Setting any value will disable auto exposure. */
-    RS_OPTION_COLOR_GAIN                                      = 4,  
-    RS_OPTION_COLOR_GAMMA                                     = 5,  
-    RS_OPTION_COLOR_HUE                                       = 6,  
-    RS_OPTION_COLOR_SATURATION                                = 7,  
-    RS_OPTION_COLOR_SHARPNESS                                 = 8,  
+    RS_OPTION_COLOR_GAIN                                      = 4,
+    RS_OPTION_COLOR_GAMMA                                     = 5,
+    RS_OPTION_COLOR_HUE                                       = 6,
+    RS_OPTION_COLOR_SATURATION                                = 7,
+    RS_OPTION_COLOR_SHARPNESS                                 = 8,
     RS_OPTION_COLOR_WHITE_BALANCE                             = 9,  /**< Controls white balance of color image. Setting any value will disable auto white balance. */
     RS_OPTION_COLOR_ENABLE_AUTO_EXPOSURE                      = 10, /**< Set to 1 to enable automatic exposure control, or 0 to return to manual control */
     RS_OPTION_COLOR_ENABLE_AUTO_WHITE_BALANCE                 = 11, /**< Set to 1 to enable automatic white balance control, or 0 to return to manual control */
@@ -124,20 +124,20 @@ typedef enum rs_option
     RS_OPTION_F200_FILTER_OPTION                              = 15, /**< 0 - 7 */
     RS_OPTION_F200_CONFIDENCE_THRESHOLD                       = 16, /**< 0 - 15 */
     RS_OPTION_F200_DYNAMIC_FPS                                = 17, /**< {2, 5, 15, 30, 60} */
-    RS_OPTION_SR300_AUTO_RANGE_ENABLE_MOTION_VERSUS_RANGE     = 18, 
-    RS_OPTION_SR300_AUTO_RANGE_ENABLE_LASER                   = 19, 
-    RS_OPTION_SR300_AUTO_RANGE_MIN_MOTION_VERSUS_RANGE        = 20, 
-    RS_OPTION_SR300_AUTO_RANGE_MAX_MOTION_VERSUS_RANGE        = 21, 
-    RS_OPTION_SR300_AUTO_RANGE_START_MOTION_VERSUS_RANGE      = 22, 
-    RS_OPTION_SR300_AUTO_RANGE_MIN_LASER                      = 23, 
-    RS_OPTION_SR300_AUTO_RANGE_MAX_LASER                      = 24, 
-    RS_OPTION_SR300_AUTO_RANGE_START_LASER                    = 25, 
-    RS_OPTION_SR300_AUTO_RANGE_UPPER_THRESHOLD                = 26, 
+    RS_OPTION_SR300_AUTO_RANGE_ENABLE_MOTION_VERSUS_RANGE     = 18,
+    RS_OPTION_SR300_AUTO_RANGE_ENABLE_LASER                   = 19,
+    RS_OPTION_SR300_AUTO_RANGE_MIN_MOTION_VERSUS_RANGE        = 20,
+    RS_OPTION_SR300_AUTO_RANGE_MAX_MOTION_VERSUS_RANGE        = 21,
+    RS_OPTION_SR300_AUTO_RANGE_START_MOTION_VERSUS_RANGE      = 22,
+    RS_OPTION_SR300_AUTO_RANGE_MIN_LASER                      = 23,
+    RS_OPTION_SR300_AUTO_RANGE_MAX_LASER                      = 24,
+    RS_OPTION_SR300_AUTO_RANGE_START_LASER                    = 25,
+    RS_OPTION_SR300_AUTO_RANGE_UPPER_THRESHOLD                = 26,
     RS_OPTION_SR300_AUTO_RANGE_LOWER_THRESHOLD                = 27,
     RS_OPTION_SR300_WAKEUP_DEV_PHASE1_PERIOD                  = 28,
-    RS_OPTION_SR300_WAKEUP_DEV_PHASE1_FPS                     = 29, 
-    RS_OPTION_SR300_WAKEUP_DEV_PHASE2_PERIOD                  = 30, 
-    RS_OPTION_SR300_WAKEUP_DEV_PHASE2_FPS                     = 31, 
+    RS_OPTION_SR300_WAKEUP_DEV_PHASE1_FPS                     = 29,
+    RS_OPTION_SR300_WAKEUP_DEV_PHASE2_PERIOD                  = 30,
+    RS_OPTION_SR300_WAKEUP_DEV_PHASE2_FPS                     = 31,
     RS_OPTION_SR300_WAKEUP_DEV_RESET                          = 32,
     RS_OPTION_SR300_WAKE_ON_USB_REASON                        = 33,
     RS_OPTION_SR300_WAKE_ON_USB_CONFIDENCE                    = 34,
@@ -150,30 +150,36 @@ typedef enum rs_option
     RS_OPTION_R200_DEPTH_CLAMP_MAX                            = 41, /**< {0 - USHORT_MAX}. Can only be set before streaming starts. */
     RS_OPTION_R200_DISPARITY_MULTIPLIER                       = 42, /**< {0 - 1000}. The increments in integer disparity values corresponding to one pixel of disparity. Can only be set before streaming starts. */
     RS_OPTION_R200_DISPARITY_SHIFT                            = 43, /**< {0 - 512}. Can only be set before streaming starts. */
-    RS_OPTION_R200_AUTO_EXPOSURE_MEAN_INTENSITY_SET_POINT     = 44, 
-    RS_OPTION_R200_AUTO_EXPOSURE_BRIGHT_RATIO_SET_POINT       = 45, 
-    RS_OPTION_R200_AUTO_EXPOSURE_KP_GAIN                      = 46, 
-    RS_OPTION_R200_AUTO_EXPOSURE_KP_EXPOSURE                  = 47, 
-    RS_OPTION_R200_AUTO_EXPOSURE_KP_DARK_THRESHOLD            = 48, 
-    RS_OPTION_R200_AUTO_EXPOSURE_TOP_EDGE                     = 49, 
-    RS_OPTION_R200_AUTO_EXPOSURE_BOTTOM_EDGE                  = 50, 
-    RS_OPTION_R200_AUTO_EXPOSURE_LEFT_EDGE                    = 51, 
-    RS_OPTION_R200_AUTO_EXPOSURE_RIGHT_EDGE                   = 52, 
-    RS_OPTION_R200_DEPTH_CONTROL_ESTIMATE_MEDIAN_DECREMENT    = 53, 
-    RS_OPTION_R200_DEPTH_CONTROL_ESTIMATE_MEDIAN_INCREMENT    = 54, 
-    RS_OPTION_R200_DEPTH_CONTROL_MEDIAN_THRESHOLD             = 55, 
-    RS_OPTION_R200_DEPTH_CONTROL_SCORE_MINIMUM_THRESHOLD      = 56, 
-    RS_OPTION_R200_DEPTH_CONTROL_SCORE_MAXIMUM_THRESHOLD      = 57, 
-    RS_OPTION_R200_DEPTH_CONTROL_TEXTURE_COUNT_THRESHOLD      = 58, 
-    RS_OPTION_R200_DEPTH_CONTROL_TEXTURE_DIFFERENCE_THRESHOLD = 59, 
-    RS_OPTION_R200_DEPTH_CONTROL_SECOND_PEAK_THRESHOLD        = 60, 
-    RS_OPTION_R200_DEPTH_CONTROL_NEIGHBOR_THRESHOLD           = 61, 
+    RS_OPTION_R200_AUTO_EXPOSURE_MEAN_INTENSITY_SET_POINT     = 44,
+    RS_OPTION_R200_AUTO_EXPOSURE_BRIGHT_RATIO_SET_POINT       = 45,
+    RS_OPTION_R200_AUTO_EXPOSURE_KP_GAIN                      = 46,
+    RS_OPTION_R200_AUTO_EXPOSURE_KP_EXPOSURE                  = 47,
+    RS_OPTION_R200_AUTO_EXPOSURE_KP_DARK_THRESHOLD            = 48,
+    RS_OPTION_R200_AUTO_EXPOSURE_TOP_EDGE                     = 49,
+    RS_OPTION_R200_AUTO_EXPOSURE_BOTTOM_EDGE                  = 50,
+    RS_OPTION_R200_AUTO_EXPOSURE_LEFT_EDGE                    = 51,
+    RS_OPTION_R200_AUTO_EXPOSURE_RIGHT_EDGE                   = 52,
+    RS_OPTION_R200_DEPTH_CONTROL_ESTIMATE_MEDIAN_DECREMENT    = 53,
+    RS_OPTION_R200_DEPTH_CONTROL_ESTIMATE_MEDIAN_INCREMENT    = 54,
+    RS_OPTION_R200_DEPTH_CONTROL_MEDIAN_THRESHOLD             = 55,
+    RS_OPTION_R200_DEPTH_CONTROL_SCORE_MINIMUM_THRESHOLD      = 56,
+    RS_OPTION_R200_DEPTH_CONTROL_SCORE_MAXIMUM_THRESHOLD      = 57,
+    RS_OPTION_R200_DEPTH_CONTROL_TEXTURE_COUNT_THRESHOLD      = 58,
+    RS_OPTION_R200_DEPTH_CONTROL_TEXTURE_DIFFERENCE_THRESHOLD = 59,
+    RS_OPTION_R200_DEPTH_CONTROL_SECOND_PEAK_THRESHOLD        = 60,
+    RS_OPTION_R200_DEPTH_CONTROL_NEIGHBOR_THRESHOLD           = 61,
     RS_OPTION_R200_DEPTH_CONTROL_LR_THRESHOLD                 = 62,
-    RS_OPTION_FISHEYE_COLOR_EXPOSURE                          = 63,
-    RS_OPTION_FISHEYE_COLOR_GAIN                              = 64,
-    RS_OPTION_FISHEYE_STROBE                                  = 65,
-    RS_OPTION_FISHEYE_EXT_TRIG                                = 66,
-    RS_OPTION_COUNT                                           = 67,
+    RS_OPTION_R200_GYRO_BANDWIDTH                             = 63,
+    RS_OPTION_R200_GYRO_RANGE                                 = 64,
+    RS_OPTION_R200_ACCELEROMETER_BANDWIDTH                    = 65,
+    RS_OPTION_R200_ACCELEROMETER_RANGE                        = 66,
+    RS_OPTION_R200_MOTION_MODULE_TIME_SEED                    = 67,
+    RS_OPTION_R200_MOTION_MODULE_ACTIVE                       = 68,
+    RS_OPTION_FISHEYE_COLOR_EXPOSURE                          = 69,
+    RS_OPTION_FISHEYE_COLOR_GAIN                              = 70,
+    RS_OPTION_FISHEYE_STROBE                                  = 71,
+    RS_OPTION_FISHEYE_EXT_TRIG                                = 72,
+    RS_OPTION_COUNT                                           = 73,
     RS_OPTION_MAX_ENUM = 0x7FFFFFFF
 } rs_option;
 
@@ -219,7 +225,6 @@ typedef struct rs_motion_data
     unsigned int        is_valid;   /* boolean */
     float               axes[3];    /* Three [x,y,z] axes; 16 bit data for Gyro, 12 bit for Accelerometer; 2's complement*/
 } rs_motion_data;
-
 
 
 typedef struct rs_context rs_context;
@@ -384,59 +389,79 @@ int rs_get_stream_framerate(const rs_device * device, rs_stream stream, rs_error
 void rs_get_stream_intrinsics(const rs_device * device, rs_stream stream, rs_intrinsics * intrin, rs_error ** error);
 
 /**
- * enable motion events
- */
-void rs_enable_events(rs_device * device, rs_error ** error);
-
-/**
- * disable motion events
- */
-void rs_disable_events(rs_device * device, rs_error ** error);
-
-/**
-* start data acquisition from motion module
+* Enable and configure motion-tracking data handlers 
+* \param[in] on_motion_event    user-defined routine to be invoked when a motion data arrives
+* \param[in] motion_handler     a user data point to be passed to the motion event callback
+* \param[in] on_timestamp_event user-defined routine to be invoked on timestamp
+* \param[in] timestamp_handler  a user data point to be passed to the motion event callback
+* \param[out] error             if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 */
-void rs_start_events(rs_device * device, rs_error ** error);
+void rs_enable_motion_tracking(rs_device * device,
+    void(*on_motion_event)(rs_device * , rs_motion_data, void * ), void * motion_handler,
+    void(*on_timestamp_event)(rs_device * , rs_timestamp_data, void * ), void * timestamp_handler,
+    rs_error ** error);
 
 /**
-* stop data acquisition
+* disable motion-tracking handlers
 */
-void rs_stop_events(rs_device * device, rs_error ** error);
+void rs_disable_motion_tracking(rs_device * device, rs_error ** error);
+
+///**
+// * enable motion events
+// */
+//void rs_enable_events(rs_device * device, rs_error ** error);
+//
+///**
+// * disable motion events
+// */
+//void rs_disable_events(rs_device * device, rs_error ** error);
+//
+///**
+//* start data acquisition from motion module
+//*/
+//void rs_start_events(rs_device * device, rs_error ** error);
+//
+///**
+//* stop data acquisition
+//*/
+//void rs_stop_events(rs_device * device, rs_error ** error);
 
 /**
 * check if data acquisition is active
 */
-int rs_events_active(rs_device * device, rs_error ** error);
+int rs_is_motion_tracking_active(rs_device * device, rs_error ** error);
 
-/**
-* set up a event callback that will be called immediately when hw event is available, with no synchronization logic applied
-* \param[in] stream    the stream for whose images the callback should be registered
-* \param[in] on_event  the callback which will receive the event data and handle it
-* \param[in] user      a user data point to be passed to the callback
-* \param[out] error    if non-null, receives any error that occurs during this call, otherwise, errors are ignored
-*/
-void rs_set_motion_callback(rs_device * device, void(*on_event)(rs_device *, rs_motion_data, void *), void * user, rs_error ** error);
-
-/**
-* set up a event callback that will be called immediately when hw event is available, with no synchronization logic applied
-* \param[in] stream    the stream for whose images the callback should be registered
-* \param[in] on_event  the callback which will receive the event data and handle it
-* \param[in] user      a user data point to be passed to the callback
-* \param[out] error    if non-null, receives any error that occurs during this call, otherwise, errors are ignored
-*/
-void rs_set_timestamp_callback(rs_device * device, void(*on_event)(rs_device * dev, rs_timestamp_data, void * user), void * user, rs_error ** error);
+///**
+//* set up a event callback that will be called immediately when hw event is available, with no synchronization logic applied
+//* \param[in] stream    the stream for whose images the callback should be registered
+//* \param[in] on_event  the callback which will receive the event data and handle it
+//* \param[in] user      a user data point to be passed to the callback
+//* \param[out] error    if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+//*/
+//void rs_set_motion_callback(rs_device * device, void(*on_event)(rs_device *, rs_motion_data, void *), void * user, rs_error ** error);
+//
+///**
+//* set up a event callback that will be called immediately when hw event is available, with no synchronization logic applied
+//* \param[in] stream    the stream for whose images the callback should be registered
+//* \param[in] on_event  the callback which will receive the event data and handle it
+//* \param[in] user      a user data point to be passed to the callback
+//* \param[out] error    if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+//*/
+//void rs_set_timestamp_callback(rs_device * device, void(*on_event)(rs_device * dev, rs_timestamp_data, void * user), void * user, rs_error ** error);
 
 /**
  * begin streaming on all enabled streams for this device
+ * \param[in] source  the data source to be activated
  * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
  */
-void rs_start_device(rs_device * device, rs_error ** error);
+void rs_start_device(rs_device * device, rs_source source, rs_error ** error);
 
 /**
- * end streaming on all streams for this device
+ * end data acquisition for the specified source providers
+ * \param[in] source  the data source to be terminated
  * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
  */
-void rs_stop_device(rs_device * device, rs_error ** error);
+void rs_stop_device(rs_device * device, rs_source source, rs_error ** error);
 
 /**
  * determine if the device is currently streaming

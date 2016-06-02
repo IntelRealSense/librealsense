@@ -53,6 +53,7 @@ namespace rsimpl
 
         bulk_transfer(device, handle_id, IVCAM_MONITOR_ENDPOINT_OUT, out, (int)outSize, &outXfer, 1000); // timeout in ms
 
+        std::this_thread::sleep_for(std::chrono::milliseconds(20));
         // read
         if (in && inSize)
         {

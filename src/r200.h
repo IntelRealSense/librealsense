@@ -22,7 +22,8 @@ namespace rsimpl
         void on_update_disparity_multiplier(double multiplier);
         uint32_t get_lr_framerate() const;
 
-        motion_module_control motion_module_ctrl;
+		motion_module::motion_module_control	motion_module_ctrl;
+		motion_module::mm_config				motion_module_configuration;
         
     public:
         r200_camera(std::shared_ptr<uvc::device> device, const static_device_info & info);
@@ -33,11 +34,11 @@ namespace rsimpl
         void set_options(const rs_option options[], int count, const double values[]) override;
         void get_options(const rs_option options[], int count, double values[]) override;
 
-        void start_events() override;
-        void stop_events() override;
+        void start_motion_tracking() override;
+        void stop_motion_tracking() override;
 
-        void start() override;
-        void stop() override;
+        void start(rs_source source) override;
+        void stop(rs_source source) override;
 
         void toggle_motion_module_power(bool bOn);
         void toggle_motion_module_events(bool bOn);

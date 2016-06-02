@@ -10,6 +10,7 @@
 #include <iostream>
 
 using namespace rsimpl;
+using namespace rsimpl::motion_module;
 
 rs_device::rs_device(std::shared_ptr<rsimpl::uvc::device> device, const rsimpl::static_device_info & info) : device(device), config(info), capturing(false), data_acquisition_active(false),
     depth(config, RS_STREAM_DEPTH), color(config, RS_STREAM_COLOR), infrared(config, RS_STREAM_INFRARED), infrared2(config, RS_STREAM_INFRARED2), fisheye(config, RS_STREAM_FISHEYE),
@@ -68,27 +69,26 @@ void rs_device::disable_stream(rs_stream stream)
     for(auto & s : native_streams) s->archive.reset(); // Changing stream configuration invalidates the current stream info
 }
 
-void rs_device::enable_events()
+void rs_device::enable_motion_tracking()
 {
-    if (data_acquisition_active) throw std::runtime_error("events cannot be reconfigured after having called rs_start_device()");
+    if (data_acquisition_active) throw std::runtime_error("motion-tracking cannot be reconfigured after having called rs_start_device()");
 
     config.data_requests.enabled = true;
-
 }
 
-void rs_device::disable_events()
+void rs_device::disable_motion_tracking()
 {
-    if (data_acquisition_active) throw std::runtime_error("events cannot be reconfigured after having called rs_start_device()");
+    if (data_acquisition_active) throw std::runtime_error("motion-tracking disabled after having called rs_start_device()");
 
     config.data_requests.enabled = false;
 }
 
-void rs_device::start_events()
+void rs_device::start_motion_tracking()
 {
     if (data_acquisition_active) throw std::runtime_error("cannot restart data acquisition without stopping first");
 
-    std::vector<motion_events_callback> mo_callbacks = config.motion_callbacks;
-    std::vector<timestamp_events_callback> ts_callbacks = config.timestamp_callbacks;
+    motion_events_callback  mo_callback = config.motion_callback;
+    timestamp_events_callback   ts_callback = config.timestamp_callback;
 
     motion_module_parser parser;
 
@@ -97,31 +97,23 @@ void rs_device::start_events()
     {
         // TODO -replace hard-coded value 3 which stands for fisheye subdevice   
         set_subdevice_data_channel_handler(*device, 3,
-            [mo_callbacks, ts_callbacks, parser](const unsigned char * data, const int size) mutable
+            [mo_callback, ts_callback, parser](const unsigned char * data, const int size) mutable
         {
             // Parse motion data
             auto events = parser(data, size);
 
             // Handle events by user-provided handlers
             for (auto & entry : events)
-            {		
-				// Handle Motion data packets
-				for (int i = 0; i < entry.imu_entries_num; i++)
-				{
-					for (auto & cb : mo_callbacks)
-					{
-						cb(entry.imu_packets[i]);
-					}
-				}
-
-				// Handle Timestamp packets
-				for (int i = 0; i < entry.non_imu_entries_num; i++)
-				{
-					for (auto & cb : ts_callbacks)
-					{
-						cb(entry.non_imu_packets[i]);
-					}
-				}
+            {       
+                // Handle Motion data packets
+                if (mo_callback)
+                    for (int i = 0; i < entry.imu_entries_num; i++)
+                        mo_callback(entry.imu_packets[i]);
+                
+                // Handle Timestamp packets
+                if (ts_callback)
+                    for (int i = 0; i < entry.non_imu_entries_num; i++)
+                        ts_callback(entry.non_imu_packets[i]);
             }
         });
     }
@@ -130,25 +122,47 @@ void rs_device::start_events()
     data_acquisition_active = true;
 }
 
-void rs_device::stop_events()
+void rs_device::stop_motion_tracking()
 {
     if (!data_acquisition_active) throw std::runtime_error("cannot stop data acquisition - is already stopped");
     stop_data_acquisition(*device);
-    data_acquisition_active = false; // todo
+    data_acquisition_active = false;
 }
 
 void rs_device::set_motion_callback(void(*on_event)(rs_device * device, rs_motion_data data, void * user), void * user)
 {
-    config.motion_callbacks.push_back({ this, on_event, user });
+    if (data_acquisition_active) throw std::runtime_error("cannot set motion callback when motion data is active");
+    
+    // replace previous, if needed
+    config.motion_callback = {this, on_event, user};
 }
 
 void rs_device::set_timestamp_callback(void(*on_event)(rs_device * device, rs_timestamp_data data, void * user), void * user)
 {
-    config.timestamp_callbacks.push_back({ this, on_event, user });
+    if (data_acquisition_active) throw std::runtime_error("cannot set timestamp callback when motion data is active");
+
+    config.timestamp_callback = {this, on_event, user};
 }
 
+void rs_device::start(rs_source source)
+{
+    if (source & rs_source::RS_SOURCE_VIDEO)
+        start_video_streaming();
 
-void rs_device::start()
+    if (source & rs_source::RS_SOURCE_MOTION_TRACKING)
+        start_motion_tracking();
+}
+
+void rs_device::stop(rs_source source)
+{
+    if (source & rs_source::RS_SOURCE_VIDEO)
+        stop_video_streaming();
+
+    if (source & rs_source::RS_SOURCE_MOTION_TRACKING)
+        stop_motion_tracking();
+}
+
+void rs_device::start_video_streaming()
 {
     if(capturing) throw std::runtime_error("cannot restart device without first stopping device");
         
@@ -178,7 +192,7 @@ void rs_device::start()
 
             // Determine the timestamp for this frame
             int timestamp = timestamp_reader->get_frame_timestamp(mode_selection.mode, frame);
-			int frameCounter = timestamp_reader->get_frame_counter(mode_selection.mode, frame);
+            int frameCounter = timestamp_reader->get_frame_counter(mode_selection.mode, frame);
 
             // Obtain buffers for unpacking the frame
             std::vector<byte *> dest;
@@ -197,7 +211,7 @@ void rs_device::start()
     capturing = true;
 }
 
-void rs_device::stop()
+void rs_device::stop_video_streaming()
 {
     if(!capturing) throw std::runtime_error("cannot stop device without first starting device");
     stop_streaming(*device);
@@ -257,4 +271,3 @@ void rs_device::get_option_range(rs_option option, double & min, double & max, d
 
     throw std::logic_error("range not specified");
 }
-

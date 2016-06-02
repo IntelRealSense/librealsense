@@ -12,7 +12,7 @@ rs_context::rs_context() : rs_context(0)
     context = rsimpl::uvc::create_context();    
 
     // DS4.1 bringup path- adapter board initialization. Will be removed in post Alpha stage
-    rsimpl::uvc::power_on_adapter_board();
+    //rsimpl::uvc::power_on_adapter_board();
 
     for(auto device : query_devices(context))
     {

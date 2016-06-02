@@ -170,7 +170,7 @@ rs::motion_callback motion_callback([](rs::motion_data entry)   // TODO rs_motio
 
 rs::timestamp_callback timestamp_callback([](rs::timestamp_data entry)   // TODO rs_motion event wrapper
 {
-    std::cout << "Timestamp event arrived, timestamp: " << entry.timestamp << std::endl;
+    //std::cout << "Timestamp event arrived, timestamp: " << entry.timestamp << std::endl;  TODO
 });
 
 
@@ -222,11 +222,14 @@ int main(int argc, char * argv[]) try
 
     if (has_motion_module)
     {
-        if (dev->supports(rs::capabilities::motion_events))
-           dev->enable_events();
+        if (supports_motion_events)
+        {
+            dev->enable_motion_tracking(motion_callback, timestamp_callback);
+            /*dev->enable_events();
 
-        dev->set_motion_callback(motion_callback);
-        dev->set_timestamp_callback(timestamp_callback);
+            dev->set_motion_callback(motion_callback);
+            dev->set_timestamp_callback(timestamp_callback);*/
+        }
 
         glfwSetWindowSize(win, 1100, 960);
     }
@@ -270,7 +273,7 @@ int main(int argc, char * argv[]) try
                 dev->stop();
 
                 if (has_motion_module)
-                    dev->stop(rs::source::events);
+                    dev->stop(rs::source::motion_data);
             }
         }
         else
@@ -280,7 +283,7 @@ int main(int argc, char * argv[]) try
                 dev->start();
 
                 if (has_motion_module)
-                    dev->start(rs::source::events);
+                    dev->start(rs::source::motion_data);
             }
         }
         y += 34;

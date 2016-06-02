@@ -234,26 +234,26 @@ namespace rsimpl
     };
 
     class timestamp_events_callback
-	{
-		void(*on_event)(rs_device * dev, rs_timestamp_data data, void * user);
-		void        * user;
-		rs_device   * device;
-	public:
+    {
+        void(*on_event)(rs_device * dev, rs_timestamp_data data, void * user);
+        void        * user;
+        rs_device   * device;
+    public:
         timestamp_events_callback() : timestamp_events_callback(nullptr, nullptr, nullptr) {}
         timestamp_events_callback(rs_device * dev, void(*on_event)(rs_device *, rs_timestamp_data, void *), void * user) : on_event(on_event), user(user), device(dev) {}
 
-		operator bool() { return on_event != nullptr; }
-		void operator () (rs_timestamp_data data) const { if (on_event) on_event(device, data, user); }
-	};
+        operator bool() { return on_event != nullptr; }
+        void operator () (rs_timestamp_data data) const { if (on_event) on_event(device, data, user); }
+    };
 
     struct device_config
     {
-        const static_device_info info;
-        stream_request          requests[RS_STREAM_NATIVE_COUNT];	// Modified by enable/disable_stream calls
-        data_polling_request    data_requests;                      // Modified by enable/disable_events calls
-        std::vector<motion_events_callback> motion_callbacks;            // Modified by set_events_callback calls
-        std::vector<timestamp_events_callback> timestamp_callbacks;
-        float depth_scale;														// Scale of depth values
+        const static_device_info    info;
+        stream_request              requests[RS_STREAM_NATIVE_COUNT];   // Modified by enable/disable_stream calls
+        data_polling_request        data_requests;                      // Modified by enable/disable_events calls
+        motion_events_callback      motion_callback;                   // Modified by set_events_callback calls
+        timestamp_events_callback   timestamp_callback;
+        float depth_scale;                                              // Scale of depth values
 
         device_config(const rsimpl::static_device_info & info) : info(info), depth_scale(info.nominal_depth_scale) 
         { 

@@ -73,6 +73,7 @@ namespace rs
         inverse_brown_conrady  = 2  ///< Equivalent to Brown-Conrady distortion, except undistorts image instead of distorting it
     };
 
+    // reflection of rs_option
     enum class option : int32_t
     {
         color_backlight_compensation                    = 0,  
@@ -138,10 +139,24 @@ namespace rs
         r200_depth_control_second_peak_threshold        = 60, 
         r200_depth_control_neighbor_threshold           = 61, 
         r200_depth_control_lr_threshold                 = 62,
-        r200_fisheye_color_exposure                     = 63,
-        r200_fisheye_color_gain                         = 64,
-        r200_fisheye_strobe                             = 65,
-        r200_fisheye_ext_trig                           = 66
+        r200_gyroscope_bandwidth                        = 63,
+        r200_gyroscope_range                            = 64,
+        r200_accelerometer_bandwidth                    = 65,
+        r200_accelerometer_range                        = 66,
+        r200_motion_module_time_seed                    = 67,       
+        r200_motion_module_active                       = 68,
+        r200_fisheye_color_exposure                     = 69,
+        r200_fisheye_color_gain                         = 70,
+        r200_fisheye_strobe                             = 71,
+        r200_fisheye_ext_trig                           = 72
+    };
+
+    enum class source : uint8_t
+    {
+        undefined_source= 0,
+        video           = 1,
+        motion_data     = 2,
+        all_sources
     };
 
     struct float2 { float x,y; };
@@ -173,13 +188,7 @@ namespace rs
         bool        is_identity() const                                                 { return rotation[0] == 1 && rotation[4] == 1 && translation[0] == 0 && translation[1] == 0 && translation[2] == 0; }
         float3      transform(const float3 & point) const                               { float3 p; rs_transform_point_to_point(&p.x, this, &point.x); return p; }
 
-    };
-
-    enum source
-    {
-        video = 0,
-        events
-    };
+    };   
 
     struct timestamp_data : rs_timestamp_data
     {
@@ -244,45 +253,45 @@ namespace rs
             error::handle(e);
             return (device *)r;
         }
-    };	
+    };  
 
     class motion_callback_base
-	{
-	public:
+    {
+    public:
         virtual void on_event(motion_data e) = 0;
         virtual ~motion_callback_base() {}
-	};
+    };
 
     class motion_callback : public motion_callback_base
-	{
+    {
         std::function<void(motion_data)> on_event_function;
-	public:
+    public:
         explicit motion_callback(std::function<void(motion_data)> on_event) : on_event_function(on_event) {}
 
         void on_event(motion_data e) override
-		{
-			on_event_function(std::move(e));
-		}
-	};
-	
+        {
+            on_event_function(std::move(e));
+        }
+    };
+    
     class timestamp_callback_base
-	{
-	public:
+    {
+    public:
         virtual void on_event(timestamp_data data) = 0;
         virtual ~timestamp_callback_base() {}
-	};
+    };
 
     class timestamp_callback : public timestamp_callback_base
-	{
+    {
         std::function<void(timestamp_data)> on_event_function;
-	public:
+    public:
         explicit timestamp_callback(std::function<void(timestamp_data)> on_event) : on_event_function(on_event) {}
 
         void on_event(timestamp_data data) override
-		{
-			on_event_function(std::move(data));
-		}
-	};
+        {
+            on_event_function(std::move(data));
+        }
+    };
 
     class device
     {
@@ -479,7 +488,7 @@ namespace rs
             return intrin;
         }
 
-        /// notify backend to querry hw event on play
+       /* /// notify backend to querry hw event on play
         void enable_events()
         {
             rs_error * e = nullptr;
@@ -493,16 +502,43 @@ namespace rs
             rs_error * e = nullptr;
             rs_disable_events((rs_device *)this, &e);
             error::handle(e);
-        }        
+        }*/
 
-        /// check if data acquisition is active        
-        int events_active()
+        /// Configure backend to acquire and handle motion-tracking data
+        void enable_motion_tracking(motion_callback_base& motion_handler, timestamp_callback_base& timestamp_handler)
         {
-            rs_error * e = nullptr;
-            return rs_events_active((rs_device *)this,&e);
+            rs_error * e = nullptr;            
+
+            rs_enable_motion_tracking((rs_device *)this, 
+                [](rs_device * device, rs_motion_data mo_data, void * user) { try {
+                    auto listener = (motion_callback_base *)user;
+                    listener->on_event((rs::motion_data)mo_data);
+                } catch (...) {} }, &motion_handler,
+                [](rs_device * device, rs_timestamp_data ts_data, void * user) { try {
+                    auto listener = (timestamp_callback_base *)user;
+                    listener->on_event((rs::timestamp_data)ts_data);
+                } catch (...) {} }, &timestamp_handler, &e);
+
             error::handle(e);
         }
 
+        /// disable events polling
+        void disable_motion_tracking(void)
+        {
+            rs_error * e = nullptr;
+            rs_disable_motion_tracking((rs_device *)this, &e);
+            error::handle(e);
+        }          
+
+        /// check if data acquisition is active        
+        int is_motion_tracking_active()
+        {
+            rs_error * e = nullptr;
+            return rs_is_motion_tracking_active((rs_device *)this,&e);
+            error::handle(e);
+        }
+
+       /* /// check if data acquisition is active        
         void set_motion_callback(motion_callback_base& on_event)
         {
             rs_error * e = nullptr;
@@ -521,32 +557,29 @@ namespace rs
         }
 
         void set_timestamp_callback(timestamp_callback_base& on_event)
-		{
-			rs_error * e = nullptr;
+        {
+            rs_error * e = nullptr;
             rs_set_timestamp_callback((rs_device *)this, [](rs_device * device, rs_timestamp_data ts_data, void * user) {
-				try
-				{
+                try
+                {
                     auto listener = (timestamp_callback_base *)user;
                     listener->on_event((rs::timestamp_data)ts_data);
-				}
-				catch (...)
-				{
+                }
+                catch (...)
+                {
 
-				}
-			}, &on_event, &e);
-			error::handle(e);
-		}
-				
+                }
+            }, &on_event, &e);
+            error::handle(e);
+        }*/
+                
 
         /// begin streaming on all enabled streams for this device
         ///
         void start(rs::source source = rs::source::video)
         {            
             rs_error * e = nullptr;
-            if (events==source)
-                rs_start_events((rs_device *)this, &e);
-            else
-                rs_start_device((rs_device *)this, &e);
+            rs_start_device((rs_device *)this, (rs_source)source, &e);
             error::handle(e);
         }
 
@@ -555,10 +588,7 @@ namespace rs
         void stop(rs::source source = rs::source::video)
         {
             rs_error * e = nullptr;
-            if (events==source)
-                rs_stop_events((rs_device *)this, &e);
-            else
-                rs_stop_device((rs_device *)this, &e);
+            rs_stop_device((rs_device *)this, (rs_source)source, &e);
             error::handle(e);
         }
 
@@ -654,7 +684,7 @@ namespace rs
             rs_error * e = nullptr;
             auto r = rs_supports((rs_device *)this, (rs_capabilities)capability, &e);
             error::handle(e);
-            return r;
+            return (bool)r;
         }
 
         /// retrieve the time at which the latest frame on a stream was captured
@@ -668,16 +698,16 @@ namespace rs
             return r;
         }
 
-		/// retrieve the number of frame
-		/// \param[in] stream  the stream whose latest frame we are interested in
-		/// \return            the number of the frame, since the device was started
-		int get_frame_counter(stream stream) const
-		{
-			rs_error * e = nullptr;
-			auto r = rs_get_frame_counter((const rs_device *)this, (rs_stream)stream, &e);
-			error::handle(e);
-			return r;
-		}
+        /// retrieve the number of frame
+        /// \param[in] stream  the stream whose latest frame we are interested in
+        /// \return            the number of the frame, since the device was started
+        int get_frame_counter(stream stream) const
+        {
+            rs_error * e = nullptr;
+            auto r = rs_get_frame_counter((const rs_device *)this, (rs_stream)stream, &e);
+            error::handle(e);
+            return r;
+        }
 
         /// retrieve the contents of the latest frame on a stream
         /// \param[in] stream  the stream whose latest frame we are interested in
