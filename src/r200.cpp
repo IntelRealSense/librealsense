@@ -316,11 +316,11 @@ namespace rsimpl
         auto c = r200::read_camera_info(*device);        
         info.subdevice_modes.push_back({ 2, { 1920, 1080 }, pf_rw16, 30, c.intrinsicsThird[0], { c.modesThird[0][0] }, { 0 } });
 
-        // Acquire Device handle for Motion Module API
-        r200::claim_motion_module_interface(*device);
-
         if (uvc::is_device_connected(*device, PID_INTEL_CAMERA, FISHEYE_PRODUCT_ID))
         {
+            // Acquire Device handle for Motion Module API
+            r200::claim_motion_module_interface(*device);
+
             info.capabilities_vector.push_back(RS_CAPABILITIES_FISH_EYE);
             info.capabilities_vector.push_back(RS_CAPABILITIES_MOTION_EVENTS);
 

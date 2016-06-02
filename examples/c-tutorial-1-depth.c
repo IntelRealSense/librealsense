@@ -76,7 +76,6 @@ int main()
         const uint16_t * depth_frame = (const uint16_t *)(rs_get_frame_data(dev, RS_STREAM_DEPTH, &e));
 
         /* Print a simple text-based representation of the image, by breaking it into 10x20 pixel regions and and approximating the coverage of pixels within one meter */
-        
         char * out = buffer;
         int coverage[255] = {0}, x,y,i; //The buffer will suffice up to 255*10  pixels width
         for(y=0; y<height; ++y)
@@ -98,7 +97,6 @@ int main()
             }
         }
         *out++ = 0;
-        system("clear");
         printf("\n%s", buffer);
     }
     

@@ -30,7 +30,7 @@ rs::motion_callback motion_callback([](rs::motion_data entry)
 // ... and the timestamp packets (DS4.1/FishEye Frame, GPIOS...)
 rs::timestamp_callback timestamp_callback([](rs::timestamp_data entry)
 {
-    std::cout << "Timestamp arrived, timestamp: " << entry.timestamp << std::endl;
+    std::cout << "Timestamp arrived, timestamp: " << entry.timestamp << "\r";
 });
 
 
@@ -39,7 +39,7 @@ int main() try
     // Create a context object. This object owns the handles to all connected realsense devices.
     rs::context ctx;
 
-    std::cout << "There are "<< ctx.get_device_count() << " connected RealSense devices.\n";
+    std::cout << "There are " << ctx.get_device_count() << " connected RealSense devices.\n";
 
     if (ctx.get_device_count() == 0) return EXIT_FAILURE;
 
@@ -52,46 +52,55 @@ int main() try
     // Motion Module configurable options
     std::vector<rs::option> mm_cfg_list = { rs::option::r200_gyroscope_bandwidth,       rs::option::r200_gyroscope_range,
                                             rs::option::r200_accelerometer_bandwidth,   rs::option::r200_accelerometer_range };
-                                        // gyro_bw      gyro_range  accel_bw    accel_range
-    std::vector<double> mm_cfg_params = {       1,          1,          1,          1 };    // TODO expose as opaque gyro/accel parameters
+    // gyro_bw      gyro_range  accel_bw    accel_range
+    std::vector<double> mm_cfg_params = { 1,          1,          1,          1 };    // TODO expose as opaque gyro/accel parameters
     assert(mm_cfg_list.size() == mm_cfg_params.size());
-    
+
     // 1. Make motion-tracking available
     if (dev->supports(rs::capabilities::motion_events))
     {
-        dev->enable_motion_tracking(motion_callback, timestamp_callback);            
-    }
+        dev->enable_motion_tracking(motion_callback, timestamp_callback);
 
-    // 2. Optional - configure motion module
-    //dev->set_options(mm_cfg_list.data(), mm_cfg_list.size(), mm_cfg_params.data());
-    
-    std::cout << "Motion module is " << (dev->get_option(rs::option::r200_motion_module_active) ? " active" : " idle") << std::endl;
 
-    // 3. Start generating motion-tracking data
-    dev->start(rs::source::motion_data);
+        // 2. Optional - configure motion module
+        //dev->set_options(mm_cfg_list.data(), mm_cfg_list.size(), mm_cfg_params.data());
 
-    for (int i = 0; i < 1000; i++)
-    {       
+        // Optional - query Motion module state
         std::cout << "Motion module is " << (dev->get_option(rs::option::r200_motion_module_active) ? " active" : " idle") << std::endl;
-        std::this_thread::sleep_for(std::chrono::milliseconds(300));
+
+        // 3. Start generating motion-tracking data
+        dev->start(rs::source::motion_data);
+
+        for (int i = 0; i < 100; i++)
+        {
+            std::cout << "Waiting for motion-tracking data" << std::endl;
+            std::this_thread::sleep_for(std::chrono::milliseconds(300));
+        }
+
+        // 4. stop data acquisition
+        dev->stop(rs::source::motion_data);
+
+        // 5. reset previous settings formotion data handlers
+        dev->disable_motion_tracking();
+
+    }
+    else
+    {
+        std::cout << "The device does not support motion-tracking capability" << std::endl;
     }
 
-    // 4. stop data acquisition
-    dev->stop(rs::source::motion_data);
-
-    // 5. reset previous settings formotion data handlers
-    dev->disable_motion_tracking();
+    std::cout << "Demo concluded" << std::endl;
 
     return EXIT_SUCCESS;
 }
-catch(const rs::error & e)
+catch (const rs::error & e)
 {
     // Method calls against librealsense objects may throw exceptions of type rs::error
     printf("rs::error was thrown when calling %s(%s):\n", e.get_failed_function().c_str(), e.get_failed_args().c_str());
     printf("    %s\n", e.what());
     return EXIT_FAILURE;
 }
-catch(...)
+catch (...)
 {
     printf("Unhandled excepton occured'n");
 }
