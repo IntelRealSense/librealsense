@@ -171,10 +171,9 @@ namespace rsimpl
         #define CASE(X) case RS_SOURCE_##X: return #X;
         switch(value)
         {
-		CASE(UNDEFINED)
         CASE(VIDEO)
         CASE(MOTION_TRACKING)
-		CASE(ALL)
+        CASE(ALL)
         default: assert(!is_valid(value)); return nullptr;
         }
         #undef CASE

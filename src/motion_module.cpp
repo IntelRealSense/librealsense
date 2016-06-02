@@ -100,14 +100,14 @@ void motion_module_control::enter_state(mm_state new_state)
 
 void motion_module_control::set_control(mm_request request, bool on)
 {
-    CX3_GrossTete_MonitorCommand cmd_opcode;
+    adaptor_board_command cmd_opcode;
     switch (request)
     {
     case mm_video_output:
-        cmd_opcode = CX3_GrossTete_MonitorCommand::MMPWR;
+        cmd_opcode = adaptor_board_command::MMPWR;
         break;
     case mm_events_output:
-        cmd_opcode = CX3_GrossTete_MonitorCommand::MM_ACTIVATE;
+        cmd_opcode = adaptor_board_command::MM_ACTIVATE;
         break;
     default:
         throw std::logic_error(to_string() << " unsupported control requested :" << (int)request << " valid range is [1,2]");
@@ -176,10 +176,6 @@ std::vector<motion_event> motion_module_parser::operator() (const unsigned char*
             memcpy(&event_data.imu_entries_num, &cur_packet[4], sizeof(unsigned short));
             memcpy(&event_data.non_imu_entries_num, &cur_packet[6], sizeof(unsigned short));
 
-            //std::cout << "New motion_packet arrived, imu_entries: " << event_data.imu_entries_num
-            //             << ", non-imu_entries: " << event_data.non_imu_entries_num
-            //          << std::endl;
-
             // Validate header input
             if ((event_data.imu_entries_num <= imu_data_entries) && (event_data.non_imu_entries_num <= non_imu_data_entries))
             {
@@ -247,4 +243,3 @@ rs_motion_data motion_module_parser::parse_motion(const unsigned char * data)
 
     return entry;
 }
-

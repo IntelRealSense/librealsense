@@ -25,7 +25,7 @@ EXPORTS
 	rs_get_stream_framerate
 	rs_get_stream_intrinsics
 
-	rs_supports		
+	rs_supports
 	rs_enable_motion_tracking
 	rs_disable_motion_tracking
 	rs_is_motion_tracking_active

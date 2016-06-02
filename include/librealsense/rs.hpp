@@ -143,7 +143,7 @@ namespace rs
         r200_gyroscope_range                            = 64,
         r200_accelerometer_bandwidth                    = 65,
         r200_accelerometer_range                        = 66,
-        r200_motion_module_time_seed                    = 67,       
+        r200_motion_module_time_seed                    = 67,
         r200_motion_module_active                       = 68,
         r200_fisheye_color_exposure                     = 69,
         r200_fisheye_color_gain                         = 70,
@@ -153,7 +153,6 @@ namespace rs
 
     enum class source : uint8_t
     {
-        undefined_source= 0,
         video           = 1,
         motion_data     = 2,
         all_sources
@@ -488,22 +487,6 @@ namespace rs
             return intrin;
         }
 
-       /* /// notify backend to querry hw event on play
-        void enable_events()
-        {
-            rs_error * e = nullptr;
-            rs_enable_events((rs_device *)this, &e);
-            error::handle(e);
-        }
-
-        /// disable events polling
-        void disable_events()
-        {
-            rs_error * e = nullptr;
-            rs_disable_events((rs_device *)this, &e);
-            error::handle(e);
-        }*/
-
         /// Configure backend to acquire and handle motion-tracking data
         void enable_motion_tracking(motion_callback_base& motion_handler, timestamp_callback_base& timestamp_handler)
         {
@@ -538,41 +521,6 @@ namespace rs
             error::handle(e);
         }
 
-       /* /// check if data acquisition is active        
-        void set_motion_callback(motion_callback_base& on_event)
-        {
-            rs_error * e = nullptr;
-            rs_set_motion_callback((rs_device *)this, [](rs_device * device, rs_motion_data mo_data, void * user) {
-                try
-                {
-                    auto listener = (motion_callback_base *)user;
-                    listener->on_event((rs::motion_data)mo_data);
-                }
-                catch (...)
-                {
-
-                }
-            }, &on_event, &e);
-            error::handle(e);
-        }
-
-        void set_timestamp_callback(timestamp_callback_base& on_event)
-        {
-            rs_error * e = nullptr;
-            rs_set_timestamp_callback((rs_device *)this, [](rs_device * device, rs_timestamp_data ts_data, void * user) {
-                try
-                {
-                    auto listener = (timestamp_callback_base *)user;
-                    listener->on_event((rs::timestamp_data)ts_data);
-                }
-                catch (...)
-                {
-
-                }
-            }, &on_event, &e);
-            error::handle(e);
-        }*/
-                
 
         /// begin streaming on all enabled streams for this device
         ///

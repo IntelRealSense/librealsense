@@ -105,7 +105,7 @@ namespace rsimpl
             void set_control(mm_request request, bool on);
         };
 
-        enum CX3_GrossTete_MonitorCommand : uint32_t
+        enum adaptor_board_command : uint32_t
         {
             IRB         = 0x01,     // Read from i2c ( 8x8 )
             IWB         = 0x02,     // Write to i2c ( 8x8 )

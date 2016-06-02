@@ -70,10 +70,10 @@ typedef enum rs_preset
 } rs_preset;
 
 typedef enum rs_source
-{	
-    RS_SOURCE_VIDEO						= 1,
+{   
+    RS_SOURCE_VIDEO                     = 1,
     RS_SOURCE_MOTION_TRACKING           = 2,
-	RS_SOURCE_ALL						= 3,
+    RS_SOURCE_ALL                       = 3,
     RS_SOURCE_COUNT                     = 4,
     RS_SOURCE_MAX_ENUM = 0x7FFFFFFF
 } rs_source;
@@ -405,48 +405,11 @@ void rs_enable_motion_tracking(rs_device * device,
 */
 void rs_disable_motion_tracking(rs_device * device, rs_error ** error);
 
-///**
-// * enable motion events
-// */
-//void rs_enable_events(rs_device * device, rs_error ** error);
-//
-///**
-// * disable motion events
-// */
-//void rs_disable_events(rs_device * device, rs_error ** error);
-//
-///**
-//* start data acquisition from motion module
-//*/
-//void rs_start_events(rs_device * device, rs_error ** error);
-//
-///**
-//* stop data acquisition
-//*/
-//void rs_stop_events(rs_device * device, rs_error ** error);
-
 /**
 * check if data acquisition is active
 */
 int rs_is_motion_tracking_active(rs_device * device, rs_error ** error);
 
-///**
-//* set up a event callback that will be called immediately when hw event is available, with no synchronization logic applied
-//* \param[in] stream    the stream for whose images the callback should be registered
-//* \param[in] on_event  the callback which will receive the event data and handle it
-//* \param[in] user      a user data point to be passed to the callback
-//* \param[out] error    if non-null, receives any error that occurs during this call, otherwise, errors are ignored
-//*/
-//void rs_set_motion_callback(rs_device * device, void(*on_event)(rs_device *, rs_motion_data, void *), void * user, rs_error ** error);
-//
-///**
-//* set up a event callback that will be called immediately when hw event is available, with no synchronization logic applied
-//* \param[in] stream    the stream for whose images the callback should be registered
-//* \param[in] on_event  the callback which will receive the event data and handle it
-//* \param[in] user      a user data point to be passed to the callback
-//* \param[out] error    if non-null, receives any error that occurs during this call, otherwise, errors are ignored
-//*/
-//void rs_set_timestamp_callback(rs_device * device, void(*on_event)(rs_device * dev, rs_timestamp_data, void * user), void * user, rs_error ** error);
 
 /**
  * begin streaming on all enabled streams for this device

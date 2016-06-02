@@ -237,23 +237,6 @@ void rs_disable_motion_tracking(rs_device * device, rs_error ** error) try
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, device)
 
-//void rs_enable_events(rs_device * device, rs_error ** error) try
-//{
-//    VALIDATE_NOT_NULL(device);    
-//
-//    device->enable_motion_tracking();
-//}
-//HANDLE_EXCEPTIONS_AND_RETURN(, device)
-//
-//void rs_disable_events(rs_device * device, rs_error ** error) try
-//{
-//    VALIDATE_NOT_NULL(device);    
-//
-//    device->disable_motion_tracking();
-//}
-//HANDLE_EXCEPTIONS_AND_RETURN(, device)
-
-
 int rs_is_motion_tracking_active(rs_device * device, rs_error ** error) try
 {
     VALIDATE_NOT_NULL(device);  
@@ -261,22 +244,6 @@ int rs_is_motion_tracking_active(rs_device * device, rs_error ** error) try
     return device->is_motion_tracking_active();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, device)
-
-//void rs_set_motion_callback(rs_device * device, void(*on_event)(rs_device * dev, rs_motion_data data, void * user), void * user, rs_error ** error) try
-//{
-//    VALIDATE_NOT_NULL(device);  
-//    VALIDATE_NOT_NULL(on_event);
-//    device->set_motion_callback( on_event, user);
-//}
-//HANDLE_EXCEPTIONS_AND_RETURN(, device, on_event, user)
-//
-//void rs_set_timestamp_callback(rs_device * device, void(*on_event)(rs_device * dev, rs_timestamp_data data, void * user), void * user, rs_error ** error) try
-//{
-//    VALIDATE_NOT_NULL(device);  
-//    VALIDATE_NOT_NULL(on_event);
-//    device->set_timestamp_callback(on_event, user);
-//}
-//HANDLE_EXCEPTIONS_AND_RETURN(, device, on_event, user)
 
 void rs_start_device(rs_device * device, rs_source source, rs_error ** error) try
 {
@@ -353,8 +320,6 @@ const void * rs_get_frame_data(const rs_device * device, rs_stream stream, rs_er
     return device->get_stream_interface(stream).get_frame_data();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, device, stream)
-
-
 
 const char * rs_get_stream_name(rs_stream stream, rs_error ** error) try
 {
