@@ -13,7 +13,8 @@
 #define GLFW_INCLUDE_GLU
 #include <GLFW/glfw3.h>
 
-double yaw, pitch, lastX, lastY; int ml;
+double yaw, pitch, lastX, lastY;
+int ml;
 static void on_mouse_button(GLFWwindow * win, int button, int action, int mods)
 {
     if(button == GLFW_MOUSE_BUTTON_LEFT) ml = action == GLFW_PRESS;
@@ -34,7 +35,7 @@ int main() try
 {
     // Turn on logging. We can separately enable logging to console or to file, and use different severity filters for each.
     rs::log_to_console(rs::log_severity::warn);
-    //rs::log_to_file(rs::log_severity::debug, "librealsense.log");
+    // rs::log_to_file(rs::log_severity::debug, "librealsense.log");
 
     // Create a context object. This object owns the handles to all connected realsense devices.
     rs::context ctx;
@@ -78,23 +79,23 @@ int main() try
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         glMatrixMode(GL_PROJECTION);
         glLoadIdentity();
-        gluPerspective(60, (float)1280/960, 0.01f, 20.0f);
+        gluPerspective(60, (float)1280 / 960, 0.01f, 20.0f);
         glMatrixMode(GL_MODELVIEW);
         glLoadIdentity();
-        gluLookAt(0,0,0, 0,0,1, 0,-1,0);
-        glTranslatef(0,0,+0.5f);
+        gluLookAt(0, 0, 0, 0, 0, 1, 0, -1, 0);
+        glTranslatef(0, 0, +0.5f);
         glRotated(pitch, 1, 0, 0);
         glRotated(yaw, 0, 1, 0);
-        glTranslatef(0,0,-0.5f);
+        glTranslatef(0, 0, -0.5f);
 
         // We will render our depth data as a set of points in 3D space
         glPointSize(2);
         glEnable(GL_DEPTH_TEST);
         glBegin(GL_POINTS);
 
-        for(int dy=0; dy<depth_intrin.height; ++dy)
+        for(int dy = 0; dy < depth_intrin.height; ++dy)
         {
-            for(int dx=0; dx<depth_intrin.width; ++dx)
+            for(int dx = 0; dx < depth_intrin.width; ++dx)
             {
                 // Retrieve the 16-bit depth value and map it into a depth in meters
                 uint16_t depth_value = depth_image[dy * depth_intrin.width + dx];
@@ -128,7 +129,7 @@ int main() try
 
         glfwSwapBuffers(win);
     }
-    
+
     return EXIT_SUCCESS;
 }
 catch(const rs::error & e)

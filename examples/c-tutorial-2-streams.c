@@ -97,6 +97,6 @@ int main()
 
         glfwSwapBuffers(win);
     }
-    
+
     return EXIT_SUCCESS;
 }
