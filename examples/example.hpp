@@ -69,39 +69,38 @@ public:
 
     GLuint get_gl_handle() const { return texture; }
 
-    void upload(const void * data, int width, int height, rs::format format)
+    void upload(const void * data, int width, int height,  rs::format format, int stride = 0)
     {
         // If the frame timestamp has changed since the last time show(...) was called, re-upload the texture
         if(!texture) glGenTextures(1, &texture);
         glBindTexture(GL_TEXTURE_2D, texture);
-
         switch(format)
         {
         case rs::format::any:
-	    throw std::runtime_error("not a valid format");
+        throw std::runtime_error("not a valid format");
         case rs::format::z16:
         case rs::format::disparity16:
             rgb.resize(width * height * 3);
             make_depth_histogram(rgb.data(), reinterpret_cast<const uint16_t *>(data), width, height);
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, rgb.data());
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, stride>0 ? stride : width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, rgb.data());
             break;
         case rs::format::xyz32f:
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_FLOAT, data);
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, stride>0 ? stride : width, height, 0, GL_RGB, GL_FLOAT, data);
             break;
         case rs::format::yuyv: // Display YUYV by showing the luminance channel and packing chrominance into ignored alpha channel
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_LUMINANCE_ALPHA, GL_UNSIGNED_BYTE, data); 
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, stride>0 ? stride : width, height, 0, GL_LUMINANCE_ALPHA, GL_UNSIGNED_BYTE, data);
             break;
         case rs::format::rgb8: case rs::format::bgr8: // Display both RGB and BGR by interpreting them RGB, to show the flipped byte ordering. Obviously, GL_BGR could be used on OpenGL 1.2+
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, stride>0 ? stride : width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
             break;
         case rs::format::rgba8: case rs::format::bgra8: // Display both RGBA and BGRA by interpreting them RGBA, to show the flipped byte ordering. Obviously, GL_BGRA could be used on OpenGL 1.2+
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, stride>0 ? stride : width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
             break;
         case rs::format::y8:
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, data);
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, stride>0 ? stride : width, height, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, data);
             break;
         case rs::format::y16:
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_LUMINANCE, GL_UNSIGNED_SHORT, data);
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, stride>0 ? stride : width, height, 0, GL_LUMINANCE, GL_UNSIGNED_SHORT, data);
             break;
 //        case rs::format::raw10:
 //            // Visualize Raw10 by performing a naive downsample. Each 2x2 block contains one red pixel, two green pixels, and one blue pixel, so combine them into a single RGB triple.
@@ -121,7 +120,7 @@ public:
 //            break;
           case rs::format::raw8:
           case rs::format::raw10:
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE, width, height, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, data);
+			  glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE, stride>0 ? stride : width, height, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, data);
             break;
         }
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -130,6 +129,7 @@ public:
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
 
         glBindTexture(GL_TEXTURE_2D, 0);
+        
     }
 
     void upload(rs::device & dev, rs::stream stream)

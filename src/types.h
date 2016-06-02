@@ -80,6 +80,7 @@ namespace rsimpl
     RS_ENUM_HELPERS(rs_preset, PRESET)
     RS_ENUM_HELPERS(rs_distortion, DISTORTION)
     RS_ENUM_HELPERS(rs_option, OPTION)
+	RS_ENUM_HELPERS(rs_output_buffer_format, OUTPUT_BUFFER_FORMAT)
     #undef RS_ENUM_HELPERS
 
     ////////////////////////////////////////////
@@ -147,6 +148,7 @@ namespace rsimpl
         int width, height;
         rs_format format;
         int fps;
+        rs_output_buffer_format output_format;
     }; 
 
     struct interstream_rule // Requires a.*field + delta == b.*field OR a.*field + delta2 == b.*field
@@ -189,9 +191,10 @@ namespace rsimpl
         subdevice_mode mode;                    // The streaming mode in which to place the hardware
         int pad_crop;                           // The number of pixels of padding (positive values) or cropping (negative values) to apply to all four edges of the image
         int unpacker_index;                     // The specific unpacker used to unpack the encoded format into the desired output formats
+        rs_output_buffer_format output_format = RS_OUTPUT_BUFFER_FORMAT_CONTINOUS; // The output buffer format. 
 
-        subdevice_mode_selection() : mode({}), pad_crop(), unpacker_index() {}
-        subdevice_mode_selection(const subdevice_mode & mode, int pad_crop, int unpacker_index) : mode(mode), pad_crop(pad_crop), unpacker_index(unpacker_index) {}
+        subdevice_mode_selection() : mode({}), pad_crop(), unpacker_index(), output_format(RS_OUTPUT_BUFFER_FORMAT_CONTINOUS){}
+        subdevice_mode_selection(const subdevice_mode & mode, int pad_crop, int unpacker_index) : mode(mode), pad_crop(pad_crop), unpacker_index(unpacker_index){}
 
         const pixel_format_unpacker & get_unpacker() const { return mode.pf.unpackers[unpacker_index]; }
         const std::vector<std::pair<rs_stream, rs_format>> & get_outputs() const { return get_unpacker().outputs; }
@@ -201,9 +204,11 @@ namespace rsimpl
         bool provides_stream(rs_stream stream) const { return get_unpacker().provides_stream(stream); }
         rs_format get_format(rs_stream stream) const { return get_unpacker().get_format(stream); }
         int get_framerate(rs_stream stream) const { return mode.fps; }
+        void set_output_buffer_format(const rs_output_buffer_format in_output_format);
+
         void unpack(byte * const dest[], const byte * source) const;
 
-        bool requires_processing() const { return mode.pf.unpackers[unpacker_index].requires_processing || get_width() != mode.native_dims.x; }
+        bool requires_processing() const { return mode.pf.unpackers[unpacker_index].requires_processing || (get_width() != mode.native_dims.x && output_format != RS_OUTPUT_BUFFER_FORMAT_NATIVE); }
     };
 
     class frame_callback

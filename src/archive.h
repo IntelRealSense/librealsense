@@ -14,6 +14,30 @@ namespace rsimpl
     class frame_archive
     {
     public:
+        struct frame_additional_data
+        {
+            int timestamp = 0;
+            int frame_number = 0;
+            long long system_time = 0;
+            int width = 0;
+            int height = 0;
+            int stride = 0;
+            int bpp = 0;
+			rs_format format;
+			int pad = 0;
+
+            frame_additional_data(){};
+
+			frame_additional_data(int in_timestamp, int in_frame_number, long long in_system_time, int in_width, int in_height, int in_stride, int in_bpp, const rs_format in_format, int in_pad)
+                :timestamp(in_timestamp),
+                frame_number(in_frame_number),
+                system_time(in_system_time),
+                width(in_width),
+                height(in_height),
+                stride(in_stride),
+                bpp(in_bpp),
+                format(in_format){}
+        };                        
 
         // Define a movable but explicitly noncopyable buffer type to hold our frame data
         struct frame
@@ -26,11 +50,9 @@ namespace rsimpl
 
         public:
             std::vector<byte> data;
-            int timestamp = 0;
-            int frame_number = 0;
-			long long system_time = 0;
+            frame_additional_data additional_data;
 
-            explicit frame() : ref_count(0), owner(nullptr), timestamp(), frame_number(), on_release() {}
+            explicit frame() : ref_count(0), owner(nullptr), on_release(){}
             frame(const frame & r) = delete;
             frame(frame && r) 
                 : ref_count(r.ref_count.exchange(0)), 
@@ -43,16 +65,22 @@ namespace rsimpl
             frame& operator=(frame&& r)
             {
                 data = move(r.data);
-                timestamp = r.timestamp;
                 owner = r.owner;
                 ref_count = r.ref_count.exchange(0);
                 on_release = std::move(r.on_release);
-                frame_number = r.frame_number;
-				system_time = r.system_time;
+                additional_data = std::move(r.additional_data);
                 return *this;
             }
 
             const byte* get_frame_data() const;
+            int get_frame_timestamp() const;
+            int get_frame_number() const;
+            long long get_frame_system_time() const;
+            int get_width()const;
+            int get_height()const;
+            int get_stride()const;
+            int get_bpp()const;
+            rs_format get_format()const;
 
             void acquire() { ref_count.fetch_add(1); }
             void release();
@@ -101,7 +129,12 @@ namespace rsimpl
             const byte* get_frame_data() const;
             int get_frame_timestamp() const;
             int get_frame_number() const;
-	        long long get_frame_system_time() const;
+            long long get_frame_system_time() const;
+            int get_frame_width()const;
+            int get_frame_height()const;
+            int get_frame_stride()const;
+            int get_frame_bpp()const;
+			rs_format get_frame_format()const;
         };
 
         class frameset
@@ -115,7 +148,7 @@ namespace rsimpl
             const byte * get_frame_data(rs_stream stream) const { return buffer[stream].get_frame_data(); }
             int get_frame_timestamp(rs_stream stream) const { return buffer[stream].get_frame_timestamp(); }
             int get_frame_number(rs_stream stream) const { return buffer[stream].get_frame_number(); }
-			long long get_frame_system_time(rs_stream stream) const { return buffer[stream].get_frame_system_time(); }
+            long long get_frame_system_time(rs_stream stream) const { return buffer[stream].get_frame_system_time(); }
 
             void cleanup();
 
@@ -158,7 +191,7 @@ namespace rsimpl
         }
 
         // Frame callback thread API
-        byte * alloc_frame(rs_stream stream, int timestamp, int frameCounter, long long system_time, bool requires_memory);
+        byte * alloc_frame(rs_stream stream, const frame_additional_data& additional_data, bool requires_memory);
         frame_ref * track_frame(rs_stream stream);
         void attach_continuation(rs_stream stream, frame_continuation&& continuation);
 

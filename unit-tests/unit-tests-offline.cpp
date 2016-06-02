@@ -107,21 +107,21 @@ TEST_CASE( "rs_get_stream_mode() validates input", "[offline] [validation]" )
 
 TEST_CASE( "rs_enable_stream() validates input", "[offline] [validation]" )
 {
-    rs_enable_stream(nullptr,               RS_STREAM_DEPTH,    640, 480, RS_FORMAT_Z16,      60, require_error("null pointer passed for argument \"device\""));
+    rs_enable_stream(nullptr, RS_STREAM_DEPTH, 640, 480, RS_FORMAT_Z16, 60, RS_OUTPUT_BUFFER_FORMAT_CONTINOUS, require_error("null pointer passed for argument \"device\""));
                                                                                               
-    rs_enable_stream(fake_object_pointer(), (rs_stream)-1,      640, 480, RS_FORMAT_Z16,      60, require_error("bad enum value for argument \"stream\""));
-    rs_enable_stream(fake_object_pointer(), RS_STREAM_COUNT,    640, 480, RS_FORMAT_Z16,      60, require_error("bad enum value for argument \"stream\""));
-    rs_enable_stream(fake_object_pointer(), RS_STREAM_MAX_ENUM, 640, 480, RS_FORMAT_Z16,      60, require_error("bad enum value for argument \"stream\""));
+    rs_enable_stream(fake_object_pointer(), (rs_stream)-1, 640, 480, RS_FORMAT_Z16, 60, RS_OUTPUT_BUFFER_FORMAT_CONTINOUS, require_error("bad enum value for argument \"stream\""));
+    rs_enable_stream(fake_object_pointer(), RS_STREAM_COUNT, 640, 480, RS_FORMAT_Z16, 60, RS_OUTPUT_BUFFER_FORMAT_CONTINOUS, require_error("bad enum value for argument \"stream\""));
+    rs_enable_stream(fake_object_pointer(), RS_STREAM_MAX_ENUM, 640, 480, RS_FORMAT_Z16, 60, RS_OUTPUT_BUFFER_FORMAT_CONTINOUS, require_error("bad enum value for argument \"stream\""));
                                                                                               
-    rs_enable_stream(fake_object_pointer(), RS_STREAM_DEPTH,     -1, 480, RS_FORMAT_Z16,      60, require_error("out of range value for argument \"width\""));
+    rs_enable_stream(fake_object_pointer(), RS_STREAM_DEPTH, -1, 480, RS_FORMAT_Z16, 60, RS_OUTPUT_BUFFER_FORMAT_CONTINOUS, require_error("out of range value for argument \"width\""));
                                                                                               
-    rs_enable_stream(fake_object_pointer(), RS_STREAM_DEPTH,    640,  -1, RS_FORMAT_Z16,      60, require_error("out of range value for argument \"height\""));
+    rs_enable_stream(fake_object_pointer(), RS_STREAM_DEPTH, 640, -1, RS_FORMAT_Z16, 60, RS_OUTPUT_BUFFER_FORMAT_CONTINOUS, require_error("out of range value for argument \"height\""));
                                                                                               
-    rs_enable_stream(fake_object_pointer(), RS_STREAM_DEPTH,    640, 480, (rs_format)-1,      60, require_error("bad enum value for argument \"format\""));
-    rs_enable_stream(fake_object_pointer(), RS_STREAM_DEPTH,    640, 480, RS_FORMAT_COUNT,    60, require_error("bad enum value for argument \"format\""));
-    rs_enable_stream(fake_object_pointer(), RS_STREAM_DEPTH,    640, 480, RS_FORMAT_MAX_ENUM, 60, require_error("bad enum value for argument \"format\""));
+    rs_enable_stream(fake_object_pointer(), RS_STREAM_DEPTH, 640, 480, (rs_format)-1, 60, RS_OUTPUT_BUFFER_FORMAT_CONTINOUS, require_error("bad enum value for argument \"format\""));
+    rs_enable_stream(fake_object_pointer(), RS_STREAM_DEPTH, 640, 480, RS_FORMAT_COUNT, 60, RS_OUTPUT_BUFFER_FORMAT_CONTINOUS, require_error("bad enum value for argument \"format\""));
+    rs_enable_stream(fake_object_pointer(), RS_STREAM_DEPTH, 640, 480, RS_FORMAT_MAX_ENUM, 60, RS_OUTPUT_BUFFER_FORMAT_CONTINOUS, require_error("bad enum value for argument \"format\""));
                                                                 
-    rs_enable_stream(fake_object_pointer(), RS_STREAM_DEPTH,    640, 480, RS_FORMAT_Z16,      -1, require_error("out of range value for argument \"framerate\""));
+    rs_enable_stream(fake_object_pointer(), RS_STREAM_DEPTH, 640, 480, RS_FORMAT_Z16, -1, RS_OUTPUT_BUFFER_FORMAT_CONTINOUS, require_error("out of range value for argument \"framerate\""));
 }
 
 TEST_CASE( "rs_enable_stream_preset() validates input", "[offline] [validation]" )

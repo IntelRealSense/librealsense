@@ -6,7 +6,7 @@ EXPORTS
     rs_get_device_count
     rs_get_device
     
-	rs_supports
+    rs_supports
     rs_get_device_name
     rs_get_device_serial
     rs_get_device_firmware_version
@@ -43,8 +43,9 @@ EXPORTS
     rs_get_frame_timestamp
     rs_get_frame_system_time
 
-	rs_get_frame_number
+    rs_get_frame_number
     rs_get_frame_data
+    
 
     rs_wait_for_frames_safe
     rs_poll_for_frames_safe
@@ -52,14 +53,19 @@ EXPORTS
     rs_get_frame_data_safe
     rs_get_frame_number_safe
     rs_release_frames
-	rs_clone_frames_ref
+    rs_clone_frames_ref
 
     rs_get_detached_frame_timestamp
     rs_get_detached_frame_data
     rs_get_detached_frame_number
+    rs_get_detached_frame_intrinsic_height
+    rs_get_detached_frame_intrinsic_width
+    rs_get_detached_frame_pad_crop
+    rs_get_detached_frame_bpp
+
     rs_release_frame
     rs_detach_frame
-	rs_clone_frame_ref
+    rs_clone_frame_ref
     
     rs_get_failed_function
     rs_get_failed_args

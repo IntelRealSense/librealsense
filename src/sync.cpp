@@ -13,11 +13,11 @@ syncronizing_archive::syncronizing_archive(const std::vector<subdevice_mode_sele
 
     // Allocate an empty image for each stream, and move it to the frontbuffer
     // This allows us to assume that get_frame_data/get_frame_timestamp always return valid data
-    alloc_frame(key_stream, 0, 0, 0, true);
+    alloc_frame(key_stream, frame_additional_data(), true);
     frontbuffer.place_frame(key_stream, std::move(backbuffer[key_stream]));
     for(auto s : other_streams)
     {
-		alloc_frame(s, 0, 0, 0, true);
+        alloc_frame(s, frame_additional_data(), true);
         frontbuffer.place_frame(s, std::move(backbuffer[s]));
     }
 }
@@ -44,7 +44,7 @@ int rsimpl::syncronizing_archive::get_frame_counter(rs_stream stream) const
 
 long long syncronizing_archive::get_frame_system_time(rs_stream stream) const
 {
-	return frontbuffer.get_frame_system_time(stream);
+    return frontbuffer.get_frame_system_time(stream);
 }
 
 // Block until the next coherent frameset is available
@@ -111,7 +111,7 @@ void syncronizing_archive::get_next_frames()
             continue;
         }
 
-        if (!frames[s].empty() && abs(frames[s].front().timestamp - frontbuffer.get_frame_timestamp(key_stream)) <= abs(frontbuffer.get_frame_timestamp(s) - frontbuffer.get_frame_timestamp(key_stream)))
+        if (!frames[s].empty() && abs(frames[s].front().additional_data.timestamp - frontbuffer.get_frame_timestamp(key_stream)) <= abs(frontbuffer.get_frame_timestamp(s) - frontbuffer.get_frame_timestamp(key_stream)))
         {
             dequeue_frame(s);
         }
@@ -155,7 +155,7 @@ void syncronizing_archive::cull_frames()
     while(true)
     {
         if(frames[key_stream].size() < 2) break;
-        const int t0 = frames[key_stream][0].timestamp, t1 = frames[key_stream][1].timestamp;
+        const int t0 = frames[key_stream][0].additional_data.timestamp, t1 = frames[key_stream][1].additional_data.timestamp;
 
         bool valid_to_skip = true;
         for(auto s : other_streams)
@@ -163,7 +163,7 @@ void syncronizing_archive::cull_frames()
             if (key_stream == RS_STREAM_FISHEYE) // TODO: W/O until we will achieve frame timestamp
                 continue;
 
-            if(abs(t0 - frames[s].back().timestamp) < abs(t1 - frames[s].back().timestamp))
+            if (abs(t0 - frames[s].back().additional_data.timestamp) < abs(t1 - frames[s].back().additional_data.timestamp))
             {
                 valid_to_skip = false;
                 break;
@@ -183,9 +183,9 @@ void syncronizing_archive::cull_frames()
         while(true)
         {
             if(frames[s].size() < 2) break;
-            const int t0 = frames[s][0].timestamp, t1 = frames[s][1].timestamp;
+            const int t0 = frames[s][0].additional_data.timestamp, t1 = frames[s][1].additional_data.timestamp;
 
-            if(abs(t0 - frames[key_stream].front().timestamp) < abs(t1 - frames[key_stream].front().timestamp)) break;
+            if (abs(t0 - frames[key_stream].front().additional_data.timestamp) < abs(t1 - frames[key_stream].front().additional_data.timestamp)) break;
             discard_frame(s);
         }
     }

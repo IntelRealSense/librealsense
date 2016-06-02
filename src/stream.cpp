@@ -99,7 +99,7 @@ int native_stream::get_frame_counter() const
 
 long long native_stream::get_frame_system_time() const
 {
-	return archive->get_frame_system_time(stream);
+    return archive->get_frame_system_time(stream);
 }
 
 const byte * native_stream::get_frame_data() const

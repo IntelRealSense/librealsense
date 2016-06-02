@@ -9,6 +9,7 @@
 #include "stream.h"
 #include <chrono>
 
+
 namespace rsimpl
 {
     struct frame_timestamp_reader
@@ -51,7 +52,7 @@ public:
     const char *                                get_firmware_version() const { return config.info.firmware_version.c_str(); }
     float                                       get_depth_scale() const { return config.depth_scale; }
 
-    void                                        enable_stream(rs_stream stream, int width, int height, rs_format format, int fps);
+    void                                        enable_stream(rs_stream stream, int width, int height, rs_format format, int fps, rs_output_buffer_format output);
     void                                        enable_stream_preset(rs_stream stream, rs_preset preset);    
     void                                        disable_stream(rs_stream stream);
 
