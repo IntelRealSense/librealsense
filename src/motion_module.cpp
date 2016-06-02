@@ -145,7 +145,6 @@ std::vector<motion_event> motion_module_parser::operator() (const unsigned char*
     const unsigned short non_imu_entry_size         = 6;
     const unsigned short non_imu_data_offset        = motion_packet_header_size + (imu_data_entries * imu_entry_size);
     const unsigned short motion_packet_size         = non_imu_data_offset + (non_imu_data_entries * non_imu_entry_size);
-    
     unsigned short packets = data_size / motion_packet_size;
 
     std::vector<motion_event> v;
