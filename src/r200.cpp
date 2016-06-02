@@ -28,7 +28,7 @@ namespace rsimpl
         LOG_INFO("Connecting to Intel RealSense R200");
         
         static_device_info info;
-        info.name = {"Intel RealSense R200"};
+        info.name = "Intel RealSense R200";
         info.stream_subdevices[RS_STREAM_DEPTH] = 1;
         info.stream_subdevices[RS_STREAM_COLOR] = 2;
         info.stream_subdevices[RS_STREAM_INFRARED ] = 0;
