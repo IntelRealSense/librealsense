@@ -550,7 +550,7 @@ long long rs_get_frame_system_time(const rs_device * device, rs_stream stream, r
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return            the frame number
 */
-int rs_get_frame_number(const rs_device * device, rs_stream stream, rs_error ** error);
+int rs_get_frame_counter(const rs_device * device, rs_stream stream, rs_error ** error);
 
 /**
  * retrieve the contents of the latest frame on a stream

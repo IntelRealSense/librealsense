@@ -211,6 +211,16 @@ void rs_get_stream_intrinsics(const rs_device * device, rs_stream stream, rs_int
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, device, stream, intrin)
 
+void rs_set_frame_callback(rs_device * device, rs_stream stream, 
+    void(*on_frame)(rs_device * dev, rs_frame_ref * frame, void * user), void * user, rs_error ** error) try
+{
+    VALIDATE_NOT_NULL(device);
+    VALIDATE_ENUM(stream);
+    VALIDATE_NOT_NULL(on_frame);
+    device->set_stream_callback(stream, on_frame, user);
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, device, stream, on_frame, user)
+
 void rs_enable_motion_tracking(rs_device * device,
     void(*on_motion_event)(rs_device * dev, rs_motion_data m_data, void * user), void * motion_handler,
     void(*on_timestamp_event)(rs_device * dev, rs_timestamp_data t_data, void * user), void * timestamp_handler,
@@ -218,9 +228,7 @@ void rs_enable_motion_tracking(rs_device * device,
 {
     VALIDATE_NOT_NULL(device);
     VALIDATE_NOT_NULL(on_motion_event);
-    VALIDATE_NOT_NULL(on_timestamp_event);
-    VALIDATE_NOT_NULL(motion_handler);
-    VALIDATE_NOT_NULL(timestamp_handler);
+    VALIDATE_NOT_NULL(on_timestamp_event || on_motion_event);
     device->enable_motion_tracking();
     device->set_motion_callback(on_motion_event, motion_handler);
     device->set_timestamp_callback(on_timestamp_event, timestamp_handler);
@@ -329,7 +337,7 @@ long long rs_get_frame_system_time(const rs_device * device, rs_stream stream, r
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, device, stream)
 
-int rs_get_frame_number(const rs_device * device, rs_stream stream, rs_error ** error) try
+int rs_get_frame_counter(const rs_device * device, rs_stream stream, rs_error ** error) try
 {
     VALIDATE_NOT_NULL(device);
     VALIDATE_ENUM(stream);

@@ -38,7 +38,7 @@ rs_device::~rs_device()
     try
     {
         if (capturing) 
-            stop();
+            stop(RS_SOURCE_ALL);
     }
     catch (...) {}
 }
