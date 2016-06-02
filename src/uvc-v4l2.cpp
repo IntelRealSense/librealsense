@@ -534,7 +534,7 @@ namespace rsimpl
             if(status < 0) throw std::runtime_error(to_string() << "libusb_interrupt_transfer(...) returned " << libusb_error_name(status));
         }
 
-	void set_subdevice_mode(device & device, int subdevice_index, int width, int height, uint32_t fourcc, int fps, std::function<void(const void * frame, std::function<void()> continuation)> callback)void set_subdevice_mode(device & device, int subdevice_index, int width, int height, uint32_t fourcc, int fps, std::function<void(const void * frame, std::function<void()> continuation)> callback)        	void set_subdevice_mode(device & device, int subdevice_index, int width, int height, uint32_t fourcc, int fps, std::function<void(const void * frame, std::function<void()> continuation)> callback)void set_subdevice_mode(device & device, int subdevice_index, int width, int height, uint32_t fourcc, int fps, std::function<void(const void * frame, std::function<void()> continuation)> callback)
+    void set_subdevice_mode(device & device, int subdevice_index, int width, int height, uint32_t fourcc, int fps, std::function<void(const void * frame, std::function<void()> continuation)> callback)void set_subdevice_mode(device & device, int subdevice_index, int width, int height, uint32_t fourcc, int fps, std::function<void(const void * frame, std::function<void()> continuation)> callback)
         {
             device.subdevices[subdevice_index]->set_format(width, height, (const big_endian<int> &)fourcc, fps, callback);
         }
@@ -552,17 +552,17 @@ namespace rsimpl
         void stop_streaming(device & device)
         {
             device.stop_streaming();
-        }		
+        }       
 
-		void start_data_acquisition(device & device)
-		{
-			device.start_data_acquisition();
-		}
+        void start_data_acquisition(device & device)
+        {
+            device.start_data_acquisition();
+        }
 
-		void stop_data_acquisition(device & device)
-		{
-			device.stop_data_acquisition();
-		}
+        void stop_data_acquisition(device & device)
+        {
+            device.stop_data_acquisition();
+        }
 
         static uint32_t get_cid(rs_option option)
         {
