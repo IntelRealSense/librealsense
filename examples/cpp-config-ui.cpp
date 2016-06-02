@@ -170,7 +170,7 @@ rs::motion_callback motion_callback([](rs::motion_data entry)   // TODO rs_motio
 
 rs::timestamp_callback timestamp_callback([](rs::timestamp_data entry)   // TODO rs_motion event wrapper
 {
-    //std::cout << "Timestamp event arrived, timestamp: " << entry.timestamp << std::endl;  TODO
+    std::cout << "Timestamp event arrived, timestamp: " << entry.timestamp << std::endl;
 });
 
 
@@ -224,11 +224,7 @@ int main(int argc, char * argv[]) try
     {
         if (supports_motion_events)
         {
-            dev->enable_motion_tracking(motion_callback, timestamp_callback);
-            /*dev->enable_events();
-
-            dev->set_motion_callback(motion_callback);
-            dev->set_timestamp_callback(timestamp_callback);*/
+            dev->enable_motion_tracking(motion_callback, timestamp_callback);            
         }
 
         glfwSetWindowSize(win, 1100, 960);

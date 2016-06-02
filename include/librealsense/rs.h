@@ -70,8 +70,7 @@ typedef enum rs_preset
 } rs_preset;
 
 typedef enum rs_source
-{
-	RS_SOURCE_UNDEFINED					= 0,
+{	
     RS_SOURCE_VIDEO						= 1,
     RS_SOURCE_MOTION_TRACKING           = 2,
 	RS_SOURCE_ALL						= 3,
