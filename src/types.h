@@ -418,6 +418,12 @@ namespace rsimpl
             protected_data = nullptr;
         }
 
+        void reset()
+        {
+            protected_data = nullptr;
+            continuation = [](){};
+        }
+
         const void* get_data() const { return protected_data; }
 
         frame_continuation & operator=(frame_continuation && other)

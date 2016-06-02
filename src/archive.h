@@ -52,6 +52,8 @@ namespace rsimpl
                 return *this;
             }
 
+            ~frame() { on_release.reset(); }
+
             const byte* get_frame_data() const;
 
             void acquire() { ref_count.fetch_add(1); }
@@ -59,6 +61,7 @@ namespace rsimpl
             frame* publish();
             void update_owner(frame_archive * new_owner) { owner = new_owner; }
             void attach_continuation(frame_continuation&& continuation) { on_release = std::move(continuation); }
+            void disable_continuation() { on_release.reset(); }
         };
 
         class frame_ref // esentially an intrusive shared_ptr<frame>
@@ -96,6 +99,11 @@ namespace rsimpl
             void swap(frame_ref& other)
             {
                 std::swap(frame_ptr, other.frame_ptr);
+            }
+
+            void disable_continuation()
+            {
+                if (frame_ptr) frame_ptr->disable_continuation();
             }
 
             const byte* get_frame_data() const;
