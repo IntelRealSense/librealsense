@@ -59,13 +59,6 @@ namespace rs
         raw8        = 13
     };
 
-    enum class channel : int8_t
-    {
-        motion_data = 0,
-        timestamps_data,
-        max_channel_enum_type
-    };
-
     enum class preset : int32_t
     {
         best_quality      = 0, 
@@ -704,7 +697,6 @@ namespace rs
     inline std::ostream & operator << (std::ostream & o, distortion distortion) { return o << rs_distortion_to_string((rs_distortion)distortion); }
     inline std::ostream & operator << (std::ostream & o, option option) { return o << rs_option_to_string((rs_option)option); }    
     inline std::ostream & operator << (std::ostream & o, capabilities capability) { return o << rs_capabilities_to_string((rs_capabilities)capability); }
-    inline std::ostream & operator << (std::ostream & o, channel data) { return o << rs_channel_to_string((rs_channel)data); }
     inline std::ostream & operator << (std::ostream & o, source src) { return o << rs_source_to_string((rs_source)src); }
 
     enum class log_severity : int32_t

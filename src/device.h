@@ -11,19 +11,33 @@
 
 namespace rsimpl
 {
-    struct frame_timestamp_reader
-    {
-        virtual bool validate_frame(const subdevice_mode & mode, const void * frame) const = 0;
-        virtual int get_frame_timestamp(const subdevice_mode & mode, const void * frame) = 0;
-		virtual int get_frame_counter(const subdevice_mode &, const void * frame) = 0;
-    };
+	// This class is used to buffer up several writes to a structure-valued XU control, and send the entire structure all at once
+	// Additionally, it will ensure that any fields not set in a given struct will retain their original values
+	template<class T, class R, class W> struct struct_interface
+	{
+		T struct_;
+		R reader;
+		W writer;
+		bool active;
 
-	struct motion_module_parser
-    {
-        std::vector<motion_event> operator() (const unsigned char* data, const int& data_size);
-        void parse_timestamp(const unsigned char* data,rs_timestamp_data &);
-		rs_motion_data parse_motion(const unsigned char* data);
+		struct_interface(R r, W w) : reader(r), writer(w), active(false) {}
+
+		void activate() { if (!active) { struct_ = reader(); active = true; } }
+		template<class U> double get(U T::* field) { activate(); return struct_.*field; }
+		template<class U, class V> void set(U T::* field, V value) { activate(); struct_.*field = static_cast<U>(value); }
+		void commit() { if (active) writer(struct_); }
 	};
+
+	template<class T, class R, class W> struct_interface<T, R, W> make_struct_interface(R r, W w) { return{ r,w }; }
+		
+	struct frame_timestamp_reader
+	{
+		virtual bool validate_frame(const subdevice_mode & mode, const void * frame) const = 0;
+		virtual int get_frame_timestamp(const subdevice_mode & mode, const void * frame) = 0;
+		virtual int get_frame_counter(const subdevice_mode &, const void * frame) = 0;
+	};
+
+	struct motion_module_parser;
 }
 
 struct rs_device
@@ -87,30 +101,8 @@ public:
 
     virtual void                                on_before_start(const std::vector<rsimpl::subdevice_mode_selection> & selected_modes) = 0;
     virtual rs_stream                           select_key_stream(const std::vector<rsimpl::subdevice_mode_selection> & selected_modes) = 0;
-    virtual std::shared_ptr<rsimpl::frame_timestamp_reader>
-                                                create_frame_timestamp_reader() const = 0;
+    virtual std::shared_ptr<rsimpl::frame_timestamp_reader>  create_frame_timestamp_reader() const = 0;
 };
 
-namespace rsimpl
-{
-    // This class is used to buffer up several writes to a structure-valued XU control, and send the entire structure all at once
-    // Additionally, it will ensure that any fields not set in a given struct will retain their original values
-    template<class T, class R, class W> struct struct_interface
-    {
-        T struct_;
-        R reader;
-        W writer;        
-        bool active;
-
-        struct_interface(R r, W w) : reader(r), writer(w), active(false) {}
-
-        void activate() { if(!active) { struct_ = reader(); active = true; } }
-        template<class U> double get(U T::* field) { activate(); return struct_.*field; }
-        template<class U, class V> void set(U T::* field, V value) { activate(); struct_.*field = static_cast<U>(value); }
-        void commit() { if(active) writer(struct_); }
-    };
-
-    template<class T, class R, class W> struct_interface<T,R,W> make_struct_interface(R r, W w) { return {r,w}; }
-}
-
 #endif
+

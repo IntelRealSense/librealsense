@@ -3,6 +3,7 @@
 
 #include "device.h"
 #include "sync.h"
+#include "motion_module.h"
 
 #include <algorithm>
 #include <sstream>
@@ -263,6 +264,7 @@ void rs_device::get_option_range(rs_option option, double & min, double & max, d
     throw std::logic_error("range not specified");
 }
 
+<<<<<<< HEAD
 std::vector<motion_event> motion_module_parser::operator() (const unsigned char* data, const int& data_size)
 {
     const unsigned short motion_packet_size = 104; // bytes
@@ -363,3 +365,5 @@ rs_motion_data motion_module_parser::parse_motion(const unsigned char * data)
 
     return entry;
 }
+=======
+>>>>>>> c31e52491babca2545c9ff1c53317e7d442f0eeb

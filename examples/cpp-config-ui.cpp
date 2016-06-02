@@ -10,8 +10,8 @@
 
 #pragma comment(lib, "opengl32.lib")
 
-#define MAX(x,y) ((float)(x)>(float)(y))?(x):(y)
-#define MIN(x,y) ((float)(x)<(float)(y))?(x):(y)
+template<typename T> inline T MIN(T x, T y) { return x < y? x : y; }
+template<typename T> inline T MAX(T x, T y) { return x > y? x : y; }
 
 struct int2 { int x,y; };
 struct rect 

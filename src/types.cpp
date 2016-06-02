@@ -160,20 +160,6 @@ namespace rsimpl
         #undef CASE
     }
 
-        const char * get_string(rs_channel value)
-    {
-        #define CASE(X) case RS_CHANNEL_##X: return #X;
-        switch (value)
-        {        
-        CASE(MOTION_DATA)
-        CASE(TIMESTAMP_DATA)
-        CASE(COUNT)
-        CASE(MAX_ENUM)
-        default: assert(!is_valid(value)); return nullptr;
-        }
-        #undef CASE
-    }
-
     const char * get_string(rs_source value)
     {
         #define CASE(X) case RS_SOURCE_##X: return #X;

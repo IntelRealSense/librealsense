@@ -24,6 +24,12 @@ namespace rsimpl
         mm_full_load    = 4     // Motion dat + FishEye streaming
     };
 
+	struct motion_module_parser
+	{
+		std::vector<motion_event> operator() (const unsigned char* data, const int& data_size);
+		void parse_timestamp(const unsigned char* data, rs_timestamp_data &);
+		rs_motion_data parse_motion(const unsigned char* data);
+	};
 
     class motion_module_state
     {
@@ -55,6 +61,7 @@ namespace rsimpl
         void enter_state(mm_state new_state);
         void set_control(mm_request request, bool on);
     };
+
 }
 
 #endif // MOTION_MODULE_H
