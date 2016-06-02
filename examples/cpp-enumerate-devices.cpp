@@ -8,12 +8,12 @@
 int main() try
 {
     rs::log_to_console(rs::log_severity::warn);
-    //rs::log_to_file(rs::log_severity::debug, "librealsense.log");
+    // rs::log_to_file(rs::log_severity::debug, "librealsense.log");
 
     // Obtain a list of devices currently present on the system
     rs::context ctx;
-    int device_count = ctx.get_device_count();   
-    if (!device_count) printf("No device detected. Is it plugged in?\n");
+    int device_count = ctx.get_device_count();
+    if(!device_count) printf("No device detected. Is it plugged in?\n");
 
     for(int i = 0; i < device_count; ++i)
     {
@@ -22,7 +22,13 @@ int main() try
         std::cout << "Device " << i << " - " << dev->get_name() << ":\n";
         std::cout << " Serial number: " << dev->get_serial() << "\n";
         std::cout << " Firmware version: " << dev->get_firmware_version() << "\n";
-        try { std::cout << " USB Port ID: " << dev->get_usb_port_id() << "\n"; } catch (...) {}
+        try
+        {
+            std::cout << " USB Port ID: " << dev->get_usb_port_id() << "\n";
+        }
+        catch(...)
+        {
+        }
 
         // Show which options are supported by this device
         std::cout << " Supported options:\n";
@@ -40,7 +46,7 @@ int main() try
         // Show which streams are supported by this device
         for(int j = 0; j < RS_STREAM_COUNT; ++j)
         {
-            // Determine number of available streaming modes (zero means stream is unavailable) 
+            // Determine number of available streaming modes (zero means stream is unavailable)
             rs::stream strm = (rs::stream)j;
             int mode_count = dev->get_stream_mode_count(strm);
             if(mode_count == 0) continue;

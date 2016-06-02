@@ -2,17 +2,17 @@
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
 #include "stream.h"
-#include "sync.h"       // For frame_archive
-#include "image.h"      // For image alignment, rectification, and deprojection routines
-#include <algorithm>    // For sort
-#include <tuple>        // For make_tuple
+#include "sync.h"    // For frame_archive
+#include "image.h"   // For image alignment, rectification, and deprojection routines
+#include <algorithm> // For sort
+#include <tuple>     // For make_tuple
 
 using namespace rsimpl;
 
 rs_extrinsics stream_interface::get_extrinsics_to(const stream_interface & r) const
 {
     auto from = get_pose(), to = r.get_pose();
-    if(from == to) return {{1,0,0,0,1,0,0,0,1},{0,0,0}};
+    if(from == to) return {{1, 0, 0, 0, 1, 0, 0, 0, 1}, {0, 0, 0}};
     auto transform = inverse(from) * to;
     rs_extrinsics extrin;
     (float3x3 &)extrin.rotation = transform.orientation;
@@ -20,7 +20,7 @@ rs_extrinsics stream_interface::get_extrinsics_to(const stream_interface & r) co
     return extrin;
 }
 
-native_stream::native_stream(device_config & config, rs_stream stream) : config(config), stream(stream) 
+native_stream::native_stream(device_config & config, rs_stream stream) : config(config), stream(stream)
 {
     for(auto & subdevice_mode : config.info.subdevice_modes)
     {
@@ -34,10 +34,8 @@ native_stream::native_stream(device_config & config, rs_stream stream) : config(
         }
     }
 
-    auto get_tuple = [stream](const subdevice_mode_selection & selection)
-    {     
-        return std::make_tuple(-selection.get_width(), -selection.get_height(), -selection.get_framerate(stream), selection.get_format(stream));
-    };
+    auto get_tuple = [stream](
+        const subdevice_mode_selection & selection) { return std::make_tuple(-selection.get_width(), -selection.get_height(), -selection.get_framerate(stream), selection.get_format(stream)); };
 
     std::sort(begin(modes), end(modes), [get_tuple](const subdevice_mode_selection & a, const subdevice_mode_selection & b) { return get_tuple(a) < get_tuple(b); });
     auto it = std::unique(begin(modes), end(modes), [get_tuple](const subdevice_mode_selection & a, const subdevice_mode_selection & b) { return get_tuple(a) == get_tuple(b); });
@@ -53,10 +51,7 @@ void native_stream::get_mode(int mode, int * w, int * h, rs_format * f, int * fp
     if(fps) *fps = selection.get_framerate(stream);
 }
 
-bool native_stream::is_enabled() const
-{ 
-    return (archive && archive->is_stream_enabled(stream)) || config.requests[stream].enabled; 
-}
+bool native_stream::is_enabled() const { return (archive && archive->is_stream_enabled(stream)) || config.requests[stream].enabled; }
 
 subdevice_mode_selection native_stream::get_mode() const
 {
@@ -66,13 +61,13 @@ subdevice_mode_selection native_stream::get_mode() const
         for(auto subdevice_mode : config.select_modes())
         {
             if(subdevice_mode.provides_stream(stream)) return subdevice_mode;
-        }   
+        }
         throw std::logic_error("no mode found"); // Should never happen, select_modes should throw if no mode can be found
     }
     throw std::runtime_error(to_string() << "stream not enabled: " << stream);
 }
 
-rs_intrinsics native_stream::get_intrinsics() const 
+rs_intrinsics native_stream::get_intrinsics() const
 {
     const auto m = get_mode();
     return pad_crop_intrinsics(m.mode.native_intrinsics, m.pad_crop);
@@ -85,8 +80,8 @@ rs_intrinsics native_stream::get_rectified_intrinsics() const
     return pad_crop_intrinsics(m.mode.rect_modes[0], m.pad_crop);
 }
 
-int native_stream::get_frame_number() const 
-{ 
+int native_stream::get_frame_number() const
+{
     if(!is_enabled()) throw std::runtime_error(to_string() << "stream not enabled: " << stream);
     return archive->get_frame_timestamp(stream);
 }
@@ -111,7 +106,8 @@ const rsimpl::byte * point_stream::get_frame_data() const
         {
             deproject_disparity(reinterpret_cast<float *>(image.data()), get_intrinsics(), reinterpret_cast<const uint16_t *>(source.get_frame_data()), get_depth_scale());
         }
-        else assert(false && "Cannot deproject image from a non-depth format");
+        else
+            assert(false && "Cannot deproject image from a non-depth format");
 
         number = get_frame_number();
     }
@@ -149,13 +145,16 @@ const rsimpl::byte * aligned_stream::get_frame_data() const
         }
         else if(to.get_format() == RS_FORMAT_Z16)
         {
-            align_other_to_z(image.data(), (const uint16_t *)to.get_frame_data(), to.get_depth_scale(), to.get_intrinsics(), to.get_extrinsics_to(from), from.get_intrinsics(), from.get_frame_data(), from.get_format());
+            align_other_to_z(image.data(), (const uint16_t *)to.get_frame_data(), to.get_depth_scale(), to.get_intrinsics(), to.get_extrinsics_to(from), from.get_intrinsics(), from.get_frame_data(),
+                from.get_format());
         }
         else if(to.get_format() == RS_FORMAT_DISPARITY16)
         {
-            align_other_to_disparity(image.data(), (const uint16_t *)to.get_frame_data(), to.get_depth_scale(), to.get_intrinsics(), to.get_extrinsics_to(from), from.get_intrinsics(), from.get_frame_data(), from.get_format());
+            align_other_to_disparity(image.data(), (const uint16_t *)to.get_frame_data(), to.get_depth_scale(), to.get_intrinsics(), to.get_extrinsics_to(from), from.get_intrinsics(),
+                from.get_frame_data(), from.get_format());
         }
-        else assert(false && "Cannot align two images if neither have depth data");
+        else
+            assert(false && "Cannot align two images if neither have depth data");
         number = get_frame_number();
     }
     return image.data();

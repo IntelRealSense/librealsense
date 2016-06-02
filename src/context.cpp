@@ -16,9 +16,8 @@ rs_context::rs_context()
         LOG_INFO("UVC device detected with VID = 0x" << std::hex << get_vendor_id(*device) << " PID = 0x" << get_product_id(*device));
         LOG_INFO("USB Port number =" << get_usb_port_id(*device));
 
-		if (get_vendor_id(*device) != 32902)
-			continue;
-				
+        if(get_vendor_id(*device) != 32902) continue;
+
         switch(get_product_id(*device))
         {
         case 2688: devices.push_back(rsimpl::make_r200_device(device)); break;
@@ -29,14 +28,14 @@ rs_context::rs_context()
 }
 
 // Enforce singleton semantics on rs_context
-rs_context* rs_context::instance = nullptr;
+rs_context * rs_context::instance = nullptr;
 int rs_context::ref_count = 0;
 std::mutex rs_context::instance_lock;
 
-rs_context* rs_context::acquire_instance()
+rs_context * rs_context::acquire_instance()
 {
     std::lock_guard<std::mutex> lock(instance_lock);
-    if (ref_count++ == 0)
+    if(ref_count++ == 0)
     {
         instance = new rs_context();
     }
@@ -46,13 +45,10 @@ rs_context* rs_context::acquire_instance()
 void rs_context::release_instance()
 {
     std::lock_guard<std::mutex> lock(instance_lock);
-    if (--ref_count == 0)
+    if(--ref_count == 0)
     {
         delete instance;
     }
 }
 
-rs_context::~rs_context()
-{
-    assert(ref_count == 0);
-}
+rs_context::~rs_context() { assert(ref_count == 0); }

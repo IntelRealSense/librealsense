@@ -16,7 +16,7 @@ texture_buffer buffers[RS_STREAM_COUNT];
 int main(int argc, char * argv[]) try
 {
     rs::log_to_console(rs::log_severity::warn);
-    //rs::log_to_file(rs::log_severity::debug, "librealsense.log");
+    // rs::log_to_file(rs::log_severity::debug, "librealsense.log");
 
     rs::context ctx;
     if(ctx.get_device_count() == 0) throw std::runtime_error("No device detected. Is it plugged in?");
@@ -24,11 +24,12 @@ int main(int argc, char * argv[]) try
 
     // Open a GLFW window
     glfwInit();
-    std::ostringstream ss; ss << "CPP Restart Example (" << dev.get_name() << ")";
+    std::ostringstream ss;
+    ss << "CPP Restart Example (" << dev.get_name() << ")";
     GLFWwindow * win = glfwCreateWindow(1280, 960, ss.str().c_str(), 0, 0);
     glfwMakeContextCurrent(win);
 
-    for(int i=0; i<20; ++i)
+    for(int i = 0; i < 20; ++i)
     {
         try
         {
@@ -36,7 +37,7 @@ int main(int argc, char * argv[]) try
 
             std::this_thread::sleep_for(std::chrono::milliseconds(100));
 
-            for(int j=0; j<4; ++j)
+            for(int j = 0; j < 4; ++j)
             {
                 auto s = (rs::stream)j;
                 if(dev.is_stream_enabled(s)) dev.disable_stream(s);
@@ -44,45 +45,19 @@ int main(int argc, char * argv[]) try
 
             switch(i)
             {
-            case 0:
-                dev.enable_stream(rs::stream::color, 640, 480, rs::format::yuyv, 60);
-                break;
-            case 1:
-                dev.enable_stream(rs::stream::color, 640, 480, rs::format::rgb8, 60);
-                break;
-            case 2:
-                dev.enable_stream(rs::stream::color, 640, 480, rs::format::bgr8, 60);
-                break;
-            case 3:
-                dev.enable_stream(rs::stream::color, 640, 480, rs::format::rgba8, 60);
-                break;
-            case 4:
-                dev.enable_stream(rs::stream::color, 640, 480, rs::format::bgra8, 60);
-                break;
-            case 5:
-                dev.enable_stream(rs::stream::color, 1920, 1080, rs::format::rgb8, 0);
-                break;
-            case 6:
-                dev.enable_stream(rs::stream::depth, rs::preset::largest_image);
-                break;
-            case 7:
-                dev.enable_stream(rs::stream::depth, 480, 360, rs::format::z16, 60);
-                break;
-            case 8:
-                dev.enable_stream(rs::stream::depth, 320, 240, rs::format::z16, 60);
-                break;
-            case 9:
-                dev.enable_stream(rs::stream::infrared, rs::preset::largest_image);
-                break;
-            case 10:
-                dev.enable_stream(rs::stream::infrared, 492, 372, rs::format::y8, 60);
-                break;
-            case 11:
-                dev.enable_stream(rs::stream::infrared, 320, 240, rs::format::y8, 60);
-                break;
-            case 12:
-                dev.enable_stream(rs::stream::infrared, 0, 0, rs::format::y16, 60);
-                break;
+            case 0: dev.enable_stream(rs::stream::color, 640, 480, rs::format::yuyv, 60); break;
+            case 1: dev.enable_stream(rs::stream::color, 640, 480, rs::format::rgb8, 60); break;
+            case 2: dev.enable_stream(rs::stream::color, 640, 480, rs::format::bgr8, 60); break;
+            case 3: dev.enable_stream(rs::stream::color, 640, 480, rs::format::rgba8, 60); break;
+            case 4: dev.enable_stream(rs::stream::color, 640, 480, rs::format::bgra8, 60); break;
+            case 5: dev.enable_stream(rs::stream::color, 1920, 1080, rs::format::rgb8, 0); break;
+            case 6: dev.enable_stream(rs::stream::depth, rs::preset::largest_image); break;
+            case 7: dev.enable_stream(rs::stream::depth, 480, 360, rs::format::z16, 60); break;
+            case 8: dev.enable_stream(rs::stream::depth, 320, 240, rs::format::z16, 60); break;
+            case 9: dev.enable_stream(rs::stream::infrared, rs::preset::largest_image); break;
+            case 10: dev.enable_stream(rs::stream::infrared, 492, 372, rs::format::y8, 60); break;
+            case 11: dev.enable_stream(rs::stream::infrared, 320, 240, rs::format::y8, 60); break;
+            case 12: dev.enable_stream(rs::stream::infrared, 0, 0, rs::format::y16, 60); break;
             case 13:
                 dev.enable_stream(rs::stream::infrared, 0, 0, rs::format::y8, 60);
                 dev.enable_stream(rs::stream::infrared2, 0, 0, rs::format::y8, 60);
@@ -117,7 +92,7 @@ int main(int argc, char * argv[]) try
             }
 
             dev.start();
-            for(int j=0; j<120; ++j)
+            for(int j = 0; j < 120; ++j)
             {
                 // Wait for new images
                 glfwPollEvents();
@@ -125,7 +100,7 @@ int main(int argc, char * argv[]) try
                 dev.wait_for_frames();
 
                 // Clear the framebuffer
-                int w,h;
+                int w, h;
                 glfwGetWindowSize(win, &w, &h);
                 glViewport(0, 0, w, h);
                 glClear(GL_COLOR_BUFFER_BIT);
@@ -134,10 +109,10 @@ int main(int argc, char * argv[]) try
                 glPushMatrix();
                 glfwGetWindowSize(win, &w, &h);
                 glOrtho(0, w, h, 0, -1, +1);
-                buffers[0].show(dev, rs::stream::color, 0, 0, w/2, h/2);
-                buffers[1].show(dev, rs::stream::depth, w/2, 0, w-w/2, h/2);
-                buffers[2].show(dev, rs::stream::infrared, 0, h/2, w/2, h-h/2);
-                buffers[3].show(dev, rs::stream::infrared2, w/2, h/2, w-w/2, h-h/2);
+                buffers[0].show(dev, rs::stream::color, 0, 0, w / 2, h / 2);
+                buffers[1].show(dev, rs::stream::depth, w / 2, 0, w - w / 2, h / 2);
+                buffers[2].show(dev, rs::stream::infrared, 0, h / 2, w / 2, h - h / 2);
+                buffers[3].show(dev, rs::stream::infrared2, w / 2, h / 2, w - w / 2, h - h / 2);
                 glPopMatrix();
                 glfwSwapBuffers(win);
             }

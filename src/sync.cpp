@@ -30,15 +30,9 @@ frame_archive::frame_archive(const std::vector<subdevice_mode_selection> & selec
     }
 }
 
-const byte * frame_archive::get_frame_data(rs_stream stream) const 
-{ 
-    return frontbuffer[stream].data.data();
-}
+const byte * frame_archive::get_frame_data(rs_stream stream) const { return frontbuffer[stream].data.data(); }
 
-int frame_archive::get_frame_timestamp(rs_stream stream) const
-{ 
-    return frontbuffer[stream].timestamp;
-}
+int frame_archive::get_frame_timestamp(rs_stream stream) const { return frontbuffer[stream].timestamp; }
 
 // Block until the next coherent frameset is available
 void frame_archive::wait_for_frames()
@@ -76,8 +70,8 @@ void frame_archive::get_next_frames()
 }
 
 // Allocate a new frame in the backbuffer, potentially recycling a buffer from the freelist
-byte * frame_archive::alloc_frame(rs_stream stream, int timestamp) 
-{ 
+byte * frame_archive::alloc_frame(rs_stream stream, int timestamp)
+{
     const size_t size = modes[stream].get_image_size(stream);
 
     {
@@ -95,10 +89,12 @@ byte * frame_archive::alloc_frame(rs_stream stream, int timestamp)
         }
 
         // Discard buffers that have been in the freelist for longer than 1s
-        for(auto it = begin(freelist); it != end(freelist); )
+        for(auto it = begin(freelist); it != end(freelist);)
         {
-            if(timestamp > it->timestamp + 1000) it = freelist.erase(it);
-            else ++it;
+            if(timestamp > it->timestamp + 1000)
+                it = freelist.erase(it);
+            else
+                ++it;
         }
     }
 
@@ -108,7 +104,7 @@ byte * frame_archive::alloc_frame(rs_stream stream, int timestamp)
 }
 
 // Move a frame from the backbuffer to the back of the queue
-void frame_archive::commit_frame(rs_stream stream) 
+void frame_archive::commit_frame(rs_stream stream)
 {
     std::unique_lock<std::mutex> lock(mutex);
     frames[stream].push_back(std::move(backbuffer[stream]));
@@ -131,7 +127,8 @@ void frame_archive::cull_frames()
 
     // Cannot do any culling unless at least one frame is enqueued for each enabled stream
     if(frames[key_stream].empty()) return;
-    for(auto s : other_streams) if(frames[s].empty()) return;
+    for(auto s : other_streams)
+        if(frames[s].empty()) return;
 
     // We can discard frames from the key stream if we have at least two and the latter is closer to the most recent frame of all other streams than the former
     while(true)
@@ -179,5 +176,5 @@ void frame_archive::dequeue_frame(rs_stream stream)
 void frame_archive::discard_frame(rs_stream stream)
 {
     freelist.push_back(std::move(frames[stream].front()));
-    frames[stream].erase(begin(frames[stream]));    
+    frames[stream].erase(begin(frames[stream]));
 }

@@ -62,22 +62,22 @@ int main()
         const uint16_t * depth_frame = (const uint16_t *)(rs_get_frame_data(dev, RS_STREAM_DEPTH, &e));
 
         /* Print a simple text-based representation of the image, by breaking it into 10x20 pixel regions and and approximating the coverage of pixels within one meter */
-        char buffer[(640/10+1)*(480/20)+1];
+        char buffer[(640 / 10 + 1) * (480 / 20) + 1];
         char * out = buffer;
-        int coverage[64] = {0}, x,y,i;
-        for(y=0; y<480; ++y)
+        int coverage[64] = {0}, x, y, i;
+        for(y = 0; y < 480; ++y)
         {
-            for(x=0; x<640; ++x)
+            for(x = 0; x < 640; ++x)
             {
                 int depth = *depth_frame++;
-                if(depth > 0 && depth < one_meter) ++coverage[x/10];
+                if(depth > 0 && depth < one_meter) ++coverage[x / 10];
             }
 
-            if(y%20 == 19)
+            if(y % 20 == 19)
             {
-                for(i=0; i<64; ++i)
+                for(i = 0; i < 64; ++i)
                 {
-                    *out++ = " .:nhBXWW"[coverage[i]/25];
+                    *out++ = " .:nhBXWW"[coverage[i] / 25];
                     coverage[i] = 0;
                 }
                 *out++ = '\n';
@@ -86,6 +86,6 @@ int main()
         *out++ = 0;
         printf("\n%s", buffer);
     }
-    
+
     return EXIT_SUCCESS;
 }

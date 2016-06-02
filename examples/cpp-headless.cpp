@@ -6,7 +6,7 @@
 ///////////////////
 
 // This sample captures 30 frames and writes the last frame to disk.
-// It can be useful for debugging an embedded system with no display. 
+// It can be useful for debugging an embedded system with no display.
 
 #include <librealsense/rs.hpp>
 
@@ -19,22 +19,22 @@
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "third_party/stb_image_write.h"
 
-void normalize_depth_to_rgb(uint8_t rgb_image[640*480*3], const uint16_t depth_image[], int width, int height)
+void normalize_depth_to_rgb(uint8_t rgb_image[640 * 480 * 3], const uint16_t depth_image[], int width, int height)
 {
-    for (int i = 0; i < width * height; ++i)
+    for(int i = 0; i < width * height; ++i)
     {
-        if (auto d = depth_image[i])
+        if(auto d = depth_image[i])
         {
             uint8_t v = d * 255 / std::numeric_limits<uint16_t>::max();
-            rgb_image[i*3 + 0] = 255 - v;
-            rgb_image[i*3 + 1] = 255 - v;
-            rgb_image[i*3 + 2] = 255 - v;
+            rgb_image[i * 3 + 0] = 255 - v;
+            rgb_image[i * 3 + 1] = 255 - v;
+            rgb_image[i * 3 + 2] = 255 - v;
         }
         else
         {
-            rgb_image[i*3 + 0] = 0;
-            rgb_image[i*3 + 1] = 0;
-            rgb_image[i*3 + 2] = 0;
+            rgb_image[i * 3 + 0] = 0;
+            rgb_image[i * 3 + 1] = 0;
+            rgb_image[i * 3 + 2] = 0;
         }
     }
 }
@@ -42,7 +42,7 @@ void normalize_depth_to_rgb(uint8_t rgb_image[640*480*3], const uint16_t depth_i
 int main() try
 {
     rs::log_to_console(rs::log_severity::warn);
-    //rs::log_to_file(rs::log_severity::debug, "librealsense.log");
+    // rs::log_to_file(rs::log_severity::debug, "librealsense.log");
 
     rs::context ctx;
     printf("There are %d connected RealSense devices.\n", ctx.get_device_count());
@@ -64,7 +64,7 @@ int main() try
     dev->start();
 
     // Capture 30 frames to give autoexposure, etc. a chance to settle
-    for (int i = 0; i < 30; ++i) dev->wait_for_frames();
+    for(int i = 0; i < 30; ++i) dev->wait_for_frames();
 
     // Retrieve depth data, which was previously configured as a 640 x 480 image of 16-bit depth values
     const uint16_t * depth_frame = reinterpret_cast<const uint16_t *>(dev->get_frame_data(rs::stream::depth));

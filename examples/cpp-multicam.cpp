@@ -12,14 +12,14 @@ std::vector<texture_buffer> buffers;
 int main(int argc, char * argv[]) try
 {
     rs::log_to_console(rs::log_severity::warn);
-    //rs::log_to_file(rs::log_severity::debug, "librealsense.log");
+    // rs::log_to_file(rs::log_severity::debug, "librealsense.log");
 
     rs::context ctx;
     if(ctx.get_device_count() == 0) throw std::runtime_error("No device detected. Is it plugged in?");
-    
+
     // Enumerate all devices
     std::vector<rs::device *> devices;
-    for(int i=0; i<ctx.get_device_count(); ++i)
+    for(int i = 0; i < ctx.get_device_count(); ++i)
     {
         devices.push_back(ctx.get_device(i));
     }
@@ -39,7 +39,8 @@ int main(int argc, char * argv[]) try
 
     // Open a GLFW window
     glfwInit();
-    std::ostringstream ss; ss << "CPP Multi-Camera Example";
+    std::ostringstream ss;
+    ss << "CPP Multi-Camera Example";
     GLFWwindow * win = glfwCreateWindow(1280, 960, ss.str().c_str(), 0, 0);
     glfwMakeContextCurrent(win);
 
@@ -50,22 +51,22 @@ int main(int argc, char * argv[]) try
     auto perTextureWidth = windowWidth / devices.size();
     auto perTextureHeight = 480;
 
-    while (!glfwWindowShouldClose(win))
+    while(!glfwWindowShouldClose(win))
     {
         // Wait for new images
         glfwPollEvents();
-        
+
         // Draw the images
-        int w,h;
+        int w, h;
         glfwGetFramebufferSize(win, &w, &h);
         glViewport(0, 0, w, h);
         glClear(GL_COLOR_BUFFER_BIT);
-        
+
         glfwGetWindowSize(win, &w, &h);
         glPushMatrix();
         glOrtho(0, w, h, 0, -1, +1);
         glPixelZoom(1, -1);
-        int i=0, x=0;
+        int i = 0, x = 0;
         for(auto dev : devices)
         {
             dev->poll_for_frames();

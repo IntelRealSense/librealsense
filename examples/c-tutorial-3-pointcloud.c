@@ -31,7 +31,8 @@ void check_error()
     }
 }
 
-double yaw, pitch, lastX, lastY; int ml;
+double yaw, pitch, lastX, lastY;
+int ml;
 static void on_mouse_button(GLFWwindow * win, int button, int action, int mods)
 {
     if(button == GLFW_MOUSE_BUTTON_LEFT) ml = action == GLFW_PRESS;
@@ -116,14 +117,14 @@ int main()
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         glMatrixMode(GL_PROJECTION);
         glLoadIdentity();
-        gluPerspective(60, (float)1280/960, 0.01f, 20.0f);
+        gluPerspective(60, (float)1280 / 960, 0.01f, 20.0f);
         glMatrixMode(GL_MODELVIEW);
         glLoadIdentity();
-        gluLookAt(0,0,0, 0,0,1, 0,-1,0);
-        glTranslatef(0,0,+0.5f);
+        gluLookAt(0, 0, 0, 0, 0, 1, 0, -1, 0);
+        glTranslatef(0, 0, +0.5f);
         glRotated(pitch, 1, 0, 0);
         glRotated(yaw, 0, 1, 0);
-        glTranslatef(0,0,-0.5f);
+        glTranslatef(0, 0, -0.5f);
 
         /* We will render our depth data as a set of points in 3D space */
         glPointSize(2);
@@ -131,9 +132,9 @@ int main()
         glBegin(GL_POINTS);
 
         int dx, dy;
-        for(dy=0; dy<depth_intrin.height; ++dy)
+        for(dy = 0; dy < depth_intrin.height; ++dy)
         {
-            for(dx=0; dx<depth_intrin.width; ++dx)
+            for(dx = 0; dx < depth_intrin.width; ++dx)
             {
                 /* Retrieve the 16-bit depth value and map it into a depth in meters */
                 uint16_t depth_value = depth_image[dy * depth_intrin.width + dx];
@@ -168,6 +169,6 @@ int main()
 
         glfwSwapBuffers(win);
     }
-    
+
     return EXIT_SUCCESS;
 }
