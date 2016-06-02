@@ -10,18 +10,19 @@
 
 struct rs_context
 {
-    std::shared_ptr<rsimpl::uvc::context>           context;
-    std::vector<std::shared_ptr<rs_device>>         devices;
+    std::shared_ptr<rsimpl::uvc::context> context;
+    std::vector<std::shared_ptr<rs_device>> devices;
 
-                                                    rs_context();
-                                                    ~rs_context();
+    rs_context();
+    ~rs_context();
 
-    static rs_context*                              acquire_instance();
-    static void                                     release_instance();
+    static rs_context * acquire_instance();
+    static void release_instance();
+
 private:
-    static int                                      ref_count;
-    static std::mutex                               instance_lock;
-    static rs_context*                              instance;
+    static int ref_count;
+    static std::mutex instance_lock;
+    static rs_context * instance;
 };
 
 #endif

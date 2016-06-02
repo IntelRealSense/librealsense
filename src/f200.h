@@ -14,7 +14,10 @@
 
 namespace rsimpl
 {
-    namespace f200 { class IVCAMHardwareIO; }
+    namespace f200
+    {
+        class IVCAMHardwareIO;
+    }
 
     class f200_camera final : public rs_device
     {
@@ -34,13 +37,15 @@ namespace rsimpl
         std::condition_variable temperatureCv;
 
         void temperature_control_loop();
-    public:      
-        f200_camera(std::shared_ptr<uvc::device> device, const static_device_info & info, const f200::CameraCalibrationParameters & calib, const f200::IVCAMTemperatureData & temp, const f200::IVCAMThermalLoopParams & params);
+
+    public:
+        f200_camera(std::shared_ptr<uvc::device> device, const static_device_info & info, const f200::CameraCalibrationParameters & calib, const f200::IVCAMTemperatureData & temp,
+            const f200::IVCAMThermalLoopParams & params);
         ~f200_camera();
 
         void on_before_start(const std::vector<subdevice_mode_selection> & selected_modes) override;
         rs_stream select_key_stream(const std::vector<rsimpl::subdevice_mode_selection> & selected_modes) override;
-        
+
         void set_options(const rs_option options[], int count, const double values[]) override;
         void get_options(const rs_option options[], int count, double values[]) override;
 

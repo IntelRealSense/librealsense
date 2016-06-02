@@ -13,156 +13,158 @@ namespace rsimpl
 {
     const char * get_string(rs_stream value)
     {
-        #define CASE(X) case RS_STREAM_##X: return #X;
+#define CASE(X)                                                                                                                                                                                        \
+    case RS_STREAM_##X: return #X;
         switch(value)
         {
-        CASE(DEPTH)
-        CASE(COLOR)
-        CASE(INFRARED)
-        CASE(INFRARED2)
-        CASE(POINTS)
-        CASE(RECTIFIED_COLOR)
-        CASE(COLOR_ALIGNED_TO_DEPTH)
-        CASE(DEPTH_ALIGNED_TO_COLOR)
-        CASE(DEPTH_ALIGNED_TO_RECTIFIED_COLOR)
-        CASE(INFRARED2_ALIGNED_TO_DEPTH)
-        CASE(DEPTH_ALIGNED_TO_INFRARED2)
+            CASE(DEPTH)
+            CASE(COLOR)
+            CASE(INFRARED)
+            CASE(INFRARED2)
+            CASE(POINTS)
+            CASE(RECTIFIED_COLOR)
+            CASE(COLOR_ALIGNED_TO_DEPTH)
+            CASE(DEPTH_ALIGNED_TO_COLOR)
+            CASE(DEPTH_ALIGNED_TO_RECTIFIED_COLOR)
+            CASE(INFRARED2_ALIGNED_TO_DEPTH)
+            CASE(DEPTH_ALIGNED_TO_INFRARED2)
         default: assert(!is_valid(value)); return nullptr;
         }
-        #undef CASE
+#undef CASE
     }
 
     const char * get_string(rs_format value)
     {
-        #define CASE(X) case RS_FORMAT_##X: return #X;
+#define CASE(X)                                                                                                                                                                                        \
+    case RS_FORMAT_##X: return #X;
         switch(value)
         {
-        CASE(ANY)
-        CASE(Z16)
-        CASE(DISPARITY16)
-        CASE(XYZ32F)
-        CASE(YUYV)
-        CASE(RGB8)
-        CASE(BGR8)
-        CASE(RGBA8)
-        CASE(BGRA8)
-        CASE(Y8)
-        CASE(Y16)
-        CASE(RAW10)
+            CASE(ANY)
+            CASE(Z16)
+            CASE(DISPARITY16)
+            CASE(XYZ32F)
+            CASE(YUYV)
+            CASE(RGB8)
+            CASE(BGR8)
+            CASE(RGBA8)
+            CASE(BGRA8)
+            CASE(Y8)
+            CASE(Y16)
+            CASE(RAW10)
         default: assert(!is_valid(value)); return nullptr;
         }
-        #undef CASE
+#undef CASE
     }
 
     const char * get_string(rs_preset value)
     {
-        #define CASE(X) case RS_PRESET_##X: return #X;
+#define CASE(X)                                                                                                                                                                                        \
+    case RS_PRESET_##X: return #X;
         switch(value)
         {
-        CASE(BEST_QUALITY)
-        CASE(LARGEST_IMAGE)
-        CASE(HIGHEST_FRAMERATE)
+            CASE(BEST_QUALITY)
+            CASE(LARGEST_IMAGE)
+            CASE(HIGHEST_FRAMERATE)
         default: assert(!is_valid(value)); return nullptr;
         }
-        #undef CASE
+#undef CASE
     }
 
     const char * get_string(rs_distortion value)
     {
-        #define CASE(X) case RS_DISTORTION_##X: return #X;
+#define CASE(X)                                                                                                                                                                                        \
+    case RS_DISTORTION_##X: return #X;
         switch(value)
         {
-        CASE(NONE)
-        CASE(MODIFIED_BROWN_CONRADY)
-        CASE(INVERSE_BROWN_CONRADY)
+            CASE(NONE)
+            CASE(MODIFIED_BROWN_CONRADY)
+            CASE(INVERSE_BROWN_CONRADY)
         default: assert(!is_valid(value)); return nullptr;
         }
-        #undef CASE
+#undef CASE
     }
 
     const char * get_string(rs_option value)
     {
-        #define CASE(X) case RS_OPTION_##X: return #X;
+#define CASE(X)                                                                                                                                                                                        \
+    case RS_OPTION_##X: return #X;
         switch(value)
         {
-        CASE(COLOR_BACKLIGHT_COMPENSATION)
-        CASE(COLOR_BRIGHTNESS)
-        CASE(COLOR_CONTRAST)
-        CASE(COLOR_EXPOSURE)
-        CASE(COLOR_GAIN)
-        CASE(COLOR_GAMMA)
-        CASE(COLOR_HUE)
-        CASE(COLOR_SATURATION)
-        CASE(COLOR_SHARPNESS)
-        CASE(COLOR_WHITE_BALANCE)
-        CASE(COLOR_ENABLE_AUTO_EXPOSURE)
-        CASE(COLOR_ENABLE_AUTO_WHITE_BALANCE)
-        CASE(F200_LASER_POWER)
-        CASE(F200_ACCURACY)
-        CASE(F200_MOTION_RANGE)
-        CASE(F200_FILTER_OPTION)
-        CASE(F200_CONFIDENCE_THRESHOLD)
-        CASE(SR300_DYNAMIC_FPS)
-        CASE(SR300_AUTO_RANGE_ENABLE_MOTION_VERSUS_RANGE) 
-        CASE(SR300_AUTO_RANGE_ENABLE_LASER)               
-        CASE(SR300_AUTO_RANGE_MIN_MOTION_VERSUS_RANGE)    
-        CASE(SR300_AUTO_RANGE_MAX_MOTION_VERSUS_RANGE)    
-        CASE(SR300_AUTO_RANGE_START_MOTION_VERSUS_RANGE)  
-        CASE(SR300_AUTO_RANGE_MIN_LASER)                  
-        CASE(SR300_AUTO_RANGE_MAX_LASER)                  
-        CASE(SR300_AUTO_RANGE_START_LASER)                
-        CASE(SR300_AUTO_RANGE_UPPER_THRESHOLD) 
-        CASE(SR300_AUTO_RANGE_LOWER_THRESHOLD) 
-        CASE(R200_LR_AUTO_EXPOSURE_ENABLED)
-        CASE(R200_LR_GAIN)
-        CASE(R200_LR_EXPOSURE)
-        CASE(R200_EMITTER_ENABLED)
-        CASE(R200_DEPTH_UNITS)
-        CASE(R200_DEPTH_CLAMP_MIN)
-        CASE(R200_DEPTH_CLAMP_MAX)
-        CASE(R200_DISPARITY_MULTIPLIER)
-        CASE(R200_DISPARITY_SHIFT)
-        CASE(R200_AUTO_EXPOSURE_MEAN_INTENSITY_SET_POINT)
-        CASE(R200_AUTO_EXPOSURE_BRIGHT_RATIO_SET_POINT)  
-        CASE(R200_AUTO_EXPOSURE_KP_GAIN)                 
-        CASE(R200_AUTO_EXPOSURE_KP_EXPOSURE)             
-        CASE(R200_AUTO_EXPOSURE_KP_DARK_THRESHOLD)       
-        CASE(R200_AUTO_EXPOSURE_TOP_EDGE)       
-        CASE(R200_AUTO_EXPOSURE_BOTTOM_EDGE)    
-        CASE(R200_AUTO_EXPOSURE_LEFT_EDGE)      
-        CASE(R200_AUTO_EXPOSURE_RIGHT_EDGE)     
-        CASE(R200_DEPTH_CONTROL_ESTIMATE_MEDIAN_DECREMENT)   
-        CASE(R200_DEPTH_CONTROL_ESTIMATE_MEDIAN_INCREMENT)   
-        CASE(R200_DEPTH_CONTROL_MEDIAN_THRESHOLD)            
-        CASE(R200_DEPTH_CONTROL_SCORE_MINIMUM_THRESHOLD)     
-        CASE(R200_DEPTH_CONTROL_SCORE_MAXIMUM_THRESHOLD)     
-        CASE(R200_DEPTH_CONTROL_TEXTURE_COUNT_THRESHOLD)     
-        CASE(R200_DEPTH_CONTROL_TEXTURE_DIFFERENCE_THRESHOLD)
-        CASE(R200_DEPTH_CONTROL_SECOND_PEAK_THRESHOLD)       
-        CASE(R200_DEPTH_CONTROL_NEIGHBOR_THRESHOLD)          
-        CASE(R200_DEPTH_CONTROL_LR_THRESHOLD)
-        CASE(SR300_WAKEUP_DEV_PHASE1_PERIOD)
-        CASE(SR300_WAKEUP_DEV_PHASE1_FPS)
-        CASE(SR300_WAKEUP_DEV_PHASE2_PERIOD)
-        CASE(SR300_WAKEUP_DEV_PHASE2_FPS)
-        CASE(SR300_WAKEUP_DEV_RESET)
-        CASE(SR300_WAKE_ON_USB_REASON)
-        CASE(SR300_WAKE_ON_USB_CONFIDENCE)
+            CASE(COLOR_BACKLIGHT_COMPENSATION)
+            CASE(COLOR_BRIGHTNESS)
+            CASE(COLOR_CONTRAST)
+            CASE(COLOR_EXPOSURE)
+            CASE(COLOR_GAIN)
+            CASE(COLOR_GAMMA)
+            CASE(COLOR_HUE)
+            CASE(COLOR_SATURATION)
+            CASE(COLOR_SHARPNESS)
+            CASE(COLOR_WHITE_BALANCE)
+            CASE(COLOR_ENABLE_AUTO_EXPOSURE)
+            CASE(COLOR_ENABLE_AUTO_WHITE_BALANCE)
+            CASE(F200_LASER_POWER)
+            CASE(F200_ACCURACY)
+            CASE(F200_MOTION_RANGE)
+            CASE(F200_FILTER_OPTION)
+            CASE(F200_CONFIDENCE_THRESHOLD)
+            CASE(SR300_DYNAMIC_FPS)
+            CASE(SR300_AUTO_RANGE_ENABLE_MOTION_VERSUS_RANGE)
+            CASE(SR300_AUTO_RANGE_ENABLE_LASER)
+            CASE(SR300_AUTO_RANGE_MIN_MOTION_VERSUS_RANGE)
+            CASE(SR300_AUTO_RANGE_MAX_MOTION_VERSUS_RANGE)
+            CASE(SR300_AUTO_RANGE_START_MOTION_VERSUS_RANGE)
+            CASE(SR300_AUTO_RANGE_MIN_LASER)
+            CASE(SR300_AUTO_RANGE_MAX_LASER)
+            CASE(SR300_AUTO_RANGE_START_LASER)
+            CASE(SR300_AUTO_RANGE_UPPER_THRESHOLD)
+            CASE(SR300_AUTO_RANGE_LOWER_THRESHOLD)
+            CASE(R200_LR_AUTO_EXPOSURE_ENABLED)
+            CASE(R200_LR_GAIN)
+            CASE(R200_LR_EXPOSURE)
+            CASE(R200_EMITTER_ENABLED)
+            CASE(R200_DEPTH_UNITS)
+            CASE(R200_DEPTH_CLAMP_MIN)
+            CASE(R200_DEPTH_CLAMP_MAX)
+            CASE(R200_DISPARITY_MULTIPLIER)
+            CASE(R200_DISPARITY_SHIFT)
+            CASE(R200_AUTO_EXPOSURE_MEAN_INTENSITY_SET_POINT)
+            CASE(R200_AUTO_EXPOSURE_BRIGHT_RATIO_SET_POINT)
+            CASE(R200_AUTO_EXPOSURE_KP_GAIN)
+            CASE(R200_AUTO_EXPOSURE_KP_EXPOSURE)
+            CASE(R200_AUTO_EXPOSURE_KP_DARK_THRESHOLD)
+            CASE(R200_AUTO_EXPOSURE_TOP_EDGE)
+            CASE(R200_AUTO_EXPOSURE_BOTTOM_EDGE)
+            CASE(R200_AUTO_EXPOSURE_LEFT_EDGE)
+            CASE(R200_AUTO_EXPOSURE_RIGHT_EDGE)
+            CASE(R200_DEPTH_CONTROL_ESTIMATE_MEDIAN_DECREMENT)
+            CASE(R200_DEPTH_CONTROL_ESTIMATE_MEDIAN_INCREMENT)
+            CASE(R200_DEPTH_CONTROL_MEDIAN_THRESHOLD)
+            CASE(R200_DEPTH_CONTROL_SCORE_MINIMUM_THRESHOLD)
+            CASE(R200_DEPTH_CONTROL_SCORE_MAXIMUM_THRESHOLD)
+            CASE(R200_DEPTH_CONTROL_TEXTURE_COUNT_THRESHOLD)
+            CASE(R200_DEPTH_CONTROL_TEXTURE_DIFFERENCE_THRESHOLD)
+            CASE(R200_DEPTH_CONTROL_SECOND_PEAK_THRESHOLD)
+            CASE(R200_DEPTH_CONTROL_NEIGHBOR_THRESHOLD)
+            CASE(R200_DEPTH_CONTROL_LR_THRESHOLD)
+            CASE(SR300_WAKEUP_DEV_PHASE1_PERIOD)
+            CASE(SR300_WAKEUP_DEV_PHASE1_FPS)
+            CASE(SR300_WAKEUP_DEV_PHASE2_PERIOD)
+            CASE(SR300_WAKEUP_DEV_PHASE2_FPS)
+            CASE(SR300_WAKEUP_DEV_RESET)
+            CASE(SR300_WAKE_ON_USB_REASON)
+            CASE(SR300_WAKE_ON_USB_CONFIDENCE)
 
         default: assert(!is_valid(value)); return nullptr;
         }
-        #undef CASE
+#undef CASE
     }
 
-    size_t subdevice_mode_selection::get_image_size(rs_stream stream) const
-    {
-        return rsimpl::get_image_size(get_width(), get_height(), get_format(stream));
-    }
+    size_t subdevice_mode_selection::get_image_size(rs_stream stream) const { return rsimpl::get_image_size(get_width(), get_height(), get_format(stream)); }
 
     void subdevice_mode_selection::unpack(byte * const dest[], const byte * source) const
     {
         const int MAX_OUTPUTS = 2;
-        const auto & outputs = get_outputs();        
+        const auto & outputs = get_outputs();
         assert(outputs.size() <= MAX_OUTPUTS);
 
         // Determine input stride (and apply cropping)
@@ -173,7 +175,7 @@ namespace rsimpl
         // Determine output stride (and apply padding)
         byte * out[MAX_OUTPUTS];
         size_t out_stride[MAX_OUTPUTS];
-        for(size_t i=0; i<outputs.size(); ++i)
+        for(size_t i = 0; i < outputs.size(); ++i)
         {
             out[i] = dest[i];
             out_stride[i] = rsimpl::get_image_size(get_width(), 1, outputs[i].second);
@@ -191,10 +193,10 @@ namespace rsimpl
         {
             // Otherwise unpack one row at a time
             assert(mode.pf.plane_count == 1); // Can't unpack planar formats row-by-row (at least not with the current architecture, would need to pass multiple source ptrs to unpack)
-            for(int i=0; i<unpack_height; ++i)
+            for(int i = 0; i < unpack_height; ++i)
             {
                 mode.pf.unpackers[unpacker_index].unpack(out, in, unpack_width);
-                for(size_t i=0; i<outputs.size(); ++i) out[i] += out_stride[i];
+                for(size_t i = 0; i < outputs.size(); ++i) out[i] += out_stride[i];
                 in += in_stride;
             }
         }
@@ -207,14 +209,15 @@ namespace rsimpl
     static_device_info::static_device_info()
     {
         for(auto & s : stream_subdevices) s = -1;
-        for(auto & s : presets) for(auto & p : s) p = stream_request();
+        for(auto & s : presets)
+            for(auto & p : s) p = stream_request();
         for(auto & p : stream_poses)
         {
-            p = {{{1,0,0},{0,1,0},{0,0,1}}, {0,0,0}};
+            p = {{{1, 0, 0}, {0, 1, 0}, {0, 0, 1}}, {0, 0, 0}};
         }
     }
 
-    subdevice_mode_selection device_config::select_mode(const stream_request (& requests)[RS_STREAM_NATIVE_COUNT], int subdevice_index) const
+    subdevice_mode_selection device_config::select_mode(const stream_request (&requests)[RS_STREAM_NATIVE_COUNT], int subdevice_index) const
     {
         // Determine if the user has requested any streams which are supplied by this subdevice
         bool any_stream_requested = false;
@@ -248,10 +251,8 @@ namespace rsimpl
                     for(auto & output : unpacker.outputs)
                     {
                         const auto & req = requests[output.first];
-                        if(req.enabled && (req.width == 0 || req.width == selection.get_width())
-                                       && (req.height == 0 || req.height == selection.get_height())
-                                       && (req.format == RS_FORMAT_ANY || req.format == selection.get_format(output.first))
-                                       && (req.fps == 0 || req.fps == subdevice_mode.fps))
+                        if(req.enabled && (req.width == 0 || req.width == selection.get_width()) && (req.height == 0 || req.height == selection.get_height()) &&
+                            (req.format == RS_FORMAT_ANY || req.format == selection.get_format(output.first)) && (req.fps == 0 || req.fps == subdevice_mode.fps))
                         {
                             stream_unsatisfied[output.first] = false;
                         }
@@ -283,12 +284,13 @@ namespace rsimpl
     {
         // Make a mutable copy of our array
         stream_request requests[RS_STREAM_NATIVE_COUNT];
-        for(int i=0; i<RS_STREAM_NATIVE_COUNT; ++i) requests[i] = reqs[i];
+        for(int i = 0; i < RS_STREAM_NATIVE_COUNT; ++i) requests[i] = reqs[i];
 
         // Check and modify requests to enforce all interstream constraints
         for(auto & rule : info.interstream_rules)
         {
-            auto & a = requests[rule.a], & b = requests[rule.b]; auto f = rule.field;
+            auto &a = requests[rule.a], &b = requests[rule.b];
+            auto f = rule.field;
             if(a.enabled && b.enabled)
             {
                 // Check for incompatibility if both values specified
@@ -305,7 +307,7 @@ namespace rsimpl
 
         // Select subdevice modes needed to satisfy our requests
         int num_subdevices = 0;
-        for(auto & mode : info.subdevice_modes) num_subdevices = std::max(num_subdevices, mode.subdevice+1);
+        for(auto & mode : info.subdevice_modes) num_subdevices = std::max(num_subdevices, mode.subdevice + 1);
         std::vector<subdevice_mode_selection> selected_modes;
         for(int i = 0; i < num_subdevices; ++i)
         {

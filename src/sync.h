@@ -12,8 +12,8 @@ namespace rsimpl
     class frame_archive
     {
         // Define a movable but explicitly noncopyable buffer type to hold our frame data
-        struct frame 
-        { 
+        struct frame
+        {
             std::vector<byte> data;
             int timestamp;
 
@@ -21,8 +21,13 @@ namespace rsimpl
             frame(const frame & r) = delete;
             frame(frame && r) : frame() { *this = std::move(r); }
 
-            frame & operator = (const frame & r) = delete;
-            frame & operator = (frame && r) { data = move(r.data); timestamp = r.timestamp; return *this; }            
+            frame & operator=(const frame & r) = delete;
+            frame & operator=(frame && r)
+            {
+                data = move(r.data);
+                timestamp = r.timestamp;
+                return *this;
+            }
         };
 
         // This data will be left constant after creation, and accessed from all threads
@@ -46,6 +51,7 @@ namespace rsimpl
         void dequeue_frame(rs_stream stream);
         void discard_frame(rs_stream stream);
         void cull_frames();
+
     public:
         frame_archive(const std::vector<subdevice_mode_selection> & selection, rs_stream key_stream);
 
@@ -61,7 +67,7 @@ namespace rsimpl
 
         // Frame callback thread API
         byte * alloc_frame(rs_stream stream, int timestamp);
-        void commit_frame(rs_stream stream);  
+        void commit_frame(rs_stream stream);
     };
 }
 

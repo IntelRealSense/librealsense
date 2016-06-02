@@ -20,8 +20,8 @@ struct rs_error
 // This facility allows for translation of exceptions to rs_error structs at the API boundary
 namespace rsimpl
 {
-    template<class T> void stream_args(std::ostream & out, const char * names, const T & last) { out << names << ':' << last; }
-    template<class T, class... U> void stream_args(std::ostream & out, const char * names, const T & first, const U &... rest)
+    template <class T> void stream_args(std::ostream & out, const char * names, const T & last) { out << names << ':' << last; }
+    template <class T, class... U> void stream_args(std::ostream & out, const char * names, const T & first, const U &... rest)
     {
         while(*names && *names != ',') out << *names++;
         out << ':' << first << ", ";
@@ -31,20 +31,56 @@ namespace rsimpl
 
     static void translate_exception(const char * name, std::string args, rs_error ** error)
     {
-        try { throw; }
-        catch (const std::exception & e) { if (error) *error = new rs_error {e.what(), name, move(args)}; } // todo - Handle case where THIS code throws
-        catch (...) { if (error) *error = new rs_error {"unknown error", name, move(args)}; } // todo - Handle case where THIS code throws
+        try
+        {
+            throw;
+        }
+        catch(const std::exception & e)
+        {
+            if(error) *error = new rs_error{e.what(), name, move(args)};
+        } // todo - Handle case where THIS code throws
+        catch(...)
+        {
+            if(error) *error = new rs_error{"unknown error", name, move(args)};
+        } // todo - Handle case where THIS code throws
     }
 }
-#define HANDLE_EXCEPTIONS_AND_RETURN(R, ...) catch(...) { std::ostringstream ss; rsimpl::stream_args(ss, #__VA_ARGS__, __VA_ARGS__); rsimpl::translate_exception(__FUNCTION__, ss.str(), error); return R; }
-#define VALIDATE_NOT_NULL(ARG) if(!ARG) throw std::runtime_error("null pointer passed for argument \"" #ARG "\"");
-#define VALIDATE_ENUM(ARG) if(!rsimpl::is_valid(ARG)) { std::ostringstream ss; ss << "bad enum value for argument \"" #ARG "\""; throw std::runtime_error(ss.str()); }
-#define VALIDATE_RANGE(ARG, MIN, MAX) if(ARG < MIN || ARG > MAX) { std::ostringstream ss; ss << "out of range value for argument \"" #ARG "\""; throw std::runtime_error(ss.str()); }
-#define VALIDATE_NATIVE_STREAM(ARG) VALIDATE_ENUM(ARG); if(ARG >= RS_STREAM_NATIVE_COUNT) { std::ostringstream ss; ss << "argument \"" #ARG "\" must be a native stream"; throw std::runtime_error(ss.str()); }
+#define HANDLE_EXCEPTIONS_AND_RETURN(R, ...)                                                                                                                                                           \
+    catch(...)                                                                                                                                                                                         \
+    {                                                                                                                                                                                                  \
+        std::ostringstream ss;                                                                                                                                                                         \
+        rsimpl::stream_args(ss, #__VA_ARGS__, __VA_ARGS__);                                                                                                                                            \
+        rsimpl::translate_exception(__FUNCTION__, ss.str(), error);                                                                                                                                    \
+        return R;                                                                                                                                                                                      \
+    }
+#define VALIDATE_NOT_NULL(ARG)                                                                                                                                                                         \
+    if(!ARG) throw std::runtime_error("null pointer passed for argument \"" #ARG "\"");
+#define VALIDATE_ENUM(ARG)                                                                                                                                                                             \
+    if(!rsimpl::is_valid(ARG))                                                                                                                                                                         \
+    {                                                                                                                                                                                                  \
+        std::ostringstream ss;                                                                                                                                                                         \
+        ss << "bad enum value for argument \"" #ARG "\"";                                                                                                                                              \
+        throw std::runtime_error(ss.str());                                                                                                                                                            \
+    }
+#define VALIDATE_RANGE(ARG, MIN, MAX)                                                                                                                                                                  \
+    if(ARG < MIN || ARG > MAX)                                                                                                                                                                         \
+    {                                                                                                                                                                                                  \
+        std::ostringstream ss;                                                                                                                                                                         \
+        ss << "out of range value for argument \"" #ARG "\"";                                                                                                                                          \
+        throw std::runtime_error(ss.str());                                                                                                                                                            \
+    }
+#define VALIDATE_NATIVE_STREAM(ARG)                                                                                                                                                                    \
+    VALIDATE_ENUM(ARG);                                                                                                                                                                                \
+    if(ARG >= RS_STREAM_NATIVE_COUNT)                                                                                                                                                                  \
+    {                                                                                                                                                                                                  \
+        std::ostringstream ss;                                                                                                                                                                         \
+        ss << "argument \"" #ARG "\" must be a native stream";                                                                                                                                         \
+        throw std::runtime_error(ss.str());                                                                                                                                                            \
+    }
 
 rs_context * rs_create_context(int api_version, rs_error ** error) try
 {
-    if (api_version != RS_API_VERSION) throw std::runtime_error("api version mismatch");
+    if(api_version != RS_API_VERSION) throw std::runtime_error("api version mismatch");
     return rs_context::acquire_instance();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, api_version)
@@ -66,12 +102,10 @@ HANDLE_EXCEPTIONS_AND_RETURN(0, context)
 rs_device * rs_get_device(rs_context * context, int index, rs_error ** error) try
 {
     VALIDATE_NOT_NULL(context);
-    VALIDATE_RANGE(index, 0, (int)context->devices.size()-1);
+    VALIDATE_RANGE(index, 0, (int)context->devices.size() - 1);
     return context->devices[index].get();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, context, index)
-
-
 
 const char * rs_get_device_name(const rs_device * device, rs_error ** error) try
 {
@@ -87,7 +121,7 @@ const char * rs_get_device_serial(const rs_device * device, rs_error ** error) t
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, device)
 
-const char * rs_get_device_usb_port_id(const rs_device * device, rs_error **error) try
+const char * rs_get_device_usb_port_id(const rs_device * device, rs_error ** error) try
 {
     VALIDATE_NOT_NULL(device);
     return device->get_usb_port_id();
@@ -100,7 +134,6 @@ const char * rs_get_device_firmware_version(const rs_device * device, rs_error *
     return device->get_firmware_version();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, device)
-
 
 void rs_get_device_extrinsics(const rs_device * device, rs_stream from, rs_stream to, rs_extrinsics * extrin, rs_error ** error) try
 {
@@ -132,11 +165,10 @@ void rs_get_stream_mode(const rs_device * device, rs_stream stream, int index, i
 {
     VALIDATE_NOT_NULL(device);
     VALIDATE_ENUM(stream);
-    VALIDATE_RANGE(index, 0, device->get_stream_interface(stream).get_mode_count()-1);
+    VALIDATE_RANGE(index, 0, device->get_stream_interface(stream).get_mode_count() - 1);
     device->get_stream_interface(stream).get_mode(index, width, height, format, framerate);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, device, stream, index, width, height, format, framerate)
-
 
 void rs_enable_stream(rs_device * device, rs_stream stream, int width, int height, rs_format format, int framerate, rs_error ** error) try
 {
@@ -216,8 +248,6 @@ void rs_get_stream_intrinsics(const rs_device * device, rs_stream stream, rs_int
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, device, stream, intrin)
 
-
-
 void rs_start_device(rs_device * device, rs_error ** error) try
 {
     VALIDATE_NOT_NULL(device);
@@ -245,8 +275,6 @@ float rs_get_device_depth_scale(const rs_device * device, rs_error ** error) try
     return device->get_depth_scale();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0.0f, device)
-
-
 
 void rs_wait_for_frames(rs_device * device, rs_error ** error) try
 {
@@ -278,8 +306,6 @@ const void * rs_get_frame_data(const rs_device * device, rs_stream stream, rs_er
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, device, stream)
 
-
-
 const char * rs_get_stream_name(rs_stream stream, rs_error ** error) try
 {
     VALIDATE_ENUM(stream);
@@ -289,8 +315,8 @@ HANDLE_EXCEPTIONS_AND_RETURN(nullptr, stream)
 
 const char * rs_get_format_name(rs_format format, rs_error ** error) try
 {
-   VALIDATE_ENUM(format);
-   return rsimpl::get_string(format);
+    VALIDATE_ENUM(format);
+    return rsimpl::get_string(format);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, format)
 
@@ -303,8 +329,8 @@ HANDLE_EXCEPTIONS_AND_RETURN(nullptr, preset)
 
 const char * rs_get_distortion_name(rs_distortion distortion, rs_error ** error) try
 {
-   VALIDATE_ENUM(distortion);
-   return rsimpl::get_string(distortion);
+    VALIDATE_ENUM(distortion);
+    return rsimpl::get_string(distortion);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, distortion)
 
@@ -314,8 +340,6 @@ const char * rs_get_option_name(rs_option option, rs_error ** error) try
     return rsimpl::get_string(option);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, option)
-
-
 
 void rs_get_device_option_range(rs_device * device, rs_option option, double * min, double * max, double * step, rs_error ** error) try
 {
@@ -331,7 +355,7 @@ void rs_get_device_options(rs_device * device, const rs_option options[], int co
     VALIDATE_NOT_NULL(device);
     VALIDATE_RANGE(count, 0, INT_MAX);
     VALIDATE_NOT_NULL(options);
-    for(int i=0; i<count; ++i) VALIDATE_ENUM(options[i]);
+    for(int i = 0; i < count; ++i) VALIDATE_ENUM(options[i]);
     VALIDATE_NOT_NULL(values);
     device->get_options(options, count, values);
 }
@@ -342,7 +366,7 @@ void rs_set_device_options(rs_device * device, const rs_option options[], int co
     VALIDATE_NOT_NULL(device);
     VALIDATE_RANGE(count, 0, INT_MAX);
     VALIDATE_NOT_NULL(options);
-    for(int i=0; i<count; ++i) VALIDATE_ENUM(options[i]);
+    for(int i = 0; i < count; ++i) VALIDATE_ENUM(options[i]);
     VALIDATE_NOT_NULL(values);
     device->set_options(options, count, values);
 }
@@ -366,22 +390,19 @@ void rs_set_device_option(rs_device * device, rs_option option, double value, rs
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, device, option, value)
 
-
-
-void rs_free_error(rs_error * error) { if (error) delete error; }
+void rs_free_error(rs_error * error)
+{
+    if(error) delete error;
+}
 const char * rs_get_failed_function(const rs_error * error) { return error ? error->function : nullptr; }
 const char * rs_get_failed_args(const rs_error * error) { return error ? error->args.c_str() : nullptr; }
 const char * rs_get_error_message(const rs_error * error) { return error ? error->message.c_str() : nullptr; }
-
-
 
 const char * rs_stream_to_string(rs_stream stream) { return rsimpl::get_string(stream); }
 const char * rs_format_to_string(rs_format format) { return rsimpl::get_string(format); }
 const char * rs_preset_to_string(rs_preset preset) { return rsimpl::get_string(preset); }
 const char * rs_distortion_to_string(rs_distortion distortion) { return rsimpl::get_string(distortion); }
 const char * rs_option_to_string(rs_option option) { return rsimpl::get_string(option); }
-
-
 
 void rs_log_to_console(rs_log_severity min_severity, rs_error ** error) try
 {

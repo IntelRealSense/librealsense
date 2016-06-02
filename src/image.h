@@ -9,22 +9,21 @@
 
 namespace rsimpl
 {
-    size_t           get_image_size                 (int width, int height, rs_format format);
+    size_t get_image_size(int width, int height, rs_format format);
 
-    void             deproject_z                    (float * points, const rs_intrinsics & z_intrin, const uint16_t * z_pixels, float z_scale);
-    void             deproject_disparity            (float * points, const rs_intrinsics & disparity_intrin, const uint16_t * disparity_pixels, float disparity_scale);
+    void deproject_z(float * points, const rs_intrinsics & z_intrin, const uint16_t * z_pixels, float z_scale);
+    void deproject_disparity(float * points, const rs_intrinsics & disparity_intrin, const uint16_t * disparity_pixels, float disparity_scale);
 
-    void             align_z_to_other               (byte * z_aligned_to_other, const uint16_t * z_pixels, float z_scale, const rs_intrinsics & z_intrin, 
-                                                     const rs_extrinsics & z_to_other, const rs_intrinsics & other_intrin);
-    void             align_disparity_to_other       (byte * disparity_aligned_to_other, const uint16_t * disparity_pixels, float disparity_scale, const rs_intrinsics & disparity_intrin, 
-                                                     const rs_extrinsics & disparity_to_other, const rs_intrinsics & other_intrin);
-    void             align_other_to_z               (byte * other_aligned_to_z, const uint16_t * z_pixels, float z_scale, const rs_intrinsics & z_intrin, 
-                                                     const rs_extrinsics & z_to_other, const rs_intrinsics & other_intrin, const byte * other_pixels, rs_format other_format);
-    void             align_other_to_disparity       (byte * other_aligned_to_disparity, const uint16_t * disparity_pixels, float disparity_scale, const rs_intrinsics & disparity_intrin, 
-                                                     const rs_extrinsics & disparity_to_other, const rs_intrinsics & other_intrin, const byte * other_pixels, rs_format other_format);
+    void align_z_to_other(byte * z_aligned_to_other, const uint16_t * z_pixels, float z_scale, const rs_intrinsics & z_intrin, const rs_extrinsics & z_to_other, const rs_intrinsics & other_intrin);
+    void align_disparity_to_other(byte * disparity_aligned_to_other, const uint16_t * disparity_pixels, float disparity_scale, const rs_intrinsics & disparity_intrin,
+        const rs_extrinsics & disparity_to_other, const rs_intrinsics & other_intrin);
+    void align_other_to_z(byte * other_aligned_to_z, const uint16_t * z_pixels, float z_scale, const rs_intrinsics & z_intrin, const rs_extrinsics & z_to_other, const rs_intrinsics & other_intrin,
+        const byte * other_pixels, rs_format other_format);
+    void align_other_to_disparity(byte * other_aligned_to_disparity, const uint16_t * disparity_pixels, float disparity_scale, const rs_intrinsics & disparity_intrin,
+        const rs_extrinsics & disparity_to_other, const rs_intrinsics & other_intrin, const byte * other_pixels, rs_format other_format);
 
-    std::vector<int> compute_rectification_table    (const rs_intrinsics & rect_intrin, const rs_extrinsics & rect_to_unrect, const rs_intrinsics & unrect_intrin);
-    void             rectify_image                  (byte * rect_pixels, const std::vector<int> & rectification_table, const byte * unrect_pixels, rs_format format);
+    std::vector<int> compute_rectification_table(const rs_intrinsics & rect_intrin, const rs_extrinsics & rect_to_unrect, const rs_intrinsics & unrect_intrin);
+    void rectify_image(byte * rect_pixels, const std::vector<int> & rectification_table, const byte * unrect_pixels, rs_format format);
 
     extern const native_pixel_format pf_rw10;       // Four 10 bit luminance values in one 40 bit macropixel
     extern const native_pixel_format pf_yuy2;       // Y0 U Y1 V ordered chroma subsampled macropixel
