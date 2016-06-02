@@ -11,6 +11,25 @@
 
 namespace rsimpl
 {
+    // This class is used to buffer up several writes to a structure-valued XU control, and send the entire structure all at once
+    // Additionally, it will ensure that any fields not set in a given struct will retain their original values
+    template<class T, class R, class W> struct struct_interface
+    {
+        T struct_;
+        R reader;
+        W writer;
+        bool active;
+
+        struct_interface(R r, W w) : reader(r), writer(w), active(false) {}
+
+        void activate() { if (!active) { struct_ = reader(); active = true; } }
+        template<class U> double get(U T::* field) { activate(); return static_cast<double>(struct_.*field); }
+        template<class U, class V> void set(U T::* field, V value) { activate(); struct_.*field = static_cast<U>(value); }
+        void commit() { if (active) writer(struct_); }
+    };
+
+    template<class T, class R, class W> struct_interface<T, R, W> make_struct_interface(R r, W w) { return{ r,w }; }
+        
     struct frame_timestamp_reader
     {
         virtual bool validate_frame(const subdevice_mode & mode, const void * frame) const = 0;
@@ -18,12 +37,11 @@ namespace rsimpl
         virtual int get_frame_counter(const subdevice_mode &, const void * frame) = 0;
     };
 
-	struct motion_module_parser
-    {
-        std::vector<motion_event> operator() (const unsigned char* data, const int& data_size);
-        void parse_timestamp(const unsigned char* data,rs_timestamp_data &);
-		rs_motion_data parse_motion(const unsigned char* data);
-	};
+	namespace motion_module
+	{
+		struct motion_module_parser;
+	}
+    
 }
 
 struct rs_device
@@ -41,13 +59,19 @@ private:
     rsimpl::stream_interface *                  streams[RS_STREAM_COUNT];
 
     bool                                        capturing;
-	bool                                        data_acquisition_active;
+    bool                                        data_acquisition_active;
     std::chrono::high_resolution_clock::time_point capture_started;
 
     std::shared_ptr<rsimpl::syncronizing_archive> archive;
 protected:
     const rsimpl::uvc::device &                 get_device() const { return *device; }
     rsimpl::uvc::device &                       get_device() { return *device; }
+
+	virtual void                                start_video_streaming();
+	virtual void                                stop_video_streaming();
+	virtual void                                start_motion_tracking();
+	virtual void                                stop_motion_tracking();
+
 public:
                                                 rs_device(std::shared_ptr<rsimpl::uvc::device> device, const rsimpl::static_device_info & info);
                                                 virtual ~rs_device();
@@ -63,18 +87,18 @@ public:
     void                                        enable_stream_preset(rs_stream stream, rs_preset preset);    
     void                                        disable_stream(rs_stream stream);
 
+    void                                        enable_motion_tracking();
     void                                        set_stream_callback(rs_stream stream, void (*on_frame)(rs_device * device, rs_frame_ref * frame, void * user), void * user);
-    void										enable_events();
-    void										disable_events();
-    virtual void                                start_events();
-    virtual void                                stop_events();
-    int											events_active() const { return data_acquisition_active; }
+    void                                        disable_motion_tracking();
+
     void                                        set_motion_callback(void(*on_event)(rs_device * device, rs_motion_data data, void * user), void * user);
     void                                        set_timestamp_callback(void(*on_event)(rs_device * device, rs_timestamp_data data, void * user), void * user);
 
-    virtual void                                start();
-    virtual void                                stop();
+    virtual void                                start(rs_source source);
+    virtual void                                stop(rs_source source);
+
     bool                                        is_capturing() const { return capturing; }
+	int                                         is_motion_tracking_active() const { return data_acquisition_active; }
     
     void                                        wait_all_streams();
     bool                                        poll_all_streams();
@@ -93,33 +117,10 @@ public:
 
     virtual void                                on_before_start(const std::vector<rsimpl::subdevice_mode_selection> & selected_modes) = 0;
     virtual rs_stream                           select_key_stream(const std::vector<rsimpl::subdevice_mode_selection> & selected_modes) = 0;
-    virtual std::shared_ptr<rsimpl::frame_timestamp_reader>
-                                                create_frame_timestamp_reader() const = 0;
+    virtual std::shared_ptr<rsimpl::frame_timestamp_reader>  create_frame_timestamp_reader() const = 0;
     rs_frame_ref *                              detach_frame(const rs_frameset * fs, rs_stream stream);
     void                                        release_frame(rs_frame_ref * ref);
     rs_frame_ref *                              clone_frame(rs_frame_ref * frame);
 };
-
-namespace rsimpl
-{
-    // This class is used to buffer up several writes to a structure-valued XU control, and send the entire structure all at once
-    // Additionally, it will ensure that any fields not set in a given struct will retain their original values
-    template<class T, class R, class W> struct struct_interface
-    {
-        T struct_;
-        R reader;
-        W writer;        
-        bool active;
-
-        struct_interface(R r, W w) : reader(r), writer(w), active(false) {}
-
-        void activate() { if(!active) { struct_ = reader(); active = true; } }
-        template<class U> double get(U T::* field) { activate(); return struct_.*field; }
-        template<class U, class V> void set(U T::* field, V value) { activate(); struct_.*field = static_cast<U>(value); }
-        void commit() { if(active) writer(struct_); }
-    };
-
-    template<class T, class R, class W> struct_interface<T,R,W> make_struct_interface(R r, W w) { return {r,w}; }
-}
 
 #endif

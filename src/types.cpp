@@ -115,7 +115,14 @@ namespace rsimpl
         CASE(SR300_AUTO_RANGE_MAX_LASER)                  
         CASE(SR300_AUTO_RANGE_START_LASER)                
         CASE(SR300_AUTO_RANGE_UPPER_THRESHOLD) 
-        CASE(SR300_AUTO_RANGE_LOWER_THRESHOLD) 
+        CASE(SR300_AUTO_RANGE_LOWER_THRESHOLD)
+        CASE(SR300_WAKEUP_DEV_PHASE1_PERIOD)
+        CASE(SR300_WAKEUP_DEV_PHASE1_FPS)
+        CASE(SR300_WAKEUP_DEV_PHASE2_PERIOD)
+        CASE(SR300_WAKEUP_DEV_PHASE2_FPS)
+        CASE(SR300_WAKEUP_DEV_RESET)
+        CASE(SR300_WAKE_ON_USB_REASON)
+        CASE(SR300_WAKE_ON_USB_CONFIDENCE)
         CASE(R200_LR_AUTO_EXPOSURE_ENABLED)
         CASE(R200_LR_GAIN)
         CASE(R200_LR_EXPOSURE)
@@ -142,33 +149,18 @@ namespace rsimpl
         CASE(R200_DEPTH_CONTROL_TEXTURE_COUNT_THRESHOLD)     
         CASE(R200_DEPTH_CONTROL_TEXTURE_DIFFERENCE_THRESHOLD)
         CASE(R200_DEPTH_CONTROL_SECOND_PEAK_THRESHOLD)       
-        CASE(R200_DEPTH_CONTROL_NEIGHBOR_THRESHOLD)          
+        CASE(R200_DEPTH_CONTROL_NEIGHBOR_THRESHOLD)
         CASE(R200_DEPTH_CONTROL_LR_THRESHOLD)
-        CASE(SR300_WAKEUP_DEV_PHASE1_PERIOD)
-        CASE(SR300_WAKEUP_DEV_PHASE1_FPS)
-        CASE(SR300_WAKEUP_DEV_PHASE2_PERIOD)
-        CASE(SR300_WAKEUP_DEV_PHASE2_FPS)
-        CASE(SR300_WAKEUP_DEV_RESET)
-        CASE(SR300_WAKE_ON_USB_REASON)
-        CASE(SR300_WAKE_ON_USB_CONFIDENCE)
+        CASE(R200_GYRO_BANDWIDTH)
+        CASE(R200_GYRO_RANGE)
+        CASE(R200_ACCELEROMETER_BANDWIDTH)
+        CASE(R200_ACCELEROMETER_RANGE)
+        CASE(R200_MOTION_MODULE_TIME_SEED)
+        CASE(R200_MOTION_MODULE_ACTIVE)
         CASE(FISHEYE_COLOR_EXPOSURE)
         CASE(FISHEYE_COLOR_GAIN)
         CASE(FISHEYE_STROBE)
         CASE(FISHEYE_EXT_TRIG)
-        default: assert(!is_valid(value)); return nullptr;
-        }
-        #undef CASE
-    }
-
-        const char * get_string(rs_channel value)
-    {
-        #define CASE(X) case RS_CHANNEL_##X: return #X;
-        switch (value)
-        {        
-        CASE(MOTION_DATA)
-        CASE(TIMESTAMP_DATA)
-        CASE(COUNT)
-        CASE(MAX_ENUM)
         default: assert(!is_valid(value)); return nullptr;
         }
         #undef CASE
@@ -180,7 +172,8 @@ namespace rsimpl
         switch(value)
         {
         CASE(VIDEO)
-        CASE(EVENTS)
+        CASE(MOTION_TRACKING)
+        CASE(ALL)
         default: assert(!is_valid(value)); return nullptr;
         }
         #undef CASE

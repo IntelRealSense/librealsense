@@ -53,7 +53,7 @@ int main()
     rs_enable_stream(dev, RS_STREAM_INFRARED, 640, 480, RS_FORMAT_Y8, 60, &e);
     check_error();
     rs_enable_stream(dev, RS_STREAM_INFRARED2, 640, 480, RS_FORMAT_Y8, 60, NULL); /* Pass NULL to ignore errors */
-    rs_start_device(dev, &e);
+    rs_start_device(dev, RS_SOURCE_VIDEO, &e);
     check_error();
 
     /* Open a GLFW window to display our output */

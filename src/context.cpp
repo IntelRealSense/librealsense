@@ -8,11 +8,8 @@
 #include <mutex>
 
 rs_context::rs_context()
-{    
-    context = rsimpl::uvc::create_context();    
-
-    // DS4.1 bringup path- adapter board initialization. Will be removed in post Alpha stage
-    rsimpl::uvc::power_on_adapter_board();
+{
+    context = rsimpl::uvc::create_context();
 
     for(auto device : query_devices(context))
     {
@@ -20,7 +17,7 @@ rs_context::rs_context()
 
         if (get_vendor_id(*device) != PID_INTEL_CAMERA)
             continue;
-                
+
         switch(get_product_id(*device))
         {
             case R200_PRODUCT_ID: devices.push_back(rsimpl::make_r200_device(device)); break;

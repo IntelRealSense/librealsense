@@ -25,13 +25,10 @@ EXPORTS
     rs_get_stream_framerate
     rs_get_stream_intrinsics
 
-	rs_supports	
-	rs_enable_events
-	rs_disable_events
-	rs_start_events
-	rs_stop_events
-	rs_set_motion_callback
-	rs_set_timestamp_callback
+	rs_supports
+	rs_enable_motion_tracking
+	rs_disable_motion_tracking
+	rs_is_motion_tracking_active
 	
     rs_set_frame_callback
     rs_start_device

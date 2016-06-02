@@ -59,13 +59,6 @@ namespace rs
         raw8        = 13
     };
 
-    enum class channel : int8_t
-    {
-        motion_data = 0,
-        timestamps_data,
-        max_channel_enum_type
-    };
-
     enum class preset : int32_t
     {
         best_quality      = 0, 
@@ -80,6 +73,7 @@ namespace rs
         inverse_brown_conrady  = 2  ///< Equivalent to Brown-Conrady distortion, except undistorts image instead of distorting it
     };
 
+    // reflection of rs_option
     enum class option : int32_t
     {
         color_backlight_compensation                    = 0,  
@@ -145,10 +139,23 @@ namespace rs
         r200_depth_control_second_peak_threshold        = 60, 
         r200_depth_control_neighbor_threshold           = 61, 
         r200_depth_control_lr_threshold                 = 62,
-        r200_fisheye_color_exposure                     = 63,
-        r200_fisheye_color_gain                         = 64,
-        r200_fisheye_strobe                             = 65,
-        r200_fisheye_ext_trig                           = 66
+        r200_gyroscope_bandwidth                        = 63,
+        r200_gyroscope_range                            = 64,
+        r200_accelerometer_bandwidth                    = 65,
+        r200_accelerometer_range                        = 66,
+        r200_motion_module_time_seed                    = 67,
+        r200_motion_module_active                       = 68,
+        r200_fisheye_color_exposure                     = 69,
+        r200_fisheye_color_gain                         = 70,
+        r200_fisheye_strobe                             = 71,
+        r200_fisheye_ext_trig                           = 72
+    };
+
+    enum class source : uint8_t
+    {
+        video           = 1,
+        motion_data     = 2,
+        all_sources
     };
 
     struct float2 { float x,y; };
@@ -180,13 +187,7 @@ namespace rs
         bool        is_identity() const                                                 { return rotation[0] == 1 && rotation[4] == 1 && translation[0] == 0 && translation[1] == 0 && translation[2] == 0; }
         float3      transform(const float3 & point) const                               { float3 p; rs_transform_point_to_point(&p.x, this, &point.x); return p; }
 
-    };
-
-    enum source
-    {
-        video = 0,
-        events
-    };
+    };   
 
     struct timestamp_data : rs_timestamp_data
     {
@@ -687,73 +688,47 @@ namespace rs
             error::handle(e);
         }
 
-        /// notify backend to querry hw event on play
-        void enable_events()
+        /// Configure backend to acquire and handle motion-tracking data
+        void enable_motion_tracking(motion_callback_base& motion_handler, timestamp_callback_base& timestamp_handler)
         {
-            rs_error * e = nullptr;
-            rs_enable_events((rs_device *)this, &e);
-            error::handle(e);
-        }
+            rs_error * e = nullptr;            
 
-        void disable_events()
-        {
-            rs_error * e = nullptr;
-            rs_disable_events((rs_device *)this, &e);
-            error::handle(e);
-        }        
-
-        /// check if data acquisition is active        
-        int events_active()
-        {
-            rs_error * e = nullptr;
-            return rs_events_active((rs_device *)this,&e);
-            error::handle(e);
-        }
-
-        void set_motion_callback(motion_callback_base& on_event)
-        {
-            rs_error * e = nullptr;
-            rs_set_motion_callback((rs_device *)this, [](rs_device * device, rs_motion_data mo_data, void * user) {
-                try
-                {
+            rs_enable_motion_tracking((rs_device *)this, 
+                [](rs_device * device, rs_motion_data mo_data, void * user) { try {
                     auto listener = (motion_callback_base *)user;
                     listener->on_event((rs::motion_data)mo_data);
-                }
-                catch (...)
-                {
-
-                }
-            }, &on_event, &e);
-            error::handle(e);
-        }
-
-        void set_timestamp_callback(timestamp_callback_base& on_event)
-        {
-            rs_error * e = nullptr;
-            rs_set_timestamp_callback((rs_device *)this, [](rs_device * device, rs_timestamp_data ts_data, void * user) {
-                try
-                {
+                } catch (...) {} }, &motion_handler,
+                [](rs_device * device, rs_timestamp_data ts_data, void * user) { try {
                     auto listener = (timestamp_callback_base *)user;
                     listener->on_event((rs::timestamp_data)ts_data);
-                }
-                catch (...)
-                {
+                } catch (...) {} }, &timestamp_handler, &e);
 
-                }
-            }, &on_event, &e);
             error::handle(e);
         }
-                
+
+        /// disable events polling
+        void disable_motion_tracking(void)
+        {
+            rs_error * e = nullptr;
+            rs_disable_motion_tracking((rs_device *)this, &e);
+            error::handle(e);
+        }          
+
+        /// check if data acquisition is active        
+        int is_motion_tracking_active()
+        {
+            rs_error * e = nullptr;
+            return rs_is_motion_tracking_active((rs_device *)this,&e);
+            error::handle(e);
+        }
+
 
         /// begin streaming on all enabled streams for this device
         ///
         void start(rs::source source = rs::source::video)
         {            
             rs_error * e = nullptr;
-            if (events==source)
-                rs_start_events((rs_device *)this, &e);
-            else
-                rs_start_device((rs_device *)this, &e);
+            rs_start_device((rs_device *)this, (rs_source)source, &e);
             error::handle(e);
         }
 
@@ -762,10 +737,7 @@ namespace rs
         void stop(rs::source source = rs::source::video)
         {
             rs_error * e = nullptr;
-            if (events==source)
-                rs_stop_events((rs_device *)this, &e);
-            else
-                rs_stop_device((rs_device *)this, &e);
+            rs_stop_device((rs_device *)this, (rs_source)source, &e);
             error::handle(e);
         }
 
@@ -861,7 +833,7 @@ namespace rs
             rs_error * e = nullptr;
             auto r = rs_supports((rs_device *)this, (rs_capabilities)capability, &e);
             error::handle(e);
-            return r;
+            return (bool)r;
         }
 
         /// block until new frames are available
@@ -920,7 +892,7 @@ namespace rs
         int get_frame_counter(stream stream) const
         {
             rs_error * e = nullptr;
-            auto r = rs_get_frame_number((const rs_device *)this, (rs_stream)stream, &e);
+            auto r = rs_get_frame_counter((const rs_device *)this, (rs_stream)stream, &e);
             error::handle(e);
             return r;
         }
@@ -943,7 +915,6 @@ namespace rs
     inline std::ostream & operator << (std::ostream & o, distortion distortion) { return o << rs_distortion_to_string((rs_distortion)distortion); }
     inline std::ostream & operator << (std::ostream & o, option option) { return o << rs_option_to_string((rs_option)option); }    
     inline std::ostream & operator << (std::ostream & o, capabilities capability) { return o << rs_capabilities_to_string((rs_capabilities)capability); }
-    inline std::ostream & operator << (std::ostream & o, channel data) { return o << rs_channel_to_string((rs_channel)data); }
     inline std::ostream & operator << (std::ostream & o, source src) { return o << rs_source_to_string((rs_source)src); }
 
     enum class log_severity : int32_t

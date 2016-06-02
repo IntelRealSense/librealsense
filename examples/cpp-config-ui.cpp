@@ -10,8 +10,8 @@
 
 #pragma comment(lib, "opengl32.lib")
 
-#define MAX(x,y) ((float)(x)>(float)(y))?(x):(y)
-#define MIN(x,y) ((float)(x)<(float)(y))?(x):(y)
+template<typename T> inline T MIN(T x, T y) { return x < y? x : y; }
+template<typename T> inline T MAX(T x, T y) { return x > y? x : y; }
 
 struct int2 { int x,y; };
 struct rect 
@@ -222,11 +222,10 @@ int main(int argc, char * argv[]) try
 
     if (has_motion_module)
     {
-        if (dev->supports(rs::capabilities::motion_events))
-           dev->enable_events();
-
-        dev->set_motion_callback(motion_callback);
-        dev->set_timestamp_callback(timestamp_callback);
+        if (supports_motion_events)
+        {
+            dev->enable_motion_tracking(motion_callback, timestamp_callback);            
+        }
 
         glfwSetWindowSize(win, 1100, 960);
     }
@@ -270,7 +269,7 @@ int main(int argc, char * argv[]) try
                 dev->stop();
 
                 if (has_motion_module)
-                    dev->stop(rs::source::events);
+                    dev->stop(rs::source::motion_data);
             }
         }
         else
@@ -280,7 +279,7 @@ int main(int argc, char * argv[]) try
                 dev->start();
 
                 if (has_motion_module)
-                    dev->start(rs::source::events);
+                    dev->start(rs::source::motion_data);
             }
         }
         y += 34;

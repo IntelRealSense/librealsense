@@ -156,7 +156,7 @@ inline void test_streaming(rs_device * device, std::initializer_list<stream_mode
         rs_enable_stream(device, mode.stream, mode.width, mode.height, mode.format, mode.framerate, require_no_error());
         REQUIRE( rs_is_stream_enabled(device, mode.stream, require_no_error()) == 1 );
     }
-    rs_start_device(device, require_no_error());
+    rs_start_device(device, rs_source::RS_SOURCE_VIDEO, require_no_error());
     REQUIRE( rs_is_device_streaming(device, require_no_error()) == 1 );
 
     rs_wait_for_frames(device, require_no_error());
@@ -178,7 +178,7 @@ inline void test_streaming(rs_device * device, std::initializer_list<stream_mode
         REQUIRE( rs_get_frame_timestamp(device, mode.stream, require_no_error()) >= 0 );
     }
 
-    rs_stop_device(device, require_no_error());
+    rs_stop_device(device, rs_source::RS_SOURCE_VIDEO, require_no_error());
     REQUIRE( rs_is_device_streaming(device, require_no_error()) == 0 );
     for(auto & mode : modes)
     {

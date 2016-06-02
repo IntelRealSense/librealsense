@@ -80,8 +80,7 @@ namespace rsimpl
         RS_ENUM_HELPERS(rs_format, FORMAT)
         RS_ENUM_HELPERS(rs_preset, PRESET)
         RS_ENUM_HELPERS(rs_distortion, DISTORTION)
-        RS_ENUM_HELPERS(rs_option, OPTION)
-        RS_ENUM_HELPERS(rs_channel, CHANNEL)
+    RS_ENUM_HELPERS(rs_option, OPTION)
         RS_ENUM_HELPERS(rs_capabilities, CAPABILITIES)
         RS_ENUM_HELPERS(rs_source, SOURCE)
 #undef RS_ENUM_HELPERS
@@ -268,13 +267,13 @@ namespace rsimpl
 
     struct device_config
     {
-        const static_device_info info;
-        stream_request          requests[RS_STREAM_NATIVE_COUNT];   // Modified by enable/disable_stream calls
+        const static_device_info    info;
+        stream_request              requests[RS_STREAM_NATIVE_COUNT];   // Modified by enable/disable_stream calls
         frame_callback callbacks[RS_STREAM_NATIVE_COUNT];   // Modified by set_frame_callback calls
-        data_polling_request    data_requests;                      // Modified by enable/disable_events calls
-        std::vector<motion_events_callback> motion_callbacks;            // Modified by set_events_callback calls
-        std::vector<timestamp_events_callback> timestamp_callbacks;
-        float depth_scale;                                                      // Scale of depth values
+        data_polling_request        data_requests;                      // Modified by enable/disable_events calls
+        motion_events_callback      motion_callback;                   // Modified by set_events_callback calls
+        timestamp_events_callback   timestamp_callback;
+        float depth_scale;                                              // Scale of depth values
 
         device_config(const rsimpl::static_device_info & info) : info(info), depth_scale(info.nominal_depth_scale)
         {

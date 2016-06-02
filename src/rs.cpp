@@ -211,81 +211,54 @@ void rs_get_stream_intrinsics(const rs_device * device, rs_stream stream, rs_int
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, device, stream, intrin)
 
-void rs_set_frame_callback(rs_device * device, rs_stream stream, void (*on_frame)(rs_device * dev, rs_frame_ref * frame, void * user), void * user, rs_error ** error) try
+void rs_enable_motion_tracking(rs_device * device,
+    void(*on_motion_event)(rs_device * dev, rs_motion_data m_data, void * user), void * motion_handler,
+    void(*on_timestamp_event)(rs_device * dev, rs_timestamp_data t_data, void * user), void * timestamp_handler,
+    rs_error ** error) try
 {
     VALIDATE_NOT_NULL(device);
-    VALIDATE_NATIVE_STREAM(stream);
-    VALIDATE_NOT_NULL(on_frame);
-    device->set_stream_callback(stream, on_frame, user);
+    VALIDATE_NOT_NULL(on_motion_event);
+    VALIDATE_NOT_NULL(on_timestamp_event);
+    VALIDATE_NOT_NULL(motion_handler);
+    VALIDATE_NOT_NULL(timestamp_handler);
+    device->enable_motion_tracking();
+    device->set_motion_callback(on_motion_event, motion_handler);
+    device->set_timestamp_callback(on_timestamp_event, timestamp_handler);
 }
-HANDLE_EXCEPTIONS_AND_RETURN(, device, stream, on_frame, user)
+HANDLE_EXCEPTIONS_AND_RETURN(, device, on_motion_event, motion_handler, on_timestamp_event, timestamp_handler)
 
-void rs_enable_events(rs_device * device, rs_error ** error) try
+void rs_disable_motion_tracking(rs_device * device, rs_error ** error) try
 {
     VALIDATE_NOT_NULL(device);
-    device->enable_events();
-}
-HANDLE_EXCEPTIONS_AND_RETURN(, device)
-
-void rs_disable_events(rs_device * device, rs_error ** error) try
-{
-    VALIDATE_NOT_NULL(device);
-    device->disable_events();
-}
-HANDLE_EXCEPTIONS_AND_RETURN(, device)
-
-void rs_start_events(rs_device * device, rs_error ** error) try
-{
-    VALIDATE_NOT_NULL(device);
-    device->start_events();
+    device->disable_motion_tracking();
+    device->set_motion_callback(nullptr, nullptr);
+    device->set_timestamp_callback(nullptr, nullptr);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, device)
 
-void rs_stop_events(rs_device * device, rs_error ** error) try
-{
-    VALIDATE_NOT_NULL(device);
-
-    device->stop_events();
-}
-HANDLE_EXCEPTIONS_AND_RETURN(, device)
-
-int rs_events_active(rs_device * device, rs_error ** error) try
+int rs_is_motion_tracking_active(rs_device * device, rs_error ** error) try
 {
     VALIDATE_NOT_NULL(device);  
 
-    return device->events_active();
+    return device->is_motion_tracking_active();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, device)
 
-void rs_set_motion_callback(rs_device * device, void(*on_event)(rs_device * dev, rs_motion_data data, void * user), void * user, rs_error ** error) try
+void rs_start_device(rs_device * device, rs_source source, rs_error ** error) try
 {
-    VALIDATE_NOT_NULL(device);
-    VALIDATE_NOT_NULL(on_event);
-    device->set_motion_callback( on_event, user);
+    VALIDATE_NOT_NULL(device); 
+    VALIDATE_ENUM(source);
+    device->start(source);
 }
-HANDLE_EXCEPTIONS_AND_RETURN(, device, on_event, user)
+HANDLE_EXCEPTIONS_AND_RETURN(, device,source)
 
-void rs_set_timestamp_callback(rs_device * device, void(*on_event)(rs_device * dev, rs_timestamp_data data, void * user), void * user, rs_error ** error) try
+void rs_stop_device(rs_device * device, rs_source source, rs_error ** error) try
 {
     VALIDATE_NOT_NULL(device);
-    VALIDATE_NOT_NULL(on_event);
-    device->set_timestamp_callback(on_event, user);
+    VALIDATE_ENUM(source);
+    device->stop(source);
 }
-HANDLE_EXCEPTIONS_AND_RETURN(, device, on_event, user)
-
-void rs_start_device(rs_device * device, rs_error ** error) try
-{
-    VALIDATE_NOT_NULL(device);
-    device->start();
-}
-HANDLE_EXCEPTIONS_AND_RETURN(, device)
-
-void rs_stop_device(rs_device * device, rs_error ** error) try
-{
-    VALIDATE_NOT_NULL(device);
-    device->stop();
-}
-HANDLE_EXCEPTIONS_AND_RETURN(, device)
+HANDLE_EXCEPTIONS_AND_RETURN(, device,source)
 
 int rs_is_device_streaming(const rs_device * device, rs_error ** error) try
 {
@@ -300,7 +273,6 @@ float rs_get_device_depth_scale(const rs_device * device, rs_error ** error) try
     return device->get_depth_scale();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0.0f, device)
-
 
 
 void rs_wait_for_frames(rs_device * device, rs_error ** error) try
@@ -441,8 +413,6 @@ rs_frame_ref * rs_clone_frame_ref(rs_device * device, rs_frame_ref* frame, rs_er
     return device->clone_frame(frame);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, device, frame)
-
-
 rs_frame_ref * rs_detach_frame(rs_device * device, const rs_frameset * frameset, rs_stream stream, rs_error ** error) try
 {
     VALIDATE_NOT_NULL(frameset);
@@ -493,13 +463,6 @@ const char * rs_get_option_name(rs_option option, rs_error ** error) try
     return rsimpl::get_string(option);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, option)
-
-const char * rs_get_channel_name(rs_channel channel, rs_error ** error) try
-{
-    VALIDATE_ENUM(channel);
-    return rsimpl::get_string(channel);
-}
-HANDLE_EXCEPTIONS_AND_RETURN(nullptr, channel)
 
 const char * rs_get_capabilities_name(rs_capabilities capability, rs_error ** error) try
 {
@@ -577,12 +540,10 @@ void rs_set_device_option(rs_device * device, rs_option option, double value, rs
 HANDLE_EXCEPTIONS_AND_RETURN(, device, option, value)
 
 
-
 void rs_free_error(rs_error * error) { if (error) delete error; }
 const char * rs_get_failed_function(const rs_error * error) { return error ? error->function : nullptr; }
 const char * rs_get_failed_args(const rs_error * error) { return error ? error->args.c_str() : nullptr; }
 const char * rs_get_error_message(const rs_error * error) { return error ? error->message.c_str() : nullptr; }
-
 
 
 const char * rs_stream_to_string(rs_stream stream) { return rsimpl::get_string(stream); }
@@ -590,7 +551,6 @@ const char * rs_format_to_string(rs_format format) { return rsimpl::get_string(f
 const char * rs_preset_to_string(rs_preset preset) { return rsimpl::get_string(preset); }
 const char * rs_distortion_to_string(rs_distortion distortion) { return rsimpl::get_string(distortion); }
 const char * rs_option_to_string(rs_option option) { return rsimpl::get_string(option); }
-const char * rs_channel_to_string(rs_channel data) { return rsimpl::get_string(data); }
 const char * rs_capabilities_to_string(rs_capabilities capability) { return rsimpl::get_string(capability); }
 const char * rs_source_to_string(rs_source source)   { return rsimpl::get_string(source); }
 

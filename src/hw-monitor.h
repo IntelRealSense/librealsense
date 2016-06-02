@@ -92,8 +92,7 @@ namespace rsimpl
         
         void fill_usb_buffer(int opCodeNumber, int p1, int p2, int p3, int p4, uint8_t * data, int dataLength, uint8_t * bufferToSend, int & length);
 
-        void execute_usb_command(uvc::device & device, std::timed_mutex & mutex, unsigned char handle_id, uint8_t *out, size_t outSize, uint32_t & op, uint8_t * in, size_t & inSize);
-        //void execute_usb_command(uvc::device & device, std::timed_mutex & mutex, uint8_t *out, size_t outSize, uint32_t & op, uint8_t * in, size_t & inSize);
+        void execute_usb_command(uvc::device & device, std::timed_mutex & mutex, unsigned char handle_id, uint8_t *out, size_t outSize, uint32_t & op, uint8_t * in, size_t & inSize);        
 
         void send_hw_monitor_command(uvc::device & device, std::timed_mutex & mutex, unsigned char handle_id, HWMonCommandDetails & details);
 
