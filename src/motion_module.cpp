@@ -216,7 +216,7 @@ rs_motion_data motion_module_parser::parse_motion(const unsigned char * data)
 {
     // predefined motion devices parameters
     const static float gravity      = 9.80665f;
-    const static float gyro_range   = 2000.f;           // Angular speed range [Deg_C/Sec]
+    const static float gyro_range   = 2000.f;           // Measured angular velocity range [Deg_C/Sec]
     const static float gyro_transform_factor = float((gyro_range * M_PI) / (180.f * 32767.f));
 
     const static float accel_range = 4.f;               // Accelerometer is preset to [-4...+4]g range
