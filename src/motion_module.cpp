@@ -4,6 +4,8 @@
 #include "hw-monitor.h"
 #include "motion_module.h"
 #include <iostream>
+#define _USE_MATH_DEFINES
+#include <math.h>
 
 using namespace rsimpl;
 using namespace rsimpl::motion_module;
@@ -214,12 +216,12 @@ rs_motion_data motion_module_parser::parse_motion(const unsigned char * data)
 {
     // predefined motion devices ranges
 
-    const static float gravity = 9.871f;
+    const static float gravity = 9.80665f;
     const static float gyro_range = 2000.f;
-    const static float gyro_transform_factor = (gyro_range * 3.141527f) / (180.f * 32768.f);
+    const static float gyro_transform_factor = (gyro_range * M_PI) / (180.f * 32767.f);
 
-    const static float accel_range = 0.00195f;   // [-4..4]g
-    const static float accelerator_transform_factor = accel_range * gravity;
+    const static float accel_range = 4.f;
+    const static float accelerator_transform_factor = gravity * accel_range / 2048.f;
 
     rs_motion_data entry;
 
