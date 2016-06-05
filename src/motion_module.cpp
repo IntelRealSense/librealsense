@@ -214,14 +214,13 @@ void motion_module_parser::parse_timestamp(const unsigned char * data, rs_timest
 
 rs_motion_data motion_module_parser::parse_motion(const unsigned char * data)
 {
-    // predefined motion devices ranges
+    // predefined motion devices parameters
+    const static float gravity      = 9.80665f;
+    const static float gyro_range   = 2000.f;           // Angular speed range [Deg_C/Sec]
+    const static float gyro_transform_factor = float((gyro_range * M_PI) / (180.f * 32767.f));
 
-    const static float gravity = 9.80665f;
-    const static float gyro_range = 2000.f;
-    const static float gyro_transform_factor = (gyro_range * M_PI) / (180.f * 32767.f);
-
-    const static float accel_range = 4.f;
-    const static float accelerator_transform_factor = gravity * accel_range / 2048.f;
+    const static float accel_range = 4.f;               // Accelerometer is preset to [-4...+4]g range
+    const static float accelerator_transform_factor = float(gravity * accel_range / 2048.f);
 
     rs_motion_data entry;
 
@@ -229,6 +228,7 @@ rs_motion_data motion_module_parser::parse_motion(const unsigned char * data)
 
     entry.is_valid = (data[1] >> 7);          // Isolate bit[15]
 
+    // The mation tracking data for the three measured axes
     short tmp[3];
     memcpy(&tmp, &data[6], sizeof(short) * 3);
 
