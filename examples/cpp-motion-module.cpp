@@ -50,8 +50,8 @@ int main() try
     printf("    Firmware version: %s\n", dev->get_firmware_version());
 
     // Motion Module configurable options
-    std::vector<rs::option> mm_cfg_list = { rs::option::r200_gyroscope_bandwidth,       rs::option::r200_gyroscope_range,
-                                            rs::option::r200_accelerometer_bandwidth,   rs::option::r200_accelerometer_range };
+    std::vector<rs::option> mm_cfg_list = { rs::option::zr300_gyroscope_bandwidth,       rs::option::zr300_gyroscope_range,
+                                            rs::option::zr300_accelerometer_bandwidth,   rs::option::zr300_accelerometer_range };
     // gyro_bw      gyro_range  accel_bw    accel_range
     std::vector<double> mm_cfg_params = { 1,          1,          1,          1 };    // TODO expose as opaque gyro/accel parameters
     assert(mm_cfg_list.size() == mm_cfg_params.size());
@@ -65,8 +65,7 @@ int main() try
         // 2. Optional - configure motion module
         //dev->set_options(mm_cfg_list.data(), mm_cfg_list.size(), mm_cfg_params.data());
 
-        // Optional - query Motion module state
-        std::cout << "Motion module is " << (dev->get_option(rs::option::r200_motion_module_active) ? " active" : " idle") << std::endl;
+    std::cout << "Motion module is " << (dev->get_option(rs::option::zr300_motion_module_active) ? " active" : " idle") << std::endl;
 
         // 3. Start generating motion-tracking data
         dev->start(rs::source::motion_data);
@@ -80,7 +79,7 @@ int main() try
         // 4. stop data acquisition
         dev->stop(rs::source::motion_data);
 
-        // 5. reset previous settings formotion data handlers
+        // 5. reset previous settings for motion data handlers
         dev->disable_motion_tracking();
 
     }

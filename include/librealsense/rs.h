@@ -168,12 +168,12 @@ typedef enum rs_option
     RS_OPTION_R200_DEPTH_CONTROL_SECOND_PEAK_THRESHOLD        = 60,
     RS_OPTION_R200_DEPTH_CONTROL_NEIGHBOR_THRESHOLD           = 61,
     RS_OPTION_R200_DEPTH_CONTROL_LR_THRESHOLD                 = 62,
-    RS_OPTION_R200_GYRO_BANDWIDTH                             = 63,
-    RS_OPTION_R200_GYRO_RANGE                                 = 64,
-    RS_OPTION_R200_ACCELEROMETER_BANDWIDTH                    = 65,
-    RS_OPTION_R200_ACCELEROMETER_RANGE                        = 66,
-    RS_OPTION_R200_MOTION_MODULE_TIME_SEED                    = 67,
-    RS_OPTION_R200_MOTION_MODULE_ACTIVE                       = 68,
+    RS_OPTION_ZR300_GYRO_BANDWIDTH                            = 63,
+    RS_OPTION_ZR300_GYRO_RANGE                                = 64,
+    RS_OPTION_ZR300_ACCELEROMETER_BANDWIDTH                   = 65,
+    RS_OPTION_ZR300_ACCELEROMETER_RANGE                       = 66,
+    RS_OPTION_ZR300_MOTION_MODULE_TIME_SEED                   = 67,
+    RS_OPTION_ZR300_MOTION_MODULE_ACTIVE                      = 68,
     RS_OPTION_FISHEYE_COLOR_EXPOSURE                          = 69,
     RS_OPTION_FISHEYE_COLOR_GAIN                              = 70,
     RS_OPTION_FISHEYE_STROBE                                  = 71,
@@ -229,6 +229,8 @@ typedef struct rs_motion_data
 typedef struct rs_context rs_context;
 typedef struct rs_device rs_device;
 typedef struct rs_error rs_error;
+typedef struct rs_frameset rs_frameset;
+typedef struct rs_frame_ref rs_frame_ref;
 
 rs_context * rs_create_context(int api_version, rs_error ** error);
 void rs_delete_context(rs_context * context, rs_error ** error);
@@ -388,6 +390,15 @@ int rs_get_stream_framerate(const rs_device * device, rs_stream stream, rs_error
 void rs_get_stream_intrinsics(const rs_device * device, rs_stream stream, rs_intrinsics * intrin, rs_error ** error);
 
 /**
+ * set up a frame callback that will be called immediately when an image is available, with no synchronization logic applied
+ * \param[in] stream    the stream for whose images the callback should be registered
+ * \param[in] on_frame  the callback which will receive the frame data and timestamp
+ * \param[in] user      a user data point to be passed to the callback
+ * \param[out] error    if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+ */
+void rs_set_frame_callback(rs_device * device, rs_stream stream, void (*on_frame)(rs_device * dev, rs_frame_ref * frame, void * user), void * user, rs_error ** error);
+
+/**
 * Enable and configure motion-tracking data handlers 
 * \param[in] on_motion_event    user-defined routine to be invoked when a motion data arrives
 * \param[in] motion_handler     a user data point to be passed to the motion event callback
@@ -505,6 +516,20 @@ int rs_poll_for_frames(rs_device * device, rs_error ** error);
 int rs_supports(rs_device * device, rs_capabilities capability, rs_error ** error);
 
 /**
+* block until new frames are available and return a unique handle to the resulting frameset
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+*/
+rs_frameset* rs_wait_for_frames_safe(rs_device * device, rs_error ** error);
+
+/**
+* check if new frames are available, without blocking and return a unique handle to the resulting frameset
+* \param[out] frameset  if non-null, receives a unique handle for the resulting frame-set, to be queried later
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return            1 if new frames are available, 0 if no new frames have arrived
+*/
+int rs_poll_for_frames_safe(rs_device * device, rs_frameset** frameset, rs_error ** error);
+
+/**
  * retrieve the time at which the latest frame on a stream was captured
  * \param[in] stream  the stream whose latest frame we are interested in
  * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
@@ -512,6 +537,13 @@ int rs_supports(rs_device * device, rs_capabilities capability, rs_error ** erro
  */
 int rs_get_frame_timestamp(const rs_device * device, rs_stream stream, rs_error ** error);
 
+/**
+* retrieve the system time at which the latest frame on a stream was captured
+* \param[in] stream  the stream whose latest frame we are interested in
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return            the system time  of the frame, in milliseconds
+*/
+long long rs_get_frame_system_time(const rs_device * device, rs_stream stream, rs_error ** error);
 /**
 * retrieve the frame counter
 * \param[in] stream  the stream whose latest frame we are interested in
@@ -526,8 +558,95 @@ int rs_get_frame_counter(const rs_device * device, rs_stream stream, rs_error **
  * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
  * \return            the pointer to the start of the frame data
  */
-
 const void * rs_get_frame_data(const rs_device * device, rs_stream stream, rs_error ** error);
+
+/**
+* retrive timestamp from safe frameset handle, returned by wait_for_frames_safe or rs_poll_for_frames_safe
+* \param[in] stream  the stream whose latest frame we are interested in
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return            the timestamp of the frame, in milliseconds since the device was started
+*/
+int rs_get_frame_timestamp_safe(const rs_frameset * frameset, rs_stream stream, rs_error ** error);
+
+/**
+* retrive frame data from safe frameset handle, returned by wait_for_frames_safe or rs_poll_for_frames_safe
+* \param[in] stream  the stream whose latest frame we are interested in
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return            the pointer to the start of the frame data
+*/
+const void * rs_get_frame_data_safe(const rs_frameset * frameset, rs_stream stream, rs_error ** error);
+
+/**
+* retrive frame number from safe frameset handle, returned by wait_for_frames_safe or rs_poll_for_frames_safe
+* \param[in] stream  the stream whose latest frame we are interested in
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return            frame number of the frame
+*/
+int rs_get_frame_number_safe(const rs_frameset * frameset, rs_stream stream, rs_error ** error);
+
+/**
+* relases the frameset handle
+* \param[in] frameset handle returned by wait_for_frames_safe or rs_poll_for_frames_safe
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return            the pointer to the start of the frame data
+*/
+void rs_release_frames(rs_device * device, rs_frameset * frameset, rs_error ** error);
+
+/**
+* clone frameset handle, creating new handle that is tracking the same underlying frameset object
+* \param[in] frameset handle returned by wait_for_frames_safe or rs_poll_for_frames_safe
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return            the pointer to the start of the frame data
+*/
+rs_frameset * rs_clone_frames_ref(rs_device * device, rs_frameset* frameset, rs_error ** error);
+
+/**
+* detach individual frame reference from a frame-set.
+* \param[in] frameset handle returned by wait_for_frames_safe or rs_poll_for_frames_safe
+* \param[in] stream  the stream whose latest frame we are interested in
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return            the pointer to the start of the frame data
+*/
+rs_frame_ref * rs_detach_frame(rs_device * device, const rs_frameset * frameset, rs_stream stream, rs_error ** error);
+
+/**
+* relases the frame handle
+* \param[in] frame handle returned either detach, clone_ref or from frame callback
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return            the pointer to the start of the frame data
+*/
+void rs_release_frame(rs_device * device, rs_frame_ref * frame, rs_error ** error);
+
+
+/**
+* retrive timestamp from safe frame handle, returned from detach, clone_ref or from frame callback
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return            the timestamp of the frame, in milliseconds since the device was started
+*/
+int rs_get_detached_frame_timestamp(const rs_frame_ref * frame, rs_error ** error);
+
+/**
+* retrive frame number from safe frame handle, returned from detach, clone_ref or from frame callback
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return            the frame nubmer of the frame, in milliseconds since the device was started
+*/
+int rs_get_detached_frame_number(const rs_frame_ref * frame, rs_error ** error);
+
+
+/**
+* retrive data from safe frame handle, returned from detach, clone_ref or from frame callback
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return            the pointer to the start of the frame data
+*/
+const void * rs_get_detached_frame_data(const rs_frame_ref * frame, rs_error ** error);
+
+/**
+* clone frame handle, creating new handle that is tracking the same underlying frame object
+* \param[in] frame handle returned from detach, clone_ref or from frame callback
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return            the pointer to the start of the frame data
+*/
+rs_frame_ref * rs_clone_frame_ref(rs_device * device, rs_frame_ref* frame, rs_error ** error);
                                      
 const char * rs_get_failed_function  (const rs_error * error);
 const char * rs_get_failed_args      (const rs_error * error);

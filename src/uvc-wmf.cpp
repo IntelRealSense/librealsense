@@ -1,5 +1,7 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
+#include <chrono>
+
 
 #ifdef RS_USE_WMF_BACKEND
 
@@ -213,7 +215,7 @@ namespace rsimpl
             com_ptr<IAMVideoProcAmp> am_video_proc_amp;            
             std::map<int, com_ptr<IKsControl>> ks_controls;
             com_ptr<IMFSourceReader> mf_source_reader;
-            std::function<void(const void * frame)> callback;
+            std::function<void(const void * frame, std::function<void()>)> callback;
             std::function<void(const unsigned char * data, const int size)> channel_data_callback = nullptr;
             int vid, pid;
 
@@ -648,24 +650,31 @@ namespace rsimpl
                         BYTE * byte_buffer; DWORD max_length, current_length;
                         if(SUCCEEDED(buffer->Lock(&byte_buffer, &max_length, &current_length)))
                         {
-                            owner_ptr->subdevices[subdevice_index].callback(byte_buffer);
-                            HRESULT hr = buffer->Unlock();
-                        }
-                    }
-                }
+                            auto continuation = [buffer, this]()
+                            {
+                                buffer->Unlock();
+                            };
 
-                HRESULT hr = owner_ptr->subdevices[subdevice_index].mf_source_reader->ReadSample(MF_SOURCE_READER_FIRST_VIDEO_STREAM, 0, NULL, NULL, NULL, NULL);
-                switch(hr)
+                            owner_ptr->subdevices[subdevice_index].callback(byte_buffer, continuation);
+                        }
+					}
+				}
+
+                if (auto owner_ptr_new = owner.lock())
                 {
-                case S_OK: break;
-                case MF_E_INVALIDREQUEST: LOG_ERROR("ReadSample returned MF_E_INVALIDREQUEST"); break;
-                case MF_E_INVALIDSTREAMNUMBER: LOG_ERROR("ReadSample returned MF_E_INVALIDSTREAMNUMBER"); break;
-                case MF_E_NOTACCEPTING: LOG_ERROR("ReadSample returned MF_E_NOTACCEPTING"); break;
-                case E_INVALIDARG: LOG_ERROR("ReadSample returned E_INVALIDARG"); break;
-                case MF_E_VIDEO_RECORDING_DEVICE_INVALIDATED: LOG_ERROR("ReadSample returned MF_E_VIDEO_RECORDING_DEVICE_INVALIDATED"); break;
-                default: LOG_ERROR("ReadSample returned HRESULT " << std::hex << (uint32_t)hr); break;
+                    auto hr = owner_ptr_new->subdevices[subdevice_index].mf_source_reader->ReadSample(MF_SOURCE_READER_FIRST_VIDEO_STREAM, 0, NULL, NULL, NULL, NULL);
+                    switch (hr)
+                    {
+                    case S_OK: break;
+                    case MF_E_INVALIDREQUEST: LOG_ERROR("ReadSample returned MF_E_INVALIDREQUEST"); break;
+                    case MF_E_INVALIDSTREAMNUMBER: LOG_ERROR("ReadSample returned MF_E_INVALIDSTREAMNUMBER"); break;
+                    case MF_E_NOTACCEPTING: LOG_ERROR("ReadSample returned MF_E_NOTACCEPTING"); break;
+                    case E_INVALIDARG: LOG_ERROR("ReadSample returned E_INVALIDARG"); break;
+                    case MF_E_VIDEO_RECORDING_DEVICE_INVALIDATED: LOG_ERROR("ReadSample returned MF_E_VIDEO_RECORDING_DEVICE_INVALIDATED"); break;
+                    default: LOG_ERROR("ReadSample returned HRESULT " << std::hex << (uint32_t)hr); break;
+                    }
+                    if (hr != S_OK) streaming = false;
                 }
-                if(hr != S_OK) streaming = false;
             }
             return S_OK; 
         }
@@ -718,7 +727,7 @@ namespace rsimpl
             device.claimed_aux_interfaces.push_back(interface_number);
         }
 
-        bool power_on_adapter_board()
+        void power_on_adapter_board()
         {
             IMFAttributes * pAttributes = NULL;
             check("MFCreateAttributes", MFCreateAttributes(&pAttributes, 1));
@@ -754,7 +763,7 @@ namespace rsimpl
             CoTaskMemFree(ppDevices);
 
             if (!fish_eye_dev)
-                return false;
+                return;
 
             std::timed_mutex mutex;
             claim_interface(*fish_eye_dev, FISHEYE_WIN_USB_DEVICE_GUID, FISHEYE_HWMONITOR_INTERFACE);
@@ -763,7 +772,7 @@ namespace rsimpl
             perform_and_send_monitor_command(*fish_eye_dev, mutex, cmd);
             Sleep(2000);
 
-            return true;
+            return;
         }
 
         void bulk_transfer(device & device, unsigned char handle_id, uint8_t endpoint, void * data, int length, int *actual_length, unsigned int timeout)
@@ -779,7 +788,7 @@ namespace rsimpl
             }
         }
 
-        void set_subdevice_mode(device & device, int subdevice_index, int width, int height, uint32_t fourcc, int fps, std::function<void(const void * frame)> callback)
+        void set_subdevice_mode(device & device, int subdevice_index, int width, int height, uint32_t fourcc, int fps, std::function<void(const void * frame, std::function<void()> continuation)> callback)
         {
             auto & sub = device.subdevices[subdevice_index];
             
@@ -818,7 +827,7 @@ namespace rsimpl
         }
 
         void set_subdevice_data_channel_handler(device & device, int subdevice_index, std::function<void(const unsigned char * data, const int size)> callback)
-        {			
+        {           
             device.subdevices[subdevice_index].set_data_channel_cfg(callback);
         }
 

@@ -6,8 +6,10 @@
 
 #include "context.h"
 #include "device.h"
+#include "sync.h"
 
 
+#include "archive.h"
 
 ////////////////////////
 // API implementation //
@@ -40,7 +42,7 @@ namespace rsimpl
     }
 }
 #define HANDLE_EXCEPTIONS_AND_RETURN(R, ...) catch(...) { std::ostringstream ss; rsimpl::stream_args(ss, #__VA_ARGS__, __VA_ARGS__); rsimpl::translate_exception(__FUNCTION__, ss.str(), error); return R; }
-#define VALIDATE_NOT_NULL(ARG) if(!ARG) throw std::runtime_error("null pointer passed for argument \"" #ARG "\"");
+#define VALIDATE_NOT_NULL(ARG) if(!(ARG)) throw std::runtime_error("null pointer passed for argument \"" #ARG "\"");
 #define VALIDATE_ENUM(ARG) if(!rsimpl::is_valid(ARG)) { std::ostringstream ss; ss << "bad enum value for argument \"" #ARG "\""; throw std::runtime_error(ss.str()); }
 #define VALIDATE_RANGE(ARG, MIN, MAX) if(ARG < MIN || ARG > MAX) { std::ostringstream ss; ss << "out of range value for argument \"" #ARG "\""; throw std::runtime_error(ss.str()); }
 #define VALIDATE_NATIVE_STREAM(ARG) VALIDATE_ENUM(ARG); if(ARG >= RS_STREAM_NATIVE_COUNT) { std::ostringstream ss; ss << "argument \"" #ARG "\" must be a native stream"; throw std::runtime_error(ss.str()); }
@@ -48,14 +50,14 @@ namespace rsimpl
 rs_context * rs_create_context(int api_version, rs_error ** error) try
 {
     if (api_version != RS_API_VERSION) throw std::runtime_error("api version mismatch");
-    return new rs_context();
+    return rs_context::acquire_instance();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, api_version)
 
 void rs_delete_context(rs_context * context, rs_error ** error) try
 {
     VALIDATE_NOT_NULL(context);
-    delete context;
+    rs_context::release_instance();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, context)
 
@@ -73,8 +75,6 @@ rs_device * rs_get_device(rs_context * context, int index, rs_error ** error) tr
     return context->devices[index].get();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, context, index)
-
-
 
 const char * rs_get_device_name(const rs_device * device, rs_error ** error) try
 {
@@ -96,7 +96,6 @@ const char * rs_get_device_firmware_version(const rs_device * device, rs_error *
     return device->get_firmware_version();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, device)
-
 
 void rs_get_device_extrinsics(const rs_device * device, rs_stream from, rs_stream to, rs_extrinsics * extrin, rs_error ** error) try
 {
@@ -212,6 +211,16 @@ void rs_get_stream_intrinsics(const rs_device * device, rs_stream stream, rs_int
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, device, stream, intrin)
 
+void rs_set_frame_callback(rs_device * device, rs_stream stream, 
+    void(*on_frame)(rs_device * dev, rs_frame_ref * frame, void * user), void * user, rs_error ** error) try
+{
+    VALIDATE_NOT_NULL(device);
+    VALIDATE_ENUM(stream);
+    VALIDATE_NOT_NULL(on_frame);
+    device->set_stream_callback(stream, on_frame, user);
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, device, stream, on_frame, user)
+
 void rs_enable_motion_tracking(rs_device * device,
     void(*on_motion_event)(rs_device * dev, rs_motion_data m_data, void * user), void * motion_handler,
     void(*on_timestamp_event)(rs_device * dev, rs_timestamp_data t_data, void * user), void * timestamp_handler,
@@ -219,9 +228,7 @@ void rs_enable_motion_tracking(rs_device * device,
 {
     VALIDATE_NOT_NULL(device);
     VALIDATE_NOT_NULL(on_motion_event);
-    VALIDATE_NOT_NULL(on_timestamp_event);
-    VALIDATE_NOT_NULL(motion_handler);
-    VALIDATE_NOT_NULL(timestamp_handler);
+    VALIDATE_NOT_NULL(on_timestamp_event || on_motion_event);
     device->enable_motion_tracking();
     device->set_motion_callback(on_motion_event, motion_handler);
     device->set_timestamp_callback(on_timestamp_event, timestamp_handler);
@@ -290,6 +297,14 @@ int rs_poll_for_frames(rs_device * device, rs_error ** error) try
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, device)
 
+
+rs_frameset* rs_wait_for_frames_safe(rs_device * device, rs_error ** error) try
+{
+    VALIDATE_NOT_NULL(device);
+    return device->wait_all_streams_safe();
+}
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, device)
+
 int rs_supports(rs_device * device, rs_capabilities capability, rs_error ** error) try
 {
     VALIDATE_NOT_NULL(device);
@@ -297,11 +312,28 @@ int rs_supports(rs_device * device, rs_capabilities capability, rs_error ** erro
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, device)
 
+
+int rs_poll_for_frames_safe(rs_device * device, rs_frameset** frameset, rs_error ** error) try
+{
+    VALIDATE_NOT_NULL(device);
+    VALIDATE_NOT_NULL(frameset);
+    return device->poll_all_streams_safe(frameset);
+}
+HANDLE_EXCEPTIONS_AND_RETURN(0, device, frameset)
+
 int rs_get_frame_timestamp(const rs_device * device, rs_stream stream, rs_error ** error) try
 {
     VALIDATE_NOT_NULL(device);
     VALIDATE_ENUM(stream);
     return device->get_stream_interface(stream).get_frame_number();
+}
+HANDLE_EXCEPTIONS_AND_RETURN(0, device, stream)
+
+long long rs_get_frame_system_time(const rs_device * device, rs_stream stream, rs_error ** error) try
+{
+	VALIDATE_NOT_NULL(device);
+	VALIDATE_ENUM(stream);
+	return device->get_stream_interface(stream).get_frame_system_time();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, device, stream)
 
@@ -320,6 +352,90 @@ const void * rs_get_frame_data(const rs_device * device, rs_stream stream, rs_er
     return device->get_stream_interface(stream).get_frame_data();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, device, stream)
+
+int rs_get_frame_timestamp_safe(const rs_frameset * device, rs_stream stream, rs_error ** error) try
+{
+    VALIDATE_NOT_NULL(device);
+    VALIDATE_ENUM(stream);
+    return ((rsimpl::frame_archive::frameset*)device)->get_frame_timestamp(stream);
+}
+HANDLE_EXCEPTIONS_AND_RETURN(0, device, stream)
+
+int rs_get_frame_number_safe(const rs_frameset * device, rs_stream stream, rs_error ** error) try
+{
+    VALIDATE_NOT_NULL(device);
+    VALIDATE_ENUM(stream);
+    return ((rsimpl::frame_archive::frameset*)device)->get_frame_number(stream);
+}
+HANDLE_EXCEPTIONS_AND_RETURN(0, device, stream)
+
+const void * rs_get_frame_data_safe(const rs_frameset * device, rs_stream stream, rs_error ** error) try
+{
+    VALIDATE_NOT_NULL(device);
+    VALIDATE_ENUM(stream);
+    return ((rsimpl::frame_archive::frameset*)device)->get_frame_data(stream);
+}
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, device, stream)
+
+int rs_get_detached_frame_timestamp(const rs_frame_ref * frameset, rs_error ** error) try
+{
+    VALIDATE_NOT_NULL(frameset);
+    return ((rsimpl::frame_archive::frame_ref*)frameset)->get_frame_timestamp();
+}
+HANDLE_EXCEPTIONS_AND_RETURN(0, frameset)
+
+const void * rs_get_detached_frame_data(const rs_frame_ref * frameset, rs_error ** error) try
+{
+    VALIDATE_NOT_NULL(frameset);
+    return ((rsimpl::frame_archive::frame_ref*)frameset)->get_frame_data();
+}
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, frameset)
+
+int rs_get_detached_frame_number(const rs_frame_ref * frame, rs_error ** error) try
+{
+    VALIDATE_NOT_NULL(frame);
+    return ((rsimpl::frame_archive::frame_ref*)frame)->get_frame_number();
+}
+HANDLE_EXCEPTIONS_AND_RETURN(0, frame)
+
+void rs_release_frames(rs_device * device, rs_frameset * frames, rs_error ** error) try
+{
+    VALIDATE_NOT_NULL(device);
+    VALIDATE_NOT_NULL(frames);
+    device->release_frames(frames);
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, device, frames)
+
+rs_frameset* rs_clone_frames_ref(rs_device * device, rs_frameset* frameset, rs_error ** error) try
+{
+    VALIDATE_NOT_NULL(device);
+    VALIDATE_NOT_NULL(frameset);
+    return device->clone_frames(frameset);
+}
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, device, frameset)
+
+rs_frame_ref * rs_clone_frame_ref(rs_device * device, rs_frame_ref* frame, rs_error ** error) try
+{
+    VALIDATE_NOT_NULL(device);
+    VALIDATE_NOT_NULL(frame);
+    return device->clone_frame(frame);
+}
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, device, frame)
+rs_frame_ref * rs_detach_frame(rs_device * device, const rs_frameset * frameset, rs_stream stream, rs_error ** error) try
+{
+    VALIDATE_NOT_NULL(frameset);
+    VALIDATE_ENUM(stream);
+    return device->detach_frame(frameset, stream);
+}
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, frameset, stream)
+
+void rs_release_frame(rs_device * device, rs_frame_ref * frame, rs_error ** error) try
+{
+    VALIDATE_NOT_NULL(device);
+    VALIDATE_NOT_NULL(frame);
+    device->release_frame(frame);
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, device, frame)
 
 const char * rs_get_stream_name(rs_stream stream, rs_error ** error) try
 {

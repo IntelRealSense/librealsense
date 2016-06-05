@@ -231,7 +231,7 @@ namespace rsimpl
         rs_device(device, info), base_calibration(calib), base_temperature_data(temp), thermal_loop_params(params), last_temperature_delta(std::numeric_limits<float>::infinity())
     {
         // If thermal control loop requested, start up thread to handle it
-		if(thermal_loop_params.IRThermalLoopEnable)
+        if(thermal_loop_params.IRThermalLoopEnable)
         {
             runTemperatureThread = true;
             temperatureThread = std::thread(&f200_camera::temperature_control_loop, this);
@@ -535,10 +535,10 @@ namespace rsimpl
             const int timestamp = static_cast<int>(total / 100000);
             return timestamp;
         }
-		int get_frame_counter(const subdevice_mode & mode, const void * frame) override
-		{
-			return 0;
-		}
+        int get_frame_counter(const subdevice_mode & mode, const void * frame) override
+        {
+            return 0;
+        }
     };
 
     std::shared_ptr<frame_timestamp_reader> f200_camera::create_frame_timestamp_reader() const
@@ -547,4 +547,3 @@ namespace rsimpl
     }
 
 } // namespace rsimpl::f200
-

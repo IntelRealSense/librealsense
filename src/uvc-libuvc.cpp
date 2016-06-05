@@ -105,7 +105,7 @@ namespace rsimpl
             throw std::logic_error("claim_aux_interface(...) is not implemented for this backend ");
         }
 
-        bool power_on_adapter_board()
+        void power_on_adapter_board()
         {
             throw std::logic_error("power_on_adapter_board(...) is not implemented for this backend ");
         }

@@ -27,17 +27,19 @@ namespace rsimpl
 
         virtual int                             get_frame_number() const = 0;
 		virtual int                             get_frame_counter() const = 0;
+		virtual long long						get_frame_system_time() const = 0;
         virtual const byte *                    get_frame_data() const = 0;    
     };
     
     class frame_archive;
+	class syncronizing_archive;
 
     struct native_stream final : public stream_interface
     {
         const device_config &                   config;
         const rs_stream                         stream;
         std::vector<subdevice_mode_selection>   modes;
-        std::shared_ptr<frame_archive>          archive;
+        std::shared_ptr<syncronizing_archive>   archive;
 
                                                 native_stream(device_config & config, rs_stream stream);
 
@@ -55,6 +57,7 @@ namespace rsimpl
 
         int                                     get_frame_number() const override;
 		int                                     get_frame_counter() const override;
+		long long								get_frame_system_time() const override;
         const byte *                            get_frame_data() const override;
     };
 
@@ -77,6 +80,7 @@ namespace rsimpl
 
         int                                     get_frame_number() const override { return source.get_frame_number(); }
 		int                                     get_frame_counter() const override { return source.get_frame_counter(); }
+		long long								get_frame_system_time() const override { return source.get_frame_counter(); }
         const byte *                            get_frame_data() const override;
     };
 
@@ -100,6 +104,7 @@ namespace rsimpl
 
         int                                     get_frame_number() const override { return source.get_frame_number(); }
 		int                                     get_frame_counter() const override { return source.get_frame_counter(); }
+		long long								get_frame_system_time() const override { return source.get_frame_counter(); }
         const byte *                            get_frame_data() const override;
     };
 
@@ -122,6 +127,7 @@ namespace rsimpl
 
         int                                     get_frame_number() const override { return from.get_frame_number(); }
 		int                                     get_frame_counter() const override { return from.get_frame_counter(); }
+		long long								get_frame_system_time() const override { return from.get_frame_counter(); }
         const byte *                            get_frame_data() const override;
     };
 }

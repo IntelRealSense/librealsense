@@ -4,6 +4,8 @@
 #include "hw-monitor.h"
 #include "motion_module.h"
 #include <iostream>
+#define _USE_MATH_DEFINES
+#include <math.h>
 
 using namespace rsimpl;
 using namespace rsimpl::motion_module;
@@ -204,8 +206,8 @@ void motion_module_parser::parse_timestamp(const unsigned char * data, rs_timest
     // assuming msb ordering
     unsigned short  tmp = (data[1] << 8) | (data[0]);
 
-    entry.source_id = rs_event_source(tmp & 0x7);       // bits [0:2] - source_id
-    entry.frame_number = (tmp & 0x7fff) >> 3;           // bits [3-14] - frame num
+    entry.source_id     = rs_event_source(tmp & 0x7);               // bits [0:2] - source_id
+    entry.frame_number  = (tmp & 0x7fff) >> 3;                      // bits [3-14] - frame num
     memcpy(&entry.timestamp, &data[2], sizeof(unsigned int));       // bits [16:47] - timestamp
 
 }
@@ -214,12 +216,12 @@ rs_motion_data motion_module_parser::parse_motion(const unsigned char * data)
 {
     // predefined motion devices ranges
 
-    const static float gravity = 9.871f;
+    const static float gravity = 9.80665f;
     const static float gyro_range = 2000.f;
-    const static float gyro_transform_factor = (gyro_range * 3.141527f) / (180.f * 32768.f);
+    const static float gyro_transform_factor = (gyro_range * M_PI) / (180.f * 32767.f);
 
-    const static float accel_range = 0.00195f;   // [-4..4]g
-    const static float accelerator_transform_factor = accel_range * gravity;
+    const static float accel_range = 4.f;
+    const static float accelerator_transform_factor = gravity * accel_range / 2048.f;
 
     rs_motion_data entry;
 
@@ -232,7 +234,7 @@ rs_motion_data motion_module_parser::parse_motion(const unsigned char * data)
 
     unsigned data_shift = (RS_IMU_ACCEL == entry.timestamp_data.source_id) ? 4 : 0;
 
-    for (int i = 0; i < 3; i++)                     // convert axis data to physical units (m/sec^2)
+    for (int i = 0; i < 3; i++)                     // convert axis data to physical units (m/sec^2, or deg_c/sec)
     {
         entry.axes[i] = float(tmp[i] >> data_shift);
         if (RS_IMU_ACCEL == entry.timestamp_data.source_id) entry.axes[i] *= accelerator_transform_factor;

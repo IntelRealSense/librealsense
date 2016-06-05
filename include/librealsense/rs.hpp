@@ -1,6 +1,6 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
-#pragma once
+
 #ifndef LIBREALSENSE_RS_HPP
 #define LIBREALSENSE_RS_HPP
 
@@ -139,12 +139,12 @@ namespace rs
         r200_depth_control_second_peak_threshold        = 60, 
         r200_depth_control_neighbor_threshold           = 61, 
         r200_depth_control_lr_threshold                 = 62,
-        r200_gyroscope_bandwidth                        = 63,
-        r200_gyroscope_range                            = 64,
-        r200_accelerometer_bandwidth                    = 65,
-        r200_accelerometer_range                        = 66,
-        r200_motion_module_time_seed                    = 67,
-        r200_motion_module_active                       = 68,
+        zr300_gyroscope_bandwidth                       = 63,
+        zr300_gyroscope_range                           = 64,
+        zr300_accelerometer_bandwidth                   = 65,
+        zr300_accelerometer_range                       = 66,
+        zr300_motion_module_time_seed                   = 67,
+        zr300_motion_module_active                      = 68,
         r200_fisheye_color_exposure                     = 69,
         r200_fisheye_color_gain                         = 70,
         r200_fisheye_strobe                             = 71,
@@ -253,7 +253,7 @@ namespace rs
             return (device *)r;
         }
     };  
-
+    
     class motion_callback_base
     {
     public:
@@ -289,6 +289,189 @@ namespace rs
         void on_event(timestamp_data data) override
         {
             on_event_function(std::move(data));
+        }
+    };
+
+    class frame
+    {
+        rs_device * device;
+        rs_frame_ref * frame_ref;
+
+        frame(const frame &) = delete;
+
+    public:
+        frame() : device(nullptr), frame_ref(nullptr) {}
+        frame(rs_device * device, rs_frame_ref * frame_ref) : device(device), frame_ref(frame_ref) {}
+        frame(frame&& other) : device(other.device), frame_ref(other.frame_ref) { other.frame_ref = nullptr; }
+        frame& operator=(frame other)
+        {
+            swap(other);
+            return *this;
+        }
+        void swap(frame& other)
+        {
+            std::swap(device, other.device);
+            std::swap(frame_ref, other.frame_ref);
+        }
+
+        ~frame()
+        {
+            if (frame_ref)
+            {
+                rs_error * e = nullptr;
+                rs_release_frame(device, frame_ref, &e);
+                error::handle(e);
+            }
+        }
+
+        frame clone_ref()
+        {
+            rs_error * e = nullptr;
+            auto r = rs_clone_frame_ref(device, frame_ref, &e);
+            error::handle(e);
+            return std::move(frame(device, r));
+        }
+
+        bool try_clone_ref(frame& result)
+        {
+            rs_error * e = nullptr;
+            auto r = rs_clone_frame_ref(device, frame_ref, &e);
+            if (!e) result = std::move(frame(device, r));
+            return e == nullptr;
+        }
+
+		/// retrieve the time at which the TODO on a stream was captured
+		/// \return            the timestamp of the frame, in milliseconds since the device was started
+		int get_timestamp() const
+        {
+            rs_error * e = nullptr;
+            auto r = rs_get_detached_frame_timestamp(frame_ref, &e);
+            error::handle(e);
+            return r;
+        }
+
+        int get_frame_number() const
+        {
+            rs_error * e = nullptr;
+            auto r = rs_get_detached_frame_number(frame_ref, &e);
+            error::handle(e);
+            return r;
+        }
+
+        const void * get_data() const
+        {
+            rs_error * e = nullptr;
+            auto r = rs_get_detached_frame_data(frame_ref, &e);
+            error::handle(e);
+            return r;
+        }
+    };
+
+    class frameset
+    {
+        rs_device * device;
+        rs_frameset * frames;
+        
+        frameset(const frameset &) = delete;
+
+    public:
+        frameset() : device(nullptr), frames(nullptr) {}
+        frameset(rs_device * device, rs_frameset * frames) : device(device), frames(frames) {}
+        frameset(frameset&& other) : device(other.device), frames(other.frames) { other.frames = nullptr; }
+        frameset& operator=(frameset other)
+        {
+            swap(other);
+            return *this;
+        }
+        void swap(frameset& other)
+        {
+            std::swap(device, other.device);
+            std::swap(frames, other.frames);
+        }
+
+        ~frameset()
+        {
+            if (frames)
+            {
+                rs_error * e = nullptr;
+                rs_release_frames(device, frames, &e);
+                error::handle(e);
+            }
+        }
+
+        frame detach_frame(stream stream)
+        {
+            rs_error * e = nullptr;
+            auto r = rs_detach_frame(device, frames, (rs_stream)stream, &e);
+            error::handle(e);
+            return std::move(frame(device, r));
+        }
+
+        bool try_detach_frame(stream stream, frame& result)
+        {
+            rs_error * e = nullptr;
+            auto r = rs_detach_frame(device, frames, (rs_stream)stream, &e);
+            if (!e) result = std::move(frame(device, r));
+            return e == nullptr;
+        }
+
+        frameset clone_ref()
+        {
+            rs_error * e = nullptr;
+            auto r = rs_clone_frames_ref(device, frames, &e);
+            error::handle(e);
+            return std::move(frameset(device, r));
+        }
+
+        bool try_clone_ref(frameset& result)
+        {
+            rs_error * e = nullptr;
+            auto r = rs_clone_frames_ref(device, frames, &e);
+            if (!e) result = std::move(frameset(device, r));
+            return e == nullptr;
+        }
+
+        int get_frame_timestamp(stream stream) const
+        {
+            rs_error * e = nullptr;
+            auto r = rs_get_frame_timestamp_safe(frames, (rs_stream)stream, &e);
+            error::handle(e);
+            return r;
+        }
+
+        int get_frame_number(stream stream) const
+        {
+            rs_error * e = nullptr;
+            auto r = rs_get_frame_number_safe(frames, (rs_stream)stream, &e);
+            error::handle(e);
+            return r;
+        }
+
+        const void * get_frame_data(stream stream) const
+        {
+            rs_error * e = nullptr;
+            auto r = rs_get_frame_data_safe(frames, (rs_stream)stream, &e);
+            error::handle(e);
+            return r;
+        }
+    };
+
+    class frame_callback_base
+    {
+    public:
+        virtual void on_frame(frame f) = 0;
+        virtual ~frame_callback_base() {};
+    };
+
+    class frame_callback : public frame_callback_base
+    {
+        std::function<void(frame)> on_frame_function;
+    public:
+        explicit frame_callback(std::function<void(frame)> on_frame) : on_frame_function(on_frame) {}
+
+        void on_frame(frame f) override
+        {
+            on_frame_function(std::move(f));
         }
     };
 
@@ -487,6 +670,24 @@ namespace rs
             return intrin;
         }
 
+        /// TODO
+        void set_frame_callback(rs::stream stream, frame_callback_base& on_frame)
+        {
+            rs_error * e = nullptr;
+            rs_set_frame_callback((rs_device *)this, (rs_stream)stream, [](rs_device * device, rs_frame_ref * fref, void * user){
+                try
+                {
+                    auto on_frame = (frame_callback_base *)user;
+                    on_frame->on_frame(frame(device, fref));
+                }
+                catch (...)
+                {
+                    
+                }
+            }, &on_frame, &e);
+            error::handle(e);
+        }
+
         /// Configure backend to acquire and handle motion-tracking data
         void enable_motion_tracking(motion_callback_base& motion_handler, timestamp_callback_base& timestamp_handler)
         {
@@ -635,6 +836,34 @@ namespace rs
             return (bool)r;
         }
 
+        /// block until new frames are available
+        ///
+        frameset wait_for_frames_safe()
+        {
+            rs_error * e = nullptr;
+            auto fs = rs_wait_for_frames_safe((rs_device *)this, &e);
+            error::handle(e);
+            return std::move(frameset((rs_device *)this, fs));
+        }
+
+        /// check if new frames are available, without blocking
+        /// \return  true if new frames are available, false if no new frames have arrived
+        bool poll_for_frames_safe(frameset& result)
+        {
+            rs_error * e = nullptr;
+            rs_frameset * fs = nullptr;
+            auto r = rs_poll_for_frames_safe((rs_device *)this, &fs, &e);
+            error::handle(e);
+
+            if (fs)
+            {
+                frameset new_frames((rs_device *)this, fs);
+                result = std::move(new_frames);
+            }
+
+            return r != 0;
+        }
+
         /// retrieve the time at which the latest frame on a stream was captured
         /// \param[in] stream  the stream whose latest frame we are interested in
         /// \return            the timestamp of the frame, in milliseconds since the device was started
@@ -646,7 +875,18 @@ namespace rs
             return r;
         }
 
-        /// retrieve the number of frame
+        /// retrieve the system time at which the latest frame on a stream was captured
+        /// \param[in] stream  the stream whose latest frame we are interested in
+        /// \return            the system time of the frame, in milliseconds
+        long long get_frame_system_time(stream stream) const
+        {
+            rs_error * e = nullptr;
+            auto r = rs_get_frame_system_time((const rs_device *)this, (rs_stream)stream, &e);
+            error::handle(e);
+            return r;
+        }
+
+        /// retrieve the frame number
         /// \param[in] stream  the stream whose latest frame we are interested in
         /// \return            the number of the frame, since the device was started
         int get_frame_counter(stream stream) const

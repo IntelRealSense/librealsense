@@ -60,6 +60,9 @@
     <ClCompile Include="..\..\src\verify.c">
       <Filter>src</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\archive.cpp">
+          <Filter>src</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\hw-monitor.cpp">
       <Filter>src</Filter>
     </ClCompile>
@@ -109,6 +112,9 @@
     </ClInclude>
     <ClInclude Include="..\..\include\librealsense\rsutil.h">
       <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\archive.h">
+      <Filter>src</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\hw-monitor.h">
       <Filter>src</Filter>

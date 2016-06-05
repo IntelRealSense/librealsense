@@ -193,13 +193,25 @@ public:
 
         show(rx + (rw - w)/2, ry + (rh - h)/2, w, h);
 
-		std::ostringstream ss; ss << stream << ": " << width << " x " << height << " " << dev.get_stream_format(stream) << " (" << fps << "/" << dev.get_stream_framerate(stream) << ")" << ", F#: " << dev.get_frame_counter(stream);
+        std::ostringstream ss; ss << stream << ": " << width << " x " << height << " " << dev.get_stream_format(stream) << " (" << fps << "/" << dev.get_stream_framerate(stream) << ")" << ", F#: " << dev.get_frame_counter(stream);
         glColor3f(0,0,0);
         draw_text(rx+9, ry+17, ss.str().c_str());
         glColor3f(1,1,1);
         draw_text(rx+8, ry+16, ss.str().c_str());
     }
+    void show(int rx, int ry, int rw, int rh, int width, int height)
+    {
+        float h = (float)rh, w = (float)rh * width / height;
+        if (w > rw)
+        {
+            float scale = rw / w;
+            w *= scale;
+            h *= scale;
+        }
 
+        show(rx + (rw - w) / 2, ry + (rh - h) / 2, w, h);
+
+    }
     void show(const void * data, int width, int height, rs::format format, const std::string & caption, int rx, int ry, int rw, int rh)
     {
         if(!data) return;

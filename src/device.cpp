@@ -5,6 +5,9 @@
 #include "sync.h"
 #include "motion_module.h"
 
+#include <array>
+#include "image.h"
+
 #include <algorithm>
 #include <sstream>
 #include <iostream>
@@ -32,7 +35,12 @@ rs_device::rs_device(std::shared_ptr<rsimpl::uvc::device> device, const rsimpl::
 
 rs_device::~rs_device()
 {
-
+    try
+    {
+        if (capturing) 
+            stop(RS_SOURCE_ALL);
+    }
+    catch (...) {}
 }
 
 bool rs_device::supports_option(rs_option option) const 
@@ -47,7 +55,7 @@ void rs_device::enable_stream(rs_stream stream, int width, int height, rs_format
     if(capturing) throw std::runtime_error("streams cannot be reconfigured after having called rs_start_device()");
     if(config.info.stream_subdevices[stream] == -1) throw std::runtime_error("unsupported stream");
 
-    config.requests[stream] = {true, width, height, format, fps};
+	config.requests[stream] = { true, width, height, format, fps };
     for(auto & s : native_streams) s->archive.reset(); // Changing stream configuration invalidates the current stream info
 }
 
@@ -67,6 +75,11 @@ void rs_device::disable_stream(rs_stream stream)
 
     config.requests[stream] = {};
     for(auto & s : native_streams) s->archive.reset(); // Changing stream configuration invalidates the current stream info
+}
+
+void rs_device::set_stream_callback(rs_stream stream, void (*on_frame)(rs_device * device, rs_frame_ref * frame, void * user), void * user)
+{
+    config.callbacks[stream] = {this, on_frame, user};
 }
 
 void rs_device::enable_motion_tracking()
@@ -167,7 +180,7 @@ void rs_device::start_video_streaming()
     if(capturing) throw std::runtime_error("cannot restart device without first stopping device");
         
     auto selected_modes = config.select_modes();
-    auto archive = std::make_shared<frame_archive>(selected_modes, select_key_stream(selected_modes));
+    auto archive = std::make_shared<syncronizing_archive>(selected_modes, select_key_stream(selected_modes));
     auto timestamp_reader = create_frame_timestamp_reader();
 
     for(auto & s : native_streams) s->archive.reset(); // Starting capture invalidates the current stream info, if any exists from previous capture
@@ -183,24 +196,66 @@ void rs_device::start_video_streaming()
             if(config.requests[stream_mode.first].enabled) native_streams[stream_mode.first]->archive = archive;
         }
 
+        // Copy the callbacks that apply to this stream, so that they can be captured by value
+        std::vector<frame_callback> callbacks;
+        std::vector<rs_stream> streams;
+        for (auto & output : mode_selection.get_outputs())
+        {
+            callbacks.push_back(config.callbacks[output.first]);
+            streams.push_back(output.first);
+        }
         // Initialize the subdevice and set it to the selected mode
         set_subdevice_mode(*device, mode_selection.mode.subdevice, mode_selection.mode.native_dims.x, mode_selection.mode.native_dims.y, mode_selection.mode.pf.fourcc, mode_selection.mode.fps, 
-            [mode_selection, archive, timestamp_reader](const void * frame) mutable
+        [mode_selection, archive, timestamp_reader, callbacks, streams](const void * frame, std::function<void()> continuation) mutable
         {
+            auto now = std::chrono::system_clock::now().time_since_epoch();
+            auto sys_time = std::chrono::duration_cast<std::chrono::milliseconds>(now).count();
+
+            frame_continuation release_and_enqueue(continuation, frame);
+
             // Ignore any frames which appear corrupted or invalid
-            if(!timestamp_reader->validate_frame(mode_selection.mode, frame)) return;
+            if (!timestamp_reader->validate_frame(mode_selection.mode, frame)) return;
 
             // Determine the timestamp for this frame
-            int timestamp = timestamp_reader->get_frame_timestamp(mode_selection.mode, frame);
-            int frameCounter = timestamp_reader->get_frame_counter(mode_selection.mode, frame);
+            auto timestamp = timestamp_reader->get_frame_timestamp(mode_selection.mode, frame);
+            auto frame_counter = timestamp_reader->get_frame_counter(mode_selection.mode, frame);
+            
+          auto requires_processing = mode_selection.requires_processing();
 
+            
             // Obtain buffers for unpacking the frame
             std::vector<byte *> dest;
-            for(auto & output : mode_selection.get_outputs()) dest.push_back(archive->alloc_frame(output.first, timestamp, frameCounter));
+            for (auto & output : mode_selection.get_outputs()) dest.push_back(archive->alloc_frame(output.first, timestamp, frame_counter, sys_time, requires_processing));
+            
+            // Unpack the frame
+            if (requires_processing)
+            {
+                mode_selection.unpack(dest.data(), reinterpret_cast<const byte *>(frame));
+            }
 
-            // Unpack the frame and commit it to the archive
-            mode_selection.unpack(dest.data(), reinterpret_cast<const byte *>(frame));
-            for(auto & output : mode_selection.get_outputs()) archive->commit_frame(output.first);
+            // If any frame callbacks were specified, dispatch them now
+            for (size_t i = 0; i < dest.size(); ++i)
+            {
+
+                if (!requires_processing)
+                {
+                    archive->attach_continuation(streams[i], std::move(release_and_enqueue));
+                }
+
+                if (callbacks[i])
+                {
+                    auto frame_ref = archive->track_frame(streams[i]);
+                    if (frame_ref)
+                    {
+                        callbacks[i]((rs_frame_ref*)frame_ref);
+                    }
+                }
+                else
+                {
+                    // Commit the frame to the archive
+                    archive->commit_frame(streams[i]);
+                }
+            }
         });
     }
     
@@ -215,6 +270,7 @@ void rs_device::stop_video_streaming()
 {
     if(!capturing) throw std::runtime_error("cannot stop device without first starting device");
     stop_streaming(*device);
+    archive->flush();
     capturing = false;
 }
 
@@ -231,6 +287,54 @@ bool rs_device::poll_all_streams()
     if(!capturing) return false;
     if(!archive) return false;
     return archive->poll_for_frames();
+}
+
+rs_frameset* rs_device::wait_all_streams_safe()
+{
+    if (!capturing) throw std::runtime_error("Can't call wait_for_frames_safe when the device is not capturing!");
+    if (!archive) throw std::runtime_error("Can't call wait_for_frames_safe when frame archive is not available!");
+
+        return (rs_frameset*)archive->wait_for_frames_safe();
+}
+
+bool rs_device::poll_all_streams_safe(rs_frameset** frames)
+{
+    if (!capturing) return false;
+    if (!archive) return false;
+
+    return archive->poll_for_frames_safe((frame_archive::frameset**)frames);
+}
+
+void rs_device::release_frames(rs_frameset * frameset)
+{
+    archive->release_frameset((frame_archive::frameset *)frameset);
+}
+
+rs_frameset * rs_device::clone_frames(rs_frameset * frameset)
+{
+    auto result = archive->clone_frameset((frame_archive::frameset *)frameset);
+    if (!result) throw std::runtime_error("Not enough resources to clone frameset!");
+    return (rs_frameset*)result;
+}
+
+
+rs_frame_ref* rs_device::detach_frame(const rs_frameset* fs, rs_stream stream)
+{
+    auto result = archive->detach_frame_ref((frame_archive::frameset *)fs, stream);
+    if (!result) throw std::runtime_error("Not enough resources to tack detached frame!");
+    return (rs_frame_ref*)result;
+}
+
+void rs_device::release_frame(rs_frame_ref* ref)
+{
+    archive->release_frame_ref((frame_archive::frame_ref *)ref);
+}
+
+rs_frame_ref* ::rs_device::clone_frame(rs_frame_ref* frame)
+{
+    auto result = archive->clone_frame((frame_archive::frame_ref *)frame);
+    if (!result) throw std::runtime_error("Not enough resources to clone frame!");
+    return (rs_frame_ref*)result;
 }
 
 bool rs_device::supports(rs_capabilities capability) const

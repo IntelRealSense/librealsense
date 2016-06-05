@@ -27,7 +27,7 @@ namespace rsimpl
         std::shared_ptr<context> create_context();
         std::vector<std::shared_ptr<device>> query_devices(std::shared_ptr<context> context);
 
-        bool power_on_adapter_board();
+        void power_on_adapter_board();
 
         // Check for connected device
         bool is_device_connected(device & device, int vid, int pid);
@@ -54,11 +54,11 @@ namespace rsimpl
 
         // Control data channels
         void set_subdevice_data_channel_handler(device & device, int subdevice_index, std::function<void(const unsigned char * data, const int size)> callback);
-		void start_data_acquisition(device & device);
-		void stop_data_acquisition(device & device);
+        void start_data_acquisition(device & device);
+        void stop_data_acquisition(device & device);
 
         // Control streaming
-        void set_subdevice_mode(device & device, int subdevice_index, int width, int height, uint32_t fourcc, int fps, std::function<void(const void * frame)> callback);
+        void set_subdevice_mode(device & device, int subdevice_index, int width, int height, uint32_t fourcc, int fps, std::function<void(const void * frame, std::function<void()> continuation)> callback);
         void start_streaming(device & device, int num_transfer_bufs);
         void stop_streaming(device & device);
         

@@ -135,19 +135,18 @@ namespace rsimpl
             {RS_OPTION_R200_DEPTH_CONTROL_TEXTURE_DIFFERENCE_THRESHOLD, 0, 0x3FF,       1},
             {RS_OPTION_R200_DEPTH_CONTROL_SECOND_PEAK_THRESHOLD,        0, 0x3FF,       1},
             {RS_OPTION_R200_DEPTH_CONTROL_NEIGHBOR_THRESHOLD,           0, 0x3FF,       1},
-            {RS_OPTION_R200_DEPTH_CONTROL_LR_THRESHOLD,                 0, 0x7FF,       1},
-
-            { RS_OPTION_R200_GYRO_BANDWIDTH,            (int)mm_gyro_bandwidth::gyro_bw_default,    (int)mm_gyro_bandwidth::gyro_bw_200hz,
-                                                                    1,                              (int)mm_gyro_bandwidth::gyro_bw_200hz},
-            { RS_OPTION_R200_GYRO_RANGE,                (int)mm_gyro_range::gyro_range_default,    (int)mm_gyro_range::gyro_range_1000,
-                                                                    1,                              (int)mm_gyro_range::gyro_range_1000},
-            { RS_OPTION_R200_ACCELEROMETER_BANDWIDTH,   (int)mm_accel_bandwidth::accel_bw_default, (int)mm_accel_bandwidth::accel_bw_250hz,
-                                                                    1,                              (int)mm_accel_bandwidth::accel_bw_125hz},
-            { RS_OPTION_R200_ACCELEROMETER_RANGE,       (int)mm_accel_range::accel_range_default,   (int)mm_accel_range::accel_range_16g,
-                                                                    1,                              (int)mm_accel_range::accel_range_4g},
-            { RS_OPTION_R200_MOTION_MODULE_TIME_SEED,       0,      UINT_MAX,   1,   0},
-            { RS_OPTION_R200_MOTION_MODULE_ACTIVE,          0,       1,         1,   0}
+            {RS_OPTION_R200_DEPTH_CONTROL_LR_THRESHOLD,                 0, 0x7FF,       1}
         };
+
+        if ("Intel RealSense ZR300" ==info.name)
+        {
+            info.options.push_back({ RS_OPTION_ZR300_GYRO_BANDWIDTH, (int)mm_gyro_bandwidth::gyro_bw_default, (int)mm_gyro_bandwidth::gyro_bw_200hz,  1, (int)mm_gyro_bandwidth::gyro_bw_200hz });
+            info.options.push_back({ RS_OPTION_ZR300_GYRO_RANGE,     (int)mm_gyro_range::gyro_range_default,  (int)mm_gyro_range::gyro_range_1000, 1,  (int)mm_gyro_range::gyro_range_1000 });
+            info.options.push_back({ RS_OPTION_ZR300_ACCELEROMETER_BANDWIDTH,   (int)mm_accel_bandwidth::accel_bw_default, (int)mm_accel_bandwidth::accel_bw_250hz, 1,  (int)mm_accel_bandwidth::accel_bw_125hz });
+            info.options.push_back({ RS_OPTION_ZR300_ACCELEROMETER_RANGE,       (int)mm_accel_range::accel_range_default,   (int)mm_accel_range::accel_range_16g, 1, (int)mm_accel_range::accel_range_4g });
+            info.options.push_back({ RS_OPTION_ZR300_MOTION_MODULE_TIME_SEED,       0,      UINT_MAX,   1,   0 });
+            info.options.push_back({ RS_OPTION_ZR300_MOTION_MODULE_ACTIVE,          0,       1,         1,   0 });
+        }
 
         if (uvc::is_device_connected(*device, PID_INTEL_CAMERA, FISHEYE_PRODUCT_ID))
         {
@@ -265,11 +264,11 @@ namespace rsimpl
             case RS_OPTION_R200_DEPTH_CONTROL_NEIGHBOR_THRESHOLD:           dc_writer.set(&r200::dc_params::neighbor_thresh,          values[i]); break;
             case RS_OPTION_R200_DEPTH_CONTROL_LR_THRESHOLD:                 dc_writer.set(&r200::dc_params::lr_thresh,                values[i]); break;
 
-            case RS_OPTION_R200_GYRO_BANDWIDTH:                             mm_cfg_writer.set(&motion_module::mm_config::gyro_bandwidth,    (uint8_t)values[i]); break;
-            case RS_OPTION_R200_GYRO_RANGE:                                 mm_cfg_writer.set(&motion_module::mm_config::gyro_range,        (uint8_t)values[i]); break;
-            case RS_OPTION_R200_ACCELEROMETER_BANDWIDTH:                    mm_cfg_writer.set(&motion_module::mm_config::accel_bandwidth,   (uint8_t)values[i]); break;
-            case RS_OPTION_R200_ACCELEROMETER_RANGE:                        mm_cfg_writer.set(&motion_module::mm_config::accel_range,       (uint8_t)values[i]); break;
-            case RS_OPTION_R200_MOTION_MODULE_TIME_SEED:                    mm_cfg_writer.set(&motion_module::mm_config::mm_time_seed,  values[i]); break;
+            case RS_OPTION_ZR300_GYRO_BANDWIDTH:                            mm_cfg_writer.set(&motion_module::mm_config::gyro_bandwidth,    (uint8_t)values[i]); break;
+            case RS_OPTION_ZR300_GYRO_RANGE:                                mm_cfg_writer.set(&motion_module::mm_config::gyro_range,        (uint8_t)values[i]); break;
+            case RS_OPTION_ZR300_ACCELEROMETER_BANDWIDTH:                   mm_cfg_writer.set(&motion_module::mm_config::accel_bandwidth,   (uint8_t)values[i]); break;
+            case RS_OPTION_ZR300_ACCELEROMETER_RANGE:                       mm_cfg_writer.set(&motion_module::mm_config::accel_range,       (uint8_t)values[i]); break;
+            case RS_OPTION_ZR300_MOTION_MODULE_TIME_SEED:                   mm_cfg_writer.set(&motion_module::mm_config::mm_time_seed,  values[i]); break;
                 
             default: LOG_WARNING("Cannot set " << options[i] << " to " << values[i] << " on " << get_name()); break;
             }
@@ -388,7 +387,7 @@ namespace rsimpl
             case RS_OPTION_R200_DISPARITY_MULTIPLIER:                       values[i] = disp_reader.get(&r200::disp_mode::disparity_multiplier); break;
             case RS_OPTION_R200_DISPARITY_SHIFT:                            values[i] = r200::get_disparity_shift(get_device()); break;
 
-            case RS_OPTION_R200_MOTION_MODULE_ACTIVE:                       values[i] = is_motion_tracking_active();
+            case RS_OPTION_ZR300_MOTION_MODULE_ACTIVE:                       values[i] = is_motion_tracking_active();
 
             case RS_OPTION_R200_AUTO_EXPOSURE_MEAN_INTENSITY_SET_POINT:     values[i] = ae_reader.get(&r200::ae_params::mean_intensity_set_point); break;
             case RS_OPTION_R200_AUTO_EXPOSURE_BRIGHT_RATIO_SET_POINT:       values[i] = ae_reader.get(&r200::ae_params::bright_ratio_set_point  ); break;
@@ -411,11 +410,11 @@ namespace rsimpl
             case RS_OPTION_R200_DEPTH_CONTROL_NEIGHBOR_THRESHOLD:           values[i] = dc_reader.get(&r200::dc_params::neighbor_thresh         ); break;
             case RS_OPTION_R200_DEPTH_CONTROL_LR_THRESHOLD:                 values[i] = dc_reader.get(&r200::dc_params::lr_thresh               ); break;
 
-            case RS_OPTION_R200_GYRO_BANDWIDTH:                             values[i] = (double)mm_cfg_reader.get(&motion_module::mm_config::gyro_bandwidth ); break;
-            case RS_OPTION_R200_GYRO_RANGE:                                 values[i] = (double)mm_cfg_reader.get(&motion_module::mm_config::gyro_range     ); break;
-            case RS_OPTION_R200_ACCELEROMETER_BANDWIDTH:                    values[i] = (double)mm_cfg_reader.get(&motion_module::mm_config::accel_bandwidth); break;
-            case RS_OPTION_R200_ACCELEROMETER_RANGE:                        values[i] = (double)mm_cfg_reader.get(&motion_module::mm_config::accel_range    ); break;
-            case RS_OPTION_R200_MOTION_MODULE_TIME_SEED:                    values[i] = (double)mm_cfg_reader.get(&motion_module::mm_config::mm_time_seed   ); break;
+            case RS_OPTION_ZR300_GYRO_BANDWIDTH:                             values[i] = (double)mm_cfg_reader.get(&motion_module::mm_config::gyro_bandwidth ); break;
+            case RS_OPTION_ZR300_GYRO_RANGE:                                 values[i] = (double)mm_cfg_reader.get(&motion_module::mm_config::gyro_range     ); break;
+            case RS_OPTION_ZR300_ACCELEROMETER_BANDWIDTH:                    values[i] = (double)mm_cfg_reader.get(&motion_module::mm_config::accel_bandwidth); break;
+            case RS_OPTION_ZR300_ACCELEROMETER_RANGE:                        values[i] = (double)mm_cfg_reader.get(&motion_module::mm_config::accel_range    ); break;
+            case RS_OPTION_ZR300_MOTION_MODULE_TIME_SEED:                    values[i] = (double)mm_cfg_reader.get(&motion_module::mm_config::mm_time_seed   ); break;
 
             default: LOG_WARNING("Cannot get " << options[i] << " on " << get_name()); break;
             }
