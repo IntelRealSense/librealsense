@@ -33,7 +33,7 @@ namespace rsimpl
 {
     namespace f200 { class IVCAMHardwareIO; }
 
-    class f200_camera final : public rs_device
+    class f200_camera final : public rs_device_base
     {
         std::timed_mutex usbMutex;
 

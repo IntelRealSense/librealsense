@@ -44,7 +44,7 @@ namespace rsimpl
     
 }
 
-struct rs_device
+struct rs_device_base : rs_device
 {
 private:
     const std::shared_ptr<rsimpl::uvc::device>  device;
@@ -73,8 +73,8 @@ protected:
 	virtual void                                stop_motion_tracking();
 
 public:
-                                                rs_device(std::shared_ptr<rsimpl::uvc::device> device, const rsimpl::static_device_info & info);
-                                                virtual ~rs_device();
+                                                rs_device_base(std::shared_ptr<rsimpl::uvc::device> device, const rsimpl::static_device_info & info);
+                                                virtual ~rs_device_base();
 
     const rsimpl::stream_interface &            get_stream_interface(rs_stream stream) const { return *streams[stream]; }
 

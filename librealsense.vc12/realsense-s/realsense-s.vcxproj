@@ -43,6 +43,7 @@
   <ItemGroup>
     <ClInclude Include="..\..\include\librealsense\rs.h" />
     <ClInclude Include="..\..\include\librealsense\rs.hpp" />
+    <ClInclude Include="..\..\include\librealsense\rscore.hpp" />
     <ClInclude Include="..\..\include\librealsense\rsutil.h" />
     <ClInclude Include="..\..\src\archive.h" />
     <ClInclude Include="..\..\src\context.h" />
