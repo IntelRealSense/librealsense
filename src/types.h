@@ -10,6 +10,7 @@
 #define LIBREALSENSE_TYPES_H
 
 #include "../include/librealsense/rs.h"     // Inherit all type definitions in the public API
+#include "../include/librealsense/rscore.hpp" // Inherit public interfaces
 
 #include <cassert>                          // For assert
 #include <cstring>                          // For memcmp
@@ -30,7 +31,7 @@ namespace rsimpl
     // Utility types for general use //
     ///////////////////////////////////
 
-    enum class byte : uint8_t {};
+    typedef uint8_t byte;
 
     struct to_string
     {

@@ -16,7 +16,7 @@ using namespace rsimpl::motion_module;
 namespace rsimpl
 {
     r200_camera::r200_camera(std::shared_ptr<uvc::device> device, const static_device_info & info) 
-    : rs_device(device, info),
+    : rs_device_base(device, info),
       motion_module_ctrl(device.get())
     {
         rs_option opt[] = {RS_OPTION_R200_DEPTH_UNITS};
@@ -438,13 +438,13 @@ namespace rsimpl
         if ((supports(rs_capabilities::RS_CAPABILITIES_FISH_EYE)) && ((config.requests[RS_STREAM_FISHEYE].enabled)))
             toggle_motion_module_power(true);
 
-        rs_device::start(source);
+        rs_device_base::start(source);
     }
 
     // Power off Fisheye camera
     void r200_camera::stop(rs_source source)
     {
-        rs_device::stop(source);
+        rs_device_base::stop(source);
         if ((supports(rs_capabilities::RS_CAPABILITIES_FISH_EYE)) && ((config.requests[RS_STREAM_FISHEYE].enabled)))
             toggle_motion_module_power(false);
     }
@@ -454,13 +454,13 @@ namespace rsimpl
     {
         if (supports(rs_capabilities::RS_CAPABILITIES_MOTION_EVENTS))
             toggle_motion_module_events(true);
-        rs_device::start_motion_tracking();
+        rs_device_base::start_motion_tracking();
     }
 
     // Power down Motion Module
     void r200_camera::stop_motion_tracking()
     {
-        rs_device::stop_motion_tracking();
+        rs_device_base::stop_motion_tracking();
         if (supports(rs_capabilities::RS_CAPABILITIES_MOTION_EVENTS))
             toggle_motion_module_events(false);
     }
@@ -552,7 +552,7 @@ namespace rsimpl
     bool r200_camera::supports_option(rs_option option) const
     {
         // We have special logic to implement LR gain and exposure, so they do not belong to the standard option list
-        return option == RS_OPTION_R200_LR_GAIN || option == RS_OPTION_R200_LR_EXPOSURE || rs_device::supports_option(option);
+        return option == RS_OPTION_R200_LR_GAIN || option == RS_OPTION_R200_LR_EXPOSURE || rs_device_base::supports_option(option);
     }
 
     void r200_camera::get_option_range(rs_option option, double & min, double & max, double & step, double & def)
@@ -593,7 +593,7 @@ namespace rsimpl
         }
 
         // Default to parent implementation
-        rs_device::get_option_range(option, min, max, step, def);
+        rs_device_base::get_option_range(option, min, max, step, def);
     }
 
     // All R200 images which are not in YUY2 format contain an extra row of pixels, called the "dinghy", which contains useful information

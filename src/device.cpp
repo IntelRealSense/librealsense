@@ -15,7 +15,7 @@
 using namespace rsimpl;
 using namespace rsimpl::motion_module;
 
-rs_device::rs_device(std::shared_ptr<rsimpl::uvc::device> device, const rsimpl::static_device_info & info) : device(device), config(info), capturing(false), data_acquisition_active(false),
+rs_device_base::rs_device_base(std::shared_ptr<rsimpl::uvc::device> device, const rsimpl::static_device_info & info) : device(device), config(info), capturing(false), data_acquisition_active(false),
     depth(config, RS_STREAM_DEPTH), color(config, RS_STREAM_COLOR), infrared(config, RS_STREAM_INFRARED), infrared2(config, RS_STREAM_INFRARED2), fisheye(config, RS_STREAM_FISHEYE),
     points(depth), rect_color(color), color_to_depth(color, depth), depth_to_color(depth, color), depth_to_rect_color(depth, rect_color), infrared2_to_depth(infrared2,depth), depth_to_infrared2(depth,infrared2)
 {
@@ -33,7 +33,7 @@ rs_device::rs_device(std::shared_ptr<rsimpl::uvc::device> device, const rsimpl::
     streams[RS_STREAM_DEPTH_ALIGNED_TO_INFRARED2]                      = &depth_to_infrared2;
 }
 
-rs_device::~rs_device()
+rs_device_base::~rs_device_base()
 {
     try
     {
@@ -43,14 +43,14 @@ rs_device::~rs_device()
     catch (...) {}
 }
 
-bool rs_device::supports_option(rs_option option) const 
+bool rs_device_base::supports_option(rs_option option) const 
 { 
     if(uvc::is_pu_control(option)) return true;
     for(auto & o : config.info.options) if(o.option == option) return true;
     return false; 
 }
 
-void rs_device::enable_stream(rs_stream stream, int width, int height, rs_format format, int fps)
+void rs_device_base::enable_stream(rs_stream stream, int width, int height, rs_format format, int fps)
 {
     if(capturing) throw std::runtime_error("streams cannot be reconfigured after having called rs_start_device()");
     if(config.info.stream_subdevices[stream] == -1) throw std::runtime_error("unsupported stream");
@@ -59,7 +59,7 @@ void rs_device::enable_stream(rs_stream stream, int width, int height, rs_format
     for(auto & s : native_streams) s->archive.reset(); // Changing stream configuration invalidates the current stream info
 }
 
-void rs_device::enable_stream_preset(rs_stream stream, rs_preset preset)
+void rs_device_base::enable_stream_preset(rs_stream stream, rs_preset preset)
 {
     if(capturing) throw std::runtime_error("streams cannot be reconfigured after having called rs_start_device()");
     if(!config.info.presets[stream][preset].enabled) throw std::runtime_error("unsupported stream");
@@ -68,7 +68,7 @@ void rs_device::enable_stream_preset(rs_stream stream, rs_preset preset)
     for(auto & s : native_streams) s->archive.reset(); // Changing stream configuration invalidates the current stream info
 }
 
-void rs_device::disable_stream(rs_stream stream)
+void rs_device_base::disable_stream(rs_stream stream)
 {
     if(capturing) throw std::runtime_error("streams cannot be reconfigured after having called rs_start_device()");
     if(config.info.stream_subdevices[stream] == -1) throw std::runtime_error("unsupported stream");
@@ -77,26 +77,26 @@ void rs_device::disable_stream(rs_stream stream)
     for(auto & s : native_streams) s->archive.reset(); // Changing stream configuration invalidates the current stream info
 }
 
-void rs_device::set_stream_callback(rs_stream stream, void (*on_frame)(rs_device * device, rs_frame_ref * frame, void * user), void * user)
+void rs_device_base::set_stream_callback(rs_stream stream, void (*on_frame)(rs_device * device, rs_frame_ref * frame, void * user), void * user)
 {
     config.callbacks[stream] = {this, on_frame, user};
 }
 
-void rs_device::enable_motion_tracking()
+void rs_device_base::enable_motion_tracking()
 {
     if (data_acquisition_active) throw std::runtime_error("motion-tracking cannot be reconfigured after having called rs_start_device()");
 
     config.data_requests.enabled = true;
 }
 
-void rs_device::disable_motion_tracking()
+void rs_device_base::disable_motion_tracking()
 {
     if (data_acquisition_active) throw std::runtime_error("motion-tracking disabled after having called rs_start_device()");
 
     config.data_requests.enabled = false;
 }
 
-void rs_device::start_motion_tracking()
+void rs_device_base::start_motion_tracking()
 {
     if (data_acquisition_active) throw std::runtime_error("cannot restart data acquisition without stopping first");
 
@@ -135,14 +135,14 @@ void rs_device::start_motion_tracking()
     data_acquisition_active = true;
 }
 
-void rs_device::stop_motion_tracking()
+void rs_device_base::stop_motion_tracking()
 {
     if (!data_acquisition_active) throw std::runtime_error("cannot stop data acquisition - is already stopped");
     stop_data_acquisition(*device);
     data_acquisition_active = false;
 }
 
-void rs_device::set_motion_callback(void(*on_event)(rs_device * device, rs_motion_data data, void * user), void * user)
+void rs_device_base::set_motion_callback(void(*on_event)(rs_device * device, rs_motion_data data, void * user), void * user)
 {
     if (data_acquisition_active) throw std::runtime_error("cannot set motion callback when motion data is active");
     
@@ -150,14 +150,14 @@ void rs_device::set_motion_callback(void(*on_event)(rs_device * device, rs_motio
     config.motion_callback = {this, on_event, user};
 }
 
-void rs_device::set_timestamp_callback(void(*on_event)(rs_device * device, rs_timestamp_data data, void * user), void * user)
+void rs_device_base::set_timestamp_callback(void(*on_event)(rs_device * device, rs_timestamp_data data, void * user), void * user)
 {
     if (data_acquisition_active) throw std::runtime_error("cannot set timestamp callback when motion data is active");
 
     config.timestamp_callback = {this, on_event, user};
 }
 
-void rs_device::start(rs_source source)
+void rs_device_base::start(rs_source source)
 {
     if (source & rs_source::RS_SOURCE_VIDEO)
         start_video_streaming();
@@ -166,7 +166,7 @@ void rs_device::start(rs_source source)
         start_motion_tracking();
 }
 
-void rs_device::stop(rs_source source)
+void rs_device_base::stop(rs_source source)
 {
     if (source & rs_source::RS_SOURCE_VIDEO)
         stop_video_streaming();
@@ -175,7 +175,7 @@ void rs_device::stop(rs_source source)
         stop_motion_tracking();
 }
 
-void rs_device::start_video_streaming()
+void rs_device_base::start_video_streaming()
 {
     if(capturing) throw std::runtime_error("cannot restart device without first stopping device");
         
@@ -266,7 +266,7 @@ void rs_device::start_video_streaming()
     capturing = true;
 }
 
-void rs_device::stop_video_streaming()
+void rs_device_base::stop_video_streaming()
 {
     if(!capturing) throw std::runtime_error("cannot stop device without first starting device");
     stop_streaming(*device);
@@ -274,7 +274,7 @@ void rs_device::stop_video_streaming()
     capturing = false;
 }
 
-void rs_device::wait_all_streams()
+void rs_device_base::wait_all_streams()
 {
     if(!capturing) return;
     if(!archive) return;
@@ -282,14 +282,14 @@ void rs_device::wait_all_streams()
     archive->wait_for_frames();
 }
 
-bool rs_device::poll_all_streams()
+bool rs_device_base::poll_all_streams()
 {
     if(!capturing) return false;
     if(!archive) return false;
     return archive->poll_for_frames();
 }
 
-rs_frameset* rs_device::wait_all_streams_safe()
+rs_frameset* rs_device_base::wait_all_streams_safe()
 {
     if (!capturing) throw std::runtime_error("Can't call wait_for_frames_safe when the device is not capturing!");
     if (!archive) throw std::runtime_error("Can't call wait_for_frames_safe when frame archive is not available!");
@@ -297,7 +297,7 @@ rs_frameset* rs_device::wait_all_streams_safe()
         return (rs_frameset*)archive->wait_for_frames_safe();
 }
 
-bool rs_device::poll_all_streams_safe(rs_frameset** frames)
+bool rs_device_base::poll_all_streams_safe(rs_frameset** frames)
 {
     if (!capturing) return false;
     if (!archive) return false;
@@ -305,12 +305,12 @@ bool rs_device::poll_all_streams_safe(rs_frameset** frames)
     return archive->poll_for_frames_safe((frame_archive::frameset**)frames);
 }
 
-void rs_device::release_frames(rs_frameset * frameset)
+void rs_device_base::release_frames(rs_frameset * frameset)
 {
     archive->release_frameset((frame_archive::frameset *)frameset);
 }
 
-rs_frameset * rs_device::clone_frames(rs_frameset * frameset)
+rs_frameset * rs_device_base::clone_frames(rs_frameset * frameset)
 {
     auto result = archive->clone_frameset((frame_archive::frameset *)frameset);
     if (!result) throw std::runtime_error("Not enough resources to clone frameset!");
@@ -318,26 +318,26 @@ rs_frameset * rs_device::clone_frames(rs_frameset * frameset)
 }
 
 
-rs_frame_ref* rs_device::detach_frame(const rs_frameset* fs, rs_stream stream)
+rs_frame_ref* rs_device_base::detach_frame(const rs_frameset* fs, rs_stream stream)
 {
     auto result = archive->detach_frame_ref((frame_archive::frameset *)fs, stream);
     if (!result) throw std::runtime_error("Not enough resources to tack detached frame!");
     return (rs_frame_ref*)result;
 }
 
-void rs_device::release_frame(rs_frame_ref* ref)
+void rs_device_base::release_frame(rs_frame_ref* ref)
 {
     archive->release_frame_ref((frame_archive::frame_ref *)ref);
 }
 
-rs_frame_ref* ::rs_device::clone_frame(rs_frame_ref* frame)
+rs_frame_ref* ::rs_device_base::clone_frame(rs_frame_ref* frame)
 {
     auto result = archive->clone_frame((frame_archive::frame_ref *)frame);
     if (!result) throw std::runtime_error("Not enough resources to clone frame!");
     return (rs_frame_ref*)result;
 }
 
-bool rs_device::supports(rs_capabilities capability) const
+bool rs_device_base::supports(rs_capabilities capability) const
 {
     for (auto elem: config.info.capabilities_vector)
     {
@@ -348,7 +348,7 @@ bool rs_device::supports(rs_capabilities capability) const
     return false;
 }
 
-void rs_device::get_option_range(rs_option option, double & min, double & max, double & step, double & def)
+void rs_device_base::get_option_range(rs_option option, double & min, double & max, double & step, double & def)
 {
     if(uvc::is_pu_control(option))
     {
