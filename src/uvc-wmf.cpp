@@ -410,7 +410,7 @@ namespace rsimpl
 
             }
 
-            ~device() { stop_streaming(); stop_data_acquisition(); close_win_usb(); }
+            ~device() { stop_streaming(); close_win_usb(); }
 
             IKsControl * get_ks_control(const uvc::extension_unit & xu)
             {
@@ -450,6 +450,7 @@ namespace rsimpl
                     data_channel_thread.join();
                     data_stop = false;
                 }
+                close_win_usb();
             }
 
             void start_streaming()

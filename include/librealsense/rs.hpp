@@ -833,7 +833,7 @@ namespace rs
             rs_error * e = nullptr;
             auto r = rs_supports((rs_device *)this, (rs_capabilities)capability, &e);
             error::handle(e);
-            return (bool)r;
+            return r? true: false;
         }
 
         /// block until new frames are available

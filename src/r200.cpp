@@ -315,20 +315,18 @@ namespace rsimpl
         auto c = r200::read_camera_info(*device);        
         info.subdevice_modes.push_back({ 2, { 1920, 1080 }, pf_rw16, 30, c.intrinsicsThird[0], { c.modesThird[0][0] }, { 0 } });
 
+        // Acquire Device handle for Motion Module API
+        r200::claim_motion_module_interface(*device);
+
         if (uvc::is_device_connected(*device, PID_INTEL_CAMERA, FISHEYE_PRODUCT_ID))
         {
-            // Acquire Device handle for Motion Module API
-            r200::claim_motion_module_interface(*device);
-
             info.capabilities_vector.push_back(RS_CAPABILITIES_FISH_EYE);
             info.capabilities_vector.push_back(RS_CAPABILITIES_MOTION_EVENTS);
 
             info.stream_subdevices[RS_STREAM_FISHEYE] = 3;
             info.presets[RS_STREAM_FISHEYE][RS_PRESET_BEST_QUALITY] = {true, 640, 480, RS_FORMAT_RAW8,   60};
             info.subdevice_modes.push_back({3, {640, 480}, pf_raw8, 60, c.intrinsicsThird[1], {c.modesThird[1][0]}, {0}});
-            info.subdevice_modes.push_back({3, {640, 480}, pf_raw8, 30, c.intrinsicsThird[1], {c.modesThird[1][0]}, {0}});
-            info.subdevice_modes.push_back({3, {640, 480}, pf_rw10, 60, c.intrinsicsThird[1], {c.modesThird[1][0]}, {0}});
-            info.subdevice_modes.push_back({3, {640, 480}, pf_rw10, 30, c.intrinsicsThird[1], {c.modesThird[1][0]}, {0}});
+            info.subdevice_modes.push_back({3, {640, 480}, pf_raw8, 30, c.intrinsicsThird[1], {c.modesThird[1][0]}, {0}});            
         }        
 
         return make_device(device, info, c);

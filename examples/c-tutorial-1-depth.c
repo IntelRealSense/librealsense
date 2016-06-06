@@ -68,14 +68,13 @@ int main()
 
     while(1)
     {
-        /* This call waits until a new coherent set of frames is available on a device
-           Calls to get_frame_data(...) and get_frame_timestamp(...) on a device will return stable values until wait_for_frames(...) is called */
+        /* This call waits until a new coherent set of frames is available on a device */
         rs_wait_for_frames(dev, &e);
 
-        /* Retrieve depth data, which was previously configured as a 640 x 480 image of 16-bit depth values */
+        /* Retrieve depth data, configured as 16-bit depth values */
         const uint16_t * depth_frame = (const uint16_t *)(rs_get_frame_data(dev, RS_STREAM_DEPTH, &e));
 
-        /* Print a simple text-based representation of the image, by breaking it into 10x20 pixel regions and and approximating the coverage of pixels within one meter */
+        /* Print a simple text-based representation of the image, by breaking it into 10x20 pixel regions and and approximating the coverage of pixels within one meter */        
         char * out = buffer;
         int coverage[255] = {0}, x,y,i; //The buffer will suffice up to 255*10  pixels width
         for(y=0; y<height; ++y)

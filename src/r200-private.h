@@ -156,9 +156,6 @@ namespace rsimpl
         void toggle_motion_module_power(uvc::device & device, bool on);
         void toggle_motion_module_events(uvc::device & device, bool on);
 
-		//void config(uvc::device & device, int16_t gyro_bw, int16_t gyro_range, int16_t accel_bw, int16_t accel_range, uint32_t time_seed);
-
-
         ///////////////
         // Streaming //
         ///////////////

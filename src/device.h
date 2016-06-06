@@ -37,10 +37,10 @@ namespace rsimpl
         virtual int get_frame_counter(const subdevice_mode &, const void * frame) = 0;
     };
 
-	namespace motion_module
-	{
-		struct motion_module_parser;
-	}
+    namespace motion_module
+    {
+        struct motion_module_parser;
+    }
     
 }
 
@@ -67,10 +67,10 @@ protected:
     const rsimpl::uvc::device &                 get_device() const { return *device; }
     rsimpl::uvc::device &                       get_device() { return *device; }
 
-	virtual void                                start_video_streaming();
-	virtual void                                stop_video_streaming();
-	virtual void                                start_motion_tracking();
-	virtual void                                stop_motion_tracking();
+    virtual void                                start_video_streaming();
+    virtual void                                stop_video_streaming();
+    virtual void                                start_motion_tracking();
+    virtual void                                stop_motion_tracking();
 
 public:
                                                 rs_device(std::shared_ptr<rsimpl::uvc::device> device, const rsimpl::static_device_info & info);
@@ -98,7 +98,7 @@ public:
     virtual void                                stop(rs_source source);
 
     bool                                        is_capturing() const { return capturing; }
-	int                                         is_motion_tracking_active() const { return data_acquisition_active; }
+    int                                         is_motion_tracking_active() const { return data_acquisition_active; }
     
     void                                        wait_all_streams();
     bool                                        poll_all_streams();

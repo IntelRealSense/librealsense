@@ -147,7 +147,7 @@
     <ClCompile Include="..\..\examples\cpp-callback.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\examples\third_party\glfw\msvc120\glfw3.vcxproj">
+    <ProjectReference Include="..\..\examples\third_party\glfw\msvc140\glfw3.vcxproj">
       <Project>{979d0add-6ab7-403a-bb17-5434615e4446}</Project>
     </ProjectReference>
     <ProjectReference Include="..\realsense\realsense.vcxproj">
