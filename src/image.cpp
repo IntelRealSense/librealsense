@@ -455,7 +455,7 @@ namespace rsimpl
         for(auto entry : rectification_table) *rect_pixels++ = unrect_pixels[entry];
     }
 
-    void rectify_image(byte * rect_pixels, const std::vector<int> & rectification_table, const byte * unrect_pixels, rs_format format)
+    void rectify_image(uint8_t * rect_pixels, const std::vector<int> & rectification_table, const uint8_t * unrect_pixels, rs_format format)
     {
         switch(format)
         {

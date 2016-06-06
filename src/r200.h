@@ -15,15 +15,15 @@
 
 namespace rsimpl
 {
-    class r200_camera final : public rs_device
+    class r200_camera final : public rs_device_base
     {
         bool is_disparity_mode_enabled() const;
         void on_update_depth_units(uint32_t units);
         void on_update_disparity_multiplier(double multiplier);
         uint32_t get_lr_framerate() const;
 
-		motion_module::motion_module_control	motion_module_ctrl;
-		motion_module::mm_config				motion_module_configuration;
+        motion_module::motion_module_control    motion_module_ctrl;
+        motion_module::mm_config                motion_module_configuration;
         
     public:
         r200_camera(std::shared_ptr<uvc::device> device, const static_device_info & info);

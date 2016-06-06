@@ -114,6 +114,9 @@
     <ClInclude Include="..\..\src\uvc.h">
       <Filter>sources</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\include\librealsense\rscore.hpp">
+      <Filter>includes</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="includes">
