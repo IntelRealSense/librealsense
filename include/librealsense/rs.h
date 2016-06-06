@@ -265,6 +265,13 @@ const char * rs_get_device_name(const rs_device * device, rs_error ** error);
 const char * rs_get_device_serial(const rs_device * device, rs_error ** error);
 
 /**
+ * retrieve the USB port number of the device
+ * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+ * \return            the USB port number in a string form "##-##"
+ */
+const char * rs_get_device_usb_port_id(const rs_device * device, rs_error ** error);
+
+/**
  * retrieve the version of the firmware currently installed on the device
  * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
  * \return            firmware version string, in a format is specific to device model

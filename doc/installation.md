@@ -1,11 +1,11 @@
 # Table of Contents
-* [Ubuntu 14.04 LTS Installation](#ubuntu-1404-lts-installation)
+* [Ubuntu Installation](#ubuntu-installation)
 * [Apple OSX Installation](#apple-osx-installation)
 * [Windows 8.1/10 Installation](#windows-81-installation)
 
 **Note:** Due to the USB 3.0 translation layer between native hardware and virtual machine, the librealsense team does not recommend or support installation in a VM. 
 
-# Ubuntu 14.04 LTS Installation
+# Ubuntu Installation - for Ubuntu 14.04 and 16.04
 
 Installation of cameras on Linux is lengthy compared to other supported platforms. Several upstream fixes to the uvcvideo driver have been merged in recent kernel versions, greatly enhancing stability. Once an updated kernel has been installed, one more patch must be applied to the uvcvideo driver with support for several non-standard pixel formats provided by RealSense™ cameras.
 
@@ -18,7 +18,9 @@ Installation of cameras on Linux is lengthy compared to other supported platform
   * `sudo apt-get install libusb-1.0-0-dev`
 3. glfw3 is not available in apt-get on Ubuntu 14.04. Use included installer script:
   * `scripts/install_glfw3.sh`
-4. **Follow the installation instructions for your desired backend (see below)**
+  * For 16.04 you can install glfw3 via 'sudo apt-get install libglfw3-dev
+4. For Ubuntu 14.04 -- **Follow the installation instructions for your desired backend (see below)**
+  * For Ubuntu 16.04 -- No kernel patch is needed for the R200 camera
 5. We use QtCreator as an IDE for Linux development on Ubuntu
   * **Note:** QtCreator is presently configured to use the V4L2 backend by default
   * `sudo apt-get install qtcreator`

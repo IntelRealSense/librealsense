@@ -10,6 +10,7 @@ EXPORTS
     rs_get_device_name
     rs_get_device_serial
     rs_get_device_firmware_version
+    rs_get_device_usb_port_id
     rs_get_device_extrinsics
     rs_get_device_depth_scale
     rs_device_supports_option

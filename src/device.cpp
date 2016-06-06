@@ -375,3 +375,8 @@ void rs_device_base::get_option_range(rs_option option, double & min, double & m
 
     throw std::logic_error("range not specified");
 }
+
+const char * rs_device_base::get_usb_port_id() const
+{
+    return rsimpl::uvc::get_usb_port_id(*device);
+}

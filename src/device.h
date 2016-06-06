@@ -120,6 +120,7 @@ public:
     virtual std::shared_ptr<rsimpl::frame_timestamp_reader>  create_frame_timestamp_reader() const = 0;
     rs_frame_ref *                              detach_frame(const rs_frameset * fs, rs_stream stream);
     void                                        release_frame(rs_frame_ref * ref);
+    const char *                                get_usb_port_id() const;
     rs_frame_ref *                              clone_frame(rs_frame_ref * frame);
 };
 
