@@ -66,16 +66,16 @@ typedef enum rs_format
 
 typedef enum rs_output_buffer_format
 {
-    RS_OUTPUT_BUFFER_FORMAT_CONTINOUS   = 0,   /**< Makes sure that the output frame is exposed as a single cotinous buffer */
-    RS_OUTPUT_BUFFER_FORMAT_NATIVE      = 1,   /**< Don't convert buffer to continous, the user has to handle pitch manually */
+    RS_OUTPUT_BUFFER_FORMAT_CONTINOUS   = 0,   /**< Makes sure that the output frame is exposed as a single continuous buffer */
+    RS_OUTPUT_BUFFER_FORMAT_NATIVE      = 1,   /**< Don't convert buffer to continuous, the user has to handle pitch manually */
     RS_OUTPUT_BUFFER_FORMAT_COUNT       = 2,
     RS_OUTPUT_BUFFER_FORMAT_ENUM        = 0x7FFFFFFF
 } rs_output_buffer_format;
 
 typedef enum rs_preset
 {
-    RS_PRESET_BEST_QUALITY      = 0, 
-    RS_PRESET_LARGEST_IMAGE     = 1, 
+    RS_PRESET_BEST_QUALITY      = 0,
+    RS_PRESET_LARGEST_IMAGE     = 1,
     RS_PRESET_HIGHEST_FRAMERATE = 2, 
     RS_PRESET_COUNT             = 3, 
     RS_PRESET_MAX_ENUM = 0x7FFFFFFF
@@ -101,17 +101,17 @@ typedef enum rs_distortion
 
 typedef enum rs_ivcam_preset
 {
-    RS_IVCAM_PRESET_SHORT_RANGE = 0,
-    RS_IVCAM_PRESET_LONG_RANGE = 1,
+    RS_IVCAM_PRESET_SHORT_RANGE             = 0,
+    RS_IVCAM_PRESET_LONG_RANGE              = 1,
     RS_IVCAM_PRESET_BACKGROUND_SEGMENTATION = 2,
-    RS_IVCAM_PRESET_GESTURE_RECOGNITION = 3,
-    RS_IVCAM_PRESET_OBJECT_SCANNING = 4,
-    RS_IVCAM_PRESET_FACE_ANALYTICS = 5,
-    RS_IVCAM_PRESET_FACE_LOGIN = 6,
-    RS_IVCAM_PRESET_GR_CURSOR = 7,
-    RS_IVCAM_PRESET_DEFAULT = 8,
-    RS_IVCAM_PRESET_MID_RANGE = 9,
-    RS_IVCAM_PRESET_IR_ONLY = 10,
+    RS_IVCAM_PRESET_GESTURE_RECOGNITION     = 3,
+    RS_IVCAM_PRESET_OBJECT_SCANNING         = 4,
+    RS_IVCAM_PRESET_FACE_ANALYTICS          = 5,
+    RS_IVCAM_PRESET_FACE_LOGIN              = 6,
+    RS_IVCAM_PRESET_GR_CURSOR               = 7,
+    RS_IVCAM_PRESET_DEFAULT                 = 8,
+    RS_IVCAM_PRESET_MID_RANGE               = 9,
+    RS_IVCAM_PRESET_IR_ONLY                 = 10,
     RS_IVCAM_PRESET_MAX_ENUM = 0x7FFFFFFF
 } rs_ivcam_preset;
 

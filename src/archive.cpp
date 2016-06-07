@@ -235,7 +235,7 @@ const byte* frame_archive::frame::get_frame_data() const
             frame_data += additional_data.stride*additional_data.bpp * -additional_data.pad + (-additional_data.pad)*additional_data.bpp;
         }
     }
-        
+
     else
     {
         frame_data = data.data();
