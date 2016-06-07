@@ -9,8 +9,9 @@
 
 using namespace rsimpl;
 
-rs_extrinsics stream_interface::get_extrinsics_to(const stream_interface & r) const
+rs_extrinsics stream_interface::get_extrinsics_to(const rs_stream_interface & other) const
 {
+    auto& r = dynamic_cast<const stream_interface&>(other);
     auto from = get_pose(), to = r.get_pose();
     if(from == to) return {{1,0,0,0,1,0,0,0,1},{0,0,0}};
     auto transform = inverse(from) * to;
@@ -91,25 +92,18 @@ int native_stream::get_frame_number() const
     return archive->get_frame_timestamp(stream);
 }
 
-int native_stream::get_frame_counter() const
-{
-    if (!is_enabled()) throw std::runtime_error(to_string() << "stream not enabled: " << stream);
-    return archive->get_frame_counter(stream);
-}
-
 long long native_stream::get_frame_system_time() const
 {
     return archive->get_frame_system_time(stream);
 }
 
-const byte * native_stream::get_frame_data() const
+const uint8_t * native_stream::get_frame_data() const
 {
     if(!is_enabled()) throw std::runtime_error(to_string() << "stream not enabled: " << stream);
-    return archive->get_frame_data(stream);
+    return (const uint8_t *) archive->get_frame_data(stream);
 }
 
-
-const rsimpl::byte * point_stream::get_frame_data() const
+const uint8_t * point_stream::get_frame_data() const
 {
     if(image.empty() || number != get_frame_number())
     {
@@ -130,7 +124,7 @@ const rsimpl::byte * point_stream::get_frame_data() const
     return image.data();
 }
 
-const rsimpl::byte * rectified_stream::get_frame_data() const
+const uint8_t * rectified_stream::get_frame_data() const
 {
     // If source image is already rectified, just return it without doing any work
     if(get_pose() == source.get_pose() && get_intrinsics() == source.get_intrinsics()) return source.get_frame_data();
@@ -145,7 +139,7 @@ const rsimpl::byte * rectified_stream::get_frame_data() const
     return image.data();
 }
 
-const rsimpl::byte * aligned_stream::get_frame_data() const
+const uint8_t * aligned_stream::get_frame_data() const
 {
     if(image.empty() || number != get_frame_number())
     {

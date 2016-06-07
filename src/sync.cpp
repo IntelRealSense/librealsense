@@ -37,7 +37,7 @@ frame_archive::frameset* syncronizing_archive::clone_frontbuffer()
     return clone_frameset(&frontbuffer);
 }
 
-int rsimpl::syncronizing_archive::get_frame_counter(rs_stream stream) const
+int rsimpl::syncronizing_archive::get_frame_number(rs_stream stream) const
 {
     return frontbuffer.get_frame_number(stream);
 }
@@ -52,7 +52,7 @@ void syncronizing_archive::wait_for_frames()
 {
     std::unique_lock<std::recursive_mutex> lock(mutex);
     const auto ready = [this]() { return !frames[key_stream].empty(); };
-    if (!ready() && !cv.wait_for(lock, std::chrono::seconds(5), ready)) throw std::runtime_error("Timeout waiting for frames.");
+    if(!ready() && !cv.wait_for(lock, std::chrono::seconds(5), ready)) throw std::runtime_error("Timeout waiting for frames.");
     get_next_frames();
 }
 

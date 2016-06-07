@@ -228,7 +228,7 @@ namespace rsimpl
     }
 
     f200_camera::f200_camera(std::shared_ptr<uvc::device> device, const static_device_info & info, const f200::CameraCalibrationParameters & calib, const f200::IVCAMTemperatureData & temp, const f200::IVCAMThermalLoopParams & params) :
-        rs_device(device, info), base_calibration(calib), base_temperature_data(temp), thermal_loop_params(params), last_temperature_delta(std::numeric_limits<float>::infinity())
+        rs_device_base(device, info), base_calibration(calib), base_temperature_data(temp), thermal_loop_params(params), last_temperature_delta(std::numeric_limits<float>::infinity())
     {
         // If thermal control loop requested, start up thread to handle it
         if(thermal_loop_params.IRThermalLoopEnable)
@@ -472,7 +472,7 @@ namespace rsimpl
             case RS_OPTION_F200_MOTION_RANGE:         f200::get_motion_range        (get_device(), val); values[i] = val; break;
             case RS_OPTION_F200_FILTER_OPTION:        f200::get_filter_option       (get_device(), val); values[i] = val; break;
             case RS_OPTION_F200_CONFIDENCE_THRESHOLD: f200::get_confidence_threshold(get_device(), val); values[i] = val; break;
-            case RS_OPTION_F200_DYNAMIC_FPS:          f200::get_dynamic_fps         (get_device(), val); values[i] = val; break;
+            case RS_OPTION_F200_DYNAMIC_FPS:          f200::get_dynamic_fps         (get_device(), val); values[i] = val; break;            
 
             case RS_OPTION_SR300_AUTO_RANGE_ENABLE_MOTION_VERSUS_RANGE: values[i] = arr_reader.get(&f200::IVCAMAutoRangeRequest::enableMvR); break; 
             case RS_OPTION_SR300_AUTO_RANGE_ENABLE_LASER:               values[i] = arr_reader.get(&f200::IVCAMAutoRangeRequest::enableLaser); break;
@@ -486,7 +486,7 @@ namespace rsimpl
             case RS_OPTION_SR300_AUTO_RANGE_LOWER_THRESHOLD:            values[i] = arr_reader.get(&f200::IVCAMAutoRangeRequest::ARLowerTh); break;
 
             case RS_OPTION_SR300_WAKE_ON_USB_REASON:        sr300::get_wakeup_reason(get_device(), usbMutex, val); values[i] = val; break;
-            case RS_OPTION_SR300_WAKE_ON_USB_CONFIDENCE:    sr300::get_wakeup_confidence(get_device(), usbMutex, val); values[i] = val; break;
+            case RS_OPTION_SR300_WAKE_ON_USB_CONFIDENCE:    sr300::get_wakeup_confidence(get_device(), usbMutex, val); values[i] = val; break;            
 
             default: LOG_WARNING("Cannot get " << options[i] << " on " << get_name()); break;
             }

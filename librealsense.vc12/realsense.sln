@@ -121,6 +121,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "cpp-callback", "cpp-callbac
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "cpp-multi-threading-4", "cpp-multi-threading-4\cpp-multi-threading-4.vcxproj", "{78B5B485-34B9-4462-A284-B19118D3D0DA}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "cpp-motion-module", "cpp-motion-module\cpp-motion-module.vcxproj", "{D1A726B7-DF03-4F04-AEC8-936AB88FC372}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -337,6 +339,15 @@ Global
 		{78B5B485-34B9-4462-A284-B19118D3D0DA}.Release|Win32.Build.0 = Release|Win32
 		{78B5B485-34B9-4462-A284-B19118D3D0DA}.Release|x64.ActiveCfg = Release|x64
 		{78B5B485-34B9-4462-A284-B19118D3D0DA}.Release|x64.Build.0 = Release|x64
+		{D1A726B7-DF03-4F04-AEC8-936AB88FC372}.Debug|Win32.ActiveCfg = Debug|Win32
+		{D1A726B7-DF03-4F04-AEC8-936AB88FC372}.Debug|Win32.Build.0 = Debug|Win32
+		{D1A726B7-DF03-4F04-AEC8-936AB88FC372}.Debug|x64.ActiveCfg = Debug|x64
+		{D1A726B7-DF03-4F04-AEC8-936AB88FC372}.Debug|x64.Build.0 = Debug|x64
+		{D1A726B7-DF03-4F04-AEC8-936AB88FC372}.Release|Win32.ActiveCfg = Release|Win32
+		{D1A726B7-DF03-4F04-AEC8-936AB88FC372}.Release|Win32.Build.0 = Release|Win32
+		{D1A726B7-DF03-4F04-AEC8-936AB88FC372}.Release|x64.ActiveCfg = Release|x64
+		{D1A726B7-DF03-4F04-AEC8-936AB88FC372}.Release|x64.Build.0 = Release|x64
+
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -368,5 +379,6 @@ Global
 		{C3CB58F0-844A-4B8F-B3C6-159A9677E868} = {9CE5B9D5-05C7-4288-99B3-13ABFBE7B60C}
 		{22315D69-5DB9-4C89-98FE-B45F1A5D6674} = {9CE5B9D5-05C7-4288-99B3-13ABFBE7B60C}
 		{78B5B485-34B9-4462-A284-B19118D3D0DA} = {9CE5B9D5-05C7-4288-99B3-13ABFBE7B60C}
+		{D1A726B7-DF03-4F04-AEC8-936AB88FC372} = {9CE5B9D5-05C7-4288-99B3-13ABFBE7B60C}
 	EndGlobalSection
 EndGlobal

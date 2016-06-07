@@ -11,6 +11,7 @@
 #include <sstream>
 #include <stdexcept>
 #include <functional>
+#include <vector>
 
 namespace rs
 {
@@ -78,6 +79,7 @@ namespace rs
         inverse_brown_conrady  = 2  ///< Equivalent to Brown-Conrady distortion, except undistorts image instead of distorting it
     };
 
+    // reflection of rs_option
     enum class option : int32_t
     {
         color_backlight_compensation                    = 0,  
@@ -143,10 +145,23 @@ namespace rs
         r200_depth_control_second_peak_threshold        = 60, 
         r200_depth_control_neighbor_threshold           = 61, 
         r200_depth_control_lr_threshold                 = 62,
-        r200_fisheye_color_exposure                     = 63,
-        r200_fisheye_color_gain                         = 64,
-        r200_fisheye_strobe                             = 65,
-        r200_fisheye_ext_trig                           = 66
+        zr300_gyroscope_bandwidth                       = 63,
+        zr300_gyroscope_range                           = 64,
+        zr300_accelerometer_bandwidth                   = 65,
+        zr300_accelerometer_range                       = 66,
+        zr300_motion_module_time_seed                   = 67,
+        zr300_motion_module_active                      = 68,
+        r200_fisheye_color_exposure                     = 69,
+        r200_fisheye_color_gain                         = 70,
+        r200_fisheye_strobe                             = 71,
+        r200_fisheye_ext_trig                           = 72
+    };
+
+    enum class source : uint8_t
+    {
+        video           = 1,
+        motion_data     = 2,
+        all_sources
     };
 
     struct float2 { float x,y; };
@@ -178,7 +193,20 @@ namespace rs
         bool        is_identity() const                                                 { return rotation[0] == 1 && rotation[4] == 1 && translation[0] == 0 && translation[1] == 0 && translation[2] == 0; }
         float3      transform(const float3 & point) const                               { float3 p; rs_transform_point_to_point(&p.x, this, &point.x); return p; }
 
+    };   
+
+    struct timestamp_data : rs_timestamp_data
+    {
+        timestamp_data(rs_timestamp_data orig) : rs_timestamp_data(orig) {}
+        timestamp_data() {}
     };
+
+    struct motion_data : rs_motion_data
+    {
+        motion_data(rs_motion_data orig) : rs_motion_data(orig) {}
+        motion_data() {}
+    };
+
     class context;
     class device;
     
@@ -229,6 +257,44 @@ namespace rs
             auto r = rs_get_device(handle, index, &e);
             error::handle(e);
             return (device *)r;
+        }
+    };  
+    
+    class motion_callback_base
+    {
+    public:
+        virtual void on_event(motion_data e) = 0;
+        virtual ~motion_callback_base() {}
+    };
+
+    class motion_callback : public motion_callback_base
+    {
+        std::function<void(motion_data)> on_event_function;
+    public:
+        explicit motion_callback(std::function<void(motion_data)> on_event) : on_event_function(on_event) {}
+
+        void on_event(motion_data e) override
+        {
+            on_event_function(std::move(e));
+        }
+    };
+    
+    class timestamp_callback_base
+    {
+    public:
+        virtual void on_event(timestamp_data data) = 0;
+        virtual ~timestamp_callback_base() {}
+    };
+
+    class timestamp_callback : public timestamp_callback_base
+    {
+        std::function<void(timestamp_data)> on_event_function;
+    public:
+        explicit timestamp_callback(std::function<void(timestamp_data)> on_event) : on_event_function(on_event) {}
+
+        void on_event(timestamp_data data) override
+        {
+            on_event_function(std::move(data));
         }
     };
 
@@ -461,6 +527,8 @@ namespace rs
         device(const device &) = delete;
         device & operator = (const device &) = delete;
         ~device() = delete;
+
+
     public:
         /// retrieve a human readable device model string
         /// \return  the model string, such as "Intel RealSense F200" or "Intel RealSense R200"
@@ -478,6 +546,16 @@ namespace rs
         {
             rs_error * e = nullptr;
             auto r = rs_get_device_serial((const rs_device *)this, &e);
+            error::handle(e);
+            return r;
+        }
+
+        /// retrieve the USB port number of the device
+        /// \return  the USB port number, in a format specific to the device model
+        const char * get_usb_port_id() const
+        {
+            rs_error * e = nullptr;
+            auto r = rs_get_device_usb_port_id((const rs_device *)this, &e);
             error::handle(e);
             return r;
         }
@@ -669,21 +747,56 @@ namespace rs
             error::handle(e);
         }
 
-        /// begin streaming on all enabled streams for this device
-        ///
-        void start()
+        /// Configure backend to acquire and handle motion-tracking data
+        void enable_motion_tracking(motion_callback_base& motion_handler, timestamp_callback_base& timestamp_handler)
+        {
+            rs_error * e = nullptr;            
+
+            rs_enable_motion_tracking((rs_device *)this, 
+                [](rs_device * device, rs_motion_data mo_data, void * user) { try {
+                    auto listener = (motion_callback_base *)user;
+                    listener->on_event((rs::motion_data)mo_data);
+                } catch (...) {} }, &motion_handler,
+                [](rs_device * device, rs_timestamp_data ts_data, void * user) { try {
+                    auto listener = (timestamp_callback_base *)user;
+                    listener->on_event((rs::timestamp_data)ts_data);
+                } catch (...) {} }, &timestamp_handler, &e);
+
+            error::handle(e);
+        }
+
+        /// disable events polling
+        void disable_motion_tracking(void)
         {
             rs_error * e = nullptr;
-            rs_start_device((rs_device *)this, &e);
+            rs_disable_motion_tracking((rs_device *)this, &e);
+            error::handle(e);
+        }          
+
+        /// check if data acquisition is active        
+        int is_motion_tracking_active()
+        {
+            rs_error * e = nullptr;
+            return rs_is_motion_tracking_active((rs_device *)this,&e);
+            error::handle(e);
+        }
+
+
+        /// begin streaming on all enabled streams for this device
+        ///
+        void start(rs::source source = rs::source::video)
+        {            
+            rs_error * e = nullptr;
+            rs_start_device((rs_device *)this, (rs_source)source, &e);
             error::handle(e);
         }
 
         /// end streaming on all streams for this device
         ///
-        void stop()
+        void stop(rs::source source = rs::source::video)
         {
             rs_error * e = nullptr;
-            rs_stop_device((rs_device *)this, &e);
+            rs_stop_device((rs_device *)this, (rs_source)source, &e);
             error::handle(e);
         }
 
@@ -779,7 +892,7 @@ namespace rs
             rs_error * e = nullptr;
             auto r = rs_supports((rs_device *)this, (rs_capabilities)capability, &e);
             error::handle(e);
-            return r;
+            return r? true: false;
         }
 
         /// block until new frames are available
@@ -835,7 +948,7 @@ namespace rs
         /// retrieve the frame number
         /// \param[in] stream  the stream whose latest frame we are interested in
         /// \return            the number of the frame, since the device was started
-        int get_frame_counter(stream stream) const
+        int get_frame_number(stream stream) const
         {
             rs_error * e = nullptr;
             auto r = rs_get_frame_number((const rs_device *)this, (rs_stream)stream, &e);
@@ -859,7 +972,9 @@ namespace rs
     inline std::ostream & operator << (std::ostream & o, format format) { return o << rs_format_to_string((rs_format)format); }
     inline std::ostream & operator << (std::ostream & o, preset preset) { return o << rs_preset_to_string((rs_preset)preset); }
     inline std::ostream & operator << (std::ostream & o, distortion distortion) { return o << rs_distortion_to_string((rs_distortion)distortion); }
-    inline std::ostream & operator << (std::ostream & o, option option) { return o << rs_option_to_string((rs_option)option); }
+    inline std::ostream & operator << (std::ostream & o, option option) { return o << rs_option_to_string((rs_option)option); }    
+    inline std::ostream & operator << (std::ostream & o, capabilities capability) { return o << rs_capabilities_to_string((rs_capabilities)capability); }
+    inline std::ostream & operator << (std::ostream & o, source src) { return o << rs_source_to_string((rs_source)src); }
 
     enum class log_severity : int32_t
     {

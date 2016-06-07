@@ -187,12 +187,12 @@ TEST_CASE( "rs_get_stream_framerate() validates input", "[offline] [validation]"
 
 TEST_CASE( "rs_start_device() validates input", "[offline] [validation]" )
 {
-    rs_start_device(nullptr, require_error("null pointer passed for argument \"device\""));
+    rs_start_device(nullptr, rs_source::RS_SOURCE_VIDEO, require_error("null pointer passed for argument \"device\""));
 }
 
 TEST_CASE( "rs_stop_device() validates input", "[offline] [validation]" )
 {
-    rs_stop_device(nullptr, require_error("null pointer passed for argument \"device\""));
+    rs_stop_device(nullptr, rs_source::RS_SOURCE_VIDEO, require_error("null pointer passed for argument \"device\""));
 }
 
 TEST_CASE( "rs_is_device_streaming() validates input", "[offline] [validation]" )

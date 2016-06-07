@@ -14,7 +14,7 @@ namespace rsimpl
     namespace r200
     {       
         const uvc::extension_unit lr_xu = {0, 2, 1, {0x18682d34, 0xdd2c, 0x4073, {0xad, 0x23, 0x72, 0x14, 0x73, 0x9a, 0x07, 0x4c}}};
-        const uvc::extension_unit fisheye_xu = {3, 3, 1, {0xf6c3c3d1, 0x5cde, 0x4477, {0xad, 0xf0, 0x41, 0x33, 0xf5, 0x8d, 0xa6, 0xf4}}};
+        const uvc::extension_unit fisheye_xu = {3, 3, 2, {0xf6c3c3d1, 0x5cde, 0x4477, {0xad, 0xf0, 0x41, 0x33, 0xf5, 0x8d, 0xa6, 0xf4}}};
 
         const int STATUS_BIT_Z_STREAMING = 1 << 0;
         const int STATUS_BIT_LR_STREAMING = 1 << 1;
@@ -31,10 +31,10 @@ namespace rsimpl
         };
 
         r200_calibration read_camera_info(uvc::device & device);
-        std::string read_firmware_version(uvc::device & device);
+        std::string read_firmware_version(uvc::device & device);        
              
         void get_register_value(uvc::device & device, uint32_t reg, uint32_t & value);
-		void set_register_value(uvc::device & device, uint32_t reg, uint32_t value);
+        void set_register_value(uvc::device & device, uint32_t reg, uint32_t value);
 
         /////////////////////////////
         // Extension unit controls //
@@ -67,6 +67,9 @@ namespace rsimpl
             lr_gain_discovery          = 22,
             hw_timestamp               = 23,
         };
+
+        // Claim USB interface used for motion module device
+        void claim_motion_module_interface(uvc::device & device);
 
         void xu_read(const uvc::device & device, uvc::extension_unit xu, control xu_ctrl, void * buffer, uint32_t length);
         void xu_write(uvc::device & device, uvc::extension_unit xu, control xu_ctrl, void * buffer, uint32_t length);
@@ -150,6 +153,8 @@ namespace rsimpl
         uint8_t get_ext_trig(const uvc::device & device);
         void set_ext_trig(uvc::device & device, uint8_t ext_trig);
 
+        void toggle_motion_module_power(uvc::device & device, bool on);
+        void toggle_motion_module_events(uvc::device & device, bool on);
 
         ///////////////
         // Streaming //

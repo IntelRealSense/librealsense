@@ -63,6 +63,12 @@
     <ClCompile Include="..\..\src\archive.cpp">
       <Filter>src</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\hw-monitor.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\motion_module.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\src\context.h">
@@ -109,6 +115,15 @@
     </ClInclude>
     <ClInclude Include="..\..\src\archive.h">
       <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\hw-monitor.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\motion_module.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\librealsense\rscore.hpp">
+      <Filter>include</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

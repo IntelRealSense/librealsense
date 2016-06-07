@@ -6,20 +6,21 @@
 ///////////////////
 
 // This sample captures 30 frames and writes the last frame to disk.
-// It can be useful for debugging an embedded system with no display. 
+// It can be useful for debugging an embedded system with no display.
 
 #include <librealsense/rs.hpp>
 
 #include <cstdio>
 #include <stdint.h>
 #include <vector>
+#include <map>
 #include <limits>
 #include <iostream>
 
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "third_party/stb_image_write.h"
 
-void normalize_depth_to_rgb(uint8_t rgb_image[640*480*3], const uint16_t depth_image[], int width, int height)
+void normalize_depth_to_rgb(uint8_t rgb_image[], const uint16_t depth_image[], int width, int height)
 {
     for (int i = 0; i < width * height; ++i)
     {
@@ -39,6 +40,26 @@ void normalize_depth_to_rgb(uint8_t rgb_image[640*480*3], const uint16_t depth_i
     }
 }
 
+std::map<rs::stream,int> components_map =
+{
+    { rs::stream::depth,     3  },      // RGB
+    { rs::stream::color,     3  },
+    { rs::stream::infrared , 1  },      // Monochromatic
+    { rs::stream::infrared2, 1  },
+    { rs::stream::fisheye,   1  }
+};
+
+struct stream_record
+{
+    stream_record(void): frame_data(nullptr) {};
+    stream_record(rs::stream value): stream(value), frame_data(nullptr) {};
+    ~stream_record() { frame_data = nullptr;}
+    rs::stream          stream;
+    rs::intrinsics      intrinsics;
+    unsigned char   *   frame_data;
+};
+
+
 int main() try
 {
     rs::log_to_console(rs::log_severity::warn);
@@ -53,29 +74,53 @@ int main() try
     printf("    Serial number: %s\n", dev->get_serial());
     printf("    Firmware version: %s\n", dev->get_firmware_version());
 
-    // Configure depth to run at VGA resolution at 30 frames per second
-    dev->enable_stream(rs::stream::depth, 640, 480, rs::format::z16, 30);
-    dev->enable_stream(rs::stream::color, 640, 480, rs::format::rgb8, 30);
-    dev->enable_stream(rs::stream::infrared, 640, 480, rs::format::y8, 30);
+    std::vector<stream_record> supported_streams;
 
-    const int width = 640;
-    const int height = 480;
+    for (int i=(int)rs::capabilities::depth; i <=(int)rs::capabilities::fish_eye; i++)
+        if (dev->supports((rs::capabilities)i))
+            supported_streams.push_back(stream_record((rs::stream)i));
 
+    for (auto & stream_record : supported_streams)
+        dev->enable_stream(stream_record.stream, rs::preset::best_quality);
+
+    /* activate video streaming */
     dev->start();
 
-    // Capture 30 frames to give autoexposure, etc. a chance to settle
+    /* retrieve actual frame size for each enabled stream*/
+    for (auto & stream_record : supported_streams)
+        stream_record.intrinsics = dev->get_stream_intrinsics(stream_record.stream);
+
+    /* Capture 30 frames to give autoexposure, etc. a chance to settle */
     for (int i = 0; i < 30; ++i) dev->wait_for_frames();
 
-    // Retrieve depth data, which was previously configured as a 640 x 480 image of 16-bit depth values
-    const uint16_t * depth_frame = reinterpret_cast<const uint16_t *>(dev->get_frame_data(rs::stream::depth));
-    const uint8_t * color_frame = reinterpret_cast<const uint8_t *>(dev->get_frame_data(rs::stream::color));
-    const uint8_t * ir_frame = reinterpret_cast<const uint8_t *>(dev->get_frame_data(rs::stream::infrared));
+    /* Retrieve data from all the enabled streams */
+    for (auto & stream_record : supported_streams)
+        stream_record.frame_data = const_cast<uint8_t *>((const uint8_t*)dev->get_frame_data(stream_record.stream));
 
-    std::vector<uint8_t> coloredDepth(width * height * 3);
-    normalize_depth_to_rgb(coloredDepth.data(), depth_frame, width, height);
-    stbi_write_png("cpp-headless-output-depth.png", width, height, 3, coloredDepth.data(), 3 * width);
-    stbi_write_png("cpp-headless-output-rgb.png", width, height, 3, color_frame, 3 * width);
-    stbi_write_png("cpp-headless-output-ir.png", width, height, 1, ir_frame, width);
+    /* Transform Depth range map into color map */
+    stream_record depth = supported_streams[(int)rs::stream::depth];
+    std::vector<uint8_t> coloredDepth(depth.intrinsics.width * depth.intrinsics.height * components_map[depth.stream]);
+
+    /* Encode depth data into color image */
+    normalize_depth_to_rgb(coloredDepth.data(), (const uint16_t *)depth.frame_data, depth.intrinsics.width, depth.intrinsics.height);
+
+    /* Update captured data */
+    supported_streams[(int)rs::stream::depth].frame_data = coloredDepth.data();
+
+    /* Store captured frames into current directory */
+    for (auto & captured : supported_streams)
+    {
+        std::stringstream ss;
+        ss << "cpp-headless-output-" << captured.stream << ".png";
+
+        std::cout << "Writing " << ss.str().data() << ", " << captured.intrinsics.width << " x " << captured.intrinsics.height << " pixels"   << std::endl;
+
+        stbi_write_png(ss.str().data(),
+            captured.intrinsics.width,captured.intrinsics.height,
+            components_map[captured.stream],
+            captured.frame_data,
+            captured.intrinsics.width * components_map[captured.stream] );
+    }
 
     printf("wrote frames to current working directory.\n");
     return EXIT_SUCCESS;

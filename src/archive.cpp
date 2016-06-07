@@ -173,6 +173,7 @@ void frame_archive::frameset::cleanup()
 {
     for (auto i = 0; i < RS_STREAM_NATIVE_COUNT; i++)
     {
+        buffer[i].disable_continuation();
         buffer[i] = frame_ref(nullptr);
     }
 }

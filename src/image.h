@@ -26,9 +26,9 @@ namespace rsimpl
                                                      const rs_extrinsics & disparity_to_other, const rs_intrinsics & other_intrin, const byte * other_pixels, rs_format other_format);
 
     std::vector<int> compute_rectification_table    (const rs_intrinsics & rect_intrin, const rs_extrinsics & rect_to_unrect, const rs_intrinsics & unrect_intrin);
-    void             rectify_image                  (byte * rect_pixels, const std::vector<int> & rectification_table, const byte * unrect_pixels, rs_format format);
+    void             rectify_image                  (uint8_t * rect_pixels, const std::vector<int> & rectification_table, const uint8_t * unrect_pixels, rs_format format);
 
-    extern const native_pixel_format pf_rw8;        // Four 8 bit luminance
+    extern const native_pixel_format pf_raw8;       // Four 8 bit luminance
     extern const native_pixel_format pf_rw10;       // Four 10 bit luminance values in one 40 bit macropixel
     extern const native_pixel_format pf_rw16;       // 10 bit in 16 bit WORD with 6 bit unused
     extern const native_pixel_format pf_yuy2;       // Y0 U Y1 V ordered chroma subsampled macropixel

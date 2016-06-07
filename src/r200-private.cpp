@@ -1,13 +1,17 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
+#include "hw-monitor.h"
 #include "r200-private.h"
 
 #include <cstring>
 #include <cmath>
 #include <ctime>
 #include <thread>
+#include <chrono>
 #include <iomanip>
+#include <mutex>
+#include <algorithm>
 
 #pragma pack(push, 1) // All structs in this file are byte-aligend
 
@@ -16,7 +20,7 @@ enum class command : uint32_t // Command/response codes
     peek               = 0x11,
     poke               = 0x12,
     download_spi_flash = 0x1A,
-    get_fwrevision     = 0x21,
+    get_fwrevision     = 0x21
 };
 
 enum class command_modifier : uint32_t { direct = 0x10 }; // Command/response modifiers
@@ -33,30 +37,13 @@ enum class command_modifier : uint32_t { direct = 0x10 }; // Command/response mo
 #define NV_NON_FIRMWARE_ROOT_ADDRESS                NV_NON_FIRMWARE_START
 #define CAM_INFO_BLOCK_LEN 2048
 
-
-
-
 namespace rsimpl { namespace r200
 {
-    void xu_read(const uvc::device & device, uvc::extension_unit xu, control xu_ctrl, void * buffer, uint32_t length)
-    {
-        uvc::get_control_with_retry(device, xu, static_cast<int>(xu_ctrl), buffer, length);
-    }
+    //const uvc::extension_unit lr_xu = {0, 2, 1, {0x18682d34, 0xdd2c, 0x4073, {0xad, 0x23, 0x72, 0x14, 0x73, 0x9a, 0x07, 0x4c}}};
 
-    void xu_write(uvc::device & device, uvc::extension_unit xu, control xu_ctrl, void * buffer, uint32_t length)
-    {
-        uvc::set_control_with_retry(device, xu, static_cast<int>(xu_ctrl), buffer, length);
-    }
-
-    uint8_t get_strobe(const uvc::device & device)
-    {
-        return r200::xu_read<uint8_t>(device, fisheye_xu, r200::control::fisheye_xu_strobe);
-    }
-
-    void set_strobe(uvc::device & device, uint8_t strobe)
-    {
-        r200::xu_write(device, fisheye_xu, r200::control::fisheye_xu_strobe, &strobe, sizeof(strobe));
-    }
+    const uvc::guid MOTION_MODULE_USB_DEVICE_GUID = { 0xC0B55A29, 0xD7B6, 0x436E, { 0xA6, 0xEF, 0x2E, 0x76, 0xED, 0x0A, 0xBC, 0xA5 } };
+    const unsigned short motion_module_interrupt_interface = 0x2; // endpint to pull sensors data continuously (interrupt transmit)
+       
 
     uint8_t get_ext_trig(const uvc::device & device)
     {
@@ -68,6 +55,24 @@ namespace rsimpl { namespace r200
         r200::xu_write(device, fisheye_xu, r200::control::fisheye_xu_ext_trig, &ext_trig, sizeof(ext_trig));
     }
 
+    void xu_read(const uvc::device & device, uvc::extension_unit xu, control xu_ctrl, void * buffer, uint32_t length)
+    {
+        uvc::get_control_with_retry(device, xu, static_cast<int>(xu_ctrl), buffer, length);
+    }
+
+    void xu_write(uvc::device & device, uvc::extension_unit xu, control xu_ctrl, void * buffer, uint32_t length)
+    {
+        uvc::set_control_with_retry(device, xu, static_cast<int>(xu_ctrl), buffer, length);
+    }
+    uint8_t get_strobe(const uvc::device & device)
+    {
+        return r200::xu_read<uint8_t>(device, fisheye_xu, r200::control::fisheye_xu_strobe);
+    }
+
+    void set_strobe(uvc::device & device, uint8_t strobe)
+    {
+        r200::xu_write(device, fisheye_xu, r200::control::fisheye_xu_strobe, &strobe, sizeof(strobe));
+    }
 
     struct CommandResponsePacket
     {
@@ -86,6 +91,35 @@ namespace rsimpl { namespace r200
         set_control(device, lr_xu, static_cast<int>(control::command_response), &c, sizeof(c));
         get_control(device, lr_xu, static_cast<int>(control::command_response), &r, sizeof(r));
         return r;
+    }
+
+    void bulk_usb_command(uvc::device & device, std::timed_mutex & mutex,unsigned char handle_id ,unsigned char out_ep, uint8_t *out, size_t outSize, uint32_t & op,unsigned char in_ep, uint8_t * in, size_t & inSize, int timeout)
+    {
+        // write
+        errno = 0;
+
+        int outXfer;
+
+        if (!mutex.try_lock_for(std::chrono::milliseconds(timeout))) throw std::runtime_error("timed_mutex::try_lock_for(...) timed out");
+        std::lock_guard<std::timed_mutex> guard(mutex, std::adopt_lock);
+
+        bulk_transfer(device, handle_id, out_ep, out, (int) outSize, &outXfer, timeout); // timeout in ms
+
+        // read
+        if (in && inSize)
+        {
+            uint8_t buf[1024];  // TBD the size may vary
+
+            errno = 0;
+
+            bulk_transfer(device, handle_id, in_ep, buf, sizeof(buf), &outXfer, timeout);
+            if (outXfer < (int)sizeof(uint32_t)) throw std::runtime_error("incomplete bulk usb transfer");
+
+            op = *(uint32_t *)buf;
+            if (outXfer > (int)inSize) throw std::runtime_error("bulk transfer failed - user buffer too small");
+            inSize = outXfer;
+            memcpy(in, buf, inSize);
+        }
     }
 
     bool read_device_pages(uvc::device & dev, uint32_t address, unsigned char * buffer, uint32_t nPages)
@@ -410,6 +444,11 @@ namespace rsimpl { namespace r200
     {
         auto response = send_command_and_receive_response(device, CommandResponsePacket(command::get_fwrevision));
         return reinterpret_cast<const char *>(response.reserved);
+    }
+
+     void claim_motion_module_interface(uvc::device & device)
+    {
+        claim_aux_interface(device, MOTION_MODULE_USB_DEVICE_GUID, motion_module_interrupt_interface);
     }
 
     void set_stream_intent(uvc::device & device, uint8_t & intent)

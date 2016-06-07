@@ -115,7 +115,14 @@ namespace rsimpl
         CASE(SR300_AUTO_RANGE_MAX_LASER)                  
         CASE(SR300_AUTO_RANGE_START_LASER)                
         CASE(SR300_AUTO_RANGE_UPPER_THRESHOLD) 
-        CASE(SR300_AUTO_RANGE_LOWER_THRESHOLD) 
+        CASE(SR300_AUTO_RANGE_LOWER_THRESHOLD)
+        CASE(SR300_WAKEUP_DEV_PHASE1_PERIOD)
+        CASE(SR300_WAKEUP_DEV_PHASE1_FPS)
+        CASE(SR300_WAKEUP_DEV_PHASE2_PERIOD)
+        CASE(SR300_WAKEUP_DEV_PHASE2_FPS)
+        CASE(SR300_WAKEUP_DEV_RESET)
+        CASE(SR300_WAKE_ON_USB_REASON)
+        CASE(SR300_WAKE_ON_USB_CONFIDENCE)
         CASE(R200_LR_AUTO_EXPOSURE_ENABLED)
         CASE(R200_LR_GAIN)
         CASE(R200_LR_EXPOSURE)
@@ -142,15 +149,14 @@ namespace rsimpl
         CASE(R200_DEPTH_CONTROL_TEXTURE_COUNT_THRESHOLD)     
         CASE(R200_DEPTH_CONTROL_TEXTURE_DIFFERENCE_THRESHOLD)
         CASE(R200_DEPTH_CONTROL_SECOND_PEAK_THRESHOLD)       
-        CASE(R200_DEPTH_CONTROL_NEIGHBOR_THRESHOLD)          
+        CASE(R200_DEPTH_CONTROL_NEIGHBOR_THRESHOLD)
         CASE(R200_DEPTH_CONTROL_LR_THRESHOLD)
-        CASE(SR300_WAKEUP_DEV_PHASE1_PERIOD)
-        CASE(SR300_WAKEUP_DEV_PHASE1_FPS)
-        CASE(SR300_WAKEUP_DEV_PHASE2_PERIOD)
-        CASE(SR300_WAKEUP_DEV_PHASE2_FPS)
-        CASE(SR300_WAKEUP_DEV_RESET)
-        CASE(SR300_WAKE_ON_USB_REASON)
-        CASE(SR300_WAKE_ON_USB_CONFIDENCE)
+        CASE(ZR300_GYRO_BANDWIDTH)
+        CASE(ZR300_GYRO_RANGE)
+        CASE(ZR300_ACCELEROMETER_BANDWIDTH)
+        CASE(ZR300_ACCELEROMETER_RANGE)
+        CASE(ZR300_MOTION_MODULE_TIME_SEED)
+        CASE(ZR300_MOTION_MODULE_ACTIVE)
         CASE(FISHEYE_COLOR_EXPOSURE)
         CASE(FISHEYE_COLOR_GAIN)
         CASE(FISHEYE_STROBE)
@@ -159,6 +165,37 @@ namespace rsimpl
         }
         #undef CASE
     }
+
+    const char * get_string(rs_source value)
+    {
+        #define CASE(X) case RS_SOURCE_##X: return #X;
+        switch(value)
+        {
+        CASE(VIDEO)
+        CASE(MOTION_TRACKING)
+        CASE(ALL)
+        default: assert(!is_valid(value)); return nullptr;
+        }
+        #undef CASE
+    }
+    
+        const char * get_string(rs_capabilities value)
+    {
+        #define CASE(X) case RS_CAPABILITIES_##X: return #X;
+        switch(value)
+        {
+        CASE(DEPTH)
+        CASE(COLOR)
+        CASE(INFRARED)
+        CASE(INFRARED2)
+        CASE(FISH_EYE)
+        CASE(MOTION_EVENTS)
+        default: assert(!is_valid(value)); return nullptr;
+        }
+        #undef CASE
+    }
+    
+
 
     size_t subdevice_mode_selection::get_image_size(rs_stream stream) const
     {
@@ -228,6 +265,7 @@ namespace rsimpl
     static_device_info::static_device_info()
     {
         for(auto & s : stream_subdevices) s = -1;
+        for(auto & s : data_subdevices) s = -1;
         for(auto & s : presets) for(auto & p : s) p = stream_request();
         for(auto & p : stream_poses)
         {

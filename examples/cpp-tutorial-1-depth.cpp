@@ -24,6 +24,7 @@ int main() try
 
     // Configure depth to run at VGA resolution at 30 frames per second
     dev->enable_stream(rs::stream::depth, 640, 480, rs::format::z16, 30);
+
     dev->start();
 
     // Determine depth value corresponding to one meter

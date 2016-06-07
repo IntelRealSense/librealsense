@@ -24,8 +24,10 @@
     <ClCompile Include="..\..\src\device.cpp" />
     <ClCompile Include="..\..\src\f200-private.cpp" />
     <ClCompile Include="..\..\src\f200.cpp" />
+    <ClCompile Include="..\..\src\hw-monitor.cpp" />
     <ClCompile Include="..\..\src\image.cpp" />
     <ClCompile Include="..\..\src\log.cpp" />
+    <ClCompile Include="..\..\src\motion_module.cpp" />
     <ClCompile Include="..\..\src\r200-private.cpp" />
     <ClCompile Include="..\..\src\r200.cpp" />
     <ClCompile Include="..\..\src\rs.cpp" />
@@ -41,13 +43,16 @@
   <ItemGroup>
     <ClInclude Include="..\..\include\librealsense\rs.h" />
     <ClInclude Include="..\..\include\librealsense\rs.hpp" />
+    <ClInclude Include="..\..\include\librealsense\rscore.hpp" />
     <ClInclude Include="..\..\include\librealsense\rsutil.h" />
     <ClInclude Include="..\..\src\archive.h" />
     <ClInclude Include="..\..\src\context.h" />
     <ClInclude Include="..\..\src\device.h" />
     <ClInclude Include="..\..\src\f200-private.h" />
     <ClInclude Include="..\..\src\f200.h" />
+    <ClInclude Include="..\..\src\hw-monitor.h" />
     <ClInclude Include="..\..\src\image.h" />
+    <ClInclude Include="..\..\src\motion_module.h" />
     <ClInclude Include="..\..\src\r200-private.h" />
     <ClInclude Include="..\..\src\r200.h" />
     <ClInclude Include="..\..\src\stream.h" />
