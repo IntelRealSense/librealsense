@@ -9,7 +9,7 @@
 
 struct rs_stream_interface
 {
-    virtual ~rs_stream_interface() {};
+    virtual                                 ~rs_stream_interface() {}
 
     virtual rs_extrinsics                   get_extrinsics_to(const rs_stream_interface & r) const = 0;
     virtual float                           get_depth_scale() const = 0;
@@ -30,6 +30,7 @@ struct rs_stream_interface
     virtual bool                            is_enabled() const = 0;
 };
 
+// realsense device public interface
 struct rs_device
 {
     virtual                                 ~rs_device() {}

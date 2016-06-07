@@ -340,9 +340,9 @@ namespace rs
             return e == nullptr;
         }
 
-		/// retrieve the time at which the TODO on a stream was captured
-		/// \return            the timestamp of the frame, in milliseconds since the device was started
-		int get_timestamp() const
+        /// retrieve the time at which the TODO on a stream was captured
+        /// \return            the timestamp of the frame, in milliseconds since the device was started
+        int get_timestamp() const
         {
             rs_error * e = nullptr;
             auto r = rs_get_detached_frame_timestamp(frame_ref, &e);
@@ -373,7 +373,6 @@ namespace rs
         rs_frameset * frames;
         
         frameset(const frameset &) = delete;
-
     public:
         frameset() : device(nullptr), frames(nullptr) {}
         frameset(rs_device * device, rs_frameset * frames) : device(device), frames(frames) {}
@@ -680,20 +679,19 @@ namespace rs
             return intrin;
         }
 
-        /// TODO
+        /// sets the callback for frame arrival event. provided callback will be called the instant new frame of given stream becomes available
+        /// once callback is set on certain stream type, frames of this type will no longer be available throuhg wait/poll methods (those two approaches are mutually exclusive) 
+        /// while wait/poll methods provide consistent set of syncronized frames at the expense of extra latency,
+        /// set frame callbacks provides low latency solution with no syncronization
+        /// \param[in] stream    the stream 
+        /// \param[in] on_frame  frame callback to be invoke on every new frame
+        /// \return            the framerate of the stream, in frames per second
         void set_frame_callback(rs::stream stream, frame_callback_base& on_frame)
         {
             rs_error * e = nullptr;
             rs_set_frame_callback((rs_device *)this, (rs_stream)stream, [](rs_device * device, rs_frame_ref * fref, void * user){
-                try
-                {
-                    auto on_frame = (frame_callback_base *)user;
-                    on_frame->on_frame(frame(device, fref));
-                }
-                catch (...)
-                {
-                    
-                }
+                auto on_frame = (frame_callback_base *)user;
+                on_frame->on_frame(frame(device, fref));
             }, &on_frame, &e);
             error::handle(e);
         }
