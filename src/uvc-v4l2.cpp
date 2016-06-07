@@ -377,7 +377,7 @@ namespace rsimpl
             std::vector<int> claimed_interfaces;
             std::vector<int> claimed_aux_interfaces;
 
-            device(std::shared_ptr<context> parent) : parent(parent), stop(), usb_device(), usb_aux_device(), usb_handle(), usb_aux_handle() {}
+            device(std::shared_ptr<context> parent) : parent(parent), stop(), data_stop(), usb_device(), usb_aux_device(), usb_handle(), usb_aux_handle() {}
             ~device()
             {
                 stop_streaming();
