@@ -732,6 +732,7 @@ namespace rs
         /// once callback is set on certain stream type, frames of this type will no longer be available throuhg wait/poll methods (those two approaches are mutually exclusive) 
         /// while wait/poll methods provide consistent set of syncronized frames at the expense of extra latency,
         /// set frame callbacks provides low latency solution with no syncronization
+        /// the lifetime of the callback must be managed by the user (you must ensure the device is either stopped or destructed before callback object is destructed)
         /// \param[in] stream    the stream 
         /// \param[in] on_frame  frame callback to be invoke on every new frame
         /// \return            the framerate of the stream, in frames per second
@@ -745,21 +746,60 @@ namespace rs
             error::handle(e);
         }
 
-        /// Configure backend to acquire and handle motion-tracking data
+        /// sets the callback for motion module event. provided callback will be called the instant new motion or timestamp event is available. 
+        /// the lifetime of the callback must be managed by the user (you must ensure the device is either stopped or destructed before callback object is destructed)
+        /// \param[in] stream             the stream 
+        /// \param[in] motion_handler     frame callback to be invoke on every new motion event
+        /// \param[in] timestamp_handler  frame callback to be invoke on every new timestamp event
+        /// \return                       the framerate of the stream, in frames per second
         void enable_motion_tracking(motion_callback_base& motion_handler, timestamp_callback_base& timestamp_handler)
         {
             rs_error * e = nullptr;            
-
             rs_enable_motion_tracking((rs_device *)this, 
-                [](rs_device * device, rs_motion_data mo_data, void * user) { try {
+                [](rs_device * device, rs_motion_data mo_data, void * user) {
                     auto listener = (motion_callback_base *)user;
                     listener->on_event((rs::motion_data)mo_data);
-                } catch (...) {} }, &motion_handler,
-                [](rs_device * device, rs_timestamp_data ts_data, void * user) { try {
+                }, &motion_handler,
+                [](rs_device * device, rs_timestamp_data ts_data, void * user) {
                     auto listener = (timestamp_callback_base *)user;
                     listener->on_event((rs::timestamp_data)ts_data);
-                } catch (...) {} }, &timestamp_handler, &e);
+                }, &timestamp_handler, &e);
+            error::handle(e);
+        }
 
+        /// sets the callback for motion module event. provided callback will be called the instant new motion event is available. 
+        /// the lifetime of the callback must be managed by the user (you must ensure the device is either stopped or destructed before callback object is destructed)
+        /// \param[in] stream             the stream 
+        /// \param[in] motion_handler     frame callback to be invoke on every new motion event
+        /// \return                       the framerate of the stream, in frames per second
+        void enable_motion_tracking(motion_callback_base& motion_handler)
+        {
+            rs_error * e = nullptr;            
+            rs_enable_motion_tracking((rs_device *)this, 
+                [](rs_device * device, rs_motion_data mo_data, void * user) {
+                    auto listener = (motion_callback_base *)user;
+                    listener->on_event((rs::motion_data)mo_data);
+                }, &motion_handler,
+                [](rs_device * device, rs_timestamp_data ts_data, void * user) {
+                }, nullptr, &e);
+            error::handle(e);
+        }
+
+		/// sets the callback for motion module event. provided callback will be called the instant new timestamp event is available. 
+        /// the lifetime of the callback must be managed by the user (you must ensure the device is either stopped or destructed before callback object is destructed)
+        /// \param[in] stream             the stream 
+        /// \param[in] timestamp_handler  frame callback to be invoke on every new timestamp event
+        /// \return                       the framerate of the stream, in frames per second
+        void enable_motion_tracking(timestamp_callback_base& timestamp_handler)
+        {
+            rs_error * e = nullptr;            
+            rs_enable_motion_tracking((rs_device *)this, 
+                [](rs_device * device, rs_motion_data mo_data, void * user) {
+                }, nullptr,
+                [](rs_device * device, rs_timestamp_data ts_data, void * user) {
+                    auto listener = (timestamp_callback_base *)user;
+                    listener->on_event((rs::timestamp_data)ts_data);
+                }, &timestamp_handler, &e);
             error::handle(e);
         }
 
