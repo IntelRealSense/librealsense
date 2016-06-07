@@ -261,7 +261,6 @@ void rs_device_base::start_video_streaming()
             // If any frame callbacks were specified, dispatch them now
             for (size_t i = 0; i < dest.size(); ++i)
             {
-
                 if (!requires_processing)
                 {
                     archive->attach_continuation(streams[i], std::move(release_and_enqueue));
