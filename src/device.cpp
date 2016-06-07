@@ -50,12 +50,12 @@ bool rs_device_base::supports_option(rs_option option) const
     return false; 
 }
 
-void rs_device_base::enable_stream(rs_stream stream, int width, int height, rs_format format, int fps)
+void rs_device_base::enable_stream(rs_stream stream, int width, int height, rs_format format, int fps, rs_output_buffer_format output)
 {
     if(capturing) throw std::runtime_error("streams cannot be reconfigured after having called rs_start_device()");
     if(config.info.stream_subdevices[stream] == -1) throw std::runtime_error("unsupported stream");
 
-	config.requests[stream] = { true, width, height, format, fps };
+    config.requests[stream] = { true, width, height, format, fps, output };
     for(auto & s : native_streams) s->archive.reset(); // Changing stream configuration invalidates the current stream info
 }
 
@@ -220,13 +220,31 @@ void rs_device_base::start_video_streaming()
             auto timestamp = timestamp_reader->get_frame_timestamp(mode_selection.mode, frame);
             auto frame_counter = timestamp_reader->get_frame_counter(mode_selection.mode, frame);
             
-          auto requires_processing = mode_selection.requires_processing();
+            auto requires_processing = mode_selection.requires_processing();
 
-            
-            // Obtain buffers for unpacking the frame
+            auto width = mode_selection.get_unpacked_width();
+            auto height = mode_selection.get_unpacked_height();
+
             std::vector<byte *> dest;
-            for (auto & output : mode_selection.get_outputs()) dest.push_back(archive->alloc_frame(output.first, timestamp, frame_counter, sys_time, requires_processing));
-            
+
+            auto stride = mode_selection.get_stride();
+
+            for (auto & output : mode_selection.get_outputs())
+            {
+                auto bpp = rsimpl::get_image_bpp(output.second);
+                frame_archive::frame_additional_data additional_data( timestamp,
+                    frame_counter,
+                    sys_time,
+                    width,
+                    height,
+                    stride,
+                    bpp,
+                    output.second,
+                    mode_selection.pad_crop);
+
+                // Obtain buffers for unpacking the frame
+                dest.push_back(archive->alloc_frame(output.first, additional_data, requires_processing));
+            }
             // Unpack the frame
             if (requires_processing)
             {

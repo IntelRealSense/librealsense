@@ -46,13 +46,13 @@ int main()
     check_error();
 
     /* Configure all streams to run at VGA resolution at 60 frames per second */
-    rs_enable_stream(dev, RS_STREAM_DEPTH, 640, 480, RS_FORMAT_Z16, 60, &e);
+	rs_enable_stream(dev, RS_STREAM_DEPTH, 640, 480, RS_FORMAT_Z16, 60, RS_OUTPUT_BUFFER_FORMAT_CONTINOUS, &e);
     check_error();
-    rs_enable_stream(dev, RS_STREAM_COLOR, 640, 480, RS_FORMAT_RGB8, 60, &e);
+	rs_enable_stream(dev, RS_STREAM_COLOR, 640, 480, RS_FORMAT_RGB8, 60, RS_OUTPUT_BUFFER_FORMAT_CONTINOUS, &e);
     check_error();
-    rs_enable_stream(dev, RS_STREAM_INFRARED, 640, 480, RS_FORMAT_Y8, 60, &e);
+	rs_enable_stream(dev, RS_STREAM_INFRARED, 640, 480, RS_FORMAT_Y8, 60, RS_OUTPUT_BUFFER_FORMAT_CONTINOUS, &e);
     check_error();
-    rs_enable_stream(dev, RS_STREAM_INFRARED2, 640, 480, RS_FORMAT_Y8, 60, NULL); /* Pass NULL to ignore errors */
+	rs_enable_stream(dev, RS_STREAM_INFRARED2, 640, 480, RS_FORMAT_Y8, 60, RS_OUTPUT_BUFFER_FORMAT_CONTINOUS, NULL); /* Pass NULL to ignore errors */
     rs_start_device(dev, RS_SOURCE_VIDEO, &e);
     check_error();
 

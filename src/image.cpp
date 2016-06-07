@@ -39,6 +39,26 @@ namespace rsimpl
         }    
     }
 
+	float get_image_bpp(rs_format format)
+	{
+		switch (format)
+		{
+		case RS_FORMAT_Z16: return  2;
+		case RS_FORMAT_DISPARITY16: return 2;
+		case RS_FORMAT_XYZ32F: return  12;
+		case RS_FORMAT_YUYV:  return  2;
+		case RS_FORMAT_RGB8: return  3;
+		case RS_FORMAT_BGR8: return  3;
+		case RS_FORMAT_RGBA8: return  4;
+		case RS_FORMAT_BGRA8: return  4;
+		case RS_FORMAT_Y8: return 1;
+		case RS_FORMAT_Y16: return 2;
+		case RS_FORMAT_RAW10: return 5/4;
+		case RS_FORMAT_RAW16: return 2;
+		case RS_FORMAT_RAW8: return 1;
+		default: assert(false); return 0;
+		}
+	}
     //////////////////////////////
     // Naive unpacking routines //
     //////////////////////////////
@@ -292,7 +312,7 @@ namespace rsimpl
     //////////////////////////
     // Native pixel formats //
     //////////////////////////
-    const native_pixel_format pf_raw8       = { 'RAW8', 1, 1,{  { true, &copy_pixels<1>,                    { { RS_STREAM_FISHEYE,  RS_FORMAT_RAW8 } } } } };
+    const native_pixel_format pf_raw8       = { 'RAW8', 1, 1,{  { false, &copy_pixels<1>,                   { { RS_STREAM_FISHEYE,  RS_FORMAT_RAW8 } } } } };
     const native_pixel_format pf_rw16       = { 'RW16', 1, 2,{  { false, &copy_pixels<2>,                   { { RS_STREAM_COLOR,    RS_FORMAT_RAW16 } } } } };
     const native_pixel_format pf_rw10       = { 'RW10', 1, 1,{  { false, &copy_pixels<1>,                   { { RS_STREAM_COLOR,    RS_FORMAT_RAW10 } } },
                                                                 { true,  &unpack_rw10_from_rw8,             { { RS_STREAM_FISHEYE,  RS_FORMAT_RAW10 } } } } };

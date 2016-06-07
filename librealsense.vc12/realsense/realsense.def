@@ -26,7 +26,7 @@ EXPORTS
     rs_get_stream_format
     rs_get_stream_framerate
     rs_get_stream_intrinsics
-
+	
     rs_supports
     rs_enable_motion_tracking
     rs_disable_motion_tracking
@@ -50,9 +50,9 @@ EXPORTS
     rs_get_frame_timestamp
     rs_get_frame_system_time
 
-    rs_get_frame_counter
+    rs_get_frame_number
     rs_get_frame_data
-
+    
     rs_wait_for_frames_safe
     rs_poll_for_frames_safe
     rs_get_frame_timestamp_safe
@@ -64,6 +64,11 @@ EXPORTS
     rs_get_detached_frame_timestamp
     rs_get_detached_frame_data
     rs_get_detached_frame_number
+    rs_get_detached_frame_height
+    rs_get_detached_frame_width
+    rs_get_detached_frame_stride
+    rs_get_detached_frame_bpp
+    rs_get_detached_frame_format
     rs_release_frame
     rs_detach_frame
     rs_clone_frame_ref

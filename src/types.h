@@ -78,33 +78,34 @@ namespace rsimpl
         inline bool is_valid(TYPE value) { return value >= 0 && value < RS_##PREFIX##_COUNT; } \
         inline std::ostream & operator << (std::ostream & out, TYPE value) { if(is_valid(value)) return out << get_string(value); else return out << (int)value; }
     RS_ENUM_HELPERS(rs_stream, STREAM)
-        RS_ENUM_HELPERS(rs_format, FORMAT)
-        RS_ENUM_HELPERS(rs_preset, PRESET)
-        RS_ENUM_HELPERS(rs_distortion, DISTORTION)
+    RS_ENUM_HELPERS(rs_format, FORMAT)
+    RS_ENUM_HELPERS(rs_preset, PRESET)
+    RS_ENUM_HELPERS(rs_distortion, DISTORTION)
     RS_ENUM_HELPERS(rs_option, OPTION)
-        RS_ENUM_HELPERS(rs_capabilities, CAPABILITIES)
-        RS_ENUM_HELPERS(rs_source, SOURCE)
-#undef RS_ENUM_HELPERS
+    RS_ENUM_HELPERS(rs_capabilities, CAPABILITIES)
+    RS_ENUM_HELPERS(rs_source, SOURCE)
+    RS_ENUM_HELPERS(rs_output_buffer_format, OUTPUT_BUFFER_FORMAT)
+    #undef RS_ENUM_HELPERS
 
-        ////////////////////////////////////////////
-        // World's tiniest linear algebra library //
-        ////////////////////////////////////////////
+    ////////////////////////////////////////////
+    // World's tiniest linear algebra library //
+    ////////////////////////////////////////////
 
-    struct int2 { int x, y; };
-    struct float3 { float x, y, z; float & operator [] (int i) { return (&x)[i]; } };
-    struct float3x3 { float3 x, y, z; float & operator () (int i, int j) { return (&x)[j][i]; } }; // column-major
+    struct int2 { int x,y; };
+    struct float3 { float x,y,z; float & operator [] (int i) { return (&x)[i]; } };
+    struct float3x3 { float3 x,y,z; float & operator () (int i, int j) { return (&x)[j][i]; } }; // column-major
     struct pose { float3x3 orientation; float3 position; };
-    inline bool operator == (const float3 & a, const float3 & b) { return a.x == b.x && a.y == b.y && a.z == b.z; }
-    inline float3 operator + (const float3 & a, const float3 & b) { return{ a.x + b.x, a.y + b.y, a.z + b.z }; }
-    inline float3 operator * (const float3 & a, float b) { return{ a.x*b, a.y*b, a.z*b }; }
-    inline bool operator == (const float3x3 & a, const float3x3 & b) { return a.x == b.x && a.y == b.y && a.z == b.z; }
+    inline bool operator == (const float3 & a, const float3 & b) { return a.x==b.x && a.y==b.y && a.z==b.z; }
+    inline float3 operator + (const float3 & a, const float3 & b) { return {a.x+b.x, a.y+b.y, a.z+b.z}; }
+    inline float3 operator * (const float3 & a, float b) { return {a.x*b, a.y*b, a.z*b}; }
+    inline bool operator == (const float3x3 & a, const float3x3 & b) { return a.x==b.x && a.y==b.y && a.z==b.z; }
     inline float3 operator * (const float3x3 & a, const float3 & b) { return a.x*b.x + a.y*b.y + a.z*b.z; }
-    inline float3x3 operator * (const float3x3 & a, const float3x3 & b) { return{ a*b.x, a*b.y, a*b.z }; }
-    inline float3x3 transpose(const float3x3 & a) { return{ {a.x.x,a.y.x,a.z.x}, {a.x.y,a.y.y,a.z.y}, {a.x.z,a.y.z,a.z.z} }; }
-    inline bool operator == (const pose & a, const pose & b) { return a.orientation == b.orientation && a.position == b.position; }
+    inline float3x3 operator * (const float3x3 & a, const float3x3 & b) { return {a*b.x, a*b.y, a*b.z}; }
+    inline float3x3 transpose(const float3x3 & a) { return {{a.x.x,a.y.x,a.z.x}, {a.x.y,a.y.y,a.z.y}, {a.x.z,a.y.z,a.z.z}}; }
+    inline bool operator == (const pose & a, const pose & b) { return a.orientation==b.orientation && a.position==b.position; }
     inline float3 operator * (const pose & a, const float3 & b) { return a.orientation * b + a.position; }
-    inline pose operator * (const pose & a, const pose & b) { return{ a.orientation * b.orientation, a * b.position }; }
-    inline pose inverse(const pose & a) { auto inv = transpose(a.orientation); return{ inv, inv * a.position * -1 }; }
+    inline pose operator * (const pose & a, const pose & b) { return {a.orientation * b.orientation, a * b.position}; }
+    inline pose inverse(const pose & a) { auto inv = transpose(a.orientation); return {inv, inv * a.position * -1}; }
 
     ///////////////////
     // Pixel formats //
@@ -128,6 +129,7 @@ namespace rsimpl
         std::vector<pixel_format_unpacker> unpackers;
 
         size_t get_image_size(int width, int height) const { return width * height * plane_count * bytes_per_pixel; }
+
     };
 
     ////////////////////////
@@ -151,6 +153,7 @@ namespace rsimpl
         int width, height;
         rs_format format;
         int fps;
+        rs_output_buffer_format output_format;
     };
 
     struct interstream_rule // Requires a.*field + delta == b.*field OR a.*field + delta2 == b.*field
@@ -210,21 +213,27 @@ namespace rsimpl
         subdevice_mode mode;                    // The streaming mode in which to place the hardware
         int pad_crop;                           // The number of pixels of padding (positive values) or cropping (negative values) to apply to all four edges of the image
         int unpacker_index;                     // The specific unpacker used to unpack the encoded format into the desired output formats
+        rs_output_buffer_format output_format = RS_OUTPUT_BUFFER_FORMAT_CONTINOUS; // The output buffer format. 
 
-        subdevice_mode_selection() : mode({}), pad_crop(), unpacker_index() {}
-        subdevice_mode_selection(const subdevice_mode & mode, int pad_crop, int unpacker_index) : mode(mode), pad_crop(pad_crop), unpacker_index(unpacker_index) {}
+        subdevice_mode_selection() : mode({}), pad_crop(), unpacker_index(), output_format(RS_OUTPUT_BUFFER_FORMAT_CONTINOUS){}
+        subdevice_mode_selection(const subdevice_mode & mode, int pad_crop, int unpacker_index) : mode(mode), pad_crop(pad_crop), unpacker_index(unpacker_index){}
 
         const pixel_format_unpacker & get_unpacker() const { return mode.pf.unpackers[unpacker_index]; }
         const std::vector<std::pair<rs_stream, rs_format>> & get_outputs() const { return get_unpacker().outputs; }
         int get_width() const { return mode.native_intrinsics.width + pad_crop * 2; }
         int get_height() const { return mode.native_intrinsics.height + pad_crop * 2; }
+        int get_stride() const { return requires_processing() ? get_width() : mode.native_dims.x; }
         size_t get_image_size(rs_stream stream) const;
         bool provides_stream(rs_stream stream) const { return get_unpacker().provides_stream(stream); }
         rs_format get_format(rs_stream stream) const { return get_unpacker().get_format(stream); }
         int get_framerate(rs_stream stream) const { return mode.fps; }
-        void unpack(byte * const dest[], const byte * source) const;
+        void set_output_buffer_format(const rs_output_buffer_format in_output_format);
 
-        bool requires_processing() const { return mode.pf.unpackers[unpacker_index].requires_processing || get_width() != mode.native_dims.x; }
+        void unpack(byte * const dest[], const byte * source) const;
+        int get_unpacked_width() const;
+        int get_unpacked_height() const;
+
+        bool requires_processing() const { return mode.pf.unpackers[unpacker_index].requires_processing || (get_width() != mode.native_dims.x && output_format != RS_OUTPUT_BUFFER_FORMAT_NATIVE); }
     };
 
     class frame_callback

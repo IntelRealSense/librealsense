@@ -21,6 +21,7 @@ SUBDIRS += \
    ./cpp-multi-threading-1.pro \
    ./cpp-multi-threading-2.pro \
    ./cpp-multi-threading-3.pro \
+   ./cpp-multi-threading-4.pro \
    ./unit-tests-live-r200.pro \
    ./unit-tests-live-f200.pro \
    ./unit-tests-live-sr300.pro \

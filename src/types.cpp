@@ -202,6 +202,11 @@ namespace rsimpl
         return rsimpl::get_image_size(get_width(), get_height(), get_format(stream));
     }
 
+    void subdevice_mode_selection::set_output_buffer_format(const rs_output_buffer_format in_output_format)
+    {
+        output_format = in_output_format;
+    }
+
     void subdevice_mode_selection::unpack(byte * const dest[], const byte * source) const
     {
         const int MAX_OUTPUTS = 2;
@@ -224,7 +229,7 @@ namespace rsimpl
         }
 
         // Unpack (potentially a subrect of) the source image into (potentially a subrect of) the destination buffers
-        const int unpack_width = std::min(mode.native_intrinsics.width, get_width()), unpack_height = std::min(mode.native_intrinsics.height, get_height());
+        const int unpack_width = get_unpacked_width(), unpack_height = get_unpacked_height();
         if(mode.native_dims.x == get_width())
         {
             // If not strided, unpack as though it were a single long row
@@ -241,6 +246,16 @@ namespace rsimpl
                 in += in_stride;
             }
         }
+    }
+
+    int subdevice_mode_selection::get_unpacked_width() const
+    {
+        return std::min(mode.native_intrinsics.width, get_width());
+    }
+
+    int subdevice_mode_selection::get_unpacked_height() const
+    {
+        return std::min(mode.native_intrinsics.height, get_height());
     }
 
     ////////////////////////
@@ -292,6 +307,8 @@ namespace rsimpl
                     for(auto & output : unpacker.outputs)
                     {
                         const auto & req = requests[output.first];
+                       
+                        selection.set_output_buffer_format(req.output_format);
                         if(req.enabled && (req.width == 0 || req.width == selection.get_width())
                                        && (req.height == 0 || req.height == selection.get_height())
                                        && (req.format == RS_FORMAT_ANY || req.format == selection.get_format(output.first))

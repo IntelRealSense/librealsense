@@ -5,6 +5,10 @@
 #define LIBREALSENSE_RS_H
 
 #ifdef __cplusplus
+namespace rs{
+	enum class format;
+}
+
 extern "C" {
 #endif
 
@@ -59,6 +63,14 @@ typedef enum rs_format
     RS_FORMAT_COUNT       = 14,
     RS_FORMAT_MAX_ENUM = 0x7FFFFFFF
 } rs_format;
+
+typedef enum rs_output_buffer_format
+{
+    RS_OUTPUT_BUFFER_FORMAT_CONTINOUS   = 0,   /**< Makes sure that the output frame is exposed as a single cotinous buffer */
+    RS_OUTPUT_BUFFER_FORMAT_NATIVE      = 1,   /**< Don't convert buffer to continous, the user has to handle pitch manually */
+    RS_OUTPUT_BUFFER_FORMAT_COUNT       = 2,
+    RS_OUTPUT_BUFFER_FORMAT_ENUM        = 0x7FFFFFFF
+} rs_output_buffer_format;
 
 typedef enum rs_preset
 {
@@ -324,14 +336,15 @@ void rs_get_stream_mode(const rs_device * device, rs_stream stream, int index, i
 
 /**
  * enable a specific stream and request specific properties
- * \param[in] stream     the stream to enable
- * \param[in] width      the desired width of a frame image in pixels, or 0 if any width is acceptable
- * \param[in] height     the desired height of a frame image in pixels, or 0 if any height is acceptable
- * \param[in] format     the pixel format of a frame image, or ANY if any format is acceptable
- * \param[in] framerate  the number of frames which will be streamed per second, or 0 if any framerate is acceptable
+ * \param[in] stream         the stream to enable
+ * \param[in] width          the desired width of a frame image in pixels, or 0 if any width is acceptable
+ * \param[in] height         the desired height of a frame image in pixels, or 0 if any height is acceptable
+ * \param[in] format         the pixel format of a frame image, or ANY if any format is acceptable
+ * \param[in] framerate      the number of frames which will be streamed per second, or 0 if any framerate is acceptable
+ * \param[in] output_format  output buffer format (contious in memory / native with pitch)
  * \param[out] error     if non-null, receives any error that occurs during this call, otherwise, errors are ignored
  */
-void rs_enable_stream(rs_device * device, rs_stream stream, int width, int height, rs_format format, int framerate, rs_error ** error);
+void rs_enable_stream(rs_device * device, rs_stream stream, int width, int height, rs_format format, int framerate, rs_output_buffer_format output_format, rs_error ** error);
 
 /**
  * enable a specific stream and request properties using a preset
@@ -551,13 +564,14 @@ int rs_get_frame_timestamp(const rs_device * device, rs_stream stream, rs_error 
 * \return            the system time  of the frame, in milliseconds
 */
 long long rs_get_frame_system_time(const rs_device * device, rs_stream stream, rs_error ** error);
+
 /**
-* retrieve the frame counter
+* retrieve the frame number
 * \param[in] stream  the stream whose latest frame we are interested in
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return            the frame number
 */
-int rs_get_frame_counter(const rs_device * device, rs_stream stream, rs_error ** error);
+int rs_get_frame_number(const rs_device * device, rs_stream stream, rs_error ** error);
 
 /**
  * retrieve the contents of the latest frame on a stream
@@ -648,11 +662,47 @@ int rs_get_detached_frame_number(const rs_frame_ref * frame, rs_error ** error);
 const void * rs_get_detached_frame_data(const rs_frame_ref * frame, rs_error ** error);
 
 /**
+* retrive frame intrinsic width
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return            intrinsic width
+*/
+int rs_get_detached_frame_width(const rs_frame_ref * frameset, rs_error ** error);
+
+/**
+* retrive frame intrinsic height
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return            intrinsic height
+*/
+int rs_get_detached_frame_height(const rs_frame_ref * frameset, rs_error ** error);
+
+/**
+* retrive frame pad crop
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return            frame pad crop
+*/
+int rs_get_detached_frame_stride(const rs_frame_ref * frameset, rs_error ** error);
+
+/**
+* retrive frame pad crop
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return            frame pad crop
+*/
+int rs_get_detached_frame_bpp(const rs_frame_ref * frameset, rs_error ** error);
+
+/**
+* retrive frame format
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return            frame format
+*/
+rs_format rs_get_detached_frame_format(const rs_frame_ref * frameset, rs_error ** error);
+
+/**
 * clone frame handle, creating new handle that is tracking the same underlying frame object
 * \param[in] frame handle returned from detach, clone_ref or from frame callback
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return            the pointer to the start of the frame data
 */
+
 rs_frame_ref * rs_clone_frame_ref(rs_device * device, rs_frame_ref* frame, rs_error ** error);
                                      
 const char * rs_get_failed_function  (const rs_error * error);

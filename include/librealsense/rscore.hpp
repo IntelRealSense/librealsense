@@ -9,7 +9,7 @@
 
 struct rs_stream_interface
 {
-    virtual ~rs_stream_interface() {};
+    virtual                                 ~rs_stream_interface() {}
 
     virtual rs_extrinsics                   get_extrinsics_to(const rs_stream_interface & r) const = 0;
     virtual float                           get_depth_scale() const = 0;
@@ -20,7 +20,6 @@ struct rs_stream_interface
     virtual int                             get_framerate() const = 0;
 
     virtual int                             get_frame_number() const = 0;
-    virtual int                             get_frame_counter() const = 0;
     virtual long long                       get_frame_system_time() const = 0;
     virtual const uint8_t *                 get_frame_data() const = 0;
 
@@ -30,6 +29,7 @@ struct rs_stream_interface
     virtual bool                            is_enabled() const = 0;
 };
 
+// realsense device public interface
 struct rs_device
 {
     virtual                                 ~rs_device() {}
@@ -40,7 +40,7 @@ struct rs_device
     virtual const char *                    get_firmware_version() const = 0;
     virtual float                           get_depth_scale() const = 0;
                                             
-    virtual void                            enable_stream(rs_stream stream, int width, int height, rs_format format, int fps) = 0;
+	virtual void                            enable_stream(rs_stream stream, int width, int height, rs_format format, int fps, rs_output_buffer_format output) = 0;
     virtual void                            enable_stream_preset(rs_stream stream, rs_preset preset) = 0;
     virtual void                            disable_stream(rs_stream stream) = 0;
                                             

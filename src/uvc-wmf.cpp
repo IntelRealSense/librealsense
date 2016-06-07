@@ -658,8 +658,8 @@ namespace rsimpl
 
                             owner_ptr->subdevices[subdevice_index].callback(byte_buffer, continuation);
                         }
-					}
-				}
+                    }
+                }
 
                 if (auto owner_ptr_new = owner.lock())
                 {
