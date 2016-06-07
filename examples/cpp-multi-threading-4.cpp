@@ -30,7 +30,7 @@ int main() try
     std::vector<rs::frame_callback> callbacks(streams, rs::frame_callback([](rs::frame frame){}));
     single_consumer_queue<rs::frame> frames_queue[streams];
     texture_buffer buffers[streams];
-    std::atomic<bool> running = true;
+    std::atomic<bool> running(true);
 
     struct resolution
     {

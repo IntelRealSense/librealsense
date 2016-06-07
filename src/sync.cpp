@@ -23,12 +23,12 @@ syncronizing_archive::syncronizing_archive(const std::vector<subdevice_mode_sele
 }
 
 const byte * syncronizing_archive::get_frame_data(rs_stream stream) const
-{ 
+{
     return frontbuffer.get_frame_data(stream);
 }
 
 int syncronizing_archive::get_frame_timestamp(rs_stream stream) const
-{ 
+{
     return frontbuffer.get_frame_timestamp(stream);
 }
 
@@ -203,5 +203,5 @@ void syncronizing_archive::discard_frame(rs_stream stream)
 {
     std::lock_guard<std::recursive_mutex> guard(mutex);
     freelist.push_back(std::move(frames[stream].front()));
-    frames[stream].erase(begin(frames[stream]));    
+    frames[stream].erase(begin(frames[stream]));
 }

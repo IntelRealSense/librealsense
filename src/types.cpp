@@ -307,7 +307,7 @@ namespace rsimpl
                     for(auto & output : unpacker.outputs)
                     {
                         const auto & req = requests[output.first];
-                       
+
                         selection.set_output_buffer_format(req.output_format);
                         if(req.enabled && (req.width == 0 || req.width == selection.get_width())
                                        && (req.height == 0 || req.height == selection.get_height())
