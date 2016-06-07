@@ -121,7 +121,6 @@ void rs_device::start_events()
                     {
                         auto tse = entry.non_imu_packets[i];
                         archive->on_timestamp(tse);
-
                         cb(tse);
 					}
 				}

@@ -17,7 +17,7 @@ namespace rsimpl
         void push_back_data(rs_timestamp_data data);
         bool pop_front_data();
         bool erase(rs_timestamp_data data);
-        bool update_timestamp(int frame_number, rs_timestamp_data& data);
+        bool correct(rs_timestamp_data& data);
         unsigned size();
 
     private:
@@ -30,7 +30,7 @@ namespace rsimpl
     public:
         virtual ~timestamp_corrector_interface() {}
         virtual void on_timestamp(rs_timestamp_data data) = 0;
-        virtual void correct_timestamp(frame_info& frame) = 0;
+        virtual void correct_timestamp(frame_info& frame, rs_stream stream) = 0;
         virtual void release() = 0;
     };
 
@@ -39,10 +39,12 @@ namespace rsimpl
     public:
         ~timestamp_corrector() override;
         void on_timestamp(rs_timestamp_data data) override;
-        void correct_timestamp(frame_info& frame) override;
+        void correct_timestamp(frame_info& frame, rs_stream stream) override;
         void release() override  {delete this;}
 
     private:
+        void update_timestamp_data(rs_timestamp_data& data, const frame_info& frame, const rs_stream stream);
+
         std::mutex mtx;
         concurrent_queue data_queue;
         std::condition_variable cv;

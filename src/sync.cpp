@@ -129,7 +129,7 @@ void frame_archive::correct_timestamp()
     for(auto stream : {RS_STREAM_DEPTH, RS_STREAM_COLOR, RS_STREAM_INFRARED, RS_STREAM_INFRARED2, RS_STREAM_FISHEYE})
     {
         if (is_stream_enabled(stream))
-            ts_corrector.correct_timestamp(backbuffer[stream]);
+            ts_corrector.correct_timestamp(backbuffer[stream], stream);
     }
 }
 

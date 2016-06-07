@@ -200,7 +200,6 @@ void motion_module_parser::parse_timestamp(const unsigned char * data, rs_timest
     entry.source_id = rs_event_source(tmp & 0x7);       // bits [0:2] - source_id
     entry.frame_number = (tmp & 0x7fff) >> 3;           // bits [3-14] - frame num
     memcpy(&entry.timestamp, &data[2], sizeof(unsigned int));       // bits [16:47] - timestamp
-
 }
 
 rs_motion_data motion_module_parser::parse_motion(const unsigned char * data)
