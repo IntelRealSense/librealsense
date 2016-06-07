@@ -5,6 +5,10 @@
 #define LIBREALSENSE_RS_H
 
 #ifdef __cplusplus
+namespace rs{
+	enum class format;
+}
+
 extern "C" {
 #endif
 
@@ -60,6 +64,14 @@ typedef enum rs_format
     RS_FORMAT_MAX_ENUM = 0x7FFFFFFF
 } rs_format;
 
+typedef enum rs_output_buffer_format
+{
+    RS_OUTPUT_BUFFER_FORMAT_CONTINOUS   = 0,   /**< Makes sure that the output frame is exposed as a single cotinous buffer */
+    RS_OUTPUT_BUFFER_FORMAT_NATIVE      = 1,   /**< Don't convert buffer to continous, the user has to handle pitch manually */
+    RS_OUTPUT_BUFFER_FORMAT_COUNT       = 2,
+    RS_OUTPUT_BUFFER_FORMAT_ENUM        = 0x7FFFFFFF
+} rs_output_buffer_format;
+
 typedef enum rs_preset
 {
     RS_PRESET_BEST_QUALITY      = 0, 
@@ -69,15 +81,14 @@ typedef enum rs_preset
     RS_PRESET_MAX_ENUM = 0x7FFFFFFF
 } rs_preset;
 
-
 typedef enum rs_source
-{
-    RS_SOURCE_VIDEO                            = 0,
-    RS_SOURCE_EVENTS                           = 1,
-    RS_SOURCE_COUNT                            = 2,
+{   
+    RS_SOURCE_VIDEO                     = 1,
+    RS_SOURCE_MOTION_TRACKING           = 2,
+    RS_SOURCE_ALL                       = 3,
+    RS_SOURCE_COUNT                     = 4,
     RS_SOURCE_MAX_ENUM = 0x7FFFFFFF
 } rs_source;
-
 
 typedef enum rs_distortion
 {
@@ -106,15 +117,15 @@ typedef enum rs_ivcam_preset
 
 typedef enum rs_option
 {
-    RS_OPTION_COLOR_BACKLIGHT_COMPENSATION                    = 0,  
-    RS_OPTION_COLOR_BRIGHTNESS                                = 1,  
-    RS_OPTION_COLOR_CONTRAST                                  = 2,  
+    RS_OPTION_COLOR_BACKLIGHT_COMPENSATION                    = 0,
+    RS_OPTION_COLOR_BRIGHTNESS                                = 1,
+    RS_OPTION_COLOR_CONTRAST                                  = 2,
     RS_OPTION_COLOR_EXPOSURE                                  = 3,  /**< Controls exposure time of color camera. Setting any value will disable auto exposure. */
-    RS_OPTION_COLOR_GAIN                                      = 4,  
-    RS_OPTION_COLOR_GAMMA                                     = 5,  
-    RS_OPTION_COLOR_HUE                                       = 6,  
-    RS_OPTION_COLOR_SATURATION                                = 7,  
-    RS_OPTION_COLOR_SHARPNESS                                 = 8,  
+    RS_OPTION_COLOR_GAIN                                      = 4,
+    RS_OPTION_COLOR_GAMMA                                     = 5,
+    RS_OPTION_COLOR_HUE                                       = 6,
+    RS_OPTION_COLOR_SATURATION                                = 7,
+    RS_OPTION_COLOR_SHARPNESS                                 = 8,
     RS_OPTION_COLOR_WHITE_BALANCE                             = 9,  /**< Controls white balance of color image. Setting any value will disable auto white balance. */
     RS_OPTION_COLOR_ENABLE_AUTO_EXPOSURE                      = 10, /**< Set to 1 to enable automatic exposure control, or 0 to return to manual control */
     RS_OPTION_COLOR_ENABLE_AUTO_WHITE_BALANCE                 = 11, /**< Set to 1 to enable automatic white balance control, or 0 to return to manual control */
@@ -124,20 +135,20 @@ typedef enum rs_option
     RS_OPTION_F200_FILTER_OPTION                              = 15, /**< 0 - 7 */
     RS_OPTION_F200_CONFIDENCE_THRESHOLD                       = 16, /**< 0 - 15 */
     RS_OPTION_F200_DYNAMIC_FPS                                = 17, /**< {2, 5, 15, 30, 60} */
-    RS_OPTION_SR300_AUTO_RANGE_ENABLE_MOTION_VERSUS_RANGE     = 18, 
-    RS_OPTION_SR300_AUTO_RANGE_ENABLE_LASER                   = 19, 
-    RS_OPTION_SR300_AUTO_RANGE_MIN_MOTION_VERSUS_RANGE        = 20, 
-    RS_OPTION_SR300_AUTO_RANGE_MAX_MOTION_VERSUS_RANGE        = 21, 
-    RS_OPTION_SR300_AUTO_RANGE_START_MOTION_VERSUS_RANGE      = 22, 
-    RS_OPTION_SR300_AUTO_RANGE_MIN_LASER                      = 23, 
-    RS_OPTION_SR300_AUTO_RANGE_MAX_LASER                      = 24, 
-    RS_OPTION_SR300_AUTO_RANGE_START_LASER                    = 25, 
-    RS_OPTION_SR300_AUTO_RANGE_UPPER_THRESHOLD                = 26, 
+    RS_OPTION_SR300_AUTO_RANGE_ENABLE_MOTION_VERSUS_RANGE     = 18,
+    RS_OPTION_SR300_AUTO_RANGE_ENABLE_LASER                   = 19,
+    RS_OPTION_SR300_AUTO_RANGE_MIN_MOTION_VERSUS_RANGE        = 20,
+    RS_OPTION_SR300_AUTO_RANGE_MAX_MOTION_VERSUS_RANGE        = 21,
+    RS_OPTION_SR300_AUTO_RANGE_START_MOTION_VERSUS_RANGE      = 22,
+    RS_OPTION_SR300_AUTO_RANGE_MIN_LASER                      = 23,
+    RS_OPTION_SR300_AUTO_RANGE_MAX_LASER                      = 24,
+    RS_OPTION_SR300_AUTO_RANGE_START_LASER                    = 25,
+    RS_OPTION_SR300_AUTO_RANGE_UPPER_THRESHOLD                = 26,
     RS_OPTION_SR300_AUTO_RANGE_LOWER_THRESHOLD                = 27,
     RS_OPTION_SR300_WAKEUP_DEV_PHASE1_PERIOD                  = 28,
-    RS_OPTION_SR300_WAKEUP_DEV_PHASE1_FPS                     = 29, 
-    RS_OPTION_SR300_WAKEUP_DEV_PHASE2_PERIOD                  = 30, 
-    RS_OPTION_SR300_WAKEUP_DEV_PHASE2_FPS                     = 31, 
+    RS_OPTION_SR300_WAKEUP_DEV_PHASE1_FPS                     = 29,
+    RS_OPTION_SR300_WAKEUP_DEV_PHASE2_PERIOD                  = 30,
+    RS_OPTION_SR300_WAKEUP_DEV_PHASE2_FPS                     = 31,
     RS_OPTION_SR300_WAKEUP_DEV_RESET                          = 32,
     RS_OPTION_SR300_WAKE_ON_USB_REASON                        = 33,
     RS_OPTION_SR300_WAKE_ON_USB_CONFIDENCE                    = 34,
@@ -150,30 +161,36 @@ typedef enum rs_option
     RS_OPTION_R200_DEPTH_CLAMP_MAX                            = 41, /**< {0 - USHORT_MAX}. Can only be set before streaming starts. */
     RS_OPTION_R200_DISPARITY_MULTIPLIER                       = 42, /**< {0 - 1000}. The increments in integer disparity values corresponding to one pixel of disparity. Can only be set before streaming starts. */
     RS_OPTION_R200_DISPARITY_SHIFT                            = 43, /**< {0 - 512}. Can only be set before streaming starts. */
-    RS_OPTION_R200_AUTO_EXPOSURE_MEAN_INTENSITY_SET_POINT     = 44, 
-    RS_OPTION_R200_AUTO_EXPOSURE_BRIGHT_RATIO_SET_POINT       = 45, 
-    RS_OPTION_R200_AUTO_EXPOSURE_KP_GAIN                      = 46, 
-    RS_OPTION_R200_AUTO_EXPOSURE_KP_EXPOSURE                  = 47, 
-    RS_OPTION_R200_AUTO_EXPOSURE_KP_DARK_THRESHOLD            = 48, 
-    RS_OPTION_R200_AUTO_EXPOSURE_TOP_EDGE                     = 49, 
-    RS_OPTION_R200_AUTO_EXPOSURE_BOTTOM_EDGE                  = 50, 
-    RS_OPTION_R200_AUTO_EXPOSURE_LEFT_EDGE                    = 51, 
-    RS_OPTION_R200_AUTO_EXPOSURE_RIGHT_EDGE                   = 52, 
-    RS_OPTION_R200_DEPTH_CONTROL_ESTIMATE_MEDIAN_DECREMENT    = 53, 
-    RS_OPTION_R200_DEPTH_CONTROL_ESTIMATE_MEDIAN_INCREMENT    = 54, 
-    RS_OPTION_R200_DEPTH_CONTROL_MEDIAN_THRESHOLD             = 55, 
-    RS_OPTION_R200_DEPTH_CONTROL_SCORE_MINIMUM_THRESHOLD      = 56, 
-    RS_OPTION_R200_DEPTH_CONTROL_SCORE_MAXIMUM_THRESHOLD      = 57, 
-    RS_OPTION_R200_DEPTH_CONTROL_TEXTURE_COUNT_THRESHOLD      = 58, 
-    RS_OPTION_R200_DEPTH_CONTROL_TEXTURE_DIFFERENCE_THRESHOLD = 59, 
-    RS_OPTION_R200_DEPTH_CONTROL_SECOND_PEAK_THRESHOLD        = 60, 
-    RS_OPTION_R200_DEPTH_CONTROL_NEIGHBOR_THRESHOLD           = 61, 
+    RS_OPTION_R200_AUTO_EXPOSURE_MEAN_INTENSITY_SET_POINT     = 44,
+    RS_OPTION_R200_AUTO_EXPOSURE_BRIGHT_RATIO_SET_POINT       = 45,
+    RS_OPTION_R200_AUTO_EXPOSURE_KP_GAIN                      = 46,
+    RS_OPTION_R200_AUTO_EXPOSURE_KP_EXPOSURE                  = 47,
+    RS_OPTION_R200_AUTO_EXPOSURE_KP_DARK_THRESHOLD            = 48,
+    RS_OPTION_R200_AUTO_EXPOSURE_TOP_EDGE                     = 49,
+    RS_OPTION_R200_AUTO_EXPOSURE_BOTTOM_EDGE                  = 50,
+    RS_OPTION_R200_AUTO_EXPOSURE_LEFT_EDGE                    = 51,
+    RS_OPTION_R200_AUTO_EXPOSURE_RIGHT_EDGE                   = 52,
+    RS_OPTION_R200_DEPTH_CONTROL_ESTIMATE_MEDIAN_DECREMENT    = 53,
+    RS_OPTION_R200_DEPTH_CONTROL_ESTIMATE_MEDIAN_INCREMENT    = 54,
+    RS_OPTION_R200_DEPTH_CONTROL_MEDIAN_THRESHOLD             = 55,
+    RS_OPTION_R200_DEPTH_CONTROL_SCORE_MINIMUM_THRESHOLD      = 56,
+    RS_OPTION_R200_DEPTH_CONTROL_SCORE_MAXIMUM_THRESHOLD      = 57,
+    RS_OPTION_R200_DEPTH_CONTROL_TEXTURE_COUNT_THRESHOLD      = 58,
+    RS_OPTION_R200_DEPTH_CONTROL_TEXTURE_DIFFERENCE_THRESHOLD = 59,
+    RS_OPTION_R200_DEPTH_CONTROL_SECOND_PEAK_THRESHOLD        = 60,
+    RS_OPTION_R200_DEPTH_CONTROL_NEIGHBOR_THRESHOLD           = 61,
     RS_OPTION_R200_DEPTH_CONTROL_LR_THRESHOLD                 = 62,
-    RS_OPTION_FISHEYE_COLOR_EXPOSURE                          = 63,
-    RS_OPTION_FISHEYE_COLOR_GAIN                              = 64,
-    RS_OPTION_FISHEYE_STROBE                                  = 65,
-    RS_OPTION_FISHEYE_EXT_TRIG                                = 66,
-    RS_OPTION_COUNT                                           = 67,
+    RS_OPTION_ZR300_GYRO_BANDWIDTH                            = 63,
+    RS_OPTION_ZR300_GYRO_RANGE                                = 64,
+    RS_OPTION_ZR300_ACCELEROMETER_BANDWIDTH                   = 65,
+    RS_OPTION_ZR300_ACCELEROMETER_RANGE                       = 66,
+    RS_OPTION_ZR300_MOTION_MODULE_TIME_SEED                   = 67,
+    RS_OPTION_ZR300_MOTION_MODULE_ACTIVE                      = 68,
+    RS_OPTION_FISHEYE_COLOR_EXPOSURE                          = 69,
+    RS_OPTION_FISHEYE_COLOR_GAIN                              = 70,
+    RS_OPTION_FISHEYE_STROBE                                  = 71,
+    RS_OPTION_FISHEYE_EXT_TRIG                                = 72,
+    RS_OPTION_COUNT                                           = 73,
     RS_OPTION_MAX_ENUM = 0x7FFFFFFF
 } rs_option;
 
@@ -221,10 +238,11 @@ typedef struct rs_motion_data
 } rs_motion_data;
 
 
-
 typedef struct rs_context rs_context;
 typedef struct rs_device rs_device;
 typedef struct rs_error rs_error;
+typedef struct rs_frameset rs_frameset;
+typedef struct rs_frame_ref rs_frame_ref;
 
 rs_context * rs_create_context(int api_version, rs_error ** error);
 void rs_delete_context(rs_context * context, rs_error ** error);
@@ -257,6 +275,13 @@ const char * rs_get_device_name(const rs_device * device, rs_error ** error);
  * \return            the serial number, in a format specific to the device model
  */
 const char * rs_get_device_serial(const rs_device * device, rs_error ** error);
+
+/**
+ * retrieve the USB port number of the device
+ * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+ * \return            the USB port number in a string form "##-##"
+ */
+const char * rs_get_device_usb_port_id(const rs_device * device, rs_error ** error);
 
 /**
  * retrieve the version of the firmware currently installed on the device
@@ -311,14 +336,15 @@ void rs_get_stream_mode(const rs_device * device, rs_stream stream, int index, i
 
 /**
  * enable a specific stream and request specific properties
- * \param[in] stream     the stream to enable
- * \param[in] width      the desired width of a frame image in pixels, or 0 if any width is acceptable
- * \param[in] height     the desired height of a frame image in pixels, or 0 if any height is acceptable
- * \param[in] format     the pixel format of a frame image, or ANY if any format is acceptable
- * \param[in] framerate  the number of frames which will be streamed per second, or 0 if any framerate is acceptable
+ * \param[in] stream         the stream to enable
+ * \param[in] width          the desired width of a frame image in pixels, or 0 if any width is acceptable
+ * \param[in] height         the desired height of a frame image in pixels, or 0 if any height is acceptable
+ * \param[in] format         the pixel format of a frame image, or ANY if any format is acceptable
+ * \param[in] framerate      the number of frames which will be streamed per second, or 0 if any framerate is acceptable
+ * \param[in] output_format  output buffer format (contious in memory / native with pitch)
  * \param[out] error     if non-null, receives any error that occurs during this call, otherwise, errors are ignored
  */
-void rs_enable_stream(rs_device * device, rs_stream stream, int width, int height, rs_format format, int framerate, rs_error ** error);
+void rs_enable_stream(rs_device * device, rs_stream stream, int width, int height, rs_format format, int framerate, rs_output_buffer_format output_format, rs_error ** error);
 
 /**
  * enable a specific stream and request properties using a preset
@@ -384,59 +410,51 @@ int rs_get_stream_framerate(const rs_device * device, rs_stream stream, rs_error
 void rs_get_stream_intrinsics(const rs_device * device, rs_stream stream, rs_intrinsics * intrin, rs_error ** error);
 
 /**
- * enable motion events
+ * set up a frame callback that will be called immediately when an image is available, with no synchronization logic applied
+ * \param[in] stream    the stream for whose images the callback should be registered
+ * \param[in] on_frame  the callback which will receive the frame data and timestamp
+ * \param[in] user      a user data point to be passed to the callback
+ * \param[out] error    if non-null, receives any error that occurs during this call, otherwise, errors are ignored
  */
-void rs_enable_events(rs_device * device, rs_error ** error);
+void rs_set_frame_callback(rs_device * device, rs_stream stream, void (*on_frame)(rs_device * dev, rs_frame_ref * frame, void * user), void * user, rs_error ** error);
 
 /**
- * disable motion events
- */
-void rs_disable_events(rs_device * device, rs_error ** error);
-
-/**
-* start data acquisition from motion module
+* Enable and configure motion-tracking data handlers 
+* \param[in] on_motion_event    user-defined routine to be invoked when a motion data arrives
+* \param[in] motion_handler     a user data point to be passed to the motion event callback
+* \param[in] on_timestamp_event user-defined routine to be invoked on timestamp
+* \param[in] timestamp_handler  a user data point to be passed to the motion event callback
+* \param[out] error             if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 */
-void rs_start_events(rs_device * device, rs_error ** error);
+void rs_enable_motion_tracking(rs_device * device,
+    void(*on_motion_event)(rs_device * , rs_motion_data, void * ), void * motion_handler,
+    void(*on_timestamp_event)(rs_device * , rs_timestamp_data, void * ), void * timestamp_handler,
+    rs_error ** error);
 
 /**
-* stop data acquisition
+* disable motion-tracking handlers
 */
-void rs_stop_events(rs_device * device, rs_error ** error);
+void rs_disable_motion_tracking(rs_device * device, rs_error ** error);
 
 /**
 * check if data acquisition is active
 */
-int rs_events_active(rs_device * device, rs_error ** error);
+int rs_is_motion_tracking_active(rs_device * device, rs_error ** error);
 
-/**
-* set up a event callback that will be called immediately when hw event is available, with no synchronization logic applied
-* \param[in] stream    the stream for whose images the callback should be registered
-* \param[in] on_event  the callback which will receive the event data and handle it
-* \param[in] user      a user data point to be passed to the callback
-* \param[out] error    if non-null, receives any error that occurs during this call, otherwise, errors are ignored
-*/
-void rs_set_motion_callback(rs_device * device, void(*on_event)(rs_device *, rs_motion_data, void *), void * user, rs_error ** error);
-
-/**
-* set up a event callback that will be called immediately when hw event is available, with no synchronization logic applied
-* \param[in] stream    the stream for whose images the callback should be registered
-* \param[in] on_event  the callback which will receive the event data and handle it
-* \param[in] user      a user data point to be passed to the callback
-* \param[out] error    if non-null, receives any error that occurs during this call, otherwise, errors are ignored
-*/
-void rs_set_timestamp_callback(rs_device * device, void(*on_event)(rs_device * dev, rs_timestamp_data, void * user), void * user, rs_error ** error);
 
 /**
  * begin streaming on all enabled streams for this device
+ * \param[in] source  the data source to be activated
  * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
  */
-void rs_start_device(rs_device * device, rs_error ** error);
+void rs_start_device(rs_device * device, rs_source source, rs_error ** error);
 
 /**
- * end streaming on all streams for this device
+ * end data acquisition for the specified source providers
+ * \param[in] source  the data source to be terminated
  * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
  */
-void rs_stop_device(rs_device * device, rs_error ** error);
+void rs_stop_device(rs_device * device, rs_source source, rs_error ** error);
 
 /**
  * determine if the device is currently streaming
@@ -518,6 +536,20 @@ int rs_poll_for_frames(rs_device * device, rs_error ** error);
 int rs_supports(rs_device * device, rs_capabilities capability, rs_error ** error);
 
 /**
+* block until new frames are available and return a unique handle to the resulting frameset
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+*/
+rs_frameset* rs_wait_for_frames_safe(rs_device * device, rs_error ** error);
+
+/**
+* check if new frames are available, without blocking and return a unique handle to the resulting frameset
+* \param[out] frameset  if non-null, receives a unique handle for the resulting frame-set, to be queried later
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return            1 if new frames are available, 0 if no new frames have arrived
+*/
+int rs_poll_for_frames_safe(rs_device * device, rs_frameset** frameset, rs_error ** error);
+
+/**
  * retrieve the time at which the latest frame on a stream was captured
  * \param[in] stream  the stream whose latest frame we are interested in
  * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
@@ -526,12 +558,20 @@ int rs_supports(rs_device * device, rs_capabilities capability, rs_error ** erro
 int rs_get_frame_timestamp(const rs_device * device, rs_stream stream, rs_error ** error);
 
 /**
-* retrieve the frame counter
+* retrieve the system time at which the latest frame on a stream was captured
+* \param[in] stream  the stream whose latest frame we are interested in
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return            the system time  of the frame, in milliseconds
+*/
+long long rs_get_frame_system_time(const rs_device * device, rs_stream stream, rs_error ** error);
+
+/**
+* retrieve the frame number
 * \param[in] stream  the stream whose latest frame we are interested in
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return            the frame number
 */
-int rs_get_frame_counter(const rs_device * device, rs_stream stream, rs_error ** error);
+int rs_get_frame_number(const rs_device * device, rs_stream stream, rs_error ** error);
 
 /**
  * retrieve the contents of the latest frame on a stream
@@ -539,8 +579,131 @@ int rs_get_frame_counter(const rs_device * device, rs_stream stream, rs_error **
  * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
  * \return            the pointer to the start of the frame data
  */
-
 const void * rs_get_frame_data(const rs_device * device, rs_stream stream, rs_error ** error);
+
+/**
+* retrive timestamp from safe frameset handle, returned by wait_for_frames_safe or rs_poll_for_frames_safe
+* \param[in] stream  the stream whose latest frame we are interested in
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return            the timestamp of the frame, in milliseconds since the device was started
+*/
+int rs_get_frame_timestamp_safe(const rs_frameset * frameset, rs_stream stream, rs_error ** error);
+
+/**
+* retrive frame data from safe frameset handle, returned by wait_for_frames_safe or rs_poll_for_frames_safe
+* \param[in] stream  the stream whose latest frame we are interested in
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return            the pointer to the start of the frame data
+*/
+const void * rs_get_frame_data_safe(const rs_frameset * frameset, rs_stream stream, rs_error ** error);
+
+/**
+* retrive frame number from safe frameset handle, returned by wait_for_frames_safe or rs_poll_for_frames_safe
+* \param[in] stream  the stream whose latest frame we are interested in
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return            frame number of the frame
+*/
+int rs_get_frame_number_safe(const rs_frameset * frameset, rs_stream stream, rs_error ** error);
+
+/**
+* relases the frameset handle
+* \param[in] frameset handle returned by wait_for_frames_safe or rs_poll_for_frames_safe
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return            the pointer to the start of the frame data
+*/
+void rs_release_frames(rs_device * device, rs_frameset * frameset, rs_error ** error);
+
+/**
+* clone frameset handle, creating new handle that is tracking the same underlying frameset object
+* \param[in] frameset handle returned by wait_for_frames_safe or rs_poll_for_frames_safe
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return            the pointer to the start of the frame data
+*/
+rs_frameset * rs_clone_frames_ref(rs_device * device, rs_frameset* frameset, rs_error ** error);
+
+/**
+* detach individual frame reference from a frame-set.
+* \param[in] frameset handle returned by wait_for_frames_safe or rs_poll_for_frames_safe
+* \param[in] stream  the stream whose latest frame we are interested in
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return            the pointer to the start of the frame data
+*/
+rs_frame_ref * rs_detach_frame(rs_device * device, const rs_frameset * frameset, rs_stream stream, rs_error ** error);
+
+/**
+* relases the frame handle
+* \param[in] frame handle returned either detach, clone_ref or from frame callback
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return            the pointer to the start of the frame data
+*/
+void rs_release_frame(rs_device * device, rs_frame_ref * frame, rs_error ** error);
+
+
+/**
+* retrive timestamp from safe frame handle, returned from detach, clone_ref or from frame callback
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return            the timestamp of the frame, in milliseconds since the device was started
+*/
+int rs_get_detached_frame_timestamp(const rs_frame_ref * frame, rs_error ** error);
+
+/**
+* retrive frame number from safe frame handle, returned from detach, clone_ref or from frame callback
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return            the frame nubmer of the frame, in milliseconds since the device was started
+*/
+int rs_get_detached_frame_number(const rs_frame_ref * frame, rs_error ** error);
+
+
+/**
+* retrive data from safe frame handle, returned from detach, clone_ref or from frame callback
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return            the pointer to the start of the frame data
+*/
+const void * rs_get_detached_frame_data(const rs_frame_ref * frame, rs_error ** error);
+
+/**
+* retrive frame intrinsic width
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return            intrinsic width
+*/
+int rs_get_detached_frame_width(const rs_frame_ref * frameset, rs_error ** error);
+
+/**
+* retrive frame intrinsic height
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return            intrinsic height
+*/
+int rs_get_detached_frame_height(const rs_frame_ref * frameset, rs_error ** error);
+
+/**
+* retrive frame pad crop
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return            frame pad crop
+*/
+int rs_get_detached_frame_stride(const rs_frame_ref * frameset, rs_error ** error);
+
+/**
+* retrive frame pad crop
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return            frame pad crop
+*/
+int rs_get_detached_frame_bpp(const rs_frame_ref * frameset, rs_error ** error);
+
+/**
+* retrive frame format
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return            frame format
+*/
+rs_format rs_get_detached_frame_format(const rs_frame_ref * frameset, rs_error ** error);
+
+/**
+* clone frame handle, creating new handle that is tracking the same underlying frame object
+* \param[in] frame handle returned from detach, clone_ref or from frame callback
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return            the pointer to the start of the frame data
+*/
+
+rs_frame_ref * rs_clone_frame_ref(rs_device * device, rs_frame_ref* frame, rs_error ** error);
                                      
 const char * rs_get_failed_function  (const rs_error * error);
 const char * rs_get_failed_args      (const rs_error * error);

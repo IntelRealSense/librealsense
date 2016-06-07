@@ -62,7 +62,7 @@ struct stream_record
 
 int main() try
 {
-    rs::log_to_console(rs::log_severity::debug);
+    rs::log_to_console(rs::log_severity::warn);
     //rs::log_to_file(rs::log_severity::debug, "librealsense.log");
 
     rs::context ctx;

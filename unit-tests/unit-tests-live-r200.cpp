@@ -201,8 +201,8 @@ TEST_CASE( "R200 infrared2 streaming modes exactly match infrared streaming mode
             REQUIRE( infrared_framerate == infrared2_framerate );
 
             // Require that the intrinsics for these streaming modes match exactly
-            rs_enable_stream(dev, RS_STREAM_INFRARED, infrared_width, infrared_height, infrared_format, infrared_framerate, require_no_error());
-            rs_enable_stream(dev, RS_STREAM_INFRARED2, infrared2_width, infrared2_height, infrared2_format, infrared2_framerate, require_no_error());
+            rs_enable_stream(dev, RS_STREAM_INFRARED, infrared_width, infrared_height, infrared_format, infrared_framerate, RS_OUTPUT_BUFFER_FORMAT_CONTINOUS, require_no_error());
+            rs_enable_stream(dev, RS_STREAM_INFRARED2, infrared2_width, infrared2_height, infrared2_format, infrared2_framerate, RS_OUTPUT_BUFFER_FORMAT_CONTINOUS, require_no_error());
 
             REQUIRE( rs_get_stream_format(dev, RS_STREAM_INFRARED, require_no_error()) == rs_get_stream_format(dev, RS_STREAM_INFRARED2, require_no_error()) );
             REQUIRE( rs_get_stream_framerate(dev, RS_STREAM_INFRARED, require_no_error()) == rs_get_stream_framerate(dev, RS_STREAM_INFRARED2, require_no_error()) );
@@ -488,7 +488,7 @@ inline void test_r200_option(rs_option option, std::initializer_list<int> values
     if(when & AFTER_START_DEVICE)
     {
         rs_enable_stream_preset(dev, RS_STREAM_DEPTH, RS_PRESET_BEST_QUALITY, require_no_error());
-        rs_start_device(dev, require_no_error());
+        rs_start_device(dev, rs_source::RS_SOURCE_VIDEO, require_no_error());
 
         // Currently, setting/getting options immediately after streaming frequently raises hardware errors
         // todo - Internally block or retry failed calls within the first few seconds after streaming
@@ -535,7 +535,7 @@ TEST_CASE( "R200 emitter defaults to off if depth is not enabled/streamed", "[li
     REQUIRE(rs_get_device_option(dev, RS_OPTION_R200_EMITTER_ENABLED, require_no_error()) == 0);
 
     // Starting the device does not change the emitter's state
-    rs_start_device(dev, require_no_error());
+    rs_start_device(dev, rs_source::RS_SOURCE_VIDEO, require_no_error());
     std::this_thread::sleep_for(std::chrono::seconds(1));
     REQUIRE(rs_get_device_option(dev, RS_OPTION_R200_EMITTER_ENABLED, require_no_error()) == 0);
 }
@@ -557,7 +557,7 @@ TEST_CASE( "R200 emitter defaults to on if depth is enabled/streamed", "[live] [
     REQUIRE(rs_get_device_option(dev, RS_OPTION_R200_EMITTER_ENABLED, require_no_error()) == 1);
 
     // Starting the device does not change the emitter's state
-    rs_start_device(dev, require_no_error());
+    rs_start_device(dev, rs_source::RS_SOURCE_VIDEO, require_no_error());
     std::this_thread::sleep_for(std::chrono::seconds(1));
     REQUIRE(rs_get_device_option(dev, RS_OPTION_R200_EMITTER_ENABLED, require_no_error()) == 1);
 }
@@ -585,7 +585,7 @@ TEST_CASE( "R200 emitter can be enabled even if depth is not enabled/streamed", 
     REQUIRE(rs_get_device_option(dev, RS_OPTION_R200_EMITTER_ENABLED, require_no_error()) == 1);
 
     // Starting the device does not change the emitter's state
-    rs_start_device(dev, require_no_error());
+    rs_start_device(dev, rs_source::RS_SOURCE_VIDEO, require_no_error());
     std::this_thread::sleep_for(std::chrono::seconds(1));
     REQUIRE(rs_get_device_option(dev, RS_OPTION_R200_EMITTER_ENABLED, require_no_error()) == 1);
 }
@@ -611,7 +611,7 @@ TEST_CASE( "R200 emitter can be turned off even if depth is enabled/streamed", "
     REQUIRE(rs_get_device_option(dev, RS_OPTION_R200_EMITTER_ENABLED, require_no_error()) == 0);
 
     // Starting the device does not change the emitter's state
-    rs_start_device(dev, require_no_error());
+    rs_start_device(dev, rs_source::RS_SOURCE_VIDEO, require_no_error());
     std::this_thread::sleep_for(std::chrono::seconds(1));
     REQUIRE(rs_get_device_option(dev, RS_OPTION_R200_EMITTER_ENABLED, require_no_error()) == 0);
 }
@@ -627,7 +627,7 @@ TEST_CASE( "R200 emitter can be turned on and off after streaming has begun", "[
 
     // The emitter defaults to on when depth is streamed
     rs_enable_stream_preset(dev, RS_STREAM_DEPTH, RS_PRESET_BEST_QUALITY, require_no_error());
-    rs_start_device(dev, require_no_error());
+    rs_start_device(dev, rs_source::RS_SOURCE_VIDEO, require_no_error());
     std::this_thread::sleep_for(std::chrono::seconds(1));
     REQUIRE(rs_get_device_option(dev, RS_OPTION_R200_EMITTER_ENABLED, require_no_error()) == 1);
 

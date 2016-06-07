@@ -5,13 +5,17 @@
 #include "sync.h"
 #include "motion_module.h"
 
+#include <array>
+#include "image.h"
+
 #include <algorithm>
 #include <sstream>
 #include <iostream>
 
 using namespace rsimpl;
+using namespace rsimpl::motion_module;
 
-rs_device::rs_device(std::shared_ptr<rsimpl::uvc::device> device, const rsimpl::static_device_info & info) : device(device), config(info), capturing(false), data_acquisition_active(false),
+rs_device_base::rs_device_base(std::shared_ptr<rsimpl::uvc::device> device, const rsimpl::static_device_info & info) : device(device), config(info), capturing(false), data_acquisition_active(false),
     depth(config, RS_STREAM_DEPTH), color(config, RS_STREAM_COLOR), infrared(config, RS_STREAM_INFRARED), infrared2(config, RS_STREAM_INFRARED2), fisheye(config, RS_STREAM_FISHEYE),
     points(depth), rect_color(color), color_to_depth(color, depth), depth_to_color(depth, color), depth_to_rect_color(depth, rect_color), infrared2_to_depth(infrared2,depth), depth_to_infrared2(depth,infrared2)
 {
@@ -29,28 +33,33 @@ rs_device::rs_device(std::shared_ptr<rsimpl::uvc::device> device, const rsimpl::
     streams[RS_STREAM_DEPTH_ALIGNED_TO_INFRARED2]                      = &depth_to_infrared2;
 }
 
-rs_device::~rs_device()
+rs_device_base::~rs_device_base()
 {
-
+    try
+    {
+        if (capturing) 
+            stop(RS_SOURCE_ALL);
+    }
+    catch (...) {}
 }
 
-bool rs_device::supports_option(rs_option option) const 
+bool rs_device_base::supports_option(rs_option option) const 
 { 
     if(uvc::is_pu_control(option)) return true;
     for(auto & o : config.info.options) if(o.option == option) return true;
     return false; 
 }
 
-void rs_device::enable_stream(rs_stream stream, int width, int height, rs_format format, int fps)
+void rs_device_base::enable_stream(rs_stream stream, int width, int height, rs_format format, int fps, rs_output_buffer_format output)
 {
     if(capturing) throw std::runtime_error("streams cannot be reconfigured after having called rs_start_device()");
     if(config.info.stream_subdevices[stream] == -1) throw std::runtime_error("unsupported stream");
 
-    config.requests[stream] = {true, width, height, format, fps};
+    config.requests[stream] = { true, width, height, format, fps, output };
     for(auto & s : native_streams) s->archive.reset(); // Changing stream configuration invalidates the current stream info
 }
 
-void rs_device::enable_stream_preset(rs_stream stream, rs_preset preset)
+void rs_device_base::enable_stream_preset(rs_stream stream, rs_preset preset)
 {
     if(capturing) throw std::runtime_error("streams cannot be reconfigured after having called rs_start_device()");
     if(!config.info.presets[stream][preset].enabled) throw std::runtime_error("unsupported stream");
@@ -59,7 +68,7 @@ void rs_device::enable_stream_preset(rs_stream stream, rs_preset preset)
     for(auto & s : native_streams) s->archive.reset(); // Changing stream configuration invalidates the current stream info
 }
 
-void rs_device::disable_stream(rs_stream stream)
+void rs_device_base::disable_stream(rs_stream stream)
 {
     if(capturing) throw std::runtime_error("streams cannot be reconfigured after having called rs_start_device()");
     if(config.info.stream_subdevices[stream] == -1) throw std::runtime_error("unsupported stream");
@@ -68,27 +77,31 @@ void rs_device::disable_stream(rs_stream stream)
     for(auto & s : native_streams) s->archive.reset(); // Changing stream configuration invalidates the current stream info
 }
 
-void rs_device::enable_events()
+void rs_device_base::set_stream_callback(rs_stream stream, void (*on_frame)(rs_device * device, rs_frame_ref * frame, void * user), void * user)
 {
-    if (data_acquisition_active) throw std::runtime_error("events cannot be reconfigured after having called rs_start_device()");
-
-    config.data_requests.enabled = true;
-
+    config.callbacks[stream] = {this, on_frame, user};
 }
 
-void rs_device::disable_events()
+void rs_device_base::enable_motion_tracking()
 {
-    if (data_acquisition_active) throw std::runtime_error("events cannot be reconfigured after having called rs_start_device()");
+    if (data_acquisition_active) throw std::runtime_error("motion-tracking cannot be reconfigured after having called rs_start_device()");
+
+    config.data_requests.enabled = true;
+}
+
+void rs_device_base::disable_motion_tracking()
+{
+    if (data_acquisition_active) throw std::runtime_error("motion-tracking disabled after having called rs_start_device()");
 
     config.data_requests.enabled = false;
 }
 
-void rs_device::start_events()
+void rs_device_base::start_motion_tracking()
 {
     if (data_acquisition_active) throw std::runtime_error("cannot restart data acquisition without stopping first");
 
-    std::vector<motion_events_callback> mo_callbacks = config.motion_callbacks;
-    std::vector<timestamp_events_callback> ts_callbacks = config.timestamp_callbacks;
+    motion_events_callback  mo_callback = config.motion_callback;
+    timestamp_events_callback   ts_callback = config.timestamp_callback;
 
     motion_module_parser parser;
 
@@ -97,7 +110,7 @@ void rs_device::start_events()
     {
         // TODO -replace hard-coded value 3 which stands for fisheye subdevice   
         set_subdevice_data_channel_handler(*device, 3,
-            [this,mo_callbacks, ts_callbacks, parser](const unsigned char * data, const int size) mutable
+            [this, mo_callback, ts_callback, parser](const unsigned char * data, const int size) mutable
         {
             // Parse motion data
             auto events = parser(data, size);
@@ -106,24 +119,20 @@ void rs_device::start_events()
             for (auto & entry : events)
             {
                 // Handle Motion data packets
+                if (mo_callback)
                 for (int i = 0; i < entry.imu_entries_num; i++)
+                        mo_callback(entry.imu_packets[i]);
+                
+                // Handle Timestamp packets
+                if (ts_callback)
                 {
-                    for (auto & cb : mo_callbacks)
-                    {
-                        cb(entry.imu_packets[i]);
-                    }
-                }
-
-				// Handle Timestamp packets
-				for (int i = 0; i < entry.non_imu_entries_num; i++)
-				{
-					for (auto & cb : ts_callbacks)
+                    for (int i = 0; i < entry.non_imu_entries_num; i++)
                     {
                         auto tse = entry.non_imu_packets[i];
                         archive->on_timestamp(tse);
-                        cb(tse);
-					}
-				}
+                        ts_callback(entry.non_imu_packets[i]);
+                    }
+                }
             }
         });
     }
@@ -132,30 +141,52 @@ void rs_device::start_events()
     data_acquisition_active = true;
 }
 
-void rs_device::stop_events()
+void rs_device_base::stop_motion_tracking()
 {
     if (!data_acquisition_active) throw std::runtime_error("cannot stop data acquisition - is already stopped");
     stop_data_acquisition(*device);
-    data_acquisition_active = false; // todo
+    data_acquisition_active = false;
 }
 
-void rs_device::set_motion_callback(void(*on_event)(rs_device * device, rs_motion_data data, void * user), void * user)
+void rs_device_base::set_motion_callback(void(*on_event)(rs_device * device, rs_motion_data data, void * user), void * user)
 {
-    config.motion_callbacks.push_back({ this, on_event, user });
+    if (data_acquisition_active) throw std::runtime_error("cannot set motion callback when motion data is active");
+    
+    // replace previous, if needed
+    config.motion_callback = {this, on_event, user};
 }
 
-void rs_device::set_timestamp_callback(void(*on_event)(rs_device * device, rs_timestamp_data data, void * user), void * user)
+void rs_device_base::set_timestamp_callback(void(*on_event)(rs_device * device, rs_timestamp_data data, void * user), void * user)
 {
-    config.timestamp_callbacks.push_back({ this, on_event, user });
+    if (data_acquisition_active) throw std::runtime_error("cannot set timestamp callback when motion data is active");
+
+    config.timestamp_callback = {this, on_event, user};
 }
 
+void rs_device_base::start(rs_source source)
+{
+    if (source & rs_source::RS_SOURCE_VIDEO)
+        start_video_streaming();
 
-void rs_device::start()
+    if (source & rs_source::RS_SOURCE_MOTION_TRACKING)
+        start_motion_tracking();
+}
+
+void rs_device_base::stop(rs_source source)
+{
+    if (source & rs_source::RS_SOURCE_VIDEO)
+        stop_video_streaming();
+
+    if (source & rs_source::RS_SOURCE_MOTION_TRACKING)
+        stop_motion_tracking();
+}
+
+void rs_device_base::start_video_streaming()
 {
     if(capturing) throw std::runtime_error("cannot restart device without first stopping device");
         
     auto selected_modes = config.select_modes();
-    auto archive = std::make_shared<frame_archive>(selected_modes, select_key_stream(selected_modes));
+    auto archive = std::make_shared<syncronizing_archive>(selected_modes, select_key_stream(selected_modes));
     auto timestamp_reader = create_frame_timestamp_reader();
 
     for(auto & s : native_streams) s->archive.reset(); // Starting capture invalidates the current stream info, if any exists from previous capture
@@ -171,27 +202,85 @@ void rs_device::start()
             if(config.requests[stream_mode.first].enabled) native_streams[stream_mode.first]->archive = archive;
         }
 
+        // Copy the callbacks that apply to this stream, so that they can be captured by value
+        std::vector<frame_callback> callbacks;
+        std::vector<rs_stream> streams;
+        for (auto & output : mode_selection.get_outputs())
+        {
+            callbacks.push_back(config.callbacks[output.first]);
+            streams.push_back(output.first);
+        }
         // Initialize the subdevice and set it to the selected mode
         set_subdevice_mode(*device, mode_selection.mode.subdevice, mode_selection.mode.native_dims.x, mode_selection.mode.native_dims.y, mode_selection.mode.pf.fourcc, mode_selection.mode.fps, 
-            [mode_selection, archive, timestamp_reader](const void * frame) mutable
+        [mode_selection, archive, timestamp_reader, callbacks, streams](const void * frame, std::function<void()> continuation) mutable
         {
+            auto now = std::chrono::system_clock::now().time_since_epoch();
+            auto sys_time = std::chrono::duration_cast<std::chrono::milliseconds>(now).count();
+
+            frame_continuation release_and_enqueue(continuation, frame);
+
             // Ignore any frames which appear corrupted or invalid
-            if(!timestamp_reader->validate_frame(mode_selection.mode, frame)) return;
+            if (!timestamp_reader->validate_frame(mode_selection.mode, frame)) return;
 
             // Determine the timestamp for this frame
-            int timestamp = timestamp_reader->get_frame_timestamp(mode_selection.mode, frame);
-			int frameCounter = timestamp_reader->get_frame_counter(mode_selection.mode, frame);
+            auto timestamp = timestamp_reader->get_frame_timestamp(mode_selection.mode, frame);
+            auto frame_counter = timestamp_reader->get_frame_counter(mode_selection.mode, frame);
+            
+            auto requires_processing = mode_selection.requires_processing();
 
-            // Obtain buffers for unpacking the frame
+            auto width = mode_selection.get_unpacked_width();
+            auto height = mode_selection.get_unpacked_height();
+
             std::vector<byte *> dest;
-            for(auto & output : mode_selection.get_outputs()) dest.push_back(archive->alloc_frame(output.first, timestamp, frameCounter));
 
+            auto stride = mode_selection.get_stride();
             archive->correct_timestamp();
 
-            // Unpack the frame and commit it to the archive
-            mode_selection.unpack(dest.data(), reinterpret_cast<const byte *>(frame));
+            for (auto & output : mode_selection.get_outputs())
+            {
+                auto bpp = rsimpl::get_image_bpp(output.second);
+                frame_archive::frame_additional_data additional_data( timestamp,
+                    frame_counter,
+                    sys_time,
+                    width,
+                    height,
+                    stride,
+                    bpp,
+                    output.second,
+                    mode_selection.pad_crop);
 
-            for(auto & output : mode_selection.get_outputs()) archive->commit_frame(output.first);
+                // Obtain buffers for unpacking the frame
+                dest.push_back(archive->alloc_frame(output.first, additional_data, requires_processing));
+            }
+            // Unpack the frame
+            if (requires_processing)
+            {
+                mode_selection.unpack(dest.data(), reinterpret_cast<const byte *>(frame));
+            }
+
+            // If any frame callbacks were specified, dispatch them now
+            for (size_t i = 0; i < dest.size(); ++i)
+            {
+
+                if (!requires_processing)
+                {
+                    archive->attach_continuation(streams[i], std::move(release_and_enqueue));
+                }
+
+                if (callbacks[i])
+                {
+                    auto frame_ref = archive->track_frame(streams[i]);
+                    if (frame_ref)
+                    {
+                        callbacks[i]((rs_frame_ref*)frame_ref);
+                    }
+                }
+                else
+                {
+                    // Commit the frame to the archive
+                    archive->commit_frame(streams[i]);
+                }
+            }
         });
     }
     
@@ -202,14 +291,15 @@ void rs_device::start()
     capturing = true;
 }
 
-void rs_device::stop()
+void rs_device_base::stop_video_streaming()
 {
     if(!capturing) throw std::runtime_error("cannot stop device without first starting device");
     stop_streaming(*device);
+    archive->flush();
     capturing = false;
 }
 
-void rs_device::wait_all_streams()
+void rs_device_base::wait_all_streams()
 {
     if(!capturing) return;
     if(!archive) return;
@@ -217,14 +307,62 @@ void rs_device::wait_all_streams()
     archive->wait_for_frames();
 }
 
-bool rs_device::poll_all_streams()
+bool rs_device_base::poll_all_streams()
 {
     if(!capturing) return false;
     if(!archive) return false;
     return archive->poll_for_frames();
 }
 
-bool rs_device::supports(rs_capabilities capability) const
+rs_frameset* rs_device_base::wait_all_streams_safe()
+{
+    if (!capturing) throw std::runtime_error("Can't call wait_for_frames_safe when the device is not capturing!");
+    if (!archive) throw std::runtime_error("Can't call wait_for_frames_safe when frame archive is not available!");
+
+        return (rs_frameset*)archive->wait_for_frames_safe();
+}
+
+bool rs_device_base::poll_all_streams_safe(rs_frameset** frames)
+{
+    if (!capturing) return false;
+    if (!archive) return false;
+
+    return archive->poll_for_frames_safe((frame_archive::frameset**)frames);
+}
+
+void rs_device_base::release_frames(rs_frameset * frameset)
+{
+    archive->release_frameset((frame_archive::frameset *)frameset);
+}
+
+rs_frameset * rs_device_base::clone_frames(rs_frameset * frameset)
+{
+    auto result = archive->clone_frameset((frame_archive::frameset *)frameset);
+    if (!result) throw std::runtime_error("Not enough resources to clone frameset!");
+    return (rs_frameset*)result;
+}
+
+
+rs_frame_ref* rs_device_base::detach_frame(const rs_frameset* fs, rs_stream stream)
+{
+    auto result = archive->detach_frame_ref((frame_archive::frameset *)fs, stream);
+    if (!result) throw std::runtime_error("Not enough resources to tack detached frame!");
+    return (rs_frame_ref*)result;
+}
+
+void rs_device_base::release_frame(rs_frame_ref* ref)
+{
+    archive->release_frame_ref((frame_archive::frame_ref *)ref);
+}
+
+rs_frame_ref* ::rs_device_base::clone_frame(rs_frame_ref* frame)
+{
+    auto result = archive->clone_frame((frame_archive::frame_ref *)frame);
+    if (!result) throw std::runtime_error("Not enough resources to clone frame!");
+    return (rs_frame_ref*)result;
+}
+
+bool rs_device_base::supports(rs_capabilities capability) const
 {
     for (auto elem: config.info.capabilities_vector)
     {
@@ -235,7 +373,7 @@ bool rs_device::supports(rs_capabilities capability) const
     return false;
 }
 
-void rs_device::get_option_range(rs_option option, double & min, double & max, double & step, double & def)
+void rs_device_base::get_option_range(rs_option option, double & min, double & max, double & step, double & def)
 {
     if(uvc::is_pu_control(option))
     {
@@ -261,4 +399,9 @@ void rs_device::get_option_range(rs_option option, double & min, double & max, d
     }
 
     throw std::logic_error("range not specified");
+}
+
+const char * rs_device_base::get_usb_port_id() const
+{
+    return rsimpl::uvc::get_usb_port_id(*device);
 }

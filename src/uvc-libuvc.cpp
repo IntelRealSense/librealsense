@@ -81,6 +81,13 @@ namespace rsimpl
         int get_vendor_id(const device & device) { return device.vid; }
         int get_product_id(const device & device) { return device.pid; }
 
+        const char * get_usb_port_id(const device & device)
+        {
+            std::string usb_port = std::to_string(libusb_get_bus_number(device.uvcdevice->usb_dev)) + "-" +
+                std::to_string(libusb_get_port_number(device.uvcdevice->usb_dev));
+            return usb_port.c_str();
+        }
+
         void get_control(const device & dev, const extension_unit & xu, uint8_t ctrl, void * data, int len)
         {
             int status = uvc_get_ctrl(const_cast<device &>(dev).get_subdevice(xu.subdevice).handle, xu.unit, ctrl, data, len, UVC_GET_CUR);
@@ -105,7 +112,7 @@ namespace rsimpl
             throw std::logic_error("claim_aux_interface(...) is not implemented for this backend ");
         }
 
-        bool power_on_adapter_board()
+        void power_on_adapter_board()
         {
             throw std::logic_error("power_on_adapter_board(...) is not implemented for this backend ");
         }

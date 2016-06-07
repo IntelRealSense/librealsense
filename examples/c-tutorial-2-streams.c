@@ -46,14 +46,14 @@ int main()
     check_error();
 
     /* Configure all streams to run at VGA resolution at 60 frames per second */
-    rs_enable_stream(dev, RS_STREAM_DEPTH, 640, 480, RS_FORMAT_Z16, 60, &e);
+	rs_enable_stream(dev, RS_STREAM_DEPTH, 640, 480, RS_FORMAT_Z16, 60, RS_OUTPUT_BUFFER_FORMAT_CONTINOUS, &e);
     check_error();
-    rs_enable_stream(dev, RS_STREAM_COLOR, 640, 480, RS_FORMAT_RGB8, 60, &e);
+	rs_enable_stream(dev, RS_STREAM_COLOR, 640, 480, RS_FORMAT_RGB8, 60, RS_OUTPUT_BUFFER_FORMAT_CONTINOUS, &e);
     check_error();
-    rs_enable_stream(dev, RS_STREAM_INFRARED, 640, 480, RS_FORMAT_Y8, 60, &e);
+	rs_enable_stream(dev, RS_STREAM_INFRARED, 640, 480, RS_FORMAT_Y8, 60, RS_OUTPUT_BUFFER_FORMAT_CONTINOUS, &e);
     check_error();
-    rs_enable_stream(dev, RS_STREAM_INFRARED2, 640, 480, RS_FORMAT_Y8, 60, NULL); /* Pass NULL to ignore errors */
-    rs_start_device(dev, &e);
+	rs_enable_stream(dev, RS_STREAM_INFRARED2, 640, 480, RS_FORMAT_Y8, 60, RS_OUTPUT_BUFFER_FORMAT_CONTINOUS, NULL); /* Pass NULL to ignore errors */
+    rs_start_device(dev, RS_SOURCE_VIDEO, &e);
     check_error();
 
     /* Open a GLFW window to display our output */
@@ -64,7 +64,7 @@ int main()
     {
         /* Wait for new frame data */
         glfwPollEvents();
-        rs_wait_for_frames(dev, &e);
+        rs_frameset* frames = rs_wait_for_frames_safe(dev, &e);
         check_error();
 
         glClear(GL_COLOR_BUFFER_BIT);
@@ -74,28 +74,30 @@ int main()
         glRasterPos2f(-1, 1);
         glPixelTransferf(GL_RED_SCALE, 0xFFFF * rs_get_device_depth_scale(dev, &e) / 2.0f);
         check_error();
-        glDrawPixels(640, 480, GL_RED, GL_UNSIGNED_SHORT, rs_get_frame_data(dev, RS_STREAM_DEPTH, &e));
+        glDrawPixels(640, 480, GL_RED, GL_UNSIGNED_SHORT, rs_get_frame_data_safe(frames, RS_STREAM_DEPTH, &e));
         check_error();
         glPixelTransferf(GL_RED_SCALE, 1.0f);
 
         /* Display color image as RGB triples */
         glRasterPos2f(0, 1);
-        glDrawPixels(640, 480, GL_RGB, GL_UNSIGNED_BYTE, rs_get_frame_data(dev, RS_STREAM_COLOR, &e));
+        glDrawPixels(640, 480, GL_RGB, GL_UNSIGNED_BYTE, rs_get_frame_data_safe(frames, RS_STREAM_COLOR, &e));
         check_error();
 
         /* Display infrared image by mapping IR intensity to visible luminance */
         glRasterPos2f(-1, 0);
-        glDrawPixels(640, 480, GL_LUMINANCE, GL_UNSIGNED_BYTE, rs_get_frame_data(dev, RS_STREAM_INFRARED, &e));
+        glDrawPixels(640, 480, GL_LUMINANCE, GL_UNSIGNED_BYTE, rs_get_frame_data_safe(frames, RS_STREAM_INFRARED, &e));
         check_error();
 
         /* Display second infrared image by mapping IR intensity to visible luminance */
         if(rs_is_stream_enabled(dev, RS_STREAM_INFRARED2, NULL))
         {
             glRasterPos2f(0, 0);
-            glDrawPixels(640, 480, GL_LUMINANCE, GL_UNSIGNED_BYTE, rs_get_frame_data(dev, RS_STREAM_INFRARED2, &e));
+            glDrawPixels(640, 480, GL_LUMINANCE, GL_UNSIGNED_BYTE, rs_get_frame_data_safe(frames, RS_STREAM_INFRARED2, &e));
         }
 
         glfwSwapBuffers(win);
+
+        rs_release_frames(dev, frames, &e);
     }
     
     return EXIT_SUCCESS;

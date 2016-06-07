@@ -11,33 +11,23 @@
 
 namespace rsimpl
 {
-    struct stream_interface
+    struct stream_interface : rs_stream_interface
     {
-        rs_extrinsics                           get_extrinsics_to(const stream_interface & r) const;
+        virtual rs_extrinsics                   get_extrinsics_to(const rs_stream_interface & r) const override;
         virtual rsimpl::pose                    get_pose() const = 0;
-        virtual float                           get_depth_scale() const = 0;
-        virtual int                             get_mode_count() const { return 0; }
-        virtual void                            get_mode(int mode, int * w, int * h, rs_format * f, int * fps) const { throw std::logic_error("no modes"); }
-
-        virtual bool                            is_enabled() const = 0;
-        virtual rs_intrinsics                   get_intrinsics() const = 0;
-        virtual rs_intrinsics                   get_rectified_intrinsics() const = 0;
-        virtual rs_format                       get_format() const = 0;
-        virtual int                             get_framerate() const = 0;
-
-        virtual int                             get_frame_number() const = 0;
-		virtual int                             get_frame_counter() const = 0;
-        virtual const byte *                    get_frame_data() const = 0;    
+        virtual int                             get_mode_count() const override { return 0; }
+        virtual void                            get_mode(int mode, int * w, int * h, rs_format * f, int * fps) const override { throw std::logic_error("no modes"); }
     };
     
     class frame_archive;
+    class syncronizing_archive;
 
     struct native_stream final : public stream_interface
     {
         const device_config &                   config;
         const rs_stream                         stream;
         std::vector<subdevice_mode_selection>   modes;
-        std::shared_ptr<frame_archive>          archive;
+        std::shared_ptr<syncronizing_archive>   archive;
 
                                                 native_stream(device_config & config, rs_stream stream);
 
@@ -54,14 +44,14 @@ namespace rsimpl
         int                                     get_framerate() const override { return get_mode().get_framerate(stream); }
 
         int                                     get_frame_number() const override;
-		int                                     get_frame_counter() const override;
-        const byte *                            get_frame_data() const override;
+        long long                               get_frame_system_time() const override;
+        const uint8_t *                         get_frame_data() const override;
     };
 
     class point_stream final : public stream_interface
     {
         const stream_interface &                source;
-        mutable std::vector<byte>               image;
+        mutable std::vector<uint8_t>            image;
         mutable int                             number;
     public:
                                                 point_stream(const stream_interface & source) : source(source), number() {}
@@ -76,15 +66,15 @@ namespace rsimpl
         int                                     get_framerate() const override { return source.get_framerate(); }
 
         int                                     get_frame_number() const override { return source.get_frame_number(); }
-		int                                     get_frame_counter() const override { return source.get_frame_counter(); }
-        const byte *                            get_frame_data() const override;
+        long long                               get_frame_system_time() const override { return source.get_frame_system_time(); }
+        const uint8_t *                         get_frame_data() const override;
     };
 
     class rectified_stream final : public stream_interface
     {
         const stream_interface &                source;
         mutable std::vector<int>                table;
-        mutable std::vector<byte>               image;
+        mutable std::vector<uint8_t>            image;
         mutable int                             number;
     public:
                                                 rectified_stream(const stream_interface & source) : source(source), number() {}
@@ -99,14 +89,14 @@ namespace rsimpl
         int                                     get_framerate() const override { return source.get_framerate(); }
 
         int                                     get_frame_number() const override { return source.get_frame_number(); }
-		int                                     get_frame_counter() const override { return source.get_frame_counter(); }
-        const byte *                            get_frame_data() const override;
+        long long                               get_frame_system_time() const override { return source.get_frame_system_time(); }
+        const uint8_t *                         get_frame_data() const override;
     };
 
     class aligned_stream final : public stream_interface
     {
         const stream_interface &                from, & to;
-        mutable std::vector<byte>               image;
+        mutable std::vector<uint8_t>            image;
         mutable int                             number;
     public:
                                                 aligned_stream(const stream_interface & from, const stream_interface & to) : from(from), to(to), number() {}
@@ -121,8 +111,8 @@ namespace rsimpl
         int                                     get_framerate() const override { return from.get_framerate(); }
 
         int                                     get_frame_number() const override { return from.get_frame_number(); }
-		int                                     get_frame_counter() const override { return from.get_frame_counter(); }
-        const byte *                            get_frame_data() const override;
+        long long                               get_frame_system_time() const override { return from.get_frame_system_time(); }
+        const unsigned char *                   get_frame_data() const override;
     };
 }
 

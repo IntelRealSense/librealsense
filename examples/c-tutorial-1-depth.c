@@ -44,39 +44,37 @@ int main()
 
     rs_stream stream_type = RS_STREAM_DEPTH;
     /* Configure depth to run at VGA resolution at 30 frames per second */
-    rs_enable_stream_preset(dev, stream_type, RS_PRESET_BEST_QUALITY, &e);
+    rs_enable_stream(dev, RS_STREAM_DEPTH, 640, 480, RS_FORMAT_Z16, 30, RS_OUTPUT_BUFFER_FORMAT_CONTINOUS, &e);
     check_error();
-    rs_start_device(dev, &e);
+    rs_start_device(dev, RS_SOURCE_VIDEO, &e);
     check_error();
 
     /* Determine depth value corresponding to one meter */
     const uint16_t one_meter = (uint16_t)(1.0f / rs_get_device_depth_scale(dev, &e));
     check_error();
 
-	/* retrieve actual frame size */
+    /* retrieve actual frame size */
     rs_intrinsics depth_intrin;
     rs_get_stream_intrinsics(dev, stream_type, &depth_intrin, &e);
     check_error();
     int width = depth_intrin.width;
     int height = depth_intrin.height;
 
-    int rows = (height / 20);
-    int row_lenght = (width / 10);
+    int rows = (height / 10);
+    int row_lenght = (width / 5);
     int display_size = (rows+1) * (row_lenght+1);
 
     char *buffer = (char*) malloc (display_size*sizeof(char));
 
     while(1)
     {
-        /* This call waits until a new coherent set of frames is available on a device
-           Calls to get_frame_data(...) and get_frame_timestamp(...) on a device will return stable values until wait_for_frames(...) is called */
+        /* This call waits until a new coherent set of frames is available on a device */
         rs_wait_for_frames(dev, &e);
 
-        /* Retrieve depth data, which was previously configured as a 640 x 480 image of 16-bit depth values */
+        /* Retrieve depth data, configured as 16-bit depth values */
         const uint16_t * depth_frame = (const uint16_t *)(rs_get_frame_data(dev, RS_STREAM_DEPTH, &e));
 
-        /* Print a simple text-based representation of the image, by breaking it into 10x20 pixel regions and and approximating the coverage of pixels within one meter */
-        
+        /* Print a simple text-based representation of the image, by breaking it into 10x20 pixel regions and and approximating the coverage of pixels within one meter */        
         char * out = buffer;
         int coverage[255] = {0}, x,y,i; //The buffer will suffice up to 255*10  pixels width
         for(y=0; y<height; ++y)
@@ -84,14 +82,14 @@ int main()
             for(x=0; x<width; ++x)
             {
                 int depth = *depth_frame++;
-                if(depth > 0 && depth < one_meter) ++coverage[x/10];
+                if(depth > 0 && depth < one_meter) ++coverage[x/5];
             }
 
-            if(y%20 == 19)
+            if(y%10 == 9)
             {
                 for(i=0; i<(row_lenght); ++i)
                 {                   
-                    *out++ = " .:nhBXWW"[coverage[i]/25];
+                    *out++ = " .:nhBXWW"[coverage[i]/10];
                     coverage[i] = 0;
                 }
                 *out++ = '\n';
@@ -101,7 +99,7 @@ int main()
         printf("\n%s", buffer);
     }
     
-    rs_stop_device(dev, &e);
+    rs_stop_device(dev, RS_SOURCE_VIDEO, &e);
     check_error();
 
     free(buffer);

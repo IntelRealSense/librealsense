@@ -115,7 +115,14 @@ namespace rsimpl
         CASE(SR300_AUTO_RANGE_MAX_LASER)                  
         CASE(SR300_AUTO_RANGE_START_LASER)                
         CASE(SR300_AUTO_RANGE_UPPER_THRESHOLD) 
-        CASE(SR300_AUTO_RANGE_LOWER_THRESHOLD) 
+        CASE(SR300_AUTO_RANGE_LOWER_THRESHOLD)
+        CASE(SR300_WAKEUP_DEV_PHASE1_PERIOD)
+        CASE(SR300_WAKEUP_DEV_PHASE1_FPS)
+        CASE(SR300_WAKEUP_DEV_PHASE2_PERIOD)
+        CASE(SR300_WAKEUP_DEV_PHASE2_FPS)
+        CASE(SR300_WAKEUP_DEV_RESET)
+        CASE(SR300_WAKE_ON_USB_REASON)
+        CASE(SR300_WAKE_ON_USB_CONFIDENCE)
         CASE(R200_LR_AUTO_EXPOSURE_ENABLED)
         CASE(R200_LR_GAIN)
         CASE(R200_LR_EXPOSURE)
@@ -142,15 +149,14 @@ namespace rsimpl
         CASE(R200_DEPTH_CONTROL_TEXTURE_COUNT_THRESHOLD)     
         CASE(R200_DEPTH_CONTROL_TEXTURE_DIFFERENCE_THRESHOLD)
         CASE(R200_DEPTH_CONTROL_SECOND_PEAK_THRESHOLD)       
-        CASE(R200_DEPTH_CONTROL_NEIGHBOR_THRESHOLD)          
+        CASE(R200_DEPTH_CONTROL_NEIGHBOR_THRESHOLD)
         CASE(R200_DEPTH_CONTROL_LR_THRESHOLD)
-        CASE(SR300_WAKEUP_DEV_PHASE1_PERIOD)
-        CASE(SR300_WAKEUP_DEV_PHASE1_FPS)
-        CASE(SR300_WAKEUP_DEV_PHASE2_PERIOD)
-        CASE(SR300_WAKEUP_DEV_PHASE2_FPS)
-        CASE(SR300_WAKEUP_DEV_RESET)
-        CASE(SR300_WAKE_ON_USB_REASON)
-        CASE(SR300_WAKE_ON_USB_CONFIDENCE)
+        CASE(ZR300_GYRO_BANDWIDTH)
+        CASE(ZR300_GYRO_RANGE)
+        CASE(ZR300_ACCELEROMETER_BANDWIDTH)
+        CASE(ZR300_ACCELEROMETER_RANGE)
+        CASE(ZR300_MOTION_MODULE_TIME_SEED)
+        CASE(ZR300_MOTION_MODULE_ACTIVE)
         CASE(FISHEYE_COLOR_EXPOSURE)
         CASE(FISHEYE_COLOR_GAIN)
         CASE(FISHEYE_STROBE)
@@ -166,7 +172,8 @@ namespace rsimpl
         switch(value)
         {
         CASE(VIDEO)
-        CASE(EVENTS)
+        CASE(MOTION_TRACKING)
+        CASE(ALL)
         default: assert(!is_valid(value)); return nullptr;
         }
         #undef CASE
@@ -195,6 +202,11 @@ namespace rsimpl
         return rsimpl::get_image_size(get_width(), get_height(), get_format(stream));
     }
 
+    void subdevice_mode_selection::set_output_buffer_format(const rs_output_buffer_format in_output_format)
+    {
+        output_format = in_output_format;
+    }
+
     void subdevice_mode_selection::unpack(byte * const dest[], const byte * source) const
     {
         const int MAX_OUTPUTS = 2;
@@ -217,7 +229,7 @@ namespace rsimpl
         }
 
         // Unpack (potentially a subrect of) the source image into (potentially a subrect of) the destination buffers
-        const int unpack_width = std::min(mode.native_intrinsics.width, get_width()), unpack_height = std::min(mode.native_intrinsics.height, get_height());
+        const int unpack_width = get_unpacked_width(), unpack_height = get_unpacked_height();
         if(mode.native_dims.x == get_width())
         {
             // If not strided, unpack as though it were a single long row
@@ -234,6 +246,16 @@ namespace rsimpl
                 in += in_stride;
             }
         }
+    }
+
+    int subdevice_mode_selection::get_unpacked_width() const
+    {
+        return std::min(mode.native_intrinsics.width, get_width());
+    }
+
+    int subdevice_mode_selection::get_unpacked_height() const
+    {
+        return std::min(mode.native_intrinsics.height, get_height());
     }
 
     ////////////////////////
@@ -285,6 +307,8 @@ namespace rsimpl
                     for(auto & output : unpacker.outputs)
                     {
                         const auto & req = requests[output.first];
+                       
+                        selection.set_output_buffer_format(req.output_format);
                         if(req.enabled && (req.width == 0 || req.width == selection.get_width())
                                        && (req.height == 0 || req.height == selection.get_height())
                                        && (req.format == RS_FORMAT_ANY || req.format == selection.get_format(output.first))

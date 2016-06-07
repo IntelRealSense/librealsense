@@ -10,14 +10,19 @@
 
 namespace rsimpl
 {
-    struct frame_info;
+    struct frame_interface
+    { 
+        virtual ~frame_interface() {}
+        virtual int get_frame_number() const = 0;
+        virtual void set_timestamp(int new_ts) = 0;
+    };
 
     class concurrent_queue{
     public:
         void push_back_data(rs_timestamp_data data);
         bool pop_front_data();
         bool erase(rs_timestamp_data data);
-        bool correct(rs_timestamp_data& data);
+        bool correct(const rs_event_source& source_id, frame_interface& frame);
         unsigned size();
 
     private:
@@ -30,7 +35,7 @@ namespace rsimpl
     public:
         virtual ~timestamp_corrector_interface() {}
         virtual void on_timestamp(rs_timestamp_data data) = 0;
-        virtual void correct_timestamp(frame_info& frame, rs_stream stream) = 0;
+        virtual void correct_timestamp(frame_interface& frame, rs_stream stream) = 0;
         virtual void release() = 0;
     };
 
@@ -39,11 +44,11 @@ namespace rsimpl
     public:
         ~timestamp_corrector() override;
         void on_timestamp(rs_timestamp_data data) override;
-        void correct_timestamp(frame_info& frame, rs_stream stream) override;
+        void correct_timestamp(frame_interface& frame, rs_stream stream) override;
         void release() override  {delete this;}
 
     private:
-        void update_timestamp_data(rs_timestamp_data& data, const frame_info& frame, const rs_stream stream);
+        void update_source_id(rs_event_source& source_id, const rs_stream stream);
 
         std::mutex mtx;
         concurrent_queue data_queue;

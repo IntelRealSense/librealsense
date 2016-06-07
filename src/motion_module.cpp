@@ -4,31 +4,13 @@
 #include "hw-monitor.h"
 #include "motion_module.h"
 #include <iostream>
+#define _USE_MATH_DEFINES
+#include <math.h>
 
 using namespace rsimpl;
+using namespace rsimpl::motion_module;
 
-namespace rsimpl
-{
-    enum CX3_GrossTete_MonitorCommand : uint32_t
-    {
-        IRB = 0x01,     // Read from i2c ( 8x8 )
-        IWB = 0x02,     // Write to i2c ( 8x8 )
-        GVD = 0x03,     // Get Version and Date
-        IAP_IRB = 0x04,     // Read from IAP i2c ( 8x8 )
-        IAP_IWB = 0x05,     // Write to IAP i2c ( 8x8 )
-        FRCNT = 0x06,     // Read frame counter
-        GLD = 0x07,     // Get logger data
-        GPW = 0x08,     // Write to GPIO
-        GPR = 0x09,     // Read from GPIO
-        MMPWR = 0x0A,     // Motion module power up/down
-        DSPWR = 0x0B,     // DS4 power up/down
-        EXT_TRIG = 0x0C,     // external trigger mode
-        CX3FWUPD = 0x0D,     // FW update
-        MM_ACTIVATE = 0x0E      // Motion Module activation
-    };
-}
-
-motion_module_control::motion_module_control(uvc::device *device) : device_handle(device)
+motion_module_control::motion_module_control(uvc::device *device) : device_handle(device), power_state(false)
 {
 }
 
@@ -47,7 +29,7 @@ void motion_module_control::impose(mm_request request, bool on)
     if (motion_module_state::valid(new_state))
         enter_state(new_state);
     else
-        throw std::logic_error("ABC");
+        throw std::logic_error(to_string() << "MM invalid mode from" << state_handler.state << " to " << new_state);
 }
 
 void motion_module_control::enter_state(mm_state new_state)
@@ -62,12 +44,12 @@ void motion_module_control::enter_state(mm_state new_state)
         if (mm_streaming == new_state)
         {
             set_control(mm_video_output, true);
-            std::this_thread::sleep_for(std::chrono::milliseconds(2000));
+            //std::this_thread::sleep_for(std::chrono::milliseconds(2000));   // L-Shaped adapter board
             //std::cout << "Switch from mm_idle to mm_streaming" << std::endl;
         }
         if (mm_eventing == new_state)
         {
-            set_control(mm_video_output, true);
+            set_control(mm_video_output, true); // L -shape adapter board            
             set_control(mm_events_output, true);
             //std::cout << "Switch from mm_idle to mm_eventing" << std::endl;
         }
@@ -83,12 +65,32 @@ void motion_module_control::enter_state(mm_state new_state)
             set_control(mm_events_output, true);
             //std::cout << "Switch from mm_streaming to mm_full_load" << std::endl;
         }
+        if (mm_eventing == new_state)
+        {            
+            throw std::logic_error(" Invalid Motion Module transition from streaming to motion tracking");
+        }
         break;
     case mm_eventing:
         if (mm_idle == new_state)
         {
             set_control(mm_events_output, false);
             //std::cout << "Switch from mm_eventing to mm_idle" << std::endl;
+        }
+        if (mm_full_load == new_state)
+        {
+            set_control(mm_events_output, true);
+            //std::cout << "Switch from mm_streaming to mm_full_load" << std::endl;
+        }
+        if (mm_streaming == new_state)
+        {
+            throw std::logic_error(" Invalid Motion Module transition from motion tracking to streaming");
+        }
+        break;
+    case mm_full_load:
+        if (mm_streaming == new_state)
+        {
+            set_control(mm_events_output, false);
+            //std::cout << "Switch from mm_full_load to mm_streaming" << std::endl;
         }
         break;
     default:        // void
@@ -100,14 +102,14 @@ void motion_module_control::enter_state(mm_state new_state)
 
 void motion_module_control::set_control(mm_request request, bool on)
 {
-    CX3_GrossTete_MonitorCommand cmd_opcode;
+    adaptor_board_command cmd_opcode;
     switch (request)
     {
     case mm_video_output:
-        cmd_opcode = CX3_GrossTete_MonitorCommand::MMPWR;
+        cmd_opcode = adaptor_board_command::MMPWR;
         break;
     case mm_events_output:
-        cmd_opcode = CX3_GrossTete_MonitorCommand::MM_ACTIVATE;
+        cmd_opcode = adaptor_board_command::MM_ACTIVATE;
         break;
     default:
         throw std::logic_error(to_string() << " unsupported control requested :" << (int)request << " valid range is [1,2]");
@@ -124,14 +126,24 @@ void motion_module_control::set_control(mm_request request, bool on)
 
 void motion_module_control::toggle_motion_module_power(bool on)
 {
-    // Apply user request, and update motion module controls if needed
-    impose(mm_video_output, on);
+    if (power_state != on)  // prevent re-entrance
+    {
+        // Apply user request, and update motion module controls if needed
+        impose(mm_video_output, on);
+        power_state = on;
+    }
 }
 
 void motion_module_control::toggle_motion_module_events(bool on)
 {
     // Apply user request, and update motion module controls if needed
     impose(mm_events_output, on);
+}
+
+void motion_module::config(uvc::device & device, uint8_t gyro_bw, uint8_t gyro_range, uint8_t accel_bw, uint8_t accel_range, uint32_t time_seed)
+{
+    throw std::runtime_error(to_string() << __FUNCTION__ << " is not implemented");
+    // perform_and_send_monitor_command()
 }
 
 
@@ -164,10 +176,6 @@ std::vector<motion_event> motion_module_parser::operator() (const unsigned char*
             memcpy(&event_data.status, &cur_packet[2], sizeof(unsigned short));
             memcpy(&event_data.imu_entries_num, &cur_packet[4], sizeof(unsigned short));
             memcpy(&event_data.non_imu_entries_num, &cur_packet[6], sizeof(unsigned short));
-
-            //std::cout << "New motion_packet arrived, imu_entries: " << event_data.imu_entries_num
-            //             << ", non-imu_entries: " << event_data.non_imu_entries_num
-            //          << std::endl;
 
             // Validate header input
             if ((event_data.imu_entries_num <= imu_data_entries) && (event_data.non_imu_entries_num <= non_imu_data_entries))
@@ -204,14 +212,13 @@ void motion_module_parser::parse_timestamp(const unsigned char * data, rs_timest
 
 rs_motion_data motion_module_parser::parse_motion(const unsigned char * data)
 {
-    // predefined motion devices ranges
+    // predefined motion devices parameters
+    const static float gravity      = 9.80665f;
+    const static float gyro_range   = 2000.f;           // Measured angular velocity range [Deg_C/Sec]
+    const static float gyro_transform_factor = float((gyro_range * M_PI) / (180.f * 32767.f));
 
-    const static float gravity = 9.871f;
-    const static float gyro_range = 2000.f;
-    const static float gyro_transform_factor = (gyro_range * 3.141527f) / (180.f * 32768.f);
-
-    const static float accel_range = 0.00195f;   // [-4..4]g
-    const static float accelerator_transform_factor = accel_range * gravity;
+    const static float accel_range = 4.f;               // Accelerometer is preset to [-4...+4]g range
+    const static float accelerator_transform_factor = float(gravity * accel_range / 2048.f);
 
     rs_motion_data entry;
 
@@ -219,6 +226,7 @@ rs_motion_data motion_module_parser::parse_motion(const unsigned char * data)
 
     entry.is_valid = (data[1] >> 7);          // Isolate bit[15]
 
+    // The mation tracking data for the three measured axes
     short tmp[3];
     memcpy(&tmp, &data[6], sizeof(short) * 3);
 

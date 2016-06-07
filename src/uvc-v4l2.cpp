@@ -11,6 +11,7 @@
 #include <cstring>
 
 #include <algorithm>
+#include <functional>
 #include <string>
 #include <sstream>
 #include <fstream>
@@ -84,7 +85,7 @@ namespace rsimpl
             std::vector<buffer> buffers;
 
             int width, height, format, fps;
-            std::function<void(const void *)> callback;                 // calback to handle uvc stream
+            std::function<void(const void *, std::function<void()>)> callback;
             std::function<void(const unsigned char * data, const int size)> channel_data_callback;    // handle non-uvc data produced by device
             bool is_capturing;
 
@@ -185,7 +186,7 @@ namespace rsimpl
                 if(xioctl(fd, UVCIOC_CTRL_QUERY, &q) < 0) throw_error("UVCIOC_CTRL_QUERY:UVC_SET_CUR");
             }
 
-            void set_format(int width, int height, int fourcc, int fps, std::function<void(const void * data)> callback)
+            void set_format(int width, int height, int fourcc, int fps, std::function<void(const void * data, std::function<void()> continuation)> callback)
             {
                 this->width = width;
                 this->height = height;
@@ -330,10 +331,10 @@ namespace rsimpl
                             throw_error("VIDIOC_DQBUF");
                         }
 
-                        assert(buf.index < sub->buffers.size());
-                        sub->callback(sub->buffers[buf.index].start);
-
-                        if(xioctl(sub->fd, VIDIOC_QBUF, &buf) < 0) throw_error("VIDIOC_QBUF");
+                        sub->callback(sub->buffers[buf.index].start,
+                                [sub, buf]() mutable {
+                                    if(xioctl(sub->fd, VIDIOC_QBUF, &buf) < 0) throw_error("VIDIOC_QBUF");
+                                });
                     }
                 }
             }            
@@ -484,6 +485,13 @@ namespace rsimpl
         int get_vendor_id(const device & device) { return device.subdevices[0]->get_vid(); }
         int get_product_id(const device & device) { return device.subdevices[0]->get_pid(); }
 
+        const char * get_usb_port_id(const device & device)
+        {
+            std::string usb_port = std::to_string(libusb_get_bus_number(device.usb_device)) + "-" +
+                std::to_string(libusb_get_port_number(device.usb_device));
+            return usb_port.c_str();
+        }
+
         void get_control(const device & device, const extension_unit & xu, uint8_t ctrl, void * data, int len)
         {
             device.subdevices[xu.subdevice]->get_control(xu, ctrl, data, len);
@@ -534,7 +542,7 @@ namespace rsimpl
             if(status < 0) throw std::runtime_error(to_string() << "libusb_interrupt_transfer(...) returned " << libusb_error_name(status));
         }
 
-        void set_subdevice_mode(device & device, int subdevice_index, int width, int height, uint32_t fourcc, int fps, std::function<void(const void * frame)> callback)
+        void set_subdevice_mode(device & device, int subdevice_index, int width, int height, uint32_t fourcc, int fps, std::function<void(const void * frame, std::function<void()> continuation)> callback)
         {
             device.subdevices[subdevice_index]->set_format(width, height, (const big_endian<int> &)fourcc, fps, callback);
         }
@@ -552,17 +560,17 @@ namespace rsimpl
         void stop_streaming(device & device)
         {
             device.stop_streaming();
-        }		
+        }       
 
-		void start_data_acquisition(device & device)
-		{
-			device.start_data_acquisition();
-		}
+        void start_data_acquisition(device & device)
+        {
+            device.start_data_acquisition();
+        }
 
-		void stop_data_acquisition(device & device)
-		{
-			device.stop_data_acquisition();
-		}
+        void stop_data_acquisition(device & device)
+        {
+            device.stop_data_acquisition();
+        }
 
         static uint32_t get_cid(rs_option option)
         {
@@ -830,7 +838,7 @@ namespace rsimpl
         }
 
         // DS4.1T Bring-up stage hack to power on camera without user interferance
-        bool power_on_adapter_board()
+        void power_on_adapter_board()
         {
             struct device_activator
             {
@@ -928,9 +936,7 @@ namespace rsimpl
             };
 
             device_activator act;
-
-            return act.ds_device_power_on();
-
+            act.ds_device_power_on();
         }
     }
 }
