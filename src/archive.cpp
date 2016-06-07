@@ -209,7 +209,7 @@ int frame_archive::frame_ref::get_frame_height() const
 
 int frame_archive::frame_ref::get_frame_stride() const
 {
-	return frame_ptr ? frame_ptr->get_stride() : 0;
+    return frame_ptr ? frame_ptr->get_stride() : 0;
 }
 
 int frame_archive::frame_ref::get_frame_bpp() const
@@ -219,14 +219,32 @@ int frame_archive::frame_ref::get_frame_bpp() const
 
 rs_format frame_archive::frame_ref::get_frame_format() const
 {
-	return frame_ptr ? frame_ptr->get_format() : RS_FORMAT_ANY;
+    return frame_ptr ? frame_ptr->get_format() : RS_FORMAT_ANY;
 }
 
 const byte* frame_archive::frame::get_frame_data() const
 {
+    const byte* frame_data;
+
     if (on_release.get_data())
-        return (const byte*)on_release.get_data();
-	return data.data() + additional_data.stride*additional_data.bpp * additional_data.pad + additional_data.pad*additional_data.bpp;
+    {
+        frame_data = static_cast<const byte*>(on_release.get_data());
+        if (additional_data.pad < 0)
+        {
+            frame_data += additional_data.stride*additional_data.bpp * -additional_data.pad + (-additional_data.pad)*additional_data.bpp;
+        }
+    }
+        
+    else
+    {
+        frame_data = data.data();
+
+        if (additional_data.pad > 0)
+        {
+            return data.data() + additional_data.stride*additional_data.bpp * additional_data.pad + additional_data.pad*additional_data.bpp;
+        }
+    }
+    return frame_data;
 }
 
 int frame_archive::frame::get_frame_timestamp() const
@@ -256,7 +274,7 @@ int frame_archive::frame::get_height() const
 
 int frame_archive::frame::get_stride() const
 {
-	return additional_data.stride;
+    return additional_data.stride;
 }
 
 int frame_archive::frame::get_bpp() const
@@ -266,5 +284,5 @@ int frame_archive::frame::get_bpp() const
 
 rs_format frame_archive::frame::get_format() const
 {
-	return additional_data.format;
+    return additional_data.format;
 }

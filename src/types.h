@@ -80,7 +80,7 @@ namespace rsimpl
     RS_ENUM_HELPERS(rs_preset, PRESET)
     RS_ENUM_HELPERS(rs_distortion, DISTORTION)
     RS_ENUM_HELPERS(rs_option, OPTION)
-	RS_ENUM_HELPERS(rs_output_buffer_format, OUTPUT_BUFFER_FORMAT)
+    RS_ENUM_HELPERS(rs_output_buffer_format, OUTPUT_BUFFER_FORMAT)
     #undef RS_ENUM_HELPERS
 
     ////////////////////////////////////////////
@@ -125,6 +125,7 @@ namespace rsimpl
         std::vector<pixel_format_unpacker> unpackers;
 
         size_t get_image_size(int width, int height) const { return width * height * plane_count * bytes_per_pixel; }
+
     };
 
     ////////////////////////
@@ -200,6 +201,7 @@ namespace rsimpl
         const std::vector<std::pair<rs_stream, rs_format>> & get_outputs() const { return get_unpacker().outputs; }
         int get_width() const { return mode.native_intrinsics.width + pad_crop * 2; }
         int get_height() const { return mode.native_intrinsics.height + pad_crop * 2; }
+        int get_stride() const { return requires_processing() ? get_width() : mode.native_dims.x; }
         size_t get_image_size(rs_stream stream) const;
         bool provides_stream(rs_stream stream) const { return get_unpacker().provides_stream(stream); }
         rs_format get_format(rs_stream stream) const { return get_unpacker().get_format(stream); }
@@ -207,6 +209,8 @@ namespace rsimpl
         void set_output_buffer_format(const rs_output_buffer_format in_output_format);
 
         void unpack(byte * const dest[], const byte * source) const;
+        int get_unpacked_width() const;
+        int get_unpacked_height() const;
 
         bool requires_processing() const { return mode.pf.unpackers[unpacker_index].requires_processing || (get_width() != mode.native_dims.x && output_format != RS_OUTPUT_BUFFER_FORMAT_NATIVE); }
     };

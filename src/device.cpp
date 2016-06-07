@@ -123,26 +123,15 @@ void rs_device::start()
             
             auto requires_processing = mode_selection.requires_processing();
 
-            auto width = std::min(mode_selection.mode.native_intrinsics.width, mode_selection.get_width());
-            auto height = std::min(mode_selection.mode.native_intrinsics.height, mode_selection.get_height());
+            auto width = mode_selection.get_unpacked_width();
+            auto height = mode_selection.get_unpacked_height();
 
             std::vector<byte *> dest;
 
-            auto stride = 0;
-
-            if (requires_processing)
-            {
-                stride = mode_selection.mode.native_intrinsics.width + mode_selection.pad_crop * 2;
-
-            }
-            else
-            {
-                stride = mode_selection.mode.native_dims.x;
-            }
+            auto stride = mode_selection.get_stride();
 
             for (auto & output : mode_selection.get_outputs())
             {
-                
                 auto bpp = rsimpl::get_image_bpp(output.second);
                 frame_archive::frame_additional_data additional_data( timestamp,
                     frame_counter,
