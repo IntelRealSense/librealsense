@@ -37,7 +37,7 @@ namespace rsimpl
                 stride(in_stride),
                 bpp(in_bpp),
                 format(in_format){}
-        };                        
+        };
 
         // Define a movable but explicitly noncopyable buffer type to hold our frame data
         struct frame
