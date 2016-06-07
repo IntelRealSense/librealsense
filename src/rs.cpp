@@ -7,10 +7,7 @@
 #include "context.h"
 #include "device.h"
 #include "sync.h"
-
-
 #include "archive.h"
-#include <librealsense/rs.hpp>
 
 ////////////////////////
 // API implementation //

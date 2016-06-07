@@ -5,14 +5,10 @@
 #define LIBREALSENSE_RS_H
 
 #ifdef __cplusplus
-namespace rs{
-	enum class format;
-}
-
 extern "C" {
 #endif
 
-#define RS_API_VERSION 6
+#define RS_API_VERSION 7
 
 typedef enum rs_capabilities
 {

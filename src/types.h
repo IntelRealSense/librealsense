@@ -246,7 +246,12 @@ namespace rsimpl
         frame_callback(rs_device * dev, void(*on_frame)(rs_device *, rs_frame_ref *, void *), void * user) : on_frame(on_frame), user(user), device(dev) {}
 
         operator bool() { return on_frame != nullptr; }
-        void operator () (rs_frame_ref * frame) const { if (on_frame) on_frame(device, frame, user); }
+        void operator () (rs_frame_ref * frame) const { 
+            if (on_frame) 
+            {
+                try { on_frame(device, frame, user); } catch (...) {}
+            }
+        }
     };
 
     class motion_events_callback
@@ -259,7 +264,12 @@ namespace rsimpl
         motion_events_callback(rs_device * dev, void(*on_event)(rs_device *, rs_motion_data, void *), void * user) : on_event(on_event), user(user), device(dev) {}
 
         operator bool() { return on_event != nullptr; }
-        void operator () (rs_motion_data data) const { if (on_event) on_event(device, data, user); }
+        void operator () (rs_motion_data data) const { 
+            if (on_event) 
+            {
+                try { on_event(device, data, user); } catch (...) {}
+            }
+        }
     };
 
     class timestamp_events_callback
@@ -272,7 +282,12 @@ namespace rsimpl
         timestamp_events_callback(rs_device * dev, void(*on_event)(rs_device *, rs_timestamp_data, void *), void * user) : on_event(on_event), user(user), device(dev) {}
 
         operator bool() { return on_event != nullptr; }
-        void operator () (rs_timestamp_data data) const { if (on_event) on_event(device, data, user); }
+        void operator () (rs_timestamp_data data) const { 
+            if (on_event) 
+            {
+                try { on_event(device, data, user); } catch (...) {}
+            }
+        }
     };
 
     struct device_config
