@@ -201,8 +201,8 @@ TEST_CASE( "R200 infrared2 streaming modes exactly match infrared streaming mode
             REQUIRE( infrared_framerate == infrared2_framerate );
 
             // Require that the intrinsics for these streaming modes match exactly
-            rs_enable_stream(dev, RS_STREAM_INFRARED, infrared_width, infrared_height, infrared_format, infrared_framerate, require_no_error());
-            rs_enable_stream(dev, RS_STREAM_INFRARED2, infrared2_width, infrared2_height, infrared2_format, infrared2_framerate, require_no_error());
+            rs_enable_stream(dev, RS_STREAM_INFRARED, infrared_width, infrared_height, infrared_format, infrared_framerate, RS_OUTPUT_BUFFER_FORMAT_CONTINOUS, require_no_error());
+            rs_enable_stream(dev, RS_STREAM_INFRARED2, infrared2_width, infrared2_height, infrared2_format, infrared2_framerate, RS_OUTPUT_BUFFER_FORMAT_CONTINOUS, require_no_error());
 
             REQUIRE( rs_get_stream_format(dev, RS_STREAM_INFRARED, require_no_error()) == rs_get_stream_format(dev, RS_STREAM_INFRARED2, require_no_error()) );
             REQUIRE( rs_get_stream_framerate(dev, RS_STREAM_INFRARED, require_no_error()) == rs_get_stream_framerate(dev, RS_STREAM_INFRARED2, require_no_error()) );

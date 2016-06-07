@@ -91,6 +91,7 @@ int main() try
     {
         dev->enable_stream(rs::stream::infrared2, 0, 0, rs::format::y8, 60);
     }
+
     
     dev->start();
     resolutions[static_cast<int>(rs::stream::depth)] = { dev->get_stream_width(rs::stream::depth), dev->get_stream_height(rs::stream::depth) };

@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
-VisualStudioVersion = 14.0.23107.0
+VisualStudioVersion = 14.0.24720.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "realsense", "realsense\realsense.vcxproj", "{1AE4CEB5-9A0B-4B9F-9505-824FD56BB41F}"
 EndProject
@@ -118,6 +118,8 @@ EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "cpp-multi-threading-3", "cpp-multi-threading-3\cpp-multi-threading-3.vcxproj", "{C3CB58F0-844A-4B8F-B3C6-159A9677E868}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "cpp-callback", "cpp-callback\cpp-callback.vcxproj", "{22315D69-5DB9-4C89-98FE-B45F1A5D6674}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "cpp-multi-threading-4", "cpp-multi-threading-4\cpp-multi-threading-4.vcxproj", "{73EFE2E7-7AE7-4E04-89A9-22B6B5E908B5}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "cpp-motion-module", "cpp-motion-module\cpp-motion-module.vcxproj", "{D1AABCB7-D353-4F04-AEC8-9363088FC825}"
 EndProject
@@ -329,6 +331,14 @@ Global
 		{22315D69-5DB9-4C89-98FE-B45F1A5D6674}.Release|Win32.Build.0 = Release|Win32
 		{22315D69-5DB9-4C89-98FE-B45F1A5D6674}.Release|x64.ActiveCfg = Release|x64
 		{22315D69-5DB9-4C89-98FE-B45F1A5D6674}.Release|x64.Build.0 = Release|x64
+		{73EFE2E7-7AE7-4E04-89A9-22B6B5E908B5}.Debug|Win32.ActiveCfg = Debug|Win32
+		{73EFE2E7-7AE7-4E04-89A9-22B6B5E908B5}.Debug|Win32.Build.0 = Debug|Win32
+		{73EFE2E7-7AE7-4E04-89A9-22B6B5E908B5}.Debug|x64.ActiveCfg = Debug|x64
+		{73EFE2E7-7AE7-4E04-89A9-22B6B5E908B5}.Debug|x64.Build.0 = Debug|x64
+		{73EFE2E7-7AE7-4E04-89A9-22B6B5E908B5}.Release|Win32.ActiveCfg = Release|Win32
+		{73EFE2E7-7AE7-4E04-89A9-22B6B5E908B5}.Release|Win32.Build.0 = Release|Win32
+		{73EFE2E7-7AE7-4E04-89A9-22B6B5E908B5}.Release|x64.ActiveCfg = Release|x64
+		{73EFE2E7-7AE7-4E04-89A9-22B6B5E908B5}.Release|x64.Build.0 = Release|x64
 		{D1AABCB7-D353-4F04-AEC8-9363088FC825}.Debug|Win32.ActiveCfg = Debug|Win32
 		{D1AABCB7-D353-4F04-AEC8-9363088FC825}.Debug|Win32.Build.0 = Debug|Win32
 		{D1AABCB7-D353-4F04-AEC8-9363088FC825}.Debug|x64.ActiveCfg = Debug|x64
@@ -337,6 +347,7 @@ Global
 		{D1AABCB7-D353-4F04-AEC8-9363088FC825}.Release|Win32.Build.0 = Release|Win32
 		{D1AABCB7-D353-4F04-AEC8-9363088FC825}.Release|x64.ActiveCfg = Release|x64
 		{D1AABCB7-D353-4F04-AEC8-9363088FC825}.Release|x64.Build.0 = Release|x64
+
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -367,6 +378,7 @@ Global
 		{2BB995AD-7C93-4F0C-80CC-A422FF12C22D} = {9CE5B9D5-05C7-4288-99B3-13ABFBE7B60C}
 		{C3CB58F0-844A-4B8F-B3C6-159A9677E868} = {9CE5B9D5-05C7-4288-99B3-13ABFBE7B60C}
 		{22315D69-5DB9-4C89-98FE-B45F1A5D6674} = {9CE5B9D5-05C7-4288-99B3-13ABFBE7B60C}
+		{73EFE2E7-7AE7-4E04-89A9-22B6B5E908B5} = {9CE5B9D5-05C7-4288-99B3-13ABFBE7B60C}
 		{D1AABCB7-D353-4F04-AEC8-9363088FC825} = {9CE5B9D5-05C7-4288-99B3-13ABFBE7B60C}
 	EndGlobalSection
 EndGlobal

@@ -63,7 +63,7 @@ frame_archive::frame_ref* frame_archive::clone_frame(frame_ref* frameset)
 }
 
 // Allocate a new frame in the backbuffer, potentially recycling a buffer from the freelist
-byte * frame_archive::alloc_frame(rs_stream stream, int timestamp, int frame_number, long long system_time, bool requires_memory)
+byte * frame_archive::alloc_frame(rs_stream stream, const frame_additional_data& additional_data, bool requires_memory)
 {
     const size_t size = modes[stream].get_image_size(stream);
 
@@ -89,7 +89,7 @@ byte * frame_archive::alloc_frame(rs_stream stream, int timestamp, int frame_num
             // Discard buffers that have been in the freelist for longer than 1s
             for (auto it = begin(freelist); it != end(freelist);)
             {
-                if (timestamp > it->timestamp + 1000) it = freelist.erase(it);
+                if (additional_data.timestamp > it->additional_data.timestamp + 1000) it = freelist.erase(it);
                 else ++it;
             }
         }
@@ -103,9 +103,7 @@ byte * frame_archive::alloc_frame(rs_stream stream, int timestamp, int frame_num
         backbuffer[stream].data.resize(size); // TODO: Allow users to provide a custom allocator for frame buffers
     }
     backbuffer[stream].update_owner(this);
-    backbuffer[stream].timestamp = timestamp;
-    backbuffer[stream].frame_number = frame_number;
-    backbuffer[stream].system_time = system_time;
+    backbuffer[stream].additional_data = additional_data;
     return backbuffer[stream].data.data();
 }
 
@@ -170,6 +168,7 @@ void frame_archive::frameset::place_frame(rs_stream stream, frame&& new_frame)
     }
 }
 
+
 void frame_archive::frameset::cleanup()
 {
     for (auto i = 0; i < RS_STREAM_NATIVE_COUNT; i++)
@@ -186,23 +185,105 @@ const byte* frame_archive::frame_ref::get_frame_data() const
 
 int frame_archive::frame_ref::get_frame_timestamp() const
 {
-    return frame_ptr ? frame_ptr->timestamp : 0;
+    return frame_ptr ? frame_ptr->get_frame_timestamp(): 0;
 }
 
 int frame_archive::frame_ref::get_frame_number() const
 {
-    return frame_ptr ? frame_ptr->frame_number : 0;
+    return frame_ptr ? frame_ptr->get_frame_number() : 0;
 }
 
 long long frame_archive::frame_ref::get_frame_system_time() const
 {
-    return frame_ptr ? frame_ptr->system_time : 0;
+    return frame_ptr ? frame_ptr->get_frame_system_time() : 0;
+}
+
+int frame_archive::frame_ref::get_frame_width() const
+{
+    return frame_ptr ? frame_ptr->get_width() : 0;
+}
+
+int frame_archive::frame_ref::get_frame_height() const
+{
+    return frame_ptr ? frame_ptr->get_height() : 0;
+}
+
+int frame_archive::frame_ref::get_frame_stride() const
+{
+    return frame_ptr ? frame_ptr->get_stride() : 0;
+}
+
+int frame_archive::frame_ref::get_frame_bpp() const
+{
+    return frame_ptr ? frame_ptr->get_bpp() : 0;
+}
+
+rs_format frame_archive::frame_ref::get_frame_format() const
+{
+    return frame_ptr ? frame_ptr->get_format() : RS_FORMAT_ANY;
 }
 
 const byte* frame_archive::frame::get_frame_data() const
 {
+    const byte* frame_data;
+
     if (on_release.get_data())
-        return (const byte*)on_release.get_data();
-    return data.data();
+    {
+        frame_data = static_cast<const byte*>(on_release.get_data());
+        if (additional_data.pad < 0)
+        {
+            frame_data += additional_data.stride*additional_data.bpp * -additional_data.pad + (-additional_data.pad)*additional_data.bpp;
+        }
+    }
+        
+    else
+    {
+        frame_data = data.data();
+
+        if (additional_data.pad > 0)
+        {
+            return data.data() + additional_data.stride*additional_data.bpp * additional_data.pad + additional_data.pad*additional_data.bpp;
+        }
+    }
+    return frame_data;
 }
 
+int frame_archive::frame::get_frame_timestamp() const
+{
+    return additional_data.timestamp;
+}
+
+int frame_archive::frame::get_frame_number() const
+{
+    return additional_data.frame_number;
+}
+
+long long frame_archive::frame::get_frame_system_time() const
+{
+    return additional_data.system_time;
+}
+
+int frame_archive::frame::get_width() const
+{
+    return additional_data.width;
+}
+
+int frame_archive::frame::get_height() const
+{
+    return additional_data.height;
+}
+
+int frame_archive::frame::get_stride() const
+{
+    return additional_data.stride;
+}
+
+int frame_archive::frame::get_bpp() const
+{
+    return additional_data.bpp;
+}
+
+rs_format frame_archive::frame::get_format() const
+{
+    return additional_data.format;
+}

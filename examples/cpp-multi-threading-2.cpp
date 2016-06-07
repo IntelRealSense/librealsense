@@ -10,7 +10,6 @@
 #include <GLFW/glfw3.h>
 #include "concurrency.hpp"
 #include <thread>
-#include <iostream>
 
 int main() try
 {
@@ -100,7 +99,7 @@ int main() try
             }
         }
     }
-
+    
     return EXIT_SUCCESS;
 }
 catch (const rs::error & e)

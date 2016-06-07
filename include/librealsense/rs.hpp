@@ -59,6 +59,12 @@ namespace rs
         raw8        = 13
     };
 
+    enum class output_buffer_format : int32_t
+    {
+        continous      = 0,
+        native         = 1
+    };
+
     enum class preset : int32_t
     {
         best_quality      = 0, 
@@ -365,6 +371,46 @@ namespace rs
             error::handle(e);
             return r;
         }
+
+        int get_width() const
+        {
+            rs_error * e = nullptr;
+            auto r = rs_get_detached_frame_width(frame_ref, &e);
+            error::handle(e);
+            return r;
+        } 
+
+        int get_height() const
+        {
+            rs_error * e = nullptr;
+            auto r = rs_get_detached_frame_height(frame_ref, &e);
+            error::handle(e);
+            return r;
+        }
+
+        int get_stride() const
+        {
+            rs_error * e = nullptr;
+            auto r = rs_get_detached_frame_stride(frame_ref, &e);
+            error::handle(e);
+            return r;
+        }
+
+        int get_bpp() const
+        {
+            rs_error * e = nullptr;
+            auto r = rs_get_detached_frame_bpp(frame_ref, &e);
+            error::handle(e);
+            return r;
+        }
+
+        format get_format() const
+        {
+            rs_error * e = nullptr;
+            auto r = rs_get_detached_frame_format(frame_ref, &e);
+            error::handle(e);
+            return static_cast<format>(r);
+        }
     };
 
     class frameset
@@ -414,7 +460,7 @@ namespace rs
             return e == nullptr;
         }
 
-        frameset clone_ref()
+        frameset clone_ref() const
         {
             rs_error * e = nullptr;
             auto r = rs_clone_frames_ref(device, frames, &e);
@@ -480,6 +526,8 @@ namespace rs
         device(const device &) = delete;
         device & operator = (const device &) = delete;
         ~device() = delete;
+
+
     public:
         /// retrieve a human readable device model string
         /// \return  the model string, such as "Intel RealSense F200" or "Intel RealSense R200"
@@ -581,15 +629,16 @@ namespace rs
         }
 
         /// enable a specific stream and request specific properties
-        /// \param[in] stream     the stream to enable
-        /// \param[in] width      the desired width of a frame image in pixels, or 0 if any width is acceptable
-        /// \param[in] height     the desired height of a frame image in pixels, or 0 if any height is acceptable
-        /// \param[in] format     the pixel format of a frame image, or ANY if any format is acceptable
-        /// \param[in] framerate  the number of frames which will be streamed per second, or 0 if any framerate is acceptable
-        void enable_stream(stream stream, int width, int height, format format, int framerate)
+        /// \param[in] stream                   the stream to enable
+        /// \param[in] width                    the desired width of a frame image in pixels, or 0 if any width is acceptable
+        /// \param[in] height                   the desired height of a frame image in pixels, or 0 if any height is acceptable
+        /// \param[in] format                   the pixel format of a frame image, or ANY if any format is acceptable
+        /// \param[in] framerate                the number of frames which will be streamed per second, or 0 if any framerate is acceptable
+        /// \param[in] output_buffer_type       output buffer format (continous in memory / native with pitch)
+        void enable_stream(stream stream, int width, int height, format format, int framerate, output_buffer_format output_buffer_type = output_buffer_format::continous)
         {
             rs_error * e = nullptr;
-            rs_enable_stream((rs_device *)this, (rs_stream)stream, width, height, (rs_format)format, framerate, &e);
+            rs_enable_stream((rs_device *)this, (rs_stream)stream, width, height, (rs_format)format, framerate, (rs_output_buffer_format)output_buffer_type, &e);
             error::handle(e);
         }
 
@@ -897,10 +946,10 @@ namespace rs
         /// retrieve the frame number
         /// \param[in] stream  the stream whose latest frame we are interested in
         /// \return            the number of the frame, since the device was started
-        int get_frame_counter(stream stream) const
+        int get_frame_number(stream stream) const
         {
             rs_error * e = nullptr;
-            auto r = rs_get_frame_counter((const rs_device *)this, (rs_stream)stream, &e);
+            auto r = rs_get_frame_number((const rs_device *)this, (rs_stream)stream, &e);
             error::handle(e);
             return r;
         }
