@@ -29,6 +29,25 @@ struct rs_stream_interface
     virtual bool                            is_enabled() const = 0;
 };
 
+struct rs_frame_ref
+{
+    virtual                                 ~rs_frame_ref() {}
+    virtual const uint8_t*                  get_frame_data() const = 0;
+    virtual int                             get_frame_timestamp() const = 0;
+    virtual int                             get_frame_number() const = 0;
+    virtual long long                       get_frame_system_time() const = 0;
+    virtual int                             get_frame_width() const = 0;
+    virtual int                             get_frame_height() const = 0;
+    virtual int                             get_frame_stride() const = 0;
+    virtual int                             get_frame_bpp() const = 0;
+    virtual rs_format                       get_frame_format() const = 0;
+};
+
+struct rs_frameset
+{
+    virtual                                 ~rs_frameset() {}
+};
+
 // realsense device public interface
 struct rs_device
 {

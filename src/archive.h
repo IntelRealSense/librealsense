@@ -94,7 +94,7 @@ namespace rsimpl
             void disable_continuation() { on_release.reset(); }
         };
 
-        class frame_ref // esentially an intrusive shared_ptr<frame>
+        class frame_ref : rs_frame_ref // esentially an intrusive shared_ptr<frame>
         {
             frame * frame_ptr;
         public:
@@ -136,18 +136,18 @@ namespace rsimpl
                 if (frame_ptr) frame_ptr->disable_continuation();
             }
 
-            const byte* get_frame_data() const;
-            int get_frame_timestamp() const;
-            int get_frame_number() const;
-            long long get_frame_system_time() const;
-            int get_frame_width()const;
-            int get_frame_height()const;
-            int get_frame_stride()const;
-            int get_frame_bpp()const;
-			rs_format get_frame_format()const;
+            const byte* get_frame_data() const override;
+            int get_frame_timestamp() const override;
+            int get_frame_number() const override;
+            long long get_frame_system_time() const override;
+            int get_frame_width() const override;
+            int get_frame_height() const override;
+            int get_frame_stride() const override;
+            int get_frame_bpp() const override;
+            rs_format get_frame_format() const override;
         };
 
-        class frameset
+        class frameset : rs_frameset
         {
             frame_ref buffer[RS_STREAM_NATIVE_COUNT];
         public:
