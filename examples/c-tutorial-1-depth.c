@@ -1,5 +1,5 @@
 /* License: Apache 2.0. See LICENSE file in root directory.
-   Copyright(c) 2015 Intel Corporation. All Rights Reserved. */
+Copyright(c) 2015 Intel Corporation. All Rights Reserved. */
 
 /*************************************************\
 * librealsense tutorial #1 - Accessing depth data *
@@ -15,7 +15,7 @@
 rs_error * e = 0;
 void check_error()
 {
-    if(e)
+    if (e)
     {
         printf("rs_error was raised when calling %s(%s):\n", rs_get_failed_function(e), rs_get_failed_args(e));
         printf("    %s\n", rs_get_error_message(e));
@@ -30,7 +30,7 @@ int main()
     check_error();
     printf("There are %d connected RealSense devices.\n", rs_get_device_count(ctx, &e));
     check_error();
-    if(rs_get_device_count(ctx, &e) == 0) return EXIT_FAILURE;
+    if (rs_get_device_count(ctx, &e) == 0) return EXIT_FAILURE;
 
     /* This tutorial will access only a single device, but it is trivial to extend to multiple devices */
     rs_device * dev = rs_get_device(ctx, 0, &e);
@@ -60,13 +60,13 @@ int main()
     int width = depth_intrin.width;
     int height = depth_intrin.height;
 
-    int rows = (height / 10);
-    int row_lenght = (width / 5);
-    int display_size = (rows+1) * (row_lenght+1);
+    int rows = (height / 20);
+    int row_lenght = (width / 10);
+    int display_size = (rows + 1) * (row_lenght + 1);
 
-    char *buffer = (char*) malloc (display_size*sizeof(char));
+    char *buffer = (char*)malloc(display_size * sizeof(char));
 
-    while(1)
+    while (1)
     {
         /* This call waits until a new coherent set of frames is available on a device */
         rs_wait_for_frames(dev, &e);
@@ -74,22 +74,22 @@ int main()
         /* Retrieve depth data, configured as 16-bit depth values */
         const uint16_t * depth_frame = (const uint16_t *)(rs_get_frame_data(dev, RS_STREAM_DEPTH, &e));
 
-        /* Print a simple text-based representation of the image, by breaking it into 10x20 pixel regions and and approximating the coverage of pixels within one meter */        
+        /* Print a simple text-based representation of the image, by breaking it into 10x5 pixel regions and and approximating the coverage of pixels within one meter */
         char * out = buffer;
-        int coverage[255] = {0}, x,y,i; //The buffer will suffice up to 255*10  pixels width
-        for(y=0; y<height; ++y)
+        int coverage[255] = { 0 }, x, y, i;
+        for (y = 0; y < height; ++y)
         {
-            for(x=0; x<width; ++x)
+            for (x = 0; x < width; ++x)
             {
                 int depth = *depth_frame++;
-                if(depth > 0 && depth < one_meter) ++coverage[x/5];
+                if (depth > 0 && depth < one_meter) ++coverage[x / 10];
             }
 
-            if(y%10 == 9)
+            if (y % 20 == 19)
             {
-                for(i=0; i<(row_lenght); ++i)
-                {                   
-                    *out++ = " .:nhBXWW"[coverage[i]/10];
+                for (i = 0; i < (row_lenght); ++i)
+                {
+                    *out++ = " .:nhBXWW"[coverage[i] / 25];
                     coverage[i] = 0;
                 }
                 *out++ = '\n';
@@ -98,7 +98,7 @@ int main()
         *out++ = 0;
         printf("\n%s", buffer);
     }
-    
+
     rs_stop_device(dev, RS_SOURCE_VIDEO, &e);
     check_error();
 
