@@ -210,13 +210,15 @@ typedef struct rs_extrinsics
 
 typedef enum rs_event_source
 {
-    RS_IMU_ACCEL        = 1,
-    RS_IMU_GYRO         = 2,
-    RS_IMU_DEPTH_CAM    = 3,
-    RS_IMU_MOTION_CAM   = 4,
-    RS_G0_SYNC          = 5,
-    RS_G1_SYNC          = 6,
-    RS_G2_SYNC          = 7
+    RS_EVENT_IMU_ACCEL        = 1,
+    RS_EVENT_IMU_GYRO         = 2,
+    RS_EVENT_IMU_DEPTH_CAM    = 3,
+    RS_EVENT_IMU_MOTION_CAM   = 4,
+    RS_EVENT_G0_SYNC          = 5,
+    RS_EVENT_G1_SYNC          = 6,
+    RS_EVENT_G2_SYNC          = 7,
+    RS_EVENT_SOURCE_COUNT     = 8,
+    RS_EVENT_SOURCE_MAX_ENUM  = 0x7FFFFFFF
 }rs_event_source;
 
 typedef struct rs_timestamp_data
@@ -713,6 +715,7 @@ const char * rs_distortion_to_string (rs_distortion distortion);
 const char * rs_option_to_string     (rs_option option);
 const char * rs_capabilities_to_string(rs_capabilities capability);
 const char * rs_source_to_string     (rs_source source);
+const char * rs_event_to_string     (rs_event_source event);
 
 typedef enum
 {

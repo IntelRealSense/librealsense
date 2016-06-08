@@ -85,6 +85,7 @@ namespace rsimpl
     RS_ENUM_HELPERS(rs_capabilities, CAPABILITIES)
     RS_ENUM_HELPERS(rs_source, SOURCE)
     RS_ENUM_HELPERS(rs_output_buffer_format, OUTPUT_BUFFER_FORMAT)
+    RS_ENUM_HELPERS(rs_event_source, EVENT_SOURCE)
     #undef RS_ENUM_HELPERS
 
     ////////////////////////////////////////////

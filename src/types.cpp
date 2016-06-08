@@ -179,7 +179,7 @@ namespace rsimpl
         #undef CASE
     }
     
-        const char * get_string(rs_capabilities value)
+    const char * get_string(rs_capabilities value)
     {
         #define CASE(X) case RS_CAPABILITIES_##X: return #X;
         switch(value)
@@ -194,8 +194,23 @@ namespace rsimpl
         }
         #undef CASE
     }
-    
 
+    const char * get_string(rs_event_source value)
+    {
+        #define CASE(X) case RS_EVENT_##X: return #X;
+        switch(value)
+        {
+        CASE(IMU_ACCEL)
+        CASE(IMU_GYRO)
+        CASE(IMU_DEPTH_CAM)
+        CASE(IMU_MOTION_CAM)
+        CASE(G0_SYNC)
+        CASE(G1_SYNC)
+        CASE(G2_SYNC)
+        default: assert(!is_valid(value)); return nullptr;
+        }
+        #undef CASE
+    }
 
     size_t subdevice_mode_selection::get_image_size(rs_stream stream) const
     {

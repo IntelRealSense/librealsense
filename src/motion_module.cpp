@@ -230,13 +230,13 @@ rs_motion_data motion_module_parser::parse_motion(const unsigned char * data)
     short tmp[3];
     memcpy(&tmp, &data[6], sizeof(short) * 3);
 
-    unsigned data_shift = (RS_IMU_ACCEL == entry.timestamp_data.source_id) ? 4 : 0;
+    unsigned data_shift = (RS_EVENT_IMU_ACCEL == entry.timestamp_data.source_id) ? 4 : 0;
 
     for (int i = 0; i < 3; i++)                     // convert axis data to physical units (m/sec^2)
     {
         entry.axes[i] = float(tmp[i] >> data_shift);
-        if (RS_IMU_ACCEL == entry.timestamp_data.source_id) entry.axes[i] *= accelerator_transform_factor;
-        if (RS_IMU_GYRO == entry.timestamp_data.source_id) entry.axes[i] *= gyro_transform_factor;
+        if (RS_EVENT_IMU_ACCEL == entry.timestamp_data.source_id) entry.axes[i] *= accelerator_transform_factor;
+        if (RS_EVENT_IMU_GYRO == entry.timestamp_data.source_id) entry.axes[i] *= gyro_transform_factor;
 
         // TODO check and report invalid conversion requests
     }

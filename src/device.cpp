@@ -131,7 +131,8 @@ void rs_device_base::start_motion_tracking()
                     for (int i = 0; i < entry.non_imu_entries_num; i++)
                     {
                         auto tse = entry.non_imu_packets[i];
-                        archive->on_timestamp(tse);
+                        if (archive)
+                            archive->on_timestamp(tse);
                         ts_callback(entry.non_imu_packets[i]);
                     }
                 }

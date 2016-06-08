@@ -164,6 +164,17 @@ namespace rs
         all_sources
     };
 
+    enum class event : uint8_t
+    {
+        event_imu_accel         = 1,
+        event_imu_gyro          = 2,
+        event_imu_depth_cam     = 3,
+        event_imu_motion_cam    = 4,
+        event_imu_g0_sync       = 5,
+        event_imu_g1_sync       = 6,
+        event_imu_g2_sync       = 7
+    };
+
     struct float2 { float x,y; };
     struct float3 { float x,y,z; };
 
@@ -1013,6 +1024,8 @@ namespace rs
     inline std::ostream & operator << (std::ostream & o, option option) { return o << rs_option_to_string((rs_option)option); }    
     inline std::ostream & operator << (std::ostream & o, capabilities capability) { return o << rs_capabilities_to_string((rs_capabilities)capability); }
     inline std::ostream & operator << (std::ostream & o, source src) { return o << rs_source_to_string((rs_source)src); }
+    inline std::ostream & operator << (std::ostream & o, event evt) { return o << rs_event_to_string((rs_event_source)evt); }
+
 
     enum class log_severity : int32_t
     {

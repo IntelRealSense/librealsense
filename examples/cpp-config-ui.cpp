@@ -161,9 +161,9 @@ rs::motion_data m_acc_data;
 rs::motion_callback motion_callback([](rs::motion_data entry)   // TODO rs_motion event wrapper
 {
     std::lock_guard<std::mutex> lock(mm_mutex);
-    if (entry.timestamp_data.source_id == RS_IMU_ACCEL)
+    if (entry.timestamp_data.source_id == RS_EVENT_IMU_ACCEL)
         m_acc_data = entry;
-    if (entry.timestamp_data.source_id == RS_IMU_GYRO)
+    if (entry.timestamp_data.source_id == RS_EVENT_IMU_GYRO)
         m_gyro_data = entry;
 
 });
