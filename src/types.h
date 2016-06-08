@@ -237,7 +237,7 @@ namespace rsimpl
         bool requires_processing() const { return mode.pf.unpackers[unpacker_index].requires_processing || (get_width() != mode.native_dims.x && output_format != RS_OUTPUT_BUFFER_FORMAT_NATIVE); }
     };
 
-    class frame_callback : rs_frame_callback
+    class frame_callback : public rs_frame_callback
     {
         void(*fptr)(rs_device * dev, rs_frame_ref * frame, void * user);
         void * user;
