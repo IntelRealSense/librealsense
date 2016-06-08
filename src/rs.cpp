@@ -359,14 +359,6 @@ int rs_get_frame_timestamp(const rs_device * device, rs_stream stream, rs_error 
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, device, stream)
 
-long long rs_get_frame_system_time(const rs_device * device, rs_stream stream, rs_error ** error) try
-{
-    VALIDATE_NOT_NULL(device);
-    VALIDATE_ENUM(stream);
-    return device->get_stream_interface(stream).get_frame_system_time();
-}
-HANDLE_EXCEPTIONS_AND_RETURN(0, device, stream)
-
 int rs_get_frame_number(const rs_device * device, rs_stream stream, rs_error ** error) try
 {
     VALIDATE_NOT_NULL(device);
@@ -383,29 +375,15 @@ const void * rs_get_frame_data(const rs_device * device, rs_stream stream, rs_er
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, device, stream)
 
-int rs_get_frame_timestamp_safe(const rs_frameset * frame_set, rs_stream stream, rs_error ** error) try
+rs_frame_ref* rs_get_frame(const rs_frameset * frame_set, rs_stream stream, rs_error ** error) try
 {
     VALIDATE_NOT_NULL(frame_set);
     VALIDATE_ENUM(stream);
-    return ((rsimpl::frame_archive::frameset*)frame_set)->get_frame_timestamp(stream);
+    auto frames = (rsimpl::frame_archive::frameset*)frame_set;
+    auto frame = (*frames)[stream];
+    return reinterpret_cast<rs_frame_ref*>(frame);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, frame_set, stream)
-
-int rs_get_frame_number_safe(const rs_frameset * frame_set, rs_stream stream, rs_error ** error) try
-{
-    VALIDATE_NOT_NULL(frame_set);
-    VALIDATE_ENUM(stream);
-    return ((rsimpl::frame_archive::frameset*)frame_set)->get_frame_number(stream);
-}
-HANDLE_EXCEPTIONS_AND_RETURN(0, frame_set, stream)
-
-const void * rs_get_frame_data_safe(const rs_frameset * device, rs_stream stream, rs_error ** error) try
-{
-    VALIDATE_NOT_NULL(device);
-    VALIDATE_ENUM(stream);
-    return ((rsimpl::frame_archive::frameset*)device)->get_frame_data(stream);
-}
-HANDLE_EXCEPTIONS_AND_RETURN(nullptr, device, stream)
 
 int rs_get_detached_frame_timestamp(const rs_frame_ref * frameset, rs_error ** error) try
 {
@@ -438,7 +416,7 @@ HANDLE_EXCEPTIONS_AND_RETURN(0, frameset)
 int rs_get_detached_frame_stride(const rs_frame_ref * frameset, rs_error ** error) try
 {
     VALIDATE_NOT_NULL(frameset);
-	return ((rsimpl::frame_archive::frame_ref*)frameset)->get_frame_stride();
+    return ((rsimpl::frame_archive::frame_ref*)frameset)->get_frame_stride();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, frameset)
 
@@ -451,11 +429,10 @@ HANDLE_EXCEPTIONS_AND_RETURN(0, frameset)
 
 rs_format rs_get_detached_frame_format(const rs_frame_ref * frameset, rs_error ** error) try
 {
-	VALIDATE_NOT_NULL(frameset);
-	return ((rsimpl::frame_archive::frame_ref*)frameset)->get_frame_format();
+    VALIDATE_NOT_NULL(frameset);
+    return ((rsimpl::frame_archive::frame_ref*)frameset)->get_frame_format();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(RS_FORMAT_ANY, frameset)
-
 
 int rs_get_detached_frame_number(const rs_frame_ref * frame, rs_error ** error) try
 {
@@ -486,6 +463,7 @@ rs_frame_ref * rs_clone_frame_ref(rs_device * device, rs_frame_ref* frame, rs_er
     VALIDATE_NOT_NULL(frame);
     return device->clone_frame(frame);
 }
+
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, device, frame)
 rs_frame_ref * rs_detach_frame(rs_device * device, const rs_frameset * frameset, rs_stream stream, rs_error ** error) try
 {

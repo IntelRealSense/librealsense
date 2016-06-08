@@ -154,7 +154,10 @@ namespace rsimpl
 
             frame_ref detach_ref(rs_stream stream);
             void place_frame(rs_stream stream, frame&& new_frame);
-
+			frame_ref* operator[](rs_stream stream)
+			{
+				return &buffer[stream];
+			};
             const byte * get_frame_data(rs_stream stream) const { return buffer[stream].get_frame_data(); }
             int get_frame_timestamp(rs_stream stream) const { return buffer[stream].get_frame_timestamp(); }
             int get_frame_number(rs_stream stream) const { return buffer[stream].get_frame_number(); }
