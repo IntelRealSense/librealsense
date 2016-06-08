@@ -42,17 +42,17 @@ typedef enum rs_stream
 
 typedef enum rs_format
 {
-    RS_FORMAT_ANY         = 0,  
+    RS_FORMAT_ANY         = 0,
     RS_FORMAT_Z16         = 1,  /**< 16 bit linear depth values. The depth is meters is equal to depth scale * pixel value */
     RS_FORMAT_DISPARITY16 = 2,  /**< 16 bit linear disparity values. The depth in meters is equal to depth scale / pixel value */
     RS_FORMAT_XYZ32F      = 3,  /**< 32 bit floating point 3D coordinates. */
-    RS_FORMAT_YUYV        = 4,  
-    RS_FORMAT_RGB8        = 5,  
-    RS_FORMAT_BGR8        = 6,  
-    RS_FORMAT_RGBA8       = 7,  
-    RS_FORMAT_BGRA8       = 8,  
-    RS_FORMAT_Y8          = 9,  
-    RS_FORMAT_Y16         = 10, 
+    RS_FORMAT_YUYV        = 4,
+    RS_FORMAT_RGB8        = 5,
+    RS_FORMAT_BGR8        = 6,
+    RS_FORMAT_RGBA8       = 7,
+    RS_FORMAT_BGRA8       = 8,
+    RS_FORMAT_Y8          = 9,
+    RS_FORMAT_Y16         = 10,
     RS_FORMAT_RAW10       = 11, /**< Four 10-bit luminance values encoded into a 5-byte macropixel */
     RS_FORMAT_RAW16       = 12,
     RS_FORMAT_RAW8        = 13,
@@ -72,13 +72,13 @@ typedef enum rs_preset
 {
     RS_PRESET_BEST_QUALITY      = 0,
     RS_PRESET_LARGEST_IMAGE     = 1,
-    RS_PRESET_HIGHEST_FRAMERATE = 2, 
-    RS_PRESET_COUNT             = 3, 
+    RS_PRESET_HIGHEST_FRAMERATE = 2,
+    RS_PRESET_COUNT             = 3,
     RS_PRESET_MAX_ENUM = 0x7FFFFFFF
 } rs_preset;
 
 typedef enum rs_source
-{   
+{
     RS_SOURCE_VIDEO                     = 1,
     RS_SOURCE_MOTION_TRACKING           = 2,
     RS_SOURCE_ALL                       = 3,
@@ -91,7 +91,7 @@ typedef enum rs_distortion
     RS_DISTORTION_NONE                   = 0, /**< Rectilinear images, no distortion compensation required */
     RS_DISTORTION_MODIFIED_BROWN_CONRADY = 1, /**< Equivalent to Brown-Conrady distortion, except that tangential distortion is applied to radially distorted points */
     RS_DISTORTION_INVERSE_BROWN_CONRADY  = 2, /**< Equivalent to Brown-Conrady distortion, except undistorts image instead of distorting it */
-    RS_DISTORTION_COUNT                  = 3, 
+    RS_DISTORTION_COUNT                  = 3,
     RS_DISTORTION_MAX_ENUM = 0x7FFFFFFF
 } rs_distortion;
 
@@ -420,7 +420,7 @@ void rs_get_stream_intrinsics(const rs_device * device, rs_stream stream, rs_int
 void rs_set_frame_callback(rs_device * device, rs_stream stream, void (*on_frame)(rs_device * dev, rs_frame_ref * frame, void * user), void * user, rs_error ** error);
 
 /**
-* Enable and configure motion-tracking data handlers 
+* Enable and configure motion-tracking data handlers
 * \param[in] on_motion_event    user-defined routine to be invoked when a motion data arrives
 * \param[in] motion_handler     a user data point to be passed to the motion event callback
 * \param[in] on_timestamp_event user-defined routine to be invoked on timestamp
@@ -432,12 +432,25 @@ void rs_enable_motion_tracking(rs_device * device,
     void(*on_timestamp_event)(rs_device * , rs_timestamp_data, void * ), void * timestamp_handler,
     rs_error ** error);
 
-
+    /**
+    * Enable and configure motion-tracking data handlers
+    * (This variant is provided specificly to enable passing lambdas with capture lists safely into the library)
+    * \param[in] motion_callback    user-defined routine to be invoked when a motion data arrives
+    * \param[in] timestamp_callback user-defined routine to be invoked on timestamp
+    * \param[out] error             if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+    */
 void rs_enable_motion_tracking_cpp(rs_device * device,
     rs_motion_callback * motion_callback,
     rs_timestamp_callback * timestamp_callback,
     rs_error ** error);
 
+/**
+ * set up a frame callback that will be called immediately when an image is available, with no synchronization logic applied
+ * (This variant is provided specificly to enable passing lambdas with capture lists safely into the library)
+ * \param[in] stream    the stream for whose images the callback should be registered
+ * \param[in] callback  the callback which will receive the frame data and timestamp
+ * \param[out] error    if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+ */
 void rs_set_frame_callback_cpp(rs_device * device, rs_stream stream, rs_frame_callback * callback, rs_error ** error);
 
 /**
@@ -690,12 +703,12 @@ rs_format rs_get_detached_frame_format(const rs_frame_ref * frameset, rs_error *
 */
 
 rs_frame_ref * rs_clone_frame_ref(rs_device * device, rs_frame_ref* frame, rs_error ** error);
-                                     
+
 const char * rs_get_failed_function  (const rs_error * error);
 const char * rs_get_failed_args      (const rs_error * error);
 const char * rs_get_error_message    (const rs_error * error);
 void         rs_free_error           (rs_error * error);
-                                     
+
 const char * rs_stream_to_string     (rs_stream stream);
 const char * rs_format_to_string     (rs_format format);
 const char * rs_preset_to_string     (rs_preset preset);
