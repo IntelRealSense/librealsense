@@ -29,11 +29,12 @@ EXPORTS
 	
     rs_supports
     rs_enable_motion_tracking
-    rs_enable_motion_tracking_new
+    rs_enable_motion_tracking_cpp
     rs_disable_motion_tracking
     rs_is_motion_tracking_active
     
     rs_set_frame_callback
+    rs_set_frame_callback_cpp
     rs_start_device
     rs_stop_device
     rs_is_device_streaming

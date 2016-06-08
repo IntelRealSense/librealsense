@@ -69,6 +69,7 @@ struct rs_device
                                             
     virtual void                            enable_motion_tracking() = 0;
     virtual void                            set_stream_callback(rs_stream stream, void(*on_frame)(rs_device * device, rs_frame_ref * frame, void * user), void * user) = 0;
+    virtual void                            set_stream_callback(rs_stream stream, rs_frame_callback * callback) = 0;
     virtual void                            disable_motion_tracking() = 0;
                                             
     virtual void                            set_motion_callback(void(*on_event)(rs_device * device, rs_motion_data data, void * user), void * user) = 0;
@@ -108,6 +109,13 @@ struct rs_motion_callback
     virtual void on_event(rs_motion_data e) = 0;
     virtual void release() = 0;
     virtual ~rs_motion_callback() {}
+};
+
+struct rs_frame_callback
+{
+    virtual void on_frame(rs_device * device, rs_frame_ref * f) = 0;
+    virtual void release() = 0;
+    virtual ~rs_frame_callback() {}
 };
 
 #endif

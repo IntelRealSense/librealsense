@@ -26,7 +26,6 @@ int main() try
     printf("    Firmware version: %s\n", dev->get_firmware_version());
 
     const auto streams = 4;
-    std::vector<rs::frame_callback> callbacks(streams, rs::frame_callback([](rs::frame frame){}));
     single_consumer_queue<rs::frame> frames_queue[streams];
     texture_buffer buffers[streams];
     std::atomic<bool> running(true);
@@ -41,11 +40,10 @@ int main() try
 
     for (auto i = 0; i < streams; i++)
     {
-        callbacks[i] = rs::frame_callback([dev, &running, &frames_queue, &resolutions, i](rs::frame frame)
+        dev->set_frame_callback((rs::stream)i, [dev, &running, &frames_queue, &resolutions, i](rs::frame frame)
         {
             if (running) frames_queue[i].enqueue(std::move(frame));
         });
-        dev->set_frame_callback((rs::stream)i, callbacks[i]);
     }
 
     dev->enable_stream(rs::stream::depth, 0, 0, rs::format::z16, 60);

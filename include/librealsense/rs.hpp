@@ -497,23 +497,18 @@ namespace rs
         }
     };
 
-    class frame_callback_base
-    {
-    public:
-        virtual void on_frame(frame f) = 0;
-        virtual ~frame_callback_base() {};
-    };
-
-    class frame_callback : public frame_callback_base
+    class frame_callback : public rs_frame_callback
     {
         std::function<void(frame)> on_frame_function;
     public:
         explicit frame_callback(std::function<void(frame)> on_frame) : on_frame_function(on_frame) {}
 
-        void on_frame(frame f) override
+        void on_frame(rs_device * device, rs_frame_ref * fref) override
         {
-            on_frame_function(std::move(f));
+            on_frame_function(std::move(frame(device, fref)));
         }
+
+        void release() override { delete this; }
     };
 
     class device
@@ -732,13 +727,10 @@ namespace rs
         /// \param[in] stream    the stream 
         /// \param[in] on_frame  frame callback to be invoke on every new frame
         /// \return            the framerate of the stream, in frames per second
-        void set_frame_callback(rs::stream stream, frame_callback_base& on_frame)
+        void set_frame_callback(rs::stream stream, std::function<void(frame)> frame_handler)
         {
             rs_error * e = nullptr;
-            rs_set_frame_callback((rs_device *)this, (rs_stream)stream, [](rs_device * device, rs_frame_ref * fref, void * user){
-                auto on_frame = (frame_callback_base *)user;
-                on_frame->on_frame(frame(device, fref));
-            }, &on_frame, &e);
+            rs_set_frame_callback_cpp((rs_device *)this, (rs_stream)stream, new frame_callback(frame_handler), &e);
             error::handle(e);
         }
 
@@ -771,7 +763,7 @@ namespace rs
         void enable_motion_tracking(std::function<void(motion_data)> motion_handler)
         {
             rs_error * e = nullptr;            
-            rs_enable_motion_tracking_new((rs_device *)this, new motion_callback(motion_handler), &e);
+            rs_enable_motion_tracking_cpp((rs_device *)this, new motion_callback(motion_handler), &e);
             error::handle(e);
         }
 

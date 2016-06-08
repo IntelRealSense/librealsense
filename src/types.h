@@ -236,22 +236,23 @@ namespace rsimpl
         bool requires_processing() const { return mode.pf.unpackers[unpacker_index].requires_processing || (get_width() != mode.native_dims.x && output_format != RS_OUTPUT_BUFFER_FORMAT_NATIVE); }
     };
 
-    class frame_callback
+    class frame_callback : rs_frame_callback
     {
-        void(*on_frame)(rs_device * dev, rs_frame_ref * frame, void * user);
+        void(*fptr)(rs_device * dev, rs_frame_ref * frame, void * user);
         void * user;
         rs_device * device;
     public:
         frame_callback() : frame_callback(nullptr, nullptr, nullptr) {}
-        frame_callback(rs_device * dev, void(*on_frame)(rs_device *, rs_frame_ref *, void *), void * user) : on_frame(on_frame), user(user), device(dev) {}
+        frame_callback(rs_device * dev, void(*on_frame)(rs_device *, rs_frame_ref *, void *), void * user) : fptr(on_frame), user(user), device(dev) {}
 
-        operator bool() { return on_frame != nullptr; }
-        void operator () (rs_frame_ref * frame) const { 
-            if (on_frame) 
+        operator bool() { return fptr != nullptr; }
+        void on_frame (rs_device * device, rs_frame_ref * frame) override { 
+            if (fptr)
             {
-                try { on_frame(device, frame, user); } catch (...) {}
+                try { fptr(device, frame, user); } catch (...) {}
             }
         }
+        void release() override { delete this; }
     };
 
     class motion_events_callback : public rs_motion_callback
@@ -296,15 +297,33 @@ namespace rsimpl
     };
 
     typedef std::unique_ptr<rs_motion_callback, void(*)(rs_motion_callback*)> motion_callback_ptr;
+    class frame_callback_ptr
+    {
+        rs_frame_callback * callback;
+    public:
+        frame_callback_ptr() : callback(nullptr) {}
+        explicit frame_callback_ptr(rs_frame_callback * callback) : callback(callback) {}
+        frame_callback_ptr(const frame_callback_ptr&) = delete;
+        frame_callback_ptr& operator =(frame_callback_ptr&& other)
+        {
+            if (callback) callback->release();
+            callback = other.callback;
+            other.callback = nullptr;
+            return *this;
+        }
+        ~frame_callback_ptr() { if (callback) callback->release(); }
+        operator rs_frame_callback *() { return callback; }
+        rs_frame_callback * operator*() { return callback; }
+    };
 
     struct device_config
     {
-        const static_device_info    info;
-        stream_request              requests[RS_STREAM_NATIVE_COUNT];   // Modified by enable/disable_stream calls
-        frame_callback              callbacks[RS_STREAM_NATIVE_COUNT];  // Modified by set_frame_callback calls
-        data_polling_request        data_requests;                      // Modified by enable/disable_events calls
-        motion_callback_ptr         motion_callback{ nullptr, [](rs_motion_callback*){} };// Modified by set_events_callback calls
-        timestamp_events_callback   timestamp_callback;
+        const static_device_info            info;
+        stream_request                      requests[RS_STREAM_NATIVE_COUNT];                       // Modified by enable/disable_stream calls
+        frame_callback_ptr                  callbacks[RS_STREAM_NATIVE_COUNT];                      // Modified by set_frame_callback calls
+        data_polling_request                data_requests;                                          // Modified by enable/disable_events calls
+        motion_callback_ptr                 motion_callback{ nullptr, [](rs_motion_callback*){} };  // Modified by set_events_callback calls
+        timestamp_events_callback           timestamp_callback;
         float depth_scale;                                              // Scale of depth values
 
         explicit device_config(const rsimpl::static_device_info & info) : info(info), depth_scale(info.nominal_depth_scale)

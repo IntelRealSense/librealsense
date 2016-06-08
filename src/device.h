@@ -90,6 +90,7 @@ public:
 
     void                                        enable_motion_tracking() override;
     void                                        set_stream_callback(rs_stream stream, void(*on_frame)(rs_device * device, rs_frame_ref * frame, void * user), void * user) override;
+    void                                        set_stream_callback(rs_stream stream, rs_frame_callback * callback);
     void                                        disable_motion_tracking() override;
 
     void                                        set_motion_callback(rs_motion_callback * callback) override;

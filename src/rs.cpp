@@ -228,6 +228,15 @@ void rs_set_frame_callback(rs_device * device, rs_stream stream,
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, device, stream, on_frame, user)
 
+void rs_set_frame_callback_cpp(rs_device * device, rs_stream stream, rs_frame_callback * callback, rs_error ** error) try
+{
+    VALIDATE_NOT_NULL(device);
+    VALIDATE_ENUM(stream);
+    VALIDATE_NOT_NULL(callback);
+    device->set_stream_callback(stream, callback);
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, device, stream, callback)
+
 void rs_enable_motion_tracking(rs_device * device,
     void(*on_motion_event)(rs_device * dev, rs_motion_data m_data, void * user), void * motion_handler,
     void(*on_timestamp_event)(rs_device * dev, rs_timestamp_data t_data, void * user), void * timestamp_handler,
@@ -242,7 +251,7 @@ void rs_enable_motion_tracking(rs_device * device,
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, device, on_motion_event, motion_handler, on_timestamp_event, timestamp_handler)
 
-void rs_enable_motion_tracking_new(rs_device * device,
+void rs_enable_motion_tracking_cpp(rs_device * device,
     rs_motion_callback * motion_callback,
     rs_error ** error) try
 {

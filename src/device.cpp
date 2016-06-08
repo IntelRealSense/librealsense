@@ -81,7 +81,12 @@ void rs_device_base::disable_stream(rs_stream stream)
 
 void rs_device_base::set_stream_callback(rs_stream stream, void (*on_frame)(rs_device * device, rs_frame_ref * frame, void * user), void * user)
 {
-    config.callbacks[stream] = {this, on_frame, user};
+    config.callbacks[stream] = frame_callback_ptr(new frame_callback{ this, on_frame, user });
+}
+
+void rs_device_base::set_stream_callback(rs_stream stream, rs_frame_callback* callback)
+{
+    config.callbacks[stream] = frame_callback_ptr(callback);
 }
 
 void rs_device_base::enable_motion_tracking()
@@ -210,16 +215,14 @@ void rs_device_base::start_video_streaming()
         }
 
         // Copy the callbacks that apply to this stream, so that they can be captured by value
-        std::vector<frame_callback> callbacks;
         std::vector<rs_stream> streams;
         for (auto & output : mode_selection.get_outputs())
         {
-            callbacks.push_back(config.callbacks[output.first]);
             streams.push_back(output.first);
         }
         // Initialize the subdevice and set it to the selected mode
         set_subdevice_mode(*device, mode_selection.mode.subdevice, mode_selection.mode.native_dims.x, mode_selection.mode.native_dims.y, mode_selection.mode.pf.fourcc, mode_selection.mode.fps, 
-        [mode_selection, archive, timestamp_reader, callbacks, streams](const void * frame, std::function<void()> continuation) mutable
+        [this, mode_selection, archive, timestamp_reader, streams](const void * frame, std::function<void()> continuation) mutable
         {
             auto now = std::chrono::system_clock::now().time_since_epoch();
             auto sys_time = std::chrono::duration_cast<std::chrono::milliseconds>(now).count();
@@ -273,12 +276,12 @@ void rs_device_base::start_video_streaming()
                     archive->attach_continuation(streams[i], std::move(release_and_enqueue));
                 }
 
-                if (callbacks[i])
+                if (config.callbacks[i])
                 {
                     auto frame_ref = archive->track_frame(streams[i]);
                     if (frame_ref)
                     {
-                        callbacks[i]((rs_frame_ref*)frame_ref);
+                        (*config.callbacks[i])->on_frame(this, (rs_frame_ref*)frame_ref);
                     }
                 }
                 else
