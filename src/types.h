@@ -18,12 +18,12 @@
 #include <sstream>                          // For ostringstream
 #include <mutex>                            // For mutex, unique_lock
 #include <condition_variable>               // For condition_variable
+#include <memory>                           // For unique_ptr
 
 #define RS_STREAM_NATIVE_COUNT 5
 #define RS_CHANNEL_NATIVE_COUNT 1
 
 #define RS_USER_QUEUE_SIZE 64
-
 
 namespace rsimpl
 {
@@ -254,22 +254,27 @@ namespace rsimpl
         }
     };
 
-    class motion_events_callback
+    class motion_events_callback : public rs_motion_callback
     {
-        void(*on_event)(rs_device * dev, rs_motion_data data, void * user);
+        void(*fptr)(rs_device * dev, rs_motion_data data, void * user);
         void        * user;
         rs_device   * device;
     public:
         motion_events_callback() : motion_events_callback(nullptr, nullptr, nullptr) {}
-        motion_events_callback(rs_device * dev, void(*on_event)(rs_device *, rs_motion_data, void *), void * user) : on_event(on_event), user(user), device(dev) {}
+        motion_events_callback(rs_device * dev, void(*fptr)(rs_device *, rs_motion_data, void *), void * user) : fptr(fptr), user(user), device(dev) {}
 
-        operator bool() { return on_event != nullptr; }
-        void operator () (rs_motion_data data) const { 
-            if (on_event) 
+        operator bool() { return fptr != nullptr; }
+
+        void on_event(rs_motion_data data) override
+        {
+            if (fptr)
             {
-                try { on_event(device, data, user); } catch (...) {}
+                try { fptr(device, data, user); }
+                catch (...) {}
             }
         }
+
+        void release() override { }
     };
 
     class timestamp_events_callback
@@ -290,17 +295,19 @@ namespace rsimpl
         }
     };
 
+    typedef std::unique_ptr<rs_motion_callback, void(*)(rs_motion_callback*)> motion_callback_ptr;
+
     struct device_config
     {
         const static_device_info    info;
         stream_request              requests[RS_STREAM_NATIVE_COUNT];   // Modified by enable/disable_stream calls
-        frame_callback callbacks[RS_STREAM_NATIVE_COUNT];   // Modified by set_frame_callback calls
+        frame_callback              callbacks[RS_STREAM_NATIVE_COUNT];  // Modified by set_frame_callback calls
         data_polling_request        data_requests;                      // Modified by enable/disable_events calls
-        motion_events_callback      motion_callback;                   // Modified by set_events_callback calls
+        motion_callback_ptr         motion_callback{ nullptr, [](rs_motion_callback*){} };// Modified by set_events_callback calls
         timestamp_events_callback   timestamp_callback;
         float depth_scale;                                              // Scale of depth values
 
-        device_config(const rsimpl::static_device_info & info) : info(info), depth_scale(info.nominal_depth_scale)
+        explicit device_config(const rsimpl::static_device_info & info) : info(info), depth_scale(info.nominal_depth_scale)
         {
             for (auto & req : requests) req = rsimpl::stream_request();
         }

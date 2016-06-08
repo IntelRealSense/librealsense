@@ -5,6 +5,7 @@
 #define LIBREALSENSE_RS_HPP
 
 #include "rsutil.h"
+#include "rscore.hpp"
 #include <cmath>
 #include <cstdint>
 #include <cstring>
@@ -259,24 +260,19 @@ namespace rs
             return (device *)r;
         }
     };  
-    
-    class motion_callback_base
-    {
-    public:
-        virtual void on_event(motion_data e) = 0;
-        virtual ~motion_callback_base() {}
-    };
 
-    class motion_callback : public motion_callback_base
+    class motion_callback : public rs_motion_callback
     {
         std::function<void(motion_data)> on_event_function;
     public:
         explicit motion_callback(std::function<void(motion_data)> on_event) : on_event_function(on_event) {}
 
-        void on_event(motion_data e) override
+        void on_event(rs_motion_data e) override
         {
-            on_event_function(std::move(e));
+            on_event_function(motion_data(e));
         }
+
+        void release() override { delete this; }
     };
     
     class timestamp_callback_base
@@ -746,42 +742,36 @@ namespace rs
             error::handle(e);
         }
 
-        /// sets the callback for motion module event. provided callback will be called the instant new motion or timestamp event is available. 
-        /// the lifetime of the callback must be managed by the user (you must ensure the device is either stopped or destructed before callback object is destructed)
-        /// \param[in] stream             the stream 
-        /// \param[in] motion_handler     frame callback to be invoke on every new motion event
-        /// \param[in] timestamp_handler  frame callback to be invoke on every new timestamp event
-        /// \return                       the framerate of the stream, in frames per second
-        void enable_motion_tracking(motion_callback_base& motion_handler, timestamp_callback_base& timestamp_handler)
-        {
-            rs_error * e = nullptr;            
-            rs_enable_motion_tracking((rs_device *)this, 
-                [](rs_device * device, rs_motion_data mo_data, void * user) {
-                    auto listener = (motion_callback_base *)user;
-                    listener->on_event((rs::motion_data)mo_data);
-                }, &motion_handler,
-                [](rs_device * device, rs_timestamp_data ts_data, void * user) {
-                    auto listener = (timestamp_callback_base *)user;
-                    listener->on_event((rs::timestamp_data)ts_data);
-                }, &timestamp_handler, &e);
-            error::handle(e);
-        }
+        ///// sets the callback for motion module event. provided callback will be called the instant new motion or timestamp event is available. 
+        ///// the lifetime of the callback must be managed by the user (you must ensure the device is either stopped or destructed before callback object is destructed)
+        ///// \param[in] stream             the stream 
+        ///// \param[in] motion_handler     frame callback to be invoke on every new motion event
+        ///// \param[in] timestamp_handler  frame callback to be invoke on every new timestamp event
+        ///// \return                       the framerate of the stream, in frames per second
+        //void enable_motion_tracking(motion_callback_base& motion_handler, timestamp_callback_base& timestamp_handler)
+        //{
+        //    rs_error * e = nullptr;            
+        //    rs_enable_motion_tracking((rs_device *)this, 
+        //        [](rs_device * device, rs_motion_data mo_data, void * user) {
+        //            auto listener = (motion_callback_base *)user;
+        //            listener->on_event((rs::motion_data)mo_data);
+        //        }, &motion_handler,
+        //        [](rs_device * device, rs_timestamp_data ts_data, void * user) {
+        //            auto listener = (timestamp_callback_base *)user;
+        //            listener->on_event((rs::timestamp_data)ts_data);
+        //        }, &timestamp_handler, &e);
+        //    error::handle(e);
+        //}
 
         /// sets the callback for motion module event. provided callback will be called the instant new motion event is available. 
         /// the lifetime of the callback must be managed by the user (you must ensure the device is either stopped or destructed before callback object is destructed)
         /// \param[in] stream             the stream 
         /// \param[in] motion_handler     frame callback to be invoke on every new motion event
         /// \return                       the framerate of the stream, in frames per second
-        void enable_motion_tracking(motion_callback_base& motion_handler)
+        void enable_motion_tracking(std::function<void(motion_data)> motion_handler)
         {
             rs_error * e = nullptr;            
-            rs_enable_motion_tracking((rs_device *)this, 
-                [](rs_device * device, rs_motion_data mo_data, void * user) {
-                    auto listener = (motion_callback_base *)user;
-                    listener->on_event((rs::motion_data)mo_data);
-                }, &motion_handler,
-                [](rs_device * device, rs_timestamp_data ts_data, void * user) {
-                }, nullptr, &e);
+            rs_enable_motion_tracking_new((rs_device *)this, new motion_callback(motion_handler), &e);
             error::handle(e);
         }
 

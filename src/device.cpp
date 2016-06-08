@@ -98,12 +98,17 @@ void rs_device_base::disable_motion_tracking()
     config.data_requests.enabled = false;
 }
 
+void rs_device_base::set_motion_callback(rs_motion_callback* callback)
+{
+    if (data_acquisition_active) throw std::runtime_error("cannot set motion callback when motion data is active");
+    
+    // replace previous, if needed
+    config.motion_callback = motion_callback_ptr(callback, [](rs_motion_callback* c) { c->release(); });
+}
+
 void rs_device_base::start_motion_tracking()
 {
     if (data_acquisition_active) throw std::runtime_error("cannot restart data acquisition without stopping first");
-
-    motion_events_callback  mo_callback = config.motion_callback;
-    timestamp_events_callback   ts_callback = config.timestamp_callback;
 
     motion_module_parser parser;
 
@@ -112,7 +117,7 @@ void rs_device_base::start_motion_tracking()
     {
         // TODO -replace hard-coded value 3 which stands for fisheye subdevice   
         set_subdevice_data_channel_handler(*device, 3,
-            [this, mo_callback, ts_callback, parser](const unsigned char * data, const int size) mutable
+            [this, parser](const unsigned char * data, const int size) mutable
         {
             // Parse motion data
             auto events = parser(data, size);
@@ -121,18 +126,18 @@ void rs_device_base::start_motion_tracking()
             for (auto & entry : events)
             {
                 // Handle Motion data packets
-                if (mo_callback)
+                if (config.motion_callback)
                 for (int i = 0; i < entry.imu_entries_num; i++)
-                        mo_callback(entry.imu_packets[i]);
+                        config.motion_callback->on_event(entry.imu_packets[i]);
                 
                 // Handle Timestamp packets
-                if (ts_callback)
+                if (config.timestamp_callback)
                 {
                     for (int i = 0; i < entry.non_imu_entries_num; i++)
                     {
                         auto tse = entry.non_imu_packets[i];
                         archive->on_timestamp(tse);
-                        ts_callback(entry.non_imu_packets[i]);
+                        config.timestamp_callback(entry.non_imu_packets[i]);
                     }
                 }
             }
@@ -155,7 +160,7 @@ void rs_device_base::set_motion_callback(void(*on_event)(rs_device * device, rs_
     if (data_acquisition_active) throw std::runtime_error("cannot set motion callback when motion data is active");
     
     // replace previous, if needed
-    config.motion_callback = {this, on_event, user};
+    config.motion_callback = motion_callback_ptr(new motion_events_callback(this, on_event, user), [](rs_motion_callback* c) { delete c; });
 }
 
 void rs_device_base::set_timestamp_callback(void(*on_event)(rs_device * device, rs_timestamp_data data, void * user), void * user)

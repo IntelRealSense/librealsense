@@ -29,6 +29,7 @@ EXPORTS
 	
     rs_supports
     rs_enable_motion_tracking
+    rs_enable_motion_tracking_new
     rs_disable_motion_tracking
     rs_is_motion_tracking_active
     
