@@ -68,7 +68,7 @@ int main() try
             max_aspect_ratio = aspect_ratio;
     };
 
-    auto win = glfwCreateWindow(1100, 1100 * max_aspect_ratio, "CPP Configuration Example", nullptr, nullptr);
+    auto win = glfwCreateWindow(1100, 1100 * max_aspect_ratio, "librealsense - multi-threading demo-4", nullptr, nullptr);
     glfwMakeContextCurrent(win);
 
     dev->start();

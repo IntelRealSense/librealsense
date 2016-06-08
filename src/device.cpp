@@ -38,7 +38,9 @@ rs_device_base::~rs_device_base()
     try
     {
         if (capturing) 
-            stop(RS_SOURCE_ALL);
+            stop(RS_SOURCE_VIDEO);
+        if (data_acquisition_active)
+            stop(RS_SOURCE_MOTION_TRACKING);
     }
     catch (...) {}
 }
