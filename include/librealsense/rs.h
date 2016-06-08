@@ -558,14 +558,6 @@ int rs_poll_for_frames_safe(rs_device * device, rs_frameset** frameset, rs_error
 int rs_get_frame_timestamp(const rs_device * device, rs_stream stream, rs_error ** error);
 
 /**
-* retrieve the system time at which the latest frame on a stream was captured
-* \param[in] stream  the stream whose latest frame we are interested in
-* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
-* \return            the system time  of the frame, in milliseconds
-*/
-long long rs_get_frame_system_time(const rs_device * device, rs_stream stream, rs_error ** error);
-
-/**
 * retrieve the frame number
 * \param[in] stream  the stream whose latest frame we are interested in
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
@@ -582,14 +574,6 @@ int rs_get_frame_number(const rs_device * device, rs_stream stream, rs_error ** 
 const void * rs_get_frame_data(const rs_device * device, rs_stream stream, rs_error ** error);
 
 /**
-* retrive timestamp from safe frameset handle, returned by wait_for_frames_safe or rs_poll_for_frames_safe
-* \param[in] stream  the stream whose latest frame we are interested in
-* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
-* \return            the timestamp of the frame, in milliseconds since the device was started
-*/
-int rs_get_frame_timestamp_safe(const rs_frameset * frameset, rs_stream stream, rs_error ** error);
-
-/**
 * get access to the individual frame referenced inside the frame-set.
 * \param[in] frameset handle returned by wait_for_frames_safe or rs_poll_for_frames_safe
 * \param[in] stream  the stream whose latest frame we are interested in
@@ -597,21 +581,6 @@ int rs_get_frame_timestamp_safe(const rs_frameset * frameset, rs_stream stream, 
 * \return            frame reference that is stored inside the frameset object
 */
 rs_frame_ref* rs_get_frame(const rs_frameset * frame_set, rs_stream stream, rs_error ** error);
-/**
-* retrive frame data from safe frameset handle, returned by wait_for_frames_safe or rs_poll_for_frames_safe
-* \param[in] stream  the stream whose latest frame we are interested in
-* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
-* \return            the pointer to the start of the frame data
-*/
-const void * rs_get_frame_data_safe(const rs_frameset * frameset, rs_stream stream, rs_error ** error);
-
-/**
-* retrive frame number from safe frameset handle, returned by wait_for_frames_safe or rs_poll_for_frames_safe
-* \param[in] stream  the stream whose latest frame we are interested in
-* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
-* \return            frame number of the frame
-*/
-int rs_get_frame_number_safe(const rs_frameset * frameset, rs_stream stream, rs_error ** error);
 
 /**
 * relases the frameset handle

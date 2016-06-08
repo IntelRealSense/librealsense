@@ -481,30 +481,6 @@ namespace rs
             rs_error * e = nullptr;
             return { nullptr, rs_get_frame(frames, (rs_stream)stream, &e) };
         }
-
-        int get_frame_timestamp(stream stream) const
-        {
-            rs_error * e = nullptr;
-            auto r = rs_get_frame_timestamp_safe(frames, (rs_stream)stream, &e);
-            error::handle(e);
-            return r;
-        }
-
-        int get_frame_number(stream stream) const
-        {
-            rs_error * e = nullptr;
-            auto r = rs_get_frame_number_safe(frames, (rs_stream)stream, &e);
-            error::handle(e);
-            return r;
-        }
-
-        const void * get_frame_data(stream stream) const
-        {
-            rs_error * e = nullptr;
-            auto r = rs_get_frame_data_safe(frames, (rs_stream)stream, &e);
-            error::handle(e);
-            return r;
-        }
     };
 
     class frame_callback_base
@@ -934,17 +910,6 @@ namespace rs
         {
             rs_error * e = nullptr;
             auto r = rs_get_frame_timestamp((const rs_device *)this, (rs_stream)stream, &e);
-            error::handle(e);
-            return r;
-        }
-
-        /// retrieve the system time at which the latest frame on a stream was captured
-        /// \param[in] stream  the stream whose latest frame we are interested in
-        /// \return            the system time of the frame, in milliseconds
-        long long get_frame_system_time(stream stream) const
-        {
-            rs_error * e = nullptr;
-            auto r = rs_get_frame_system_time((const rs_device *)this, (rs_stream)stream, &e);
             error::handle(e);
             return r;
         }
