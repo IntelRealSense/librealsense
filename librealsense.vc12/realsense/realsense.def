@@ -60,6 +60,7 @@ EXPORTS
     rs_get_frame_number_safe
     rs_release_frames
     rs_clone_frames_ref
+	rs_get_frame
 
     rs_get_detached_frame_timestamp
     rs_get_detached_frame_data

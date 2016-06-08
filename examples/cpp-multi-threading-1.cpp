@@ -28,11 +28,11 @@ int main() try
 
     // create N queues for the N consumers
     const auto consumers = 3;
-	const auto  streams = 3;
+    const auto  streams = 3;
 
     single_consumer_queue<rs::frameset> frames_queue[consumers];
     std::vector<bool> running(consumers, true);
-    std::vector<std::pair<int, int>> resolutions(static_cast<int>(rs::stream::depth_aligned_to_infrared2), { 0, 0 });
+
 
     glfwInit();
    
@@ -40,7 +40,7 @@ int main() try
     for (auto i = 0; i < consumers; i++)
     {
         // Each consumer will deque 1/N-th of the total frames and present them in its own window
-        std::thread consumer([dev, &frames_queue, &running, &resolutions, i]()
+        std::thread consumer([dev, &frames_queue, &running, i]()
         {
             try
             {
@@ -56,21 +56,19 @@ int main() try
 
                     glRasterPos2f(-1, 1);
                     glPixelTransferf(GL_RED_SCALE, 0xFFFF * dev->get_depth_scale() / 2.0f);
-                    glDrawPixels(resolutions[static_cast<int>(rs::stream::depth)].first, resolutions[static_cast<int>(rs::stream::depth)].second, GL_RED, GL_UNSIGNED_SHORT, frames.get_frame_data(rs::stream::depth));
+                    glDrawPixels(frames[rs::stream::depth].get_width(), frames[rs::stream::depth].get_height(), GL_RED, GL_UNSIGNED_SHORT, frames[rs::stream::depth].get_data());
                     glPixelTransferf(GL_RED_SCALE, 1.0f);
 
                     glRasterPos2f(0, 1);
-                    glDrawPixels(resolutions[static_cast<int>(rs::stream::color)].first, resolutions[static_cast<int>(rs::stream::color)].second, GL_RGB, GL_UNSIGNED_BYTE, frames.get_frame_data(rs::stream::color));
+                    glDrawPixels(frames[rs::stream::color].get_width(), frames[rs::stream::color].get_height(), GL_RGB, GL_UNSIGNED_BYTE, frames[rs::stream::color].get_data());
 
                     glRasterPos2f(-1, 0);
-                    glDrawPixels(resolutions[static_cast<int>(rs::stream::infrared)].first, resolutions[static_cast<int>(rs::stream::infrared)].second, GL_LUMINANCE, GL_UNSIGNED_BYTE, frames.get_frame_data(rs::stream::infrared));
+                    glDrawPixels(frames[rs::stream::infrared].get_width(), frames[rs::stream::infrared].get_height(), GL_LUMINANCE, GL_UNSIGNED_BYTE, frames[rs::stream::infrared].get_data());
 
-                    if (dev->is_stream_enabled(rs::stream::infrared2))
-                    {
-                        glRasterPos2f(0, 0);
-                        glDrawPixels(resolutions[static_cast<int>(rs::stream::infrared2)].first, resolutions[static_cast<int>(rs::stream::infrared2)].second, GL_LUMINANCE, GL_UNSIGNED_BYTE, frames.get_frame_data(rs::stream::infrared2));
-                    }
-
+                    auto infrared2_frame = frames[rs::stream::infrared2];
+                    glRasterPos2f(0, 0);
+                    glDrawPixels(frames[rs::stream::infrared2].get_width(), frames[rs::stream::infrared2].get_height(), GL_LUMINANCE, GL_UNSIGNED_BYTE, frames[rs::stream::infrared2].get_data());
+                   
                     glfwSwapBuffers(win);
                 }
             }
@@ -94,12 +92,6 @@ int main() try
 
     
     dev->start();
-    resolutions[static_cast<int>(rs::stream::depth)] = { dev->get_stream_width(rs::stream::depth), dev->get_stream_height(rs::stream::depth) };
-    resolutions[static_cast<int>(rs::stream::color)] = { dev->get_stream_width(rs::stream::color), dev->get_stream_height(rs::stream::color) };
-    resolutions[static_cast<int>(rs::stream::infrared)] = { dev->get_stream_width(rs::stream::infrared), dev->get_stream_height(rs::stream::infrared) };
-
-    if (dev->is_stream_enabled(rs::stream::infrared2))
-        resolutions[static_cast<int>(rs::stream::infrared2)] = { dev->get_stream_width(rs::stream::infrared2), dev->get_stream_height(rs::stream::infrared2) };
 
     auto counter = 0;
     while (any_costumers_alive(running))

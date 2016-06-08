@@ -322,7 +322,7 @@ namespace rs
 
         ~frame()
         {
-            if (frame_ref)
+            if (device && frame_ref)
             {
                 rs_error * e = nullptr;
                 rs_release_frame(device, frame_ref, &e);
@@ -474,6 +474,12 @@ namespace rs
             auto r = rs_clone_frames_ref(device, frames, &e);
             if (!e) result = std::move(frameset(device, r));
             return e == nullptr;
+        }
+
+        frame operator[](stream stream)
+        {
+            rs_error * e = nullptr;
+            return { nullptr, rs_get_frame(frames, (rs_stream)stream, &e) };
         }
 
         int get_frame_timestamp(stream stream) const
