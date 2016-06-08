@@ -26,13 +26,15 @@ EXPORTS
     rs_get_stream_format
     rs_get_stream_framerate
     rs_get_stream_intrinsics
-
+	
     rs_supports
     rs_enable_motion_tracking
+    rs_enable_motion_tracking_cpp
     rs_disable_motion_tracking
     rs_is_motion_tracking_active
     
     rs_set_frame_callback
+    rs_set_frame_callback_cpp
     rs_start_device
     rs_stop_device
     rs_is_device_streaming
@@ -48,10 +50,9 @@ EXPORTS
     rs_wait_for_frames
     rs_poll_for_frames
     rs_get_frame_timestamp
-
     rs_get_frame_number
     rs_get_frame_data
-
+    
     rs_wait_for_frames_safe
     rs_poll_for_frames_safe
     rs_release_frames
@@ -63,10 +64,9 @@ EXPORTS
     rs_get_detached_frame_number
     rs_get_detached_frame_height
     rs_get_detached_frame_width
-    rs_get_detached_frame_bpp
     rs_get_detached_frame_stride
+    rs_get_detached_frame_bpp
     rs_get_detached_frame_format
-
     rs_release_frame
     rs_detach_frame
     rs_clone_frame_ref
@@ -81,6 +81,10 @@ EXPORTS
     rs_preset_to_string
     rs_distortion_to_string
     rs_option_to_string
+    rs_capabilities_to_string
+    rs_source_to_string
+    rs_event_to_string
+
 
     rs_log_to_console
     rs_log_to_file

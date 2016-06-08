@@ -89,10 +89,10 @@ void timestamp_corrector::update_source_id(rs_event_source& source_id, const rs_
     case RS_STREAM_COLOR:
     case RS_STREAM_INFRARED:
     case RS_STREAM_INFRARED2:
-        source_id = RS_IMU_DEPTH_CAM;
+        source_id = RS_EVENT_IMU_DEPTH_CAM;
         break;
     case RS_STREAM_FISHEYE:
-        source_id = RS_IMU_MOTION_CAM;
+        source_id = RS_EVENT_IMU_MOTION_CAM;
         break;
     }
 }

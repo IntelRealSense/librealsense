@@ -75,12 +75,16 @@ EXPORTS
     rs_get_failed_args
     rs_get_error_message
     rs_free_error
-    
+
     rs_stream_to_string
     rs_format_to_string
     rs_preset_to_string
     rs_distortion_to_string
     rs_option_to_string
+    rs_capabilities_to_string
+    rs_source_to_string
+    rs_event_to_string
+
 
     rs_log_to_console
     rs_log_to_file
