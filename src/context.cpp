@@ -7,14 +7,13 @@
 #include "f200.h"
 #include <mutex>
 
-rs_context::rs_context()
+rs_context_base::rs_context_base()
 {
     context = rsimpl::uvc::create_context();
 
     for(auto device : query_devices(context))
     {
         LOG_INFO("UVC device detected with VID = 0x" << std::hex << get_vendor_id(*device) << " PID = 0x" << get_product_id(*device));
-        LOG_INFO("USB Port number =" << get_usb_port_id(*device));
 
         if (get_vendor_id(*device) != PID_INTEL_CAMERA)
             continue;
@@ -31,21 +30,21 @@ rs_context::rs_context()
 }
 
 // Enforce singleton semantics on rs_context
-rs_context* rs_context::instance = nullptr;
-int rs_context::ref_count = 0;
-std::mutex rs_context::instance_lock;
+rs_context* rs_context_base::instance = nullptr;
+int rs_context_base::ref_count = 0;
+std::mutex rs_context_base::instance_lock;
 
-rs_context* rs_context::acquire_instance()
+rs_context* rs_context_base::acquire_instance()
 {
     std::lock_guard<std::mutex> lock(instance_lock);
     if (ref_count++ == 0)
     {
-        instance = new rs_context();
+        instance = new rs_context_base();
     }
     return instance;
 }
 
-void rs_context::release_instance()
+void rs_context_base::release_instance()
 {
     std::lock_guard<std::mutex> lock(instance_lock);
     if (--ref_count == 0)
@@ -54,7 +53,17 @@ void rs_context::release_instance()
     }
 }
 
-rs_context::~rs_context()
+rs_context_base::~rs_context_base()
 {
     assert(ref_count == 0);
+}
+
+int rs_context_base::get_device_count() const
+{
+    return devices.size();
+}
+
+rs_device* rs_context_base::get_device(int index) const
+{
+    return devices[index].get();
 }

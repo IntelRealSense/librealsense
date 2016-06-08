@@ -245,6 +245,8 @@ namespace rs
             error::handle(e);
         }
 
+        explicit context(rs_context * handle) : handle(handle) {}
+
         ~context()
         {
             rs_delete_context(handle, nullptr);
