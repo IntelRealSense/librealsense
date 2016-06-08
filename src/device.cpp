@@ -177,19 +177,19 @@ void rs_device_base::set_timestamp_callback(void(*on_event)(rs_device * device, 
 
 void rs_device_base::start(rs_source source)
 {
-    if (source & rs_source::RS_SOURCE_VIDEO)
+    if (source & RS_SOURCE_VIDEO)
         start_video_streaming();
 
-    if (source & rs_source::RS_SOURCE_MOTION_TRACKING)
+    if (source & RS_SOURCE_MOTION_TRACKING)
         start_motion_tracking();
 }
 
 void rs_device_base::stop(rs_source source)
 {
-    if (source & rs_source::RS_SOURCE_VIDEO)
+    if (source & RS_SOURCE_VIDEO)
         stop_video_streaming();
 
-    if (source & rs_source::RS_SOURCE_MOTION_TRACKING)
+    if (source & RS_SOURCE_MOTION_TRACKING)
         stop_motion_tracking();
 }
 
@@ -276,12 +276,12 @@ void rs_device_base::start_video_streaming()
                     archive->attach_continuation(streams[i], std::move(release_and_enqueue));
                 }
 
-                if (config.callbacks[i])
+                if (config.callbacks[streams[i]])
                 {
                     auto frame_ref = archive->track_frame(streams[i]);
                     if (frame_ref)
                     {
-                        (*config.callbacks[i])->on_frame(this, (rs_frame_ref*)frame_ref);
+                        (*config.callbacks[streams[i]])->on_frame(this, (rs_frame_ref*)frame_ref);
                     }
                 }
                 else

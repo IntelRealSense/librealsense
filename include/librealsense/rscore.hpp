@@ -106,16 +106,16 @@ struct rs_device
 
 struct rs_motion_callback
 {
-    virtual void on_event(rs_motion_data e) = 0;
-    virtual void release() = 0;
-    virtual ~rs_motion_callback() {}
+    virtual void                            on_event(rs_motion_data e) = 0;
+    virtual void                            release() = 0;
+    virtual                                 ~rs_motion_callback() {}
 };
 
 struct rs_frame_callback
 {
-    virtual void on_frame(rs_device * device, rs_frame_ref * f) = 0;
-    virtual void release() = 0;
-    virtual ~rs_frame_callback() {}
+    virtual void                            on_frame(rs_device * device, rs_frame_ref * f) = 0;
+    virtual void                            release() = 0;
+    virtual                                 ~rs_frame_callback() {}
 };
 
 #endif
