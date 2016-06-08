@@ -110,23 +110,29 @@ void rs_device_base::start_motion_tracking()
     {
         // TODO -replace hard-coded value 3 which stands for fisheye subdevice   
         set_subdevice_data_channel_handler(*device, 3,
-            [mo_callback, ts_callback, parser](const unsigned char * data, const int size) mutable
+            [this, mo_callback, ts_callback, parser](const unsigned char * data, const int size) mutable
         {
             // Parse motion data
             auto events = parser(data, size);
 
             // Handle events by user-provided handlers
             for (auto & entry : events)
-            {       
+            {
                 // Handle Motion data packets
                 if (mo_callback)
-                    for (int i = 0; i < entry.imu_entries_num; i++)
+                for (int i = 0; i < entry.imu_entries_num; i++)
                         mo_callback(entry.imu_packets[i]);
                 
                 // Handle Timestamp packets
                 if (ts_callback)
+                {
                     for (int i = 0; i < entry.non_imu_entries_num; i++)
+                    {
+                        auto tse = entry.non_imu_packets[i];
+                        archive->on_timestamp(tse);
                         ts_callback(entry.non_imu_packets[i]);
+                    }
+                }
             }
         });
     }
@@ -228,6 +234,7 @@ void rs_device_base::start_video_streaming()
             std::vector<byte *> dest;
 
             auto stride = mode_selection.get_stride();
+            archive->correct_timestamp();
 
             for (auto & output : mode_selection.get_outputs())
             {
@@ -254,7 +261,6 @@ void rs_device_base::start_video_streaming()
             // If any frame callbacks were specified, dispatch them now
             for (size_t i = 0; i < dest.size(); ++i)
             {
-
                 if (!requires_processing)
                 {
                     archive->attach_continuation(streams[i], std::move(release_and_enqueue));

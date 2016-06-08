@@ -84,18 +84,12 @@ byte * frame_archive::alloc_frame(rs_stream stream, const frame_additional_data&
             }
         }
 
-        if (stream != RS_STREAM_FISHEYE) // TODO: W/O until we will achieve frame timestamp
+        // Discard buffers that have been in the freelist for longer than 1s
+        for (auto it = begin(freelist); it != end(freelist);)
         {
-            // Discard buffers that have been in the freelist for longer than 1s
-            for (auto it = begin(freelist); it != end(freelist);)
-            {
-                if (additional_data.timestamp > it->additional_data.timestamp + 1000) it = freelist.erase(it);
-                else ++it;
-            }
+            if (additional_data.timestamp > it->additional_data.timestamp + 1000) it = freelist.erase(it);
+            else ++it;
         }
-        
-    
-
     }
     
     if (requires_memory)

@@ -61,6 +61,9 @@
     <ClCompile Include="..\..\src\verify.c">
       <Filter>sources</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\timestamps.cpp">
+      <Filter>sources</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\include\librealsense\rsutil.h">
@@ -116,6 +119,9 @@
     </ClInclude>
     <ClInclude Include="..\..\include\librealsense\rscore.hpp">
       <Filter>includes</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\timestamps.h">
+      <Filter>sources</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

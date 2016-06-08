@@ -242,8 +242,8 @@ int main(int argc, char * argv[]) try
         try { o.value = dev->get_option(o.opt); } catch(...) {}
         options.push_back(o);
     }
-    double dc_preset = 0, iv_preset = 0;
 
+    double dc_preset = 0, iv_preset = 0;
     int offset = 0, panel_height = 1;
     while(!glfwWindowShouldClose(win))
     {

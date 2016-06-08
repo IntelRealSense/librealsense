@@ -7,6 +7,7 @@
 
 #include "types.h"
 #include <atomic>
+#include "timestamps.h"
 
 namespace rsimpl
 {
@@ -40,7 +41,7 @@ namespace rsimpl
         };
 
         // Define a movable but explicitly noncopyable buffer type to hold our frame data
-        struct frame
+        struct frame : frame_interface
         {
         private:
             // TODO: check boost::intrusive_ptr or an alternative
@@ -76,7 +77,8 @@ namespace rsimpl
 
             const byte* get_frame_data() const;
             int get_frame_timestamp() const;
-            int get_frame_number() const;
+            void set_timestamp(int new_ts) override { additional_data.timestamp = new_ts; }
+            int get_frame_number() const override;
             long long get_frame_system_time() const;
             int get_width()const;
             int get_height()const;
