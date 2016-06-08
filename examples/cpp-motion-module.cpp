@@ -15,15 +15,6 @@
 #include <string>
 #include <thread>
 
-
-
-// ... and the timestamp packets (DS4.1/FishEye Frame, GPIOS...)
-rs::timestamp_callback timestamp_callback([](rs::timestamp_data entry)
-{
-    std::cout << "Timestamp arrived, timestamp: " << entry.timestamp << std::endl;
-});
-
-
 int main() try
 {
     // Create a context object. This object owns the handles to all connected realsense devices.
@@ -57,10 +48,16 @@ int main() try
             << std::endl;
     };
 
+    // ... and the timestamp packets (DS4.1/FishEye Frame, GPIOS...)
+    auto timestamp_callback = [](rs::timestamp_data entry)
+    {
+        std::cout << "Timestamp arrived, timestamp: " << entry.timestamp << std::endl;
+    };
+
     // 1. Make motion-tracking available
     if (dev->supports(rs::capabilities::motion_events))
     {
-        dev->enable_motion_tracking(on_motion);
+        dev->enable_motion_tracking(on_motion, timestamp_callback);
     }
 
     // 2. Optional - configure motion module

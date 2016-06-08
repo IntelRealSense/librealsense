@@ -75,6 +75,7 @@ struct rs_device
     virtual void                            set_motion_callback(void(*on_event)(rs_device * device, rs_motion_data data, void * user), void * user) = 0;
     virtual void                            set_motion_callback(rs_motion_callback * callback) = 0;
     virtual void                            set_timestamp_callback(void(*on_event)(rs_device * device, rs_timestamp_data data, void * user), void * user) = 0;
+    virtual void                            set_timestamp_callback(rs_timestamp_callback * callback) = 0;
                                             
     virtual void                            start(rs_source source) = 0;
     virtual void                            stop(rs_source source) = 0;
@@ -116,6 +117,13 @@ struct rs_frame_callback
     virtual void                            on_frame(rs_device * device, rs_frame_ref * f) = 0;
     virtual void                            release() = 0;
     virtual                                 ~rs_frame_callback() {}
+};
+
+struct rs_timestamp_callback
+{
+    virtual void                            on_event(rs_timestamp_data data) = 0;
+    virtual void                            release() = 0;
+    virtual                                 ~rs_timestamp_callback() {}
 };
 
 #endif

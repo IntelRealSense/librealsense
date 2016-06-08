@@ -142,7 +142,7 @@ void rs_device_base::start_motion_tracking()
                     {
                         auto tse = entry.non_imu_packets[i];
                         archive->on_timestamp(tse);
-                        config.timestamp_callback(entry.non_imu_packets[i]);
+                        config.timestamp_callback->on_event(entry.non_imu_packets[i]);
                     }
                 }
             }
@@ -172,7 +172,13 @@ void rs_device_base::set_timestamp_callback(void(*on_event)(rs_device * device, 
 {
     if (data_acquisition_active) throw std::runtime_error("cannot set timestamp callback when motion data is active");
 
-    config.timestamp_callback = {this, on_event, user};
+    config.timestamp_callback = timestamp_callback_ptr(new timestamp_events_callback{ this, on_event, user }, [](rs_timestamp_callback* c) { delete c; });
+}
+
+void rs_device_base::set_timestamp_callback(rs_timestamp_callback* callback)
+{
+    // replace previous, if needed
+    config.timestamp_callback = timestamp_callback_ptr(callback, [](rs_timestamp_callback* c) { c->release(); });
 }
 
 void rs_device_base::start(rs_source source)

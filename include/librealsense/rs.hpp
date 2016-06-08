@@ -274,24 +274,19 @@ namespace rs
 
         void release() override { delete this; }
     };
-    
-    class timestamp_callback_base
-    {
-    public:
-        virtual void on_event(timestamp_data data) = 0;
-        virtual ~timestamp_callback_base() {}
-    };
 
-    class timestamp_callback : public timestamp_callback_base
+    class timestamp_callback : public rs_timestamp_callback
     {
         std::function<void(timestamp_data)> on_event_function;
     public:
         explicit timestamp_callback(std::function<void(timestamp_data)> on_event) : on_event_function(on_event) {}
 
-        void on_event(timestamp_data data) override
+        void on_event(rs_timestamp_data data) override
         {
             on_event_function(std::move(data));
         }
+
+        void release() override { delete this; }
     };
 
     class frame
@@ -740,48 +735,10 @@ namespace rs
         ///// \param[in] motion_handler     frame callback to be invoke on every new motion event
         ///// \param[in] timestamp_handler  frame callback to be invoke on every new timestamp event
         ///// \return                       the framerate of the stream, in frames per second
-        //void enable_motion_tracking(motion_callback_base& motion_handler, timestamp_callback_base& timestamp_handler)
-        //{
-        //    rs_error * e = nullptr;            
-        //    rs_enable_motion_tracking((rs_device *)this, 
-        //        [](rs_device * device, rs_motion_data mo_data, void * user) {
-        //            auto listener = (motion_callback_base *)user;
-        //            listener->on_event((rs::motion_data)mo_data);
-        //        }, &motion_handler,
-        //        [](rs_device * device, rs_timestamp_data ts_data, void * user) {
-        //            auto listener = (timestamp_callback_base *)user;
-        //            listener->on_event((rs::timestamp_data)ts_data);
-        //        }, &timestamp_handler, &e);
-        //    error::handle(e);
-        //}
-
-        /// sets the callback for motion module event. provided callback will be called the instant new motion event is available. 
-        /// the lifetime of the callback must be managed by the user (you must ensure the device is either stopped or destructed before callback object is destructed)
-        /// \param[in] stream             the stream 
-        /// \param[in] motion_handler     frame callback to be invoke on every new motion event
-        /// \return                       the framerate of the stream, in frames per second
-        void enable_motion_tracking(std::function<void(motion_data)> motion_handler)
+        void enable_motion_tracking(std::function<void(motion_data)> motion_handler, std::function<void(timestamp_data)> timestamp_handler)
         {
             rs_error * e = nullptr;            
-            rs_enable_motion_tracking_cpp((rs_device *)this, new motion_callback(motion_handler), &e);
-            error::handle(e);
-        }
-
-		/// sets the callback for motion module event. provided callback will be called the instant new timestamp event is available. 
-        /// the lifetime of the callback must be managed by the user (you must ensure the device is either stopped or destructed before callback object is destructed)
-        /// \param[in] stream             the stream 
-        /// \param[in] timestamp_handler  frame callback to be invoke on every new timestamp event
-        /// \return                       the framerate of the stream, in frames per second
-        void enable_motion_tracking(timestamp_callback_base& timestamp_handler)
-        {
-            rs_error * e = nullptr;            
-            rs_enable_motion_tracking((rs_device *)this, 
-                [](rs_device * device, rs_motion_data mo_data, void * user) {
-                }, nullptr,
-                [](rs_device * device, rs_timestamp_data ts_data, void * user) {
-                    auto listener = (timestamp_callback_base *)user;
-                    listener->on_event((rs::timestamp_data)ts_data);
-                }, &timestamp_handler, &e);
+            rs_enable_motion_tracking_cpp((rs_device *)this, new motion_callback(motion_handler), new timestamp_callback(timestamp_handler), &e);
             error::handle(e);
         }
 

@@ -158,22 +158,19 @@ std::mutex mm_mutex;
 rs::motion_data m_gyro_data;
 rs::motion_data m_acc_data;
 
-rs::motion_callback motion_callback([](rs::motion_data entry)   // TODO rs_motion event wrapper
+void on_motion_event(rs::motion_data entry)
 {
     std::lock_guard<std::mutex> lock(mm_mutex);
     if (entry.timestamp_data.source_id == RS_IMU_ACCEL)
         m_acc_data = entry;
     if (entry.timestamp_data.source_id == RS_IMU_GYRO)
         m_gyro_data = entry;
+}
 
-});
-
-rs::timestamp_callback timestamp_callback([](rs::timestamp_data entry)   // TODO rs_motion event wrapper
+void on_timestamp_event(rs::timestamp_data entry)
 {
     std::cout << "Timestamp event arrived, timestamp: " << entry.timestamp << std::endl;
-});
-
-
+}
 
 int main(int argc, char * argv[]) try
 {
@@ -224,7 +221,7 @@ int main(int argc, char * argv[]) try
     {
         if (supports_motion_events)
         {
-            dev->enable_motion_tracking(motion_callback, timestamp_callback);            
+            dev->enable_motion_tracking(on_motion_event, on_timestamp_event);            
         }
 
         glfwSetWindowSize(win, 1100, 960);

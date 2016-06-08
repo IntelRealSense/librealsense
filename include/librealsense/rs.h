@@ -241,6 +241,7 @@ typedef struct rs_frameset rs_frameset;
 typedef struct rs_frame_ref rs_frame_ref;
 typedef struct rs_motion_callback rs_motion_callback;
 typedef struct rs_frame_callback rs_frame_callback;
+typedef struct rs_timestamp_callback rs_timestamp_callback;
 
 rs_context * rs_create_context(int api_version, rs_error ** error);
 void rs_delete_context(rs_context * context, rs_error ** error);
@@ -431,7 +432,8 @@ void rs_enable_motion_tracking(rs_device * device,
 
 
 void rs_enable_motion_tracking_cpp(rs_device * device,
-    rs_motion_callback * callback,
+    rs_motion_callback * motion_callback,
+    rs_timestamp_callback * timestamp_callback,
     rs_error ** error);
 
 void rs_set_frame_callback_cpp(rs_device * device, rs_stream stream, rs_frame_callback * callback, rs_error ** error);

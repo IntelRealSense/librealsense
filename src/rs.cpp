@@ -253,14 +253,17 @@ HANDLE_EXCEPTIONS_AND_RETURN(, device, on_motion_event, motion_handler, on_times
 
 void rs_enable_motion_tracking_cpp(rs_device * device,
     rs_motion_callback * motion_callback,
+    rs_timestamp_callback * ts_callback,
     rs_error ** error) try
 {
     VALIDATE_NOT_NULL(device);
     VALIDATE_NOT_NULL(motion_callback);
+    VALIDATE_NOT_NULL(ts_callback);
     device->enable_motion_tracking();
     device->set_motion_callback(motion_callback);
+    device->set_timestamp_callback(ts_callback);
 }
-HANDLE_EXCEPTIONS_AND_RETURN(, device, motion_callback)
+HANDLE_EXCEPTIONS_AND_RETURN(, device, motion_callback, ts_callback)
 
 void rs_disable_motion_tracking(rs_device * device, rs_error ** error) try
 {

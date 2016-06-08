@@ -270,33 +270,34 @@ namespace rsimpl
         {
             if (fptr)
             {
-                try { fptr(device, data, user); }
-                catch (...) {}
+                try { fptr(device, data, user); } catch (...) {}
             }
         }
 
         void release() override { }
     };
 
-    class timestamp_events_callback
+    class timestamp_events_callback : public rs_timestamp_callback
     {
-        void(*on_event)(rs_device * dev, rs_timestamp_data data, void * user);
+        void(*fptr)(rs_device * dev, rs_timestamp_data data, void * user);
         void        * user;
         rs_device   * device;
     public:
         timestamp_events_callback() : timestamp_events_callback(nullptr, nullptr, nullptr) {}
-        timestamp_events_callback(rs_device * dev, void(*on_event)(rs_device *, rs_timestamp_data, void *), void * user) : on_event(on_event), user(user), device(dev) {}
+        timestamp_events_callback(rs_device * dev, void(*fptr)(rs_device *, rs_timestamp_data, void *), void * user) : fptr(fptr), user(user), device(dev) {}
 
-        operator bool() { return on_event != nullptr; }
-        void operator () (rs_timestamp_data data) const { 
-            if (on_event) 
+        operator bool() { return fptr != nullptr; }
+        void on_event(rs_timestamp_data data) override {
+            if (fptr)
             {
-                try { on_event(device, data, user); } catch (...) {}
+                try { fptr(device, data, user); } catch (...) {}
             }
         }
+        void release() override { }
     };
 
     typedef std::unique_ptr<rs_motion_callback, void(*)(rs_motion_callback*)> motion_callback_ptr;
+    typedef std::unique_ptr<rs_timestamp_callback, void(*)(rs_timestamp_callback*)> timestamp_callback_ptr;
     class frame_callback_ptr
     {
         rs_frame_callback * callback;
@@ -323,7 +324,7 @@ namespace rsimpl
         frame_callback_ptr                  callbacks[RS_STREAM_NATIVE_COUNT];                      // Modified by set_frame_callback calls
         data_polling_request                data_requests;                                          // Modified by enable/disable_events calls
         motion_callback_ptr                 motion_callback{ nullptr, [](rs_motion_callback*){} };  // Modified by set_events_callback calls
-        timestamp_events_callback           timestamp_callback;
+        timestamp_callback_ptr              timestamp_callback{ nullptr, [](rs_timestamp_callback*){} };
         float depth_scale;                                              // Scale of depth values
 
         explicit device_config(const rsimpl::static_device_info & info) : info(info), depth_scale(info.nominal_depth_scale)
