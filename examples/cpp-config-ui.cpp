@@ -171,7 +171,6 @@ void on_motion_event(rs::motion_data entry)
 
 void on_timestamp_event(rs::timestamp_data entry)
 {
-    std::cout << "Timestamp event arrived, timestamp: " << entry.timestamp << std::endl;
 }
 
 int main(int argc, char * argv[]) try
@@ -273,10 +272,9 @@ int main(int argc, char * argv[]) try
         options.push_back(o);
     }
 
-    rs::format format[streams];
-    int frame_number[streams];
-    int fps[streams];
-
+    rs::format format[streams] = {};
+    int frame_number[streams] = {};
+    int fps[streams] = {};
     double dc_preset = 0, iv_preset = 0;
     int offset = 0, panel_height = 1;
     while(!glfwWindowShouldClose(win))
