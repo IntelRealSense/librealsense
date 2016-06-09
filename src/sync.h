@@ -7,6 +7,7 @@
 
 #include "archive.h"
 #include <atomic>
+#include "timestamps.h"
 
 namespace rsimpl
 {
@@ -29,6 +30,8 @@ namespace rsimpl
         void dequeue_frame(rs_stream stream);
         void discard_frame(rs_stream stream);
         void cull_frames();
+
+        timestamp_corrector            ts_corrector;
     public:
         syncronizing_archive(const std::vector<subdevice_mode_selection> & selection, rs_stream key_stream);
 
@@ -51,6 +54,8 @@ namespace rsimpl
 
         void flush() override;
 
+        void correct_timestamp();
+        void on_timestamp(rs_timestamp_data data);
     };
 }
 

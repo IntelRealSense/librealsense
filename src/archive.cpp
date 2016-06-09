@@ -84,18 +84,12 @@ byte * frame_archive::alloc_frame(rs_stream stream, const frame_additional_data&
             }
         }
 
-        if (stream != RS_STREAM_FISHEYE) // TODO: W/O until we will achieve frame timestamp
+        // Discard buffers that have been in the freelist for longer than 1s
+        for (auto it = begin(freelist); it != end(freelist);)
         {
-            // Discard buffers that have been in the freelist for longer than 1s
-            for (auto it = begin(freelist); it != end(freelist);)
-            {
-                if (additional_data.timestamp > it->additional_data.timestamp + 1000) it = freelist.erase(it);
-                else ++it;
-            }
+            if (additional_data.timestamp > it->additional_data.timestamp + 1000) it = freelist.erase(it);
+            else ++it;
         }
-        
-    
-
     }
     
     if (requires_memory)
@@ -241,7 +235,7 @@ const byte* frame_archive::frame::get_frame_data() const
             frame_data += additional_data.stride*additional_data.bpp * -additional_data.pad + (-additional_data.pad)*additional_data.bpp;
         }
     }
-        
+
     else
     {
         frame_data = data.data();
@@ -293,7 +287,7 @@ rs_format frame_archive::frame::get_format() const
 {
     return additional_data.format;
 }
-rs_stream frame_archive::frame::get_stream_type()
+rs_stream frame_archive::frame::get_stream_type() const
 {
 	return additional_data.stream_type;
 }

@@ -2,7 +2,7 @@
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
 //////////////////////////////////////////////////////////////////////////////////////
-// librealsense Multi-threading Demo 4 - low latency with callbacks and zero copy   //
+// librealsense Multi-threading Demo 3 - callbacks                                  //
 //////////////////////////////////////////////////////////////////////////////////////
 
 #include <librealsense/rs.hpp>
@@ -13,7 +13,6 @@
 
 #include "concurrency.hpp"
 #include "example.hpp"
-#include <iostream>
 
 int main() try
 {
@@ -26,11 +25,10 @@ int main() try
     printf("    Serial number: %s\n", dev->get_serial());
     printf("    Firmware version: %s\n", dev->get_firmware_version());
 
-    const auto streams = 3;
-    std::vector<rs::frame_callback> callbacks(streams, rs::frame_callback([](rs::frame frame){}));
+    const auto streams = 4;
     single_consumer_queue<rs::frame> frames_queue[streams];
     texture_buffer buffers[streams];
-    std::atomic<bool> running = true;
+    std::atomic<bool> running(true);
 
     struct resolution
     {
@@ -42,21 +40,27 @@ int main() try
 
     for (auto i = 0; i < streams; i++)
     {
-        callbacks[i] = rs::frame_callback([dev, &running, &frames_queue, &resolutions, i](rs::frame frame)
+        // Set callback to be executed when frame of stream i is ready
+        dev->set_frame_callback((rs::stream)i, [dev, &running, &frames_queue, &resolutions, i](rs::frame frame)
         {
-            if (running) frames_queue[i].enqueue(std::move(frame));
-            
+            if (running) frames_queue[i].enqueue(std::move(frame)); 
+            // Important: Not constraining the max size of the queue will prevent frames from being dropped at the expense of lattency
         });
-        dev->set_frame_callback((rs::stream)i, callbacks[i]);
     }
 
-    dev->enable_stream(rs::stream::depth, 0, 0, rs::format::z16, 60, rs::output_buffer_format::native);
-    dev->enable_stream(rs::stream::color, 640, 480, rs::format::rgb8, 60, rs::output_buffer_format::native);
-    dev->enable_stream(rs::stream::infrared, 0, 0, rs::format::y8, 60, rs::output_buffer_format::native);
+    dev->enable_stream(rs::stream::depth, 0, 0, rs::format::z16, 60);
+    dev->enable_stream(rs::stream::color, 640, 480, rs::format::rgb8, 60);
+    dev->enable_stream(rs::stream::infrared, 0, 0, rs::format::y8, 60);
+    if (dev->supports(rs::capabilities::infrared2))
+    {
+        dev->enable_stream(rs::stream::infrared2, 0, 0, rs::format::y8, 60);
+    }
 
     resolutions[rs::stream::depth] = { dev->get_stream_width(rs::stream::depth), dev->get_stream_height(rs::stream::depth), rs::format::z16 };
-   resolutions[rs::stream::color] = { dev->get_stream_width(rs::stream::color), dev->get_stream_height(rs::stream::color), rs::format::rgb8 };
-   resolutions[rs::stream::infrared] = { dev->get_stream_width(rs::stream::infrared), dev->get_stream_height(rs::stream::infrared), rs::format::y8 };
+    resolutions[rs::stream::color] = { dev->get_stream_width(rs::stream::color), dev->get_stream_height(rs::stream::color), rs::format::rgb8 };
+    resolutions[rs::stream::infrared] = { dev->get_stream_width(rs::stream::infrared), dev->get_stream_height(rs::stream::infrared), rs::format::y8 };
+    if (dev->is_stream_enabled(rs::stream::infrared2))
+        resolutions[rs::stream::infrared2] = { dev->get_stream_width(rs::stream::infrared2), dev->get_stream_height(rs::stream::infrared2), rs::format::y8 };
 
     glfwInit();
 
@@ -68,7 +72,7 @@ int main() try
             max_aspect_ratio = aspect_ratio;
     };
 
-    auto win = glfwCreateWindow(1100, 1100 * max_aspect_ratio, "CPP Configuration Example", nullptr, nullptr);
+    auto win = glfwCreateWindow(1100, 1100 * max_aspect_ratio, "librealsense - multi-threading demo-3", nullptr, nullptr);
     glfwMakeContextCurrent(win);
 
     dev->start();
@@ -91,9 +95,9 @@ int main() try
         {
             auto res = resolutions[(rs::stream)i];
 
-            if (frames_queue[i].try_dequeue(&frame))
+            if (frames_queue[i].try_dequeue(&frame)) // If new frame of stream i is available
             {
-                buffers[i].upload(frame.get_data(), frame.get_width(), frame.get_height(), frame.get_format(), frame.get_stride());
+                buffers[i].upload(frame.get_data(), res.width, res.height, res.format); // Update the texture
             }
 
             auto x = (i % 2) * (w / 2);

@@ -77,52 +77,53 @@ public:
                                                 rs_device_base(std::shared_ptr<rsimpl::uvc::device> device, const rsimpl::static_device_info & info);
                                                 virtual ~rs_device_base();
 
-    const rsimpl::stream_interface &            get_stream_interface(rs_stream stream) const { return *streams[stream]; }
+    const rsimpl::stream_interface &            get_stream_interface(rs_stream stream) const override { return *streams[stream]; }
 
-    const char *                                get_name() const { return config.info.name.c_str(); }
-    const char *                                get_serial() const { return config.info.serial.c_str(); }
-    const char *                                get_firmware_version() const { return config.info.firmware_version.c_str(); }
-    float                                       get_depth_scale() const { return config.depth_scale; }
+    const char *                                get_name() const override { return config.info.name.c_str(); }
+    const char *                                get_serial() const override { return config.info.serial.c_str(); }
+    const char *                                get_firmware_version() const override { return config.info.firmware_version.c_str(); }
+    float                                       get_depth_scale() const override { return config.depth_scale; }
 
-    void                                        enable_stream(rs_stream stream, int width, int height, rs_format format, int fps, rs_output_buffer_format output);
-    void                                        enable_stream_preset(rs_stream stream, rs_preset preset);    
-    void                                        disable_stream(rs_stream stream);
+    void                                        enable_stream(rs_stream stream, int width, int height, rs_format format, int fps, rs_output_buffer_format output) override;
+    void                                        enable_stream_preset(rs_stream stream, rs_preset preset) override;
+    void                                        disable_stream(rs_stream stream) override;
 
-    void                                        enable_motion_tracking();
-    void                                        set_stream_callback(rs_stream stream, void (*on_frame)(rs_device * device, rs_frame_ref * frame, void * user), void * user);
-    void                                        disable_motion_tracking();
+    void                                        enable_motion_tracking() override;
+    void                                        set_stream_callback(rs_stream stream, void(*on_frame)(rs_device * device, rs_frame_ref * frame, void * user), void * user) override;
+    void                                        set_stream_callback(rs_stream stream, rs_frame_callback * callback) override;
+    void                                        disable_motion_tracking() override;
 
-    void                                        set_motion_callback(void(*on_event)(rs_device * device, rs_motion_data data, void * user), void * user);
-    void                                        set_timestamp_callback(void(*on_event)(rs_device * device, rs_timestamp_data data, void * user), void * user);
+    void                                        set_motion_callback(rs_motion_callback * callback) override;
+    void                                        set_motion_callback(void(*on_event)(rs_device * device, rs_motion_data data, void * user), void * user) override;
+    void                                        set_timestamp_callback(void(*on_event)(rs_device * device, rs_timestamp_data data, void * user), void * user) override;
+    void                                        set_timestamp_callback(rs_timestamp_callback * callback) override;
 
-    virtual void                                start(rs_source source);
-    virtual void                                stop(rs_source source);
+    virtual void                                start(rs_source source) override;
+    virtual void                                stop(rs_source source) override;
 
-    bool                                        is_capturing() const { return capturing; }
-    int                                         is_motion_tracking_active() const { return data_acquisition_active; }
+    bool                                        is_capturing() const override { return capturing; }
+    int                                         is_motion_tracking_active() const override { return data_acquisition_active; }
     
-    void                                        wait_all_streams();
-    bool                                        poll_all_streams();
+    void                                        wait_all_streams() override;
+    bool                                        poll_all_streams() override;
 
-    rs_frameset *                               wait_all_streams_safe();
-    bool                                        poll_all_streams_safe(rs_frameset ** frames);
-    void                                        release_frames(rs_frameset * frameset);
-    rs_frameset *                               clone_frames(rs_frameset * frameset);
+    rs_frameset *                               wait_all_streams_safe() override;
+    bool                                        poll_all_streams_safe(rs_frameset ** frames) override;
+    void                                        release_frames(rs_frameset * frameset) override;
+    rs_frameset *                               clone_frames(rs_frameset * frameset) override;
     
-    virtual bool                                supports(rs_capabilities capability) const;
+    virtual bool                                supports(rs_capabilities capability) const override;
 
-    virtual bool                                supports_option(rs_option option) const;
-    virtual void                                get_option_range(rs_option option, double & min, double & max, double & step, double & def);
-    virtual void                                set_options(const rs_option options[], int count, const double values[]) = 0;
-    virtual void                                get_options(const rs_option options[], int count, double values[]) = 0;
+    virtual bool                                supports_option(rs_option option) const override;
+    virtual void                                get_option_range(rs_option option, double & min, double & max, double & step, double & def) override;
 
     virtual void                                on_before_start(const std::vector<rsimpl::subdevice_mode_selection> & selected_modes) = 0;
     virtual rs_stream                           select_key_stream(const std::vector<rsimpl::subdevice_mode_selection> & selected_modes) = 0;
     virtual std::shared_ptr<rsimpl::frame_timestamp_reader>  create_frame_timestamp_reader() const = 0;
-    rs_frame_ref *                              detach_frame(const rs_frameset * fs, rs_stream stream);
-    void                                        release_frame(rs_frame_ref * ref);
-    const char *                                get_usb_port_id() const;
-    rs_frame_ref *                              clone_frame(rs_frame_ref * frame);
+    rs_frame_ref *                              detach_frame(const rs_frameset * fs, rs_stream stream) override;
+    void                                        release_frame(rs_frame_ref * ref) override;
+    const char *                                get_usb_port_id() const override;
+    rs_frame_ref *                              clone_frame(rs_frame_ref * frame) override;
 };
 
 #endif

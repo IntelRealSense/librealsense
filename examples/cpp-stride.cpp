@@ -2,7 +2,7 @@
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
 //////////////////////////////////////////////////////////////////////////////////////
-// librealsense Multi-threading Demo 3 - callbacks                          //
+// librealsense Multi-threading Demo 4 - low latency with callbacks and zero copy   //
 //////////////////////////////////////////////////////////////////////////////////////
 
 #include <librealsense/rs.hpp>
@@ -13,6 +13,7 @@
 
 #include "concurrency.hpp"
 #include "example.hpp"
+#include <iostream>
 
 int main() try
 {
@@ -26,7 +27,8 @@ int main() try
     printf("    Firmware version: %s\n", dev->get_firmware_version());
 
     const auto streams = 4;
-    std::vector<rs::frame_callback> callbacks(streams, rs::frame_callback([](rs::frame frame){}));
+    std::vector<uint16_t> supported_streams = { (uint16_t)rs::stream::depth, (uint16_t)rs::stream::color, (uint16_t)rs::stream::infrared};
+    const auto max_queue_size = 1; // To minimize latency prefer frame drops
     single_consumer_queue<rs::frame> frames_queue[streams];
     texture_buffer buffers[streams];
     std::atomic<bool> running(true);
@@ -39,41 +41,40 @@ int main() try
     };
     std::map<rs::stream, resolution> resolutions;
 
-    for (auto i = 0; i < streams; i++)
+    if(dev->supports(rs::capabilities::infrared2))
+            supported_streams.push_back((uint16_t)rs::stream::infrared2);
+
+    for (auto i : supported_streams)
     {
-        callbacks[i] = rs::frame_callback([dev, &running, &frames_queue, &resolutions, i](rs::frame frame)
+        dev->set_frame_callback((rs::stream)i, [dev, &running, &frames_queue, &resolutions, i, max_queue_size](rs::frame frame)
         {
-            if (running) frames_queue[i].enqueue(std::move(frame));
+            if (running && frames_queue[i].size() <= max_queue_size) frames_queue[i].enqueue(std::move(frame));
         });
-        dev->set_frame_callback((rs::stream)i, callbacks[i]);
     }
 
-    dev->enable_stream(rs::stream::depth, 0, 0, rs::format::z16, 60);
-    dev->enable_stream(rs::stream::color, 640, 480, rs::format::rgb8, 60);
-    dev->enable_stream(rs::stream::infrared, 0, 0, rs::format::y8, 60);
-    if (dev->supports(rs::capabilities::infrared2))
-    {
-        dev->enable_stream(rs::stream::infrared2, 0, 0, rs::format::y8, 60);
-    }
-
+    dev->enable_stream(rs::stream::depth, 0, 0, rs::format::z16, 60, rs::output_buffer_format::native);
+    dev->enable_stream(rs::stream::color, 640, 480, rs::format::rgb8, 60, rs::output_buffer_format::native);
+    dev->enable_stream(rs::stream::infrared, 0, 0, rs::format::y8, 60, rs::output_buffer_format::native);
+    if(dev->supports(rs::capabilities::infrared2))
+        dev->enable_stream(rs::stream::infrared2, 0, 0, rs::format::y8, 60, rs::output_buffer_format::native);
 
     resolutions[rs::stream::depth] = { dev->get_stream_width(rs::stream::depth), dev->get_stream_height(rs::stream::depth), rs::format::z16 };
     resolutions[rs::stream::color] = { dev->get_stream_width(rs::stream::color), dev->get_stream_height(rs::stream::color), rs::format::rgb8 };
     resolutions[rs::stream::infrared] = { dev->get_stream_width(rs::stream::infrared), dev->get_stream_height(rs::stream::infrared), rs::format::y8 };
-    if (dev->is_stream_enabled(rs::stream::infrared2))
+    if(dev->supports(rs::capabilities::infrared2))
         resolutions[rs::stream::infrared2] = { dev->get_stream_width(rs::stream::infrared2), dev->get_stream_height(rs::stream::infrared2), rs::format::y8 };
 
     glfwInit();
 
     auto max_aspect_ratio = 0.0f;
-    for (auto i = 0; i < streams; i++)
+    for (auto i : supported_streams)
     {
         auto aspect_ratio = static_cast<float>(resolutions[static_cast<rs::stream>(i)].height) / static_cast<float>(resolutions[static_cast<rs::stream>(i)].width);
         if (max_aspect_ratio < aspect_ratio)
             max_aspect_ratio = aspect_ratio;
     };
 
-    auto win = glfwCreateWindow(1100, 1100 * max_aspect_ratio, "librealsense - multi-threading demo-3", nullptr, nullptr);
+    auto win = glfwCreateWindow(1100, 1100 * max_aspect_ratio, "librealsense - multi-threading demo-4", nullptr, nullptr);
     glfwMakeContextCurrent(win);
 
     dev->start();
@@ -94,11 +95,13 @@ int main() try
 
         for (auto i = 0; i < streams; i++)
         {
+            if(!dev->supports(rs::capabilities(i))) continue;
+
             auto res = resolutions[(rs::stream)i];
 
             if (frames_queue[i].try_dequeue(&frame))
             {
-                buffers[i].upload(frame.get_data(), res.width, res.height, res.format);
+                buffers[i].upload(frame.get_data(), frame.get_width(), frame.get_height(), frame.get_format(), frame.get_stride());
             }
 
             auto x = (i % 2) * (w / 2);
@@ -111,11 +114,11 @@ int main() try
 
     running = false;
 
-    for (auto i = 0; i < streams; i++) frames_queue[i].clear();
+    for (auto i : supported_streams) frames_queue[i].clear();
 
     dev->stop();
 
-    for (auto i = 0; i < streams; i++)
+    for (auto i : supported_streams)
     {
         if (dev->is_stream_enabled((rs::stream)i))
             dev->disable_stream((rs::stream)i);

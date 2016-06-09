@@ -25,16 +25,16 @@ int main() try
     color_format = dev->get_stream_format(rs::stream::color);
 
     // Set callbacks prior to calling start()
-    rs::frame_callback depth_callback([depth_intrin, depth_format](rs::frame f)
+    auto depth_callback = [depth_intrin, depth_format](rs::frame f)
     {
         std::cout << depth_intrin.width << "x" << depth_intrin.height
             << " " << depth_format << "\tat t = " << f.get_timestamp() << " ms" << std::endl;
-    });
-    rs::frame_callback color_callback([color_intrin, color_format](rs::frame f)
+    };
+    auto color_callback = [color_intrin, color_format](rs::frame f)
     {
         std::cout << color_intrin.width << "x" << color_intrin.height
             << " " << color_format << "\tat t = " << f.get_timestamp() << " ms" << std::endl;
-    });
+    };
 
     dev->set_frame_callback(rs::stream::depth, depth_callback);
     dev->set_frame_callback(rs::stream::color, color_callback);

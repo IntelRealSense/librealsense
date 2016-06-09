@@ -13,9 +13,6 @@ QMAKE_CXXFLAGS += -std=c++11 -fPIC -pedantic -mssse3
 QMAKE_CXXFLAGS += -Wno-missing-field-initializers -Wno-switch -Wno-multichar
 QMAKE_CXXFLAGS += -DRS_USE_V4L2_BACKEND
 
-HEADERS += ../include/librealsense/* ../src/*.h \
-    ../src/hw-monitor.h \
-    ../src/motion_module.h
-SOURCES += ../src/*.cpp ../src/verify.c \
-    ../src/hw-monitor.cpp \
-    ../src/motion_module.cpp
+HEADERS += ../include/librealsense/* ../src/*.h
+SOURCES += ../src/*.cpp ../src/verify.c
+

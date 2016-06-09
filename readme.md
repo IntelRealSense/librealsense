@@ -1,24 +1,20 @@
 # Intel® RealSense™ Cross Platform API
+**Development Branch** - [What's New?](./doc/whats_new.md)
 
 [ ![Release] [release-image] ] [releases]
 [ ![License] [license-image] ] [license]
 
-[release-image]: http://img.shields.io/badge/release-0.9.1-blue.svg?style=flat
+[release-image]: http://img.shields.io/badge/release-1.9.2-blue.svg?style=flat
 [releases]: https://github.com/IntelRealSense/librealsense
 
 [license-image]: http://img.shields.io/badge/license-Apache--2-blue.svg?style=flat
 [license]: LICENSE
 
-Platform | Build Status |
--------- | ------------ |
-Linux and OS X | [![Build Status](https://travis-ci.org/IntelRealSense/librealsense.svg?branch=master)](https://travis-ci.org/IntelRealSense/librealsense) |
-Windows | [![Build status](https://ci.appveyor.com/api/projects/status/y9f8qcebnb9v41y4?svg=true)](https://ci.appveyor.com/project/ddiakopoulos/librealsense) | 
-
-This project is a cross-platform library (Linux, OSX, Windows) for capturing data from the Intel® RealSense™ F200, SR300 and R200 cameras. This effort was initiated to better support researchers, creative coders, and app developers in domains such as robotics, virtual reality, and the internet of things. Several often-requested features of RealSense™ devices are implemented in this project, including multi-camera capture.
+This project is a cross-platform library (Linux, OSX, Windows) for capturing data from the Intel® RealSense™ F200, SR300, R200, LR200 and the ZR300 cameras. This effort was initiated to better support researchers, creative coders, and app developers in domains such as robotics, virtual reality, and the internet of things. Several often-requested features of RealSense™ devices are implemented in this project, including multi-camera capture.
 
 Developer kits containing the necessary hardware to use this library are available for purchase at [this link](http://click.intel.com/realsense.html). This project is separate from the production software stack available in the [Intel® RealSense™ SDK](https://software.intel.com/en-us/intel-realsense-sdk), namely that this library only encompasses camera capture functionality without additional computer vision algorithms.
 
-The Intel® RealSense™ Cross Platform API is experimental and not an official Intel product. It is subject to incompatible API changes in future updates. Breaking API changes are noted through release numbers with [semver](http://semver.org/).
+The Intel® RealSense™ Cross Platform API is experimental and not an official Intel product. It is subject to incompatible API changes in future updates. 
 
 The project requires two external dependencies, GLFW3 (all platforms) and libusb-1.0 (Mac/Linux). These dependencies should be gathered through manual steps that are enumerated as part of this readme file (i.e. these packages must be installed with apt-get on Linux and Homebrew on OSX). GLFW is not required for the core library and is only used for examples.
 
@@ -37,14 +33,16 @@ The project requires two external dependencies, GLFW3 (all platforms) and libusb
 1. RealSense R200
 2. RealSense F200
 3. RealSense SR300
+4. RealSense LR200
+5. RealSense ZR300
 
 ## Compatible Platforms
 
 The library is written in standards-conforming C++11 and relies only on the C89 ABI for its public interface. It is developed and tested on the following platforms:
 
-1. Windows 8.1 (Visual Studio 2013 Update 5)
+1. Windows 8.1 (Visual Studio 2013 Update 5/ Visual Studio 2015 Update 2)
 2. Ubuntu 14.04.03 LTS x64 (GCC 4.9 toolchain)
-3. Mac OS X 10.7+ (Clang toolchain)
+
 
 Neither libuvc nor V4L2 backends have been validated on Ubuntu 12.04 LTS or Ubuntu 15.10, and several attempts to bring cameras up on these platforms have been problematic due to the requirement of a patched uvcvideo driver. It may be possible to compile and run the library on other platforms. Please file an issue or submit a pull request if the library has been successfully ported to a platform.
 
@@ -55,13 +53,14 @@ Neither libuvc nor V4L2 backends have been validated on Ubuntu 12.04 LTS or Ubun
 
 ## Functionality
 
-1. Native streams: depth, color, infrared
+1. Native streams: depth, color, infrared and fisheye
 2. Synthetic streams: rectified images, depth aligned to color and vice versa, etc.
 3. Intrinsic/extrinsic calibration information
 4. Majority of hardware-specific functionality for individual camera generations (UVC XU controls)
-5. Multi-camera capture across heterogeneous camera architectures (e.g. mix R200 and F200 in same application) 
+5. Multi-camera capture across heterogeneous camera architectures (e.g. mix R200 and F200 in same application)
+6. Motion-tracking sensors acquisition (ZR300 only)
 
-### Firmware Update
+## Firmware Update
 
 All RealSense™ cameras ship with proprietary firmware. This firmware is periodically updated with critical bugfixes, however the API does not currently expose functionality to upload new firmware. A supported update path is available on Windows 8.1 and Windows 10 systems via the [Intel® RealSense™ DCM](https://downloadcenter.intel.com/download/25044/Intel-RealSense-Depth-Camera-Manager-DCM-) (Depth Camera Manager). Installing the DCM on a supported machine with an attached camera will automatically flash the latest firmware released by Intel.
 
@@ -69,7 +68,9 @@ All RealSense™ cameras ship with proprietary firmware. This firmware is period
 | ------ | --- |
 | R200 | 1.0.72.04 |
 | F200 | 2.60.0.0 |
-| SR300 |3.10.10.0 |
+| SR300 | 3.15.0.0 |
+| LR200 | 2.0.71.03 |
+| ZR300 | 2.0.71.07 |
 
 # Installation Guide
 
@@ -111,7 +112,7 @@ A comprehensive suite of sample and tutorial applications are provided in the `/
 
 ## License
 
-Copyright 2015 Intel Corporation
+Copyright 2016 Intel Corporation
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this project except in compliance with the License.

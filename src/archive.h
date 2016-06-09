@@ -7,6 +7,7 @@
 
 #include "types.h"
 #include <atomic>
+#include "timestamps.h"
 
 namespace rsimpl
 {
@@ -39,10 +40,10 @@ namespace rsimpl
                 bpp(in_bpp),
                 stream_type(in_stream_type),
                 format(in_format){}
-        };                        
+        };
 
         // Define a movable but explicitly noncopyable buffer type to hold our frame data
-        struct frame
+        struct frame : frame_interface
         {
         private:
             // TODO: check boost::intrusive_ptr or an alternative
@@ -78,13 +79,16 @@ namespace rsimpl
 
             const byte* get_frame_data() const;
             int get_frame_timestamp() const;
-            int get_frame_number() const;
+            void set_timestamp(int new_ts) override { additional_data.timestamp = new_ts; }
+            int get_frame_number() const override;
             long long get_frame_system_time() const;
             int get_width()const;
             int get_height()const;
             int get_stride()const;
             int get_bpp()const;
             rs_format get_format()const;
+            rs_stream get_stream_type() const override;
+
 
             void acquire() { ref_count.fetch_add(1); }
             void release();
@@ -92,11 +96,9 @@ namespace rsimpl
             void update_owner(frame_archive * new_owner) { owner = new_owner; }
             void attach_continuation(frame_continuation&& continuation) { on_release = std::move(continuation); }
             void disable_continuation() { on_release.reset(); }
-
-	        rs_stream get_stream_type();
         };
 
-        class frame_ref // esentially an intrusive shared_ptr<frame>
+        class frame_ref : public rs_frame_ref // esentially an intrusive shared_ptr<frame>
         {
             frame * frame_ptr;
         public:
@@ -138,29 +140,31 @@ namespace rsimpl
                 if (frame_ptr) frame_ptr->disable_continuation();
             }
 
-            const byte* get_frame_data() const;
-            int get_frame_timestamp() const;
-            int get_frame_number() const;
-            long long get_frame_system_time() const;
-            int get_frame_width()const;
-            int get_frame_height()const;
-            int get_frame_stride()const;
-            int get_frame_bpp()const;
-			rs_format get_frame_format()const;
+            const byte* get_frame_data() const override;
+            int get_frame_timestamp() const override;
+            int get_frame_number() const override;
+            long long get_frame_system_time() const override;
+            int get_frame_width() const override;
+            int get_frame_height() const override;
+            int get_frame_stride() const override;
+            int get_frame_bpp() const override;
+            rs_format get_frame_format() const override;
 	        rs_stream get_stream_type() const;
         };
 
-        class frameset
+        class frameset : public rs_frameset
         {
             frame_ref buffer[RS_STREAM_NATIVE_COUNT];
         public:
 
             frame_ref detach_ref(rs_stream stream);
             void place_frame(rs_stream stream, frame&& new_frame);
-			frame_ref* operator[](rs_stream stream)
-			{
-				return &buffer[stream];
-			};
+
+            rs_frame_ref * get_frame(rs_stream stream) override
+            {
+                return &buffer[stream];
+            }
+
             const byte * get_frame_data(rs_stream stream) const { return buffer[stream].get_frame_data(); }
             int get_frame_timestamp(rs_stream stream) const { return buffer[stream].get_frame_timestamp(); }
             int get_frame_number(rs_stream stream) const { return buffer[stream].get_frame_number(); }

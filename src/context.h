@@ -8,16 +8,19 @@
 #include "types.h"
 #include "uvc.h"
 
-struct rs_context
+struct rs_context_base : rs_context
 {
     std::shared_ptr<rsimpl::uvc::context>           context;
     std::vector<std::shared_ptr<rs_device>>         devices;
 
-                                                    rs_context();
-                                                    ~rs_context();
+                                                    rs_context_base();
+                                                    ~rs_context_base();
 
     static rs_context*                              acquire_instance();
     static void                                     release_instance();
+
+    int                                             get_device_count() const override;
+    rs_device *                                     get_device(int index) const override;
 private:
     static int                                      ref_count;
     static std::mutex                               instance_lock;

@@ -5,6 +5,7 @@
 #define LIBREALSENSE_RS_HPP
 
 #include "rsutil.h"
+#include "rscore.hpp"
 #include <cmath>
 #include <cstdint>
 #include <cstring>
@@ -164,6 +165,17 @@ namespace rs
         all_sources
     };
 
+    enum class event : uint8_t
+    {
+        event_imu_accel         = 1,
+        event_imu_gyro          = 2,
+        event_imu_depth_cam     = 3,
+        event_imu_motion_cam    = 4,
+        event_imu_g0_sync       = 5,
+        event_imu_g1_sync       = 6,
+        event_imu_g2_sync       = 7
+    };
+
     struct float2 { float x,y; };
     struct float3 { float x,y,z; };
 
@@ -233,6 +245,8 @@ namespace rs
             error::handle(e);
         }
 
+        explicit context(rs_context * handle) : handle(handle) {}
+
         ~context()
         {
             rs_delete_context(handle, nullptr);
@@ -259,43 +273,33 @@ namespace rs
             return (device *)r;
         }
     };  
-    
-    class motion_callback_base
-    {
-    public:
-        virtual void on_event(motion_data e) = 0;
-        virtual ~motion_callback_base() {}
-    };
 
-    class motion_callback : public motion_callback_base
+    class motion_callback : public rs_motion_callback
     {
         std::function<void(motion_data)> on_event_function;
     public:
         explicit motion_callback(std::function<void(motion_data)> on_event) : on_event_function(on_event) {}
 
-        void on_event(motion_data e) override
+        void on_event(rs_motion_data e) override
         {
-            on_event_function(std::move(e));
+            on_event_function(motion_data(e));
         }
-    };
-    
-    class timestamp_callback_base
-    {
-    public:
-        virtual void on_event(timestamp_data data) = 0;
-        virtual ~timestamp_callback_base() {}
+
+        void release() override { delete this; }
     };
 
-    class timestamp_callback : public timestamp_callback_base
+    class timestamp_callback : public rs_timestamp_callback
     {
         std::function<void(timestamp_data)> on_event_function;
     public:
         explicit timestamp_callback(std::function<void(timestamp_data)> on_event) : on_event_function(on_event) {}
 
-        void on_event(timestamp_data data) override
+        void on_event(rs_timestamp_data data) override
         {
             on_event_function(std::move(data));
         }
+
+        void release() override { delete this; }
     };
 
     class frame
@@ -491,23 +495,18 @@ namespace rs
         }
     };
 
-    class frame_callback_base
-    {
-    public:
-        virtual void on_frame(frame f) = 0;
-        virtual ~frame_callback_base() {};
-    };
-
-    class frame_callback : public frame_callback_base
+    class frame_callback : public rs_frame_callback
     {
         std::function<void(frame)> on_frame_function;
     public:
         explicit frame_callback(std::function<void(frame)> on_frame) : on_frame_function(on_frame) {}
 
-        void on_frame(frame f) override
+        void on_frame(rs_device * device, rs_frame_ref * fref) override
         {
-            on_frame_function(std::move(f));
+            on_frame_function(std::move(frame(device, fref)));
         }
+
+        void release() override { delete this; }
     };
 
     class device
@@ -628,7 +627,7 @@ namespace rs
         void enable_stream(stream stream, int width, int height, format format, int framerate, output_buffer_format output_buffer_type = output_buffer_format::continous)
         {
             rs_error * e = nullptr;
-            rs_enable_stream((rs_device *)this, (rs_stream)stream, width, height, (rs_format)format, framerate, (rs_output_buffer_format)output_buffer_type, &e);
+            rs_enable_stream_ex((rs_device *)this, (rs_stream)stream, width, height, (rs_format)format, framerate, (rs_output_buffer_format)output_buffer_type, &e);
             error::handle(e);
         }
 
@@ -722,34 +721,27 @@ namespace rs
         /// once callback is set on certain stream type, frames of this type will no longer be available throuhg wait/poll methods (those two approaches are mutually exclusive) 
         /// while wait/poll methods provide consistent set of syncronized frames at the expense of extra latency,
         /// set frame callbacks provides low latency solution with no syncronization
+        /// the lifetime of the callback must be managed by the user (you must ensure the device is either stopped or destructed before callback object is destructed)
         /// \param[in] stream    the stream 
         /// \param[in] on_frame  frame callback to be invoke on every new frame
         /// \return            the framerate of the stream, in frames per second
-        void set_frame_callback(rs::stream stream, frame_callback_base& on_frame)
+        void set_frame_callback(rs::stream stream, std::function<void(frame)> frame_handler)
         {
             rs_error * e = nullptr;
-            rs_set_frame_callback((rs_device *)this, (rs_stream)stream, [](rs_device * device, rs_frame_ref * fref, void * user){
-                auto on_frame = (frame_callback_base *)user;
-                on_frame->on_frame(frame(device, fref));
-            }, &on_frame, &e);
+            rs_set_frame_callback_cpp((rs_device *)this, (rs_stream)stream, new frame_callback(frame_handler), &e);
             error::handle(e);
         }
 
-        /// Configure backend to acquire and handle motion-tracking data
-        void enable_motion_tracking(motion_callback_base& motion_handler, timestamp_callback_base& timestamp_handler)
+        ///// sets the callback for motion module event. provided callback will be called the instant new motion or timestamp event is available. 
+        ///// the lifetime of the callback must be managed by the user (you must ensure the device is either stopped or destructed before callback object is destructed)
+        ///// \param[in] stream             the stream 
+        ///// \param[in] motion_handler     frame callback to be invoke on every new motion event
+        ///// \param[in] timestamp_handler  frame callback to be invoke on every new timestamp event
+        ///// \return                       the framerate of the stream, in frames per second
+        void enable_motion_tracking(std::function<void(motion_data)> motion_handler, std::function<void(timestamp_data)> timestamp_handler)
         {
             rs_error * e = nullptr;            
-
-            rs_enable_motion_tracking((rs_device *)this, 
-                [](rs_device * device, rs_motion_data mo_data, void * user) { try {
-                    auto listener = (motion_callback_base *)user;
-                    listener->on_event((rs::motion_data)mo_data);
-                } catch (...) {} }, &motion_handler,
-                [](rs_device * device, rs_timestamp_data ts_data, void * user) { try {
-                    auto listener = (timestamp_callback_base *)user;
-                    listener->on_event((rs::timestamp_data)ts_data);
-                } catch (...) {} }, &timestamp_handler, &e);
-
+            rs_enable_motion_tracking_cpp((rs_device *)this, new motion_callback(motion_handler), new timestamp_callback(timestamp_handler), &e);
             error::handle(e);
         }
 
@@ -952,6 +944,8 @@ namespace rs
     inline std::ostream & operator << (std::ostream & o, option option) { return o << rs_option_to_string((rs_option)option); }    
     inline std::ostream & operator << (std::ostream & o, capabilities capability) { return o << rs_capabilities_to_string((rs_capabilities)capability); }
     inline std::ostream & operator << (std::ostream & o, source src) { return o << rs_source_to_string((rs_source)src); }
+    inline std::ostream & operator << (std::ostream & o, event evt) { return o << rs_event_to_string((rs_event_source)evt); }
+
 
     enum class log_severity : int32_t
     {

@@ -23,12 +23,12 @@ syncronizing_archive::syncronizing_archive(const std::vector<subdevice_mode_sele
 }
 
 const byte * syncronizing_archive::get_frame_data(rs_stream stream) const
-{ 
+{
     return frontbuffer.get_frame_data(stream);
 }
 
 int syncronizing_archive::get_frame_timestamp(rs_stream stream) const
-{ 
+{
     return frontbuffer.get_frame_timestamp(stream);
 }
 
@@ -105,12 +105,6 @@ void syncronizing_archive::get_next_frames()
     // Dequeue from other streams if the new frame is closer to the timestamp of the key stream than the old frame
     for(auto s : other_streams)
     {
-        if (!frames[s].empty() && s == RS_STREAM_FISHEYE) // TODO: W/O until we will achieve frame timestamp
-        {
-            dequeue_frame(s);
-            continue;
-        }
-
         if (!frames[s].empty() && abs(frames[s].front().additional_data.timestamp - frontbuffer.get_frame_timestamp(key_stream)) <= abs(frontbuffer.get_frame_timestamp(s) - frontbuffer.get_frame_timestamp(key_stream)))
         {
             dequeue_frame(s);
@@ -134,6 +128,21 @@ void syncronizing_archive::flush()
     frame_archive::flush();
 }
 
+void syncronizing_archive::correct_timestamp()
+{
+    for(auto stream : {RS_STREAM_DEPTH, RS_STREAM_COLOR, RS_STREAM_INFRARED, RS_STREAM_INFRARED2, RS_STREAM_FISHEYE})
+    {
+        if (is_stream_enabled(stream))
+        {
+            ts_corrector.correct_timestamp(backbuffer[stream], stream);
+        }    
+    }
+}
+
+void syncronizing_archive::on_timestamp(rs_timestamp_data data)
+{
+    ts_corrector.on_timestamp(data);
+}
 
 // Discard all frames which are older than the most recent coherent frameset
 void syncronizing_archive::cull_frames()
@@ -160,9 +169,6 @@ void syncronizing_archive::cull_frames()
         bool valid_to_skip = true;
         for(auto s : other_streams)
         {
-            if (key_stream == RS_STREAM_FISHEYE) // TODO: W/O until we will achieve frame timestamp
-                continue;
-
             if (abs(t0 - frames[s].back().additional_data.timestamp) < abs(t1 - frames[s].back().additional_data.timestamp))
             {
                 valid_to_skip = false;
@@ -177,9 +183,6 @@ void syncronizing_archive::cull_frames()
     // We can discard frames for other streams if we have at least two and the latter is closer to the next key stream frame than the former
     for(auto s : other_streams)
     {
-        if (key_stream == RS_STREAM_FISHEYE) // TODO: W/O until we will achieve frame timestamp
-            continue;
-
         while(true)
         {
             if(frames[s].size() < 2) break;
@@ -203,5 +206,5 @@ void syncronizing_archive::discard_frame(rs_stream stream)
 {
     std::lock_guard<std::recursive_mutex> guard(mutex);
     freelist.push_back(std::move(frames[stream].front()));
-    frames[stream].erase(begin(frames[stream]));    
+    frames[stream].erase(begin(frames[stream]));
 }

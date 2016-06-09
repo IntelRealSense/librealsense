@@ -157,7 +157,6 @@ std::vector<motion_event> motion_module_parser::operator() (const unsigned char*
     const unsigned short non_imu_entry_size         = 6;
     const unsigned short non_imu_data_offset        = motion_packet_header_size + (imu_data_entries * imu_entry_size);
     const unsigned short motion_packet_size         = non_imu_data_offset + (non_imu_data_entries * non_imu_entry_size);
-    
     unsigned short packets = data_size / motion_packet_size;
 
     std::vector<motion_event> v;
@@ -209,7 +208,6 @@ void motion_module_parser::parse_timestamp(const unsigned char * data, rs_timest
     entry.source_id = rs_event_source(tmp & 0x7);       // bits [0:2] - source_id
     entry.frame_number = (tmp & 0x7fff) >> 3;           // bits [3-14] - frame num
     memcpy(&entry.timestamp, &data[2], sizeof(unsigned int));       // bits [16:47] - timestamp
-
 }
 
 rs_motion_data motion_module_parser::parse_motion(const unsigned char * data)
@@ -232,13 +230,13 @@ rs_motion_data motion_module_parser::parse_motion(const unsigned char * data)
     short tmp[3];
     memcpy(&tmp, &data[6], sizeof(short) * 3);
 
-    unsigned data_shift = (RS_IMU_ACCEL == entry.timestamp_data.source_id) ? 4 : 0;
+    unsigned data_shift = (RS_EVENT_IMU_ACCEL == entry.timestamp_data.source_id) ? 4 : 0;
 
     for (int i = 0; i < 3; i++)                     // convert axis data to physical units (m/sec^2)
     {
         entry.axes[i] = float(tmp[i] >> data_shift);
-        if (RS_IMU_ACCEL == entry.timestamp_data.source_id) entry.axes[i] *= accelerator_transform_factor;
-        if (RS_IMU_GYRO == entry.timestamp_data.source_id) entry.axes[i] *= gyro_transform_factor;
+        if (RS_EVENT_IMU_ACCEL == entry.timestamp_data.source_id) entry.axes[i] *= accelerator_transform_factor;
+        if (RS_EVENT_IMU_GYRO == entry.timestamp_data.source_id) entry.axes[i] *= gyro_transform_factor;
 
         // TODO check and report invalid conversion requests
     }

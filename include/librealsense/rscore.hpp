@@ -7,6 +7,10 @@
 #include "rs.h"
 #include <cstdint>
 
+namespace rs{
+    struct motion_data;
+}
+
 struct rs_stream_interface
 {
     virtual                                 ~rs_stream_interface() {}
@@ -29,6 +33,26 @@ struct rs_stream_interface
     virtual bool                            is_enabled() const = 0;
 };
 
+struct rs_frame_ref
+{
+    virtual                                 ~rs_frame_ref() {}
+    virtual const uint8_t*                  get_frame_data() const = 0;
+    virtual int                             get_frame_timestamp() const = 0;
+    virtual int                             get_frame_number() const = 0;
+    virtual long long                       get_frame_system_time() const = 0;
+    virtual int                             get_frame_width() const = 0;
+    virtual int                             get_frame_height() const = 0;
+    virtual int                             get_frame_stride() const = 0;
+    virtual int                             get_frame_bpp() const = 0;
+    virtual rs_format                       get_frame_format() const = 0;
+};
+
+struct rs_frameset
+{
+    virtual                                 ~rs_frameset() {}
+    virtual rs_frame_ref *                  get_frame(rs_stream stream) = 0;
+};
+
 // realsense device public interface
 struct rs_device
 {
@@ -40,16 +64,19 @@ struct rs_device
     virtual const char *                    get_firmware_version() const = 0;
     virtual float                           get_depth_scale() const = 0;
                                             
-	virtual void                            enable_stream(rs_stream stream, int width, int height, rs_format format, int fps, rs_output_buffer_format output) = 0;
+    virtual void                            enable_stream(rs_stream stream, int width, int height, rs_format format, int fps, rs_output_buffer_format output) = 0;
     virtual void                            enable_stream_preset(rs_stream stream, rs_preset preset) = 0;
     virtual void                            disable_stream(rs_stream stream) = 0;
                                             
     virtual void                            enable_motion_tracking() = 0;
     virtual void                            set_stream_callback(rs_stream stream, void(*on_frame)(rs_device * device, rs_frame_ref * frame, void * user), void * user) = 0;
+    virtual void                            set_stream_callback(rs_stream stream, rs_frame_callback * callback) = 0;
     virtual void                            disable_motion_tracking() = 0;
                                             
     virtual void                            set_motion_callback(void(*on_event)(rs_device * device, rs_motion_data data, void * user), void * user) = 0;
+    virtual void                            set_motion_callback(rs_motion_callback * callback) = 0;
     virtual void                            set_timestamp_callback(void(*on_event)(rs_device * device, rs_timestamp_data data, void * user), void * user) = 0;
+    virtual void                            set_timestamp_callback(rs_timestamp_callback * callback) = 0;
                                             
     virtual void                            start(rs_source source) = 0;
     virtual void                            stop(rs_source source) = 0;
@@ -77,6 +104,34 @@ struct rs_device
     virtual rs_frame_ref *                  clone_frame(rs_frame_ref * frame) = 0;
 
     virtual const char *                    get_usb_port_id() const = 0;
+};
+
+struct rs_context
+{
+    virtual int                             get_device_count() const = 0;
+    virtual rs_device *                     get_device(int index) const = 0;
+    virtual                                 ~rs_context() {}
+};
+
+struct rs_motion_callback
+{
+    virtual void                            on_event(rs_motion_data e) = 0;
+    virtual void                            release() = 0;
+    virtual                                 ~rs_motion_callback() {}
+};
+
+struct rs_frame_callback
+{
+    virtual void                            on_frame(rs_device * device, rs_frame_ref * f) = 0;
+    virtual void                            release() = 0;
+    virtual                                 ~rs_frame_callback() {}
+};
+
+struct rs_timestamp_callback
+{
+    virtual void                            on_event(rs_timestamp_data data) = 0;
+    virtual void                            release() = 0;
+    virtual                                 ~rs_timestamp_callback() {}
 };
 
 #endif

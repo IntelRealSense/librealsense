@@ -5,14 +5,10 @@
 #define LIBREALSENSE_RS_H
 
 #ifdef __cplusplus
-namespace rs{
-	enum class format;
-}
-
 extern "C" {
 #endif
 
-#define RS_API_VERSION 6
+#define RS_API_VERSION 7
 
 typedef enum rs_capabilities
 {
@@ -46,17 +42,17 @@ typedef enum rs_stream
 
 typedef enum rs_format
 {
-    RS_FORMAT_ANY         = 0,  
+    RS_FORMAT_ANY         = 0,
     RS_FORMAT_Z16         = 1,  /**< 16 bit linear depth values. The depth is meters is equal to depth scale * pixel value */
     RS_FORMAT_DISPARITY16 = 2,  /**< 16 bit linear disparity values. The depth in meters is equal to depth scale / pixel value */
     RS_FORMAT_XYZ32F      = 3,  /**< 32 bit floating point 3D coordinates. */
-    RS_FORMAT_YUYV        = 4,  
-    RS_FORMAT_RGB8        = 5,  
-    RS_FORMAT_BGR8        = 6,  
-    RS_FORMAT_RGBA8       = 7,  
-    RS_FORMAT_BGRA8       = 8,  
-    RS_FORMAT_Y8          = 9,  
-    RS_FORMAT_Y16         = 10, 
+    RS_FORMAT_YUYV        = 4,
+    RS_FORMAT_RGB8        = 5,
+    RS_FORMAT_BGR8        = 6,
+    RS_FORMAT_RGBA8       = 7,
+    RS_FORMAT_BGRA8       = 8,
+    RS_FORMAT_Y8          = 9,
+    RS_FORMAT_Y16         = 10,
     RS_FORMAT_RAW10       = 11, /**< Four 10-bit luminance values encoded into a 5-byte macropixel */
     RS_FORMAT_RAW16       = 12,
     RS_FORMAT_RAW8        = 13,
@@ -66,23 +62,23 @@ typedef enum rs_format
 
 typedef enum rs_output_buffer_format
 {
-    RS_OUTPUT_BUFFER_FORMAT_CONTINOUS   = 0,   /**< Makes sure that the output frame is exposed as a single cotinous buffer */
-    RS_OUTPUT_BUFFER_FORMAT_NATIVE      = 1,   /**< Don't convert buffer to continous, the user has to handle pitch manually */
+    RS_OUTPUT_BUFFER_FORMAT_CONTINOUS   = 0,   /**< Makes sure that the output frame is exposed as a single continuous buffer */
+    RS_OUTPUT_BUFFER_FORMAT_NATIVE      = 1,   /**< Don't convert buffer to continuous, the user has to handle pitch manually */
     RS_OUTPUT_BUFFER_FORMAT_COUNT       = 2,
     RS_OUTPUT_BUFFER_FORMAT_ENUM        = 0x7FFFFFFF
 } rs_output_buffer_format;
 
 typedef enum rs_preset
 {
-    RS_PRESET_BEST_QUALITY      = 0, 
-    RS_PRESET_LARGEST_IMAGE     = 1, 
-    RS_PRESET_HIGHEST_FRAMERATE = 2, 
-    RS_PRESET_COUNT             = 3, 
+    RS_PRESET_BEST_QUALITY      = 0,
+    RS_PRESET_LARGEST_IMAGE     = 1,
+    RS_PRESET_HIGHEST_FRAMERATE = 2,
+    RS_PRESET_COUNT             = 3,
     RS_PRESET_MAX_ENUM = 0x7FFFFFFF
 } rs_preset;
 
 typedef enum rs_source
-{   
+{
     RS_SOURCE_VIDEO                     = 1,
     RS_SOURCE_MOTION_TRACKING           = 2,
     RS_SOURCE_ALL                       = 3,
@@ -95,23 +91,23 @@ typedef enum rs_distortion
     RS_DISTORTION_NONE                   = 0, /**< Rectilinear images, no distortion compensation required */
     RS_DISTORTION_MODIFIED_BROWN_CONRADY = 1, /**< Equivalent to Brown-Conrady distortion, except that tangential distortion is applied to radially distorted points */
     RS_DISTORTION_INVERSE_BROWN_CONRADY  = 2, /**< Equivalent to Brown-Conrady distortion, except undistorts image instead of distorting it */
-    RS_DISTORTION_COUNT                  = 3, 
+    RS_DISTORTION_COUNT                  = 3,
     RS_DISTORTION_MAX_ENUM = 0x7FFFFFFF
 } rs_distortion;
 
 typedef enum rs_ivcam_preset
 {
-    RS_IVCAM_PRESET_SHORT_RANGE = 0,
-    RS_IVCAM_PRESET_LONG_RANGE = 1,
+    RS_IVCAM_PRESET_SHORT_RANGE             = 0,
+    RS_IVCAM_PRESET_LONG_RANGE              = 1,
     RS_IVCAM_PRESET_BACKGROUND_SEGMENTATION = 2,
-    RS_IVCAM_PRESET_GESTURE_RECOGNITION = 3,
-    RS_IVCAM_PRESET_OBJECT_SCANNING = 4,
-    RS_IVCAM_PRESET_FACE_ANALYTICS = 5,
-    RS_IVCAM_PRESET_FACE_LOGIN = 6,
-    RS_IVCAM_PRESET_GR_CURSOR = 7,
-    RS_IVCAM_PRESET_DEFAULT = 8,
-    RS_IVCAM_PRESET_MID_RANGE = 9,
-    RS_IVCAM_PRESET_IR_ONLY = 10,
+    RS_IVCAM_PRESET_GESTURE_RECOGNITION     = 3,
+    RS_IVCAM_PRESET_OBJECT_SCANNING         = 4,
+    RS_IVCAM_PRESET_FACE_ANALYTICS          = 5,
+    RS_IVCAM_PRESET_FACE_LOGIN              = 6,
+    RS_IVCAM_PRESET_GR_CURSOR               = 7,
+    RS_IVCAM_PRESET_DEFAULT                 = 8,
+    RS_IVCAM_PRESET_MID_RANGE               = 9,
+    RS_IVCAM_PRESET_IR_ONLY                 = 10,
     RS_IVCAM_PRESET_MAX_ENUM = 0x7FFFFFFF
 } rs_ivcam_preset;
 
@@ -214,13 +210,15 @@ typedef struct rs_extrinsics
 
 typedef enum rs_event_source
 {
-    RS_IMU_ACCEL        = 1,
-    RS_IMU_GYRO         = 2,
-    RS_IMU_DEPTH_CAM    = 3,
-    RS_IMU_MOTION_CAM   = 4,
-    RS_G0_SYNC          = 5,
-    RS_G1_SYNC          = 6,
-    RS_G2_SYNC          = 7
+    RS_EVENT_IMU_ACCEL        = 1,
+    RS_EVENT_IMU_GYRO         = 2,
+    RS_EVENT_IMU_DEPTH_CAM    = 3,
+    RS_EVENT_IMU_MOTION_CAM   = 4,
+    RS_EVENT_G0_SYNC          = 5,
+    RS_EVENT_G1_SYNC          = 6,
+    RS_EVENT_G2_SYNC          = 7,
+    RS_EVENT_SOURCE_COUNT     = 8,
+    RS_EVENT_SOURCE_MAX_ENUM  = 0x7FFFFFFF
 }rs_event_source;
 
 typedef struct rs_timestamp_data
@@ -243,6 +241,9 @@ typedef struct rs_device rs_device;
 typedef struct rs_error rs_error;
 typedef struct rs_frameset rs_frameset;
 typedef struct rs_frame_ref rs_frame_ref;
+typedef struct rs_motion_callback rs_motion_callback;
+typedef struct rs_frame_callback rs_frame_callback;
+typedef struct rs_timestamp_callback rs_timestamp_callback;
 
 rs_context * rs_create_context(int api_version, rs_error ** error);
 void rs_delete_context(rs_context * context, rs_error ** error);
@@ -344,7 +345,18 @@ void rs_get_stream_mode(const rs_device * device, rs_stream stream, int index, i
  * \param[in] output_format  output buffer format (contious in memory / native with pitch)
  * \param[out] error     if non-null, receives any error that occurs during this call, otherwise, errors are ignored
  */
-void rs_enable_stream(rs_device * device, rs_stream stream, int width, int height, rs_format format, int framerate, rs_output_buffer_format output_format, rs_error ** error);
+void rs_enable_stream_ex(rs_device * device, rs_stream stream, int width, int height, rs_format format, int framerate, rs_output_buffer_format output_format, rs_error ** error);
+
+/**
+* enable a specific stream and request specific properties
+* \param[in] stream         the stream to enable
+* \param[in] width          the desired width of a frame image in pixels, or 0 if any width is acceptable
+* \param[in] height         the desired height of a frame image in pixels, or 0 if any height is acceptable
+* \param[in] format         the pixel format of a frame image, or ANY if any format is acceptable
+* \param[in] framerate      the number of frames which will be streamed per second, or 0 if any framerate is acceptable
+* \param[out] error     if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+*/
+void rs_enable_stream(rs_device * device, rs_stream stream, int width, int height, rs_format format, int framerate, rs_error ** error);
 
 /**
  * enable a specific stream and request properties using a preset
@@ -419,7 +431,7 @@ void rs_get_stream_intrinsics(const rs_device * device, rs_stream stream, rs_int
 void rs_set_frame_callback(rs_device * device, rs_stream stream, void (*on_frame)(rs_device * dev, rs_frame_ref * frame, void * user), void * user, rs_error ** error);
 
 /**
-* Enable and configure motion-tracking data handlers 
+* Enable and configure motion-tracking data handlers
 * \param[in] on_motion_event    user-defined routine to be invoked when a motion data arrives
 * \param[in] motion_handler     a user data point to be passed to the motion event callback
 * \param[in] on_timestamp_event user-defined routine to be invoked on timestamp
@@ -430,6 +442,27 @@ void rs_enable_motion_tracking(rs_device * device,
     void(*on_motion_event)(rs_device * , rs_motion_data, void * ), void * motion_handler,
     void(*on_timestamp_event)(rs_device * , rs_timestamp_data, void * ), void * timestamp_handler,
     rs_error ** error);
+
+    /**
+    * Enable and configure motion-tracking data handlers
+    * (This variant is provided specificly to enable passing lambdas with capture lists safely into the library)
+    * \param[in] motion_callback    user-defined routine to be invoked when a motion data arrives
+    * \param[in] timestamp_callback user-defined routine to be invoked on timestamp
+    * \param[out] error             if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+    */
+void rs_enable_motion_tracking_cpp(rs_device * device,
+    rs_motion_callback * motion_callback,
+    rs_timestamp_callback * timestamp_callback,
+    rs_error ** error);
+
+/**
+ * set up a frame callback that will be called immediately when an image is available, with no synchronization logic applied
+ * (This variant is provided specificly to enable passing lambdas with capture lists safely into the library)
+ * \param[in] stream    the stream for whose images the callback should be registered
+ * \param[in] callback  the callback which will receive the frame data and timestamp
+ * \param[out] error    if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+ */
+void rs_set_frame_callback_cpp(rs_device * device, rs_stream stream, rs_frame_callback * callback, rs_error ** error);
 
 /**
 * disable motion-tracking handlers
@@ -643,35 +676,35 @@ const void * rs_get_detached_frame_data(const rs_frame_ref * frame, rs_error ** 
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return            intrinsic width
 */
-int rs_get_detached_frame_width(const rs_frame_ref * frameset, rs_error ** error);
+int rs_get_detached_frame_width(const rs_frame_ref * frame, rs_error ** error);
 
 /**
 * retrive frame intrinsic height
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return            intrinsic height
 */
-int rs_get_detached_frame_height(const rs_frame_ref * frameset, rs_error ** error);
+int rs_get_detached_frame_height(const rs_frame_ref * frame, rs_error ** error);
 
 /**
 * retrive frame pad crop
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return            frame pad crop
 */
-int rs_get_detached_frame_stride(const rs_frame_ref * frameset, rs_error ** error);
+int rs_get_detached_frame_stride(const rs_frame_ref * frame, rs_error ** error);
 
 /**
 * retrive frame pad crop
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return            frame pad crop
 */
-int rs_get_detached_frame_bpp(const rs_frame_ref * frameset, rs_error ** error);
+int rs_get_detached_frame_bpp(const rs_frame_ref * frame, rs_error ** error);
 
 /**
 * retrive frame format
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return            frame format
 */
-rs_format rs_get_detached_frame_format(const rs_frame_ref * frameset, rs_error ** error);
+rs_format rs_get_detached_frame_format(const rs_frame_ref * frame, rs_error ** error);
 
 /**
 * retrive frame stream type
@@ -687,12 +720,12 @@ rs_stream rs_get_detached_frame_stream_type(const rs_frame_ref * frameset, rs_er
 */
 
 rs_frame_ref * rs_clone_frame_ref(rs_device * device, rs_frame_ref* frame, rs_error ** error);
-                                     
+
 const char * rs_get_failed_function  (const rs_error * error);
 const char * rs_get_failed_args      (const rs_error * error);
 const char * rs_get_error_message    (const rs_error * error);
 void         rs_free_error           (rs_error * error);
-                                     
+
 const char * rs_stream_to_string     (rs_stream stream);
 const char * rs_format_to_string     (rs_format format);
 const char * rs_preset_to_string     (rs_preset preset);
@@ -700,6 +733,7 @@ const char * rs_distortion_to_string (rs_distortion distortion);
 const char * rs_option_to_string     (rs_option option);
 const char * rs_capabilities_to_string(rs_capabilities capability);
 const char * rs_source_to_string     (rs_source source);
+const char * rs_event_to_string     (rs_event_source event);
 
 typedef enum
 {
