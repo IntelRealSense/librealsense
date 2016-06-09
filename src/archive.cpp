@@ -202,6 +202,11 @@ int frame_archive::frame_ref::get_frame_height() const
     return frame_ptr ? frame_ptr->get_height() : 0;
 }
 
+int frame_archive::frame_ref::get_frame_framerate() const
+{
+    return frame_ptr ? frame_ptr->get_framerate() : 0;
+}
+
 int frame_archive::frame_ref::get_frame_stride() const
 {
     return frame_ptr ? frame_ptr->get_stride() : 0;
@@ -216,6 +221,12 @@ rs_format frame_archive::frame_ref::get_frame_format() const
 {
     return frame_ptr ? frame_ptr->get_format() : RS_FORMAT_ANY;
 }
+
+rs_stream frame_archive::frame_ref::get_stream_type() const
+{
+	return frame_ptr ? frame_ptr->get_stream_type() : RS_STREAM_MAX_ENUM;
+}
+
 
 const byte* frame_archive::frame::get_frame_data() const
 {
@@ -267,6 +278,11 @@ int frame_archive::frame::get_height() const
     return additional_data.height;
 }
 
+int frame_archive::frame::get_framerate() const
+{
+    return additional_data.fps;
+}
+
 int frame_archive::frame::get_stride() const
 {
     return additional_data.stride;
@@ -280,4 +296,8 @@ int frame_archive::frame::get_bpp() const
 rs_format frame_archive::frame::get_format() const
 {
     return additional_data.format;
+}
+rs_stream frame_archive::frame::get_stream_type() const
+{
+	return additional_data.stream_type;
 }

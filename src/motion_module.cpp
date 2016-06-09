@@ -109,6 +109,7 @@ void motion_module_control::set_control(mm_request request, bool on)
         break;
     }
 
+    std::cout << "send command " << ((mm_video_output==request)? "pwr, " : "evt, ") << (int)on << std::endl;
     std::timed_mutex mutex;
     hw_mon::HWMonitorCommand cmd((uint8_t)cmd_opcode);
     cmd.Param1 = (on) ? 1 : 0;

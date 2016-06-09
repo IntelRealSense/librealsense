@@ -60,6 +60,7 @@ EXPORTS
     rs_clone_frames_ref
     rs_get_frame
 
+    rs_get_detached_framerate
     rs_get_detached_frame_timestamp
     rs_get_detached_frame_data
     rs_get_detached_frame_number
@@ -68,6 +69,8 @@ EXPORTS
     rs_get_detached_frame_stride
     rs_get_detached_frame_bpp
     rs_get_detached_frame_format
+	rs_get_detached_frame_stream_type
+
     rs_release_frame
     rs_detach_frame
     rs_clone_frame_ref

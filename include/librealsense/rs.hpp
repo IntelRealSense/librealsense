@@ -392,6 +392,14 @@ namespace rs
             return r;
         }
 
+        int get_framerate() const
+        {
+            rs_error * e = nullptr;
+            auto r = rs_get_detached_framerate(frame_ref, &e);
+            error::handle(e);
+            return r;
+        }
+
         int get_stride() const
         {
             rs_error * e = nullptr;
@@ -415,6 +423,14 @@ namespace rs
             error::handle(e);
             return static_cast<format>(r);
         }
+
+		stream get_stream_type()
+		{
+			rs_error * e = nullptr;
+			auto s = rs_get_detached_frame_stream_type(frame_ref, &e);
+			error::handle(e);
+			return static_cast<stream>(s);
+		}
     };
 
     class frameset

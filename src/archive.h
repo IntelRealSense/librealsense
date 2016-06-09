@@ -22,21 +22,25 @@ namespace rsimpl
             long long system_time = 0;
             int width = 0;
             int height = 0;
+            int fps = 0;
             int stride = 0;
             int bpp = 0;
-			rs_format format;
-			int pad = 0;
+            rs_format format = RS_FORMAT_ANY;
+            rs_stream stream_type = RS_STREAM_MAX_ENUM;
+            int pad = 0;
 
             frame_additional_data(){};
 
-			frame_additional_data(int in_timestamp, int in_frame_number, long long in_system_time, int in_width, int in_height, int in_stride, int in_bpp, const rs_format in_format, int in_pad)
+            frame_additional_data(int in_timestamp, int in_frame_number, long long in_system_time, int in_width, int in_height, int in_fps, int in_stride, int in_bpp, const rs_format in_format, rs_stream in_stream_type, int in_pad)
                 :timestamp(in_timestamp),
                 frame_number(in_frame_number),
                 system_time(in_system_time),
                 width(in_width),
                 height(in_height),
+                fps(in_fps),
                 stride(in_stride),
                 bpp(in_bpp),
+                stream_type(in_stream_type),
                 format(in_format){}
         };
 
@@ -82,9 +86,12 @@ namespace rsimpl
             long long get_frame_system_time() const;
             int get_width()const;
             int get_height()const;
+            int get_framerate() const;
             int get_stride()const;
             int get_bpp()const;
             rs_format get_format()const;
+            rs_stream get_stream_type() const override;
+
 
             void acquire() { ref_count.fetch_add(1); }
             void release();
@@ -142,9 +149,11 @@ namespace rsimpl
             long long get_frame_system_time() const override;
             int get_frame_width() const override;
             int get_frame_height() const override;
+            int get_frame_framerate() const override;
             int get_frame_stride() const override;
             int get_frame_bpp() const override;
             rs_format get_frame_format() const override;
+	        rs_stream get_stream_type() const;
         };
 
         class frameset : public rs_frameset

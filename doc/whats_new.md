@@ -56,6 +56,11 @@ While wait_for_frames API is extremely convenient for applications expecting coh
 
 Frame object can be moved between threads **without extra copies** of the underlying data. When the last reference to frame is released, frame memory will be recycled.
 
+<<<<<<< HEAD
+=======
+(Refer to [cpp-callback-2](./../examples/cpp-callback-2.cpp) for full demo)
+
+>>>>>>> fbc5fa067b5c1e53d6d6f2655dbde130365987a1
 ## Minimal Processing
 
 In effort to minimize latency and overall performance overhead, the development branch provides an opt-in support to get the raw data from the relevant backend when it is possible, avoiding **any extra memory copies**:
@@ -71,3 +76,8 @@ Once this buffer access mode is configured, nothing else has to change unless th
     glPixelStorei(GL_UNPACK_ROW_LENGTH, frame.get_stride());
 
 When using this mode, get_frame_data will return direct pointer to backend memory. Once the frame is released, memory will be returned to the backend and next frame would be requested.
+<<<<<<< HEAD
+=======
+
+(Refer to [cpp-stride](./../examples/cpp-stride.cpp) for an example)
+>>>>>>> fbc5fa067b5c1e53d6d6f2655dbde130365987a1

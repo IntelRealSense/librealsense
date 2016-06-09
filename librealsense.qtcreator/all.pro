@@ -11,6 +11,7 @@ SUBDIRS += \
    ./cpp-capture.pro \
    ./cpp-motion-module.pro \
    ./cpp-callback.pro \
+   ./cpp-callback-2.pro \
    ./cpp-alignimages.pro \
    ./cpp-config-ui.pro \
    ./cpp-multicam.pro \
@@ -18,10 +19,7 @@ SUBDIRS += \
    ./cpp-restart.pro \
    ./cpp-enumerate-devices.pro \
    ./cpp-headless.pro \
-   ./cpp-multi-threading-1.pro \
-   ./cpp-multi-threading-2.pro \
-   ./cpp-multi-threading-3.pro \
-   ./cpp-multi-threading-4.pro \
+   ./cpp-stride.pro \
    ./unit-tests-live-r200.pro \
    ./unit-tests-live-f200.pro \
    ./unit-tests-live-sr300.pro \
