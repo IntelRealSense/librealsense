@@ -345,7 +345,18 @@ void rs_get_stream_mode(const rs_device * device, rs_stream stream, int index, i
  * \param[in] output_format  output buffer format (contious in memory / native with pitch)
  * \param[out] error     if non-null, receives any error that occurs during this call, otherwise, errors are ignored
  */
-void rs_enable_stream(rs_device * device, rs_stream stream, int width, int height, rs_format format, int framerate, rs_output_buffer_format output_format, rs_error ** error);
+void rs_enable_stream_ex(rs_device * device, rs_stream stream, int width, int height, rs_format format, int framerate, rs_output_buffer_format output_format, rs_error ** error);
+
+/**
+* enable a specific stream and request specific properties
+* \param[in] stream         the stream to enable
+* \param[in] width          the desired width of a frame image in pixels, or 0 if any width is acceptable
+* \param[in] height         the desired height of a frame image in pixels, or 0 if any height is acceptable
+* \param[in] format         the pixel format of a frame image, or ANY if any format is acceptable
+* \param[in] framerate      the number of frames which will be streamed per second, or 0 if any framerate is acceptable
+* \param[out] error     if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+*/
+void rs_enable_stream(rs_device * device, rs_stream stream, int width, int height, rs_format format, int framerate, rs_error ** error);
 
 /**
  * enable a specific stream and request properties using a preset
@@ -665,35 +676,35 @@ const void * rs_get_detached_frame_data(const rs_frame_ref * frame, rs_error ** 
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return            intrinsic width
 */
-int rs_get_detached_frame_width(const rs_frame_ref * frameset, rs_error ** error);
+int rs_get_detached_frame_width(const rs_frame_ref * frame, rs_error ** error);
 
 /**
 * retrive frame intrinsic height
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return            intrinsic height
 */
-int rs_get_detached_frame_height(const rs_frame_ref * frameset, rs_error ** error);
+int rs_get_detached_frame_height(const rs_frame_ref * frame, rs_error ** error);
 
 /**
 * retrive frame pad crop
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return            frame pad crop
 */
-int rs_get_detached_frame_stride(const rs_frame_ref * frameset, rs_error ** error);
+int rs_get_detached_frame_stride(const rs_frame_ref * frame, rs_error ** error);
 
 /**
 * retrive frame pad crop
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return            frame pad crop
 */
-int rs_get_detached_frame_bpp(const rs_frame_ref * frameset, rs_error ** error);
+int rs_get_detached_frame_bpp(const rs_frame_ref * frame, rs_error ** error);
 
 /**
 * retrive frame format
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return            frame format
 */
-rs_format rs_get_detached_frame_format(const rs_frame_ref * frameset, rs_error ** error);
+rs_format rs_get_detached_frame_format(const rs_frame_ref * frame, rs_error ** error);
 
 /**
 * clone frame handle, creating new handle that is tracking the same underlying frame object

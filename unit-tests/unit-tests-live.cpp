@@ -225,7 +225,7 @@ TEST_CASE( "streaming mode intrinsics are sane", "[live]" )
                 REQUIRE( framerate <= 300 );
 
                 // Require that we can set the stream to this mode
-				rs_enable_stream(dev, stream, width, height, format, framerate, RS_OUTPUT_BUFFER_FORMAT_CONTINOUS, require_no_error());
+                rs_enable_stream(dev, stream, width, height, format, framerate, require_no_error());
                 REQUIRE(rs_is_stream_enabled(dev, stream, require_no_error()) == 1);
                 REQUIRE(rs_get_stream_format(dev, stream, require_no_error()) == format);
                 REQUIRE(rs_get_stream_framerate(dev, stream, require_no_error()) == framerate);
@@ -282,7 +282,7 @@ TEST_CASE( "synthetic streaming mode properties are correct", "[live]" )
             // Enable a COLOR mode and retrieve intrinsics
             int color_width = 0, color_height = 0, color_framerate = 0; rs_format color_format = RS_FORMAT_ANY;
             rs_get_stream_mode(dev, RS_STREAM_COLOR, j, &color_width, &color_height, &color_format, &color_framerate, require_no_error());
-            rs_enable_stream(dev, RS_STREAM_COLOR, color_width, color_height, color_format, color_framerate, RS_OUTPUT_BUFFER_FORMAT_CONTINOUS, require_no_error());
+            rs_enable_stream(dev, RS_STREAM_COLOR, color_width, color_height, color_format, color_framerate, require_no_error());
 
             rs_intrinsics color_intrin = {};
             rs_get_stream_intrinsics(dev, RS_STREAM_COLOR, &color_intrin, require_no_error());
@@ -309,7 +309,7 @@ TEST_CASE( "synthetic streaming mode properties are correct", "[live]" )
                 // Enable a DEPTH mode and retrieve intrinsics
                 int depth_width = 0, depth_height = 0, depth_framerate = 0; rs_format depth_format = RS_FORMAT_ANY; 
                 rs_get_stream_mode(dev, RS_STREAM_DEPTH, k, &depth_width, &depth_height, &depth_format, &depth_framerate, require_no_error());
-                rs_enable_stream(dev, RS_STREAM_DEPTH, depth_width, depth_height, depth_format, depth_framerate, RS_OUTPUT_BUFFER_FORMAT_CONTINOUS, require_no_error());
+                rs_enable_stream(dev, RS_STREAM_DEPTH, depth_width, depth_height, depth_format, depth_framerate, require_no_error());
 
                 rs_intrinsics depth_intrin = {};
                 rs_get_stream_intrinsics(dev, RS_STREAM_DEPTH, &depth_intrin, require_no_error());

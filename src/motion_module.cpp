@@ -44,26 +44,21 @@ void motion_module_control::enter_state(mm_state new_state)
         if (mm_streaming == new_state)
         {
             set_control(mm_video_output, true);
-            //std::this_thread::sleep_for(std::chrono::milliseconds(2000));   // L-Shaped adapter board
-            //std::cout << "Switch from mm_idle to mm_streaming" << std::endl;
         }
         if (mm_eventing == new_state)
         {
-            set_control(mm_video_output, true); // L -shape adapter board            
+            set_control(mm_video_output, true); // L -shape adapter board
             set_control(mm_events_output, true);
-            //std::cout << "Switch from mm_idle to mm_eventing" << std::endl;
         }
         break;
     case mm_streaming:
         if (mm_idle == new_state)
         {
             set_control(mm_video_output, false);
-            //std::cout << "Switch from mm_eventing to mm_idle" << std::endl;
         }
         if (mm_full_load == new_state)
         {
             set_control(mm_events_output, true);
-            //std::cout << "Switch from mm_streaming to mm_full_load" << std::endl;
         }
         if (mm_eventing == new_state)
         {            
@@ -74,12 +69,11 @@ void motion_module_control::enter_state(mm_state new_state)
         if (mm_idle == new_state)
         {
             set_control(mm_events_output, false);
-            //std::cout << "Switch from mm_eventing to mm_idle" << std::endl;
+            set_control(mm_video_output, false);
         }
         if (mm_full_load == new_state)
         {
             set_control(mm_events_output, true);
-            //std::cout << "Switch from mm_streaming to mm_full_load" << std::endl;
         }
         if (mm_streaming == new_state)
         {
@@ -90,7 +84,6 @@ void motion_module_control::enter_state(mm_state new_state)
         if (mm_streaming == new_state)
         {
             set_control(mm_events_output, false);
-            //std::cout << "Switch from mm_full_load to mm_streaming" << std::endl;
         }
         break;
     default:        // void
@@ -205,19 +198,20 @@ void motion_module_parser::parse_timestamp(const unsigned char * data, rs_timest
     // assuming msb ordering
     unsigned short  tmp = (data[1] << 8) | (data[0]);
 
-    entry.source_id = rs_event_source(tmp & 0x7);       // bits [0:2] - source_id
-    entry.frame_number = (tmp & 0x7fff) >> 3;           // bits [3-14] - frame num
-    memcpy(&entry.timestamp, &data[2], sizeof(unsigned int));       // bits [16:47] - timestamp
+    entry.source_id = rs_event_source(tmp & 0x7);               // bits [0:2] - source_id
+    entry.frame_number = (tmp & 0x7fff) >> 3;                   // bits [3-14] - frame num
+    memcpy(&entry.timestamp, &data[2], sizeof(unsigned int));   // bits [16:47] - timestamp
+
 }
 
 rs_motion_data motion_module_parser::parse_motion(const unsigned char * data)
 {
     // predefined motion devices parameters
     const static float gravity      = 9.80665f;
-    const static float gyro_range   = 2000.f;           // Measured angular velocity range [Deg_C/Sec]
+    const static float gyro_range   = 2000.f;                   // Measured angular velocity range [Deg_C/Sec]
     const static float gyro_transform_factor = float((gyro_range * M_PI) / (180.f * 32767.f));
 
-    const static float accel_range = 4.f;               // Accelerometer is preset to [-4...+4]g range
+    const static float accel_range = 4.f;                       // Accelerometer is preset to [-4...+4]g range
     const static float accelerator_transform_factor = float(gravity * accel_range / 2048.f);
 
     rs_motion_data entry;

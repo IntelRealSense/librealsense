@@ -153,7 +153,7 @@ inline void test_streaming(rs_device * device, std::initializer_list<stream_mode
 {
     for(auto & mode : modes)
     {
-        rs_enable_stream(device, mode.stream, mode.width, mode.height, mode.format, mode.framerate, RS_OUTPUT_BUFFER_FORMAT_CONTINOUS, require_no_error());
+        rs_enable_stream(device, mode.stream, mode.width, mode.height, mode.format, mode.framerate, require_no_error());
         REQUIRE( rs_is_stream_enabled(device, mode.stream, require_no_error()) == 1 );
     }
     rs_start_device(device, rs_source::RS_SOURCE_VIDEO, require_no_error());

@@ -422,7 +422,6 @@ namespace rsimpl
     void r200_camera::toggle_motion_module_power(bool on)
     {        
         motion_module_ctrl.toggle_motion_module_power(on);
-
     }
 
     void r200_camera::toggle_motion_module_events(bool on)
