@@ -27,6 +27,7 @@ int main() try
     printf("    Firmware version: %s\n", dev->get_firmware_version());
 
     const auto streams = 3;
+    const auto max_queue_size = 1; // To minimize lattency, prefer frame drops by constraining the size of the queue
     single_consumer_queue<rs::frame> frames_queue[streams];
     texture_buffer buffers[streams];
     std::atomic<bool> running(true);
@@ -41,9 +42,9 @@ int main() try
 
     for (auto i = 0; i < streams; i++)
     {
-        dev->set_frame_callback((rs::stream)i, [dev, &running, &frames_queue, &resolutions, i](rs::frame frame)
+        dev->set_frame_callback((rs::stream)i, [dev, &running, &frames_queue, &resolutions, i, max_queue_size](rs::frame frame)
         {
-            if (running) frames_queue[i].enqueue(std::move(frame));
+            if (running && frames_queue[i].size() <= max_queue_size) frames_queue[i].enqueue(std::move(frame));
         });
     }
 

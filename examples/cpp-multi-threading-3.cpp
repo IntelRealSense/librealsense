@@ -2,7 +2,7 @@
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
 //////////////////////////////////////////////////////////////////////////////////////
-// librealsense Multi-threading Demo 3 - callbacks                          //
+// librealsense Multi-threading Demo 3 - callbacks                                  //
 //////////////////////////////////////////////////////////////////////////////////////
 
 #include <librealsense/rs.hpp>
@@ -40,9 +40,11 @@ int main() try
 
     for (auto i = 0; i < streams; i++)
     {
+        // Set callback to be executed when frame of stream i is ready
         dev->set_frame_callback((rs::stream)i, [dev, &running, &frames_queue, &resolutions, i](rs::frame frame)
         {
-            if (running) frames_queue[i].enqueue(std::move(frame));
+            if (running) frames_queue[i].enqueue(std::move(frame)); 
+            // Important: Not constraining the max size of the queue will prevent frames from being dropped at the expense of lattency
         });
     }
 
@@ -53,7 +55,6 @@ int main() try
     {
         dev->enable_stream(rs::stream::infrared2, 0, 0, rs::format::y8, 60);
     }
-
 
     resolutions[rs::stream::depth] = { dev->get_stream_width(rs::stream::depth), dev->get_stream_height(rs::stream::depth), rs::format::z16 };
     resolutions[rs::stream::color] = { dev->get_stream_width(rs::stream::color), dev->get_stream_height(rs::stream::color), rs::format::rgb8 };
@@ -94,9 +95,9 @@ int main() try
         {
             auto res = resolutions[(rs::stream)i];
 
-            if (frames_queue[i].try_dequeue(&frame))
+            if (frames_queue[i].try_dequeue(&frame)) // If new frame of stream i is available
             {
-                buffers[i].upload(frame.get_data(), res.width, res.height, res.format);
+                buffers[i].upload(frame.get_data(), res.width, res.height, res.format); // Update the texture
             }
 
             auto x = (i % 2) * (w / 2);
