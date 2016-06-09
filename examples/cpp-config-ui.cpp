@@ -214,11 +214,15 @@ int main(int argc, char * argv[]) try
     single_consumer_queue<rs::frame> frames_queue[streams];
     texture_buffer buffers[streams];
     std::atomic<bool> running(true);
+    static const auto max_queue_size = 2;
     for (auto i = 0; i < 5; i++)
     {
-        dev->set_frame_callback((rs::stream)i, [dev, &running, &frames_queue, &resolutions, i](rs::frame frame)
+        dev->set_frame_callback((rs::stream)i, [dev, &buffers, &running, &frames_queue, &resolutions, i](rs::frame frame)
         {
-            if (running) frames_queue[i].enqueue(std::move(frame));
+            if (running && frames_queue[i].size() < max_queue_size)
+            {
+                frames_queue[i].enqueue(std::move(frame));
+            }
         });
     }
 
@@ -268,6 +272,10 @@ int main(int argc, char * argv[]) try
         try { o.value = dev->get_option(o.opt); } catch(...) {}
         options.push_back(o);
     }
+
+    rs::format format[streams];
+    int frame_number[streams];
+    int fps[streams];
 
     double dc_preset = 0, iv_preset = 0;
     int offset = 0, panel_height = 1;
@@ -376,14 +384,15 @@ int main(int argc, char * argv[]) try
                 if(!dev->is_stream_enabled((rs::stream)i))
                     continue;
 
-                auto res = resolutions[(rs::stream)i];
-
                 if (frames_queue[i].try_dequeue(&frame))
                 {
-                    buffers[i].upload(frame.get_data(), frame.get_width(), frame.get_height(), frame.get_format(), frame.get_stride());
+                    buffers[i].upload(frame);
+                    format[i] = frame.get_format();
+                    frame_number[i] = frame.get_frame_number();
+                    fps[i] = frame.get_framerate();
                 }
 
-                buffers[i].show(pos_vec[i].rx, pos_vec[i].ry, pos_vec[i].rw, pos_vec[i].rh, res.width, res.height);
+                buffers[i].show((rs::stream)i, format[i], fps[i], frame_number[i], pos_vec[i].rx, pos_vec[i].ry, pos_vec[i].rw, pos_vec[i].rh, resolutions[(rs::stream)i].width, resolutions[(rs::stream)i].height);
             }
 
             if (has_motion_module)
@@ -432,6 +441,19 @@ int main(int argc, char * argv[]) try
         g.scroll_vec = {0,0};
         g.click = false;
         if(!g.mouse_down) g.clicked_id = 0;
+    }
+
+    running = false;
+
+    for (auto i = 0; i < streams; i++) frames_queue[i].clear();
+
+    if(dev->is_streaming())
+        dev->stop();
+
+    for (auto i = 0; i < streams; i++)
+    {
+        if (dev->is_stream_enabled((rs::stream)i))
+            dev->disable_stream((rs::stream)i);
     }
 
     glfwTerminate();

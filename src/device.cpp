@@ -247,7 +247,7 @@ void rs_device_base::start_video_streaming()
 
             auto width = mode_selection.get_unpacked_width();
             auto height = mode_selection.get_unpacked_height();
-
+            auto fps = mode_selection.get_framerate();
             std::vector<byte *> dest;
 
             auto stride = mode_selection.get_stride();
@@ -261,6 +261,7 @@ void rs_device_base::start_video_streaming()
                     sys_time,
                     width,
                     height,
+                    fps,
                     stride,
                     bpp,
                     output.second,

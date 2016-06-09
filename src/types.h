@@ -223,6 +223,7 @@ namespace rsimpl
         const std::vector<std::pair<rs_stream, rs_format>> & get_outputs() const { return get_unpacker().outputs; }
         int get_width() const { return mode.native_intrinsics.width + pad_crop * 2; }
         int get_height() const { return mode.native_intrinsics.height + pad_crop * 2; }
+        int get_framerate() const { return mode.fps; }
         int get_stride() const { return requires_processing() ? get_width() : mode.native_dims.x; }
         size_t get_image_size(rs_stream stream) const;
         bool provides_stream(rs_stream stream) const { return get_unpacker().provides_stream(stream); }

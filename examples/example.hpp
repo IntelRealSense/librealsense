@@ -156,6 +156,24 @@ public:
         }
     }
 
+    void upload(rs::frame& frame)
+    {
+        const int timestamp = frame.get_timestamp();
+        if(timestamp != last_timestamp)
+        {
+            upload(frame.get_data(), frame.get_width(), frame.get_height(), frame.get_format(), frame.get_stride());
+            last_timestamp = timestamp;
+
+            ++num_frames;
+            if(timestamp >= next_time)
+            {
+                fps = num_frames;
+                num_frames = 0;
+                next_time += 1000;
+            }
+        }
+    }
+
     void show(float rx, float ry, float rw, float rh) const
     {
         glBindTexture(GL_TEXTURE_2D, texture);
@@ -196,13 +214,26 @@ public:
         }
 
         show(rx + (rw - w)/2, ry + (rh - h)/2, w, h);
-
         std::ostringstream ss; ss << stream << ": " << width << " x " << height << " " << dev.get_stream_format(stream) << " (" << fps << "/" << dev.get_stream_framerate(stream) << ")" << ", F#: " << dev.get_frame_number(stream);
         glColor3f(0,0,0);
         draw_text(rx+9, ry+17, ss.str().c_str());
         glColor3f(1,1,1);
         draw_text(rx+8, ry+16, ss.str().c_str());
     }
+
+    void show(rs::stream stream, rs::format format, int stream_framerate, int frame_number, int rx, int ry, int rw, int rh, int width, int height)
+    {
+        show(rx, ry, rw, rh, width, height);
+        if (frame_number != 0)
+        {
+            std::ostringstream ss; ss << stream << ": " << width << " x " << height << " " << format << " (" << fps << "/" << stream_framerate << ")" << ", F#: " << frame_number;
+            glColor3f(0,0,0);
+            draw_text(rx+9, ry+17, ss.str().c_str());
+            glColor3f(1,1,1);
+            draw_text(rx+8, ry+16, ss.str().c_str());
+        }
+    }
+
     void show(int rx, int ry, int rw, int rh, int width, int height)
     {
         float h = (float)rh, w = (float)rh * width / height;
@@ -214,8 +245,8 @@ public:
         }
 
         show(rx + (rw - w) / 2, ry + (rh - h) / 2, w, h);
-
     }
+
     void show(const void * data, int width, int height, rs::format format, const std::string & caption, int rx, int ry, int rw, int rh)
     {
         if(!data) return;
