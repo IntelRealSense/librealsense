@@ -44,7 +44,7 @@ int main()
 
     rs_stream stream_type = RS_STREAM_DEPTH;
     /* Configure depth to run at VGA resolution at 30 frames per second */
-    rs_enable_stream(dev, RS_STREAM_DEPTH, 0, 0, RS_FORMAT_Z16, 30, RS_OUTPUT_BUFFER_FORMAT_CONTINOUS, &e);
+    rs_enable_stream(dev, RS_STREAM_DEPTH, 0, 0, RS_FORMAT_Z16, 30, &e);
     check_error();
     rs_start_device(dev, RS_SOURCE_VIDEO, &e);
     check_error();

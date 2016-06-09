@@ -10,7 +10,7 @@ CONFIG += link_pkgconfig
 INCLUDEPATH += ../include
 LIBS += -pthread
 
-SOURCES += ../examples/cpp-multi-threading-4.cpp
+SOURCES += ../examples/cpp-stride.cpp
 HEADERS += ../examples/concurrency.hpp
 
 LIBS += -L$$DESTDIR/ -lrealsense
