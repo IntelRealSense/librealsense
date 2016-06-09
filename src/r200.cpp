@@ -667,7 +667,7 @@ namespace rsimpl
 
              auto last_counter_msb = (last_fisheye_counter >> 4);
              auto wrap_around = reinterpret_cast<byte_wrapping&>(last_fisheye_counter).lsb;
-             if (wrap_around == 15)
+             if (wrap_around == 15 || pixel_lsb < last_counter_lsb)
              {
                  ++last_counter_msb;
              }

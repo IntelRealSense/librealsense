@@ -42,6 +42,7 @@ struct rs_frame_ref
     virtual long long                       get_frame_system_time() const = 0;
     virtual int                             get_frame_width() const = 0;
     virtual int                             get_frame_height() const = 0;
+    virtual int                             get_frame_framerate() const = 0;
     virtual int                             get_frame_stride() const = 0;
     virtual int                             get_frame_bpp() const = 0;
     virtual rs_format                       get_frame_format() const = 0;

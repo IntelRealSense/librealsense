@@ -392,6 +392,14 @@ namespace rs
             return r;
         }
 
+        int get_framerate() const
+        {
+            rs_error * e = nullptr;
+            auto r = rs_get_detached_framerate(frame_ref, &e);
+            error::handle(e);
+            return r;
+        }
+
         int get_stride() const
         {
             rs_error * e = nullptr;

@@ -202,6 +202,11 @@ int frame_archive::frame_ref::get_frame_height() const
     return frame_ptr ? frame_ptr->get_height() : 0;
 }
 
+int frame_archive::frame_ref::get_frame_framerate() const
+{
+    return frame_ptr ? frame_ptr->get_framerate() : 0;
+}
+
 int frame_archive::frame_ref::get_frame_stride() const
 {
     return frame_ptr ? frame_ptr->get_stride() : 0;
@@ -271,6 +276,11 @@ int frame_archive::frame::get_width() const
 int frame_archive::frame::get_height() const
 {
     return additional_data.height;
+}
+
+int frame_archive::frame::get_framerate() const
+{
+    return additional_data.fps;
 }
 
 int frame_archive::frame::get_stride() const
