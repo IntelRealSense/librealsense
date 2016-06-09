@@ -1,5 +1,5 @@
 # Intel® RealSense™ Cross Platform API
-**Intel Development Branch** - [What's New?](./doc/whats_new.md)
+**Development Branch** - [What's New?](./doc/whats_new.md)
 
 [ ![Release] [release-image] ] [releases]
 [ ![License] [license-image] ] [license]
@@ -14,7 +14,7 @@ This project is a cross-platform library (Linux, OSX, Windows) for capturing dat
 
 Developer kits containing the necessary hardware to use this library are available for purchase at [this link](http://click.intel.com/realsense.html). This project is separate from the production software stack available in the [Intel® RealSense™ SDK](https://software.intel.com/en-us/intel-realsense-sdk), namely that this library only encompasses camera capture functionality without additional computer vision algorithms.
 
-The Intel® RealSense™ Cross Platform API is experimental and not an official Intel product. It is subject to incompatible API changes in future updates. Breaking API changes are noted through release numbers with [semver](http://semver.org/).
+The Intel® RealSense™ Cross Platform API is experimental and not an official Intel product. It is subject to incompatible API changes in future updates. 
 
 The project requires two external dependencies, GLFW3 (all platforms) and libusb-1.0 (Mac/Linux). These dependencies should be gathered through manual steps that are enumerated as part of this readme file (i.e. these packages must be installed with apt-get on Linux and Homebrew on OSX). GLFW is not required for the core library and is only used for examples.
 

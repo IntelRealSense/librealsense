@@ -28,7 +28,7 @@ int main() try
 
     const auto streams = 4;
     std::vector<uint16_t> supported_streams = { (uint16_t)rs::stream::depth, (uint16_t)rs::stream::color, (uint16_t)rs::stream::infrared};
-    const auto max_queue_size = 1; // To minimize latency, prefer frame drops by constraining the size of the queue
+    const auto max_queue_size = 1; // To minimize latency prefer frame drops
     single_consumer_queue<rs::frame> frames_queue[streams];
     texture_buffer buffers[streams];
     std::atomic<bool> running(true);
