@@ -380,7 +380,7 @@ rs_frame_ref* rs_get_frame(const rs_frameset * frame_set, rs_stream stream, rs_e
     VALIDATE_NOT_NULL(frame_set);
     VALIDATE_ENUM(stream);
     auto frames = (rsimpl::frame_archive::frameset*)frame_set;
-    auto frame = (*frames)[stream];
+    auto frame = frames->get_frame(stream);
     return reinterpret_cast<rs_frame_ref*>(frame);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, frame_set, stream)
