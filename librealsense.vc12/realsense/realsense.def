@@ -18,6 +18,7 @@ EXPORTS
     rs_get_stream_mode
 
     rs_enable_stream
+    rs_enable_stream_ex
     rs_enable_stream_preset
     rs_disable_stream
     rs_is_stream_enabled

@@ -619,7 +619,7 @@ namespace rs
         void enable_stream(stream stream, int width, int height, format format, int framerate, output_buffer_format output_buffer_type = output_buffer_format::continous)
         {
             rs_error * e = nullptr;
-            rs_enable_stream((rs_device *)this, (rs_stream)stream, width, height, (rs_format)format, framerate, (rs_output_buffer_format)output_buffer_type, &e);
+            rs_enable_stream_ex((rs_device *)this, (rs_stream)stream, width, height, (rs_format)format, framerate, (rs_output_buffer_format)output_buffer_type, &e);
             error::handle(e);
         }
 

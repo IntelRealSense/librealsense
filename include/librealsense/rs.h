@@ -345,7 +345,18 @@ void rs_get_stream_mode(const rs_device * device, rs_stream stream, int index, i
  * \param[in] output_format  output buffer format (contious in memory / native with pitch)
  * \param[out] error     if non-null, receives any error that occurs during this call, otherwise, errors are ignored
  */
-void rs_enable_stream(rs_device * device, rs_stream stream, int width, int height, rs_format format, int framerate, rs_output_buffer_format output_format, rs_error ** error);
+void rs_enable_stream_ex(rs_device * device, rs_stream stream, int width, int height, rs_format format, int framerate, rs_output_buffer_format output_format, rs_error ** error);
+
+/**
+* enable a specific stream and request specific properties
+* \param[in] stream         the stream to enable
+* \param[in] width          the desired width of a frame image in pixels, or 0 if any width is acceptable
+* \param[in] height         the desired height of a frame image in pixels, or 0 if any height is acceptable
+* \param[in] format         the pixel format of a frame image, or ANY if any format is acceptable
+* \param[in] framerate      the number of frames which will be streamed per second, or 0 if any framerate is acceptable
+* \param[out] error     if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+*/
+void rs_enable_stream(rs_device * device, rs_stream stream, int width, int height, rs_format format, int framerate, rs_error ** error);
 
 /**
  * enable a specific stream and request properties using a preset
