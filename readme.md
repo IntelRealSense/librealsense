@@ -1,5 +1,5 @@
 # Intel® RealSense™ Cross Platform API
-**Intel Development Branch** - [What's New?](#./doc/whats_new.md)
+**Intel Development Branch** - [What's New?](./doc/whats_new.md)
 
 [ ![Release] [release-image] ] [releases]
 [ ![License] [license-image] ] [license]
