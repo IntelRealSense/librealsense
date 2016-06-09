@@ -413,6 +413,14 @@ rs_format rs_get_detached_frame_format(const rs_frame_ref * frameset, rs_error *
 }
 HANDLE_EXCEPTIONS_AND_RETURN(RS_FORMAT_ANY, frameset)
 
+rs_stream rs_get_detached_frame_stream_type(const rs_frame_ref * frameset, rs_error ** error) try
+{
+	VALIDATE_NOT_NULL(frameset);
+	return ((rsimpl::frame_archive::frame_ref*)frameset)->get_stream_type();
+}
+HANDLE_EXCEPTIONS_AND_RETURN(RS_STREAM_MAX_ENUM, frameset)
+
+
 int rs_get_detached_frame_number(const rs_frame_ref * frame, rs_error ** error) try
 {
     VALIDATE_NOT_NULL(frame);

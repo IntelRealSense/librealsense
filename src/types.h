@@ -233,7 +233,7 @@ namespace rsimpl
         int get_unpacked_width() const;
         int get_unpacked_height() const;
 
-        bool requires_processing() const { return mode.pf.unpackers[unpacker_index].requires_processing || (get_width() != mode.native_dims.x && output_format != RS_OUTPUT_BUFFER_FORMAT_NATIVE); }
+		bool requires_processing() const { return (output_format == RS_OUTPUT_BUFFER_FORMAT_CONTINOUS) || (mode.pf.unpackers[unpacker_index].requires_processing); }
     };
 
     class frame_callback

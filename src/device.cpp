@@ -240,6 +240,7 @@ void rs_device_base::start_video_streaming()
                     stride,
                     bpp,
                     output.second,
+					output.first,
                     mode_selection.pad_crop);
 
                 // Obtain buffers for unpacking the frame

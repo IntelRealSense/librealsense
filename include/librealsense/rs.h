@@ -674,6 +674,12 @@ int rs_get_detached_frame_bpp(const rs_frame_ref * frameset, rs_error ** error);
 rs_format rs_get_detached_frame_format(const rs_frame_ref * frameset, rs_error ** error);
 
 /**
+* retrive frame stream type
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return            stream type
+*/
+rs_stream rs_get_detached_frame_stream_type(const rs_frame_ref * frameset, rs_error ** error);
+/**
 * clone frame handle, creating new handle that is tracking the same underlying frame object
 * \param[in] frame handle returned from detach, clone_ref or from frame callback
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored

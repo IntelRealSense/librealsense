@@ -23,12 +23,13 @@ namespace rsimpl
             int height = 0;
             int stride = 0;
             int bpp = 0;
-			rs_format format;
-			int pad = 0;
+            rs_format format = RS_FORMAT_ANY;
+            rs_stream stream_type = RS_STREAM_MAX_ENUM;
+            int pad = 0;
 
             frame_additional_data(){};
 
-			frame_additional_data(int in_timestamp, int in_frame_number, long long in_system_time, int in_width, int in_height, int in_stride, int in_bpp, const rs_format in_format, int in_pad)
+            frame_additional_data(int in_timestamp, int in_frame_number, long long in_system_time, int in_width, int in_height, int in_stride, int in_bpp, const rs_format in_format, rs_stream in_stream_type, int in_pad)
                 :timestamp(in_timestamp),
                 frame_number(in_frame_number),
                 system_time(in_system_time),
@@ -36,6 +37,7 @@ namespace rsimpl
                 height(in_height),
                 stride(in_stride),
                 bpp(in_bpp),
+                stream_type(in_stream_type),
                 format(in_format){}
         };                        
 
@@ -90,6 +92,8 @@ namespace rsimpl
             void update_owner(frame_archive * new_owner) { owner = new_owner; }
             void attach_continuation(frame_continuation&& continuation) { on_release = std::move(continuation); }
             void disable_continuation() { on_release.reset(); }
+
+	        rs_stream get_stream_type();
         };
 
         class frame_ref // esentially an intrusive shared_ptr<frame>
@@ -143,6 +147,7 @@ namespace rsimpl
             int get_frame_stride()const;
             int get_frame_bpp()const;
 			rs_format get_frame_format()const;
+	        rs_stream get_stream_type() const;
         };
 
         class frameset

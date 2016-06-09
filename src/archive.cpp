@@ -223,6 +223,12 @@ rs_format frame_archive::frame_ref::get_frame_format() const
     return frame_ptr ? frame_ptr->get_format() : RS_FORMAT_ANY;
 }
 
+rs_stream frame_archive::frame_ref::get_stream_type() const
+{
+	return frame_ptr ? frame_ptr->get_stream_type() : RS_STREAM_MAX_ENUM;
+}
+
+
 const byte* frame_archive::frame::get_frame_data() const
 {
     const byte* frame_data;
@@ -286,4 +292,8 @@ int frame_archive::frame::get_bpp() const
 rs_format frame_archive::frame::get_format() const
 {
     return additional_data.format;
+}
+rs_stream frame_archive::frame::get_stream_type()
+{
+	return additional_data.stream_type;
 }
