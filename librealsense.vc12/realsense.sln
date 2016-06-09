@@ -1,5 +1,4 @@
-﻿
-Microsoft Visual Studio Solution File, Format Version 12.00
+﻿Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2013
 VisualStudioVersion = 12.0.31101.0
 MinimumVisualStudioVersion = 10.0.40219.1
@@ -347,7 +346,6 @@ Global
 		{D1A726B7-DF03-4F04-AEC8-936AB88FC372}.Release|Win32.Build.0 = Release|Win32
 		{D1A726B7-DF03-4F04-AEC8-936AB88FC372}.Release|x64.ActiveCfg = Release|x64
 		{D1A726B7-DF03-4F04-AEC8-936AB88FC372}.Release|x64.Build.0 = Release|x64
-
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

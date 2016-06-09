@@ -41,7 +41,7 @@ int main() try
     {
         std::cout << "Motion: "
             << "timestamp: " << entry.timestamp_data.timestamp
-            << "\tsource: " << (rs::source)entry.timestamp_data.source_id
+            << "\tsource: " << (rs::event)entry.timestamp_data.source_id
             << "\tframe_num: " << entry.timestamp_data.frame_number
             //<< "\tvalid: "  << (int)entry.is_valid - Not available         - temporaly disabled
             << "\tx: " << entry.axes[0] << "\ty: " << entry.axes[1] << "\tz: " << entry.axes[2]
