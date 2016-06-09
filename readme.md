@@ -1,7 +1,6 @@
 # Intel® RealSense™ Cross Platform API
 **Development Branch** - [What's New?](./doc/whats_new.md)
 
-[ ![Release] [release-image] ] [releases]
 [ ![License] [license-image] ] [license]
 
 [release-image]: http://img.shields.io/badge/release-1.9.2-blue.svg?style=flat
