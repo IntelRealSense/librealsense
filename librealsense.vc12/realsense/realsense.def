@@ -69,7 +69,7 @@ EXPORTS
     rs_get_detached_frame_stride
     rs_get_detached_frame_bpp
     rs_get_detached_frame_format
-	rs_get_detached_frame_stream_type
+    rs_get_detached_frame_stream_type
 
     rs_release_frame
     rs_detach_frame
