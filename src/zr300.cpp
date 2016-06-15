@@ -1,32 +1,48 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
-#include "r200.h"
-#include "r200-private.h"
-#include "image.h"
-
 #include <cstring>
 #include <climits>
 #include <algorithm>
 #include <iostream>
+
+#include "image.h"
+
+#include "ds-camera.h"
+#include "zr300-private.h"
+#include "zr300.h"
 
 using namespace rsimpl;
 using namespace rsimpl::motion_module;
 
 namespace rsimpl
 {
-    r200_camera::r200_camera(std::shared_ptr<uvc::device> device, const static_device_info & info) 
-    : ds_camera(device, info)
+    zr300_camera::zr300_camera(std::shared_ptr<uvc::device> device, const static_device_info & info)
+    : ds_camera(device, info),
+      motion_module_ctrl(device.get())
     {
 
     }
     
-    r200_camera::~r200_camera()
+    zr300_camera::~zr300_camera()
     {
 
     }
 
-    std::shared_ptr<rs_device> make_ds_device(std::shared_ptr<uvc::device> device, static_device_info& info, ds::ds_calibration& c)
+    bool is_fisheye_uvc_control(rs_option option)
+    {
+        return (option == RS_OPTION_FISHEYE_COLOR_EXPOSURE) ||
+               (option == RS_OPTION_FISHEYE_COLOR_GAIN);
+    }
+
+    bool is_fisheye_xu_control(rs_option option)
+    {
+        return (option == RS_OPTION_FISHEYE_STROBE) ||
+               (option == RS_OPTION_FISHEYE_EXT_TRIG);
+    }
+
+	// TODO refactor with factory
+	std::shared_ptr<rs_device> make_zr300_device(std::shared_ptr<uvc::device> device, static_device_info& info, ds::ds_calibration& c)
     {
         info.capabilities_vector.push_back(RS_CAPABILITIES_COLOR);
         info.capabilities_vector.push_back(RS_CAPABILITIES_DEPTH);
@@ -122,6 +138,16 @@ namespace rsimpl
             {RS_OPTION_R200_DEPTH_CONTROL_LR_THRESHOLD,                 0, 0x7FF,       1}
         };
 
+        if ("Intel RealSense ZR300" ==info.name)
+        {
+            info.options.push_back({ RS_OPTION_ZR300_GYRO_BANDWIDTH, (int)mm_gyro_bandwidth::gyro_bw_default, (int)mm_gyro_bandwidth::gyro_bw_200hz,  1, (int)mm_gyro_bandwidth::gyro_bw_200hz });
+            info.options.push_back({ RS_OPTION_ZR300_GYRO_RANGE,     (int)mm_gyro_range::gyro_range_default,  (int)mm_gyro_range::gyro_range_1000, 1,  (int)mm_gyro_range::gyro_range_1000 });
+            info.options.push_back({ RS_OPTION_ZR300_ACCELEROMETER_BANDWIDTH,   (int)mm_accel_bandwidth::accel_bw_default, (int)mm_accel_bandwidth::accel_bw_250hz, 1,  (int)mm_accel_bandwidth::accel_bw_125hz });
+            info.options.push_back({ RS_OPTION_ZR300_ACCELEROMETER_RANGE,       (int)mm_accel_range::accel_range_default,   (int)mm_accel_range::accel_range_16g, 1, (int)mm_accel_range::accel_range_4g });
+            info.options.push_back({ RS_OPTION_ZR300_MOTION_MODULE_TIME_SEED,       0,      UINT_MAX,   1,   0 });
+            info.options.push_back({ RS_OPTION_ZR300_MOTION_MODULE_ACTIVE,          0,       1,         1,   0 });
+        }
+
         if (uvc::is_device_connected(*device, VID_INTEL_CAMERA, FISHEYE_PRODUCT_ID))
         {
             info.options.push_back({RS_OPTION_FISHEYE_COLOR_EXPOSURE});
@@ -151,22 +177,22 @@ namespace rsimpl
 
         // On LibUVC backends, the R200 should use four transfer buffers
         info.num_libuvc_transfer_buffers = 4;
-        return std::make_shared<r200_camera>(device, info);
+        return std::make_shared<zr300_camera>(device, info);
     }
 
-    //bool r200_camera::is_disparity_mode_enabled() const
+    //bool zr300_camera::is_disparity_mode_enabled() const
     //{
     //    auto & depth = get_stream_interface(RS_STREAM_DEPTH);
     //    return depth.is_enabled() && depth.get_format() == RS_FORMAT_DISPARITY16;
     //}
 
-    //void r200_camera::on_update_depth_units(uint32_t units)
+    //void zr300_camera::on_update_depth_units(uint32_t units)
     //{
     //    if(is_disparity_mode_enabled()) return;
     //    config.depth_scale = (float)units / 1000000; // Convert from micrometers to meters
     //}
 
-    //void r200_camera::on_update_disparity_multiplier(double multiplier)
+    //void zr300_camera::on_update_disparity_multiplier(double multiplier)
     //{
     //    if(!is_disparity_mode_enabled()) return;
     //    auto & depth = get_stream_interface(RS_STREAM_DEPTH);
@@ -174,136 +200,171 @@ namespace rsimpl
     //    config.depth_scale = static_cast<float>(depth.get_intrinsics().fx * baseline * multiplier);
     //}
 
-    std::shared_ptr<rs_device> make_r200_device(std::shared_ptr<uvc::device> device)
+    void zr300_camera::set_options(const rs_option options[], size_t count, const double values[])
     {
-        LOG_INFO("Connecting to Intel RealSense R200");
+        std::vector<rs_option>  base_opt;
+        std::vector<double>     base_opt_val;
 
-        static_device_info info;
-        info.name = {"Intel RealSense R200"};
-        auto c = ds::read_camera_info(*device);
-        info.subdevice_modes.push_back({ 2, { 1920, 1080 }, pf_rw10, 30, c.intrinsicsThird[0], { c.modesThird[0][0] }, { 0 } });
+        auto & dev = get_device();
+        auto mm_cfg_writer = make_struct_interface<motion_module::mm_config>([this]() { return motion_module_configuration; }, [&dev, this](mm_config param) {
+            motion_module::config(dev, (uint8_t)param.gyro_bandwidth, (uint8_t)param.gyro_range, (uint8_t)param.accel_bandwidth, (uint8_t)param.accel_range, param.mm_time_seed);
+            motion_module_configuration = param; });
 
-        return make_ds_device(device, info, c);
+        // Handle ZR300 specific options first
+        for (int i = 0; i < count; ++i)
+        {
+            if (is_fisheye_uvc_control(options[i]))
+            {
+                uvc::set_pu_control_with_retry(get_device(), 3, options[i], static_cast<int>(values[i]));
+                continue;
+            }
+
+            switch (options[i])
+            {
+            case RS_OPTION_FISHEYE_STROBE:             zr300::set_strobe(get_device(), static_cast<uint8_t>(values[i])); break;
+            case RS_OPTION_FISHEYE_EXT_TRIG:           zr300::set_ext_trig(get_device(), static_cast<uint8_t>(values[i])); break;
+
+            case RS_OPTION_ZR300_GYRO_BANDWIDTH:                            mm_cfg_writer.set(&motion_module::mm_config::gyro_bandwidth, (uint8_t)values[i]); break;
+            case RS_OPTION_ZR300_GYRO_RANGE:                                mm_cfg_writer.set(&motion_module::mm_config::gyro_range, (uint8_t)values[i]); break;
+            case RS_OPTION_ZR300_ACCELEROMETER_BANDWIDTH:                   mm_cfg_writer.set(&motion_module::mm_config::accel_bandwidth, (uint8_t)values[i]); break;
+            case RS_OPTION_ZR300_ACCELEROMETER_RANGE:                       mm_cfg_writer.set(&motion_module::mm_config::accel_range, (uint8_t)values[i]); break;
+            case RS_OPTION_ZR300_MOTION_MODULE_TIME_SEED:                   mm_cfg_writer.set(&motion_module::mm_config::mm_time_seed, values[i]); break;
+
+                // Default will be handled by parent implementation
+            default: base_opt.push_back(options[i]); base_opt_val.push_back(values[i]); break;
+            }
+        }
+
+        // Apply Motion Configuraiton
+        mm_cfg_writer.commit();
+
+        //Then handle the common options
+        if (base_opt.size())
+            ds_camera::set_options(base_opt.data(), base_opt.size(), base_opt_val.data());
     }
 
-    std::shared_ptr<rs_device> make_lr200_device(std::shared_ptr<uvc::device> device)
+
+    std::shared_ptr<rs_device> make_zr300_device(std::shared_ptr<uvc::device> device)
     {
-        LOG_INFO("Connecting to Intel RealSense LR200");
+        LOG_INFO("Connecting to Intel RealSense ZR300");
 
         static_device_info info;
-        info.name = { "Intel RealSense LR200" };
-        auto c = ds::read_camera_info(*device);
+        info.name = { "Intel RealSense ZR300" };
+        auto c = ds::read_camera_info(*device);        
         info.subdevice_modes.push_back({ 2, { 1920, 1080 }, pf_rw16, 30, c.intrinsicsThird[0], { c.modesThird[0][0] }, { 0 } });
 
-        return make_ds_device(device, info, c);
+        // TODO - is Motion Module optional
+        if (uvc::is_device_connected(*device, VID_INTEL_CAMERA, FISHEYE_PRODUCT_ID))
+        {
+            // Acquire Device handle for Motion Module API
+            zr300::claim_motion_module_interface(*device);
+
+            info.capabilities_vector.push_back(RS_CAPABILITIES_FISH_EYE);
+            info.capabilities_vector.push_back(RS_CAPABILITIES_MOTION_EVENTS);
+
+            info.stream_subdevices[RS_STREAM_FISHEYE] = 3;
+            info.presets[RS_STREAM_FISHEYE][RS_PRESET_BEST_QUALITY] = {true, 640, 480, RS_FORMAT_RAW8,   60};
+            info.subdevice_modes.push_back({3, {640, 480}, pf_raw8, 60, c.intrinsicsThird[1], {c.modesThird[1][0]}, {0}});
+            info.subdevice_modes.push_back({3, {640, 480}, pf_raw8, 30, c.intrinsicsThird[1], {c.modesThird[1][0]}, {0}});            
+        }        
+
+        return make_zr300_device(device, info, c);
     }
 
-    //std::shared_ptr<rs_device> make_zr300_device(std::shared_ptr<uvc::device> device)
-    //{
-    //    LOG_INFO("Connecting to Intel RealSense ZR300");
+    void zr300_camera::get_options(const rs_option options[], size_t count, double values[])
+    {
+        std::vector<rs_option>  base_opt;
+        std::vector<size_t> base_opt_index;
+        std::vector<double>     base_opt_val;
 
-    //    static_device_info info;
-    //    info.name = { "Intel RealSense ZR300" };
-    //    auto c = r200::read_camera_info(*device);        
-    //    info.subdevice_modes.push_back({ 2, { 1920, 1080 }, pf_rw16, 30, c.intrinsicsThird[0], { c.modesThird[0][0] }, { 0 } });
+        auto & dev = get_device();
+        auto mm_cfg_reader = make_struct_interface<motion_module::mm_config>([this]() { return motion_module_configuration; }, []() { throw std::logic_error("Operation not allowed"); });
 
-    //    if (uvc::is_device_connected(*device, VID_INTEL_CAMERA, FISHEYE_PRODUCT_ID))
-    //    {
-    //        // Acquire Device handle for Motion Module API
-    //        r200::claim_motion_module_interface(*device);
+        // Retrieve ZR300 specific options first
+        for(int i=0; i<count; ++i)
+        {
+            if (is_fisheye_uvc_control(options[i]))
+            {
+                values[i] = uvc::get_pu_control(get_device(), 3, options[i]);
+                continue;
+            }
 
-    //        info.capabilities_vector.push_back(RS_CAPABILITIES_FISH_EYE);
-    //        info.capabilities_vector.push_back(RS_CAPABILITIES_MOTION_EVENTS);
+            switch(options[i])
+            {
 
-    //        info.stream_subdevices[RS_STREAM_FISHEYE] = 3;
-    //        info.presets[RS_STREAM_FISHEYE][RS_PRESET_BEST_QUALITY] = {true, 640, 480, RS_FORMAT_RAW8,   60};
-    //        info.subdevice_modes.push_back({3, {640, 480}, pf_raw8, 60, c.intrinsicsThird[1], {c.modesThird[1][0]}, {0}});
-    //        info.subdevice_modes.push_back({3, {640, 480}, pf_raw8, 30, c.intrinsicsThird[1], {c.modesThird[1][0]}, {0}});            
-    //    }        
+            case RS_OPTION_FISHEYE_STROBE:             values[i] = zr300::get_strobe            (get_device()); break;
+            case RS_OPTION_FISHEYE_EXT_TRIG:           values[i] = zr300::get_ext_trig          (get_device()); break;
 
-    //    return make_device(device, info, c);
-    //}
+            case RS_OPTION_ZR300_MOTION_MODULE_ACTIVE:                       values[i] = is_motion_tracking_active();
 
-    //void r200_camera::get_options(const rs_option options[], size_t count, double values[])
-    //{
-    //    auto & dev = get_device();
-    //    auto minmax_reader = make_struct_interface<r200::range    >([&dev]() { return r200::get_min_max_depth(dev);           }, [&dev](r200::range     v) { r200::set_min_max_depth(dev,v);           });
-    //    auto disp_reader   = make_struct_interface<r200::disp_mode>([&dev]() { return r200::get_disparity_mode(dev);          }, [&dev](r200::disp_mode v) { r200::set_disparity_mode(dev,v);          });
-    //    auto ae_reader     = make_struct_interface<r200::ae_params>([&dev]() { return r200::get_lr_auto_exposure_params(dev); }, [&dev](r200::ae_params v) { r200::set_lr_auto_exposure_params(dev,v); });
-    //    auto dc_reader     = make_struct_interface<r200::dc_params>([&dev]() { return r200::get_depth_params(dev);            }, [&dev](r200::dc_params v) { r200::set_depth_params(dev,v);            }); 
+            case RS_OPTION_ZR300_GYRO_BANDWIDTH:                             values[i] = (double)mm_cfg_reader.get(&motion_module::mm_config::gyro_bandwidth ); break;
+            case RS_OPTION_ZR300_GYRO_RANGE:                                 values[i] = (double)mm_cfg_reader.get(&motion_module::mm_config::gyro_range     ); break;
+            case RS_OPTION_ZR300_ACCELEROMETER_BANDWIDTH:                    values[i] = (double)mm_cfg_reader.get(&motion_module::mm_config::accel_bandwidth); break;
+            case RS_OPTION_ZR300_ACCELEROMETER_RANGE:                        values[i] = (double)mm_cfg_reader.get(&motion_module::mm_config::accel_range    ); break;
+            case RS_OPTION_ZR300_MOTION_MODULE_TIME_SEED:                    values[i] = (double)mm_cfg_reader.get(&motion_module::mm_config::mm_time_seed   ); break;
 
-    //    for(int i=0; i<count; ++i)
-    //    {
+                // Default will be handled by parent implementation
+            default: base_opt.push_back(options[i]); base_opt_index.push_back(i);  break;
+            }
+        }
 
-    //        if(uvc::is_pu_control(options[i]))
-    //        {
-    //            values[i] = uvc::get_pu_control(get_device(), 2, options[i]);
-    //            continue;
-    //        }
+        //Then retrieve the common options
+        if (base_opt.size())
+        {
+            base_opt_val.resize(base_opt.size());
+            ds_camera::get_options(base_opt.data(), base_opt.size(), base_opt_val.data());
+        }
 
-    //        switch(options[i])
-    //        {
+        // Then merge the local data with values obtained by base class
+        for (auto i : base_opt_index)
+            values[i] = base_opt_val[i];
 
-    //        //case RS_OPTION_FISHEYE_STROBE:             values[i] = r200::get_strobe            (get_device()); break;
-    //        //case RS_OPTION_FISHEYE_EXT_TRIG:           values[i] = r200::get_ext_trig          (get_device()); break;
+    }
 
-    //        case RS_OPTION_R200_LR_AUTO_EXPOSURE_ENABLED:                   values[i] = r200::get_lr_exposure_mode(get_device()); break;
-    //        
-    //        case RS_OPTION_R200_LR_GAIN: // Gain is framerate dependent
-    //            r200::set_lr_gain_discovery(get_device(), {get_lr_framerate()});
-    //            values[i] = r200::get_lr_gain(get_device()).value;
-    //            break;
-    //        case RS_OPTION_R200_LR_EXPOSURE: // Exposure is framerate dependent
-    //            r200::set_lr_exposure_discovery(get_device(), {get_lr_framerate()});
-    //            values[i] = r200::get_lr_exposure(get_device()).value;
-    //            break;
-    //        case RS_OPTION_R200_EMITTER_ENABLED:
-    //            values[i] = r200::get_emitter_state(get_device(), is_capturing(), get_stream_interface(RS_STREAM_DEPTH).is_enabled());
-    //            break;
+    void zr300_camera::toggle_motion_module_power(bool on)
+    {        
+        motion_module_ctrl.toggle_motion_module_power(on);
+    }
 
-    //        case RS_OPTION_R200_DEPTH_UNITS:                                values[i] = r200::get_depth_units(get_device());  break;
+    void zr300_camera::toggle_motion_module_events(bool on)
+    {
+        motion_module_ctrl.toggle_motion_module_events(on);
+    }
 
-    //        case RS_OPTION_R200_DEPTH_CLAMP_MIN:                            values[i] = minmax_reader.get(&r200::range::min); break;
-    //        case RS_OPTION_R200_DEPTH_CLAMP_MAX:                            values[i] = minmax_reader.get(&r200::range::max); break;
+    // Power on Fisheye camera (dspwr)
+    void zr300_camera::start(rs_source source)
+    {
+        if ((supports(rs_capabilities::RS_CAPABILITIES_FISH_EYE)) && ((config.requests[RS_STREAM_FISHEYE].enabled)))
+            toggle_motion_module_power(true);
 
-    //        case RS_OPTION_R200_DISPARITY_MULTIPLIER:                       values[i] = disp_reader.get(&r200::disp_mode::disparity_multiplier); break;
-    //        case RS_OPTION_R200_DISPARITY_SHIFT:                            values[i] = r200::get_disparity_shift(get_device()); break;
+        rs_device_base::start(source);
+    }
 
-    //        //case RS_OPTION_ZR300_MOTION_MODULE_ACTIVE:                       values[i] = is_motion_tracking_active();
+    // Power off Fisheye camera
+    void zr300_camera::stop(rs_source source)
+    {
+        rs_device_base::stop(source);
+        if ((supports(rs_capabilities::RS_CAPABILITIES_FISH_EYE)) && ((config.requests[RS_STREAM_FISHEYE].enabled)))
+            toggle_motion_module_power(false);
+    }
 
-    //        case RS_OPTION_R200_AUTO_EXPOSURE_MEAN_INTENSITY_SET_POINT:     values[i] = ae_reader.get(&r200::ae_params::mean_intensity_set_point); break;
-    //        case RS_OPTION_R200_AUTO_EXPOSURE_BRIGHT_RATIO_SET_POINT:       values[i] = ae_reader.get(&r200::ae_params::bright_ratio_set_point  ); break;
-    //        case RS_OPTION_R200_AUTO_EXPOSURE_KP_GAIN:                      values[i] = ae_reader.get(&r200::ae_params::kp_gain                 ); break;
-    //        case RS_OPTION_R200_AUTO_EXPOSURE_KP_EXPOSURE:                  values[i] = ae_reader.get(&r200::ae_params::kp_exposure             ); break;
-    //        case RS_OPTION_R200_AUTO_EXPOSURE_KP_DARK_THRESHOLD:            values[i] = ae_reader.get(&r200::ae_params::kp_dark_threshold       ); break;
-    //        case RS_OPTION_R200_AUTO_EXPOSURE_TOP_EDGE:                     values[i] = ae_reader.get(&r200::ae_params::exposure_top_edge       ); break;
-    //        case RS_OPTION_R200_AUTO_EXPOSURE_BOTTOM_EDGE:                  values[i] = ae_reader.get(&r200::ae_params::exposure_bottom_edge    ); break;
-    //        case RS_OPTION_R200_AUTO_EXPOSURE_LEFT_EDGE:                    values[i] = ae_reader.get(&r200::ae_params::exposure_left_edge      ); break;
-    //        case RS_OPTION_R200_AUTO_EXPOSURE_RIGHT_EDGE:                   values[i] = ae_reader.get(&r200::ae_params::exposure_right_edge     ); break;
+    // Power on motion module (mmpwr)
+    void zr300_camera::start_motion_tracking()
+    {
+        if (supports(rs_capabilities::RS_CAPABILITIES_MOTION_EVENTS))
+            toggle_motion_module_events(true);
+        rs_device_base::start_motion_tracking();
+    }
 
-    //        case RS_OPTION_R200_DEPTH_CONTROL_ESTIMATE_MEDIAN_DECREMENT:    values[i] = dc_reader.get(&r200::dc_params::robbins_munroe_minus_inc); break;
-    //        case RS_OPTION_R200_DEPTH_CONTROL_ESTIMATE_MEDIAN_INCREMENT:    values[i] = dc_reader.get(&r200::dc_params::robbins_munroe_plus_inc ); break;
-    //        case RS_OPTION_R200_DEPTH_CONTROL_MEDIAN_THRESHOLD:             values[i] = dc_reader.get(&r200::dc_params::median_thresh           ); break;
-    //        case RS_OPTION_R200_DEPTH_CONTROL_SCORE_MINIMUM_THRESHOLD:      values[i] = dc_reader.get(&r200::dc_params::score_min_thresh        ); break;
-    //        case RS_OPTION_R200_DEPTH_CONTROL_SCORE_MAXIMUM_THRESHOLD:      values[i] = dc_reader.get(&r200::dc_params::score_max_thresh        ); break;
-    //        case RS_OPTION_R200_DEPTH_CONTROL_TEXTURE_COUNT_THRESHOLD:      values[i] = dc_reader.get(&r200::dc_params::texture_count_thresh    ); break;
-    //        case RS_OPTION_R200_DEPTH_CONTROL_TEXTURE_DIFFERENCE_THRESHOLD: values[i] = dc_reader.get(&r200::dc_params::texture_diff_thresh     ); break;
-    //        case RS_OPTION_R200_DEPTH_CONTROL_SECOND_PEAK_THRESHOLD:        values[i] = dc_reader.get(&r200::dc_params::second_peak_thresh      ); break;
-    //        case RS_OPTION_R200_DEPTH_CONTROL_NEIGHBOR_THRESHOLD:           values[i] = dc_reader.get(&r200::dc_params::neighbor_thresh         ); break;
-    //        case RS_OPTION_R200_DEPTH_CONTROL_LR_THRESHOLD:                 values[i] = dc_reader.get(&r200::dc_params::lr_thresh               ); break;
+    // Power down Motion Module
+    void zr300_camera::stop_motion_tracking()
+    {
+        rs_device_base::stop_motion_tracking();
+        if (supports(rs_capabilities::RS_CAPABILITIES_MOTION_EVENTS))
+            toggle_motion_module_events(false);
+    }
 
-    //        //case RS_OPTION_ZR300_GYRO_BANDWIDTH:                             values[i] = (double)mm_cfg_reader.get(&motion_module::mm_config::gyro_bandwidth ); break;
-    //        //case RS_OPTION_ZR300_GYRO_RANGE:                                 values[i] = (double)mm_cfg_reader.get(&motion_module::mm_config::gyro_range     ); break;
-    //        //case RS_OPTION_ZR300_ACCELEROMETER_BANDWIDTH:                    values[i] = (double)mm_cfg_reader.get(&motion_module::mm_config::accel_bandwidth); break;
-    //        //case RS_OPTION_ZR300_ACCELEROMETER_RANGE:                        values[i] = (double)mm_cfg_reader.get(&motion_module::mm_config::accel_range    ); break;
-    //        //case RS_OPTION_ZR300_MOTION_MODULE_TIME_SEED:                    values[i] = (double)mm_cfg_reader.get(&motion_module::mm_config::mm_time_seed   ); break;
-
-    //        default: LOG_WARNING("Cannot get " << options[i] << " on " << get_name()); break;
-    //        }
-    //    }
-    //}
-
-    //void r200_camera::on_before_start(const std::vector<subdevice_mode_selection> & selected_modes)
+    //void zr300_camera::on_before_start(const std::vector<subdevice_mode_selection> & selected_modes)
     //{
     //    rs_option depth_units_option = RS_OPTION_R200_DEPTH_UNITS;
     //    double depth_units;
@@ -338,30 +399,30 @@ namespace rsimpl
     //    r200::set_stream_intent(get_device(), streamIntent);
     //}
 
-    //rs_stream r200_camera::select_key_stream(const std::vector<rsimpl::subdevice_mode_selection> & selected_modes)
-    //{
-    //    // When all streams are enabled at an identical framerate, R200 images are delivered in the order: Z -> Third -> L/R
-    //    // To maximize the chance of being able to deliver coherent framesets, we want to wait on the latest image coming from
-    //    // a stream running at the fastest framerate.
-    //    int fps[RS_STREAM_NATIVE_COUNT] = {}, max_fps = 0;
-    //    for(const auto & m : selected_modes)
-    //    {
-    //        for(const auto & output : m.get_outputs())
-    //        {
-    //            fps[output.first] = m.mode.fps;
-    //            max_fps = std::max(max_fps, m.mode.fps);
-    //        }
-    //    }
+    rs_stream zr300_camera::select_key_stream(const std::vector<rsimpl::subdevice_mode_selection> & selected_modes)
+    {
+        // When all streams are enabled at an identical framerate, R200 images are delivered in the order: Z -> Third -> L/R
+        // To maximize the chance of being able to deliver coherent framesets, we want to wait on the latest image coming from
+        // a stream running at the fastest framerate.
+        int fps[RS_STREAM_NATIVE_COUNT] = {}, max_fps = 0;
+        for(const auto & m : selected_modes)
+        {
+            for(const auto & output : m.get_outputs())
+            {
+                fps[output.first] = m.mode.fps;
+                max_fps = std::max(max_fps, m.mode.fps);
+            }
+        }
 
-    //    // Select the "latest arriving" stream which is running at the fastest framerate
-    //    for(auto s : {RS_STREAM_COLOR, RS_STREAM_INFRARED2, RS_STREAM_INFRARED, RS_STREAM_FISHEYE})
-    //    {
-    //        if(fps[s] == max_fps) return s;
-    //    }
-    //    return RS_STREAM_DEPTH;
-    //}
+        // Select the "latest arriving" stream which is running at the fastest framerate
+        for(auto s : {RS_STREAM_COLOR, RS_STREAM_INFRARED2, RS_STREAM_INFRARED, RS_STREAM_FISHEYE})
+        {
+            if(fps[s] == max_fps) return s;
+        }
+        return RS_STREAM_DEPTH;
+    }
 
-    //uint32_t r200_camera::get_lr_framerate() const
+    //uint32_t zr300_camera::get_lr_framerate() const
     //{
     //    for(auto s : {RS_STREAM_DEPTH, RS_STREAM_INFRARED, RS_STREAM_INFRARED2})
     //    {
@@ -371,7 +432,7 @@ namespace rsimpl
     //    return 30; // If no streams have yet been enabled, return the minimum possible left/right framerate, to allow the maximum possible exposure range
     //}
 
-    /*void r200_camera::set_xu_option(rs_option option, int value)
+    /*void zr300_camera::set_xu_option(rs_option option, int value)
     {
         if(is_capturing())
         {
@@ -387,54 +448,30 @@ namespace rsimpl
         }
     }*/
     
-    bool r200_camera::supports_option(rs_option option) const
+    bool zr300_camera::supports_option(rs_option option) const
     {
         // We have special logic to implement LR gain and exposure, so they do not belong to the standard option list
         return option == RS_OPTION_R200_LR_GAIN || option == RS_OPTION_R200_LR_EXPOSURE || rs_device_base::supports_option(option);
     }
 
-    //void r200_camera::get_option_range(rs_option option, double & min, double & max, double & step, double & def)
-    //{
-    //    if (is_fisheye_uvc_control(option))
-    //    {
-    //        int mn, mx, stp, df;
-    //        uvc::get_pu_control_range(get_device(), 3, option, &mn, &mx, &stp, &df);
-    //        min = mn;
-    //        max = mx;
-    //        step = stp;
-    //        def = df;
-    //        return;
-    //    }
+    void zr300_camera::get_option_range(rs_option option, double & min, double & max, double & step, double & def)
+    {
+        if (is_fisheye_uvc_control(option))
+        {
+            int mn, mx, stp, df;
+            uvc::get_pu_control_range(get_device(), 3, option, &mn, &mx, &stp, &df);
+            min = mn;
+            max = mx;
+            step = stp;
+            def = df;
+            return;
+        }
 
-    //    // Gain min/max is framerate dependent
-    //    if(option == RS_OPTION_R200_LR_GAIN)
-    //    {
-    //        r200::set_lr_gain_discovery(get_device(), {get_lr_framerate()});
-    //        auto disc = r200::get_lr_gain_discovery(get_device());
-    //        min = disc.min;
-    //        max = disc.max;
-    //        step = 1;
-    //        def = disc.default_value;
-    //        return;
-    //    }
+        // Default to parent implementation
+        ds_camera::get_option_range(option, min, max, step, def);
+    }
 
-    //    // Exposure min/max is framerate dependent
-    //    if(option == RS_OPTION_R200_LR_EXPOSURE)
-    //    {
-    //        r200::set_lr_exposure_discovery(get_device(), {get_lr_framerate()});
-    //        auto disc = r200::get_lr_exposure_discovery(get_device());
-    //        min = disc.min;
-    //        max = disc.max;
-    //        step = 1;
-    //        def = disc.default_value;
-    //        return;
-    //    }
-
-    //    // Default to parent implementation
-    //    rs_device_base::get_option_range(option, min, max, step, def);
-    //}
-
-    //// All R200 images which are not in YUY2 format contain an extra row of pixels, called the "dinghy", which contains useful information
+    //// All R200/ZR300 images which are not in YUY2 format contain an extra row of pixels, called the "dinghy", which contains useful information
     //const ds_private::Dinghy & get_dinghy(const subdevice_mode & mode, const void * frame)
     //{
     //    return *reinterpret_cast<const ds_private::Dinghy *>(reinterpret_cast<const uint8_t *>(frame) + mode.pf.get_image_size(mode.native_dims.x, mode.native_dims.y-1));
@@ -578,7 +615,7 @@ namespace rsimpl
     //    }
     //};
 
-    //std::shared_ptr<frame_timestamp_reader> r200_camera::create_frame_timestamp_reader() const
+    //std::shared_ptr<frame_timestamp_reader> zr300_camera::create_frame_timestamp_reader() const
     //{
     //    // If left, right, or Z streams are enabled, convert frame numbers to millisecond timestamps based on LRZ framerate
     //    for(auto s : {RS_STREAM_DEPTH, RS_STREAM_INFRARED, RS_STREAM_INFRARED2, RS_STREAM_FISHEYE})

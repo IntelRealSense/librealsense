@@ -11,7 +11,7 @@
 #include <functional>   // For function
 #include <thread>       // For this_thread::sleep_for
 
-#define PID_INTEL_CAMERA 0x8086
+const uint16_t VID_INTEL_CAMERA = 0x8086;
 
 namespace rsimpl
 {

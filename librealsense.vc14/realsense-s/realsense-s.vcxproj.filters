@@ -7,6 +7,9 @@
     <Filter Include="include">
       <UniqueIdentifier>{7c55ef50-4524-4b0f-83ab-efb6b40218b9}</UniqueIdentifier>
     </Filter>
+    <Filter Include="refactoring">
+      <UniqueIdentifier>{f0f88a20-9c3b-464d-a7ff-285f1510c124}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\context.cpp">
@@ -25,12 +28,6 @@
       <Filter>src</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\log.cpp">
-      <Filter>src</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\r200.cpp">
-      <Filter>src</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\r200-private.cpp">
       <Filter>src</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\rs.cpp">
@@ -72,6 +69,24 @@
     <ClCompile Include="..\..\src\timestamps.cpp">
       <Filter>src</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\r200.cpp">
+      <Filter>refactoring</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\r200-private.cpp">
+      <Filter>refactoring</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\zr300-private.cpp">
+      <Filter>refactoring</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\zr300.cpp">
+      <Filter>refactoring</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ds-private.cpp">
+      <Filter>refactoring</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ds-camera.cpp">
+      <Filter>refactoring</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\src\context.h">
@@ -87,12 +102,6 @@
       <Filter>src</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\image.h">
-      <Filter>src</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\r200.h">
-      <Filter>src</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\r200-private.h">
       <Filter>src</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\stream.h">
@@ -130,6 +139,24 @@
     </ClInclude>
     <ClInclude Include="..\..\include\librealsense\rscore.hpp">
       <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\r200-private.h">
+      <Filter>refactoring</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\r200.h">
+      <Filter>refactoring</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\zr300-private.h">
+      <Filter>refactoring</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\zr300.h">
+      <Filter>refactoring</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ds-private.h">
+      <Filter>refactoring</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ds-camera.h">
+      <Filter>refactoring</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

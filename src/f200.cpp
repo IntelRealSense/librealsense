@@ -395,7 +395,7 @@ namespace rsimpl
         }
     }
 
-    void f200_camera::set_options(const rs_option options[], int count, const double values[])
+    void f200_camera::set_options(const rs_option options[], size_t count, const double values[])
     {
         auto arr_writer = make_struct_interface<f200::IVCAMAutoRangeRequest>([this]() { return arr; }, [this](f200::IVCAMAutoRangeRequest r) {
             f200::set_auto_range(get_device(), usbMutex, r.enableMvR, r.minMvR, r.maxMvR, r.startMvR, r.enableLaser, r.minLaser, r.maxLaser, r.startLaser, r.ARUpperTh, r.ARLowerTh);
@@ -450,7 +450,7 @@ namespace rsimpl
         arr_wakeup_dev_writer.commit();
     }
 
-    void f200_camera::get_options(const rs_option options[], int count, double values[])
+    void f200_camera::get_options(const rs_option options[], size_t count, double values[])
     {
         auto arr_reader = make_struct_interface<f200::IVCAMAutoRangeRequest>([this]() { return arr; }, [this](f200::IVCAMAutoRangeRequest r) {});
 

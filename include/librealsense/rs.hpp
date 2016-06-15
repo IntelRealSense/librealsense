@@ -814,7 +814,7 @@ namespace rs
         /// \param[in] options  the array of options which should be queried
         /// \param[in] count    the length of the options and values arrays
         /// \param[out] values  the array which will receive the values of the queried options
-        void get_options(const option * options, int count, double * values)
+        void get_options(const option * options, size_t count, double * values)
         {
             rs_error * e = nullptr;
             rs_get_device_options((rs_device *)this, (const rs_option *)options, count, values, &e);
@@ -825,7 +825,7 @@ namespace rs
         /// \param[in] options  the array of options which should be set
         /// \param[in] count    the length of the options and values arrays
         /// \param[in] values   the array of values to which the options should be set
-        void set_options(const option * options, int count, const double * values)
+        void set_options(const option * options, size_t count, const double * values)
         {
             rs_error * e = nullptr;
             rs_set_device_options((rs_device *)this, (const rs_option *)options, count, values, &e);
