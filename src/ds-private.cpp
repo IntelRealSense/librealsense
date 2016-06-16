@@ -40,18 +40,6 @@ enum class command_modifier : uint32_t { direct = 0x10 }; // Command/response mo
 namespace rsimpl { 
     namespace ds 
     {
-    //const uvc::guid MOTION_MODULE_USB_DEVICE_GUID = { 0xC0B55A29, 0xD7B6, 0x436E, { 0xA6, 0xEF, 0x2E, 0x76, 0xED, 0x0A, 0xBC, 0xA5 } };
-    //const unsigned short motion_module_interrupt_interface = 0x2; // endpint to pull sensors data continuously (interrupt transmit)
-
-  //  uint8_t get_ext_trig(const uvc::device & device)
-  //  {
-  //      return ds::xu_read<uint8_t>(device, fisheye_xu, r200::control::fisheye_xu_ext_trig);
-  //  }
-
-  //  void set_ext_trig(uvc::device & device, uint8_t ext_trig)
-  //  {
-        //ds::xu_write(device, fisheye_xu, r200::control::fisheye_xu_ext_trig, &ext_trig, sizeof(ext_trig));
-  //  }
 
     void xu_read(const uvc::device & device, uvc::extension_unit xu, control xu_ctrl, void * buffer, uint32_t length)
     {
@@ -62,15 +50,6 @@ namespace rsimpl {
     {
         uvc::set_control_with_retry(device, xu, static_cast<int>(xu_ctrl), buffer, length);
     }
-    //uint8_t get_strobe(const uvc::device & device)
-    //{
-    //    return r200::xu_read<uint8_t>(device, fisheye_xu, r200::control::fisheye_xu_strobe);
-    //}
-
-    //void set_strobe(uvc::device & device, uint8_t strobe)
-    //{
-    //    r200::xu_write(device, fisheye_xu, r200::control::fisheye_xu_strobe, &strobe, sizeof(strobe));
-    //}
 
     struct CommandResponsePacket
     {
@@ -444,11 +423,6 @@ namespace rsimpl {
         return reinterpret_cast<const char *>(response.reserved);
     }
 
-    // void claim_motion_module_interface(uvc::device & device)
-    //{
-    //    claim_aux_interface(device, MOTION_MODULE_USB_DEVICE_GUID, motion_module_interrupt_interface);
-    //}
-
     void set_stream_intent(uvc::device & device, uint8_t & intent)
     {
         xu_write(device, lr_xu, control::stream_intent, intent);
@@ -488,7 +462,6 @@ namespace rsimpl {
     {
         value = send_command_and_receive_response(device, CommandResponsePacket(command::peek, reg)).value;
     }
-
     void set_register_value(uvc::device & device, uint32_t reg, uint32_t value)
     {
         send_command_and_receive_response(device, CommandResponsePacket(command::poke, reg, value));

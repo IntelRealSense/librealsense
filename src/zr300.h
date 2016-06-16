@@ -47,9 +47,7 @@ namespace rsimpl
 
         void toggle_motion_module_power(bool bOn);
         void toggle_motion_module_events(bool bOn);
-        //void on_before_start(const std::vector<subdevice_mode_selection> & selected_modes) override;
         rs_stream select_key_stream(const std::vector<rsimpl::subdevice_mode_selection> & selected_modes) override;
-        //std::shared_ptr<frame_timestamp_reader> create_frame_timestamp_reader() const override;
     };
 
     std::shared_ptr<rs_device> make_zr300_device(std::shared_ptr<uvc::device> device);

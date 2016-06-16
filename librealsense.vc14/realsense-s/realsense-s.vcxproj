@@ -30,7 +30,6 @@
     <ClCompile Include="..\..\src\image.cpp" />
     <ClCompile Include="..\..\src\log.cpp" />
     <ClCompile Include="..\..\src\motion_module.cpp" />
-    <ClCompile Include="..\..\src\r200-private.cpp" />
     <ClCompile Include="..\..\src\r200.cpp" />
     <ClCompile Include="..\..\src\rs.cpp" />
     <ClCompile Include="..\..\src\stream.cpp" />
@@ -60,7 +59,6 @@
     <ClInclude Include="..\..\src\hw-monitor.h" />
     <ClInclude Include="..\..\src\image.h" />
     <ClInclude Include="..\..\src\motion_module.h" />
-    <ClInclude Include="..\..\src\r200-private.h" />
     <ClInclude Include="..\..\src\r200.h" />
     <ClInclude Include="..\..\src\stream.h" />
     <ClInclude Include="..\..\src\sync.h" />

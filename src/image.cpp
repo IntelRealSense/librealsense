@@ -36,29 +36,29 @@ namespace rsimpl
         case RS_FORMAT_RAW16: return width * height * 2;
         case RS_FORMAT_RAW8: return width * height;
         default: assert(false); return 0;
-        }    
+        }
     }
 
-	float get_image_bpp(rs_format format)
-	{
-		switch (format)
-		{
-		case RS_FORMAT_Z16: return  2;
-		case RS_FORMAT_DISPARITY16: return 2;
-		case RS_FORMAT_XYZ32F: return  12;
-		case RS_FORMAT_YUYV:  return  2;
-		case RS_FORMAT_RGB8: return  3;
-		case RS_FORMAT_BGR8: return  3;
-		case RS_FORMAT_RGBA8: return  4;
-		case RS_FORMAT_BGRA8: return  4;
-		case RS_FORMAT_Y8: return 1;
-		case RS_FORMAT_Y16: return 2;
-		case RS_FORMAT_RAW10: return 5/4;
-		case RS_FORMAT_RAW16: return 2;
-		case RS_FORMAT_RAW8: return 1;
-		default: assert(false); return 0;
-		}
-	}
+    float get_image_bpp(rs_format format)
+    {
+        switch (format)
+        {
+        case RS_FORMAT_Z16: return  2;
+        case RS_FORMAT_DISPARITY16: return 2;
+        case RS_FORMAT_XYZ32F: return  12;
+        case RS_FORMAT_YUYV:  return  2;
+        case RS_FORMAT_RGB8: return  3;
+        case RS_FORMAT_BGR8: return  3;
+        case RS_FORMAT_RGBA8: return  4;
+        case RS_FORMAT_BGRA8: return  4;
+        case RS_FORMAT_Y8: return 1;
+        case RS_FORMAT_Y16: return 2;
+        case RS_FORMAT_RAW10: return 5/4;
+        case RS_FORMAT_RAW16: return 2;
+        case RS_FORMAT_RAW8: return 1;
+        default: assert(false); return 0;
+        }
+    }
     //////////////////////////////
     // Naive unpacking routines //
     //////////////////////////////
@@ -327,8 +327,8 @@ namespace rsimpl
     const native_pixel_format pf_y12i       = { 'Y12I', 1, 3,{  { true,  &unpack_y16_y16_from_y12i_10,      { { RS_STREAM_INFRARED, RS_FORMAT_Y16 },{ RS_STREAM_INFRARED2, RS_FORMAT_Y16 } } } } };
     const native_pixel_format pf_z16        = { 'Z16 ', 1, 2,{  { false,  &copy_pixels<2>,                   { { RS_STREAM_DEPTH,    RS_FORMAT_Z16 } } },
                                                                 { false,  &copy_pixels<2>,                   { { RS_STREAM_DEPTH,    RS_FORMAT_DISPARITY16 } } } } };
-	const native_pixel_format pf_invz       = { 'INVZ', 1, 2, { { false, &copy_pixels<2>, { { RS_STREAM_DEPTH, RS_FORMAT_Z16 } } } } };
-	const native_pixel_format pf_f200_invi  = { 'INVI', 1, 1, { { false, &copy_pixels<1>, { { RS_STREAM_INFRARED, RS_FORMAT_Y8 } } },
+    const native_pixel_format pf_invz       = { 'INVZ', 1, 2, { { false, &copy_pixels<2>, { { RS_STREAM_DEPTH, RS_FORMAT_Z16 } } } } };
+    const native_pixel_format pf_f200_invi  = { 'INVI', 1, 1, { { false, &copy_pixels<1>, { { RS_STREAM_INFRARED, RS_FORMAT_Y8 } } },
                                                                 { true,  &unpack_y16_from_y8,               { { RS_STREAM_INFRARED, RS_FORMAT_Y16 } } } } };
     const native_pixel_format pf_f200_inzi  = { 'INZI', 1, 3,{  { true,  &unpack_z16_y8_from_f200_inzi,     { { RS_STREAM_DEPTH,    RS_FORMAT_Z16 },{ RS_STREAM_INFRARED, RS_FORMAT_Y8 } } },
                                                                 { true,  &unpack_z16_y16_from_f200_inzi,    { { RS_STREAM_DEPTH,    RS_FORMAT_Z16 },{ RS_STREAM_INFRARED, RS_FORMAT_Y16 } } } } };

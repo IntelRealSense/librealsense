@@ -275,22 +275,125 @@ namespace rsimpl
         return 30; // If no streams have yet been enabled, return the minimum possible left/right framerate, to allow the maximum possible exposure range
     }
 
-    /*void ds_camera::set_xu_option(rs_option option, int value)
+    void ds_camera::set_common_ds_config(std::shared_ptr<uvc::device> device, static_device_info& info, const ds::ds_calibration& c)
     {
-        if(is_capturing())
+        info.capabilities_vector.push_back(RS_CAPABILITIES_COLOR);
+        info.capabilities_vector.push_back(RS_CAPABILITIES_DEPTH);
+        info.capabilities_vector.push_back(RS_CAPABILITIES_INFRARED);
+        info.capabilities_vector.push_back(RS_CAPABILITIES_INFRARED2);
+
+        info.stream_subdevices[RS_STREAM_DEPTH] = 1;
+        info.stream_subdevices[RS_STREAM_COLOR] = 2;
+        info.stream_subdevices[RS_STREAM_INFRARED] = 0;
+        info.stream_subdevices[RS_STREAM_INFRARED2] = 0;
+
+        // Set up modes for left/right/z images
+        for(auto fps : {30, 60, 90})
         {
-            switch(option)
+            // Subdevice 0 can provide left/right infrared via four pixel formats, in three resolutions, which can either be uncropped or cropped to match Z
+            for(auto pf : {pf_y8, pf_y8i, pf_y16, pf_y12i})
             {
-            case RS_OPTION_R200_DEPTH_UNITS:
-            case RS_OPTION_R200_DEPTH_CLAMP_MIN:
-            case RS_OPTION_R200_DEPTH_CLAMP_MAX:
-            case RS_OPTION_R200_DISPARITY_MULTIPLIER:
-            case RS_OPTION_R200_DISPARITY_SHIFT:
-                throw std::runtime_error("cannot set this option after rs_start_capture(...)");
+                info.subdevice_modes.push_back({0, {640, 481}, pf, fps, c.modesLR[0], {}, { -6}});
+                info.subdevice_modes.push_back({0, {640, 373}, pf, fps, c.modesLR[1], {}, { -6}});
+                info.subdevice_modes.push_back({0, {640, 254}, pf, fps, c.modesLR[2], {}, { -6}});
             }
+
+            // Subdevice 1 can provide depth, in three resolutions, which can either be unpadded or padded to match left/right
+            info.subdevice_modes.push_back({1, {628, 469}, pf_z16,  fps, pad_crop_intrinsics(c.modesLR[0], -6), {}, {0}});
+            info.subdevice_modes.push_back({1, {628, 361}, pf_z16,  fps, pad_crop_intrinsics(c.modesLR[1], -6), {}, {0}});
+            info.subdevice_modes.push_back({1, {628, 242}, pf_z16,  fps, pad_crop_intrinsics(c.modesLR[2], -6), {}, {0}});
         }
-    }*/
-    
+
+        // Subdevice 2 can provide color, in several formats and framerates
+        info.subdevice_modes.push_back({ 2, { 320, 240 }, pf_yuy2, 60, scale_intrinsics(c.intrinsicsThird[1], 320, 240), { c.modesThird[1][1] }, { 0 } });
+        info.subdevice_modes.push_back({ 2, { 320, 240 }, pf_yuy2, 30, scale_intrinsics(c.intrinsicsThird[1], 320, 240), { c.modesThird[1][1] }, { 0 } });
+        info.subdevice_modes.push_back({ 2, { 320, 240 }, pf_yuy2, 15, scale_intrinsics(c.intrinsicsThird[1], 320, 240), { c.modesThird[1][1] }, { 0 } });
+        info.subdevice_modes.push_back({ 2, { 640, 480 }, pf_yuy2, 60, c.intrinsicsThird[1], { c.modesThird[1][0] }, { 0 } });
+        info.subdevice_modes.push_back({ 2, { 640, 480 }, pf_yuy2, 30, c.intrinsicsThird[1], { c.modesThird[1][0] }, { 0 } });
+        info.subdevice_modes.push_back({ 2, { 640, 480 }, pf_yuy2, 15, c.intrinsicsThird[1], { c.modesThird[1][0] }, { 0 } });
+        info.subdevice_modes.push_back({ 2, { 1280, 720 }, pf_yuy2, 30, scale_intrinsics(c.intrinsicsThird[0], 1280, 720), { c.modesThird[0][1] }, { 0 } });
+        info.subdevice_modes.push_back({ 2, { 1280, 720 }, pf_yuy2, 15, scale_intrinsics(c.intrinsicsThird[0], 1280, 720), { c.modesThird[0][1] }, { 0 } });
+
+        info.subdevice_modes.push_back({ 2, { 1920, 1080 }, pf_yuy2, 30, c.intrinsicsThird[0], { c.modesThird[0][0] }, { 0 } });
+        info.subdevice_modes.push_back({ 2, { 1920, 1080 }, pf_yuy2, 15, c.intrinsicsThird[0], { c.modesThird[0][0] }, { 0 } });
+
+        // Set up interstream rules for left/right/z images
+        for(auto ir : {RS_STREAM_INFRARED, RS_STREAM_INFRARED2})
+        {
+            info.interstream_rules.push_back({RS_STREAM_DEPTH, ir, &stream_request::width, 0, 12});
+            info.interstream_rules.push_back({RS_STREAM_DEPTH, ir, &stream_request::height, 0, 12});
+            info.interstream_rules.push_back({RS_STREAM_DEPTH, ir, &stream_request::fps, 0, 0});
+        }
+
+        info.presets[RS_STREAM_INFRARED][RS_PRESET_BEST_QUALITY] = {true, 480, 360, RS_FORMAT_Y8,   60};
+        info.presets[RS_STREAM_DEPTH   ][RS_PRESET_BEST_QUALITY] = {true, 480, 360, RS_FORMAT_Z16,  60};
+        info.presets[RS_STREAM_COLOR   ][RS_PRESET_BEST_QUALITY] = {true, 640, 480, RS_FORMAT_RGB8, 60};
+
+        info.presets[RS_STREAM_INFRARED][RS_PRESET_LARGEST_IMAGE] = {true, 640,   480, RS_FORMAT_Y8,   60};
+        info.presets[RS_STREAM_DEPTH   ][RS_PRESET_LARGEST_IMAGE] = {true, 640,   480, RS_FORMAT_Z16,  60};
+        info.presets[RS_STREAM_COLOR   ][RS_PRESET_LARGEST_IMAGE] = {true, 1920, 1080, RS_FORMAT_RGB8, 30};
+
+        info.presets[RS_STREAM_INFRARED][RS_PRESET_HIGHEST_FRAMERATE] = {true, 320, 240, RS_FORMAT_Y8,   60};
+        info.presets[RS_STREAM_DEPTH   ][RS_PRESET_HIGHEST_FRAMERATE] = {true, 320, 240, RS_FORMAT_Z16,  60};
+        info.presets[RS_STREAM_COLOR   ][RS_PRESET_HIGHEST_FRAMERATE] = {true, 640, 480, RS_FORMAT_RGB8, 60};
+
+        for(int i=0; i<RS_PRESET_COUNT; ++i)
+            info.presets[RS_STREAM_INFRARED2][i] = info.presets[RS_STREAM_INFRARED][i];
+
+        info.options = {    // Option                               Min     Max         Step
+            {RS_OPTION_R200_LR_AUTO_EXPOSURE_ENABLED,                   0, 1,           1},
+            {RS_OPTION_R200_EMITTER_ENABLED,                            0, 1,           1},
+            {RS_OPTION_R200_DEPTH_UNITS,                                1, INT_MAX,     1}, // What is the real range?
+            {RS_OPTION_R200_DEPTH_CLAMP_MIN,                            0, USHRT_MAX,   1},
+            {RS_OPTION_R200_DEPTH_CLAMP_MAX,                            0, USHRT_MAX,   1},
+            {RS_OPTION_R200_DISPARITY_MULTIPLIER,                       1, 1000,        1},
+            {RS_OPTION_R200_DISPARITY_SHIFT,                            0, 0,           1},
+
+            {RS_OPTION_R200_AUTO_EXPOSURE_MEAN_INTENSITY_SET_POINT,     0, 4095,        0},
+            {RS_OPTION_R200_AUTO_EXPOSURE_BRIGHT_RATIO_SET_POINT,       0, 1,           0},
+            {RS_OPTION_R200_AUTO_EXPOSURE_KP_GAIN,                      0, 1000,        0},
+            {RS_OPTION_R200_AUTO_EXPOSURE_KP_EXPOSURE,                  0, 1000,        0},
+            {RS_OPTION_R200_AUTO_EXPOSURE_KP_DARK_THRESHOLD,            0, 1000,        0},
+            {RS_OPTION_R200_AUTO_EXPOSURE_TOP_EDGE,                     0, USHRT_MAX,   1},
+            {RS_OPTION_R200_AUTO_EXPOSURE_BOTTOM_EDGE,                  0, USHRT_MAX,   1},
+            {RS_OPTION_R200_AUTO_EXPOSURE_LEFT_EDGE,                    0, USHRT_MAX,   1},
+            {RS_OPTION_R200_AUTO_EXPOSURE_RIGHT_EDGE,                   0, USHRT_MAX,   1},
+
+            {RS_OPTION_R200_DEPTH_CONTROL_ESTIMATE_MEDIAN_DECREMENT,    0, 0xFF,        1},
+            {RS_OPTION_R200_DEPTH_CONTROL_ESTIMATE_MEDIAN_INCREMENT,    0, 0xFF,        1},
+            {RS_OPTION_R200_DEPTH_CONTROL_MEDIAN_THRESHOLD,             0, 0x3FF,       1},
+            {RS_OPTION_R200_DEPTH_CONTROL_SCORE_MINIMUM_THRESHOLD,      0, 0x3FF,       1},
+            {RS_OPTION_R200_DEPTH_CONTROL_SCORE_MAXIMUM_THRESHOLD,      0, 0x3FF,       1},
+            {RS_OPTION_R200_DEPTH_CONTROL_TEXTURE_COUNT_THRESHOLD,      0, 0x1F,        1},
+            {RS_OPTION_R200_DEPTH_CONTROL_TEXTURE_DIFFERENCE_THRESHOLD, 0, 0x3FF,       1},
+            {RS_OPTION_R200_DEPTH_CONTROL_SECOND_PEAK_THRESHOLD,        0, 0x3FF,       1},
+            {RS_OPTION_R200_DEPTH_CONTROL_NEIGHBOR_THRESHOLD,           0, 0x3FF,       1},
+            {RS_OPTION_R200_DEPTH_CONTROL_LR_THRESHOLD,                 0, 0x7FF,       1}
+        };
+
+        // We select the depth/left infrared camera's viewpoint to be the origin
+        info.stream_poses[RS_STREAM_DEPTH] = {{{1,0,0},{0,1,0},{0,0,1}},{0,0,0}};
+        info.stream_poses[RS_STREAM_INFRARED] = {{{1,0,0},{0,1,0},{0,0,1}},{0,0,0}};
+
+        // The right infrared camera is offset along the +x axis by the baseline (B)
+        info.stream_poses[RS_STREAM_INFRARED2] = {{{1, 0, 0}, {0, 1, 0}, {0, 0, 1}}, {c.B * 0.001f, 0, 0}}; // Sterling comment
+
+        // The transformation between the depth camera and third camera is described by a translation vector (T), followed by rotation matrix (Rthird)
+        for(int i=0; i<3; ++i) for(int j=0; j<3; ++j)
+            info.stream_poses[RS_STREAM_COLOR].orientation(i,j) = c.Rthird[i*3+j];
+        for(int i=0; i<3; ++i)
+            info.stream_poses[RS_STREAM_COLOR].position[i] = c.T[i] * 0.001f;
+
+        // Our position is added AFTER orientation is applied, not before, so we must multiply Rthird * T to compute it
+        info.stream_poses[RS_STREAM_COLOR].position = info.stream_poses[RS_STREAM_COLOR].orientation * info.stream_poses[RS_STREAM_COLOR].position;
+        info.nominal_depth_scale = 0.001f;
+        info.serial = std::to_string(c.serial_number);
+        info.firmware_version = ds::read_firmware_version(*device);
+
+        // On LibUVC backends, the R200 should use four transfer buffers
+        info.num_libuvc_transfer_buffers = 4;
+    }
+
     bool ds_camera::supports_option(rs_option option) const
     {
         // We have special logic to implement LR gain and exposure, so they do not belong to the standard option list
@@ -470,7 +573,7 @@ namespace rsimpl
         }
     };
 
-	// TODO refactor supported streams list to derived
+    // TODO refactor supported streams list to derived
     std::shared_ptr<frame_timestamp_reader> ds_camera::create_frame_timestamp_reader() const
     {
         // If left, right, or Z streams are enabled, convert frame numbers to millisecond timestamps based on LRZ framerate

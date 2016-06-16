@@ -9,33 +9,33 @@ namespace rsimpl
 {
     namespace motion_module
     {
-        //RealSense DS41t SaS rev 0_60 specifications
+        //RealSense DS41t SaS rev 0_60 specifications [deg/sec]
         enum class mm_gyro_range : uint8_t
         {
-            gyro_range_default = 0,
-            gyro_range_1000 = 1,        // Deg/sec
-            gyro_range_2000 = 2
+            gyro_range_default  = 0,
+            gyro_range_1000     = 1,
+            gyro_range_2000     = 2
         };
 
         enum class mm_gyro_bandwidth : uint8_t
         {
             gyro_bw_default = 0,
-            gyro_bw_200hz = 1
+            gyro_bw_200hz   = 1
         };
 
         enum class mm_accel_range : uint8_t
         {
             accel_range_default = 0,
-            accel_range_4g = 1,
-            accel_range_8g = 2,
-            accel_range_16g = 3
+            accel_range_4g      = 1,
+            accel_range_8g      = 2,
+            accel_range_16g     = 3
         };
 
         enum class mm_accel_bandwidth : uint8_t
         {
-            accel_bw_default = 0,
-            accel_bw_125hz = 1,
-            accel_bw_250hz = 2
+            accel_bw_default    = 0,
+            accel_bw_125hz      = 1,
+            accel_bw_250hz      = 2
         };
 
 #pragma pack(push, 1)

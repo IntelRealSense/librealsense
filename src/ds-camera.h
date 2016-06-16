@@ -37,15 +37,12 @@ namespace rsimpl
         void set_options(const rs_option options[], size_t count, const double values[]) override;
         void get_options(const rs_option options[], size_t count, double values[]) override;
 
-        //void start_motion_tracking() override;
-        //void stop_motion_tracking() override;
-
-        //void toggle_motion_module_power(bool bOn);
-        //void toggle_motion_module_events(bool bOn);
         void on_before_start(const std::vector<subdevice_mode_selection> & selected_modes) override;
         rs_stream select_key_stream(const std::vector<rsimpl::subdevice_mode_selection> & selected_modes) override;
         std::shared_ptr<frame_timestamp_reader> create_frame_timestamp_reader() const override;
+
+		static void set_common_ds_config(std::shared_ptr<uvc::device> device, static_device_info& info, const ds::ds_calibration& c);
     };
 }
 
-#endif
+#endif // DS_CAMERA_H

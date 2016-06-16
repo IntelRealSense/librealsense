@@ -31,9 +31,6 @@
     <ClCompile Include="..\..\src\r200.cpp">
       <Filter>sources</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\r200-private.cpp">
-      <Filter>sources</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\rs.cpp">
       <Filter>sources</Filter>
     </ClCompile>
@@ -64,6 +61,16 @@
     <ClCompile Include="..\..\src\timestamps.cpp">
       <Filter>sources</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\ds-camera.cpp">
+      <Filter>sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\zr300.cpp">
+      <Filter>sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ds-private.cpp">
+      <Filter>sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\zr300-private.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\include\librealsense\rsutil.h">
@@ -102,9 +109,6 @@
     <ClInclude Include="..\..\src\r200.h">
       <Filter>sources</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\r200-private.h">
-      <Filter>sources</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\stream.h">
       <Filter>sources</Filter>
     </ClInclude>
@@ -123,6 +127,16 @@
     <ClInclude Include="..\..\src\timestamps.h">
       <Filter>sources</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\zr300.h">
+      <Filter>sources</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ds-camera.h">
+      <Filter>sources</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ds-private.h">
+      <Filter>sources</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\zr300-private.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="includes">
