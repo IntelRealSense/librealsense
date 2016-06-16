@@ -6,6 +6,7 @@
 
 #include "rs.h"
 #include <cstdint>
+#include <cstddef>
 
 namespace rs{
     struct motion_data;

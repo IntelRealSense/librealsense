@@ -112,13 +112,13 @@ struct gui
         int Ydelta = -1;
         if (value == max)
         {
-            int Xdelta =  0;
-            int Ydelta = -2;
+            Xdelta =  0;
+            Ydelta = -2;
         }
         else if (value == min)
         {
-            int Xdelta = 2;
-            int Ydelta = 0;
+            Xdelta = 2;
+            Ydelta = 0;
         }
 
         const rect dragger = {int(r.x0+p+Xdelta), int(r.y0), int(r.x0+p+Ydelta), int(r.y1)};

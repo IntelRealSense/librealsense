@@ -407,7 +407,7 @@ namespace rsimpl
             arr_wakeup_dev_param = param;
         });
 
-        for(int i=0; i<count; ++i)
+        for(size_t i=0; i<count; ++i)
         {
             if(uvc::is_pu_control(options[i]))
             {
@@ -452,7 +452,7 @@ namespace rsimpl
 
     void f200_camera::get_options(const rs_option options[], size_t count, double values[])
     {
-        auto arr_reader = make_struct_interface<f200::IVCAMAutoRangeRequest>([this]() { return arr; }, [this](f200::IVCAMAutoRangeRequest r) {});
+        auto arr_reader = make_struct_interface<f200::IVCAMAutoRangeRequest>([this]() { return arr; }, [this](f200::IVCAMAutoRangeRequest) {});
 
         for(int i=0; i<count; ++i)
         {
