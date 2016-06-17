@@ -809,7 +809,7 @@ namespace rsimpl
                 // Look for a video device whose busnum/devnum matches this USB device
                 for(auto & dev : devices)
                 {
-                    if (subdevices.size() >=4)      // Make sure that four subdevices present
+                    if (subdevices.size() >=4 && dev->subdevices.size() >= 4)      // Make sure that four subdevices present
                     {
                         // First, handle the special case of FishEye
                         bool bFishEyeDevice = ((busnum == dev->subdevices[3]->busnum) && (devnum == dev->subdevices[3]->devnum));
