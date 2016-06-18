@@ -2,7 +2,7 @@
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
 #include "hw-monitor.h"
-#include "ds-private.h"
+#include "ds-common.h"
 
 #include <cstring>
 #include <cmath>

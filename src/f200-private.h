@@ -5,15 +5,20 @@
 #ifndef LIBREALSENSE_F200_PRIVATE_H
 #define LIBREALSENSE_F200_PRIVATE_H
 
-#include <mutex>
 #include "uvc.h"
 #include "iv-common.h"
 
 namespace rsimpl {
 namespace f200 {
-    const uvc::extension_unit depth_xu{ 1, 6, 1, { 0xA55751A1, 0xF3C5, 0x4A5E, { 0x8D, 0x5A, 0x68, 0x54, 0xB8, 0xFA, 0x27, 0x16 } } };
 
-    struct IVCAMThermalLoopParams
+    struct cam_temperature_data
+    {
+        float LiguriaTemp;
+        float IRTemp;
+        float AmbientTemp;
+    };
+
+    struct thermal_loop_params
     {
         float IRThermalLoopEnable = 1;      // enable the mechanism
         float TimeOutA = 10000;             // default time out
@@ -40,39 +45,13 @@ namespace f200 {
         float Param5 = 0;                   // reserved
     };
 
-
-    // Claim USB interface used for device
-    void claim_ivcam_interface(uvc::device & device);
-
     // Read calibration or device state
-    std::tuple<iv::camera_calib_params, IVCAMTemperatureData, IVCAMThermalLoopParams> read_f200_calibration(uvc::device & device, std::timed_mutex & mutex);
+    std::tuple<iv::camera_calib_params, f200::cam_temperature_data, thermal_loop_params> read_f200_calibration(uvc::device & device, std::timed_mutex & mutex);
     float read_mems_temp(uvc::device & device, std::timed_mutex & mutex);
     int read_ir_temp(uvc::device & device, std::timed_mutex & mutex);
-    void get_gvd(uvc::device & device, std::timed_mutex & mutex, size_t sz, char * gvd);
-    void get_firmware_version_string(uvc::device & device, std::timed_mutex & mutex, std::string & version);
-    void get_module_serial_string(uvc::device & device, std::timed_mutex & mutex, std::string & serial, int offset);
 
     // Modify device state
-    void force_hardware_reset(uvc::device & device, std::timed_mutex & mutex);
-    void enable_timestamp(uvc::device & device, std::timed_mutex & mutex, bool colorEnable, bool depthEnable);
     void update_asic_coefficients(uvc::device & device, std::timed_mutex & mutex, const iv::camera_calib_params & compensated_params); // todo - Allow you to specify resolution
-    void set_auto_range(uvc::device & device, std::timed_mutex & mutex, int enableMvR, int16_t minMvR, int16_t maxMvR, int16_t startMvR, int enableLaser, int16_t minLaser, int16_t maxLaser, int16_t startLaser, int16_t ARUpperTH, int16_t ARLowerTH);
-
-    // XU read/write
-    void get_laser_power(const uvc::device & device, uint8_t & laser_power);
-    void set_laser_power(uvc::device & device, uint8_t laser_power);  
-    void get_accuracy(const uvc::device & device, uint8_t & accuracy);  
-    void set_accuracy(uvc::device & device, uint8_t accuracy);    
-    void get_motion_range(const uvc::device & device, uint8_t & motion_range);
-    void set_motion_range(uvc::device & device, uint8_t motion_range);
-    void get_filter_option(const uvc::device & device, uint8_t & filter_option);
-    void set_filter_option(uvc::device & device, uint8_t filter_option);
-    void get_confidence_threshold(const uvc::device & device, uint8_t & conf_thresh);
-    void set_confidence_threshold(uvc::device & device, uint8_t conf_thresh);
-    void get_dynamic_fps(const uvc::device & device, uint8_t & dynamic_fps);
-    void set_dynamic_fps(uvc::device & device, uint8_t dynamic_fps);
-
-    #define NUM_OF_CALIBRATION_COEFFS   (64)
 
 } // rsimpl::f200
 } // namespace rsimpl

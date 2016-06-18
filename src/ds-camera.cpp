@@ -7,7 +7,7 @@
 #include <iostream>
 
 #include "image.h"
-#include "ds-private.h"
+#include "ds-common.h"
 #include "ds-camera.h"
 
 using namespace rsimpl;
@@ -38,7 +38,7 @@ namespace rsimpl
     void ds_camera::on_update_depth_units(uint32_t units)
     {
         if(is_disparity_mode_enabled()) return;
-        config.depth_scale = (float)units / 1000000; // Convert from micrometers to meters
+        config.depth_scale = (double)units * 0.000001; // Convert from micrometers to meters
     }
 
     void ds_camera::on_update_disparity_multiplier(double multiplier)

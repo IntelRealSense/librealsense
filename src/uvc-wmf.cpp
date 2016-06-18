@@ -186,12 +186,16 @@ namespace rsimpl
             bool is_streaming() const { return streaming; }
             void on_start() { streaming = true; }
 
+#pragma warning( push )
+#pragma warning( disable: 4838 )
             // Implement IUnknown
             HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, void ** ppvObject) override 
             {
                 static const QITAB table[] = {QITABENT(reader_callback, IUnknown), QITABENT(reader_callback, IMFSourceReaderCallback), {0}};
                 return QISearch(this, table, riid, ppvObject);
             }
+#pragma warning( pop )
+
             ULONG STDMETHODCALLTYPE AddRef() override { return InterlockedIncrement(&ref_count); }
             ULONG STDMETHODCALLTYPE Release() override 
             { 
@@ -768,7 +772,7 @@ namespace rsimpl
 
             std::timed_mutex mutex;
             claim_interface(*fish_eye_dev, FISHEYE_WIN_USB_DEVICE_GUID, FISHEYE_HWMONITOR_INTERFACE);
-            rsimpl::hw_mon::HWMonitorCommand cmd(0x0b);
+            rsimpl::hw_monitor::hwmon_cmd cmd(0x0b);
             cmd.Param1 = 1;
             perform_and_send_monitor_command(*fish_eye_dev, mutex, cmd);
             Sleep(2000);

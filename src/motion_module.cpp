@@ -110,11 +110,11 @@ void motion_module_control::set_control(mm_request request, bool on)
     }
 
     std::timed_mutex mutex;
-    hw_mon::HWMonitorCommand cmd((uint8_t)cmd_opcode);
+    hw_monitor::hwmon_cmd cmd((uint8_t)cmd_opcode);
     cmd.Param1 = (on) ? 1 : 0;
 
     // Motion module will always use the auxillary USB handle (1) for
-    rsimpl::hw_mon::perform_and_send_monitor_command(*device_handle, mutex, 1, cmd);
+    rsimpl::hw_monitor::perform_and_send_monitor_command(*device_handle, mutex, 1, cmd);
 }
 
 void motion_module_control::toggle_motion_module_power(bool on)

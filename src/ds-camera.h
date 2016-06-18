@@ -6,7 +6,7 @@
 #define LIBREALSENSE_DS_CAMERA_H
 
 #include "device.h"
-#include "ds-private.h"
+#include "ds-common.h"
 
 #define R200_PRODUCT_ID  0x0a80
 #define LR200_PRODUCT_ID 0x0abf
@@ -41,7 +41,7 @@ namespace rsimpl
         rs_stream select_key_stream(const std::vector<rsimpl::subdevice_mode_selection> & selected_modes) override;
         std::shared_ptr<frame_timestamp_reader> create_frame_timestamp_reader() const override;
 
-		static void set_common_ds_config(std::shared_ptr<uvc::device> device, static_device_info& info, const ds::ds_calibration& c);
+        static void set_common_ds_config(std::shared_ptr<uvc::device> device, static_device_info& info, const ds::ds_calibration& c);
     };
 }
 

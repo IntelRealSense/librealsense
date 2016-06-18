@@ -12,7 +12,7 @@
 namespace rsimpl
 {
     namespace ds
-    {       
+    {
         const uvc::extension_unit lr_xu = {0, 2, 1, {0x18682d34, 0xdd2c, 0x4073, {0xad, 0x23, 0x72, 0x14, 0x73, 0x9a, 0x07, 0x4c}}};
 
         const int STATUS_BIT_Z_STREAMING = 1 << 0;

@@ -34,8 +34,6 @@ const uint8_t   NUM_OF_CALIBRATION_COEFFS       = 64;
 
 const uint16_t  MAX_SIZE_OF_CALIB_PARAM_BYTES   = 800;
 const uint16_t  SIZE_OF_CALIB_PARAM_BYTES       = 512;
-const uint16_t  IVCAM_VID                       = 0x8086;
-const uint16_t  IVCAM_PID                       = 0x0A66;
 const uint16_t  IVCAM_MONITOR_MAGIC_NUMBER      = 0xcdab;
 const uint16_t  IVCAM_MONITOR_MAX_BUFFER_SIZE   = 1024;
 const uint16_t  IVCAM_MONITOR_MUTEX_TIMEOUT     = 3000;
@@ -59,9 +57,9 @@ const uint8_t IVCAM_COLOR_EXPOSURE_GRANULAR     = 4;
 
 namespace rsimpl
 {
-    namespace hw_mon
+    namespace hw_monitor
     {
-        struct HWMonitorCommand
+        struct hwmon_cmd
         {
             uint8_t     cmd;
             int         Param1;
@@ -76,10 +74,10 @@ namespace rsimpl
             size_t      receivedCommandDataLength;
             uint8_t     receivedOpcode[4];
 
-            HWMonitorCommand(uint8_t cmd_id) : cmd(cmd_id), Param1(0), Param2(0), Param3(0), Param4(0), sizeOfSendCommandData(0), TimeOut(5000), oneDirection(false){}
+            hwmon_cmd(uint8_t cmd_id) : cmd(cmd_id), Param1(0), Param2(0), Param3(0), Param4(0), sizeOfSendCommandData(0), TimeOut(5000), oneDirection(false){}
         };
 
-        struct HWMonCommandDetails
+        struct hwmon_cmd_details
         {
             bool        oneDirection;
             uint8_t     sendCommandData[HW_MONITOR_COMMAND_SIZE];
@@ -94,10 +92,10 @@ namespace rsimpl
 
         void execute_usb_command(uvc::device & device, std::timed_mutex & mutex, unsigned char handle_id, uint8_t *out, size_t outSize, uint32_t & op, uint8_t * in, size_t & inSize);        
 
-        void send_hw_monitor_command(uvc::device & device, std::timed_mutex & mutex, unsigned char handle_id, HWMonCommandDetails & details);
+        void send_hw_monitor_command(uvc::device & device, std::timed_mutex & mutex, unsigned char handle_id, hwmon_cmd_details & details);
 
-        void perform_and_send_monitor_command(uvc::device & device, std::timed_mutex & mutex, unsigned char handle_id, HWMonitorCommand & newCommand);
-        void perform_and_send_monitor_command(uvc::device & device, std::timed_mutex & mutex, HWMonitorCommand & newCommand);
+        void perform_and_send_monitor_command(uvc::device & device, std::timed_mutex & mutex, unsigned char handle_id, hwmon_cmd & newCommand);
+        void perform_and_send_monitor_command(uvc::device & device, std::timed_mutex & mutex, hwmon_cmd & newCommand);
 
     }
 }

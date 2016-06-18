@@ -9,39 +9,14 @@
 #include <thread>
 #include <cmath>
 
-using namespace rsimpl::hw_mon;
+using namespace rsimpl::hw_monitor;
+using namespace rsimpl::iv;
 
 namespace rsimpl
 {
-    enum class IVCAMMonitorCommand : uint8_t
-    {
-        UpdateCalib = 0xBC,
-        GetIRTemp = 0x52,
-        GetMEMSTemp = 0x0A,
-        HWReset = 0x28,
-        GVD = 0x3B,
-        BIST = 0xFF,
-        GoToDFU = 0x80,
-        GetCalibrationTable = 0x3D,
-        DebugFormat = 0x0B,
-        TimeStampEnable = 0x0C,
-        GetPowerGearState = 0xFF,
-        SetDefaultControls = 0xA6,
-        GetDefaultControls = 0xA7,
-        GetFWLastError = 0x0E,
-        CheckI2cConnect = 0x4A,
-        CheckRGBConnect = 0x4B,
-        CheckDPTConnect = 0x4C,
-        SetAutoRange = 0xA6,
-        OnSuspendResume = 0x91,
-        GetWakeReason = 0x93,
-        GetWakeConfidence = 0x92,
-        AutoRangeSetParamsforDebug = 0xb3
-    };
-
     namespace f200
     {
-        struct IVCAMASICCoefficients
+        struct cam_asic_coefficients
         {
             float CoefValueArray[NUM_OF_CALIBRATION_COEFFS];
         };
@@ -56,304 +31,18 @@ namespace rsimpl
 
         struct IVCAMTesterData
         {
-            int16_t TableValidation;
-            int16_t TableVarsion;
-            IVCAMTemperatureData TemperatureData;
-            OACOffsetData OACOffsetData_;
-            IVCAMThermalLoopParams ThermalLoopParams;
+            int16_t                 TableValidation;
+            int16_t                 TableVarsion;
+            cam_temperature_data    TemperatureData;
+            OACOffsetData           OACOffsetData_;
+            thermal_loop_params  ThermalLoopParams;
         };
-
-        struct IVCAMCalibration
-        {
-            int uniqueNumber; //Should be 0xCAFECAFE in Calibration version 1 or later. In calibration version 0 this is zero.
-            int16_t TableValidation;
-            int16_t TableVersion;
-            CameraCalibrationParameters CalibrationParameters;
-        };
-
-        struct SR300RawCalibration
-        {
-            uint16_t tableVersion;
-            uint16_t tableID;
-            uint32_t dataSize;
-            uint32_t reserved;
-            int crc;
-            CameraCalibrationParameters CalibrationParameters;
-            uint8_t reserved_1[176];
-            IVCAMTemperatureData TemperatureData;
-            uint8_t reserved21[148];
-        };
-
-        enum class IVCAMDataSource : uint32_t
-        {
-            TakeFromRO = 0,
-            TakeFromRW = 1,
-            TakeFromRAM = 2
-        };
-
-        enum Property
-        {
-            IVCAM_PROPERTY_COLOR_EXPOSURE = 1,
-            IVCAM_PROPERTY_COLOR_BRIGHTNESS = 2,
-            IVCAM_PROPERTY_COLOR_CONTRAST = 3,
-            IVCAM_PROPERTY_COLOR_SATURATION = 4,
-            IVCAM_PROPERTY_COLOR_HUE = 5,
-            IVCAM_PROPERTY_COLOR_GAMMA = 6,
-            IVCAM_PROPERTY_COLOR_WHITE_BALANCE = 7,
-            IVCAM_PROPERTY_COLOR_SHARPNESS = 8,
-            IVCAM_PROPERTY_COLOR_BACK_LIGHT_COMPENSATION = 9,
-            IVCAM_PROPERTY_COLOR_GAIN = 10,
-            IVCAM_PROPERTY_COLOR_POWER_LINE_FREQUENCY = 11,
-            IVCAM_PROPERTY_AUDIO_MIX_LEVEL = 12,
-            IVCAM_PROPERTY_APERTURE = 13,
-            IVCAM_PROPERTY_DISTORTION_CORRECTION_I = 202,
-            IVCAM_PROPERTY_DISTORTION_CORRECTION_DPTH = 203,
-            IVCAM_PROPERTY_DEPTH_MIRROR = 204,    //0 - not mirrored, 1 - mirrored
-            IVCAM_PROPERTY_COLOR_MIRROR = 205,
-            IVCAM_PROPERTY_COLOR_FIELD_OF_VIEW = 207,
-            IVCAM_PROPERTY_COLOR_SENSOR_RANGE = 209,
-            IVCAM_PROPERTY_COLOR_FOCAL_LENGTH = 211,
-            IVCAM_PROPERTY_COLOR_PRINCIPAL_POINT = 213,
-            IVCAM_PROPERTY_DEPTH_FIELD_OF_VIEW = 215,
-            IVCAM_PROPERTY_DEPTH_UNDISTORTED_FIELD_OF_VIEW = 223,
-            IVCAM_PROPERTY_DEPTH_SENSOR_RANGE = 217,
-            IVCAM_PROPERTY_DEPTH_FOCAL_LENGTH = 219,
-            IVCAM_PROPERTY_DEPTH_UNDISTORTED_FOCAL_LENGTH = 225,
-            IVCAM_PROPERTY_DEPTH_PRINCIPAL_POINT = 221,
-            IVCAM_PROPERTY_MF_DEPTH_LOW_CONFIDENCE_VALUE = 5000,
-            IVCAM_PROPERTY_MF_DEPTH_UNIT = 5001,   // in micron
-            IVCAM_PROPERTY_MF_CALIBRATION_DATA = 5003,
-            IVCAM_PROPERTY_MF_LASER_POWER = 5004,
-            IVCAM_PROPERTY_MF_ACCURACY = 5005,
-            IVCAM_PROPERTY_MF_INTENSITY_IMAGE_TYPE = 5006,   //0 - (I0 - laser off), 1 - (I1 - Laser on), 2 - (I1-I0), default is I1.
-            IVCAM_PROPERTY_MF_MOTION_VS_RANGE_TRADE = 5007,
-            IVCAM_PROPERTY_MF_POWER_GEAR = 5008,
-            IVCAM_PROPERTY_MF_FILTER_OPTION = 5009,
-            IVCAM_PROPERTY_MF_VERSION = 5010,
-            IVCAM_PROPERTY_MF_DEPTH_CONFIDENCE_THRESHOLD = 5013,
-            IVCAM_PROPERTY_ACCELEROMETER_READING = 3000,   // three values
-            IVCAM_PROPERTY_PROJECTION_SERIALIZABLE = 3003,
-            IVCAM_PROPERTY_CUSTOMIZED = 0x04000000,
-        };
-
-        enum class FirmwareError : int32_t
-        {
-            FW_ACTIVE = 0,
-            FW_MSAFE_S1_ERR,
-            FW_I2C_SAFE_ERR,
-            FW_FLASH_SAFE_ERR,
-            FW_I2C_CFG_ERR,
-            FW_I2C_EV_ERR,
-            FW_HUMIDITY_ERR,
-            FW_MSAFE_S0_ERR,
-            FW_LD_ERR,
-            FW_PI_ERR,
-            FW_PJCLK_ERR,
-            FW_OAC_ERR,
-            FW_LIGURIA_TEMPERATURE_ERR,
-            FW_CONTINUE_SAFE_ERROR,
-            FW_FORZA_HUNG,
-            FW_FORZA_CONTINUES_HUNG,
-            FW_PJ_EYESAFETY_CHKRHARD,
-            FW_MIPI_PCAM_ERR,
-            FW_MIPI_TCAM_ERR,
-            FW_SYNC_DISABLED,
-            FW_MIPI_PCAM_SVR_ERR,
-            FW_MIPI_TCAM_SVR_ERR,
-            FW_MIPI_PCAM_FRAME_SIZE_ERR,
-            FW_MIPI_TCAM_FRAME_SIZE_ERR,
-            FW_MIPI_PCAM_FRAME_RESPONSE_ERR,
-            FW_MIPI_TCAM_FRAME_RESPONSE_ERR,
-            FW_USB_PCAM_THROTTLED_ERR,
-            FW_USB_TCAM_THROTTLED_ERR,
-            FW_USB_PCAM_QOS_WAR,
-            FW_USB_TCAM_QOS_WAR,
-            FW_USB_PCAM_OVERFLOW,
-            FW_USB_TCAM_OVERFLOW,
-            FW_Flash_OEM_SECTOR,
-            FW_Flash_CALIBRATION_RW,
-            FW_Flash_IR_CALIBRATION,
-            FW_Flash_RGB_CALIBRATION,
-            FW_Flash_THERMAL_LOOP_CONFIGURATION,
-            FW_Flash_REALTEK,
-            FW_RGB_ISP_BOOT_FAILED,
-            FW_PRIVACY_RGB_OFF,
-            FW_PRIVACY_DEPTH_OFF,
-            FW_COUNT_ERROR
-        };
-
-        //////////////////
-        // XU functions //
-        //////////////////
-
-        // N.B. f200 xu_read and xu_write hard code the xu interface to the depth suvdevice. There is only a
-        // single *potentially* useful XU on the color device, so let's ignore it for now.
-        void xu_read(const uvc::device & device, uint8_t xu_ctrl, void * buffer, uint32_t length)
-        {
-            uvc::get_control_with_retry(device, depth_xu, static_cast<int>(xu_ctrl), buffer, length);
-        }
-
-        void xu_write(uvc::device & device, uint8_t xu_ctrl, void * buffer, uint32_t length)
-        {
-            uvc::set_control_with_retry(device, depth_xu, static_cast<int>(xu_ctrl), buffer, length);
-        }
-
-        void get_laser_power(const uvc::device & device, uint8_t & laser_power)
-        {
-            xu_read(device, IVCAM_DEPTH_LASER_POWER, &laser_power, sizeof(laser_power));
-        }
-
-        void set_laser_power(uvc::device & device, uint8_t laser_power)
-        {
-            xu_write(device, IVCAM_DEPTH_LASER_POWER, &laser_power, sizeof(laser_power));
-        }
-
-        void get_accuracy(const uvc::device & device, uint8_t & accuracy)
-        {
-            xu_read(device, IVCAM_DEPTH_ACCURACY, &accuracy, sizeof(accuracy));
-        }
-
-        void set_accuracy(uvc::device & device, uint8_t accuracy)
-        {
-            xu_write(device, IVCAM_DEPTH_ACCURACY, &accuracy, sizeof(accuracy));
-        }
-
-        void get_motion_range(const uvc::device & device, uint8_t & motion_range)
-        {
-            xu_read(device, IVCAM_DEPTH_MOTION_RANGE, &motion_range, sizeof(motion_range));
-        }
-
-        void set_motion_range(uvc::device & device, uint8_t motion_range)
-        {
-            xu_write(device, IVCAM_DEPTH_MOTION_RANGE, &motion_range, sizeof(motion_range));
-        }
-
-        void get_filter_option(const uvc::device & device, uint8_t & filter_option)
-        {
-            xu_read(device, IVCAM_DEPTH_FILTER_OPTION, &filter_option, sizeof(filter_option));
-        }
-
-        void set_filter_option(uvc::device & device, uint8_t filter_option)
-        {
-            xu_write(device, IVCAM_DEPTH_FILTER_OPTION, &filter_option, sizeof(filter_option));
-        }
-
-        void get_confidence_threshold(const uvc::device & device, uint8_t & conf_thresh)
-        {
-            xu_read(device, IVCAM_DEPTH_CONFIDENCE_THRESH, &conf_thresh, sizeof(conf_thresh));
-        }
-
-        void set_confidence_threshold(uvc::device & device, uint8_t conf_thresh)
-        {
-            xu_write(device, IVCAM_DEPTH_CONFIDENCE_THRESH, &conf_thresh, sizeof(conf_thresh));
-        }
-
-        void get_dynamic_fps(const uvc::device & device, uint8_t & dynamic_fps)
-        {
-            return xu_read(device, IVCAM_DEPTH_DYNAMIC_FPS, &dynamic_fps, sizeof(dynamic_fps));
-        }
-
-        void set_dynamic_fps(uvc::device & device, uint8_t dynamic_fps)
-        {
-            return xu_write(device, IVCAM_DEPTH_DYNAMIC_FPS, &dynamic_fps, sizeof(dynamic_fps));
-        }
 
         ///////////////////
         // USB functions //
         ///////////////////
 
-        void claim_ivcam_interface(uvc::device & device)
-        {
-            const uvc::guid IVCAM_WIN_USB_DEVICE_GUID = { 0x175695CD, 0x30D9, 0x4F87, {0x8B, 0xE3, 0x5A, 0x82, 0x70, 0xF4, 0x9A, 0x31} };
-            claim_interface(device, IVCAM_WIN_USB_DEVICE_GUID, IVCAM_MONITOR_INTERFACE);
-        }
-
-        size_t prepare_usb_command(uint8_t * request, size_t & requestSize, uint32_t op, uint32_t p1 = 0, uint32_t p2 = 0, uint32_t p3 = 0, uint32_t p4 = 0, uint8_t * data = 0, size_t dataLength = 0)
-        {
-
-            if (requestSize < IVCAM_MONITOR_HEADER_SIZE)
-                return 0;
-
-            size_t index = sizeof(uint16_t);
-            *(uint16_t *)(request + index) = IVCAM_MONITOR_MAGIC_NUMBER;
-            index += sizeof(uint16_t);
-            *(uint32_t *)(request + index) = op;
-            index += sizeof(uint32_t);
-            *(uint32_t *)(request + index) = p1;
-            index += sizeof(uint32_t);
-            *(uint32_t *)(request + index) = p2;
-            index += sizeof(uint32_t);
-            *(uint32_t *)(request + index) = p3;
-            index += sizeof(uint32_t);
-            *(uint32_t *)(request + index) = p4;
-            index += sizeof(uint32_t);
-
-            if (dataLength)
-            {
-                memcpy(request + index, data, dataLength);
-                index += dataLength;
-            }
-
-            // Length doesn't include header size (sizeof(uint32_t))
-            *(uint16_t *)request = (uint16_t)(index - sizeof(uint32_t));
-            requestSize = index;
-            return index;
-        }
-
-        // "Get Version and Date"
-        // Reference: Commands.xml in IVCAM_DLL
-        void get_gvd(uvc::device & device, std::timed_mutex & mutex, size_t sz, char * gvd)
-        {
-            HWMonitorCommand cmd((uint8_t)IVCAMMonitorCommand::GVD);
-            perform_and_send_monitor_command(device, mutex, cmd);
-            auto minSize = std::min(sz, cmd.receivedCommandDataLength);
-            memcpy(gvd, cmd.receivedCommandData, minSize);
-        }
-
-        void get_firmware_version_string(uvc::device & device, std::timed_mutex & mutex, std::string & version)
-        {
-            std::vector<char> gvd(1024);
-            get_gvd(device, mutex, 1024, gvd.data());
-            char fws[8];
-            memcpy(fws, gvd.data(), 8); // offset 0
-            version = std::string(std::to_string(fws[3]) + "." + std::to_string(fws[2]) + "." + std::to_string(fws[1]) + "." + std::to_string(fws[0]));
-        }
-
-        void get_module_serial_string(uvc::device & device, std::timed_mutex & mutex, std::string & serial, int offset)
-        {
-            std::vector<char> gvd(1024);
-            get_gvd(device, mutex, 1024, gvd.data());
-            unsigned char ss[8];
-            memcpy(ss, gvd.data() + offset, 8);
-            char formattedBuffer[64];
-            if (offset == 96)
-            {
-                sprintf(formattedBuffer, "%02X%02X%02X%02X%02X%02X", ss[0], ss[1], ss[2], ss[3], ss[4], ss[5]);
-                serial = std::string(formattedBuffer);
-            }
-            else if (offset == 132)
-            {
-                sprintf(formattedBuffer, "%02X%02X%02X%02X%02X%-2X", ss[0], ss[1], ss[2], ss[3], ss[4], ss[5]);
-                serial = std::string(formattedBuffer);
-            }
-        }
-
-        void force_hardware_reset(uvc::device & device, std::timed_mutex & mutex)
-        {
-            HWMonitorCommand cmd((uint8_t)IVCAMMonitorCommand::HWReset);
-            cmd.oneDirection = true;
-            perform_and_send_monitor_command(device, mutex, cmd);
-        }
-
-        void enable_timestamp(uvc::device & device, std::timed_mutex & mutex, bool colorEnable, bool depthEnable)
-        {
-            HWMonitorCommand cmd((uint8_t)IVCAMMonitorCommand::TimeStampEnable);
-            cmd.Param1 = depthEnable ? 1 : 0;
-            cmd.Param2 = colorEnable ? 1 : 0;
-            perform_and_send_monitor_command(device, mutex, cmd);
-        }
-
-        void set_asic_coefficients(uvc::device & device, std::timed_mutex & mutex, const IVCAMASICCoefficients & coeffs)
+        void set_asic_coefficients(uvc::device & device, std::timed_mutex & mutex, const cam_asic_coefficients & coeffs)
         {
             // command.Param1 =
             // 0 - INVZ VGA (640x480)
@@ -365,7 +54,7 @@ namespace rsimpl
             // 6 - INVR HVGA (640x240)
             // 7 - INVR 640x360
 
-            HWMonitorCommand command((uint8_t)IVCAMMonitorCommand::UpdateCalib);
+            hwmon_cmd command((uint8_t)fw_cmd::UpdateCalib);
 
             memcpy(command.data, coeffs.CoefValueArray, NUM_OF_CALIBRATION_COEFFS * sizeof(float));
             command.Param1 = 0; // todo - Send appropriate value at appropriate times, see above
@@ -379,49 +68,9 @@ namespace rsimpl
             perform_and_send_monitor_command(device, mutex, command);
         }
 
-        void set_auto_range(uvc::device & device, std::timed_mutex & mutex, int enableMvR, int16_t minMvR, int16_t maxMvR, int16_t startMvR, int enableLaser, int16_t minLaser, int16_t maxLaser, int16_t startLaser, int16_t ARUpperTH, int16_t ARLowerTH)
-        {
-            HWMonitorCommand CommandParameters((uint8_t)IVCAMMonitorCommand::SetAutoRange);
-            CommandParameters.Param1 = enableMvR;
-            CommandParameters.Param2 = enableLaser;
-
-            auto data = reinterpret_cast<int16_t *>(CommandParameters.data);
-            data[0] = minMvR;
-            data[1] = maxMvR;
-            data[2] = startMvR;
-            data[3] = minLaser;
-            data[4] = maxLaser;
-            data[5] = startLaser;
-            auto size = 12;
-
-            if (ARUpperTH != -1)
-            {
-                data[6] = ARUpperTH;
-                size += 2;
-            }
-
-            if (ARLowerTH != -1)
-            {
-                data[7] = ARLowerTH;
-                size += 2;
-            }
-
-            CommandParameters.sizeOfSendCommandData = size;
-            perform_and_send_monitor_command(device, mutex, CommandParameters);
-        }
-
-        FirmwareError get_fw_last_error(uvc::device & device, std::timed_mutex & mutex)
-        {
-            HWMonitorCommand cmd((uint8_t)IVCAMMonitorCommand::GetFWLastError);
-            memset(cmd.data, 0, 4);
-
-            perform_and_send_monitor_command(device, mutex, cmd);
-            return *reinterpret_cast<FirmwareError *>(cmd.receivedCommandData);
-        }
-
         float read_mems_temp(uvc::device & device, std::timed_mutex & mutex)
         {
-            HWMonitorCommand command((uint8_t)IVCAMMonitorCommand::GetMEMSTemp);
+            hwmon_cmd command((uint8_t)fw_cmd::GetMEMSTemp);
             command.Param1 = 0;
             command.Param2 = 0;
             command.Param3 = 0;
@@ -437,7 +86,7 @@ namespace rsimpl
 
         int read_ir_temp(uvc::device & device, std::timed_mutex & mutex)
         {
-            HWMonitorCommand command((uint8_t)IVCAMMonitorCommand::GetIRTemp);
+            hwmon_cmd command((uint8_t)fw_cmd::GetIRTemp);
             command.Param1 = 0;
             command.Param2 = 0;
             command.Param3 = 0;
@@ -456,19 +105,9 @@ namespace rsimpl
             size_t requestSize = sizeof(request);
             uint32_t responseOp;
 
-            if (prepare_usb_command(request, requestSize, (uint32_t)IVCAMMonitorCommand::GetCalibrationTable) <= 0)
+            if (prepare_usb_command(request, requestSize, (uint32_t)fw_cmd::GetCalibrationTable) <= 0)
                 throw std::runtime_error("usb transfer to retrieve calibration data failed");
             execute_usb_command(device, usbMutex, 0, request, requestSize, responseOp, data, bytesReturned);
-        }
-
-        void get_sr300_calibration_raw_data(uvc::device & device, std::timed_mutex & mutex, uint8_t * data, size_t & bytesReturned)
-        {
-            HWMonitorCommand command((uint8_t)IVCAMMonitorCommand::GetCalibrationTable);
-            command.Param1 = (uint32_t)IVCAMDataSource::TakeFromRAM;
-
-            perform_and_send_monitor_command(device, mutex, command);
-            memcpy(data, command.receivedCommandData, HW_MONITOR_BUFFER_SIZE);
-            bytesReturned = command.receivedCommandDataLength;
         }
 
         int bcdtoint(uint8_t * buf, int bufsize)
@@ -486,14 +125,14 @@ namespace rsimpl
             else return bcdtoint(version, 2);
         }
 
-        std::tuple<CameraCalibrationParameters, IVCAMTemperatureData, IVCAMThermalLoopParams> get_f200_calibration(uint8_t * rawCalibData, size_t len)
+        std::tuple<iv::camera_calib_params, cam_temperature_data, thermal_loop_params> get_f200_calibration(uint8_t * rawCalibData, size_t len)
         {
             uint8_t * bufParams = rawCalibData + 4;
 
-            IVCAMCalibration CalibrationData;
+            iv::cam_calibration CalibrationData;
             IVCAMTesterData TesterData;
 
-            memset(&CalibrationData, 0, sizeof(IVCAMCalibration));
+            memset(&CalibrationData, 0, sizeof(cam_calibration));
 
             int ver = get_version_of_calibration(bufParams, bufParams + 2);
 
@@ -501,17 +140,17 @@ namespace rsimpl
             {
                 rawCalibData = rawCalibData + 4;
 
-                size_t size = (sizeof(IVCAMCalibration) > len) ? len : sizeof(IVCAMCalibration);
+                size_t size = (sizeof(cam_calibration) > len) ? len : sizeof(cam_calibration);
 
-                auto fixWithVersionInfo = [&](IVCAMCalibration &d, int size, uint8_t * data)
+                auto fixWithVersionInfo = [&](cam_calibration &d, int size, uint8_t * data)
                 {
                     memcpy((uint8_t*)&d + sizeof(int), data, size - sizeof(int));
                 };
 
                 fixWithVersionInfo(CalibrationData, (int)size, rawCalibData);
 
-                CameraCalibrationParameters calibration;
-                memcpy(&calibration, &CalibrationData.CalibrationParameters, sizeof(CameraCalibrationParameters));
+                iv::camera_calib_params calibration;
+                memcpy(&calibration, &CalibrationData.CalibrationParameters, sizeof(iv::camera_calib_params));
                 memcpy(&TesterData, rawCalibData, SIZE_OF_CALIB_HEADER_BYTES); //copy the header: valid + version
 
                 //copy the tester data from end of calibration
@@ -524,8 +163,8 @@ namespace rsimpl
             {
                 float *params = (float *)bufParams;
 
-                CameraCalibrationParameters calibration;
-                memcpy(&calibration, params + 1, sizeof(CameraCalibrationParameters)); // skip the first float or 2 uint16
+                iv::camera_calib_params calibration;
+                memcpy(&calibration, params + 1, sizeof(iv::camera_calib_params)); // skip the first float or 2 uint16
                 memcpy(&TesterData, bufParams, SIZE_OF_CALIB_HEADER_BYTES);
 
                 memset((uint8_t*)&TesterData + SIZE_OF_CALIB_HEADER_BYTES, 0, sizeof(IVCAMTesterData) - SIZE_OF_CALIB_HEADER_BYTES);
@@ -535,7 +174,7 @@ namespace rsimpl
             throw std::runtime_error("calibration table is not compatible with this API");
         }
 
-        std::tuple<CameraCalibrationParameters, IVCAMTemperatureData, IVCAMThermalLoopParams> read_f200_calibration(uvc::device & device, std::timed_mutex & mutex)
+        std::tuple<iv::camera_calib_params, cam_temperature_data, thermal_loop_params> read_f200_calibration(uvc::device & device, std::timed_mutex & mutex)
         {
             uint8_t rawCalibrationBuffer[HW_MONITOR_BUFFER_SIZE];
             size_t bufferLength = HW_MONITOR_BUFFER_SIZE;
@@ -543,20 +182,7 @@ namespace rsimpl
             return get_f200_calibration(rawCalibrationBuffer, bufferLength);
         }
 
-        std::tuple<CameraCalibrationParameters, IVCAMTemperatureData, IVCAMThermalLoopParams> read_sr300_calibration(uvc::device & device, std::timed_mutex & mutex)
-        {
-            uint8_t rawCalibrationBuffer[HW_MONITOR_BUFFER_SIZE];
-            size_t bufferLength = HW_MONITOR_BUFFER_SIZE;
-            get_sr300_calibration_raw_data(device, mutex, rawCalibrationBuffer, bufferLength);
-
-            SR300RawCalibration rawCalib;
-            memcpy(&rawCalib, rawCalibrationBuffer, std::min(sizeof(rawCalib), bufferLength)); // Is this longer or shorter than the rawCalib struct?
-            IVCAMThermalLoopParams tlp;
-            tlp.IRThermalLoopEnable = 0; // No need for SW thermal loop on SR300
-            return std::make_tuple(rawCalib.CalibrationParameters, rawCalib.TemperatureData, tlp);
-        }
-
-        void generate_asic_calibration_coefficients(const CameraCalibrationParameters & compensated_calibration, std::vector<int> resolution, const bool isZMode, float * values)
+        void generate_asic_calibration_coefficients(const iv::camera_calib_params & compensated_calibration, std::vector<int> resolution, const bool isZMode, float * values)
         {
             auto params = compensated_calibration;
 
@@ -705,69 +331,12 @@ namespace rsimpl
             return;
         }
 
-        void update_asic_coefficients(uvc::device & device, std::timed_mutex & mutex, const CameraCalibrationParameters & compensated_params)
+        void update_asic_coefficients(uvc::device & device, std::timed_mutex & mutex, const iv::camera_calib_params & compensated_params)
         {
-            IVCAMASICCoefficients coeffs = {};
+            cam_asic_coefficients coeffs = {};
             generate_asic_calibration_coefficients(compensated_params, { 640, 480 }, true, coeffs.CoefValueArray); // todo - fix hardcoded resolution parameters
             set_asic_coefficients(device, mutex, coeffs);
         }
 
-    }
-
-    namespace sr300
-    {
-        void set_wakeup_device(uvc::device & device, std::timed_mutex & mutex, const uint32_t& phase1Period, const uint32_t& phase1FPS, const uint32_t& phase2Period, const uint32_t& phase2FPS)
-        {
-            HWMonitorCommand cmd((uint8_t)IVCAMMonitorCommand::OnSuspendResume);
-
-            sr300::wakeup_dev_params params = { phase1Period, static_cast<sr300::e_suspend_fps>(phase1FPS), phase2Period, static_cast<sr300::e_suspend_fps>(phase2FPS) };
-            if (!params.isValid())
-                throw std::logic_error("missing/invalid wake_up command parameters");
-            cmd.Param1 = 1;                                                                 // TODO Specification could not be found in IVCAM
-            auto trg = reinterpret_cast<sr300::wakeup_dev_params*>(cmd.data);
-            *trg = params;
-            cmd.sizeOfSendCommandData = sizeof(sr300::wakeup_dev_params);
-
-            perform_and_send_monitor_command(device, mutex, cmd);
-        }
-
-        void reset_wakeup_device(uvc::device & device, std::timed_mutex & mutex)
-        {
-            HWMonitorCommand cmd((uint8_t)IVCAMMonitorCommand::OnSuspendResume);
-
-            perform_and_send_monitor_command(device, mutex, cmd);
-        }
-
-        void get_wakeup_reason(uvc::device & device, std::timed_mutex & mutex, unsigned char &cReason)
-        {
-            HWMonitorCommand cmdWUReason((uint8_t)IVCAMMonitorCommand::GetWakeReason);
-
-            perform_and_send_monitor_command(device, mutex, cmdWUReason);
-
-            if (cmdWUReason.receivedCommandDataLength >= 4)     // TODO - better guard condition ?
-            {
-                unsigned char rslt = (*reinterpret_cast<int32_t *>(cmdWUReason.receivedCommandData)) && (0xFF);
-                if (rslt >= (uint8_t)wakeonusb_reason::eMaxWakeOnReason)
-                    throw std::logic_error("undefined wakeonusb_reason provided");
-                cReason = rslt;
-            }
-            else
-                throw std::runtime_error("no valid wakeonusb_reason provided");
-        }
-
-        void get_wakeup_confidence(uvc::device & device, std::timed_mutex & mutex, unsigned char &cConfidence)
-        {
-            HWMonitorCommand cmdCnfd((uint8_t)IVCAMMonitorCommand::GetWakeConfidence);
-            perform_and_send_monitor_command(device, mutex, cmdCnfd);
-
-            if (cmdCnfd.receivedCommandDataLength >= 4)
-            {
-                int32_t rslt = *reinterpret_cast<int32_t *>(cmdCnfd.receivedCommandData);
-                cConfidence = (unsigned char)(rslt & 0xFF);
-            }
-            else
-                throw std::runtime_error("no valid wakeonusb_confidence provided");
-        }
-
-    } // namespace rsimpl::sr300
+    } // namespace f200
 } // namespace rsimpl

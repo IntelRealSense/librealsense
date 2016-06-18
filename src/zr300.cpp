@@ -61,14 +61,14 @@ namespace rsimpl
 
             switch (options[i])
             {
-            case RS_OPTION_FISHEYE_STROBE:             zr300::set_strobe(get_device(), static_cast<uint8_t>(values[i])); break;
-            case RS_OPTION_FISHEYE_EXT_TRIG:           zr300::set_ext_trig(get_device(), static_cast<uint8_t>(values[i])); break;
+            case RS_OPTION_FISHEYE_STROBE:                  zr300::set_strobe(get_device(), static_cast<uint8_t>(values[i])); break;
+            case RS_OPTION_FISHEYE_EXT_TRIG:                zr300::set_ext_trig(get_device(), static_cast<uint8_t>(values[i])); break;
 
-            case RS_OPTION_ZR300_GYRO_BANDWIDTH:                            mm_cfg_writer.set(&motion_module::mm_config::gyro_bandwidth, (uint8_t)values[i]); break;
-            case RS_OPTION_ZR300_GYRO_RANGE:                                mm_cfg_writer.set(&motion_module::mm_config::gyro_range, (uint8_t)values[i]); break;
-            case RS_OPTION_ZR300_ACCELEROMETER_BANDWIDTH:                   mm_cfg_writer.set(&motion_module::mm_config::accel_bandwidth, (uint8_t)values[i]); break;
-            case RS_OPTION_ZR300_ACCELEROMETER_RANGE:                       mm_cfg_writer.set(&motion_module::mm_config::accel_range, (uint8_t)values[i]); break;
-            case RS_OPTION_ZR300_MOTION_MODULE_TIME_SEED:                   mm_cfg_writer.set(&motion_module::mm_config::mm_time_seed, values[i]); break;
+            case RS_OPTION_ZR300_GYRO_BANDWIDTH:            mm_cfg_writer.set(&motion_module::mm_config::gyro_bandwidth, (uint8_t)values[i]); break;
+            case RS_OPTION_ZR300_GYRO_RANGE:                mm_cfg_writer.set(&motion_module::mm_config::gyro_range, (uint8_t)values[i]); break;
+            case RS_OPTION_ZR300_ACCELEROMETER_BANDWIDTH:   mm_cfg_writer.set(&motion_module::mm_config::accel_bandwidth, (uint8_t)values[i]); break;
+            case RS_OPTION_ZR300_ACCELEROMETER_RANGE:       mm_cfg_writer.set(&motion_module::mm_config::accel_range, (uint8_t)values[i]); break;
+            case RS_OPTION_ZR300_MOTION_MODULE_TIME_SEED:   mm_cfg_writer.set(&motion_module::mm_config::mm_time_seed, values[i]); break;
 
                 // Default will be handled by parent implementation
             default: base_opt.push_back(options[i]); base_opt_val.push_back(values[i]); break;
@@ -83,50 +83,10 @@ namespace rsimpl
             ds_camera::set_options(base_opt.data(), base_opt.size(), base_opt_val.data());
     }
 
-    std::shared_ptr<rs_device> make_zr300_device(std::shared_ptr<uvc::device> device)
-    {
-        LOG_INFO("Connecting to Intel RealSense ZR300");
-
-        static_device_info info;
-        info.name = { "Intel RealSense ZR300" };
-        auto c = ds::read_camera_info(*device);        
-        info.subdevice_modes.push_back({ 2, { 1920, 1080 }, pf_rw16, 30, c.intrinsicsThird[0], { c.modesThird[0][0] }, { 0 } });
-
-        // TODO - is Motion Module optional
-        if (uvc::is_device_connected(*device, VID_INTEL_CAMERA, FISHEYE_PRODUCT_ID))
-        {
-            // Acquire Device handle for Motion Module API
-            zr300::claim_motion_module_interface(*device);
-
-            info.capabilities_vector.push_back(RS_CAPABILITIES_FISH_EYE);
-            info.capabilities_vector.push_back(RS_CAPABILITIES_MOTION_EVENTS);
-
-            info.stream_subdevices[RS_STREAM_FISHEYE] = 3;
-            info.presets[RS_STREAM_FISHEYE][RS_PRESET_BEST_QUALITY] = { true, 640, 480, RS_FORMAT_RAW8,   60 };
-            info.subdevice_modes.push_back({ 3, {640, 480}, pf_raw8, 60, c.intrinsicsThird[1], {c.modesThird[1][0]}, {0} });
-            info.subdevice_modes.push_back({ 3, {640, 480}, pf_raw8, 30, c.intrinsicsThird[1], {c.modesThird[1][0]}, {0} });
-
-            info.options.push_back({ RS_OPTION_FISHEYE_COLOR_EXPOSURE });
-            info.options.push_back({ RS_OPTION_FISHEYE_COLOR_GAIN });
-            info.options.push_back({ RS_OPTION_FISHEYE_STROBE, 0, 1, 1, 0 });
-            info.options.push_back({ RS_OPTION_FISHEYE_EXT_TRIG, 0, 1, 1, 0 });
-
-            info.options.push_back({ RS_OPTION_ZR300_GYRO_BANDWIDTH,            (int)mm_gyro_bandwidth::gyro_bw_default,    (int)mm_gyro_bandwidth::gyro_bw_200hz,  1,  (int)mm_gyro_bandwidth::gyro_bw_200hz });
-            info.options.push_back({ RS_OPTION_ZR300_GYRO_RANGE,                (int)mm_gyro_range::gyro_range_default,     (int)mm_gyro_range::gyro_range_1000,    1,  (int)mm_gyro_range::gyro_range_1000 });
-            info.options.push_back({ RS_OPTION_ZR300_ACCELEROMETER_BANDWIDTH,   (int)mm_accel_bandwidth::accel_bw_default,  (int)mm_accel_bandwidth::accel_bw_250hz,1,  (int)mm_accel_bandwidth::accel_bw_125hz });
-            info.options.push_back({ RS_OPTION_ZR300_ACCELEROMETER_RANGE,       (int)mm_accel_range::accel_range_default,   (int)mm_accel_range::accel_range_16g,   1,  (int)mm_accel_range::accel_range_4g });
-            info.options.push_back({ RS_OPTION_ZR300_MOTION_MODULE_TIME_SEED,       0,      UINT_MAX,   1,   0 });
-            info.options.push_back({ RS_OPTION_ZR300_MOTION_MODULE_ACTIVE,          0,       1,         1,   0 });
-        }
-
-        ds_camera::set_common_ds_config(device, info, c);
-        return std::make_shared<zr300_camera>(device, info);
-    }
-
     void zr300_camera::get_options(const rs_option options[], size_t count, double values[])
     {
         std::vector<rs_option>  base_opt;
-        std::vector<size_t>		base_opt_index;
+        std::vector<size_t>     base_opt_index;
         std::vector<double>     base_opt_val;
 
         auto & dev = get_device();
@@ -260,5 +220,45 @@ namespace rsimpl
             // Default to parent implementation
             ds_camera::get_option_range(option, min, max, step, def);
         }
+    }
+
+    std::shared_ptr<rs_device> make_zr300_device(std::shared_ptr<uvc::device> device)
+    {
+        LOG_INFO("Connecting to Intel RealSense ZR300");
+
+        static_device_info info;
+        info.name = { "Intel RealSense ZR300" };
+        auto c = ds::read_camera_info(*device);
+        info.subdevice_modes.push_back({ 2,{ 1920, 1080 }, pf_rw16, 30, c.intrinsicsThird[0],{ c.modesThird[0][0] },{ 0 } });
+
+        // TODO - is Motion Module optional
+        if (uvc::is_device_connected(*device, VID_INTEL_CAMERA, FISHEYE_PRODUCT_ID))
+        {
+            // Acquire Device handle for Motion Module API
+            zr300::claim_motion_module_interface(*device);
+
+            info.capabilities_vector.push_back(RS_CAPABILITIES_FISH_EYE);
+            info.capabilities_vector.push_back(RS_CAPABILITIES_MOTION_EVENTS);
+
+            info.stream_subdevices[RS_STREAM_FISHEYE] = 3;
+            info.presets[RS_STREAM_FISHEYE][RS_PRESET_BEST_QUALITY] = { true, 640, 480, RS_FORMAT_RAW8,   60 };
+            info.subdevice_modes.push_back({ 3,{ 640, 480 }, pf_raw8, 60, c.intrinsicsThird[1],{ c.modesThird[1][0] },{ 0 } });
+            info.subdevice_modes.push_back({ 3,{ 640, 480 }, pf_raw8, 30, c.intrinsicsThird[1],{ c.modesThird[1][0] },{ 0 } });
+
+            info.options.push_back({ RS_OPTION_FISHEYE_COLOR_EXPOSURE });
+            info.options.push_back({ RS_OPTION_FISHEYE_COLOR_GAIN });
+            info.options.push_back({ RS_OPTION_FISHEYE_STROBE, 0, 1, 1, 0 });
+            info.options.push_back({ RS_OPTION_FISHEYE_EXT_TRIG, 0, 1, 1, 0 });
+
+            info.options.push_back({ RS_OPTION_ZR300_GYRO_BANDWIDTH,            (int)mm_gyro_bandwidth::gyro_bw_default,    (int)mm_gyro_bandwidth::gyro_bw_200hz,  1,  (int)mm_gyro_bandwidth::gyro_bw_200hz });
+            info.options.push_back({ RS_OPTION_ZR300_GYRO_RANGE,                (int)mm_gyro_range::gyro_range_default,     (int)mm_gyro_range::gyro_range_1000,    1,  (int)mm_gyro_range::gyro_range_1000 });
+            info.options.push_back({ RS_OPTION_ZR300_ACCELEROMETER_BANDWIDTH,   (int)mm_accel_bandwidth::accel_bw_default,  (int)mm_accel_bandwidth::accel_bw_250hz,1,  (int)mm_accel_bandwidth::accel_bw_125hz });
+            info.options.push_back({ RS_OPTION_ZR300_ACCELEROMETER_RANGE,       (int)mm_accel_range::accel_range_default,   (int)mm_accel_range::accel_range_16g,   1,  (int)mm_accel_range::accel_range_4g });
+            info.options.push_back({ RS_OPTION_ZR300_MOTION_MODULE_TIME_SEED,       0,      UINT_MAX,   1,   0 });
+            info.options.push_back({ RS_OPTION_ZR300_MOTION_MODULE_ACTIVE,          0,       1,         1,   0 });
+        }
+
+        ds_camera::set_common_ds_config(device, info, c);
+        return std::make_shared<zr300_camera>(device, info);
     }
 }

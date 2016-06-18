@@ -5,6 +5,7 @@
 
 #include "r200.h"
 #include "f200.h"
+#include "sr300.h"
 #include "zr300.h"
 #include "uvc.h"
 #include "context.h"

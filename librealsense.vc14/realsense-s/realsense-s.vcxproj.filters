@@ -69,9 +69,6 @@
     <ClCompile Include="..\..\src\ds-camera.cpp">
       <Filter>src</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ds-private.cpp">
-      <Filter>src</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\r200.cpp">
       <Filter>src</Filter>
     </ClCompile>
@@ -79,6 +76,21 @@
       <Filter>src</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\zr300-private.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\iv-camera.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\sr300.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ds-common.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\sr300-private.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\iv-common.cpp">
       <Filter>src</Filter>
     </ClCompile>
   </ItemGroup>
@@ -137,9 +149,6 @@
     <ClInclude Include="..\..\src\ds-camera.h">
       <Filter>src</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ds-private.h">
-      <Filter>src</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\r200.h">
       <Filter>src</Filter>
     </ClInclude>
@@ -147,6 +156,21 @@
       <Filter>src</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\zr300-private.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\iv-camera.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\sr300.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ds-common.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\sr300-private.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\iv-common.h">
       <Filter>src</Filter>
     </ClInclude>
   </ItemGroup>

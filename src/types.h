@@ -20,10 +20,8 @@
 #include <condition_variable>               // For condition_variable
 #include <memory>                           // For unique_ptr
 
-#define RS_STREAM_NATIVE_COUNT 5
-#define RS_CHANNEL_NATIVE_COUNT 1
-
-#define RS_USER_QUEUE_SIZE 64
+const uint8_t RS_STREAM_NATIVE_COUNT	= 5;
+const uint8_t RS_USER_QUEUE_SIZE		= 64;
 
 namespace rsimpl
 {
