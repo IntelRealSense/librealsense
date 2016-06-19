@@ -54,31 +54,34 @@ int main() try
         std::cout << "Timestamp arrived, timestamp: " << entry.timestamp << std::endl;
     };
 
-    // 1. Make motion-tracking available
-    if (dev->supports(rs::capabilities::motion_events))
+    for (int ii = 0; ii < 100; ii++)
     {
-        dev->enable_motion_tracking(motion_callback, timestamp_callback);
-    }
+        // 1. Make motion-tracking available
+        if (dev->supports(rs::capabilities::motion_events))
+        {
+            dev->enable_motion_tracking(motion_callback, timestamp_callback);
+        }
 
-    // 2. Optional - configure motion module
-    //dev->set_options(mm_cfg_list.data(), mm_cfg_list.size(), mm_cfg_params.data());
+        // 2. Optional - configure motion module
+        //dev->set_options(mm_cfg_list.data(), mm_cfg_list.size(), mm_cfg_params.data());
 
-    std::cout << "Motion module is " << (dev->get_option(rs::option::zr300_motion_module_active) ? " active" : " idle") << std::endl;
-
-    // 3. Start generating motion-tracking data
-    dev->start(rs::source::motion_data);
-
-    for (int i = 0; i < 1000; i++)
-    {
         std::cout << "Motion module is " << (dev->get_option(rs::option::zr300_motion_module_active) ? " active" : " idle") << std::endl;
-        std::this_thread::sleep_for(std::chrono::milliseconds(300));
+
+        // 3. Start generating motion-tracking data
+        dev->start(rs::source::motion_data);
+
+        for (int i = 0; i < 10; i++)
+        {
+            std::cout << "Motion module is " << (dev->get_option(rs::option::zr300_motion_module_active) ? " active" : " idle") << std::endl;
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        }
+
+        // 4. stop data acquisition
+        dev->stop(rs::source::motion_data);
+
+        // 5. reset previous settings formotion data handlers
+        dev->disable_motion_tracking();
     }
-
-    // 4. stop data acquisition
-    dev->stop(rs::source::motion_data);
-
-    // 5. reset previous settings formotion data handlers
-    dev->disable_motion_tracking();
 
     return EXIT_SUCCESS;
 }

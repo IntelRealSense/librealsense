@@ -6,7 +6,7 @@
 
 namespace rsimpl
 {
-    namespace hw_mon
+    namespace hw_monitor
     {
 
     void fill_usb_buffer(int opCodeNumber, int p1, int p2, int p3, int p4, uint8_t * data, int dataLength, uint8_t * bufferToSend, int & length)
@@ -71,7 +71,7 @@ namespace rsimpl
         }
     }
 
-    void send_hw_monitor_command(uvc::device & device, std::timed_mutex & mutex, unsigned char handle_id, HWMonCommandDetails & details)
+    void send_hw_monitor_command(uvc::device & device, std::timed_mutex & mutex, unsigned char handle_id, hwmon_cmd_details & details)
     {
         unsigned char outputBuffer[HW_MONITOR_BUFFER_SIZE];
 
@@ -92,11 +92,11 @@ namespace rsimpl
             memcpy(details.receivedCommandData, outputBuffer + 4, details.receivedCommandDataLength);
     }
 
-    void perform_and_send_monitor_command(uvc::device & device, std::timed_mutex & mutex, HWMonitorCommand & newCommand)
+    void perform_and_send_monitor_command(uvc::device & device, std::timed_mutex & mutex, hwmon_cmd & newCommand)
     {
         uint32_t opCodeXmit = (uint32_t)newCommand.cmd;
 
-        HWMonCommandDetails details;
+        hwmon_cmd_details details;
         details.oneDirection = newCommand.oneDirection;
         details.TimeOut = newCommand.TimeOut;
 
@@ -128,11 +128,11 @@ namespace rsimpl
         }
     }
 
-    void perform_and_send_monitor_command(uvc::device & device, std::timed_mutex & mutex, unsigned char handle_id, HWMonitorCommand & newCommand)
+    void perform_and_send_monitor_command(uvc::device & device, std::timed_mutex & mutex, unsigned char handle_id, hwmon_cmd & newCommand)
     {
         uint32_t opCodeXmit = (uint32_t)newCommand.cmd;
 
-        HWMonCommandDetails details;
+        hwmon_cmd_details details;
         details.oneDirection = newCommand.oneDirection;
         details.TimeOut = newCommand.TimeOut;
 

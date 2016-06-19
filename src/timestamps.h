@@ -20,11 +20,11 @@ namespace rsimpl
 
     class concurrent_queue{
     public:
-        void push_back_data(rs_timestamp_data data);
-        bool pop_front_data();
-        bool erase(rs_timestamp_data data);
-        bool correct(const rs_event_source& source_id, frame_interface& frame);
-        unsigned size();
+        void    push_back_data(rs_timestamp_data data);
+        bool    pop_front_data();
+        bool    erase(rs_timestamp_data data);
+        bool    correct(const rs_event_source& source_id, frame_interface& frame);
+        size_t  size();
 
     private:
         std::deque<rs_timestamp_data> data_queue;

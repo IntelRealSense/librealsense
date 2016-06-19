@@ -42,7 +42,7 @@ bool concurrent_queue::erase(rs_timestamp_data data)
     return false;
 }
 
-unsigned concurrent_queue::size()
+size_t concurrent_queue::size()
 {
     lock_guard<mutex> lock(mtx);
 

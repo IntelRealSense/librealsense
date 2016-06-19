@@ -41,7 +41,7 @@ namespace rsimpl
         rs_intrinsics                           get_intrinsics() const override;
         rs_intrinsics                           get_rectified_intrinsics() const override;
         rs_format                               get_format() const override { return get_mode().get_format(stream); }
-        int                                     get_framerate() const override { return get_mode().get_framerate(stream); }
+        int                                     get_framerate() const override { return get_mode().get_framerate(); }
 
         int                                     get_frame_number() const override;
         long long                               get_frame_system_time() const override;
