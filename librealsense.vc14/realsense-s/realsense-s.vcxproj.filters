@@ -18,9 +18,6 @@
     <ClCompile Include="..\..\src\f200.cpp">
       <Filter>src</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\f200-private.cpp">
-      <Filter>src</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\image.cpp">
       <Filter>src</Filter>
     </ClCompile>
@@ -60,13 +57,7 @@
     <ClCompile Include="..\..\src\hw-monitor.cpp">
       <Filter>src</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\motion_module.cpp">
-      <Filter>src</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\timestamps.cpp">
-      <Filter>src</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ds-camera.cpp">
       <Filter>src</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\r200.cpp">
@@ -75,22 +66,22 @@
     <ClCompile Include="..\..\src\zr300.cpp">
       <Filter>src</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\zr300-private.cpp">
-      <Filter>src</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\iv-camera.cpp">
-      <Filter>src</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\sr300.cpp">
       <Filter>src</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ds-common.cpp">
+    <ClCompile Include="..\..\src\motion-module.cpp">
       <Filter>src</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\sr300-private.cpp">
+    <ClCompile Include="..\..\src\ds-device.cpp">
       <Filter>src</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\iv-common.cpp">
+    <ClCompile Include="..\..\src\ds-private.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ivcam-device.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ivcam-private.cpp">
       <Filter>src</Filter>
     </ClCompile>
   </ItemGroup>
@@ -102,9 +93,6 @@
       <Filter>src</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\f200.h">
-      <Filter>src</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\f200-private.h">
       <Filter>src</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\image.h">
@@ -137,17 +125,11 @@
     <ClInclude Include="..\..\src\hw-monitor.h">
       <Filter>src</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\motion_module.h">
-      <Filter>src</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\timestamps.h">
       <Filter>src</Filter>
     </ClInclude>
     <ClInclude Include="..\..\include\librealsense\rscore.hpp">
       <Filter>include</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ds-camera.h">
-      <Filter>src</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\r200.h">
       <Filter>src</Filter>
@@ -155,22 +137,22 @@
     <ClInclude Include="..\..\src\zr300.h">
       <Filter>src</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\zr300-private.h">
-      <Filter>src</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\iv-camera.h">
-      <Filter>src</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\sr300.h">
       <Filter>src</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ds-common.h">
+    <ClInclude Include="..\..\src\motion-module.h">
       <Filter>src</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\sr300-private.h">
+    <ClInclude Include="..\..\src\ds-device.h">
       <Filter>src</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\iv-common.h">
+    <ClInclude Include="..\..\src\ds-private.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ivcam-device.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ivcam-private.h">
       <Filter>src</Filter>
     </ClInclude>
   </ItemGroup>

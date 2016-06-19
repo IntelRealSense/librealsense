@@ -5,7 +5,6 @@
 
 #include "image.h"
 #include "sr300.h"
-#include "sr300-private.h"
 
 namespace rsimpl
 {
@@ -36,7 +35,7 @@ namespace rsimpl
         {{640, 480}, {30,60,120,200}}      
     };    
 
-    static static_device_info get_sr300_info(std::shared_ptr<uvc::device> device, const iv::camera_calib_params & c)
+    static static_device_info get_sr300_info(std::shared_ptr<uvc::device> device, const ivcam::camera_calib_params & c)
     {
         LOG_INFO("Connecting to Intel RealSense SR300");
 
@@ -99,7 +98,7 @@ namespace rsimpl
             {RS_OPTION_SR300_WAKE_ON_USB_CONFIDENCE,                0.0,              100.,                                              1.0, -1.0}  // Percentage
         };
 
-        update_supported_options(*device.get(), iv::depth_xu, eu_SR300_depth_controls, info.options);
+        update_supported_options(*device.get(), ivcam::depth_xu, eu_SR300_depth_controls, info.options);
 
         rsimpl::pose depth_to_color = {transpose((const float3x3 &)c.Rt), (const float3 &)c.Tt * 0.001f}; // convert mm to m
         info.stream_poses[RS_STREAM_DEPTH] = info.stream_poses[RS_STREAM_INFRARED] = inverse(depth_to_color);
@@ -110,7 +109,7 @@ namespace rsimpl
         return info;
     }
 
-    sr300_camera::sr300_camera(std::shared_ptr<uvc::device> device, const static_device_info & info, const iv::camera_calib_params & calib) :
+    sr300_camera::sr300_camera(std::shared_ptr<uvc::device> device, const static_device_info & info, const ivcam::camera_calib_params & calib) :
         iv_camera(device, info, calib)
     {
         // These settings come from the "Common" preset. There is no actual way to read the current values off the device.
@@ -126,42 +125,13 @@ namespace rsimpl
         arr.ARLowerTh = 650;
     }
 
-    sr300_camera::~sr300_camera()
-    {
-    }
-
-    void sr300_camera::on_before_start(const std::vector<subdevice_mode_selection> & selected_modes)
-    {
-
-    }
-    
-    rs_stream sr300_camera::select_key_stream(const std::vector<rsimpl::subdevice_mode_selection> & selected_modes)
-    {
-        int fps[RS_STREAM_NATIVE_COUNT] = {}, max_fps = 0;
-        for(const auto & m : selected_modes)
-        {
-            for(const auto & output : m.get_outputs())
-            {
-                fps[output.first] = m.mode.fps;
-                max_fps = std::max(max_fps, m.mode.fps);
-            }
-        }
-
-        // Prefer to sync on depth or infrared, but select the stream running at the fastest framerate
-        for (auto s : { RS_STREAM_DEPTH, RS_STREAM_INFRARED2, RS_STREAM_INFRARED, RS_STREAM_COLOR })
-        {
-            if(fps[s] == max_fps) return s;
-        }
-        return RS_STREAM_DEPTH;
-    }
-
     void sr300_camera::set_options(const rs_option options[], size_t count, const double values[])
     {
         std::vector<rs_option>  base_opt;
         std::vector<double>     base_opt_val;
 
-        auto arr_writer = make_struct_interface<iv::cam_auto_range_request>([this]() { return arr; }, [this](iv::cam_auto_range_request r) {
-            iv::set_auto_range(get_device(), usbMutex, r.enableMvR, r.minMvR, r.maxMvR, r.startMvR, r.enableLaser, r.minLaser, r.maxLaser, r.startLaser, r.ARUpperTh, r.ARLowerTh);
+        auto arr_writer = make_struct_interface<ivcam::cam_auto_range_request>([this]() { return arr; }, [this](ivcam::cam_auto_range_request r) {
+            ivcam::set_auto_range(get_device(), usbMutex, r.enableMvR, r.minMvR, r.maxMvR, r.startMvR, r.enableLaser, r.minLaser, r.maxLaser, r.startLaser, r.ARUpperTh, r.ARLowerTh);
             arr = r;
         });
 
@@ -182,16 +152,16 @@ namespace rsimpl
             {
             case RS_OPTION_SR300_WAKEUP_DEV_RESET:    sr300::reset_wakeup_device(get_device(), usbMutex); break;
 
-            case RS_OPTION_SR300_AUTO_RANGE_ENABLE_MOTION_VERSUS_RANGE: arr_writer.set(&iv::cam_auto_range_request::enableMvR, values[i]); break; 
-            case RS_OPTION_SR300_AUTO_RANGE_ENABLE_LASER:               arr_writer.set(&iv::cam_auto_range_request::enableLaser, values[i]); break;
-            case RS_OPTION_SR300_AUTO_RANGE_MIN_MOTION_VERSUS_RANGE:    arr_writer.set(&iv::cam_auto_range_request::minMvR, values[i]); break;
-            case RS_OPTION_SR300_AUTO_RANGE_MAX_MOTION_VERSUS_RANGE:    arr_writer.set(&iv::cam_auto_range_request::maxMvR, values[i]); break;
-            case RS_OPTION_SR300_AUTO_RANGE_START_MOTION_VERSUS_RANGE:  arr_writer.set(&iv::cam_auto_range_request::startMvR, values[i]); break;
-            case RS_OPTION_SR300_AUTO_RANGE_MIN_LASER:                  arr_writer.set(&iv::cam_auto_range_request::minLaser, values[i]); break;
-            case RS_OPTION_SR300_AUTO_RANGE_MAX_LASER:                  arr_writer.set(&iv::cam_auto_range_request::maxLaser, values[i]); break;
-            case RS_OPTION_SR300_AUTO_RANGE_START_LASER:                arr_writer.set(&iv::cam_auto_range_request::startLaser, values[i]); break;
-            case RS_OPTION_SR300_AUTO_RANGE_UPPER_THRESHOLD:            arr_writer.set(&iv::cam_auto_range_request::ARUpperTh, values[i]); break;
-            case RS_OPTION_SR300_AUTO_RANGE_LOWER_THRESHOLD:            arr_writer.set(&iv::cam_auto_range_request::ARLowerTh, values[i]); break;
+            case RS_OPTION_SR300_AUTO_RANGE_ENABLE_MOTION_VERSUS_RANGE: arr_writer.set(&ivcam::cam_auto_range_request::enableMvR, values[i]); break; 
+            case RS_OPTION_SR300_AUTO_RANGE_ENABLE_LASER:               arr_writer.set(&ivcam::cam_auto_range_request::enableLaser, values[i]); break;
+            case RS_OPTION_SR300_AUTO_RANGE_MIN_MOTION_VERSUS_RANGE:    arr_writer.set(&ivcam::cam_auto_range_request::minMvR, values[i]); break;
+            case RS_OPTION_SR300_AUTO_RANGE_MAX_MOTION_VERSUS_RANGE:    arr_writer.set(&ivcam::cam_auto_range_request::maxMvR, values[i]); break;
+            case RS_OPTION_SR300_AUTO_RANGE_START_MOTION_VERSUS_RANGE:  arr_writer.set(&ivcam::cam_auto_range_request::startMvR, values[i]); break;
+            case RS_OPTION_SR300_AUTO_RANGE_MIN_LASER:                  arr_writer.set(&ivcam::cam_auto_range_request::minLaser, values[i]); break;
+            case RS_OPTION_SR300_AUTO_RANGE_MAX_LASER:                  arr_writer.set(&ivcam::cam_auto_range_request::maxLaser, values[i]); break;
+            case RS_OPTION_SR300_AUTO_RANGE_START_LASER:                arr_writer.set(&ivcam::cam_auto_range_request::startLaser, values[i]); break;
+            case RS_OPTION_SR300_AUTO_RANGE_UPPER_THRESHOLD:            arr_writer.set(&ivcam::cam_auto_range_request::ARUpperTh, values[i]); break;
+            case RS_OPTION_SR300_AUTO_RANGE_LOWER_THRESHOLD:            arr_writer.set(&ivcam::cam_auto_range_request::ARLowerTh, values[i]); break;
 
             case RS_OPTION_SR300_WAKEUP_DEV_PHASE1_PERIOD:              arr_wakeup_dev_writer.set(&sr300::wakeup_dev_params::phase1Period, values[i]); break;
             case RS_OPTION_SR300_WAKEUP_DEV_PHASE1_FPS:                 arr_wakeup_dev_writer.set(&sr300::wakeup_dev_params::phase1FPS, (int)values[i]); break;
@@ -221,7 +191,7 @@ namespace rsimpl
         std::vector<size_t>     base_opt_index;
         std::vector<double>     base_opt_val;
 
-        auto arr_reader = make_struct_interface<iv::cam_auto_range_request>([this]() { return arr; }, [this](iv::cam_auto_range_request) {});
+        auto arr_reader = make_struct_interface<ivcam::cam_auto_range_request>([this]() { return arr; }, [this](ivcam::cam_auto_range_request) {});
         auto wake_on_usb_reader = make_struct_interface<sr300::wakeup_dev_params>([this]()
         { return arr_wakeup_dev_param; },[]() { throw std::logic_error("Read-only operation"); });
 
@@ -239,16 +209,16 @@ namespace rsimpl
             uint8_t val=0;
             switch(options[i])
             {
-            case RS_OPTION_SR300_AUTO_RANGE_ENABLE_MOTION_VERSUS_RANGE: values[i] = arr_reader.get(&iv::cam_auto_range_request::enableMvR); break; 
-            case RS_OPTION_SR300_AUTO_RANGE_ENABLE_LASER:               values[i] = arr_reader.get(&iv::cam_auto_range_request::enableLaser); break;
-            case RS_OPTION_SR300_AUTO_RANGE_MIN_MOTION_VERSUS_RANGE:    values[i] = arr_reader.get(&iv::cam_auto_range_request::minMvR); break;
-            case RS_OPTION_SR300_AUTO_RANGE_MAX_MOTION_VERSUS_RANGE:    values[i] = arr_reader.get(&iv::cam_auto_range_request::maxMvR); break;
-            case RS_OPTION_SR300_AUTO_RANGE_START_MOTION_VERSUS_RANGE:  values[i] = arr_reader.get(&iv::cam_auto_range_request::startMvR); break;
-            case RS_OPTION_SR300_AUTO_RANGE_MIN_LASER:                  values[i] = arr_reader.get(&iv::cam_auto_range_request::minLaser); break;
-            case RS_OPTION_SR300_AUTO_RANGE_MAX_LASER:                  values[i] = arr_reader.get(&iv::cam_auto_range_request::maxLaser); break;
-            case RS_OPTION_SR300_AUTO_RANGE_START_LASER:                values[i] = arr_reader.get(&iv::cam_auto_range_request::startLaser); break;
-            case RS_OPTION_SR300_AUTO_RANGE_UPPER_THRESHOLD:            values[i] = arr_reader.get(&iv::cam_auto_range_request::ARUpperTh); break;
-            case RS_OPTION_SR300_AUTO_RANGE_LOWER_THRESHOLD:            values[i] = arr_reader.get(&iv::cam_auto_range_request::ARLowerTh); break;
+            case RS_OPTION_SR300_AUTO_RANGE_ENABLE_MOTION_VERSUS_RANGE: values[i] = arr_reader.get(&ivcam::cam_auto_range_request::enableMvR); break; 
+            case RS_OPTION_SR300_AUTO_RANGE_ENABLE_LASER:               values[i] = arr_reader.get(&ivcam::cam_auto_range_request::enableLaser); break;
+            case RS_OPTION_SR300_AUTO_RANGE_MIN_MOTION_VERSUS_RANGE:    values[i] = arr_reader.get(&ivcam::cam_auto_range_request::minMvR); break;
+            case RS_OPTION_SR300_AUTO_RANGE_MAX_MOTION_VERSUS_RANGE:    values[i] = arr_reader.get(&ivcam::cam_auto_range_request::maxMvR); break;
+            case RS_OPTION_SR300_AUTO_RANGE_START_MOTION_VERSUS_RANGE:  values[i] = arr_reader.get(&ivcam::cam_auto_range_request::startMvR); break;
+            case RS_OPTION_SR300_AUTO_RANGE_MIN_LASER:                  values[i] = arr_reader.get(&ivcam::cam_auto_range_request::minLaser); break;
+            case RS_OPTION_SR300_AUTO_RANGE_MAX_LASER:                  values[i] = arr_reader.get(&ivcam::cam_auto_range_request::maxLaser); break;
+            case RS_OPTION_SR300_AUTO_RANGE_START_LASER:                values[i] = arr_reader.get(&ivcam::cam_auto_range_request::startLaser); break;
+            case RS_OPTION_SR300_AUTO_RANGE_UPPER_THRESHOLD:            values[i] = arr_reader.get(&ivcam::cam_auto_range_request::ARUpperTh); break;
+            case RS_OPTION_SR300_AUTO_RANGE_LOWER_THRESHOLD:            values[i] = arr_reader.get(&ivcam::cam_auto_range_request::ARLowerTh); break;
 
             case RS_OPTION_SR300_WAKEUP_DEV_PHASE1_PERIOD:              values[i] = wake_on_usb_reader.get(&sr300::wakeup_dev_params::phase1Period); break;
             case RS_OPTION_SR300_WAKEUP_DEV_PHASE1_FPS:                 values[i] = wake_on_usb_reader.get(&sr300::wakeup_dev_params::phase1FPS); break;
@@ -278,9 +248,9 @@ namespace rsimpl
     std::shared_ptr<rs_device> make_sr300_device(std::shared_ptr<uvc::device> device)
     {
         std::timed_mutex mutex;
-        iv::claim_ivcam_interface(*device);
+        ivcam::claim_ivcam_interface(*device);
         auto calib = sr300::read_sr300_calibration(*device, mutex);
-        iv::enable_timestamp(*device, mutex, true, true);
+        ivcam::enable_timestamp(*device, mutex, true, true);
 
         uvc::set_pu_control_with_retry(*device, 0, rs_option::RS_OPTION_COLOR_BACKLIGHT_COMPENSATION, 0);
         uvc::set_pu_control_with_retry(*device, 0, rs_option::RS_OPTION_COLOR_BRIGHTNESS, 0);
@@ -295,8 +265,8 @@ namespace rsimpl
 
         auto info = get_sr300_info(device, calib);
 
-        iv::get_module_serial_string(*device, mutex, info.serial, 132);
-        iv::get_firmware_version_string(*device, mutex, info.firmware_version);
+        ivcam::get_module_serial_string(*device, mutex, info.serial, 132);
+        ivcam::get_firmware_version_string(*device, mutex, info.firmware_version);
 
         info.capabilities_vector.push_back(RS_CAPABILITIES_COLOR);
         info.capabilities_vector.push_back(RS_CAPABILITIES_DEPTH);

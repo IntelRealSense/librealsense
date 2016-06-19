@@ -5,8 +5,7 @@
 #ifndef LIBREALSENSE_R200_H
 #define LIBREALSENSE_R200_H
 
-#include "device.h"
-#include "ds-camera.h"
+#include "ds-device.h"
 
 #define R200_PRODUCT_ID  0x0a80
 #define LR200_PRODUCT_ID 0x0abf
@@ -15,14 +14,12 @@
 
 namespace rsimpl
 {
-    class r200_camera final : public ds_camera
+    class r200_camera final : public ds::ds_device
     {
-    protected:
-        //std::shared_ptr<rs_device> make_device(std::shared_ptr<uvc::device> device, static_device_info& info, ds::ds_calibration& c) override;
 
     public:
         r200_camera(std::shared_ptr<uvc::device> device, const static_device_info & info);
-        ~r200_camera();
+        ~r200_camera() {};
 
         bool supports_option(rs_option option) const override;
     };

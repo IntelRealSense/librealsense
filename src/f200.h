@@ -9,16 +9,13 @@
 #include <thread>
 #include <condition_variable>
 
-#include "device.h"
-#include "iv-camera.h"
-#include "f200-private.h" // todo - refactor so we don't need this here
+#include "ivcam-device.h"
 
 
 #define F200_PRODUCT_ID  0x0a66
 
 namespace rsimpl
 {
-
     class f200_camera final : public iv_camera
     {
         f200::cam_temperature_data base_temperature_data;
@@ -34,12 +31,9 @@ namespace rsimpl
         void temperature_control_loop();
 
     public:
-        f200_camera(std::shared_ptr<uvc::device> device, const static_device_info & info, const iv::camera_calib_params & calib, const f200::cam_temperature_data & temp, const f200::thermal_loop_params & params);
+        f200_camera(std::shared_ptr<uvc::device> device, const static_device_info & info, const ivcam::camera_calib_params & calib, const f200::cam_temperature_data & temp, const f200::thermal_loop_params & params);
         ~f200_camera();
 
-        void on_before_start(const std::vector<subdevice_mode_selection> & selected_modes) override;
-        rs_stream select_key_stream(const std::vector<rsimpl::subdevice_mode_selection> & selected_modes) override;
-        
         void set_options(const rs_option options[], size_t count, const double values[]) override;
         void get_options(const rs_option options[], size_t count, double values[]) override;
 

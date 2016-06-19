@@ -1,23 +1,20 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
-#include <cstring>
-#include <climits>
 #include <algorithm>
-#include <iostream>
 
 #include "image.h"
-#include "ds-camera.h"
-#include "zr300-private.h"
+#include "ds-private.h"
 #include "zr300.h"
 
 using namespace rsimpl;
+using namespace rsimpl::ds;
 using namespace rsimpl::motion_module;
 
 namespace rsimpl
 {
     zr300_camera::zr300_camera(std::shared_ptr<uvc::device> device, const static_device_info & info)
-    : ds_camera(device, info),
+    : ds_device(device, info),
       motion_module_ctrl(device.get())
     {
 
@@ -80,7 +77,7 @@ namespace rsimpl
 
         //Then handle the common options
         if (base_opt.size())
-            ds_camera::set_options(base_opt.data(), base_opt.size(), base_opt_val.data());
+            ds_device::set_options(base_opt.data(), base_opt.size(), base_opt_val.data());
     }
 
     void zr300_camera::get_options(const rs_option options[], size_t count, double values[])
@@ -124,7 +121,7 @@ namespace rsimpl
         if (base_opt.size())
         {
             base_opt_val.resize(base_opt.size());
-            ds_camera::get_options(base_opt.data(), base_opt.size(), base_opt_val.data());
+            ds_device::get_options(base_opt.data(), base_opt.size(), base_opt_val.data());
         }
 
         // Merge the local data with values obtained by base class
@@ -198,12 +195,6 @@ namespace rsimpl
         return RS_STREAM_DEPTH;
     }
 
-    bool zr300_camera::supports_option(rs_option option) const
-    {
-        // We have special logic to implement LR gain and exposure, so they do not belong to the standard option list
-        return option == RS_OPTION_R200_LR_GAIN || option == RS_OPTION_R200_LR_EXPOSURE || rs_device_base::supports_option(option);
-    }
-
     void zr300_camera::get_option_range(rs_option option, double & min, double & max, double & step, double & def)
     {
         if (is_fisheye_uvc_control(option))
@@ -218,7 +209,7 @@ namespace rsimpl
         else
         {
             // Default to parent implementation
-            ds_camera::get_option_range(option, min, max, step, def);
+            ds_device::get_option_range(option, min, max, step, def);
         }
     }
 
@@ -258,7 +249,7 @@ namespace rsimpl
             info.options.push_back({ RS_OPTION_ZR300_MOTION_MODULE_ACTIVE,          0,       1,         1,   0 });
         }
 
-        ds_camera::set_common_ds_config(device, info, c);
+        ds_device::set_common_ds_config(device, info, c);
         return std::make_shared<zr300_camera>(device, info);
     }
 }

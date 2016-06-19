@@ -3,12 +3,10 @@
 
 #define _USE_MATH_DEFINES
 #include <math.h>
-#include <limits>
-#include <climits>
 #include <algorithm>
 
 #include "image.h"
-#include "f200-private.h"
+#include "ivcam-private.h"
 #include "f200.h"
 
 using namespace rsimpl::f200;
@@ -42,7 +40,7 @@ namespace rsimpl
         {{640, 240}, {30,60,120,240,300}}        
     };
 
-    static static_device_info get_f200_info(std::shared_ptr<uvc::device> device, const iv::camera_calib_params & c)
+    static static_device_info get_f200_info(std::shared_ptr<uvc::device> device, const ivcam::camera_calib_params & c)
     {
         LOG_INFO("Connecting to Intel RealSense F200");
 
@@ -90,7 +88,7 @@ namespace rsimpl
         info.presets[RS_STREAM_DEPTH   ][RS_PRESET_HIGHEST_FRAMERATE] = {true, 640, 480, RS_FORMAT_Z16,  60};
         info.presets[RS_STREAM_COLOR   ][RS_PRESET_HIGHEST_FRAMERATE] = {true, 640, 480, RS_FORMAT_RGB8, 60};
 
-        update_supported_options(*device.get(), iv::depth_xu, eu_F200_depth_controls, info.options);
+        update_supported_options(*device.get(), ivcam::depth_xu, eu_F200_depth_controls, info.options);
 
         rsimpl::pose depth_to_color = {transpose((const float3x3 &)c.Rt), (const float3 &)c.Tt * 0.001f}; // convert mm to m
         info.stream_poses[RS_STREAM_DEPTH] = info.stream_poses[RS_STREAM_INFRARED] = inverse(depth_to_color);
@@ -101,7 +99,7 @@ namespace rsimpl
         return info;
     }
 
-    f200_camera::f200_camera(std::shared_ptr<uvc::device> device, const static_device_info & info, const iv::camera_calib_params & calib, const f200::cam_temperature_data & temp, const f200::thermal_loop_params & params) :
+    f200_camera::f200_camera(std::shared_ptr<uvc::device> device, const static_device_info & info, const ivcam::camera_calib_params & calib, const f200::cam_temperature_data & temp, const f200::thermal_loop_params & params) :
         iv_camera(device, info, calib),
         base_temperature_data(temp), 
         thermal_loop_params(params), 
@@ -121,32 +119,7 @@ namespace rsimpl
         runTemperatureThread = false;
         temperatureCv.notify_one();
         if (temperatureThread.joinable())
-            temperatureThread.join();        
-    }
-
-    void f200_camera::on_before_start(const std::vector<subdevice_mode_selection> & selected_modes)
-    {
-
-    }
-    
-    rs_stream f200_camera::select_key_stream(const std::vector<rsimpl::subdevice_mode_selection> & selected_modes)
-    {
-        int fps[RS_STREAM_NATIVE_COUNT] = {}, max_fps = 0;
-        for(const auto & m : selected_modes)
-        {
-            for(const auto & output : m.get_outputs())
-            {
-                fps[output.first] = m.mode.fps;
-                max_fps = std::max(max_fps, m.mode.fps);
-            }
-        }
-
-        // Prefer to sync on depth or infrared, but select the stream running at the fastest framerate
-        for (auto s : { RS_STREAM_DEPTH, RS_STREAM_INFRARED2, RS_STREAM_INFRARED, RS_STREAM_COLOR })
-        {
-            if(fps[s] == max_fps) return s;
-        }
-        return RS_STREAM_DEPTH;
+            temperatureThread.join();
     }
 
     void f200_camera::temperature_control_loop()
@@ -227,7 +200,7 @@ namespace rsimpl
 
             switch(options[i])
             {
-			case RS_OPTION_F200_DYNAMIC_FPS:          iv::set_dynamic_fps(get_device(), static_cast<uint8_t>(values[i])); break; // IVCAM 1.0 Only
+			case RS_OPTION_F200_DYNAMIC_FPS:          ivcam::set_dynamic_fps(get_device(), static_cast<uint8_t>(values[i])); break; // IVCAM 1.0 Only
 
              // Default will be handled by parent implementation
             default: base_opt.push_back(options[i]); base_opt_val.push_back(values[i]); break;
@@ -245,7 +218,7 @@ namespace rsimpl
         std::vector<size_t>     base_opt_index;
         std::vector<double>     base_opt_val;
 
-        for(int i=0; i<count; ++i)
+        for (size_t i = 0; i<count; ++i)
         {
             LOG_INFO("Reading option " << options[i]);
 
@@ -258,7 +231,7 @@ namespace rsimpl
             uint8_t val=0;
             switch(options[i])
             {
-            case RS_OPTION_F200_DYNAMIC_FPS:          iv::get_dynamic_fps(get_device(), val); values[i] = val; break;
+            case RS_OPTION_F200_DYNAMIC_FPS:          ivcam::get_dynamic_fps(get_device(), val); values[i] = val; break;
 
                 // Default will be handled by parent implementation
             default: base_opt.push_back(options[i]); base_opt_index.push_back(i);  break;
@@ -280,13 +253,13 @@ namespace rsimpl
     std::shared_ptr<rs_device> make_f200_device(std::shared_ptr<uvc::device> device)
     {
         std::timed_mutex mutex;
-        iv::claim_ivcam_interface(*device);
+        ivcam::claim_ivcam_interface(*device);
         auto calib = f200::read_f200_calibration(*device, mutex);
-        iv::enable_timestamp(*device, mutex, true, true);
+        ivcam::enable_timestamp(*device, mutex, true, true);
 
         auto info = get_f200_info(device, std::get<0>(calib));
-        iv::get_module_serial_string(*device, mutex, info.serial, 96);
-        iv::get_firmware_version_string(*device, mutex, info.firmware_version);
+        ivcam::get_module_serial_string(*device, mutex, info.serial, 96);
+        ivcam::get_firmware_version_string(*device, mutex, info.firmware_version);
 
         info.capabilities_vector.push_back(RS_CAPABILITIES_COLOR);
         info.capabilities_vector.push_back(RS_CAPABILITIES_DEPTH);

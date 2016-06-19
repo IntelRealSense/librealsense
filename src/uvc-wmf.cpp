@@ -422,20 +422,6 @@ namespace rsimpl
                 return subdevices[xu.subdevice].get_ks_control(xu);
             }
 
-            void flush_motion_data(std::vector<subdevice *> data_channel_subs, uint16_t timeout_ms)
-            {
-                auto t0 = std::chrono::high_resolution_clock::now();
-                auto t1 = t0;
-                do
-                { 
-                    subdevice::poll_interrupts(&this->usb_aux_interface_handle, data_channel_subs, 100);
-                    t1 = std::chrono::high_resolution_clock::now();
-                } while (std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count() < timeout_ms);
-                // TODO evgeni
-                std::cout << " Flushing mm took " 
-                    << std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count() << " ms" <<std::endl;
-            }
-
             void start_data_acquisition()
             {
                 std::vector<subdevice *> data_channel_subs;
@@ -456,9 +442,6 @@ namespace rsimpl
                         {
                             subdevice::poll_interrupts(&this->usb_aux_interface_handle, data_channel_subs, 100);
                         }
-
-                        // Pull remaining data
-                        flush_motion_data(data_channel_subs, 500);
                     });
                 }
             }
