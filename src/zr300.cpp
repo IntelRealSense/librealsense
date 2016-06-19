@@ -1,6 +1,7 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
+#include <climits>
 #include <algorithm>
 
 #include "image.h"
@@ -104,7 +105,7 @@ namespace rsimpl
             case RS_OPTION_FISHEYE_STROBE:                  values[i] = zr300::get_strobe        (dev); break;
             case RS_OPTION_FISHEYE_EXT_TRIG:                values[i] = zr300::get_ext_trig      (dev); break;
 
-            case RS_OPTION_ZR300_MOTION_MODULE_ACTIVE:      values[i] = is_motion_tracking_active();
+            case RS_OPTION_ZR300_MOTION_MODULE_ACTIVE:      values[i] = is_motion_tracking_active(); break;
 
             case RS_OPTION_ZR300_GYRO_BANDWIDTH:            values[i] = (double)mm_cfg_reader.get(&motion_module::mm_config::gyro_bandwidth ); break;
             case RS_OPTION_ZR300_GYRO_RANGE:                values[i] = (double)mm_cfg_reader.get(&motion_module::mm_config::gyro_range     ); break;

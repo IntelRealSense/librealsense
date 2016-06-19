@@ -226,7 +226,6 @@ namespace rsimpl
         size_t get_image_size(rs_stream stream) const;
         bool provides_stream(rs_stream stream) const { return get_unpacker().provides_stream(stream); }
         rs_format get_format(rs_stream stream) const { return get_unpacker().get_format(stream); }
-        int get_framerate(rs_stream stream) const { return mode.fps; }
         void set_output_buffer_format(const rs_output_buffer_format in_output_format);
 
         void unpack(byte * const dest[], const byte * source) const;

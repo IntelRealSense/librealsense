@@ -246,4 +246,4 @@ namespace sr300
 } // rsimpl::sr300
 } // namespace rsimpl
 
-#endif  IV_PRIVATE_H
+#endif  // IV_PRIVATE_H

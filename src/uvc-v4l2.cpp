@@ -340,14 +340,14 @@ namespace rsimpl
                 }
             }            
 
-            static void poll_interrupts(libusb_device_handle *handle, const std::vector<subdevice *> & subdevices)
+            static void poll_interrupts(libusb_device_handle *handle, const std::vector<subdevice *> & subdevices, uint16_t timeout)
             {
                 static const unsigned short interrupt_buf_size = 0x400;
                 uint8_t buffer[interrupt_buf_size];                       /* 64 byte transfer buffer  - dedicated channel*/
                 int num_bytes             = 0;                           /* Actual bytes transferred. */
 
                 // TODO - replace hard-coded values : 0x82 and 1000
-                int res = libusb_interrupt_transfer(handle, 0x84, buffer, interrupt_buf_size, &num_bytes, interrupt_buf_size);
+                int res = libusb_interrupt_transfer(handle, 0x84, buffer, interrupt_buf_size, &num_bytes, timeout);
                 if (0 == res)
                 {
                     // Propagate the data to device layer
@@ -357,9 +357,15 @@ namespace rsimpl
                 }
                 else
                 {
-                    // todo exception
-                    perror("receiving interrupt_ep bytes failed");
-                    fprintf(stderr, "Error receiving message.\n");
+                    switch (res)
+                    {
+                    case LIBUSB_ERROR_TIMEOUT :
+                        perror("interrupt e.p. timeout");
+                        break;
+                    default:
+                        throw std::runtime_error(to_string() << "USB Interrupt end-point error " << libusb_strerror((libusb_error)res));
+                        break;
+                    }
                 }
             }
         };
@@ -448,8 +454,7 @@ namespace rsimpl
                 for (auto & sub : subdevices)
                 {                   
                     if (sub->channel_data_callback)
-                    {
-                        // TODO start_capture();       // both video and motion events. TODO callback for uvc layer
+                    {                        
                         data_channel_subs.push_back(sub.get());
                     }
                 }
@@ -459,10 +464,10 @@ namespace rsimpl
                 {
                     data_channel_thread = std::thread([this, data_channel_subs]()
                     {
-                        // Polling
+                        // Polling 100ms timeout
                         while (!data_stop)
                         {
-                            subdevice::poll_interrupts(this->usb_aux_handle, data_channel_subs);
+                            subdevice::poll_interrupts(this->usb_aux_handle, data_channel_subs, 100);
                         }
                     });
                 }
@@ -901,7 +906,6 @@ namespace rsimpl
                     if (handle)  // Adaptor board is present
                     {
                         const unsigned char cmd_sz = 24;
-                        unsigned char mmpwr_cmd[cmd_sz] = { 0x14, 0x0, 0xab, 0xcd, 0x0a, 0x0, 0x0, 0x0, 0x1, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
                         unsigned char dspwr_cmd[cmd_sz] = { 0x14, 0x0, 0xab, 0xcd, 0x0b, 0x0, 0x0, 0x0, 0x1, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
                         unsigned int timeout = 5000;
                         const int res_buf_sz = 1024;

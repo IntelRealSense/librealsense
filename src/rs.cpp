@@ -610,7 +610,7 @@ double rs_get_device_option(rs_device * device, rs_option option, rs_error ** er
 {
     VALIDATE_NOT_NULL(device);
     VALIDATE_ENUM(option);
-    double value;
+    double value = 0;
     device->get_options(&option, 1, &value);
     return value;
 }

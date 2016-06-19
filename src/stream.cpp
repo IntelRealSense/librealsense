@@ -37,7 +37,7 @@ native_stream::native_stream(device_config & config, rs_stream stream) : config(
 
     auto get_tuple = [stream](const subdevice_mode_selection & selection)
     {     
-        return std::make_tuple(-selection.get_width(), -selection.get_height(), -selection.get_framerate(stream), selection.get_format(stream));
+        return std::make_tuple(-selection.get_width(), -selection.get_height(), -selection.get_framerate(), selection.get_format(stream));
     };
 
     std::sort(begin(modes), end(modes), [get_tuple](const subdevice_mode_selection & a, const subdevice_mode_selection & b) { return get_tuple(a) < get_tuple(b); });
@@ -51,7 +51,7 @@ void native_stream::get_mode(int mode, int * w, int * h, rs_format * f, int * fp
     if(w) *w = selection.get_width();
     if(h) *h = selection.get_height();
     if(f) *f = selection.get_format(stream);
-    if(fps) *fps = selection.get_framerate(stream);
+    if(fps) *fps = selection.get_framerate();
 }
 
 bool native_stream::is_enabled() const
