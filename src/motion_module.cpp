@@ -1,11 +1,13 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
-#include "hw-monitor.h"
-#include "motion_module.h"
+#include <mutex>
 #include <iostream>
 #define _USE_MATH_DEFINES
 #include <math.h>
+
+#include "hw-monitor.h"
+#include "motion_module.h"
 
 using namespace rsimpl;
 using namespace rsimpl::motion_module;
@@ -24,7 +26,12 @@ mm_state motion_module_state::requested_state(mm_request request, bool on) const
 
 void motion_module_control::impose(mm_request request, bool on)
 {
+    std::lock_guard<std::mutex> lock(mtx);
+
     mm_state new_state = state_handler.requested_state(request, on);
+
+    // TODO Evgeni
+    //std::cout << "request to switch from " << get_mm_state_name(state_handler.state) << " to " << get_mm_state_name(new_state) << std::endl;
 
     if (motion_module_state::valid(new_state))
         enter_state(new_state);
@@ -69,7 +76,7 @@ void motion_module_control::enter_state(mm_state new_state)
         if (mm_idle == new_state)
         {
             set_control(mm_events_output, false);
-            //set_control(mm_video_output, false);  Prevent power down
+            set_control(mm_video_output, false);  //Prevent power down
         }
         if (mm_full_load == new_state)
         {
@@ -109,6 +116,7 @@ void motion_module_control::set_control(mm_request request, bool on)
         break;
     }
 
+    std::cout << " Switch " << request << " to " << std::boolalpha << on << std::endl;
     std::timed_mutex mutex;
     hw_monitor::hwmon_cmd cmd((uint8_t)cmd_opcode);
     cmd.Param1 = (on) ? 1 : 0;

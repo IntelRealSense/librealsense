@@ -98,7 +98,6 @@ namespace rsimpl
                 continue;
             }
 
-            // Evgeni TODO are those common to f200 and sr300 ?
             switch (options[i])
             {
             case RS_OPTION_F200_LASER_POWER:          iv::set_laser_power(get_device(), static_cast<uint8_t>(values[i])); break;
@@ -106,7 +105,6 @@ namespace rsimpl
             case RS_OPTION_F200_MOTION_RANGE:         iv::set_motion_range(get_device(), static_cast<uint8_t>(values[i])); break;
             case RS_OPTION_F200_FILTER_OPTION:        iv::set_filter_option(get_device(), static_cast<uint8_t>(values[i])); break;
             case RS_OPTION_F200_CONFIDENCE_THRESHOLD: iv::set_confidence_threshold(get_device(), static_cast<uint8_t>(values[i])); break;
-            case RS_OPTION_F200_DYNAMIC_FPS:          iv::set_dynamic_fps(get_device(), static_cast<uint8_t>(values[i])); break; // IVCAM 1.0 Only
 
             default: LOG_WARNING("Cannot set " << options[i] << " to " << values[i] << " on " << get_name()); break;
             }
@@ -115,14 +113,12 @@ namespace rsimpl
 
     void iv_camera::get_options(const rs_option options[], size_t count, double values[])
     {
-        for (int i = 0; i < count; ++i)
+        for (size_t i = 0; i < count; ++i)
         {
             LOG_INFO("Reading option " << options[i]);
 
             if (uvc::is_pu_control(options[i]))
-            {
-                throw std::logic_error(to_string() << __FUNCTION__ << " Option " << options[i] << " must be resolved in the concrete class");
-            }
+                throw std::logic_error(to_string() << __FUNCTION__ << " Option " << options[i] << " must be processed by a concrete class");
 
             uint8_t val = 0;
             switch (options[i])
@@ -132,7 +128,6 @@ namespace rsimpl
             case RS_OPTION_F200_MOTION_RANGE:         iv::get_motion_range(get_device(), val); values[i] = val; break;
             case RS_OPTION_F200_FILTER_OPTION:        iv::get_filter_option(get_device(), val); values[i] = val; break;
             case RS_OPTION_F200_CONFIDENCE_THRESHOLD: iv::get_confidence_threshold(get_device(), val); values[i] = val; break;
-            case RS_OPTION_F200_DYNAMIC_FPS:          iv::get_dynamic_fps(get_device(), val); values[i] = val; break;
 
             default: LOG_WARNING("Cannot get " << options[i] << " on " << get_name()); break;
             }

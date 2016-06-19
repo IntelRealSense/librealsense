@@ -1,13 +1,13 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
-#include "hw-monitor.h"
-#include "f200-private.h"
-
 #include <cstring>
 #include <algorithm>
 #include <thread>
 #include <cmath>
+
+#include "hw-monitor.h"
+#include "f200-private.h"
 
 using namespace rsimpl::hw_monitor;
 using namespace rsimpl::iv;

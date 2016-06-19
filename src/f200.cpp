@@ -1,9 +1,6 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
-
-
-
 #define _USE_MATH_DEFINES
 #include <math.h>
 #include <limits>
@@ -116,18 +113,6 @@ namespace rsimpl
             runTemperatureThread = true;
             temperatureThread = std::thread(&f200_camera::temperature_control_loop, this);
         }
-
-        // These settings come from the "Common" preset. There is no actual way to read the current values off the device.
-        arr.enableMvR   = 1;
-        arr.enableLaser = 1;
-        arr.minMvR      = 180;
-        arr.maxMvR      = 605;
-        arr.startMvR    = 303;
-        arr.minLaser    = 2;
-        arr.maxLaser    = 16;
-        arr.startLaser  = -1;
-        arr.ARUpperTh   = 1250;
-        arr.ARLowerTh   = 650;
     }
 
     f200_camera::~f200_camera()
@@ -242,7 +227,8 @@ namespace rsimpl
 
             switch(options[i])
             {
-            // TODO Evgeni - Find F200 unique options
+			case RS_OPTION_F200_DYNAMIC_FPS:          iv::set_dynamic_fps(get_device(), static_cast<uint8_t>(values[i])); break; // IVCAM 1.0 Only
+
              // Default will be handled by parent implementation
             default: base_opt.push_back(options[i]); base_opt_val.push_back(values[i]); break;
             }
@@ -272,12 +258,7 @@ namespace rsimpl
             uint8_t val=0;
             switch(options[i])
             {
-            case RS_OPTION_F200_LASER_POWER:          iv::get_laser_power         (get_device(), val); values[i] = val; break;
-            case RS_OPTION_F200_ACCURACY:             iv::get_accuracy            (get_device(), val); values[i] = val; break;
-            case RS_OPTION_F200_MOTION_RANGE:         iv::get_motion_range        (get_device(), val); values[i] = val; break;
-            case RS_OPTION_F200_FILTER_OPTION:        iv::get_filter_option       (get_device(), val); values[i] = val; break;
-            case RS_OPTION_F200_CONFIDENCE_THRESHOLD: iv::get_confidence_threshold(get_device(), val); values[i] = val; break;
-            case RS_OPTION_F200_DYNAMIC_FPS:          iv::get_dynamic_fps         (get_device(), val); values[i] = val; break;
+            case RS_OPTION_F200_DYNAMIC_FPS:          iv::get_dynamic_fps(get_device(), val); values[i] = val; break;
 
                 // Default will be handled by parent implementation
             default: base_opt.push_back(options[i]); base_opt_index.push_back(i);  break;

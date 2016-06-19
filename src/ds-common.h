@@ -6,8 +6,7 @@
 #define LIBREALSENSE_DS_PRIVATE_H
 
 #include "uvc.h"
-
-#include <cstring>
+//#include <cstring>
 
 namespace rsimpl
 {

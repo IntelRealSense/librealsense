@@ -235,7 +235,7 @@ namespace rsimpl
 
         // Determine output stride (and apply padding)
         byte * out[MAX_OUTPUTS];
-        size_t out_stride[MAX_OUTPUTS];
+		size_t out_stride[MAX_OUTPUTS] = { 0 };
         for(size_t i=0; i<outputs.size(); ++i)
         {
             out[i] = dest[i];

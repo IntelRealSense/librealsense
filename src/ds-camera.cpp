@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2015 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2016 Intel Corporation. All Rights Reserved.
 
 #include <cstring>
 #include <climits>
@@ -38,7 +38,7 @@ namespace rsimpl
     void ds_camera::on_update_depth_units(uint32_t units)
     {
         if(is_disparity_mode_enabled()) return;
-        config.depth_scale = (double)units * 0.000001; // Convert from micrometers to meters
+        config.depth_scale = (float)((double)units * 0.000001); // Convert from micrometers to meters
     }
 
     void ds_camera::on_update_disparity_multiplier(double multiplier)
@@ -57,7 +57,7 @@ namespace rsimpl
         auto ae_writer     = make_struct_interface<ds::ae_params>([&dev]() { return ds::get_lr_auto_exposure_params(dev); }, [&dev](ds::ae_params v) { ds::set_lr_auto_exposure_params(dev,v); });
         auto dc_writer     = make_struct_interface<ds::dc_params>([&dev]() { return ds::get_depth_params(dev);            }, [&dev](ds::dc_params v) { ds::set_depth_params(dev,v);            });
 
-        for(int i=0; i<count; ++i)
+        for (size_t i = 0; i<count; ++i)
         {
             if(uvc::is_pu_control(options[i]))
             {
@@ -121,7 +121,7 @@ namespace rsimpl
         auto ae_reader     = make_struct_interface<ds::ae_params>([&dev]() { return ds::get_lr_auto_exposure_params(dev); }, [&dev](ds::ae_params v) { ds::set_lr_auto_exposure_params(dev,v); });
         auto dc_reader     = make_struct_interface<ds::dc_params>([&dev]() { return ds::get_depth_params(dev);            }, [&dev](ds::dc_params v) { ds::set_depth_params(dev,v);            });
 
-        for(int i=0; i<count; ++i)
+        for (size_t i = 0; i<count; ++i)
         {
 
             if(uvc::is_pu_control(options[i]))

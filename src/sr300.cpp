@@ -113,18 +113,17 @@ namespace rsimpl
     sr300_camera::sr300_camera(std::shared_ptr<uvc::device> device, const static_device_info & info, const iv::camera_calib_params & calib) :
         iv_camera(device, info, calib)
     {
-        // TODO Evgeni
-        //// These settings come from the "Common" preset. There is no actual way to read the current values off the device.
-        //arr.enableMvR = 1;
-        //arr.enableLaser = 1;
-        //arr.minMvR = 180;
-        //arr.maxMvR = 605;
-        //arr.startMvR = 303;
-        //arr.minLaser = 2;
-        //arr.maxLaser = 16;
-        //arr.startLaser = -1;
-        //arr.ARUpperTh = 1250;
-        //arr.ARLowerTh = 650;
+        // These settings come from the "Common" preset. There is no actual way to read the current values off the device.
+        arr.enableMvR = 1;
+        arr.enableLaser = 1;
+        arr.minMvR = 180;
+        arr.maxMvR = 605;
+        arr.startMvR = 303;
+        arr.minLaser = 2;
+        arr.maxLaser = 16;
+        arr.startLaser = -1;
+        arr.ARUpperTh = 1250;
+        arr.ARLowerTh = 650;
     }
 
     sr300_camera::~sr300_camera()
@@ -226,9 +225,8 @@ namespace rsimpl
         auto wake_on_usb_reader = make_struct_interface<sr300::wakeup_dev_params>([this]()
         { return arr_wakeup_dev_param; },[]() { throw std::logic_error("Read-only operation"); });
 
-
         // Acquire SR300-specific options first
-        for(int i=0; i<count; ++i)
+        for(size_t i=0; i<count; ++i)
         {
             LOG_INFO("Reading option " << options[i]);
 

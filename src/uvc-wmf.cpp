@@ -1,6 +1,7 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 #include <chrono>
+#include <iostream>
 
 
 #ifdef RS_USE_WMF_BACKEND
@@ -241,7 +242,7 @@ namespace rsimpl
 
             }
 
-            static bool wait_for_async_operation(WINUSB_INTERFACE_HANDLE interfaceHandle, OVERLAPPED &hOvl, ULONG &lengthTransferred)
+            static bool wait_for_async_operation(WINUSB_INTERFACE_HANDLE interfaceHandle, OVERLAPPED &hOvl, ULONG &lengthTransferred, USHORT timeout)
             {
                 if (GetOverlappedResult(interfaceHandle, &hOvl, &lengthTransferred, FALSE))
                     return true;
@@ -249,7 +250,7 @@ namespace rsimpl
                 auto lastResult = GetLastError();
                 if (lastResult == ERROR_IO_PENDING || lastResult == ERROR_IO_INCOMPLETE)
                 {
-                    WaitForSingleObject(hOvl.hEvent, 100);
+                    WaitForSingleObject(hOvl.hEvent, timeout);
                     auto res = GetOverlappedResult(interfaceHandle, &hOvl, &lengthTransferred, FALSE);
                     if (res != 1)
                     {
@@ -310,11 +311,11 @@ namespace rsimpl
                 HANDLE _handle;
             };
 
-            static void poll_interrupts(HANDLE *handle, const std::vector<subdevice *> & subdevices)
+            static void poll_interrupts(HANDLE *handle, const std::vector<subdevice *> & subdevices,uint16_t timeout)
             {
                 static const unsigned short interrupt_buf_size = 0x400;
-                uint8_t buffer[interrupt_buf_size];                       /* 64 byte transfer buffer  - dedicated channel*/
-                ULONG num_bytes = 0;                           /* Actual bytes transferred. */
+                uint8_t buffer[interrupt_buf_size];                         /* 64 byte transfer buffer  - dedicated channel*/
+                ULONG num_bytes = 0;                                        /* Actual bytes transferred. */
                 OVERLAPPED hOvl;
                 safe_handle sh(CreateEvent(nullptr, false, false, nullptr));
                 hOvl.hEvent = sh.GetHandle();
@@ -326,7 +327,7 @@ namespace rsimpl
                     if (lastError == ERROR_IO_PENDING)
                     {
                         bool isExitOnTimeout = false;
-                        auto sts = wait_for_async_operation(*handle, hOvl, num_bytes);
+                        auto sts = wait_for_async_operation(*handle, hOvl, num_bytes, timeout);
                         lastError = GetLastError();
                         if (lastError == ERROR_OPERATION_ABORTED)
                         {
@@ -421,6 +422,20 @@ namespace rsimpl
                 return subdevices[xu.subdevice].get_ks_control(xu);
             }
 
+            void flush_motion_data(std::vector<subdevice *> data_channel_subs, uint16_t timeout_ms)
+            {
+                auto t0 = std::chrono::high_resolution_clock::now();
+                auto t1 = t0;
+                do
+                { 
+                    subdevice::poll_interrupts(&this->usb_aux_interface_handle, data_channel_subs, 100);
+                    t1 = std::chrono::high_resolution_clock::now();
+                } while (std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count() < timeout_ms);
+                // TODO evgeni
+                std::cout << " Flushing mm took " 
+                    << std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count() << " ms" <<std::endl;
+            }
+
             void start_data_acquisition()
             {
                 std::vector<subdevice *> data_channel_subs;
@@ -428,7 +443,6 @@ namespace rsimpl
                 {
                     if (sub.channel_data_callback)
                     {
-                        // TODO start_capture();       // both video and motion events. TODO callback for uvc layer
                         data_channel_subs.push_back(&sub);
                     }
                 }
@@ -440,8 +454,11 @@ namespace rsimpl
                         // Polling
                         while (!data_stop)
                         {
-                            subdevice::poll_interrupts(&this->usb_aux_interface_handle, data_channel_subs);
+                            subdevice::poll_interrupts(&this->usb_aux_interface_handle, data_channel_subs, 100);
                         }
+
+                        // Pull remaining data
+                        flush_motion_data(data_channel_subs, 500);
                     });
                 }
             }

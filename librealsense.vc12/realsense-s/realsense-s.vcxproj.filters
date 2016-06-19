@@ -67,10 +67,24 @@
     <ClCompile Include="..\..\src\zr300.cpp">
       <Filter>sources</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ds-private.cpp">
+    <ClCompile Include="..\..\src\sr300.cpp">
       <Filter>sources</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\zr300-private.cpp" />
+    <ClCompile Include="..\..\src\sr300-private.cpp">
+      <Filter>sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\zr300-private.cpp">
+      <Filter>sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\iv-camera.cpp">
+      <Filter>sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\iv-common.cpp">
+      <Filter>sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ds-common.cpp">
+      <Filter>sources</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\include\librealsense\rsutil.h">
@@ -133,10 +147,24 @@
     <ClInclude Include="..\..\src\ds-camera.h">
       <Filter>sources</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ds-private.h">
+    <ClInclude Include="..\..\src\sr300.h">
       <Filter>sources</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\zr300-private.h" />
+    <ClInclude Include="..\..\src\sr300-private.h">
+      <Filter>sources</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\zr300-private.h">
+      <Filter>sources</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\iv-camera.h">
+      <Filter>sources</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\iv-common.h">
+      <Filter>sources</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ds-common.h">
+      <Filter>sources</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="includes">

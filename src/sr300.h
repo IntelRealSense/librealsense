@@ -6,11 +6,9 @@
 #define LIBREALSENSE_SR300_H
 
 #include <atomic>
-#include <thread>
-
 
 #include "iv-camera.h"
-#include "sr300-private.h" // todo - refactor so we don't need this here
+#include "sr300-private.h"
 
 #define SR300_PRODUCT_ID 0x0aa5
 

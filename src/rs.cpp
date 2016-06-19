@@ -561,7 +561,7 @@ void rs_get_device_option_range(rs_device * device, rs_option option, double * m
 {
     VALIDATE_NOT_NULL(device);
     VALIDATE_ENUM(option);
-    double x; // Prevent internal code from having to worry about whether nulls are passed in for min/max/step by giving it somewhere to write to
+	double x = 0; // Prevent internal code from having to worry about whether nulls are passed in for min/max/step by giving it somewhere to write to
     device->get_option_range(option, min ? *min : x, max ? *max : x, step ? *step : x, def ? *def : x);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, device, option, min, max, step)

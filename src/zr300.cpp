@@ -51,7 +51,7 @@ namespace rsimpl
             motion_module_configuration = param; });
 
         // Handle ZR300 specific options first
-        for (int i = 0; i < count; ++i)
+        for (size_t i = 0; i < count; ++i)
         {
             if (is_fisheye_uvc_control(options[i]))
             {
@@ -93,7 +93,7 @@ namespace rsimpl
         auto mm_cfg_reader = make_struct_interface<motion_module::mm_config>([this]() { return motion_module_configuration; }, []() { throw std::logic_error("Operation not allowed"); });
 
         // Acquire ZR300-specific options first
-        for(int i=0; i<count; ++i)
+        for (size_t i = 0; i<count; ++i)
         {
             if (is_fisheye_uvc_control(options[i]))
             {
@@ -170,9 +170,9 @@ namespace rsimpl
     // Power down Motion Module
     void zr300_camera::stop_motion_tracking()
     {
-        rs_device_base::stop_motion_tracking();
         if (supports(rs_capabilities::RS_CAPABILITIES_MOTION_EVENTS))
             toggle_motion_module_events(false);
+        rs_device_base::stop_motion_tracking();
     }
 
     rs_stream zr300_camera::select_key_stream(const std::vector<rsimpl::subdevice_mode_selection> & selected_modes)
