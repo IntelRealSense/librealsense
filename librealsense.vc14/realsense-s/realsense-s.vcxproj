@@ -22,15 +22,18 @@
     <ClCompile Include="..\..\src\archive.cpp" />
     <ClCompile Include="..\..\src\context.cpp" />
     <ClCompile Include="..\..\src\device.cpp" />
-    <ClCompile Include="..\..\src\f200-private.cpp" />
+    <ClCompile Include="..\..\src\ds-private.cpp" />
+    <ClCompile Include="..\..\src\ds-device.cpp" />
     <ClCompile Include="..\..\src\f200.cpp" />
     <ClCompile Include="..\..\src\hw-monitor.cpp" />
     <ClCompile Include="..\..\src\image.cpp" />
+    <ClCompile Include="..\..\src\ivcam-device.cpp" />
+    <ClCompile Include="..\..\src\ivcam-private.cpp" />
     <ClCompile Include="..\..\src\log.cpp" />
-    <ClCompile Include="..\..\src\motion_module.cpp" />
-    <ClCompile Include="..\..\src\r200-private.cpp" />
+    <ClCompile Include="..\..\src\motion-module.cpp" />
     <ClCompile Include="..\..\src\r200.cpp" />
     <ClCompile Include="..\..\src\rs.cpp" />
+    <ClCompile Include="..\..\src\sr300.cpp" />
     <ClCompile Include="..\..\src\stream.cpp" />
     <ClCompile Include="..\..\src\sync.cpp" />
     <ClCompile Include="..\..\src\timestamps.cpp" />
@@ -40,6 +43,7 @@
     <ClCompile Include="..\..\src\uvc-wmf.cpp" />
     <ClCompile Include="..\..\src\uvc.cpp" />
     <ClCompile Include="..\..\src\verify.c" />
+    <ClCompile Include="..\..\src\zr300.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\include\librealsense\rs.h" />
@@ -49,18 +53,22 @@
     <ClInclude Include="..\..\src\archive.h" />
     <ClInclude Include="..\..\src\context.h" />
     <ClInclude Include="..\..\src\device.h" />
-    <ClInclude Include="..\..\src\f200-private.h" />
+    <ClInclude Include="..\..\src\ds-private.h" />
+    <ClInclude Include="..\..\src\ds-device.h" />
     <ClInclude Include="..\..\src\f200.h" />
     <ClInclude Include="..\..\src\hw-monitor.h" />
     <ClInclude Include="..\..\src\image.h" />
-    <ClInclude Include="..\..\src\motion_module.h" />
-    <ClInclude Include="..\..\src\r200-private.h" />
+    <ClInclude Include="..\..\src\ivcam-device.h" />
+    <ClInclude Include="..\..\src\ivcam-private.h" />
+    <ClInclude Include="..\..\src\motion-module.h" />
     <ClInclude Include="..\..\src\r200.h" />
+    <ClInclude Include="..\..\src\sr300.h" />
     <ClInclude Include="..\..\src\stream.h" />
     <ClInclude Include="..\..\src\sync.h" />
     <ClInclude Include="..\..\src\timestamps.h" />
     <ClInclude Include="..\..\src\types.h" />
     <ClInclude Include="..\..\src\uvc.h" />
+    <ClInclude Include="..\..\src\zr300.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{622186C4-6D7D-4288-B8FD-8F08419181C2}</ProjectGuid>
@@ -114,19 +122,27 @@
     <OutDir>obj\$(Configuration)-$(Platform)\</OutDir>
     <IntDir>obj\$(Configuration)-$(Platform)\</IntDir>
     <TargetName>$(ProjectName)d</TargetName>
+    <CodeAnalysisRuleSet>C:\Program Files (x86)\Microsoft Visual Studio 14.0\Team Tools\Static Analysis Tools\Rule Sets\NativeRecommendedRules.ruleset</CodeAnalysisRuleSet>
+    <RunCodeAnalysis>false</RunCodeAnalysis>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <OutDir>obj\$(Configuration)-$(Platform)\</OutDir>
     <IntDir>obj\$(Configuration)-$(Platform)\</IntDir>
+    <CodeAnalysisRuleSet>C:\Program Files (x86)\Microsoft Visual Studio 14.0\Team Tools\Static Analysis Tools\Rule Sets\NativeRecommendedRules.ruleset</CodeAnalysisRuleSet>
+    <RunCodeAnalysis>false</RunCodeAnalysis>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <OutDir>obj\$(Configuration)-$(Platform)\</OutDir>
     <IntDir>obj\$(Configuration)-$(Platform)\</IntDir>
     <TargetName>$(ProjectName)d</TargetName>
+    <CodeAnalysisRuleSet>C:\Program Files (x86)\Microsoft Visual Studio 14.0\Team Tools\Static Analysis Tools\Rule Sets\NativeRecommendedRules.ruleset</CodeAnalysisRuleSet>
+    <RunCodeAnalysis>false</RunCodeAnalysis>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <OutDir>obj\$(Configuration)-$(Platform)\</OutDir>
     <IntDir>obj\$(Configuration)-$(Platform)\</IntDir>
+    <CodeAnalysisRuleSet>C:\Program Files (x86)\Microsoft Visual Studio 14.0\Team Tools\Static Analysis Tools\Rule Sets\NativeRecommendedRules.ruleset</CodeAnalysisRuleSet>
+    <RunCodeAnalysis>false</RunCodeAnalysis>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -137,6 +153,7 @@
       <PreprocessorDefinitions>RS_USE_WMF_BACKEND;_CRT_SECURE_NO_WARNINGS;WIN32;_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>../../include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <OpenMPSupport>true</OpenMPSupport>
+      <EnablePREfast>false</EnablePREfast>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -152,6 +169,7 @@
       <PreprocessorDefinitions>RS_USE_WMF_BACKEND;_CRT_SECURE_NO_WARNINGS;WIN32;_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>../../include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <OpenMPSupport>true</OpenMPSupport>
+      <EnablePREfast>false</EnablePREfast>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -169,6 +187,7 @@
       <PreprocessorDefinitions>RS_USE_WMF_BACKEND;_CRT_SECURE_NO_WARNINGS;WIN32;NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>../../include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <OpenMPSupport>true</OpenMPSupport>
+      <EnablePREfast>false</EnablePREfast>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -188,6 +207,7 @@
       <PreprocessorDefinitions>RS_USE_WMF_BACKEND;_CRT_SECURE_NO_WARNINGS;WIN32;NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>../../include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <OpenMPSupport>true</OpenMPSupport>
+      <EnablePREfast>false</EnablePREfast>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>

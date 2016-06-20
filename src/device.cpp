@@ -3,7 +3,7 @@
 
 #include "device.h"
 #include "sync.h"
-#include "motion_module.h"
+#include "motion-module.h"
 
 #include <array>
 #include "image.h"

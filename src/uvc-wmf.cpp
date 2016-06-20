@@ -1,6 +1,7 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 #include <chrono>
+#include <iostream>
 
 
 #ifdef RS_USE_WMF_BACKEND
@@ -186,12 +187,16 @@ namespace rsimpl
             bool is_streaming() const { return streaming; }
             void on_start() { streaming = true; }
 
+#pragma warning( push )
+#pragma warning( disable: 4838 )
             // Implement IUnknown
             HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, void ** ppvObject) override 
             {
                 static const QITAB table[] = {QITABENT(reader_callback, IUnknown), QITABENT(reader_callback, IMFSourceReaderCallback), {0}};
                 return QISearch(this, table, riid, ppvObject);
             }
+#pragma warning( pop )
+
             ULONG STDMETHODCALLTYPE AddRef() override { return InterlockedIncrement(&ref_count); }
             ULONG STDMETHODCALLTYPE Release() override 
             { 
@@ -237,7 +242,7 @@ namespace rsimpl
 
             }
 
-            static bool wait_for_async_operation(WINUSB_INTERFACE_HANDLE interfaceHandle, OVERLAPPED &hOvl, ULONG &lengthTransferred)
+            static bool wait_for_async_operation(WINUSB_INTERFACE_HANDLE interfaceHandle, OVERLAPPED &hOvl, ULONG &lengthTransferred, USHORT timeout)
             {
                 if (GetOverlappedResult(interfaceHandle, &hOvl, &lengthTransferred, FALSE))
                     return true;
@@ -245,7 +250,7 @@ namespace rsimpl
                 auto lastResult = GetLastError();
                 if (lastResult == ERROR_IO_PENDING || lastResult == ERROR_IO_INCOMPLETE)
                 {
-                    WaitForSingleObject(hOvl.hEvent, 100);
+                    WaitForSingleObject(hOvl.hEvent, timeout);
                     auto res = GetOverlappedResult(interfaceHandle, &hOvl, &lengthTransferred, FALSE);
                     if (res != 1)
                     {
@@ -306,11 +311,11 @@ namespace rsimpl
                 HANDLE _handle;
             };
 
-            static void poll_interrupts(HANDLE *handle, const std::vector<subdevice *> & subdevices)
+            static void poll_interrupts(HANDLE *handle, const std::vector<subdevice *> & subdevices,uint16_t timeout)
             {
                 static const unsigned short interrupt_buf_size = 0x400;
-                uint8_t buffer[interrupt_buf_size];                       /* 64 byte transfer buffer  - dedicated channel*/
-                ULONG num_bytes = 0;                           /* Actual bytes transferred. */
+                uint8_t buffer[interrupt_buf_size];                         /* 64 byte transfer buffer  - dedicated channel*/
+                ULONG num_bytes = 0;                                        /* Actual bytes transferred. */
                 OVERLAPPED hOvl;
                 safe_handle sh(CreateEvent(nullptr, false, false, nullptr));
                 hOvl.hEvent = sh.GetHandle();
@@ -322,7 +327,7 @@ namespace rsimpl
                     if (lastError == ERROR_IO_PENDING)
                     {
                         bool isExitOnTimeout = false;
-                        auto sts = wait_for_async_operation(*handle, hOvl, num_bytes);
+                        auto sts = wait_for_async_operation(*handle, hOvl, num_bytes, timeout);
                         lastError = GetLastError();
                         if (lastError == ERROR_OPERATION_ABORTED)
                         {
@@ -424,7 +429,6 @@ namespace rsimpl
                 {
                     if (sub.channel_data_callback)
                     {
-                        // TODO start_capture();       // both video and motion events. TODO callback for uvc layer
                         data_channel_subs.push_back(&sub);
                     }
                 }
@@ -436,7 +440,7 @@ namespace rsimpl
                         // Polling
                         while (!data_stop)
                         {
-                            subdevice::poll_interrupts(&this->usb_aux_interface_handle, data_channel_subs);
+                            subdevice::poll_interrupts(&this->usb_aux_interface_handle, data_channel_subs, 100);
                         }
                     });
                 }
@@ -768,7 +772,7 @@ namespace rsimpl
 
             std::timed_mutex mutex;
             claim_interface(*fish_eye_dev, FISHEYE_WIN_USB_DEVICE_GUID, FISHEYE_HWMONITOR_INTERFACE);
-            rsimpl::hw_mon::HWMonitorCommand cmd(0x0b);
+            rsimpl::hw_monitor::hwmon_cmd cmd(0x0b);
             cmd.Param1 = 1;
             perform_and_send_monitor_command(*fish_eye_dev, mutex, cmd);
             Sleep(2000);

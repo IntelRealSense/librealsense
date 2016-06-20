@@ -6,6 +6,7 @@
 
 #include "rs.h"
 #include <cstdint>
+#include <cstddef>
 
 namespace rs{
     struct motion_data;
@@ -97,8 +98,8 @@ struct rs_device
                                             
     virtual bool                            supports_option(rs_option option) const = 0;
     virtual void                            get_option_range(rs_option option, double & min, double & max, double & step, double & def) = 0;
-    virtual void                            set_options(const rs_option options[], int count, const double values[]) = 0;
-    virtual void                            get_options(const rs_option options[], int count, double values[]) = 0;
+    virtual void                            set_options(const rs_option options[], size_t count, const double values[]) = 0;
+    virtual void                            get_options(const rs_option options[], size_t count, double values[]) = 0;
                                             
     virtual rs_frame_ref *                  detach_frame(const rs_frameset * fs, rs_stream stream) = 0;
     virtual void                            release_frame(rs_frame_ref * ref) = 0;
@@ -109,7 +110,7 @@ struct rs_device
 
 struct rs_context
 {
-    virtual int                             get_device_count() const = 0;
+    virtual size_t                          get_device_count() const = 0;
     virtual rs_device *                     get_device(int index) const = 0;
     virtual                                 ~rs_context() {}
 };

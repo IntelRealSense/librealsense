@@ -1,11 +1,14 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
-#include "context.h"
-#include "uvc.h"
+#include <mutex>
+
 #include "r200.h"
 #include "f200.h"
-#include <mutex>
+#include "sr300.h"
+#include "zr300.h"
+#include "uvc.h"
+#include "context.h"
 
 rs_context_base::rs_context_base()
 {
@@ -15,7 +18,7 @@ rs_context_base::rs_context_base()
     {
         LOG_INFO("UVC device detected with VID = 0x" << std::hex << get_vendor_id(*device) << " PID = 0x" << get_product_id(*device));
 
-        if (get_vendor_id(*device) != PID_INTEL_CAMERA)
+        if (get_vendor_id(*device) != VID_INTEL_CAMERA)
             continue;
 
         switch(get_product_id(*device))
@@ -58,7 +61,7 @@ rs_context_base::~rs_context_base()
     assert(ref_count == 0);
 }
 
-int rs_context_base::get_device_count() const
+size_t rs_context_base::get_device_count() const
 {
     return devices.size();
 }

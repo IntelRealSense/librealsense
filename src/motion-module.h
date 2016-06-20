@@ -5,37 +5,39 @@
 #ifndef MOTION_MODULE_H
 #define MOTION_MODULE_H
 
+#include <mutex>
+
 namespace rsimpl
 {
     namespace motion_module
     {
-        //RealSense DS41t SaS rev 0_60 specifications
+        //RealSense DS41t SaS rev 0_60 specifications [deg/sec]
         enum class mm_gyro_range : uint8_t
         {
-            gyro_range_default = 0,
-            gyro_range_1000 = 1,        // Deg/sec
-            gyro_range_2000 = 2
+            gyro_range_default  = 0,
+            gyro_range_1000     = 1,
+            gyro_range_2000     = 2
         };
 
         enum class mm_gyro_bandwidth : uint8_t
         {
             gyro_bw_default = 0,
-            gyro_bw_200hz = 1
+            gyro_bw_200hz   = 1
         };
 
         enum class mm_accel_range : uint8_t
         {
             accel_range_default = 0,
-            accel_range_4g = 1,
-            accel_range_8g = 2,
-            accel_range_16g = 3
+            accel_range_4g      = 1,
+            accel_range_8g      = 2,
+            accel_range_16g     = 3
         };
 
         enum class mm_accel_bandwidth : uint8_t
         {
-            accel_bw_default = 0,
-            accel_bw_125hz = 1,
-            accel_bw_250hz = 2
+            accel_bw_default    = 0,
+            accel_bw_125hz      = 1,
+            accel_bw_250hz      = 2
         };
 
 #pragma pack(push, 1)
@@ -58,6 +60,15 @@ namespace rsimpl
             mm_events_output    = 2
         };
 
+        inline const char* get_mm_request_name(mm_request request) {
+            switch (request) {
+            case mm_output_undefined:   return "undefined";
+            case mm_video_output:       return "video";
+            case mm_events_output:      return "motion_tracking";
+            default: return  ("unresolved request id: " + request);
+            }
+        }
+
         enum mm_state : uint8_t
         {
             mm_idle         = 0,    // Initial
@@ -65,6 +76,16 @@ namespace rsimpl
             mm_eventing     = 2,    // Motion data only
             mm_full_load    = 3     // Motion dat + FishEye streaming
         };
+
+        inline const char* get_mm_state_name(mm_state state) {
+            switch (state) {
+            case mm_idle:           return "idle";
+            case mm_streaming:      return "video";
+            case mm_eventing:       return "motion";
+            case mm_full_load:      return "video+motion";
+            default: return  ("unresolved mm state id: " + state);
+            }
+        }
 
         struct motion_module_parser
         {
@@ -98,11 +119,13 @@ namespace rsimpl
             motion_module_control(const motion_module_control&);
             motion_module_state state_handler;
             uvc::device* device_handle;
+            std::mutex mtx;
             bool    power_state;
 
             void impose(mm_request request, bool on);
             void enter_state(mm_state new_state);
             void set_control(mm_request request, bool on);
+
         };
 
         enum adaptor_board_command : uint32_t
@@ -122,7 +145,7 @@ namespace rsimpl
             CX3FWUPD    = 0x0D,     // FW update
             MM_ACTIVATE = 0x0E      // Motion Module activation
         };
-    }
+    }   // namespace motion_module
 }
 
 #endif // MOTION_MODULE_H

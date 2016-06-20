@@ -19,7 +19,7 @@ struct rs_context_base : rs_context
     static rs_context*                              acquire_instance();
     static void                                     release_instance();
 
-    int                                             get_device_count() const override;
+    size_t                                          get_device_count() const override;
     rs_device *                                     get_device(int index) const override;
 private:
     static int                                      ref_count;

@@ -20,7 +20,6 @@ Installation of cameras on Linux is lengthy compared to other supported platform
   * `scripts/install_glfw3.sh`
   * For 16.04 you can install glfw3 via 'sudo apt-get install libglfw3-dev
 4. For Ubuntu 14.04 -- **Follow the installation instructions for your desired backend (see below)**
-  * For Ubuntu 16.04 -- No kernel patch is needed for the R200 camera
 5. We use QtCreator as an IDE for Linux development on Ubuntu
   * **Note:** QtCreator is presently configured to use the V4L2 backend by default
   * `sudo apt-get install qtcreator`
@@ -53,7 +52,7 @@ Installation of cameras on Linux is lengthy compared to other supported platform
       * This udev fix is not necessary for kernels >= 4.2
       * Use of 3.19.xx Kernel is not recommended. 
   * **(OR) Kernel in 16.04.xx**
-    * No action required.  Ubuntu 16.04 beta2 and newer already contains the patch 
+    * `/scripts/patch-uvcvideo-16.04.simple.sh`
 4. Reload the uvcvideo driver
   * `sudo modprobe uvcvideo`
 5. Check installation by examining the last 50 lines of the dmesg log:
@@ -91,4 +90,4 @@ The libuvc backend has known incompatibilities with some versions of SR300 and R
 
 # Windows 8.1 & Windows 10 Installation
 
-librealsense should compile out of the box with Visual Studio 2013 Release 5, both Professional and Community editions. Particular C++11 features are known to be incompatible with earlier VS2013 releases due to internal compiler errors. 
+librealsense should compile out of the box with Visual Studio 2013 Release 4, both Professional and Community editions. Particular C++11 features are known to be incompatible with earlier VS2013 releases due to internal compiler errors. 
