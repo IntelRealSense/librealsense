@@ -89,7 +89,7 @@ rs_intrinsics native_stream::get_rectified_intrinsics() const
 int native_stream::get_frame_number() const 
 { 
     if(!is_enabled()) throw std::runtime_error(to_string() << "stream not enabled: " << stream);
-    return archive->get_frame_timestamp(stream);
+    return archive->get_frame_number(stream);
 }
 
 long long native_stream::get_frame_system_time() const

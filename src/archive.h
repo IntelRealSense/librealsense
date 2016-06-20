@@ -28,6 +28,7 @@ namespace rsimpl
             rs_format format = RS_FORMAT_ANY;
             rs_stream stream_type = RS_STREAM_MAX_ENUM;
             int pad = 0;
+            std::chrono::high_resolution_clock::time_point frame_callback_started {};
 
             frame_additional_data(){};
 
@@ -91,7 +92,8 @@ namespace rsimpl
             int get_bpp()const;
             rs_format get_format()const;
             rs_stream get_stream_type() const override;
-
+            std::chrono::high_resolution_clock::time_point get_frame_callback_start_time_point() const;
+            void update_frame_callback_start_ts(std::chrono::high_resolution_clock::time_point ts);
 
             void acquire() { ref_count.fetch_add(1); }
             void release();
@@ -153,7 +155,10 @@ namespace rsimpl
             int get_frame_stride() const override;
             int get_frame_bpp() const override;
             rs_format get_frame_format() const override;
-	        rs_stream get_stream_type() const;
+            rs_stream get_stream_type() const;
+            std::chrono::high_resolution_clock::time_point get_frame_callback_start_time_point() const;
+            void update_frame_callback_start_ts(std::chrono::high_resolution_clock::time_point ts);
+            void log_callback_start(std::chrono::high_resolution_clock::time_point capture_start_time);
         };
 
         class frameset : public rs_frameset
@@ -185,6 +190,8 @@ namespace rsimpl
         small_heap<frame, RS_USER_QUEUE_SIZE> published_frames;
         small_heap<frameset, RS_USER_QUEUE_SIZE> published_sets;
         small_heap<frame_ref, RS_USER_QUEUE_SIZE> detached_refs;
+        
+        std::chrono::high_resolution_clock::time_point capture_started;
 
     protected:
         frame backbuffer[RS_STREAM_NATIVE_COUNT]; // recieve frame here
@@ -192,12 +199,12 @@ namespace rsimpl
         std::recursive_mutex mutex;
 
     public:
-        frame_archive(const std::vector<subdevice_mode_selection> & selection);
+        frame_archive(const std::vector<subdevice_mode_selection> & selection, std::chrono::high_resolution_clock::time_point capture_started = std::chrono::high_resolution_clock::now());
 
         // Safe to call from any thread
         bool is_stream_enabled(rs_stream stream) const { return modes[stream].mode.pf.fourcc != 0; }
         const subdevice_mode_selection & get_mode(rs_stream stream) const { return modes[stream]; }
-
+        
         void release_frameset(frameset * frameset)
         {
             published_sets.deallocate(frameset);
@@ -218,6 +225,8 @@ namespace rsimpl
         byte * alloc_frame(rs_stream stream, const frame_additional_data& additional_data, bool requires_memory);
         frame_ref * track_frame(rs_stream stream);
         void attach_continuation(rs_stream stream, frame_continuation&& continuation);
+        void log_frame_callback_end(frame* frame);
+        void log_callback_start(frame_ref* frame_ref, std::chrono::high_resolution_clock::time_point capture_start_time);
 
         virtual void flush();
 
