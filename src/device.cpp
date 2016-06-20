@@ -203,11 +203,12 @@ void rs_device_base::stop(rs_source source)
 void rs_device_base::start_video_streaming()
 {
     if(capturing) throw std::runtime_error("cannot restart device without first stopping device");
-        
-    auto selected_modes = config.select_modes();
-    auto archive = std::make_shared<syncronizing_archive>(selected_modes, select_key_stream(selected_modes));
-    auto timestamp_reader = create_frame_timestamp_reader();
 
+    auto capture_start_time = std::chrono::high_resolution_clock::now();
+    auto selected_modes = config.select_modes();
+    auto archive = std::make_shared<syncronizing_archive>(selected_modes, select_key_stream(selected_modes), capture_start_time);
+    auto timestamp_reader = create_frame_timestamp_reader();
+    
     for(auto & s : native_streams) s->archive.reset(); // Starting capture invalidates the current stream info, if any exists from previous capture
 
     // Satisfy stream_requests as necessary for each subdevice, calling set_mode and
@@ -226,10 +227,10 @@ void rs_device_base::start_video_streaming()
         for (auto & output : mode_selection.get_outputs())
         {
             streams.push_back(output.first);
-        }
+        }       
         // Initialize the subdevice and set it to the selected mode
         set_subdevice_mode(*device, mode_selection.mode.subdevice, mode_selection.mode.native_dims.x, mode_selection.mode.native_dims.y, mode_selection.mode.pf.fourcc, mode_selection.mode.fps, 
-        [this, mode_selection, archive, timestamp_reader, streams](const void * frame, std::function<void()> continuation) mutable
+            [this, mode_selection, archive, timestamp_reader, streams, capture_start_time](const void * frame, std::function<void()> continuation) mutable
         {
             auto now = std::chrono::system_clock::now().time_since_epoch();
             auto sys_time = std::chrono::duration_cast<std::chrono::milliseconds>(now).count();
@@ -242,6 +243,7 @@ void rs_device_base::start_video_streaming()
             // Determine the timestamp for this frame
             auto timestamp = timestamp_reader->get_frame_timestamp(mode_selection.mode, frame);
             auto frame_counter = timestamp_reader->get_frame_counter(mode_selection.mode, frame);
+            auto recieved_time = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - capture_start_time).count();
             
             auto requires_processing = mode_selection.requires_processing();
 
@@ -255,7 +257,12 @@ void rs_device_base::start_video_streaming()
 
             for (auto & output : mode_selection.get_outputs())
             {
-                auto bpp = rsimpl::get_image_bpp(output.second);
+                LOG_DEBUG("FrameAccepted, RecievedAt," << recieved_time << ", FWTS," << timestamp << ", DLLTS," << recieved_time << ", Type," << rsimpl::get_string(output.first) << ",HasPair,0,F#," << frame_counter);
+            }
+
+            for (auto & output : mode_selection.get_outputs())
+            {
+                auto bpp = rsimpl::get_image_bpp(output.second);               
                 frame_archive::frame_additional_data additional_data( timestamp,
                     frame_counter,
                     sys_time,
@@ -290,6 +297,8 @@ void rs_device_base::start_video_streaming()
                     auto frame_ref = archive->track_frame(streams[i]);
                     if (frame_ref)
                     {
+                        frame_ref->update_frame_callback_start_ts(std::chrono::high_resolution_clock::now());
+                        frame_ref->log_callback_start(capture_start_time);
                         (*config.callbacks[streams[i]])->on_frame(this, (rs_frame_ref*)frame_ref);
                     }
                 }

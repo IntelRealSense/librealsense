@@ -9,9 +9,12 @@ rs_log_severity rsimpl::minimum_log_severity = RS_LOG_SEVERITY_NONE;
 static rs_log_severity minimum_console_severity = RS_LOG_SEVERITY_NONE;
 static rs_log_severity minimum_file_severity = RS_LOG_SEVERITY_NONE;
 static std::ofstream log_file;
+static std::mutex log_mutex;
 
 void rsimpl::log(rs_log_severity severity, const std::string & message)
 {
+    std::lock_guard<std::mutex> lock(log_mutex);
+
     if(static_cast<int>(severity) < minimum_log_severity) return;
 
     std::time_t t = std::time(nullptr); char buffer[20];
@@ -21,11 +24,11 @@ void rsimpl::log(rs_log_severity severity, const std::string & message)
     {
         switch(severity)
         {
-        case RS_LOG_SEVERITY_DEBUG: log_file << buffer << " DEBUG: " << message << std::endl; break;
-        case RS_LOG_SEVERITY_INFO:  log_file << buffer << " INFO: " << message << std::endl; break;
-        case RS_LOG_SEVERITY_WARN:  log_file << buffer << " WARN: " << message << std::endl; break;
-        case RS_LOG_SEVERITY_ERROR: log_file << buffer << " ERROR: " << message << std::endl; break;
-        case RS_LOG_SEVERITY_FATAL: log_file << buffer << " FATAL: " << message << std::endl; break;
+        case RS_LOG_SEVERITY_DEBUG: log_file << buffer << " DEBUG: " << message << "\n"; break;
+        case RS_LOG_SEVERITY_INFO:  log_file << buffer << " INFO: "  << message << "\n"; break;
+        case RS_LOG_SEVERITY_WARN:  log_file << buffer << " WARN: "  << message << "\n"; break;
+        case RS_LOG_SEVERITY_ERROR: log_file << buffer << " ERROR: " << message << "\n"; break;
+        case RS_LOG_SEVERITY_FATAL: log_file << buffer << " FATAL: " << message << "\n"; break;
         default: throw std::logic_error("not a valid severity for log message");
         }
     }
@@ -34,11 +37,11 @@ void rsimpl::log(rs_log_severity severity, const std::string & message)
     {
         switch(severity)
         {
-        case RS_LOG_SEVERITY_DEBUG: std::cout << "rs.debug: " << message << std::endl; break;
-        case RS_LOG_SEVERITY_INFO:  std::cout << "rs.info: " << message << std::endl; break;
-        case RS_LOG_SEVERITY_WARN:  std::cout << "rs.warn: " << message << std::endl; break;
-        case RS_LOG_SEVERITY_ERROR: std::cout << "rs.error: " << message << std::endl; break;
-        case RS_LOG_SEVERITY_FATAL: std::cout << "rs.fatal: " << message << std::endl; break;
+        case RS_LOG_SEVERITY_DEBUG: std::cout << "rs.debug: " << message << "\n"; break;
+        case RS_LOG_SEVERITY_INFO:  std::cout << "rs.info: "  << message << "\n"; break;
+        case RS_LOG_SEVERITY_WARN:  std::cout << "rs.warn: "  << message << "\n"; break;
+        case RS_LOG_SEVERITY_ERROR: std::cout << "rs.error: " << message << "\n"; break;
+        case RS_LOG_SEVERITY_FATAL: std::cout << "rs.fatal: " << message << "\n"; break;
         default: throw std::logic_error("not a valid severity for log message");
         }
     }

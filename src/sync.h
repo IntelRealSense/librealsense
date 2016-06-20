@@ -25,7 +25,7 @@ namespace rsimpl
         // This data will be read and written by all threads, and synchronized with a mutex
         std::vector<frame> frames[RS_STREAM_NATIVE_COUNT];
         std::condition_variable_any cv;
-
+        
         void get_next_frames();
         void dequeue_frame(rs_stream stream);
         void discard_frame(rs_stream stream);
@@ -33,8 +33,8 @@ namespace rsimpl
 
         timestamp_corrector            ts_corrector;
     public:
-        syncronizing_archive(const std::vector<subdevice_mode_selection> & selection, rs_stream key_stream);
-
+        syncronizing_archive(const std::vector<subdevice_mode_selection> & selection, rs_stream key_stream, std::chrono::high_resolution_clock::time_point capture_started = std::chrono::high_resolution_clock::now());
+        
         // Application thread API
         void wait_for_frames();
         bool poll_for_frames();
