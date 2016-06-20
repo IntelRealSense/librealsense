@@ -329,7 +329,7 @@ void frame_archive::log_frame_callback_end(frame* frame)
 {
     auto callback_ended = std::chrono::high_resolution_clock::now();
     auto ts = std::chrono::duration_cast<std::chrono::milliseconds>(callback_ended - capture_started).count();
-    auto callback_warning_duration = 1000 / frame->additional_data.fps;
+    auto callback_warning_duration = 1000 / (frame->additional_data.fps + 1);
     auto callback_duration = std::chrono::duration_cast<std::chrono::milliseconds>(callback_ended - frame->get_frame_callback_start_time_point()).count();
 
     if (callback_duration > callback_warning_duration)
