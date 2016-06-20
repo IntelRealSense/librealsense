@@ -3,7 +3,8 @@
 
 using namespace rsimpl;
 
-frame_archive::frame_archive(const std::vector<subdevice_mode_selection>& selection) : mutex()
+frame_archive::frame_archive(const std::vector<subdevice_mode_selection>& selection, std::chrono::high_resolution_clock::time_point capture_started) 
+    : mutex() , capture_started(capture_started)
 {
     // Store the mode selection that pertains to each native stream
     for (auto & mode : selection)
@@ -27,6 +28,7 @@ frame_archive::frameset* frame_archive::clone_frameset(frameset* frameset)
 
 void frame_archive::unpublish_frame(frame* frame)
 {
+    log_frame_callback_end(frame);
     std::lock_guard<std::recursive_mutex> lock(mutex);
     freelist.push_back(std::move(*frame));
     published_frames.deallocate(frame);
@@ -224,7 +226,17 @@ rs_format frame_archive::frame_ref::get_frame_format() const
 
 rs_stream frame_archive::frame_ref::get_stream_type() const
 {
-	return frame_ptr ? frame_ptr->get_stream_type() : RS_STREAM_MAX_ENUM;
+    return frame_ptr ? frame_ptr->get_stream_type() : RS_STREAM_MAX_ENUM;
+}
+
+std::chrono::high_resolution_clock::time_point frame_archive::frame_ref::get_frame_callback_start_time_point() const
+{
+    return frame_ptr ? frame_ptr->get_frame_callback_start_time_point() :  std::chrono::high_resolution_clock::now();
+}
+
+void frame_archive::frame_ref::update_frame_callback_start_ts(std::chrono::high_resolution_clock::time_point ts)
+{
+    frame_ptr->update_frame_callback_start_ts(ts);
 }
 
 
@@ -293,11 +305,45 @@ int frame_archive::frame::get_bpp() const
     return additional_data.bpp;
 }
 
+void frame_archive::frame::update_frame_callback_start_ts(std::chrono::high_resolution_clock::time_point ts)
+{
+    additional_data.frame_callback_started = ts;
+}
+
+
 rs_format frame_archive::frame::get_format() const
 {
     return additional_data.format;
 }
 rs_stream frame_archive::frame::get_stream_type() const
 {
-	return additional_data.stream_type;
+    return additional_data.stream_type;
 }
+
+std::chrono::high_resolution_clock::time_point frame_archive::frame::get_frame_callback_start_time_point() const
+{
+    return additional_data.frame_callback_started;
+}
+
+void frame_archive::log_frame_callback_end(frame* frame)
+{
+    auto callback_ended = std::chrono::high_resolution_clock::now();
+    auto ts = std::chrono::duration_cast<std::chrono::milliseconds>(callback_ended - capture_started).count();
+    auto callback_warning_duration = 1000 / frame->additional_data.fps;
+    auto callback_duration = std::chrono::duration_cast<std::chrono::milliseconds>(callback_ended - frame->get_frame_callback_start_time_point()).count();
+
+    if (callback_duration > callback_warning_duration)
+    {
+        LOG_WARNING("Frame Callback took to long to complete. (Duration: " << callback_duration << ", FPS: " << frame->additional_data.fps << ")");
+    }
+
+    LOG_DEBUG("CallbackFinished," << rsimpl::get_string(frame->get_stream_type()) << "," << frame->get_frame_number() << ",DispatchedAt," << ts);
+}
+
+void frame_archive::frame_ref::log_callback_start(std::chrono::high_resolution_clock::time_point capture_start_time)
+{
+    auto callback_start_time = std::chrono::high_resolution_clock::now();
+    auto ts = std::chrono::duration_cast<std::chrono::milliseconds>(callback_start_time - capture_start_time).count();
+    LOG_DEBUG("CallbackStarted," << rsimpl::get_string(get_stream_type()) << "," << get_frame_number() << ",DispatchedAt," << ts);
+}
+
