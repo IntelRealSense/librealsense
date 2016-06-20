@@ -200,7 +200,7 @@ namespace rsimpl
 
             switch(options[i])
             {
-			case RS_OPTION_F200_DYNAMIC_FPS:          ivcam::set_dynamic_fps(get_device(), static_cast<uint8_t>(values[i])); break; // IVCAM 1.0 Only
+            case RS_OPTION_F200_DYNAMIC_FPS:          f200::set_dynamic_fps(get_device(), static_cast<uint8_t>(values[i])); break; // IVCAM 1.0 Only
 
              // Default will be handled by parent implementation
             default: base_opt.push_back(options[i]); base_opt_val.push_back(values[i]); break;
@@ -231,7 +231,7 @@ namespace rsimpl
             uint8_t val=0;
             switch(options[i])
             {
-            case RS_OPTION_F200_DYNAMIC_FPS:          ivcam::get_dynamic_fps(get_device(), val); values[i] = val; break;
+            case RS_OPTION_F200_DYNAMIC_FPS:          f200::get_dynamic_fps(get_device(), val); values[i] = val; break;
 
                 // Default will be handled by parent implementation
             default: base_opt.push_back(options[i]); base_opt_index.push_back(i);  break;

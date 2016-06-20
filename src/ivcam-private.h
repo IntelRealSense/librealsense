@@ -153,8 +153,6 @@ namespace ivcam {
     void set_filter_option(uvc::device & device, uint8_t filter_option);
     void get_confidence_threshold(const uvc::device & device, uint8_t & conf_thresh);
     void set_confidence_threshold(uvc::device & device, uint8_t conf_thresh);
-    void get_dynamic_fps(const uvc::device & device, uint8_t & dynamic_fps);
-    void set_dynamic_fps(uvc::device & device, uint8_t dynamic_fps);
 
 } // rsimpl::ivcam
 
@@ -201,6 +199,9 @@ namespace f200 {
 
     // Modify device state
     void update_asic_coefficients(uvc::device & device, std::timed_mutex & mutex, const ivcam::camera_calib_params & compensated_params); // todo - Allow you to specify resolution
+
+    void get_dynamic_fps(const uvc::device & device, uint8_t & dynamic_fps);
+    void set_dynamic_fps(uvc::device & device, uint8_t dynamic_fps);
 
 } // rsimpl::f200
 

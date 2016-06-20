@@ -126,16 +126,6 @@ namespace ivcam {
         xu_write(device, IVCAM_DEPTH_CONFIDENCE_THRESH, &conf_thresh, sizeof(conf_thresh));
     }
 
-    void get_dynamic_fps(const uvc::device & device, uint8_t & dynamic_fps)
-    {
-        return xu_read(device, IVCAM_DEPTH_DYNAMIC_FPS, &dynamic_fps, sizeof(dynamic_fps));
-    }
-
-    void set_dynamic_fps(uvc::device & device, uint8_t dynamic_fps)
-    {
-        return xu_write(device, IVCAM_DEPTH_DYNAMIC_FPS, &dynamic_fps, sizeof(dynamic_fps));
-    }
-
     ///////////////////
     // USB functions //
     ///////////////////
@@ -594,6 +584,16 @@ namespace f200
         cam_asic_coefficients coeffs = {};
         generate_asic_calibration_coefficients(compensated_params, { 640, 480 }, true, coeffs.CoefValueArray); // todo - fix hardcoded resolution parameters
         set_asic_coefficients(device, mutex, coeffs);
+    }
+
+    void get_dynamic_fps(const uvc::device & device, uint8_t & dynamic_fps)
+    {
+        return xu_read(device, IVCAM_DEPTH_DYNAMIC_FPS, &dynamic_fps, sizeof(dynamic_fps));
+    }
+
+    void set_dynamic_fps(uvc::device & device, uint8_t dynamic_fps)
+    {
+        return xu_write(device, IVCAM_DEPTH_DYNAMIC_FPS, &dynamic_fps, sizeof(dynamic_fps));
     }
 
 } // namespace f200

@@ -269,29 +269,29 @@ namespace rsimpl
             // Subdevice 0 can provide left/right infrared via four pixel formats, in three resolutions, which can either be uncropped or cropped to match Z
             for(auto pf : {pf_y8, pf_y8i, pf_y16, pf_y12i})
             {
-                info.subdevice_modes.push_back({0, {640, 481}, pf, fps, c.modesLR[0], {}, { -6}});
-                info.subdevice_modes.push_back({0, {640, 373}, pf, fps, c.modesLR[1], {}, { -6}});
-                info.subdevice_modes.push_back({0, {640, 254}, pf, fps, c.modesLR[2], {}, { -6}});
+                info.subdevice_modes.push_back({0, {640, 481}, pf, fps, c.modesLR[0], {}, {0, -6}});
+                info.subdevice_modes.push_back({0, {640, 373}, pf, fps, c.modesLR[1], {}, {0, -6}});
+                info.subdevice_modes.push_back({0, {640, 254}, pf, fps, c.modesLR[2], {}, {0, -6}});
             }
 
             // Subdevice 1 can provide depth, in three resolutions, which can either be unpadded or padded to match left/right
-            info.subdevice_modes.push_back({1, {628, 469}, pf_z16,  fps, pad_crop_intrinsics(c.modesLR[0], -6), {}, {0}});
-            info.subdevice_modes.push_back({1, {628, 361}, pf_z16,  fps, pad_crop_intrinsics(c.modesLR[1], -6), {}, {0}});
-            info.subdevice_modes.push_back({1, {628, 242}, pf_z16,  fps, pad_crop_intrinsics(c.modesLR[2], -6), {}, {0}});
+            info.subdevice_modes.push_back({ 1,{ 628, 469 }, pf_z16,  fps, pad_crop_intrinsics(c.modesLR[0], -6),{},{ 0, +6 } });
+            info.subdevice_modes.push_back({ 1,{ 628, 361 }, pf_z16,  fps, pad_crop_intrinsics(c.modesLR[1], -6),{},{ 0, +6 } });
+            info.subdevice_modes.push_back({ 1,{ 628, 242 }, pf_z16,  fps, pad_crop_intrinsics(c.modesLR[2], -6),{},{ 0, +6 } });
         }
 
-        // Subdevice 2 can provide color, in several formats and framerates
+        // Subdevice 2 can provide color, in several formats and framerates        
         info.subdevice_modes.push_back({ 2, { 320, 240 }, pf_yuy2, 60, scale_intrinsics(c.intrinsicsThird[1], 320, 240), { c.modesThird[1][1] }, { 0 } });
         info.subdevice_modes.push_back({ 2, { 320, 240 }, pf_yuy2, 30, scale_intrinsics(c.intrinsicsThird[1], 320, 240), { c.modesThird[1][1] }, { 0 } });
-        info.subdevice_modes.push_back({ 2, { 320, 240 }, pf_yuy2, 15, scale_intrinsics(c.intrinsicsThird[1], 320, 240), { c.modesThird[1][1] }, { 0 } });
+        info.subdevice_modes.push_back({ 2, { 320, 240 }, pf_yuy2, 15, scale_intrinsics(c.intrinsicsThird[1], 320, 240),{ c.modesThird[1][1] },{ 0 } });        
         info.subdevice_modes.push_back({ 2, { 640, 480 }, pf_yuy2, 60, c.intrinsicsThird[1], { c.modesThird[1][0] }, { 0 } });
         info.subdevice_modes.push_back({ 2, { 640, 480 }, pf_yuy2, 30, c.intrinsicsThird[1], { c.modesThird[1][0] }, { 0 } });
-        info.subdevice_modes.push_back({ 2, { 640, 480 }, pf_yuy2, 15, c.intrinsicsThird[1], { c.modesThird[1][0] }, { 0 } });
         info.subdevice_modes.push_back({ 2, { 1280, 720 }, pf_yuy2, 30, scale_intrinsics(c.intrinsicsThird[0], 1280, 720), { c.modesThird[0][1] }, { 0 } });
         info.subdevice_modes.push_back({ 2, { 1280, 720 }, pf_yuy2, 15, scale_intrinsics(c.intrinsicsThird[0], 1280, 720), { c.modesThird[0][1] }, { 0 } });
 
-        info.subdevice_modes.push_back({ 2, { 1920, 1080 }, pf_yuy2, 30, c.intrinsicsThird[0], { c.modesThird[0][0] }, { 0 } });
-        info.subdevice_modes.push_back({ 2, { 1920, 1080 }, pf_yuy2, 15, c.intrinsicsThird[0], { c.modesThird[0][0] }, { 0 } });
+        info.subdevice_modes.push_back({ 2,{ 1920, 1080 }, pf_yuy2, 15, c.intrinsicsThird[0],{ c.modesThird[0][0] },{ 0 } });
+        info.subdevice_modes.push_back({ 2,{ 1920, 1080 }, pf_yuy2, 30, c.intrinsicsThird[0],{ c.modesThird[0][0] },{ 0 } });
+        info.subdevice_modes.push_back({ 2,{ 2400, 1081 }, pf_rw10, 30, c.intrinsicsThird[0],{ c.modesThird[0][0] },{ 0 } });
 
         // Set up interstream rules for left/right/z images
         for(auto ir : {RS_STREAM_INFRARED, RS_STREAM_INFRARED2})

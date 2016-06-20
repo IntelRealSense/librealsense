@@ -20,8 +20,8 @@
 #include <condition_variable>               // For condition_variable
 #include <memory>                           // For unique_ptr
 
-const uint8_t RS_STREAM_NATIVE_COUNT	= 5;
-const uint8_t RS_USER_QUEUE_SIZE		= 64;
+const uint8_t RS_STREAM_NATIVE_COUNT    = 5;
+const uint8_t RS_USER_QUEUE_SIZE        = 64;
 
 namespace rsimpl
 {
@@ -232,7 +232,7 @@ namespace rsimpl
         int get_unpacked_width() const;
         int get_unpacked_height() const;
 
-		bool requires_processing() const { return (output_format == RS_OUTPUT_BUFFER_FORMAT_CONTINOUS) || (mode.pf.unpackers[unpacker_index].requires_processing); }
+        bool requires_processing() const { return (output_format == RS_OUTPUT_BUFFER_FORMAT_CONTINOUS) || (mode.pf.unpackers[unpacker_index].requires_processing); }
     };
 
     class frame_callback : public rs_frame_callback

@@ -2,7 +2,6 @@
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
 #include <mutex>
-#include <iostream>
 #define _USE_MATH_DEFINES
 #include <math.h>
 
@@ -29,9 +28,6 @@ void motion_module_control::impose(mm_request request, bool on)
     std::lock_guard<std::mutex> lock(mtx);
 
     mm_state new_state = state_handler.requested_state(request, on);
-
-    // TODO Evgeni
-    //std::cout << "request to switch from " << get_mm_state_name(state_handler.state) << " to " << get_mm_state_name(new_state) << std::endl;
 
     if (motion_module_state::valid(new_state))
         enter_state(new_state);

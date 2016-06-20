@@ -73,14 +73,14 @@ namespace rsimpl
         struct ae_params // Auto-exposure algorithm parameters
         {
             float mean_intensity_set_point;
-            float bright_ratio_set_point;  
-            float kp_gain;                 
-            float kp_exposure;             
-            float kp_dark_threshold;       
-            uint16_t exposure_top_edge;    
-            uint16_t exposure_bottom_edge; 
-            uint16_t exposure_left_edge;   
-            uint16_t exposure_right_edge;  
+            float bright_ratio_set_point;
+            float kp_gain;
+            float kp_exposure;
+            float kp_dark_threshold;
+            uint16_t exposure_top_edge;
+            uint16_t exposure_bottom_edge;
+            uint16_t exposure_left_edge;
+            uint16_t exposure_right_edge;
         };
 
         struct dc_params // Depth control algorithm parameters
@@ -109,7 +109,7 @@ namespace rsimpl
 
         void set_stream_intent(uvc::device & device, uint8_t & intent);
         void get_stream_status(const uvc::device & device, uint32_t & status);
-        void force_firmware_reset(uvc::device & device);       
+        void force_firmware_reset(uvc::device & device);
         bool get_emitter_state(const uvc::device & device, bool is_streaming, bool is_depth_enabled);
         void set_emitter_state(uvc::device & device, bool state);
 

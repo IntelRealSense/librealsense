@@ -28,7 +28,6 @@ namespace rsimpl
         static_device_info info;
         info.name = { "Intel RealSense R200" };
         auto c = ds::read_camera_info(*device);
-        info.subdevice_modes.push_back({ 2,{ 1920, 1080 }, pf_rw10, 30, c.intrinsicsThird[0],{ c.modesThird[0][0] },{ 0 } });
 
         ds_device::set_common_ds_config(device, info, c);
         return std::make_shared<r200_camera>(device, info);
