@@ -638,7 +638,7 @@ rs_frameset * rs_clone_frames_ref(rs_device * device, rs_frameset* frameset, rs_
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return            the pointer to the start of the frame data
 */
-rs_frame_ref * rs_detach_frame(rs_device * device, const rs_frameset * frameset, rs_stream stream, rs_error ** error);
+rs_frame_ref * rs_detach_frame(rs_device * device, rs_frameset * frameset, rs_stream stream, rs_error ** error);
 
 /**
 * relases the frame handle

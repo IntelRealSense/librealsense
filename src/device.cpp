@@ -370,7 +370,7 @@ rs_frameset * rs_device_base::clone_frames(rs_frameset * frameset)
 }
 
 
-rs_frame_ref* rs_device_base::detach_frame(const rs_frameset* fs, rs_stream stream)
+rs_frame_ref* rs_device_base::detach_frame(rs_frameset* fs, rs_stream stream)
 {
     auto result = archive->detach_frame_ref((frame_archive::frameset *)fs, stream);
     if (!result) throw std::runtime_error("Not enough resources to tack detached frame!");
