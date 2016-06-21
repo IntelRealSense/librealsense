@@ -47,7 +47,7 @@ int main(int argc, char * argv[]) try
     glfwGetWindowSize(win, &windowWidth, &windowHeight);
 
     // Does not account for correct aspect ratios
-    auto perTextureWidth = windowWidth / devices.size();
+    auto perTextureWidth = int(windowWidth / devices.size());
     auto perTextureHeight = 480;
 
     while (!glfwWindowShouldClose(win))

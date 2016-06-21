@@ -53,7 +53,7 @@ namespace rsimpl
         case RS_FORMAT_BGRA8: return  4;
         case RS_FORMAT_Y8: return 1;
         case RS_FORMAT_Y16: return 2;
-        case RS_FORMAT_RAW10: return 5/4;
+        case RS_FORMAT_RAW10: return 5.f/4;
         case RS_FORMAT_RAW16: return 2;
         case RS_FORMAT_RAW8: return 1;
         default: assert(false); return 0;

@@ -513,7 +513,7 @@ void rs_get_device_option_range(rs_device * device, rs_option option, double * m
  * \param[out] values  the array which will receive the values of the queried options
  * \param[out] error   if non-null, receives any error that occurs during this call, otherwise, errors are ignored
  */
-void rs_get_device_options(rs_device * device, const rs_option * options, int count, double * values, rs_error ** error);
+void rs_get_device_options(rs_device * device, const rs_option * options, unsigned int count, double * values, rs_error ** error);
 
 /**
  * efficiently set the value of an arbitrary number of options, using minimal hardware IO
@@ -522,7 +522,7 @@ void rs_get_device_options(rs_device * device, const rs_option * options, int co
  * \param[in] values   the array of values to which the options should be set
  * \param[out] error   if non-null, receives any error that occurs during this call, otherwise, errors are ignored
  */
-void rs_set_device_options(rs_device * device, const rs_option * options, int count, const double * values, rs_error ** error);
+void rs_set_device_options(rs_device * device, const rs_option * options, unsigned int count, const double * values, rs_error ** error);
 
 /**
 * efficiently reset the value of an arbitrary number of options to default
@@ -704,7 +704,7 @@ int rs_get_detached_frame_stride(const rs_frame_ref * frame, rs_error ** error);
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return            frame pad crop
 */
-int rs_get_detached_frame_bpp(const rs_frame_ref * frame, rs_error ** error);
+float rs_get_detached_frame_bpp(const rs_frame_ref * frame, rs_error ** error);
 
 /**
 * retrive frame format

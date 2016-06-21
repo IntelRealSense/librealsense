@@ -408,7 +408,7 @@ namespace rs
             return r;
         }
 
-        int get_bpp() const
+        float get_bpp() const
         {
             rs_error * e = nullptr;
             auto r = rs_get_detached_frame_bpp(frame_ref, &e);
@@ -817,7 +817,7 @@ namespace rs
         void get_options(const option * options, size_t count, double * values)
         {
             rs_error * e = nullptr;
-            rs_get_device_options((rs_device *)this, (const rs_option *)options, count, values, &e);
+            rs_get_device_options((rs_device *)this, (const rs_option *)options, (unsigned int)count, values, &e);
             error::handle(e);
         }
 
@@ -828,7 +828,7 @@ namespace rs
         void set_options(const option * options, size_t count, const double * values)
         {
             rs_error * e = nullptr;
-            rs_set_device_options((rs_device *)this, (const rs_option *)options, count, values, &e);
+            rs_set_device_options((rs_device *)this, (const rs_option *)options, (unsigned int)count, values, &e);
             error::handle(e);
         }
 

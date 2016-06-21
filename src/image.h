@@ -10,7 +10,6 @@
 namespace rsimpl
 {
 
-
     size_t           get_image_size                 (int width, int height, rs_format format);
     float            get_image_bpp                  (rs_format format);
     void             deproject_z                    (float * points, const rs_intrinsics & z_intrin, const uint16_t * z_pixels, float z_scale);

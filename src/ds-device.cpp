@@ -291,7 +291,6 @@ namespace rsimpl
 
         info.subdevice_modes.push_back({ 2,{ 1920, 1080 }, pf_yuy2, 15, c.intrinsicsThird[0],{ c.modesThird[0][0] },{ 0 } });
         info.subdevice_modes.push_back({ 2,{ 1920, 1080 }, pf_yuy2, 30, c.intrinsicsThird[0],{ c.modesThird[0][0] },{ 0 } });
-        info.subdevice_modes.push_back({ 2,{ 2400, 1081 }, pf_rw10, 30, c.intrinsicsThird[0],{ c.modesThird[0][0] },{ 0 } });
 
         // Set up interstream rules for left/right/z images
         for(auto ir : {RS_STREAM_INFRARED, RS_STREAM_INFRARED2})

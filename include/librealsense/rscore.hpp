@@ -45,7 +45,7 @@ struct rs_frame_ref
     virtual int                             get_frame_height() const = 0;
     virtual int                             get_frame_framerate() const = 0;
     virtual int                             get_frame_stride() const = 0;
-    virtual int                             get_frame_bpp() const = 0;
+    virtual float                           get_frame_bpp() const = 0;
     virtual rs_format                       get_frame_format() const = 0;
 };
 

@@ -54,7 +54,7 @@ int main() try
         std::cout << "Timestamp arrived, timestamp: " << entry.timestamp << std::endl;
     };
 
-    for (int ii = 0; ii < 100; ii++)
+    for (int ii = 0; ii < 10000; ii++)
     {
         // 1. Make motion-tracking available
         if (dev->supports(rs::capabilities::motion_events))

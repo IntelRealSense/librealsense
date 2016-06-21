@@ -438,7 +438,7 @@ int rs_get_detached_frame_stride(const rs_frame_ref * frameset, rs_error ** erro
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, frameset)
 
-int rs_get_detached_frame_bpp(const rs_frame_ref * frameset, rs_error ** error) try
+float rs_get_detached_frame_bpp(const rs_frame_ref * frameset, rs_error ** error) try
 {
     VALIDATE_NOT_NULL(frameset);
     return ((rsimpl::frame_archive::frame_ref*)frameset)->get_frame_bpp();
@@ -584,23 +584,23 @@ void rs_reset_device_options_to_default(rs_device * device, const rs_option* opt
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, device, options, count)
 
-void rs_get_device_options(rs_device * device, const rs_option options[], int count, double values[], rs_error ** error) try
+void rs_get_device_options(rs_device * device, const rs_option options[], unsigned int count, double values[], rs_error ** error) try
 {
     VALIDATE_NOT_NULL(device);
     VALIDATE_RANGE(count, 0, INT_MAX);
     VALIDATE_NOT_NULL(options);
-    for(int i=0; i<count; ++i) VALIDATE_ENUM(options[i]);
+    for(size_t i=0; i<count; ++i) VALIDATE_ENUM(options[i]);
     VALIDATE_NOT_NULL(values);
     device->get_options(options, count, values);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, device, options, count, values)
 
-void rs_set_device_options(rs_device * device, const rs_option options[], int count, const double values[], rs_error ** error) try
+void rs_set_device_options(rs_device * device, const rs_option options[], unsigned int count, const double values[], rs_error ** error) try
 {
     VALIDATE_NOT_NULL(device);
     VALIDATE_RANGE(count, 0, INT_MAX);
     VALIDATE_NOT_NULL(options);
-    for(int i=0; i<count; ++i) VALIDATE_ENUM(options[i]);
+    for(size_t i=0; i<count; ++i) VALIDATE_ENUM(options[i]);
     VALIDATE_NOT_NULL(values);
     device->set_options(options, count, values);
 }

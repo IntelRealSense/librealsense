@@ -24,7 +24,7 @@ namespace rsimpl
             int height = 0;
             int fps = 0;
             int stride = 0;
-            int bpp = 0;
+            float bpp = 0;
             rs_format format = RS_FORMAT_ANY;
             rs_stream stream_type = RS_STREAM_MAX_ENUM;
             int pad = 0;
@@ -32,7 +32,7 @@ namespace rsimpl
 
             frame_additional_data(){};
 
-            frame_additional_data(int in_timestamp, int in_frame_number, long long in_system_time, int in_width, int in_height, int in_fps, int in_stride, int in_bpp, const rs_format in_format, rs_stream in_stream_type, int in_pad)
+            frame_additional_data(int in_timestamp, int in_frame_number, long long in_system_time, int in_width, int in_height, int in_fps, int in_stride, float in_bpp, const rs_format in_format, rs_stream in_stream_type, int in_pad)
                 :timestamp(in_timestamp),
                 frame_number(in_frame_number),
                 system_time(in_system_time),
@@ -89,7 +89,7 @@ namespace rsimpl
             int get_height()const;
             int get_framerate() const;
             int get_stride()const;
-            int get_bpp()const;
+            float get_bpp()const;
             rs_format get_format()const;
             rs_stream get_stream_type() const override;
             std::chrono::high_resolution_clock::time_point get_frame_callback_start_time_point() const;
@@ -153,7 +153,7 @@ namespace rsimpl
             int get_frame_height() const override;
             int get_frame_framerate() const override;
             int get_frame_stride() const override;
-            int get_frame_bpp() const override;
+            float get_frame_bpp() const override;
             rs_format get_frame_format() const override;
             rs_stream get_stream_type() const;
             std::chrono::high_resolution_clock::time_point get_frame_callback_start_time_point() const;

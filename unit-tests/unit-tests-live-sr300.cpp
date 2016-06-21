@@ -426,17 +426,17 @@ inline void test_options(rs_device * device, rs_option* option_list, size_t opti
         if (good_values.size() == options)
         {
             if (expected_success_msg.size())
-                rs_set_device_options(device, option_list, (int)options, good_values.data(), require_error(expected_success_msg));
+                rs_set_device_options(device, option_list, (unsigned int)options, good_values.data(), require_error(expected_success_msg));
             else
-                rs_set_device_options(device, option_list, (int)options, good_values.data(), require_no_error());
+                rs_set_device_options(device, option_list, (unsigned int)options, good_values.data(), require_no_error());
         }
 
         if (bad_values.size() == options)
         {
             if (expected_error_msg.size())
-                rs_set_device_options(device, option_list, (int)options, bad_values.data(), require_error(expected_error_msg));
+                rs_set_device_options(device, option_list, (unsigned int)options, bad_values.data(), require_error(expected_error_msg));
             else
-                rs_set_device_options(device, option_list, (int)options, bad_values.data(), require_no_error());
+                rs_set_device_options(device, option_list, (unsigned int)options, bad_values.data(), require_no_error());
         }
     }
     else // Read command
@@ -444,9 +444,9 @@ inline void test_options(rs_device * device, rs_option* option_list, size_t opti
         std::vector<double> vretVal;
         vretVal.resize(options);
         if (expected_success_msg.size())
-            rs_get_device_options(device, option_list, (int)options, vretVal.data(), require_error(expected_success_msg));
+            rs_get_device_options(device, option_list, (unsigned int)options, vretVal.data(), require_error(expected_success_msg));
         else
-            rs_get_device_options(device, option_list, (int)options, vretVal.data(), require_no_error());
+            rs_get_device_options(device, option_list, (unsigned int)options, vretVal.data(), require_no_error());
 
         // Results to be returned
         ret_values = vretVal;       

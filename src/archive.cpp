@@ -217,7 +217,7 @@ int frame_archive::frame_ref::get_frame_stride() const
     return frame_ptr ? frame_ptr->get_stride() : 0;
 }
 
-int frame_archive::frame_ref::get_frame_bpp() const
+float frame_archive::frame_ref::get_frame_bpp() const
 {
     return frame_ptr ? frame_ptr->get_bpp() : 0;
 }
@@ -252,7 +252,9 @@ const byte* frame_archive::frame::get_frame_data() const
         frame_data = static_cast<const byte*>(on_release.get_data());
         if (additional_data.pad < 0)
         {
-            frame_data += additional_data.stride*additional_data.bpp * -additional_data.pad + (-additional_data.pad)*additional_data.bpp;
+            // evgeni
+            //frame_data += (int)(additional_data.stride*additional_data.bpp) * -additional_data.pad + (-additional_data.pad)*additional_data.bpp;
+            frame_data += int((additional_data.stride - additional_data.pad)*additional_data.bpp) - additional_data.pad;
         }
     }
 
@@ -262,7 +264,9 @@ const byte* frame_archive::frame::get_frame_data() const
 
         if (additional_data.pad > 0)
         {
-            return data.data() + additional_data.stride*additional_data.bpp * additional_data.pad + additional_data.pad*additional_data.bpp;
+            // evgeni
+            //return data.data() + additional_data.stride*additional_data.bpp * additional_data.pad + additional_data.pad*additional_data.bpp;
+            return data.data() + (int)((additional_data.stride+ additional_data.pad)*additional_data.bpp) + additional_data.pad;
         }
     }
     return frame_data;
@@ -303,7 +307,7 @@ int frame_archive::frame::get_stride() const
     return additional_data.stride;
 }
 
-int frame_archive::frame::get_bpp() const
+float frame_archive::frame::get_bpp() const
 {
     return additional_data.bpp;
 }
