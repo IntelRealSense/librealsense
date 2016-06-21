@@ -28,10 +28,13 @@ frame_archive::frameset* frame_archive::clone_frameset(frameset* frameset)
 
 void frame_archive::unpublish_frame(frame* frame)
 {
-    log_frame_callback_end(frame);
-    std::lock_guard<std::recursive_mutex> lock(mutex);
-    freelist.push_back(std::move(*frame));
-    published_frames.deallocate(frame);
+    if (frame)
+    {
+        log_frame_callback_end(frame);
+        std::lock_guard<std::recursive_mutex> lock(mutex);
+        freelist.push_back(std::move(*frame));
+        published_frames.deallocate(frame);
+    }
 }
 
 frame_archive::frame* frame_archive::publish_frame(frame&& frame)
@@ -329,7 +332,7 @@ void frame_archive::log_frame_callback_end(frame* frame)
 {
     auto callback_ended = std::chrono::high_resolution_clock::now();
     auto ts = std::chrono::duration_cast<std::chrono::milliseconds>(callback_ended - capture_started).count();
-    auto callback_warning_duration = 1000 / frame->additional_data.fps;
+    auto callback_warning_duration = 1000 / (frame->additional_data.fps+1);
     auto callback_duration = std::chrono::duration_cast<std::chrono::milliseconds>(callback_ended - frame->get_frame_callback_start_time_point()).count();
 
     if (callback_duration > callback_warning_duration)
@@ -337,7 +340,9 @@ void frame_archive::log_frame_callback_end(frame* frame)
         LOG_WARNING("Frame Callback took to long to complete. (Duration: " << callback_duration << ", FPS: " << frame->additional_data.fps << ")");
     }
 
-    LOG_DEBUG("CallbackFinished," << rsimpl::get_string(frame->get_stream_type()) << "," << frame->get_frame_number() << ",DispatchedAt," << ts);
+    LOG_DEBUG("CallbackFinished," 
+        << ((rs_stream::RS_STREAM_MAX_ENUM == frame->get_stream_type()) ? "Uninitialized" : rsimpl::get_string(frame->get_stream_type()))
+        << "," << frame->get_frame_number() << ",DispatchedAt," << ts);
 }
 
 void frame_archive::frame_ref::log_callback_start(std::chrono::high_resolution_clock::time_point capture_start_time)
@@ -346,4 +351,3 @@ void frame_archive::frame_ref::log_callback_start(std::chrono::high_resolution_c
     auto ts = std::chrono::duration_cast<std::chrono::milliseconds>(callback_start_time - capture_start_time).count();
     LOG_DEBUG("CallbackStarted," << rsimpl::get_string(get_stream_type()) << "," << get_frame_number() << ",DispatchedAt," << ts);
 }
-
