@@ -8,10 +8,6 @@
 #include <cstdint>
 #include <cstddef>
 
-namespace rs{
-    struct motion_data;
-}
-
 struct rs_stream_interface
 {
     virtual                                 ~rs_stream_interface() {}
@@ -101,7 +97,7 @@ struct rs_device
     virtual void                            set_options(const rs_option options[], size_t count, const double values[]) = 0;
     virtual void                            get_options(const rs_option options[], size_t count, double values[]) = 0;
                                             
-    virtual rs_frame_ref *                  detach_frame(const rs_frameset * fs, rs_stream stream) = 0;
+    virtual rs_frame_ref *                  detach_frame(rs_frameset * fs, rs_stream stream) = 0;
     virtual void                            release_frame(rs_frame_ref * ref) = 0;
     virtual rs_frame_ref *                  clone_frame(rs_frame_ref * frame) = 0;
 

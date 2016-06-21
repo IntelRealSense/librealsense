@@ -491,7 +491,7 @@ rs_frame_ref * rs_clone_frame_ref(rs_device * device, rs_frame_ref* frame, rs_er
 }
 
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, device, frame)
-rs_frame_ref * rs_detach_frame(rs_device * device, const rs_frameset * frameset, rs_stream stream, rs_error ** error) try
+rs_frame_ref * rs_detach_frame(rs_device * device, rs_frameset * frameset, rs_stream stream, rs_error ** error) try
 {
     VALIDATE_NOT_NULL(frameset);
     VALIDATE_ENUM(stream);
