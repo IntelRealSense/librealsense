@@ -252,8 +252,6 @@ const byte* frame_archive::frame::get_frame_data() const
         frame_data = static_cast<const byte*>(on_release.get_data());
         if (additional_data.pad < 0)
         {
-            // evgeni
-            //frame_data += (int)(additional_data.stride*additional_data.bpp) * -additional_data.pad + (-additional_data.pad)*additional_data.bpp;
             frame_data += int((additional_data.stride - additional_data.pad)*additional_data.bpp) - additional_data.pad;
         }
     }
@@ -264,8 +262,6 @@ const byte* frame_archive::frame::get_frame_data() const
 
         if (additional_data.pad > 0)
         {
-            // evgeni
-            //return data.data() + additional_data.stride*additional_data.bpp * additional_data.pad + additional_data.pad*additional_data.bpp;
             return data.data() + (int)((additional_data.stride+ additional_data.pad)*additional_data.bpp) + additional_data.pad;
         }
     }
