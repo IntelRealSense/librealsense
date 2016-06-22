@@ -41,8 +41,9 @@ namespace rsimpl
                 fps(in_fps),
                 stride(in_stride),
                 bpp(in_bpp),
+                format(in_format),
                 stream_type(in_stream_type),
-                format(in_format){}
+                pad(in_pad){}
         };
 
         // Define a movable but explicitly noncopyable buffer type to hold our frame data
