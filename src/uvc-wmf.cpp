@@ -410,12 +410,11 @@ namespace rsimpl
             std::thread data_channel_thread;
             volatile bool data_stop;
 
-            device(std::shared_ptr<context> parent, int vid, int pid, std::string unique_id) : parent(move(parent)), vid(vid), pid(pid), unique_id(move(unique_id)), data_stop(false), aux_pid(0), aux_vid(0)
+            device(std::shared_ptr<context> parent, int vid, int pid, std::string unique_id) : parent(move(parent)), vid(vid), pid(pid), unique_id(move(unique_id)), aux_pid(0), aux_vid(0), data_stop(false)
             {
-
             }
 
-            ~device() { stop_streaming(); close_win_usb(); }
+            ~device() { stop_streaming(); stop_data_acquisition(); close_win_usb(); }
 
             IKsControl * get_ks_control(const uvc::extension_unit & xu)
             {
@@ -454,7 +453,6 @@ namespace rsimpl
                     data_channel_thread.join();
                     data_stop = false;
                 }
-                close_win_usb();
             }
 
             void start_streaming()
@@ -591,6 +589,18 @@ namespace rsimpl
                 {
                     CloseHandle(usb_file_handle);
                     usb_file_handle = INVALID_HANDLE_VALUE;
+                }
+
+                if (usb_aux_interface_handle != INVALID_HANDLE_VALUE)
+                {
+                    WinUsb_Free(usb_aux_interface_handle);
+                    usb_aux_interface_handle = INVALID_HANDLE_VALUE;
+                }
+
+                if (usb_aux_file_handle != INVALID_HANDLE_VALUE)
+                {
+                    CloseHandle(usb_aux_file_handle);
+                    usb_aux_file_handle = INVALID_HANDLE_VALUE;
                 }
             }
 
