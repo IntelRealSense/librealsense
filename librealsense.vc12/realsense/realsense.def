@@ -91,3 +91,5 @@ EXPORTS
 
     rs_log_to_console
     rs_log_to_file
+
+    rs_get_api_version
