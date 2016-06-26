@@ -13,16 +13,16 @@
 #include "context.h"
 
 
-#define constexpr_support true
+#define constexpr_support 1
 
 #ifdef _MSC_VER
-#if (_MSC_VER <= 1800) // constexpr is not supported in MSVC2013 - manual tracking is required
+#if (_MSC_VER <= 1800) // constexpr is not supported in MSVC2013
 #undef constexpr_support
-#define constexpr_support false
+#define constexpr_support 0
 #endif
 #endif
 
-#if (constexpr_support)
+#if (constexpr_support == 1)
 template<unsigned... Is> struct seq{};
 template<unsigned N, unsigned... Is>
 struct gen_seq : gen_seq<N-1, N-1, Is...>{};
@@ -41,8 +41,8 @@ constexpr std::array<char const, N1+N2-1> concat(char const (&a1)[N1], char cons
 
 constexpr auto rs_api_version = concat("VERSION: ",RS_API_VERSION_STR);
 
-#else
-static const std::string rs_api_version("VERSION: 1.9.5");
+#else    // manual version tracking is required
+static const std::string rs_api_version("VERSION: 1.9.3");
 
 #endif
 

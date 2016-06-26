@@ -789,19 +789,3 @@ TEST_CASE( "streaming five configurations sequentionally", "[live] [r200] [one-c
     });
 
 }
-
-TEST_CASE( "R200 API version verification", "[live] [r200]" )
-{
-    safe_context ctx;
-    std::cout << "Librealsense API version is " << RS_API_VERSION_STR << std::endl;
-    std::cout << "Librealsense API version number is " << RS_API_VERSION << std::endl;
-
-    std::string api_ver_str(RS_API_VERSION_STR);
-    // API  version is within [10000..999999] range
-    REQUIRE(RS_API_VERSION > 0);
-    REQUIRE(RS_API_VERSION <= 999999);
-    // Version string is in ["1.0.0".. "99.99.99"] range
-    REQUIRE(api_ver_str.size()>=5);
-    REQUIRE(api_ver_str.size()<=8);
-
-}
