@@ -697,30 +697,95 @@ TEST_CASE( "a single R200 can stream a variety of reasonable streaming mode comb
 
     SECTION( "streaming is possible in some reasonable configurations" )
     {
-        test_streaming(dev, {
-            {RS_STREAM_DEPTH, 480, 360, RS_FORMAT_Z16, 60}
-        });
+        SECTION( "streaming DEPTH 480, 360, RS_FORMAT_Z16, 60" )
+        {
+            test_streaming(dev, {
+                {RS_STREAM_DEPTH, 480, 360, RS_FORMAT_Z16, 60}
+            });
+        }
 
-        test_streaming(dev, {
-            {RS_STREAM_DEPTH, 480, 360, RS_FORMAT_Z16, 60},
-            {RS_STREAM_COLOR, 640, 480, RS_FORMAT_RGB8, 60}
-        });
+        SECTION( "streaming [DEPTH,480,360,Z16,60] [COLOR,480,360,RGB8,60]" )
+        {
+            test_streaming(dev, {
+                {RS_STREAM_DEPTH, 480, 360, RS_FORMAT_Z16, 60},
+                {RS_STREAM_COLOR, 640, 480, RS_FORMAT_RGB8, 60}
+            });
+        }
 
-        test_streaming(dev, {
-            {RS_STREAM_DEPTH, 480, 360, RS_FORMAT_Z16, 60},
-            {RS_STREAM_INFRARED, 480, 360, RS_FORMAT_Y8, 60}
-        });
+        SECTION( "streaming [DEPTH,480,360,Z16,60] [IR,480,360,Y8,60]" )
+        {
+            test_streaming(dev, {
+                {RS_STREAM_DEPTH, 480, 360, RS_FORMAT_Z16, 60},
+                {RS_STREAM_INFRARED, 480, 360, RS_FORMAT_Y8, 60}
+            });
+        }
 
-        test_streaming(dev, {
-            {RS_STREAM_INFRARED, 492, 372, RS_FORMAT_Y16, 60},
-            {RS_STREAM_INFRARED2, 492, 372, RS_FORMAT_Y16, 60}
-        });
+        SECTION( "streaming [IR,492,372,Y16,60] [IR2,492,372,Y16,60]" )
+        {
+            test_streaming(dev, {
+                {RS_STREAM_INFRARED, 492, 372, RS_FORMAT_Y16, 60},
+                {RS_STREAM_INFRARED2, 492, 372, RS_FORMAT_Y16, 60}
+            });
+        }
 
-        test_streaming(dev, {
-            {RS_STREAM_DEPTH, 480, 360, RS_FORMAT_Z16, 60},
-            {RS_STREAM_COLOR, 640, 480, RS_FORMAT_RGB8, 60},
-            {RS_STREAM_INFRARED, 480, 360, RS_FORMAT_Y8, 60},
-            {RS_STREAM_INFRARED2, 480, 360, RS_FORMAT_Y8, 60}
-        });
+        SECTION( "streaming [DEPTH,480,360,Z16,60] [COLOR,640,480,RGB8,60] [IR,480,360,Y8,60] [IR2,480,360,Y8,60]" )
+        {
+            test_streaming(dev, {
+                {RS_STREAM_DEPTH, 480, 360, RS_FORMAT_Z16, 60},
+                {RS_STREAM_COLOR, 640, 480, RS_FORMAT_RGB8, 60},
+                {RS_STREAM_INFRARED, 480, 360, RS_FORMAT_Y8, 60},
+                {RS_STREAM_INFRARED2, 480, 360, RS_FORMAT_Y8, 60}
+            });
+        }
     }
+}
+
+TEST_CASE( "streaming five configurations sequentionally", "[live] [r200] [one-camera]" )
+{
+    safe_context ctx;
+
+    int device_count = rs_get_device_count(ctx, require_no_error());
+    REQUIRE(device_count == 1);
+
+    rs_device * dev = rs_get_device(ctx, 0, require_no_error());
+    REQUIRE(dev != nullptr);
+
+    const char * name = rs_get_device_name(dev, require_no_error());
+    REQUIRE(name == std::string("Intel RealSense R200"));
+
+    test_streaming(dev, {
+        {RS_STREAM_DEPTH, 480, 360, RS_FORMAT_Z16, 60}
+    });
+
+    test_streaming(dev, {
+        {RS_STREAM_DEPTH, 480, 360, RS_FORMAT_Z16, 60},
+        {RS_STREAM_COLOR, 640, 480, RS_FORMAT_RGB8, 60}
+    });
+
+    test_streaming(dev, {
+        {RS_STREAM_DEPTH, 480, 360, RS_FORMAT_Z16, 60}
+    });
+
+    test_streaming(dev, {
+        {RS_STREAM_DEPTH, 480, 360, RS_FORMAT_Z16, 60},
+        {RS_STREAM_INFRARED, 480, 360, RS_FORMAT_Y8, 60}
+    });
+
+    test_streaming(dev, {
+        {RS_STREAM_INFRARED, 492, 372, RS_FORMAT_Y16, 60},
+        {RS_STREAM_INFRARED2, 492, 372, RS_FORMAT_Y16, 60}
+    });
+
+    test_streaming(dev, {
+        {RS_STREAM_INFRARED, 492, 372, RS_FORMAT_Y16, 60},
+        {RS_STREAM_INFRARED2, 492, 372, RS_FORMAT_Y16, 60}
+    });
+
+    test_streaming(dev, {
+        {RS_STREAM_DEPTH, 480, 360, RS_FORMAT_Z16, 60},
+        {RS_STREAM_COLOR, 640, 480, RS_FORMAT_RGB8, 60},
+        {RS_STREAM_INFRARED, 480, 360, RS_FORMAT_Y8, 60},
+        {RS_STREAM_INFRARED2, 480, 360, RS_FORMAT_Y8, 60}
+    });
+
 }
