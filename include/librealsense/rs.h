@@ -8,7 +8,18 @@
 extern "C" {
 #endif
 
-#define RS_API_VERSION 7
+#define RS_API_MAJOR_VERSION    1
+#define RS_API_MINOR_VERSION    9
+#define RS_API_PATCH_VERSION    3
+
+#define STRINGIFY(arg) #arg
+#define VAR_ARG_STRING(arg) STRINGIFY(arg)
+
+/* Version in encoded integer format (1,9,3) -> 10903 */
+#define	RS_API_VERSION  (((((RS_API_MAJOR_VERSION) *100) + RS_API_MINOR_VERSION) * 100) + RS_API_PATCH_VERSION)
+/*// Return version in "X.Y.Z" format */
+#define RS_API_VERSION_STR (VAR_ARG_STRING(RS_API_MAJOR_VERSION.RS_API_MINOR_VERSION.RS_API_PATCH_VERSION))
+
 
 typedef enum rs_capabilities
 {
@@ -725,13 +736,20 @@ rs_stream rs_get_detached_frame_stream_type(const rs_frame_ref * frameset, rs_er
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return            the pointer to the start of the frame data
 */
-
 rs_frame_ref * rs_clone_frame_ref(rs_device * device, rs_frame_ref* frame, rs_error ** error);
+
+/**
+* retrieve the API version from the source code. Evaluate that the value is conformant to the established policies
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return            the version API encoded into integer value "1.9.3" -> 10903
+*/
+int          rs_get_api_version      (rs_error ** error);
 
 const char * rs_get_failed_function  (const rs_error * error);
 const char * rs_get_failed_args      (const rs_error * error);
 const char * rs_get_error_message    (const rs_error * error);
 void         rs_free_error           (rs_error * error);
+
 
 const char * rs_stream_to_string     (rs_stream stream);
 const char * rs_format_to_string     (rs_format format);

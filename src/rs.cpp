@@ -21,6 +21,25 @@ struct rs_error
     std::string args;
 };
 
+
+template<unsigned... Is> struct seq{};
+template<unsigned N, unsigned... Is>
+struct gen_seq : gen_seq<N-1, N-1, Is...>{};
+template<unsigned... Is>
+struct gen_seq<0, Is...> : seq<Is...>{};
+
+template<unsigned N1, unsigned... I1, unsigned N2, unsigned... I2>
+constexpr std::array<char const, N1+N2-1> concat(char const (&a1)[N1], char const (&a2)[N2], seq<I1...>, seq<I2...>){
+  return {{ a1[I1]..., a2[I2]... }};
+}
+
+template<unsigned N1, unsigned N2>
+constexpr std::array<char const, N1+N2-1> concat(char const (&a1)[N1], char const (&a2)[N2]){
+  return concat(a1, a2, gen_seq<N1-1>{}, gen_seq<N2>{});
+}
+
+constexpr auto rs_api_version = concat("VERSION: ",RS_API_VERSION_STR);
+
 // This facility allows for translation of exceptions to rs_error structs at the API boundary
 namespace rsimpl
 {
@@ -48,7 +67,10 @@ namespace rsimpl
 
 rs_context * rs_create_context(int api_version, rs_error ** error) try
 {
-    if (api_version != RS_API_VERSION) throw std::runtime_error("api version mismatch");
+    int runtime_api_version = rs_get_api_version(error);
+    if (*error) throw std::runtime_error(rs_get_error_message(*error));
+
+    if (api_version != runtime_api_version) throw std::runtime_error("api version mismatch");
     return rs_context_base::acquire_instance();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, api_version)
@@ -623,6 +645,17 @@ void rs_set_device_option(rs_device * device, rs_option option, double value, rs
     device->set_options(&option, 1, &value);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, device, option, value)
+
+// Verify  and provide API version encoded as integer value
+int rs_get_api_version(rs_error ** error) try
+{
+    // Each component type is within [0-99] range
+    VALIDATE_RANGE(RS_API_MAJOR_VERSION, 0, 99);
+    VALIDATE_RANGE(RS_API_MINOR_VERSION, 0, 99);
+    VALIDATE_RANGE(RS_API_PATCH_VERSION, 0, 99);
+    return RS_API_VERSION;
+}
+HANDLE_EXCEPTIONS_AND_RETURN(0, RS_API_MAJOR_VERSION, RS_API_MINOR_VERSION, RS_API_PATCH_VERSION)
 
 
 void rs_free_error(rs_error * error) { if (error) delete error; }
