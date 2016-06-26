@@ -43,11 +43,6 @@ librealsense-log.txt
 
 *.vcxproj.user
 *.orig
-/librealsense.vc14/unit-tests-live-r200.psess
-/librealsense.vc14/unit-tests-live-r200-d160623.vspx
-/librealsense.vc14/unit-tests-live-r200-d.psess
-/librealsense.vc14/Report160623.vsp
-/librealsense.vc14/Report160623(3).vsp
-/librealsense.vc14/Report160623(2).vsp
-/librealsense.vc14/Report160623(1).vsp
-/librealsense.vc14/Performance.psess
+*.psess
+*.vspx
+*.vsp
