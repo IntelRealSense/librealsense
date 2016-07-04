@@ -184,11 +184,12 @@ void rs_device_base::set_timestamp_callback(rs_timestamp_callback* callback)
 
 void rs_device_base::start(rs_source source)
 {
+    if (source & RS_SOURCE_MOTION_TRACKING)
+        start_motion_tracking();
+
     if (source & RS_SOURCE_VIDEO)
         start_video_streaming();
 
-    if (source & RS_SOURCE_MOTION_TRACKING)
-        start_motion_tracking();
 }
 
 void rs_device_base::stop(rs_source source)
