@@ -102,7 +102,10 @@ namespace rsimpl
             case RS_OPTION_F200_FILTER_OPTION:        ivcam::set_filter_option(get_device(), static_cast<uint8_t>(values[i])); break;
             case RS_OPTION_F200_CONFIDENCE_THRESHOLD: ivcam::set_confidence_threshold(get_device(), static_cast<uint8_t>(values[i])); break;
 
-            default: LOG_WARNING("Cannot set " << options[i] << " to " << values[i] << " on " << get_name()); break;
+            default: 
+                LOG_WARNING("Cannot set " << options[i] << " to " << values[i] << " on " << get_name());
+                throw std::logic_error("Option unsupported");
+                break;
             }
         }
     }
@@ -125,7 +128,10 @@ namespace rsimpl
             case RS_OPTION_F200_FILTER_OPTION:        ivcam::get_filter_option(get_device(), val); values[i] = val; break;
             case RS_OPTION_F200_CONFIDENCE_THRESHOLD: ivcam::get_confidence_threshold(get_device(), val); values[i] = val; break;
 
-            default: LOG_WARNING("Cannot get " << options[i] << " on " << get_name()); break;
+            default: 
+                LOG_WARNING("Cannot get " << options[i] << " on " << get_name());
+                throw std::logic_error("Option unsupported");
+                break;
             }
         }
     }

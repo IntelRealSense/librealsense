@@ -109,7 +109,10 @@ namespace rsimpl
             case RS_OPTION_R200_DEPTH_CONTROL_NEIGHBOR_THRESHOLD:           dc_writer.set(&ds::dc_params::neighbor_thresh,          values[i]); break;
             case RS_OPTION_R200_DEPTH_CONTROL_LR_THRESHOLD:                 dc_writer.set(&ds::dc_params::lr_thresh,                values[i]); break;
 
-            default: LOG_WARNING("Cannot set " << options[i] << " to " << values[i] << " on " << get_name()); break;
+            default: 
+                LOG_WARNING("Cannot set " << options[i] << " to " << values[i] << " on " << get_name());
+                throw std::logic_error("Option unsupported");
+                break;
             }
         }
 
@@ -183,7 +186,10 @@ namespace rsimpl
             case RS_OPTION_R200_DEPTH_CONTROL_NEIGHBOR_THRESHOLD:           values[i] = dc_reader.get(&ds::dc_params::neighbor_thresh         ); break;
             case RS_OPTION_R200_DEPTH_CONTROL_LR_THRESHOLD:                 values[i] = dc_reader.get(&ds::dc_params::lr_thresh               ); break;
 
-            default: LOG_WARNING("Cannot get " << options[i] << " on " << get_name()); break;
+            default: 
+                LOG_WARNING("Cannot get " << options[i] << " on " << get_name());
+                throw std::logic_error("Option unsupported");
+                break;
             }
         }
     }
