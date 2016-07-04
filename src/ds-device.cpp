@@ -325,7 +325,7 @@ namespace rsimpl
             {RS_OPTION_R200_DEPTH_CLAMP_MIN,                            0, USHRT_MAX,   1},
             {RS_OPTION_R200_DEPTH_CLAMP_MAX,                            0, USHRT_MAX,   1},
             {RS_OPTION_R200_DISPARITY_MULTIPLIER,                       1, 1000,        1},
-            {RS_OPTION_R200_DISPARITY_SHIFT,                            0, 0,           1},
+            {RS_OPTION_R200_DISPARITY_SHIFT,                            0, 512,         1},
 
             {RS_OPTION_R200_AUTO_EXPOSURE_MEAN_INTENSITY_SET_POINT,     0, 4095,        0},
             {RS_OPTION_R200_AUTO_EXPOSURE_BRIGHT_RATIO_SET_POINT,       0, 1,           0},
