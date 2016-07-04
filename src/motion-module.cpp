@@ -11,6 +11,8 @@
 using namespace rsimpl;
 using namespace rsimpl::motion_module;
 
+#define MOTION_MODULE_CONTROL_I2C_SLAVE_ADDRESS 0x42
+
 motion_module_control::motion_module_control(uvc::device *device) : device_handle(device), power_state(false)
 {
 }
@@ -134,6 +136,181 @@ void motion_module_control::toggle_motion_module_events(bool on)
 {
     // Apply user request, and update motion module controls if needed
     impose(mm_events_output, on);
+}
+
+
+// Write a buffer to the IAP I2C register.
+void motion_module_control::i2c_iap_write(uint16_t slave_address, uint8_t *buffer, uint16_t len)
+{
+	hw_monitor::hwmon_cmd cmd(adaptor_board_command::IAP_IWB);
+
+	cmd.Param1 = slave_address;
+	cmd.Param2 = len;
+
+	cmd.sizeOfSendCommandData = len;
+	memcpy_s(cmd.data, HW_MONITOR_BUFFER_SIZE, buffer, len);
+
+	std::timed_mutex mutex;
+	rsimpl::hw_monitor::perform_and_send_monitor_command(*device_handle, mutex, 1, cmd);
+}
+
+// Write a 32 bit value to a specific i2c slave address.
+void motion_module_control::i2c_write_reg(uint16_t slave_address, uint16_t reg, uint32_t value)
+{
+	hw_monitor::hwmon_cmd cmd(adaptor_board_command::IWB);
+
+	cmd.Param1 = slave_address;
+	cmd.Param2 = reg;
+	cmd.Param3 = sizeof(value);
+
+	memcpy_s(cmd.data, HW_MONITOR_BUFFER_SIZE, &value, sizeof(value));
+	cmd.sizeOfSendCommandData = sizeof(value);
+
+	std::timed_mutex mutex;
+	rsimpl::hw_monitor::perform_and_send_monitor_command(*device_handle, mutex, 1, cmd);
+
+	return;
+}
+
+// Read a 32 bit value from the i2c register.
+void motion_module_control::i2c_read_reg(uint16_t slave_address, uint16_t reg, uint32_t &value)
+{
+	hw_monitor::hwmon_cmd cmd(adaptor_board_command::IRB);
+
+	cmd.Param1 = slave_address;
+	cmd.Param2 = reg;
+	cmd.Param3 = sizeof(value);
+
+	std::timed_mutex mutex;
+	rsimpl::hw_monitor::perform_and_send_monitor_command(*device_handle, mutex, 1, cmd);
+
+	// validate that the size is of 32 bit (value size).
+	if (cmd.receivedCommandDataLength == sizeof(value))
+	{
+		memcpy_s( &value, sizeof(value),cmd.receivedCommandData, sizeof(cmd.receivedCommandDataLength) );
+	}
+	
+	return ;
+
+}
+
+// switch the mtion module to IAP mode.
+int motion_module_control::switch_to_iap()
+{
+
+	uint32_t value = -1;
+
+	// read state.
+	i2c_read_reg(MOTION_MODULE_CONTROL_I2C_SLAVE_ADDRESS, i2c_register::REG_CURR_PWR_STATE, value);
+
+	if (value != power_states::PWR_STATE_IAP) {
+		// we are not in IAP. switch to IAP.
+		i2c_write_reg(MOTION_MODULE_CONTROL_I2C_SLAVE_ADDRESS, i2c_register::REG_IAP_REG, 0xAE);
+	}
+
+	// retry for 10 times to be in IAP state.
+	for (int retries = 0; retries < 10; retries++) {
+		std::this_thread::sleep_for(std::chrono::milliseconds(100));
+
+		i2c_read_reg(MOTION_MODULE_CONTROL_I2C_SLAVE_ADDRESS, i2c_register::REG_CURR_PWR_STATE, value);
+		if (value == power_states::PWR_STATE_IAP) {
+			return 0;
+		}
+	}
+	// TODO SERGEY : Should we throw an exception ?
+	return -1;
+}
+
+int motion_module_control::switch_to_operational()
+{
+	uint32_t value = -1;
+
+	// write to the REG_JUMP_TO_APP register. this should return us to operational mode if all went well.
+	i2c_write_reg(MOTION_MODULE_CONTROL_I2C_SLAVE_ADDRESS, i2c_register::REG_JUMP_TO_APP, 0x00);
+
+	// retry for 10 times to see if we are in opertinal state.
+	for (int retries = 0; retries < 10; retries++) {
+		std::this_thread::sleep_for(std::chrono::milliseconds(100));
+
+		i2c_read_reg(MOTION_MODULE_CONTROL_I2C_SLAVE_ADDRESS, i2c_register::REG_CURR_PWR_STATE, value);
+		
+		if (value != power_states::PWR_STATE_IAP) {
+			return 0;
+		}
+	}
+	// TODO SERGEY : Should we throw an exception ?
+	return -1;
+}
+
+// Write the firmware.
+int motion_module_control::write_firmware(uint8_t *data, int size)
+{
+	int32_t length = size;
+	uint32_t image_address = 0x8002000;
+	fw_image_packet packet;
+	uint8_t *data_buffer = data;
+
+	// we considered to be in a IAP state here. we loop through the data and send it in packets of 128 bytes.
+	while(length > 0)
+	{
+		uint16_t payload_length = (length > FW_IMAGE_PACKET_PAYLOAD_LEN) ? FW_IMAGE_PACKET_PAYLOAD_LEN : length;
+		uint32_t image_address_be;
+		uint16_t payload_be;
+
+		// TODO SERGEY : The firmware needs the image address and payload length as big endian. do we have any 
+		// little to big endian functions in this code ? we should detect that the machine is little endian and only 
+		// then do something.
+		image_address_be =  (image_address >> 24)  & 0xFF;
+		image_address_be |= (image_address >> 8)   & 0xFF00;
+		image_address_be |= (image_address <<  8)  & 0xFF0000;
+		image_address_be |= (image_address <<  24) & 0xFF000000;
+
+		payload_be = (payload_length >> 8) & 0xFF;
+		payload_be |= (payload_length << 8) & 0xFF00;
+
+		// packet require op_code of 0x6. cant find documentation for that.
+		packet.address = image_address_be;
+		packet.op_code = 0x6;
+		packet.length = payload_be;
+		packet.dummy = 0;
+
+		// calcuate packet Length which includes the packet size and payload.
+		uint16_t packetLength = (sizeof(packet) - FW_IMAGE_PACKET_PAYLOAD_LEN + payload_length);
+
+		// copy data to packet.
+		memcpy_s(packet.data, sizeof(packet.data), data_buffer, payload_length);
+
+		// write to IAP.
+		i2c_iap_write(MOTION_MODULE_CONTROL_I2C_SLAVE_ADDRESS, (uint8_t *)&packet, packetLength);
+
+		// go to next packet if needed.
+		data_buffer += payload_length;
+		length -= payload_length;
+		image_address += payload_length;		
+	};
+
+	return 0;
+}
+
+// This function responsible for the whole firmware upgrade process.
+// TODO SERGEY: We need to decide how control errors here. because some of the hw monitor function throw exceptions.
+
+int motion_module_control::firmware_upgrade(void *data, int size)
+{
+
+	// power on motion mmodule (if needed).
+	toggle_motion_module_power(true);
+
+	// swtich to IAP if needed.
+	switch_to_iap();
+
+	//write the firmware.
+	write_firmware((uint8_t *)data, size);
+
+	// write to operational mode.
+	switch_to_operational();
+
+	return 0;
 }
 
 void motion_module::config(uvc::device & device, uint8_t gyro_bw, uint8_t gyro_range, uint8_t accel_bw, uint8_t accel_range, uint32_t time_seed)

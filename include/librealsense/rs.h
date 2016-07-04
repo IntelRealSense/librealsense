@@ -190,6 +190,10 @@ typedef enum rs_option
     RS_OPTION_MAX_ENUM = 0x7FFFFFFF
 } rs_option;
 
+typedef enum rs_blob_type {
+	RS_BLOB_TYPE_MOTION_MODULE_FIRMWARE_UPDATE                = 1
+}  rs_blob_type;
+
 typedef struct rs_intrinsics
 {
     int           width;     /* width of the image in pixels */
@@ -727,6 +731,15 @@ rs_stream rs_get_detached_frame_stream_type(const rs_frame_ref * frameset, rs_er
 */
 
 rs_frame_ref * rs_clone_frame_ref(rs_device * device, rs_frame_ref* frame, rs_error ** error);
+
+/**
+* send a blob of data to the device. at the moment only RS_BLOB_TYPE_MOTION_MODULE_FIRMWARE_UPDATE is support 
+* of the motiohn module.
+* \param[in] firmware data.
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+*/
+void rs_send_blob_to_device(rs_device * device, rs_blob_type type, void * data, int size, rs_error ** error);
+
 
 const char * rs_get_failed_function  (const rs_error * error);
 const char * rs_get_failed_args      (const rs_error * error);

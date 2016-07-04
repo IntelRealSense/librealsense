@@ -130,6 +130,13 @@ namespace rsimpl
             values[i] = base_opt_val[i];
     }
 
+	void zr300_camera::send_blob_to_device(rs_blob_type type, void * data, int size)
+	{
+		switch(type)
+			case RS_BLOB_TYPE_MOTION_MODULE_FIRMWARE_UPDATE:
+				motion_module_ctrl.firmware_upgrade(data, size);
+	}
+
     void zr300_camera::toggle_motion_module_power(bool on)
     {        
         motion_module_ctrl.toggle_motion_module_power(on);

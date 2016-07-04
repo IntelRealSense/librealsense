@@ -53,44 +53,18 @@ int main() try
     {
         std::cout << "Timestamp arrived, timestamp: " << entry.timestamp << std::endl;
     };
+	
 
-    for (int ii = 0; ii < 10000; ii++)
-    {
-        // 1. Make motion-tracking available
-        if (dev->supports(rs::capabilities::motion_events))
-        {
-            dev->enable_motion_tracking(motion_callback, timestamp_callback);
-        }
+	/// FIRMWARE TEST ///
 
-        // 2. Optional - configure motion module
-        //dev->set_options(mm_cfg_list.data(), mm_cfg_list.size(), mm_cfg_params.data());
+	FILE *f = fopen("c:\\temp\\firmware\\1.bin", "rb");
+	uint8_t firmware[65535];
+	uint32_t numRead = fread(firmware, 1, 65535, f);
+	fclose(f);
+	dev->send_blob_to_device(RS_BLOB_TYPE_MOTION_MODULE_FIRMWARE_UPDATE, firmware, numRead);
 
-        std::cout << "Motion module is " << (dev->get_option(rs::option::zr300_motion_module_active) ? " active" : " idle") << std::endl;
+	/// FIRMWARE TEST ///
 
-        // 3. Start generating motion-tracking data
-        dev->start(rs::source::motion_data);
-
-        for (int i = 0; i < 10; i++)
-        {
-            std::cout << "Motion module is " << (dev->get_option(rs::option::zr300_motion_module_active) ? " active" : " idle") << std::endl;
-            std::this_thread::sleep_for(std::chrono::milliseconds(100));
-        }
-
-        // 4. stop data acquisition
-        dev->stop(rs::source::motion_data);
-
-        // 5. reset previous settings formotion data handlers
-        dev->disable_motion_tracking();
-    }
-
-    return EXIT_SUCCESS;
-}
-catch(const rs::error & e)
-{
-    // Method calls against librealsense objects may throw exceptions of type rs::error
-    printf("rs::error was thrown when calling %s(%s):\n", e.get_failed_function().c_str(), e.get_failed_args().c_str());
-    printf("    %s\n", e.what());
-    return EXIT_FAILURE;
 }
 catch(...)
 {

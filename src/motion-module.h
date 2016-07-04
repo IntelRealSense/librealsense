@@ -49,6 +49,16 @@ namespace rsimpl
             mm_accel_range      accel_range;
             mm_accel_bandwidth  accel_bandwidth;
         };
+
+		#define FW_IMAGE_PACKET_PAYLOAD_LEN (128)
+
+		struct fw_image_packet {
+			uint8_t op_code;
+			uint32_t address;
+			uint16_t length;
+			uint8_t	dummy;
+			uint8_t	data[FW_IMAGE_PACKET_PAYLOAD_LEN];
+		};
 #pragma pack(pop)
 
         void config(uvc::device & device, uint8_t gyro_bw, uint8_t gyro_range, uint8_t accel_bw, uint8_t accel_range, uint32_t time_seed);
@@ -114,6 +124,11 @@ namespace rsimpl
             void toggle_motion_module_power(bool on);
             void toggle_motion_module_events(bool on);
 
+			int switch_to_iap();
+			int switch_to_operational();
+
+			int firmware_upgrade(void *data, int size);
+
         private:
             motion_module_control(void);
             motion_module_control(const motion_module_control&);
@@ -122,11 +137,57 @@ namespace rsimpl
             std::mutex mtx;
             bool    power_state;
 
+			void i2c_iap_write(uint16_t slave_address, uint8_t *buffer, uint16_t len);
+			void i2c_write_reg(uint16_t slave_address, uint16_t reg, uint32_t value);
+			void i2c_read_reg(uint16_t slave_address, uint16_t reg, uint32_t &value);
+
+			int write_firmware(uint8_t *data, int size);
+
             void impose(mm_request request, bool on);
             void enter_state(mm_state new_state);
             void set_control(mm_request request, bool on);
 
         };
+		enum i2c_register : uint32_t {
+			REG_UCTRL_CFG = 0x00,
+			REG_INT_ID_CONFIG = 0x04,
+			REG_INT_TYPE_CONFIG = 0x08,
+			REG_EEPROM_CMD = 0x0C,
+			REG_EEPROM_DATA = 0xD0,
+			REG_TIMER_PRESCALER = 0x14,
+			REG_TIMER_RESET_VALUE = 0x18,
+			REG_GYRO_BYPASS_CMD1 = 0x1C,
+			REG_GYRO_BYPASS_CMD2 = 0x20,
+			REG_GYRO_BYPASS_RDOUT1 = 0x24,
+			REG_GYRO_BYPASS_RDOUT2 = 0x28,
+			REG_ACC_BYPASS_CMD1 = 0x2C,
+			REG_ACC_BYPASS_CMD2 = 0x30,
+			REG_ACC_BYPASS_RDOUT1 = 0x34,
+			REG_ACC_BYPASS_RDOUT2 = 0x38,
+			REG_REQ_LTR = 0x3C,
+			REG_STATUS_REG = 0x40,
+			REG_FIFO_RD = 0x44,
+			REG_FIRST_INT_IGNORE = 0x48,
+			REG_IAP_REG = 0x4C,
+			REG_INT_ENABLE = 0x50,
+			REG_CURR_PWR_STATE = 0x54,
+			REG_NEXT_PWR_STATE = 0x58,
+			REG_ACC_BW = 0x5C,
+			REG_GYRO_BW = 0x60,
+			REG_ACC_RANGE = 0x64,
+			REG_GYRO_RANGE = 0x68,
+			REG_IMG_VER = 0x6C,
+			REG_ERROR = 0x70,
+			REG_JUMP_TO_APP = 0x77
+		};
+
+		enum power_states : uint32_t {
+			PWR_STATE_DNR = 0x00,
+			PWR_STATE_INIT = 0x02,
+			PWR_STATE_ACTIVE = 0x03,
+			PWR_STATE_PAUSE = 0x04,
+			PWR_STATE_IAP = 0x05
+		};
 
         enum adaptor_board_command : uint32_t
         {

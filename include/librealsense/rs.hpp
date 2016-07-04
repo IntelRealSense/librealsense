@@ -943,6 +943,13 @@ namespace rs
             error::handle(e);
             return r;
         }
+
+		void send_blob_to_device(const rs_blob_type type, void * data, int size)
+		{
+			rs_error * e = nullptr;
+			rs_send_blob_to_device((rs_device *)this, type, data, size, &e);
+			error::handle(e);
+		}
     };
 
     inline std::ostream & operator << (std::ostream & o, stream stream) { return o << rs_stream_to_string((rs_stream)stream); }
