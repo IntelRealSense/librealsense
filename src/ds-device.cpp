@@ -63,8 +63,8 @@ namespace rsimpl
                 // Disabling auto-setting controls, if needed
                 switch (options[i])
                 {
-                case RS_OPTION_COLOR_WHITE_BALANCE: disable_auto_option(get_device(), 2, RS_OPTION_COLOR_ENABLE_AUTO_WHITE_BALANCE); break;
-                case RS_OPTION_COLOR_EXPOSURE: disable_auto_option(get_device(), 2, RS_OPTION_COLOR_ENABLE_AUTO_EXPOSURE); break;
+                case RS_OPTION_COLOR_WHITE_BALANCE:     disable_auto_option( 2, RS_OPTION_COLOR_ENABLE_AUTO_WHITE_BALANCE); break;
+                case RS_OPTION_COLOR_EXPOSURE:          disable_auto_option( 2, RS_OPTION_COLOR_ENABLE_AUTO_EXPOSURE); break;
                 default:  break;
                 }
 
@@ -324,36 +324,35 @@ namespace rsimpl
         for(int i=0; i<RS_PRESET_COUNT; ++i)
             info.presets[RS_STREAM_INFRARED2][i] = info.presets[RS_STREAM_INFRARED][i];
 
-        info.options = {    // Option                               Min     Max         Step
-            {RS_OPTION_R200_LR_AUTO_EXPOSURE_ENABLED,                   0, 1,           1},
-            {RS_OPTION_R200_EMITTER_ENABLED,                            0, 1,           1},
-            {RS_OPTION_R200_DEPTH_UNITS,                                1, INT_MAX,     1}, // What is the real range?
-            {RS_OPTION_R200_DEPTH_CLAMP_MIN,                            0, USHRT_MAX,   1},
-            {RS_OPTION_R200_DEPTH_CLAMP_MAX,                            0, USHRT_MAX,   1},
-            {RS_OPTION_R200_DISPARITY_MULTIPLIER,                       1, 1000,        1},
-            {RS_OPTION_R200_DISPARITY_SHIFT,                            0, 512,         1},
+                                // Extended controls ranges cannot be retrieved from device, therefore the data is locally defined
+                                //Option                                                Min     Max Step      Default
+        info.options.push_back({ RS_OPTION_R200_LR_AUTO_EXPOSURE_ENABLED,               0,      1,      1,      0 });
+        info.options.push_back({ RS_OPTION_R200_EMITTER_ENABLED,                        0,      1,      1,      0 });
+        info.options.push_back({ RS_OPTION_R200_DEPTH_UNITS,                            0, INT_MAX,     1,      1000 });  // What is the real range?
+        info.options.push_back({ RS_OPTION_R200_DEPTH_CLAMP_MIN,                        0, USHRT_MAX,   1,      0 });
+        info.options.push_back({ RS_OPTION_R200_DEPTH_CLAMP_MAX,                        0, USHRT_MAX,   1,      USHRT_MAX });
+        info.options.push_back({ RS_OPTION_R200_DISPARITY_MULTIPLIER,                   1,      1000,    1,     32 });
+        info.options.push_back({ RS_OPTION_R200_DISPARITY_SHIFT,                        0,      1,      1,      0 });
+        info.options.push_back({ RS_OPTION_R200_AUTO_EXPOSURE_MEAN_INTENSITY_SET_POINT, 0,      4095,   0,      512 });
+        info.options.push_back({ RS_OPTION_R200_AUTO_EXPOSURE_BRIGHT_RATIO_SET_POINT,   0,      1,      0,      0.2 });
+        info.options.push_back({ RS_OPTION_R200_AUTO_EXPOSURE_KP_GAIN,                  0,      1000,   0,      0.002 });
+        info.options.push_back({ RS_OPTION_R200_AUTO_EXPOSURE_KP_EXPOSURE,              0,      1000,   0,      0.001 });
+        info.options.push_back({ RS_OPTION_R200_AUTO_EXPOSURE_KP_DARK_THRESHOLD,        0,      1000,   0,      10 });
+        info.options.push_back({ RS_OPTION_R200_AUTO_EXPOSURE_TOP_EDGE,                 0,  USHRT_MAX,  1,      0 });
+        info.options.push_back({ RS_OPTION_R200_AUTO_EXPOSURE_BOTTOM_EDGE,              0,  USHRT_MAX,  1,      479 });
+        info.options.push_back({ RS_OPTION_R200_AUTO_EXPOSURE_LEFT_EDGE,                0,  USHRT_MAX,  1,      0 });
+        info.options.push_back({ RS_OPTION_R200_AUTO_EXPOSURE_RIGHT_EDGE,               0,  USHRT_MAX,  1,      639 });
+        info.options.push_back({ RS_OPTION_R200_DEPTH_CONTROL_ESTIMATE_MEDIAN_DECREMENT, 0,     0xFF,   1,      5 });
+        info.options.push_back({ RS_OPTION_R200_DEPTH_CONTROL_ESTIMATE_MEDIAN_INCREMENT, 0,     0xFF,   1,      5 });
+        info.options.push_back({ RS_OPTION_R200_DEPTH_CONTROL_MEDIAN_THRESHOLD,         0,      0x3FF,  1,      0xc0 });
+        info.options.push_back({ RS_OPTION_R200_DEPTH_CONTROL_SCORE_MINIMUM_THRESHOLD,  0,      0x3FF,  1,      1 });
+        info.options.push_back({ RS_OPTION_R200_DEPTH_CONTROL_SCORE_MAXIMUM_THRESHOLD,  0,      0x3FF,  1,      0x200 });
+        info.options.push_back({ RS_OPTION_R200_DEPTH_CONTROL_TEXTURE_COUNT_THRESHOLD,  0,      0x1F,   1,      6 });
+        info.options.push_back({ RS_OPTION_R200_DEPTH_CONTROL_TEXTURE_DIFFERENCE_THRESHOLD, 0,  0x3FF,  1,      0x18 });
+        info.options.push_back({ RS_OPTION_R200_DEPTH_CONTROL_SECOND_PEAK_THRESHOLD,    0,      0x3FF,  1,      0x1b });
+        info.options.push_back({ RS_OPTION_R200_DEPTH_CONTROL_NEIGHBOR_THRESHOLD,       0,      0x3FF,  1,      0x7 });
+        info.options.push_back({ RS_OPTION_R200_DEPTH_CONTROL_LR_THRESHOLD,             0,      0x7FF,  1,      0x18 });
 
-            {RS_OPTION_R200_AUTO_EXPOSURE_MEAN_INTENSITY_SET_POINT,     0, 4095,        0},
-            {RS_OPTION_R200_AUTO_EXPOSURE_BRIGHT_RATIO_SET_POINT,       0, 1,           0},
-            {RS_OPTION_R200_AUTO_EXPOSURE_KP_GAIN,                      0, 1000,        0},
-            {RS_OPTION_R200_AUTO_EXPOSURE_KP_EXPOSURE,                  0, 1000,        0},
-            {RS_OPTION_R200_AUTO_EXPOSURE_KP_DARK_THRESHOLD,            0, 1000,        0},
-            {RS_OPTION_R200_AUTO_EXPOSURE_TOP_EDGE,                     0, USHRT_MAX,   1},
-            {RS_OPTION_R200_AUTO_EXPOSURE_BOTTOM_EDGE,                  0, USHRT_MAX,   1},
-            {RS_OPTION_R200_AUTO_EXPOSURE_LEFT_EDGE,                    0, USHRT_MAX,   1},
-            {RS_OPTION_R200_AUTO_EXPOSURE_RIGHT_EDGE,                   0, USHRT_MAX,   1},
-
-            {RS_OPTION_R200_DEPTH_CONTROL_ESTIMATE_MEDIAN_DECREMENT,    0, 0xFF,        1},
-            {RS_OPTION_R200_DEPTH_CONTROL_ESTIMATE_MEDIAN_INCREMENT,    0, 0xFF,        1},
-            {RS_OPTION_R200_DEPTH_CONTROL_MEDIAN_THRESHOLD,             0, 0x3FF,       1},
-            {RS_OPTION_R200_DEPTH_CONTROL_SCORE_MINIMUM_THRESHOLD,      0, 0x3FF,       1},
-            {RS_OPTION_R200_DEPTH_CONTROL_SCORE_MAXIMUM_THRESHOLD,      0, 0x3FF,       1},
-            {RS_OPTION_R200_DEPTH_CONTROL_TEXTURE_COUNT_THRESHOLD,      0, 0x1F,        1},
-            {RS_OPTION_R200_DEPTH_CONTROL_TEXTURE_DIFFERENCE_THRESHOLD, 0, 0x3FF,       1},
-            {RS_OPTION_R200_DEPTH_CONTROL_SECOND_PEAK_THRESHOLD,        0, 0x3FF,       1},
-            {RS_OPTION_R200_DEPTH_CONTROL_NEIGHBOR_THRESHOLD,           0, 0x3FF,       1},
-            {RS_OPTION_R200_DEPTH_CONTROL_LR_THRESHOLD,                 0, 0x7FF,       1}
-        };
 
         // We select the depth/left infrared camera's viewpoint to be the origin
         info.stream_poses[RS_STREAM_DEPTH] = {{{1,0,0},{0,1,0},{0,0,1}},{0,0,0}};
@@ -407,6 +406,15 @@ namespace rsimpl
             max = disc.max;
             step = 1;
             def = disc.default_value;
+            return;
+        }
+
+        // Exposure values converted from [0..3] to [0..1] range
+        if(option == RS_OPTION_COLOR_ENABLE_AUTO_EXPOSURE)
+        {
+            rs_device_base::get_option_range(option, min, max, step, def);
+            max = 1;
+            step = 1;
             return;
         }
 

@@ -88,8 +88,17 @@ namespace rsimpl
     {
         for (size_t i = 0; i < count; ++i)
         {
+
             if (uvc::is_pu_control(options[i]))
             {
+                // Disabling auto-setting controls, if needed
+                switch (options[i])
+                {
+                case RS_OPTION_COLOR_WHITE_BALANCE:     disable_auto_option( 0, RS_OPTION_COLOR_ENABLE_AUTO_WHITE_BALANCE); break;
+                case RS_OPTION_COLOR_EXPOSURE:          disable_auto_option( 0, RS_OPTION_COLOR_ENABLE_AUTO_EXPOSURE); break;
+                default:  break;
+                }
+
                 uvc::set_pu_control_with_retry(get_device(), 0, options[i], static_cast<int>(values[i]));
                 continue;
             }

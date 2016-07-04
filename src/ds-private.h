@@ -115,8 +115,6 @@ namespace rsimpl
         void get_register_value(uvc::device & device, uint32_t reg, uint32_t & value);
         void set_register_value(uvc::device & device, uint32_t reg, uint32_t value);
 
-        void disable_auto_option(uvc::device & device, int subdevice, rs_option auto_opt);
-
 
         inline uint32_t     get_depth_units             (const uvc::device & device) { return xu_read<uint32_t   >(device, lr_xu, control::depth_units); }
         inline range        get_min_max_depth           (const uvc::device & device) { return xu_read<range      >(device, lr_xu, control::min_max); }

@@ -595,7 +595,6 @@ namespace f200
     {
         return xu_write(device, IVCAM_DEPTH_DYNAMIC_FPS, &dynamic_fps, sizeof(dynamic_fps));
     }
-
 } // namespace f200
 namespace sr300 {
 

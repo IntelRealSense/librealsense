@@ -143,12 +143,6 @@ namespace rsimpl
 
         for(size_t i=0; i<count; ++i)
         {
-            if(uvc::is_pu_control(options[i]))
-            {
-                uvc::set_pu_control_with_retry(get_device(), 0, options[i], static_cast<int>(values[i]));
-                continue;
-            }
-
             switch(options[i])
             {
             case RS_OPTION_SR300_WAKEUP_DEV_RESET:    sr300::reset_wakeup_device(get_device(), usbMutex); break;

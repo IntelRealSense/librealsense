@@ -10,7 +10,6 @@
 
 #include <algorithm>
 #include <sstream>
-#include <iostream>
 
 using namespace rsimpl;
 using namespace rsimpl::motion_module;
@@ -427,6 +426,14 @@ void rs_device_base::get_option_range(rs_option option, double & min, double & m
     }
 
     throw std::logic_error("range not specified");
+}
+
+void rs_device_base::disable_auto_option(int subdevice, rs_option auto_opt)
+{
+    static const int reset_state = 0;
+    // Probe , then deactivate
+    if (uvc::get_pu_control(get_device(), subdevice, auto_opt))
+        uvc::set_pu_control(get_device(), subdevice, auto_opt, reset_state);
 }
 
 const char * rs_device_base::get_usb_port_id() const

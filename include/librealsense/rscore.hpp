@@ -21,7 +21,7 @@ struct rs_stream_interface
     virtual int                             get_framerate() const = 0;
 
     virtual int                             get_frame_number() const = 0;
-	virtual int                             get_frame_timestamp() const = 0;
+    virtual int                             get_frame_timestamp() const = 0;
     virtual long long                       get_frame_system_time() const = 0;
     virtual const uint8_t *                 get_frame_data() const = 0;
 
@@ -96,6 +96,7 @@ struct rs_device
                                             
     virtual bool                            supports_option(rs_option option) const = 0;
     virtual void                            get_option_range(rs_option option, double & min, double & max, double & step, double & def) = 0;
+    virtual void                            disable_auto_option(int subdevice, rs_option auto_opt) = 0;
     virtual void                            set_options(const rs_option options[], size_t count, const double values[]) = 0;
     virtual void                            get_options(const rs_option options[], size_t count, double values[]) = 0;
                                             
