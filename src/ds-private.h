@@ -6,7 +6,6 @@
 #define LIBREALSENSE_DS_PRIVATE_H
 
 #include "uvc.h"
-//#include <cstring>
 
 namespace rsimpl
 {
@@ -115,6 +114,8 @@ namespace rsimpl
 
         void get_register_value(uvc::device & device, uint32_t reg, uint32_t & value);
         void set_register_value(uvc::device & device, uint32_t reg, uint32_t value);
+
+        void disable_auto_option(uvc::device & device, int subdevice, rs_option auto_opt);
 
 
         inline uint32_t     get_depth_units             (const uvc::device & device) { return xu_read<uint32_t   >(device, lr_xu, control::depth_units); }

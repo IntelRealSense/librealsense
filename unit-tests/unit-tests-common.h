@@ -1,5 +1,8 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
+#pragma once
+#ifndef LIBREALSENSE_UNITTESTS_COMMON_H
+#define LIBREALSENSE_UNITTESTS_COMMON_H
 
 #include "catch/catch.hpp"
 #include <librealsense/rs.h>
@@ -25,15 +28,19 @@
 class require_error
 {
     std::string message;
+    bool validate_error_message;      // Messages content may vary , subject to backend selection
     rs_error * err;
 public:
-    require_error(std::string message) : message(move(message)), err() {}
+    require_error(std::string message,bool message_validation=true) : message(move(message)), validate_error_message(message_validation), err() {}
     require_error(const require_error &) = delete;
     ~require_error() NOEXCEPT_FALSE
     {
         assert(!std::uncaught_exception());
         REQUIRE(err != nullptr);
-        REQUIRE(rs_get_error_message(err) == std::string(message));
+        if (validate_error_message)
+        {
+            REQUIRE(rs_get_error_message(err) == std::string(message));
+        }
     }
     require_error &  operator = (const require_error &) = delete;
     operator rs_error ** () { return &err; }
@@ -192,7 +199,7 @@ inline void test_option(rs_device * device, rs_option option, std::initializer_l
     // Test reading the current value
     const auto first_value = rs_get_device_option(device, option, require_no_error());
     
-	// todo - Check that the first value is something sane?
+    // todo - Check that the first value is something sane?
 
     // Test setting good values, and that each value set can be subsequently get
     for(auto value : good_values)
@@ -205,7 +212,7 @@ inline void test_option(rs_device * device, rs_option option, std::initializer_l
     const auto last_good_value = rs_get_device_option(device, option, require_no_error());
     for(auto value : bad_values)
     {
-        rs_set_device_option(device, option, value, require_error("foo"));
+        rs_set_device_option(device, option, value, require_error("foo",false));
         REQUIRE( rs_get_device_option(device, option, require_no_error()) == last_good_value );
     }
 
@@ -213,3 +220,4 @@ inline void test_option(rs_device * device, rs_option option, std::initializer_l
     rs_set_device_option(device, option, first_value, require_no_error());
     REQUIRE( rs_get_device_option(device, option, require_no_error()) == first_value );
 }
+#endif

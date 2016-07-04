@@ -64,11 +64,11 @@ All RealSense™ cameras ship with proprietary firmware. This firmware is period
 
 | Camera | F/W |
 | ------ | --- |
-| R200 | 1.0.72.04 |
+| R200 | 1.0.72.06 |
 | F200 | 2.60.0.0 |
 | SR300 | 3.15.0.0 |
 | LR200 | 2.0.71.03 |
-| ZR300 | 2.0.71.07 |
+| ZR300 | 2.0.71.13 |
 
 # Installation Guide
 

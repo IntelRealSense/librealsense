@@ -337,7 +337,7 @@ void frame_archive::log_frame_callback_end(frame* frame)
 
     if (callback_duration > callback_warning_duration)
     {
-        LOG_WARNING("Frame Callback took to long to complete. (Duration: " << callback_duration << ", FPS: " << frame->additional_data.fps << ")");
+        LOG_WARNING("Frame Callback took too long to complete. (Duration: " << callback_duration << ", FPS: " << frame->additional_data.fps << ")");
     }
 
     LOG_DEBUG("CallbackFinished," 

@@ -6,7 +6,8 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\unit-tests\unit-tests-live.cpp" />
-    <ClCompile Include="..\..\unit-tests\unit-tests-live-r200.cpp" />
     <ClCompile Include="..\..\unit-tests\unit-tests-live-ds-common.cpp" />
+    <ClCompile Include="..\..\unit-tests\unit-tests-live-lr200.cpp" />
+    <ClCompile Include="..\..\unit-tests\unit-tests-live-zr300.cpp" />
   </ItemGroup>
 </Project>

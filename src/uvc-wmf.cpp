@@ -217,7 +217,7 @@ namespace rsimpl
             com_ptr<IMFActivate> mf_activate;
             com_ptr<IMFMediaSource> mf_media_source;
             com_ptr<IAMCameraControl> am_camera_control;
-            com_ptr<IAMVideoProcAmp> am_video_proc_amp;            
+            com_ptr<IAMVideoProcAmp> am_video_proc_amp;
             std::map<int, com_ptr<IKsControl>> ks_controls;
             com_ptr<IMFSourceReader> mf_source_reader;
             std::function<void(const void * frame, std::function<void()>)> callback;
@@ -1033,9 +1033,12 @@ namespace rsimpl
         int get_pu_control(const device & device, int subdevice, rs_option option)
         {
             auto & sub = device.subdevices[subdevice];
+            // first call to get_media_source is also initializing the am_camera_control pointer, required for this method
+            const_cast<uvc::subdevice &>(sub).get_media_source(); // initialize am_camera_control
             long value=0, flags=0;
             if (option == RS_OPTION_COLOR_EXPOSURE || option == RS_OPTION_FISHEYE_COLOR_EXPOSURE)
             {
+                // am_camera_control != null, becouse get_media_source was called at least once
                 check("IAMCameraControl::Get", sub.am_camera_control->Get(CameraControl_Exposure, &value, &flags));
                 return win_to_uvc_exposure(value);
             }

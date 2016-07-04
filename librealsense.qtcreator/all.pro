@@ -21,6 +21,8 @@ SUBDIRS += \
    ./cpp-headless.pro \
    ./cpp-stride.pro \
    ./unit-tests-live-r200.pro \
+   ./unit-tests-live-lr200.pro \
+   ./unit-tests-live-zr300.pro \
    ./unit-tests-live-f200.pro \
    ./unit-tests-live-sr300.pro \
    ./unit-tests-offline.pro

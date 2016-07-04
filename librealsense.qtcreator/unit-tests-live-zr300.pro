@@ -10,14 +10,15 @@ CONFIG += link_pkgconfig
 INCLUDEPATH += ../include
 LIBS += -pthread
 
-SOURCES += ../unit-tests/unit-tests-live-r200.cpp \
-    ../unit-tests/unit-tests-live-ds-common.cpp
-SOURCES += ../unit-tests/unit-tests-live.cpp
-SOURCES += ../unit-tests/unit-tests-common.h
-
 LIBS += -L$$DESTDIR/ -lrealsense
 
 PRE_TARGETDEPS += $$DESTDIR/librealsense.a
 
-HEADERS += \
+SOURCES += ../unit-tests/unit-tests-live-ds-common.cpp \
+    ../unit-tests/unit-tests-live.cpp \
+    ../unit-tests/unit-tests-live-zr300.cpp \
+    ../unit-tests/unit-tests-live-lr200.cpp
+
+HEADERS += ../unit-tests/unit-tests-common.h \
     ../unit-tests/unit-tests-live-ds-common.h
+

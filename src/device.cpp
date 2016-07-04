@@ -253,7 +253,6 @@ void rs_device_base::start_video_streaming()
             std::vector<byte *> dest;
 
             auto stride = mode_selection.get_stride();
-            archive->correct_timestamp();
 
             for (auto & output : mode_selection.get_outputs())
             {
@@ -277,6 +276,7 @@ void rs_device_base::start_video_streaming()
 
                 // Obtain buffers for unpacking the frame
                 dest.push_back(archive->alloc_frame(output.first, additional_data, requires_processing));
+                archive->correct_timestamp(output.first);
             }
             // Unpack the frame
             if (requires_processing)

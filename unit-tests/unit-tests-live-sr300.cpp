@@ -368,7 +368,7 @@ TEST_CASE( "SR300 supports RS_OPTION_F200_FILTER_OPTION", "[live] [sr300]" )
 
 TEST_CASE( "SR300 supports RS_OPTION_F200_CONFIDENCE_THRESHOLD", "[live] [sr300]" )
 {
-    test_sr300_option(RS_OPTION_F200_LASER_POWER, {0, 1, 2, 4, 8, 15}, AFTER_START_DEVICE);
+    test_sr300_option(RS_OPTION_F200_CONFIDENCE_THRESHOLD, {0, 1, 2, 4, 8, 15}, AFTER_START_DEVICE);
 }
 
 //////////////////////////////////////////

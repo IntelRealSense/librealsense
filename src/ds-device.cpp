@@ -58,8 +58,16 @@ namespace rsimpl
 
         for (size_t i = 0; i<count; ++i)
         {
-            if(uvc::is_pu_control(options[i]))
+            if (uvc::is_pu_control(options[i]))
             {
+                // Disabling auto-setting controls, if needed
+                switch (options[i])
+                {
+                case RS_OPTION_COLOR_WHITE_BALANCE: disable_auto_option(get_device(), 2, RS_OPTION_COLOR_ENABLE_AUTO_WHITE_BALANCE); break;
+                case RS_OPTION_COLOR_EXPOSURE: disable_auto_option(get_device(), 2, RS_OPTION_COLOR_ENABLE_AUTO_EXPOSURE); break;
+                default:  break;
+                }
+
                 uvc::set_pu_control_with_retry(get_device(), 2, options[i], static_cast<int>(values[i]));
                 continue;
             }
@@ -132,11 +140,8 @@ namespace rsimpl
             switch(options[i])
             {
 
-            //case RS_OPTION_FISHEYE_STROBE:             values[i] = r200::get_strobe            (get_device()); break;
-            //case RS_OPTION_FISHEYE_EXT_TRIG:           values[i] = r200::get_ext_trig          (get_device()); break;
-
             case RS_OPTION_R200_LR_AUTO_EXPOSURE_ENABLED:                   values[i] = ds::get_lr_exposure_mode(get_device()); break;
-            
+
             case RS_OPTION_R200_LR_GAIN: // Gain is framerate dependent
                 ds::set_lr_gain_discovery(get_device(), {get_lr_framerate()});
                 values[i] = ds::get_lr_gain(get_device()).value;
@@ -288,7 +293,7 @@ namespace rsimpl
 
         info.subdevice_modes.push_back({ 2,{ 1920, 1080 }, pf_yuy2, 15, c.intrinsicsThird[0],{ c.modesThird[0][0] },{ 0 } });
         info.subdevice_modes.push_back({ 2,{ 1920, 1080 }, pf_yuy2, 30, c.intrinsicsThird[0],{ c.modesThird[0][0] },{ 0 } });
-        info.subdevice_modes.push_back({ 2, {2400, 1081},  pf_rw10, 30, c.intrinsicsThird[0], {c.modesThird[0][0]}, {0}});
+
 
         // Set up interstream rules for left/right/z images
         for(auto ir : {RS_STREAM_INFRARED, RS_STREAM_INFRARED2})

@@ -2,9 +2,11 @@
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <ClInclude Include="..\..\unit-tests\unit-tests-common.h" />
+    <ClInclude Include="..\..\unit-tests\unit-tests-live-ds-common.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\unit-tests\unit-tests-live.cpp" />
     <ClCompile Include="..\..\unit-tests\unit-tests-live-r200.cpp" />
+    <ClCompile Include="..\..\unit-tests\unit-tests-live-ds-common.cpp" />
   </ItemGroup>
 </Project>

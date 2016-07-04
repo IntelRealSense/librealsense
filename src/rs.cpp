@@ -370,7 +370,7 @@ int rs_get_frame_timestamp(const rs_device * device, rs_stream stream, rs_error 
 {
     VALIDATE_NOT_NULL(device);
     VALIDATE_ENUM(stream);
-    return device->get_stream_interface(stream).get_frame_number();
+	return device->get_stream_interface(stream).get_frame_timestamp();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, device, stream)
 

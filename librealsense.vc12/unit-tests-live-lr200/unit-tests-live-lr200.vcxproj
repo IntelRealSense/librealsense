@@ -24,14 +24,14 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\unit-tests\unit-tests-live-ds-common.cpp" />
-    <ClCompile Include="..\..\unit-tests\unit-tests-live-r200.cpp" />
+    <ClCompile Include="..\..\unit-tests\unit-tests-live-lr200.cpp" />
     <ClCompile Include="..\..\unit-tests\unit-tests-live.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{7B497980-3BB8-4699-A459-0F3091D24E03}</ProjectGuid>
+    <ProjectGuid>{9D0CA8E1-96E2-4A56-9000-F52035256190}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>testliveds4</RootNamespace>
-    <ProjectName>unit-tests-live-r200</ProjectName>
+    <ProjectName>unit-tests-live-lr200</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">

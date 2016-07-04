@@ -128,15 +128,12 @@ void syncronizing_archive::flush()
     frame_archive::flush();
 }
 
-void syncronizing_archive::correct_timestamp()
+void syncronizing_archive::correct_timestamp(rs_stream stream)
 {
-    for(auto stream : {RS_STREAM_DEPTH, RS_STREAM_COLOR, RS_STREAM_INFRARED, RS_STREAM_INFRARED2, RS_STREAM_FISHEYE})
-    {
-        if (is_stream_enabled(stream))
+    if (is_stream_enabled(stream))
         {
             ts_corrector.correct_timestamp(backbuffer[stream], stream);
-        }    
-    }
+        }
 }
 
 void syncronizing_archive::on_timestamp(rs_timestamp_data data)
