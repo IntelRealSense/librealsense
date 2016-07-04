@@ -403,63 +403,63 @@ HANDLE_EXCEPTIONS_AND_RETURN(0, frame_set, stream)
 int rs_get_detached_frame_timestamp(const rs_frame_ref * frameset, rs_error ** error) try
 {
     VALIDATE_NOT_NULL(frameset);
-    return ((rsimpl::frame_archive::frame_ref*)frameset)->get_frame_timestamp();
+    return frameset->get_frame_timestamp();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, frameset)
 
 const void * rs_get_detached_frame_data(const rs_frame_ref * frameset, rs_error ** error) try
 {
     VALIDATE_NOT_NULL(frameset);
-    return ((rsimpl::frame_archive::frame_ref*)frameset)->get_frame_data();
+    return frameset->get_frame_data();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, frameset)
 
 int rs_get_detached_frame_width(const rs_frame_ref * frameset, rs_error ** error) try
 {
     VALIDATE_NOT_NULL(frameset);
-    return ((rsimpl::frame_archive::frame_ref*)frameset)->get_frame_width();
+    return frameset->get_frame_width();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, frameset)
 
 int rs_get_detached_frame_height(const rs_frame_ref * frameset, rs_error ** error) try
 {
     VALIDATE_NOT_NULL(frameset);
-    return ((rsimpl::frame_archive::frame_ref*)frameset)->get_frame_height();
+    return frameset->get_frame_height();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, frameset)
 
 int rs_get_detached_framerate(const rs_frame_ref * frameset, rs_error ** error) try
 {
     VALIDATE_NOT_NULL(frameset);
-    return ((rsimpl::frame_archive::frame_ref*)frameset)->get_frame_framerate();
+    return frameset->get_frame_framerate();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, frameset)
 
 int rs_get_detached_frame_stride(const rs_frame_ref * frameset, rs_error ** error) try
 {
     VALIDATE_NOT_NULL(frameset);
-    return ((rsimpl::frame_archive::frame_ref*)frameset)->get_frame_stride();
+    return frameset->get_frame_stride();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, frameset)
 
 float rs_get_detached_frame_bpp(const rs_frame_ref * frameset, rs_error ** error) try
 {
     VALIDATE_NOT_NULL(frameset);
-    return ((rsimpl::frame_archive::frame_ref*)frameset)->get_frame_bpp();
+    return frameset->get_frame_bpp();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, frameset)
 
 rs_format rs_get_detached_frame_format(const rs_frame_ref * frameset, rs_error ** error) try
 {
     VALIDATE_NOT_NULL(frameset);
-    return ((rsimpl::frame_archive::frame_ref*)frameset)->get_frame_format();
+    return frameset->get_frame_format();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(RS_FORMAT_ANY, frameset)
 
 rs_stream rs_get_detached_frame_stream_type(const rs_frame_ref * frameset, rs_error ** error) try
 {
-	VALIDATE_NOT_NULL(frameset);
-	return ((rsimpl::frame_archive::frame_ref*)frameset)->get_stream_type();
+    VALIDATE_NOT_NULL(frameset);
+    return frameset->get_stream_type();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(RS_STREAM_MAX_ENUM, frameset)
 
@@ -467,7 +467,7 @@ HANDLE_EXCEPTIONS_AND_RETURN(RS_STREAM_MAX_ENUM, frameset)
 int rs_get_detached_frame_number(const rs_frame_ref * frame, rs_error ** error) try
 {
     VALIDATE_NOT_NULL(frame);
-    return ((rsimpl::frame_archive::frame_ref*)frame)->get_frame_number();
+    return frame->get_frame_number();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, frame)
 
