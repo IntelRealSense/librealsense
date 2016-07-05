@@ -775,7 +775,7 @@ namespace rs
         void start(rs::source source = rs::source::video)
         {            
             rs_error * e = nullptr;
-            rs_start_device((rs_device *)this, (rs_source)source, &e);
+            rs_start_source((rs_device *)this, (rs_source)source, &e);
             error::handle(e);
         }
 
@@ -784,7 +784,7 @@ namespace rs
         void stop(rs::source source = rs::source::video)
         {
             rs_error * e = nullptr;
-            rs_stop_device((rs_device *)this, (rs_source)source, &e);
+            rs_stop_source((rs_device *)this, (rs_source)source, &e);
             error::handle(e);
         }
 
@@ -803,10 +803,23 @@ namespace rs
         /// \param[out] min    the minimum value which will be accepted for this option
         /// \param[out] max    the maximum value which will be accepted for this option
         /// \param[out] step   the granularity of options which accept discrete values, or zero if the option accepts continuous values
+        void get_option_range(option option, double & min, double & max, double & step)
+        {
+            rs_error * e = nullptr;
+            rs_get_device_option_range((rs_device *)this, (rs_option)option, &min, &max, &step, &e);
+            error::handle(e);
+        }
+
+        /// retrieve the available range of values of a supported option
+        /// \param[in] option  the option whose range should be queried
+        /// \param[out] min    the minimum value which will be accepted for this option
+        /// \param[out] max    the maximum value which will be accepted for this option
+        /// \param[out] step   the granularity of options which accept discrete values, or zero if the option accepts continuous values
+        /// \param[out] def    the default value of the option
         void get_option_range(option option, double & min, double & max, double & step, double & def)
         {
             rs_error * e = nullptr;
-            rs_get_device_option_range((rs_device *)this, (rs_option)option, &min, &max, &step, &def, &e);
+            rs_get_device_option_range_ex((rs_device *)this, (rs_option)option, &min, &max, &step, &def, &e);
             error::handle(e);
         }
 
@@ -982,5 +995,6 @@ namespace rs
     // Additional utilities
     inline void apply_depth_control_preset(device * device, int preset) { rs_apply_depth_control_preset((rs_device *)device, preset); }
     inline void apply_ivcam_preset(device * device, rs_ivcam_preset preset) { rs_apply_ivcam_preset((rs_device *)device, preset); }
+    inline void apply_ivcam_preset(device * device, int preset) { rs_apply_ivcam_preset((rs_device *)device, (rs_ivcam_preset)preset); }
 }
 #endif

@@ -297,21 +297,35 @@ int rs_is_motion_tracking_active(rs_device * device, rs_error ** error) try
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, device)
 
-void rs_start_device(rs_device * device, rs_source source, rs_error ** error) try
+void rs_start_device(rs_device * device, rs_error ** error) try
+{
+    VALIDATE_NOT_NULL(device); 
+    device->start(rs_source::RS_SOURCE_VIDEO);
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, device)
+
+void rs_start_source(rs_device * device, rs_source source, rs_error ** error) try
 {
     VALIDATE_NOT_NULL(device); 
     VALIDATE_ENUM(source);
     device->start(source);
 }
-HANDLE_EXCEPTIONS_AND_RETURN(, device,source)
+HANDLE_EXCEPTIONS_AND_RETURN(, device, source)
 
-void rs_stop_device(rs_device * device, rs_source source, rs_error ** error) try
+void rs_stop_device(rs_device * device, rs_error ** error) try
+{
+    VALIDATE_NOT_NULL(device);
+    device->stop(rs_source::RS_SOURCE_VIDEO);
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, device)
+
+void rs_stop_source(rs_device * device, rs_source source, rs_error ** error) try
 {
     VALIDATE_NOT_NULL(device);
     VALIDATE_ENUM(source);
     device->stop(source);
 }
-HANDLE_EXCEPTIONS_AND_RETURN(, device,source)
+HANDLE_EXCEPTIONS_AND_RETURN(, device, source)
 
 int rs_is_device_streaming(const rs_device * device, rs_error ** error) try
 {
@@ -561,7 +575,17 @@ const char * rs_get_event_name(rs_event_source event, rs_error ** error) try
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, event)
 
 
-void rs_get_device_option_range(rs_device * device, rs_option option, double * min, double * max, double * step, double * def, rs_error ** error) try
+void rs_get_device_option_range(rs_device * device, rs_option option, double * min, double * max, double * step, rs_error ** error) try
+{
+    VALIDATE_NOT_NULL(device);
+    VALIDATE_ENUM(option);
+    double x = 0; // Prevent internal code from having to worry about whether nulls are passed in for min/max/step by giving it somewhere to write to
+    double def = 0;
+    device->get_option_range(option, min ? *min : x, max ? *max : x, step ? *step : x, def);
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, device, option, min, max, step)
+
+void rs_get_device_option_range_ex(rs_device * device, rs_option option, double * min, double * max, double * step, double * def, rs_error ** error) try
 {
     VALIDATE_NOT_NULL(device);
     VALIDATE_ENUM(option);
@@ -581,7 +605,7 @@ void rs_reset_device_options_to_default(rs_device * device, const rs_option* opt
     for (int i = 0; i < count; ++i)
     {
         double def;
-        rs_get_device_option_range(device, options[i], NULL, NULL, NULL, &def, 0);
+        rs_get_device_option_range_ex(device, options[i], NULL, NULL, NULL, &def, 0);
         values.push_back(def);
     }
     device->set_options(options, count, values.data());

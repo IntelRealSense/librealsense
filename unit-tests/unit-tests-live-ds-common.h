@@ -53,7 +53,7 @@ inline void test_ds_device_option(rs_option option, std::initializer_list<int> v
     if (when & AFTER_START_DEVICE)
     {
         rs_enable_stream_preset(dev, RS_STREAM_DEPTH, RS_PRESET_BEST_QUALITY, require_no_error());
-        rs_start_device(dev, rs_source::RS_SOURCE_VIDEO, require_no_error());
+        rs_start_device(dev, require_no_error());
 
         // Currently, setting/getting options immediately after streaming frequently raises hardware errors
         // todo - Internally block or retry failed calls within the first few seconds after streaming

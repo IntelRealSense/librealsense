@@ -488,17 +488,29 @@ int rs_is_motion_tracking_active(rs_device * device, rs_error ** error);
 
 /**
  * begin streaming on all enabled streams for this device
+ * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+ */
+void rs_start_device(rs_device * device, rs_error ** error);
+
+/**
+ * end data acquisition for the specified source providers
+ * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+ */
+void rs_stop_device(rs_device * device, rs_error ** error);
+
+/**
+ * begin streaming on all enabled streams for this device
  * \param[in] source  the data source to be activated
  * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
  */
-void rs_start_device(rs_device * device, rs_source source, rs_error ** error);
+void rs_start_source(rs_device * device, rs_source source, rs_error ** error);
 
 /**
  * end data acquisition for the specified source providers
  * \param[in] source  the data source to be terminated
  * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
  */
-void rs_stop_device(rs_device * device, rs_source source, rs_error ** error);
+void rs_stop_source(rs_device * device, rs_source source, rs_error ** error);
 
 /**
  * determine if the device is currently streaming
@@ -515,7 +527,18 @@ int rs_is_device_streaming(const rs_device * device, rs_error ** error);
  * \param[out] step   the granularity of options which accept discrete values, or zero if the option accepts continuous values
  * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
  */
-void rs_get_device_option_range(rs_device * device, rs_option option, double * min, double * max, double * step,double * def, rs_error ** error);
+void rs_get_device_option_range(rs_device * device, rs_option option, double * min, double * max, double * step, rs_error ** error);
+
+/**
+ * retrieve the available range of values of a supported option
+ * \param[in] option  the option whose range should be queried
+ * \param[out] min    the minimum value which will be accepted for this option
+ * \param[out] max    the maximum value which will be accepted for this option
+ * \param[out] step   the granularity of options which accept discrete values, or zero if the option accepts continuous values
+ * \param[out] def    the default value of the option
+ * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+ */
+void rs_get_device_option_range_ex(rs_device * device, rs_option option, double * min, double * max, double * step, double * def, rs_error ** error);
 
 /**
  * efficiently retrieve the value of an arbitrary number of options, using minimal hardware IO

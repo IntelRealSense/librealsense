@@ -513,7 +513,7 @@ TEST_CASE("DS-device emitter defaults to off if depth is not enabled/streamed", 
     REQUIRE(rs_get_device_option(dev, RS_OPTION_R200_EMITTER_ENABLED, require_no_error()) == 0);
 
     // Starting the device does not change the emitter's state
-    rs_start_device(dev, rs_source::RS_SOURCE_VIDEO, require_no_error());
+    rs_start_device(dev, require_no_error());
     std::this_thread::sleep_for(std::chrono::seconds(1));
     REQUIRE(rs_get_device_option(dev, RS_OPTION_R200_EMITTER_ENABLED, require_no_error()) == 0);
 }
@@ -535,7 +535,7 @@ TEST_CASE("DS-device emitter defaults to on if depth is enabled/streamed", "[liv
     REQUIRE(rs_get_device_option(dev, RS_OPTION_R200_EMITTER_ENABLED, require_no_error()) == 1);
 
     // Starting the device does not change the emitter's state
-    rs_start_device(dev, rs_source::RS_SOURCE_VIDEO, require_no_error());
+    rs_start_device(dev, require_no_error());
     std::this_thread::sleep_for(std::chrono::seconds(1));
     REQUIRE(rs_get_device_option(dev, RS_OPTION_R200_EMITTER_ENABLED, require_no_error()) == 1);
 }
@@ -563,7 +563,7 @@ TEST_CASE("DS-device emitter can be enabled even if depth is not enabled/streame
     REQUIRE(rs_get_device_option(dev, RS_OPTION_R200_EMITTER_ENABLED, require_no_error()) == 1);
 
     // Starting the device does not change the emitter's state
-    rs_start_device(dev, rs_source::RS_SOURCE_VIDEO, require_no_error());
+    rs_start_device(dev, require_no_error());
     std::this_thread::sleep_for(std::chrono::seconds(1));
     REQUIRE(rs_get_device_option(dev, RS_OPTION_R200_EMITTER_ENABLED, require_no_error()) == 1);
 }
@@ -589,7 +589,7 @@ TEST_CASE("DS-device emitter can be turned off even if depth is enabled/streamed
     REQUIRE(rs_get_device_option(dev, RS_OPTION_R200_EMITTER_ENABLED, require_no_error()) == 0);
 
     // Starting the device does not change the emitter's state
-    rs_start_device(dev, rs_source::RS_SOURCE_VIDEO, require_no_error());
+    rs_start_device(dev, require_no_error());
     std::this_thread::sleep_for(std::chrono::seconds(1));
     REQUIRE(rs_get_device_option(dev, RS_OPTION_R200_EMITTER_ENABLED, require_no_error()) == 0);
 }
@@ -605,7 +605,7 @@ TEST_CASE("DS-device emitter can be turned on and off after streaming has begun"
 
     // The emitter defaults to on when depth is streamed
     rs_enable_stream_preset(dev, RS_STREAM_DEPTH, RS_PRESET_BEST_QUALITY, require_no_error());
-    rs_start_device(dev, rs_source::RS_SOURCE_VIDEO, require_no_error());
+    rs_start_device(dev, require_no_error());
     std::this_thread::sleep_for(std::chrono::seconds(1));
     REQUIRE(rs_get_device_option(dev, RS_OPTION_R200_EMITTER_ENABLED, require_no_error()) == 1);
 
