@@ -9,6 +9,8 @@
 #include <algorithm>
 #include <array>
 
+const char * unknown = "UNKNOWN";
+
 namespace rsimpl
 {
     const char * get_string(rs_stream value)
@@ -28,7 +30,7 @@ namespace rsimpl
         CASE(INFRARED2_ALIGNED_TO_DEPTH)
         CASE(DEPTH_ALIGNED_TO_INFRARED2)
         CASE(FISHEYE)
-        default: assert(!is_valid(value)); return nullptr;
+        default: assert(!is_valid(value)); return unknown;
         }
         #undef CASE
     }
@@ -52,7 +54,7 @@ namespace rsimpl
         CASE(RAW10)
         CASE(RAW16)
         CASE(RAW8)
-        default: assert(!is_valid(value)); return nullptr;
+		default: assert(!is_valid(value)); return unknown;
         }
         #undef CASE
     }
@@ -65,7 +67,7 @@ namespace rsimpl
         CASE(BEST_QUALITY)
         CASE(LARGEST_IMAGE)
         CASE(HIGHEST_FRAMERATE)
-        default: assert(!is_valid(value)); return nullptr;
+		default: assert(!is_valid(value)); return unknown;
         }
         #undef CASE
     }
@@ -78,7 +80,7 @@ namespace rsimpl
         CASE(NONE)
         CASE(MODIFIED_BROWN_CONRADY)
         CASE(INVERSE_BROWN_CONRADY)
-        default: assert(!is_valid(value)); return nullptr;
+		default: assert(!is_valid(value)); return unknown;
         }
         #undef CASE
     }
@@ -161,7 +163,7 @@ namespace rsimpl
         CASE(FISHEYE_COLOR_GAIN)
         CASE(FISHEYE_STROBE)
         CASE(FISHEYE_EXT_TRIG)
-        default: assert(!is_valid(value)); return nullptr;
+		default: assert(!is_valid(value)); return unknown;
         }
         #undef CASE
     }
@@ -174,7 +176,7 @@ namespace rsimpl
         CASE(VIDEO)
         CASE(MOTION_TRACKING)
         CASE(ALL)
-        default: assert(!is_valid(value)); return nullptr;
+		default: assert(!is_valid(value)); return unknown;
         }
         #undef CASE
     }
@@ -190,7 +192,7 @@ namespace rsimpl
         CASE(INFRARED2)
         CASE(FISH_EYE)
         CASE(MOTION_EVENTS)
-        default: assert(!is_valid(value)); return nullptr;
+		default: assert(!is_valid(value)); return unknown;
         }
         #undef CASE
     }
@@ -207,7 +209,7 @@ namespace rsimpl
         CASE(G0_SYNC)
         CASE(G1_SYNC)
         CASE(G2_SYNC)
-        default: assert(!is_valid(value)); return nullptr;
+		default: assert(!is_valid(value)); return unknown;
         }
         #undef CASE
     }

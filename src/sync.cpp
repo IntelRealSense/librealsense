@@ -194,6 +194,14 @@ void syncronizing_archive::cull_frames()
 // Move a single frame from the head of the queue to the front buffer, while recycling the front buffer into the freelist
 void syncronizing_archive::dequeue_frame(rs_stream stream)
 {
+    auto & frame = frames[stream].front();
+    
+    // Log callback started
+    auto callback_start_time = std::chrono::high_resolution_clock::now();
+    frame.update_frame_callback_start_ts(callback_start_time);
+    auto ts = std::chrono::duration_cast<std::chrono::milliseconds>(callback_start_time - capture_started).count();
+    LOG_DEBUG("CallbackStarted," << rsimpl::get_string(frame.get_stream_type()) << "," << frame.get_frame_number() << ",DispatchedAt," << ts);
+
     frontbuffer.place_frame(stream, std::move(frames[stream].front())); // the frame will move to free list once there are no external references to it
     frames[stream].erase(begin(frames[stream]));
 }
