@@ -93,6 +93,7 @@ namespace rsimpl
             float get_bpp()const;
             rs_format get_format()const;
             rs_stream get_stream_type() const override;
+
             std::chrono::high_resolution_clock::time_point get_frame_callback_start_time_point() const;
             void update_frame_callback_start_ts(std::chrono::high_resolution_clock::time_point ts);
 
@@ -192,12 +193,12 @@ namespace rsimpl
         small_heap<frameset, RS_USER_QUEUE_SIZE> published_sets;
         small_heap<frame_ref, RS_USER_QUEUE_SIZE> detached_refs;
         
-        std::chrono::high_resolution_clock::time_point capture_started;
 
     protected:
         frame backbuffer[RS_STREAM_NATIVE_COUNT]; // recieve frame here
         std::vector<frame> freelist; // return frames here
         std::recursive_mutex mutex;
+        std::chrono::high_resolution_clock::time_point capture_started;
 
     public:
         frame_archive(const std::vector<subdevice_mode_selection> & selection, std::chrono::high_resolution_clock::time_point capture_started = std::chrono::high_resolution_clock::now());
