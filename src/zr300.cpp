@@ -7,7 +7,7 @@
 #include "image.h"
 #include "ds-private.h"
 #include "zr300.h"
-#include <Shlwapi.h>
+
 
 using namespace rsimpl;
 using namespace rsimpl::ds;
@@ -147,7 +147,7 @@ namespace rsimpl
         if ((supports(rs_capabilities::RS_CAPABILITIES_FISH_EYE)) && ((config.requests[RS_STREAM_FISHEYE].enabled)))
             toggle_motion_module_power(true);
 
-        Sleep(300); // Added delay between MM power on and MM start commands to be sure that the MM will be ready untill start polling events. 
+        std::this_thread::sleep_for(std::chrono::milliseconds(300)); // Added delay between MM power on and MM start commands to be sure that the MM will be ready untill start polling events. 
         rs_device_base::start(source);
     }
 
@@ -186,7 +186,7 @@ namespace rsimpl
             for(const auto & output : m.get_outputs())
             {
                 fps[output.first] = m.mode.fps;
-                max_fps = max(max_fps, m.mode.fps);
+                max_fps = std::max(max_fps, m.mode.fps);
             }
         }
 

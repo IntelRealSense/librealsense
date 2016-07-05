@@ -599,10 +599,11 @@ namespace rsimpl
             default: throw std::runtime_error(to_string() << "no v4l2 cid for option " << option);
             }
         }
-        
+
         void set_pu_control(device & device, int subdevice, rs_option option, int value)
         {
             struct v4l2_control control = {get_cid(option), value};
+            if (RS_OPTION_COLOR_ENABLE_AUTO_EXPOSURE==option) { control.value = value ? V4L2_EXPOSURE_APERTURE_PRIORITY : V4L2_EXPOSURE_MANUAL; }
             if (xioctl(device.subdevices[subdevice]->fd, VIDIOC_S_CTRL, &control) < 0) throw_error("VIDIOC_S_CTRL");
         }
 
@@ -610,11 +611,22 @@ namespace rsimpl
         {
             struct v4l2_control control = {get_cid(option)};
             if (xioctl(device.subdevices[subdevice]->fd, VIDIOC_G_CTRL, &control) < 0) throw_error("VIDIOC_G_CTRL");
+            if (RS_OPTION_COLOR_ENABLE_AUTO_EXPOSURE==option)  { control.value = (V4L2_EXPOSURE_MANUAL==control.value) ? 0 : 1; }
             return control.value;
         }
 
         void get_pu_control_range(const device & device, int subdevice, rs_option option, int * min, int * max, int * step, int * def)
         {
+            // Auto controls range is trimed to {0,1} range
+            if(option >= RS_OPTION_COLOR_ENABLE_AUTO_EXPOSURE && option <= RS_OPTION_COLOR_ENABLE_AUTO_WHITE_BALANCE)
+            {
+                if(min)  *min  = 0;
+                if(max)  *max  = 1;
+                if(step) *step = 1;
+                if(def)  *def  = 1;
+                return;
+            }
+
             struct v4l2_queryctrl query = {};
             query.id = get_cid(option);
             if (xioctl(device.subdevices[subdevice]->fd, VIDIOC_QUERYCTRL, &query) < 0)

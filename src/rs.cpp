@@ -370,7 +370,7 @@ int rs_get_frame_timestamp(const rs_device * device, rs_stream stream, rs_error 
 {
     VALIDATE_NOT_NULL(device);
     VALIDATE_ENUM(stream);
-	return device->get_stream_interface(stream).get_frame_timestamp();
+    return device->get_stream_interface(stream).get_frame_timestamp();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, device, stream)
 
@@ -565,7 +565,7 @@ void rs_get_device_option_range(rs_device * device, rs_option option, double * m
 {
     VALIDATE_NOT_NULL(device);
     VALIDATE_ENUM(option);
-	double x = 0; // Prevent internal code from having to worry about whether nulls are passed in for min/max/step by giving it somewhere to write to
+    double x = 0; // Prevent internal code from having to worry about whether nulls are passed in for min/max/step by giving it somewhere to write to
     device->get_option_range(option, min ? *min : x, max ? *max : x, step ? *step : x, def ? *def : x);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, device, option, min, max, step)

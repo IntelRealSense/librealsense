@@ -73,6 +73,8 @@ protected:
     virtual void                                start_motion_tracking();
     virtual void                                stop_motion_tracking();
 
+    virtual void                                disable_auto_option(int subdevice, rs_option auto_opt);
+
 public:
                                                 rs_device_base(std::shared_ptr<rsimpl::uvc::device> device, const rsimpl::static_device_info & info);
                                                 virtual ~rs_device_base();
