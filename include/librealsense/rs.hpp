@@ -352,7 +352,7 @@ namespace rs
 
         /// retrieve the time at which the TODO on a stream was captured
         /// \return            the timestamp of the frame, in milliseconds since the device was started
-        int get_timestamp() const
+        double get_timestamp() const
         {
             rs_error * e = nullptr;
             auto r = rs_get_detached_frame_timestamp(frame_ref, &e);
@@ -424,13 +424,13 @@ namespace rs
             return static_cast<format>(r);
         }
 
-		stream get_stream_type()
-		{
-			rs_error * e = nullptr;
-			auto s = rs_get_detached_frame_stream_type(frame_ref, &e);
-			error::handle(e);
-			return static_cast<stream>(s);
-		}
+        stream get_stream_type()
+        {
+            rs_error * e = nullptr;
+            auto s = rs_get_detached_frame_stream_type(frame_ref, &e);
+            error::handle(e);
+            return static_cast<stream>(s);
+        }
     };
 
     class frameset
@@ -927,7 +927,7 @@ namespace rs
         /// retrieve the time at which the latest frame on a stream was captured
         /// \param[in] stream  the stream whose latest frame we are interested in
         /// \return            the timestamp of the frame, in milliseconds since the device was started
-        int get_frame_timestamp(stream stream) const
+        double get_frame_timestamp(stream stream) const
         {
             rs_error * e = nullptr;
             auto r = rs_get_frame_timestamp((const rs_device *)this, (rs_stream)stream, &e);

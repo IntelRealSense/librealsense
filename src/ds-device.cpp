@@ -504,7 +504,7 @@ namespace rsimpl
              return fixed_counter;
          }
 
-        int get_frame_timestamp(const subdevice_mode & mode, const void * frame) override 
+        double get_frame_timestamp(const subdevice_mode & mode, const void * frame) override
         { 
             int frame_number = 0;
             if (mode.subdevice == 3) // Fisheye
@@ -553,7 +553,7 @@ namespace rsimpl
         serial_timestamp_generator(int fps) : fps(fps), serial_frame_number() {}
 
         bool validate_frame(const subdevice_mode & mode, const void * frame) const override { return true; }
-        int get_frame_timestamp(const subdevice_mode &, const void *) override 
+        double get_frame_timestamp(const subdevice_mode &, const void *) override
         { 
             ++serial_frame_number;
             return serial_frame_number * 1000 / fps;

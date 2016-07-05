@@ -21,7 +21,7 @@ struct rs_stream_interface
     virtual int                             get_framerate() const = 0;
 
     virtual int                             get_frame_number() const = 0;
-    virtual int                             get_frame_timestamp() const = 0;
+    virtual double                          get_frame_timestamp() const = 0;
     virtual long long                       get_frame_system_time() const = 0;
     virtual const uint8_t *                 get_frame_data() const = 0;
 
@@ -35,7 +35,7 @@ struct rs_frame_ref
 {
     virtual                                 ~rs_frame_ref() {}
     virtual const uint8_t*                  get_frame_data() const = 0;
-    virtual int                             get_frame_timestamp() const = 0;
+    virtual double                          get_frame_timestamp() const = 0;
     virtual int                             get_frame_number() const = 0;
     virtual long long                       get_frame_system_time() const = 0;
     virtual int                             get_frame_width() const = 0;

@@ -170,7 +170,7 @@ namespace rsimpl
             return false;
         }
 
-        int get_frame_timestamp(const subdevice_mode & mode, const void * frame) override
+        double get_frame_timestamp(const subdevice_mode & mode, const void * frame) override
         {
             // Timestamps are encoded within the first 32 bits of the image
             int rolling_timestamp = *reinterpret_cast<const int32_t *>(frame);
