@@ -25,14 +25,6 @@ TEST_CASE( "R200 streams HD Raw10", "[live] [r200] [one-camera]" )
 
 TEST_CASE("R200 Testing RGB Exposure values", "[live] [DS-device] [one-camera]")
 {
-    // The formula is 2^(exposure [-8..-4]) / 10000
-    SECTION("Testing without Streaming")
-    {
-        test_ds_device_option(RS_OPTION_COLOR_EXPOSURE, { 39, 78, 156, 313, 625 }, {}, BEFORE_START_DEVICE);
-    }
-
-    SECTION("Testing while Streaming")
-    {
-        test_ds_device_option(RS_OPTION_COLOR_EXPOSURE, { 39, 78, 156, 313, 625 }, {}, AFTER_START_DEVICE);
-    }
+    // The logarithmic range is [-13:1:-4]
+    test_ds_device_option(RS_OPTION_COLOR_EXPOSURE, { -13, -9, -4, -6, -10 }, {}, BEFORE_START_DEVICE | AFTER_START_DEVICE);
 }

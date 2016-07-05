@@ -17,6 +17,6 @@ TEST_CASE("Streams COLOR HD 1920X1080  Raw16 30FPS", "[live] [lr200] [one-camera
 
 TEST_CASE("LR200 Testing RGB Exposure values", "[live] [DS-device] [one-camera]")
 {
-    // the range is [50:1:666]
-    test_ds_device_option(RS_OPTION_COLOR_EXPOSURE, { 50, 100, 245, 511, 666 }, {}, BEFORE_START_DEVICE | AFTER_START_DEVICE);
+    // the range is [-8:1:-4]
+    test_ds_device_option(RS_OPTION_COLOR_EXPOSURE, { -8, -7, -6, -5, -4 }, {}, BEFORE_START_DEVICE | AFTER_START_DEVICE);
 }

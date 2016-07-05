@@ -73,6 +73,8 @@ protected:
     virtual void                                start_motion_tracking();
     virtual void                                stop_motion_tracking();
 
+    virtual void                                disable_auto_option(int subdevice, rs_option auto_opt);
+
 public:
                                                 rs_device_base(std::shared_ptr<rsimpl::uvc::device> device, const rsimpl::static_device_info & info);
                                                 virtual ~rs_device_base();
@@ -116,7 +118,6 @@ public:
 
     virtual bool                                supports_option(rs_option option) const override;
     virtual void                                get_option_range(rs_option option, double & min, double & max, double & step, double & def) override;
-    virtual void                                disable_auto_option(int subdevice, rs_option auto_opt) override;
 
     virtual void                                on_before_start(const std::vector<rsimpl::subdevice_mode_selection> & selected_modes) = 0;
     virtual rs_stream                           select_key_stream(const std::vector<rsimpl::subdevice_mode_selection> & selected_modes) = 0;

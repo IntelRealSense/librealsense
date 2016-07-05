@@ -96,7 +96,6 @@ struct rs_device
                                             
     virtual bool                            supports_option(rs_option option) const = 0;
     virtual void                            get_option_range(rs_option option, double & min, double & max, double & step, double & def) = 0;
-    virtual void                            disable_auto_option(int subdevice, rs_option auto_opt) = 0;
     virtual void                            set_options(const rs_option options[], size_t count, const double values[]) = 0;
     virtual void                            get_options(const rs_option options[], size_t count, double values[]) = 0;
                                             
