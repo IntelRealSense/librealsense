@@ -27,7 +27,7 @@ const byte * syncronizing_archive::get_frame_data(rs_stream stream) const
     return frontbuffer.get_frame_data(stream);
 }
 
-int syncronizing_archive::get_frame_timestamp(rs_stream stream) const
+double syncronizing_archive::get_frame_timestamp(rs_stream stream) const
 {
     return frontbuffer.get_frame_timestamp(stream);
 }
@@ -161,7 +161,7 @@ void syncronizing_archive::cull_frames()
     while(true)
     {
         if(frames[key_stream].size() < 2) break;
-        const int t0 = frames[key_stream][0].additional_data.timestamp, t1 = frames[key_stream][1].additional_data.timestamp;
+        const double t0 = frames[key_stream][0].additional_data.timestamp, t1 = frames[key_stream][1].additional_data.timestamp;
 
         bool valid_to_skip = true;
         for(auto s : other_streams)
@@ -183,7 +183,7 @@ void syncronizing_archive::cull_frames()
         while(true)
         {
             if(frames[s].size() < 2) break;
-            const int t0 = frames[s][0].additional_data.timestamp, t1 = frames[s][1].additional_data.timestamp;
+            const double t0 = frames[s][0].additional_data.timestamp, t1 = frames[s][1].additional_data.timestamp;
 
             if (abs(t0 - frames[key_stream].front().additional_data.timestamp) < abs(t1 - frames[key_stream].front().additional_data.timestamp)) break;
             discard_frame(s);

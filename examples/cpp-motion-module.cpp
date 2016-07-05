@@ -56,6 +56,8 @@ int main() try
 
     for (int ii = 0; ii < 10000; ii++)
     {
+        std::cout << "\n\n\n\nIteration " << ii << " has started\n\n\n\n" << std::endl;
+
         // 1. Make motion-tracking available
         if (dev->supports(rs::capabilities::motion_events))
         {
@@ -73,7 +75,7 @@ int main() try
         for (int i = 0; i < 10; i++)
         {
             std::cout << "Motion module is " << (dev->get_option(rs::option::zr300_motion_module_active) ? " active" : " idle") << std::endl;
-            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            std::this_thread::sleep_for(std::chrono::milliseconds(200));
         }
 
         // 4. stop data acquisition

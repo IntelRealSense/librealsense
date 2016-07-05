@@ -366,7 +366,7 @@ int rs_poll_for_frames_safe(rs_device * device, rs_frameset** frameset, rs_error
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, device, frameset)
 
-int rs_get_frame_timestamp(const rs_device * device, rs_stream stream, rs_error ** error) try
+double rs_get_frame_timestamp(const rs_device * device, rs_stream stream, rs_error ** error) try
 {
     VALIDATE_NOT_NULL(device);
     VALIDATE_ENUM(stream);
@@ -400,7 +400,7 @@ rs_frame_ref* rs_get_frame(const rs_frameset * frame_set, rs_stream stream, rs_e
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, frame_set, stream)
 
-int rs_get_detached_frame_timestamp(const rs_frame_ref * frameset, rs_error ** error) try
+double rs_get_detached_frame_timestamp(const rs_frame_ref * frameset, rs_error ** error) try
 {
     VALIDATE_NOT_NULL(frameset);
     return frameset->get_frame_timestamp();

@@ -234,7 +234,7 @@ typedef enum rs_event_source
 
 typedef struct rs_timestamp_data
 {
-    unsigned int        timestamp;
+    unsigned int        timestamp;      /* 32Mhz clock. Each tick corresponds to 31.25 usec */
     rs_event_source     source_id;
     unsigned short      frame_number;  /* 12 bit; per data source */
 } rs_timestamp_data;
@@ -599,7 +599,7 @@ int rs_poll_for_frames_safe(rs_device * device, rs_frameset** frameset, rs_error
  * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
  * \return            the timestamp of the frame, in milliseconds since the device was started
  */
-int rs_get_frame_timestamp(const rs_device * device, rs_stream stream, rs_error ** error);
+double rs_get_frame_timestamp(const rs_device * device, rs_stream stream, rs_error ** error);
 
 /**
 * retrieve the frame number
@@ -665,7 +665,7 @@ void rs_release_frame(rs_device * device, rs_frame_ref * frame, rs_error ** erro
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return            the timestamp of the frame, in milliseconds since the device was started
 */
-int rs_get_detached_frame_timestamp(const rs_frame_ref * frame, rs_error ** error);
+double rs_get_detached_frame_timestamp(const rs_frame_ref * frame, rs_error ** error);
 
 /**
 * retrive frame number from safe frame handle, returned from detach, clone_ref or from frame callback

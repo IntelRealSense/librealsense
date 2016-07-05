@@ -154,9 +154,10 @@ namespace rsimpl
     // Power off Fisheye camera
     void zr300_camera::stop(rs_source source)
     {
-        rs_device_base::stop(source);
         if ((supports(rs_capabilities::RS_CAPABILITIES_FISH_EYE)) && ((config.requests[RS_STREAM_FISHEYE].enabled)))
             toggle_motion_module_power(false);
+        std::this_thread::sleep_for(std::chrono::milliseconds(100)); // Continue polling to flush adapter board buffers
+        rs_device_base::stop(source);
     }
 
     // Power on motion module (mmpwr)

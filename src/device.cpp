@@ -261,7 +261,7 @@ void rs_device_base::start_video_streaming()
 
             for (auto & output : mode_selection.get_outputs())
             {
-                auto bpp = rsimpl::get_image_bpp(output.second);               
+                auto bpp = rsimpl::get_image_bpp(output.second);
                 frame_archive::frame_additional_data additional_data( timestamp,
                     frame_counter,
                     sys_time,

@@ -315,7 +315,7 @@ namespace rsimpl
             {
                 for(auto & unpacker : subdevice_mode.pf.unpackers)
                 {
-                    auto selection = subdevice_mode_selection(subdevice_mode, pad_crop, &unpacker - subdevice_mode.pf.unpackers.data());
+                    auto selection = subdevice_mode_selection(subdevice_mode, pad_crop, (int)(&unpacker - subdevice_mode.pf.unpackers.data()));
 
                     // Determine if this mode satisfies the requirements on our requested streams
                     auto stream_unsatisfied = stream_requested;

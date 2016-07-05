@@ -182,7 +182,7 @@ const byte* frame_archive::frame_ref::get_frame_data() const
     return frame_ptr ? frame_ptr->get_frame_data() : nullptr;
 }
 
-int frame_archive::frame_ref::get_frame_timestamp() const
+double frame_archive::frame_ref::get_frame_timestamp() const
 {
     return frame_ptr ? frame_ptr->get_frame_timestamp(): 0;
 }
@@ -268,7 +268,7 @@ const byte* frame_archive::frame::get_frame_data() const
     return frame_data;
 }
 
-int frame_archive::frame::get_frame_timestamp() const
+double frame_archive::frame::get_frame_timestamp() const
 {
     return additional_data.timestamp;
 }

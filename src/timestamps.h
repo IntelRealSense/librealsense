@@ -14,7 +14,7 @@ namespace rsimpl
     { 
         virtual ~frame_interface() {}
         virtual int get_frame_number() const = 0;
-        virtual void set_timestamp(int new_ts) = 0;
+        virtual void set_timestamp(double new_ts) = 0;
         virtual rs_stream get_stream_type()const = 0;
     };
 
@@ -56,7 +56,7 @@ namespace rsimpl
         std::mutex mtx;
         concurrent_queue data_queue;
         std::condition_variable cv;
-        int queue_size;
+        size_t queue_size;
         int time_out;
 
     };
