@@ -159,6 +159,10 @@ int main(int argc, char * argv[]) try
     double dc_preset = 0, iv_preset = 0;
 
     int offset = 0, panel_height = 1;
+    bool opt_modified = false;
+    std::string modified_option;
+    int option_num = RS_OPTION_COUNT;
+    std::ostringstream opt_ss;
     while(!glfwWindowShouldClose(win))
     {
         glfwPollEvents();
@@ -173,16 +177,16 @@ int main(int argc, char * argv[]) try
         glLoadIdentity();
         glOrtho(0, w, h, 0, -1, +1);
 
-        g.vscroll({w-270, 0, w, h}, panel_height, offset);
+        g.vscroll({w-310, 0, w, h}, panel_height, offset);
         int y = 10 - offset;
 
         if(dev->is_streaming())
         {
-            if(g.button({w-260, y, w-20, y+24}, "Stop Capture")) dev->stop();
+            if(g.button({w-380, y, w-20, y+24}, "Stop Capture")) dev->stop();
         }
         else
         {
-            if(g.button({w-260, y, w-20, y+24}, "Start Capture")) dev->start();
+            if(g.button({w-380, y, w-20, y+24}, "Start Capture")) dev->start();
         }
         y += 34;
         if(!dev->is_streaming())
@@ -191,38 +195,54 @@ int main(int argc, char * argv[]) try
             {
                 auto s = (rs::stream)i;
                 bool enable = dev->is_stream_enabled(s);
-                if(g.checkbox({w-260, y, w-240, y+20}, enable))
+                if(g.checkbox({w-380, y, w-360, y+20}, enable))
                 {
                     if(enable) dev->enable_stream(s, rs::preset::best_quality);
                     else dev->disable_stream(s);
                 }
-                g.label({w-234, y+13}, {1,1,1}, "Enable %s", rs_stream_to_string((rs_stream)i));
+                g.label({w-324, y+13}, {1,1,1}, "Enable %s", rs_stream_to_string((rs_stream)i));
                 y += 30;
             }
         }
 
+        g.label({w-380,y+13}, {255,255,0}, "%s", opt_ss.str().c_str());
+        y += 38;
+
         for(auto & o : options)
         {
             std::ostringstream ss; ss << o.opt << ": " << o.value;
-            g.label({w-260,y+12}, {1,1,1}, ss.str().c_str());
-            if(g.slider((int)o.opt + 1, {w-260,y+16,w-20,y+36}, o.min, o.max, o.step, o.value))
+            g.label({w-380,y+12}, {1,1,1}, ss.str().c_str());
+            if(g.slider((int)o.opt + 1, {w-380,y+16,w-20,y+36}, o.min, o.max, o.step, o.value))
             {
+                opt_modified = true;
                 dev->set_option(o.opt, o.value);
+                option_num = (int)o.opt;
+                modified_option = rs_option_to_string((rs_option)((int)o.opt));
             }
             y += 38;
         }
-        g.label({w-260,y+12}, {1,1,1}, "Depth control parameters preset: %g", dc_preset);
-        if(g.slider(100, {w-260,y+16,w-20,y+36}, 0, 5, 1, dc_preset)) apply_depth_control_preset(dev, static_cast<int>(dc_preset));
+        g.label({w-380,y+12}, {1,1,1}, "Depth control parameters preset: %g", dc_preset);
+        if(g.slider(100, {w-380,y+16,w-20,y+36}, 0, 5, 1, dc_preset)) apply_depth_control_preset(dev, static_cast<int>(dc_preset));
         y += 38;
-        g.label({w-260,y+12}, {1,1,1}, "IVCAM options preset: %g", iv_preset);
-        if(g.slider(101, {w-260,y+16,w-20,y+36}, 0, 8, 1, iv_preset)) apply_ivcam_preset(dev, static_cast<int>(iv_preset));
+        g.label({w-380,y+12}, {1,1,1}, "IVCAM options preset: %g", iv_preset);
+        if(g.slider(101, {w-380,y+16,w-20,y+36}, 0, 8, 1, iv_preset)) apply_ivcam_preset(dev, static_cast<int>(iv_preset));
         y += 38;
-        
+
+        if(!g.mouse_down && opt_modified == true)
+        {
+          double value = 0.0;
+          rs::option option_changed = (rs::option)option_num;
+          try { value = dev->get_option(option_changed); } catch(...) {continue;}
+          opt_ss.str("");
+          opt_ss << modified_option << " set to " << value;
+          opt_modified = false;
+        }
+
         panel_height = y + 10 + offset;
         
         if(dev->is_streaming())
         {
-            w-=270;
+            w-=390;
             buffers[0].show(*dev, rs::stream::color, 0, 0, w/2, h/2);
             buffers[1].show(*dev, rs::stream::depth, w/2, 0, w-w/2, h/2);
             buffers[2].show(*dev, rs::stream::infrared, 0, h/2, w/2, h-h/2);
