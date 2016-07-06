@@ -51,9 +51,9 @@ EXAMPLES += $(wildcard examples/*.cpp)
 EXAMPLES := $(addprefix bin/, $(notdir $(basename $(EXAMPLES))))
 
 # Aliases for convenience
-all: examples $(EXAMPLES)
+all: $(EXAMPLES)
 
-install: library
+install: lib/librealsense.so
 	install -m755 -d /usr/local/include/librealsense
 	cp -r include/librealsense/* /usr/local/include/librealsense
 	cp lib/librealsense.so /usr/local/lib
@@ -69,35 +69,33 @@ clean:
 	rm -rf lib
 	rm -rf bin
 
-library: lib/librealsense.so
-
-prepare:
+obj obj/libuvc lib bin:
 	mkdir -p obj/libuvc
 	mkdir -p lib
 	mkdir -p bin
 
 # Rules for building the sample programs
-bin/c-%: examples/c-%.c library
+bin/c-%: examples/c-%.c lib/librealsense.so | bin
 	$(CC) $< $(REALSENSE_FLAGS) $(GLFW3_FLAGS) -o $@
 
-bin/cpp-%: examples/cpp-%.cpp library
+bin/cpp-%: examples/cpp-%.cpp lib/librealsense.so | bin
 	$(CXX) $< -std=c++11 $(REALSENSE_FLAGS) $(GLFW3_FLAGS) -o $@
 
 # Rules for building the library itself
-lib/librealsense.so: prepare $(OBJECTS)
+lib/librealsense.so: $(OBJECTS) | lib
 	$(CXX) -std=c++11 -shared $(OBJECTS) $(LIBUSB_FLAGS) -o $@
 
-lib/librealsense.a: prepare $(OBJECTS)
+lib/librealsense.a: $(OBJECTS) | lib
 	ar rvs $@ `find obj/ -name "*.o"`
  
 # Rules for compiling librealsense source
-obj/%.o: src/%.cpp
+obj/%.o: src/%.cpp | obj
 	$(CXX) $< $(CXXFLAGS) -c -o $@
 
 # Rules for compiling libuvc source
-obj/libuvc/%.o: src/libuvc/%.c
+obj/libuvc/%.o: src/libuvc/%.c | obj
 	$(CC) $< $(CFLAGS) -c -o $@
 
 # Special rule to verify that rs.h can be included by a C89 compiler
-obj/verify.o: src/verify.c
+obj/verify.o: src/verify.c | obj
 	$(CC) $< -std=c89 -Iinclude -c -o $@
