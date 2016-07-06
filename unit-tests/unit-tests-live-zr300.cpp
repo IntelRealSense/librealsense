@@ -156,8 +156,8 @@ TEST_CASE("ZR300 Motion Module Data Streaming", "[live] [DS-device]")
         rs_stop_source(dev, rs_source::RS_SOURCE_MOTION_TRACKING, require_no_error());
 
         // Validate acquired data
-        REQUIRE(!accel_frames.empty());
-        REQUIRE(!gyro_frames.empty());
+        REQUIRE(accel_frames.size()>0);
+        REQUIRE(gyro_frames.size()>0);
         //REQUIRE(std::any_of(ds_names.begin(), ds_names.end(), [&](std::string const& s) {return s == rs_get_device_name(dev, require_no_error()); }));
         REQUIRE(std::all_of(accel_frames.begin(), accel_frames.end(), [](rs::motion_data const& entry) { return entry.timestamp_data.source_id == rs_event_source::RS_EVENT_IMU_ACCEL; }));
         REQUIRE(std::all_of(gyro_frames.begin(), gyro_frames.end(), [](rs::motion_data const& entry) { return entry.timestamp_data.source_id == rs_event_source::RS_EVENT_IMU_GYRO; }));
