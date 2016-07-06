@@ -78,7 +78,7 @@ struct gui
         return changed;
     }
 
-    bool slider(int id, const rect & r, double min, double max, double step, double & value)
+    bool slider(int id, const rect & r, double min, double max, double step, double & value, bool disable_dragger = false)
     {
         bool changed = false;
         const int w = r.x1 - r.x0, h = r.y1 - r.y0;
@@ -99,7 +99,10 @@ struct gui
             clicked_id = id;
         }
         fill_rect(r, {0.5,0.5,0.5});
-        fill_rect(dragger, {1,1,1});
+
+        if (!disable_dragger)
+            fill_rect(dragger, {1,1,1});
+
         return changed;
     }
 
@@ -343,16 +346,57 @@ int main(int argc, char * argv[]) try
             }
         }
 
+        bool auto_exposure;
+        bool auto_white_balance;
         for(auto & o : options)
         {
-            std::ostringstream ss; ss << o.opt << ": " << o.value;
+            bool disable_dragger = false;
+            if (o.opt == rs::option::color_enable_auto_exposure && o.value == 1)
+            {
+                auto_exposure = true;
+            }
+            else if (o.opt == rs::option::color_enable_auto_exposure && o.value == 0)
+            {
+                auto_exposure = false;
+            }
+
+            if (o.opt == rs::option::color_enable_auto_white_balance && o.value == 1)
+            {
+                auto_white_balance = true;
+            }
+            else if (o.opt == rs::option::color_enable_auto_white_balance && o.value == 0)
+            {
+                auto_white_balance = false;
+            }
+
+            if (o.opt == rs::option::color_exposure && auto_exposure)
+            {
+                disable_dragger = true;
+            }
+
+            if (o.opt == rs::option::color_white_balance && auto_white_balance)
+            {
+                disable_dragger = true;
+            }
+
+            std::ostringstream ss;
+            ss << o.opt << ": ";
+
+            if ((auto_exposure && o.opt == rs::option::color_exposure) ||
+                    (auto_white_balance && o.opt == rs::option::color_white_balance))
+                ss << "Auto";
+            else
+                ss << o.value;
+
             g.label({w-260,y+12}, {1,1,1}, ss.str().c_str());
-            if(g.slider((int)o.opt + 1, {w-260,y+16,w-20,y+36}, o.min, o.max, o.step, o.value))
+
+            if(g.slider((int)o.opt + 1, {w-260,y+16,w-20,y+36}, o.min, o.max, o.step, o.value, disable_dragger))
             {
                 dev->set_option(o.opt, o.value);
             }
             y += 38;
         }
+
         g.label({w-260,y+12}, {1,1,1}, "Depth control parameters preset: %g", dc_preset);
         if(g.slider(100, {w-260,y+16,w-20,y+36}, 0, 5, 1, dc_preset)) rs_apply_depth_control_preset((rs_device *)dev, static_cast<int>(dc_preset));
         y += 38;
