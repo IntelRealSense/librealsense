@@ -11,12 +11,12 @@ endif
 
 LIBUSB_FLAGS := `pkg-config --cflags --libs libusb-1.0`
 
+# Security enhancements
+LDFLAGS := -z noexecstack -z relro -z now
+
 CFLAGS := -std=c11 -fPIC -pedantic -O2 -D_FORTIFY_SOURCE=2 -fstack-protector-strong -Wformat -Wformat-security -DRS_USE_$(BACKEND)_BACKEND $(LIBUSB_FLAGS) $(LDFLAGS)
 CXXFLAGS := -std=c++11 -fPIC -pedantic -mssse3 -Ofast -O2 -D_FORTIFY_SOURCE=2 -fstack-protector-strong -Wformat -Wformat-security -Wno-missing-field-initializers
 CXXFLAGS += -Wno-switch -Wno-multichar -DRS_USE_$(BACKEND)_BACKEND $(LIBUSB_FLAGS)  $(LDFLAGS)
-
-# Security enhancements
-LDFLAGS := -z noexecstack -z relro -z now
 
 # Add specific include paths for OSX
 ifeq ($(uname_S),Darwin)

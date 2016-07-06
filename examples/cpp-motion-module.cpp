@@ -77,7 +77,7 @@ int main() try
         log(ss.str().c_str());
     };
 		
-    for (int ii = 0; ii < 10000; ii++)
+    for (int ii = 0; ii < 100; ii++)
     {
         std::cout << "\n\nIteration " << ii+1 << " started\n\n" << std::endl;
 
@@ -122,7 +122,7 @@ int main() try
                     log(ss.str().c_str());
                 }
             }
-        } while (std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start).count() < 1000);
+        } while (std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start).count() < 10000);
 
         // 4. stop data acquisition
         dev->stop(rs::source::all_sources);
