@@ -137,9 +137,9 @@ TEST_CASE("ZR300 Motion Module Data Streaming", "[live] [DS-device]")
 
     REQUIRE(rs_supports(dev, rs_capabilities::RS_CAPABILITIES_MOTION_EVENTS, require_no_error()));
 
-    for (int ii = 0; ii < 10; ii++)
+    for (int ii = 0; ii < 20; ii++)
     {
-
+		std::cout << "Iteration num " << ii + 1 << std::endl;
         rs_enable_motion_tracking_cpp(dev, new rs::motion_callback(motion_handler), new rs::timestamp_callback(timestamp_handler), require_no_error());
 
         timestamp_frame_counter = 0;
