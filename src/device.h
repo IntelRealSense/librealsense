@@ -60,7 +60,7 @@ private:
     rsimpl::stream_interface *                  streams[RS_STREAM_COUNT];
 
     bool                                        capturing;
-    bool                                        data_acquisition_active;
+    bool                                        data_acquisition_active;    
     std::chrono::high_resolution_clock::time_point capture_started;
 
     std::shared_ptr<rsimpl::syncronizing_archive> archive;
@@ -75,6 +75,7 @@ protected:
 
     virtual void                                disable_auto_option(int subdevice, rs_option auto_opt);
 
+    bool                                        motion_module_ready;
 public:
                                                 rs_device_base(std::shared_ptr<rsimpl::uvc::device> device, const rsimpl::static_device_info & info);
                                                 virtual ~rs_device_base();

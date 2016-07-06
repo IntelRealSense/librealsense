@@ -56,7 +56,7 @@ int main() try
 
     for (int ii = 0; ii < 10000; ii++)
     {
-        std::cout << "\n\n\n\nIteration " << ii << " has started\n\n\n\n" << std::endl;
+        std::cout << "\n\n\n\nIteration " << ii+1 << " has started\n\n\n\n" << std::endl;
 
         // 1. Make motion-tracking available
         if (dev->supports(rs::capabilities::motion_events))

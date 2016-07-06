@@ -456,7 +456,7 @@ void rs_enable_motion_tracking(rs_device * device,
 
     /**
     * Enable and configure motion-tracking data handlers
-    * (This variant is provided specificly to enable passing lambdas with capture lists safely into the library)
+    * (This variant is provided specifically to enable passing lambdas with capture lists safely into the library)
     * \param[in] motion_callback    user-defined routine to be invoked when a motion data arrives
     * \param[in] timestamp_callback user-defined routine to be invoked on timestamp
     * \param[out] error             if non-null, receives any error that occurs during this call, otherwise, errors are ignored

@@ -139,6 +139,7 @@ namespace rsimpl
     void zr300_camera::toggle_motion_module_events(bool on)
     {
         motion_module_ctrl.toggle_motion_module_events(on);
+        motion_module_ready = on;
     }
 
     // Power on Fisheye camera (dspwr)
@@ -146,8 +147,7 @@ namespace rsimpl
     {
         if ((supports(rs_capabilities::RS_CAPABILITIES_FISH_EYE)) && ((config.requests[RS_STREAM_FISHEYE].enabled)))
             toggle_motion_module_power(true);
-
-        std::this_thread::sleep_for(std::chrono::milliseconds(300)); // Added delay between MM power on and MM start commands to be sure that the MM will be ready untill start polling events. 
+       
         rs_device_base::start(source);
     }
 
@@ -156,16 +156,15 @@ namespace rsimpl
     {
         if ((supports(rs_capabilities::RS_CAPABILITIES_FISH_EYE)) && ((config.requests[RS_STREAM_FISHEYE].enabled)))
             toggle_motion_module_power(false);
-        std::this_thread::sleep_for(std::chrono::milliseconds(100)); // Continue polling to flush adapter board buffers
         rs_device_base::stop(source);
     }
 
     // Power on motion module (mmpwr)
     void zr300_camera::start_motion_tracking()
     {
-        if (supports(rs_capabilities::RS_CAPABILITIES_MOTION_EVENTS))
-            toggle_motion_module_events(true);
         rs_device_base::start_motion_tracking();
+        if (supports(rs_capabilities::RS_CAPABILITIES_MOTION_EVENTS))
+            toggle_motion_module_events(true);        
     }
 
     // Power down Motion Module
