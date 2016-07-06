@@ -11,9 +11,12 @@ endif
 
 LIBUSB_FLAGS := `pkg-config --cflags --libs libusb-1.0`
 
-CFLAGS := -std=c11 -fPIC -pedantic -DRS_USE_$(BACKEND)_BACKEND $(LIBUSB_FLAGS) 
-CXXFLAGS := -std=c++11 -fPIC -pedantic -mssse3 -Ofast -Wno-missing-field-initializers
-CXXFLAGS += -Wno-switch -Wno-multichar -DRS_USE_$(BACKEND)_BACKEND $(LIBUSB_FLAGS) 
+CFLAGS := -std=c11 -fPIC -pedantic -O2 -D_FORTIFY_SOURCE=2 -fstack-protector-strong -Wformat -Wformat-security -DRS_USE_$(BACKEND)_BACKEND $(LIBUSB_FLAGS) $(LDFLAGS)
+CXXFLAGS := -std=c++11 -fPIC -pedantic -mssse3 -Ofast -O2 -D_FORTIFY_SOURCE=2 -fstack-protector-strong -Wformat -Wformat-security -Wno-missing-field-initializers
+CXXFLAGS += -Wno-switch -Wno-multichar -DRS_USE_$(BACKEND)_BACKEND $(LIBUSB_FLAGS)  $(LDFLAGS)
+
+# Security enhancements
+LDFLAGS := -z noexecstack -z relro -z now
 
 # Add specific include paths for OSX
 ifeq ($(uname_S),Darwin)
@@ -28,7 +31,7 @@ OBJECTS += $(addprefix libuvc/, $(notdir $(basename $(wildcard src/libuvc/*.c)))
 OBJECTS := $(addprefix obj/, $(addsuffix .o, $(OBJECTS)))
 
 # Sets of flags used by the example programs
-REALSENSE_FLAGS := -Iinclude -Llib -lrealsense -lm -lpthread
+REALSENSE_FLAGS := -Iinclude -Llib -lrealsense -lm -lpthread -fPIE
 
 ifeq ($(uname_S),Darwin)
 # OSX uses OpenGL as a framework
@@ -78,7 +81,7 @@ bin/cpp-%: examples/cpp-%.cpp library
 
 # Rules for building the library itself
 lib/librealsense.so: prepare $(OBJECTS)
-	$(CXX) -std=c++11 -shared $(OBJECTS) $(LIBUSB_FLAGS) -o $@
+	$(CXX) -std=c++11 -shared $(OBJECTS) $(LIBUSB_FLAGS) $(LDFLAGS) -o $@
 
 lib/librealsense.a: prepare $(OBJECTS)
 	ar rvs $@ `find obj/ -name "*.o"`
