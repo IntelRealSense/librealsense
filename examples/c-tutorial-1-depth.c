@@ -46,7 +46,7 @@ int main()
     /* Configure depth to run at VGA resolution at 30 frames per second */
     rs_enable_stream(dev, RS_STREAM_DEPTH, 0, 0, RS_FORMAT_Z16, 30, &e);
     check_error();
-    rs_start_device(dev, RS_SOURCE_VIDEO, &e);
+    rs_start_device(dev, &e);
     check_error();
 
     /* Determine depth value corresponding to one meter */
@@ -99,7 +99,7 @@ int main()
         printf("\n%s", buffer);
     }
 
-    rs_stop_device(dev, RS_SOURCE_VIDEO, &e);
+    rs_stop_device(dev, &e);
     check_error();
 
     free(buffer);
