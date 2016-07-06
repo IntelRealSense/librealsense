@@ -44,7 +44,7 @@ namespace rsimpl
 
     class timestamp_corrector : public timestamp_corrector_interface{
     public:
-        timestamp_corrector(int queue_size = 10, int time_out = 10);
+        timestamp_corrector(int queue_size = 500, int time_out = 10);
         ~timestamp_corrector() override;
         void on_timestamp(rs_timestamp_data data) override;
         void correct_timestamp(frame_interface& frame, rs_stream stream) override;
