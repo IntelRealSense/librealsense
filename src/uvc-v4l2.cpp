@@ -80,7 +80,7 @@ namespace rsimpl
         struct subdevice
         {
             std::string dev_name;   // Device name (typically of the form /dev/video*)
-            int busnum, devnum;     // USB device bus number and device number (needed for F200/SR300 direct USB controls)
+            int busnum, devnum, parent_devnum;     // USB device bus number and device number (needed for F200/SR300 direct USB controls)
             int vid, pid, mi;       // Vendor ID, product ID, and multiple interface index
             int fd;                 // File descriptor for this device
             std::vector<buffer> buffers;
@@ -110,8 +110,11 @@ namespace rsimpl
                     {
                         if(std::ifstream(path + "devnum") >> devnum)
                         {
-                            good = true;
-                            break;
+                            if(std::ifstream(path + "../devnum") >> parent_devnum)
+                            {
+                                good = true;
+                                break;
+                            }
                         }
                     }
                     path += "../";
@@ -824,7 +827,7 @@ namespace rsimpl
                 for(auto & dev : devices)
                 {
                     //if (dev->subdevices[0]->vid == 0x8086 && dev->subdevices[0]->pid == 0x0acb && sub->vid == 0x04b4 && sub->pid == 0x00c3)
-                    if (dev->subdevices[0]->vid == 0x8086 && dev->subdevices[0]->pid == 0x0acb && sub->vid == 0x8086 && sub->pid == 0x0ad0)
+                    if (dev->subdevices[0]->vid == 0x8086 && dev->subdevices[0]->pid == 0x0acb && sub->vid == 0x8086 && sub->pid == 0x0ad0 && dev->subdevices[0]->parent_devnum == sub->parent_devnum)
                     {
                         dev->subdevices.push_back(move(sub));
                         break;
@@ -848,13 +851,19 @@ namespace rsimpl
                 {
                     if (dev->subdevices.size() >=4)      // Make sure that four subdevices present
                     {
-                        // First, handle the special case of FishEye
-                        bool bFishEyeDevice = ((busnum == dev->subdevices[3]->busnum) && (devnum == dev->subdevices[3]->devnum));
-                        if(bFishEyeDevice)
+                        auto parent_device = libusb_get_parent(usb_device);
+                        if (parent_device)
                         {
-                            dev->usb_aux_device = usb_device;
-                            libusb_ref_device(usb_device);
-                            break;
+                            int parent_devnum = libusb_get_device_address(libusb_get_parent(usb_device));
+
+                            // First, handle the special case of FishEye
+                            bool bFishEyeDevice = ((busnum == dev->subdevices[3]->busnum) && (parent_devnum == dev->subdevices[3]->parent_devnum));
+                            if(bFishEyeDevice && !dev->usb_aux_device)
+                            {
+                                dev->usb_aux_device = usb_device;
+                                libusb_ref_device(usb_device);
+                                break;
+                            }
                         }
                     }
 
