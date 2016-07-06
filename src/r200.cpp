@@ -13,7 +13,14 @@
 static rsimpl::uvc::device *r200_device;
 static void on_signal(int sig)
 {
+#if _XOPEN_SOURCE >= 700 || _POSIX_C_SOURCE >= 200809L
     const char *p = sig ? strsignal(sig) : "~r200_camera()";
+#else
+    char p[64] = "~r200_camera()";
+    if (sig) {
+	sprintf(p, "SIGNAL %d", sig);
+    }
+#endif
 
     if (r200_device) {
         fprintf(stderr, "%s: Resetting R200 firmware... ", p);
