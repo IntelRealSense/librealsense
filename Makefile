@@ -52,6 +52,11 @@ install: library
 	cp lib/librealsense.so /usr/local/lib
 	ldconfig
 
+uninstall:
+	rm -rf /usr/local/include/librealsense
+	rm /usr/local/lib/librealsense.so
+	ldconfig
+
 clean:
 	rm -rf obj
 	rm -rf lib
