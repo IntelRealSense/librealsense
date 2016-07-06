@@ -8,6 +8,32 @@
 #include <cstring>
 #include <climits>
 #include <algorithm>
+#include <signal.h>
+
+static rsimpl::uvc::device *r200_device;
+static void on_signal(int sig)
+{
+#if _XOPEN_SOURCE >= 700 || _POSIX_C_SOURCE >= 200809L
+    const char *p = sig ? strsignal(sig) : "~r200_camera()";
+#else
+    char p[64] = "~r200_camera()";
+    if (sig) {
+	sprintf(p, "SIGNAL %d", sig);
+    }
+#endif
+
+    if (r200_device) {
+        fprintf(stderr, "%s: Resetting R200 firmware... ", p);
+        rsimpl::r200::force_firmware_reset(*r200_device);
+        fprintf(stderr, "ok\n");
+        r200_device = 0;
+    } else {
+        fprintf(stderr, "%s: R200 firmware already reset.\n", p);
+    }
+
+    signal(sig, SIG_DFL);
+    raise(sig);
+}
 
 namespace rsimpl
 {
@@ -16,11 +42,14 @@ namespace rsimpl
         rs_option opt[] = {RS_OPTION_R200_DEPTH_UNITS}; double units;
         get_options(opt, 1, &units);
         on_update_depth_units(static_cast<int>(units));
+
+        r200_device = device.get();
+        signal(SIGTERM, on_signal);
     }
     
     r200_camera::~r200_camera()
     {
-
+        on_signal(0);
     }
 
     std::shared_ptr<rs_device> make_r200_device(std::shared_ptr<uvc::device> device)
