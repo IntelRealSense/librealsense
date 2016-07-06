@@ -1,5 +1,6 @@
-# Detect OS
+# Detect OS and CPU
 uname_S := $(shell sh -c 'uname -s 2>/dev/null || echo not')
+machine := $(shell sh -c "$(CC) -dumpmachine || echo unknown")
 
 # Specify BACKEND=V4L2 or BACKEND=LIBUVC to build a specific backend
 BACKEND := V4L2
@@ -12,13 +13,19 @@ endif
 LIBUSB_FLAGS := `pkg-config --cflags --libs libusb-1.0`
 
 CFLAGS := -std=c11 -fPIC -pedantic -DRS_USE_$(BACKEND)_BACKEND $(LIBUSB_FLAGS) 
-CXXFLAGS := -std=c++11 -fPIC -pedantic -mssse3 -Ofast -Wno-missing-field-initializers
+CXXFLAGS := -std=c++11 -fPIC -pedantic -Ofast -Wno-missing-field-initializers
 CXXFLAGS += -Wno-switch -Wno-multichar -DRS_USE_$(BACKEND)_BACKEND $(LIBUSB_FLAGS) 
 
 # Add specific include paths for OSX
 ifeq ($(uname_S),Darwin)
 CFLAGS   += -I/usr/local/include
 CXXFLAGS += -I/usr/local/include
+endif
+
+ifeq (arm-linux-gnueabihf,$(machine))
+CXXFLAGS += -mfpu=neon -mfloat-abi=hard -ftree-vectorize
+else
+CXXFLAGS += -mssse3
 endif
 
 # Compute list of all *.o files that participate in librealsense.so
