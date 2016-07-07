@@ -29,6 +29,7 @@ namespace rsimpl
             void on_update_depth_units(uint32_t units);
             void on_update_disparity_multiplier(double multiplier);
             uint32_t get_lr_framerate() const;
+            std::vector<supported_option> get_ae_range_vec();
 
         public:
             ds_device(std::shared_ptr<uvc::device> device, const static_device_info & info);

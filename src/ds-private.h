@@ -7,6 +7,7 @@
 
 #include "uvc.h"
 
+
 namespace rsimpl
 {
     namespace ds
@@ -123,7 +124,32 @@ namespace rsimpl
         inline dc_params    get_depth_params            (const uvc::device & device) { return xu_read<dc_params  >(device, lr_xu, control::depth_params); }
         inline uint8_t      get_last_error              (const uvc::device & device) { return xu_read<uint8_t    >(device, lr_xu, control::last_error); }
         inline rate_value   get_lr_exposure             (const uvc::device & device) { return xu_read<rate_value >(device, lr_xu, control::lr_exposure); }
-        inline ae_params    get_lr_auto_exposure_params (const uvc::device & device) { return xu_read<ae_params  >(device, lr_xu, control::lr_autoexposure_parameters); }
+        inline ae_params    get_lr_auto_exposure_params(const uvc::device & device, std::vector<supported_option> ae_vec) {
+            auto ret_val = xu_read<ae_params  >(device, lr_xu, control::lr_autoexposure_parameters);
+
+            for (auto& elem : ae_vec)
+            {
+                switch (elem.option)
+                {
+                case RS_OPTION_R200_AUTO_EXPOSURE_TOP_EDGE:
+                    ret_val.exposure_top_edge = ((ret_val.exposure_top_edge > elem.max) ? (uint16_t)elem.max : ret_val.exposure_top_edge);
+                    break;
+
+                case RS_OPTION_R200_AUTO_EXPOSURE_BOTTOM_EDGE:
+                    ret_val.exposure_bottom_edge = ((ret_val.exposure_bottom_edge > elem.max) ? (uint16_t)elem.max : ret_val.exposure_bottom_edge);
+                    break;
+
+                case RS_OPTION_R200_AUTO_EXPOSURE_LEFT_EDGE:
+                    ret_val.exposure_left_edge = ((ret_val.exposure_left_edge > elem.max) ? (uint16_t)elem.max : ret_val.exposure_left_edge);
+                    break;
+
+                case RS_OPTION_R200_AUTO_EXPOSURE_RIGHT_EDGE:
+                    ret_val.exposure_right_edge = ((ret_val.exposure_right_edge > elem.max) ? (uint16_t)elem.max : ret_val.exposure_right_edge);
+                    break;
+                }
+            }
+            return ret_val;
+        }
         inline rate_value   get_lr_gain                 (const uvc::device & device) { return xu_read<rate_value >(device, lr_xu, control::lr_gain); }
         inline uint8_t      get_lr_exposure_mode        (const uvc::device & device) { return xu_read<uint8_t    >(device, lr_xu, control::lr_exposure_mode); }
         inline uint32_t     get_disparity_shift         (const uvc::device & device) { return xu_read<uint32_t   >(device, lr_xu, control::disparity_shift); }

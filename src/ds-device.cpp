@@ -48,13 +48,30 @@ namespace rsimpl
         config.depth_scale = static_cast<float>(depth.get_intrinsics().fx * baseline * multiplier);
     }
 
+    std::vector<supported_option> ds_device::get_ae_range_vec()
+    {
+        std::vector<supported_option> so_vec;
+        std::vector<rs_option> ae_vector = { RS_OPTION_R200_AUTO_EXPOSURE_TOP_EDGE, RS_OPTION_R200_AUTO_EXPOSURE_BOTTOM_EDGE, RS_OPTION_R200_AUTO_EXPOSURE_LEFT_EDGE, RS_OPTION_R200_AUTO_EXPOSURE_RIGHT_EDGE };
+        for (auto& opt : ae_vector)
+        {
+            double min, max, step, def;
+            get_option_range(opt, min, max, step, def);
+            so_vec.push_back({ opt, min, max, step, def });
+        }
+
+        return so_vec;
+    }
+
     void ds_device::set_options(const rs_option options[], size_t count, const double values[])
     {
         auto & dev = get_device();
         auto minmax_writer = make_struct_interface<ds::range    >([&dev]() { return ds::get_min_max_depth(dev);           }, [&dev](ds::range     v) { ds::set_min_max_depth(dev,v);           });
         auto disp_writer   = make_struct_interface<ds::disp_mode>([&dev]() { return ds::get_disparity_mode(dev);          }, [&dev](ds::disp_mode v) { ds::set_disparity_mode(dev,v);          });
-        auto ae_writer     = make_struct_interface<ds::ae_params>([&dev]() { return ds::get_lr_auto_exposure_params(dev); }, [&dev](ds::ae_params v) { ds::set_lr_auto_exposure_params(dev,v); });
+        auto ae_writer = make_struct_interface<ds::ae_params>([&dev, this]() { return ds::get_lr_auto_exposure_params(dev, get_ae_range_vec()); }, [&dev](ds::ae_params v) { ds::set_lr_auto_exposure_params(dev, v); });
         auto dc_writer     = make_struct_interface<ds::dc_params>([&dev]() { return ds::get_depth_params(dev);            }, [&dev](ds::dc_params v) { ds::set_depth_params(dev,v);            });
+
+
+
 
         for (size_t i = 0; i<count; ++i)
         {
@@ -128,7 +145,7 @@ namespace rsimpl
         auto & dev = get_device();
         auto minmax_reader = make_struct_interface<ds::range    >([&dev]() { return ds::get_min_max_depth(dev);           }, [&dev](ds::range     v) { ds::set_min_max_depth(dev,v);           });
         auto disp_reader   = make_struct_interface<ds::disp_mode>([&dev]() { return ds::get_disparity_mode(dev);          }, [&dev](ds::disp_mode v) { ds::set_disparity_mode(dev,v);          });
-        auto ae_reader     = make_struct_interface<ds::ae_params>([&dev]() { return ds::get_lr_auto_exposure_params(dev); }, [&dev](ds::ae_params v) { ds::set_lr_auto_exposure_params(dev,v); });
+        auto ae_reader = make_struct_interface<ds::ae_params>([&dev, this]() { return ds::get_lr_auto_exposure_params(dev, get_ae_range_vec()); }, [&dev](ds::ae_params v) { ds::set_lr_auto_exposure_params(dev, v); });
         auto dc_reader     = make_struct_interface<ds::dc_params>([&dev]() { return ds::get_depth_params(dev);            }, [&dev](ds::dc_params v) { ds::set_depth_params(dev,v);            });
 
         for (size_t i = 0; i<count; ++i)
@@ -338,10 +355,10 @@ namespace rsimpl
         info.options.push_back({ RS_OPTION_R200_AUTO_EXPOSURE_KP_GAIN,                  0,      1000,   0,      0 });
         info.options.push_back({ RS_OPTION_R200_AUTO_EXPOSURE_KP_EXPOSURE,              0,      1000,   0,      0 });
         info.options.push_back({ RS_OPTION_R200_AUTO_EXPOSURE_KP_DARK_THRESHOLD,        0,      1000,   0,      0 });
-        info.options.push_back({ RS_OPTION_R200_AUTO_EXPOSURE_TOP_EDGE,                 0,      239,    1,      239 });
-        info.options.push_back({ RS_OPTION_R200_AUTO_EXPOSURE_BOTTOM_EDGE,              0,      239,    1,      0});
-        info.options.push_back({ RS_OPTION_R200_AUTO_EXPOSURE_LEFT_EDGE,                0,      319,    1,      0 });
-        info.options.push_back({ RS_OPTION_R200_AUTO_EXPOSURE_RIGHT_EDGE,               0,      319,    1,      319 });
+        info.options.push_back({ RS_OPTION_R200_AUTO_EXPOSURE_TOP_EDGE,                 0,      639,    1,      239 });
+        info.options.push_back({ RS_OPTION_R200_AUTO_EXPOSURE_BOTTOM_EDGE,              0,      639,    1,      0});
+        info.options.push_back({ RS_OPTION_R200_AUTO_EXPOSURE_LEFT_EDGE,                0,      639,    1,      0 });
+        info.options.push_back({ RS_OPTION_R200_AUTO_EXPOSURE_RIGHT_EDGE,               0,      639,    1,      319 });
         info.options.push_back({ RS_OPTION_R200_DEPTH_CONTROL_ESTIMATE_MEDIAN_DECREMENT, 0,     0xFF,   1,      5 });
         info.options.push_back({ RS_OPTION_R200_DEPTH_CONTROL_ESTIMATE_MEDIAN_INCREMENT, 0,     0xFF,   1,      5 });
         info.options.push_back({ RS_OPTION_R200_DEPTH_CONTROL_MEDIAN_THRESHOLD,         0,      0x3FF,  1,      0xc0 });
