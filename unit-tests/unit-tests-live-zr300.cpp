@@ -158,9 +158,10 @@ TEST_CASE("ZR300 Motion Module Data Streaming", "[live] [DS-device]")
         // Validate acquired data
         REQUIRE(accel_frames.size()>0);
         REQUIRE(gyro_frames.size()>0);
-        //REQUIRE(std::any_of(ds_names.begin(), ds_names.end(), [&](std::string const& s) {return s == rs_get_device_name(dev, require_no_error()); }));
+
         REQUIRE(std::all_of(accel_frames.begin(), accel_frames.end(), [](rs::motion_data const& entry) { return entry.timestamp_data.source_id == rs_event_source::RS_EVENT_IMU_ACCEL; }));
         REQUIRE(std::all_of(gyro_frames.begin(), gyro_frames.end(), [](rs::motion_data const& entry) { return entry.timestamp_data.source_id == rs_event_source::RS_EVENT_IMU_GYRO; }));
+
         for (size_t i = 0; i < (gyro_frames.size() - 1); i++)
         {
             REQUIRE(gyro_frames[i].timestamp_data.frame_number < gyro_frames[i + 1].timestamp_data.frame_number);               
@@ -173,5 +174,34 @@ TEST_CASE("ZR300 Motion Module Data Streaming", "[live] [DS-device]")
 
         // 5. reset previous settings formotion data handlers
         rs_disable_motion_tracking(dev, require_no_error());
+    }
+}
+
+TEST_CASE("ZR300 correctly recognizes invalid options", "[live] [DS-device]")
+{
+    rs::context ctx;
+    REQUIRE(ctx.get_device_count() == 1);
+
+    rs::device * dev = ctx.get_device(0);
+    REQUIRE(nullptr!=dev);
+
+    const char * name = dev->get_name();
+    REQUIRE(name == std::string("Intel RealSense ZR300"));
+
+    int index = 0;
+    double val = 0;
+
+    for (int i= (int)rs::option::f200_laser_power; i <= (int)rs::option::sr300_wake_on_usb_confidence; i++)
+    {
+        index = i;
+        try
+        {
+            rs::option opt = (rs::option)i;
+            dev->set_options(&opt,1, &val);
+        }
+        catch(...)
+        {
+            REQUIRE(i==index); // Each invoked option must throw exception
+        }
     }
 }
