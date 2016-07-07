@@ -171,7 +171,7 @@ namespace rsimpl
             frame_ref detach_ref(rs_stream stream);
             void place_frame(rs_stream stream, frame&& new_frame);
 
-            rs_frame_ref * get_frame(rs_stream stream) override
+            const rs_frame_ref * get_frame(rs_stream stream) const override
             {
                 return &buffer[stream];
             }
