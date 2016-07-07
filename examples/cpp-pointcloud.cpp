@@ -100,7 +100,6 @@ int main(int argc, char * argv[]) try
         }
 
         const rs::stream tex_stream = app_state.tex_streams[app_state.index];
-        const float depth_scale = dev.get_depth_scale();
         const rs::extrinsics extrin = dev.get_extrinsics(rs::stream::depth, tex_stream);
         const rs::intrinsics depth_intrin = dev.get_stream_intrinsics(rs::stream::depth);
         const rs::intrinsics tex_intrin = dev.get_stream_intrinsics(tex_stream);
@@ -170,8 +169,6 @@ int main(int argc, char * argv[]) try
         glPopMatrix();
 
         glfwSwapBuffers(win);
-
-        int z = 99;
     }
 
     glfwDestroyWindow(win);

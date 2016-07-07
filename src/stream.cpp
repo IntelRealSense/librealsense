@@ -29,7 +29,7 @@ native_stream::native_stream(device_config & config, rs_stream stream) : config(
         {
             for(auto & unpacker : subdevice_mode.pf.unpackers)
             {
-                auto selection = subdevice_mode_selection(subdevice_mode, pad_crop, &unpacker - subdevice_mode.pf.unpackers.data());
+                auto selection = subdevice_mode_selection(subdevice_mode, pad_crop, (int)(&unpacker - subdevice_mode.pf.unpackers.data()));
                 if(selection.provides_stream(stream)) modes.push_back(selection);
             }
         }
@@ -90,6 +90,12 @@ int native_stream::get_frame_number() const
 { 
     if(!is_enabled()) throw std::runtime_error(to_string() << "stream not enabled: " << stream);
     return archive->get_frame_number(stream);
+}
+
+double native_stream::get_frame_timestamp() const
+{
+    if (!is_enabled()) throw std::runtime_error(to_string() << "stream not enabled: " << stream);
+    return archive->get_frame_timestamp(stream);
 }
 
 long long native_stream::get_frame_system_time() const

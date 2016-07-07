@@ -10,12 +10,11 @@
 
 #include <algorithm>
 #include <sstream>
-#include <iostream>
 
 using namespace rsimpl;
 using namespace rsimpl::motion_module;
 
-rs_device_base::rs_device_base(std::shared_ptr<rsimpl::uvc::device> device, const rsimpl::static_device_info & info) : device(device), config(info), capturing(false), data_acquisition_active(false),
+rs_device_base::rs_device_base(std::shared_ptr<rsimpl::uvc::device> device, const rsimpl::static_device_info & info) : device(device), config(info), capturing(false), data_acquisition_active(false), motion_module_ready(false),
     depth(config, RS_STREAM_DEPTH), color(config, RS_STREAM_COLOR), infrared(config, RS_STREAM_INFRARED), infrared2(config, RS_STREAM_INFRARED2), fisheye(config, RS_STREAM_FISHEYE),
     points(depth), rect_color(color), color_to_depth(color, depth), depth_to_color(depth, color), depth_to_rect_color(depth, rect_color), infrared2_to_depth(infrared2,depth), depth_to_infrared2(depth,infrared2)
 {
@@ -124,26 +123,29 @@ void rs_device_base::start_motion_tracking()
         set_subdevice_data_channel_handler(*device, 3,
             [this, parser](const unsigned char * data, const int size) mutable
         {
-            // Parse motion data
-            auto events = parser(data, size);
-
-            // Handle events by user-provided handlers
-            for (auto & entry : events)
+            if (motion_module_ready)    //  Flush all received data before MM is fully operational 
             {
-                // Handle Motion data packets
-                if (config.motion_callback)
-                for (int i = 0; i < entry.imu_entries_num; i++)
-                        config.motion_callback->on_event(entry.imu_packets[i]);
-                
-                // Handle Timestamp packets
-                if (config.timestamp_callback)
+                // Parse motion data
+                auto events = parser(data, size);
+
+                // Handle events by user-provided handlers
+                for (auto & entry : events)
                 {
-                    for (int i = 0; i < entry.non_imu_entries_num; i++)
+                    // Handle Motion data packets
+                    if (config.motion_callback)
+                        for (int i = 0; i < entry.imu_entries_num; i++)
+                            config.motion_callback->on_event(entry.imu_packets[i]);
+
+                    // Handle Timestamp packets
+                    if (config.timestamp_callback)
                     {
-                        auto tse = entry.non_imu_packets[i];
-                        if (archive)
-                            archive->on_timestamp(tse);
-                        config.timestamp_callback->on_event(entry.non_imu_packets[i]);
+                        for (int i = 0; i < entry.non_imu_entries_num; i++)
+                        {
+                            auto tse = entry.non_imu_packets[i];
+                            if (archive)
+                                archive->on_timestamp(tse);
+                            config.timestamp_callback->on_event(entry.non_imu_packets[i]);
+                        }
                     }
                 }
             }
@@ -184,11 +186,12 @@ void rs_device_base::set_timestamp_callback(rs_timestamp_callback* callback)
 
 void rs_device_base::start(rs_source source)
 {
+    if (source & RS_SOURCE_MOTION_TRACKING)
+        start_motion_tracking();
+
     if (source & RS_SOURCE_VIDEO)
         start_video_streaming();
 
-    if (source & RS_SOURCE_MOTION_TRACKING)
-        start_motion_tracking();
 }
 
 void rs_device_base::stop(rs_source source)
@@ -253,7 +256,6 @@ void rs_device_base::start_video_streaming()
             std::vector<byte *> dest;
 
             auto stride = mode_selection.get_stride();
-            archive->correct_timestamp();
 
             for (auto & output : mode_selection.get_outputs())
             {
@@ -262,7 +264,7 @@ void rs_device_base::start_video_streaming()
 
             for (auto & output : mode_selection.get_outputs())
             {
-                auto bpp = rsimpl::get_image_bpp(output.second);               
+                auto bpp = rsimpl::get_image_bpp(output.second);
                 frame_archive::frame_additional_data additional_data( timestamp,
                     frame_counter,
                     sys_time,
@@ -277,6 +279,7 @@ void rs_device_base::start_video_streaming()
 
                 // Obtain buffers for unpacking the frame
                 dest.push_back(archive->alloc_frame(output.first, additional_data, requires_processing));
+                archive->correct_timestamp(output.first);
             }
             // Unpack the frame
             if (requires_processing)
@@ -426,6 +429,14 @@ void rs_device_base::get_option_range(rs_option option, double & min, double & m
     }
 
     throw std::logic_error("range not specified");
+}
+
+void rs_device_base::disable_auto_option(int subdevice, rs_option auto_opt)
+{
+    static const int reset_state = 0;
+    // Probe , then deactivate
+    if (uvc::get_pu_control(get_device(), subdevice, auto_opt))
+        uvc::set_pu_control(get_device(), subdevice, auto_opt, reset_state);
 }
 
 const char * rs_device_base::get_usb_port_id() const

@@ -25,6 +25,7 @@ private:
     static int                                      ref_count;
     static std::mutex                               instance_lock;
     static rs_context*                              instance;
+    static std::string                              api_version;
 };
 
 #endif

@@ -187,12 +187,12 @@ TEST_CASE( "rs_get_stream_framerate() validates input", "[offline] [validation]"
 
 TEST_CASE( "rs_start_device() validates input", "[offline] [validation]" )
 {
-    rs_start_device(nullptr, rs_source::RS_SOURCE_VIDEO, require_error("null pointer passed for argument \"device\""));
+    rs_start_device(nullptr, require_error("null pointer passed for argument \"device\""));
 }
 
 TEST_CASE( "rs_stop_device() validates input", "[offline] [validation]" )
 {
-    rs_stop_device(nullptr, rs_source::RS_SOURCE_VIDEO, require_error("null pointer passed for argument \"device\""));
+    rs_stop_device(nullptr, require_error("null pointer passed for argument \"device\""));
 }
 
 TEST_CASE( "rs_is_device_streaming() validates input", "[offline] [validation]" )
@@ -380,4 +380,19 @@ TEST_CASE( "rs_context has singleton semantics", "[offline] [validation]" )
     safe_context ctx;
     safe_context second_ctx;
     REQUIRE(second_ctx == ctx);
+}
+
+TEST_CASE("rs API version verification", "[offline] [validation]")
+{
+    safe_context ctx;
+    std::cout << "Librealsense API version is " << RS_API_VERSION_STR << std::endl;
+    std::cout << "Librealsense API version number is " << RS_API_VERSION << std::endl;
+
+    std::string api_ver_str(RS_API_VERSION_STR);
+    // API  version is within [10000..999999] range
+    REQUIRE(RS_API_VERSION > 0);
+    REQUIRE(RS_API_VERSION <= 999999);
+    // Version string is in ["1.0.0".. "99.99.99"] range
+    REQUIRE(api_ver_str.size() >= 5);
+    REQUIRE(api_ver_str.size() <= 8);
 }

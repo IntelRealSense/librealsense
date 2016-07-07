@@ -353,7 +353,7 @@ namespace rs
 
         /// retrieve the time at which the TODO on a stream was captured
         /// \return            the timestamp of the frame, in milliseconds since the device was started
-        int get_timestamp() const
+        double get_timestamp() const
         {
             rs_error * e = nullptr;
             auto r = rs_get_detached_frame_timestamp(frame_ref, &e);
@@ -425,13 +425,13 @@ namespace rs
             return static_cast<format>(r);
         }
 
-		stream get_stream_type()
-		{
-			rs_error * e = nullptr;
-			auto s = rs_get_detached_frame_stream_type(frame_ref, &e);
-			error::handle(e);
-			return static_cast<stream>(s);
-		}
+        stream get_stream_type()
+        {
+            rs_error * e = nullptr;
+            auto s = rs_get_detached_frame_stream_type(frame_ref, &e);
+            error::handle(e);
+            return static_cast<stream>(s);
+        }
     };
 
     class frameset
@@ -777,7 +777,7 @@ namespace rs
         void start(rs::source source = rs::source::video)
         {            
             rs_error * e = nullptr;
-            rs_start_device((rs_device *)this, (rs_source)source, &e);
+            rs_start_source((rs_device *)this, (rs_source)source, &e);
             error::handle(e);
         }
 
@@ -786,7 +786,7 @@ namespace rs
         void stop(rs::source source = rs::source::video)
         {
             rs_error * e = nullptr;
-            rs_stop_device((rs_device *)this, (rs_source)source, &e);
+            rs_stop_source((rs_device *)this, (rs_source)source, &e);
             error::handle(e);
         }
 
@@ -805,10 +805,23 @@ namespace rs
         /// \param[out] min    the minimum value which will be accepted for this option
         /// \param[out] max    the maximum value which will be accepted for this option
         /// \param[out] step   the granularity of options which accept discrete values, or zero if the option accepts continuous values
+        void get_option_range(option option, double & min, double & max, double & step)
+        {
+            rs_error * e = nullptr;
+            rs_get_device_option_range((rs_device *)this, (rs_option)option, &min, &max, &step, &e);
+            error::handle(e);
+        }
+
+        /// retrieve the available range of values of a supported option
+        /// \param[in] option  the option whose range should be queried
+        /// \param[out] min    the minimum value which will be accepted for this option
+        /// \param[out] max    the maximum value which will be accepted for this option
+        /// \param[out] step   the granularity of options which accept discrete values, or zero if the option accepts continuous values
+        /// \param[out] def    the default value of the option
         void get_option_range(option option, double & min, double & max, double & step, double & def)
         {
             rs_error * e = nullptr;
-            rs_get_device_option_range((rs_device *)this, (rs_option)option, &min, &max, &step, &def, &e);
+            rs_get_device_option_range_ex((rs_device *)this, (rs_option)option, &min, &max, &step, &def, &e);
             error::handle(e);
         }
 
@@ -916,7 +929,7 @@ namespace rs
         /// retrieve the time at which the latest frame on a stream was captured
         /// \param[in] stream  the stream whose latest frame we are interested in
         /// \return            the timestamp of the frame, in milliseconds since the device was started
-        int get_frame_timestamp(stream stream) const
+        double get_frame_timestamp(stream stream) const
         {
             rs_error * e = nullptr;
             auto r = rs_get_frame_timestamp((const rs_device *)this, (rs_stream)stream, &e);
@@ -995,5 +1008,6 @@ namespace rs
     // Additional utilities
     inline void apply_depth_control_preset(device * device, int preset) { rs_apply_depth_control_preset((rs_device *)device, preset); }
     inline void apply_ivcam_preset(device * device, rs_ivcam_preset preset) { rs_apply_ivcam_preset((rs_device *)device, preset); }
+    inline void apply_ivcam_preset(device * device, int preset) { rs_apply_ivcam_preset((rs_device *)device, (rs_ivcam_preset)preset); } // duplicate for better backward compatibility with existing applications
 }
 #endif

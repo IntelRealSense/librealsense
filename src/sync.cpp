@@ -27,7 +27,7 @@ const byte * syncronizing_archive::get_frame_data(rs_stream stream) const
     return frontbuffer.get_frame_data(stream);
 }
 
-int syncronizing_archive::get_frame_timestamp(rs_stream stream) const
+double syncronizing_archive::get_frame_timestamp(rs_stream stream) const
 {
     return frontbuffer.get_frame_timestamp(stream);
 }
@@ -128,15 +128,12 @@ void syncronizing_archive::flush()
     frame_archive::flush();
 }
 
-void syncronizing_archive::correct_timestamp()
+void syncronizing_archive::correct_timestamp(rs_stream stream)
 {
-    for(auto stream : {RS_STREAM_DEPTH, RS_STREAM_COLOR, RS_STREAM_INFRARED, RS_STREAM_INFRARED2, RS_STREAM_FISHEYE})
-    {
-        if (is_stream_enabled(stream))
+    if (is_stream_enabled(stream))
         {
             ts_corrector.correct_timestamp(backbuffer[stream], stream);
-        }    
-    }
+        }
 }
 
 void syncronizing_archive::on_timestamp(rs_timestamp_data data)
@@ -164,7 +161,7 @@ void syncronizing_archive::cull_frames()
     while(true)
     {
         if(frames[key_stream].size() < 2) break;
-        const int t0 = frames[key_stream][0].additional_data.timestamp, t1 = frames[key_stream][1].additional_data.timestamp;
+        const double t0 = frames[key_stream][0].additional_data.timestamp, t1 = frames[key_stream][1].additional_data.timestamp;
 
         bool valid_to_skip = true;
         for(auto s : other_streams)
@@ -186,7 +183,7 @@ void syncronizing_archive::cull_frames()
         while(true)
         {
             if(frames[s].size() < 2) break;
-            const int t0 = frames[s][0].additional_data.timestamp, t1 = frames[s][1].additional_data.timestamp;
+            const double t0 = frames[s][0].additional_data.timestamp, t1 = frames[s][1].additional_data.timestamp;
 
             if (abs(t0 - frames[key_stream].front().additional_data.timestamp) < abs(t1 - frames[key_stream].front().additional_data.timestamp)) break;
             discard_frame(s);
@@ -197,6 +194,14 @@ void syncronizing_archive::cull_frames()
 // Move a single frame from the head of the queue to the front buffer, while recycling the front buffer into the freelist
 void syncronizing_archive::dequeue_frame(rs_stream stream)
 {
+    auto & frame = frames[stream].front();
+    
+    // Log callback started
+    auto callback_start_time = std::chrono::high_resolution_clock::now();
+    frame.update_frame_callback_start_ts(callback_start_time);
+    auto ts = std::chrono::duration_cast<std::chrono::milliseconds>(callback_start_time - capture_started).count();
+    LOG_DEBUG("CallbackStarted," << rsimpl::get_string(frame.get_stream_type()) << "," << frame.get_frame_number() << ",DispatchedAt," << ts);
+
     frontbuffer.place_frame(stream, std::move(frames[stream].front())); // the frame will move to free list once there are no external references to it
     frames[stream].erase(begin(frames[stream]));
 }

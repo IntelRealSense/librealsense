@@ -43,7 +43,7 @@ namespace rsimpl
         bool poll_for_frames_safe(frameset ** frames);
 
         const byte * get_frame_data(rs_stream stream) const;
-        int get_frame_timestamp(rs_stream stream) const;
+        double get_frame_timestamp(rs_stream stream) const;
         int get_frame_number(rs_stream stream) const;
         long long get_frame_system_time(rs_stream stream) const;
 
@@ -54,7 +54,7 @@ namespace rsimpl
 
         void flush() override;
 
-        void correct_timestamp();
+        void correct_timestamp(rs_stream stream);
         void on_timestamp(rs_timestamp_data data);
     };
 }

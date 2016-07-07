@@ -8,7 +8,18 @@
 extern "C" {
 #endif
 
-#define RS_API_VERSION 8
+#define RS_API_MAJOR_VERSION    1
+#define RS_API_MINOR_VERSION    9
+#define RS_API_PATCH_VERSION    4
+
+#define STRINGIFY(arg) #arg
+#define VAR_ARG_STRING(arg) STRINGIFY(arg)
+
+/* Version in encoded integer format (1,9,3) -> 10903 */
+#define	RS_API_VERSION  (((RS_API_MAJOR_VERSION) * 10000) + ((RS_API_MINOR_VERSION) * 100) + (RS_API_PATCH_VERSION))
+/*// Return version in "X.Y.Z" format */
+#define RS_API_VERSION_STR (VAR_ARG_STRING(RS_API_MAJOR_VERSION.RS_API_MINOR_VERSION.RS_API_PATCH_VERSION))
+
 
 typedef enum rs_capabilities
 {
@@ -228,7 +239,7 @@ typedef enum rs_event_source
 
 typedef struct rs_timestamp_data
 {
-    unsigned int        timestamp;
+    unsigned int        timestamp;      /* 32Mhz clock. Each tick corresponds to 31.25 usec */
     rs_event_source     source_id;
     unsigned short      frame_number;  /* 12 bit; per data source */
 } rs_timestamp_data;
@@ -450,7 +461,7 @@ void rs_enable_motion_tracking(rs_device * device,
 
     /**
     * Enable and configure motion-tracking data handlers
-    * (This variant is provided specificly to enable passing lambdas with capture lists safely into the library)
+    * (This variant is provided specifically to enable passing lambdas with capture lists safely into the library)
     * \param[in] motion_callback    user-defined routine to be invoked when a motion data arrives
     * \param[in] timestamp_callback user-defined routine to be invoked on timestamp
     * \param[out] error             if non-null, receives any error that occurs during this call, otherwise, errors are ignored
@@ -482,17 +493,29 @@ int rs_is_motion_tracking_active(rs_device * device, rs_error ** error);
 
 /**
  * begin streaming on all enabled streams for this device
+ * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+ */
+void rs_start_device(rs_device * device, rs_error ** error);
+
+/**
+ * end data acquisition for the specified source providers
+ * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+ */
+void rs_stop_device(rs_device * device, rs_error ** error);
+
+/**
+ * begin streaming on all enabled streams for this device
  * \param[in] source  the data source to be activated
  * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
  */
-void rs_start_device(rs_device * device, rs_source source, rs_error ** error);
+void rs_start_source(rs_device * device, rs_source source, rs_error ** error);
 
 /**
  * end data acquisition for the specified source providers
  * \param[in] source  the data source to be terminated
  * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
  */
-void rs_stop_device(rs_device * device, rs_source source, rs_error ** error);
+void rs_stop_source(rs_device * device, rs_source source, rs_error ** error);
 
 /**
  * determine if the device is currently streaming
@@ -509,7 +532,18 @@ int rs_is_device_streaming(const rs_device * device, rs_error ** error);
  * \param[out] step   the granularity of options which accept discrete values, or zero if the option accepts continuous values
  * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
  */
-void rs_get_device_option_range(rs_device * device, rs_option option, double * min, double * max, double * step,double * def, rs_error ** error);
+void rs_get_device_option_range(rs_device * device, rs_option option, double * min, double * max, double * step, rs_error ** error);
+
+/**
+ * retrieve the available range of values of a supported option
+ * \param[in] option  the option whose range should be queried
+ * \param[out] min    the minimum value which will be accepted for this option
+ * \param[out] max    the maximum value which will be accepted for this option
+ * \param[out] step   the granularity of options which accept discrete values, or zero if the option accepts continuous values
+ * \param[out] def    the default value of the option
+ * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+ */
+void rs_get_device_option_range_ex(rs_device * device, rs_option option, double * min, double * max, double * step, double * def, rs_error ** error);
 
 /**
  * efficiently retrieve the value of an arbitrary number of options, using minimal hardware IO
@@ -593,7 +627,7 @@ int rs_poll_for_frames_safe(rs_device * device, rs_frameset** frameset, rs_error
  * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
  * \return            the timestamp of the frame, in milliseconds since the device was started
  */
-int rs_get_frame_timestamp(const rs_device * device, rs_stream stream, rs_error ** error);
+double rs_get_frame_timestamp(const rs_device * device, rs_stream stream, rs_error ** error);
 
 /**
 * retrieve the frame number
@@ -659,7 +693,7 @@ void rs_release_frame(rs_device * device, rs_frame_ref * frame, rs_error ** erro
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return            the timestamp of the frame, in milliseconds since the device was started
 */
-int rs_get_detached_frame_timestamp(const rs_frame_ref * frame, rs_error ** error);
+double rs_get_detached_frame_timestamp(const rs_frame_ref * frame, rs_error ** error);
 
 /**
 * retrive frame number from safe frame handle, returned from detach, clone_ref or from frame callback
@@ -730,7 +764,6 @@ rs_stream rs_get_detached_frame_stream_type(const rs_frame_ref * frameset, rs_er
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return            the pointer to the start of the frame data
 */
-
 rs_frame_ref * rs_clone_frame_ref(rs_device * device, rs_frame_ref* frame, rs_error ** error);
 
 /**
@@ -742,10 +775,18 @@ rs_frame_ref * rs_clone_frame_ref(rs_device * device, rs_frame_ref* frame, rs_er
 void rs_send_blob_to_device(rs_device * device, rs_blob_type type, void * data, int size, rs_error ** error);
 
 
+/**
+* retrieve the API version from the source code. Evaluate that the value is conformant to the established policies
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return            the version API encoded into integer value "1.9.3" -> 10903
+*/
+int          rs_get_api_version      (rs_error ** error);
+
 const char * rs_get_failed_function  (const rs_error * error);
 const char * rs_get_failed_args      (const rs_error * error);
 const char * rs_get_error_message    (const rs_error * error);
 void         rs_free_error           (rs_error * error);
+
 
 const char * rs_stream_to_string     (rs_stream stream);
 const char * rs_format_to_string     (rs_format format);

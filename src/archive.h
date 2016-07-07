@@ -17,7 +17,7 @@ namespace rsimpl
     public:
         struct frame_additional_data
         {
-            int timestamp = 0;
+            double timestamp = 0;
             int frame_number = 0;
             long long system_time = 0;
             int width = 0;
@@ -32,7 +32,7 @@ namespace rsimpl
 
             frame_additional_data(){};
 
-            frame_additional_data(int in_timestamp, int in_frame_number, long long in_system_time, int in_width, int in_height, int in_fps, int in_stride, float in_bpp, const rs_format in_format, rs_stream in_stream_type, int in_pad)
+            frame_additional_data(double in_timestamp, int in_frame_number, long long in_system_time, int in_width, int in_height, int in_fps, int in_stride, float in_bpp, const rs_format in_format, rs_stream in_stream_type, int in_pad)
                 :timestamp(in_timestamp),
                 frame_number(in_frame_number),
                 system_time(in_system_time),
@@ -41,8 +41,9 @@ namespace rsimpl
                 fps(in_fps),
                 stride(in_stride),
                 bpp(in_bpp),
+                format(in_format),
                 stream_type(in_stream_type),
-                format(in_format){}
+                pad(in_pad){}
         };
 
         // Define a movable but explicitly noncopyable buffer type to hold our frame data
@@ -81,8 +82,8 @@ namespace rsimpl
             ~frame() { on_release.reset(); }
 
             const byte* get_frame_data() const;
-            int get_frame_timestamp() const;
-            void set_timestamp(int new_ts) override { additional_data.timestamp = new_ts; }
+            double get_frame_timestamp() const;
+            void set_timestamp(double new_ts) override { additional_data.timestamp = new_ts; }
             int get_frame_number() const override;
             long long get_frame_system_time() const;
             int get_width()const;
@@ -92,6 +93,7 @@ namespace rsimpl
             float get_bpp()const;
             rs_format get_format()const;
             rs_stream get_stream_type() const override;
+
             std::chrono::high_resolution_clock::time_point get_frame_callback_start_time_point() const;
             void update_frame_callback_start_ts(std::chrono::high_resolution_clock::time_point ts);
 
@@ -146,7 +148,7 @@ namespace rsimpl
             }
 
             const byte* get_frame_data() const override;
-            int get_frame_timestamp() const override;
+            double get_frame_timestamp() const override;
             int get_frame_number() const override;
             long long get_frame_system_time() const override;
             int get_frame_width() const override;
@@ -169,13 +171,13 @@ namespace rsimpl
             frame_ref detach_ref(rs_stream stream);
             void place_frame(rs_stream stream, frame&& new_frame);
 
-            rs_frame_ref * get_frame(rs_stream stream) override
+            const rs_frame_ref * get_frame(rs_stream stream) const override
             {
                 return &buffer[stream];
             }
 
             const byte * get_frame_data(rs_stream stream) const { return buffer[stream].get_frame_data(); }
-            int get_frame_timestamp(rs_stream stream) const { return buffer[stream].get_frame_timestamp(); }
+            double get_frame_timestamp(rs_stream stream) const { return buffer[stream].get_frame_timestamp(); }
             int get_frame_number(rs_stream stream) const { return buffer[stream].get_frame_number(); }
             long long get_frame_system_time(rs_stream stream) const { return buffer[stream].get_frame_system_time(); }
 
@@ -191,12 +193,12 @@ namespace rsimpl
         small_heap<frameset, RS_USER_QUEUE_SIZE> published_sets;
         small_heap<frame_ref, RS_USER_QUEUE_SIZE> detached_refs;
         
-        std::chrono::high_resolution_clock::time_point capture_started;
 
     protected:
         frame backbuffer[RS_STREAM_NATIVE_COUNT]; // recieve frame here
         std::vector<frame> freelist; // return frames here
         std::recursive_mutex mutex;
+        std::chrono::high_resolution_clock::time_point capture_started;
 
     public:
         frame_archive(const std::vector<subdevice_mode_selection> & selection, std::chrono::high_resolution_clock::time_point capture_started = std::chrono::high_resolution_clock::now());

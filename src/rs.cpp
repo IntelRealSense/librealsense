@@ -21,6 +21,7 @@ struct rs_error
     std::string args;
 };
 
+
 // This facility allows for translation of exceptions to rs_error structs at the API boundary
 namespace rsimpl
 {
@@ -48,7 +49,10 @@ namespace rsimpl
 
 rs_context * rs_create_context(int api_version, rs_error ** error) try
 {
-    if (api_version != RS_API_VERSION) throw std::runtime_error("api version mismatch");
+    int runtime_api_version = rs_get_api_version(error);
+    if (*error) throw std::runtime_error(rs_get_error_message(*error));
+
+    if (api_version != runtime_api_version) throw std::runtime_error("api version mismatch");
     return rs_context_base::acquire_instance();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, api_version)
@@ -293,21 +297,35 @@ int rs_is_motion_tracking_active(rs_device * device, rs_error ** error) try
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, device)
 
-void rs_start_device(rs_device * device, rs_source source, rs_error ** error) try
+void rs_start_device(rs_device * device, rs_error ** error) try
+{
+    VALIDATE_NOT_NULL(device); 
+    device->start(rs_source::RS_SOURCE_VIDEO);
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, device)
+
+void rs_start_source(rs_device * device, rs_source source, rs_error ** error) try
 {
     VALIDATE_NOT_NULL(device); 
     VALIDATE_ENUM(source);
     device->start(source);
 }
-HANDLE_EXCEPTIONS_AND_RETURN(, device,source)
+HANDLE_EXCEPTIONS_AND_RETURN(, device, source)
 
-void rs_stop_device(rs_device * device, rs_source source, rs_error ** error) try
+void rs_stop_device(rs_device * device, rs_error ** error) try
+{
+    VALIDATE_NOT_NULL(device);
+    device->stop(rs_source::RS_SOURCE_VIDEO);
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, device)
+
+void rs_stop_source(rs_device * device, rs_source source, rs_error ** error) try
 {
     VALIDATE_NOT_NULL(device);
     VALIDATE_ENUM(source);
     device->stop(source);
 }
-HANDLE_EXCEPTIONS_AND_RETURN(, device,source)
+HANDLE_EXCEPTIONS_AND_RETURN(, device, source)
 
 int rs_is_device_streaming(const rs_device * device, rs_error ** error) try
 {
@@ -362,11 +380,11 @@ int rs_poll_for_frames_safe(rs_device * device, rs_frameset** frameset, rs_error
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, device, frameset)
 
-int rs_get_frame_timestamp(const rs_device * device, rs_stream stream, rs_error ** error) try
+double rs_get_frame_timestamp(const rs_device * device, rs_stream stream, rs_error ** error) try
 {
     VALIDATE_NOT_NULL(device);
     VALIDATE_ENUM(stream);
-    return device->get_stream_interface(stream).get_frame_number();
+    return device->get_stream_interface(stream).get_frame_timestamp();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, device, stream)
 
@@ -390,72 +408,71 @@ rs_frame_ref* rs_get_frame(const rs_frameset * frame_set, rs_stream stream, rs_e
 {
     VALIDATE_NOT_NULL(frame_set);
     VALIDATE_ENUM(stream);
-    auto frames = (rsimpl::frame_archive::frameset*)frame_set;
-    auto frame = frames->get_frame(stream);
-    return reinterpret_cast<rs_frame_ref*>(frame);
+    auto frame = frame_set->get_frame(stream);
+    return (rs_frame_ref*)(frame);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, frame_set, stream)
 
-int rs_get_detached_frame_timestamp(const rs_frame_ref * frameset, rs_error ** error) try
+double rs_get_detached_frame_timestamp(const rs_frame_ref * frameset, rs_error ** error) try
 {
     VALIDATE_NOT_NULL(frameset);
-    return ((rsimpl::frame_archive::frame_ref*)frameset)->get_frame_timestamp();
+    return frameset->get_frame_timestamp();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, frameset)
 
 const void * rs_get_detached_frame_data(const rs_frame_ref * frameset, rs_error ** error) try
 {
     VALIDATE_NOT_NULL(frameset);
-    return ((rsimpl::frame_archive::frame_ref*)frameset)->get_frame_data();
+    return frameset->get_frame_data();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, frameset)
 
 int rs_get_detached_frame_width(const rs_frame_ref * frameset, rs_error ** error) try
 {
     VALIDATE_NOT_NULL(frameset);
-    return ((rsimpl::frame_archive::frame_ref*)frameset)->get_frame_width();
+    return frameset->get_frame_width();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, frameset)
 
 int rs_get_detached_frame_height(const rs_frame_ref * frameset, rs_error ** error) try
 {
     VALIDATE_NOT_NULL(frameset);
-    return ((rsimpl::frame_archive::frame_ref*)frameset)->get_frame_height();
+    return frameset->get_frame_height();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, frameset)
 
 int rs_get_detached_framerate(const rs_frame_ref * frameset, rs_error ** error) try
 {
     VALIDATE_NOT_NULL(frameset);
-    return ((rsimpl::frame_archive::frame_ref*)frameset)->get_frame_framerate();
+    return frameset->get_frame_framerate();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, frameset)
 
 int rs_get_detached_frame_stride(const rs_frame_ref * frameset, rs_error ** error) try
 {
     VALIDATE_NOT_NULL(frameset);
-    return ((rsimpl::frame_archive::frame_ref*)frameset)->get_frame_stride();
+    return frameset->get_frame_stride();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, frameset)
 
 float rs_get_detached_frame_bpp(const rs_frame_ref * frameset, rs_error ** error) try
 {
     VALIDATE_NOT_NULL(frameset);
-    return ((rsimpl::frame_archive::frame_ref*)frameset)->get_frame_bpp();
+    return frameset->get_frame_bpp();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, frameset)
 
 rs_format rs_get_detached_frame_format(const rs_frame_ref * frameset, rs_error ** error) try
 {
     VALIDATE_NOT_NULL(frameset);
-    return ((rsimpl::frame_archive::frame_ref*)frameset)->get_frame_format();
+    return frameset->get_frame_format();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(RS_FORMAT_ANY, frameset)
 
 rs_stream rs_get_detached_frame_stream_type(const rs_frame_ref * frameset, rs_error ** error) try
 {
-	VALIDATE_NOT_NULL(frameset);
-	return ((rsimpl::frame_archive::frame_ref*)frameset)->get_stream_type();
+    VALIDATE_NOT_NULL(frameset);
+    return frameset->get_stream_type();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(RS_STREAM_MAX_ENUM, frameset)
 
@@ -463,7 +480,7 @@ HANDLE_EXCEPTIONS_AND_RETURN(RS_STREAM_MAX_ENUM, frameset)
 int rs_get_detached_frame_number(const rs_frame_ref * frame, rs_error ** error) try
 {
     VALIDATE_NOT_NULL(frame);
-    return ((rsimpl::frame_archive::frame_ref*)frame)->get_frame_number();
+    return frame->get_frame_number();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, frame)
 
@@ -557,11 +574,21 @@ const char * rs_get_event_name(rs_event_source event, rs_error ** error) try
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, event)
 
 
-void rs_get_device_option_range(rs_device * device, rs_option option, double * min, double * max, double * step, double * def, rs_error ** error) try
+void rs_get_device_option_range(rs_device * device, rs_option option, double * min, double * max, double * step, rs_error ** error) try
 {
     VALIDATE_NOT_NULL(device);
     VALIDATE_ENUM(option);
-	double x = 0; // Prevent internal code from having to worry about whether nulls are passed in for min/max/step by giving it somewhere to write to
+    double x = 0; // Prevent internal code from having to worry about whether nulls are passed in for min/max/step by giving it somewhere to write to
+    double def = 0;
+    device->get_option_range(option, min ? *min : x, max ? *max : x, step ? *step : x, def);
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, device, option, min, max, step)
+
+void rs_get_device_option_range_ex(rs_device * device, rs_option option, double * min, double * max, double * step, double * def, rs_error ** error) try
+{
+    VALIDATE_NOT_NULL(device);
+    VALIDATE_ENUM(option);
+    double x = 0; // Prevent internal code from having to worry about whether nulls are passed in for min/max/step by giving it somewhere to write to
     device->get_option_range(option, min ? *min : x, max ? *max : x, step ? *step : x, def ? *def : x);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, device, option, min, max, step)
@@ -577,7 +604,7 @@ void rs_reset_device_options_to_default(rs_device * device, const rs_option* opt
     for (int i = 0; i < count; ++i)
     {
         double def;
-        rs_get_device_option_range(device, options[i], NULL, NULL, NULL, &def, 0);
+        rs_get_device_option_range_ex(device, options[i], NULL, NULL, NULL, &def, 0);
         values.push_back(def);
     }
     device->set_options(options, count, values.data());
@@ -623,6 +650,17 @@ void rs_set_device_option(rs_device * device, rs_option option, double value, rs
     device->set_options(&option, 1, &value);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, device, option, value)
+
+// Verify  and provide API version encoded as integer value
+int rs_get_api_version(rs_error ** error) try
+{
+    // Each component type is within [0-99] range
+    VALIDATE_RANGE(RS_API_MAJOR_VERSION, 0, 99);
+    VALIDATE_RANGE(RS_API_MINOR_VERSION, 0, 99);
+    VALIDATE_RANGE(RS_API_PATCH_VERSION, 0, 99);
+    return RS_API_VERSION;
+}
+HANDLE_EXCEPTIONS_AND_RETURN(0, RS_API_MAJOR_VERSION, RS_API_MINOR_VERSION, RS_API_PATCH_VERSION)
 
 void rs_send_blob_to_device(rs_device * device, rs_blob_type type, void * data, int size, rs_error ** error) try
 {

@@ -42,7 +42,7 @@ namespace rsimpl
         void claim_aux_interface(device & device, const guid & interface_guid, int interface_number);
         void bulk_transfer(device & device, unsigned char handle_id, unsigned char endpoint, void * data, int length, int *actual_length, unsigned int timeout);
 
-        // Access CT and PU controls
+        // Access CT (Camera Terminal) and PU (Processing Units) controls
         inline bool is_pu_control(rs_option option) { return option >= RS_OPTION_COLOR_BACKLIGHT_COMPENSATION && option <= RS_OPTION_COLOR_ENABLE_AUTO_WHITE_BALANCE; }
         void get_pu_control_range(const device & device, int subdevice, rs_option option, int * min, int * max, int * step, int * def);
         void get_extension_control_range(const device & device, const extension_unit & xu, char control, int * min, int * max, int * step, int * def);

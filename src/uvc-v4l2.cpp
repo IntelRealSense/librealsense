@@ -80,7 +80,7 @@ namespace rsimpl
         struct subdevice
         {
             std::string dev_name;   // Device name (typically of the form /dev/video*)
-            int busnum, devnum;     // USB device bus number and device number (needed for F200/SR300 direct USB controls)
+            int busnum, devnum, parent_devnum;     // USB device bus number and device number (needed for F200/SR300 direct USB controls)
             int vid, pid, mi;       // Vendor ID, product ID, and multiple interface index
             int fd;                 // File descriptor for this device
             std::vector<buffer> buffers;
@@ -110,8 +110,11 @@ namespace rsimpl
                     {
                         if(std::ifstream(path + "devnum") >> devnum)
                         {
-                            good = true;
-                            break;
+                            if(std::ifstream(path + "../devnum") >> parent_devnum)
+                            {
+                                good = true;
+                                break;
+                            }
                         }
                     }
                     path += "../";
@@ -599,10 +602,11 @@ namespace rsimpl
             default: throw std::runtime_error(to_string() << "no v4l2 cid for option " << option);
             }
         }
-        
+
         void set_pu_control(device & device, int subdevice, rs_option option, int value)
         {
             struct v4l2_control control = {get_cid(option), value};
+            if (RS_OPTION_COLOR_ENABLE_AUTO_EXPOSURE==option) { control.value = value ? V4L2_EXPOSURE_APERTURE_PRIORITY : V4L2_EXPOSURE_MANUAL; }
             if (xioctl(device.subdevices[subdevice]->fd, VIDIOC_S_CTRL, &control) < 0) throw_error("VIDIOC_S_CTRL");
         }
 
@@ -610,11 +614,22 @@ namespace rsimpl
         {
             struct v4l2_control control = {get_cid(option)};
             if (xioctl(device.subdevices[subdevice]->fd, VIDIOC_G_CTRL, &control) < 0) throw_error("VIDIOC_G_CTRL");
+            if (RS_OPTION_COLOR_ENABLE_AUTO_EXPOSURE==option)  { control.value = (V4L2_EXPOSURE_MANUAL==control.value) ? 0 : 1; }
             return control.value;
         }
 
         void get_pu_control_range(const device & device, int subdevice, rs_option option, int * min, int * max, int * step, int * def)
         {
+            // Auto controls range is trimed to {0,1} range
+            if(option >= RS_OPTION_COLOR_ENABLE_AUTO_EXPOSURE && option <= RS_OPTION_COLOR_ENABLE_AUTO_WHITE_BALANCE)
+            {
+                if(min)  *min  = 0;
+                if(max)  *max  = 1;
+                if(step) *step = 1;
+                if(def)  *def  = 1;
+                return;
+            }
+
             struct v4l2_queryctrl query = {};
             query.id = get_cid(option);
             if (xioctl(device.subdevices[subdevice]->fd, VIDIOC_QUERYCTRL, &query) < 0)
@@ -812,7 +827,7 @@ namespace rsimpl
                 for(auto & dev : devices)
                 {
                     //if (dev->subdevices[0]->vid == 0x8086 && dev->subdevices[0]->pid == 0x0acb && sub->vid == 0x04b4 && sub->pid == 0x00c3)
-                    if (dev->subdevices[0]->vid == 0x8086 && dev->subdevices[0]->pid == 0x0acb && sub->vid == 0x8086 && sub->pid == 0x0ad0)
+                    if (dev->subdevices[0]->vid == 0x8086 && dev->subdevices[0]->pid == 0x0acb && sub->vid == 0x8086 && sub->pid == 0x0ad0 && dev->subdevices[0]->parent_devnum == sub->parent_devnum)
                     {
                         dev->subdevices.push_back(move(sub));
                         break;
@@ -834,15 +849,21 @@ namespace rsimpl
                 // Look for a video device whose busnum/devnum matches this USB device
                 for(auto & dev : devices)
                 {
-                    if (subdevices.size() >=4 && dev->subdevices.size() >= 4)      // Make sure that four subdevices present
+                    if (dev->subdevices.size() >=4)      // Make sure that four subdevices present
                     {
-                        // First, handle the special case of FishEye
-                        bool bFishEyeDevice = ((busnum == dev->subdevices[3]->busnum) && (devnum == dev->subdevices[3]->devnum));
-                        if(bFishEyeDevice)
+                        auto parent_device = libusb_get_parent(usb_device);
+                        if (parent_device)
                         {
-                            dev->usb_aux_device = usb_device;
-                            libusb_ref_device(usb_device);
-                            break;
+                            int parent_devnum = libusb_get_device_address(libusb_get_parent(usb_device));
+
+                            // First, handle the special case of FishEye
+                            bool bFishEyeDevice = ((busnum == dev->subdevices[3]->busnum) && (parent_devnum == dev->subdevices[3]->parent_devnum));
+                            if(bFishEyeDevice && !dev->usb_aux_device)
+                            {
+                                dev->usb_aux_device = usb_device;
+                                libusb_ref_device(usb_device);
+                                break;
+                            }
                         }
                     }
 

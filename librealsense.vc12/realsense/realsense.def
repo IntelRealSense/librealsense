@@ -38,10 +38,13 @@ EXPORTS
     rs_set_frame_callback_cpp
     rs_start_device
     rs_stop_device
+    rs_start_source
+    rs_stop_source
     rs_is_device_streaming
 
     rs_reset_device_options_to_default
     rs_get_device_option_range
+    rs_get_device_option_range_ex
     rs_get_device_options
     rs_set_device_options
     rs_reset_device_options_to_default
@@ -92,3 +95,5 @@ EXPORTS
 
     rs_log_to_console
     rs_log_to_file
+
+    rs_get_api_version

@@ -44,6 +44,7 @@ namespace rsimpl
         int                                     get_framerate() const override { return get_mode().get_framerate(); }
 
         int                                     get_frame_number() const override;
+        double                                  get_frame_timestamp() const override;
         long long                               get_frame_system_time() const override;
         const uint8_t *                         get_frame_data() const override;
     };
@@ -66,6 +67,7 @@ namespace rsimpl
         int                                     get_framerate() const override { return source.get_framerate(); }
 
         int                                     get_frame_number() const override { return source.get_frame_number(); }
+        double                                  get_frame_timestamp() const override{ return source.get_frame_timestamp(); }
         long long                               get_frame_system_time() const override { return source.get_frame_system_time(); }
         const uint8_t *                         get_frame_data() const override;
     };
@@ -89,6 +91,7 @@ namespace rsimpl
         int                                     get_framerate() const override { return source.get_framerate(); }
 
         int                                     get_frame_number() const override { return source.get_frame_number(); }
+        double                                  get_frame_timestamp() const override { return source.get_frame_timestamp(); }
         long long                               get_frame_system_time() const override { return source.get_frame_system_time(); }
         const uint8_t *                         get_frame_data() const override;
     };
@@ -111,6 +114,7 @@ namespace rsimpl
         int                                     get_framerate() const override { return from.get_framerate(); }
 
         int                                     get_frame_number() const override { return from.get_frame_number(); }
+        double                                  get_frame_timestamp() const override { return from.get_frame_timestamp(); }
         long long                               get_frame_system_time() const override { return from.get_frame_system_time(); }
         const unsigned char *                   get_frame_data() const override;
     };

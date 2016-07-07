@@ -6,7 +6,7 @@
 #define LIBREALSENSE_DS_PRIVATE_H
 
 #include "uvc.h"
-//#include <cstring>
+#include <algorithm>
 
 namespace rsimpl
 {
@@ -124,7 +124,32 @@ namespace rsimpl
         inline dc_params    get_depth_params            (const uvc::device & device) { return xu_read<dc_params  >(device, lr_xu, control::depth_params); }
         inline uint8_t      get_last_error              (const uvc::device & device) { return xu_read<uint8_t    >(device, lr_xu, control::last_error); }
         inline rate_value   get_lr_exposure             (const uvc::device & device) { return xu_read<rate_value >(device, lr_xu, control::lr_exposure); }
-        inline ae_params    get_lr_auto_exposure_params (const uvc::device & device) { return xu_read<ae_params  >(device, lr_xu, control::lr_autoexposure_parameters); }
+        inline ae_params    get_lr_auto_exposure_params(const uvc::device & device, std::vector<supported_option> ae_vec) {
+            auto ret_val = xu_read<ae_params  >(device, lr_xu, control::lr_autoexposure_parameters);
+
+            for (auto& elem : ae_vec)
+            {
+                switch (elem.option)
+                {
+                case RS_OPTION_R200_AUTO_EXPOSURE_TOP_EDGE:
+                    ret_val.exposure_top_edge = std::min((uint16_t)elem.max, ret_val.exposure_top_edge);
+                    break;
+
+                case RS_OPTION_R200_AUTO_EXPOSURE_BOTTOM_EDGE:
+                    ret_val.exposure_bottom_edge = std::min((uint16_t)elem.max, ret_val.exposure_bottom_edge);
+                    break;
+
+                case RS_OPTION_R200_AUTO_EXPOSURE_LEFT_EDGE:
+                    ret_val.exposure_left_edge = std::min((uint16_t)elem.max, ret_val.exposure_left_edge);
+                    break;
+
+                case RS_OPTION_R200_AUTO_EXPOSURE_RIGHT_EDGE:
+                    ret_val.exposure_right_edge = std::min((uint16_t)elem.max, ret_val.exposure_right_edge);
+                    break;
+                }
+            }
+            return ret_val;
+        }
         inline rate_value   get_lr_gain                 (const uvc::device & device) { return xu_read<rate_value >(device, lr_xu, control::lr_gain); }
         inline uint8_t      get_lr_exposure_mode        (const uvc::device & device) { return xu_read<uint8_t    >(device, lr_xu, control::lr_exposure_mode); }
         inline uint32_t     get_disparity_shift         (const uvc::device & device) { return xu_read<uint32_t   >(device, lr_xu, control::disparity_shift); }
@@ -137,7 +162,11 @@ namespace rsimpl
         inline void         set_temperature             (uvc::device & device, temperature temp)    { xu_write(device, lr_xu, control::temperature, temp); }
         inline void         set_depth_params            (uvc::device & device, dc_params params)    { xu_write(device, lr_xu, control::depth_params, params); }
         inline void         set_lr_exposure             (uvc::device & device, rate_value exposure) { xu_write(device, lr_xu, control::lr_exposure, exposure); }
-        inline void         set_lr_auto_exposure_params (uvc::device & device, ae_params params)    { xu_write(device, lr_xu, control::lr_autoexposure_parameters, params); }
+        inline void         set_lr_auto_exposure_params (uvc::device & device, ae_params params)    {
+            if (params.exposure_top_edge >= params.exposure_bottom_edge || params.exposure_left_edge >= params.exposure_right_edge)
+                throw std::logic_error("set_lr_auto_exposure_params failed.");
+
+            xu_write(device, lr_xu, control::lr_autoexposure_parameters, params); }
         inline void         set_lr_gain                 (uvc::device & device, rate_value gain)     { xu_write(device, lr_xu, control::lr_gain, gain); }
         inline void         set_lr_exposure_mode        (uvc::device & device, uint8_t mode)        { xu_write(device, lr_xu, control::lr_exposure_mode, mode); }
         inline void         set_disparity_shift         (uvc::device & device, uint32_t shift)      { xu_write(device, lr_xu, control::disparity_shift, shift); }

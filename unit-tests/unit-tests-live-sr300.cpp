@@ -337,7 +337,7 @@ inline void test_sr300_option(rs_option option, std::initializer_list<int> value
     if(when & AFTER_START_DEVICE)
     {
         rs_enable_stream_preset(dev, RS_STREAM_DEPTH, RS_PRESET_BEST_QUALITY, require_no_error());
-        rs_start_device(dev, rs_source::RS_SOURCE_VIDEO, require_no_error());
+        rs_start_device(dev, require_no_error());
 
         // Currently, setting/getting options immediately after streaming frequently raises hardware errors
         // todo - Internally block or retry failed calls within the first few seconds after streaming
@@ -368,7 +368,7 @@ TEST_CASE( "SR300 supports RS_OPTION_F200_FILTER_OPTION", "[live] [sr300]" )
 
 TEST_CASE( "SR300 supports RS_OPTION_F200_CONFIDENCE_THRESHOLD", "[live] [sr300]" )
 {
-    test_sr300_option(RS_OPTION_F200_LASER_POWER, {0, 1, 2, 4, 8, 15}, AFTER_START_DEVICE);
+    test_sr300_option(RS_OPTION_F200_CONFIDENCE_THRESHOLD, {0, 1, 2, 4, 8, 15}, AFTER_START_DEVICE);
 }
 
 //////////////////////////////////////////
@@ -471,7 +471,7 @@ inline void test_sr300_command(rs_device *dev, std::vector<rs_option> options_li
     if (when & AFTER_START_DEVICE)
     {
         rs_enable_stream_preset(dev, RS_STREAM_DEPTH, RS_PRESET_BEST_QUALITY, require_no_error());
-        rs_start_device(dev, rs_source::RS_SOURCE_VIDEO, require_no_error());
+        rs_start_device(dev, require_no_error());
 
         // Currently, setting/getting options immediately after streaming frequently raises hardware errors
         // todo - Internally block or retry failed calls within the first few seconds after streaming
@@ -479,7 +479,7 @@ inline void test_sr300_command(rs_device *dev, std::vector<rs_option> options_li
         test_options(dev, options_list.data(), options_list.size(), good_values, bad_values, ret_values, expected_success_msg, expected_error_msg, write_cmd);
 
         std::this_thread::sleep_for(std::chrono::milliseconds(50));
-        rs_stop_device(dev, rs_source::RS_SOURCE_VIDEO, require_no_error());
+        rs_stop_device(dev, require_no_error());
     }
 }
 

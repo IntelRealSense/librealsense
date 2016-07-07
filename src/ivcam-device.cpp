@@ -88,8 +88,17 @@ namespace rsimpl
     {
         for (size_t i = 0; i < count; ++i)
         {
+
             if (uvc::is_pu_control(options[i]))
             {
+                // Disabling auto-setting controls, if needed
+                switch (options[i])
+                {
+                case RS_OPTION_COLOR_WHITE_BALANCE:     disable_auto_option( 0, RS_OPTION_COLOR_ENABLE_AUTO_WHITE_BALANCE); break;
+                case RS_OPTION_COLOR_EXPOSURE:          disable_auto_option( 0, RS_OPTION_COLOR_ENABLE_AUTO_EXPOSURE); break;
+                default:  break;
+                }
+
                 uvc::set_pu_control_with_retry(get_device(), 0, options[i], static_cast<int>(values[i]));
                 continue;
             }
@@ -102,7 +111,10 @@ namespace rsimpl
             case RS_OPTION_F200_FILTER_OPTION:        ivcam::set_filter_option(get_device(), static_cast<uint8_t>(values[i])); break;
             case RS_OPTION_F200_CONFIDENCE_THRESHOLD: ivcam::set_confidence_threshold(get_device(), static_cast<uint8_t>(values[i])); break;
 
-            default: LOG_WARNING("Cannot set " << options[i] << " to " << values[i] << " on " << get_name()); break;
+            default: 
+                LOG_WARNING("Cannot set " << options[i] << " to " << values[i] << " on " << get_name());
+                throw std::logic_error("Option unsupported");
+                break;
             }
         }
     }
@@ -125,7 +137,10 @@ namespace rsimpl
             case RS_OPTION_F200_FILTER_OPTION:        ivcam::get_filter_option(get_device(), val); values[i] = val; break;
             case RS_OPTION_F200_CONFIDENCE_THRESHOLD: ivcam::get_confidence_threshold(get_device(), val); values[i] = val; break;
 
-            default: LOG_WARNING("Cannot get " << options[i] << " on " << get_name()); break;
+            default: 
+                LOG_WARNING("Cannot get " << options[i] << " on " << get_name());
+                throw std::logic_error("Option unsupported");
+                break;
             }
         }
     }
@@ -155,7 +170,7 @@ namespace rsimpl
             return false;
         }
 
-        int get_frame_timestamp(const subdevice_mode & mode, const void * frame) override
+        double get_frame_timestamp(const subdevice_mode & mode, const void * frame) override
         {
             // Timestamps are encoded within the first 32 bits of the image
             int rolling_timestamp = *reinterpret_cast<const int32_t *>(frame);

@@ -34,7 +34,7 @@ namespace rsimpl
     struct frame_timestamp_reader
     {
         virtual bool validate_frame(const subdevice_mode & mode, const void * frame) const = 0;
-        virtual int get_frame_timestamp(const subdevice_mode & mode, const void * frame) = 0;
+        virtual double get_frame_timestamp(const subdevice_mode & mode, const void * frame) = 0;
         virtual int get_frame_counter(const subdevice_mode &, const void * frame) = 0;
     };
 
@@ -60,7 +60,7 @@ private:
     rsimpl::stream_interface *                  streams[RS_STREAM_COUNT];
 
     bool                                        capturing;
-    bool                                        data_acquisition_active;
+    bool                                        data_acquisition_active;    
     std::chrono::high_resolution_clock::time_point capture_started;
 
     std::shared_ptr<rsimpl::syncronizing_archive> archive;
@@ -73,6 +73,9 @@ protected:
     virtual void                                start_motion_tracking();
     virtual void                                stop_motion_tracking();
 
+    virtual void                                disable_auto_option(int subdevice, rs_option auto_opt);
+
+    bool                                        motion_module_ready;
 public:
                                                 rs_device_base(std::shared_ptr<rsimpl::uvc::device> device, const rsimpl::static_device_info & info);
                                                 virtual ~rs_device_base();

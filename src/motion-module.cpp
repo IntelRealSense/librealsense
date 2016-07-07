@@ -53,6 +53,7 @@ void motion_module_control::enter_state(mm_state new_state)
         if (mm_eventing == new_state)
         {
             set_control(mm_video_output, true); // L -shape adapter board
+            std::this_thread::sleep_for(std::chrono::milliseconds(300)); // Added delay between MM power on and MM start commands to be sure that the MM will be ready untill start polling events. 
             set_control(mm_events_output, true);
         }
         break;
@@ -63,6 +64,7 @@ void motion_module_control::enter_state(mm_state new_state)
         }
         if (mm_full_load == new_state)
         {
+            std::this_thread::sleep_for(std::chrono::milliseconds(300)); // Added delay between MM power on and MM start commands to be sure that the MM will be ready untill start polling events. 
             set_control(mm_events_output, true);
         }
         if (mm_eventing == new_state)

@@ -217,7 +217,7 @@ namespace rsimpl
             com_ptr<IMFActivate> mf_activate;
             com_ptr<IMFMediaSource> mf_media_source;
             com_ptr<IAMCameraControl> am_camera_control;
-            com_ptr<IAMVideoProcAmp> am_video_proc_amp;            
+            com_ptr<IAMVideoProcAmp> am_video_proc_amp;
             std::map<int, com_ptr<IKsControl>> ks_controls;
             com_ptr<IMFSourceReader> mf_source_reader;
             std::function<void(const void * frame, std::function<void()>)> callback;
@@ -410,12 +410,11 @@ namespace rsimpl
             std::thread data_channel_thread;
             volatile bool data_stop;
 
-            device(std::shared_ptr<context> parent, int vid, int pid, std::string unique_id) : parent(move(parent)), vid(vid), pid(pid), unique_id(move(unique_id)), data_stop(false), aux_pid(0), aux_vid(0)
+            device(std::shared_ptr<context> parent, int vid, int pid, std::string unique_id) : parent(move(parent)), vid(vid), pid(pid), unique_id(move(unique_id)), aux_pid(0), aux_vid(0), data_stop(false)
             {
-
             }
 
-            ~device() { stop_streaming(); close_win_usb(); }
+            ~device() { stop_streaming(); stop_data_acquisition(); close_win_usb(); }
 
             IKsControl * get_ks_control(const uvc::extension_unit & xu)
             {
@@ -454,7 +453,6 @@ namespace rsimpl
                     data_channel_thread.join();
                     data_stop = false;
                 }
-                close_win_usb();
             }
 
             void start_streaming()
@@ -591,6 +589,18 @@ namespace rsimpl
                 {
                     CloseHandle(usb_file_handle);
                     usb_file_handle = INVALID_HANDLE_VALUE;
+                }
+
+                if (usb_aux_interface_handle != INVALID_HANDLE_VALUE)
+                {
+                    WinUsb_Free(usb_aux_interface_handle);
+                    usb_aux_interface_handle = INVALID_HANDLE_VALUE;
+                }
+
+                if (usb_aux_file_handle != INVALID_HANDLE_VALUE)
+                {
+                    CloseHandle(usb_aux_file_handle);
+                    usb_aux_file_handle = INVALID_HANDLE_VALUE;
                 }
             }
 
@@ -870,7 +880,7 @@ namespace rsimpl
             sub.get_media_source();
             if (option == RS_OPTION_COLOR_EXPOSURE || option == RS_OPTION_FISHEYE_COLOR_EXPOSURE)
             {
-                check("IAMCameraControl::Set", sub.am_camera_control->Set(CameraControl_Exposure, static_cast<int>(std::round(log2(static_cast<double>(value) / 10000))), CameraControl_Flags_Manual));
+                check("IAMCameraControl::Set", sub.am_camera_control->Set(CameraControl_Exposure, static_cast<int>(value), CameraControl_Flags_Manual));
                 return;
             }
             if(option == RS_OPTION_COLOR_ENABLE_AUTO_EXPOSURE)
@@ -905,8 +915,6 @@ namespace rsimpl
             throw std::runtime_error("unsupported control");
         }
 
-        int win_to_uvc_exposure(int value) { return static_cast<int>(std::round(exp2(static_cast<double>(value)) * 10000)); }
-
         void get_pu_control_range(const device & device, int subdevice, rs_option option, int * min, int * max, int * step, int * def)
         {
             if(option >= RS_OPTION_COLOR_ENABLE_AUTO_EXPOSURE && option <= RS_OPTION_COLOR_ENABLE_AUTO_WHITE_BALANCE)
@@ -924,10 +932,10 @@ namespace rsimpl
             if (option == RS_OPTION_COLOR_EXPOSURE || option == RS_OPTION_FISHEYE_COLOR_EXPOSURE)
             {
                 check("IAMCameraControl::Get", sub.am_camera_control->GetRange(CameraControl_Exposure, &minVal, &maxVal, &steppingDelta, &defVal, &capsFlag));
-                if(min)  *min  = win_to_uvc_exposure(minVal);
-                if(max)  *max  = win_to_uvc_exposure(maxVal);
-                if(step) *step = win_to_uvc_exposure(steppingDelta);
-                if(def)  *def  = win_to_uvc_exposure(defVal);
+                if (min)  *min = minVal;
+                if (max)  *max = maxVal;
+                if (step) *step = steppingDelta;
+                if (def)  *def = defVal;
                 return;
             }
             for(auto & pu : pu_controls)
@@ -1023,11 +1031,14 @@ namespace rsimpl
         int get_pu_control(const device & device, int subdevice, rs_option option)
         {
             auto & sub = device.subdevices[subdevice];
+            // first call to get_media_source is also initializing the am_camera_control pointer, required for this method
+            const_cast<uvc::subdevice &>(sub).get_media_source(); // initialize am_camera_control
             long value=0, flags=0;
             if (option == RS_OPTION_COLOR_EXPOSURE || option == RS_OPTION_FISHEYE_COLOR_EXPOSURE)
             {
+                // am_camera_control != null, because get_media_source was called at least once
                 check("IAMCameraControl::Get", sub.am_camera_control->Get(CameraControl_Exposure, &value, &flags));
-                return win_to_uvc_exposure(value);
+                return value;
             }
             if(option == RS_OPTION_COLOR_ENABLE_AUTO_EXPOSURE)
             {

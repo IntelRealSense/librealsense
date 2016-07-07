@@ -5,6 +5,9 @@
 using namespace rsimpl;
 using namespace std;
 
+const double IMU_UNITS_TO_MSEC = 0.00003125;
+
+
 void concurrent_queue::push_back_data(rs_timestamp_data data)
 {
     lock_guard<mutex> lock(mtx);
@@ -52,7 +55,7 @@ size_t concurrent_queue::size()
 bool concurrent_queue::correct(const rs_event_source& source_id, frame_interface& frame)
 {
     lock_guard<mutex> lock(mtx);
-
+    
     auto it = find_if(data_queue.begin(), data_queue.end(),
                       [&](const rs_timestamp_data& element) {
         return ((frame.get_frame_number() == element.frame_number) && (source_id == element.source_id));
@@ -60,22 +63,27 @@ bool concurrent_queue::correct(const rs_event_source& source_id, frame_interface
 
     if (it != data_queue.end())
     {
-        frame.set_timestamp(it->timestamp);
+        frame.set_timestamp((double)(it->timestamp)*IMU_UNITS_TO_MSEC);
         return true;
     }
-
     return false;
 }
 
+timestamp_corrector::timestamp_corrector(int in_queue_size, int in_time_out)
+    :queue_size(in_queue_size), time_out(in_time_out)
+{
+}
+
 timestamp_corrector::~timestamp_corrector()
-{ }
+{
+}
 
 void timestamp_corrector::on_timestamp(rs_timestamp_data data)
 {
     lock_guard<mutex> lock(mtx);
 
     data_queue.push_back_data(data);
-    if (data_queue.size() > 10)
+    if (data_queue.size() > queue_size)
         data_queue.pop_front_data();
 
     cv.notify_one();
@@ -106,8 +114,7 @@ void timestamp_corrector::correct_timestamp(frame_interface& frame, rs_stream st
     if (!data_queue.correct(source_id, frame))
     {
         const auto ready = [&]() { return data_queue.correct(source_id, frame); };
-        cv.wait_for(lock, std::chrono::milliseconds(1), ready);
+        auto res = cv.wait_for(lock, std::chrono::milliseconds(time_out), ready);
     }
-
     lock.unlock();
 }

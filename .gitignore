@@ -43,3 +43,7 @@ librealsense-log.txt
 
 *.vcxproj.user
 *.orig
+*.psess
+*.vspx
+*.vsp
+*.bak

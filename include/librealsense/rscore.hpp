@@ -21,6 +21,7 @@ struct rs_stream_interface
     virtual int                             get_framerate() const = 0;
 
     virtual int                             get_frame_number() const = 0;
+    virtual double                          get_frame_timestamp() const = 0;
     virtual long long                       get_frame_system_time() const = 0;
     virtual const uint8_t *                 get_frame_data() const = 0;
 
@@ -34,7 +35,7 @@ struct rs_frame_ref
 {
     virtual                                 ~rs_frame_ref() {}
     virtual const uint8_t*                  get_frame_data() const = 0;
-    virtual int                             get_frame_timestamp() const = 0;
+    virtual double                          get_frame_timestamp() const = 0;
     virtual int                             get_frame_number() const = 0;
     virtual long long                       get_frame_system_time() const = 0;
     virtual int                             get_frame_width() const = 0;
@@ -43,12 +44,13 @@ struct rs_frame_ref
     virtual int                             get_frame_stride() const = 0;
     virtual float                           get_frame_bpp() const = 0;
     virtual rs_format                       get_frame_format() const = 0;
+    virtual rs_stream                       get_stream_type() const = 0;
 };
 
 struct rs_frameset
 {
     virtual                                 ~rs_frameset() {}
-    virtual rs_frame_ref *                  get_frame(rs_stream stream) = 0;
+    virtual const rs_frame_ref *            get_frame(rs_stream stream) const = 0;
 };
 
 // realsense device public interface
