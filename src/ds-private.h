@@ -6,7 +6,7 @@
 #define LIBREALSENSE_DS_PRIVATE_H
 
 #include "uvc.h"
-
+#include <algorithm>
 
 namespace rsimpl
 {
