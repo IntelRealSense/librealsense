@@ -692,7 +692,7 @@ TEST_CASE("DS-device verify standard UVC Controls set/get", "[live] [DS-device]"
     rs_get_device_options(dev,test_options.data(),test_options.size(),initial_values.data(), require_no_error());
 
     //for (size_t i=first; i<= last; i++)
-    //    std::cout << "Option " << (rs_option)i << " : initial value " << initial_values[i] <<std::endl;
+    //    std::cout << "Option " << rs_option_to_string((rs_option)i) << " : initial value " << initial_values[i] <<std::endl;
 
     double min=0, max=0, step=0;
     for (size_t i=first; i<= last; i++)
@@ -711,7 +711,7 @@ TEST_CASE("DS-device verify standard UVC Controls set/get", "[live] [DS-device]"
     rs_get_device_options(dev,test_options.data(),test_options.size(),verification_values.data(), require_no_error());
 
     //for (size_t i=first; i<= last; i++)
-    //    std::cout << "Option " << (rs_option)i << " Requested value = " << modified_values[i] << " Actual value = " << verification_values[i] << std::endl;
+    //    std::cout << "Option " << rs_option_to_string((rs_option)i) << " Requested value = " << modified_values[i] << " Actual value = " << verification_values[i] << std::endl;
 
     for (size_t i=first; i<= last; i++)
     {
