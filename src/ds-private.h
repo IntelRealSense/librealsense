@@ -132,19 +132,19 @@ namespace rsimpl
                 switch (elem.option)
                 {
                 case RS_OPTION_R200_AUTO_EXPOSURE_TOP_EDGE:
-                    ret_val.exposure_top_edge = ((ret_val.exposure_top_edge > elem.max) ? (uint16_t)elem.max : ret_val.exposure_top_edge);
+                    ret_val.exposure_top_edge = std::min((uint16_t)elem.max, ret_val.exposure_top_edge);
                     break;
 
                 case RS_OPTION_R200_AUTO_EXPOSURE_BOTTOM_EDGE:
-                    ret_val.exposure_bottom_edge = ((ret_val.exposure_bottom_edge > elem.max) ? (uint16_t)elem.max : ret_val.exposure_bottom_edge);
+                    ret_val.exposure_bottom_edge = std::min((uint16_t)elem.max, ret_val.exposure_bottom_edge);
                     break;
 
                 case RS_OPTION_R200_AUTO_EXPOSURE_LEFT_EDGE:
-                    ret_val.exposure_left_edge = ((ret_val.exposure_left_edge > elem.max) ? (uint16_t)elem.max : ret_val.exposure_left_edge);
+                    ret_val.exposure_left_edge = std::min((uint16_t)elem.max, ret_val.exposure_left_edge);
                     break;
 
                 case RS_OPTION_R200_AUTO_EXPOSURE_RIGHT_EDGE:
-                    ret_val.exposure_right_edge = ((ret_val.exposure_right_edge > elem.max) ? (uint16_t)elem.max : ret_val.exposure_right_edge);
+                    ret_val.exposure_right_edge = std::min((uint16_t)elem.max, ret_val.exposure_right_edge);
                     break;
                 }
             }
