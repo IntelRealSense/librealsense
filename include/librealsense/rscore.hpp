@@ -50,7 +50,7 @@ struct rs_frame_ref
 struct rs_frameset
 {
     virtual                                 ~rs_frameset() {}
-    virtual rs_frame_ref *                  get_frame(rs_stream stream) = 0;
+    virtual const rs_frame_ref *            get_frame(rs_stream stream) const = 0;
 };
 
 // realsense device public interface

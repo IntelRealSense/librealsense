@@ -153,6 +153,8 @@ namespace rsimpl
         rs_format format;
         int fps;
         rs_output_buffer_format output_format;
+
+        bool contradict(stream_request req) const;
     };
 
     struct interstream_rule // Requires a.*field + delta == b.*field OR a.*field + delta2 == b.*field
@@ -160,6 +162,8 @@ namespace rsimpl
         rs_stream a, b;
         int stream_request::* field;
         int delta, delta2;
+        rs_stream bigger; // if this equals to a or b, this stream must have field value bigger then the other stream
+        bool diveded, diveded2; // devided = a must devide b; devided2 = b must devide a
     };
 
     struct supported_option
@@ -332,8 +336,13 @@ namespace rsimpl
         }
 
         subdevice_mode_selection select_mode(const stream_request(&requests)[RS_STREAM_NATIVE_COUNT], int subdevice_index) const;
+        bool all_requests_filled(const stream_request(&original_requests)[RS_STREAM_NATIVE_COUNT]) const;
+        bool find_good_requests_combination(stream_request(&output_requests)[RS_STREAM_NATIVE_COUNT], std::vector<stream_request> stream_requests[RS_STREAM_NATIVE_COUNT]) const;
+        bool fill_requests(stream_request(&requests)[RS_STREAM_NATIVE_COUNT]) const;
+        void get_all_possible_requestes(std::vector<stream_request> (&stream_requests)[RS_STREAM_NATIVE_COUNT]) const;
         std::vector<subdevice_mode_selection> select_modes(const stream_request(&requests)[RS_STREAM_NATIVE_COUNT]) const;
         std::vector<subdevice_mode_selection> select_modes() const { return select_modes(requests); }
+        bool validate_requests(stream_request(&requests)[RS_STREAM_NATIVE_COUNT], bool throw_exception = false) const;
     };
 
     ////////////////////////////////////////
