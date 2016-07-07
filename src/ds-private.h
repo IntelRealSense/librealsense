@@ -160,18 +160,18 @@ namespace rsimpl
         inline void         set_min_max_depth           (uvc::device & device, range min_max)       { xu_write(device, lr_xu, control::min_max, min_max); }
         inline void         set_disparity_mode          (uvc::device & device, disp_mode mode)      { xu_write(device, lr_xu, control::disparity, mode); }
         inline void         set_temperature             (uvc::device & device, temperature temp)    { xu_write(device, lr_xu, control::temperature, temp); }
-        inline void         set_depth_params            (uvc::device & device, dc_params params)    { xu_write(device, lr_xu, control::depth_params, params); }
-        inline void         set_lr_exposure             (uvc::device & device, rate_value exposure) { xu_write(device, lr_xu, control::lr_exposure, exposure); }
+        inline void         set_depth_params            (uvc::device & device, dc_params params)    { xu_write(device, lr_xu, control::depth_params, params); }        
         inline void         set_lr_auto_exposure_params (uvc::device & device, ae_params params)    {
             if (params.exposure_top_edge >= params.exposure_bottom_edge || params.exposure_left_edge >= params.exposure_right_edge)
                 throw std::logic_error("set_lr_auto_exposure_params failed.");
-
-            xu_write(device, lr_xu, control::lr_autoexposure_parameters, params); }
-        inline void         set_lr_gain                 (uvc::device & device, rate_value gain)     { xu_write(device, lr_xu, control::lr_gain, gain); }
+            xu_write(device, lr_xu, control::lr_autoexposure_parameters, params); }        
         inline void         set_lr_exposure_mode        (uvc::device & device, uint8_t mode)        { xu_write(device, lr_xu, control::lr_exposure_mode, mode); }
         inline void         set_disparity_shift         (uvc::device & device, uint32_t shift)      { xu_write(device, lr_xu, control::disparity_shift, shift); }
         inline void         set_lr_exposure_discovery   (uvc::device & device, discovery disc)      { xu_write(device, lr_xu, control::lr_exposure_discovery, disc); }
         inline void         set_lr_gain_discovery       (uvc::device & device, discovery disc)      { xu_write(device, lr_xu, control::lr_gain_discovery, disc); }
+        inline void         set_lr_exposure             (uvc::device & device, rate_value exposure) { if (get_lr_exposure_mode(device)) set_lr_exposure_mode(device,0); xu_write(device, lr_xu, control::lr_exposure, exposure);}
+        inline void         set_lr_gain                 (uvc::device & device, rate_value gain)     { if (get_lr_exposure_mode(device)) set_lr_exposure_mode(device,0); xu_write(device, lr_xu, control::lr_gain, gain);}
+
 
         #pragma pack(push, 1)
         struct dinghy
