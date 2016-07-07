@@ -175,3 +175,4 @@ TEST_CASE("ZR300 Motion Module Data Streaming", "[live] [DS-device]")
         rs_disable_motion_tracking(dev, require_no_error());
     }
 }
+
