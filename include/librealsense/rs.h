@@ -8,17 +8,18 @@
 extern "C" {
 #endif
 
-#define RS_API_VERSION 7
+#define RS_API_VERSION 8
 
 typedef enum rs_capabilities
 {
-    RS_CAPABILITIES_DEPTH         = 0,
-    RS_CAPABILITIES_COLOR         = 1,
-    RS_CAPABILITIES_INFRARED      = 2,
-    RS_CAPABILITIES_INFRARED2     = 3,
-    RS_CAPABILITIES_FISH_EYE      = 4,
-    RS_CAPABILITIES_MOTION_EVENTS = 5,
-    RS_CAPABILITIES_COUNT         = 6,
+    RS_CAPABILITIES_DEPTH                   = 0,
+    RS_CAPABILITIES_COLOR                   = 1,
+    RS_CAPABILITIES_INFRARED                = 2,
+    RS_CAPABILITIES_INFRARED2               = 3,
+    RS_CAPABILITIES_FISH_EYE                = 4,
+    RS_CAPABILITIES_MOTION_EVENTS           = 5,
+    RS_CAPABILITIES_MOTION_MODULE_FW_UPDATE = 6,
+    RS_CAPABILITIES_COUNT                   = 7,
     RS_CAPABILITIES_MAX_ENUM = 0x7FFFFFFF
 } rs_capabilities;
 
@@ -191,7 +192,7 @@ typedef enum rs_option
 } rs_option;
 
 typedef enum rs_blob_type {
-	RS_BLOB_TYPE_MOTION_MODULE_FIRMWARE_UPDATE                = 1
+    RS_BLOB_TYPE_MOTION_MODULE_FIRMWARE_UPDATE                = 1
 }  rs_blob_type;
 
 typedef struct rs_intrinsics

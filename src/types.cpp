@@ -190,6 +190,7 @@ namespace rsimpl
         CASE(INFRARED2)
         CASE(FISH_EYE)
         CASE(MOTION_EVENTS)
+        CASE(MOTION_MODULE_FW_UPDATE)
         default: assert(!is_valid(value)); return nullptr;
         }
         #undef CASE

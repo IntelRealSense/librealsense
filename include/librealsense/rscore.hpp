@@ -96,7 +96,6 @@ struct rs_device
     virtual void                            get_option_range(rs_option option, double & min, double & max, double & step, double & def) = 0;
     virtual void                            set_options(const rs_option options[], size_t count, const double values[]) = 0;
     virtual void                            get_options(const rs_option options[], size_t count, double values[]) = 0;
-	virtual void                             send_blob_to_device(rs_blob_type type, void * data, int size) { };
 
     virtual rs_frame_ref *                  detach_frame(rs_frameset * fs, rs_stream stream) = 0;
     virtual void                            release_frame(rs_frame_ref * ref) = 0;

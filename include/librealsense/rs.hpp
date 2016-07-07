@@ -18,12 +18,13 @@ namespace rs
 {
     enum class capabilities : int32_t
     {
-        depth         = 0,
-        color         = 1,
-        infrared      = 2,
-        infrared2     = 3,
-        fish_eye      = 4,
-        motion_events = 5
+        depth                   = 0,
+        color                   = 1,
+        infrared                = 2,
+        infrared2               = 3,
+        fish_eye                = 4,
+        motion_events           = 5,
+        motion_module_fw_update = 6
     };
 
     enum class stream : int32_t
@@ -759,14 +760,15 @@ namespace rs
             rs_error * e = nullptr;
             rs_disable_motion_tracking((rs_device *)this, &e);
             error::handle(e);
-        }          
+        }
 
         /// check if data acquisition is active        
         int is_motion_tracking_active()
         {
             rs_error * e = nullptr;
-            return rs_is_motion_tracking_active((rs_device *)this,&e);
+            auto result = rs_is_motion_tracking_active((rs_device *)this,&e);
             error::handle(e);
+            return result;
         }
 
 
@@ -944,12 +946,16 @@ namespace rs
             return r;
         }
 
-		void send_blob_to_device(const rs_blob_type type, void * data, int size)
-		{
-			rs_error * e = nullptr;
-			rs_send_blob_to_device((rs_device *)this, type, data, size, &e);
-			error::handle(e);
-		}
+        /// send device specific data to the device
+        /// \param[in] type  describes the content of the memory buffer, how it will be interpreted by the device
+        /// \param[in] data  raw data buffer to be sent to the device
+        /// \param[in] size  size in bytes of the buffer
+        void send_blob_to_device(rs_blob_type type, void * data, int size)
+        {
+            rs_error * e = nullptr;
+            rs_send_blob_to_device((rs_device *)this, type, data, size, &e);
+            error::handle(e);
+        }
     };
 
     inline std::ostream & operator << (std::ostream & o, stream stream) { return o << rs_stream_to_string((rs_stream)stream); }

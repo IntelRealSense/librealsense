@@ -623,11 +623,20 @@ void rs_set_device_option(rs_device * device, rs_option option, double value, rs
     device->set_options(&option, 1, &value);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, device, option, value)
+
 void rs_send_blob_to_device(rs_device * device, rs_blob_type type, void * data, int size, rs_error ** error) try
 {
-	VALIDATE_NOT_NULL(device);
-	VALIDATE_NOT_NULL(data);
-	device->send_blob_to_device(type, data, size);
+    VALIDATE_NOT_NULL(device);
+    VALIDATE_NOT_NULL(data);
+    auto lrs_device = dynamic_cast<rs_device_base*>(device);
+    if (lrs_device)
+    {
+        lrs_device->send_blob_to_device(type, data, size);
+    }
+    else
+    {
+        throw std::runtime_error("sending binary data to the device is only available when using physical device!");
+    }
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, device, type, data, size)
 

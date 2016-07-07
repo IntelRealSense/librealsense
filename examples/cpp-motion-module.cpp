@@ -1,9 +1,9 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
-/////////////////////////////////////////////////////
-// librealsense tutorial #1 - Accessing depth data //
-/////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////
+// librealsense motion-module sample - accessing IMU data //
+////////////////////////////////////////////////////////////
 
 // First include the librealsense C++ header file
 #include <librealsense/rs.hpp>
@@ -12,11 +12,25 @@
 #include <vector>
 #include <chrono>
 #include <iostream>
+#include <iomanip>
 #include <string>
 #include <thread>
 
+std::mutex mtx;
+std::vector<std::string> logs;
+
+void log(const char* msg)
+{
+    std::lock_guard<std::mutex> lock(mtx);
+    logs.push_back(msg);
+}
+
+const double IMU_UNITS_TO_MSEC = 0.00003125;
+
 int main() try
 {
+	rs::log_to_console(rs::log_severity::error);
+
     // Create a context object. This object owns the handles to all connected realsense devices.
     rs::context ctx;
 
@@ -39,32 +53,93 @@ int main() try
 
     auto motion_callback = [](rs::motion_data entry)
     {
-        std::cout << "Motion: "
-            << "timestamp: " << entry.timestamp_data.timestamp
+        auto now = std::chrono::system_clock::now().time_since_epoch();
+        auto sys_time = std::chrono::duration_cast<std::chrono::milliseconds>(now).count();
+        std::stringstream ss;
+        ss << "Motion,\t host time " << sys_time
+            << "\ttimestamp: " << std::setprecision(8) << (double)entry.timestamp_data.timestamp*IMU_UNITS_TO_MSEC
             << "\tsource: " << (rs::event)entry.timestamp_data.source_id
             << "\tframe_num: " << entry.timestamp_data.frame_number
-            //<< "\tvalid: "  << (int)entry.is_valid - Not available         - temporaly disabled
-            << "\tx: " << entry.axes[0] << "\ty: " << entry.axes[1] << "\tz: " << entry.axes[2]
-            << std::endl;
+            << "\tx: " << std::setprecision(5) <<  entry.axes[0] << "\ty: " << entry.axes[1] << "\tz: " << entry.axes[2];
+        log(ss.str().c_str());
     };
 
     // ... and the timestamp packets (DS4.1/FishEye Frame, GPIOS...)
     auto timestamp_callback = [](rs::timestamp_data entry)
     {
-        std::cout << "Timestamp arrived, timestamp: " << entry.timestamp << std::endl;
+        auto now = std::chrono::system_clock::now().time_since_epoch();
+        auto sys_time = std::chrono::duration_cast<std::chrono::milliseconds>(now).count();
+        std::stringstream ss;
+        ss << "TimeEvt, host time "  << sys_time
+            << "\ttimestamp: " << std::setprecision(8) << (double)entry.timestamp*IMU_UNITS_TO_MSEC
+            << "\tsource: " << (rs::event)entry.source_id
+            << "\tframe_num: " << entry.frame_number;
+        log(ss.str().c_str());
     };
-	
+    for (int ii = 0; ii < 100; ii++)
+    {
+        std::cout << "\n\nIteration " << ii+1 << " started\n\n" << std::endl;
 
-	/// FIRMWARE TEST ///
+        // 1. Make motion-tracking available
+        if (dev->supports(rs::capabilities::motion_events))
+        {
+            dev->enable_motion_tracking(motion_callback, timestamp_callback);
+        }
 
-	FILE *f = fopen("c:\\temp\\firmware\\1.bin", "rb");
-	uint8_t firmware[65535];
-	uint32_t numRead = fread(firmware, 1, 65535, f);
-	fclose(f);
-	dev->send_blob_to_device(RS_BLOB_TYPE_MOTION_MODULE_FIRMWARE_UPDATE, firmware, numRead);
+        // 2. Optional - configure motion module
+        //dev->set_options(mm_cfg_list.data(), mm_cfg_list.size(), mm_cfg_params.data());
 
-	/// FIRMWARE TEST ///
+        dev->enable_stream(rs::stream::depth, 640, 480, rs::format::z16, 60);
+        dev->enable_stream(rs::stream::color, 640, 480, rs::format::rgb8, 60);
+        dev->enable_stream(rs::stream::infrared, 640, 480, rs::format::y8, 60);
+        dev->enable_stream(rs::stream::infrared2, 640, 480, rs::format::y8, 60);
+        dev->enable_stream(rs::stream::fisheye, 640, 480, rs::format::raw8, 60);
 
+        dev->set_option(rs::option::r200_fisheye_strobe, 1);
+
+        logs.clear();
+        logs.reserve(10000);
+
+        // 3. Start generating motion-tracking data
+        dev->start(rs::source::all_sources);
+
+        auto start = std::chrono::high_resolution_clock::now();
+        do {
+            auto frames = dev->wait_for_frames_safe();
+            // Log some metadata regarding each of the possible streams
+            for (int i = 0; i <= 4; i++)
+            {
+                auto now = std::chrono::system_clock::now().time_since_epoch();
+                auto sys_time = std::chrono::duration_cast<std::chrono::milliseconds>(now).count();
+                if (i == (int)frames[(rs::stream)i].get_stream_type()) // Check that the frame is valid
+                {
+                    std::stringstream ss;
+                    ss << "Frame data,   time " << sys_time
+                        << "\ttimestamp: " << std::setprecision(8) << frames[(rs::stream)i].get_timestamp()
+                        << "\tsource: " << std::setw(13) << frames[(rs::stream)i].get_stream_type()
+                        << "\tframe_num: " << frames[(rs::stream)i].get_frame_number();
+                    log(ss.str().c_str());
+                }
+            }
+        } while (std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start).count() < 10000);
+
+        // 4. stop data acquisition
+        dev->stop(rs::source::all_sources);
+
+        for (auto entry : logs)   std::cout << entry << std::endl;
+
+        // 5. reset previous settings formotion data handlers
+        dev->disable_motion_tracking();
+    }
+
+    return EXIT_SUCCESS;
+}
+catch(const rs::error & e)
+{
+    // Method calls against librealsense objects may throw exceptions of type rs::error
+    printf("rs::error was thrown when calling %s(%s):\n", e.get_failed_function().c_str(), e.get_failed_args().c_str());
+    printf("    %s\n", e.what());
+    return EXIT_FAILURE;
 }
 catch(...)
 {
