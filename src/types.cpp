@@ -8,6 +8,7 @@
 #include <cstring>
 #include <algorithm>
 #include <array>
+#include <deque>
 
 namespace rsimpl
 {
@@ -235,7 +236,7 @@ namespace rsimpl
 
         // Determine output stride (and apply padding)
         byte * out[MAX_OUTPUTS];
-		size_t out_stride[MAX_OUTPUTS] = { 0 };
+        size_t out_stride[MAX_OUTPUTS] = { 0 };
         for(size_t i=0; i<outputs.size(); ++i)
         {
             out[i] = dest[i];
@@ -277,6 +278,17 @@ namespace rsimpl
     // static_device_info //
     ////////////////////////
 
+    bool stream_request::contradict(stream_request req) const
+    {
+        if (((format != RS_FORMAT_ANY && format != req.format) ||
+            (width != 0 && width != req.width) ||
+            (height != 0 && height != req.height) ||
+            (fps != 0 && fps != req.fps) ||
+            (output_format != req.output_format)))
+            return true;
+        return false;
+    }
+
     static_device_info::static_device_info()
     {
         for(auto & s : stream_subdevices) s = -1;
@@ -288,10 +300,137 @@ namespace rsimpl
         }
     }
 
-    subdevice_mode_selection device_config::select_mode(const stream_request (& requests)[RS_STREAM_NATIVE_COUNT], int subdevice_index) const
+
+    struct params
+    {
+        stream_request requests[RS_STREAM_NATIVE_COUNT];
+        int stream;
+        params(stream_request in_requests[RS_STREAM_NATIVE_COUNT], int i):
+            
+            stream(i)
+        {
+            for (auto i = 0; i<RS_STREAM_NATIVE_COUNT; i++)
+            {
+                requests[i] = in_requests[i];
+            }
+        }
+    };
+
+    bool device_config::all_requests_filled(const stream_request(&requests)[RS_STREAM_NATIVE_COUNT]) const
+    {
+        for (auto i = 0; i<RS_STREAM_NATIVE_COUNT; i++)
+        {
+            if (requests[i].enabled &&
+                (requests[i].height == 0 ||
+                requests[i].width == 0 ||
+                requests[i].format == RS_FORMAT_ANY ||
+                requests[i].fps == 0))
+                return false;
+        }
+        return true;
+    }
+
+    bool device_config::find_good_requests_combination( stream_request(&requests)[RS_STREAM_NATIVE_COUNT], std::vector<stream_request> stream_requests[RS_STREAM_NATIVE_COUNT]) const
+    {
+        std::deque<params> calls;
+  
+        params p = { requests, 0 };
+
+        calls.push_back(p);
+
+        while (!calls.empty())
+        {
+            p = calls.back();
+            calls.pop_back();
+
+            if (all_requests_filled(p.requests) && validate_requests(p.requests))
+            {
+                for (auto i = 0; i < RS_STREAM_NATIVE_COUNT; i++)
+                {
+                    requests[i] = p.requests[i];
+                }
+                return true;
+            }
+
+            for (auto i = 0; i < stream_requests[p.stream].size(); i++)
+            {
+                if (!requests[p.stream].enabled) break;
+
+                if (!requests[p.stream].contradict(stream_requests[p.stream][i]))
+                {
+                    p.requests[p.stream] = stream_requests[p.stream][i];
+
+                    if (validate_requests(p.requests))
+                    { 
+                        params new_p = { p.requests, p.stream + 1 };
+                        calls.push_back(new_p);
+                    }
+                }
+            }
+
+        }
+        return false;
+
+  
+    }
+
+    bool device_config::fill_requests(stream_request(&requests)[RS_STREAM_NATIVE_COUNT]) const
     {
         // Determine if the user has requested any streams which are supplied by this subdevice
-        bool any_stream_requested = false;
+        
+        if(all_requests_filled(requests))
+        {
+            return true;
+        }
+
+        std::vector<stream_request> stream_requests[RS_STREAM_NATIVE_COUNT];
+        get_all_possible_requestes(stream_requests);
+
+        return find_good_requests_combination(requests, stream_requests);
+    }
+
+    void device_config::get_all_possible_requestes(std::vector<stream_request>(&stream_requests)[RS_STREAM_NATIVE_COUNT]) const
+    {
+        for (auto i = 0; i < info.subdevice_modes.size(); i++)
+        {
+            stream_request request;
+            auto mode = info.subdevice_modes[i];
+
+            for (auto pad_crop : mode.pad_crop_options)
+            {
+                for (auto & unpacker : mode.pf.unpackers)
+                {
+                    auto selection = subdevice_mode_selection(mode, pad_crop, &unpacker - mode.pf.unpackers.data());
+
+                    request.enabled = true;
+                    request.fps = selection.get_framerate();
+                    request.height = selection.get_height();
+                    request.width = selection.get_width();
+                    auto outputs = selection.get_outputs();
+
+                    for (auto output : outputs)
+                    {
+                        request.format = output.second;
+                        for (auto output_format = static_cast<int>(RS_OUTPUT_BUFFER_FORMAT_CONTINOUS); output_format < static_cast<int>(RS_OUTPUT_BUFFER_FORMAT_COUNT); output_format++)
+                        {
+                            request.output_format = static_cast<rs_output_buffer_format>(output_format);
+                            stream_requests[output.first].push_back(request);
+                            if (output.first == rs_stream::RS_STREAM_COLOR)
+                            {
+                                request.format = output.second;;
+                            }
+                        }
+
+                    }
+                }
+            }
+        }
+    }
+
+    subdevice_mode_selection device_config::select_mode(const  stream_request(&requests)[RS_STREAM_NATIVE_COUNT], int subdevice_index) const
+    {
+        // Determine if the user has requested any streams which are supplied by this subdevice
+        auto any_stream_requested = false;
         std::array<bool, RS_STREAM_NATIVE_COUNT> stream_requested = {};
         for(int j = 0; j < RS_STREAM_NATIVE_COUNT; ++j)
         {
@@ -322,12 +461,12 @@ namespace rsimpl
                     for(auto & output : unpacker.outputs)
                     {
                         const auto & req = requests[output.first];
-
+                        
                         selection.set_output_buffer_format(req.output_format);
-                        if(req.enabled && (req.width == 0 || req.width == selection.get_width())
-                                       && (req.height == 0 || req.height == selection.get_height())
-                                       && (req.format == RS_FORMAT_ANY || req.format == selection.get_format(output.first))
-                                       && (req.fps == 0 || req.fps == subdevice_mode.fps))
+                        if(req.enabled && (req.width == selection.get_width() )
+                                       && (req.height == selection.get_height())
+                                       && (req.format == selection.get_format(output.first))
+                                       && (req.fps == subdevice_mode.fps))
                         {
                             stream_unsatisfied[output.first] = false;
                         }
@@ -359,25 +498,11 @@ namespace rsimpl
     {
         // Make a mutable copy of our array
         stream_request requests[RS_STREAM_NATIVE_COUNT];
-        for(int i=0; i<RS_STREAM_NATIVE_COUNT; ++i) requests[i] = reqs[i];
+        for (int i = 0; i<RS_STREAM_NATIVE_COUNT; ++i) requests[i] = reqs[i];
 
-        // Check and modify requests to enforce all interstream constraints
-        for(auto & rule : info.interstream_rules)
-        {
-            auto & a = requests[rule.a], & b = requests[rule.b]; auto f = rule.field;
-            if(a.enabled && b.enabled)
-            {
-                // Check for incompatibility if both values specified
-                if(a.*f != 0 && b.*f != 0 && a.*f + rule.delta != b.*f && a.*f + rule.delta2 != b.*f)
-                {
-                    throw std::runtime_error(to_string() << "requested " << rule.a << " and " << rule.b << " settings are incompatible");
-                }
+        validate_requests(requests, true);
 
-                // If only one value is specified, modify the other request to match
-                if(a.*f != 0 && b.*f == 0) b.*f = a.*f + rule.delta;
-                if(a.*f == 0 && b.*f != 0) a.*f = b.*f - rule.delta;
-            }
-        }
+        fill_requests(requests);
 
         // Select subdevice modes needed to satisfy our requests
         int num_subdevices = 0;
@@ -389,5 +514,45 @@ namespace rsimpl
             if(selection.mode.pf.fourcc) selected_modes.push_back(selection);
         }
         return selected_modes;
+    }
+
+    bool device_config::validate_requests(stream_request(&requests)[RS_STREAM_NATIVE_COUNT], bool throw_exception) const
+    {
+        // Check and modify requests to enforce all interstream constraints
+
+        for (auto & rule : info.interstream_rules)
+        {
+            auto & a = requests[rule.a], &b = requests[rule.b]; auto f = rule.field;
+            if (a.enabled && b.enabled)
+            {
+                if (rule.bigger == RS_STREAM_COUNT && !rule.diveded && !rule.diveded2)
+                {
+                    // Check for incompatibility if both values specified
+                    if (a.*f != 0 && b.*f != 0 && a.*f + rule.delta != b.*f && a.*f + rule.delta2 != b.*f)
+                    {
+                        if (throw_exception)
+                            throw std::runtime_error(to_string() << "requested " << rule.a << " and " << rule.b << " settings are incompatible");
+                        return false;
+                    }
+                }
+                else
+                {
+                    if (a.*f != 0 && b.*f != 0 && (rule.bigger == rule.a && a.*f < b.*f) || (rule.bigger == rule.b && b.*f < a.*f))
+                    {
+                        if (throw_exception)
+                            throw std::runtime_error(to_string() << "requested " << rule.a << " and " << rule.b << " settings are incompatible");
+                        return false;
+                    }
+                    if (a.*f != 0 && b.*f != 0 && ((rule.diveded && float(a.*f) / float(b.*f) - a.*f / b.*f > 0) || (rule.diveded2 && float(b.*f) / float(a.*f) - b.*f / a.*f > 0)))
+					{
+						rs_stream bigger;
+                        if (throw_exception)
+                            throw std::runtime_error(to_string() << "requested " << rule.a << " and " << rule.b << " settings are incompatible");
+                        return false;
+                    }
+                }
+            }
+        }
+        return true;
     }
 }
