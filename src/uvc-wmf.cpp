@@ -50,6 +50,8 @@
 
 DEFINE_GUID(GUID_DEVINTERFACE_USB_DEVICE, 0xA5DCBF10L, 0x6530, 0x11D2, 0x90, 0x1F, 0x00, \
     0xC0, 0x4F, 0xB9, 0x51, 0xED);
+DEFINE_GUID(GUID_DEVINTERFACE_IMAGE, 0x6bdd1fc6L, 0x810f, 0x11d0, 0xbe, 0xc7, 0x08, 0x00, \
+	0x2b, 0xe2, 0x09, 0x2f);
 
 namespace rsimpl
 {
@@ -162,7 +164,44 @@ namespace rsimpl
             return true;
         }
 
-        struct context
+		bool parse_usb_path_from_device_id(int & vid, int & pid, int & mi, std::string & unique_id, const std::string & device_id)
+		{
+			auto name = device_id;
+			std::transform(begin(name), end(name), begin(name), ::tolower);
+			auto tokens = tokenize(name, '\\');
+			if (tokens.size() < 1 || tokens[0] != R"(usb)") return false; // Not a USB device
+
+			auto ids = tokenize(tokens[1], '&');
+			if (ids[0].size() != 8 || ids[0].substr(0, 4) != "vid_" || !(std::istringstream(ids[0].substr(4, 4)) >> std::hex >> vid))
+			{
+				LOG_ERROR("malformed vid string: " << tokens[1]);
+				return false;
+			}
+
+			if (ids[1].size() != 8 || ids[1].substr(0, 4) != "pid_" || !(std::istringstream(ids[1].substr(4, 4)) >> std::hex >> pid))
+			{
+				LOG_ERROR("malformed pid string: " << tokens[1]);
+				return false;
+			}
+
+			if (ids[2].size() != 5 || ids[2].substr(0, 3) != "mi_" || !(std::istringstream(ids[2].substr(3, 2)) >> mi))
+			{
+				LOG_ERROR("malformed mi string: " << tokens[1]);
+				return false;
+			}
+
+			ids = tokenize(tokens[2], '&');
+			if (ids.size() < 2)
+			{
+				LOG_ERROR("malformed id string: " << tokens[2]);
+				return false;
+			}
+			unique_id = ids[1];
+			return true;
+		}
+
+
+		struct context
         {
             context()
             {
@@ -868,54 +907,57 @@ namespace rsimpl
 
         std::string get_usb_port_id(const device & device) // Not implemented for Windows at this point
         {
-            const guid IVCAM_WIN_USB_DEVICE_GUID = { 0x175695CD, 0x30D9, 0x4F87,{ 0x8B, 0xE3, 0x5A, 0x82, 0x70, 0xF4, 0x9A, 0x31 } };
+			SP_DEVINFO_DATA devInfo = { sizeof(SP_DEVINFO_DATA) };
             static_assert(sizeof(guid) == sizeof(GUID), "struct packing error"); // not sure this is needed. maybe because the original function gets the guid object from outside?
 
-            HDEVINFO device_info = SetupDiGetClassDevs((const GUID *)&IVCAM_WIN_USB_DEVICE_GUID, nullptr, nullptr, DIGCF_PRESENT | DIGCF_DEVICEINTERFACE);
+			// build a device info represent all imaging devices.
+            HDEVINFO device_info = SetupDiGetClassDevsEx((const GUID *)&GUID_DEVINTERFACE_IMAGE,
+				nullptr, 
+				nullptr, 
+				DIGCF_PRESENT,
+				nullptr,
+				nullptr,
+				nullptr);
             if (device_info == INVALID_HANDLE_VALUE) throw std::runtime_error("SetupDiGetClassDevs");
             auto di = std::shared_ptr<void>(device_info, SetupDiDestroyDeviceInfoList);
 
+			// enumerate all imaging devices.
             for (int member_index = 0; ; ++member_index)
             {
-                // Enumerate all the device interfaces in the device information set. 
-                SP_DEVICE_INTERFACE_DATA interfaceData = { sizeof(SP_DEVICE_INTERFACE_DATA) };
-                if (SetupDiEnumDeviceInterfaces(device_info, nullptr, (const GUID *)&IVCAM_WIN_USB_DEVICE_GUID, member_index, &interfaceData) == FALSE)
-                {
-                    if (GetLastError() == ERROR_NO_MORE_ITEMS) break; // stop when none left
-                    continue; // silently ignore other errors
-                }
+				SP_DEVICE_INTERFACE_DATA interfaceData = { sizeof(SP_DEVICE_INTERFACE_DATA) };
+				unsigned long buf_size = 0;
 
+				if (SetupDiEnumDeviceInfo(device_info, member_index, &devInfo) == FALSE)
+				{
+					if (GetLastError() == ERROR_NO_MORE_ITEMS) break; // stop when none left
+					continue; // silently ignore other errors
+				}
 
-                // Allocate space for a detail data struct 
-                unsigned long buf_size = 0;
-                SetupDiGetDeviceInterfaceDetail(device_info, &interfaceData, nullptr, 0, &buf_size, nullptr);
-                if (GetLastError() != ERROR_INSUFFICIENT_BUFFER)
-                {
-                    //LOG_ERROR("SetupDiGetDeviceInterfaceDetail failed"); 
-                    continue;
-                }
-                auto alloc = std::malloc(buf_size);
-                if (!alloc) throw std::bad_alloc();
-                // Retrieve the detail data struct 
-                auto detail_data = std::shared_ptr<SP_DEVICE_INTERFACE_DETAIL_DATA>(reinterpret_cast<SP_DEVICE_INTERFACE_DETAIL_DATA *>(alloc), std::free);
-                detail_data->cbSize = sizeof(SP_DEVICE_INTERFACE_DETAIL_DATA);
-                // get the SP_DEVICE_INTERFACE_DETAIL_DATA object, and also grab the SP_DEVINFO_DATA object for the device
-                SP_DEVINFO_DATA devinfo_data = { sizeof(SP_DEVINFO_DATA) };
-                if (!SetupDiGetDeviceInterfaceDetail(device_info, &interfaceData, detail_data.get(), buf_size, nullptr, &devinfo_data))
-                {
-                    //LOG_ERROR("SetupDiGetDeviceInterfaceDetail failed"); 
-                    continue;
-                }
-                if (detail_data->DevicePath == nullptr) continue;
+				// get the device ID of current device.
+				if (CM_Get_Device_ID_Size(&buf_size, devInfo.DevInst, 0) != CR_SUCCESS)
+				{
+					LOG_ERROR("CM_Get_Device_ID_Size failed");
+					return "";
+				}
+				
+				auto alloc = std::malloc(buf_size * sizeof(WCHAR) + sizeof(WCHAR));
+				if (!alloc) throw std::bad_alloc();
+				auto pInstID = std::shared_ptr<WCHAR>(reinterpret_cast<WCHAR *>(alloc), std::free);
+				if (CM_Get_Device_ID(devInfo.DevInst, pInstID.get(), buf_size * sizeof(WCHAR) + sizeof(WCHAR), 0) != CR_SUCCESS) {
+					LOG_ERROR("CM_Get_Device_ID failed");
+					return "";
+				}
+
+                if (pInstID == nullptr) continue;
 
                 // Check if this is our device 
                 int usb_vid, usb_pid, usb_mi; std::string usb_unique_id;
-                if (!parse_usb_path(usb_vid, usb_pid, usb_mi, usb_unique_id, std::string(win_to_utf(detail_data->DevicePath)))) continue;
+                if (!parse_usb_path_from_device_id(usb_vid, usb_pid, usb_mi, usb_unique_id, std::string(win_to_utf(pInstID.get())))) continue;
                 if (usb_vid != device.vid || usb_pid != device.pid || /* usb_mi != device->mi || */ usb_unique_id != device.unique_id) continue;
 
                 // get parent (composite device) instance
                 DEVINST instance;
-                if (CM_Get_Parent(&instance, devinfo_data.DevInst, 0) != CR_SUCCESS)
+                if (CM_Get_Parent(&instance, devInfo.DevInst, 0) != CR_SUCCESS)
                 {
                     LOG_ERROR("CM_Get_Parent failed");
                     return "";
@@ -929,14 +971,14 @@ namespace rsimpl
                 }
                 alloc = std::malloc(buf_size*sizeof(WCHAR) + sizeof(WCHAR));
                 if (!alloc) throw std::bad_alloc();
-                auto pInstID = std::shared_ptr<WCHAR>(reinterpret_cast<WCHAR *>(alloc), std::free);
+                pInstID = std::shared_ptr<WCHAR>(reinterpret_cast<WCHAR *>(alloc), std::free);
                 if (CM_Get_Device_ID(instance, pInstID.get(), buf_size * sizeof(WCHAR) + sizeof(WCHAR), 0) != CR_SUCCESS) {
                     LOG_ERROR("CM_Get_Device_ID failed");
                     return "";
                 }
 
                 // upgrade to DEVINFO_DATA for SetupDiGetDeviceRegistryProperty
-                HDEVINFO device_info = SetupDiGetClassDevs(nullptr, pInstID.get(), nullptr, DIGCF_PRESENT | DIGCF_DEVICEINTERFACE | DIGCF_ALLCLASSES);
+                device_info = SetupDiGetClassDevs(nullptr, pInstID.get(), nullptr, DIGCF_PRESENT | DIGCF_DEVICEINTERFACE | DIGCF_ALLCLASSES);
                 if (device_info == INVALID_HANDLE_VALUE) {
                     LOG_ERROR("SetupDiGetClassDevs failed");
                     return "";
@@ -960,7 +1002,7 @@ namespace rsimpl
                 }
                 alloc = std::malloc(buf_size);
                 if (!alloc) throw std::bad_alloc();
-                detail_data = std::shared_ptr<SP_DEVICE_INTERFACE_DETAIL_DATA>(reinterpret_cast<SP_DEVICE_INTERFACE_DETAIL_DATA *>(alloc), std::free);
+                auto detail_data = std::shared_ptr<SP_DEVICE_INTERFACE_DETAIL_DATA>(reinterpret_cast<SP_DEVICE_INTERFACE_DETAIL_DATA *>(alloc), std::free);
                 detail_data->cbSize = sizeof(SP_DEVICE_INTERFACE_DETAIL_DATA);
                 SP_DEVINFO_DATA parent_data = { sizeof(SP_DEVINFO_DATA) };
                 if (!SetupDiGetDeviceInterfaceDetail(device_info, &interfaceData, detail_data.get(), buf_size, nullptr, &parent_data))
