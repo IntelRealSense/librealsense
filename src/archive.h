@@ -163,7 +163,7 @@ namespace rsimpl
             void log_callback_start(std::chrono::high_resolution_clock::time_point capture_start_time);
         };
 
-        class frameset : public rs_frameset
+        class frameset
         {
             frame_ref buffer[RS_STREAM_NATIVE_COUNT];
         public:
@@ -171,7 +171,7 @@ namespace rsimpl
             frame_ref detach_ref(rs_stream stream);
             void place_frame(rs_stream stream, frame&& new_frame);
 
-            const rs_frame_ref * get_frame(rs_stream stream) const override
+            const rs_frame_ref * get_frame(rs_stream stream) const
             {
                 return &buffer[stream];
             }

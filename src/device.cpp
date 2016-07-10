@@ -344,42 +344,6 @@ bool rs_device_base::poll_all_streams()
     return archive->poll_for_frames();
 }
 
-rs_frameset* rs_device_base::wait_all_streams_safe()
-{
-    if (!capturing) throw std::runtime_error("Can't call wait_for_frames_safe when the device is not capturing!");
-    if (!archive) throw std::runtime_error("Can't call wait_for_frames_safe when frame archive is not available!");
-
-        return (rs_frameset*)archive->wait_for_frames_safe();
-}
-
-bool rs_device_base::poll_all_streams_safe(rs_frameset** frames)
-{
-    if (!capturing) return false;
-    if (!archive) return false;
-
-    return archive->poll_for_frames_safe((frame_archive::frameset**)frames);
-}
-
-void rs_device_base::release_frames(rs_frameset * frameset)
-{
-    archive->release_frameset((frame_archive::frameset *)frameset);
-}
-
-rs_frameset * rs_device_base::clone_frames(rs_frameset * frameset)
-{
-    auto result = archive->clone_frameset((frame_archive::frameset *)frameset);
-    if (!result) throw std::runtime_error("Not enough resources to clone frameset!");
-    return (rs_frameset*)result;
-}
-
-
-rs_frame_ref* rs_device_base::detach_frame(rs_frameset* fs, rs_stream stream)
-{
-    auto result = archive->detach_frame_ref((frame_archive::frameset *)fs, stream);
-    if (!result) throw std::runtime_error("Not enough resources to tack detached frame!");
-    return (rs_frame_ref*)result;
-}
-
 void rs_device_base::release_frame(rs_frame_ref* ref)
 {
     archive->release_frame_ref((frame_archive::frame_ref *)ref);

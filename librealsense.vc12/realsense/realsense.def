@@ -57,12 +57,6 @@ EXPORTS
     rs_get_frame_number
     rs_get_frame_data
 
-    rs_wait_for_frames_safe
-    rs_poll_for_frames_safe
-    rs_release_frames
-    rs_clone_frames_ref
-    rs_get_frame
-
     rs_get_detached_framerate
     rs_get_detached_frame_timestamp
     rs_get_detached_frame_data
@@ -75,7 +69,6 @@ EXPORTS
     rs_get_detached_frame_stream_type
 
     rs_release_frame
-    rs_detach_frame
     rs_clone_frame_ref
     rs_send_blob_to_device
 
