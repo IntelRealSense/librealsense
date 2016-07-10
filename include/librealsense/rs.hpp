@@ -400,10 +400,18 @@ namespace rs
             return r;
         }
 
-        int get_stride() const
+        int get_stride_x() const
         {
             rs_error * e = nullptr;
-            auto r = rs_get_detached_frame_stride(frame_ref, &e);
+            auto r = rs_get_detached_frame_stride_x(frame_ref, &e);
+            error::handle(e);
+            return r;
+        }
+
+        int get_stride_y() const
+        {
+            rs_error * e = nullptr;
+            auto r = rs_get_detached_frame_stride_y(frame_ref, &e);
             error::handle(e);
             return r;
         }

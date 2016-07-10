@@ -248,13 +248,13 @@ void rs_device_base::start_video_streaming()
             
             auto requires_processing = mode_selection.requires_processing();
 
-            auto width = mode_selection.get_unpacked_width();
-            auto height = mode_selection.get_unpacked_height();
+            auto width = mode_selection.get_width();
+            auto height = mode_selection.get_height();
             auto fps = mode_selection.get_framerate();
             std::vector<byte *> dest;
 
-            auto stride = mode_selection.get_stride();
-
+            auto stride_x = mode_selection.get_stride_x();
+            auto stride_y = mode_selection.get_stride_y();
             for (auto & output : mode_selection.get_outputs())
             {
                 LOG_DEBUG("FrameAccepted, RecievedAt," << recieved_time << ", FWTS," << timestamp << ", DLLTS," << recieved_time << ", Type," << rsimpl::get_string(output.first) << ",HasPair,0,F#," << frame_counter);
@@ -269,7 +269,8 @@ void rs_device_base::start_video_streaming()
                     width,
                     height,
                     fps,
-                    stride,
+                    stride_x,
+                    stride_y,
                     bpp,
                     output.second,
                     output.first,
