@@ -660,7 +660,6 @@ namespace rs
         /// once callback is set on certain stream type, frames of this type will no longer be available throuhg wait/poll methods (those two approaches are mutually exclusive) 
         /// while wait/poll methods provide consistent set of syncronized frames at the expense of extra latency,
         /// set frame callbacks provides low latency solution with no syncronization
-        /// the lifetime of the callback must be managed by the user (you must ensure the device is either stopped or destructed before callback object is destructed)
         /// \param[in] stream    the stream 
         /// \param[in] on_frame  frame callback to be invoke on every new frame
         /// \return            the framerate of the stream, in frames per second
@@ -672,7 +671,6 @@ namespace rs
         }
 
         ///// sets the callback for motion module event. provided callback will be called the instant new motion or timestamp event is available. 
-        ///// the lifetime of the callback must be managed by the user (you must ensure the device is either stopped or destructed before callback object is destructed)
         ///// \param[in] stream             the stream 
         ///// \param[in] motion_handler     frame callback to be invoke on every new motion event
         ///// \param[in] timestamp_handler  frame callback to be invoke on every new timestamp event
@@ -681,6 +679,17 @@ namespace rs
         {
             rs_error * e = nullptr;            
             rs_enable_motion_tracking_cpp((rs_device *)this, new motion_callback(motion_handler), new timestamp_callback(timestamp_handler), &e);
+            error::handle(e);
+        }
+
+        ///// sets the callback for motion module event. provided callback will be called the instant new motion event is available. 
+        ///// \param[in] stream             the stream 
+        ///// \param[in] motion_handler     frame callback to be invoke on every new motion event
+        ///// \return                       the framerate of the stream, in frames per second
+        void enable_motion_tracking(std::function<void(motion_data)> motion_handler)
+        {
+            rs_error * e = nullptr;            
+            rs_enable_motion_tracking_cpp((rs_device *)this, new motion_callback(motion_handler), new timestamp_callback([](rs::timestamp_data data) {}), &e);
             error::handle(e);
         }
 

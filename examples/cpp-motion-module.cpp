@@ -117,6 +117,7 @@ int main() try
         // 3. Start generating motion-tracking data
         dev->start(rs::source::all_sources);
 
+        printf("\nThe application is collecting data for next 10sec...\n");
         std::this_thread::sleep_for(std::chrono::milliseconds(10000));
 
         // 4. stop data acquisition
