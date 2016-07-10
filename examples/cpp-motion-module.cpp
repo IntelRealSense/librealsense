@@ -108,7 +108,7 @@ int main() try
             log(ss.str().c_str());
         };
 
-        for (int i = 0; i < RS_STREAM_MAX_ENUM; i++)
+        for (int i = (int)(rs::stream::depth); i <= (int)(rs::stream::fisheye); i++)
             dev->set_frame_callback((rs::stream)i, frame_callback);
 
         logs.clear();
