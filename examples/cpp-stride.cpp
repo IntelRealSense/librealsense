@@ -55,7 +55,7 @@ int main() try
     dev->enable_stream(rs::stream::depth, 0, 0, rs::format::z16, 60, rs::output_buffer_format::native);
     dev->enable_stream(rs::stream::color, 640, 480, rs::format::rgb8, 60, rs::output_buffer_format::native);
     dev->enable_stream(rs::stream::infrared, 0, 0, rs::format::y8, 60, rs::output_buffer_format::native);
-    if(dev->supports(rs::capabilities::infrared2))
+    if (dev->supports(rs::capabilities::infrared2))
         dev->enable_stream(rs::stream::infrared2, 0, 0, rs::format::y8, 60, rs::output_buffer_format::native);
 
     resolutions[rs::stream::depth] = { dev->get_stream_width(rs::stream::depth), dev->get_stream_height(rs::stream::depth), rs::format::z16 };
@@ -101,7 +101,7 @@ int main() try
 
             if (frames_queue[i].try_dequeue(&frame))
             {
-                buffers[i].upload(frame.get_data(), frame.get_width(), frame.get_height(), frame.get_format(), frame.get_stride());
+                buffers[i].upload(frame.get_data(), frame.get_width(), frame.get_height(), frame.get_format(), frame.get_stride_x(), frame.get_stride_y());
             }
 
             auto x = (i % 2) * (w / 2);

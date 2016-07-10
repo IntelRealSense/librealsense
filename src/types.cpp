@@ -303,14 +303,14 @@ namespace rsimpl
         }
     }
 
-
-    struct params
+    // search_request_params are used to find first request that satisfies cameras set of constraints
+    // each search_request_params represents requests for each stream type + index of current stream type under examination
+    struct search_request_params
     {
         stream_request requests[RS_STREAM_NATIVE_COUNT];
         int stream;
-        params(stream_request in_requests[RS_STREAM_NATIVE_COUNT], int i):
-            
-            stream(i)
+        search_request_params(stream_request in_requests[RS_STREAM_NATIVE_COUNT], int i)
+            : stream(i)
         {
             for (auto i = 0; i<RS_STREAM_NATIVE_COUNT; i++)
             {
@@ -333,19 +333,32 @@ namespace rsimpl
         return true;
     }
 
+    // find_good_requests_combination is used to find requests that satisfy cameras set of constraints.
+    // this is done using BFS search over the posibility space.
+    // the algorithm:
+    // start with initial combination of streams requests- the input requests, can be empty or partially filled by user
+    // insert initial combination to a queue data structure (dequeu for performance)
+    // loop until queue is empty - at each iteration pop from queue the next set of requests.
+    // for each one of the next stream request posibilties create new items by adding them to current item and pushing them back to queue.
+    // once there is a item that all its stream requsts are filled 
+    // and validated to satisfies all interstream constraints
+    // copy it to requests parameter and return true.
     bool device_config::find_good_requests_combination( stream_request(&requests)[RS_STREAM_NATIVE_COUNT], std::vector<stream_request> stream_requests[RS_STREAM_NATIVE_COUNT]) const
     {
-        std::deque<params> calls;
+        std::deque<search_request_params> calls;
   
-        params p = { requests, 0 };
-
+        // initial parameter is the input requests 
+        // and its stream index is 0 (depth)
+        search_request_params p = { requests, 0 };
         calls.push_back(p);
 
         while (!calls.empty())
         {
+            //pop one item
             p = calls.back();
             calls.pop_back();
 
+            //check if found combination that satisfies all interstream constraints
             if (all_requests_filled(p.requests) && validate_requests(p.requests))
             {
                 for (auto i = 0; i < RS_STREAM_NATIVE_COUNT; i++)
@@ -355,40 +368,49 @@ namespace rsimpl
                 return true;
             }
 
+            //now need to go over all posibilities for the next stream
             for (auto i = 0; i < stream_requests[p.stream].size(); i++)
             {
+                //if this stream is not enabled move to next item
                 if (!requests[p.stream].enabled) break;
 
+                //check that this spasific request is not contradicts the original user request
                 if (!requests[p.stream].contradict(stream_requests[p.stream][i]))
                 {
+                    //add to request the next option from possible requests
                     p.requests[p.stream] = stream_requests[p.stream][i];
 
+                    //if after adding the next stream request if it doesn't satisfies all interstream constraints
+                    //do not insert it to queue
                     if (validate_requests(p.requests))
                     { 
-                        params new_p = { p.requests, p.stream + 1 };
+                        // push the new requests parameter with stream =  stream + 1
+                        search_request_params new_p = { p.requests, p.stream + 1 };
                         calls.push_back(new_p);
                     }
                 }
             }
 
         }
+        //if deque is empty and no good requests combination found return false
         return false;
-
-  
     }
 
     bool device_config::fill_requests(stream_request(&requests)[RS_STREAM_NATIVE_COUNT]) const
     {
-        // Determine if the user has requested any streams which are supplied by this subdevice
-        
+        //did the user filled all requests?
         if(all_requests_filled(requests))
         {
             return true;
         }
 
+        //If the user did not fill all requests, we need to fill the missing requests
+
         std::vector<stream_request> stream_requests[RS_STREAM_NATIVE_COUNT];
+        //Get all requests posibilities in order to find the requests that satisfies interstream constraints
         get_all_possible_requestes(stream_requests);
 
+        //find stream requests combination that satisfies all interstream constraints
         return find_good_requests_combination(requests, stream_requests);
     }
 
@@ -418,12 +440,7 @@ namespace rsimpl
                         {
                             request.output_format = static_cast<rs_output_buffer_format>(output_format);
                             stream_requests[output.first].push_back(request);
-                            if (output.first == rs_stream::RS_STREAM_COLOR)
-                            {
-                                request.format = output.second;;
-                            }
                         }
-
                     }
                 }
             }
@@ -503,8 +520,10 @@ namespace rsimpl
         stream_request requests[RS_STREAM_NATIVE_COUNT];
         for (int i = 0; i<RS_STREAM_NATIVE_COUNT; ++i) requests[i] = reqs[i];
 
+        //Validate that user requests satisfy all interstream constraints 
         validate_requests(requests, true);
 
+        //Fill the requests that user did not fill
         fill_requests(requests);
 
         // Select subdevice modes needed to satisfy our requests
@@ -547,8 +566,8 @@ namespace rsimpl
                         return false;
                     }
                     if (a.*f != 0 && b.*f != 0 && ((rule.diveded && float(a.*f) / float(b.*f) - a.*f / b.*f > 0) || (rule.diveded2 && float(b.*f) / float(a.*f) - b.*f / a.*f > 0)))
-					{
-						rs_stream bigger;
+                    {
+                        rs_stream bigger;
                         if (throw_exception)
                             throw std::runtime_error(to_string() << "requested " << rule.a << " and " << rule.b << " settings are incompatible");
                         return false;

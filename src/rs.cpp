@@ -423,10 +423,17 @@ int rs_get_detached_framerate(const rs_frame_ref * frameset, rs_error ** error) 
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, frameset)
 
-int rs_get_detached_frame_stride(const rs_frame_ref * frameset, rs_error ** error) try
+int rs_get_detached_frame_stride_x(const rs_frame_ref * frameset, rs_error ** error) try
 {
     VALIDATE_NOT_NULL(frameset);
-    return frameset->get_frame_stride();
+    return frameset->get_frame_stride_x();
+}
+HANDLE_EXCEPTIONS_AND_RETURN(0, frameset)
+
+int rs_get_detached_frame_stride_y(const rs_frame_ref * frameset, rs_error ** error) try
+{
+	VALIDATE_NOT_NULL(frameset);
+	return frameset->get_frame_stride_y();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, frameset)
 

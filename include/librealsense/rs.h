@@ -683,11 +683,18 @@ int rs_get_detached_frame_height(const rs_frame_ref * frame, rs_error ** error);
 int rs_get_detached_framerate(const rs_frame_ref * frameset, rs_error ** error);
 
 /**
-* retrive frame pad crop
+* retrive frame stride X, meaning the actual line width in memory (not the logical image width)
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return            frame pad crop
 */
-int rs_get_detached_frame_stride(const rs_frame_ref * frame, rs_error ** error);
+int rs_get_detached_frame_stride_x(const rs_frame_ref * frame, rs_error ** error);
+
+/**
+* retrive frame stride Y, meaning the actual line height in memory (not the logical image height)
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return            frame pad crop
+*/
+int rs_get_detached_frame_stride_y(const rs_frame_ref * frame, rs_error ** error);
 
 /**
 * retrive frame pad crop
