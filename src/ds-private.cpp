@@ -458,14 +458,6 @@ namespace rsimpl {
             send_command_and_receive_response(device, CommandResponsePacket(command::poke, reg, value));
         }
 
-        void disable_auto_option(uvc::device & device, int subdevice, rs_option auto_opt)
-        {
-            static const int reset_val = 0;
-            // Probe , then deactivate
-            if (uvc::get_pu_control(device, subdevice, auto_opt))
-                uvc::set_pu_control(device, subdevice, auto_opt, reset_val);
-        }
-
         const dc_params dc_params::presets[] = {
             {5, 5, 192,  1,  512, 6, 24, 27,  7,   24}, // (DEFAULT) Default settings on chip. Similiar to the medium setting and best for outdoors.
             {5, 5,   0,  0, 1023, 0,  0,  0,  0, 2047}, // (OFF) Disable almost all hardware-based outlier removal

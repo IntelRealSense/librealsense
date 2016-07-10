@@ -192,12 +192,6 @@ namespace rsimpl
 
         for(size_t i=0; i<count; ++i)
         {
-            if(uvc::is_pu_control(options[i]))
-            {
-                uvc::set_pu_control_with_retry(get_device(), 0, options[i], static_cast<int>(values[i]));
-                continue;
-            }
-
             switch(options[i])
             {
             case RS_OPTION_F200_DYNAMIC_FPS:          f200::set_dynamic_fps(get_device(), static_cast<uint8_t>(values[i])); break; // IVCAM 1.0 Only
@@ -208,7 +202,7 @@ namespace rsimpl
         }
 
         //Set common options
-        if (base_opt.size())
+        if (!base_opt.empty())
             iv_camera::set_options(base_opt.data(), base_opt.size(), base_opt_val.data());
     }
 

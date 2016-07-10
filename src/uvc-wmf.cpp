@@ -880,7 +880,7 @@ namespace rsimpl
             sub.get_media_source();
             if (option == RS_OPTION_COLOR_EXPOSURE || option == RS_OPTION_FISHEYE_COLOR_EXPOSURE)
             {
-                check("IAMCameraControl::Set", sub.am_camera_control->Set(CameraControl_Exposure, static_cast<int>(std::round(log2(static_cast<double>(value) / 10000))), CameraControl_Flags_Manual));
+                check("IAMCameraControl::Set", sub.am_camera_control->Set(CameraControl_Exposure, static_cast<int>(value), CameraControl_Flags_Manual));
                 return;
             }
             if(option == RS_OPTION_COLOR_ENABLE_AUTO_EXPOSURE)
@@ -915,8 +915,6 @@ namespace rsimpl
             throw std::runtime_error("unsupported control");
         }
 
-        int win_to_uvc_exposure(int value) { return static_cast<int>(std::round(exp2(static_cast<double>(value)) * 10000)); }
-
         void get_pu_control_range(const device & device, int subdevice, rs_option option, int * min, int * max, int * step, int * def)
         {
             if(option >= RS_OPTION_COLOR_ENABLE_AUTO_EXPOSURE && option <= RS_OPTION_COLOR_ENABLE_AUTO_WHITE_BALANCE)
@@ -934,10 +932,10 @@ namespace rsimpl
             if (option == RS_OPTION_COLOR_EXPOSURE || option == RS_OPTION_FISHEYE_COLOR_EXPOSURE)
             {
                 check("IAMCameraControl::Get", sub.am_camera_control->GetRange(CameraControl_Exposure, &minVal, &maxVal, &steppingDelta, &defVal, &capsFlag));
-                if(min)  *min  = win_to_uvc_exposure(minVal);
-                if(max)  *max  = win_to_uvc_exposure(maxVal);
-                if(step) *step = win_to_uvc_exposure(steppingDelta);
-                if(def)  *def  = win_to_uvc_exposure(defVal);
+                if (min)  *min = minVal;
+                if (max)  *max = maxVal;
+                if (step) *step = steppingDelta;
+                if (def)  *def = defVal;
                 return;
             }
             for(auto & pu : pu_controls)
@@ -1038,9 +1036,9 @@ namespace rsimpl
             long value=0, flags=0;
             if (option == RS_OPTION_COLOR_EXPOSURE || option == RS_OPTION_FISHEYE_COLOR_EXPOSURE)
             {
-                // am_camera_control != null, becouse get_media_source was called at least once
+                // am_camera_control != null, because get_media_source was called at least once
                 check("IAMCameraControl::Get", sub.am_camera_control->Get(CameraControl_Exposure, &value, &flags));
-                return win_to_uvc_exposure(value);
+                return value;
             }
             if(option == RS_OPTION_COLOR_ENABLE_AUTO_EXPOSURE)
             {

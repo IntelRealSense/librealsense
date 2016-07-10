@@ -34,6 +34,35 @@
 // TODO consider to expose cameras id strings in rs.hpp via <PID:NAME> construct
 static const std::vector<std::string> ds_names = { "Intel RealSense R200" ,"Intel RealSense LR200", "Intel RealSense ZR300" };
 
+enum { BEFORE_START_DEVICE = 1, AFTER_START_DEVICE = 2 };
+
+inline void test_ds_device_option(rs_option option, std::initializer_list<int> values, std::initializer_list<int> bad_values, int when)
+{
+    safe_context ctx;
+    REQUIRE(rs_get_device_count(ctx, require_no_error()) == 1);
+
+    rs_device * dev = rs_get_device(ctx, 0, require_no_error());
+    REQUIRE(dev != nullptr);
+    REQUIRE(std::any_of(ds_names.begin(), ds_names.end(), [&](std::string const& s) {return s == rs_get_device_name(dev, require_no_error()); }));
+
+    if (when & BEFORE_START_DEVICE)
+    {
+        test_option(dev, option, values, bad_values);
+    }
+
+    if (when & AFTER_START_DEVICE)
+    {
+        rs_enable_stream_preset(dev, RS_STREAM_DEPTH, RS_PRESET_BEST_QUALITY, require_no_error());
+        rs_start_device(dev, require_no_error());
+
+        // Currently, setting/getting options immediately after streaming frequently raises hardware errors
+        // todo - Internally block or retry failed calls within the first few seconds after streaming
+        std::this_thread::sleep_for(std::chrono::seconds(1));
+        test_option(dev, option, values, bad_values);
+    }
+}
+
+
 inline void test_ds_device_streaming(std::initializer_list<stream_mode> modes)
 {
     safe_context ctx;

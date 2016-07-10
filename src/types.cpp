@@ -10,6 +10,8 @@
 #include <array>
 #include <deque>
 
+const char * unknown = "UNKNOWN";
+
 namespace rsimpl
 {
     const char * get_string(rs_stream value)
@@ -29,7 +31,7 @@ namespace rsimpl
         CASE(INFRARED2_ALIGNED_TO_DEPTH)
         CASE(DEPTH_ALIGNED_TO_INFRARED2)
         CASE(FISHEYE)
-        default: assert(!is_valid(value)); return nullptr;
+        default: assert(!is_valid(value)); return unknown;
         }
         #undef CASE
     }
@@ -53,7 +55,7 @@ namespace rsimpl
         CASE(RAW10)
         CASE(RAW16)
         CASE(RAW8)
-        default: assert(!is_valid(value)); return nullptr;
+		default: assert(!is_valid(value)); return unknown;
         }
         #undef CASE
     }
@@ -66,7 +68,7 @@ namespace rsimpl
         CASE(BEST_QUALITY)
         CASE(LARGEST_IMAGE)
         CASE(HIGHEST_FRAMERATE)
-        default: assert(!is_valid(value)); return nullptr;
+		default: assert(!is_valid(value)); return unknown;
         }
         #undef CASE
     }
@@ -79,7 +81,7 @@ namespace rsimpl
         CASE(NONE)
         CASE(MODIFIED_BROWN_CONRADY)
         CASE(INVERSE_BROWN_CONRADY)
-        default: assert(!is_valid(value)); return nullptr;
+		default: assert(!is_valid(value)); return unknown;
         }
         #undef CASE
     }
@@ -162,7 +164,7 @@ namespace rsimpl
         CASE(FISHEYE_COLOR_GAIN)
         CASE(FISHEYE_STROBE)
         CASE(FISHEYE_EXT_TRIG)
-        default: assert(!is_valid(value)); return nullptr;
+		default: assert(!is_valid(value)); return unknown;
         }
         #undef CASE
     }
@@ -175,7 +177,7 @@ namespace rsimpl
         CASE(VIDEO)
         CASE(MOTION_TRACKING)
         CASE(ALL)
-        default: assert(!is_valid(value)); return nullptr;
+		default: assert(!is_valid(value)); return unknown;
         }
         #undef CASE
     }
@@ -191,7 +193,8 @@ namespace rsimpl
         CASE(INFRARED2)
         CASE(FISH_EYE)
         CASE(MOTION_EVENTS)
-        default: assert(!is_valid(value)); return nullptr;
+        CASE(MOTION_MODULE_FW_UPDATE)
+        default: assert(!is_valid(value)); return unknown;
         }
         #undef CASE
     }
@@ -208,7 +211,7 @@ namespace rsimpl
         CASE(G0_SYNC)
         CASE(G1_SYNC)
         CASE(G2_SYNC)
-        default: assert(!is_valid(value)); return nullptr;
+		default: assert(!is_valid(value)); return unknown;
         }
         #undef CASE
     }
@@ -471,7 +474,7 @@ namespace rsimpl
             {
                 for(auto & unpacker : subdevice_mode.pf.unpackers)
                 {
-                    auto selection = subdevice_mode_selection(subdevice_mode, pad_crop, &unpacker - subdevice_mode.pf.unpackers.data());
+                    auto selection = subdevice_mode_selection(subdevice_mode, pad_crop, (int)(&unpacker - subdevice_mode.pf.unpackers.data()));
 
                     // Determine if this mode satisfies the requirements on our requested streams
                     auto stream_unsatisfied = stream_requested;

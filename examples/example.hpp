@@ -59,10 +59,11 @@ inline void draw_text(int x, int y, const char * text)
 class texture_buffer
 {
     GLuint texture;
-    int last_timestamp;
+    double last_timestamp;
     std::vector<uint8_t> rgb;
 
-    int fps, num_frames, next_time;
+    int fps, num_frames;
+    double next_time;
 
 public:
     texture_buffer() : texture(), last_timestamp(-1), fps(), num_frames(), next_time(1000) {}
@@ -140,7 +141,7 @@ public:
     {
         assert(dev.is_stream_enabled(stream));
 
-        const int timestamp = dev.get_frame_timestamp(stream);
+        const double timestamp = dev.get_frame_timestamp(stream);
         if(timestamp != last_timestamp)
         {
             upload(dev.get_frame_data(stream), dev.get_stream_width(stream), dev.get_stream_height(stream), dev.get_stream_format(stream));
@@ -158,7 +159,7 @@ public:
 
     void upload(rs::frame& frame)
     {
-        const int timestamp = frame.get_timestamp();
+        const double timestamp = frame.get_timestamp();
         if(timestamp != last_timestamp)
         {
 			upload(frame.get_data(), frame.get_width(), frame.get_height(), frame.get_format(), frame.get_stride_x(), frame.get_stride_y());

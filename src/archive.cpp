@@ -181,7 +181,7 @@ const byte* frame_archive::frame_ref::get_frame_data() const
     return frame_ptr ? frame_ptr->get_frame_data() : nullptr;
 }
 
-int frame_archive::frame_ref::get_frame_timestamp() const
+double frame_archive::frame_ref::get_frame_timestamp() const
 {
     return frame_ptr ? frame_ptr->get_frame_timestamp(): 0;
 }
@@ -272,7 +272,7 @@ const byte* frame_archive::frame::get_frame_data() const
     return frame_data;
 }
 
-int frame_archive::frame::get_frame_timestamp() const
+double frame_archive::frame::get_frame_timestamp() const
 {
     return additional_data.timestamp;
 }
@@ -317,6 +317,7 @@ float frame_archive::frame::get_bpp() const
     return additional_data.bpp;
 }
 
+
 void frame_archive::frame::update_frame_callback_start_ts(std::chrono::high_resolution_clock::time_point ts)
 {
     additional_data.frame_callback_started = ts;
@@ -346,12 +347,10 @@ void frame_archive::log_frame_callback_end(frame* frame)
 
     if (callback_duration > callback_warning_duration)
     {
-        LOG_WARNING("Frame Callback took too long to complete. (Duration: " << callback_duration << ", FPS: " << frame->additional_data.fps << ")");
+        LOG_INFO("Frame Callback took too long to complete. (Duration: " << callback_duration << "ms, FPS: " << frame->additional_data.fps << ", Max Duration: " << callback_warning_duration << "ms)");
     }
 
-    LOG_DEBUG("CallbackFinished," 
-        << ((rs_stream::RS_STREAM_MAX_ENUM == frame->get_stream_type()) ? "Uninitialized" : rsimpl::get_string(frame->get_stream_type()))
-        << "," << frame->get_frame_number() << ",DispatchedAt," << ts);
+    LOG_DEBUG("CallbackFinished," << rsimpl::get_string(frame->get_stream_type()) << "," << frame->get_frame_number() << ",DispatchedAt," << ts);
 }
 
 void frame_archive::frame_ref::log_callback_start(std::chrono::high_resolution_clock::time_point capture_start_time)

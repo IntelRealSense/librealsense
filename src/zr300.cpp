@@ -7,7 +7,7 @@
 #include "image.h"
 #include "ds-private.h"
 #include "zr300.h"
-#include <Shlwapi.h>
+
 
 using namespace rsimpl;
 using namespace rsimpl::ds;
@@ -131,6 +131,17 @@ namespace rsimpl
             values[i] = base_opt_val[i];
     }
 
+    void zr300_camera::send_blob_to_device(rs_blob_type type, void * data, int size)
+    {
+        switch(type)
+        {
+        case RS_BLOB_TYPE_MOTION_MODULE_FIRMWARE_UPDATE:
+            motion_module_ctrl.firmware_upgrade(data, size);
+            break;
+        default: rs_device_base::send_blob_to_device(type, data, size);
+        }
+    }
+
     void zr300_camera::toggle_motion_module_power(bool on)
     {        
         motion_module_ctrl.toggle_motion_module_power(on);
@@ -139,6 +150,7 @@ namespace rsimpl
     void zr300_camera::toggle_motion_module_events(bool on)
     {
         motion_module_ctrl.toggle_motion_module_events(on);
+        motion_module_ready = on;
     }
 
     // Power on Fisheye camera (dspwr)
@@ -146,25 +158,24 @@ namespace rsimpl
     {
         if ((supports(rs_capabilities::RS_CAPABILITIES_FISH_EYE)) && ((config.requests[RS_STREAM_FISHEYE].enabled)))
             toggle_motion_module_power(true);
-
-        Sleep(300); // Added delay between MM power on and MM start commands to be sure that the MM will be ready untill start polling events. 
+       
         rs_device_base::start(source);
     }
 
     // Power off Fisheye camera
     void zr300_camera::stop(rs_source source)
     {
-        rs_device_base::stop(source);
         if ((supports(rs_capabilities::RS_CAPABILITIES_FISH_EYE)) && ((config.requests[RS_STREAM_FISHEYE].enabled)))
             toggle_motion_module_power(false);
+        rs_device_base::stop(source);
     }
 
     // Power on motion module (mmpwr)
     void zr300_camera::start_motion_tracking()
     {
-        if (supports(rs_capabilities::RS_CAPABILITIES_MOTION_EVENTS))
-            toggle_motion_module_events(true);
         rs_device_base::start_motion_tracking();
+        if (supports(rs_capabilities::RS_CAPABILITIES_MOTION_EVENTS))
+            toggle_motion_module_events(true);        
     }
 
     // Power down Motion Module
@@ -186,7 +197,7 @@ namespace rsimpl
             for(const auto & output : m.get_outputs())
             {
                 fps[output.first] = m.mode.fps;
-                max_fps = max(max_fps, m.mode.fps);
+                max_fps = std::max(max_fps, m.mode.fps);
             }
         }
 
@@ -233,6 +244,7 @@ namespace rsimpl
 
             info.capabilities_vector.push_back(RS_CAPABILITIES_FISH_EYE);
             info.capabilities_vector.push_back(RS_CAPABILITIES_MOTION_EVENTS);
+            info.capabilities_vector.push_back(RS_CAPABILITIES_MOTION_MODULE_FW_UPDATE);
 
             info.stream_subdevices[RS_STREAM_FISHEYE] = 3;
             info.presets[RS_STREAM_FISHEYE][RS_PRESET_BEST_QUALITY] = { true, 640, 480, RS_FORMAT_RAW8,   60 };

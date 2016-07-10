@@ -10,12 +10,11 @@
 
 #include <algorithm>
 #include <sstream>
-#include <iostream>
 
 using namespace rsimpl;
 using namespace rsimpl::motion_module;
 
-rs_device_base::rs_device_base(std::shared_ptr<rsimpl::uvc::device> device, const rsimpl::static_device_info & info) : device(device), config(info), capturing(false), data_acquisition_active(false),
+rs_device_base::rs_device_base(std::shared_ptr<rsimpl::uvc::device> device, const rsimpl::static_device_info & info) : device(device), config(info), capturing(false), data_acquisition_active(false), motion_module_ready(false),
     depth(config, RS_STREAM_DEPTH), color(config, RS_STREAM_COLOR), infrared(config, RS_STREAM_INFRARED), infrared2(config, RS_STREAM_INFRARED2), fisheye(config, RS_STREAM_FISHEYE),
     points(depth), rect_color(color), color_to_depth(color, depth), depth_to_color(depth, color), depth_to_rect_color(depth, rect_color), infrared2_to_depth(infrared2,depth), depth_to_infrared2(depth,infrared2)
 {
@@ -124,26 +123,29 @@ void rs_device_base::start_motion_tracking()
         set_subdevice_data_channel_handler(*device, 3,
             [this, parser](const unsigned char * data, const int size) mutable
         {
-            // Parse motion data
-            auto events = parser(data, size);
-
-            // Handle events by user-provided handlers
-            for (auto & entry : events)
+            if (motion_module_ready)    //  Flush all received data before MM is fully operational 
             {
-                // Handle Motion data packets
-                if (config.motion_callback)
-                for (int i = 0; i < entry.imu_entries_num; i++)
-                        config.motion_callback->on_event(entry.imu_packets[i]);
-                
-                // Handle Timestamp packets
-                if (config.timestamp_callback)
+                // Parse motion data
+                auto events = parser(data, size);
+
+                // Handle events by user-provided handlers
+                for (auto & entry : events)
                 {
-                    for (int i = 0; i < entry.non_imu_entries_num; i++)
+                    // Handle Motion data packets
+                    if (config.motion_callback)
+                        for (int i = 0; i < entry.imu_entries_num; i++)
+                            config.motion_callback->on_event(entry.imu_packets[i]);
+
+                    // Handle Timestamp packets
+                    if (config.timestamp_callback)
                     {
-                        auto tse = entry.non_imu_packets[i];
-                        if (archive)
-                            archive->on_timestamp(tse);
-                        config.timestamp_callback->on_event(entry.non_imu_packets[i]);
+                        for (int i = 0; i < entry.non_imu_entries_num; i++)
+                        {
+                            auto tse = entry.non_imu_packets[i];
+                            if (archive)
+                                archive->on_timestamp(tse);
+                            config.timestamp_callback->on_event(entry.non_imu_packets[i]);
+                        }
                     }
                 }
             }
@@ -262,7 +264,7 @@ void rs_device_base::start_video_streaming()
 
             for (auto & output : mode_selection.get_outputs())
             {
-                auto bpp = rsimpl::get_image_bpp(output.second);               
+                auto bpp = rsimpl::get_image_bpp(output.second);
                 frame_archive::frame_additional_data additional_data( timestamp,
                     frame_counter,
                     sys_time,
@@ -343,42 +345,6 @@ bool rs_device_base::poll_all_streams()
     return archive->poll_for_frames();
 }
 
-rs_frameset* rs_device_base::wait_all_streams_safe()
-{
-    if (!capturing) throw std::runtime_error("Can't call wait_for_frames_safe when the device is not capturing!");
-    if (!archive) throw std::runtime_error("Can't call wait_for_frames_safe when frame archive is not available!");
-
-        return (rs_frameset*)archive->wait_for_frames_safe();
-}
-
-bool rs_device_base::poll_all_streams_safe(rs_frameset** frames)
-{
-    if (!capturing) return false;
-    if (!archive) return false;
-
-    return archive->poll_for_frames_safe((frame_archive::frameset**)frames);
-}
-
-void rs_device_base::release_frames(rs_frameset * frameset)
-{
-    archive->release_frameset((frame_archive::frameset *)frameset);
-}
-
-rs_frameset * rs_device_base::clone_frames(rs_frameset * frameset)
-{
-    auto result = archive->clone_frameset((frame_archive::frameset *)frameset);
-    if (!result) throw std::runtime_error("Not enough resources to clone frameset!");
-    return (rs_frameset*)result;
-}
-
-
-rs_frame_ref* rs_device_base::detach_frame(rs_frameset* fs, rs_stream stream)
-{
-    auto result = archive->detach_frame_ref((frame_archive::frameset *)fs, stream);
-    if (!result) throw std::runtime_error("Not enough resources to tack detached frame!");
-    return (rs_frame_ref*)result;
-}
-
 void rs_device_base::release_frame(rs_frame_ref* ref)
 {
     archive->release_frame_ref((frame_archive::frame_ref *)ref);
@@ -428,6 +394,14 @@ void rs_device_base::get_option_range(rs_option option, double & min, double & m
     }
 
     throw std::logic_error("range not specified");
+}
+
+void rs_device_base::disable_auto_option(int subdevice, rs_option auto_opt)
+{
+    static const int reset_state = 0;
+    // Probe , then deactivate
+    if (uvc::get_pu_control(get_device(), subdevice, auto_opt))
+        uvc::set_pu_control(get_device(), subdevice, auto_opt, reset_state);
 }
 
 const char * rs_device_base::get_usb_port_id() const

@@ -14,7 +14,7 @@ namespace rsimpl
     { 
         virtual ~frame_interface() {}
         virtual int get_frame_number() const = 0;
-        virtual void set_timestamp(int new_ts) = 0;
+        virtual void set_timestamp(double new_ts) = 0;
         virtual rs_stream get_stream_type()const = 0;
     };
 
@@ -44,7 +44,7 @@ namespace rsimpl
 
     class timestamp_corrector : public timestamp_corrector_interface{
     public:
-        timestamp_corrector(int queue_size = 10, int time_out = 10);
+        timestamp_corrector(int queue_size = 500, int time_out = 10);
         ~timestamp_corrector() override;
         void on_timestamp(rs_timestamp_data data) override;
         void correct_timestamp(frame_interface& frame, rs_stream stream) override;
@@ -56,7 +56,7 @@ namespace rsimpl
         std::mutex mtx;
         concurrent_queue data_queue;
         std::condition_variable cv;
-        int queue_size;
+        size_t queue_size;
         int time_out;
 
     };

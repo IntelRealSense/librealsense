@@ -23,3 +23,8 @@ TEST_CASE( "R200 streams HD Raw10", "[live] [r200] [one-camera]" )
     test_ds_device_streaming({{RS_STREAM_COLOR, 1920, 1080, RS_FORMAT_RAW10, 30}});
 }
 
+TEST_CASE("R200 Testing RGB Exposure values", "[live] [DS-device] [one-camera]")
+{
+    // The logarithmic range is [-13:1:-4]
+    test_ds_device_option(RS_OPTION_COLOR_EXPOSURE, { -13, -9, -4, -6, -10 }, {}, BEFORE_START_DEVICE | AFTER_START_DEVICE);
+}

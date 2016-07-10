@@ -21,7 +21,7 @@ struct rs_stream_interface
     virtual int                             get_framerate() const = 0;
 
     virtual int                             get_frame_number() const = 0;
-	virtual int                             get_frame_timestamp() const = 0;
+    virtual double                          get_frame_timestamp() const = 0;
     virtual long long                       get_frame_system_time() const = 0;
     virtual const uint8_t *                 get_frame_data() const = 0;
 
@@ -35,7 +35,7 @@ struct rs_frame_ref
 {
     virtual                                 ~rs_frame_ref() {}
     virtual const uint8_t*                  get_frame_data() const = 0;
-    virtual int                             get_frame_timestamp() const = 0;
+    virtual double                          get_frame_timestamp() const = 0;
     virtual int                             get_frame_number() const = 0;
     virtual long long                       get_frame_system_time() const = 0;
     virtual int                             get_frame_width() const = 0;
@@ -46,12 +46,6 @@ struct rs_frame_ref
     virtual float                           get_frame_bpp() const = 0;
     virtual rs_format                       get_frame_format() const = 0;
     virtual rs_stream                       get_stream_type() const = 0;
-};
-
-struct rs_frameset
-{
-    virtual                                 ~rs_frameset() {}
-    virtual rs_frame_ref *                  get_frame(rs_stream stream) = 0;
 };
 
 // realsense device public interface
@@ -88,19 +82,13 @@ struct rs_device
     virtual void                            wait_all_streams() = 0;
     virtual bool                            poll_all_streams() = 0;
                                             
-    virtual rs_frameset *                   wait_all_streams_safe() = 0;
-    virtual bool                            poll_all_streams_safe(rs_frameset ** frames) = 0;
-    virtual void                            release_frames(rs_frameset * frameset) = 0;
-    virtual rs_frameset *                   clone_frames(rs_frameset * frameset) = 0;
-                                            
     virtual bool                            supports(rs_capabilities capability) const = 0;
                                             
     virtual bool                            supports_option(rs_option option) const = 0;
     virtual void                            get_option_range(rs_option option, double & min, double & max, double & step, double & def) = 0;
     virtual void                            set_options(const rs_option options[], size_t count, const double values[]) = 0;
     virtual void                            get_options(const rs_option options[], size_t count, double values[]) = 0;
-                                            
-    virtual rs_frame_ref *                  detach_frame(rs_frameset * fs, rs_stream stream) = 0;
+
     virtual void                            release_frame(rs_frame_ref * ref) = 0;
     virtual rs_frame_ref *                  clone_frame(rs_frame_ref * frame) = 0;
 

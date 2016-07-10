@@ -78,7 +78,7 @@ int main()
     check_error();
     rs_enable_stream_preset(dev, RS_STREAM_COLOR, RS_PRESET_BEST_QUALITY, &e);
     check_error();
-    rs_start_device(dev, RS_SOURCE_VIDEO, &e);
+    rs_start_device(dev, &e);
     check_error();
 
     /* Open a GLFW window to display our output */

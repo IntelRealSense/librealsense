@@ -23,13 +23,14 @@ extern "C" {
 
 typedef enum rs_capabilities
 {
-    RS_CAPABILITIES_DEPTH         = 0,
-    RS_CAPABILITIES_COLOR         = 1,
-    RS_CAPABILITIES_INFRARED      = 2,
-    RS_CAPABILITIES_INFRARED2     = 3,
-    RS_CAPABILITIES_FISH_EYE      = 4,
-    RS_CAPABILITIES_MOTION_EVENTS = 5,
-    RS_CAPABILITIES_COUNT         = 6,
+    RS_CAPABILITIES_DEPTH                   = 0,
+    RS_CAPABILITIES_COLOR                   = 1,
+    RS_CAPABILITIES_INFRARED                = 2,
+    RS_CAPABILITIES_INFRARED2               = 3,
+    RS_CAPABILITIES_FISH_EYE                = 4,
+    RS_CAPABILITIES_MOTION_EVENTS           = 5,
+    RS_CAPABILITIES_MOTION_MODULE_FW_UPDATE = 6,
+    RS_CAPABILITIES_COUNT                   = 7,
     RS_CAPABILITIES_MAX_ENUM = 0x7FFFFFFF
 } rs_capabilities;
 
@@ -201,6 +202,10 @@ typedef enum rs_option
     RS_OPTION_MAX_ENUM = 0x7FFFFFFF
 } rs_option;
 
+typedef enum rs_blob_type {
+    RS_BLOB_TYPE_MOTION_MODULE_FIRMWARE_UPDATE                = 1
+}  rs_blob_type;
+
 typedef struct rs_intrinsics
 {
     int           width;     /* width of the image in pixels */
@@ -234,7 +239,7 @@ typedef enum rs_event_source
 
 typedef struct rs_timestamp_data
 {
-    unsigned int        timestamp;
+    unsigned int        timestamp;      /* 32Mhz clock. Each tick corresponds to 31.25 usec */
     rs_event_source     source_id;
     unsigned short      frame_number;  /* 12 bit; per data source */
 } rs_timestamp_data;
@@ -456,7 +461,7 @@ void rs_enable_motion_tracking(rs_device * device,
 
     /**
     * Enable and configure motion-tracking data handlers
-    * (This variant is provided specificly to enable passing lambdas with capture lists safely into the library)
+    * (This variant is provided specifically to enable passing lambdas with capture lists safely into the library)
     * \param[in] motion_callback    user-defined routine to be invoked when a motion data arrives
     * \param[in] timestamp_callback user-defined routine to be invoked on timestamp
     * \param[out] error             if non-null, receives any error that occurs during this call, otherwise, errors are ignored
@@ -488,17 +493,29 @@ int rs_is_motion_tracking_active(rs_device * device, rs_error ** error);
 
 /**
  * begin streaming on all enabled streams for this device
+ * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+ */
+void rs_start_device(rs_device * device, rs_error ** error);
+
+/**
+ * end data acquisition for the specified source providers
+ * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+ */
+void rs_stop_device(rs_device * device, rs_error ** error);
+
+/**
+ * begin streaming on all enabled streams for this device
  * \param[in] source  the data source to be activated
  * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
  */
-void rs_start_device(rs_device * device, rs_source source, rs_error ** error);
+void rs_start_source(rs_device * device, rs_source source, rs_error ** error);
 
 /**
  * end data acquisition for the specified source providers
  * \param[in] source  the data source to be terminated
  * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
  */
-void rs_stop_device(rs_device * device, rs_source source, rs_error ** error);
+void rs_stop_source(rs_device * device, rs_source source, rs_error ** error);
 
 /**
  * determine if the device is currently streaming
@@ -515,7 +532,18 @@ int rs_is_device_streaming(const rs_device * device, rs_error ** error);
  * \param[out] step   the granularity of options which accept discrete values, or zero if the option accepts continuous values
  * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
  */
-void rs_get_device_option_range(rs_device * device, rs_option option, double * min, double * max, double * step,double * def, rs_error ** error);
+void rs_get_device_option_range(rs_device * device, rs_option option, double * min, double * max, double * step, rs_error ** error);
+
+/**
+ * retrieve the available range of values of a supported option
+ * \param[in] option  the option whose range should be queried
+ * \param[out] min    the minimum value which will be accepted for this option
+ * \param[out] max    the maximum value which will be accepted for this option
+ * \param[out] step   the granularity of options which accept discrete values, or zero if the option accepts continuous values
+ * \param[out] def    the default value of the option
+ * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+ */
+void rs_get_device_option_range_ex(rs_device * device, rs_option option, double * min, double * max, double * step, double * def, rs_error ** error);
 
 /**
  * efficiently retrieve the value of an arbitrary number of options, using minimal hardware IO
@@ -580,26 +608,12 @@ int rs_poll_for_frames(rs_device * device, rs_error ** error);
 int rs_supports(rs_device * device, rs_capabilities capability, rs_error ** error);
 
 /**
-* block until new frames are available and return a unique handle to the resulting frameset
-* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
-*/
-rs_frameset* rs_wait_for_frames_safe(rs_device * device, rs_error ** error);
-
-/**
-* check if new frames are available, without blocking and return a unique handle to the resulting frameset
-* \param[out] frameset  if non-null, receives a unique handle for the resulting frame-set, to be queried later
-* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
-* \return            1 if new frames are available, 0 if no new frames have arrived
-*/
-int rs_poll_for_frames_safe(rs_device * device, rs_frameset** frameset, rs_error ** error);
-
-/**
  * retrieve the time at which the latest frame on a stream was captured
  * \param[in] stream  the stream whose latest frame we are interested in
  * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
  * \return            the timestamp of the frame, in milliseconds since the device was started
  */
-int rs_get_frame_timestamp(const rs_device * device, rs_stream stream, rs_error ** error);
+double rs_get_frame_timestamp(const rs_device * device, rs_stream stream, rs_error ** error);
 
 /**
 * retrieve the frame number
@@ -618,40 +632,6 @@ int rs_get_frame_number(const rs_device * device, rs_stream stream, rs_error ** 
 const void * rs_get_frame_data(const rs_device * device, rs_stream stream, rs_error ** error);
 
 /**
-* get access to the individual frame referenced inside the frame-set.
-* \param[in] frameset handle returned by wait_for_frames_safe or rs_poll_for_frames_safe
-* \param[in] stream  the stream whose latest frame we are interested in
-* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
-* \return            frame reference that is stored inside the frameset object
-*/
-rs_frame_ref* rs_get_frame(const rs_frameset * frame_set, rs_stream stream, rs_error ** error);
-
-/**
-* relases the frameset handle
-* \param[in] frameset handle returned by wait_for_frames_safe or rs_poll_for_frames_safe
-* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
-* \return            the pointer to the start of the frame data
-*/
-void rs_release_frames(rs_device * device, rs_frameset * frameset, rs_error ** error);
-
-/**
-* clone frameset handle, creating new handle that is tracking the same underlying frameset object
-* \param[in] frameset handle returned by wait_for_frames_safe or rs_poll_for_frames_safe
-* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
-* \return            the pointer to the start of the frame data
-*/
-rs_frameset * rs_clone_frames_ref(rs_device * device, rs_frameset* frameset, rs_error ** error);
-
-/**
-* detach individual frame reference from a frame-set.
-* \param[in] frameset handle returned by wait_for_frames_safe or rs_poll_for_frames_safe
-* \param[in] stream  the stream whose latest frame we are interested in
-* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
-* \return            the pointer to the start of the frame data
-*/
-rs_frame_ref * rs_detach_frame(rs_device * device, rs_frameset * frameset, rs_stream stream, rs_error ** error);
-
-/**
 * relases the frame handle
 * \param[in] frame handle returned either detach, clone_ref or from frame callback
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
@@ -659,13 +639,12 @@ rs_frame_ref * rs_detach_frame(rs_device * device, rs_frameset * frameset, rs_st
 */
 void rs_release_frame(rs_device * device, rs_frame_ref * frame, rs_error ** error);
 
-
 /**
 * retrive timestamp from safe frame handle, returned from detach, clone_ref or from frame callback
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return            the timestamp of the frame, in milliseconds since the device was started
 */
-int rs_get_detached_frame_timestamp(const rs_frame_ref * frame, rs_error ** error);
+double rs_get_detached_frame_timestamp(const rs_frame_ref * frame, rs_error ** error);
 
 /**
 * retrive frame number from safe frame handle, returned from detach, clone_ref or from frame callback
@@ -744,6 +723,15 @@ rs_stream rs_get_detached_frame_stream_type(const rs_frame_ref * frameset, rs_er
 * \return            the pointer to the start of the frame data
 */
 rs_frame_ref * rs_clone_frame_ref(rs_device * device, rs_frame_ref* frame, rs_error ** error);
+
+/**
+* send a blob of data to the device. at the moment only RS_BLOB_TYPE_MOTION_MODULE_FIRMWARE_UPDATE is support 
+* of the motiohn module.
+* \param[in] firmware data.
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+*/
+void rs_send_blob_to_device(rs_device * device, rs_blob_type type, void * data, int size, rs_error ** error);
+
 
 /**
 * retrieve the API version from the source code. Evaluate that the value is conformant to the established policies
