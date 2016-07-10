@@ -14,7 +14,7 @@
 using namespace rsimpl;
 using namespace rsimpl::motion_module;
 
-rs_device_base::rs_device_base(std::shared_ptr<rsimpl::uvc::device> device, const rsimpl::static_device_info & info) : device(device), config(info), capturing(false), data_acquisition_active(false), motion_module_ready(false),
+rs_device_base::rs_device_base(std::shared_ptr<rsimpl::uvc::device> device, const rsimpl::static_device_info & info) : device(device), config(info), capturing(false), usb_port_id(""), data_acquisition_active(false), motion_module_ready(false),
     depth(config, RS_STREAM_DEPTH), color(config, RS_STREAM_COLOR), infrared(config, RS_STREAM_INFRARED), infrared2(config, RS_STREAM_INFRARED2), fisheye(config, RS_STREAM_FISHEYE),
     points(depth), rect_color(color), color_to_depth(color, depth), depth_to_color(depth, color), depth_to_rect_color(depth, rect_color), infrared2_to_depth(infrared2,depth), depth_to_infrared2(depth,infrared2)
 {
@@ -441,5 +441,7 @@ void rs_device_base::disable_auto_option(int subdevice, rs_option auto_opt)
 
 const char * rs_device_base::get_usb_port_id() const
 {
-    return rsimpl::uvc::get_usb_port_id(*device);
+    std::lock_guard<std::mutex> lock(usb_port_mutex);
+    if (usb_port_id == "") usb_port_id = rsimpl::uvc::get_usb_port_id(*device);
+    return usb_port_id.c_str();
 }

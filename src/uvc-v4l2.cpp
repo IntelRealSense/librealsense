@@ -494,11 +494,11 @@ namespace rsimpl
         int get_vendor_id(const device & device) { return device.subdevices[0]->get_vid(); }
         int get_product_id(const device & device) { return device.subdevices[0]->get_pid(); }
 
-        const char * get_usb_port_id(const device & device)
+        std::string get_usb_port_id(const device & device)
         {
             std::string usb_port = std::to_string(libusb_get_bus_number(device.usb_device)) + "-" +
                 std::to_string(libusb_get_port_number(device.usb_device));
-            return usb_port.c_str();
+            return usb_port;
         }
 
         void get_control(const device & device, const extension_unit & xu, uint8_t ctrl, void * data, int len)

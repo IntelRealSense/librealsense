@@ -64,6 +64,9 @@ private:
     std::chrono::high_resolution_clock::time_point capture_started;
 
     std::shared_ptr<rsimpl::syncronizing_archive> archive;
+
+    mutable std::string                         usb_port_id;
+    mutable std::mutex                          usb_port_mutex;
 protected:
     const rsimpl::uvc::device &                 get_device() const { return *device; }
     rsimpl::uvc::device &                       get_device() { return *device; }

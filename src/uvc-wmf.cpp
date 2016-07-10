@@ -1150,7 +1150,7 @@ namespace rsimpl
             return devices;
         }
 
-        const char * get_usb_port_id(const device & device) { throw std::exception("Not Implemented"); } // Not implemented for Windows at this point
+        std::string get_usb_port_id(const device & device) { throw std::exception("Not Implemented"); } // Not implemented for Windows at this point
     }
 }
 
