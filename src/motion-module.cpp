@@ -150,7 +150,7 @@ void motion_module_control::i2c_iap_write(uint16_t slave_address, uint8_t *buffe
 	cmd.Param2 = len;
 
 	cmd.sizeOfSendCommandData = len;
-	memcpy_s(cmd.data, HW_MONITOR_BUFFER_SIZE, buffer, len);
+	memcpy(cmd.data, buffer, len);
 
 	std::timed_mutex mutex;
 	rsimpl::hw_monitor::perform_and_send_monitor_command(*device_handle, mutex, 1, cmd);
@@ -165,7 +165,7 @@ void motion_module_control::i2c_write_reg(uint16_t slave_address, uint16_t reg, 
     cmd.Param2 = reg;
     cmd.Param3 = sizeof(value);
 
-    memcpy_s(cmd.data, HW_MONITOR_BUFFER_SIZE, &value, sizeof(value));
+    memcpy(cmd.data, &value, sizeof(value));
     cmd.sizeOfSendCommandData = sizeof(value);
 
     std::timed_mutex mutex;
@@ -189,7 +189,7 @@ void motion_module_control::i2c_read_reg(uint16_t slave_address, uint16_t reg, u
     // validate that the size is of 32 bit (value size).
     if (cmd.receivedCommandDataLength == sizeof(value))
     {
-        memcpy_s( &value, sizeof(value),cmd.receivedCommandData, sizeof(cmd.receivedCommandDataLength) );
+        memcpy(&value, cmd.receivedCommandData, sizeof(cmd.receivedCommandDataLength));
     }
     
     return ;
@@ -279,7 +279,7 @@ void motion_module_control::write_firmware(uint8_t *data, int size)
         uint16_t packetLength = (sizeof(packet) - FW_IMAGE_PACKET_PAYLOAD_LEN + payload_length);
 
         // copy data to packet.
-        memcpy_s(packet.data, sizeof(packet.data), data_buffer, payload_length);
+        memcpy(packet.data, data_buffer, payload_length);
 
         // write to IAP.
         i2c_iap_write(MOTION_MODULE_CONTROL_I2C_SLAVE_ADDRESS, (uint8_t *)&packet, packetLength);
