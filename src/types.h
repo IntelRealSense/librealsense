@@ -221,7 +221,11 @@ namespace rsimpl
         subdevice_mode_selection() : mode({}), pad_crop(), unpacker_index(), output_format(RS_OUTPUT_BUFFER_FORMAT_CONTINOUS){}
         subdevice_mode_selection(const subdevice_mode & mode, int pad_crop, int unpacker_index) : mode(mode), pad_crop(pad_crop), unpacker_index(unpacker_index){}
 
-        const pixel_format_unpacker & get_unpacker() const { return mode.pf.unpackers[unpacker_index]; }
+        const pixel_format_unpacker & get_unpacker() const { 
+            if (unpacker_index < mode.pf.unpackers.size())
+                return mode.pf.unpackers[unpacker_index]; 
+            throw std::runtime_error("failed to fetch an unpakcer, most likely becouse enable_stream was not called!");
+        }
         const std::vector<std::pair<rs_stream, rs_format>> & get_outputs() const { return get_unpacker().outputs; }
         int get_width() const { return mode.native_intrinsics.width + pad_crop * 2; }
         int get_height() const { return mode.native_intrinsics.height + pad_crop * 2; }
