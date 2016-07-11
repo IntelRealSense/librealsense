@@ -181,7 +181,7 @@ void uvc_print_diag(uvc_device_handle_t *devh, FILE *stream) {
           case UVC_VS_FORMAT_MJPEG:
           case UVC_VS_FORMAT_FRAME_BASED:
             fprintf(stream,
-                "\t\%s(%d)\n"
+                "\t\t%s(%d)\n"
                 "\t\t  bits per pixel: %d\n"
                 "\t\t  GUID: ",
                 _uvc_name_for_format_subtype(fmt_desc->bDescriptorSubtype),
