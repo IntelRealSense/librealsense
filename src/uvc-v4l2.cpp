@@ -35,6 +35,8 @@
 
 #include <libusb.h>
 
+#pragma GCC diagnostic ignored "-Woverflow"
+
 namespace rsimpl
 {
     namespace uvc

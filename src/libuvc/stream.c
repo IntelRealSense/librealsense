@@ -453,7 +453,7 @@ void _uvc_process_payload(uvc_stream_handle_t *strmh, uint8_t *payload, size_t p
     header_info = payload[1];
 
     if (header_info & 0x40) {
-      UVC_DEBUG("bad packet: error bit set");
+      UVC_DEBUG("bad packet: error bit set",);
       return;
     }
 
@@ -816,7 +816,7 @@ uvc_error_t uvc_stream_start(
                                            altsetting->bInterfaceNumber,
                                            altsetting->bAlternateSetting);
     if (ret != UVC_SUCCESS) {
-      UVC_DEBUG("libusb_set_interface_alt_setting failed");
+      UVC_DEBUG("libusb_set_interface_alt_setting failed",);
       goto fail;
     }
 
@@ -874,7 +874,7 @@ uvc_error_t uvc_stream_start(
     ret = libusb_submit_transfer(strmh->transfers[transfer_id]);
     if (ret != UVC_SUCCESS)
     {
-      UVC_DEBUG("libusb_submit_transfer failed");
+      UVC_DEBUG("libusb_submit_transfer failed",);
       break;
     }
   }
