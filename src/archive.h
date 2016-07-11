@@ -23,7 +23,8 @@ namespace rsimpl
             int width = 0;
             int height = 0;
             int fps = 0;
-            int stride = 0;
+            int stride_x = 0;
+            int stride_y = 0;
             float bpp = 0;
             rs_format format = RS_FORMAT_ANY;
             rs_stream stream_type = RS_STREAM_MAX_ENUM;
@@ -32,14 +33,15 @@ namespace rsimpl
 
             frame_additional_data(){};
 
-            frame_additional_data(double in_timestamp, int in_frame_number, long long in_system_time, int in_width, int in_height, int in_fps, int in_stride, float in_bpp, const rs_format in_format, rs_stream in_stream_type, int in_pad)
+            frame_additional_data(double in_timestamp, int in_frame_number, long long in_system_time, int in_width, int in_height, int in_fps, int in_stride_x, int in_stride_y, float in_bpp, const rs_format in_format, rs_stream in_stream_type, int in_pad)
                 :timestamp(in_timestamp),
                 frame_number(in_frame_number),
                 system_time(in_system_time),
                 width(in_width),
                 height(in_height),
                 fps(in_fps),
-                stride(in_stride),
+                stride_x(in_stride_x),
+                stride_y(in_stride_y),
                 bpp(in_bpp),
                 format(in_format),
                 stream_type(in_stream_type),
@@ -89,7 +91,8 @@ namespace rsimpl
             int get_width()const;
             int get_height()const;
             int get_framerate() const;
-            int get_stride()const;
+            int get_stride_x()const;
+            int get_stride_y()const;
             float get_bpp()const;
             rs_format get_format()const;
             rs_stream get_stream_type() const override;
@@ -154,7 +157,8 @@ namespace rsimpl
             int get_frame_width() const override;
             int get_frame_height() const override;
             int get_frame_framerate() const override;
-            int get_frame_stride() const override;
+            int get_frame_stride_x() const override;
+			int get_frame_stride_y() const override;
             float get_frame_bpp() const override;
             rs_format get_frame_format() const override;
             rs_stream get_stream_type() const;
@@ -163,7 +167,7 @@ namespace rsimpl
             void log_callback_start(std::chrono::high_resolution_clock::time_point capture_start_time);
         };
 
-        class frameset : public rs_frameset
+        class frameset
         {
             frame_ref buffer[RS_STREAM_NATIVE_COUNT];
         public:
@@ -171,7 +175,7 @@ namespace rsimpl
             frame_ref detach_ref(rs_stream stream);
             void place_frame(rs_stream stream, frame&& new_frame);
 
-            const rs_frame_ref * get_frame(rs_stream stream) const override
+            const rs_frame_ref * get_frame(rs_stream stream) const
             {
                 return &buffer[stream];
             }

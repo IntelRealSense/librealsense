@@ -112,11 +112,6 @@ public:
     
     void                                        wait_all_streams() override;
     bool                                        poll_all_streams() override;
-
-    rs_frameset *                               wait_all_streams_safe() override;
-    bool                                        poll_all_streams_safe(rs_frameset ** frames) override;
-    void                                        release_frames(rs_frameset * frameset) override;
-    rs_frameset *                               clone_frames(rs_frameset * frameset) override;
     
     virtual bool                                supports(rs_capabilities capability) const override;
 
@@ -126,7 +121,6 @@ public:
     virtual void                                on_before_start(const std::vector<rsimpl::subdevice_mode_selection> & selected_modes) = 0;
     virtual rs_stream                           select_key_stream(const std::vector<rsimpl::subdevice_mode_selection> & selected_modes) = 0;
     virtual std::shared_ptr<rsimpl::frame_timestamp_reader>  create_frame_timestamp_reader() const = 0;
-    rs_frame_ref *                              detach_frame(rs_frameset * fs, rs_stream stream) override;
     void                                        release_frame(rs_frame_ref * ref) override;
     const char *                                get_usb_port_id() const override;
     rs_frame_ref *                              clone_frame(rs_frame_ref * frame) override;

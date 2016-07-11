@@ -250,13 +250,13 @@ void rs_device_base::start_video_streaming()
             
             auto requires_processing = mode_selection.requires_processing();
 
-            auto width = mode_selection.get_unpacked_width();
-            auto height = mode_selection.get_unpacked_height();
+            auto width = mode_selection.get_width();
+            auto height = mode_selection.get_height();
             auto fps = mode_selection.get_framerate();
             std::vector<byte *> dest;
 
-            auto stride = mode_selection.get_stride();
-
+            auto stride_x = mode_selection.get_stride_x();
+            auto stride_y = mode_selection.get_stride_y();
             for (auto & output : mode_selection.get_outputs())
             {
                 LOG_DEBUG("FrameAccepted, RecievedAt," << recieved_time << ", FWTS," << timestamp << ", DLLTS," << recieved_time << ", Type," << rsimpl::get_string(output.first) << ",HasPair,0,F#," << frame_counter);
@@ -271,7 +271,8 @@ void rs_device_base::start_video_streaming()
                     width,
                     height,
                     fps,
-                    stride,
+                    stride_x,
+                    stride_y,
                     bpp,
                     output.second,
                     output.first,
@@ -342,42 +343,6 @@ bool rs_device_base::poll_all_streams()
     if(!capturing) return false;
     if(!archive) return false;
     return archive->poll_for_frames();
-}
-
-rs_frameset* rs_device_base::wait_all_streams_safe()
-{
-    if (!capturing) throw std::runtime_error("Can't call wait_for_frames_safe when the device is not capturing!");
-    if (!archive) throw std::runtime_error("Can't call wait_for_frames_safe when frame archive is not available!");
-
-        return (rs_frameset*)archive->wait_for_frames_safe();
-}
-
-bool rs_device_base::poll_all_streams_safe(rs_frameset** frames)
-{
-    if (!capturing) return false;
-    if (!archive) return false;
-
-    return archive->poll_for_frames_safe((frame_archive::frameset**)frames);
-}
-
-void rs_device_base::release_frames(rs_frameset * frameset)
-{
-    archive->release_frameset((frame_archive::frameset *)frameset);
-}
-
-rs_frameset * rs_device_base::clone_frames(rs_frameset * frameset)
-{
-    auto result = archive->clone_frameset((frame_archive::frameset *)frameset);
-    if (!result) throw std::runtime_error("Not enough resources to clone frameset!");
-    return (rs_frameset*)result;
-}
-
-
-rs_frame_ref* rs_device_base::detach_frame(rs_frameset* fs, rs_stream stream)
-{
-    auto result = archive->detach_frame_ref((frame_archive::frameset *)fs, stream);
-    if (!result) throw std::runtime_error("Not enough resources to tack detached frame!");
-    return (rs_frame_ref*)result;
 }
 
 void rs_device_base::release_frame(rs_frame_ref* ref)

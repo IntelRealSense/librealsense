@@ -97,31 +97,28 @@ int main() try
 
         dev->set_option(rs::option::r200_fisheye_strobe, 1);
 
+        auto frame_callback = [](rs::frame frame){
+            auto now = std::chrono::system_clock::now().time_since_epoch();
+            auto sys_time = std::chrono::duration_cast<std::chrono::milliseconds>(now).count();
+            std::stringstream ss;
+            ss << "Frame data,   time " << sys_time
+                << "\ttimestamp: " << std::setprecision(8) << frame.get_timestamp()
+                << "\tsource: " << std::setw(13) << frame.get_stream_type()
+                << "\tframe_num: " << frame.get_frame_number();
+            log(ss.str().c_str());
+        };
+
+        for (int i = (int)(rs::stream::depth); i <= (int)(rs::stream::fisheye); i++)
+            dev->set_frame_callback((rs::stream)i, frame_callback);
+
         logs.clear();
         logs.reserve(10000);
 
         // 3. Start generating motion-tracking data
         dev->start(rs::source::all_sources);
 
-        auto start = std::chrono::high_resolution_clock::now();
-        do {
-            auto frames = dev->wait_for_frames_safe();
-            // Log some metadata regarding each of the possible streams
-            for (int i = 0; i <= 4; i++)
-            {
-                auto now = std::chrono::system_clock::now().time_since_epoch();
-                auto sys_time = std::chrono::duration_cast<std::chrono::milliseconds>(now).count();
-                if (i == (int)frames[(rs::stream)i].get_stream_type()) // Check that the frame is valid
-                {
-                    std::stringstream ss;
-                    ss << "Frame data,   time " << sys_time
-                        << "\ttimestamp: " << std::setprecision(8) << frames[(rs::stream)i].get_timestamp()
-                        << "\tsource: " << std::setw(13) << frames[(rs::stream)i].get_stream_type()
-                        << "\tframe_num: " << frames[(rs::stream)i].get_frame_number();
-                    log(ss.str().c_str());
-                }
-            }
-        } while (std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start).count() < 10000);
+        printf("\nThe application is collecting data for next 10sec...\n");
+        std::this_thread::sleep_for(std::chrono::milliseconds(10000));
 
         // 4. stop data acquisition
         dev->stop(rs::source::all_sources);
