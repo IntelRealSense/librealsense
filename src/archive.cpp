@@ -249,26 +249,17 @@ void frame_archive::frame_ref::update_frame_callback_start_ts(std::chrono::high_
 
 const byte* frame_archive::frame::get_frame_data() const
 {
-    const byte* frame_data;
+	const byte* frame_data = data.data();;
 
     if (on_release.get_data())
     {
         frame_data = static_cast<const byte*>(on_release.get_data());
         if (additional_data.pad < 0)
         {
-            frame_data += int((additional_data.stride_x - additional_data.pad)*additional_data.bpp) - additional_data.pad;
+            frame_data += (int)(additional_data.stride_x *additional_data.bpp*(-additional_data.pad) + (-additional_data.pad)*additional_data.bpp);
         }
     }
 
-    else
-    {
-        frame_data = data.data();
-
-        if (additional_data.pad > 0)
-        {
-			return data.data() + (int)((additional_data.stride_x + additional_data.pad)*additional_data.bpp) + additional_data.pad;
-        }
-    }
     return frame_data;
 }
 
