@@ -25,7 +25,11 @@ endif
 ifeq (arm-linux-gnueabihf,$(machine))
 CXXFLAGS += -mfpu=neon -mfloat-abi=hard -ftree-vectorize
 else
+ifeq (aarch64-linux-gnu,$(machine))
+CXXFLAGS += -mfpu=neon -mfloat-abi=hard -ftree-vectorize
+else
 CXXFLAGS += -mssse3
+endif
 endif
 
 # Compute list of all *.o files that participate in librealsense.so
