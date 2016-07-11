@@ -256,6 +256,7 @@ namespace rsimpl
         }
         else
         {
+			
             // Otherwise unpack one row at a time
             assert(mode.pf.plane_count == 1); // Can't unpack planar formats row-by-row (at least not with the current architecture, would need to pass multiple source ptrs to unpack)
             for(int i=0; i<unpack_height; ++i)
@@ -372,7 +373,14 @@ namespace rsimpl
             for (auto i = 0; i < stream_requests[p.stream].size(); i++)
             {
                 //if this stream is not enabled move to next item
-                if (!requests[p.stream].enabled) break;
+                if (!requests[p.stream].enabled)
+                {
+                    // push the new requests parameter with stream =  stream + 1
+                    search_request_params new_p = { p.requests, p.stream + 1 };
+                    calls.push_back(new_p);
+                    break;
+                }
+                    
 
                 //check that this spasific request is not contradicts the original user request
                 if (!requests[p.stream].contradict(stream_requests[p.stream][i]))
@@ -547,7 +555,17 @@ namespace rsimpl
             auto & a = requests[rule.a], &b = requests[rule.b]; auto f = rule.field;
             if (a.enabled && b.enabled)
             {
-                if (rule.bigger == RS_STREAM_COUNT && !rule.diveded && !rule.diveded2)
+				if (rule.same_formet)
+				{
+					if (a.format != RS_FORMAT_ANY && b.format != RS_FORMAT_ANY && a.format != b.format)
+					{
+						if (throw_exception)
+							throw std::runtime_error(to_string() << "requested " << rule.a << " and " << rule.b << " settings are incompatible");
+						return false;
+					}
+						
+				}
+				else  if (rule.bigger == RS_STREAM_COUNT && !rule.diveded && !rule.diveded2)
                 {
                     // Check for incompatibility if both values specified
                     if (a.*f != 0 && b.*f != 0 && a.*f + rule.delta != b.*f && a.*f + rule.delta2 != b.*f)

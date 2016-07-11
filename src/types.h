@@ -164,6 +164,7 @@ namespace rsimpl
         int delta, delta2;
         rs_stream bigger; // if this equals to a or b, this stream must have field value bigger then the other stream
         bool diveded, diveded2; // devided = a must devide b; devided2 = b must devide a
+        bool same_formet;
     };
 
     struct supported_option
@@ -221,9 +222,9 @@ namespace rsimpl
         subdevice_mode_selection() : mode({}), pad_crop(), unpacker_index(), output_format(RS_OUTPUT_BUFFER_FORMAT_CONTINOUS){}
         subdevice_mode_selection(const subdevice_mode & mode, int pad_crop, int unpacker_index) : mode(mode), pad_crop(pad_crop), unpacker_index(unpacker_index){}
 
-        const pixel_format_unpacker & get_unpacker() const { 
+        const pixel_format_unpacker & get_unpacker() const {
             if (unpacker_index < mode.pf.unpackers.size())
-                return mode.pf.unpackers[unpacker_index]; 
+                return mode.pf.unpackers[unpacker_index];
             throw std::runtime_error("failed to fetch an unpakcer, most likely becouse enable_stream was not called!");
         }
         const std::vector<std::pair<rs_stream, rs_format>> & get_outputs() const { return get_unpacker().outputs; }
