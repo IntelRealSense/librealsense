@@ -9,6 +9,7 @@
 #include "f200.h"
 #include "sr300.h"
 #include "zr300.h"
+#include "ds5.h"
 #include "uvc.h"
 #include "context.h"
 
@@ -64,6 +65,7 @@ rs_context_base::rs_context_base()
             case ZR300_PRODUCT_ID: devices.push_back(rsimpl::make_zr300_device(device)); break;
             case F200_PRODUCT_ID: devices.push_back(rsimpl::make_f200_device(device)); break;
             case SR300_PRODUCT_ID: devices.push_back(rsimpl::make_sr300_device(device)); break;
+            case DS5_PRODUCT_ID: devices.push_back(rsimpl::make_ds5_device(device)); break;
         }
     }
 }
