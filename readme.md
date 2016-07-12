@@ -71,7 +71,7 @@ Minimal supported FW versions:
 | F200 | 2.60.0.0 |
 | SR300 | 3.15.0.0 |
 | LR200 | 2.0.71.18 |
-| ZR300 | Camera - 2.0.71.18, Adapter board - 1.22, Motion module 1.19.0.0 IAP 8 |
+| ZR300 | Camera - 2.0.71.18, Adapter board - 1.23, Motion module 1.20.0.0 IAP 9 |
 
 # Installation Guide
 
