@@ -210,7 +210,6 @@ void rs_device_base::start_video_streaming()
     auto capture_start_time = std::chrono::high_resolution_clock::now();
     auto selected_modes = config.select_modes();
     auto archive = std::make_shared<syncronizing_archive>(selected_modes, select_key_stream(selected_modes), capture_start_time);
-    auto timestamp_reader = create_frame_timestamp_reader();
     
     for(auto & s : native_streams) s->archive.reset(); // Starting capture invalidates the current stream info, if any exists from previous capture
 
@@ -218,6 +217,7 @@ void rs_device_base::start_video_streaming()
     // dispatching the uvc configuration for a requested stream to the hardware
     for(auto mode_selection : selected_modes)
     {
+        auto timestamp_reader = create_frame_timestamp_reader(mode_selection.mode.subdevice);
         // Create a stream buffer for each stream served by this subdevice mode
         for(auto & stream_mode : mode_selection.get_outputs())
         {                    
