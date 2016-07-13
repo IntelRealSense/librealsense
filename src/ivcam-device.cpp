@@ -193,7 +193,7 @@ namespace rsimpl
         }
     };
 
-    std::shared_ptr<frame_timestamp_reader> iv_camera::create_frame_timestamp_reader() const
+	std::shared_ptr<frame_timestamp_reader> iv_camera::create_frame_timestamp_reader(int subdevice) const
     {
         return std::make_shared<rolling_timestamp_reader>();
     }
