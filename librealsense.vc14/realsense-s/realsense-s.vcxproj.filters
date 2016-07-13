@@ -84,6 +84,12 @@
     <ClCompile Include="..\..\src\ivcam-private.cpp">
       <Filter>src</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\ds5.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ds5-private.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\src\context.h">
@@ -153,6 +159,12 @@
       <Filter>src</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ivcam-private.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ds5.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ds5-private.h">
       <Filter>src</Filter>
     </ClInclude>
   </ItemGroup>

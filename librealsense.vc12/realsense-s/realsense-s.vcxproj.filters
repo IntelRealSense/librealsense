@@ -76,6 +76,12 @@
     <ClCompile Include="..\..\src\motion-module.cpp">
       <Filter>sources</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\ds5.cpp">
+      <Filter>sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ds5-private.cpp">
+      <Filter>sources</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\include\librealsense\rsutil.h">
@@ -145,6 +151,12 @@
       <Filter>sources</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\motion-module.h">
+      <Filter>sources</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ds5.h">
+      <Filter>sources</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ds5-private.h">
       <Filter>sources</Filter>
     </ClInclude>
   </ItemGroup>
