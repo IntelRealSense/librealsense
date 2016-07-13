@@ -25,7 +25,7 @@ ifeq (arm-linux-gnueabihf,$(machine))
 CXXFLAGS += -mfpu=neon -mfloat-abi=hard -ftree-vectorize
 else
 ifeq (aarch64-linux-gnu,$(machine))
-CXXFLAGS += -mfpu=neon -mfloat-abi=hard -ftree-vectorize
+CXXFLAGS += -mstrict-align -ftree-vectorize
 else
 CXXFLAGS += -mssse3
 endif
