@@ -363,7 +363,7 @@ rs_frame_ref* ::rs_device_base::clone_frame(rs_frame_ref* frame)
 
 bool rs_device_base::supports(rs_capabilities capability) const
 {
-    auto it = find(config.info.capabilities_vector.begin(), config.info.capabilities_vector.end(), [capability](rs_capabilities item) { return capability == item; });
+    auto it = find(config.info.capabilities_vector.begin(), config.info.capabilities_vector.end(), capability);
     return it != config.info.capabilities_vector.end();
 }
 
