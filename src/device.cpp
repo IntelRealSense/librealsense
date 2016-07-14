@@ -264,7 +264,7 @@ void rs_device_base::start_video_streaming()
 
             for (auto & output : mode_selection.get_outputs())
             {
-                auto bpp = rsimpl::get_image_bpp(output.second);
+                auto bpp = get_image_bpp(output.second);
                 frame_archive::frame_additional_data additional_data( timestamp,
                     frame_counter,
                     sys_time,
@@ -280,7 +280,11 @@ void rs_device_base::start_video_streaming()
 
                 // Obtain buffers for unpacking the frame
                 dest.push_back(archive->alloc_frame(output.first, additional_data, requires_processing));
-                archive->correct_timestamp(output.first);
+
+                if (motion_module_ready) // try to correct timestamp only if motion module is enabled
+                {
+                    archive->correct_timestamp(output.first);
+                }
             }
             // Unpack the frame
             if (requires_processing)
@@ -303,7 +307,7 @@ void rs_device_base::start_video_streaming()
                     {
                         frame_ref->update_frame_callback_start_ts(std::chrono::high_resolution_clock::now());
                         frame_ref->log_callback_start(capture_start_time);
-                        (*config.callbacks[streams[i]])->on_frame(this, (rs_frame_ref*)frame_ref);
+                        (*config.callbacks[streams[i]])->on_frame(this, frame_ref);
                     }
                 }
                 else
@@ -354,18 +358,13 @@ rs_frame_ref* ::rs_device_base::clone_frame(rs_frame_ref* frame)
 {
     auto result = archive->clone_frame((frame_archive::frame_ref *)frame);
     if (!result) throw std::runtime_error("Not enough resources to clone frame!");
-    return (rs_frame_ref*)result;
+    return result;
 }
 
 bool rs_device_base::supports(rs_capabilities capability) const
 {
-    for (auto elem: config.info.capabilities_vector)
-    {
-        if (elem == capability)
-            return true;
-    }
-
-    return false;
+    auto it = find(config.info.capabilities_vector.begin(), config.info.capabilities_vector.end(), capability);
+    return it != config.info.capabilities_vector.end();
 }
 
 void rs_device_base::get_option_range(rs_option option, double & min, double & max, double & step, double & def)

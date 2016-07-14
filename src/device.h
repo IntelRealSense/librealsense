@@ -80,7 +80,7 @@ protected:
 
     virtual void                                disable_auto_option(int subdevice, rs_option auto_opt);
 
-    bool                                        motion_module_ready;
+    bool                                        motion_module_ready = false;
 public:
                                                 rs_device_base(std::shared_ptr<rsimpl::uvc::device> device, const rsimpl::static_device_info & info);
                                                 virtual ~rs_device_base();
