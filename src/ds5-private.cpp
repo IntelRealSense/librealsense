@@ -1,11 +1,6 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
-#include <cstring>
-#include <algorithm>
-#include <thread>
-#include <cmath>
-
 #include "hw-monitor.h"
 #include "ds5-private.h"
 
@@ -15,10 +10,30 @@ using namespace rsimpl::ds5;
 namespace rsimpl {
 namespace ds5 {
 
-    void claim_ds5_interface(uvc::device & device)
+    enum class fw_cmd : uint8_t
     {
-	const uvc::guid DS5_WIN_USB_DEVICE_GUID = {};
+        GVD = 0x10,
+    };
+
+    enum class FirmwareError : int32_t
+    {
+
+    };
+
+    const uint8_t DS5_MONITOR_INTERFACE = 0x3;
+    const uint8_t DS5_MOTION_MODULE_INTERRUPT_INTERFACE = 0x4;
+    const uvc::extension_unit depth_xu = {};
+
+    void claim_ds5_monitor_interface(uvc::device & device)
+    {
+        const uvc::guid DS5_WIN_USB_DEVICE_GUID = {};
         claim_interface(device, DS5_WIN_USB_DEVICE_GUID, DS5_MONITOR_INTERFACE);
+    }
+
+    void claim_ds5_motion_module_interface(uvc::device & device)
+    {
+        const uvc::guid MOTION_MODULE_USB_DEVICE_GUID = {};
+        claim_aux_interface(device, MOTION_MODULE_USB_DEVICE_GUID, DS5_MOTION_MODULE_INTERRUPT_INTERFACE);
     }
 
     // "Get Version and Date"
