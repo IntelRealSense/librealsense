@@ -28,7 +28,7 @@ namespace rsimpl
         // Static device properties
         int get_vendor_id(const device & device);
         int get_product_id(const device & device);
-        const char * get_usb_port_id(const device & device);
+        std::string get_usb_port_id(const device & device);
 
         // Direct USB controls
         void claim_interface(device & device, const guid & interface_guid, int interface_number);

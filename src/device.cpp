@@ -160,5 +160,7 @@ void rs_device::get_option_range(rs_option option, double & min, double & max, d
 
 const char * rs_device::get_usb_port_id() const
 {
-    return rsimpl::uvc::get_usb_port_id(*device);
+    std::lock_guard<std::mutex> lock(usb_port_mutex);
+    if (usb_port_id == "") usb_port_id = rsimpl::uvc::get_usb_port_id(*device);
+    return usb_port_id.c_str();
 }
