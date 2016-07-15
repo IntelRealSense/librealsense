@@ -309,7 +309,12 @@ namespace rsimpl
             
             uvc_device_t ** list;
             CALL_UVC(uvc_get_device_list, context->ctx, &list);
-            for(auto it = list; *it; ++it) devices.push_back(std::make_shared<device>(context, *it));
+            for(auto it = list; *it; ++it) try {
+                devices.push_back(std::make_shared<device>(context, *it));
+            } catch(std::runtime_error &e) {
+                LOG_WARNING("usb:" << (int)uvc_get_bus_number(*it) << ':' <<
+                        (int)uvc_get_device_address(*it) << ": " << e.what());
+            }
             uvc_free_device_list(list, 1);
             return devices;
         }
