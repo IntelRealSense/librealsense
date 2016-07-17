@@ -88,24 +88,29 @@ rs_intrinsics native_stream::get_rectified_intrinsics() const
 
 int native_stream::get_frame_number() const 
 { 
-    if(!is_enabled()) throw std::runtime_error(to_string() << "stream not enabled: " << stream);
+    if (!is_enabled()) throw std::runtime_error(to_string() << "stream not enabled: " << stream);
+    if (!archive) throw  std::runtime_error(to_string() << "streaming not started!");
     return archive->get_frame_number(stream);
 }
 
 double native_stream::get_frame_timestamp() const
 {
     if (!is_enabled()) throw std::runtime_error(to_string() << "stream not enabled: " << stream);
+    if (!archive) throw  std::runtime_error(to_string() << "streaming not started!");
     return archive->get_frame_timestamp(stream);
 }
 
 long long native_stream::get_frame_system_time() const
 {
+    if (!is_enabled()) throw std::runtime_error(to_string() << "stream not enabled: " << stream);
+    if (!archive) throw  std::runtime_error(to_string() << "streaming not started!");
     return archive->get_frame_system_time(stream);
 }
 
 const uint8_t * native_stream::get_frame_data() const
 {
     if(!is_enabled()) throw std::runtime_error(to_string() << "stream not enabled: " << stream);
+    if (!archive) throw  std::runtime_error(to_string() << "streaming not started!");
     return (const uint8_t *) archive->get_frame_data(stream);
 }
 
