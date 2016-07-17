@@ -8,7 +8,6 @@
 #include "uvc.h"
 #include "stream.h"
 #include <chrono>
-#include <librealsense/rs.hpp>
 
 
 namespace rsimpl
