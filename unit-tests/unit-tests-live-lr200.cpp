@@ -5,6 +5,8 @@
 // This set of tests is valid only for the R200 camera //
 /////////////////////////////////////////////////////////
 
+#if defined(LIVE_TEST) && ( defined(LR200_TEST) || defined(ZR300_TEST) )
+
 #include "unit-tests-live-ds-common.h"
 
 #include <climits>
@@ -20,3 +22,5 @@ TEST_CASE("Streams COLOR HD 1920X1080  Raw16 30FPS", "[live] [lr200] [one-camera
 //    // the range is [-8:1:-4]
 //    test_ds_device_option(RS_OPTION_COLOR_EXPOSURE, { -8, -7, -6, -5, -4 }, {}, BEFORE_START_DEVICE | AFTER_START_DEVICE);
 //}
+
+#endif /* defined(LIVE_TEST) && ( defined(LR200_TEST) || defined(ZR300_TEST) ) */

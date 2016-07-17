@@ -5,6 +5,8 @@
 // This set of tests is valid only for the SR300 camera //
 //////////////////////////////////////////////////////////
 
+#if defined(LIVE_TEST) && defined(SR300_TEST)
+
 #define CATCH_CONFIG_MAIN
 #include "catch/catch.hpp"
 
@@ -570,3 +572,5 @@ TEST_CASE("SR300 Wakeup over USB function", "[live] [sr300]")
     REQUIRE(((vRetValues[1] >= 0) && (vRetValues[1] <= 100) && ( 0 == (int)vRetValues[1]%10))== true);
     
 }
+
+#endif /* defined(LIVE_TEST) && defined(SR300_TEST) */

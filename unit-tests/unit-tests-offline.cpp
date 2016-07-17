@@ -1,6 +1,8 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
+#if defined(OFFLINE_TEST)
+
 #define CATCH_CONFIG_MAIN
 #include "catch/catch.hpp"
 
@@ -396,3 +398,5 @@ TEST_CASE("rs API version verification", "[offline] [validation]")
     REQUIRE(api_ver_str.size() >= 5);
     REQUIRE(api_ver_str.size() <= 8);
 }
+
+#endif /* defined(OFFLINE_TEST) */

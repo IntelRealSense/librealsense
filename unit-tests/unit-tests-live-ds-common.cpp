@@ -5,6 +5,8 @@
 // This set of tests is valid only for the DS-device camera //
 /////////////////////////////////////////////////////////
 
+#if defined(LR200_TEST) || defined(R200_TEST) || defined(ZR300_TEST)
+
 #define CATCH_CONFIG_MAIN
 
 #include <climits>
@@ -843,3 +845,5 @@ TEST_CASE("streaming five configurations sequentionally", "[live] [DS-device] [o
         });
     }
 }
+
+#endif /* defined(LR200_TEST) || defined(R200_TEST) || defined(ZR300_TEST) */
