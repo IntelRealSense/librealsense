@@ -321,11 +321,13 @@ namespace rsimpl
         // Set up interstream rules for left/right/z images
         for(auto ir : {RS_STREAM_INFRARED, RS_STREAM_INFRARED2})
         {
-            info.interstream_rules.push_back({ RS_STREAM_DEPTH, ir, &stream_request::width, 0, 12, RS_STREAM_COUNT, false, false });
-            info.interstream_rules.push_back({ RS_STREAM_DEPTH, ir, &stream_request::height, 0, 12, RS_STREAM_COUNT, false, false });
-            info.interstream_rules.push_back({ RS_STREAM_DEPTH, ir, &stream_request::fps, 0, 0, RS_STREAM_COUNT, false, false });
+            info.interstream_rules.push_back({ RS_STREAM_DEPTH, ir, &stream_request::width, 0, 12, RS_STREAM_COUNT, false, false, false });
+            info.interstream_rules.push_back({ RS_STREAM_DEPTH, ir, &stream_request::height, 0, 12, RS_STREAM_COUNT, false, false, false });
+            info.interstream_rules.push_back({ RS_STREAM_DEPTH, ir, &stream_request::fps, 0, 0, RS_STREAM_COUNT, false, false, false });
         }
-        info.interstream_rules.push_back({ RS_STREAM_DEPTH, RS_STREAM_COLOR, &stream_request::fps, 0, 0, RS_STREAM_DEPTH, true, false });
+        info.interstream_rules.push_back({ RS_STREAM_DEPTH, RS_STREAM_COLOR, &stream_request::fps, 0, 0, RS_STREAM_DEPTH, true, false, false });
+        info.interstream_rules.push_back({ RS_STREAM_INFRARED, RS_STREAM_INFRARED2, &stream_request::fps, 0, 0, RS_STREAM_COUNT, false, false, false });
+        info.interstream_rules.push_back({ RS_STREAM_INFRARED, RS_STREAM_INFRARED2, nullptr, 0, 0, RS_STREAM_COUNT, false, false, true });
 
         info.presets[RS_STREAM_INFRARED][RS_PRESET_BEST_QUALITY] = {true, 480, 360, RS_FORMAT_Y8,   60};
         info.presets[RS_STREAM_DEPTH   ][RS_PRESET_BEST_QUALITY] = {true, 480, 360, RS_FORMAT_Z16,  60};
@@ -447,20 +449,13 @@ namespace rsimpl
 
     class dinghy_timestamp_reader : public frame_timestamp_reader
     {
-        int max_fps;
-        std::mutex mutex;
-        unsigned last_fisheye_counter;
+        int fps;
+        
     public:
-        dinghy_timestamp_reader(int max_fps) : max_fps(max_fps),last_fisheye_counter(0) {}
+        dinghy_timestamp_reader(int fps) : fps(fps) {}
 
         bool validate_frame(const subdevice_mode & mode, const void * frame) const override 
         {
-            if (mode.subdevice == 3) // Fisheye camera
-                return true;
-
-            // No dinghy available on YUY2 images
-            if(mode.pf.fourcc == pf_yuy2.fourcc) return true;
-
             // Check magic number for all subdevices
             auto & dinghy = get_dinghy(mode, frame);
             const uint32_t magic_numbers[] = {0x08070605, 0x04030201, 0x8A8B8C8D};
@@ -471,19 +466,17 @@ namespace rsimpl
             }
 
             // Check frame status for left/right/Z subdevices only
-            if(dinghy.frameStatus != 0 && mode.subdevice != 2)
+            if(dinghy.frameStatus != 0)
             {
                 LOG_WARNING("Subdevice " << mode.subdevice << " frame status 0x" << std::hex << dinghy.frameStatus);
                 return false;
             }
-
             // Check VDF error status for all subdevices
             if(dinghy.VDFerrorStatus != 0)
             {
                 LOG_WARNING("Subdevice " << mode.subdevice << " VDF error status 0x" << std::hex << dinghy.VDFerrorStatus);
                 return false;
             }
-
             // Check CAM module status for left/right subdevice only
             if (dinghy.CAMmoduleStatus != 0 && mode.subdevice == 0)
             {
@@ -495,72 +488,97 @@ namespace rsimpl
             return true;
         }
 
-        struct byte_wrapping{
-             unsigned char lsb : 4;
-             unsigned char msb : 4;
-         };
-
-        unsigned fix_fisheye_counter(unsigned char pixel)
-         {
-             std::lock_guard<std::mutex> guard(mutex);
-
-             auto last_counter_lsb = reinterpret_cast<byte_wrapping&>(last_fisheye_counter).lsb;
-             auto pixel_lsb = reinterpret_cast<byte_wrapping&>(pixel).lsb;
-             if (last_counter_lsb == pixel_lsb)
-                 return last_fisheye_counter;
-
-             auto last_counter_msb = (last_fisheye_counter >> 4);
-             auto wrap_around = reinterpret_cast<byte_wrapping&>(last_fisheye_counter).lsb;
-             if (wrap_around == 15 || pixel_lsb < last_counter_lsb)
-             {
-                 ++last_counter_msb;
-             }
-
-             auto fixed_counter = (last_counter_msb << 4) | (pixel_lsb & 0xff);
-
-             last_fisheye_counter = fixed_counter;
-             return fixed_counter;
-         }
-
         double get_frame_timestamp(const subdevice_mode & mode, const void * frame) override
-        { 
-            int frame_number = 0;
-            if (mode.subdevice == 3) // Fisheye
-            {
-                frame_number = fix_fisheye_counter(*((unsigned char*)frame));
-            }
-            else if(mode.pf.fourcc == pf_yuy2.fourcc)
-            {
-                // YUY2 images encode the frame number in the low order bits of the final 32 bytes of the image
-                auto data = reinterpret_cast<const uint8_t *>(frame) + ((mode.native_dims.x * mode.native_dims.y) - 32) * 2;
-                for(int i = 0; i < 32; ++i)
-                {
-                    frame_number |= ((*data & 1) << (i & 1 ? 32 - i : 30 - i));
-                    data += 2;
-                }
-            }
-            else frame_number = get_dinghy(mode, frame).frameCount; // All other formats can use the frame number in the dinghy row
-            return frame_number * 1000 / max_fps;
+        {
+          auto frame_number = 0;
+         
+          frame_number = get_dinghy(mode, frame).frameCount; // All other formats can use the frame number in the dinghy row
+          return frame_number * 1000 / fps;
         }
         int get_frame_counter(const subdevice_mode & mode, const void * frame) override
         {
-            int frame_number = 0;
-            if (mode.subdevice == 3) // Fisheye
-            {
-                frame_number = fix_fisheye_counter(*((unsigned char*)frame));
-            }
-            else if (mode.pf.fourcc == pf_yuy2.fourcc)
-            {
-                // YUY2 images encode the frame number in the low order bits of the final 32 bytes of the image
-                auto data = reinterpret_cast<const uint8_t *>(frame) + ((mode.native_dims.x * mode.native_dims.y) - 32) * 2;
-                for (int i = 0; i < 32; ++i)
-                {
-                    frame_number |= ((*data & 1) << (i & 1 ? 32 - i : 30 - i));
-                    data += 2;
-                }
-            }
-            else frame_number = get_dinghy(mode, frame).frameCount; // All other formats can use the frame number in the dinghy row
+            auto frame_number = 0;
+        
+           frame_number = get_dinghy(mode, frame).frameCount; // All other formats can use the frame number in the dinghy row
             return frame_number;
+        }
+    };
+
+    class fisheye_timestamp_reader : public frame_timestamp_reader
+    {
+        int fps;
+        std::mutex mutex;
+        unsigned last_fisheye_counter;
+    public:
+        fisheye_timestamp_reader(int max_fps) : fps(max_fps), last_fisheye_counter(0) {}
+
+        bool validate_frame(const subdevice_mode & mode, const void * frame) const override
+        {
+            return true;
+        }
+
+        struct byte_wrapping{
+            unsigned char lsb : 4;
+            unsigned char msb : 4;
+        };
+
+        int get_frame_counter(const subdevice_mode & mode, const void * frame) override
+        {
+            std::lock_guard<std::mutex> guard(mutex);
+
+            auto last_counter_lsb = reinterpret_cast<byte_wrapping&>(last_fisheye_counter).lsb;
+            auto pixel_lsb = reinterpret_cast<byte_wrapping&>(*((unsigned char*)frame)).lsb;
+            if (last_counter_lsb == pixel_lsb)
+                return last_fisheye_counter;
+
+            auto last_counter_msb = (last_fisheye_counter >> 4);
+            auto wrap_around = reinterpret_cast<byte_wrapping&>(last_fisheye_counter).lsb;
+            if (wrap_around == 15 || pixel_lsb < last_counter_lsb)
+            {
+                ++last_counter_msb;
+            }
+
+            auto fixed_counter = (last_counter_msb << 4) | (pixel_lsb & 0xff);
+
+            last_fisheye_counter = fixed_counter;
+            return fixed_counter;
+        }
+
+        double get_frame_timestamp(const subdevice_mode & mode, const void * frame) override
+        {
+            return get_frame_counter(mode, frame) * 1000 / fps;
+        }
+    };
+
+    class color_timestamp_reader : public frame_timestamp_reader
+    {
+        int fps;
+    public:
+        color_timestamp_reader(int fps) : fps(fps) {}
+
+        bool validate_frame(const subdevice_mode & mode, const void * frame) const override
+        {
+            return true;
+        }
+
+        int get_frame_counter(const subdevice_mode & mode, const void * frame) override
+        {
+            auto frame_number = 0;
+            
+            // YUY2 images encode the frame number in the low order bits of the final 32 bytes of the image
+            auto data = reinterpret_cast<const uint8_t *>(frame)+((mode.native_dims.x * mode.native_dims.y) - 32) * 2;
+            for (auto i = 0; i < 32; ++i)
+            {
+                frame_number |= ((*data & 1) << (i & 1 ? 32 - i : 30 - i));
+                data += 2;
+            }
+            
+            return frame_number;
+        }
+
+        double get_frame_timestamp(const subdevice_mode & mode, const void * frame) override
+        {
+            return get_frame_counter(mode, frame) * 1000 / fps;
         }
     };
 
@@ -583,18 +601,52 @@ namespace rsimpl
     };
 
     // TODO refactor supported streams list to derived
-    std::shared_ptr<frame_timestamp_reader> ds_device::create_frame_timestamp_reader() const
+    std::shared_ptr<frame_timestamp_reader> ds_device::create_frame_timestamp_reader(int subdevice) const
     {
-        // If left, right, or Z streams are enabled, convert frame numbers to millisecond timestamps based on LRZ framerate
-        for(auto s : {RS_STREAM_DEPTH, RS_STREAM_INFRARED, RS_STREAM_INFRARED2, RS_STREAM_FISHEYE})
-        {
-            auto & si = get_stream_interface(s);
-            if(si.is_enabled()) return std::make_shared<dinghy_timestamp_reader>(si.get_framerate());
-        }
+        auto & stream_depth = get_stream_interface(RS_STREAM_DEPTH);
+        auto & stream_infrared = get_stream_interface(RS_STREAM_INFRARED);
+        auto & stream_infrared2 = get_stream_interface(RS_STREAM_INFRARED2);
+        auto & stream_fisheye = get_stream_interface(RS_STREAM_FISHEYE);
+        auto & stream_color = get_stream_interface(RS_STREAM_COLOR);
 
-        // If only color stream is enabled, generate serial frame timestamps (no HW frame numbers available)
-        auto & si = get_stream_interface(RS_STREAM_COLOR);
-        if(si.is_enabled()) return std::make_shared<serial_timestamp_generator>(si.get_framerate());
+        switch (subdevice)
+        {
+        case SUB_DEVICE_DEPTH:
+            if (stream_depth.is_enabled())
+                return std::make_shared<dinghy_timestamp_reader>(stream_depth.get_framerate());
+            break;
+        case SUB_DEVICE_INFRARED: 
+
+            if (stream_infrared.is_enabled())
+                return std::make_shared<dinghy_timestamp_reader>(stream_infrared.get_framerate());
+
+            if (stream_infrared2.is_enabled())
+                return std::make_shared<dinghy_timestamp_reader>(stream_infrared2.get_framerate());
+
+
+            break;
+        case SUB_DEVICE_FISHEYE:
+
+            if (stream_fisheye.is_enabled())
+                return std::make_shared<fisheye_timestamp_reader>(stream_fisheye.get_framerate());
+            break;
+
+        case SUB_DEVICE_COLOR:
+
+            if (stream_color.is_enabled())
+            {
+                if (stream_depth.is_enabled() || stream_infrared.is_enabled() || stream_infrared2.is_enabled())
+                {
+                    return std::make_shared<color_timestamp_reader>(stream_color.get_framerate());
+                }
+                else
+                {
+                    return std::make_shared<serial_timestamp_generator>(stream_color.get_framerate());
+                }
+
+            }
+            break;
+        }
 
         // No streams enabled, so no need for a timestamp converter
         return nullptr;

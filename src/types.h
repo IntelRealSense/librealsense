@@ -164,6 +164,7 @@ namespace rsimpl
         int delta, delta2;
         rs_stream bigger; // if this equals to a or b, this stream must have field value bigger then the other stream
         bool diveded, diveded2; // devided = a must devide b; devided2 = b must devide a
+        bool same_formet;
     };
 
     struct supported_option
@@ -221,12 +222,17 @@ namespace rsimpl
         subdevice_mode_selection() : mode({}), pad_crop(), unpacker_index(), output_format(RS_OUTPUT_BUFFER_FORMAT_CONTINOUS){}
         subdevice_mode_selection(const subdevice_mode & mode, int pad_crop, int unpacker_index) : mode(mode), pad_crop(pad_crop), unpacker_index(unpacker_index){}
 
-        const pixel_format_unpacker & get_unpacker() const { return mode.pf.unpackers[unpacker_index]; }
+        const pixel_format_unpacker & get_unpacker() const {
+            if (unpacker_index < mode.pf.unpackers.size())
+                return mode.pf.unpackers[unpacker_index];
+            throw std::runtime_error("failed to fetch an unpakcer, most likely becouse enable_stream was not called!");
+        }
         const std::vector<std::pair<rs_stream, rs_format>> & get_outputs() const { return get_unpacker().outputs; }
         int get_width() const { return mode.native_intrinsics.width + pad_crop * 2; }
         int get_height() const { return mode.native_intrinsics.height + pad_crop * 2; }
         int get_framerate() const { return mode.fps; }
-        int get_stride() const { return requires_processing() ? get_width() : mode.native_dims.x; }
+        int get_stride_x() const { return requires_processing() ? get_width() : mode.native_dims.x; }
+        int get_stride_y() const { return requires_processing() ? get_height() : mode.native_dims.y; }
         size_t get_image_size(rs_stream stream) const;
         bool provides_stream(rs_stream stream) const { return get_unpacker().provides_stream(stream); }
         rs_format get_format(rs_stream stream) const { return get_unpacker().get_format(stream); }
@@ -237,6 +243,7 @@ namespace rsimpl
         int get_unpacked_height() const;
 
         bool requires_processing() const { return (output_format == RS_OUTPUT_BUFFER_FORMAT_CONTINOUS) || (mode.pf.unpackers[unpacker_index].requires_processing); }
+
     };
 
     class frame_callback : public rs_frame_callback

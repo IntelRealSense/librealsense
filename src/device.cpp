@@ -14,7 +14,7 @@
 using namespace rsimpl;
 using namespace rsimpl::motion_module;
 
-rs_device_base::rs_device_base(std::shared_ptr<rsimpl::uvc::device> device, const rsimpl::static_device_info & info) : device(device), config(info), capturing(false), data_acquisition_active(false), motion_module_ready(false),
+rs_device_base::rs_device_base(std::shared_ptr<rsimpl::uvc::device> device, const rsimpl::static_device_info & info) : device(device), config(info), capturing(false), usb_port_id(""), data_acquisition_active(false), motion_module_ready(false),
     depth(config, RS_STREAM_DEPTH), color(config, RS_STREAM_COLOR), infrared(config, RS_STREAM_INFRARED), infrared2(config, RS_STREAM_INFRARED2), fisheye(config, RS_STREAM_FISHEYE),
     points(depth), rect_color(color), color_to_depth(color, depth), depth_to_color(depth, color), depth_to_rect_color(depth, rect_color), infrared2_to_depth(infrared2,depth), depth_to_infrared2(depth,infrared2)
 {
@@ -210,7 +210,6 @@ void rs_device_base::start_video_streaming()
     auto capture_start_time = std::chrono::high_resolution_clock::now();
     auto selected_modes = config.select_modes();
     auto archive = std::make_shared<syncronizing_archive>(selected_modes, select_key_stream(selected_modes), capture_start_time);
-    auto timestamp_reader = create_frame_timestamp_reader();
     
     for(auto & s : native_streams) s->archive.reset(); // Starting capture invalidates the current stream info, if any exists from previous capture
 
@@ -218,6 +217,7 @@ void rs_device_base::start_video_streaming()
     // dispatching the uvc configuration for a requested stream to the hardware
     for(auto mode_selection : selected_modes)
     {
+        auto timestamp_reader = create_frame_timestamp_reader(mode_selection.mode.subdevice);
         // Create a stream buffer for each stream served by this subdevice mode
         for(auto & stream_mode : mode_selection.get_outputs())
         {                    
@@ -250,13 +250,13 @@ void rs_device_base::start_video_streaming()
             
             auto requires_processing = mode_selection.requires_processing();
 
-            auto width = mode_selection.get_unpacked_width();
-            auto height = mode_selection.get_unpacked_height();
+            auto width = mode_selection.get_width();
+            auto height = mode_selection.get_height();
             auto fps = mode_selection.get_framerate();
             std::vector<byte *> dest;
 
-            auto stride = mode_selection.get_stride();
-
+            auto stride_x = mode_selection.get_stride_x();
+            auto stride_y = mode_selection.get_stride_y();
             for (auto & output : mode_selection.get_outputs())
             {
                 LOG_DEBUG("FrameAccepted, RecievedAt," << recieved_time << ", FWTS," << timestamp << ", DLLTS," << recieved_time << ", Type," << rsimpl::get_string(output.first) << ",HasPair,0,F#," << frame_counter);
@@ -264,14 +264,15 @@ void rs_device_base::start_video_streaming()
 
             for (auto & output : mode_selection.get_outputs())
             {
-                auto bpp = rsimpl::get_image_bpp(output.second);
+                auto bpp = get_image_bpp(output.second);
                 frame_archive::frame_additional_data additional_data( timestamp,
                     frame_counter,
                     sys_time,
                     width,
                     height,
                     fps,
-                    stride,
+                    stride_x,
+                    stride_y,
                     bpp,
                     output.second,
                     output.first,
@@ -279,7 +280,11 @@ void rs_device_base::start_video_streaming()
 
                 // Obtain buffers for unpacking the frame
                 dest.push_back(archive->alloc_frame(output.first, additional_data, requires_processing));
-                archive->correct_timestamp(output.first);
+
+                if (motion_module_ready) // try to correct timestamp only if motion module is enabled
+                {
+                    archive->correct_timestamp(output.first);
+                }
             }
             // Unpack the frame
             if (requires_processing)
@@ -302,7 +307,7 @@ void rs_device_base::start_video_streaming()
                     {
                         frame_ref->update_frame_callback_start_ts(std::chrono::high_resolution_clock::now());
                         frame_ref->log_callback_start(capture_start_time);
-                        (*config.callbacks[streams[i]])->on_frame(this, (rs_frame_ref*)frame_ref);
+                        (*config.callbacks[streams[i]])->on_frame(this, frame_ref);
                     }
                 }
                 else
@@ -344,42 +349,6 @@ bool rs_device_base::poll_all_streams()
     return archive->poll_for_frames();
 }
 
-rs_frameset* rs_device_base::wait_all_streams_safe()
-{
-    if (!capturing) throw std::runtime_error("Can't call wait_for_frames_safe when the device is not capturing!");
-    if (!archive) throw std::runtime_error("Can't call wait_for_frames_safe when frame archive is not available!");
-
-        return (rs_frameset*)archive->wait_for_frames_safe();
-}
-
-bool rs_device_base::poll_all_streams_safe(rs_frameset** frames)
-{
-    if (!capturing) return false;
-    if (!archive) return false;
-
-    return archive->poll_for_frames_safe((frame_archive::frameset**)frames);
-}
-
-void rs_device_base::release_frames(rs_frameset * frameset)
-{
-    archive->release_frameset((frame_archive::frameset *)frameset);
-}
-
-rs_frameset * rs_device_base::clone_frames(rs_frameset * frameset)
-{
-    auto result = archive->clone_frameset((frame_archive::frameset *)frameset);
-    if (!result) throw std::runtime_error("Not enough resources to clone frameset!");
-    return (rs_frameset*)result;
-}
-
-
-rs_frame_ref* rs_device_base::detach_frame(rs_frameset* fs, rs_stream stream)
-{
-    auto result = archive->detach_frame_ref((frame_archive::frameset *)fs, stream);
-    if (!result) throw std::runtime_error("Not enough resources to tack detached frame!");
-    return (rs_frame_ref*)result;
-}
-
 void rs_device_base::release_frame(rs_frame_ref* ref)
 {
     archive->release_frame_ref((frame_archive::frame_ref *)ref);
@@ -389,18 +358,13 @@ rs_frame_ref* ::rs_device_base::clone_frame(rs_frame_ref* frame)
 {
     auto result = archive->clone_frame((frame_archive::frame_ref *)frame);
     if (!result) throw std::runtime_error("Not enough resources to clone frame!");
-    return (rs_frame_ref*)result;
+    return result;
 }
 
 bool rs_device_base::supports(rs_capabilities capability) const
 {
-    for (auto elem: config.info.capabilities_vector)
-    {
-        if (elem == capability)
-            return true;
-    }
-
-    return false;
+    auto it = find(config.info.capabilities_vector.begin(), config.info.capabilities_vector.end(), capability);
+    return it != config.info.capabilities_vector.end();
 }
 
 void rs_device_base::get_option_range(rs_option option, double & min, double & max, double & step, double & def)
@@ -441,5 +405,7 @@ void rs_device_base::disable_auto_option(int subdevice, rs_option auto_opt)
 
 const char * rs_device_base::get_usb_port_id() const
 {
-    return rsimpl::uvc::get_usb_port_id(*device);
+    std::lock_guard<std::mutex> lock(usb_port_mutex);
+    if (usb_port_id == "") usb_port_id = rsimpl::uvc::get_usb_port_id(*device);
+    return usb_port_id.c_str();
 }

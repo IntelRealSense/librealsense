@@ -71,7 +71,6 @@ frame_archive::frame_ref* frame_archive::clone_frame(frame_ref* frameset)
 byte * frame_archive::alloc_frame(rs_stream stream, const frame_additional_data& additional_data, bool requires_memory)
 {
     const size_t size = modes[stream].get_image_size(stream);
-
     {
         std::lock_guard<std::recursive_mutex> guard(mutex);
 
@@ -212,9 +211,14 @@ int frame_archive::frame_ref::get_frame_framerate() const
     return frame_ptr ? frame_ptr->get_framerate() : 0;
 }
 
-int frame_archive::frame_ref::get_frame_stride() const
+int frame_archive::frame_ref::get_frame_stride_x() const
 {
-    return frame_ptr ? frame_ptr->get_stride() : 0;
+    return frame_ptr ? frame_ptr->get_stride_x() : 0;
+}
+
+int frame_archive::frame_ref::get_frame_stride_y() const
+{
+    return frame_ptr ? frame_ptr->get_stride_y() : 0;
 }
 
 float frame_archive::frame_ref::get_frame_bpp() const
@@ -245,26 +249,17 @@ void frame_archive::frame_ref::update_frame_callback_start_ts(std::chrono::high_
 
 const byte* frame_archive::frame::get_frame_data() const
 {
-    const byte* frame_data;
+	const byte* frame_data = data.data();;
 
     if (on_release.get_data())
     {
         frame_data = static_cast<const byte*>(on_release.get_data());
         if (additional_data.pad < 0)
         {
-            frame_data += int((additional_data.stride - additional_data.pad)*additional_data.bpp) - additional_data.pad;
+            frame_data += (int)(additional_data.stride_x *additional_data.bpp*(-additional_data.pad) + (-additional_data.pad)*additional_data.bpp);
         }
     }
 
-    else
-    {
-        frame_data = data.data();
-
-        if (additional_data.pad > 0)
-        {
-            return data.data() + (int)((additional_data.stride+ additional_data.pad)*additional_data.bpp) + additional_data.pad;
-        }
-    }
     return frame_data;
 }
 
@@ -298,9 +293,14 @@ int frame_archive::frame::get_framerate() const
     return additional_data.fps;
 }
 
-int frame_archive::frame::get_stride() const
+int frame_archive::frame::get_stride_y() const
 {
-    return additional_data.stride;
+    return additional_data.stride_y;
+}
+
+int frame_archive::frame::get_stride_x() const
+{
+    return additional_data.stride_x;
 }
 
 float frame_archive::frame::get_bpp() const

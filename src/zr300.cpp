@@ -131,6 +131,17 @@ namespace rsimpl
             values[i] = base_opt_val[i];
     }
 
+    void zr300_camera::send_blob_to_device(rs_blob_type type, void * data, int size)
+    {
+        switch(type)
+        {
+        case RS_BLOB_TYPE_MOTION_MODULE_FIRMWARE_UPDATE:
+            motion_module_ctrl.firmware_upgrade(data, size);
+            break;
+        default: rs_device_base::send_blob_to_device(type, data, size);
+        }
+    }
+
     void zr300_camera::toggle_motion_module_power(bool on)
     {        
         motion_module_ctrl.toggle_motion_module_power(on);
@@ -233,6 +244,7 @@ namespace rsimpl
 
             info.capabilities_vector.push_back(RS_CAPABILITIES_FISH_EYE);
             info.capabilities_vector.push_back(RS_CAPABILITIES_MOTION_EVENTS);
+            info.capabilities_vector.push_back(RS_CAPABILITIES_MOTION_MODULE_FW_UPDATE);
 
             info.stream_subdevices[RS_STREAM_FISHEYE] = 3;
             info.presets[RS_STREAM_FISHEYE][RS_PRESET_BEST_QUALITY] = { true, 640, 480, RS_FORMAT_RAW8,   60 };

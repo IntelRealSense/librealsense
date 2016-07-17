@@ -8,6 +8,7 @@
 #include "uvc.h"
 #include "stream.h"
 #include <chrono>
+#include <librealsense/rs.hpp>
 
 
 namespace rsimpl
@@ -35,8 +36,9 @@ namespace rsimpl
     {
         virtual bool validate_frame(const subdevice_mode & mode, const void * frame) const = 0;
         virtual double get_frame_timestamp(const subdevice_mode & mode, const void * frame) = 0;
-        virtual int get_frame_counter(const subdevice_mode &, const void * frame) = 0;
+        virtual int get_frame_counter(const subdevice_mode & mode, const void * frame) = 0;
     };
+
 
     namespace motion_module
     {
@@ -64,6 +66,9 @@ private:
     std::chrono::high_resolution_clock::time_point capture_started;
 
     std::shared_ptr<rsimpl::syncronizing_archive> archive;
+
+    mutable std::string                         usb_port_id;
+    mutable std::mutex                          usb_port_mutex;
 protected:
     const rsimpl::uvc::device &                 get_device() const { return *device; }
     rsimpl::uvc::device &                       get_device() { return *device; }
@@ -75,7 +80,7 @@ protected:
 
     virtual void                                disable_auto_option(int subdevice, rs_option auto_opt);
 
-    bool                                        motion_module_ready;
+    bool                                        motion_module_ready = false;
 public:
                                                 rs_device_base(std::shared_ptr<rsimpl::uvc::device> device, const rsimpl::static_device_info & info);
                                                 virtual ~rs_device_base();
@@ -109,11 +114,6 @@ public:
     
     void                                        wait_all_streams() override;
     bool                                        poll_all_streams() override;
-
-    rs_frameset *                               wait_all_streams_safe() override;
-    bool                                        poll_all_streams_safe(rs_frameset ** frames) override;
-    void                                        release_frames(rs_frameset * frameset) override;
-    rs_frameset *                               clone_frames(rs_frameset * frameset) override;
     
     virtual bool                                supports(rs_capabilities capability) const override;
 
@@ -122,11 +122,13 @@ public:
 
     virtual void                                on_before_start(const std::vector<rsimpl::subdevice_mode_selection> & selected_modes) = 0;
     virtual rs_stream                           select_key_stream(const std::vector<rsimpl::subdevice_mode_selection> & selected_modes) = 0;
-    virtual std::shared_ptr<rsimpl::frame_timestamp_reader>  create_frame_timestamp_reader() const = 0;
-    rs_frame_ref *                              detach_frame(rs_frameset * fs, rs_stream stream) override;
+	virtual std::shared_ptr<rsimpl::frame_timestamp_reader>  create_frame_timestamp_reader(int subdevice) const = 0;
     void                                        release_frame(rs_frame_ref * ref) override;
     const char *                                get_usb_port_id() const override;
     rs_frame_ref *                              clone_frame(rs_frame_ref * frame) override;
+
+    virtual void                                send_blob_to_device(rs_blob_type type, void * data, int size) { throw std::runtime_error("not supported!"); }
+
 };
 
 #endif

@@ -33,6 +33,7 @@ namespace rsimpl
         void get_option_range(rs_option option, double & min, double & max, double & step, double & def) override;
         void set_options(const rs_option options[], size_t count, const double values[]) override;
         void get_options(const rs_option options[], size_t count, double values[]) override;
+		void send_blob_to_device(rs_blob_type type, void * data, int size);
 
         void start_motion_tracking() override;
         void stop_motion_tracking() override;

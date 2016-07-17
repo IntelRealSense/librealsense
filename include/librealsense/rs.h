@@ -23,13 +23,14 @@ extern "C" {
 
 typedef enum rs_capabilities
 {
-    RS_CAPABILITIES_DEPTH         = 0,
-    RS_CAPABILITIES_COLOR         = 1,
-    RS_CAPABILITIES_INFRARED      = 2,
-    RS_CAPABILITIES_INFRARED2     = 3,
-    RS_CAPABILITIES_FISH_EYE      = 4,
-    RS_CAPABILITIES_MOTION_EVENTS = 5,
-    RS_CAPABILITIES_COUNT         = 6,
+    RS_CAPABILITIES_DEPTH                   = 0,
+    RS_CAPABILITIES_COLOR                   = 1,
+    RS_CAPABILITIES_INFRARED                = 2,
+    RS_CAPABILITIES_INFRARED2               = 3,
+    RS_CAPABILITIES_FISH_EYE                = 4,
+    RS_CAPABILITIES_MOTION_EVENTS           = 5,
+    RS_CAPABILITIES_MOTION_MODULE_FW_UPDATE = 6,
+    RS_CAPABILITIES_COUNT                   = 7,
     RS_CAPABILITIES_MAX_ENUM = 0x7FFFFFFF
 } rs_capabilities;
 
@@ -200,6 +201,10 @@ typedef enum rs_option
     RS_OPTION_COUNT                                           = 73,
     RS_OPTION_MAX_ENUM = 0x7FFFFFFF
 } rs_option;
+
+typedef enum rs_blob_type {
+    RS_BLOB_TYPE_MOTION_MODULE_FIRMWARE_UPDATE                = 1
+}  rs_blob_type;
 
 typedef struct rs_intrinsics
 {
@@ -603,20 +608,6 @@ int rs_poll_for_frames(rs_device * device, rs_error ** error);
 int rs_supports(rs_device * device, rs_capabilities capability, rs_error ** error);
 
 /**
-* block until new frames are available and return a unique handle to the resulting frameset
-* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
-*/
-rs_frameset* rs_wait_for_frames_safe(rs_device * device, rs_error ** error);
-
-/**
-* check if new frames are available, without blocking and return a unique handle to the resulting frameset
-* \param[out] frameset  if non-null, receives a unique handle for the resulting frame-set, to be queried later
-* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
-* \return            1 if new frames are available, 0 if no new frames have arrived
-*/
-int rs_poll_for_frames_safe(rs_device * device, rs_frameset** frameset, rs_error ** error);
-
-/**
  * retrieve the time at which the latest frame on a stream was captured
  * \param[in] stream  the stream whose latest frame we are interested in
  * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
@@ -641,47 +632,12 @@ int rs_get_frame_number(const rs_device * device, rs_stream stream, rs_error ** 
 const void * rs_get_frame_data(const rs_device * device, rs_stream stream, rs_error ** error);
 
 /**
-* get access to the individual frame referenced inside the frame-set.
-* \param[in] frameset handle returned by wait_for_frames_safe or rs_poll_for_frames_safe
-* \param[in] stream  the stream whose latest frame we are interested in
-* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
-* \return            frame reference that is stored inside the frameset object
-*/
-rs_frame_ref* rs_get_frame(const rs_frameset * frame_set, rs_stream stream, rs_error ** error);
-
-/**
-* relases the frameset handle
-* \param[in] frameset handle returned by wait_for_frames_safe or rs_poll_for_frames_safe
-* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
-* \return            the pointer to the start of the frame data
-*/
-void rs_release_frames(rs_device * device, rs_frameset * frameset, rs_error ** error);
-
-/**
-* clone frameset handle, creating new handle that is tracking the same underlying frameset object
-* \param[in] frameset handle returned by wait_for_frames_safe or rs_poll_for_frames_safe
-* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
-* \return            the pointer to the start of the frame data
-*/
-rs_frameset * rs_clone_frames_ref(rs_device * device, rs_frameset* frameset, rs_error ** error);
-
-/**
-* detach individual frame reference from a frame-set.
-* \param[in] frameset handle returned by wait_for_frames_safe or rs_poll_for_frames_safe
-* \param[in] stream  the stream whose latest frame we are interested in
-* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
-* \return            the pointer to the start of the frame data
-*/
-rs_frame_ref * rs_detach_frame(rs_device * device, rs_frameset * frameset, rs_stream stream, rs_error ** error);
-
-/**
 * relases the frame handle
 * \param[in] frame handle returned either detach, clone_ref or from frame callback
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return            the pointer to the start of the frame data
 */
 void rs_release_frame(rs_device * device, rs_frame_ref * frame, rs_error ** error);
-
 
 /**
 * retrive timestamp from safe frame handle, returned from detach, clone_ref or from frame callback
@@ -727,11 +683,18 @@ int rs_get_detached_frame_height(const rs_frame_ref * frame, rs_error ** error);
 int rs_get_detached_framerate(const rs_frame_ref * frameset, rs_error ** error);
 
 /**
-* retrive frame pad crop
+* retrive frame stride X, meaning the actual line width in memory (not the logical image width)
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return            frame pad crop
 */
-int rs_get_detached_frame_stride(const rs_frame_ref * frame, rs_error ** error);
+int rs_get_detached_frame_stride_x(const rs_frame_ref * frame, rs_error ** error);
+
+/**
+* retrive frame stride Y, meaning the actual line height in memory (not the logical image height)
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return            frame pad crop
+*/
+int rs_get_detached_frame_stride_y(const rs_frame_ref * frame, rs_error ** error);
 
 /**
 * retrive frame pad crop
@@ -760,6 +723,15 @@ rs_stream rs_get_detached_frame_stream_type(const rs_frame_ref * frameset, rs_er
 * \return            the pointer to the start of the frame data
 */
 rs_frame_ref * rs_clone_frame_ref(rs_device * device, rs_frame_ref* frame, rs_error ** error);
+
+/**
+* send a blob of data to the device. at the moment only RS_BLOB_TYPE_MOTION_MODULE_FIRMWARE_UPDATE is support 
+* of the motiohn module.
+* \param[in] firmware data.
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+*/
+void rs_send_blob_to_device(rs_device * device, rs_blob_type type, void * data, int size, rs_error ** error);
+
 
 /**
 * retrieve the API version from the source code. Evaluate that the value is conformant to the established policies

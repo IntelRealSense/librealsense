@@ -41,16 +41,11 @@ struct rs_frame_ref
     virtual int                             get_frame_width() const = 0;
     virtual int                             get_frame_height() const = 0;
     virtual int                             get_frame_framerate() const = 0;
-    virtual int                             get_frame_stride() const = 0;
+    virtual int                             get_frame_stride_x() const = 0;
+    virtual int                             get_frame_stride_y() const = 0;
     virtual float                           get_frame_bpp() const = 0;
     virtual rs_format                       get_frame_format() const = 0;
     virtual rs_stream                       get_stream_type() const = 0;
-};
-
-struct rs_frameset
-{
-    virtual                                 ~rs_frameset() {}
-    virtual const rs_frame_ref *            get_frame(rs_stream stream) const = 0;
 };
 
 // realsense device public interface
@@ -87,19 +82,13 @@ struct rs_device
     virtual void                            wait_all_streams() = 0;
     virtual bool                            poll_all_streams() = 0;
                                             
-    virtual rs_frameset *                   wait_all_streams_safe() = 0;
-    virtual bool                            poll_all_streams_safe(rs_frameset ** frames) = 0;
-    virtual void                            release_frames(rs_frameset * frameset) = 0;
-    virtual rs_frameset *                   clone_frames(rs_frameset * frameset) = 0;
-                                            
     virtual bool                            supports(rs_capabilities capability) const = 0;
                                             
     virtual bool                            supports_option(rs_option option) const = 0;
     virtual void                            get_option_range(rs_option option, double & min, double & max, double & step, double & def) = 0;
     virtual void                            set_options(const rs_option options[], size_t count, const double values[]) = 0;
     virtual void                            get_options(const rs_option options[], size_t count, double values[]) = 0;
-                                            
-    virtual rs_frame_ref *                  detach_frame(rs_frameset * fs, rs_stream stream) = 0;
+
     virtual void                            release_frame(rs_frame_ref * ref) = 0;
     virtual rs_frame_ref *                  clone_frame(rs_frame_ref * frame) = 0;
 

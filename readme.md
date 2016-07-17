@@ -8,7 +8,7 @@
 [license-image]: http://img.shields.io/badge/license-Apache--2-blue.svg?style=flat
 [license]: LICENSE
 
-This project is a cross-platform library (Linux, OSX, Windows) for capturing data from the Intel® RealSense™ F200, SR300, R200, LR200 and the ZR300 cameras. This effort was initiated to better support researchers, creative coders, and app developers in domains such as robotics, virtual reality, and the internet of things. Several often-requested features of RealSense™ devices are implemented in this project, including multi-camera capture.
+This project is a cross-platform library (Linux, Windows, Ostro-OS) for capturing data from the Intel® RealSense™ F200, SR300, R200, LR200 and the ZR300 cameras. This effort was initiated to better support researchers, creative coders, and app developers in domains such as robotics, virtual reality, and the internet of things. Several often-requested features of RealSense™ devices are implemented in this project, including multi-camera capture.
 
 Developer kits containing the necessary hardware to use this library are available for purchase at [this link](http://click.intel.com/realsense.html). This project is separate from the production software stack available in the [Intel® RealSense™ SDK](https://software.intel.com/en-us/intel-realsense-sdk), namely that this library only encompasses camera capture functionality without additional computer vision algorithms.
 
@@ -38,8 +38,9 @@ The project requires two external dependencies, GLFW3 (all platforms) and libusb
 
 The library is written in standards-conforming C++11 and relies only on the C89 ABI for its public interface. It is developed and tested on the following platforms:
 
-1. Windows 8.1 (Visual Studio 2013 Update 5/ Visual Studio 2015 Update 2)
+1. Windows 10 (Visual Studio 2015 Update 2)
 2. Ubuntu 14.04.03 LTS x64 (GCC 4.9 toolchain)
+3. Ostro OS
 
 
 Neither libuvc nor V4L2 backends have been validated on Ubuntu 12.04 LTS or Ubuntu 15.10, and several attempts to bring cameras up on these platforms have been problematic due to the requirement of a patched uvcvideo driver. It may be possible to compile and run the library on other platforms. Please file an issue or submit a pull request if the library has been successfully ported to a platform.
@@ -62,19 +63,20 @@ Neither libuvc nor V4L2 backends have been validated on Ubuntu 12.04 LTS or Ubun
 
 All RealSense™ cameras ship with proprietary firmware. This firmware is periodically updated with critical bugfixes, however the API does not currently expose functionality to upload new firmware. A supported update path is available on Windows 8.1 and Windows 10 systems via the [Intel® RealSense™ DCM](https://downloadcenter.intel.com/download/25044/Intel-RealSense-Depth-Camera-Manager-DCM-) (Depth Camera Manager). Installing the DCM on a supported machine with an attached camera will automatically flash the latest firmware released by Intel.
 
+Minimal supported FW versions:
+
 | Camera | F/W |
 | ------ | --- |
 | R200 | 1.0.72.06 |
 | F200 | 2.60.0.0 |
 | SR300 | 3.15.0.0 |
-| LR200 | 2.0.71.03 |
-| ZR300 | 2.0.71.13 |
+| LR200 | 2.0.71.18 |
+| ZR300 | Camera - 2.0.71.18, Adapter board - 1.23, Motion module 1.20.0.0 IAP 9 |
 
 # Installation Guide
 
 The Intel® RealSense™ Cross Platform API communicates with RealSense™ devices directly via the UVC and USB protocols. It does not link against the RealSense™ SDK runtime. Most of the library source code is platform agnostic, but there is a small UVC abstraction layer with platform-specific backends, including:
   * A video4linux2 backend which provides kernel-space access to UVC devices on Linux.
-  * A libuvc backend which provides user-space access to UVC devices on Linux and Mac OS X (built with libusb).
   * A Windows Media Foundation backend which provides kernel-space access to UVC devices on Windows 8.1 and above.
 
 **New Users:** A comprehensive installation guide is [available here](./doc/installation.md)
