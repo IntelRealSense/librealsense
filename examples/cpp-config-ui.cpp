@@ -296,6 +296,158 @@ void show_message(GLFWwindow* curr_window, const std::string& title, const std::
     glfwMakeContextCurrent(curr_window);
 }
 
+void update_auto_manual_str(std::ostringstream& ss, bool is_auto)
+{
+    ss << ((is_auto) ? "Auto" : "Manual");
+}
+
+struct option { rs::option opt; double min, max, step, value, def; };
+bool auto_exposure = false;
+bool auto_white_balance = false;
+bool lr_auto_exposure = false;
+struct auto_options
+{
+    auto_options(rs::option opt, std::vector<rs::option> options) : auto_option(opt), relate_options(options) {}
+    rs::option auto_option;
+    std::vector<rs::option> relate_options;
+};
+auto_options exp_option(rs::option::color_enable_auto_exposure, { rs::option::color_exposure });
+auto_options wb_option(rs::option::color_enable_auto_white_balance, { rs::option::color_white_balance });
+auto_options lr_option(rs::option::r200_lr_auto_exposure_enabled, { rs::option::r200_lr_gain, rs::option::r200_lr_exposure });
+static std::vector<auto_options> auto_options_vec = { exp_option, wb_option, lr_option };
+void update_auto_option(rs::option opt, std::vector<option>& options)
+{
+    auto it = find_if(auto_options_vec.begin(), auto_options_vec.end(),
+        [&](const auto_options& element) {
+        for (auto& o : element.relate_options)
+        {
+            if (opt == o)
+                return true;
+        }
+        return false;
+    });
+
+    if (it != auto_options_vec.end())
+    {
+        auto auto_opt = it->auto_option;
+        switch (auto_opt)
+        {
+            case rs::option::color_enable_auto_exposure:
+                auto_exposure = false;
+            break;
+
+            case rs::option::color_enable_auto_white_balance:
+                auto_white_balance = false;
+            break;
+
+            case rs::option::r200_lr_auto_exposure_enabled:
+                lr_auto_exposure = false;
+            break;
+        }
+
+        auto it = find_if(options.begin(), options.end(),
+            [&](const option& element) {
+            return (element.opt == auto_opt);
+        });
+
+        if (it != options.end())
+        {
+            it->value = 0;
+        }
+    }
+}
+
+bool is_any_stream_enable(rs::device* dev)
+{
+    bool sts = false;
+    for (auto i = 0; i < 5; i++)
+    {
+        if (dev->is_stream_enabled((rs::stream)i))
+        {
+            sts = true;
+            break;
+        }
+    }
+
+    return sts;
+}
+
+bool motion_tracking_enable = true;
+void enable_stream(rs::device * dev, int stream, bool enable, std::stringstream& stream_name)
+{
+    stream_name.str("");
+    if (stream == RS_CAPABILITIES_MOTION_EVENTS)
+    {
+        stream_name << "MOTION EVENTS";
+
+        if (dev->is_motion_tracking_active())
+            return;
+
+        if (enable)
+        {
+            dev->enable_motion_tracking(on_motion_event, on_timestamp_event);
+            motion_tracking_enable = true;
+        }
+        else
+        {
+            dev->disable_motion_tracking();
+            motion_tracking_enable = false;
+        }
+    }
+    else
+    {
+        stream_name << rs_stream_to_string((rs_stream)stream);
+        if (enable)
+        {
+            if (!dev->is_stream_enabled((rs::stream)stream))
+                dev->enable_stream((rs::stream)stream, rs::preset::best_quality);
+        }
+        else
+        {
+            if (dev->is_stream_enabled((rs::stream)stream))
+                dev->disable_stream((rs::stream)stream);
+        }
+    }
+}
+
+void update_mm_data(texture_buffer* buffers, int w, int h, gui& g)
+{
+    int x = w / 3 + 10;
+    int y = 2 * h / 3 + 5;
+    auto rect_y0_pos = y + 36;
+    auto rect_y1_pos = y + 28;
+    auto indicator_width = 42;
+
+    buffers[5].print(x, rect_y0_pos - 10, "Gyro X: ");
+    g.indicator({ x + 100, rect_y0_pos, x + 300, rect_y1_pos }, -10, 10, m_gyro_data.axes[0]);
+    rect_y0_pos += indicator_width;
+    rect_y1_pos += indicator_width;
+
+    buffers[5].print(x, rect_y0_pos - 10, "Gyro Y: ");
+    g.indicator({ x + 100, rect_y0_pos, x + 300, rect_y1_pos }, -10, 10, m_gyro_data.axes[1]);
+    rect_y0_pos += indicator_width;
+    rect_y1_pos += indicator_width;
+
+    buffers[5].print(x, rect_y0_pos - 10, "Gyro Z: ");
+    g.indicator({ x + 100, rect_y0_pos, x + 300, rect_y1_pos }, -10, 10, m_gyro_data.axes[2]);
+    rect_y0_pos += indicator_width;
+    rect_y1_pos += indicator_width;
+
+    buffers[5].print(x, rect_y0_pos - 10, "Acc X: ");
+    g.indicator({ x + 100, rect_y0_pos, x + 300, rect_y1_pos }, -10, 10, m_acc_data.axes[0]);
+    rect_y0_pos += indicator_width;
+    rect_y1_pos += indicator_width;
+
+    buffers[5].print(x, rect_y0_pos - 10, "Acc Y: ");
+    g.indicator({ x + 100, rect_y0_pos, x + 300, rect_y1_pos }, -10, 10, m_acc_data.axes[1]);
+    rect_y0_pos += indicator_width;
+    rect_y1_pos += indicator_width;
+
+    buffers[5].print(x, rect_y0_pos - 10, "Acc Z: ");
+    g.indicator({ x + 100, rect_y0_pos, x + 300, rect_y1_pos }, -10, 10, m_acc_data.axes[2]);
+}
+
+
 
 int main(int argc, char * argv[])
 {
@@ -307,7 +459,6 @@ int main(int argc, char * argv[])
     std::atomic<bool> running(true);
     bool has_motion_module;
     single_consumer_queue<rs::frame> frames_queue[streams];
-    struct option { rs::option opt; double min, max, step, value, def; };
     std::vector<option> options;
     texture_buffer buffers[streams];
     struct resolution
@@ -366,7 +517,6 @@ int main(int argc, char * argv[])
         resolutions[rs::stream::depth] = { dev->get_stream_width(rs::stream::depth), dev->get_stream_height(rs::stream::depth), rs::format::z16 };
         resolutions[rs::stream::color] = { dev->get_stream_width(rs::stream::color), dev->get_stream_height(rs::stream::color), rs::format::rgb8 };
         resolutions[rs::stream::infrared] = { dev->get_stream_width(rs::stream::infrared), dev->get_stream_height(rs::stream::infrared), rs::format::y8 };
-
 
         bool supports_fish_eye = dev->supports(rs::capabilities::fish_eye);
         bool supports_motion_events = dev->supports(rs::capabilities::motion_events);
@@ -447,173 +597,102 @@ int main(int argc, char * argv[])
                     g.vscroll({ w - 270, 0, w, h }, panel_height, offset);
                     int y = 10 - offset;
 
-                    if (dev->is_streaming())
+                    if (dev->is_streaming() || dev->is_motion_tracking_active())
                     {
                         if (g.button({ w - 260, y, w - 20, y + 24 }, "Stop Capture"))
                         {
-                            running = false;
-                            for (auto i = 0; i < 5; i++) frames_queue[i].clear();
-                            dev->stop();
+                            if (is_any_stream_enable(dev))
+                            {
+                                running = false;
+                                for (auto i = 0; i < 5; i++) frames_queue[i].clear();
+                                dev->stop();
+                            }
 
                             if (has_motion_module)
+                            {
+                                running = false;
                                 dev->stop(rs::source::motion_data);
+                            }
                         }
                     }
                     else
                     {
                         if (g.button({ w - 260, y, w - 20, y + 24 }, "Start Capture"))
                         {
-                            running = true;
-                            dev->start();
+                            if (is_any_stream_enable(dev))
+                            {
+                                running = true;
+                                dev->start();
+                            }
 
                             if (has_motion_module)
+                            {
+                                running = true;
                                 dev->start(rs::source::motion_data);
+                            }
                         }
                     }
                     y += 34;
                     if (!dev->is_streaming())
                     {
-                        for (int i = 0; i <= RS_CAPABILITIES_FISH_EYE; ++i)
+                        for (int i = 0; i <= RS_CAPABILITIES_MOTION_EVENTS; ++i)
                         {
                             auto s = (rs::stream)i;
                             auto cap = (rs::capabilities)i;
+                            std::stringstream stream_name;
 
                             if (dev->supports(cap))
                             {
-                                bool enable = dev->is_stream_enabled(s);
+                                bool enable;
+                                if (i == RS_CAPABILITIES_MOTION_EVENTS)
+                                    enable = motion_tracking_enable;
+                                else
+                                    enable = dev->is_stream_enabled(s);
 
-                                if (enable) dev->enable_stream(s, rs::preset::best_quality);
-                                else dev->disable_stream(s);
+                                enable_stream(dev, i, enable, stream_name);
 
                                 if (g.checkbox({ w - 260, y, w - 240, y + 20 }, enable))
                                 {
-                                    if (enable) dev->enable_stream(s, rs::preset::best_quality);
-                                    else dev->disable_stream(s);
+                                    enable_stream(dev, i, enable, stream_name);
                                 }
-                                g.label({ w - 234, y + 13 }, { 1, 1, 1 }, "Enable %s", rs_stream_to_string((rs_stream)i));
+                                g.label({ w - 234, y + 13 }, { 1, 1, 1 }, "Enable %s", stream_name.str().c_str());
                                 y += 30;
                             }
                         }
                     }
 
-                    bool auto_exposure;
-                    bool auto_white_balance;
-                    bool auto_exposure_enable;
+
                     for (auto & o : options)
                     {
                         bool disable_dragger = false;
-                        if (o.opt == rs::option::color_enable_auto_exposure && o.value == 1)
-                        {
-                            auto_exposure = true;
-                        }
-                        else if (o.opt == rs::option::color_enable_auto_exposure && o.value == 0)
-                        {
-                            auto_exposure = false;
-                        }
-
-                        if (o.opt == rs::option::color_enable_auto_white_balance && o.value == 1)
-                        {
-                            auto_white_balance = true;
-                        }
-                        else if (o.opt == rs::option::color_enable_auto_white_balance && o.value == 0)
-                        {
-                            auto_white_balance = false;
-                        }
-
-                        if (o.opt == rs::option::r200_lr_auto_exposure_enabled && o.value == 1)
-                        {
-                            auto_exposure_enable = true;
-                        }
-                        else if (o.opt == rs::option::r200_lr_auto_exposure_enabled && o.value == 0)
-                        {
-                            auto_exposure_enable = false;
-                        }
-
-
-                        if (o.opt == rs::option::color_exposure && auto_exposure)
-                        {
-                            disable_dragger = true;
-                        }
-
-                        if (o.opt == rs::option::color_white_balance && auto_white_balance)
-                        {
-                            disable_dragger = true;
-                        }
-
-                        if (o.opt == rs::option::r200_lr_gain && auto_exposure_enable)
-                        {
-                            disable_dragger = true;
-                        }
-
-                        if (o.opt == rs::option::r200_lr_exposure && auto_exposure_enable)
-                        {
-                            disable_dragger = true;
-                        }
-
-                        if (o.opt == rs::option::r200_lr_exposure && auto_exposure_enable)
-                        {
-                            disable_dragger = true;
-                        }
-
-                        if (o.opt == rs::option::r200_auto_exposure_mean_intensity_set_point)
-                        {
-                            disable_dragger = !auto_exposure_enable;
-                        }
-
-                        if (o.opt == rs::option::r200_auto_exposure_bright_ratio_set_point)
-                        {
-                            disable_dragger = !auto_exposure_enable;
-                        }
-
-                        if (o.opt == rs::option::r200_auto_exposure_kp_gain)
-                        {
-                            disable_dragger = !auto_exposure_enable;
-                        }
-
-                        if (o.opt == rs::option::r200_auto_exposure_kp_exposure)
-                        {
-                            disable_dragger = !auto_exposure_enable;
-                        }
-
-                        if (o.opt == rs::option::r200_auto_exposure_kp_dark_threshold)
-                        {
-                            disable_dragger = !auto_exposure_enable;
-                        }
-
-                        if (o.opt == rs::option::r200_auto_exposure_top_edge)
-                        {
-                            disable_dragger = !auto_exposure_enable;
-                        }
-
-                        if (o.opt == rs::option::r200_auto_exposure_bottom_edge)
-                        {
-                            disable_dragger = !auto_exposure_enable;
-                        }
-
-                        if (o.opt == rs::option::r200_auto_exposure_left_edge)
-                        {
-                            disable_dragger = !auto_exposure_enable;
-                        }
-
-                        if (o.opt == rs::option::r200_auto_exposure_right_edge)
-                        {
-                            disable_dragger = !auto_exposure_enable;
-                        }
-
                         std::ostringstream ss;
                         ss << o.opt << ": ";
 
-                        if ((auto_exposure && o.opt == rs::option::color_exposure) ||
-                            (auto_white_balance && o.opt == rs::option::color_white_balance))
-                            ss << "Auto";
+                        if ((o.opt == rs::option::color_enable_auto_exposure))
+                        {
+                            auto_exposure = (o.value == 1);
+                            update_auto_manual_str(ss, auto_exposure);
+                        }
+                        else if ((o.opt == rs::option::color_enable_auto_white_balance))
+                        {
+                            auto_white_balance = (o.value == 1);
+                            update_auto_manual_str(ss, auto_white_balance);
+                        }
+                        else if ((o.opt == rs::option::r200_lr_auto_exposure_enabled))
+                        {
+                            lr_auto_exposure = (o.value == 1);
+                            update_auto_manual_str(ss, lr_auto_exposure);
+                        }
                         else
                             ss << o.value;
+
 
                         g.label({ w - 260, y + 12 }, { 1, 1, 1 }, ss.str().c_str());
 
                         if (g.slider((int)o.opt + 1, { w - 260, y + 16, w - 20, y + 36 }, o.min, o.max, o.step, o.value, disable_dragger))
                         {
                             dev->set_option(o.opt, o.value);
+                            update_auto_option(o.opt, options);
                         }
                         y += 38;
                     }
@@ -627,7 +706,7 @@ int main(int argc, char * argv[])
 
                     panel_height = y + 10 + offset;
 
-                    if (dev->is_streaming())
+                    if (dev->is_streaming() || dev->is_motion_tracking_active())
                     {
                         w += (has_motion_module ? 150 : -280);
 
@@ -658,45 +737,10 @@ int main(int argc, char * argv[])
                             buffers[i].show((rs::stream)i, format[i], fps[i], frame_number[i], pos_vec[i].rx, pos_vec[i].ry, pos_vec[i].rw, pos_vec[i].rh, resolutions[(rs::stream)i].width, resolutions[(rs::stream)i].height);
                         }
 
-                        if (has_motion_module)
+                        if (has_motion_module && motion_tracking_enable)
                         {
                             std::lock_guard<std::mutex> lock(mm_mutex);
-
-                            int x = w / 3 + 10;
-                            int y = 2 * h / 3 + 5;
-                            //buffers[5].print(x, y, "MM (200 Hz)");
-
-                            auto rect_y0_pos = y + 36;
-                            auto rect_y1_pos = y + 28;
-                            auto indicator_width = 42;
-
-                            buffers[5].print(x, rect_y0_pos - 10, "Gyro X: ");
-                            g.indicator({ x + 100, rect_y0_pos, x + 300, rect_y1_pos }, -10, 10, m_gyro_data.axes[0]);
-                            rect_y0_pos += indicator_width;
-                            rect_y1_pos += indicator_width;
-
-                            buffers[5].print(x, rect_y0_pos - 10, "Gyro Y: ");
-                            g.indicator({ x + 100, rect_y0_pos, x + 300, rect_y1_pos }, -10, 10, m_gyro_data.axes[1]);
-                            rect_y0_pos += indicator_width;
-                            rect_y1_pos += indicator_width;
-
-                            buffers[5].print(x, rect_y0_pos - 10, "Gyro Z: ");
-                            g.indicator({ x + 100, rect_y0_pos, x + 300, rect_y1_pos }, -10, 10, m_gyro_data.axes[2]);
-                            rect_y0_pos += indicator_width;
-                            rect_y1_pos += indicator_width;
-
-                            buffers[5].print(x, rect_y0_pos - 10, "Acc X: ");
-                            g.indicator({ x + 100, rect_y0_pos, x + 300, rect_y1_pos }, -10, 10, m_acc_data.axes[0]);
-                            rect_y0_pos += indicator_width;
-                            rect_y1_pos += indicator_width;
-
-                            buffers[5].print(x, rect_y0_pos - 10, "Acc Y: ");
-                            g.indicator({ x + 100, rect_y0_pos, x + 300, rect_y1_pos }, -10, 10, m_acc_data.axes[1]);
-                            rect_y0_pos += indicator_width;
-                            rect_y1_pos += indicator_width;
-
-                            buffers[5].print(x, rect_y0_pos - 10, "Acc Z: ");
-                            g.indicator({ x + 100, rect_y0_pos, x + 300, rect_y1_pos }, -10, 10, m_acc_data.axes[2]);
+                            update_mm_data(buffers, w, h, g);
                         }
                     }
 
