@@ -25,11 +25,20 @@ namespace rsimpl
         {{ 480, 270}, {6,15,30,60}},
     };
 
-    static static_device_info get_ds5d_info(std::shared_ptr<uvc::device> device)
+    static static_device_info get_ds5d_info(std::shared_ptr<uvc::device> device, std::string dev_name)
     {
         static_device_info info;
 
-        // Depth and IR modes on subdevice 1 and 0 respectively
+        // Populate miscellaneous information about the device
+        info.name = dev_name;
+        std::timed_mutex mutex;
+        ds5::get_module_serial_string(*device, mutex, info.serial, 8);
+        ds5::get_firmware_version_string(*device, mutex, info.firmware_version);
+
+        info.capabilities_vector.push_back(RS_CAPABILITIES_DEPTH);
+        info.capabilities_vector.push_back(RS_CAPABILITIES_INFRARED);
+
+        // Populate IR modes on subdevice 1
         info.stream_subdevices[RS_STREAM_INFRARED] = 1;
         for(auto & m : ds5d_ir_only_modes)
         {
@@ -39,6 +48,7 @@ namespace rsimpl
             }
         }
 
+        // Populate depth modes on subdevice 0
         info.stream_subdevices[RS_STREAM_DEPTH] = 0;
         for(auto & m : ds5d_depth_modes)
         {
@@ -48,17 +58,19 @@ namespace rsimpl
             }
         }
 
+	// Populate the presets
         for(int i=0; i<RS_PRESET_COUNT; ++i)
         {
-            info.presets[RS_STREAM_DEPTH   ][i] = {true, 640, 480, RS_FORMAT_Z16, 60};
-            info.presets[RS_STREAM_INFRARED][i] = {true, 640, 480, RS_FORMAT_Y8, 60};
+            info.presets[RS_STREAM_DEPTH   ][i] = {true, 640, 480, RS_FORMAT_Z16, 30};
+            info.presets[RS_STREAM_INFRARED][i] = {true, 640, 480, RS_FORMAT_Y8, 30};
         }
 
         return info;
     }
 
-    ds5d_camera::ds5d_camera(std::shared_ptr<uvc::device> device, const static_device_info & info) :
-        ds5_camera(device, info)
+    ds5d_camera::ds5d_camera(std::shared_ptr<uvc::device> device, const static_device_info & info, bool is_active) :
+        ds5_camera(device, info),
+        has_emitter(is_active)
     {
 
     }
@@ -77,38 +89,18 @@ namespace rsimpl
     {
         LOG_INFO("Connecting to Intel RealSense DS5 Active");
 
-        std::timed_mutex mutex;
         ds5::claim_ds5_monitor_interface(*device);
 
-        auto info = get_ds5d_info(device);
-        info.name = {"Intel RealSense DS5 Active"};
-
-        ds5::get_module_serial_string(*device, mutex, info.serial, 8);
-        ds5::get_firmware_version_string(*device, mutex, info.firmware_version);
-
-        info.capabilities_vector.push_back(RS_CAPABILITIES_DEPTH);
-        info.capabilities_vector.push_back(RS_CAPABILITIES_INFRARED);
-
-        return std::make_shared<ds5d_camera>(device, info);
+        return std::make_shared<ds5d_camera>(device, get_ds5d_info(device, "Intel RealSense DS5 Active"), true);
     }
 
     std::shared_ptr<rs_device> make_ds5d_passive_device(std::shared_ptr<uvc::device> device)
     {
         LOG_INFO("Connecting to Intel RealSense DS5 Passive");
 
-        std::timed_mutex mutex;
         ds5::claim_ds5_monitor_interface(*device);
 
-        auto info = get_ds5d_info(device);
-        info.name = {"Intel RealSense DS5 Passive"};
-
-        ds5::get_module_serial_string(*device, mutex, info.serial, 8);
-        ds5::get_firmware_version_string(*device, mutex, info.firmware_version);
-
-        info.capabilities_vector.push_back(RS_CAPABILITIES_DEPTH);
-        info.capabilities_vector.push_back(RS_CAPABILITIES_INFRARED);
-
-        return std::make_shared<ds5d_camera>(device, info);
+        return std::make_shared<ds5d_camera>(device, get_ds5d_info(device, "Intel RealSense DS5 Passive"), false);
     }
 
 } // namespace rsimpl::ds5d

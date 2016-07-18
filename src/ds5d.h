@@ -20,12 +20,14 @@ namespace rsimpl
     {
 
     public:
-        ds5d_camera(std::shared_ptr<uvc::device> device, const static_device_info & info);
+        ds5d_camera(std::shared_ptr<uvc::device> device, const static_device_info & info, bool has_emitter);
         ~ds5d_camera() {};
 
         void set_options(const rs_option options[], size_t count, const double values[]) override;
         void get_options(const rs_option options[], size_t count, double values[]) override;
 
+    private:
+        bool has_emitter;
     };
 
     std::shared_ptr<rs_device> make_ds5d_active_device(std::shared_ptr<uvc::device> device);

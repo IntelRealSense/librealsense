@@ -19,11 +19,15 @@ namespace rsimpl
     {
 
     public:
-        ds5c_camera(std::shared_ptr<uvc::device> device, const static_device_info & info);
+        ds5c_camera(std::shared_ptr<uvc::device> device, const static_device_info & info, bool has_global_shutter);
         ~ds5c_camera() {};
 
         void set_options(const rs_option options[], size_t count, const double values[]) override;
         void get_options(const rs_option options[], size_t count, double values[]) override;
+
+    private:
+        bool has_global_shutter;
+
     };
 
     std::shared_ptr<rs_device> make_ds5c_rolling_device(std::shared_ptr<uvc::device> device);

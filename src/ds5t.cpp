@@ -46,7 +46,19 @@ namespace rsimpl
     {
         static_device_info info;
 
-        // Fisheye modes on subdevice 3
+        // Populate miscellaneous info about device
+        info.name = {"Intel RealSense DS5 Tracking"};
+        std::timed_mutex mutex;
+        ds5::get_module_serial_string(*device, mutex, info.serial, 8);
+        ds5::get_firmware_version_string(*device, mutex, info.firmware_version);
+
+        info.capabilities_vector.push_back(RS_CAPABILITIES_COLOR);
+        info.capabilities_vector.push_back(RS_CAPABILITIES_DEPTH);
+        info.capabilities_vector.push_back(RS_CAPABILITIES_INFRARED);
+        info.capabilities_vector.push_back(RS_CAPABILITIES_FISH_EYE);
+        info.capabilities_vector.push_back(RS_CAPABILITIES_MOTION_EVENTS);
+
+        // Populate fisheye modes on subdevice 3
         info.stream_subdevices[RS_STREAM_FISHEYE] = 3;
         for(auto & m : ds5t_fisheye_modes)
         {
@@ -56,7 +68,7 @@ namespace rsimpl
             }
         }
 
-        // Color modes on subdevice 2
+        // Populate color modes on subdevice 2
         info.stream_subdevices[RS_STREAM_COLOR] = 2;
         for(auto & m : ds5t_color_modes)
         {
@@ -66,7 +78,7 @@ namespace rsimpl
             }
         }
 
-        // IR mode on subdevice 1
+        // Populate IR mode on subdevice 1
         info.stream_subdevices[RS_STREAM_INFRARED] = 1;
         for(auto & m : ds5t_ir_only_modes)
         {
@@ -76,7 +88,7 @@ namespace rsimpl
             }
         }
 
-        // Depth modes on subdevice 0
+        // Populate depth modes on subdevice 0
         info.stream_subdevices[RS_STREAM_DEPTH] = 0;
         for(auto & m : ds5t_depth_modes)
         {
@@ -86,6 +98,7 @@ namespace rsimpl
             }
         }
 
+        // Populate presets
         for(int i=0; i<RS_PRESET_COUNT; ++i)
         {
             info.presets[RS_STREAM_COLOR   ][i] = {true, 640, 480, RS_FORMAT_RGB8, 60};
@@ -148,24 +161,10 @@ namespace rsimpl
     {
         LOG_INFO("Connecting to Intel RealSense DS5 Tracking");
 
-        std::timed_mutex mutex;
         ds5::claim_ds5_monitor_interface(*device);
         ds5::claim_ds5_motion_module_interface(*device);
 
-        auto info = get_ds5t_info(device);
-        info.name = {"Intel RealSense DS5 Tracking"};
-
-
-        ds5::get_module_serial_string(*device, mutex, info.serial, 8);
-        ds5::get_firmware_version_string(*device, mutex, info.firmware_version);
-
-        info.capabilities_vector.push_back(RS_CAPABILITIES_COLOR);
-        info.capabilities_vector.push_back(RS_CAPABILITIES_DEPTH);
-        info.capabilities_vector.push_back(RS_CAPABILITIES_INFRARED);
-        info.capabilities_vector.push_back(RS_CAPABILITIES_FISH_EYE);
-        info.capabilities_vector.push_back(RS_CAPABILITIES_MOTION_EVENTS);
-
-        return std::make_shared<ds5t_camera>(device, info);
+        return std::make_shared<ds5t_camera>(device, get_ds5t_info(device));
     }
 
 } // namespace rsimpl::ds5t

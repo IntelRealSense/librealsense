@@ -37,11 +37,22 @@ namespace rsimpl
         {{ 480, 270}, {6,15,30,60}},
     };
 
-    static static_device_info get_ds5c_info(std::shared_ptr<uvc::device> device)
+    static static_device_info get_ds5c_info(std::shared_ptr<uvc::device> device, std::string dev_name)
     {
         static_device_info info;
 
-        // Color modes on subdevice 2
+        // Populate miscellaneous info about the device
+        info.name = dev_name;
+
+        std::timed_mutex mutex;
+        ds5::get_module_serial_string(*device, mutex, info.serial, 8);
+        ds5::get_firmware_version_string(*device, mutex, info.firmware_version);
+
+        info.capabilities_vector.push_back(RS_CAPABILITIES_COLOR);
+        info.capabilities_vector.push_back(RS_CAPABILITIES_DEPTH);
+        info.capabilities_vector.push_back(RS_CAPABILITIES_INFRARED);
+
+        // Populate Color modes on subdevice 2
         info.stream_subdevices[RS_STREAM_COLOR] = 2;
         for(auto & m : ds5c_color_modes)
         {
@@ -51,7 +62,7 @@ namespace rsimpl
             }
         }
 
-        // IR modes on subdevice 1
+        // Populate IR modes on subdevice 1
         info.stream_subdevices[RS_STREAM_INFRARED] = 1;
         for(auto & m : ds5c_ir_only_modes)
         {
@@ -61,7 +72,7 @@ namespace rsimpl
             }
         }
 
-        // IR modes on subdevice 0
+        // Populate IR modes on subdevice 0
         info.stream_subdevices[RS_STREAM_DEPTH] = 0;
         for(auto & m : ds5c_depth_modes)
         {
@@ -71,6 +82,7 @@ namespace rsimpl
             }
         }
 
+        // Populate presets
         for(int i=0; i<RS_PRESET_COUNT; ++i)
         {
             info.presets[RS_STREAM_COLOR   ][i] = {true, 640, 480, RS_FORMAT_RGB8, 60};
@@ -81,8 +93,8 @@ namespace rsimpl
         return info;
     }
 
-    ds5c_camera::ds5c_camera(std::shared_ptr<uvc::device> device, const static_device_info & info) :
-        ds5_camera(device, info)
+    ds5c_camera::ds5c_camera(std::shared_ptr<uvc::device> device, const static_device_info & info, bool global_shutter) :
+        ds5_camera(device, info), has_global_shutter(global_shutter)
     {
 
     }
@@ -101,39 +113,17 @@ namespace rsimpl
     {
         LOG_INFO("Connecting to Intel RealSense DS5 RGB with rolling shutter");
 
-        std::timed_mutex mutex;
         ds5::claim_ds5_monitor_interface(*device);
 
-        auto info = get_ds5c_info(device);
-        info.name = {"Intel RealSense DS5 RGB R"};
-
-        ds5::get_module_serial_string(*device, mutex, info.serial, 8);
-        ds5::get_firmware_version_string(*device, mutex, info.firmware_version);
-
-        info.capabilities_vector.push_back(RS_CAPABILITIES_COLOR);
-        info.capabilities_vector.push_back(RS_CAPABILITIES_DEPTH);
-        info.capabilities_vector.push_back(RS_CAPABILITIES_INFRARED);
-
-        return std::make_shared<ds5c_camera>(device, info);
+        return std::make_shared<ds5c_camera>(device, get_ds5c_info(device, "Intel RealSense DS5 RGB R"), false);
     }
 
     std::shared_ptr<rs_device> make_ds5c_global_wide_device(std::shared_ptr<uvc::device> device)
     {
         LOG_INFO("Connecting to Intel RealSense DS5 RGB with global shutter");
 
-        std::timed_mutex mutex;
         ds5::claim_ds5_monitor_interface(*device);
 
-        auto info = get_ds5c_info(device);
-        info.name = {"Intel RealSense DS5 RGB GW"};
-
-        ds5::get_module_serial_string(*device, mutex, info.serial, 8);
-        ds5::get_firmware_version_string(*device, mutex, info.firmware_version);
-
-        info.capabilities_vector.push_back(RS_CAPABILITIES_COLOR);
-        info.capabilities_vector.push_back(RS_CAPABILITIES_DEPTH);
-        info.capabilities_vector.push_back(RS_CAPABILITIES_INFRARED);
-
-        return std::make_shared<ds5c_camera>(device, info);
+        return std::make_shared<ds5c_camera>(device, get_ds5c_info(device,"Intel RealSense DS5 RGB GW"), true);
     }
 } // namespace rsimpl::ds5c
