@@ -5,7 +5,7 @@
 // This set of tests is valid for any number and combination of RealSense cameras, including R200 and F200 //
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-#if defined(LIVE_TEST)
+#if !defined(MAKEFILE) || ( defined(LIVE_TEST) )
 
 #include "unit-tests-common.h"
 
@@ -368,4 +368,4 @@ TEST_CASE( "synthetic streaming mode properties are correct", "[live]" )
     }
 }
 
-#endif /* defined(LIVE_TEST) */
+#endif /* !defined(MAKEFILE) || ( defined(LIVE_TEST) ) */

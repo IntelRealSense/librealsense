@@ -5,7 +5,7 @@
 // This set of tests is valid only for the R200 camera //
 /////////////////////////////////////////////////////////
 
-#if defined(LIVE_TEST) && defined(R200_TEST)
+#if !defined(MAKEFILE) || ( defined(LIVE_TEST) && defined(R200_TEST) )
 
 #include "catch/catch.hpp"
 
@@ -30,4 +30,4 @@ TEST_CASE("R200 Testing RGB Exposure values", "[live] [DS-device] [one-camera]")
     test_ds_device_option(RS_OPTION_COLOR_EXPOSURE, { -13, -9, -4, -6, -10 }, {}, BEFORE_START_DEVICE | AFTER_START_DEVICE);
 }
 
-#endif /* defined(LIVE_TEST) && defined(R200_TEST) */
+#endif /* !defined(MAKEFILE) || ( defined(LIVE_TEST) && defined(R200_TEST) ) */
