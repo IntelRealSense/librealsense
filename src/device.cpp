@@ -51,6 +51,14 @@ bool rs_device_base::supports_option(rs_option option) const
     return false; 
 }
 
+const char* rs_device_base::get_camera_info(rs_camera_info info) const
+{ 
+    auto it = config.info.camera_info.find(info);
+    if (it == config.info.camera_info.end())
+        throw std::runtime_error("selected camera info is not supported for this camera!"); 
+    return it->second.c_str();
+}
+
 void rs_device_base::enable_stream(rs_stream stream, int width, int height, rs_format format, int fps, rs_output_buffer_format output)
 {
     if(capturing) throw std::runtime_error("streams cannot be reconfigured after having called rs_start_device()");

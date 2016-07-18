@@ -24,7 +24,8 @@ namespace rs
         infrared2               = 3,
         fish_eye                = 4,
         motion_events           = 5,
-        motion_module_fw_update = 6
+        motion_module_fw_update = 6,
+        adapter_board           = 7
     };
 
     enum class stream : int32_t
@@ -157,6 +158,15 @@ namespace rs
         r200_fisheye_color_gain                         = 70,
         r200_fisheye_strobe                             = 71,
         r200_fisheye_ext_trig                           = 72
+    };
+
+    enum class blob_type {
+        motion_module_firmware_update                   = 1,
+    };
+
+    enum class camera_info {
+        adapter_baord_firmware_version                  = 1,
+        motion_module_firmware_version                  = 2,
     };
 
     enum class source : uint8_t
@@ -501,6 +511,16 @@ namespace rs
         {
             rs_error * e = nullptr;
             auto r = rs_get_device_firmware_version((const rs_device *)this, &e);
+            error::handle(e);
+            return r;
+        }
+
+        /// retrieve camera specific information like the versions of the various componnents
+        /// \return  camera info string, in a format specific to the device model
+        const char * get_info(camera_info info) const
+        {
+            rs_error * e = nullptr;
+            auto r = rs_get_device_info((const rs_device *)this, (rs_camera_info)info, &e);
             error::handle(e);
             return r;
         }
@@ -882,10 +902,10 @@ namespace rs
         /// \param[in] type  describes the content of the memory buffer, how it will be interpreted by the device
         /// \param[in] data  raw data buffer to be sent to the device
         /// \param[in] size  size in bytes of the buffer
-        void send_blob_to_device(rs_blob_type type, void * data, int size)
+        void send_blob_to_device(rs::blob_type type, void * data, int size)
         {
             rs_error * e = nullptr;
-            rs_send_blob_to_device((rs_device *)this, type, data, size, &e);
+            rs_send_blob_to_device((rs_device *)this, (rs_blob_type)type, data, size, &e);
             error::handle(e);
         }
     };

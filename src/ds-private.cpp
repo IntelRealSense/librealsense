@@ -61,7 +61,7 @@ namespace rsimpl {
             return r;
         }
 
-        void bulk_usb_command(uvc::device & device, std::timed_mutex & mutex, unsigned char handle_id, unsigned char out_ep, uint8_t *out, size_t outSize, uint32_t & op, unsigned char in_ep, uint8_t * in, size_t & inSize, int timeout)
+        void bulk_usb_command(uvc::device & device, std::timed_mutex & mutex, unsigned char out_ep, uint8_t *out, size_t outSize, uint32_t & op, unsigned char in_ep, uint8_t * in, size_t & inSize, int timeout)
         {
             // write
             errno = 0;
@@ -71,7 +71,7 @@ namespace rsimpl {
             if (!mutex.try_lock_for(std::chrono::milliseconds(timeout))) throw std::runtime_error("timed_mutex::try_lock_for(...) timed out");
             std::lock_guard<std::timed_mutex> guard(mutex, std::adopt_lock);
 
-            bulk_transfer(device, handle_id, out_ep, out, (int)outSize, &outXfer, timeout); // timeout in ms
+            bulk_transfer(device, out_ep, out, (int)outSize, &outXfer, timeout); // timeout in ms
 
             // read
             if (in && inSize)
@@ -80,7 +80,7 @@ namespace rsimpl {
 
                 errno = 0;
 
-                bulk_transfer(device, handle_id, in_ep, buf, sizeof(buf), &outXfer, timeout);
+                bulk_transfer(device, in_ep, buf, sizeof(buf), &outXfer, timeout);
                 if (outXfer < (int)sizeof(uint32_t)) throw std::runtime_error("incomplete bulk usb transfer");
 
                 op = *(uint32_t *)buf;

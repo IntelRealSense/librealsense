@@ -57,6 +57,7 @@ struct rs_device
     virtual const char *                    get_name() const = 0;
     virtual const char *                    get_serial() const = 0;
     virtual const char *                    get_firmware_version() const = 0;
+    virtual const char *                    get_camera_info(rs_camera_info) const = 0;
     virtual float                           get_depth_scale() const = 0;
                                             
     virtual void                            enable_stream(rs_stream stream, int width, int height, rs_format format, int fps, rs_output_buffer_format output) = 0;

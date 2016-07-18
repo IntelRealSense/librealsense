@@ -384,12 +384,11 @@ namespace rsimpl
             volatile bool stop;
             volatile bool data_stop;
 
-            libusb_device * usb_device, *usb_aux_device;
-            libusb_device_handle * usb_handle, * usb_aux_handle;
+            libusb_device * usb_device;
+            libusb_device_handle * usb_handle;
             std::vector<int> claimed_interfaces;
-            std::vector<int> claimed_aux_interfaces;
 
-            device(std::shared_ptr<context> parent) : parent(parent), stop(), data_stop(), usb_device(), usb_aux_device(), usb_handle(), usb_aux_handle() {}
+            device(std::shared_ptr<context> parent) : parent(parent), stop(), data_stop(), usb_device(), usb_handle() {}
             ~device()
             {
                 stop_streaming();
@@ -399,15 +398,6 @@ namespace rsimpl
                     int status = libusb_release_interface(usb_handle, interface_number);
                     if(status < 0) LOG_ERROR("libusb_release_interface(...) returned " << libusb_error_name(status));
                 }
-
-                for(auto interface_data : claimed_aux_interfaces)
-                {
-                    int status = libusb_release_interface(usb_aux_handle, interface_data);
-                    if(status < 0) LOG_ERROR("libusb_release_interface(...) returned " << libusb_error_name(status));
-                }
-
-                if(usb_aux_handle) libusb_close(usb_aux_handle);
-                if(usb_aux_device) libusb_unref_device(usb_aux_device);
 
                 if(usb_handle) libusb_close(usb_handle);
                 if(usb_device) libusb_unref_device(usb_device);
@@ -465,14 +455,14 @@ namespace rsimpl
                 }
                 
                 // Motion events polling pipe
-                if (claimed_aux_interfaces.size())
+                if (claimed_interfaces.size())
                 {
                     data_channel_thread = std::thread([this, data_channel_subs]()
                     {
                         // Polling 100ms timeout
                         while (!data_stop)
                         {
-                            subdevice::poll_interrupts(this->usb_aux_handle, data_channel_subs, 100);
+                            subdevice::poll_interrupts(this->usb_handle, data_channel_subs, 100);
                         }
                     });
                 }
@@ -524,32 +514,22 @@ namespace rsimpl
             if(status < 0) throw std::runtime_error(to_string() << "libusb_claim_interface(...) returned " << libusb_error_name(status));
             device.claimed_interfaces.push_back(interface_number);
         }
-
         void claim_aux_interface(device & device, const guid & interface_guid, int interface_number)
         {
-            if(!device.usb_aux_handle)
-            {
-                int status = libusb_open(device.usb_aux_device, &device.usb_aux_handle);
-                if(status < 0) throw std::runtime_error(to_string() << "libusb_open(...) returned " << libusb_error_name(status));
-            }
-
-            int status = libusb_claim_interface(device.usb_aux_handle, interface_number);
-            if(status < 0) throw std::runtime_error(to_string() << "libusb_claim_interface(...) returned " << libusb_error_name(status));            
-            device.claimed_aux_interfaces.push_back(interface_number);
+            claim_interface(device, interface_guid, interface_number);
         }
 
         void bulk_transfer(device & device, unsigned char handle_id, unsigned char endpoint, void * data, int length, int *actual_length, unsigned int timeout)
         {
-            libusb_device_handle * handle = (handle_id==0) ?device.usb_handle : device.usb_aux_handle;
-            if(!handle) throw std::logic_error("called uvc::bulk_transfer before uvc::claim_interface");
-            int status = libusb_bulk_transfer(handle, endpoint, (unsigned char *)data, length, actual_length, timeout);
+            if(!device.usb_handle) throw std::logic_error("called uvc::bulk_transfer before uvc::claim_interface");
+            int status = libusb_bulk_transfer(device.usb_handle, endpoint, (unsigned char *)data, length, actual_length, timeout);
             if(status < 0) throw std::runtime_error(to_string() << "libusb_bulk_transfer(...) returned " << libusb_error_name(status));
         }
 
         void interrupt_transfer(device & device, unsigned char endpoint, void * data, int length, int *actual_length, unsigned int timeout)
         {
-            if(!device.usb_aux_handle) throw std::logic_error("called uvc::interrupt_transfer before uvc::claim_interface");
-            int status = libusb_interrupt_transfer(device.usb_aux_handle, endpoint, (unsigned char *)data, length, actual_length, timeout);
+            if(!device.usb_handle) throw std::logic_error("called uvc::interrupt_transfer before uvc::claim_interface");
+            int status = libusb_interrupt_transfer(device.usb_handle, endpoint, (unsigned char *)data, length, actual_length, timeout);
             if(status < 0) throw std::runtime_error(to_string() << "libusb_interrupt_transfer(...) returned " << libusb_error_name(status));
         }
 
@@ -860,9 +840,9 @@ namespace rsimpl
 
                             // First, handle the special case of FishEye
                             bool bFishEyeDevice = ((busnum == dev->subdevices[3]->busnum) && (parent_devnum == dev->subdevices[3]->parent_devnum));
-                            if(bFishEyeDevice && !dev->usb_aux_device)
+                            if(bFishEyeDevice && !dev->usb_handle)
                             {
-                                dev->usb_aux_device = usb_device;
+                                dev->usb_handle = usb_device;
                                 libusb_ref_device(usb_device);
                                 break;
                             }
