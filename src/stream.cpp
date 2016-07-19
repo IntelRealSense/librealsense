@@ -86,7 +86,7 @@ rs_intrinsics native_stream::get_rectified_intrinsics() const
     return pad_crop_intrinsics(m.mode.rect_modes[0], m.pad_crop);
 }
 
-int native_stream::get_frame_number() const 
+unsigned long long native_stream::get_frame_number() const
 { 
     if (!is_enabled()) throw std::runtime_error(to_string() << "stream not enabled: " << stream);
     if (!archive) throw  std::runtime_error(to_string() << "streaming not started!");

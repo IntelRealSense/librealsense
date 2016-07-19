@@ -361,7 +361,7 @@ namespace rs
             return r;
         }
 
-        int get_frame_number() const
+        unsigned long long get_frame_number() const
         {
             rs_error * e = nullptr;
             auto r = rs_get_detached_frame_number(frame_ref, &e);
@@ -859,7 +859,7 @@ namespace rs
         /// retrieve the frame number
         /// \param[in] stream  the stream whose latest frame we are interested in
         /// \return            the number of the frame, since the device was started
-        int get_frame_number(stream stream) const
+        unsigned long long get_frame_number(stream stream) const
         {
             rs_error * e = nullptr;
             auto r = rs_get_frame_number((const rs_device *)this, (rs_stream)stream, &e);

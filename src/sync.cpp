@@ -37,7 +37,7 @@ frame_archive::frameset* syncronizing_archive::clone_frontbuffer()
     return clone_frameset(&frontbuffer);
 }
 
-int rsimpl::syncronizing_archive::get_frame_number(rs_stream stream) const
+unsigned long long rsimpl::syncronizing_archive::get_frame_number(rs_stream stream) const
 {
     return frontbuffer.get_frame_number(stream);
 }

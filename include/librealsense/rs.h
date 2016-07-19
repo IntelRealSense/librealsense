@@ -233,15 +233,15 @@ typedef enum rs_event_source
     RS_EVENT_G0_SYNC          = 5,
     RS_EVENT_G1_SYNC          = 6,
     RS_EVENT_G2_SYNC          = 7,
-    RS_EVENT_SOURCE_COUNT     = 8,
+    RS_EVENT_SOURCE_COUNT     = 7, // non zero start
     RS_EVENT_SOURCE_MAX_ENUM  = 0x7FFFFFFF
 }rs_event_source;
 
 typedef struct rs_timestamp_data
 {
-    unsigned int        timestamp;      /* 32Mhz clock. Each tick corresponds to 31.25 usec */
+    unsigned long long  timestamp;      /* 32Mhz clock. Each tick corresponds to 31.25 usec */
     rs_event_source     source_id;
-    unsigned short      frame_number;  /* 12 bit; per data source */
+    unsigned long long  frame_number;  /* original size: 12 bit ; per data source */
 } rs_timestamp_data;
 
 typedef struct rs_motion_data
@@ -621,7 +621,7 @@ double rs_get_frame_timestamp(const rs_device * device, rs_stream stream, rs_err
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return            the frame number
 */
-int rs_get_frame_number(const rs_device * device, rs_stream stream, rs_error ** error);
+unsigned long long rs_get_frame_number(const rs_device * device, rs_stream stream, rs_error ** error);
 
 /**
  * retrieve the contents of the latest frame on a stream
@@ -651,7 +651,7 @@ double rs_get_detached_frame_timestamp(const rs_frame_ref * frame, rs_error ** e
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return            the frame nubmer of the frame, in milliseconds since the device was started
 */
-int rs_get_detached_frame_number(const rs_frame_ref * frame, rs_error ** error);
+unsigned long long rs_get_detached_frame_number(const rs_frame_ref * frame, rs_error ** error);
 
 
 /**

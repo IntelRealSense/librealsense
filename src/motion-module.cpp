@@ -373,9 +373,10 @@ void motion_module_parser::parse_timestamp(const unsigned char * data, rs_timest
     unsigned short  tmp = (data[1] << 8) | (data[0]);
 
     entry.source_id = rs_event_source(tmp & 0x7);               // bits [0:2] - source_id
-    entry.frame_number = (tmp & 0x7fff) >> 3;                   // bits [3-14] - frame num
+    auto source_id_index = entry.source_id - 1;
+    entry.frame_number = mm_data_wraparound[source_id_index].frame_counter_wraparound.fix((tmp & 0x7fff) >> 3); // bits [3-14] - frame num
     memcpy(&entry.timestamp, &data[2], sizeof(unsigned int));   // bits [16:47] - timestamp
-
+    entry.timestamp = mm_data_wraparound[source_id_index].timestamp_wraparound.fix(entry.timestamp);
 }
 
 rs_motion_data motion_module_parser::parse_motion(const unsigned char * data)

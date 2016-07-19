@@ -30,12 +30,43 @@ namespace rsimpl
     };
 
     template<class T, class R, class W> struct_interface<T, R, W> make_struct_interface(R r, W w) { return{ r,w }; }
-        
+
+    template <typename T>
+    class wraparound_mechanism
+    {
+    public:
+        wraparound_mechanism(T max_num)
+            : max_number(max_num), base_number(0), last_number(0), num_of_wraparounds(0)
+        {}
+
+        T fix(T number)
+        {
+            if (number == last_number)
+                return last_number;
+
+            if ((number + base_number) < last_number)
+            {
+                ++num_of_wraparounds;
+                base_number = num_of_wraparounds*max_number;
+            }
+
+            number += base_number;
+            last_number = number;
+            return number;
+        }
+
+    private:
+        T num_of_wraparounds;
+        T max_number;
+        T base_number;
+        T last_number;
+    };
+
     struct frame_timestamp_reader
     {
         virtual bool validate_frame(const subdevice_mode & mode, const void * frame) const = 0;
         virtual double get_frame_timestamp(const subdevice_mode & mode, const void * frame) = 0;
-        virtual int get_frame_counter(const subdevice_mode & mode, const void * frame) = 0;
+        virtual unsigned long long get_frame_counter(const subdevice_mode & mode, const void * frame) = 0;
     };
 
 
