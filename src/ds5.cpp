@@ -60,8 +60,43 @@ namespace rsimpl
         return RS_STREAM_DEPTH;
     }
 
+    ///-----------------------
+    // TODO: This may need to be modified for thread safety
+    class ds5_timestamp_reader : public frame_timestamp_reader
+    {
+    public:
+        ds5_timestamp_reader() {};
+
+        bool validate_frame(const subdevice_mode & mode, const void * frame) const override
+        {
+            // Validate that at least one byte of the image is nonzero
+            for (const uint8_t * it = (const uint8_t *)frame, *end = it + mode.pf.get_image_size(mode.native_dims.x, mode.native_dims.y); it != end; ++it)
+            {
+                if (*it)
+                {
+                    return true;
+                }
+            }
+
+            // DS5 can sometimes produce empty frames shortly after starting, ignore them
+            LOG_INFO("Subdevice " << mode.subdevice << " produced empty frame");
+            return false;
+        }
+
+        double get_frame_timestamp(const subdevice_mode & mode, const void * frame) override
+        {
+            return 0;
+        }
+
+        int get_frame_counter(const subdevice_mode & mode, const void * frame) override
+        {
+            return 0;
+        }
+    };
+
     std::shared_ptr<frame_timestamp_reader> ds5_camera::create_frame_timestamp_reader() const
     {
-        return NULL;
+        return std::make_shared<ds5_timestamp_reader>();
     }
+
 } // namespace rsimpl::ds5
