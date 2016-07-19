@@ -63,6 +63,7 @@ prepare:
 	mkdir -p obj/libuvc
 	mkdir -p lib
 	mkdir -p bin
+	mkdir -p bin/tests
 
 # Rules for building the sample programs
 bin/c-%: examples/c-%.c library
@@ -91,7 +92,9 @@ obj/verify.o: src/verify.c
 	$(CC) $< -std=c89 -Iinclude -c -o $@
 
 # rules for tests
-.PHONY all-tests
+
+.PHONY: all-tests all clean
+
 all-tests: F200-live-test LR200-live-test R200-live-test SR300-live-test ZR300-live-test offline-test
 
 %-test: unit-tests/*
