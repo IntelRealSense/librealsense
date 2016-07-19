@@ -248,7 +248,7 @@ typedef struct rs_motion_data
 {
     rs_timestamp_data   timestamp_data;
     unsigned int        is_valid;   /* boolean */
-    float               axes[3];    /* Three [x,y,z] axes; 16 bit data for Gyro, 12 bit for Accelerometer; 2's complement*/
+    float               axes[3];    /* Three [x,y,z] axes; 16 bit data for Gyro [rad/sec], 12 bit for Accelerometer; 2's complement [m/sec^2]*/
 } rs_motion_data;
 
 

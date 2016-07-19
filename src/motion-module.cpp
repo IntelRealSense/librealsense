@@ -381,8 +381,8 @@ void motion_module_parser::parse_timestamp(const unsigned char * data, rs_timest
 rs_motion_data motion_module_parser::parse_motion(const unsigned char * data)
 {
     // predefined motion devices parameters
-    const static float gravity      = 9.80665f;
-    const static float gyro_range   = 2000.f;                   // Measured angular velocity range [Deg_C/Sec]
+    const static float gravity      = 9.80665f;                 // Standard Gravitation Acceleration
+    const static float gyro_range   = 1000.f;                   // Preconfigured angular velocity range [-1000...1000] Deg_C/Sec
     const static float gyro_transform_factor = float((gyro_range * M_PI) / (180.f * 32767.f));
 
     const static float accel_range = 4.f;                       // Accelerometer is preset to [-4...+4]g range
@@ -400,7 +400,7 @@ rs_motion_data motion_module_parser::parse_motion(const unsigned char * data)
 
     unsigned data_shift = (RS_EVENT_IMU_ACCEL == entry.timestamp_data.source_id) ? 4 : 0;
 
-    for (int i = 0; i < 3; i++)                     // convert axis data to physical units (m/sec^2)
+    for (int i = 0; i < 3; i++)                     // convert axis data to physical units, (m/sec^2) or (rad/sec)
     {
         entry.axes[i] = float(tmp[i] >> data_shift);
         if (RS_EVENT_IMU_ACCEL == entry.timestamp_data.source_id) entry.axes[i] *= accelerator_transform_factor;
