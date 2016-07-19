@@ -177,23 +177,37 @@ void motion_module_control::i2c_write_reg(uint16_t slave_address, uint16_t reg, 
 // Read a 32 bit value from the i2c register.
 void motion_module_control::i2c_read_reg(uint16_t slave_address, uint16_t reg, uint32_t &value)
 {
-    hw_monitor::hwmon_cmd cmd(adaptor_board_command::IRB);
+	hw_monitor::hwmon_cmd cmd(adaptor_board_command::IRB);
 
-    cmd.Param1 = slave_address;
-    cmd.Param2 = reg;
-    cmd.Param3 = sizeof(value);
+	cmd.Param1 = slave_address;
+	cmd.Param2 = reg;
+	cmd.Param3 = sizeof(value);
+	const int num_retries = 10;
+	std::timed_mutex mutex;
+	int retries = 0;
+	do {
+		try {
+			rsimpl::hw_monitor::perform_and_send_monitor_command(*device_handle, mutex, 1, cmd);
 
-    std::timed_mutex mutex;
-    rsimpl::hw_monitor::perform_and_send_monitor_command(*device_handle, mutex, 1, cmd);
+			// validate that the size is of 32 bit (value size).
+			if (cmd.receivedCommandDataLength == sizeof(value))
+			{
+				memcpy(&value, cmd.receivedCommandData, cmd.receivedCommandDataLength);
+				break;
+			}
+		}
+		catch (...)
+		{
+			retries++;
+			std::this_thread::sleep_for(std::chrono::milliseconds(100));
+			if (retries == num_retries)
+			{
+				throw;
+			}
+		}
 
-    // validate that the size is of 32 bit (value size).
-    if (cmd.receivedCommandDataLength == sizeof(value))
-    {
-        memcpy(&value, cmd.receivedCommandData, sizeof(cmd.receivedCommandDataLength));
-    }
-    
-    return ;
-
+	} while (retries < num_retries);
+	return;
 }
 
 // switch the mtion module to IAP mode.
