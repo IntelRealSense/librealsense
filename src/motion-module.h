@@ -101,7 +101,7 @@ namespace rsimpl
         struct motion_module_wraparound
         {
             motion_module_wraparound()
-                : timestamp_wraparound(UINT_MAX), frame_counter_wraparound(0xfff)
+                : timestamp_wraparound(std::numeric_limits<uint32_t>::max()), frame_counter_wraparound(0xfff)
             {}
             wraparound_mechanism<unsigned long long> timestamp_wraparound;
             wraparound_mechanism<unsigned long long> frame_counter_wraparound;

@@ -454,7 +454,7 @@ namespace rsimpl
         wraparound_mechanism<unsigned long long> frame_counter_wraparound;
         
     public:
-        dinghy_timestamp_reader(int fps) : fps(fps), timestamp_wraparound(UINT_MAX), frame_counter_wraparound(UINT_MAX) {}
+        dinghy_timestamp_reader(int fps) : fps(fps), timestamp_wraparound(std::numeric_limits<uint32_t>::max()), frame_counter_wraparound(std::numeric_limits<uint32_t>::max()) {}
 
         bool validate_frame(const subdevice_mode & mode, const void * frame) const override 
         {
@@ -516,7 +516,7 @@ namespace rsimpl
         wraparound_mechanism<unsigned long long> frame_counter_wraparound;
 
     public:
-        fisheye_timestamp_reader(int max_fps) : fps(max_fps), last_fisheye_counter(0), timestamp_wraparound(UINT_MAX), frame_counter_wraparound(UINT_MAX) {}
+        fisheye_timestamp_reader(int max_fps) : fps(max_fps), last_fisheye_counter(0), timestamp_wraparound(std::numeric_limits<uint32_t>::max()), frame_counter_wraparound(std::numeric_limits<uint32_t>::max()) {}
 
         bool validate_frame(const subdevice_mode & mode, const void * frame) const override
         {
@@ -563,7 +563,7 @@ namespace rsimpl
         wraparound_mechanism<unsigned long long> frame_counter_wraparound;
 
     public:
-        color_timestamp_reader(int fps) : fps(fps), timestamp_wraparound(UINT_MAX), frame_counter_wraparound(UINT_MAX) {}
+        color_timestamp_reader(int fps) : fps(fps), timestamp_wraparound(std::numeric_limits<uint32_t>::max()), frame_counter_wraparound(std::numeric_limits<uint32_t>::max()) {}
 
         bool validate_frame(const subdevice_mode & mode, const void * frame) const override
         {
@@ -598,7 +598,7 @@ namespace rsimpl
         wraparound_mechanism<unsigned long long> frame_counter_wraparound;
 
     public:
-        serial_timestamp_generator(int fps) : fps(fps), serial_frame_number(), timestamp_wraparound(UINT_MAX), frame_counter_wraparound(UINT_MAX) {}
+        serial_timestamp_generator(int fps) : fps(fps), serial_frame_number(), timestamp_wraparound(std::numeric_limits<uint32_t>::max()), frame_counter_wraparound(std::numeric_limits<uint32_t>::max()) {}
 
         bool validate_frame(const subdevice_mode & mode, const void * frame) const override { return true; }
         double get_frame_timestamp(const subdevice_mode &, const void *) override

@@ -16,12 +16,13 @@ struct fake_object_pointer { template<class T> operator T * () const { return (T
 
 TEST_CASE("wraparound_mechanism produces correct output", "[offline] [validation]")
 {
-    rsimpl::wraparound_mechanism<unsigned long long> wm(USHRT_MAX);
+    auto unsigned_short_max = std::numeric_limits<uint16_t>::max();
+    rsimpl::wraparound_mechanism<unsigned long long> wm(unsigned_short_max);
 
     unsigned long long last_number = 65532;
-    for (unsigned i = 65533; last_number < USHRT_MAX * 3; ++i)
+    for (unsigned i = 65533; last_number < unsigned_short_max * 5; ++i)
     {
-        if (i > USHRT_MAX)
+        if (i > unsigned_short_max)
             i = 1;
 
         auto new_number = wm.fix(i);

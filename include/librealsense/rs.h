@@ -226,14 +226,14 @@ typedef struct rs_extrinsics
 
 typedef enum rs_event_source
 {
-    RS_EVENT_IMU_ACCEL        = 1,
-    RS_EVENT_IMU_GYRO         = 2,
-    RS_EVENT_IMU_DEPTH_CAM    = 3,
-    RS_EVENT_IMU_MOTION_CAM   = 4,
-    RS_EVENT_G0_SYNC          = 5,
-    RS_EVENT_G1_SYNC          = 6,
-    RS_EVENT_G2_SYNC          = 7,
-    RS_EVENT_SOURCE_COUNT     = 7, // non zero start
+    RS_EVENT_IMU_ACCEL        = 0,
+    RS_EVENT_IMU_GYRO         = 1,
+    RS_EVENT_IMU_DEPTH_CAM    = 2,
+    RS_EVENT_IMU_MOTION_CAM   = 3,
+    RS_EVENT_G0_SYNC          = 4,
+    RS_EVENT_G1_SYNC          = 5,
+    RS_EVENT_G2_SYNC          = 6,
+    RS_EVENT_SOURCE_COUNT     = 7,
     RS_EVENT_SOURCE_MAX_ENUM  = 0x7FFFFFFF
 }rs_event_source;
 
