@@ -519,7 +519,7 @@ namespace rsimpl
             claim_interface(device, interface_guid, interface_number);
         }
 
-        void bulk_transfer(device & device, unsigned char handle_id, unsigned char endpoint, void * data, int length, int *actual_length, unsigned int timeout)
+        void bulk_transfer(device & device, unsigned char endpoint, void * data, int length, int *actual_length, unsigned int timeout)
         {
             if(!device.usb_handle) throw std::logic_error("called uvc::bulk_transfer before uvc::claim_interface");
             int status = libusb_bulk_transfer(device.usb_handle, endpoint, (unsigned char *)data, length, actual_length, timeout);
@@ -842,7 +842,7 @@ namespace rsimpl
                             bool bFishEyeDevice = ((busnum == dev->subdevices[3]->busnum) && (parent_devnum == dev->subdevices[3]->parent_devnum));
                             if(bFishEyeDevice && !dev->usb_handle)
                             {
-                                dev->usb_handle = usb_device;
+                                dev->usb_device = usb_device;
                                 libusb_ref_device(usb_device);
                                 break;
                             }
