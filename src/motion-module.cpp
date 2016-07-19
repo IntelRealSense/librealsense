@@ -243,15 +243,10 @@ void motion_module_control::switch_to_operational()
     // write to the REG_JUMP_TO_APP register. this should return us to operational mode if all went well.
     i2c_write_reg(MOTION_MODULE_CONTROL_I2C_SLAVE_ADDRESS, i2c_register::REG_JUMP_TO_APP, 0x00);
 
-    // retry for 10 times to see if we are in opertinal state.
-    for (int retries = 0; retries < 10; retries++) {
-        std::this_thread::sleep_for(std::chrono::milliseconds(100));
-
-        i2c_read_reg(MOTION_MODULE_CONTROL_I2C_SLAVE_ADDRESS, i2c_register::REG_CURR_PWR_STATE, value);
+    i2c_read_reg(MOTION_MODULE_CONTROL_I2C_SLAVE_ADDRESS, i2c_register::REG_CURR_PWR_STATE, value);
         
-        if (value != power_states::PWR_STATE_IAP) {
-            return;
-        }
+    if (value != power_states::PWR_STATE_IAP) {
+        return;
     }
     
     return throw std::runtime_error("Unable to leave IAP state!");
@@ -308,6 +303,7 @@ void motion_module_control::write_firmware(uint8_t *data, int size)
 // This function responsible for the whole firmware upgrade process.
 void motion_module_control::firmware_upgrade(void *data, int size)
 {
+	set_control(mm_events_output, false);
     // power on motion mmodule (if needed).
     toggle_motion_module_power(true);
 
