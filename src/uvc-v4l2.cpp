@@ -840,7 +840,7 @@ namespace rsimpl
 
                             // First, handle the special case of FishEye
                             bool bFishEyeDevice = ((busnum == dev->subdevices[3]->busnum) && (parent_devnum == dev->subdevices[3]->parent_devnum));
-                            if(bFishEyeDevice && !dev->usb_handle)
+                            if(bFishEyeDevice && !dev->usb_device)
                             {
                                 dev->usb_device = usb_device;
                                 libusb_ref_device(usb_device);
