@@ -145,57 +145,8 @@ namespace rsimpl
         }
     }
 
-    // TODO: This may need to be modified for thread safety
-    class rolling_timestamp_reader : public frame_timestamp_reader
-    {
-        bool started;
-        int64_t total;
-        int last_timestamp;
-    public:
-        rolling_timestamp_reader() : started(), total() {}
-
-        bool validate_frame(const subdevice_mode & mode, const void * frame) const override
-        {
-            // Validate that at least one byte of the image is nonzero
-            for (const uint8_t * it = (const uint8_t *)frame, *end = it + mode.pf.get_image_size(mode.native_dims.x, mode.native_dims.y); it != end; ++it)
-            {
-                if (*it)
-                {
-                    return true;
-                }
-            }
-
-            // F200 and SR300 can sometimes produce empty frames shortly after starting, ignore them
-            LOG_INFO("Subdevice " << mode.subdevice << " produced empty frame");
-            return false;
-        }
-
-        double get_frame_timestamp(const subdevice_mode & mode, const void * frame) override
-        {
-            // Timestamps are encoded within the first 32 bits of the image
-            int rolling_timestamp = *reinterpret_cast<const int32_t *>(frame);
-
-            if (!started)
-            {
-                last_timestamp = rolling_timestamp;
-                started = true;
-            }
-
-            const int delta = rolling_timestamp - last_timestamp; // NOTE: Relies on undefined behavior: signed int wraparound
-            last_timestamp = rolling_timestamp;
-            total += delta;
-            const int timestamp = static_cast<int>(total / 100000);
-            return timestamp;
-        }
-        int get_frame_counter(const subdevice_mode & mode, const void * frame) override
-        {
-            return 0;
-        }
-    };
-
     std::shared_ptr<frame_timestamp_reader> iv_camera::create_frame_timestamp_reader() const
     {
         return std::make_shared<rolling_timestamp_reader>();
     }
-
 } // namespace rsimpl::f200

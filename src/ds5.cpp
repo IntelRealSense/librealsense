@@ -5,12 +5,13 @@
 #include <algorithm>
 
 #include "image.h"
+#include "ivcam-device.h"
 #include "ds5.h"
 #include "ds5-private.h"
 
 namespace rsimpl
 {
-    struct cam_mode { int2 dims; std::vector<int> fps; };
+    //struct cam_mode { int2 dims; std::vector<int> fps; };
 
     static const cam_mode ds5_color_modes[] = {
         {{1920, 1080}, {30}},
@@ -59,11 +60,13 @@ namespace rsimpl
 
         // Depth and IR modes on subdevice 1 and 0 respectively
         info.stream_subdevices[RS_STREAM_INFRARED] = 1;
+        info.stream_subdevices[RS_STREAM_INFRARED2] = 1;
         for(auto & m : ds5_ir_only_modes)
         {
             for(auto fps : m.fps)
             {
                 info.subdevice_modes.push_back({1, m.dims, pf_y8, fps, {m.dims.x, m.dims.y}, {}, {0}});
+                info.subdevice_modes.push_back({1, m.dims, pf_y8i, fps, {m.dims.x, m.dims.y}, {}, {0}});
             }
         }
 
@@ -78,9 +81,10 @@ namespace rsimpl
 
         for(int i=0; i<RS_PRESET_COUNT; ++i)
         {
-            info.presets[RS_STREAM_COLOR   ][i] = {true, 640, 480, RS_FORMAT_RGB8, 60};
-            info.presets[RS_STREAM_DEPTH   ][i] = {true, 640, 480, RS_FORMAT_Z16, 60};
-            info.presets[RS_STREAM_INFRARED][i] = {true, 640, 480, RS_FORMAT_Y8, 60};
+            info.presets[RS_STREAM_COLOR   ][i] = {true, 640, 480, RS_FORMAT_RGB8, 30};
+            info.presets[RS_STREAM_DEPTH   ][i] = {true, 640, 480, RS_FORMAT_Z16, 30};
+            info.presets[RS_STREAM_INFRARED][i] = {true, 640, 480, RS_FORMAT_Y8, 30};
+            info.presets[RS_STREAM_INFRARED2][i] = {true, 640, 480, RS_FORMAT_Y8, 30};
         }
 
         return info;
@@ -141,7 +145,7 @@ namespace rsimpl
 
     std::shared_ptr<frame_timestamp_reader> ds5_camera::create_frame_timestamp_reader() const
     {
-        return NULL;
+        return std::make_shared<rsimpl::rolling_timestamp_reader>();
     }
 
     std::shared_ptr<rs_device> make_ds5_device(std::shared_ptr<uvc::device> device)
@@ -157,6 +161,7 @@ namespace rsimpl
         info.capabilities_vector.push_back(RS_CAPABILITIES_COLOR);
         info.capabilities_vector.push_back(RS_CAPABILITIES_DEPTH);
         info.capabilities_vector.push_back(RS_CAPABILITIES_INFRARED);
+        info.capabilities_vector.push_back(RS_CAPABILITIES_INFRARED2);
 
         return std::make_shared<ds5_camera>(device, info);
     }

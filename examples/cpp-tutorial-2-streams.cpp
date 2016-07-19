@@ -27,9 +27,9 @@ int main() try
 
     // Configure all streams to run at VGA resolution at 60 frames per second
     dev->enable_stream(rs::stream::depth, 640, 480, rs::format::z16, 60);
-    dev->enable_stream(rs::stream::color, 640, 480, rs::format::rgb8, 60);
-    dev->enable_stream(rs::stream::infrared, 640, 480, rs::format::y8, 60);
-    try { dev->enable_stream(rs::stream::infrared2, 640, 480, rs::format::y8, 60); }
+    //dev->enable_stream(rs::stream::color, 640, 480, rs::format::rgb8, 30);
+    dev->enable_stream(rs::stream::infrared, 640, 480, rs::format::y8, 30);
+    try { dev->enable_stream(rs::stream::infrared2, 640, 480, rs::format::y8, 30); }
     catch(...) { printf("Device does not provide infrared2 stream.\n"); }
     dev->start();
 
@@ -52,9 +52,9 @@ int main() try
         glDrawPixels(640, 480, GL_RED, GL_UNSIGNED_SHORT, dev->get_frame_data(rs::stream::depth));
         glPixelTransferf(GL_RED_SCALE, 1.0f);
 
-        // Display color image as RGB triples
-        glRasterPos2f(0, 1);
-        glDrawPixels(640, 480, GL_RGB, GL_UNSIGNED_BYTE, dev->get_frame_data(rs::stream::color));
+//        // Display color image as RGB triples
+//        glRasterPos2f(0, 1);
+//        glDrawPixels(640, 480, GL_RGB, GL_UNSIGNED_BYTE, dev->get_frame_data(rs::stream::color));
 
         // Display infrared image by mapping IR intensity to visible luminance
         glRasterPos2f(-1, 0);
