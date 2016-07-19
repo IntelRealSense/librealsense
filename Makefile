@@ -1,5 +1,6 @@
-# Detect OS
+# Detect OS and CPU
 uname_S := $(shell sh -c 'uname -s 2>/dev/null || echo not')
+machine := $(shell sh -c "$(CC) -dumpmachine || echo unknown")
 
 # Specify BACKEND=V4L2 or BACKEND=LIBUVC to build a specific backend
 BACKEND := V4L2
@@ -11,8 +12,8 @@ endif
 
 LIBUSB_FLAGS := `pkg-config --cflags --libs libusb-1.0`
 
-CFLAGS := -std=c11 -fPIC -pedantic -DRS_USE_$(BACKEND)_BACKEND $(LIBUSB_FLAGS) 
-CXXFLAGS := -std=c++11 -fPIC -pedantic -mssse3 -Ofast -Wno-missing-field-initializers
+CFLAGS := -std=c11 -D_BSD_SOURCE -fPIC -pedantic -DRS_USE_$(BACKEND)_BACKEND $(LIBUSB_FLAGS) 
+CXXFLAGS := -std=c++11 -fPIC -pedantic -Ofast -Wno-missing-field-initializers
 CXXFLAGS += -Wno-switch -Wno-multichar -DRS_USE_$(BACKEND)_BACKEND $(LIBUSB_FLAGS) 
 
 # Add specific include paths for OSX
@@ -21,8 +22,18 @@ CFLAGS   += -I/usr/local/include
 CXXFLAGS += -I/usr/local/include
 endif
 
+ifeq (arm-linux-gnueabihf,$(machine))
+CXXFLAGS += -mfpu=neon -mfloat-abi=hard -ftree-vectorize
+else
+ifeq (aarch64-linux-gnu,$(machine))
+CXXFLAGS += -mstrict-align -ftree-vectorize
+else
+CXXFLAGS += -mssse3
+endif
+endif
+
 # Compute list of all *.o files that participate in librealsense.so
-OBJECTS = verify 
+OBJECTS = verify
 OBJECTS += $(notdir $(basename $(wildcard src/*.cpp)))
 OBJECTS += $(addprefix libuvc/, $(notdir $(basename $(wildcard src/libuvc/*.c))))
 OBJECTS := $(addprefix obj/, $(addsuffix .o, $(OBJECTS)))
@@ -46,10 +57,15 @@ EXAMPLES := $(addprefix bin/, $(notdir $(basename $(EXAMPLES))))
 # Aliases for convenience
 all: examples $(EXAMPLES) all-tests
 
-install: library
+install: lib/librealsense.so
 	install -m755 -d /usr/local/include/librealsense
 	cp -r include/librealsense/* /usr/local/include/librealsense
 	cp lib/librealsense.so /usr/local/lib
+	ldconfig
+
+uninstall:
+	rm -rf /usr/local/include/librealsense
+	rm /usr/local/lib/librealsense.so
 	ldconfig
 
 clean:
@@ -59,36 +75,36 @@ clean:
 
 library: lib/librealsense.so
 
-prepare:
+obj obj/libuvc lib bin:
 	mkdir -p obj/libuvc
 	mkdir -p lib
 	mkdir -p bin
 	mkdir -p bin/tests
 
 # Rules for building the sample programs
-bin/c-%: examples/c-%.c library
+bin/c-%: examples/c-%.c lib/librealsense.so | bin
 	$(CC) $< $(REALSENSE_FLAGS) $(GLFW3_FLAGS) -o $@
 
-bin/cpp-%: examples/cpp-%.cpp library
+bin/cpp-%: examples/cpp-%.cpp lib/librealsense.so | bin
 	$(CXX) $< -std=c++11 $(REALSENSE_FLAGS) $(GLFW3_FLAGS) -o $@
 
 # Rules for building the library itself
-lib/librealsense.so: prepare $(OBJECTS)
+lib/librealsense.so: $(OBJECTS) | lib
 	$(CXX) -std=c++11 -shared $(OBJECTS) $(LIBUSB_FLAGS) -o $@
 
-lib/librealsense.a: prepare $(OBJECTS)
+lib/librealsense.a: $(OBJECTS) | lib
 	ar rvs $@ `find obj/ -name "*.o"`
- 
+
 # Rules for compiling librealsense source
-obj/%.o: src/%.cpp
+obj/%.o: src/%.cpp | obj
 	$(CXX) $< $(CXXFLAGS) -c -o $@
 
 # Rules for compiling libuvc source
-obj/libuvc/%.o: src/libuvc/%.c
+obj/libuvc/%.o: src/libuvc/%.c | obj
 	$(CC) $< $(CFLAGS) -c -o $@
 
 # Special rule to verify that rs.h can be included by a C89 compiler
-obj/verify.o: src/verify.c
+obj/verify.o: src/verify.c | obj
 	$(CC) $< -std=c89 -Iinclude -c -o $@
 
 # rules for tests
