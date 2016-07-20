@@ -372,8 +372,23 @@ rs_frame_ref* ::rs_device_base::clone_frame(rs_frame_ref* frame)
 
 bool rs_device_base::supports(rs_capabilities capability) const
 {
-    auto it = find(config.info.capabilities_vector.begin(), config.info.capabilities_vector.end(), capability);
-    return it != config.info.capabilities_vector.end();
+    auto found = false;
+    auto version_ok = true;
+    for (auto supported : config.info.capabilities_vector)
+    {
+        if (supported.capability == capability)
+        {
+            found = true;
+
+            firmware_version firmware(get_camera_info(supported.firmware_type));
+            if (!firmware.is_between(supported.from, supported.until)) // unsupported due to versioning constraint
+            {
+                LOG_WARNING("capability " << rs_capabilities_to_string(capability) << " requires " << rs_camera_info_to_string(supported.firmware_type) << " to be from " << supported.from << " up-to " << supported.until << ", but is " << firmware << "!");
+                version_ok = false;
+            }
+        }
+    }
+    return found && version_ok;
 }
 
 void rs_device_base::get_option_range(rs_option option, double & min, double & max, double & step, double & def)

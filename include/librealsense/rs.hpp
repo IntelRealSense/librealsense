@@ -25,7 +25,8 @@ namespace rs
         fish_eye                = 4,
         motion_events           = 5,
         motion_module_fw_update = 6,
-        adapter_board           = 7
+        adapter_board           = 7,
+        enumeration             = 8,
     };
 
     enum class stream : int32_t
@@ -161,19 +162,22 @@ namespace rs
     };
 
     enum class blob_type {
-        motion_module_firmware_update                   = 1,
+        motion_module_firmware_update                   = 0,
     };
 
     enum class camera_info {
-        adapter_baord_firmware_version                  = 1,
-        motion_module_firmware_version                  = 2,
+        device_name                                     = 0,
+        serial_number                                   = 1,
+        camera_firmware_version                         = 2,
+        adapter_board_firmware_version                  = 3,
+        motion_module_firmware_version                  = 4,
     };
 
     enum class source : uint8_t
     {
         video           = 1,
         motion_data     = 2,
-        all_sources
+        all_sources     = 3,
     };
 
     enum class event : uint8_t

@@ -20,18 +20,20 @@ extern "C" {
 /*// Return version in "X.Y.Z" format */
 #define RS_API_VERSION_STR (VAR_ARG_STRING(RS_API_MAJOR_VERSION.RS_API_MINOR_VERSION.RS_API_PATCH_VERSION))
 
-
+/* rs_capabilities defines the full set of functionality that a RealSense device might provide
+   to check what functionality is supported by a particular device at runtime call dev->supports(capability) */
 typedef enum rs_capabilities
 {
-    RS_CAPABILITIES_DEPTH                   = 0,
-    RS_CAPABILITIES_COLOR                   = 1,
-    RS_CAPABILITIES_INFRARED                = 2,
-    RS_CAPABILITIES_INFRARED2               = 3,
-    RS_CAPABILITIES_FISH_EYE                = 4,
-    RS_CAPABILITIES_MOTION_EVENTS           = 5,
-    RS_CAPABILITIES_MOTION_MODULE_FW_UPDATE = 6,
-    RS_CAPABILITIES_ADAPTER_BOARD           = 7,
-    RS_CAPABILITIES_COUNT                   = 8,
+    RS_CAPABILITIES_DEPTH                   = 0, /**< provides depth stream */
+    RS_CAPABILITIES_COLOR                   = 1, /**< provides color stream */
+    RS_CAPABILITIES_INFRARED                = 2, /**< provides infrared stream */
+    RS_CAPABILITIES_INFRARED2               = 3, /**< provides second infrared stream */
+    RS_CAPABILITIES_FISH_EYE                = 4, /**< provides wide field of view (fish-eye) stream */
+    RS_CAPABILITIES_MOTION_EVENTS           = 5, /**< provides gyro and accelorometer events */
+    RS_CAPABILITIES_MOTION_MODULE_FW_UPDATE = 6, /**< provides method for upgrading motion module firmware */
+    RS_CAPABILITIES_ADAPTER_BOARD           = 7, /**< interanlly includes MIPI to USB adapter */
+    RS_CAPABILITIES_ENUMERATION             = 8, /**< provides enough basic functionality to be considered supported. this to catch at runtime various outdated engineering samples */
+    RS_CAPABILITIES_COUNT                   = 9, 
     RS_CAPABILITIES_MAX_ENUM = 0x7FFFFFFF
 } rs_capabilities;
 
@@ -204,15 +206,18 @@ typedef enum rs_option
 } rs_option;
 
 typedef enum rs_blob_type {
-    RS_BLOB_TYPE_MOTION_MODULE_FIRMWARE_UPDATE                = 1,
-    RS_BLOB_TYPE_COUNT                                        = 2,
+    RS_BLOB_TYPE_MOTION_MODULE_FIRMWARE_UPDATE                = 0,
+    RS_BLOB_TYPE_COUNT                                        = 1,
     RS_BLOB_TYPE_MAX_ENUM = 0x7FFFFFFF
 }  rs_blob_type;
 
 typedef enum rs_camera_info {
-    RS_CAMERA_INFO_ADAPTER_BOARD_FIRMWARE_VERSION             = 1,
-    RS_CAMERA_INFO_MOTION_MODULE_FIRMWARE_VERSION             = 2,
-    RS_CAMERA_INFO_COUNT                                      = 3,
+    RS_CAMERA_INFO_DEVICE_NAME                                = 0,
+    RS_CAMERA_INFO_DEVICE_SERIAL_NUMBER                       = 1,
+    RS_CAMERA_INFO_CAMERA_FIRMWARE_VERSION                    = 2,
+    RS_CAMERA_INFO_ADAPTER_BOARD_FIRMWARE_VERSION             = 3,
+    RS_CAMERA_INFO_MOTION_MODULE_FIRMWARE_VERSION             = 4,
+    RS_CAMERA_INFO_COUNT                                      = 5,
     RS_CAMERA_INFO_MAX_ENUM = 0x7FFFFFFF
 } rs_camera_info;
 

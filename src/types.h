@@ -181,6 +181,74 @@ namespace rsimpl
         bool        enabled = false;
     };
 
+    class firmware_version
+    {
+        int                 major, minor, patch, build;
+        bool                is_any;
+        std::string         string_representation;
+
+        std::string to_string() const;
+        static std::vector<std::string> split(const std::string& str);
+        static int parse_part(const std::string& name, int part);
+
+    public:
+        firmware_version() : major(0), minor(0), patch(0), build(0), is_any(true), string_representation(to_string()) {}
+
+        firmware_version(int major, int minor, int patch, int build, bool is_any = false)
+            : major(major), minor(minor), patch(patch), build(build), is_any(is_any), string_representation(to_string()) {}
+
+        static firmware_version any()
+        {
+            return{};
+        }
+
+        explicit firmware_version(const std::string& name)
+            : major(parse_part(name, 0)), minor(parse_part(name, 1)), patch(parse_part(name, 2)), build(parse_part(name, 3)), is_any(false), string_representation(to_string()) {}
+
+        bool operator<=(const firmware_version& other) const
+        {
+            if (is_any || other.is_any) return true;
+            if (major > other.major) return false;
+            if ((major == other.major) && (minor > other.minor)) return false;
+            if ((major == other.major) && (minor == other.minor) && (patch > other.patch)) return false;
+            if ((major == other.major) && (minor == other.minor) && (patch == other.patch) && (build > other.build)) return false;
+            return true;
+        }
+        bool operator==(const firmware_version& other) const
+        {
+            return is_any || (other.major == major && other.minor == minor && other.patch == patch && other.build == build);
+        }
+
+        bool operator> (const firmware_version& other) const { return !(*this < other) || is_any; }
+        bool operator!=(const firmware_version& other) const { return !(*this == other); }
+        bool operator<(const firmware_version& other) const { return !(*this == other) && (*this <= other); }
+        bool operator>=(const firmware_version& other) const { return (*this == other) || (*this > other); }
+
+        bool is_between(const firmware_version& from, const firmware_version& until)
+        {
+            return (from <= *this) && (*this <= until);
+        }
+
+        operator const char*() const
+        {
+            return string_representation.c_str();
+        }
+    };
+
+    struct supported_capability
+    {
+        rs_capabilities     capability;
+        firmware_version    from;
+        firmware_version    until;
+        rs_camera_info      firmware_type;
+
+        supported_capability(rs_capabilities capability, firmware_version from, firmware_version until, rs_camera_info firmware_type = RS_CAMERA_INFO_CAMERA_FIRMWARE_VERSION)
+            : capability(capability), from(from), until(until), firmware_type(firmware_type) {}
+        
+        supported_capability(rs_capabilities capability) 
+            : capability(capability), from(), until(), firmware_type(RS_CAMERA_INFO_CAMERA_FIRMWARE_VERSION) {}
+    };
+
     struct static_device_info
     {
         std::string name;                                                   // Model name of the camera        
@@ -195,7 +263,7 @@ namespace rsimpl
         std::string firmware_version;                                       // Firmware version string
         std::string serial;                                                 // Serial number of the camera (from USB or from SPI memory)
         float nominal_depth_scale;                                          // Default scale
-        std::vector<rs_capabilities> capabilities_vector;
+        std::vector<supported_capability> capabilities_vector;
         std::map<rs_camera_info, std::string> camera_info;
 
         static_device_info();
@@ -212,6 +280,8 @@ namespace rsimpl
         rs_timestamp_data   non_imu_packets[8];
     };
 
+    
+
     //////////////////////////////////
     // Runtime device configuration //
     //////////////////////////////////
@@ -227,7 +297,7 @@ namespace rsimpl
         subdevice_mode_selection(const subdevice_mode & mode, int pad_crop, int unpacker_index) : mode(mode), pad_crop(pad_crop), unpacker_index(unpacker_index){}
 
         const pixel_format_unpacker & get_unpacker() const {
-            if (unpacker_index < mode.pf.unpackers.size())
+            if ((size_t)unpacker_index < mode.pf.unpackers.size())
                 return mode.pf.unpackers[unpacker_index];
             throw std::runtime_error("failed to fetch an unpakcer, most likely becouse enable_stream was not called!");
         }
@@ -512,6 +582,8 @@ namespace rsimpl
             continuation();
         }
     };
+
+
 }
 
 #endif
