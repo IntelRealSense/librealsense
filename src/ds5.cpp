@@ -65,9 +65,12 @@ namespace rsimpl
         {
             for(auto fps : m.fps)
             {
-                info.subdevice_modes.push_back({1, m.dims, pf_y8, fps, {m.dims.x, m.dims.y}, {}, {0}});
-                info.subdevice_modes.push_back({1, m.dims, pf_y8i, fps, {m.dims.x, m.dims.y}, {}, {0}});
+                //info.subdevice_modes.push_back({1, m.dims, pf_y8, fps, {m.dims.x, m.dims.y}, {}, {0}});
+                info.subdevice_modes.push_back({1, m.dims, pf_l8, fps, {m.dims.x, m.dims.y}, {}, {0}});
             }
+            // Calibration modes
+            info.subdevice_modes.push_back({1, { 640, 480 }, pf_y12i, 30, { 640, 480 }, {}, {0}});
+            info.subdevice_modes.push_back({1, { 1928, 1088 }, pf_y12i, 30, { 1928, 1088 }, {}, {0}});
         }
 
         info.stream_subdevices[RS_STREAM_DEPTH] = 0;
@@ -76,6 +79,7 @@ namespace rsimpl
             for(auto fps : m.fps)
             {
                 info.subdevice_modes.push_back({0, m.dims, pf_z16, fps, {m.dims.x, m.dims.y}, {}, {0}});
+                info.subdevice_modes.push_back({0, m.dims, pf_d16, fps, {m.dims.x, m.dims.y}, {}, {0}});
             }
         }
 

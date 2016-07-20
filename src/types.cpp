@@ -55,6 +55,8 @@ namespace rsimpl
         CASE(RAW10)
         CASE(RAW16)
         CASE(RAW8)
+        CASE(L8)
+        CASE(D16)
 		default: assert(!is_valid(value)); return unknown;
         }
         #undef CASE
@@ -424,7 +426,7 @@ namespace rsimpl
 
     void device_config::get_all_possible_requestes(std::vector<stream_request>(&stream_requests)[RS_STREAM_NATIVE_COUNT]) const
     {
-        for (auto i = 0; i < info.subdevice_modes.size(); i++)
+        for (size_t i = 0; i < info.subdevice_modes.size(); i++)
         {
             stream_request request;
             auto mode = info.subdevice_modes[i];
@@ -555,7 +557,7 @@ namespace rsimpl
             auto & a = requests[rule.a], &b = requests[rule.b]; auto f = rule.field;
             if (a.enabled && b.enabled)
             {
-				if (rule.same_formet)
+                if (rule.same_format)
 				{
 					if (a.format != RS_FORMAT_ANY && b.format != RS_FORMAT_ANY && a.format != b.format)
 					{
@@ -565,10 +567,10 @@ namespace rsimpl
 					}
 						
 				}
-				else  if (rule.bigger == RS_STREAM_COUNT && !rule.diveded && !rule.diveded2)
+                else  if (rule.bigger == RS_STREAM_COUNT && !rule.divided && !rule.divided2)
                 {
                     // Check for incompatibility if both values specified
-                    if (a.*f != 0 && b.*f != 0 && a.*f + rule.delta != b.*f && a.*f + rule.delta2 != b.*f)
+                    if ((a.*f != 0) && (b.*f != 0) && (a.*f + rule.delta != b.*f) && (a.*f + rule.delta2 != b.*f))
                     {
                         if (throw_exception)
                             throw std::runtime_error(to_string() << "requested " << rule.a << " and " << rule.b << " settings are incompatible");
@@ -577,15 +579,14 @@ namespace rsimpl
                 }
                 else
                 {
-                    if (a.*f != 0 && b.*f != 0 && (rule.bigger == rule.a && a.*f < b.*f) || (rule.bigger == rule.b && b.*f < a.*f))
+                    if ((a.*f != 0) && (b.*f != 0) && (rule.bigger == rule.a && a.*f < b.*f) || (rule.bigger == rule.b && b.*f < a.*f))
                     {
                         if (throw_exception)
                             throw std::runtime_error(to_string() << "requested " << rule.a << " and " << rule.b << " settings are incompatible");
                         return false;
                     }
-                    if (a.*f != 0 && b.*f != 0 && ((rule.diveded && float(a.*f) / float(b.*f) - a.*f / b.*f > 0) || (rule.diveded2 && float(b.*f) / float(a.*f) - b.*f / a.*f > 0)))
+                    if (a.*f != 0 && b.*f != 0 && ((rule.divided && float(a.*f) / float(b.*f) - a.*f / b.*f > 0) || (rule.divided2 && float(b.*f) / float(a.*f) - b.*f / a.*f > 0)))
                     {
-                        rs_stream bigger;
                         if (throw_exception)
                             throw std::runtime_error(to_string() << "requested " << rule.a << " and " << rule.b << " settings are incompatible");
                         return false;

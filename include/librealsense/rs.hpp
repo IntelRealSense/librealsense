@@ -58,7 +58,9 @@ namespace rs
         y16         = 10, 
         raw10       = 11,  ///< Four 10-bit luminance values encoded into a 5-byte macropixel
         raw16       = 12,  ///< Four 10-bit luminance filled in 16 bit pixel (6 bit unused)
-        raw8        = 13
+        raw8        = 13,
+        l8          = 14,  ///< MS Frame Server Greyscale 8bit format
+        d16         = 15   ///< MS Frame Server Depth 16 bit
     };
 
     enum class output_buffer_format : int32_t
