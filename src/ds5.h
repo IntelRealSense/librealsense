@@ -5,9 +5,7 @@
 #ifndef LIBREALSENSE_DS5_H
 #define LIBREALSENSE_DS5_H
 
-#include <atomic>
 #include "device.h"
-#include "ds5-private.h"
 
 namespace rsimpl
 {

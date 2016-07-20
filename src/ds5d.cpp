@@ -60,7 +60,7 @@ namespace rsimpl
             }
         }
 
-    // Populate the presets
+        // Populate the presets
         for(int i=0; i<RS_PRESET_COUNT; ++i)
         {
             info.presets[RS_STREAM_DEPTH   ][i] = {true, 640, 480, RS_FORMAT_Z16, 30};
