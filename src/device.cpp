@@ -114,7 +114,7 @@ void rs_device_base::start_motion_tracking()
 {
     if (data_acquisition_active) throw std::runtime_error("cannot restart data acquisition without stopping first");
 
-    motion_module_parser parser;
+    auto parser = std::make_shared<motion_module_parser>();
 
     // Activate data polling handler
     if (config.data_requests.enabled)
@@ -126,7 +126,7 @@ void rs_device_base::start_motion_tracking()
             if (motion_module_ready)    //  Flush all received data before MM is fully operational 
             {
                 // Parse motion data
-                auto events = parser(data, size);
+                auto events = (*parser)(data, size);
 
                 // Handle events by user-provided handlers
                 for (auto & entry : events)
@@ -144,6 +144,7 @@ void rs_device_base::start_motion_tracking()
                             auto tse = entry.non_imu_packets[i];
                             if (archive)
                                 archive->on_timestamp(tse);
+
                             config.timestamp_callback->on_event(entry.non_imu_packets[i]);
                         }
                     }

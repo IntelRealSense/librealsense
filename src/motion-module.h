@@ -6,6 +6,7 @@
 #define MOTION_MODULE_H
 
 #include <mutex>
+#include "device.h"
 
 namespace rsimpl
 {
@@ -50,15 +51,15 @@ namespace rsimpl
             mm_accel_bandwidth  accel_bandwidth;
         };
 
-		#define FW_IMAGE_PACKET_PAYLOAD_LEN (128)
+        #define FW_IMAGE_PACKET_PAYLOAD_LEN (128)
 
-		struct fw_image_packet {
-			uint8_t op_code;
-			uint32_t address;
-			uint16_t length;
-			uint8_t	dummy;
-			uint8_t	data[FW_IMAGE_PACKET_PAYLOAD_LEN];
-		};
+        struct fw_image_packet {
+            uint8_t op_code;
+            uint32_t address;
+            uint16_t length;
+            uint8_t dummy;
+            uint8_t data[FW_IMAGE_PACKET_PAYLOAD_LEN];
+        };
 #pragma pack(pop)
 
         void config(uvc::device & device, uint8_t gyro_bw, uint8_t gyro_range, uint8_t accel_bw, uint8_t accel_range, uint32_t time_seed);
@@ -97,11 +98,26 @@ namespace rsimpl
             }
         }
 
+        struct motion_module_wraparound
+        {
+            motion_module_wraparound()
+                : timestamp_wraparound(std::numeric_limits<uint32_t>::max()), frame_counter_wraparound(0xfff)
+            {}
+            wraparound_mechanism<unsigned long long> timestamp_wraparound;
+            wraparound_mechanism<unsigned long long> frame_counter_wraparound;
+        };
+
         struct motion_module_parser
         {
+            motion_module_parser()
+                : mm_data_wraparound(RS_EVENT_SOURCE_COUNT)
+            {}
+
             std::vector<motion_event> operator() (const unsigned char* data, const int& data_size);
             void parse_timestamp(const unsigned char* data, rs_timestamp_data &);
             rs_motion_data parse_motion(const unsigned char* data);
+
+            std::vector<motion_module_wraparound> mm_data_wraparound;
         };
 
         class motion_module_state

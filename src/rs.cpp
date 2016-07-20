@@ -372,7 +372,7 @@ double rs_get_frame_timestamp(const rs_device * device, rs_stream stream, rs_err
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, device, stream)
 
-int rs_get_frame_number(const rs_device * device, rs_stream stream, rs_error ** error) try
+unsigned long long rs_get_frame_number(const rs_device * device, rs_stream stream, rs_error ** error) try
 {
     VALIDATE_NOT_NULL(device);
     VALIDATE_ENUM(stream);
@@ -459,7 +459,7 @@ rs_stream rs_get_detached_frame_stream_type(const rs_frame_ref * frameset, rs_er
 HANDLE_EXCEPTIONS_AND_RETURN(RS_STREAM_MAX_ENUM, frameset)
 
 
-int rs_get_detached_frame_number(const rs_frame_ref * frame, rs_error ** error) try
+unsigned long long rs_get_detached_frame_number(const rs_frame_ref * frame, rs_error ** error) try
 {
     VALIDATE_NOT_NULL(frame);
     return frame->get_frame_number();
