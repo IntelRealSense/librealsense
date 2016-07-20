@@ -129,6 +129,7 @@ namespace rsimpl
 
     rs_stream ds5_camera::select_key_stream(const std::vector<rsimpl::subdevice_mode_selection> & selected_modes)
     {
+        // DS5t may have a different behaviour here. This is a placeholder
         int fps[RS_STREAM_NATIVE_COUNT] = {}, max_fps = 0;
         for (const auto & m : selected_modes)
         {
@@ -149,25 +150,25 @@ namespace rsimpl
 
     std::shared_ptr<frame_timestamp_reader> ds5_camera::create_frame_timestamp_reader() const
     {
-        return std::make_shared<rsimpl::rolling_timestamp_reader>();
+        return std::make_shared<rsimpl::ivcam_timestamp_reader>();
     }
 
-    std::shared_ptr<rs_device> make_ds5_device(std::shared_ptr<uvc::device> device)
-    {
-        std::timed_mutex mutex;
-        ds5::claim_ds5_interface(*device);
+    //std::shared_ptr<rs_device> make_ds5_device(std::shared_ptr<uvc::device> device)
+    //{
+    //    std::timed_mutex mutex;
+    //    ds5::claim_ds5_interface(*device);
 
-        auto info = get_ds5_info(device);
+    //    auto info = get_ds5_info(device);
 
-        ds5::get_module_serial_string(*device, mutex, info.serial, 8);
-        ds5::get_firmware_version_string(*device, mutex, info.firmware_version);
+    //    ds5::get_module_serial_string(*device, mutex, info.serial, 8);
+    //    ds5::get_firmware_version_string(*device, mutex, info.firmware_version);
 
-        info.capabilities_vector.push_back(RS_CAPABILITIES_COLOR);
-        info.capabilities_vector.push_back(RS_CAPABILITIES_DEPTH);
-        info.capabilities_vector.push_back(RS_CAPABILITIES_INFRARED);
-        info.capabilities_vector.push_back(RS_CAPABILITIES_INFRARED2);
+    //    info.capabilities_vector.push_back(RS_CAPABILITIES_COLOR);
+    //    info.capabilities_vector.push_back(RS_CAPABILITIES_DEPTH);
+    //    info.capabilities_vector.push_back(RS_CAPABILITIES_INFRARED);
+    //    info.capabilities_vector.push_back(RS_CAPABILITIES_INFRARED2);
 
-        return std::make_shared<ds5_camera>(device, info);
-    }
+    //    return std::make_shared<ds5_camera>(device, info);
+    //}
 
 } // namespace rsimpl::ds5

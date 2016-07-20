@@ -9,11 +9,10 @@
 #include "device.h"
 #include "ds5-private.h"
 
-#define DS5_PRODUCT_ID 0x0ad1
-
 namespace rsimpl
 {
-    class ds5_camera final : public rs_device_base
+    // This is a base class for the various SKUs of the DS5 camera
+    class ds5_camera : public rs_device_base
     {
 
     public:
@@ -27,8 +26,6 @@ namespace rsimpl
         rs_stream select_key_stream(const std::vector<rsimpl::subdevice_mode_selection> & selected_modes) override;
         std::shared_ptr<frame_timestamp_reader> create_frame_timestamp_reader() const override;
     };
-
-    std::shared_ptr<rs_device> make_ds5_device(std::shared_ptr<uvc::device> device);
 }
 
 #endif

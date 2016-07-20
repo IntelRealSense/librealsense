@@ -42,13 +42,9 @@ namespace rsimpl
     };
 
     // TODO: This may need to be modified for thread safety
-    class rolling_timestamp_reader : public frame_timestamp_reader
+    class ivcam_timestamp_reader : public frame_timestamp_reader
     {
-        bool started;
-        int64_t total;
-        int last_timestamp;
     public:
-        rolling_timestamp_reader() : started(), total(), last_timestamp(0) {}
 
         bool validate_frame(const subdevice_mode & mode, const void * frame) const override
         {
@@ -69,20 +65,9 @@ namespace rsimpl
         double get_frame_timestamp(const subdevice_mode & mode, const void * frame) override
         {
             // Timestamps are encoded within the first 32 bits of the image
-            int rolling_timestamp = *reinterpret_cast<const int32_t *>(frame);
-
-            if (!started)
-            {
-                last_timestamp = rolling_timestamp;
-                started = true;
-            }
-
-            const int delta = rolling_timestamp - last_timestamp; // NOTE: Relies on undefined behavior: signed int wraparound
-            last_timestamp = rolling_timestamp;
-            total += delta;
-            const int timestamp = static_cast<int>(total / 100000);
-            return timestamp;
+            return  (double)(*reinterpret_cast<const int32_t *>(frame));
         }
+
         int get_frame_counter(const subdevice_mode & mode, const void * frame) override
         {
             return 0;

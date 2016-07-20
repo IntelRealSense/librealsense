@@ -147,6 +147,6 @@ namespace rsimpl
 
     std::shared_ptr<frame_timestamp_reader> iv_camera::create_frame_timestamp_reader() const
     {
-        return std::make_shared<rolling_timestamp_reader>();
+        return std::make_shared<ivcam_timestamp_reader>();
     }
 } // namespace rsimpl::f200

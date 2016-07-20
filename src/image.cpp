@@ -37,8 +37,6 @@ namespace rsimpl
         case RS_FORMAT_RAW10: assert(width % 4 == 0); return width * 5/4 * height;
         case RS_FORMAT_RAW16: return width * height * 2;
         case RS_FORMAT_RAW8: return width * height;
-        case RS_FORMAT_L8: return width * height;
-        case RS_FORMAT_D16: return width * height * 2;
         default: assert(false); return 0;
         }
     }
@@ -60,8 +58,6 @@ namespace rsimpl
         case RS_FORMAT_RAW10: return 5.f/4;
         case RS_FORMAT_RAW16: return 2;
         case RS_FORMAT_RAW8: return 1;
-        case RS_FORMAT_L8: return 1;
-        case RS_FORMAT_D16: return  2;
         default: assert(false); return 0;
         }
     }
@@ -477,9 +473,9 @@ namespace rsimpl
                                                                 { true,  &unpack_z16_y16_from_sr300_inzi,   { { RS_STREAM_DEPTH,    RS_FORMAT_Z16 },{ RS_STREAM_INFRARED, RS_FORMAT_Y16 } } } } };
 
     // Microsoft 8 bit (left) Greyscale IR image
-    const native_pixel_format pf_l8         = { 0x32000000, 1, 1,{  { false, &copy_pixels<1>,               { { RS_STREAM_INFRARED, RS_FORMAT_L8 } } } } };
+    const native_pixel_format pf_l8         = { 0x32000000, 1, 1,{  { false, &copy_pixels<1>,               { { RS_STREAM_INFRARED, RS_FORMAT_Y8 } } } } };
     // Microsoft 16 bit Depth image format
-    const native_pixel_format pf_d16        = { 0x50000000, 1, 2,{  { false,  &copy_pixels<2>,              { { RS_STREAM_DEPTH,    RS_FORMAT_D16 } } },
+    const native_pixel_format pf_d16        = { 0x50000000, 1, 2,{  { false,  &copy_pixels<2>,              { { RS_STREAM_DEPTH,    RS_FORMAT_Z16 } } },
                                                                     { false,  &copy_pixels<2>,              { { RS_STREAM_DEPTH,    RS_FORMAT_DISPARITY16 } } } } };
 
     //////////////////
