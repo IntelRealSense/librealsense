@@ -146,7 +146,6 @@ namespace rsimpl
             void firmware_upgrade(void *data, int size);
 
         private:
-            motion_module_control(void);
             motion_module_control(const motion_module_control&);
             motion_module_state state_handler;
             uvc::device* device_handle;
@@ -165,7 +164,7 @@ namespace rsimpl
 
         };
 
-        enum i2c_register : uint32_t {
+        enum class i2c_register : uint32_t {
             REG_UCTRL_CFG = 0x00,
             REG_INT_ID_CONFIG = 0x04,
             REG_INT_TYPE_CONFIG = 0x08,
@@ -198,7 +197,7 @@ namespace rsimpl
             REG_JUMP_TO_APP = 0x77
         };
 
-        enum power_states : uint32_t {
+        enum class power_states : uint32_t {
             PWR_STATE_DNR = 0x00,
             PWR_STATE_INIT = 0x02,
             PWR_STATE_ACTIVE = 0x03,
@@ -206,7 +205,7 @@ namespace rsimpl
             PWR_STATE_IAP = 0x05
         };
 
-        enum adaptor_board_command : uint32_t
+        enum class adaptor_board_command : uint32_t
         {
             IRB         = 0x01,     // Read from i2c ( 8x8 )
             IWB         = 0x02,     // Write to i2c ( 8x8 )

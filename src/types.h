@@ -19,6 +19,7 @@
 #include <mutex>                            // For mutex, unique_lock
 #include <condition_variable>               // For condition_variable
 #include <memory>                           // For unique_ptr
+#include <map>                              // For map
 
 const uint8_t RS_STREAM_NATIVE_COUNT    = 5;
 const uint8_t RS_USER_QUEUE_SIZE        = 64;
@@ -84,6 +85,8 @@ namespace rsimpl
     RS_ENUM_HELPERS(rs_source, SOURCE)
     RS_ENUM_HELPERS(rs_output_buffer_format, OUTPUT_BUFFER_FORMAT)
     RS_ENUM_HELPERS(rs_event_source, EVENT_SOURCE)
+    RS_ENUM_HELPERS(rs_blob_type, BLOB_TYPE)
+    RS_ENUM_HELPERS(rs_camera_info, CAMERA_INFO)
     #undef RS_ENUM_HELPERS
 
     ////////////////////////////////////////////
@@ -193,6 +196,7 @@ namespace rsimpl
         std::string serial;                                                 // Serial number of the camera (from USB or from SPI memory)
         float nominal_depth_scale;                                          // Default scale
         std::vector<rs_capabilities> capabilities_vector;
+        std::map<rs_camera_info, std::string> camera_info;
 
         static_device_info();
     };

@@ -115,6 +115,8 @@ public:
     const char *                                get_firmware_version() const override { return config.info.firmware_version.c_str(); }
     float                                       get_depth_scale() const override { return config.depth_scale; }
 
+    const char*                                 get_camera_info(rs_camera_info info) const override;
+
     void                                        enable_stream(rs_stream stream, int width, int height, rs_format format, int fps, rs_output_buffer_format output) override;
     void                                        enable_stream_preset(rs_stream stream, rs_preset preset) override;
     void                                        disable_stream(rs_stream stream) override;

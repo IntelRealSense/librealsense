@@ -30,7 +30,8 @@ typedef enum rs_capabilities
     RS_CAPABILITIES_FISH_EYE                = 4,
     RS_CAPABILITIES_MOTION_EVENTS           = 5,
     RS_CAPABILITIES_MOTION_MODULE_FW_UPDATE = 6,
-    RS_CAPABILITIES_COUNT                   = 7,
+    RS_CAPABILITIES_ADAPTER_BOARD           = 7,
+    RS_CAPABILITIES_COUNT                   = 8,
     RS_CAPABILITIES_MAX_ENUM = 0x7FFFFFFF
 } rs_capabilities;
 
@@ -203,8 +204,17 @@ typedef enum rs_option
 } rs_option;
 
 typedef enum rs_blob_type {
-    RS_BLOB_TYPE_MOTION_MODULE_FIRMWARE_UPDATE                = 1
+    RS_BLOB_TYPE_MOTION_MODULE_FIRMWARE_UPDATE                = 1,
+    RS_BLOB_TYPE_COUNT                                        = 2,
+    RS_BLOB_TYPE_MAX_ENUM = 0x7FFFFFFF
 }  rs_blob_type;
+
+typedef enum rs_camera_info {
+    RS_CAMERA_INFO_ADAPTER_BOARD_FIRMWARE_VERSION             = 1,
+    RS_CAMERA_INFO_MOTION_MODULE_FIRMWARE_VERSION             = 2,
+    RS_CAMERA_INFO_COUNT                                      = 3,
+    RS_CAMERA_INFO_MAX_ENUM = 0x7FFFFFFF
+} rs_camera_info;
 
 typedef struct rs_intrinsics
 {
@@ -292,6 +302,13 @@ const char * rs_get_device_name(const rs_device * device, rs_error ** error);
  * \return            the serial number, in a format specific to the device model
  */
 const char * rs_get_device_serial(const rs_device * device, rs_error ** error);
+
+/**
+* retrieve camera specifci information, like versions of the various internal componnents
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return            the requested camera info string, in a format specific to the device model
+*/
+const char * rs_get_device_info(const rs_device * device, rs_camera_info info, rs_error ** error);
 
 /**
  * retrieve the USB port number of the device
@@ -753,7 +770,9 @@ const char * rs_distortion_to_string (rs_distortion distortion);
 const char * rs_option_to_string     (rs_option option);
 const char * rs_capabilities_to_string(rs_capabilities capability);
 const char * rs_source_to_string     (rs_source source);
-const char * rs_event_to_string     (rs_event_source event);
+const char * rs_event_to_string      (rs_event_source event);
+const char * rs_blob_type_to_string  (rs_blob_type type);
+const char * rs_camera_info_to_string(rs_camera_info info);
 
 typedef enum
 {

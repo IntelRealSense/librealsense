@@ -194,6 +194,7 @@ namespace rsimpl
         CASE(FISH_EYE)
         CASE(MOTION_EVENTS)
         CASE(MOTION_MODULE_FW_UPDATE)
+        CASE(ADAPTER_BOARD)
         default: assert(!is_valid(value)); return unknown;
         }
         #undef CASE
@@ -211,10 +212,34 @@ namespace rsimpl
         CASE(G0_SYNC)
         CASE(G1_SYNC)
         CASE(G2_SYNC)
-		default: assert(!is_valid(value)); return unknown;
+        default: assert(!is_valid(value)); return unknown;
         }
         #undef CASE
     }
+
+    const char * get_string(rs_blob_type value)
+    {
+        #define CASE(X) case RS_BLOB_TYPE_##X: return #X;
+        switch(value)
+        {
+        CASE(MOTION_MODULE_FIRMWARE_UPDATE)
+        default: assert(!is_valid(value)); return unknown;
+        }
+        #undef CASE
+    }
+
+    const char * get_string(rs_camera_info value)
+    {
+        #define CASE(X) case RS_CAMERA_INFO_##X: return #X;
+        switch(value)
+        {
+        CASE(ADAPTER_BOARD_FIRMWARE_VERSION)
+        CASE(MOTION_MODULE_FIRMWARE_VERSION)
+        default: assert(!is_valid(value)); return unknown;
+        }
+        #undef CASE
+    }
+
 
     size_t subdevice_mode_selection::get_image_size(rs_stream stream) const
     {
