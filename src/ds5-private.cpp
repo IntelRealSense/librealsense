@@ -17,7 +17,7 @@ namespace ds5 {
 
     void claim_ds5_interface(uvc::device & device)
     {
-	const uvc::guid DS5_WIN_USB_DEVICE_GUID = {};
+    const uvc::guid DS5_WIN_USB_DEVICE_GUID = {};
         claim_interface(device, DS5_WIN_USB_DEVICE_GUID, DS5_MONITOR_INTERFACE);
     }
 

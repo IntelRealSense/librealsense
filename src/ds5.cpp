@@ -108,7 +108,7 @@ namespace rsimpl
             {
                 uvc::set_pu_control_with_retry(get_device(), 2, options[i], static_cast<int>(values[i]));
             }
-	}
+    }
     }
 
     void ds5_camera::get_options(const rs_option options[], size_t count, double values[])
