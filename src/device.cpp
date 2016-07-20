@@ -259,7 +259,7 @@ void rs_device_base::start_video_streaming()
             auto stride_y = mode_selection.get_stride_y();
             for (auto & output : mode_selection.get_outputs())
             {
-                LOG_DEBUG("FrameAccepted, RecievedAt," << recieved_time << ", FWTS," << timestamp << ", DLLTS," << recieved_time << ", Type," << rsimpl::get_string(output.first) << ",HasPair,0,F#," << frame_counter);
+                LOG_DEBUG("Valid frame, host time:" << recieved_time << ", FW time:" << timestamp << ", Type:" << rsimpl::get_string(output.first) << ", frame_num:" << frame_counter);
             }
 
             for (auto & output : mode_selection.get_outputs())

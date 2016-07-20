@@ -219,7 +219,7 @@ TEST_CASE("DS-device infrared2 streaming modes exactly match infrared streaming 
             REQUIRE(rs_get_stream_format(dev, RS_STREAM_INFRARED, require_no_error()) == rs_get_stream_format(dev, RS_STREAM_INFRARED2, require_no_error()));
             REQUIRE(rs_get_stream_framerate(dev, RS_STREAM_INFRARED, require_no_error()) == rs_get_stream_framerate(dev, RS_STREAM_INFRARED2, require_no_error()));
 
-            rs_intrinsics infrared_intrin = {}, infrared2_intrin = {};
+            rs_intrinsics infrared_intrin, infrared2_intrin;
             rs_get_stream_intrinsics(dev, RS_STREAM_INFRARED, &infrared_intrin, require_no_error());
             rs_get_stream_intrinsics(dev, RS_STREAM_INFRARED2, &infrared2_intrin, require_no_error());
             REQUIRE(infrared_intrin.width == infrared_intrin.width);

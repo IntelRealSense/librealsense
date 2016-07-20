@@ -44,7 +44,9 @@ namespace rsimpl
     // TODO: This may need to be modified for thread safety
     class ivcam_timestamp_reader : public frame_timestamp_reader
     {
+        int  serial_frame_number;
     public:
+        ivcam_timestamp_reader(void) : serial_frame_number(0) {}
 
         bool validate_frame(const subdevice_mode & mode, const void * frame) const override
         {
@@ -70,7 +72,8 @@ namespace rsimpl
 
         int get_frame_counter(const subdevice_mode & mode, const void * frame) override
         {
-            return 0;
+            return serial_frame_number++;
+            //return 0;
         }
     };
 }
