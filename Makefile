@@ -11,9 +11,10 @@ BACKEND := LIBUVC
 endif
 
 LIBUSB_FLAGS := `pkg-config --cflags --libs libusb-1.0`
-CFLAGS := -std=c11 -D_BSD_SOURCE -fPIC -pedantic -DRS_USE_$(BACKEND)_BACKEND $(LIBUSB_FLAGS)
+
+CFLAGS := -std=c11 -D_BSD_SOURCE -fPIC -pedantic -DRS_USE_$(BACKEND)_BACKEND $(LIBUSB_FLAGS) 
 CXXFLAGS := -std=c++11 -fPIC -pedantic -Ofast -Wno-missing-field-initializers
-CXXFLAGS += -Wno-switch -Wno-multichar -DRS_USE_$(BACKEND)_BACKEND $(LIBUSB_FLAGS)
+CXXFLAGS += -Wno-switch -Wno-multichar -DRS_USE_$(BACKEND)_BACKEND $(LIBUSB_FLAGS) 
 
 # Add specific include paths for OSX
 ifeq ($(uname_S),Darwin)
@@ -54,7 +55,7 @@ EXAMPLES += $(wildcard examples/*.cpp)
 EXAMPLES := $(addprefix bin/, $(notdir $(basename $(EXAMPLES))))
 
 # Aliases for convenience
-all: $(EXAMPLES)
+all: examples $(EXAMPLES) all-tests
 
 install: lib/librealsense.so
 	install -m755 -d /usr/local/include/librealsense
@@ -72,10 +73,13 @@ clean:
 	rm -rf lib
 	rm -rf bin
 
+library: lib/librealsense.so
+
 obj obj/libuvc lib bin:
 	mkdir -p obj/libuvc
 	mkdir -p lib
 	mkdir -p bin
+	mkdir -p bin/tests
 
 # Rules for building the sample programs
 bin/c-%: examples/c-%.c lib/librealsense.so | bin
@@ -102,3 +106,12 @@ obj/libuvc/%.o: src/libuvc/%.c | obj
 # Special rule to verify that rs.h can be included by a C89 compiler
 obj/verify.o: src/verify.c | obj
 	$(CC) $< -std=c89 -Iinclude -c -o $@
+
+# rules for tests
+
+.PHONY: all-tests all clean
+
+all-tests: F200-live-test LR200-live-test R200-live-test SR300-live-test ZR300-live-test offline-test
+
+%-test: unit-tests/*
+	$(CXX) unit-tests/*.cpp -std=c++11 -o bin/tests/$@ -D$(if $(findstring live,$@),LIVE_TEST,OFFLINE_TEST) -D$(firstword $(subst -, ,$@))_TEST -DMAKEFILE $(REALSENSE_FLAGS)
