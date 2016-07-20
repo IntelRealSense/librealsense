@@ -183,7 +183,7 @@ namespace rsimpl
 
     class firmware_version
     {
-        int                 major, minor, patch, build;
+        int                 m_major, m_minor, m_patch, m_build;
         bool                is_any;
         std::string         string_representation;
 
@@ -192,10 +192,10 @@ namespace rsimpl
         static int parse_part(const std::string& name, int part);
 
     public:
-        firmware_version() : major(0), minor(0), patch(0), build(0), is_any(true), string_representation(to_string()) {}
+        firmware_version() : m_major(0), m_minor(0), m_patch(0), m_build(0), is_any(true), string_representation(to_string()) {}
 
         firmware_version(int major, int minor, int patch, int build, bool is_any = false)
-            : major(major), minor(minor), patch(patch), build(build), is_any(is_any), string_representation(to_string()) {}
+            : m_major(major), m_minor(minor), m_patch(patch), m_build(build), is_any(is_any), string_representation(to_string()) {}
 
         static firmware_version any()
         {
@@ -203,20 +203,20 @@ namespace rsimpl
         }
 
         explicit firmware_version(const std::string& name)
-            : major(parse_part(name, 0)), minor(parse_part(name, 1)), patch(parse_part(name, 2)), build(parse_part(name, 3)), is_any(false), string_representation(to_string()) {}
+            : m_major(parse_part(name, 0)), m_minor(parse_part(name, 1)), m_patch(parse_part(name, 2)), m_build(parse_part(name, 3)), is_any(false), string_representation(to_string()) {}
 
         bool operator<=(const firmware_version& other) const
         {
             if (is_any || other.is_any) return true;
-            if (major > other.major) return false;
-            if ((major == other.major) && (minor > other.minor)) return false;
-            if ((major == other.major) && (minor == other.minor) && (patch > other.patch)) return false;
-            if ((major == other.major) && (minor == other.minor) && (patch == other.patch) && (build > other.build)) return false;
+            if (m_major > other.m_major) return false;
+            if ((m_major == other.m_major) && (m_minor > other.m_minor)) return false;
+            if ((m_major == other.m_major) && (m_minor == other.m_minor) && (m_patch > other.m_patch)) return false;
+            if ((m_major == other.m_major) && (m_minor == other.m_minor) && (m_patch == other.m_patch) && (m_build > other.m_build)) return false;
             return true;
         }
         bool operator==(const firmware_version& other) const
         {
-            return is_any || (other.major == major && other.minor == minor && other.patch == patch && other.build == build);
+            return is_any || (other.m_major == m_major && other.m_minor == m_minor && other.m_patch == m_patch && other.m_build == m_build);
         }
 
         bool operator> (const firmware_version& other) const { return !(*this < other) || is_any; }
