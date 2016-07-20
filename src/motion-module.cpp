@@ -185,7 +185,7 @@ void motion_module_control::i2c_read_reg(uint16_t slave_address, uint16_t reg, u
 	int retries = 0;
 	do {
 		try {
-			rsimpl::hw_monitor::perform_and_send_monitor_command(*device_handle, mutex, 1, cmd);
+			hw_monitor::perform_and_send_monitor_command(*device_handle, mutex, cmd);
 
 			// validate that the size is of 32 bit (value size).
 			if (cmd.receivedCommandDataLength == sizeof(value))
@@ -242,7 +242,7 @@ void motion_module_control::switch_to_operational()
     // write to the REG_JUMP_TO_APP register. this should return us to operational mode if all went well.
     i2c_write_reg(MOTION_MODULE_CONTROL_I2C_SLAVE_ADDRESS, (int)i2c_register::REG_JUMP_TO_APP, 0x00);
 
-    i2c_read_reg(MOTION_MODULE_CONTROL_I2C_SLAVE_ADDRESS, i2c_register::REG_CURR_PWR_STATE, value);
+    i2c_read_reg(MOTION_MODULE_CONTROL_I2C_SLAVE_ADDRESS, (int)i2c_register::REG_CURR_PWR_STATE, value);
         
     if ((power_states)value != power_states::PWR_STATE_IAP) {
         return;
