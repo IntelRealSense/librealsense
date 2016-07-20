@@ -38,7 +38,7 @@ int main() try
         uint8_t firmware[65535];
         auto numRead = fread(firmware, 1, 65535, f);
         fclose(f);
-        dev->send_blob_to_device(RS_BLOB_TYPE_MOTION_MODULE_FIRMWARE_UPDATE, firmware, numRead);
+        dev->send_blob_to_device(rs::blob_type::motion_module_firmware_update, firmware, numRead);
 
         printf("\nMotion Module FW was succesfully updated");
     }
