@@ -41,7 +41,7 @@ namespace rsimpl
     }
 
 
-    void execute_usb_command(uvc::device & device, std::timed_mutex & mutex, unsigned char handle_id, uint8_t *out, size_t outSize, uint32_t & op, uint8_t * in, size_t & inSize)
+    void execute_usb_command(uvc::device & device, std::timed_mutex & mutex, uint8_t *out, size_t outSize, uint32_t & op, uint8_t * in, size_t & inSize)
     {
         // write
         errno = 0;
@@ -51,7 +51,7 @@ namespace rsimpl
         if (!mutex.try_lock_for(std::chrono::milliseconds(IVCAM_MONITOR_MUTEX_TIMEOUT))) throw std::runtime_error("timed_mutex::try_lock_for(...) timed out");
         std::lock_guard<std::timed_mutex> guard(mutex, std::adopt_lock);
 
-        bulk_transfer(device, handle_id, IVCAM_MONITOR_ENDPOINT_OUT, out, (int)outSize, &outXfer, 1000); // timeout in ms
+        bulk_transfer(device, IVCAM_MONITOR_ENDPOINT_OUT, out, (int)outSize, &outXfer, 1000); // timeout in ms
 
         std::this_thread::sleep_for(std::chrono::milliseconds(20));
         // read
@@ -61,7 +61,7 @@ namespace rsimpl
 
             errno = 0;
 
-            bulk_transfer(device, handle_id, IVCAM_MONITOR_ENDPOINT_IN, buf, sizeof(buf), &outXfer, 1000);
+            bulk_transfer(device, IVCAM_MONITOR_ENDPOINT_IN, buf, sizeof(buf), &outXfer, 1000);
             if (outXfer < (int)sizeof(uint32_t)) throw std::runtime_error("incomplete bulk usb transfer");
 
             op = *(uint32_t *)buf;
@@ -71,14 +71,14 @@ namespace rsimpl
         }
     }
 
-    void send_hw_monitor_command(uvc::device & device, std::timed_mutex & mutex, unsigned char handle_id, hwmon_cmd_details & details)
+    void send_hw_monitor_command(uvc::device & device, std::timed_mutex & mutex, hwmon_cmd_details & details)
     {
         unsigned char outputBuffer[HW_MONITOR_BUFFER_SIZE];
 
         uint32_t op;
         size_t receivedCmdLen = HW_MONITOR_BUFFER_SIZE;
 
-        execute_usb_command(device, mutex, handle_id, (uint8_t*)details.sendCommandData, (size_t)details.sizeOfSendCommandData, op, outputBuffer, receivedCmdLen);
+        execute_usb_command(device, mutex, (uint8_t*)details.sendCommandData, (size_t)details.sizeOfSendCommandData, op, outputBuffer, receivedCmdLen);
         details.receivedCommandDataLength = receivedCmdLen;
 
         if (details.oneDirection) return;
@@ -110,7 +110,7 @@ namespace rsimpl
             details.sendCommandData,
             details.sizeOfSendCommandData);
 
-        send_hw_monitor_command(device, mutex, 0, details);
+        send_hw_monitor_command(device, mutex, details);
 
         // Error/exit conditions
         if (newCommand.oneDirection)
@@ -146,7 +146,7 @@ namespace rsimpl
             details.sendCommandData,
             details.sizeOfSendCommandData);
 
-        send_hw_monitor_command(device, mutex, handle_id, details);
+        send_hw_monitor_command(device, mutex, details);
 
         // Error/exit conditions
         if (newCommand.oneDirection)

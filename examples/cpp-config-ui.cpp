@@ -571,7 +571,8 @@ int main(int argc, char * argv[])
     }
 
         rs::format format[streams] = {};
-        int frame_number[streams] = {};
+        unsigned long long  frame_number[streams] = {};
+        double frame_timestamp[streams] = {};
         int fps[streams] = {};
         double dc_preset = 0, iv_preset = 0;
         int offset = 0, panel_height = 1;
@@ -731,10 +732,11 @@ int main(int argc, char * argv[])
                                 buffers[i].upload(frame);
                                 format[i] = frame.get_format();
                                 frame_number[i] = frame.get_frame_number();
+                                frame_timestamp[i] = frame.get_timestamp();
                                 fps[i] = frame.get_framerate();
                             }
 
-                            buffers[i].show((rs::stream)i, format[i], fps[i], frame_number[i], pos_vec[i].rx, pos_vec[i].ry, pos_vec[i].rw, pos_vec[i].rh, resolutions[(rs::stream)i].width, resolutions[(rs::stream)i].height);
+                            buffers[i].show((rs::stream)i, format[i], fps[i], frame_number[i], frame_timestamp[i], pos_vec[i].rx, pos_vec[i].ry, pos_vec[i].rw, pos_vec[i].rh, resolutions[(rs::stream)i].width, resolutions[(rs::stream)i].height);
                         }
 
                         if (has_motion_module && motion_tracking_enable)

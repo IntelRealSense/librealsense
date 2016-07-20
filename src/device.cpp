@@ -51,6 +51,14 @@ bool rs_device_base::supports_option(rs_option option) const
     return false; 
 }
 
+const char* rs_device_base::get_camera_info(rs_camera_info info) const
+{ 
+    auto it = config.info.camera_info.find(info);
+    if (it == config.info.camera_info.end())
+        throw std::runtime_error("selected camera info is not supported for this camera!"); 
+    return it->second.c_str();
+}
+
 void rs_device_base::enable_stream(rs_stream stream, int width, int height, rs_format format, int fps, rs_output_buffer_format output)
 {
     if(capturing) throw std::runtime_error("streams cannot be reconfigured after having called rs_start_device()");
@@ -114,7 +122,7 @@ void rs_device_base::start_motion_tracking()
 {
     if (data_acquisition_active) throw std::runtime_error("cannot restart data acquisition without stopping first");
 
-    motion_module_parser parser;
+    auto parser = std::make_shared<motion_module_parser>();
 
     // Activate data polling handler
     if (config.data_requests.enabled)
@@ -126,7 +134,7 @@ void rs_device_base::start_motion_tracking()
             if (motion_module_ready)    //  Flush all received data before MM is fully operational 
             {
                 // Parse motion data
-                auto events = parser(data, size);
+                auto events = (*parser)(data, size);
 
                 // Handle events by user-provided handlers
                 for (auto & entry : events)
@@ -144,6 +152,7 @@ void rs_device_base::start_motion_tracking()
                             auto tse = entry.non_imu_packets[i];
                             if (archive)
                                 archive->on_timestamp(tse);
+
                             config.timestamp_callback->on_event(entry.non_imu_packets[i]);
                         }
                     }
