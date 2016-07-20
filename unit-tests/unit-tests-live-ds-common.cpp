@@ -672,7 +672,7 @@ TEST_CASE("DS-device verify standard UVC Controls set/get", "[live] [DS-device]"
     rs_start_device(dev, require_no_error());
 
 
-    REQUIRE(rs_get_device_option(dev, RS_OPTION_R200_EMITTER_ENABLED, require_no_error()) == 0);
+    REQUIRE(rs_get_device_option(dev, RS_OPTION_R200_EMITTER_ENABLED, require_no_error()) == 1);
 
     rs_option first = RS_OPTION_COLOR_BACKLIGHT_COMPENSATION;
     rs_option last = RS_OPTION_COLOR_ENABLE_AUTO_WHITE_BALANCE;
