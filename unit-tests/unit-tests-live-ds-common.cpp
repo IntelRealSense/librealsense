@@ -5,6 +5,8 @@
 // This set of tests is valid only for the DS-device camera //
 /////////////////////////////////////////////////////////
 
+#if !defined(MAKEFILE) || ( defined(LR200_TEST) || defined(R200_TEST) || defined(ZR300_TEST) )
+
 #define CATCH_CONFIG_MAIN
 
 #include <climits>
@@ -661,8 +663,7 @@ TEST_CASE("DS-device verify standard UVC Controls set/get", "[live] [DS-device]"
     rs_device * dev = rs_get_device(ctx, 0, require_no_error());
     REQUIRE(dev != nullptr);
 
-    const char * name = rs_get_device_name(dev, require_no_error());
-    REQUIRE(name == std::string("Intel RealSense ZR300"));
+    REQUIRE(std::any_of(ds_names.begin(), ds_names.end(), [&](std::string const& s) {return s == rs_get_device_name(dev, require_no_error()); }));
 
     // Enabling non-depth streams does not change the emitter's state
     rs_enable_stream_preset(dev, RS_STREAM_COLOR, RS_PRESET_BEST_QUALITY, require_no_error());
@@ -673,7 +674,7 @@ TEST_CASE("DS-device verify standard UVC Controls set/get", "[live] [DS-device]"
     rs_start_device(dev, require_no_error());
 
 
-    REQUIRE(rs_get_device_option(dev, RS_OPTION_R200_EMITTER_ENABLED, require_no_error()) == 0);
+    REQUIRE(rs_get_device_option(dev, RS_OPTION_R200_EMITTER_ENABLED, require_no_error()) == 1);
 
     rs_option first = RS_OPTION_COLOR_BACKLIGHT_COMPENSATION;
     rs_option last = RS_OPTION_COLOR_ENABLE_AUTO_WHITE_BALANCE;
@@ -844,3 +845,5 @@ TEST_CASE("streaming five configurations sequentionally", "[live] [DS-device] [o
         });
     }
 }
+
+#endif /* !defined(MAKEFILE) || ( defined(LR200_TEST) || defined(R200_TEST) || defined(ZR300_TEST) ) */

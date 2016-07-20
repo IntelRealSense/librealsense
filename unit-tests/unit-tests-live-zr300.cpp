@@ -5,6 +5,8 @@
 // This set of tests is valid only for the R200 camera //
 /////////////////////////////////////////////////////////
 
+#if !defined(MAKEFILE) || ( defined(LIVE_TEST) && defined(ZR300_TEST) )
+
 #include "catch/catch.hpp"
 
 #include "librealsense/rs.hpp"
@@ -205,3 +207,5 @@ TEST_CASE("ZR300 correctly recognizes invalid options", "[live] [DS-device]")
         }
     }
 }
+
+#endif /* !defined(MAKEFILE) || ( defined(LIVE_TEST) && defined(ZR300_TEST) ) */

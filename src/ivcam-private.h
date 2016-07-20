@@ -56,7 +56,7 @@ namespace ivcam {
         int16_t ARLowerTh;      // "
     };
 
-        enum class fw_cmd : uint8_t
+    enum class fw_cmd : uint8_t
     {
         GetMEMSTemp                 = 0x0A,
         DebugFormat                 = 0x0B,
@@ -133,8 +133,8 @@ namespace ivcam {
 
     // Read device state
     size_t prepare_usb_command(uint8_t * request, size_t & requestSize, uint32_t op, uint32_t p1 = 0, uint32_t p2 = 0, uint32_t p3 = 0, uint32_t p4 = 0, uint8_t * data = 0, size_t dataLength = 0);
-    void get_gvd(uvc::device & device, std::timed_mutex & mutex, size_t sz, char * gvd);
-    void get_firmware_version_string(uvc::device & device, std::timed_mutex & mutex, std::string & version);
+    void get_gvd(uvc::device & device, std::timed_mutex & mutex, size_t sz, char * gvd, int gvd_cmd = (int)fw_cmd::GVD);
+    void get_firmware_version_string(uvc::device & device, std::timed_mutex & mutex, std::string & version, int gvd_cmd = (int)fw_cmd::GVD, int offset = 0);
     void get_module_serial_string(uvc::device & device, std::timed_mutex & mutex, std::string & serial, int offset);
 
     // Modify device state
