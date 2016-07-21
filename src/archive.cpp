@@ -203,6 +203,11 @@ long long frame_archive::frame_ref::get_frame_system_time() const
     return frame_ptr ? frame_ptr->get_frame_system_time() : 0;
 }
 
+rs_timestamp_domain frame_archive::frame_ref::get_frame_timestamp_domain() const
+{
+    return frame_ptr ? frame_ptr->get_frame_timestamp_domain() : RS_TIMESTAMP_DOMAIN_MAX_ENUM;
+}
+
 int frame_archive::frame_ref::get_frame_width() const
 {
     return frame_ptr ? frame_ptr->get_width() : 0;
@@ -268,6 +273,11 @@ const byte* frame_archive::frame::get_frame_data() const
     }
 
     return frame_data;
+}
+
+rs_timestamp_domain frame_archive::frame::get_frame_timestamp_domain() const
+{
+    return additional_data.timestamp_domain;
 }
 
 double frame_archive::frame::get_frame_timestamp() const

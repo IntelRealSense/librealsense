@@ -16,6 +16,7 @@ namespace rsimpl
         virtual ~frame_interface() {}
         virtual unsigned long long get_frame_number() const = 0;
         virtual void set_timestamp(double new_ts) = 0;
+        virtual void set_timestamp_domain(rs_timestamp_domain timestamp_domain) = 0;
         virtual rs_stream get_stream_type()const = 0;
     };
 

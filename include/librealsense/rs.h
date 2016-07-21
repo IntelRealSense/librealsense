@@ -257,6 +257,16 @@ typedef enum rs_event_source
     RS_EVENT_SOURCE_MAX_ENUM  = 0x7FFFFFFF
 }rs_event_source;
 
+
+typedef enum rs_timestamp_domain
+{
+    RS_TIMESTAMP_DOMAIN_CAMERA                   = 0,
+    RS_TIMESTAMP_DOMAIN_MICROCONTROLLER          = 1,
+    RS_TIMESTAMP_DOMAIN_COUNT   = 3,
+    RS_TIMESTAMP_DOMAIN_MAX_ENUM = 0x7FFFFFFF
+}rs_timestamp_domain;
+
+
 typedef struct rs_timestamp_data
 {
     unsigned long long  timestamp;      /* 32Mhz clock. Each tick corresponds to 31.25 usec */
@@ -674,6 +684,13 @@ void rs_release_frame(rs_device * device, rs_frame_ref * frame, rs_error ** erro
 double rs_get_detached_frame_timestamp(const rs_frame_ref * frame, rs_error ** error);
 
 /**
+* retrive timestamp domain from safe frame handle, returned from detach, clone_ref or from frame callback
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return            the timestamp domain of the frame (camera/ microcontroller)
+*/
+rs_timestamp_domain rs_get_detached_frame_timestamp_domain(const rs_frame_ref * frameset, rs_error ** error);
+
+/**
 * retrive frame number from safe frame handle, returned from detach, clone_ref or from frame callback
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return            the frame nubmer of the frame, in milliseconds since the device was started
@@ -783,6 +800,8 @@ const char * rs_source_to_string     (rs_source source);
 const char * rs_event_to_string      (rs_event_source event);
 const char * rs_blob_type_to_string  (rs_blob_type type);
 const char * rs_camera_info_to_string(rs_camera_info info);
+const char * rs_camera_info_to_string(rs_camera_info info);
+const char * rs_timestamp_domain_to_string(rs_timestamp_domain info);
 
 typedef enum
 {

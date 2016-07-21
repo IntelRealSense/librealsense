@@ -249,6 +249,20 @@ namespace rsimpl
         #undef CASE
     }
 
+    const char * get_string(rs_timestamp_domain value)
+    {
+        #define CASE(X) case RS_TIMESTAMP_DOMAIN_##X: return #X;
+        switch (value)
+        {
+        CASE(CAMERA)
+        CASE(MICROCONTROLLER)
+        CASE(COUNT)
+        CASE(MAX_ENUM)
+        default: assert(!is_valid(value)); return unknown;
+        }
+        #undef CASE
+    }
+
     size_t subdevice_mode_selection::get_image_size(rs_stream stream) const
     {
         return rsimpl::get_image_size(get_width(), get_height(), get_format(stream));
@@ -389,8 +403,8 @@ namespace rsimpl
         while (!calls.empty())
         {
             //pop one item
-			p = calls.front();
-			calls.pop_front();
+            p = calls.front();
+            calls.pop_front();
 
             //check if found combination that satisfies all interstream constraints
             if (all_requests_filled(p.requests) && validate_requests(p.requests))

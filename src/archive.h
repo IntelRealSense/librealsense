@@ -28,6 +28,7 @@ namespace rsimpl
             float bpp = 0;
             rs_format format = RS_FORMAT_ANY;
             rs_stream stream_type = RS_STREAM_MAX_ENUM;
+            rs_timestamp_domain timestamp_domain = RS_TIMESTAMP_DOMAIN_CAMERA;
             int pad = 0;
             std::chrono::high_resolution_clock::time_point frame_callback_started {};
 
@@ -85,8 +86,10 @@ namespace rsimpl
 
             const byte* get_frame_data() const;
             double get_frame_timestamp() const;
+            rs_timestamp_domain get_frame_timestamp_domain() const;
             void set_timestamp(double new_ts) override { additional_data.timestamp = new_ts; }
             unsigned long long get_frame_number() const override;
+            void set_timestamp_domain(rs_timestamp_domain timestamp_domain) override { additional_data.timestamp_domain = timestamp_domain; }
             long long get_frame_system_time() const;
             int get_width()const;
             int get_height()const;
@@ -154,6 +157,7 @@ namespace rsimpl
             double get_frame_timestamp() const override;
             unsigned long long get_frame_number() const override;
             long long get_frame_system_time() const override;
+            rs_timestamp_domain get_frame_timestamp_domain() const override;
             int get_frame_width() const override;
             int get_frame_height() const override;
             int get_frame_framerate() const override;

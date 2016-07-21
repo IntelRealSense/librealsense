@@ -115,6 +115,10 @@ void timestamp_corrector::correct_timestamp(frame_interface& frame, rs_stream st
     {
         const auto ready = [&]() { return data_queue[source_id].correct(frame); };
         auto res = cv.wait_for(lock, std::chrono::milliseconds(*events_timeout), ready);
+        if (res)
+        {
+            frame.set_timestamp_domain(RS_TIMESTAMP_DOMAIN_MICROCONTROLLER);
+        }
     }
     lock.unlock();
 }

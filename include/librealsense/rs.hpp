@@ -194,6 +194,12 @@ namespace rs
         event_imu_g2_sync       = 7
     };
 
+    enum class timestamp_domain
+    {
+        camera,
+        microcontroller
+    };
+
     struct float2 { float x,y; };
     struct float3 { float x,y,z; };
 
@@ -376,6 +382,13 @@ namespace rs
             auto r = rs_get_detached_frame_timestamp(frame_ref, &e);
             error::handle(e);
             return r;
+        }
+        rs::timestamp_domain get_frame_timestamp_domain() const
+        {
+            rs_error * e = nullptr;
+            auto r = rs_get_detached_frame_timestamp_domain(frame_ref, &e);
+            error::handle(e);
+            return static_cast<timestamp_domain>(r);
         }
 
         unsigned long long get_frame_number() const
