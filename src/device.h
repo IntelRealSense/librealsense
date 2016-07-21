@@ -64,7 +64,9 @@ private:
     bool                                        capturing;
     bool                                        data_acquisition_active;    
     std::chrono::high_resolution_clock::time_point capture_started;
-
+    std::atomic<int> max_publish_list_size;
+    std::atomic<int> event_queue_size;
+    std::atomic<int> events_timeout;
     std::shared_ptr<rsimpl::syncronizing_archive> archive;
 protected:
     const rsimpl::uvc::device &                 get_device() const { return *device; }
@@ -116,16 +118,17 @@ public:
 
     virtual bool                                supports_option(rs_option option) const override;
     virtual void                                get_option_range(rs_option option, double & min, double & max, double & step, double & def) override;
-
+    virtual void                                set_options(const rs_option options[], size_t count, const double values[]) override;
+    virtual void                                get_options(const rs_option options[], size_t count, double values[])override;
     virtual void                                on_before_start(const std::vector<rsimpl::subdevice_mode_selection> & selected_modes) = 0;
     virtual rs_stream                           select_key_stream(const std::vector<rsimpl::subdevice_mode_selection> & selected_modes) = 0;
-	virtual std::shared_ptr<rsimpl::frame_timestamp_reader>  create_frame_timestamp_reader(int subdevice) const = 0;
+    virtual std::shared_ptr<rsimpl::frame_timestamp_reader>  create_frame_timestamp_reader(int subdevice) const = 0;
     void                                        release_frame(rs_frame_ref * ref) override;
     const char *                                get_usb_port_id() const override;
     rs_frame_ref *                              clone_frame(rs_frame_ref * frame) override;
 
     virtual void                                send_blob_to_device(rs_blob_type type, void * data, int size) { throw std::runtime_error("not supported!"); }
-
+    static void                                 update_device_info(rsimpl::static_device_info& info);
 };
 
 #endif

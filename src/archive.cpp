@@ -3,8 +3,8 @@
 
 using namespace rsimpl;
 
-frame_archive::frame_archive(const std::vector<subdevice_mode_selection>& selection, std::chrono::high_resolution_clock::time_point capture_started) 
-    : mutex() , capture_started(capture_started)
+frame_archive::frame_archive(const std::vector<subdevice_mode_selection>& selection, std::atomic<int>* in_max_frame_queue_size, std::chrono::high_resolution_clock::time_point capture_started)
+    : mutex(), capture_started(capture_started), max_frame_queue_size(in_max_frame_queue_size)
 {
     // Store the mode selection that pertains to each native stream
     for (auto & mode : selection)
@@ -32,16 +32,23 @@ void frame_archive::unpublish_frame(frame* frame)
     {
         log_frame_callback_end(frame);
         std::lock_guard<std::recursive_mutex> lock(mutex);
+        --published_frames_per_stream[frame->get_stream_type()];
         freelist.push_back(std::move(*frame));
         published_frames.deallocate(frame);
+       
     }
 }
 
 frame_archive::frame* frame_archive::publish_frame(frame&& frame)
 {
+    if (published_frames_per_stream[frame.get_stream_type()] >= *max_frame_queue_size)
+    {
+        return nullptr;
+    }
     auto new_frame = published_frames.allocate();
     if (new_frame)
     {
+        ++published_frames_per_stream[frame.get_stream_type()];
         *new_frame = std::move(frame);
     }
     return new_frame;

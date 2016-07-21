@@ -39,7 +39,7 @@ namespace rsimpl
     static static_device_info get_sr300_info(std::shared_ptr<uvc::device> device, const ivcam::camera_calib_params & c)
     {
         LOG_INFO("Connecting to Intel RealSense SR300");
-
+       
         static_device_info info;
         info.name = {"Intel RealSense SR300"};
         
@@ -107,6 +107,7 @@ namespace rsimpl
 
         info.nominal_depth_scale = (c.Rmax / 0xFFFF) * 0.001f; // convert mm to m
         info.num_libuvc_transfer_buffers = 1;
+        rs_device_base::update_device_info(info);
         return info;
     }
 

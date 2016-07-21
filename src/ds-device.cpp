@@ -64,6 +64,9 @@ namespace rsimpl
 
     void ds_device::set_options(const rs_option options[], size_t count, const double values[])
     {
+        std::vector<rs_option>  base_opt;
+        std::vector<double>     base_opt_val;
+
         auto & dev = get_device();
         auto minmax_writer = make_struct_interface<ds::range    >([&dev]() { return ds::get_min_max_depth(dev);           }, [&dev](ds::range     v) { ds::set_min_max_depth(dev,v);           });
         auto disp_writer   = make_struct_interface<ds::disp_mode>([&dev]() { return ds::get_disparity_mode(dev);          }, [&dev](ds::disp_mode v) { ds::set_disparity_mode(dev,v);          });
@@ -127,9 +130,7 @@ namespace rsimpl
             case RS_OPTION_R200_DEPTH_CONTROL_LR_THRESHOLD:                 dc_writer.set(&ds::dc_params::lr_thresh,                values[i]); break;
 
             default: 
-                LOG_WARNING("Cannot set " << options[i] << " to " << values[i] << " on " << get_name());
-                throw std::logic_error("Option unsupported");
-                break;
+                base_opt.push_back(options[i]); base_opt_val.push_back(values[i]); break;
             }
         }
 
@@ -138,10 +139,18 @@ namespace rsimpl
         if(disp_writer.active) on_update_disparity_multiplier(disp_writer.struct_.disparity_multiplier);
         ae_writer.commit();
         dc_writer.commit();
+
+        //Handle common options
+        if (base_opt.size())
+            rs_device_base::set_options(base_opt.data(), base_opt.size(), base_opt_val.data());
     }
 
     void ds_device::get_options(const rs_option options[], size_t count, double values[])
     {
+        std::vector<rs_option>  base_opt;
+        std::vector<size_t>     base_opt_index;
+        std::vector<double>     base_opt_val;
+
         auto & dev = get_device();
         auto minmax_reader = make_struct_interface<ds::range    >([&dev]() { return ds::get_min_max_depth(dev);           }, [&dev](ds::range     v) { ds::set_min_max_depth(dev,v);           });
         auto disp_reader   = make_struct_interface<ds::disp_mode>([&dev]() { return ds::get_disparity_mode(dev);          }, [&dev](ds::disp_mode v) { ds::set_disparity_mode(dev,v);          });
@@ -203,12 +212,19 @@ namespace rsimpl
             case RS_OPTION_R200_DEPTH_CONTROL_NEIGHBOR_THRESHOLD:           values[i] = dc_reader.get(&ds::dc_params::neighbor_thresh         ); break;
             case RS_OPTION_R200_DEPTH_CONTROL_LR_THRESHOLD:                 values[i] = dc_reader.get(&ds::dc_params::lr_thresh               ); break;
 
-            default: 
-                LOG_WARNING("Cannot get " << options[i] << " on " << get_name());
-                throw std::logic_error("Option unsupported");
-                break;
+            default:
+                base_opt.push_back(options[i]); base_opt_index.push_back(i); break;
             }
         }
+        if (base_opt.size())
+        {
+            base_opt_val.resize(base_opt.size());
+            rs_device_base::get_options(base_opt.data(), base_opt.size(), base_opt_val.data());
+        }
+
+        // Merge the local data with values obtained by base class
+        for (auto i : base_opt_index)
+            values[i] = base_opt_val[i];
     }
 
     void ds_device::on_before_start(const std::vector<subdevice_mode_selection> & selected_modes)
@@ -281,6 +297,8 @@ namespace rsimpl
 
     void ds_device::set_common_ds_config(std::shared_ptr<uvc::device> device, static_device_info& info, const ds::ds_calibration& c)
     {
+        
+
         info.capabilities_vector.push_back(RS_CAPABILITIES_COLOR);
         info.capabilities_vector.push_back(RS_CAPABILITIES_DEPTH);
         info.capabilities_vector.push_back(RS_CAPABILITIES_INFRARED);
@@ -394,6 +412,8 @@ namespace rsimpl
 
         // On LibUVC backends, the R200 should use four transfer buffers
         info.num_libuvc_transfer_buffers = 4;
+
+        rs_device_base::update_device_info(info);
     }
 
     bool ds_device::supports_option(rs_option option) const

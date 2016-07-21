@@ -156,7 +156,10 @@ namespace rs
         r200_fisheye_color_exposure                     = 69,
         r200_fisheye_color_gain                         = 70,
         r200_fisheye_strobe                             = 71,
-        r200_fisheye_ext_trig                           = 72
+        r200_fisheye_ext_trig                           = 72,
+        frames_queue_size                               = 73,
+        events_queue_size                               = 74,
+        max_timestamp_latency                           = 75
     };
 
     enum class source : uint8_t

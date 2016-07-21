@@ -164,7 +164,10 @@ namespace rsimpl
         CASE(FISHEYE_COLOR_GAIN)
         CASE(FISHEYE_STROBE)
         CASE(FISHEYE_EXT_TRIG)
-		default: assert(!is_valid(value)); return unknown;
+        CASE(FRAMES_QUEUE_SIZE)
+        CASE(EVENTS_QUEUE_SIZE)
+        CASE(MAX_TIMESTAMP_LATENCY)
+        default: assert(!is_valid(value)); return unknown;
         }
         #undef CASE
     }
