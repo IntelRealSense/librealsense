@@ -1,6 +1,8 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2016 Intel Corporation. All Rights Reserved.
 
+#include <algorithm>
+
 #include "image.h"
 #include "ds5.h"
 #include "ds5-private.h"
@@ -42,6 +44,7 @@ namespace rsimpl
 
     rs_stream ds5_camera::select_key_stream(const std::vector<rsimpl::subdevice_mode_selection> & selected_modes)
     {
+        // DS5t may have a different behaviour here. This is a placeholder
         int fps[RS_STREAM_NATIVE_COUNT] = {}, max_fps = 0;
         for (const auto & m : selected_modes)
         {

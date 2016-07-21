@@ -9,8 +9,10 @@ sudo apt-get install linux-headers-generic build-essential
 apt-get source linux
 cd linux-*
 
-# Apply the one, simple UVC format patch
+# Apply UVC format patches for RealSense devices
 patch -p1 < ../scripts/realsense-camera-formats.patch
+patch -p1 < ../scripts/realsense-y8-format-request.patch
+patch -p1 < ../scripts/realsense_camera_formats_win_guids.patch
 
 # Copy configuration
 cp /usr/src/linux-headers-$(uname -r)/.config .

@@ -37,14 +37,16 @@ namespace rsimpl
 
         info.capabilities_vector.push_back(RS_CAPABILITIES_DEPTH);
         info.capabilities_vector.push_back(RS_CAPABILITIES_INFRARED);
+        info.capabilities_vector.push_back(RS_CAPABILITIES_INFRARED2);
 
         // Populate IR modes on subdevice 1
         info.stream_subdevices[RS_STREAM_INFRARED] = 1;
+        info.stream_subdevices[RS_STREAM_INFRARED2] = 1;
         for(auto & m : ds5d_ir_only_modes)
         {
             for(auto fps : m.fps)
             {
-                info.subdevice_modes.push_back({1, m.dims, pf_y8, fps, {m.dims.x, m.dims.y}, {}, {0}});
+                info.subdevice_modes.push_back({1, m.dims, pf_l8, fps, {m.dims.x, m.dims.y}, {}, {0}});
             }
         }
 
@@ -54,15 +56,16 @@ namespace rsimpl
         {
             for(auto fps : m.fps)
             {
-                info.subdevice_modes.push_back({0, m.dims, pf_z16, fps, {m.dims.x, m.dims.y}, {}, {0}});
+                info.subdevice_modes.push_back({0, m.dims, pf_d16, fps, {m.dims.x, m.dims.y}, {}, {0}});
             }
         }
 
-	// Populate the presets
+        // Populate the presets
         for(int i=0; i<RS_PRESET_COUNT; ++i)
         {
             info.presets[RS_STREAM_DEPTH   ][i] = {true, 640, 480, RS_FORMAT_Z16, 30};
             info.presets[RS_STREAM_INFRARED][i] = {true, 640, 480, RS_FORMAT_Y8, 30};
+            info.presets[RS_STREAM_INFRARED2][i] = {true, 640, 480, RS_FORMAT_Y8, 30};
         }
 
         return info;

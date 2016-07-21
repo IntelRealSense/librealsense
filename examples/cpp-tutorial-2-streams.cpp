@@ -25,18 +25,32 @@ int main() try
     printf("    Serial number: %s\n", dev->get_serial());
     printf("    Firmware version: %s\n", dev->get_firmware_version());
 
-    // Configure all streams to run at VGA resolution at 60 frames per second
-    dev->enable_stream(rs::stream::depth, 640, 480, rs::format::z16, 60);
-    dev->enable_stream(rs::stream::color, 640, 480, rs::format::rgb8, 60);
-    dev->enable_stream(rs::stream::infrared, 640, 480, rs::format::y8, 60);
-    try { dev->enable_stream(rs::stream::infrared2, 640, 480, rs::format::y8, 60); }
-    catch(...) { printf("Device does not provide infrared2 stream.\n"); }
+    std::vector<rs::stream> supported_streams;
+
+    for (int i=(int)rs::capabilities::depth; i <=(int)rs::capabilities::infrared2; i++)
+        if (dev->supports((rs::capabilities)i))
+            supported_streams.push_back((rs::stream)i);
+
+    // Configure all supported streams to run at 30 frames per second
+    for (auto & stream : supported_streams)
+    {
+        switch (stream)
+        {
+            case rs::stream::depth: dev->enable_stream(stream, 640, 480, rs::format::z16, 30); break;
+            case rs::stream::color: dev->enable_stream(stream, 640, 480, rs::format::rgb8, 30); break;
+            case rs::stream::infrared: dev->enable_stream(stream, 640, 480, rs::format::y8, 30); break;
+            case rs::stream::infrared2: dev->enable_stream(stream, 640, 480, rs::format::y8, 30); break;
+            default : break;    // This demo will display native streams only
+        }
+    }
+
     dev->start();
 
     // Open a GLFW window to display our output
     glfwInit();
     GLFWwindow * win = glfwCreateWindow(1280, 960, "librealsense tutorial #2", nullptr, nullptr);
     glfwMakeContextCurrent(win);
+
     while(!glfwWindowShouldClose(win))
     {
         // Wait for new frame data
@@ -46,25 +60,30 @@ int main() try
         glClear(GL_COLOR_BUFFER_BIT);
         glPixelZoom(1, -1);
 
-        // Display depth data by linearly mapping depth between 0 and 2 meters to the red channel
-        glRasterPos2f(-1, 1);
-        glPixelTransferf(GL_RED_SCALE, 0xFFFF * dev->get_depth_scale() / 2.0f);
-        glDrawPixels(640, 480, GL_RED, GL_UNSIGNED_SHORT, dev->get_frame_data(rs::stream::depth));
-        glPixelTransferf(GL_RED_SCALE, 1.0f);
-
-        // Display color image as RGB triples
-        glRasterPos2f(0, 1);
-        glDrawPixels(640, 480, GL_RGB, GL_UNSIGNED_BYTE, dev->get_frame_data(rs::stream::color));
-
-        // Display infrared image by mapping IR intensity to visible luminance
-        glRasterPos2f(-1, 0);
-        glDrawPixels(640, 480, GL_LUMINANCE, GL_UNSIGNED_BYTE, dev->get_frame_data(rs::stream::infrared));
-
-        // Display second infrared image by mapping IR intensity to visible luminance
-        if(dev->is_stream_enabled(rs::stream::infrared2))
+        for (auto & stream : supported_streams)
         {
-            glRasterPos2f(0, 0);
-            glDrawPixels(640, 480, GL_LUMINANCE, GL_UNSIGNED_BYTE, dev->get_frame_data(rs::stream::infrared2));
+            switch (stream)
+            {
+                case rs::stream::depth: // Display depth data by linearly mapping depth between 0 and 2 meters to the red channel
+                    glRasterPos2f(-1, 1);
+                    glPixelTransferf(GL_RED_SCALE, 0xFFFF * dev->get_depth_scale() / 2.0f);
+                    glDrawPixels(640, 480, GL_RED, GL_UNSIGNED_SHORT, dev->get_frame_data(rs::stream::depth));
+                    glPixelTransferf(GL_RED_SCALE, 1.0f);
+                break;
+                case rs::stream::color: // Display color image as RGB triples
+                    glRasterPos2f(0, 1);
+                    glDrawPixels(640, 480, GL_RGB, GL_UNSIGNED_BYTE, dev->get_frame_data(rs::stream::color));
+                break;
+                case rs::stream::infrared: // Display infrared image by mapping IR intensity to visible luminance
+                    glRasterPos2f(-1, 0);
+                    glDrawPixels(640, 480, GL_LUMINANCE, GL_UNSIGNED_BYTE, dev->get_frame_data(rs::stream::infrared));
+                break;
+                case rs::stream::infrared2: // Display second infrared image by mapping IR intensity to visible luminance
+                    glRasterPos2f(0, 0);
+                    glDrawPixels(640, 480, GL_LUMINANCE, GL_UNSIGNED_BYTE, dev->get_frame_data(rs::stream::infrared2));
+                break;
+                default : break;    // This demo will display native streams only
+            }
         }
 
         glfwSwapBuffers(win);
