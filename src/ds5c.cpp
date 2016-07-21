@@ -106,7 +106,7 @@ namespace rsimpl
 
     void ds5c_camera::get_options(const rs_option options[], size_t count, double values[])
     {
-        ds5c_camera::get_options(options, count, values);
+        ds5_camera::get_options(options, count, values);
     }
 
     std::shared_ptr<rs_device> make_ds5c_rolling_device(std::shared_ptr<uvc::device> device)
