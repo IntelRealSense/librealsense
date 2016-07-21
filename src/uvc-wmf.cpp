@@ -172,44 +172,44 @@ namespace rsimpl
             return true;
         }
 
-		bool parse_usb_path_from_device_id(int & vid, int & pid, int & mi, std::string & unique_id, const std::string & device_id)
-		{
-			auto name = device_id;
-			std::transform(begin(name), end(name), begin(name), ::tolower);
-			auto tokens = tokenize(name, '\\');
-			if (tokens.size() < 1 || tokens[0] != R"(usb)") return false; // Not a USB device
+        bool parse_usb_path_from_device_id(int & vid, int & pid, int & mi, std::string & unique_id, const std::string & device_id)
+        {
+            auto name = device_id;
+            std::transform(begin(name), end(name), begin(name), ::tolower);
+            auto tokens = tokenize(name, '\\');
+            if (tokens.size() < 1 || tokens[0] != R"(usb)") return false; // Not a USB device
 
-			auto ids = tokenize(tokens[1], '&');
-			if (ids[0].size() != 8 || ids[0].substr(0, 4) != "vid_" || !(std::istringstream(ids[0].substr(4, 4)) >> std::hex >> vid))
-			{
-				LOG_ERROR("malformed vid string: " << tokens[1]);
-				return false;
-			}
+            auto ids = tokenize(tokens[1], '&');
+            if (ids[0].size() != 8 || ids[0].substr(0, 4) != "vid_" || !(std::istringstream(ids[0].substr(4, 4)) >> std::hex >> vid))
+            {
+                LOG_ERROR("malformed vid string: " << tokens[1]);
+                return false;
+            }
 
-			if (ids[1].size() != 8 || ids[1].substr(0, 4) != "pid_" || !(std::istringstream(ids[1].substr(4, 4)) >> std::hex >> pid))
-			{
-				LOG_ERROR("malformed pid string: " << tokens[1]);
-				return false;
-			}
+            if (ids[1].size() != 8 || ids[1].substr(0, 4) != "pid_" || !(std::istringstream(ids[1].substr(4, 4)) >> std::hex >> pid))
+            {
+                LOG_ERROR("malformed pid string: " << tokens[1]);
+                return false;
+            }
 
-			if (ids[2].size() != 5 || ids[2].substr(0, 3) != "mi_" || !(std::istringstream(ids[2].substr(3, 2)) >> mi))
-			{
-				LOG_ERROR("malformed mi string: " << tokens[1]);
-				return false;
-			}
+            if (ids[2].size() != 5 || ids[2].substr(0, 3) != "mi_" || !(std::istringstream(ids[2].substr(3, 2)) >> mi))
+            {
+                LOG_ERROR("malformed mi string: " << tokens[1]);
+                return false;
+            }
 
-			ids = tokenize(tokens[2], '&');
-			if (ids.size() < 2)
-			{
-				LOG_ERROR("malformed id string: " << tokens[2]);
-				return false;
-			}
-			unique_id = ids[1];
-			return true;
-		}
+            ids = tokenize(tokens[2], '&');
+            if (ids.size() < 2)
+            {
+                LOG_ERROR("malformed id string: " << tokens[2]);
+                return false;
+            }
+            unique_id = ids[1];
+            return true;
+        }
 
 
-		struct context
+        struct context
         {
             context()
             {
@@ -761,11 +761,13 @@ namespace rsimpl
         void claim_interface(device & device, const guid & interface_guid, int interface_number)
         {
             device.open_win_usb(device.vid, device.pid, device.unique_id, interface_guid, interface_number);
+            device.claimed_interfaces.push_back(interface_number);
         }
 
         void claim_aux_interface(device & device, const guid & interface_guid, int interface_number)
         {
             device.open_win_usb(device.aux_vid, device.aux_pid, device.aux_unique_id, interface_guid, interface_number);
+            device.claimed_interfaces.push_back(interface_number);
         }
 
         void power_on_adapter_board()
