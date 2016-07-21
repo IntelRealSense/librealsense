@@ -19,10 +19,14 @@
 #include <mutex>                            // For mutex, unique_lock
 #include <condition_variable>               // For condition_variable
 #include <memory>                           // For unique_ptr
-#include <map>                              // For map
+#include <atomic>
+#include <map>          
 
 const uint8_t RS_STREAM_NATIVE_COUNT    = 5;
-const uint8_t RS_USER_QUEUE_SIZE        = 64;
+const int RS_USER_QUEUE_SIZE = 20;
+const int RS_MAX_EVENT_QUEUE_SIZE = 500;
+const int RS_MAX_EVENT_TINE_OUT = 10;
+
 
 namespace rsimpl
 {
@@ -493,10 +497,6 @@ namespace rsimpl
             }
             auto i = item - buffer;
             buffer[i] = std::move(T());
-
-
-          
-
             
             {
                 std::unique_lock<std::mutex> lock(mutex);

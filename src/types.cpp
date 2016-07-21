@@ -166,7 +166,10 @@ namespace rsimpl
         CASE(FISHEYE_COLOR_GAIN)
         CASE(FISHEYE_STROBE)
         CASE(FISHEYE_EXT_TRIG)
-		default: assert(!is_valid(value)); return unknown;
+        CASE(FRAMES_QUEUE_SIZE)
+        CASE(EVENTS_QUEUE_SIZE)
+        CASE(MAX_TIMESTAMP_LATENCY)
+        default: assert(!is_valid(value)); return unknown;
         }
         #undef CASE
     }
@@ -386,8 +389,8 @@ namespace rsimpl
         while (!calls.empty())
         {
             //pop one item
-            p = calls.back();
-            calls.pop_back();
+			p = calls.front();
+			calls.pop_front();
 
             //check if found combination that satisfies all interstream constraints
             if (all_requests_filled(p.requests) && validate_requests(p.requests))

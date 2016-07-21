@@ -193,9 +193,11 @@ namespace rsimpl
         // This data will be left constant after creation, and accessed from all threads
         subdevice_mode_selection modes[RS_STREAM_NATIVE_COUNT];
         
-        small_heap<frame, RS_USER_QUEUE_SIZE> published_frames;
-        small_heap<frameset, RS_USER_QUEUE_SIZE> published_sets;
-        small_heap<frame_ref, RS_USER_QUEUE_SIZE> detached_refs;
+        std::atomic<int>* max_frame_queue_size;
+        std::atomic<int> published_frames_per_stream[RS_STREAM_COUNT];
+        small_heap<frame, RS_USER_QUEUE_SIZE*RS_STREAM_COUNT> published_frames;
+        small_heap<frameset, RS_USER_QUEUE_SIZE*RS_STREAM_COUNT> published_sets;
+        small_heap<frame_ref, RS_USER_QUEUE_SIZE*RS_STREAM_COUNT> detached_refs;
         
 
     protected:
@@ -205,7 +207,7 @@ namespace rsimpl
         std::chrono::high_resolution_clock::time_point capture_started;
 
     public:
-        frame_archive(const std::vector<subdevice_mode_selection> & selection, std::chrono::high_resolution_clock::time_point capture_started = std::chrono::high_resolution_clock::now());
+        frame_archive(const std::vector<subdevice_mode_selection> & selection, std::atomic<int>* max_frame_queue_size, std::chrono::high_resolution_clock::time_point capture_started = std::chrono::high_resolution_clock::now());
 
         // Safe to call from any thread
         bool is_stream_enabled(rs_stream stream) const { return modes[stream].mode.pf.fourcc != 0; }

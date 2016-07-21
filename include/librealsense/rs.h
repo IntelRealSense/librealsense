@@ -201,7 +201,12 @@ typedef enum rs_option
     RS_OPTION_FISHEYE_COLOR_GAIN                              = 70,
     RS_OPTION_FISHEYE_STROBE                                  = 71,
     RS_OPTION_FISHEYE_EXT_TRIG                                = 72,
-    RS_OPTION_COUNT                                           = 73,
+    RS_OPTION_FRAMES_QUEUE_SIZE                               = 73,
+    RS_OPTION_EVENTS_QUEUE_SIZE                               = 74,
+    RS_OPTION_MAX_TIMESTAMP_LATENCY                           = 75,
+    RS_OPTION_COUNT                                           = 76,
+    
+
     RS_OPTION_MAX_ENUM = 0x7FFFFFFF
 } rs_option;
 

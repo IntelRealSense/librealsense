@@ -6,6 +6,7 @@
 #include <deque>
 #include <condition_variable>
 #include <mutex>
+#include <atomic>
 
 
 namespace rsimpl
@@ -24,7 +25,7 @@ namespace rsimpl
         void    push_back_data(rs_timestamp_data data);
         bool    pop_front_data();
         bool    erase(rs_timestamp_data data);
-        bool    correct(const rs_event_source& source_id, frame_interface& frame);
+        bool    correct(frame_interface& frame);
         size_t  size();
 
         private:
@@ -44,7 +45,7 @@ namespace rsimpl
 
     class timestamp_corrector : public timestamp_corrector_interface{
     public:
-        timestamp_corrector(int queue_size = 500, int time_out = 10);
+        timestamp_corrector(std::atomic<int>* event_queue_size, std::atomic<int>* events_timeout);
         ~timestamp_corrector() override;
         void on_timestamp(rs_timestamp_data data) override;
         void correct_timestamp(frame_interface& frame, rs_stream stream) override;
@@ -54,10 +55,10 @@ namespace rsimpl
         void update_source_id(rs_event_source& source_id, const rs_stream stream);
 
         std::mutex mtx;
-        concurrent_queue data_queue;
+        concurrent_queue data_queue[RS_EVENT_SOURCE_COUNT];
         std::condition_variable cv;
-        size_t queue_size;
-        int time_out;
+        std::atomic<int>* event_queue_size;
+        std::atomic<int>* events_timeout;
 
     };
 

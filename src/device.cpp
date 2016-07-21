@@ -14,9 +14,14 @@
 using namespace rsimpl;
 using namespace rsimpl::motion_module;
 
+const int MAX_FRAME_QUEUE_SIZE = 20;
+const int MAX_EVENT_QUEUE_SIZE = 500;
+const int MAX_EVENT_TINE_OUT   = 10;
+
 rs_device_base::rs_device_base(std::shared_ptr<rsimpl::uvc::device> device, const rsimpl::static_device_info & info) : device(device), config(info), capturing(false), usb_port_id(""), data_acquisition_active(false), motion_module_ready(false),
     depth(config, RS_STREAM_DEPTH), color(config, RS_STREAM_COLOR), infrared(config, RS_STREAM_INFRARED), infrared2(config, RS_STREAM_INFRARED2), fisheye(config, RS_STREAM_FISHEYE),
-    points(depth), rect_color(color), color_to_depth(color, depth), depth_to_color(depth, color), depth_to_rect_color(depth, rect_color), infrared2_to_depth(infrared2,depth), depth_to_infrared2(depth,infrared2)
+    points(depth), rect_color(color), color_to_depth(color, depth), depth_to_color(depth, color), depth_to_rect_color(depth, rect_color), infrared2_to_depth(infrared2,depth), depth_to_infrared2(depth,infrared2),
+    max_publish_list_size(MAX_FRAME_QUEUE_SIZE), event_queue_size(MAX_EVENT_QUEUE_SIZE), events_timeout(MAX_EVENT_TINE_OUT)
 {
     streams[RS_STREAM_DEPTH    ] = native_streams[RS_STREAM_DEPTH]     = &depth;
     streams[RS_STREAM_COLOR    ] = native_streams[RS_STREAM_COLOR]     = &color;
@@ -218,7 +223,7 @@ void rs_device_base::start_video_streaming()
 
     auto capture_start_time = std::chrono::high_resolution_clock::now();
     auto selected_modes = config.select_modes();
-    auto archive = std::make_shared<syncronizing_archive>(selected_modes, select_key_stream(selected_modes), capture_start_time);
+    auto archive = std::make_shared<syncronizing_archive>(selected_modes, select_key_stream(selected_modes), &max_publish_list_size, &event_queue_size, &events_timeout, capture_start_time);
     
     for(auto & s : native_streams) s->archive.reset(); // Starting capture invalidates the current stream info, if any exists from previous capture
 
@@ -370,6 +375,13 @@ rs_frame_ref* ::rs_device_base::clone_frame(rs_frame_ref* frame)
     return result;
 }
 
+void rs_device_base::update_device_info(rsimpl::static_device_info& info)
+{
+    info.options.push_back({ RS_OPTION_FRAMES_QUEUE_SIZE,     1, MAX_FRAME_QUEUE_SIZE,      1, MAX_FRAME_QUEUE_SIZE });
+    info.options.push_back({ RS_OPTION_EVENTS_QUEUE_SIZE,     1, MAX_EVENT_QUEUE_SIZE, 1, MAX_EVENT_QUEUE_SIZE });
+    info.options.push_back({ RS_OPTION_MAX_TIMESTAMP_LATENCY, 1, MAX_EVENT_TINE_OUT,   1, MAX_EVENT_TINE_OUT });
+}
+
 bool rs_device_base::supports(rs_capabilities capability) const
 {
     auto found = false;
@@ -417,6 +429,52 @@ void rs_device_base::get_option_range(rs_option option, double & min, double & m
     }
 
     throw std::logic_error("range not specified");
+}
+
+void rs_device_base::set_options(const rs_option options[], size_t count, const double values[])
+{
+    for (size_t i = 0; i < count; ++i)
+    {
+        switch (options[i])
+        {
+        case  RS_OPTION_FRAMES_QUEUE_SIZE:
+            max_publish_list_size = values[i];
+            break;
+        case  RS_OPTION_EVENTS_QUEUE_SIZE:
+            event_queue_size = values[i];
+            break;
+        case  RS_OPTION_MAX_TIMESTAMP_LATENCY:
+            events_timeout = values[i];
+            break;
+        default:
+            LOG_WARNING("Cannot set " << options[i] << " to " << values[i] << " on " << get_name());
+            throw std::logic_error("Option unsupported");
+            break;
+        }
+    }
+}
+
+void rs_device_base::get_options(const rs_option options[], size_t count, double values[])
+{
+    for (size_t i = 0; i < count; ++i)
+    {
+        switch (options[i])
+        {
+        case  RS_OPTION_FRAMES_QUEUE_SIZE:
+            values[i] = max_publish_list_size;
+            break;
+        case  RS_OPTION_EVENTS_QUEUE_SIZE:
+            values[i] = event_queue_size;
+            break;
+        case  RS_OPTION_MAX_TIMESTAMP_LATENCY:
+            values[i] = events_timeout;
+            break;
+        default:
+            LOG_WARNING("Cannot get " << options[i] << " on " << get_name());
+            throw std::logic_error("Option unsupported");
+            break;
+        }
+    }
 }
 
 void rs_device_base::disable_auto_option(int subdevice, rs_option auto_opt)
