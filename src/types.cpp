@@ -389,8 +389,8 @@ namespace rsimpl
         while (!calls.empty())
         {
             //pop one item
-            p = calls.back();
-            calls.pop_back();
+			p = calls.front();
+			calls.pop_front();
 
             //check if found combination that satisfies all interstream constraints
             if (all_requests_filled(p.requests) && validate_requests(p.requests))
