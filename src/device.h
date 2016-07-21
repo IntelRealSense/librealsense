@@ -35,8 +35,8 @@ namespace rsimpl
     class wraparound_mechanism
     {
     public:
-        wraparound_mechanism(T max_num)
-            : max_number(max_num), last_number(0), num_of_wraparounds(0)
+        wraparound_mechanism(T min_value, T max_value)
+            : max_number(max_value - min_value + 1), last_number(min_value), num_of_wraparounds(0)
         {}
 
         T fix(T number)
@@ -44,13 +44,14 @@ namespace rsimpl
             if ((number + (num_of_wraparounds*max_number)) < last_number)
                 ++num_of_wraparounds;
 
+
             number += (num_of_wraparounds*max_number);
             last_number = number;
             return number;
         }
 
     private:
-        T num_of_wraparounds;
+        unsigned long long num_of_wraparounds;
         T max_number;
         T last_number;
     };
