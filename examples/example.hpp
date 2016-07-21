@@ -222,12 +222,12 @@ public:
         draw_text(rx+8, ry+16, ss.str().c_str());
     }
 
-    void show(rs::stream stream, rs::format format, int stream_framerate, int frame_number, int rx, int ry, int rw, int rh, int width, int height)
+    void show(rs::stream stream, rs::format format, int stream_framerate, unsigned long long frame_number, double timestamp, int rx, int ry, int rw, int rh, int width, int height)
     {
         show(rx, ry, rw, rh, width, height);
         if (frame_number != 0)
         {
-            std::ostringstream ss; ss << stream << ": " << width << " x " << height << " " << format << " (" << fps << "/" << stream_framerate << ")" << ", F#: " << frame_number;
+            std::ostringstream ss; ss << stream << ": " << width << " x " << height << " " << format << " (" << fps << "/" << stream_framerate << ")" << ", F#: " << frame_number << ", TS: " << timestamp;
             glColor3f(0,0,0);
             draw_text(rx+9, ry+17, ss.str().c_str());
             glColor3f(1,1,1);

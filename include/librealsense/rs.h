@@ -20,17 +20,20 @@ extern "C" {
 /*// Return version in "X.Y.Z" format */
 #define RS_API_VERSION_STR (VAR_ARG_STRING(RS_API_MAJOR_VERSION.RS_API_MINOR_VERSION.RS_API_PATCH_VERSION))
 
-
+/* rs_capabilities defines the full set of functionality that a RealSense device might provide
+   to check what functionality is supported by a particular device at runtime call dev->supports(capability) */
 typedef enum rs_capabilities
 {
-    RS_CAPABILITIES_DEPTH                   = 0,
-    RS_CAPABILITIES_COLOR                   = 1,
-    RS_CAPABILITIES_INFRARED                = 2,
-    RS_CAPABILITIES_INFRARED2               = 3,
-    RS_CAPABILITIES_FISH_EYE                = 4,
-    RS_CAPABILITIES_MOTION_EVENTS           = 5,
-    RS_CAPABILITIES_MOTION_MODULE_FW_UPDATE = 6,
-    RS_CAPABILITIES_COUNT                   = 7,
+    RS_CAPABILITIES_DEPTH                   = 0, /**< provides depth stream */
+    RS_CAPABILITIES_COLOR                   = 1, /**< provides color stream */
+    RS_CAPABILITIES_INFRARED                = 2, /**< provides infrared stream */
+    RS_CAPABILITIES_INFRARED2               = 3, /**< provides second infrared stream */
+    RS_CAPABILITIES_FISH_EYE                = 4, /**< provides wide field of view (fish-eye) stream */
+    RS_CAPABILITIES_MOTION_EVENTS           = 5, /**< provides gyro and accelorometer events */
+    RS_CAPABILITIES_MOTION_MODULE_FW_UPDATE = 6, /**< provides method for upgrading motion module firmware */
+    RS_CAPABILITIES_ADAPTER_BOARD           = 7, /**< interanlly includes MIPI to USB adapter */
+    RS_CAPABILITIES_ENUMERATION             = 8, /**< provides enough basic functionality to be considered supported. this to catch at runtime various outdated engineering samples */
+    RS_CAPABILITIES_COUNT                   = 9, 
     RS_CAPABILITIES_MAX_ENUM = 0x7FFFFFFF
 } rs_capabilities;
 
@@ -208,8 +211,20 @@ typedef enum rs_option
 } rs_option;
 
 typedef enum rs_blob_type {
-    RS_BLOB_TYPE_MOTION_MODULE_FIRMWARE_UPDATE                = 1
+    RS_BLOB_TYPE_MOTION_MODULE_FIRMWARE_UPDATE                = 0,
+    RS_BLOB_TYPE_COUNT                                        = 1,
+    RS_BLOB_TYPE_MAX_ENUM = 0x7FFFFFFF
 }  rs_blob_type;
+
+typedef enum rs_camera_info {
+    RS_CAMERA_INFO_DEVICE_NAME                                = 0,
+    RS_CAMERA_INFO_DEVICE_SERIAL_NUMBER                       = 1,
+    RS_CAMERA_INFO_CAMERA_FIRMWARE_VERSION                    = 2,
+    RS_CAMERA_INFO_ADAPTER_BOARD_FIRMWARE_VERSION             = 3,
+    RS_CAMERA_INFO_MOTION_MODULE_FIRMWARE_VERSION             = 4,
+    RS_CAMERA_INFO_COUNT                                      = 5,
+    RS_CAMERA_INFO_MAX_ENUM = 0x7FFFFFFF
+} rs_camera_info;
 
 typedef struct rs_intrinsics
 {
@@ -231,29 +246,29 @@ typedef struct rs_extrinsics
 
 typedef enum rs_event_source
 {
-    RS_EVENT_IMU_ACCEL        = 1,
-    RS_EVENT_IMU_GYRO         = 2,
-    RS_EVENT_IMU_DEPTH_CAM    = 3,
-    RS_EVENT_IMU_MOTION_CAM   = 4,
-    RS_EVENT_G0_SYNC          = 5,
-    RS_EVENT_G1_SYNC          = 6,
-    RS_EVENT_G2_SYNC          = 7,
-    RS_EVENT_SOURCE_COUNT     = 8,
+    RS_EVENT_IMU_ACCEL        = 0,
+    RS_EVENT_IMU_GYRO         = 1,
+    RS_EVENT_IMU_DEPTH_CAM    = 2,
+    RS_EVENT_IMU_MOTION_CAM   = 3,
+    RS_EVENT_G0_SYNC          = 4,
+    RS_EVENT_G1_SYNC          = 5,
+    RS_EVENT_G2_SYNC          = 6,
+    RS_EVENT_SOURCE_COUNT     = 7,
     RS_EVENT_SOURCE_MAX_ENUM  = 0x7FFFFFFF
 }rs_event_source;
 
 typedef struct rs_timestamp_data
 {
-    unsigned int        timestamp;      /* 32Mhz clock. Each tick corresponds to 31.25 usec */
+    unsigned long long  timestamp;      /* 32Mhz clock. Each tick corresponds to 31.25 usec */
     rs_event_source     source_id;
-    unsigned short      frame_number;  /* 12 bit; per data source */
+    unsigned long long  frame_number;  /* original size: 12 bit ; per data source */
 } rs_timestamp_data;
 
 typedef struct rs_motion_data
 {
     rs_timestamp_data   timestamp_data;
     unsigned int        is_valid;   /* boolean */
-    float               axes[3];    /* Three [x,y,z] axes; 16 bit data for Gyro, 12 bit for Accelerometer; 2's complement*/
+    float               axes[3];    /* Three [x,y,z] axes; 16 bit data for Gyro [rad/sec], 12 bit for Accelerometer; 2's complement [m/sec^2]*/
 } rs_motion_data;
 
 
@@ -297,6 +312,13 @@ const char * rs_get_device_name(const rs_device * device, rs_error ** error);
  * \return            the serial number, in a format specific to the device model
  */
 const char * rs_get_device_serial(const rs_device * device, rs_error ** error);
+
+/**
+* retrieve camera specifci information, like versions of the various internal componnents
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return            the requested camera info string, in a format specific to the device model
+*/
+const char * rs_get_device_info(const rs_device * device, rs_camera_info info, rs_error ** error);
 
 /**
  * retrieve the USB port number of the device
@@ -626,7 +648,7 @@ double rs_get_frame_timestamp(const rs_device * device, rs_stream stream, rs_err
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return            the frame number
 */
-int rs_get_frame_number(const rs_device * device, rs_stream stream, rs_error ** error);
+unsigned long long rs_get_frame_number(const rs_device * device, rs_stream stream, rs_error ** error);
 
 /**
  * retrieve the contents of the latest frame on a stream
@@ -656,7 +678,7 @@ double rs_get_detached_frame_timestamp(const rs_frame_ref * frame, rs_error ** e
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return            the frame nubmer of the frame, in milliseconds since the device was started
 */
-int rs_get_detached_frame_number(const rs_frame_ref * frame, rs_error ** error);
+unsigned long long rs_get_detached_frame_number(const rs_frame_ref * frame, rs_error ** error);
 
 
 /**
@@ -758,7 +780,9 @@ const char * rs_distortion_to_string (rs_distortion distortion);
 const char * rs_option_to_string     (rs_option option);
 const char * rs_capabilities_to_string(rs_capabilities capability);
 const char * rs_source_to_string     (rs_source source);
-const char * rs_event_to_string     (rs_event_source event);
+const char * rs_event_to_string      (rs_event_source event);
+const char * rs_blob_type_to_string  (rs_blob_type type);
+const char * rs_camera_info_to_string(rs_camera_info info);
 
 typedef enum
 {

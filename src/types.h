@@ -20,6 +20,7 @@
 #include <condition_variable>               // For condition_variable
 #include <memory>                           // For unique_ptr
 #include <atomic>
+#include <map>          
 
 const uint8_t RS_STREAM_NATIVE_COUNT    = 5;
 const int RS_USER_QUEUE_SIZE = 20;
@@ -88,6 +89,8 @@ namespace rsimpl
     RS_ENUM_HELPERS(rs_source, SOURCE)
     RS_ENUM_HELPERS(rs_output_buffer_format, OUTPUT_BUFFER_FORMAT)
     RS_ENUM_HELPERS(rs_event_source, EVENT_SOURCE)
+    RS_ENUM_HELPERS(rs_blob_type, BLOB_TYPE)
+    RS_ENUM_HELPERS(rs_camera_info, CAMERA_INFO)
     #undef RS_ENUM_HELPERS
 
     ////////////////////////////////////////////
@@ -182,6 +185,74 @@ namespace rsimpl
         bool        enabled = false;
     };
 
+    class firmware_version
+    {
+        int                 m_major, m_minor, m_patch, m_build;
+        bool                is_any;
+        std::string         string_representation;
+
+        std::string to_string() const;
+        static std::vector<std::string> split(const std::string& str);
+        static int parse_part(const std::string& name, int part);
+
+    public:
+        firmware_version() : m_major(0), m_minor(0), m_patch(0), m_build(0), is_any(true), string_representation(to_string()) {}
+
+        firmware_version(int major, int minor, int patch, int build, bool is_any = false)
+            : m_major(major), m_minor(minor), m_patch(patch), m_build(build), is_any(is_any), string_representation(to_string()) {}
+
+        static firmware_version any()
+        {
+            return{};
+        }
+
+        explicit firmware_version(const std::string& name)
+            : m_major(parse_part(name, 0)), m_minor(parse_part(name, 1)), m_patch(parse_part(name, 2)), m_build(parse_part(name, 3)), is_any(false), string_representation(to_string()) {}
+
+        bool operator<=(const firmware_version& other) const
+        {
+            if (is_any || other.is_any) return true;
+            if (m_major > other.m_major) return false;
+            if ((m_major == other.m_major) && (m_minor > other.m_minor)) return false;
+            if ((m_major == other.m_major) && (m_minor == other.m_minor) && (m_patch > other.m_patch)) return false;
+            if ((m_major == other.m_major) && (m_minor == other.m_minor) && (m_patch == other.m_patch) && (m_build > other.m_build)) return false;
+            return true;
+        }
+        bool operator==(const firmware_version& other) const
+        {
+            return is_any || (other.m_major == m_major && other.m_minor == m_minor && other.m_patch == m_patch && other.m_build == m_build);
+        }
+
+        bool operator> (const firmware_version& other) const { return !(*this < other) || is_any; }
+        bool operator!=(const firmware_version& other) const { return !(*this == other); }
+        bool operator<(const firmware_version& other) const { return !(*this == other) && (*this <= other); }
+        bool operator>=(const firmware_version& other) const { return (*this == other) || (*this > other); }
+
+        bool is_between(const firmware_version& from, const firmware_version& until)
+        {
+            return (from <= *this) && (*this <= until);
+        }
+
+        operator const char*() const
+        {
+            return string_representation.c_str();
+        }
+    };
+
+    struct supported_capability
+    {
+        rs_capabilities     capability;
+        firmware_version    from;
+        firmware_version    until;
+        rs_camera_info      firmware_type;
+
+        supported_capability(rs_capabilities capability, firmware_version from, firmware_version until, rs_camera_info firmware_type = RS_CAMERA_INFO_CAMERA_FIRMWARE_VERSION)
+            : capability(capability), from(from), until(until), firmware_type(firmware_type) {}
+        
+        supported_capability(rs_capabilities capability) 
+            : capability(capability), from(), until(), firmware_type(RS_CAMERA_INFO_CAMERA_FIRMWARE_VERSION) {}
+    };
+
     struct static_device_info
     {
         std::string name;                                                   // Model name of the camera        
@@ -196,7 +267,8 @@ namespace rsimpl
         std::string firmware_version;                                       // Firmware version string
         std::string serial;                                                 // Serial number of the camera (from USB or from SPI memory)
         float nominal_depth_scale;                                          // Default scale
-        std::vector<rs_capabilities> capabilities_vector;
+        std::vector<supported_capability> capabilities_vector;
+        std::map<rs_camera_info, std::string> camera_info;
 
         static_device_info();
     };
@@ -211,6 +283,8 @@ namespace rsimpl
         rs_motion_data      imu_packets[4];
         rs_timestamp_data   non_imu_packets[8];
     };
+
+    
 
     //////////////////////////////////
     // Runtime device configuration //
@@ -227,7 +301,7 @@ namespace rsimpl
         subdevice_mode_selection(const subdevice_mode & mode, int pad_crop, int unpacker_index) : mode(mode), pad_crop(pad_crop), unpacker_index(unpacker_index){}
 
         const pixel_format_unpacker & get_unpacker() const {
-            if (unpacker_index < mode.pf.unpackers.size())
+            if ((size_t)unpacker_index < mode.pf.unpackers.size())
                 return mode.pf.unpackers[unpacker_index];
             throw std::runtime_error("failed to fetch an unpakcer, most likely becouse enable_stream was not called!");
         }
@@ -508,6 +582,8 @@ namespace rsimpl
             continuation();
         }
     };
+
+
 }
 
 #endif

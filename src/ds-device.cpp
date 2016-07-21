@@ -297,8 +297,7 @@ namespace rsimpl
 
     void ds_device::set_common_ds_config(std::shared_ptr<uvc::device> device, static_device_info& info, const ds::ds_calibration& c)
     {
-        
-
+        info.capabilities_vector.push_back(RS_CAPABILITIES_ENUMERATION);
         info.capabilities_vector.push_back(RS_CAPABILITIES_COLOR);
         info.capabilities_vector.push_back(RS_CAPABILITIES_DEPTH);
         info.capabilities_vector.push_back(RS_CAPABILITIES_INFRARED);
@@ -410,6 +409,10 @@ namespace rsimpl
         info.serial = std::to_string(c.serial_number);
         info.firmware_version = ds::read_firmware_version(*device);
 
+        info.camera_info[RS_CAMERA_INFO_CAMERA_FIRMWARE_VERSION] = info.firmware_version;
+        info.camera_info[RS_CAMERA_INFO_DEVICE_SERIAL_NUMBER] = info.serial;
+        info.camera_info[RS_CAMERA_INFO_DEVICE_NAME] = info.name;
+
         // On LibUVC backends, the R200 should use four transfer buffers
         info.num_libuvc_transfer_buffers = 4;
 
@@ -470,9 +473,11 @@ namespace rsimpl
     class dinghy_timestamp_reader : public frame_timestamp_reader
     {
         int fps;
+        wraparound_mechanism<double> timestamp_wraparound;
+        wraparound_mechanism<unsigned long long> frame_counter_wraparound;
         
     public:
-        dinghy_timestamp_reader(int fps) : fps(fps) {}
+        dinghy_timestamp_reader(int fps) : fps(fps), timestamp_wraparound(std::numeric_limits<uint32_t>::max()), frame_counter_wraparound(std::numeric_limits<uint32_t>::max()) {}
 
         bool validate_frame(const subdevice_mode & mode, const void * frame) const override 
         {
@@ -513,14 +518,15 @@ namespace rsimpl
           auto frame_number = 0;
          
           frame_number = get_dinghy(mode, frame).frameCount; // All other formats can use the frame number in the dinghy row
-          return frame_number * 1000 / fps;
+          return timestamp_wraparound.fix(frame_number * 1000 / fps);
         }
-        int get_frame_counter(const subdevice_mode & mode, const void * frame) override
+
+        unsigned long long get_frame_counter(const subdevice_mode & mode, const void * frame) override
         {
             auto frame_number = 0;
         
            frame_number = get_dinghy(mode, frame).frameCount; // All other formats can use the frame number in the dinghy row
-            return frame_number;
+           return frame_counter_wraparound.fix(frame_number);
         }
     };
 
@@ -529,8 +535,11 @@ namespace rsimpl
         int fps;
         std::mutex mutex;
         unsigned last_fisheye_counter;
+        wraparound_mechanism<double> timestamp_wraparound;
+        wraparound_mechanism<unsigned long long> frame_counter_wraparound;
+
     public:
-        fisheye_timestamp_reader(int max_fps) : fps(max_fps), last_fisheye_counter(0) {}
+        fisheye_timestamp_reader(int max_fps) : fps(max_fps), last_fisheye_counter(0), timestamp_wraparound(std::numeric_limits<uint32_t>::max()), frame_counter_wraparound(std::numeric_limits<uint32_t>::max()) {}
 
         bool validate_frame(const subdevice_mode & mode, const void * frame) const override
         {
@@ -542,7 +551,7 @@ namespace rsimpl
             unsigned char msb : 4;
         };
 
-        int get_frame_counter(const subdevice_mode & mode, const void * frame) override
+        unsigned long long get_frame_counter(const subdevice_mode & mode, const void * frame) override
         {
             std::lock_guard<std::mutex> guard(mutex);
 
@@ -561,27 +570,30 @@ namespace rsimpl
             auto fixed_counter = (last_counter_msb << 4) | (pixel_lsb & 0xff);
 
             last_fisheye_counter = fixed_counter;
-            return fixed_counter;
+            return frame_counter_wraparound.fix(fixed_counter);
         }
 
         double get_frame_timestamp(const subdevice_mode & mode, const void * frame) override
         {
-            return get_frame_counter(mode, frame) * 1000 / fps;
+            return timestamp_wraparound.fix(get_frame_counter(mode, frame) * 1000 / fps);
         }
     };
 
     class color_timestamp_reader : public frame_timestamp_reader
     {
         int fps;
+        wraparound_mechanism<double> timestamp_wraparound;
+        wraparound_mechanism<unsigned long long> frame_counter_wraparound;
+
     public:
-        color_timestamp_reader(int fps) : fps(fps) {}
+        color_timestamp_reader(int fps) : fps(fps), timestamp_wraparound(std::numeric_limits<uint32_t>::max()), frame_counter_wraparound(std::numeric_limits<uint32_t>::max()) {}
 
         bool validate_frame(const subdevice_mode & mode, const void * frame) const override
         {
             return true;
         }
 
-        int get_frame_counter(const subdevice_mode & mode, const void * frame) override
+        unsigned long long get_frame_counter(const subdevice_mode & mode, const void * frame) override
         {
             auto frame_number = 0;
             
@@ -593,30 +605,33 @@ namespace rsimpl
                 data += 2;
             }
             
-            return frame_number;
+            return frame_counter_wraparound.fix(frame_number);
         }
 
         double get_frame_timestamp(const subdevice_mode & mode, const void * frame) override
         {
-            return get_frame_counter(mode, frame) * 1000 / fps;
+            return timestamp_wraparound.fix(get_frame_counter(mode, frame) * 1000 / fps);
         }
     };
 
     class serial_timestamp_generator : public frame_timestamp_reader
     {
         int fps, serial_frame_number;
+        wraparound_mechanism<double> timestamp_wraparound;
+        wraparound_mechanism<unsigned long long> frame_counter_wraparound;
+
     public:
-        serial_timestamp_generator(int fps) : fps(fps), serial_frame_number() {}
+        serial_timestamp_generator(int fps) : fps(fps), serial_frame_number(), timestamp_wraparound(std::numeric_limits<uint32_t>::max()), frame_counter_wraparound(std::numeric_limits<uint32_t>::max()) {}
 
         bool validate_frame(const subdevice_mode & mode, const void * frame) const override { return true; }
         double get_frame_timestamp(const subdevice_mode &, const void *) override
         { 
             ++serial_frame_number;
-            return serial_frame_number * 1000 / fps;
+            return timestamp_wraparound.fix(serial_frame_number * 1000 / fps);
         }
-        int get_frame_counter(const subdevice_mode &, const void *) override
+        unsigned long long get_frame_counter(const subdevice_mode &, const void *) override
         {
-            return serial_frame_number;
+            return frame_counter_wraparound.fix(serial_frame_number);
         }
     };
 

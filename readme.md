@@ -38,7 +38,7 @@ The project requires two external dependencies, GLFW3 (all platforms) and libusb
 
 The library is written in standards-conforming C++11 and relies only on the C89 ABI for its public interface. It is developed and tested on the following platforms:
 
-1. Windows 8.1 (Visual Studio 2013 Update 5 / Visual Studio 2015 Update 2)
+1. Windows 10 (Visual Studio 2015 Update 2)
 2. Ubuntu 14.04.03 LTS x64 (GCC 4.9 toolchain)
 3. Ostro OS
 
@@ -70,8 +70,8 @@ Minimal supported FW versions:
 | R200 | 1.0.72.06 |
 | F200 | 2.60.0.0 |
 | SR300 | 3.15.0.0 |
-| LR200 | 2.0.71.03 |
-| ZR300 | 2.0.71.18 |
+| LR200 | 2.0.71.18 |
+| ZR300 | Camera - 2.0.71.18, Adapter board - 1.23, Motion module 1.20.0.0 IAP 9 |
 
 # Installation Guide
 

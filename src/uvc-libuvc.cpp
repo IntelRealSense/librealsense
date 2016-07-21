@@ -81,11 +81,11 @@ namespace rsimpl
         int get_vendor_id(const device & device) { return device.vid; }
         int get_product_id(const device & device) { return device.pid; }
 
-        const char * get_usb_port_id(const device & device)
+        std::string get_usb_port_id(const device & device)
         {
             std::string usb_port = std::to_string(libusb_get_bus_number(device.uvcdevice->usb_dev)) + "-" +
                 std::to_string(libusb_get_port_number(device.uvcdevice->usb_dev));
-            return usb_port.c_str();
+            return usb_port;
         }
 
         void get_control(const device & dev, const extension_unit & xu, uint8_t ctrl, void * data, int len)
@@ -309,7 +309,12 @@ namespace rsimpl
             
             uvc_device_t ** list;
             CALL_UVC(uvc_get_device_list, context->ctx, &list);
-            for(auto it = list; *it; ++it) devices.push_back(std::make_shared<device>(context, *it));
+            for(auto it = list; *it; ++it) try {
+                devices.push_back(std::make_shared<device>(context, *it));
+            } catch(std::runtime_error &e) {
+                LOG_WARNING("usb:" << (int)uvc_get_bus_number(*it) << ':' <<
+                        (int)uvc_get_device_address(*it) << ": " << e.what());
+            }
             uvc_free_device_list(list, 1);
             return devices;
         }

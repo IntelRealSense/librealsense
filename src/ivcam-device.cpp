@@ -207,7 +207,7 @@ namespace rsimpl
             const int timestamp = static_cast<int>(total / 100000);
             return timestamp;
         }
-        int get_frame_counter(const subdevice_mode & mode, const void * frame) override
+        unsigned long long get_frame_counter(const subdevice_mode & mode, const void * frame) override
         {
             return 0;
         }

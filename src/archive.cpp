@@ -193,7 +193,7 @@ double frame_archive::frame_ref::get_frame_timestamp() const
     return frame_ptr ? frame_ptr->get_frame_timestamp(): 0;
 }
 
-int frame_archive::frame_ref::get_frame_number() const
+unsigned long long frame_archive::frame_ref::get_frame_number() const
 {
     return frame_ptr ? frame_ptr->get_frame_number() : 0;
 }
@@ -275,7 +275,7 @@ double frame_archive::frame::get_frame_timestamp() const
     return additional_data.timestamp;
 }
 
-int frame_archive::frame::get_frame_number() const
+unsigned long long frame_archive::frame::get_frame_number() const
 {
     return additional_data.frame_number;
 }

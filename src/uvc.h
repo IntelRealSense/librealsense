@@ -35,12 +35,12 @@ namespace rsimpl
         // Static device properties
         int get_vendor_id(const device & device);
         int get_product_id(const device & device);
-        const char * get_usb_port_id(const device & device);
+        std::string get_usb_port_id(const device & device);
 
         // Direct USB controls
         void claim_interface(device & device, const guid & interface_guid, int interface_number);
         void claim_aux_interface(device & device, const guid & interface_guid, int interface_number);
-        void bulk_transfer(device & device, unsigned char handle_id, unsigned char endpoint, void * data, int length, int *actual_length, unsigned int timeout);
+        void bulk_transfer(device & device, unsigned char endpoint, void * data, int length, int *actual_length, unsigned int timeout);
 
         // Access CT (Camera Terminal) and PU (Processing Units) controls
         inline bool is_pu_control(rs_option option) { return option >= RS_OPTION_COLOR_BACKLIGHT_COMPENSATION && option <= RS_OPTION_COLOR_ENABLE_AUTO_WHITE_BALANCE; }

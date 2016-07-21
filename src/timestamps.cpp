@@ -63,7 +63,7 @@ bool concurrent_queue::correct( frame_interface& frame)
 
     if (it != data_queue.end())
     {
-        frame.set_timestamp((double)(it->timestamp)*IMU_UNITS_TO_MSEC);
+        frame.set_timestamp((it->timestamp)*IMU_UNITS_TO_MSEC);
         return true;
     }
     return false;

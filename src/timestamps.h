@@ -14,7 +14,7 @@ namespace rsimpl
     struct frame_interface
     { 
         virtual ~frame_interface() {}
-        virtual int get_frame_number() const = 0;
+        virtual unsigned long long get_frame_number() const = 0;
         virtual void set_timestamp(double new_ts) = 0;
         virtual rs_stream get_stream_type()const = 0;
     };

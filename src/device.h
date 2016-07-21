@@ -8,7 +8,6 @@
 #include "uvc.h"
 #include "stream.h"
 #include <chrono>
-#include <librealsense/rs.hpp>
 
 
 namespace rsimpl
@@ -31,12 +30,36 @@ namespace rsimpl
     };
 
     template<class T, class R, class W> struct_interface<T, R, W> make_struct_interface(R r, W w) { return{ r,w }; }
-        
+
+    template <typename T>
+    class wraparound_mechanism
+    {
+    public:
+        wraparound_mechanism(T max_num)
+            : max_number(max_num), last_number(0), num_of_wraparounds(0)
+        {}
+
+        T fix(T number)
+        {
+            if ((number + (num_of_wraparounds*max_number)) < last_number)
+                ++num_of_wraparounds;
+
+            number += (num_of_wraparounds*max_number);
+            last_number = number;
+            return number;
+        }
+
+    private:
+        T num_of_wraparounds;
+        T max_number;
+        T last_number;
+    };
+
     struct frame_timestamp_reader
     {
         virtual bool validate_frame(const subdevice_mode & mode, const void * frame) const = 0;
         virtual double get_frame_timestamp(const subdevice_mode & mode, const void * frame) = 0;
-        virtual int get_frame_counter(const subdevice_mode & mode, const void * frame) = 0;
+        virtual unsigned long long get_frame_counter(const subdevice_mode & mode, const void * frame) = 0;
     };
 
 
@@ -68,6 +91,9 @@ private:
     std::atomic<int> event_queue_size;
     std::atomic<int> events_timeout;
     std::shared_ptr<rsimpl::syncronizing_archive> archive;
+
+    mutable std::string                         usb_port_id;
+    mutable std::mutex                          usb_port_mutex;
 protected:
     const rsimpl::uvc::device &                 get_device() const { return *device; }
     rsimpl::uvc::device &                       get_device() { return *device; }
@@ -79,7 +105,7 @@ protected:
 
     virtual void                                disable_auto_option(int subdevice, rs_option auto_opt);
 
-    bool                                        motion_module_ready;
+    bool                                        motion_module_ready = false;
 public:
                                                 rs_device_base(std::shared_ptr<rsimpl::uvc::device> device, const rsimpl::static_device_info & info);
                                                 virtual ~rs_device_base();
@@ -90,6 +116,8 @@ public:
     const char *                                get_serial() const override { return config.info.serial.c_str(); }
     const char *                                get_firmware_version() const override { return config.info.firmware_version.c_str(); }
     float                                       get_depth_scale() const override { return config.depth_scale; }
+
+    const char*                                 get_camera_info(rs_camera_info info) const override;
 
     void                                        enable_stream(rs_stream stream, int width, int height, rs_format format, int fps, rs_output_buffer_format output) override;
     void                                        enable_stream_preset(rs_stream stream, rs_preset preset) override;

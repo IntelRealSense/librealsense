@@ -1,16 +1,37 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
+#if !defined(MAKEFILE) || ( defined(OFFLINE_TEST) )
+
 #define CATCH_CONFIG_MAIN
 #include "catch/catch.hpp"
 
 #include "unit-tests-common.h"
+#include "../src/device.h"
 
 #include <sstream>
 
 // Helper to produce a not-null pointer to a specific object type, to help validate API methods.
 // Use with caution, the resulting pointer does not address a real object!
 struct fake_object_pointer { template<class T> operator T * () const { return (T *)(0x100); } };
+
+
+TEST_CASE("wraparound_mechanism produces correct output", "[offline] [validation]")
+{
+    auto unsigned_short_max = std::numeric_limits<uint16_t>::max();
+    rsimpl::wraparound_mechanism<unsigned long long> wm(unsigned_short_max);
+
+    unsigned long long last_number = 65532;
+    for (unsigned i = 65533; last_number < unsigned_short_max * 5; ++i)
+    {
+        if (i > unsigned_short_max)
+            i = 1;
+
+        auto new_number = wm.fix(i);
+        REQUIRE((new_number - last_number) == 1);
+        last_number = new_number;
+    }
+}
 
 TEST_CASE( "rs_create_context() validates input", "[offline] [validation]" )
 {
@@ -396,3 +417,5 @@ TEST_CASE("rs API version verification", "[offline] [validation]")
     REQUIRE(api_ver_str.size() >= 5);
     REQUIRE(api_ver_str.size() <= 8);
 }
+
+#endif /* !defined(MAKEFILE) || ( defined(OFFLINE_TEST) ) */

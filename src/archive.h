@@ -18,7 +18,7 @@ namespace rsimpl
         struct frame_additional_data
         {
             double timestamp = 0;
-            int frame_number = 0;
+            unsigned long long frame_number = 0;
             long long system_time = 0;
             int width = 0;
             int height = 0;
@@ -33,7 +33,7 @@ namespace rsimpl
 
             frame_additional_data(){};
 
-            frame_additional_data(double in_timestamp, int in_frame_number, long long in_system_time, int in_width, int in_height, int in_fps, int in_stride_x, int in_stride_y, float in_bpp, const rs_format in_format, rs_stream in_stream_type, int in_pad)
+            frame_additional_data(double in_timestamp, unsigned long long in_frame_number, long long in_system_time, int in_width, int in_height, int in_fps, int in_stride_x, int in_stride_y, float in_bpp, const rs_format in_format, rs_stream in_stream_type, int in_pad)
                 :timestamp(in_timestamp),
                 frame_number(in_frame_number),
                 system_time(in_system_time),
@@ -86,7 +86,7 @@ namespace rsimpl
             const byte* get_frame_data() const;
             double get_frame_timestamp() const;
             void set_timestamp(double new_ts) override { additional_data.timestamp = new_ts; }
-            int get_frame_number() const override;
+            unsigned long long get_frame_number() const override;
             long long get_frame_system_time() const;
             int get_width()const;
             int get_height()const;
@@ -152,7 +152,7 @@ namespace rsimpl
 
             const byte* get_frame_data() const override;
             double get_frame_timestamp() const override;
-            int get_frame_number() const override;
+            unsigned long long get_frame_number() const override;
             long long get_frame_system_time() const override;
             int get_frame_width() const override;
             int get_frame_height() const override;
@@ -182,7 +182,7 @@ namespace rsimpl
 
             const byte * get_frame_data(rs_stream stream) const { return buffer[stream].get_frame_data(); }
             double get_frame_timestamp(rs_stream stream) const { return buffer[stream].get_frame_timestamp(); }
-            int get_frame_number(rs_stream stream) const { return buffer[stream].get_frame_number(); }
+            unsigned long long get_frame_number(rs_stream stream) const { return buffer[stream].get_frame_number(); }
             long long get_frame_system_time(rs_stream stream) const { return buffer[stream].get_frame_system_time(); }
 
             void cleanup();

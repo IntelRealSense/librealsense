@@ -269,7 +269,7 @@ uvc_error_t uvc_open2(
     UVC_DEBUG("libusb_submit_transfer() = %d", ret);
 
     if (ret) {
-      UVC_DEBUG("device has a status interrupt endpoint, but unable to read from it");
+      UVC_DEBUG("device has a status interrupt endpoint, but unable to read from it",);
       goto fail;
     }
   }
@@ -1493,7 +1493,7 @@ void uvc_process_status_xfer(uvc_device_handle_t *devh, struct libusb_transfer *
     selector = transfer->buffer[3];
 
     if (originator == 0) {
-      UVC_DEBUG("Unhandled update from VC interface");
+      UVC_DEBUG("Unhandled update from VC interface", );
       UVC_EXIT_VOID();
       return;  /* @todo VideoControl virtual entity interface updates */
     }
@@ -1537,7 +1537,7 @@ void uvc_process_status_xfer(uvc_device_handle_t *devh, struct libusb_transfer *
     break;
   }
   case 2:  /* VideoStreaming interface */
-    UVC_DEBUG("Unhandled update from VideoStreaming interface");
+    UVC_DEBUG("Unhandled update from VideoStreaming interface",);
     UVC_EXIT_VOID();
     return;  /* @todo VideoStreaming updates */
   }
@@ -1546,7 +1546,7 @@ void uvc_process_status_xfer(uvc_device_handle_t *devh, struct libusb_transfer *
     status_class, event, selector, attribute, data_len);
 
   if(devh->status_cb) {
-    UVC_DEBUG("Running user-supplied status callback");
+    UVC_DEBUG("Running user-supplied status callback",);
     devh->status_cb(status_class,
                     event,
                     selector,
