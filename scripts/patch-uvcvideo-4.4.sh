@@ -43,9 +43,10 @@ patch -p1 < $PATCH_A
 patch -p1 < $PATCH_B
 patch -p1 < $PATCH_C
 
-# Apply our RealSense specific patch
+# Apply our RealSense specific patches
 patch -p1 < ../scripts/realsense-camera-formats.patch
 patch -p1 < ../scripts/realsense-y8-format-request.patch
+patch -p1 < ../scripts/realsense_camera_formats_win_guids.patch
 
 # Prepare to compile modules
 cp $CONFIG_LOCATION/.config .
