@@ -9,6 +9,8 @@
 #include <algorithm>
 #include <array>
 #include <deque>
+#include <algorithm>
+#include <iomanip>
 
 const char * unknown = "UNKNOWN";
 
@@ -195,6 +197,7 @@ namespace rsimpl
         CASE(MOTION_EVENTS)
         CASE(MOTION_MODULE_FW_UPDATE)
         CASE(ADAPTER_BOARD)
+        CASE(ENUMERATION)
         default: assert(!is_valid(value)); return unknown;
         }
         #undef CASE
@@ -233,13 +236,15 @@ namespace rsimpl
         #define CASE(X) case RS_CAMERA_INFO_##X: return #X;
         switch(value)
         {
+        CASE(DEVICE_NAME)
+        CASE(DEVICE_SERIAL_NUMBER)
+        CASE(CAMERA_FIRMWARE_VERSION)
         CASE(ADAPTER_BOARD_FIRMWARE_VERSION)
         CASE(MOTION_MODULE_FIRMWARE_VERSION)
         default: assert(!is_valid(value)); return unknown;
         }
         #undef CASE
     }
-
 
     size_t subdevice_mode_selection::get_image_size(rs_stream stream) const
     {
@@ -395,7 +400,7 @@ namespace rsimpl
             }
 
             //now need to go over all posibilities for the next stream
-            for (auto i = 0; i < stream_requests[p.stream].size(); i++)
+            for (size_t i = 0; i < stream_requests[p.stream].size(); i++)
             {
                 //if this stream is not enabled move to next item
                 if (!requests[p.stream].enabled)
@@ -449,7 +454,7 @@ namespace rsimpl
 
     void device_config::get_all_possible_requestes(std::vector<stream_request>(&stream_requests)[RS_STREAM_NATIVE_COUNT]) const
     {
-        for (auto i = 0; i < info.subdevice_modes.size(); i++)
+        for (size_t i = 0; i < info.subdevice_modes.size(); i++)
         {
             stream_request request;
             auto mode = info.subdevice_modes[i];
@@ -610,7 +615,6 @@ namespace rsimpl
                     }
                     if (a.*f != 0 && b.*f != 0 && ((rule.diveded && float(a.*f) / float(b.*f) - a.*f / b.*f > 0) || (rule.diveded2 && float(b.*f) / float(a.*f) - b.*f / a.*f > 0)))
                     {
-                        rs_stream bigger;
                         if (throw_exception)
                             throw std::runtime_error(to_string() << "requested " << rule.a << " and " << rule.b << " settings are incompatible");
                         return false;
@@ -619,5 +623,37 @@ namespace rsimpl
             }
         }
         return true;
+    }
+
+    std::string firmware_version::to_string() const
+    {
+        if (is_any) return "any";
+
+        std::stringstream s;
+        s << std::setfill('0') << std::setw(2) << m_major << "." 
+            << std::setfill('0') << std::setw(2) << m_minor << "." 
+            << std::setfill('0') << std::setw(2) << m_patch << "." 
+            << std::setfill('0') << std::setw(2) << m_build;
+        return s.str();
+    }
+
+    std::vector<std::string> firmware_version::split(const std::string& str)
+    {
+        std::vector<std::string> result;
+        auto e = str.end();
+        auto i = str.begin();
+        while (i != e){
+            i = find_if_not(i, e, [](char c) { return c == '.'; });
+            if (i == e) break;
+            auto j = find(i, e, '.');
+            result.emplace_back(i, j);
+            i = j;
+        }
+        return result;
+    }
+
+    int firmware_version::parse_part(const std::string& name, int part)
+    {
+        return atoi(split(name)[part].c_str());
     }
 }

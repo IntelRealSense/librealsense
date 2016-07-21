@@ -263,6 +263,11 @@ namespace rsimpl
         ivcam::get_module_serial_string(*device, mutex, info.serial, 132);
         ivcam::get_firmware_version_string(*device, mutex, info.firmware_version);
 
+        info.camera_info[RS_CAMERA_INFO_CAMERA_FIRMWARE_VERSION] = info.firmware_version;
+        info.camera_info[RS_CAMERA_INFO_DEVICE_SERIAL_NUMBER] = info.serial;
+        info.camera_info[RS_CAMERA_INFO_DEVICE_NAME] = info.name;
+
+        info.capabilities_vector.push_back(RS_CAPABILITIES_ENUMERATION);
         info.capabilities_vector.push_back(RS_CAPABILITIES_COLOR);
         info.capabilities_vector.push_back(RS_CAPABILITIES_DEPTH);
         info.capabilities_vector.push_back(RS_CAPABILITIES_INFRARED);

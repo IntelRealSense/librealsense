@@ -247,6 +247,10 @@ namespace rsimpl
             info.capabilities_vector.push_back(RS_CAPABILITIES_MOTION_MODULE_FW_UPDATE);
             info.capabilities_vector.push_back(RS_CAPABILITIES_ADAPTER_BOARD);
 
+            // require at least Alpha FW version to run
+            info.capabilities_vector.push_back({ RS_CAPABILITIES_ENUMERATION, { 1, 16, 0, 0 }, firmware_version::any(), RS_CAMERA_INFO_ADAPTER_BOARD_FIRMWARE_VERSION });
+            info.capabilities_vector.push_back({ RS_CAPABILITIES_ENUMERATION, { 1, 15, 5, 0 }, firmware_version::any(), RS_CAMERA_INFO_MOTION_MODULE_FIRMWARE_VERSION });
+
             info.stream_subdevices[RS_STREAM_FISHEYE] = 3;
             info.presets[RS_STREAM_FISHEYE][RS_PRESET_BEST_QUALITY] = { true, 640, 480, RS_FORMAT_RAW8,   60 };
             info.subdevice_modes.push_back({ 3,{ 640, 480 }, pf_raw8, 60, c.intrinsicsThird[1],{ c.modesThird[1][0] },{ 0 } });

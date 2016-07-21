@@ -281,6 +281,7 @@ namespace rsimpl
 
     void ds_device::set_common_ds_config(std::shared_ptr<uvc::device> device, static_device_info& info, const ds::ds_calibration& c)
     {
+        info.capabilities_vector.push_back(RS_CAPABILITIES_ENUMERATION);
         info.capabilities_vector.push_back(RS_CAPABILITIES_COLOR);
         info.capabilities_vector.push_back(RS_CAPABILITIES_DEPTH);
         info.capabilities_vector.push_back(RS_CAPABILITIES_INFRARED);
@@ -391,6 +392,10 @@ namespace rsimpl
         info.nominal_depth_scale = 0.001f;
         info.serial = std::to_string(c.serial_number);
         info.firmware_version = ds::read_firmware_version(*device);
+
+        info.camera_info[RS_CAMERA_INFO_CAMERA_FIRMWARE_VERSION] = info.firmware_version;
+        info.camera_info[RS_CAMERA_INFO_DEVICE_SERIAL_NUMBER] = info.serial;
+        info.camera_info[RS_CAMERA_INFO_DEVICE_NAME] = info.name;
 
         // On LibUVC backends, the R200 should use four transfer buffers
         info.num_libuvc_transfer_buffers = 4;
