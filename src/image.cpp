@@ -472,7 +472,7 @@ namespace rsimpl
     const native_pixel_format pf_sr300_inzi = { 'INZI', 2, 2,{  { true,  &unpack_z16_y8_from_sr300_inzi,    { { RS_STREAM_DEPTH,    RS_FORMAT_Z16 },{ RS_STREAM_INFRARED, RS_FORMAT_Y8 } } },
                                                                 { true,  &unpack_z16_y16_from_sr300_inzi,   { { RS_STREAM_DEPTH,    RS_FORMAT_Z16 },{ RS_STREAM_INFRARED, RS_FORMAT_Y16 } } } } };
 
-    // Microsoft 8 bit Luminocity image
+    // Microsoft 8 bit Luminosity image
     const native_pixel_format pf_l8         = { 0x32000000, 1, 1,{  { false, &copy_pixels<1>,               { { RS_STREAM_INFRARED, RS_FORMAT_Y8 } } } } };
     // Microsoft 16 bit Depth image format
     const native_pixel_format pf_d16        = { 0x50000000, 1, 2,{  { false,  &copy_pixels<2>,              { { RS_STREAM_DEPTH,    RS_FORMAT_Z16 } } },
