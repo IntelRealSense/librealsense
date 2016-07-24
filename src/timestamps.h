@@ -46,7 +46,7 @@ namespace rsimpl
 
     class timestamp_corrector : public timestamp_corrector_interface{
     public:
-        timestamp_corrector(std::atomic<int>* event_queue_size, std::atomic<int>* events_timeout);
+        timestamp_corrector(std::atomic<uint32_t>* event_queue_size, std::atomic<uint32_t>* events_timeout);
         ~timestamp_corrector() override;
         void on_timestamp(rs_timestamp_data data) override;
         void correct_timestamp(frame_interface& frame, rs_stream stream) override;
@@ -58,8 +58,8 @@ namespace rsimpl
         std::mutex mtx;
         concurrent_queue data_queue[RS_EVENT_SOURCE_COUNT];
         std::condition_variable cv;
-        std::atomic<int>* event_queue_size;
-        std::atomic<int>* events_timeout;
+        std::atomic<uint32_t>* event_queue_size;
+        std::atomic<uint32_t>* events_timeout;
 
     };
 

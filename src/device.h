@@ -86,11 +86,11 @@ private:
     rsimpl::stream_interface *                  streams[RS_STREAM_COUNT];
 
     bool                                        capturing;
-    bool                                        data_acquisition_active;    
+    bool                                        data_acquisition_active;
     std::chrono::high_resolution_clock::time_point capture_started;
-    std::atomic<int> max_publish_list_size;
-    std::atomic<int> event_queue_size;
-    std::atomic<int> events_timeout;
+    std::atomic<uint32_t> max_publish_list_size;
+    std::atomic<uint32_t> event_queue_size;
+    std::atomic<uint32_t> events_timeout;
     std::shared_ptr<rsimpl::syncronizing_archive> archive;
 
     mutable std::string                         usb_port_id;
