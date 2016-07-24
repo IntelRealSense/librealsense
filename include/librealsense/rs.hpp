@@ -24,7 +24,9 @@ namespace rs
         infrared2               = 3,
         fish_eye                = 4,
         motion_events           = 5,
-        motion_module_fw_update = 6
+        motion_module_fw_update = 6,
+        adapter_board           = 7,
+        enumeration             = 8,
     };
 
     enum class stream : int32_t
@@ -156,14 +158,29 @@ namespace rs
         r200_fisheye_color_exposure                     = 69,
         r200_fisheye_color_gain                         = 70,
         r200_fisheye_strobe                             = 71,
-        r200_fisheye_ext_trig                           = 72
+        r200_fisheye_ext_trig                           = 72,
+        frames_queue_size                               = 73,
+        events_queue_size                               = 74,
+        max_timestamp_latency                           = 75
+    };
+
+    enum class blob_type {
+        motion_module_firmware_update                   = 0,
+    };
+
+    enum class camera_info {
+        device_name                                     = 0,
+        serial_number                                   = 1,
+        camera_firmware_version                         = 2,
+        adapter_board_firmware_version                  = 3,
+        motion_module_firmware_version                  = 4,
     };
 
     enum class source : uint8_t
     {
         video           = 1,
         motion_data     = 2,
-        all_sources
+        all_sources     = 3,
     };
 
     enum class event : uint8_t
@@ -175,6 +192,12 @@ namespace rs
         event_imu_g0_sync       = 5,
         event_imu_g1_sync       = 6,
         event_imu_g2_sync       = 7
+    };
+
+    enum class timestamp_domain
+    {
+        camera,
+        microcontroller
     };
 
     struct float2 { float x,y; };
@@ -360,8 +383,15 @@ namespace rs
             error::handle(e);
             return r;
         }
+        rs::timestamp_domain get_frame_timestamp_domain() const
+        {
+            rs_error * e = nullptr;
+            auto r = rs_get_detached_frame_timestamp_domain(frame_ref, &e);
+            error::handle(e);
+            return static_cast<timestamp_domain>(r);
+        }
 
-        int get_frame_number() const
+        unsigned long long get_frame_number() const
         {
             rs_error * e = nullptr;
             auto r = rs_get_detached_frame_number(frame_ref, &e);
@@ -501,6 +531,16 @@ namespace rs
         {
             rs_error * e = nullptr;
             auto r = rs_get_device_firmware_version((const rs_device *)this, &e);
+            error::handle(e);
+            return r;
+        }
+
+        /// retrieve camera specific information like the versions of the various componnents
+        /// \return  camera info string, in a format specific to the device model
+        const char * get_info(camera_info info) const
+        {
+            rs_error * e = nullptr;
+            auto r = rs_get_device_info((const rs_device *)this, (rs_camera_info)info, &e);
             error::handle(e);
             return r;
         }
@@ -859,7 +899,7 @@ namespace rs
         /// retrieve the frame number
         /// \param[in] stream  the stream whose latest frame we are interested in
         /// \return            the number of the frame, since the device was started
-        int get_frame_number(stream stream) const
+        unsigned long long get_frame_number(stream stream) const
         {
             rs_error * e = nullptr;
             auto r = rs_get_frame_number((const rs_device *)this, (rs_stream)stream, &e);
@@ -882,10 +922,10 @@ namespace rs
         /// \param[in] type  describes the content of the memory buffer, how it will be interpreted by the device
         /// \param[in] data  raw data buffer to be sent to the device
         /// \param[in] size  size in bytes of the buffer
-        void send_blob_to_device(rs_blob_type type, void * data, int size)
+        void send_blob_to_device(rs::blob_type type, void * data, int size)
         {
             rs_error * e = nullptr;
-            rs_send_blob_to_device((rs_device *)this, type, data, size, &e);
+            rs_send_blob_to_device((rs_device *)this, (rs_blob_type)type, data, size, &e);
             error::handle(e);
         }
     };

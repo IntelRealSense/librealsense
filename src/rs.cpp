@@ -93,6 +93,13 @@ const char * rs_get_device_serial(const rs_device * device, rs_error ** error) t
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, device)
 
+const char * rs_get_device_info(const rs_device * device, rs_camera_info info, rs_error ** error) try
+{
+    VALIDATE_NOT_NULL(device);
+    return device->get_camera_info(info);
+}
+HANDLE_EXCEPTIONS_AND_RETURN(0, device, info)
+
 const char * rs_get_device_usb_port_id(const rs_device * device, rs_error **error) try
 {
     VALIDATE_NOT_NULL(device);
@@ -372,7 +379,7 @@ double rs_get_frame_timestamp(const rs_device * device, rs_stream stream, rs_err
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, device, stream)
 
-int rs_get_frame_number(const rs_device * device, rs_stream stream, rs_error ** error) try
+unsigned long long rs_get_frame_number(const rs_device * device, rs_stream stream, rs_error ** error) try
 {
     VALIDATE_NOT_NULL(device);
     VALIDATE_ENUM(stream);
@@ -394,6 +401,13 @@ double rs_get_detached_frame_timestamp(const rs_frame_ref * frameset, rs_error *
     return frameset->get_frame_timestamp();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, frameset)
+
+rs_timestamp_domain rs_get_detached_frame_timestamp_domain(const rs_frame_ref * frameset, rs_error ** error) try
+{
+    VALIDATE_NOT_NULL(frameset);
+    return frameset->get_frame_timestamp_domain();
+}
+HANDLE_EXCEPTIONS_AND_RETURN(RS_TIMESTAMP_DOMAIN_MAX_ENUM, frameset)
 
 const void * rs_get_detached_frame_data(const rs_frame_ref * frameset, rs_error ** error) try
 {
@@ -459,7 +473,7 @@ rs_stream rs_get_detached_frame_stream_type(const rs_frame_ref * frameset, rs_er
 HANDLE_EXCEPTIONS_AND_RETURN(RS_STREAM_MAX_ENUM, frameset)
 
 
-int rs_get_detached_frame_number(const rs_frame_ref * frame, rs_error ** error) try
+unsigned long long rs_get_detached_frame_number(const rs_frame_ref * frame, rs_error ** error) try
 {
     VALIDATE_NOT_NULL(frame);
     return frame->get_frame_number();
@@ -652,6 +666,9 @@ const char * rs_capabilities_to_string(rs_capabilities capability) { return rsim
 const char * rs_source_to_string(rs_source source)   { return rsimpl::get_string(source); }
 const char * rs_event_to_string(rs_event_source event)   { return rsimpl::get_string(event); }
 
+const char * rs_blob_type_to_string(rs_blob_type type) { return rsimpl::get_string(type); }
+const char * rs_camera_info_to_string(rs_camera_info info) { return rsimpl::get_string(info); }
+const char * rs_timestamp_domain_to_string(rs_timestamp_domain info){ return rsimpl::get_string(info); }
 
 void rs_log_to_console(rs_log_severity min_severity, rs_error ** error) try
 {

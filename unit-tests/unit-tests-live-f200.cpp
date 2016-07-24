@@ -5,6 +5,8 @@
 // This set of tests is valid only for the F200 camera //
 /////////////////////////////////////////////////////////
 
+#if !defined(MAKEFILE) || ( defined(F200_TEST) && defined(LIVE_TEST) )
+
 #define CATCH_CONFIG_MAIN
 #include "catch/catch.hpp"
 
@@ -182,3 +184,5 @@ TEST_CASE( "a single F200 can stream a variety of reasonable streaming mode comb
         });
     }
 }
+
+#endif /* !defined(MAKEFILE) || ( defined(F200_TEST) && defined(LIVE_TEST) ) */

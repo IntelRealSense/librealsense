@@ -33,7 +33,12 @@ namespace rsimpl
 
         timestamp_corrector            ts_corrector;
     public:
-        syncronizing_archive(const std::vector<subdevice_mode_selection> & selection, rs_stream key_stream, std::chrono::high_resolution_clock::time_point capture_started = std::chrono::high_resolution_clock::now());
+        syncronizing_archive(const std::vector<subdevice_mode_selection> & selection, 
+            rs_stream key_stream, 
+            std::atomic<int>* max_size, 
+            std::atomic<int>* event_queue_size, 
+            std::atomic<int>* events_timeout, 
+            std::chrono::high_resolution_clock::time_point capture_started = std::chrono::high_resolution_clock::now());
         
         // Application thread API
         void wait_for_frames();
@@ -44,7 +49,7 @@ namespace rsimpl
 
         const byte * get_frame_data(rs_stream stream) const;
         double get_frame_timestamp(rs_stream stream) const;
-        int get_frame_number(rs_stream stream) const;
+        unsigned long long get_frame_number(rs_stream stream) const;
         long long get_frame_system_time(rs_stream stream) const;
 
         frameset * clone_frontbuffer();

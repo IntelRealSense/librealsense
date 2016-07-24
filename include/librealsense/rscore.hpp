@@ -20,7 +20,7 @@ struct rs_stream_interface
     virtual rs_format                       get_format() const = 0;
     virtual int                             get_framerate() const = 0;
 
-    virtual int                             get_frame_number() const = 0;
+    virtual unsigned long long              get_frame_number() const = 0;
     virtual double                          get_frame_timestamp() const = 0;
     virtual long long                       get_frame_system_time() const = 0;
     virtual const uint8_t *                 get_frame_data() const = 0;
@@ -36,7 +36,8 @@ struct rs_frame_ref
     virtual                                 ~rs_frame_ref() {}
     virtual const uint8_t*                  get_frame_data() const = 0;
     virtual double                          get_frame_timestamp() const = 0;
-    virtual int                             get_frame_number() const = 0;
+    virtual rs_timestamp_domain             get_frame_timestamp_domain() const = 0;
+    virtual unsigned long long              get_frame_number() const = 0;
     virtual long long                       get_frame_system_time() const = 0;
     virtual int                             get_frame_width() const = 0;
     virtual int                             get_frame_height() const = 0;
@@ -57,6 +58,7 @@ struct rs_device
     virtual const char *                    get_name() const = 0;
     virtual const char *                    get_serial() const = 0;
     virtual const char *                    get_firmware_version() const = 0;
+    virtual const char *                    get_camera_info(rs_camera_info) const = 0;
     virtual float                           get_depth_scale() const = 0;
                                             
     virtual void                            enable_stream(rs_stream stream, int width, int height, rs_format format, int fps, rs_output_buffer_format output) = 0;

@@ -6,6 +6,7 @@
 #define MOTION_MODULE_H
 
 #include <mutex>
+#include "device.h"
 
 namespace rsimpl
 {
@@ -50,15 +51,15 @@ namespace rsimpl
             mm_accel_bandwidth  accel_bandwidth;
         };
 
-		#define FW_IMAGE_PACKET_PAYLOAD_LEN (128)
+        #define FW_IMAGE_PACKET_PAYLOAD_LEN (128)
 
-		struct fw_image_packet {
-			uint8_t op_code;
-			uint32_t address;
-			uint16_t length;
-			uint8_t	dummy;
-			uint8_t	data[FW_IMAGE_PACKET_PAYLOAD_LEN];
-		};
+        struct fw_image_packet {
+            uint8_t op_code;
+            uint32_t address;
+            uint16_t length;
+            uint8_t dummy;
+            uint8_t data[FW_IMAGE_PACKET_PAYLOAD_LEN];
+        };
 #pragma pack(pop)
 
         void config(uvc::device & device, uint8_t gyro_bw, uint8_t gyro_range, uint8_t accel_bw, uint8_t accel_range, uint32_t time_seed);
@@ -97,11 +98,26 @@ namespace rsimpl
             }
         }
 
+        struct motion_module_wraparound
+        {
+            motion_module_wraparound()
+                : timestamp_wraparound(1, std::numeric_limits<uint32_t>::max()), frame_counter_wraparound(0, 0xfff)
+            {}
+            wraparound_mechanism<unsigned long long> timestamp_wraparound;
+            wraparound_mechanism<unsigned long long> frame_counter_wraparound;
+        };
+
         struct motion_module_parser
         {
+            motion_module_parser()
+                : mm_data_wraparound(RS_EVENT_SOURCE_COUNT)
+            {}
+
             std::vector<motion_event> operator() (const unsigned char* data, const int& data_size);
             void parse_timestamp(const unsigned char* data, rs_timestamp_data &);
             rs_motion_data parse_motion(const unsigned char* data);
+
+            std::vector<motion_module_wraparound> mm_data_wraparound;
         };
 
         class motion_module_state
@@ -130,7 +146,6 @@ namespace rsimpl
             void firmware_upgrade(void *data, int size);
 
         private:
-            motion_module_control(void);
             motion_module_control(const motion_module_control&);
             motion_module_state state_handler;
             uvc::device* device_handle;
@@ -149,7 +164,7 @@ namespace rsimpl
 
         };
 
-        enum i2c_register : uint32_t {
+        enum class i2c_register : uint32_t {
             REG_UCTRL_CFG = 0x00,
             REG_INT_ID_CONFIG = 0x04,
             REG_INT_TYPE_CONFIG = 0x08,
@@ -182,7 +197,7 @@ namespace rsimpl
             REG_JUMP_TO_APP = 0x77
         };
 
-        enum power_states : uint32_t {
+        enum class power_states : uint32_t {
             PWR_STATE_DNR = 0x00,
             PWR_STATE_INIT = 0x02,
             PWR_STATE_ACTIVE = 0x03,
@@ -190,7 +205,7 @@ namespace rsimpl
             PWR_STATE_IAP = 0x05
         };
 
-        enum adaptor_board_command : uint32_t
+        enum class adaptor_board_command : uint32_t
         {
             IRB         = 0x01,     // Read from i2c ( 8x8 )
             IWB         = 0x02,     // Write to i2c ( 8x8 )
