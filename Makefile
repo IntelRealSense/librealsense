@@ -49,6 +49,12 @@ else
 GLFW3_FLAGS := `pkg-config --cflags --libs glfw3 glu gl`
 endif
 
+# Compute a list of all header files
+INCLUDES := $(wildcard src/*.hpp)
+INCLUDES += $(wildcard src/*.h)
+INCLUDES += $(wildcard include/librealsense/*.hpp)
+INCLUDES += $(wildcard include/librealsense/*.h)
+
 # Compute a list of all example program binaries
 EXAMPLES := $(wildcard examples/*.c)
 EXAMPLES += $(wildcard examples/*.cpp)
@@ -96,7 +102,7 @@ lib/librealsense.a: $(OBJECTS) | lib
 	ar rvs $@ `find obj/ -name "*.o"`
 
 # Rules for compiling librealsense source
-obj/%.o: src/%.cpp | obj
+obj/%.o: src/%.cpp $(INCLUDES) | obj
 	$(CXX) $< $(CXXFLAGS) -c -o $@
 
 # Rules for compiling libuvc source
