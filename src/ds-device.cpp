@@ -15,7 +15,7 @@ using namespace rsimpl::motion_module;
 namespace rsimpl
 {
     ds_device::ds_device(std::shared_ptr<uvc::device> device, const static_device_info & info) 
-    : rs_device_base(device, info)
+    : rs_device_base(device, info), start_stop_pad(std::chrono::milliseconds(500))
     {
         rs_option opt[] = {RS_OPTION_R200_DEPTH_UNITS};
         double units;
@@ -227,8 +227,22 @@ namespace rsimpl
             values[i] = base_opt_val[i];
     }
 
+    void ds_device::stop(rs_source source)
+    {
+        start_stop_pad.stop();
+        rs_device_base::stop(source);
+    }
+
+    void ds_device::start(rs_source source)
+    {
+        rs_device_base::start(source);
+        start_stop_pad.start();
+    }
+
     void ds_device::on_before_start(const std::vector<subdevice_mode_selection> & selected_modes)
     {
+
+
         rs_option depth_units_option = RS_OPTION_R200_DEPTH_UNITS;
         double depth_units;
 
