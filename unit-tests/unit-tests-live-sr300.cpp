@@ -449,7 +449,7 @@ inline void test_options(rs_device * device, rs_option* option_list, size_t opti
             rs_get_device_options(device, option_list, (unsigned int)options, vretVal.data(), require_no_error());
 
         // Results to be returned
-        ret_values = vretVal;       
+        ret_values = vretVal;
     }
 }
 
