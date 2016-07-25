@@ -14,6 +14,11 @@ frame_archive::frame_archive(const std::vector<subdevice_mode_selection>& select
             modes[o.first] = mode;
         }
     }
+
+    for(auto s : {RS_STREAM_DEPTH, RS_STREAM_INFRARED, RS_STREAM_INFRARED2, RS_STREAM_COLOR, RS_STREAM_FISHEYE})
+    {
+        published_frames_per_stream[s] = 0;
+    }
 }
 
 frame_archive::frameset* frame_archive::clone_frameset(frameset* frameset)
@@ -41,7 +46,8 @@ void frame_archive::unpublish_frame(frame* frame)
 
 frame_archive::frame* frame_archive::publish_frame(frame&& frame)
 {
-    if (published_frames_per_stream[frame.get_stream_type()] >= *max_frame_queue_size)
+    if (frame.get_stream_type() == RS_STREAM_MAX_ENUM ||
+        published_frames_per_stream[frame.get_stream_type()] >= *max_frame_queue_size)
     {
         return nullptr;
     }
