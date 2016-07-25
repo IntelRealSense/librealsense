@@ -16,7 +16,6 @@
 #include <sstream>
 #include <numeric>
 
-static uint32_t timestamp_frame_counter = 0;
 static std::vector<rs::motion_data> accel_frames = {};
 static std::vector<rs::motion_data> gyro_frames = {};
 static std::vector<rs::timestamp_data> fisheye_timestamp_events = {};
@@ -147,7 +146,7 @@ TEST_CASE("ZR300 Motion Module Data Streaming Validation", "[live] [DS-device]")
 
     REQUIRE(rs_supports(dev, rs_capabilities::RS_CAPABILITIES_MOTION_EVENTS, require_no_error()));
 
-    unsigned int active_period_ms = 20000; // Time for the application to generate and collect data
+    unsigned int active_period_ms = 10000; // Time for the application to generate and collect data
     const unsigned int gyro_bandwidth_fps = 200;
     const unsigned int accel_bandwidth_fps = 250; // Predefined rate
     const double allowed_deviation = 0.03; // The frame rates can vary within the predefined limit
@@ -157,9 +156,10 @@ TEST_CASE("ZR300 Motion Module Data Streaming Validation", "[live] [DS-device]")
     {
         INFO("Iteration num " << ii + 1 << " has started ");
 
-        timestamp_frame_counter = 0;
         accel_frames.clear();
         gyro_frames.clear();
+        fisheye_timestamp_events.clear();
+        depth_timestamp_events.clear();
 
         // Configure motion events callbacks
         rs_enable_motion_tracking_cpp(dev, new rs::motion_callback(motion_handler), new rs::timestamp_callback(timestamp_handler), require_no_error());
