@@ -2,12 +2,12 @@
 LINUX_BRANCH=$(uname -r) 
 
 # Get the required tools and headers to build the kernel
-sudo apt-get build-dep linux
+sudo apt-get install libusb-1.0-0-dev
 sudo apt-get install linux-headers-generic build-essential 
 
 # Get the linux kernel and change into source tree
-apt-get source linux
-cd linux-*
+[ ! -d ubuntu-xenial ] && git clone git://kernel.ubuntu.com/ubuntu/ubuntu-xenial.git
+cd ubuntu-xenial
 
 # Apply the one, simple UVC format patch
 patch -p1 < ../scripts/realsense-camera-formats.patch
