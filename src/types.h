@@ -274,19 +274,6 @@ namespace rsimpl
         static_device_info();
     };
 
-    struct motion_event
-    {
-        unsigned short      error_state;
-        unsigned short      status;
-        unsigned short      imu_entries_num;
-        unsigned short      non_imu_entries_num;
-        unsigned long       timestamp;
-        rs_motion_data      imu_packets[4];
-        rs_timestamp_data   non_imu_packets[8];
-    };
-
-    
-
     //////////////////////////////////
     // Runtime device configuration //
     //////////////////////////////////
