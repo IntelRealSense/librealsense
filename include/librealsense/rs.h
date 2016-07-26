@@ -269,7 +269,7 @@ typedef enum rs_timestamp_domain
 
 typedef struct rs_timestamp_data
 {
-    unsigned long long  timestamp;      /* 32Mhz clock. Each tick corresponds to 31.25 usec */
+    double              timestamp;     /* 32Mhz clock. Each tick corresponds to 31.25 usec */
     rs_event_source     source_id;
     unsigned long long  frame_number;  /* original size: 12 bit ; per data source */
 } rs_timestamp_data;
