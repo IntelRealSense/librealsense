@@ -683,20 +683,20 @@ TEST_CASE("DS-device verify standard UVC Controls set/get", "[live] [DS-device]"
     std::vector<double> initial_values;
     std::vector<double> modified_values;
     std::vector<double> verification_values;
-    for (size_t i=first; i<= last; i++)
+    for (int i=first; i<= last; i++)
         test_options.push_back((rs_option)i);
 
     initial_values.resize(test_options.size());
     modified_values.resize(test_options.size());
     verification_values.resize(test_options.size());
 
-    rs_get_device_options(dev,test_options.data(),test_options.size(),initial_values.data(), require_no_error());
+    rs_get_device_options(dev,test_options.data(),(unsigned int)test_options.size(),initial_values.data(), require_no_error());
 
     //for (size_t i=first; i<= last; i++)
     //    std::cout << "Option " << rs_option_to_string((rs_option)i) << " : initial value " << initial_values[i] <<std::endl;
 
     double min=0, max=0, step=0;
-    for (size_t i=first; i<= last; i++)
+    for (int i=first; i<= last; i++)
     {
         rs_get_device_option_range(dev,(rs_option)i,&min,&max,&step,require_no_error());
         if (initial_values[i] == max)
@@ -706,7 +706,7 @@ TEST_CASE("DS-device verify standard UVC Controls set/get", "[live] [DS-device]"
     }
 
     // Apply all properties with the modified values
-    rs_set_device_options(dev,test_options.data(),test_options.size(),modified_values.data(), require_no_error());
+    rs_set_device_options(dev,test_options.data(),(unsigned int)test_options.size(),modified_values.data(), require_no_error());
 
     // Verify
     rs_get_device_options(dev,test_options.data(),test_options.size(),verification_values.data(), require_no_error());
@@ -714,7 +714,7 @@ TEST_CASE("DS-device verify standard UVC Controls set/get", "[live] [DS-device]"
     //for (size_t i=first; i<= last; i++)
     //    std::cout << "Option " << rs_option_to_string((rs_option)i) << " Requested value = " << modified_values[i] << " Actual value = " << verification_values[i] << std::endl;
 
-    for (size_t i=first; i<= last; i++)
+    for (int i=first; i<= last; i++)
     {
         REQUIRE(modified_values[i]!=initial_values[i]);
         REQUIRE(modified_values[i]==verification_values[i]);

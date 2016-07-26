@@ -69,7 +69,7 @@ bool concurrent_queue::correct( frame_interface& frame)
     return false;
 }
 
-timestamp_corrector::timestamp_corrector(std::atomic<int>* queue_size, std::atomic<int>* timeout)
+timestamp_corrector::timestamp_corrector(std::atomic<uint32_t>* queue_size, std::atomic<uint32_t>* timeout)
     :event_queue_size(queue_size), events_timeout(timeout)
 {
 }

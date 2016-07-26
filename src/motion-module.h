@@ -6,12 +6,35 @@
 #define MOTION_MODULE_H
 
 #include <mutex>
+#include <bitset>
+
 #include "device.h"
 
 namespace rsimpl
 {
     namespace motion_module
     {
+        enum motion_module_errors
+        {
+            imu_not_responding      = 0,
+            illegal_configuration   = 1,
+            ts_fifo_overflow        = 2,
+            imu_fifo_overflow       = 3,
+            watchdog_reset          = 4,
+            crc_error               = 5,
+            missing_data_from_imu   = 6,
+            bootloader_failure      = 7,
+            eeprom_error            = 8,
+            bist_check_failed       = 9,
+            uctrl_not_responding    = 10,
+            cx3_fifo_overflow       = 11,
+            general_cx3_failure     = 12,
+            cx3_usb_failure         = 13,
+            reserved_1              = 14,
+            reserved_2              = 15,
+            max_mm_error
+        };
+
         //RealSense DS41t SaS rev 0_60 specifications [deg/sec]
         enum class mm_gyro_range : uint8_t
         {
@@ -39,6 +62,25 @@ namespace rsimpl
             accel_bw_default    = 0,
             accel_bw_125hz      = 1,
             accel_bw_250hz      = 2
+        };
+
+        struct motion_event_status
+        {
+            unsigned reserved_0             : 1;
+            unsigned pwr_mode_change_done   : 1;
+            unsigned cx3_packet_number      : 4;     /* bits [2..5] packet counter number*/
+            unsigned reserved_6_15          : 10;
+        };
+
+        struct motion_event
+        {
+            std::bitset<16>         error_state;
+            motion_event_status     status;
+            unsigned short          imu_entries_num;
+            unsigned short          non_imu_entries_num;
+            unsigned long           timestamp;
+            rs_motion_data          imu_packets[4];
+            rs_timestamp_data       non_imu_packets[8];
         };
 
 #pragma pack(push, 1)
