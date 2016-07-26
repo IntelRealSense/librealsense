@@ -532,7 +532,7 @@ namespace rsimpl
           auto frame_number = 0;
          
           frame_number = get_dinghy(mode, frame).frameCount; // All other formats can use the frame number in the dinghy row
-          return timestamp_wraparound.fix(frame_number * 1000 / fps);
+          return timestamp_wraparound.fix(frame_number * 1000. / fps);
         }
 
         unsigned long long get_frame_counter(const subdevice_mode & mode, const void * frame) override
@@ -572,7 +572,7 @@ namespace rsimpl
             auto last_counter_lsb = reinterpret_cast<byte_wrapping&>(last_fisheye_counter).lsb;
             auto pixel_lsb = reinterpret_cast<byte_wrapping&>(*((unsigned char*)frame)).lsb;
             if (last_counter_lsb == pixel_lsb)
-                return last_fisheye_counter;
+                return ((last_fisheye_counter)?last_fisheye_counter:1);
 
             auto last_counter_msb = (last_fisheye_counter >> 4);
             auto wrap_around = reinterpret_cast<byte_wrapping&>(last_fisheye_counter).lsb;
@@ -589,7 +589,7 @@ namespace rsimpl
 
         double get_frame_timestamp(const subdevice_mode & mode, const void * frame) override
         {
-            return timestamp_wraparound.fix(get_frame_counter(mode, frame) * 1000.0 / fps);
+            return timestamp_wraparound.fix(get_frame_counter(mode, frame) * 1000. / fps);
         }
     };
 
@@ -624,7 +624,7 @@ namespace rsimpl
 
         double get_frame_timestamp(const subdevice_mode & mode, const void * frame) override
         {
-            return timestamp_wraparound.fix(get_frame_counter(mode, frame) * 1000 / fps);
+            return timestamp_wraparound.fix(get_frame_counter(mode, frame) * 1000. / fps);
         }
     };
 
@@ -641,7 +641,7 @@ namespace rsimpl
         double get_frame_timestamp(const subdevice_mode &, const void *) override
         { 
             ++serial_frame_number;
-            return timestamp_wraparound.fix(serial_frame_number * 1000 / fps);
+            return timestamp_wraparound.fix(serial_frame_number * 1000. / fps);
         }
         unsigned long long get_frame_counter(const subdevice_mode &, const void *) override
         {

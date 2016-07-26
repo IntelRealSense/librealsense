@@ -12,6 +12,7 @@ using namespace rsimpl;
 using namespace motion_module;
 
 #define MOTION_MODULE_CONTROL_I2C_SLAVE_ADDRESS 0x42
+const double IMU_UNITS_TO_MSEC = 0.00003125;
 
 motion_module_control::motion_module_control(uvc::device *device) : device_handle(device), power_state(false)
 {
@@ -47,10 +48,16 @@ void motion_module_control::enter_state(mm_state new_state)
     case mm_idle:
         if (mm_streaming == new_state)
         {
+            // Power off before power on- Ensure that we starting from scratch
+            set_control(mm_events_output, false);
+            set_control(mm_video_output, false);
             set_control(mm_video_output, true);
         }
         if (mm_eventing == new_state)
         {
+            //  Power off before power on- Ensure that we starting from scratch
+            set_control(mm_events_output, false);
+            set_control(mm_video_output, false);
             set_control(mm_video_output, true); // L -shape adapter board
             std::this_thread::sleep_for(std::chrono::milliseconds(300)); // Added delay between MM power on and MM start commands to be sure that the MM will be ready untill start polling events. 
             set_control(mm_events_output, true);
@@ -59,6 +66,7 @@ void motion_module_control::enter_state(mm_state new_state)
     case mm_streaming:
         if (mm_idle == new_state)
         {
+            set_control(mm_events_output, false);
             set_control(mm_video_output, false);
         }
         if (mm_full_load == new_state)
@@ -90,6 +98,12 @@ void motion_module_control::enter_state(mm_state new_state)
         if (mm_streaming == new_state)
         {
             set_control(mm_events_output, false);
+        }
+        if (mm_idle == new_state)
+        {
+            set_control(mm_events_output, false);
+            set_control(mm_video_output, false);
+            throw std::logic_error(" Invalid Motion Module transition from full to idle");
         }
         break;
     default:
@@ -390,7 +404,7 @@ void motion_module_parser::parse_timestamp(const unsigned char * data, rs_timest
     entry.frame_number = mm_data_wraparound[entry.source_id].frame_counter_wraparound.fix((tmp & 0x7fff) >> 3); // bits [3-14] - frame num
     unsigned int timestamp;
     memcpy(&timestamp, &data[2], sizeof(unsigned int));   // bits [16:47] - timestamp
-    entry.timestamp = mm_data_wraparound[entry.source_id].timestamp_wraparound.fix(timestamp);
+    entry.timestamp = mm_data_wraparound[entry.source_id].timestamp_wraparound.fix(timestamp) * IMU_UNITS_TO_MSEC; // Convert ticks to ms
 }
 
 rs_motion_data motion_module_parser::parse_motion(const unsigned char * data)

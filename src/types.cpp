@@ -602,7 +602,7 @@ namespace rsimpl
             auto & a = requests[rule.a], &b = requests[rule.b]; auto f = rule.field;
             if (a.enabled && b.enabled)
             {
-                if (rule.same_formet)
+                if (rule.same_format)
                 {
                     if (a.format != RS_FORMAT_ANY && b.format != RS_FORMAT_ANY && a.format != b.format)
                     {
