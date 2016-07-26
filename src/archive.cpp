@@ -3,7 +3,7 @@
 
 using namespace rsimpl;
 
-frame_archive::frame_archive(const std::vector<subdevice_mode_selection>& selection, std::atomic<int>* in_max_frame_queue_size, std::chrono::high_resolution_clock::time_point capture_started)
+frame_archive::frame_archive(const std::vector<subdevice_mode_selection>& selection, std::atomic<uint32_t>* in_max_frame_queue_size, std::chrono::high_resolution_clock::time_point capture_started)
     : mutex(), capture_started(capture_started), max_frame_queue_size(in_max_frame_queue_size)
 {
     // Store the mode selection that pertains to each native stream

@@ -170,7 +170,7 @@ namespace rsimpl
         rs_stream a, b;
         int stream_request::* field;
         int delta, delta2;
-        rs_stream bigger; // if this equals to a or b, this stream must have field value bigger then the other stream
+        rs_stream bigger;       // if this equals to a or b, this stream must have field value bigger then the other stream
         bool diveded, diveded2; // devided = a must devide b; devided2 = b must devide a
         bool same_format;
     };
@@ -274,19 +274,6 @@ namespace rsimpl
         static_device_info();
     };
 
-    struct motion_event
-    {
-        unsigned short      error_state;
-        unsigned short      status;
-        unsigned short      imu_entries_num;
-        unsigned short      non_imu_entries_num;
-        unsigned long       timestamp;
-        rs_motion_data      imu_packets[4];
-        rs_timestamp_data   non_imu_packets[8];
-    };
-
-    
-
     //////////////////////////////////
     // Runtime device configuration //
     //////////////////////////////////
@@ -295,7 +282,7 @@ namespace rsimpl
     {
         subdevice_mode mode;                    // The streaming mode in which to place the hardware
         int pad_crop;                           // The number of pixels of padding (positive values) or cropping (negative values) to apply to all four edges of the image
-        int unpacker_index;                     // The specific unpacker used to unpack the encoded format into the desired output formats
+        size_t unpacker_index;                  // The specific unpacker used to unpack the encoded format into the desired output formats
         rs_output_buffer_format output_format = RS_OUTPUT_BUFFER_FORMAT_CONTINOUS; // The output buffer format. 
 
         subdevice_mode_selection() : mode({}), pad_crop(), unpacker_index(), output_format(RS_OUTPUT_BUFFER_FORMAT_CONTINOUS){}

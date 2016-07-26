@@ -4,9 +4,9 @@ using namespace rsimpl;
 
 syncronizing_archive::syncronizing_archive(const std::vector<subdevice_mode_selection> & selection,
     rs_stream key_stream,
-    std::atomic<int>* max_size,
-    std::atomic<int>* event_queue_size,
-    std::atomic<int>* events_timeout,
+    std::atomic<uint32_t>* max_size,
+    std::atomic<uint32_t>* event_queue_size,
+    std::atomic<uint32_t>* events_timeout,
     std::chrono::high_resolution_clock::time_point capture_started)
     : frame_archive(selection, max_size, capture_started), key_stream(key_stream),
     ts_corrector(event_queue_size, events_timeout)
