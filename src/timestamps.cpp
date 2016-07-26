@@ -1,6 +1,5 @@
 #include "timestamps.h"
 #include "sync.h"
-#include "motion-module.h"
 #include <algorithm>
 
 using namespace rsimpl;
@@ -63,7 +62,7 @@ bool concurrent_queue::correct( frame_interface& frame)
 
     if (it != data_queue.end())
     {
-        frame.set_timestamp((it->timestamp)*motion_module::IMU_UNITS_TO_MSEC);
+        frame.set_timestamp(it->timestamp);
         return true;
     }
     return false;

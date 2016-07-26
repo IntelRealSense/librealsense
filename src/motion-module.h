@@ -12,8 +12,6 @@ namespace rsimpl
 {
     namespace motion_module
     {
-        const double IMU_UNITS_TO_MSEC = 0.00003125;
-
         //RealSense DS41t SaS rev 0_60 specifications [deg/sec]
         enum class mm_gyro_range : uint8_t
         {

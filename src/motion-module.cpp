@@ -12,6 +12,7 @@ using namespace rsimpl;
 using namespace motion_module;
 
 #define MOTION_MODULE_CONTROL_I2C_SLAVE_ADDRESS 0x42
+const double IMU_UNITS_TO_MSEC = 0.00003125;
 
 motion_module_control::motion_module_control(uvc::device *device) : device_handle(device), power_state(false)
 {
