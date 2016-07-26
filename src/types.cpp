@@ -602,40 +602,33 @@ namespace rsimpl
             auto & a = requests[rule.a], &b = requests[rule.b]; auto f = rule.field;
             if (a.enabled && b.enabled)
             {
-                if (rule.same_formet)
+                bool compat = true;
+                if (rule.same_format)
                 {
-                    if (a.format != RS_FORMAT_ANY && b.format != RS_FORMAT_ANY && a.format != b.format)
-                    {
-                        if (throw_exception)
-                            throw std::runtime_error(to_string() << "requested " << rule.a << " and " << rule.b << " settings are incompatible");
-                        return false;
-                    }
-                        
+                    if ((a.format != RS_FORMAT_ANY) && (b.format != RS_FORMAT_ANY) && (a.format != b.format))
+                        compat = false;
                 }
-                else  if (rule.bigger == RS_STREAM_COUNT && !rule.diveded && !rule.diveded2)
+                else if((a.*f != 0) && (b.*f != 0))
                 {
-                    // Check for incompatibility if both values specified
-                    if (a.*f != 0 && b.*f != 0 && a.*f + rule.delta != b.*f && a.*f + rule.delta2 != b.*f)
+                    if ((rule.bigger == RS_STREAM_COUNT) && (!rule.divides && !rule.divides2))
                     {
-                        if (throw_exception)
-                            throw std::runtime_error(to_string() << "requested " << rule.a << " and " << rule.b << " settings are incompatible");
-                        return false;
+                        // Check for incompatibility if both values specified
+                        if ((a.*f + rule.delta != b.*f) && (a.*f + rule.delta2 != b.*f))
+                            compat = false;
+                    }
+                    else
+                    {
+                        if (((rule.bigger == rule.a) && (a.*f < b.*f)) || ((rule.bigger == rule.b) && (b.*f < a.*f)))
+                            compat = false;
+                        if ((rule.divides &&  (a.*f % b.*f)) || (rule.divides2 && (b.*f % a.*f)))
+                            compat = false;
                     }
                 }
-                else
+                if (!compat)
                 {
-                    if (a.*f != 0 && b.*f != 0 && (rule.bigger == rule.a && a.*f < b.*f) || (rule.bigger == rule.b && b.*f < a.*f))
-                    {
-                        if (throw_exception)
-                            throw std::runtime_error(to_string() << "requested " << rule.a << " and " << rule.b << " settings are incompatible");
-                        return false;
-                    }
-                    if (a.*f != 0 && b.*f != 0 && ((rule.diveded && float(a.*f) / float(b.*f) - a.*f / b.*f > 0) || (rule.diveded2 && float(b.*f) / float(a.*f) - b.*f / a.*f > 0)))
-                    {
-                        if (throw_exception)
-                            throw std::runtime_error(to_string() << "requested " << rule.a << " and " << rule.b << " settings are incompatible");
-                        return false;
-                    }
+                    if (throw_exception)
+                        throw std::runtime_error(to_string() << "requested " << rule.a << " and " << rule.b << " settings are incompatible");
+                    return false;
                 }
             }
         }

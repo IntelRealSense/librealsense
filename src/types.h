@@ -171,8 +171,8 @@ namespace rsimpl
         int stream_request::* field;
         int delta, delta2;
         rs_stream bigger;       // if this equals to a or b, this stream must have field value bigger then the other stream
-        bool diveded, diveded2; // devided = a must devide b; devided2 = b must devide a
-        bool same_formet;
+        bool divides, divides2; // divides = a must divide b; divides2 = b must divide a
+        bool same_format;
     };
 
     struct supported_option
