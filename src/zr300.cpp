@@ -257,16 +257,16 @@ namespace rsimpl
         memset(&intrinsic, 0, sizeof(motion_module_calibration));
 
         byte data[256];
-        hw_monitor::ReadFromEEPRom(static_cast<int>(adaptor_board_command::IRB), static_cast<int>(adaptor_board_command::IWB), device, 0, 255, data);
+        hw_monitor::read_from_eeprom(static_cast<int>(adaptor_board_command::IRB), static_cast<int>(adaptor_board_command::IWB), device, 0, 255, data);
         intrinsic.sn = *(serial_number*)&data[0];
 
-        hw_monitor::ReadFromEEPRom(static_cast<int>(adaptor_board_command::IRB), static_cast<int>(adaptor_board_command::IWB), device, 0x100, 255, data);
+        hw_monitor::read_from_eeprom(static_cast<int>(adaptor_board_command::IRB), static_cast<int>(adaptor_board_command::IWB), device, 0x100, 255, data);
         intrinsic.fe_intrinsic = *(fisheye_intrinsic*)&data[0];
 
-        hw_monitor::ReadFromEEPRom(static_cast<int>(adaptor_board_command::IRB), static_cast<int>(adaptor_board_command::IWB), device, 0x200, 255, data);
+        hw_monitor::read_from_eeprom(static_cast<int>(adaptor_board_command::IRB), static_cast<int>(adaptor_board_command::IWB), device, 0x200, 255, data);
         intrinsic.mm_extrinsic = *(IMU_extrinsic*)&data[0];
 
-        hw_monitor::ReadFromEEPRom(static_cast<int>(adaptor_board_command::IRB), static_cast<int>(adaptor_board_command::IWB), device, 0x300, 255, data);
+        hw_monitor::read_from_eeprom(static_cast<int>(adaptor_board_command::IRB), static_cast<int>(adaptor_board_command::IWB), device, 0x300, 255, data);
         intrinsic.imu_intrinsic = *(IMU_intrinsic*)&data[0];
 
         return intrinsic;

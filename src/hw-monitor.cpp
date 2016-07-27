@@ -215,7 +215,7 @@ namespace rsimpl
             } while (retries < num_retries);
             return;
         }
-        void CheckEEPromDataReady(int IRB_opcode, uvc::device & device)
+        void check_eeprom_data_ready(int IRB_opcode, uvc::device & device)
         {
             auto value = 0;
             i2c_read_reg(IRB_opcode, device, 0x42, 0x40, 4, (byte*)&value);
@@ -225,7 +225,7 @@ namespace rsimpl
             }
         }
 
-        void CheckEEPromRWStatus(int IRB_opcode, uvc::device & device)
+        void check_eeprom_read_write_status(int IRB_opcode, uvc::device & device)
         {
             auto value = 0;
             i2c_read_reg(IRB_opcode, device, 0x42, 0x70, 4, (byte*)&value);
@@ -236,7 +236,7 @@ namespace rsimpl
         }
 
 
-        void ReadFromEEPRom(int IRB_opcode, int IWB_opcode, uvc::device & device, unsigned int offset, int size, byte* data)
+        void read_from_eeprom(int IRB_opcode, int IWB_opcode, uvc::device & device, unsigned int offset, int size, byte* data)
         {
             unsigned int  command = offset;
 
@@ -261,13 +261,12 @@ namespace rsimpl
 
             //expected = 0x100005
 
-            CheckEEPromDataReady(IRB_opcode, device);
+            check_eeprom_data_ready(IRB_opcode, device);
             i2c_write_reg(IWB_opcode, device, 0x42, 0x0C, command);
-            CheckEEPromRWStatus(IRB_opcode, device);
-            CheckEEPromDataReady(IRB_opcode, device);
+            check_eeprom_read_write_status(IRB_opcode, device);
+            check_eeprom_data_ready(IRB_opcode, device);
             i2c_read_reg(IRB_opcode, device, 0x42, 0xD0, size, data);
-            CheckEEPromRWStatus(IRB_opcode, device);
-
+            check_eeprom_read_write_status(IRB_opcode, device);
         }
 
     }
