@@ -557,7 +557,8 @@ namespace rsimpl
 
         bool validate_frame(const subdevice_mode & mode, const void * frame) const override
         {
-            return true;
+            auto pixel_counter = reinterpret_cast<byte_wrapping&>(*((unsigned char*)frame)).lsb;
+            return (pixel_counter != 0);
         }
 
         struct byte_wrapping{
@@ -572,7 +573,7 @@ namespace rsimpl
             auto last_counter_lsb = reinterpret_cast<byte_wrapping&>(last_fisheye_counter).lsb;
             auto pixel_lsb = reinterpret_cast<byte_wrapping&>(*((unsigned char*)frame)).lsb;
             if (last_counter_lsb == pixel_lsb)
-                return ((last_fisheye_counter)?last_fisheye_counter:1);
+                return last_fisheye_counter;
 
             auto last_counter_msb = (last_fisheye_counter >> 4);
             auto wrap_around = reinterpret_cast<byte_wrapping&>(last_fisheye_counter).lsb;
