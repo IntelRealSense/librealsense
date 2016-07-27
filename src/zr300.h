@@ -68,7 +68,7 @@ namespace rsimpl
         big_endian<float>  scale_y;
         big_endian<float>  scale_z;
 
-        operator rs_motion_intrinsics_data() const{
+        operator rs_motion_device_intrinsics() const{
             return{ { bias_x, bias_y, bias_z }, { scale_x, scale_y, scale_z } };
         };
     };
@@ -79,7 +79,7 @@ namespace rsimpl
         MM_intrinsics acc_intrinsic;
         MM_intrinsics gyro_intrinsic;
         operator rs_motion_intrinsics() const{
-            return { rs_motion_intrinsics_data(acc_intrinsic), rs_motion_intrinsics_data(gyro_intrinsic) };
+            return{ rs_motion_device_intrinsics(acc_intrinsic), rs_motion_device_intrinsics(gyro_intrinsic) };
         };
     };
 

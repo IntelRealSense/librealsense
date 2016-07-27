@@ -106,8 +106,8 @@ typedef enum rs_distortion
     RS_DISTORTION_NONE                   = 0, /**< Rectilinear images, no distortion compensation required */
     RS_DISTORTION_MODIFIED_BROWN_CONRADY = 1, /**< Equivalent to Brown-Conrady distortion, except that tangential distortion is applied to radially distorted points */
     RS_DISTORTION_INVERSE_BROWN_CONRADY  = 2, /**< Equivalent to Brown-Conrady distortion, except undistorts image instead of distorting it */
-    RS_DISTORTION_COUNT                  = 3,
-    RS_DISTORTION_FTHETA                 = 4,
+    RS_DISTORTION_FTHETA                 = 3,
+    RS_DISTORTION_COUNT                  = 4,
     RS_DISTORTION_MAX_ENUM = 0x7FFFFFFF
 } rs_distortion;
 
@@ -239,16 +239,16 @@ typedef struct rs_intrinsics
     float         coeffs[5]; /* distortion coefficients */
 } rs_intrinsics;
 
-typedef struct rs_motion_intrinsics_data
+typedef struct rs_motion_device_intrinsics
 {
     float bias[3];
     float scale[3];
-}rs_motion_intrinsics_data;
+}rs_motion_device_intrinsics;
 
 typedef struct rs_motion_intrinsics
 {
-    rs_motion_intrinsics_data gyro;
-    rs_motion_intrinsics_data acc;
+    rs_motion_device_intrinsics gyro;
+    rs_motion_device_intrinsics acc;
 }rs_motion_intrinsics;
 
 
