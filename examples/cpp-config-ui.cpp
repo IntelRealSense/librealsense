@@ -132,7 +132,7 @@ struct gui
 
         std::ostringstream oss;
         oss << std::setprecision(2) << std::fixed << min;
-        auto delta = (min<0) ? 40 : 22;
+        auto delta = (min < 0) ? 40 : 22;
         draw_text(r.x0 - delta, r.y1 + abs(h / 2) + 3, oss.str().c_str());
 
         oss.str("");
@@ -202,7 +202,7 @@ void show_message(GLFWwindow* curr_window, const std::string& title, const std::
 
     int width, height;
     glfwGetWindowSize(curr_window, &width, &height);
-    
+
     int close_win_width = 550;
     int close_win_height = 150;
     auto closeWin = glfwCreateWindow(close_win_width, close_win_height, title.c_str(), nullptr, nullptr);
@@ -216,7 +216,7 @@ void show_message(GLFWwindow* curr_window, const std::string& title, const std::
     data.g = &g;
 
     glfwSetWindowUserPointer(closeWin, &data);
-    glfwSetWindowCloseCallback(closeWin, [](GLFWwindow* w){
+    glfwSetWindowCloseCallback(closeWin, [](GLFWwindow* w) {
         glfwDestroyWindow(w);
     });
 
@@ -279,7 +279,7 @@ void show_message(GLFWwindow* curr_window, const std::string& title, const std::
                 g.label(p, { 1, 1, 1 }, elem.c_str());
                 p.y += 15;
             }
-            
+
             if (p.y > 100)
                 glfwSetWindowSize(closeWin, close_win_width, p.y + 50);
         }
@@ -332,16 +332,16 @@ void update_auto_option(rs::option opt, std::vector<option>& options)
         auto auto_opt = it->auto_option;
         switch (auto_opt)
         {
-            case rs::option::color_enable_auto_exposure:
-                auto_exposure = false;
+        case rs::option::color_enable_auto_exposure:
+            auto_exposure = false;
             break;
 
-            case rs::option::color_enable_auto_white_balance:
-                auto_white_balance = false;
+        case rs::option::color_enable_auto_white_balance:
+            auto_white_balance = false;
             break;
 
-            case rs::option::r200_lr_auto_exposure_enabled:
-                lr_auto_exposure = false;
+        case rs::option::r200_lr_auto_exposure_enabled:
+            lr_auto_exposure = false;
             break;
         }
 
@@ -469,7 +469,7 @@ int main(int argc, char * argv[])
     };
     std::map<rs::stream, resolution> resolutions;
 
-    try{
+    try {
         rs::log_to_console(rs::log_severity::warn);
         //rs::log_to_file(rs::log_severity::debug, "librealsense.log");
 
@@ -478,7 +478,7 @@ int main(int argc, char * argv[])
         win = glfwCreateWindow(1550, 960, "CPP Configuration Example", nullptr, nullptr);
 
         glfwMakeContextCurrent(win);
-        
+
         glfwSetWindowUserPointer(win, &g);
         glfwSetCursorPosCallback(win, [](GLFWwindow * w, double cx, double cy) { reinterpret_cast<gui *>(glfwGetWindowUserPointer(w))->cursor = { (int)cx, (int)cy }; });
         glfwSetScrollCallback(win, [](GLFWwindow * w, double x, double y) { reinterpret_cast<gui *>(glfwGetWindowUserPointer(w))->scroll_vec = { (int)x, (int)y }; });
@@ -493,7 +493,7 @@ int main(int argc, char * argv[])
             g->mouse_down = action != GLFW_RELEASE;
         });
 
-        
+
         if (ctx.get_device_count() < 1) throw std::runtime_error("No device found. Is it plugged in?");
 
         dev = ctx.get_device(0);
@@ -570,215 +570,215 @@ int main(int argc, char * argv[])
         return 1;
     }
 
-        rs::format format[streams] = {};
-        unsigned long long  frame_number[streams] = {};
-        double frame_timestamp[streams] = {};
-        int fps[streams] = {};
-        double dc_preset = 0, iv_preset = 0;
-        int offset = 0, panel_height = 1;
+    rs::format format[streams] = {};
+    unsigned long long  frame_number[streams] = {};
+    double frame_timestamp[streams] = {};
+    int fps[streams] = {};
+    double dc_preset = 0, iv_preset = 0;
+    int offset = 0, panel_height = 1;
 
-        while (true)
+    while (true)
+    {
+        try
         {
-            try
+            while (!glfwWindowShouldClose(win))
             {
-                while (!glfwWindowShouldClose(win))
+                glfwPollEvents();
+                rs::frame frame;
+
+                int w, h;
+                glfwGetFramebufferSize(win, &w, &h);
+                glViewport(0, 0, w, h);
+                glClear(GL_COLOR_BUFFER_BIT);
+
+                glfwGetWindowSize(win, &w, &h);
+                glLoadIdentity();
+                glOrtho(0, w, h, 0, -1, +1);
+
+                g.vscroll({ w - 270, 0, w, h }, panel_height, offset);
+                int y = 10 - offset;
+
+                if (dev->is_streaming() || dev->is_motion_tracking_active())
                 {
-                    glfwPollEvents();
-                    rs::frame frame;
-
-                    int w, h;
-                    glfwGetFramebufferSize(win, &w, &h);
-                    glViewport(0, 0, w, h);
-                    glClear(GL_COLOR_BUFFER_BIT);
-
-                    glfwGetWindowSize(win, &w, &h);
-                    glLoadIdentity();
-                    glOrtho(0, w, h, 0, -1, +1);
-
-                    g.vscroll({ w - 270, 0, w, h }, panel_height, offset);
-                    int y = 10 - offset;
-
-                    if (dev->is_streaming() || dev->is_motion_tracking_active())
+                    if (g.button({ w - 260, y, w - 20, y + 24 }, "Stop Capture"))
                     {
-                        if (g.button({ w - 260, y, w - 20, y + 24 }, "Stop Capture"))
+                        if (is_any_stream_enable(dev))
                         {
-                            if (is_any_stream_enable(dev))
-                            {
-                                running = false;
-                                for (auto i = 0; i < 5; i++) frames_queue[i].clear();
-                                dev->stop();
-                            }
-
-                            if (has_motion_module)
-                            {
-                                running = false;
-                                dev->stop(rs::source::motion_data);
-                            }
+                            running = false;
+                            for (auto i = 0; i < 5; i++) frames_queue[i].clear();
+                            dev->stop();
                         }
+
+                        if (has_motion_module)
+                        {
+                            running = false;
+                            dev->stop(rs::source::motion_data);
+                        }
+                    }
+                }
+                else
+                {
+                    if (g.button({ w - 260, y, w - 20, y + 24 }, "Start Capture"))
+                    {
+                        if (is_any_stream_enable(dev))
+                        {
+                            running = true;
+                            dev->start();
+                        }
+
+                        if (has_motion_module)
+                        {
+                            running = true;
+                            dev->start(rs::source::motion_data);
+                        }
+                    }
+                }
+                y += 34;
+                if (!dev->is_streaming())
+                {
+                    for (int i = 0; i <= RS_CAPABILITIES_MOTION_EVENTS; ++i)
+                    {
+                        auto s = (rs::stream)i;
+                        auto cap = (rs::capabilities)i;
+                        std::stringstream stream_name;
+
+                        if (dev->supports(cap))
+                        {
+                            bool enable;
+                            if (i == RS_CAPABILITIES_MOTION_EVENTS)
+                                enable = motion_tracking_enable;
+                            else
+                                enable = dev->is_stream_enabled(s);
+
+                            enable_stream(dev, i, enable, stream_name);
+
+                            if (g.checkbox({ w - 260, y, w - 240, y + 20 }, enable))
+                            {
+                                enable_stream(dev, i, enable, stream_name);
+                            }
+                            g.label({ w - 234, y + 13 }, { 1, 1, 1 }, "Enable %s", stream_name.str().c_str());
+                            y += 30;
+                        }
+                    }
+                }
+
+
+                for (auto & o : options)
+                {
+                    bool disable_dragger = false;
+                    std::ostringstream ss;
+                    ss << o.opt << ": ";
+
+                    if ((o.opt == rs::option::color_enable_auto_exposure))
+                    {
+                        auto_exposure = (o.value == 1);
+                        update_auto_manual_str(ss, auto_exposure);
+                    }
+                    else if ((o.opt == rs::option::color_enable_auto_white_balance))
+                    {
+                        auto_white_balance = (o.value == 1);
+                        update_auto_manual_str(ss, auto_white_balance);
+                    }
+                    else if ((o.opt == rs::option::r200_lr_auto_exposure_enabled))
+                    {
+                        lr_auto_exposure = (o.value == 1);
+                        update_auto_manual_str(ss, lr_auto_exposure);
                     }
                     else
+                        ss << o.value;
+
+
+                    g.label({ w - 260, y + 12 }, { 1, 1, 1 }, ss.str().c_str());
+
+                    if (g.slider((int)o.opt + 1, { w - 260, y + 16, w - 20, y + 36 }, o.min, o.max, o.step, o.value, disable_dragger))
                     {
-                        if (g.button({ w - 260, y, w - 20, y + 24 }, "Start Capture"))
-                        {
-                            if (is_any_stream_enable(dev))
-                            {
-                                running = true;
-                                dev->start();
-                            }
-
-                            if (has_motion_module)
-                            {
-                                running = true;
-                                dev->start(rs::source::motion_data);
-                            }
-                        }
+                        dev->set_option(o.opt, o.value);
+                        update_auto_option(o.opt, options);
                     }
-                    y += 34;
-                    if (!dev->is_streaming())
-                    {
-                        for (int i = 0; i <= RS_CAPABILITIES_MOTION_EVENTS; ++i)
-                        {
-                            auto s = (rs::stream)i;
-                            auto cap = (rs::capabilities)i;
-                            std::stringstream stream_name;
-
-                            if (dev->supports(cap))
-                            {
-                                bool enable;
-                                if (i == RS_CAPABILITIES_MOTION_EVENTS)
-                                    enable = motion_tracking_enable;
-                                else
-                                    enable = dev->is_stream_enabled(s);
-
-                                enable_stream(dev, i, enable, stream_name);
-
-                                if (g.checkbox({ w - 260, y, w - 240, y + 20 }, enable))
-                                {
-                                    enable_stream(dev, i, enable, stream_name);
-                                }
-                                g.label({ w - 234, y + 13 }, { 1, 1, 1 }, "Enable %s", stream_name.str().c_str());
-                                y += 30;
-                            }
-                        }
-                    }
-
-
-                    for (auto & o : options)
-                    {
-                        bool disable_dragger = false;
-                        std::ostringstream ss;
-                        ss << o.opt << ": ";
-
-                        if ((o.opt == rs::option::color_enable_auto_exposure))
-                        {
-                            auto_exposure = (o.value == 1);
-                            update_auto_manual_str(ss, auto_exposure);
-                        }
-                        else if ((o.opt == rs::option::color_enable_auto_white_balance))
-                        {
-                            auto_white_balance = (o.value == 1);
-                            update_auto_manual_str(ss, auto_white_balance);
-                        }
-                        else if ((o.opt == rs::option::r200_lr_auto_exposure_enabled))
-                        {
-                            lr_auto_exposure = (o.value == 1);
-                            update_auto_manual_str(ss, lr_auto_exposure);
-                        }
-                        else
-                            ss << o.value;
-
-
-                        g.label({ w - 260, y + 12 }, { 1, 1, 1 }, ss.str().c_str());
-
-                        if (g.slider((int)o.opt + 1, { w - 260, y + 16, w - 20, y + 36 }, o.min, o.max, o.step, o.value, disable_dragger))
-                        {
-                            dev->set_option(o.opt, o.value);
-                            update_auto_option(o.opt, options);
-                        }
-                        y += 38;
-                    }
-
-                    g.label({ w - 260, y + 12 }, { 1, 1, 1 }, "Depth control parameters preset: %g", dc_preset);
-                    if (g.slider(100, { w - 260, y + 16, w - 20, y + 36 }, 0, 5, 1, dc_preset)) rs_apply_depth_control_preset((rs_device *)dev, static_cast<int>(dc_preset));
                     y += 38;
-                    g.label({ w - 260, y + 12 }, { 1, 1, 1 }, "IVCAM options preset: %g", iv_preset);
-                    if (g.slider(101, { w - 260, y + 16, w - 20, y + 36 }, 0, 10, 1, iv_preset)) rs_apply_ivcam_preset((rs_device *)dev, static_cast<rs_ivcam_preset>((int)iv_preset));
-                    y += 38;
-
-                    panel_height = y + 10 + offset;
-
-                    if (dev->is_streaming() || dev->is_motion_tracking_active())
-                    {
-                        w += (has_motion_module ? 150 : -280);
-
-                        int scale_factor = (has_motion_module ? 3 : 2);
-                        int fWidth = w / scale_factor;
-                        int fHeight = h / scale_factor;
-
-                        static struct position{ int rx, ry, rw, rh; } pos_vec[5];
-                        pos_vec[0] = position{ fWidth, 0, fWidth, fHeight };
-                        pos_vec[1] = position{ 0, 0, fWidth, fHeight };
-                        pos_vec[2] = position{ 0, fHeight, fWidth, fHeight };
-                        pos_vec[3] = position{ fWidth, fHeight, fWidth, fHeight };
-                        pos_vec[4] = position{ 0, 2 * fHeight, fWidth, fHeight };
-
-                        for (auto i = 0; i < 5; i++)
-                        {
-                            if (!dev->is_stream_enabled((rs::stream)i))
-                                continue;
-
-                            if (frames_queue[i].try_dequeue(&frame))
-                            {
-                                buffers[i].upload(frame);
-                                format[i] = frame.get_format();
-                                frame_number[i] = frame.get_frame_number();
-                                frame_timestamp[i] = frame.get_timestamp();
-                                fps[i] = frame.get_framerate();
-                            }
-
-                            buffers[i].show((rs::stream)i, format[i], fps[i], frame_number[i], frame_timestamp[i], pos_vec[i].rx, pos_vec[i].ry, pos_vec[i].rw, pos_vec[i].rh, resolutions[(rs::stream)i].width, resolutions[(rs::stream)i].height);
-                        }
-
-                        if (has_motion_module && motion_tracking_enable)
-                        {
-                            std::lock_guard<std::mutex> lock(mm_mutex);
-                            update_mm_data(buffers, w, h, g);
-                        }
-                    }
-
-                    glfwSwapBuffers(win);
-                    g.scroll_vec = { 0, 0 };
-                    g.click = false;
-                    if (!g.mouse_down) g.clicked_id = 0;
                 }
 
-                running = false;
+                g.label({ w - 260, y + 12 }, { 1, 1, 1 }, "Depth control parameters preset: %g", dc_preset);
+                if (g.slider(100, { w - 260, y + 16, w - 20, y + 36 }, 0, 5, 1, dc_preset)) rs_apply_depth_control_preset((rs_device *)dev, static_cast<int>(dc_preset));
+                y += 38;
+                g.label({ w - 260, y + 12 }, { 1, 1, 1 }, "IVCAM options preset: %g", iv_preset);
+                if (g.slider(101, { w - 260, y + 16, w - 20, y + 36 }, 0, 10, 1, iv_preset)) rs_apply_ivcam_preset((rs_device *)dev, static_cast<rs_ivcam_preset>((int)iv_preset));
+                y += 38;
 
-                for (auto i = 0; i < streams; i++) frames_queue[i].clear();
+                panel_height = y + 10 + offset;
 
-                if (dev->is_streaming())
-                    dev->stop();
-
-                for (auto i = 0; i < streams; i++)
+                if (dev->is_streaming() || dev->is_motion_tracking_active())
                 {
-                    if (dev->is_stream_enabled((rs::stream)i))
-                        dev->disable_stream((rs::stream)i);
+                    w += (has_motion_module ? 150 : -280);
+
+                    int scale_factor = (has_motion_module ? 3 : 2);
+                    int fWidth = w / scale_factor;
+                    int fHeight = h / scale_factor;
+
+                    static struct position { int rx, ry, rw, rh; } pos_vec[5];
+                    pos_vec[0] = position{ fWidth, 0, fWidth, fHeight };
+                    pos_vec[1] = position{ 0, 0, fWidth, fHeight };
+                    pos_vec[2] = position{ 0, fHeight, fWidth, fHeight };
+                    pos_vec[3] = position{ fWidth, fHeight, fWidth, fHeight };
+                    pos_vec[4] = position{ 0, 2 * fHeight, fWidth, fHeight };
+
+                    for (auto i = 0; i < 5; i++)
+                    {
+                        if (!dev->is_stream_enabled((rs::stream)i))
+                            continue;
+
+                        if (frames_queue[i].try_dequeue(&frame))
+                        {
+                            buffers[i].upload(frame);
+                            format[i] = frame.get_format();
+                            frame_number[i] = frame.get_frame_number();
+                            frame_timestamp[i] = frame.get_timestamp();
+                            fps[i] = frame.get_framerate();
+                        }
+
+                        buffers[i].show((rs::stream)i, format[i], fps[i], frame_number[i], frame_timestamp[i], pos_vec[i].rx, pos_vec[i].ry, pos_vec[i].rw, pos_vec[i].rh, resolutions[(rs::stream)i].width, resolutions[(rs::stream)i].height);
+                    }
+
+                    if (has_motion_module && motion_tracking_enable)
+                    {
+                        std::lock_guard<std::mutex> lock(mm_mutex);
+                        update_mm_data(buffers, w, h, g);
+                    }
                 }
 
-                glfwTerminate();
-                return 0;
+                glfwSwapBuffers(win);
+                g.scroll_vec = { 0, 0 };
+                g.click = false;
+                if (!g.mouse_down) g.clicked_id = 0;
             }
-            catch (const rs::error & e)
+
+            running = false;
+
+            for (auto i = 0; i < streams; i++) frames_queue[i].clear();
+
+            if (dev->is_streaming())
+                dev->stop();
+
+            for (auto i = 0; i < streams; i++)
             {
-                std::stringstream ss;
-                ss << "RealSense error calling " << e.get_failed_function() << "(" << e.get_failed_args() << "):\n    " << e.what() << std::endl;
-                std::cerr << ss.str();
-                show_message(win, "Exception", ss.str());
+                if (dev->is_stream_enabled((rs::stream)i))
+                    dev->disable_stream((rs::stream)i);
             }
-            catch (const std::exception & e)
-            {
-                std::cerr << e.what() << std::endl;
-                show_message(win, "Exception", e.what());
-            }
+
+            glfwTerminate();
+            return 0;
         }
+        catch (const rs::error & e)
+        {
+            std::stringstream ss;
+            ss << "RealSense error calling " << e.get_failed_function() << "(" << e.get_failed_args() << "):\n    " << e.what() << std::endl;
+            std::cerr << ss.str();
+            show_message(win, "Exception", ss.str());
+        }
+        catch (const std::exception & e)
+        {
+            std::cerr << e.what() << std::endl;
+            show_message(win, "Exception", e.what());
+        }
+    }
 }

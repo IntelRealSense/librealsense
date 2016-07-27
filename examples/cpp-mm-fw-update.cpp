@@ -65,8 +65,8 @@ catch (const std::runtime_error& err_msg)
 }
 catch (const std::string& err_msg)
 {
-	printf("%s", err_msg);
-	return 1;
+    printf("%s", err_msg.c_str());
+    return 1;
 }
 catch(...)
 {

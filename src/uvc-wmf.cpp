@@ -283,9 +283,12 @@ namespace rsimpl
                 if(!mf_media_source)
                 {
                     check("IMFActivate::ActivateObject", mf_activate->ActivateObject(__uuidof(IMFMediaSource), (void **)&mf_media_source));
-                    if (!mf_media_source) throw std::runtime_error(to_string() << "Invalid media source");
-                    check("IMFMediaSource::QueryInterface", mf_media_source->QueryInterface(__uuidof(IAMCameraControl), (void **)&am_camera_control));
-                    if(SUCCEEDED(mf_media_source->QueryInterface(__uuidof(IAMVideoProcAmp), (void **)&am_video_proc_amp))) LOG_DEBUG("obtained IAMVideoProcAmp");
+                    if (mf_media_source)
+                    {
+                        check("IMFMediaSource::QueryInterface", mf_media_source->QueryInterface(__uuidof(IAMCameraControl), (void **)&am_camera_control));
+                        if (SUCCEEDED(mf_media_source->QueryInterface(__uuidof(IAMVideoProcAmp), (void **)&am_video_proc_amp))) LOG_DEBUG("obtained IAMVideoProcAmp");
+                    }
+                    else throw std::runtime_error(to_string() << "Invalid media source");
                 }
                 return mf_media_source;
 
