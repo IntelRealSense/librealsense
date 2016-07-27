@@ -450,13 +450,13 @@ void rs_device_base::set_options(const rs_option options[], size_t count, const 
         switch (options[i])
         {
         case  RS_OPTION_FRAMES_QUEUE_SIZE:
-            max_publish_list_size = values[i];
+            max_publish_list_size = (uint32_t)values[i];
             break;
         case  RS_OPTION_EVENTS_QUEUE_SIZE:
-            event_queue_size = values[i];
+            event_queue_size = (uint32_t)values[i];
             break;
         case  RS_OPTION_MAX_TIMESTAMP_LATENCY:
-            events_timeout = values[i];
+            events_timeout = (uint32_t)values[i];
             break;
         default:
             LOG_WARNING("Cannot set " << options[i] << " to " << values[i] << " on " << get_name());

@@ -5,7 +5,6 @@
 using namespace rsimpl;
 using namespace std;
 
-const double IMU_UNITS_TO_MSEC = 0.00003125;
 
 
 void concurrent_queue::push_back_data(rs_timestamp_data data)
@@ -63,13 +62,13 @@ bool concurrent_queue::correct( frame_interface& frame)
 
     if (it != data_queue.end())
     {
-        frame.set_timestamp((it->timestamp)*IMU_UNITS_TO_MSEC);
+        frame.set_timestamp(it->timestamp);
         return true;
     }
     return false;
 }
 
-timestamp_corrector::timestamp_corrector(std::atomic<int>* queue_size, std::atomic<int>* timeout)
+timestamp_corrector::timestamp_corrector(std::atomic<uint32_t>* queue_size, std::atomic<uint32_t>* timeout)
     :event_queue_size(queue_size), events_timeout(timeout)
 {
 }
@@ -82,8 +81,9 @@ void timestamp_corrector::on_timestamp(rs_timestamp_data data)
 {
     lock_guard<mutex> lock(mtx);
 
-    data_queue[data.source_id].push_back_data(data);
-    if (data_queue[data.source_id].size() >= *event_queue_size)
+    if (data_queue[data.source_id].size() <= *event_queue_size)
+        data_queue[data.source_id].push_back_data(data);
+    if (data_queue[data.source_id].size() > *event_queue_size)
         data_queue[data.source_id].pop_front_data();
 
     cv.notify_one();
@@ -109,16 +109,18 @@ void timestamp_corrector::correct_timestamp(frame_interface& frame, rs_stream st
 {
     unique_lock<mutex> lock(mtx);
 
+    bool res;
     rs_event_source source_id;
     update_source_id(source_id, stream);
-    if (!data_queue[source_id].correct(frame))
+    if (!(res = data_queue[source_id].correct(frame)))
     {
         const auto ready = [&]() { return data_queue[source_id].correct(frame); };
-        auto res = cv.wait_for(lock, std::chrono::milliseconds(*events_timeout), ready);
-        if (res)
-        {
-            frame.set_timestamp_domain(RS_TIMESTAMP_DOMAIN_MICROCONTROLLER);
-        }
+        res = cv.wait_for(lock, std::chrono::milliseconds(*events_timeout), ready);
+    }
+
+    if (res)
+    {
+        frame.set_timestamp_domain(RS_TIMESTAMP_DOMAIN_MICROCONTROLLER);
     }
     lock.unlock();
 }

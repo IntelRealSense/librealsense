@@ -17,6 +17,8 @@
 
 int main() try
 {
+    rs::log_to_console(rs::log_severity::warn);
+
     // Create a context object. This object owns the handles to all connected realsense devices.
     rs::context ctx;
 
