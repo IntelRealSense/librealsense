@@ -201,7 +201,10 @@ void rs_device_base::set_timestamp_callback(rs_timestamp_callback* callback)
 void rs_device_base::start(rs_source source)
 {
     if (source & RS_SOURCE_MOTION_TRACKING)
-        start_motion_tracking();
+        if (supports(RS_CAPABILITIES_MOTION_EVENTS))
+            start_motion_tracking();
+        else
+             throw std::runtime_error("motion-tracking is not supported by this device");
 
     if (source & RS_SOURCE_VIDEO)
         start_video_streaming();
@@ -214,7 +217,10 @@ void rs_device_base::stop(rs_source source)
         stop_video_streaming();
 
     if (source & RS_SOURCE_MOTION_TRACKING)
-        stop_motion_tracking();
+        if (supports(RS_CAPABILITIES_MOTION_EVENTS))
+            stop_motion_tracking();
+        else
+             throw std::runtime_error("motion-tracking is not supported by this device");
 }
 
 void rs_device_base::start_video_streaming()
