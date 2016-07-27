@@ -34,9 +34,9 @@ int main() try
 
     if (dev->supports(rs::capabilities::motion_module_fw_update))
     {
-        printf("Motion Module FW will be updated to the content of fw.bin in working directory");
+        printf("Motion Module FW will be updated to the content of fw.bin in working directory \n");
         auto f = fopen("fw.bin", "rb");
-        if (!f) throw std::runtime_error("fw.bin not found in working directory!");
+        if (!f) throw std::runtime_error("fw.bin not found in working directory!\n");
         uint8_t firmware[65535];
         auto numRead = fread(firmware, 1, 65535, f);
         fclose(f);
@@ -50,6 +50,23 @@ int main() try
     }
 
     return 0;
+}
+catch (const rs::error & e)
+{
+    // Method calls against librealsense objects may throw exceptions of type rs::error
+    printf("rs::error was thrown when calling %s(%s):\n", e.get_failed_function().c_str(), e.get_failed_args().c_str());
+    printf("    %s\n", e.what());
+    return EXIT_FAILURE;
+}
+catch (const std::runtime_error& err_msg)
+{
+    printf("%s", err_msg.what());
+    return 1;
+}
+catch (const std::string& err_msg)
+{
+	printf("%s", err_msg);
+	return 1;
 }
 catch(...)
 {
