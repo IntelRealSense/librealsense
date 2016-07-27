@@ -37,7 +37,10 @@ void frame_archive::unpublish_frame(frame* frame)
     {
         log_frame_callback_end(frame);
         std::lock_guard<std::recursive_mutex> lock(mutex);
-        --published_frames_per_stream[frame->get_stream_type()];
+
+        if (is_valid(frame->get_stream_type()))
+            --published_frames_per_stream[frame->get_stream_type()];
+
         freelist.push_back(std::move(*frame));
         published_frames.deallocate(frame);
        
@@ -46,7 +49,7 @@ void frame_archive::unpublish_frame(frame* frame)
 
 frame_archive::frame* frame_archive::publish_frame(frame&& frame)
 {
-    if (frame.get_stream_type() == RS_STREAM_MAX_ENUM ||
+    if (is_valid(frame.get_stream_type()) &&
         published_frames_per_stream[frame.get_stream_type()] >= *max_frame_queue_size)
     {
         return nullptr;
@@ -54,7 +57,7 @@ frame_archive::frame* frame_archive::publish_frame(frame&& frame)
     auto new_frame = published_frames.allocate();
     if (new_frame)
     {
-        ++published_frames_per_stream[frame.get_stream_type()];
+        if (is_valid(frame.get_stream_type())) ++published_frames_per_stream[frame.get_stream_type()];
         *new_frame = std::move(frame);
     }
     return new_frame;
