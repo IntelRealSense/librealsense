@@ -65,14 +65,12 @@ EXPORTS
     rs_get_detached_frame_number
     rs_get_detached_frame_height
     rs_get_detached_frame_width
-    rs_get_detached_frame_stride_x
-    rs_get_detached_frame_stride_y
+    rs_get_detached_frame_stride
     rs_get_detached_frame_bpp
     rs_get_detached_frame_format
     rs_get_detached_frame_stream_type
 
     rs_release_frame
-    rs_clone_frame_ref
     rs_send_blob_to_device
 
     rs_get_failed_function

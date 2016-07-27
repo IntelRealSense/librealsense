@@ -358,23 +358,7 @@ namespace rs
             }
         }
 
-        frame clone_ref()
-        {
-            rs_error * e = nullptr;
-            auto r = rs_clone_frame_ref(device, frame_ref, &e);
-            error::handle(e);
-            return std::move(frame(device, r));
-        }
-
-        bool try_clone_ref(frame& result)
-        {
-            rs_error * e = nullptr;
-            auto r = rs_clone_frame_ref(device, frame_ref, &e);
-            if (!e) result = std::move(frame(device, r));
-            return e == nullptr;
-        }
-
-        /// retrieve the time at which the TODO on a stream was captured
+        /// retrieve the time at which the frame was captured
         /// \return            the timestamp of the frame, in milliseconds since the device was started
         double get_timestamp() const
         {
@@ -383,7 +367,10 @@ namespace rs
             error::handle(e);
             return r;
         }
-        rs::timestamp_domain get_frame_timestamp_domain() const
+
+        /// retrieve the timestamp domain 
+        /// \return            timestamp domain (clock name) for timestamp values
+        timestamp_domain get_frame_timestamp_domain() const
         {
             rs_error * e = nullptr;
             auto r = rs_get_detached_frame_timestamp_domain(frame_ref, &e);
@@ -431,23 +418,17 @@ namespace rs
             return r;
         }
 
-        int get_stride_x() const
+        int get_stride() const
         {
             rs_error * e = nullptr;
-            auto r = rs_get_detached_frame_stride_x(frame_ref, &e);
+            auto r = rs_get_detached_frame_stride(frame_ref, &e);
             error::handle(e);
             return r;
         }
 
-        int get_stride_y() const
-        {
-            rs_error * e = nullptr;
-            auto r = rs_get_detached_frame_stride_y(frame_ref, &e);
-            error::handle(e);
-            return r;
-        }
-
-        float get_bpp() const
+        /// retrieve bits per pixel
+        /// \return            number of bits per one pixel
+        int get_bpp() const
         {
             rs_error * e = nullptr;
             auto r = rs_get_detached_frame_bpp(frame_ref, &e);
