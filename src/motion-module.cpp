@@ -177,11 +177,11 @@ void motion_module_control::switch_to_iap()
     uint32_t value = -1;
 
     // read state.
-	hw_monitor::i2c_read_reg(static_cast<int>(adaptor_board_command::IRB), *device_handle, MOTION_MODULE_CONTROL_I2C_SLAVE_ADDRESS, (int)i2c_register::REG_CURR_PWR_STATE, sizeof(uint32_t), reinterpret_cast<byte*>(&value));
+    hw_monitor::i2c_read_reg(static_cast<int>(adaptor_board_command::IRB), *device_handle, MOTION_MODULE_CONTROL_I2C_SLAVE_ADDRESS, (int)i2c_register::REG_CURR_PWR_STATE, sizeof(uint32_t), reinterpret_cast<byte*>(&value));
 
     if ((power_states)value != power_states::PWR_STATE_IAP) {
         // we are not in IAP. switch to IAP.
-		hw_monitor::i2c_write_reg(static_cast<int>(adaptor_board_command::IWB), *device_handle, MOTION_MODULE_CONTROL_I2C_SLAVE_ADDRESS, (int)i2c_register::REG_IAP_REG, 0xAE);
+        hw_monitor::i2c_write_reg(static_cast<int>(adaptor_board_command::IWB), *device_handle, MOTION_MODULE_CONTROL_I2C_SLAVE_ADDRESS, (int)i2c_register::REG_IAP_REG, 0xAE);
     }
 
     // retry for 10 times to be in IAP state.
@@ -189,7 +189,7 @@ void motion_module_control::switch_to_iap()
     {
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
 
-		hw_monitor::i2c_read_reg(static_cast<int>(adaptor_board_command::IRB), *device_handle, MOTION_MODULE_CONTROL_I2C_SLAVE_ADDRESS, (int)i2c_register::REG_CURR_PWR_STATE, sizeof(uint32_t), reinterpret_cast<byte*>(&value));
+        hw_monitor::i2c_read_reg(static_cast<int>(adaptor_board_command::IRB), *device_handle, MOTION_MODULE_CONTROL_I2C_SLAVE_ADDRESS, (int)i2c_register::REG_CURR_PWR_STATE, sizeof(uint32_t), reinterpret_cast<byte*>(&value));
         if ((power_states)value == power_states::PWR_STATE_IAP) {
             return; // we have entered IAP
         }

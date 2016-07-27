@@ -146,7 +146,7 @@ namespace rsimpl
 
 
 
-	void zr300_camera::toggle_motion_module_power(bool on)
+    void zr300_camera::toggle_motion_module_power(bool on)
     {        
         motion_module_ctrl.toggle_motion_module_power(on);
     }
