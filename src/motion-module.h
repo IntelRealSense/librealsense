@@ -153,8 +153,6 @@ namespace rsimpl
             bool    power_state;
 
             void i2c_iap_write(uint16_t slave_address, uint8_t *buffer, uint16_t len);
-            void i2c_write_reg(uint16_t slave_address, uint16_t reg, uint32_t value);
-            void i2c_read_reg(uint16_t slave_address, uint16_t reg, uint32_t &value);
 
             void write_firmware(uint8_t *data, int size);
 

@@ -107,6 +107,7 @@ typedef enum rs_distortion
     RS_DISTORTION_MODIFIED_BROWN_CONRADY = 1, /**< Equivalent to Brown-Conrady distortion, except that tangential distortion is applied to radially distorted points */
     RS_DISTORTION_INVERSE_BROWN_CONRADY  = 2, /**< Equivalent to Brown-Conrady distortion, except undistorts image instead of distorting it */
     RS_DISTORTION_COUNT                  = 3,
+    RS_DISTORTION_FTHETA                 = 4,
     RS_DISTORTION_MAX_ENUM = 0x7FFFFFFF
 } rs_distortion;
 
@@ -238,6 +239,19 @@ typedef struct rs_intrinsics
     float         coeffs[5]; /* distortion coefficients */
 } rs_intrinsics;
 
+typedef struct rs_motion_intrinsics_data
+{
+    float bias[3];
+    float scale[3];
+}rs_motion_intrinsics_data;
+
+typedef struct rs_motion_intrinsics
+{
+    rs_motion_intrinsics_data gyro;
+    rs_motion_intrinsics_data acc;
+}rs_motion_intrinsics;
+
+
 typedef struct rs_extrinsics
 {
     float rotation[9];    /* column-major 3x3 rotation matrix */
@@ -352,6 +366,14 @@ const char * rs_get_device_firmware_version(const rs_device * device, rs_error *
  * \param[out] error       if non-null, receives any error that occurs during this call, otherwise, errors are ignored
  */
 void rs_get_device_extrinsics(const rs_device * device, rs_stream from_stream, rs_stream to_stream, rs_extrinsics * extrin, rs_error ** error);
+
+/**
+* retrieve extrinsic transformation between specific stream and the motion module
+* \param[in] from_stream  stream whose coordinate space we will transform from
+* \param[out] extrin      the transformation between the specific stream and motion module
+* \param[out] error       if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+*/
+void rs_get_motion_extrinsics_from(const rs_device * device, rs_stream from, rs_extrinsics * extrin, rs_error ** error);
 
 /**
  * retrieve mapping between the units of the depth image and meters
@@ -475,12 +497,19 @@ int rs_get_stream_framerate(const rs_device * device, rs_stream stream, rs_error
 void rs_get_stream_intrinsics(const rs_device * device, rs_stream stream, rs_intrinsics * intrin, rs_error ** error);
 
 /**
- * set up a frame callback that will be called immediately when an image is available, with no synchronization logic applied
- * \param[in] stream    the stream for whose images the callback should be registered
- * \param[in] on_frame  the callback which will receive the frame data and timestamp
- * \param[in] user      a user data point to be passed to the callback
- * \param[out] error    if non-null, receives any error that occurs during this call, otherwise, errors are ignored
- */
+* retrieve intrinsic camera parameters for a motion module
+* \param[out] intrinsic  the intrinsic parameters
+* \param[out] error   if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+*/
+void rs_get_motion_intrinsics(const rs_device * device, rs_motion_intrinsics * intrinsic, rs_error ** error);
+
+/**
+* set up a frame callback that will be called immediately when an image is available, with no synchronization logic applied
+* \param[in] stream    the stream for whose images the callback should be registered
+* \param[in] on_frame  the callback which will receive the frame data and timestamp
+* \param[in] user      a user data point to be passed to the callback
+* \param[out] error    if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+*/
 void rs_set_frame_callback(rs_device * device, rs_stream stream, void (*on_frame)(rs_device * dev, rs_frame_ref * frame, void * user), void * user, rs_error ** error);
 
 /**

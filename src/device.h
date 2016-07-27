@@ -123,6 +123,8 @@ public:
     void                                        enable_stream_preset(rs_stream stream, rs_preset preset) override;
     void                                        disable_stream(rs_stream stream) override;
 
+    rs_motion_intrinsics                        get_motion_intrinsics() const override;
+    rs_extrinsics                               get_motion_extrinsics_from(rs_stream from) const override;
     void                                        enable_motion_tracking() override;
     void                                        set_stream_callback(rs_stream stream, void(*on_frame)(rs_device * device, rs_frame_ref * frame, void * user), void * user) override;
     void                                        set_stream_callback(rs_stream stream, rs_frame_callback * callback) override;

@@ -163,5 +163,112 @@ namespace rsimpl
             throw std::runtime_error("opcodes do not match");
         }
     }
+        void i2c_write_reg(int command, uvc::device & device, uint16_t slave_address, uint16_t reg, uint32_t value)
+        {
+            hw_monitor::hwmon_cmd cmd(command);
+
+            cmd.Param1 = slave_address;
+            cmd.Param2 = reg;
+            cmd.Param3 = sizeof(value);
+
+            memcpy(cmd.data, &value, sizeof(value));
+            cmd.sizeOfSendCommandData = sizeof(value);
+
+            std::timed_mutex mutex;
+            perform_and_send_monitor_command(device, mutex, cmd);
+
+            return;
+        }
+
+        // Read a 32 bit value from the i2c register.
+        void i2c_read_reg(int command, uvc::device & device, uint16_t slave_address, uint16_t reg, uint32_t size, byte* data)
+        {
+            hw_monitor::hwmon_cmd cmd(command);
+
+            cmd.Param1 = slave_address;
+            cmd.Param2 = reg;
+            cmd.Param3 = size;
+            const int num_retries = 10;
+            std::timed_mutex mutex;
+            int retries = 0;
+            do {
+                try {
+                    hw_monitor::perform_and_send_monitor_command(device, mutex, cmd);
+
+                    // validate that the size is of 32 bit (value size).
+                    if (cmd.receivedCommandDataLength == size)
+                    {
+                        memcpy(data, cmd.receivedCommandData, cmd.receivedCommandDataLength);
+                        break;
+                    }
+                }
+                catch (...)
+                {
+                    retries++;
+                    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+                    if (retries == num_retries)
+                    {
+                        throw;
+                    }
+                }
+
+            } while (retries < num_retries);
+            return;
+        }
+        void CheckEEPromDataReady(int IRB_opcode, uvc::device & device)
+        {
+            auto value = 0;
+            i2c_read_reg(IRB_opcode, device, 0x42, 0x40, 4, (byte*)&value);
+            if (value & 0x8 != 0x8)
+            {
+                throw std::runtime_error(to_string() << "EEPRom Error" << value);
+            }
+        }
+
+        void CheckEEPromRWStatus(int IRB_opcode, uvc::device & device)
+        {
+            auto value = 0;
+            i2c_read_reg(IRB_opcode, device, 0x42, 0x70, 4, (byte*)&value);
+            if (value & 0x100 != 0x100)
+            {
+                throw std::runtime_error(to_string() << "EEPRom Error" << value);
+            }
+        }
+
+
+        void ReadFromEEPRom(int IRB_opcode, int IWB_opcode, uvc::device & device, unsigned int offset, int size, byte* data)
+        {
+            unsigned int  command = offset;
+
+            //bits[0:12] - Offset In EEprom
+            command &= 0x00001FFF;
+
+            //bit[13] - Direction 0 = read, 1 = write
+            //Doesn't do anything since it is already 0. Just for redability/consistency.
+            command &= 0xFFFFDFFF;
+
+            //bit[14:15] - Reserved
+            //Nothing to do
+
+            //bits[16:23] - Size to read
+            unsigned int  lengthR = size;
+            lengthR = lengthR << 16;
+
+            command |= lengthR;
+
+            //bit[14:15] - Reserved
+            //Nothing to do
+
+            //expected = 0x100005
+
+            CheckEEPromDataReady(IRB_opcode, device);
+            i2c_write_reg(IWB_opcode, device, 0x42, 0x0C, command);
+            CheckEEPromRWStatus(IRB_opcode, device);
+            CheckEEPromDataReady(IRB_opcode, device);
+            i2c_read_reg(IRB_opcode, device, 0x42, 0xD0, size, data);
+            CheckEEPromRWStatus(IRB_opcode, device);
+
+        }
+
     }
 }

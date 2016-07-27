@@ -155,58 +155,7 @@ void motion_module_control::i2c_iap_write(uint16_t slave_address, uint8_t *buffe
 }
 
 // Write a 32 bit value to a specific i2c slave address.
-void motion_module_control::i2c_write_reg(uint16_t slave_address, uint16_t reg, uint32_t value)
-{
-    hw_monitor::hwmon_cmd cmd((int)adaptor_board_command::IWB);
 
-    cmd.Param1 = slave_address;
-    cmd.Param2 = reg;
-    cmd.Param3 = sizeof(value);
-
-    memcpy(cmd.data, &value, sizeof(value));
-    cmd.sizeOfSendCommandData = sizeof(value);
-
-    std::timed_mutex mutex;
-    perform_and_send_monitor_command(*device_handle, mutex, cmd);
-
-    return;
-}
-
-// Read a 32 bit value from the i2c register.
-void motion_module_control::i2c_read_reg(uint16_t slave_address, uint16_t reg, uint32_t &value)
-{
-    hw_monitor::hwmon_cmd cmd((int)adaptor_board_command::IRB);
-
-	cmd.Param1 = slave_address;
-	cmd.Param2 = reg;
-	cmd.Param3 = sizeof(value);
-	const int num_retries = 10;
-	std::timed_mutex mutex;
-	int retries = 0;
-	do {
-		try {
-			hw_monitor::perform_and_send_monitor_command(*device_handle, mutex, cmd);
-
-			// validate that the size is of 32 bit (value size).
-			if (cmd.receivedCommandDataLength == sizeof(value))
-			{
-				memcpy(&value, cmd.receivedCommandData, cmd.receivedCommandDataLength);
-				break;
-			}
-		}
-		catch (...)
-		{
-			retries++;
-			std::this_thread::sleep_for(std::chrono::milliseconds(100));
-			if (retries == num_retries)
-			{
-				throw;
-			}
-		}
-
-	} while (retries < num_retries);
-	return;
-}
 
 // switch the mtion module to IAP mode.
 void motion_module_control::switch_to_iap()
@@ -214,11 +163,11 @@ void motion_module_control::switch_to_iap()
     uint32_t value = -1;
 
     // read state.
-    i2c_read_reg(MOTION_MODULE_CONTROL_I2C_SLAVE_ADDRESS, (int)i2c_register::REG_CURR_PWR_STATE, value);
+	hw_monitor::i2c_read_reg(static_cast<int>(adaptor_board_command::IRB), *device_handle, MOTION_MODULE_CONTROL_I2C_SLAVE_ADDRESS, (int)i2c_register::REG_CURR_PWR_STATE, sizeof(uint32_t), reinterpret_cast<byte*>(&value));
 
     if ((power_states)value != power_states::PWR_STATE_IAP) {
         // we are not in IAP. switch to IAP.
-        i2c_write_reg(MOTION_MODULE_CONTROL_I2C_SLAVE_ADDRESS, (int)i2c_register::REG_IAP_REG, 0xAE);
+		hw_monitor::i2c_write_reg(static_cast<int>(adaptor_board_command::IWB), *device_handle, MOTION_MODULE_CONTROL_I2C_SLAVE_ADDRESS, (int)i2c_register::REG_IAP_REG, 0xAE);
     }
 
     // retry for 10 times to be in IAP state.
@@ -226,7 +175,7 @@ void motion_module_control::switch_to_iap()
     {
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
 
-        i2c_read_reg(MOTION_MODULE_CONTROL_I2C_SLAVE_ADDRESS, (int)i2c_register::REG_CURR_PWR_STATE, value);
+		hw_monitor::i2c_read_reg(static_cast<int>(adaptor_board_command::IRB), *device_handle, MOTION_MODULE_CONTROL_I2C_SLAVE_ADDRESS, (int)i2c_register::REG_CURR_PWR_STATE, sizeof(uint32_t), reinterpret_cast<byte*>(&value));
         if ((power_states)value == power_states::PWR_STATE_IAP) {
             return; // we have entered IAP
         }
@@ -240,9 +189,9 @@ void motion_module_control::switch_to_operational()
     uint32_t value = -1;
 
     // write to the REG_JUMP_TO_APP register. this should return us to operational mode if all went well.
-    i2c_write_reg(MOTION_MODULE_CONTROL_I2C_SLAVE_ADDRESS, (int)i2c_register::REG_JUMP_TO_APP, 0x00);
+	hw_monitor::i2c_write_reg(static_cast<int>(adaptor_board_command::IWB), *device_handle, MOTION_MODULE_CONTROL_I2C_SLAVE_ADDRESS, (int)i2c_register::REG_JUMP_TO_APP, 0x00);
 
-    i2c_read_reg(MOTION_MODULE_CONTROL_I2C_SLAVE_ADDRESS, (int)i2c_register::REG_CURR_PWR_STATE, value);
+	hw_monitor::i2c_read_reg(static_cast<int>(adaptor_board_command::IRB), *device_handle, MOTION_MODULE_CONTROL_I2C_SLAVE_ADDRESS, (int)i2c_register::REG_CURR_PWR_STATE, sizeof(uint32_t), reinterpret_cast<byte*>(&value));
         
     if ((power_states)value != power_states::PWR_STATE_IAP) {
         return;

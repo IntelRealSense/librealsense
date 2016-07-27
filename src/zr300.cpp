@@ -16,7 +16,7 @@ using namespace rsimpl::motion_module;
 
 namespace rsimpl
 {
-    zr300_camera::zr300_camera(std::shared_ptr<uvc::device> device, const static_device_info & info, fisheye_intrinsic in_fe_intrinsic)
+    zr300_camera::zr300_camera(std::shared_ptr<uvc::device> device, const static_device_info & info, motion_module_calibration in_fe_intrinsic)
     : ds_device(device, info),
       motion_module_ctrl(device.get()),
       fe_intrinsic(in_fe_intrinsic)
@@ -145,6 +145,7 @@ namespace rsimpl
     }
 
 
+
 	void zr300_camera::toggle_motion_module_power(bool on)
     {        
         motion_module_ctrl.toggle_motion_module_power(on);
@@ -212,6 +213,26 @@ namespace rsimpl
         return RS_STREAM_DEPTH;
     }
 
+    rs_motion_intrinsics zr300_camera::get_motion_intrinsics() const
+    {
+        return  fe_intrinsic.imu_intrinsic;
+    }
+
+    rs_extrinsics zr300_camera::get_motion_extrinsics_from(rs_stream from) const
+    {
+        switch (from)
+        {
+        case RS_STREAM_DEPTH:
+            return fe_intrinsic.mm_extrinsic.depth_to_imu;
+        case RS_STREAM_COLOR:
+            return fe_intrinsic.mm_extrinsic.rgb_to_imu;
+        case RS_STREAM_FISHEYE:
+            return fe_intrinsic.mm_extrinsic.fe_to_imu;
+        default:
+            throw std::runtime_error(to_string() << "No motion extrinsics from "<<from );
+        }
+    }
+
     void zr300_camera::get_option_range(rs_option option, double & min, double & max, double & step, double & def)
     {
         if (is_fisheye_uvc_control(option))
@@ -230,20 +251,23 @@ namespace rsimpl
         }
     }
 
-    fisheye_intrinsic read_fisheye_intrinsic(uvc::device & device)
+    motion_module_calibration read_fisheye_intrinsic(uvc::device & device)
     {
-        fisheye_intrinsic intrinsic;
-        memset(&intrinsic, 0, sizeof(fisheye_intrinsic));
+        motion_module_calibration intrinsic;
+        memset(&intrinsic, 0, sizeof(motion_module_calibration));
 
-        intrinsic.mm_extrinsic.rotation_FE_to_depth.x.x = 1;
-        intrinsic.mm_extrinsic.rotation_FE_to_depth.y.y = 1;
-        intrinsic.mm_extrinsic.rotation_FE_to_depth.z.z = 1;
+        byte data[256];
+        hw_monitor::ReadFromEEPRom(static_cast<int>(adaptor_board_command::IRB), static_cast<int>(adaptor_board_command::IWB), device, 0, 255, data);
+        intrinsic.sn = *(serial_number*)&data[0];
 
-        intrinsic.fe_intrinsic.kf.x.x = 10;
-        intrinsic.fe_intrinsic.kf.y.y = 20;
+        hw_monitor::ReadFromEEPRom(static_cast<int>(adaptor_board_command::IRB), static_cast<int>(adaptor_board_command::IWB), device, 0x100, 255, data);
+        intrinsic.fe_intrinsic = *(fisheye_intrinsic*)&data[0];
 
-        intrinsic.fe_intrinsic.kf.x.z = 101;
-        intrinsic.fe_intrinsic.kf.y.z = 202;
+        hw_monitor::ReadFromEEPRom(static_cast<int>(adaptor_board_command::IRB), static_cast<int>(adaptor_board_command::IWB), device, 0x200, 255, data);
+        intrinsic.mm_extrinsic = *(IMU_extrinsic*)&data[0];
+
+        hw_monitor::ReadFromEEPRom(static_cast<int>(adaptor_board_command::IRB), static_cast<int>(adaptor_board_command::IWB), device, 0x300, 255, data);
+        intrinsic.imu_intrinsic = *(IMU_intrinsic*)&data[0];
 
         return intrinsic;
     }
@@ -258,16 +282,21 @@ namespace rsimpl
 
         info.subdevice_modes.push_back({ 2, { 1920, 1080 }, pf_rw16, 30, c.intrinsicsThird[0], { c.modesThird[0][0] }, { 0 } });
 
-        fisheye_intrinsic fisheye_intrinsic;
+        motion_module_calibration fisheye_intrinsic;
         auto succeeded_to_read_fisheye_intrinsic = false;
-
+       
         // TODO - is Motion Module optional
         if (uvc::is_device_connected(*device, VID_INTEL_CAMERA, FISHEYE_PRODUCT_ID))
         {
             // Acquire Device handle for Motion Module API
             zr300::claim_motion_module_interface(*device);
-
+            motion_module_control mm(device.get());
+            mm.toggle_motion_module_power(true);
+            mm.toggle_motion_module_events(true); //to be sure that the motion module is up
             fisheye_intrinsic = read_fisheye_intrinsic(*device);
+            mm.toggle_motion_module_events(false);
+            mm.toggle_motion_module_power(false);
+
             rs_intrinsics rs_intrinsics = fisheye_intrinsic.fe_intrinsic;
             succeeded_to_read_fisheye_intrinsic = true;
 
@@ -309,7 +338,7 @@ namespace rsimpl
         if (succeeded_to_read_fisheye_intrinsic)
         {
             auto fe_extrinsic = fisheye_intrinsic.mm_extrinsic;
-            info.stream_poses[RS_STREAM_FISHEYE] = { fe_extrinsic.rotation_FE_to_depth*info.stream_poses[RS_STREAM_DEPTH].orientation, fe_extrinsic.translation_FE_to_depth + info.stream_poses[RS_STREAM_DEPTH].position };
+            info.stream_poses[RS_STREAM_FISHEYE] = { reinterpret_cast<float3x3 &>(fe_extrinsic.fe_to_depth.rotation)*info.stream_poses[RS_STREAM_DEPTH].orientation, reinterpret_cast<float3&>(fe_extrinsic.fe_to_depth.translation) + info.stream_poses[RS_STREAM_DEPTH].position };
         }
         
         return std::make_shared<zr300_camera>(device, info, fisheye_intrinsic);

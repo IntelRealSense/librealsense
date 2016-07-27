@@ -16,67 +16,78 @@
 
 namespace rsimpl
 {
-    struct version
+    struct IMU_version
     {
-        uint32_t ver;
-        byte Size;
-        uint32_t CRC32;
+        byte ver[4];
+        byte size;
+        byte CRC32[4];
     };
 
     struct serial_number
     {
-        version ver;
-        byte Size;
-        uint32_t CRC32;
+        IMU_version ver;
         byte MM_s_n[6];
         byte DS4_s_n[6];
         byte reserved[235];
     };
 
-    struct fe_intrinsic 
+    struct fisheye_intrinsic 
     {
-        version ver;
-        float3x3 kf;
-        float distf[5];
+        IMU_version ver;
+        big_endian<float>  kf[9];
+        big_endian<float>  distf[5];
         byte reserved[191];
-        operator rs_intrinsics () const { return{ 640, 480, kf.x.z, kf.y.z, kf.x.x, kf.y.y, RS_DISTORTION_FTHETA, { 0, 0, 0, 0, 0 } }; }
+        
+        operator rs_intrinsics () const { return{ 640, 480, kf[2], kf[5], kf[0], kf[4], RS_DISTORTION_FTHETA, { 0, 0, 0, 0, 0 } }; }
     };
 
     struct mm_extrinsic
     {
-        version ver;
-        float3x3 rotation_fe_to_imu;
-        float3 translation_fe_to_imu;
-        float3x3 rotation_fe_to_depth;
-        float3 translation_fe_to_depth;
-        float3x3 rotation_rgb_to_imu;
-        float3 translation_rgb_to_imu;
-        float3x3 rotation_depth_to_imu;
-        float3 translation_depth_to_imu;
+        big_endian<float> rotation[9];
+        big_endian<float> translation[3];
+
+        operator rs_extrinsics () const { return{   { rotation[0], rotation[1], rotation[2], rotation[3], rotation[4], rotation[5], rotation[6], rotation[7], rotation[8] }, 
+                                                    { translation[0], translation[1], translation[2] } };
+        }
+    };
+    struct IMU_extrinsic
+    {
+        IMU_version ver;
+        mm_extrinsic  fe_to_imu;
+        mm_extrinsic  fe_to_depth;
+        mm_extrinsic  rgb_to_imu;
+        mm_extrinsic  depth_to_imu;
     };
 
-    struct mm_intrinsic
+    struct MM_intrinsics
     {
-        float Bias_x;
-        float Bias_y;
-        float Bias_z;
-        float scale_x;
-        float scale_y;
-        float scale_z;
+        big_endian<float>  bias_x;
+        big_endian<float>  bias_y;
+        big_endian<float>  bias_z;
+        big_endian<float>  scale_x;
+        big_endian<float>  scale_y;
+        big_endian<float>  scale_z;
+
+        operator rs_motion_intrinsics_data() const{
+            return{ { bias_x, bias_y, bias_z }, { scale_x, scale_y, scale_z } };
+        };
     };
 
     struct IMU_intrinsic
     {
-        version ver;
-        mm_intrinsic acc_intrinsic;
-        mm_intrinsic gyro_intrinsic;
+        IMU_version ver;
+        MM_intrinsics acc_intrinsic;
+        MM_intrinsics gyro_intrinsic;
+        operator rs_motion_intrinsics() const{
+            return { rs_motion_intrinsics_data(acc_intrinsic), rs_motion_intrinsics_data(gyro_intrinsic) };
+        };
     };
 
-    struct fisheye_intrinsic
+    struct motion_module_calibration
     {
         serial_number sn;
-        fe_intrinsic fe_intrinsic;
-        mm_extrinsic mm_extrinsic;
+        fisheye_intrinsic fe_intrinsic;
+        IMU_extrinsic mm_extrinsic;
         IMU_intrinsic imu_intrinsic;
 
     };
@@ -92,13 +103,13 @@ namespace rsimpl
         void toggle_motion_module_events(bool bOn);
 
     public:
-        zr300_camera(std::shared_ptr<uvc::device> device, const static_device_info & info, fisheye_intrinsic fe_intrinsic);
+        zr300_camera(std::shared_ptr<uvc::device> device, const static_device_info & info, motion_module_calibration fe_intrinsic);
         ~zr300_camera();
 
         void get_option_range(rs_option option, double & min, double & max, double & step, double & def) override;
         void set_options(const rs_option options[], size_t count, const double values[]) override;
         void get_options(const rs_option options[], size_t count, double values[]) override;
-		void send_blob_to_device(rs_blob_type type, void * data, int size);
+        void send_blob_to_device(rs_blob_type type, void * data, int size);
 
         void start_motion_tracking() override;
         void stop_motion_tracking() override;
@@ -108,10 +119,12 @@ namespace rsimpl
 
         rs_stream select_key_stream(const std::vector<rsimpl::subdevice_mode_selection> & selected_modes) override;
 
+        rs_motion_intrinsics get_motion_intrinsics() const override;
+        rs_extrinsics get_motion_extrinsics_from(rs_stream from) const override;
     private:
-        fisheye_intrinsic fe_intrinsic;
+        motion_module_calibration fe_intrinsic;
     };
-    fisheye_intrinsic read_fisheye_intrinsic(uvc::device & device);
+    motion_module_calibration read_fisheye_intrinsic(uvc::device & device);
     std::shared_ptr<rs_device> make_zr300_device(std::shared_ptr<uvc::device> device);
 }
 

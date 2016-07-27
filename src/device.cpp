@@ -82,6 +82,16 @@ void rs_device_base::enable_stream_preset(rs_stream stream, rs_preset preset)
     for(auto & s : native_streams) s->archive.reset(); // Changing stream configuration invalidates the current stream info
 }
 
+rs_motion_intrinsics rs_device_base::get_motion_intrinsics() const
+{
+    throw std::runtime_error("Motion intrinsics does not supported");
+}
+
+rs_extrinsics rs_device_base::get_motion_extrinsics_from(rs_stream from) const
+{
+    throw std::runtime_error("Motion extrinsics does not supported");
+}
+
 void rs_device_base::disable_stream(rs_stream stream)
 {
     if(capturing) throw std::runtime_error("streams cannot be reconfigured after having called rs_start_device()");
@@ -216,6 +226,8 @@ void rs_device_base::stop(rs_source source)
     if (source & RS_SOURCE_MOTION_TRACKING)
         stop_motion_tracking();
 }
+
+
 
 void rs_device_base::start_video_streaming()
 {
