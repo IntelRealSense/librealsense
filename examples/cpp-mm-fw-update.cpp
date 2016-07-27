@@ -48,8 +48,11 @@ int main() try
     {
         printf("This device does not support motion module FW update!");
     }
+
+    return 0;
 }
 catch(...)
 {
     printf("Unhandled excepton occured'n");
+    return 1;
 }

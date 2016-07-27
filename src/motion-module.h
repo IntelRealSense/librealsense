@@ -167,8 +167,8 @@ namespace rsimpl
         public:
             motion_module_state() : state(mm_idle) {};
             mm_state state;
-            mm_state requested_state(mm_request, bool on) const;
-            static bool valid(mm_state check_state) { return ((check_state >= mm_idle) && (check_state <= mm_full_load)); }
+            int requested_state(mm_request, bool on) const;
+            static bool valid(int check_state) { return ((check_state >= mm_idle) && (check_state <= mm_full_load)); }
         private:
             motion_module_state(const motion_module_state&);
         };

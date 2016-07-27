@@ -340,7 +340,7 @@ namespace rsimpl
         return false;
     }
 
-    static_device_info::static_device_info()
+    static_device_info::static_device_info() : num_libuvc_transfer_buffers(1), nominal_depth_scale(0.001f)
     {
         for(auto & s : stream_subdevices) s = -1;
         for(auto & s : data_subdevices) s = -1;

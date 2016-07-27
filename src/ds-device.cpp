@@ -624,7 +624,7 @@ namespace rsimpl
 
         double get_frame_timestamp(const subdevice_mode & mode, const void * frame) override
         {
-            return timestamp_wraparound.fix(get_frame_counter(mode, frame) * 1000 / fps);
+            return timestamp_wraparound.fix(get_frame_counter(mode, frame) * 1000. / fps);
         }
     };
 

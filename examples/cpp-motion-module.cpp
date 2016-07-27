@@ -29,7 +29,7 @@ const double IMU_UNITS_TO_MSEC = 0.00003125;
 
 int main() try
 {
-	rs::log_to_console(rs::log_severity::error);
+    rs::log_to_console(rs::log_severity::error);
 
     // Create a context object. This object owns the handles to all connected realsense devices.
     rs::context ctx;
@@ -141,4 +141,5 @@ catch(const rs::error & e)
 catch(...)
 {
     printf("Unhandled excepton occured'n");
+    return EXIT_FAILURE;
 }

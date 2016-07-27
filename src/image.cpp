@@ -570,13 +570,13 @@ namespace rsimpl
         switch(other_format)
         {
         case RS_FORMAT_Y8: 
-            return align_other_to_depth_bytes<1>(other_aligned_to_depth, get_depth, depth_intrin, depth_to_other, other_intrin, other_pixels);
+            align_other_to_depth_bytes<1>(other_aligned_to_depth, get_depth, depth_intrin, depth_to_other, other_intrin, other_pixels); break;
         case RS_FORMAT_Y16: case RS_FORMAT_Z16: 
-            return align_other_to_depth_bytes<2>(other_aligned_to_depth, get_depth, depth_intrin, depth_to_other, other_intrin, other_pixels);
+            align_other_to_depth_bytes<2>(other_aligned_to_depth, get_depth, depth_intrin, depth_to_other, other_intrin, other_pixels); break;
         case RS_FORMAT_RGB8: case RS_FORMAT_BGR8: 
-            return align_other_to_depth_bytes<3>(other_aligned_to_depth, get_depth, depth_intrin, depth_to_other, other_intrin, other_pixels);
+            align_other_to_depth_bytes<3>(other_aligned_to_depth, get_depth, depth_intrin, depth_to_other, other_intrin, other_pixels); break;
         case RS_FORMAT_RGBA8: case RS_FORMAT_BGRA8: 
-            return align_other_to_depth_bytes<4>(other_aligned_to_depth, get_depth, depth_intrin, depth_to_other, other_intrin, other_pixels);
+            align_other_to_depth_bytes<4>(other_aligned_to_depth, get_depth, depth_intrin, depth_to_other, other_intrin, other_pixels); break;
         default: 
             assert(false); // NOTE: rs_align_other_to_depth_bytes<2>(...) is not appropriate for RS_FORMAT_YUYV/RS_FORMAT_RAW10 images, no logic prevents U/V channels from being written to one another
         }

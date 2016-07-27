@@ -283,11 +283,11 @@ namespace rsimpl
                 if(!mf_media_source)
                 {
                     check("IMFActivate::ActivateObject", mf_activate->ActivateObject(__uuidof(IMFMediaSource), (void **)&mf_media_source));
+                    if (!mf_media_source) throw std::runtime_error(to_string() << "Invalid media source");
                     check("IMFMediaSource::QueryInterface", mf_media_source->QueryInterface(__uuidof(IAMCameraControl), (void **)&am_camera_control));
-                    if(SUCCEEDED(mf_media_source->QueryInterface(__uuidof(IAMVideoProcAmp), (void **)&am_video_proc_amp))) LOG_DEBUG("obtained IAMVideoProcAmp");                    
+                    if(SUCCEEDED(mf_media_source->QueryInterface(__uuidof(IAMVideoProcAmp), (void **)&am_video_proc_amp))) LOG_DEBUG("obtained IAMVideoProcAmp");
                 }
                 return mf_media_source;
-
 
             }
 
@@ -314,7 +314,6 @@ namespace rsimpl
                 }
 
                 return true;
-
             }
 
             class safe_handle
@@ -375,7 +374,6 @@ namespace rsimpl
                     auto lastError = GetLastError();
                     if (lastError == ERROR_IO_PENDING)
                     {
-                        bool isExitOnTimeout = false;
                         auto sts = wait_for_async_operation(*handle, hOvl, num_bytes, timeout);
                         lastError = GetLastError();
                         if (lastError == ERROR_OPERATION_ABORTED)
@@ -383,12 +381,8 @@ namespace rsimpl
                             perror("receiving interrupt_ep bytes failed");
                             fprintf(stderr, "Error receiving message.\n");
                         }
-                        if (isExitOnTimeout || !sts)
-                        {
-                            //perror("receiving interrupt_ep bytes failed");
-                            //fprintf(stderr, "Error receiving message.\n");
+                        if (!sts)
                             return;
-                        }
                     }
                     else
                     {

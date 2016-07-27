@@ -179,7 +179,7 @@ namespace rsimpl {
                 operator rs_intrinsics () const { return{ (int)rw, (int)rh, rpx, rpy, rfx, rfy, RS_DISTORTION_NONE, {0,0,0,0,0} }; }
             };
 
-            ds_calibration cameraCalib;
+            ds_calibration cameraCalib = {};
             cameraCalib.version = reinterpret_cast<const big_endian<uint32_t> &>(flash_data_buffer);
             if (cameraCalib.version == 0)
             {

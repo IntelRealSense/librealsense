@@ -105,14 +105,14 @@ void rs_device_base::enable_motion_tracking()
 {
     if (data_acquisition_active) throw std::runtime_error("motion-tracking cannot be reconfigured after having called rs_start_device()");
 
-    config.data_requests.enabled = true;
+    config.data_request.enabled = true;
 }
 
 void rs_device_base::disable_motion_tracking()
 {
     if (data_acquisition_active) throw std::runtime_error("motion-tracking disabled after having called rs_start_device()");
 
-    config.data_requests.enabled = false;
+    config.data_request.enabled = false;
 }
 
 void rs_device_base::set_motion_callback(rs_motion_callback* callback)
@@ -130,7 +130,7 @@ void rs_device_base::start_motion_tracking()
     auto parser = std::make_shared<motion_module_parser>();
 
     // Activate data polling handler
-    if (config.data_requests.enabled)
+    if (config.data_request.enabled)
     {
         // TODO -replace hard-coded value 3 which stands for fisheye subdevice   
         set_subdevice_data_channel_handler(*device, 3,
