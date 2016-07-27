@@ -546,6 +546,7 @@ namespace rsimpl
 
     class fisheye_timestamp_reader : public frame_timestamp_reader
     {
+        mutable bool validate;
         int fps;
         std::mutex mutex;
         unsigned last_fisheye_counter;
@@ -553,11 +554,19 @@ namespace rsimpl
         wraparound_mechanism<unsigned long long> frame_counter_wraparound;
 
     public:
-        fisheye_timestamp_reader(int max_fps) : fps(max_fps), last_fisheye_counter(0), timestamp_wraparound(1, std::numeric_limits<uint32_t>::max()), frame_counter_wraparound(0, std::numeric_limits<uint32_t>::max()) {}
+        fisheye_timestamp_reader(int max_fps) : fps(max_fps), last_fisheye_counter(0), timestamp_wraparound(1, std::numeric_limits<uint32_t>::max()), frame_counter_wraparound(0, std::numeric_limits<uint32_t>::max()), validate(true){}
 
         bool validate_frame(const subdevice_mode & mode, const void * frame) const override
         {
-            return true;
+            if (!validate)
+                return true;
+
+            bool sts;
+            auto pixel_lsb = reinterpret_cast<byte_wrapping&>(*((unsigned char*)frame)).lsb;
+            if ((sts = (pixel_lsb != 0)))
+                validate = false;
+
+            return sts;
         }
 
         struct byte_wrapping{
@@ -572,7 +581,7 @@ namespace rsimpl
             auto last_counter_lsb = reinterpret_cast<byte_wrapping&>(last_fisheye_counter).lsb;
             auto pixel_lsb = reinterpret_cast<byte_wrapping&>(*((unsigned char*)frame)).lsb;
             if (last_counter_lsb == pixel_lsb)
-                return ((last_fisheye_counter)?last_fisheye_counter:1);
+                return last_fisheye_counter;
 
             auto last_counter_msb = (last_fisheye_counter >> 4);
             auto wrap_around = reinterpret_cast<byte_wrapping&>(last_fisheye_counter).lsb;
