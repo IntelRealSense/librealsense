@@ -302,6 +302,7 @@ namespace rsimpl
                         else warn_error("VIDIOC_REQBUFS");
                     }
 
+                    callback = nullptr;
                     is_capturing = false;
                 }
             }
