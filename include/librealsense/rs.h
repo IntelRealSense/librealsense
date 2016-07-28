@@ -10,7 +10,7 @@ extern "C" {
 
 #define RS_API_MAJOR_VERSION    1
 #define RS_API_MINOR_VERSION    9
-#define RS_API_PATCH_VERSION    4
+#define RS_API_PATCH_VERSION    5
 
 #define STRINGIFY(arg) #arg
 #define VAR_ARG_STRING(arg) STRINGIFY(arg)
@@ -85,10 +85,10 @@ typedef enum rs_output_buffer_format
 
 typedef enum rs_preset
 {
-    RS_PRESET_BEST_QUALITY      = 0,
-    RS_PRESET_LARGEST_IMAGE     = 1,
-    RS_PRESET_HIGHEST_FRAMERATE = 2,
-    RS_PRESET_COUNT             = 3,
+    RS_PRESET_BEST_QUALITY              = 0,
+    RS_PRESET_LARGEST_IMAGE             = 1,
+    RS_PRESET_HIGHEST_FRAMERATE         = 2,
+    RS_PRESET_COUNT                     = 3,
     RS_PRESET_MAX_ENUM = 0x7FFFFFFF
 } rs_preset;
 
@@ -98,7 +98,7 @@ typedef enum rs_source
     RS_SOURCE_MOTION_TRACKING           = 2,
     RS_SOURCE_ALL                       = 3,
     RS_SOURCE_COUNT                     = 4,
-    RS_SOURCE_MAX_ENUM = 0x7FFFFFFF
+    RS_SOURCE_MAX_ENUM                  = 0x7FFFFFFF
 } rs_source;
 
 typedef enum rs_distortion
@@ -206,8 +206,6 @@ typedef enum rs_option
     RS_OPTION_EVENTS_QUEUE_SIZE                               = 74,
     RS_OPTION_MAX_TIMESTAMP_LATENCY                           = 75,
     RS_OPTION_COUNT                                           = 76,
-    
-
     RS_OPTION_MAX_ENUM = 0x7FFFFFFF
 } rs_option;
 
@@ -283,9 +281,9 @@ typedef enum rs_timestamp_domain
 
 typedef struct rs_timestamp_data
 {
-    double              timestamp;     /* 32Mhz clock. Each tick corresponds to 31.25 usec */
+    double              timestamp;     /* timestamp in milliseconds */
     rs_event_source     source_id;
-    unsigned long long  frame_number;  /* original size: 12 bit ; per data source */
+    unsigned long long  frame_number;  
 } rs_timestamp_data;
 
 typedef struct rs_motion_data
@@ -338,7 +336,7 @@ const char * rs_get_device_name(const rs_device * device, rs_error ** error);
 const char * rs_get_device_serial(const rs_device * device, rs_error ** error);
 
 /**
-* retrieve camera specifci information, like versions of the various internal componnents
+* retrieve camera specific information, like versions of various internal componnents
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return            the requested camera info string, in a format specific to the device model
 */
@@ -513,7 +511,7 @@ void rs_get_motion_intrinsics(const rs_device * device, rs_motion_intrinsics * i
 void rs_set_frame_callback(rs_device * device, rs_stream stream, void (*on_frame)(rs_device * dev, rs_frame_ref * frame, void * user), void * user, rs_error ** error);
 
 /**
-* Enable and configure motion-tracking data handlers
+* enable and configure motion-tracking data handlers
 * \param[in] on_motion_event    user-defined routine to be invoked when a motion data arrives
 * \param[in] motion_handler     a user data point to be passed to the motion event callback
 * \param[in] on_timestamp_event user-defined routine to be invoked on timestamp
@@ -525,13 +523,13 @@ void rs_enable_motion_tracking(rs_device * device,
     void(*on_timestamp_event)(rs_device * , rs_timestamp_data, void * ), void * timestamp_handler,
     rs_error ** error);
 
-    /**
-    * Enable and configure motion-tracking data handlers
-    * (This variant is provided specifically to enable passing lambdas with capture lists safely into the library)
-    * \param[in] motion_callback    user-defined routine to be invoked when a motion data arrives
-    * \param[in] timestamp_callback user-defined routine to be invoked on timestamp
-    * \param[out] error             if non-null, receives any error that occurs during this call, otherwise, errors are ignored
-    */
+/**
+* enable and configure motion-tracking data handlers
+* (This variant is provided specifically to enable passing lambdas with capture lists safely into the library)
+* \param[in] motion_callback    user-defined routine to be invoked when a motion data arrives
+* \param[in] timestamp_callback user-defined routine to be invoked on timestamp
+* \param[out] error             if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+*/
 void rs_enable_motion_tracking_cpp(rs_device * device,
     rs_motion_callback * motion_callback,
     rs_timestamp_callback * timestamp_callback,
@@ -714,6 +712,7 @@ double rs_get_detached_frame_timestamp(const rs_frame_ref * frame, rs_error ** e
 
 /**
 * retrive timestamp domain from safe frame handle, returned from detach, clone_ref or from frame callback
+* this method is used to check if two timestamp values are comparable (generated from the same clock)
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return            the timestamp domain of the frame (camera/ microcontroller)
 */
@@ -725,7 +724,6 @@ rs_timestamp_domain rs_get_detached_frame_timestamp_domain(const rs_frame_ref * 
 * \return            the frame nubmer of the frame, in milliseconds since the device was started
 */
 unsigned long long rs_get_detached_frame_number(const rs_frame_ref * frame, rs_error ** error);
-
 
 /**
 * retrive data from safe frame handle, returned from detach, clone_ref or from frame callback
@@ -749,32 +747,25 @@ int rs_get_detached_frame_width(const rs_frame_ref * frame, rs_error ** error);
 int rs_get_detached_frame_height(const rs_frame_ref * frame, rs_error ** error);
 
 /**
-* retrive frame intrinsic height
+* retrive frame intrinsic framerate
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return            intrinsic framerate
 */
 int rs_get_detached_framerate(const rs_frame_ref * frameset, rs_error ** error);
 
 /**
-* retrive frame stride X, meaning the actual line width in memory (not the logical image width)
+* retrive frame stride, meaning the actual line width in memory (not the logical image width)
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return            frame pad crop
 */
-int rs_get_detached_frame_stride_x(const rs_frame_ref * frame, rs_error ** error);
+int rs_get_detached_frame_stride(const rs_frame_ref * frame, rs_error ** error);
 
 /**
-* retrive frame stride Y, meaning the actual line height in memory (not the logical image height)
+* retrive frame **bits** per pixel
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return            frame pad crop
 */
-int rs_get_detached_frame_stride_y(const rs_frame_ref * frame, rs_error ** error);
-
-/**
-* retrive frame pad crop
-* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
-* \return            frame pad crop
-*/
-float rs_get_detached_frame_bpp(const rs_frame_ref * frame, rs_error ** error);
+int rs_get_detached_frame_bpp(const rs_frame_ref * frame, rs_error ** error);
 
 /**
 * retrive frame format
@@ -789,13 +780,6 @@ rs_format rs_get_detached_frame_format(const rs_frame_ref * frame, rs_error ** e
 * \return            stream type
 */
 rs_stream rs_get_detached_frame_stream_type(const rs_frame_ref * frameset, rs_error ** error);
-/**
-* clone frame handle, creating new handle that is tracking the same underlying frame object
-* \param[in] frame handle returned from detach, clone_ref or from frame callback
-* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
-* \return            the pointer to the start of the frame data
-*/
-rs_frame_ref * rs_clone_frame_ref(rs_device * device, rs_frame_ref* frame, rs_error ** error);
 
 /**
 * send a blob of data to the device. at the moment only RS_BLOB_TYPE_MOTION_MODULE_FIRMWARE_UPDATE is support 
@@ -804,7 +788,6 @@ rs_frame_ref * rs_clone_frame_ref(rs_device * device, rs_frame_ref* frame, rs_er
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 */
 void rs_send_blob_to_device(rs_device * device, rs_blob_type type, void * data, int size, rs_error ** error);
-
 
 /**
 * retrieve the API version from the source code. Evaluate that the value is conformant to the established policies

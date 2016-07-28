@@ -38,6 +38,11 @@ double syncronizing_archive::get_frame_timestamp(rs_stream stream) const
     return frontbuffer.get_frame_timestamp(stream);
 }
 
+int syncronizing_archive::get_frame_bpp(rs_stream stream) const
+{
+    return frontbuffer.get_frame_bpp(stream);
+}
+
 frame_archive::frameset* syncronizing_archive::clone_frontbuffer()
 {
     return clone_frameset(&frontbuffer);
@@ -145,6 +150,11 @@ void syncronizing_archive::correct_timestamp(rs_stream stream)
 void syncronizing_archive::on_timestamp(rs_timestamp_data data)
 {
     ts_corrector.on_timestamp(data);
+}
+
+int syncronizing_archive::get_frame_stride(rs_stream stream) const
+{
+    return frontbuffer.get_frame_stride(stream);
 }
 
 // Discard all frames which are older than the most recent coherent frameset

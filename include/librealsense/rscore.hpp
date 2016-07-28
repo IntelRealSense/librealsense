@@ -8,6 +8,10 @@
 #include <cstdint>
 #include <cstddef>
 
+// this interface is an entry point for extending librealsense with custom devices while keeping librealsense public API
+// the interfaces in this file are expected to be inherited from, never used directly, rs.hpp provides safer and simpler wrapper
+// an example usage would be playback and record. this API allows to integrate custom playback&record implementation while keeping librealsense API
+
 struct rs_stream_interface
 {
     virtual                                 ~rs_stream_interface() {}
@@ -20,6 +24,8 @@ struct rs_stream_interface
     virtual rs_format                       get_format() const = 0;
     virtual int                             get_framerate() const = 0;
 
+    virtual int                             get_frame_stride() const = 0;
+    virtual int                             get_frame_bpp() const = 0;
     virtual unsigned long long              get_frame_number() const = 0;
     virtual double                          get_frame_timestamp() const = 0;
     virtual long long                       get_frame_system_time() const = 0;
@@ -42,9 +48,8 @@ struct rs_frame_ref
     virtual int                             get_frame_width() const = 0;
     virtual int                             get_frame_height() const = 0;
     virtual int                             get_frame_framerate() const = 0;
-    virtual int                             get_frame_stride_x() const = 0;
-    virtual int                             get_frame_stride_y() const = 0;
-    virtual float                           get_frame_bpp() const = 0;
+    virtual int                             get_frame_stride() const = 0;
+    virtual int                             get_frame_bpp() const = 0;
     virtual rs_format                       get_frame_format() const = 0;
     virtual rs_stream                       get_stream_type() const = 0;
 };
