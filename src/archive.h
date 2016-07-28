@@ -25,7 +25,7 @@ namespace rsimpl
             int fps = 0;
             int stride_x = 0;
             int stride_y = 0;
-            float bpp = 0;
+            int bpp = 1;
             rs_format format = RS_FORMAT_ANY;
             rs_stream stream_type = RS_STREAM_MAX_ENUM;
             rs_timestamp_domain timestamp_domain = RS_TIMESTAMP_DOMAIN_CAMERA;
@@ -34,19 +34,22 @@ namespace rsimpl
 
             frame_additional_data(){};
 
-            frame_additional_data(double in_timestamp, unsigned long long in_frame_number, long long in_system_time, int in_width, int in_height, int in_fps, int in_stride_x, int in_stride_y, float in_bpp, const rs_format in_format, rs_stream in_stream_type, int in_pad)
-                :timestamp(in_timestamp),
-                frame_number(in_frame_number),
-                system_time(in_system_time),
-                width(in_width),
-                height(in_height),
-                fps(in_fps),
-                stride_x(in_stride_x),
-                stride_y(in_stride_y),
-                bpp(in_bpp),
-                format(in_format),
-                stream_type(in_stream_type),
-                pad(in_pad){}
+            frame_additional_data(double in_timestamp, unsigned long long in_frame_number, long long in_system_time, 
+                int in_width, int in_height, int in_fps, 
+                int in_stride_x, int in_stride_y, int in_bpp, 
+                const rs_format in_format, rs_stream in_stream_type, int in_pad)
+                : timestamp(in_timestamp),
+                  frame_number(in_frame_number),
+                  system_time(in_system_time),
+                  width(in_width),
+                  height(in_height),
+                  fps(in_fps),
+                  stride_x(in_stride_x),
+                  stride_y(in_stride_y),
+                  bpp(in_bpp),
+                  format(in_format),
+                  stream_type(in_stream_type),
+                  pad(in_pad) {}
         };
 
         // Define a movable but explicitly noncopyable buffer type to hold our frame data
@@ -91,13 +94,12 @@ namespace rsimpl
             unsigned long long get_frame_number() const override;
             void set_timestamp_domain(rs_timestamp_domain timestamp_domain) override { additional_data.timestamp_domain = timestamp_domain; }
             long long get_frame_system_time() const;
-            int get_width()const;
-            int get_height()const;
+            int get_width() const;
+            int get_height() const;
             int get_framerate() const;
-            int get_stride_x()const;
-            int get_stride_y()const;
-            float get_bpp()const;
-            rs_format get_format()const;
+            int get_stride() const;
+            int get_bpp() const;
+            rs_format get_format() const;
             rs_stream get_stream_type() const override;
 
             std::chrono::high_resolution_clock::time_point get_frame_callback_start_time_point() const;
@@ -161,11 +163,10 @@ namespace rsimpl
             int get_frame_width() const override;
             int get_frame_height() const override;
             int get_frame_framerate() const override;
-            int get_frame_stride_x() const override;
-			int get_frame_stride_y() const override;
-            float get_frame_bpp() const override;
+            int get_frame_stride() const override;
+            int get_frame_bpp() const override;
             rs_format get_frame_format() const override;
-            rs_stream get_stream_type() const;
+            rs_stream get_stream_type() const override;
             std::chrono::high_resolution_clock::time_point get_frame_callback_start_time_point() const;
             void update_frame_callback_start_ts(std::chrono::high_resolution_clock::time_point ts);
             void log_callback_start(std::chrono::high_resolution_clock::time_point capture_start_time);
@@ -188,9 +189,11 @@ namespace rsimpl
             double get_frame_timestamp(rs_stream stream) const { return buffer[stream].get_frame_timestamp(); }
             unsigned long long get_frame_number(rs_stream stream) const { return buffer[stream].get_frame_number(); }
             long long get_frame_system_time(rs_stream stream) const { return buffer[stream].get_frame_system_time(); }
+            int get_frame_stride(rs_stream stream) const { return buffer[stream].get_frame_stride(); }
+            int get_frame_bpp(rs_stream stream) const { return buffer[stream].get_frame_bpp(); }
 
             void cleanup();
-
+            
         };
 
     private:

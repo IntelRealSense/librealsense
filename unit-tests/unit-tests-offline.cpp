@@ -11,6 +11,8 @@
 
 #include <sstream>
 
+const char * unknown = "UNKNOWN";
+
 // Helper to produce a not-null pointer to a specific object type, to help validate API methods.
 // Use with caution, the resulting pointer does not address a real object!
 struct fake_object_pointer { template<class T> operator T * () const { return (T *)(0x100); } };
@@ -299,9 +301,9 @@ TEST_CASE( "rs_stream_to_string() produces correct output", "[offline] [validati
     REQUIRE(rs_stream_to_string(RS_STREAM_DEPTH_ALIGNED_TO_RECTIFIED_COLOR) == std::string("DEPTH_ALIGNED_TO_RECTIFIED_COLOR"));
 
     // Invalid enum values should return nullptr
-    REQUIRE(rs_stream_to_string((rs_stream)-1) == nullptr);
-    REQUIRE(rs_stream_to_string(RS_STREAM_COUNT) == nullptr);
-    REQUIRE(rs_stream_to_string(RS_STREAM_MAX_ENUM) == nullptr);
+    REQUIRE(rs_stream_to_string((rs_stream)-1) == unknown);
+    REQUIRE(rs_stream_to_string(RS_STREAM_COUNT) == unknown);
+    REQUIRE(rs_stream_to_string(RS_STREAM_MAX_ENUM) == unknown);
 }
 
 TEST_CASE( "rs_format_to_string() produces correct output", "[offline] [validation]" )
@@ -320,9 +322,9 @@ TEST_CASE( "rs_format_to_string() produces correct output", "[offline] [validati
     REQUIRE(rs_format_to_string(RS_FORMAT_RAW10) == std::string("RAW10"));
 
     // Invalid enum values should return nullptr
-    REQUIRE(rs_format_to_string((rs_format)-1) == nullptr);
-    REQUIRE(rs_format_to_string(RS_FORMAT_COUNT) == nullptr);
-    REQUIRE(rs_format_to_string(RS_FORMAT_MAX_ENUM) == nullptr);
+    REQUIRE(rs_format_to_string((rs_format)-1) == unknown);
+    REQUIRE(rs_format_to_string(RS_FORMAT_COUNT) == unknown);
+    REQUIRE(rs_format_to_string(RS_FORMAT_MAX_ENUM) == unknown);
 }
 
 TEST_CASE( "rs_preset_to_string() produces correct output", "[offline] [validation]" )
@@ -333,9 +335,9 @@ TEST_CASE( "rs_preset_to_string() produces correct output", "[offline] [validati
     REQUIRE(rs_preset_to_string(RS_PRESET_HIGHEST_FRAMERATE) == std::string("HIGHEST_FRAMERATE"));
 
     // Invalid enum values should return nullptr
-    REQUIRE(rs_preset_to_string((rs_preset)-1) == nullptr);
-    REQUIRE(rs_preset_to_string(RS_PRESET_COUNT) == nullptr);
-    REQUIRE(rs_preset_to_string(RS_PRESET_MAX_ENUM) == nullptr);
+    REQUIRE(rs_preset_to_string((rs_preset)-1) == unknown);
+    REQUIRE(rs_preset_to_string(RS_PRESET_COUNT) == unknown);
+    REQUIRE(rs_preset_to_string(RS_PRESET_MAX_ENUM) == unknown);
 }
 
 TEST_CASE( "rs_distortion_to_string() produces correct output", "[offline] [validation]" )
@@ -346,9 +348,9 @@ TEST_CASE( "rs_distortion_to_string() produces correct output", "[offline] [vali
     REQUIRE(rs_distortion_to_string(RS_DISTORTION_INVERSE_BROWN_CONRADY) == std::string("INVERSE_BROWN_CONRADY"));
 
     // Invalid enum values should return nullptr
-    REQUIRE(rs_distortion_to_string((rs_distortion)-1) == nullptr);
-    REQUIRE(rs_distortion_to_string(RS_DISTORTION_COUNT) == nullptr);
-    REQUIRE(rs_distortion_to_string(RS_DISTORTION_MAX_ENUM) == nullptr);
+    REQUIRE(rs_distortion_to_string((rs_distortion)-1) == unknown);
+    REQUIRE(rs_distortion_to_string(RS_DISTORTION_COUNT) == unknown);
+    REQUIRE(rs_distortion_to_string(RS_DISTORTION_MAX_ENUM) == unknown);
 }
 
 TEST_CASE( "rs_option_to_string() produces correct output", "[offline] [validation]" )
@@ -385,9 +387,9 @@ TEST_CASE( "rs_option_to_string() produces correct output", "[offline] [validati
     REQUIRE(rs_option_to_string(RS_OPTION_R200_DISPARITY_SHIFT) == std::string("R200_DISPARITY_SHIFT")); 
 
     // Invalid enum values should return nullptr
-    REQUIRE(rs_option_to_string((rs_option)-1) == nullptr);
-    REQUIRE(rs_option_to_string(RS_OPTION_COUNT) == nullptr);
-    REQUIRE(rs_option_to_string(RS_OPTION_MAX_ENUM) == nullptr);
+    REQUIRE(rs_option_to_string((rs_option)-1) == unknown);
+    REQUIRE(rs_option_to_string(RS_OPTION_COUNT) == unknown);
+    REQUIRE(rs_option_to_string(RS_OPTION_MAX_ENUM) == unknown);
 }
 
 TEST_CASE( "rs_create_context() returns a valid context", "[offline] [validation]" )
