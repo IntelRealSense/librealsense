@@ -235,6 +235,16 @@ namespace rs
             return r;
         }
 
+        /// retrieve the USB port number of the device
+        /// \return  the USB port number, in a format specific to the device model
+        const char * get_usb_port_id() const
+        {
+            rs_error * e = nullptr;
+            auto r = rs_get_device_usb_port_id((const rs_device *)this, &e);
+            error::handle(e);
+            return r;
+        }
+
         /// retrieve the version of the firmware currently installed on the device
         /// \return  firmware version string, in a format is specific to device model
         const char * get_firmware_version() const

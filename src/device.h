@@ -36,6 +36,9 @@ private:
     std::chrono::high_resolution_clock::time_point capture_started;
 
     std::shared_ptr<rsimpl::frame_archive>      archive;
+
+    mutable std::string                         usb_port_id;
+    mutable std::mutex                          usb_port_mutex;
 protected:
     const rsimpl::uvc::device &                 get_device() const { return *device; }
     rsimpl::uvc::device &                       get_device() { return *device; }
@@ -70,6 +73,7 @@ public:
     virtual rs_stream                           select_key_stream(const std::vector<rsimpl::subdevice_mode_selection> & selected_modes) = 0;
     virtual std::shared_ptr<rsimpl::frame_timestamp_reader>
                                                 create_frame_timestamp_reader() const = 0;
+    const char *                                get_usb_port_id() const;
 };
 
 namespace rsimpl

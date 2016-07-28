@@ -8,7 +8,9 @@
 #include <cmath>
 #include <algorithm>
 
+#ifdef __SSSE3__
 #include <tmmintrin.h> // For SSE3 intrinsics used in unpack_yuy2_sse
+#endif
 
 #pragma pack(push, 1) // All structs in this file are assumed to be byte-packed
 namespace rsimpl
@@ -65,6 +67,7 @@ namespace rsimpl
     template<rs_format FORMAT> void unpack_yuy2(byte * const d [], const byte * s, int n)
     {
         assert(n % 16 == 0); // All currently supported color resolutions are multiples of 16 pixels. Could easily extend support to other resolutions by copying final n<16 pixels into a zero-padded buffer and recursively calling self for final iteration.
+#ifdef __SSSE3__
         auto src = reinterpret_cast<const __m128i *>(s);
         auto dst = reinterpret_cast<__m128i *>(d[0]);
         for(; n; n -= 16)
@@ -206,6 +209,139 @@ namespace rsimpl
                 }
             }
         }    
+#else  // Generic code for when SSSE3 is not available.
+        auto src = reinterpret_cast<const uint8_t *>(s);
+        auto dst = reinterpret_cast<uint8_t *>(d[0]);
+        for(; n; n -= 16, src += 32)
+        {
+            if(FORMAT == RS_FORMAT_Y8)
+            {
+                uint8_t out[16] = {
+                    src[ 0], src[ 2], src[ 4], src[ 6],
+                    src[ 8], src[10], src[12], src[14],
+                    src[16], src[18], src[20], src[22],
+                    src[24], src[26], src[28], src[30],
+                };
+                memcpy(dst, out, sizeof out);
+                dst += sizeof out;
+                continue;
+            }
+
+            if(FORMAT == RS_FORMAT_Y16)
+            {
+                // Y16 is little-endian.  We output Y << 8.
+                uint8_t out[32] = {
+                    0, src[ 0], 0, src[ 2], 0, src[ 4], 0, src[ 6],
+                    0, src[ 8], 0, src[10], 0, src[12], 0, src[14],
+                    0, src[16], 0, src[18], 0, src[20], 0, src[22],
+                    0, src[24], 0, src[26], 0, src[28], 0, src[30],
+                };
+                memcpy(dst, out, sizeof out);
+                dst += sizeof out;
+                continue;
+            }
+
+            int16_t y[16] = {
+                src[ 0], src[ 2], src[ 4], src[ 6],
+                src[ 8], src[10], src[12], src[14],
+                src[16], src[18], src[20], src[22],
+                src[24], src[26], src[28], src[30],
+            }, u[16] = {
+                src[ 1], src[ 1], src[ 5], src[ 5],
+                src[ 9], src[ 9], src[13], src[13],
+                src[17], src[17], src[21], src[21],
+                src[25], src[25], src[29], src[29],
+            }, v[16] = {
+                src[ 3], src[ 3], src[ 7], src[ 7],
+                src[11], src[11], src[15], src[15],
+                src[19], src[19], src[23], src[23],
+                src[27], src[27], src[31], src[31],
+            };
+
+            uint8_t r[16], g[16], b[16];
+            for(int i = 0; i < 16; i++)
+            {
+                int32_t c = y[i] - 16;
+                int32_t d = u[i] - 128;
+                int32_t e = v[i] - 128;
+
+                int32_t t;
+                #define clamp(x)  ((t=(x)) > 255 ? 255 : t < 0 ? 0 : t)
+                r[i] = clamp((298 * c           + 409 * e + 128) >> 8);
+                g[i] = clamp((298 * c - 100 * d - 409 * e + 128) >> 8);
+                b[i] = clamp((298 * c + 516 * d           + 128) >> 8);
+                #undef clamp
+            }
+
+            if(FORMAT == RS_FORMAT_RGB8)
+            {
+                uint8_t out[16*3] = {
+                    r[ 0], g[ 0], b[ 0], r[ 1], g[ 1], b[ 1],
+                    r[ 2], g[ 2], b[ 2], r[ 3], g[ 3], b[ 3],
+                    r[ 4], g[ 4], b[ 4], r[ 5], g[ 5], b[ 5],
+                    r[ 6], g[ 6], b[ 6], r[ 7], g[ 7], b[ 7],
+                    r[ 8], g[ 8], b[ 8], r[ 9], g[ 9], b[ 9],
+                    r[10], g[10], b[10], r[11], g[11], b[11],
+                    r[12], g[12], b[12], r[13], g[13], b[13],
+                    r[14], g[14], b[14], r[15], g[15], b[15],
+                };
+                memcpy(dst, out, sizeof out);
+                dst += sizeof out;
+                continue;
+            }
+
+            if(FORMAT == RS_FORMAT_BGR8)
+            {
+                uint8_t out[16*3] = {
+                    b[ 0], g[ 0], r[ 0], b[ 1], g[ 1], r[ 1],
+                    b[ 2], g[ 2], r[ 2], b[ 3], g[ 3], r[ 3],
+                    b[ 4], g[ 4], r[ 4], b[ 5], g[ 5], r[ 5],
+                    b[ 6], g[ 6], r[ 6], b[ 7], g[ 7], r[ 7],
+                    b[ 8], g[ 8], r[ 8], b[ 9], g[ 9], r[ 9],
+                    b[10], g[10], r[10], b[11], g[11], r[11],
+                    b[12], g[12], r[12], b[13], g[13], r[13],
+                    b[14], g[14], r[14], b[15], g[15], r[15],
+                };
+                memcpy(dst, out, sizeof out);
+                dst += sizeof out;
+                continue;
+            }
+
+            if(FORMAT == RS_FORMAT_RGBA8)
+            {
+                uint8_t out[16*4] = {
+                    r[ 0], g[ 0], b[ 0], 255, r[ 1], g[ 1], b[ 1], 255,
+                    r[ 2], g[ 2], b[ 2], 255, r[ 3], g[ 3], b[ 3], 255,
+                    r[ 4], g[ 4], b[ 4], 255, r[ 5], g[ 5], b[ 5], 255,
+                    r[ 6], g[ 6], b[ 6], 255, r[ 7], g[ 7], b[ 7], 255,
+                    r[ 8], g[ 8], b[ 8], 255, r[ 9], g[ 9], b[ 9], 255,
+                    r[10], g[10], b[10], 255, r[11], g[11], b[11], 255,
+                    r[12], g[12], b[12], 255, r[13], g[13], b[13], 255,
+                    r[14], g[14], b[14], 255, r[15], g[15], b[15], 255,
+                };
+                memcpy(dst, out, sizeof out);
+                dst += sizeof out;
+                continue;
+            }
+
+            if(FORMAT == RS_FORMAT_BGRA8)
+            {
+                uint8_t out[16*4] = {
+                    b[ 0], g[ 0], r[ 0], 255, b[ 1], g[ 1], r[ 1], 255,
+                    b[ 2], g[ 2], r[ 2], 255, b[ 3], g[ 3], r[ 3], 255,
+                    b[ 4], g[ 4], r[ 4], 255, b[ 5], g[ 5], r[ 5], 255,
+                    b[ 6], g[ 6], r[ 6], 255, b[ 7], g[ 7], r[ 7], 255,
+                    b[ 8], g[ 8], r[ 8], 255, b[ 9], g[ 9], r[ 9], 255,
+                    b[10], g[10], r[10], 255, b[11], g[11], r[11], 255,
+                    b[12], g[12], r[12], 255, b[13], g[13], r[13], 255,
+                    b[14], g[14], r[14], 255, b[15], g[15], r[15], 255,
+                };
+                memcpy(dst, out, sizeof out);
+                dst += sizeof out;
+                continue;
+            }
+        }
+#endif
     }
     
     //////////////////////////////////////
@@ -332,8 +468,10 @@ namespace rsimpl
     template<class GET_DEPTH, class TRANSFER_PIXEL> void align_images(const rs_intrinsics & depth_intrin, const rs_extrinsics & depth_to_other, const rs_intrinsics & other_intrin, GET_DEPTH get_depth, TRANSFER_PIXEL transfer_pixel)
     {
         // Iterate over the pixels of the depth image    
-        for(int depth_y = 0, depth_pixel_index = 0; depth_y < depth_intrin.height; ++depth_y)
+#pragma omp parallel for schedule(dynamic)
+        for(int depth_y = 0; depth_y < depth_intrin.height; ++depth_y)
         {
+            int depth_pixel_index = depth_y * depth_intrin.width;
             for(int depth_x = 0; depth_x < depth_intrin.width; ++depth_x, ++depth_pixel_index)
             {
                 // Skip over depth pixels with the value of zero, we have no depth data so we will not write anything into our aligned images
@@ -344,14 +482,16 @@ namespace rsimpl
                     rs_deproject_pixel_to_point(depth_point, &depth_intrin, depth_pixel, depth);
                     rs_transform_point_to_point(other_point, &depth_to_other, depth_point);
                     rs_project_point_to_pixel(other_pixel, &other_intrin, other_point);
-                    const int other_x0 = std::round(other_pixel[0]), other_y0 = std::round(other_pixel[1]);
+                    const int other_x0 = static_cast<int>(other_pixel[0] + 0.5f);
+                    const int other_y0 = static_cast<int>(other_pixel[1] + 0.5f);
 
                     // Map the bottom-right corner of the depth pixel onto the other image
                     depth_pixel[0] = depth_x+0.5f; depth_pixel[1] = depth_y+0.5f;
                     rs_deproject_pixel_to_point(depth_point, &depth_intrin, depth_pixel, depth);
                     rs_transform_point_to_point(other_point, &depth_to_other, depth_point);
                     rs_project_point_to_pixel(other_pixel, &other_intrin, other_point);
-                    const int other_x1 = std::round(other_pixel[0]), other_y1 = std::round(other_pixel[1]);
+                    const int other_x1 = static_cast<int>(other_pixel[0] + 0.5f);
+                    const int other_y1 = static_cast<int>(other_pixel[1] + 0.5f);
 
                     if(other_x0 < 0 || other_y0 < 0 || other_x1 >= other_intrin.width || other_y1 >= other_intrin.height) continue;
 

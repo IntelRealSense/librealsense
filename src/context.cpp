@@ -5,14 +5,16 @@
 #include "uvc.h"
 #include "r200.h"
 #include "f200.h"
+#include <mutex>
 
-rs_context::rs_context() : rs_context(0)
+rs_context::rs_context()
 {
     context = rsimpl::uvc::create_context();
 
     for(auto device : query_devices(context))
     {
         LOG_INFO("UVC device detected with VID = 0x" << std::hex << get_vendor_id(*device) << " PID = 0x" << get_product_id(*device));
+        LOG_INFO("USB Port number =" << get_usb_port_id(*device));
 
 		if (get_vendor_id(*device) != 32902)
 			continue;
@@ -27,17 +29,30 @@ rs_context::rs_context() : rs_context(0)
 }
 
 // Enforce singleton semantics on rs_context
+rs_context* rs_context::instance = nullptr;
+int rs_context::ref_count = 0;
+std::mutex rs_context::instance_lock;
 
-bool rs_context::singleton_alive = false;
-
-rs_context::rs_context(int)
+rs_context* rs_context::acquire_instance()
 {
-    if(singleton_alive) throw std::runtime_error("rs_context has singleton semantics, only one may exist at a time");
-    singleton_alive = true;
+    std::lock_guard<std::mutex> lock(instance_lock);
+    if (ref_count++ == 0)
+    {
+        instance = new rs_context();
+    }
+    return instance;
+}
+
+void rs_context::release_instance()
+{
+    std::lock_guard<std::mutex> lock(instance_lock);
+    if (--ref_count == 0)
+    {
+        delete instance;
+    }
 }
 
 rs_context::~rs_context()
 {
-    assert(singleton_alive);
-    singleton_alive = false;
+    assert(ref_count == 0);
 }

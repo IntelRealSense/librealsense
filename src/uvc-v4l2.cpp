@@ -30,6 +30,8 @@
 
 #include <libusb.h>
 
+#pragma GCC diagnostic ignored "-Woverflow"
+
 namespace rsimpl
 {
     namespace uvc
@@ -94,13 +96,23 @@ namespace rsimpl
                 }
                 if(!S_ISCHR(st.st_mode)) throw std::runtime_error(dev_name + " is no device");
 
-                // TODO: Might not always be exactly three dirs up, might need to walk upwards until we find busnum and devnum
-                std::ostringstream ss; ss << "/sys/dev/char/" << major(st.st_rdev) << ":" << minor(st.st_rdev) << "/";
+                // Search directory and up to three parent directories to find busnum/devnum
+                std::ostringstream ss; ss << "/sys/dev/char/" << major(st.st_rdev) << ":" << minor(st.st_rdev) << "/device/";
                 auto path = ss.str();
-                if(!(std::ifstream(path + "../../../busnum") >> busnum))
-                    throw std::runtime_error("Failed to read busnum");
-                if(!(std::ifstream(path + "../../../devnum") >> devnum))
-                    throw std::runtime_error("Failed to read devnum");
+                bool good = false;
+                for(int i=0; i<=3; ++i)
+                {
+                    if(std::ifstream(path + "busnum") >> busnum)
+                    {
+                        if(std::ifstream(path + "devnum") >> devnum)
+                        {
+                            good = true;
+                            break;
+                        }
+                    }
+                    path += "../";
+                }
+                if(!good) throw std::runtime_error("Failed to read busnum/devnum");
 
                 std::string modalias;
                 if(!(std::ifstream("/sys/class/video4linux/" + name + "/device/modalias") >> modalias))
@@ -392,6 +404,13 @@ namespace rsimpl
         int get_vendor_id(const device & device) { return device.subdevices[0]->get_vid(); }
         int get_product_id(const device & device) { return device.subdevices[0]->get_pid(); }
 
+        std::string get_usb_port_id(const device & device)
+        {
+            std::string usb_port = std::to_string(libusb_get_bus_number(device.usb_device)) + "-" +
+                std::to_string(libusb_get_port_number(device.usb_device));
+            return usb_port;
+        }
+
         void get_control(const device & device, const extension_unit & xu, uint8_t ctrl, void * data, int len)
         {
             device.subdevices[xu.subdevice]->get_control(xu, ctrl, data, len);
@@ -516,8 +535,15 @@ namespace rsimpl
                         continue;
                 }
 
-                std::unique_ptr<subdevice> sub(new subdevice(name));
-                subdevices.push_back(move(sub));
+                try
+                {
+                    std::unique_ptr<subdevice> sub(new subdevice(name));
+                    subdevices.push_back(move(sub));
+                }
+                catch(const std::exception & e)
+                {
+                    LOG_INFO("Not a USB video device: " << e.what());
+                }
             }
             closedir(dir);
 

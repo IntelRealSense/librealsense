@@ -45,14 +45,14 @@ namespace rsimpl
 rs_context * rs_create_context(int api_version, rs_error ** error) try
 {
     if (api_version != RS_API_VERSION) throw std::runtime_error("api version mismatch");
-    return new rs_context();
+    return rs_context::acquire_instance();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, api_version)
 
 void rs_delete_context(rs_context * context, rs_error ** error) try
 {
     VALIDATE_NOT_NULL(context);
-    delete context;
+    rs_context::release_instance();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, context)
 
@@ -86,6 +86,13 @@ const char * rs_get_device_serial(const rs_device * device, rs_error ** error) t
     return device->get_serial();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, device)
+
+const char * rs_get_device_usb_port_id(const rs_device * device, rs_error **error) try
+{
+    VALIDATE_NOT_NULL(device);
+    return device->get_usb_port_id();
+}
+HANDLE_EXCEPTIONS_AND_RETURN(0, device)
 
 const char * rs_get_device_firmware_version(const rs_device * device, rs_error ** error) try
 {
