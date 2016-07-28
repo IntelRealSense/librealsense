@@ -70,23 +70,22 @@ public:
 
     GLuint get_gl_handle() const { return texture; }
 
-    void upload(const void * data, int width, int height, rs::format format, int stride_x = 0, int stride_y = 0)
+    void upload(const void * data, int width, int height, rs::format format, int stride = 0)
     {
         // If the frame timestamp has changed since the last time show(...) was called, re-upload the texture
         if(!texture) glGenTextures(1, &texture);
         glBindTexture(GL_TEXTURE_2D, texture);
-        stride_x = stride_x == 0 ? width : stride_x;
-        stride_y = stride_y == 0 ? height : stride_y;
-        glPixelStorei(GL_UNPACK_ROW_LENGTH, stride_x);
+        stride = stride == 0 ? width : stride;
+        glPixelStorei(GL_UNPACK_ROW_LENGTH, stride);
         switch(format)
         {
         case rs::format::any:
         throw std::runtime_error("not a valid format");
         case rs::format::z16:
         case rs::format::disparity16:
-            rgb.resize(stride_x * stride_y * 3);
-            make_depth_histogram(rgb.data(), reinterpret_cast<const uint16_t *>(data), stride_x, stride_y);
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, stride_x, stride_y, 0, GL_RGB, GL_UNSIGNED_BYTE, rgb.data());
+            rgb.resize(stride * height * 3);
+            make_depth_histogram(rgb.data(), reinterpret_cast<const uint16_t *>(data), stride, height);
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, stride, height, 0, GL_RGB, GL_UNSIGNED_BYTE, rgb.data());
             
             break;
         case rs::format::xyz32f:
@@ -107,26 +106,11 @@ public:
         case rs::format::y16:
             glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_LUMINANCE, GL_UNSIGNED_SHORT, data);
             break;
-//        case rs::format::raw10:
-//            // Visualize Raw10 by performing a naive downsample. Each 2x2 block contains one red pixel, two green pixels, and one blue pixel, so combine them into a single RGB triple.
-//            rgb.clear(); rgb.resize(width/2 * height/2 * 3);
-//            auto out = rgb.data(); auto in0 = reinterpret_cast<const uint8_t *>(data), in1 = in0 + width*5/4;
-//            for(int y=0; y<height; y+=2)
-//            {
-//                for(int x=0; x<width; x+=4)
-//                {
-//                    *out++ = in0[0]; *out++ = (in0[1] + in1[0]) / 2; *out++ = in1[1]; // RGRG -> RGB RGB
-//                    *out++ = in0[2]; *out++ = (in0[3] + in1[2]) / 2; *out++ = in1[3]; // GBGB
-//                    in0 += 5; in1 += 5;
-//                }
-//                in0 = in1; in1 += width*5/4;
-//            }
-//            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width/2, height/2, 0, GL_RGB, GL_UNSIGNED_BYTE, rgb.data());
-//            break;
           case rs::format::raw8:
           case rs::format::raw10:
               glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE, width, height, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, data);
             break;
+        default: break;
         }
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
@@ -162,7 +146,7 @@ public:
         const double timestamp = frame.get_timestamp();
         if(timestamp != last_timestamp)
         {
-			upload(frame.get_data(), frame.get_width(), frame.get_height(), frame.get_format(), frame.get_stride_x(), frame.get_stride_y());
+            upload(frame.get_data(), frame.get_width(), frame.get_height(), frame.get_format(), frame.get_stride());
             last_timestamp = timestamp;
 
             ++num_frames;

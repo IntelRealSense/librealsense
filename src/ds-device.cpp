@@ -532,7 +532,7 @@ namespace rsimpl
           auto frame_number = 0;
          
           frame_number = get_dinghy(mode, frame).frameCount; // All other formats can use the frame number in the dinghy row
-          return timestamp_wraparound.fix(frame_number * 1000 / fps);
+          return timestamp_wraparound.fix(frame_number * 1000. / fps);
         }
 
         unsigned long long get_frame_counter(const subdevice_mode & mode, const void * frame) override
@@ -546,6 +546,7 @@ namespace rsimpl
 
     class fisheye_timestamp_reader : public frame_timestamp_reader
     {
+        mutable bool validate;
         int fps;
         std::mutex mutex;
         unsigned last_fisheye_counter;
@@ -553,11 +554,19 @@ namespace rsimpl
         wraparound_mechanism<unsigned long long> frame_counter_wraparound;
 
     public:
-        fisheye_timestamp_reader(int max_fps) : fps(max_fps), last_fisheye_counter(0), timestamp_wraparound(1, std::numeric_limits<uint32_t>::max()), frame_counter_wraparound(0, std::numeric_limits<uint32_t>::max()) {}
+        fisheye_timestamp_reader(int max_fps) : fps(max_fps), last_fisheye_counter(0), timestamp_wraparound(1, std::numeric_limits<uint32_t>::max()), frame_counter_wraparound(0, std::numeric_limits<uint32_t>::max()), validate(true){}
 
         bool validate_frame(const subdevice_mode & mode, const void * frame) const override
         {
-            return true;
+            if (!validate)
+                return true;
+
+            bool sts;
+            auto pixel_lsb = reinterpret_cast<byte_wrapping&>(*((unsigned char*)frame)).lsb;
+            if ((sts = (pixel_lsb != 0)))
+                validate = false;
+
+            return sts;
         }
 
         struct byte_wrapping{
@@ -589,7 +598,7 @@ namespace rsimpl
 
         double get_frame_timestamp(const subdevice_mode & mode, const void * frame) override
         {
-            return timestamp_wraparound.fix(get_frame_counter(mode, frame) * 1000.0 / fps);
+            return timestamp_wraparound.fix(get_frame_counter(mode, frame) * 1000. / fps);
         }
     };
 
@@ -641,7 +650,7 @@ namespace rsimpl
         double get_frame_timestamp(const subdevice_mode &, const void *) override
         { 
             ++serial_frame_number;
-            return timestamp_wraparound.fix(serial_frame_number * 1000 / fps);
+            return timestamp_wraparound.fix(serial_frame_number * 1000. / fps);
         }
         unsigned long long get_frame_counter(const subdevice_mode &, const void *) override
         {

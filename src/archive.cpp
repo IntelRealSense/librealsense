@@ -1,10 +1,11 @@
 
 #include "archive.h"
+#include <algorithm>
 
 using namespace rsimpl;
 
 frame_archive::frame_archive(const std::vector<subdevice_mode_selection>& selection, std::atomic<uint32_t>* in_max_frame_queue_size, std::chrono::high_resolution_clock::time_point capture_started)
-    : mutex(), capture_started(capture_started), max_frame_queue_size(in_max_frame_queue_size)
+    : max_frame_queue_size(in_max_frame_queue_size), mutex(), capture_started(capture_started)
 {
     // Store the mode selection that pertains to each native stream
     for (auto & mode : selection)
@@ -37,7 +38,10 @@ void frame_archive::unpublish_frame(frame* frame)
     {
         log_frame_callback_end(frame);
         std::lock_guard<std::recursive_mutex> lock(mutex);
-        --published_frames_per_stream[frame->get_stream_type()];
+
+        if (is_valid(frame->get_stream_type()))
+            --published_frames_per_stream[frame->get_stream_type()];
+
         freelist.push_back(std::move(*frame));
         published_frames.deallocate(frame);
        
@@ -46,7 +50,7 @@ void frame_archive::unpublish_frame(frame* frame)
 
 frame_archive::frame* frame_archive::publish_frame(frame&& frame)
 {
-    if (frame.get_stream_type() == RS_STREAM_MAX_ENUM ||
+    if (is_valid(frame.get_stream_type()) &&
         published_frames_per_stream[frame.get_stream_type()] >= *max_frame_queue_size)
     {
         return nullptr;
@@ -54,7 +58,7 @@ frame_archive::frame* frame_archive::publish_frame(frame&& frame)
     auto new_frame = published_frames.allocate();
     if (new_frame)
     {
-        ++published_frames_per_stream[frame.get_stream_type()];
+        if (is_valid(frame.get_stream_type())) ++published_frames_per_stream[frame.get_stream_type()];
         *new_frame = std::move(frame);
     }
     return new_frame;
@@ -229,17 +233,12 @@ int frame_archive::frame_ref::get_frame_framerate() const
     return frame_ptr ? frame_ptr->get_framerate() : 0;
 }
 
-int frame_archive::frame_ref::get_frame_stride_x() const
+int frame_archive::frame_ref::get_frame_stride() const
 {
-    return frame_ptr ? frame_ptr->get_stride_x() : 0;
+    return frame_ptr ? frame_ptr->get_stride() : 0;
 }
 
-int frame_archive::frame_ref::get_frame_stride_y() const
-{
-    return frame_ptr ? frame_ptr->get_stride_y() : 0;
-}
-
-float frame_archive::frame_ref::get_frame_bpp() const
+int frame_archive::frame_ref::get_frame_bpp() const
 {
     return frame_ptr ? frame_ptr->get_bpp() : 0;
 }
@@ -308,7 +307,7 @@ int frame_archive::frame::get_width() const
 
 int frame_archive::frame::get_height() const
 {
-    return additional_data.height;
+    return additional_data.stride_y ? std::min(additional_data.height, additional_data.stride_y) : additional_data.height;
 }
 
 int frame_archive::frame::get_framerate() const
@@ -316,17 +315,12 @@ int frame_archive::frame::get_framerate() const
     return additional_data.fps;
 }
 
-int frame_archive::frame::get_stride_y() const
-{
-    return additional_data.stride_y;
-}
-
-int frame_archive::frame::get_stride_x() const
+int frame_archive::frame::get_stride() const
 {
     return additional_data.stride_x;
 }
 
-float frame_archive::frame::get_bpp() const
+int frame_archive::frame::get_bpp() const
 {
     return additional_data.bpp;
 }

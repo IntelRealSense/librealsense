@@ -101,7 +101,7 @@ int main() try
 
             if (frames_queue[i].try_dequeue(&frame))
             {
-                buffers[i].upload(frame.get_data(), frame.get_width(), frame.get_height(), frame.get_format(), frame.get_stride_x(), frame.get_stride_y());
+                buffers[i].upload(frame.get_data(), frame.get_width(), frame.get_height(), frame.get_format(), frame.get_stride());
             }
 
             auto x = (i % 2) * (w / 2);

@@ -56,7 +56,7 @@
 DEFINE_GUID(GUID_DEVINTERFACE_USB_DEVICE, 0xA5DCBF10L, 0x6530, 0x11D2, 0x90, 0x1F, 0x00, \
     0xC0, 0x4F, 0xB9, 0x51, 0xED);
 DEFINE_GUID(GUID_DEVINTERFACE_IMAGE, 0x6bdd1fc6L, 0x810f, 0x11d0, 0xbe, 0xc7, 0x08, 0x00, \
-	0x2b, 0xe2, 0x09, 0x2f);
+    0x2b, 0xe2, 0x09, 0x2f);
 
 namespace rsimpl
 {
@@ -1245,20 +1245,14 @@ namespace rsimpl
             // for each port on the hub
             for (ULONG i = 1; i <= info.u.HubInformation.HubDescriptor.bNumberOfPorts; ++i)
             {
-                // allocate something or other (commented out parts exist in virtualbox source but appear unused
-                char buf[sizeof(USB_NODE_CONNECTION_INFORMATION_EX) /* + (sizeof(USB_PIPE_INFO) * 20) */] = { 0 };
+                // allocate something or other
+                char buf[sizeof(USB_NODE_CONNECTION_INFORMATION_EX)] = { 0 };
                 PUSB_NODE_CONNECTION_INFORMATION_EX pConInfo = (PUSB_NODE_CONNECTION_INFORMATION_EX)buf;
-                /* PUSB_PIPE_INFO paPipeInfo = (PUSB_PIPE_INFO)(buf + sizeof(PUSB_NODE_CONNECTION_INFORMATION_EX)); */
 
                 // get info about port i
                 pConInfo->ConnectionIndex = i;
                 if (!DeviceIoControl(h, IOCTL_USB_GET_NODE_CONNECTION_INFORMATION_EX, pConInfo, sizeof(buf), pConInfo, sizeof(buf), nullptr, nullptr))
                 {
-                    // virtual box makes a distinction, but said distinction is buried deeper than I could follow in their error logging macros
-                    if (GetLastError() != ERROR_DEVICE_NOT_CONNECTED) {
-                        continue;
-                    }
-                    // i guess the difference could be if the user happens to disconnect the device at this exact second?
                     continue;
                 }
 
@@ -1286,46 +1280,46 @@ namespace rsimpl
 
         std::string get_usb_port_id(const device & device) // Not implemented for Windows at this point
         {
-			SP_DEVINFO_DATA devInfo = { sizeof(SP_DEVINFO_DATA) };
+            SP_DEVINFO_DATA devInfo = { sizeof(SP_DEVINFO_DATA) };
             static_assert(sizeof(guid) == sizeof(GUID), "struct packing error"); // not sure this is needed. maybe because the original function gets the guid object from outside?
 
-			// build a device info represent all imaging devices.
+            // build a device info represent all imaging devices.
             HDEVINFO device_info = SetupDiGetClassDevsEx((const GUID *)&GUID_DEVINTERFACE_IMAGE,
-				nullptr, 
-				nullptr, 
-				DIGCF_PRESENT,
-				nullptr,
-				nullptr,
-				nullptr);
+                nullptr, 
+                nullptr, 
+                DIGCF_PRESENT,
+                nullptr,
+                nullptr,
+                nullptr);
             if (device_info == INVALID_HANDLE_VALUE) throw std::runtime_error("SetupDiGetClassDevs");
             auto di = std::shared_ptr<void>(device_info, SetupDiDestroyDeviceInfoList);
 
-			// enumerate all imaging devices.
+            // enumerate all imaging devices.
             for (int member_index = 0; ; ++member_index)
             {
-				SP_DEVICE_INTERFACE_DATA interfaceData = { sizeof(SP_DEVICE_INTERFACE_DATA) };
-				unsigned long buf_size = 0;
+                SP_DEVICE_INTERFACE_DATA interfaceData = { sizeof(SP_DEVICE_INTERFACE_DATA) };
+                unsigned long buf_size = 0;
 
-				if (SetupDiEnumDeviceInfo(device_info, member_index, &devInfo) == FALSE)
-				{
-					if (GetLastError() == ERROR_NO_MORE_ITEMS) break; // stop when none left
-					continue; // silently ignore other errors
-				}
+                if (SetupDiEnumDeviceInfo(device_info, member_index, &devInfo) == FALSE)
+                {
+                    if (GetLastError() == ERROR_NO_MORE_ITEMS) break; // stop when none left
+                    continue; // silently ignore other errors
+                }
 
-				// get the device ID of current device.
-				if (CM_Get_Device_ID_Size(&buf_size, devInfo.DevInst, 0) != CR_SUCCESS)
-				{
-					LOG_ERROR("CM_Get_Device_ID_Size failed");
-					return "";
-				}
-				
-				auto alloc = std::malloc(buf_size * sizeof(WCHAR) + sizeof(WCHAR));
-				if (!alloc) throw std::bad_alloc();
-				auto pInstID = std::shared_ptr<WCHAR>(reinterpret_cast<WCHAR *>(alloc), std::free);
-				if (CM_Get_Device_ID(devInfo.DevInst, pInstID.get(), buf_size * sizeof(WCHAR) + sizeof(WCHAR), 0) != CR_SUCCESS) {
-					LOG_ERROR("CM_Get_Device_ID failed");
-					return "";
-				}
+                // get the device ID of current device.
+                if (CM_Get_Device_ID_Size(&buf_size, devInfo.DevInst, 0) != CR_SUCCESS)
+                {
+                    LOG_ERROR("CM_Get_Device_ID_Size failed");
+                    return "";
+                }
+                
+                auto alloc = std::malloc(buf_size * sizeof(WCHAR) + sizeof(WCHAR));
+                if (!alloc) throw std::bad_alloc();
+                auto pInstID = std::shared_ptr<WCHAR>(reinterpret_cast<WCHAR *>(alloc), std::free);
+                if (CM_Get_Device_ID(devInfo.DevInst, pInstID.get(), buf_size * sizeof(WCHAR) + sizeof(WCHAR), 0) != CR_SUCCESS) {
+                    LOG_ERROR("CM_Get_Device_ID failed");
+                    return "";
+                }
 
                 if (pInstID == nullptr) continue;
 
@@ -1413,7 +1407,7 @@ namespace rsimpl
                 // recursively check all hubs, searching for composite device
                 std::wstringstream buf;
                 for (int i = 0;; i++)
-                { // VBox thinks 10 is enough
+                { 
                     buf << "\\\\.\\HCD" << i;
                     std::wstring hcd = buf.str();
 
@@ -1450,12 +1444,9 @@ namespace rsimpl
                         std::string ret = handleHub(targetKey, std::wstring(pName->RootHubName));
                         if (ret != "") return ret;
                     }
-
                 }
-
-                throw std::exception("could not find camera in windows device tree");
             }
-            throw std::exception("Not Implemented");
+            throw std::exception("could not find camera in windows device tree");
         }
     }
 }

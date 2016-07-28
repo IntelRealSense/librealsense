@@ -47,6 +47,9 @@ namespace rsimpl
         double                                  get_frame_timestamp() const override;
         long long                               get_frame_system_time() const override;
         const uint8_t *                         get_frame_data() const override;
+
+        int                                     get_frame_stride() const override;
+        int                                     get_frame_bpp() const override;
     };
 
     class point_stream final : public stream_interface
@@ -70,6 +73,9 @@ namespace rsimpl
         double                                  get_frame_timestamp() const override{ return source.get_frame_timestamp(); }
         long long                               get_frame_system_time() const override { return source.get_frame_system_time(); }
         const uint8_t *                         get_frame_data() const override;
+
+        int                                     get_frame_stride() const override { return source.get_frame_stride(); }
+        int                                     get_frame_bpp() const override { return source.get_frame_bpp(); }
     };
 
     class rectified_stream final : public stream_interface
@@ -94,6 +100,9 @@ namespace rsimpl
         double                                  get_frame_timestamp() const override { return source.get_frame_timestamp(); }
         long long                               get_frame_system_time() const override { return source.get_frame_system_time(); }
         const uint8_t *                         get_frame_data() const override;
+
+        int                                     get_frame_stride() const override { return source.get_frame_stride(); }
+        int                                     get_frame_bpp() const override { return source.get_frame_bpp(); }
     };
 
     class aligned_stream final : public stream_interface
@@ -117,6 +126,9 @@ namespace rsimpl
         double                                  get_frame_timestamp() const override { return from.get_frame_timestamp(); }
         long long                               get_frame_system_time() const override { return from.get_frame_system_time(); }
         const unsigned char *                   get_frame_data() const override;
+
+        int                                     get_frame_stride() const override { return from.get_frame_stride(); }
+        int                                     get_frame_bpp() const override { return from.get_frame_bpp(); }
     };
 }
 
