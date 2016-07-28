@@ -124,6 +124,15 @@ void rs_get_device_extrinsics(const rs_device * device, rs_stream from, rs_strea
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, device, from, to, extrin)
 
+void rs_get_motion_extrinsics_from(const rs_device * device, rs_stream from, rs_extrinsics * extrin, rs_error ** error) try
+{
+    VALIDATE_NOT_NULL(device);
+    VALIDATE_ENUM(from);
+    VALIDATE_NOT_NULL(extrin);
+    *extrin = device->get_motion_extrinsics_from(from);
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, device, from, extrin)
+
 int rs_device_supports_option(const rs_device * device, rs_option option, rs_error ** error) try
 {
     VALIDATE_NOT_NULL(device);
@@ -239,6 +248,14 @@ void rs_get_stream_intrinsics(const rs_device * device, rs_stream stream, rs_int
     *intrin = device->get_stream_interface(stream).get_intrinsics();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, device, stream, intrin)
+
+void rs_get_motion_intrinsics(const rs_device * device, rs_motion_intrinsics * intrinsic, rs_error ** error) try
+{
+    VALIDATE_NOT_NULL(device);
+    VALIDATE_NOT_NULL(intrinsic);
+    *intrinsic = device->get_motion_intrinsics();
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, device, intrinsic)
 
 void rs_set_frame_callback(rs_device * device, rs_stream stream, 
     void(*on_frame)(rs_device * dev, rs_frame_ref * frame, void * user), void * user, rs_error ** error) try

@@ -59,6 +59,8 @@ namespace rsimpl
 {
     namespace hw_monitor
     {
+
+
         struct hwmon_cmd
         {
             uint8_t     cmd;
@@ -97,6 +99,10 @@ namespace rsimpl
         void perform_and_send_monitor_command(uvc::device & device, std::timed_mutex & mutex, hwmon_cmd & newCommand);
         void perform_and_send_monitor_command(uvc::device & device, std::timed_mutex & mutex, hwmon_cmd & newCommand);
 
+        void i2c_write_reg(int command, uvc::device & device, uint16_t slave_address, uint16_t reg, uint32_t value);
+        void i2c_read_reg(int command, uvc::device & device, uint16_t slave_address, uint16_t reg, uint32_t size, byte* data);
+
+        void read_from_eeprom(int IRB_opcode, int IWB_opcode, uvc::device & device, unsigned int offset, int size, byte* data);
     }
 }
 

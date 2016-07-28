@@ -80,7 +80,8 @@ namespace rs
     {
         none                   = 0, ///< Rectilinear images, no distortion compensation required
         modified_brown_conrady = 1, ///< Equivalent to Brown-Conrady distortion, except that tangential distortion is applied to radially distorted points
-        inverse_brown_conrady  = 2  ///< Equivalent to Brown-Conrady distortion, except undistorts image instead of distorting it
+        inverse_brown_conrady  = 2,  ///< Equivalent to Brown-Conrady distortion, except undistorts image instead of distorting it
+        distortion_ftheta      = 3 
     };
 
     // reflection of rs_option
@@ -224,6 +225,12 @@ namespace rs
         bool        operator == (const intrinsics & r) const                            { return memcmp(this, &r, sizeof(r)) == 0; }
 
     };
+
+    struct motion_intrinsics : rs_motion_intrinsics
+    {
+        motion_intrinsics(){};
+    };
+
     struct extrinsics : rs_extrinsics
     {
         bool        is_identity() const                                                 { return (rotation[0] == 1) && (rotation[4] == 1) && (translation[0] == 0) && (translation[1] == 0) && (translation[2] == 0); }
@@ -543,6 +550,18 @@ namespace rs
             return extrin;
         }
 
+        /// retrieve extrinsic transformation between the viewpoints of specific stream and the motion module
+        /// \param[in] from_stream  stream whose coordinate space we will transform from
+        /// \return                 the transformation between the  specific stream and motion module
+        extrinsics get_motion_extrinsics_from(stream from_stream) const
+        {
+            rs_error * e = nullptr;
+            extrinsics extrin;
+            rs_get_motion_extrinsics_from((const rs_device *)this, (rs_stream)from_stream, &extrin, &e);
+            error::handle(e);
+            return extrin;
+        }
+
         /// retrieve mapping between the units of the depth image and meters
         /// \return  depth in meters corresponding to a depth value of 1
         float get_depth_scale() const
@@ -687,6 +706,18 @@ namespace rs
             rs_get_stream_intrinsics((const rs_device *)this, (rs_stream)stream, &intrin, &e);
             error::handle(e);
             return intrin;
+        }
+
+        /// retrieve intrinsic camera parameters for a specific stream
+        /// \param[in] stream  the stream whose parameters to retrieve
+        /// \return            the intrinsic parameters of the stream
+        motion_intrinsics get_motion_intrinsics() const
+        {
+            rs_error * e = nullptr;
+            motion_intrinsics intrinsics;
+            rs_get_motion_intrinsics((const rs_device *)this, &intrinsics, &e);
+            error::handle(e);
+            return intrinsics;
         }
 
         /// sets the callback for frame arrival event. provided callback will be called the instant new frame of given stream becomes available

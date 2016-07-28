@@ -380,7 +380,7 @@ namespace rsimpl {
             auto header = reinterpret_cast<const CameraHeadContents &>(flash_data_buffer[CAM_INFO_BLOCK_LEN]);
             serial_number = header.serialNumber;
 
-            auto build_date = time_t(header.buildDate), calib_date = time_t(header.calibrationDate);
+            //auto build_date = time_t(header.buildDate), calib_date = time_t(header.calibrationDate);
             LOG_INFO("Serial number                       = " << header.serialNumber);
             LOG_INFO("Model number                        = " << header.modelNumber);
             LOG_INFO("Revision number                     = " << header.revisionNumber);

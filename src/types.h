@@ -324,10 +324,10 @@ namespace rsimpl
         frame_callback(rs_device * dev, void(*on_frame)(rs_device *, rs_frame_ref *, void *), void * user) : fptr(on_frame), user(user), device(dev) {}
 
         operator bool() { return fptr != nullptr; }
-        void on_frame (rs_device * device, rs_frame_ref * frame) override { 
+        void on_frame (rs_device * dev, rs_frame_ref * frame) override { 
             if (fptr)
             {
-                try { fptr(device, frame, user); } catch (...) {}
+                try { fptr(dev, frame, user); } catch (...) {}
             }
         }
         void release() override { delete this; }
