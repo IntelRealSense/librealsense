@@ -338,7 +338,7 @@ namespace rsimpl
         if (succeeded_to_read_fisheye_intrinsic)
         {
             auto fe_extrinsic = fisheye_intrinsic.mm_extrinsic;
-            info.stream_poses[RS_STREAM_FISHEYE] = { reinterpret_cast<float3x3 &>(fe_extrinsic.fe_to_depth.rotation)*info.stream_poses[RS_STREAM_DEPTH].orientation, reinterpret_cast<float3&>(fe_extrinsic.fe_to_depth.translation) + info.stream_poses[RS_STREAM_DEPTH].position };
+            info.stream_poses[RS_STREAM_FISHEYE] = { reinterpret_cast<float3x3 &>(fe_extrinsic.fe_to_depth.rotation), reinterpret_cast<float3&>(fe_extrinsic.fe_to_depth.translation) };
         }
         
         return std::make_shared<zr300_camera>(device, info, fisheye_intrinsic);
