@@ -114,6 +114,20 @@ const uint8_t * native_stream::get_frame_data() const
     return (const uint8_t *) archive->get_frame_data(stream);
 }
 
+int native_stream::get_frame_stride() const
+{
+    if (!is_enabled()) throw std::runtime_error(to_string() << "stream not enabled: " << stream);
+    if (!archive) throw  std::runtime_error(to_string() << "streaming not started!");
+    return archive->get_frame_stride(stream);
+}
+
+int native_stream::get_frame_bpp() const
+{
+    if (!is_enabled()) throw std::runtime_error(to_string() << "stream not enabled: " << stream);
+    if (!archive) throw  std::runtime_error(to_string() << "streaming not started!");
+    return archive->get_frame_bpp(stream);
+}
+
 const uint8_t * point_stream::get_frame_data() const
 {
     if(image.empty() || number != get_frame_number())

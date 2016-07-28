@@ -51,6 +51,8 @@ namespace rsimpl
         double get_frame_timestamp(rs_stream stream) const;
         unsigned long long get_frame_number(rs_stream stream) const;
         long long get_frame_system_time(rs_stream stream) const;
+        int get_frame_stride(rs_stream stream) const;
+        int get_frame_bpp(rs_stream stream) const;
 
         frameset * clone_frontbuffer();
 
@@ -61,6 +63,7 @@ namespace rsimpl
 
         void correct_timestamp(rs_stream stream);
         void on_timestamp(rs_timestamp_data data);
+
     };
 }
 
