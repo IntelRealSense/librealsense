@@ -396,6 +396,14 @@ double rs_get_frame_timestamp(const rs_device * device, rs_stream stream, rs_err
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, device, stream)
 
+double rs_get_frame_metadata(const rs_device * device, rs_stream stream, rs_frame_metadata frame_metadata, rs_error ** error) try
+{
+    VALIDATE_NOT_NULL(device);
+    VALIDATE_ENUM(stream);
+    return device->get_stream_interface(stream).get_frame_metadata(frame_metadata);
+}
+HANDLE_EXCEPTIONS_AND_RETURN(0, device)
+
 unsigned long long rs_get_frame_number(const rs_device * device, rs_stream stream, rs_error ** error) try
 {
     VALIDATE_NOT_NULL(device);
@@ -483,6 +491,12 @@ rs_stream rs_get_detached_frame_stream_type(const rs_frame_ref * frame_ref, rs_e
 }
 HANDLE_EXCEPTIONS_AND_RETURN(RS_STREAM_MAX_ENUM, frame_ref)
 
+double rs_get_detached_frame_metadata(const rs_frame_ref * frame, rs_frame_metadata frame_metadata, rs_error ** error) try
+{
+    VALIDATE_NOT_NULL(frame);
+    return frame->get_frame_metadata(frame_metadata);
+}
+HANDLE_EXCEPTIONS_AND_RETURN(0, frame)
 
 unsigned long long rs_get_detached_frame_number(const rs_frame_ref * frame, rs_error ** error) try
 {
