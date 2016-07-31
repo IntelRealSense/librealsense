@@ -42,6 +42,7 @@ namespace rsimpl
             iffley                     = 2,
             fisheye_xu_ext_trig        = 2,
             stream_intent              = 3,
+            fisheye_exposure           = 3,
             depth_units                = 4,
             min_max                    = 5,
             disparity                  = 6,
@@ -230,6 +231,8 @@ namespace rsimpl
         void set_strobe(uvc::device & device, uint8_t strobe);
         uint8_t get_ext_trig(const uvc::device & device);
         void set_ext_trig(uvc::device & device, uint8_t ext_trig);
+        uint8_t get_exposure(const uvc::device & device);
+        void set_exposure(uvc::device & device, uint32_t exposure);
 
     }
 }

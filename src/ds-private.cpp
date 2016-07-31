@@ -496,6 +496,16 @@ namespace rsimpl {
             ds::xu_write(device, fisheye_xu, ds::control::fisheye_xu_strobe, &strobe, sizeof(strobe));
         }
 
+        uint8_t get_exposure(const uvc::device & device)
+        {
+            return ds::xu_read<uint32_t>(device, fisheye_xu, ds::control::fisheye_exposure);
+        }
+
+        void set_exposure(uvc::device & device, uint32_t exposure)
+        {
+            ds::xu_write(device, fisheye_xu, ds::control::fisheye_exposure, &exposure, sizeof(exposure));
+        }
+
         void claim_motion_module_interface(uvc::device & device)
         {
             claim_aux_interface(device, MOTION_MODULE_USB_DEVICE_GUID, motion_module_interrupt_interface);
