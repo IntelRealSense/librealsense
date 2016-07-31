@@ -300,7 +300,7 @@ double frame_archive::frame::get_frame_metadata(rs_frame_metadata frame_metadata
     switch (frame_metadata)
     {
     case RS_FRAME_METADATA_EXPOSURE:
-        return additional_data.fisheye_exposure_value;
+        return additional_data.exposure_value;
         break;
     default:
         throw std::logic_error("unsupported metadata type");
