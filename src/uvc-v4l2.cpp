@@ -241,7 +241,7 @@ namespace rsimpl
                     }
 
                     buffers.resize(req.count);
-                    for(int i=0; i<buffers.size(); ++i)
+                    for(size_t i=0; i<buffers.size(); ++i)
                     {
                         v4l2_buffer buf = {};
                         buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
@@ -255,7 +255,7 @@ namespace rsimpl
                     }
 
                     // Start capturing
-                    for(int i = 0; i < buffers.size(); ++i)
+                    for(size_t i = 0; i < buffers.size(); ++i)
                     {
                         v4l2_buffer buf = {};
                         buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
@@ -286,7 +286,7 @@ namespace rsimpl
                     v4l2_buf_type type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
                     if(xioctl(fd, VIDIOC_STREAMOFF, &type) < 0) warn_error("VIDIOC_STREAMOFF");
 
-                    for(int i = 0; i < buffers.size(); i++)
+                    for(size_t i = 0; i < buffers.size(); i++)
                     {
                         if(munmap(buffers[i].start, buffers[i].length) < 0) warn_error("munmap");
                     }

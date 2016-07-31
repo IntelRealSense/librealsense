@@ -7,7 +7,6 @@
 
 namespace rsimpl
 {
-    struct cam_mode { int2 dims; std::vector<int> fps; };
 
     static const cam_mode ds5d_depth_modes[] = {
         {{1280, 720}, {6,15,30}},

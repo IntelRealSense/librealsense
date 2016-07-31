@@ -7,7 +7,6 @@
 
 namespace rsimpl
 {
-    struct cam_mode { int2 dims; std::vector<int> fps; };
 
     static const cam_mode ds5c_color_modes[] = {
         {{1920, 1080}, {30}},
@@ -51,6 +50,7 @@ namespace rsimpl
         info.capabilities_vector.push_back(RS_CAPABILITIES_COLOR);
         info.capabilities_vector.push_back(RS_CAPABILITIES_DEPTH);
         info.capabilities_vector.push_back(RS_CAPABILITIES_INFRARED);
+        info.capabilities_vector.push_back(RS_CAPABILITIES_INFRARED2);
 
         // Populate Color modes on subdevice 2
         info.stream_subdevices[RS_STREAM_COLOR] = 2;
@@ -64,6 +64,7 @@ namespace rsimpl
 
         // Populate IR modes on subdevice 1
         info.stream_subdevices[RS_STREAM_INFRARED] = 1;
+        info.stream_subdevices[RS_STREAM_INFRARED2] = 1;
         for(auto & m : ds5c_ir_only_modes)
         {
             for(auto fps : m.fps)

@@ -68,7 +68,7 @@ namespace rsimpl
         CASE(BEST_QUALITY)
         CASE(LARGEST_IMAGE)
         CASE(HIGHEST_FRAMERATE)
-		default: assert(!is_valid(value)); return unknown;
+        default: assert(!is_valid(value)); return unknown;
         }
         #undef CASE
     }
@@ -81,7 +81,7 @@ namespace rsimpl
         CASE(NONE)
         CASE(MODIFIED_BROWN_CONRADY)
         CASE(INVERSE_BROWN_CONRADY)
-		default: assert(!is_valid(value)); return unknown;
+        default: assert(!is_valid(value)); return unknown;
         }
         #undef CASE
     }
@@ -164,7 +164,7 @@ namespace rsimpl
         CASE(FISHEYE_COLOR_GAIN)
         CASE(FISHEYE_STROBE)
         CASE(FISHEYE_EXT_TRIG)
-		default: assert(!is_valid(value)); return unknown;
+        default: assert(!is_valid(value)); return unknown;
         }
         #undef CASE
     }
@@ -177,7 +177,7 @@ namespace rsimpl
         CASE(VIDEO)
         CASE(MOTION_TRACKING)
         CASE(ALL)
-		default: assert(!is_valid(value)); return unknown;
+        default: assert(!is_valid(value)); return unknown;
         }
         #undef CASE
     }
@@ -211,7 +211,7 @@ namespace rsimpl
         CASE(G0_SYNC)
         CASE(G1_SYNC)
         CASE(G2_SYNC)
-		default: assert(!is_valid(value)); return unknown;
+        default: assert(!is_valid(value)); return unknown;
         }
         #undef CASE
     }
@@ -256,7 +256,6 @@ namespace rsimpl
         }
         else
         {
-			
             // Otherwise unpack one row at a time
             assert(mode.pf.plane_count == 1); // Can't unpack planar formats row-by-row (at least not with the current architecture, would need to pass multiple source ptrs to unpack)
             for(int i=0; i<unpack_height; ++i)
@@ -370,7 +369,7 @@ namespace rsimpl
             }
 
             //now need to go over all posibilities for the next stream
-            for (auto i = 0; i < stream_requests[p.stream].size(); i++)
+            for (size_t i = 0; i < stream_requests[p.stream].size(); i++)
             {
                 //if this stream is not enabled move to next item
                 if (!requests[p.stream].enabled)
@@ -380,7 +379,6 @@ namespace rsimpl
                     calls.push_back(new_p);
                     break;
                 }
-                    
 
                 //check that this spasific request is not contradicts the original user request
                 if (!requests[p.stream].contradict(stream_requests[p.stream][i]))
@@ -424,7 +422,7 @@ namespace rsimpl
 
     void device_config::get_all_possible_requestes(std::vector<stream_request>(&stream_requests)[RS_STREAM_NATIVE_COUNT]) const
     {
-        for (auto i = 0; i < info.subdevice_modes.size(); i++)
+        for (size_t i = 0; i < info.subdevice_modes.size(); i++)
         {
             stream_request request;
             auto mode = info.subdevice_modes[i];
@@ -555,20 +553,20 @@ namespace rsimpl
             auto & a = requests[rule.a], &b = requests[rule.b]; auto f = rule.field;
             if (a.enabled && b.enabled)
             {
-				if (rule.same_formet)
-				{
-					if (a.format != RS_FORMAT_ANY && b.format != RS_FORMAT_ANY && a.format != b.format)
-					{
-						if (throw_exception)
-							throw std::runtime_error(to_string() << "requested " << rule.a << " and " << rule.b << " settings are incompatible");
-						return false;
-					}
-						
-				}
-				else  if (rule.bigger == RS_STREAM_COUNT && !rule.diveded && !rule.diveded2)
+                if (rule.same_format)
+                {
+                    if (a.format != RS_FORMAT_ANY && b.format != RS_FORMAT_ANY && a.format != b.format)
+                    {
+                        if (throw_exception)
+                            throw std::runtime_error(to_string() << "requested " << rule.a << " and " << rule.b << " settings are incompatible");
+                        return false;
+                    }
+                        
+                }
+                else  if (rule.bigger == RS_STREAM_COUNT && !rule.divided && !rule.divided2)
                 {
                     // Check for incompatibility if both values specified
-                    if (a.*f != 0 && b.*f != 0 && a.*f + rule.delta != b.*f && a.*f + rule.delta2 != b.*f)
+                    if ((a.*f != 0) && (b.*f != 0) && (a.*f + rule.delta != b.*f) && (a.*f + rule.delta2 != b.*f))
                     {
                         if (throw_exception)
                             throw std::runtime_error(to_string() << "requested " << rule.a << " and " << rule.b << " settings are incompatible");
@@ -577,15 +575,14 @@ namespace rsimpl
                 }
                 else
                 {
-                    if (a.*f != 0 && b.*f != 0 && (rule.bigger == rule.a && a.*f < b.*f) || (rule.bigger == rule.b && b.*f < a.*f))
+                    if ((a.*f != 0) && (b.*f != 0) && (rule.bigger == rule.a && a.*f < b.*f) || (rule.bigger == rule.b && b.*f < a.*f))
                     {
                         if (throw_exception)
                             throw std::runtime_error(to_string() << "requested " << rule.a << " and " << rule.b << " settings are incompatible");
                         return false;
                     }
-                    if (a.*f != 0 && b.*f != 0 && ((rule.diveded && float(a.*f) / float(b.*f) - a.*f / b.*f > 0) || (rule.diveded2 && float(b.*f) / float(a.*f) - b.*f / a.*f > 0)))
+                    if (a.*f != 0 && b.*f != 0 && ((rule.divided && float(a.*f) / float(b.*f) - a.*f / b.*f > 0) || (rule.divided2 && float(b.*f) / float(a.*f) - b.*f / a.*f > 0)))
                     {
-                        rs_stream bigger;
                         if (throw_exception)
                             throw std::runtime_error(to_string() << "requested " << rule.a << " and " << rule.b << " settings are incompatible");
                         return false;

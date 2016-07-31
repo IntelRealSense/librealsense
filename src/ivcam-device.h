@@ -10,8 +10,6 @@
 
 namespace rsimpl
 {
-    struct cam_mode { int2 dims; std::vector<int> fps; };
-
     rs_intrinsics MakeDepthIntrinsics(const ivcam::camera_calib_params & c, const int2 & dims);
     rs_intrinsics MakeColorIntrinsics(const ivcam::camera_calib_params & c, const int2 & dims);
     void update_supported_options(uvc::device& dev,

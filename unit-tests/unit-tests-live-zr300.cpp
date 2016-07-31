@@ -155,7 +155,13 @@ TEST_CASE("ZR300 Motion Module Data Streaming", "[live] [DS-device]")
         // 4. stop data acquisition
         rs_stop_source(dev, rs_source::RS_SOURCE_MOTION_TRACKING, require_no_error());
 
+        // 5. reset previous settings for motion data handlers
+        rs_disable_motion_tracking(dev, require_no_error());
+
+
         // Validate acquired data
+
+        // Sanity Tests
         REQUIRE(accel_frames.size()>0);
         REQUIRE(gyro_frames.size()>0);
 
@@ -171,9 +177,6 @@ TEST_CASE("ZR300 Motion Module Data Streaming", "[live] [DS-device]")
         {
             REQUIRE(accel_frames[i].timestamp_data.frame_number < accel_frames[i + 1].timestamp_data.frame_number);
         }
-
-        // 5. reset previous settings formotion data handlers
-        rs_disable_motion_tracking(dev, require_no_error());
     }
 }
 

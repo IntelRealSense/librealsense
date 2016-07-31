@@ -14,21 +14,16 @@ namespace ds5 {
 
     enum class fw_cmd : uint8_t
     {
-        GVD = 0x10,
-    };
-
-    enum class FirmwareError : int32_t
-    {
-
+        GVD = 0x10
     };
 
     const uint8_t DS5_MONITOR_INTERFACE = 0x3;
     const uint8_t DS5_MOTION_MODULE_INTERRUPT_INTERFACE = 0x4;
     const uvc::extension_unit depth_xu = {};
+    const uvc::guid DS5_WIN_USB_DEVICE_GUID = { 0x08090549, 0xCE78, 0x41DC,{ 0xA0, 0xFB, 0x1B, 0xD6, 0x66, 0x94, 0xBB, 0x0C } };
 
     void claim_ds5_monitor_interface(uvc::device & device)
     {
-        const uvc::guid DS5_WIN_USB_DEVICE_GUID = {};
         claim_interface(device, DS5_WIN_USB_DEVICE_GUID, DS5_MONITOR_INTERFACE);
     }
 
