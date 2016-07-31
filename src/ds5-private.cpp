@@ -17,11 +17,6 @@ namespace ds5 {
         GVD = 0x10,
     };
 
-    enum class FirmwareError : int32_t
-    {
-
-    };
-
     const uint8_t DS5_MONITOR_INTERFACE = 0x3;
     const uint8_t DS5_MOTION_MODULE_INTERRUPT_INTERFACE = 0x4;
     const uvc::extension_unit depth_xu = {};
@@ -52,11 +47,11 @@ namespace ds5 {
         std::vector<char> gvd(1024);
         get_gvd(device, mutex, 1024, gvd.data());
         char fws[8];
-        memcpy(fws, gvd.data(), 8); // offset 0
+        memcpy(fws, gvd.data() + gvd_fields::fw_version_offset, sizeof(uint32_t)); // Four-bytes at address 0x20C
         version = std::string(std::to_string(fws[3]) + "." + std::to_string(fws[2]) + "." + std::to_string(fws[1]) + "." + std::to_string(fws[0]));
     }
 
-    void get_module_serial_string(uvc::device & device, std::timed_mutex & mutex, std::string & serial, int offset)
+    void get_module_serial_string(uvc::device & device, std::timed_mutex & mutex, std::string & serial, unsigned int offset)
     {
         std::vector<char> gvd(1024);
         get_gvd(device, mutex, 1024, gvd.data());

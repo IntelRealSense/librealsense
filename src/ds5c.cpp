@@ -45,8 +45,10 @@ namespace rsimpl
         info.name = dev_name;
 
         std::timed_mutex mutex;
-        ds5::get_module_serial_string(*device, mutex, info.serial, 8);
+        ds5::get_module_serial_string(*device, mutex, info.serial, ds5::fw_version_offset);
         ds5::get_firmware_version_string(*device, mutex, info.firmware_version);
+
+        info.nominal_depth_scale = 0.001f;
 
         info.capabilities_vector.push_back(RS_CAPABILITIES_COLOR);
         info.capabilities_vector.push_back(RS_CAPABILITIES_DEPTH);
