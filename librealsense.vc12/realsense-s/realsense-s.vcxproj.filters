@@ -82,6 +82,15 @@
     <ClCompile Include="..\..\src\ds5-private.cpp">
       <Filter>sources</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\ds5c.cpp">
+      <Filter>sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ds5d.cpp">
+      <Filter>sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ds5t.cpp">
+      <Filter>sources</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\include\librealsense\rsutil.h">
@@ -157,6 +166,15 @@
       <Filter>sources</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ds5-private.h">
+      <Filter>sources</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ds5c.h">
+      <Filter>sources</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ds5d.h">
+      <Filter>sources</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ds5t.h">
       <Filter>sources</Filter>
     </ClInclude>
   </ItemGroup>
