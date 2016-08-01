@@ -293,7 +293,14 @@ namespace rsimpl
             motion_module_control mm(device.get());
             mm.toggle_motion_module_power(true);
             mm.toggle_motion_module_events(true); //to be sure that the motion module is up
-            fisheye_intrinsic = read_fisheye_intrinsic(*device);
+            try
+            {
+                fisheye_intrinsic = read_fisheye_intrinsic(*device);
+            }
+            catch (...)
+            {
+                LOG_ERROR("Failed to read fisheye intrinsic");
+            }
             mm.toggle_motion_module_events(false);
             mm.toggle_motion_module_power(false);
 
