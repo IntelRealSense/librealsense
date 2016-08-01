@@ -57,6 +57,7 @@ namespace rsimpl
         info.capabilities_vector.push_back(RS_CAPABILITIES_COLOR);
         info.capabilities_vector.push_back(RS_CAPABILITIES_DEPTH);
         info.capabilities_vector.push_back(RS_CAPABILITIES_INFRARED);
+        info.capabilities_vector.push_back(RS_CAPABILITIES_INFRARED2);
         info.capabilities_vector.push_back(RS_CAPABILITIES_FISH_EYE);
         info.capabilities_vector.push_back(RS_CAPABILITIES_MOTION_EVENTS);
 
@@ -82,6 +83,7 @@ namespace rsimpl
 
         // Populate IR mode on subdevice 1
         info.stream_subdevices[RS_STREAM_INFRARED] = 1;
+        info.stream_subdevices[RS_STREAM_INFRARED2] = 1;
         for(auto & m : ds5t_ir_only_modes)
         {
             for(auto fps : m.fps)

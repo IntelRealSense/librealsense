@@ -675,8 +675,8 @@ TEST_CASE("DS-device verify standard UVC Controls set/get", "[live] [DS-device]"
 
     REQUIRE(rs_get_device_option(dev, RS_OPTION_R200_EMITTER_ENABLED, require_no_error()) == 0);
 
-    rs_option first = RS_OPTION_COLOR_BACKLIGHT_COMPENSATION;
-    rs_option last = RS_OPTION_COLOR_ENABLE_AUTO_WHITE_BALANCE;
+    size_t first = RS_OPTION_COLOR_BACKLIGHT_COMPENSATION;
+    size_t last = RS_OPTION_COLOR_ENABLE_AUTO_WHITE_BALANCE;
 
     std::vector<rs_option> test_options;
     std::vector<double> initial_values;
@@ -689,7 +689,7 @@ TEST_CASE("DS-device verify standard UVC Controls set/get", "[live] [DS-device]"
     modified_values.resize(test_options.size());
     verification_values.resize(test_options.size());
 
-    rs_get_device_options(dev,test_options.data(),test_options.size(),initial_values.data(), require_no_error());
+    rs_get_device_options(dev,test_options.data(),(unsigned int)test_options.size(),initial_values.data(), require_no_error());
 
     //for (size_t i=first; i<= last; i++)
     //    std::cout << "Option " << rs_option_to_string((rs_option)i) << " : initial value " << initial_values[i] <<std::endl;
@@ -705,10 +705,10 @@ TEST_CASE("DS-device verify standard UVC Controls set/get", "[live] [DS-device]"
     }
 
     // Apply all properties with the modified values
-    rs_set_device_options(dev,test_options.data(),test_options.size(),modified_values.data(), require_no_error());
+    rs_set_device_options(dev,test_options.data(), (unsigned int)test_options.size(),modified_values.data(), require_no_error());
 
     // Verify
-    rs_get_device_options(dev,test_options.data(),test_options.size(),verification_values.data(), require_no_error());
+    rs_get_device_options(dev,test_options.data(), (unsigned int)test_options.size(),verification_values.data(), require_no_error());
 
     //for (size_t i=first; i<= last; i++)
     //    std::cout << "Option " << rs_option_to_string((rs_option)i) << " Requested value = " << modified_values[i] << " Actual value = " << verification_values[i] << std::endl;

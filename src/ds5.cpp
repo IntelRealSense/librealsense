@@ -44,7 +44,7 @@ namespace rsimpl
 
     rs_stream ds5_camera::select_key_stream(const std::vector<rsimpl::subdevice_mode_selection> & selected_modes)
     {
-        // DS5t may have a different behaviour here. This is a placeholder
+        // DS5 may have a different behaviour here. This is a placeholder
         int fps[RS_STREAM_NATIVE_COUNT] = {}, max_fps = 0;
         for (const auto & m : selected_modes)
         {

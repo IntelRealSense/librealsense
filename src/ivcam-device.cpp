@@ -197,5 +197,4 @@ namespace rsimpl
     {
         return std::make_shared<rolling_timestamp_reader>();
     }
-
 } // namespace rsimpl::f200
