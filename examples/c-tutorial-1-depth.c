@@ -65,6 +65,12 @@ int main()
     int display_size = (rows + 1) * (row_lenght + 1);
 
     char *buffer = (char*)malloc(display_size * sizeof(char));
+    if (NULL == buffer)
+    {
+        printf("Failed to allocate application memory");
+        exit(EXIT_FAILURE);
+    }
+    char * out;
 
     while (1)
     {
@@ -75,7 +81,7 @@ int main()
         const uint16_t * depth_frame = (const uint16_t *)(rs_get_frame_data(dev, RS_STREAM_DEPTH, &e));
 
         /* Print a simple text-based representation of the image, by breaking it into 10x5 pixel regions and and approximating the coverage of pixels within one meter */
-        char * out = buffer;
+        out = buffer;
         int coverage[255] = { 0 }, x, y, i;
         for (y = 0; y < height; ++y)
         {

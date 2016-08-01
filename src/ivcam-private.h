@@ -210,7 +210,7 @@ namespace sr300
     // Read calibration or device state
     ivcam::camera_calib_params read_sr300_calibration(uvc::device & device, std::timed_mutex & mutex);
 
-    enum class wakeonusb_reason : unsigned char
+    enum wakeonusb_reason : unsigned char
     {
         eNone_provided = 0,    // Wake-up performed, but FW doesn't provide a comprehensive resason
         eUser_input = 1,    // Firmware recognized user input and performed system wake up accordingly
@@ -218,7 +218,7 @@ namespace sr300
         eMaxWakeOnReason
     };
 
-    enum class e_suspend_fps : uint32_t
+    enum e_suspend_fps : uint32_t
     {
         eFPS_2 = 0,
         eFPS_1,

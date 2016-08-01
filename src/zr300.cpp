@@ -314,7 +314,6 @@ namespace rsimpl
 
             // require at least Alpha FW version to run
             info.capabilities_vector.push_back({ RS_CAPABILITIES_ENUMERATION, { 1, 16, 0, 0 }, firmware_version::any(), RS_CAMERA_INFO_ADAPTER_BOARD_FIRMWARE_VERSION });
-            info.capabilities_vector.push_back({ RS_CAPABILITIES_ENUMERATION, { 1, 15, 5, 0 }, firmware_version::any(), RS_CAMERA_INFO_MOTION_MODULE_FIRMWARE_VERSION });
 
             info.stream_subdevices[RS_STREAM_FISHEYE] = 3;
             info.presets[RS_STREAM_FISHEYE][RS_PRESET_BEST_QUALITY] = { true, 640, 480, RS_FORMAT_RAW8,   60 };
@@ -345,8 +344,8 @@ namespace rsimpl
             auto fe_extrinsic = fisheye_intrinsic.mm_extrinsic;
             info.stream_poses[RS_STREAM_FISHEYE] = { reinterpret_cast<float3x3 &>(fe_extrinsic.fe_to_depth.rotation), reinterpret_cast<float3&>(fe_extrinsic.fe_to_depth.translation) };
 
-            info.capabilities_vector.push_back(RS_CAPABILITIES_FISH_EYE);
-            info.capabilities_vector.push_back(RS_CAPABILITIES_MOTION_EVENTS);
+            info.capabilities_vector.push_back({ RS_CAPABILITIES_FISH_EYE, { 1, 15, 5, 0 }, firmware_version::any(), RS_CAMERA_INFO_MOTION_MODULE_FIRMWARE_VERSION });
+            info.capabilities_vector.push_back({ RS_CAPABILITIES_MOTION_EVENTS, { 1, 15, 5, 0 }, firmware_version::any(), RS_CAMERA_INFO_MOTION_MODULE_FIRMWARE_VERSION });
         }
         
         return std::make_shared<zr300_camera>(device, info, fisheye_intrinsic);

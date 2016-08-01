@@ -171,7 +171,7 @@ namespace rsimpl
         int stream_request::* field;
         int delta, delta2;
         rs_stream bigger;       // if this equals to a or b, this stream must have field value bigger then the other stream
-        bool diveded, diveded2; // devided = a must devide b; devided2 = b must devide a
+        bool divides, divides2; // divides = a must divide b; divides2 = b must divide a
         bool same_format;
     };
 
@@ -183,7 +183,9 @@ namespace rsimpl
 
     struct data_polling_request
     {
-        bool        enabled = false;
+        bool        enabled;
+        
+        data_polling_request(): enabled(false) {};
     };
 
     class firmware_version
@@ -322,10 +324,10 @@ namespace rsimpl
         frame_callback(rs_device * dev, void(*on_frame)(rs_device *, rs_frame_ref *, void *), void * user) : fptr(on_frame), user(user), device(dev) {}
 
         operator bool() { return fptr != nullptr; }
-        void on_frame (rs_device * device, rs_frame_ref * frame) override { 
+        void on_frame (rs_device * dev, rs_frame_ref * frame) override { 
             if (fptr)
             {
-                try { fptr(device, frame, user); } catch (...) {}
+                try { fptr(dev, frame, user); } catch (...) {}
             }
         }
         void release() override { delete this; }
@@ -398,7 +400,7 @@ namespace rsimpl
         const static_device_info            info;
         stream_request                      requests[RS_STREAM_NATIVE_COUNT];                       // Modified by enable/disable_stream calls
         frame_callback_ptr                  callbacks[RS_STREAM_NATIVE_COUNT];                      // Modified by set_frame_callback calls
-        data_polling_request                data_requests;                                          // Modified by enable/disable_events calls
+        data_polling_request                data_request;                                           // Modified by enable/disable_events calls
         motion_callback_ptr                 motion_callback{ nullptr, [](rs_motion_callback*){} };  // Modified by set_events_callback calls
         timestamp_callback_ptr              timestamp_callback{ nullptr, [](rs_timestamp_callback*){} };
         float depth_scale;                                              // Scale of depth values
