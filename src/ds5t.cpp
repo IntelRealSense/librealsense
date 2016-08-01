@@ -7,8 +7,6 @@
 
 namespace rsimpl
 {
-    struct cam_mode { int2 dims; std::vector<int> fps; };
-
     static const cam_mode ds5t_fisheye_modes[] = {
         {{ 640, 480}, {30}},
         {{ 640, 480}, {60}},

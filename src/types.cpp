@@ -256,7 +256,6 @@ namespace rsimpl
         }
         else
         {
-            
             // Otherwise unpack one row at a time
             assert(mode.pf.plane_count == 1); // Can't unpack planar formats row-by-row (at least not with the current architecture, would need to pass multiple source ptrs to unpack)
             for(int i=0; i<unpack_height; ++i)

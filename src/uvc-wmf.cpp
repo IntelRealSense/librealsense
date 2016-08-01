@@ -1153,7 +1153,7 @@ namespace rsimpl
                 std::shared_ptr<device> dev;
                 for(auto & d : devices)
                 {
-                    if(d->vid == vid && d->pid == pid && d->unique_id == unique_id)
+                    if((d->vid == vid) && (d->pid == pid) && (d->unique_id == unique_id))
                     {
                         dev = d;
                     }
@@ -1164,11 +1164,11 @@ namespace rsimpl
                     devices.push_back(dev);
                 }
 
-                size_t subdevice_index = mi/2;
+                size_t subdevice_index = (mi+1)/2;	// Patch TODO - need to be refactored  Evgeni
                 if(subdevice_index >= dev->subdevices.size()) dev->subdevices.resize(subdevice_index+1);
 
                 dev->subdevices[subdevice_index].reader_callback = new reader_callback(dev, static_cast<int>(subdevice_index));
-                dev->subdevices[subdevice_index].mf_activate = pDevice;                
+                dev->subdevices[subdevice_index].mf_activate = pDevice;
                 dev->subdevices[subdevice_index].vid = vid;
                 dev->subdevices[subdevice_index].pid = pid;
             }
