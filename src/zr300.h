@@ -99,7 +99,7 @@ namespace rsimpl
         IMU_intrinsic imu_intrinsic;
 
     };
-#pragma pop
+#pragma pack(pop)
 
     class zr300_camera final : public ds::ds_device
     {

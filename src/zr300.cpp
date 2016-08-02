@@ -292,8 +292,8 @@ namespace rsimpl
             zr300::claim_motion_module_interface(*device);
             motion_module_control mm(device.get());
             mm.toggle_motion_module_power(true);
-            mm.toggle_motion_module_events(true); //to be sure that the motion module is up
-
+            mm.toggle_motion_module_events(true); //wait for the motion module start up (300 msec)
+            mm.toggle_motion_module_events(false); //then deactivate events generation
             try
             {
                 fisheye_intrinsic = read_fisheye_intrinsic(*device);
@@ -304,7 +304,6 @@ namespace rsimpl
                 LOG_ERROR("Failed to read fisheye intrinsic");
             }
 
-            mm.toggle_motion_module_events(false);
             mm.toggle_motion_module_power(false);
 
             rs_intrinsics rs_intrinsics = fisheye_intrinsic.fe_intrinsic;
@@ -347,7 +346,10 @@ namespace rsimpl
             info.capabilities_vector.push_back({ RS_CAPABILITIES_FISH_EYE, { 1, 15, 5, 0 }, firmware_version::any(), RS_CAMERA_INFO_MOTION_MODULE_FIRMWARE_VERSION });
             info.capabilities_vector.push_back({ RS_CAPABILITIES_MOTION_EVENTS, { 1, 15, 5, 0 }, firmware_version::any(), RS_CAMERA_INFO_MOTION_MODULE_FIRMWARE_VERSION });
         }
-        
+        else
+        {
+            LOG_ERROR("Motion module capabilities were disabled due to failure to aquire intrinsic");
+        }
         return std::make_shared<zr300_camera>(device, info, fisheye_intrinsic);
     }
 }
