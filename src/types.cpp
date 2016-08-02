@@ -164,6 +164,7 @@ namespace rsimpl
         CASE(FISHEYE_COLOR_GAIN)
         CASE(FISHEYE_STROBE)
         CASE(FISHEYE_EXT_TRIG)
+        CASE(DS5_LASER_POWER)
         default: assert(!is_valid(value)); return unknown;
         }
         #undef CASE

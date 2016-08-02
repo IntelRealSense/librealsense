@@ -55,6 +55,7 @@ const uint8_t IVCAM_COLOR_AUTO_FLICKER          = 2;
 const uint8_t IVCAM_COLOR_ERROR                 = 3;
 const uint8_t IVCAM_COLOR_EXPOSURE_GRANULAR     = 4;
 
+
 namespace rsimpl
 {
     namespace hw_monitor

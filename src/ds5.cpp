@@ -21,18 +21,43 @@ namespace rsimpl
         {
             if(uvc::is_pu_control(options[i]))
             {
-                uvc::set_pu_control_with_retry(get_device(), 2, options[i], static_cast<int>(values[i]));
+                if (supports(RS_CAPABILITIES_COLOR))
+                    uvc::set_pu_control_with_retry(get_device(), 2, options[i], static_cast<int>(values[i]));
+                else
+                    throw std::logic_error(to_string() << __FUNCTION__ << " Option " << options[i] << " must be processed by a concrete class");
+                    throw std::logic_error(to_string() << get_name() << " has no CCD sensor, the following is not supported: " << options[i]);
             }
         }
     }
 
+//    void ds5_camera::get_options(const rs_option options[], size_t count, double values[])
+//    {
+//        for (size_t i = 0; i<count; ++i)
+//        {
+//            if(uvc::is_pu_control(options[i]))
+//            {
+//                values[i] = uvc::get_pu_control(get_device(), 2, options[i]);
+//            }
+//        }
+//    }
+
     void ds5_camera::get_options(const rs_option options[], size_t count, double values[])
     {
-        for (size_t i = 0; i<count; ++i)
+        for (size_t i = 0; i < count; ++i)
         {
-            if(uvc::is_pu_control(options[i]))
+            LOG_INFO("Reading option " << options[i]);
+
+            if (uvc::is_pu_control(options[i]))
+                throw std::logic_error(to_string() << __FUNCTION__ << " Option " << options[i] << " must be processed by a concrete class");
+
+            uint8_t val = 0;
+            switch (options[i])
             {
-                values[i] = uvc::get_pu_control(get_device(), 2, options[i]);
+                case RS_OPTION_DS5_LASER_POWER:           ds5::get_laser_power(get_device(), val); values[i] = val; break;
+                default:
+                    LOG_WARNING("Cannot get " << options[i] << " on " << get_name());
+                    throw std::logic_error("Option unsupported");
+                    break;
             }
         }
     }

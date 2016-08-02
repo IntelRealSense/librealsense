@@ -156,7 +156,8 @@ namespace rs
         r200_fisheye_color_exposure                     = 69,
         r200_fisheye_color_gain                         = 70,
         r200_fisheye_strobe                             = 71,
-        r200_fisheye_ext_trig                           = 72
+        r200_fisheye_ext_trig                           = 72,
+        ds5_laser_power                                 = 73        /* TODO : Replace DS5 with TBD */
     };
 
     enum class source : uint8_t

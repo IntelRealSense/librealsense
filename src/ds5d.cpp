@@ -69,6 +69,8 @@ namespace rsimpl
             info.presets[RS_STREAM_INFRARED2][i] = {true, 640, 480, RS_FORMAT_Y8, 30};
         }
 
+        info.options.push_back({ RS_OPTION_DS5_LASER_POWER });
+
         return info;
     }
 
@@ -87,6 +89,12 @@ namespace rsimpl
     void ds5d_camera::get_options(const rs_option options[], size_t count, double values[])
     {
         ds5_camera::get_options(options, count, values);
+    }
+
+    bool ds5d_camera::supports_option(rs_option option) const
+    {
+        // DS5d doesn't have CCD camera, therfore it doesn't support standard UVC (PU) controls at this stage
+        return (option == RS_OPTION_DS5_LASER_POWER)  /*|| rs_device_base::supports_option(option)*/;
     }
 
     std::shared_ptr<rs_device> make_ds5d_active_device(std::shared_ptr<uvc::device> device)
