@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
-VisualStudioVersion = 14.0.25123.0
+VisualStudioVersion = 14.0.25420.1
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "realsense", "realsense\realsense.vcxproj", "{1AE4CEB5-9A0B-4B9F-9505-824FD56BB41F}"
 EndProject
@@ -127,6 +127,11 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "unit-tests-live-lr200", "un
 	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "unit-tests-live-zr300", "unit-tests-live-zr300\unit-tests-live-zr300.vcxproj", "{036423B5-EDC7-4681-9282-373DE5821843}"
+	ProjectSection(ProjectDependencies) = postProject
+		{1AE4CEB5-9A0B-4B9F-9505-824FD56BB41F} = {1AE4CEB5-9A0B-4B9F-9505-824FD56BB41F}
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "unit-tests-live-ds5", "unit-tests-live-ds5\unit-tests-live-ds5.vcxproj", "{0364A3F5-E0C7-46A1-9C82-343D05AB1843}"
 	ProjectSection(ProjectDependencies) = postProject
 		{1AE4CEB5-9A0B-4B9F-9505-824FD56BB41F} = {1AE4CEB5-9A0B-4B9F-9505-824FD56BB41F}
 	EndProjectSection
@@ -363,6 +368,14 @@ Global
 		{036423B5-EDC7-4681-9282-373DE5821843}.Release|Win32.Build.0 = Release|Win32
 		{036423B5-EDC7-4681-9282-373DE5821843}.Release|x64.ActiveCfg = Release|x64
 		{036423B5-EDC7-4681-9282-373DE5821843}.Release|x64.Build.0 = Release|x64
+		{0364A3F5-E0C7-46A1-9C82-343D05AB1843}.Debug|Win32.ActiveCfg = Debug|Win32
+		{0364A3F5-E0C7-46A1-9C82-343D05AB1843}.Debug|Win32.Build.0 = Debug|Win32
+		{0364A3F5-E0C7-46A1-9C82-343D05AB1843}.Debug|x64.ActiveCfg = Debug|x64
+		{0364A3F5-E0C7-46A1-9C82-343D05AB1843}.Debug|x64.Build.0 = Debug|x64
+		{0364A3F5-E0C7-46A1-9C82-343D05AB1843}.Release|Win32.ActiveCfg = Release|Win32
+		{0364A3F5-E0C7-46A1-9C82-343D05AB1843}.Release|Win32.Build.0 = Release|Win32
+		{0364A3F5-E0C7-46A1-9C82-343D05AB1843}.Release|x64.ActiveCfg = Release|x64
+		{0364A3F5-E0C7-46A1-9C82-343D05AB1843}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -396,5 +409,6 @@ Global
 		{227EA8A6-72EE-4E5B-A348-EC685FD20718} = {9CE5B9D5-05C7-4288-99B3-13ABFBE7B60C}
 		{8B1DC091-609F-4783-A2C2-CA0F7B5B644F} = {EA2793EE-C590-43D0-A11D-02F93DA139AC}
 		{036423B5-EDC7-4681-9282-373DE5821843} = {EA2793EE-C590-43D0-A11D-02F93DA139AC}
+		{0364A3F5-E0C7-46A1-9C82-343D05AB1843} = {EA2793EE-C590-43D0-A11D-02F93DA139AC}
 	EndGlobalSection
 EndGlobal

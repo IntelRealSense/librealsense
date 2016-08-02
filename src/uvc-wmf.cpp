@@ -428,7 +428,7 @@ namespace rsimpl
                 GUID node_type;
                 check("get_NodeType", ks_topology_info->get_NodeType(xu.node, &node_type));
                 const GUID KSNODETYPE_DEV_SPECIFIC_LOCAL{0x941C7AC0L, 0xC559, 0x11D0, {0x8A, 0x2B, 0x00, 0xA0, 0xC9, 0x25, 0x5A, 0xC1}};
-                if(node_type != KSNODETYPE_DEV_SPECIFIC_LOCAL) throw std::runtime_error(to_string() << "Invalid extension unit node ID: " << xu.node);
+                if ((KSNODETYPE_DEV_SPECIFIC_LOCAL != node_type) && (KSNODETYPE_DEV_SPECIFIC != node_type)) throw std::runtime_error(to_string() << "Invalid extension unit node ID: " << xu.node);
 
                 com_ptr<IUnknown> unknown;
                 check("CreateNodeInstance", ks_topology_info->CreateNodeInstance(xu.node, IID_IUnknown, (LPVOID *)&unknown));

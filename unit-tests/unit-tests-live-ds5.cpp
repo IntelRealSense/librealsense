@@ -5,15 +5,13 @@
 // This set of tests is valid only for the R200 camera //
 /////////////////////////////////////////////////////////
 
-#define CATCH_CONFIG_MAIN
-
-#include "catch/catch.hpp"
-
-#include "librealsense/rs.hpp"
-#include "unit-tests-live-ds-common.h"
-
 #include <climits>
 #include <sstream>
+
+#define CATCH_CONFIG_MAIN
+
+#include "unit-tests-live-ds-common.h"
+#include "librealsense/rs.hpp"
 
 
 TEST_CASE("DS5 devices support all required options", "[live] [DS-device]")
@@ -111,7 +109,7 @@ TEST_CASE("DS5 laser power control verification", "[live] [DS-device]")
     dev->get_options(&opt,1, &lsr_init_power);
     INFO("Initial laser power value obtained from hardware is " << lsr_init_power);
 
-    for (uint8_t i =0; i < 0xff; i++)
+    for (uint8_t i =0; i < 100; i++) // Laser power is specified in % of max power
     {
         val = i;
         try
@@ -127,4 +125,3 @@ TEST_CASE("DS5 laser power control verification", "[live] [DS-device]")
         }
     }
 }
-
