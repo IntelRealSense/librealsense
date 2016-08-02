@@ -496,12 +496,12 @@ namespace rsimpl {
             ds::xu_write(device, fisheye_xu, ds::control::fisheye_xu_strobe, &strobe, sizeof(strobe));
         }
 
-        uint8_t get_exposure(const uvc::device & device)
+        uint16_t get_exposure(const uvc::device & device)
         {
-            return ds::xu_read<uint32_t>(device, fisheye_xu, ds::control::fisheye_exposure);
+            return ds::xu_read<uint16_t>(device, fisheye_xu, ds::control::fisheye_exposure);
         }
 
-        void set_exposure(uvc::device & device, uint32_t exposure)
+        void set_exposure(uvc::device & device, uint16_t exposure)
         {
             ds::xu_write(device, fisheye_xu, ds::control::fisheye_exposure, &exposure, sizeof(exposure));
         }

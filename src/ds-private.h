@@ -231,8 +231,8 @@ namespace rsimpl
         void set_strobe(uvc::device & device, uint8_t strobe);
         uint8_t get_ext_trig(const uvc::device & device);
         void set_ext_trig(uvc::device & device, uint8_t ext_trig);
-        uint8_t get_exposure(const uvc::device & device);
-        void set_exposure(uvc::device & device, uint32_t exposure);
+        uint16_t get_exposure(const uvc::device & device);
+        void set_exposure(uvc::device & device, uint16_t exposure);
 
     }
 }

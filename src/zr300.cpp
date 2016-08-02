@@ -317,7 +317,7 @@ namespace rsimpl
             info.subdevice_modes.push_back({ 3, { 640, 480 }, pf_raw8, 60, rs_intrinsics, { /*TODO:ask if we need rect_modes*/ }, { 0 } });
             info.subdevice_modes.push_back({ 3, { 640, 480 }, pf_raw8, 30, rs_intrinsics, {/*TODO:ask if we need rect_modes*/ }, { 0 } });
 
-            info.options.push_back({ RS_OPTION_FISHEYE_COLOR_EXPOSURE, 0, 500, 1, 10 });
+            info.options.push_back({ RS_OPTION_FISHEYE_COLOR_EXPOSURE, 40, 331, 1, 40 });
             info.options.push_back({ RS_OPTION_FISHEYE_COLOR_GAIN });
             info.options.push_back({ RS_OPTION_FISHEYE_STROBE, 0, 1, 1, 0 });
             info.options.push_back({ RS_OPTION_FISHEYE_EXT_TRIG, 0, 1, 1, 0 });
