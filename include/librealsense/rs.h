@@ -58,7 +58,8 @@ typedef enum rs_stream
 typedef enum rs_frame_metadata
 {
     RS_FRAME_METADATA_EXPOSURE = 0,
-    RS_FRAME_METADATA_COUNT    = 1,
+    RS_FRAME_METADATA_GAIN     = 1,
+    RS_FRAME_METADATA_COUNT    = 2,
     RS_FRAME_METADATA_MAX_ENUM = 0x7FFFFFFF
 } rs_frame_metadata;
 

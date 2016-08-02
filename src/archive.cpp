@@ -302,6 +302,9 @@ double frame_archive::frame::get_frame_metadata(rs_frame_metadata frame_metadata
     case RS_FRAME_METADATA_EXPOSURE:
         return additional_data.exposure_value;
         break;
+    case RS_FRAME_METADATA_GAIN:
+        return additional_data.gain_value;
+        break;
     default:
         throw std::logic_error("unsupported metadata type");
         break;

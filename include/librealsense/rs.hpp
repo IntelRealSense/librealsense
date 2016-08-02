@@ -32,6 +32,7 @@ namespace rs
     enum class frame_metadata
     {
         exposure = 0,
+        gain     = 1
     };
 
     enum class stream : int32_t
