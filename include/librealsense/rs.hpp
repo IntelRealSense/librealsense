@@ -162,13 +162,18 @@ namespace rs
         zr300_accelerometer_range                       = 66,
         zr300_motion_module_time_seed                   = 67,
         zr300_motion_module_active                      = 68,
-        r200_fisheye_color_exposure                     = 69,
-        r200_fisheye_color_gain                         = 70,
-        r200_fisheye_strobe                             = 71,
-        r200_fisheye_ext_trig                           = 72,
+        fisheye_color_exposure                          = 69,
+        fisheye_color_gain                              = 70,
+        fisheye_strobe                                  = 71,
+        fisheye_ext_trig                                = 72,
         frames_queue_size                               = 73,
         events_queue_size                               = 74,
-        max_timestamp_latency                           = 75
+        max_timestamp_latency                           = 75,
+        fisheye_color_auto_exposure                     = 76,
+        fisheye_color_auto_exposure_mode                = 77,
+        fisheye_color_auto_exposure_rate                = 78,
+        fisheye_color_auto_exposure_sample_rate         = 79,
+        fisheye_color_auto_exposure_skip_frames         = 80
     };
 
     enum class blob_type {

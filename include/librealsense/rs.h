@@ -213,7 +213,12 @@ typedef enum rs_option
     RS_OPTION_FRAMES_QUEUE_SIZE                               = 73,
     RS_OPTION_EVENTS_QUEUE_SIZE                               = 74,
     RS_OPTION_MAX_TIMESTAMP_LATENCY                           = 75,
-    RS_OPTION_COUNT                                           = 76,
+    RS_OPTION_FISHEYE_COLOR_AUTO_EXPOSURE                     = 76,
+    RS_OPTION_FISHEYE_COLOR_AUTO_EXPOSURE_MODE                = 77,
+    RS_OPTION_FISHEYE_COLOR_AUTO_EXPOSURE_RATE                = 78,
+    RS_OPTION_FISHEYE_COLOR_AUTO_EXPOSURE_SAMPLE_RATE         = 79,
+    RS_OPTION_FISHEYE_COLOR_AUTO_EXPOSURE_SKIP_FRAMES         = 80,
+    RS_OPTION_COUNT                                           = 81,
     RS_OPTION_MAX_ENUM = 0x7FFFFFFF
 } rs_option;
 

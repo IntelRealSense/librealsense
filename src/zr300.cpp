@@ -62,9 +62,14 @@ namespace rsimpl
 
             switch (options[i])
             {
-            case RS_OPTION_FISHEYE_STROBE:                  zr300::set_strobe(get_device(), static_cast<uint8_t>(values[i])); break;
-            case RS_OPTION_FISHEYE_EXT_TRIG:                zr300::set_ext_trig(get_device(), static_cast<uint8_t>(values[i])); break;
-            case RS_OPTION_FISHEYE_COLOR_EXPOSURE:          zr300::set_exposure(get_device(), static_cast<uint8_t>(values[i])); break;
+            case RS_OPTION_FISHEYE_STROBE:                            zr300::set_strobe(get_device(), static_cast<uint8_t>(values[i])); break;
+            case RS_OPTION_FISHEYE_EXT_TRIG:                          zr300::set_ext_trig(get_device(), static_cast<uint8_t>(values[i])); break;
+            case RS_OPTION_FISHEYE_COLOR_EXPOSURE:                    zr300::set_exposure(get_device(), static_cast<uint8_t>(values[i])); break;
+            case RS_OPTION_FISHEYE_COLOR_AUTO_EXPOSURE:               fisheye_auto_exposure_state.set_auto_exposure_state(RS_OPTION_FISHEYE_COLOR_AUTO_EXPOSURE, values[i]); break;
+            case RS_OPTION_FISHEYE_COLOR_AUTO_EXPOSURE_MODE:          fisheye_auto_exposure_state.set_auto_exposure_state(RS_OPTION_FISHEYE_COLOR_AUTO_EXPOSURE_MODE, values[i]); break;
+            case RS_OPTION_FISHEYE_COLOR_AUTO_EXPOSURE_RATE:          fisheye_auto_exposure_state.set_auto_exposure_state(RS_OPTION_FISHEYE_COLOR_AUTO_EXPOSURE_RATE, values[i]); break;
+            case RS_OPTION_FISHEYE_COLOR_AUTO_EXPOSURE_SAMPLE_RATE:   fisheye_auto_exposure_state.set_auto_exposure_state(RS_OPTION_FISHEYE_COLOR_AUTO_EXPOSURE_SAMPLE_RATE, values[i]); break;
+            case RS_OPTION_FISHEYE_COLOR_AUTO_EXPOSURE_SKIP_FRAMES:   fisheye_auto_exposure_state.set_auto_exposure_state(RS_OPTION_FISHEYE_COLOR_AUTO_EXPOSURE_SKIP_FRAMES, values[i]); break;
 
             case RS_OPTION_ZR300_GYRO_BANDWIDTH:            mm_cfg_writer.set(&motion_module::mm_config::gyro_bandwidth, (uint8_t)values[i]); break;
             case RS_OPTION_ZR300_GYRO_RANGE:                mm_cfg_writer.set(&motion_module::mm_config::gyro_range, (uint8_t)values[i]); break;
@@ -106,9 +111,14 @@ namespace rsimpl
             switch(options[i])
             {
 
-            case RS_OPTION_FISHEYE_STROBE:                  values[i] = zr300::get_strobe        (dev); break;
-            case RS_OPTION_FISHEYE_EXT_TRIG:                values[i] = zr300::get_ext_trig      (dev); break;
-            case RS_OPTION_FISHEYE_COLOR_EXPOSURE:          values[i] = zr300::get_exposure      (dev); break;
+            case RS_OPTION_FISHEYE_STROBE:                            values[i] = zr300::get_strobe        (dev); break;
+            case RS_OPTION_FISHEYE_EXT_TRIG:                          values[i] = zr300::get_ext_trig      (dev); break;
+            case RS_OPTION_FISHEYE_COLOR_EXPOSURE:                    values[i] = zr300::get_exposure      (dev); break;
+            case RS_OPTION_FISHEYE_COLOR_AUTO_EXPOSURE:               values[i] = get_auto_exposure_state(RS_OPTION_FISHEYE_COLOR_AUTO_EXPOSURE); break;
+            case RS_OPTION_FISHEYE_COLOR_AUTO_EXPOSURE_MODE:          values[i] = get_auto_exposure_state(RS_OPTION_FISHEYE_COLOR_AUTO_EXPOSURE_MODE); break;
+            case RS_OPTION_FISHEYE_COLOR_AUTO_EXPOSURE_RATE:          values[i] = get_auto_exposure_state(RS_OPTION_FISHEYE_COLOR_AUTO_EXPOSURE_RATE); break;
+            case RS_OPTION_FISHEYE_COLOR_AUTO_EXPOSURE_SAMPLE_RATE:   values[i] = get_auto_exposure_state(RS_OPTION_FISHEYE_COLOR_AUTO_EXPOSURE_SAMPLE_RATE); break;
+            case RS_OPTION_FISHEYE_COLOR_AUTO_EXPOSURE_SKIP_FRAMES:   values[i] = get_auto_exposure_state(RS_OPTION_FISHEYE_COLOR_AUTO_EXPOSURE_SKIP_FRAMES); break;
 
             case RS_OPTION_ZR300_MOTION_MODULE_ACTIVE:      values[i] = is_motion_tracking_active(); break;
 
@@ -146,7 +156,15 @@ namespace rsimpl
         }
     }
 
+    unsigned zr300_camera::get_auto_exposure_state(rs_option option)
+    {
+        return fisheye_auto_exposure_state.get_auto_exposure_state(option);
+    }
 
+    void zr300_camera::set_auto_exposure_state(rs_option option, double value)
+    {
+        fisheye_auto_exposure_state.set_auto_exposure_state(option, value);
+    }
 
     void zr300_camera::toggle_motion_module_power(bool on)
     {        
@@ -317,10 +335,15 @@ namespace rsimpl
             info.subdevice_modes.push_back({ 3, { 640, 480 }, pf_raw8, 60, rs_intrinsics, { /*TODO:ask if we need rect_modes*/ }, { 0 } });
             info.subdevice_modes.push_back({ 3, { 640, 480 }, pf_raw8, 30, rs_intrinsics, {/*TODO:ask if we need rect_modes*/ }, { 0 } });
 
-            info.options.push_back({ RS_OPTION_FISHEYE_COLOR_EXPOSURE, 40, 331, 1, 40 });
-            info.options.push_back({ RS_OPTION_FISHEYE_COLOR_GAIN });
-            info.options.push_back({ RS_OPTION_FISHEYE_STROBE, 0, 1, 1, 0 });
-            info.options.push_back({ RS_OPTION_FISHEYE_EXT_TRIG, 0, 1, 1, 0 });
+            info.options.push_back({ RS_OPTION_FISHEYE_COLOR_EXPOSURE,                  40, 331, 1,  40 });
+            info.options.push_back({ RS_OPTION_FISHEYE_COLOR_GAIN                                       });
+            info.options.push_back({ RS_OPTION_FISHEYE_STROBE,                          0,  1,   1,  0  });
+            info.options.push_back({ RS_OPTION_FISHEYE_EXT_TRIG,                        0,  1,   1,  0  });
+            info.options.push_back({ RS_OPTION_FISHEYE_COLOR_AUTO_EXPOSURE,             0,  1,   1,  0  });
+            info.options.push_back({ RS_OPTION_FISHEYE_COLOR_AUTO_EXPOSURE_MODE,        0,  2,   1,  0  });
+            info.options.push_back({ RS_OPTION_FISHEYE_COLOR_AUTO_EXPOSURE_RATE,        50, 60,  10, 60 });
+            info.options.push_back({ RS_OPTION_FISHEYE_COLOR_AUTO_EXPOSURE_SAMPLE_RATE, 1,  3,   1,  1  });
+            info.options.push_back({ RS_OPTION_FISHEYE_COLOR_AUTO_EXPOSURE_SKIP_FRAMES, 1,  3,   1,  1  });
 
             info.options.push_back({ RS_OPTION_ZR300_GYRO_BANDWIDTH,            (int)mm_gyro_bandwidth::gyro_bw_default,    (int)mm_gyro_bandwidth::gyro_bw_200hz,  1,  (int)mm_gyro_bandwidth::gyro_bw_200hz });
             info.options.push_back({ RS_OPTION_ZR300_GYRO_RANGE,                (int)mm_gyro_range::gyro_range_default,     (int)mm_gyro_range::gyro_range_1000,    1,  (int)mm_gyro_range::gyro_range_1000 });
