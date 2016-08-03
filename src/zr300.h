@@ -22,7 +22,7 @@ namespace rsimpl
         byte size;
         byte CRC32[4];
     };
-
+#pragma pack(push, 1)
     struct serial_number
     {
         IMU_version ver;
@@ -34,20 +34,27 @@ namespace rsimpl
     struct fisheye_intrinsic 
     {
         IMU_version ver;
-        big_endian<float>  kf[9];
-        big_endian<float>  distf[5];
+        float kf[9];
+        float distf[5];
         byte reserved[191];
         
-        operator rs_intrinsics () const { return{ 640, 480, kf[2], kf[5], kf[0], kf[4], RS_DISTORTION_FTHETA, { 0, 0, 0, 0, 0 } }; }
+        operator rs_intrinsics () const
+        {
+            return{ 640, 480, kf[2], kf[4], kf[0], kf[4], RS_DISTORTION_FTHETA, { distf[0], 0, 0, 0, 0 } };
+        }
     };
+
 
     struct mm_extrinsic
     {
-        big_endian<float> rotation[9];
-        big_endian<float> translation[3];
+        float rotation[9];
+        float translation[3];
 
-        operator rs_extrinsics () const { return{   { rotation[0], rotation[1], rotation[2], rotation[3], rotation[4], rotation[5], rotation[6], rotation[7], rotation[8] }, 
-                                                    { translation[0], translation[1], translation[2] } };
+        operator rs_extrinsics () const {
+            return{ {   rotation[0], rotation[1], rotation[2],
+                        rotation[3], rotation[4], rotation[5],
+                        rotation[6], rotation[7], rotation[8] },
+                      { translation[0], translation[1], translation[2] } };
         }
     };
     struct IMU_extrinsic
@@ -61,12 +68,12 @@ namespace rsimpl
 
     struct MM_intrinsics
     {
-        big_endian<float>  bias_x;
-        big_endian<float>  bias_y;
-        big_endian<float>  bias_z;
-        big_endian<float>  scale_x;
-        big_endian<float>  scale_y;
-        big_endian<float>  scale_z;
+        float bias_x;
+        float bias_y;
+        float bias_z;
+        float scale_x;
+        float scale_y;
+        float scale_z;
 
         operator rs_motion_device_intrinsics() const{
             return{ { bias_x, bias_y, bias_z }, { scale_x, scale_y, scale_z } };
@@ -83,6 +90,7 @@ namespace rsimpl
         };
     };
 
+
     struct motion_module_calibration
     {
         serial_number sn;
@@ -91,6 +99,7 @@ namespace rsimpl
         IMU_intrinsic imu_intrinsic;
 
     };
+#pragma pack(pop)
 
     class zr300_camera final : public ds::ds_device
     {
@@ -109,7 +118,7 @@ namespace rsimpl
         void get_option_range(rs_option option, double & min, double & max, double & step, double & def) override;
         void set_options(const rs_option options[], size_t count, const double values[]) override;
         void get_options(const rs_option options[], size_t count, double values[]) override;
-        void send_blob_to_device(rs_blob_type type, void * data, int size);
+        void send_blob_to_device(rs_blob_type type, void * data, size_t size) override;
 
         void start_motion_tracking() override;
         void stop_motion_tracking() override;

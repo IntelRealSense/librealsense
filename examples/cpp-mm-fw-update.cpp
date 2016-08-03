@@ -17,7 +17,7 @@
 
 int main() try
 {
-    rs::log_to_console(rs::log_severity::warn);
+    rs::log_to_console(rs::log_severity::info);
 
     // Create a context object. This object owns the handles to all connected realsense devices.
     rs::context ctx;
@@ -36,11 +36,12 @@ int main() try
     {
         printf("Motion Module FW will be updated to the content of fw.bin in working directory \n");
         auto f = fopen("fw.bin", "rb");
-        if (!f) throw std::runtime_error("fw.bin not found in working directory!\n");
-        uint8_t firmware[65535];
-        auto numRead = fread(firmware, 1, 65535, f);
+        if (!f) throw std::runtime_error("fw.bin not found in working directory, process aborted\n");
+        std::vector<uint8_t> firmware;
+        firmware.resize(0xFFFF);    // 64 kb is required
+        auto numRead = fread(firmware.data(), 1, 0xFFFF, f);
         fclose(f);
-        dev->send_blob_to_device(rs::blob_type::motion_module_firmware_update, firmware, numRead);
+        dev->send_blob_to_device(rs::blob_type::motion_module_firmware_update, firmware.data(), numRead);
 
         printf("\nMotion Module FW was succesfully updated");
     }

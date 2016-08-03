@@ -93,7 +93,7 @@ namespace rsimpl
             mm_accel_bandwidth  accel_bandwidth;
         };
 
-        #define FW_IMAGE_PACKET_PAYLOAD_LEN (128)
+        static const uint16_t FW_IMAGE_PACKET_PAYLOAD_LEN = 128;
 
         struct fw_image_packet {
             uint8_t op_code;
@@ -185,7 +185,7 @@ namespace rsimpl
             void switch_to_iap();
             void switch_to_operational();
 
-            void firmware_upgrade(void *data, int size);
+            void firmware_upgrade(void *data, size_t size);
 
         private:
             motion_module_control(const motion_module_control&);
@@ -196,7 +196,7 @@ namespace rsimpl
 
             void i2c_iap_write(uint16_t slave_address, uint8_t *buffer, uint16_t len);
 
-            void write_firmware(uint8_t *data, int size);
+            void write_firmware(uint8_t *data, size_t size);
 
             void impose(mm_request request, bool on);
             void enter_state(mm_state new_state);

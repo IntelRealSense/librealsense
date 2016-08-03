@@ -215,21 +215,12 @@ namespace rsimpl
             } while (retries < num_retries);
             return;
         }
-        void check_eeprom_data_ready(int IRB_opcode, uvc::device & device)
-        {
-            auto value = 0;
-            i2c_read_reg(IRB_opcode, device, 0x42, 0x40, 4, (byte*)&value);
-            if ((value & 0x8) != 0x8)
-            {
-                throw std::runtime_error(to_string() << "EEPRom Error" << value);
-            }
-        }
 
         void check_eeprom_read_write_status(int IRB_opcode, uvc::device & device)
         {
-            auto value = 0;
-            i2c_read_reg(IRB_opcode, device, 0x42, 0x70, 4, (byte*)&value);
-            if ((value & 0x100) != 0x100)
+            uint32_t value = 0;
+            i2c_read_reg(IRB_opcode, device, 0x42, 0x70, sizeof(uint32_t), (byte*)&value);
+            if (value & 0x100)
             {
                 throw std::runtime_error(to_string() << "EEPRom Error" << value);
             }
@@ -261,12 +252,12 @@ namespace rsimpl
 
             //expected = 0x100005
 
-            check_eeprom_data_ready(IRB_opcode, device);
+            uint32_t value = 0;
+            i2c_read_reg(IRB_opcode, device, 0x42, 0x70, sizeof(uint32_t), (byte*)&value); //clean the register
             i2c_write_reg(IWB_opcode, device, 0x42, 0x0C, command);
             check_eeprom_read_write_status(IRB_opcode, device);
-            check_eeprom_data_ready(IRB_opcode, device);
             i2c_read_reg(IRB_opcode, device, 0x42, 0xD0, size, data);
-            check_eeprom_read_write_status(IRB_opcode, device);
+            
         }
 
     }

@@ -26,7 +26,7 @@ TEST_CASE("DS5 devices support all required options", "[live] [DS-device]")
     SECTION("DS5 supports specific extended UVC controls, and nothing else")
     {
         // For each device
-        for (int i = 0; i<device_count; ++i)
+        for (int i = 0; i < device_count; ++i)
         {
             rs_device * dev = rs_get_device(ctx, 0, require_no_error());
             REQUIRE(dev != nullptr);
@@ -34,7 +34,7 @@ TEST_CASE("DS5 devices support all required options", "[live] [DS-device]")
             std::string name = dev->get_name();
             REQUIRE(std::string::npos != name.find("Intel RealSense DS5"));
 
-            for (size_t i = 0; i<RS_OPTION_COUNT; ++i)
+            for (size_t i = 0; i < RS_OPTION_COUNT; ++i)
             {
                 INFO("Checking support for " << (rs::option)i);
                 if (std::find(std::begin(supported_options), std::end(supported_options), i) != std::end(supported_options))
@@ -56,7 +56,7 @@ TEST_CASE("DS5 correctly recognizes invalid options", "[live] [DS-device]")
     REQUIRE(ctx.get_device_count() == 1);
 
     rs::device * dev = ctx.get_device(0);
-    REQUIRE(nullptr!=dev);
+    REQUIRE(nullptr != dev);
 
     std::string name = dev->get_name();
     REQUIRE(std::string::npos != name.find("Intel RealSense DS5"));
@@ -64,26 +64,26 @@ TEST_CASE("DS5 correctly recognizes invalid options", "[live] [DS-device]")
     size_t index = 0;
     double val = 0;
 
-    for (size_t i= 0; i <RS_OPTION_COUNT; i++)
+    for (size_t i = 0; i < RS_OPTION_COUNT; i++)
     {
         index = i;
         rs::option opt = (rs::option)i;
         try
         {
-            dev->get_options(&opt,1, &val);
+            dev->get_options(&opt, 1, &val);
         }
-        catch(...)
+        catch (...)
         {
-            REQUIRE(i==index); // Every invalid option queried must throw exception
+            REQUIRE(i == index); // Every invalid option queried must throw exception
         }
 
         try
         {
-            dev->set_options(&opt,1, &val);
+            dev->set_options(&opt, 1, &val);
         }
-        catch(...)
+        catch (...)
         {
-            REQUIRE(i==index); // Each invoked option must throw exception
+            REQUIRE(i == index); // Each invoked option must throw exception
         }
     }
 }
@@ -95,38 +95,30 @@ TEST_CASE("DS5 laser power control verification", "[live] [DS-device]")
     REQUIRE(ctx.get_device_count() == 1);
 
     rs::device * dev = ctx.get_device(0);
-    REQUIRE(nullptr!=dev);
+    REQUIRE(nullptr != dev);
 
     std::string name = dev->get_name();
     REQUIRE(std::string::npos != name.find("Intel RealSense DS5"));
 
     int index = 0;
-    double val = 0., res = 0.;
+    double set_val = 1., reset_val = 0., res = 0.;
 
     double lsr_init_power = 0.;
     rs::option opt = rs::option::ds5_laser_power;
 
-    double tmp = 1.;
-    dev->set_options(&opt, 1, &tmp);
-
-    return; // Evgeni
-
-    dev->get_options(&opt,1, &lsr_init_power);
+    dev->get_options(&opt, 1, &lsr_init_power);
     INFO("Initial laser power value obtained from hardware is " << lsr_init_power);
 
-    for (uint8_t i =0; i < 100; i++) // Laser power is specified in % of max power
+    for (uint8_t i = 0; i < 10; i++) // Laser power is specified in % of max power  - TODO: verify with FW
     {
-        val = i;
-        try
-        {
-            dev->set_options(&opt,1, &val);
-            dev->get_options(&opt,1, &res);
-            CHECK(val==res);
-        }
-        catch(...)
-        {
-            WARN("Test failed on input value " << i);
-            CHECK(false); // Each invoked option must throw exception
-        }
+        dev->set_options(&opt, 1, &set_val);
+        dev->get_options(&opt, 1, &res);
+        REQUIRE(set_val == res);
+
+        dev->set_options(&opt, 1, &reset_val);
+        dev->get_options(&opt, 1, &res);
+        REQUIRE(reset_val == res);
     }
+
+    dev->set_options(&opt, 1, &lsr_init_power);
 }

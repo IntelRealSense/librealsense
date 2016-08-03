@@ -159,7 +159,7 @@ public:
     const char *                                get_usb_port_id() const override;
     rs_frame_ref *                              clone_frame(rs_frame_ref * frame) override;
 
-    virtual void                                send_blob_to_device(rs_blob_type type, void * data, int size) { throw std::runtime_error("not supported!"); }
+    virtual void                                send_blob_to_device(rs_blob_type type, void * data, size_t size) { throw std::runtime_error("not supported!"); }
     static void                                 update_device_info(rsimpl::static_device_info& info);
 };
 

@@ -788,7 +788,7 @@ rs_stream rs_get_detached_frame_stream_type(const rs_frame_ref * frameset, rs_er
 * \param[in] firmware data.
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 */
-void rs_send_blob_to_device(rs_device * device, rs_blob_type type, void * data, int size, rs_error ** error);
+void rs_send_blob_to_device(rs_device * device, rs_blob_type type, void * data, size_t size, rs_error ** error);
 
 /**
 * retrieve the API version from the source code. Evaluate that the value is conformant to the established policies

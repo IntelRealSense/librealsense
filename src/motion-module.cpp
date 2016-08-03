@@ -2,6 +2,7 @@
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
 #include <mutex>
+#include <limits>       // std::numeric_limits
 #define _USE_MATH_DEFINES
 #include <math.h>
 
@@ -203,26 +204,29 @@ void motion_module_control::switch_to_operational()
     uint32_t value = -1;
 
     // write to the REG_JUMP_TO_APP register. this should return us to operational mode if all went well.
-	hw_monitor::i2c_write_reg(static_cast<int>(adaptor_board_command::IWB), *device_handle, MOTION_MODULE_CONTROL_I2C_SLAVE_ADDRESS, (int)i2c_register::REG_JUMP_TO_APP, 0x00);
+    hw_monitor::i2c_write_reg(static_cast<int>(adaptor_board_command::IWB), *device_handle, MOTION_MODULE_CONTROL_I2C_SLAVE_ADDRESS, (int)i2c_register::REG_JUMP_TO_APP, 0x00);
 
-	hw_monitor::i2c_read_reg(static_cast<int>(adaptor_board_command::IRB), *device_handle, MOTION_MODULE_CONTROL_I2C_SLAVE_ADDRESS, (int)i2c_register::REG_CURR_PWR_STATE, sizeof(uint32_t), reinterpret_cast<byte*>(&value));
+    hw_monitor::i2c_read_reg(static_cast<int>(adaptor_board_command::IRB), *device_handle, MOTION_MODULE_CONTROL_I2C_SLAVE_ADDRESS, (int)i2c_register::REG_CURR_PWR_STATE, sizeof(uint32_t), reinterpret_cast<byte*>(&value));
         
     if ((power_states)value != power_states::PWR_STATE_IAP)
         throw std::runtime_error("Unable to leave IAP state!");
 }
 
 // Write the firmware.
-void motion_module_control::write_firmware(uint8_t *data, int size)
+void motion_module_control::write_firmware(uint8_t *data, size_t size)
 {
-    int32_t length = size;
+    size_t length = size;
     uint32_t image_address = 0x8002000;
     fw_image_packet packet;
     uint8_t *data_buffer = data;
+    int percentage_completed = 0, last_val = 0;
+
 
     // we considered to be in a IAP state here. we loop through the data and send it in packets of 128 bytes.
     while(length > 0)
     {
-        uint16_t payload_length = (length > FW_IMAGE_PACKET_PAYLOAD_LEN) ? FW_IMAGE_PACKET_PAYLOAD_LEN : length;
+        // Upload FW image in pages of 128 bytes
+        uint16_t payload_length = uint16_t((length > FW_IMAGE_PACKET_PAYLOAD_LEN) ? FW_IMAGE_PACKET_PAYLOAD_LEN : length);
         uint32_t image_address_be;
         uint16_t payload_be;
 
@@ -256,12 +260,25 @@ void motion_module_control::write_firmware(uint8_t *data, int size)
         data_buffer += payload_length;
         length -= payload_length;
         image_address += payload_length;
+
+        // display progress to the user
+        percentage_completed = int(100 - (length / (float)size) * 100);
+        if (percentage_completed != last_val)
+        {
+            LOG_INFO("\rFirmware update in progress," <<  percentage_completed <<  " completed");
+            last_val = percentage_completed;
+        }
     };
 }
 
 // This function responsible for the whole firmware upgrade process.
-void motion_module_control::firmware_upgrade(void *data, int size)
+void motion_module_control::firmware_upgrade(void *data, size_t size)
 {
+    if (size >= std::numeric_limits<uint16_t>::max())
+        throw std::runtime_error(to_string() << "Firmware image size " << size << " exceeds the permitted lenght of 64k ");
+    if (size == 0)
+        throw std::runtime_error(to_string() << "Zero Firmware image size, process aborted");
+
     set_control(mm_events_output, false);
     // power on motion mmodule (if needed).
     toggle_motion_module_power(true);

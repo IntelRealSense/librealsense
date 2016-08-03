@@ -940,7 +940,7 @@ namespace rs
         /// \param[in] type  describes the content of the memory buffer, how it will be interpreted by the device
         /// \param[in] data  raw data buffer to be sent to the device
         /// \param[in] size  size in bytes of the buffer
-        void send_blob_to_device(rs::blob_type type, void * data, int size)
+        void send_blob_to_device(rs::blob_type type, void * data, size_t size)
         {
             rs_error * e = nullptr;
             rs_send_blob_to_device((rs_device *)this, (rs_blob_type)type, data, size, &e);

@@ -55,7 +55,7 @@ TEST_CASE("ZR300 devices support all required options", "[live] [DS-device]")
     REQUIRE(device_count > 0);
 
     // For each device
-    for (int i = 0; i<device_count; ++i)
+    for (int i = 0; i < device_count; ++i)
     {
         rs_device * dev = rs_get_device(ctx, 0, require_no_error());
         REQUIRE(dev != nullptr);
@@ -115,7 +115,7 @@ TEST_CASE("ZR300 devices support all required options", "[live] [DS-device]")
                 RS_OPTION_FISHEYE_EXT_TRIG
             };
 
-            for (int i = 0; i<RS_OPTION_COUNT; ++i)
+            for (int i = 0; i < RS_OPTION_COUNT; ++i)
             {
                 if (std::find(std::begin(supported_options), std::end(supported_options), i) != std::end(supported_options))
                 {
@@ -172,7 +172,7 @@ TEST_CASE("ZR300 Motion Module Data Streaming Validation", "[live] [DS-device]")
         rs_enable_stream(dev, RS_STREAM_FISHEYE, 640, 480, RS_FORMAT_RAW8, video_fps, require_no_error());
 
         // Activate strobe to enforce timestamp events ( required by spec)
-        rs_set_device_option(dev,rs_option::RS_OPTION_FISHEYE_STROBE, 1, require_no_error());
+        rs_set_device_option(dev, rs_option::RS_OPTION_FISHEYE_STROBE, 1, require_no_error());
 
         // 3. Start generating motion-tracking data
         rs_start_source(dev, rs_source::RS_SOURCE_ALL, require_no_error());
@@ -291,7 +291,7 @@ TEST_CASE("ZR300 correctly recognizes invalid options", "[live] [DS-device]")
     REQUIRE(ctx.get_device_count() == 1);
 
     rs::device * dev = ctx.get_device(0);
-    REQUIRE(nullptr!=dev);
+    REQUIRE(nullptr != dev);
 
     const char * name = dev->get_name();
     REQUIRE(name == std::string("Intel RealSense ZR300"));
@@ -299,19 +299,50 @@ TEST_CASE("ZR300 correctly recognizes invalid options", "[live] [DS-device]")
     int index = 0;
     double val = 0;
 
-    for (int i= (int)rs::option::f200_laser_power; i <= (int)rs::option::sr300_wake_on_usb_confidence; i++)
+    for (int i = (int)rs::option::f200_laser_power; i <= (int)rs::option::sr300_wake_on_usb_confidence; i++)
     {
         index = i;
         try
         {
             rs::option opt = (rs::option)i;
-            dev->set_options(&opt,1, &val);
+            dev->set_options(&opt, 1, &val);
         }
-        catch(...)
+        catch (...)
         {
-            REQUIRE(i==index); // Each invoked option must throw exception
+            REQUIRE(i == index); // Each invoked option must throw exception
         }
     }
 }
+
+TEST_CASE("ZR300 Motion Module Strobe", "[live] [DS-device]")
+{
+    rs::context ctx;
+    REQUIRE(ctx.get_device_count() == 1);
+
+    rs::device * dev = ctx.get_device(0);
+    REQUIRE(nullptr != dev);
+
+    const char * name = dev->get_name();
+    REQUIRE(name == std::string("Intel RealSense ZR300"));
+
+	double init_val = -1, test_val = -1, actual_val = -1;
+
+	rs::option opt = rs::option::r200_fisheye_strobe;
+
+	// Strobe is a boolean option value
+    dev->get_options(&opt, 1, &init_val);
+	REQUIRE(init_val >= 0);
+	REQUIRE(init_val <= 1);
+	test_val = 1 - init_val;
+	// Change strobe
+	dev->set_options(&opt, 1, &test_val);
+	dev->get_options(&opt, 1, &actual_val);
+	REQUIRE(test_val == Approx(actual_val));
+	// Revert to initial value
+	dev->set_options(&opt, 1, &init_val);
+	dev->get_options(&opt, 1, &actual_val);
+	REQUIRE(init_val == Approx(actual_val));
+}
+
 
 #endif /* !defined(MAKEFILE) || ( defined(LIVE_TEST) && defined(ZR300_TEST) ) */
