@@ -637,7 +637,7 @@ int rs_get_api_version(rs_error ** error) try
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, RS_API_MAJOR_VERSION, RS_API_MINOR_VERSION, RS_API_PATCH_VERSION)
 
-void rs_send_blob_to_device(rs_device * device, rs_blob_type type, void * data, size_t size, rs_error ** error) try
+void rs_send_blob_to_device(rs_device * device, rs_blob_type type, void * data, unsigned int size, rs_error ** error) try
 {
     VALIDATE_NOT_NULL(device);
     VALIDATE_NOT_NULL(data);

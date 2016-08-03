@@ -5,10 +5,14 @@
 // This set of tests is valid only for the R200 camera //
 /////////////////////////////////////////////////////////
 
+#if !defined(MAKEFILE) || ( defined(LIVE_TEST) && defined(DS5_TEST) )
+
 #include <climits>
 #include <sstream>
 
+
 #define CATCH_CONFIG_MAIN
+#include "catch/catch.hpp"
 
 #include "unit-tests-live-ds-common.h"
 #include "librealsense/rs.hpp"
@@ -122,3 +126,4 @@ TEST_CASE("DS5 laser power control verification", "[live] [DS-device]")
 
     dev->set_options(&opt, 1, &lsr_init_power);
 }
+#endif /* #if !defined(MAKEFILE) || ( defined(LIVE_TEST) && defined(DS5_TEST) ) */
