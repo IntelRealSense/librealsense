@@ -33,7 +33,7 @@ namespace rsimpl
             uvc_device_handle_t * handle = nullptr;
             uvc_stream_ctrl_t ctrl;
             uint8_t unit;
-            std::function<void(const void * frame)> callback;
+            std::function<void(const void * frame, std::function<void()> continuation)> callback;
         };
 
         struct device
@@ -126,10 +126,9 @@ namespace rsimpl
 
         void set_subdevice_mode(device & device, int subdevice_index, int width, int height, uint32_t fourcc, int fps, std::function<void(const void * frame, std::function<void()> continuation)> callback)
         {
-            throw std::logic_error("set_subdevice_mode(...) is not implemented for this backend ");
-//            auto & sub = device.get_subdevice(subdevice_index);
-//            check("get_stream_ctrl_format_size", uvc_get_stream_ctrl_format_size(sub.handle, &sub.ctrl, reinterpret_cast<const big_endian<uint32_t> &>(fourcc), width, height, fps));
-//            sub.callback = callback;
+            auto & sub = device.get_subdevice(subdevice_index);
+            check("get_stream_ctrl_format_size", uvc_get_stream_ctrl_format_size(sub.handle, &sub.ctrl, reinterpret_cast<const big_endian<uint32_t> &>(fourcc), width, height, fps));
+            sub.callback = callback;
         }
 
         void set_subdevice_data_channel_handler(device & device, int subdevice_index, std::function<void(const unsigned char * data, const int size)> callback)
@@ -149,7 +148,7 @@ namespace rsimpl
 
                     check("uvc_start_streaming", uvc_start_streaming(sub.handle, &sub.ctrl, [](uvc_frame * frame, void * user)
                     {
-                        reinterpret_cast<subdevice *>(user)->callback(frame->data);
+                        reinterpret_cast<subdevice *>(user)->callback(frame->data, []{});
                     }, &sub, 0, num_transfer_bufs));
                 }
             }
