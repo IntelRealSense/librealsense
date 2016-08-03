@@ -42,7 +42,8 @@ namespace rsimpl
     {
         struct motion_module_parser;
     }
-    
+
+    struct cam_mode { int2 dims; std::vector<int> fps; };
 }
 
 struct rs_device_base : rs_device

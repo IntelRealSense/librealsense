@@ -39,6 +39,7 @@ namespace rsimpl
         {
             command_response           = 1,
             fisheye_xu_strobe          = 1,
+            ds5_laser_power            = 1,
             iffley                     = 2,
             fisheye_xu_ext_trig        = 2,
             stream_intent              = 3,

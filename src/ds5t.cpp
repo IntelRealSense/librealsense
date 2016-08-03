@@ -7,8 +7,6 @@
 
 namespace rsimpl
 {
-    struct cam_mode { int2 dims; std::vector<int> fps; };
-
     static const cam_mode ds5t_fisheye_modes[] = {
         {{ 640, 480}, {30}},
         {{ 640, 480}, {60}},
@@ -49,12 +47,15 @@ namespace rsimpl
         // Populate miscellaneous info about device
         info.name = {"Intel RealSense DS5 Tracking"};
         std::timed_mutex mutex;
-        ds5::get_module_serial_string(*device, mutex, info.serial, 8);
+        ds5::get_module_serial_string(*device, mutex, info.serial, ds5::fw_version_offset);
         ds5::get_firmware_version_string(*device, mutex, info.firmware_version);
+
+        info.nominal_depth_scale = 0.001f;
 
         info.capabilities_vector.push_back(RS_CAPABILITIES_COLOR);
         info.capabilities_vector.push_back(RS_CAPABILITIES_DEPTH);
         info.capabilities_vector.push_back(RS_CAPABILITIES_INFRARED);
+        info.capabilities_vector.push_back(RS_CAPABILITIES_INFRARED2);
         info.capabilities_vector.push_back(RS_CAPABILITIES_FISH_EYE);
         info.capabilities_vector.push_back(RS_CAPABILITIES_MOTION_EVENTS);
 
@@ -80,6 +81,7 @@ namespace rsimpl
 
         // Populate IR mode on subdevice 1
         info.stream_subdevices[RS_STREAM_INFRARED] = 1;
+        info.stream_subdevices[RS_STREAM_INFRARED2] = 1;
         for(auto & m : ds5t_ir_only_modes)
         {
             for(auto fps : m.fps)
