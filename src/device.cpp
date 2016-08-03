@@ -282,6 +282,12 @@ void rs_device_base::start_video_streaming()
             
             auto requires_processing = mode_selection.requires_processing();
 
+            rs_option option[2];
+            double opt_values[2];
+            option[0] = ((streams[0] == rs_stream::RS_STREAM_FISHEYE) ? RS_OPTION_FISHEYE_COLOR_EXPOSURE : RS_OPTION_COLOR_EXPOSURE);
+            option[1] = ((streams[0] == rs_stream::RS_STREAM_FISHEYE) ? RS_OPTION_FISHEYE_COLOR_GAIN     : RS_OPTION_COLOR_GAIN);
+            get_options(option, 2, opt_values);
+
             auto width = mode_selection.get_width();
             auto height = mode_selection.get_height();
             auto fps = mode_selection.get_framerate();
@@ -308,7 +314,9 @@ void rs_device_base::start_video_streaming()
                     bpp,
                     output.second,
                     output.first,
-                    mode_selection.pad_crop);
+                    mode_selection.pad_crop,
+                    opt_values[0],
+                    opt_values[1]);
 
                 // Obtain buffers for unpacking the frame
                 dest.push_back(archive->alloc_frame(output.first, additional_data, requires_processing));

@@ -31,14 +31,14 @@ namespace rsimpl
 
     bool is_fisheye_uvc_control(rs_option option)
     {
-        return (option == RS_OPTION_FISHEYE_COLOR_EXPOSURE) ||
-               (option == RS_OPTION_FISHEYE_COLOR_GAIN);
+        return (option == RS_OPTION_FISHEYE_COLOR_GAIN);
     }
 
     bool is_fisheye_xu_control(rs_option option)
     {
         return (option == RS_OPTION_FISHEYE_STROBE) ||
-               (option == RS_OPTION_FISHEYE_EXT_TRIG);
+               (option == RS_OPTION_FISHEYE_EXT_TRIG) ||
+               (option == RS_OPTION_FISHEYE_COLOR_EXPOSURE);
     }
 
     void zr300_camera::set_options(const rs_option options[], size_t count, const double values[])
@@ -64,6 +64,7 @@ namespace rsimpl
             {
             case RS_OPTION_FISHEYE_STROBE:                  zr300::set_strobe(get_device(), static_cast<uint8_t>(values[i])); break;
             case RS_OPTION_FISHEYE_EXT_TRIG:                zr300::set_ext_trig(get_device(), static_cast<uint8_t>(values[i])); break;
+            case RS_OPTION_FISHEYE_COLOR_EXPOSURE:          zr300::set_exposure(get_device(), static_cast<uint8_t>(values[i])); break;
 
             case RS_OPTION_ZR300_GYRO_BANDWIDTH:            mm_cfg_writer.set(&motion_module::mm_config::gyro_bandwidth, (uint8_t)values[i]); break;
             case RS_OPTION_ZR300_GYRO_RANGE:                mm_cfg_writer.set(&motion_module::mm_config::gyro_range, (uint8_t)values[i]); break;
@@ -107,6 +108,7 @@ namespace rsimpl
 
             case RS_OPTION_FISHEYE_STROBE:                  values[i] = zr300::get_strobe        (dev); break;
             case RS_OPTION_FISHEYE_EXT_TRIG:                values[i] = zr300::get_ext_trig      (dev); break;
+            case RS_OPTION_FISHEYE_COLOR_EXPOSURE:          values[i] = zr300::get_exposure      (dev); break;
 
             case RS_OPTION_ZR300_MOTION_MODULE_ACTIVE:      values[i] = is_motion_tracking_active(); break;
 
@@ -321,7 +323,7 @@ namespace rsimpl
             info.subdevice_modes.push_back({ 3, { 640, 480 }, pf_raw8, 60, rs_intrinsics, { /*TODO:ask if we need rect_modes*/ }, { 0 } });
             info.subdevice_modes.push_back({ 3, { 640, 480 }, pf_raw8, 30, rs_intrinsics, {/*TODO:ask if we need rect_modes*/ }, { 0 } });
 
-            info.options.push_back({ RS_OPTION_FISHEYE_COLOR_EXPOSURE });
+            info.options.push_back({ RS_OPTION_FISHEYE_COLOR_EXPOSURE, 40, 331, 1, 40 });
             info.options.push_back({ RS_OPTION_FISHEYE_COLOR_GAIN });
             info.options.push_back({ RS_OPTION_FISHEYE_STROBE, 0, 1, 1, 0 });
             info.options.push_back({ RS_OPTION_FISHEYE_EXT_TRIG, 0, 1, 1, 0 });
