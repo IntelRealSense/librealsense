@@ -43,8 +43,8 @@ namespace rsimpl
     static static_device_info get_f200_info(std::shared_ptr<uvc::device> device, const ivcam::camera_calib_params & c)
     {
         LOG_INFO("Connecting to Intel RealSense F200");
-
         static_device_info info;
+      
         info.name = {"Intel RealSense F200"};
 
         // Color modes on subdevice 0
@@ -96,6 +96,7 @@ namespace rsimpl
 
         info.nominal_depth_scale = (c.Rmax / 0xFFFF) * 0.001f; // convert mm to m
         info.num_libuvc_transfer_buffers = 1;
+        rs_device_base::update_device_info(info);
         return info;
     }
 
@@ -255,6 +256,11 @@ namespace rsimpl
         ivcam::get_module_serial_string(*device, mutex, info.serial, 96);
         ivcam::get_firmware_version_string(*device, mutex, info.firmware_version);
 
+        info.camera_info[RS_CAMERA_INFO_CAMERA_FIRMWARE_VERSION] = info.firmware_version;
+        info.camera_info[RS_CAMERA_INFO_DEVICE_SERIAL_NUMBER] = info.serial;
+        info.camera_info[RS_CAMERA_INFO_DEVICE_NAME] = info.name;
+
+        info.capabilities_vector.push_back(RS_CAPABILITIES_ENUMERATION);
         info.capabilities_vector.push_back(RS_CAPABILITIES_COLOR);
         info.capabilities_vector.push_back(RS_CAPABILITIES_DEPTH);
         info.capabilities_vector.push_back(RS_CAPABILITIES_INFRARED);

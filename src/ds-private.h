@@ -100,6 +100,29 @@ namespace rsimpl
             enum { MAX_PRESETS = 6 };
             static const dc_params presets[MAX_PRESETS];
         };
+
+        class time_pad
+        {
+            std::chrono::high_resolution_clock::duration _duration;
+            std::chrono::high_resolution_clock::time_point _start_time;
+
+        public:
+            time_pad(std::chrono::high_resolution_clock::duration duration) : _duration(duration) {}
+            void start()
+            {
+                _start_time = std::chrono::high_resolution_clock::now();
+            }
+
+            void stop()
+            {
+                auto elapsed = std::chrono::high_resolution_clock::now() - _start_time;
+                if (elapsed < _duration)
+                {
+                    auto left = _duration - elapsed;
+                    std::this_thread::sleep_for(left);
+                }
+            }
+        };
         
         struct range { uint16_t min, max; };
         struct disp_mode { uint32_t is_disparity_enabled; double disparity_multiplier; };

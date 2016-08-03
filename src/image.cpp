@@ -22,42 +22,28 @@ namespace rsimpl
 
     size_t get_image_size(int width, int height, rs_format format)
     {
-        switch(format)
-        {
-        case RS_FORMAT_Z16: return width * height * 2;
-        case RS_FORMAT_DISPARITY16: return width * height * 2;
-        case RS_FORMAT_XYZ32F: return width * height * 12;
-        case RS_FORMAT_YUYV: assert(width % 2 == 0); return width * height * 2;
-        case RS_FORMAT_RGB8: return width * height * 3;
-        case RS_FORMAT_BGR8: return width * height * 3;
-        case RS_FORMAT_RGBA8: return width * height * 4;
-        case RS_FORMAT_BGRA8: return width * height * 4;
-        case RS_FORMAT_Y8: return width * height;
-        case RS_FORMAT_Y16: return width * height * 2;
-        case RS_FORMAT_RAW10: assert(width % 4 == 0); return width * 5/4 * height;
-        case RS_FORMAT_RAW16: return width * height * 2;
-        case RS_FORMAT_RAW8: return width * height;
-        default: assert(false); return 0;
-        }
+        if (format == RS_FORMAT_YUYV) assert(width % 2 == 0);
+        if (format == RS_FORMAT_RAW10) assert(width % 4 == 0);
+        return width * height * get_image_bpp(format) / 8;
     }
 
-    float get_image_bpp(rs_format format)
+    int get_image_bpp(rs_format format)
     {
         switch (format)
         {
-        case RS_FORMAT_Z16: return  2;
-        case RS_FORMAT_DISPARITY16: return 2;
-        case RS_FORMAT_XYZ32F: return  12;
-        case RS_FORMAT_YUYV:  return  2;
-        case RS_FORMAT_RGB8: return  3;
-        case RS_FORMAT_BGR8: return  3;
-        case RS_FORMAT_RGBA8: return  4;
-        case RS_FORMAT_BGRA8: return  4;
-        case RS_FORMAT_Y8: return 1;
-        case RS_FORMAT_Y16: return 2;
-        case RS_FORMAT_RAW10: return 5.f/4;
-        case RS_FORMAT_RAW16: return 2;
-        case RS_FORMAT_RAW8: return 1;
+        case RS_FORMAT_Z16: return  16;
+        case RS_FORMAT_DISPARITY16: return 16;
+        case RS_FORMAT_XYZ32F: return 12 * 8;
+        case RS_FORMAT_YUYV:  return 16;
+        case RS_FORMAT_RGB8: return 24;
+        case RS_FORMAT_BGR8: return 24;
+        case RS_FORMAT_RGBA8: return 32;
+        case RS_FORMAT_BGRA8: return 32;
+        case RS_FORMAT_Y8: return 8;
+        case RS_FORMAT_Y16: return 16;
+        case RS_FORMAT_RAW10: return 10;
+        case RS_FORMAT_RAW16: return 16;
+        case RS_FORMAT_RAW8: return 8;
         default: assert(false); return 0;
         }
     }
@@ -576,13 +562,13 @@ namespace rsimpl
         switch(other_format)
         {
         case RS_FORMAT_Y8: 
-            return align_other_to_depth_bytes<1>(other_aligned_to_depth, get_depth, depth_intrin, depth_to_other, other_intrin, other_pixels);
+            align_other_to_depth_bytes<1>(other_aligned_to_depth, get_depth, depth_intrin, depth_to_other, other_intrin, other_pixels); break;
         case RS_FORMAT_Y16: case RS_FORMAT_Z16: 
-            return align_other_to_depth_bytes<2>(other_aligned_to_depth, get_depth, depth_intrin, depth_to_other, other_intrin, other_pixels);
+            align_other_to_depth_bytes<2>(other_aligned_to_depth, get_depth, depth_intrin, depth_to_other, other_intrin, other_pixels); break;
         case RS_FORMAT_RGB8: case RS_FORMAT_BGR8: 
-            return align_other_to_depth_bytes<3>(other_aligned_to_depth, get_depth, depth_intrin, depth_to_other, other_intrin, other_pixels);
+            align_other_to_depth_bytes<3>(other_aligned_to_depth, get_depth, depth_intrin, depth_to_other, other_intrin, other_pixels); break;
         case RS_FORMAT_RGBA8: case RS_FORMAT_BGRA8: 
-            return align_other_to_depth_bytes<4>(other_aligned_to_depth, get_depth, depth_intrin, depth_to_other, other_intrin, other_pixels);
+            align_other_to_depth_bytes<4>(other_aligned_to_depth, get_depth, depth_intrin, depth_to_other, other_intrin, other_pixels); break;
         default: 
             assert(false); // NOTE: rs_align_other_to_depth_bytes<2>(...) is not appropriate for RS_FORMAT_YUYV/RS_FORMAT_RAW10 images, no logic prevents U/V channels from being written to one another
         }

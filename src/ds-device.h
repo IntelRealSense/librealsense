@@ -17,6 +17,13 @@ namespace rsimpl
 {
     namespace ds
     {
+        enum subdevices
+        {
+            SUB_DEVICE_INFRARED = 0,
+            SUB_DEVICE_DEPTH = 1,
+            SUB_DEVICE_COLOR = 2,
+            SUB_DEVICE_FISHEYE = 3
+        };
         /*
         ds_device class is interface that provides partial implementation for ds cameras line functionalities and properties
         */
@@ -30,6 +37,7 @@ namespace rsimpl
             void on_update_disparity_multiplier(double multiplier);
             uint32_t get_lr_framerate() const;
             std::vector<supported_option> get_ae_range_vec();
+            time_pad start_stop_pad; // R200 line-up needs minimum 500ms delay between consecutive start-stop commands
 
         public:
             ds_device(std::shared_ptr<uvc::device> device, const static_device_info & info);
@@ -42,9 +50,12 @@ namespace rsimpl
 
             void on_before_start(const std::vector<subdevice_mode_selection> & selected_modes) override;
             rs_stream select_key_stream(const std::vector<rsimpl::subdevice_mode_selection> & selected_modes) override;
-            std::shared_ptr<frame_timestamp_reader> create_frame_timestamp_reader() const override;
+            std::shared_ptr<frame_timestamp_reader> create_frame_timestamp_reader(int subdevice) const override;
 
             static void set_common_ds_config(std::shared_ptr<uvc::device> device, static_device_info& info, const ds::ds_calibration& c);
+
+            virtual void stop(rs_source source) override;
+            virtual void start(rs_source source) override;
         };
     }
 }

@@ -5,6 +5,8 @@
 // This set of tests is valid only for the R200 camera //
 /////////////////////////////////////////////////////////
 
+#if !defined(MAKEFILE)
+
 #define CATCH_CONFIG_MAIN
 #include "catch/catch.hpp"
 
@@ -789,3 +791,5 @@ TEST_CASE( "streaming five configurations sequentionally", "[live] [r200] [one-c
     });
 
 }
+
+#endif /* !defined(MAKEFILE) */

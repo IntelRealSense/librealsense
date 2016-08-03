@@ -8,6 +8,10 @@
 #include <cstdint>
 #include <cstddef>
 
+// this interface is an entry point for extending librealsense with custom devices while keeping librealsense public API
+// the interfaces in this file are expected to be inherited from, never used directly, rs.hpp provides safer and simpler wrapper
+// an example usage would be playback and record. this API allows to integrate custom playback&record implementation while keeping librealsense API
+
 struct rs_stream_interface
 {
     virtual                                 ~rs_stream_interface() {}
@@ -20,7 +24,9 @@ struct rs_stream_interface
     virtual rs_format                       get_format() const = 0;
     virtual int                             get_framerate() const = 0;
 
-    virtual int                             get_frame_number() const = 0;
+    virtual int                             get_frame_stride() const = 0;
+    virtual int                             get_frame_bpp() const = 0;
+    virtual unsigned long long              get_frame_number() const = 0;
     virtual double                          get_frame_timestamp() const = 0;
     virtual long long                       get_frame_system_time() const = 0;
     virtual const uint8_t *                 get_frame_data() const = 0;
@@ -36,14 +42,14 @@ struct rs_frame_ref
     virtual                                 ~rs_frame_ref() {}
     virtual const uint8_t*                  get_frame_data() const = 0;
     virtual double                          get_frame_timestamp() const = 0;
-    virtual int                             get_frame_number() const = 0;
+    virtual rs_timestamp_domain             get_frame_timestamp_domain() const = 0;
+    virtual unsigned long long              get_frame_number() const = 0;
     virtual long long                       get_frame_system_time() const = 0;
     virtual int                             get_frame_width() const = 0;
     virtual int                             get_frame_height() const = 0;
     virtual int                             get_frame_framerate() const = 0;
-    virtual int                             get_frame_stride_x() const = 0;
-    virtual int                             get_frame_stride_y() const = 0;
-    virtual float                           get_frame_bpp() const = 0;
+    virtual int                             get_frame_stride() const = 0;
+    virtual int                             get_frame_bpp() const = 0;
     virtual rs_format                       get_frame_format() const = 0;
     virtual rs_stream                       get_stream_type() const = 0;
 };
@@ -57,6 +63,7 @@ struct rs_device
     virtual const char *                    get_name() const = 0;
     virtual const char *                    get_serial() const = 0;
     virtual const char *                    get_firmware_version() const = 0;
+    virtual const char *                    get_camera_info(rs_camera_info) const = 0;
     virtual float                           get_depth_scale() const = 0;
                                             
     virtual void                            enable_stream(rs_stream stream, int width, int height, rs_format format, int fps, rs_output_buffer_format output) = 0;
@@ -67,7 +74,9 @@ struct rs_device
     virtual void                            set_stream_callback(rs_stream stream, void(*on_frame)(rs_device * device, rs_frame_ref * frame, void * user), void * user) = 0;
     virtual void                            set_stream_callback(rs_stream stream, rs_frame_callback * callback) = 0;
     virtual void                            disable_motion_tracking() = 0;
-                                            
+
+    virtual rs_motion_intrinsics            get_motion_intrinsics() const = 0;
+    virtual rs_extrinsics                   get_motion_extrinsics_from(rs_stream from) const = 0;
     virtual void                            set_motion_callback(void(*on_event)(rs_device * device, rs_motion_data data, void * user), void * user) = 0;
     virtual void                            set_motion_callback(rs_motion_callback * callback) = 0;
     virtual void                            set_timestamp_callback(void(*on_event)(rs_device * device, rs_timestamp_data data, void * user), void * user) = 0;

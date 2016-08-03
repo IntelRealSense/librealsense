@@ -17,8 +17,9 @@ void rsimpl::log(rs_log_severity severity, const std::string & message)
 
     if(static_cast<int>(severity) < minimum_log_severity) return;
 
-    std::time_t t = std::time(nullptr); char buffer[20];
-    std::strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S", std::localtime(&t));
+    std::time_t t = std::time(nullptr); char buffer[20] = {}; const tm* time = std::localtime(&t);
+    if (nullptr!=time)
+        std::strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S", time);
 
     if(severity >= minimum_file_severity)
     {

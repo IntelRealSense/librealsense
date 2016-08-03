@@ -6,11 +6,35 @@
 #define MOTION_MODULE_H
 
 #include <mutex>
+#include <bitset>
+
+#include "device.h"
 
 namespace rsimpl
 {
     namespace motion_module
     {
+        enum motion_module_errors
+        {
+            imu_not_responding      = 0,
+            illegal_configuration   = 1,
+            ts_fifo_overflow        = 2,
+            imu_fifo_overflow       = 3,
+            watchdog_reset          = 4,
+            crc_error               = 5,
+            missing_data_from_imu   = 6,
+            bootloader_failure      = 7,
+            eeprom_error            = 8,
+            bist_check_failed       = 9,
+            uctrl_not_responding    = 10,
+            cx3_fifo_overflow       = 11,
+            general_cx3_failure     = 12,
+            cx3_usb_failure         = 13,
+            reserved_1              = 14,
+            reserved_2              = 15,
+            max_mm_error
+        };
+
         //RealSense DS41t SaS rev 0_60 specifications [deg/sec]
         enum class mm_gyro_range : uint8_t
         {
@@ -40,6 +64,25 @@ namespace rsimpl
             accel_bw_250hz      = 2
         };
 
+        struct motion_event_status
+        {
+            unsigned reserved_0             : 1;
+            unsigned pwr_mode_change_done   : 1;
+            unsigned cx3_packet_number      : 4;     /* bits [2..5] packet counter number*/
+            unsigned reserved_6_15          : 10;
+        };
+
+        struct motion_event
+        {
+            std::bitset<16>         error_state;
+            motion_event_status     status;
+            unsigned short          imu_entries_num;
+            unsigned short          non_imu_entries_num;
+            unsigned long           timestamp;
+            rs_motion_data          imu_packets[4];
+            rs_timestamp_data       non_imu_packets[8];
+        };
+
 #pragma pack(push, 1)
         struct mm_config  /* Motion module configuration data*/
         {
@@ -50,15 +93,15 @@ namespace rsimpl
             mm_accel_bandwidth  accel_bandwidth;
         };
 
-		#define FW_IMAGE_PACKET_PAYLOAD_LEN (128)
+        #define FW_IMAGE_PACKET_PAYLOAD_LEN (128)
 
-		struct fw_image_packet {
-			uint8_t op_code;
-			uint32_t address;
-			uint16_t length;
-			uint8_t	dummy;
-			uint8_t	data[FW_IMAGE_PACKET_PAYLOAD_LEN];
-		};
+        struct fw_image_packet {
+            uint8_t op_code;
+            uint32_t address;
+            uint16_t length;
+            uint8_t dummy;
+            uint8_t data[FW_IMAGE_PACKET_PAYLOAD_LEN];
+        };
 #pragma pack(pop)
 
         void config(uvc::device & device, uint8_t gyro_bw, uint8_t gyro_range, uint8_t accel_bw, uint8_t accel_range, uint32_t time_seed);
@@ -97,11 +140,26 @@ namespace rsimpl
             }
         }
 
+        struct motion_module_wraparound
+        {
+            motion_module_wraparound()
+                : timestamp_wraparound(1, std::numeric_limits<uint32_t>::max()), frame_counter_wraparound(0, 0xfff)
+            {}
+            wraparound_mechanism<unsigned long long> timestamp_wraparound;
+            wraparound_mechanism<unsigned long long> frame_counter_wraparound;
+        };
+
         struct motion_module_parser
         {
+            motion_module_parser()
+                : mm_data_wraparound(RS_EVENT_SOURCE_COUNT)
+            {}
+
             std::vector<motion_event> operator() (const unsigned char* data, const int& data_size);
             void parse_timestamp(const unsigned char* data, rs_timestamp_data &);
             rs_motion_data parse_motion(const unsigned char* data);
+
+            std::vector<motion_module_wraparound> mm_data_wraparound;
         };
 
         class motion_module_state
@@ -109,8 +167,8 @@ namespace rsimpl
         public:
             motion_module_state() : state(mm_idle) {};
             mm_state state;
-            mm_state requested_state(mm_request, bool on) const;
-            static bool valid(mm_state check_state) { return ((check_state >= mm_idle) && (check_state <= mm_full_load)); }
+            int requested_state(mm_request, bool on) const;
+            static bool valid(int check_state) { return ((check_state >= mm_idle) && (check_state <= mm_full_load)); }
         private:
             motion_module_state(const motion_module_state&);
         };
@@ -130,7 +188,6 @@ namespace rsimpl
             void firmware_upgrade(void *data, int size);
 
         private:
-            motion_module_control(void);
             motion_module_control(const motion_module_control&);
             motion_module_state state_handler;
             uvc::device* device_handle;
@@ -138,8 +195,6 @@ namespace rsimpl
             bool    power_state;
 
             void i2c_iap_write(uint16_t slave_address, uint8_t *buffer, uint16_t len);
-            void i2c_write_reg(uint16_t slave_address, uint16_t reg, uint32_t value);
-            void i2c_read_reg(uint16_t slave_address, uint16_t reg, uint32_t &value);
 
             void write_firmware(uint8_t *data, int size);
 
@@ -149,7 +204,7 @@ namespace rsimpl
 
         };
 
-        enum i2c_register : uint32_t {
+        enum class i2c_register : uint32_t {
             REG_UCTRL_CFG = 0x00,
             REG_INT_ID_CONFIG = 0x04,
             REG_INT_TYPE_CONFIG = 0x08,
@@ -182,7 +237,7 @@ namespace rsimpl
             REG_JUMP_TO_APP = 0x77
         };
 
-        enum power_states : uint32_t {
+        enum class power_states : uint32_t {
             PWR_STATE_DNR = 0x00,
             PWR_STATE_INIT = 0x02,
             PWR_STATE_ACTIVE = 0x03,
@@ -190,7 +245,7 @@ namespace rsimpl
             PWR_STATE_IAP = 0x05
         };
 
-        enum adaptor_board_command : uint32_t
+        enum class adaptor_board_command : uint32_t
         {
             IRB         = 0x01,     // Read from i2c ( 8x8 )
             IWB         = 0x02,     // Write to i2c ( 8x8 )

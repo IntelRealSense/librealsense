@@ -116,13 +116,13 @@ namespace rsimpl
             return 0;
         }
 
-        int get_frame_counter(const subdevice_mode & mode, const void * frame) override
+        unsigned long long get_frame_counter(const subdevice_mode & mode, const void * frame) override
         {
             return 0;
         }
     };
 
-    std::shared_ptr<frame_timestamp_reader> ds5_camera::create_frame_timestamp_reader() const
+    std::shared_ptr<frame_timestamp_reader> ds5_camera::create_frame_timestamp_reader(int subdevice) const
     {
         return std::make_shared<ds5_timestamp_reader>();
     }

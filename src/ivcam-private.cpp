@@ -170,20 +170,20 @@ namespace ivcam {
 
     // "Get Version and Date"
     // Reference: Commands.xml in IVCAM_DLL
-    void get_gvd(uvc::device & device, std::timed_mutex & mutex, size_t sz, char * gvd)
+    void get_gvd(uvc::device & device, std::timed_mutex & mutex, size_t sz, char * gvd, int gvd_cmd)
     {
-        hwmon_cmd cmd((uint8_t)fw_cmd::GVD);
+        hwmon_cmd cmd((uint8_t)gvd_cmd);
         perform_and_send_monitor_command(device, mutex, cmd);
         auto minSize = std::min(sz, cmd.receivedCommandDataLength);
         memcpy(gvd, cmd.receivedCommandData, minSize);
     }
 
-    void get_firmware_version_string(uvc::device & device, std::timed_mutex & mutex, std::string & version)
+    void get_firmware_version_string(uvc::device & device, std::timed_mutex & mutex, std::string & version, int gvd_cmd, int offset)
     {
         std::vector<char> gvd(1024);
-        get_gvd(device, mutex, 1024, gvd.data());
+        get_gvd(device, mutex, 1024, gvd.data(), gvd_cmd);
         char fws[8];
-        memcpy(fws, gvd.data(), 8); // offset 0
+        memcpy(fws, gvd.data() + offset, 8); // offset 0
         version = std::string(std::to_string(fws[3]) + "." + std::to_string(fws[2]) + "." + std::to_string(fws[1]) + "." + std::to_string(fws[0]));
     }
 
@@ -353,9 +353,9 @@ namespace f200
         size_t requestSize = sizeof(request);
         uint32_t responseOp;
 
-        if (prepare_usb_command(request, requestSize, (uint32_t)fw_cmd::GetCalibrationTable) <= 0)
+        if (prepare_usb_command(request, requestSize, (uint32_t)fw_cmd::GetCalibrationTable) == 0)
             throw std::runtime_error("usb transfer to retrieve calibration data failed");
-        execute_usb_command(device, usbMutex, 0, request, requestSize, responseOp, data, bytesReturned);
+        execute_usb_command(device, usbMutex, request, requestSize, responseOp, data, bytesReturned);
     }
 
     int bcdtoint(uint8_t * buf, int bufsize)
@@ -671,8 +671,8 @@ namespace sr300 {
 
         if (cmdWUReason.receivedCommandDataLength >= 4)     // TODO - better guard condition ?
         {
-            unsigned char rslt = (*reinterpret_cast<int32_t *>(cmdWUReason.receivedCommandData)) && (0xFF);
-            if (rslt >= (uint8_t)wakeonusb_reason::eMaxWakeOnReason)
+            unsigned char rslt = cmdWUReason.receivedCommandData[0];
+            if (rslt >= wakeonusb_reason::eMaxWakeOnReason)
                 throw std::logic_error("undefined wakeonusb_reason provided");
             cReason = rslt;
         }

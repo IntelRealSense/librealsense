@@ -9,30 +9,31 @@
 #include "motion-module.h"
 
 using namespace rsimpl;
-using namespace rsimpl::motion_module;
+using namespace motion_module;
 
 #define MOTION_MODULE_CONTROL_I2C_SLAVE_ADDRESS 0x42
+const double IMU_UNITS_TO_MSEC = 0.00003125;
 
 motion_module_control::motion_module_control(uvc::device *device) : device_handle(device), power_state(false)
 {
 }
 
-mm_state motion_module_state::requested_state(mm_request request, bool on) const
+int motion_module_state::requested_state(mm_request request, bool on) const
 {
     int tmp = state;
     tmp += (int)request * (on ? 1 : -1);
 
-    return (mm_state)tmp;
+    return tmp;
 }
 
 void motion_module_control::impose(mm_request request, bool on)
 {
     std::lock_guard<std::mutex> lock(mtx);
 
-    mm_state new_state = state_handler.requested_state(request, on);
+    auto new_state = state_handler.requested_state(request, on);
 
     if (motion_module_state::valid(new_state))
-        enter_state(new_state);
+        enter_state((mm_state)new_state);
     else
         throw std::logic_error(to_string() << "MM invalid mode from" << state_handler.state << " to " << new_state);
 }
@@ -42,16 +43,21 @@ void motion_module_control::enter_state(mm_state new_state)
     if (new_state == state_handler.state)
         return;
 
-    // TODO refactor into state patters
     switch (state_handler.state)
     {
     case mm_idle:
         if (mm_streaming == new_state)
         {
+            // Power off before power on- Ensure that we starting from scratch
+            set_control(mm_events_output, false);
+            set_control(mm_video_output, false);
             set_control(mm_video_output, true);
         }
         if (mm_eventing == new_state)
         {
+            //  Power off before power on- Ensure that we starting from scratch
+            set_control(mm_events_output, false);
+            set_control(mm_video_output, false);
             set_control(mm_video_output, true); // L -shape adapter board
             std::this_thread::sleep_for(std::chrono::milliseconds(300)); // Added delay between MM power on and MM start commands to be sure that the MM will be ready untill start polling events. 
             set_control(mm_events_output, true);
@@ -60,6 +66,7 @@ void motion_module_control::enter_state(mm_state new_state)
     case mm_streaming:
         if (mm_idle == new_state)
         {
+            set_control(mm_events_output, false);
             set_control(mm_video_output, false);
         }
         if (mm_full_load == new_state)
@@ -92,8 +99,14 @@ void motion_module_control::enter_state(mm_state new_state)
         {
             set_control(mm_events_output, false);
         }
+        if (mm_idle == new_state)
+        {
+            set_control(mm_events_output, false);
+            set_control(mm_video_output, false);
+            throw std::logic_error(" Invalid Motion Module transition from full to idle");
+        }
         break;
-    default:        // void
+    default:
         break;
     }
 
@@ -113,7 +126,6 @@ void motion_module_control::set_control(mm_request request, bool on)
         break;
     default:
         throw std::logic_error(to_string() << " unsupported control requested :" << (int)request << " valid range is [1,2]");
-        break;
     }
 
     std::timed_mutex mutex;
@@ -121,7 +133,7 @@ void motion_module_control::set_control(mm_request request, bool on)
     cmd.Param1 = (on) ? 1 : 0;
 
     // Motion module will always use the auxillary USB handle (1) for
-    rsimpl::hw_monitor::perform_and_send_monitor_command(*device_handle, mutex, 1, cmd);
+    perform_and_send_monitor_command(*device_handle, mutex, cmd);
 }
 
 void motion_module_control::toggle_motion_module_power(bool on)
@@ -144,57 +156,20 @@ void motion_module_control::toggle_motion_module_events(bool on)
 // Write a buffer to the IAP I2C register.
 void motion_module_control::i2c_iap_write(uint16_t slave_address, uint8_t *buffer, uint16_t len)
 {
-	hw_monitor::hwmon_cmd cmd(adaptor_board_command::IAP_IWB);
+    hw_monitor::hwmon_cmd cmd((int)adaptor_board_command::IAP_IWB);
 
-	cmd.Param1 = slave_address;
-	cmd.Param2 = len;
+    cmd.Param1 = slave_address;
+    cmd.Param2 = len;
 
-	cmd.sizeOfSendCommandData = len;
-	memcpy(cmd.data, buffer, len);
+    cmd.sizeOfSendCommandData = len;
+    memcpy(cmd.data, buffer, len);
 
-	std::timed_mutex mutex;
-	rsimpl::hw_monitor::perform_and_send_monitor_command(*device_handle, mutex, 1, cmd);
+    std::timed_mutex mutex;
+    perform_and_send_monitor_command(*device_handle, mutex, cmd);
 }
 
 // Write a 32 bit value to a specific i2c slave address.
-void motion_module_control::i2c_write_reg(uint16_t slave_address, uint16_t reg, uint32_t value)
-{
-    hw_monitor::hwmon_cmd cmd(adaptor_board_command::IWB);
 
-    cmd.Param1 = slave_address;
-    cmd.Param2 = reg;
-    cmd.Param3 = sizeof(value);
-
-    memcpy(cmd.data, &value, sizeof(value));
-    cmd.sizeOfSendCommandData = sizeof(value);
-
-    std::timed_mutex mutex;
-    rsimpl::hw_monitor::perform_and_send_monitor_command(*device_handle, mutex, 1, cmd);
-
-    return;
-}
-
-// Read a 32 bit value from the i2c register.
-void motion_module_control::i2c_read_reg(uint16_t slave_address, uint16_t reg, uint32_t &value)
-{
-    hw_monitor::hwmon_cmd cmd(adaptor_board_command::IRB);
-
-    cmd.Param1 = slave_address;
-    cmd.Param2 = reg;
-    cmd.Param3 = sizeof(value);
-
-    std::timed_mutex mutex;
-    rsimpl::hw_monitor::perform_and_send_monitor_command(*device_handle, mutex, 1, cmd);
-
-    // validate that the size is of 32 bit (value size).
-    if (cmd.receivedCommandDataLength == sizeof(value))
-    {
-        memcpy(&value, cmd.receivedCommandData, sizeof(cmd.receivedCommandDataLength));
-    }
-    
-    return ;
-
-}
 
 // switch the mtion module to IAP mode.
 void motion_module_control::switch_to_iap()
@@ -202,24 +177,25 @@ void motion_module_control::switch_to_iap()
     uint32_t value = -1;
 
     // read state.
-    i2c_read_reg(MOTION_MODULE_CONTROL_I2C_SLAVE_ADDRESS, i2c_register::REG_CURR_PWR_STATE, value);
+    hw_monitor::i2c_read_reg(static_cast<int>(adaptor_board_command::IRB), *device_handle, MOTION_MODULE_CONTROL_I2C_SLAVE_ADDRESS, (int)i2c_register::REG_CURR_PWR_STATE, sizeof(uint32_t), reinterpret_cast<byte*>(&value));
 
-    if (value != power_states::PWR_STATE_IAP) {
+    if ((power_states)value != power_states::PWR_STATE_IAP) {
         // we are not in IAP. switch to IAP.
-        i2c_write_reg(MOTION_MODULE_CONTROL_I2C_SLAVE_ADDRESS, i2c_register::REG_IAP_REG, 0xAE);
+        hw_monitor::i2c_write_reg(static_cast<int>(adaptor_board_command::IWB), *device_handle, MOTION_MODULE_CONTROL_I2C_SLAVE_ADDRESS, (int)i2c_register::REG_IAP_REG, 0xAE);
     }
 
     // retry for 10 times to be in IAP state.
-    for (int retries = 0; retries < 10; retries++) {
+    for (int retries = 0; retries < 10; retries++) 
+    {
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
 
-        i2c_read_reg(MOTION_MODULE_CONTROL_I2C_SLAVE_ADDRESS, i2c_register::REG_CURR_PWR_STATE, value);
-        if (value == power_states::PWR_STATE_IAP) {
-            return; // we have entered IAP
-        }
+        hw_monitor::i2c_read_reg(static_cast<int>(adaptor_board_command::IRB), *device_handle, MOTION_MODULE_CONTROL_I2C_SLAVE_ADDRESS, (int)i2c_register::REG_CURR_PWR_STATE, sizeof(uint32_t), reinterpret_cast<byte*>(&value));
+        if ((power_states)value == power_states::PWR_STATE_IAP) 
+            break; // we have entered IAP
     }
 
-    return throw std::runtime_error("Unable to enter IAP state!");
+    if ((power_states)value != power_states::PWR_STATE_IAP)
+        throw std::runtime_error("Unable to enter IAP state!");
 }
 
 void motion_module_control::switch_to_operational()
@@ -227,20 +203,12 @@ void motion_module_control::switch_to_operational()
     uint32_t value = -1;
 
     // write to the REG_JUMP_TO_APP register. this should return us to operational mode if all went well.
-    i2c_write_reg(MOTION_MODULE_CONTROL_I2C_SLAVE_ADDRESS, i2c_register::REG_JUMP_TO_APP, 0x00);
+	hw_monitor::i2c_write_reg(static_cast<int>(adaptor_board_command::IWB), *device_handle, MOTION_MODULE_CONTROL_I2C_SLAVE_ADDRESS, (int)i2c_register::REG_JUMP_TO_APP, 0x00);
 
-    // retry for 10 times to see if we are in opertinal state.
-    for (int retries = 0; retries < 10; retries++) {
-        std::this_thread::sleep_for(std::chrono::milliseconds(100));
-
-        i2c_read_reg(MOTION_MODULE_CONTROL_I2C_SLAVE_ADDRESS, i2c_register::REG_CURR_PWR_STATE, value);
+	hw_monitor::i2c_read_reg(static_cast<int>(adaptor_board_command::IRB), *device_handle, MOTION_MODULE_CONTROL_I2C_SLAVE_ADDRESS, (int)i2c_register::REG_CURR_PWR_STATE, sizeof(uint32_t), reinterpret_cast<byte*>(&value));
         
-        if (value != power_states::PWR_STATE_IAP) {
-            return;
-        }
-    }
-    
-    return throw std::runtime_error("Unable to leave IAP state!");
+    if ((power_states)value != power_states::PWR_STATE_IAP)
+        throw std::runtime_error("Unable to leave IAP state!");
 }
 
 // Write the firmware.
@@ -287,13 +255,14 @@ void motion_module_control::write_firmware(uint8_t *data, int size)
         // go to next packet if needed.
         data_buffer += payload_length;
         length -= payload_length;
-        image_address += payload_length;        
+        image_address += payload_length;
     };
 }
 
 // This function responsible for the whole firmware upgrade process.
 void motion_module_control::firmware_upgrade(void *data, int size)
 {
+    set_control(mm_events_output, false);
     // power on motion mmodule (if needed).
     toggle_motion_module_power(true);
 
@@ -307,10 +276,9 @@ void motion_module_control::firmware_upgrade(void *data, int size)
     switch_to_operational();
 }
 
-void motion_module::config(uvc::device & device, uint8_t gyro_bw, uint8_t gyro_range, uint8_t accel_bw, uint8_t accel_range, uint32_t time_seed)
+void motion_module::config(uvc::device&, uint8_t, uint8_t, uint8_t, uint8_t, uint32_t)
 {
     throw std::runtime_error(to_string() << __FUNCTION__ << " is not implemented");
-    // perform_and_send_monitor_command()
 }
 
 
@@ -338,11 +306,17 @@ std::vector<motion_event> motion_module_parser::operator() (const unsigned char*
 
             cur_packet = (unsigned char*)data + (i*motion_packet_size);
 
-            // extract packet info
+            // extract packet header
             memcpy(&event_data.error_state, &cur_packet[0], sizeof(unsigned short));
             memcpy(&event_data.status, &cur_packet[2], sizeof(unsigned short));
             memcpy(&event_data.imu_entries_num, &cur_packet[4], sizeof(unsigned short));
             memcpy(&event_data.non_imu_entries_num, &cur_packet[6], sizeof(unsigned short));
+
+            if (event_data.error_state.any())
+            {
+                LOG_WARNING("Motion Event: packet-level error detected " << event_data.error_state.to_string() << " packet will be dropped");
+                break;
+            }
 
             // Validate header input
             if ((event_data.imu_entries_num <= imu_data_entries) && (event_data.non_imu_entries_num <= non_imu_data_entries))
@@ -372,17 +346,18 @@ void motion_module_parser::parse_timestamp(const unsigned char * data, rs_timest
     // assuming msb ordering
     unsigned short  tmp = (data[1] << 8) | (data[0]);
 
-    entry.source_id = rs_event_source(tmp & 0x7);               // bits [0:2] - source_id
-    entry.frame_number = (tmp & 0x7fff) >> 3;                   // bits [3-14] - frame num
-    memcpy(&entry.timestamp, &data[2], sizeof(unsigned int));   // bits [16:47] - timestamp
-
+    entry.source_id = rs_event_source((tmp & 0x7) - 1);         // bits [0:2] - source_id
+    entry.frame_number = mm_data_wraparound[entry.source_id].frame_counter_wraparound.fix((tmp & 0x7fff) >> 3); // bits [3-14] - frame num
+    unsigned int timestamp;
+    memcpy(&timestamp, &data[2], sizeof(unsigned int));   // bits [16:47] - timestamp
+    entry.timestamp = mm_data_wraparound[entry.source_id].timestamp_wraparound.fix(timestamp) * IMU_UNITS_TO_MSEC; // Convert ticks to ms
 }
 
 rs_motion_data motion_module_parser::parse_motion(const unsigned char * data)
 {
     // predefined motion devices parameters
-    const static float gravity      = 9.80665f;
-    const static float gyro_range   = 2000.f;                   // Measured angular velocity range [Deg_C/Sec]
+    const static float gravity      = 9.80665f;                 // Standard Gravitation Acceleration
+    const static float gyro_range   = 1000.f;                   // Preconfigured angular velocity range [-1000...1000] Deg_C/Sec
     const static float gyro_transform_factor = float((gyro_range * M_PI) / (180.f * 32767.f));
 
     const static float accel_range = 4.f;                       // Accelerometer is preset to [-4...+4]g range
@@ -394,13 +369,13 @@ rs_motion_data motion_module_parser::parse_motion(const unsigned char * data)
 
     entry.is_valid = (data[1] >> 7);          // Isolate bit[15]
 
-    // The mation tracking data for the three measured axes
+    // Read the motion tracking data for the three measured axes
     short tmp[3];
     memcpy(&tmp, &data[6], sizeof(short) * 3);
 
-    unsigned data_shift = (RS_EVENT_IMU_ACCEL == entry.timestamp_data.source_id) ? 4 : 0;
+    unsigned data_shift = (RS_EVENT_IMU_ACCEL == entry.timestamp_data.source_id) ? 4 : 0;  // Acceleration data is stored in 12 MSB
 
-    for (int i = 0; i < 3; i++)                     // convert axis data to physical units (m/sec^2)
+    for (int i = 0; i < 3; i++)                     // convert axis data to physical units, (m/sec^2) or (rad/sec)
     {
         entry.axes[i] = float(tmp[i] >> data_shift);
         if (RS_EVENT_IMU_ACCEL == entry.timestamp_data.source_id) entry.axes[i] *= accelerator_transform_factor;

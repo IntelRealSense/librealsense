@@ -23,6 +23,8 @@ int main() try
         std::cout << " Serial number: " << dev->get_serial() << "\n";
         std::cout << " Firmware version: " << dev->get_firmware_version() << "\n";
         try { std::cout << " USB Port ID: " << dev->get_usb_port_id() << "\n"; } catch (...) {}
+        if (dev->supports(rs::capabilities::adapter_board)) std::cout << " Adapter Board Firmware version: " << dev->get_info(rs::camera_info::adapter_board_firmware_version) << "\n";
+        if (dev->supports(rs::capabilities::motion_events)) std::cout << " Motion Module Firmware version: " << dev->get_info(rs::camera_info::motion_module_firmware_version) << "\n";
 
         // Show which options are supported by this device
         std::cout << " Supported options:\n";

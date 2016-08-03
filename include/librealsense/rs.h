@@ -10,7 +10,7 @@ extern "C" {
 
 #define RS_API_MAJOR_VERSION    1
 #define RS_API_MINOR_VERSION    9
-#define RS_API_PATCH_VERSION    4
+#define RS_API_PATCH_VERSION    5
 
 #define STRINGIFY(arg) #arg
 #define VAR_ARG_STRING(arg) STRINGIFY(arg)
@@ -20,17 +20,20 @@ extern "C" {
 /*// Return version in "X.Y.Z" format */
 #define RS_API_VERSION_STR (VAR_ARG_STRING(RS_API_MAJOR_VERSION.RS_API_MINOR_VERSION.RS_API_PATCH_VERSION))
 
-
+/* rs_capabilities defines the full set of functionality that a RealSense device might provide
+   to check what functionality is supported by a particular device at runtime call dev->supports(capability) */
 typedef enum rs_capabilities
 {
-    RS_CAPABILITIES_DEPTH                   = 0,
-    RS_CAPABILITIES_COLOR                   = 1,
-    RS_CAPABILITIES_INFRARED                = 2,
-    RS_CAPABILITIES_INFRARED2               = 3,
-    RS_CAPABILITIES_FISH_EYE                = 4,
-    RS_CAPABILITIES_MOTION_EVENTS           = 5,
-    RS_CAPABILITIES_MOTION_MODULE_FW_UPDATE = 6,
-    RS_CAPABILITIES_COUNT                   = 7,
+    RS_CAPABILITIES_DEPTH                   = 0, /**< provides depth stream */
+    RS_CAPABILITIES_COLOR                   = 1, /**< provides color stream */
+    RS_CAPABILITIES_INFRARED                = 2, /**< provides infrared stream */
+    RS_CAPABILITIES_INFRARED2               = 3, /**< provides second infrared stream */
+    RS_CAPABILITIES_FISH_EYE                = 4, /**< provides wide field of view (fish-eye) stream */
+    RS_CAPABILITIES_MOTION_EVENTS           = 5, /**< provides gyro and accelorometer events */
+    RS_CAPABILITIES_MOTION_MODULE_FW_UPDATE = 6, /**< provides method for upgrading motion module firmware */
+    RS_CAPABILITIES_ADAPTER_BOARD           = 7, /**< interanlly includes MIPI to USB adapter */
+    RS_CAPABILITIES_ENUMERATION             = 8, /**< provides enough basic functionality to be considered supported. this to catch at runtime various outdated engineering samples */
+    RS_CAPABILITIES_COUNT                   = 9, 
     RS_CAPABILITIES_MAX_ENUM = 0x7FFFFFFF
 } rs_capabilities;
 
@@ -82,11 +85,11 @@ typedef enum rs_output_buffer_format
 
 typedef enum rs_preset
 {
-    RS_PRESET_BEST_QUALITY      = 0,
-    RS_PRESET_LARGEST_IMAGE     = 1,
-    RS_PRESET_HIGHEST_FRAMERATE = 2,
-    RS_PRESET_COUNT             = 3,
-    RS_PRESET_MAX_ENUM = 0x7FFFFFFF
+    RS_PRESET_BEST_QUALITY              = 0,
+    RS_PRESET_LARGEST_IMAGE             = 1,
+    RS_PRESET_HIGHEST_FRAMERATE         = 2,
+    RS_PRESET_COUNT                     = 3,
+    RS_PRESET_MAX_ENUM                  = 0x7FFFFFFF
 } rs_preset;
 
 typedef enum rs_source
@@ -95,7 +98,7 @@ typedef enum rs_source
     RS_SOURCE_MOTION_TRACKING           = 2,
     RS_SOURCE_ALL                       = 3,
     RS_SOURCE_COUNT                     = 4,
-    RS_SOURCE_MAX_ENUM = 0x7FFFFFFF
+    RS_SOURCE_MAX_ENUM                  = 0x7FFFFFFF
 } rs_source;
 
 typedef enum rs_distortion
@@ -103,8 +106,9 @@ typedef enum rs_distortion
     RS_DISTORTION_NONE                   = 0, /**< Rectilinear images, no distortion compensation required */
     RS_DISTORTION_MODIFIED_BROWN_CONRADY = 1, /**< Equivalent to Brown-Conrady distortion, except that tangential distortion is applied to radially distorted points */
     RS_DISTORTION_INVERSE_BROWN_CONRADY  = 2, /**< Equivalent to Brown-Conrady distortion, except undistorts image instead of distorting it */
-    RS_DISTORTION_COUNT                  = 3,
-    RS_DISTORTION_MAX_ENUM = 0x7FFFFFFF
+    RS_DISTORTION_FTHETA                 = 3,
+    RS_DISTORTION_COUNT                  = 4,
+    RS_DISTORTION_MAX_ENUM               = 0x7FFFFFFF
 } rs_distortion;
 
 typedef enum rs_ivcam_preset
@@ -198,14 +202,29 @@ typedef enum rs_option
     RS_OPTION_FISHEYE_COLOR_GAIN                              = 70,
     RS_OPTION_FISHEYE_STROBE                                  = 71,
     RS_OPTION_FISHEYE_EXT_TRIG                                = 72,
-    RS_OPTION_DS5_LASER_POWER                                 = 73, /* TODO : Replace DS5 with TBD */
-    RS_OPTION_COUNT                                           = 74,
+    RS_OPTION_FRAMES_QUEUE_SIZE                               = 73,
+    RS_OPTION_EVENTS_QUEUE_SIZE                               = 74,
+    RS_OPTION_MAX_TIMESTAMP_LATENCY                           = 75,
+    RS_OPTION_DS5_LASER_POWER                                 = 76, /* TODO : Replace DS5 with TBD */
+    RS_OPTION_COUNT                                           = 77,
     RS_OPTION_MAX_ENUM = 0x7FFFFFFF
 } rs_option;
 
 typedef enum rs_blob_type {
-    RS_BLOB_TYPE_MOTION_MODULE_FIRMWARE_UPDATE                = 1
+    RS_BLOB_TYPE_MOTION_MODULE_FIRMWARE_UPDATE                = 0,
+    RS_BLOB_TYPE_COUNT                                        = 1,
+    RS_BLOB_TYPE_MAX_ENUM = 0x7FFFFFFF
 }  rs_blob_type;
+
+typedef enum rs_camera_info {
+    RS_CAMERA_INFO_DEVICE_NAME                                = 0,
+    RS_CAMERA_INFO_DEVICE_SERIAL_NUMBER                       = 1,
+    RS_CAMERA_INFO_CAMERA_FIRMWARE_VERSION                    = 2,
+    RS_CAMERA_INFO_ADAPTER_BOARD_FIRMWARE_VERSION             = 3,
+    RS_CAMERA_INFO_MOTION_MODULE_FIRMWARE_VERSION             = 4,
+    RS_CAMERA_INFO_COUNT                                      = 5,
+    RS_CAMERA_INFO_MAX_ENUM                                   = 0x7FFFFFFF
+} rs_camera_info;
 
 typedef struct rs_intrinsics
 {
@@ -219,6 +238,19 @@ typedef struct rs_intrinsics
     float         coeffs[5]; /* distortion coefficients */
 } rs_intrinsics;
 
+typedef struct rs_motion_device_intrinsics
+{
+    float bias[3];
+    float scale[3];
+}rs_motion_device_intrinsics;
+
+typedef struct rs_motion_intrinsics
+{
+    rs_motion_device_intrinsics gyro;
+    rs_motion_device_intrinsics acc;
+}rs_motion_intrinsics;
+
+
 typedef struct rs_extrinsics
 {
     float rotation[9];    /* column-major 3x3 rotation matrix */
@@ -227,29 +259,39 @@ typedef struct rs_extrinsics
 
 typedef enum rs_event_source
 {
-    RS_EVENT_IMU_ACCEL        = 1,
-    RS_EVENT_IMU_GYRO         = 2,
-    RS_EVENT_IMU_DEPTH_CAM    = 3,
-    RS_EVENT_IMU_MOTION_CAM   = 4,
-    RS_EVENT_G0_SYNC          = 5,
-    RS_EVENT_G1_SYNC          = 6,
-    RS_EVENT_G2_SYNC          = 7,
-    RS_EVENT_SOURCE_COUNT     = 8,
+    RS_EVENT_IMU_ACCEL        = 0,
+    RS_EVENT_IMU_GYRO         = 1,
+    RS_EVENT_IMU_DEPTH_CAM    = 2,
+    RS_EVENT_IMU_MOTION_CAM   = 3,
+    RS_EVENT_G0_SYNC          = 4,
+    RS_EVENT_G1_SYNC          = 5,
+    RS_EVENT_G2_SYNC          = 6,
+    RS_EVENT_SOURCE_COUNT     = 7,
     RS_EVENT_SOURCE_MAX_ENUM  = 0x7FFFFFFF
 }rs_event_source;
 
+
+typedef enum rs_timestamp_domain
+{
+    RS_TIMESTAMP_DOMAIN_CAMERA                   = 0,
+    RS_TIMESTAMP_DOMAIN_MICROCONTROLLER          = 1,
+    RS_TIMESTAMP_DOMAIN_COUNT                    = 2,
+    RS_TIMESTAMP_DOMAIN_MAX_ENUM                 = 0x7FFFFFFF
+}rs_timestamp_domain;
+
+
 typedef struct rs_timestamp_data
 {
-    unsigned int        timestamp;      /* 32Mhz clock. Each tick corresponds to 31.25 usec */
+    double              timestamp;     /* timestamp in milliseconds. hw resolution: 31.25usec */
     rs_event_source     source_id;
-    unsigned short      frame_number;  /* 12 bit; per data source */
+    unsigned long long  frame_number;
 } rs_timestamp_data;
 
 typedef struct rs_motion_data
 {
     rs_timestamp_data   timestamp_data;
     unsigned int        is_valid;   /* boolean */
-    float               axes[3];    /* Three [x,y,z] axes; 16 bit data for Gyro, 12 bit for Accelerometer; 2's complement*/
+    float               axes[3];    /* Three [x,y,z] axes; 16 bit data for Gyro [rad/sec], 12 bit for Accelerometer; 2's complement [m/sec^2]*/
 } rs_motion_data;
 
 
@@ -295,6 +337,13 @@ const char * rs_get_device_name(const rs_device * device, rs_error ** error);
 const char * rs_get_device_serial(const rs_device * device, rs_error ** error);
 
 /**
+* retrieve camera specific information, like versions of various internal componnents
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return            the requested camera info string, in a format specific to the device model
+*/
+const char * rs_get_device_info(const rs_device * device, rs_camera_info info, rs_error ** error);
+
+/**
  * retrieve the USB port number of the device
  * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
  * \return            the USB port number in a string form "##-##"
@@ -316,6 +365,14 @@ const char * rs_get_device_firmware_version(const rs_device * device, rs_error *
  * \param[out] error       if non-null, receives any error that occurs during this call, otherwise, errors are ignored
  */
 void rs_get_device_extrinsics(const rs_device * device, rs_stream from_stream, rs_stream to_stream, rs_extrinsics * extrin, rs_error ** error);
+
+/**
+* retrieve extrinsic transformation between specific stream and the motion module
+* \param[in] from_stream  stream whose coordinate space we will transform from
+* \param[out] extrin      the transformation between the specific stream and motion module
+* \param[out] error       if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+*/
+void rs_get_motion_extrinsics_from(const rs_device * device, rs_stream from, rs_extrinsics * extrin, rs_error ** error);
 
 /**
  * retrieve mapping between the units of the depth image and meters
@@ -439,16 +496,23 @@ int rs_get_stream_framerate(const rs_device * device, rs_stream stream, rs_error
 void rs_get_stream_intrinsics(const rs_device * device, rs_stream stream, rs_intrinsics * intrin, rs_error ** error);
 
 /**
- * set up a frame callback that will be called immediately when an image is available, with no synchronization logic applied
- * \param[in] stream    the stream for whose images the callback should be registered
- * \param[in] on_frame  the callback which will receive the frame data and timestamp
- * \param[in] user      a user data point to be passed to the callback
- * \param[out] error    if non-null, receives any error that occurs during this call, otherwise, errors are ignored
- */
+* retrieve intrinsic camera parameters for a motion module
+* \param[out] intrinsic  the intrinsic parameters
+* \param[out] error   if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+*/
+void rs_get_motion_intrinsics(const rs_device * device, rs_motion_intrinsics * intrinsic, rs_error ** error);
+
+/**
+* set up a frame callback that will be called immediately when an image is available, with no synchronization logic applied
+* \param[in] stream    the stream for whose images the callback should be registered
+* \param[in] on_frame  the callback which will receive the frame data and timestamp
+* \param[in] user      a user data point to be passed to the callback
+* \param[out] error    if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+*/
 void rs_set_frame_callback(rs_device * device, rs_stream stream, void (*on_frame)(rs_device * dev, rs_frame_ref * frame, void * user), void * user, rs_error ** error);
 
 /**
-* Enable and configure motion-tracking data handlers
+* enable and configure motion-tracking data handlers
 * \param[in] on_motion_event    user-defined routine to be invoked when a motion data arrives
 * \param[in] motion_handler     a user data point to be passed to the motion event callback
 * \param[in] on_timestamp_event user-defined routine to be invoked on timestamp
@@ -460,13 +524,13 @@ void rs_enable_motion_tracking(rs_device * device,
     void(*on_timestamp_event)(rs_device * , rs_timestamp_data, void * ), void * timestamp_handler,
     rs_error ** error);
 
-    /**
-    * Enable and configure motion-tracking data handlers
-    * (This variant is provided specifically to enable passing lambdas with capture lists safely into the library)
-    * \param[in] motion_callback    user-defined routine to be invoked when a motion data arrives
-    * \param[in] timestamp_callback user-defined routine to be invoked on timestamp
-    * \param[out] error             if non-null, receives any error that occurs during this call, otherwise, errors are ignored
-    */
+/**
+* enable and configure motion-tracking data handlers
+* (This variant is provided specifically to enable passing lambdas with capture lists safely into the library)
+* \param[in] motion_callback    user-defined routine to be invoked when a motion data arrives
+* \param[in] timestamp_callback user-defined routine to be invoked on timestamp
+* \param[out] error             if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+*/
 void rs_enable_motion_tracking_cpp(rs_device * device,
     rs_motion_callback * motion_callback,
     rs_timestamp_callback * timestamp_callback,
@@ -622,7 +686,7 @@ double rs_get_frame_timestamp(const rs_device * device, rs_stream stream, rs_err
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return            the frame number
 */
-int rs_get_frame_number(const rs_device * device, rs_stream stream, rs_error ** error);
+unsigned long long rs_get_frame_number(const rs_device * device, rs_stream stream, rs_error ** error);
 
 /**
  * retrieve the contents of the latest frame on a stream
@@ -648,12 +712,19 @@ void rs_release_frame(rs_device * device, rs_frame_ref * frame, rs_error ** erro
 double rs_get_detached_frame_timestamp(const rs_frame_ref * frame, rs_error ** error);
 
 /**
+* retrive timestamp domain from safe frame handle, returned from detach, clone_ref or from frame callback
+* this method is used to check if two timestamp values are comparable (generated from the same clock)
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return            the timestamp domain of the frame (camera/ microcontroller)
+*/
+rs_timestamp_domain rs_get_detached_frame_timestamp_domain(const rs_frame_ref * frameset, rs_error ** error);
+
+/**
 * retrive frame number from safe frame handle, returned from detach, clone_ref or from frame callback
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return            the frame nubmer of the frame, in milliseconds since the device was started
 */
-int rs_get_detached_frame_number(const rs_frame_ref * frame, rs_error ** error);
-
+unsigned long long rs_get_detached_frame_number(const rs_frame_ref * frame, rs_error ** error);
 
 /**
 * retrive data from safe frame handle, returned from detach, clone_ref or from frame callback
@@ -677,32 +748,25 @@ int rs_get_detached_frame_width(const rs_frame_ref * frame, rs_error ** error);
 int rs_get_detached_frame_height(const rs_frame_ref * frame, rs_error ** error);
 
 /**
-* retrive frame intrinsic height
+* retrive frame intrinsic framerate
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return            intrinsic framerate
 */
 int rs_get_detached_framerate(const rs_frame_ref * frameset, rs_error ** error);
 
 /**
-* retrive frame stride X, meaning the actual line width in memory (not the logical image width)
+* retrive frame stride, meaning the actual line width in memory (not the logical image width)
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return            frame pad crop
 */
-int rs_get_detached_frame_stride_x(const rs_frame_ref * frame, rs_error ** error);
+int rs_get_detached_frame_stride(const rs_frame_ref * frame, rs_error ** error);
 
 /**
-* retrive frame stride Y, meaning the actual line height in memory (not the logical image height)
+* retrive frame **bits** per pixel
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return            frame pad crop
 */
-int rs_get_detached_frame_stride_y(const rs_frame_ref * frame, rs_error ** error);
-
-/**
-* retrive frame pad crop
-* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
-* \return            frame pad crop
-*/
-float rs_get_detached_frame_bpp(const rs_frame_ref * frame, rs_error ** error);
+int rs_get_detached_frame_bpp(const rs_frame_ref * frame, rs_error ** error);
 
 /**
 * retrive frame format
@@ -717,13 +781,6 @@ rs_format rs_get_detached_frame_format(const rs_frame_ref * frame, rs_error ** e
 * \return            stream type
 */
 rs_stream rs_get_detached_frame_stream_type(const rs_frame_ref * frameset, rs_error ** error);
-/**
-* clone frame handle, creating new handle that is tracking the same underlying frame object
-* \param[in] frame handle returned from detach, clone_ref or from frame callback
-* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
-* \return            the pointer to the start of the frame data
-*/
-rs_frame_ref * rs_clone_frame_ref(rs_device * device, rs_frame_ref* frame, rs_error ** error);
 
 /**
 * send a blob of data to the device. at the moment only RS_BLOB_TYPE_MOTION_MODULE_FIRMWARE_UPDATE is support 
@@ -732,7 +789,6 @@ rs_frame_ref * rs_clone_frame_ref(rs_device * device, rs_frame_ref* frame, rs_er
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 */
 void rs_send_blob_to_device(rs_device * device, rs_blob_type type, void * data, int size, rs_error ** error);
-
 
 /**
 * retrieve the API version from the source code. Evaluate that the value is conformant to the established policies
@@ -754,7 +810,11 @@ const char * rs_distortion_to_string (rs_distortion distortion);
 const char * rs_option_to_string     (rs_option option);
 const char * rs_capabilities_to_string(rs_capabilities capability);
 const char * rs_source_to_string     (rs_source source);
-const char * rs_event_to_string     (rs_event_source event);
+const char * rs_event_to_string      (rs_event_source event);
+const char * rs_blob_type_to_string  (rs_blob_type type);
+const char * rs_camera_info_to_string(rs_camera_info info);
+const char * rs_camera_info_to_string(rs_camera_info info);
+const char * rs_timestamp_domain_to_string(rs_timestamp_domain info);
 
 typedef enum
 {

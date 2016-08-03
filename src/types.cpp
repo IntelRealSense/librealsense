@@ -9,6 +9,8 @@
 #include <algorithm>
 #include <array>
 #include <deque>
+#include <algorithm>
+#include <iomanip>
 
 const char * unknown = "UNKNOWN";
 
@@ -81,6 +83,7 @@ namespace rsimpl
         CASE(NONE)
         CASE(MODIFIED_BROWN_CONRADY)
         CASE(INVERSE_BROWN_CONRADY)
+        CASE(FTHETA)
         default: assert(!is_valid(value)); return unknown;
         }
         #undef CASE
@@ -164,6 +167,9 @@ namespace rsimpl
         CASE(FISHEYE_COLOR_GAIN)
         CASE(FISHEYE_STROBE)
         CASE(FISHEYE_EXT_TRIG)
+        CASE(FRAMES_QUEUE_SIZE)
+        CASE(EVENTS_QUEUE_SIZE)
+        CASE(MAX_TIMESTAMP_LATENCY)
         CASE(DS5_LASER_POWER)
         default: assert(!is_valid(value)); return unknown;
         }
@@ -195,6 +201,8 @@ namespace rsimpl
         CASE(FISH_EYE)
         CASE(MOTION_EVENTS)
         CASE(MOTION_MODULE_FW_UPDATE)
+        CASE(ADAPTER_BOARD)
+        CASE(ENUMERATION)
         default: assert(!is_valid(value)); return unknown;
         }
         #undef CASE
@@ -212,6 +220,46 @@ namespace rsimpl
         CASE(G0_SYNC)
         CASE(G1_SYNC)
         CASE(G2_SYNC)
+        default: assert(!is_valid(value)); return unknown;
+        }
+        #undef CASE
+    }
+
+    const char * get_string(rs_blob_type value)
+    {
+        #define CASE(X) case RS_BLOB_TYPE_##X: return #X;
+        switch(value)
+        {
+        CASE(MOTION_MODULE_FIRMWARE_UPDATE)
+        default: assert(!is_valid(value)); return unknown;
+        }
+        #undef CASE
+    }
+
+    const char * get_string(rs_camera_info value)
+    {
+        #define CASE(X) case RS_CAMERA_INFO_##X: return #X;
+        switch(value)
+        {
+        CASE(DEVICE_NAME)
+        CASE(DEVICE_SERIAL_NUMBER)
+        CASE(CAMERA_FIRMWARE_VERSION)
+        CASE(ADAPTER_BOARD_FIRMWARE_VERSION)
+        CASE(MOTION_MODULE_FIRMWARE_VERSION)
+        default: assert(!is_valid(value)); return unknown;
+        }
+        #undef CASE
+    }
+
+    const char * get_string(rs_timestamp_domain value)
+    {
+        #define CASE(X) case RS_TIMESTAMP_DOMAIN_##X: return #X;
+        switch (value)
+        {
+        CASE(CAMERA)
+        CASE(MICROCONTROLLER)
+        CASE(COUNT)
+        CASE(MAX_ENUM)
         default: assert(!is_valid(value)); return unknown;
         }
         #undef CASE
@@ -293,7 +341,7 @@ namespace rsimpl
         return false;
     }
 
-    static_device_info::static_device_info()
+    static_device_info::static_device_info() : num_libuvc_transfer_buffers(1), nominal_depth_scale(0.001f)
     {
         for(auto & s : stream_subdevices) s = -1;
         for(auto & s : data_subdevices) s = -1;
@@ -356,8 +404,8 @@ namespace rsimpl
         while (!calls.empty())
         {
             //pop one item
-            p = calls.back();
-            calls.pop_back();
+            p = calls.front();
+            calls.pop_front();
 
             //check if found combination that satisfies all interstream constraints
             if (all_requests_filled(p.requests) && validate_requests(p.requests))
@@ -554,43 +602,68 @@ namespace rsimpl
             auto & a = requests[rule.a], &b = requests[rule.b]; auto f = rule.field;
             if (a.enabled && b.enabled)
             {
+                bool compat = true;
                 if (rule.same_format)
                 {
-                    if (a.format != RS_FORMAT_ANY && b.format != RS_FORMAT_ANY && a.format != b.format)
-                    {
-                        if (throw_exception)
-                            throw std::runtime_error(to_string() << "requested " << rule.a << " and " << rule.b << " settings are incompatible");
-                        return false;
-                    }
-                        
+                    if ((a.format != RS_FORMAT_ANY) && (b.format != RS_FORMAT_ANY) && (a.format != b.format))
+                        compat = false;
                 }
-                else  if (rule.bigger == RS_STREAM_COUNT && !rule.divided && !rule.divided2)
+                else if((a.*f != 0) && (b.*f != 0))
                 {
-                    // Check for incompatibility if both values specified
-                    if ((a.*f != 0) && (b.*f != 0) && (a.*f + rule.delta != b.*f) && (a.*f + rule.delta2 != b.*f))
+                    if ((rule.bigger == RS_STREAM_COUNT) && (!rule.divides && !rule.divides2))
                     {
-                        if (throw_exception)
-                            throw std::runtime_error(to_string() << "requested " << rule.a << " and " << rule.b << " settings are incompatible");
-                        return false;
+                        // Check for incompatibility if both values specified
+                        if ((a.*f + rule.delta != b.*f) && (a.*f + rule.delta2 != b.*f))
+                            compat = false;
+                    }
+                    else
+                    {
+                        if (((rule.bigger == rule.a) && (a.*f < b.*f)) || ((rule.bigger == rule.b) && (b.*f < a.*f)))
+                            compat = false;
+                        if ((rule.divides &&  (a.*f % b.*f)) || (rule.divides2 && (b.*f % a.*f)))
+                            compat = false;
                     }
                 }
-                else
+                if (!compat)
                 {
-                    if ((a.*f != 0) && (b.*f != 0) && (rule.bigger == rule.a && a.*f < b.*f) || (rule.bigger == rule.b && b.*f < a.*f))
-                    {
-                        if (throw_exception)
-                            throw std::runtime_error(to_string() << "requested " << rule.a << " and " << rule.b << " settings are incompatible");
-                        return false;
-                    }
-                    if (a.*f != 0 && b.*f != 0 && ((rule.divided && float(a.*f) / float(b.*f) - a.*f / b.*f > 0) || (rule.divided2 && float(b.*f) / float(a.*f) - b.*f / a.*f > 0)))
-                    {
-                        if (throw_exception)
-                            throw std::runtime_error(to_string() << "requested " << rule.a << " and " << rule.b << " settings are incompatible");
-                        return false;
-                    }
+                    if (throw_exception)
+                        throw std::runtime_error(to_string() << "requested " << rule.a << " and " << rule.b << " settings are incompatible");
+                    return false;
                 }
             }
         }
         return true;
+    }
+
+    std::string firmware_version::to_string() const
+    {
+        if (is_any) return "any";
+
+        std::stringstream s;
+        s << std::setfill('0') << std::setw(2) << m_major << "." 
+            << std::setfill('0') << std::setw(2) << m_minor << "." 
+            << std::setfill('0') << std::setw(2) << m_patch << "." 
+            << std::setfill('0') << std::setw(2) << m_build;
+        return s.str();
+    }
+
+    std::vector<std::string> firmware_version::split(const std::string& str)
+    {
+        std::vector<std::string> result;
+        auto e = str.end();
+        auto i = str.begin();
+        while (i != e){
+            i = find_if_not(i, e, [](char c) { return c == '.'; });
+            if (i == e) break;
+            auto j = find(i, e, '.');
+            result.emplace_back(i, j);
+            i = j;
+        }
+        return result;
+    }
+
+    int firmware_version::parse_part(const std::string& name, int part)
+    {
+        return atoi(split(name)[part].c_str());
     }
 }
