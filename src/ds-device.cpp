@@ -609,7 +609,7 @@ namespace rsimpl
         wraparound_mechanism<unsigned long long> frame_counter_wraparound;
 
     public:
-        color_timestamp_reader(int fps) : fps(fps), timestamp_wraparound(1, std::numeric_limits<uint32_t>::max()), frame_counter_wraparound(1, std::numeric_limits<uint32_t>::max()) {}
+        color_timestamp_reader(int fps) : fps(fps), timestamp_wraparound(0, std::numeric_limits<uint32_t>::max()), frame_counter_wraparound(0, std::numeric_limits<uint32_t>::max()) {}
 
         bool validate_frame(const subdevice_mode & mode, const void * frame) const override
         {
@@ -644,7 +644,7 @@ namespace rsimpl
         wraparound_mechanism<unsigned long long> frame_counter_wraparound;
 
     public:
-        serial_timestamp_generator(int fps) : fps(fps), serial_frame_number(), timestamp_wraparound(1, std::numeric_limits<uint32_t>::max()), frame_counter_wraparound(1, std::numeric_limits<uint32_t>::max()) {}
+        serial_timestamp_generator(int fps) : fps(fps), serial_frame_number(), timestamp_wraparound(0, std::numeric_limits<uint32_t>::max()), frame_counter_wraparound(0, std::numeric_limits<uint32_t>::max()) {}
 
         bool validate_frame(const subdevice_mode & mode, const void * frame) const override { return true; }
         double get_frame_timestamp(const subdevice_mode &, const void *) override
