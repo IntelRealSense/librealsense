@@ -12,7 +12,7 @@
 #include <algorithm>
 #include <iomanip>
 
-const char * unknown = "UNKNOWN";
+#define unknown "UNKNOWN" 
 
 namespace rsimpl
 {
