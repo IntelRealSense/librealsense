@@ -55,7 +55,7 @@ namespace rsimpl
         CASE(RAW10)
         CASE(RAW16)
         CASE(RAW8)
-		default: assert(!is_valid(value)); return unknown;
+        default: assert(!is_valid(value)); return unknown;
         }
         #undef CASE
     }
@@ -68,7 +68,7 @@ namespace rsimpl
         CASE(BEST_QUALITY)
         CASE(LARGEST_IMAGE)
         CASE(HIGHEST_FRAMERATE)
-		default: assert(!is_valid(value)); return unknown;
+        default: assert(!is_valid(value)); return unknown;
         }
         #undef CASE
     }
@@ -81,7 +81,7 @@ namespace rsimpl
         CASE(NONE)
         CASE(MODIFIED_BROWN_CONRADY)
         CASE(INVERSE_BROWN_CONRADY)
-		default: assert(!is_valid(value)); return unknown;
+        default: assert(!is_valid(value)); return unknown;
         }
         #undef CASE
     }
@@ -164,7 +164,11 @@ namespace rsimpl
         CASE(FISHEYE_COLOR_GAIN)
         CASE(FISHEYE_STROBE)
         CASE(FISHEYE_EXT_TRIG)
-		default: assert(!is_valid(value)); return unknown;
+        CASE(FRAMES_QUEUE_SIZE)
+        CASE(EVENTS_QUEUE_SIZE)
+        CASE(MAX_TIMESTAMP_LATENCY)
+        CASE(DS5_LASER_POWER)
+        default: assert(!is_valid(value)); return unknown;
         }
         #undef CASE
     }
@@ -177,7 +181,7 @@ namespace rsimpl
         CASE(VIDEO)
         CASE(MOTION_TRACKING)
         CASE(ALL)
-		default: assert(!is_valid(value)); return unknown;
+        default: assert(!is_valid(value)); return unknown;
         }
         #undef CASE
     }
@@ -211,7 +215,7 @@ namespace rsimpl
         CASE(G0_SYNC)
         CASE(G1_SYNC)
         CASE(G2_SYNC)
-		default: assert(!is_valid(value)); return unknown;
+        default: assert(!is_valid(value)); return unknown;
         }
         #undef CASE
     }
@@ -256,7 +260,6 @@ namespace rsimpl
         }
         else
         {
-			
             // Otherwise unpack one row at a time
             assert(mode.pf.plane_count == 1); // Can't unpack planar formats row-by-row (at least not with the current architecture, would need to pass multiple source ptrs to unpack)
             for(int i=0; i<unpack_height; ++i)
@@ -293,7 +296,7 @@ namespace rsimpl
         return false;
     }
 
-    static_device_info::static_device_info()
+    static_device_info::static_device_info() : num_libuvc_transfer_buffers(1), nominal_depth_scale(0.001f)
     {
         for(auto & s : stream_subdevices) s = -1;
         for(auto & s : data_subdevices) s = -1;
@@ -555,17 +558,17 @@ namespace rsimpl
             auto & a = requests[rule.a], &b = requests[rule.b]; auto f = rule.field;
             if (a.enabled && b.enabled)
             {
-				if (rule.same_formet)
-				{
-					if (a.format != RS_FORMAT_ANY && b.format != RS_FORMAT_ANY && a.format != b.format)
-					{
-						if (throw_exception)
-							throw std::runtime_error(to_string() << "requested " << rule.a << " and " << rule.b << " settings are incompatible");
-						return false;
-					}
-						
-				}
-				else  if (rule.bigger == RS_STREAM_COUNT && !rule.diveded && !rule.diveded2)
+                if (rule.same_formet)
+                {
+                    if (a.format != RS_FORMAT_ANY && b.format != RS_FORMAT_ANY && a.format != b.format)
+                    {
+                        if (throw_exception)
+                            throw std::runtime_error(to_string() << "requested " << rule.a << " and " << rule.b << " settings are incompatible");
+                        return false;
+                    }
+                        
+                }
+                else  if (rule.bigger == RS_STREAM_COUNT && !rule.diveded && !rule.diveded2)
                 {
                     // Check for incompatibility if both values specified
                     if (a.*f != 0 && b.*f != 0 && a.*f + rule.delta != b.*f && a.*f + rule.delta2 != b.*f)

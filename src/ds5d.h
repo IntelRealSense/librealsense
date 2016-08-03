@@ -25,6 +25,7 @@ namespace rsimpl
 
         void set_options(const rs_option options[], size_t count, const double values[]) override;
         void get_options(const rs_option options[], size_t count, double values[]) override;
+        bool supports_option(rs_option option) const override;
 
     private:
         bool has_emitter;
