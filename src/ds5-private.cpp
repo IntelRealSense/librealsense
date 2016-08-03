@@ -23,7 +23,6 @@ namespace ds5 {
 
     const uint8_t DS5_MONITOR_INTERFACE                 = 0x3;
     const uint8_t DS5_MOTION_MODULE_INTERRUPT_INTERFACE = 0x4;
-    //const uvc::extension_unit depth_xu = {};
 
 
     void claim_ds5_monitor_interface(uvc::device & device)
