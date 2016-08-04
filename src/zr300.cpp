@@ -7,7 +7,8 @@
 #include "image.h"
 #include "ds-private.h"
 #include "zr300.h"
-
+#include "ivcam-private.h"
+#include "hw-monitor.h"
 
 using namespace rsimpl;
 using namespace rsimpl::ds;
@@ -15,9 +16,10 @@ using namespace rsimpl::motion_module;
 
 namespace rsimpl
 {
-    zr300_camera::zr300_camera(std::shared_ptr<uvc::device> device, const static_device_info & info)
+    zr300_camera::zr300_camera(std::shared_ptr<uvc::device> device, const static_device_info & info, motion_module_calibration in_fe_intrinsic)
     : ds_device(device, info),
-      motion_module_ctrl(device.get())
+      motion_module_ctrl(device.get()),
+      fe_intrinsic(in_fe_intrinsic)
     {
 
     }
@@ -131,7 +133,7 @@ namespace rsimpl
             values[i] = base_opt_val[i];
     }
 
-    void zr300_camera::send_blob_to_device(rs_blob_type type, void * data, int size)
+    void zr300_camera::send_blob_to_device(rs_blob_type type, void * data, size_t size)
     {
         switch(type)
         {
@@ -141,6 +143,8 @@ namespace rsimpl
         default: rs_device_base::send_blob_to_device(type, data, size);
         }
     }
+
+
 
     void zr300_camera::toggle_motion_module_power(bool on)
     {        
@@ -209,6 +213,26 @@ namespace rsimpl
         return RS_STREAM_DEPTH;
     }
 
+    rs_motion_intrinsics zr300_camera::get_motion_intrinsics() const
+    {
+        return  fe_intrinsic.imu_intrinsic;
+    }
+
+    rs_extrinsics zr300_camera::get_motion_extrinsics_from(rs_stream from) const
+    {
+        switch (from)
+        {
+        case RS_STREAM_DEPTH:
+            return fe_intrinsic.mm_extrinsic.depth_to_imu;
+        case RS_STREAM_COLOR:
+            return fe_intrinsic.mm_extrinsic.rgb_to_imu;
+        case RS_STREAM_FISHEYE:
+            return fe_intrinsic.mm_extrinsic.fe_to_imu;
+        default:
+            throw std::runtime_error(to_string() << "No motion extrinsics from "<<from );
+        }
+    }
+
     void zr300_camera::get_option_range(rs_option option, double & min, double & max, double & step, double & def)
     {
         if (is_fisheye_uvc_control(option))
@@ -227,6 +251,27 @@ namespace rsimpl
         }
     }
 
+    motion_module_calibration read_fisheye_intrinsic(uvc::device & device)
+    {
+        motion_module_calibration intrinsic;
+        memset(&intrinsic, 0, sizeof(motion_module_calibration));
+
+        byte data[256];
+        hw_monitor::read_from_eeprom(static_cast<int>(adaptor_board_command::IRB), static_cast<int>(adaptor_board_command::IWB), device, 0, 255, data);
+        intrinsic.sn = *(serial_number*)&data[0];
+
+        hw_monitor::read_from_eeprom(static_cast<int>(adaptor_board_command::IRB), static_cast<int>(adaptor_board_command::IWB), device, 0x100, 255, data);
+        intrinsic.fe_intrinsic = *(fisheye_intrinsic*)&data[0];
+
+        hw_monitor::read_from_eeprom(static_cast<int>(adaptor_board_command::IRB), static_cast<int>(adaptor_board_command::IWB), device, 0x200, 255, data);
+        intrinsic.mm_extrinsic = *(IMU_extrinsic*)&data[0];
+
+        hw_monitor::read_from_eeprom(static_cast<int>(adaptor_board_command::IRB), static_cast<int>(adaptor_board_command::IWB), device, 0x300, 255, data);
+        intrinsic.imu_intrinsic = *(IMU_intrinsic*)&data[0];
+
+        return intrinsic;
+    }
+
     std::shared_ptr<rs_device> make_zr300_device(std::shared_ptr<uvc::device> device)
     {
         LOG_INFO("Connecting to Intel RealSense ZR300");
@@ -234,22 +279,46 @@ namespace rsimpl
         static_device_info info;
         info.name = { "Intel RealSense ZR300" };
         auto c = ds::read_camera_info(*device);
-        info.subdevice_modes.push_back({ 2,{ 1920, 1080 }, pf_rw16, 30, c.intrinsicsThird[0],{ c.modesThird[0][0] },{ 0 } });
 
+        info.subdevice_modes.push_back({ 2, { 1920, 1080 }, pf_rw16, 30, c.intrinsicsThird[0], { c.modesThird[0][0] }, { 0 } });
+
+        motion_module_calibration fisheye_intrinsic;
+        auto succeeded_to_read_fisheye_intrinsic = false;
+       
         // TODO - is Motion Module optional
         if (uvc::is_device_connected(*device, VID_INTEL_CAMERA, FISHEYE_PRODUCT_ID))
         {
             // Acquire Device handle for Motion Module API
             zr300::claim_motion_module_interface(*device);
+            motion_module_control mm(device.get());
+            mm.toggle_motion_module_power(true);
+            mm.toggle_motion_module_events(true); //wait for the motion module start up (300 msec)
+            mm.toggle_motion_module_events(false); //then deactivate events generation
+            try
+            {
+                fisheye_intrinsic = read_fisheye_intrinsic(*device);
+                succeeded_to_read_fisheye_intrinsic = true;
+            }
+            catch (...)
+            {
+                LOG_ERROR("Failed to read fisheye intrinsic");
+            }
 
-            info.capabilities_vector.push_back(RS_CAPABILITIES_FISH_EYE);
-            info.capabilities_vector.push_back(RS_CAPABILITIES_MOTION_EVENTS);
+            mm.toggle_motion_module_power(false);
+
+            rs_intrinsics rs_intrinsics = fisheye_intrinsic.fe_intrinsic;
+
             info.capabilities_vector.push_back(RS_CAPABILITIES_MOTION_MODULE_FW_UPDATE);
+            info.capabilities_vector.push_back(RS_CAPABILITIES_ADAPTER_BOARD);
+
+            // require at least Alpha FW version to run
+            info.capabilities_vector.push_back({ RS_CAPABILITIES_ENUMERATION, { 1, 16, 0, 0 }, firmware_version::any(), RS_CAMERA_INFO_ADAPTER_BOARD_FIRMWARE_VERSION });
 
             info.stream_subdevices[RS_STREAM_FISHEYE] = 3;
             info.presets[RS_STREAM_FISHEYE][RS_PRESET_BEST_QUALITY] = { true, 640, 480, RS_FORMAT_RAW8,   60 };
-            info.subdevice_modes.push_back({ 3,{ 640, 480 }, pf_raw8, 60, c.intrinsicsThird[1],{ c.modesThird[1][0] },{ 0 } });
-            info.subdevice_modes.push_back({ 3,{ 640, 480 }, pf_raw8, 30, c.intrinsicsThird[1],{ c.modesThird[1][0] },{ 0 } });
+
+            info.subdevice_modes.push_back({ 3, { 640, 480 }, pf_raw8, 60, rs_intrinsics, { /*TODO:ask if we need rect_modes*/ }, { 0 } });
+            info.subdevice_modes.push_back({ 3, { 640, 480 }, pf_raw8, 30, rs_intrinsics, {/*TODO:ask if we need rect_modes*/ }, { 0 } });
 
             info.options.push_back({ RS_OPTION_FISHEYE_COLOR_EXPOSURE });
             info.options.push_back({ RS_OPTION_FISHEYE_COLOR_GAIN });
@@ -263,8 +332,24 @@ namespace rsimpl
             info.options.push_back({ RS_OPTION_ZR300_MOTION_MODULE_TIME_SEED,       0,      UINT_MAX,   1,   0 });
             info.options.push_back({ RS_OPTION_ZR300_MOTION_MODULE_ACTIVE,          0,       1,         1,   0 });
         }
+        
+        std::timed_mutex mutex;
+        ivcam::get_firmware_version_string(*device, mutex, info.camera_info[RS_CAMERA_INFO_ADAPTER_BOARD_FIRMWARE_VERSION], (int)adaptor_board_command::GVD);
+        ivcam::get_firmware_version_string(*device, mutex, info.camera_info[RS_CAMERA_INFO_MOTION_MODULE_FIRMWARE_VERSION], (int)adaptor_board_command::GVD, 4);
 
         ds_device::set_common_ds_config(device, info, c);
-        return std::make_shared<zr300_camera>(device, info);
+        if (succeeded_to_read_fisheye_intrinsic)
+        {
+            auto fe_extrinsic = fisheye_intrinsic.mm_extrinsic;
+            info.stream_poses[RS_STREAM_FISHEYE] = { reinterpret_cast<float3x3 &>(fe_extrinsic.fe_to_depth.rotation), reinterpret_cast<float3&>(fe_extrinsic.fe_to_depth.translation) };
+
+            info.capabilities_vector.push_back({ RS_CAPABILITIES_FISH_EYE, { 1, 15, 5, 0 }, firmware_version::any(), RS_CAMERA_INFO_MOTION_MODULE_FIRMWARE_VERSION });
+            info.capabilities_vector.push_back({ RS_CAPABILITIES_MOTION_EVENTS, { 1, 15, 5, 0 }, firmware_version::any(), RS_CAMERA_INFO_MOTION_MODULE_FIRMWARE_VERSION });
+        }
+        else
+        {
+            LOG_ERROR("Motion module capabilities were disabled due to failure to aquire intrinsic");
+        }
+        return std::make_shared<zr300_camera>(device, info, fisheye_intrinsic);
     }
 }

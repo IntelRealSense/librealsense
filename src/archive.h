@@ -18,34 +18,38 @@ namespace rsimpl
         struct frame_additional_data
         {
             double timestamp = 0;
-            int frame_number = 0;
+            unsigned long long frame_number = 0;
             long long system_time = 0;
             int width = 0;
             int height = 0;
             int fps = 0;
             int stride_x = 0;
             int stride_y = 0;
-            float bpp = 0;
+            int bpp = 1;
             rs_format format = RS_FORMAT_ANY;
             rs_stream stream_type = RS_STREAM_MAX_ENUM;
+            rs_timestamp_domain timestamp_domain = RS_TIMESTAMP_DOMAIN_CAMERA;
             int pad = 0;
             std::chrono::high_resolution_clock::time_point frame_callback_started {};
 
             frame_additional_data(){};
 
-            frame_additional_data(double in_timestamp, int in_frame_number, long long in_system_time, int in_width, int in_height, int in_fps, int in_stride_x, int in_stride_y, float in_bpp, const rs_format in_format, rs_stream in_stream_type, int in_pad)
-                :timestamp(in_timestamp),
-                frame_number(in_frame_number),
-                system_time(in_system_time),
-                width(in_width),
-                height(in_height),
-                fps(in_fps),
-                stride_x(in_stride_x),
-                stride_y(in_stride_y),
-                bpp(in_bpp),
-                format(in_format),
-                stream_type(in_stream_type),
-                pad(in_pad){}
+            frame_additional_data(double in_timestamp, unsigned long long in_frame_number, long long in_system_time, 
+                int in_width, int in_height, int in_fps, 
+                int in_stride_x, int in_stride_y, int in_bpp, 
+                const rs_format in_format, rs_stream in_stream_type, int in_pad)
+                : timestamp(in_timestamp),
+                  frame_number(in_frame_number),
+                  system_time(in_system_time),
+                  width(in_width),
+                  height(in_height),
+                  fps(in_fps),
+                  stride_x(in_stride_x),
+                  stride_y(in_stride_y),
+                  bpp(in_bpp),
+                  format(in_format),
+                  stream_type(in_stream_type),
+                  pad(in_pad) {}
         };
 
         // Define a movable but explicitly noncopyable buffer type to hold our frame data
@@ -85,16 +89,17 @@ namespace rsimpl
 
             const byte* get_frame_data() const;
             double get_frame_timestamp() const;
+            rs_timestamp_domain get_frame_timestamp_domain() const;
             void set_timestamp(double new_ts) override { additional_data.timestamp = new_ts; }
-            int get_frame_number() const override;
+            unsigned long long get_frame_number() const override;
+            void set_timestamp_domain(rs_timestamp_domain timestamp_domain) override { additional_data.timestamp_domain = timestamp_domain; }
             long long get_frame_system_time() const;
-            int get_width()const;
-            int get_height()const;
+            int get_width() const;
+            int get_height() const;
             int get_framerate() const;
-            int get_stride_x()const;
-            int get_stride_y()const;
-            float get_bpp()const;
-            rs_format get_format()const;
+            int get_stride() const;
+            int get_bpp() const;
+            rs_format get_format() const;
             rs_stream get_stream_type() const override;
 
             std::chrono::high_resolution_clock::time_point get_frame_callback_start_time_point() const;
@@ -152,16 +157,16 @@ namespace rsimpl
 
             const byte* get_frame_data() const override;
             double get_frame_timestamp() const override;
-            int get_frame_number() const override;
+            unsigned long long get_frame_number() const override;
             long long get_frame_system_time() const override;
+            rs_timestamp_domain get_frame_timestamp_domain() const override;
             int get_frame_width() const override;
             int get_frame_height() const override;
             int get_frame_framerate() const override;
-            int get_frame_stride_x() const override;
-			int get_frame_stride_y() const override;
-            float get_frame_bpp() const override;
+            int get_frame_stride() const override;
+            int get_frame_bpp() const override;
             rs_format get_frame_format() const override;
-            rs_stream get_stream_type() const;
+            rs_stream get_stream_type() const override;
             std::chrono::high_resolution_clock::time_point get_frame_callback_start_time_point() const;
             void update_frame_callback_start_ts(std::chrono::high_resolution_clock::time_point ts);
             void log_callback_start(std::chrono::high_resolution_clock::time_point capture_start_time);
@@ -182,20 +187,24 @@ namespace rsimpl
 
             const byte * get_frame_data(rs_stream stream) const { return buffer[stream].get_frame_data(); }
             double get_frame_timestamp(rs_stream stream) const { return buffer[stream].get_frame_timestamp(); }
-            int get_frame_number(rs_stream stream) const { return buffer[stream].get_frame_number(); }
+            unsigned long long get_frame_number(rs_stream stream) const { return buffer[stream].get_frame_number(); }
             long long get_frame_system_time(rs_stream stream) const { return buffer[stream].get_frame_system_time(); }
+            int get_frame_stride(rs_stream stream) const { return buffer[stream].get_frame_stride(); }
+            int get_frame_bpp(rs_stream stream) const { return buffer[stream].get_frame_bpp(); }
 
             void cleanup();
-
+            
         };
 
     private:
         // This data will be left constant after creation, and accessed from all threads
         subdevice_mode_selection modes[RS_STREAM_NATIVE_COUNT];
         
-        small_heap<frame, RS_USER_QUEUE_SIZE> published_frames;
-        small_heap<frameset, RS_USER_QUEUE_SIZE> published_sets;
-        small_heap<frame_ref, RS_USER_QUEUE_SIZE> detached_refs;
+        std::atomic<uint32_t>* max_frame_queue_size;
+        std::atomic<uint32_t> published_frames_per_stream[RS_STREAM_COUNT];
+        small_heap<frame, RS_USER_QUEUE_SIZE*RS_STREAM_COUNT> published_frames;
+        small_heap<frameset, RS_USER_QUEUE_SIZE*RS_STREAM_COUNT> published_sets;
+        small_heap<frame_ref, RS_USER_QUEUE_SIZE*RS_STREAM_COUNT> detached_refs;
         
 
     protected:
@@ -205,7 +214,7 @@ namespace rsimpl
         std::chrono::high_resolution_clock::time_point capture_started;
 
     public:
-        frame_archive(const std::vector<subdevice_mode_selection> & selection, std::chrono::high_resolution_clock::time_point capture_started = std::chrono::high_resolution_clock::now());
+        frame_archive(const std::vector<subdevice_mode_selection> & selection, std::atomic<uint32_t>* max_frame_queue_size, std::chrono::high_resolution_clock::time_point capture_started = std::chrono::high_resolution_clock::now());
 
         // Safe to call from any thread
         bool is_stream_enabled(rs_stream stream) const { return modes[stream].mode.pf.fourcc != 0; }

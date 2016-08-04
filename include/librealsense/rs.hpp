@@ -24,7 +24,9 @@ namespace rs
         infrared2               = 3,
         fish_eye                = 4,
         motion_events           = 5,
-        motion_module_fw_update = 6
+        motion_module_fw_update = 6,
+        adapter_board           = 7,
+        enumeration             = 8,
     };
 
     enum class stream : int32_t
@@ -78,7 +80,8 @@ namespace rs
     {
         none                   = 0, ///< Rectilinear images, no distortion compensation required
         modified_brown_conrady = 1, ///< Equivalent to Brown-Conrady distortion, except that tangential distortion is applied to radially distorted points
-        inverse_brown_conrady  = 2  ///< Equivalent to Brown-Conrady distortion, except undistorts image instead of distorting it
+        inverse_brown_conrady  = 2,  ///< Equivalent to Brown-Conrady distortion, except undistorts image instead of distorting it
+        distortion_ftheta      = 3 
     };
 
     // reflection of rs_option
@@ -161,13 +164,26 @@ namespace rs
         events_queue_size                               = 74,
         max_timestamp_latency                           = 75,
         ds5_laser_power                                 = 76
+
+    };
+
+    enum class blob_type {
+        motion_module_firmware_update                   = 0,
+    };
+
+    enum class camera_info {
+        device_name                                     = 0,
+        serial_number                                   = 1,
+        camera_firmware_version                         = 2,
+        adapter_board_firmware_version                  = 3,
+        motion_module_firmware_version                  = 4,
     };
 
     enum class source : uint8_t
     {
         video           = 1,
         motion_data     = 2,
-        all_sources
+        all_sources     = 3,
     };
 
     enum class event : uint8_t
@@ -179,6 +195,12 @@ namespace rs
         event_imu_g0_sync       = 5,
         event_imu_g1_sync       = 6,
         event_imu_g2_sync       = 7
+    };
+
+    enum class timestamp_domain
+    {
+        camera,
+        microcontroller
     };
 
     struct float2 { float x,y; };
@@ -195,22 +217,27 @@ namespace rs
         float2      texcoord_to_pixel(const float2 & coord) const                       { return {coord.x*width - 0.5f, coord.y*height - 0.5f}; }
 
                     // Helpers for mapping from image coordinates into 3D space
-        float3      deproject(const float2 & pixel, float depth) const                  { float3 point; rs_deproject_pixel_to_point(&point.x, this, &pixel.x, depth); return point; }
+        float3      deproject(const float2 & pixel, float depth) const                  { float3 point = {}; rs_deproject_pixel_to_point(&point.x, this, &pixel.x, depth); return point; }
         float3      deproject_from_texcoord(const float2 & coord, float depth) const    { return deproject(texcoord_to_pixel(coord), depth); }
 
                     // Helpers for mapping from 3D space into image coordinates
-        float2      project(const float3 & point) const                                 { float2 pixel; rs_project_point_to_pixel(&pixel.x, this, &point.x); return pixel; }
+        float2      project(const float3 & point) const                                 { float2 pixel = {}; rs_project_point_to_pixel(&pixel.x, this, &point.x); return pixel; }
         float2      project_to_texcoord(const float3 & point) const                     { return pixel_to_texcoord(project(point)); }
 
         bool        operator == (const intrinsics & r) const                            { return memcmp(this, &r, sizeof(r)) == 0; }
 
     };
+
+    struct motion_intrinsics : rs_motion_intrinsics
+    {
+        motion_intrinsics(){};
+    };
+
     struct extrinsics : rs_extrinsics
     {
-        bool        is_identity() const                                                 { return rotation[0] == 1 && rotation[4] == 1 && translation[0] == 0 && translation[1] == 0 && translation[2] == 0; }
-        float3      transform(const float3 & point) const                               { float3 p; rs_transform_point_to_point(&p.x, this, &point.x); return p; }
-
-    };   
+        bool        is_identity() const                                                 { return (rotation[0] == 1) && (rotation[4] == 1) && (translation[0] == 0) && (translation[1] == 0) && (translation[2] == 0); }
+        float3      transform(const float3 & point) const                               { float3 p = {}; rs_transform_point_to_point(&p.x, this, &point.x); return p; }
+    };
 
     struct timestamp_data : rs_timestamp_data
     {
@@ -231,7 +258,12 @@ namespace rs
     {
         std::string function, args;
     public:
-        error(rs_error * err) : std::runtime_error(rs_get_error_message(err)), function(rs_get_failed_function(err)), args(rs_get_failed_args(err)) { rs_free_error(err); }
+        error(rs_error * err) : std::runtime_error(rs_get_error_message(err))
+        { 
+            function = (nullptr != rs_get_failed_function(err)) ? rs_get_failed_function(err) : std::string();
+            args = (nullptr != rs_get_failed_args(err)) ? rs_get_failed_args(err) : std::string();
+            rs_free_error(err); 
+        }
         const std::string & get_failed_function() const { return function; }
         const std::string & get_failed_args() const { return args; }
         static void handle(rs_error * e) { if(e) throw error(e); }
@@ -339,23 +371,7 @@ namespace rs
             }
         }
 
-        frame clone_ref()
-        {
-            rs_error * e = nullptr;
-            auto r = rs_clone_frame_ref(device, frame_ref, &e);
-            error::handle(e);
-            return std::move(frame(device, r));
-        }
-
-        bool try_clone_ref(frame& result)
-        {
-            rs_error * e = nullptr;
-            auto r = rs_clone_frame_ref(device, frame_ref, &e);
-            if (!e) result = std::move(frame(device, r));
-            return e == nullptr;
-        }
-
-        /// retrieve the time at which the TODO on a stream was captured
+        /// retrieve the time at which the frame was captured
         /// \return            the timestamp of the frame, in milliseconds since the device was started
         double get_timestamp() const
         {
@@ -365,7 +381,17 @@ namespace rs
             return r;
         }
 
-        int get_frame_number() const
+        /// retrieve the timestamp domain 
+        /// \return            timestamp domain (clock name) for timestamp values
+        timestamp_domain get_frame_timestamp_domain() const
+        {
+            rs_error * e = nullptr;
+            auto r = rs_get_detached_frame_timestamp_domain(frame_ref, &e);
+            error::handle(e);
+            return static_cast<timestamp_domain>(r);
+        }
+
+        unsigned long long get_frame_number() const
         {
             rs_error * e = nullptr;
             auto r = rs_get_detached_frame_number(frame_ref, &e);
@@ -405,23 +431,17 @@ namespace rs
             return r;
         }
 
-        int get_stride_x() const
+        int get_stride() const
         {
             rs_error * e = nullptr;
-            auto r = rs_get_detached_frame_stride_x(frame_ref, &e);
+            auto r = rs_get_detached_frame_stride(frame_ref, &e);
             error::handle(e);
             return r;
         }
 
-        int get_stride_y() const
-        {
-            rs_error * e = nullptr;
-            auto r = rs_get_detached_frame_stride_y(frame_ref, &e);
-            error::handle(e);
-            return r;
-        }
-
-        float get_bpp() const
+        /// retrieve bits per pixel
+        /// \return            number of bits per one pixel
+        int get_bpp() const
         {
             rs_error * e = nullptr;
             auto r = rs_get_detached_frame_bpp(frame_ref, &e);
@@ -509,6 +529,16 @@ namespace rs
             return r;
         }
 
+        /// retrieve camera specific information like the versions of the various componnents
+        /// \return  camera info string, in a format specific to the device model
+        const char * get_info(camera_info info) const
+        {
+            rs_error * e = nullptr;
+            auto r = rs_get_device_info((const rs_device *)this, (rs_camera_info)info, &e);
+            error::handle(e);
+            return r;
+        }
+
         /// retrieve extrinsic transformation between the viewpoints of two different streams
         /// \param[in] from_stream  stream whose coordinate space we will transform from
         /// \param[in] to_stream    stream whose coordinate space we will transform to
@@ -518,6 +548,18 @@ namespace rs
             rs_error * e = nullptr;
             extrinsics extrin;
             rs_get_device_extrinsics((const rs_device *)this, (rs_stream)from_stream, (rs_stream)to_stream, &extrin, &e);
+            error::handle(e);
+            return extrin;
+        }
+
+        /// retrieve extrinsic transformation between the viewpoints of specific stream and the motion module
+        /// \param[in] from_stream  stream whose coordinate space we will transform from
+        /// \return                 the transformation between the  specific stream and motion module
+        extrinsics get_motion_extrinsics_from(stream from_stream) const
+        {
+            rs_error * e = nullptr;
+            extrinsics extrin;
+            rs_get_motion_extrinsics_from((const rs_device *)this, (rs_stream)from_stream, &extrin, &e);
             error::handle(e);
             return extrin;
         }
@@ -666,6 +708,18 @@ namespace rs
             rs_get_stream_intrinsics((const rs_device *)this, (rs_stream)stream, &intrin, &e);
             error::handle(e);
             return intrin;
+        }
+
+        /// retrieve intrinsic camera parameters for a specific stream
+        /// \param[in] stream  the stream whose parameters to retrieve
+        /// \return            the intrinsic parameters of the stream
+        motion_intrinsics get_motion_intrinsics() const
+        {
+            rs_error * e = nullptr;
+            motion_intrinsics intrinsics;
+            rs_get_motion_intrinsics((const rs_device *)this, &intrinsics, &e);
+            error::handle(e);
+            return intrinsics;
         }
 
         /// sets the callback for frame arrival event. provided callback will be called the instant new frame of given stream becomes available
@@ -863,7 +917,7 @@ namespace rs
         /// retrieve the frame number
         /// \param[in] stream  the stream whose latest frame we are interested in
         /// \return            the number of the frame, since the device was started
-        int get_frame_number(stream stream) const
+        unsigned long long get_frame_number(stream stream) const
         {
             rs_error * e = nullptr;
             auto r = rs_get_frame_number((const rs_device *)this, (rs_stream)stream, &e);
@@ -886,10 +940,10 @@ namespace rs
         /// \param[in] type  describes the content of the memory buffer, how it will be interpreted by the device
         /// \param[in] data  raw data buffer to be sent to the device
         /// \param[in] size  size in bytes of the buffer
-        void send_blob_to_device(rs_blob_type type, void * data, int size)
+        void send_blob_to_device(rs::blob_type type, void * data, size_t size)
         {
             rs_error * e = nullptr;
-            rs_send_blob_to_device((rs_device *)this, type, data, size, &e);
+            rs_send_blob_to_device((rs_device *)this, (rs_blob_type)type, data, size, &e);
             error::handle(e);
         }
     };

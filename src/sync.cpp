@@ -2,8 +2,14 @@
 
 using namespace rsimpl;
 
-syncronizing_archive::syncronizing_archive(const std::vector<subdevice_mode_selection> & selection, rs_stream key_stream, std::chrono::high_resolution_clock::time_point capture_started)
-    : frame_archive(selection,capture_started), key_stream(key_stream)
+syncronizing_archive::syncronizing_archive(const std::vector<subdevice_mode_selection> & selection,
+    rs_stream key_stream,
+    std::atomic<uint32_t>* max_size,
+    std::atomic<uint32_t>* event_queue_size,
+    std::atomic<uint32_t>* events_timeout,
+    std::chrono::high_resolution_clock::time_point capture_started)
+    : frame_archive(selection, max_size, capture_started), key_stream(key_stream),
+    ts_corrector(event_queue_size, events_timeout)
 {
     // Enumerate all streams we need to keep synchronized with the key stream
     for(auto s : {RS_STREAM_DEPTH, RS_STREAM_INFRARED, RS_STREAM_INFRARED2, RS_STREAM_COLOR, RS_STREAM_FISHEYE})
@@ -32,12 +38,17 @@ double syncronizing_archive::get_frame_timestamp(rs_stream stream) const
     return frontbuffer.get_frame_timestamp(stream);
 }
 
+int syncronizing_archive::get_frame_bpp(rs_stream stream) const
+{
+    return frontbuffer.get_frame_bpp(stream);
+}
+
 frame_archive::frameset* syncronizing_archive::clone_frontbuffer()
 {
     return clone_frameset(&frontbuffer);
 }
 
-int rsimpl::syncronizing_archive::get_frame_number(rs_stream stream) const
+unsigned long long rsimpl::syncronizing_archive::get_frame_number(rs_stream stream) const
 {
     return frontbuffer.get_frame_number(stream);
 }
@@ -139,6 +150,11 @@ void syncronizing_archive::correct_timestamp(rs_stream stream)
 void syncronizing_archive::on_timestamp(rs_timestamp_data data)
 {
     ts_corrector.on_timestamp(data);
+}
+
+int syncronizing_archive::get_frame_stride(rs_stream stream) const
+{
+    return frontbuffer.get_frame_stride(stream);
 }
 
 // Discard all frames which are older than the most recent coherent frameset

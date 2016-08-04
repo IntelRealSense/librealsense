@@ -43,17 +43,20 @@ namespace rsimpl
         rs_format                               get_format() const override { return get_mode().get_format(stream); }
         int                                     get_framerate() const override { return get_mode().get_framerate(); }
 
-        int                                     get_frame_number() const override;
+        unsigned long long                      get_frame_number() const override;
         double                                  get_frame_timestamp() const override;
         long long                               get_frame_system_time() const override;
         const uint8_t *                         get_frame_data() const override;
+
+        int                                     get_frame_stride() const override;
+        int                                     get_frame_bpp() const override;
     };
 
     class point_stream final : public stream_interface
     {
         const stream_interface &                source;
         mutable std::vector<uint8_t>            image;
-        mutable int                             number;
+        mutable unsigned long long              number;
     public:
                                                 point_stream(const stream_interface & source) : source(source), number() {}
 
@@ -66,10 +69,13 @@ namespace rsimpl
         rs_format                               get_format() const override { return RS_FORMAT_XYZ32F; }
         int                                     get_framerate() const override { return source.get_framerate(); }
 
-        int                                     get_frame_number() const override { return source.get_frame_number(); }
+        unsigned long long                      get_frame_number() const override { return source.get_frame_number(); }
         double                                  get_frame_timestamp() const override{ return source.get_frame_timestamp(); }
         long long                               get_frame_system_time() const override { return source.get_frame_system_time(); }
         const uint8_t *                         get_frame_data() const override;
+
+        int                                     get_frame_stride() const override { return source.get_frame_stride(); }
+        int                                     get_frame_bpp() const override { return source.get_frame_bpp(); }
     };
 
     class rectified_stream final : public stream_interface
@@ -77,7 +83,7 @@ namespace rsimpl
         const stream_interface &                source;
         mutable std::vector<int>                table;
         mutable std::vector<uint8_t>            image;
-        mutable int                             number;
+        mutable unsigned long long              number;
     public:
                                                 rectified_stream(const stream_interface & source) : source(source), number() {}
 
@@ -90,17 +96,20 @@ namespace rsimpl
         rs_format                               get_format() const override { return source.get_format(); }
         int                                     get_framerate() const override { return source.get_framerate(); }
 
-        int                                     get_frame_number() const override { return source.get_frame_number(); }
+        unsigned long long                      get_frame_number() const override { return source.get_frame_number(); }
         double                                  get_frame_timestamp() const override { return source.get_frame_timestamp(); }
         long long                               get_frame_system_time() const override { return source.get_frame_system_time(); }
         const uint8_t *                         get_frame_data() const override;
+
+        int                                     get_frame_stride() const override { return source.get_frame_stride(); }
+        int                                     get_frame_bpp() const override { return source.get_frame_bpp(); }
     };
 
     class aligned_stream final : public stream_interface
     {
         const stream_interface &                from, & to;
         mutable std::vector<uint8_t>            image;
-        mutable int                             number;
+        mutable unsigned long long              number;
     public:
                                                 aligned_stream(const stream_interface & from, const stream_interface & to) : from(from), to(to), number() {}
 
@@ -113,10 +122,13 @@ namespace rsimpl
         rs_format                               get_format() const override { return from.get_format(); }
         int                                     get_framerate() const override { return from.get_framerate(); }
 
-        int                                     get_frame_number() const override { return from.get_frame_number(); }
+        unsigned long long                      get_frame_number() const override { return from.get_frame_number(); }
         double                                  get_frame_timestamp() const override { return from.get_frame_timestamp(); }
         long long                               get_frame_system_time() const override { return from.get_frame_system_time(); }
         const unsigned char *                   get_frame_data() const override;
+
+        int                                     get_frame_stride() const override { return from.get_frame_stride(); }
+        int                                     get_frame_bpp() const override { return from.get_frame_bpp(); }
     };
 }
 

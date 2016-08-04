@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project DefaultTargets="Build" ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project DefaultTargets="Build" ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
       <Configuration>Debug</Configuration>
@@ -22,8 +22,8 @@
     <ClInclude Include="..\..\unit-tests\unit-tests-common.h" />
     <ClInclude Include="..\..\unit-tests\unit-tests-live-ds-common.h" />
   </ItemGroup>
-  <ItemGroup>
-    <ClCompile Include="..\..\unit-tests\unit-tests-live-ds5.cpp" />
+  <ItemGroup>    
+    <ClCompile Include="..\..\unit-tests\unit-tests-live-ds5.cpp" />    
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{0364A3F5-E0C7-46A1-9C82-343D05AB1843}</ProjectGuid>

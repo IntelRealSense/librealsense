@@ -15,7 +15,7 @@ using namespace rsimpl::motion_module;
 namespace rsimpl
 {
     ds_device::ds_device(std::shared_ptr<uvc::device> device, const static_device_info & info) 
-    : rs_device_base(device, info)
+    : rs_device_base(device, info), start_stop_pad(std::chrono::milliseconds(500))
     {
         rs_option opt[] = {RS_OPTION_R200_DEPTH_UNITS};
         double units;
@@ -64,6 +64,9 @@ namespace rsimpl
 
     void ds_device::set_options(const rs_option options[], size_t count, const double values[])
     {
+        std::vector<rs_option>  base_opt;
+        std::vector<double>     base_opt_val;
+
         auto & dev = get_device();
         auto minmax_writer = make_struct_interface<ds::range    >([&dev]() { return ds::get_min_max_depth(dev);           }, [&dev](ds::range     v) { ds::set_min_max_depth(dev,v);           });
         auto disp_writer   = make_struct_interface<ds::disp_mode>([&dev]() { return ds::get_disparity_mode(dev);          }, [&dev](ds::disp_mode v) { ds::set_disparity_mode(dev,v);          });
@@ -127,9 +130,7 @@ namespace rsimpl
             case RS_OPTION_R200_DEPTH_CONTROL_LR_THRESHOLD:                 dc_writer.set(&ds::dc_params::lr_thresh,                values[i]); break;
 
             default: 
-                LOG_WARNING("Cannot set " << options[i] << " to " << values[i] << " on " << get_name());
-                throw std::logic_error("Option unsupported");
-                break;
+                base_opt.push_back(options[i]); base_opt_val.push_back(values[i]); break;
             }
         }
 
@@ -138,10 +139,18 @@ namespace rsimpl
         if(disp_writer.active) on_update_disparity_multiplier(disp_writer.struct_.disparity_multiplier);
         ae_writer.commit();
         dc_writer.commit();
+
+        //Handle common options
+        if (base_opt.size())
+            rs_device_base::set_options(base_opt.data(), base_opt.size(), base_opt_val.data());
     }
 
     void ds_device::get_options(const rs_option options[], size_t count, double values[])
     {
+        std::vector<rs_option>  base_opt;
+        std::vector<size_t>     base_opt_index;
+        std::vector<double>     base_opt_val;
+
         auto & dev = get_device();
         auto minmax_reader = make_struct_interface<ds::range    >([&dev]() { return ds::get_min_max_depth(dev);           }, [&dev](ds::range     v) { ds::set_min_max_depth(dev,v);           });
         auto disp_reader   = make_struct_interface<ds::disp_mode>([&dev]() { return ds::get_disparity_mode(dev);          }, [&dev](ds::disp_mode v) { ds::set_disparity_mode(dev,v);          });
@@ -203,16 +212,37 @@ namespace rsimpl
             case RS_OPTION_R200_DEPTH_CONTROL_NEIGHBOR_THRESHOLD:           values[i] = dc_reader.get(&ds::dc_params::neighbor_thresh         ); break;
             case RS_OPTION_R200_DEPTH_CONTROL_LR_THRESHOLD:                 values[i] = dc_reader.get(&ds::dc_params::lr_thresh               ); break;
 
-            default: 
-                LOG_WARNING("Cannot get " << options[i] << " on " << get_name());
-                throw std::logic_error("Option unsupported");
-                break;
+            default:
+                base_opt.push_back(options[i]); base_opt_index.push_back(i); break;
             }
         }
+        if (base_opt.size())
+        {
+            base_opt_val.resize(base_opt.size());
+            rs_device_base::get_options(base_opt.data(), base_opt.size(), base_opt_val.data());
+        }
+
+        // Merge the local data with values obtained by base class
+        for (auto i : base_opt_index)
+            values[i] = base_opt_val[i];
+    }
+
+    void ds_device::stop(rs_source source)
+    {
+        start_stop_pad.stop();
+        rs_device_base::stop(source);
+    }
+
+    void ds_device::start(rs_source source)
+    {
+        rs_device_base::start(source);
+        start_stop_pad.start();
     }
 
     void ds_device::on_before_start(const std::vector<subdevice_mode_selection> & selected_modes)
     {
+
+
         rs_option depth_units_option = RS_OPTION_R200_DEPTH_UNITS;
         double depth_units;
 
@@ -281,6 +311,7 @@ namespace rsimpl
 
     void ds_device::set_common_ds_config(std::shared_ptr<uvc::device> device, static_device_info& info, const ds::ds_calibration& c)
     {
+        info.capabilities_vector.push_back(RS_CAPABILITIES_ENUMERATION);
         info.capabilities_vector.push_back(RS_CAPABILITIES_COLOR);
         info.capabilities_vector.push_back(RS_CAPABILITIES_DEPTH);
         info.capabilities_vector.push_back(RS_CAPABILITIES_INFRARED);
@@ -392,8 +423,14 @@ namespace rsimpl
         info.serial = std::to_string(c.serial_number);
         info.firmware_version = ds::read_firmware_version(*device);
 
+        info.camera_info[RS_CAMERA_INFO_CAMERA_FIRMWARE_VERSION] = info.firmware_version;
+        info.camera_info[RS_CAMERA_INFO_DEVICE_SERIAL_NUMBER] = info.serial;
+        info.camera_info[RS_CAMERA_INFO_DEVICE_NAME] = info.name;
+
         // On LibUVC backends, the R200 should use four transfer buffers
         info.num_libuvc_transfer_buffers = 4;
+
+        rs_device_base::update_device_info(info);
     }
 
     bool ds_device::supports_option(rs_option option) const
@@ -449,20 +486,15 @@ namespace rsimpl
 
     class dinghy_timestamp_reader : public frame_timestamp_reader
     {
-        int max_fps;
-        std::mutex mutex;
-        unsigned last_fisheye_counter;
+        int fps;
+        wraparound_mechanism<double> timestamp_wraparound;
+        wraparound_mechanism<unsigned long long> frame_counter_wraparound;
+        
     public:
-        dinghy_timestamp_reader(int max_fps) : max_fps(max_fps),last_fisheye_counter(0) {}
+        dinghy_timestamp_reader(int fps) : fps(fps), timestamp_wraparound(1, std::numeric_limits<uint32_t>::max()), frame_counter_wraparound(1, std::numeric_limits<uint32_t>::max()) {}
 
         bool validate_frame(const subdevice_mode & mode, const void * frame) const override 
         {
-            if (mode.subdevice == 3) // Fisheye camera
-                return true;
-
-            // No dinghy available on YUY2 images
-            if(mode.pf.fourcc == pf_yuy2.fourcc) return true;
-
             // Check magic number for all subdevices
             auto & dinghy = get_dinghy(mode, frame);
             const uint32_t magic_numbers[] = {0x08070605, 0x04030201, 0x8A8B8C8D};
@@ -473,19 +505,17 @@ namespace rsimpl
             }
 
             // Check frame status for left/right/Z subdevices only
-            if(dinghy.frameStatus != 0 && mode.subdevice != 2)
+            if(dinghy.frameStatus != 0)
             {
                 LOG_WARNING("Subdevice " << mode.subdevice << " frame status 0x" << std::hex << dinghy.frameStatus);
                 return false;
             }
-
             // Check VDF error status for all subdevices
             if(dinghy.VDFerrorStatus != 0)
             {
                 LOG_WARNING("Subdevice " << mode.subdevice << " VDF error status 0x" << std::hex << dinghy.VDFerrorStatus);
                 return false;
             }
-
             // Check CAM module status for left/right subdevice only
             if (dinghy.CAMmoduleStatus != 0 && mode.subdevice == 0)
             {
@@ -497,106 +527,184 @@ namespace rsimpl
             return true;
         }
 
+        double get_frame_timestamp(const subdevice_mode & mode, const void * frame) override
+        {
+          auto frame_number = 0;
+         
+          frame_number = get_dinghy(mode, frame).frameCount; // All other formats can use the frame number in the dinghy row
+          return timestamp_wraparound.fix(frame_number * 1000. / fps);
+        }
+
+        unsigned long long get_frame_counter(const subdevice_mode & mode, const void * frame) override
+        {
+            auto frame_number = 0;
+        
+           frame_number = get_dinghy(mode, frame).frameCount; // All other formats can use the frame number in the dinghy row
+           return frame_counter_wraparound.fix(frame_number);
+        }
+    };
+
+    class fisheye_timestamp_reader : public frame_timestamp_reader
+    {
+        mutable bool validate;
+        int fps;
+        std::mutex mutex;
+        unsigned last_fisheye_counter;
+        wraparound_mechanism<double> timestamp_wraparound;
+        wraparound_mechanism<unsigned long long> frame_counter_wraparound;
+
+    public:
+        fisheye_timestamp_reader(int max_fps) : fps(max_fps), last_fisheye_counter(0), timestamp_wraparound(1, std::numeric_limits<uint32_t>::max()), frame_counter_wraparound(0, std::numeric_limits<uint32_t>::max()), validate(true){}
+
+        bool validate_frame(const subdevice_mode & mode, const void * frame) const override
+        {
+            if (!validate)
+                return true;
+
+            bool sts;
+            auto pixel_lsb = reinterpret_cast<byte_wrapping&>(*((unsigned char*)frame)).lsb;
+            if ((sts = (pixel_lsb != 0)))
+                validate = false;
+
+            return sts;
+        }
+
         struct byte_wrapping{
-             unsigned char lsb : 4;
-             unsigned char msb : 4;
-         };
+            unsigned char lsb : 4;
+            unsigned char msb : 4;
+        };
 
-        unsigned fix_fisheye_counter(unsigned char pixel)
-         {
-             std::lock_guard<std::mutex> guard(mutex);
+        unsigned long long get_frame_counter(const subdevice_mode & mode, const void * frame) override
+        {
+            std::lock_guard<std::mutex> guard(mutex);
 
-             auto last_counter_lsb = reinterpret_cast<byte_wrapping&>(last_fisheye_counter).lsb;
-             auto pixel_lsb = reinterpret_cast<byte_wrapping&>(pixel).lsb;
-             if (last_counter_lsb == pixel_lsb)
-                 return last_fisheye_counter;
+            auto last_counter_lsb = reinterpret_cast<byte_wrapping&>(last_fisheye_counter).lsb;
+            auto pixel_lsb = reinterpret_cast<byte_wrapping&>(*((unsigned char*)frame)).lsb;
+            if (last_counter_lsb == pixel_lsb)
+                return last_fisheye_counter;
 
-             auto last_counter_msb = (last_fisheye_counter >> 4);
-             auto wrap_around = reinterpret_cast<byte_wrapping&>(last_fisheye_counter).lsb;
-             if (wrap_around == 15 || pixel_lsb < last_counter_lsb)
-             {
-                 ++last_counter_msb;
-             }
+            auto last_counter_msb = (last_fisheye_counter >> 4);
+            auto wrap_around = reinterpret_cast<byte_wrapping&>(last_fisheye_counter).lsb;
+            if (wrap_around == 15 || pixel_lsb < last_counter_lsb)
+            {
+                ++last_counter_msb;
+            }
 
-             auto fixed_counter = (last_counter_msb << 4) | (pixel_lsb & 0xff);
+            auto fixed_counter = (last_counter_msb << 4) | (pixel_lsb & 0xff);
 
-             last_fisheye_counter = fixed_counter;
-             return fixed_counter;
-         }
+            last_fisheye_counter = fixed_counter;
+            return frame_counter_wraparound.fix(fixed_counter);
+        }
 
         double get_frame_timestamp(const subdevice_mode & mode, const void * frame) override
-        { 
-            int frame_number = 0;
-            if (mode.subdevice == 3) // Fisheye
-            {
-                frame_number = fix_fisheye_counter(*((unsigned char*)frame));
-            }
-            else if(mode.pf.fourcc == pf_yuy2.fourcc)
-            {
-                // YUY2 images encode the frame number in the low order bits of the final 32 bytes of the image
-                auto data = reinterpret_cast<const uint8_t *>(frame) + ((mode.native_dims.x * mode.native_dims.y) - 32) * 2;
-                for(int i = 0; i < 32; ++i)
-                {
-                    frame_number |= ((*data & 1) << (i & 1 ? 32 - i : 30 - i));
-                    data += 2;
-                }
-            }
-            else frame_number = get_dinghy(mode, frame).frameCount; // All other formats can use the frame number in the dinghy row
-            return frame_number * 1000 / max_fps;
-        }
-        int get_frame_counter(const subdevice_mode & mode, const void * frame) override
         {
-            int frame_number = 0;
-            if (mode.subdevice == 3) // Fisheye
+            return timestamp_wraparound.fix(get_frame_counter(mode, frame) * 1000. / fps);
+        }
+    };
+
+    class color_timestamp_reader : public frame_timestamp_reader
+    {
+        int fps;
+        wraparound_mechanism<double> timestamp_wraparound;
+        wraparound_mechanism<unsigned long long> frame_counter_wraparound;
+
+    public:
+        color_timestamp_reader(int fps) : fps(fps), timestamp_wraparound(0, std::numeric_limits<uint32_t>::max()), frame_counter_wraparound(0, std::numeric_limits<uint32_t>::max()) {}
+
+        bool validate_frame(const subdevice_mode & mode, const void * frame) const override
+        {
+            return true;
+        }
+
+        unsigned long long get_frame_counter(const subdevice_mode & mode, const void * frame) override
+        {
+            auto frame_number = 0;
+            
+            // YUY2 images encode the frame number in the low order bits of the final 32 bytes of the image
+            auto data = reinterpret_cast<const uint8_t *>(frame)+((mode.native_dims.x * mode.native_dims.y) - 32) * 2;
+            for (auto i = 0; i < 32; ++i)
             {
-                frame_number = fix_fisheye_counter(*((unsigned char*)frame));
+                frame_number |= ((*data & 1) << (i & 1 ? 32 - i : 30 - i));
+                data += 2;
             }
-            else if (mode.pf.fourcc == pf_yuy2.fourcc)
-            {
-                // YUY2 images encode the frame number in the low order bits of the final 32 bytes of the image
-                auto data = reinterpret_cast<const uint8_t *>(frame) + ((mode.native_dims.x * mode.native_dims.y) - 32) * 2;
-                for (int i = 0; i < 32; ++i)
-                {
-                    frame_number |= ((*data & 1) << (i & 1 ? 32 - i : 30 - i));
-                    data += 2;
-                }
-            }
-            else frame_number = get_dinghy(mode, frame).frameCount; // All other formats can use the frame number in the dinghy row
-            return frame_number;
+            
+            return frame_counter_wraparound.fix(frame_number);
+        }
+
+        double get_frame_timestamp(const subdevice_mode & mode, const void * frame) override
+        {
+            return timestamp_wraparound.fix(get_frame_counter(mode, frame) * 1000. / fps);
         }
     };
 
     class serial_timestamp_generator : public frame_timestamp_reader
     {
         int fps, serial_frame_number;
+        wraparound_mechanism<double> timestamp_wraparound;
+        wraparound_mechanism<unsigned long long> frame_counter_wraparound;
+
     public:
-        serial_timestamp_generator(int fps) : fps(fps), serial_frame_number() {}
+        serial_timestamp_generator(int fps) : fps(fps), serial_frame_number(), timestamp_wraparound(0, std::numeric_limits<uint32_t>::max()), frame_counter_wraparound(0, std::numeric_limits<uint32_t>::max()) {}
 
         bool validate_frame(const subdevice_mode & mode, const void * frame) const override { return true; }
         double get_frame_timestamp(const subdevice_mode &, const void *) override
         { 
             ++serial_frame_number;
-            return serial_frame_number * 1000 / fps;
+            return timestamp_wraparound.fix(serial_frame_number * 1000. / fps);
         }
-        int get_frame_counter(const subdevice_mode &, const void *) override
+        unsigned long long get_frame_counter(const subdevice_mode &, const void *) override
         {
-            return serial_frame_number;
+            return frame_counter_wraparound.fix(serial_frame_number);
         }
     };
 
     // TODO refactor supported streams list to derived
-    std::shared_ptr<frame_timestamp_reader> ds_device::create_frame_timestamp_reader() const
+    std::shared_ptr<frame_timestamp_reader> ds_device::create_frame_timestamp_reader(int subdevice) const
     {
-        // If left, right, or Z streams are enabled, convert frame numbers to millisecond timestamps based on LRZ framerate
-        for(auto s : {RS_STREAM_DEPTH, RS_STREAM_INFRARED, RS_STREAM_INFRARED2, RS_STREAM_FISHEYE})
-        {
-            auto & si = get_stream_interface(s);
-            if(si.is_enabled()) return std::make_shared<dinghy_timestamp_reader>(si.get_framerate());
-        }
+        auto & stream_depth = get_stream_interface(RS_STREAM_DEPTH);
+        auto & stream_infrared = get_stream_interface(RS_STREAM_INFRARED);
+        auto & stream_infrared2 = get_stream_interface(RS_STREAM_INFRARED2);
+        auto & stream_fisheye = get_stream_interface(RS_STREAM_FISHEYE);
+        auto & stream_color = get_stream_interface(RS_STREAM_COLOR);
 
-        // If only color stream is enabled, generate serial frame timestamps (no HW frame numbers available)
-        auto & si = get_stream_interface(RS_STREAM_COLOR);
-        if(si.is_enabled()) return std::make_shared<serial_timestamp_generator>(si.get_framerate());
+        switch (subdevice)
+        {
+        case SUB_DEVICE_DEPTH:
+            if (stream_depth.is_enabled())
+                return std::make_shared<dinghy_timestamp_reader>(stream_depth.get_framerate());
+            break;
+        case SUB_DEVICE_INFRARED: 
+
+            if (stream_infrared.is_enabled())
+                return std::make_shared<dinghy_timestamp_reader>(stream_infrared.get_framerate());
+
+            if (stream_infrared2.is_enabled())
+                return std::make_shared<dinghy_timestamp_reader>(stream_infrared2.get_framerate());
+
+
+            break;
+        case SUB_DEVICE_FISHEYE:
+
+            if (stream_fisheye.is_enabled())
+                return std::make_shared<fisheye_timestamp_reader>(stream_fisheye.get_framerate());
+            break;
+
+        case SUB_DEVICE_COLOR:
+
+            if (stream_color.is_enabled())
+            {
+                if (stream_depth.is_enabled() || stream_infrared.is_enabled() || stream_infrared2.is_enabled())
+                {
+                    return std::make_shared<color_timestamp_reader>(stream_color.get_framerate());
+                }
+                else
+                {
+                    return std::make_shared<serial_timestamp_generator>(stream_color.get_framerate());
+                }
+
+            }
+            break;
+        }
 
         // No streams enabled, so no need for a timestamp converter
         return nullptr;

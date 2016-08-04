@@ -41,6 +41,8 @@ The library is written in standards-conforming C++11 and relies only on the C89 
 
 1. Windows 10 (Visual Studio 2015 Update 2)
 2. Ubuntu 14.04.03 LTS x64 (GCC 4.9 toolchain)
+3. Ostro OS
+
 
 Neither libuvc nor V4L2 backends have been validated on Ubuntu 12.04 LTS or Ubuntu 15.10, and several attempts to bring cameras up on these platforms have been problematic due to the requirement of a patched uvcvideo driver. It may be possible to compile and run the library on other platforms. Please file an issue or submit a pull request if the library has been successfully ported to a platform.
 
@@ -70,7 +72,7 @@ Minimal supported FW versions:
 | F200 | 2.60.0.0 |
 | SR300 | 3.15.0.0 |
 | LR200 | 2.0.71.18 |
-| ZR300 | 2.0.71.18; 1.22; 1.19.0.0 IAP 8 |
+| ZR300 | Camera - 2.0.71.18, Adapter board - 1.23, Motion module 1.20.0.0 IAP 9 |
 | DS5 B0 | TBD |
 
 # Installation Guide

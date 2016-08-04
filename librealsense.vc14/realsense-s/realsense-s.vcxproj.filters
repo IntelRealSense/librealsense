@@ -90,6 +90,15 @@
     <ClCompile Include="..\..\src\ds5-private.cpp">
       <Filter>src</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\ds5c.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ds5d.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ds5t.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\src\context.h">
@@ -165,6 +174,15 @@
       <Filter>src</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ds5-private.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ds5c.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ds5d.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ds5t.h">
       <Filter>src</Filter>
     </ClInclude>
   </ItemGroup>

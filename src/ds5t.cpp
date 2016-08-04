@@ -52,6 +52,7 @@ namespace rsimpl
 
         info.nominal_depth_scale = 0.001f;
 
+        info.capabilities_vector.push_back(RS_CAPABILITIES_ENUMERATION);
         info.capabilities_vector.push_back(RS_CAPABILITIES_COLOR);
         info.capabilities_vector.push_back(RS_CAPABILITIES_DEPTH);
         info.capabilities_vector.push_back(RS_CAPABILITIES_INFRARED);

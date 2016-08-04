@@ -18,7 +18,7 @@ namespace rsimpl
     bool r200_camera::supports_option(rs_option option) const
     {
         // We have special logic to implement LR gain and exposure, so they do not belong to the standard option list
-        return option == RS_OPTION_R200_LR_GAIN || option == RS_OPTION_R200_LR_EXPOSURE || rs_device_base::supports_option(option);
+        return (option == RS_OPTION_R200_LR_GAIN) || (option == RS_OPTION_R200_LR_EXPOSURE) || rs_device_base::supports_option(option);
     }
 
     std::shared_ptr<rs_device> make_r200_device(std::shared_ptr<uvc::device> device)

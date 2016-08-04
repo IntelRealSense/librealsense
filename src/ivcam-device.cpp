@@ -86,6 +86,9 @@ namespace rsimpl
 
     void iv_camera::set_options(const rs_option options[], size_t count, const double values[])
     {
+        std::vector<rs_option>  base_opt;
+        std::vector<double>     base_opt_val;
+
         for (size_t i = 0; i < count; ++i)
         {
 
@@ -112,15 +115,21 @@ namespace rsimpl
             case RS_OPTION_F200_CONFIDENCE_THRESHOLD: ivcam::set_confidence_threshold(get_device(), static_cast<uint8_t>(values[i])); break;
 
             default: 
-                LOG_WARNING("Cannot set " << options[i] << " to " << values[i] << " on " << get_name());
-                throw std::logic_error("Option unsupported");
-                break;
+                base_opt.push_back(options[i]); base_opt_val.push_back(values[i]); break;
             }
         }
+
+        //Set common options
+        if (!base_opt.empty())
+            rs_device_base::set_options(base_opt.data(), base_opt.size(), base_opt_val.data());
     }
 
     void iv_camera::get_options(const rs_option options[], size_t count, double values[])
     {
+        std::vector<rs_option>  base_opt;
+        std::vector<size_t>     base_opt_index;
+        std::vector<double>     base_opt_val;
+
         for (size_t i = 0; i < count; ++i)
         {
             LOG_INFO("Reading option " << options[i]);
@@ -138,11 +147,22 @@ namespace rsimpl
             case RS_OPTION_F200_CONFIDENCE_THRESHOLD: ivcam::get_confidence_threshold(get_device(), val); values[i] = val; break;
 
             default: 
-                LOG_WARNING("Cannot get " << options[i] << " on " << get_name());
-                throw std::logic_error("Option unsupported");
+                base_opt.push_back(options[i]); base_opt_index.push_back(i);
+               /* LOG_WARNING("Cannot get " << options[i] << " on " << get_name());
+                throw std::logic_error("Option unsupported");*/
                 break;
             }
         }
+        //Retrieve the common options
+        if (base_opt.size())
+        {
+            base_opt_val.resize(base_opt.size());
+            rs_device_base::get_options(base_opt.data(), base_opt.size(), base_opt_val.data());
+        }
+
+        // Merge the local data with values obtained by base class
+        for (auto i : base_opt_index)
+            values[i] = base_opt_val[i];
     }
 
     // TODO: This may need to be modified for thread safety
@@ -187,15 +207,14 @@ namespace rsimpl
             const int timestamp = static_cast<int>(total / 100000);
             return timestamp;
         }
-        int get_frame_counter(const subdevice_mode & mode, const void * frame) override
+        unsigned long long get_frame_counter(const subdevice_mode & mode, const void * frame) override
         {
             return 0;
         }
     };
 
-    std::shared_ptr<frame_timestamp_reader> iv_camera::create_frame_timestamp_reader() const
+    std::shared_ptr<frame_timestamp_reader> iv_camera::create_frame_timestamp_reader(int subdevice) const
     {
         return std::make_shared<rolling_timestamp_reader>();
     }
-
 } // namespace rsimpl::f200

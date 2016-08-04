@@ -35,7 +35,7 @@ namespace rsimpl
         void set_options(const rs_option options[], size_t count, const double values[]) override;
         void get_options(const rs_option options[], size_t count, double values[]) override;
 
-        std::shared_ptr<frame_timestamp_reader> create_frame_timestamp_reader() const override;
+		std::shared_ptr<frame_timestamp_reader> create_frame_timestamp_reader(int subdevice) const override;
     };
 }
 

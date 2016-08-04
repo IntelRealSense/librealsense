@@ -16,14 +16,10 @@
 		279985A31B964EFF00894334 /* uvc.h in Headers */ = {isa = PBXBuildFile; fileRef = 279985A11B964EFF00894334 /* uvc.h */; };
 		279D52AD1B8E8678007F2D73 /* context.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 279D529B1B8E8678007F2D73 /* context.cpp */; };
 		279D52AE1B8E8678007F2D73 /* context.h in Headers */ = {isa = PBXBuildFile; fileRef = 279D529C1B8E8678007F2D73 /* context.h */; };
-		279D52AF1B8E8678007F2D73 /* f200-private.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 279D529D1B8E8678007F2D73 /* f200-private.cpp */; };
-		279D52B01B8E8678007F2D73 /* f200-private.h in Headers */ = {isa = PBXBuildFile; fileRef = 279D529E1B8E8678007F2D73 /* f200-private.h */; };
 		279D52B11B8E8678007F2D73 /* f200.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 279D529F1B8E8678007F2D73 /* f200.cpp */; };
 		279D52B21B8E8678007F2D73 /* f200.h in Headers */ = {isa = PBXBuildFile; fileRef = 279D52A01B8E8678007F2D73 /* f200.h */; };
 		279D52B31B8E8678007F2D73 /* image.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 279D52A11B8E8678007F2D73 /* image.cpp */; };
 		279D52B41B8E8678007F2D73 /* image.h in Headers */ = {isa = PBXBuildFile; fileRef = 279D52A21B8E8678007F2D73 /* image.h */; };
-		279D52B51B8E8678007F2D73 /* r200-private.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 279D52A31B8E8678007F2D73 /* r200-private.cpp */; };
-		279D52B61B8E8678007F2D73 /* r200-private.h in Headers */ = {isa = PBXBuildFile; fileRef = 279D52A41B8E8678007F2D73 /* r200-private.h */; };
 		279D52B71B8E8678007F2D73 /* r200.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 279D52A51B8E8678007F2D73 /* r200.cpp */; };
 		279D52B81B8E8678007F2D73 /* r200.h in Headers */ = {isa = PBXBuildFile; fileRef = 279D52A61B8E8678007F2D73 /* r200.h */; };
 		279D52B91B8E8678007F2D73 /* rs.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 279D52A71B8E8678007F2D73 /* rs.cpp */; };
@@ -35,6 +31,26 @@
 		279D52E61B90FD4E007F2D73 /* rsutil.h in Headers */ = {isa = PBXBuildFile; fileRef = 279D52E31B90FD4E007F2D73 /* rsutil.h */; };
 		27B9FE7E1BFBE46D0095505F /* stream.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 27B9FE7C1BFBE46D0095505F /* stream.cpp */; };
 		27B9FE7F1BFBE46D0095505F /* stream.h in Headers */ = {isa = PBXBuildFile; fileRef = 27B9FE7D1BFBE46D0095505F /* stream.h */; };
+		6D804AB11D37E69100156CBA /* archive.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 6D804A9D1D37E69100156CBA /* archive.cpp */; };
+		6D804AB21D37E69100156CBA /* archive.h in Headers */ = {isa = PBXBuildFile; fileRef = 6D804A9E1D37E69100156CBA /* archive.h */; };
+		6D804AB31D37E69100156CBA /* ds-device.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 6D804A9F1D37E69100156CBA /* ds-device.cpp */; };
+		6D804AB41D37E69100156CBA /* ds-device.h in Headers */ = {isa = PBXBuildFile; fileRef = 6D804AA01D37E69100156CBA /* ds-device.h */; };
+		6D804AB51D37E69100156CBA /* ds-private.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 6D804AA11D37E69100156CBA /* ds-private.cpp */; };
+		6D804AB61D37E69100156CBA /* ds-private.h in Headers */ = {isa = PBXBuildFile; fileRef = 6D804AA21D37E69100156CBA /* ds-private.h */; };
+		6D804AB71D37E69100156CBA /* hw-monitor.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 6D804AA31D37E69100156CBA /* hw-monitor.cpp */; };
+		6D804AB81D37E69100156CBA /* hw-monitor.h in Headers */ = {isa = PBXBuildFile; fileRef = 6D804AA41D37E69100156CBA /* hw-monitor.h */; };
+		6D804AB91D37E69100156CBA /* ivcam-device.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 6D804AA51D37E69100156CBA /* ivcam-device.cpp */; };
+		6D804ABA1D37E69100156CBA /* ivcam-device.h in Headers */ = {isa = PBXBuildFile; fileRef = 6D804AA61D37E69100156CBA /* ivcam-device.h */; };
+		6D804ABB1D37E69100156CBA /* ivcam-private.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 6D804AA71D37E69100156CBA /* ivcam-private.cpp */; };
+		6D804ABC1D37E69100156CBA /* ivcam-private.h in Headers */ = {isa = PBXBuildFile; fileRef = 6D804AA81D37E69100156CBA /* ivcam-private.h */; };
+		6D804ABD1D37E69100156CBA /* motion-module.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 6D804AA91D37E69100156CBA /* motion-module.cpp */; };
+		6D804ABE1D37E69100156CBA /* motion-module.h in Headers */ = {isa = PBXBuildFile; fileRef = 6D804AAA1D37E69100156CBA /* motion-module.h */; };
+		6D804ABF1D37E69100156CBA /* sr300.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 6D804AAB1D37E69100156CBA /* sr300.cpp */; };
+		6D804AC01D37E69100156CBA /* sr300.h in Headers */ = {isa = PBXBuildFile; fileRef = 6D804AAC1D37E69100156CBA /* sr300.h */; };
+		6D804AC11D37E69100156CBA /* timestamps.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 6D804AAD1D37E69100156CBA /* timestamps.cpp */; };
+		6D804AC21D37E69100156CBA /* timestamps.h in Headers */ = {isa = PBXBuildFile; fileRef = 6D804AAE1D37E69100156CBA /* timestamps.h */; };
+		6D804AC31D37E69100156CBA /* zr300.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 6D804AAF1D37E69100156CBA /* zr300.cpp */; };
+		6D804AC41D37E69100156CBA /* zr300.h in Headers */ = {isa = PBXBuildFile; fileRef = 6D804AB01D37E69100156CBA /* zr300.h */; };
 		8C7307131BE03102003BB7DE /* ctrl.c in Sources */ = {isa = PBXBuildFile; fileRef = 8C7307091BE03102003BB7DE /* ctrl.c */; };
 		8C7307141BE03102003BB7DE /* dev.c in Sources */ = {isa = PBXBuildFile; fileRef = 8C73070A1BE03102003BB7DE /* dev.c */; };
 		8C7307151BE03102003BB7DE /* diag.c in Sources */ = {isa = PBXBuildFile; fileRef = 8C73070B1BE03102003BB7DE /* diag.c */; };
@@ -62,14 +78,10 @@
 		279985A11B964EFF00894334 /* uvc.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = uvc.h; path = ../src/uvc.h; sourceTree = SOURCE_ROOT; };
 		279D529B1B8E8678007F2D73 /* context.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = context.cpp; path = ../src/context.cpp; sourceTree = SOURCE_ROOT; };
 		279D529C1B8E8678007F2D73 /* context.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = context.h; path = ../src/context.h; sourceTree = SOURCE_ROOT; };
-		279D529D1B8E8678007F2D73 /* f200-private.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = "f200-private.cpp"; path = "../src/f200-private.cpp"; sourceTree = SOURCE_ROOT; };
-		279D529E1B8E8678007F2D73 /* f200-private.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = "f200-private.h"; path = "../src/f200-private.h"; sourceTree = SOURCE_ROOT; };
 		279D529F1B8E8678007F2D73 /* f200.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = f200.cpp; path = ../src/f200.cpp; sourceTree = SOURCE_ROOT; };
 		279D52A01B8E8678007F2D73 /* f200.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = f200.h; path = ../src/f200.h; sourceTree = SOURCE_ROOT; };
 		279D52A11B8E8678007F2D73 /* image.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = image.cpp; path = ../src/image.cpp; sourceTree = SOURCE_ROOT; };
 		279D52A21B8E8678007F2D73 /* image.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = image.h; path = ../src/image.h; sourceTree = SOURCE_ROOT; };
-		279D52A31B8E8678007F2D73 /* r200-private.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = "r200-private.cpp"; path = "../src/r200-private.cpp"; sourceTree = SOURCE_ROOT; };
-		279D52A41B8E8678007F2D73 /* r200-private.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = "r200-private.h"; path = "../src/r200-private.h"; sourceTree = SOURCE_ROOT; };
 		279D52A51B8E8678007F2D73 /* r200.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = r200.cpp; path = ../src/r200.cpp; sourceTree = SOURCE_ROOT; };
 		279D52A61B8E8678007F2D73 /* r200.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = r200.h; path = ../src/r200.h; sourceTree = SOURCE_ROOT; };
 		279D52A71B8E8678007F2D73 /* rs.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = rs.cpp; path = ../src/rs.cpp; sourceTree = SOURCE_ROOT; };
@@ -81,6 +93,26 @@
 		279D52E31B90FD4E007F2D73 /* rsutil.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = rsutil.h; path = ../include/librealsense/rsutil.h; sourceTree = SOURCE_ROOT; };
 		27B9FE7C1BFBE46D0095505F /* stream.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = stream.cpp; path = ../src/stream.cpp; sourceTree = "<group>"; };
 		27B9FE7D1BFBE46D0095505F /* stream.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = stream.h; path = ../src/stream.h; sourceTree = "<group>"; };
+		6D804A9D1D37E69100156CBA /* archive.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = archive.cpp; path = ../src/archive.cpp; sourceTree = "<group>"; };
+		6D804A9E1D37E69100156CBA /* archive.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = archive.h; path = ../src/archive.h; sourceTree = "<group>"; };
+		6D804A9F1D37E69100156CBA /* ds-device.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = "ds-device.cpp"; path = "../src/ds-device.cpp"; sourceTree = "<group>"; };
+		6D804AA01D37E69100156CBA /* ds-device.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = "ds-device.h"; path = "../src/ds-device.h"; sourceTree = "<group>"; };
+		6D804AA11D37E69100156CBA /* ds-private.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = "ds-private.cpp"; path = "../src/ds-private.cpp"; sourceTree = "<group>"; };
+		6D804AA21D37E69100156CBA /* ds-private.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = "ds-private.h"; path = "../src/ds-private.h"; sourceTree = "<group>"; };
+		6D804AA31D37E69100156CBA /* hw-monitor.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = "hw-monitor.cpp"; path = "../src/hw-monitor.cpp"; sourceTree = "<group>"; };
+		6D804AA41D37E69100156CBA /* hw-monitor.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = "hw-monitor.h"; path = "../src/hw-monitor.h"; sourceTree = "<group>"; };
+		6D804AA51D37E69100156CBA /* ivcam-device.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = "ivcam-device.cpp"; path = "../src/ivcam-device.cpp"; sourceTree = "<group>"; };
+		6D804AA61D37E69100156CBA /* ivcam-device.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = "ivcam-device.h"; path = "../src/ivcam-device.h"; sourceTree = "<group>"; };
+		6D804AA71D37E69100156CBA /* ivcam-private.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = "ivcam-private.cpp"; path = "../src/ivcam-private.cpp"; sourceTree = "<group>"; };
+		6D804AA81D37E69100156CBA /* ivcam-private.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = "ivcam-private.h"; path = "../src/ivcam-private.h"; sourceTree = "<group>"; };
+		6D804AA91D37E69100156CBA /* motion-module.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = "motion-module.cpp"; path = "../src/motion-module.cpp"; sourceTree = "<group>"; };
+		6D804AAA1D37E69100156CBA /* motion-module.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = "motion-module.h"; path = "../src/motion-module.h"; sourceTree = "<group>"; };
+		6D804AAB1D37E69100156CBA /* sr300.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = sr300.cpp; path = ../src/sr300.cpp; sourceTree = "<group>"; };
+		6D804AAC1D37E69100156CBA /* sr300.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = sr300.h; path = ../src/sr300.h; sourceTree = "<group>"; };
+		6D804AAD1D37E69100156CBA /* timestamps.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = timestamps.cpp; path = ../src/timestamps.cpp; sourceTree = "<group>"; };
+		6D804AAE1D37E69100156CBA /* timestamps.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = timestamps.h; path = ../src/timestamps.h; sourceTree = "<group>"; };
+		6D804AAF1D37E69100156CBA /* zr300.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = zr300.cpp; path = ../src/zr300.cpp; sourceTree = "<group>"; };
+		6D804AB01D37E69100156CBA /* zr300.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = zr300.h; path = ../src/zr300.h; sourceTree = "<group>"; };
 		8C7307091BE03102003BB7DE /* ctrl.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = ctrl.c; path = ../src/libuvc/ctrl.c; sourceTree = SOURCE_ROOT; };
 		8C73070A1BE03102003BB7DE /* dev.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = dev.c; path = ../src/libuvc/dev.c; sourceTree = SOURCE_ROOT; };
 		8C73070B1BE03102003BB7DE /* diag.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = diag.c; path = ../src/libuvc/diag.c; sourceTree = SOURCE_ROOT; };
@@ -164,6 +196,26 @@
 		279D52E71B90FD53007F2D73 /* src */ = {
 			isa = PBXGroup;
 			children = (
+				6D804A9D1D37E69100156CBA /* archive.cpp */,
+				6D804A9E1D37E69100156CBA /* archive.h */,
+				6D804A9F1D37E69100156CBA /* ds-device.cpp */,
+				6D804AA01D37E69100156CBA /* ds-device.h */,
+				6D804AA11D37E69100156CBA /* ds-private.cpp */,
+				6D804AA21D37E69100156CBA /* ds-private.h */,
+				6D804AA31D37E69100156CBA /* hw-monitor.cpp */,
+				6D804AA41D37E69100156CBA /* hw-monitor.h */,
+				6D804AA51D37E69100156CBA /* ivcam-device.cpp */,
+				6D804AA61D37E69100156CBA /* ivcam-device.h */,
+				6D804AA71D37E69100156CBA /* ivcam-private.cpp */,
+				6D804AA81D37E69100156CBA /* ivcam-private.h */,
+				6D804AA91D37E69100156CBA /* motion-module.cpp */,
+				6D804AAA1D37E69100156CBA /* motion-module.h */,
+				6D804AAB1D37E69100156CBA /* sr300.cpp */,
+				6D804AAC1D37E69100156CBA /* sr300.h */,
+				6D804AAD1D37E69100156CBA /* timestamps.cpp */,
+				6D804AAE1D37E69100156CBA /* timestamps.h */,
+				6D804AAF1D37E69100156CBA /* zr300.cpp */,
+				6D804AB01D37E69100156CBA /* zr300.h */,
 				2774067C1C5AEE1B0032830E /* sync.h */,
 				2774067A1C5AEE160032830E /* sync.cpp */,
 				273DEE571C503F05004A1AD6 /* log.cpp */,
@@ -178,14 +230,10 @@
 				271E78B01B9F83710063ECAE /* device.h */,
 				279D529B1B8E8678007F2D73 /* context.cpp */,
 				279D529C1B8E8678007F2D73 /* context.h */,
-				279D529D1B8E8678007F2D73 /* f200-private.cpp */,
-				279D529E1B8E8678007F2D73 /* f200-private.h */,
 				279D529F1B8E8678007F2D73 /* f200.cpp */,
 				279D52A01B8E8678007F2D73 /* f200.h */,
 				279D52A11B8E8678007F2D73 /* image.cpp */,
 				279D52A21B8E8678007F2D73 /* image.h */,
-				279D52A31B8E8678007F2D73 /* r200-private.cpp */,
-				279D52A41B8E8678007F2D73 /* r200-private.h */,
 				279D52A51B8E8678007F2D73 /* r200.cpp */,
 				279D52A61B8E8678007F2D73 /* r200.h */,
 				279D52A71B8E8678007F2D73 /* rs.cpp */,
@@ -214,23 +262,31 @@
 			isa = PBXHeadersBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				279D52B61B8E8678007F2D73 /* r200-private.h in Headers */,
 				279D52B81B8E8678007F2D73 /* r200.h in Headers */,
+				6D804ABC1D37E69100156CBA /* ivcam-private.h in Headers */,
 				279D52E51B90FD4E007F2D73 /* rs.hpp in Headers */,
 				8C73071C1BE03102003BB7DE /* utlist.h in Headers */,
+				6D804AC21D37E69100156CBA /* timestamps.h in Headers */,
+				6D804ABA1D37E69100156CBA /* ivcam-device.h in Headers */,
 				27B9FE7F1BFBE46D0095505F /* stream.h in Headers */,
 				279D52BB1B8E8678007F2D73 /* types.h in Headers */,
+				6D804AC41D37E69100156CBA /* zr300.h in Headers */,
 				8C7307191BE03102003BB7DE /* libuvc_internal.h in Headers */,
 				279D52B21B8E8678007F2D73 /* f200.h in Headers */,
 				279D52B41B8E8678007F2D73 /* image.h in Headers */,
 				279D52E41B90FD4E007F2D73 /* rs.h in Headers */,
+				6D804AB41D37E69100156CBA /* ds-device.h in Headers */,
+				6D804AB81D37E69100156CBA /* hw-monitor.h in Headers */,
 				279985A31B964EFF00894334 /* uvc.h in Headers */,
 				279D52E61B90FD4E007F2D73 /* rsutil.h in Headers */,
+				6D804AB21D37E69100156CBA /* archive.h in Headers */,
 				8C73071A1BE03102003BB7DE /* libuvc.h in Headers */,
 				2774067D1C5AEE1B0032830E /* sync.h in Headers */,
-				279D52B01B8E8678007F2D73 /* f200-private.h in Headers */,
 				279D52AE1B8E8678007F2D73 /* context.h in Headers */,
 				271E78B21B9F83710063ECAE /* device.h in Headers */,
+				6D804AB61D37E69100156CBA /* ds-private.h in Headers */,
+				6D804AC01D37E69100156CBA /* sr300.h in Headers */,
+				6D804ABE1D37E69100156CBA /* motion-module.h in Headers */,
 				8C7307181BE03102003BB7DE /* libuvc_config.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -291,29 +347,37 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				6D804AB11D37E69100156CBA /* archive.cpp in Sources */,
 				8C7307161BE03102003BB7DE /* frame.c in Sources */,
 				8C7307151BE03102003BB7DE /* diag.c in Sources */,
 				273DEE581C503F05004A1AD6 /* log.cpp in Sources */,
 				2774067B1C5AEE160032830E /* sync.cpp in Sources */,
 				8C7307241BE03131003BB7DE /* uvc.cpp in Sources */,
+				6D804AB51D37E69100156CBA /* ds-private.cpp in Sources */,
+				6D804AB31D37E69100156CBA /* ds-device.cpp in Sources */,
 				8C7307211BE03131003BB7DE /* uvc-libuvc.cpp in Sources */,
 				279D52BC1B8E8678007F2D73 /* verify.c in Sources */,
+				6D804AC11D37E69100156CBA /* timestamps.cpp in Sources */,
 				8C7307221BE03131003BB7DE /* uvc-v4l2.cpp in Sources */,
 				279D52B71B8E8678007F2D73 /* r200.cpp in Sources */,
+				6D804AB91D37E69100156CBA /* ivcam-device.cpp in Sources */,
 				8C7307231BE03131003BB7DE /* uvc-wmf.cpp in Sources */,
-				279D52AF1B8E8678007F2D73 /* f200-private.cpp in Sources */,
 				279D52B11B8E8678007F2D73 /* f200.cpp in Sources */,
+				6D804AB71D37E69100156CBA /* hw-monitor.cpp in Sources */,
+				6D804AC31D37E69100156CBA /* zr300.cpp in Sources */,
 				279D52B31B8E8678007F2D73 /* image.cpp in Sources */,
 				8C7307141BE03102003BB7DE /* dev.c in Sources */,
 				279D52B91B8E8678007F2D73 /* rs.cpp in Sources */,
 				279D52AD1B8E8678007F2D73 /* context.cpp in Sources */,
 				8C73071B1BE03102003BB7DE /* stream.c in Sources */,
 				8C7307171BE03102003BB7DE /* init.c in Sources */,
+				6D804ABB1D37E69100156CBA /* ivcam-private.cpp in Sources */,
 				8C7307131BE03102003BB7DE /* ctrl.c in Sources */,
 				271E78B11B9F83710063ECAE /* device.cpp in Sources */,
-				279D52B51B8E8678007F2D73 /* r200-private.cpp in Sources */,
+				6D804ABF1D37E69100156CBA /* sr300.cpp in Sources */,
 				279D52BA1B8E8678007F2D73 /* types.cpp in Sources */,
 				27B9FE7E1BFBE46D0095505F /* stream.cpp in Sources */,
+				6D804ABD1D37E69100156CBA /* motion-module.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
