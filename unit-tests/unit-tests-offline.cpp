@@ -11,7 +11,7 @@
 
 #include <sstream>
 
-const char * unknown = "UNKNOWN";
+static const char * unknown = "UNKNOWN";
 
 // Helper to produce a not-null pointer to a specific object type, to help validate API methods.
 // Use with caution, the resulting pointer does not address a real object!

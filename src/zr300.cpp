@@ -71,11 +71,11 @@ namespace rsimpl
             case RS_OPTION_FISHEYE_STROBE:                            zr300::set_strobe(get_device(), static_cast<uint8_t>(values[i])); break;
             case RS_OPTION_FISHEYE_EXT_TRIG:                          zr300::set_ext_trig(get_device(), static_cast<uint8_t>(values[i])); break;
             case RS_OPTION_FISHEYE_COLOR_EXPOSURE:                    zr300::set_exposure(get_device(), static_cast<uint8_t>(values[i])); break;
-            case RS_OPTION_FISHEYE_COLOR_AUTO_EXPOSURE:               fisheye_auto_exposure_state.set_auto_exposure_state(RS_OPTION_FISHEYE_COLOR_AUTO_EXPOSURE, values[i]); break;
-            case RS_OPTION_FISHEYE_COLOR_AUTO_EXPOSURE_MODE:          fisheye_auto_exposure_state.set_auto_exposure_state(RS_OPTION_FISHEYE_COLOR_AUTO_EXPOSURE_MODE, values[i]); break;
-            case RS_OPTION_FISHEYE_COLOR_AUTO_EXPOSURE_RATE:          fisheye_auto_exposure_state.set_auto_exposure_state(RS_OPTION_FISHEYE_COLOR_AUTO_EXPOSURE_RATE, values[i]); break;
-            case RS_OPTION_FISHEYE_COLOR_AUTO_EXPOSURE_SAMPLE_RATE:   fisheye_auto_exposure_state.set_auto_exposure_state(RS_OPTION_FISHEYE_COLOR_AUTO_EXPOSURE_SAMPLE_RATE, values[i]); break;
-            case RS_OPTION_FISHEYE_COLOR_AUTO_EXPOSURE_SKIP_FRAMES:   fisheye_auto_exposure_state.set_auto_exposure_state(RS_OPTION_FISHEYE_COLOR_AUTO_EXPOSURE_SKIP_FRAMES, values[i]); break;
+            case RS_OPTION_FISHEYE_COLOR_AUTO_EXPOSURE:               set_auto_exposure_state(RS_OPTION_FISHEYE_COLOR_AUTO_EXPOSURE, values[i]); break;
+            case RS_OPTION_FISHEYE_COLOR_AUTO_EXPOSURE_MODE:          set_auto_exposure_state(RS_OPTION_FISHEYE_COLOR_AUTO_EXPOSURE_MODE, values[i]); break;
+            case RS_OPTION_FISHEYE_COLOR_AUTO_EXPOSURE_RATE:          set_auto_exposure_state(RS_OPTION_FISHEYE_COLOR_AUTO_EXPOSURE_RATE, values[i]); break;
+            case RS_OPTION_FISHEYE_COLOR_AUTO_EXPOSURE_SAMPLE_RATE:   set_auto_exposure_state(RS_OPTION_FISHEYE_COLOR_AUTO_EXPOSURE_SAMPLE_RATE, values[i]); break;
+            case RS_OPTION_FISHEYE_COLOR_AUTO_EXPOSURE_SKIP_FRAMES:   set_auto_exposure_state(RS_OPTION_FISHEYE_COLOR_AUTO_EXPOSURE_SKIP_FRAMES, values[i]); break;
 
             case RS_OPTION_ZR300_GYRO_BANDWIDTH:            mm_cfg_writer.set(&motion_module::mm_config::gyro_bandwidth, (uint8_t)values[i]); break;
             case RS_OPTION_ZR300_GYRO_RANGE:                mm_cfg_writer.set(&motion_module::mm_config::gyro_range, (uint8_t)values[i]); break;
@@ -164,12 +164,12 @@ namespace rsimpl
 
     unsigned zr300_camera::get_auto_exposure_state(rs_option option)
     {
-        return fisheye_auto_exposure_state.get_auto_exposure_state(option);
+        return auto_exposure_state.get_auto_exposure_state(option);
     }
 
     void zr300_camera::set_auto_exposure_state(rs_option option, double value)
     {
-        fisheye_auto_exposure_state.set_auto_exposure_state(option, value);
+        auto_exposure_state.set_auto_exposure_state(option, value);
     }
 
     void zr300_camera::toggle_motion_module_power(bool on)

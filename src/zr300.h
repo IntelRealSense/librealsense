@@ -184,7 +184,7 @@ namespace rsimpl
 
         motion_module::motion_module_control     motion_module_ctrl;
         motion_module::mm_config                 motion_module_configuration;
-        fisheye_auto_exposure_state              fisheye_auto_exposure_state;
+        fisheye_auto_exposure_state              auto_exposure_state;
         std::shared_ptr<auto_exposure_mechanism> auto_exposure;
 
     protected:
