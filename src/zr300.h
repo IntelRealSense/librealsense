@@ -139,6 +139,12 @@ namespace rsimpl
         void decrease_exposure_target(float mult, float& target_exposure);
         void increase_exposure_gain(const float& target_exposure, const float& target_exposure0, float& exposure, float& gain);
         void decrease_exposure_gain(const float& target_exposure, const float& target_exposure0, float& exposure, float& gain);
+        void static_increase_exposure_gain(const float& target_exposure, const float& target_exposure0, float& exposure, float& gain);
+        void static_decrease_exposure_gain(const float& target_exposure, const float& target_exposure0, float& exposure, float& gain);
+        void anti_flicker_increase_exposure_gain(const float& target_exposure, const float& target_exposure0, float& exposure, float& gain);
+        void anti_flicker_decrease_exposure_gain(const float& target_exposure, const float& target_exposure0, float& exposure, float& gain);
+        void hybrid_increase_exposure_gain(const float& target_exposure, const float& target_exposure0, float& exposure, float& gain);
+        void hybrid_decrease_exposure_gain(const float& target_exposure, const float& target_exposure0, float& exposure, float& gain);
 
 #if defined(_WINDOWS) || defined(WIN32) || defined(WIN64)
         inline float round(float x) { return std::round(x); }
@@ -156,7 +162,7 @@ namespace rsimpl
         uint8_t under_exposure_limit = 5, over_exposure_limit = 250; int under_exposure_noise_limit = 50, over_exposure_noise_limit = 50;
         int direction = 0, prev_direction = 0; float hysteresis = 0.075f;// 05;
         float eps = 0.01f, exposure_step = 0.05f, minimal_exposure_step = 0.15f;
-        fisheye_auto_exposure_state state; float flicker_cycle;
+        fisheye_auto_exposure_state state; float flicker_cycle; bool anti_flicker_mode = false;
     };
 
     class auto_exposure_mechanism {

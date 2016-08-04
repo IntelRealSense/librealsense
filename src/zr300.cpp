@@ -592,7 +592,7 @@ namespace rsimpl
     {
         float total_exposure = exposure * gain;
         float prev_exposure = exposure;
-        //    EXPOSURE_LOG("TotalExposure " << TotalExposure << ", TargetExposure " << TargetExposure << std::endl);
+        //    EXPOSURE_LOG("TotalExposure " << TotalExposure << ", target_exposure " << target_exposure << std::endl);
         if (fabs(target_exposure - total_exposure) > eps)
         {
             rounding_mode_type RoundingMode;
@@ -605,7 +605,7 @@ namespace rsimpl
                 increase_exposure_gain(target_exposure, target_exposure0, exposure, gain);
                 RoundingMode = rounding_mode_type::ceil;
                 //            EXPOSURE_LOG(" ModifyExposure: IncreaseExposureGain: ");
-                //            EXPOSURE_LOG(" TargetExposure0 " << TargetExposure0);
+                //            EXPOSURE_LOG(" target_exposure0 " << target_exposure0);
             }
             else
             {
@@ -615,14 +615,14 @@ namespace rsimpl
                 decrease_exposure_gain(target_exposure, target_exposure0, exposure, gain);
                 RoundingMode = rounding_mode_type::floor;
                 //            EXPOSURE_LOG(" ModifyExposure: DecreaseExposureGain: ");
-                //            EXPOSURE_LOG(" TargetExposure0 " << TargetExposure0);
+                //            EXPOSURE_LOG(" target_exposure0 " << target_exposure0);
             }
-            //        EXPOSURE_LOG(" Exposure " << Exposure << ", Gain " << Gain << std::endl);
+            //        EXPOSURE_LOG(" exposure " << exposure << ", gain " << gain << std::endl);
             if (exposure_value != exposure)
             {
                 exp_modified = true;
                 exposure_value = exposure;
-                //            EXPOSURE_LOG("ExposureModified: Exposure = " << exposure_value);
+                //            EXPOSURE_LOG("ExposureModified: exposure = " << exposure_value);
                 exposure_value = exposure_to_value(exposure_value, RoundingMode);
                 //            EXPOSURE_LOG(" rounded to: " << exposure_value << std::endl);
 
@@ -635,7 +635,7 @@ namespace rsimpl
             {
                 gain_modified = true;
                 gain_value = gain;
-                //            EXPOSURE_LOG("GainModified: Gain = " << Gain_);
+                //            EXPOSURE_LOG("GainModified: gain = " << Gain_);
                 gain_value = gain_to_value(gain_value, RoundingMode);
                 //            EXPOSURE_LOG(" rounded to: " << Gain_ << std::endl);
             }
@@ -704,7 +704,7 @@ namespace rsimpl
         {
             if (fabs(1.0f - (exposure * gain) / target_exposure) < hysteresis)
             {
-                //            EXPOSURE_LOG(" AnalyzeImage: Don't Modify (Hysteresis): " << TargetExposure << " " << Exposure * Gain << std::endl);
+                //            EXPOSURE_LOG(" AnalyzeImage: Don't Modify (Hysteresis): " << target_exposure << " " << exposure * gain << std::endl);
                 return false;
             }
         }
@@ -738,13 +738,113 @@ namespace rsimpl
 
     void auto_exposure_algorithm::increase_exposure_gain(const float& target_exposure, const float& target_exposure0, float& exposure, float& gain)
     {
-        exposure = std::max(minimal_exposure, std::min(target_exposure0 / base_gain, maximal_exposure));
-        gain = std::min(gain_limit, std::max(target_exposure0 / exposure, base_gain));
+        switch (state.get_auto_exposure_state(RS_OPTION_FISHEYE_COLOR_AUTO_EXPOSURE_MODE))
+        {
+        case static_auto_exposure:          static_increase_exposure_gain(target_exposure, target_exposure0, exposure, gain); break;
+        case auto_exposure_anti_flicker:    anti_flicker_increase_exposure_gain(target_exposure, target_exposure0, exposure, gain); break;
+        case auto_exposure_hybrid:          hybrid_increase_exposure_gain(target_exposure, target_exposure0, exposure, gain); break;
+        }
     }
     void auto_exposure_algorithm::decrease_exposure_gain(const float& target_exposure, const float& target_exposure0, float& exposure, float& gain)
     {
+        switch (state.get_auto_exposure_state(RS_OPTION_FISHEYE_COLOR_AUTO_EXPOSURE_MODE))
+        {
+        case static_auto_exposure:          static_decrease_exposure_gain(target_exposure, target_exposure0, exposure, gain); break;
+        case auto_exposure_anti_flicker:    anti_flicker_decrease_exposure_gain(target_exposure, target_exposure0, exposure, gain); break;
+        case auto_exposure_hybrid:          hybrid_decrease_exposure_gain(target_exposure, target_exposure0, exposure, gain); break;
+        }
+    }
+    void auto_exposure_algorithm::static_increase_exposure_gain(const float& target_exposure, const float& target_exposure0, float& exposure, float& gain)
+    {
         exposure = std::max(minimal_exposure, std::min(target_exposure0 / base_gain, maximal_exposure));
         gain = std::min(gain_limit, std::max(target_exposure0 / exposure, base_gain));
+    }
+    void auto_exposure_algorithm::static_decrease_exposure_gain(const float& target_exposure, const float& target_exposure0, float& exposure, float& gain)
+    {
+        exposure = std::max(minimal_exposure, std::min(target_exposure0 / base_gain, maximal_exposure));
+        gain = std::min(gain_limit, std::max(target_exposure0 / exposure, base_gain));
+    }
+    void auto_exposure_algorithm::anti_flicker_increase_exposure_gain(const float& target_exposure, const float& target_exposure0, float& exposure, float& gain)
+    {
+        std::vector< std::tuple<float, float, float> > exposure_gain_score;
+
+        for (int i = 1; i < 4; ++i)
+        {
+            float exposure1 = std::max(std::min(i * flicker_cycle, maximal_exposure), flicker_cycle);
+            float gain1 = base_gain;
+
+            if ((exposure1 * gain1) != target_exposure)
+            {
+                std::min(std::max(target_exposure / exposure1, base_gain), gain_limit);
+            }
+            float score1 = fabs(target_exposure - exposure1 * gain1);
+            exposure_gain_score.push_back(std::tuple<float, float, float>(score1, exposure1, gain1));
+        }
+
+        std::sort(exposure_gain_score.begin(), exposure_gain_score.end());
+
+        exposure = std::get<1>(exposure_gain_score.front());
+        gain = std::get<2>(exposure_gain_score.front());
+    }
+    void auto_exposure_algorithm::anti_flicker_decrease_exposure_gain(const float& target_exposure, const float& target_exposure0, float& exposure, float& gain)
+    {
+        std::vector< std::tuple<float, float, float> > exposure_gain_score;
+
+        for (int i = 1; i < 4; ++i)
+        {
+            float exposure1 = std::max(std::min(i * flicker_cycle, maximal_exposure), flicker_cycle);
+            float gain1 = base_gain;
+            if ((exposure1 * gain1) != target_exposure)
+            {
+                std::min(std::max(target_exposure / exposure1, base_gain), gain_limit);
+            }
+            float score1 = fabs(target_exposure - exposure1 * gain1);
+            exposure_gain_score.push_back(std::tuple<float, float, float>(score1, exposure1, gain1));
+        }
+
+        std::sort(exposure_gain_score.begin(), exposure_gain_score.end());
+
+        exposure = std::get<1>(exposure_gain_score.front());
+        gain = std::get<2>(exposure_gain_score.front());
+    }
+    void auto_exposure_algorithm::hybrid_increase_exposure_gain(const float& target_exposure, const float& target_exposure0, float& exposure, float& gain)
+    {
+        if (anti_flicker_mode)
+        {
+            anti_flicker_increase_exposure_gain(target_exposure, target_exposure0, exposure, gain);
+        }
+        else
+        {
+            static_increase_exposure_gain(target_exposure, target_exposure0, exposure, gain);
+            //        EXPOSURE_LOG("HybridAutoExposure::IncreaseExposureGain: " << exposure * gain << " " << flicker_cycle * base_gain << " " << base_gain << std::endl);
+            if (target_exposure > 0.99 * flicker_cycle * base_gain)
+            {
+                anti_flicker_mode = true;
+                anti_flicker_increase_exposure_gain(target_exposure, target_exposure0, exposure, gain);
+                //            EXPOSURE_LOG("anti_flicker_mode = true" << std::endl);
+            }
+        }
+    }
+    void auto_exposure_algorithm::hybrid_decrease_exposure_gain(const float& target_exposure, const float& target_exposure0, float& exposure, float& gain)
+    {
+        if (anti_flicker_mode)
+        {
+            //        EXPOSURE_LOG("HybridAutoExposure::DecreaseExposureGain: " << exposure << " " << flicker_cycle << " " << gain << " " << base_gain << std::endl);
+            if ((target_exposure) <= 0.99 * (flicker_cycle * base_gain))
+            {
+                anti_flicker_mode = false;
+                static_decrease_exposure_gain(target_exposure, target_exposure0, exposure, gain);
+                //            EXPOSURE_LOG("anti_flicker_mode = false" << std::endl);
+            }
+            else
+            {
+                anti_flicker_decrease_exposure_gain(target_exposure, target_exposure0, exposure, gain);
+            }
+        }
+        else
+        {
+            static_decrease_exposure_gain(target_exposure, target_exposure0, exposure, gain);
+        }
     }
 
     float auto_exposure_algorithm::exposure_to_value(float exp_ms, rounding_mode_type rounding_mode)
