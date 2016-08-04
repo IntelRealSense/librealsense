@@ -523,7 +523,6 @@ namespace rsimpl
         std::lock_guard<std::mutex> lk(queue_mtx);
         skip_frames = auto_exposure_state.get_auto_exposure_state(RS_OPTION_FISHEYE_COLOR_AUTO_EXPOSURE_SKIP_FRAMES);
         auto_exposure_algo.update_options(auto_exposure_state);
-        //TODO: update auto_exposure_state on auto_exposure_algorithm
     }
 
     void auto_exposure_mechanism::add_frame(rs_frame_ref* frame, std::shared_ptr<rsimpl::frame_archive> archive)
@@ -711,6 +710,8 @@ namespace rsimpl
 
     void auto_exposure_algorithm::update_options(const fisheye_auto_exposure_state& options)
     {
+        std::lock_guard<std::recursive_mutex> lock(state_mutex);
+
         state = options;
         flicker_cycle = 1000.0f / (state.get_auto_exposure_state(RS_OPTION_FISHEYE_COLOR_AUTO_EXPOSURE_RATE) * 2.0f);
     }
@@ -734,6 +735,8 @@ namespace rsimpl
 
     void auto_exposure_algorithm::increase_exposure_gain(const float& target_exposure, const float& target_exposure0, float& exposure, float& gain)
     {
+        std::lock_guard<std::recursive_mutex> lock(state_mutex);
+
         switch (state.get_auto_exposure_state(RS_OPTION_FISHEYE_COLOR_AUTO_EXPOSURE_MODE))
         {
         case static_auto_exposure:          static_increase_exposure_gain(target_exposure, target_exposure0, exposure, gain); break;
@@ -743,6 +746,8 @@ namespace rsimpl
     }
     void auto_exposure_algorithm::decrease_exposure_gain(const float& target_exposure, const float& target_exposure0, float& exposure, float& gain)
     {
+        std::lock_guard<std::recursive_mutex> lock(state_mutex);
+
         switch (state.get_auto_exposure_state(RS_OPTION_FISHEYE_COLOR_AUTO_EXPOSURE_MODE))
         {
         case static_auto_exposure:          static_decrease_exposure_gain(target_exposure, target_exposure0, exposure, gain); break;

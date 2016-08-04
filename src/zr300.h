@@ -162,6 +162,7 @@ namespace rsimpl
         int direction = 0, prev_direction = 0; float hysteresis = 0.075f;// 05;
         float eps = 0.01f, exposure_step = 0.05f, minimal_exposure_step = 0.15f;
         fisheye_auto_exposure_state state; float flicker_cycle; bool anti_flicker_mode = false;
+        std::recursive_mutex state_mutex;
     };
 
     class auto_exposure_mechanism {
