@@ -25,7 +25,8 @@ namespace rsimpl
         if (supports(rs_capabilities::RS_CAPABILITIES_FISH_EYE))
         {
             ds_device::set_stream_pre_callback(RS_STREAM_FISHEYE, [&](rs_device * device, rs_frame_ref * frame, std::shared_ptr<frame_archive> archive) {
-                    auto_exposure->add_frame(clone_frame(frame), archive);
+                std::lock_guard<std::mutex> lk(pre_callback_mtx);
+                auto_exposure->add_frame(clone_frame(frame), archive);
             });
         }
     }
@@ -164,12 +165,46 @@ namespace rsimpl
 
     unsigned zr300_camera::get_auto_exposure_state(rs_option option)
     {
+        if (!supports(rs_capabilities::RS_CAPABILITIES_FISH_EYE))
+            throw std::logic_error("Option unsupported without Fisheye camera");
+
         return auto_exposure_state.get_auto_exposure_state(option);
     }
 
     void zr300_camera::set_auto_exposure_state(rs_option option, double value)
     {
+        if (!supports(rs_capabilities::RS_CAPABILITIES_FISH_EYE))
+            throw std::logic_error("Option unsupported without Fisheye camera");
+
+        auto auto_exposure_prev_state = auto_exposure_state.get_auto_exposure_state(RS_OPTION_FISHEYE_COLOR_AUTO_EXPOSURE);
         auto_exposure_state.set_auto_exposure_state(option, value);
+
+        if (auto_exposure_state.get_auto_exposure_state(RS_OPTION_FISHEYE_COLOR_AUTO_EXPOSURE))
+        {
+            if (auto_exposure_prev_state)
+            {
+                auto_exposure->update_auto_exposure_state(auto_exposure_state);
+            }
+            else
+            {
+                auto_exposure = std::make_shared<auto_exposure_mechanism>(this, auto_exposure_state);
+                ds_device::set_stream_pre_callback(RS_STREAM_FISHEYE, [&](rs_device * device, rs_frame_ref * frame, std::shared_ptr<frame_archive> archive) {
+                    std::lock_guard<std::mutex> lk(pre_callback_mtx);
+                    auto_exposure->add_frame(clone_frame(frame), archive);
+                });
+            }
+        }
+        else
+        {
+            if (auto_exposure_prev_state)
+            {
+                {
+                    std::lock_guard<std::mutex> lk(pre_callback_mtx);
+                    ds_device::set_stream_pre_callback(RS_STREAM_FISHEYE, nullptr);
+                }
+                auto_exposure.reset();
+            }
+        }
     }
 
     void zr300_camera::toggle_motion_module_power(bool on)
@@ -190,7 +225,7 @@ namespace rsimpl
             toggle_motion_module_power(true);
        
         if (supports(rs_capabilities::RS_CAPABILITIES_FISH_EYE))
-            auto_exposure = std::make_shared<auto_exposure_mechanism>(this);
+            auto_exposure = std::make_shared<auto_exposure_mechanism>(this, auto_exposure_state);
 
         rs_device_base::start(source);
     }
@@ -355,7 +390,7 @@ namespace rsimpl
             info.options.push_back({ RS_OPTION_FISHEYE_COLOR_AUTO_EXPOSURE_MODE,        0,  2,   1,  0  });
             info.options.push_back({ RS_OPTION_FISHEYE_COLOR_AUTO_EXPOSURE_RATE,        50, 60,  10, 60 });
             info.options.push_back({ RS_OPTION_FISHEYE_COLOR_AUTO_EXPOSURE_SAMPLE_RATE, 1,  3,   1,  1  });
-            info.options.push_back({ RS_OPTION_FISHEYE_COLOR_AUTO_EXPOSURE_SKIP_FRAMES, 1,  3,   1,  1  });
+            info.options.push_back({ RS_OPTION_FISHEYE_COLOR_AUTO_EXPOSURE_SKIP_FRAMES, 0,  3,   1,  2  });
 
             info.options.push_back({ RS_OPTION_ZR300_GYRO_BANDWIDTH,            (int)mm_gyro_bandwidth::gyro_bw_default,    (int)mm_gyro_bandwidth::gyro_bw_200hz,  1,  (int)mm_gyro_bandwidth::gyro_bw_200hz });
             info.options.push_back({ RS_OPTION_ZR300_GYRO_RANGE,                (int)mm_gyro_range::gyro_range_default,     (int)mm_gyro_range::gyro_range_1000,    1,  (int)mm_gyro_range::gyro_range_1000 });
@@ -379,7 +414,7 @@ namespace rsimpl
         return std::make_shared<zr300_camera>(device, info, fisheye_intrinsic);
     }
 
-    unsigned fisheye_auto_exposure_state::get_auto_exposure_state(rs_option option)
+    unsigned fisheye_auto_exposure_state::get_auto_exposure_state(rs_option option) const
     {
         switch (option)
         {
@@ -429,7 +464,7 @@ namespace rsimpl
         }
     }
 
-    auto_exposure_mechanism::auto_exposure_mechanism(rs_device_base* dev) : action(true), device(dev), sync_archive(nullptr)
+    auto_exposure_mechanism::auto_exposure_mechanism(rs_device_base* dev, fisheye_auto_exposure_state auto_exposure_state) : action(true), device(dev), sync_archive(nullptr), skip_frames(get_skip_frames(auto_exposure_state)), auto_exposure_algo(auto_exposure_state), frames_counter(0)
     {
         exposure_thread = std::make_shared<std::thread>([this]() {
             while (action)
@@ -456,7 +491,6 @@ namespace rsimpl
 
                         if (modify_exposure)
                         {
-                            //printf("exposure value: %f\n", exposure_value * 10);
                             rs_option option[] = { RS_OPTION_FISHEYE_COLOR_EXPOSURE };
                             double value[] = { exposure_value * 10. };
                             device->set_options(option, 1, value);
@@ -477,19 +511,34 @@ namespace rsimpl
 
     auto_exposure_mechanism::~auto_exposure_mechanism()
     {
-        action = false;
         {
             std::lock_guard<std::mutex> lk(queue_mtx);
+            action = false;
             clear_queue();
         }
         cv.notify_one();
         exposure_thread->join();
     }
 
+    void auto_exposure_mechanism::update_auto_exposure_state(fisheye_auto_exposure_state& auto_exposure_state)
+    {
+        std::lock_guard<std::mutex> lk(queue_mtx);
+        skip_frames = auto_exposure_state.get_auto_exposure_state(RS_OPTION_FISHEYE_COLOR_AUTO_EXPOSURE_SKIP_FRAMES);
+        //TODO: update auto_exposure_state on auto_exposure_algorithm
+    }
+
     void auto_exposure_mechanism::add_frame(rs_frame_ref* frame, std::shared_ptr<rsimpl::frame_archive> archive)
     {
         if (!action)
             return;
+
+        if (skip_frames && (frames_counter++) != skip_frames)
+        {
+            archive->release_frame_ref((rsimpl::frame_archive::frame_ref *)frame);
+            return;
+        }
+
+        frames_counter = 0;
 
         if (!sync_archive)
             sync_archive = archive;

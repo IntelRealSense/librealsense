@@ -100,10 +100,32 @@ namespace rsimpl
         auto_exposure_hybrid
     };
 
+    class fisheye_auto_exposure_state
+    {
+    public:
+        fisheye_auto_exposure_state() :
+            is_auto_exposure(true),
+            mode(static_auto_exposure),
+            rate(60),
+            sample_rate(1),
+            skip_frames(2)
+        {}
+
+        unsigned get_auto_exposure_state(rs_option option) const;
+        void set_auto_exposure_state(rs_option option, double value);
+
+    private:
+        bool                is_auto_exposure;
+        auto_exposure_modes mode;
+        unsigned            rate;
+        unsigned            sample_rate;
+        unsigned            skip_frames;
+    };
 
     class auto_exposure_algorithm {
     public:
-        void modify_exposure(float& exposure_value, bool& exp_modified, float& gain_value, bool& gain_modified);
+        auto_exposure_algorithm(fisheye_auto_exposure_state auto_exposure_state) {};
+        void modify_exposure(float& exposure_value, bool& exp_modified, float& gain_value, bool& gain_modified); // exposure_value in milliseconds
         bool analyze_image(const rs_frame_ref* image);
 
     private:
@@ -136,15 +158,17 @@ namespace rsimpl
 
     class auto_exposure_mechanism {
     public:
-        auto_exposure_mechanism(rs_device_base* dev);
+        auto_exposure_mechanism(rs_device_base* dev, fisheye_auto_exposure_state auto_exposure_state);
         ~auto_exposure_mechanism();
         void add_frame(rs_frame_ref* frame, std::shared_ptr<rsimpl::frame_archive> archive);
+        void update_auto_exposure_state(fisheye_auto_exposure_state& auto_exposure_state);
 
     private:
         void push_back_data(rs_frame_ref* data);
         bool pop_front_data(rs_frame_ref** data);
         size_t get_queue_size();
         void clear_queue();
+        unsigned get_skip_frames(const fisheye_auto_exposure_state& auto_exposure_state) { return auto_exposure_state.get_auto_exposure_state(RS_OPTION_FISHEYE_COLOR_AUTO_EXPOSURE_SKIP_FRAMES); }
 
         rs_device_base*                        device = nullptr;
         auto_exposure_algorithm                auto_exposure_algo;
@@ -154,38 +178,17 @@ namespace rsimpl
         std::atomic<bool>                      action;
         std::deque<rs_frame_ref*>              data_queue;
         std::mutex                             queue_mtx;
-    };
-
-
-    class fisheye_auto_exposure_state
-    {
-    public:
-        fisheye_auto_exposure_state() :
-            is_auto_exposure(true),
-            mode(static_auto_exposure),
-            rate(60),
-            sample_rate(1),
-            skip_frames(2)
-        {}
-
-        unsigned get_auto_exposure_state(rs_option option);
-        void set_auto_exposure_state(rs_option option, double value);
-
-    private:
-        bool                is_auto_exposure;
-        auto_exposure_modes mode;
-        unsigned            rate;
-        unsigned            sample_rate;
-        unsigned            skip_frames;
+        std::atomic<unsigned>                  frames_counter;
+        std::atomic<unsigned>                  skip_frames;
     };
 
     class zr300_camera final : public ds::ds_device
     {
-
         motion_module::motion_module_control     motion_module_ctrl;
         motion_module::mm_config                 motion_module_configuration;
         fisheye_auto_exposure_state              auto_exposure_state;
         std::shared_ptr<auto_exposure_mechanism> auto_exposure;
+        std::mutex pre_callback_mtx;
 
     protected:
         void toggle_motion_module_power(bool bOn);
