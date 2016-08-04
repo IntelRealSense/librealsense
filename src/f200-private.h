@@ -75,8 +75,8 @@ namespace rsimpl { namespace f200
         int16_t minLaser;       // "
         int16_t maxLaser;       // "
         int16_t startLaser;     // "
-        int16_t ARUpperTh;      // Copy into IVCAMCommand::data if not -1
-        int16_t ARLowerTh;      // "
+        uint16_t ARUpperTh;     // Copy into IVCAMCommand::data if not -1
+        uint16_t ARLowerTh;     // "
     };
 
     // Claim USB interface used for device
