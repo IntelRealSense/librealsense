@@ -10,6 +10,7 @@
 #include "libuvc/libuvc_internal.h" // For LibUSB punchthrough
 #include <thread>
 
+
 namespace rsimpl
 {
     namespace uvc
@@ -234,7 +235,7 @@ namespace rsimpl
 
         void get_extension_control_range(const device & device, const extension_unit & xu, char control, int * min, int * max, int * step, int * def)
         {
-            throw std::logic_error("get_extension_control_range(...) is not implemented for this backend ");
+            throw std::logic_error("get_extension_control_range(...) is not implemented for this backend");
         }
 
         void set_pu_control(device & device, int subdevice, rs_option option, int value)
