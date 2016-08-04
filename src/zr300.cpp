@@ -19,9 +19,15 @@ namespace rsimpl
     zr300_camera::zr300_camera(std::shared_ptr<uvc::device> device, const static_device_info & info, motion_module_calibration in_fe_intrinsic)
     : ds_device(device, info),
       motion_module_ctrl(device.get()),
-      fe_intrinsic(in_fe_intrinsic)
+      fe_intrinsic(in_fe_intrinsic),
+      auto_exposure(nullptr)
     {
-
+        if (supports(rs_capabilities::RS_CAPABILITIES_FISH_EYE))
+        {
+            ds_device::set_stream_pre_callback(RS_STREAM_FISHEYE, [&](rs_device * device, rs_frame_ref * frame, std::shared_ptr<frame_archive> archive) {
+                    auto_exposure->add_frame(clone_frame(frame), archive);
+            });
+        }
     }
     
     zr300_camera::~zr300_camera()
@@ -183,6 +189,9 @@ namespace rsimpl
         if ((supports(rs_capabilities::RS_CAPABILITIES_FISH_EYE)) && ((config.requests[RS_STREAM_FISHEYE].enabled)))
             toggle_motion_module_power(true);
        
+        if (supports(rs_capabilities::RS_CAPABILITIES_FISH_EYE))
+            auto_exposure = std::make_shared<auto_exposure_mechanism>(this);
+
         rs_device_base::start(source);
     }
 
@@ -191,7 +200,10 @@ namespace rsimpl
     {
         if ((supports(rs_capabilities::RS_CAPABILITIES_FISH_EYE)) && ((config.requests[RS_STREAM_FISHEYE].enabled)))
             toggle_motion_module_power(false);
+
         rs_device_base::stop(source);
+        if (auto_exposure)
+            auto_exposure.reset();
     }
 
     // Power on motion module (mmpwr)
@@ -339,7 +351,7 @@ namespace rsimpl
             info.options.push_back({ RS_OPTION_FISHEYE_COLOR_GAIN                                       });
             info.options.push_back({ RS_OPTION_FISHEYE_STROBE,                          0,  1,   1,  0  });
             info.options.push_back({ RS_OPTION_FISHEYE_EXT_TRIG,                        0,  1,   1,  0  });
-            info.options.push_back({ RS_OPTION_FISHEYE_COLOR_AUTO_EXPOSURE,             0,  1,   1,  0  });
+            info.options.push_back({ RS_OPTION_FISHEYE_COLOR_AUTO_EXPOSURE,             0,  1,   1,  1  });
             info.options.push_back({ RS_OPTION_FISHEYE_COLOR_AUTO_EXPOSURE_MODE,        0,  2,   1,  0  });
             info.options.push_back({ RS_OPTION_FISHEYE_COLOR_AUTO_EXPOSURE_RATE,        50, 60,  10, 60 });
             info.options.push_back({ RS_OPTION_FISHEYE_COLOR_AUTO_EXPOSURE_SAMPLE_RATE, 1,  3,   1,  1  });
@@ -351,8 +363,6 @@ namespace rsimpl
             info.options.push_back({ RS_OPTION_ZR300_ACCELEROMETER_RANGE,       (int)mm_accel_range::accel_range_default,   (int)mm_accel_range::accel_range_16g,   1,  (int)mm_accel_range::accel_range_4g });
             info.options.push_back({ RS_OPTION_ZR300_MOTION_MODULE_TIME_SEED,       0,      UINT_MAX,   1,   0 });
             info.options.push_back({ RS_OPTION_ZR300_MOTION_MODULE_ACTIVE,          0,       1,         1,   0 });
-
-           
         }
         
         std::timed_mutex mutex;
@@ -367,5 +377,431 @@ namespace rsimpl
         }
         
         return std::make_shared<zr300_camera>(device, info, fisheye_intrinsic);
+    }
+
+    unsigned fisheye_auto_exposure_state::get_auto_exposure_state(rs_option option)
+    {
+        switch (option)
+        {
+        case RS_OPTION_FISHEYE_COLOR_AUTO_EXPOSURE:
+            return (static_cast<unsigned>(auto_exposure));
+            break;
+        case RS_OPTION_FISHEYE_COLOR_AUTO_EXPOSURE_MODE:
+            return (static_cast<unsigned>(auto_exposure_mode));
+            break;
+        case RS_OPTION_FISHEYE_COLOR_AUTO_EXPOSURE_RATE:
+            return (static_cast<unsigned>(auto_exposure_rate));
+            break;
+        case RS_OPTION_FISHEYE_COLOR_AUTO_EXPOSURE_SAMPLE_RATE:
+            return (static_cast<unsigned>(auto_exposure_sample_rate));
+            break;
+        case RS_OPTION_FISHEYE_COLOR_AUTO_EXPOSURE_SKIP_FRAMES:
+            return (static_cast<unsigned>(auto_exposure_skip_frames));
+            break;
+        default:
+            throw std::logic_error("Option unsupported");
+            break;
+        }
+    }
+
+    void fisheye_auto_exposure_state::set_auto_exposure_state(rs_option option, double value)
+    {
+        switch (option)
+        {
+        case RS_OPTION_FISHEYE_COLOR_AUTO_EXPOSURE:
+            auto_exposure = (value == 1);
+            break;
+        case RS_OPTION_FISHEYE_COLOR_AUTO_EXPOSURE_MODE:
+            auto_exposure_mode = static_cast<auto_exposure_modes>((int)value);
+            break;
+        case RS_OPTION_FISHEYE_COLOR_AUTO_EXPOSURE_RATE:
+            auto_exposure_rate = static_cast<unsigned>(value);
+            break;
+        case RS_OPTION_FISHEYE_COLOR_AUTO_EXPOSURE_SAMPLE_RATE:
+            auto_exposure_sample_rate = static_cast<unsigned>(value);
+            break;
+        case RS_OPTION_FISHEYE_COLOR_AUTO_EXPOSURE_SKIP_FRAMES:
+            auto_exposure_skip_frames = static_cast<unsigned>(value);
+            break;
+        default:
+            throw std::logic_error("Option unsupported");
+            break;
+        }
+    }
+
+    auto_exposure_mechanism::auto_exposure_mechanism(rs_device_base* dev) : action(true), device(dev), sync_archive(nullptr)
+    {
+        exposure_thread = std::make_shared<std::thread>([this]() {
+            while (action)
+            {
+                std::unique_lock<std::mutex> lk(queue_mtx);
+                cv.wait(lk, [&] {return (get_queue_size() || !action); });
+                if (!action)
+                    return;
+
+                lk.unlock();
+
+                rs_frame_ref* frame_ref = nullptr;
+                if (pop_front_data(&frame_ref))
+                {
+                    auto frame_data = frame_ref->get_frame_data();
+                    float exposure_value = static_cast<float>(frame_ref->get_frame_metadata(RS_FRAME_METADATA_EXPOSURE) / 10.);
+                    float gain_value = static_cast<float>(frame_ref->get_frame_metadata(RS_FRAME_METADATA_GAIN));
+
+                    bool sts = auto_exposure_algo.analyze_image(frame_ref);
+                    if (sts)
+                    {
+                        bool modify_exposure, modify_gain;
+                        auto_exposure_algo.modify_exposure(exposure_value, modify_exposure, gain_value, modify_gain);
+
+                        if (modify_exposure)
+                        {
+                            //printf("exposure value: %f\n", exposure_value * 10);
+                            rs_option option[] = { RS_OPTION_FISHEYE_COLOR_EXPOSURE };
+                            double value[] = { exposure_value * 10. };
+                            device->set_options(option, 1, value);
+                        }
+
+                        if (modify_gain)
+                        {
+                            rs_option option[] = { RS_OPTION_FISHEYE_COLOR_GAIN };
+                            double value[] = { gain_value };
+                            device->set_options(option, 1, value);
+                        }
+                    }
+                }
+                sync_archive->release_frame_ref((rsimpl::frame_archive::frame_ref *)frame_ref);
+            }
+        });
+    }
+
+    auto_exposure_mechanism::~auto_exposure_mechanism()
+    {
+        action = false;
+        {
+            std::lock_guard<std::mutex> lk(queue_mtx);
+            clear_queue();
+        }
+        cv.notify_one();
+        exposure_thread->join();
+    }
+
+    void auto_exposure_mechanism::add_frame(rs_frame_ref* frame, std::shared_ptr<rsimpl::frame_archive> archive)
+    {
+        if (!action)
+            return;
+
+        if (!sync_archive)
+            sync_archive = archive;
+
+        {
+            std::lock_guard<std::mutex> lk(queue_mtx);
+            push_back_data(frame);
+        }
+        cv.notify_one();
+    }
+
+    void auto_exposure_mechanism::push_back_data(rs_frame_ref* data)
+    {
+        data_queue.push_back(data);
+    }
+
+    bool auto_exposure_mechanism::pop_front_data(rs_frame_ref** data)
+    {
+        if (!data_queue.size())
+            return false;
+
+        *data = data_queue.front();
+        data_queue.pop_front();
+
+        return true;
+    }
+
+    size_t auto_exposure_mechanism::get_queue_size()
+    {
+        return data_queue.size();
+    }
+
+    void auto_exposure_mechanism::clear_queue()
+    {
+        rs_frame_ref* frame_ref = nullptr;
+        while (pop_front_data(&frame_ref))
+        {
+            sync_archive->release_frame_ref((rsimpl::frame_archive::frame_ref *)frame_ref);
+        }
+    }
+
+    void auto_exposure_algorithm::modify_exposure(float& exposure_value, bool& exp_modified, float& gain_value, bool& gain_modified)
+    {
+        float total_exposure = exposure * gain;
+        float prev_exposure = exposure;
+        //    EXPOSURE_LOG("TotalExposure " << TotalExposure << ", TargetExposure " << TargetExposure << std::endl);
+        if (fabs(target_exposure - total_exposure) > eps)
+        {
+            rounding_mode_type RoundingMode;
+
+            if (target_exposure > total_exposure)
+            {
+                float target_exposure0 = total_exposure * (1.0f + exposure_step);
+
+                target_exposure0 = std::min(target_exposure0, target_exposure);
+                increase_exposure_gain(target_exposure, target_exposure0, exposure, gain);
+                RoundingMode = rounding_mode_type::ceil;
+                //            EXPOSURE_LOG(" ModifyExposure: IncreaseExposureGain: ");
+                //            EXPOSURE_LOG(" TargetExposure0 " << TargetExposure0);
+            }
+            else
+            {
+                float target_exposure0 = total_exposure / (1.0f + exposure_step);
+
+                target_exposure0 = std::max(target_exposure0, target_exposure);
+                decrease_exposure_gain(target_exposure, target_exposure0, exposure, gain);
+                RoundingMode = rounding_mode_type::floor;
+                //            EXPOSURE_LOG(" ModifyExposure: DecreaseExposureGain: ");
+                //            EXPOSURE_LOG(" TargetExposure0 " << TargetExposure0);
+            }
+            //        EXPOSURE_LOG(" Exposure " << Exposure << ", Gain " << Gain << std::endl);
+            if (exposure_value != exposure)
+            {
+                exp_modified = true;
+                exposure_value = exposure;
+                //            EXPOSURE_LOG("ExposureModified: Exposure = " << exposure_value);
+                exposure_value = exposure_to_value(exposure_value, RoundingMode);
+                //            EXPOSURE_LOG(" rounded to: " << exposure_value << std::endl);
+
+                if (std::fabs(prev_exposure - exposure) < minimal_exposure_step)
+                {
+                    exposure_value = exposure + direction * minimal_exposure_step;
+                }
+            }
+            if (gain_value != gain)
+            {
+                gain_modified = true;
+                gain_value = gain;
+                //            EXPOSURE_LOG("GainModified: Gain = " << Gain_);
+                gain_value = gain_to_value(gain_value, RoundingMode);
+                //            EXPOSURE_LOG(" rounded to: " << Gain_ << std::endl);
+            }
+        }
+    }
+
+    bool auto_exposure_algorithm::analyze_image(const rs_frame_ref* image)
+    {
+        int cols = image->get_frame_width();
+        int rows = image->get_frame_height();
+
+        const int number_of_pixels = cols * rows; //VGA
+        if (number_of_pixels == 0)
+        {
+            // empty image
+            return false;
+        }
+        std::vector<int> H(256);
+        int total_weight;
+        //    if (UseWeightedHistogram)
+        //    {
+        //        if ((Weights.cols != cols) || (Weights.rows != rows)) { /* weights matrix size != image size */ }
+        //        ImHistW(Image.get_data(), Weights.data, cols, rows, Image.step, Weights.step, &H[0], TotalWeight);
+        //    }
+        //    else
+        {
+            im_hist((uint8_t*)image->get_frame_data(), cols, rows, image->get_frame_bpp() / 8 * cols, &H[0]);
+            total_weight = number_of_pixels;
+        }
+        histogram_metric score;
+        histogram_score(H, total_weight, score);
+        int EffectiveDynamicRange = (score.highlight_limit - score.shadow_limit);
+        ///
+        float s1 = (score.main_mean - 128.0f) / 255.0f;
+        float s2 = 0;
+        if (total_weight != 0)
+        {
+            s2 = (score.over_exposure_count - score.under_exposure_count) / (float)total_weight;
+        }
+        else
+        {
+            //        WRITE2LOG(eLogVerbose, "Weight=0 Error");
+            return false;
+        }
+        float s = -0.3f * (s1 + 5.0f * s2);
+        //    EXPOSURE_LOG(" AnalyzeImage Score: " << s << std::endl);
+        //std::cout << "----------------- " << s << std::endl;
+        /*if (fabs(s) < Hysteresis)
+        {
+        EXPOSURE_LOG(" AnalyzeImage < Hysteresis" << std::endl);
+        return false;
+        }*/
+        if (s > 0)
+        {
+            //        EXPOSURE_LOG(" AnalyzeImage: IncreaseExposure" << std::endl);
+            direction = +1;
+            increase_exposure_target(s, target_exposure);
+        }
+        else
+        {
+            //        EXPOSURE_LOG(" AnalyzeImage: DecreaseExposure" << std::endl);
+            direction = -1;
+            decrease_exposure_target(s, target_exposure);
+        }
+        //if ((PrevDirection != 0) && (PrevDirection != Direction))
+        {
+            if (fabs(1.0f - (exposure * gain) / target_exposure) < hysteresis)
+            {
+                //            EXPOSURE_LOG(" AnalyzeImage: Don't Modify (Hysteresis): " << TargetExposure << " " << Exposure * Gain << std::endl);
+                return false;
+            }
+        }
+        prev_direction = direction;
+        //    EXPOSURE_LOG(" AnalyzeImage: Modify" << std::endl);
+        return true;
+    }
+
+    void auto_exposure_algorithm::im_hist(const uint8_t* data, const int width, const int height, const int rowStep, int h[])
+    {
+        for (int i = 0; i < 256; ++i) h[i] = 0;
+        const uint8_t* rowData = data;
+        for (int i = 0; i < height; ++i, rowData += rowStep) for (int j = 0; j < width; ++j) ++h[rowData[j]];
+    }
+
+    void auto_exposure_algorithm::increase_exposure_target(float mult, float& target_exposure)
+    {
+        target_exposure = std::min((exposure * gain) * (1.0f + mult), maximal_exposure * gain_limit);
+    }
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    void auto_exposure_algorithm::decrease_exposure_target(float mult, float& target_exposure)
+    {
+        target_exposure = std::max((exposure * gain) * (1.0f + mult), minimal_exposure * base_gain);
+    }
+
+    void auto_exposure_algorithm::increase_exposure_gain(const float& target_exposure, const float& target_exposure0, float& exposure, float& gain)
+    {
+        exposure = std::max(minimal_exposure, std::min(target_exposure0 / base_gain, maximal_exposure));
+        gain = std::min(gain_limit, std::max(target_exposure0 / exposure, base_gain));
+    }
+    void auto_exposure_algorithm::decrease_exposure_gain(const float& target_exposure, const float& target_exposure0, float& exposure, float& gain)
+    {
+        exposure = std::max(minimal_exposure, std::min(target_exposure0 / base_gain, maximal_exposure));
+        gain = std::min(gain_limit, std::max(target_exposure0 / exposure, base_gain));
+    }
+
+    float auto_exposure_algorithm::exposure_to_value(float exp_ms, rounding_mode_type rounding_mode)
+    {
+        const float line_period_us = 19.33333333f;
+
+        float ExposureTimeLine = (exp_ms * 1000.0f / line_period_us);
+        if (rounding_mode == rounding_mode_type::ceil) ExposureTimeLine = std::ceil(ExposureTimeLine);
+        else if (rounding_mode == rounding_mode_type::floor) ExposureTimeLine = std::floor(ExposureTimeLine);
+        else ExposureTimeLine = round(ExposureTimeLine);
+        return ((float)ExposureTimeLine * line_period_us) / 1000.0f;
+    }
+
+    float auto_exposure_algorithm::gain_to_value(float gain, rounding_mode_type rounding_mode)
+    {
+
+        if (gain < 2.0f) { return 2.0f; }
+        else if (gain > 32.0f) { return 32.0f; }
+        else {
+            if (rounding_mode == rounding_mode_type::ceil) return std::ceil(gain * 8.0f) / 8.0f;
+            else if (rounding_mode == rounding_mode_type::floor) return std::floor(gain * 8.0f) / 8.0f;
+            else return round(gain * 8.0f) / 8.0f;
+        }
+    }
+
+    template <typename T> inline T sqr(const T& x) { return (x*x); }
+    void auto_exposure_algorithm::histogram_score(std::vector<int>& h, const int total_weight, histogram_metric& score)
+    {
+        score.under_exposure_count = 0;
+        score.over_exposure_count = 0;
+
+        for (size_t i = 0; i <= under_exposure_limit; ++i)
+        {
+            score.under_exposure_count += h[i];
+        }
+        score.shadow_limit = 0;
+        //if (Score.UnderExposureCount < UnderExposureNoiseLimit)
+        {
+            score.shadow_limit = under_exposure_limit;
+            for (size_t i = under_exposure_limit + 1; i <= over_exposure_limit; ++i)
+            {
+                if (h[i] > under_exposure_noise_limit)
+                {
+                    break;
+                }
+                score.shadow_limit++;
+            }
+            int lower_q = 0;
+            score.lower_q = 0;
+            for (size_t i = under_exposure_limit + 1; i <= over_exposure_limit; ++i)
+            {
+                lower_q += h[i];
+                if (lower_q > total_weight / 4)
+                {
+                    break;
+                }
+                score.lower_q++;
+            }
+        }
+
+        for (size_t i = over_exposure_limit; i <= 255; ++i)
+        {
+            score.over_exposure_count += h[i];
+        }
+
+        score.highlight_limit = 255;
+        //if (Score.OverExposureCount < OverExposureNoiseLimit)
+        {
+            score.highlight_limit = over_exposure_limit;
+            for (size_t i = over_exposure_limit; i >= under_exposure_limit; --i)
+            {
+                if (h[i] > over_exposure_noise_limit)
+                {
+                    break;
+                }
+                score.highlight_limit--;
+            }
+            int upper_q = 0;
+            score.upper_q = over_exposure_limit;
+            for (size_t i = over_exposure_limit; i >= under_exposure_limit; --i)
+            {
+                upper_q += h[i];
+                if (upper_q > total_weight / 4)
+                {
+                    break;
+                }
+                score.upper_q--;
+            }
+
+        }
+        int32_t m1 = 0;
+        int64_t m2 = 0;
+
+        double nn = (double)total_weight - score.under_exposure_count - score.over_exposure_count;
+        if (nn == 0)
+        {
+            nn = (double)total_weight;
+            for (int i = 0; i <= 255; ++i)
+            {
+                m1 += h[i] * i;
+                m2 += h[i] * sqr(i);
+            }
+        }
+        else
+        {
+            for (int i = under_exposure_limit + 1; i < over_exposure_limit; ++i)
+            {
+                m1 += h[i] * i;
+                m2 += h[i] * sqr(i);
+            }
+        }
+        score.main_mean = (float)((double)m1 / nn);
+        double Var = (double)m2 / nn - sqr((double)m1 / nn);
+        if (Var > 0)
+        {
+            score.main_std = (float)sqrt(Var);
+        }
+        else
+        {
+            score.main_std = 0.0f;
+        }
     }
 }

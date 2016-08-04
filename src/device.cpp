@@ -111,6 +111,11 @@ void rs_device_base::set_stream_callback(rs_stream stream, rs_frame_callback* ca
     config.callbacks[stream] = frame_callback_ptr(callback);
 }
 
+void rs_device_base::set_stream_pre_callback(rs_stream stream, std::function<void(rs_device *, rs_frame_ref *, std::shared_ptr<frame_archive>)> callback)
+{
+    config.pre_callbacks[stream] = callback;
+}
+
 void rs_device_base::enable_motion_tracking()
 {
     if (data_acquisition_active) throw std::runtime_error("motion-tracking cannot be reconfigured after having called rs_start_device()");
@@ -236,7 +241,6 @@ void rs_device_base::start_video_streaming()
     auto capture_start_time = std::chrono::high_resolution_clock::now();
     auto selected_modes = config.select_modes();
     auto archive = std::make_shared<syncronizing_archive>(selected_modes, select_key_stream(selected_modes), &max_publish_list_size, &event_queue_size, &events_timeout, capture_start_time);
-    auto auto_exposure = std::make_shared<auto_exposure_mechanism>(this, archive);
 
     for(auto & s : native_streams) s->archive.reset(); // Starting capture invalidates the current stream info, if any exists from previous capture
 
@@ -260,7 +264,7 @@ void rs_device_base::start_video_streaming()
         }       
         // Initialize the subdevice and set it to the selected mode
         set_subdevice_mode(*device, mode_selection.mode.subdevice, mode_selection.mode.native_dims.x, mode_selection.mode.native_dims.y, mode_selection.mode.pf.fourcc, mode_selection.mode.fps, 
-            [this, mode_selection, archive, timestamp_reader, streams, capture_start_time, auto_exposure](const void * frame, std::function<void()> continuation) mutable
+            [this, mode_selection, archive, timestamp_reader, streams, capture_start_time](const void * frame, std::function<void()> continuation) mutable
         {
             auto now = std::chrono::system_clock::now().time_since_epoch();
             auto sys_time = std::chrono::duration_cast<std::chrono::milliseconds>(now).count();
@@ -345,8 +349,8 @@ void rs_device_base::start_video_streaming()
                         frame_ref->update_frame_callback_start_ts(std::chrono::high_resolution_clock::now());
                         frame_ref->log_callback_start(capture_start_time);
 
-                        if ((streams[i] == rs_stream::RS_STREAM_FISHEYE))
-                            auto_exposure->add_frame(clone_frame(frame_ref));
+                        if (config.pre_callbacks[streams[i]])
+                            (config.pre_callbacks[streams[i]])(this, frame_ref, archive);
 
                         (*config.callbacks[streams[i]])->on_frame(this, frame_ref);
                     }

@@ -7,7 +7,9 @@
 
 #include "motion-module.h"
 #include "ds-device.h"
-
+#include "sync.h"
+#include <deque>
+#include <algorithm>
 
 #define R200_PRODUCT_ID     0x0a80
 #define LR200_PRODUCT_ID    0x0abf
@@ -98,73 +100,92 @@ namespace rsimpl
         auto_exposure_hybrid
     };
 
+
+    class auto_exposure_algorithm {
+    public:
+        void modify_exposure(float& exposure_value, bool& exp_modified, float& gain_value, bool& gain_modified);
+        bool analyze_image(const rs_frame_ref* image);
+
+    private:
+        struct histogram_metric { int under_exposure_count; int over_exposure_count; int shadow_limit; int highlight_limit; int lower_q; int upper_q; float main_mean; float main_std; };
+        enum class rounding_mode_type { round, ceil, floor };
+
+        inline void im_hist(const uint8_t* data, const int width, const int height, const int rowStep, int h[]);
+        void increase_exposure_target(float mult, float& target_exposure);
+        void decrease_exposure_target(float mult, float& target_exposure);
+        void increase_exposure_gain(const float& target_exposure, const float& target_exposure0, float& exposure, float& gain);
+        void decrease_exposure_gain(const float& target_exposure, const float& target_exposure0, float& exposure, float& gain);
+
+#if defined(_WINDOWS) || defined(WIN32) || defined(WIN64)
+        inline float round(float x) { return std::round(x); }
+#else
+        inline float round(float x) { return x < 0.0 ? ceil(x - 0.5f) : floor(x + 0.5f); }
+#endif
+
+        float exposure_to_value(float exp_ms, rounding_mode_type rounding_mode);
+        float gain_to_value(float gain, rounding_mode_type rounding_mode);
+        template <typename T> inline T sqr(const T& x) { return (x*x); }
+        void histogram_score(std::vector<int>& h, const int total_weight, histogram_metric& score);
+
+        float minimal_exposure = 0.25f, maximal_exposure = 20.f, base_gain = 2.0f, gain_limit = 15.0f;
+        float exposure = 10.0f, gain = 2.0f, target_exposure = 0.0f;
+        uint8_t under_exposure_limit = 5, over_exposure_limit = 250; int under_exposure_noise_limit = 50, over_exposure_noise_limit = 50;
+        int direction = 0, prev_direction = 0; float hysteresis = 0.075f;// 05;
+        float eps = 0.01f, exposure_step = 0.05f, minimal_exposure_step = 0.15f;
+    };
+
+    class auto_exposure_mechanism {
+    public:
+        auto_exposure_mechanism(rs_device_base* dev);
+        ~auto_exposure_mechanism();
+        void add_frame(rs_frame_ref* frame, std::shared_ptr<rsimpl::frame_archive> archive);
+
+    private:
+        void push_back_data(rs_frame_ref* data);
+        bool pop_front_data(rs_frame_ref** data);
+        size_t get_queue_size();
+        void clear_queue();
+
+        rs_device_base*                        device = nullptr;
+        auto_exposure_algorithm                auto_exposure_algo;
+        std::shared_ptr<rsimpl::frame_archive> sync_archive;
+        std::shared_ptr<std::thread>           exposure_thread;
+        std::condition_variable                cv;
+        std::atomic<bool>                      action;
+        std::deque<rs_frame_ref*>              data_queue;
+        std::mutex                             queue_mtx;
+    };
+
+
     class fisheye_auto_exposure_state
     {
     public:
-        unsigned get_auto_exposure_state(rs_option option)
-        {
-            switch (option)
-            {
-            case RS_OPTION_FISHEYE_COLOR_AUTO_EXPOSURE:
-                return (static_cast<unsigned>(auto_exposure));
-                break;
-            case RS_OPTION_FISHEYE_COLOR_AUTO_EXPOSURE_MODE:
-                return (static_cast<unsigned>(auto_exposure_mode));
-                break;
-            case RS_OPTION_FISHEYE_COLOR_AUTO_EXPOSURE_RATE:
-                return (static_cast<unsigned>(auto_exposure_rate));
-                break;
-            case RS_OPTION_FISHEYE_COLOR_AUTO_EXPOSURE_SAMPLE_RATE:
-                return (static_cast<unsigned>(auto_exposure_sample_rate));
-                break;
-            case RS_OPTION_FISHEYE_COLOR_AUTO_EXPOSURE_SKIP_FRAMES:
-                return (static_cast<unsigned>(auto_exposure_skip_frames));
-                break;
-            default:
-                throw std::logic_error("Option unsupported");
-                break;
-            }
-        }
+        fisheye_auto_exposure_state() :
+            auto_exposure(true),
+            auto_exposure_mode(static_auto_exposure),
+            auto_exposure_rate(60),
+            auto_exposure_sample_rate(1),
+            auto_exposure_skip_frames(2)
+        {}
 
-        void set_auto_exposure_state(rs_option option, double value)
-        {
-            switch (option)
-            {
-            case RS_OPTION_FISHEYE_COLOR_AUTO_EXPOSURE:
-                auto_exposure = (value == 1);
-                break;
-            case RS_OPTION_FISHEYE_COLOR_AUTO_EXPOSURE_MODE:
-                auto_exposure_mode = static_cast<auto_exposure_modes>((int)value);
-                break;
-            case RS_OPTION_FISHEYE_COLOR_AUTO_EXPOSURE_RATE:
-                auto_exposure_rate = static_cast<unsigned>(value);
-                break;
-            case RS_OPTION_FISHEYE_COLOR_AUTO_EXPOSURE_SAMPLE_RATE:
-                auto_exposure_sample_rate = static_cast<unsigned>(value);
-                break;
-            case RS_OPTION_FISHEYE_COLOR_AUTO_EXPOSURE_SKIP_FRAMES:
-                auto_exposure_skip_frames = static_cast<unsigned>(value);
-                break;
-            default:
-                throw std::logic_error("Option unsupported");
-                break;
-            }
-        }
+        unsigned get_auto_exposure_state(rs_option option);
+        void set_auto_exposure_state(rs_option option, double value);
 
     private:
-        bool auto_exposure = false;
-        auto_exposure_modes auto_exposure_mode = static_auto_exposure;
-        unsigned auto_exposure_rate = 60;
-        unsigned auto_exposure_sample_rate = 1;
-        unsigned auto_exposure_skip_frames = 2;
+        bool                auto_exposure;
+        auto_exposure_modes auto_exposure_mode;
+        unsigned            auto_exposure_rate;
+        unsigned            auto_exposure_sample_rate;
+        unsigned            auto_exposure_skip_frames;
     };
 
     class zr300_camera final : public ds::ds_device
     {
 
-        motion_module::motion_module_control    motion_module_ctrl;
-        motion_module::mm_config                motion_module_configuration;
-        fisheye_auto_exposure_state             fisheye_auto_exposure_state;
+        motion_module::motion_module_control     motion_module_ctrl;
+        motion_module::mm_config                 motion_module_configuration;
+        fisheye_auto_exposure_state              fisheye_auto_exposure_state;
+        std::shared_ptr<auto_exposure_mechanism> auto_exposure;
 
     protected:
         void toggle_motion_module_power(bool bOn);
@@ -189,6 +210,7 @@ namespace rsimpl
 
         rs_motion_intrinsics get_motion_intrinsics() const override;
         rs_extrinsics get_motion_extrinsics_from(rs_stream from) const override;
+
     private:
         unsigned get_auto_exposure_state(rs_option option);
         void set_auto_exposure_state(rs_option option, double value);
