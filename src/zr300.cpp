@@ -548,6 +548,11 @@ namespace rsimpl
         cv.notify_one();
     }
 
+    void auto_exposure_mechanism::update_options(const fisheye_auto_exposure_state& options)
+    {
+        auto_exposure_algo.update_options(options);
+    }
+
     void auto_exposure_mechanism::push_back_data(rs_frame_ref* data)
     {
         data_queue.push_back(data);
@@ -576,6 +581,11 @@ namespace rsimpl
         {
             sync_archive->release_frame_ref((rsimpl::frame_archive::frame_ref *)frame_ref);
         }
+    }
+
+    auto_exposure_algorithm::auto_exposure_algorithm(const fisheye_auto_exposure_state& options)
+    {
+        update_options(options);
     }
 
     void auto_exposure_algorithm::modify_exposure(float& exposure_value, bool& exp_modified, float& gain_value, bool& gain_modified)
@@ -701,6 +711,12 @@ namespace rsimpl
         prev_direction = direction;
         //    EXPOSURE_LOG(" AnalyzeImage: Modify" << std::endl);
         return true;
+    }
+
+    void auto_exposure_algorithm::update_options(const fisheye_auto_exposure_state& options)
+    {
+        state = options;
+        flicker_cycle = 1000.0f / (state.get_auto_exposure_state(RS_OPTION_FISHEYE_COLOR_AUTO_EXPOSURE_RATE) * 2.0f);
     }
 
     void auto_exposure_algorithm::im_hist(const uint8_t* data, const int width, const int height, const int rowStep, int h[])

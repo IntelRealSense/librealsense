@@ -127,6 +127,8 @@ namespace rsimpl
         auto_exposure_algorithm(fisheye_auto_exposure_state auto_exposure_state) {};
         void modify_exposure(float& exposure_value, bool& exp_modified, float& gain_value, bool& gain_modified); // exposure_value in milliseconds
         bool analyze_image(const rs_frame_ref* image);
+        auto_exposure_algorithm(const fisheye_auto_exposure_state& options);
+        void update_options(const fisheye_auto_exposure_state& options);
 
     private:
         struct histogram_metric { int under_exposure_count; int over_exposure_count; int shadow_limit; int highlight_limit; int lower_q; int upper_q; float main_mean; float main_std; };
@@ -154,6 +156,7 @@ namespace rsimpl
         uint8_t under_exposure_limit = 5, over_exposure_limit = 250; int under_exposure_noise_limit = 50, over_exposure_noise_limit = 50;
         int direction = 0, prev_direction = 0; float hysteresis = 0.075f;// 05;
         float eps = 0.01f, exposure_step = 0.05f, minimal_exposure_step = 0.15f;
+        fisheye_auto_exposure_state state; float flicker_cycle;
     };
 
     class auto_exposure_mechanism {
