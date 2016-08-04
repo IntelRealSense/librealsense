@@ -720,7 +720,7 @@ namespace rsimpl
     {
         for (int i = 0; i < 256; ++i) h[i] = 0;
         const uint8_t* rowData = data;
-        for (int i = 0; i < height; ++i, rowData += rowStep) for (int j = 0; j < width; ++j) ++h[rowData[j]];
+        for (int i = 0; i < height; ++i, rowData += rowStep) for (int j = 0; j < width; j+=state.get_auto_exposure_state(RS_OPTION_FISHEYE_COLOR_AUTO_EXPOSURE_SAMPLE_RATE)) ++h[rowData[j]];
     }
 
     void auto_exposure_algorithm::increase_exposure_target(float mult, float& target_exposure)
