@@ -21,15 +21,7 @@ namespace rsimpl
       motion_module_ctrl(device.get()),
       fe_intrinsic(in_fe_intrinsic),
       auto_exposure(nullptr)
-    {
-        if (supports(rs_capabilities::RS_CAPABILITIES_FISH_EYE))
-        {
-            ds_device::set_stream_pre_callback(RS_STREAM_FISHEYE, [&](rs_device * device, rs_frame_ref * frame, std::shared_ptr<frame_archive> archive) {
-                std::lock_guard<std::mutex> lk(pre_callback_mtx);
-                auto_exposure->add_frame(clone_frame(frame), archive);
-            });
-        }
-    }
+    {}
     
     zr300_camera::~zr300_camera()
     {
@@ -223,9 +215,15 @@ namespace rsimpl
     {
         if ((supports(rs_capabilities::RS_CAPABILITIES_FISH_EYE)) && ((config.requests[RS_STREAM_FISHEYE].enabled)))
             toggle_motion_module_power(true);
-       
-        if (supports(rs_capabilities::RS_CAPABILITIES_FISH_EYE))
+
+        if (supports(rs_capabilities::RS_CAPABILITIES_FISH_EYE) && auto_exposure_state.get_auto_exposure_state(RS_OPTION_FISHEYE_COLOR_AUTO_EXPOSURE))
+        {
             auto_exposure = std::make_shared<auto_exposure_mechanism>(this, auto_exposure_state);
+            ds_device::set_stream_pre_callback(RS_STREAM_FISHEYE, [&](rs_device * device, rs_frame_ref * frame, std::shared_ptr<frame_archive> archive) {
+                std::lock_guard<std::mutex> lk(pre_callback_mtx);
+                auto_exposure->add_frame(clone_frame(frame), archive);
+            });
+        }
 
         rs_device_base::start(source);
     }
