@@ -161,22 +161,22 @@ namespace rsimpl
     {
     public:
         fisheye_auto_exposure_state() :
-            auto_exposure(true),
-            auto_exposure_mode(static_auto_exposure),
-            auto_exposure_rate(60),
-            auto_exposure_sample_rate(1),
-            auto_exposure_skip_frames(2)
+            is_auto_exposure(true),
+            mode(static_auto_exposure),
+            rate(60),
+            sample_rate(1),
+            skip_frames(2)
         {}
 
         unsigned get_auto_exposure_state(rs_option option);
         void set_auto_exposure_state(rs_option option, double value);
 
     private:
-        bool                auto_exposure;
-        auto_exposure_modes auto_exposure_mode;
-        unsigned            auto_exposure_rate;
-        unsigned            auto_exposure_sample_rate;
-        unsigned            auto_exposure_skip_frames;
+        bool                is_auto_exposure;
+        auto_exposure_modes mode;
+        unsigned            rate;
+        unsigned            sample_rate;
+        unsigned            skip_frames;
     };
 
     class zr300_camera final : public ds::ds_device

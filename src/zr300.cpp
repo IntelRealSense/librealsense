@@ -384,19 +384,19 @@ namespace rsimpl
         switch (option)
         {
         case RS_OPTION_FISHEYE_COLOR_AUTO_EXPOSURE:
-            return (static_cast<unsigned>(auto_exposure));
+            return (static_cast<unsigned>(is_auto_exposure));
             break;
         case RS_OPTION_FISHEYE_COLOR_AUTO_EXPOSURE_MODE:
-            return (static_cast<unsigned>(auto_exposure_mode));
+            return (static_cast<unsigned>(mode));
             break;
         case RS_OPTION_FISHEYE_COLOR_AUTO_EXPOSURE_RATE:
-            return (static_cast<unsigned>(auto_exposure_rate));
+            return (static_cast<unsigned>(rate));
             break;
         case RS_OPTION_FISHEYE_COLOR_AUTO_EXPOSURE_SAMPLE_RATE:
-            return (static_cast<unsigned>(auto_exposure_sample_rate));
+            return (static_cast<unsigned>(sample_rate));
             break;
         case RS_OPTION_FISHEYE_COLOR_AUTO_EXPOSURE_SKIP_FRAMES:
-            return (static_cast<unsigned>(auto_exposure_skip_frames));
+            return (static_cast<unsigned>(skip_frames));
             break;
         default:
             throw std::logic_error("Option unsupported");
@@ -409,19 +409,19 @@ namespace rsimpl
         switch (option)
         {
         case RS_OPTION_FISHEYE_COLOR_AUTO_EXPOSURE:
-            auto_exposure = (value == 1);
+            is_auto_exposure = (value == 1);
             break;
         case RS_OPTION_FISHEYE_COLOR_AUTO_EXPOSURE_MODE:
-            auto_exposure_mode = static_cast<auto_exposure_modes>((int)value);
+            mode = static_cast<auto_exposure_modes>((int)value);
             break;
         case RS_OPTION_FISHEYE_COLOR_AUTO_EXPOSURE_RATE:
-            auto_exposure_rate = static_cast<unsigned>(value);
+            rate = static_cast<unsigned>(value);
             break;
         case RS_OPTION_FISHEYE_COLOR_AUTO_EXPOSURE_SAMPLE_RATE:
-            auto_exposure_sample_rate = static_cast<unsigned>(value);
+            sample_rate = static_cast<unsigned>(value);
             break;
         case RS_OPTION_FISHEYE_COLOR_AUTO_EXPOSURE_SKIP_FRAMES:
-            auto_exposure_skip_frames = static_cast<unsigned>(value);
+            skip_frames = static_cast<unsigned>(value);
             break;
         default:
             throw std::logic_error("Option unsupported");
