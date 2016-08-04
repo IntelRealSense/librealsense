@@ -522,6 +522,7 @@ namespace rsimpl
     {
         std::lock_guard<std::mutex> lk(queue_mtx);
         skip_frames = auto_exposure_state.get_auto_exposure_state(RS_OPTION_FISHEYE_COLOR_AUTO_EXPOSURE_SKIP_FRAMES);
+        auto_exposure_algo.update_options(auto_exposure_state);
         //TODO: update auto_exposure_state on auto_exposure_algorithm
     }
 
@@ -546,11 +547,6 @@ namespace rsimpl
             push_back_data(frame);
         }
         cv.notify_one();
-    }
-
-    void auto_exposure_mechanism::update_options(const fisheye_auto_exposure_state& options)
-    {
-        auto_exposure_algo.update_options(options);
     }
 
     void auto_exposure_mechanism::push_back_data(rs_frame_ref* data)
@@ -583,9 +579,9 @@ namespace rsimpl
         }
     }
 
-    auto_exposure_algorithm::auto_exposure_algorithm(const fisheye_auto_exposure_state& options)
+    auto_exposure_algorithm::auto_exposure_algorithm(fisheye_auto_exposure_state auto_exposure_state)
     {
-        update_options(options);
+        update_options(auto_exposure_state);
     }
 
     void auto_exposure_algorithm::modify_exposure(float& exposure_value, bool& exp_modified, float& gain_value, bool& gain_modified)

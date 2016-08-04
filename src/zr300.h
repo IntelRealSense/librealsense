@@ -124,10 +124,9 @@ namespace rsimpl
 
     class auto_exposure_algorithm {
     public:
-        auto_exposure_algorithm(fisheye_auto_exposure_state auto_exposure_state) {};
         void modify_exposure(float& exposure_value, bool& exp_modified, float& gain_value, bool& gain_modified); // exposure_value in milliseconds
         bool analyze_image(const rs_frame_ref* image);
-        auto_exposure_algorithm(const fisheye_auto_exposure_state& options);
+        auto_exposure_algorithm(fisheye_auto_exposure_state auto_exposure_state);
         void update_options(const fisheye_auto_exposure_state& options);
 
     private:
