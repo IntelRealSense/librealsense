@@ -472,10 +472,11 @@ namespace rsimpl
                 if (!action)
                     return;
 
-                lk.unlock();
 
                 rs_frame_ref* frame_ref = nullptr;
-                if (pop_front_data(&frame_ref))
+                auto sts = pop_front_data(&frame_ref);
+                lk.unlock();
+                if (sts)
                 {
                     auto frame_data = frame_ref->get_frame_data();
                     float exposure_value = static_cast<float>(frame_ref->get_frame_metadata(RS_FRAME_METADATA_EXPOSURE) / 10.);
@@ -718,6 +719,8 @@ namespace rsimpl
 
     void auto_exposure_algorithm::im_hist(const uint8_t* data, const int width, const int height, const int rowStep, int h[])
     {
+        std::lock_guard<std::recursive_mutex> lock(state_mutex);
+
         for (int i = 0; i < 256; ++i) h[i] = 0;
         const uint8_t* rowData = data;
         for (int i = 0; i < height; ++i, rowData += rowStep) for (int j = 0; j < width; j+=state.get_auto_exposure_state(RS_OPTION_FISHEYE_COLOR_AUTO_EXPOSURE_SAMPLE_RATE)) ++h[rowData[j]];
