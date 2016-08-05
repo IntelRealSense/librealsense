@@ -62,6 +62,36 @@ namespace rsimpl
         return so_vec;
     }
 
+    
+    void correct_lr_auto_exposure_params(rs_device_base * device, ae_params& params)
+    {
+        auto intrinsics = device->get_stream_interface(RS_STREAM_DEPTH).get_intrinsics();
+        // first, bring to the valid range
+        params.exposure_left_edge = std::max((uint16_t)0, std::min((uint16_t)intrinsics.width, params.exposure_left_edge));
+        params.exposure_right_edge = std::max((uint16_t)0, std::min((uint16_t)intrinsics.width, params.exposure_right_edge));
+        params.exposure_top_edge = std::max((uint16_t)0, std::min((uint16_t)intrinsics.height, params.exposure_top_edge));
+        params.exposure_bottom_edge = std::max((uint16_t)0, std::min((uint16_t)intrinsics.height, params.exposure_bottom_edge));
+        // now, let's take care of order:
+        auto left = std::min(params.exposure_left_edge, params.exposure_right_edge);
+        auto right = std::max(params.exposure_left_edge, params.exposure_right_edge);
+        auto top = std::min(params.exposure_top_edge, params.exposure_bottom_edge);
+        auto bottom = std::max(params.exposure_top_edge, params.exposure_bottom_edge);
+
+        if (right == left){
+            if (left == 0) right++;
+            else left--;
+        }
+        if (bottom == top) {
+            if (top == 0) bottom++;
+            else top--;
+        }
+
+        params.exposure_left_edge = left;
+        params.exposure_right_edge = right;
+        params.exposure_top_edge = top;
+        params.exposure_bottom_edge = bottom;
+    }
+
     void ds_device::set_options(const rs_option options[], size_t count, const double values[])
     {
         std::vector<rs_option>  base_opt;
@@ -70,11 +100,18 @@ namespace rsimpl
         auto & dev = get_device();
         auto minmax_writer = make_struct_interface<ds::range    >([&dev]() { return ds::get_min_max_depth(dev);           }, [&dev](ds::range     v) { ds::set_min_max_depth(dev,v);           });
         auto disp_writer   = make_struct_interface<ds::disp_mode>([&dev]() { return ds::get_disparity_mode(dev);          }, [&dev](ds::disp_mode v) { ds::set_disparity_mode(dev,v);          });
-        auto ae_writer = make_struct_interface<ds::ae_params>([&dev, this]() { return ds::get_lr_auto_exposure_params(dev, get_ae_range_vec()); }, [&dev](ds::ae_params v) { ds::set_lr_auto_exposure_params(dev, v); });
+        auto ae_writer = make_struct_interface<ds::ae_params>(
+            [&dev, this]() { 
+                auto ae = ds::get_lr_auto_exposure_params(dev, get_ae_range_vec());
+                correct_lr_auto_exposure_params(this, ae);
+                return ae; 
+            }, 
+            [&dev, this](ds::ae_params& v) { 
+                correct_lr_auto_exposure_params(this, v);
+                ds::set_lr_auto_exposure_params(dev, v); 
+            }
+        );
         auto dc_writer     = make_struct_interface<ds::dc_params>([&dev]() { return ds::get_depth_params(dev);            }, [&dev](ds::dc_params v) { ds::set_depth_params(dev,v);            });
-
-
-
 
         for (size_t i = 0; i<count; ++i)
         {
@@ -154,7 +191,17 @@ namespace rsimpl
         auto & dev = get_device();
         auto minmax_reader = make_struct_interface<ds::range    >([&dev]() { return ds::get_min_max_depth(dev);           }, [&dev](ds::range     v) { ds::set_min_max_depth(dev,v);           });
         auto disp_reader   = make_struct_interface<ds::disp_mode>([&dev]() { return ds::get_disparity_mode(dev);          }, [&dev](ds::disp_mode v) { ds::set_disparity_mode(dev,v);          });
-        auto ae_reader = make_struct_interface<ds::ae_params>([&dev, this]() { return ds::get_lr_auto_exposure_params(dev, get_ae_range_vec()); }, [&dev](ds::ae_params v) { ds::set_lr_auto_exposure_params(dev, v); });
+        auto ae_reader = make_struct_interface<ds::ae_params>(
+            [&dev, this]() { 
+                auto ae = ds::get_lr_auto_exposure_params(dev, get_ae_range_vec());
+                correct_lr_auto_exposure_params(this, ae);
+                return ae; 
+            }, 
+            [&dev, this](ds::ae_params& v) { 
+                correct_lr_auto_exposure_params(this, v);
+                ds::set_lr_auto_exposure_params(dev, v); 
+            }
+        );
         auto dc_reader     = make_struct_interface<ds::dc_params>([&dev]() { return ds::get_depth_params(dev);            }, [&dev](ds::dc_params v) { ds::set_depth_params(dev,v);            });
 
         for (size_t i = 0; i<count; ++i)
@@ -270,6 +317,14 @@ namespace rsimpl
                     break;
                 }
                 ds::set_disparity_mode(get_device(), dm);
+
+                auto ae_enabled = ds::get_lr_exposure_mode(get_device()) > 0;
+                if (ae_enabled)
+                {
+                    ds::set_lr_exposure_mode(get_device(), 0);
+                    ds::set_lr_exposure_mode(get_device(), 1);
+                }
+
                 break;
             }
         }
@@ -472,6 +527,16 @@ namespace rsimpl
             max = 1;
             step = 1;
             return;
+        }
+
+        if (option == RS_OPTION_R200_AUTO_EXPOSURE_BOTTOM_EDGE || option == RS_OPTION_R200_AUTO_EXPOSURE_TOP_EDGE ||
+            option == RS_OPTION_R200_AUTO_EXPOSURE_LEFT_EDGE || option == RS_OPTION_R200_AUTO_EXPOSURE_RIGHT_EDGE)
+        {
+            if (ds::get_lr_exposure_mode(get_device()) == 0)
+            {
+                min = 0; max = 0; step = 0; def = 0;
+                return;
+            }
         }
 
         // Default to parent implementation
