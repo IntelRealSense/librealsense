@@ -47,6 +47,27 @@ case "$1" in
         echo "         sudo rm -f ${OLDUDEV}"
       fi
     fi
+
+    # Check for uvcvideo loadable kernel module patchs
+    UVC_MODULE="/lib/modules/$(uname -r)/kernel/drivers/media/usb/uvc/uvcvideo.ko"
+    PATCHED_FORMATS=$(/usr/bin/strings ${UVC_MODULE} | \
+      /bin/egrep '\((Y8I|Y12I|Z16|RW10|INVZ|INZI|INVR|INRI|INVI|RELI)\)' | \
+      /usr/bin/wc -l)
+    case "${PATCHED_FORMATS}" in
+      10)
+        echo "INFO: Intel RealSense(TM) F200, R200, and SR300 cameras are supported."
+      ;;
+      3)
+        echo "WARNING: Only Intel RealSense(TM) R200 camera is supported!"
+        echo "    Visit https://github.com/IntelRealSense/librealsense/blob/master/doc/installation.md"
+        echo "    to enable additional camera types."
+      ;;
+      *)
+        echo "WARNING: NO Intel RealSense(TM) cameras are supported!"
+        echo "    Visit https://github.com/IntelRealSense/librealsense/blob/master/doc/installation.md"
+        echo "    to enable Intel RealSense (TM) camera types."
+      ;;
+    esac
   ;;
 
   abort-upgrade|abort-remove|abort-deconfigure)
