@@ -48,7 +48,7 @@ struct gui
     {
         va_list args;
         va_start(args, format);
-        char buffer[1024];
+        char buffer[2048];
         vsnprintf(buffer, sizeof(buffer), format, args);
         va_end(args);
 
@@ -59,7 +59,7 @@ struct gui
     // extended label method for option lines
     // the purpose is to provide a little more visual context to the various options,
     // and make config-ui interface more human friendly
-    void option_label(const int2& p, const color& c, rs::option opt, double max_width, bool enabled, double* value = nullptr)
+    void option_label(const int2& p, const color& c, rs::device& dev, rs::option opt, double max_width, bool enabled, double* value = nullptr)
     {
         auto name = find_and_replace(rs_option_to_string((rs_option)opt), "_", " "); // replacing _ with ' ' to reduce visual clutter
         std::string s(name);
@@ -96,6 +96,16 @@ struct gui
             sstream << ": " << *value;
             int2 newP { p.x + w, p.y };
             label(newP, c, sstream.str().c_str());
+        }
+
+        rect bbox { p.x - 15, p.y - 10, p.x + w + 10, p.y + 5};
+        if (bbox.contains(cursor))
+        {
+            std::string hint = dev.get_option_description(opt);
+            auto hint_w = stb_easy_font_width((char*)hint.c_str());
+            fill_rect({ cursor.x - hint_w - 7, cursor.y + 5, cursor.x + 7, cursor.y - 17 }, { 1.0f, 1.0f, 1.0f } );
+            fill_rect({ cursor.x - hint_w - 6, cursor.y + 4, cursor.x + 6, cursor.y - 16 }, { 0.0f, 0.0f, 0.0f } );
+            label({cursor.x - hint_w, cursor.y - 2}, {1.f, 1.f, 1.f}, hint.c_str());
         }
     }
 
@@ -752,54 +762,12 @@ int main(int argc, char * argv[])
                     }
                 }
 
-
-                for (auto & o : options)
-                {
-                    if (!dev->supports_option(o.opt)) continue;
-
-                    auto slider_enabled = o.max > o.min;
-                    
-                    auto is_checkbox = (o.min == 0) && (o.max == 1) && (o.step == 1);
-                    auto is_checked = o.value > 0;
-
-                    if (is_checkbox) g.option_label({ w - 230, y + 24 }, { 1, 1, 1 }, o.opt, 210, true);
-                    else g.option_label({ w - 260, y + 12 }, { 1, 1, 1 }, o.opt, 240, slider_enabled, slider_enabled ? &o.value : nullptr);
-                    
-                    if (is_checkbox ? 
-                            g.checkbox({ w - 260, y + 10, w - 240, y + 30 }, is_checked) :
-                            g.slider((int)o.opt + 1, { w - 260, y + 16, w - 20, y + 36 }, o.min, o.max, o.step, o.value, !slider_enabled))
-                    {
-                        if (is_checkbox) dev->set_option(o.opt, is_checked ? 1 : 0);
-                        else dev->set_option(o.opt, o.value);
-
-                        update_auto_option(o.opt, options);
-                        
-                        for (auto& o : options) // refresh options
-                        {
-                            if (!dev->supports_option(o.opt)) continue;
-                            dev->get_option_range(o.opt, o.min, o.max, o.step, o.def);
-                            try { o.value = dev->get_option(o.opt); }
-                            catch (...) {}
-                        }
-                    }
-                    y += 38;
-                }
-
-                g.label({ w - 260, y + 12 }, { 1, 1, 1 }, "Depth control parameters preset: %g", dc_preset);
-                if (g.slider(100, { w - 260, y + 16, w - 20, y + 36 }, 0, 5, 1, dc_preset)) rs_apply_depth_control_preset((rs_device *)dev, static_cast<int>(dc_preset));
-                y += 38;
-                g.label({ w - 260, y + 12 }, { 1, 1, 1 }, "IVCAM options preset: %g", iv_preset);
-                if (g.slider(101, { w - 260, y + 16, w - 20, y + 36 }, 0, 10, 1, iv_preset)) rs_apply_ivcam_preset((rs_device *)dev, static_cast<rs_ivcam_preset>((int)iv_preset));
-                y += 38;
-
-                panel_height = y + 10 + offset;
-
                 if (dev->is_streaming() || dev->is_motion_tracking_active())
                 {
-                    w += (has_motion_module ? 150 : -280);
+                    auto new_w = w + (has_motion_module ? 150 : -280);
 
                     int scale_factor = (has_motion_module ? 3 : 2);
-                    int fWidth = w / scale_factor;
+                    int fWidth = new_w / scale_factor;
                     int fHeight = h / scale_factor;
 
                     static struct position { int rx, ry, rw, rh; } pos_vec[5];
@@ -831,9 +799,53 @@ int main(int argc, char * argv[])
                     if (has_motion_module && motion_tracking_enable)
                     {
                         std::lock_guard<std::mutex> lock(mm_mutex);
-                        update_mm_data(buffers, w, h, g);
+                        update_mm_data(buffers, new_w, h, g);
                     }
                 }
+
+                for (auto & o : options)
+                {
+                    if (!dev->supports_option(o.opt)) continue;
+
+                    auto slider_enabled = o.max > o.min;
+                    
+                    auto is_checkbox = (o.min == 0) && (o.max == 1) && (o.step == 1);
+                    auto is_checked = o.value > 0;
+
+                    if (is_checkbox ? 
+                            g.checkbox({ w - 260, y + 10, w - 240, y + 30 }, is_checked) :
+                            g.slider((int)o.opt + 1, { w - 260, y + 16, w - 20, y + 36 }, o.min, o.max, o.step, o.value, !slider_enabled))
+                    {
+                        if (is_checkbox) dev->set_option(o.opt, is_checked ? 1 : 0);
+                        else dev->set_option(o.opt, o.value);
+
+                        update_auto_option(o.opt, options);
+
+                        o.value = dev->get_option(o.opt);
+                        
+                        for (auto& o : options) // refresh options
+                        {
+                            if (!dev->supports_option(o.opt)) continue;
+                            dev->get_option_range(o.opt, o.min, o.max, o.step, o.def);
+                            //try { o.value = dev->get_option(o.opt); }
+                            //catch (...) {}
+                        }
+                    }
+
+                    if (is_checkbox) g.option_label({ w - 230, y + 24 }, { 1, 1, 1 }, *dev, o.opt, 210, true);
+                    else g.option_label({ w - 260, y + 12 }, { 1, 1, 1 }, *dev, o.opt, 240, slider_enabled, &o.value);
+
+                    y += 38;
+                }
+
+                g.label({ w - 260, y + 12 }, { 1, 1, 1 }, "Depth control parameters preset: %g", dc_preset);
+                if (g.slider(100, { w - 260, y + 16, w - 20, y + 36 }, 0, 5, 1, dc_preset)) rs_apply_depth_control_preset((rs_device *)dev, static_cast<int>(dc_preset));
+                y += 38;
+                g.label({ w - 260, y + 12 }, { 1, 1, 1 }, "IVCAM options preset: %g", iv_preset);
+                if (g.slider(101, { w - 260, y + 16, w - 20, y + 36 }, 0, 10, 1, iv_preset)) rs_apply_ivcam_preset((rs_device *)dev, static_cast<rs_ivcam_preset>((int)iv_preset));
+                y += 38;
+
+                panel_height = y + 10 + offset;
 
                 glfwSwapBuffers(win);
                 g.scroll_vec = { 0, 0 };

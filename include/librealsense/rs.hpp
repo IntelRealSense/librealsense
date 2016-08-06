@@ -854,6 +854,17 @@ namespace rs
             error::handle(e);
             return r;
         }
+        
+        /// retrieve the device specific option description
+        /// \param[in] option  the option whose description should be retrieved
+        /// \return            the value of the option
+        const char * get_option_description(option option)
+        {
+            rs_error * e = nullptr;
+            auto r = rs_get_device_option_description((rs_device *)this, (rs_option)option, &e);
+            error::handle(e);
+            return r;
+        }
 
         /// set the current value of a single option
         /// \param[in] option  the option whose value should be set

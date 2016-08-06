@@ -618,6 +618,14 @@ double rs_get_device_option(rs_device * device, rs_option option, rs_error ** er
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, device, option)
 
+const char * rs_get_device_option_description(rs_device * device, rs_option option, rs_error ** error) try
+{
+    VALIDATE_NOT_NULL(device);
+    VALIDATE_ENUM(option);
+    return device->get_option_description(option);
+}
+HANDLE_EXCEPTIONS_AND_RETURN("", device, option)
+
 void rs_set_device_option(rs_device * device, rs_option option, double value, rs_error ** error) try
 {
     VALIDATE_NOT_NULL(device);
