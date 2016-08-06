@@ -59,7 +59,7 @@ struct gui
     // extended label method for option lines
     // the purpose is to provide a little more visual context to the various options,
     // and make config-ui interface more human friendly
-    void option_label(const int2& p, const color& c, rs::option opt, double max_width, double* value = nullptr)
+    void option_label(const int2& p, const color& c, rs::option opt, double max_width, bool enabled, double* value = nullptr)
     {
         auto name = find_and_replace(rs_option_to_string((rs_option)opt), "_", " "); // replacing _ with ' ' to reduce visual clutter
         std::string s(name);
@@ -85,6 +85,7 @@ struct gui
         STRING_CASE(R200, color4)
         STRING_CASE(FISHEYE, color5)
         STRING_CASE(COLOR, color6)
+        if (!enabled) newC = { 0.5f, 0.5f, 0.5f };
 
         auto w = stb_easy_font_width((char*)s.c_str());
         label(p, newC, s.c_str());
@@ -636,10 +637,12 @@ int main(int argc, char * argv[])
             option o = { (rs::option)i };
             if (!dev->supports_option(o.opt)) continue;
             dev->get_option_range(o.opt, o.min, o.max, o.step, o.def);
-            if (o.min == o.max) continue;
-            try { o.value = dev->get_option(o.opt); }
+            try { 
+                if (o.min < o.max) o.value = dev->get_option(o.opt);
+                else o.value = o.min;
+                options.push_back(o);
+            }
             catch (...) {}
-            options.push_back(o);
         }
     }
     catch (const rs::error & e)
@@ -756,12 +759,11 @@ int main(int argc, char * argv[])
 
                     auto slider_enabled = o.max > o.min;
                     
-
                     auto is_checkbox = (o.min == 0) && (o.max == 1) && (o.step == 1);
                     auto is_checked = o.value > 0;
 
-                    if (is_checkbox) g.option_label({ w - 230, y + 24 }, { 1, 1, 1 }, o.opt, 210);
-                    else g.option_label({ w - 260, y + 12 }, { 1, 1, 1 }, o.opt, 240, &o.value);
+                    if (is_checkbox) g.option_label({ w - 230, y + 24 }, { 1, 1, 1 }, o.opt, 210, true);
+                    else g.option_label({ w - 260, y + 12 }, { 1, 1, 1 }, o.opt, 240, slider_enabled, slider_enabled ? &o.value : nullptr);
                     
                     if (is_checkbox ? 
                             g.checkbox({ w - 260, y + 10, w - 240, y + 30 }, is_checked) :
