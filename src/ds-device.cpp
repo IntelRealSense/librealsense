@@ -529,8 +529,18 @@ namespace rsimpl
             return;
         }
 
-        if (option == RS_OPTION_R200_AUTO_EXPOSURE_BOTTOM_EDGE || option == RS_OPTION_R200_AUTO_EXPOSURE_TOP_EDGE ||
-            option == RS_OPTION_R200_AUTO_EXPOSURE_LEFT_EDGE || option == RS_OPTION_R200_AUTO_EXPOSURE_RIGHT_EDGE)
+        std::vector<rs_option> auto_exposure_options = { 
+            RS_OPTION_R200_AUTO_EXPOSURE_BOTTOM_EDGE, 
+            RS_OPTION_R200_AUTO_EXPOSURE_TOP_EDGE,
+            RS_OPTION_R200_AUTO_EXPOSURE_LEFT_EDGE,
+            RS_OPTION_R200_AUTO_EXPOSURE_RIGHT_EDGE,
+            RS_OPTION_R200_AUTO_EXPOSURE_KP_EXPOSURE,
+            RS_OPTION_R200_AUTO_EXPOSURE_KP_GAIN,
+            RS_OPTION_R200_AUTO_EXPOSURE_KP_DARK_THRESHOLD,
+            RS_OPTION_R200_AUTO_EXPOSURE_BRIGHT_RATIO_SET_POINT,
+            RS_OPTION_R200_AUTO_EXPOSURE_MEAN_INTENSITY_SET_POINT
+        };
+        if (std::find(auto_exposure_options.begin(), auto_exposure_options.end(), option) != auto_exposure_options.end())
         {
             if (ds::get_lr_exposure_mode(get_device()) == 0)
             {
