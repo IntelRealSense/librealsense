@@ -31,8 +31,8 @@ namespace rsimpl
 
     bool is_fisheye_uvc_control(rs_option option)
     {
-        return (option == RS_OPTION_FISHEYE_COLOR_EXPOSURE) ||
-               (option == RS_OPTION_FISHEYE_COLOR_GAIN);
+        return (option == RS_OPTION_FISHEYE_EXPOSURE) ||
+               (option == RS_OPTION_FISHEYE_GAIN);
     }
 
     bool is_fisheye_xu_control(rs_option option)
@@ -47,9 +47,6 @@ namespace rsimpl
         std::vector<double>     base_opt_val;
 
         auto & dev = get_device();
-        auto mm_cfg_writer = make_struct_interface<motion_module::mm_config>([this]() { return motion_module_configuration; }, [&dev, this](mm_config param) {
-            motion_module::config(dev, (uint8_t)param.gyro_bandwidth, (uint8_t)param.gyro_range, (uint8_t)param.accel_bandwidth, (uint8_t)param.accel_range, param.mm_time_seed);
-            motion_module_configuration = param; });
 
         // Handle ZR300 specific options first
         for (size_t i = 0; i < count; ++i)
@@ -65,19 +62,10 @@ namespace rsimpl
             case RS_OPTION_FISHEYE_STROBE:                  zr300::set_strobe(get_device(), static_cast<uint8_t>(values[i])); break;
             case RS_OPTION_FISHEYE_EXT_TRIG:                zr300::set_ext_trig(get_device(), static_cast<uint8_t>(values[i])); break;
 
-            case RS_OPTION_ZR300_GYRO_BANDWIDTH:            mm_cfg_writer.set(&motion_module::mm_config::gyro_bandwidth, (uint8_t)values[i]); break;
-            case RS_OPTION_ZR300_GYRO_RANGE:                mm_cfg_writer.set(&motion_module::mm_config::gyro_range, (uint8_t)values[i]); break;
-            case RS_OPTION_ZR300_ACCELEROMETER_BANDWIDTH:   mm_cfg_writer.set(&motion_module::mm_config::accel_bandwidth, (uint8_t)values[i]); break;
-            case RS_OPTION_ZR300_ACCELEROMETER_RANGE:       mm_cfg_writer.set(&motion_module::mm_config::accel_range, (uint8_t)values[i]); break;
-            case RS_OPTION_ZR300_MOTION_MODULE_TIME_SEED:   mm_cfg_writer.set(&motion_module::mm_config::mm_time_seed, values[i]); break;
-
                 // Default will be handled by parent implementation
             default: base_opt.push_back(options[i]); base_opt_val.push_back(values[i]); break;
             }
         }
-
-        // Apply Motion Configuraiton
-        mm_cfg_writer.commit();
 
         //Then handle the common options
         if (base_opt.size())
@@ -91,7 +79,6 @@ namespace rsimpl
         std::vector<double>     base_opt_val;
 
         auto & dev = get_device();
-        auto mm_cfg_reader = make_struct_interface<motion_module::mm_config>([this]() { return motion_module_configuration; }, []() { throw std::logic_error("Operation not allowed"); });
 
         // Acquire ZR300-specific options first
         for (size_t i = 0; i<count; ++i)
@@ -107,14 +94,6 @@ namespace rsimpl
 
             case RS_OPTION_FISHEYE_STROBE:                  values[i] = zr300::get_strobe        (dev); break;
             case RS_OPTION_FISHEYE_EXT_TRIG:                values[i] = zr300::get_ext_trig      (dev); break;
-
-            case RS_OPTION_ZR300_MOTION_MODULE_ACTIVE:      values[i] = is_motion_tracking_active(); break;
-
-            case RS_OPTION_ZR300_GYRO_BANDWIDTH:            values[i] = (double)mm_cfg_reader.get(&motion_module::mm_config::gyro_bandwidth ); break;
-            case RS_OPTION_ZR300_GYRO_RANGE:                values[i] = (double)mm_cfg_reader.get(&motion_module::mm_config::gyro_range     ); break;
-            case RS_OPTION_ZR300_ACCELEROMETER_BANDWIDTH:   values[i] = (double)mm_cfg_reader.get(&motion_module::mm_config::accel_bandwidth); break;
-            case RS_OPTION_ZR300_ACCELEROMETER_RANGE:       values[i] = (double)mm_cfg_reader.get(&motion_module::mm_config::accel_range    ); break;
-            case RS_OPTION_ZR300_MOTION_MODULE_TIME_SEED:   values[i] = (double)mm_cfg_reader.get(&motion_module::mm_config::mm_time_seed   ); break;
 
                 // Default will be handled by parent implementation
             default: base_opt.push_back(options[i]); base_opt_index.push_back(i);  break;
@@ -320,17 +299,10 @@ namespace rsimpl
             info.subdevice_modes.push_back({ 3, { 640, 480 }, pf_raw8, 60, rs_intrinsics, { /*TODO:ask if we need rect_modes*/ }, { 0 } });
             info.subdevice_modes.push_back({ 3, { 640, 480 }, pf_raw8, 30, rs_intrinsics, {/*TODO:ask if we need rect_modes*/ }, { 0 } });
 
-            info.options.push_back({ RS_OPTION_FISHEYE_COLOR_EXPOSURE });
-            info.options.push_back({ RS_OPTION_FISHEYE_COLOR_GAIN });
+            info.options.push_back({ RS_OPTION_FISHEYE_EXPOSURE });
+            info.options.push_back({ RS_OPTION_FISHEYE_GAIN });
             info.options.push_back({ RS_OPTION_FISHEYE_STROBE, 0, 1, 1, 0 });
             info.options.push_back({ RS_OPTION_FISHEYE_EXT_TRIG, 0, 1, 1, 0 });
-
-            info.options.push_back({ RS_OPTION_ZR300_GYRO_BANDWIDTH,            (int)mm_gyro_bandwidth::gyro_bw_default,    (int)mm_gyro_bandwidth::gyro_bw_200hz,  1,  (int)mm_gyro_bandwidth::gyro_bw_200hz });
-            info.options.push_back({ RS_OPTION_ZR300_GYRO_RANGE,                (int)mm_gyro_range::gyro_range_default,     (int)mm_gyro_range::gyro_range_1000,    1,  (int)mm_gyro_range::gyro_range_1000 });
-            info.options.push_back({ RS_OPTION_ZR300_ACCELEROMETER_BANDWIDTH,   (int)mm_accel_bandwidth::accel_bw_default,  (int)mm_accel_bandwidth::accel_bw_250hz,1,  (int)mm_accel_bandwidth::accel_bw_125hz });
-            info.options.push_back({ RS_OPTION_ZR300_ACCELEROMETER_RANGE,       (int)mm_accel_range::accel_range_default,   (int)mm_accel_range::accel_range_16g,   1,  (int)mm_accel_range::accel_range_4g });
-            info.options.push_back({ RS_OPTION_ZR300_MOTION_MODULE_TIME_SEED,       0,      UINT_MAX,   1,   0 });
-            info.options.push_back({ RS_OPTION_ZR300_MOTION_MODULE_ACTIVE,          0,       1,         1,   0 });
         }
         
         std::timed_mutex mutex;

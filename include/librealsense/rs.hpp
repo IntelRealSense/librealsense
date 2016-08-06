@@ -150,19 +150,13 @@ namespace rs
         r200_depth_control_second_peak_threshold        = 60, 
         r200_depth_control_neighbor_threshold           = 61, 
         r200_depth_control_lr_threshold                 = 62,
-        zr300_gyroscope_bandwidth                       = 63,
-        zr300_gyroscope_range                           = 64,
-        zr300_accelerometer_bandwidth                   = 65,
-        zr300_accelerometer_range                       = 66,
-        zr300_motion_module_time_seed                   = 67,
-        zr300_motion_module_active                      = 68,
-        r200_fisheye_color_exposure                     = 69,
-        r200_fisheye_color_gain                         = 70,
-        r200_fisheye_strobe                             = 71,
-        r200_fisheye_ext_trig                           = 72,
-        frames_queue_size                               = 73,
-        events_queue_size                               = 74,
-        max_timestamp_latency                           = 75
+        r200_fisheye_color_exposure                     = 63,
+        r200_fisheye_color_gain                         = 64,
+        r200_fisheye_strobe                             = 65,
+        r200_fisheye_ext_trig                           = 66,
+        frames_queue_size                               = 67,
+        events_queue_size                               = 68,
+        max_timestamp_latency                           = 69
     };
 
     enum class blob_type {

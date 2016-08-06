@@ -440,10 +440,10 @@ namespace rsimpl
         info.options.push_back({ RS_OPTION_R200_DISPARITY_MULTIPLIER,                   1,      1000,    1,     32 });
         info.options.push_back({ RS_OPTION_R200_DISPARITY_SHIFT,                        0,      1,      1,      0 });
         info.options.push_back({ RS_OPTION_R200_AUTO_EXPOSURE_MEAN_INTENSITY_SET_POINT, 0,      4095,   1,      512 });
-        info.options.push_back({ RS_OPTION_R200_AUTO_EXPOSURE_BRIGHT_RATIO_SET_POINT,   0,      1,      0,      0 });
-        info.options.push_back({ RS_OPTION_R200_AUTO_EXPOSURE_KP_GAIN,                  0,      1000,   0,      0 });
-        info.options.push_back({ RS_OPTION_R200_AUTO_EXPOSURE_KP_EXPOSURE,              0,      1000,   0,      0 });
-        info.options.push_back({ RS_OPTION_R200_AUTO_EXPOSURE_KP_DARK_THRESHOLD,        0,      1000,   0,      0 });
+        info.options.push_back({ RS_OPTION_R200_AUTO_EXPOSURE_BRIGHT_RATIO_SET_POINT,   0,      1,      1,      0 });
+        info.options.push_back({ RS_OPTION_R200_AUTO_EXPOSURE_KP_GAIN,                  0,      1000,   1,      0 });
+        info.options.push_back({ RS_OPTION_R200_AUTO_EXPOSURE_KP_EXPOSURE,              0,      1000,   1,      0 });
+        info.options.push_back({ RS_OPTION_R200_AUTO_EXPOSURE_KP_DARK_THRESHOLD,        0,      1000,   1,      0 });
         info.options.push_back({ RS_OPTION_R200_AUTO_EXPOSURE_TOP_EDGE,                 0,      639,    1,      239 });
         info.options.push_back({ RS_OPTION_R200_AUTO_EXPOSURE_BOTTOM_EDGE,              0,      639,    1,      0});
         info.options.push_back({ RS_OPTION_R200_AUTO_EXPOSURE_LEFT_EDGE,                0,      639,    1,      0 });
@@ -545,6 +545,30 @@ namespace rsimpl
             if (ds::get_lr_exposure_mode(get_device()) == 0)
             {
                 min = 0; max = 0; step = 0; def = 0;
+                return;
+            }
+            else if (option == RS_OPTION_R200_AUTO_EXPOSURE_RIGHT_EDGE)
+            {
+                auto width = this->get_stream_interface(rs_stream::RS_STREAM_DEPTH).get_intrinsics().width;
+                min = 1; max = width; step = 1; def = width - 1;
+                return;
+            }
+            else if (option == RS_OPTION_R200_AUTO_EXPOSURE_LEFT_EDGE)
+            {
+                auto width = this->get_stream_interface(rs_stream::RS_STREAM_DEPTH).get_intrinsics().width;
+                min = 0; max = width - 1; step = 1; def = 0;
+                return;
+            }
+            else if (option == RS_OPTION_R200_AUTO_EXPOSURE_BOTTOM_EDGE)
+            {
+                auto height = this->get_stream_interface(rs_stream::RS_STREAM_DEPTH).get_intrinsics().height;
+                min = 1; max = height; step = 1; def = height - 1;
+                return;
+            }
+            else if (option == RS_OPTION_R200_AUTO_EXPOSURE_LEFT_EDGE)
+            {
+                auto height = this->get_stream_interface(rs_stream::RS_STREAM_DEPTH).get_intrinsics().height;
+                min = 0; max = height - 1; step = 1; def = 0;
                 return;
             }
         }
