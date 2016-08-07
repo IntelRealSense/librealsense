@@ -3,6 +3,7 @@
 
 #include <climits>
 #include <algorithm>
+#include <cmath>
 
 #include "image.h"
 #include "ds-private.h"
@@ -13,6 +14,7 @@
 using namespace rsimpl;
 using namespace rsimpl::ds;
 using namespace rsimpl::motion_module;
+using namespace rsimpl::hw_monitor;
 
 namespace rsimpl
 {
@@ -20,7 +22,8 @@ namespace rsimpl
     : ds_device(device, info),
       motion_module_ctrl(device.get()),
       fe_intrinsic(in_fe_intrinsic),
-      auto_exposure(nullptr)
+      auto_exposure(nullptr),
+      to_add_frames((auto_exposure_state.get_auto_exposure_state(RS_OPTION_FISHEYE_ENABLE_AUTO_EXPOSURE) == 1))
     {}
     
     zr300_camera::~zr300_camera()
@@ -37,7 +40,7 @@ namespace rsimpl
     {
         return (option == RS_OPTION_FISHEYE_STROBE) ||
                (option == RS_OPTION_FISHEYE_EXT_TRIG) ||
-               (option == RS_OPTION_FISHEYE_COLOR_EXPOSURE);
+               (option == RS_OPTION_FISHEYE_EXPOSURE);
     }
 
     void zr300_camera::set_options(const rs_option options[], size_t count, const double values[])
@@ -63,12 +66,12 @@ namespace rsimpl
             {
             case RS_OPTION_FISHEYE_STROBE:                            zr300::set_strobe(get_device(), static_cast<uint8_t>(values[i])); break;
             case RS_OPTION_FISHEYE_EXT_TRIG:                          zr300::set_ext_trig(get_device(), static_cast<uint8_t>(values[i])); break;
-            case RS_OPTION_FISHEYE_COLOR_EXPOSURE:                    zr300::set_exposure(get_device(), static_cast<uint8_t>(values[i])); break;
-            case RS_OPTION_FISHEYE_COLOR_AUTO_EXPOSURE:               set_auto_exposure_state(RS_OPTION_FISHEYE_COLOR_AUTO_EXPOSURE, values[i]); break;
-            case RS_OPTION_FISHEYE_COLOR_AUTO_EXPOSURE_MODE:          set_auto_exposure_state(RS_OPTION_FISHEYE_COLOR_AUTO_EXPOSURE_MODE, values[i]); break;
-            case RS_OPTION_FISHEYE_COLOR_AUTO_EXPOSURE_RATE:          set_auto_exposure_state(RS_OPTION_FISHEYE_COLOR_AUTO_EXPOSURE_RATE, values[i]); break;
-            case RS_OPTION_FISHEYE_COLOR_AUTO_EXPOSURE_SAMPLE_RATE:   set_auto_exposure_state(RS_OPTION_FISHEYE_COLOR_AUTO_EXPOSURE_SAMPLE_RATE, values[i]); break;
-            case RS_OPTION_FISHEYE_COLOR_AUTO_EXPOSURE_SKIP_FRAMES:   set_auto_exposure_state(RS_OPTION_FISHEYE_COLOR_AUTO_EXPOSURE_SKIP_FRAMES, values[i]); break;
+            case RS_OPTION_FISHEYE_EXPOSURE:                          zr300::set_exposure(get_device(), static_cast<uint8_t>(values[i])); break;
+            case RS_OPTION_FISHEYE_ENABLE_AUTO_EXPOSURE:              set_auto_exposure_state(RS_OPTION_FISHEYE_ENABLE_AUTO_EXPOSURE, values[i]); break;
+            case RS_OPTION_FISHEYE_AUTO_EXPOSURE_MODE:                set_auto_exposure_state(RS_OPTION_FISHEYE_AUTO_EXPOSURE_MODE, values[i]); break;
+            case RS_OPTION_FISHEYE_AUTO_EXPOSURE_ANTIFLICKER_RATE:    set_auto_exposure_state(RS_OPTION_FISHEYE_AUTO_EXPOSURE_ANTIFLICKER_RATE, values[i]); break;
+            case RS_OPTION_FISHEYE_AUTO_EXPOSURE_PIXEL_SAMPLE_RATE:   set_auto_exposure_state(RS_OPTION_FISHEYE_AUTO_EXPOSURE_PIXEL_SAMPLE_RATE, values[i]); break;
+            case RS_OPTION_FISHEYE_AUTO_EXPOSURE_SKIP_FRAMES:         set_auto_exposure_state(RS_OPTION_FISHEYE_AUTO_EXPOSURE_SKIP_FRAMES, values[i]); break;
 
             case RS_OPTION_ZR300_GYRO_BANDWIDTH:            mm_cfg_writer.set(&motion_module::mm_config::gyro_bandwidth, (uint8_t)values[i]); break;
             case RS_OPTION_ZR300_GYRO_RANGE:                mm_cfg_writer.set(&motion_module::mm_config::gyro_range, (uint8_t)values[i]); break;
@@ -110,22 +113,22 @@ namespace rsimpl
             switch(options[i])
             {
 
-            case RS_OPTION_FISHEYE_STROBE:                            values[i] = zr300::get_strobe        (dev); break;
-            case RS_OPTION_FISHEYE_EXT_TRIG:                          values[i] = zr300::get_ext_trig      (dev); break;
-            case RS_OPTION_FISHEYE_COLOR_EXPOSURE:                    values[i] = zr300::get_exposure      (dev); break;
-            case RS_OPTION_FISHEYE_COLOR_AUTO_EXPOSURE:               values[i] = get_auto_exposure_state(RS_OPTION_FISHEYE_COLOR_AUTO_EXPOSURE); break;
-            case RS_OPTION_FISHEYE_COLOR_AUTO_EXPOSURE_MODE:          values[i] = get_auto_exposure_state(RS_OPTION_FISHEYE_COLOR_AUTO_EXPOSURE_MODE); break;
-            case RS_OPTION_FISHEYE_COLOR_AUTO_EXPOSURE_RATE:          values[i] = get_auto_exposure_state(RS_OPTION_FISHEYE_COLOR_AUTO_EXPOSURE_RATE); break;
-            case RS_OPTION_FISHEYE_COLOR_AUTO_EXPOSURE_SAMPLE_RATE:   values[i] = get_auto_exposure_state(RS_OPTION_FISHEYE_COLOR_AUTO_EXPOSURE_SAMPLE_RATE); break;
-            case RS_OPTION_FISHEYE_COLOR_AUTO_EXPOSURE_SKIP_FRAMES:   values[i] = get_auto_exposure_state(RS_OPTION_FISHEYE_COLOR_AUTO_EXPOSURE_SKIP_FRAMES); break;
+            case RS_OPTION_FISHEYE_STROBE:                          values[i] = zr300::get_strobe        (dev); break;
+            case RS_OPTION_FISHEYE_EXT_TRIG:                        values[i] = zr300::get_ext_trig      (dev); break;
+            case RS_OPTION_FISHEYE_EXPOSURE:                        values[i] = zr300::get_exposure      (dev); break;
+            case RS_OPTION_FISHEYE_ENABLE_AUTO_EXPOSURE:            values[i] = get_auto_exposure_state(RS_OPTION_FISHEYE_ENABLE_AUTO_EXPOSURE); break;
+            case RS_OPTION_FISHEYE_AUTO_EXPOSURE_MODE:              values[i] = get_auto_exposure_state(RS_OPTION_FISHEYE_AUTO_EXPOSURE_MODE); break;
+            case RS_OPTION_FISHEYE_AUTO_EXPOSURE_ANTIFLICKER_RATE:  values[i] = get_auto_exposure_state(RS_OPTION_FISHEYE_AUTO_EXPOSURE_ANTIFLICKER_RATE); break;
+            case RS_OPTION_FISHEYE_AUTO_EXPOSURE_PIXEL_SAMPLE_RATE: values[i] = get_auto_exposure_state(RS_OPTION_FISHEYE_AUTO_EXPOSURE_PIXEL_SAMPLE_RATE); break;
+            case RS_OPTION_FISHEYE_AUTO_EXPOSURE_SKIP_FRAMES:       values[i] = get_auto_exposure_state(RS_OPTION_FISHEYE_AUTO_EXPOSURE_SKIP_FRAMES); break;
 
-            case RS_OPTION_ZR300_MOTION_MODULE_ACTIVE:      values[i] = is_motion_tracking_active(); break;
+            case RS_OPTION_ZR300_MOTION_MODULE_ACTIVE:              values[i] = is_motion_tracking_active(); break;
 
-            case RS_OPTION_ZR300_GYRO_BANDWIDTH:            values[i] = (double)mm_cfg_reader.get(&motion_module::mm_config::gyro_bandwidth ); break;
-            case RS_OPTION_ZR300_GYRO_RANGE:                values[i] = (double)mm_cfg_reader.get(&motion_module::mm_config::gyro_range     ); break;
-            case RS_OPTION_ZR300_ACCELEROMETER_BANDWIDTH:   values[i] = (double)mm_cfg_reader.get(&motion_module::mm_config::accel_bandwidth); break;
-            case RS_OPTION_ZR300_ACCELEROMETER_RANGE:       values[i] = (double)mm_cfg_reader.get(&motion_module::mm_config::accel_range    ); break;
-            case RS_OPTION_ZR300_MOTION_MODULE_TIME_SEED:   values[i] = (double)mm_cfg_reader.get(&motion_module::mm_config::mm_time_seed   ); break;
+            case RS_OPTION_ZR300_GYRO_BANDWIDTH:                    values[i] = (double)mm_cfg_reader.get(&motion_module::mm_config::gyro_bandwidth ); break;
+            case RS_OPTION_ZR300_GYRO_RANGE:                        values[i] = (double)mm_cfg_reader.get(&motion_module::mm_config::gyro_range     ); break;
+            case RS_OPTION_ZR300_ACCELEROMETER_BANDWIDTH:           values[i] = (double)mm_cfg_reader.get(&motion_module::mm_config::accel_bandwidth); break;
+            case RS_OPTION_ZR300_ACCELEROMETER_RANGE:               values[i] = (double)mm_cfg_reader.get(&motion_module::mm_config::accel_range    ); break;
+            case RS_OPTION_ZR300_MOTION_MODULE_TIME_SEED:           values[i] = (double)mm_cfg_reader.get(&motion_module::mm_config::mm_time_seed   ); break;
 
                 // Default will be handled by parent implementation
             default: base_opt.push_back(options[i]); base_opt_index.push_back(i);  break;
@@ -163,15 +166,23 @@ namespace rsimpl
         return auto_exposure_state.get_auto_exposure_state(option);
     }
 
+    void zr300_camera::on_before_callback(rs_frame_ref * frame, std::shared_ptr<rsimpl::frame_archive> archive)
+    {
+        if (!to_add_frames)
+            return;
+
+        auto_exposure->add_frame(clone_frame(frame), archive);
+    }
+
     void zr300_camera::set_auto_exposure_state(rs_option option, double value)
     {
         if (!supports(rs_capabilities::RS_CAPABILITIES_FISH_EYE))
             throw std::logic_error("Option unsupported without Fisheye camera");
 
-        auto auto_exposure_prev_state = auto_exposure_state.get_auto_exposure_state(RS_OPTION_FISHEYE_COLOR_AUTO_EXPOSURE);
+        auto auto_exposure_prev_state = auto_exposure_state.get_auto_exposure_state(RS_OPTION_FISHEYE_ENABLE_AUTO_EXPOSURE);
         auto_exposure_state.set_auto_exposure_state(option, value);
 
-        if (auto_exposure_state.get_auto_exposure_state(RS_OPTION_FISHEYE_COLOR_AUTO_EXPOSURE))
+        if (auto_exposure_state.get_auto_exposure_state(RS_OPTION_FISHEYE_ENABLE_AUTO_EXPOSURE))
         {
             if (auto_exposure_prev_state)
             {
@@ -179,22 +190,14 @@ namespace rsimpl
             }
             else
             {
-                auto_exposure = std::make_shared<auto_exposure_mechanism>(this, auto_exposure_state);
-                ds_device::set_stream_pre_callback(RS_STREAM_FISHEYE, [&](rs_device * device, rs_frame_ref * frame, std::shared_ptr<frame_archive> archive) {
-                    std::lock_guard<std::mutex> lk(pre_callback_mtx);
-                    auto_exposure->add_frame(clone_frame(frame), archive);
-                });
+                to_add_frames = true;
             }
         }
         else
         {
             if (auto_exposure_prev_state)
             {
-                {
-                    std::lock_guard<std::mutex> lk(pre_callback_mtx);
-                    ds_device::set_stream_pre_callback(RS_STREAM_FISHEYE, nullptr);
-                }
-                auto_exposure.reset();
+                to_add_frames = false;
             }
         }
     }
@@ -216,14 +219,8 @@ namespace rsimpl
         if ((supports(rs_capabilities::RS_CAPABILITIES_FISH_EYE)) && ((config.requests[RS_STREAM_FISHEYE].enabled)))
             toggle_motion_module_power(true);
 
-        if (supports(rs_capabilities::RS_CAPABILITIES_FISH_EYE) && auto_exposure_state.get_auto_exposure_state(RS_OPTION_FISHEYE_COLOR_AUTO_EXPOSURE))
-        {
+        if (supports(rs_capabilities::RS_CAPABILITIES_FISH_EYE))
             auto_exposure = std::make_shared<auto_exposure_mechanism>(this, auto_exposure_state);
-            ds_device::set_stream_pre_callback(RS_STREAM_FISHEYE, [&](rs_device * device, rs_frame_ref * frame, std::shared_ptr<frame_archive> archive) {
-                std::lock_guard<std::mutex> lk(pre_callback_mtx);
-                auto_exposure->add_frame(clone_frame(frame), archive);
-            });
-        }
 
         rs_device_base::start(source);
     }
@@ -235,7 +232,7 @@ namespace rsimpl
             toggle_motion_module_power(false);
 
         rs_device_base::stop(source);
-        if (auto_exposure)
+        if (supports(rs_capabilities::RS_CAPABILITIES_FISH_EYE))
             auto_exposure.reset();
     }
 
@@ -316,6 +313,16 @@ namespace rsimpl
         }
     }
 
+    unsigned long long zr300_camera::get_frame_counter_by_usb_cmd()
+    {
+        hwmon_cmd cmd((int)adaptor_board_command::FRCNT);
+        std::timed_mutex mutex;
+        perform_and_send_monitor_command(this->get_device(), mutex, cmd);
+        unsigned long long frame_counter = 0;
+        memcpy(&frame_counter, cmd.receivedCommandData, cmd.receivedCommandDataLength);
+        return frame_counter;
+    }
+
     motion_module_calibration read_fisheye_intrinsic(uvc::device & device)
     {
         motion_module_calibration intrinsic;
@@ -380,15 +387,15 @@ namespace rsimpl
             info.subdevice_modes.push_back({ 3, { 640, 480 }, pf_raw8, 60, rs_intrinsics, { /*TODO:ask if we need rect_modes*/ }, { 0 } });
             info.subdevice_modes.push_back({ 3, { 640, 480 }, pf_raw8, 30, rs_intrinsics, {/*TODO:ask if we need rect_modes*/ }, { 0 } });
 
-            info.options.push_back({ RS_OPTION_FISHEYE_COLOR_EXPOSURE,                  40, 331, 1,  40 });
+            info.options.push_back({ RS_OPTION_FISHEYE_EXPOSURE,                        40, 331, 1,  40 });
             info.options.push_back({ RS_OPTION_FISHEYE_COLOR_GAIN                                       });
             info.options.push_back({ RS_OPTION_FISHEYE_STROBE,                          0,  1,   1,  0  });
             info.options.push_back({ RS_OPTION_FISHEYE_EXT_TRIG,                        0,  1,   1,  0  });
-            info.options.push_back({ RS_OPTION_FISHEYE_COLOR_AUTO_EXPOSURE,             0,  1,   1,  1  });
-            info.options.push_back({ RS_OPTION_FISHEYE_COLOR_AUTO_EXPOSURE_MODE,        0,  2,   1,  0  });
-            info.options.push_back({ RS_OPTION_FISHEYE_COLOR_AUTO_EXPOSURE_RATE,        50, 60,  10, 60 });
-            info.options.push_back({ RS_OPTION_FISHEYE_COLOR_AUTO_EXPOSURE_SAMPLE_RATE, 1,  3,   1,  1  });
-            info.options.push_back({ RS_OPTION_FISHEYE_COLOR_AUTO_EXPOSURE_SKIP_FRAMES, 0,  3,   1,  2  });
+            info.options.push_back({ RS_OPTION_FISHEYE_ENABLE_AUTO_EXPOSURE,            0,  1,   1,  1  });
+            info.options.push_back({ RS_OPTION_FISHEYE_AUTO_EXPOSURE_MODE,              0,  2,   1,  0  });
+            info.options.push_back({ RS_OPTION_FISHEYE_AUTO_EXPOSURE_ANTIFLICKER_RATE,  50, 60,  10, 60 });
+            info.options.push_back({ RS_OPTION_FISHEYE_AUTO_EXPOSURE_PIXEL_SAMPLE_RATE, 1,  3,   1,  1  });
+            info.options.push_back({ RS_OPTION_FISHEYE_AUTO_EXPOSURE_SKIP_FRAMES,       0,  3,   1,  2  });
 
             info.options.push_back({ RS_OPTION_ZR300_GYRO_BANDWIDTH,            (int)mm_gyro_bandwidth::gyro_bw_default,    (int)mm_gyro_bandwidth::gyro_bw_200hz,  1,  (int)mm_gyro_bandwidth::gyro_bw_200hz });
             info.options.push_back({ RS_OPTION_ZR300_GYRO_RANGE,                (int)mm_gyro_range::gyro_range_default,     (int)mm_gyro_range::gyro_range_1000,    1,  (int)mm_gyro_range::gyro_range_1000 });
@@ -416,19 +423,19 @@ namespace rsimpl
     {
         switch (option)
         {
-        case RS_OPTION_FISHEYE_COLOR_AUTO_EXPOSURE:
+        case RS_OPTION_FISHEYE_ENABLE_AUTO_EXPOSURE:
             return (static_cast<unsigned>(is_auto_exposure));
             break;
-        case RS_OPTION_FISHEYE_COLOR_AUTO_EXPOSURE_MODE:
+        case RS_OPTION_FISHEYE_AUTO_EXPOSURE_MODE:
             return (static_cast<unsigned>(mode));
             break;
-        case RS_OPTION_FISHEYE_COLOR_AUTO_EXPOSURE_RATE:
+        case RS_OPTION_FISHEYE_AUTO_EXPOSURE_ANTIFLICKER_RATE:
             return (static_cast<unsigned>(rate));
             break;
-        case RS_OPTION_FISHEYE_COLOR_AUTO_EXPOSURE_SAMPLE_RATE:
+        case RS_OPTION_FISHEYE_AUTO_EXPOSURE_PIXEL_SAMPLE_RATE:
             return (static_cast<unsigned>(sample_rate));
             break;
-        case RS_OPTION_FISHEYE_COLOR_AUTO_EXPOSURE_SKIP_FRAMES:
+        case RS_OPTION_FISHEYE_AUTO_EXPOSURE_SKIP_FRAMES:
             return (static_cast<unsigned>(skip_frames));
             break;
         default:
@@ -441,19 +448,19 @@ namespace rsimpl
     {
         switch (option)
         {
-        case RS_OPTION_FISHEYE_COLOR_AUTO_EXPOSURE:
+        case RS_OPTION_FISHEYE_ENABLE_AUTO_EXPOSURE:
             is_auto_exposure = (value == 1);
             break;
-        case RS_OPTION_FISHEYE_COLOR_AUTO_EXPOSURE_MODE:
+        case RS_OPTION_FISHEYE_AUTO_EXPOSURE_MODE:
             mode = static_cast<auto_exposure_modes>((int)value);
             break;
-        case RS_OPTION_FISHEYE_COLOR_AUTO_EXPOSURE_RATE:
+        case RS_OPTION_FISHEYE_AUTO_EXPOSURE_ANTIFLICKER_RATE:
             rate = static_cast<unsigned>(value);
             break;
-        case RS_OPTION_FISHEYE_COLOR_AUTO_EXPOSURE_SAMPLE_RATE:
+        case RS_OPTION_FISHEYE_AUTO_EXPOSURE_PIXEL_SAMPLE_RATE:
             sample_rate = static_cast<unsigned>(value);
             break;
-        case RS_OPTION_FISHEYE_COLOR_AUTO_EXPOSURE_SKIP_FRAMES:
+        case RS_OPTION_FISHEYE_AUTO_EXPOSURE_SKIP_FRAMES:
             skip_frames = static_cast<unsigned>(value);
             break;
         default:
@@ -462,25 +469,39 @@ namespace rsimpl
         }
     }
 
-    auto_exposure_mechanism::auto_exposure_mechanism(rs_device_base* dev, fisheye_auto_exposure_state auto_exposure_state) : action(true), device(dev), sync_archive(nullptr), skip_frames(get_skip_frames(auto_exposure_state)), auto_exposure_algo(auto_exposure_state), frames_counter(0)
+    auto_exposure_mechanism::auto_exposure_mechanism(zr300_camera* dev, fisheye_auto_exposure_state auto_exposure_state) : keep_alive(true), device(dev), sync_archive(nullptr), skip_frames(get_skip_frames(auto_exposure_state)), auto_exposure_algo(auto_exposure_state), frames_counter(0)
     {
         exposure_thread = std::make_shared<std::thread>([this]() {
-            while (action)
+            while (keep_alive)
             {
                 std::unique_lock<std::mutex> lk(queue_mtx);
-                cv.wait(lk, [&] {return (get_queue_size() || !action); });
-                if (!action)
+                cv.wait(lk, [&] {return (get_queue_size() || !keep_alive); });
+                if (!keep_alive)
                     return;
 
 
                 rs_frame_ref* frame_ref = nullptr;
-                auto sts = pop_front_data(&frame_ref);
+                auto frame_sts = try_pop_front_data(&frame_ref);
                 lk.unlock();
-                if (sts)
+
+                rs_option exposure_option[] = { RS_OPTION_FISHEYE_EXPOSURE };
+                double exposure_value[1] = {};
+                unsigned long long frame_counter;
+                try {
+                    device->get_options(exposure_option, 1, exposure_value);
+                    frame_counter = device->get_frame_counter_by_usb_cmd();
+                    push_back_exp_and_cnt(exposure_and_frame_counter(exposure_value[0], frame_counter));
+                }
+                catch (...) {};
+
+                if (frame_sts)
                 {
-                    auto frame_data = frame_ref->get_frame_data();
-                    float exposure_value = static_cast<float>(frame_ref->get_frame_metadata(RS_FRAME_METADATA_EXPOSURE) / 10.);
-                    float gain_value = static_cast<float>(frame_ref->get_frame_metadata(RS_FRAME_METADATA_GAIN));
+                    unsigned long long frame_counter = frame_ref->get_frame_number();
+                    double exp_by_frame_cnt;
+                    auto exp_and_cnt_sts = try_get_exp_by_frame_cnt(exp_by_frame_cnt, frame_counter);
+
+                    auto exposure_value = static_cast<float>((exp_and_cnt_sts)? exp_by_frame_cnt : frame_ref->get_frame_metadata(RS_FRAME_METADATA_EXPOSURE) / 10.);
+                    auto gain_value = static_cast<float>(frame_ref->get_frame_metadata(RS_FRAME_METADATA_GAIN));
 
                     bool sts = auto_exposure_algo.analyze_image(frame_ref);
                     if (sts)
@@ -490,7 +511,7 @@ namespace rsimpl
 
                         if (modify_exposure)
                         {
-                            rs_option option[] = { RS_OPTION_FISHEYE_COLOR_EXPOSURE };
+                            rs_option option[] = { RS_OPTION_FISHEYE_EXPOSURE };
                             double value[] = { exposure_value * 10. };
                             device->set_options(option, 1, value);
                         }
@@ -512,7 +533,7 @@ namespace rsimpl
     {
         {
             std::lock_guard<std::mutex> lk(queue_mtx);
-            action = false;
+            keep_alive = false;
             clear_queue();
         }
         cv.notify_one();
@@ -522,16 +543,13 @@ namespace rsimpl
     void auto_exposure_mechanism::update_auto_exposure_state(fisheye_auto_exposure_state& auto_exposure_state)
     {
         std::lock_guard<std::mutex> lk(queue_mtx);
-        skip_frames = auto_exposure_state.get_auto_exposure_state(RS_OPTION_FISHEYE_COLOR_AUTO_EXPOSURE_SKIP_FRAMES);
+        skip_frames = auto_exposure_state.get_auto_exposure_state(RS_OPTION_FISHEYE_AUTO_EXPOSURE_SKIP_FRAMES);
         auto_exposure_algo.update_options(auto_exposure_state);
     }
 
     void auto_exposure_mechanism::add_frame(rs_frame_ref* frame, std::shared_ptr<rsimpl::frame_archive> archive)
     {
-        if (!action)
-            return;
-
-        if (skip_frames && (frames_counter++) != skip_frames)
+        if (!keep_alive || (skip_frames && (frames_counter++) != skip_frames))
         {
             archive->release_frame_ref((rsimpl::frame_archive::frame_ref *)frame);
             return;
@@ -544,9 +562,56 @@ namespace rsimpl
 
         {
             std::lock_guard<std::mutex> lk(queue_mtx);
+            if (data_queue.size() > 1)
+            {
+                sync_archive->release_frame_ref((rsimpl::frame_archive::frame_ref *)data_queue.front());
+                data_queue.pop_front();
+            }
+
             push_back_data(frame);
         }
         cv.notify_one();
+    }
+
+    void auto_exposure_mechanism::push_back_exp_and_cnt(exposure_and_frame_counter exp_and_cnt)
+    {
+        std::lock_guard<std::mutex> lk(exp_and_cnt_queue_mtx);
+
+        if (exposure_and_frame_counter_queue.size() > max_size_of_exp_and_cnt_queue)
+            exposure_and_frame_counter_queue.pop_front();
+
+        exposure_and_frame_counter_queue.push_back(exp_and_cnt);
+    }
+
+    bool auto_exposure_mechanism::try_get_exp_by_frame_cnt(double& exposure, const unsigned long long frame_counter)
+    {
+        std::lock_guard<std::mutex> lk(exp_and_cnt_queue_mtx);
+
+        if (!exposure_and_frame_counter_queue.size())
+            return false;
+
+        unsigned long long min = std::numeric_limits<uint64_t>::max();
+        double exp;
+        auto it = std::find_if(exposure_and_frame_counter_queue.begin(), exposure_and_frame_counter_queue.end(),
+            [&](const exposure_and_frame_counter& element) {
+            int diff = static_cast<int>(frame_counter - element.frame_counter);
+            if (std::abs(diff) < min)
+            {
+                min = diff;
+                exp = element.exposure;
+                return false;
+            }
+            return true;
+        });
+
+        if (it != exposure_and_frame_counter_queue.end())
+        {
+            exposure = it->exposure;
+            exposure_and_frame_counter_queue.erase(it);
+            return true;
+        }
+
+        return false;
     }
 
     void auto_exposure_mechanism::push_back_data(rs_frame_ref* data)
@@ -554,7 +619,7 @@ namespace rsimpl
         data_queue.push_back(data);
     }
 
-    bool auto_exposure_mechanism::pop_front_data(rs_frame_ref** data)
+    bool auto_exposure_mechanism::try_pop_front_data(rs_frame_ref** data)
     {
         if (!data_queue.size())
             return false;
@@ -573,7 +638,7 @@ namespace rsimpl
     void auto_exposure_mechanism::clear_queue()
     {
         rs_frame_ref* frame_ref = nullptr;
-        while (pop_front_data(&frame_ref))
+        while (try_pop_front_data(&frame_ref))
         {
             sync_archive->release_frame_ref((rsimpl::frame_archive::frame_ref *)frame_ref);
         }
@@ -588,7 +653,7 @@ namespace rsimpl
     {
         float total_exposure = exposure * gain;
         float prev_exposure = exposure;
-        //    EXPOSURE_LOG("TotalExposure " << TotalExposure << ", target_exposure " << target_exposure << std::endl);
+        LOG_DEBUG("TotalExposure " << total_exposure << ", target_exposure " << target_exposure);
         if (fabs(target_exposure - total_exposure) > eps)
         {
             rounding_mode_type RoundingMode;
@@ -600,8 +665,8 @@ namespace rsimpl
                 target_exposure0 = std::min(target_exposure0, target_exposure);
                 increase_exposure_gain(target_exposure, target_exposure0, exposure, gain);
                 RoundingMode = rounding_mode_type::ceil;
-                //            EXPOSURE_LOG(" ModifyExposure: IncreaseExposureGain: ");
-                //            EXPOSURE_LOG(" target_exposure0 " << target_exposure0);
+                LOG_DEBUG(" ModifyExposure: IncreaseExposureGain: ");
+                LOG_DEBUG(" target_exposure0 " << target_exposure0);
             }
             else
             {
@@ -610,17 +675,17 @@ namespace rsimpl
                 target_exposure0 = std::max(target_exposure0, target_exposure);
                 decrease_exposure_gain(target_exposure, target_exposure0, exposure, gain);
                 RoundingMode = rounding_mode_type::floor;
-                //            EXPOSURE_LOG(" ModifyExposure: DecreaseExposureGain: ");
-                //            EXPOSURE_LOG(" target_exposure0 " << target_exposure0);
+                LOG_DEBUG(" ModifyExposure: DecreaseExposureGain: ");
+                LOG_DEBUG(" target_exposure0 " << target_exposure0);
             }
-            //        EXPOSURE_LOG(" exposure " << exposure << ", gain " << gain << std::endl);
+            LOG_DEBUG(" exposure " << exposure << ", gain " << gain);
             if (exposure_value != exposure)
             {
                 exp_modified = true;
                 exposure_value = exposure;
-                //            EXPOSURE_LOG("ExposureModified: exposure = " << exposure_value);
+                LOG_DEBUG("ExposureModified: exposure = " << exposure_value);
                 exposure_value = exposure_to_value(exposure_value, RoundingMode);
-                //            EXPOSURE_LOG(" rounded to: " << exposure_value << std::endl);
+                LOG_DEBUG(" rounded to: " << exposure_value << std::endl);
 
                 if (std::fabs(prev_exposure - exposure) < minimal_exposure_step)
                 {
@@ -631,9 +696,9 @@ namespace rsimpl
             {
                 gain_modified = true;
                 gain_value = gain;
-                //            EXPOSURE_LOG("GainModified: gain = " << Gain_);
+                LOG_DEBUG("GainModified: gain = " << gain);
                 gain_value = gain_to_value(gain_value, RoundingMode);
-                //            EXPOSURE_LOG(" rounded to: " << Gain_ << std::endl);
+                LOG_DEBUG(" rounded to: " << gain);
             }
         }
     }
@@ -673,26 +738,26 @@ namespace rsimpl
         }
         else
         {
-            //        WRITE2LOG(eLogVerbose, "Weight=0 Error");
+            LOG_ERROR("Weight=0 Error");
             return false;
         }
         float s = -0.3f * (s1 + 5.0f * s2);
-        //    EXPOSURE_LOG(" AnalyzeImage Score: " << s << std::endl);
+        LOG_DEBUG(" AnalyzeImage Score: " << s);
         //std::cout << "----------------- " << s << std::endl;
         /*if (fabs(s) < Hysteresis)
         {
-        EXPOSURE_LOG(" AnalyzeImage < Hysteresis" << std::endl);
+        LOG_DEBUG(" AnalyzeImage < Hysteresis" << std::endl);
         return false;
         }*/
         if (s > 0)
         {
-            //        EXPOSURE_LOG(" AnalyzeImage: IncreaseExposure" << std::endl);
+            //        LOG_DEBUG(" AnalyzeImage: IncreaseExposure" << std::endl);
             direction = +1;
             increase_exposure_target(s, target_exposure);
         }
         else
         {
-            //        EXPOSURE_LOG(" AnalyzeImage: DecreaseExposure" << std::endl);
+            LOG_DEBUG(" AnalyzeImage: DecreaseExposure");
             direction = -1;
             decrease_exposure_target(s, target_exposure);
         }
@@ -700,12 +765,12 @@ namespace rsimpl
         {
             if (fabs(1.0f - (exposure * gain) / target_exposure) < hysteresis)
             {
-                //            EXPOSURE_LOG(" AnalyzeImage: Don't Modify (Hysteresis): " << target_exposure << " " << exposure * gain << std::endl);
+                LOG_DEBUG(" AnalyzeImage: Don't Modify (Hysteresis): " << target_exposure << " " << exposure * gain);
                 return false;
             }
         }
         prev_direction = direction;
-        //    EXPOSURE_LOG(" AnalyzeImage: Modify" << std::endl);
+        LOG_DEBUG(" AnalyzeImage: Modify");
         return true;
     }
 
@@ -714,7 +779,7 @@ namespace rsimpl
         std::lock_guard<std::recursive_mutex> lock(state_mutex);
 
         state = options;
-        flicker_cycle = 1000.0f / (state.get_auto_exposure_state(RS_OPTION_FISHEYE_COLOR_AUTO_EXPOSURE_RATE) * 2.0f);
+        flicker_cycle = 1000.0f / (state.get_auto_exposure_state(RS_OPTION_FISHEYE_AUTO_EXPOSURE_ANTIFLICKER_RATE) * 2.0f);
     }
 
     void auto_exposure_algorithm::im_hist(const uint8_t* data, const int width, const int height, const int rowStep, int h[])
@@ -723,7 +788,7 @@ namespace rsimpl
 
         for (int i = 0; i < 256; ++i) h[i] = 0;
         const uint8_t* rowData = data;
-        for (int i = 0; i < height; ++i, rowData += rowStep) for (int j = 0; j < width; j+=state.get_auto_exposure_state(RS_OPTION_FISHEYE_COLOR_AUTO_EXPOSURE_SAMPLE_RATE)) ++h[rowData[j]];
+        for (int i = 0; i < height; ++i, rowData += rowStep) for (int j = 0; j < width; j+=state.get_auto_exposure_state(RS_OPTION_FISHEYE_AUTO_EXPOSURE_PIXEL_SAMPLE_RATE)) ++h[rowData[j]];
     }
 
     void auto_exposure_algorithm::increase_exposure_target(float mult, float& target_exposure)
@@ -740,7 +805,7 @@ namespace rsimpl
     {
         std::lock_guard<std::recursive_mutex> lock(state_mutex);
 
-        switch (state.get_auto_exposure_state(RS_OPTION_FISHEYE_COLOR_AUTO_EXPOSURE_MODE))
+        switch (state.get_auto_exposure_state(RS_OPTION_FISHEYE_AUTO_EXPOSURE_MODE))
         {
         case static_auto_exposure:          static_increase_exposure_gain(target_exposure, target_exposure0, exposure, gain); break;
         case auto_exposure_anti_flicker:    anti_flicker_increase_exposure_gain(target_exposure, target_exposure0, exposure, gain); break;
@@ -751,7 +816,7 @@ namespace rsimpl
     {
         std::lock_guard<std::recursive_mutex> lock(state_mutex);
 
-        switch (state.get_auto_exposure_state(RS_OPTION_FISHEYE_COLOR_AUTO_EXPOSURE_MODE))
+        switch (state.get_auto_exposure_state(RS_OPTION_FISHEYE_AUTO_EXPOSURE_MODE))
         {
         case static_auto_exposure:          static_decrease_exposure_gain(target_exposure, target_exposure0, exposure, gain); break;
         case auto_exposure_anti_flicker:    anti_flicker_decrease_exposure_gain(target_exposure, target_exposure0, exposure, gain); break;
@@ -820,12 +885,12 @@ namespace rsimpl
         else
         {
             static_increase_exposure_gain(target_exposure, target_exposure0, exposure, gain);
-            //        EXPOSURE_LOG("HybridAutoExposure::IncreaseExposureGain: " << exposure * gain << " " << flicker_cycle * base_gain << " " << base_gain << std::endl);
+            LOG_DEBUG("HybridAutoExposure::IncreaseExposureGain: " << exposure * gain << " " << flicker_cycle * base_gain << " " << base_gain);
             if (target_exposure > 0.99 * flicker_cycle * base_gain)
             {
                 anti_flicker_mode = true;
                 anti_flicker_increase_exposure_gain(target_exposure, target_exposure0, exposure, gain);
-                //            EXPOSURE_LOG("anti_flicker_mode = true" << std::endl);
+                LOG_DEBUG("anti_flicker_mode = true");
             }
         }
     }
@@ -833,12 +898,12 @@ namespace rsimpl
     {
         if (anti_flicker_mode)
         {
-            //        EXPOSURE_LOG("HybridAutoExposure::DecreaseExposureGain: " << exposure << " " << flicker_cycle << " " << gain << " " << base_gain << std::endl);
+            LOG_DEBUG("HybridAutoExposure::DecreaseExposureGain: " << exposure << " " << flicker_cycle << " " << gain << " " << base_gain);
             if ((target_exposure) <= 0.99 * (flicker_cycle * base_gain))
             {
                 anti_flicker_mode = false;
                 static_decrease_exposure_gain(target_exposure, target_exposure0, exposure, gain);
-                //            EXPOSURE_LOG("anti_flicker_mode = false" << std::endl);
+                LOG_DEBUG("anti_flicker_mode = false");
             }
             else
             {

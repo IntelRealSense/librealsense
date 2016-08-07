@@ -104,7 +104,7 @@ namespace rsimpl
         virtual void                                stop_motion_tracking();
 
         virtual void                                disable_auto_option(int subdevice, rs_option auto_opt);
-        virtual void                                set_stream_pre_callback(rs_stream stream, std::function<void(rs_device *, rs_frame_ref *, std::shared_ptr<rsimpl::frame_archive>)>);
+        virtual void                                on_before_callback(rs_frame_ref *, std::shared_ptr<rsimpl::frame_archive>) { }
 
         bool                                        motion_module_ready = false;
     public:

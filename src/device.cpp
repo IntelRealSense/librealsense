@@ -111,11 +111,6 @@ void rs_device_base::set_stream_callback(rs_stream stream, rs_frame_callback* ca
     config.callbacks[stream] = frame_callback_ptr(callback);
 }
 
-void rs_device_base::set_stream_pre_callback(rs_stream stream, std::function<void(rs_device *, rs_frame_ref *, std::shared_ptr<frame_archive>)> callback)
-{
-    config.pre_callbacks[stream] = callback;
-}
-
 void rs_device_base::enable_motion_tracking()
 {
     if (data_acquisition_active) throw std::runtime_error("motion-tracking cannot be reconfigured after having called rs_start_device()");
@@ -284,7 +279,7 @@ void rs_device_base::start_video_streaming()
             // get options value for frame metadata
             rs_option option[2];
             double opt_values[2];
-            option[0] = ((streams[0] == rs_stream::RS_STREAM_FISHEYE) ? RS_OPTION_FISHEYE_COLOR_EXPOSURE : RS_OPTION_COLOR_EXPOSURE);
+            option[0] = ((streams[0] == rs_stream::RS_STREAM_FISHEYE) ? RS_OPTION_FISHEYE_EXPOSURE :       RS_OPTION_COLOR_EXPOSURE);
             option[1] = ((streams[0] == rs_stream::RS_STREAM_FISHEYE) ? RS_OPTION_FISHEYE_COLOR_GAIN     : RS_OPTION_COLOR_GAIN);
             get_options(option, 2, opt_values);
 
@@ -349,9 +344,7 @@ void rs_device_base::start_video_streaming()
                         frame_ref->update_frame_callback_start_ts(std::chrono::high_resolution_clock::now());
                         frame_ref->log_callback_start(capture_start_time);
 
-                        if (config.pre_callbacks[streams[i]])
-                            (config.pre_callbacks[streams[i]])(this, frame_ref, archive);
-
+                        on_before_callback(frame_ref, archive);
                         (*config.callbacks[streams[i]])->on_frame(this, frame_ref);
                     }
                 }

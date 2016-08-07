@@ -122,6 +122,7 @@ namespace rsimpl
         unsigned            skip_frames;
     };
 
+    class zr300_camera;
     class auto_exposure_algorithm {
     public:
         void modify_exposure(float& exposure_value, bool& exp_modified, float& gain_value, bool& gain_modified); // exposure_value in milliseconds
@@ -167,28 +168,39 @@ namespace rsimpl
 
     class auto_exposure_mechanism {
     public:
-        auto_exposure_mechanism(rs_device_base* dev, fisheye_auto_exposure_state auto_exposure_state);
+        auto_exposure_mechanism(zr300_camera* dev, fisheye_auto_exposure_state auto_exposure_state);
         ~auto_exposure_mechanism();
         void add_frame(rs_frame_ref* frame, std::shared_ptr<rsimpl::frame_archive> archive);
         void update_auto_exposure_state(fisheye_auto_exposure_state& auto_exposure_state);
+        struct exposure_and_frame_counter {
+            exposure_and_frame_counter() : exposure(0), frame_counter(0) {};
+            exposure_and_frame_counter(double exposure, unsigned long long frame_counter) : exposure(exposure), frame_counter(frame_counter){}
+            double exposure;
+            unsigned long long frame_counter;
+        };
 
     private:
         void push_back_data(rs_frame_ref* data);
-        bool pop_front_data(rs_frame_ref** data);
+        bool try_pop_front_data(rs_frame_ref** data);
         size_t get_queue_size();
         void clear_queue();
-        unsigned get_skip_frames(const fisheye_auto_exposure_state& auto_exposure_state) { return auto_exposure_state.get_auto_exposure_state(RS_OPTION_FISHEYE_COLOR_AUTO_EXPOSURE_SKIP_FRAMES); }
+        unsigned get_skip_frames(const fisheye_auto_exposure_state& auto_exposure_state) { return auto_exposure_state.get_auto_exposure_state(RS_OPTION_FISHEYE_AUTO_EXPOSURE_SKIP_FRAMES); }
+        void push_back_exp_and_cnt(exposure_and_frame_counter exp_and_cnt);
+        bool try_get_exp_by_frame_cnt(double& exposure, const unsigned long long frame_counter);
 
-        rs_device_base*                        device = nullptr;
+        const int                              max_size_of_exp_and_cnt_queue = 10;
+        zr300_camera*                          device;
         auto_exposure_algorithm                auto_exposure_algo;
         std::shared_ptr<rsimpl::frame_archive> sync_archive;
         std::shared_ptr<std::thread>           exposure_thread;
         std::condition_variable                cv;
-        std::atomic<bool>                      action;
+        std::atomic<bool>                      keep_alive;
         std::deque<rs_frame_ref*>              data_queue;
         std::mutex                             queue_mtx;
         std::atomic<unsigned>                  frames_counter;
         std::atomic<unsigned>                  skip_frames;
+        std::deque<exposure_and_frame_counter> exposure_and_frame_counter_queue;
+        std::mutex                             exp_and_cnt_queue_mtx;
     };
 
     class zr300_camera final : public ds::ds_device
@@ -197,11 +209,12 @@ namespace rsimpl
         motion_module::mm_config                 motion_module_configuration;
         fisheye_auto_exposure_state              auto_exposure_state;
         std::shared_ptr<auto_exposure_mechanism> auto_exposure;
-        std::mutex pre_callback_mtx;
+        std::atomic<bool>                        to_add_frames;
 
     protected:
         void toggle_motion_module_power(bool bOn);
         void toggle_motion_module_events(bool bOn);
+        void on_before_callback(rs_frame_ref *, std::shared_ptr<rsimpl::frame_archive>) override;
 
     public:
         zr300_camera(std::shared_ptr<uvc::device> device, const static_device_info & info, motion_module_calibration fe_intrinsic);
@@ -222,6 +235,7 @@ namespace rsimpl
 
         rs_motion_intrinsics get_motion_intrinsics() const override;
         rs_extrinsics get_motion_extrinsics_from(rs_stream from) const override;
+        unsigned long long get_frame_counter_by_usb_cmd();
 
     private:
         unsigned get_auto_exposure_state(rs_option option);

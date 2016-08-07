@@ -393,15 +393,11 @@ namespace rsimpl
         rs_frame_callback * operator*() { return callback; }
     };
 
-    class frame_archive;
-    typedef std::function<void(rs_device *, rs_frame_ref *, std::shared_ptr<frame_archive>)> frame_pre_callback_ptr;
-
     struct device_config
     {
         const static_device_info            info;
         stream_request                      requests[RS_STREAM_NATIVE_COUNT];                       // Modified by enable/disable_stream calls
         frame_callback_ptr                  callbacks[RS_STREAM_NATIVE_COUNT];                      // Modified by set_frame_callback calls
-        frame_pre_callback_ptr              pre_callbacks[RS_STREAM_NATIVE_COUNT];
         data_polling_request                data_requests;                                          // Modified by enable/disable_events calls
         motion_callback_ptr                 motion_callback{ nullptr, [](rs_motion_callback*){} };  // Modified by set_events_callback calls
         timestamp_callback_ptr              timestamp_callback{ nullptr, [](rs_timestamp_callback*){} };
