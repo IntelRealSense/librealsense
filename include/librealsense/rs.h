@@ -142,9 +142,9 @@ typedef enum rs_option
     RS_OPTION_COLOR_ENABLE_AUTO_EXPOSURE                      = 10, /**< Enable / disable color image auto-exposure*/
     RS_OPTION_COLOR_ENABLE_AUTO_WHITE_BALANCE                 = 11, /**< Enable / disable color image auto-white-balance*/
     RS_OPTION_F200_LASER_POWER                                = 12, /**< Power of the F200 / SR300 projector, with 0 meaning projector off*/
-    RS_OPTION_F200_ACCURACY                                   = 13, /**< The number of the IR patterns that the ASIC will use in order to get the Depth image, increasing the number of patterns help to achieve better accuracy. Note that this control is affecting the Depth FPS*/
+    RS_OPTION_F200_ACCURACY                                   = 13, /**< Set the number of patterns projected per frame. The higher the accuracy value the more patterns projected. Increasing the number of patterns help to achieve better accuracy. Note that this control is affecting the Depth FPS */
     RS_OPTION_F200_MOTION_RANGE                               = 14, /**< Motion vs. Range trade-off, with lower values allowing for better motion sensitivity and higher values allowing for better depth range*/
-    RS_OPTION_F200_FILTER_OPTION                              = 15, /**< The Depth filter that is used by the ASIC pipe. Each one of the filter is optimized per the application requirements*/
+    RS_OPTION_F200_FILTER_OPTION                              = 15, /**< Set the filter to apply to each depth frame. Each one of the filter is optimized per the application requirements*/
     RS_OPTION_F200_CONFIDENCE_THRESHOLD                       = 16, /**< The confidence level threshold used by the Depth algorithm pipe to set whether a pixel will get a valid range or will be marked with invalid range*/
     RS_OPTION_F200_DYNAMIC_FPS                                = 17, /**< (F200-only) Allows to reduce FPS without restarting streaming. Valid values are {2, 5, 15, 30, 60}*/
     RS_OPTION_SR300_AUTO_RANGE_ENABLE_MOTION_VERSUS_RANGE     = 18, /**< Configures SR300 Depth Auto-Range setting. Should not be used directly but through set IVCAM preset method*/

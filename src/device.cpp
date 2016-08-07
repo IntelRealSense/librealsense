@@ -396,8 +396,8 @@ rs_frame_ref* ::rs_device_base::clone_frame(rs_frame_ref* frame)
 void rs_device_base::update_device_info(rsimpl::static_device_info& info)
 {
     info.options.push_back({ RS_OPTION_FRAMES_QUEUE_SIZE,     1, MAX_FRAME_QUEUE_SIZE,      1, MAX_FRAME_QUEUE_SIZE });
-    info.options.push_back({ RS_OPTION_EVENTS_QUEUE_SIZE,     1, MAX_EVENT_QUEUE_SIZE, 1, MAX_EVENT_QUEUE_SIZE });
-    info.options.push_back({ RS_OPTION_MAX_TIMESTAMP_LATENCY, 1, MAX_EVENT_TINE_OUT,   1, MAX_EVENT_TINE_OUT });
+    info.options.push_back({ RS_OPTION_EVENTS_QUEUE_SIZE,     1, MAX_EVENT_QUEUE_SIZE,      1, MAX_EVENT_QUEUE_SIZE });
+    info.options.push_back({ RS_OPTION_MAX_TIMESTAMP_LATENCY, 1, MAX_EVENT_TINE_OUT,        1, MAX_EVENT_TINE_OUT });
 }
 
 const char * rs_device_base::get_option_description(rs_option option) const
@@ -417,9 +417,9 @@ const char * rs_device_base::get_option_description(rs_option option) const
     case RS_OPTION_COLOR_ENABLE_AUTO_EXPOSURE                      : return "Enable / disable color image auto-exposure";
     case RS_OPTION_COLOR_ENABLE_AUTO_WHITE_BALANCE                 : return "Enable / disable color image auto-white-balance";
     case RS_OPTION_F200_LASER_POWER                                : return "Power of the F200 / SR300 projector, with 0 meaning projector off";
-    case RS_OPTION_F200_ACCURACY                                   : return "The number of the IR patterns that the ASIC will use in order to get the Depth image, increasing the number of patterns help to achieve better accuracy. Note that this control is affecting the Depth FPS";
+    case RS_OPTION_F200_ACCURACY                                   : return "Set the number of patterns projected per frame. The higher the accuracy value the more patterns projected. Increasing the number of patterns help to achieve better accuracy. Note that this control is affecting the Depth FPS";
     case RS_OPTION_F200_MOTION_RANGE                               : return "Motion vs. Range trade-off, with lower values allowing for better motion sensitivity and higher values allowing for better depth range";
-    case RS_OPTION_F200_FILTER_OPTION                              : return "The Depth filter that is used by the ASIC pipe. Each one of the filter is optimized per the application requirements";
+    case RS_OPTION_F200_FILTER_OPTION                              : return "Set the filter to apply to each depth frame. Each one of the filter is optimized per the application requirements";
     case RS_OPTION_F200_CONFIDENCE_THRESHOLD                       : return "The confidence level threshold used by the Depth algorithm pipe to set whether a pixel will get a valid range or will be marked with invalid range";
     case RS_OPTION_F200_DYNAMIC_FPS                                : return "(F200-only) Allows to reduce FPS without restarting streaming. Valid values are {2, 5, 15, 30, 60}";
     case RS_OPTION_SR300_AUTO_RANGE_ENABLE_MOTION_VERSUS_RANGE     : return "Configures SR300 Depth Auto-Range setting. Should not be used directly but through set IVCAM preset method";

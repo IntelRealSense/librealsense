@@ -490,6 +490,36 @@ namespace rsimpl
 
     bool ds_device::supports_option(rs_option option) const
     {
+        std::vector<rs_option> auto_exposure_options = { 
+            RS_OPTION_R200_AUTO_EXPOSURE_BOTTOM_EDGE, 
+            RS_OPTION_R200_AUTO_EXPOSURE_TOP_EDGE,
+            RS_OPTION_R200_AUTO_EXPOSURE_LEFT_EDGE,
+            RS_OPTION_R200_AUTO_EXPOSURE_RIGHT_EDGE,
+            RS_OPTION_R200_AUTO_EXPOSURE_KP_EXPOSURE,
+            RS_OPTION_R200_AUTO_EXPOSURE_KP_GAIN,
+            RS_OPTION_R200_AUTO_EXPOSURE_KP_DARK_THRESHOLD,
+            RS_OPTION_R200_AUTO_EXPOSURE_BRIGHT_RATIO_SET_POINT,
+            RS_OPTION_R200_AUTO_EXPOSURE_MEAN_INTENSITY_SET_POINT
+        };
+
+        if (std::find(auto_exposure_options.begin(), auto_exposure_options.end(), option) != auto_exposure_options.end())
+        {
+            return ds::get_lr_exposure_mode(get_device()) > 0;
+        }
+
+        std::vector<rs_option> only_when_not_streaming = { 
+            RS_OPTION_R200_DEPTH_UNITS,
+            RS_OPTION_R200_DEPTH_CLAMP_MIN,
+            RS_OPTION_R200_DEPTH_CLAMP_MAX,
+            RS_OPTION_R200_DISPARITY_MULTIPLIER,
+            RS_OPTION_R200_DISPARITY_SHIFT,
+        };
+
+        if (std::find(only_when_not_streaming.begin(), only_when_not_streaming.end(), option) != only_when_not_streaming.end())
+        {
+            if (is_capturing()) return false;
+        }
+
         // We have special logic to implement LR gain and exposure, so they do not belong to the standard option list
         return option == RS_OPTION_R200_LR_GAIN || option == RS_OPTION_R200_LR_EXPOSURE || rs_device_base::supports_option(option);
     }
@@ -534,20 +564,10 @@ namespace rsimpl
             RS_OPTION_R200_AUTO_EXPOSURE_TOP_EDGE,
             RS_OPTION_R200_AUTO_EXPOSURE_LEFT_EDGE,
             RS_OPTION_R200_AUTO_EXPOSURE_RIGHT_EDGE,
-            RS_OPTION_R200_AUTO_EXPOSURE_KP_EXPOSURE,
-            RS_OPTION_R200_AUTO_EXPOSURE_KP_GAIN,
-            RS_OPTION_R200_AUTO_EXPOSURE_KP_DARK_THRESHOLD,
-            RS_OPTION_R200_AUTO_EXPOSURE_BRIGHT_RATIO_SET_POINT,
-            RS_OPTION_R200_AUTO_EXPOSURE_MEAN_INTENSITY_SET_POINT
         };
         if (std::find(auto_exposure_options.begin(), auto_exposure_options.end(), option) != auto_exposure_options.end())
         {
-            if (ds::get_lr_exposure_mode(get_device()) == 0)
-            {
-                min = 0; max = 0; step = 0; def = 0;
-                return;
-            }
-            else if (option == RS_OPTION_R200_AUTO_EXPOSURE_RIGHT_EDGE)
+            if (option == RS_OPTION_R200_AUTO_EXPOSURE_RIGHT_EDGE)
             {
                 auto width = this->get_stream_interface(rs_stream::RS_STREAM_DEPTH).get_intrinsics().width;
                 min = 1; max = width; step = 1; def = width - 1;

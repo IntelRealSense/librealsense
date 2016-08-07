@@ -645,11 +645,12 @@ int main(int argc, char * argv[])
         for (int i = 0; i < RS_OPTION_COUNT; ++i)
         {
             option o = { (rs::option)i };
-            if (!dev->supports_option(o.opt)) continue;
-            dev->get_option_range(o.opt, o.min, o.max, o.step, o.def);
             try { 
-                if (o.min < o.max) o.value = dev->get_option(o.opt);
-                else o.value = o.min;
+                if (dev->supports_option(o.opt)) 
+                {
+                    dev->get_option_range(o.opt, o.min, o.max, o.step, o.def);
+                    o.value = dev->get_option(o.opt);
+                }
                 options.push_back(o);
             }
             catch (...) {}
@@ -807,14 +808,12 @@ int main(int argc, char * argv[])
                 {
                     if (!dev->supports_option(o.opt)) continue;
 
-                    auto slider_enabled = o.max > o.min;
-                    
                     auto is_checkbox = (o.min == 0) && (o.max == 1) && (o.step == 1);
                     auto is_checked = o.value > 0;
 
                     if (is_checkbox ? 
                             g.checkbox({ w - 260, y + 10, w - 240, y + 30 }, is_checked) :
-                            g.slider((int)o.opt + 1, { w - 260, y + 16, w - 20, y + 36 }, o.min, o.max, o.step, o.value, !slider_enabled))
+                            g.slider((int)o.opt + 1, { w - 260, y + 16, w - 20, y + 36 }, o.min, o.max, o.step, o.value))
                     {
                         if (is_checkbox) dev->set_option(o.opt, is_checked ? 1 : 0);
                         else dev->set_option(o.opt, o.value);
@@ -827,13 +826,11 @@ int main(int argc, char * argv[])
                         {
                             if (!dev->supports_option(o.opt)) continue;
                             dev->get_option_range(o.opt, o.min, o.max, o.step, o.def);
-                            //try { o.value = dev->get_option(o.opt); }
-                            //catch (...) {}
                         }
                     }
 
                     if (is_checkbox) g.option_label({ w - 230, y + 24 }, { 1, 1, 1 }, *dev, o.opt, 210, true);
-                    else g.option_label({ w - 260, y + 12 }, { 1, 1, 1 }, *dev, o.opt, 240, slider_enabled, &o.value);
+                    else g.option_label({ w - 260, y + 12 }, { 1, 1, 1 }, *dev, o.opt, 240, true, &o.value);
 
                     y += 38;
                 }
