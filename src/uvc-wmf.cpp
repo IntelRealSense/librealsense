@@ -896,7 +896,7 @@ namespace rsimpl
             {RS_OPTION_COLOR_SHARPNESS, VideoProcAmp_Sharpness},
             {RS_OPTION_COLOR_WHITE_BALANCE, VideoProcAmp_WhiteBalance},
             {RS_OPTION_COLOR_ENABLE_AUTO_WHITE_BALANCE, VideoProcAmp_WhiteBalance, true},
-            {RS_OPTION_FISHEYE_COLOR_GAIN, VideoProcAmp_Gain}
+            {RS_OPTION_FISHEYE_GAIN, VideoProcAmp_Gain}
         };
 
         void set_pu_control(device & device, int subdevice, rs_option option, int value)

@@ -49,7 +49,6 @@ namespace rsimpl
 
         const byte * get_frame_data(rs_stream stream) const;
         double get_frame_timestamp(rs_stream stream) const;
-        double get_frame_metadata(rs_stream stream, rs_frame_metadata frame_metadata) const;
         unsigned long long get_frame_number(rs_stream stream) const;
         long long get_frame_system_time(rs_stream stream) const;
         int get_frame_stride(rs_stream stream) const;

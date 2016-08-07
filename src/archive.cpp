@@ -203,11 +203,6 @@ double frame_archive::frame_ref::get_frame_timestamp() const
     return frame_ptr ? frame_ptr->get_frame_timestamp(): 0;
 }
 
-double frame_archive::frame_ref::get_frame_metadata(rs_frame_metadata frame_metadata) const
-{
-    return frame_ptr ? frame_ptr->get_frame_metadata(frame_metadata) : 0;
-}
-
 unsigned long long frame_archive::frame_ref::get_frame_number() const
 {
     return frame_ptr ? frame_ptr->get_frame_number() : 0;
@@ -293,22 +288,6 @@ rs_timestamp_domain frame_archive::frame::get_frame_timestamp_domain() const
 double frame_archive::frame::get_frame_timestamp() const
 {
     return additional_data.timestamp;
-}
-
-double frame_archive::frame::get_frame_metadata(rs_frame_metadata frame_metadata) const
-{
-    switch (frame_metadata)
-    {
-    case RS_FRAME_METADATA_EXPOSURE:
-        return additional_data.exposure_value;
-        break;
-    case RS_FRAME_METADATA_GAIN:
-        return additional_data.gain_value;
-        break;
-    default:
-        throw std::logic_error("unsupported metadata type");
-        break;
-    }
 }
 
 unsigned long long frame_archive::frame::get_frame_number() const

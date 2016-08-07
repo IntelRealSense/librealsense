@@ -29,12 +29,6 @@ namespace rs
         enumeration             = 8,
     };
 
-    enum class frame_metadata
-    {
-        exposure = 0,
-        gain     = 1
-    };
-
     enum class stream : int32_t
     {
         depth                            = 0,  ///< Native stream of depth data produced by RealSense device
@@ -398,14 +392,6 @@ namespace rs
             auto r = rs_get_detached_frame_timestamp_domain(frame_ref, &e);
             error::handle(e);
             return static_cast<timestamp_domain>(r);
-        }
-
-        double get_frame_metadata(rs_frame_metadata frame_metadata) const
-        {
-            rs_error * e = nullptr;
-            auto r = rs_get_detached_frame_metadata(frame_ref, frame_metadata, &e);
-            error::handle(e);
-            return r;
         }
 
         unsigned long long get_frame_number() const
@@ -927,18 +913,6 @@ namespace rs
         {
             rs_error * e = nullptr;
             auto r = rs_get_frame_timestamp((const rs_device *)this, (rs_stream)stream, &e);
-            error::handle(e);
-            return r;
-        }
-
-        /// retrieve the metadata at which the latest frame on a stream was captured
-        /// \param[in] stream  the stream whose latest frame we are interested in
-        /// \param[in] frame_metadata  the rs_frame_metadata whose latest frame we are interested in
-        /// \return            the metadata value
-        double get_frame_metadata(stream stream, rs_frame_metadata frame_metadata) const
-        {
-            rs_error * e = nullptr;
-            auto r = rs_get_frame_metadata((const rs_device *)this, (rs_stream)stream, frame_metadata, &e);
             error::handle(e);
             return r;
         }

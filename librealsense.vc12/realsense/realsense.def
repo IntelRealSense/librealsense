@@ -56,12 +56,10 @@ EXPORTS
 
     rs_wait_for_frames
     rs_poll_for_frames
-    rs_get_frame_metadata
     rs_get_frame_timestamp
     rs_get_frame_number
     rs_get_frame_data
 
-    rs_get_detached_frame_metadata
     rs_get_detached_framerate
     rs_get_detached_frame_timestamp
     rs_get_detached_frame_timestamp_domain

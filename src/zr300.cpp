@@ -33,7 +33,7 @@ namespace rsimpl
 
     bool is_fisheye_uvc_control(rs_option option)
     {
-        return (option == RS_OPTION_FISHEYE_COLOR_GAIN);
+        return (option == RS_OPTION_FISHEYE_GAIN);
     }
 
     bool is_fisheye_xu_control(rs_option option)
@@ -393,7 +393,7 @@ namespace rsimpl
             info.subdevice_modes.push_back({ 3, { 640, 480 }, pf_raw8, 30, rs_intrinsics, {/*TODO:ask if we need rect_modes*/ }, { 0 } });
 
             info.options.push_back({ RS_OPTION_FISHEYE_EXPOSURE,                        40, 331, 1,  40 });
-            info.options.push_back({ RS_OPTION_FISHEYE_COLOR_GAIN                                       });
+            info.options.push_back({ RS_OPTION_FISHEYE_GAIN                                             });
             info.options.push_back({ RS_OPTION_FISHEYE_STROBE,                          0,  1,   1,  0  });
             info.options.push_back({ RS_OPTION_FISHEYE_EXT_TRIG,                        0,  1,   1,  0  });
             info.options.push_back({ RS_OPTION_FISHEYE_ENABLE_AUTO_EXPOSURE,            0,  1,   1,  1  });
@@ -495,13 +495,13 @@ namespace rsimpl
                 auto frame_sts = try_pop_front_data(&frame_ref);
                 lk.unlock();
 
-                rs_option exposure_option[] = { RS_OPTION_FISHEYE_EXPOSURE };
-                double exposure_value[1] = {};
+                rs_option options[] = { RS_OPTION_FISHEYE_EXPOSURE, RS_OPTION_FISHEYE_GAIN };
+                double values[2] = {};
                 unsigned long long frame_counter;
                 try {
-                    device->get_options(exposure_option, 1, exposure_value);
+                    device->get_options(options, 2, values);
                     frame_counter = device->get_frame_counter_by_usb_cmd();
-                    push_back_exp_and_cnt(exposure_and_frame_counter(exposure_value[0], frame_counter));
+                    push_back_exp_and_cnt(exposure_and_frame_counter(values[0], frame_counter));
                 }
                 catch (...) {};
 
@@ -511,8 +511,8 @@ namespace rsimpl
                     double exp_by_frame_cnt;
                     auto exp_and_cnt_sts = try_get_exp_by_frame_cnt(exp_by_frame_cnt, frame_counter);
 
-                    auto exposure_value = static_cast<float>((exp_and_cnt_sts)? exp_by_frame_cnt : frame_ref->get_frame_metadata(RS_FRAME_METADATA_EXPOSURE) / 10.);
-                    auto gain_value = static_cast<float>(frame_ref->get_frame_metadata(RS_FRAME_METADATA_GAIN));
+                    auto exposure_value = static_cast<float>((exp_and_cnt_sts)? exp_by_frame_cnt : values[0] / 10.);
+                    auto gain_value = static_cast<float>(values[1]);
 
                     bool sts = auto_exposure_algo.analyze_image(frame_ref);
                     if (sts)
@@ -529,7 +529,7 @@ namespace rsimpl
 
                         if (modify_gain)
                         {
-                            rs_option option[] = { RS_OPTION_FISHEYE_COLOR_GAIN };
+                            rs_option option[] = { RS_OPTION_FISHEYE_GAIN };
                             double value[] = { gain_value };
                             device->set_options(option, 1, value);
                         }

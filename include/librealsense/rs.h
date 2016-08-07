@@ -55,14 +55,6 @@ typedef enum rs_stream
     RS_STREAM_MAX_ENUM = 0x7FFFFFFF
 } rs_stream;
 
-typedef enum rs_frame_metadata
-{
-    RS_FRAME_METADATA_EXPOSURE = 0,
-    RS_FRAME_METADATA_GAIN     = 1,
-    RS_FRAME_METADATA_COUNT    = 2,
-    RS_FRAME_METADATA_MAX_ENUM = 0x7FFFFFFF
-} rs_frame_metadata;
-
 typedef enum rs_format
 {
     RS_FORMAT_ANY         = 0,
@@ -207,7 +199,7 @@ typedef enum rs_option
     RS_OPTION_ZR300_MOTION_MODULE_TIME_SEED                   = 67,
     RS_OPTION_ZR300_MOTION_MODULE_ACTIVE                      = 68,
     RS_OPTION_FISHEYE_EXPOSURE                                = 69,
-    RS_OPTION_FISHEYE_COLOR_GAIN                              = 70,
+    RS_OPTION_FISHEYE_GAIN                                    = 70,
     RS_OPTION_FISHEYE_STROBE                                  = 71,
     RS_OPTION_FISHEYE_EXT_TRIG                                = 72,
     RS_OPTION_FRAMES_QUEUE_SIZE                               = 73,
@@ -691,22 +683,6 @@ int rs_supports(rs_device * device, rs_capabilities capability, rs_error ** erro
  * \return            the timestamp of the frame, in milliseconds since the device was started
  */
 double rs_get_frame_timestamp(const rs_device * device, rs_stream stream, rs_error ** error);
-
-/**
- * retrieve the metadata at which the latest frame on a stream was captured
- * \param[in] stream  the stream whose latest frame we are interested in
- * \param[in] frame_metadata  the rs_frame_metadata whose latest frame we are interested in
- * \return            the metadata value
-*/
-double rs_get_frame_metadata(const rs_device * device, rs_stream stream, rs_frame_metadata frame_metadata, rs_error ** error);
-
-/**
-* retrive metadata from safe frame handle, returned from detach, clone_ref or from frame callback
-* \param[in] stream  the stream whose latest frame we are interested in
-* \param[in] frame_metadata  the rs_frame_metadata whose latest frame we are interested in
-* \return            the metadata value
-*/
-double rs_get_detached_frame_metadata(const rs_frame_ref * frame, rs_frame_metadata frame_metadata, rs_error ** error);
 
 /**
 * retrieve the frame number
