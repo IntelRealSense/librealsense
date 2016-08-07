@@ -223,7 +223,7 @@ namespace rsimpl
     protected:
         void toggle_motion_module_power(bool bOn);
         void toggle_motion_module_events(bool bOn);
-        void on_before_callback(rs_frame_ref *, std::shared_ptr<rsimpl::frame_archive>) override;
+        void on_before_callback(rs_stream , rs_frame_ref *, std::shared_ptr<rsimpl::frame_archive>) override;
 
     public:
         zr300_camera(std::shared_ptr<uvc::device> device, const static_device_info & info, motion_module_calibration fe_intrinsic);

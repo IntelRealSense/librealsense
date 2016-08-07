@@ -166,9 +166,9 @@ namespace rsimpl
         return auto_exposure_state.get_auto_exposure_state(option);
     }
 
-    void zr300_camera::on_before_callback(rs_frame_ref * frame, std::shared_ptr<rsimpl::frame_archive> archive)
+    void zr300_camera::on_before_callback(rs_stream stream, rs_frame_ref * frame, std::shared_ptr<rsimpl::frame_archive> archive)
     {
-        if (!to_add_frames)
+        if (!to_add_frames || stream != RS_STREAM_FISHEYE)
             return;
 
         auto_exposure->add_frame(clone_frame(frame), archive);
