@@ -702,8 +702,7 @@ namespace rs
             return intrin;
         }
 
-        /// retrieve intrinsic camera parameters for a specific stream
-        /// \param[in] stream  the stream whose parameters to retrieve
+        /// retrieve intrinsic camera parameters for the motion module
         /// \return            the intrinsic parameters of the stream
         motion_intrinsics get_motion_intrinsics() const
         {
