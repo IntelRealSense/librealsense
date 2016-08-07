@@ -276,6 +276,21 @@ void rs_set_frame_callback_cpp(rs_device * device, rs_stream stream, rs_frame_ca
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, device, stream, callback)
 
+void rs_log_to_callback(rs_log_severity min_severity,
+    void(*on_log)(rs_log_severity min_severity, const char * message, void * user), void * user, rs_error ** error) try
+{
+    VALIDATE_NOT_NULL(on_log);
+    rsimpl::log_to_callback(min_severity, on_log, user);
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, min_severity, on_log, user)
+
+void rs_log_to_callback_cpp(rs_log_severity min_severity, rs_log_callback * callback, rs_error ** error) try
+{
+    VALIDATE_NOT_NULL(callback);
+    rsimpl::log_to_callback(min_severity, callback);
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, min_severity, callback)
+
 void rs_enable_motion_tracking(rs_device * device,
     void(*on_motion_event)(rs_device * dev, rs_motion_data m_data, void * user), void * motion_handler,
     void(*on_timestamp_event)(rs_device * dev, rs_timestamp_data t_data, void * user), void * timestamp_handler,

@@ -966,6 +966,20 @@ namespace rs
         none  = 5, // No logging will occur
     };
 
+    class log_callback : public rs_log_callback
+    {
+        std::function<void(log_severity, const char *)> on_event_function;
+    public:
+        explicit log_callback(std::function<void(log_severity, const char *)> on_event) : on_event_function(on_event) {}
+
+        void on_event(rs_log_severity severity, const char * message) override
+        {
+            on_event_function((log_severity)severity, message);
+        }
+
+        void release() override { delete this; }
+    };
+
     inline void log_to_console(log_severity min_severity)
     {
         rs_error * e = nullptr;
@@ -977,6 +991,13 @@ namespace rs
     {
         rs_error * e = nullptr;
         rs_log_to_file((rs_log_severity)min_severity, file_path, &e);
+        error::handle(e);
+    }
+
+    inline void log_to_callback(log_severity min_severity, std::function<void(log_severity, const char *)> callback)
+    {
+        rs_error * e = nullptr;
+        rs_log_to_callback_cpp((rs_log_severity)min_severity, new log_callback(callback), &e);
         error::handle(e);
     }
 

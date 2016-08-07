@@ -302,6 +302,7 @@ typedef struct rs_frame_ref rs_frame_ref;
 typedef struct rs_motion_callback rs_motion_callback;
 typedef struct rs_frame_callback rs_frame_callback;
 typedef struct rs_timestamp_callback rs_timestamp_callback;
+typedef struct rs_log_callback rs_log_callback;
 
 rs_context * rs_create_context(int api_version, rs_error ** error);
 void rs_delete_context(rs_context * context, rs_error ** error);
@@ -827,6 +828,8 @@ typedef enum
 } rs_log_severity;
 void rs_log_to_console(rs_log_severity min_severity, rs_error ** error);
 void rs_log_to_file(rs_log_severity min_severity, const char * file_path, rs_error ** error);
+void rs_log_to_callback_cpp(rs_log_severity min_severity, rs_log_callback * callback, rs_error ** error);
+void rs_log_to_callback(rs_log_severity min_severity, void(*on_log)(rs_log_severity min_severity, const char * message, void * user), void * user, rs_error ** error);
 
 #ifdef __cplusplus
 }
