@@ -364,22 +364,27 @@ namespace rsimpl
             zr300::claim_motion_module_interface(*device);
             motion_module_control mm(device.get());
             mm.toggle_motion_module_power(true);
-            mm.toggle_motion_module_events(true); //to be sure that the motion module is up
-            fisheye_intrinsic = read_fisheye_intrinsic(*device);
-            mm.toggle_motion_module_events(false);
+            mm.toggle_motion_module_events(true); //wait for the motion module start up (300 msec)
+            mm.toggle_motion_module_events(false); //then deactivate events generation
+            try
+            {
+                fisheye_intrinsic = read_fisheye_intrinsic(*device);
+                succeeded_to_read_fisheye_intrinsic = true;
+            }
+            catch (...)
+            {
+                LOG_ERROR("Failed to read fisheye intrinsic");
+            }
+
             mm.toggle_motion_module_power(false);
 
             rs_intrinsics rs_intrinsics = fisheye_intrinsic.fe_intrinsic;
-            succeeded_to_read_fisheye_intrinsic = true;
 
-            info.capabilities_vector.push_back(RS_CAPABILITIES_FISH_EYE);
-            info.capabilities_vector.push_back(RS_CAPABILITIES_MOTION_EVENTS);
             info.capabilities_vector.push_back(RS_CAPABILITIES_MOTION_MODULE_FW_UPDATE);
             info.capabilities_vector.push_back(RS_CAPABILITIES_ADAPTER_BOARD);
 
             // require at least Alpha FW version to run
             info.capabilities_vector.push_back({ RS_CAPABILITIES_ENUMERATION, { 1, 16, 0, 0 }, firmware_version::any(), RS_CAMERA_INFO_ADAPTER_BOARD_FIRMWARE_VERSION });
-            info.capabilities_vector.push_back({ RS_CAPABILITIES_ENUMERATION, { 1, 15, 5, 0 }, firmware_version::any(), RS_CAMERA_INFO_MOTION_MODULE_FIRMWARE_VERSION });
 
             info.stream_subdevices[RS_STREAM_FISHEYE] = 3;
             info.presets[RS_STREAM_FISHEYE][RS_PRESET_BEST_QUALITY] = { true, 640, 480, RS_FORMAT_RAW8,   60 };
@@ -414,8 +419,14 @@ namespace rsimpl
         {
             auto fe_extrinsic = fisheye_intrinsic.mm_extrinsic;
             info.stream_poses[RS_STREAM_FISHEYE] = { reinterpret_cast<float3x3 &>(fe_extrinsic.fe_to_depth.rotation), reinterpret_cast<float3&>(fe_extrinsic.fe_to_depth.translation) };
+
+            info.capabilities_vector.push_back({ RS_CAPABILITIES_FISH_EYE, { 1, 15, 5, 0 }, firmware_version::any(), RS_CAMERA_INFO_MOTION_MODULE_FIRMWARE_VERSION });
+            info.capabilities_vector.push_back({ RS_CAPABILITIES_MOTION_EVENTS, { 1, 15, 5, 0 }, firmware_version::any(), RS_CAMERA_INFO_MOTION_MODULE_FIRMWARE_VERSION });
         }
-        
+        else
+        {
+            LOG_ERROR("Motion module capabilities were disabled due to failure to aquire intrinsic");
+        }
         return std::make_shared<zr300_camera>(device, info, fisheye_intrinsic);
     }
 

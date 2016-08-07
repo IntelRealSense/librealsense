@@ -18,12 +18,12 @@ motion_module_control::motion_module_control(uvc::device *device) : device_handl
 {
 }
 
-mm_state motion_module_state::requested_state(mm_request request, bool on) const
+int motion_module_state::requested_state(mm_request request, bool on) const
 {
     int tmp = state;
     tmp += (int)request * (on ? 1 : -1);
 
-    return (mm_state)tmp;
+    return tmp;
 }
 
 void motion_module_control::impose(mm_request request, bool on)
@@ -33,7 +33,7 @@ void motion_module_control::impose(mm_request request, bool on)
     auto new_state = state_handler.requested_state(request, on);
 
     if (motion_module_state::valid(new_state))
-        enter_state(new_state);
+        enter_state((mm_state)new_state);
     else
         throw std::logic_error(to_string() << "MM invalid mode from" << state_handler.state << " to " << new_state);
 }
@@ -190,12 +190,12 @@ void motion_module_control::switch_to_iap()
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
 
         hw_monitor::i2c_read_reg(static_cast<int>(adaptor_board_command::IRB), *device_handle, MOTION_MODULE_CONTROL_I2C_SLAVE_ADDRESS, (int)i2c_register::REG_CURR_PWR_STATE, sizeof(uint32_t), reinterpret_cast<byte*>(&value));
-        if ((power_states)value == power_states::PWR_STATE_IAP) {
-            return; // we have entered IAP
-        }
+        if ((power_states)value == power_states::PWR_STATE_IAP) 
+            break; // we have entered IAP
     }
 
-    return throw std::runtime_error("Unable to enter IAP state!");
+    if ((power_states)value != power_states::PWR_STATE_IAP)
+        throw std::runtime_error("Unable to enter IAP state!");
 }
 
 void motion_module_control::switch_to_operational()
@@ -207,11 +207,8 @@ void motion_module_control::switch_to_operational()
 
 	hw_monitor::i2c_read_reg(static_cast<int>(adaptor_board_command::IRB), *device_handle, MOTION_MODULE_CONTROL_I2C_SLAVE_ADDRESS, (int)i2c_register::REG_CURR_PWR_STATE, sizeof(uint32_t), reinterpret_cast<byte*>(&value));
         
-    if ((power_states)value != power_states::PWR_STATE_IAP) {
-        return;
-    }
-    
-    return throw std::runtime_error("Unable to leave IAP state!");
+    if ((power_states)value != power_states::PWR_STATE_IAP)
+        throw std::runtime_error("Unable to leave IAP state!");
 }
 
 // Write the firmware.

@@ -226,11 +226,11 @@ namespace rs
         float2      texcoord_to_pixel(const float2 & coord) const                       { return {coord.x*width - 0.5f, coord.y*height - 0.5f}; }
 
                     // Helpers for mapping from image coordinates into 3D space
-        float3      deproject(const float2 & pixel, float depth) const                  { float3 point; rs_deproject_pixel_to_point(&point.x, this, &pixel.x, depth); return point; }
+        float3      deproject(const float2 & pixel, float depth) const                  { float3 point = {}; rs_deproject_pixel_to_point(&point.x, this, &pixel.x, depth); return point; }
         float3      deproject_from_texcoord(const float2 & coord, float depth) const    { return deproject(texcoord_to_pixel(coord), depth); }
 
                     // Helpers for mapping from 3D space into image coordinates
-        float2      project(const float3 & point) const                                 { float2 pixel; rs_project_point_to_pixel(&pixel.x, this, &point.x); return pixel; }
+        float2      project(const float3 & point) const                                 { float2 pixel = {}; rs_project_point_to_pixel(&pixel.x, this, &point.x); return pixel; }
         float2      project_to_texcoord(const float3 & point) const                     { return pixel_to_texcoord(project(point)); }
 
         bool        operator == (const intrinsics & r) const                            { return memcmp(this, &r, sizeof(r)) == 0; }
@@ -244,10 +244,9 @@ namespace rs
 
     struct extrinsics : rs_extrinsics
     {
-        bool        is_identity() const                                                 { return rotation[0] == 1 && rotation[4] == 1 && translation[0] == 0 && translation[1] == 0 && translation[2] == 0; }
-        float3      transform(const float3 & point) const                               { float3 p; rs_transform_point_to_point(&p.x, this, &point.x); return p; }
-
-    };   
+        bool        is_identity() const                                                 { return (rotation[0] == 1) && (rotation[4] == 1) && (translation[0] == 0) && (translation[1] == 0) && (translation[2] == 0); }
+        float3      transform(const float3 & point) const                               { float3 p = {}; rs_transform_point_to_point(&p.x, this, &point.x); return p; }
+    };
 
     struct timestamp_data : rs_timestamp_data
     {
@@ -268,7 +267,12 @@ namespace rs
     {
         std::string function, args;
     public:
-        error(rs_error * err) : std::runtime_error(rs_get_error_message(err)), function(rs_get_failed_function(err)), args(rs_get_failed_args(err)) { rs_free_error(err); }
+        error(rs_error * err) : std::runtime_error(rs_get_error_message(err))
+        { 
+            function = (nullptr != rs_get_failed_function(err)) ? rs_get_failed_function(err) : std::string();
+            args = (nullptr != rs_get_failed_args(err)) ? rs_get_failed_args(err) : std::string();
+            rs_free_error(err); 
+        }
         const std::string & get_failed_function() const { return function; }
         const std::string & get_failed_args() const { return args; }
         static void handle(rs_error * e) { if(e) throw error(e); }

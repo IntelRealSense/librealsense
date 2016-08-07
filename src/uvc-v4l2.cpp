@@ -302,6 +302,7 @@ namespace rsimpl
                         else warn_error("VIDIOC_REQBUFS");
                     }
 
+                    callback = nullptr;
                     is_capturing = false;
                 }
             }
@@ -365,7 +366,7 @@ namespace rsimpl
                     switch (res)
                     {
                     case LIBUSB_ERROR_TIMEOUT :
-                        perror("interrupt e.p. timeout");
+                        LOG_WARNING("interrupt e.p. timeout");
                         break;
                     default:
                         throw std::runtime_error(to_string() << "USB Interrupt end-point error " << libusb_strerror((libusb_error)res));
