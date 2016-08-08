@@ -245,10 +245,10 @@ typedef struct rs_intrinsics
 
 typedef struct rs_motion_device_intrinsics
 {
-    //  Scale X        cross axis        cross axis      Bias X
-    //  cross axis     Scale Y           cross axis      Bias Y
-    //  cross axis     cross axis        Scale Z         Bias Z
-    float val[3][4];
+	/* Scale X        cross axis        cross axis      Bias X */
+	/* cross axis     Scale Y           cross axis      Bias Y */
+	/* cross axis     cross axis        Scale Z         Bias Z */
+    float data[3][4];
 }rs_motion_device_intrinsics;
 
 typedef struct rs_variances
