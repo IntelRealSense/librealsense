@@ -16,6 +16,11 @@
 
 namespace rsimpl
 {
+    enum class fw_cmd : uint8_t
+    {
+        MM_SNB = 0x10,
+        MM_TRB = 0x11
+    };
     struct IMU_version
     {
         byte ver[4];
@@ -40,7 +45,7 @@ namespace rsimpl
         
         operator rs_intrinsics () const
         {
-            return{ 640, 480, kf[2], kf[4], kf[0], kf[4], RS_DISTORTION_FTHETA, { distf[0], 0, 0, 0, 0 } };
+            return{ 640, 480, kf[2], kf[5], kf[0], kf[4], RS_DISTORTION_FTHETA, { distf[0], 0, 0, 0, 0 } };
         }
     };
 
@@ -90,14 +95,16 @@ namespace rsimpl
         };
     };
 
-
-    struct motion_module_calibration
+    struct calibration
     {
-        serial_number sn;
         fisheye_intrinsic fe_intrinsic;
         IMU_extrinsic mm_extrinsic;
         IMU_intrinsic imu_intrinsic;
-
+    };
+    struct motion_module_calibration
+    {
+        serial_number sn;
+        calibration calib;
     };
 #pragma pack(pop)
 

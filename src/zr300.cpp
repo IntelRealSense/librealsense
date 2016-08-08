@@ -215,7 +215,7 @@ namespace rsimpl
 
     rs_motion_intrinsics zr300_camera::get_motion_intrinsics() const
     {
-        return  fe_intrinsic.imu_intrinsic;
+        return  fe_intrinsic.calib.imu_intrinsic;
     }
 
     rs_extrinsics zr300_camera::get_motion_extrinsics_from(rs_stream from) const
@@ -223,11 +223,11 @@ namespace rsimpl
         switch (from)
         {
         case RS_STREAM_DEPTH:
-            return fe_intrinsic.mm_extrinsic.depth_to_imu;
+            return fe_intrinsic.calib.mm_extrinsic.depth_to_imu;
         case RS_STREAM_COLOR:
-            return fe_intrinsic.mm_extrinsic.rgb_to_imu;
+            return fe_intrinsic.calib.mm_extrinsic.rgb_to_imu;
         case RS_STREAM_FISHEYE:
-            return fe_intrinsic.mm_extrinsic.fe_to_imu;
+            return fe_intrinsic.calib.mm_extrinsic.fe_to_imu;
         default:
             throw std::runtime_error(to_string() << "No motion extrinsics from "<<from );
         }
@@ -251,23 +251,41 @@ namespace rsimpl
         }
     }
 
-    motion_module_calibration read_fisheye_intrinsic(uvc::device & device)
+    void get_raw_data(uint8_t opcode, uvc::device & device, std::timed_mutex & mutex, uint8_t * data, size_t & bytesReturned)
+    {
+        hw_monitor::hwmon_cmd command(opcode);
+
+        perform_and_send_monitor_command(device, mutex, command);
+        memcpy(data, command.receivedCommandData, HW_MONITOR_BUFFER_SIZE);
+        bytesReturned = command.receivedCommandDataLength;
+    }
+
+    serial_number read_serial_number(uvc::device & device, std::timed_mutex & mutex)
+    {
+        uint8_t serial_number_raw[HW_MONITOR_BUFFER_SIZE];
+        size_t bufferLength = HW_MONITOR_BUFFER_SIZE;
+        get_raw_data(static_cast<uint8_t>(fw_cmd::MM_SNB), device, mutex, serial_number_raw, bufferLength);
+
+        serial_number sn;
+        memcpy(&sn, serial_number_raw, std::min(sizeof(serial_number), bufferLength)); // Is this longer or shorter than the rawCalib struct?
+        return sn;
+    }
+    calibration read_calibration(uvc::device & device, std::timed_mutex & mutex)
+    {
+        uint8_t scalibration_raw[HW_MONITOR_BUFFER_SIZE];
+        size_t bufferLength = HW_MONITOR_BUFFER_SIZE;
+        get_raw_data(static_cast<uint8_t>(fw_cmd::MM_TRB), device, mutex, scalibration_raw, bufferLength);
+
+        calibration calibration;
+        memcpy(&calibration, scalibration_raw, std::min(sizeof(calibration), bufferLength)); // Is this longer or shorter than the rawCalib struct?
+        return calibration;
+    }
+
+    motion_module_calibration read_fisheye_intrinsic(uvc::device & device, std::timed_mutex & mutex)
     {
         motion_module_calibration intrinsic;
-        memset(&intrinsic, 0, sizeof(motion_module_calibration));
-
-        byte data[256];
-        hw_monitor::read_from_eeprom(static_cast<int>(adaptor_board_command::IRB), static_cast<int>(adaptor_board_command::IWB), device, 0, 255, data);
-        intrinsic.sn = *(serial_number*)&data[0];
-
-        hw_monitor::read_from_eeprom(static_cast<int>(adaptor_board_command::IRB), static_cast<int>(adaptor_board_command::IWB), device, 0x100, 255, data);
-        intrinsic.fe_intrinsic = *(fisheye_intrinsic*)&data[0];
-
-        hw_monitor::read_from_eeprom(static_cast<int>(adaptor_board_command::IRB), static_cast<int>(adaptor_board_command::IWB), device, 0x200, 255, data);
-        intrinsic.mm_extrinsic = *(IMU_extrinsic*)&data[0];
-
-        hw_monitor::read_from_eeprom(static_cast<int>(adaptor_board_command::IRB), static_cast<int>(adaptor_board_command::IWB), device, 0x300, 255, data);
-        intrinsic.imu_intrinsic = *(IMU_intrinsic*)&data[0];
+        intrinsic.calib = read_calibration(device, mutex);
+        intrinsic.sn = read_serial_number(device, mutex);
 
         return intrinsic;
     }
@@ -296,7 +314,8 @@ namespace rsimpl
             mm.toggle_motion_module_events(false); //then deactivate events generation
             try
             {
-                fisheye_intrinsic = read_fisheye_intrinsic(*device);
+                std::timed_mutex  mutex;
+                fisheye_intrinsic = read_fisheye_intrinsic(*device, mutex);
                 succeeded_to_read_fisheye_intrinsic = true;
             }
             catch (...)
@@ -306,7 +325,7 @@ namespace rsimpl
 
             mm.toggle_motion_module_power(false);
 
-            rs_intrinsics rs_intrinsics = fisheye_intrinsic.fe_intrinsic;
+            rs_intrinsics rs_intrinsics = fisheye_intrinsic.calib.fe_intrinsic;
 
             info.capabilities_vector.push_back(RS_CAPABILITIES_MOTION_MODULE_FW_UPDATE);
             info.capabilities_vector.push_back(RS_CAPABILITIES_ADAPTER_BOARD);
@@ -340,7 +359,7 @@ namespace rsimpl
         ds_device::set_common_ds_config(device, info, c);
         if (succeeded_to_read_fisheye_intrinsic)
         {
-            auto fe_extrinsic = fisheye_intrinsic.mm_extrinsic;
+            auto fe_extrinsic = fisheye_intrinsic.calib.mm_extrinsic;
             info.stream_poses[RS_STREAM_FISHEYE] = { reinterpret_cast<float3x3 &>(fe_extrinsic.fe_to_depth.rotation), reinterpret_cast<float3&>(fe_extrinsic.fe_to_depth.translation) };
 
             info.capabilities_vector.push_back({ RS_CAPABILITIES_FISH_EYE, { 1, 15, 5, 0 }, firmware_version::any(), RS_CAMERA_INFO_MOTION_MODULE_FIRMWARE_VERSION });
