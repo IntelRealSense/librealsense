@@ -483,6 +483,7 @@ rs_stream rs_get_detached_frame_stream_type(const rs_frame_ref * frame_ref, rs_e
 }
 HANDLE_EXCEPTIONS_AND_RETURN(RS_STREAM_MAX_ENUM, frame_ref)
 
+
 unsigned long long rs_get_detached_frame_number(const rs_frame_ref * frame, rs_error ** error) try
 {
     VALIDATE_NOT_NULL(frame);

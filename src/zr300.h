@@ -103,7 +103,7 @@ namespace rsimpl
     };
 #pragma pack(pop)
 
-    enum auto_exposure_modes {
+    enum class auto_exposure_modes {
         static_auto_exposure = 0,
         auto_exposure_anti_flicker,
         auto_exposure_hybrid
@@ -114,7 +114,7 @@ namespace rsimpl
     public:
         fisheye_auto_exposure_state() :
             is_auto_exposure(true),
-            mode(static_auto_exposure),
+            mode(auto_exposure_modes::static_auto_exposure),
             rate(60),
             sample_rate(1),
             skip_frames(2)

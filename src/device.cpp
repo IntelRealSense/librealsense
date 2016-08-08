@@ -335,12 +335,10 @@ void rs_device_base::start_video_streaming()
                 if (config.callbacks[streams[i]])
                 {
                     auto frame_ref = archive->track_frame(streams[i]);
-
                     if (frame_ref)
                     {
                         frame_ref->update_frame_callback_start_ts(std::chrono::high_resolution_clock::now());
                         frame_ref->log_callback_start(capture_start_time);
-
                         on_before_callback(streams[i], frame_ref, archive);
                         (*config.callbacks[streams[i]])->on_frame(this, frame_ref);
                     }

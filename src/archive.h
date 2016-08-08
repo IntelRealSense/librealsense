@@ -49,7 +49,7 @@ namespace rsimpl
                   bpp(in_bpp),
                   format(in_format),
                   stream_type(in_stream_type),
-                  pad(in_pad){}
+                  pad(in_pad) {}
         };
 
         // Define a movable but explicitly noncopyable buffer type to hold our frame data

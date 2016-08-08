@@ -64,9 +64,9 @@ namespace rsimpl
 
             switch (options[i])
             {
-            case RS_OPTION_FISHEYE_STROBE:                            zr300::set_strobe(get_device(), static_cast<uint8_t>(values[i])); break;
-            case RS_OPTION_FISHEYE_EXT_TRIG:                          zr300::set_ext_trig(get_device(), static_cast<uint8_t>(values[i])); break;
-            case RS_OPTION_FISHEYE_EXPOSURE:                          zr300::set_exposure(get_device(), static_cast<uint8_t>(values[i])); break;
+            case RS_OPTION_FISHEYE_STROBE:                            zr300::set_fisheye_strobe(get_device(), static_cast<uint8_t>(values[i])); break;
+            case RS_OPTION_FISHEYE_EXT_TRIG:                          zr300::set_fisheye_ext_trig(get_device(), static_cast<uint8_t>(values[i])); break;
+            case RS_OPTION_FISHEYE_EXPOSURE:                          zr300::set_fisheye_exposure(get_device(), static_cast<uint8_t>(values[i])); break;
             case RS_OPTION_FISHEYE_ENABLE_AUTO_EXPOSURE:              set_auto_exposure_state(RS_OPTION_FISHEYE_ENABLE_AUTO_EXPOSURE, values[i]); break;
             case RS_OPTION_FISHEYE_AUTO_EXPOSURE_MODE:                set_auto_exposure_state(RS_OPTION_FISHEYE_AUTO_EXPOSURE_MODE, values[i]); break;
             case RS_OPTION_FISHEYE_AUTO_EXPOSURE_ANTIFLICKER_RATE:    set_auto_exposure_state(RS_OPTION_FISHEYE_AUTO_EXPOSURE_ANTIFLICKER_RATE, values[i]); break;
@@ -113,9 +113,9 @@ namespace rsimpl
             switch(options[i])
             {
 
-            case RS_OPTION_FISHEYE_STROBE:                          values[i] = zr300::get_strobe        (dev); break;
-            case RS_OPTION_FISHEYE_EXT_TRIG:                        values[i] = zr300::get_ext_trig      (dev); break;
-            case RS_OPTION_FISHEYE_EXPOSURE:                        values[i] = zr300::get_exposure      (dev); break;
+            case RS_OPTION_FISHEYE_STROBE:                          values[i] = zr300::get_fisheye_strobe        (dev); break;
+            case RS_OPTION_FISHEYE_EXT_TRIG:                        values[i] = zr300::get_fisheye_ext_trig      (dev); break;
+            case RS_OPTION_FISHEYE_EXPOSURE:                        values[i] = zr300::get_fisheye_exposure      (dev); break;
             case RS_OPTION_FISHEYE_ENABLE_AUTO_EXPOSURE:            values[i] = get_auto_exposure_state(RS_OPTION_FISHEYE_ENABLE_AUTO_EXPOSURE); break;
             case RS_OPTION_FISHEYE_AUTO_EXPOSURE_MODE:              values[i] = get_auto_exposure_state(RS_OPTION_FISHEYE_AUTO_EXPOSURE_MODE); break;
             case RS_OPTION_FISHEYE_AUTO_EXPOSURE_ANTIFLICKER_RATE:  values[i] = get_auto_exposure_state(RS_OPTION_FISHEYE_AUTO_EXPOSURE_ANTIFLICKER_RATE); break;
@@ -160,9 +160,6 @@ namespace rsimpl
 
     unsigned zr300_camera::get_auto_exposure_state(rs_option option)
     {
-        if (!supports(rs_capabilities::RS_CAPABILITIES_FISH_EYE))
-            throw std::logic_error("Option unsupported without Fisheye camera");
-
         return auto_exposure_state.get_auto_exposure_state(option);
     }
 
@@ -176,28 +173,25 @@ namespace rsimpl
 
     void zr300_camera::set_auto_exposure_state(rs_option option, double value)
     {
-        if (!supports(rs_capabilities::RS_CAPABILITIES_FISH_EYE))
-            throw std::logic_error("Option unsupported without Fisheye camera");
-
         auto auto_exposure_prev_state = auto_exposure_state.get_auto_exposure_state(RS_OPTION_FISHEYE_ENABLE_AUTO_EXPOSURE);
         auto_exposure_state.set_auto_exposure_state(option, value);
 
-        if (auto_exposure_state.get_auto_exposure_state(RS_OPTION_FISHEYE_ENABLE_AUTO_EXPOSURE))
+        if (auto_exposure_state.get_auto_exposure_state(RS_OPTION_FISHEYE_ENABLE_AUTO_EXPOSURE)) // auto_exposure current value
         {
-            if (auto_exposure_prev_state)
+            if (auto_exposure_prev_state) // auto_exposure previous value
             {
-                auto_exposure->update_auto_exposure_state(auto_exposure_state);
+                auto_exposure->update_auto_exposure_state(auto_exposure_state); // auto_exposure mode not changed
             }
             else
             {
-                to_add_frames = true;
+                to_add_frames = true; // auto_exposure moved from disable to enable
             }
         }
         else
         {
             if (auto_exposure_prev_state)
             {
-                to_add_frames = false;
+                to_add_frames = false; // auto_exposure moved from enable to disable
             }
         }
     }
@@ -216,10 +210,10 @@ namespace rsimpl
     // Power on Fisheye camera (dspwr)
     void zr300_camera::start(rs_source source)
     {
-        if ((supports(rs_capabilities::RS_CAPABILITIES_FISH_EYE)) && ((config.requests[RS_STREAM_FISHEYE].enabled)))
+        if ((supports(RS_CAPABILITIES_FISH_EYE)) && ((config.requests[RS_STREAM_FISHEYE].enabled)))
             toggle_motion_module_power(true);
 
-        if (supports(rs_capabilities::RS_CAPABILITIES_FISH_EYE))
+        if (supports(RS_CAPABILITIES_FISH_EYE))
             auto_exposure = std::make_shared<auto_exposure_mechanism>(this, auto_exposure_state);
 
         rs_device_base::start(source);
@@ -228,11 +222,11 @@ namespace rsimpl
     // Power off Fisheye camera
     void zr300_camera::stop(rs_source source)
     {
-        if ((supports(rs_capabilities::RS_CAPABILITIES_FISH_EYE)) && ((config.requests[RS_STREAM_FISHEYE].enabled)))
+        if ((supports(RS_CAPABILITIES_FISH_EYE)) && ((config.requests[RS_STREAM_FISHEYE].enabled)))
             toggle_motion_module_power(false);
 
         rs_device_base::stop(source);
-        if (supports(rs_capabilities::RS_CAPABILITIES_FISH_EYE))
+        if (supports(RS_CAPABILITIES_FISH_EYE))
             auto_exposure.reset();
     }
 
@@ -240,14 +234,14 @@ namespace rsimpl
     void zr300_camera::start_motion_tracking()
     {
         rs_device_base::start_motion_tracking();
-        if (supports(rs_capabilities::RS_CAPABILITIES_MOTION_EVENTS))
-            toggle_motion_module_events(true);        
+        if (supports(RS_CAPABILITIES_MOTION_EVENTS))
+            toggle_motion_module_events(true);
     }
 
     // Power down Motion Module
     void zr300_camera::stop_motion_tracking()
     {
-        if (supports(rs_capabilities::RS_CAPABILITIES_MOTION_EVENTS))
+        if (supports(RS_CAPABILITIES_MOTION_EVENTS))
             toggle_motion_module_events(false);
         rs_device_base::stop_motion_tracking();
     }
@@ -460,7 +454,7 @@ namespace rsimpl
         switch (option)
         {
         case RS_OPTION_FISHEYE_ENABLE_AUTO_EXPOSURE:
-            is_auto_exposure = (value == 1);
+            is_auto_exposure = (value >= 1);
             break;
         case RS_OPTION_FISHEYE_AUTO_EXPOSURE_MODE:
             mode = static_cast<auto_exposure_modes>((int)value);
@@ -605,8 +599,8 @@ namespace rsimpl
         double exp;
         auto it = std::find_if(exposure_and_frame_counter_queue.begin(), exposure_and_frame_counter_queue.end(),
             [&](const exposure_and_frame_counter& element) {
-            int diff = static_cast<int>(frame_counter - element.frame_counter);
-            if (std::abs(diff) < min)
+            int diff = std::abs(static_cast<int>(frame_counter - element.frame_counter));
+            if (diff < min)
             {
                 min = diff;
                 exp = element.exposure;
@@ -818,9 +812,9 @@ namespace rsimpl
 
         switch (state.get_auto_exposure_state(RS_OPTION_FISHEYE_AUTO_EXPOSURE_MODE))
         {
-        case static_auto_exposure:          static_increase_exposure_gain(target_exposure, target_exposure0, exposure, gain); break;
-        case auto_exposure_anti_flicker:    anti_flicker_increase_exposure_gain(target_exposure, target_exposure0, exposure, gain); break;
-        case auto_exposure_hybrid:          hybrid_increase_exposure_gain(target_exposure, target_exposure0, exposure, gain); break;
+        case int(auto_exposure_modes::static_auto_exposure):          static_increase_exposure_gain(target_exposure, target_exposure0, exposure, gain); break;
+        case int(auto_exposure_modes::auto_exposure_anti_flicker):    anti_flicker_increase_exposure_gain(target_exposure, target_exposure0, exposure, gain); break;
+        case int(auto_exposure_modes::auto_exposure_hybrid):          hybrid_increase_exposure_gain(target_exposure, target_exposure0, exposure, gain); break;
         }
     }
     void auto_exposure_algorithm::decrease_exposure_gain(const float& target_exposure, const float& target_exposure0, float& exposure, float& gain)
@@ -829,9 +823,9 @@ namespace rsimpl
 
         switch (state.get_auto_exposure_state(RS_OPTION_FISHEYE_AUTO_EXPOSURE_MODE))
         {
-        case static_auto_exposure:          static_decrease_exposure_gain(target_exposure, target_exposure0, exposure, gain); break;
-        case auto_exposure_anti_flicker:    anti_flicker_decrease_exposure_gain(target_exposure, target_exposure0, exposure, gain); break;
-        case auto_exposure_hybrid:          hybrid_decrease_exposure_gain(target_exposure, target_exposure0, exposure, gain); break;
+        case int(auto_exposure_modes::static_auto_exposure):          static_decrease_exposure_gain(target_exposure, target_exposure0, exposure, gain); break;
+        case int(auto_exposure_modes::auto_exposure_anti_flicker):    anti_flicker_decrease_exposure_gain(target_exposure, target_exposure0, exposure, gain); break;
+        case int(auto_exposure_modes::auto_exposure_hybrid):          hybrid_decrease_exposure_gain(target_exposure, target_exposure0, exposure, gain); break;
         }
     }
     void auto_exposure_algorithm::static_increase_exposure_gain(const float& target_exposure, const float& target_exposure0, float& exposure, float& gain)
