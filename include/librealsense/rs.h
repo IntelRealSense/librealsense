@@ -200,6 +200,12 @@ typedef enum rs_option
     RS_OPTION_EVENTS_QUEUE_SIZE                               = 68, /**< Number of timestamp events the library will keep internally to align images to common clock-domain with the motion events*/
     RS_OPTION_MAX_TIMESTAMP_LATENCY                           = 69, /**< Max allowed time in milliseconds for frame to wait for its timestamp event*/
     RS_OPTION_COUNT                                           = 70,
+    RS_OPTION_FISHEYE_ENABLE_AUTO_EXPOSURE                    = 76,
+    RS_OPTION_FISHEYE_AUTO_EXPOSURE_MODE                      = 77,
+    RS_OPTION_FISHEYE_AUTO_EXPOSURE_ANTIFLICKER_RATE          = 78,
+    RS_OPTION_FISHEYE_AUTO_EXPOSURE_PIXEL_SAMPLE_RATE         = 79,
+    RS_OPTION_FISHEYE_AUTO_EXPOSURE_SKIP_FRAMES               = 80,
+    RS_OPTION_COUNT                                           = 81,
     RS_OPTION_MAX_ENUM = 0x7FFFFFFF
 } rs_option;
 

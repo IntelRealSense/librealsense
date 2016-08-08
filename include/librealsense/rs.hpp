@@ -156,7 +156,16 @@ namespace rs
         r200_fisheye_ext_trig                           = 66, /**< Enables / disables fisheye external trigger mode. When enabled fisheye image will be aquired in-sync with the depth image*/
         frames_queue_size                               = 67, /**< Number of frames the user is allowed to keep per stream. Trying to hold-on to more frames will cause frame-drops.*/
         events_queue_size                               = 68, /**< Number of timestamp events the library will keep internally to align images to common clock-domain with the motion events*/
-        max_timestamp_latency                           = 69  /**< Max allowed time in milliseconds for frame to wait for its timestamp event*/
+        fisheye_color_exposure                          = 69,
+        fisheye_color_gain                              = 70,
+        fisheye_strobe                                  = 71,
+        fisheye_ext_trig                                = 72,
+        max_timestamp_latency                           = 75,
+        fisheye_color_auto_exposure                     = 76,
+        fisheye_color_auto_exposure_mode                = 77,
+        fisheye_color_auto_exposure_rate                = 78,
+        fisheye_color_auto_exposure_sample_rate         = 79,
+        fisheye_color_auto_exposure_skip_frames         = 80
     };
 
     enum class blob_type {

@@ -242,7 +242,7 @@ void rs_device_base::start_video_streaming()
     auto capture_start_time = std::chrono::high_resolution_clock::now();
     auto selected_modes = config.select_modes();
     auto archive = std::make_shared<syncronizing_archive>(selected_modes, select_key_stream(selected_modes), &max_publish_list_size, &event_queue_size, &events_timeout, capture_start_time);
-    
+
     for(auto & s : native_streams) s->archive.reset(); // Starting capture invalidates the current stream info, if any exists from previous capture
 
     // Satisfy stream_requests as necessary for each subdevice, calling set_mode and
@@ -339,6 +339,7 @@ void rs_device_base::start_video_streaming()
                     {
                         frame_ref->update_frame_callback_start_ts(std::chrono::high_resolution_clock::now());
                         frame_ref->log_callback_start(capture_start_time);
+                        on_before_callback(streams[i], frame_ref, archive);
                         (*config.callbacks[streams[i]])->on_frame(this, frame_ref);
                     }
                 }

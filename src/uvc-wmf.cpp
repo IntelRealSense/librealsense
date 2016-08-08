@@ -903,7 +903,7 @@ namespace rsimpl
         {
             auto & sub = device.subdevices[subdevice];
             sub.get_media_source();
-            if (option == RS_OPTION_COLOR_EXPOSURE || option == RS_OPTION_FISHEYE_EXPOSURE)
+            if (option == RS_OPTION_COLOR_EXPOSURE)
             {
                 check("IAMCameraControl::Set", sub.am_camera_control->Set(CameraControl_Exposure, static_cast<int>(value), CameraControl_Flags_Manual));
                 return;
@@ -954,7 +954,7 @@ namespace rsimpl
             auto & sub = device.subdevices[subdevice];
             const_cast<uvc::subdevice &>(sub).get_media_source();
             long minVal=0, maxVal=0, steppingDelta=0, defVal=0, capsFlag=0;
-            if (option == RS_OPTION_COLOR_EXPOSURE || option == RS_OPTION_FISHEYE_EXPOSURE)
+            if (option == RS_OPTION_COLOR_EXPOSURE)
             {
                 check("IAMCameraControl::Get", sub.am_camera_control->GetRange(CameraControl_Exposure, &minVal, &maxVal, &steppingDelta, &defVal, &capsFlag));
                 if (min)  *min = minVal;
@@ -1059,7 +1059,7 @@ namespace rsimpl
             // first call to get_media_source is also initializing the am_camera_control pointer, required for this method
             const_cast<uvc::subdevice &>(sub).get_media_source(); // initialize am_camera_control
             long value=0, flags=0;
-            if (option == RS_OPTION_COLOR_EXPOSURE || option == RS_OPTION_FISHEYE_EXPOSURE)
+            if (option == RS_OPTION_COLOR_EXPOSURE)
             {
                 // am_camera_control != null, because get_media_source was called at least once
                 check("IAMCameraControl::Get", sub.am_camera_control->Get(CameraControl_Exposure, &value, &flags));
