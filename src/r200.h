@@ -20,8 +20,6 @@ namespace rsimpl
     public:
         r200_camera(std::shared_ptr<uvc::device> device, const static_device_info & info);
         ~r200_camera() {};
-
-        bool supports_option(rs_option option) const override;
     };
 
     std::shared_ptr<rs_device> make_r200_device(std::shared_ptr<uvc::device> device);

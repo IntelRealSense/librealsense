@@ -26,6 +26,16 @@ struct rect
 };
 struct color { float r, g, b; };
 
+std::string find_and_replace(std::string source, std::string const& find, std::string const& replace)
+{
+    for (std::string::size_type i = 0; (i = source.find(find, i)) != std::string::npos;)
+    {
+        source.replace(i, find.length(), replace);
+        i += replace.length();
+    }
+    return source;
+}
+
 struct gui
 {
     int2 cursor, clicked_offset, scroll_vec;
@@ -34,15 +44,69 @@ struct gui
 
     gui() : scroll_vec({ 0, 0 }), click(), mouse_down(), clicked_id() {}
 
-    void label(const int2 & p, const color & c, const char * format, ...)
+    void label(const int2 & p, const color& c, const char * format, ...)
     {
         va_list args;
         va_start(args, format);
-        char buffer[1024];
+        char buffer[2048];
         vsnprintf(buffer, sizeof(buffer), format, args);
         va_end(args);
+
         glColor3f(c.r, c.g, c.b);
         draw_text(p.x, p.y, buffer);
+    }
+
+    // extended label method for option lines
+    // the purpose is to provide a little more visual context to the various options,
+    // and make config-ui interface more human friendly
+    void option_label(const int2& p, const color& c, rs::device& dev, rs::option opt, double max_width, bool enabled, double* value = nullptr)
+    {
+        auto name = find_and_replace(rs_option_to_string((rs_option)opt), "_", " "); // replacing _ with ' ' to reduce visual clutter
+        std::string s(name);
+
+        auto size = name.size(); // align the string to max. allowed width
+        while (size > 0 && stb_easy_font_width((char*)s.c_str()) > max_width)
+        {
+            s = name.substr(0, size--) + "...";
+        }
+
+        // remove option prefixes converting them to visual hints through color:
+        color newC = c;
+#define STRING_CASE(S, C) std::string S = #S; if (s.compare(0, S.length(), S) == 0) { newC = C; s = find_and_replace(s, S + " ", ""); }
+        color color1 = { 0.6f, 1.0f, 1.0f };
+        color color2 = { 1.0f, 0.6f, 1.0f };
+        color color3 = { 1.0f, 1.0f, 0.6f };
+        color color4 = { 1.0f, 0.6f, 0.6f };
+        color color5 = { 0.6f, 0.6f, 1.0f };
+        color color6 = { 0.6f, 1.0f, 0.6f };
+        STRING_CASE(ZR300, color1)
+        STRING_CASE(F200, color2)
+        STRING_CASE(SR300, color3)
+        STRING_CASE(R200, color4)
+        STRING_CASE(FISHEYE, color5)
+        STRING_CASE(COLOR, color6)
+        if (!enabled) newC = { 0.5f, 0.5f, 0.5f };
+
+        auto w = stb_easy_font_width((char*)s.c_str());
+        label(p, newC, s.c_str());
+        // if value is required, append it at the end of the string
+        if (value)
+        {
+            std::stringstream sstream;
+            sstream << ": " << *value;
+            int2 newP { p.x + w, p.y };
+            label(newP, c, sstream.str().c_str());
+        }
+
+        rect bbox { p.x - 15, p.y - 10, p.x + w + 10, p.y + 5};
+        if (bbox.contains(cursor))
+        {
+            std::string hint = dev.get_option_description(opt);
+            auto hint_w = stb_easy_font_width((char*)hint.c_str());
+            fill_rect({ cursor.x - hint_w - 7, cursor.y + 5, cursor.x + 7, cursor.y - 17 }, { 1.0f, 1.0f, 1.0f } );
+            fill_rect({ cursor.x - hint_w - 6, cursor.y + 4, cursor.x + 6, cursor.y - 16 }, { 0.0f, 0.0f, 0.0f } );
+            label({cursor.x - hint_w, cursor.y - 2}, {1.f, 1.f, 1.f}, hint.c_str());
+        }
     }
 
     void fill_rect(const rect & r, const color & c)
@@ -54,6 +118,25 @@ struct gui
         glVertex2i(r.x1, r.y1);
         glVertex2i(r.x1, r.y0);
         glEnd();
+    }
+
+    void outline_rect(const rect & r, const color & c)
+    {
+        glPushAttrib(GL_ENABLE_BIT); 
+
+        glLineStipple(1, 0xAAAA); 
+        glEnable(GL_LINE_STIPPLE);
+
+        glBegin(GL_LINE_STRIP);
+        glColor3f(c.r, c.g, c.b);
+        glVertex2i(r.x0, r.y0);
+        glVertex2i(r.x0, r.y1);
+        glVertex2i(r.x1, r.y1);
+        glVertex2i(r.x1, r.y0);
+        glVertex2i(r.x0, r.y0);
+        glEnd();
+
+        glPopAttrib();
     }
 
     bool button(const rect & r, const std::string & label)
@@ -94,7 +177,7 @@ struct gui
             p = (w - h) * (value - min) / (max - min);
         }
         const rect dragger = { int(r.x0 + p), int(r.y0), int(r.x0 + p + h), int(r.y1) };
-        if (click && dragger.contains(cursor))
+        if (click && dragger.contains(cursor) && !disable_dragger)
         {
             clicked_offset = { cursor.x - dragger.x0, cursor.y - dragger.y0 };
             clicked_id = id;
@@ -183,15 +266,6 @@ struct user_data
     gui* g = nullptr;
 };
 
-void find_and_replace(std::string& source, std::string const& find, std::string const& replace)
-{
-    for (std::string::size_type i = 0; (i = source.find(find, i)) != std::string::npos;)
-    {
-        source.replace(i, find.length(), replace);
-        i += replace.length();
-    }
-}
-
 void show_message(GLFWwindow* curr_window, const std::string& title, const std::string& message)
 {
     glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
@@ -259,7 +333,7 @@ void show_message(GLFWwindow* curr_window, const std::string& title, const std::
         {
             std::vector<std::string> str_vec;
             std::string temp_message = message;
-            find_and_replace(temp_message, "\n", " ");
+            temp_message = find_and_replace(temp_message, "\n", " ");
             size_t index = 0;
             while (index < temp_message.size())
             {
@@ -296,12 +370,7 @@ void show_message(GLFWwindow* curr_window, const std::string& title, const std::
     glfwMakeContextCurrent(curr_window);
 }
 
-void update_auto_manual_str(std::ostringstream& ss, bool is_auto)
-{
-    ss << ((is_auto) ? "Auto" : "Manual");
-}
-
-struct option { rs::option opt; double min, max, step, value, def; };
+struct option { rs::option opt; double min, max, step, value, def; bool supports; };
 bool auto_exposure = false;
 bool auto_white_balance = false;
 bool lr_auto_exposure = false;
@@ -447,7 +516,36 @@ void update_mm_data(texture_buffer* buffers, int w, int h, gui& g)
     g.indicator({ x + 100, rect_y0_pos, x + 300, rect_y1_pos }, -10, 10, m_acc_data.axes[2]);
 }
 
+double find_option_value(const std::vector<option>& options, rs::option opt)
+{
+    auto it = find_if(options.begin(), options.end(), [opt](option o) { return o.opt == opt; });
+    if (it == options.end()) return 0.0;
+    return it->value;
+}
 
+void draw_autoexposure_roi_boundary(rs::stream s, const std::vector<option>& options, rs::device* dev, gui& g, int x, int y, double w, double h)
+{
+    if ((s == rs::stream::depth || s == rs::stream::infrared) &&
+        find_option_value(options, rs::option::r200_lr_auto_exposure_enabled) > 0)
+    {
+        auto intrinsics = dev->get_stream_intrinsics(s);
+        auto width = intrinsics.width;
+        auto height = intrinsics.height;
+
+        auto left =     find_option_value(options, rs::option::r200_auto_exposure_left_edge) / width;
+        auto right =    find_option_value(options, rs::option::r200_auto_exposure_right_edge) / width;
+        auto top =      find_option_value(options, rs::option::r200_auto_exposure_top_edge) / height;
+        auto bottom =   find_option_value(options, rs::option::r200_auto_exposure_bottom_edge) / height;
+
+        left = x + left * w;
+        right = x + right * w;
+        top = y + top * h;
+        bottom = y + bottom * h;
+
+        g.outline_rect({ (int)left + 1, (int)top + 1, (int)right - 1, (int)bottom - 1 }, { 1.0f, 1.0f, 1.0f });
+        g.label({ (int) left + 4, (int) bottom - 6 }, { 1.0f, 1.0f, 1.0f }, "AE ROI");
+    }
+}
 
 int main(int argc, char * argv[])
 {
@@ -547,12 +645,16 @@ int main(int argc, char * argv[])
         for (int i = 0; i < RS_OPTION_COUNT; ++i)
         {
             option o = { (rs::option)i };
-            if (!dev->supports_option(o.opt)) continue;
-            dev->get_option_range(o.opt, o.min, o.max, o.step, o.def);
-            if (o.min == o.max) continue;
-            try { o.value = dev->get_option(o.opt); }
+            try { 
+                o.supports = dev->supports_option(o.opt);
+                if (o.supports) 
+                {
+                    dev->get_option_range(o.opt, o.min, o.max, o.step, o.def);
+                    o.value = dev->get_option(o.opt);
+                }
+                options.push_back(o);
+            }
             catch (...) {}
-            options.push_back(o);
         }
     }
     catch (const rs::error & e)
@@ -662,57 +764,12 @@ int main(int argc, char * argv[])
                     }
                 }
 
-
-                for (auto & o : options)
-                {
-                    bool disable_dragger = false;
-                    std::ostringstream ss;
-                    ss << o.opt << ": ";
-
-                    if ((o.opt == rs::option::color_enable_auto_exposure))
-                    {
-                        auto_exposure = (o.value == 1);
-                        update_auto_manual_str(ss, auto_exposure);
-                    }
-                    else if ((o.opt == rs::option::color_enable_auto_white_balance))
-                    {
-                        auto_white_balance = (o.value == 1);
-                        update_auto_manual_str(ss, auto_white_balance);
-                    }
-                    else if ((o.opt == rs::option::r200_lr_auto_exposure_enabled))
-                    {
-                        lr_auto_exposure = (o.value == 1);
-                        update_auto_manual_str(ss, lr_auto_exposure);
-                    }
-                    else
-                        ss << o.value;
-
-
-                    g.label({ w - 260, y + 12 }, { 1, 1, 1 }, ss.str().c_str());
-
-                    if (g.slider((int)o.opt + 1, { w - 260, y + 16, w - 20, y + 36 }, o.min, o.max, o.step, o.value, disable_dragger))
-                    {
-                        dev->set_option(o.opt, o.value);
-                        update_auto_option(o.opt, options);
-                    }
-                    y += 38;
-                }
-
-                g.label({ w - 260, y + 12 }, { 1, 1, 1 }, "Depth control parameters preset: %g", dc_preset);
-                if (g.slider(100, { w - 260, y + 16, w - 20, y + 36 }, 0, 5, 1, dc_preset)) rs_apply_depth_control_preset((rs_device *)dev, static_cast<int>(dc_preset));
-                y += 38;
-                g.label({ w - 260, y + 12 }, { 1, 1, 1 }, "IVCAM options preset: %g", iv_preset);
-                if (g.slider(101, { w - 260, y + 16, w - 20, y + 36 }, 0, 10, 1, iv_preset)) rs_apply_ivcam_preset((rs_device *)dev, static_cast<rs_ivcam_preset>((int)iv_preset));
-                y += 38;
-
-                panel_height = y + 10 + offset;
-
                 if (dev->is_streaming() || dev->is_motion_tracking_active())
                 {
-                    w += (has_motion_module ? 150 : -280);
+                    auto new_w = w + (has_motion_module ? 150 : -280);
 
                     int scale_factor = (has_motion_module ? 3 : 2);
-                    int fWidth = w / scale_factor;
+                    int fWidth = new_w / scale_factor;
                     int fHeight = h / scale_factor;
 
                     static struct position { int rx, ry, rw, rh; } pos_vec[5];
@@ -737,14 +794,68 @@ int main(int argc, char * argv[])
                         }
 
                         buffers[i].show((rs::stream)i, format[i], fps[i], frame_number[i], frame_timestamp[i], pos_vec[i].rx, pos_vec[i].ry, pos_vec[i].rw, pos_vec[i].rh, resolutions[(rs::stream)i].width, resolutions[(rs::stream)i].height);
+
+                        draw_autoexposure_roi_boundary((rs::stream)i, options, dev, g, pos_vec[i].rx, pos_vec[i].ry, fWidth, fHeight);
                     }
 
                     if (has_motion_module && motion_tracking_enable)
                     {
                         std::lock_guard<std::mutex> lock(mm_mutex);
-                        update_mm_data(buffers, w, h, g);
+                        update_mm_data(buffers, new_w, h, g);
                     }
                 }
+
+                for (auto & o : options)
+                {
+                    if (!dev->supports_option(o.opt)) 
+                    {
+                        o.supports = false;
+                        continue;
+                    }
+                    if (!o.supports)
+                    {
+                        try { 
+                            dev->get_option_range(o.opt, o.min, o.max, o.step, o.def);
+                            o.value = dev->get_option(o.opt);
+                        }
+                        catch (...) {}
+                    }
+
+                    auto is_checkbox = (o.min == 0) && (o.max == 1) && (o.step == 1);
+                    auto is_checked = o.value > 0;
+
+                    if (is_checkbox ? 
+                            g.checkbox({ w - 260, y + 10, w - 240, y + 30 }, is_checked) :
+                            g.slider((int)o.opt + 1, { w - 260, y + 16, w - 20, y + 36 }, o.min, o.max, o.step, o.value))
+                    {
+                        if (is_checkbox) dev->set_option(o.opt, is_checked ? 1 : 0);
+                        else dev->set_option(o.opt, o.value);
+
+                        update_auto_option(o.opt, options);
+
+                        o.value = dev->get_option(o.opt);
+                        
+                        for (auto& o : options) // refresh options
+                        {
+                            if (!dev->supports_option(o.opt)) continue;
+                            dev->get_option_range(o.opt, o.min, o.max, o.step, o.def);
+                        }
+                    }
+
+                    if (is_checkbox) g.option_label({ w - 230, y + 24 }, { 1, 1, 1 }, *dev, o.opt, 210, true);
+                    else g.option_label({ w - 260, y + 12 }, { 1, 1, 1 }, *dev, o.opt, 240, true, &o.value);
+
+                    y += 38;
+                }
+
+                g.label({ w - 260, y + 12 }, { 1, 1, 1 }, "Depth control parameters preset: %g", dc_preset);
+                if (g.slider(100, { w - 260, y + 16, w - 20, y + 36 }, 0, 5, 1, dc_preset)) rs_apply_depth_control_preset((rs_device *)dev, static_cast<int>(dc_preset));
+                y += 38;
+                g.label({ w - 260, y + 12 }, { 1, 1, 1 }, "IVCAM options preset: %g", iv_preset);
+                if (g.slider(101, { w - 260, y + 16, w - 20, y + 36 }, 0, 10, 1, iv_preset)) rs_apply_ivcam_preset((rs_device *)dev, static_cast<rs_ivcam_preset>((int)iv_preset));
+                y += 38;
+
+                panel_height = y + 10 + offset;
 
                 glfwSwapBuffers(win);
                 g.scroll_vec = { 0, 0 };

@@ -53,6 +53,7 @@ EXPORTS
     rs_reset_device_options_to_default
     rs_get_device_option
     rs_set_device_option
+    rs_get_device_option_description
 
     rs_wait_for_frames
     rs_poll_for_frames

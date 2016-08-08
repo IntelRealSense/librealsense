@@ -97,6 +97,7 @@ struct rs_device
     virtual void                            get_option_range(rs_option option, double & min, double & max, double & step, double & def) = 0;
     virtual void                            set_options(const rs_option options[], size_t count, const double values[]) = 0;
     virtual void                            get_options(const rs_option options[], size_t count, double values[]) = 0;
+    virtual const char *                    get_option_description(rs_option option) const = 0;
 
     virtual void                            release_frame(rs_frame_ref * ref) = 0;
     virtual rs_frame_ref *                  clone_frame(rs_frame_ref * frame) = 0;

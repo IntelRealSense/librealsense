@@ -129,88 +129,80 @@ typedef enum rs_ivcam_preset
 
 typedef enum rs_option
 {
-    RS_OPTION_COLOR_BACKLIGHT_COMPENSATION                    = 0,
-    RS_OPTION_COLOR_BRIGHTNESS                                = 1,
-    RS_OPTION_COLOR_CONTRAST                                  = 2,
-    RS_OPTION_COLOR_EXPOSURE                                  = 3,  /**< Controls exposure time of color camera. Setting any value will disable auto exposure. */
-    RS_OPTION_COLOR_GAIN                                      = 4,
-    RS_OPTION_COLOR_GAMMA                                     = 5,
-    RS_OPTION_COLOR_HUE                                       = 6,
-    RS_OPTION_COLOR_SATURATION                                = 7,
-    RS_OPTION_COLOR_SHARPNESS                                 = 8,
-    RS_OPTION_COLOR_WHITE_BALANCE                             = 9,  /**< Controls white balance of color image. Setting any value will disable auto white balance. */
-    RS_OPTION_COLOR_ENABLE_AUTO_EXPOSURE                      = 10, /**< Set to 1 to enable automatic exposure control, or 0 to return to manual control */
-    RS_OPTION_COLOR_ENABLE_AUTO_WHITE_BALANCE                 = 11, /**< Set to 1 to enable automatic white balance control, or 0 to return to manual control */
-    RS_OPTION_F200_LASER_POWER                                = 12, /**< 0 - 15 */
-    RS_OPTION_F200_ACCURACY                                   = 13, /**< 0 - 3 */
-    RS_OPTION_F200_MOTION_RANGE                               = 14, /**< 0 - 100 */
-    RS_OPTION_F200_FILTER_OPTION                              = 15, /**< 0 - 7 */
-    RS_OPTION_F200_CONFIDENCE_THRESHOLD                       = 16, /**< 0 - 15 */
-    RS_OPTION_F200_DYNAMIC_FPS                                = 17, /**< {2, 5, 15, 30, 60} */
-    RS_OPTION_SR300_AUTO_RANGE_ENABLE_MOTION_VERSUS_RANGE     = 18,
-    RS_OPTION_SR300_AUTO_RANGE_ENABLE_LASER                   = 19,
-    RS_OPTION_SR300_AUTO_RANGE_MIN_MOTION_VERSUS_RANGE        = 20,
-    RS_OPTION_SR300_AUTO_RANGE_MAX_MOTION_VERSUS_RANGE        = 21,
-    RS_OPTION_SR300_AUTO_RANGE_START_MOTION_VERSUS_RANGE      = 22,
-    RS_OPTION_SR300_AUTO_RANGE_MIN_LASER                      = 23,
-    RS_OPTION_SR300_AUTO_RANGE_MAX_LASER                      = 24,
-    RS_OPTION_SR300_AUTO_RANGE_START_LASER                    = 25,
-    RS_OPTION_SR300_AUTO_RANGE_UPPER_THRESHOLD                = 26,
-    RS_OPTION_SR300_AUTO_RANGE_LOWER_THRESHOLD                = 27,
-    RS_OPTION_SR300_WAKEUP_DEV_PHASE1_PERIOD                  = 28,
-    RS_OPTION_SR300_WAKEUP_DEV_PHASE1_FPS                     = 29,
-    RS_OPTION_SR300_WAKEUP_DEV_PHASE2_PERIOD                  = 30,
-    RS_OPTION_SR300_WAKEUP_DEV_PHASE2_FPS                     = 31,
-    RS_OPTION_SR300_WAKEUP_DEV_RESET                          = 32,
-    RS_OPTION_SR300_WAKE_ON_USB_REASON                        = 33,
-    RS_OPTION_SR300_WAKE_ON_USB_CONFIDENCE                    = 34,
-    RS_OPTION_R200_LR_AUTO_EXPOSURE_ENABLED                   = 35, /**< {0, 1} */
-    RS_OPTION_R200_LR_GAIN                                    = 36, /**< 100 - 1600 (Units of 0.01) */
-    RS_OPTION_R200_LR_EXPOSURE                                = 37, /**< > 0 (Units of 0.1 ms) */
-    RS_OPTION_R200_EMITTER_ENABLED                            = 38, /**< {0, 1} */
-    RS_OPTION_R200_DEPTH_UNITS                                = 39, /**< micrometers per increment in integer depth values, 1000 is default (mm scale) */
-    RS_OPTION_R200_DEPTH_CLAMP_MIN                            = 40, /**< {0 - USHORT_MAX}. Can only be set before streaming starts. */
-    RS_OPTION_R200_DEPTH_CLAMP_MAX                            = 41, /**< {0 - USHORT_MAX}. Can only be set before streaming starts. */
-    RS_OPTION_R200_DISPARITY_MULTIPLIER                       = 42, /**< {0 - 1000}. The increments in integer disparity values corresponding to one pixel of disparity. Can only be set before streaming starts. */
-    RS_OPTION_R200_DISPARITY_SHIFT                            = 43, /**< {0 - 512}. Can only be set before streaming starts. */
-    RS_OPTION_R200_AUTO_EXPOSURE_MEAN_INTENSITY_SET_POINT     = 44,
-    RS_OPTION_R200_AUTO_EXPOSURE_BRIGHT_RATIO_SET_POINT       = 45,
-    RS_OPTION_R200_AUTO_EXPOSURE_KP_GAIN                      = 46,
-    RS_OPTION_R200_AUTO_EXPOSURE_KP_EXPOSURE                  = 47,
-    RS_OPTION_R200_AUTO_EXPOSURE_KP_DARK_THRESHOLD            = 48,
-    RS_OPTION_R200_AUTO_EXPOSURE_TOP_EDGE                     = 49,
-    RS_OPTION_R200_AUTO_EXPOSURE_BOTTOM_EDGE                  = 50,
-    RS_OPTION_R200_AUTO_EXPOSURE_LEFT_EDGE                    = 51,
-    RS_OPTION_R200_AUTO_EXPOSURE_RIGHT_EDGE                   = 52,
-    RS_OPTION_R200_DEPTH_CONTROL_ESTIMATE_MEDIAN_DECREMENT    = 53,
-    RS_OPTION_R200_DEPTH_CONTROL_ESTIMATE_MEDIAN_INCREMENT    = 54,
-    RS_OPTION_R200_DEPTH_CONTROL_MEDIAN_THRESHOLD             = 55,
-    RS_OPTION_R200_DEPTH_CONTROL_SCORE_MINIMUM_THRESHOLD      = 56,
-    RS_OPTION_R200_DEPTH_CONTROL_SCORE_MAXIMUM_THRESHOLD      = 57,
-    RS_OPTION_R200_DEPTH_CONTROL_TEXTURE_COUNT_THRESHOLD      = 58,
-    RS_OPTION_R200_DEPTH_CONTROL_TEXTURE_DIFFERENCE_THRESHOLD = 59,
-    RS_OPTION_R200_DEPTH_CONTROL_SECOND_PEAK_THRESHOLD        = 60,
-    RS_OPTION_R200_DEPTH_CONTROL_NEIGHBOR_THRESHOLD           = 61,
-    RS_OPTION_R200_DEPTH_CONTROL_LR_THRESHOLD                 = 62,
-    RS_OPTION_ZR300_GYRO_BANDWIDTH                            = 63,
-    RS_OPTION_ZR300_GYRO_RANGE                                = 64,
-    RS_OPTION_ZR300_ACCELEROMETER_BANDWIDTH                   = 65,
-    RS_OPTION_ZR300_ACCELEROMETER_RANGE                       = 66,
-    RS_OPTION_ZR300_MOTION_MODULE_TIME_SEED                   = 67,
-    RS_OPTION_ZR300_MOTION_MODULE_ACTIVE                      = 68,
-    RS_OPTION_FISHEYE_EXPOSURE                                = 69,
-    RS_OPTION_FISHEYE_GAIN                                    = 70,
-    RS_OPTION_FISHEYE_STROBE                                  = 71,
-    RS_OPTION_FISHEYE_EXT_TRIG                                = 72,
-    RS_OPTION_FRAMES_QUEUE_SIZE                               = 73,
-    RS_OPTION_EVENTS_QUEUE_SIZE                               = 74,
-    RS_OPTION_MAX_TIMESTAMP_LATENCY                           = 75,
-    RS_OPTION_FISHEYE_ENABLE_AUTO_EXPOSURE                    = 76,
-    RS_OPTION_FISHEYE_AUTO_EXPOSURE_MODE                      = 77,
-    RS_OPTION_FISHEYE_AUTO_EXPOSURE_ANTIFLICKER_RATE          = 78,
-    RS_OPTION_FISHEYE_AUTO_EXPOSURE_PIXEL_SAMPLE_RATE         = 79,
-    RS_OPTION_FISHEYE_AUTO_EXPOSURE_SKIP_FRAMES               = 80,
-    RS_OPTION_COUNT                                           = 81,
+    RS_OPTION_COLOR_BACKLIGHT_COMPENSATION                    = 0,  /**< Enable / disable color backlight compensation*/
+    RS_OPTION_COLOR_BRIGHTNESS                                = 1,  /**< Color image brightness*/
+    RS_OPTION_COLOR_CONTRAST                                  = 2,  /**< Color image contrast*/
+    RS_OPTION_COLOR_EXPOSURE                                  = 3,  /**< Controls exposure time of color camera. Setting any value will disable auto exposure*/
+    RS_OPTION_COLOR_GAIN                                      = 4,  /**< Color image gain*/
+    RS_OPTION_COLOR_GAMMA                                     = 5,  /**< Color image gamma setting*/
+    RS_OPTION_COLOR_HUE                                       = 6,  /**< Color image hue*/
+    RS_OPTION_COLOR_SATURATION                                = 7,  /**< Color image saturation setting*/
+    RS_OPTION_COLOR_SHARPNESS                                 = 8,  /**< Color image sharpness setting*/
+    RS_OPTION_COLOR_WHITE_BALANCE                             = 9,  /**< Controls white balance of color image. Setting any value will disable auto white balance*/
+    RS_OPTION_COLOR_ENABLE_AUTO_EXPOSURE                      = 10, /**< Enable / disable color image auto-exposure*/
+    RS_OPTION_COLOR_ENABLE_AUTO_WHITE_BALANCE                 = 11, /**< Enable / disable color image auto-white-balance*/
+    RS_OPTION_F200_LASER_POWER                                = 12, /**< Power of the F200 / SR300 projector, with 0 meaning projector off*/
+    RS_OPTION_F200_ACCURACY                                   = 13, /**< Set the number of patterns projected per frame. The higher the accuracy value the more patterns projected. Increasing the number of patterns help to achieve better accuracy. Note that this control is affecting the Depth FPS */
+    RS_OPTION_F200_MOTION_RANGE                               = 14, /**< Motion vs. Range trade-off, with lower values allowing for better motion sensitivity and higher values allowing for better depth range*/
+    RS_OPTION_F200_FILTER_OPTION                              = 15, /**< Set the filter to apply to each depth frame. Each one of the filter is optimized per the application requirements*/
+    RS_OPTION_F200_CONFIDENCE_THRESHOLD                       = 16, /**< The confidence level threshold used by the Depth algorithm pipe to set whether a pixel will get a valid range or will be marked with invalid range*/
+    RS_OPTION_F200_DYNAMIC_FPS                                = 17, /**< (F200-only) Allows to reduce FPS without restarting streaming. Valid values are {2, 5, 15, 30, 60}*/
+    RS_OPTION_SR300_AUTO_RANGE_ENABLE_MOTION_VERSUS_RANGE     = 18, /**< Configures SR300 Depth Auto-Range setting. Should not be used directly but through set IVCAM preset method*/
+    RS_OPTION_SR300_AUTO_RANGE_ENABLE_LASER                   = 19, /**< Configures SR300 Depth Auto-Range setting. Should not be used directly but through set IVCAM preset method*/
+    RS_OPTION_SR300_AUTO_RANGE_MIN_MOTION_VERSUS_RANGE        = 20, /**< Configures SR300 Depth Auto-Range setting. Should not be used directly but through set IVCAM preset method*/
+    RS_OPTION_SR300_AUTO_RANGE_MAX_MOTION_VERSUS_RANGE        = 21, /**< Configures SR300 Depth Auto-Range setting. Should not be used directly but through set IVCAM preset method*/
+    RS_OPTION_SR300_AUTO_RANGE_START_MOTION_VERSUS_RANGE      = 22, /**< Configures SR300 Depth Auto-Range setting. Should not be used directly but through set IVCAM preset method*/
+    RS_OPTION_SR300_AUTO_RANGE_MIN_LASER                      = 23, /**< Configures SR300 Depth Auto-Range setting. Should not be used directly but through set IVCAM preset method*/
+    RS_OPTION_SR300_AUTO_RANGE_MAX_LASER                      = 24, /**< Configures SR300 Depth Auto-Range setting. Should not be used directly but through set IVCAM preset method*/
+    RS_OPTION_SR300_AUTO_RANGE_START_LASER                    = 25, /**< Configures SR300 Depth Auto-Range setting. Should not be used directly but through set IVCAM preset method*/
+    RS_OPTION_SR300_AUTO_RANGE_UPPER_THRESHOLD                = 26, /**< Configures SR300 Depth Auto-Range setting. Should not be used directly but through set IVCAM preset method*/
+    RS_OPTION_SR300_AUTO_RANGE_LOWER_THRESHOLD                = 27, /**< Configures SR300 Depth Auto-Range setting. Should not be used directly but through set IVCAM preset method*/
+    RS_OPTION_SR300_WAKEUP_DEV_PHASE1_PERIOD                  = 28, /**< Configures period for the first phase of the wake-up device SR300 mode*/
+    RS_OPTION_SR300_WAKEUP_DEV_PHASE1_FPS                     = 29, /**< Configures FPS for the first phase of the wake-up device SR300 mode*/
+    RS_OPTION_SR300_WAKEUP_DEV_PHASE2_PERIOD                  = 30, /**< Configures period for the second phase of the wake-up device SR300 mode*/
+    RS_OPTION_SR300_WAKEUP_DEV_PHASE2_FPS                     = 31, /**< Configures FPS for the second phase of the wake-up device SR300 mode*/
+    RS_OPTION_SR300_WAKEUP_DEV_RESET                          = 32, /**< Disables SR300 wakeup device mode.*/
+    RS_OPTION_SR300_WAKE_ON_USB_REASON                        = 33, /**< Gets the reason for last registered wakeup event*/
+    RS_OPTION_SR300_WAKE_ON_USB_CONFIDENCE                    = 34, /**< Gets wakeup reason confidence (0-100)*/
+    RS_OPTION_R200_LR_AUTO_EXPOSURE_ENABLED                   = 35, /**< Enables / disables R200 auto-exposure. This will affect both IR and depth image.*/
+    RS_OPTION_R200_LR_GAIN                                    = 36, /**< IR image gain*/
+    RS_OPTION_R200_LR_EXPOSURE                                = 37, /**< This control allows manual adjustment of the exposure time value for the L/R imagers*/
+    RS_OPTION_R200_EMITTER_ENABLED                            = 38, /**< Enables / disables R200 emitter*/
+    RS_OPTION_R200_DEPTH_UNITS                                = 39, /**< Micrometers per increment in integer depth values, 1000 is default (mm scale). Set before streaming*/
+    RS_OPTION_R200_DEPTH_CLAMP_MIN                            = 40, /**< Minimum depth in current depth units that will be output. Any values less than ‘Min Depth’ will be mapped to 0 during the conversion between disparity and depth. Set before streaming*/
+    RS_OPTION_R200_DEPTH_CLAMP_MAX                            = 41, /**< Maximum depth in current depth units that will be output. Any values greater than ‘Max Depth’ will be mapped to 0 during the conversion between disparity and depth. Set before streaming*/
+    RS_OPTION_R200_DISPARITY_MULTIPLIER                       = 42, /**< The disparity scale factor used when in disparity output mode. Can only be set before streaming*/
+    RS_OPTION_R200_DISPARITY_SHIFT                            = 43, /**< {0 - 512}. Can only be set before streaming starts*/
+    RS_OPTION_R200_AUTO_EXPOSURE_MEAN_INTENSITY_SET_POINT     = 44, /**< (Requires LR-Auto-Exposure ON) Mean intensity set point*/
+    RS_OPTION_R200_AUTO_EXPOSURE_BRIGHT_RATIO_SET_POINT       = 45, /**< (Requires LR-Auto-Exposure ON) Bright ratio set point*/
+    RS_OPTION_R200_AUTO_EXPOSURE_KP_GAIN                      = 46, /**< (Requires LR-Auto-Exposure ON) Kp Gain*/
+    RS_OPTION_R200_AUTO_EXPOSURE_KP_EXPOSURE                  = 47, /**< (Requires LR-Auto-Exposure ON) Kp Exposure*/
+    RS_OPTION_R200_AUTO_EXPOSURE_KP_DARK_THRESHOLD            = 48, /**< (Requires LR-Auto-Exposure ON) Kp Dark Threshold*/
+    RS_OPTION_R200_AUTO_EXPOSURE_TOP_EDGE                     = 49, /**< (Requires LR-Auto-Exposure ON) Auto-Exposure region-of-interest top edge (in pixels)*/
+    RS_OPTION_R200_AUTO_EXPOSURE_BOTTOM_EDGE                  = 50, /**< (Requires LR-Auto-Exposure ON) Auto-Exposure region-of-interest bottom edge (in pixels)*/
+    RS_OPTION_R200_AUTO_EXPOSURE_LEFT_EDGE                    = 51, /**< (Requires LR-Auto-Exposure ON) Auto-Exposure region-of-interest left edge (in pixels)*/
+    RS_OPTION_R200_AUTO_EXPOSURE_RIGHT_EDGE                   = 52, /**< (Requires LR-Auto-Exposure ON) Auto-Exposure region-of-interest right edge (in pixels)*/
+    RS_OPTION_R200_DEPTH_CONTROL_ESTIMATE_MEDIAN_DECREMENT    = 53, /**< Value to subtract when estimating the median of the correlation surface*/
+    RS_OPTION_R200_DEPTH_CONTROL_ESTIMATE_MEDIAN_INCREMENT    = 54, /**< Value to add when estimating the median of the correlation surface*/
+    RS_OPTION_R200_DEPTH_CONTROL_MEDIAN_THRESHOLD             = 55, /**< A threshold by how much the winning score must beat the median*/
+    RS_OPTION_R200_DEPTH_CONTROL_SCORE_MINIMUM_THRESHOLD      = 56, /**< The minimum correlation score that is considered acceptable*/
+    RS_OPTION_R200_DEPTH_CONTROL_SCORE_MAXIMUM_THRESHOLD      = 57, /**< The maximum correlation score that is considered acceptable*/
+    RS_OPTION_R200_DEPTH_CONTROL_TEXTURE_COUNT_THRESHOLD      = 58, /**< A parameter for determining whether the texture in the region is sufficient to justify a depth result*/
+    RS_OPTION_R200_DEPTH_CONTROL_TEXTURE_DIFFERENCE_THRESHOLD = 59, /**< A parameter for determining whether the texture in the region is sufficient to justify a depth result*/
+    RS_OPTION_R200_DEPTH_CONTROL_SECOND_PEAK_THRESHOLD        = 60, /**< A threshold on how much the minimum correlation score must differ from the next best score*/
+    RS_OPTION_R200_DEPTH_CONTROL_NEIGHBOR_THRESHOLD           = 61, /**< Neighbor threshold value for depth calculation*/
+    RS_OPTION_R200_DEPTH_CONTROL_LR_THRESHOLD                 = 62, /**< Left-Right threshold value for depth calculation*/
+    RS_OPTION_FISHEYE_EXPOSURE                                = 63, /**< Fisheye image exposure time in msec*/
+    RS_OPTION_FISHEYE_GAIN                                    = 64, /**< Fisheye image gain*/
+    RS_OPTION_FISHEYE_STROBE                                  = 65, /**< Enables / disables fisheye strobe. When enabled this will align timestamps to common clock-domain with the motion events*/
+    RS_OPTION_FISHEYE_EXT_TRIG                                = 66, /**< Enables / disables fisheye external trigger mode. When enabled fisheye image will be aquired in-sync with the depth image*/
+    RS_OPTION_FISHEYE_ENABLE_AUTO_EXPOSURE                    = 67, /**< Enable / disable fisheye auto-exposure */
+    RS_OPTION_FISHEYE_AUTO_EXPOSURE_MODE                      = 68, /**< 0 - static auto-exposure, 1 - anti-flicker auto-exposure, 2 - hybrid */
+    RS_OPTION_FISHEYE_AUTO_EXPOSURE_ANTIFLICKER_RATE          = 69, /**< Fisheye auto-exposure anti-flicker rate, can be 50 or 60 Hz */
+    RS_OPTION_FISHEYE_AUTO_EXPOSURE_PIXEL_SAMPLE_RATE         = 70, /**< In Fisheye auto-exposure sample frame every given number of pixels */
+    RS_OPTION_FISHEYE_AUTO_EXPOSURE_SKIP_FRAMES               = 71, /**< In Fisheye auto-exposure sample every given number of frames */
+    RS_OPTION_FRAMES_QUEUE_SIZE                               = 72, /**< Number of frames the user is allowed to keep per stream. Trying to hold-on to more frames will cause frame-drops.*/
+    RS_OPTION_COUNT                                           = 73,
     RS_OPTION_MAX_ENUM = 0x7FFFFFFF
 } rs_option;
 
@@ -647,6 +639,16 @@ void rs_reset_device_options_to_default(rs_device * device, const rs_option* opt
  * \return            the value of the option
  */
 double rs_get_device_option(rs_device * device, rs_option option, rs_error ** error);
+
+
+/**
+ * retrieve a static description of what a particular option does on given device
+ * \param[in] option  the option whose description should be retrieved
+ * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+ * \return            the value of the option
+ */
+const char * rs_get_device_option_description(rs_device * device, rs_option option, rs_error ** error);
+
 
 /**
  * set the current value of a single option
