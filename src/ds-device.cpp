@@ -241,8 +241,6 @@ namespace rsimpl
 
     void ds_device::on_before_start(const std::vector<subdevice_mode_selection> & selected_modes)
     {
-
-
         rs_option depth_units_option = RS_OPTION_R200_DEPTH_UNITS;
         double depth_units;
 

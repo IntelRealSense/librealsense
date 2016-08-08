@@ -109,8 +109,8 @@ TEST_CASE("ZR300 devices support all required options", "[live] [DS-device]")
                 RS_OPTION_ZR300_ACCELEROMETER_RANGE,
                 RS_OPTION_ZR300_MOTION_MODULE_TIME_SEED,
                 RS_OPTION_ZR300_MOTION_MODULE_ACTIVE,
-                RS_OPTION_FISHEYE_COLOR_EXPOSURE,
-                RS_OPTION_FISHEYE_COLOR_GAIN,
+                RS_OPTION_FISHEYE_EXPOSURE,
+                RS_OPTION_FISHEYE_GAIN,
                 RS_OPTION_FISHEYE_STROBE,
                 RS_OPTION_FISHEYE_EXT_TRIG
             };

@@ -42,6 +42,7 @@ namespace rsimpl
             iffley                     = 2,
             fisheye_xu_ext_trig        = 2,
             stream_intent              = 3,
+            fisheye_exposure           = 3,
             depth_units                = 4,
             min_max                    = 5,
             disparity                  = 6,
@@ -226,10 +227,12 @@ namespace rsimpl
         // Claim USB interface used for motion module device
         void claim_motion_module_interface(uvc::device & device);
 
-        uint8_t get_strobe(const uvc::device & device);
-        void set_strobe(uvc::device & device, uint8_t strobe);
-        uint8_t get_ext_trig(const uvc::device & device);
-        void set_ext_trig(uvc::device & device, uint8_t ext_trig);
+        uint8_t get_fisheye_strobe(const uvc::device & device);
+        void set_fisheye_strobe(uvc::device & device, uint8_t strobe);
+        uint8_t get_fisheye_ext_trig(const uvc::device & device);
+        void set_fisheye_ext_trig(uvc::device & device, uint8_t ext_trig);
+        uint16_t get_fisheye_exposure(const uvc::device & device);
+        void set_fisheye_exposure(uvc::device & device, uint16_t exposure);
 
     }
 }

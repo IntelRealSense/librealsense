@@ -68,7 +68,6 @@ namespace rsimpl
     {
         struct motion_module_parser;
     }
-    
 }
 
 struct rs_device_base : rs_device
@@ -105,11 +104,12 @@ protected:
     virtual void                                stop_motion_tracking();
 
     virtual void                                disable_auto_option(int subdevice, rs_option auto_opt);
+    virtual void                                on_before_callback(rs_stream, rs_frame_ref *, std::shared_ptr<rsimpl::frame_archive>) { }
 
     bool                                        motion_module_ready = false;
 public:
-                                                rs_device_base(std::shared_ptr<rsimpl::uvc::device> device, const rsimpl::static_device_info & info);
-                                                virtual ~rs_device_base();
+    rs_device_base(std::shared_ptr<rsimpl::uvc::device> device, const rsimpl::static_device_info & info);
+    virtual ~rs_device_base();
 
     const rsimpl::stream_interface &            get_stream_interface(rs_stream stream) const override { return *streams[stream]; }
 
@@ -141,10 +141,10 @@ public:
 
     bool                                        is_capturing() const override { return capturing; }
     int                                         is_motion_tracking_active() const override { return data_acquisition_active; }
-    
+
     void                                        wait_all_streams() override;
     bool                                        poll_all_streams() override;
-    
+
     virtual bool                                supports(rs_capabilities capability) const override;
 
     virtual bool                                supports_option(rs_option option) const override;
