@@ -133,4 +133,11 @@ struct rs_timestamp_callback
     virtual                                 ~rs_timestamp_callback() {}
 };
 
+struct rs_log_callback
+{
+    virtual void                            on_event(rs_log_severity severity, const char * message) = 0;
+    virtual void                            release() = 0;
+    virtual                                 ~rs_log_callback() {}
+};
+
 #endif
