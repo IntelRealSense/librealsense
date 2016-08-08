@@ -251,24 +251,6 @@ namespace rsimpl
         return intrinsic;
     }
 
-    bool zr300_camera::supports_option(rs_option option) const
-    {
-        std::vector<rs_option> auto_exposure_options = { 
-            RS_OPTION_R200_AUTO_EXPOSURE_KP_EXPOSURE,
-            RS_OPTION_R200_AUTO_EXPOSURE_KP_GAIN,
-            RS_OPTION_R200_AUTO_EXPOSURE_KP_DARK_THRESHOLD,
-            RS_OPTION_R200_AUTO_EXPOSURE_BRIGHT_RATIO_SET_POINT,
-            RS_OPTION_R200_AUTO_EXPOSURE_MEAN_INTENSITY_SET_POINT
-        };
-
-        if (std::find(auto_exposure_options.begin(), auto_exposure_options.end(), option) != auto_exposure_options.end())
-        {
-            return false; // temporarily disabling non-functioning options on the ZR300
-        }
-
-        return ds_device::supports_option(option);
-    }
-
     std::shared_ptr<rs_device> make_zr300_device(std::shared_ptr<uvc::device> device)
     {
         LOG_INFO("Connecting to Intel RealSense ZR300");

@@ -60,6 +60,8 @@ TEST_CASE("ZR300 devices support all required options", "[live] [DS-device]")
         rs_device * dev = rs_get_device(ctx, 0, require_no_error());
         REQUIRE(dev != nullptr);
 
+        rs_set_device_option(dev, RS_OPTION_R200_LR_AUTO_EXPOSURE_ENABLED, 1.0, require_no_error());
+
         SECTION("ZR300 supports DS-Line standard UVC controls and ZR300 Motion Module controls, and nothing else")
         {
             const int supported_options[] = {
