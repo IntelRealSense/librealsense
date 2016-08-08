@@ -180,7 +180,8 @@ namespace rsimpl
         {
             if (auto_exposure_prev_state) // auto_exposure previous value
             {
-                auto_exposure->update_auto_exposure_state(auto_exposure_state); // auto_exposure mode not changed
+                if (auto_exposure)
+                    auto_exposure->update_auto_exposure_state(auto_exposure_state); // auto_exposure mode not changed
             }
             else
             {
