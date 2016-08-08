@@ -173,11 +173,11 @@ typedef enum rs_option
     RS_OPTION_R200_DEPTH_CLAMP_MAX                            = 41, /**< Maximum depth in current depth units that will be output. Any values greater than ‘Max Depth’ will be mapped to 0 during the conversion between disparity and depth. Set before streaming*/
     RS_OPTION_R200_DISPARITY_MULTIPLIER                       = 42, /**< The disparity scale factor used when in disparity output mode. Can only be set before streaming*/
     RS_OPTION_R200_DISPARITY_SHIFT                            = 43, /**< {0 - 512}. Can only be set before streaming starts*/
-    RS_OPTION_R200_AUTO_EXPOSURE_MEAN_INTENSITY_SET_POINT     = 44, /**< (Requires LR-Auto-Exposure ON)*/
-    RS_OPTION_R200_AUTO_EXPOSURE_BRIGHT_RATIO_SET_POINT       = 45, /**< (Requires LR-Auto-Exposure ON)*/
-    RS_OPTION_R200_AUTO_EXPOSURE_KP_GAIN                      = 46, /**< (Requires LR-Auto-Exposure ON)*/
-    RS_OPTION_R200_AUTO_EXPOSURE_KP_EXPOSURE                  = 47, /**< (Requires LR-Auto-Exposure ON)*/
-    RS_OPTION_R200_AUTO_EXPOSURE_KP_DARK_THRESHOLD            = 48, /**< (Requires LR-Auto-Exposure ON)*/
+    RS_OPTION_R200_AUTO_EXPOSURE_MEAN_INTENSITY_SET_POINT     = 44, /**< (Requires LR-Auto-Exposure ON) Mean intensity set point*/
+    RS_OPTION_R200_AUTO_EXPOSURE_BRIGHT_RATIO_SET_POINT       = 45, /**< (Requires LR-Auto-Exposure ON) Bright ratio set point*/
+    RS_OPTION_R200_AUTO_EXPOSURE_KP_GAIN                      = 46, /**< (Requires LR-Auto-Exposure ON) Kp Gain*/
+    RS_OPTION_R200_AUTO_EXPOSURE_KP_EXPOSURE                  = 47, /**< (Requires LR-Auto-Exposure ON) Kp Exposure*/
+    RS_OPTION_R200_AUTO_EXPOSURE_KP_DARK_THRESHOLD            = 48, /**< (Requires LR-Auto-Exposure ON) Kp Dark Threshold*/
     RS_OPTION_R200_AUTO_EXPOSURE_TOP_EDGE                     = 49, /**< (Requires LR-Auto-Exposure ON) Auto-Exposure region-of-interest top edge (in pixels)*/
     RS_OPTION_R200_AUTO_EXPOSURE_BOTTOM_EDGE                  = 50, /**< (Requires LR-Auto-Exposure ON) Auto-Exposure region-of-interest bottom edge (in pixels)*/
     RS_OPTION_R200_AUTO_EXPOSURE_LEFT_EDGE                    = 51, /**< (Requires LR-Auto-Exposure ON) Auto-Exposure region-of-interest left edge (in pixels)*/
@@ -196,16 +196,13 @@ typedef enum rs_option
     RS_OPTION_FISHEYE_GAIN                                    = 64, /**< Fisheye image gain*/
     RS_OPTION_FISHEYE_STROBE                                  = 65, /**< Enables / disables fisheye strobe. When enabled this will align timestamps to common clock-domain with the motion events*/
     RS_OPTION_FISHEYE_EXT_TRIG                                = 66, /**< Enables / disables fisheye external trigger mode. When enabled fisheye image will be aquired in-sync with the depth image*/
-    RS_OPTION_FRAMES_QUEUE_SIZE                               = 67, /**< Number of frames the user is allowed to keep per stream. Trying to hold-on to more frames will cause frame-drops.*/
-    RS_OPTION_EVENTS_QUEUE_SIZE                               = 68, /**< Number of timestamp events the library will keep internally to align images to common clock-domain with the motion events*/
-    RS_OPTION_MAX_TIMESTAMP_LATENCY                           = 69, /**< Max allowed time in milliseconds for frame to wait for its timestamp event*/
-    RS_OPTION_COUNT                                           = 70,
-    RS_OPTION_FISHEYE_ENABLE_AUTO_EXPOSURE                    = 76,
-    RS_OPTION_FISHEYE_AUTO_EXPOSURE_MODE                      = 77,
-    RS_OPTION_FISHEYE_AUTO_EXPOSURE_ANTIFLICKER_RATE          = 78,
-    RS_OPTION_FISHEYE_AUTO_EXPOSURE_PIXEL_SAMPLE_RATE         = 79,
-    RS_OPTION_FISHEYE_AUTO_EXPOSURE_SKIP_FRAMES               = 80,
-    RS_OPTION_COUNT                                           = 81,
+    RS_OPTION_FISHEYE_ENABLE_AUTO_EXPOSURE                    = 67, /**< Enable / disable fisheye auto-exposure */
+    RS_OPTION_FISHEYE_AUTO_EXPOSURE_MODE                      = 68, /**< 0 - static auto-exposure, 1 - anti-flicker auto-exposure, 2 - hybrid */
+    RS_OPTION_FISHEYE_AUTO_EXPOSURE_ANTIFLICKER_RATE          = 69, /**< Fisheye auto-exposure anti-flicker rate, can be 50 or 60 Hz */
+    RS_OPTION_FISHEYE_AUTO_EXPOSURE_PIXEL_SAMPLE_RATE         = 70, /**< In Fisheye auto-exposure sample frame every given number of pixels */
+    RS_OPTION_FISHEYE_AUTO_EXPOSURE_SKIP_FRAMES               = 71, /**< In Fisheye auto-exposure sample every given number of frames */
+    RS_OPTION_FRAMES_QUEUE_SIZE                               = 72, /**< Number of frames the user is allowed to keep per stream. Trying to hold-on to more frames will cause frame-drops.*/
+    RS_OPTION_COUNT                                           = 73,
     RS_OPTION_MAX_ENUM = 0x7FFFFFFF
 } rs_option;
 

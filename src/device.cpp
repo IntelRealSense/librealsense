@@ -397,8 +397,6 @@ rs_frame_ref* ::rs_device_base::clone_frame(rs_frame_ref* frame)
 void rs_device_base::update_device_info(rsimpl::static_device_info& info)
 {
     info.options.push_back({ RS_OPTION_FRAMES_QUEUE_SIZE,     1, MAX_FRAME_QUEUE_SIZE,      1, MAX_FRAME_QUEUE_SIZE });
-    info.options.push_back({ RS_OPTION_EVENTS_QUEUE_SIZE,     1, MAX_EVENT_QUEUE_SIZE,      1, MAX_EVENT_QUEUE_SIZE });
-    info.options.push_back({ RS_OPTION_MAX_TIMESTAMP_LATENCY, 1, MAX_EVENT_TINE_OUT,        1, MAX_EVENT_TINE_OUT });
 }
 
 const char * rs_device_base::get_option_description(rs_option option) const
@@ -449,11 +447,11 @@ const char * rs_device_base::get_option_description(rs_option option) const
     case RS_OPTION_R200_DEPTH_CLAMP_MAX                            : return "Maximum depth in current depth units that will be output. Any values greater than ‘Max Depth’ will be mapped to 0 during the conversion between disparity and depth. Set before streaming";
     case RS_OPTION_R200_DISPARITY_MULTIPLIER                       : return "The disparity scale factor used when in disparity output mode. Can only be set before streaming";
     case RS_OPTION_R200_DISPARITY_SHIFT                            : return "{0 - 512}. Can only be set before streaming starts";
-    case RS_OPTION_R200_AUTO_EXPOSURE_MEAN_INTENSITY_SET_POINT     : return "(Requires LR-Auto-Exposure ON)";
-    case RS_OPTION_R200_AUTO_EXPOSURE_BRIGHT_RATIO_SET_POINT       : return "(Requires LR-Auto-Exposure ON)";
-    case RS_OPTION_R200_AUTO_EXPOSURE_KP_GAIN                      : return "(Requires LR-Auto-Exposure ON)";
-    case RS_OPTION_R200_AUTO_EXPOSURE_KP_EXPOSURE                  : return "(Requires LR-Auto-Exposure ON)";
-    case RS_OPTION_R200_AUTO_EXPOSURE_KP_DARK_THRESHOLD            : return "(Requires LR-Auto-Exposure ON)";
+    case RS_OPTION_R200_AUTO_EXPOSURE_MEAN_INTENSITY_SET_POINT     : return "(Requires LR-Auto-Exposure ON) Mean intensity set point";
+    case RS_OPTION_R200_AUTO_EXPOSURE_BRIGHT_RATIO_SET_POINT       : return "(Requires LR-Auto-Exposure ON) Bright ratio set point";
+    case RS_OPTION_R200_AUTO_EXPOSURE_KP_GAIN                      : return "(Requires LR-Auto-Exposure ON) Kp Gain";
+    case RS_OPTION_R200_AUTO_EXPOSURE_KP_EXPOSURE                  : return "(Requires LR-Auto-Exposure ON) Kp Exposure";
+    case RS_OPTION_R200_AUTO_EXPOSURE_KP_DARK_THRESHOLD            : return "(Requires LR-Auto-Exposure ON) Kp Dark Threshold";
     case RS_OPTION_R200_AUTO_EXPOSURE_TOP_EDGE                     : return "(Requires LR-Auto-Exposure ON) Auto-Exposure region-of-interest top edge (in pixels)";
     case RS_OPTION_R200_AUTO_EXPOSURE_BOTTOM_EDGE                  : return "(Requires LR-Auto-Exposure ON) Auto-Exposure region-of-interest bottom edge (in pixels)";
     case RS_OPTION_R200_AUTO_EXPOSURE_LEFT_EDGE                    : return "(Requires LR-Auto-Exposure ON) Auto-Exposure region-of-interest left edge (in pixels)";
@@ -473,8 +471,11 @@ const char * rs_device_base::get_option_description(rs_option option) const
     case RS_OPTION_FISHEYE_STROBE                                  : return "Enables / disables fisheye strobe. When enabled this will align timestamps to common clock-domain with the motion events";
     case RS_OPTION_FISHEYE_EXT_TRIG                                : return "Enables / disables fisheye external trigger mode. When enabled fisheye image will be aquired in-sync with the depth image";
     case RS_OPTION_FRAMES_QUEUE_SIZE                               : return "Number of frames the user is allowed to keep per stream. Trying to hold-on to more frames will cause frame-drops.";
-    case RS_OPTION_EVENTS_QUEUE_SIZE                               : return "Number of timestamp events the library will keep internally to align images to common clock-domain with the motion events";
-    case RS_OPTION_MAX_TIMESTAMP_LATENCY                           : return "Max allowed time in milliseconds for frame to wait for its timestamp event";
+    case RS_OPTION_FISHEYE_ENABLE_AUTO_EXPOSURE                    : return "Enable / disable fisheye auto-exposure";
+    case RS_OPTION_FISHEYE_AUTO_EXPOSURE_MODE                      : return "0 - static auto-exposure, 1 - anti-flicker auto-exposure, 2 - hybrid";
+    case RS_OPTION_FISHEYE_AUTO_EXPOSURE_ANTIFLICKER_RATE          : return "Fisheye auto-exposure anti-flicker rate, can be 50 or 60 Hz";
+    case RS_OPTION_FISHEYE_AUTO_EXPOSURE_PIXEL_SAMPLE_RATE         : return "In Fisheye auto-exposure sample frame every given number of pixels";
+    case RS_OPTION_FISHEYE_AUTO_EXPOSURE_SKIP_FRAMES               : return "In Fisheye auto-exposure sample every given number of frames";
     default: return rs_option_to_string(option);
     }
 }
@@ -537,12 +538,6 @@ void rs_device_base::set_options(const rs_option options[], size_t count, const 
         case  RS_OPTION_FRAMES_QUEUE_SIZE:
             max_publish_list_size = (uint32_t)values[i];
             break;
-        case  RS_OPTION_EVENTS_QUEUE_SIZE:
-            event_queue_size = (uint32_t)values[i];
-            break;
-        case  RS_OPTION_MAX_TIMESTAMP_LATENCY:
-            events_timeout = (uint32_t)values[i];
-            break;
         default:
             LOG_WARNING("Cannot set " << options[i] << " to " << values[i] << " on " << get_name());
             throw std::logic_error("Option unsupported");
@@ -559,12 +554,6 @@ void rs_device_base::get_options(const rs_option options[], size_t count, double
         {
         case  RS_OPTION_FRAMES_QUEUE_SIZE:
             values[i] = max_publish_list_size;
-            break;
-        case  RS_OPTION_EVENTS_QUEUE_SIZE:
-            values[i] = event_queue_size;
-            break;
-        case  RS_OPTION_MAX_TIMESTAMP_LATENCY:
-            values[i] = events_timeout;
             break;
         default:
             LOG_WARNING("Cannot get " << options[i] << " on " << get_name());

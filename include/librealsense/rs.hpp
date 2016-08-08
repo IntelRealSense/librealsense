@@ -131,11 +131,11 @@ namespace rs
         r200_depth_clamp_max                            = 41, /**< Maximum depth in current depth units that will be output. Any values greater than ‘Max Depth’ will be mapped to 0 during the conversion between disparity and depth. Set before streaming*/
         r200_disparity_multiplier                       = 42, /**< The disparity scale factor used when in disparity output mode. Can only be set before streaming*/
         r200_disparity_shift                            = 43, /**< {0 - 512}. Can only be set before streaming starts*/
-        r200_auto_exposure_mean_intensity_set_point     = 44, /**< (Requires LR-Auto-Exposure ON)*/
-        r200_auto_exposure_bright_ratio_set_point       = 45, /**< (Requires LR-Auto-Exposure ON)*/
-        r200_auto_exposure_kp_gain                      = 46, /**< (Requires LR-Auto-Exposure ON)*/
-        r200_auto_exposure_kp_exposure                  = 47, /**< (Requires LR-Auto-Exposure ON)*/
-        r200_auto_exposure_kp_dark_threshold            = 48, /**< (Requires LR-Auto-Exposure ON)*/
+        r200_auto_exposure_mean_intensity_set_point     = 44, /**< (Requires LR-Auto-Exposure ON) Mean intensity set point*/
+        r200_auto_exposure_bright_ratio_set_point       = 45, /**< (Requires LR-Auto-Exposure ON) Bright ratio set point*/
+        r200_auto_exposure_kp_gain                      = 46, /**< (Requires LR-Auto-Exposure ON) Kp Gain*/
+        r200_auto_exposure_kp_exposure                  = 47, /**< (Requires LR-Auto-Exposure ON) Kp Exposure*/
+        r200_auto_exposure_kp_dark_threshold            = 48, /**< (Requires LR-Auto-Exposure ON) Kp Dark Threshold*/
         r200_auto_exposure_top_edge                     = 49, /**< (Requires LR-Auto-Exposure ON) Auto-Exposure region-of-interest top edge (in pixels)*/
         r200_auto_exposure_bottom_edge                  = 50, /**< (Requires LR-Auto-Exposure ON) Auto-Exposure region-of-interest bottom edge (in pixels)*/
         r200_auto_exposure_left_edge                    = 51, /**< (Requires LR-Auto-Exposure ON) Auto-Exposure region-of-interest left edge (in pixels)*/
@@ -150,22 +150,16 @@ namespace rs
         r200_depth_control_second_peak_threshold        = 60, /**< A threshold on how much the minimum correlation score must differ from the next best score*/
         r200_depth_control_neighbor_threshold           = 61, /**< Neighbor threshold value for depth calculation*/
         r200_depth_control_lr_threshold                 = 62, /**< Left-Right threshold value for depth calculation*/
-        r200_fisheye_color_exposure                     = 63, /**< Fisheye image exposure time in msec*/
-        r200_fisheye_color_gain                         = 64, /**< Fisheye image gain*/
-        r200_fisheye_strobe                             = 65, /**< Enables / disables fisheye strobe. When enabled this will align timestamps to common clock-domain with the motion events*/
-        r200_fisheye_ext_trig                           = 66, /**< Enables / disables fisheye external trigger mode. When enabled fisheye image will be aquired in-sync with the depth image*/
-        frames_queue_size                               = 67, /**< Number of frames the user is allowed to keep per stream. Trying to hold-on to more frames will cause frame-drops.*/
-        events_queue_size                               = 68, /**< Number of timestamp events the library will keep internally to align images to common clock-domain with the motion events*/
-        fisheye_color_exposure                          = 69,
-        fisheye_color_gain                              = 70,
-        fisheye_strobe                                  = 71,
-        fisheye_ext_trig                                = 72,
-        max_timestamp_latency                           = 75,
-        fisheye_color_auto_exposure                     = 76,
-        fisheye_color_auto_exposure_mode                = 77,
-        fisheye_color_auto_exposure_rate                = 78,
-        fisheye_color_auto_exposure_sample_rate         = 79,
-        fisheye_color_auto_exposure_skip_frames         = 80
+        fisheye_exposure                                = 63, /**< Fisheye image exposure time in msec*/
+        fisheye_gain                                    = 64, /**< Fisheye image gain*/
+        fisheye_strobe                                  = 65, /**< Enables / disables fisheye strobe. When enabled this will align timestamps to common clock-domain with the motion events*/
+        fisheye_ext_trig                                = 66, /**< Enables / disables fisheye external trigger mode. When enabled fisheye image will be aquired in-sync with the depth image*/
+        fisheye_color_auto_exposure                     = 67, /**< Enable / disable fisheye auto-exposure */
+        fisheye_color_auto_exposure_mode                = 68, /**< 0 - static auto-exposure, 1 - anti-flicker auto-exposure, 2 - hybrid */
+        fisheye_color_auto_exposure_rate                = 69, /**< Fisheye auto-exposure anti-flicker rate, can be 50 or 60 Hz */
+        fisheye_color_auto_exposure_sample_rate         = 70, /**< In Fisheye auto-exposure sample frame every given number of pixels */
+        fisheye_color_auto_exposure_skip_frames         = 71, /**< In Fisheye auto-exposure sample every given number of frames */
+        frames_queue_size                               = 72, /**< Number of frames the user is allowed to keep per stream. Trying to hold-on to more frames will cause frame-drops.*/
     };
 
     enum class blob_type {

@@ -370,7 +370,7 @@ void show_message(GLFWwindow* curr_window, const std::string& title, const std::
     glfwMakeContextCurrent(curr_window);
 }
 
-struct option { rs::option opt; double min, max, step, value, def; };
+struct option { rs::option opt; double min, max, step, value, def; bool supports; };
 bool auto_exposure = false;
 bool auto_white_balance = false;
 bool lr_auto_exposure = false;
@@ -646,7 +646,8 @@ int main(int argc, char * argv[])
         {
             option o = { (rs::option)i };
             try { 
-                if (dev->supports_option(o.opt)) 
+                o.supports = dev->supports_option(o.opt);
+                if (o.supports) 
                 {
                     dev->get_option_range(o.opt, o.min, o.max, o.step, o.def);
                     o.value = dev->get_option(o.opt);
@@ -806,7 +807,19 @@ int main(int argc, char * argv[])
 
                 for (auto & o : options)
                 {
-                    if (!dev->supports_option(o.opt)) continue;
+                    if (!dev->supports_option(o.opt)) 
+                    {
+                        o.supports = false;
+                        continue;
+                    }
+                    if (!o.supports)
+                    {
+                        try { 
+                            dev->get_option_range(o.opt, o.min, o.max, o.step, o.def);
+                            o.value = dev->get_option(o.opt);
+                        }
+                        catch (...) {}
+                    }
 
                     auto is_checkbox = (o.min == 0) && (o.max == 1) && (o.step == 1);
                     auto is_checked = o.value > 0;
