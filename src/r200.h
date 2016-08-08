@@ -22,6 +22,9 @@ namespace rsimpl
         ~r200_camera() {};
 
         bool supports_option(rs_option option) const override;
+
+        virtual void start_fw_logger(char fw_log_op_code, int grab_rate_in_ms) override;
+        virtual void stop_fw_logger() override;
     };
 
     std::shared_ptr<rs_device> make_r200_device(std::shared_ptr<uvc::device> device);

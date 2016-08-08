@@ -84,7 +84,10 @@ struct rs_device
                                             
     virtual void                            start(rs_source source) = 0;
     virtual void                            stop(rs_source source) = 0;
-                                            
+
+    virtual void                            start_fw_logger(char fw_log_op_code, int grab_rate_in_ms) = 0;
+    virtual void                            stop_fw_logger() = 0;
+
     virtual bool                            is_capturing() const = 0;
     virtual int                             is_motion_tracking_active() const = 0;
                                             

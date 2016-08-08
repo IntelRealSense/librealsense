@@ -8,7 +8,7 @@
 #include "uvc.h"
 #include "stream.h"
 #include <chrono>
-
+#include <memory>
 
 namespace rsimpl
 {
@@ -94,6 +94,10 @@ private:
 
     mutable std::string                         usb_port_id;
     mutable std::mutex                          usb_port_mutex;
+
+    std::atomic<bool>                           keep_fw_logger_alive = false;
+    std::shared_ptr<std::thread>                fw_logger;
+
 protected:
     const rsimpl::uvc::device &                 get_device() const { return *device; }
     rsimpl::uvc::device &                       get_device() { return *device; }
@@ -138,6 +142,9 @@ public:
 
     virtual void                                start(rs_source source) override;
     virtual void                                stop(rs_source source) override;
+
+    virtual void                                start_fw_logger(char fw_log_op_code, int grab_rate_in_ms) override;
+    virtual void                                stop_fw_logger() override;
 
     bool                                        is_capturing() const override { return capturing; }
     int                                         is_motion_tracking_active() const override { return data_acquisition_active; }

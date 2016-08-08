@@ -186,6 +186,16 @@ namespace rsimpl
         }
     }
 
+    void f200_camera::start_fw_logger(char fw_log_op_code, int grab_rate_in_ms)
+    {
+        rs_device_base::start_fw_logger(fw_log_op_code, grab_rate_in_ms);
+    }
+
+    void f200_camera::stop_fw_logger()
+    {
+        rs_device_base::stop_fw_logger();
+    }
+
     void f200_camera::set_options(const rs_option options[], size_t count, const double values[])
     {
         std::vector<rs_option>  base_opt;

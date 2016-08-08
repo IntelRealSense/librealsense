@@ -127,6 +127,16 @@ namespace rsimpl
         arr.ARLowerTh = 650;
     }
 
+    void sr300_camera::start_fw_logger(char fw_log_op_code, int grab_rate_in_ms)
+    {
+        iv_camera::start_fw_logger(fw_log_op_code, grab_rate_in_ms);
+    }
+
+    void sr300_camera::stop_fw_logger()
+    {
+        iv_camera::stop_fw_logger();
+    }
+
     void sr300_camera::set_options(const rs_option options[], size_t count, const double values[])
     {
         std::vector<rs_option>  base_opt;
