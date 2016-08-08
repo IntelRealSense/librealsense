@@ -95,7 +95,7 @@ int main() try
         dev->enable_stream(rs::stream::infrared2, 640, 480, rs::format::y8, 60);
         dev->enable_stream(rs::stream::fisheye, 640, 480, rs::format::raw8, 60);
 
-        dev->set_option(rs::option::r200_fisheye_strobe, 1);
+        dev->set_option(rs::option::fisheye_strobe, 1);
 
         auto frame_callback = [](rs::frame frame){
             auto now = std::chrono::system_clock::now().time_since_epoch();
