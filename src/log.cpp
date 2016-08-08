@@ -83,7 +83,9 @@ namespace rsimpl {
                 callback->on_event(severity, message.c_str());
             }
         }
-    } static logger;
+    };
+
+    static logger_type logger;
 }
 
 rs_log_severity rsimpl::get_minimum_severity(void)
