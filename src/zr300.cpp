@@ -275,6 +275,24 @@ namespace rsimpl
         return  fe_intrinsic.imu_intrinsic;
     }
 
+    bool zr300_camera::supports_option(rs_option option) const
+    {
+        // The following 4 parameters are removed from DS4.1 FW:
+        std::vector<rs_option> auto_exposure_options = { 
+            RS_OPTION_R200_AUTO_EXPOSURE_KP_EXPOSURE,
+            RS_OPTION_R200_AUTO_EXPOSURE_KP_GAIN,
+            RS_OPTION_R200_AUTO_EXPOSURE_KP_DARK_THRESHOLD,
+            RS_OPTION_R200_AUTO_EXPOSURE_BRIGHT_RATIO_SET_POINT,
+        };
+
+        if (std::find(auto_exposure_options.begin(), auto_exposure_options.end(), option) != auto_exposure_options.end())
+        {
+            return false; 
+        }
+
+        return ds_device::supports_option(option);
+    }
+
     rs_extrinsics zr300_camera::get_motion_extrinsics_from(rs_stream from) const
     {
         switch (from)
