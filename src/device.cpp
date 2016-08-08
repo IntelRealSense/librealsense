@@ -256,17 +256,16 @@ std::string hexify(unsigned char n)
     return res;
 }
 
-void rs_device_base::start_fw_logger(char fw_log_op_code, int grab_rate_in_ms)
+void rs_device_base::start_fw_logger(char fw_log_op_code, int grab_rate_in_ms, std::timed_mutex& mutex)
 {
     if (keep_fw_logger_alive)
         throw std::logic_error("FW logger already started");
 
     keep_fw_logger_alive = true;
-    fw_logger = std::make_shared<std::thread>([&]() {
+    fw_logger = std::make_shared<std::thread>([this, fw_log_op_code, grab_rate_in_ms, &mutex]() {
         const int data_size = 500;
         hw_monitor::hwmon_cmd cmd((int)fw_log_op_code);
         cmd.Param1 = data_size;
-        std::timed_mutex mutex;
         while (keep_fw_logger_alive)
         {
             std::this_thread::sleep_for(std::chrono::milliseconds(grab_rate_in_ms));
@@ -274,8 +273,12 @@ void rs_device_base::start_fw_logger(char fw_log_op_code, int grab_rate_in_ms)
             char data[data_size];
             memcpy(data, cmd.receivedCommandData, cmd.receivedCommandDataLength);
 
+            std::stringstream sstr;
             for (int i = 0; i < cmd.receivedCommandDataLength; ++i)
-                LOG_DEBUG(hexify(data[i]) << " ");
+                sstr << hexify(data[i]) << " ";
+
+            if (cmd.receivedCommandDataLength)
+               LOG_INFO(sstr.str());
         }
     });
 }

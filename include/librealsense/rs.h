@@ -210,7 +210,8 @@ typedef enum rs_option
     RS_OPTION_FISHEYE_AUTO_EXPOSURE_ANTIFLICKER_RATE          = 78,
     RS_OPTION_FISHEYE_AUTO_EXPOSURE_PIXEL_SAMPLE_RATE         = 79,
     RS_OPTION_FISHEYE_AUTO_EXPOSURE_SKIP_FRAMES               = 80,
-    RS_OPTION_COUNT                                           = 81,
+    RS_OPTION_ENABLE_FW_LOG                                   = 81,
+    RS_OPTION_COUNT                                           = 82,
     RS_OPTION_MAX_ENUM = 0x7FFFFFFF
 } rs_option;
 

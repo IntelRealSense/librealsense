@@ -239,9 +239,9 @@ namespace rsimpl
         start_stop_pad.start();
     }
 
-    void ds_device::start_fw_logger(char fw_log_op_code, int grab_rate_in_ms)
+    void ds_device::start_fw_logger(char fw_log_op_code, int grab_rate_in_ms, std::timed_mutex& mutex)
     {
-        rs_device_base::start_fw_logger(fw_log_op_code, grab_rate_in_ms);
+        rs_device_base::start_fw_logger(fw_log_op_code, grab_rate_in_ms, mutex);
     }
 
     void ds_device::stop_fw_logger()

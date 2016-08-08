@@ -37,7 +37,7 @@ namespace rsimpl
         void set_options(const rs_option options[], size_t count, const double values[]) override;
         void get_options(const rs_option options[], size_t count, double values[]) override;
 
-        virtual void start_fw_logger(char fw_log_op_code, int grab_rate_in_ms) override;
+        virtual void start_fw_logger(char fw_log_op_code, int grab_rate_in_ms, std::timed_mutex& mutex) override;
         virtual void stop_fw_logger() override;
     };
 

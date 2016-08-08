@@ -16,6 +16,8 @@ namespace rsimpl
 
     class sr300_camera final : public iv_camera
     {
+        void set_fw_logger_option(double value);
+        unsigned get_fw_logger_option();
 
         sr300::wakeup_dev_params arr_wakeup_dev_param;
 
@@ -26,7 +28,7 @@ namespace rsimpl
         void set_options(const rs_option options[], size_t count, const double values[]) override;
         void get_options(const rs_option options[], size_t count, double values[]) override;
 
-        virtual void start_fw_logger(char fw_log_op_code, int grab_rate_in_ms) override;
+        virtual void start_fw_logger(char fw_log_op_code, int grab_rate_in_ms, std::timed_mutex& mutex) override;
         virtual void stop_fw_logger() override;
     };
 

@@ -39,7 +39,7 @@ namespace rsimpl
 
 		std::shared_ptr<frame_timestamp_reader> create_frame_timestamp_reader(int subdevice) const override;
 
-        void start_fw_logger(char fw_log_op_code, int grab_rate_in_ms) override;
+        void start_fw_logger(char fw_log_op_code, int grab_rate_in_ms, std::timed_mutex& mutex) override;
         void stop_fw_logger() override;
     };
 }

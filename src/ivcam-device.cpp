@@ -60,9 +60,9 @@ namespace rsimpl
     {
     }
 
-    void iv_camera::start_fw_logger(char fw_log_op_code, int grab_rate_in_ms)
+    void iv_camera::start_fw_logger(char fw_log_op_code, int grab_rate_in_ms, std::timed_mutex& mutex)
     {
-        rs_device_base::start_fw_logger(fw_log_op_code, grab_rate_in_ms);
+        rs_device_base::start_fw_logger(fw_log_op_code, grab_rate_in_ms, mutex);
     }
 
     void iv_camera::stop_fw_logger()

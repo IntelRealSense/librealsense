@@ -72,6 +72,7 @@ namespace rsimpl
             case RS_OPTION_FISHEYE_AUTO_EXPOSURE_ANTIFLICKER_RATE:    set_auto_exposure_state(RS_OPTION_FISHEYE_AUTO_EXPOSURE_ANTIFLICKER_RATE, values[i]); break;
             case RS_OPTION_FISHEYE_AUTO_EXPOSURE_PIXEL_SAMPLE_RATE:   set_auto_exposure_state(RS_OPTION_FISHEYE_AUTO_EXPOSURE_PIXEL_SAMPLE_RATE, values[i]); break;
             case RS_OPTION_FISHEYE_AUTO_EXPOSURE_SKIP_FRAMES:         set_auto_exposure_state(RS_OPTION_FISHEYE_AUTO_EXPOSURE_SKIP_FRAMES, values[i]); break;
+            case RS_OPTION_ENABLE_FW_LOG:                             set_fw_logger_option(values[i]); break;
 
             case RS_OPTION_ZR300_GYRO_BANDWIDTH:            mm_cfg_writer.set(&motion_module::mm_config::gyro_bandwidth, (uint8_t)values[i]); break;
             case RS_OPTION_ZR300_GYRO_RANGE:                mm_cfg_writer.set(&motion_module::mm_config::gyro_range, (uint8_t)values[i]); break;
@@ -121,6 +122,7 @@ namespace rsimpl
             case RS_OPTION_FISHEYE_AUTO_EXPOSURE_ANTIFLICKER_RATE:  values[i] = get_auto_exposure_state(RS_OPTION_FISHEYE_AUTO_EXPOSURE_ANTIFLICKER_RATE); break;
             case RS_OPTION_FISHEYE_AUTO_EXPOSURE_PIXEL_SAMPLE_RATE: values[i] = get_auto_exposure_state(RS_OPTION_FISHEYE_AUTO_EXPOSURE_PIXEL_SAMPLE_RATE); break;
             case RS_OPTION_FISHEYE_AUTO_EXPOSURE_SKIP_FRAMES:       values[i] = get_auto_exposure_state(RS_OPTION_FISHEYE_AUTO_EXPOSURE_SKIP_FRAMES); break;
+            case RS_OPTION_ENABLE_FW_LOG:                           values[i] = get_fw_logger_option(); break;
 
             case RS_OPTION_ZR300_MOTION_MODULE_ACTIVE:              values[i] = is_motion_tracking_active(); break;
 
@@ -171,6 +173,25 @@ namespace rsimpl
         auto_exposure->add_frame(clone_frame(frame), archive);
     }
 
+    void zr300_camera::set_fw_logger_option(double value)
+    {
+        if (value >= 1)
+        {
+            if (!rs_device_base::keep_fw_logger_alive)
+                start_fw_logger(char(adaptor_board_command::GLD), 100, usbMutex);
+        }
+        else
+        {
+            if (rs_device_base::keep_fw_logger_alive)
+                stop_fw_logger();
+        }
+    }
+
+    unsigned zr300_camera::get_fw_logger_option()
+    {
+        return rs_device_base::keep_fw_logger_alive;
+    }
+
     void zr300_camera::set_auto_exposure_state(rs_option option, double value)
     {
         auto auto_exposure_prev_state = auto_exposure_state.get_auto_exposure_state(RS_OPTION_FISHEYE_ENABLE_AUTO_EXPOSURE);
@@ -180,7 +201,8 @@ namespace rsimpl
         {
             if (auto_exposure_prev_state) // auto_exposure previous value
             {
-                auto_exposure->update_auto_exposure_state(auto_exposure_state); // auto_exposure mode not changed
+                if (auto_exposure)
+                    auto_exposure->update_auto_exposure_state(auto_exposure_state); // auto_exposure mode not changed
             }
             else
             {
@@ -310,8 +332,7 @@ namespace rsimpl
     unsigned long long zr300_camera::get_frame_counter_by_usb_cmd()
     {
         hwmon_cmd cmd((int)adaptor_board_command::FRCNT);
-        std::timed_mutex mutex;
-        perform_and_send_monitor_command(this->get_device(), mutex, cmd);
+        perform_and_send_monitor_command(this->get_device(), usbMutex, cmd);
         unsigned long long frame_counter = 0;
         memcpy(&frame_counter, cmd.receivedCommandData, cmd.receivedCommandDataLength);
         return frame_counter;
@@ -395,6 +416,7 @@ namespace rsimpl
             info.options.push_back({ RS_OPTION_FISHEYE_AUTO_EXPOSURE_ANTIFLICKER_RATE,  50, 60,  10, 60 });
             info.options.push_back({ RS_OPTION_FISHEYE_AUTO_EXPOSURE_PIXEL_SAMPLE_RATE, 1,  3,   1,  1  });
             info.options.push_back({ RS_OPTION_FISHEYE_AUTO_EXPOSURE_SKIP_FRAMES,       0,  3,   1,  2  });
+            info.options.push_back({ RS_OPTION_ENABLE_FW_LOG,                           0,  1,   1,  0  });
 
             info.options.push_back({ RS_OPTION_ZR300_GYRO_BANDWIDTH,            (int)mm_gyro_bandwidth::gyro_bw_default,    (int)mm_gyro_bandwidth::gyro_bw_200hz,  1,  (int)mm_gyro_bandwidth::gyro_bw_200hz });
             info.options.push_back({ RS_OPTION_ZR300_GYRO_RANGE,                (int)mm_gyro_range::gyro_range_default,     (int)mm_gyro_range::gyro_range_1000,    1,  (int)mm_gyro_range::gyro_range_1000 });

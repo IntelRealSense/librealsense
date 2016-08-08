@@ -175,6 +175,7 @@ namespace rsimpl
         CASE(FISHEYE_AUTO_EXPOSURE_ANTIFLICKER_RATE)
         CASE(FISHEYE_AUTO_EXPOSURE_PIXEL_SAMPLE_RATE)
         CASE(FISHEYE_AUTO_EXPOSURE_SKIP_FRAMES)
+        CASE(ENABLE_FW_LOG)
         default: assert(!is_valid(value)); return unknown;
         }
         #undef CASE

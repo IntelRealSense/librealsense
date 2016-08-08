@@ -21,14 +21,14 @@ namespace rsimpl
         return option == RS_OPTION_R200_LR_GAIN || option == RS_OPTION_R200_LR_EXPOSURE || rs_device_base::supports_option(option);
     }
 
-    void r200_camera::start_fw_logger(char fw_log_op_code, int grab_rate_in_ms)
+    void r200_camera::start_fw_logger(char fw_log_op_code, int grab_rate_in_ms, std::timed_mutex& mutex)
     {
-        ds_device::start_fw_logger(fw_log_op_code, grab_rate_in_ms);
+        throw std::logic_error("Not implemented");
     }
 
     void r200_camera::stop_fw_logger()
     {
-        ds_device::stop_fw_logger();
+        throw std::logic_error("Not implemented");
     }
 
     std::shared_ptr<rs_device> make_r200_device(std::shared_ptr<uvc::device> device)

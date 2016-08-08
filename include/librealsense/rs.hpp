@@ -167,7 +167,8 @@ namespace rs
         fisheye_color_auto_exposure_mode                = 77,
         fisheye_color_auto_exposure_rate                = 78,
         fisheye_color_auto_exposure_sample_rate         = 79,
-        fisheye_color_auto_exposure_skip_frames         = 80
+        fisheye_color_auto_exposure_skip_frames         = 80,
+        enable_fw_log                                   = 81
     };
 
     enum class blob_type {

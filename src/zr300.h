@@ -225,6 +225,8 @@ namespace rsimpl
         void toggle_motion_module_events(bool bOn);
         void on_before_callback(rs_stream , rs_frame_ref *, std::shared_ptr<rsimpl::frame_archive>) override;
 
+        std::timed_mutex usbMutex;
+
     public:
         zr300_camera(std::shared_ptr<uvc::device> device, const static_device_info & info, motion_module_calibration fe_intrinsic);
         ~zr300_camera();
@@ -249,6 +251,8 @@ namespace rsimpl
     private:
         unsigned get_auto_exposure_state(rs_option option);
         void set_auto_exposure_state(rs_option option, double value);
+        void set_fw_logger_option(double value);
+        unsigned get_fw_logger_option();
 
         motion_module_calibration fe_intrinsic;
     };
