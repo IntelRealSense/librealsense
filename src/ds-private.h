@@ -229,8 +229,8 @@ namespace rsimpl
 
         uint8_t get_fisheye_strobe(const uvc::device & device);
         void set_fisheye_strobe(uvc::device & device, uint8_t strobe);
-        uint8_t get_fisheye_ext_trig(const uvc::device & device);
-        void set_fisheye_ext_trig(uvc::device & device, uint8_t ext_trig);
+        uint8_t get_fisheye_external_trigger(const uvc::device & device);
+        void set_fisheye_external_trigger(uvc::device & device, uint8_t ext_trig);
         uint16_t get_fisheye_exposure(const uvc::device & device);
         void set_fisheye_exposure(uvc::device & device, uint16_t exposure);
 

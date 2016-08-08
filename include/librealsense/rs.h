@@ -195,16 +195,15 @@ typedef enum rs_option
     RS_OPTION_FISHEYE_EXPOSURE                                = 63, /**< Fisheye image exposure time in msec*/
     RS_OPTION_FISHEYE_GAIN                                    = 64, /**< Fisheye image gain*/
     RS_OPTION_FISHEYE_STROBE                                  = 65, /**< Enables / disables fisheye strobe. When enabled this will align timestamps to common clock-domain with the motion events*/
-    RS_OPTION_FISHEYE_EXT_TRIG                                = 66, /**< Enables / disables fisheye external trigger mode. When enabled fisheye image will be aquired in-sync with the depth image*/
+    RS_OPTION_FISHEYE_EXTERNAL_TRIGGER                        = 66, /**< Enables / disables fisheye external trigger mode. When enabled fisheye image will be aquired in-sync with the depth image*/
     RS_OPTION_FISHEYE_ENABLE_AUTO_EXPOSURE                    = 67, /**< Enable / disable fisheye auto-exposure */
     RS_OPTION_FISHEYE_AUTO_EXPOSURE_MODE                      = 68, /**< 0 - static auto-exposure, 1 - anti-flicker auto-exposure, 2 - hybrid */
     RS_OPTION_FISHEYE_AUTO_EXPOSURE_ANTIFLICKER_RATE          = 69, /**< Fisheye auto-exposure anti-flicker rate, can be 50 or 60 Hz */
     RS_OPTION_FISHEYE_AUTO_EXPOSURE_PIXEL_SAMPLE_RATE         = 70, /**< In Fisheye auto-exposure sample frame every given number of pixels */
     RS_OPTION_FISHEYE_AUTO_EXPOSURE_SKIP_FRAMES               = 71, /**< In Fisheye auto-exposure sample every given number of frames */
     RS_OPTION_FRAMES_QUEUE_SIZE                               = 72, /**< Number of frames the user is allowed to keep per stream. Trying to hold-on to more frames will cause frame-drops.*/
-    RS_OPTION_COUNT                                           = 73,
-    RS_OPTION_ENABLE_FW_LOG                                   = 81,
-    RS_OPTION_COUNT                                           = 82,
+    RS_OPTION_HARDWARE_LOGGER_ENABLED                         = 73, /**< Enable / disable fetching log data from the device */
+    RS_OPTION_COUNT                                           = 74,
     RS_OPTION_MAX_ENUM = 0x7FFFFFFF
 } rs_option;
 

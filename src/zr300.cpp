@@ -39,7 +39,7 @@ namespace rsimpl
     bool is_fisheye_xu_control(rs_option option)
     {
         return (option == RS_OPTION_FISHEYE_STROBE) ||
-               (option == RS_OPTION_FISHEYE_EXT_TRIG) ||
+               (option == RS_OPTION_FISHEYE_EXTERNAL_TRIGGER) ||
                (option == RS_OPTION_FISHEYE_EXPOSURE);
     }
 
@@ -62,14 +62,14 @@ namespace rsimpl
             switch (options[i])
             {
             case RS_OPTION_FISHEYE_STROBE:                            zr300::set_fisheye_strobe(get_device(), static_cast<uint8_t>(values[i])); break;
-            case RS_OPTION_FISHEYE_EXT_TRIG:                          zr300::set_fisheye_ext_trig(get_device(), static_cast<uint8_t>(values[i])); break;
+            case RS_OPTION_FISHEYE_EXTERNAL_TRIGGER:                  zr300::set_fisheye_external_trigger(get_device(), static_cast<uint8_t>(values[i])); break;
             case RS_OPTION_FISHEYE_EXPOSURE:                          zr300::set_fisheye_exposure(get_device(), static_cast<uint8_t>(values[i])); break;
             case RS_OPTION_FISHEYE_ENABLE_AUTO_EXPOSURE:              set_auto_exposure_state(RS_OPTION_FISHEYE_ENABLE_AUTO_EXPOSURE, values[i]); break;
             case RS_OPTION_FISHEYE_AUTO_EXPOSURE_MODE:                set_auto_exposure_state(RS_OPTION_FISHEYE_AUTO_EXPOSURE_MODE, values[i]); break;
             case RS_OPTION_FISHEYE_AUTO_EXPOSURE_ANTIFLICKER_RATE:    set_auto_exposure_state(RS_OPTION_FISHEYE_AUTO_EXPOSURE_ANTIFLICKER_RATE, values[i]); break;
             case RS_OPTION_FISHEYE_AUTO_EXPOSURE_PIXEL_SAMPLE_RATE:   set_auto_exposure_state(RS_OPTION_FISHEYE_AUTO_EXPOSURE_PIXEL_SAMPLE_RATE, values[i]); break;
             case RS_OPTION_FISHEYE_AUTO_EXPOSURE_SKIP_FRAMES:         set_auto_exposure_state(RS_OPTION_FISHEYE_AUTO_EXPOSURE_SKIP_FRAMES, values[i]); break;
-            case RS_OPTION_ENABLE_FW_LOG:                             set_fw_logger_option(values[i]); break;
+            case RS_OPTION_HARDWARE_LOGGER_ENABLED:                   set_fw_logger_option(values[i]); break;
 
                 // Default will be handled by parent implementation
             default: base_opt.push_back(options[i]); base_opt_val.push_back(values[i]); break;
@@ -102,14 +102,14 @@ namespace rsimpl
             {
 
             case RS_OPTION_FISHEYE_STROBE:                          values[i] = zr300::get_fisheye_strobe        (dev); break;
-            case RS_OPTION_FISHEYE_EXT_TRIG:                        values[i] = zr300::get_fisheye_ext_trig      (dev); break;
+            case RS_OPTION_FISHEYE_EXTERNAL_TRIGGER:                values[i] = zr300::get_fisheye_external_trigger      (dev); break;
             case RS_OPTION_FISHEYE_EXPOSURE:                        values[i] = zr300::get_fisheye_exposure      (dev); break;
             case RS_OPTION_FISHEYE_ENABLE_AUTO_EXPOSURE:            values[i] = get_auto_exposure_state(RS_OPTION_FISHEYE_ENABLE_AUTO_EXPOSURE); break;
             case RS_OPTION_FISHEYE_AUTO_EXPOSURE_MODE:              values[i] = get_auto_exposure_state(RS_OPTION_FISHEYE_AUTO_EXPOSURE_MODE); break;
             case RS_OPTION_FISHEYE_AUTO_EXPOSURE_ANTIFLICKER_RATE:  values[i] = get_auto_exposure_state(RS_OPTION_FISHEYE_AUTO_EXPOSURE_ANTIFLICKER_RATE); break;
             case RS_OPTION_FISHEYE_AUTO_EXPOSURE_PIXEL_SAMPLE_RATE: values[i] = get_auto_exposure_state(RS_OPTION_FISHEYE_AUTO_EXPOSURE_PIXEL_SAMPLE_RATE); break;
             case RS_OPTION_FISHEYE_AUTO_EXPOSURE_SKIP_FRAMES:       values[i] = get_auto_exposure_state(RS_OPTION_FISHEYE_AUTO_EXPOSURE_SKIP_FRAMES); break;
-            case RS_OPTION_ENABLE_FW_LOG:                           values[i] = get_fw_logger_option(); break;
+            case RS_OPTION_HARDWARE_LOGGER_ENABLED:                 values[i] = get_fw_logger_option(); break;
 
                 // Default will be handled by parent implementation
             default: base_opt.push_back(options[i]); base_opt_index.push_back(i);  break;
@@ -389,13 +389,13 @@ namespace rsimpl
             info.options.push_back({ RS_OPTION_FISHEYE_EXPOSURE,                        40, 331, 1,  40 });
             info.options.push_back({ RS_OPTION_FISHEYE_GAIN                                             });
             info.options.push_back({ RS_OPTION_FISHEYE_STROBE,                          0,  1,   1,  0  });
-            info.options.push_back({ RS_OPTION_FISHEYE_EXT_TRIG,                        0,  1,   1,  0  });
+            info.options.push_back({ RS_OPTION_FISHEYE_EXTERNAL_TRIGGER,                0,  1,   1,  0  });
             info.options.push_back({ RS_OPTION_FISHEYE_ENABLE_AUTO_EXPOSURE,            0,  1,   1,  1  });
             info.options.push_back({ RS_OPTION_FISHEYE_AUTO_EXPOSURE_MODE,              0,  2,   1,  0  });
             info.options.push_back({ RS_OPTION_FISHEYE_AUTO_EXPOSURE_ANTIFLICKER_RATE,  50, 60,  10, 60 });
             info.options.push_back({ RS_OPTION_FISHEYE_AUTO_EXPOSURE_PIXEL_SAMPLE_RATE, 1,  3,   1,  1  });
             info.options.push_back({ RS_OPTION_FISHEYE_AUTO_EXPOSURE_SKIP_FRAMES,       0,  3,   1,  2  });
-            info.options.push_back({ RS_OPTION_ENABLE_FW_LOG,                           0,  1,   1,  0  });
+            info.options.push_back({ RS_OPTION_HARDWARE_LOGGER_ENABLED,                 0,  1,   1,  0  });
         }
         
         std::timed_mutex mutex;

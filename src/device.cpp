@@ -526,13 +526,14 @@ const char * rs_device_base::get_option_description(rs_option option) const
     case RS_OPTION_FISHEYE_EXPOSURE                                : return "Fisheye image exposure time in msec";
     case RS_OPTION_FISHEYE_GAIN                                    : return "Fisheye image gain";
     case RS_OPTION_FISHEYE_STROBE                                  : return "Enables / disables fisheye strobe. When enabled this will align timestamps to common clock-domain with the motion events";
-    case RS_OPTION_FISHEYE_EXT_TRIG                                : return "Enables / disables fisheye external trigger mode. When enabled fisheye image will be aquired in-sync with the depth image";
+    case RS_OPTION_FISHEYE_EXTERNAL_TRIGGER                        : return "Enables / disables fisheye external trigger mode. When enabled fisheye image will be aquired in-sync with the depth image";
     case RS_OPTION_FRAMES_QUEUE_SIZE                               : return "Number of frames the user is allowed to keep per stream. Trying to hold-on to more frames will cause frame-drops.";
     case RS_OPTION_FISHEYE_ENABLE_AUTO_EXPOSURE                    : return "Enable / disable fisheye auto-exposure";
     case RS_OPTION_FISHEYE_AUTO_EXPOSURE_MODE                      : return "0 - static auto-exposure, 1 - anti-flicker auto-exposure, 2 - hybrid";
     case RS_OPTION_FISHEYE_AUTO_EXPOSURE_ANTIFLICKER_RATE          : return "Fisheye auto-exposure anti-flicker rate, can be 50 or 60 Hz";
     case RS_OPTION_FISHEYE_AUTO_EXPOSURE_PIXEL_SAMPLE_RATE         : return "In Fisheye auto-exposure sample frame every given number of pixels";
     case RS_OPTION_FISHEYE_AUTO_EXPOSURE_SKIP_FRAMES               : return "In Fisheye auto-exposure sample every given number of frames";
+    case RS_OPTION_HARDWARE_LOGGER_ENABLED                         : return "Enables / disables fetching diagnostic information from hardware (and writting the results to log)";
     default: return rs_option_to_string(option);
     }
 }
