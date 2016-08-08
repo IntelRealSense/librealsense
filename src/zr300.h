@@ -75,25 +75,47 @@ namespace rsimpl
 
     struct MM_intrinsics
     {
-        float bias_x;
-        float bias_y;
-        float bias_z;
-        float scale_x;
-        float scale_y;
-        float scale_z;
+        //  Scale X        cross axis        cross axis      Bias X
+        //  cross axis     Scale Y           cross axis      Bias Y
+        //  cross axis     cross axis        Scale Z         Bias Z
+
+        float val[3][4];
 
         operator rs_motion_device_intrinsics() const{
-            return{ { bias_x, bias_y, bias_z }, { scale_x, scale_y, scale_z } };
+            return
+            {
+                val[0][0], val[0][1], val[0][2], val[0][3],
+                val[1][0], val[1][1], val[1][2], val[1][3],
+                val[2][0], val[2][1], val[2][2], val[2][3]
+            };
         };
     };
 
+    struct variances
+    {
+        float x_axis;
+        float y_axis;
+        float z_axis;
+        operator rs_variances() const{
+            return{ x_axis, y_axis, z_axis };
+        };
+    };
+    
     struct IMU_intrinsic
     {
         IMU_version ver;
         MM_intrinsics acc_intrinsic;
         MM_intrinsics gyro_intrinsic;
+        variances acc_bias;
+        variances acc_noise;
+        variances gyro_bias;
+        variances gyro_noise;
+
         operator rs_motion_intrinsics() const{
-            return{ rs_motion_device_intrinsics(acc_intrinsic), rs_motion_device_intrinsics(gyro_intrinsic) };
+            return{ rs_motion_device_intrinsics(acc_intrinsic), rs_motion_device_intrinsics(gyro_intrinsic), 
+                    rs_variances(acc_bias), rs_variances(acc_noise), 
+                    rs_variances(gyro_bias), rs_variances(gyro_noise)
+            };
         };
     };
 
