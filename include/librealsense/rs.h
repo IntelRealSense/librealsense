@@ -203,6 +203,8 @@ typedef enum rs_option
     RS_OPTION_FISHEYE_AUTO_EXPOSURE_SKIP_FRAMES               = 71, /**< In Fisheye auto-exposure sample every given number of frames */
     RS_OPTION_FRAMES_QUEUE_SIZE                               = 72, /**< Number of frames the user is allowed to keep per stream. Trying to hold-on to more frames will cause frame-drops.*/
     RS_OPTION_COUNT                                           = 73,
+    RS_OPTION_ENABLE_FW_LOG                                   = 81,
+    RS_OPTION_COUNT                                           = 82,
     RS_OPTION_MAX_ENUM = 0x7FFFFFFF
 } rs_option;
 

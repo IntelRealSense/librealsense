@@ -96,7 +96,8 @@ namespace rsimpl
             {RS_OPTION_SR300_WAKEUP_DEV_PHASE2_FPS,                 0.0,              ((double)sr300::e_suspend_fps::eFPS_MAX) - 1,      1.0, -1.0},
             {RS_OPTION_SR300_WAKEUP_DEV_RESET,                      0.0,              0.0,               1.0, -1.0},
             {RS_OPTION_SR300_WAKE_ON_USB_REASON,                    0.0,              (double)sr300::wakeonusb_reason::eMaxWakeOnReason, 1.0, -1.0},
-            {RS_OPTION_SR300_WAKE_ON_USB_CONFIDENCE,                0.0,              100.,                                              1.0, -1.0}  // Percentage
+            {RS_OPTION_SR300_WAKE_ON_USB_CONFIDENCE,                0.0,              100.,                                              1.0, -1.0}, // Percentage
+            {RS_OPTION_ENABLE_FW_LOG,                               0,                1,                                                 1,    0 }
         };
 
         update_supported_options(*device.get(), ivcam::depth_xu, eu_SR300_depth_controls, info.options);
@@ -125,6 +126,35 @@ namespace rsimpl
         arr.startLaser = -1;
         arr.ARUpperTh = 1250;
         arr.ARLowerTh = 650;
+    }
+
+    void sr300_camera::start_fw_logger(char fw_log_op_code, int grab_rate_in_ms, std::timed_mutex& mutex)
+    {
+        iv_camera::start_fw_logger(fw_log_op_code, grab_rate_in_ms, mutex);
+    }
+
+    void sr300_camera::stop_fw_logger()
+    {
+        iv_camera::stop_fw_logger();
+    }
+
+    void sr300_camera::set_fw_logger_option(double value)
+    {
+        if (value >= 1)
+        {
+            if (!rs_device_base::keep_fw_logger_alive)
+                start_fw_logger(0x35, 100, usbMutex);
+        }
+        else
+        {
+            if (rs_device_base::keep_fw_logger_alive)
+                stop_fw_logger();
+        }
+    }
+
+    unsigned sr300_camera::get_fw_logger_option()
+    {
+        return rs_device_base::keep_fw_logger_alive;
     }
 
     void sr300_camera::set_options(const rs_option options[], size_t count, const double values[])
@@ -158,6 +188,7 @@ namespace rsimpl
             case RS_OPTION_SR300_AUTO_RANGE_START_LASER:                arr_writer.set(&ivcam::cam_auto_range_request::startLaser, values[i]); break;
             case RS_OPTION_SR300_AUTO_RANGE_UPPER_THRESHOLD:            arr_writer.set(&ivcam::cam_auto_range_request::ARUpperTh, values[i]); break;
             case RS_OPTION_SR300_AUTO_RANGE_LOWER_THRESHOLD:            arr_writer.set(&ivcam::cam_auto_range_request::ARLowerTh, values[i]); break;
+            case RS_OPTION_ENABLE_FW_LOG:                               set_fw_logger_option(values[i]); break;
 
             case RS_OPTION_SR300_WAKEUP_DEV_PHASE1_PERIOD:              arr_wakeup_dev_writer.set(&sr300::wakeup_dev_params::phase1Period, values[i]); break;
             case RS_OPTION_SR300_WAKEUP_DEV_PHASE1_FPS:                 arr_wakeup_dev_writer.set(&sr300::wakeup_dev_params::phase1FPS, (int)values[i]); break;
@@ -215,6 +246,7 @@ namespace rsimpl
             case RS_OPTION_SR300_AUTO_RANGE_START_LASER:                values[i] = arr_reader.get(&ivcam::cam_auto_range_request::startLaser); break;
             case RS_OPTION_SR300_AUTO_RANGE_UPPER_THRESHOLD:            values[i] = arr_reader.get(&ivcam::cam_auto_range_request::ARUpperTh); break;
             case RS_OPTION_SR300_AUTO_RANGE_LOWER_THRESHOLD:            values[i] = arr_reader.get(&ivcam::cam_auto_range_request::ARLowerTh); break;
+            case RS_OPTION_ENABLE_FW_LOG:                               values[i] = get_fw_logger_option(); break;
 
             case RS_OPTION_SR300_WAKEUP_DEV_PHASE1_PERIOD:              values[i] = wake_on_usb_reader.get(&sr300::wakeup_dev_params::phase1Period); break;
             case RS_OPTION_SR300_WAKEUP_DEV_PHASE1_FPS:                 values[i] = wake_on_usb_reader.get(&sr300::wakeup_dev_params::phase1FPS); break;

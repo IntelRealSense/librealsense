@@ -160,6 +160,7 @@ namespace rs
         fisheye_color_auto_exposure_sample_rate         = 70, /**< In Fisheye auto-exposure sample frame every given number of pixels */
         fisheye_color_auto_exposure_skip_frames         = 71, /**< In Fisheye auto-exposure sample every given number of frames */
         frames_queue_size                               = 72, /**< Number of frames the user is allowed to keep per stream. Trying to hold-on to more frames will cause frame-drops.*/
+        enable_fw_log                                   = 81
     };
 
     enum class blob_type {
