@@ -20,6 +20,7 @@
 
 TEST_CASE("DS5 devices support all required options", "[live] [DS-device]")
 {
+    rs::log_to_console(rs::log_severity::warn);
     // Require at least one device to be plugged in
     safe_context ctx;
     const int device_count = rs_get_device_count(ctx, require_no_error());
@@ -92,6 +93,52 @@ TEST_CASE("DS5 correctly recognizes invalid options", "[live] [DS-device]")
     }
 }
 
+TEST_CASE("DS5 asynchronous controls", "[live] [DS-device]")
+{
+    for (int i=0; i< 10; i++)
+    {
+        INFO("CTX creation iteration " << i);
+
+        rs::context ctx;
+        REQUIRE(ctx.get_device_count() == 1);
+
+        rs::device * dev = ctx.get_device(0);
+        REQUIRE(nullptr != dev);
+
+        std::string name = dev->get_name();
+        INFO("Device name is " << name);
+        REQUIRE(std::string::npos != name.find("Intel RealSense DS5"));
+
+        double lsr_init_power = 0.;
+        rs::option opt = rs::option::ds5_laser_power;
+
+        dev->get_options(&opt, 1, &lsr_init_power);
+        INFO("Initial laser power value obtained from hardware is " << lsr_init_power);
+        std::this_thread::sleep_for(std::chrono::milliseconds(20));
+
+        int index = 0;
+        double set_val = 1., reset_val = 0., res = 0.;
+
+        for (uint8_t j = 0; j < 10; j++) // Laser power is specified in % of max power  - TODO: verify with FW
+        {
+            INFO("Set option iteration " << j);
+            dev->set_options(&opt, 1, &set_val);
+            std::this_thread::sleep_for(std::chrono::milliseconds(50));
+            dev->get_options(&opt, 1, &res);
+            std::this_thread::sleep_for(std::chrono::milliseconds(50));
+            REQUIRE(set_val == res);
+
+            dev->set_options(&opt, 1, &reset_val);
+            std::this_thread::sleep_for(std::chrono::milliseconds(50));
+            dev->get_options(&opt, 1, &res);
+            std::this_thread::sleep_for(std::chrono::milliseconds(50));
+            REQUIRE(reset_val == res);
+        }
+
+        dev->set_options(&opt, 1, &lsr_init_power);
+        std::this_thread::sleep_for(std::chrono::milliseconds(20));
+    }
+}
 
 TEST_CASE("DS5 laser power control verification", "[live] [DS-device]")
 {
@@ -125,5 +172,29 @@ TEST_CASE("DS5 laser power control verification", "[live] [DS-device]")
     }
 
     dev->set_options(&opt, 1, &lsr_init_power);
+}
+
+TEST_CASE("DS5 Streaming Formats validation", "[live] [DS-device]")
+{
+    // Require only one device to be plugged in
+    safe_context ctx;
+    const int device_count = rs_get_device_count(ctx, require_no_error());
+    REQUIRE(device_count == 1);
+
+    rs_device * dev = rs_get_device(ctx, 0, require_no_error());
+    REQUIRE(dev != nullptr);
+
+    std::string name = dev->get_name();
+    REQUIRE(std::string::npos != name.find("Intel RealSense DS5"));
+
+    SECTION( "Streaming depth configurations: [640X480] X [15,30,60]FPS ")
+    {
+        for ( auto fps : {15,30})
+        {
+            test_streaming(dev, {
+                {RS_STREAM_DEPTH, 640, 480, RS_FORMAT_Z16, fps}
+            });
+        }
+    }
 }
 #endif /* #if !defined(MAKEFILE) || ( defined(LIVE_TEST) && defined(DS5_TEST) ) */
