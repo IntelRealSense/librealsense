@@ -15,12 +15,6 @@ namespace rsimpl
 
     }
 
-    bool r200_camera::supports_option(rs_option option) const
-    {
-        // We have special logic to implement LR gain and exposure, so they do not belong to the standard option list
-        return option == RS_OPTION_R200_LR_GAIN || option == RS_OPTION_R200_LR_EXPOSURE || rs_device_base::supports_option(option);
-    }
-
     void r200_camera::start_fw_logger(char fw_log_op_code, int grab_rate_in_ms, std::timed_mutex& mutex)
     {
         throw std::logic_error("Not implemented");

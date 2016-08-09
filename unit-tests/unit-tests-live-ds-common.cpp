@@ -74,6 +74,8 @@ TEST_CASE("DS-device devices support all required options", "[live] [DS-device]"
 
         SECTION("device supports standard picture options and DS-device extension options")
         {
+            rs_set_device_option(dev, RS_OPTION_R200_LR_AUTO_EXPOSURE_ENABLED, 1.0, require_no_error());
+
             const int supported_options[] = {
                 RS_OPTION_COLOR_BACKLIGHT_COMPENSATION,
                 RS_OPTION_COLOR_BRIGHTNESS,
@@ -122,7 +124,7 @@ TEST_CASE("DS-device devices support all required options", "[live] [DS-device]"
                 if (std::find(std::begin(supported_options), std::end(supported_options), i) != std::end(supported_options))
                 {
                     REQUIRE(rs_device_supports_option(dev, (rs_option)i, require_no_error()) == 1);
-                }                
+                }
             }
         }
     }

@@ -44,20 +44,13 @@ int main() try
     printf("    Serial number: %s\n", dev->get_serial());
     printf("    Firmware version: %s\n", dev->get_firmware_version());
 
-    // Motion Module configurable options
-    std::vector<rs::option> mm_cfg_list = { rs::option::zr300_gyroscope_bandwidth,       rs::option::zr300_gyroscope_range,
-                                            rs::option::zr300_accelerometer_bandwidth,   rs::option::zr300_accelerometer_range };
-                                        // gyro_bw      gyro_range  accel_bw    accel_range
-    std::vector<double> mm_cfg_params = {       1,          1,          1,          1 };    // TODO expose as opaque gyro/accel parameters
-    assert(mm_cfg_list.size() == mm_cfg_params.size());
-
     auto motion_callback = [](rs::motion_data entry)
     {
         auto now = std::chrono::system_clock::now().time_since_epoch();
         auto sys_time = std::chrono::duration_cast<std::chrono::milliseconds>(now).count();
         std::stringstream ss;
         ss << "Motion,\t host time " << sys_time
-            << "\ttimestamp: " << std::setprecision(8) << (double)entry.timestamp_data.timestamp*IMU_UNITS_TO_MSEC
+            << "\ttimestamp: " << std::setprecision(8) << entry.timestamp_data.timestamp
             << "\tsource: " << (rs::event)entry.timestamp_data.source_id
             << "\tframe_num: " << entry.timestamp_data.frame_number
             << "\tx: " << std::setprecision(5) <<  entry.axes[0] << "\ty: " << entry.axes[1] << "\tz: " << entry.axes[2];
@@ -71,7 +64,7 @@ int main() try
         auto sys_time = std::chrono::duration_cast<std::chrono::milliseconds>(now).count();
         std::stringstream ss;
         ss << "TimeEvt, host time "  << sys_time
-            << "\ttimestamp: " << std::setprecision(8) << (double)entry.timestamp*IMU_UNITS_TO_MSEC
+            << "\ttimestamp: " << std::setprecision(8) << entry.timestamp
             << "\tsource: " << (rs::event)entry.source_id
             << "\tframe_num: " << entry.frame_number;
         log(ss.str().c_str());

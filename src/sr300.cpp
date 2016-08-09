@@ -97,11 +97,19 @@ namespace rsimpl
             {RS_OPTION_SR300_WAKEUP_DEV_RESET,                      0.0,              0.0,               1.0, -1.0},
             {RS_OPTION_SR300_WAKE_ON_USB_REASON,                    0.0,              (double)sr300::wakeonusb_reason::eMaxWakeOnReason, 1.0, -1.0},
             {RS_OPTION_SR300_WAKE_ON_USB_CONFIDENCE,                0.0,              100.,                                              1.0, -1.0}, // Percentage
-            {RS_OPTION_ENABLE_FW_LOG,                               0,                1,                                                 1,    0 }
+            {RS_OPTION_HARDWARE_LOGGER_ENABLED,                     0,                1,                                                 1,    0 }
         };
-
-        update_supported_options(*device.get(), ivcam::depth_xu, eu_SR300_depth_controls, info.options);
-
+	
+        
+        // Hardcoded extension controls
+        //                                  option                         min  max    step     def
+        //                                  ------                         ---  ---    ----     ---
+        info.options.push_back({ RS_OPTION_F200_LASER_POWER,                0,  16,     1,      16  });
+        info.options.push_back({ RS_OPTION_F200_ACCURACY,                   0,  3,      1,      1   });
+        info.options.push_back({ RS_OPTION_F200_MOTION_RANGE,               0,  220,    1,      9   });
+        info.options.push_back({ RS_OPTION_F200_FILTER_OPTION,              0,  7,      1,      5   });
+        info.options.push_back({ RS_OPTION_F200_CONFIDENCE_THRESHOLD,       0,  15,     1,      3   });
+        
         rsimpl::pose depth_to_color = {transpose((const float3x3 &)c.Rt), (const float3 &)c.Tt * 0.001f}; // convert mm to m
         info.stream_poses[RS_STREAM_DEPTH] = info.stream_poses[RS_STREAM_INFRARED] = inverse(depth_to_color);
         info.stream_poses[RS_STREAM_COLOR] = {{{1,0,0},{0,1,0},{0,0,1}}, {0,0,0}};
@@ -188,7 +196,7 @@ namespace rsimpl
             case RS_OPTION_SR300_AUTO_RANGE_START_LASER:                arr_writer.set(&ivcam::cam_auto_range_request::startLaser, values[i]); break;
             case RS_OPTION_SR300_AUTO_RANGE_UPPER_THRESHOLD:            arr_writer.set(&ivcam::cam_auto_range_request::ARUpperTh, values[i]); break;
             case RS_OPTION_SR300_AUTO_RANGE_LOWER_THRESHOLD:            arr_writer.set(&ivcam::cam_auto_range_request::ARLowerTh, values[i]); break;
-            case RS_OPTION_ENABLE_FW_LOG:                               set_fw_logger_option(values[i]); break;
+            case RS_OPTION_HARDWARE_LOGGER_ENABLED:                     set_fw_logger_option(values[i]); break;
 
             case RS_OPTION_SR300_WAKEUP_DEV_PHASE1_PERIOD:              arr_wakeup_dev_writer.set(&sr300::wakeup_dev_params::phase1Period, values[i]); break;
             case RS_OPTION_SR300_WAKEUP_DEV_PHASE1_FPS:                 arr_wakeup_dev_writer.set(&sr300::wakeup_dev_params::phase1FPS, (int)values[i]); break;
@@ -246,7 +254,7 @@ namespace rsimpl
             case RS_OPTION_SR300_AUTO_RANGE_START_LASER:                values[i] = arr_reader.get(&ivcam::cam_auto_range_request::startLaser); break;
             case RS_OPTION_SR300_AUTO_RANGE_UPPER_THRESHOLD:            values[i] = arr_reader.get(&ivcam::cam_auto_range_request::ARUpperTh); break;
             case RS_OPTION_SR300_AUTO_RANGE_LOWER_THRESHOLD:            values[i] = arr_reader.get(&ivcam::cam_auto_range_request::ARLowerTh); break;
-            case RS_OPTION_ENABLE_FW_LOG:                               values[i] = get_fw_logger_option(); break;
+            case RS_OPTION_HARDWARE_LOGGER_ENABLED:                     values[i] = get_fw_logger_option(); break;
 
             case RS_OPTION_SR300_WAKEUP_DEV_PHASE1_PERIOD:              values[i] = wake_on_usb_reader.get(&sr300::wakeup_dev_params::phase1Period); break;
             case RS_OPTION_SR300_WAKEUP_DEV_PHASE1_FPS:                 values[i] = wake_on_usb_reader.get(&sr300::wakeup_dev_params::phase1FPS); break;
@@ -292,7 +300,7 @@ namespace rsimpl
         //uvc::set_pu_control_with_retry(*device, 0, rs_option::RS_OPTION_COLOR_EXPOSURE, -6); // auto
 
         auto info = get_sr300_info(device, calib);
-
+        
         ivcam::get_module_serial_string(*device, mutex, info.serial, 132);
         ivcam::get_firmware_version_string(*device, mutex, info.firmware_version);
 
