@@ -403,14 +403,13 @@ namespace rsimpl
         }
 
         // Subdevice 2 can provide color, in several formats and framerates        
-        info.subdevice_modes.push_back({ 2, { 320, 240 }, pf_yuy2, 60, scale_intrinsics(c.intrinsicsThird[1], 320, 240), { c.modesThird[1][1] }, { 0 } });
-        info.subdevice_modes.push_back({ 2, { 320, 240 }, pf_yuy2, 30, scale_intrinsics(c.intrinsicsThird[1], 320, 240), { c.modesThird[1][1] }, { 0 } });
         info.subdevice_modes.push_back({ 2, { 640, 480 }, pf_yuy2, 60, c.intrinsicsThird[1], { c.modesThird[1][0] }, { 0 } });
         info.subdevice_modes.push_back({ 2, { 640, 480 }, pf_yuy2, 30, c.intrinsicsThird[1], { c.modesThird[1][0] }, { 0 } });
-
+        info.subdevice_modes.push_back({ 2, { 320, 240 }, pf_yuy2, 60, scale_intrinsics(c.intrinsicsThird[1], 320, 240), { c.modesThird[1][1] }, { 0 } });
+        info.subdevice_modes.push_back({ 2, { 320, 240 }, pf_yuy2, 30, scale_intrinsics(c.intrinsicsThird[1], 320, 240), { c.modesThird[1][1] }, { 0 } });
+        
         info.subdevice_modes.push_back({ 2,{ 1920, 1080 }, pf_yuy2, 15, c.intrinsicsThird[0],{ c.modesThird[0][0] },{ 0 } });
         info.subdevice_modes.push_back({ 2,{ 1920, 1080 }, pf_yuy2, 30, c.intrinsicsThird[0],{ c.modesThird[0][0] },{ 0 } });
-
 
         // Set up interstream rules for left/right/z images
         for(auto ir : {RS_STREAM_INFRARED, RS_STREAM_INFRARED2})
@@ -731,12 +730,12 @@ namespace rsimpl
 
     class color_timestamp_reader : public frame_timestamp_reader
     {
-        int fps;
+        int fps, scale;
         wraparound_mechanism<double> timestamp_wraparound;
         wraparound_mechanism<unsigned long long> frame_counter_wraparound;
 
     public:
-        color_timestamp_reader(int fps) : fps(fps), timestamp_wraparound(0, std::numeric_limits<uint32_t>::max()), frame_counter_wraparound(0, std::numeric_limits<uint32_t>::max()) {}
+        color_timestamp_reader(int fps, int scale) : fps(fps), scale(scale), timestamp_wraparound(0, std::numeric_limits<uint32_t>::max()), frame_counter_wraparound(0, std::numeric_limits<uint32_t>::max()) {}
 
         bool validate_frame(const subdevice_mode & mode, const void * frame) const override
         {
@@ -754,6 +753,8 @@ namespace rsimpl
                 frame_number |= ((*data & 1) << (i & 1 ? 32 - i : 30 - i));
                 data += 2;
             }
+
+            frame_number /= scale;
             
             return frame_counter_wraparound.fix(frame_number);
         }
@@ -822,7 +823,17 @@ namespace rsimpl
             {
                 if (stream_depth.is_enabled() || stream_infrared.is_enabled() || stream_infrared2.is_enabled())
                 {
-                    return std::make_shared<color_timestamp_reader>(stream_color.get_framerate());
+                    if (stream_color.get_intrinsics().width > 640) // HD formats seem to not include DINGY
+                        return std::make_shared<serial_timestamp_generator>(stream_color.get_framerate());
+
+                    // W/A for DS4 issue: when running at Depth 60 & Color 30 it seems that the frame counter is being incremented on every
+                    // depth frame (or ir/ir2). This means we need to reduce color frame number accordingly
+                    auto master_fps = stream_depth.is_enabled() ? stream_depth.get_framerate() : 0;
+                    master_fps = stream_infrared.is_enabled() ? stream_infrared.get_framerate() : master_fps;
+                    master_fps = stream_infrared2.is_enabled() ? stream_infrared2.get_framerate() : master_fps;
+                    auto scale = master_fps / stream_color.get_framerate();
+
+                    return std::make_shared<color_timestamp_reader>(stream_color.get_framerate(), scale);
                 }
                 else
                 {
