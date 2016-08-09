@@ -184,13 +184,13 @@ namespace rs
 
     enum class event : uint8_t
     {
-        event_imu_accel         = 1,
-        event_imu_gyro          = 2,
-        event_imu_depth_cam     = 3,
-        event_imu_motion_cam    = 4,
-        event_imu_g0_sync       = 5,
-        event_imu_g1_sync       = 6,
-        event_imu_g2_sync       = 7
+        event_imu_accel         = 0,
+        event_imu_gyro          = 1,
+        event_imu_depth_cam     = 2,
+        event_imu_motion_cam    = 3,
+        event_imu_g0_sync       = 4,
+        event_imu_g1_sync       = 5,
+        event_imu_g2_sync       = 6
     };
 
     enum class timestamp_domain
