@@ -20,7 +20,7 @@ namespace rsimpl
 {
     zr300_camera::zr300_camera(std::shared_ptr<uvc::device> device, const static_device_info & info, motion_module_calibration in_fe_intrinsic)
     : ds_device(device, info),
-      motion_module_ctrl(device.get()),
+      motion_module_ctrl(device.get(), usbMutex),
       fe_intrinsic(in_fe_intrinsic),
       auto_exposure(nullptr),
       to_add_frames((auto_exposure_state.get_auto_exposure_state(RS_OPTION_FISHEYE_ENABLE_AUTO_EXPOSURE) == 1))
@@ -377,7 +377,8 @@ namespace rsimpl
         {
             // Acquire Device handle for Motion Module API
             zr300::claim_motion_module_interface(*device);
-            motion_module_control mm(device.get());
+            std::timed_mutex mtx;
+            motion_module_control mm(device.get(), mtx);
             mm.toggle_motion_module_power(true);
             mm.toggle_motion_module_events(true); //wait for the motion module start up (300 msec)
             mm.toggle_motion_module_events(false); //then deactivate events generation
