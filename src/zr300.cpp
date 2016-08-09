@@ -364,8 +364,6 @@ namespace rsimpl
         info.name = { "Intel RealSense ZR300" };
         auto c = ds::read_camera_info(*device);
 
-        info.subdevice_modes.push_back({ 2, { 1920, 1080 }, pf_rw16, 30, c.intrinsicsThird[0], { c.modesThird[0][0] }, { 0 } });
-
         motion_module_calibration fisheye_intrinsic;
         auto succeeded_to_read_fisheye_intrinsic = false;
        
@@ -418,10 +416,19 @@ namespace rsimpl
         }
         
         std::timed_mutex mutex;
-        ivcam::get_firmware_version_string(*device, mutex, info.camera_info[RS_CAMERA_INFO_ADAPTER_BOARD_FIRMWARE_VERSION], (int)adaptor_board_command::GVD);
-        ivcam::get_firmware_version_string(*device, mutex, info.camera_info[RS_CAMERA_INFO_MOTION_MODULE_FIRMWARE_VERSION], (int)adaptor_board_command::GVD, 4);
-
+        try
+        {
+            ivcam::get_firmware_version_string(*device, mutex, info.camera_info[RS_CAMERA_INFO_ADAPTER_BOARD_FIRMWARE_VERSION], (int)adaptor_board_command::GVD);
+            ivcam::get_firmware_version_string(*device, mutex, info.camera_info[RS_CAMERA_INFO_MOTION_MODULE_FIRMWARE_VERSION], (int)adaptor_board_command::GVD, 4);
+        }
+        catch(...) 
+        {
+            LOG_ERROR("Couldn't query adapter board / motion module FW version!");
+        }
+        
         ds_device::set_common_ds_config(device, info, c);
+        info.subdevice_modes.push_back({ 2, { 1920, 1080 }, pf_rw16, 30, c.intrinsicsThird[0], { c.modesThird[0][0] }, { 0 } });
+
         if (succeeded_to_read_fisheye_intrinsic)
         {
             auto fe_extrinsic = fisheye_intrinsic.mm_extrinsic;
@@ -432,7 +439,7 @@ namespace rsimpl
         }
         else
         {
-            LOG_ERROR("Motion module capabilities were disabled due to failure to aquire intrinsic");
+            LOG_ERROR("Motion module capabilities were disabled due to failure to read intrinsics");
         }
         return std::make_shared<zr300_camera>(device, info, fisheye_intrinsic);
     }
