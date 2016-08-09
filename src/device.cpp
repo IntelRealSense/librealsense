@@ -4,6 +4,7 @@
 #include "device.h"
 #include "sync.h"
 #include "motion-module.h"
+#include "hw-monitor.h"
 
 #include <array>
 #include "image.h"
@@ -21,7 +22,7 @@ const int MAX_EVENT_TINE_OUT   = 10;
 rs_device_base::rs_device_base(std::shared_ptr<rsimpl::uvc::device> device, const rsimpl::static_device_info & info) : device(device), config(info), capturing(false), usb_port_id(""), data_acquisition_active(false), motion_module_ready(false),
     depth(config, RS_STREAM_DEPTH), color(config, RS_STREAM_COLOR), infrared(config, RS_STREAM_INFRARED), infrared2(config, RS_STREAM_INFRARED2), fisheye(config, RS_STREAM_FISHEYE),
     points(depth), rect_color(color), color_to_depth(color, depth), depth_to_color(depth, color), depth_to_rect_color(depth, rect_color), infrared2_to_depth(infrared2,depth), depth_to_infrared2(depth,infrared2),
-    max_publish_list_size(MAX_FRAME_QUEUE_SIZE), event_queue_size(MAX_EVENT_QUEUE_SIZE), events_timeout(MAX_EVENT_TINE_OUT)
+    max_publish_list_size(MAX_FRAME_QUEUE_SIZE), event_queue_size(MAX_EVENT_QUEUE_SIZE), events_timeout(MAX_EVENT_TINE_OUT), keep_fw_logger_alive(false)
 {
     streams[RS_STREAM_DEPTH    ] = native_streams[RS_STREAM_DEPTH]     = &depth;
     streams[RS_STREAM_COLOR    ] = native_streams[RS_STREAM_COLOR]     = &color;
@@ -45,6 +46,8 @@ rs_device_base::~rs_device_base()
             stop(RS_SOURCE_VIDEO);
         if (data_acquisition_active)
             stop(RS_SOURCE_MOTION_TRACKING);
+        if (keep_fw_logger_alive)
+            stop_fw_logger();
     }
     catch (...) {}
 }
@@ -233,7 +236,61 @@ void rs_device_base::stop(rs_source source)
              throw std::runtime_error("motion-tracking is not supported by this device");
 }
 
+std::string hexify(unsigned char n)
+{
+    std::string res;
 
+    do
+    {
+        res += "0123456789ABCDEF"[n % 16];
+        n >>= 4;
+    } while (n);
+
+    reverse(res.begin(), res.end());
+
+    if (res.size() == 1)
+    {
+        res.insert(0, "0");
+    }
+
+    return res;
+}
+
+void rs_device_base::start_fw_logger(char fw_log_op_code, int grab_rate_in_ms, std::timed_mutex& mutex)
+{
+    if (keep_fw_logger_alive)
+        throw std::logic_error("FW logger already started");
+
+    keep_fw_logger_alive = true;
+    fw_logger = std::make_shared<std::thread>([this, fw_log_op_code, grab_rate_in_ms, &mutex]() {
+        const int data_size = 500;
+        hw_monitor::hwmon_cmd cmd((int)fw_log_op_code);
+        cmd.Param1 = data_size;
+        while (keep_fw_logger_alive)
+        {
+            std::this_thread::sleep_for(std::chrono::milliseconds(grab_rate_in_ms));
+            hw_monitor::perform_and_send_monitor_command(this->get_device(), mutex, cmd);
+            char data[data_size];
+            memcpy(data, cmd.receivedCommandData, cmd.receivedCommandDataLength);
+
+            std::stringstream sstr;
+            for (int i = 0; i < cmd.receivedCommandDataLength; ++i)
+                sstr << hexify(data[i]) << " ";
+
+            if (cmd.receivedCommandDataLength)
+               LOG_INFO(sstr.str());
+        }
+    });
+}
+
+void rs_device_base::stop_fw_logger()
+{
+    if (!keep_fw_logger_alive)
+        throw std::logic_error("FW logger not started");
+
+    keep_fw_logger_alive = false;
+    fw_logger->join();
+}
 
 void rs_device_base::start_video_streaming()
 {
@@ -469,13 +526,14 @@ const char * rs_device_base::get_option_description(rs_option option) const
     case RS_OPTION_FISHEYE_EXPOSURE                                : return "Fisheye image exposure time in msec";
     case RS_OPTION_FISHEYE_GAIN                                    : return "Fisheye image gain";
     case RS_OPTION_FISHEYE_STROBE                                  : return "Enables / disables fisheye strobe. When enabled this will align timestamps to common clock-domain with the motion events";
-    case RS_OPTION_FISHEYE_EXT_TRIG                                : return "Enables / disables fisheye external trigger mode. When enabled fisheye image will be aquired in-sync with the depth image";
+    case RS_OPTION_FISHEYE_EXTERNAL_TRIGGER                        : return "Enables / disables fisheye external trigger mode. When enabled fisheye image will be aquired in-sync with the depth image";
     case RS_OPTION_FRAMES_QUEUE_SIZE                               : return "Number of frames the user is allowed to keep per stream. Trying to hold-on to more frames will cause frame-drops.";
     case RS_OPTION_FISHEYE_ENABLE_AUTO_EXPOSURE                    : return "Enable / disable fisheye auto-exposure";
     case RS_OPTION_FISHEYE_AUTO_EXPOSURE_MODE                      : return "0 - static auto-exposure, 1 - anti-flicker auto-exposure, 2 - hybrid";
     case RS_OPTION_FISHEYE_AUTO_EXPOSURE_ANTIFLICKER_RATE          : return "Fisheye auto-exposure anti-flicker rate, can be 50 or 60 Hz";
     case RS_OPTION_FISHEYE_AUTO_EXPOSURE_PIXEL_SAMPLE_RATE         : return "In Fisheye auto-exposure sample frame every given number of pixels";
     case RS_OPTION_FISHEYE_AUTO_EXPOSURE_SKIP_FRAMES               : return "In Fisheye auto-exposure sample every given number of frames";
+    case RS_OPTION_HARDWARE_LOGGER_ENABLED                         : return "Enables / disables fetching diagnostic information from hardware (and writting the results to log)";
     default: return rs_option_to_string(option);
     }
 }

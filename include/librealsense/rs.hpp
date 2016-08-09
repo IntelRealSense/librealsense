@@ -153,13 +153,14 @@ namespace rs
         fisheye_exposure                                = 63, /**< Fisheye image exposure time in msec*/
         fisheye_gain                                    = 64, /**< Fisheye image gain*/
         fisheye_strobe                                  = 65, /**< Enables / disables fisheye strobe. When enabled this will align timestamps to common clock-domain with the motion events*/
-        fisheye_ext_trig                                = 66, /**< Enables / disables fisheye external trigger mode. When enabled fisheye image will be aquired in-sync with the depth image*/
+        fisheye_external_trigger                        = 66, /**< Enables / disables fisheye external trigger mode. When enabled fisheye image will be aquired in-sync with the depth image*/
         fisheye_color_auto_exposure                     = 67, /**< Enable / disable fisheye auto-exposure */
         fisheye_color_auto_exposure_mode                = 68, /**< 0 - static auto-exposure, 1 - anti-flicker auto-exposure, 2 - hybrid */
         fisheye_color_auto_exposure_rate                = 69, /**< Fisheye auto-exposure anti-flicker rate, can be 50 or 60 Hz */
         fisheye_color_auto_exposure_sample_rate         = 70, /**< In Fisheye auto-exposure sample frame every given number of pixels */
         fisheye_color_auto_exposure_skip_frames         = 71, /**< In Fisheye auto-exposure sample every given number of frames */
         frames_queue_size                               = 72, /**< Number of frames the user is allowed to keep per stream. Trying to hold-on to more frames will cause frame-drops.*/
+        hardware_logger_enabled                         = 73, /**< Enable / disable fetching log data from the device */
     };
 
     enum class blob_type {
@@ -973,6 +974,20 @@ namespace rs
         none  = 5, // No logging will occur
     };
 
+    class log_callback : public rs_log_callback
+    {
+        std::function<void(log_severity, const char *)> on_event_function;
+    public:
+        explicit log_callback(std::function<void(log_severity, const char *)> on_event) : on_event_function(on_event) {}
+
+        void on_event(rs_log_severity severity, const char * message) override
+        {
+            on_event_function((log_severity)severity, message);
+        }
+
+        void release() override { delete this; }
+    };
+
     inline void log_to_console(log_severity min_severity)
     {
         rs_error * e = nullptr;
@@ -984,6 +999,13 @@ namespace rs
     {
         rs_error * e = nullptr;
         rs_log_to_file((rs_log_severity)min_severity, file_path, &e);
+        error::handle(e);
+    }
+
+    inline void log_to_callback(log_severity min_severity, std::function<void(log_severity, const char *)> callback)
+    {
+        rs_error * e = nullptr;
+        rs_log_to_callback_cpp((rs_log_severity)min_severity, new log_callback(callback), &e);
         error::handle(e);
     }
 

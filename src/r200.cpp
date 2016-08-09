@@ -15,6 +15,16 @@ namespace rsimpl
 
     }
 
+    void r200_camera::start_fw_logger(char fw_log_op_code, int grab_rate_in_ms, std::timed_mutex& mutex)
+    {
+        throw std::logic_error("Not implemented");
+    }
+
+    void r200_camera::stop_fw_logger()
+    {
+        throw std::logic_error("Not implemented");
+    }
+
     std::shared_ptr<rs_device> make_r200_device(std::shared_ptr<uvc::device> device)
     {
         LOG_INFO("Connecting to Intel RealSense R200");

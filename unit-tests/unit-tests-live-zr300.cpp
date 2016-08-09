@@ -108,7 +108,7 @@ TEST_CASE("ZR300 devices support all required options", "[live] [DS-device]")
                 RS_OPTION_FISHEYE_EXPOSURE,
                 RS_OPTION_FISHEYE_GAIN,
                 RS_OPTION_FISHEYE_STROBE,
-                RS_OPTION_FISHEYE_EXT_TRIG
+                RS_OPTION_FISHEYE_EXTERNAL_TRIGGER
             };
 
             for (int i = 0; i<RS_OPTION_COUNT; ++i)

@@ -56,6 +56,9 @@ namespace rsimpl
 
             virtual void stop(rs_source source) override;
             virtual void start(rs_source source) override;
+
+            virtual void start_fw_logger(char fw_log_op_code, int grab_rate_in_ms, std::timed_mutex& mutex) override;
+            virtual void stop_fw_logger() override;
         };
     }
 }
