@@ -110,7 +110,7 @@ protected:
     virtual void                                on_before_callback(rs_stream, rs_frame_ref *, std::shared_ptr<rsimpl::frame_archive>) { }
 
     bool                                        motion_module_ready = false;
-    std::atomic<bool>                           keep_fw_logger_alive = false;
+    std::atomic<bool>                           keep_fw_logger_alive;
 public:
     rs_device_base(std::shared_ptr<rsimpl::uvc::device> device, const rsimpl::static_device_info & info);
     virtual ~rs_device_base();
