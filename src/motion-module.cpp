@@ -14,7 +14,7 @@ using namespace motion_module;
 #define MOTION_MODULE_CONTROL_I2C_SLAVE_ADDRESS 0x42
 const double IMU_UNITS_TO_MSEC = 0.00003125;
 
-motion_module_control::motion_module_control(uvc::device *device) : device_handle(device), power_state(false)
+motion_module_control::motion_module_control(uvc::device *device, std::timed_mutex& usbMutex) : device_handle(device), power_state(false), usbMutex(usbMutex)
 {
 }
 
@@ -128,12 +128,11 @@ void motion_module_control::set_control(mm_request request, bool on)
         throw std::logic_error(to_string() << " unsupported control requested :" << (int)request << " valid range is [1,2]");
     }
 
-    std::timed_mutex mutex;
     hw_monitor::hwmon_cmd cmd((uint8_t)cmd_opcode);
     cmd.Param1 = (on) ? 1 : 0;
 
     // Motion module will always use the auxillary USB handle (1) for
-    perform_and_send_monitor_command(*device_handle, mutex, cmd);
+    perform_and_send_monitor_command(*device_handle, usbMutex, cmd);
 }
 
 void motion_module_control::toggle_motion_module_power(bool on)
@@ -164,8 +163,7 @@ void motion_module_control::i2c_iap_write(uint16_t slave_address, uint8_t *buffe
     cmd.sizeOfSendCommandData = len;
     memcpy(cmd.data, buffer, len);
 
-    std::timed_mutex mutex;
-    perform_and_send_monitor_command(*device_handle, mutex, cmd);
+    perform_and_send_monitor_command(*device_handle, usbMutex, cmd);
 }
 
 // Write a 32 bit value to a specific i2c slave address.

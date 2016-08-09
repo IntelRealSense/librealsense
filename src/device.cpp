@@ -274,6 +274,7 @@ void rs_device_base::start_fw_logger(char fw_log_op_code, int grab_rate_in_ms, s
             memcpy(data, cmd.receivedCommandData, cmd.receivedCommandDataLength);
 
             std::stringstream sstr;
+            sstr << "FW_Log_Data:";
             for (int i = 0; i < cmd.receivedCommandDataLength; ++i)
                 sstr << hexify(data[i]) << " ";
 
