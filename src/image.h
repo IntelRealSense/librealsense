@@ -41,8 +41,6 @@ namespace rsimpl
     extern const native_pixel_format pf_f200_inzi;  // 16-bit Z + 8 bit IR per pixel
     extern const native_pixel_format pf_sr300_invi; // 16-bit IR image
     extern const native_pixel_format pf_sr300_inzi; // Planar 16-bit IR image followed by 16-bit Z image
-    extern const native_pixel_format pf_l8;         // Microsoft 8 bit Luminosity image
-    extern const native_pixel_format pf_d16;        // Microsoft 16 bit Depth image format
 }
 
 #endif
