@@ -262,10 +262,10 @@ typedef struct rs_motion_intrinsics
 {
     rs_motion_device_intrinsics acc;
     rs_motion_device_intrinsics gyro;
-    rs_variances acc_bias;
-    rs_variances acc_noise;
-    rs_variances gyro_bias;
-    rs_variances gyro_noise;
+    rs_variances acc_bias_variances;
+    rs_variances acc_noise_variances;
+    rs_variances gyro_bias_variances;
+    rs_variances gyro_noise_variances;
 }rs_motion_intrinsics;
 
 

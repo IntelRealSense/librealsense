@@ -10,6 +10,7 @@
 #include "zr300.h"
 #include "ivcam-private.h"
 #include "hw-monitor.h"
+#include <librealsense/rs.hpp>
 
 using namespace rsimpl;
 using namespace rsimpl::ds;
@@ -18,8 +19,8 @@ using namespace rsimpl::hw_monitor;
 
 namespace rsimpl
 {
-    zr300_camera::zr300_camera(std::shared_ptr<uvc::device> device, const static_device_info & info, motion_module_calibration in_fe_intrinsic)
-    : ds_device(device, info),
+    zr300_camera::zr300_camera(std::shared_ptr<uvc::device> device, const static_device_info & info, motion_module_calibration in_fe_intrinsic, calibration_validator validator)
+        : ds_device(device, info, validator),
       motion_module_ctrl(device.get()),
       fe_intrinsic(in_fe_intrinsic),
       auto_exposure(nullptr),
@@ -271,11 +272,19 @@ namespace rsimpl
 
     rs_motion_intrinsics zr300_camera::get_motion_intrinsics() const
     {
+        if (!validate_motion_intrinsics())
+        {
+            throw std::runtime_error("Motion intrinsics are not valid");
+        }
         return  fe_intrinsic.calib.imu_intrinsic;
     }
 
     rs_extrinsics zr300_camera::get_motion_extrinsics_from(rs_stream from) const
     {
+        if (!validate_motion_extrinsics(from))
+        {
+            throw std::runtime_error("Motion intrinsics are not valid");
+        }
         switch (from)
         {
         case RS_STREAM_DEPTH:
@@ -316,7 +325,58 @@ namespace rsimpl
         memcpy(&frame_counter, cmd.receivedCommandData, cmd.receivedCommandDataLength);
         return frame_counter;
     }
-void get_raw_data(uint8_t opcode, uvc::device & device, std::timed_mutex & mutex, uint8_t * data, size_t & bytesReturned)
+
+    bool check_calibration_data(byte* data, int size)
+    {
+        for (auto i = 0; i < size; i++)
+        {
+            if (data[i] != 0)
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    bool zr300_camera::validate_motion_extrinsics(rs_stream from_stream) const
+    {
+        if(fe_intrinsic.calib.mm_extrinsic.ver.size == fe_intrinsic.calib.mm_extrinsic.get_data_size())
+        {
+            switch (from_stream)
+            {
+            case RS_STREAM_DEPTH:
+                if (check_calibration_data((byte*)&fe_intrinsic.calib.mm_extrinsic.depth_to_imu, sizeof(mm_extrinsic)))
+                    return true;
+                break;
+            case RS_STREAM_COLOR:
+                if (check_calibration_data((byte*)&fe_intrinsic.calib.mm_extrinsic.rgb_to_imu, sizeof(mm_extrinsic)))
+                    return true;
+                break;
+            case RS_STREAM_FISHEYE:
+                if (check_calibration_data((byte*)&fe_intrinsic.calib.mm_extrinsic.fe_to_imu, sizeof(mm_extrinsic)))
+                    return true;
+                break;
+            default:
+                return false;
+            }
+        }
+
+        return false;
+    }
+
+    bool zr300_camera::validate_motion_intrinsics() const
+    {
+       if(fe_intrinsic.calib.imu_intrinsic.ver.size == fe_intrinsic.calib.imu_intrinsic.get_data_size())
+       {
+           if(check_calibration_data((byte*)&fe_intrinsic.calib.imu_intrinsic, fe_intrinsic.calib.imu_intrinsic.get_data_size()))
+           {
+               return true;
+           }
+       }
+       return false;
+    }
+
+    void get_raw_data(uint8_t opcode, uvc::device & device, std::timed_mutex & mutex, uint8_t * data, size_t & bytesReturned)
     {
         hw_monitor::hwmon_cmd command(opcode);
 
@@ -354,6 +414,8 @@ void get_raw_data(uint8_t opcode, uvc::device & device, std::timed_mutex & mutex
         return intrinsic;
     }
 
+   
+
     std::shared_ptr<rs_device> make_zr300_device(std::shared_ptr<uvc::device> device)
     {
         LOG_INFO("Connecting to Intel RealSense ZR300");
@@ -372,10 +434,6 @@ void get_raw_data(uint8_t opcode, uvc::device & device, std::timed_mutex & mutex
         {
             // Acquire Device handle for Motion Module API
             zr300::claim_motion_module_interface(*device);
-            motion_module_control mm(device.get());
-            mm.toggle_motion_module_power(true);
-            mm.toggle_motion_module_events(true); //wait for the motion module start up (300 msec)
-            mm.toggle_motion_module_events(false); //then deactivate events generation
             try
             {
                 std::timed_mutex  mutex;
@@ -386,9 +444,6 @@ void get_raw_data(uint8_t opcode, uvc::device & device, std::timed_mutex & mutex
             {
                 LOG_ERROR("Failed to read fisheye intrinsic");
             }
-
-            mm.toggle_motion_module_power(false);
-
             rs_intrinsics rs_intrinsics = fisheye_intrinsic.calib.fe_intrinsic;
 
             info.capabilities_vector.push_back(RS_CAPABILITIES_MOTION_MODULE_FW_UPDATE);
@@ -438,7 +493,62 @@ void get_raw_data(uint8_t opcode, uvc::device & device, std::timed_mutex & mutex
         {
             LOG_ERROR("Motion module capabilities were disabled due to failure to aquire intrinsic");
         }
-        return std::make_shared<zr300_camera>(device, info, fisheye_intrinsic);
+
+        auto fisheye_intrinsics_validator = [fisheye_intrinsic, succeeded_to_read_fisheye_intrinsic](rs_stream stream)
+        { 
+            if (stream != RS_STREAM_FISHEYE)
+            {
+                return true;
+            }
+            if (!succeeded_to_read_fisheye_intrinsic)
+            {
+                return false;
+            }
+            if (fisheye_intrinsic.calib.fe_intrinsic.ver.size == fisheye_intrinsic.calib.fe_intrinsic.get_data_size())
+            {
+                if (check_calibration_data((byte*)&fisheye_intrinsic.calib.fe_intrinsic, fisheye_intrinsic.calib.fe_intrinsic.get_data_size()))
+                {
+                    return true;
+                }
+            }
+            return false;
+        };
+        auto fisheye_extrinsics_validator = [fisheye_intrinsic, succeeded_to_read_fisheye_intrinsic](rs_stream from_stream, rs_stream to_stream)
+        {
+            if (from_stream != RS_STREAM_FISHEYE && to_stream != RS_STREAM_FISHEYE)
+            {
+                return true;
+            }
+            if (!succeeded_to_read_fisheye_intrinsic)
+            {
+                return false;
+            }
+            if (fisheye_intrinsic.calib.mm_extrinsic.ver.size == fisheye_intrinsic.calib.mm_extrinsic.get_data_size())
+            {
+               
+                if(check_calibration_data((byte*)&fisheye_intrinsic.calib.mm_extrinsic.fe_to_depth, sizeof(mm_extrinsic)))
+                {
+                    return true;
+                }
+            }
+            return false;
+        };
+
+        return std::make_shared<zr300_camera>(device, info, fisheye_intrinsic, calibration_validator(fisheye_extrinsics_validator, fisheye_intrinsics_validator));
+    }
+
+    calibration_validator::calibration_validator(std::function<bool(rs_stream, rs_stream)> in_extrinsic_validator, std::function<bool(rs_stream)> in_intrinsic_validator)
+        :extrinsic_validator(in_extrinsic_validator), intrinsic_validator(in_intrinsic_validator)
+    {
+    }
+
+    bool calibration_validator::validate_extrinsic(rs_stream from_stream, rs_stream to_stream) const
+    {
+        return extrinsic_validator(from_stream, to_stream);
+    }
+    bool calibration_validator::validate_intrinsic(rs_stream stream) const
+    {
+        return intrinsic_validator(stream);
     }
 
     unsigned fisheye_auto_exposure_state::get_auto_exposure_state(rs_option option) const

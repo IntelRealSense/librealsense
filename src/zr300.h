@@ -45,6 +45,11 @@ namespace rsimpl
         float distf[5];
         byte reserved[191];
         
+        int get_data_size() const
+        {
+            return sizeof(float) * 9 + sizeof(float) * 5;
+        };
+
         operator rs_intrinsics () const
         {
             return{ 640, 480, kf[2], kf[5], kf[0], kf[4], RS_DISTORTION_FTHETA, { distf[0], 0, 0, 0, 0 } };
@@ -71,6 +76,12 @@ namespace rsimpl
         mm_extrinsic  fe_to_depth;
         mm_extrinsic  rgb_to_imu;
         mm_extrinsic  depth_to_imu;
+        byte reserved[55];
+
+        int get_data_size() const
+        {
+            return sizeof(mm_extrinsic) * 4;
+        };
     };
 
     struct MM_intrinsics
@@ -80,7 +91,6 @@ namespace rsimpl
         //  cross axis     cross axis        Scale Z         Bias Z
 
         float val[3][4];
-
         operator rs_motion_device_intrinsics() const{
             return
             {
@@ -110,6 +120,12 @@ namespace rsimpl
         variances acc_noise;
         variances gyro_bias;
         variances gyro_noise;
+        byte reserved[103];
+
+        int get_data_size() const
+        {
+            return sizeof(MM_intrinsics) * 2 + sizeof(variances) * 4;
+        };
 
         operator rs_motion_intrinsics() const{
             return{ rs_motion_device_intrinsics(acc_intrinsic), rs_motion_device_intrinsics(gyro_intrinsic), 
@@ -132,6 +148,8 @@ namespace rsimpl
     };
 #pragma pack(pop)
 
+    
+   
     enum class auto_exposure_modes {
         static_auto_exposure = 0,
         auto_exposure_anti_flicker,
@@ -255,7 +273,7 @@ namespace rsimpl
         void on_before_callback(rs_stream , rs_frame_ref *, std::shared_ptr<rsimpl::frame_archive>) override;
 
     public:
-        zr300_camera(std::shared_ptr<uvc::device> device, const static_device_info & info, motion_module_calibration fe_intrinsic);
+        zr300_camera(std::shared_ptr<uvc::device> device, const static_device_info & info, motion_module_calibration fe_intrinsic, calibration_validator validator);
         ~zr300_camera();
 
         void get_option_range(rs_option option, double & min, double & max, double & step, double & def) override;
@@ -275,9 +293,13 @@ namespace rsimpl
         rs_extrinsics get_motion_extrinsics_from(rs_stream from) const override;
         unsigned long long get_frame_counter_by_usb_cmd();
 
+       
     private:
         unsigned get_auto_exposure_state(rs_option option);
         void set_auto_exposure_state(rs_option option, double value);
+
+        bool validate_motion_extrinsics(rs_stream) const;
+        bool validate_motion_intrinsics() const;
 
         motion_module_calibration fe_intrinsic;
     };

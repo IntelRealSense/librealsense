@@ -10,9 +10,9 @@ using namespace rsimpl::ds;
 namespace rsimpl
 {
     r200_camera::r200_camera(std::shared_ptr<uvc::device> device, const static_device_info & info) 
-    : ds_device(device, info)
+        : ds_device(device, info, 
+        calibration_validator([](rs_stream, rs_stream){return true; }, [](rs_stream){return true; }))
     {
-
     }
 
     bool r200_camera::supports_option(rs_option option) const

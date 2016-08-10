@@ -7,6 +7,7 @@
 #include "rs.h"
 #include <cstdint>
 #include <cstddef>
+#include <functional>
 
 // this interface is an entry point for extending librealsense with custom devices while keeping librealsense public API
 // the interfaces in this file are expected to be inherited from, never used directly, rs.hpp provides safer and simpler wrapper
@@ -35,6 +36,7 @@ struct rs_stream_interface
     virtual void                            get_mode(int mode, int * w, int * h, rs_format * f, int * fps) const = 0;
 
     virtual bool                            is_enabled() const = 0;
+    virtual rs_stream                       get_stream() const = 0;
 };
 
 struct rs_frame_ref

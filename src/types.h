@@ -571,9 +571,23 @@ namespace rsimpl
         {
             continuation();
         }
+
     };
 
+    class calibration_validator 
+    {
+    public:
+        calibration_validator(std::function<bool(rs_stream, rs_stream)> in_extrinsic_validator,
+                              std::function<bool(rs_stream)> in_intrinsic_validator);
 
+        bool validate_extrinsic(rs_stream from_stream, rs_stream to_stream) const;
+        bool validate_intrinsic(rs_stream stream) const;
+
+    private:
+        std::function<bool(rs_stream from_stream, rs_stream to_stream)> extrinsic_validator;
+        std::function<bool(rs_stream stream)> intrinsic_validator;
+
+    };
 }
 
 #endif

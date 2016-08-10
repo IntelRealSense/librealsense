@@ -18,8 +18,8 @@ const int MAX_FRAME_QUEUE_SIZE = 20;
 const int MAX_EVENT_QUEUE_SIZE = 500;
 const int MAX_EVENT_TINE_OUT   = 10;
 
-rs_device_base::rs_device_base(std::shared_ptr<rsimpl::uvc::device> device, const rsimpl::static_device_info & info) : device(device), config(info), capturing(false), usb_port_id(""), data_acquisition_active(false), motion_module_ready(false),
-    depth(config, RS_STREAM_DEPTH), color(config, RS_STREAM_COLOR), infrared(config, RS_STREAM_INFRARED), infrared2(config, RS_STREAM_INFRARED2), fisheye(config, RS_STREAM_FISHEYE),
+rs_device_base::rs_device_base(std::shared_ptr<rsimpl::uvc::device> device, const rsimpl::static_device_info & info, calibration_validator validator) : device(device), config(info), capturing(false), usb_port_id(""), data_acquisition_active(false), motion_module_ready(false),
+depth(config, RS_STREAM_DEPTH, validator), color(config, RS_STREAM_COLOR, validator), infrared(config, RS_STREAM_INFRARED, validator), infrared2(config, RS_STREAM_INFRARED2, validator), fisheye(config, RS_STREAM_FISHEYE, validator),
     points(depth), rect_color(color), color_to_depth(color, depth), depth_to_color(depth, color), depth_to_rect_color(depth, rect_color), infrared2_to_depth(infrared2,depth), depth_to_infrared2(depth,infrared2),
     max_publish_list_size(MAX_FRAME_QUEUE_SIZE), event_queue_size(MAX_EVENT_QUEUE_SIZE), events_timeout(MAX_EVENT_TINE_OUT)
 {
@@ -84,7 +84,7 @@ void rs_device_base::enable_stream_preset(rs_stream stream, rs_preset preset)
 
 rs_motion_intrinsics rs_device_base::get_motion_intrinsics() const
 {
-    throw std::runtime_error("Motion intrinsics does not supported");
+    throw std::runtime_error("Motion intrinsics does not supported for this device");
 }
 
 rs_extrinsics rs_device_base::get_motion_extrinsics_from(rs_stream from) const
@@ -503,6 +503,7 @@ void rs_device_base::disable_auto_option(int subdevice, rs_option auto_opt)
     if (uvc::get_pu_control(get_device(), subdevice, auto_opt))
         uvc::set_pu_control(get_device(), subdevice, auto_opt, reset_state);
 }
+
 
 const char * rs_device_base::get_usb_port_id() const
 {

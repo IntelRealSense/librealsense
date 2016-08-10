@@ -94,6 +94,7 @@ private:
 
     mutable std::string                         usb_port_id;
     mutable std::mutex                          usb_port_mutex;
+
 protected:
     const rsimpl::uvc::device &                 get_device() const { return *device; }
     rsimpl::uvc::device &                       get_device() { return *device; }
@@ -106,9 +107,10 @@ protected:
     virtual void                                disable_auto_option(int subdevice, rs_option auto_opt);
     virtual void                                on_before_callback(rs_stream, rs_frame_ref *, std::shared_ptr<rsimpl::frame_archive>) { }
 
+
     bool                                        motion_module_ready = false;
 public:
-    rs_device_base(std::shared_ptr<rsimpl::uvc::device> device, const rsimpl::static_device_info & info);
+    rs_device_base(std::shared_ptr<rsimpl::uvc::device> device, const rsimpl::static_device_info & info, rsimpl::calibration_validator validator);
     virtual ~rs_device_base();
 
     const rsimpl::stream_interface &            get_stream_interface(rs_stream stream) const override { return *streams[stream]; }
