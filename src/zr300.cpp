@@ -20,8 +20,8 @@ using namespace rsimpl::hw_monitor;
 namespace rsimpl
 {
     zr300_camera::zr300_camera(std::shared_ptr<uvc::device> device, const static_device_info & info, motion_module_calibration in_fe_intrinsic, calibration_validator validator)
-        : ds_device(device, info, validator),
-      motion_module_ctrl(device.get()),
+    : ds_device(device, info, validator),
+      motion_module_ctrl(device.get(), usbMutex),
       fe_intrinsic(in_fe_intrinsic),
       auto_exposure(nullptr),
       to_add_frames((auto_exposure_state.get_auto_exposure_state(RS_OPTION_FISHEYE_ENABLE_AUTO_EXPOSURE) == 1))
@@ -40,7 +40,7 @@ namespace rsimpl
     bool is_fisheye_xu_control(rs_option option)
     {
         return (option == RS_OPTION_FISHEYE_STROBE) ||
-               (option == RS_OPTION_FISHEYE_EXT_TRIG) ||
+               (option == RS_OPTION_FISHEYE_EXTERNAL_TRIGGER) ||
                (option == RS_OPTION_FISHEYE_EXPOSURE);
     }
 
@@ -50,9 +50,6 @@ namespace rsimpl
         std::vector<double>     base_opt_val;
 
         auto & dev = get_device();
-        auto mm_cfg_writer = make_struct_interface<motion_module::mm_config>([this]() { return motion_module_configuration; }, [&dev, this](mm_config param) {
-            motion_module::config(dev, (uint8_t)param.gyro_bandwidth, (uint8_t)param.gyro_range, (uint8_t)param.accel_bandwidth, (uint8_t)param.accel_range, param.mm_time_seed);
-            motion_module_configuration = param; });
 
         // Handle ZR300 specific options first
         for (size_t i = 0; i < count; ++i)
@@ -66,27 +63,19 @@ namespace rsimpl
             switch (options[i])
             {
             case RS_OPTION_FISHEYE_STROBE:                            zr300::set_fisheye_strobe(get_device(), static_cast<uint8_t>(values[i])); break;
-            case RS_OPTION_FISHEYE_EXT_TRIG:                          zr300::set_fisheye_ext_trig(get_device(), static_cast<uint8_t>(values[i])); break;
+            case RS_OPTION_FISHEYE_EXTERNAL_TRIGGER:                  zr300::set_fisheye_external_trigger(get_device(), static_cast<uint8_t>(values[i])); break;
             case RS_OPTION_FISHEYE_EXPOSURE:                          zr300::set_fisheye_exposure(get_device(), static_cast<uint8_t>(values[i])); break;
             case RS_OPTION_FISHEYE_ENABLE_AUTO_EXPOSURE:              set_auto_exposure_state(RS_OPTION_FISHEYE_ENABLE_AUTO_EXPOSURE, values[i]); break;
             case RS_OPTION_FISHEYE_AUTO_EXPOSURE_MODE:                set_auto_exposure_state(RS_OPTION_FISHEYE_AUTO_EXPOSURE_MODE, values[i]); break;
             case RS_OPTION_FISHEYE_AUTO_EXPOSURE_ANTIFLICKER_RATE:    set_auto_exposure_state(RS_OPTION_FISHEYE_AUTO_EXPOSURE_ANTIFLICKER_RATE, values[i]); break;
             case RS_OPTION_FISHEYE_AUTO_EXPOSURE_PIXEL_SAMPLE_RATE:   set_auto_exposure_state(RS_OPTION_FISHEYE_AUTO_EXPOSURE_PIXEL_SAMPLE_RATE, values[i]); break;
             case RS_OPTION_FISHEYE_AUTO_EXPOSURE_SKIP_FRAMES:         set_auto_exposure_state(RS_OPTION_FISHEYE_AUTO_EXPOSURE_SKIP_FRAMES, values[i]); break;
-
-            case RS_OPTION_ZR300_GYRO_BANDWIDTH:            mm_cfg_writer.set(&motion_module::mm_config::gyro_bandwidth, (uint8_t)values[i]); break;
-            case RS_OPTION_ZR300_GYRO_RANGE:                mm_cfg_writer.set(&motion_module::mm_config::gyro_range, (uint8_t)values[i]); break;
-            case RS_OPTION_ZR300_ACCELEROMETER_BANDWIDTH:   mm_cfg_writer.set(&motion_module::mm_config::accel_bandwidth, (uint8_t)values[i]); break;
-            case RS_OPTION_ZR300_ACCELEROMETER_RANGE:       mm_cfg_writer.set(&motion_module::mm_config::accel_range, (uint8_t)values[i]); break;
-            case RS_OPTION_ZR300_MOTION_MODULE_TIME_SEED:   mm_cfg_writer.set(&motion_module::mm_config::mm_time_seed, values[i]); break;
+            case RS_OPTION_HARDWARE_LOGGER_ENABLED:                   set_fw_logger_option(values[i]); break;
 
                 // Default will be handled by parent implementation
             default: base_opt.push_back(options[i]); base_opt_val.push_back(values[i]); break;
             }
         }
-
-        // Apply Motion Configuraiton
-        mm_cfg_writer.commit();
 
         //Then handle the common options
         if (base_opt.size())
@@ -100,7 +89,6 @@ namespace rsimpl
         std::vector<double>     base_opt_val;
 
         auto & dev = get_device();
-        auto mm_cfg_reader = make_struct_interface<motion_module::mm_config>([this]() { return motion_module_configuration; }, []() { throw std::logic_error("Operation not allowed"); });
 
         // Acquire ZR300-specific options first
         for (size_t i = 0; i<count; ++i)
@@ -115,21 +103,14 @@ namespace rsimpl
             {
 
             case RS_OPTION_FISHEYE_STROBE:                          values[i] = zr300::get_fisheye_strobe        (dev); break;
-            case RS_OPTION_FISHEYE_EXT_TRIG:                        values[i] = zr300::get_fisheye_ext_trig      (dev); break;
+            case RS_OPTION_FISHEYE_EXTERNAL_TRIGGER:                values[i] = zr300::get_fisheye_external_trigger      (dev); break;
             case RS_OPTION_FISHEYE_EXPOSURE:                        values[i] = zr300::get_fisheye_exposure      (dev); break;
             case RS_OPTION_FISHEYE_ENABLE_AUTO_EXPOSURE:            values[i] = get_auto_exposure_state(RS_OPTION_FISHEYE_ENABLE_AUTO_EXPOSURE); break;
             case RS_OPTION_FISHEYE_AUTO_EXPOSURE_MODE:              values[i] = get_auto_exposure_state(RS_OPTION_FISHEYE_AUTO_EXPOSURE_MODE); break;
             case RS_OPTION_FISHEYE_AUTO_EXPOSURE_ANTIFLICKER_RATE:  values[i] = get_auto_exposure_state(RS_OPTION_FISHEYE_AUTO_EXPOSURE_ANTIFLICKER_RATE); break;
             case RS_OPTION_FISHEYE_AUTO_EXPOSURE_PIXEL_SAMPLE_RATE: values[i] = get_auto_exposure_state(RS_OPTION_FISHEYE_AUTO_EXPOSURE_PIXEL_SAMPLE_RATE); break;
             case RS_OPTION_FISHEYE_AUTO_EXPOSURE_SKIP_FRAMES:       values[i] = get_auto_exposure_state(RS_OPTION_FISHEYE_AUTO_EXPOSURE_SKIP_FRAMES); break;
-
-            case RS_OPTION_ZR300_MOTION_MODULE_ACTIVE:              values[i] = is_motion_tracking_active(); break;
-
-            case RS_OPTION_ZR300_GYRO_BANDWIDTH:                    values[i] = (double)mm_cfg_reader.get(&motion_module::mm_config::gyro_bandwidth ); break;
-            case RS_OPTION_ZR300_GYRO_RANGE:                        values[i] = (double)mm_cfg_reader.get(&motion_module::mm_config::gyro_range     ); break;
-            case RS_OPTION_ZR300_ACCELEROMETER_BANDWIDTH:           values[i] = (double)mm_cfg_reader.get(&motion_module::mm_config::accel_bandwidth); break;
-            case RS_OPTION_ZR300_ACCELEROMETER_RANGE:               values[i] = (double)mm_cfg_reader.get(&motion_module::mm_config::accel_range    ); break;
-            case RS_OPTION_ZR300_MOTION_MODULE_TIME_SEED:           values[i] = (double)mm_cfg_reader.get(&motion_module::mm_config::mm_time_seed   ); break;
+            case RS_OPTION_HARDWARE_LOGGER_ENABLED:                 values[i] = get_fw_logger_option(); break;
 
                 // Default will be handled by parent implementation
             default: base_opt.push_back(options[i]); base_opt_index.push_back(i);  break;
@@ -172,6 +153,25 @@ namespace rsimpl
         auto_exposure->add_frame(clone_frame(frame), archive);
     }
 
+    void zr300_camera::set_fw_logger_option(double value)
+    {
+        if (value >= 1)
+        {
+            if (!rs_device_base::keep_fw_logger_alive)
+                start_fw_logger(char(adaptor_board_command::GLD), 100, usbMutex);
+        }
+        else
+        {
+            if (rs_device_base::keep_fw_logger_alive)
+                stop_fw_logger();
+        }
+    }
+
+    unsigned zr300_camera::get_fw_logger_option()
+    {
+        return rs_device_base::keep_fw_logger_alive;
+    }
+
     void zr300_camera::set_auto_exposure_state(rs_option option, double value)
     {
         auto auto_exposure_prev_state = auto_exposure_state.get_auto_exposure_state(RS_OPTION_FISHEYE_ENABLE_AUTO_EXPOSURE);
@@ -181,7 +181,8 @@ namespace rsimpl
         {
             if (auto_exposure_prev_state) // auto_exposure previous value
             {
-                auto_exposure->update_auto_exposure_state(auto_exposure_state); // auto_exposure mode not changed
+                if (auto_exposure)
+                    auto_exposure->update_auto_exposure_state(auto_exposure_state); // auto_exposure mode not changed
             }
             else
             {
@@ -279,6 +280,24 @@ namespace rsimpl
         return  fe_intrinsic.calib.imu_intrinsic;
     }
 
+    bool zr300_camera::supports_option(rs_option option) const
+    {
+        // The following 4 parameters are removed from DS4.1 FW:
+        std::vector<rs_option> auto_exposure_options = { 
+            RS_OPTION_R200_AUTO_EXPOSURE_KP_EXPOSURE,
+            RS_OPTION_R200_AUTO_EXPOSURE_KP_GAIN,
+            RS_OPTION_R200_AUTO_EXPOSURE_KP_DARK_THRESHOLD,
+            RS_OPTION_R200_AUTO_EXPOSURE_BRIGHT_RATIO_SET_POINT,
+        };
+
+        if (std::find(auto_exposure_options.begin(), auto_exposure_options.end(), option) != auto_exposure_options.end())
+        {
+            return false; 
+        }
+
+        return ds_device::supports_option(option);
+    }
+
     rs_extrinsics zr300_camera::get_motion_extrinsics_from(rs_stream from) const
     {
         if (!validate_motion_extrinsics(from))
@@ -319,8 +338,7 @@ namespace rsimpl
     unsigned long long zr300_camera::get_frame_counter_by_usb_cmd()
     {
         hwmon_cmd cmd((int)adaptor_board_command::FRCNT);
-        std::timed_mutex mutex;
-        perform_and_send_monitor_command(this->get_device(), mutex, cmd);
+        perform_and_send_monitor_command(this->get_device(), usbMutex, cmd);
         unsigned long long frame_counter = 0;
         memcpy(&frame_counter, cmd.receivedCommandData, cmd.receivedCommandDataLength);
         return frame_counter;
@@ -424,8 +442,6 @@ namespace rsimpl
         info.name = { "Intel RealSense ZR300" };
         auto c = ds::read_camera_info(*device);
 
-        info.subdevice_modes.push_back({ 2, { 1920, 1080 }, pf_rw16, 30, c.intrinsicsThird[0], { c.modesThird[0][0] }, { 0 } });
-
         motion_module_calibration fisheye_intrinsic;
         auto succeeded_to_read_fisheye_intrinsic = false;
        
@@ -434,6 +450,7 @@ namespace rsimpl
         {
             // Acquire Device handle for Motion Module API
             zr300::claim_motion_module_interface(*device);
+            std::timed_mutex mtx;
             try
             {
                 std::timed_mutex  mutex;
@@ -449,8 +466,8 @@ namespace rsimpl
             info.capabilities_vector.push_back(RS_CAPABILITIES_MOTION_MODULE_FW_UPDATE);
             info.capabilities_vector.push_back(RS_CAPABILITIES_ADAPTER_BOARD);
 
-            // require at least Alpha FW version to run
-            info.capabilities_vector.push_back({ RS_CAPABILITIES_ENUMERATION, { 1, 16, 0, 0 }, firmware_version::any(), RS_CAMERA_INFO_ADAPTER_BOARD_FIRMWARE_VERSION });
+            // require FW version with extention control of fisheye exposure and on
+            info.capabilities_vector.push_back({ RS_CAPABILITIES_ENUMERATION,{ 1, 25, 0, 1 }, firmware_version::any(), RS_CAMERA_INFO_ADAPTER_BOARD_FIRMWARE_VERSION });
 
             info.stream_subdevices[RS_STREAM_FISHEYE] = 3;
             info.presets[RS_STREAM_FISHEYE][RS_PRESET_BEST_QUALITY] = { true, 640, 480, RS_FORMAT_RAW8,   60 };
@@ -461,26 +478,29 @@ namespace rsimpl
             info.options.push_back({ RS_OPTION_FISHEYE_EXPOSURE,                        40, 331, 1,  40 });
             info.options.push_back({ RS_OPTION_FISHEYE_GAIN                                             });
             info.options.push_back({ RS_OPTION_FISHEYE_STROBE,                          0,  1,   1,  0  });
-            info.options.push_back({ RS_OPTION_FISHEYE_EXT_TRIG,                        0,  1,   1,  0  });
+            info.options.push_back({ RS_OPTION_FISHEYE_EXTERNAL_TRIGGER,                0,  1,   1,  0  });
             info.options.push_back({ RS_OPTION_FISHEYE_ENABLE_AUTO_EXPOSURE,            0,  1,   1,  1  });
             info.options.push_back({ RS_OPTION_FISHEYE_AUTO_EXPOSURE_MODE,              0,  2,   1,  0  });
             info.options.push_back({ RS_OPTION_FISHEYE_AUTO_EXPOSURE_ANTIFLICKER_RATE,  50, 60,  10, 60 });
             info.options.push_back({ RS_OPTION_FISHEYE_AUTO_EXPOSURE_PIXEL_SAMPLE_RATE, 1,  3,   1,  1  });
             info.options.push_back({ RS_OPTION_FISHEYE_AUTO_EXPOSURE_SKIP_FRAMES,       0,  3,   1,  2  });
-
-            info.options.push_back({ RS_OPTION_ZR300_GYRO_BANDWIDTH,            (int)mm_gyro_bandwidth::gyro_bw_default,    (int)mm_gyro_bandwidth::gyro_bw_200hz,  1,  (int)mm_gyro_bandwidth::gyro_bw_200hz });
-            info.options.push_back({ RS_OPTION_ZR300_GYRO_RANGE,                (int)mm_gyro_range::gyro_range_default,     (int)mm_gyro_range::gyro_range_1000,    1,  (int)mm_gyro_range::gyro_range_1000 });
-            info.options.push_back({ RS_OPTION_ZR300_ACCELEROMETER_BANDWIDTH,   (int)mm_accel_bandwidth::accel_bw_default,  (int)mm_accel_bandwidth::accel_bw_250hz,1,  (int)mm_accel_bandwidth::accel_bw_125hz });
-            info.options.push_back({ RS_OPTION_ZR300_ACCELEROMETER_RANGE,       (int)mm_accel_range::accel_range_default,   (int)mm_accel_range::accel_range_16g,   1,  (int)mm_accel_range::accel_range_4g });
-            info.options.push_back({ RS_OPTION_ZR300_MOTION_MODULE_TIME_SEED,       0,      UINT_MAX,   1,   0 });
-            info.options.push_back({ RS_OPTION_ZR300_MOTION_MODULE_ACTIVE,          0,       1,         1,   0 });
+            info.options.push_back({ RS_OPTION_HARDWARE_LOGGER_ENABLED,                 0,  1,   1,  0  });
         }
         
         std::timed_mutex mutex;
-        ivcam::get_firmware_version_string(*device, mutex, info.camera_info[RS_CAMERA_INFO_ADAPTER_BOARD_FIRMWARE_VERSION], (int)adaptor_board_command::GVD);
-        ivcam::get_firmware_version_string(*device, mutex, info.camera_info[RS_CAMERA_INFO_MOTION_MODULE_FIRMWARE_VERSION], (int)adaptor_board_command::GVD, 4);
-
+        try
+        {
+            ivcam::get_firmware_version_string(*device, mutex, info.camera_info[RS_CAMERA_INFO_ADAPTER_BOARD_FIRMWARE_VERSION], (int)adaptor_board_command::GVD);
+            ivcam::get_firmware_version_string(*device, mutex, info.camera_info[RS_CAMERA_INFO_MOTION_MODULE_FIRMWARE_VERSION], (int)adaptor_board_command::GVD, 4);
+        }
+        catch(...) 
+        {
+            LOG_ERROR("Couldn't query adapter board / motion module FW version!");
+        }
+        
         ds_device::set_common_ds_config(device, info, c);
+        info.subdevice_modes.push_back({ 2, { 1920, 1080 }, pf_rw16, 30, c.intrinsicsThird[0], { c.modesThird[0][0] }, { 0 } });
+
         if (succeeded_to_read_fisheye_intrinsic)
         {
             auto fe_extrinsic = fisheye_intrinsic.calib.mm_extrinsic;

@@ -87,87 +87,80 @@ namespace rs
     // reflection of rs_option
     enum class option : int32_t
     {
-        color_backlight_compensation                    = 0,  
-        color_brightness                                = 1,  
-        color_contrast                                  = 2,  
-        color_exposure                                  = 3,  ///< Controls exposure time of color camera. Setting any value will disable auto exposure.
-        color_gain                                      = 4,  
-        color_gamma                                     = 5,  
-        color_hue                                       = 6,  
-        color_saturation                                = 7,  
-        color_sharpness                                 = 8,  
-        color_white_balance                             = 9,  ///< Controls white balance of color image. Setting any value will disable auto white balance.
-        color_enable_auto_exposure                      = 10, ///< Set to 1 to enable automatic exposure control, or 0 to return to manual control
-        color_enable_auto_white_balance                 = 11, ///< Set to 1 to enable automatic white balance control, or 0 to return to manual control
-        f200_laser_power                                = 12, ///< 0 - 15
-        f200_accuracy                                   = 13, ///< 0 - 3
-        f200_motion_range                               = 14, ///< 0 - 100
-        f200_filter_option                              = 15, ///< 0 - 7
-        f200_confidence_threshold                       = 16, ///< 0 - 15
-        f200_dynamic_fps                                = 17, ///< {2, 5, 15, 30, 60}
-        sr300_auto_range_enable_motion_versus_range     = 18, 
-        sr300_auto_range_enable_laser                   = 19, 
-        sr300_auto_range_min_motion_versus_range        = 20, 
-        sr300_auto_range_max_motion_versus_range        = 21, 
-        sr300_auto_range_start_motion_versus_range      = 22, 
-        sr300_auto_range_min_laser                      = 23, 
-        sr300_auto_range_max_laser                      = 24, 
-        sr300_auto_range_start_laser                    = 25, 
-        sr300_auto_range_upper_threshold                = 26, 
-        sr300_auto_range_lower_threshold                = 27, 
-        sr300_wakeup_dev_phase1_period                  = 28, 
-        sr300_wakeup_dev_phase1_fps                     = 29, 
-        sr300_wakeup_dev_phase2_period                  = 30, 
-        sr300_wakeup_dev_phase2_fps                     = 31, 
-        sr300_wakeup_dev_reset                          = 32, 
-        sr300_wake_on_usb_reason                        = 33 ,
-        sr300_wake_on_usb_confidence                    = 34, 
-        r200_lr_auto_exposure_enabled                   = 35, ///< {0, 1}
-        r200_lr_gain                                    = 36, ///< 100 - 1600 (Units of 0.01)
-        r200_lr_exposure                                = 37, ///< > 0 (Units of 0.1 ms)
-        r200_emitter_enabled                            = 38, ///< {0, 1}
-        r200_depth_units                                = 39, ///< micrometers per increment in integer depth values, 1000 is default (mm scale)
-        r200_depth_clamp_min                            = 40, ///< {0 - USHORT_MAX}. Can only be set before streaming starts.
-        r200_depth_clamp_max                            = 41, ///< {0 - USHORT_MAX}. Can only be set before streaming starts.
-        r200_disparity_multiplier                       = 42, ///< {0 - 1000}. The increments in integer disparity values corresponding to one pixel of disparity. Can only be set before streaming starts.
-        r200_disparity_shift                            = 43, ///< {0 - 512}. Can only be set before streaming starts.
-        r200_auto_exposure_mean_intensity_set_point     = 44, 
-        r200_auto_exposure_bright_ratio_set_point       = 45, 
-        r200_auto_exposure_kp_gain                      = 46, 
-        r200_auto_exposure_kp_exposure                  = 47, 
-        r200_auto_exposure_kp_dark_threshold            = 48, 
-        r200_auto_exposure_top_edge                     = 49, 
-        r200_auto_exposure_bottom_edge                  = 50, 
-        r200_auto_exposure_left_edge                    = 51, 
-        r200_auto_exposure_right_edge                   = 52, 
-        r200_depth_control_estimate_median_decrement    = 53, 
-        r200_depth_control_estimate_median_increment    = 54, 
-        r200_depth_control_median_threshold             = 55, 
-        r200_depth_control_score_minimum_threshold      = 56, 
-        r200_depth_control_score_maximum_threshold      = 57, 
-        r200_depth_control_texture_count_threshold      = 58, 
-        r200_depth_control_texture_difference_threshold = 59, 
-        r200_depth_control_second_peak_threshold        = 60, 
-        r200_depth_control_neighbor_threshold           = 61, 
-        r200_depth_control_lr_threshold                 = 62,
-        zr300_gyroscope_bandwidth                       = 63,
-        zr300_gyroscope_range                           = 64,
-        zr300_accelerometer_bandwidth                   = 65,
-        zr300_accelerometer_range                       = 66,
-        zr300_motion_module_time_seed                   = 67,
-        zr300_motion_module_active                      = 68,
-        fisheye_color_exposure                          = 69,
-        fisheye_color_gain                              = 70,
-        fisheye_strobe                                  = 71,
-        fisheye_ext_trig                                = 72,
-        frames_queue_size                               = 73,
-        events_queue_size                               = 74,
-        max_timestamp_latency                           = 75,
-        fisheye_color_auto_exposure                     = 76,
-        fisheye_color_auto_exposure_mode                = 77,
-        fisheye_color_auto_exposure_rate                = 78,
-        fisheye_color_auto_exposure_sample_rate         = 79,
-        fisheye_color_auto_exposure_skip_frames         = 80
+        color_backlight_compensation                    = 0,  /**< Enable / disable color backlight compensation*/
+        color_brightness                                = 1,  /**< Color image brightness*/
+        color_contrast                                  = 2,  /**< Color image contrast*/
+        color_exposure                                  = 3,  /**< Controls exposure time of color camera. Setting any value will disable auto exposure*/
+        color_gain                                      = 4,  /**< Color image gain*/
+        color_gamma                                     = 5,  /**< Color image gamma setting*/
+        color_hue                                       = 6,  /**< Color image hue*/
+        color_saturation                                = 7,  /**< Color image saturation setting*/
+        color_sharpness                                 = 8,  /**< Color image sharpness setting*/
+        color_white_balance                             = 9,  /**< Controls white balance of color image. Setting any value will disable auto white balance*/
+        color_enable_auto_exposure                      = 10, /**< Enable / disable color image auto-exposure*/
+        color_enable_auto_white_balance                 = 11, /**< Enable / disable color image auto-white-balance*/
+        f200_laser_power                                = 12, /**< Power of the F200 / SR300 projector, with 0 meaning projector off*/
+        f200_accuracy                                   = 13, /**< Set the number of patterns projected per frame. The higher the accuracy value the more patterns projected. Increasing the number of patterns help to achieve better accuracy. Note that this control is affecting the Depth FPS */
+        f200_motion_range                               = 14, /**< Motion vs. Range trade-off, with lower values allowing for better motion sensitivity and higher values allowing for better depth range*/
+        f200_filter_option                              = 15, /**< Set the filter to apply to each depth frame. Each one of the filter is optimized per the application requirements*/
+        f200_confidence_threshold                       = 16, /**< The confidence level threshold used by the Depth algorithm pipe to set whether a pixel will get a valid range or will be marked with invalid range*/
+        f200_dynamic_fps                                = 17, /**< (F200-only) Allows to reduce FPS without restarting streaming. Valid values are {2, 5, 15, 30, 60}*/
+        sr300_auto_range_enable_motion_versus_range     = 18, /**< Configures SR300 Depth Auto-Range setting. Should not be used directly but through set IVCAM preset method*/
+        sr300_auto_range_enable_laser                   = 19, /**< Configures SR300 Depth Auto-Range setting. Should not be used directly but through set IVCAM preset method*/
+        sr300_auto_range_min_motion_versus_range        = 20, /**< Configures SR300 Depth Auto-Range setting. Should not be used directly but through set IVCAM preset method*/
+        sr300_auto_range_max_motion_versus_range        = 21, /**< Configures SR300 Depth Auto-Range setting. Should not be used directly but through set IVCAM preset method*/
+        sr300_auto_range_start_motion_versus_range      = 22, /**< Configures SR300 Depth Auto-Range setting. Should not be used directly but through set IVCAM preset method*/
+        sr300_auto_range_min_laser                      = 23, /**< Configures SR300 Depth Auto-Range setting. Should not be used directly but through set IVCAM preset method*/
+        sr300_auto_range_max_laser                      = 24, /**< Configures SR300 Depth Auto-Range setting. Should not be used directly but through set IVCAM preset method*/
+        sr300_auto_range_start_laser                    = 25, /**< Configures SR300 Depth Auto-Range setting. Should not be used directly but through set IVCAM preset method*/
+        sr300_auto_range_upper_threshold                = 26, /**< Configures SR300 Depth Auto-Range setting. Should not be used directly but through set IVCAM preset method*/
+        sr300_auto_range_lower_threshold                = 27, /**< Configures SR300 Depth Auto-Range setting. Should not be used directly but through set IVCAM preset method*/
+        sr300_wakeup_dev_phase1_period                  = 28, /**< Configures period for the first phase of the wake-up device SR300 mode*/
+        sr300_wakeup_dev_phase1_fps                     = 29, /**< Configures FPS for the first phase of the wake-up device SR300 mode*/
+        sr300_wakeup_dev_phase2_period                  = 30, /**< Configures period for the second phase of the wake-up device SR300 mode*/
+        sr300_wakeup_dev_phase2_fps                     = 31, /**< Configures FPS for the second phase of the wake-up device SR300 mode*/
+        sr300_wakeup_dev_reset                          = 32, /**< Disables SR300 wakeup device mode.*/
+        sr300_wake_on_usb_reason                        = 33 ,/**< Gets the reason for last registered wakeup event*/
+        sr300_wake_on_usb_confidence                    = 34, /**< Gets wakeup reason confidence (0-100)*/
+        r200_lr_auto_exposure_enabled                   = 35, /**< Enables / disables R200 auto-exposure. This will affect both IR and depth image.*/
+        r200_lr_gain                                    = 36, /**< IR image gain*/
+        r200_lr_exposure                                = 37, /**< This control allows manual adjustment of the exposure time value for the L/R imagers*/
+        r200_emitter_enabled                            = 38, /**< Enables / disables R200 emitter*/
+        r200_depth_units                                = 39, /**< Micrometers per increment in integer depth values, 1000 is default (mm scale). Set before streaming*/
+        r200_depth_clamp_min                            = 40, /**< Minimum depth in current depth units that will be output. Any values less than ‘Min Depth’ will be mapped to 0 during the conversion between disparity and depth. Set before streaming*/
+        r200_depth_clamp_max                            = 41, /**< Maximum depth in current depth units that will be output. Any values greater than ‘Max Depth’ will be mapped to 0 during the conversion between disparity and depth. Set before streaming*/
+        r200_disparity_multiplier                       = 42, /**< The disparity scale factor used when in disparity output mode. Can only be set before streaming*/
+        r200_disparity_shift                            = 43, /**< {0 - 512}. Can only be set before streaming starts*/
+        r200_auto_exposure_mean_intensity_set_point     = 44, /**< (Requires LR-Auto-Exposure ON) Mean intensity set point*/
+        r200_auto_exposure_bright_ratio_set_point       = 45, /**< (Requires LR-Auto-Exposure ON) Bright ratio set point*/
+        r200_auto_exposure_kp_gain                      = 46, /**< (Requires LR-Auto-Exposure ON) Kp Gain*/
+        r200_auto_exposure_kp_exposure                  = 47, /**< (Requires LR-Auto-Exposure ON) Kp Exposure*/
+        r200_auto_exposure_kp_dark_threshold            = 48, /**< (Requires LR-Auto-Exposure ON) Kp Dark Threshold*/
+        r200_auto_exposure_top_edge                     = 49, /**< (Requires LR-Auto-Exposure ON) Auto-Exposure region-of-interest top edge (in pixels)*/
+        r200_auto_exposure_bottom_edge                  = 50, /**< (Requires LR-Auto-Exposure ON) Auto-Exposure region-of-interest bottom edge (in pixels)*/
+        r200_auto_exposure_left_edge                    = 51, /**< (Requires LR-Auto-Exposure ON) Auto-Exposure region-of-interest left edge (in pixels)*/
+        r200_auto_exposure_right_edge                   = 52, /**< (Requires LR-Auto-Exposure ON) Auto-Exposure region-of-interest right edge (in pixels)*/
+        r200_depth_control_estimate_median_decrement    = 53, /**< Value to subtract when estimating the median of the correlation surface*/
+        r200_depth_control_estimate_median_increment    = 54, /**< Value to add when estimating the median of the correlation surface*/
+        r200_depth_control_median_threshold             = 55, /**< A threshold by how much the winning score must beat the median*/
+        r200_depth_control_score_minimum_threshold      = 56, /**< The minimum correlation score that is considered acceptable*/
+        r200_depth_control_score_maximum_threshold      = 57, /**< The maximum correlation score that is considered acceptable*/
+        r200_depth_control_texture_count_threshold      = 58, /**< A parameter for determining whether the texture in the region is sufficient to justify a depth result*/
+        r200_depth_control_texture_difference_threshold = 59, /**< A parameter for determining whether the texture in the region is sufficient to justify a depth result*/
+        r200_depth_control_second_peak_threshold        = 60, /**< A threshold on how much the minimum correlation score must differ from the next best score*/
+        r200_depth_control_neighbor_threshold           = 61, /**< Neighbor threshold value for depth calculation*/
+        r200_depth_control_lr_threshold                 = 62, /**< Left-Right threshold value for depth calculation*/
+        fisheye_exposure                                = 63, /**< Fisheye image exposure time in msec*/
+        fisheye_gain                                    = 64, /**< Fisheye image gain*/
+        fisheye_strobe                                  = 65, /**< Enables / disables fisheye strobe. When enabled this will align timestamps to common clock-domain with the motion events*/
+        fisheye_external_trigger                        = 66, /**< Enables / disables fisheye external trigger mode. When enabled fisheye image will be aquired in-sync with the depth image*/
+        fisheye_color_auto_exposure                     = 67, /**< Enable / disable fisheye auto-exposure */
+        fisheye_color_auto_exposure_mode                = 68, /**< 0 - static auto-exposure, 1 - anti-flicker auto-exposure, 2 - hybrid */
+        fisheye_color_auto_exposure_rate                = 69, /**< Fisheye auto-exposure anti-flicker rate, can be 50 or 60 Hz */
+        fisheye_color_auto_exposure_sample_rate         = 70, /**< In Fisheye auto-exposure sample frame every given number of pixels */
+        fisheye_color_auto_exposure_skip_frames         = 71, /**< In Fisheye auto-exposure sample every given number of frames */
+        frames_queue_size                               = 72, /**< Number of frames the user is allowed to keep per stream. Trying to hold-on to more frames will cause frame-drops.*/
+        hardware_logger_enabled                         = 73, /**< Enable / disable fetching log data from the device */
     };
 
     enum class blob_type {
@@ -191,13 +184,13 @@ namespace rs
 
     enum class event : uint8_t
     {
-        event_imu_accel         = 1,
-        event_imu_gyro          = 2,
-        event_imu_depth_cam     = 3,
-        event_imu_motion_cam    = 4,
-        event_imu_g0_sync       = 5,
-        event_imu_g1_sync       = 6,
-        event_imu_g2_sync       = 7
+        event_imu_accel         = 0,
+        event_imu_gyro          = 1,
+        event_imu_depth_cam     = 2,
+        event_imu_motion_cam    = 3,
+        event_imu_g0_sync       = 4,
+        event_imu_g1_sync       = 5,
+        event_imu_g2_sync       = 6
     };
 
     enum class timestamp_domain
@@ -713,8 +706,7 @@ namespace rs
             return intrin;
         }
 
-        /// retrieve intrinsic camera parameters for a specific stream
-        /// \param[in] stream  the stream whose parameters to retrieve
+        /// retrieve intrinsic camera parameters for the motion module
         /// \return            the intrinsic parameters of the stream
         motion_intrinsics get_motion_intrinsics() const
         {
@@ -865,6 +857,17 @@ namespace rs
             error::handle(e);
             return r;
         }
+        
+        /// retrieve the device specific option description
+        /// \param[in] option  the option whose description should be retrieved
+        /// \return            the value of the option
+        const char * get_option_description(option option)
+        {
+            rs_error * e = nullptr;
+            auto r = rs_get_device_option_description((rs_device *)this, (rs_option)option, &e);
+            error::handle(e);
+            return r;
+        }
 
         /// set the current value of a single option
         /// \param[in] option  the option whose value should be set
@@ -971,6 +974,20 @@ namespace rs
         none  = 5, // No logging will occur
     };
 
+    class log_callback : public rs_log_callback
+    {
+        std::function<void(log_severity, const char *)> on_event_function;
+    public:
+        explicit log_callback(std::function<void(log_severity, const char *)> on_event) : on_event_function(on_event) {}
+
+        void on_event(rs_log_severity severity, const char * message) override
+        {
+            on_event_function((log_severity)severity, message);
+        }
+
+        void release() override { delete this; }
+    };
+
     inline void log_to_console(log_severity min_severity)
     {
         rs_error * e = nullptr;
@@ -982,6 +999,13 @@ namespace rs
     {
         rs_error * e = nullptr;
         rs_log_to_file((rs_log_severity)min_severity, file_path, &e);
+        error::handle(e);
+    }
+
+    inline void log_to_callback(log_severity min_severity, std::function<void(log_severity, const char *)> callback)
+    {
+        rs_error * e = nullptr;
+        rs_log_to_callback_cpp((rs_log_severity)min_severity, new log_callback(callback), &e);
         error::handle(e);
     }
 

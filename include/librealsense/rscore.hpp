@@ -7,7 +7,7 @@
 #include "rs.h"
 #include <cstdint>
 #include <cstddef>
-#include <functional>
+#include <mutex>
 
 // this interface is an entry point for extending librealsense with custom devices while keeping librealsense public API
 // the interfaces in this file are expected to be inherited from, never used directly, rs.hpp provides safer and simpler wrapper
@@ -86,7 +86,10 @@ struct rs_device
                                             
     virtual void                            start(rs_source source) = 0;
     virtual void                            stop(rs_source source) = 0;
-                                            
+
+    virtual void                            start_fw_logger(char fw_log_op_code, int grab_rate_in_ms, std::timed_mutex& mutex) = 0;
+    virtual void                            stop_fw_logger() = 0;
+
     virtual bool                            is_capturing() const = 0;
     virtual int                             is_motion_tracking_active() const = 0;
                                             
@@ -99,6 +102,7 @@ struct rs_device
     virtual void                            get_option_range(rs_option option, double & min, double & max, double & step, double & def) = 0;
     virtual void                            set_options(const rs_option options[], size_t count, const double values[]) = 0;
     virtual void                            get_options(const rs_option options[], size_t count, double values[]) = 0;
+    virtual const char *                    get_option_description(rs_option option) const = 0;
 
     virtual void                            release_frame(rs_frame_ref * ref) = 0;
     virtual rs_frame_ref *                  clone_frame(rs_frame_ref * frame) = 0;
@@ -132,6 +136,13 @@ struct rs_timestamp_callback
     virtual void                            on_event(rs_timestamp_data data) = 0;
     virtual void                            release() = 0;
     virtual                                 ~rs_timestamp_callback() {}
+};
+
+struct rs_log_callback
+{
+    virtual void                            on_event(rs_log_severity severity, const char * message) = 0;
+    virtual void                            release() = 0;
+    virtual                                 ~rs_log_callback() {}
 };
 
 #endif

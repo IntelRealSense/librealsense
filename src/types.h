@@ -64,9 +64,11 @@ namespace rsimpl
     void log(rs_log_severity severity, const std::string & message);
     void log_to_console(rs_log_severity min_severity);
     void log_to_file(rs_log_severity min_severity, const char * file_path);
-    extern rs_log_severity minimum_log_severity;
+    void log_to_callback(rs_log_severity min_severity, rs_log_callback * callback);
+    void log_to_callback(rs_log_severity min_severity, void(*on_log)(rs_log_severity min_severity, const char * message, void * user), void * user);
+    rs_log_severity get_minimum_severity();
 
-#define LOG(SEVERITY, ...) do { if(static_cast<int>(SEVERITY) >= rsimpl::minimum_log_severity) { std::ostringstream ss; ss << __VA_ARGS__; rsimpl::log(SEVERITY, ss.str()); } } while(false)
+#define LOG(SEVERITY, ...) do { if(static_cast<int>(SEVERITY) >= rsimpl::get_minimum_severity()) { std::ostringstream ss; ss << __VA_ARGS__; rsimpl::log(SEVERITY, ss.str()); } } while(false)
 #define LOG_DEBUG(...)   LOG(RS_LOG_SEVERITY_DEBUG, __VA_ARGS__)
 #define LOG_INFO(...)    LOG(RS_LOG_SEVERITY_INFO,  __VA_ARGS__)
 #define LOG_WARNING(...) LOG(RS_LOG_SEVERITY_WARN,  __VA_ARGS__)
@@ -374,6 +376,29 @@ namespace rsimpl
         void release() override { }
     };
 
+    class log_callback : public rs_log_callback
+    {
+        void(*fptr)(rs_log_severity severity, const char * message, void * user);
+        void        * user;
+    public:
+        log_callback() : log_callback(nullptr, nullptr) {}
+        log_callback(void(*fptr)(rs_log_severity, const char *, void *), void * user) : fptr(fptr), user(user) {}
+
+        operator bool() { return fptr != nullptr; }
+
+        void on_event(rs_log_severity severity, const char * message) override
+        {
+            if (fptr)
+            {
+                try { fptr(severity, message, user); }
+                catch (...) {}
+            }
+        }
+
+        void release() override { }
+    };
+
+    typedef std::unique_ptr<rs_log_callback, void(*)(rs_log_callback*)> log_callback_ptr;
     typedef std::unique_ptr<rs_motion_callback, void(*)(rs_motion_callback*)> motion_callback_ptr;
     typedef std::unique_ptr<rs_timestamp_callback, void(*)(rs_timestamp_callback*)> timestamp_callback_ptr;
     class frame_callback_ptr

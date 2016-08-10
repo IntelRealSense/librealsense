@@ -40,7 +40,7 @@ namespace rsimpl
             time_pad start_stop_pad; // R200 line-up needs minimum 500ms delay between consecutive start-stop commands
 
         public:
-            ds_device(std::shared_ptr<uvc::device> device, const static_device_info & info, calibration_validator validator);
+            ds_device(std::shared_ptr<uvc::device> device, const static_device_info & info);
             ~ds_device();
 
             bool supports_option(rs_option option) const override;
@@ -57,6 +57,8 @@ namespace rsimpl
             virtual void stop(rs_source source) override;
             virtual void start(rs_source source) override;
 
+            virtual void start_fw_logger(char fw_log_op_code, int grab_rate_in_ms, std::timed_mutex& mutex) override;
+            virtual void stop_fw_logger() override;
         };
     }
 }

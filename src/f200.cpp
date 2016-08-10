@@ -186,6 +186,16 @@ namespace rsimpl
         }
     }
 
+    void f200_camera::start_fw_logger(char fw_log_op_code, int grab_rate_in_ms, std::timed_mutex& mutex)
+    {
+        throw std::logic_error("Not implemented");
+    }
+
+    void f200_camera::stop_fw_logger()
+    {
+        throw std::logic_error("Not implemented");
+    }
+
     void f200_camera::set_options(const rs_option options[], size_t count, const double values[])
     {
         std::vector<rs_option>  base_opt;

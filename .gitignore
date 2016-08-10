@@ -47,3 +47,4 @@ librealsense-log.txt
 *.vspx
 *.vsp
 *.bak
+*.bin

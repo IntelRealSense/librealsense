@@ -60,6 +60,16 @@ namespace rsimpl
     {
     }
 
+    void iv_camera::start_fw_logger(char fw_log_op_code, int grab_rate_in_ms, std::timed_mutex& mutex)
+    {
+        rs_device_base::start_fw_logger(fw_log_op_code, grab_rate_in_ms, mutex);
+    }
+
+    void iv_camera::stop_fw_logger()
+    {
+        rs_device_base::stop_fw_logger();
+    }
+
     void iv_camera::on_before_start(const std::vector<subdevice_mode_selection> & selected_modes)
     {
     }

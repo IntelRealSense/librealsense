@@ -177,7 +177,7 @@ namespace rsimpl
         {
         public:
 
-            motion_module_control(uvc::device *device);
+            motion_module_control(uvc::device *device, std::timed_mutex& usbMutex);
 
             void toggle_motion_module_power(bool on);
             void toggle_motion_module_events(bool on);
@@ -192,6 +192,7 @@ namespace rsimpl
             motion_module_state state_handler;
             uvc::device* device_handle;
             std::mutex mtx;
+            std::timed_mutex& usbMutex;
             bool    power_state;
 
             void i2c_iap_write(uint16_t slave_address, uint8_t *buffer, uint16_t len);

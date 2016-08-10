@@ -45,7 +45,7 @@ inline int get_text_width(const char * text)
 
 inline void draw_text(int x, int y, const char * text)
 {
-    char buffer[20000]; // ~100 chars
+    char buffer[60000]; // ~300 chars
     glEnableClientState(GL_VERTEX_ARRAY);
     glVertexPointer(2, GL_FLOAT, 16, buffer);
     glDrawArrays(GL_QUADS, 0, 4*stb_easy_font_print((float)x, (float)(y-7), (char *)text, nullptr, buffer, sizeof(buffer)));

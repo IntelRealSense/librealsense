@@ -4,6 +4,7 @@
 #include "device.h"
 #include "sync.h"
 #include "motion-module.h"
+#include "hw-monitor.h"
 
 #include <array>
 #include "image.h"
@@ -21,7 +22,7 @@ const int MAX_EVENT_TINE_OUT   = 10;
 rs_device_base::rs_device_base(std::shared_ptr<rsimpl::uvc::device> device, const rsimpl::static_device_info & info, calibration_validator validator) : device(device), config(info), capturing(false), usb_port_id(""), data_acquisition_active(false), motion_module_ready(false),
 depth(config, RS_STREAM_DEPTH, validator), color(config, RS_STREAM_COLOR, validator), infrared(config, RS_STREAM_INFRARED, validator), infrared2(config, RS_STREAM_INFRARED2, validator), fisheye(config, RS_STREAM_FISHEYE, validator),
     points(depth), rect_color(color), color_to_depth(color, depth), depth_to_color(depth, color), depth_to_rect_color(depth, rect_color), infrared2_to_depth(infrared2,depth), depth_to_infrared2(depth,infrared2),
-    max_publish_list_size(MAX_FRAME_QUEUE_SIZE), event_queue_size(MAX_EVENT_QUEUE_SIZE), events_timeout(MAX_EVENT_TINE_OUT)
+    max_publish_list_size(MAX_FRAME_QUEUE_SIZE), event_queue_size(MAX_EVENT_QUEUE_SIZE), events_timeout(MAX_EVENT_TINE_OUT), keep_fw_logger_alive(false)
 {
     streams[RS_STREAM_DEPTH    ] = native_streams[RS_STREAM_DEPTH]     = &depth;
     streams[RS_STREAM_COLOR    ] = native_streams[RS_STREAM_COLOR]     = &color;
@@ -45,6 +46,8 @@ rs_device_base::~rs_device_base()
             stop(RS_SOURCE_VIDEO);
         if (data_acquisition_active)
             stop(RS_SOURCE_MOTION_TRACKING);
+        if (keep_fw_logger_alive)
+            stop_fw_logger();
     }
     catch (...) {}
 }
@@ -233,7 +236,62 @@ void rs_device_base::stop(rs_source source)
              throw std::runtime_error("motion-tracking is not supported by this device");
 }
 
+std::string hexify(unsigned char n)
+{
+    std::string res;
 
+    do
+    {
+        res += "0123456789ABCDEF"[n % 16];
+        n >>= 4;
+    } while (n);
+
+    reverse(res.begin(), res.end());
+
+    if (res.size() == 1)
+    {
+        res.insert(0, "0");
+    }
+
+    return res;
+}
+
+void rs_device_base::start_fw_logger(char fw_log_op_code, int grab_rate_in_ms, std::timed_mutex& mutex)
+{
+    if (keep_fw_logger_alive)
+        throw std::logic_error("FW logger already started");
+
+    keep_fw_logger_alive = true;
+    fw_logger = std::make_shared<std::thread>([this, fw_log_op_code, grab_rate_in_ms, &mutex]() {
+        const int data_size = 500;
+        hw_monitor::hwmon_cmd cmd((int)fw_log_op_code);
+        cmd.Param1 = data_size;
+        while (keep_fw_logger_alive)
+        {
+            std::this_thread::sleep_for(std::chrono::milliseconds(grab_rate_in_ms));
+            hw_monitor::perform_and_send_monitor_command(this->get_device(), mutex, cmd);
+            char data[data_size];
+            memcpy(data, cmd.receivedCommandData, cmd.receivedCommandDataLength);
+
+            std::stringstream sstr;
+            sstr << "FW_Log_Data:";
+            for (int i = 0; i < cmd.receivedCommandDataLength; ++i)
+                sstr << hexify(data[i]) << " ";
+
+            if (cmd.receivedCommandDataLength)
+               LOG_INFO(sstr.str());
+        }
+    });
+}
+
+void rs_device_base::stop_fw_logger()
+{
+    if (!keep_fw_logger_alive)
+        throw std::logic_error("FW logger not started");
+
+    keep_fw_logger_alive = false;
+    fw_logger->join();
+}
 
 void rs_device_base::start_video_streaming()
 {
@@ -397,8 +455,88 @@ rs_frame_ref* ::rs_device_base::clone_frame(rs_frame_ref* frame)
 void rs_device_base::update_device_info(rsimpl::static_device_info& info)
 {
     info.options.push_back({ RS_OPTION_FRAMES_QUEUE_SIZE,     1, MAX_FRAME_QUEUE_SIZE,      1, MAX_FRAME_QUEUE_SIZE });
-    info.options.push_back({ RS_OPTION_EVENTS_QUEUE_SIZE,     1, MAX_EVENT_QUEUE_SIZE, 1, MAX_EVENT_QUEUE_SIZE });
-    info.options.push_back({ RS_OPTION_MAX_TIMESTAMP_LATENCY, 1, MAX_EVENT_TINE_OUT,   1, MAX_EVENT_TINE_OUT });
+}
+
+const char * rs_device_base::get_option_description(rs_option option) const
+{
+    switch (option)
+    {
+    case RS_OPTION_COLOR_BACKLIGHT_COMPENSATION                    : return "Enable / disable color backlight compensation";
+    case RS_OPTION_COLOR_BRIGHTNESS                                : return "Color image brightness";
+    case RS_OPTION_COLOR_CONTRAST                                  : return "Color image contrast";
+    case RS_OPTION_COLOR_EXPOSURE                                  : return "Controls exposure time of color camera. Setting any value will disable auto exposure";
+    case RS_OPTION_COLOR_GAIN                                      : return "Color image gain";
+    case RS_OPTION_COLOR_GAMMA                                     : return "Color image gamma setting";
+    case RS_OPTION_COLOR_HUE                                       : return "Color image hue";
+    case RS_OPTION_COLOR_SATURATION                                : return "Color image saturation setting";
+    case RS_OPTION_COLOR_SHARPNESS                                 : return "Color image sharpness setting";
+    case RS_OPTION_COLOR_WHITE_BALANCE                             : return "Controls white balance of color image. Setting any value will disable auto white balance";
+    case RS_OPTION_COLOR_ENABLE_AUTO_EXPOSURE                      : return "Enable / disable color image auto-exposure";
+    case RS_OPTION_COLOR_ENABLE_AUTO_WHITE_BALANCE                 : return "Enable / disable color image auto-white-balance";
+    case RS_OPTION_F200_LASER_POWER                                : return "Power of the F200 / SR300 projector, with 0 meaning projector off";
+    case RS_OPTION_F200_ACCURACY                                   : return "Set the number of patterns projected per frame. The higher the accuracy value the more patterns projected. Increasing the number of patterns help to achieve better accuracy. Note that this control is affecting the Depth FPS";
+    case RS_OPTION_F200_MOTION_RANGE                               : return "Motion vs. Range trade-off, with lower values allowing for better motion sensitivity and higher values allowing for better depth range";
+    case RS_OPTION_F200_FILTER_OPTION                              : return "Set the filter to apply to each depth frame. Each one of the filter is optimized per the application requirements";
+    case RS_OPTION_F200_CONFIDENCE_THRESHOLD                       : return "The confidence level threshold used by the Depth algorithm pipe to set whether a pixel will get a valid range or will be marked with invalid range";
+    case RS_OPTION_F200_DYNAMIC_FPS                                : return "(F200-only) Allows to reduce FPS without restarting streaming. Valid values are {2, 5, 15, 30, 60}";
+    case RS_OPTION_SR300_AUTO_RANGE_ENABLE_MOTION_VERSUS_RANGE     : return "Configures SR300 Depth Auto-Range setting. Should not be used directly but through set IVCAM preset method";
+    case RS_OPTION_SR300_AUTO_RANGE_ENABLE_LASER                   : return "Configures SR300 Depth Auto-Range setting. Should not be used directly but through set IVCAM preset method";
+    case RS_OPTION_SR300_AUTO_RANGE_MIN_MOTION_VERSUS_RANGE        : return "Configures SR300 Depth Auto-Range setting. Should not be used directly but through set IVCAM preset method";
+    case RS_OPTION_SR300_AUTO_RANGE_MAX_MOTION_VERSUS_RANGE        : return "Configures SR300 Depth Auto-Range setting. Should not be used directly but through set IVCAM preset method";
+    case RS_OPTION_SR300_AUTO_RANGE_START_MOTION_VERSUS_RANGE      : return "Configures SR300 Depth Auto-Range setting. Should not be used directly but through set IVCAM preset method";
+    case RS_OPTION_SR300_AUTO_RANGE_MIN_LASER                      : return "Configures SR300 Depth Auto-Range setting. Should not be used directly but through set IVCAM preset method";
+    case RS_OPTION_SR300_AUTO_RANGE_MAX_LASER                      : return "Configures SR300 Depth Auto-Range setting. Should not be used directly but through set IVCAM preset method";
+    case RS_OPTION_SR300_AUTO_RANGE_START_LASER                    : return "Configures SR300 Depth Auto-Range setting. Should not be used directly but through set IVCAM preset method";
+    case RS_OPTION_SR300_AUTO_RANGE_UPPER_THRESHOLD                : return "Configures SR300 Depth Auto-Range setting. Should not be used directly but through set IVCAM preset method";
+    case RS_OPTION_SR300_AUTO_RANGE_LOWER_THRESHOLD                : return "Configures SR300 Depth Auto-Range setting. Should not be used directly but through set IVCAM preset method";
+    case RS_OPTION_SR300_WAKEUP_DEV_PHASE1_PERIOD                  : return "Configures period for the first phase of the wake-up device SR300 mode.";
+    case RS_OPTION_SR300_WAKEUP_DEV_PHASE1_FPS                     : return "Configures FPS for the first phase of the wake-up device SR300 mode.";
+    case RS_OPTION_SR300_WAKEUP_DEV_PHASE2_PERIOD                  : return "Configures period for the second phase of the wake-up device SR300 mode.";
+    case RS_OPTION_SR300_WAKEUP_DEV_PHASE2_FPS                     : return "Configures FPS for the second phase of the wake-up device SR300 mode.";
+    case RS_OPTION_SR300_WAKEUP_DEV_RESET                          : return "Disables SR300 wakeup device mode.";
+    case RS_OPTION_SR300_WAKE_ON_USB_REASON                        : return "Gets the reason for last registered wakeup event";
+    case RS_OPTION_SR300_WAKE_ON_USB_CONFIDENCE                    : return "Gets wakeup reason confidence (0-100)";
+    case RS_OPTION_R200_LR_AUTO_EXPOSURE_ENABLED                   : return "Enables / disables R200 auto-exposure. This will affect both IR and depth image.";
+    case RS_OPTION_R200_LR_GAIN                                    : return "IR image gain";
+    case RS_OPTION_R200_LR_EXPOSURE                                : return "This control allows manual adjustment of the exposure time value for the L/R imagers";
+    case RS_OPTION_R200_EMITTER_ENABLED                            : return "Enables / disables R200 emitter";
+    case RS_OPTION_R200_DEPTH_UNITS                                : return "Micrometers per increment in integer depth values, 1000 is default (mm scale). Set before streaming";
+    case RS_OPTION_R200_DEPTH_CLAMP_MIN                            : return "Minimum depth in current depth units that will be output. Any values less than ‘Min Depth’ will be mapped to 0 during the conversion between disparity and depth. Set before streaming";
+    case RS_OPTION_R200_DEPTH_CLAMP_MAX                            : return "Maximum depth in current depth units that will be output. Any values greater than ‘Max Depth’ will be mapped to 0 during the conversion between disparity and depth. Set before streaming";
+    case RS_OPTION_R200_DISPARITY_MULTIPLIER                       : return "The disparity scale factor used when in disparity output mode. Can only be set before streaming";
+    case RS_OPTION_R200_DISPARITY_SHIFT                            : return "{0 - 512}. Can only be set before streaming starts";
+    case RS_OPTION_R200_AUTO_EXPOSURE_MEAN_INTENSITY_SET_POINT     : return "(Requires LR-Auto-Exposure ON) Mean intensity set point";
+    case RS_OPTION_R200_AUTO_EXPOSURE_BRIGHT_RATIO_SET_POINT       : return "(Requires LR-Auto-Exposure ON) Bright ratio set point";
+    case RS_OPTION_R200_AUTO_EXPOSURE_KP_GAIN                      : return "(Requires LR-Auto-Exposure ON) Kp Gain";
+    case RS_OPTION_R200_AUTO_EXPOSURE_KP_EXPOSURE                  : return "(Requires LR-Auto-Exposure ON) Kp Exposure";
+    case RS_OPTION_R200_AUTO_EXPOSURE_KP_DARK_THRESHOLD            : return "(Requires LR-Auto-Exposure ON) Kp Dark Threshold";
+    case RS_OPTION_R200_AUTO_EXPOSURE_TOP_EDGE                     : return "(Requires LR-Auto-Exposure ON) Auto-Exposure region-of-interest top edge (in pixels)";
+    case RS_OPTION_R200_AUTO_EXPOSURE_BOTTOM_EDGE                  : return "(Requires LR-Auto-Exposure ON) Auto-Exposure region-of-interest bottom edge (in pixels)";
+    case RS_OPTION_R200_AUTO_EXPOSURE_LEFT_EDGE                    : return "(Requires LR-Auto-Exposure ON) Auto-Exposure region-of-interest left edge (in pixels)";
+    case RS_OPTION_R200_AUTO_EXPOSURE_RIGHT_EDGE                   : return "(Requires LR-Auto-Exposure ON) Auto-Exposure region-of-interest right edge (in pixels)";
+    case RS_OPTION_R200_DEPTH_CONTROL_ESTIMATE_MEDIAN_DECREMENT    : return "Value to subtract when estimating the median of the correlation surface";
+    case RS_OPTION_R200_DEPTH_CONTROL_ESTIMATE_MEDIAN_INCREMENT    : return "Value to add when estimating the median of the correlation surface";
+    case RS_OPTION_R200_DEPTH_CONTROL_MEDIAN_THRESHOLD             : return "A threshold by how much the winning score must beat the median";
+    case RS_OPTION_R200_DEPTH_CONTROL_SCORE_MINIMUM_THRESHOLD      : return "The minimum correlation score that is considered acceptable";
+    case RS_OPTION_R200_DEPTH_CONTROL_SCORE_MAXIMUM_THRESHOLD      : return "The maximum correlation score that is considered acceptable";
+    case RS_OPTION_R200_DEPTH_CONTROL_TEXTURE_COUNT_THRESHOLD      : return "A parameter for determining whether the texture in the region is sufficient to justify a depth result";
+    case RS_OPTION_R200_DEPTH_CONTROL_TEXTURE_DIFFERENCE_THRESHOLD : return "A parameter for determining whether the texture in the region is sufficient to justify a depth result";
+    case RS_OPTION_R200_DEPTH_CONTROL_SECOND_PEAK_THRESHOLD        : return "A threshold on how much the minimum correlation score must differ from the next best score";
+    case RS_OPTION_R200_DEPTH_CONTROL_NEIGHBOR_THRESHOLD           : return "Neighbor threshold value for depth calculation";
+    case RS_OPTION_R200_DEPTH_CONTROL_LR_THRESHOLD                 : return "Left-Right threshold value for depth calculation";
+    case RS_OPTION_FISHEYE_EXPOSURE                                : return "Fisheye image exposure time in msec";
+    case RS_OPTION_FISHEYE_GAIN                                    : return "Fisheye image gain";
+    case RS_OPTION_FISHEYE_STROBE                                  : return "Enables / disables fisheye strobe. When enabled this will align timestamps to common clock-domain with the motion events";
+    case RS_OPTION_FISHEYE_EXTERNAL_TRIGGER                        : return "Enables / disables fisheye external trigger mode. When enabled fisheye image will be aquired in-sync with the depth image";
+    case RS_OPTION_FRAMES_QUEUE_SIZE                               : return "Number of frames the user is allowed to keep per stream. Trying to hold-on to more frames will cause frame-drops.";
+    case RS_OPTION_FISHEYE_ENABLE_AUTO_EXPOSURE                    : return "Enable / disable fisheye auto-exposure";
+    case RS_OPTION_FISHEYE_AUTO_EXPOSURE_MODE                      : return "0 - static auto-exposure, 1 - anti-flicker auto-exposure, 2 - hybrid";
+    case RS_OPTION_FISHEYE_AUTO_EXPOSURE_ANTIFLICKER_RATE          : return "Fisheye auto-exposure anti-flicker rate, can be 50 or 60 Hz";
+    case RS_OPTION_FISHEYE_AUTO_EXPOSURE_PIXEL_SAMPLE_RATE         : return "In Fisheye auto-exposure sample frame every given number of pixels";
+    case RS_OPTION_FISHEYE_AUTO_EXPOSURE_SKIP_FRAMES               : return "In Fisheye auto-exposure sample every given number of frames";
+    case RS_OPTION_HARDWARE_LOGGER_ENABLED                         : return "Enables / disables fetching diagnostic information from hardware (and writting the results to log)";
+    default: return rs_option_to_string(option);
+    }
 }
 
 bool rs_device_base::supports(rs_capabilities capability) const
@@ -459,12 +597,6 @@ void rs_device_base::set_options(const rs_option options[], size_t count, const 
         case  RS_OPTION_FRAMES_QUEUE_SIZE:
             max_publish_list_size = (uint32_t)values[i];
             break;
-        case  RS_OPTION_EVENTS_QUEUE_SIZE:
-            event_queue_size = (uint32_t)values[i];
-            break;
-        case  RS_OPTION_MAX_TIMESTAMP_LATENCY:
-            events_timeout = (uint32_t)values[i];
-            break;
         default:
             LOG_WARNING("Cannot set " << options[i] << " to " << values[i] << " on " << get_name());
             throw std::logic_error("Option unsupported");
@@ -481,12 +613,6 @@ void rs_device_base::get_options(const rs_option options[], size_t count, double
         {
         case  RS_OPTION_FRAMES_QUEUE_SIZE:
             values[i] = max_publish_list_size;
-            break;
-        case  RS_OPTION_EVENTS_QUEUE_SIZE:
-            values[i] = event_queue_size;
-            break;
-        case  RS_OPTION_MAX_TIMESTAMP_LATENCY:
-            values[i] = events_timeout;
             break;
         default:
             LOG_WARNING("Cannot get " << options[i] << " on " << get_name());
