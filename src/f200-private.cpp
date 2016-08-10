@@ -531,16 +531,8 @@ namespace rsimpl { namespace f200
         unsigned char ss[8];
         memcpy(ss, gvd.data() + offset, 8);
         char formattedBuffer[64];
-        if (offset == 96)
-        {
-            sprintf(formattedBuffer, "%02X%02X%02X%02X%02X%02X", ss[0], ss[1], ss[2], ss[3], ss[4], ss[5]);
-            serial = std::string(formattedBuffer);
-        }
-        else if (offset == 132)
-        {
-            sprintf(formattedBuffer, "%02X%02X%02X%02X%02X%-2X", ss[0], ss[1], ss[2], ss[3], ss[4], ss[5]);
-            serial = std::string(formattedBuffer);
-        }
+        sprintf(formattedBuffer, "%02X%02X%02X%02X%02X%02X", ss[0], ss[1], ss[2], ss[3], ss[4], ss[5]);
+        serial = std::string(formattedBuffer);
     }
 
     void force_hardware_reset(uvc::device & device, std::timed_mutex & mutex)
