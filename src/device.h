@@ -112,7 +112,7 @@ protected:
     bool                                        motion_module_ready = false;
     std::atomic<bool>                           keep_fw_logger_alive;
 public:
-    rs_device_base(std::shared_ptr<rsimpl::uvc::device> device, const rsimpl::static_device_info & info, rsimpl::calibration_validator validator);
+    rs_device_base(std::shared_ptr<rsimpl::uvc::device> device, const rsimpl::static_device_info & info, rsimpl::calibration_validator validator = rsimpl::calibration_validator());
     virtual ~rs_device_base();
 
     const rsimpl::stream_interface &            get_stream_interface(rs_stream stream) const override { return *streams[stream]; }

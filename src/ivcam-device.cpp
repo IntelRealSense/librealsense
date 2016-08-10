@@ -55,7 +55,7 @@ namespace rsimpl
     }
 
     iv_camera::iv_camera(std::shared_ptr<uvc::device> device, const static_device_info & info, const ivcam::camera_calib_params & calib) :
-        rs_device_base(device, info, calibration_validator([](rs_stream, rs_stream){return true; }, [](rs_stream){return true; })),
+        rs_device_base(device, info),
         base_calibration(calib)
     {
     }

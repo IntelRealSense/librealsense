@@ -47,8 +47,13 @@ namespace rsimpl
         
         int get_data_size() const
         {
-            return sizeof(float) * 9 + sizeof(float) * 5;
+            return sizeof(kf) + sizeof(distf);
         };
+
+        bool has_data() const
+        {
+            return check_not_all_zeros({(byte*)&kf, ((byte*)&kf) + get_data_size()});
+        }
 
         operator rs_intrinsics () const
         {
@@ -92,12 +97,7 @@ namespace rsimpl
 
         float val[3][4];
         operator rs_motion_device_intrinsics() const{
-            return
-            {
-                val[0][0], val[0][1], val[0][2], val[0][3],
-                val[1][0], val[1][1], val[1][2], val[1][3],
-                val[2][0], val[2][1], val[2][2], val[2][3]
-            };
+            return *((rs_motion_device_intrinsics*)this); // Relies on the fact the underlying representation is the same
         };
     };
 
@@ -126,6 +126,11 @@ namespace rsimpl
         {
             return sizeof(MM_intrinsics) * 2 + sizeof(variances) * 4;
         };
+
+        bool has_data() const
+        {
+            return check_not_all_zeros({(byte*)&acc_intrinsic, ((byte*)&acc_intrinsic) + get_data_size()});
+        }
 
         operator rs_motion_intrinsics() const{
             return{ rs_motion_device_intrinsics(acc_intrinsic), rs_motion_device_intrinsics(gyro_intrinsic), 

@@ -344,52 +344,44 @@ namespace rsimpl
         return frame_counter;
     }
 
-    bool check_calibration_data(byte* data, int size)
-    {
-        for (auto i = 0; i < size; i++)
-        {
-            if (data[i] != 0)
-            {
-                return true;
-            }
-        }
-        return false;
-    }
-
     bool zr300_camera::validate_motion_extrinsics(rs_stream from_stream) const
     {
-        if(fe_intrinsic.calib.mm_extrinsic.ver.size == fe_intrinsic.calib.mm_extrinsic.get_data_size())
+        if(!fe_intrinsic.calib.mm_extrinsic.ver.size == fe_intrinsic.calib.mm_extrinsic.get_data_size()) 
         {
-            switch (from_stream)
-            {
-            case RS_STREAM_DEPTH:
-                if (check_calibration_data((byte*)&fe_intrinsic.calib.mm_extrinsic.depth_to_imu, sizeof(mm_extrinsic)))
-                    return true;
-                break;
-            case RS_STREAM_COLOR:
-                if (check_calibration_data((byte*)&fe_intrinsic.calib.mm_extrinsic.rgb_to_imu, sizeof(mm_extrinsic)))
-                    return true;
-                break;
-            case RS_STREAM_FISHEYE:
-                if (check_calibration_data((byte*)&fe_intrinsic.calib.mm_extrinsic.fe_to_imu, sizeof(mm_extrinsic)))
-                    return true;
-                break;
-            default:
-                return false;
-            }
+            LOG_WARNING("Motion Module extrinsics size seem to be wrong!");
+            return false;
         }
 
-        return false;
+        switch (from_stream)
+        {
+        case RS_STREAM_DEPTH:
+            if (!check_not_all_zeros((byte*)&fe_intrinsic.calib.mm_extrinsic.depth_to_imu, sizeof(mm_extrinsic)))
+            {
+                LOG_WARNING("Fish-eye extrinsics Depth-to-IMU is zeros!");
+                return false;
+            }
+                
+            break;
+        case RS_STREAM_COLOR:
+            if (!check_not_all_zeros((byte*)&fe_intrinsic.calib.mm_extrinsic.rgb_to_imu, sizeof(mm_extrinsic)))
+                return false;
+            break;
+        case RS_STREAM_FISHEYE:
+            if (!check_not_all_zeros((byte*)&fe_intrinsic.calib.mm_extrinsic.fe_to_imu, sizeof(mm_extrinsic)))
+                return false;
+            break;
+        default:
+            return true;
+        }
+
+        return true;
     }
 
     bool zr300_camera::validate_motion_intrinsics() const
     {
        if(fe_intrinsic.calib.imu_intrinsic.ver.size == fe_intrinsic.calib.imu_intrinsic.get_data_size())
        {
-           if(check_calibration_data((byte*)&fe_intrinsic.calib.imu_intrinsic, fe_intrinsic.calib.imu_intrinsic.get_data_size()))
-           {
-               return true;
-           }
+           return fe_intrinsic.calib.imu_intrinsic.has_data();
        }
        return false;
     }
@@ -522,11 +514,12 @@ namespace rsimpl
             }
             if (!succeeded_to_read_fisheye_intrinsic)
             {
+                LOG_ERROR("Could not read fisheye calibration from firmware!");
                 return false;
             }
             if (fisheye_intrinsic.calib.fe_intrinsic.ver.size == fisheye_intrinsic.calib.fe_intrinsic.get_data_size())
             {
-                if (check_calibration_data((byte*)&fisheye_intrinsic.calib.fe_intrinsic, fisheye_intrinsic.calib.fe_intrinsic.get_data_size()))
+                if (check_not_all_zeros((byte*)&fisheye_intrinsic.calib.fe_intrinsic, fisheye_intrinsic.calib.fe_intrinsic.get_data_size()))
                 {
                     return true;
                 }
@@ -541,34 +534,22 @@ namespace rsimpl
             }
             if (!succeeded_to_read_fisheye_intrinsic)
             {
+                LOG_ERROR("Could not read fisheye calibration from firmware!");
                 return false;
             }
             if (fisheye_intrinsic.calib.mm_extrinsic.ver.size == fisheye_intrinsic.calib.mm_extrinsic.get_data_size())
             {
                
-                if(check_calibration_data((byte*)&fisheye_intrinsic.calib.mm_extrinsic.fe_to_depth, sizeof(mm_extrinsic)))
+                if(check_not_all_zeros((byte*)&fisheye_intrinsic.calib.mm_extrinsic.fe_to_depth, sizeof(mm_extrinsic)))
                 {
                     return true;
                 }
             }
             return false;
         };
+        calibration_validator validator(fisheye_extrinsics_validator, fisheye_intrinsics_validator);
 
-        return std::make_shared<zr300_camera>(device, info, fisheye_intrinsic, calibration_validator(fisheye_extrinsics_validator, fisheye_intrinsics_validator));
-    }
-
-    calibration_validator::calibration_validator(std::function<bool(rs_stream, rs_stream)> in_extrinsic_validator, std::function<bool(rs_stream)> in_intrinsic_validator)
-        :extrinsic_validator(in_extrinsic_validator), intrinsic_validator(in_intrinsic_validator)
-    {
-    }
-
-    bool calibration_validator::validate_extrinsic(rs_stream from_stream, rs_stream to_stream) const
-    {
-        return extrinsic_validator(from_stream, to_stream);
-    }
-    bool calibration_validator::validate_intrinsic(rs_stream stream) const
-    {
-        return intrinsic_validator(stream);
+        return std::make_shared<zr300_camera>(device, info, fisheye_intrinsic, validator);
     }
 
     unsigned fisheye_auto_exposure_state::get_auto_exposure_state(rs_option option) const

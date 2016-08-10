@@ -13,19 +13,18 @@ namespace rsimpl
 {
     struct stream_interface : rs_stream_interface
     {
-        stream_interface(calibration_validator in_validator, rs_stream in_stream) :validator(in_validator), stream(in_stream){};
+        stream_interface(calibration_validator in_validator, rs_stream in_stream) : validator(in_validator), stream(in_stream){};
                                                                  
         virtual rs_extrinsics                   get_extrinsics_to(const rs_stream_interface & other) const override;
         virtual rsimpl::pose                    get_pose() const = 0;
         virtual int                             get_mode_count() const override { return 0; }
         virtual void                            get_mode(int mode, int * w, int * h, rs_format * f, int * fps) const override { throw std::logic_error("no modes"); }
-        virtual rs_stream                       get_stream()const override { return stream; }
+        virtual rs_stream                       get_stream_type()const override { return stream; }
 
         const rs_stream   stream;
 
     protected:
         calibration_validator validator;
-        
     };
     
     class frame_archive;

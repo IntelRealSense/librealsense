@@ -238,29 +238,26 @@ typedef struct rs_intrinsics
 
 typedef struct rs_motion_device_intrinsics
 {
-	/* Scale X        cross axis        cross axis      Bias X */
-	/* cross axis     Scale Y           cross axis      Bias Y */
-	/* cross axis     cross axis        Scale Z         Bias Z */
+    /* Scale X        cross axis        cross axis      Bias X */
+    /* cross axis     Scale Y           cross axis      Bias Y */
+    /* cross axis     cross axis        Scale Z         Bias Z */
     float data[3][4];
 }rs_motion_device_intrinsics;
 
-typedef struct rs_variances
+/* represents motion device intrinsics - scale, bias and variances */
+typedef struct rs_motion_device_intrinsic
 {
-    float x_axis;
-    float y_axis;
-    float z_axis;
-}rs_variances;
+    rs_motion_device_intrinsics intrinsic;
+    float noise_variances[3];
+    float bias_variances[3];
+} rs_motion_device_intrinsic;
 
+/* represents motion module intrinsics including accelerometer and gyro intrinsics */
 typedef struct rs_motion_intrinsics
 {
-    rs_motion_device_intrinsics acc;
-    rs_motion_device_intrinsics gyro;
-    rs_variances acc_bias_variances;
-    rs_variances acc_noise_variances;
-    rs_variances gyro_bias_variances;
-    rs_variances gyro_noise_variances;
-}rs_motion_intrinsics;
-
+    rs_motion_device_intrinsic acc;
+    rs_motion_device_intrinsic gyro;
+} rs_motion_intrinsics;
 
 typedef struct rs_extrinsics
 {

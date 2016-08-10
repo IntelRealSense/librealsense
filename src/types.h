@@ -599,20 +599,26 @@ namespace rsimpl
 
     };
 
+    // this class is a convinience wrapper for intrinsics / extrinsics validation methods
     class calibration_validator 
     {
     public:
-        calibration_validator(std::function<bool(rs_stream, rs_stream)> in_extrinsic_validator,
-                              std::function<bool(rs_stream)> in_intrinsic_validator);
+        calibration_validator(std::function<bool(rs_stream, rs_stream)> extrinsic_validator,
+                              std::function<bool(rs_stream)>            intrinsic_validator);
+        calibration_validator();
 
-        bool validate_extrinsic(rs_stream from_stream, rs_stream to_stream) const;
-        bool validate_intrinsic(rs_stream stream) const;
+        bool validate_extrinsics(rs_stream from_stream, rs_stream to_stream) const;
+        bool validate_intrinsics(rs_stream stream) const;
 
     private:
         std::function<bool(rs_stream from_stream, rs_stream to_stream)> extrinsic_validator;
         std::function<bool(rs_stream stream)> intrinsic_validator;
-
     };
+
+    bool check_not_all_zeros(std::vector<byte> data)
+    {
+        return std::find_if(data.begin(), data.end(), [](byte b){ return b!=0; }) != data.end();
+    }
 }
 
 #endif
