@@ -79,13 +79,6 @@ TEST_CASE( "SR300 devices support all required options", "[live] [sr300]" )
                 RS_OPTION_SR300_AUTO_RANGE_START_LASER,
                 RS_OPTION_SR300_AUTO_RANGE_UPPER_THRESHOLD,
                 RS_OPTION_SR300_AUTO_RANGE_LOWER_THRESHOLD,
-                RS_OPTION_SR300_WAKEUP_DEV_PHASE1_PERIOD,
-                RS_OPTION_SR300_WAKEUP_DEV_PHASE1_FPS,
-                RS_OPTION_SR300_WAKEUP_DEV_PHASE2_PERIOD,
-                RS_OPTION_SR300_WAKEUP_DEV_PHASE2_FPS,
-                RS_OPTION_SR300_WAKEUP_DEV_RESET,
-                RS_OPTION_SR300_WAKE_ON_USB_REASON,
-                RS_OPTION_SR300_WAKE_ON_USB_CONFIDENCE
             };
 
             for(int i=0; i<RS_OPTION_COUNT; ++i)
@@ -482,92 +475,4 @@ inline void test_sr300_command(rs_device *dev, std::vector<rs_option> options_li
         std::this_thread::sleep_for(std::chrono::milliseconds(50));
         rs_stop_device(dev, require_no_error());
     }
-}
-
-TEST_CASE("SR300 Wakeup over USB function", "[live] [sr300]")
-{
-    std::vector<rs_option> vSetWakeupDevCmd;
-    std::vector<rs_option> vGetWakeUpDevCmd;
-
-    std::vector<std::vector<double>> vGoodParams;
-    std::vector<std::vector<double>> vBadParams;
-    std::vector<double> vRetValues;
-
-    std::string strSuccessMsg = ("");
-    std::string strErrorMsg = ("missing/invalid wake_up command parameters");
-
-    safe_context ctx;
-    REQUIRE(rs_get_device_count(ctx, require_no_error()) == 1);
-
-    rs_device * dev = rs_get_device(ctx, 0, require_no_error());
-    REQUIRE(dev != nullptr);
-
-    SECTION("Minimal Main Success Scenario")
-    {
-        vSetWakeupDevCmd = { RS_OPTION_SR300_WAKEUP_DEV_PHASE1_PERIOD, RS_OPTION_SR300_WAKEUP_DEV_PHASE1_FPS, RS_OPTION_SR300_WAKEUP_DEV_PHASE2_PERIOD, RS_OPTION_SR300_WAKEUP_DEV_PHASE2_FPS };
-        vGetWakeUpDevCmd = { RS_OPTION_SR300_WAKE_ON_USB_REASON, RS_OPTION_SR300_WAKE_ON_USB_CONFIDENCE };
-
-        //phase1Period  phase1FPS   phase2Period phase2FPS
-        vGoodParams = { { 500, 2, 200, 3 } };
-        vBadParams = {};              // second and forth parameters are invalid
-    }
-
-    SECTION("Main Success Scenario Extended")
-    {
-        vSetWakeupDevCmd = { RS_OPTION_SR300_WAKEUP_DEV_PHASE1_PERIOD, RS_OPTION_SR300_WAKEUP_DEV_PHASE1_FPS, RS_OPTION_SR300_WAKEUP_DEV_PHASE2_PERIOD, RS_OPTION_SR300_WAKEUP_DEV_PHASE2_FPS };
-        vGetWakeUpDevCmd = { RS_OPTION_SR300_WAKE_ON_USB_REASON, RS_OPTION_SR300_WAKE_ON_USB_CONFIDENCE };
-
-        //phase1Period  phase1FPS   phase2Period phase2FPS
-        vGoodParams = {
-            { 500, 2, 200, 3 },
-            { 5000, 1, 456, 2 } };
-        vBadParams = {
-            { 0xffffffff, 0, 3, 6 },       // first parameter is invalid
-            { 1, 32, 3, 6 },               // second parameter is invalid : enum in range [0-3]
-            { 1, 2, 3, 6 },                // fourth parameter is invalid : enum in range [0-3]
-            { 1, 2, 3, 6 } };              // second and forth parameters are invalid
-    }
-
-    SECTION("Negative Tests: Ill-formed commands")
-    {
-        SECTION("WAKEUP_DEV_PHASE1_PERIOD option is undefined")
-        {
-            vSetWakeupDevCmd = { RS_OPTION_SR300_WAKEUP_DEV_PHASE2_PERIOD, RS_OPTION_SR300_WAKEUP_DEV_PHASE1_FPS, RS_OPTION_SR300_WAKEUP_DEV_PHASE2_PERIOD, RS_OPTION_SR300_WAKEUP_DEV_PHASE2_FPS };
-        }
-
-        SECTION("number of command options does not correspond to the number of assignment values")
-        {
-            vSetWakeupDevCmd = { RS_OPTION_SR300_WAKEUP_DEV_PHASE1_PERIOD, RS_OPTION_SR300_WAKEUP_DEV_PHASE2_PERIOD, RS_OPTION_SR300_WAKEUP_DEV_PHASE1_FPS, RS_OPTION_SR300_WAKEUP_DEV_PHASE2_PERIOD, RS_OPTION_SR300_WAKEUP_DEV_PHASE2_FPS };
-        }
-
-        strSuccessMsg = ("missing/invalid wake_up command parameters");    // Eventhought the parameters are correct we'd expect the test to fail due to invalid command options specification
-
-        vGetWakeUpDevCmd = { RS_OPTION_SR300_WAKE_ON_USB_REASON, RS_OPTION_SR300_WAKE_ON_USB_CONFIDENCE };
-        vGoodParams = { { 500, 2, 200, 3 } };
-        vBadParams = {};
-    }
-
-    // Apply set command in different scenarios
-    for (auto &data : vGoodParams)
-    {
-        test_sr300_command(dev, vSetWakeupDevCmd, data, {}, vRetValues, strSuccessMsg, strErrorMsg, BEFORE_START_DEVICE, true);
-        test_sr300_command(dev, vSetWakeupDevCmd, data, {}, vRetValues, strSuccessMsg, strErrorMsg, AFTER_START_DEVICE, true);
-    }
-
-    for (auto &data : vBadParams)
-    {
-        test_sr300_command(dev, vSetWakeupDevCmd, {}, data, vRetValues, strSuccessMsg, strErrorMsg, BEFORE_START_DEVICE, true);
-        test_sr300_command(dev, vSetWakeupDevCmd, {}, data, vRetValues, strSuccessMsg, strErrorMsg, AFTER_START_DEVICE, true);
-    }
-
-    // Revert to original messages
-    strSuccessMsg = ("");
-    strErrorMsg = ("missing/invalid wake_up command parameters");
-    
-    test_sr300_command(dev, vGetWakeUpDevCmd, {}, {}, vRetValues, strSuccessMsg, strErrorMsg, BEFORE_START_DEVICE, false);
-    test_sr300_command(dev, vGetWakeUpDevCmd, {}, {}, vRetValues, strSuccessMsg, strErrorMsg, AFTER_START_DEVICE, false);
-
-    REQUIRE(((vRetValues[0] == Approx(1.0)) || ((int)vRetValues[0] == Approx(0))) == true );
-    REQUIRE(((vRetValues[1] >= 0) && (vRetValues[1] <= 100) && ( 0 == (int)vRetValues[1]%10))== true);
-    
 }
