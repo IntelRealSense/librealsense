@@ -11,9 +11,9 @@ using namespace rsimpl;
 
 rs_extrinsics stream_interface::get_extrinsics_to(const rs_stream_interface & other) const
 {
-    if (!validator.validate_extrinsic(stream, other.get_stream()))
+    if (!validator.validate_extrinsics(stream, other.get_stream_type()))
     {
-        throw std::runtime_error(to_string() << "The extrinsic from " << get_stream() << " to " << other.get_stream()<<" is not valid");
+        throw std::runtime_error(to_string() << "The extrinsic from " << get_stream_type() << " to " << other.get_stream_type() << " is not valid");
     }
     
     auto& r = dynamic_cast<const stream_interface&>(other);
@@ -80,9 +80,9 @@ subdevice_mode_selection native_stream::get_mode() const
 
 rs_intrinsics native_stream::get_intrinsics() const 
 {
-    if (!validator.validate_intrinsic(stream))
+    if (!validator.validate_intrinsics(stream))
     {
-        throw std::runtime_error(to_string() << "The intrinsic of " << get_stream() << " ia not valid");
+        throw std::runtime_error(to_string() << "The intrinsic of " << get_stream_type() << " is not valid");
     }
     const auto m = get_mode();
     return pad_crop_intrinsics(m.mode.native_intrinsics, m.pad_crop);
@@ -90,9 +90,9 @@ rs_intrinsics native_stream::get_intrinsics() const
 
 rs_intrinsics native_stream::get_rectified_intrinsics() const
 {
-    if (!validator.validate_intrinsic(stream))
+    if (!validator.validate_intrinsics(stream))
     {
-        throw std::runtime_error(to_string() << "The intrinsic of " << get_stream() << " ia not valid");
+        throw std::runtime_error(to_string() << "The intrinsic of " << get_stream_type() << " is not valid");
     }
     const auto m = get_mode();
     if(m.mode.rect_modes.empty()) return get_intrinsics();

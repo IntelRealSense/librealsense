@@ -346,60 +346,63 @@ namespace rsimpl
 
     bool zr300_camera::validate_motion_extrinsics(rs_stream from_stream) const
     {
-        if(!fe_intrinsic.calib.mm_extrinsic.ver.size == fe_intrinsic.calib.mm_extrinsic.get_data_size()) 
-        {
-            LOG_WARNING("Motion Module extrinsics size seem to be wrong!");
-            return false;
-        }
+		if (fe_intrinsic.calib.mm_extrinsic.ver.size != fe_intrinsic.calib.mm_extrinsic.get_data_size())
+		{
+			LOG_WARNING("Motion exntrinsics validation from "<< from_stream <<" failed, ver.size = " << fe_intrinsic.calib.mm_extrinsic.ver.size << " real size = " << fe_intrinsic.calib.mm_extrinsic.get_data_size());
+			return false;
+		}
 
+		auto res = true;
         switch (from_stream)
         {
         case RS_STREAM_DEPTH:
-            if (!check_not_all_zeros((byte*)&fe_intrinsic.calib.mm_extrinsic.depth_to_imu, sizeof(mm_extrinsic)))
-            {
-                LOG_WARNING("Fish-eye extrinsics Depth-to-IMU is zeros!");
-                return false;
-            }
-                
+			if (!fe_intrinsic.calib.mm_extrinsic.depth_to_imu.has_data())
+				res = false;
+   
             break;
         case RS_STREAM_COLOR:
-            if (!check_not_all_zeros((byte*)&fe_intrinsic.calib.mm_extrinsic.rgb_to_imu, sizeof(mm_extrinsic)))
-                return false;
+            if (!fe_intrinsic.calib.mm_extrinsic.rgb_to_imu.has_data())
+				res = false;
+
             break;
         case RS_STREAM_FISHEYE:
-            if (!check_not_all_zeros((byte*)&fe_intrinsic.calib.mm_extrinsic.fe_to_imu, sizeof(mm_extrinsic)))
-                return false;
+            if (!fe_intrinsic.calib.mm_extrinsic.fe_to_imu.has_data())
+				res = false;
+
             break;
         default:
-            return true;
+			res = false;
         }
 
+		if (res == false)
+		{
+			LOG_WARNING("Motion exntrinsics validation from " << from_stream << " failed, because the data is invalid");
+			return false;
+		}
         return true;
     }
 
     bool zr300_camera::validate_motion_intrinsics() const
     {
-       if(fe_intrinsic.calib.imu_intrinsic.ver.size == fe_intrinsic.calib.imu_intrinsic.get_data_size())
-       {
-           return fe_intrinsic.calib.imu_intrinsic.has_data();
-       }
-       return false;
-    }
-
-    void get_raw_data(uint8_t opcode, uvc::device & device, std::timed_mutex & mutex, uint8_t * data, size_t & bytesReturned)
-    {
-        hw_monitor::hwmon_cmd command(opcode);
-
-        perform_and_send_monitor_command(device, mutex, command);
-        memcpy(data, command.receivedCommandData, HW_MONITOR_BUFFER_SIZE);
-        bytesReturned = command.receivedCommandDataLength;
+		if (fe_intrinsic.calib.imu_intrinsic.ver.size != fe_intrinsic.calib.imu_intrinsic.get_data_size())
+		{
+			LOG_ERROR("Motion intrinsics validation of failed, ver.size = " << fe_intrinsic.calib.imu_intrinsic.ver.size << " real size = " << fe_intrinsic.calib.imu_intrinsic.get_data_size());
+			return false;
+		}
+        if(!fe_intrinsic.calib.imu_intrinsic.has_data())
+        {
+			LOG_ERROR("Motion intrinsics validation of failed, because the data is invalid");
+			return false;
+        }
+       
+       return true;
     }
 
     serial_number read_serial_number(uvc::device & device, std::timed_mutex & mutex)
     {
         uint8_t serial_number_raw[HW_MONITOR_BUFFER_SIZE];
         size_t bufferLength = HW_MONITOR_BUFFER_SIZE;
-        get_raw_data(static_cast<uint8_t>(fw_cmd::MM_SNB), device, mutex, serial_number_raw, bufferLength);
+        get_raw_data(static_cast<uint8_t>(adaptor_board_command::MM_SNB), device, mutex, serial_number_raw, bufferLength);
 
         serial_number sn;
         memcpy(&sn, serial_number_raw, std::min(sizeof(serial_number), bufferLength)); // Is this longer or shorter than the rawCalib struct?
@@ -409,7 +412,7 @@ namespace rsimpl
     {
         uint8_t scalibration_raw[HW_MONITOR_BUFFER_SIZE];
         size_t bufferLength = HW_MONITOR_BUFFER_SIZE;
-        get_raw_data(static_cast<uint8_t>(fw_cmd::MM_TRB), device, mutex, scalibration_raw, bufferLength);
+        get_raw_data(static_cast<uint8_t>(adaptor_board_command::MM_TRB), device, mutex, scalibration_raw, bufferLength);
 
         calibration calibration;
         memcpy(&calibration, scalibration_raw, std::min(sizeof(calibration), bufferLength)); // Is this longer or shorter than the rawCalib struct?
@@ -451,7 +454,7 @@ namespace rsimpl
             }
             catch (...)
             {
-                LOG_ERROR("Failed to read fisheye intrinsic");
+                LOG_ERROR("Failed to read fisheye intrinsics");
             }
             rs_intrinsics rs_intrinsics = fisheye_intrinsic.calib.fe_intrinsic;
 
@@ -503,7 +506,7 @@ namespace rsimpl
         }
         else
         {
-            LOG_ERROR("Motion module capabilities were disabled due to failure to aquire intrinsic");
+			LOG_WARNING("Motion module capabilities were disabled due to failure to aquire intrinsic");
         }
 
         auto fisheye_intrinsics_validator = [fisheye_intrinsic, succeeded_to_read_fisheye_intrinsic](rs_stream stream)
@@ -514,18 +517,22 @@ namespace rsimpl
             }
             if (!succeeded_to_read_fisheye_intrinsic)
             {
-                LOG_ERROR("Could not read fisheye calibration from firmware!");
+                LOG_WARNING("Intrinsics validation of"<<stream<<" failed, because the reading of calibration table failed");
                 return false;
             }
-            if (fisheye_intrinsic.calib.fe_intrinsic.ver.size == fisheye_intrinsic.calib.fe_intrinsic.get_data_size())
+            if (fisheye_intrinsic.calib.fe_intrinsic.ver.size != fisheye_intrinsic.calib.fe_intrinsic.get_data_size())
             {
-                if (check_not_all_zeros((byte*)&fisheye_intrinsic.calib.fe_intrinsic, fisheye_intrinsic.calib.fe_intrinsic.get_data_size()))
-                {
-                    return true;
-                }
+                LOG_WARNING("Intrinsics validation of" << stream <<" failed, ver.size = " << fisheye_intrinsic.calib.fe_intrinsic.ver.size << " real size = " << fisheye_intrinsic.calib.fe_intrinsic.get_data_size());
+                return false;
             }
-            return false;
+            if (!fisheye_intrinsic.calib.fe_intrinsic.has_data())
+            {
+                LOG_WARNING("Intrinsics validation of" << stream <<" failed, because the data is invalid");
+                return false;
+            }
+            return true;
         };
+
         auto fisheye_extrinsics_validator = [fisheye_intrinsic, succeeded_to_read_fisheye_intrinsic](rs_stream from_stream, rs_stream to_stream)
         {
             if (from_stream != RS_STREAM_FISHEYE && to_stream != RS_STREAM_FISHEYE)
@@ -534,23 +541,27 @@ namespace rsimpl
             }
             if (!succeeded_to_read_fisheye_intrinsic)
             {
-                LOG_ERROR("Could not read fisheye calibration from firmware!");
+                LOG_WARNING("Exstrinsics validation of" << from_stream <<" to "<< to_stream << " failed,  because the reading of calibration table failed");
                 return false;
             }
-            if (fisheye_intrinsic.calib.mm_extrinsic.ver.size == fisheye_intrinsic.calib.mm_extrinsic.get_data_size())
+			if (!fisheye_intrinsic.calib.mm_extrinsic.ver.size == fisheye_intrinsic.calib.mm_extrinsic.get_data_size())
+			{
+				LOG_WARNING("Extrinsics validation of" << from_stream <<" to "<<to_stream<< " failed, ver.size = " << fisheye_intrinsic.calib.fe_intrinsic.ver.size << " real size = " << fisheye_intrinsic.calib.fe_intrinsic.get_data_size());
+				return false;
+			}
+            if(!fisheye_intrinsic.calib.mm_extrinsic.fe_to_depth.has_data())
             {
-               
-                if(check_not_all_zeros((byte*)&fisheye_intrinsic.calib.mm_extrinsic.fe_to_depth, sizeof(mm_extrinsic)))
-                {
-                    return true;
-                }
+				LOG_WARNING("Extrinsics validation of" << from_stream <<" to "<<to_stream<< " failed, because the data is invalid");
+                return false;
             }
-            return false;
+            
+            return true;
         };
-        calibration_validator validator(fisheye_extrinsics_validator, fisheye_intrinsics_validator);
 
-        return std::make_shared<zr300_camera>(device, info, fisheye_intrinsic, validator);
+        return std::make_shared<zr300_camera>(device, info, fisheye_intrinsic, calibration_validator(fisheye_extrinsics_validator, fisheye_intrinsics_validator));
     }
+
+   
 
     unsigned fisheye_auto_exposure_state::get_auto_exposure_state(rs_option option) const
     {

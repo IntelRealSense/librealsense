@@ -685,6 +685,10 @@ namespace rsimpl
     {
     }
 
+    calibration_validator::calibration_validator()
+    {
+    }
+
     bool calibration_validator::validate_extrinsics(rs_stream from_stream, rs_stream to_stream) const
     {
         return extrinsic_validator(from_stream, to_stream);
@@ -694,7 +698,4 @@ namespace rsimpl
         return intrinsic_validator(stream);
     }
 
-    calibration_validator::calibration_validator()
-        : extrinsic_validator([](rs_stream, rs_stream){ return true; }), intrinsic_validator([](rs_stream){ return true; })
-    {}
 }

@@ -18,11 +18,7 @@
 
 namespace rsimpl
 {
-    enum class fw_cmd : uint8_t
-    {
-        MM_SNB = 0x10,
-        MM_TRB = 0x11
-    };
+  
     struct IMU_version
     {
         byte ver[4];
@@ -73,6 +69,16 @@ namespace rsimpl
                         rotation[6], rotation[7], rotation[8] },
                       { translation[0], translation[1], translation[2] } };
         }
+
+        int get_data_size() const
+        {
+            return sizeof(rotation) + sizeof(translation);
+        }
+
+        bool has_data() const
+        {
+            return check_not_all_zeros({ (byte*)&rotation, ((byte*)&rotation) + get_data_size() });
+        }
     };
     struct IMU_extrinsic
     {
@@ -85,7 +91,7 @@ namespace rsimpl
 
         int get_data_size() const
         {
-            return sizeof(mm_extrinsic) * 4;
+            return sizeof(fe_to_imu) + sizeof(fe_to_depth) + sizeof(rgb_to_imu) + sizeof(depth_to_imu);
         };
     };
 
@@ -101,43 +107,46 @@ namespace rsimpl
         };
     };
 
-    struct variances
-    {
-        float x_axis;
-        float y_axis;
-        float z_axis;
-        operator rs_variances() const{
-            return{ x_axis, y_axis, z_axis };
-        };
-    };
-    
+  
     struct IMU_intrinsic
     {
         IMU_version ver;
         MM_intrinsics acc_intrinsic;
         MM_intrinsics gyro_intrinsic;
-        variances acc_bias;
-        variances acc_noise;
-        variances gyro_bias;
-        variances gyro_noise;
+        float acc_bias_variance[3];
+        float acc_noise_variance[3];
+        float gyro_bias_variance[3];
+        float gyro_noise_variance[3];
         byte reserved[103];
 
         int get_data_size() const
         {
-            return sizeof(MM_intrinsics) * 2 + sizeof(variances) * 4;
+            return sizeof(acc_intrinsic) + sizeof(gyro_intrinsic) + 
+                sizeof(acc_bias_variance) + sizeof(acc_noise_variance) + sizeof(gyro_bias_variance) + sizeof(gyro_noise_variance);
         };
 
         bool has_data() const
         {
             return check_not_all_zeros({(byte*)&acc_intrinsic, ((byte*)&acc_intrinsic) + get_data_size()});
         }
-
+       
+        rs_motion_device_intrinsic get_acc_intrinsic() const
+        {
+            return{ rs_motion_device_intrinsics(acc_intrinsic), 
+            { acc_noise_variance[0], acc_noise_variance[1], acc_noise_variance[2] }, 
+            { acc_bias_variance[0], acc_bias_variance[1], acc_bias_variance[2] } };
+        }
+        rs_motion_device_intrinsic get_gyro_intrinsic() const
+        {
+            return{ rs_motion_device_intrinsics(gyro_intrinsic),
+            { gyro_noise_variance[0], gyro_noise_variance[1], gyro_noise_variance[2] },
+            { gyro_bias_variance[0], gyro_bias_variance[1], gyro_bias_variance[2] } };
+        }
+       
         operator rs_motion_intrinsics() const{
-            return{ rs_motion_device_intrinsics(acc_intrinsic), rs_motion_device_intrinsics(gyro_intrinsic), 
-                    rs_variances(acc_bias), rs_variances(acc_noise), 
-                    rs_variances(gyro_bias), rs_variances(gyro_noise)
-            };
-        };
+
+            return{ get_acc_intrinsic(), get_gyro_intrinsic() };
+        }
     };
 
     struct calibration

@@ -21,6 +21,7 @@
 #include <memory>                           // For unique_ptr
 #include <atomic>
 #include <map>          
+#include <algorithm>
 
 const uint8_t RS_STREAM_NATIVE_COUNT    = 5;
 const int RS_USER_QUEUE_SIZE = 20;
@@ -615,7 +616,7 @@ namespace rsimpl
         std::function<bool(rs_stream stream)> intrinsic_validator;
     };
 
-    bool check_not_all_zeros(std::vector<byte> data)
+    inline bool check_not_all_zeros(std::vector<byte> data)
     {
         return std::find_if(data.begin(), data.end(), [](byte b){ return b!=0; }) != data.end();
     }
