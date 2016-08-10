@@ -66,7 +66,7 @@ namespace rsimpl
         mutable std::vector<uint8_t>            image;
         mutable unsigned long long              number;
     public:
-        point_stream(const stream_interface & source) :stream_interface(calibration_validator([](rs_stream, rs_stream){return true; }, [](rs_stream){return true; }), RS_STREAM_COUNT), source(source), number() {}
+        point_stream(const stream_interface & source) :stream_interface(calibration_validator(), RS_STREAM_POINTS), source(source), number() {}
 
         pose                                    get_pose() const override { return {{{1,0,0},{0,1,0},{0,0,1}}, source.get_pose().position}; }
         float                                   get_depth_scale() const override { return source.get_depth_scale(); }
@@ -93,7 +93,7 @@ namespace rsimpl
         mutable std::vector<uint8_t>            image;
         mutable unsigned long long              number;
     public:
-        rectified_stream(const stream_interface & source) : stream_interface(calibration_validator([](rs_stream, rs_stream){return true; }, [](rs_stream){return true; }), RS_STREAM_COUNT), source(source), number() {}
+        rectified_stream(const stream_interface & source) : stream_interface(calibration_validator(), RS_STREAM_RECTIFIED_COLOR), source(source), number() {}
 
         pose                                    get_pose() const override { return {{{1,0,0},{0,1,0},{0,0,1}}, source.get_pose().position}; }
         float                                   get_depth_scale() const override { return source.get_depth_scale(); }
@@ -119,7 +119,7 @@ namespace rsimpl
         mutable std::vector<uint8_t>            image;
         mutable unsigned long long              number;
     public:
-        aligned_stream(const stream_interface & from, const stream_interface & to) :stream_interface(calibration_validator([](rs_stream, rs_stream){return true; }, [](rs_stream){return true; }), RS_STREAM_COUNT), from(from), to(to), number() {}
+        aligned_stream(const stream_interface & from, const stream_interface & to) :stream_interface(calibration_validator(), RS_STREAM_COLOR_ALIGNED_TO_DEPTH), from(from), to(to), number() {}
 
         pose                                    get_pose() const override { return to.get_pose(); }
         float                                   get_depth_scale() const override { return to.get_depth_scale(); }
