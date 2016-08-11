@@ -346,53 +346,53 @@ namespace rsimpl
 
     bool zr300_camera::validate_motion_extrinsics(rs_stream from_stream) const
     {
-		if (fe_intrinsic.calib.mm_extrinsic.ver.size != fe_intrinsic.calib.mm_extrinsic.get_data_size())
-		{
-			LOG_WARNING("Motion exntrinsics validation from "<< from_stream <<" failed, ver.size = " << fe_intrinsic.calib.mm_extrinsic.ver.size << " real size = " << fe_intrinsic.calib.mm_extrinsic.get_data_size());
-			return false;
-		}
+        if (fe_intrinsic.calib.mm_extrinsic.ver.size != fe_intrinsic.calib.mm_extrinsic.get_data_size())
+        {
+            LOG_WARNING("Motion exntrinsics validation from "<< from_stream <<" failed, ver.size = " << fe_intrinsic.calib.mm_extrinsic.ver.size << " real size = " << fe_intrinsic.calib.mm_extrinsic.get_data_size());
+            return false;
+        }
 
-		auto res = true;
+        auto res = true;
         switch (from_stream)
         {
         case RS_STREAM_DEPTH:
-			if (!fe_intrinsic.calib.mm_extrinsic.depth_to_imu.has_data())
-				res = false;
+            if (!fe_intrinsic.calib.mm_extrinsic.depth_to_imu.has_data())
+                res = false;
    
             break;
         case RS_STREAM_COLOR:
             if (!fe_intrinsic.calib.mm_extrinsic.rgb_to_imu.has_data())
-				res = false;
+                res = false;
 
             break;
         case RS_STREAM_FISHEYE:
             if (!fe_intrinsic.calib.mm_extrinsic.fe_to_imu.has_data())
-				res = false;
+                res = false;
 
             break;
         default:
-			res = false;
+            res = false;
         }
 
-		if (res == false)
-		{
-			LOG_WARNING("Motion exntrinsics validation from " << from_stream << " failed, because the data is invalid");
-			return false;
-		}
+        if (res == false)
+        {
+            LOG_WARNING("Motion exntrinsics validation from " << from_stream << " failed, because the data is invalid");
+            return false;
+        }
         return true;
     }
 
     bool zr300_camera::validate_motion_intrinsics() const
     {
-		if (fe_intrinsic.calib.imu_intrinsic.ver.size != fe_intrinsic.calib.imu_intrinsic.get_data_size())
-		{
-			LOG_ERROR("Motion intrinsics validation of failed, ver.size = " << fe_intrinsic.calib.imu_intrinsic.ver.size << " real size = " << fe_intrinsic.calib.imu_intrinsic.get_data_size());
-			return false;
-		}
+        if (fe_intrinsic.calib.imu_intrinsic.ver.size != fe_intrinsic.calib.imu_intrinsic.get_data_size())
+        {
+            LOG_ERROR("Motion intrinsics validation of failed, ver.size = " << fe_intrinsic.calib.imu_intrinsic.ver.size << " real size = " << fe_intrinsic.calib.imu_intrinsic.get_data_size());
+            return false;
+        }
         if(!fe_intrinsic.calib.imu_intrinsic.has_data())
         {
-			LOG_ERROR("Motion intrinsics validation of failed, because the data is invalid");
-			return false;
+            LOG_ERROR("Motion intrinsics validation of failed, because the data is invalid");
+            return false;
         }
        
        return true;
@@ -506,7 +506,7 @@ namespace rsimpl
         }
         else
         {
-			LOG_WARNING("Motion module capabilities were disabled due to failure to aquire intrinsic");
+            LOG_WARNING("Motion module capabilities were disabled due to failure to aquire intrinsic");
         }
 
         auto fisheye_intrinsics_validator = [fisheye_intrinsic, succeeded_to_read_fisheye_intrinsic](rs_stream stream)
@@ -544,14 +544,14 @@ namespace rsimpl
                 LOG_WARNING("Exstrinsics validation of" << from_stream <<" to "<< to_stream << " failed,  because the reading of calibration table failed");
                 return false;
             }
-			if (!fisheye_intrinsic.calib.mm_extrinsic.ver.size == fisheye_intrinsic.calib.mm_extrinsic.get_data_size())
-			{
-				LOG_WARNING("Extrinsics validation of" << from_stream <<" to "<<to_stream<< " failed, ver.size = " << fisheye_intrinsic.calib.fe_intrinsic.ver.size << " real size = " << fisheye_intrinsic.calib.fe_intrinsic.get_data_size());
-				return false;
-			}
+            if (!fisheye_intrinsic.calib.mm_extrinsic.ver.size == fisheye_intrinsic.calib.mm_extrinsic.get_data_size())
+            {
+                LOG_WARNING("Extrinsics validation of" << from_stream <<" to "<<to_stream<< " failed, ver.size = " << fisheye_intrinsic.calib.fe_intrinsic.ver.size << " real size = " << fisheye_intrinsic.calib.fe_intrinsic.get_data_size());
+                return false;
+            }
             if(!fisheye_intrinsic.calib.mm_extrinsic.fe_to_depth.has_data())
             {
-				LOG_WARNING("Extrinsics validation of" << from_stream <<" to "<<to_stream<< " failed, because the data is invalid");
+                LOG_WARNING("Extrinsics validation of" << from_stream <<" to "<<to_stream<< " failed, because the data is invalid");
                 return false;
             }
             

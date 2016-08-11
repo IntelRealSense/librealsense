@@ -235,19 +235,14 @@ typedef struct rs_intrinsics
     float         coeffs[5]; /* distortion coefficients */
 } rs_intrinsics;
 
-
-typedef struct rs_motion_device_intrinsics
+/* represents motion device intrinsics - scale, bias and variances */
+typedef struct rs_motion_device_intrinsic
 {
     /* Scale X        cross axis        cross axis      Bias X */
     /* cross axis     Scale Y           cross axis      Bias Y */
     /* cross axis     cross axis        Scale Z         Bias Z */
     float data[3][4];
-}rs_motion_device_intrinsics;
 
-/* represents motion device intrinsics - scale, bias and variances */
-typedef struct rs_motion_device_intrinsic
-{
-    rs_motion_device_intrinsics intrinsic;
     float noise_variances[3];
     float bias_variances[3];
 } rs_motion_device_intrinsic;

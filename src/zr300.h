@@ -102,9 +102,6 @@ namespace rsimpl
         //  cross axis     cross axis        Scale Z         Bias Z
 
         float val[3][4];
-        operator rs_motion_device_intrinsics() const{
-            return *((rs_motion_device_intrinsics*)this); // Relies on the fact the underlying representation is the same
-        };
     };
 
   
@@ -130,17 +127,33 @@ namespace rsimpl
             return check_not_all_zeros({(byte*)&acc_intrinsic, ((byte*)&acc_intrinsic) + get_data_size()});
         }
        
+        rs_motion_device_intrinsic convert(const MM_intrinsics& intrin, const float bias_variance[3], const float noises_variance[3]) const
+        {
+            rs_motion_device_intrinsic res;
+
+            for (auto i = 0; i < 3; i++)
+            {
+                for (auto j = 0; j < 4; j++)
+                {
+                    res.data[i][j] = intrin.val[i][j];
+                }
+            }
+
+            for (auto i = 0; i < 3; i++)
+            {
+                res.noise_variances[i] = noises_variance[i];
+                res.bias_variances[i] = bias_variance[i];
+            }
+            return res;
+        }
         rs_motion_device_intrinsic get_acc_intrinsic() const
         {
-            return{ rs_motion_device_intrinsics(acc_intrinsic), 
-            { acc_noise_variance[0], acc_noise_variance[1], acc_noise_variance[2] }, 
-            { acc_bias_variance[0], acc_bias_variance[1], acc_bias_variance[2] } };
+            return convert(acc_intrinsic, acc_bias_variance, acc_noise_variance);
         }
+
         rs_motion_device_intrinsic get_gyro_intrinsic() const
         {
-            return{ rs_motion_device_intrinsics(gyro_intrinsic),
-            { gyro_noise_variance[0], gyro_noise_variance[1], gyro_noise_variance[2] },
-            { gyro_bias_variance[0], gyro_bias_variance[1], gyro_bias_variance[2] } };
+            return convert(gyro_intrinsic, gyro_bias_variance, gyro_noise_variance);
         }
        
         operator rs_motion_intrinsics() const{
