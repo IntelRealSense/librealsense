@@ -602,10 +602,15 @@ namespace rsimpl
             if (a.enabled && b.enabled)
             {
                 bool compat = true;
+                std::stringstream error_message;
+
                 if (rule.same_format)
                 {
                     if ((a.format != RS_FORMAT_ANY) && (b.format != RS_FORMAT_ANY) && (a.format != b.format))
+                    {
+                        if (throw_exception) error_message << rule.a << " format (" << rs_format_to_string(a.format) << ") must be equal to " << rule.b << " format (" << rs_format_to_string(b.format) << ")!";
                         compat = false;
+                    }
                 }
                 else if((a.*f != 0) && (b.*f != 0))
                 {
@@ -613,20 +618,29 @@ namespace rsimpl
                     {
                         // Check for incompatibility if both values specified
                         if ((a.*f + rule.delta != b.*f) && (a.*f + rule.delta2 != b.*f))
+                        {
+                            if (throw_exception) error_message << " " << rule.b << " value " << b.*f << " must be equal to either " << (a.*f + rule.delta) << " or " << (a.*f + rule.delta2) << "!";
                             compat = false;
+                        }
                     }
                     else
                     {
                         if (((rule.bigger == rule.a) && (a.*f < b.*f)) || ((rule.bigger == rule.b) && (b.*f < a.*f)))
+                        {
+                            if (throw_exception) error_message << " " << rule.a << " value " << a.*f << " must be " << ((rule.bigger == rule.a) ? "bigger" : "smaller") << " then " << rule.b << " value " << b.*f << "!";
                             compat = false;
+                        }
                         if ((rule.divides &&  (a.*f % b.*f)) || (rule.divides2 && (b.*f % a.*f)))
+                        {
+                            if (throw_exception) error_message << " " << rule.a << " value " << a.*f << " must " << (rule.divides ? "be divided by" : "divide") << rule.b << " value " << b.*f << "!";
                             compat = false;
+                        }
                     }
                 }
                 if (!compat)
                 {
                     if (throw_exception)
-                        throw std::runtime_error(to_string() << "requested " << rule.a << " and " << rule.b << " settings are incompatible");
+                        throw std::runtime_error(to_string() << "requested settings for " << rule.a << " and " << rule.b << " are incompatible!" << error_message.str());
                     return false;
                 }
             }
@@ -665,4 +679,23 @@ namespace rsimpl
     {
         return atoi(split(name)[part].c_str());
     }
+
+    calibration_validator::calibration_validator(std::function<bool(rs_stream, rs_stream)> extrinsic_validator, std::function<bool(rs_stream)> intrinsic_validator)
+        :extrinsic_validator(extrinsic_validator), intrinsic_validator(intrinsic_validator)
+    {
+    }
+
+    calibration_validator::calibration_validator()
+    {
+    }
+
+    bool calibration_validator::validate_extrinsics(rs_stream from_stream, rs_stream to_stream) const
+    {
+        return extrinsic_validator(from_stream, to_stream);
+    }
+    bool calibration_validator::validate_intrinsics(rs_stream stream) const
+    {
+        return intrinsic_validator(stream);
+    }
+
 }

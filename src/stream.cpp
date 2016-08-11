@@ -11,6 +11,11 @@ using namespace rsimpl;
 
 rs_extrinsics stream_interface::get_extrinsics_to(const rs_stream_interface & other) const
 {
+    if (!validator.validate_extrinsics(stream, other.get_stream_type()))
+    {
+        throw std::runtime_error(to_string() << "The extrinsic from " << get_stream_type() << " to " << other.get_stream_type() << " is not valid");
+    }
+    
     auto& r = dynamic_cast<const stream_interface&>(other);
     auto from = get_pose(), to = r.get_pose();
     if(from == to) return {{1,0,0,0,1,0,0,0,1},{0,0,0}};
@@ -21,7 +26,7 @@ rs_extrinsics stream_interface::get_extrinsics_to(const rs_stream_interface & ot
     return extrin;
 }
 
-native_stream::native_stream(device_config & config, rs_stream stream) : config(config), stream(stream) 
+native_stream::native_stream(device_config & config, rs_stream stream, calibration_validator in_validator) : stream_interface(in_validator, stream), config(config)
 {
     for(auto & subdevice_mode : config.info.subdevice_modes)
     {
@@ -75,12 +80,20 @@ subdevice_mode_selection native_stream::get_mode() const
 
 rs_intrinsics native_stream::get_intrinsics() const 
 {
+    if (!validator.validate_intrinsics(stream))
+    {
+        throw std::runtime_error(to_string() << "The intrinsic of " << get_stream_type() << " is not valid");
+    }
     const auto m = get_mode();
     return pad_crop_intrinsics(m.mode.native_intrinsics, m.pad_crop);
 }
 
 rs_intrinsics native_stream::get_rectified_intrinsics() const
 {
+    if (!validator.validate_intrinsics(stream))
+    {
+        throw std::runtime_error(to_string() << "The intrinsic of " << get_stream_type() << " is not valid");
+    }
     const auto m = get_mode();
     if(m.mode.rect_modes.empty()) return get_intrinsics();
     return pad_crop_intrinsics(m.mode.rect_modes[0], m.pad_crop);
