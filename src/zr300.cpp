@@ -368,13 +368,24 @@ namespace rsimpl
 
         motion_module_calibration fisheye_intrinsic;
         auto succeeded_to_read_fisheye_intrinsic = false;
-       
+
+
         // TODO - is Motion Module optional
         if (uvc::is_device_connected(*device, VID_INTEL_CAMERA, FISHEYE_PRODUCT_ID))
         {
             // Acquire Device handle for Motion Module API
             zr300::claim_motion_module_interface(*device);
             std::timed_mutex mtx;
+            try
+            {
+                ivcam::get_firmware_version_string(*device, mtx, info.camera_info[RS_CAMERA_INFO_ADAPTER_BOARD_FIRMWARE_VERSION], (int)adaptor_board_command::GVD);
+                ivcam::get_firmware_version_string(*device, mtx, info.camera_info[RS_CAMERA_INFO_MOTION_MODULE_FIRMWARE_VERSION], (int)adaptor_board_command::GVD, 4);
+            }
+            catch (...)
+            {
+                LOG_ERROR("Failed to get firmware version");
+            }
+
             motion_module_control mm(device.get(), mtx);
             mm.toggle_motion_module_power(true);
             mm.toggle_motion_module_events(true); //wait for the motion module start up (300 msec)
@@ -405,7 +416,13 @@ namespace rsimpl
             info.subdevice_modes.push_back({ 3, { 640, 480 }, pf_raw8, 60, rs_intrinsics, { /*TODO:ask if we need rect_modes*/ }, { 0 } });
             info.subdevice_modes.push_back({ 3, { 640, 480 }, pf_raw8, 30, rs_intrinsics, {/*TODO:ask if we need rect_modes*/ }, { 0 } });
 
-            info.options.push_back({ RS_OPTION_FISHEYE_EXPOSURE,                        40, 331, 1,  40 });
+            if (!info.camera_info[RS_CAMERA_INFO_ADAPTER_BOARD_FIRMWARE_VERSION].empty())
+            {
+                firmware_version ver(info.camera_info[RS_CAMERA_INFO_ADAPTER_BOARD_FIRMWARE_VERSION]);
+                if (ver >= firmware_version("1.25.0.0"))
+                    info.options.push_back({ RS_OPTION_FISHEYE_EXPOSURE,                40, 331, 1,  40 });
+            }
+
             info.options.push_back({ RS_OPTION_FISHEYE_GAIN                                             });
             info.options.push_back({ RS_OPTION_FISHEYE_STROBE,                          0,  1,   1,  0  });
             info.options.push_back({ RS_OPTION_FISHEYE_EXTERNAL_TRIGGER,                0,  1,   1,  0  });
@@ -416,10 +433,6 @@ namespace rsimpl
             info.options.push_back({ RS_OPTION_FISHEYE_AUTO_EXPOSURE_SKIP_FRAMES,       0,  3,   1,  2  });
             info.options.push_back({ RS_OPTION_HARDWARE_LOGGER_ENABLED,                 0,  1,   1,  0  });
         }
-        
-        std::timed_mutex mutex;
-        ivcam::get_firmware_version_string(*device, mutex, info.camera_info[RS_CAMERA_INFO_ADAPTER_BOARD_FIRMWARE_VERSION], (int)adaptor_board_command::GVD);
-        ivcam::get_firmware_version_string(*device, mutex, info.camera_info[RS_CAMERA_INFO_MOTION_MODULE_FIRMWARE_VERSION], (int)adaptor_board_command::GVD, 4);
 
         ds_device::set_common_ds_config(device, info, c);
         if (succeeded_to_read_fisheye_intrinsic)

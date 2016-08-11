@@ -667,11 +667,12 @@ TEST_CASE("DS-device verify standard UVC Controls set/get", "[live] [DS-device]"
     rs_enable_stream_preset(dev, RS_STREAM_COLOR, RS_PRESET_BEST_QUALITY, require_no_error());
     rs_enable_stream_preset(dev, RS_STREAM_DEPTH, RS_PRESET_BEST_QUALITY, require_no_error());
 
-
+    rs_set_device_option(dev, RS_OPTION_R200_EMITTER_ENABLED, 1, require_no_error());
+    REQUIRE(rs_get_device_option(dev, RS_OPTION_R200_EMITTER_ENABLED, require_no_error()) == 1);
     // Starting the device does not change the emitter's state
     rs_start_device(dev, require_no_error());
 
-
+    std::this_thread::sleep_for(std::chrono::milliseconds(1000));
     REQUIRE(rs_get_device_option(dev, RS_OPTION_R200_EMITTER_ENABLED, require_no_error()) == 1);
 
     rs_option first = RS_OPTION_COLOR_BACKLIGHT_COMPENSATION;
@@ -705,7 +706,7 @@ TEST_CASE("DS-device verify standard UVC Controls set/get", "[live] [DS-device]"
 
     // Apply all properties with the modified values
     rs_set_device_options(dev,test_options.data(),(unsigned int)test_options.size(),modified_values.data(), require_no_error());
-
+    std::this_thread::sleep_for(std::chrono::milliseconds(500));
     // Verify
     rs_get_device_options(dev,test_options.data(),test_options.size(),verification_values.data(), require_no_error());
 
@@ -714,6 +715,9 @@ TEST_CASE("DS-device verify standard UVC Controls set/get", "[live] [DS-device]"
 
     for (int i=first; i<= last; i++)
     {
+        if (WIN32 && ((rs_option)i == rs_option::RS_OPTION_COLOR_EXPOSURE || (rs_option)i == rs_option::RS_OPTION_COLOR_WHITE_BALANCE))
+            continue;
+
         REQUIRE(modified_values[i]!=initial_values[i]);
         REQUIRE(modified_values[i]==verification_values[i]);
     }
