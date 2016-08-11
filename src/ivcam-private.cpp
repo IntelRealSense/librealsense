@@ -640,59 +640,5 @@ namespace sr300 {
         memcpy(&rawCalib, rawCalibrationBuffer, std::min(sizeof(rawCalib), bufferLength)); // Is this longer or shorter than the rawCalib struct?
         return rawCalib.CalibrationParameters;
     }
-
-    void set_wakeup_device(uvc::device & device, std::timed_mutex & mutex, const uint32_t& phase1Period, const uint32_t& phase1FPS, const uint32_t& phase2Period, const uint32_t& phase2FPS)
-    {
-        hwmon_cmd cmd((uint8_t)fw_cmd::OnSuspendResume);
-
-        wakeup_dev_params params = { phase1Period, static_cast<e_suspend_fps>(phase1FPS), phase2Period, static_cast<e_suspend_fps>(phase2FPS) };
-        if (!params.isValid())
-            throw std::logic_error("missing/invalid wake_up command parameters");
-        cmd.Param1 = 1;                                                                 // TODO Specification could not be found in IVCAM
-        auto trg = reinterpret_cast<wakeup_dev_params*>(cmd.data);
-        *trg = params;
-        cmd.sizeOfSendCommandData = sizeof(wakeup_dev_params);
-
-        perform_and_send_monitor_command(device, mutex, cmd);
-    }
-
-    void reset_wakeup_device(uvc::device & device, std::timed_mutex & mutex)
-    {
-        hwmon_cmd cmd((uint8_t)fw_cmd::OnSuspendResume);
-
-        perform_and_send_monitor_command(device, mutex, cmd);
-    }
-
-    void get_wakeup_reason(uvc::device & device, std::timed_mutex & mutex, unsigned char &cReason)
-    {
-        hwmon_cmd cmdWUReason((uint8_t)fw_cmd::GetWakeReason);
-
-        perform_and_send_monitor_command(device, mutex, cmdWUReason);
-
-        if (cmdWUReason.receivedCommandDataLength >= 4)     // TODO - better guard condition ?
-        {
-            unsigned char rslt = cmdWUReason.receivedCommandData[0];
-            if (rslt >= wakeonusb_reason::eMaxWakeOnReason)
-                throw std::logic_error("undefined wakeonusb_reason provided");
-            cReason = rslt;
-        }
-        else
-            throw std::runtime_error("no valid wakeonusb_reason provided");
-    }
-
-    void get_wakeup_confidence(uvc::device & device, std::timed_mutex & mutex, unsigned char &cConfidence)
-    {
-        hwmon_cmd cmdCnfd((uint8_t)fw_cmd::GetWakeConfidence);
-        perform_and_send_monitor_command(device, mutex, cmdCnfd);
-
-        if (cmdCnfd.receivedCommandDataLength >= 4)
-        {
-            int32_t rslt = *reinterpret_cast<int32_t *>(cmdCnfd.receivedCommandData);
-            cConfidence = (unsigned char)(rslt & 0xFF);
-        }
-        else
-            throw std::runtime_error("no valid wakeonusb_confidence provided");
-    }
-
 } // namespace rsimpl::sr300
 } // namespace rsimpl
