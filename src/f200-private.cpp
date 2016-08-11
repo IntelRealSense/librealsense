@@ -531,16 +531,8 @@ namespace rsimpl { namespace f200
         unsigned char ss[8];
         memcpy(ss, gvd.data() + offset, 8);
         char formattedBuffer[64];
-        if (offset == 96)
-        {
-            sprintf(formattedBuffer, "%02X%02X%02X%02X%02X%02X", ss[0], ss[1], ss[2], ss[3], ss[4], ss[5]);
-            serial = std::string(formattedBuffer);
-        }
-        else if (offset == 132)
-        {
-            sprintf(formattedBuffer, "%02X%02X%02X%02X%02X%-2X", ss[0], ss[1], ss[2], ss[3], ss[4], ss[5]);
-            serial = std::string(formattedBuffer);
-        }
+        sprintf(formattedBuffer, "%02X%02X%02X%02X%02X%02X", ss[0], ss[1], ss[2], ss[3], ss[4], ss[5]);
+        serial = std::string(formattedBuffer);
     }
 
     void force_hardware_reset(uvc::device & device, std::timed_mutex & mutex)
@@ -918,60 +910,4 @@ namespace rsimpl { namespace f200
     }    
 
 }
-    namespace sr300
-    {
-        void set_wakeup_device(uvc::device & device, std::timed_mutex & mutex, const uint32_t& phase1Period, const uint32_t& phase1FPS, const uint32_t& phase2Period, const uint32_t& phase2FPS)
-        {
-            f200::IVCAMCommand cmd(f200::IVCAMMonitorCommand::OnSuspendResume);
-
-            sr300::wakeup_dev_params params = { phase1Period, static_cast<sr300::e_suspend_fps>(phase1FPS), phase2Period, static_cast<sr300::e_suspend_fps>(phase2FPS) };
-            if (!params.isValid())
-                throw std::logic_error("missing/invalid wake_up command parameters");
-            cmd.Param1 = 1;                                                                 // TODO Specification could not be found in IVCAM
-            auto trg = reinterpret_cast<sr300::wakeup_dev_params*>(cmd.data);
-            *trg = params;
-            cmd.sizeOfSendCommandData = sizeof(sr300::wakeup_dev_params);
-
-            perform_and_send_monitor_command(device, mutex, cmd);
-        }
-
-        void reset_wakeup_device(uvc::device & device, std::timed_mutex & mutex)
-        {
-            f200::IVCAMCommand cmd(f200::IVCAMMonitorCommand::OnSuspendResume);
-
-            perform_and_send_monitor_command(device, mutex, cmd);
-        }
-
-        void get_wakeup_reason(uvc::device & device, std::timed_mutex & mutex, unsigned char &cReason)
-        {
-            f200::IVCAMCommand cmdWUReason(f200::IVCAMMonitorCommand::GetWakeReason);
-
-            perform_and_send_monitor_command(device, mutex, cmdWUReason);
-
-            if (cmdWUReason.receivedCommandDataLength >= 4)     // TODO - better guard condition ?
-            {
-                unsigned char rslt = (*reinterpret_cast<int32_t *>(cmdWUReason.receivedCommandData)) && (0xFF);
-                if (rslt >= (uint8_t)wakeonusb_reason::eMaxWakeOnReason)
-                    throw std::logic_error("undefined wakeonusb_reason provided");
-                cReason = rslt;
-            }
-            else
-                throw std::runtime_error("no valid wakeonusb_reason provided");
-        }
-
-        void get_wakeup_confidence(uvc::device & device, std::timed_mutex & mutex, unsigned char &cConfidence)
-        {
-            f200::IVCAMCommand cmdCnfd(f200::IVCAMMonitorCommand::GetWakeConfidence);
-            perform_and_send_monitor_command(device, mutex, cmdCnfd);
-
-            if (cmdCnfd.receivedCommandDataLength >= 4)
-            {
-                int32_t rslt = *reinterpret_cast<int32_t *>(cmdCnfd.receivedCommandData);
-                cConfidence = (unsigned char)(rslt & 0xFF);
-            }
-            else
-                throw std::runtime_error("no valid wakeonusb_confidence provided");
-        }
-
-    } // namespace rsimpl::sr300
 } // namespace rsimpl

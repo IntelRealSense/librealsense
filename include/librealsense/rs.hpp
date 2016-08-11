@@ -88,41 +88,34 @@ namespace rs
         sr300_auto_range_start_laser                    = 25, 
         sr300_auto_range_upper_threshold                = 26, 
         sr300_auto_range_lower_threshold                = 27, 
-        sr300_wakeup_dev_phase1_period                  = 28, 
-        sr300_wakeup_dev_phase1_fps                     = 29, 
-        sr300_wakeup_dev_phase2_period                  = 30, 
-        sr300_wakeup_dev_phase2_fps                     = 31, 
-        sr300_wakeup_dev_reset                          = 32, 
-        sr300_wake_on_usb_reason                        = 33 ,
-        sr300_wake_on_usb_confidence                    = 34, 
-        r200_lr_auto_exposure_enabled                   = 35, ///< {0, 1}
-        r200_lr_gain                                    = 36, ///< 100 - 1600 (Units of 0.01)
-        r200_lr_exposure                                = 37, ///< > 0 (Units of 0.1 ms)
-        r200_emitter_enabled                            = 38, ///< {0, 1}
-        r200_depth_units                                = 39, ///< micrometers per increment in integer depth values, 1000 is default (mm scale)
-        r200_depth_clamp_min                            = 40, ///< {0 - USHORT_MAX}. Can only be set before streaming starts.
-        r200_depth_clamp_max                            = 41, ///< {0 - USHORT_MAX}. Can only be set before streaming starts.
-        r200_disparity_multiplier                       = 42, ///< {0 - 1000}. The increments in integer disparity values corresponding to one pixel of disparity. Can only be set before streaming starts.
-        r200_disparity_shift                            = 43, ///< {0 - 512}. Can only be set before streaming starts.
-        r200_auto_exposure_mean_intensity_set_point     = 44, 
-        r200_auto_exposure_bright_ratio_set_point       = 45, 
-        r200_auto_exposure_kp_gain                      = 46, 
-        r200_auto_exposure_kp_exposure                  = 47, 
-        r200_auto_exposure_kp_dark_threshold            = 48, 
-        r200_auto_exposure_top_edge                     = 49, 
-        r200_auto_exposure_bottom_edge                  = 50, 
-        r200_auto_exposure_left_edge                    = 51, 
-        r200_auto_exposure_right_edge                   = 52, 
-        r200_depth_control_estimate_median_decrement    = 53, 
-        r200_depth_control_estimate_median_increment    = 54, 
-        r200_depth_control_median_threshold             = 55, 
-        r200_depth_control_score_minimum_threshold      = 56, 
-        r200_depth_control_score_maximum_threshold      = 57, 
-        r200_depth_control_texture_count_threshold      = 58, 
-        r200_depth_control_texture_difference_threshold = 59, 
-        r200_depth_control_second_peak_threshold        = 60, 
-        r200_depth_control_neighbor_threshold           = 61, 
-        r200_depth_control_lr_threshold                 = 62
+        r200_lr_auto_exposure_enabled                   = 28, ///< {0, 1}
+        r200_lr_gain                                    = 29, ///< 100 - 1600 (Units of 0.01)
+        r200_lr_exposure                                = 30, ///< > 0 (Units of 0.1 ms)
+        r200_emitter_enabled                            = 31, ///< {0, 1}
+        r200_depth_units                                = 32, ///< micrometers per increment in integer depth values, 1000 is default (mm scale)
+        r200_depth_clamp_min                            = 33, ///< {0 - USHORT_MAX}. Can only be set before streaming starts.
+        r200_depth_clamp_max                            = 34, ///< {0 - USHORT_MAX}. Can only be set before streaming starts.
+        r200_disparity_multiplier                       = 35, ///< {0 - 1000}. The increments in integer disparity values corresponding to one pixel of disparity. Can only be set before streaming starts.
+        r200_disparity_shift                            = 36, ///< {0 - 512}. Can only be set before streaming starts.
+        r200_auto_exposure_mean_intensity_set_point     = 37, 
+        r200_auto_exposure_bright_ratio_set_point       = 38, 
+        r200_auto_exposure_kp_gain                      = 39, 
+        r200_auto_exposure_kp_exposure                  = 40, 
+        r200_auto_exposure_kp_dark_threshold            = 41, 
+        r200_auto_exposure_top_edge                     = 42, 
+        r200_auto_exposure_bottom_edge                  = 43, 
+        r200_auto_exposure_left_edge                    = 44, 
+        r200_auto_exposure_right_edge                   = 45, 
+        r200_depth_control_estimate_median_decrement    = 46, 
+        r200_depth_control_estimate_median_increment    = 47, 
+        r200_depth_control_median_threshold             = 48, 
+        r200_depth_control_score_minimum_threshold      = 49, 
+        r200_depth_control_score_maximum_threshold      = 50, 
+        r200_depth_control_texture_count_threshold      = 51, 
+        r200_depth_control_texture_difference_threshold = 52, 
+        r200_depth_control_second_peak_threshold        = 53, 
+        r200_depth_control_neighbor_threshold           = 54, 
+        r200_depth_control_lr_threshold                 = 55
     };
 
     struct float2 { float x,y; };
@@ -177,7 +170,7 @@ namespace rs
         context()
         {
             rs_error * e = nullptr;
-            handle = rs_create_context(4, &e);
+            handle = rs_create_context(RS_API_VERSION, &e);
             error::handle(e);
         }
 
