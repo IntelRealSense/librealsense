@@ -127,8 +127,6 @@ namespace rsimpl
 
     void ds5t_camera::set_options(const rs_option options[], size_t count, const double values[])
     {
-        auto & dev = get_device();
-
         for (size_t i = 0; i < count; ++i)
         {
             if (is_fisheye_uvc_control(options[i]))

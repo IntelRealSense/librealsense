@@ -27,7 +27,7 @@ int main() try
 
     std::vector<rs::stream> supported_streams;
 
-    for (int i=(int)rs::capabilities::depth; i <=(int)rs::capabilities::infrared2; i++)
+    for (int i=(int)rs::capabilities::depth; i <=(int)rs::capabilities::infrared; i++)
         if (dev->supports((rs::capabilities)i))
             supported_streams.push_back((rs::stream)i);
 

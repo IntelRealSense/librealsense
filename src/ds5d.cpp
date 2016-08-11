@@ -33,6 +33,7 @@ namespace rsimpl
         std::timed_mutex mutex;
         ds5::get_module_serial_string(*device, mutex, info.serial, ds5::fw_version_offset);
         ds5::get_firmware_version_string(*device, mutex, info.firmware_version);
+        //ds5::read_calibrations(*device,mutex);
 
         info.nominal_depth_scale = 0.001f;
 
@@ -52,7 +53,7 @@ namespace rsimpl
         {
             for(auto fps : m.fps)
             {
-                info.subdevice_modes.push_back({1, m.dims, pf_l8, fps, {m.dims.x, m.dims.y}, {}, {0}});
+                info.subdevice_modes.push_back({1, m.dims, pf_y8, fps, {m.dims.x, m.dims.y}, {}, {0}});
             }
         }
 
@@ -62,7 +63,7 @@ namespace rsimpl
         {
             for(auto fps : m.fps)
             {
-                info.subdevice_modes.push_back({0, m.dims, pf_d16, fps, {m.dims.x, m.dims.y}, {}, {0}});
+                info.subdevice_modes.push_back({0, m.dims, pf_z16, fps, {m.dims.x, m.dims.y}, {}, {0}});
             }
         }
 
