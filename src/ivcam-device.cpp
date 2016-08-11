@@ -181,6 +181,7 @@ namespace rsimpl
         bool started;
         int64_t total;
         int last_timestamp;
+        int64_t counter = 0;
     public:
         rolling_timestamp_reader() : started(), total() {}
 
@@ -219,7 +220,7 @@ namespace rsimpl
         }
         unsigned long long get_frame_counter(const subdevice_mode & mode, const void * frame) override
         {
-            return 0;
+            return ++counter;
         }
     };
 
