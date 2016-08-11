@@ -10,7 +10,6 @@
 #include "zr300.h"
 #include "ivcam-private.h"
 #include "hw-monitor.h"
-#include <librealsense/rs.hpp>
 
 using namespace rsimpl;
 using namespace rsimpl::ds;
@@ -374,12 +373,8 @@ namespace rsimpl
             res = false;
         }
 
-        if (res == false)
-        {
-            LOG_WARNING("Motion exntrinsics validation from " << from_stream << " failed, because the data is invalid");
-            return false;
-        }
-        return true;
+        if (res == false) LOG_WARNING("Motion exntrinsics validation from " << from_stream << " failed, because the data is invalid");
+        return res;
     }
 
     bool zr300_camera::validate_motion_intrinsics() const
