@@ -311,7 +311,7 @@ TEST_CASE( "synthetic streaming mode properties are correct", "[live]" )
                 // Enable a DEPTH mode and retrieve intrinsics
                 int depth_width = 0, depth_height = 0, depth_framerate = 0; rs_format depth_format = RS_FORMAT_ANY; 
                 rs_get_stream_mode(dev, RS_STREAM_DEPTH, k, &depth_width, &depth_height, &depth_format, &depth_framerate, require_no_error());
-                rs_enable_stream(dev, RS_STREAM_DEPTH, depth_width, depth_height, depth_format, depth_framerate, require_no_error());
+                rs_enable_stream(dev, RS_STREAM_DEPTH, depth_width, depth_height, depth_format, color_framerate, require_no_error());
 
                 rs_intrinsics depth_intrin = {};
                 rs_get_stream_intrinsics(dev, RS_STREAM_DEPTH, &depth_intrin, require_no_error());

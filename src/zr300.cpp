@@ -434,7 +434,8 @@ namespace rsimpl
 
         motion_module_calibration fisheye_intrinsic;
         auto succeeded_to_read_fisheye_intrinsic = false;
-       
+
+
         // TODO - is Motion Module optional
         if (uvc::is_device_connected(*device, VID_INTEL_CAMERA, FISHEYE_PRODUCT_ID))
         {
@@ -443,13 +444,23 @@ namespace rsimpl
             std::timed_mutex mtx;
             try
             {
+                ivcam::get_firmware_version_string(*device, mtx, info.camera_info[RS_CAMERA_INFO_ADAPTER_BOARD_FIRMWARE_VERSION], (int)adaptor_board_command::GVD);
+                ivcam::get_firmware_version_string(*device, mtx, info.camera_info[RS_CAMERA_INFO_MOTION_MODULE_FIRMWARE_VERSION], (int)adaptor_board_command::GVD, 4);
+            }
+            catch (...)
+            {
+                LOG_ERROR("Failed to get firmware version");
+            }
+
+            try
+            {
                 std::timed_mutex  mutex;
                 fisheye_intrinsic = read_fisheye_intrinsic(*device, mutex);
                 succeeded_to_read_fisheye_intrinsic = true;
             }
             catch (...)
             {
-                LOG_ERROR("Failed to read fisheye intrinsics");
+                LOG_ERROR("Couldn't query adapter board / motion module FW version!");
             }
             rs_intrinsics rs_intrinsics = fisheye_intrinsic.calib.fe_intrinsic;
 
@@ -465,7 +476,14 @@ namespace rsimpl
             info.subdevice_modes.push_back({ 3, { 640, 480 }, pf_raw8, 60, rs_intrinsics, { /*TODO:ask if we need rect_modes*/ }, { 0 } });
             info.subdevice_modes.push_back({ 3, { 640, 480 }, pf_raw8, 30, rs_intrinsics, {/*TODO:ask if we need rect_modes*/ }, { 0 } });
 
-            info.options.push_back({ RS_OPTION_FISHEYE_EXPOSURE,                        40, 331, 1,  40 });
+            if (!info.camera_info[RS_CAMERA_INFO_ADAPTER_BOARD_FIRMWARE_VERSION].empty())
+            {
+                const char* fw_ver = "1.25.0.0";
+                firmware_version ver(info.camera_info[RS_CAMERA_INFO_ADAPTER_BOARD_FIRMWARE_VERSION]);
+                if (ver >= firmware_version(fw_ver))
+                    info.options.push_back({ RS_OPTION_FISHEYE_EXPOSURE,                40, 331, 1,  40 });
+            }
+
             info.options.push_back({ RS_OPTION_FISHEYE_GAIN                                             });
             info.options.push_back({ RS_OPTION_FISHEYE_STROBE,                          0,  1,   1,  0  });
             info.options.push_back({ RS_OPTION_FISHEYE_EXTERNAL_TRIGGER,                0,  1,   1,  0  });
@@ -475,17 +493,6 @@ namespace rsimpl
             info.options.push_back({ RS_OPTION_FISHEYE_AUTO_EXPOSURE_PIXEL_SAMPLE_RATE, 1,  3,   1,  1  });
             info.options.push_back({ RS_OPTION_FISHEYE_AUTO_EXPOSURE_SKIP_FRAMES,       0,  3,   1,  2  });
             info.options.push_back({ RS_OPTION_HARDWARE_LOGGER_ENABLED,                 0,  1,   1,  0  });
-        }
-        
-        std::timed_mutex mutex;
-        try
-        {
-            ivcam::get_firmware_version_string(*device, mutex, info.camera_info[RS_CAMERA_INFO_ADAPTER_BOARD_FIRMWARE_VERSION], (int)adaptor_board_command::GVD);
-            ivcam::get_firmware_version_string(*device, mutex, info.camera_info[RS_CAMERA_INFO_MOTION_MODULE_FIRMWARE_VERSION], (int)adaptor_board_command::GVD, 4);
-        }
-        catch(...) 
-        {
-            LOG_ERROR("Couldn't query adapter board / motion module FW version!");
         }
         
         ds_device::set_common_ds_config(device, info, c);

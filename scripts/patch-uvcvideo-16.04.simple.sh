@@ -9,8 +9,8 @@ sudo apt-get install linux-headers-generic build-essential
 [ ! -d ubuntu-xenial ] && git clone git://kernel.ubuntu.com/ubuntu/ubuntu-xenial.git
 cd ubuntu-xenial
 
-# Apply the one, simple UVC format patch
-patch -p1 < ../scripts/realsense-camera-formats.patch
+# Apply UVC formats patch for RealSense devices
+patch -p1 < ../scripts/realsense-camera-formats_ubuntu16.patch
 
 # Copy configuration
 cp /usr/src/linux-headers-$(uname -r)/.config .

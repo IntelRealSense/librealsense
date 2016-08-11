@@ -18,6 +18,44 @@
 // Streaming tests //
 /////////////////////
 
+TEST_CASE("R200 devices support required options", "[live] [DS-device]")
+{
+    // Require at least one device to be plugged in
+    safe_context ctx;
+    const int device_count = rs_get_device_count(ctx, require_no_error());
+    REQUIRE(device_count > 0);
+
+    // For each device
+    for (int i = 0; i<device_count; ++i)
+    {
+        rs_device * dev = rs_get_device(ctx, 0, require_no_error());
+        REQUIRE(dev != nullptr);
+
+        rs_set_device_option(dev, RS_OPTION_R200_LR_AUTO_EXPOSURE_ENABLED, 1.0, require_no_error());
+
+        SECTION("R200 supports DS-Line standard UVC controls, and nothing else")
+        {
+            const int supported_options[] = {
+                RS_OPTION_R200_AUTO_EXPOSURE_BRIGHT_RATIO_SET_POINT,
+                RS_OPTION_R200_AUTO_EXPOSURE_KP_GAIN,
+                RS_OPTION_R200_AUTO_EXPOSURE_KP_EXPOSURE,
+                RS_OPTION_R200_AUTO_EXPOSURE_KP_DARK_THRESHOLD,
+            };
+
+            for (int i = 0; i<RS_OPTION_COUNT; ++i)
+            {
+                if (std::find(std::begin(supported_options), std::end(supported_options), i) != std::end(supported_options))
+                {
+                    REQUIRE(rs_device_supports_option(dev, (rs_option)i, require_no_error()) == 1);
+                }
+                else
+                {
+                    REQUIRE(rs_device_supports_option(dev, (rs_option)i, require_no_error()) == 0);
+                }
+            }
+        }
+    }
+}
 
 TEST_CASE( "R200 streams HD Raw10", "[live] [r200] [one-camera]" )
 {
