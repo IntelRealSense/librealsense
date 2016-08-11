@@ -1,10 +1,10 @@
 diff --git a/drivers/media/usb/uvc/uvc_driver.c b/drivers/media/usb/uvc/uvc_driver.c
-index d11fd6a..9a3069b 100644
+index 47ff9f4..e2964df 100644
 --- a/drivers/media/usb/uvc/uvc_driver.c
 +++ b/drivers/media/usb/uvc/uvc_driver.c
-@@ -148,6 +148,86 @@ static struct uvc_format_desc uvc_fmts[] = {
- 		.guid		= UVC_GUID_FORMAT_H264,
- 		.fcc		= V4L2_PIX_FMT_H264,
+@@ -168,6 +168,86 @@ static struct uvc_format_desc uvc_fmts[] = {
+ 		.guid		= UVC_GUID_FORMAT_RW10,
+ 		.fcc		= V4L2_PIX_FMT_SRGGB10P,
  	},
 +	{
 +		.name		= "Greyscale 8 L/R (Y8I)",
@@ -90,12 +90,12 @@ index d11fd6a..9a3069b 100644
  
  /* ------------------------------------------------------------------------
 diff --git a/drivers/media/usb/uvc/uvcvideo.h b/drivers/media/usb/uvc/uvcvideo.h
-index f0f2391..f864f5a 100644
+index 7e4d3ee..e007d1c 100644
 --- a/drivers/media/usb/uvc/uvcvideo.h
 +++ b/drivers/media/usb/uvc/uvcvideo.h
-@@ -119,6 +119,69 @@
- #define UVC_GUID_FORMAT_H264 \
- 	{ 'H',  '2',  '6',  '4', 0x00, 0x00, 0x10, 0x00, \
+@@ -115,6 +115,69 @@
+ #define UVC_GUID_FORMAT_M420 \
+ 	{ 'M',  '4',  '2',  '0', 0x00, 0x00, 0x10, 0x00, \
  	 0x80, 0x00, 0x00, 0xaa, 0x00, 0x38, 0x9b, 0x71}
 +#define UVC_GUID_FORMAT_Y8I \
 +	{ 'Y',  '8',  'I',  ' ', 0x00, 0x00, 0x10, 0x00, \
@@ -161,19 +161,16 @@ index f0f2391..f864f5a 100644
 +	{ 'P', 0x00,  0x00,  0x00, 0x00, 0x00, 0x10, 0x00, \
 +	 0x80, 0x00, 0x00, 0xaa, 0x00, 0x38, 0x9b, 0x71}
  
- /* ------------------------------------------------------------------------
-  * Driver specific constants.
+ #define UVC_GUID_FORMAT_H264 \
+ 	{ 'H',  '2',  '6',  '4', 0x00, 0x00, 0x10, 0x00, \
 diff --git a/include/uapi/linux/videodev2.h b/include/uapi/linux/videodev2.h
-index a0e87d1..5fc5ab2 100644
+index 421d274..5fc5ab2 100644
 --- a/include/uapi/linux/videodev2.h
 +++ b/include/uapi/linux/videodev2.h
-@@ -621,6 +621,22 @@ struct v4l2_pix_format {
- #define V4L2_PIX_FMT_JPGL	v4l2_fourcc('J', 'P', 'G', 'L') /* JPEG-Lite */
- #define V4L2_PIX_FMT_SE401      v4l2_fourcc('S', '4', '0', '1') /* se401 janggu compressed rgb */
- #define V4L2_PIX_FMT_S5C_UYVY_JPG v4l2_fourcc('S', '5', 'C', 'I') /* S5C73M3 interleaved UYVY/JPEG */
-+#define V4L2_PIX_FMT_Y8I      v4l2_fourcc('Y', '8', 'I', ' ') /* Greyscale 8-bit L/R interleaved */
-+#define V4L2_PIX_FMT_Y12I     v4l2_fourcc('Y', '1', '2', 'I') /* Greyscale 12-bit L/R interleaved */
-+#define V4L2_PIX_FMT_Z16      v4l2_fourcc('Z', '1', '6', ' ') /* Depth data 16-bit */
+@@ -624,6 +624,19 @@ struct v4l2_pix_format {
+ #define V4L2_PIX_FMT_Y8I      v4l2_fourcc('Y', '8', 'I', ' ') /* Greyscale 8-bit L/R interleaved */
+ #define V4L2_PIX_FMT_Y12I     v4l2_fourcc('Y', '1', '2', 'I') /* Greyscale 12-bit L/R interleaved */
+ #define V4L2_PIX_FMT_Z16      v4l2_fourcc('Z', '1', '6', ' ') /* Depth data 16-bit */
 +#define V4L2_PIX_FMT_Y8       v4l2_fourcc('Y', '8', ' ', ' ') /* Greyscale 8-bit */
 +#define V4L2_PIX_FMT_Y10      v4l2_fourcc('Y', '1', '0', ' ') /* Greyscale 10-bit */
 +#define V4L2_PIX_FMT_Y12      v4l2_fourcc('Y', '1', '2', ' ') /* Greyscale 12-bit */
