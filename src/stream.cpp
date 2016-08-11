@@ -82,7 +82,7 @@ rs_intrinsics native_stream::get_intrinsics() const
 {
     if (!validator.validate_intrinsics(stream))
     {
-        throw std::runtime_error(to_string() << "The intrinsic of " << get_stream_type() << " is not valid");
+        LOG_ERROR("The intrinsic of " << get_stream_type() << " is not valid");
     }
     const auto m = get_mode();
     return pad_crop_intrinsics(m.mode.native_intrinsics, m.pad_crop);
