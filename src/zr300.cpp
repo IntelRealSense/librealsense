@@ -496,6 +496,7 @@ namespace rsimpl
 
         try
         {
+            std::timed_mutex  mutex;
             ivcam::get_firmware_version_string(*device, mutex, info.camera_info[RS_CAMERA_INFO_ADAPTER_BOARD_FIRMWARE_VERSION], (int)adaptor_board_command::GVD);
             ivcam::get_firmware_version_string(*device, mutex, info.camera_info[RS_CAMERA_INFO_MOTION_MODULE_FIRMWARE_VERSION], (int)adaptor_board_command::GVD, 4);
         }
