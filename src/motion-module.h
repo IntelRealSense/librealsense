@@ -261,6 +261,8 @@ namespace rsimpl
             DSPWR       = 0x0B,     // DS4 power up/down
             EXT_TRIG    = 0x0C,     // external trigger mode
             CX3FWUPD    = 0x0D,     // FW update
+            MM_SNB      = 0x10,     // Get the serial number
+            MM_TRB      = 0x11,     // Get the extrinsics and intrinsics data
             MM_ACTIVATE = 0x0E      // Motion Module activation
         };
     }   // namespace motion_module

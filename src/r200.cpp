@@ -10,9 +10,8 @@ using namespace rsimpl::ds;
 namespace rsimpl
 {
     r200_camera::r200_camera(std::shared_ptr<uvc::device> device, const static_device_info & info) 
-    : ds_device(device, info)
+        : ds_device(device, info, calibration_validator())
     {
-
     }
 
     void r200_camera::start_fw_logger(char fw_log_op_code, int grab_rate_in_ms, std::timed_mutex& mutex)

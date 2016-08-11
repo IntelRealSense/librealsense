@@ -21,6 +21,7 @@
 #include <memory>                           // For unique_ptr
 #include <atomic>
 #include <map>          
+#include <algorithm>
 
 const uint8_t RS_STREAM_NATIVE_COUNT    = 5;
 const int RS_USER_QUEUE_SIZE = 20;
@@ -596,9 +597,29 @@ namespace rsimpl
         {
             continuation();
         }
+
     };
 
+    // this class is a convinience wrapper for intrinsics / extrinsics validation methods
+    class calibration_validator 
+    {
+    public:
+        calibration_validator(std::function<bool(rs_stream, rs_stream)> extrinsic_validator,
+                              std::function<bool(rs_stream)>            intrinsic_validator);
+        calibration_validator();
 
+        bool validate_extrinsics(rs_stream from_stream, rs_stream to_stream) const;
+        bool validate_intrinsics(rs_stream stream) const;
+
+    private:
+        std::function<bool(rs_stream from_stream, rs_stream to_stream)> extrinsic_validator;
+        std::function<bool(rs_stream stream)> intrinsic_validator;
+    };
+
+    inline bool check_not_all_zeros(std::vector<byte> data)
+    {
+        return std::find_if(data.begin(), data.end(), [](byte b){ return b!=0; }) != data.end();
+    }
 }
 
 #endif
