@@ -122,13 +122,6 @@ namespace rsimpl
         CASE(SR300_AUTO_RANGE_START_LASER)                
         CASE(SR300_AUTO_RANGE_UPPER_THRESHOLD) 
         CASE(SR300_AUTO_RANGE_LOWER_THRESHOLD)
-        CASE(SR300_WAKEUP_DEV_PHASE1_PERIOD)
-        CASE(SR300_WAKEUP_DEV_PHASE1_FPS)
-        CASE(SR300_WAKEUP_DEV_PHASE2_PERIOD)
-        CASE(SR300_WAKEUP_DEV_PHASE2_FPS)
-        CASE(SR300_WAKEUP_DEV_RESET)
-        CASE(SR300_WAKE_ON_USB_REASON)
-        CASE(SR300_WAKE_ON_USB_CONFIDENCE)
         CASE(R200_LR_AUTO_EXPOSURE_ENABLED)
         CASE(R200_LR_GAIN)
         CASE(R200_LR_EXPOSURE)
@@ -681,11 +674,12 @@ namespace rsimpl
     }
 
     calibration_validator::calibration_validator(std::function<bool(rs_stream, rs_stream)> extrinsic_validator, std::function<bool(rs_stream)> intrinsic_validator)
-        :extrinsic_validator(extrinsic_validator), intrinsic_validator(intrinsic_validator)
+        : extrinsic_validator(extrinsic_validator), intrinsic_validator(intrinsic_validator)
     {
     }
 
     calibration_validator::calibration_validator()
+        : extrinsic_validator([](rs_stream, rs_stream) { return true; }), intrinsic_validator([](rs_stream) { return true; })
     {
     }
 
