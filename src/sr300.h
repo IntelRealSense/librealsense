@@ -19,8 +19,6 @@ namespace rsimpl
         void set_fw_logger_option(double value);
         unsigned get_fw_logger_option();
 
-        sr300::wakeup_dev_params arr_wakeup_dev_param;
-
     public:
         sr300_camera(std::shared_ptr<uvc::device> device, const static_device_info & info, const ivcam::camera_calib_params & calib);
         ~sr300_camera() {};

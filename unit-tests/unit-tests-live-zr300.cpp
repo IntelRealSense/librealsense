@@ -298,7 +298,7 @@ TEST_CASE("ZR300 correctly recognizes invalid options", "[live] [DS-device]")
     int index = 0;
     double val = 0;
 
-    for (int i= (int)rs::option::f200_laser_power; i <= (int)rs::option::sr300_wake_on_usb_confidence; i++)
+    for (int i= (int)rs::option::f200_laser_power; i <= (int)rs::option::sr300_auto_range_lower_threshold; i++)
     {
         index = i;
         try

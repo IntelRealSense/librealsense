@@ -489,13 +489,6 @@ const char * rs_device_base::get_option_description(rs_option option) const
     case RS_OPTION_SR300_AUTO_RANGE_START_LASER                    : return "Configures SR300 Depth Auto-Range setting. Should not be used directly but through set IVCAM preset method";
     case RS_OPTION_SR300_AUTO_RANGE_UPPER_THRESHOLD                : return "Configures SR300 Depth Auto-Range setting. Should not be used directly but through set IVCAM preset method";
     case RS_OPTION_SR300_AUTO_RANGE_LOWER_THRESHOLD                : return "Configures SR300 Depth Auto-Range setting. Should not be used directly but through set IVCAM preset method";
-    case RS_OPTION_SR300_WAKEUP_DEV_PHASE1_PERIOD                  : return "Configures period for the first phase of the wake-up device SR300 mode.";
-    case RS_OPTION_SR300_WAKEUP_DEV_PHASE1_FPS                     : return "Configures FPS for the first phase of the wake-up device SR300 mode.";
-    case RS_OPTION_SR300_WAKEUP_DEV_PHASE2_PERIOD                  : return "Configures period for the second phase of the wake-up device SR300 mode.";
-    case RS_OPTION_SR300_WAKEUP_DEV_PHASE2_FPS                     : return "Configures FPS for the second phase of the wake-up device SR300 mode.";
-    case RS_OPTION_SR300_WAKEUP_DEV_RESET                          : return "Disables SR300 wakeup device mode.";
-    case RS_OPTION_SR300_WAKE_ON_USB_REASON                        : return "Gets the reason for last registered wakeup event";
-    case RS_OPTION_SR300_WAKE_ON_USB_CONFIDENCE                    : return "Gets wakeup reason confidence (0-100)";
     case RS_OPTION_R200_LR_AUTO_EXPOSURE_ENABLED                   : return "Enables / disables R200 auto-exposure. This will affect both IR and depth image.";
     case RS_OPTION_R200_LR_GAIN                                    : return "IR image gain";
     case RS_OPTION_R200_LR_EXPOSURE                                : return "This control allows manual adjustment of the exposure time value for the L/R imagers";

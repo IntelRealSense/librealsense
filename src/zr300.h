@@ -271,7 +271,7 @@ namespace rsimpl
         void push_back_exp_and_cnt(exposure_and_frame_counter exp_and_cnt);
         bool try_get_exp_by_frame_cnt(double& exposure, const unsigned long long frame_counter);
 
-        const int                              max_size_of_exp_and_cnt_queue = 10;
+        const std::size_t                      max_size_of_exp_and_cnt_queue = 10;
         zr300_camera*                          device;
         auto_exposure_algorithm                auto_exposure_algo;
         std::shared_ptr<rsimpl::frame_archive> sync_archive;
