@@ -715,8 +715,10 @@ TEST_CASE("DS-device verify standard UVC Controls set/get", "[live] [DS-device]"
 
     for (int i=first; i<= last; i++)
     {
-        if (WIN32 && ((rs_option)i == rs_option::RS_OPTION_COLOR_EXPOSURE || (rs_option)i == rs_option::RS_OPTION_COLOR_WHITE_BALANCE))
+#if defined(_WINDOWS) || defined(WIN32) || defined(WIN64)
+        if (((rs_option)i == rs_option::RS_OPTION_COLOR_EXPOSURE || (rs_option)i == rs_option::RS_OPTION_COLOR_WHITE_BALANCE))
             continue;
+#endif
 
         REQUIRE(modified_values[i]!=initial_values[i]);
         REQUIRE(modified_values[i]==verification_values[i]);
