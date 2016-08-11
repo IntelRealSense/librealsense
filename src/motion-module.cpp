@@ -205,7 +205,7 @@ void motion_module_control::switch_to_operational()
 
 	hw_monitor::i2c_read_reg(static_cast<int>(adaptor_board_command::IRB), *device_handle, MOTION_MODULE_CONTROL_I2C_SLAVE_ADDRESS, (int)i2c_register::REG_CURR_PWR_STATE, sizeof(uint32_t), reinterpret_cast<byte*>(&value));
         
-    if ((power_states)value != power_states::PWR_STATE_IAP)
+    if ((power_states)value != power_states::PWR_STATE_INIT)
         throw std::runtime_error("Unable to leave IAP state!");
 }
 
