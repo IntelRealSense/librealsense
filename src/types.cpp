@@ -679,4 +679,23 @@ namespace rsimpl
     {
         return atoi(split(name)[part].c_str());
     }
+
+    calibration_validator::calibration_validator(std::function<bool(rs_stream, rs_stream)> extrinsic_validator, std::function<bool(rs_stream)> intrinsic_validator)
+        :extrinsic_validator(extrinsic_validator), intrinsic_validator(intrinsic_validator)
+    {
+    }
+
+    calibration_validator::calibration_validator()
+    {
+    }
+
+    bool calibration_validator::validate_extrinsics(rs_stream from_stream, rs_stream to_stream) const
+    {
+        return extrinsic_validator(from_stream, to_stream);
+    }
+    bool calibration_validator::validate_intrinsics(rs_stream stream) const
+    {
+        return intrinsic_validator(stream);
+    }
+
 }
