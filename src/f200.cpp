@@ -212,7 +212,6 @@ namespace rsimpl
         }
 
         //Set common options
-        arr_writer.commit();
         if (!base_opt.empty())
             iv_camera::set_options(base_opt.data(), base_opt.size(), base_opt_val.data());
     }
