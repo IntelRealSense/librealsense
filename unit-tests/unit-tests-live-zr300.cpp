@@ -210,16 +210,16 @@ TEST_CASE("ZR300 Motion Module Data Streaming Validation", "[live] [DS-device]")
 
         // iii. Validate data consistency
         for (size_t i = 0; i < (gyro_frames.size() - 1); i++)
-            REQUIRE(gyro_frames[i].timestamp_data.frame_number < gyro_frames[i + 1].timestamp_data.frame_number);
+            REQUIRE(gyro_frames[i].timestamp_data.frame_number <= gyro_frames[i + 1].timestamp_data.frame_number);
 
         for (size_t i = 0; i < (accel_frames.size() - 1); i++)
-            REQUIRE(accel_frames[i].timestamp_data.frame_number < accel_frames[i + 1].timestamp_data.frame_number);
+            REQUIRE(accel_frames[i].timestamp_data.frame_number <= accel_frames[i + 1].timestamp_data.frame_number);
 
         for (size_t i = 0; i < (fisheye_timestamp_events.size() - 1); i++)
-            REQUIRE(fisheye_timestamp_events[i].frame_number < fisheye_timestamp_events[i + 1].frame_number);
+            REQUIRE(fisheye_timestamp_events[i].frame_number <= fisheye_timestamp_events[i + 1].frame_number);
 
         for (size_t i = 0; i < (depth_timestamp_events.size() - 1); i++)
-            REQUIRE(depth_timestamp_events[i].frame_number < depth_timestamp_events[i + 1].frame_number);
+            REQUIRE(depth_timestamp_events[i].frame_number <= depth_timestamp_events[i + 1].frame_number);
 
         // Frame numbers statistics
         std::vector<unsigned long long> gyro_frame_numbers, accel_frame_numbers, fisheye_frame_numbers, depth_cam_frame_numbers;
