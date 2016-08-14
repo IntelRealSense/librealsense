@@ -731,7 +731,7 @@ TEST_CASE("DS-device verify standard UVC Controls set/get", "[live] [DS-device]"
 // Stop, reconfigure, and restart tests //
 //////////////////////////////////////////
 
-TEST_CASE("a single DS-device can stream a variety of reasonable streaming mode combinations", "[live] [DS-device] [one-camera]")
+/*TEST_CASE("a single DS-device can stream a variety of reasonable streaming mode combinations", "[live] [DS-device] [one-camera]")
 {
     safe_context ctx;
 
@@ -796,9 +796,9 @@ TEST_CASE("a single DS-device can stream a variety of reasonable streaming mode 
             });
         }
     }
-}
+}*/
 
-TEST_CASE("streaming five configurations sequentionally", "[live] [DS-device] [one-camera]")
+/*TEST_CASE("streaming five configurations sequentionally", "[live] [DS-device] [one-camera]")
 {
     safe_context ctx;
 
@@ -848,6 +848,6 @@ TEST_CASE("streaming five configurations sequentionally", "[live] [DS-device] [o
             { RS_STREAM_INFRARED2, 480, 360, RS_FORMAT_Y8, 60 }
         });
     }
-}
+}*/
 
 #endif /* !defined(MAKEFILE) || ( defined(LR200_TEST) || defined(R200_TEST) || defined(ZR300_TEST) ) */
