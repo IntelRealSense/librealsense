@@ -8,8 +8,9 @@
 #include "motion-module.h"
 #include "ds-device.h"
 #include "sync.h"
+
 #include <deque>
-#include <algorithm>
+#include <cmath>
 
 #define R200_PRODUCT_ID     0x0a80
 #define LR200_PRODUCT_ID    0x0abf
@@ -232,7 +233,7 @@ namespace rsimpl
 #if defined(_WINDOWS) || defined(WIN32) || defined(WIN64)
         inline float round(float x) { return std::round(x); }
 #else
-        inline float round(float x) { return x < 0.0 ? ceil(x - 0.5f) : floor(x + 0.5f); }
+        inline float round(float x) { return x < 0.0 ? std::ceil(x - 0.5f) : std::floor(x + 0.5f); }
 #endif
 
         float exposure_to_value(float exp_ms, rounding_mode_type rounding_mode);
