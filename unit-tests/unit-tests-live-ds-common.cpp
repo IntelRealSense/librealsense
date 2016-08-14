@@ -811,18 +811,13 @@ TEST_CASE("streaming five configurations sequentionally", "[live] [DS-device] [o
     rs_device * dev = rs_get_device(ctx, 0, require_no_error());
     REQUIRE(dev != nullptr);
 
-    SECTION("device name identification ")
+    REQUIRE(std::any_of(ds_names.begin(), ds_names.end(), [&](std::string const& s)
     {
-        REQUIRE(std::any_of(ds_names.begin(), ds_names.end(), [&](std::string const& s)
-        {
-            bool b = (s == rs_get_device_name(dev, require_no_error()));
-            if (b) std::cout << "Camera type " << s << std::endl;
-            return b; }));
-    }
+        bool b = (s == rs_get_device_name(dev, require_no_error()));
+        if (b) std::cout << "Camera type " << s << std::endl;
+        return b; }));
 
-    SECTION("streaming is possible in some reasonable configurations")
     {
-
         test_streaming(dev, {
             { RS_STREAM_DEPTH, 480, 360, RS_FORMAT_Z16, 60 }
         });
@@ -848,6 +843,7 @@ TEST_CASE("streaming five configurations sequentionally", "[live] [DS-device] [o
             { RS_STREAM_INFRARED2, 480, 360, RS_FORMAT_Y8, 60 }
         });
     }
+
 }
 
 #endif /* !defined(MAKEFILE) || ( defined(LR200_TEST) || defined(R200_TEST) || defined(ZR300_TEST) ) */
