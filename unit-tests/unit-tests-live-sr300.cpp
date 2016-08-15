@@ -80,6 +80,8 @@ TEST_CASE( "SR300 devices support all required options", "[live] [sr300]" )
                 RS_OPTION_SR300_AUTO_RANGE_START_LASER,
                 RS_OPTION_SR300_AUTO_RANGE_UPPER_THRESHOLD,
                 RS_OPTION_SR300_AUTO_RANGE_LOWER_THRESHOLD,
+                RS_OPTION_FRAMES_QUEUE_SIZE,
+                RS_OPTION_HARDWARE_LOGGER_ENABLED
             };
 
             for(int i=0; i<RS_OPTION_COUNT; ++i)

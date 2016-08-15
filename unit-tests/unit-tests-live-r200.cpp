@@ -35,27 +35,60 @@ TEST_CASE("R200 devices support required options", "[live] [DS-device]")
 
         SECTION("R200 supports DS-Line standard UVC controls, and nothing else")
         {
-            for (int i = 0; i<=RS_OPTION_COUNT; ++i)
-            {
-                auto x = rs_device_supports_option(dev, (rs_option)i, require_no_error());
+            std::vector<rs_option> supported_options{
+                RS_OPTION_COLOR_BACKLIGHT_COMPENSATION,
+                RS_OPTION_COLOR_BRIGHTNESS,
+                RS_OPTION_COLOR_CONTRAST,
+                RS_OPTION_COLOR_EXPOSURE,
+                RS_OPTION_COLOR_GAIN,
+                RS_OPTION_COLOR_GAMMA,
+                RS_OPTION_COLOR_HUE,
+                RS_OPTION_COLOR_SATURATION,
+                RS_OPTION_COLOR_SHARPNESS,
+                RS_OPTION_COLOR_WHITE_BALANCE,
+                RS_OPTION_COLOR_ENABLE_AUTO_EXPOSURE,
+                RS_OPTION_COLOR_ENABLE_AUTO_WHITE_BALANCE,
+                RS_OPTION_R200_LR_AUTO_EXPOSURE_ENABLED,
+                RS_OPTION_R200_LR_GAIN,
+                RS_OPTION_R200_LR_EXPOSURE,
+                RS_OPTION_R200_EMITTER_ENABLED,
+                RS_OPTION_R200_DEPTH_UNITS,
+                RS_OPTION_R200_DEPTH_CLAMP_MIN,
+                RS_OPTION_R200_DEPTH_CLAMP_MAX,
+                RS_OPTION_R200_DISPARITY_MULTIPLIER,
+                RS_OPTION_R200_DISPARITY_SHIFT,
+                RS_OPTION_R200_AUTO_EXPOSURE_MEAN_INTENSITY_SET_POINT,
+                RS_OPTION_R200_AUTO_EXPOSURE_BRIGHT_RATIO_SET_POINT,
+                RS_OPTION_R200_AUTO_EXPOSURE_KP_GAIN,
+                RS_OPTION_R200_AUTO_EXPOSURE_KP_EXPOSURE,
+                RS_OPTION_R200_AUTO_EXPOSURE_KP_DARK_THRESHOLD,
+                RS_OPTION_R200_AUTO_EXPOSURE_TOP_EDGE,
+                RS_OPTION_R200_AUTO_EXPOSURE_BOTTOM_EDGE,
+                RS_OPTION_R200_AUTO_EXPOSURE_LEFT_EDGE,
+                RS_OPTION_R200_AUTO_EXPOSURE_RIGHT_EDGE,
+                RS_OPTION_R200_DEPTH_CONTROL_ESTIMATE_MEDIAN_DECREMENT,
+                RS_OPTION_R200_DEPTH_CONTROL_ESTIMATE_MEDIAN_INCREMENT,
+                RS_OPTION_R200_DEPTH_CONTROL_MEDIAN_THRESHOLD,
+                RS_OPTION_R200_DEPTH_CONTROL_SCORE_MINIMUM_THRESHOLD,
+                RS_OPTION_R200_DEPTH_CONTROL_SCORE_MAXIMUM_THRESHOLD,
+                RS_OPTION_R200_DEPTH_CONTROL_TEXTURE_COUNT_THRESHOLD,
+                RS_OPTION_R200_DEPTH_CONTROL_TEXTURE_DIFFERENCE_THRESHOLD,
+                RS_OPTION_R200_DEPTH_CONTROL_SECOND_PEAK_THRESHOLD,
+                RS_OPTION_R200_DEPTH_CONTROL_NEIGHBOR_THRESHOLD,
+                RS_OPTION_R200_DEPTH_CONTROL_LR_THRESHOLD,
+                RS_OPTION_FRAMES_QUEUE_SIZE
+            };
 
-                if ((i >= RS_OPTION_R200_LR_AUTO_EXPOSURE_ENABLED && i <= RS_OPTION_R200_DEPTH_CONTROL_LR_THRESHOLD) ||
-                    (i == RS_OPTION_FRAMES_QUEUE_SIZE))
+            for (int i = 0; i<RS_OPTION_COUNT; ++i)
+            {
+                if (std::find(std::begin(supported_options), std::end(supported_options), i) != std::end(supported_options))
                 {
-                    INFO("rs_option " << rs_option_to_string((rs_option)i) << " expected to be supported!")
-                    REQUIRE(x == 1);
+                    REQUIRE(rs_device_supports_option(dev, (rs_option)i, require_no_error()) == 1);
                 }
                 else
                 {
-                    INFO("rs_option " << rs_option_to_string((rs_option)i) << " expected to be not supported!")
-                    REQUIRE(x == 0);
+                    REQUIRE(rs_device_supports_option(dev, (rs_option)i, require_no_error()) == 0);
                 }
-
-                if (!x) 
-                {
-                    REQUIRE(x == 1);
-                }
-                REQUIRE(x == 1);
             }
         }
     }

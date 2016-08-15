@@ -69,6 +69,7 @@ TEST_CASE( "F200 devices support all required options", "[live] [f200]" )
                 RS_OPTION_F200_FILTER_OPTION,
                 RS_OPTION_F200_CONFIDENCE_THRESHOLD,
                 RS_OPTION_F200_DYNAMIC_FPS,
+                RS_OPTION_FRAMES_QUEUE_SIZE
             };
 
             for(int i=0; i<RS_OPTION_COUNT; ++i)
