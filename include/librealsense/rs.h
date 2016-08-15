@@ -194,9 +194,9 @@ typedef enum rs_option
     RS_OPTION_FISHEYE_AUTO_EXPOSURE_ANTIFLICKER_RATE          = 62, /**< Fisheye auto-exposure anti-flicker rate, can be 50 or 60 Hz */
     RS_OPTION_FISHEYE_AUTO_EXPOSURE_PIXEL_SAMPLE_RATE         = 63, /**< In Fisheye auto-exposure sample frame every given number of pixels */
     RS_OPTION_FISHEYE_AUTO_EXPOSURE_SKIP_FRAMES               = 64, /**< In Fisheye auto-exposure sample every given number of frames */
-    RS_OPTION_FRAMES_QUEUE_SIZE                               = 66, /**< Number of frames the user is allowed to keep per stream. Trying to hold-on to more frames will cause frame-drops.*/
-    RS_OPTION_HARDWARE_LOGGER_ENABLED                         = 67, /**< Enable / disable fetching log data from the device */
-    RS_OPTION_COUNT                                           = 68,
+    RS_OPTION_FRAMES_QUEUE_SIZE                               = 65, /**< Number of frames the user is allowed to keep per stream. Trying to hold-on to more frames will cause frame-drops.*/
+    RS_OPTION_HARDWARE_LOGGER_ENABLED                         = 66, /**< Enable / disable fetching log data from the device */
+    RS_OPTION_COUNT                                           = 67,
     RS_OPTION_MAX_ENUM = 0x7FFFFFFF
 } rs_option;
 
