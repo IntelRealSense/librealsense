@@ -122,9 +122,9 @@ struct gui
 
     void outline_rect(const rect & r, const color & c)
     {
-        glPushAttrib(GL_ENABLE_BIT); 
+        glPushAttrib(GL_ENABLE_BIT);
 
-        glLineStipple(1, 0xAAAA); 
+        glLineStipple(1, 0xAAAA);
         glEnable(GL_LINE_STIPPLE);
 
         glBegin(GL_LINE_STRIP);
@@ -678,6 +678,7 @@ int main(int argc, char * argv[])
     int fps[streams] = {};
     double dc_preset = 0, iv_preset = 0;
     int offset = 0, panel_height = 1;
+    int gui_click_flag = 0;
 
     while (true)
     {
@@ -778,6 +779,10 @@ int main(int argc, char * argv[])
                     pos_vec[2] = position{ 0, fHeight, fWidth, fHeight };
                     pos_vec[3] = position{ fWidth, fHeight, fWidth, fHeight };
                     pos_vec[4] = position{ 0, 2 * fHeight, fWidth, fHeight };
+                    position center_position = position{ 0, 0, fWidth * 2, fHeight * 2 };
+                    position prev_pos;
+                    bool g_clicked = g.click;
+                    static int frame_clicked[5] = {};
 
                     for (auto i = 0; i < 5; i++)
                     {
@@ -793,9 +798,39 @@ int main(int argc, char * argv[])
                             fps[i] = frame.get_framerate();
                         }
 
-                        buffers[i].show((rs::stream)i, format[i], fps[i], frame_number[i], frame_timestamp[i], pos_vec[i].rx, pos_vec[i].ry, pos_vec[i].rw, pos_vec[i].rh, resolutions[(rs::stream)i].width, resolutions[(rs::stream)i].height);
+                        if (g_clicked && gui_click_flag &&
+                            g.cursor.x >= center_position.rx && g.cursor.x <= (center_position.rw + center_position.rx) &&
+                            g.cursor.y >= center_position.ry && g.cursor.y <= (center_position.rh + center_position.ry))
+                        {
+                            pos_vec[i] = prev_pos;
+                            gui_click_flag = !gui_click_flag;
+                            for (int j = 0 ; j < 5 ; ++j)
+                                frame_clicked[j] = false;
 
-                        draw_autoexposure_roi_boundary((rs::stream)i, options, dev, g, pos_vec[i].rx, pos_vec[i].ry, fWidth, fHeight);
+                            g_clicked = false;
+                        }
+                        else if (g_clicked && !gui_click_flag &&
+                            g.cursor.x >= pos_vec[i].rx && g.cursor.x <= (pos_vec[i].rw + pos_vec[i].rx) &&
+                            g.cursor.y >= pos_vec[i].ry && g.cursor.y <= (pos_vec[i].rh + pos_vec[i].ry))
+                        {
+                            gui_click_flag = !gui_click_flag;
+                            frame_clicked[i] = gui_click_flag;
+                            g_clicked = false;
+                        }
+
+                        if (frame_clicked[i])
+                        {
+                            prev_pos = pos_vec[i];
+                            pos_vec[i] = center_position;
+                            buffers[i].show((rs::stream)i, format[i], fps[i], frame_number[i], frame_timestamp[i], pos_vec[i].rx, pos_vec[i].ry, pos_vec[i].rw, pos_vec[i].rh, resolutions[(rs::stream)i].width, resolutions[(rs::stream)i].height);
+                        }
+                        else if (!gui_click_flag)
+                            buffers[i].show((rs::stream)i, format[i], fps[i], frame_number[i], frame_timestamp[i], pos_vec[i].rx, pos_vec[i].ry, pos_vec[i].rw, pos_vec[i].rh, resolutions[(rs::stream)i].width, resolutions[(rs::stream)i].height);
+
+                        if (frame_clicked[i])
+                            draw_autoexposure_roi_boundary((rs::stream)i, options, dev, g, center_position.rx, center_position.ry, center_position.rw, center_position.rh);
+                        else if (!gui_click_flag)
+                            draw_autoexposure_roi_boundary((rs::stream)i, options, dev, g, pos_vec[i].rx, pos_vec[i].ry, fWidth, fHeight);
                     }
 
                     if (has_motion_module && motion_tracking_enable)
@@ -814,7 +849,7 @@ int main(int argc, char * argv[])
                     }
                     if (!o.supports)
                     {
-                        try { 
+                        try {
                             dev->get_option_range(o.opt, o.min, o.max, o.step, o.def);
                             o.value = dev->get_option(o.opt);
                         }

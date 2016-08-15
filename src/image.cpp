@@ -9,7 +9,7 @@
 #include <algorithm>
 
 #ifdef __SSSE3__
-#include <tmmintrin.h> // For SSE3 intrinsics used in unpack_yuy2_sse
+#include <tmmintrin.h> // For SSE3 intrinsic used in unpack_yuy2_sse
 #endif
 
 #pragma pack(push, 1) // All structs in this file are assumed to be byte-packed

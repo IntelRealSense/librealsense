@@ -672,12 +672,12 @@ namespace rsimpl
 
     class fisheye_timestamp_reader : public frame_timestamp_reader
     {
-        mutable bool validate;
-        int fps;
         std::mutex mutex;
+        int fps;
         unsigned last_fisheye_counter;
         wraparound_mechanism<double> timestamp_wraparound;
         wraparound_mechanism<unsigned long long> frame_counter_wraparound;
+        mutable bool validate;
 
     public:
         fisheye_timestamp_reader(int max_fps) : fps(max_fps), last_fisheye_counter(0), timestamp_wraparound(1, std::numeric_limits<uint32_t>::max()), frame_counter_wraparound(0, std::numeric_limits<uint32_t>::max()), validate(true){}
