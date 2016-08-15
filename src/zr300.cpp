@@ -3,7 +3,6 @@
 
 #include <climits>
 #include <algorithm>
-#include <cmath>
 
 #include "image.h"
 #include "ds-private.h"

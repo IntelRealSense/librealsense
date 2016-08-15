@@ -10,12 +10,12 @@ extern "C" {
 
 #define RS_API_MAJOR_VERSION    1
 #define RS_API_MINOR_VERSION    9
-#define RS_API_PATCH_VERSION    5
+#define RS_API_PATCH_VERSION    6
 
 #define STRINGIFY(arg) #arg
 #define VAR_ARG_STRING(arg) STRINGIFY(arg)
 
-/* Version in encoded integer format (1,9,3) -> 10903 */
+/* Version in encoded integer format (1,9,x) -> 1090x note that each component is limited into [0-99] range by design*/
 #define	RS_API_VERSION  (((RS_API_MAJOR_VERSION) * 10000) + ((RS_API_MINOR_VERSION) * 100) + (RS_API_PATCH_VERSION))
 /*// Return version in "X.Y.Z" format */
 #define RS_API_VERSION_STR (VAR_ARG_STRING(RS_API_MAJOR_VERSION.RS_API_MINOR_VERSION.RS_API_PATCH_VERSION))
