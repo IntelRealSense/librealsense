@@ -24,7 +24,7 @@ TEST_CASE("R200 device-unique options support", "[live] [DS-device]")
     const int device_count = rs_get_device_count(ctx, require_no_error());
     REQUIRE(device_count > 0);
 
-    // Iterate through devices, make sure that
+    // For each device
     for (int i = 0; i<device_count; ++i)
     {
         rs_device * dev = rs_get_device(ctx, 0, require_no_error());
