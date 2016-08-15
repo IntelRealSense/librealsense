@@ -51,9 +51,9 @@ namespace rsimpl
         }
 
     private:
-        unsigned long long num_of_wraparounds;
         T max_number;
         T last_number;
+        unsigned long long num_of_wraparounds;
     };
 
     struct frame_timestamp_reader
@@ -109,7 +109,7 @@ protected:
     virtual void                                disable_auto_option(int subdevice, rs_option auto_opt);
     virtual void                                on_before_callback(rs_stream, rs_frame_ref *, std::shared_ptr<rsimpl::frame_archive>) { }
 
-    bool                                        motion_module_ready = false;
+    bool                                        motion_module_ready;
     std::atomic<bool>                           keep_fw_logger_alive;
 public:
     rs_device_base(std::shared_ptr<rsimpl::uvc::device> device, const rsimpl::static_device_info & info, rsimpl::calibration_validator validator = rsimpl::calibration_validator());

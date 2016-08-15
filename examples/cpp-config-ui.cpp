@@ -122,9 +122,9 @@ struct gui
 
     void outline_rect(const rect & r, const color & c)
     {
-        glPushAttrib(GL_ENABLE_BIT); 
+        glPushAttrib(GL_ENABLE_BIT);
 
-        glLineStipple(1, 0xAAAA); 
+        glLineStipple(1, 0xAAAA);
         glEnable(GL_LINE_STIPPLE);
 
         glBegin(GL_LINE_STRIP);

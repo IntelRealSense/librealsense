@@ -5,10 +5,9 @@
 #include "sync.h"
 #include "motion-module.h"
 #include "hw-monitor.h"
-
-#include <array>
 #include "image.h"
 
+#include <array>
 #include <algorithm>
 #include <sstream>
 
@@ -19,10 +18,11 @@ const int MAX_FRAME_QUEUE_SIZE = 20;
 const int MAX_EVENT_QUEUE_SIZE = 500;
 const int MAX_EVENT_TINE_OUT   = 10;
 
-rs_device_base::rs_device_base(std::shared_ptr<rsimpl::uvc::device> device, const rsimpl::static_device_info & info, calibration_validator validator) : device(device), config(info), capturing(false), usb_port_id(""), data_acquisition_active(false), motion_module_ready(false),
-depth(config, RS_STREAM_DEPTH, validator), color(config, RS_STREAM_COLOR, validator), infrared(config, RS_STREAM_INFRARED, validator), infrared2(config, RS_STREAM_INFRARED2, validator), fisheye(config, RS_STREAM_FISHEYE, validator),
+rs_device_base::rs_device_base(std::shared_ptr<rsimpl::uvc::device> device, const rsimpl::static_device_info & info, calibration_validator validator) : device(device), config(info),
+    depth(config, RS_STREAM_DEPTH, validator), color(config, RS_STREAM_COLOR, validator), infrared(config, RS_STREAM_INFRARED, validator), infrared2(config, RS_STREAM_INFRARED2, validator), fisheye(config, RS_STREAM_FISHEYE, validator),
     points(depth), rect_color(color), color_to_depth(color, depth), depth_to_color(depth, color), depth_to_rect_color(depth, rect_color), infrared2_to_depth(infrared2,depth), depth_to_infrared2(depth,infrared2),
-    max_publish_list_size(MAX_FRAME_QUEUE_SIZE), event_queue_size(MAX_EVENT_QUEUE_SIZE), events_timeout(MAX_EVENT_TINE_OUT), keep_fw_logger_alive(false)
+    capturing(false), data_acquisition_active(false), max_publish_list_size(MAX_FRAME_QUEUE_SIZE), event_queue_size(MAX_EVENT_QUEUE_SIZE), events_timeout(MAX_EVENT_TINE_OUT),
+    usb_port_id(""), motion_module_ready(false), keep_fw_logger_alive(false)
 {
     streams[RS_STREAM_DEPTH    ] = native_streams[RS_STREAM_DEPTH]     = &depth;
     streams[RS_STREAM_COLOR    ] = native_streams[RS_STREAM_COLOR]     = &color;
@@ -87,7 +87,7 @@ void rs_device_base::enable_stream_preset(rs_stream stream, rs_preset preset)
 
 rs_motion_intrinsics rs_device_base::get_motion_intrinsics() const
 {
-    throw std::runtime_error("Motion intrinsics does not supported for this device");
+    throw std::runtime_error("Motion intrinsic is not supported for this device");
 }
 
 rs_extrinsics rs_device_base::get_motion_extrinsics_from(rs_stream from) const
@@ -214,10 +214,12 @@ void rs_device_base::set_timestamp_callback(rs_timestamp_callback* callback)
 void rs_device_base::start(rs_source source)
 {
     if (source & RS_SOURCE_MOTION_TRACKING)
+    {
         if (supports(RS_CAPABILITIES_MOTION_EVENTS))
             start_motion_tracking();
         else
              throw std::runtime_error("motion-tracking is not supported by this device");
+    }
 
     if (source & RS_SOURCE_VIDEO)
         start_video_streaming();
@@ -230,10 +232,12 @@ void rs_device_base::stop(rs_source source)
         stop_video_streaming();
 
     if (source & RS_SOURCE_MOTION_TRACKING)
+    {
         if (supports(RS_CAPABILITIES_MOTION_EVENTS))
             stop_motion_tracking();
         else
              throw std::runtime_error("motion-tracking is not supported by this device");
+    }
 }
 
 std::string hexify(unsigned char n)
@@ -275,7 +279,7 @@ void rs_device_base::start_fw_logger(char fw_log_op_code, int grab_rate_in_ms, s
 
             std::stringstream sstr;
             sstr << "FW_Log_Data:";
-            for (int i = 0; i < cmd.receivedCommandDataLength; ++i)
+            for (size_t i = 0; i < cmd.receivedCommandDataLength; ++i)
                 sstr << hexify(data[i]) << " ";
 
             if (cmd.receivedCommandDataLength)

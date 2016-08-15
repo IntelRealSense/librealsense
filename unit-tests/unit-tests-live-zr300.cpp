@@ -59,6 +59,7 @@ TEST_CASE("ZR300 devices support all required options", "[live] [DS-device]")
     {
         rs_device * dev = rs_get_device(ctx, 0, require_no_error());
         REQUIRE(dev != nullptr);
+        REQUIRE(ds_names[Intel_ZR300] == rs_get_device_name(dev, require_no_error()));
 
         rs_set_device_option(dev, RS_OPTION_R200_LR_AUTO_EXPOSURE_ENABLED, 1.0, require_no_error());
 
@@ -140,12 +141,11 @@ TEST_CASE("ZR300 Motion Module Data Streaming Validation", "[live] [DS-device]")
     rs_device * dev = rs_get_device(ctx, 0, require_no_error());
     REQUIRE(dev != nullptr);
 
-    const char * name = rs_get_device_name(dev, require_no_error());
-    REQUIRE(name == std::string("Intel RealSense ZR300"));
+    REQUIRE(ds_names[Intel_ZR300] == rs_get_device_name(dev, require_no_error()));
 
     REQUIRE(rs_supports(dev, rs_capabilities::RS_CAPABILITIES_MOTION_EVENTS, require_no_error()));
 
-    unsigned int active_period_ms = 10000; // Time for the application to generate and collect data
+    unsigned int active_period_ms = 5000; // Time for the application to generate and collect data
     const unsigned int gyro_bandwidth_fps = 200;
     const unsigned int accel_bandwidth_fps = 250; // Predefined rate
     const double allowed_deviation = 0.03; // The frame rates can vary within the predefined limit
@@ -293,7 +293,7 @@ TEST_CASE("ZR300 correctly recognizes invalid options", "[live] [DS-device]")
     REQUIRE(nullptr!=dev);
 
     const char * name = dev->get_name();
-    REQUIRE(name == std::string("Intel RealSense ZR300"));
+    REQUIRE(ds_names[Intel_ZR300] == dev->get_name());
 
     int index = 0;
     double val = 0;
