@@ -35,23 +35,27 @@ TEST_CASE("R200 devices support required options", "[live] [DS-device]")
 
         SECTION("R200 supports DS-Line standard UVC controls, and nothing else")
         {
-            const int supported_options[] = {
-                RS_OPTION_R200_AUTO_EXPOSURE_BRIGHT_RATIO_SET_POINT,
-                RS_OPTION_R200_AUTO_EXPOSURE_KP_GAIN,
-                RS_OPTION_R200_AUTO_EXPOSURE_KP_EXPOSURE,
-                RS_OPTION_R200_AUTO_EXPOSURE_KP_DARK_THRESHOLD,
-            };
-
-            for (int i = 0; i<RS_OPTION_COUNT; ++i)
+            for (int i = 0; i<=RS_OPTION_COUNT; ++i)
             {
-                if (std::find(std::begin(supported_options), std::end(supported_options), i) != std::end(supported_options))
+                auto x = rs_device_supports_option(dev, (rs_option)i, require_no_error());
+
+                if ((i >= RS_OPTION_R200_LR_AUTO_EXPOSURE_ENABLED && i <= RS_OPTION_R200_DEPTH_CONTROL_LR_THRESHOLD) ||
+                    (i == RS_OPTION_FRAMES_QUEUE_SIZE))
                 {
-                    REQUIRE(rs_device_supports_option(dev, (rs_option)i, require_no_error()) == 1);
+                    INFO("rs_option " << rs_option_to_string((rs_option)i) << " expected to be supported!")
+                    REQUIRE(x == 1);
                 }
                 else
                 {
-                    REQUIRE(rs_device_supports_option(dev, (rs_option)i, require_no_error()) == 0);
+                    INFO("rs_option " << rs_option_to_string((rs_option)i) << " expected to be not supported!")
+                    REQUIRE(x == 0);
                 }
+
+                if (!x) 
+                {
+                    REQUIRE(x == 1);
+                }
+                REQUIRE(x == 1);
             }
         }
     }
