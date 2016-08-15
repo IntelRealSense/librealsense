@@ -466,20 +466,16 @@ namespace rsimpl
             info.capabilities_vector.push_back(RS_CAPABILITIES_MOTION_MODULE_FW_UPDATE);
             info.capabilities_vector.push_back(RS_CAPABILITIES_ADAPTER_BOARD);
 
-            // require FW version with extention control of fisheye exposure and on
-            info.capabilities_vector.push_back({ RS_CAPABILITIES_ENUMERATION,{ 1, 25, 0, 1 }, firmware_version::any(), RS_CAMERA_INFO_ADAPTER_BOARD_FIRMWARE_VERSION });
-
             info.stream_subdevices[RS_STREAM_FISHEYE] = 3;
             info.presets[RS_STREAM_FISHEYE][RS_PRESET_BEST_QUALITY] = { true, 640, 480, RS_FORMAT_RAW8,   60 };
 
             info.subdevice_modes.push_back({ 3, { 640, 480 }, pf_raw8, 60, rs_intrinsics, { /*TODO:ask if we need rect_modes*/ }, { 0 } });
             info.subdevice_modes.push_back({ 3, { 640, 480 }, pf_raw8, 30, rs_intrinsics, {/*TODO:ask if we need rect_modes*/ }, { 0 } });
 
-            if (!info.camera_info[RS_CAMERA_INFO_ADAPTER_BOARD_FIRMWARE_VERSION].empty())
+            if (info.camera_info.find(RS_CAMERA_INFO_ADAPTER_BOARD_FIRMWARE_VERSION) != info.camera_info.end())
             {
-                const char* fw_ver = "1.25.0.0";
                 firmware_version ver(info.camera_info[RS_CAMERA_INFO_ADAPTER_BOARD_FIRMWARE_VERSION]);
-                if (ver >= firmware_version(fw_ver))
+                if (ver >= firmware_version("1.25.0.0"))
                     info.options.push_back({ RS_OPTION_FISHEYE_EXPOSURE,                40, 331, 1,  40 });
             }
 
