@@ -1,5 +1,5 @@
 #!/bin/sh
-# postinst script for ros-kinetic-librealsense
+# postinst script for ros librealsense package
 #
 # see: dh_installdeb(1)
 
@@ -48,8 +48,22 @@ case "$1" in
       fi
     fi
 
-    # Check for uvcvideo loadable kernel module patchs
-    UVC_MODULE="/lib/modules/$(uname -r)/kernel/drivers/media/usb/uvc/uvcvideo.ko"
+    IS_DKMS_INSTALLED=$(dkms status uvcvideo/1.1.1-1-realsense)
+    case "${IS_DKMS_INSTALLED}" in
+        *Installed*|*installed*)
+            echo "INFO: DKMS module already installed"
+            ;;
+        *Added*|*added*)
+            dkms build -m uvcvideo -v "1.1.1-1-realsense" && dkms install -m uvcvideo -v "1.1.1-1-realsense" || true
+            ;;
+        *)
+            dkms add -m uvcvideo -v "1.1.1-1-realsense"
+            dkms build -m uvcvideo -v "1.1.1-1-realsense" && dkms install -m uvcvideo -v "1.1.1-1-realsense" || true
+            ;;
+    esac
+
+    # Check for uvcvideo loadable kernel module patches in the running kernel
+    UVC_MODULE=$(modinfo -F filename uvcvideo)
     PATCHED_FORMATS=$(/usr/bin/strings ${UVC_MODULE} | \
       /bin/egrep '\((Y8I|Y12I|Z16|RW10|INVZ|INZI|INVR|INRI|INVI|RELI)\)' | \
       /usr/bin/wc -l)
@@ -63,7 +77,7 @@ case "$1" in
         echo "    to enable additional camera types."
       ;;
       *)
-        echo "WARNING: NO Intel RealSense(TM) cameras are supported!"
+        echo "WARNING: No Intel RealSense(TM) cameras are supported!"
         echo "    Visit https://github.com/IntelRealSense/librealsense/blob/master/doc/installation.md"
         echo "    to enable Intel RealSense (TM) camera types."
       ;;

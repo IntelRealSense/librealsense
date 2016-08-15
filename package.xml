@@ -25,4 +25,5 @@
   <build_depend>pkg-config</build_depend>
 
   <depend>libusb-1.0-dev</depend>
+  <depend>dkms</depend>
 </package>
