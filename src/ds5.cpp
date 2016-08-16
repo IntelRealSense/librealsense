@@ -86,12 +86,14 @@ namespace rsimpl
         return RS_STREAM_DEPTH;
     }
 
-    ///-----------------------
-    // TODO: This may need to be modified for thread safety
+    // Sequential frame counter, Using host-arrival timestamp
     class ds5_timestamp_reader : public frame_timestamp_reader
     {
+        int serial_frame_number;
+        std::chrono::high_resolution_clock::time_point initial_ts;
+
     public:
-        ds5_timestamp_reader() {};
+        ds5_timestamp_reader() : serial_frame_number(0), initial_ts(std::chrono::system_clock::now()) {}
 
         bool validate_frame(const subdevice_mode & mode, const void * frame) const override
         {
@@ -109,14 +111,13 @@ namespace rsimpl
             return false;
         }
 
-        double get_frame_timestamp(const subdevice_mode & mode, const void * frame) override
+        double get_frame_timestamp(const subdevice_mode &, const void *) override
         {
-            return 0;
+            return std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::system_clock::now() - initial_ts).count()*0.000001;
         }
-
-        unsigned long long get_frame_counter(const subdevice_mode & mode, const void * frame) override
+        unsigned long long get_frame_counter(const subdevice_mode &, const void *) override
         {
-            return 0;
+            return serial_frame_number++;
         }
     };
 
@@ -124,5 +125,6 @@ namespace rsimpl
     {
         return std::make_shared<ds5_timestamp_reader>();
     }
+
 
 } // namespace rsimpl::ds5

@@ -54,6 +54,7 @@ namespace rsimpl
             for(auto fps : m.fps)
             {
                 info.subdevice_modes.push_back({1, m.dims, pf_y8, fps, {m.dims.x, m.dims.y}, {}, {0}});
+                info.subdevice_modes.push_back({1, m.dims, pf_y8i, fps, {m.dims.x, m.dims.y}, {}, {0}});
             }
         }
 

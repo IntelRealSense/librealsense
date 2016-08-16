@@ -248,10 +248,11 @@ void show_message(GLFWwindow* curr_window, const std::string& title, const std::
         glOrtho(0, w, h, 0, -1, +1);
 
 
+        size_t line_lenght = 80;
         int2 p;
         p.x = 20;
         p.y = 30;
-        if (message.size() < 80)
+        if (message.size() < line_lenght)
         {
             g.label(p, { 1, 1, 1 }, message.c_str());
         }
@@ -261,17 +262,19 @@ void show_message(GLFWwindow* curr_window, const std::string& title, const std::
             std::string temp_message = message;
             find_and_replace(temp_message, "\n", " ");
             size_t index = 0;
-            while (index < temp_message.size())
+            size_t string_size = temp_message.size();
+            while (index < string_size)
             {
-                auto curr_index = index + temp_message.substr(index, 80).find_last_of(' ');
-                if (curr_index == 0)
+                if (index+line_lenght >=string_size)
                 {
                     str_vec.push_back(temp_message.substr(index));
                     break;
                 }
 
-                str_vec.push_back(temp_message.substr(index, index + curr_index));
-                index += curr_index;
+                auto curr_index = index + temp_message.substr(index, line_lenght).find_last_of(' ');
+
+                str_vec.push_back(temp_message.substr(index, curr_index-index));
+                index = curr_index;
             }
 
             for (auto& elem : str_vec)
@@ -510,32 +513,28 @@ int main(int argc, char * argv[])
             });
         }
 
-        dev->enable_stream(rs::stream::depth, 0, 0, rs::format::z16, 60, rs::output_buffer_format::native);
-        dev->enable_stream(rs::stream::color, 640, 480, rs::format::rgb8, 60, rs::output_buffer_format::native);
-        dev->enable_stream(rs::stream::infrared, 0, 0, rs::format::y8, 60, rs::output_buffer_format::native);
+        int fps = 30;
+        struct w_h { int width, height; };
+        std::vector<rs::stream> streams     = { rs::stream::depth, rs::stream::color, rs::stream::infrared, rs::stream::infrared2, rs::stream::fisheye};
+        std::vector<rs::format> formats     = { rs::format::z16,   rs::format::rgb8,  rs::format::y8,       rs::format::y8,        rs::format::raw8};
+        std::vector<w_h>        wh          = { {0,0},             {640,480},         {0,0},                {0,0},                 {640,480} };
 
-        resolutions[rs::stream::depth] = { dev->get_stream_width(rs::stream::depth), dev->get_stream_height(rs::stream::depth), rs::format::z16 };
-        resolutions[rs::stream::color] = { dev->get_stream_width(rs::stream::color), dev->get_stream_height(rs::stream::color), rs::format::rgb8 };
-        resolutions[rs::stream::infrared] = { dev->get_stream_width(rs::stream::infrared), dev->get_stream_height(rs::stream::infrared), rs::format::y8 };
-
-        bool supports_fish_eye = dev->supports(rs::capabilities::fish_eye);
-        bool supports_motion_events = dev->supports(rs::capabilities::motion_events);
-        has_motion_module = supports_fish_eye || supports_motion_events;
-        if (dev->supports(rs::capabilities::infrared2))
+        for (auto stream : streams)
         {
-            dev->enable_stream(rs::stream::infrared2, 0, 0, rs::format::y8, 60, rs::output_buffer_format::native);
-            resolutions[rs::stream::infrared2] = { dev->get_stream_width(rs::stream::infrared2), dev->get_stream_height(rs::stream::infrared2), rs::format::y8 };
+            if (dev->supports((rs::capabilities)stream))
+            {
+                dev->enable_stream(stream, wh[(int)stream].width, wh[(int)stream].height, formats[(int)stream], fps, rs::output_buffer_format::native);
+                resolutions[stream] = { dev->get_stream_width(stream), dev->get_stream_height(stream), formats[(int)stream] };
+            }
         }
 
-        if (supports_fish_eye)
-        {
-            dev->enable_stream(rs::stream::fisheye, 640, 480, rs::format::raw8, 60, rs::output_buffer_format::native);
-            resolutions[rs::stream::fisheye] = { dev->get_stream_width(rs::stream::fisheye), dev->get_stream_height(rs::stream::fisheye), rs::format::raw8 };
-        }
+        //bool supports_fish_eye = dev->supports(rs::capabilities::fish_eye);
+        //bool supports_motion_events = dev->supports(rs::capabilities::motion_events);
+        has_motion_module = dev->supports(rs::capabilities::fish_eye) || dev->supports(rs::capabilities::motion_events);
 
         if (has_motion_module)
         {
-            if (supports_motion_events)
+            if (dev->supports(rs::capabilities::motion_events))
             {
                 dev->enable_motion_tracking(on_motion_event, on_timestamp_event);
             }
@@ -543,7 +542,6 @@ int main(int argc, char * argv[])
             glfwSetWindowSize(win, 1100, 960);
         }
 
-        //std::this_thread::sleep_for(std::chrono::seconds(1));
         for (int i = 0; i < RS_OPTION_COUNT; ++i)
         {
             option o = { (rs::option)i };
