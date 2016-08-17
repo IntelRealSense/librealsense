@@ -118,9 +118,8 @@ namespace rsimpl
             throw std::logic_error("power_on_adapter_board(...) is not implemented for this backend ");
         }
 
-        void bulk_transfer(device & device, unsigned char handle_id, unsigned char endpoint, void * data, int length, int *actual_length, unsigned int timeout)
+        void bulk_transfer(device & device, unsigned char endpoint, void * data, int length, int *actual_length, unsigned int timeout)
         {
-            if(0 !=handle_id) throw std::logic_error("bulk_transfer for auxillary interface is not supported for this backend");
             int status = libusb_bulk_transfer(device.get_subdevice(0).handle->usb_devh, endpoint, (unsigned char *)data, length, actual_length, timeout);
             if(status < 0) throw std::runtime_error(to_string() << "libusb_bulk_transfer(...) returned " << libusb_error_name(status));
         }
