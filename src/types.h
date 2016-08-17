@@ -166,6 +166,7 @@ namespace rsimpl
         rs_output_buffer_format output_format;
 
         bool contradict(stream_request req) const;
+        bool is_filled() const;
     };
 
     struct interstream_rule // Requires a.*field + delta == b.*field OR a.*field + delta2 == b.*field
