@@ -528,8 +528,6 @@ int main(int argc, char * argv[])
             }
         }
 
-        //bool supports_fish_eye = dev->supports(rs::capabilities::fish_eye);
-        //bool supports_motion_events = dev->supports(rs::capabilities::motion_events);
         has_motion_module = dev->supports(rs::capabilities::fish_eye) || dev->supports(rs::capabilities::motion_events);
 
         if (has_motion_module)
