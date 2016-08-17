@@ -415,7 +415,7 @@ namespace rsimpl
                 return true;
             }
 
-            //if this stream is not enabled move to next item
+            //if this stream is not enabled or already filled move to next item 
             if (!requests[p.stream].enabled || requests[p.stream].is_filled())
             {
                 // push the new requests parameter with stream =  stream + 1
@@ -524,7 +524,7 @@ namespace rsimpl
             // Skip modes that apply to other subdevices
             if(subdevice_mode.subdevice != subdevice_index) continue;
 
-            auto stream_unsatisfied = stream_requested;
+           
             for(auto pad_crop : subdevice_mode.pad_crop_options)
             {
                 for(auto & unpacker : subdevice_mode.pf.unpackers)
@@ -532,7 +532,7 @@ namespace rsimpl
                     auto selection = subdevice_mode_selection(subdevice_mode, pad_crop, (int)(&unpacker - subdevice_mode.pf.unpackers.data()));
 
                     // Determine if this mode satisfies the requirements on our requested streams
-                   
+                    auto stream_unsatisfied = stream_requested;
                     for(auto & output : unpacker.outputs)
                     {
                         const auto & req = requests[output.first];
