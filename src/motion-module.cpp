@@ -11,10 +11,10 @@
 using namespace rsimpl;
 using namespace motion_module;
 
-#define MOTION_MODULE_CONTROL_I2C_SLAVE_ADDRESS 0x42
+const uint8_t MOTION_MODULE_CONTROL_I2C_SLAVE_ADDRESS = 0x42;
 const double IMU_UNITS_TO_MSEC = 0.00003125;
 
-motion_module_control::motion_module_control(uvc::device *device, std::timed_mutex& usbMutex) : device_handle(device), power_state(false), usbMutex(usbMutex)
+motion_module_control::motion_module_control(uvc::device *device, std::timed_mutex& usbMutex) : device_handle(device), usbMutex(usbMutex), power_state(false)
 {
 }
 

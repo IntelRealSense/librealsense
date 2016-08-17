@@ -64,6 +64,8 @@ namespace rsimpl
     {
         const auto FISHEYE_HWMONITOR_INTERFACE = 2;
         const uvc::guid FISHEYE_WIN_USB_DEVICE_GUID = { 0xC0B55A29, 0xD7B6, 0x436E, { 0xA6, 0xEF, 0x2E, 0x76, 0xED, 0x0A, 0xBC, 0xA5 } };
+        // Translation of user-provided fourcc code into device supported one:           'GREY'      'Y8  '. Note the Big-Endian notation
+        const std::map<uint32_t, uint32_t> fourcc_map                       =       { { 0x47524559, 0x59382020 } };
 
         static std::string win_to_utf(const WCHAR * s)
         {
@@ -839,6 +841,8 @@ namespace rsimpl
                 check("IMFAttributes::SetUnknown", pAttributes->SetUnknown(MF_SOURCE_READER_ASYNC_CALLBACK, static_cast<IUnknown *>(sub.reader_callback)));
                 check("MFCreateSourceReaderFromMediaSource", MFCreateSourceReaderFromMediaSource(sub.get_media_source(), pAttributes, &sub.mf_source_reader));
             }
+
+            if (fourcc_map.count(fourcc))   fourcc = fourcc_map.at(fourcc);
 
             for (DWORD j = 0; ; j++)
             {
