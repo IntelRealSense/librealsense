@@ -334,9 +334,7 @@ namespace rsimpl
 
     bool stream_request::is_filled() const
     {
-        if (width != 0 && height != 0 && format != RS_FORMAT_ANY && fps != 0)
-            return true;
-        return false;
+        return width != 0 && height != 0 && format != RS_FORMAT_ANY && fps != 0;
     }
 
     static_device_info::static_device_info() : num_libuvc_transfer_buffers(1), nominal_depth_scale(0.001f)
@@ -416,7 +414,7 @@ namespace rsimpl
             }
 
             //if this stream is not enabled or already filled move to next item 
-            if (!requests[p.stream].enabled || requests[p.stream].is_filled())
+            if (!requests[p.stream].enabled || requests[p.stream].is_filled()) 
             {
                 // push the new requests parameter with stream =  stream + 1
                 search_request_params new_p = { p.requests, p.stream + 1 };
