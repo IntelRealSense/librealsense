@@ -25,8 +25,6 @@ void log(const char* msg)
     logs.push_back(msg);
 }
 
-const double IMU_UNITS_TO_MSEC = 0.00003125;
-
 int main() try
 {
     rs::log_to_console(rs::log_severity::error);

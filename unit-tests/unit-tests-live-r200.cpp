@@ -8,7 +8,6 @@
 #if !defined(MAKEFILE) || ( defined(LIVE_TEST) && defined(R200_TEST) )
 
 #include "catch/catch.hpp"
-
 #include "unit-tests-live-ds-common.h"
 
 #include <climits>
@@ -18,7 +17,7 @@
 // Streaming tests //
 /////////////////////
 
-TEST_CASE("R200 devices support required options", "[live] [DS-device]")
+TEST_CASE("R200 device-unique options support", "[live] [DS-device]")
 {
     // Require at least one device to be plugged in
     safe_context ctx;
@@ -30,33 +29,23 @@ TEST_CASE("R200 devices support required options", "[live] [DS-device]")
     {
         rs_device * dev = rs_get_device(ctx, 0, require_no_error());
         REQUIRE(dev != nullptr);
+        REQUIRE(ds_names[Intel_R200] == rs_get_device_name(dev, require_no_error()));
 
+        // Prerequisite for the following options list
         rs_set_device_option(dev, RS_OPTION_R200_LR_AUTO_EXPOSURE_ENABLED, 1.0, require_no_error());
 
-        SECTION("R200 supports DS-Line standard UVC controls, and nothing else")
+        const int supported_options[] = {
+            RS_OPTION_R200_AUTO_EXPOSURE_BRIGHT_RATIO_SET_POINT,
+            RS_OPTION_R200_AUTO_EXPOSURE_KP_GAIN,
+            RS_OPTION_R200_AUTO_EXPOSURE_KP_EXPOSURE,
+            RS_OPTION_R200_AUTO_EXPOSURE_KP_DARK_THRESHOLD,
+        };
+
+        std::stringstream ss;
+        for (auto opt : supported_options)
         {
-            for (int i = 0; i<=RS_OPTION_COUNT; ++i)
-            {
-                auto x = rs_device_supports_option(dev, (rs_option)i, require_no_error());
-
-                if ((i >= RS_OPTION_R200_LR_AUTO_EXPOSURE_ENABLED && i <= RS_OPTION_R200_DEPTH_CONTROL_LR_THRESHOLD) ||
-                    (i == RS_OPTION_FRAMES_QUEUE_SIZE))
-                {
-                    INFO("rs_option " << rs_option_to_string((rs_option)i) << " expected to be supported!")
-                    REQUIRE(x == 1);
-                }
-                else
-                {
-                    INFO("rs_option " << rs_option_to_string((rs_option)i) << " expected to be not supported!")
-                    REQUIRE(x == 0);
-                }
-
-                if (!x) 
-                {
-                    REQUIRE(x == 1);
-                }
-                REQUIRE(x == 1);
-            }
+            ss.str(""); ss << "Verifying support for R200-specific: " << rs_option_to_string((rs_option)i);
+            REQUIRE(rs_device_supports_option(dev, (rs_option)i, require_no_error()) == 1);
         }
     }
 }

@@ -59,9 +59,9 @@ TEST_CASE( "no extrinsic transformation between a stream and itself", "[live]" )
         for(int j=0; j<RS_STREAM_COUNT; ++j)
         {
             rs_extrinsics extrin = {};
-            rs_error * e;
+            rs_error * e = nullptr;
             rs_get_device_extrinsics(dev, (rs_stream)j, (rs_stream)j, &extrin, &e);
-            if (!e) // if device is not calibrated, rs_get_device_extrinsics has to return an error
+            if (!e) // if device is not calibrated, rs_get_device_extrinsic has to return an error
             {
                 require_identity_matrix(extrin.rotation);
                 require_zero_vector(extrin.translation);
@@ -95,7 +95,7 @@ TEST_CASE( "extrinsic transformation between two streams is a rigid transform", 
                 // Extrinsics from A to B should have an orthonormal 3x3 rotation matrix and a translation vector of magnitude less than 10cm
                 rs_extrinsics a_to_b = {};
 
-                rs_error * e;
+                rs_error * e = nullptr;
 
                 rs_get_device_extrinsics(dev, stream_a, stream_b, &a_to_b, &e);
 
@@ -139,34 +139,30 @@ TEST_CASE( "extrinsic transformations are transitive", "[live]" )
                 {
                     // Require that the composition of a_to_b and b_to_c is equal to a_to_c
                     rs_extrinsics a_to_b, b_to_c, a_to_c;
-                    rs_error * e;
-                    rs_get_device_extrinsics(dev, (rs_stream)a, (rs_stream)b, &a_to_b, &e);
+                    rs_error * a_to_b_e = nullptr,* a_to_c_e = nullptr, * b_to_c_e = nullptr;
 
-                    if (!e)
+                    rs_get_device_extrinsics(dev, (rs_stream)a, (rs_stream)b, &a_to_b, &a_to_b_e);
+                    rs_get_device_extrinsics(dev, (rs_stream)b, (rs_stream)c, &b_to_c, &b_to_c_e);
+                    rs_get_device_extrinsics(dev, (rs_stream)a, (rs_stream)c, &a_to_c, &a_to_c_e);
+
+                    if ((!a_to_b_e) && (!b_to_c_e) && (!a_to_c_e))
                     {
-                        rs_get_device_extrinsics(dev, (rs_stream)b, (rs_stream)c, &b_to_c, &e);
+                        // a_to_c.rotation == a_to_b.rotation * b_to_c.rotation
+                        REQUIRE( a_to_c.rotation[0] == Approx(a_to_b.rotation[0] * b_to_c.rotation[0] + a_to_b.rotation[3] * b_to_c.rotation[1] + a_to_b.rotation[6] * b_to_c.rotation[2]) );
+                        REQUIRE( a_to_c.rotation[2] == Approx(a_to_b.rotation[2] * b_to_c.rotation[0] + a_to_b.rotation[5] * b_to_c.rotation[1] + a_to_b.rotation[8] * b_to_c.rotation[2]) );
+                        REQUIRE( a_to_c.rotation[1] == Approx(a_to_b.rotation[1] * b_to_c.rotation[0] + a_to_b.rotation[4] * b_to_c.rotation[1] + a_to_b.rotation[7] * b_to_c.rotation[2]) );
+                        REQUIRE( a_to_c.rotation[3] == Approx(a_to_b.rotation[0] * b_to_c.rotation[3] + a_to_b.rotation[3] * b_to_c.rotation[4] + a_to_b.rotation[6] * b_to_c.rotation[5]) );
+                        REQUIRE( a_to_c.rotation[4] == Approx(a_to_b.rotation[1] * b_to_c.rotation[3] + a_to_b.rotation[4] * b_to_c.rotation[4] + a_to_b.rotation[7] * b_to_c.rotation[5]) );
+                        REQUIRE( a_to_c.rotation[5] == Approx(a_to_b.rotation[2] * b_to_c.rotation[3] + a_to_b.rotation[5] * b_to_c.rotation[4] + a_to_b.rotation[8] * b_to_c.rotation[5]) );
+                        REQUIRE( a_to_c.rotation[6] == Approx(a_to_b.rotation[0] * b_to_c.rotation[6] + a_to_b.rotation[3] * b_to_c.rotation[7] + a_to_b.rotation[6] * b_to_c.rotation[8]) );
+                        REQUIRE( a_to_c.rotation[7] == Approx(a_to_b.rotation[1] * b_to_c.rotation[6] + a_to_b.rotation[4] * b_to_c.rotation[7] + a_to_b.rotation[7] * b_to_c.rotation[8]) );
+                        REQUIRE( a_to_c.rotation[8] == Approx(a_to_b.rotation[2] * b_to_c.rotation[6] + a_to_b.rotation[5] * b_to_c.rotation[7] + a_to_b.rotation[8] * b_to_c.rotation[8]) );
 
-			if (!e)
-			{
-		                rs_get_device_extrinsics(dev, (rs_stream)a, (rs_stream)c, &a_to_c, require_no_error());
-
-		                // a_to_c.rotation == a_to_b.rotation * b_to_c.rotation
-		                REQUIRE( a_to_c.rotation[0] == Approx(a_to_b.rotation[0] * b_to_c.rotation[0] + a_to_b.rotation[3] * b_to_c.rotation[1] + a_to_b.rotation[6] * b_to_c.rotation[2]) );
-		                REQUIRE( a_to_c.rotation[2] == Approx(a_to_b.rotation[2] * b_to_c.rotation[0] + a_to_b.rotation[5] * b_to_c.rotation[1] + a_to_b.rotation[8] * b_to_c.rotation[2]) );
-		                REQUIRE( a_to_c.rotation[1] == Approx(a_to_b.rotation[1] * b_to_c.rotation[0] + a_to_b.rotation[4] * b_to_c.rotation[1] + a_to_b.rotation[7] * b_to_c.rotation[2]) );
-		                REQUIRE( a_to_c.rotation[3] == Approx(a_to_b.rotation[0] * b_to_c.rotation[3] + a_to_b.rotation[3] * b_to_c.rotation[4] + a_to_b.rotation[6] * b_to_c.rotation[5]) );
-		                REQUIRE( a_to_c.rotation[4] == Approx(a_to_b.rotation[1] * b_to_c.rotation[3] + a_to_b.rotation[4] * b_to_c.rotation[4] + a_to_b.rotation[7] * b_to_c.rotation[5]) );                    
-		                REQUIRE( a_to_c.rotation[5] == Approx(a_to_b.rotation[2] * b_to_c.rotation[3] + a_to_b.rotation[5] * b_to_c.rotation[4] + a_to_b.rotation[8] * b_to_c.rotation[5]) );
-		                REQUIRE( a_to_c.rotation[6] == Approx(a_to_b.rotation[0] * b_to_c.rotation[6] + a_to_b.rotation[3] * b_to_c.rotation[7] + a_to_b.rotation[6] * b_to_c.rotation[8]) );
-		                REQUIRE( a_to_c.rotation[7] == Approx(a_to_b.rotation[1] * b_to_c.rotation[6] + a_to_b.rotation[4] * b_to_c.rotation[7] + a_to_b.rotation[7] * b_to_c.rotation[8]) );
-		                REQUIRE( a_to_c.rotation[8] == Approx(a_to_b.rotation[2] * b_to_c.rotation[6] + a_to_b.rotation[5] * b_to_c.rotation[7] + a_to_b.rotation[8] * b_to_c.rotation[8]) );
-
-		                // a_to_c.translation = a_to_b.transform(b_to_c.translation)
-		                REQUIRE( a_to_c.translation[0] == Approx(a_to_b.rotation[0] * b_to_c.translation[0] + a_to_b.rotation[3] * b_to_c.translation[1] + a_to_b.rotation[6] * b_to_c.translation[2] + a_to_b.translation[0]) );
-		                REQUIRE( a_to_c.translation[1] == Approx(a_to_b.rotation[1] * b_to_c.translation[0] + a_to_b.rotation[4] * b_to_c.translation[1] + a_to_b.rotation[7] * b_to_c.translation[2] + a_to_b.translation[1]) );
-		                REQUIRE( a_to_c.translation[2] == Approx(a_to_b.rotation[2] * b_to_c.translation[0] + a_to_b.rotation[5] * b_to_c.translation[1] + a_to_b.rotation[8] * b_to_c.translation[2] + a_to_b.translation[2]) );
-			}
-                    }
+                        // a_to_c.translation = a_to_b.transform(b_to_c.translation)
+                        REQUIRE( a_to_c.translation[0] == Approx(a_to_b.rotation[0] * b_to_c.translation[0] + a_to_b.rotation[3] * b_to_c.translation[1] + a_to_b.rotation[6] * b_to_c.translation[2] + a_to_b.translation[0]) );
+                        REQUIRE( a_to_c.translation[1] == Approx(a_to_b.rotation[1] * b_to_c.translation[0] + a_to_b.rotation[4] * b_to_c.translation[1] + a_to_b.rotation[7] * b_to_c.translation[2] + a_to_b.translation[1]) );
+                        REQUIRE( a_to_c.translation[2] == Approx(a_to_b.rotation[2] * b_to_c.translation[0] + a_to_b.rotation[5] * b_to_c.translation[1] + a_to_b.rotation[8] * b_to_c.translation[2] + a_to_b.translation[2]) );
+                   }
                 }
             }
         }
@@ -273,7 +269,7 @@ TEST_CASE( "streaming mode intrinsics are sane", "[live]" )
                 REQUIRE(rs_is_stream_enabled(dev, stream, require_no_error()) == 0);
             }
 
-            // Require that we cannot retrieve intrinsics/format/framerate when stream is disabled
+            // Require that we cannot retrieve intrinsic/format/framerate when stream is disabled
             REQUIRE(rs_is_stream_enabled(dev, stream, require_no_error()) == 0);
             rs_intrinsics intrin;
             rs_get_stream_intrinsics(dev, stream, &intrin, require_error(std::string("stream not enabled: ") + rs_stream_to_string(stream)));
