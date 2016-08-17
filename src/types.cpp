@@ -332,6 +332,11 @@ namespace rsimpl
         return false;
     }
 
+    bool stream_request::is_filled() const
+    {
+        return width != 0 && height != 0 && format != RS_FORMAT_ANY && fps != 0;
+    }
+
     static_device_info::static_device_info() : num_libuvc_transfer_buffers(1), nominal_depth_scale(0.001f)
     {
         for(auto & s : stream_subdevices) s = -1;
@@ -408,18 +413,18 @@ namespace rsimpl
                 return true;
             }
 
+            //if this stream is not enabled or already filled move to next item 
+            if (!requests[p.stream].enabled || requests[p.stream].is_filled()) 
+            {
+                // push the new requests parameter with stream =  stream + 1
+                search_request_params new_p = { p.requests, p.stream + 1 };
+                calls.push_back(new_p);
+                continue;
+            }
+
             //now need to go over all posibilities for the next stream
             for (size_t i = 0; i < stream_requests[p.stream].size(); i++)
             {
-                //if this stream is not enabled move to next item
-                if (!requests[p.stream].enabled)
-                {
-                    // push the new requests parameter with stream =  stream + 1
-                    search_request_params new_p = { p.requests, p.stream + 1 };
-                    calls.push_back(new_p);
-                    break;
-                }
-                    
 
                 //check that this spasific request is not contradicts the original user request
                 if (!requests[p.stream].contradict(stream_requests[p.stream][i]))
@@ -517,6 +522,7 @@ namespace rsimpl
             // Skip modes that apply to other subdevices
             if(subdevice_mode.subdevice != subdevice_index) continue;
 
+           
             for(auto pad_crop : subdevice_mode.pad_crop_options)
             {
                 for(auto & unpacker : subdevice_mode.pf.unpackers)
