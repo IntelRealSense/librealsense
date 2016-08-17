@@ -25,8 +25,27 @@ namespace rsimpl
         {
             uvc_context_t * ctx;
 
-            context() : ctx() { check("uvc_init", uvc_init(&ctx, nullptr)); }
-            ~context() { if(ctx) uvc_exit(ctx); }
+
+
+
+            context() : ctx()
+            {
+                check("uvc_init", uvc_init(&ctx, nullptr));
+                
+                int status = libusb_init(&usb_context);
+                if(status < 0) throw std::runtime_error(to_string() << "libusb_init(...) returned " << libusb_error_name(status));
+            }
+
+
+
+
+
+
+            ~context()
+            {
+                libusb_exit(usb_context);
+                if(ctx) uvc_exit(ctx);
+            }
         };
 
         struct subdevice
@@ -44,8 +63,12 @@ namespace rsimpl
             int vid, pid;
             std::vector<subdevice> subdevices;
             std::vector<int> claimed_interfaces;
+			
+			std::shared_ptr<device> aux_device;            
+            libusb_device_handle * usb_handle;
 
-            device(std::shared_ptr<context> parent, uvc_device_t * uvcdevice) : parent(parent), uvcdevice(uvcdevice)
+
+            device(std::shared_ptr<context> parent, uvc_device_t * uvcdevice) : parent(parent), uvcdevice(uvcdevice), usb_handle()
             {
                 get_subdevice(0);
                 
@@ -70,6 +93,14 @@ namespace rsimpl
             subdevice & get_subdevice(int subdevice_index)
             {
                 if(subdevice_index >= subdevices.size()) subdevices.resize(subdevice_index+1);
+              
+                if (subdevice_index == 3 && aux_device)
+                {
+                    auto& sub = aux_device->get_subdevice(0);
+                    subdevices[subdevice_index] = sub;
+                    return sub;
+                }
+				
                 if(!subdevices[subdevice_index].handle) check("uvc_open2", uvc_open2(uvcdevice, &subdevices[subdevice_index].handle, subdevice_index));
                 return subdevices[subdevice_index];
             }
@@ -103,14 +134,25 @@ namespace rsimpl
 
         void claim_interface(device & device, const guid & interface_guid, int interface_number)
         {
-            int status = libusb_claim_interface(device.get_subdevice(0).handle->usb_devh, interface_number);
+            libusb_device_handle* dev_h = nullptr;
+            
+            if (device.pid == 0xaa5)
+            {
+                dev_h = device.get_subdevice(0).handle->usb_devh;
+            }
+                
+            if (device.pid == 0xacb)
+            {
+                dev_h = device.usb_handle;
+            }
+            int status = libusb_claim_interface(dev_h, interface_number);          
             if(status < 0) throw std::runtime_error(to_string() << "libusb_claim_interface(...) returned " << libusb_error_name(status));
             device.claimed_interfaces.push_back(interface_number);
         }
 
         void claim_aux_interface(device & device, const guid & interface_guid, int interface_number)
         {
-            throw std::logic_error("claim_aux_interface(...) is not implemented for this backend ");
+            claim_interface(device, interface_guid, interface_number);
         }
 
         void power_on_adapter_board()
@@ -120,7 +162,19 @@ namespace rsimpl
 
         void bulk_transfer(device & device, unsigned char endpoint, void * data, int length, int *actual_length, unsigned int timeout)
         {
-            int status = libusb_bulk_transfer(device.get_subdevice(0).handle->usb_devh, endpoint, (unsigned char *)data, length, actual_length, timeout);
+            libusb_device_handle* dev_h = nullptr;
+            
+            if (device.pid == 0xaa5)
+            {
+                dev_h = device.get_subdevice(0).handle->usb_devh;
+            }
+            
+            if (device.pid == 0xacb)
+            {
+                dev_h = device.usb_handle;
+            }
+
+            int status = libusb_bulk_transfer(dev_h, endpoint, (unsigned char *)data, length, actual_length, timeout);                                   
             if(status < 0) throw std::runtime_error(to_string() << "libusb_bulk_transfer(...) returned " << libusb_error_name(status));
         }
 
@@ -138,8 +192,9 @@ namespace rsimpl
 
         void start_streaming(device & device, int num_transfer_bufs)
         {
-            for(auto & sub : device.subdevices)
+            for(auto i = 0; i < device.subdevices.size(); i++)
             {
+                auto& sub = device.get_subdevice(i);
                 if(sub.callback)
                 {
                     #if defined (ENABLE_DEBUG_SPAM)
@@ -167,12 +222,12 @@ namespace rsimpl
 
         void start_data_acquisition(device & device)
         {
-            throw std::logic_error("start_data_acquisition(...) is not implemented for this backend ");
+            //throw std::logic_error("start_data_acquisition(...) is not implemented for this backend ");
         }
 
         void stop_data_acquisition(device & device)
         {
-            throw std::logic_error("start_data_acquisition(...) is not implemented for this backend ");
+            // std::logic_error("start_data_acquisition(...) is not implemented for this backend ");
         }
 
         template<class T> void set_pu(uvc_device_handle_t * devh, int subdevice, uint8_t unit, uint8_t control, int value)
@@ -258,6 +313,11 @@ namespace rsimpl
             case RS_OPTION_COLOR_WHITE_BALANCE: return set_pu<uint16_t>(handle, subdevice, pu_unit, UVC_PU_WHITE_BALANCE_TEMPERATURE_CONTROL, value);
             case RS_OPTION_COLOR_ENABLE_AUTO_EXPOSURE: return set_pu<uint8_t>(handle, subdevice, ct_unit, UVC_CT_AE_MODE_CONTROL, value ? 2 : 1); // Modes - (1: manual) (2: auto) (4: shutter priority) (8: aperture priority)
             case RS_OPTION_COLOR_ENABLE_AUTO_WHITE_BALANCE: return set_pu<uint8_t>(handle, subdevice, pu_unit, UVC_PU_WHITE_BALANCE_TEMPERATURE_AUTO_CONTROL, value);
+            case RS_OPTION_FISHEYE_GAIN: {
+                assert(subdevice == 3);
+                
+                return set_pu<uint16_t>(handle, 0, pu_unit, UVC_PU_GAIN_CONTROL, value);
+            }
             default: throw std::logic_error("invalid option");
             }
         }
@@ -283,6 +343,7 @@ namespace rsimpl
             case RS_OPTION_COLOR_WHITE_BALANCE: return get_pu<uint16_t>(handle, subdevice, pu_unit, UVC_PU_WHITE_BALANCE_TEMPERATURE_CONTROL, UVC_GET_CUR);
             case RS_OPTION_COLOR_ENABLE_AUTO_EXPOSURE: return get_pu<uint8_t>(handle, subdevice, ct_unit, UVC_CT_AE_MODE_CONTROL, UVC_GET_CUR) > 1; // Modes - (1: manual) (2: auto) (4: shutter priority) (8: aperture priority)
             case RS_OPTION_COLOR_ENABLE_AUTO_WHITE_BALANCE: return get_pu<uint8_t>(handle, subdevice, pu_unit, UVC_PU_WHITE_BALANCE_TEMPERATURE_AUTO_CONTROL, UVC_GET_CUR);
+			case RS_OPTION_FISHEYE_GAIN: return get_pu<uint16_t>(handle, subdevice, pu_unit, UVC_PU_GAIN_CONTROL, UVC_GET_CUR);
             default: throw std::logic_error("invalid option");
             }
         }
@@ -298,8 +359,7 @@ namespace rsimpl
 
         bool is_device_connected(device & device, int vid, int pid)
         {
-            throw std::logic_error("is_device_connected(...) is not implemented for this backend ");
-            return false;
+            return true;
         }
 
         std::vector<std::shared_ptr<device>> query_devices(std::shared_ptr<context> context)
@@ -308,13 +368,36 @@ namespace rsimpl
             
             uvc_device_t ** list;
             CALL_UVC(uvc_get_device_list, context->ctx, &list);
-            for(auto it = list; *it; ++it) try {
-                devices.push_back(std::make_shared<device>(context, *it));
-            } catch(std::runtime_error &e) {
-                LOG_WARNING("usb:" << (int)uvc_get_bus_number(*it) << ':' <<
-                        (int)uvc_get_device_address(*it) << ": " << e.what());
+            for(auto it = list; *it; ++it)
+            try
+            {
+                auto dev = std::make_shared<device>(context, *it);
+                dev->usb_handle = libusb_open_device_with_vid_pid(context->usb_context, 0x8086, 0x0ad0);
+                devices.push_back(dev);
+            }
+            catch(std::runtime_error &e)
+            {
+                LOG_WARNING("usb:" << (int)uvc_get_bus_number(*it) << ':' << (int)uvc_get_device_address(*it) << ": " << e.what());
+
             }
             uvc_free_device_list(list, 1);
+            
+            std::shared_ptr<device> fisheye = nullptr;
+            
+            for (auto& dev : devices)
+            {
+                if (dev->pid == 0x0ad0)
+                {
+                    fisheye = dev;
+                    LOG_WARNING("we found fisheye");
+                }
+            }
+            
+            for (auto& dev : devices)
+            {
+                dev->aux_device = fisheye;
+            }
+            
             return devices;
         }
     }
