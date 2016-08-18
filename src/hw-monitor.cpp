@@ -71,14 +71,8 @@ namespace rsimpl
             }
         }
 
-        void send_hw_monitor_command(uvc::device & device, std::timed_mutex & mutex, hwmon_cmd_details & details)
+        void update_details_fields(hwmon_cmd_details & details, size_t receivedCmdLen, unsigned char* outputBuffer)
         {
-            unsigned char outputBuffer[HW_MONITOR_BUFFER_SIZE];
-
-            uint32_t op;
-            size_t receivedCmdLen = HW_MONITOR_BUFFER_SIZE;
-
-            execute_usb_command(device, mutex, (uint8_t*)details.sendCommandData, (size_t)details.sizeOfSendCommandData, op, outputBuffer, receivedCmdLen);
             details.receivedCommandDataLength = receivedCmdLen;
 
             if (details.oneDirection) return;
@@ -92,7 +86,79 @@ namespace rsimpl
                 memcpy(details.receivedCommandData, outputBuffer + 4, details.receivedCommandDataLength);
         }
 
-        void perform_and_send_monitor_command(uvc::device & device, std::timed_mutex & mutex, hwmon_cmd & newCommand)
+        void send_hw_monitor_command_over_usb(uvc::device & device, std::timed_mutex & mutex, hwmon_cmd_details & details)
+        {
+            unsigned char outputBuffer[HW_MONITOR_BUFFER_SIZE];
+
+            uint32_t op;
+            size_t receivedCmdLen = HW_MONITOR_BUFFER_SIZE;
+
+            execute_usb_command(device, mutex, (uint8_t*)details.sendCommandData, (size_t)details.sizeOfSendCommandData, op, outputBuffer, receivedCmdLen);
+            update_details_fields(details, receivedCmdLen, outputBuffer);
+        }
+
+        void execute_uvc_ext_ctrl_command(uvc::device & device, std::timed_mutex & mutex, uint8_t *out, size_t outSize, uint32_t & op, uint8_t * in, size_t & inSize, const uvc::extension_unit & xu, uint8_t ctrl)
+        {
+            // write
+            errno = 0;
+
+            int outXfer = 1024;
+
+            if (!mutex.try_lock_for(std::chrono::milliseconds(IVCAM_MONITOR_MUTEX_TIMEOUT))) throw std::runtime_error("timed_mutex::try_lock_for(...) timed out");
+            std::lock_guard<std::timed_mutex> guard(mutex, std::adopt_lock);
+
+            char buffer[IVCAM_MONITOR_MAX_BUFFER_SIZE];
+            memcpy(buffer, out, outSize);
+            set_control(device, xu, ctrl, buffer, IVCAM_MONITOR_MAX_BUFFER_SIZE);
+
+            std::this_thread::sleep_for(std::chrono::milliseconds(20));
+            // read
+            if (in && inSize)
+            {
+                uint8_t buf[IVCAM_MONITOR_MAX_BUFFER_SIZE];
+
+                errno = 0;
+
+                get_control(device, xu, ctrl, buf, outXfer);
+                if (outXfer < (int)sizeof(uint32_t)) throw std::runtime_error("incomplete bulk usb transfer");
+
+                op = *(uint32_t *)buf;
+                if (outXfer >(int)inSize) throw std::runtime_error("bulk transfer failed - user buffer too small");
+                inSize = outXfer;
+                memcpy(in, buf, inSize);
+            }
+        }
+
+        void send_hw_monitor_command_over_uvc_ext_ctrl(uvc::device & device, std::timed_mutex & mutex, hwmon_cmd_details & details, const uvc::extension_unit & xu, uint8_t ctrl)
+        {
+            unsigned char outputBuffer[IVCAM_MONITOR_MAX_BUFFER_SIZE];
+
+            uint32_t op;
+            size_t receivedCmdLen = IVCAM_MONITOR_MAX_BUFFER_SIZE;
+
+            execute_uvc_ext_ctrl_command(device, mutex, (uint8_t*)details.sendCommandData, (size_t)details.sizeOfSendCommandData, op, outputBuffer, receivedCmdLen, xu, ctrl);
+            update_details_fields(details, receivedCmdLen, outputBuffer);
+        }
+
+        void copy_usb_data_and_check_op_codes(hwmon_cmd_details& details, hwmon_cmd & newCommand, uint32_t opCodeXmit)
+        {
+            // Error/exit conditions
+            if (newCommand.oneDirection)
+                return;
+
+            memcpy(newCommand.receivedOpcode, details.receivedOpcode, 4);
+            memcpy(newCommand.receivedCommandData, details.receivedCommandData, details.receivedCommandDataLength);
+            newCommand.receivedCommandDataLength = details.receivedCommandDataLength;
+
+            // endian?
+            uint32_t opCodeAsUint32 = pack(details.receivedOpcode[3], details.receivedOpcode[2], details.receivedOpcode[1], details.receivedOpcode[0]);
+            if (opCodeAsUint32 != opCodeXmit)
+            {
+                throw std::runtime_error("opcodes do not match");
+            }
+        }
+
+        void perform_and_send_monitor_command_over_uvc_ext_ctrl(uvc::device & device, std::timed_mutex & mutex, hwmon_cmd & newCommand, const uvc::extension_unit & xu, uint8_t ctrl)
         {
             uint32_t opCodeXmit = (uint32_t)newCommand.cmd;
 
@@ -110,25 +176,11 @@ namespace rsimpl
                 details.sendCommandData,
                 details.sizeOfSendCommandData);
 
-            send_hw_monitor_command(device, mutex, details);
-
-            // Error/exit conditions
-            if (newCommand.oneDirection)
-                return;
-
-            memcpy(newCommand.receivedOpcode, details.receivedOpcode, 4);
-            memcpy(newCommand.receivedCommandData, details.receivedCommandData, details.receivedCommandDataLength);
-            newCommand.receivedCommandDataLength = details.receivedCommandDataLength;
-
-            // endian?
-            uint32_t opCodeAsUint32 = pack(details.receivedOpcode[3], details.receivedOpcode[2], details.receivedOpcode[1], details.receivedOpcode[0]);
-            if (opCodeAsUint32 != opCodeXmit)
-            {
-                throw std::runtime_error("opcodes do not match");
-            }
+            send_hw_monitor_command_over_uvc_ext_ctrl(device, mutex, details, xu, ctrl);
+            copy_usb_data_and_check_op_codes(details, newCommand, opCodeXmit);
         }
 
-        void perform_and_send_monitor_command(uvc::device & device, std::timed_mutex & mutex, unsigned char handle_id, hwmon_cmd & newCommand)
+        void perform_and_send_monitor_command_over_usb(uvc::device & device, std::timed_mutex & mutex, hwmon_cmd & newCommand)
         {
             uint32_t opCodeXmit = (uint32_t)newCommand.cmd;
 
@@ -146,23 +198,10 @@ namespace rsimpl
                 details.sendCommandData,
                 details.sizeOfSendCommandData);
 
-            send_hw_monitor_command(device, mutex, details);
-
-            // Error/exit conditions
-            if (newCommand.oneDirection)
-                return;
-
-            memcpy(newCommand.receivedOpcode, details.receivedOpcode, 4);
-            memcpy(newCommand.receivedCommandData, details.receivedCommandData, details.receivedCommandDataLength);
-            newCommand.receivedCommandDataLength = details.receivedCommandDataLength;
-
-            // endian?
-            uint32_t opCodeAsUint32 = pack(details.receivedOpcode[3], details.receivedOpcode[2], details.receivedOpcode[1], details.receivedOpcode[0]);
-            if (opCodeAsUint32 != opCodeXmit)
-            {
-                throw std::runtime_error("opcodes do not match");
-            }
+            send_hw_monitor_command_over_usb(device, mutex, details);
+            copy_usb_data_and_check_op_codes(details, newCommand, opCodeXmit);
         }
+
         void i2c_write_reg(int command, uvc::device & device, uint16_t slave_address, uint16_t reg, uint32_t value)
         {
             hw_monitor::hwmon_cmd cmd(command);
@@ -175,7 +214,7 @@ namespace rsimpl
             cmd.sizeOfSendCommandData = sizeof(value);
 
             std::timed_mutex mutex;
-            perform_and_send_monitor_command(device, mutex, cmd);
+            perform_and_send_monitor_command_over_usb(device, mutex, cmd);
 
             return;
         }
@@ -193,7 +232,7 @@ namespace rsimpl
             int retries = 0;
             do {
                 try {
-                    hw_monitor::perform_and_send_monitor_command(device, mutex, cmd);
+                    hw_monitor::perform_and_send_monitor_command_over_usb(device, mutex, cmd);
 
                     // validate that the size is of 32 bit (value size).
                     if (cmd.receivedCommandDataLength == size)

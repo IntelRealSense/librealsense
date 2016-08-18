@@ -173,7 +173,7 @@ namespace ivcam {
     void get_gvd(uvc::device & device, std::timed_mutex & mutex, size_t sz, char * gvd, int gvd_cmd)
     {
         hwmon_cmd cmd((uint8_t)gvd_cmd);
-        perform_and_send_monitor_command(device, mutex, cmd);
+        perform_and_send_monitor_command_over_usb(device, mutex, cmd);
         auto minSize = std::min(sz, cmd.receivedCommandDataLength);
         memcpy(gvd, cmd.receivedCommandData, minSize);
     }
@@ -210,7 +210,7 @@ namespace ivcam {
     {
         hwmon_cmd cmd((uint8_t)fw_cmd::HWReset);
         cmd.oneDirection = true;
-        perform_and_send_monitor_command(device, mutex, cmd);
+        perform_and_send_monitor_command_over_usb(device, mutex, cmd);
     }
 
     void enable_timestamp(uvc::device & device, std::timed_mutex & mutex, bool colorEnable, bool depthEnable)
@@ -218,7 +218,7 @@ namespace ivcam {
         hwmon_cmd cmd((uint8_t)fw_cmd::TimeStampEnable);
         cmd.Param1 = depthEnable ? 1 : 0;
         cmd.Param2 = colorEnable ? 1 : 0;
-        perform_and_send_monitor_command(device, mutex, cmd);
+        perform_and_send_monitor_command_over_usb(device, mutex, cmd);
     }
 
     void set_auto_range(uvc::device & device, std::timed_mutex & mutex, int enableMvR, int16_t minMvR, int16_t maxMvR, int16_t startMvR, int enableLaser, int16_t minLaser, int16_t maxLaser, int16_t startLaser, int16_t ARUpperTH, int16_t ARLowerTH)
@@ -249,7 +249,7 @@ namespace ivcam {
         }
 
         CommandParameters.sizeOfSendCommandData = size;
-        perform_and_send_monitor_command(device, mutex, CommandParameters);
+        perform_and_send_monitor_command_over_usb(device, mutex, CommandParameters);
     }
 
     FirmwareError get_fw_last_error(uvc::device & device, std::timed_mutex & mutex)
@@ -257,7 +257,7 @@ namespace ivcam {
         hwmon_cmd cmd((uint8_t)fw_cmd::GetFWLastError);
         memset(cmd.data, 0, 4);
 
-        perform_and_send_monitor_command(device, mutex, cmd);
+        perform_and_send_monitor_command_over_usb(device, mutex, cmd);
         return *reinterpret_cast<FirmwareError *>(cmd.receivedCommandData);
     }
 
@@ -313,7 +313,7 @@ namespace f200
         command.sizeOfSendCommandData = NUM_OF_CALIBRATION_COEFFS * sizeof(float);
         command.TimeOut = 5000;
 
-        perform_and_send_monitor_command(device, mutex, command);
+        perform_and_send_monitor_command_over_usb(device, mutex, command);
     }
 
     float read_mems_temp(uvc::device & device, std::timed_mutex & mutex)
@@ -327,7 +327,7 @@ namespace f200
         command.TimeOut = 5000;
         command.oneDirection = false;
 
-        perform_and_send_monitor_command(device, mutex, command);
+        perform_and_send_monitor_command_over_usb(device, mutex, command);
         int32_t t = *reinterpret_cast<int32_t *>(command.receivedCommandData);
         return static_cast<float>(t) / 100;
     }
@@ -343,7 +343,7 @@ namespace f200
         command.TimeOut = 5000;
         command.oneDirection = false;
 
-        perform_and_send_monitor_command(device, mutex, command);
+        perform_and_send_monitor_command_over_usb(device, mutex, command);
         return static_cast<int8_t>(command.receivedCommandData[0]);
     }
 
@@ -625,7 +625,7 @@ namespace sr300 {
         hwmon_cmd command((uint8_t)fw_cmd::GetCalibrationTable);
         command.Param1 = (uint32_t)cam_data_source::TakeFromRAM;
 
-        perform_and_send_monitor_command(device, mutex, command);
+        perform_and_send_monitor_command_over_usb(device, mutex, command);
         memcpy(data, command.receivedCommandData, HW_MONITOR_BUFFER_SIZE);
         bytesReturned = command.receivedCommandDataLength;
     }
@@ -653,21 +653,21 @@ namespace sr300 {
         *trg = params;
         cmd.sizeOfSendCommandData = sizeof(wakeup_dev_params);
 
-        perform_and_send_monitor_command(device, mutex, cmd);
+        perform_and_send_monitor_command_over_usb(device, mutex, cmd);
     }
 
     void reset_wakeup_device(uvc::device & device, std::timed_mutex & mutex)
     {
         hwmon_cmd cmd((uint8_t)fw_cmd::OnSuspendResume);
 
-        perform_and_send_monitor_command(device, mutex, cmd);
+        perform_and_send_monitor_command_over_usb(device, mutex, cmd);
     }
 
     void get_wakeup_reason(uvc::device & device, std::timed_mutex & mutex, unsigned char &cReason)
     {
         hwmon_cmd cmdWUReason((uint8_t)fw_cmd::GetWakeReason);
 
-        perform_and_send_monitor_command(device, mutex, cmdWUReason);
+        perform_and_send_monitor_command_over_usb(device, mutex, cmdWUReason);
 
         if (cmdWUReason.receivedCommandDataLength >= 4)     // TODO - better guard condition ?
         {
@@ -683,7 +683,7 @@ namespace sr300 {
     void get_wakeup_confidence(uvc::device & device, std::timed_mutex & mutex, unsigned char &cConfidence)
     {
         hwmon_cmd cmdCnfd((uint8_t)fw_cmd::GetWakeConfidence);
-        perform_and_send_monitor_command(device, mutex, cmdCnfd);
+        perform_and_send_monitor_command_over_usb(device, mutex, cmdCnfd);
 
         if (cmdCnfd.receivedCommandDataLength >= 4)
         {

@@ -86,7 +86,7 @@ namespace rsimpl
             int         sizeOfSendCommandData;
             long        TimeOut;
             uint8_t     receivedOpcode[4];
-            uint8_t     receivedCommandData[HW_MONITOR_BUFFER_SIZE];
+            uint8_t     receivedCommandData[IVCAM_MONITOR_MAX_BUFFER_SIZE];
             size_t      receivedCommandDataLength;
         };
         
@@ -94,10 +94,12 @@ namespace rsimpl
 
         void execute_usb_command(uvc::device & device, std::timed_mutex & mutex, uint8_t *out, size_t outSize, uint32_t & op, uint8_t * in, size_t & inSize);        
 
-        void send_hw_monitor_command(uvc::device & device, std::timed_mutex & mutex, hwmon_cmd_details & details);
+        void send_hw_monitor_command_over_usb(uvc::device & device, std::timed_mutex & mutex, hwmon_cmd_details & details);
+        void send_hw_monitor_command_over_uvc_ext_ctrl(uvc::device & device, std::timed_mutex & mutex, hwmon_cmd_details & details, const rsimpl::uvc::extension_unit & xu, uint8_t ctrl);
 
-        void perform_and_send_monitor_command(uvc::device & device, std::timed_mutex & mutex, hwmon_cmd & newCommand);
-        void perform_and_send_monitor_command(uvc::device & device, std::timed_mutex & mutex, hwmon_cmd & newCommand);
+        void perform_and_send_monitor_command_over_usb(uvc::device & device, std::timed_mutex & mutex, hwmon_cmd & newCommand);
+        void perform_and_send_monitor_command_over_uvc_ext_ctrl(uvc::device & device, std::timed_mutex & mutex, hwmon_cmd & newCommand, const rsimpl::uvc::extension_unit & xu, uint8_t ctrl);
+        void copy_usb_data_and_check_op_codes(hwmon_cmd_details& details, hwmon_cmd & newCommand, uint32_t opCodeXmit);
 
         void i2c_write_reg(int command, uvc::device & device, uint16_t slave_address, uint16_t reg, uint32_t value);
         void i2c_read_reg(int command, uvc::device & device, uint16_t slave_address, uint16_t reg, uint32_t size, byte* data);
