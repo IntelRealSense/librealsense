@@ -443,8 +443,11 @@ namespace rsimpl
             std::timed_mutex mtx;
             try
             {
-                ivcam::get_firmware_version_string(*device, mtx, info.camera_info[RS_CAMERA_INFO_ADAPTER_BOARD_FIRMWARE_VERSION], (int)adaptor_board_command::GVD);
-                ivcam::get_firmware_version_string(*device, mtx, info.camera_info[RS_CAMERA_INFO_MOTION_MODULE_FIRMWARE_VERSION], (int)adaptor_board_command::GVD, 4);
+                std::string version_string;
+                ivcam::get_firmware_version_string(*device, mtx, version_string, (int)adaptor_board_command::GVD);
+                info.camera_info[RS_CAMERA_INFO_ADAPTER_BOARD_FIRMWARE_VERSION] = version_string;
+                ivcam::get_firmware_version_string(*device, mtx, version_string, (int)adaptor_board_command::GVD, 4);
+                info.camera_info[RS_CAMERA_INFO_MOTION_MODULE_FIRMWARE_VERSION] = version_string;
             }
             catch (...)
             {
