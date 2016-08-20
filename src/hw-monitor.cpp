@@ -63,6 +63,7 @@ namespace rsimpl
 
                 bulk_transfer(device, IVCAM_MONITOR_ENDPOINT_IN, buf, sizeof(buf), &outXfer, 1000);
                 if (outXfer < (int)sizeof(uint32_t)) throw std::runtime_error("incomplete bulk usb transfer");
+                if (outXfer > IVCAM_MONITOR_MAX_BUFFER_SIZE) throw std::runtime_error("out buffer is greater than max buffer size");
 
                 op = *(uint32_t *)buf;
                 if (outXfer > (int)inSize) throw std::runtime_error("bulk transfer failed - user buffer too small");
@@ -71,7 +72,7 @@ namespace rsimpl
             }
         }
 
-        void update_details_fields(hwmon_cmd_details & details, size_t receivedCmdLen, unsigned char* outputBuffer)
+        void update_cmd_details(hwmon_cmd_details & details, size_t receivedCmdLen, unsigned char* outputBuffer)
         {
             details.receivedCommandDataLength = receivedCmdLen;
 
@@ -93,8 +94,8 @@ namespace rsimpl
             uint32_t op;
             size_t receivedCmdLen = HW_MONITOR_BUFFER_SIZE;
 
-            execute_usb_command(device, mutex, (uint8_t*)details.sendCommandData, (size_t)details.sizeOfSendCommandData, op, outputBuffer, receivedCmdLen);
-            update_details_fields(details, receivedCmdLen, outputBuffer);
+            execute_usb_command(device, mutex, details.sendCommandData, details.sizeOfSendCommandData, op, outputBuffer, receivedCmdLen);
+            update_cmd_details(details, receivedCmdLen, outputBuffer);
         }
 
         void execute_uvc_ext_ctrl_command(uvc::device & device, std::timed_mutex & mutex, uint8_t *out, size_t outSize, uint32_t & op, uint8_t * in, size_t & inSize, const uvc::extension_unit & xu, uint8_t ctrl)
@@ -121,6 +122,7 @@ namespace rsimpl
 
                 get_control(device, xu, ctrl, buf, outXfer);
                 if (outXfer < (int)sizeof(uint32_t)) throw std::runtime_error("incomplete bulk usb transfer");
+                if (outXfer > IVCAM_MONITOR_MAX_BUFFER_SIZE) throw std::runtime_error("out buffer is greater than max buffer size");
 
                 op = *(uint32_t *)buf;
                 if (outXfer >(int)inSize) throw std::runtime_error("bulk transfer failed - user buffer too small");
@@ -137,7 +139,7 @@ namespace rsimpl
             size_t receivedCmdLen = IVCAM_MONITOR_MAX_BUFFER_SIZE;
 
             execute_uvc_ext_ctrl_command(device, mutex, (uint8_t*)details.sendCommandData, (size_t)details.sizeOfSendCommandData, op, outputBuffer, receivedCmdLen, xu, ctrl);
-            update_details_fields(details, receivedCmdLen, outputBuffer);
+            update_cmd_details(details, receivedCmdLen, outputBuffer);
         }
 
         void copy_usb_data_and_check_op_codes(hwmon_cmd_details& details, hwmon_cmd & newCommand, uint32_t opCodeXmit)
@@ -154,7 +156,7 @@ namespace rsimpl
             uint32_t opCodeAsUint32 = pack(details.receivedOpcode[3], details.receivedOpcode[2], details.receivedOpcode[1], details.receivedOpcode[0]);
             if (opCodeAsUint32 != opCodeXmit)
             {
-                throw std::runtime_error("opcodes do not match");
+                throw std::runtime_error("revieved opcode do not match to the expected opcode");
             }
         }
 
@@ -180,7 +182,7 @@ namespace rsimpl
             copy_usb_data_and_check_op_codes(details, newCommand, opCodeXmit);
         }
 
-        void perform_and_send_monitor_command_over_usb(uvc::device & device, std::timed_mutex & mutex, hwmon_cmd & newCommand)
+        void perform_and_send_monitor_command_over_usb_monitor(uvc::device & device, std::timed_mutex & mutex, hwmon_cmd & newCommand)
         {
             uint32_t opCodeXmit = (uint32_t)newCommand.cmd;
 
@@ -214,7 +216,7 @@ namespace rsimpl
             cmd.sizeOfSendCommandData = sizeof(value);
 
             std::timed_mutex mutex;
-            perform_and_send_monitor_command_over_usb(device, mutex, cmd);
+            perform_and_send_monitor_command_over_usb_monitor(device, mutex, cmd);
 
             return;
         }
@@ -232,7 +234,7 @@ namespace rsimpl
             int retries = 0;
             do {
                 try {
-                    hw_monitor::perform_and_send_monitor_command_over_usb(device, mutex, cmd);
+                    hw_monitor::perform_and_send_monitor_command_over_usb_monitor(device, mutex, cmd);
 
                     // validate that the size is of 32 bit (value size).
                     if (cmd.receivedCommandDataLength == size)

@@ -97,7 +97,7 @@ namespace rsimpl
         void send_hw_monitor_command_over_usb(uvc::device & device, std::timed_mutex & mutex, hwmon_cmd_details & details);
         void send_hw_monitor_command_over_uvc_ext_ctrl(uvc::device & device, std::timed_mutex & mutex, hwmon_cmd_details & details, const rsimpl::uvc::extension_unit & xu, uint8_t ctrl);
 
-        void perform_and_send_monitor_command_over_usb(uvc::device & device, std::timed_mutex & mutex, hwmon_cmd & newCommand);
+        void perform_and_send_monitor_command_over_usb_monitor(uvc::device & device, std::timed_mutex & mutex, hwmon_cmd & newCommand);
         void perform_and_send_monitor_command_over_uvc_ext_ctrl(uvc::device & device, std::timed_mutex & mutex, hwmon_cmd & newCommand, const rsimpl::uvc::extension_unit & xu, uint8_t ctrl);
         void copy_usb_data_and_check_op_codes(hwmon_cmd_details& details, hwmon_cmd & newCommand, uint32_t opCodeXmit);
 

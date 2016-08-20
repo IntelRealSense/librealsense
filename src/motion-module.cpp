@@ -134,7 +134,7 @@ void motion_module_control::set_control(mm_request request, bool on)
     cmd.Param1 = (on) ? 1 : 0;
 
     // Motion module will always use the auxillary USB handle (1) for
-    perform_and_send_monitor_command_over_usb(*device_handle, mutex, cmd);
+    perform_and_send_monitor_command_over_usb_monitor(*device_handle, mutex, cmd);
 }
 
 void motion_module_control::toggle_motion_module_power(bool on)
@@ -166,7 +166,7 @@ void motion_module_control::i2c_iap_write(uint16_t slave_address, uint8_t *buffe
     memcpy(cmd.data, buffer, len);
 
     std::timed_mutex mutex;
-    perform_and_send_monitor_command_over_usb(*device_handle, mutex, cmd);
+    perform_and_send_monitor_command_over_usb_monitor(*device_handle, mutex, cmd);
 }
 
 // Write a 32 bit value to a specific i2c slave address.
