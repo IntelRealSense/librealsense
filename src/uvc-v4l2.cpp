@@ -28,7 +28,9 @@
 #include <linux/uvcvideo.h>
 #include <linux/videodev2.h>
 
+#pragma GCC diagnostic ignored "-Wpedantic"
 #include <libusb.h>
+#pragma GCC diagnostic pop
 
 #pragma GCC diagnostic ignored "-Woverflow"
 
