@@ -823,23 +823,17 @@ namespace rsimpl
                 return std::make_shared<dinghy_timestamp_reader>(stream_depth.get_framerate());
             break;
         case SUB_DEVICE_INFRARED: 
-
             if (stream_infrared.is_enabled())
                 return std::make_shared<dinghy_timestamp_reader>(stream_infrared.get_framerate());
 
             if (stream_infrared2.is_enabled())
                 return std::make_shared<dinghy_timestamp_reader>(stream_infrared2.get_framerate());
-
-
             break;
         case SUB_DEVICE_FISHEYE:
-
             if (stream_fisheye.is_enabled())
                 return std::make_shared<fisheye_timestamp_reader>(stream_fisheye.get_framerate());
             break;
-
         case SUB_DEVICE_COLOR:
-
             if (stream_color.is_enabled())
             {
                 if (stream_depth.is_enabled() || stream_infrared.is_enabled() || stream_infrared2.is_enabled())
@@ -860,12 +854,19 @@ namespace rsimpl
                 {
                     return std::make_shared<serial_timestamp_generator>(stream_color.get_framerate());
                 }
-
             }
             break;
         }
 
         // No streams enabled, so no need for a timestamp converter
         return nullptr;
+    }
+
+    std::vector<std::shared_ptr<frame_timestamp_reader>> ds_device::create_frame_timestamp_readers() const 
+    {
+        return { create_frame_timestamp_reader(SUB_DEVICE_INFRARED),
+                 create_frame_timestamp_reader(SUB_DEVICE_DEPTH),
+                 create_frame_timestamp_reader(SUB_DEVICE_COLOR),
+                 create_frame_timestamp_reader(SUB_DEVICE_FISHEYE) };
     }
 }

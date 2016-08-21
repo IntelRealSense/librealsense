@@ -308,11 +308,15 @@ void rs_device_base::start_video_streaming()
 
     for(auto & s : native_streams) s->archive.reset(); // Starting capture invalidates the current stream info, if any exists from previous capture
 
+    auto timestamp_readers = create_frame_timestamp_readers();
+
     // Satisfy stream_requests as necessary for each subdevice, calling set_mode and
     // dispatching the uvc configuration for a requested stream to the hardware
     for(auto mode_selection : selected_modes)
     {
-        auto timestamp_reader = create_frame_timestamp_reader(mode_selection.mode.subdevice);
+        assert(mode_selection.mode.subdevice <= timestamp_readers.size());
+        auto timestamp_reader = timestamp_readers[mode_selection.mode.subdevice];
+
         // Create a stream buffer for each stream served by this subdevice mode
         for(auto & stream_mode : mode_selection.get_outputs())
         {                    
@@ -342,7 +346,7 @@ void rs_device_base::start_video_streaming()
             auto timestamp = timestamp_reader->get_frame_timestamp(mode_selection.mode, frame);
             auto frame_counter = timestamp_reader->get_frame_counter(mode_selection.mode, frame);
             auto recieved_time = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - capture_start_time).count();
-            
+
             auto requires_processing = mode_selection.requires_processing();
 
             auto width = mode_selection.get_width();

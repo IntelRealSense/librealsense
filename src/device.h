@@ -9,6 +9,7 @@
 #include "stream.h"
 #include <chrono>
 #include <memory>
+#include <vector>
 
 namespace rsimpl
 {
@@ -160,7 +161,8 @@ public:
     virtual void                                get_options(const rs_option options[], size_t count, double values[])override;
     virtual void                                on_before_start(const std::vector<rsimpl::subdevice_mode_selection> & selected_modes) = 0;
     virtual rs_stream                           select_key_stream(const std::vector<rsimpl::subdevice_mode_selection> & selected_modes) = 0;
-    virtual std::shared_ptr<rsimpl::frame_timestamp_reader>  create_frame_timestamp_reader(int subdevice) const = 0;
+    virtual std::vector<std::shared_ptr<rsimpl::frame_timestamp_reader>> 
+                                                create_frame_timestamp_readers() const = 0;
     void                                        release_frame(rs_frame_ref * ref) override;
     const char *                                get_usb_port_id() const override;
     rs_frame_ref *                              clone_frame(rs_frame_ref * frame) override;
