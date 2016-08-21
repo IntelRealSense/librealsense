@@ -100,6 +100,7 @@ void rs_device_base::disable_stream(rs_stream stream)
     if(capturing) throw std::runtime_error("streams cannot be reconfigured after having called rs_start_device()");
     if(config.info.stream_subdevices[stream] == -1) throw std::runtime_error("unsupported stream");
 
+    config.callbacks[stream] = {};
     config.requests[stream] = {};
     for(auto & s : native_streams) s->archive.reset(); // Changing stream configuration invalidates the current stream info
 }
