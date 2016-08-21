@@ -480,7 +480,7 @@ namespace rsimpl
             {
                 for (auto & unpacker : mode.pf.unpackers)
                 {
-                    auto selection = subdevice_mode_selection(mode, pad_crop, &unpacker - mode.pf.unpackers.data());
+                    auto selection = subdevice_mode_selection(mode, pad_crop, (int)(&unpacker - mode.pf.unpackers.data()));
 
                     request.enabled = true;
                     request.fps = selection.get_framerate();

@@ -27,14 +27,14 @@ namespace rsimpl
                     throw std::logic_error(to_string() << get_name() << " has no CCD sensor, the following is not supported: " << options[i]);
             }
 
-			switch (options[i])
-			{
-			case RS_OPTION_DS5_LASER_POWER:           ds5::set_laser_power(get_device(), static_cast<uint8_t>(values[i]));break;
-			default:
-				LOG_WARNING("Set " << options[i] << " for " << get_name() << " is not supported");
-				throw std::logic_error("Option unsupported");
-				break;
-			}
+            switch (options[i])
+            {
+            case RS_OPTION_DS5_LASER_POWER:           ds5::set_laser_power(get_device(), static_cast<uint8_t>(values[i]));break;
+            default:
+                LOG_WARNING("Set " << options[i] << " for " << get_name() << " is not supported");
+                throw std::logic_error("Option unsupported");
+                break;
+            }
         }
     }
 
@@ -53,7 +53,7 @@ namespace rsimpl
             {
                 case RS_OPTION_DS5_LASER_POWER:           ds5::get_laser_power(get_device(), val); values[i] = val; break;
                 default:
-					LOG_WARNING("Get " << options[i] << " for " << get_name() << " is not supported");
+                    LOG_WARNING("Get " << options[i] << " for " << get_name() << " is not supported");
                     throw std::logic_error("Option unsupported");
                     break;
             }
@@ -90,7 +90,7 @@ namespace rsimpl
     class ds5_timestamp_reader : public frame_timestamp_reader
     {
         int serial_frame_number;
-        std::chrono::high_resolution_clock::time_point initial_ts;
+        std::chrono::system_clock::time_point initial_ts;
 
     public:
         ds5_timestamp_reader() : serial_frame_number(0), initial_ts(std::chrono::system_clock::now()) {}

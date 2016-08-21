@@ -97,14 +97,18 @@ namespace rsimpl
     ////////////////////////////////////////////
     // World's tiniest linear algebra library //
     ////////////////////////////////////////////
-
+#pragma pack(push, 1)
     struct int2 { int x,y; };
     struct float3 { float x,y,z; float & operator [] (int i) { return (&x)[i]; } };
+    struct float4 { float x, y, z, w; float & operator [] (int i) { return (&x)[i]; } };
     struct float3x3 { float3 x,y,z; float & operator () (int i, int j) { return (&x)[j][i]; } }; // column-major
     struct pose { float3x3 orientation; float3 position; };
+#pragma pack(pop)
     inline bool operator == (const float3 & a, const float3 & b) { return a.x==b.x && a.y==b.y && a.z==b.z; }
     inline float3 operator + (const float3 & a, const float3 & b) { return {a.x+b.x, a.y+b.y, a.z+b.z}; }
     inline float3 operator * (const float3 & a, float b) { return {a.x*b, a.y*b, a.z*b}; }
+    inline bool operator == (const float4 & a, const float4 & b) { return a.x == b.x && a.y == b.y && a.z == b.z && a.w == b.w; }
+    inline float4 operator + (const float4 & a, const float4 & b) { return{ a.x + b.x, a.y + b.y, a.z + b.z, a.w + b.w }; }
     inline bool operator == (const float3x3 & a, const float3x3 & b) { return a.x==b.x && a.y==b.y && a.z==b.z; }
     inline float3 operator * (const float3x3 & a, const float3 & b) { return a.x*b.x + a.y*b.y + a.z*b.z; }
     inline float3x3 operator * (const float3x3 & a, const float3x3 & b) { return {a*b.x, a*b.y, a*b.z}; }
@@ -113,6 +117,7 @@ namespace rsimpl
     inline float3 operator * (const pose & a, const float3 & b) { return a.orientation * b + a.position; }
     inline pose operator * (const pose & a, const pose & b) { return {a.orientation * b.orientation, a * b.position}; }
     inline pose inverse(const pose & a) { auto inv = transpose(a.orientation); return {inv, inv * a.position * -1}; }
+
 
     ///////////////////
     // Pixel formats //
@@ -572,8 +577,6 @@ namespace rsimpl
             continuation();
         }
     };
-
-
 }
 
 #endif

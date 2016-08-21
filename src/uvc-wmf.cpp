@@ -64,6 +64,9 @@ namespace rsimpl
     {
         const auto FISHEYE_HWMONITOR_INTERFACE = 2;
         const uvc::guid FISHEYE_WIN_USB_DEVICE_GUID = { 0xC0B55A29, 0xD7B6, 0x436E, { 0xA6, 0xEF, 0x2E, 0x76, 0xED, 0x0A, 0xBC, 0xA5 } };
+        // Translation of user-provided fourcc code into device supported one:       Note the Little-Endian notation,
+        const std::map<uint32_t, uint32_t> fourcc_map =                         {   { 0x47524559, 0x59382020 },   //  'GREY' -> 'Y8  '
+                                                                                    { 0x50000000, 0x5a313620 } }; //  'P   ' -> 'Y16 '
 
         static std::string win_to_utf(const WCHAR * s)
         {
@@ -852,7 +855,9 @@ namespace rsimpl
                 if(uvc_width != width || uvc_height != height) continue;
 
                 check("IMFMediaType::GetGUID", media_type->GetGUID(MF_MT_SUBTYPE, &subtype));
-                if(reinterpret_cast<const big_endian<uint32_t> &>(subtype.Data1) != fourcc) continue;
+                uint32_t device_fourcc = reinterpret_cast<const big_endian<uint32_t> &>(subtype.Data1);
+                if (fourcc_map.count(device_fourcc))   device_fourcc = fourcc_map.at(device_fourcc);
+                if(device_fourcc != fourcc) continue;
 
                 check("MFGetAttributeRatio", MFGetAttributeRatio(media_type, MF_MT_FRAME_RATE, &uvc_fps_num, &uvc_fps_denom));
                 if(uvc_fps_denom == 0) continue;
@@ -863,7 +868,7 @@ namespace rsimpl
                 sub.callback = callback;
                 return;
             }
-            throw std::runtime_error("no matching media type");
+            throw std::runtime_error(to_string() << "no matching media type for fourcc " << std::hex << fourcc << std::dec);
         }
 
         void set_subdevice_data_channel_handler(device & device, int subdevice_index, std::function<void(const unsigned char * data, const int size)> callback)

@@ -33,7 +33,7 @@ namespace rsimpl
         std::timed_mutex mutex;
         ds5::get_module_serial_string(*device, mutex, info.serial, ds5::fw_version_offset);
         ds5::get_firmware_version_string(*device, mutex, info.firmware_version);
-        //ds5::read_calibrations(*device,mutex);
+        ds5::read_calibration(*device,mutex);
 
         info.nominal_depth_scale = 0.001f;
 

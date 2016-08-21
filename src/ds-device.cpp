@@ -375,8 +375,8 @@ namespace rsimpl
         for(int i=0; i<RS_PRESET_COUNT; ++i)
             info.presets[RS_STREAM_INFRARED2][i] = info.presets[RS_STREAM_INFRARED][i];
 
-                                // Extended controls ranges cannot be retrieved from device, therefore the data is locally defined
-                                //Option                                                Min     Max Step      Default
+        // Extended controls ranges cannot be retrieved from device, therefore the data is locally defined
+        //Option                                                                        Min     Max     Step    Default
         info.options.push_back({ RS_OPTION_R200_LR_AUTO_EXPOSURE_ENABLED,               0,      1,      1,      0 });
         info.options.push_back({ RS_OPTION_R200_EMITTER_ENABLED,                        0,      1,      1,      0 });
         info.options.push_back({ RS_OPTION_R200_DEPTH_UNITS,                            0, INT_MAX,     1,      1000 });  // What is the real range?
