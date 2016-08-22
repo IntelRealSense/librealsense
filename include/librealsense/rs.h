@@ -301,6 +301,11 @@ typedef struct rs_frame_callback rs_frame_callback;
 typedef struct rs_timestamp_callback rs_timestamp_callback;
 typedef struct rs_log_callback rs_log_callback;
 
+typedef void (*rs_frame_callback_ptr)(rs_device * dev, rs_frame_ref * frame, void * user);
+typedef void (*rs_motion_callback_ptr)(rs_device * , rs_motion_data, void * );
+typedef void (*rs_timestamp_callback_ptr)(rs_device * , rs_timestamp_data, void * );
+typedef void (*rs_log_callback_ptr)(rs_log_severity min_severity, const char * message, void * user);
+
 rs_context * rs_create_context(int api_version, rs_error ** error);
 void rs_delete_context(rs_context * context, rs_error ** error);
 
@@ -506,7 +511,7 @@ void rs_get_motion_intrinsics(const rs_device * device, rs_motion_intrinsics * i
 * \param[in] user      a user data point to be passed to the callback
 * \param[out] error    if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 */
-void rs_set_frame_callback(rs_device * device, rs_stream stream, void (*on_frame)(rs_device * dev, rs_frame_ref * frame, void * user), void * user, rs_error ** error);
+void rs_set_frame_callback(rs_device * device, rs_stream stream, rs_frame_callback_ptr on_frame, void * user, rs_error ** error);
 
 /**
 * enable and configure motion-tracking data handlers
@@ -517,8 +522,8 @@ void rs_set_frame_callback(rs_device * device, rs_stream stream, void (*on_frame
 * \param[out] error             if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 */
 void rs_enable_motion_tracking(rs_device * device,
-    void(*on_motion_event)(rs_device * , rs_motion_data, void * ), void * motion_handler,
-    void(*on_timestamp_event)(rs_device * , rs_timestamp_data, void * ), void * timestamp_handler,
+    rs_motion_callback_ptr on_motion_event, void * motion_handler,
+    rs_timestamp_callback_ptr on_timestamp_event, void * timestamp_handler,
     rs_error ** error);
 
 /**
@@ -836,7 +841,7 @@ typedef enum
 void rs_log_to_console(rs_log_severity min_severity, rs_error ** error);
 void rs_log_to_file(rs_log_severity min_severity, const char * file_path, rs_error ** error);
 void rs_log_to_callback_cpp(rs_log_severity min_severity, rs_log_callback * callback, rs_error ** error);
-void rs_log_to_callback(rs_log_severity min_severity, void(*on_log)(rs_log_severity min_severity, const char * message, void * user), void * user, rs_error ** error);
+void rs_log_to_callback(rs_log_severity min_severity, rs_log_callback_ptr on_log, void * user, rs_error ** error);
 
 #ifdef __cplusplus
 }
