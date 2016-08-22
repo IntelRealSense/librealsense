@@ -1,12 +1,12 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
-#include <algorithm>
-#include <iostream>
-
+#include "types.h"
 #include "hw-monitor.h"
 #include "ds-private.h"
 #include "ds5-private.h"
+
+#define stringify( name ) # name
 
 using namespace rsimpl::hw_monitor;
 using namespace rsimpl::ds5;
@@ -25,8 +25,8 @@ namespace ds5 {
 
     enum calibration_table_id
     {
+        coefficients_table_id   =   25,
         depth_calibration_id    =   31,
-        depth_coefficients_id   =   -1, // TBD
         rgb_calibration_id      =   32,
         fisheye_calibration_id  =   33,
         imu_calibration_id      =   34,
@@ -37,18 +37,26 @@ namespace ds5 {
 #pragma pack(push, 1)
     struct table_header
     {
-        uint16_t    version;        // major.minor
-        uint16_t    table_type;     // ctCalibration
-        uint32_t    table_size;     // full size including: TOC header + TOC + actual tables
-        uint32_t    optional;
-        uint32_t    crc32;          // crc of all the actual table data excluding header/CRC
+        uint16_t        version;        // major.minor
+        uint16_t        table_type;     // ctCalibration
+        uint32_t        table_size;     // full size including: TOC header + TOC + actual tables
+        uint32_t        param;          // This field is determined uniquely by each table
+        uint32_t        crc32;          // crc of all the actual table data excluding header/CRC
     };
 
-    struct toc_entry
+
+    struct table_link
     {
-        uint16_t    table_id;       // enumerated table id
-        uint16_t    cam_index;      // index of the depth camera in case of multiple instances
-        uint32_t    offset;         // table actual location offset (address) in the flash memory
+        uint16_t        table_id;       // enumerated table id
+        uint16_t        param;          // This field is determined uniquely by each table
+        uint32_t        offset;         // table actual location offset (address) in the flash memory
+    };
+
+    struct eprom_table
+    {
+        table_header    header;
+        table_link      optical_module_info;   // enumerated table id
+        table_link      calib_table_info;      // index of the depth camera in case of multiple instances
     };
 
     /* Used for iterating through internal TOC stored on the flash*/
@@ -67,7 +75,7 @@ namespace ds5 {
     struct calibrations_header
     {
         table_header        toc_header;
-        toc_entry           toc[max_ds5_intrinsic_table];   // list of all data tables stored on flash
+        table_link          toc[max_ds5_intrinsic_table];   // list of all data tables stored on flash
     };
 
     enum m3_3_field
@@ -93,57 +101,35 @@ namespace ds5 {
         max_m3_3_field  = 9
     };
 
-    typedef float   rect_entry[4];
-    typedef float   matrix_entry[max_m3_3_field] ;
-
-    enum resolutions
-    {
-        res_1920_1080,
-        res_1280_720,
-        res_640_480,
-        res_854_480,
-        res_640_360,
-        res_432_240,
-        res_320_240,
-        res_480_270,
-        reserved_1,
-        reserved_2,
-        reserved_3,
-        reserved_4,
-        max_resoluitons
-    };
-
     struct coefficients_table
     {
         table_header        header;
-        matrix_entry        intrinsic_left;             //  left camera intrinsic data, normilized
-        matrix_entry        intrinsic_right;            //  right camera intrinsic data, normilized
-        matrix_entry        world2left_rot;             //  the inverse rotation of the left camera
-        matrix_entry        world2right_rot;            //  the inverse rotation of the right camera
-        matrix_entry        baseline;                   //  the baseline between the cameras
-        rect_entry          rect_list[max_resoluitons];
-        float               reserved[156];
+        float3x3            intrinsic_left;             //  left camera intrinsic data, normilized
+        float3x3            intrinsic_right;            //  right camera intrinsic data, normilized
+        float3x3            world2left_rot;             //  the inverse rotation of the left camera
+        float3x3            world2right_rot;            //  the inverse rotation of the right camera
+        float               baseline;                   //  the baseline between the cameras
+        float4              rect_params[max_ds5_rect_resoluitons];
+        uint8_t             reserved[172];
     };
 
     struct depth_calibration_table
     {
         table_header        header;
         float               r_max;                      //  the maximum depth value in mm corresponding to 65535
-        matrix_entry        k_left;                     //  Left intrinsic matrix, normalize by [-1 1]
+        float3x3            k_left;                     //  Left intrinsic matrix, normalize by [-1 1]
         float               distortion_left[5];         //  Left forward distortion parameters, brown model
         float               r_left[3];                  //  Left rotation angles (Rodrigues)
         float               t_left[3];                  //  Left translation vector, mm
-        matrix_entry        k_right;                    //  Right intrinsic matrix, normalize by [-1 1]
+        float3x3            k_right;                    //  Right intrinsic matrix, normalize by [-1 1]
         float               distortion_right[5];        //  Right forward distortion parameters, brown model
         float               r_right[3];                 //  Right rotation angles (Rodrigues)
         float               t_right[3];                 //  Right translation vector, mm
-        matrix_entry        k_depth;                    //  the Depth camera intrinsic matrix
+        float3x3            k_depth;                    //  the Depth camera intrinsic matrix
         float               r_depth[3];                 //  Depth rotation angles (Rodrigues)
         float               t_depth[3];                 //  Depth translation vector, mm
-        float               reserved[16];
+        unsigned char       reserved[16];
     };
-
-
 #pragma pack(pop)
 
     const uint8_t DS5_MONITOR_INTERFACE                 = 0x3;
@@ -208,38 +194,141 @@ namespace ds5 {
         memcpy(raw_data.data(), cmd.receivedCommandData, cmd.receivedCommandDataLength);
     }
 
-    void parse_calibration_table(calibration_tables& calib, calibration_table_id table_id, std::vector<unsigned char> & raw_data)
+    template<typename T, int sz>
+    int arr_size(T(&)[sz])
     {
-        switch(table_id)
+        return sz;
+    }
+
+    template<typename T>
+    const std::string array2str(T& data)
+    {
+        std::stringstream ss;
+        for (int i = 0; i < arr_size(data); i++)
+            ss << " [" << i << "] = " << data[i];
+        return std::string(ss.str().c_str());
+    }
+
+    typedef float float_9[9];
+    typedef float float_4[4];
+
+    void parse_calibration_table(ds5_calibration& calib, calibration_table_id table_id, std::vector<unsigned char> & raw_data)
+    {
+        switch (table_id)
         {
+        case coefficients_table_id:
+        {
+            if (raw_data.size() < sizeof(coefficients_table))
+                throw std::runtime_error(to_string() << "DS5 Coefficients table read error, actual size is " << raw_data.size());
+            coefficients_table *table = reinterpret_cast<coefficients_table *>(raw_data.data());
+            LOG_DEBUG("Table header: table version major.minor: " << std::hex  << table->header.version     << std::dec
+                << ",table type " << table->header.table_type          << ", size "    << table->header.table_size
+                << ", calibration version [mjr.mnr.ptch.rev]: " << std::hex     << table->header.version
+                << ", CRC: " << table->header.crc32);
+            LOG_DEBUG(stringify(intrinsic_left) << array2str((float_9&)table->intrinsic_left) << std::endl
+                << stringify(intrinsic_right) << array2str((float_9&)table->intrinsic_right) << std::endl
+                << stringify(world2left_rot) << array2str((float_9&)table->world2left_rot) << std::endl
+                << stringify(world2right_rot) << array2str((float_9&)table->world2right_rot) << std::endl
+                << stringify(world2left_rot) << array2str((float_9&)table->world2left_rot) << std::endl
+                << "baseline = " << table->baseline << std::endl
+                << stringify(res_1920_1080) << array2str((float_4&)table->rect_params[res_1920_1080]) << std::endl
+                << stringify(res_1280_720) << array2str((float_4&)table->rect_params[res_1280_720]) << std::endl
+                << stringify(res_640_480) << array2str((float_4&)table->rect_params[res_640_480]) << std::endl
+                << stringify(res_854_480) << array2str((float_4&)table->rect_params[res_854_480]) << std::endl
+                << stringify(res_640_360) << array2str((float_4&)table->rect_params[res_640_360]) << std::endl
+                << stringify(res_432_240) << array2str((float_4&)table->rect_params[res_432_240]) << std::endl
+                << stringify(res_320_240) << array2str((float_4&)table->rect_params[res_320_240]) << std::endl
+                << stringify(res_480_270) << array2str((float_4&)table->rect_params[res_480_270]));
+
+            calib.left_imager_intrinsic.width       = -1; // applies for all resolutions
+            calib.left_imager_intrinsic.height      = -1;
+
+            calib.left_imager_intrinsic.fx          = table->intrinsic_left(0, 0);   // focal length of the image plane, as a multiple of pixel width
+            calib.left_imager_intrinsic.fy          = table->intrinsic_left(0, 1);   // focal length of the image plane, as a multiple of pixel height
+            calib.left_imager_intrinsic.ppx         = table->intrinsic_left(0, 2);   // horizontal coordinate of the principal point of the image, as a pixel offset from the left edge
+            calib.left_imager_intrinsic.ppy         = table->intrinsic_left(1, 0);   // horizontal coordinate of the principal point of the image, as a pixel offset from the top edge
+            calib.left_imager_intrinsic.coeffs[0]   = table->intrinsic_left(1, 1);   // Distortion coeeficients 1-5
+            calib.left_imager_intrinsic.coeffs[1]   = table->intrinsic_left(1, 2);
+            calib.left_imager_intrinsic.coeffs[2]   = table->intrinsic_left(2, 0);
+            calib.left_imager_intrinsic.coeffs[3]   = table->intrinsic_left(2, 1);
+            calib.left_imager_intrinsic.coeffs[4]   = table->intrinsic_left(2, 2);
+            calib.left_imager_intrinsic.model       = rs_distortion::RS_DISTORTION_BROWN_CONRADY;
+
+            calib.right_imager_intrinsic.width      = -1;    // applies for all resolutions
+            calib.right_imager_intrinsic.height     = -1;
+            calib.right_imager_intrinsic.fx         = table->intrinsic_right(0, 0);   // focal length of the image plane, as a multiple of pixel width
+            calib.right_imager_intrinsic.fy         = table->intrinsic_right(0, 1);   // focal length of the image plane, as a multiple of pixel height
+            calib.right_imager_intrinsic.ppx        = table->intrinsic_right(0, 2);   // horizontal coordinate of the principal point of the image, as a pixel offset from the left edge
+            calib.right_imager_intrinsic.ppy        = table->intrinsic_right(1, 0);   // horizontal coordinate of the principal point of the image, as a pixel offset from the top edge
+            calib.right_imager_intrinsic.coeffs[0]  = table->intrinsic_right(1, 1);   // Distortion coeeficients 1-5
+            calib.right_imager_intrinsic.coeffs[1]  = table->intrinsic_right(1, 2);
+            calib.right_imager_intrinsic.coeffs[2]  = table->intrinsic_right(2, 0);
+            calib.right_imager_intrinsic.coeffs[3]  = table->intrinsic_right(2, 1);
+            calib.right_imager_intrinsic.coeffs[4]  = table->intrinsic_right(2, 2);
+            calib.right_imager_intrinsic.model      = rs_distortion::RS_DISTORTION_BROWN_CONRADY;
+
+            // Fill in actual data. Note that only the Focal and Principal points data varies between different resolutions
+            for (auto i = 0; i < max_ds5_rect_resoluitons; i++)
+            {
+                calib.depth_intrinsic[i].width  = resolutions_list[i].dims.x;
+                calib.depth_intrinsic[i].height = resolutions_list[i].dims.y;
+
+                calib.depth_intrinsic[i].fx     = table->rect_params[i][0];
+                calib.depth_intrinsic[i].fy     = table->rect_params[i][1];
+                calib.depth_intrinsic[i].ppx    = table->rect_params[i][2];
+                calib.depth_intrinsic[i].ppy    = table->rect_params[i][3];
+                calib.depth_intrinsic[i].model  = rs_distortion::RS_DISTORTION_BROWN_CONRADY;
+                memset(calib.depth_intrinsic[i].coeffs, 0, arr_size(calib.depth_intrinsic[i].coeffs));
+            }
+        }
+        break;
         case depth_calibration_id:
         {
-            const depth_calibration_table *table = reinterpret_cast<depth_calibration_table *>(raw_data.data());  break;
-            std::cout << "Table header: version " <<  table->header.version
-                      << ",type " <<  table->header.table_type
-                      << ", size " <<  table->header.table_size
-                      << std::endl;
+            if (raw_data.size() < sizeof(depth_calibration_table))
+                throw std::runtime_error(to_string() << "DS5 Calibration table read error, actual size is " << raw_data.size());
+            depth_calibration_table *table = reinterpret_cast<depth_calibration_table *>(raw_data.data());
+            LOG_DEBUG("Table header: version " << table->header.version
+                << ",type " << table->header.table_type << ", size " << table->header.table_size << ", max depth value [mm] " << table->r_max << std::endl
+                << stringify(distortion_left) << array2str(table->distortion_left) << std::endl
+                << stringify(distortion_right) << array2str(table->distortion_right) << std::endl
+                << stringify(k_depth) << array2str((float_9&)table->k_depth) << std::endl
+                << stringify(r_depth) << array2str(table->r_depth) << std::endl
+                << stringify(t_depth) << array2str(table->t_depth));
+            // TBD - is this data is required ?
         }
+        break;
         default:
-                throw std::runtime_error(to_string() << "Unsupported calibration table : " << table_id);
+            LOG_WARNING("Parsing Calibration table type " << table_id << " is not supported yet");
         }
     }
 
-    calibration_tables read_calibrations(uvc::device & dev, std::timed_mutex & mutex)
+    void read_calibration(uvc::device & dev, std::timed_mutex & mutex, ds5_calibration& calib)
     {
-        calibration_tables calib;
+        memset(&calib, 0, sizeof(ds5_calibration));
+
         std::vector<unsigned char> table_raw_data;
-        const std::vector<calibration_table_id> actual_list = {depth_calibration_id};  // Will be extended as FW matures
+        const std::vector<calibration_table_id> actual_list = { depth_calibration_id, coefficients_table_id /*, rgb_calibration_id, fisheye_calibration_id, imu_calibration_id, lens_shading_id, projector_id */};  // Will be extended as FW matures
 
         for (auto id : actual_list)     // Fetch and parse calibration data
         {
-            get_calibration_table_entry(dev, mutex, id, table_raw_data);
+            table_raw_data.clear();
+            try
+            {
+                get_calibration_table_entry(dev, mutex, id, table_raw_data);
+                calib.data_present[id] = true;
+            }
+            catch (const std::runtime_error &e)
+            {
+                LOG_ERROR(e.what());
+            }
+            catch (...)
+            {
+                LOG_ERROR("Reading DS5 Calibration failed, table " << id);
+            }
+
             parse_calibration_table( calib, id, table_raw_data);
         }
-
-        return calib;
     }
-
 
     void get_laser_power(const uvc::device & device, uint8_t & laser_power)
     {

@@ -346,6 +346,8 @@ TEST_CASE( "rs_distortion_to_string() produces correct output", "[offline] [vali
     REQUIRE(rs_distortion_to_string(RS_DISTORTION_NONE) == std::string("NONE"));
     REQUIRE(rs_distortion_to_string(RS_DISTORTION_MODIFIED_BROWN_CONRADY) == std::string("MODIFIED_BROWN_CONRADY"));
     REQUIRE(rs_distortion_to_string(RS_DISTORTION_INVERSE_BROWN_CONRADY) == std::string("INVERSE_BROWN_CONRADY"));
+    REQUIRE(rs_distortion_to_string(RS_DISTORTION_BROWN_CONRADY) == std::string("BROWN_CONRADY"));
+    
 
     // Invalid enum values should return nullptr
     REQUIRE(rs_distortion_to_string((rs_distortion)-1) == unknown);

@@ -84,6 +84,7 @@ namespace rsimpl
         CASE(MODIFIED_BROWN_CONRADY)
         CASE(INVERSE_BROWN_CONRADY)
         CASE(FTHETA)
+        CASE(BROWN_CONRADY)
         default: assert(!is_valid(value)); return unknown;
         }
         #undef CASE
@@ -382,7 +383,7 @@ namespace rsimpl
         return true;
     }
 
-    // find_good_requests_combination is used to find requests that satisfy cameras set of constraints.
+    // find_valid_combination is used to find the set of supported profiles that satisfies the cameras set of constraints.
     // this is done using BFS search over the posibility space.
     // the algorithm:
     // start with initial combination of streams requests- the input requests, can be empty or partially filled by user
@@ -392,7 +393,7 @@ namespace rsimpl
     // once there is a item that all its stream requsts are filled 
     // and validated to satisfies all interstream constraints
     // copy it to requests parameter and return true.
-    bool device_config::find_good_requests_combination( stream_request(&requests)[RS_STREAM_NATIVE_COUNT], std::vector<stream_request> stream_requests[RS_STREAM_NATIVE_COUNT]) const
+    bool device_config::find_valid_combination( stream_request(&requests)[RS_STREAM_NATIVE_COUNT], std::vector<stream_request> stream_requests[RS_STREAM_NATIVE_COUNT]) const
     {
         std::deque<search_request_params> calls;
   
@@ -407,7 +408,7 @@ namespace rsimpl
             p = calls.front();
             calls.pop_front();
 
-            //check if found combination that satisfies all interstream constraints
+            //check if the found combination satisfies all interstream constraints
             if (all_requests_filled(p.requests) && validate_requests(p.requests))
             {
                 for (auto i = 0; i < RS_STREAM_NATIVE_COUNT; i++)
@@ -417,19 +418,19 @@ namespace rsimpl
                 return true;
             }
 
+            //if this stream is not enabled move to next item
+            if (!requests[p.stream].enabled)
+            {
+                // push the new requests parameter with stream =  stream + 1
+                search_request_params new_p = { p.requests, p.stream + 1 };
+                calls.push_back(new_p);
+                continue;
+            }
+
             //now need to go over all posibilities for the next stream
             for (size_t i = 0; i < stream_requests[p.stream].size(); i++)
             {
-                //if this stream is not enabled move to next item
-                if (!requests[p.stream].enabled)
-                {
-                    // push the new requests parameter with stream =  stream + 1
-                    search_request_params new_p = { p.requests, p.stream + 1 };
-                    calls.push_back(new_p);
-                    break;
-                }
-
-                //check that this spasific request is not contradicts the original user request
+                //check that the specific request doen't contradict with the original user request
                 if (!requests[p.stream].contradict(stream_requests[p.stream][i]))
                 {
                     //add to request the next option from possible requests
@@ -447,7 +448,7 @@ namespace rsimpl
             }
 
         }
-        //if deque is empty and no good requests combination found return false
+        //if deque is empty and no matching combination found, then  return false
         return false;
     }
 
@@ -465,8 +466,8 @@ namespace rsimpl
         //Get all requests posibilities in order to find the requests that satisfies interstream constraints
         get_all_possible_requestes(stream_requests);
 
-        //find stream requests combination that satisfies all interstream constraints
-        return find_good_requests_combination(requests, stream_requests);
+        //find a stream profiles combination that satisfies all interstream constraints
+        return find_valid_combination(requests, stream_requests);
     }
 
     void device_config::get_all_possible_requestes(std::vector<stream_request>(&stream_requests)[RS_STREAM_NATIVE_COUNT]) const
@@ -480,7 +481,7 @@ namespace rsimpl
             {
                 for (auto & unpacker : mode.pf.unpackers)
                 {
-                    auto selection = subdevice_mode_selection(mode, pad_crop, &unpacker - mode.pf.unpackers.data());
+                    auto selection = subdevice_mode_selection(mode, pad_crop, (int)(&unpacker - mode.pf.unpackers.data()));
 
                     request.enabled = true;
                     request.fps = selection.get_framerate();

@@ -1,10 +1,12 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2016 Intel Corporation. All Rights Reserved.
+#include <algorithm>
 
 #include "image.h"
 #include "ds5-private.h"
 #include "ds5d.h"
 
+using namespace rsimpl::ds5;
 namespace rsimpl
 {
 
@@ -33,8 +35,19 @@ namespace rsimpl
         std::timed_mutex mutex;
         ds5::get_module_serial_string(*device, mutex, info.serial, ds5::fw_version_offset);
         ds5::get_firmware_version_string(*device, mutex, info.firmware_version);
-        //ds5::read_calibrations(*device,mutex);
-
+        ds5::ds5_calibration calib;
+        try
+        {
+            ds5::read_calibration(*device, mutex, calib);
+        }
+        catch (const std::runtime_error &e)
+        {
+            LOG_ERROR("DS5 Calibraion reading failed: " << e.what() << " proceed with no intrinsic/extrinsic");
+        }
+        catch (...)
+        {
+            LOG_ERROR("DS5 Calibraion reading and parsing failed, proceed with no intrinsic/extrinsic");
+        }
         info.nominal_depth_scale = 0.001f;
 
         info.camera_info[RS_CAMERA_INFO_CAMERA_FIRMWARE_VERSION] = info.firmware_version;
@@ -49,11 +62,14 @@ namespace rsimpl
         // Populate IR modes on subdevice 1
         info.stream_subdevices[RS_STREAM_INFRARED] = 1;
         info.stream_subdevices[RS_STREAM_INFRARED2] = 1;
+
         for(auto & m : ds5d_ir_only_modes)
         {
             for(auto fps : m.fps)
             {
-                info.subdevice_modes.push_back({1, m.dims, pf_y8, fps, {m.dims.x, m.dims.y}, {}, {0}});
+                //info.subdevice_modes.push_back({ 1, m.dims, pf_y8, fps, calib.left_imager_intrinsic, {}, {0}});
+                info.subdevice_modes.push_back({ 1, m.dims, pf_y8, fps,{ m.dims.x, m.dims.y },{},{ 0 } });
+                info.subdevice_modes.push_back({ 1, m.dims, pf_y8i, fps,{ m.dims.x, m.dims.y },{},{ 0 } });
             }
         }
 
@@ -63,7 +79,12 @@ namespace rsimpl
         {
             for(auto fps : m.fps)
             {
-                info.subdevice_modes.push_back({0, m.dims, pf_z16, fps, {m.dims.x, m.dims.y}, {}, {0}});
+                // Apply supported camera modes, select intrinsic from flash, if available; otherwise use default
+                //auto it = std::find_if(resolutions_list.begin(), resolutions_list.end(), [m](ds5_depth_resolutions res) { return ((m.dims.x == res.dims.x) && (m.dims.y == res.dims.y)); });
+                //auto intrinsic = (it != resolutions_list.end()) ? calib.depth_intrinsic[ds5_depth_resolutions(*it).name] : rs_intrinsics{ m.dims.x, m.dims.y };
+
+                //info.subdevice_modes.push_back({0, m.dims, pf_z16, fps, intrinsic, {}, {0}});
+                info.subdevice_modes.push_back({ 0, m.dims, pf_z16, fps,{ m.dims.x, m.dims.y },{},{ 0 } });
             }
         }
 
