@@ -9,6 +9,7 @@
 #include "stream.h"
 #include <chrono>
 #include <memory>
+#include <vector>
 
 namespace rsimpl
 {
@@ -51,9 +52,9 @@ namespace rsimpl
         }
 
     private:
-        unsigned long long num_of_wraparounds;
         T max_number;
         T last_number;
+        unsigned long long num_of_wraparounds;
     };
 
     struct frame_timestamp_reader
@@ -109,10 +110,10 @@ protected:
     virtual void                                disable_auto_option(int subdevice, rs_option auto_opt);
     virtual void                                on_before_callback(rs_stream, rs_frame_ref *, std::shared_ptr<rsimpl::frame_archive>) { }
 
-    bool                                        motion_module_ready = false;
+    bool                                        motion_module_ready;
     std::atomic<bool>                           keep_fw_logger_alive;
 public:
-    rs_device_base(std::shared_ptr<rsimpl::uvc::device> device, const rsimpl::static_device_info & info);
+    rs_device_base(std::shared_ptr<rsimpl::uvc::device> device, const rsimpl::static_device_info & info, rsimpl::calibration_validator validator = rsimpl::calibration_validator());
     virtual ~rs_device_base();
 
     const rsimpl::stream_interface &            get_stream_interface(rs_stream stream) const override { return *streams[stream]; }
@@ -160,7 +161,8 @@ public:
     virtual void                                get_options(const rs_option options[], size_t count, double values[])override;
     virtual void                                on_before_start(const std::vector<rsimpl::subdevice_mode_selection> & selected_modes) = 0;
     virtual rs_stream                           select_key_stream(const std::vector<rsimpl::subdevice_mode_selection> & selected_modes) = 0;
-    virtual std::shared_ptr<rsimpl::frame_timestamp_reader>  create_frame_timestamp_reader(int subdevice) const = 0;
+    virtual std::vector<std::shared_ptr<rsimpl::frame_timestamp_reader>> 
+                                                create_frame_timestamp_readers() const = 0;
     void                                        release_frame(rs_frame_ref * ref) override;
     const char *                                get_usb_port_id() const override;
     rs_frame_ref *                              clone_frame(rs_frame_ref * frame) override;

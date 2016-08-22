@@ -122,9 +122,9 @@ struct gui
 
     void outline_rect(const rect & r, const color & c)
     {
-        glPushAttrib(GL_ENABLE_BIT); 
+        glPushAttrib(GL_ENABLE_BIT);
 
-        glLineStipple(1, 0xAAAA); 
+        glLineStipple(1, 0xAAAA);
         glEnable(GL_LINE_STIPPLE);
 
         glBegin(GL_LINE_STRIP);
@@ -371,57 +371,47 @@ void show_message(GLFWwindow* curr_window, const std::string& title, const std::
 }
 
 struct option { rs::option opt; double min, max, step, value, def; bool supports; };
-bool auto_exposure = false;
-bool auto_white_balance = false;
-bool lr_auto_exposure = false;
-struct auto_options
-{
-    auto_options(rs::option opt, std::vector<rs::option> options) : auto_option(opt), relate_options(options) {}
-    rs::option auto_option;
-    std::vector<rs::option> relate_options;
+
+static std::map<rs::option, std::vector<rs::option>> options_dependencies = 
+{ 
+  { rs::option::color_exposure, { rs::option::color_enable_auto_exposure } },
+  { rs::option::color_white_balance, { rs::option::color_enable_auto_white_balance } },
+  { rs::option::r200_lr_gain, { rs::option::r200_lr_auto_exposure_enabled } },
+  { rs::option::r200_lr_exposure, { rs::option::r200_lr_auto_exposure_enabled } },
+  { rs::option::r200_lr_auto_exposure_enabled, { rs::option::r200_auto_exposure_mean_intensity_set_point,
+                                                 rs::option::r200_auto_exposure_bright_ratio_set_point,
+                                                 rs::option::r200_auto_exposure_kp_dark_threshold,
+                                                 rs::option::r200_auto_exposure_kp_gain,
+                                                 rs::option::r200_auto_exposure_kp_exposure,
+                                                 rs::option::r200_auto_exposure_bottom_edge,
+                                                 rs::option::r200_auto_exposure_top_edge,
+                                                 rs::option::r200_auto_exposure_left_edge,
+                                                 rs::option::r200_auto_exposure_right_edge,
+                                               } },
+  { rs::option::r200_auto_exposure_bottom_edge, { rs::option::r200_auto_exposure_top_edge } },
+  { rs::option::r200_auto_exposure_top_edge, { rs::option::r200_auto_exposure_bottom_edge } },
+  { rs::option::r200_auto_exposure_left_edge, { rs::option::r200_auto_exposure_right_edge } },
+  { rs::option::r200_auto_exposure_right_edge, { rs::option::r200_auto_exposure_left_edge } },
 };
-auto_options exp_option(rs::option::color_enable_auto_exposure, { rs::option::color_exposure });
-auto_options wb_option(rs::option::color_enable_auto_white_balance, { rs::option::color_white_balance });
-auto_options lr_option(rs::option::r200_lr_auto_exposure_enabled, { rs::option::r200_lr_gain, rs::option::r200_lr_exposure });
-static std::vector<auto_options> auto_options_vec = { exp_option, wb_option, lr_option };
-void update_auto_option(rs::option opt, std::vector<option>& options)
+
+void update_related_options(rs::device& dev, rs::option opt, std::vector<option>& options)
 {
-    auto it = find_if(auto_options_vec.begin(), auto_options_vec.end(),
-        [&](const auto_options& element) {
-        for (auto& o : element.relate_options)
-        {
-            if (opt == o)
-                return true;
-        }
-        return false;
-    });
-
-    if (it != auto_options_vec.end())
+    auto it = options_dependencies.find(opt);
+    if (it != options_dependencies.end())
     {
-        auto auto_opt = it->auto_option;
-        switch (auto_opt)
+        for (auto& related : it->second)
         {
-        case rs::option::color_enable_auto_exposure:
-            auto_exposure = false;
-            break;
-
-        case rs::option::color_enable_auto_white_balance:
-            auto_white_balance = false;
-            break;
-
-        case rs::option::r200_lr_auto_exposure_enabled:
-            lr_auto_exposure = false;
-            break;
-        }
-
-        auto it = find_if(options.begin(), options.end(),
-            [&](const option& element) {
-            return (element.opt == auto_opt);
-        });
-
-        if (it != options.end())
-        {
-            it->value = 0;
+            auto opt_it = std::find_if(options.begin(), options.end(), [related](option o){ return related == o.opt; });
+            if (opt_it != options.end())
+            {
+                try
+                {
+                    if (!dev.supports_option(opt_it->opt)) continue;
+                    dev.get_option_range(opt_it->opt, opt_it->min, opt_it->max, opt_it->step, opt_it->def);
+                    opt_it->value = dev.get_option(opt_it->opt);
+                }
+                catch (...) {}
+            }
         }
     }
 }
@@ -678,6 +668,7 @@ int main(int argc, char * argv[])
     int fps[streams] = {};
     double dc_preset = 0, iv_preset = 0;
     int offset = 0, panel_height = 1;
+    int gui_click_flag = 0;
 
     while (true)
     {
@@ -778,6 +769,10 @@ int main(int argc, char * argv[])
                     pos_vec[2] = position{ 0, fHeight, fWidth, fHeight };
                     pos_vec[3] = position{ fWidth, fHeight, fWidth, fHeight };
                     pos_vec[4] = position{ 0, 2 * fHeight, fWidth, fHeight };
+                    position center_position = position{ 0, 0, fWidth * 2, fHeight * 2 };
+                    position prev_pos;
+                    bool g_clicked = g.click;
+                    static int frame_clicked[5] = {};
 
                     for (auto i = 0; i < 5; i++)
                     {
@@ -793,9 +788,39 @@ int main(int argc, char * argv[])
                             fps[i] = frame.get_framerate();
                         }
 
-                        buffers[i].show((rs::stream)i, format[i], fps[i], frame_number[i], frame_timestamp[i], pos_vec[i].rx, pos_vec[i].ry, pos_vec[i].rw, pos_vec[i].rh, resolutions[(rs::stream)i].width, resolutions[(rs::stream)i].height);
+                        if (g_clicked && gui_click_flag &&
+                            g.cursor.x >= center_position.rx && g.cursor.x <= (center_position.rw + center_position.rx) &&
+                            g.cursor.y >= center_position.ry && g.cursor.y <= (center_position.rh + center_position.ry))
+                        {
+                            pos_vec[i] = prev_pos;
+                            gui_click_flag = !gui_click_flag;
+                            for (int j = 0 ; j < 5 ; ++j)
+                                frame_clicked[j] = false;
 
-                        draw_autoexposure_roi_boundary((rs::stream)i, options, dev, g, pos_vec[i].rx, pos_vec[i].ry, fWidth, fHeight);
+                            g_clicked = false;
+                        }
+                        else if (g_clicked && !gui_click_flag &&
+                            g.cursor.x >= pos_vec[i].rx && g.cursor.x <= (pos_vec[i].rw + pos_vec[i].rx) &&
+                            g.cursor.y >= pos_vec[i].ry && g.cursor.y <= (pos_vec[i].rh + pos_vec[i].ry))
+                        {
+                            gui_click_flag = !gui_click_flag;
+                            frame_clicked[i] = gui_click_flag;
+                            g_clicked = false;
+                        }
+
+                        if (frame_clicked[i])
+                        {
+                            prev_pos = pos_vec[i];
+                            pos_vec[i] = center_position;
+                            buffers[i].show((rs::stream)i, format[i], fps[i], frame_number[i], frame_timestamp[i], pos_vec[i].rx, pos_vec[i].ry, pos_vec[i].rw, pos_vec[i].rh, resolutions[(rs::stream)i].width, resolutions[(rs::stream)i].height);
+                        }
+                        else if (!gui_click_flag)
+                            buffers[i].show((rs::stream)i, format[i], fps[i], frame_number[i], frame_timestamp[i], pos_vec[i].rx, pos_vec[i].ry, pos_vec[i].rw, pos_vec[i].rh, resolutions[(rs::stream)i].width, resolutions[(rs::stream)i].height);
+
+                        if (frame_clicked[i])
+                            draw_autoexposure_roi_boundary((rs::stream)i, options, dev, g, center_position.rx, center_position.ry, center_position.rw, center_position.rh);
+                        else if (!gui_click_flag)
+                            draw_autoexposure_roi_boundary((rs::stream)i, options, dev, g, pos_vec[i].rx, pos_vec[i].ry, fWidth, fHeight);
                     }
 
                     if (has_motion_module && motion_tracking_enable)
@@ -814,11 +839,12 @@ int main(int argc, char * argv[])
                     }
                     if (!o.supports)
                     {
-                        try { 
+                        try {
                             dev->get_option_range(o.opt, o.min, o.max, o.step, o.def);
                             o.value = dev->get_option(o.opt);
                         }
                         catch (...) {}
+                        o.supports = true;
                     }
 
                     auto is_checkbox = (o.min == 0) && (o.max == 1) && (o.step == 1);
@@ -831,15 +857,9 @@ int main(int argc, char * argv[])
                         if (is_checkbox) dev->set_option(o.opt, is_checked ? 1 : 0);
                         else dev->set_option(o.opt, o.value);
 
-                        update_auto_option(o.opt, options);
+                        update_related_options(*dev, o.opt, options);
 
                         o.value = dev->get_option(o.opt);
-                        
-                        for (auto& o : options) // refresh options
-                        {
-                            if (!dev->supports_option(o.opt)) continue;
-                            dev->get_option_range(o.opt, o.min, o.max, o.step, o.def);
-                        }
                     }
 
                     if (is_checkbox) g.option_label({ w - 230, y + 24 }, { 1, 1, 1 }, *dev, o.opt, 210, true);

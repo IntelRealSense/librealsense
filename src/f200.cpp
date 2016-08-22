@@ -71,7 +71,7 @@ namespace rsimpl
         {
             for(auto fps : m.fps)
             {
-                info.subdevice_modes.push_back({1, m.dims, pf_invz, fps, MakeDepthIntrinsics(c, m.dims), {}, {0}});       
+                info.subdevice_modes.push_back({1, m.dims, pf_invz, fps, MakeDepthIntrinsics(c, m.dims), {}, {0}});
                 info.subdevice_modes.push_back({1, m.dims, pf_f200_inzi, fps, MakeDepthIntrinsics(c, m.dims), {}, {0}});
             }
         }
@@ -190,7 +190,6 @@ namespace rsimpl
     {
         throw std::logic_error("Not implemented");
     }
-
     void f200_camera::stop_fw_logger()
     {
         throw std::logic_error("Not implemented");
@@ -201,12 +200,12 @@ namespace rsimpl
         std::vector<rs_option>  base_opt;
         std::vector<double>     base_opt_val;
 
+
         for(size_t i=0; i<count; ++i)
         {
             switch(options[i])
             {
             case RS_OPTION_F200_DYNAMIC_FPS:          f200::set_dynamic_fps(get_device(), static_cast<uint8_t>(values[i])); break; // IVCAM 1.0 Only
-
              // Default will be handled by parent implementation
             default: base_opt.push_back(options[i]); base_opt_val.push_back(values[i]); break;
             }

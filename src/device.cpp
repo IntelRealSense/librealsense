@@ -5,10 +5,9 @@
 #include "sync.h"
 #include "motion-module.h"
 #include "hw-monitor.h"
-
-#include <array>
 #include "image.h"
 
+#include <array>
 #include <algorithm>
 #include <sstream>
 
@@ -19,10 +18,11 @@ const int MAX_FRAME_QUEUE_SIZE = 20;
 const int MAX_EVENT_QUEUE_SIZE = 500;
 const int MAX_EVENT_TINE_OUT   = 10;
 
-rs_device_base::rs_device_base(std::shared_ptr<rsimpl::uvc::device> device, const rsimpl::static_device_info & info) : device(device), config(info), capturing(false), usb_port_id(""), data_acquisition_active(false), motion_module_ready(false),
-    depth(config, RS_STREAM_DEPTH), color(config, RS_STREAM_COLOR), infrared(config, RS_STREAM_INFRARED), infrared2(config, RS_STREAM_INFRARED2), fisheye(config, RS_STREAM_FISHEYE),
+rs_device_base::rs_device_base(std::shared_ptr<rsimpl::uvc::device> device, const rsimpl::static_device_info & info, calibration_validator validator) : device(device), config(info),
+    depth(config, RS_STREAM_DEPTH, validator), color(config, RS_STREAM_COLOR, validator), infrared(config, RS_STREAM_INFRARED, validator), infrared2(config, RS_STREAM_INFRARED2, validator), fisheye(config, RS_STREAM_FISHEYE, validator),
     points(depth), rect_color(color), color_to_depth(color, depth), depth_to_color(depth, color), depth_to_rect_color(depth, rect_color), infrared2_to_depth(infrared2,depth), depth_to_infrared2(depth,infrared2),
-    max_publish_list_size(MAX_FRAME_QUEUE_SIZE), event_queue_size(MAX_EVENT_QUEUE_SIZE), events_timeout(MAX_EVENT_TINE_OUT), keep_fw_logger_alive(false)
+    capturing(false), data_acquisition_active(false), max_publish_list_size(MAX_FRAME_QUEUE_SIZE), event_queue_size(MAX_EVENT_QUEUE_SIZE), events_timeout(MAX_EVENT_TINE_OUT),
+    usb_port_id(""), motion_module_ready(false), keep_fw_logger_alive(false)
 {
     streams[RS_STREAM_DEPTH    ] = native_streams[RS_STREAM_DEPTH]     = &depth;
     streams[RS_STREAM_COLOR    ] = native_streams[RS_STREAM_COLOR]     = &color;
@@ -87,7 +87,7 @@ void rs_device_base::enable_stream_preset(rs_stream stream, rs_preset preset)
 
 rs_motion_intrinsics rs_device_base::get_motion_intrinsics() const
 {
-    throw std::runtime_error("Motion intrinsics does not supported");
+    throw std::runtime_error("Motion intrinsic is not supported for this device");
 }
 
 rs_extrinsics rs_device_base::get_motion_extrinsics_from(rs_stream from) const
@@ -100,6 +100,7 @@ void rs_device_base::disable_stream(rs_stream stream)
     if(capturing) throw std::runtime_error("streams cannot be reconfigured after having called rs_start_device()");
     if(config.info.stream_subdevices[stream] == -1) throw std::runtime_error("unsupported stream");
 
+    config.callbacks[stream] = {};
     config.requests[stream] = {};
     for(auto & s : native_streams) s->archive.reset(); // Changing stream configuration invalidates the current stream info
 }
@@ -214,10 +215,12 @@ void rs_device_base::set_timestamp_callback(rs_timestamp_callback* callback)
 void rs_device_base::start(rs_source source)
 {
     if (source & RS_SOURCE_MOTION_TRACKING)
+    {
         if (supports(RS_CAPABILITIES_MOTION_EVENTS))
             start_motion_tracking();
         else
              throw std::runtime_error("motion-tracking is not supported by this device");
+    }
 
     if (source & RS_SOURCE_VIDEO)
         start_video_streaming();
@@ -230,10 +233,12 @@ void rs_device_base::stop(rs_source source)
         stop_video_streaming();
 
     if (source & RS_SOURCE_MOTION_TRACKING)
+    {
         if (supports(RS_CAPABILITIES_MOTION_EVENTS))
             stop_motion_tracking();
         else
              throw std::runtime_error("motion-tracking is not supported by this device");
+    }
 }
 
 std::string hexify(unsigned char n)
@@ -274,7 +279,8 @@ void rs_device_base::start_fw_logger(char fw_log_op_code, int grab_rate_in_ms, s
             memcpy(data, cmd.receivedCommandData, cmd.receivedCommandDataLength);
 
             std::stringstream sstr;
-            for (int i = 0; i < cmd.receivedCommandDataLength; ++i)
+            sstr << "FW_Log_Data:";
+            for (size_t i = 0; i < cmd.receivedCommandDataLength; ++i)
                 sstr << hexify(data[i]) << " ";
 
             if (cmd.receivedCommandDataLength)
@@ -302,11 +308,15 @@ void rs_device_base::start_video_streaming()
 
     for(auto & s : native_streams) s->archive.reset(); // Starting capture invalidates the current stream info, if any exists from previous capture
 
+    auto timestamp_readers = create_frame_timestamp_readers();
+
     // Satisfy stream_requests as necessary for each subdevice, calling set_mode and
     // dispatching the uvc configuration for a requested stream to the hardware
     for(auto mode_selection : selected_modes)
     {
-        auto timestamp_reader = create_frame_timestamp_reader(mode_selection.mode.subdevice);
+        assert(mode_selection.mode.subdevice <= timestamp_readers.size());
+        auto timestamp_reader = timestamp_readers[mode_selection.mode.subdevice];
+
         // Create a stream buffer for each stream served by this subdevice mode
         for(auto & stream_mode : mode_selection.get_outputs())
         {                    
@@ -336,7 +346,7 @@ void rs_device_base::start_video_streaming()
             auto timestamp = timestamp_reader->get_frame_timestamp(mode_selection.mode, frame);
             auto frame_counter = timestamp_reader->get_frame_counter(mode_selection.mode, frame);
             auto recieved_time = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - capture_start_time).count();
-            
+
             auto requires_processing = mode_selection.requires_processing();
 
             auto width = mode_selection.get_width();
@@ -488,13 +498,6 @@ const char * rs_device_base::get_option_description(rs_option option) const
     case RS_OPTION_SR300_AUTO_RANGE_START_LASER                    : return "Configures SR300 Depth Auto-Range setting. Should not be used directly but through set IVCAM preset method";
     case RS_OPTION_SR300_AUTO_RANGE_UPPER_THRESHOLD                : return "Configures SR300 Depth Auto-Range setting. Should not be used directly but through set IVCAM preset method";
     case RS_OPTION_SR300_AUTO_RANGE_LOWER_THRESHOLD                : return "Configures SR300 Depth Auto-Range setting. Should not be used directly but through set IVCAM preset method";
-    case RS_OPTION_SR300_WAKEUP_DEV_PHASE1_PERIOD                  : return "Configures period for the first phase of the wake-up device SR300 mode.";
-    case RS_OPTION_SR300_WAKEUP_DEV_PHASE1_FPS                     : return "Configures FPS for the first phase of the wake-up device SR300 mode.";
-    case RS_OPTION_SR300_WAKEUP_DEV_PHASE2_PERIOD                  : return "Configures period for the second phase of the wake-up device SR300 mode.";
-    case RS_OPTION_SR300_WAKEUP_DEV_PHASE2_FPS                     : return "Configures FPS for the second phase of the wake-up device SR300 mode.";
-    case RS_OPTION_SR300_WAKEUP_DEV_RESET                          : return "Disables SR300 wakeup device mode.";
-    case RS_OPTION_SR300_WAKE_ON_USB_REASON                        : return "Gets the reason for last registered wakeup event";
-    case RS_OPTION_SR300_WAKE_ON_USB_CONFIDENCE                    : return "Gets wakeup reason confidence (0-100)";
     case RS_OPTION_R200_LR_AUTO_EXPOSURE_ENABLED                   : return "Enables / disables R200 auto-exposure. This will affect both IR and depth image.";
     case RS_OPTION_R200_LR_GAIN                                    : return "IR image gain";
     case RS_OPTION_R200_LR_EXPOSURE                                : return "This control allows manual adjustment of the exposure time value for the L/R imagers";
@@ -628,6 +631,7 @@ void rs_device_base::disable_auto_option(int subdevice, rs_option auto_opt)
     if (uvc::get_pu_control(get_device(), subdevice, auto_opt))
         uvc::set_pu_control(get_device(), subdevice, auto_opt, reset_state);
 }
+
 
 const char * rs_device_base::get_usb_port_id() const
 {

@@ -12,10 +12,15 @@ using namespace rsimpl;
 using namespace rsimpl::ds;
 using namespace rsimpl::motion_module;
 
+// DS4 Exposure ROI uses stream resolution as control constraints
+// When stream disabled, we are supposed to use VGA as the default
+#define MAX_DS_DEFAULT_X 639
+#define MAX_DS_DEFAULT_Y 439
+
 namespace rsimpl
 {
-    ds_device::ds_device(std::shared_ptr<uvc::device> device, const static_device_info & info) 
-    : rs_device_base(device, info), start_stop_pad(std::chrono::milliseconds(500))
+    ds_device::ds_device(std::shared_ptr<uvc::device> device, const static_device_info & info, calibration_validator validator)
+        : rs_device_base(device, info, validator), start_stop_pad(std::chrono::milliseconds(500))
     {
         rs_option opt[] = {RS_OPTION_R200_DEPTH_UNITS};
         double units;
@@ -65,12 +70,21 @@ namespace rsimpl
     
     void correct_lr_auto_exposure_params(rs_device_base * device, ae_params& params)
     {
-        auto intrinsics = device->get_stream_interface(RS_STREAM_DEPTH).get_intrinsics();
+        auto& stream = device->get_stream_interface(RS_STREAM_DEPTH);
+        uint16_t max_x = MAX_DS_DEFAULT_X;
+        uint16_t max_y = MAX_DS_DEFAULT_Y;
+        if (stream.is_enabled())
+        {
+            auto intrinsics = stream.get_intrinsics();
+            max_x = intrinsics.width - 1;
+            max_y = intrinsics.height - 1;
+        }
+
         // first, bring to the valid range
-        params.exposure_left_edge = std::max((uint16_t)0, std::min((uint16_t)intrinsics.width, params.exposure_left_edge));
-        params.exposure_right_edge = std::max((uint16_t)0, std::min((uint16_t)intrinsics.width, params.exposure_right_edge));
-        params.exposure_top_edge = std::max((uint16_t)0, std::min((uint16_t)intrinsics.height, params.exposure_top_edge));
-        params.exposure_bottom_edge = std::max((uint16_t)0, std::min((uint16_t)intrinsics.height, params.exposure_bottom_edge));
+        params.exposure_left_edge = std::max((uint16_t)0, std::min(max_x, params.exposure_left_edge));
+        params.exposure_right_edge = std::max((uint16_t)0, std::min(max_x, params.exposure_right_edge));
+        params.exposure_top_edge = std::max((uint16_t)0, std::min(max_y, params.exposure_top_edge));
+        params.exposure_bottom_edge = std::max((uint16_t)0, std::min(max_y, params.exposure_bottom_edge));
         // now, let's take care of order:
         auto left = std::min(params.exposure_left_edge, params.exposure_right_edge);
         auto right = std::max(params.exposure_left_edge, params.exposure_right_edge);
@@ -403,14 +417,13 @@ namespace rsimpl
         }
 
         // Subdevice 2 can provide color, in several formats and framerates        
-        info.subdevice_modes.push_back({ 2, { 320, 240 }, pf_yuy2, 60, scale_intrinsics(c.intrinsicsThird[1], 320, 240), { c.modesThird[1][1] }, { 0 } });
-        info.subdevice_modes.push_back({ 2, { 320, 240 }, pf_yuy2, 30, scale_intrinsics(c.intrinsicsThird[1], 320, 240), { c.modesThird[1][1] }, { 0 } });
         info.subdevice_modes.push_back({ 2, { 640, 480 }, pf_yuy2, 60, c.intrinsicsThird[1], { c.modesThird[1][0] }, { 0 } });
         info.subdevice_modes.push_back({ 2, { 640, 480 }, pf_yuy2, 30, c.intrinsicsThird[1], { c.modesThird[1][0] }, { 0 } });
-
+        info.subdevice_modes.push_back({ 2, { 320, 240 }, pf_yuy2, 60, scale_intrinsics(c.intrinsicsThird[1], 320, 240), { c.modesThird[1][1] }, { 0 } });
+        info.subdevice_modes.push_back({ 2, { 320, 240 }, pf_yuy2, 30, scale_intrinsics(c.intrinsicsThird[1], 320, 240), { c.modesThird[1][1] }, { 0 } });
+        
         info.subdevice_modes.push_back({ 2,{ 1920, 1080 }, pf_yuy2, 15, c.intrinsicsThird[0],{ c.modesThird[0][0] },{ 0 } });
         info.subdevice_modes.push_back({ 2,{ 1920, 1080 }, pf_yuy2, 30, c.intrinsicsThird[0],{ c.modesThird[0][0] },{ 0 } });
-
 
         // Set up interstream rules for left/right/z images
         for(auto ir : {RS_STREAM_INFRARED, RS_STREAM_INFRARED2})
@@ -421,6 +434,8 @@ namespace rsimpl
         }
         info.interstream_rules.push_back({ RS_STREAM_DEPTH, RS_STREAM_COLOR, &stream_request::fps, 0, 0, RS_STREAM_DEPTH, true, false, false });
         info.interstream_rules.push_back({ RS_STREAM_INFRARED, RS_STREAM_INFRARED2, &stream_request::fps, 0, 0, RS_STREAM_COUNT, false, false, false });
+        info.interstream_rules.push_back({ RS_STREAM_INFRARED, RS_STREAM_INFRARED2, &stream_request::width, 0, 0, RS_STREAM_COUNT, false, false, false });
+        info.interstream_rules.push_back({ RS_STREAM_INFRARED, RS_STREAM_INFRARED2, &stream_request::height, 0, 0, RS_STREAM_COUNT, false, false, false });
         info.interstream_rules.push_back({ RS_STREAM_INFRARED, RS_STREAM_INFRARED2, nullptr, 0, 0, RS_STREAM_COUNT, false, false, true });
 
         info.presets[RS_STREAM_INFRARED][RS_PRESET_BEST_QUALITY] = {true, 480, 360, RS_FORMAT_Y8,   60};
@@ -452,10 +467,10 @@ namespace rsimpl
         info.options.push_back({ RS_OPTION_R200_AUTO_EXPOSURE_KP_GAIN,                  0,      1000,   1,      0 });
         info.options.push_back({ RS_OPTION_R200_AUTO_EXPOSURE_KP_EXPOSURE,              0,      1000,   1,      0 });
         info.options.push_back({ RS_OPTION_R200_AUTO_EXPOSURE_KP_DARK_THRESHOLD,        0,      1000,   1,      0 });
-        info.options.push_back({ RS_OPTION_R200_AUTO_EXPOSURE_TOP_EDGE,                 0,      639,    1,      239 });
-        info.options.push_back({ RS_OPTION_R200_AUTO_EXPOSURE_BOTTOM_EDGE,              0,      639,    1,      0});
-        info.options.push_back({ RS_OPTION_R200_AUTO_EXPOSURE_LEFT_EDGE,                0,      639,    1,      0 });
-        info.options.push_back({ RS_OPTION_R200_AUTO_EXPOSURE_RIGHT_EDGE,               0,      639,    1,      319 });
+        info.options.push_back({ RS_OPTION_R200_AUTO_EXPOSURE_TOP_EDGE,                 0,      MAX_DS_DEFAULT_Y,    1,      MAX_DS_DEFAULT_Y });
+        info.options.push_back({ RS_OPTION_R200_AUTO_EXPOSURE_BOTTOM_EDGE,              0,      MAX_DS_DEFAULT_Y,    1,      MAX_DS_DEFAULT_Y});
+        info.options.push_back({ RS_OPTION_R200_AUTO_EXPOSURE_LEFT_EDGE,                0,      MAX_DS_DEFAULT_X,    1,      MAX_DS_DEFAULT_X });
+        info.options.push_back({ RS_OPTION_R200_AUTO_EXPOSURE_RIGHT_EDGE,               0,      MAX_DS_DEFAULT_X,    1,      MAX_DS_DEFAULT_X });
         info.options.push_back({ RS_OPTION_R200_DEPTH_CONTROL_ESTIMATE_MEDIAN_DECREMENT, 0,     0xFF,   1,      5 });
         info.options.push_back({ RS_OPTION_R200_DEPTH_CONTROL_ESTIMATE_MEDIAN_INCREMENT, 0,     0xFF,   1,      5 });
         info.options.push_back({ RS_OPTION_R200_DEPTH_CONTROL_MEDIAN_THRESHOLD,         0,      0x3FF,  1,      0xc0 });
@@ -575,28 +590,33 @@ namespace rsimpl
         };
         if (std::find(auto_exposure_options.begin(), auto_exposure_options.end(), option) != auto_exposure_options.end())
         {
+            auto& stream = get_stream_interface(rs_stream::RS_STREAM_DEPTH);
             if (option == RS_OPTION_R200_AUTO_EXPOSURE_RIGHT_EDGE)
             {
-                auto width = this->get_stream_interface(rs_stream::RS_STREAM_DEPTH).get_intrinsics().width;
-                min = 1; max = width; step = 1; def = width - 1;
+                auto max_x = MAX_DS_DEFAULT_X; 
+                if (stream.is_enabled()) max_x = stream.get_intrinsics().width - 1;
+                min = 1; max = max_x; step = 1; def = max_x;
                 return;
             }
             else if (option == RS_OPTION_R200_AUTO_EXPOSURE_LEFT_EDGE)
             {
-                auto width = this->get_stream_interface(rs_stream::RS_STREAM_DEPTH).get_intrinsics().width;
-                min = 0; max = width - 1; step = 1; def = 0;
+                auto max_x = MAX_DS_DEFAULT_X; 
+                if (stream.is_enabled()) max_x = stream.get_intrinsics().width - 1;
+                min = 1; max = max_x - 1; step = 1; def = 0;
                 return;
             }
             else if (option == RS_OPTION_R200_AUTO_EXPOSURE_BOTTOM_EDGE)
             {
-                auto height = this->get_stream_interface(rs_stream::RS_STREAM_DEPTH).get_intrinsics().height;
-                min = 1; max = height; step = 1; def = height - 1;
+                auto max_y = MAX_DS_DEFAULT_Y; 
+                if (stream.is_enabled()) max_y = stream.get_intrinsics().height - 1;
+                min = 1; max = max_y; step = 1; def = max_y;
                 return;
             }
-            else if (option == RS_OPTION_R200_AUTO_EXPOSURE_LEFT_EDGE)
+            else if (option == RS_OPTION_R200_AUTO_EXPOSURE_TOP_EDGE)
             {
-                auto height = this->get_stream_interface(rs_stream::RS_STREAM_DEPTH).get_intrinsics().height;
-                min = 0; max = height - 1; step = 1; def = 0;
+                auto max_y = MAX_DS_DEFAULT_Y; 
+                if (stream.is_enabled()) max_y = stream.get_intrinsics().height - 1;
+                min = 0; max = max_y - 1; step = 1; def = 0;
                 return;
             }
         }
@@ -673,12 +693,12 @@ namespace rsimpl
 
     class fisheye_timestamp_reader : public frame_timestamp_reader
     {
-        mutable bool validate;
-        int fps;
         std::mutex mutex;
+        int fps;
         unsigned last_fisheye_counter;
         wraparound_mechanism<double> timestamp_wraparound;
         wraparound_mechanism<unsigned long long> frame_counter_wraparound;
+        mutable bool validate;
 
     public:
         fisheye_timestamp_reader(int max_fps) : fps(max_fps), last_fisheye_counter(0), timestamp_wraparound(1, std::numeric_limits<uint32_t>::max()), frame_counter_wraparound(0, std::numeric_limits<uint32_t>::max()), validate(true){}
@@ -731,12 +751,12 @@ namespace rsimpl
 
     class color_timestamp_reader : public frame_timestamp_reader
     {
-        int fps;
+        int fps, scale;
         wraparound_mechanism<double> timestamp_wraparound;
         wraparound_mechanism<unsigned long long> frame_counter_wraparound;
 
     public:
-        color_timestamp_reader(int fps) : fps(fps), timestamp_wraparound(0, std::numeric_limits<uint32_t>::max()), frame_counter_wraparound(0, std::numeric_limits<uint32_t>::max()) {}
+        color_timestamp_reader(int fps, int scale) : fps(fps), scale(scale), timestamp_wraparound(0, std::numeric_limits<uint32_t>::max()), frame_counter_wraparound(0, std::numeric_limits<uint32_t>::max()) {}
 
         bool validate_frame(const subdevice_mode & mode, const void * frame) const override
         {
@@ -754,6 +774,8 @@ namespace rsimpl
                 frame_number |= ((*data & 1) << (i & 1 ? 32 - i : 30 - i));
                 data += 2;
             }
+
+            frame_number /= scale;
             
             return frame_counter_wraparound.fix(frame_number);
         }
@@ -801,39 +823,50 @@ namespace rsimpl
                 return std::make_shared<dinghy_timestamp_reader>(stream_depth.get_framerate());
             break;
         case SUB_DEVICE_INFRARED: 
-
             if (stream_infrared.is_enabled())
                 return std::make_shared<dinghy_timestamp_reader>(stream_infrared.get_framerate());
 
             if (stream_infrared2.is_enabled())
                 return std::make_shared<dinghy_timestamp_reader>(stream_infrared2.get_framerate());
-
-
             break;
         case SUB_DEVICE_FISHEYE:
-
             if (stream_fisheye.is_enabled())
                 return std::make_shared<fisheye_timestamp_reader>(stream_fisheye.get_framerate());
             break;
-
         case SUB_DEVICE_COLOR:
-
             if (stream_color.is_enabled())
             {
                 if (stream_depth.is_enabled() || stream_infrared.is_enabled() || stream_infrared2.is_enabled())
                 {
-                    return std::make_shared<color_timestamp_reader>(stream_color.get_framerate());
+                    if (stream_color.get_intrinsics().width > 640) // HD formats seem to not include DINGY
+                        return std::make_shared<serial_timestamp_generator>(stream_color.get_framerate());
+
+                    // W/A for DS4 issue: when running at Depth 60 & Color 30 it seems that the frame counter is being incremented on every
+                    // depth frame (or ir/ir2). This means we need to reduce color frame number accordingly
+                    auto master_fps = stream_depth.is_enabled() ? stream_depth.get_framerate() : 0;
+                    master_fps = stream_infrared.is_enabled() ? stream_infrared.get_framerate() : master_fps;
+                    master_fps = stream_infrared2.is_enabled() ? stream_infrared2.get_framerate() : master_fps;
+                    auto scale = master_fps / stream_color.get_framerate();
+
+                    return std::make_shared<color_timestamp_reader>(stream_color.get_framerate(), scale);
                 }
                 else
                 {
                     return std::make_shared<serial_timestamp_generator>(stream_color.get_framerate());
                 }
-
             }
             break;
         }
 
         // No streams enabled, so no need for a timestamp converter
         return nullptr;
+    }
+
+    std::vector<std::shared_ptr<frame_timestamp_reader>> ds_device::create_frame_timestamp_readers() const 
+    {
+        return { create_frame_timestamp_reader(SUB_DEVICE_INFRARED),
+                 create_frame_timestamp_reader(SUB_DEVICE_DEPTH),
+                 create_frame_timestamp_reader(SUB_DEVICE_COLOR),
+                 create_frame_timestamp_reader(SUB_DEVICE_FISHEYE) };
     }
 }

@@ -177,7 +177,7 @@ namespace rsimpl
         {
         public:
 
-            motion_module_control(uvc::device *device);
+            motion_module_control(uvc::device *device, std::timed_mutex& usbMutex);
 
             void toggle_motion_module_power(bool on);
             void toggle_motion_module_events(bool on);
@@ -192,6 +192,7 @@ namespace rsimpl
             motion_module_state state_handler;
             uvc::device* device_handle;
             std::mutex mtx;
+            std::timed_mutex& usbMutex;
             bool    power_state;
 
             void i2c_iap_write(uint16_t slave_address, uint8_t *buffer, uint16_t len);
@@ -260,6 +261,8 @@ namespace rsimpl
             DSPWR       = 0x0B,     // DS4 power up/down
             EXT_TRIG    = 0x0C,     // external trigger mode
             CX3FWUPD    = 0x0D,     // FW update
+            MM_SNB      = 0x10,     // Get the serial number
+            MM_TRB      = 0x11,     // Get the extrinsics and intrinsics data
             MM_ACTIVATE = 0x0E      // Motion Module activation
         };
     }   // namespace motion_module
