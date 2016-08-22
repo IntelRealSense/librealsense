@@ -56,7 +56,7 @@ namespace rsimpl
             static void poll_interrupts(libusb_device_handle *handle, const std::vector<subdevice *> & subdevices, uint16_t timeout)
             {
                 static const unsigned short interrupt_buf_size = 0x400;
-                uint8_t buffer[interrupt_buf_size];                       /* 64 byte transfer buffer - dedicated channel */
+                uint8_t buffer[interrupt_buf_size];           /* 64 byte transfer buffer - dedicated channel */
                 int num_bytes = 0;                            /* Actual bytes transferred */
 
                 static int counter = 0;
@@ -105,6 +105,7 @@ namespace rsimpl
             device(std::shared_ptr<context> parent, uvc_device_t * uvcdevice) : parent(parent), uvcdevice(uvcdevice), usb_handle()
             {
                 get_subdevice(0);
+                
                 uvc_device_descriptor_t * desc;
                 CALL_UVC(uvc_get_device_descriptor, uvcdevice, &desc);
                 vid = desc->idVendor;
@@ -214,16 +215,12 @@ namespace rsimpl
                 dev_h = device.usb_handle;
             }
             int status = libusb_claim_interface(dev_h, interface_number);
-            //            int status = libusb_claim_interface(device.usb_handle, interface_number);                             // ZR300
-            //            int status = libusb_claim_interface(device.get_subdevice(0).handle->usb_devh, interface_number);      // SR300
-
             if (status < 0) throw std::runtime_error(to_string() << "libusb_claim_interface(...) returned " << libusb_error_name(status));
             device.claimed_interfaces.push_back(interface_number);
         }
 
         void claim_aux_interface(device & device, const guid & interface_guid, int interface_number)
         {
-            //throw std::logic_error("claim_aux_interface(...) is not implemented for this backend ");
             claim_interface(device, interface_guid, interface_number);
         }
 
@@ -241,8 +238,7 @@ namespace rsimpl
             {
                 dev_h = device.get_subdevice(0).handle->usb_devh;
             }
-
-            if (device.pid == 0xacb)
+            else // device.pid == 0xacb
             {
                 dev_h = device.usb_handle;
             }
@@ -433,7 +429,6 @@ namespace rsimpl
 
         bool is_device_connected(device & device, int vid, int pid)
         {
-            //throw std::logic_error("is_device_connected(...) is not implemented for this backend ");
             return true;
         }
 
