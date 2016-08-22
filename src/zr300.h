@@ -10,6 +10,7 @@
 #include "sync.h"
 #include <deque>
 #include <algorithm>
+#include <math.h>
 
 #define R200_PRODUCT_ID     0x0a80
 #define LR200_PRODUCT_ID    0x0abf
