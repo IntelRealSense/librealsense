@@ -29,10 +29,11 @@ namespace rsimpl {
         max_calib_module_id
     };
 
-    enum resolution_name : unsigned short
+    enum ds5_rect_resolutions : unsigned short
     {
         res_1920_1080,
         res_1280_720,
+        res_960_540,
         res_640_480,
         res_854_480,
         res_640_360,
@@ -42,20 +43,19 @@ namespace rsimpl {
         reserved_1,
         reserved_2,
         reserved_3,
-        reserved_4,
-        max_resoluitons
+        max_ds5_rect_resoluitons
     };
-    //inline bool operator == (const resolution_name & a, const resolution_name & b) { return (a==b); }
 
-    struct resolution_def { resolution_name name; int2 dims; };
+    struct ds5_depth_resolutions { ds5_rect_resolutions name; int2 dims; };
 
-    static const std::vector<resolution_def> resolutions_list = {
+    static const std::vector<ds5_depth_resolutions> resolutions_list = {
         { res_320_240,  { 320, 240 } },
         { res_432_240,  { 432, 240 } },
         { res_480_270,  { 480, 270 } },
         { res_640_360,  { 640, 360 } },
         { res_640_480,  { 640, 480 } },
         { res_854_480,  { 854, 480 } },
+        { res_960_540,  { 960, 540 } },
         { res_1280_720, { 1280, 720 } },
         { res_1920_1080,{ 1920, 1080 } },
     };
@@ -63,14 +63,13 @@ namespace rsimpl {
     struct ds5_calibration
     {
         uint16_t        version;                        // major.minor
-        rs_intrinsics   modules_intrinsic[max_calib_module_id][max_resoluitons];
-        rs_intrinsics   modules_extrinsic[max_calib_module_id];
-        rs_intrinsics   leftImagerIntrinsic[max_resoluitons];
-        rs_intrinsics   rightImagerIntrinsic[max_resoluitons];
-        rs_intrinsics   depthIntrinsic[max_resoluitons];
-        rs_extrinsics   leftImagerExtrinsic;
-        rs_extrinsics   rightImagerExtrinsic;
-        rs_extrinsics   depthExtrinsic;
+        rs_intrinsics   left_imager_intrinsic;
+        rs_intrinsics   right_imager_intrinsic;
+        rs_intrinsics   depth_intrinsic[max_ds5_rect_resoluitons];
+        rs_extrinsics   left_imager_extrinsic;
+        rs_extrinsics   right_imager_extrinsic;
+        rs_extrinsics   depth_extrinsic;
+        bool            data_present[max_calib_module_id];
     };
 
     std::string read_firmware_version(uvc::device & device);
@@ -83,7 +82,7 @@ namespace rsimpl {
     void get_gvd(uvc::device & device, std::timed_mutex & mutex, size_t sz, char * gvd);
     void get_firmware_version_string(uvc::device & dev, std::timed_mutex & mutex, std::string & version);
     void get_module_serial_string(uvc::device & dev, std::timed_mutex & mutex, std::string & serial, unsigned int offset);
-    ds5_calibration read_calibration(uvc::device & dev, std::timed_mutex & mutex);
+    void read_calibration(uvc::device & dev, std::timed_mutex & mutex, ds5_calibration& calib);
 
     // XU read/write
     void get_laser_power(const uvc::device & device, uint8_t & laser_power);

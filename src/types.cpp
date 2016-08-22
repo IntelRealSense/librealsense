@@ -84,6 +84,7 @@ namespace rsimpl
         CASE(MODIFIED_BROWN_CONRADY)
         CASE(INVERSE_BROWN_CONRADY)
         CASE(FTHETA)
+        CASE(BROWN_CONRADY)
         default: assert(!is_valid(value)); return unknown;
         }
         #undef CASE
