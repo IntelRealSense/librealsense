@@ -294,7 +294,20 @@ namespace ds5 {
                 << stringify(k_depth) << array2str((float_9&)table->k_depth) << std::endl
                 << stringify(r_depth) << array2str(table->r_depth) << std::endl
                 << stringify(t_depth) << array2str(table->t_depth));
-            // TBD - is this data is required ?
+            float3x3 rot;
+            rsimpl::rodrigues(table->r_depth[0], table->r_depth[1], table->r_depth[2], rot);
+            calib.depth_extrinsic.rotation[0] = rot.x[0];
+            calib.depth_extrinsic.rotation[1] = rot.x[1];
+            calib.depth_extrinsic.rotation[2] = rot.x[2];
+            calib.depth_extrinsic.rotation[3] = rot.y[0];
+            calib.depth_extrinsic.rotation[4] = rot.y[1];
+            calib.depth_extrinsic.rotation[5] = rot.y[2];
+            calib.depth_extrinsic.rotation[6] = rot.z[0];
+            calib.depth_extrinsic.rotation[7] = rot.z[1];
+            calib.depth_extrinsic.rotation[8] = rot.z[2];
+            calib.depth_extrinsic.translation[0] = table->t_depth[0];
+            calib.depth_extrinsic.translation[1] = table->t_depth[1];
+            calib.depth_extrinsic.translation[2] = table->t_depth[2];
         }
         break;
         default:
