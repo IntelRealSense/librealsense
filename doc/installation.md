@@ -53,6 +53,10 @@ Installation of cameras on Linux is lengthy compared to other supported platform
       * Use of 3.19.xx Kernel is not recommended. 
   * **(OR) Kernel in 16.04.xx**
     * `/scripts/patch-uvcvideo-16.04.simple.sh`
+  * **(OR) Arch based distributions**
+    * You need to install the [base-devel](https://www.archlinux.org/groups/x86_64/base-devel/) package group. 
+	* Then run the following script to patch the uvc module:
+    * `/scripts/patch-arch.sh`
 4. Reload the uvcvideo driver
   * `sudo modprobe uvcvideo`
 5. Check installation by examining the last 50 lines of the dmesg log:
