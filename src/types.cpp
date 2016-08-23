@@ -667,4 +667,42 @@ namespace rsimpl
     {
         return atoi(split(name)[part].c_str());
     }
+
+    double computeMag(double a, double b, double c)
+    {
+        return sqrt(a * a + b * b + c * c);
+    }
+
+    void rodrigues(const double &rot1, const double& rot2, const double& rot3, float3x3 & rot)
+    {
+        // see notes on rodrigues (rodriguesNotesTaubin.pdf)
+
+        double theta = computeMag(rot1, rot2, rot3);
+        double r1 = rot1, r2 = rot2, r3 = rot3;
+        if (theta <= sqrt(DBL_EPSILON)) // identityMatrix
+        {
+            rot(0,0) = rot(1,1) = rot(2,2) = 1.0;
+            rot(0,1) = rot(0, 2) = rot(1, 0) = rot(1, 2) = rot(2, 0) = rot(2, 1) = 0.0;
+        }
+        else
+        {
+            r1 /= theta;
+            r2 /= theta;
+            r3 /= theta;
+
+            double c = cos(theta);
+            double s = sin(theta);
+            double g = 1 - c;
+
+            rot(0, 0) = float(c + g * r1 * r1);
+            rot(0, 1) = float(g * r1 * r2 - s * r3);
+            rot(0, 2) = float(g * r1 * r3 + s * r2);
+            rot(1, 0) = float(g * r2 * r1 + s * r3);
+            rot(1, 1) = float(c + g * r2 * r2);
+            rot(1, 2) = float(g * r2 * r3 - s * r1);
+            rot(2, 0) = float(g * r3 * r1 - s * r2);
+            rot(2, 1) = float(g * r3 * r2 + s * r1);
+            rot(2, 2) = float(c + g * r3 * r3);
+        }
+    }
 }

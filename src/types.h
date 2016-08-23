@@ -577,6 +577,12 @@ namespace rsimpl
             continuation();
         }
     };
+
+	///////////////////////////////////////////
+	// Extrinsic auxillary routines routines //
+	///////////////////////////////////////////
+	void rodrigues(const double &rot1, const double& rot2, const double& rot3, float3x3 & rot);
+
 }
 
 #endif
