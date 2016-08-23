@@ -10,6 +10,8 @@
 #include "libuvc/libuvc_internal.h" // For LibUSB punchthrough
 #include <thread>
 
+#define ZR300_PID 0xacb
+#define ZR300_FISHEYE_PID 0x0ad0
 
 namespace rsimpl
 {
@@ -206,13 +208,13 @@ namespace rsimpl
         {
             libusb_device_handle* dev_h = nullptr;
 
-            if (device.pid == 0xaa5)
-            {
-                dev_h = device.get_subdevice(0).handle->usb_devh;
-            }
-            else // device.pid == 0xacb
+            if (device.pid == ZR300_PID)
             {
                 dev_h = device.usb_handle;
+            }
+            else
+            {
+                dev_h = device.get_subdevice(0).handle->usb_devh;
             }
             int status = libusb_claim_interface(dev_h, interface_number);
             if (status < 0) throw std::runtime_error(to_string() << "libusb_claim_interface(...) returned " << libusb_error_name(status));
@@ -234,13 +236,13 @@ namespace rsimpl
 
             libusb_device_handle* dev_h = nullptr;
 
-            if (device.pid == 0xaa5)
-            {
-                dev_h = device.get_subdevice(0).handle->usb_devh;
-            }
-            else // device.pid == 0xacb
+            if (device.pid == ZR300_PID) // W/A for ZR300 fish-eye
             {
                 dev_h = device.usb_handle;
+            }
+            else
+            {
+                dev_h = device.get_subdevice(0).handle->usb_devh;
             }
 
             int status = libusb_bulk_transfer(dev_h, endpoint, (unsigned char *)data, length, actual_length, timeout);
@@ -385,7 +387,6 @@ namespace rsimpl
             case RS_OPTION_COLOR_ENABLE_AUTO_WHITE_BALANCE: return set_pu<uint8_t>(handle, subdevice, pu_unit, UVC_PU_WHITE_BALANCE_TEMPERATURE_AUTO_CONTROL, value);
             case RS_OPTION_FISHEYE_GAIN: {
                 assert(subdevice == 3);
-
                 return set_pu<uint16_t>(handle, 0, pu_unit, UVC_PU_GAIN_CONTROL, value);
             }
             default: throw std::logic_error("invalid option");
@@ -451,14 +452,13 @@ namespace rsimpl
             }
             uvc_free_device_list(list, 1);
 
-            std::shared_ptr<device> fisheye = nullptr;
+            std::shared_ptr<device> fisheye = nullptr; // Currently ZR300 supports only a single device on OSX
 
             for (auto& dev : devices)
             {
-                if (dev->pid == 0x0ad0)
+                if (dev->pid == ZR300_FISHEYE_PID)
                 {
                     fisheye = dev;
-                    LOG_WARNING("we found fisheye");
                 }
             }
 
