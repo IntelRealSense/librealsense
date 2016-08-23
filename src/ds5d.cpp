@@ -65,12 +65,14 @@ namespace rsimpl
 
         for(auto & m : ds5d_ir_only_modes)
         {
-            calib.left_imager_intrinsic.width = m.dims.x;   // The same intrinsic apply for all resolutions, for now. TBD verification require
+            calib.left_imager_intrinsic.width = m.dims.x;   // The same intrinsic apply for all resolutions, for now. TBD verification required
             calib.left_imager_intrinsic.height = m.dims.y;
+
+            auto intrinsic = (calib.data_present[coefficients_table_id])?  calib.left_imager_intrinsic :rs_intrinsics{ m.dims.x, m.dims.y };
 
             for(auto fps : m.fps)
             {
-                info.subdevice_modes.push_back({ 1, m.dims, pf_y8, fps, calib.left_imager_intrinsic, {}, {0}});
+                info.subdevice_modes.push_back({ 1, m.dims, pf_y8, fps, intrinsic, {}, {0}});
                 info.subdevice_modes.push_back({ 1, m.dims, pf_y8i, fps,{ m.dims.x, m.dims.y },{},{ 0 } });
             }
         }
@@ -83,13 +85,11 @@ namespace rsimpl
             {
                 auto intrinsic = rs_intrinsics{ m.dims.x, m.dims.y };
 
-                if (calib.data_present[depth_module_id])
+                if (calib.data_present[depth_calibration_id])
                 {
                     // Apply supported camera modes, select intrinsic from flash, if available; otherwise use default
                     auto it = std::find_if(resolutions_list.begin(), resolutions_list.end(), [m](ds5_depth_resolutions res) { return ((m.dims.x == res.dims.x) && (m.dims.y == res.dims.y)); });
-                   
-
-                        intrinsic = calib.depth_intrinsic[ds5_depth_resolutions(*it).name];
+                   intrinsic = calib.depth_intrinsic[ds5_depth_resolutions(*it).name];
                 }
 
                 info.subdevice_modes.push_back({0, m.dims, pf_z16, fps, intrinsic, {}, {0}});
