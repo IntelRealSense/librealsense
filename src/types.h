@@ -27,6 +27,9 @@ const int RS_USER_QUEUE_SIZE = 20;
 const int RS_MAX_EVENT_QUEUE_SIZE = 500;
 const int RS_MAX_EVENT_TINE_OUT = 10;
 
+#ifndef DBL_EPSILON
+const double DBL_EPSILON = 2.2204460492503131e-016;  // smallest such that 1.0+DBL_EPSILON != 1.0
+#endif
 
 namespace rsimpl
 {
@@ -578,10 +581,10 @@ namespace rsimpl
         }
     };
 
-	///////////////////////////////////////////
-	// Extrinsic auxillary routines routines //
-	///////////////////////////////////////////
-	void rodrigues(const double &rot1, const double& rot2, const double& rot3, float3x3 & rot);
+    ///////////////////////////////////////////
+    // Extrinsic auxillary routines routines //
+    ///////////////////////////////////////////
+    void rodrigues(const double &rot1, const double& rot2, const double& rot3, float3x3 & rot);
 
 }
 
