@@ -336,7 +336,10 @@ namespace rsimpl
         void on_frame (rs_device * dev, rs_frame_ref * frame) override { 
             if (fptr)
             {
-                try { fptr(dev, frame, user); } catch (...) {}
+                try { fptr(dev, frame, user); } catch (...) 
+                {
+                    LOG_ERROR("Received an execption from frame callback!");
+                }
             }
         }
         void release() override { delete this; }
@@ -357,7 +360,10 @@ namespace rsimpl
         {
             if (fptr)
             {
-                try { fptr(device, data, user); } catch (...) {}
+                try { fptr(device, data, user); } catch (...)
+                {
+                    LOG_ERROR("Received an execption from motion events callback!");
+                }
             }
         }
 
@@ -377,7 +383,10 @@ namespace rsimpl
         void on_event(rs_timestamp_data data) override {
             if (fptr)
             {
-                try { fptr(device, data, user); } catch (...) {}
+                try { fptr(device, data, user); } catch (...) 
+                {
+                    LOG_ERROR("Received an execption from timestamp events callback!");
+                }
             }
         }
         void release() override { }
@@ -398,7 +407,10 @@ namespace rsimpl
             if (fptr)
             {
                 try { fptr(severity, message, user); }
-                catch (...) {}
+                catch (...)
+                {
+                    LOG_ERROR("Received an execption from log callback!");
+                }
             }
         }
 
