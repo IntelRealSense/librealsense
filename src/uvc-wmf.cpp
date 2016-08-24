@@ -812,7 +812,7 @@ namespace rsimpl
             claim_interface(*fish_eye_dev, FISHEYE_WIN_USB_DEVICE_GUID, FISHEYE_HWMONITOR_INTERFACE);
             rsimpl::hw_monitor::hwmon_cmd cmd(0x0b);
             cmd.Param1 = 1;
-            perform_and_send_monitor_command(*fish_eye_dev, mutex, cmd);
+            perform_and_send_monitor_command_over_usb_monitor(*fish_eye_dev, mutex, cmd);
             Sleep(2000);
 
             return;

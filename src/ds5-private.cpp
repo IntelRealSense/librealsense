@@ -141,7 +141,7 @@ namespace ds5 {
     void get_gvd(uvc::device & device, std::timed_mutex & mutex, size_t sz, char * gvd)
     {
         hwmon_cmd cmd((uint8_t)fw_cmd::GVD);
-        perform_and_send_monitor_command(device, mutex, cmd);
+        perform_and_send_monitor_command_over_usb_monitor(device, mutex, cmd);
         auto minSize = std::min(sz, cmd.receivedCommandDataLength);
         memcpy(gvd, cmd.receivedCommandData, minSize);
     }
@@ -178,7 +178,7 @@ namespace ds5 {
     {
         hwmon_cmd cmd((uint8_t)fw_cmd::GETINTCAL);
         cmd.Param1 = table_id;
-        perform_and_send_monitor_command(device, mutex, cmd);
+        perform_and_send_monitor_command_over_usb_monitor(device, mutex, cmd);
         raw_data.resize(cmd.receivedCommandDataLength);
         raw_data.assign(cmd.receivedCommandData, cmd.receivedCommandData + cmd.receivedCommandDataLength);
     }
