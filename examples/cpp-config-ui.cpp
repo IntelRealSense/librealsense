@@ -586,18 +586,6 @@ int main(int argc, char * argv[])
 
         dev = ctx.get_device(0);
 
-        static const auto max_queue_size = 2;
-        for (auto i = 0; i < 5; i++)
-        {
-            dev->set_frame_callback((rs::stream)i, [dev, &buffers, &running, &frames_queue, &resolutions, i](rs::frame frame)
-            {
-                if (running && frames_queue[i].size() < max_queue_size)
-                {
-                    frames_queue[i].enqueue(std::move(frame));
-                }
-            });
-        }
-
         dev->enable_stream(rs::stream::depth, 0, 0, rs::format::z16, 60, rs::output_buffer_format::native);
         dev->enable_stream(rs::stream::color, 640, 480, rs::format::rgb8, 60, rs::output_buffer_format::native);
         dev->enable_stream(rs::stream::infrared, 0, 0, rs::format::y8, 60, rs::output_buffer_format::native);
@@ -737,6 +725,7 @@ int main(int argc, char * argv[])
 
                         if (dev->supports(cap))
                         {
+                            static bool is_callback_set = false;
                             bool enable;
                             if (i == RS_CAPABILITIES_MOTION_EVENTS)
                                 enable = motion_tracking_enable;
@@ -745,9 +734,25 @@ int main(int argc, char * argv[])
 
                             enable_stream(dev, i, enable, stream_name);
 
-                            if (g.checkbox({ w - 260, y, w - 240, y + 20 }, enable))
+                            if (!is_callback_set || g.checkbox({ w - 260, y, w - 240, y + 20 }, enable))
                             {
                                 enable_stream(dev, i, enable, stream_name);
+
+                                if (enable)
+                                {
+                                    static const auto max_queue_size = 2;
+                                    for (auto i = 0; i < 5; i++)
+                                    {
+                                        dev->set_frame_callback((rs::stream)i, [dev, &buffers, &running, &frames_queue, &resolutions, i](rs::frame frame)
+                                        {
+                                            if (running && frames_queue[i].size() < max_queue_size)
+                                            {
+                                                frames_queue[i].enqueue(std::move(frame));
+                                            }
+                                        });
+                                    }
+                                }
+                                is_callback_set = true;
                             }
                             g.label({ w - 234, y + 13 }, { 1, 1, 1 }, "Enable %s", stream_name.str().c_str());
                             y += 30;
