@@ -725,7 +725,7 @@ int main(int argc, char * argv[])
 
                         if (dev->supports(cap))
                         {
-                            static bool is_set_callback = false;
+                            static bool is_callback_set = false;
                             bool enable;
                             if (i == RS_CAPABILITIES_MOTION_EVENTS)
                                 enable = motion_tracking_enable;
@@ -734,7 +734,7 @@ int main(int argc, char * argv[])
 
                             enable_stream(dev, i, enable, stream_name);
 
-                            if (g.checkbox({ w - 260, y, w - 240, y + 20 }, enable) || !is_set_callback)
+                            if (!is_callback_set || g.checkbox({ w - 260, y, w - 240, y + 20 }, enable))
                             {
                                 enable_stream(dev, i, enable, stream_name);
 
@@ -752,7 +752,7 @@ int main(int argc, char * argv[])
                                         });
                                     }
                                 }
-                                is_set_callback = true;
+                                is_callback_set = true;
                             }
                             g.label({ w - 234, y + 13 }, { 1, 1, 1 }, "Enable %s", stream_name.str().c_str());
                             y += 30;
