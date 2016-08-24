@@ -71,15 +71,10 @@ namespace rsimpl
                 }
                 else
                 {
-                    switch (res)
-                    {
-                    case LIBUSB_ERROR_TIMEOUT:
+                    if (res == LIBUSB_ERROR_TIMEOUT) 
                         LOG_WARNING("interrupt e.p. timeout");
-                        break;
-                    default:
+                    else 
                         throw std::runtime_error(to_string() << "USB Interrupt end-point error " << libusb_strerror((libusb_error)res));
-                        break;
-                    }
                 }
             }
 
