@@ -216,6 +216,37 @@ typedef enum rs_camera_info {
     RS_CAMERA_INFO_MAX_ENUM = 0x7FFFFFFF
 } rs_camera_info;
 
+typedef enum rs_log_severity {
+    RS_LOG_SEVERITY_DEBUG = 0, /* Detailed information about ordinary operations */
+    RS_LOG_SEVERITY_INFO  = 1, /* Terse information about ordinary operations */
+    RS_LOG_SEVERITY_WARN  = 2, /* Indication of possible failure */
+    RS_LOG_SEVERITY_ERROR = 3, /* Indication of definite failure */
+    RS_LOG_SEVERITY_FATAL = 4, /* Indication of unrecoverable failure */
+    RS_LOG_SEVERITY_NONE  = 5, /* No logging will occur */
+    RS_LOG_SEVERITY_MAX_ENUM = 0x7FFFFFFF
+} rs_log_severity;
+
+typedef enum rs_event_source
+{
+    RS_EVENT_IMU_ACCEL        = 0,
+    RS_EVENT_IMU_GYRO         = 1,
+    RS_EVENT_IMU_DEPTH_CAM    = 2,
+    RS_EVENT_IMU_MOTION_CAM   = 3,
+    RS_EVENT_G0_SYNC          = 4,
+    RS_EVENT_G1_SYNC          = 5,
+    RS_EVENT_G2_SYNC          = 6,
+    RS_EVENT_SOURCE_COUNT     = 7,
+    RS_EVENT_SOURCE_MAX_ENUM  = 0x7FFFFFFF
+}rs_event_source;
+
+typedef enum rs_timestamp_domain
+{
+    RS_TIMESTAMP_DOMAIN_CAMERA                   = 0,
+    RS_TIMESTAMP_DOMAIN_MICROCONTROLLER          = 1,
+    RS_TIMESTAMP_DOMAIN_COUNT   = 3,
+    RS_TIMESTAMP_DOMAIN_MAX_ENUM = 0x7FFFFFFF
+}rs_timestamp_domain;
+
 typedef struct rs_intrinsics
 {
     int           width;     /* width of the image in pixels */
@@ -252,29 +283,6 @@ typedef struct rs_extrinsics
     float rotation[9];    /* column-major 3x3 rotation matrix */
     float translation[3]; /* 3 element translation vector, in meters */
 } rs_extrinsics;
-
-typedef enum rs_event_source
-{
-    RS_EVENT_IMU_ACCEL        = 0,
-    RS_EVENT_IMU_GYRO         = 1,
-    RS_EVENT_IMU_DEPTH_CAM    = 2,
-    RS_EVENT_IMU_MOTION_CAM   = 3,
-    RS_EVENT_G0_SYNC          = 4,
-    RS_EVENT_G1_SYNC          = 5,
-    RS_EVENT_G2_SYNC          = 6,
-    RS_EVENT_SOURCE_COUNT     = 7,
-    RS_EVENT_SOURCE_MAX_ENUM  = 0x7FFFFFFF
-}rs_event_source;
-
-
-typedef enum rs_timestamp_domain
-{
-    RS_TIMESTAMP_DOMAIN_CAMERA                   = 0,
-    RS_TIMESTAMP_DOMAIN_MICROCONTROLLER          = 1,
-    RS_TIMESTAMP_DOMAIN_COUNT   = 3,
-    RS_TIMESTAMP_DOMAIN_MAX_ENUM = 0x7FFFFFFF
-}rs_timestamp_domain;
-
 
 typedef struct rs_timestamp_data
 {
@@ -828,16 +836,6 @@ const char * rs_camera_info_to_string(rs_camera_info info);
 const char * rs_camera_info_to_string(rs_camera_info info);
 const char * rs_timestamp_domain_to_string(rs_timestamp_domain info);
 
-typedef enum
-{
-    RS_LOG_SEVERITY_DEBUG = 0, /* Detailed information about ordinary operations */
-    RS_LOG_SEVERITY_INFO  = 1, /* Terse information about ordinary operations */
-    RS_LOG_SEVERITY_WARN  = 2, /* Indication of possible failure */
-    RS_LOG_SEVERITY_ERROR = 3, /* Indication of definite failure */
-    RS_LOG_SEVERITY_FATAL = 4, /* Indication of unrecoverable failure */
-    RS_LOG_SEVERITY_NONE  = 5, /* No logging will occur */
-    RS_LOG_SEVERITY_MAX_ENUM = 0x7FFFFFFF
-} rs_log_severity;
 void rs_log_to_console(rs_log_severity min_severity, rs_error ** error);
 void rs_log_to_file(rs_log_severity min_severity, const char * file_path, rs_error ** error);
 void rs_log_to_callback_cpp(rs_log_severity min_severity, rs_log_callback * callback, rs_error ** error);
