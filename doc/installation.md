@@ -1,12 +1,11 @@
+# Linux Installation
+
 **Note:** Due to the USB 3.0 translation layer between native hardware and virtual machine, the librealsense team does not recommend or support installation in a VM. 
 
-# Linux Installation (Ubuntu / Arch) 
-
-Installation of cameras on Linux is lengthy compared to other supported platforms. Several upstream fixes to the uvcvideo driver have been merged in recent kernel versions, greatly enhancing stability. Once an updated kernel has been installed, one more patch must be applied to the uvcvideo driver with support for several non-standard pixel formats provided by RealSense™ cameras.
-
-## Install 3rd-party dependencies
+## 3rd-party dependencies
 
 The project requires two external dependencies, GLFW3 and libusb-1.0. 
+
 **Note:** Several scripts below invoke `wget, git, add-apt-repository` which may be blocked by router settings or a firewall. Infrequently, apt-get mirrors or repositories may also timeout. For librealsense users behind an enterprise firewall, configuring the systemwide Ubuntu proxy generally resolves most timeout issues.
 
 1. Ensure apt-get is up to date
@@ -28,7 +27,7 @@ The project requires two external dependencies, GLFW3 and libusb-1.0.
   * `make && sudo make install`
   * The example executables will build into `./bin`
 
-## Configure the Video4Linux backend
+## Video4Linux backend
 
 1. Ensure no cameras are presently plugged into the system.
 2. Install udev rules

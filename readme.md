@@ -1,9 +1,11 @@
 # Intel® RealSense™ Cross Platform API
 
+**Development Branch** - [What's New?](./doc/whats_new.md)
+
 [ ![License] [license-image] ] [license]
 
 [release-image]: http://img.shields.io/badge/release-1.9.6-blue.svg?style=flat
-[releases]: https://github.com/IntelRealSense/librealsense
+[releases]: https://github.intel.com/PerCSystemsEngineering/librealsense/releases
 
 [license-image]: http://img.shields.io/badge/license-Apache--2-blue.svg?style=flat
 [license]: LICENSE
@@ -13,7 +15,7 @@ Platform | Build Status |
 Linux and OS X | [![Build Status](https://travis-ci.org/IntelRealSense/librealsense.svg?branch=master)](https://travis-ci.org/IntelRealSense/librealsense) |
 Windows | [![Build status](https://ci.appveyor.com/api/projects/status/y9f8qcebnb9v41y4?svg=true)](https://ci.appveyor.com/project/ddiakopoulos/librealsense) |
 
-This project is a cross-platform library (Linux, Windows, Ostro-OS) for capturing data from the Intel® RealSense™ F200, SR300, R200, LR200 and the ZR300 cameras. This effort was initiated to better support researchers, creative coders, and app developers in domains such as robotics, virtual reality, and the internet of things. Several often-requested features of RealSense™ devices are implemented in this project, including multi-camera capture.
+This project is a cross-platform library (Linux, Windows, Mac) for capturing data from the Intel® RealSense™ F200, SR300, R200, LR200 and the ZR300 cameras. This effort was initiated to better support researchers, creative coders, and app developers in domains such as robotics, virtual reality, and the internet of things. Several often-requested features of RealSense™ devices are implemented in this project, including multi-camera capture.
 
 Developer kits containing the necessary hardware to use this library are available for purchase at [this link](http://click.intel.com/realsense.html). This project is separate from the production software stack available in the [Intel® RealSense™ SDK](https://software.intel.com/en-us/intel-realsense-sdk), namely that this library only encompasses camera capture functionality without additional computer vision algorithms.
 
@@ -32,7 +34,7 @@ The Intel® RealSense™ Cross Platform API is experimental and not an official 
 
   * [Linux](./doc/installation.md)
   * [Windows](./doc/installation_windows.md)
-  * [OSX](./doc/installation_osx.md)
+  * [Mac OS X](./doc/installation_osx.md)
   
 ## Documentation
 
