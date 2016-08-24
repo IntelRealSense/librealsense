@@ -27,6 +27,9 @@ const int RS_USER_QUEUE_SIZE = 20;
 const int RS_MAX_EVENT_QUEUE_SIZE = 500;
 const int RS_MAX_EVENT_TINE_OUT = 10;
 
+#ifndef DBL_EPSILON
+const double DBL_EPSILON = 2.2204460492503131e-016;  // smallest such that 1.0+DBL_EPSILON != 1.0
+#endif
 
 namespace rsimpl
 {
@@ -97,14 +100,18 @@ namespace rsimpl
     ////////////////////////////////////////////
     // World's tiniest linear algebra library //
     ////////////////////////////////////////////
-
+#pragma pack(push, 1)
     struct int2 { int x,y; };
     struct float3 { float x,y,z; float & operator [] (int i) { return (&x)[i]; } };
+    struct float4 { float x, y, z, w; float & operator [] (int i) { return (&x)[i]; } };
     struct float3x3 { float3 x,y,z; float & operator () (int i, int j) { return (&x)[j][i]; } }; // column-major
     struct pose { float3x3 orientation; float3 position; };
+#pragma pack(pop)
     inline bool operator == (const float3 & a, const float3 & b) { return a.x==b.x && a.y==b.y && a.z==b.z; }
     inline float3 operator + (const float3 & a, const float3 & b) { return {a.x+b.x, a.y+b.y, a.z+b.z}; }
     inline float3 operator * (const float3 & a, float b) { return {a.x*b, a.y*b, a.z*b}; }
+    inline bool operator == (const float4 & a, const float4 & b) { return a.x == b.x && a.y == b.y && a.z == b.z && a.w == b.w; }
+    inline float4 operator + (const float4 & a, const float4 & b) { return{ a.x + b.x, a.y + b.y, a.z + b.z, a.w + b.w }; }
     inline bool operator == (const float3x3 & a, const float3x3 & b) { return a.x==b.x && a.y==b.y && a.z==b.z; }
     inline float3 operator * (const float3x3 & a, const float3 & b) { return a.x*b.x + a.y*b.y + a.z*b.z; }
     inline float3x3 operator * (const float3x3 & a, const float3x3 & b) { return {a*b.x, a*b.y, a*b.z}; }
@@ -113,6 +120,7 @@ namespace rsimpl
     inline float3 operator * (const pose & a, const float3 & b) { return a.orientation * b + a.position; }
     inline pose operator * (const pose & a, const pose & b) { return {a.orientation * b.orientation, a * b.position}; }
     inline pose inverse(const pose & a) { auto inv = transpose(a.orientation); return {inv, inv * a.position * -1}; }
+
 
     ///////////////////
     // Pixel formats //
@@ -412,7 +420,7 @@ namespace rsimpl
 
         subdevice_mode_selection select_mode(const stream_request(&requests)[RS_STREAM_NATIVE_COUNT], int subdevice_index) const;
         bool all_requests_filled(const stream_request(&original_requests)[RS_STREAM_NATIVE_COUNT]) const;
-        bool find_good_requests_combination(stream_request(&output_requests)[RS_STREAM_NATIVE_COUNT], std::vector<stream_request> stream_requests[RS_STREAM_NATIVE_COUNT]) const;
+        bool find_valid_combination(stream_request(&output_requests)[RS_STREAM_NATIVE_COUNT], std::vector<stream_request> stream_requests[RS_STREAM_NATIVE_COUNT]) const;
         bool fill_requests(stream_request(&requests)[RS_STREAM_NATIVE_COUNT]) const;
         void get_all_possible_requestes(std::vector<stream_request> (&stream_requests)[RS_STREAM_NATIVE_COUNT]) const;
         std::vector<subdevice_mode_selection> select_modes(const stream_request(&requests)[RS_STREAM_NATIVE_COUNT]) const;
@@ -573,6 +581,10 @@ namespace rsimpl
         }
     };
 
+    ///////////////////////////////////////////
+    // Extrinsic auxillary routines routines //
+    ///////////////////////////////////////////
+    float3x3 calc_rodrigues_matrix(const std::vector<double> rot);
 
 }
 

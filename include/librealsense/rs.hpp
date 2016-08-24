@@ -81,7 +81,8 @@ namespace rs
         none                   = 0, ///< Rectilinear images, no distortion compensation required
         modified_brown_conrady = 1, ///< Equivalent to Brown-Conrady distortion, except that tangential distortion is applied to radially distorted points
         inverse_brown_conrady  = 2,  ///< Equivalent to Brown-Conrady distortion, except undistorts image instead of distorting it
-        distortion_ftheta      = 3 
+        distortion_ftheta      = 3,
+        brown_conrady          = 4  ///< Unmodified Brown-Conrady model
     };
 
     // reflection of rs_option
@@ -943,7 +944,7 @@ namespace rs
         void send_blob_to_device(rs::blob_type type, void * data, size_t size)
         {
             rs_error * e = nullptr;
-            rs_send_blob_to_device((rs_device *)this, (rs_blob_type)type, data, size, &e);
+            rs_send_blob_to_device((rs_device *)this, (rs_blob_type)type, data, (unsigned int)size, &e);
             error::handle(e);
         }
     };

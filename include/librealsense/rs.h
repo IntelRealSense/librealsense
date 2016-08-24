@@ -16,7 +16,7 @@ extern "C" {
 #define VAR_ARG_STRING(arg) STRINGIFY(arg)
 
 /* Version in encoded integer format (1,9,3) -> 10903 */
-#define	RS_API_VERSION  (((RS_API_MAJOR_VERSION) * 10000) + ((RS_API_MINOR_VERSION) * 100) + (RS_API_PATCH_VERSION))
+#define RS_API_VERSION  (((RS_API_MAJOR_VERSION) * 10000) + ((RS_API_MINOR_VERSION) * 100) + (RS_API_PATCH_VERSION))
 /*// Return version in "X.Y.Z" format */
 #define RS_API_VERSION_STR (VAR_ARG_STRING(RS_API_MAJOR_VERSION.RS_API_MINOR_VERSION.RS_API_PATCH_VERSION))
 
@@ -107,7 +107,8 @@ typedef enum rs_distortion
     RS_DISTORTION_MODIFIED_BROWN_CONRADY = 1, /**< Equivalent to Brown-Conrady distortion, except that tangential distortion is applied to radially distorted points */
     RS_DISTORTION_INVERSE_BROWN_CONRADY  = 2, /**< Equivalent to Brown-Conrady distortion, except undistorts image instead of distorting it */
     RS_DISTORTION_FTHETA                 = 3,
-    RS_DISTORTION_COUNT                  = 4,
+    RS_DISTORTION_BROWN_CONRADY          = 4,   /* Brown-Conrady distortion model*/
+    RS_DISTORTION_COUNT                  = 5,
     RS_DISTORTION_MAX_ENUM               = 0x7FFFFFFF
 } rs_distortion;
 
