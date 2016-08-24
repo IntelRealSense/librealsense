@@ -88,8 +88,9 @@ namespace rsimpl
                 if (calib.data_present[depth_calibration_id])
                 {
                     // Apply supported camera modes, select intrinsic from flash, if available; otherwise use default
-                    auto it = std::find_if(resolutions_list.begin(), resolutions_list.end(), [m](ds5_depth_resolutions res) { return ((m.dims.x == res.dims.x) && (m.dims.y == res.dims.y)); });
-                   intrinsic = calib.depth_intrinsic[ds5_depth_resolutions(*it).name];
+					auto it = std::find_if(resolutions_list.begin(), resolutions_list.end(), [m](std::pair<ds5_rect_resolutions, int2> res) { return ((m.dims.x == res.second.x) && (m.dims.y == res.second.y)); });
+                    if (it != resolutions_list.end())
+                        intrinsic = calib.depth_intrinsic[(*it).first];
                 }
 
                 info.subdevice_modes.push_back({0, m.dims, pf_z16, fps, intrinsic, {}, {0}});

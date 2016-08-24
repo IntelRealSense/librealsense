@@ -179,9 +179,8 @@ namespace ds5 {
         hwmon_cmd cmd((uint8_t)fw_cmd::GETINTCAL);
         cmd.Param1 = table_id;
         perform_and_send_monitor_command(device, mutex, cmd);
-        raw_data.clear();
         raw_data.resize(cmd.receivedCommandDataLength);
-        std::copy(cmd.receivedCommandData,cmd.receivedCommandData+cmd.receivedCommandDataLength,raw_data.data());
+        raw_data.assign(cmd.receivedCommandData, cmd.receivedCommandData + cmd.receivedCommandDataLength);
     }
 
     template<typename T, int sz>
@@ -258,16 +257,16 @@ namespace ds5 {
             calib.right_imager_intrinsic.model      = rs_distortion::RS_DISTORTION_BROWN_CONRADY;
 
             // Fill in actual data. Note that only the Focal and Principal points data varies between different resolutions
-            for (auto i = 0; i < max_ds5_rect_resoluitons; i++)
+            for (auto & i : { res_320_240 ,res_480_270, res_432_240, res_640_360, res_854_480, res_640_480, res_960_540, res_1280_720, res_1920_1080 })
             {
-                calib.depth_intrinsic[i].width  = resolutions_list[i].dims.x;
-                calib.depth_intrinsic[i].height = resolutions_list[i].dims.y;
+                calib.depth_intrinsic[i].width = resolutions_list[i].x;
+                calib.depth_intrinsic[i].height = resolutions_list[i].y;
 
-                calib.depth_intrinsic[i].fx     = table->rect_params[i][0];
-                calib.depth_intrinsic[i].fy     = table->rect_params[i][1];
-                calib.depth_intrinsic[i].ppx    = table->rect_params[i][2];
-                calib.depth_intrinsic[i].ppy    = table->rect_params[i][3];
-                calib.depth_intrinsic[i].model  = rs_distortion::RS_DISTORTION_BROWN_CONRADY;
+                calib.depth_intrinsic[i].fx = table->rect_params[i][0];
+                calib.depth_intrinsic[i].fy = table->rect_params[i][1];
+                calib.depth_intrinsic[i].ppx = table->rect_params[i][2];
+                calib.depth_intrinsic[i].ppy = table->rect_params[i][3];
+                calib.depth_intrinsic[i].model = rs_distortion::RS_DISTORTION_BROWN_CONRADY;
                 memset(calib.depth_intrinsic[i].coeffs, 0, arr_size(calib.depth_intrinsic[i].coeffs));
             }
         }
@@ -284,8 +283,7 @@ namespace ds5 {
                 << stringify(k_depth) << array2str((float_9&)table->k_depth) << std::endl
                 << stringify(r_depth) << array2str(table->r_depth) << std::endl
                 << stringify(t_depth) << array2str(table->t_depth));
-            float3x3 rot;
-            rsimpl::rodrigues(table->r_depth[0], table->r_depth[1], table->r_depth[2], rot);
+            float3x3 rot = rsimpl::calc_rodrigues_matrix({ table->r_depth[0], table->r_depth[1], table->r_depth[2] });
             calib.depth_extrinsic.rotation[0] = rot.x[0];
             calib.depth_extrinsic.rotation[1] = rot.x[1];
             calib.depth_extrinsic.rotation[2] = rot.x[2];

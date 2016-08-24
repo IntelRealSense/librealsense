@@ -584,7 +584,7 @@ namespace rsimpl
     ///////////////////////////////////////////
     // Extrinsic auxillary routines routines //
     ///////////////////////////////////////////
-    void rodrigues(const double &rot1, const double& rot2, const double& rot3, float3x3 & rot);
+    float3x3 calc_rodrigues_matrix(const std::vector<double> rot);
 
 }
 
