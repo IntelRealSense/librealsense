@@ -44,10 +44,10 @@ namespace rsimpl
             uvc_device_handle_t * handle = nullptr;
             uvc_stream_ctrl_t ctrl;
             uint8_t unit;
-            std::function<void(const void * frame, std::function<void()> continuation)> callback;
-            std::function<void(const unsigned char * data, const int size)> channel_data_callback;
+            video_channel_callback callback = nullptr;
+            data_channel_callback  channel_data_callback = nullptr;
 
-            void set_data_channel_cfg(std::function<void(const unsigned char * data, const int size)> callback)
+            void set_data_channel_cfg(data_channel_callback callback)
             {
                 this->channel_data_callback = callback;
             }
@@ -243,14 +243,14 @@ namespace rsimpl
 
         }
 
-        void set_subdevice_mode(device & device, int subdevice_index, int width, int height, uint32_t fourcc, int fps, std::function<void(const void * frame, std::function<void()> continuation)> callback)
+        void set_subdevice_mode(device & device, int subdevice_index, int width, int height, uint32_t fourcc, int fps, video_channel_callback callback)
         {
             auto & sub = device.get_subdevice(subdevice_index);
             check("get_stream_ctrl_format_size", uvc_get_stream_ctrl_format_size(sub.handle, &sub.ctrl, reinterpret_cast<const big_endian<uint32_t> &>(fourcc), width, height, fps));
             sub.callback = callback;
         }
 
-        void set_subdevice_data_channel_handler(device & device, int subdevice_index, std::function<void(const unsigned char * data, const int size)> callback)
+        void set_subdevice_data_channel_handler(device & device, int subdevice_index, data_channel_callback callback)
         {
             device.subdevices[subdevice_index].set_data_channel_cfg(callback);
         }

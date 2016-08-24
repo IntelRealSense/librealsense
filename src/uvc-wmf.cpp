@@ -271,11 +271,11 @@ namespace rsimpl
             com_ptr<IAMVideoProcAmp> am_video_proc_amp;
             std::map<int, com_ptr<IKsControl>> ks_controls;
             com_ptr<IMFSourceReader> mf_source_reader;
-            std::function<void(const void * frame, std::function<void()>)> callback;
-            std::function<void(const unsigned char * data, const int size)> channel_data_callback = nullptr;
+            video_channel_callback callback = nullptr;
+            data_channel_callback  channel_data_callback = nullptr;
             int vid, pid;
 
-            void set_data_channel_cfg(std::function<void(const unsigned char * data, const int size)> callback)
+            void set_data_channel_cfg(data_channel_callback callback)
             {
                 this->channel_data_callback = callback;
             }
@@ -782,7 +782,7 @@ namespace rsimpl
             }
         }
 
-        void set_subdevice_mode(device & device, int subdevice_index, int width, int height, uint32_t fourcc, int fps, std::function<void(const void * frame, std::function<void()> continuation)> callback)
+        void set_subdevice_mode(device & device, int subdevice_index, int width, int height, uint32_t fourcc, int fps, video_channel_callback callback)
         {
             auto & sub = device.subdevices[subdevice_index];
             
@@ -822,7 +822,7 @@ namespace rsimpl
             throw std::runtime_error("no matching media type");
         }
 
-        void set_subdevice_data_channel_handler(device & device, int subdevice_index, std::function<void(const unsigned char * data, const int size)> callback)
+        void set_subdevice_data_channel_handler(device & device, int subdevice_index, data_channel_callback callback)
         {           
             device.subdevices[subdevice_index].set_data_channel_cfg(callback);
         }

@@ -88,8 +88,8 @@ namespace rsimpl
             std::vector<buffer> buffers;
 
             int width, height, format, fps;
-            std::function<void(const void *, std::function<void()>)> callback;
-            std::function<void(const unsigned char * data, const int size)> channel_data_callback;    // handle non-uvc data produced by device
+            video_channel_callback callback = nullptr;
+            data_channel_callback  channel_data_callback = nullptr;    // handle non-uvc data produced by device
             bool is_capturing;
 
             subdevice(const std::string & name) : dev_name("/dev/" + name), vid(), pid(), fd(), width(), height(), format(), callback(nullptr), channel_data_callback(nullptr), is_capturing()
@@ -192,7 +192,7 @@ namespace rsimpl
                 if(xioctl(fd, UVCIOC_CTRL_QUERY, &q) < 0) throw_error("UVCIOC_CTRL_QUERY:UVC_SET_CUR");
             }
 
-            void set_format(int width, int height, int fourcc, int fps, std::function<void(const void * data, std::function<void()> continuation)> callback)
+            void set_format(int width, int height, int fourcc, int fps, video_channel_callback callback)
             {
                 this->width = width;
                 this->height = height;
@@ -201,7 +201,7 @@ namespace rsimpl
                 this->callback = callback;
             }
 
-            void set_data_channel_cfg(std::function<void(const unsigned char * data, const int size)> callback)
+            void set_data_channel_cfg(data_channel_callback callback)
             {                
                 this->channel_data_callback = callback;
             }
@@ -534,12 +534,12 @@ namespace rsimpl
             if(status < 0) throw std::runtime_error(to_string() << "libusb_interrupt_transfer(...) returned " << libusb_error_name(status));
         }
 
-        void set_subdevice_mode(device & device, int subdevice_index, int width, int height, uint32_t fourcc, int fps, std::function<void(const void * frame, std::function<void()> continuation)> callback)
+        void set_subdevice_mode(device & device, int subdevice_index, int width, int height, uint32_t fourcc, int fps, video_channel_callback callback)
         {
             device.subdevices[subdevice_index]->set_format(width, height, (const big_endian<int> &)fourcc, fps, callback);
         }
 
-        void set_subdevice_data_channel_handler(device & device, int subdevice_index, std::function<void(const unsigned char * data, const int size)> callback)
+        void set_subdevice_data_channel_handler(device & device, int subdevice_index, data_channel_callback callback)
         {
             device.subdevices[subdevice_index]->set_data_channel_cfg(callback);
         }
