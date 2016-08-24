@@ -11,7 +11,9 @@
 #include <functional>   // For function
 #include <thread>       // For this_thread::sleep_for
 
-const uint16_t VID_INTEL_CAMERA = 0x8086;
+const uint16_t VID_INTEL_CAMERA     = 0x8086;
+const uint16_t ZR300_CX3_PID        = 0x0acb;
+const uint16_t ZR300_FISHEYE_PID    = 0x0ad0;
 
 namespace rsimpl
 {
@@ -26,8 +28,6 @@ namespace rsimpl
         // Enumerate devices
         std::shared_ptr<context> create_context();
         std::vector<std::shared_ptr<device>> query_devices(std::shared_ptr<context> context);
-
-        void power_on_adapter_board();
 
         // Check for connected device
         bool is_device_connected(device & device, int vid, int pid);

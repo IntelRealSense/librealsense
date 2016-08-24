@@ -10,9 +10,6 @@
 #include "libuvc/libuvc_internal.h" // For LibUSB punchthrough
 #include <thread>
 
-#define ZR300_PID 0xacb
-#define ZR300_FISHEYE_PID 0x0ad0
-
 namespace rsimpl
 {
     namespace uvc
@@ -208,7 +205,7 @@ namespace rsimpl
         {
             libusb_device_handle* dev_h = nullptr;
 
-            if (device.pid == ZR300_PID)
+            if (device.pid == ZR300_CX3_PID)
             {
                 dev_h = device.usb_handle;
             }
@@ -226,17 +223,12 @@ namespace rsimpl
             claim_interface(device, interface_guid, interface_number);
         }
 
-        void power_on_adapter_board()
-        {
-            throw std::logic_error("power_on_adapter_board(...) is not implemented for this backend ");
-        }
-
         void bulk_transfer(device & device, unsigned char endpoint, void * data, int length, int *actual_length, unsigned int timeout)
         {
 
             libusb_device_handle* dev_h = nullptr;
 
-            if (device.pid == ZR300_PID) // W/A for ZR300 fish-eye
+            if (device.pid == ZR300_CX3_PID) // W/A for ZR300 fish-eye
             {
                 dev_h = device.usb_handle;
             }
@@ -443,7 +435,7 @@ namespace rsimpl
                 try
             {
                 auto dev = std::make_shared<device>(context, *it);
-                dev->usb_handle = libusb_open_device_with_vid_pid(context->usb_context, 0x8086, 0x0ad0);
+                dev->usb_handle = libusb_open_device_with_vid_pid(context->usb_context, VID_INTEL_CAMERA, ZR300_FISHEYE_PID);
                 devices.push_back(dev);
             }
             catch (std::runtime_error &e)

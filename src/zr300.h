@@ -13,11 +13,6 @@
 #include <cmath>
 #include <math.h>
 
-#define R200_PRODUCT_ID     0x0a80
-#define LR200_PRODUCT_ID    0x0abf
-#define ZR300_PRODUCT_ID    0x0acb
-#define FISHEYE_PRODUCT_ID  0x0ad0
-
 namespace rsimpl
 {
   
