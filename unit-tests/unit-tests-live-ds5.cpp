@@ -224,6 +224,7 @@ TEST_CASE("DS5 Manual Gain Control verification", "[live] [DS-device]")
 
     dev->get_options(&opt, 1, &gain_ctrl_init);
     INFO("Initial gain control value obtained from hardware is " << gain_ctrl_init);
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
 
     // Apply several iterations
     for (uint8_t i = 0; i < 1; i++)
@@ -231,10 +232,12 @@ TEST_CASE("DS5 Manual Gain Control verification", "[live] [DS-device]")
         dev->set_options(&opt, 1, &set_val);
         dev->get_options(&opt, 1, &res);
         REQUIRE(set_val == res);
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
 
         dev->set_options(&opt, 1, &reset_val);
         dev->get_options(&opt, 1, &res);
         REQUIRE(reset_val == res);
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
 
     // Revert to original value
@@ -260,8 +263,9 @@ TEST_CASE("DS5 Manual Exposure Control verification", "[live] [DS-device]")
     double exposure_ctrl_init = 0.;
     rs::option opt = rs::option::r200_lr_exposure;
 
-    //dev->get_options(&opt, 1, &exposure_ctrl_init);
+    dev->get_options(&opt, 1, &exposure_ctrl_init);
     INFO("Initial exposure control value obtained from hardware is " << exposure_ctrl_init);
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
 
     // Apply several iterations
     for (uint8_t i = 0; i < 1; i++)
@@ -269,10 +273,12 @@ TEST_CASE("DS5 Manual Exposure Control verification", "[live] [DS-device]")
         dev->set_options(&opt, 1, &set_val);
         dev->get_options(&opt, 1, &res);
         REQUIRE(set_val == res);
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
 
         dev->set_options(&opt, 1, &reset_val);
         dev->get_options(&opt, 1, &res);
         REQUIRE(reset_val == res);
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
 
     // Revert to original value
