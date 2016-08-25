@@ -29,6 +29,17 @@ namespace rsimpl {
         max_calib_module_id
     };
 
+    enum calibration_table_id
+    {
+        coefficients_table_id   =   25,
+        depth_calibration_id    =   31,
+        rgb_calibration_id      =   32,
+        fisheye_calibration_id  =   33,
+        imu_calibration_id      =   34,
+        lens_shading_id         =   35,
+        projector_id            =   36
+    };
+
     enum ds5_rect_resolutions : unsigned short
     {
         res_1920_1080,
@@ -46,9 +57,7 @@ namespace rsimpl {
         max_ds5_rect_resoluitons
     };
 
-    struct ds5_depth_resolutions { ds5_rect_resolutions name; int2 dims; };
-
-    static const std::vector<ds5_depth_resolutions> resolutions_list = {
+    static std::map< ds5_rect_resolutions, int2> resolutions_list = {
         { res_320_240,  { 320, 240 } },
         { res_432_240,  { 432, 240 } },
         { res_480_270,  { 480, 270 } },
@@ -69,7 +78,17 @@ namespace rsimpl {
         rs_extrinsics   left_imager_extrinsic;
         rs_extrinsics   right_imager_extrinsic;
         rs_extrinsics   depth_extrinsic;
-        bool            data_present[max_calib_module_id];
+        std::map<calibration_table_id, bool> data_present;
+
+        ds5_calibration(): version(0)
+        {
+            data_present.emplace(coefficients_table_id, false);
+            data_present.emplace(rgb_calibration_id, false);
+            data_present.emplace(fisheye_calibration_id, false);
+            data_present.emplace(imu_calibration_id, false);
+            data_present.emplace(lens_shading_id, false);
+            data_present.emplace(projector_id, false);
+        };
     };
 
     std::string read_firmware_version(uvc::device & device);
@@ -87,6 +106,9 @@ namespace rsimpl {
     // XU read/write
     void get_laser_power(const uvc::device & device, uint8_t & laser_power);
     void set_laser_power(uvc::device & device, uint8_t laser_power);
+    //void get_lr_exposure(uvc::device & device, uint16_t & exposure);
+    void set_lr_exposure(uvc::device & device, uint32_t exposure);
+    uint32_t get_lr_exposure(const uvc::device & device);
 
 
 } //namespace rsimpl::ds5

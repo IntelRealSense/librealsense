@@ -43,6 +43,7 @@ namespace rsimpl
             iffley                     = 2,
             fisheye_xu_ext_trig        = 2,
             stream_intent              = 3,
+            ds5_lr_exposure            = 3,
             depth_units                = 4,
             min_max                    = 5,
             disparity                  = 6,

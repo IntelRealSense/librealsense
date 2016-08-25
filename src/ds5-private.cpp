@@ -1,6 +1,7 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
+#include <iostream>
 #include "types.h"
 #include "hw-monitor.h"
 #include "ds-private.h"
@@ -21,17 +22,6 @@ namespace ds5 {
     {
         GVD         = 0x10,
         GETINTCAL   = 0x15,     // Read calibration table
-    };
-
-    enum calibration_table_id
-    {
-        coefficients_table_id   =   25,
-        depth_calibration_id    =   31,
-        rgb_calibration_id      =   32,
-        fisheye_calibration_id  =   33,
-        imu_calibration_id      =   34,
-        lens_shading_id         =   35,
-        projector_id            =   36
     };
 
 #pragma pack(push, 1)
@@ -110,7 +100,7 @@ namespace ds5 {
         float3x3            world2right_rot;            //  the inverse rotation of the right camera
         float               baseline;                   //  the baseline between the cameras
         float4              rect_params[max_ds5_rect_resoluitons];
-        uint8_t             reserved[172];
+        uint8_t             reserved[156];
     };
 
     struct depth_calibration_table
@@ -184,14 +174,13 @@ namespace ds5 {
         }
     }
 
-    void get_calibration_table_entry(uvc::device & device, std::timed_mutex & mutex,calibration_table_id table_id, std::vector<unsigned char> & raw_data)
+    void get_calibration_table_entry(uvc::device & device, std::timed_mutex & mutex,calibration_table_id table_id, std::vector<uint8_t> & raw_data)
     {
         hwmon_cmd cmd((uint8_t)fw_cmd::GETINTCAL);
         cmd.Param1 = table_id;
         perform_and_send_monitor_command_over_usb_monitor(device, mutex, cmd);
-        raw_data.clear();
         raw_data.resize(cmd.receivedCommandDataLength);
-        memcpy(raw_data.data(), cmd.receivedCommandData, cmd.receivedCommandDataLength);
+        raw_data.assign(cmd.receivedCommandData, cmd.receivedCommandData + cmd.receivedCommandDataLength);
     }
 
     template<typename T, int sz>
@@ -218,7 +207,7 @@ namespace ds5 {
         {
         case coefficients_table_id:
         {
-            if (raw_data.size() < sizeof(coefficients_table))
+            if (raw_data.size() != sizeof(coefficients_table))
                 throw std::runtime_error(to_string() << "DS5 Coefficients table read error, actual size is " << raw_data.size());
             coefficients_table *table = reinterpret_cast<coefficients_table *>(raw_data.data());
             LOG_DEBUG("Table header: table version major.minor: " << std::hex  << table->header.version     << std::dec
@@ -268,23 +257,23 @@ namespace ds5 {
             calib.right_imager_intrinsic.model      = rs_distortion::RS_DISTORTION_BROWN_CONRADY;
 
             // Fill in actual data. Note that only the Focal and Principal points data varies between different resolutions
-            for (auto i = 0; i < max_ds5_rect_resoluitons; i++)
+            for (auto & i : { res_320_240 ,res_480_270, res_432_240, res_640_360, res_854_480, res_640_480, res_960_540, res_1280_720, res_1920_1080 })
             {
-                calib.depth_intrinsic[i].width  = resolutions_list[i].dims.x;
-                calib.depth_intrinsic[i].height = resolutions_list[i].dims.y;
+                calib.depth_intrinsic[i].width = resolutions_list[i].x;
+                calib.depth_intrinsic[i].height = resolutions_list[i].y;
 
-                calib.depth_intrinsic[i].fx     = table->rect_params[i][0];
-                calib.depth_intrinsic[i].fy     = table->rect_params[i][1];
-                calib.depth_intrinsic[i].ppx    = table->rect_params[i][2];
-                calib.depth_intrinsic[i].ppy    = table->rect_params[i][3];
-                calib.depth_intrinsic[i].model  = rs_distortion::RS_DISTORTION_BROWN_CONRADY;
+                calib.depth_intrinsic[i].fx = table->rect_params[i][0];
+                calib.depth_intrinsic[i].fy = table->rect_params[i][1];
+                calib.depth_intrinsic[i].ppx = table->rect_params[i][2];
+                calib.depth_intrinsic[i].ppy = table->rect_params[i][3];
+                calib.depth_intrinsic[i].model = rs_distortion::RS_DISTORTION_BROWN_CONRADY;
                 memset(calib.depth_intrinsic[i].coeffs, 0, arr_size(calib.depth_intrinsic[i].coeffs));
             }
         }
         break;
         case depth_calibration_id:
         {
-            if (raw_data.size() < sizeof(depth_calibration_table))
+            if (raw_data.size() != sizeof(depth_calibration_table))
                 throw std::runtime_error(to_string() << "DS5 Calibration table read error, actual size is " << raw_data.size());
             depth_calibration_table *table = reinterpret_cast<depth_calibration_table *>(raw_data.data());
             LOG_DEBUG("Table header: version " << table->header.version
@@ -294,7 +283,19 @@ namespace ds5 {
                 << stringify(k_depth) << array2str((float_9&)table->k_depth) << std::endl
                 << stringify(r_depth) << array2str(table->r_depth) << std::endl
                 << stringify(t_depth) << array2str(table->t_depth));
-            // TBD - is this data is required ?
+            float3x3 rot = rsimpl::calc_rodrigues_matrix({ table->r_depth[0], table->r_depth[1], table->r_depth[2] });
+            calib.depth_extrinsic.rotation[0] = rot.x[0];
+            calib.depth_extrinsic.rotation[1] = rot.x[1];
+            calib.depth_extrinsic.rotation[2] = rot.x[2];
+            calib.depth_extrinsic.rotation[3] = rot.y[0];
+            calib.depth_extrinsic.rotation[4] = rot.y[1];
+            calib.depth_extrinsic.rotation[5] = rot.y[2];
+            calib.depth_extrinsic.rotation[6] = rot.z[0];
+            calib.depth_extrinsic.rotation[7] = rot.z[1];
+            calib.depth_extrinsic.rotation[8] = rot.z[2];
+            calib.depth_extrinsic.translation[0] = table->t_depth[0];
+            calib.depth_extrinsic.translation[1] = table->t_depth[1];
+            calib.depth_extrinsic.translation[2] = table->t_depth[2];
         }
         break;
         default:
@@ -304,18 +305,18 @@ namespace ds5 {
 
     void read_calibration(uvc::device & dev, std::timed_mutex & mutex, ds5_calibration& calib)
     {
-        memset(&calib, 0, sizeof(ds5_calibration));
+        std::vector<uint8_t> table_raw_data;
+        std::vector<calibration_table_id> actual_list = { depth_calibration_id, coefficients_table_id /*, rgb_calibration_id, fisheye_calibration_id, imu_calibration_id, lens_shading_id, projector_id */};  // Will be extended as FW matures
 
-        std::vector<unsigned char> table_raw_data;
-        const std::vector<calibration_table_id> actual_list = { depth_calibration_id, coefficients_table_id /*, rgb_calibration_id, fisheye_calibration_id, imu_calibration_id, lens_shading_id, projector_id */};  // Will be extended as FW matures
-
-        for (auto id : actual_list)     // Fetch and parse calibration data
+        for (auto & id : actual_list)     // Fetch and parse calibration data
         {
-            table_raw_data.clear();
             try
             {
+                table_raw_data.clear();
                 get_calibration_table_entry(dev, mutex, id, table_raw_data);
                 calib.data_present[id] = true;
+
+                parse_calibration_table( calib, id, table_raw_data);
             }
             catch (const std::runtime_error &e)
             {
@@ -325,8 +326,6 @@ namespace ds5 {
             {
                 LOG_ERROR("Reading DS5 Calibration failed, table " << id);
             }
-
-            parse_calibration_table( calib, id, table_raw_data);
         }
     }
 
@@ -338,6 +337,21 @@ namespace ds5 {
     void set_laser_power(uvc::device & device, uint8_t laser_power)
     {
         ds::xu_write(device, depth_xu, ds::control::ds5_laser_power, &laser_power, sizeof(uint8_t));
+    }
+
+//    void get_lr_exposure(uvc::device & device, uint16_t & exposure)
+//    {
+//        ds::xu_read(device, depth_xu, ds::control::lr_exposure, &exposure, sizeof(exposure));
+//    }
+
+    void set_lr_exposure(uvc::device & device, uint32_t exposure)
+    {
+        ds::xu_write(device, depth_xu, ds::control::ds5_lr_exposure, &exposure);
+    }
+
+    uint32_t get_lr_exposure(const uvc::device & device)
+    {
+        return ds::xu_read<uint32_t >(device, depth_xu, ds::control::ds5_lr_exposure);
     }
 
 } // namespace rsimpl::ds5

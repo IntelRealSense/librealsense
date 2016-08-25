@@ -3,6 +3,7 @@
 #include <algorithm>
 
 #include "image.h"
+#include "ds-private.h"
 #include "ds5-private.h"
 #include "ds5d.h"
 
@@ -65,10 +66,14 @@ namespace rsimpl
 
         for(auto & m : ds5d_ir_only_modes)
         {
+            calib.left_imager_intrinsic.width = m.dims.x;   // The same intrinsic apply for all resolutions, for now. TBD verification required
+            calib.left_imager_intrinsic.height = m.dims.y;
+
+            auto intrinsic = (calib.data_present[coefficients_table_id])?  calib.left_imager_intrinsic :rs_intrinsics{ m.dims.x, m.dims.y };
+
             for(auto fps : m.fps)
             {
-                //info.subdevice_modes.push_back({ 1, m.dims, pf_y8, fps, calib.left_imager_intrinsic, {}, {0}});
-                info.subdevice_modes.push_back({ 1, m.dims, pf_y8, fps,{ m.dims.x, m.dims.y },{},{ 0 } });
+                info.subdevice_modes.push_back({ 1, m.dims, pf_y8, fps, intrinsic, {}, {0}});
                 info.subdevice_modes.push_back({ 1, m.dims, pf_y8i, fps,{ m.dims.x, m.dims.y },{},{ 0 } });
             }
         }
@@ -79,24 +84,31 @@ namespace rsimpl
         {
             for(auto fps : m.fps)
             {
-                // Apply supported camera modes, select intrinsic from flash, if available; otherwise use default
-                //auto it = std::find_if(resolutions_list.begin(), resolutions_list.end(), [m](ds5_depth_resolutions res) { return ((m.dims.x == res.dims.x) && (m.dims.y == res.dims.y)); });
-                //auto intrinsic = (it != resolutions_list.end()) ? calib.depth_intrinsic[ds5_depth_resolutions(*it).name] : rs_intrinsics{ m.dims.x, m.dims.y };
+                auto intrinsic = rs_intrinsics{ m.dims.x, m.dims.y };
 
-                //info.subdevice_modes.push_back({0, m.dims, pf_z16, fps, intrinsic, {}, {0}});
-                info.subdevice_modes.push_back({ 0, m.dims, pf_z16, fps,{ m.dims.x, m.dims.y },{},{ 0 } });
+                if (calib.data_present[depth_calibration_id])
+                {
+                    // Apply supported camera modes, select intrinsic from flash, if available; otherwise use default
+                    auto it = std::find_if(resolutions_list.begin(), resolutions_list.end(), [m](std::pair<ds5_rect_resolutions, int2> res) { return ((m.dims.x == res.second.x) && (m.dims.y == res.second.y)); });
+                    if (it != resolutions_list.end())
+                        intrinsic = calib.depth_intrinsic[(*it).first];
+                }
+
+                info.subdevice_modes.push_back({0, m.dims, pf_z16, fps, intrinsic, {}, {0}});
             }
         }
 
         // Populate the presets
         for(int i=0; i<RS_PRESET_COUNT; ++i)
         {
-            info.presets[RS_STREAM_DEPTH   ][i] = {true, 640, 480, RS_FORMAT_Z16, 30};
+            info.presets[RS_STREAM_DEPTH][i]    = {true, 640, 480, RS_FORMAT_Z16, 30};
             info.presets[RS_STREAM_INFRARED][i] = {true, 640, 480, RS_FORMAT_Y8, 30};
             info.presets[RS_STREAM_INFRARED2][i] = {true, 640, 480, RS_FORMAT_Y8, 30};
         }
 
         info.options.push_back({ RS_OPTION_DS5_LASER_POWER });
+        info.options.push_back({ RS_OPTION_COLOR_GAIN });       // Manual gain and exposure
+        info.options.push_back({ RS_OPTION_R200_LR_EXPOSURE, 0, 1600, 1, 0 });
 
         return info;
     }
@@ -110,18 +122,96 @@ namespace rsimpl
 
     void ds5d_camera::set_options(const rs_option options[], size_t count, const double values[])
     {
-        ds5_camera::set_options(options, count, values);
+        std::vector<rs_option>  base_opt;
+        std::vector<double>     base_opt_val;
+
+        for (size_t i = 0; i<count; ++i)
+        {
+            if (uvc::is_pu_control(options[i]))
+            {
+                if (options[i]==RS_OPTION_COLOR_GAIN)
+                {
+                    uvc::set_pu_control_with_retry(get_device(), 0, options[i], static_cast<int>(values[i])); break;
+                }
+                else
+                    throw std::logic_error(to_string() << get_name() << " has no CCD sensor, the following is not supported: " << options[i]);
+            }
+
+            switch (options[i])
+            {
+            case RS_OPTION_DS5_LASER_POWER:     ds5::set_laser_power(get_device(), static_cast<uint8_t>(values[i])); break;
+            case RS_OPTION_R200_LR_EXPOSURE:    ds5::set_lr_exposure(get_device(), static_cast<uint32_t>(values[i])); break;
+
+            default: base_opt.push_back(options[i]); base_opt_val.push_back(values[i]); break;
+            }
+        }
+
+        //Handle common options
+        if (base_opt.size())
+            ds5_camera::set_options(base_opt.data(), base_opt.size(), base_opt_val.data());
     }
 
     void ds5d_camera::get_options(const rs_option options[], size_t count, double values[])
     {
-        ds5_camera::get_options(options, count, values);
+        std::vector<rs_option>  base_opt;
+        std::vector<size_t>     base_opt_index;
+        std::vector<double>     base_opt_val;
+
+        for (size_t i = 0; i<count; ++i)
+        {
+            LOG_INFO("Reading option " << options[i]);
+
+            if (uvc::is_pu_control(options[i]))
+            {
+                if (options[i] == RS_OPTION_COLOR_GAIN)
+                {
+                    values[i] = uvc::get_pu_control(get_device(), 0, options[i]); continue;
+                }
+            }
+
+            switch (options[i])
+            {
+                case RS_OPTION_R200_LR_EXPOSURE:    values[i] = ds5::get_lr_exposure(get_device()); break;
+
+                default: base_opt.push_back(options[i]); base_opt_val.push_back(values[i]); break;
+            }
+        }
+
+        // Retrieve common options
+        if (base_opt.size())
+        {
+            base_opt_val.resize(base_opt.size());
+            ds5_camera::get_options(base_opt.data(), base_opt.size(), base_opt_val.data());
+        }
+
+        // Merge the local data with values obtained by base class
+        for (auto i : base_opt_index)
+            values[i] = base_opt_val[i];
     }
 
     bool ds5d_camera::supports_option(rs_option option) const
     {
-        // DS5d doesn't have CCD camera, therfore it doesn't support standard UVC (PU) controls at this stage
-        return (option == RS_OPTION_DS5_LASER_POWER)  /*|| rs_device_base::supports_option(option)*/;
+        // No standard RGB controls, except for GAIN that is used for LR Gain
+        if (uvc::is_pu_control(option))
+            return (option == RS_OPTION_COLOR_GAIN)  ? true : false;
+        else
+            return rs_device_base::supports_option(option);
+    }
+
+    void ds5d_camera::get_option_range(rs_option option, double & min, double & max, double & step, double & def)
+    {
+        if (option == RS_OPTION_COLOR_GAIN)
+        {
+            int mn, mx, stp, df;
+            uvc::get_pu_control_range(get_device(), config.info.stream_subdevices[RS_STREAM_DEPTH], option, &mn, &mx, &stp, &df);
+            min = mn;
+            max = mx;
+            step = stp;
+            def = df;
+            return;
+        }
+        else
+            rs_device_base::get_option_range(option, min, max, step, def);
     }
 
     std::shared_ptr<rs_device> make_ds5d_active_device(std::shared_ptr<uvc::device> device)
