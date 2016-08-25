@@ -106,7 +106,7 @@ namespace rsimpl
             info.presets[RS_STREAM_INFRARED2][i] = {true, 640, 480, RS_FORMAT_Y8, 30};
         }
 
-        info.options.push_back({ RS_OPTION_DS5_LASER_POWER });
+        info.options.push_back({ RS_OPTION_DS5_LASER_POWER, 0, 1, 1, 0 });
         info.options.push_back({ RS_OPTION_COLOR_GAIN });       // Manual gain and exposure
         info.options.push_back({ RS_OPTION_R200_LR_EXPOSURE, 0, 1600, 1, 0 });
 
