@@ -107,8 +107,8 @@ namespace rsimpl
         }
 
         info.options.push_back({ RS_OPTION_DS5_LASER_POWER, 0, 1, 1, 0 });
-        info.options.push_back({ RS_OPTION_COLOR_GAIN });       // Manual gain and exposure
-        info.options.push_back({ RS_OPTION_R200_LR_EXPOSURE, 0, 1600, 1, 0 });
+        info.options.push_back({ RS_OPTION_COLOR_GAIN });
+        info.options.push_back({ RS_OPTION_R200_LR_EXPOSURE, 40, 1660, 1, 100 });
 
         return info;
     }
@@ -154,7 +154,6 @@ namespace rsimpl
     void ds5d_camera::get_options(const rs_option options[], size_t count, double values[])
     {
         std::vector<rs_option>  base_opt;
-        std::vector<size_t>     base_opt_index;
         std::vector<double>     base_opt_val;
 
         for (size_t i = 0; i<count; ++i)
@@ -173,7 +172,7 @@ namespace rsimpl
             {
                 case RS_OPTION_R200_LR_EXPOSURE:    values[i] = ds5::get_lr_exposure(get_device()); break;
 
-                default: base_opt.push_back(options[i]); base_opt_index.push_back(values[i]); break;
+                default: base_opt.push_back(options[i]); base_opt_val.push_back(values[i]); break;
             }
         }
 
@@ -185,7 +184,7 @@ namespace rsimpl
         }
 
         // Merge the local data with values obtained by base class
-        for (auto i =0; i< base_opt_index.size(); i++)
+        for (size_t i =0; i< base_opt.size(); i++)
             values[i] = base_opt_val[i];
     }
 

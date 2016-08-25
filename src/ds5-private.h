@@ -83,6 +83,7 @@ namespace rsimpl {
         ds5_calibration(): version(0)
         {
             data_present.emplace(coefficients_table_id, false);
+            data_present.emplace(depth_calibration_id, false);
             data_present.emplace(rgb_calibration_id, false);
             data_present.emplace(fisheye_calibration_id, false);
             data_present.emplace(imu_calibration_id, false);
