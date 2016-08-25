@@ -4,6 +4,7 @@
 #include <algorithm>
 
 #include "image.h"
+#include "ds-private.h"
 #include "ds5.h"
 #include "ds5-private.h"
 
@@ -12,7 +13,6 @@ namespace rsimpl
     ds5_camera::ds5_camera(std::shared_ptr<uvc::device> device, const static_device_info & info) :
         rs_device_base(device, info)
     {
-
     }
 
     void ds5_camera::set_options(const rs_option options[], size_t count, const double values[])
@@ -29,7 +29,9 @@ namespace rsimpl
 
             switch (options[i])
             {
-            case RS_OPTION_DS5_LASER_POWER:           ds5::set_laser_power(get_device(), static_cast<uint8_t>(values[i]));break;
+            case RS_OPTION_DS5_LASER_POWER:     ds5::set_laser_power(get_device(), static_cast<uint8_t>(values[i]));break;
+            case RS_OPTION_R200_LR_EXPOSURE:    ds5::set_lr_exposure(get_device(), static_cast<uint16_t>(values[i])); break;
+
             default:
                 LOG_WARNING("Set " << options[i] << " for " << get_name() << " is not supported");
                 throw std::logic_error("Option unsupported");
@@ -37,7 +39,6 @@ namespace rsimpl
             }
         }
     }
-
 
     void ds5_camera::get_options(const rs_option options[], size_t count, double values[])
     {
@@ -52,6 +53,11 @@ namespace rsimpl
             switch (options[i])
             {
                 case RS_OPTION_DS5_LASER_POWER:           ds5::get_laser_power(get_device(), val); values[i] = val; break;
+                case RS_OPTION_R200_LR_EXPOSURE: // Exposure is framerate dependent
+                    ds::set_lr_exposure_discovery(get_device(), { get_lr_framerate() });
+                    values[i] = ds::get_lr_exposure(get_device()).value;
+                    break;
+
                 default:
                     LOG_WARNING("Get " << options[i] << " for " << get_name() << " is not supported");
                     throw std::logic_error("Option unsupported");
@@ -126,5 +132,14 @@ namespace rsimpl
         return std::make_shared<ds5_timestamp_reader>();
     }
 
+    uint32_t ds5_camera::get_lr_framerate() const
+    {
+        for (auto s : { RS_STREAM_DEPTH, RS_STREAM_INFRARED, RS_STREAM_INFRARED2 })
+        {
+            auto & stream = get_stream_interface(s);
+            if (stream.is_enabled()) return static_cast<uint32_t>(stream.get_framerate());
+        }
+        return 30; // If no streams have yet been enabled, return the minimum possible left/right framerate, to allow the maximum possible exposure range
+    }
 
 } // namespace rsimpl::ds5
