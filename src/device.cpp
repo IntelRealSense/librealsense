@@ -214,30 +214,49 @@ void rs_device_base::set_timestamp_callback(rs_timestamp_callback* callback)
 
 void rs_device_base::start(rs_source source)
 {
-    if (source & RS_SOURCE_MOTION_TRACKING)
+    if (source == RS_SOURCE_MOTION_TRACKING)
     {
         if (supports(RS_CAPABILITIES_MOTION_EVENTS))
             start_motion_tracking();
         else
-             throw std::runtime_error("motion-tracking is not supported by this device");
+            throw std::runtime_error("motion-tracking is not supported by this device");
     }
-
-    if (source & RS_SOURCE_VIDEO)
+    else if (source == RS_SOURCE_VIDEO)
+    {
         start_video_streaming();
-
+    }
+    else if (source == RS_SOURCE_ALL)
+    {
+        start(RS_SOURCE_MOTION_TRACKING);
+        start(RS_SOURCE_VIDEO);
+    }
+    else
+    {
+        throw std::runtime_error("unsupported streaming source!");
+    }
 }
 
 void rs_device_base::stop(rs_source source)
 {
-    if (source & RS_SOURCE_VIDEO)
+    if (source == RS_SOURCE_VIDEO)
+    {
         stop_video_streaming();
-
-    if (source & RS_SOURCE_MOTION_TRACKING)
+    }
+    else if (source == RS_SOURCE_MOTION_TRACKING)
     {
         if (supports(RS_CAPABILITIES_MOTION_EVENTS))
             stop_motion_tracking();
         else
-             throw std::runtime_error("motion-tracking is not supported by this device");
+            throw std::runtime_error("motion-tracking is not supported by this device");
+    }
+    else if (source == RS_SOURCE_ALL)
+    {
+        stop(RS_SOURCE_VIDEO);
+        stop(RS_SOURCE_MOTION_TRACKING);
+    }
+    else
+    {
+        throw std::runtime_error("unsupported streaming source");
     }
 }
 
