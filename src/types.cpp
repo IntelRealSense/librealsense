@@ -13,7 +13,7 @@
 #include <iomanip>
 #include <numeric>
 
-const char * unknown = "UNKNOWN";
+#define unknown "UNKNOWN" 
 
 namespace rsimpl
 {
@@ -124,13 +124,6 @@ namespace rsimpl
         CASE(SR300_AUTO_RANGE_START_LASER)                
         CASE(SR300_AUTO_RANGE_UPPER_THRESHOLD) 
         CASE(SR300_AUTO_RANGE_LOWER_THRESHOLD)
-        CASE(SR300_WAKEUP_DEV_PHASE1_PERIOD)
-        CASE(SR300_WAKEUP_DEV_PHASE1_FPS)
-        CASE(SR300_WAKEUP_DEV_PHASE2_PERIOD)
-        CASE(SR300_WAKEUP_DEV_PHASE2_FPS)
-        CASE(SR300_WAKEUP_DEV_RESET)
-        CASE(SR300_WAKE_ON_USB_REASON)
-        CASE(SR300_WAKE_ON_USB_CONFIDENCE)
         CASE(R200_LR_AUTO_EXPOSURE_ENABLED)
         CASE(R200_LR_GAIN)
         CASE(R200_LR_EXPOSURE)
@@ -159,20 +152,18 @@ namespace rsimpl
         CASE(R200_DEPTH_CONTROL_SECOND_PEAK_THRESHOLD)       
         CASE(R200_DEPTH_CONTROL_NEIGHBOR_THRESHOLD)
         CASE(R200_DEPTH_CONTROL_LR_THRESHOLD)
-        CASE(ZR300_GYRO_BANDWIDTH)
-        CASE(ZR300_GYRO_RANGE)
-        CASE(ZR300_ACCELEROMETER_BANDWIDTH)
-        CASE(ZR300_ACCELEROMETER_RANGE)
-        CASE(ZR300_MOTION_MODULE_TIME_SEED)
-        CASE(ZR300_MOTION_MODULE_ACTIVE)
-        CASE(FISHEYE_COLOR_EXPOSURE)
-        CASE(FISHEYE_COLOR_GAIN)
+        CASE(FISHEYE_EXPOSURE)
+        CASE(FISHEYE_GAIN)
         CASE(FISHEYE_STROBE)
-        CASE(FISHEYE_EXT_TRIG)
+        CASE(FISHEYE_EXTERNAL_TRIGGER)
         CASE(FRAMES_QUEUE_SIZE)
-        CASE(EVENTS_QUEUE_SIZE)
-        CASE(MAX_TIMESTAMP_LATENCY)
+        CASE(FISHEYE_ENABLE_AUTO_EXPOSURE)
+        CASE(FISHEYE_AUTO_EXPOSURE_MODE)
+        CASE(FISHEYE_AUTO_EXPOSURE_ANTIFLICKER_RATE)
         CASE(DS5_LASER_POWER)
+        CASE(FISHEYE_AUTO_EXPOSURE_PIXEL_SAMPLE_RATE)
+        CASE(FISHEYE_AUTO_EXPOSURE_SKIP_FRAMES)
+        CASE(HARDWARE_LOGGER_ENABLED)
         default: assert(!is_valid(value)); return unknown;
         }
         #undef CASE
@@ -260,8 +251,6 @@ namespace rsimpl
         {
         CASE(CAMERA)
         CASE(MICROCONTROLLER)
-        CASE(COUNT)
-        CASE(MAX_ENUM)
         default: assert(!is_valid(value)); return unknown;
         }
         #undef CASE
@@ -343,6 +332,11 @@ namespace rsimpl
         return false;
     }
 
+    bool stream_request::is_filled() const
+    {
+        return width != 0 && height != 0 && format != RS_FORMAT_ANY && fps != 0;
+    }
+
     static_device_info::static_device_info() : num_libuvc_transfer_buffers(1), nominal_depth_scale(0.001f)
     {
         for(auto & s : stream_subdevices) s = -1;
@@ -419,8 +413,8 @@ namespace rsimpl
                 return true;
             }
 
-            //if this stream is not enabled move to next item
-            if (!requests[p.stream].enabled)
+            //if this stream is not enabled or already filled move to next item 
+            if (!requests[p.stream].enabled || requests[p.stream].is_filled()) 
             {
                 // push the new requests parameter with stream =  stream + 1
                 search_request_params new_p = { p.requests, p.stream + 1 };
@@ -527,6 +521,7 @@ namespace rsimpl
             // Skip modes that apply to other subdevices
             if(subdevice_mode.subdevice != subdevice_index) continue;
 
+           
             for(auto pad_crop : subdevice_mode.pad_crop_options)
             {
                 for(auto & unpacker : subdevice_mode.pf.unpackers)
@@ -605,10 +600,15 @@ namespace rsimpl
             if (a.enabled && b.enabled)
             {
                 bool compat = true;
+                std::stringstream error_message;
+
                 if (rule.same_format)
                 {
                     if ((a.format != RS_FORMAT_ANY) && (b.format != RS_FORMAT_ANY) && (a.format != b.format))
+                    {
+                        if (throw_exception) error_message << rule.a << " format (" << rs_format_to_string(a.format) << ") must be equal to " << rule.b << " format (" << rs_format_to_string(b.format) << ")!";
                         compat = false;
+                    }
                 }
                 else if((a.*f != 0) && (b.*f != 0))
                 {
@@ -616,20 +616,29 @@ namespace rsimpl
                     {
                         // Check for incompatibility if both values specified
                         if ((a.*f + rule.delta != b.*f) && (a.*f + rule.delta2 != b.*f))
+                        {
+                            if (throw_exception) error_message << " " << rule.b << " value " << b.*f << " must be equal to either " << (a.*f + rule.delta) << " or " << (a.*f + rule.delta2) << "!";
                             compat = false;
+                        }
                     }
                     else
                     {
                         if (((rule.bigger == rule.a) && (a.*f < b.*f)) || ((rule.bigger == rule.b) && (b.*f < a.*f)))
+                        {
+                            if (throw_exception) error_message << " " << rule.a << " value " << a.*f << " must be " << ((rule.bigger == rule.a) ? "bigger" : "smaller") << " then " << rule.b << " value " << b.*f << "!";
                             compat = false;
+                        }
                         if ((rule.divides &&  (a.*f % b.*f)) || (rule.divides2 && (b.*f % a.*f)))
+                        {
+                            if (throw_exception) error_message << " " << rule.a << " value " << a.*f << " must " << (rule.divides ? "be divided by" : "divide") << rule.b << " value " << b.*f << "!";
                             compat = false;
+                        }
                     }
                 }
                 if (!compat)
                 {
                     if (throw_exception)
-                        throw std::runtime_error(to_string() << "requested " << rule.a << " and " << rule.b << " settings are incompatible");
+                        throw std::runtime_error(to_string() << "requested settings for " << rule.a << " and " << rule.b << " are incompatible!" << error_message.str());
                     return false;
                 }
             }
@@ -704,6 +713,25 @@ namespace rsimpl
         }
 
         return rot_mat;
+    }
+
+    calibration_validator::calibration_validator(std::function<bool(rs_stream, rs_stream)> extrinsic_validator, std::function<bool(rs_stream)> intrinsic_validator)
+        : extrinsic_validator(extrinsic_validator), intrinsic_validator(intrinsic_validator)
+    {
+    }
+
+    calibration_validator::calibration_validator()
+        : extrinsic_validator([](rs_stream, rs_stream) { return true; }), intrinsic_validator([](rs_stream) { return true; })
+    {
+    }
+
+    bool calibration_validator::validate_extrinsics(rs_stream from_stream, rs_stream to_stream) const
+    {
+        return extrinsic_validator(from_stream, to_stream);
+    }
+    bool calibration_validator::validate_intrinsics(rs_stream stream) const
+    {
+        return intrinsic_validator(stream);
     }
 
 

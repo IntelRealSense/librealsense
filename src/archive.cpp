@@ -215,7 +215,7 @@ long long frame_archive::frame_ref::get_frame_system_time() const
 
 rs_timestamp_domain frame_archive::frame_ref::get_frame_timestamp_domain() const
 {
-    return frame_ptr ? frame_ptr->get_frame_timestamp_domain() : RS_TIMESTAMP_DOMAIN_MAX_ENUM;
+    return frame_ptr ? frame_ptr->get_frame_timestamp_domain() : RS_TIMESTAMP_DOMAIN_COUNT;
 }
 
 int frame_archive::frame_ref::get_frame_width() const
@@ -245,12 +245,12 @@ int frame_archive::frame_ref::get_frame_bpp() const
 
 rs_format frame_archive::frame_ref::get_frame_format() const
 {
-    return frame_ptr ? frame_ptr->get_format() : RS_FORMAT_ANY;
+    return frame_ptr ? frame_ptr->get_format() : RS_FORMAT_COUNT;
 }
 
 rs_stream frame_archive::frame_ref::get_stream_type() const
 {
-    return frame_ptr ? frame_ptr->get_stream_type() : RS_STREAM_MAX_ENUM;
+    return frame_ptr ? frame_ptr->get_stream_type() : RS_STREAM_COUNT;
 }
 
 std::chrono::high_resolution_clock::time_point frame_archive::frame_ref::get_frame_callback_start_time_point() const

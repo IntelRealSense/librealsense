@@ -25,8 +25,6 @@ void log(const char* msg)
     logs.push_back(msg);
 }
 
-const double IMU_UNITS_TO_MSEC = 0.00003125;
-
 int main() try
 {
     rs::log_to_console(rs::log_severity::error);
@@ -44,20 +42,13 @@ int main() try
     printf("    Serial number: %s\n", dev->get_serial());
     printf("    Firmware version: %s\n", dev->get_firmware_version());
 
-    // Motion Module configurable options
-    std::vector<rs::option> mm_cfg_list = { rs::option::zr300_gyroscope_bandwidth,       rs::option::zr300_gyroscope_range,
-                                            rs::option::zr300_accelerometer_bandwidth,   rs::option::zr300_accelerometer_range };
-                                        // gyro_bw      gyro_range  accel_bw    accel_range
-    std::vector<double> mm_cfg_params = {       1,          1,          1,          1 };    // TODO expose as opaque gyro/accel parameters
-    assert(mm_cfg_list.size() == mm_cfg_params.size());
-
     auto motion_callback = [](rs::motion_data entry)
     {
         auto now = std::chrono::system_clock::now().time_since_epoch();
         auto sys_time = std::chrono::duration_cast<std::chrono::milliseconds>(now).count();
         std::stringstream ss;
         ss << "Motion,\t host time " << sys_time
-            << "\ttimestamp: " << std::setprecision(8) << (double)entry.timestamp_data.timestamp*IMU_UNITS_TO_MSEC
+            << "\ttimestamp: " << std::setprecision(8) << entry.timestamp_data.timestamp
             << "\tsource: " << (rs::event)entry.timestamp_data.source_id
             << "\tframe_num: " << entry.timestamp_data.frame_number
             << "\tx: " << std::setprecision(5) <<  entry.axes[0] << "\ty: " << entry.axes[1] << "\tz: " << entry.axes[2];
@@ -71,7 +62,7 @@ int main() try
         auto sys_time = std::chrono::duration_cast<std::chrono::milliseconds>(now).count();
         std::stringstream ss;
         ss << "TimeEvt, host time "  << sys_time
-            << "\ttimestamp: " << std::setprecision(8) << (double)entry.timestamp*IMU_UNITS_TO_MSEC
+            << "\ttimestamp: " << std::setprecision(8) << entry.timestamp
             << "\tsource: " << (rs::event)entry.source_id
             << "\tframe_num: " << entry.frame_number;
         log(ss.str().c_str());
@@ -95,7 +86,7 @@ int main() try
         dev->enable_stream(rs::stream::infrared2, 640, 480, rs::format::y8, 60);
         dev->enable_stream(rs::stream::fisheye, 640, 480, rs::format::raw8, 60);
 
-        dev->set_option(rs::option::r200_fisheye_strobe, 1);
+        dev->set_option(rs::option::fisheye_strobe, 1);
 
         auto frame_callback = [](rs::frame frame){
             auto now = std::chrono::system_clock::now().time_since_epoch();

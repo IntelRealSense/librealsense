@@ -27,7 +27,7 @@ namespace rsimpl
             int stride_y = 0;
             int bpp = 1;
             rs_format format = RS_FORMAT_ANY;
-            rs_stream stream_type = RS_STREAM_MAX_ENUM;
+            rs_stream stream_type = RS_STREAM_COUNT;
             rs_timestamp_domain timestamp_domain = RS_TIMESTAMP_DOMAIN_CAMERA;
             int pad = 0;
             std::chrono::high_resolution_clock::time_point frame_callback_started {};
