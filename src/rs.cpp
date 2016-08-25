@@ -437,7 +437,7 @@ rs_timestamp_domain rs_get_detached_frame_timestamp_domain(const rs_frame_ref * 
     VALIDATE_NOT_NULL(frame_ref);
     return frame_ref->get_frame_timestamp_domain();
 }
-HANDLE_EXCEPTIONS_AND_RETURN(RS_TIMESTAMP_DOMAIN_MAX_ENUM, frame_ref)
+HANDLE_EXCEPTIONS_AND_RETURN(RS_TIMESTAMP_DOMAIN_COUNT, frame_ref)
 
 const void * rs_get_detached_frame_data(const rs_frame_ref * frame_ref, rs_error ** error) try
 {
@@ -494,7 +494,7 @@ rs_stream rs_get_detached_frame_stream_type(const rs_frame_ref * frame_ref, rs_e
     VALIDATE_NOT_NULL(frame_ref);
     return frame_ref->get_stream_type();
 }
-HANDLE_EXCEPTIONS_AND_RETURN(RS_STREAM_MAX_ENUM, frame_ref)
+HANDLE_EXCEPTIONS_AND_RETURN(RS_STREAM_COUNT, frame_ref)
 
 
 unsigned long long rs_get_detached_frame_number(const rs_frame_ref * frame, rs_error ** error) try
