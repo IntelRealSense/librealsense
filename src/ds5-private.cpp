@@ -214,6 +214,9 @@ namespace ds5 {
                 << ",table type " << table->header.table_type          << ", size "    << table->header.table_size
                 << ", calibration version [mjr.mnr.ptch.rev]: " << std::hex     << table->header.version
                 << ", CRC: " << table->header.crc32);
+            // verify the parsed table
+            if (table->header.crc32 != calc_crc32(raw_data.data() + sizeof(table_header), raw_data.size() - sizeof(table_header)))
+                throw std::runtime_error(to_string() << "DS5 Coefficients table CRC error, parsing aborted");
             LOG_DEBUG(stringify(intrinsic_left) << array2str((float_9&)table->intrinsic_left) << std::endl
                 << stringify(intrinsic_right) << array2str((float_9&)table->intrinsic_right) << std::endl
                 << stringify(world2left_rot) << array2str((float_9&)table->world2left_rot) << std::endl
@@ -274,11 +277,16 @@ namespace ds5 {
         case depth_calibration_id:
         {
             if (raw_data.size() != sizeof(depth_calibration_table))
-                throw std::runtime_error(to_string() << "DS5 Calibration table read error, actual size is " << raw_data.size());
+                throw std::runtime_error(to_string() << "DS5 Calibration table read error, actual size is " << raw_data.size() << " while expecting " << sizeof(depth_calibration_table) << " bytes");
             depth_calibration_table *table = reinterpret_cast<depth_calibration_table *>(raw_data.data());
-            LOG_DEBUG("Table header: version " << table->header.version
-                << ",type " << table->header.table_type << ", size " << table->header.table_size << ", max depth value [mm] " << table->r_max << std::endl
-                << stringify(distortion_left) << array2str(table->distortion_left) << std::endl
+            LOG_DEBUG("Table header: table version major.minor: " << std::hex << table->header.version << std::dec
+                << ",table type " << table->header.table_type << ", size " << table->header.table_size
+                << ", calibration version [mjr.mnr.ptch.rev]: " << std::hex << table->header.version
+                << ", CRC: " << table->header.crc32);
+            // verify the parsed table
+            if (table->header.crc32 != calc_crc32(raw_data.data() + sizeof(table_header), raw_data.size() - sizeof(table_header)))
+                throw std::runtime_error(to_string() << "DS5 Depth Calibration table CRC error, parsing aborted");
+            LOG_DEBUG(stringify(distortion_left) << array2str(table->distortion_left) << std::endl
                 << stringify(distortion_right) << array2str(table->distortion_right) << std::endl
                 << stringify(k_depth) << array2str((float_9&)table->k_depth) << std::endl
                 << stringify(r_depth) << array2str(table->r_depth) << std::endl
@@ -301,6 +309,8 @@ namespace ds5 {
         default:
             LOG_WARNING("Parsing Calibration table type " << table_id << " is not supported yet");
         }
+
+        calib.data_present[table_id] = true;
     }
 
     void read_calibration(uvc::device & dev, std::timed_mutex & mutex, ds5_calibration& calib)
@@ -314,7 +324,6 @@ namespace ds5 {
             {
                 table_raw_data.clear();
                 get_calibration_table_entry(dev, mutex, id, table_raw_data);
-                calib.data_present[id] = true;
 
                 parse_calibration_table( calib, id, table_raw_data);
             }
@@ -339,19 +348,14 @@ namespace ds5 {
         ds::xu_write(device, depth_xu, ds::control::ds5_lsr_power, &laser_power, sizeof(uint8_t));
     }
 
-//    void get_lr_exposure(uvc::device & device, uint32_t & exposure)
-//    {
-//        ds::xu_read(device, depth_xu, ds::control::ds5_lr_exposure, &exposure, sizeof(exposure));   }
-
-    void set_lr_exposure(uvc::device & device, uint32_t exposure)
+    void set_lr_exposure(uvc::device & device, uint16_t exposure)
     {
         ds::xu_write(device, depth_xu, ds::control::ds5_lr_exposure, exposure);
     }
 
-    uint32_t get_lr_exposure(const uvc::device & device)
+    uint16_t get_lr_exposure(const uvc::device & device)
     {
         return ds::xu_read<uint16_t >(device, depth_xu, ds::control::ds5_lr_exposure);
     }
-
 } // namespace rsimpl::ds5
 } // namespace rsimpl

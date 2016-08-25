@@ -596,9 +596,7 @@ namespace rsimpl
         int get_pu_control(const device & device, int subdevice, rs_option option)
         {
             struct v4l2_control control = {get_cid(option)};
-            int res =  xioctl(device.subdevices[subdevice]->fd, VIDIOC_G_CTRL, &control);
-           if (res < 0)
-                throw_error("VIDIOC_G_CTRL");
+            if (xioctl(device.subdevices[subdevice]->fd, VIDIOC_G_CTRL, &control) < 0)  throw_error("VIDIOC_G_CTRL");
             if (RS_OPTION_COLOR_ENABLE_AUTO_EXPOSURE==option)  { control.value = (V4L2_EXPOSURE_MANUAL==control.value) ? 0 : 1; }
             return control.value;
         }

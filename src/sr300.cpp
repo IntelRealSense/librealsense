@@ -167,7 +167,7 @@ namespace rsimpl
             case RS_OPTION_SR300_WAKE_ON_USB_REASON:                    LOG_WARNING("Read-only property: " << options[i] << " on " << get_name()); break;
             case RS_OPTION_SR300_WAKE_ON_USB_CONFIDENCE:                LOG_WARNING("Read-only property: " << options[i] << " on " << get_name()); break;
 
-                // Default will be handled by parent implementation
+            // Default will be handled by parent implementation
             default: base_opt.push_back(options[i]); base_opt_val.push_back(values[i]); break;
             }
         }
