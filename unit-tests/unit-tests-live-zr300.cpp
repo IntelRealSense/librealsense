@@ -326,7 +326,7 @@ TEST_CASE("ZR300 Motion Module Strobe", "[live] [DS-device]")
 
 	double init_val = -1, test_val = -1, actual_val = -1;
 
-	rs::option opt = rs::option::r200_fisheye_strobe;
+	rs::option opt = rs::option::fisheye_strobe;
 
 	// Strobe is a boolean option value
     dev->get_options(&opt, 1, &init_val);

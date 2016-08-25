@@ -304,7 +304,7 @@ namespace rsimpl
         {
             hw_monitor::hwmon_cmd command(opcode);
 
-            perform_and_send_monitor_command(device, mutex, command);
+            perform_and_send_monitor_command_over_usb_monitor(device, mutex, command);
             memcpy(data, command.receivedCommandData, HW_MONITOR_BUFFER_SIZE);
             bytesReturned = command.receivedCommandDataLength;
         }

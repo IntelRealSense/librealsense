@@ -8,9 +8,9 @@
 extern "C" {
 #endif
 
-#define RS_API_MAJOR_VERSION    1
-#define RS_API_MINOR_VERSION    9
-#define RS_API_PATCH_VERSION    6
+#define RS_API_MAJOR_VERSION    2
+#define RS_API_MINOR_VERSION    0
+#define RS_API_PATCH_VERSION    0
 
 #define STRINGIFY(arg) #arg
 #define VAR_ARG_STRING(arg) STRINGIFY(arg)
@@ -100,9 +100,9 @@ typedef enum rs_distortion
     RS_DISTORTION_NONE                  , /**< Rectilinear images, no distortion compensation required */
     RS_DISTORTION_MODIFIED_BROWN_CONRADY, /**< Equivalent to Brown-Conrady distortion, except that tangential distortion is applied to radially distorted points */
     RS_DISTORTION_INVERSE_BROWN_CONRADY , /**< Equivalent to Brown-Conrady distortion, except undistorts image instead of distorting it */
-    RS_DISTORTION_FTHETA                ,
-    RS_DISTORTION_BROWN_CONRADY          = 4,   /* Brown-Conrady distortion model*/
-    RS_DISTORTION_COUNT                  = 5,
+    RS_DISTORTION_FTHETA                , /**< F-Theta fish-eye distortion model */
+    RS_DISTORTION_BROWN_CONRADY         , /**< Unmodified Brown-Conrady distortion model */
+    RS_DISTORTION_COUNT                 ,
 } rs_distortion;
 
 typedef enum rs_ivcam_preset
@@ -190,9 +190,8 @@ typedef enum rs_option
     RS_OPTION_FISHEYE_AUTO_EXPOSURE_SKIP_FRAMES               , /**< In Fisheye auto-exposure sample every given number of frames */
     RS_OPTION_FRAMES_QUEUE_SIZE                               , /**< Number of frames the user is allowed to keep per stream. Trying to hold-on to more frames will cause frame-drops.*/
     RS_OPTION_HARDWARE_LOGGER_ENABLED                         , /**< Enable / disable fetching log data from the device */
-    RS_OPTION_COUNT
-    RS_OPTION_DS5_LASER_POWER                                 = 76, /* TODO : Replace DS5 with TBD */
-    RS_OPTION_COUNT                                           = 77,
+    RS_OPTION_DS5_LASER_POWER                                 , /**< DS5 Emitter enabled */
+    RS_OPTION_COUNT                                           ,
 } rs_option;
 
 typedef enum rs_blob_type {

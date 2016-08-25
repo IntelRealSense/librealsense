@@ -121,8 +121,7 @@ namespace rsimpl
 
     static bool is_fisheye_uvc_control(rs_option option)
     {
-        return (option == RS_OPTION_FISHEYE_COLOR_EXPOSURE) ||
-               (option == RS_OPTION_FISHEYE_COLOR_GAIN);
+        return (option == RS_OPTION_FISHEYE_GAIN);
     }
 
     void ds5t_camera::set_options(const rs_option options[], size_t count, const double values[])

@@ -293,7 +293,7 @@ void rs_device_base::start_fw_logger(char fw_log_op_code, int grab_rate_in_ms, s
         while (keep_fw_logger_alive)
         {
             std::this_thread::sleep_for(std::chrono::milliseconds(grab_rate_in_ms));
-            hw_monitor::perform_and_send_monitor_command(this->get_device(), mutex, cmd);
+            hw_monitor::perform_and_send_monitor_command_over_usb_monitor(this->get_device(), mutex, cmd);
             char data[data_size];
             memcpy(data, cmd.receivedCommandData, cmd.receivedCommandDataLength);
 

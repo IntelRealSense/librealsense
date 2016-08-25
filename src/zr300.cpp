@@ -336,7 +336,7 @@ namespace rsimpl
     unsigned long long zr300_camera::get_frame_counter_by_usb_cmd()
     {
         hwmon_cmd cmd((int)adaptor_board_command::FRCNT);
-        perform_and_send_monitor_command(this->get_device(), usbMutex, cmd);
+        perform_and_send_monitor_command_over_usb_monitor(this->get_device(), usbMutex, cmd);
         unsigned long long frame_counter = 0;
         memcpy(&frame_counter, cmd.receivedCommandData, cmd.receivedCommandDataLength);
         return frame_counter;

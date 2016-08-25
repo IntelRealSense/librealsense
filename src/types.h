@@ -646,8 +646,7 @@ namespace rsimpl
     {
         return std::find_if(data.begin(), data.end(), [](byte b){ return b!=0; }) != data.end();
     }
-    
-        public:
+
     ///////////////////////////////////////////
     // Extrinsic auxillary routines routines //
     ///////////////////////////////////////////

@@ -22,7 +22,7 @@ namespace rsimpl
 
         void on_before_start(const std::vector<subdevice_mode_selection> & selected_modes) override;
         rs_stream select_key_stream(const std::vector<rsimpl::subdevice_mode_selection> & selected_modes) override;
-        std::shared_ptr<frame_timestamp_reader> create_frame_timestamp_reader(int subdevice) const override;
+        std::vector<std::shared_ptr<rsimpl::frame_timestamp_reader>> create_frame_timestamp_readers() const override;
 
     };
 }
