@@ -297,7 +297,7 @@ namespace rsimpl
         const pixel_format_unpacker & get_unpacker() const {
             if ((size_t)unpacker_index < mode.pf.unpackers.size())
                 return mode.pf.unpackers[unpacker_index];
-            throw std::runtime_error("failed to fetch an unpakcer, most likely becouse enable_stream was not called!");
+            throw std::runtime_error("failed to fetch an unpakcer, most likely because enable_stream was not called!");
         }
         const std::vector<std::pair<rs_stream, rs_format>> & get_outputs() const { return get_unpacker().outputs; }
         int get_width() const { return mode.native_intrinsics.width + pad_crop * 2; }
@@ -318,20 +318,28 @@ namespace rsimpl
 
     };
 
+    typedef void(*frame_callback_function_ptr)(rs_device * dev, rs_frame_ref * frame, void * user);
+    typedef void(*motion_callback_function_ptr)(rs_device * dev, rs_motion_data data, void * user);
+    typedef void(*timestamp_callback_function_ptr)(rs_device * dev, rs_timestamp_data data, void * user);
+    typedef void(*log_callback_function_ptr)(rs_log_severity severity, const char * message, void * user);
+
     class frame_callback : public rs_frame_callback
     {
-        void(*fptr)(rs_device * dev, rs_frame_ref * frame, void * user);
+        frame_callback_function_ptr fptr;
         void * user;
         rs_device * device;
     public:
         frame_callback() : frame_callback(nullptr, nullptr, nullptr) {}
-        frame_callback(rs_device * dev, void(*on_frame)(rs_device *, rs_frame_ref *, void *), void * user) : fptr(on_frame), user(user), device(dev) {}
+        frame_callback(rs_device * dev, frame_callback_function_ptr on_frame, void * user) : fptr(on_frame), user(user), device(dev) {}
 
         operator bool() { return fptr != nullptr; }
         void on_frame (rs_device * dev, rs_frame_ref * frame) override { 
             if (fptr)
             {
-                try { fptr(dev, frame, user); } catch (...) {}
+                try { fptr(dev, frame, user); } catch (...) 
+                {
+                    LOG_ERROR("Received an execption from frame callback!");
+                }
             }
         }
         void release() override { delete this; }
@@ -339,12 +347,12 @@ namespace rsimpl
 
     class motion_events_callback : public rs_motion_callback
     {
-        void(*fptr)(rs_device * dev, rs_motion_data data, void * user);
+        motion_callback_function_ptr fptr;
         void        * user;
         rs_device   * device;
     public:
         motion_events_callback() : motion_events_callback(nullptr, nullptr, nullptr) {}
-        motion_events_callback(rs_device * dev, void(*fptr)(rs_device *, rs_motion_data, void *), void * user) : fptr(fptr), user(user), device(dev) {}
+        motion_events_callback(rs_device * dev, motion_callback_function_ptr fptr, void * user) : fptr(fptr), user(user), device(dev) {}
 
         operator bool() { return fptr != nullptr; }
 
@@ -352,7 +360,10 @@ namespace rsimpl
         {
             if (fptr)
             {
-                try { fptr(device, data, user); } catch (...) {}
+                try { fptr(device, data, user); } catch (...)
+                {
+                    LOG_ERROR("Received an execption from motion events callback!");
+                }
             }
         }
 
@@ -361,18 +372,21 @@ namespace rsimpl
 
     class timestamp_events_callback : public rs_timestamp_callback
     {
-        void(*fptr)(rs_device * dev, rs_timestamp_data data, void * user);
+        timestamp_callback_function_ptr fptr;
         void        * user;
         rs_device   * device;
     public:
         timestamp_events_callback() : timestamp_events_callback(nullptr, nullptr, nullptr) {}
-        timestamp_events_callback(rs_device * dev, void(*fptr)(rs_device *, rs_timestamp_data, void *), void * user) : fptr(fptr), user(user), device(dev) {}
+        timestamp_events_callback(rs_device * dev, timestamp_callback_function_ptr fptr, void * user) : fptr(fptr), user(user), device(dev) {}
 
         operator bool() { return fptr != nullptr; }
         void on_event(rs_timestamp_data data) override {
             if (fptr)
             {
-                try { fptr(device, data, user); } catch (...) {}
+                try { fptr(device, data, user); } catch (...) 
+                {
+                    LOG_ERROR("Received an execption from timestamp events callback!");
+                }
             }
         }
         void release() override { }
@@ -380,11 +394,11 @@ namespace rsimpl
 
     class log_callback : public rs_log_callback
     {
-        void(*fptr)(rs_log_severity severity, const char * message, void * user);
+        log_callback_function_ptr fptr;
         void        * user;
     public:
         log_callback() : log_callback(nullptr, nullptr) {}
-        log_callback(void(*fptr)(rs_log_severity, const char *, void *), void * user) : fptr(fptr), user(user) {}
+        log_callback(log_callback_function_ptr fptr, void * user) : fptr(fptr), user(user) {}
 
         operator bool() { return fptr != nullptr; }
 
@@ -393,7 +407,10 @@ namespace rsimpl
             if (fptr)
             {
                 try { fptr(severity, message, user); }
-                catch (...) {}
+                catch (...)
+                {
+                    LOG_ERROR("Received an execption from log callback!");
+                }
             }
         }
 

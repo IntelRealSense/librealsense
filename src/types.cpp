@@ -248,8 +248,6 @@ namespace rsimpl
         {
         CASE(CAMERA)
         CASE(MICROCONTROLLER)
-        CASE(COUNT)
-        CASE(MAX_ENUM)
         default: assert(!is_valid(value)); return unknown;
         }
         #undef CASE
