@@ -173,7 +173,7 @@ namespace rsimpl
             {
                 case RS_OPTION_R200_LR_EXPOSURE:    values[i] = ds5::get_lr_exposure(get_device()); break;
 
-                default: base_opt.push_back(options[i]); base_opt_val.push_back(values[i]); break;
+                default: base_opt.push_back(options[i]); base_opt_index.push_back(values[i]); break;
             }
         }
 
@@ -185,7 +185,7 @@ namespace rsimpl
         }
 
         // Merge the local data with values obtained by base class
-        for (auto i : base_opt_index)
+        for (auto i =0; i< base_opt_index.size(); i++)
             values[i] = base_opt_val[i];
     }
 
