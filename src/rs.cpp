@@ -257,8 +257,7 @@ void rs_get_motion_intrinsics(const rs_device * device, rs_motion_intrinsics * i
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, device, intrinsic)
 
-void rs_set_frame_callback(rs_device * device, rs_stream stream, 
-    void(*on_frame)(rs_device * dev, rs_frame_ref * frame, void * user), void * user, rs_error ** error) try
+void rs_set_frame_callback(rs_device * device, rs_stream stream, rs_frame_callback_ptr on_frame, void * user, rs_error ** error) try
 {
     VALIDATE_NOT_NULL(device);
     VALIDATE_ENUM(stream);
@@ -276,9 +275,23 @@ void rs_set_frame_callback_cpp(rs_device * device, rs_stream stream, rs_frame_ca
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, device, stream, callback)
 
+void rs_log_to_callback(rs_log_severity min_severity, rs_log_callback_ptr on_log, void * user, rs_error ** error) try
+{
+    VALIDATE_NOT_NULL(on_log);
+    rsimpl::log_to_callback(min_severity, on_log, user);
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, min_severity, on_log, user)
+
+void rs_log_to_callback_cpp(rs_log_severity min_severity, rs_log_callback * callback, rs_error ** error) try
+{
+    VALIDATE_NOT_NULL(callback);
+    rsimpl::log_to_callback(min_severity, callback);
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, min_severity, callback)
+
 void rs_enable_motion_tracking(rs_device * device,
-    void(*on_motion_event)(rs_device * dev, rs_motion_data m_data, void * user), void * motion_handler,
-    void(*on_timestamp_event)(rs_device * dev, rs_timestamp_data t_data, void * user), void * timestamp_handler,
+    rs_motion_callback_ptr on_motion_event, void * motion_handler,
+    rs_timestamp_callback_ptr on_timestamp_event, void * timestamp_handler,
     rs_error ** error) try
 {
     VALIDATE_NOT_NULL(device);
@@ -424,7 +437,7 @@ rs_timestamp_domain rs_get_detached_frame_timestamp_domain(const rs_frame_ref * 
     VALIDATE_NOT_NULL(frame_ref);
     return frame_ref->get_frame_timestamp_domain();
 }
-HANDLE_EXCEPTIONS_AND_RETURN(RS_TIMESTAMP_DOMAIN_MAX_ENUM, frame_ref)
+HANDLE_EXCEPTIONS_AND_RETURN(RS_TIMESTAMP_DOMAIN_COUNT, frame_ref)
 
 const void * rs_get_detached_frame_data(const rs_frame_ref * frame_ref, rs_error ** error) try
 {
@@ -481,7 +494,7 @@ rs_stream rs_get_detached_frame_stream_type(const rs_frame_ref * frame_ref, rs_e
     VALIDATE_NOT_NULL(frame_ref);
     return frame_ref->get_stream_type();
 }
-HANDLE_EXCEPTIONS_AND_RETURN(RS_STREAM_MAX_ENUM, frame_ref)
+HANDLE_EXCEPTIONS_AND_RETURN(RS_STREAM_COUNT, frame_ref)
 
 
 unsigned long long rs_get_detached_frame_number(const rs_frame_ref * frame, rs_error ** error) try
@@ -617,6 +630,14 @@ double rs_get_device_option(rs_device * device, rs_option option, rs_error ** er
     return value;
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, device, option)
+
+const char * rs_get_device_option_description(rs_device * device, rs_option option, rs_error ** error) try
+{
+    VALIDATE_NOT_NULL(device);
+    VALIDATE_ENUM(option);
+    return device->get_option_description(option);
+}
+HANDLE_EXCEPTIONS_AND_RETURN("", device, option)
 
 void rs_set_device_option(rs_device * device, rs_option option, double value, rs_error ** error) try
 {

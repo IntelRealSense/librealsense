@@ -33,6 +33,7 @@
 
 // TODO consider to expose cameras id strings in rs.hpp via <PID:NAME> construct
 static const std::vector<std::string> ds_names = { "Intel RealSense R200" ,"Intel RealSense LR200", "Intel RealSense ZR300" };
+enum { Intel_R200, Intel_LR200, Intel_ZR300};
 
 enum { BEFORE_START_DEVICE = 1, AFTER_START_DEVICE = 2 };
 

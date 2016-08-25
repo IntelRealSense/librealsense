@@ -13,10 +13,18 @@ namespace rsimpl
 {
     struct stream_interface : rs_stream_interface
     {
-        virtual rs_extrinsics                   get_extrinsics_to(const rs_stream_interface & r) const override;
+        stream_interface(calibration_validator in_validator, rs_stream in_stream) : validator(in_validator), stream(in_stream){};
+                                                                 
+        virtual rs_extrinsics                   get_extrinsics_to(const rs_stream_interface & other) const override;
         virtual rsimpl::pose                    get_pose() const = 0;
         virtual int                             get_mode_count() const override { return 0; }
         virtual void                            get_mode(int mode, int * w, int * h, rs_format * f, int * fps) const override { throw std::logic_error("no modes"); }
+        virtual rs_stream                       get_stream_type()const override { return stream; }
+
+        const rs_stream   stream;
+
+    protected:
+        calibration_validator validator;
     };
     
     class frame_archive;
@@ -25,11 +33,11 @@ namespace rsimpl
     struct native_stream final : public stream_interface
     {
         const device_config &                   config;
-        const rs_stream                         stream;
+        
         std::vector<subdevice_mode_selection>   modes;
         std::shared_ptr<syncronizing_archive>   archive;
 
-                                                native_stream(device_config & config, rs_stream stream);
+                                                native_stream(device_config & config, rs_stream stream, calibration_validator in_validator);
 
         pose                                    get_pose() const override { return config.info.stream_poses[stream]; }
         float                                   get_depth_scale() const override { return config.depth_scale; }
@@ -58,7 +66,7 @@ namespace rsimpl
         mutable std::vector<uint8_t>            image;
         mutable unsigned long long              number;
     public:
-                                                point_stream(const stream_interface & source) : source(source), number() {}
+        point_stream(const stream_interface & source) :stream_interface(calibration_validator(), RS_STREAM_POINTS), source(source), number() {}
 
         pose                                    get_pose() const override { return {{{1,0,0},{0,1,0},{0,0,1}}, source.get_pose().position}; }
         float                                   get_depth_scale() const override { return source.get_depth_scale(); }
@@ -85,7 +93,7 @@ namespace rsimpl
         mutable std::vector<uint8_t>            image;
         mutable unsigned long long              number;
     public:
-                                                rectified_stream(const stream_interface & source) : source(source), number() {}
+        rectified_stream(const stream_interface & source) : stream_interface(calibration_validator(), RS_STREAM_RECTIFIED_COLOR), source(source), number() {}
 
         pose                                    get_pose() const override { return {{{1,0,0},{0,1,0},{0,0,1}}, source.get_pose().position}; }
         float                                   get_depth_scale() const override { return source.get_depth_scale(); }
@@ -111,7 +119,7 @@ namespace rsimpl
         mutable std::vector<uint8_t>            image;
         mutable unsigned long long              number;
     public:
-                                                aligned_stream(const stream_interface & from, const stream_interface & to) : from(from), to(to), number() {}
+        aligned_stream(const stream_interface & from, const stream_interface & to) :stream_interface(calibration_validator(), RS_STREAM_COLOR_ALIGNED_TO_DEPTH), from(from), to(to), number() {}
 
         pose                                    get_pose() const override { return to.get_pose(); }
         float                                   get_depth_scale() const override { return to.get_depth_scale(); }
