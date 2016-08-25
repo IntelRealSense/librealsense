@@ -197,4 +197,80 @@ TEST_CASE("DS5 Streaming Formats validation", "[live] [DS-device]")
         }
     }
 }
+
+TEST_CASE("DS5 Manual Gain Control verification", "[live] [DS-device]")
+{
+    rs::context ctx;
+    REQUIRE(ctx.get_device_count() == 1);
+
+    rs::device * dev = ctx.get_device(0);
+    REQUIRE(nullptr != dev);
+
+    std::string name = dev->get_name();
+    REQUIRE(std::string::npos != name.find("Intel RealSense DS5"));
+
+    int index = 0;
+    double set_val = 30., reset_val = 80., res = 0.;
+
+    double gain_ctrl_init = 0.;
+    rs::option opt = rs::option::color_gain;
+
+    dev->get_options(&opt, 1, &gain_ctrl_init);
+    INFO("Initial gain control value obtained from hardware is " << gain_ctrl_init);
+
+    // Apply several iterations
+    for (uint8_t i = 0; i < 1; i++)
+    {
+        dev->set_options(&opt, 1, &set_val);
+        dev->get_options(&opt, 1, &res);
+        REQUIRE(set_val == res);
+
+        dev->set_options(&opt, 1, &reset_val);
+        dev->get_options(&opt, 1, &res);
+        REQUIRE(reset_val == res);
+    }
+
+    // Revert to original value
+    dev->set_options(&opt, 1, &gain_ctrl_init);
+    dev->get_options(&opt, 1, &res);
+    REQUIRE(gain_ctrl_init == res);
+}
+
+TEST_CASE("DS5 Manual Exposure Control verification", "[live] [DS-device]")
+{
+    rs::context ctx;
+    REQUIRE(ctx.get_device_count() == 1);
+
+    rs::device * dev = ctx.get_device(0);
+    REQUIRE(nullptr != dev);
+
+    std::string name = dev->get_name();
+    REQUIRE(std::string::npos != name.find("Intel RealSense DS5"));
+
+    int index = 0;
+    double set_val = 1200., reset_val = 80., res = 0.;
+
+    double exposure_ctrl_init = 0.;
+    rs::option opt = rs::option::r200_lr_exposure;
+
+    //dev->get_options(&opt, 1, &exposure_ctrl_init);
+    INFO("Initial exposure control value obtained from hardware is " << exposure_ctrl_init);
+
+    // Apply several iterations
+    for (uint8_t i = 0; i < 1; i++)
+    {
+        dev->set_options(&opt, 1, &set_val);
+        dev->get_options(&opt, 1, &res);
+        REQUIRE(set_val == res);
+
+        dev->set_options(&opt, 1, &reset_val);
+        dev->get_options(&opt, 1, &res);
+        REQUIRE(reset_val == res);
+    }
+
+    // Revert to original value
+    dev->set_options(&opt, 1, &exposure_ctrl_init);
+    dev->get_options(&opt, 1, &res);
+    REQUIRE(exposure_ctrl_init == res);
+}
 #endif /* #if !defined(MAKEFILE) || ( defined(LIVE_TEST) && defined(DS5_TEST) ) */

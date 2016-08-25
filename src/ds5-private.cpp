@@ -339,18 +339,19 @@ namespace ds5 {
         ds::xu_write(device, depth_xu, ds::control::ds5_laser_power, &laser_power, sizeof(uint8_t));
     }
 
-    void get_lr_exposure(uvc::device & device, uint32_t & exposure)
-    {
-        ds::xu_read(device, depth_xu, ds::control::lr_exposure, &exposure, sizeof(exposure));   }
+//    void get_lr_exposure(uvc::device & device, uint16_t & exposure)
+//    {
+//        ds::xu_read(device, depth_xu, ds::control::lr_exposure, &exposure, sizeof(exposure));
+//    }
 
     void set_lr_exposure(uvc::device & device, uint32_t exposure)
     {
-        ds::xu_write(device, depth_xu, ds::control::lr_exposure, exposure);
+        ds::xu_write(device, depth_xu, ds::control::ds5_lr_exposure, &exposure);
     }
 
-    uint16_t get_lr_exposure(const uvc::device & device)
+    uint32_t get_lr_exposure(const uvc::device & device)
     {
-        return ds::xu_read<uint16_t >(device, depth_xu, ds::control::lr_exposure);
+        return ds::xu_read<uint32_t >(device, depth_xu, ds::control::ds5_lr_exposure);
     }
 
 } // namespace rsimpl::ds5
