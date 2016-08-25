@@ -53,10 +53,6 @@ namespace rsimpl
             switch (options[i])
             {
                 case RS_OPTION_DS5_LASER_POWER:           ds5::get_laser_power(get_device(), val); values[i] = val; break;
-                case RS_OPTION_R200_LR_EXPOSURE: // Exposure is framerate dependent
-                    ds::set_lr_exposure_discovery(get_device(), { get_lr_framerate() });
-                    values[i] = ds::get_lr_exposure(get_device()).value;
-                    break;
 
                 default:
                     LOG_WARNING("Get " << options[i] << " for " << get_name() << " is not supported");
@@ -130,16 +126,6 @@ namespace rsimpl
     std::shared_ptr<frame_timestamp_reader> ds5_camera::create_frame_timestamp_reader(int subdevice) const
     {
         return std::make_shared<ds5_timestamp_reader>();
-    }
-
-    uint32_t ds5_camera::get_lr_framerate() const
-    {
-        for (auto s : { RS_STREAM_DEPTH, RS_STREAM_INFRARED, RS_STREAM_INFRARED2 })
-        {
-            auto & stream = get_stream_interface(s);
-            if (stream.is_enabled()) return static_cast<uint32_t>(stream.get_framerate());
-        }
-        return 30; // If no streams have yet been enabled, return the minimum possible left/right framerate, to allow the maximum possible exposure range
     }
 
 } // namespace rsimpl::ds5

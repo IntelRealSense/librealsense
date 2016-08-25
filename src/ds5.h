@@ -24,7 +24,6 @@ namespace rsimpl
         rs_stream select_key_stream(const std::vector<rsimpl::subdevice_mode_selection> & selected_modes) override;
         std::shared_ptr<frame_timestamp_reader> create_frame_timestamp_reader(int subdevice) const override;
 
-        uint32_t get_lr_framerate() const;
     };
 }
 
