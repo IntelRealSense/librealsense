@@ -651,6 +651,8 @@ namespace rsimpl
     // Extrinsic auxillary routines routines //
     ///////////////////////////////////////////
     float3x3 calc_rodrigues_matrix(const std::vector<double> rot);
+    // Auxillary function that calculates standard 32bit CRC code. used in verificaiton
+    uint32_t calc_crc32(uint8_t *buf, size_t bufsize);;
 }
 
 #endif
