@@ -55,7 +55,7 @@ namespace rsimpl {
         reserved_2,
         reserved_3,
         max_ds5_rect_resoluitons
-    };	
+    };
 
     static std::map< ds5_rect_resolutions, int2> resolutions_list = {
         { res_320_240,  { 320, 240 } },
@@ -82,13 +82,13 @@ namespace rsimpl {
 
         ds5_calibration(): version(0)
         {
-			data_present.emplace(coefficients_table_id, false);
-			data_present.emplace(rgb_calibration_id, false);
-			data_present.emplace(fisheye_calibration_id, false);
-			data_present.emplace(imu_calibration_id, false);
-			data_present.emplace(lens_shading_id, false);
-			data_present.emplace(projector_id, false);
-		};
+            data_present.emplace(coefficients_table_id, false);
+            data_present.emplace(rgb_calibration_id, false);
+            data_present.emplace(fisheye_calibration_id, false);
+            data_present.emplace(imu_calibration_id, false);
+            data_present.emplace(lens_shading_id, false);
+            data_present.emplace(projector_id, false);
+        };
     };
 
     std::string read_firmware_version(uvc::device & device);
@@ -106,6 +106,9 @@ namespace rsimpl {
     // XU read/write
     void get_laser_power(const uvc::device & device, uint8_t & laser_power);
     void set_laser_power(uvc::device & device, uint8_t laser_power);
+    void get_lr_exposure(uvc::device & device, uint32_t & exposure);
+    void set_lr_exposure(uvc::device & device, uint32_t exposure);
+    uint16_t get_lr_exposure(const uvc::device & device);
 
 
 } //namespace rsimpl::ds5
