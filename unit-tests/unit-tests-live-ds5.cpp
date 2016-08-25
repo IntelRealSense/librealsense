@@ -158,6 +158,7 @@ TEST_CASE("DS5 laser power control verification", "[live] [DS-device]")
     rs::option opt = rs::option::ds5_laser_power;
 
     dev->get_options(&opt, 1, &lsr_init_power);
+    std::this_thread::sleep_for(std::chrono::milliseconds(20));
     INFO("Initial laser power value obtained from hardware is " << lsr_init_power);
 
     for (uint8_t i = 0; i < 10; i++) // Laser power is specified in % of max power  - TODO: verify with FW
@@ -166,12 +167,18 @@ TEST_CASE("DS5 laser power control verification", "[live] [DS-device]")
         dev->get_options(&opt, 1, &res);
         REQUIRE(set_val == res);
 
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+
         dev->set_options(&opt, 1, &reset_val);
         dev->get_options(&opt, 1, &res);
         REQUIRE(reset_val == res);
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
 
+    // Revert to original value
     dev->set_options(&opt, 1, &lsr_init_power);
+    dev->get_options(&opt, 1, &res);
+    REQUIRE(lsr_init_power == res);
 }
 
 TEST_CASE("DS5 Streaming Formats validation", "[live] [DS-device]")
