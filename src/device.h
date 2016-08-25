@@ -8,7 +8,8 @@
 #include "uvc.h"
 #include "stream.h"
 #include <chrono>
-
+#include <memory>
+#include <vector>
 
 namespace rsimpl
 {
@@ -51,9 +52,9 @@ namespace rsimpl
         }
 
     private:
-        unsigned long long num_of_wraparounds;
         T max_number;
         T last_number;
+        unsigned long long num_of_wraparounds;
     };
 
     struct frame_timestamp_reader
@@ -68,7 +69,6 @@ namespace rsimpl
     {
         struct motion_module_parser;
     }
-
     struct cam_mode { int2 dims; std::vector<int> fps; };
 }
 
@@ -96,6 +96,9 @@ private:
 
     mutable std::string                         usb_port_id;
     mutable std::mutex                          usb_port_mutex;
+
+    std::shared_ptr<std::thread>                fw_logger;
+
 protected:
     const rsimpl::uvc::device &                 get_device() const { return *device; }
     rsimpl::uvc::device &                       get_device() { return *device; }
@@ -106,11 +109,13 @@ protected:
     virtual void                                stop_motion_tracking();
 
     virtual void                                disable_auto_option(int subdevice, rs_option auto_opt);
+    virtual void                                on_before_callback(rs_stream, rs_frame_ref *, std::shared_ptr<rsimpl::frame_archive>) { }
 
-    bool                                        motion_module_ready = false;
+    bool                                        motion_module_ready;
+    std::atomic<bool>                           keep_fw_logger_alive;
 public:
-                                                rs_device_base(std::shared_ptr<rsimpl::uvc::device> device, const rsimpl::static_device_info & info);
-                                                virtual ~rs_device_base();
+    rs_device_base(std::shared_ptr<rsimpl::uvc::device> device, const rsimpl::static_device_info & info, rsimpl::calibration_validator validator = rsimpl::calibration_validator());
+    virtual ~rs_device_base();
 
     const rsimpl::stream_interface &            get_stream_interface(rs_stream stream) const override { return *streams[stream]; }
 
@@ -140,12 +145,15 @@ public:
     virtual void                                start(rs_source source) override;
     virtual void                                stop(rs_source source) override;
 
+    virtual void                                start_fw_logger(char fw_log_op_code, int grab_rate_in_ms, std::timed_mutex& mutex) override;
+    virtual void                                stop_fw_logger() override;
+
     bool                                        is_capturing() const override { return capturing; }
     int                                         is_motion_tracking_active() const override { return data_acquisition_active; }
-    
+
     void                                        wait_all_streams() override;
     bool                                        poll_all_streams() override;
-    
+
     virtual bool                                supports(rs_capabilities capability) const override;
 
     virtual bool                                supports_option(rs_option option) const override;
@@ -154,13 +162,16 @@ public:
     virtual void                                get_options(const rs_option options[], size_t count, double values[])override;
     virtual void                                on_before_start(const std::vector<rsimpl::subdevice_mode_selection> & selected_modes) = 0;
     virtual rs_stream                           select_key_stream(const std::vector<rsimpl::subdevice_mode_selection> & selected_modes) = 0;
-    virtual std::shared_ptr<rsimpl::frame_timestamp_reader>  create_frame_timestamp_reader(int subdevice) const = 0;
+    virtual std::vector<std::shared_ptr<rsimpl::frame_timestamp_reader>> 
+                                                create_frame_timestamp_readers() const = 0;
     void                                        release_frame(rs_frame_ref * ref) override;
     const char *                                get_usb_port_id() const override;
     rs_frame_ref *                              clone_frame(rs_frame_ref * frame) override;
 
     virtual void                                send_blob_to_device(rs_blob_type type, void * data, size_t size) { throw std::runtime_error("not supported!"); }
     static void                                 update_device_info(rsimpl::static_device_info& info);
+
+    const char *                                get_option_description(rs_option option) const override;
 };
 
 #endif

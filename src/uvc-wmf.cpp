@@ -272,11 +272,11 @@ namespace rsimpl
             com_ptr<IAMVideoProcAmp> am_video_proc_amp;
             std::map<int, com_ptr<IKsControl>> ks_controls;
             com_ptr<IMFSourceReader> mf_source_reader;
-            std::function<void(const void * frame, std::function<void()>)> callback;
-            std::function<void(const unsigned char * data, const int size)> channel_data_callback = nullptr;
+            video_channel_callback callback = nullptr;
+            data_channel_callback  channel_data_callback = nullptr;
             int vid, pid;
 
-            void set_data_channel_cfg(std::function<void(const unsigned char * data, const int size)> callback)
+            void set_data_channel_cfg(data_channel_callback callback)
             {
                 this->channel_data_callback = callback;
             }
@@ -755,7 +755,8 @@ namespace rsimpl
             node.Property.Flags = KSPROPERTY_TYPE_SET | KSPROPERTY_TYPE_TOPOLOGY;
             node.NodeId = xu.node;
                 
-            check("IKsControl::KsProperty", ks_control->KsProperty((PKSPROPERTY)&node, sizeof(KSP_NODE), data, len, nullptr));
+			ULONG bytes_received = 0;
+            check("IKsControl::KsProperty", ks_control->KsProperty((PKSPROPERTY)&node, sizeof(KSP_NODE), data, len, &bytes_received));
         }
 
         void claim_interface(device & device, const guid & interface_guid, int interface_number)
@@ -768,54 +769,6 @@ namespace rsimpl
         {
             device.open_win_usb(device.aux_vid, device.aux_pid, device.aux_unique_id, interface_guid, interface_number);
             device.claimed_interfaces.push_back(interface_number);
-        }
-
-        void power_on_adapter_board()
-        {
-            IMFAttributes * pAttributes = NULL;
-            check("MFCreateAttributes", MFCreateAttributes(&pAttributes, 1));
-            check("IMFAttributes::SetGUID", pAttributes->SetGUID(MF_DEVSOURCE_ATTRIBUTE_SOURCE_TYPE, MF_DEVSOURCE_ATTRIBUTE_SOURCE_TYPE_VIDCAP_GUID));
-
-            IMFActivate ** ppDevices;
-            UINT32 numDevices;
-            check("MFEnumDeviceSources", MFEnumDeviceSources(pAttributes, &ppDevices, &numDevices));
-
-            auto context = rsimpl::uvc::create_context();
-            std::shared_ptr<device> fish_eye_dev;
-            std::vector<std::shared_ptr<device>> devices;
-            for (UINT32 i = 0; i < numDevices; ++i)
-            {
-                com_ptr<IMFActivate> pDevice;
-                *&pDevice = ppDevices[i];
-
-                WCHAR * wchar_name = NULL; UINT32 length;
-                pDevice->GetAllocatedString(MF_DEVSOURCE_ATTRIBUTE_SOURCE_TYPE_VIDCAP_SYMBOLIC_LINK, &wchar_name, &length);
-                auto name = win_to_utf(wchar_name);
-                CoTaskMemFree(wchar_name);
-
-                int vid, pid, mi; std::string unique_id;
-                if (!parse_usb_path(vid, pid, mi, unique_id, name)) continue;
-
-                if (vid == 0x8086 && pid == 0x0ad0)
-                {
-                    fish_eye_dev = std::make_shared<device>(context, vid, pid, unique_id);
-                    break;
-                }
-            }
-
-            CoTaskMemFree(ppDevices);
-
-            if (!fish_eye_dev)
-                return;
-
-            std::timed_mutex mutex;
-            claim_interface(*fish_eye_dev, FISHEYE_WIN_USB_DEVICE_GUID, FISHEYE_HWMONITOR_INTERFACE);
-            rsimpl::hw_monitor::hwmon_cmd cmd(0x0b);
-            cmd.Param1 = 1;
-            perform_and_send_monitor_command_over_usb_monitor(*fish_eye_dev, mutex, cmd);
-            Sleep(2000);
-
-            return;
         }
 
         void bulk_transfer(device & device, uint8_t endpoint, void * data, int length, int *actual_length, unsigned int timeout)
@@ -831,7 +784,7 @@ namespace rsimpl
             }
         }
 
-        void set_subdevice_mode(device & device, int subdevice_index, int width, int height, uint32_t fourcc, int fps, std::function<void(const void * frame, std::function<void()> continuation)> callback)
+        void set_subdevice_mode(device & device, int subdevice_index, int width, int height, uint32_t fourcc, int fps, video_channel_callback callback)
         {
             auto & sub = device.subdevices[subdevice_index];
             
@@ -842,6 +795,8 @@ namespace rsimpl
                 check("IMFAttributes::SetUnknown", pAttributes->SetUnknown(MF_SOURCE_READER_ASYNC_CALLBACK, static_cast<IUnknown *>(sub.reader_callback)));
                 check("MFCreateSourceReaderFromMediaSource", MFCreateSourceReaderFromMediaSource(sub.get_media_source(), pAttributes, &sub.mf_source_reader));
             }
+
+            if (fourcc_map.count(fourcc))   fourcc = fourcc_map.at(fourcc);
 
             for (DWORD j = 0; ; j++)
             {
@@ -871,7 +826,7 @@ namespace rsimpl
             throw std::runtime_error(to_string() << "no matching media type for fourcc " << std::hex << fourcc << std::dec);
         }
 
-        void set_subdevice_data_channel_handler(device & device, int subdevice_index, std::function<void(const unsigned char * data, const int size)> callback)
+        void set_subdevice_data_channel_handler(device & device, int subdevice_index, data_channel_callback callback)
         {           
             device.subdevices[subdevice_index].set_data_channel_cfg(callback);
         }
@@ -901,14 +856,14 @@ namespace rsimpl
             {RS_OPTION_COLOR_SHARPNESS, VideoProcAmp_Sharpness},
             {RS_OPTION_COLOR_WHITE_BALANCE, VideoProcAmp_WhiteBalance},
             {RS_OPTION_COLOR_ENABLE_AUTO_WHITE_BALANCE, VideoProcAmp_WhiteBalance, true},
-            {RS_OPTION_FISHEYE_COLOR_GAIN, VideoProcAmp_Gain}
+            {RS_OPTION_FISHEYE_GAIN, VideoProcAmp_Gain}
         };
 
         void set_pu_control(device & device, int subdevice, rs_option option, int value)
         {
             auto & sub = device.subdevices[subdevice];
             sub.get_media_source();
-            if (option == RS_OPTION_COLOR_EXPOSURE || option == RS_OPTION_FISHEYE_COLOR_EXPOSURE)
+            if (option == RS_OPTION_COLOR_EXPOSURE)
             {
                 check("IAMCameraControl::Set", sub.am_camera_control->Set(CameraControl_Exposure, static_cast<int>(value), CameraControl_Flags_Manual));
                 return;
@@ -959,7 +914,7 @@ namespace rsimpl
             auto & sub = device.subdevices[subdevice];
             const_cast<uvc::subdevice &>(sub).get_media_source();
             long minVal=0, maxVal=0, steppingDelta=0, defVal=0, capsFlag=0;
-            if (option == RS_OPTION_COLOR_EXPOSURE || option == RS_OPTION_FISHEYE_COLOR_EXPOSURE)
+            if (option == RS_OPTION_COLOR_EXPOSURE)
             {
                 check("IAMCameraControl::Get", sub.am_camera_control->GetRange(CameraControl_Exposure, &minVal, &maxVal, &steppingDelta, &defVal, &capsFlag));
                 if (min)  *min = minVal;
@@ -1064,7 +1019,7 @@ namespace rsimpl
             // first call to get_media_source is also initializing the am_camera_control pointer, required for this method
             const_cast<uvc::subdevice &>(sub).get_media_source(); // initialize am_camera_control
             long value=0, flags=0;
-            if (option == RS_OPTION_COLOR_EXPOSURE || option == RS_OPTION_FISHEYE_COLOR_EXPOSURE)
+            if (option == RS_OPTION_COLOR_EXPOSURE)
             {
                 // am_camera_control != null, because get_media_source was called at least once
                 check("IAMCameraControl::Get", sub.am_camera_control->Get(CameraControl_Exposure, &value, &flags));
@@ -1156,17 +1111,17 @@ namespace rsimpl
 
             for(auto& devA : devices) // Look for CX3 Fisheye camera
             {
-               if(devA->vid == 0x8086 && devA->pid == 0x0ad0)
+               if(devA->vid == VID_INTEL_CAMERA && devA->pid == ZR300_FISHEYE_PID)
                {
                     for(auto& devB : devices) // Look for DS ZR300 camera
                     {
-                        if(devB->vid == 0x8086 && devB->pid == 0x0acb)
+                        if(devB->vid == VID_INTEL_CAMERA && devB->pid == ZR300_CX3_PID)
                         {
                             devB->subdevices.resize(4);
                             devB->subdevices[3].reader_callback = new reader_callback(devB, static_cast<int>(3));
                             devB->subdevices[3].mf_activate = devA->subdevices[0].mf_activate;
-                            devB->subdevices[3].vid = devB->aux_vid = 0x8086;
-                            devB->subdevices[3].pid = devB->aux_pid = 0x0ad0;
+                            devB->subdevices[3].vid = devB->aux_vid = VID_INTEL_CAMERA;
+                            devB->subdevices[3].pid = devB->aux_pid = ZR300_FISHEYE_PID;
                             devB->aux_unique_id = devA->unique_id;
                             devices.erase(std::remove(devices.begin(), devices.end(), devA), devices.end());
                             break;

@@ -2,54 +2,53 @@
 
 **DS5 B0 Development Branch** - [What's New?](./doc/whats_new.md)
 
-
 [ ![License] [license-image] ] [license]
+
+[release-image]: http://img.shields.io/badge/release-1.9.6-blue.svg?style=flat
+[releases]: https://github.com/IntelRealSense/librealsense/releases
 
 [license-image]: http://img.shields.io/badge/license-Apache--2-blue.svg?style=flat
 [license]: LICENSE
 
-This project is a cross-platform library (Linux, Windows, Ostro-OS) for capturing data from the Intel® RealSense™ F200, SR300, R200, LR200, ZR300 cameras and the new DS5 camera now being under development. This effort was initiated to better support researchers, creative coders, and app developers in domains such as robotics, virtual reality, and the internet of things. Several often-requested features of RealSense™ devices are implemented in this project, including multi-camera capture.
+Platform | Build Status |
+-------- | ------------ |
+Linux and OS X | [![Build Status](https://travis-ci.org/IntelRealSense/librealsense.svg?branch=master)](https://travis-ci.org/IntelRealSense/librealsense) |
+Windows | [![Build status](https://ci.appveyor.com/api/projects/status/y9f8qcebnb9v41y4?svg=true)](https://ci.appveyor.com/project/ddiakopoulos/librealsense) |
+
+This project is a cross-platform library (Linux, Windows, Mac) for capturing data from the Intel® RealSense™ F200, SR300, R200, LR200 and the ZR300 cameras. This effort was initiated to better support researchers, creative coders, and app developers in domains such as robotics, virtual reality, and the internet of things. Several often-requested features of RealSense™ devices are implemented in this project, including multi-camera capture.
 
 Developer kits containing the necessary hardware to use this library are available for purchase at [this link](http://click.intel.com/realsense.html). This project is separate from the production software stack available in the [Intel® RealSense™ SDK](https://software.intel.com/en-us/intel-realsense-sdk), namely that this library only encompasses camera capture functionality without additional computer vision algorithms.
 
 The Intel® RealSense™ Cross Platform API is experimental and not an official Intel product. It is subject to incompatible API changes in future updates.
 
-The project requires two external dependencies, GLFW3 (all platforms) and libusb-1.0 (Mac/Linux). These dependencies should be gathered through manual steps that are enumerated as part of this readme file (i.e. these packages must be installed with apt-get on Linux and Homebrew on OSX). GLFW is not required for the core library and is only used for examples.
-
-# Table of Contents
-* [Compatible Devices](#compatible-devices)
-* [Supported Platforms](#compatible-platforms)
-* [Compatible Languages](#supported-languages-and-frameworks)
-* [Functionality](#functionality)
+## Table of Contents
 * [Installation Guide](#installation-guide)
-* [Hardware Requirements](#hardware-requirements)
-* [Integrations](#integrations)
 * [Documentation](#documentation)
+* [Functionality](#functionality)
+* [Compatible Devices](#compatible-devices)
+* [Compatible Platforms](#compatible-platforms)
+* [Integrations](#integrations)
+* [License](#license)
 
-## Compatible Devices
+## Installation Guide
 
-1. RealSense R200
-2. RealSense F200
-3. RealSense SR300
-4. RealSense LR200
-5. RealSense ZR300
+  * [Linux](./doc/installation.md)
+  * [Windows](./doc/installation_windows.md)
+  * [Mac OS X](./doc/installation_osx.md)
 6. RealSense DS5
+  
+## Documentation
 
-## Compatible Platforms
+A comprehensive suite of sample and tutorial applications are provided in the `/examples` subdirectory. For new users, it is best to review the tutorial series of apps which are designed to progressively introduce API features.
 
-The library is written in standards-conforming C++11 and relies only on the C89 ABI for its public interface. It is developed and tested on the following platforms:
-
-1. Windows 10 (Visual Studio 2015 Update 2)
-2. Ubuntu 14.04.03 LTS x64 (GCC 4.9 toolchain)
-3. Ostro OS
-
-
-Neither libuvc nor V4L2 backends have been validated on Ubuntu 12.04 LTS or Ubuntu 15.10, and several attempts to bring cameras up on these platforms have been problematic due to the requirement of a patched uvcvideo driver. It may be possible to compile and run the library on other platforms. Please file an issue or submit a pull request if the library has been successfully ported to a platform.
-
-## Supported Languages and Frameworks
-
-1. C - Core library API exposed via the C89 ABI
-2. C++ - Single header file (rs.hpp) wrapper around C API, providing classes and exceptions
+  * [C API](./include/librealsense/rs.h) - With doxygen-style API comments
+  * To build documentation locally from sources, on Ubuntu run the following commands:
+    * `sudo apt-get install doxygen`
+	* `cd doc/Doxygen_API`
+	* `doxygen Doxyfile`
+  * [Projection APIs](./doc/projection.md) - A guide on coordinate systems, calibration information, and projection
+  * [Camera Spec Sheet](./doc/camera_specs.md) - A brief overview of R200, F200 and SR300
+  * [Developer Notes](./doc/dev_log.md) - Several informal notes gathered during internal releases
 
 ## Functionality
 
@@ -59,29 +58,27 @@ Neither libuvc nor V4L2 backends have been validated on Ubuntu 12.04 LTS or Ubun
 4. Majority of hardware-specific functionality for individual camera generations (UVC XU controls)
 5. Multi-camera capture across heterogeneous camera architectures (e.g. mix R200 and F200 in same application)
 6. Motion-tracking sensors acquisition (ZR300 only)
+  
+## Compatible Devices
 
-## Firmware Update
-
-All RealSense™ cameras ship with proprietary firmware. This firmware is periodically updated with critical bugfixes, however the API does not currently expose functionality to upload new firmware. A supported update path is available on Windows 8.1 and Windows 10 systems via the [Intel® RealSense™ DCM](https://downloadcenter.intel.com/download/25044/Intel-RealSense-Depth-Camera-Manager-DCM-) (Depth Camera Manager). Installing the DCM on a supported machine with an attached camera will automatically flash the latest firmware released by Intel.
-
-Minimal supported FW versions:
-
-| Camera | F/W |
-| ------ | --- |
-| R200 | 1.0.72.06 |
-| F200 | 2.60.0.0 |
-| SR300 | 3.15.0.0 |
-| LR200 | 2.0.71.18 |
-| ZR300 | Camera - 2.0.71.18, Adapter board - 1.23, Motion module 1.20.0.0 IAP 9 |
+1. RealSense R200 (Firmware 1.0.72.06 and up)
+2. RealSense F200 (Firmware 2.60.0.0 and up)
+3. RealSense SR300 (Firmware 3.10.10.0 and up)
+4. RealSense LR200 (Firmware 2.0.71.18 and up)
+5. [RealSense ZR300](https://newsroom.intel.com/chip-shots/intel-announces-tools-realsense-technology-development/)
+  * Camera Firmware 2.0.71.18 and up
+  * USB Adapter Board Firmware 1.27.0.0 and up
+  * Motion Module Firmware 1.23.0.0 and up
 | DS5 B0 | TBD |
 
-# Installation Guide
+## Compatible Platforms
 
-The Intel® RealSense™ Cross Platform API communicates with RealSense™ devices directly via the UVC and USB protocols. It does not link against the RealSense™ SDK runtime. Most of the library source code is platform agnostic, but there is a small UVC abstraction layer with platform-specific backends, including:
-  * A video4linux2 backend which provides kernel-space access to UVC devices on Linux.
-  * A Windows Media Foundation backend which provides kernel-space access to UVC devices on Windows 8.1 and above.
+The library is written in standards-conforming C++11 and relies only on the C89 ABI for its public interface. It is developed and tested on the following platforms:
 
-**New Users:** A comprehensive installation guide is [available here](./doc/installation.md)
+1. Ubuntu 14.04 and 16.04 LTS (GCC 4.9 toolchain)
+2. Windows 10 (Visual Studio 2015 Update 2)
+3. Mac OS X 10.7+ (Clang toolchain)
+4. [Ostro](https://ostroproject.org/)
 
 ## Hardware Requirements
 Developer kits containing the necessary hardware to use this library are available for purchase at [this link](http://click.intel.com/realsense.html). In addition, several consumer tablets and laptops with integrated cameras may also function, such as the [HP Spectre x2 with R200](http://store.hp.com/us/en/ContentView?storeId=10151&langId=-1&catalogId=10051&eSpotName=new-detachable).
@@ -93,24 +90,19 @@ For small-form factor usages, this library has been demonstrated to work on the 
   * [MinnowBoard Max](http://minnowboard.org)
   * [Kangaroo MD2B](http://www.amazon.com/Kangaroo-MD2B-Mobile-Desktop-Computer/dp/B017J20D8U)
   * [UP Board](http://www.up-board.org/kickstarter/up-intel-realsense-technology/)
+  * [Intel Joule](https://newsroom.intel.com/chip-shots/make-amazing-things-happen-iot-entrepreneurship-intel-joule/)
 
 ## Integrations
 
 The library has been integrated with a number of third-party components and operating systems. While most of these projects are not directly supported by the team, they are useful resources for users of this library.
 
-  * [Robotic Operating System](https://github.com/intel-ros/realsense) (Intel Supported, R200 Only)
+  * [Robotic Operating System](https://github.com/intel-ros/realsense)
   * [Yocto / WindRiver Linux](https://github.com/IntelRealSense/meta-intel-librealsense)
   * [Arch Linux](https://aur.archlinux.org/packages/librealsense/)
-
-## Documentation
-
-A comprehensive suite of sample and tutorial applications are provided in the `/examples` subdirectory. For new users, it is best to review the tutorial series of apps which are designed to progressively introduce API features.
-
-  * [Installation Instructions](./doc/installation.md) - Comprehensive platform-specific installation steps
-  * [C API](./include/librealsense/rs.h) - With doxygen-style API comments
-  * [Projection APIs](./doc/projection.md) - A guide on coordinate systems, calibration information, and projection
-  * [Camera Spec Sheet](./doc/camera_specs.md) - A brief overview of R200, F200 and SR300
-  * [Developer Notes](./doc/dev_log.md) - Several informal notes gathered during internal releases
+  
+Additional language bindings (experimental, community maintained):
+  * [Python](https://github.com/toinsson/pyrealsense)
+  * [Java (generated by JavaCPP)](https://github.com/poqudrof/javacpp-presets/tree/realsense-pull)
 
 ## License
 

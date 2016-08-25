@@ -12,10 +12,10 @@
 using namespace rsimpl;
 using namespace motion_module;
 
-#define MOTION_MODULE_CONTROL_I2C_SLAVE_ADDRESS 0x42
+const uint8_t MOTION_MODULE_CONTROL_I2C_SLAVE_ADDRESS = 0x42;
 const double IMU_UNITS_TO_MSEC = 0.00003125;
 
-motion_module_control::motion_module_control(uvc::device *device) : device_handle(device), power_state(false)
+motion_module_control::motion_module_control(uvc::device *device, std::timed_mutex& usbMutex) : device_handle(device), usbMutex(usbMutex), power_state(false)
 {
 }
 
@@ -129,12 +129,11 @@ void motion_module_control::set_control(mm_request request, bool on)
         throw std::logic_error(to_string() << " unsupported control requested :" << (int)request << " valid range is [1,2]");
     }
 
-    std::timed_mutex mutex;
     hw_monitor::hwmon_cmd cmd((uint8_t)cmd_opcode);
     cmd.Param1 = (on) ? 1 : 0;
 
     // Motion module will always use the auxillary USB handle (1) for
-    perform_and_send_monitor_command_over_usb_monitor(*device_handle, mutex, cmd);
+    perform_and_send_monitor_command(*device_handle, usbMutex, cmd);
 }
 
 void motion_module_control::toggle_motion_module_power(bool on)
@@ -165,8 +164,7 @@ void motion_module_control::i2c_iap_write(uint16_t slave_address, uint8_t *buffe
     cmd.sizeOfSendCommandData = len;
     memcpy(cmd.data, buffer, len);
 
-    std::timed_mutex mutex;
-    perform_and_send_monitor_command_over_usb_monitor(*device_handle, mutex, cmd);
+    perform_and_send_monitor_command(*device_handle, usbMutex, cmd);
 }
 
 // Write a 32 bit value to a specific i2c slave address.
@@ -208,7 +206,7 @@ void motion_module_control::switch_to_operational()
 
     hw_monitor::i2c_read_reg(static_cast<int>(adaptor_board_command::IRB), *device_handle, MOTION_MODULE_CONTROL_I2C_SLAVE_ADDRESS, (int)i2c_register::REG_CURR_PWR_STATE, sizeof(uint32_t), reinterpret_cast<byte*>(&value));
         
-    if ((power_states)value != power_states::PWR_STATE_IAP)
+    if ((power_states)value != power_states::PWR_STATE_INIT)
         throw std::runtime_error("Unable to leave IAP state!");
 }
 

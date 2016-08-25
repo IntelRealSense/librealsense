@@ -300,6 +300,13 @@ namespace rsimpl
             i2c_read_reg(IRB_opcode, device, 0x42, 0xD0, size, data);
             
         }
+        void get_raw_data(uint8_t opcode, uvc::device & device, std::timed_mutex & mutex, uint8_t * data, size_t & bytesReturned)
+        {
+            hw_monitor::hwmon_cmd command(opcode);
 
+            perform_and_send_monitor_command(device, mutex, command);
+            memcpy(data, command.receivedCommandData, HW_MONITOR_BUFFER_SIZE);
+            bytesReturned = command.receivedCommandDataLength;
+        }
     }
 }

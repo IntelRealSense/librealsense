@@ -55,9 +55,19 @@ namespace rsimpl
     }
 
     iv_camera::iv_camera(std::shared_ptr<uvc::device> device, const static_device_info & info, const ivcam::camera_calib_params & calib) :
-        rs_device_base(device, info), 
+        rs_device_base(device, info),
         base_calibration(calib)
     {
+    }
+
+    void iv_camera::start_fw_logger(char fw_log_op_code, int grab_rate_in_ms, std::timed_mutex& mutex)
+    {
+        rs_device_base::start_fw_logger(fw_log_op_code, grab_rate_in_ms, mutex);
+    }
+
+    void iv_camera::stop_fw_logger()
+    {
+        rs_device_base::stop_fw_logger();
     }
 
     void iv_camera::on_before_start(const std::vector<subdevice_mode_selection> & selected_modes)
@@ -171,6 +181,7 @@ namespace rsimpl
         bool started;
         int64_t total;
         int last_timestamp;
+        int64_t counter = 0;
     public:
         rolling_timestamp_reader() : started(), total() {}
 
@@ -209,12 +220,13 @@ namespace rsimpl
         }
         unsigned long long get_frame_counter(const subdevice_mode & mode, const void * frame) override
         {
-            return 0;
+            return ++counter;
         }
     };
 
-    std::shared_ptr<frame_timestamp_reader> iv_camera::create_frame_timestamp_reader(int subdevice) const
+    std::vector<std::shared_ptr<frame_timestamp_reader>> iv_camera::create_frame_timestamp_readers() const
     {
-        return std::make_shared<rolling_timestamp_reader>();
+        auto the_reader = std::make_shared<rolling_timestamp_reader>(); // single shared timestamp reader for all subdevices
+        return { the_reader, the_reader }; // clone the reference for color and depth
     }
 } // namespace rsimpl::f200
