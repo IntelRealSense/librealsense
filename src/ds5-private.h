@@ -106,9 +106,8 @@ namespace rsimpl {
     // XU read/write
     void get_laser_power(const uvc::device & device, uint8_t & laser_power);
     void set_laser_power(uvc::device & device, uint8_t laser_power);
-    //void get_lr_exposure(uvc::device & device, uint16_t & exposure);
-    void set_lr_exposure(uvc::device & device, uint32_t exposure);
-    uint32_t get_lr_exposure(const uvc::device & device);
+    void set_lr_exposure(uvc::device & device, uint16_t exposure);
+    uint16_t get_lr_exposure(const uvc::device & device);
 
 
 } //namespace rsimpl::ds5
