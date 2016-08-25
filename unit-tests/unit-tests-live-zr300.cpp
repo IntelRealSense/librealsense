@@ -59,6 +59,9 @@ TEST_CASE("ZR300 devices support all required options", "[live] [DS-device]")
     {
         rs_device * dev = rs_get_device(ctx, 0, require_no_error());
         REQUIRE(dev != nullptr);
+        REQUIRE(ds_names[Intel_ZR300] == rs_get_device_name(dev, require_no_error()));
+
+        rs_set_device_option(dev, RS_OPTION_R200_LR_AUTO_EXPOSURE_ENABLED, 1.0, require_no_error());
 
         SECTION("ZR300 supports DS-Line standard UVC controls and ZR300 Motion Module controls, and nothing else")
         {
@@ -85,10 +88,6 @@ TEST_CASE("ZR300 devices support all required options", "[live] [DS-device]")
                 RS_OPTION_R200_DISPARITY_MULTIPLIER,
                 RS_OPTION_R200_DISPARITY_SHIFT,
                 RS_OPTION_R200_AUTO_EXPOSURE_MEAN_INTENSITY_SET_POINT,
-                RS_OPTION_R200_AUTO_EXPOSURE_BRIGHT_RATIO_SET_POINT,
-                RS_OPTION_R200_AUTO_EXPOSURE_KP_GAIN,
-                RS_OPTION_R200_AUTO_EXPOSURE_KP_EXPOSURE,
-                RS_OPTION_R200_AUTO_EXPOSURE_KP_DARK_THRESHOLD,
                 RS_OPTION_R200_AUTO_EXPOSURE_TOP_EDGE,
                 RS_OPTION_R200_AUTO_EXPOSURE_BOTTOM_EDGE,
                 RS_OPTION_R200_AUTO_EXPOSURE_LEFT_EDGE,
@@ -103,16 +102,17 @@ TEST_CASE("ZR300 devices support all required options", "[live] [DS-device]")
                 RS_OPTION_R200_DEPTH_CONTROL_SECOND_PEAK_THRESHOLD,
                 RS_OPTION_R200_DEPTH_CONTROL_NEIGHBOR_THRESHOLD,
                 RS_OPTION_R200_DEPTH_CONTROL_LR_THRESHOLD,
-                RS_OPTION_ZR300_GYRO_BANDWIDTH,
-                RS_OPTION_ZR300_GYRO_RANGE,
-                RS_OPTION_ZR300_ACCELEROMETER_BANDWIDTH,
-                RS_OPTION_ZR300_ACCELEROMETER_RANGE,
-                RS_OPTION_ZR300_MOTION_MODULE_TIME_SEED,
-                RS_OPTION_ZR300_MOTION_MODULE_ACTIVE,
-                RS_OPTION_FISHEYE_COLOR_EXPOSURE,
-                RS_OPTION_FISHEYE_COLOR_GAIN,
+                RS_OPTION_FISHEYE_EXPOSURE,
+                RS_OPTION_FISHEYE_GAIN,
                 RS_OPTION_FISHEYE_STROBE,
-                RS_OPTION_FISHEYE_EXT_TRIG
+                RS_OPTION_FISHEYE_EXTERNAL_TRIGGER,
+                RS_OPTION_FISHEYE_ENABLE_AUTO_EXPOSURE,
+                RS_OPTION_FISHEYE_AUTO_EXPOSURE_MODE,
+                RS_OPTION_FISHEYE_AUTO_EXPOSURE_ANTIFLICKER_RATE,
+                RS_OPTION_FISHEYE_AUTO_EXPOSURE_PIXEL_SAMPLE_RATE,
+                RS_OPTION_FISHEYE_AUTO_EXPOSURE_SKIP_FRAMES,
+                RS_OPTION_FRAMES_QUEUE_SIZE,
+                RS_OPTION_HARDWARE_LOGGER_ENABLED
             };
 
             for (int i = 0; i < RS_OPTION_COUNT; ++i)
@@ -141,12 +141,11 @@ TEST_CASE("ZR300 Motion Module Data Streaming Validation", "[live] [DS-device]")
     rs_device * dev = rs_get_device(ctx, 0, require_no_error());
     REQUIRE(dev != nullptr);
 
-    const char * name = rs_get_device_name(dev, require_no_error());
-    REQUIRE(name == std::string("Intel RealSense ZR300"));
+    REQUIRE(ds_names[Intel_ZR300] == rs_get_device_name(dev, require_no_error()));
 
     REQUIRE(rs_supports(dev, rs_capabilities::RS_CAPABILITIES_MOTION_EVENTS, require_no_error()));
 
-    unsigned int active_period_ms = 10000; // Time for the application to generate and collect data
+    unsigned int active_period_ms = 5000; // Time for the application to generate and collect data
     const unsigned int gyro_bandwidth_fps = 200;
     const unsigned int accel_bandwidth_fps = 250; // Predefined rate
     const double allowed_deviation = 0.03; // The frame rates can vary within the predefined limit
@@ -211,16 +210,16 @@ TEST_CASE("ZR300 Motion Module Data Streaming Validation", "[live] [DS-device]")
 
         // iii. Validate data consistency
         for (size_t i = 0; i < (gyro_frames.size() - 1); i++)
-            REQUIRE(gyro_frames[i].timestamp_data.frame_number < gyro_frames[i + 1].timestamp_data.frame_number);
+            REQUIRE(gyro_frames[i].timestamp_data.frame_number <= gyro_frames[i + 1].timestamp_data.frame_number);
 
         for (size_t i = 0; i < (accel_frames.size() - 1); i++)
-            REQUIRE(accel_frames[i].timestamp_data.frame_number < accel_frames[i + 1].timestamp_data.frame_number);
+            REQUIRE(accel_frames[i].timestamp_data.frame_number <= accel_frames[i + 1].timestamp_data.frame_number);
 
         for (size_t i = 0; i < (fisheye_timestamp_events.size() - 1); i++)
-            REQUIRE(fisheye_timestamp_events[i].frame_number < fisheye_timestamp_events[i + 1].frame_number);
+            REQUIRE(fisheye_timestamp_events[i].frame_number <= fisheye_timestamp_events[i + 1].frame_number);
 
         for (size_t i = 0; i < (depth_timestamp_events.size() - 1); i++)
-            REQUIRE(depth_timestamp_events[i].frame_number < depth_timestamp_events[i + 1].frame_number);
+            REQUIRE(depth_timestamp_events[i].frame_number <= depth_timestamp_events[i + 1].frame_number);
 
         // Frame numbers statistics
         std::vector<unsigned long long> gyro_frame_numbers, accel_frame_numbers, fisheye_frame_numbers, depth_cam_frame_numbers;
@@ -294,12 +293,12 @@ TEST_CASE("ZR300 correctly recognizes invalid options", "[live] [DS-device]")
     REQUIRE(nullptr != dev);
 
     const char * name = dev->get_name();
-    REQUIRE(name == std::string("Intel RealSense ZR300"));
+    REQUIRE(ds_names[Intel_ZR300] == dev->get_name());
 
     int index = 0;
     double val = 0;
 
-    for (int i = (int)rs::option::f200_laser_power; i <= (int)rs::option::sr300_wake_on_usb_confidence; i++)
+    for (int i= (int)rs::option::f200_laser_power; i <= (int)rs::option::sr300_auto_range_lower_threshold; i++)
     {
         index = i;
         try
@@ -327,7 +326,7 @@ TEST_CASE("ZR300 Motion Module Strobe", "[live] [DS-device]")
 
 	double init_val = -1, test_val = -1, actual_val = -1;
 
-	rs::option opt = rs::option::r200_fisheye_strobe;
+	rs::option opt = rs::option::fisheye_strobe;
 
 	// Strobe is a boolean option value
     dev->get_options(&opt, 1, &init_val);

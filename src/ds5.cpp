@@ -123,9 +123,14 @@ namespace rsimpl
         }
     };
 
-    std::shared_ptr<frame_timestamp_reader> ds5_camera::create_frame_timestamp_reader(int subdevice) const
+    std::vector<std::shared_ptr<rsimpl::frame_timestamp_reader>>  ds5_camera::create_frame_timestamp_readers() const
     {
-        return std::make_shared<ds5_timestamp_reader>();
+        return { 
+            std::make_shared<ds5_timestamp_reader>(),
+            std::make_shared<ds5_timestamp_reader>(),
+            std::make_shared<ds5_timestamp_reader>(),
+            std::make_shared<ds5_timestamp_reader>(),
+        };
     }
 
 } // namespace rsimpl::ds5

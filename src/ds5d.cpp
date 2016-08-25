@@ -110,6 +110,10 @@ namespace rsimpl
         info.options.push_back({ RS_OPTION_COLOR_GAIN });
         info.options.push_back({ RS_OPTION_R200_LR_EXPOSURE, 40, 1660, 1, 100 });
 
+        rsimpl::pose depth_to_infrared2 = { transpose((const float3x3 &)calib.depth_extrinsic.rotation), (const float3 &)calib.depth_extrinsic.translation * 0.001f }; // convert mm to m
+        info.stream_poses[RS_STREAM_DEPTH] = info.stream_poses[RS_STREAM_INFRARED] = { { { 1,0,0 },{ 0,1,0 },{ 0,0,1 } },{ 0,0,0 } };
+        info.stream_poses[RS_STREAM_INFRARED2] = depth_to_infrared2;
+
         return info;
     }
 

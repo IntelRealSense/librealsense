@@ -60,14 +60,14 @@ namespace rsimpl
         {
             for(auto fps : m.fps)
             {
-                info.subdevice_modes.push_back({1, m.dims, pf_sr300_invi, fps, MakeDepthIntrinsics(c, m.dims), {}, {0}});             
+                info.subdevice_modes.push_back({1, m.dims, pf_sr300_invi, fps, MakeDepthIntrinsics(c, m.dims), {}, {0}});
             }
         }
         for(auto & m : sr300_depth_modes)
         {
             for(auto fps : m.fps)
             {
-                info.subdevice_modes.push_back({1, m.dims, pf_invz, fps, MakeDepthIntrinsics(c, m.dims), {}, {0}});       
+                info.subdevice_modes.push_back({1, m.dims, pf_invz, fps, MakeDepthIntrinsics(c, m.dims), {}, {0}});
                 info.subdevice_modes.push_back({1, m.dims, pf_sr300_inzi, fps, MakeDepthIntrinsics(c, m.dims), {}, {0}});
             }
         }
@@ -90,17 +90,19 @@ namespace rsimpl
             {RS_OPTION_SR300_AUTO_RANGE_START_LASER,                (double)SHRT_MIN, (double)SHRT_MAX,                          1.0,   -1.0},
             {RS_OPTION_SR300_AUTO_RANGE_UPPER_THRESHOLD,            0.0,              (double)USHRT_MAX,                         1.0,   -1.0},
             {RS_OPTION_SR300_AUTO_RANGE_LOWER_THRESHOLD,            0.0,              (double)USHRT_MAX,                         1.0,   -1.0},
-            {RS_OPTION_SR300_WAKEUP_DEV_PHASE1_PERIOD,              0.0,              (double)USHRT_MAX,                         1.0,   -1.0},
-            {RS_OPTION_SR300_WAKEUP_DEV_PHASE1_FPS,                 0.0,              ((double)sr300::e_suspend_fps::eFPS_MAX) - 1,      1.0, -1.0},
-            {RS_OPTION_SR300_WAKEUP_DEV_PHASE2_PERIOD,              0.0,              (double)USHRT_MAX, 1.0, -1.0},
-            {RS_OPTION_SR300_WAKEUP_DEV_PHASE2_FPS,                 0.0,              ((double)sr300::e_suspend_fps::eFPS_MAX) - 1,      1.0, -1.0},
-            {RS_OPTION_SR300_WAKEUP_DEV_RESET,                      0.0,              0.0,               1.0, -1.0},
-            {RS_OPTION_SR300_WAKE_ON_USB_REASON,                    0.0,              (double)sr300::wakeonusb_reason::eMaxWakeOnReason, 1.0, -1.0},
-            {RS_OPTION_SR300_WAKE_ON_USB_CONFIDENCE,                0.0,              100.,                                              1.0, -1.0}  // Percentage
+            {RS_OPTION_HARDWARE_LOGGER_ENABLED,                     0,                1,                                         1,      0 }
         };
-
-        update_supported_options(*device.get(), ivcam::depth_xu, eu_SR300_depth_controls, info.options);
-
+	
+        
+        // Hardcoded extension controls
+        //                                  option                         min  max    step     def
+        //                                  ------                         ---  ---    ----     ---
+        info.options.push_back({ RS_OPTION_F200_LASER_POWER,                0,  16,     1,      16  });
+        info.options.push_back({ RS_OPTION_F200_ACCURACY,                   0,  3,      1,      1   });
+        info.options.push_back({ RS_OPTION_F200_MOTION_RANGE,               0,  220,    1,      9   });
+        info.options.push_back({ RS_OPTION_F200_FILTER_OPTION,              0,  7,      1,      5   });
+        info.options.push_back({ RS_OPTION_F200_CONFIDENCE_THRESHOLD,       0,  15,     1,      3   });
+        
         rsimpl::pose depth_to_color = {transpose((const float3x3 &)c.Rt), (const float3 &)c.Tt * 0.001f}; // convert mm to m
         info.stream_poses[RS_STREAM_DEPTH] = info.stream_poses[RS_STREAM_INFRARED] = inverse(depth_to_color);
         info.stream_poses[RS_STREAM_COLOR] = {{{1,0,0},{0,1,0},{0,0,1}}, {0,0,0}};
@@ -127,6 +129,35 @@ namespace rsimpl
         arr.ARLowerTh = 650;
     }
 
+    void sr300_camera::start_fw_logger(char fw_log_op_code, int grab_rate_in_ms, std::timed_mutex& mutex)
+    {
+        iv_camera::start_fw_logger(fw_log_op_code, grab_rate_in_ms, mutex);
+    }
+
+    void sr300_camera::stop_fw_logger()
+    {
+        iv_camera::stop_fw_logger();
+    }
+
+    void sr300_camera::set_fw_logger_option(double value)
+    {
+        if (value >= 1)
+        {
+            if (!rs_device_base::keep_fw_logger_alive)
+                start_fw_logger(0x35, 100, usbMutex);
+        }
+        else
+        {
+            if (rs_device_base::keep_fw_logger_alive)
+                stop_fw_logger();
+        }
+    }
+
+    unsigned sr300_camera::get_fw_logger_option()
+    {
+        return rs_device_base::keep_fw_logger_alive;
+    }
+
     void sr300_camera::set_options(const rs_option options[], size_t count, const double values[])
     {
         std::vector<rs_option>  base_opt;
@@ -137,17 +168,10 @@ namespace rsimpl
             arr = r;
         });
 
-        auto arr_wakeup_dev_writer = make_struct_interface<sr300::wakeup_dev_params>([this]() { return arr_wakeup_dev_param; }, [this](sr300::wakeup_dev_params param) {
-            sr300::set_wakeup_device(get_device(), usbMutex, param.phase1Period, (uint32_t)param.phase1FPS, param.phase2Period, (uint32_t)param.phase2FPS);
-            arr_wakeup_dev_param = param;
-        });
-
         for(size_t i=0; i<count; ++i)
         {
             switch(options[i])
             {
-            case RS_OPTION_SR300_WAKEUP_DEV_RESET:    sr300::reset_wakeup_device(get_device(), usbMutex); break;
-
             case RS_OPTION_SR300_AUTO_RANGE_ENABLE_MOTION_VERSUS_RANGE: arr_writer.set(&ivcam::cam_auto_range_request::enableMvR, values[i]); break; 
             case RS_OPTION_SR300_AUTO_RANGE_ENABLE_LASER:               arr_writer.set(&ivcam::cam_auto_range_request::enableLaser, values[i]); break;
             case RS_OPTION_SR300_AUTO_RANGE_MIN_MOTION_VERSUS_RANGE:    arr_writer.set(&ivcam::cam_auto_range_request::minMvR, values[i]); break;
@@ -158,14 +182,7 @@ namespace rsimpl
             case RS_OPTION_SR300_AUTO_RANGE_START_LASER:                arr_writer.set(&ivcam::cam_auto_range_request::startLaser, values[i]); break;
             case RS_OPTION_SR300_AUTO_RANGE_UPPER_THRESHOLD:            arr_writer.set(&ivcam::cam_auto_range_request::ARUpperTh, values[i]); break;
             case RS_OPTION_SR300_AUTO_RANGE_LOWER_THRESHOLD:            arr_writer.set(&ivcam::cam_auto_range_request::ARLowerTh, values[i]); break;
-
-            case RS_OPTION_SR300_WAKEUP_DEV_PHASE1_PERIOD:              arr_wakeup_dev_writer.set(&sr300::wakeup_dev_params::phase1Period, values[i]); break;
-            case RS_OPTION_SR300_WAKEUP_DEV_PHASE1_FPS:                 arr_wakeup_dev_writer.set(&sr300::wakeup_dev_params::phase1FPS, (int)values[i]); break;
-            case RS_OPTION_SR300_WAKEUP_DEV_PHASE2_PERIOD:              arr_wakeup_dev_writer.set(&sr300::wakeup_dev_params::phase2Period, values[i]); break;
-            case RS_OPTION_SR300_WAKEUP_DEV_PHASE2_FPS:                 arr_wakeup_dev_writer.set(&sr300::wakeup_dev_params::phase2FPS, (int)values[i]); break;
-
-            case RS_OPTION_SR300_WAKE_ON_USB_REASON:                    LOG_WARNING("Read-only property: " << options[i] << " on " << get_name()); break;
-            case RS_OPTION_SR300_WAKE_ON_USB_CONFIDENCE:                LOG_WARNING("Read-only property: " << options[i] << " on " << get_name()); break;
+            case RS_OPTION_HARDWARE_LOGGER_ENABLED:                     set_fw_logger_option(values[i]); break;
 
             // Default will be handled by parent implementation
             default: base_opt.push_back(options[i]); base_opt_val.push_back(values[i]); break;
@@ -173,8 +190,7 @@ namespace rsimpl
         }
 
         arr_writer.commit();
-        arr_wakeup_dev_writer.commit();
-
+        
         //Handle common options
         if (base_opt.size())
             iv_camera::set_options(base_opt.data(), base_opt.size(), base_opt_val.data());
@@ -188,9 +204,7 @@ namespace rsimpl
         std::vector<double>     base_opt_val;
 
         auto arr_reader = make_struct_interface<ivcam::cam_auto_range_request>([this]() { return arr; }, [this](ivcam::cam_auto_range_request) {});
-        auto wake_on_usb_reader = make_struct_interface<sr300::wakeup_dev_params>([this]()
-        { return arr_wakeup_dev_param; },[]() { throw std::logic_error("Read-only operation"); });
-
+        
         // Acquire SR300-specific options first
         for(size_t i=0; i<count; ++i)
         {
@@ -215,14 +229,7 @@ namespace rsimpl
             case RS_OPTION_SR300_AUTO_RANGE_START_LASER:                values[i] = arr_reader.get(&ivcam::cam_auto_range_request::startLaser); break;
             case RS_OPTION_SR300_AUTO_RANGE_UPPER_THRESHOLD:            values[i] = arr_reader.get(&ivcam::cam_auto_range_request::ARUpperTh); break;
             case RS_OPTION_SR300_AUTO_RANGE_LOWER_THRESHOLD:            values[i] = arr_reader.get(&ivcam::cam_auto_range_request::ARLowerTh); break;
-
-            case RS_OPTION_SR300_WAKEUP_DEV_PHASE1_PERIOD:              values[i] = wake_on_usb_reader.get(&sr300::wakeup_dev_params::phase1Period); break;
-            case RS_OPTION_SR300_WAKEUP_DEV_PHASE1_FPS:                 values[i] = wake_on_usb_reader.get(&sr300::wakeup_dev_params::phase1FPS); break;
-            case RS_OPTION_SR300_WAKEUP_DEV_PHASE2_PERIOD:              values[i] = wake_on_usb_reader.get(&sr300::wakeup_dev_params::phase2Period); break;
-            case RS_OPTION_SR300_WAKEUP_DEV_PHASE2_FPS:                 values[i] = wake_on_usb_reader.get(&sr300::wakeup_dev_params::phase2FPS); break;
-
-            case RS_OPTION_SR300_WAKE_ON_USB_REASON:        sr300::get_wakeup_reason(get_device(), usbMutex, val);		values[i] = val; break;
-            case RS_OPTION_SR300_WAKE_ON_USB_CONFIDENCE:    sr300::get_wakeup_confidence(get_device(), usbMutex, val);	values[i] = val; break;
+            case RS_OPTION_HARDWARE_LOGGER_ENABLED:                     values[i] = get_fw_logger_option(); break;
 
                 // Default will be handled by parent implementation
             default: base_opt.push_back(options[i]); base_opt_index.push_back(i);  break;
@@ -260,7 +267,7 @@ namespace rsimpl
         //uvc::set_pu_control_with_retry(*device, 0, rs_option::RS_OPTION_COLOR_EXPOSURE, -6); // auto
 
         auto info = get_sr300_info(device, calib);
-
+        
         ivcam::get_module_serial_string(*device, mutex, info.serial, 132);
         ivcam::get_firmware_version_string(*device, mutex, info.firmware_version);
 

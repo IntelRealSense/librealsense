@@ -7,11 +7,6 @@
 
 #include "ds-device.h"
 
-#define R200_PRODUCT_ID  0x0a80
-#define LR200_PRODUCT_ID 0x0abf
-#define ZR300_PRODUCT_ID 0x0acb
-#define FISHEYE_PRODUCT_ID 0x0ad0
-
 namespace rsimpl
 {
     class r200_camera final : public ds::ds_device
@@ -21,7 +16,8 @@ namespace rsimpl
         r200_camera(std::shared_ptr<uvc::device> device, const static_device_info & info);
         ~r200_camera() {};
 
-        bool supports_option(rs_option option) const override;
+        virtual void start_fw_logger(char fw_log_op_code, int grab_rate_in_ms, std::timed_mutex& mutex) override;
+        virtual void stop_fw_logger() override;
     };
 
     std::shared_ptr<rs_device> make_r200_device(std::shared_ptr<uvc::device> device);

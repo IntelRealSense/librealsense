@@ -286,4 +286,33 @@ TEST_CASE("DS5 Manual Exposure Control verification", "[live] [DS-device]")
     dev->get_options(&opt, 1, &res);
     REQUIRE(exposure_ctrl_init == res);
 }
+
+///////////////////////////////////
+// Calibration information tests //
+///////////////////////////////////
+
+TEST_CASE("DS5 device extrinsics are within expected parameters", "[live] [sr300]")
+{
+    // Require at least one device to be plugged in
+    safe_context ctx;
+    const int device_count = rs_get_device_count(ctx, require_no_error());
+    REQUIRE(device_count > 0);
+
+    // For each device
+    for (int i = 0; i<device_count; ++i)
+    {
+        rs_device * dev = rs_get_device(ctx, 0, require_no_error());
+        REQUIRE(dev != nullptr);
+
+        SECTION("no extrinsic transformation between DEPTH and INFRARED")
+        {
+            rs_extrinsics extrin;
+            rs_get_device_extrinsics(dev, RS_STREAM_DEPTH, RS_STREAM_INFRARED2, &extrin, require_no_error());
+
+            require_identity_matrix(extrin.rotation);
+            require_zero_vector(extrin.translation);
+        }
+    }
+}
+
 #endif /* #if !defined(MAKEFILE) || ( defined(LIVE_TEST) && defined(DS5_TEST) ) */

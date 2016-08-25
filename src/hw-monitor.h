@@ -105,6 +105,8 @@ namespace rsimpl
         void i2c_read_reg(int command, uvc::device & device, uint16_t slave_address, uint16_t reg, uint32_t size, byte* data);
 
         void read_from_eeprom(int IRB_opcode, int IWB_opcode, uvc::device & device, unsigned int offset, int size, byte* data);
+
+        void get_raw_data(uint8_t opcode, uvc::device & device, std::timed_mutex & mutex, uint8_t * data, size_t & bytesReturned);
     }
 }
 

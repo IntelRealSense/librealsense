@@ -13,16 +13,17 @@
 using namespace rsimpl;
 using namespace rsimpl::ds;
 using namespace rsimpl::motion_module;
+using namespace rsimpl::hw_monitor;
 
 namespace rsimpl
 {
-    zr300_camera::zr300_camera(std::shared_ptr<uvc::device> device, const static_device_info & info, motion_module_calibration in_fe_intrinsic)
-    : ds_device(device, info),
-      motion_module_ctrl(device.get()),
-      fe_intrinsic(in_fe_intrinsic)
-    {
-
-    }
+    zr300_camera::zr300_camera(std::shared_ptr<uvc::device> device, const static_device_info & info, motion_module_calibration in_fe_intrinsic, calibration_validator validator)
+    : ds_device(device, info, validator),
+      motion_module_ctrl(device.get(), usbMutex),
+      fe_intrinsic(in_fe_intrinsic),
+      auto_exposure(nullptr),
+      to_add_frames((auto_exposure_state.get_auto_exposure_state(RS_OPTION_FISHEYE_ENABLE_AUTO_EXPOSURE) == 1))
+    {}
     
     zr300_camera::~zr300_camera()
     {
@@ -31,14 +32,14 @@ namespace rsimpl
 
     bool is_fisheye_uvc_control(rs_option option)
     {
-        return (option == RS_OPTION_FISHEYE_COLOR_EXPOSURE) ||
-               (option == RS_OPTION_FISHEYE_COLOR_GAIN);
+        return (option == RS_OPTION_FISHEYE_GAIN);
     }
 
     bool is_fisheye_xu_control(rs_option option)
     {
         return (option == RS_OPTION_FISHEYE_STROBE) ||
-               (option == RS_OPTION_FISHEYE_EXT_TRIG);
+               (option == RS_OPTION_FISHEYE_EXTERNAL_TRIGGER) ||
+               (option == RS_OPTION_FISHEYE_EXPOSURE);
     }
 
     void zr300_camera::set_options(const rs_option options[], size_t count, const double values[])
@@ -47,9 +48,6 @@ namespace rsimpl
         std::vector<double>     base_opt_val;
 
         auto & dev = get_device();
-        auto mm_cfg_writer = make_struct_interface<motion_module::mm_config>([this]() { return motion_module_configuration; }, [&dev, this](mm_config param) {
-            motion_module::config(dev, (uint8_t)param.gyro_bandwidth, (uint8_t)param.gyro_range, (uint8_t)param.accel_bandwidth, (uint8_t)param.accel_range, param.mm_time_seed);
-            motion_module_configuration = param; });
 
         // Handle ZR300 specific options first
         for (size_t i = 0; i < count; ++i)
@@ -62,22 +60,20 @@ namespace rsimpl
 
             switch (options[i])
             {
-            case RS_OPTION_FISHEYE_STROBE:                  zr300::set_strobe(get_device(), static_cast<uint8_t>(values[i])); break;
-            case RS_OPTION_FISHEYE_EXT_TRIG:                zr300::set_ext_trig(get_device(), static_cast<uint8_t>(values[i])); break;
-
-            case RS_OPTION_ZR300_GYRO_BANDWIDTH:            mm_cfg_writer.set(&motion_module::mm_config::gyro_bandwidth, (uint8_t)values[i]); break;
-            case RS_OPTION_ZR300_GYRO_RANGE:                mm_cfg_writer.set(&motion_module::mm_config::gyro_range, (uint8_t)values[i]); break;
-            case RS_OPTION_ZR300_ACCELEROMETER_BANDWIDTH:   mm_cfg_writer.set(&motion_module::mm_config::accel_bandwidth, (uint8_t)values[i]); break;
-            case RS_OPTION_ZR300_ACCELEROMETER_RANGE:       mm_cfg_writer.set(&motion_module::mm_config::accel_range, (uint8_t)values[i]); break;
-            case RS_OPTION_ZR300_MOTION_MODULE_TIME_SEED:   mm_cfg_writer.set(&motion_module::mm_config::mm_time_seed, values[i]); break;
+            case RS_OPTION_FISHEYE_STROBE:                            zr300::set_fisheye_strobe(get_device(), static_cast<uint8_t>(values[i])); break;
+            case RS_OPTION_FISHEYE_EXTERNAL_TRIGGER:                  zr300::set_fisheye_external_trigger(get_device(), static_cast<uint8_t>(values[i])); break;
+            case RS_OPTION_FISHEYE_EXPOSURE:                          zr300::set_fisheye_exposure(get_device(), static_cast<uint16_t>(values[i])); break;
+            case RS_OPTION_FISHEYE_ENABLE_AUTO_EXPOSURE:              set_auto_exposure_state(RS_OPTION_FISHEYE_ENABLE_AUTO_EXPOSURE, values[i]); break;
+            case RS_OPTION_FISHEYE_AUTO_EXPOSURE_MODE:                set_auto_exposure_state(RS_OPTION_FISHEYE_AUTO_EXPOSURE_MODE, values[i]); break;
+            case RS_OPTION_FISHEYE_AUTO_EXPOSURE_ANTIFLICKER_RATE:    set_auto_exposure_state(RS_OPTION_FISHEYE_AUTO_EXPOSURE_ANTIFLICKER_RATE, values[i]); break;
+            case RS_OPTION_FISHEYE_AUTO_EXPOSURE_PIXEL_SAMPLE_RATE:   set_auto_exposure_state(RS_OPTION_FISHEYE_AUTO_EXPOSURE_PIXEL_SAMPLE_RATE, values[i]); break;
+            case RS_OPTION_FISHEYE_AUTO_EXPOSURE_SKIP_FRAMES:         set_auto_exposure_state(RS_OPTION_FISHEYE_AUTO_EXPOSURE_SKIP_FRAMES, values[i]); break;
+            case RS_OPTION_HARDWARE_LOGGER_ENABLED:                   set_fw_logger_option(values[i]); break;
 
                 // Default will be handled by parent implementation
             default: base_opt.push_back(options[i]); base_opt_val.push_back(values[i]); break;
             }
         }
-
-        // Apply Motion Configuraiton
-        mm_cfg_writer.commit();
 
         //Then handle the common options
         if (base_opt.size())
@@ -91,7 +87,6 @@ namespace rsimpl
         std::vector<double>     base_opt_val;
 
         auto & dev = get_device();
-        auto mm_cfg_reader = make_struct_interface<motion_module::mm_config>([this]() { return motion_module_configuration; }, []() { throw std::logic_error("Operation not allowed"); });
 
         // Acquire ZR300-specific options first
         for (size_t i = 0; i<count; ++i)
@@ -105,16 +100,15 @@ namespace rsimpl
             switch(options[i])
             {
 
-            case RS_OPTION_FISHEYE_STROBE:                  values[i] = zr300::get_strobe        (dev); break;
-            case RS_OPTION_FISHEYE_EXT_TRIG:                values[i] = zr300::get_ext_trig      (dev); break;
-
-            case RS_OPTION_ZR300_MOTION_MODULE_ACTIVE:      values[i] = is_motion_tracking_active(); break;
-
-            case RS_OPTION_ZR300_GYRO_BANDWIDTH:            values[i] = (double)mm_cfg_reader.get(&motion_module::mm_config::gyro_bandwidth ); break;
-            case RS_OPTION_ZR300_GYRO_RANGE:                values[i] = (double)mm_cfg_reader.get(&motion_module::mm_config::gyro_range     ); break;
-            case RS_OPTION_ZR300_ACCELEROMETER_BANDWIDTH:   values[i] = (double)mm_cfg_reader.get(&motion_module::mm_config::accel_bandwidth); break;
-            case RS_OPTION_ZR300_ACCELEROMETER_RANGE:       values[i] = (double)mm_cfg_reader.get(&motion_module::mm_config::accel_range    ); break;
-            case RS_OPTION_ZR300_MOTION_MODULE_TIME_SEED:   values[i] = (double)mm_cfg_reader.get(&motion_module::mm_config::mm_time_seed   ); break;
+            case RS_OPTION_FISHEYE_STROBE:                          values[i] = zr300::get_fisheye_strobe        (dev); break;
+            case RS_OPTION_FISHEYE_EXTERNAL_TRIGGER:                values[i] = zr300::get_fisheye_external_trigger      (dev); break;
+            case RS_OPTION_FISHEYE_EXPOSURE:                        values[i] = zr300::get_fisheye_exposure      (dev); break;
+            case RS_OPTION_FISHEYE_ENABLE_AUTO_EXPOSURE:            values[i] = get_auto_exposure_state(RS_OPTION_FISHEYE_ENABLE_AUTO_EXPOSURE); break;
+            case RS_OPTION_FISHEYE_AUTO_EXPOSURE_MODE:              values[i] = get_auto_exposure_state(RS_OPTION_FISHEYE_AUTO_EXPOSURE_MODE); break;
+            case RS_OPTION_FISHEYE_AUTO_EXPOSURE_ANTIFLICKER_RATE:  values[i] = get_auto_exposure_state(RS_OPTION_FISHEYE_AUTO_EXPOSURE_ANTIFLICKER_RATE); break;
+            case RS_OPTION_FISHEYE_AUTO_EXPOSURE_PIXEL_SAMPLE_RATE: values[i] = get_auto_exposure_state(RS_OPTION_FISHEYE_AUTO_EXPOSURE_PIXEL_SAMPLE_RATE); break;
+            case RS_OPTION_FISHEYE_AUTO_EXPOSURE_SKIP_FRAMES:       values[i] = get_auto_exposure_state(RS_OPTION_FISHEYE_AUTO_EXPOSURE_SKIP_FRAMES); break;
+            case RS_OPTION_HARDWARE_LOGGER_ENABLED:                 values[i] = get_fw_logger_option(); break;
 
                 // Default will be handled by parent implementation
             default: base_opt.push_back(options[i]); base_opt_index.push_back(i);  break;
@@ -144,7 +138,63 @@ namespace rsimpl
         }
     }
 
+    unsigned zr300_camera::get_auto_exposure_state(rs_option option)
+    {
+        return auto_exposure_state.get_auto_exposure_state(option);
+    }
 
+    void zr300_camera::on_before_callback(rs_stream stream, rs_frame_ref * frame, std::shared_ptr<rsimpl::frame_archive> archive)
+    {
+        if (!to_add_frames || stream != RS_STREAM_FISHEYE)
+            return;
+
+        auto_exposure->add_frame(clone_frame(frame), archive);
+    }
+
+    void zr300_camera::set_fw_logger_option(double value)
+    {
+        if (value >= 1)
+        {
+            if (!rs_device_base::keep_fw_logger_alive)
+                start_fw_logger(char(adaptor_board_command::GLD), 100, usbMutex);
+        }
+        else
+        {
+            if (rs_device_base::keep_fw_logger_alive)
+                stop_fw_logger();
+        }
+    }
+
+    unsigned zr300_camera::get_fw_logger_option()
+    {
+        return rs_device_base::keep_fw_logger_alive;
+    }
+
+    void zr300_camera::set_auto_exposure_state(rs_option option, double value)
+    {
+        auto auto_exposure_prev_state = auto_exposure_state.get_auto_exposure_state(RS_OPTION_FISHEYE_ENABLE_AUTO_EXPOSURE);
+        auto_exposure_state.set_auto_exposure_state(option, value);
+
+        if (auto_exposure_state.get_auto_exposure_state(RS_OPTION_FISHEYE_ENABLE_AUTO_EXPOSURE)) // auto_exposure current value
+        {
+            if (auto_exposure_prev_state) // auto_exposure previous value
+            {
+                if (auto_exposure)
+                    auto_exposure->update_auto_exposure_state(auto_exposure_state); // auto_exposure mode not changed
+            }
+            else
+            {
+                to_add_frames = true; // auto_exposure moved from disable to enable
+            }
+        }
+        else
+        {
+            if (auto_exposure_prev_state)
+            {
+                to_add_frames = false; // auto_exposure moved from enable to disable
+            }
+        }
+    }
 
     void zr300_camera::toggle_motion_module_power(bool on)
     {        
@@ -160,32 +210,38 @@ namespace rsimpl
     // Power on Fisheye camera (dspwr)
     void zr300_camera::start(rs_source source)
     {
-        if ((supports(rs_capabilities::RS_CAPABILITIES_FISH_EYE)) && ((config.requests[RS_STREAM_FISHEYE].enabled)))
+        if ((supports(RS_CAPABILITIES_FISH_EYE)) && ((config.requests[RS_STREAM_FISHEYE].enabled)))
             toggle_motion_module_power(true);
-       
+
+        if (supports(RS_CAPABILITIES_FISH_EYE))
+            auto_exposure = std::make_shared<auto_exposure_mechanism>(this, auto_exposure_state);
+
         rs_device_base::start(source);
     }
 
     // Power off Fisheye camera
     void zr300_camera::stop(rs_source source)
     {
-        if ((supports(rs_capabilities::RS_CAPABILITIES_FISH_EYE)) && ((config.requests[RS_STREAM_FISHEYE].enabled)))
+        if ((supports(RS_CAPABILITIES_FISH_EYE)) && ((config.requests[RS_STREAM_FISHEYE].enabled)))
             toggle_motion_module_power(false);
+
         rs_device_base::stop(source);
+        if (supports(RS_CAPABILITIES_FISH_EYE))
+            auto_exposure.reset();
     }
 
     // Power on motion module (mmpwr)
     void zr300_camera::start_motion_tracking()
     {
         rs_device_base::start_motion_tracking();
-        if (supports(rs_capabilities::RS_CAPABILITIES_MOTION_EVENTS))
-            toggle_motion_module_events(true);        
+        if (supports(RS_CAPABILITIES_MOTION_EVENTS))
+            toggle_motion_module_events(true);
     }
 
     // Power down Motion Module
     void zr300_camera::stop_motion_tracking()
     {
-        if (supports(rs_capabilities::RS_CAPABILITIES_MOTION_EVENTS))
+        if (supports(RS_CAPABILITIES_MOTION_EVENTS))
             toggle_motion_module_events(false);
         rs_device_base::stop_motion_tracking();
     }
@@ -215,19 +271,45 @@ namespace rsimpl
 
     rs_motion_intrinsics zr300_camera::get_motion_intrinsics() const
     {
-        return  fe_intrinsic.imu_intrinsic;
+        if (!validate_motion_intrinsics())
+        {
+            throw std::runtime_error("Motion intrinsic is not valid");
+        }
+        return  fe_intrinsic.calib.imu_intrinsic;
+    }
+
+    bool zr300_camera::supports_option(rs_option option) const
+    {
+        // The following 4 parameters are removed from DS4.1 FW:
+        std::vector<rs_option> auto_exposure_options = { 
+            RS_OPTION_R200_AUTO_EXPOSURE_KP_EXPOSURE,
+            RS_OPTION_R200_AUTO_EXPOSURE_KP_GAIN,
+            RS_OPTION_R200_AUTO_EXPOSURE_KP_DARK_THRESHOLD,
+            RS_OPTION_R200_AUTO_EXPOSURE_BRIGHT_RATIO_SET_POINT,
+        };
+
+        if (std::find(auto_exposure_options.begin(), auto_exposure_options.end(), option) != auto_exposure_options.end())
+        {
+            return false; 
+        }
+
+        return ds_device::supports_option(option);
     }
 
     rs_extrinsics zr300_camera::get_motion_extrinsics_from(rs_stream from) const
     {
+        if (!validate_motion_extrinsics(from))
+        {
+            throw std::runtime_error("Motion intrinsic is not valid");
+        }
         switch (from)
         {
         case RS_STREAM_DEPTH:
-            return fe_intrinsic.mm_extrinsic.depth_to_imu;
+            return fe_intrinsic.calib.mm_extrinsic.depth_to_imu;
         case RS_STREAM_COLOR:
-            return fe_intrinsic.mm_extrinsic.rgb_to_imu;
+            return fe_intrinsic.calib.mm_extrinsic.rgb_to_imu;
         case RS_STREAM_FISHEYE:
-            return fe_intrinsic.mm_extrinsic.fe_to_imu;
+            return fe_intrinsic.calib.mm_extrinsic.fe_to_imu;
         default:
             throw std::runtime_error(to_string() << "No motion extrinsics from "<<from );
         }
@@ -251,26 +333,95 @@ namespace rsimpl
         }
     }
 
-    motion_module_calibration read_fisheye_intrinsic(uvc::device & device)
+    unsigned long long zr300_camera::get_frame_counter_by_usb_cmd()
+    {
+        hwmon_cmd cmd((int)adaptor_board_command::FRCNT);
+        perform_and_send_monitor_command_over_usb_monitor(this->get_device(), usbMutex, cmd);
+        unsigned long long frame_counter = 0;
+        memcpy(&frame_counter, cmd.receivedCommandData, cmd.receivedCommandDataLength);
+        return frame_counter;
+    }
+
+    bool zr300_camera::validate_motion_extrinsics(rs_stream from_stream) const
+    {
+        if (fe_intrinsic.calib.mm_extrinsic.ver.size != fe_intrinsic.calib.mm_extrinsic.get_data_size())
+        {
+            LOG_WARNING("Motion exntrinsics validation from "<< from_stream <<" failed, ver.size = " << fe_intrinsic.calib.mm_extrinsic.ver.size << " real size = " << fe_intrinsic.calib.mm_extrinsic.get_data_size());
+            return false;
+        }
+
+        auto res = true;
+        switch (from_stream)
+        {
+        case RS_STREAM_DEPTH:
+            if (!fe_intrinsic.calib.mm_extrinsic.depth_to_imu.has_data())
+                res = false;
+   
+            break;
+        case RS_STREAM_COLOR:
+            if (!fe_intrinsic.calib.mm_extrinsic.rgb_to_imu.has_data())
+                res = false;
+
+            break;
+        case RS_STREAM_FISHEYE:
+            if (!fe_intrinsic.calib.mm_extrinsic.fe_to_imu.has_data())
+                res = false;
+
+            break;
+        default:
+            res = false;
+        }
+
+        if (res == false) LOG_WARNING("Motion exntrinsics validation from " << from_stream << " failed, because the data is invalid");
+        return res;
+    }
+
+    bool zr300_camera::validate_motion_intrinsics() const
+    {
+        if (fe_intrinsic.calib.imu_intrinsic.ver.size != fe_intrinsic.calib.imu_intrinsic.get_data_size())
+        {
+            LOG_ERROR("Motion intrinsics validation of failed, ver.size = " << fe_intrinsic.calib.imu_intrinsic.ver.size << " real size = " << fe_intrinsic.calib.imu_intrinsic.get_data_size());
+            return false;
+        }
+        if(!fe_intrinsic.calib.imu_intrinsic.has_data())
+        {
+            LOG_ERROR("Motion intrinsics validation of failed, because the data is invalid");
+            return false;
+        }
+       
+       return true;
+    }
+
+    serial_number read_serial_number(uvc::device & device, std::timed_mutex & mutex)
+    {
+        uint8_t serial_number_raw[HW_MONITOR_BUFFER_SIZE];
+        size_t bufferLength = HW_MONITOR_BUFFER_SIZE;
+        get_raw_data(static_cast<uint8_t>(adaptor_board_command::MM_SNB), device, mutex, serial_number_raw, bufferLength);
+
+        serial_number sn;
+        memcpy(&sn, serial_number_raw, std::min(sizeof(serial_number), bufferLength)); // Is this longer or shorter than the rawCalib struct?
+        return sn;
+    }
+    calibration read_calibration(uvc::device & device, std::timed_mutex & mutex)
+    {
+        uint8_t scalibration_raw[HW_MONITOR_BUFFER_SIZE];
+        size_t bufferLength = HW_MONITOR_BUFFER_SIZE;
+        get_raw_data(static_cast<uint8_t>(adaptor_board_command::MM_TRB), device, mutex, scalibration_raw, bufferLength);
+
+        calibration calibration;
+        memcpy(&calibration, scalibration_raw, std::min(sizeof(calibration), bufferLength)); // Is this longer or shorter than the rawCalib struct?
+        return calibration;
+    }
+    motion_module_calibration read_fisheye_intrinsic(uvc::device & device, std::timed_mutex & mutex)
     {
         motion_module_calibration intrinsic;
-        memset(&intrinsic, 0, sizeof(motion_module_calibration));
-
-        byte data[256];
-        hw_monitor::read_from_eeprom(static_cast<int>(adaptor_board_command::IRB), static_cast<int>(adaptor_board_command::IWB), device, 0, 255, data);
-        intrinsic.sn = *(serial_number*)&data[0];
-
-        hw_monitor::read_from_eeprom(static_cast<int>(adaptor_board_command::IRB), static_cast<int>(adaptor_board_command::IWB), device, 0x100, 255, data);
-        intrinsic.fe_intrinsic = *(fisheye_intrinsic*)&data[0];
-
-        hw_monitor::read_from_eeprom(static_cast<int>(adaptor_board_command::IRB), static_cast<int>(adaptor_board_command::IWB), device, 0x200, 255, data);
-        intrinsic.mm_extrinsic = *(IMU_extrinsic*)&data[0];
-
-        hw_monitor::read_from_eeprom(static_cast<int>(adaptor_board_command::IRB), static_cast<int>(adaptor_board_command::IWB), device, 0x300, 255, data);
-        intrinsic.imu_intrinsic = *(IMU_intrinsic*)&data[0];
+        intrinsic.calib = read_calibration(device, mutex);
+        intrinsic.sn = read_serial_number(device, mutex);
 
         return intrinsic;
     }
+
+   
 
     std::shared_ptr<rs_device> make_zr300_device(std::shared_ptr<uvc::device> device)
     {
@@ -280,39 +431,43 @@ namespace rsimpl
         info.name = { "Intel RealSense ZR300" };
         auto c = ds::read_camera_info(*device);
 
-        info.subdevice_modes.push_back({ 2, { 1920, 1080 }, pf_rw16, 30, c.intrinsicsThird[0], { c.modesThird[0][0] }, { 0 } });
-
         motion_module_calibration fisheye_intrinsic;
         auto succeeded_to_read_fisheye_intrinsic = false;
-       
+
+
         // TODO - is Motion Module optional
         if (uvc::is_device_connected(*device, VID_INTEL_CAMERA, FISHEYE_PRODUCT_ID))
         {
             // Acquire Device handle for Motion Module API
             zr300::claim_motion_module_interface(*device);
-            motion_module_control mm(device.get());
-            mm.toggle_motion_module_power(true);
-            mm.toggle_motion_module_events(true); //wait for the motion module start up (300 msec)
-            mm.toggle_motion_module_events(false); //then deactivate events generation
+            std::timed_mutex mtx;
             try
             {
-                fisheye_intrinsic = read_fisheye_intrinsic(*device);
+                std::string version_string;
+                ivcam::get_firmware_version_string(*device, mtx, version_string, (int)adaptor_board_command::GVD);
+                info.camera_info[RS_CAMERA_INFO_ADAPTER_BOARD_FIRMWARE_VERSION] = version_string;
+                ivcam::get_firmware_version_string(*device, mtx, version_string, (int)adaptor_board_command::GVD, 4);
+                info.camera_info[RS_CAMERA_INFO_MOTION_MODULE_FIRMWARE_VERSION] = version_string;
+            }
+            catch (...)
+            {
+                LOG_ERROR("Failed to get firmware version");
+            }
+
+            try
+            {
+                std::timed_mutex  mutex;
+                fisheye_intrinsic = read_fisheye_intrinsic(*device, mutex);
                 succeeded_to_read_fisheye_intrinsic = true;
             }
             catch (...)
             {
-                LOG_ERROR("Failed to read fisheye intrinsic");
+                LOG_ERROR("Couldn't query adapter board / motion module FW version!");
             }
-
-            mm.toggle_motion_module_power(false);
-
-            rs_intrinsics rs_intrinsics = fisheye_intrinsic.fe_intrinsic;
+            rs_intrinsics rs_intrinsics = fisheye_intrinsic.calib.fe_intrinsic;
 
             info.capabilities_vector.push_back(RS_CAPABILITIES_MOTION_MODULE_FW_UPDATE);
             info.capabilities_vector.push_back(RS_CAPABILITIES_ADAPTER_BOARD);
-
-            // require at least Alpha FW version to run
-            info.capabilities_vector.push_back({ RS_CAPABILITIES_ENUMERATION, { 1, 16, 0, 0 }, firmware_version::any(), RS_CAMERA_INFO_ADAPTER_BOARD_FIRMWARE_VERSION });
 
             info.stream_subdevices[RS_STREAM_FISHEYE] = 3;
             info.presets[RS_STREAM_FISHEYE][RS_PRESET_BEST_QUALITY] = { true, 640, 480, RS_FORMAT_RAW8,   60 };
@@ -320,36 +475,711 @@ namespace rsimpl
             info.subdevice_modes.push_back({ 3, { 640, 480 }, pf_raw8, 60, rs_intrinsics, { /*TODO:ask if we need rect_modes*/ }, { 0 } });
             info.subdevice_modes.push_back({ 3, { 640, 480 }, pf_raw8, 30, rs_intrinsics, {/*TODO:ask if we need rect_modes*/ }, { 0 } });
 
-            info.options.push_back({ RS_OPTION_FISHEYE_COLOR_EXPOSURE });
-            info.options.push_back({ RS_OPTION_FISHEYE_COLOR_GAIN });
-            info.options.push_back({ RS_OPTION_FISHEYE_STROBE, 0, 1, 1, 0 });
-            info.options.push_back({ RS_OPTION_FISHEYE_EXT_TRIG, 0, 1, 1, 0 });
+            if (info.camera_info.find(RS_CAMERA_INFO_ADAPTER_BOARD_FIRMWARE_VERSION) != info.camera_info.end())
+            {
+                firmware_version ver(info.camera_info[RS_CAMERA_INFO_ADAPTER_BOARD_FIRMWARE_VERSION]);
+                if (ver >= firmware_version("1.25.0.0"))
+                    info.options.push_back({ RS_OPTION_FISHEYE_EXPOSURE,                40, 331, 1,  40 });
+            }
 
-            info.options.push_back({ RS_OPTION_ZR300_GYRO_BANDWIDTH,            (int)mm_gyro_bandwidth::gyro_bw_default,    (int)mm_gyro_bandwidth::gyro_bw_200hz,  1,  (int)mm_gyro_bandwidth::gyro_bw_200hz });
-            info.options.push_back({ RS_OPTION_ZR300_GYRO_RANGE,                (int)mm_gyro_range::gyro_range_default,     (int)mm_gyro_range::gyro_range_1000,    1,  (int)mm_gyro_range::gyro_range_1000 });
-            info.options.push_back({ RS_OPTION_ZR300_ACCELEROMETER_BANDWIDTH,   (int)mm_accel_bandwidth::accel_bw_default,  (int)mm_accel_bandwidth::accel_bw_250hz,1,  (int)mm_accel_bandwidth::accel_bw_125hz });
-            info.options.push_back({ RS_OPTION_ZR300_ACCELEROMETER_RANGE,       (int)mm_accel_range::accel_range_default,   (int)mm_accel_range::accel_range_16g,   1,  (int)mm_accel_range::accel_range_4g });
-            info.options.push_back({ RS_OPTION_ZR300_MOTION_MODULE_TIME_SEED,       0,      UINT_MAX,   1,   0 });
-            info.options.push_back({ RS_OPTION_ZR300_MOTION_MODULE_ACTIVE,          0,       1,         1,   0 });
+            info.options.push_back({ RS_OPTION_FISHEYE_GAIN                                             });
+            info.options.push_back({ RS_OPTION_FISHEYE_STROBE,                          0,  1,   1,  0  });
+            info.options.push_back({ RS_OPTION_FISHEYE_EXTERNAL_TRIGGER,                0,  1,   1,  0  });
+            info.options.push_back({ RS_OPTION_FISHEYE_ENABLE_AUTO_EXPOSURE,            0,  1,   1,  1  });
+            info.options.push_back({ RS_OPTION_FISHEYE_AUTO_EXPOSURE_MODE,              0,  2,   1,  0  });
+            info.options.push_back({ RS_OPTION_FISHEYE_AUTO_EXPOSURE_ANTIFLICKER_RATE,  50, 60,  10, 60 });
+            info.options.push_back({ RS_OPTION_FISHEYE_AUTO_EXPOSURE_PIXEL_SAMPLE_RATE, 1,  3,   1,  1  });
+            info.options.push_back({ RS_OPTION_FISHEYE_AUTO_EXPOSURE_SKIP_FRAMES,       0,  3,   1,  2  });
+            info.options.push_back({ RS_OPTION_HARDWARE_LOGGER_ENABLED,                 0,  1,   1,  0  });
         }
         
-        std::timed_mutex mutex;
-        ivcam::get_firmware_version_string(*device, mutex, info.camera_info[RS_CAMERA_INFO_ADAPTER_BOARD_FIRMWARE_VERSION], (int)adaptor_board_command::GVD);
-        ivcam::get_firmware_version_string(*device, mutex, info.camera_info[RS_CAMERA_INFO_MOTION_MODULE_FIRMWARE_VERSION], (int)adaptor_board_command::GVD, 4);
-
         ds_device::set_common_ds_config(device, info, c);
+        info.subdevice_modes.push_back({ 2, { 1920, 1080 }, pf_rw16, 30, c.intrinsicsThird[0], { c.modesThird[0][0] }, { 0 } });
+
         if (succeeded_to_read_fisheye_intrinsic)
         {
-            auto fe_extrinsic = fisheye_intrinsic.mm_extrinsic;
-            info.stream_poses[RS_STREAM_FISHEYE] = { reinterpret_cast<float3x3 &>(fe_extrinsic.fe_to_depth.rotation), reinterpret_cast<float3&>(fe_extrinsic.fe_to_depth.translation) };
+            auto fe_extrinsic = fisheye_intrinsic.calib.mm_extrinsic;
+            pose fisheye_to_depth = { reinterpret_cast<float3x3 &>(fe_extrinsic.fe_to_depth.rotation), reinterpret_cast<float3&>(fe_extrinsic.fe_to_depth.translation) };
+            auto depth_to_fisheye = inverse(fisheye_to_depth);
+            info.stream_poses[RS_STREAM_FISHEYE] = depth_to_fisheye;
 
             info.capabilities_vector.push_back({ RS_CAPABILITIES_FISH_EYE, { 1, 15, 5, 0 }, firmware_version::any(), RS_CAMERA_INFO_MOTION_MODULE_FIRMWARE_VERSION });
             info.capabilities_vector.push_back({ RS_CAPABILITIES_MOTION_EVENTS, { 1, 15, 5, 0 }, firmware_version::any(), RS_CAMERA_INFO_MOTION_MODULE_FIRMWARE_VERSION });
         }
         else
         {
-            LOG_ERROR("Motion module capabilities were disabled due to failure to aquire intrinsic");
+            LOG_WARNING("Motion module capabilities were disabled due to failure to aquire intrinsic");
         }
-        return std::make_shared<zr300_camera>(device, info, fisheye_intrinsic);
+
+        auto fisheye_intrinsics_validator = [fisheye_intrinsic, succeeded_to_read_fisheye_intrinsic](rs_stream stream)
+        { 
+            if (stream != RS_STREAM_FISHEYE)
+            {
+                return true;
+            }
+            if (!succeeded_to_read_fisheye_intrinsic)
+            {
+                LOG_WARNING("Intrinsics validation of"<<stream<<" failed, because the reading of calibration table failed");
+                return false;
+            }
+            if (fisheye_intrinsic.calib.fe_intrinsic.ver.size != fisheye_intrinsic.calib.fe_intrinsic.get_data_size())
+            {
+                LOG_WARNING("Intrinsics validation of" << stream <<" failed, ver.size = " << fisheye_intrinsic.calib.fe_intrinsic.ver.size << " real size = " << fisheye_intrinsic.calib.fe_intrinsic.get_data_size());
+                return false;
+            }
+            if (!fisheye_intrinsic.calib.fe_intrinsic.has_data())
+            {
+                LOG_WARNING("Intrinsics validation of" << stream <<" failed, because the data is invalid");
+                return false;
+            }
+            return true;
+        };
+
+        auto fisheye_extrinsics_validator = [fisheye_intrinsic, succeeded_to_read_fisheye_intrinsic](rs_stream from_stream, rs_stream to_stream)
+        {
+            if (from_stream != RS_STREAM_FISHEYE && to_stream != RS_STREAM_FISHEYE)
+            {
+                return true;
+            }
+            if (!succeeded_to_read_fisheye_intrinsic)
+            {
+                LOG_WARNING("Exstrinsics validation of" << from_stream <<" to "<< to_stream << " failed,  because the reading of calibration table failed");
+                return false;
+            }
+            if (!fisheye_intrinsic.calib.mm_extrinsic.ver.size == fisheye_intrinsic.calib.mm_extrinsic.get_data_size())
+            {
+                LOG_WARNING("Extrinsics validation of" << from_stream <<" to "<<to_stream<< " failed, ver.size = " << fisheye_intrinsic.calib.fe_intrinsic.ver.size << " real size = " << fisheye_intrinsic.calib.fe_intrinsic.get_data_size());
+                return false;
+            }
+            if(!fisheye_intrinsic.calib.mm_extrinsic.fe_to_depth.has_data())
+            {
+                LOG_WARNING("Extrinsics validation of" << from_stream <<" to "<<to_stream<< " failed, because the data is invalid");
+                return false;
+            }
+            
+            return true;
+        };
+
+        return std::make_shared<zr300_camera>(device, info, fisheye_intrinsic, calibration_validator(fisheye_extrinsics_validator, fisheye_intrinsics_validator));
+    }
+
+   
+
+    unsigned fisheye_auto_exposure_state::get_auto_exposure_state(rs_option option) const
+    {
+        switch (option)
+        {
+        case RS_OPTION_FISHEYE_ENABLE_AUTO_EXPOSURE:
+            return (static_cast<unsigned>(is_auto_exposure));
+            break;
+        case RS_OPTION_FISHEYE_AUTO_EXPOSURE_MODE:
+            return (static_cast<unsigned>(mode));
+            break;
+        case RS_OPTION_FISHEYE_AUTO_EXPOSURE_ANTIFLICKER_RATE:
+            return (static_cast<unsigned>(rate));
+            break;
+        case RS_OPTION_FISHEYE_AUTO_EXPOSURE_PIXEL_SAMPLE_RATE:
+            return (static_cast<unsigned>(sample_rate));
+            break;
+        case RS_OPTION_FISHEYE_AUTO_EXPOSURE_SKIP_FRAMES:
+            return (static_cast<unsigned>(skip_frames));
+            break;
+        default:
+            throw std::logic_error("Option unsupported");
+            break;
+        }
+    }
+
+    void fisheye_auto_exposure_state::set_auto_exposure_state(rs_option option, double value)
+    {
+        switch (option)
+        {
+        case RS_OPTION_FISHEYE_ENABLE_AUTO_EXPOSURE:
+            is_auto_exposure = (value >= 1);
+            break;
+        case RS_OPTION_FISHEYE_AUTO_EXPOSURE_MODE:
+            mode = static_cast<auto_exposure_modes>((int)value);
+            break;
+        case RS_OPTION_FISHEYE_AUTO_EXPOSURE_ANTIFLICKER_RATE:
+            rate = static_cast<unsigned>(value);
+            break;
+        case RS_OPTION_FISHEYE_AUTO_EXPOSURE_PIXEL_SAMPLE_RATE:
+            sample_rate = static_cast<unsigned>(value);
+            break;
+        case RS_OPTION_FISHEYE_AUTO_EXPOSURE_SKIP_FRAMES:
+            skip_frames = static_cast<unsigned>(value);
+            break;
+        default:
+            throw std::logic_error("Option unsupported");
+            break;
+        }
+    }
+
+    auto_exposure_mechanism::auto_exposure_mechanism(zr300_camera* dev, fisheye_auto_exposure_state auto_exposure_state) : keep_alive(true), device(dev), sync_archive(nullptr), skip_frames(get_skip_frames(auto_exposure_state)), auto_exposure_algo(auto_exposure_state), frames_counter(0)
+    {
+        exposure_thread = std::make_shared<std::thread>([this]() {
+            while (keep_alive)
+            {
+                std::unique_lock<std::mutex> lk(queue_mtx);
+                cv.wait(lk, [&] {return (get_queue_size() || !keep_alive); });
+                if (!keep_alive)
+                    return;
+
+
+                rs_frame_ref* frame_ref = nullptr;
+                auto frame_sts = try_pop_front_data(&frame_ref);
+                lk.unlock();
+
+                rs_option options[] = { RS_OPTION_FISHEYE_EXPOSURE, RS_OPTION_FISHEYE_GAIN };
+                double values[2] = {};
+                unsigned long long frame_counter;
+                try {
+                    device->get_options(options, 2, values);
+                    frame_counter = device->get_frame_counter_by_usb_cmd();
+                    push_back_exp_and_cnt(exposure_and_frame_counter(values[0], frame_counter));
+                }
+                catch (...) {};
+
+                if (frame_sts)
+                {
+                    unsigned long long frame_counter = frame_ref->get_frame_number();
+                    double exp_by_frame_cnt;
+                    auto exp_and_cnt_sts = try_get_exp_by_frame_cnt(exp_by_frame_cnt, frame_counter);
+
+                    auto exposure_value = static_cast<float>((exp_and_cnt_sts)? exp_by_frame_cnt : values[0] / 10.);
+                    auto gain_value = static_cast<float>(values[1]);
+
+                    bool sts = auto_exposure_algo.analyze_image(frame_ref);
+                    if (sts)
+                    {
+                        bool modify_exposure, modify_gain;
+                        auto_exposure_algo.modify_exposure(exposure_value, modify_exposure, gain_value, modify_gain);
+
+                        if (modify_exposure)
+                        {
+                            rs_option option[] = { RS_OPTION_FISHEYE_EXPOSURE };
+                            double value[] = { exposure_value * 10. };
+                            device->set_options(option, 1, value);
+                        }
+
+                        if (modify_gain)
+                        {
+                            rs_option option[] = { RS_OPTION_FISHEYE_GAIN };
+                            double value[] = { gain_value };
+                            device->set_options(option, 1, value);
+                        }
+                    }
+                }
+                sync_archive->release_frame_ref((rsimpl::frame_archive::frame_ref *)frame_ref);
+            }
+        });
+    }
+
+    auto_exposure_mechanism::~auto_exposure_mechanism()
+    {
+        {
+            std::lock_guard<std::mutex> lk(queue_mtx);
+            keep_alive = false;
+            clear_queue();
+        }
+        cv.notify_one();
+        exposure_thread->join();
+    }
+
+    void auto_exposure_mechanism::update_auto_exposure_state(fisheye_auto_exposure_state& auto_exposure_state)
+    {
+        std::lock_guard<std::mutex> lk(queue_mtx);
+        skip_frames = auto_exposure_state.get_auto_exposure_state(RS_OPTION_FISHEYE_AUTO_EXPOSURE_SKIP_FRAMES);
+        auto_exposure_algo.update_options(auto_exposure_state);
+    }
+
+    void auto_exposure_mechanism::add_frame(rs_frame_ref* frame, std::shared_ptr<rsimpl::frame_archive> archive)
+    {
+        if (!keep_alive || (skip_frames && (frames_counter++) != skip_frames))
+        {
+            archive->release_frame_ref((rsimpl::frame_archive::frame_ref *)frame);
+            return;
+        }
+
+        frames_counter = 0;
+
+        if (!sync_archive)
+            sync_archive = archive;
+
+        {
+            std::lock_guard<std::mutex> lk(queue_mtx);
+            if (data_queue.size() > 1)
+            {
+                sync_archive->release_frame_ref((rsimpl::frame_archive::frame_ref *)data_queue.front());
+                data_queue.pop_front();
+            }
+
+            push_back_data(frame);
+        }
+        cv.notify_one();
+    }
+
+    void auto_exposure_mechanism::push_back_exp_and_cnt(exposure_and_frame_counter exp_and_cnt)
+    {
+        std::lock_guard<std::mutex> lk(exp_and_cnt_queue_mtx);
+
+        if (exposure_and_frame_counter_queue.size() > max_size_of_exp_and_cnt_queue)
+            exposure_and_frame_counter_queue.pop_front();
+
+        exposure_and_frame_counter_queue.push_back(exp_and_cnt);
+    }
+
+    bool auto_exposure_mechanism::try_get_exp_by_frame_cnt(double& exposure, const unsigned long long frame_counter)
+    {
+        std::lock_guard<std::mutex> lk(exp_and_cnt_queue_mtx);
+
+        if (!exposure_and_frame_counter_queue.size())
+            return false;
+
+        unsigned long long min = std::numeric_limits<uint64_t>::max();
+        double exp;
+        auto it = std::find_if(exposure_and_frame_counter_queue.begin(), exposure_and_frame_counter_queue.end(),
+            [&](const exposure_and_frame_counter& element) {
+            int diff = std::abs(static_cast<int>(frame_counter - element.frame_counter));
+            if (diff < min)
+            {
+                min = diff;
+                exp = element.exposure;
+                return false;
+            }
+            return true;
+        });
+
+        if (it != exposure_and_frame_counter_queue.end())
+        {
+            exposure = it->exposure;
+            exposure_and_frame_counter_queue.erase(it);
+            return true;
+        }
+
+        return false;
+    }
+
+    void auto_exposure_mechanism::push_back_data(rs_frame_ref* data)
+    {
+        data_queue.push_back(data);
+    }
+
+    bool auto_exposure_mechanism::try_pop_front_data(rs_frame_ref** data)
+    {
+        if (!data_queue.size())
+            return false;
+
+        *data = data_queue.front();
+        data_queue.pop_front();
+
+        return true;
+    }
+
+    size_t auto_exposure_mechanism::get_queue_size()
+    {
+        return data_queue.size();
+    }
+
+    void auto_exposure_mechanism::clear_queue()
+    {
+        rs_frame_ref* frame_ref = nullptr;
+        while (try_pop_front_data(&frame_ref))
+        {
+            sync_archive->release_frame_ref((rsimpl::frame_archive::frame_ref *)frame_ref);
+        }
+    }
+
+    auto_exposure_algorithm::auto_exposure_algorithm(fisheye_auto_exposure_state auto_exposure_state)
+    {
+        update_options(auto_exposure_state);
+    }
+
+    void auto_exposure_algorithm::modify_exposure(float& exposure_value, bool& exp_modified, float& gain_value, bool& gain_modified)
+    {
+        float total_exposure = exposure * gain;
+        float prev_exposure = exposure;
+        LOG_DEBUG("TotalExposure " << total_exposure << ", target_exposure " << target_exposure);
+        if (fabs(target_exposure - total_exposure) > eps)
+        {
+            rounding_mode_type RoundingMode;
+
+            if (target_exposure > total_exposure)
+            {
+                float target_exposure0 = total_exposure * (1.0f + exposure_step);
+
+                target_exposure0 = std::min(target_exposure0, target_exposure);
+                increase_exposure_gain(target_exposure, target_exposure0, exposure, gain);
+                RoundingMode = rounding_mode_type::ceil;
+                LOG_DEBUG(" ModifyExposure: IncreaseExposureGain: ");
+                LOG_DEBUG(" target_exposure0 " << target_exposure0);
+            }
+            else
+            {
+                float target_exposure0 = total_exposure / (1.0f + exposure_step);
+
+                target_exposure0 = std::max(target_exposure0, target_exposure);
+                decrease_exposure_gain(target_exposure, target_exposure0, exposure, gain);
+                RoundingMode = rounding_mode_type::floor;
+                LOG_DEBUG(" ModifyExposure: DecreaseExposureGain: ");
+                LOG_DEBUG(" target_exposure0 " << target_exposure0);
+            }
+            LOG_DEBUG(" exposure " << exposure << ", gain " << gain);
+            if (exposure_value != exposure)
+            {
+                exp_modified = true;
+                exposure_value = exposure;
+                LOG_DEBUG("ExposureModified: exposure = " << exposure_value);
+                exposure_value = exposure_to_value(exposure_value, RoundingMode);
+                LOG_DEBUG(" rounded to: " << exposure_value << std::endl);
+
+                if (std::fabs(prev_exposure - exposure) < minimal_exposure_step)
+                {
+                    exposure_value = exposure + direction * minimal_exposure_step;
+                }
+            }
+            if (gain_value != gain)
+            {
+                gain_modified = true;
+                gain_value = gain;
+                LOG_DEBUG("GainModified: gain = " << gain);
+                gain_value = gain_to_value(gain_value, RoundingMode);
+                LOG_DEBUG(" rounded to: " << gain);
+            }
+        }
+    }
+
+    bool auto_exposure_algorithm::analyze_image(const rs_frame_ref* image)
+    {
+        int cols = image->get_frame_width();
+        int rows = image->get_frame_height();
+
+        const int number_of_pixels = cols * rows; //VGA
+        if (number_of_pixels == 0)
+        {
+            // empty image
+            return false;
+        }
+        std::vector<int> H(256);
+        int total_weight;
+        //    if (UseWeightedHistogram)
+        //    {
+        //        if ((Weights.cols != cols) || (Weights.rows != rows)) { /* weights matrix size != image size */ }
+        //        ImHistW(Image.get_data(), Weights.data, cols, rows, Image.step, Weights.step, &H[0], TotalWeight);
+        //    }
+        //    else
+        {
+            im_hist((uint8_t*)image->get_frame_data(), cols, rows, image->get_frame_bpp() / 8 * cols, &H[0]);
+            total_weight = number_of_pixels;
+        }
+        histogram_metric score;
+        histogram_score(H, total_weight, score);
+        int EffectiveDynamicRange = (score.highlight_limit - score.shadow_limit);
+        ///
+        float s1 = (score.main_mean - 128.0f) / 255.0f;
+        float s2 = 0;
+        if (total_weight != 0)
+        {
+            s2 = (score.over_exposure_count - score.under_exposure_count) / (float)total_weight;
+        }
+        else
+        {
+            LOG_ERROR("Weight=0 Error");
+            return false;
+        }
+        float s = -0.3f * (s1 + 5.0f * s2);
+        LOG_DEBUG(" AnalyzeImage Score: " << s);
+        //std::cout << "----------------- " << s << std::endl;
+        /*if (fabs(s) < Hysteresis)
+        {
+        LOG_DEBUG(" AnalyzeImage < Hysteresis" << std::endl);
+        return false;
+        }*/
+        if (s > 0)
+        {
+            //        LOG_DEBUG(" AnalyzeImage: IncreaseExposure" << std::endl);
+            direction = +1;
+            increase_exposure_target(s, target_exposure);
+        }
+        else
+        {
+            LOG_DEBUG(" AnalyzeImage: DecreaseExposure");
+            direction = -1;
+            decrease_exposure_target(s, target_exposure);
+        }
+        //if ((PrevDirection != 0) && (PrevDirection != Direction))
+        {
+            if (fabs(1.0f - (exposure * gain) / target_exposure) < hysteresis)
+            {
+                LOG_DEBUG(" AnalyzeImage: Don't Modify (Hysteresis): " << target_exposure << " " << exposure * gain);
+                return false;
+            }
+        }
+        prev_direction = direction;
+        LOG_DEBUG(" AnalyzeImage: Modify");
+        return true;
+    }
+
+    void auto_exposure_algorithm::update_options(const fisheye_auto_exposure_state& options)
+    {
+        std::lock_guard<std::recursive_mutex> lock(state_mutex);
+
+        state = options;
+        flicker_cycle = 1000.0f / (state.get_auto_exposure_state(RS_OPTION_FISHEYE_AUTO_EXPOSURE_ANTIFLICKER_RATE) * 2.0f);
+    }
+
+    void auto_exposure_algorithm::im_hist(const uint8_t* data, const int width, const int height, const int rowStep, int h[])
+    {
+        std::lock_guard<std::recursive_mutex> lock(state_mutex);
+
+        for (int i = 0; i < 256; ++i) h[i] = 0;
+        const uint8_t* rowData = data;
+        for (int i = 0; i < height; ++i, rowData += rowStep) for (int j = 0; j < width; j+=state.get_auto_exposure_state(RS_OPTION_FISHEYE_AUTO_EXPOSURE_PIXEL_SAMPLE_RATE)) ++h[rowData[j]];
+    }
+
+    void auto_exposure_algorithm::increase_exposure_target(float mult, float& target_exposure)
+    {
+        target_exposure = std::min((exposure * gain) * (1.0f + mult), maximal_exposure * gain_limit);
+    }
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    void auto_exposure_algorithm::decrease_exposure_target(float mult, float& target_exposure)
+    {
+        target_exposure = std::max((exposure * gain) * (1.0f + mult), minimal_exposure * base_gain);
+    }
+
+    void auto_exposure_algorithm::increase_exposure_gain(const float& target_exposure, const float& target_exposure0, float& exposure, float& gain)
+    {
+        std::lock_guard<std::recursive_mutex> lock(state_mutex);
+
+        switch (state.get_auto_exposure_state(RS_OPTION_FISHEYE_AUTO_EXPOSURE_MODE))
+        {
+        case int(auto_exposure_modes::static_auto_exposure):          static_increase_exposure_gain(target_exposure, target_exposure0, exposure, gain); break;
+        case int(auto_exposure_modes::auto_exposure_anti_flicker):    anti_flicker_increase_exposure_gain(target_exposure, target_exposure0, exposure, gain); break;
+        case int(auto_exposure_modes::auto_exposure_hybrid):          hybrid_increase_exposure_gain(target_exposure, target_exposure0, exposure, gain); break;
+        }
+    }
+    void auto_exposure_algorithm::decrease_exposure_gain(const float& target_exposure, const float& target_exposure0, float& exposure, float& gain)
+    {
+        std::lock_guard<std::recursive_mutex> lock(state_mutex);
+
+        switch (state.get_auto_exposure_state(RS_OPTION_FISHEYE_AUTO_EXPOSURE_MODE))
+        {
+        case int(auto_exposure_modes::static_auto_exposure):          static_decrease_exposure_gain(target_exposure, target_exposure0, exposure, gain); break;
+        case int(auto_exposure_modes::auto_exposure_anti_flicker):    anti_flicker_decrease_exposure_gain(target_exposure, target_exposure0, exposure, gain); break;
+        case int(auto_exposure_modes::auto_exposure_hybrid):          hybrid_decrease_exposure_gain(target_exposure, target_exposure0, exposure, gain); break;
+        }
+    }
+    void auto_exposure_algorithm::static_increase_exposure_gain(const float& target_exposure, const float& target_exposure0, float& exposure, float& gain)
+    {
+        exposure = std::max(minimal_exposure, std::min(target_exposure0 / base_gain, maximal_exposure));
+        gain = std::min(gain_limit, std::max(target_exposure0 / exposure, base_gain));
+    }
+    void auto_exposure_algorithm::static_decrease_exposure_gain(const float& target_exposure, const float& target_exposure0, float& exposure, float& gain)
+    {
+        exposure = std::max(minimal_exposure, std::min(target_exposure0 / base_gain, maximal_exposure));
+        gain = std::min(gain_limit, std::max(target_exposure0 / exposure, base_gain));
+    }
+    void auto_exposure_algorithm::anti_flicker_increase_exposure_gain(const float& target_exposure, const float& target_exposure0, float& exposure, float& gain)
+    {
+        std::vector< std::tuple<float, float, float> > exposure_gain_score;
+
+        for (int i = 1; i < 4; ++i)
+        {
+            float exposure1 = std::max(std::min(i * flicker_cycle, maximal_exposure), flicker_cycle);
+            float gain1 = base_gain;
+
+            if ((exposure1 * gain1) != target_exposure)
+            {
+                std::min(std::max(target_exposure / exposure1, base_gain), gain_limit);
+            }
+            float score1 = fabs(target_exposure - exposure1 * gain1);
+            exposure_gain_score.push_back(std::tuple<float, float, float>(score1, exposure1, gain1));
+        }
+
+        std::sort(exposure_gain_score.begin(), exposure_gain_score.end());
+
+        exposure = std::get<1>(exposure_gain_score.front());
+        gain = std::get<2>(exposure_gain_score.front());
+    }
+    void auto_exposure_algorithm::anti_flicker_decrease_exposure_gain(const float& target_exposure, const float& target_exposure0, float& exposure, float& gain)
+    {
+        std::vector< std::tuple<float, float, float> > exposure_gain_score;
+
+        for (int i = 1; i < 4; ++i)
+        {
+            float exposure1 = std::max(std::min(i * flicker_cycle, maximal_exposure), flicker_cycle);
+            float gain1 = base_gain;
+            if ((exposure1 * gain1) != target_exposure)
+            {
+                std::min(std::max(target_exposure / exposure1, base_gain), gain_limit);
+            }
+            float score1 = fabs(target_exposure - exposure1 * gain1);
+            exposure_gain_score.push_back(std::tuple<float, float, float>(score1, exposure1, gain1));
+        }
+
+        std::sort(exposure_gain_score.begin(), exposure_gain_score.end());
+
+        exposure = std::get<1>(exposure_gain_score.front());
+        gain = std::get<2>(exposure_gain_score.front());
+    }
+    void auto_exposure_algorithm::hybrid_increase_exposure_gain(const float& target_exposure, const float& target_exposure0, float& exposure, float& gain)
+    {
+        if (anti_flicker_mode)
+        {
+            anti_flicker_increase_exposure_gain(target_exposure, target_exposure0, exposure, gain);
+        }
+        else
+        {
+            static_increase_exposure_gain(target_exposure, target_exposure0, exposure, gain);
+            LOG_DEBUG("HybridAutoExposure::IncreaseExposureGain: " << exposure * gain << " " << flicker_cycle * base_gain << " " << base_gain);
+            if (target_exposure > 0.99 * flicker_cycle * base_gain)
+            {
+                anti_flicker_mode = true;
+                anti_flicker_increase_exposure_gain(target_exposure, target_exposure0, exposure, gain);
+                LOG_DEBUG("anti_flicker_mode = true");
+            }
+        }
+    }
+    void auto_exposure_algorithm::hybrid_decrease_exposure_gain(const float& target_exposure, const float& target_exposure0, float& exposure, float& gain)
+    {
+        if (anti_flicker_mode)
+        {
+            LOG_DEBUG("HybridAutoExposure::DecreaseExposureGain: " << exposure << " " << flicker_cycle << " " << gain << " " << base_gain);
+            if ((target_exposure) <= 0.99 * (flicker_cycle * base_gain))
+            {
+                anti_flicker_mode = false;
+                static_decrease_exposure_gain(target_exposure, target_exposure0, exposure, gain);
+                LOG_DEBUG("anti_flicker_mode = false");
+            }
+            else
+            {
+                anti_flicker_decrease_exposure_gain(target_exposure, target_exposure0, exposure, gain);
+            }
+        }
+        else
+        {
+            static_decrease_exposure_gain(target_exposure, target_exposure0, exposure, gain);
+        }
+    }
+
+    float auto_exposure_algorithm::exposure_to_value(float exp_ms, rounding_mode_type rounding_mode)
+    {
+        const float line_period_us = 19.33333333f;
+
+        float ExposureTimeLine = (exp_ms * 1000.0f / line_period_us);
+        if (rounding_mode == rounding_mode_type::ceil) ExposureTimeLine = std::ceil(ExposureTimeLine);
+        else if (rounding_mode == rounding_mode_type::floor) ExposureTimeLine = std::floor(ExposureTimeLine);
+        else ExposureTimeLine = round(ExposureTimeLine);
+        return ((float)ExposureTimeLine * line_period_us) / 1000.0f;
+    }
+
+    float auto_exposure_algorithm::gain_to_value(float gain, rounding_mode_type rounding_mode)
+    {
+
+        if (gain < 2.0f) { return 2.0f; }
+        else if (gain > 32.0f) { return 32.0f; }
+        else {
+            if (rounding_mode == rounding_mode_type::ceil) return std::ceil(gain * 8.0f) / 8.0f;
+            else if (rounding_mode == rounding_mode_type::floor) return std::floor(gain * 8.0f) / 8.0f;
+            else return round(gain * 8.0f) / 8.0f;
+        }
+    }
+
+    template <typename T> inline T sqr(const T& x) { return (x*x); }
+    void auto_exposure_algorithm::histogram_score(std::vector<int>& h, const int total_weight, histogram_metric& score)
+    {
+        score.under_exposure_count = 0;
+        score.over_exposure_count = 0;
+
+        for (size_t i = 0; i <= under_exposure_limit; ++i)
+        {
+            score.under_exposure_count += h[i];
+        }
+        score.shadow_limit = 0;
+        //if (Score.UnderExposureCount < UnderExposureNoiseLimit)
+        {
+            score.shadow_limit = under_exposure_limit;
+            for (size_t i = under_exposure_limit + 1; i <= over_exposure_limit; ++i)
+            {
+                if (h[i] > under_exposure_noise_limit)
+                {
+                    break;
+                }
+                score.shadow_limit++;
+            }
+            int lower_q = 0;
+            score.lower_q = 0;
+            for (size_t i = under_exposure_limit + 1; i <= over_exposure_limit; ++i)
+            {
+                lower_q += h[i];
+                if (lower_q > total_weight / 4)
+                {
+                    break;
+                }
+                score.lower_q++;
+            }
+        }
+
+        for (size_t i = over_exposure_limit; i <= 255; ++i)
+        {
+            score.over_exposure_count += h[i];
+        }
+
+        score.highlight_limit = 255;
+        //if (Score.OverExposureCount < OverExposureNoiseLimit)
+        {
+            score.highlight_limit = over_exposure_limit;
+            for (size_t i = over_exposure_limit; i >= under_exposure_limit; --i)
+            {
+                if (h[i] > over_exposure_noise_limit)
+                {
+                    break;
+                }
+                score.highlight_limit--;
+            }
+            int upper_q = 0;
+            score.upper_q = over_exposure_limit;
+            for (size_t i = over_exposure_limit; i >= under_exposure_limit; --i)
+            {
+                upper_q += h[i];
+                if (upper_q > total_weight / 4)
+                {
+                    break;
+                }
+                score.upper_q--;
+            }
+
+        }
+        int32_t m1 = 0;
+        int64_t m2 = 0;
+
+        double nn = (double)total_weight - score.under_exposure_count - score.over_exposure_count;
+        if (nn == 0)
+        {
+            nn = (double)total_weight;
+            for (int i = 0; i <= 255; ++i)
+            {
+                m1 += h[i] * i;
+                m2 += h[i] * sqr(i);
+            }
+        }
+        else
+        {
+            for (int i = under_exposure_limit + 1; i < over_exposure_limit; ++i)
+            {
+                m1 += h[i] * i;
+                m2 += h[i] * sqr(i);
+            }
+        }
+        score.main_mean = (float)((double)m1 / nn);
+        double Var = (double)m2 / nn - sqr((double)m1 / nn);
+        if (Var > 0)
+        {
+            score.main_std = (float)sqrt(Var);
+        }
+        else
+        {
+            score.main_std = 0.0f;
+        }
     }
 }

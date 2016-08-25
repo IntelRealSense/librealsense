@@ -11,7 +11,9 @@
 #include <functional>   // For function
 #include <thread>       // For this_thread::sleep_for
 
-const uint16_t VID_INTEL_CAMERA = 0x8086;
+const uint16_t VID_INTEL_CAMERA     = 0x8086;
+const uint16_t ZR300_CX3_PID        = 0x0acb;
+const uint16_t ZR300_FISHEYE_PID    = 0x0ad0;
 
 namespace rsimpl
 {
@@ -26,8 +28,6 @@ namespace rsimpl
         // Enumerate devices
         std::shared_ptr<context> create_context();
         std::vector<std::shared_ptr<device>> query_devices(std::shared_ptr<context> context);
-
-        void power_on_adapter_board();
 
         // Check for connected device
         bool is_device_connected(device & device, int vid, int pid);
@@ -54,12 +54,16 @@ namespace rsimpl
         void get_control(const device & device, const extension_unit & xu, uint8_t ctrl, void * data, int len);
 
         // Control data channels
-        void set_subdevice_data_channel_handler(device & device, int subdevice_index, std::function<void(const unsigned char * data, const int size)> callback);
+        typedef std::function<void(const unsigned char * data, const int size)> data_channel_callback;
+
+        void set_subdevice_data_channel_handler(device & device, int subdevice_index, data_channel_callback callback);
         void start_data_acquisition(device & device);
         void stop_data_acquisition(device & device);
 
         // Control streaming
-        void set_subdevice_mode(device & device, int subdevice_index, int width, int height, uint32_t fourcc, int fps, std::function<void(const void * frame, std::function<void()> continuation)> callback);
+        typedef std::function<void(const void * frame, std::function<void()> continuation)> video_channel_callback;
+
+        void set_subdevice_mode(device & device, int subdevice_index, int width, int height, uint32_t fourcc, int fps, video_channel_callback callback);
         void start_streaming(device & device, int num_transfer_bufs);
         void stop_streaming(device & device);
         

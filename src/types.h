@@ -21,6 +21,7 @@
 #include <memory>                           // For unique_ptr
 #include <atomic>
 #include <map>          
+#include <algorithm>
 
 const uint8_t RS_STREAM_NATIVE_COUNT    = 5;
 const int RS_USER_QUEUE_SIZE = 20;
@@ -67,9 +68,11 @@ namespace rsimpl
     void log(rs_log_severity severity, const std::string & message);
     void log_to_console(rs_log_severity min_severity);
     void log_to_file(rs_log_severity min_severity, const char * file_path);
-    extern rs_log_severity minimum_log_severity;
+    void log_to_callback(rs_log_severity min_severity, rs_log_callback * callback);
+    void log_to_callback(rs_log_severity min_severity, void(*on_log)(rs_log_severity min_severity, const char * message, void * user), void * user);
+    rs_log_severity get_minimum_severity();
 
-#define LOG(SEVERITY, ...) do { if(static_cast<int>(SEVERITY) >= rsimpl::minimum_log_severity) { std::ostringstream ss; ss << __VA_ARGS__; rsimpl::log(SEVERITY, ss.str()); } } while(false)
+#define LOG(SEVERITY, ...) do { if(static_cast<int>(SEVERITY) >= rsimpl::get_minimum_severity()) { std::ostringstream ss; ss << __VA_ARGS__; rsimpl::log(SEVERITY, ss.str()); } } while(false)
 #define LOG_DEBUG(...)   LOG(RS_LOG_SEVERITY_DEBUG, __VA_ARGS__)
 #define LOG_INFO(...)    LOG(RS_LOG_SEVERITY_INFO,  __VA_ARGS__)
 #define LOG_WARNING(...) LOG(RS_LOG_SEVERITY_WARN,  __VA_ARGS__)
@@ -171,6 +174,7 @@ namespace rsimpl
         rs_output_buffer_format output_format;
 
         bool contradict(stream_request req) const;
+        bool is_filled() const;
     };
 
     struct interstream_rule // Requires a.*field + delta == b.*field OR a.*field + delta2 == b.*field
@@ -301,7 +305,7 @@ namespace rsimpl
         const pixel_format_unpacker & get_unpacker() const {
             if (unpacker_index < mode.pf.unpackers.size())
                 return mode.pf.unpackers[unpacker_index];
-            throw std::runtime_error("failed to fetch an unpakcer, most likely becouse enable_stream was not called!");
+            throw std::runtime_error("failed to fetch an unpakcer, most likely because enable_stream was not called!");
         }
         const std::vector<std::pair<rs_stream, rs_format>> & get_outputs() const { return get_unpacker().outputs; }
         int get_width() const { return mode.native_intrinsics.width + pad_crop * 2; }
@@ -322,20 +326,28 @@ namespace rsimpl
 
     };
 
+    typedef void(*frame_callback_function_ptr)(rs_device * dev, rs_frame_ref * frame, void * user);
+    typedef void(*motion_callback_function_ptr)(rs_device * dev, rs_motion_data data, void * user);
+    typedef void(*timestamp_callback_function_ptr)(rs_device * dev, rs_timestamp_data data, void * user);
+    typedef void(*log_callback_function_ptr)(rs_log_severity severity, const char * message, void * user);
+
     class frame_callback : public rs_frame_callback
     {
-        void(*fptr)(rs_device * dev, rs_frame_ref * frame, void * user);
+        frame_callback_function_ptr fptr;
         void * user;
         rs_device * device;
     public:
         frame_callback() : frame_callback(nullptr, nullptr, nullptr) {}
-        frame_callback(rs_device * dev, void(*on_frame)(rs_device *, rs_frame_ref *, void *), void * user) : fptr(on_frame), user(user), device(dev) {}
+        frame_callback(rs_device * dev, frame_callback_function_ptr on_frame, void * user) : fptr(on_frame), user(user), device(dev) {}
 
         operator bool() { return fptr != nullptr; }
         void on_frame (rs_device * dev, rs_frame_ref * frame) override { 
             if (fptr)
             {
-                try { fptr(dev, frame, user); } catch (...) {}
+                try { fptr(dev, frame, user); } catch (...) 
+                {
+                    LOG_ERROR("Received an execption from frame callback!");
+                }
             }
         }
         void release() override { delete this; }
@@ -343,12 +355,12 @@ namespace rsimpl
 
     class motion_events_callback : public rs_motion_callback
     {
-        void(*fptr)(rs_device * dev, rs_motion_data data, void * user);
+        motion_callback_function_ptr fptr;
         void        * user;
         rs_device   * device;
     public:
         motion_events_callback() : motion_events_callback(nullptr, nullptr, nullptr) {}
-        motion_events_callback(rs_device * dev, void(*fptr)(rs_device *, rs_motion_data, void *), void * user) : fptr(fptr), user(user), device(dev) {}
+        motion_events_callback(rs_device * dev, motion_callback_function_ptr fptr, void * user) : fptr(fptr), user(user), device(dev) {}
 
         operator bool() { return fptr != nullptr; }
 
@@ -356,7 +368,10 @@ namespace rsimpl
         {
             if (fptr)
             {
-                try { fptr(device, data, user); } catch (...) {}
+                try { fptr(device, data, user); } catch (...)
+                {
+                    LOG_ERROR("Received an execption from motion events callback!");
+                }
             }
         }
 
@@ -365,23 +380,52 @@ namespace rsimpl
 
     class timestamp_events_callback : public rs_timestamp_callback
     {
-        void(*fptr)(rs_device * dev, rs_timestamp_data data, void * user);
+        timestamp_callback_function_ptr fptr;
         void        * user;
         rs_device   * device;
     public:
         timestamp_events_callback() : timestamp_events_callback(nullptr, nullptr, nullptr) {}
-        timestamp_events_callback(rs_device * dev, void(*fptr)(rs_device *, rs_timestamp_data, void *), void * user) : fptr(fptr), user(user), device(dev) {}
+        timestamp_events_callback(rs_device * dev, timestamp_callback_function_ptr fptr, void * user) : fptr(fptr), user(user), device(dev) {}
 
         operator bool() { return fptr != nullptr; }
         void on_event(rs_timestamp_data data) override {
             if (fptr)
             {
-                try { fptr(device, data, user); } catch (...) {}
+                try { fptr(device, data, user); } catch (...) 
+                {
+                    LOG_ERROR("Received an execption from timestamp events callback!");
+                }
             }
         }
         void release() override { }
     };
 
+    class log_callback : public rs_log_callback
+    {
+        log_callback_function_ptr fptr;
+        void        * user;
+    public:
+        log_callback() : log_callback(nullptr, nullptr) {}
+        log_callback(log_callback_function_ptr fptr, void * user) : fptr(fptr), user(user) {}
+
+        operator bool() { return fptr != nullptr; }
+
+        void on_event(rs_log_severity severity, const char * message) override
+        {
+            if (fptr)
+            {
+                try { fptr(severity, message, user); }
+                catch (...)
+                {
+                    LOG_ERROR("Received an execption from log callback!");
+                }
+            }
+        }
+
+        void release() override { }
+    };
+
+    typedef std::unique_ptr<rs_log_callback, void(*)(rs_log_callback*)> log_callback_ptr;
     typedef std::unique_ptr<rs_motion_callback, void(*)(rs_motion_callback*)> motion_callback_ptr;
     typedef std::unique_ptr<rs_timestamp_callback, void(*)(rs_timestamp_callback*)> timestamp_callback_ptr;
     class frame_callback_ptr
@@ -579,13 +623,34 @@ namespace rsimpl
         {
             continuation();
         }
+
     };
+
+    // this class is a convinience wrapper for intrinsics / extrinsics validation methods
+    class calibration_validator 
+    {
+    public:
+        calibration_validator(std::function<bool(rs_stream, rs_stream)> extrinsic_validator,
+                              std::function<bool(rs_stream)>            intrinsic_validator);
+        calibration_validator();
+
+        bool validate_extrinsics(rs_stream from_stream, rs_stream to_stream) const;
+        bool validate_intrinsics(rs_stream stream) const;
+
+    private:
+        std::function<bool(rs_stream from_stream, rs_stream to_stream)> extrinsic_validator;
+        std::function<bool(rs_stream stream)> intrinsic_validator;
+    };
+
+    inline bool check_not_all_zeros(std::vector<byte> data)
+    {
+        return std::find_if(data.begin(), data.end(), [](byte b){ return b!=0; }) != data.end();
+    }
 
     ///////////////////////////////////////////
     // Extrinsic auxillary routines routines //
     ///////////////////////////////////////////
     float3x3 calc_rodrigues_matrix(const std::vector<double> rot);
-
     // Auxillary function that calculates standard 32bit CRC code. used in verificaiton
     uint32_t calc_crc32(uint8_t *buf, size_t bufsize);;
 }

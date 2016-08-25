@@ -474,24 +474,34 @@ namespace rsimpl {
         const uvc::guid MOTION_MODULE_USB_DEVICE_GUID = { 0xC0B55A29, 0xD7B6, 0x436E,{ 0xA6, 0xEF, 0x2E, 0x76, 0xED, 0x0A, 0xBC, 0xA5 } };
         const unsigned short motion_module_interrupt_interface = 0x2; // endpoint to pull sensors data continuously (interrupt transmit)
 
-        uint8_t get_ext_trig(const uvc::device & device)
+        uint8_t get_fisheye_external_trigger(const uvc::device & device)
         {
             return ds::xu_read<uint8_t>(device, fisheye_xu, ds::control::fisheye_xu_ext_trig);
         }
 
-        void set_ext_trig(uvc::device & device, uint8_t ext_trig)
+        void set_fisheye_external_trigger(uvc::device & device, uint8_t ext_trig)
         {
             ds::xu_write(device, fisheye_xu, ds::control::fisheye_xu_ext_trig, &ext_trig, sizeof(ext_trig));
         }
 
-        uint8_t get_strobe(const uvc::device & device)
+        uint8_t get_fisheye_strobe(const uvc::device & device)
         {
             return ds::xu_read<uint8_t>(device, fisheye_xu, ds::control::fisheye_xu_strobe);
         }
 
-        void set_strobe(uvc::device & device, uint8_t strobe)
+        void set_fisheye_strobe(uvc::device & device, uint8_t strobe)
         {
             ds::xu_write(device, fisheye_xu, ds::control::fisheye_xu_strobe, &strobe, sizeof(strobe));
+        }
+
+        uint16_t get_fisheye_exposure(const uvc::device & device)
+        {
+            return ds::xu_read<uint16_t>(device, fisheye_xu, ds::control::fisheye_exposure);
+        }
+
+        void set_fisheye_exposure(uvc::device & device, uint16_t exposure)
+        {
+            ds::xu_write(device, fisheye_xu, ds::control::fisheye_exposure, &exposure, sizeof(exposure));
         }
 
         void claim_motion_module_interface(uvc::device & device)
