@@ -1,0 +1,56 @@
+LIBRARY
+
+EXPORTS
+	rs_create_context
+	rs_delete_context
+	rs_get_device_count
+	rs_get_device
+	
+	rs_get_device_name
+	rs_get_device_serial
+	rs_get_device_firmware_version
+	rs_get_device_usb_port_id
+	rs_get_device_extrinsics
+	rs_get_device_depth_scale
+	rs_device_supports_option
+	rs_get_stream_mode_count
+	rs_get_stream_mode
+	
+	rs_enable_stream
+	rs_enable_stream_preset
+	rs_disable_stream
+	rs_is_stream_enabled
+	rs_get_stream_width
+	rs_get_stream_height
+	rs_get_stream_format
+	rs_get_stream_framerate
+	rs_get_stream_intrinsics
+	
+	rs_start_device
+	rs_stop_device
+	rs_is_device_streaming
+	
+	rs_get_device_option_range
+	rs_get_device_options
+	rs_set_device_options
+	rs_get_device_option
+	rs_set_device_option
+	
+	rs_wait_for_frames
+	rs_poll_for_frames
+	rs_get_frame_timestamp
+	rs_get_frame_data
+	
+	rs_get_failed_function
+	rs_get_failed_args
+	rs_get_error_message
+	rs_free_error
+	
+	rs_stream_to_string
+	rs_format_to_string
+	rs_preset_to_string
+	rs_distortion_to_string
+	rs_option_to_string
+
+	rs_log_to_console
+	rs_log_to_file
