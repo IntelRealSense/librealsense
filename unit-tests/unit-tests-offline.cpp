@@ -81,11 +81,9 @@ TEST_CASE( "rs_get_device_extrinsics() validates input", "[offline] [validation]
                                                                                             
     rs_get_device_extrinsics(fake_object_pointer(), (rs_stream)-1,      RS_STREAM_COLOR,    &extrin, require_error("bad enum value for argument \"from\""));
     rs_get_device_extrinsics(fake_object_pointer(), RS_STREAM_COUNT,    RS_STREAM_COLOR,    &extrin, require_error("bad enum value for argument \"from\""));
-    rs_get_device_extrinsics(fake_object_pointer(), RS_STREAM_MAX_ENUM, RS_STREAM_COLOR,    &extrin, require_error("bad enum value for argument \"from\""));
-                                                                                            
+
     rs_get_device_extrinsics(fake_object_pointer(), RS_STREAM_DEPTH,    (rs_stream)-1,      &extrin, require_error("bad enum value for argument \"to\""));
     rs_get_device_extrinsics(fake_object_pointer(), RS_STREAM_DEPTH,    RS_STREAM_COUNT,    &extrin, require_error("bad enum value for argument \"to\""));
-    rs_get_device_extrinsics(fake_object_pointer(), RS_STREAM_DEPTH,    RS_STREAM_MAX_ENUM, &extrin, require_error("bad enum value for argument \"to\""));
                                                                         
     rs_get_device_extrinsics(fake_object_pointer(), RS_STREAM_DEPTH,    RS_STREAM_COLOR,    nullptr, require_error("null pointer passed for argument \"extrin\""));
 }
@@ -101,7 +99,6 @@ TEST_CASE( "rs_device_supports_option() validates input", "[offline] [validation
 
     REQUIRE(rs_device_supports_option(fake_object_pointer(), (rs_option)-1,        require_error("bad enum value for argument \"option\"")) == 0);
     REQUIRE(rs_device_supports_option(fake_object_pointer(), RS_OPTION_COUNT,      require_error("bad enum value for argument \"option\"")) == 0);
-    REQUIRE(rs_device_supports_option(fake_object_pointer(), RS_OPTION_MAX_ENUM,   require_error("bad enum value for argument \"option\"")) == 0);
 }
 
 TEST_CASE( "rs_get_stream_mode_count() validates input", "[offline] [validation]" )
@@ -110,7 +107,6 @@ TEST_CASE( "rs_get_stream_mode_count() validates input", "[offline] [validation]
                                                                                 
     REQUIRE(rs_get_stream_mode_count(fake_object_pointer(), (rs_stream)-1,      require_error("bad enum value for argument \"stream\"")) == 0);
     REQUIRE(rs_get_stream_mode_count(fake_object_pointer(), RS_STREAM_COUNT,    require_error("bad enum value for argument \"stream\"")) == 0);
-    REQUIRE(rs_get_stream_mode_count(fake_object_pointer(), RS_STREAM_MAX_ENUM, require_error("bad enum value for argument \"stream\"")) == 0);
 }
 
 TEST_CASE( "rs_get_stream_mode() validates input", "[offline] [validation]" )
@@ -120,7 +116,6 @@ TEST_CASE( "rs_get_stream_mode() validates input", "[offline] [validation]" )
                                                                    
     rs_get_stream_mode(fake_object_pointer(), (rs_stream)-1,       0, &width, &height, &format, &framerate, require_error("bad enum value for argument \"stream\""));
     rs_get_stream_mode(fake_object_pointer(), RS_STREAM_COUNT,     0, &width, &height, &format, &framerate, require_error("bad enum value for argument \"stream\""));
-    rs_get_stream_mode(fake_object_pointer(), RS_STREAM_MAX_ENUM,  0, &width, &height, &format, &framerate, require_error("bad enum value for argument \"stream\""));
 
     rs_get_stream_mode(fake_object_pointer(), RS_STREAM_DEPTH,    -1, &width, &height, &format, &framerate, require_error("out of range value for argument \"index\""));
     // NOTE: Index upper bound determined by rs_get_stream_mode_count(), can't validate without a live object
@@ -132,6 +127,8 @@ TEST_CASE( "rs_enable_stream() validates input", "[offline] [validation]" )
 {
     rs_enable_stream(nullptr, RS_STREAM_DEPTH, 640, 480, RS_FORMAT_Z16, 60, require_error("null pointer passed for argument \"device\""));
                                                                                               
+    const auto RS_STREAM_MAX_ENUM = (rs_stream)0xFFFF;
+    const auto RS_FORMAT_MAX_ENUM = (rs_format)0xFFFF;
     rs_enable_stream(fake_object_pointer(), (rs_stream)-1, 640, 480, RS_FORMAT_Z16, 60, require_error("bad enum value for argument \"stream\""));
     rs_enable_stream(fake_object_pointer(), RS_STREAM_COUNT, 640, 480, RS_FORMAT_Z16, 60, require_error("bad enum value for argument \"stream\""));
     rs_enable_stream(fake_object_pointer(), RS_STREAM_MAX_ENUM, 640, 480, RS_FORMAT_Z16, 60, require_error("bad enum value for argument \"stream\""));
@@ -153,11 +150,9 @@ TEST_CASE( "rs_enable_stream_preset() validates input", "[offline] [validation]"
                                                                        
     rs_enable_stream_preset(fake_object_pointer(), (rs_stream)-1,      RS_PRESET_BEST_QUALITY, require_error("bad enum value for argument \"stream\""));
     rs_enable_stream_preset(fake_object_pointer(), RS_STREAM_COUNT,    RS_PRESET_BEST_QUALITY, require_error("bad enum value for argument \"stream\""));
-    rs_enable_stream_preset(fake_object_pointer(), RS_STREAM_MAX_ENUM, RS_PRESET_BEST_QUALITY, require_error("bad enum value for argument \"stream\""));
 
     rs_enable_stream_preset(fake_object_pointer(), RS_STREAM_DEPTH,    (rs_preset)-1,          require_error("bad enum value for argument \"preset\""));
     rs_enable_stream_preset(fake_object_pointer(), RS_STREAM_DEPTH,    RS_PRESET_COUNT,        require_error("bad enum value for argument \"preset\""));
-    rs_enable_stream_preset(fake_object_pointer(), RS_STREAM_DEPTH,    RS_PRESET_MAX_ENUM,     require_error("bad enum value for argument \"preset\""));
 }
 
 TEST_CASE( "rs_disable_stream() validates input", "[offline] [validation]" )
@@ -166,7 +161,6 @@ TEST_CASE( "rs_disable_stream() validates input", "[offline] [validation]" )
                                                                  
     rs_disable_stream(fake_object_pointer(), (rs_stream)-1,      require_error("bad enum value for argument \"stream\""));
     rs_disable_stream(fake_object_pointer(), RS_STREAM_COUNT,    require_error("bad enum value for argument \"stream\""));
-    rs_disable_stream(fake_object_pointer(), RS_STREAM_MAX_ENUM, require_error("bad enum value for argument \"stream\""));
 }
 
 TEST_CASE( "rs_is_stream_enabled() validates input", "[offline] [validation]" )
@@ -175,7 +169,6 @@ TEST_CASE( "rs_is_stream_enabled() validates input", "[offline] [validation]" )
                                                                             
     REQUIRE(rs_is_stream_enabled(fake_object_pointer(), (rs_stream)-1,      require_error("bad enum value for argument \"stream\"")) == 0);
     REQUIRE(rs_is_stream_enabled(fake_object_pointer(), RS_STREAM_COUNT,    require_error("bad enum value for argument \"stream\"")) == 0);
-    REQUIRE(rs_is_stream_enabled(fake_object_pointer(), RS_STREAM_MAX_ENUM, require_error("bad enum value for argument \"stream\"")) == 0);
 }
 
 TEST_CASE( "rs_get_stream_intrinsics() validates input", "[offline] [validation]" )
@@ -185,7 +178,6 @@ TEST_CASE( "rs_get_stream_intrinsics() validates input", "[offline] [validation]
                                                                         
     rs_get_stream_intrinsics(fake_object_pointer(), (rs_stream)-1,      &intrin, require_error("bad enum value for argument \"stream\""));
     rs_get_stream_intrinsics(fake_object_pointer(), RS_STREAM_COUNT,    &intrin, require_error("bad enum value for argument \"stream\""));
-    rs_get_stream_intrinsics(fake_object_pointer(), RS_STREAM_MAX_ENUM, &intrin, require_error("bad enum value for argument \"stream\""));
 
     rs_get_stream_intrinsics(fake_object_pointer(), RS_STREAM_DEPTH,    nullptr, require_error("null pointer passed for argument \"intrin\""));
 }
@@ -196,7 +188,6 @@ TEST_CASE( "rs_get_stream_format() validates input", "[offline] [validation]" )
                                                                             
     REQUIRE(rs_get_stream_format(fake_object_pointer(), (rs_stream)-1,      require_error("bad enum value for argument \"stream\"")) == RS_FORMAT_ANY);
     REQUIRE(rs_get_stream_format(fake_object_pointer(), RS_STREAM_COUNT,    require_error("bad enum value for argument \"stream\"")) == RS_FORMAT_ANY);
-    REQUIRE(rs_get_stream_format(fake_object_pointer(), RS_STREAM_MAX_ENUM, require_error("bad enum value for argument \"stream\"")) == RS_FORMAT_ANY);
 }
 
 TEST_CASE( "rs_get_stream_framerate() validates input", "[offline] [validation]" )
@@ -205,7 +196,6 @@ TEST_CASE( "rs_get_stream_framerate() validates input", "[offline] [validation]"
                                                                                
     REQUIRE(rs_get_stream_framerate(fake_object_pointer(), (rs_stream)-1,      require_error("bad enum value for argument \"stream\"")) == 0);
     REQUIRE(rs_get_stream_framerate(fake_object_pointer(), RS_STREAM_COUNT,    require_error("bad enum value for argument \"stream\"")) == 0);
-    REQUIRE(rs_get_stream_framerate(fake_object_pointer(), RS_STREAM_MAX_ENUM, require_error("bad enum value for argument \"stream\"")) == 0);
 }
 
 TEST_CASE( "rs_start_device() validates input", "[offline] [validation]" )
@@ -229,7 +219,6 @@ TEST_CASE( "rs_set_device_option() validates input", "[offline] [validation]" )
 
     rs_set_device_option(fake_object_pointer(), (rs_option)-1,        100, require_error("bad enum value for argument \"option\""));
     rs_set_device_option(fake_object_pointer(), RS_OPTION_COUNT,      100, require_error("bad enum value for argument \"option\""));
-    rs_set_device_option(fake_object_pointer(), RS_OPTION_MAX_ENUM,   100, require_error("bad enum value for argument \"option\""));
 
     // NOTE: Currently no validation is done for valid option ranges at the API level, though specifying an invalid option may fail at the UVC level
     // todo - Add some basic validation for parameter sanity (gain/exposure cannot be negative, depth clamping must be in uint16_t range, etc...)
@@ -241,7 +230,6 @@ TEST_CASE( "rs_get_device_option() validates input", "[offline] [validation]" )
 
     REQUIRE(rs_get_device_option(fake_object_pointer(), (rs_option)-1,        require_error("bad enum value for argument \"option\"")) == 0);
     REQUIRE(rs_get_device_option(fake_object_pointer(), RS_OPTION_COUNT,      require_error("bad enum value for argument \"option\"")) == 0);
-    REQUIRE(rs_get_device_option(fake_object_pointer(), RS_OPTION_MAX_ENUM,   require_error("bad enum value for argument \"option\"")) == 0);
 }
 
 TEST_CASE( "rs_wait_for_frames() validates input", "[offline] [validation]" )
@@ -255,7 +243,6 @@ TEST_CASE( "rs_get_frame_timestamp() validates input", "[offline] [validation]" 
                                                                               
     REQUIRE(rs_get_frame_timestamp(fake_object_pointer(), (rs_stream)-1,      require_error("bad enum value for argument \"stream\"")) == 0);
     REQUIRE(rs_get_frame_timestamp(fake_object_pointer(), RS_STREAM_COUNT,    require_error("bad enum value for argument \"stream\"")) == 0);
-    REQUIRE(rs_get_frame_timestamp(fake_object_pointer(), RS_STREAM_MAX_ENUM, require_error("bad enum value for argument \"stream\"")) == 0);
 }
 
 TEST_CASE( "rs_get_frame_data() validates input", "[offline] [validation]" )
@@ -264,7 +251,6 @@ TEST_CASE( "rs_get_frame_data() validates input", "[offline] [validation]" )
                                                                          
     REQUIRE(rs_get_frame_data(fake_object_pointer(), (rs_stream)-1,      require_error("bad enum value for argument \"stream\"")) == nullptr);
     REQUIRE(rs_get_frame_data(fake_object_pointer(), RS_STREAM_COUNT,    require_error("bad enum value for argument \"stream\"")) == nullptr);
-    REQUIRE(rs_get_frame_data(fake_object_pointer(), RS_STREAM_MAX_ENUM, require_error("bad enum value for argument \"stream\"")) == nullptr);
 }
 
 TEST_CASE( "rs_free_error() gracefully handles invalid input", "[offline] [validation]" )
@@ -303,7 +289,6 @@ TEST_CASE( "rs_stream_to_string() produces correct output", "[offline] [validati
     // Invalid enum values should return nullptr
     REQUIRE(rs_stream_to_string((rs_stream)-1) == unknown);
     REQUIRE(rs_stream_to_string(RS_STREAM_COUNT) == unknown);
-    REQUIRE(rs_stream_to_string(RS_STREAM_MAX_ENUM) == unknown);
 }
 
 TEST_CASE( "rs_format_to_string() produces correct output", "[offline] [validation]" )
@@ -324,7 +309,6 @@ TEST_CASE( "rs_format_to_string() produces correct output", "[offline] [validati
     // Invalid enum values should return nullptr
     REQUIRE(rs_format_to_string((rs_format)-1) == unknown);
     REQUIRE(rs_format_to_string(RS_FORMAT_COUNT) == unknown);
-    REQUIRE(rs_format_to_string(RS_FORMAT_MAX_ENUM) == unknown);
 }
 
 TEST_CASE( "rs_preset_to_string() produces correct output", "[offline] [validation]" )
@@ -337,7 +321,6 @@ TEST_CASE( "rs_preset_to_string() produces correct output", "[offline] [validati
     // Invalid enum values should return nullptr
     REQUIRE(rs_preset_to_string((rs_preset)-1) == unknown);
     REQUIRE(rs_preset_to_string(RS_PRESET_COUNT) == unknown);
-    REQUIRE(rs_preset_to_string(RS_PRESET_MAX_ENUM) == unknown);
 }
 
 TEST_CASE( "rs_distortion_to_string() produces correct output", "[offline] [validation]" )
@@ -350,7 +333,6 @@ TEST_CASE( "rs_distortion_to_string() produces correct output", "[offline] [vali
     // Invalid enum values should return nullptr
     REQUIRE(rs_distortion_to_string((rs_distortion)-1) == unknown);
     REQUIRE(rs_distortion_to_string(RS_DISTORTION_COUNT) == unknown);
-    REQUIRE(rs_distortion_to_string(RS_DISTORTION_MAX_ENUM) == unknown);
 }
 
 TEST_CASE( "rs_option_to_string() produces correct output", "[offline] [validation]" )
@@ -389,7 +371,6 @@ TEST_CASE( "rs_option_to_string() produces correct output", "[offline] [validati
     // Invalid enum values should return nullptr
     REQUIRE(rs_option_to_string((rs_option)-1) == unknown);
     REQUIRE(rs_option_to_string(RS_OPTION_COUNT) == unknown);
-    REQUIRE(rs_option_to_string(RS_OPTION_MAX_ENUM) == unknown);
 }
 
 TEST_CASE( "rs_create_context() returns a valid context", "[offline] [validation]" )

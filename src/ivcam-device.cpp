@@ -224,9 +224,10 @@ namespace rsimpl
         }
     };
 
-	std::shared_ptr<frame_timestamp_reader> iv_camera::create_frame_timestamp_reader(int subdevice) const
+    std::vector<std::shared_ptr<frame_timestamp_reader>> iv_camera::create_frame_timestamp_readers() const
     {
-        return std::make_shared<rolling_timestamp_reader>();
+        auto the_reader = std::make_shared<rolling_timestamp_reader>(); // single shared timestamp reader for all subdevices
+        return { the_reader, the_reader }; // clone the reference for color and depth
     }
 
 } // namespace rsimpl::f200

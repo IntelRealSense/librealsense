@@ -10,7 +10,6 @@
 #include "libuvc/libuvc_internal.h" // For LibUSB punchthrough
 #include <thread>
 
-
 namespace rsimpl
 {
     namespace uvc
@@ -24,9 +23,20 @@ namespace rsimpl
         struct context
         {
             uvc_context_t * ctx;
+            libusb_context * usb_context;
 
-            context() : ctx() { check("uvc_init", uvc_init(&ctx, nullptr)); }
-            ~context() { if(ctx) uvc_exit(ctx); }
+            context() : ctx()
+            {
+                check("uvc_init", uvc_init(&ctx, nullptr));
+
+                int status = libusb_init(&usb_context);
+                if (status < 0) throw std::runtime_error(to_string() << "libusb_init(...) returned " << libusb_error_name(status));
+            }
+            ~context()
+            {
+                libusb_exit(usb_context);
+                if (ctx) uvc_exit(ctx);
+            }
         };
 
         struct subdevice
@@ -34,7 +44,40 @@ namespace rsimpl
             uvc_device_handle_t * handle = nullptr;
             uvc_stream_ctrl_t ctrl;
             uint8_t unit;
-            std::function<void(const void * frame, std::function<void()> continuation)> callback;
+            video_channel_callback callback = nullptr;
+            data_channel_callback  channel_data_callback = nullptr;
+
+            void set_data_channel_cfg(data_channel_callback callback)
+            {
+                this->channel_data_callback = callback;
+            }
+
+            static void poll_interrupts(libusb_device_handle *handle, const std::vector<subdevice *> & subdevices, uint16_t timeout)
+            {
+                static const unsigned short interrupt_buf_size = 0x400;
+                uint8_t buffer[interrupt_buf_size];           /* 64 byte transfer buffer - dedicated channel */
+                int num_bytes = 0;                            /* Actual bytes transferred */
+
+                static int counter = 0;
+
+                // TODO - replace hard-coded values : 0x82 and 1000
+                int res = libusb_interrupt_transfer(handle, 0x84, buffer, interrupt_buf_size, &num_bytes, timeout);
+                if (0 == res)
+                {
+                    // Propagate the data to device layer
+                    for (auto & sub : subdevices)
+                        if (sub->channel_data_callback)
+                            sub->channel_data_callback(buffer, num_bytes);
+                }
+                else
+                {
+                    if (res == LIBUSB_ERROR_TIMEOUT) 
+                        LOG_WARNING("interrupt e.p. timeout");
+                    else 
+                        throw std::runtime_error(to_string() << "USB Interrupt end-point error " << libusb_strerror((libusb_error)res));
+                }
+            }
+
         };
 
         struct device
@@ -45,7 +88,15 @@ namespace rsimpl
             std::vector<subdevice> subdevices;
             std::vector<int> claimed_interfaces;
 
-            device(std::shared_ptr<context> parent, uvc_device_t * uvcdevice) : parent(parent), uvcdevice(uvcdevice)
+            std::thread data_channel_thread;
+            volatile bool data_stop;
+
+
+            std::shared_ptr<device> aux_device;
+
+            libusb_device_handle * usb_handle;
+
+            device(std::shared_ptr<context> parent, uvc_device_t * uvcdevice) : parent(parent), uvcdevice(uvcdevice), usb_handle()
             {
                 get_subdevice(0);
                 
@@ -69,9 +120,53 @@ namespace rsimpl
 
             subdevice & get_subdevice(int subdevice_index)
             {
-                if(subdevice_index >= subdevices.size()) subdevices.resize(subdevice_index+1);
-                if(!subdevices[subdevice_index].handle) check("uvc_open2", uvc_open2(uvcdevice, &subdevices[subdevice_index].handle, subdevice_index));
+                if (subdevice_index >= subdevices.size()) subdevices.resize(subdevice_index + 1);
+
+                if (subdevice_index == 3 && aux_device)
+                {
+                    auto& sub = aux_device->get_subdevice(0);
+                    subdevices[subdevice_index] = sub;
+                    return sub;
+                }
+
+                if (!subdevices[subdevice_index].handle) check("uvc_open2", uvc_open2(uvcdevice, &subdevices[subdevice_index].handle, subdevice_index));
                 return subdevices[subdevice_index];
+            }
+
+            void start_data_acquisition()
+            {
+                data_stop = false;
+                std::vector<subdevice *> data_channel_subs;
+                for (auto & sub : subdevices)
+                {
+                    if (sub.channel_data_callback)
+                    {
+                        data_channel_subs.push_back(&sub);
+                    }
+                }
+
+                // Motion events polling pipe
+                if (claimed_interfaces.size())
+                {
+                    data_channel_thread = std::thread([this, data_channel_subs]()
+                    {
+                        // Polling 100ms timeout
+                        while (!data_stop)
+                        {
+                            subdevice::poll_interrupts(this->usb_handle, data_channel_subs, 100);
+                        }
+                    });
+                }
+            }
+
+            void stop_data_acquisition()
+            {
+                if (data_channel_thread.joinable())
+                {
+                    data_stop = true;
+                    data_channel_thread.join();
+                    data_stop = false;
+                }
             }
         };
 
@@ -103,44 +198,64 @@ namespace rsimpl
 
         void claim_interface(device & device, const guid & interface_guid, int interface_number)
         {
-            int status = libusb_claim_interface(device.get_subdevice(0).handle->usb_devh, interface_number);
-            if(status < 0) throw std::runtime_error(to_string() << "libusb_claim_interface(...) returned " << libusb_error_name(status));
+            libusb_device_handle* dev_h = nullptr;
+
+            if (device.pid == ZR300_CX3_PID)
+            {
+                dev_h = device.usb_handle;
+            }
+            else
+            {
+                dev_h = device.get_subdevice(0).handle->usb_devh;
+            }
+            int status = libusb_claim_interface(dev_h, interface_number);
+            if (status < 0) throw std::runtime_error(to_string() << "libusb_claim_interface(...) returned " << libusb_error_name(status));
             device.claimed_interfaces.push_back(interface_number);
         }
 
         void claim_aux_interface(device & device, const guid & interface_guid, int interface_number)
         {
-            throw std::logic_error("claim_aux_interface(...) is not implemented for this backend ");
-        }
-
-        void power_on_adapter_board()
-        {
-            throw std::logic_error("power_on_adapter_board(...) is not implemented for this backend ");
+            claim_interface(device, interface_guid, interface_number);
         }
 
         void bulk_transfer(device & device, unsigned char endpoint, void * data, int length, int *actual_length, unsigned int timeout)
         {
-            int status = libusb_bulk_transfer(device.get_subdevice(0).handle->usb_devh, endpoint, (unsigned char *)data, length, actual_length, timeout);
-            if(status < 0) throw std::runtime_error(to_string() << "libusb_bulk_transfer(...) returned " << libusb_error_name(status));
+
+            libusb_device_handle* dev_h = nullptr;
+
+            if (device.pid == ZR300_CX3_PID) // W/A for ZR300 fish-eye
+            {
+                dev_h = device.usb_handle;
+            }
+            else
+            {
+                dev_h = device.get_subdevice(0).handle->usb_devh;
+            }
+
+            int status = libusb_bulk_transfer(dev_h, endpoint, (unsigned char *)data, length, actual_length, timeout);
+
+            if (status < 0) throw std::runtime_error(to_string() << "libusb_bulk_transfer(...) returned " << libusb_error_name(status));
+
         }
 
-        void set_subdevice_mode(device & device, int subdevice_index, int width, int height, uint32_t fourcc, int fps, std::function<void(const void * frame, std::function<void()> continuation)> callback)
+        void set_subdevice_mode(device & device, int subdevice_index, int width, int height, uint32_t fourcc, int fps, video_channel_callback callback)
         {
             auto & sub = device.get_subdevice(subdevice_index);
             check("get_stream_ctrl_format_size", uvc_get_stream_ctrl_format_size(sub.handle, &sub.ctrl, reinterpret_cast<const big_endian<uint32_t> &>(fourcc), width, height, fps));
             sub.callback = callback;
         }
 
-        void set_subdevice_data_channel_handler(device & device, int subdevice_index, std::function<void(const unsigned char * data, const int size)> callback)
+        void set_subdevice_data_channel_handler(device & device, int subdevice_index, data_channel_callback callback)
         {
-            throw std::logic_error("set_subdevice_data_channel_handler(...) is not implemented for this backend ");
+            device.subdevices[subdevice_index].set_data_channel_cfg(callback);
         }
 
         void start_streaming(device & device, int num_transfer_bufs)
         {
-            for(auto & sub : device.subdevices)
+            for(auto i = 0; i < device.subdevices.size(); i++)
             {
-                if(sub.callback)
+                auto& sub = device.get_subdevice(i);
+                if (sub.callback)
                 {
                     #if defined (ENABLE_DEBUG_SPAM)
                     uvc_print_stream_ctrl(&sub.ctrl, stdout);
@@ -167,12 +282,12 @@ namespace rsimpl
 
         void start_data_acquisition(device & device)
         {
-            throw std::logic_error("start_data_acquisition(...) is not implemented for this backend ");
+            device.start_data_acquisition();
         }
 
         void stop_data_acquisition(device & device)
         {
-            throw std::logic_error("start_data_acquisition(...) is not implemented for this backend ");
+            device.stop_data_acquisition();
         }
 
         template<class T> void set_pu(uvc_device_handle_t * devh, int subdevice, uint8_t unit, uint8_t control, int value)
@@ -182,7 +297,7 @@ namespace rsimpl
             if(sizeof(T)==1) buffer[0] = value;
             if(sizeof(T)==2) SHORT_TO_SW(value, buffer);
             if(sizeof(T)==4) INT_TO_DW(value, buffer);
-            int status = libusb_control_transfer(devh->usb_devh, REQ_TYPE_SET, UVC_SET_CUR, control << 8, unit << 8 | (subdevice*2), buffer, sizeof(T), 0);
+            int status = libusb_control_transfer(devh->usb_devh, REQ_TYPE_SET, UVC_SET_CUR, control << 8, unit << 8 | (subdevice * 2), buffer, sizeof(T), 0);
             if(status < 0) throw std::runtime_error(to_string() << "libusb_control_transfer(...) returned " << libusb_error_name(status));
             if(status != sizeof(T)) throw std::runtime_error("insufficient data written to usb");
         }
@@ -191,14 +306,13 @@ namespace rsimpl
         {
             const int REQ_TYPE_GET = 0xa1;
             unsigned char buffer[4];
-            int status = libusb_control_transfer(devh->usb_devh, REQ_TYPE_GET, uvc_get_thing, control << 8, unit << 8 | (subdevice*2), buffer, sizeof(T), 0);
+            int status = libusb_control_transfer(devh->usb_devh, REQ_TYPE_GET, uvc_get_thing, control << 8, unit << 8 | (subdevice * 2), buffer, sizeof(T), 0);
             if(status < 0) throw std::runtime_error(to_string() << "libusb_control_transfer(...) returned " << libusb_error_name(status));
             if(status != sizeof(T)) throw std::runtime_error("insufficient data read from usb");
             if(sizeof(T)==1) return buffer[0];
             if(sizeof(T)==2) return SW_TO_SHORT(buffer);
             if(sizeof(T)==4) return DW_TO_INT(buffer);
         }
-        
         template<class T> void get_pu_range(uvc_device_handle_t * devh, int subdevice, uint8_t unit, uint8_t control, int * min, int * max, int * step, int * def)
         {
             if(min)     *min    = get_pu<T>(devh, subdevice, unit, control, UVC_GET_MIN);
@@ -258,6 +372,10 @@ namespace rsimpl
             case RS_OPTION_COLOR_WHITE_BALANCE: return set_pu<uint16_t>(handle, subdevice, pu_unit, UVC_PU_WHITE_BALANCE_TEMPERATURE_CONTROL, value);
             case RS_OPTION_COLOR_ENABLE_AUTO_EXPOSURE: return set_pu<uint8_t>(handle, subdevice, ct_unit, UVC_CT_AE_MODE_CONTROL, value ? 2 : 1); // Modes - (1: manual) (2: auto) (4: shutter priority) (8: aperture priority)
             case RS_OPTION_COLOR_ENABLE_AUTO_WHITE_BALANCE: return set_pu<uint8_t>(handle, subdevice, pu_unit, UVC_PU_WHITE_BALANCE_TEMPERATURE_AUTO_CONTROL, value);
+            case RS_OPTION_FISHEYE_GAIN: {
+                assert(subdevice == 3);
+                return set_pu<uint16_t>(handle, 0, pu_unit, UVC_PU_GAIN_CONTROL, value);
+            }
             default: throw std::logic_error("invalid option");
             }
         }
@@ -273,7 +391,7 @@ namespace rsimpl
             {
             case RS_OPTION_COLOR_BACKLIGHT_COMPENSATION: return get_pu<uint16_t>(handle, subdevice, pu_unit, UVC_PU_BACKLIGHT_COMPENSATION_CONTROL, UVC_GET_CUR);
             case RS_OPTION_COLOR_BRIGHTNESS: return get_pu<int16_t>(handle, subdevice, pu_unit, UVC_PU_BRIGHTNESS_CONTROL, UVC_GET_CUR);
-            case RS_OPTION_COLOR_CONTRAST: return get_pu<uint16_t>(handle, subdevice, pu_unit, UVC_PU_CONTRAST_CONTROL,UVC_GET_CUR);
+            case RS_OPTION_COLOR_CONTRAST: return get_pu<uint16_t>(handle, subdevice, pu_unit,UVC_PU_CONTRAST_CONTROL, UVC_GET_CUR);
             case RS_OPTION_COLOR_EXPOSURE: return get_pu<uint32_t>(handle, subdevice, ct_unit, UVC_CT_EXPOSURE_TIME_ABSOLUTE_CONTROL, UVC_GET_CUR);
             case RS_OPTION_COLOR_GAIN: return get_pu<uint16_t>(handle, subdevice, pu_unit, UVC_PU_GAIN_CONTROL, UVC_GET_CUR);
             case RS_OPTION_COLOR_GAMMA: return get_pu<uint16_t>(handle, subdevice, pu_unit, UVC_PU_GAMMA_CONTROL, UVC_GET_CUR);
@@ -283,6 +401,7 @@ namespace rsimpl
             case RS_OPTION_COLOR_WHITE_BALANCE: return get_pu<uint16_t>(handle, subdevice, pu_unit, UVC_PU_WHITE_BALANCE_TEMPERATURE_CONTROL, UVC_GET_CUR);
             case RS_OPTION_COLOR_ENABLE_AUTO_EXPOSURE: return get_pu<uint8_t>(handle, subdevice, ct_unit, UVC_CT_AE_MODE_CONTROL, UVC_GET_CUR) > 1; // Modes - (1: manual) (2: auto) (4: shutter priority) (8: aperture priority)
             case RS_OPTION_COLOR_ENABLE_AUTO_WHITE_BALANCE: return get_pu<uint8_t>(handle, subdevice, pu_unit, UVC_PU_WHITE_BALANCE_TEMPERATURE_AUTO_CONTROL, UVC_GET_CUR);
+            case RS_OPTION_FISHEYE_GAIN: return get_pu<uint16_t>(handle, subdevice, pu_unit, UVC_PU_GAIN_CONTROL, UVC_GET_CUR);
             default: throw std::logic_error("invalid option");
             }
         }
@@ -298,8 +417,7 @@ namespace rsimpl
 
         bool is_device_connected(device & device, int vid, int pid)
         {
-            throw std::logic_error("is_device_connected(...) is not implemented for this backend ");
-            return false;
+            return true;
         }
 
         std::vector<std::shared_ptr<device>> query_devices(std::shared_ptr<context> context)
@@ -308,13 +426,34 @@ namespace rsimpl
             
             uvc_device_t ** list;
             CALL_UVC(uvc_get_device_list, context->ctx, &list);
-            for(auto it = list; *it; ++it) try {
-                devices.push_back(std::make_shared<device>(context, *it));
-            } catch(std::runtime_error &e) {
-                LOG_WARNING("usb:" << (int)uvc_get_bus_number(*it) << ':' <<
-                        (int)uvc_get_device_address(*it) << ": " << e.what());
+            for (auto it = list; *it; ++it)
+                try
+            {
+                auto dev = std::make_shared<device>(context, *it);
+                dev->usb_handle = libusb_open_device_with_vid_pid(context->usb_context, VID_INTEL_CAMERA, ZR300_FISHEYE_PID);
+                devices.push_back(dev);
+            }
+            catch (std::runtime_error &e)
+            {
+                LOG_WARNING("usb:" << (int)uvc_get_bus_number(*it) << ':' << (int)uvc_get_device_address(*it) << ": " << e.what());
             }
             uvc_free_device_list(list, 1);
+
+            std::shared_ptr<device> fisheye = nullptr; // Currently ZR300 supports only a single device on OSX
+
+            for (auto& dev : devices)
+            {
+                if (dev->pid == ZR300_FISHEYE_PID)
+                {
+                    fisheye = dev;
+                }
+            }
+
+            for (auto& dev : devices)
+            {
+                dev->aux_device = fisheye;
+            }
+
             return devices;
         }
     }

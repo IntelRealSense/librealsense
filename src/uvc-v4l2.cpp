@@ -33,7 +33,9 @@
 #include <linux/uvcvideo.h>
 #include <linux/videodev2.h>
 
+#pragma GCC diagnostic ignored "-Wpedantic"
 #include <libusb.h>
+#pragma GCC diagnostic pop
 
 #pragma GCC diagnostic ignored "-Woverflow"
 
@@ -88,8 +90,8 @@ namespace rsimpl
             std::vector<buffer> buffers;
 
             int width, height, format, fps;
-            std::function<void(const void *, std::function<void()>)> callback;
-            std::function<void(const unsigned char * data, const int size)> channel_data_callback;    // handle non-uvc data produced by device
+            video_channel_callback callback = nullptr;
+            data_channel_callback  channel_data_callback = nullptr;    // handle non-uvc data produced by device
             bool is_capturing;
 
             subdevice(const std::string & name) : dev_name("/dev/" + name), vid(), pid(), fd(), width(), height(), format(), callback(nullptr), channel_data_callback(nullptr), is_capturing()
@@ -192,7 +194,7 @@ namespace rsimpl
                 if(xioctl(fd, UVCIOC_CTRL_QUERY, &q) < 0) throw_error("UVCIOC_CTRL_QUERY:UVC_SET_CUR");
             }
 
-            void set_format(int width, int height, int fourcc, int fps, std::function<void(const void * data, std::function<void()> continuation)> callback)
+            void set_format(int width, int height, int fourcc, int fps, video_channel_callback callback)
             {
                 this->width = width;
                 this->height = height;
@@ -201,7 +203,7 @@ namespace rsimpl
                 this->callback = callback;
             }
 
-            void set_data_channel_cfg(std::function<void(const unsigned char * data, const int size)> callback)
+            void set_data_channel_cfg(data_channel_callback callback)
             {                
                 this->channel_data_callback = callback;
             }
@@ -534,12 +536,12 @@ namespace rsimpl
             if(status < 0) throw std::runtime_error(to_string() << "libusb_interrupt_transfer(...) returned " << libusb_error_name(status));
         }
 
-        void set_subdevice_mode(device & device, int subdevice_index, int width, int height, uint32_t fourcc, int fps, std::function<void(const void * frame, std::function<void()> continuation)> callback)
+        void set_subdevice_mode(device & device, int subdevice_index, int width, int height, uint32_t fourcc, int fps, video_channel_callback callback)
         {
             device.subdevices[subdevice_index]->set_format(width, height, (const big_endian<int> &)fourcc, fps, callback);
         }
 
-        void set_subdevice_data_channel_handler(device & device, int subdevice_index, std::function<void(const unsigned char * data, const int size)> callback)
+        void set_subdevice_data_channel_handler(device & device, int subdevice_index, data_channel_callback callback)
         {
             device.subdevices[subdevice_index]->set_data_channel_cfg(callback);
         }
@@ -781,9 +783,8 @@ namespace rsimpl
                     }
                 }
                 if(is_new_device)
-                {                    
-                    //if (sub->vid == 0x04b4 && sub->pid == 0x00c3)  // avoid inserting fisheye camera as a device Bring up version
-                    if (sub->vid == 0x8086 && sub->pid == 0x0ad0)  // avoid inserting fisheye camera as a device
+                {
+                    if (sub->vid == VID_INTEL_CAMERA && sub->pid == ZR300_FISHEYE_PID)  // avoid inserting fisheye camera as a device
                         continue;
                     devices.push_back(std::make_shared<device>(context));
                     devices.back()->subdevices.push_back(move(sub));
@@ -808,8 +809,8 @@ namespace rsimpl
 
                 for(auto & dev : devices)
                 {
-                    //if (dev->subdevices[0]->vid == 0x8086 && dev->subdevices[0]->pid == 0x0acb && sub->vid == 0x04b4 && sub->pid == 0x00c3)
-                    if (dev->subdevices[0]->vid == 0x8086 && dev->subdevices[0]->pid == 0x0acb && sub->vid == 0x8086 && sub->pid == 0x0ad0 && dev->subdevices[0]->parent_devnum == sub->parent_devnum)
+                    if (dev->subdevices[0]->vid == VID_INTEL_CAMERA && dev->subdevices[0]->pid == ZR300_CX3_PID && 
+                        sub->vid == VID_INTEL_CAMERA && sub->pid == ZR300_FISHEYE_PID && dev->subdevices[0]->parent_devnum == sub->parent_devnum)
                     {
                         dev->subdevices.push_back(move(sub));
                         break;
@@ -863,107 +864,6 @@ namespace rsimpl
             libusb_free_device_list(list, 1);
 
             return devices;
-        }
-
-        // DS4.1T Bring-up stage hack to power on camera without user interferance
-        void power_on_adapter_board()
-        {
-            struct device_activator
-            {
-                device_activator():
-                    adpt_brd_vid(0x8086/*0x04b4*/),       // Adapter board vid/pid
-                    adpt_brd_pid(0x0ad0/*0x00c3*/),
-                    ds41t_dev_vid(0x8086),      // DS4.1T vid/pid
-                    ds41t_dev_pid(0x0acb),
-                    adpt_brd_ctrl_iface(0x2),
-                    adpt_brd_ctrl_out_ep(0x1),
-                    adpt_brd_ctrl_in_ep(0x81),
-                    res(0),
-                    handle(0)
-                {
-                    // Look for adapter board descriptos
-                    if (handle = libusb_open_device_with_vid_pid(0, adpt_brd_vid, adpt_brd_pid))   // DS4.1T Adaptor board present
-                        if (res = libusb_claim_interface(handle, adpt_brd_ctrl_iface))             // Acquire control interface
-                            perror("error claiming adaptor board interface");
-                }
-
-                ~device_activator()
-                {
-                    release();
-                }
-
-                void release()
-                {
-                    if (handle)
-                    {   // release control interface
-                        res = libusb_release_interface(handle, adpt_brd_ctrl_iface);
-                        handle = nullptr;
-                        if (res)
-                            perror("error releasing adaptor board interface");
-                    }
-                }
-
-                bool ds_device_power_on()
-                {
-                    bool activated = false;
-                    if (handle)  // Adaptor board is present
-                    {
-                        const unsigned char cmd_sz = 24;
-                        unsigned char dspwr_cmd[cmd_sz] = { 0x14, 0x0, 0xab, 0xcd, 0x0b, 0x0, 0x0, 0x0, 0x1, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
-                        unsigned int timeout = 5000;
-                        const int res_buf_sz = 1024;
-                        std::uint8_t res_buf[res_buf_sz]={0};
-                        int actual_length = 0;
-
-                        // Look for DS4.1T device. Note that this workaround assumes single DS4.1T platform
-                        libusb_device_handle *ds_handle = libusb_open_device_with_vid_pid(0, ds41t_dev_vid, ds41t_dev_pid);
-
-                        // Activate on demand
-                        if (!ds_handle)
-                        {
-
-                            // Send DS Device Power-on cmd
-                            if ((res = libusb_bulk_transfer( handle, adpt_brd_ctrl_out_ep, dspwr_cmd, cmd_sz, &actual_length, timeout))<0)
-                                throw std::runtime_error(to_string() << "libusb_bulk_transfer(ds_power_on) returned " << libusb_error_name(res));
-
-                            if (cmd_sz != actual_length)
-                                throw std::logic_error(to_string() << "ds_power_on invalid transmit size, expected: "  << cmd_sz << ", actual: " << actual_length);
-
-                            // Get and verify correct firmware response
-                            if ((res = libusb_bulk_transfer( handle, adpt_brd_ctrl_in_ep, res_buf, res_buf_sz, &actual_length, timeout)) < 0)
-                                throw std::runtime_error(to_string() << "libusb_bulk_transfer(ds_power_on ack) returned " << libusb_error_name(res));
-
-                            // Command index should appear in the fifth byte in the response buffer. (hw_monitor protocol)
-                            unsigned char requested_type = dspwr_cmd[4];
-                            unsigned char actual_type = dspwr_cmd[4];
-
-                            if (requested_type != actual_type)
-                                throw std::logic_error(to_string() << "ds_power_on ack verification failed, expecting cmd code: " << std::hex << requested_type << ", actual: " << actual_type << std::dec);
-
-                            std::this_thread::sleep_for(std::chrono::milliseconds(2000));   // Enable the hardware to "wire up" with the host drivers; will be executed only if there is no present DS4.1T device
-
-                            activated = true;
-                        }
-                    }
-
-                    return activated;
-                }
-
-                const unsigned short adpt_brd_vid;
-                const unsigned short adpt_brd_pid;
-                const unsigned short ds41t_dev_vid;
-                const unsigned short ds41t_dev_pid;
-
-                const unsigned short adpt_brd_ctrl_iface;
-                const unsigned short adpt_brd_ctrl_out_ep;
-                const unsigned short adpt_brd_ctrl_in_ep;
-
-                int                     res;
-                libusb_device_handle * handle;                   // handle for USB device
-            };
-
-            device_activator act;
-            act.ds_device_power_on();
         }
     }
 }

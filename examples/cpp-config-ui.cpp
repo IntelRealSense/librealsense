@@ -371,57 +371,47 @@ void show_message(GLFWwindow* curr_window, const std::string& title, const std::
 }
 
 struct option { rs::option opt; double min, max, step, value, def; bool supports; };
-bool auto_exposure = false;
-bool auto_white_balance = false;
-bool lr_auto_exposure = false;
-struct auto_options
-{
-    auto_options(rs::option opt, std::vector<rs::option> options) : auto_option(opt), relate_options(options) {}
-    rs::option auto_option;
-    std::vector<rs::option> relate_options;
+
+static std::map<rs::option, std::vector<rs::option>> options_dependencies = 
+{ 
+  { rs::option::color_exposure, { rs::option::color_enable_auto_exposure } },
+  { rs::option::color_white_balance, { rs::option::color_enable_auto_white_balance } },
+  { rs::option::r200_lr_gain, { rs::option::r200_lr_auto_exposure_enabled } },
+  { rs::option::r200_lr_exposure, { rs::option::r200_lr_auto_exposure_enabled } },
+  { rs::option::r200_lr_auto_exposure_enabled, { rs::option::r200_auto_exposure_mean_intensity_set_point,
+                                                 rs::option::r200_auto_exposure_bright_ratio_set_point,
+                                                 rs::option::r200_auto_exposure_kp_dark_threshold,
+                                                 rs::option::r200_auto_exposure_kp_gain,
+                                                 rs::option::r200_auto_exposure_kp_exposure,
+                                                 rs::option::r200_auto_exposure_bottom_edge,
+                                                 rs::option::r200_auto_exposure_top_edge,
+                                                 rs::option::r200_auto_exposure_left_edge,
+                                                 rs::option::r200_auto_exposure_right_edge,
+                                               } },
+  { rs::option::r200_auto_exposure_bottom_edge, { rs::option::r200_auto_exposure_top_edge } },
+  { rs::option::r200_auto_exposure_top_edge, { rs::option::r200_auto_exposure_bottom_edge } },
+  { rs::option::r200_auto_exposure_left_edge, { rs::option::r200_auto_exposure_right_edge } },
+  { rs::option::r200_auto_exposure_right_edge, { rs::option::r200_auto_exposure_left_edge } },
 };
-auto_options exp_option(rs::option::color_enable_auto_exposure, { rs::option::color_exposure });
-auto_options wb_option(rs::option::color_enable_auto_white_balance, { rs::option::color_white_balance });
-auto_options lr_option(rs::option::r200_lr_auto_exposure_enabled, { rs::option::r200_lr_gain, rs::option::r200_lr_exposure });
-static std::vector<auto_options> auto_options_vec = { exp_option, wb_option, lr_option };
-void update_auto_option(rs::option opt, std::vector<option>& options)
+
+void update_related_options(rs::device& dev, rs::option opt, std::vector<option>& options)
 {
-    auto it = find_if(auto_options_vec.begin(), auto_options_vec.end(),
-        [&](const auto_options& element) {
-        for (auto& o : element.relate_options)
-        {
-            if (opt == o)
-                return true;
-        }
-        return false;
-    });
-
-    if (it != auto_options_vec.end())
+    auto it = options_dependencies.find(opt);
+    if (it != options_dependencies.end())
     {
-        auto auto_opt = it->auto_option;
-        switch (auto_opt)
+        for (auto& related : it->second)
         {
-        case rs::option::color_enable_auto_exposure:
-            auto_exposure = false;
-            break;
-
-        case rs::option::color_enable_auto_white_balance:
-            auto_white_balance = false;
-            break;
-
-        case rs::option::r200_lr_auto_exposure_enabled:
-            lr_auto_exposure = false;
-            break;
-        }
-
-        auto it = find_if(options.begin(), options.end(),
-            [&](const option& element) {
-            return (element.opt == auto_opt);
-        });
-
-        if (it != options.end())
-        {
-            it->value = 0;
+            auto opt_it = std::find_if(options.begin(), options.end(), [related](option o){ return related == o.opt; });
+            if (opt_it != options.end())
+            {
+                try
+                {
+                    if (!dev.supports_option(opt_it->opt)) continue;
+                    dev.get_option_range(opt_it->opt, opt_it->min, opt_it->max, opt_it->step, opt_it->def);
+                    opt_it->value = dev.get_option(opt_it->opt);
+                }
+                catch (...) {}
+            }
         }
     }
 }
@@ -596,18 +586,6 @@ int main(int argc, char * argv[])
 
         dev = ctx.get_device(0);
 
-        static const auto max_queue_size = 2;
-        for (auto i = 0; i < 5; i++)
-        {
-            dev->set_frame_callback((rs::stream)i, [dev, &buffers, &running, &frames_queue, &resolutions, i](rs::frame frame)
-            {
-                if (running && frames_queue[i].size() < max_queue_size)
-                {
-                    frames_queue[i].enqueue(std::move(frame));
-                }
-            });
-        }
-
         dev->enable_stream(rs::stream::depth, 0, 0, rs::format::z16, 60, rs::output_buffer_format::native);
         dev->enable_stream(rs::stream::color, 640, 480, rs::format::rgb8, 60, rs::output_buffer_format::native);
         dev->enable_stream(rs::stream::infrared, 0, 0, rs::format::y8, 60, rs::output_buffer_format::native);
@@ -747,6 +725,7 @@ int main(int argc, char * argv[])
 
                         if (dev->supports(cap))
                         {
+                            static bool is_callback_set = false;
                             bool enable;
                             if (i == RS_CAPABILITIES_MOTION_EVENTS)
                                 enable = motion_tracking_enable;
@@ -755,9 +734,25 @@ int main(int argc, char * argv[])
 
                             enable_stream(dev, i, enable, stream_name);
 
-                            if (g.checkbox({ w - 260, y, w - 240, y + 20 }, enable))
+                            if (!is_callback_set || g.checkbox({ w - 260, y, w - 240, y + 20 }, enable))
                             {
                                 enable_stream(dev, i, enable, stream_name);
+
+                                if (enable)
+                                {
+                                    static const auto max_queue_size = 2;
+                                    for (auto i = 0; i < 5; i++)
+                                    {
+                                        dev->set_frame_callback((rs::stream)i, [dev, &buffers, &running, &frames_queue, &resolutions, i](rs::frame frame)
+                                        {
+                                            if (running && frames_queue[i].size() < max_queue_size)
+                                            {
+                                                frames_queue[i].enqueue(std::move(frame));
+                                            }
+                                        });
+                                    }
+                                }
+                                is_callback_set = true;
                             }
                             g.label({ w - 234, y + 13 }, { 1, 1, 1 }, "Enable %s", stream_name.str().c_str());
                             y += 30;
@@ -854,6 +849,7 @@ int main(int argc, char * argv[])
                             o.value = dev->get_option(o.opt);
                         }
                         catch (...) {}
+                        o.supports = true;
                     }
 
                     auto is_checkbox = (o.min == 0) && (o.max == 1) && (o.step == 1);
@@ -866,15 +862,9 @@ int main(int argc, char * argv[])
                         if (is_checkbox) dev->set_option(o.opt, is_checked ? 1 : 0);
                         else dev->set_option(o.opt, o.value);
 
-                        update_auto_option(o.opt, options);
+                        update_related_options(*dev, o.opt, options);
 
                         o.value = dev->get_option(o.opt);
-                        
-                        for (auto& o : options) // refresh options
-                        {
-                            if (!dev->supports_option(o.opt)) continue;
-                            dev->get_option_range(o.opt, o.min, o.max, o.step, o.def);
-                        }
                     }
 
                     if (is_checkbox) g.option_label({ w - 230, y + 24 }, { 1, 1, 1 }, *dev, o.opt, 210, true);

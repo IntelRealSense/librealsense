@@ -116,7 +116,14 @@ void syncronizing_archive::get_next_frames()
     // Dequeue from other streams if the new frame is closer to the timestamp of the key stream than the old frame
     for(auto s : other_streams)
     {
-        if (!frames[s].empty() && abs(frames[s].front().additional_data.timestamp - frontbuffer.get_frame_timestamp(key_stream)) <= abs(frontbuffer.get_frame_timestamp(s) - frontbuffer.get_frame_timestamp(key_stream)))
+        if (frames[s].empty())
+            continue;
+
+        auto timestamp_of_new_frame = frames[s].front().additional_data.timestamp;
+        auto timestamp_of_old_frame = frontbuffer.get_frame_timestamp(s);
+        auto timestamp_of_key_stream = frontbuffer.get_frame_timestamp(key_stream);
+        if ((timestamp_of_new_frame > timestamp_of_key_stream) ||
+            (abs(timestamp_of_new_frame - timestamp_of_key_stream) <= abs(timestamp_of_old_frame - timestamp_of_key_stream)))
         {
             dequeue_frame(s);
         }

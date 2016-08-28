@@ -100,6 +100,7 @@ void rs_device_base::disable_stream(rs_stream stream)
     if(capturing) throw std::runtime_error("streams cannot be reconfigured after having called rs_start_device()");
     if(config.info.stream_subdevices[stream] == -1) throw std::runtime_error("unsupported stream");
 
+    config.callbacks[stream] = {};
     config.requests[stream] = {};
     for(auto & s : native_streams) s->archive.reset(); // Changing stream configuration invalidates the current stream info
 }
@@ -213,30 +214,49 @@ void rs_device_base::set_timestamp_callback(rs_timestamp_callback* callback)
 
 void rs_device_base::start(rs_source source)
 {
-    if (source & RS_SOURCE_MOTION_TRACKING)
+    if (source == RS_SOURCE_MOTION_TRACKING)
     {
         if (supports(RS_CAPABILITIES_MOTION_EVENTS))
             start_motion_tracking();
         else
-             throw std::runtime_error("motion-tracking is not supported by this device");
+            throw std::runtime_error("motion-tracking is not supported by this device");
     }
-
-    if (source & RS_SOURCE_VIDEO)
+    else if (source == RS_SOURCE_VIDEO)
+    {
         start_video_streaming();
-
+    }
+    else if (source == RS_SOURCE_ALL)
+    {
+        start(RS_SOURCE_MOTION_TRACKING);
+        start(RS_SOURCE_VIDEO);
+    }
+    else
+    {
+        throw std::runtime_error("unsupported streaming source!");
+    }
 }
 
 void rs_device_base::stop(rs_source source)
 {
-    if (source & RS_SOURCE_VIDEO)
+    if (source == RS_SOURCE_VIDEO)
+    {
         stop_video_streaming();
-
-    if (source & RS_SOURCE_MOTION_TRACKING)
+    }
+    else if (source == RS_SOURCE_MOTION_TRACKING)
     {
         if (supports(RS_CAPABILITIES_MOTION_EVENTS))
             stop_motion_tracking();
         else
-             throw std::runtime_error("motion-tracking is not supported by this device");
+            throw std::runtime_error("motion-tracking is not supported by this device");
+    }
+    else if (source == RS_SOURCE_ALL)
+    {
+        stop(RS_SOURCE_VIDEO);
+        stop(RS_SOURCE_MOTION_TRACKING);
+    }
+    else
+    {
+        throw std::runtime_error("unsupported streaming source");
     }
 }
 
@@ -307,11 +327,15 @@ void rs_device_base::start_video_streaming()
 
     for(auto & s : native_streams) s->archive.reset(); // Starting capture invalidates the current stream info, if any exists from previous capture
 
+    auto timestamp_readers = create_frame_timestamp_readers();
+
     // Satisfy stream_requests as necessary for each subdevice, calling set_mode and
     // dispatching the uvc configuration for a requested stream to the hardware
     for(auto mode_selection : selected_modes)
     {
-        auto timestamp_reader = create_frame_timestamp_reader(mode_selection.mode.subdevice);
+        assert(mode_selection.mode.subdevice <= timestamp_readers.size());
+        auto timestamp_reader = timestamp_readers[mode_selection.mode.subdevice];
+
         // Create a stream buffer for each stream served by this subdevice mode
         for(auto & stream_mode : mode_selection.get_outputs())
         {                    
@@ -341,7 +365,7 @@ void rs_device_base::start_video_streaming()
             auto timestamp = timestamp_reader->get_frame_timestamp(mode_selection.mode, frame);
             auto frame_counter = timestamp_reader->get_frame_counter(mode_selection.mode, frame);
             auto recieved_time = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - capture_start_time).count();
-            
+
             auto requires_processing = mode_selection.requires_processing();
 
             auto width = mode_selection.get_width();
