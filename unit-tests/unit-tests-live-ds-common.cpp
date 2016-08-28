@@ -10,6 +10,7 @@
 #define CATCH_CONFIG_MAIN
 
 #include <climits>
+#include <sstream>
 
 #include "unit-tests-live-ds-common.h"
 
@@ -112,15 +113,20 @@ TEST_CASE("DS-device devices support all required options", "[live] [DS-device]"
                 RS_OPTION_R200_DEPTH_CONTROL_TEXTURE_DIFFERENCE_THRESHOLD,
                 RS_OPTION_R200_DEPTH_CONTROL_SECOND_PEAK_THRESHOLD,
                 RS_OPTION_R200_DEPTH_CONTROL_NEIGHBOR_THRESHOLD,
-                RS_OPTION_R200_DEPTH_CONTROL_LR_THRESHOLD
+                RS_OPTION_R200_DEPTH_CONTROL_LR_THRESHOLD,
+                RS_OPTION_FRAMES_QUEUE_SIZE
             };
 
+            std::stringstream ss;
             for (int i = 0; i<RS_OPTION_COUNT; ++i)
             {
+                ss.str(""); ss << "Verifying support for " << rs_option_to_string((rs_option)i);
+                INFO(ss.str().c_str());
                 if (std::find(std::begin(supported_options), std::end(supported_options), i) != std::end(supported_options))
                 {
                     REQUIRE(rs_device_supports_option(dev, (rs_option)i, require_no_error()) == 1);
                 }
+                // There is no ELSE by design , as the test is intended to check only the common options support
             }
         }
     }
@@ -212,7 +218,7 @@ TEST_CASE("DS-device infrared2 streaming modes exactly match infrared streaming 
             REQUIRE(infrared_format == infrared2_format);
             REQUIRE(infrared_framerate == infrared2_framerate);
 
-            // Require that the intrinsics for these streaming modes match exactly
+            // Require that the intrinsic for these streaming modes match exactly
             rs_enable_stream(dev, RS_STREAM_INFRARED, infrared_width, infrared_height, infrared_format, infrared_framerate, require_no_error());
             rs_enable_stream(dev, RS_STREAM_INFRARED2, infrared2_width, infrared2_height, infrared2_format, infrared2_framerate, require_no_error());
 
@@ -708,7 +714,7 @@ TEST_CASE("DS-device verify standard UVC Controls set/get", "[live] [DS-device]"
     rs_set_device_options(dev,test_options.data(),(unsigned int)test_options.size(),modified_values.data(), require_no_error());
     std::this_thread::sleep_for(std::chrono::milliseconds(500));
     // Verify
-    rs_get_device_options(dev,test_options.data(),test_options.size(),verification_values.data(), require_no_error());
+    rs_get_device_options(dev,test_options.data(),(unsigned int)test_options.size(),verification_values.data(), require_no_error());
 
     //for (size_t i=first; i<= last; i++)
     //    std::cout << "Option " << rs_option_to_string((rs_option)i) << " Requested value = " << modified_values[i] << " Actual value = " << verification_values[i] << std::endl;
@@ -811,43 +817,36 @@ TEST_CASE("streaming five configurations sequentionally", "[live] [DS-device] [o
     rs_device * dev = rs_get_device(ctx, 0, require_no_error());
     REQUIRE(dev != nullptr);
 
-    SECTION("device name identification ")
+    REQUIRE(std::any_of(ds_names.begin(), ds_names.end(), [&](std::string const& s)
     {
-        REQUIRE(std::any_of(ds_names.begin(), ds_names.end(), [&](std::string const& s)
-        {
-            bool b = (s == rs_get_device_name(dev, require_no_error()));
-            if (b) std::cout << "Camera type " << s << std::endl;
-            return b; }));
-    }
+        bool b = (s == rs_get_device_name(dev, require_no_error()));
+        if (b) std::cout << "Camera type " << s << std::endl;
+        return b; }));
 
-    SECTION("streaming is possible in some reasonable configurations")
-    {
+    test_streaming(dev, {
+        { RS_STREAM_DEPTH, 480, 360, RS_FORMAT_Z16, 60 }
+    });
 
-        test_streaming(dev, {
-            { RS_STREAM_DEPTH, 480, 360, RS_FORMAT_Z16, 60 }
-        });
+    test_streaming(dev, {
+        { RS_STREAM_COLOR, 640, 480, RS_FORMAT_YUYV, 60 }
+    });
 
-        test_streaming(dev, {
-            { RS_STREAM_COLOR, 640, 480, RS_FORMAT_YUYV, 60 }
-        });
+    test_streaming(dev, {
+        { RS_STREAM_INFRARED, 492, 372, RS_FORMAT_Y16, 60 },
+        { RS_STREAM_INFRARED2, 492, 372, RS_FORMAT_Y16, 60 }
+    });
 
-        test_streaming(dev, {
-            { RS_STREAM_INFRARED, 492, 372, RS_FORMAT_Y16, 60 },
-            { RS_STREAM_INFRARED2, 492, 372, RS_FORMAT_Y16, 60 }
-        });
+    test_streaming(dev, {
+        { RS_STREAM_DEPTH, 480, 360, RS_FORMAT_Z16, 60 },
+        { RS_STREAM_INFRARED, 480, 360, RS_FORMAT_Y8, 60 }
+    });
 
-        test_streaming(dev, {
-            { RS_STREAM_DEPTH, 480, 360, RS_FORMAT_Z16, 60 },
-            { RS_STREAM_INFRARED, 480, 360, RS_FORMAT_Y8, 60 }
-        });
-
-        test_streaming(dev, {
-            { RS_STREAM_DEPTH, 480, 360, RS_FORMAT_Z16, 60 },
-            { RS_STREAM_COLOR, 640, 480, RS_FORMAT_RGB8, 60 },
-            { RS_STREAM_INFRARED, 480, 360, RS_FORMAT_Y8, 60 },
-            { RS_STREAM_INFRARED2, 480, 360, RS_FORMAT_Y8, 60 }
-        });
-    }
+    test_streaming(dev, {
+        { RS_STREAM_DEPTH, 480, 360, RS_FORMAT_Z16, 60 },
+        { RS_STREAM_COLOR, 640, 480, RS_FORMAT_RGB8, 60 },
+        { RS_STREAM_INFRARED, 480, 360, RS_FORMAT_Y8, 60 },
+        { RS_STREAM_INFRARED2, 480, 360, RS_FORMAT_Y8, 60 }
+    });
 }
 
 #endif /* !defined(MAKEFILE) || ( defined(LR200_TEST) || defined(R200_TEST) || defined(ZR300_TEST) ) */

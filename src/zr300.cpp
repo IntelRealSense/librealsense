@@ -273,7 +273,7 @@ namespace rsimpl
     {
         if (!validate_motion_intrinsics())
         {
-            throw std::runtime_error("Motion intrinsics are not valid");
+            throw std::runtime_error("Motion intrinsic is not valid");
         }
         return  fe_intrinsic.calib.imu_intrinsic;
     }
@@ -300,7 +300,7 @@ namespace rsimpl
     {
         if (!validate_motion_extrinsics(from))
         {
-            throw std::runtime_error("Motion intrinsics are not valid");
+            throw std::runtime_error("Motion intrinsic is not valid");
         }
         switch (from)
         {
