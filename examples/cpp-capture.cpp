@@ -17,14 +17,13 @@ bool align_depth_to_color = false;
 bool align_color_to_depth = false;
 bool color_rectification_enabled = false;
 
-// Split the screen into 640X480 tiles, according to the number of supported streams. The most likely variants are defined below
-const std::map<size_t, std::pair<int, int>> tiles_map = { { 1, {1,1}},            // Tiles : > {columns X rows)
+// Split the screen into 640X480 tiles, according to the number of supported streams. Define layout as follows : tiles -> <columds,rows>
+const std::map<size_t, std::pair<int, int>> tiles_map = {       { 1,{ 1,1 } },
                                                                 { 2,{ 2,1 } },
                                                                 { 3,{ 3,1 } },
                                                                 { 4,{ 2,2 } },
-                                                                { 5,{ 3,2 } },          // Five tiles, split into 3 columns, 2 rows
+                                                                { 5,{ 3,2 } },          // E.g. five tiles, split into 3 columns by 2 rows mosaic
                                                                 { 6,{ 3,2 } }};
-
 
 int main(int argc, char * argv[]) try
 {
@@ -110,11 +109,11 @@ int main(int argc, char * argv[]) try
         glfwGetWindowSize(win, &w, &h);
         glOrtho(0, w, h, 0, -1, +1);
         buffers[0].show(dev, align_color_to_depth ? rs::stream::color_aligned_to_depth : (color_rectification_enabled ? rs::stream::rectified_color : rs::stream::color), 0, 0, w / cols, h / rows);
-        buffers[1].show(dev, align_depth_to_color ? (color_rectification_enabled ? rs::stream::depth_aligned_to_rectified_color : rs::stream::depth_aligned_to_color) : rs::stream::depth, w / cols, 0, w / rows, h / cols);
+        buffers[1].show(dev, align_depth_to_color ? (color_rectification_enabled ? rs::stream::depth_aligned_to_rectified_color : rs::stream::depth_aligned_to_color) : rs::stream::depth, w / cols, 0, w / cols, h / rows);
         buffers[2].show(dev, rs::stream::infrared, 0, h / rows, w / cols, h / rows);
         buffers[3].show(dev, rs::stream::infrared2, w / cols, h / rows, w / cols, h / rows);
         if (dev.is_stream_enabled(rs::stream::fisheye))
-            buffers[4].show(dev, rs::stream::fisheye, 2 * w / cols, h / rows, w / cols, h / rows);
+            buffers[4].show(dev, rs::stream::fisheye, 2 * w / cols, 0, w / cols, h / rows);
         glPopMatrix();
         glfwSwapBuffers(win);
     }
