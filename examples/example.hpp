@@ -123,6 +123,7 @@ public:
                 }
                 in0 = in1; in1 += width*5/4;
             }
+            glPixelStorei(GL_UNPACK_ROW_LENGTH, stride / 2);        // Update row strobe do to downsampling
             glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width/2, height/2, 0, GL_RGB, GL_UNSIGNED_BYTE, rgb.data());
             break;
         }
@@ -132,7 +133,6 @@ public:
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
         glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
         glBindTexture(GL_TEXTURE_2D, 0);
-        
     }
 
     void upload(rs::device & dev, rs::stream stream)
