@@ -6,13 +6,13 @@
 
 #include "catch/catch.hpp"
 #include <librealsense/rs.h>
-
 #include <cmath> // For std::sqrt
 #include <cassert> // For assert
 #include <thread> // For std::this_thread::sleep_for
 #include <map>
 #include <mutex>
 #include <condition_variable>
+#include <atomic>
 
 // noexcept is not accepted by Visual Studio 2013 yet, but noexcept(false) is require on throwing destructors on gcc and clang
 // It is normally advisable not to throw in a destructor, however, this usage is safe for require_error/require_no_error because
@@ -158,13 +158,14 @@ inline void require_identity_matrix(const float (& matrix)[9])
 }
 
 struct time_duration{
-    bool is_start_time_initialized = false;
-    bool is_end_time_initialized = false;
+    bool is_start_time_initialized;
+    bool is_end_time_initialized;
     std::chrono::high_resolution_clock::time_point start_time , end_time;
 };
 
 inline void check_fps(float actual_fps, float configured_fps)
 {
+    printf("actual_fps: %f, configured_fps: %f\n", actual_fps, configured_fps);
     REQUIRE(actual_fps >= configured_fps * 0.9); // allow threshold of 10 percent
 }
 
@@ -184,6 +185,16 @@ inline void test_wait_for_frames(rs_device * device, std::initializer_list<strea
         REQUIRE( rs_get_frame_timestamp(device, mode.stream, require_no_error()) >= 0 );
     }
 
+    std::vector<unsigned long long> last_frame_number;
+    std::vector<unsigned long long> number_of_frames;
+    last_frame_number.resize(modes.size());
+    number_of_frames.resize(modes.size());
+    for (auto& elem : modes)
+    {
+        number_of_frames[elem.stream] = 0;
+        last_frame_number[elem.stream] = 0;
+    }
+
     for(int i=1; i<=number_of_frames_to_take; ++i)
     {
         rs_wait_for_frames(device, require_no_error());
@@ -192,25 +203,32 @@ inline void test_wait_for_frames(rs_device * device, std::initializer_list<strea
         {
             if (rs_get_frame_timestamp(device, mode.stream, require_no_error()) > 0)
             {
-                if (!duration_per_stream[mode.stream].is_start_time_initialized)
+                REQUIRE( rs_is_stream_enabled(device, mode.stream, require_no_error()) == 1 );
+                REQUIRE( rs_get_frame_data(device, mode.stream, require_no_error()) != nullptr );
+                REQUIRE( rs_get_frame_timestamp(device, mode.stream, require_no_error()) >= 0 );
+                REQUIRE( rs_get_frame_number(device, mode.stream, require_no_error()) >= 0 );
+
+                auto frame_number = rs_get_frame_number(device, mode.stream, require_no_error());
+                if (!duration_per_stream[mode.stream].is_end_time_initialized && last_frame_number[mode.stream] != frame_number)
+                {
+                    last_frame_number[mode.stream] = frame_number;
+                    ++number_of_frames[mode.stream];
+                }
+
+                if (!duration_per_stream[mode.stream].is_start_time_initialized && number_of_frames[mode.stream] >= 1)
                 {
                     duration_per_stream[mode.stream].start_time = std::chrono::high_resolution_clock::now();
                     duration_per_stream[mode.stream].is_start_time_initialized = true;
                 }
 
-                if (i > 90 && !duration_per_stream[mode.stream].is_end_time_initialized)
+                if (!duration_per_stream[mode.stream].is_end_time_initialized && (number_of_frames[mode.stream] > (0.9 * number_of_frames_to_take)))
                 {
                     duration_per_stream[mode.stream].end_time = std::chrono::high_resolution_clock::now();
                     auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(duration_per_stream[mode.stream].end_time - duration_per_stream[mode.stream].start_time).count();
-                    auto fps = ((float)i / duration) * 1000.;
+                    auto fps = ((double)number_of_frames[mode.stream] / duration) * 1000.;
                     check_fps(fps, mode.framerate);
                     duration_per_stream[mode.stream].is_end_time_initialized = true;
                 }
-
-                REQUIRE( rs_is_stream_enabled(device, mode.stream, require_no_error()) == 1 );
-                REQUIRE( rs_get_frame_data(device, mode.stream, require_no_error()) != nullptr );
-                REQUIRE( rs_get_frame_timestamp(device, mode.stream, require_no_error()) >= 0 );
-                REQUIRE( rs_get_frame_number(device, mode.stream, require_no_error()) >= 0 );
             }
         }
     }
@@ -219,17 +237,19 @@ inline void test_wait_for_frames(rs_device * device, std::initializer_list<strea
     REQUIRE( rs_is_device_streaming(device, require_no_error()) == 0 );
 }
 
+
+static std::mutex m;
+static std::condition_variable cv;
+static std::atomic<bool> stop_streaming;
+static int done;
 struct user_data{
-    std::mutex m;
-    std::condition_variable cv;
-    bool ready = false;
     std::map<rs_stream, time_duration> duration_per_stream;
     std::map<rs_stream, unsigned> number_of_frames_per_stream;
 };
 
 inline void frame_callback(rs_device * dev, rs_frame_ref * frame, void * user)
 {
-    if (rs_get_detached_frame_timestamp(frame, require_no_error()) == 0)
+    if (stop_streaming || (rs_get_detached_frame_timestamp(frame, require_no_error()) == 0))
     {
         rs_release_frame(dev, frame, require_no_error());
         return;
@@ -237,6 +257,7 @@ inline void frame_callback(rs_device * dev, rs_frame_ref * frame, void * user)
 
     auto data = (user_data*)user;
     bool stop = true;
+
     for (auto& elem : data->number_of_frames_per_stream)
     {
         if (elem.second < number_of_frames_to_take)
@@ -246,19 +267,30 @@ inline void frame_callback(rs_device * dev, rs_frame_ref * frame, void * user)
         }
     }
 
+
     if (stop)
     {
+        stop_streaming = true;
         rs_release_frame(dev, frame, require_no_error());
         {
-            std::lock_guard<std::mutex> lk(data->m);
-            data->ready = true;
+            std::lock_guard<std::mutex> lk(m);
+            done = true;
         }
-        data->cv.notify_one();
+        cv.notify_one();
         return;
     }
 
     auto stream_type = rs_get_detached_frame_stream_type(frame, require_no_error());
-    auto num_of_frames = data->number_of_frames_per_stream[stream_type]++;
+
+    if (data->duration_per_stream[stream_type].is_end_time_initialized)
+    {
+        rs_release_frame(dev, frame, require_no_error());
+        return;
+    }
+
+    unsigned num_of_frames;
+    num_of_frames = (++data->number_of_frames_per_stream[stream_type]);
+
     if (num_of_frames >= number_of_frames_to_take)
     {
         if (!data->duration_per_stream[stream_type].is_end_time_initialized)
@@ -286,39 +318,55 @@ inline void frame_callback(rs_device * dev, rs_frame_ref * frame, void * user)
 
 inline void test_frame_callback(rs_device * device, std::initializer_list<stream_mode>& modes, std::map<rs_stream, time_duration>& duration_per_stream)
 {
+    done = false;
+    stop_streaming = false;
     user_data data;
     data.duration_per_stream = duration_per_stream;
     for(auto & mode : modes)
     {
         data.number_of_frames_per_stream[mode.stream] = 0;
+        data.duration_per_stream[mode.stream].is_start_time_initialized = false;
+        data.duration_per_stream[mode.stream].is_end_time_initialized = false;
         REQUIRE( rs_is_stream_enabled(device, mode.stream, require_no_error()) == 1 );
         rs_set_frame_callback(device, mode.stream, frame_callback, &data, require_no_error());
     }
 
     rs_start_device(device, require_no_error());
     REQUIRE( rs_is_device_streaming(device, require_no_error()) == 1 );
+
     {
-        std::unique_lock<std::mutex> lk(data.m);
-        data.cv.wait(lk, [&]{return data.ready;});
+        std::unique_lock<std::mutex> lk(m);
+        cv.wait(lk, [&]{return done;});
         lk.unlock();
     }
+
     rs_stop_device(device, require_no_error());
     REQUIRE( rs_is_device_streaming(device, require_no_error()) == 0 );
 
     for(auto & mode : modes)
     {
         auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(data.duration_per_stream[mode.stream].end_time - data.duration_per_stream[mode.stream].start_time).count();
-        auto fps = ((float)number_of_frames_to_take / duration) * 1000.;
+        auto fps = ((float)data.number_of_frames_per_stream[mode.stream] / duration) * 1000.;
         check_fps(fps, mode.framerate);
     }
+}
+
+inline void motion_callback(rs_device * , rs_motion_data, void *)
+{
+}
+
+inline void timestamp_callback(rs_device * , rs_timestamp_data, void *)
+{
 }
 
 // Provide support for doing basic streaming tests on a set of specified modes
 inline void test_streaming(rs_device * device, std::initializer_list<stream_mode> modes)
 {
+    rs_enable_motion_tracking(device, motion_callback,nullptr, timestamp_callback, nullptr, require_no_error());
+
     std::map<rs_stream, time_duration> duration_per_stream;
-    std::map<rs_stream, std::vector<double>> frame_timestamp;
-    std::map<rs_stream, std::vector<unsigned long long>> frame_counter;
+    //std::map<rs_stream, std::vector<double>> frame_timestamp;
+    //std::map<rs_stream, std::vector<unsigned long long>> frame_counter;
     for(auto & mode : modes)
     {
         duration_per_stream.insert(std::pair<rs_stream, time_duration>(mode.stream, time_duration()));
@@ -329,8 +377,14 @@ inline void test_streaming(rs_device * device, std::initializer_list<stream_mode
         REQUIRE( rs_is_stream_enabled(device, mode.stream, require_no_error()) == 1 );
     }
 
+
+    rs_start_source(device, rs_source::RS_SOURCE_MOTION_TRACKING, require_no_error());
     test_wait_for_frames(device, modes, duration_per_stream);
+    rs_stop_source(device, rs_source::RS_SOURCE_MOTION_TRACKING, require_no_error());
+
+    rs_start_source(device, rs_source::RS_SOURCE_MOTION_TRACKING, require_no_error());
     test_frame_callback(device, modes, duration_per_stream);
+    rs_stop_source(device, rs_source::RS_SOURCE_MOTION_TRACKING, require_no_error());
 
     for(auto & mode : modes)
     {
