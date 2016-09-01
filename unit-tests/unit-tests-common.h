@@ -165,7 +165,6 @@ struct time_duration{
 
 inline void check_fps(float actual_fps, float configured_fps)
 {
-    printf("actual_fps: %f, configured_fps: %f\n", actual_fps, configured_fps);
     REQUIRE(actual_fps >= configured_fps * 0.9); // allow threshold of 10 percent
 }
 
@@ -187,8 +186,8 @@ inline void test_wait_for_frames(rs_device * device, std::initializer_list<strea
 
     std::vector<unsigned long long> last_frame_number;
     std::vector<unsigned long long> number_of_frames;
-    last_frame_number.resize(modes.size());
-    number_of_frames.resize(modes.size());
+    last_frame_number.resize(RS_STREAM_COUNT);
+    number_of_frames.resize(RS_STREAM_COUNT);
     for (auto& elem : modes)
     {
         number_of_frames[elem.stream] = 0;
