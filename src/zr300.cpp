@@ -470,10 +470,12 @@ namespace rsimpl
             info.capabilities_vector.push_back(RS_CAPABILITIES_ADAPTER_BOARD);
 
             info.stream_subdevices[RS_STREAM_FISHEYE] = 3;
-            info.presets[RS_STREAM_FISHEYE][RS_PRESET_BEST_QUALITY] = { true, 640, 480, RS_FORMAT_RAW8,   60 };
+            info.presets[RS_STREAM_FISHEYE][RS_PRESET_BEST_QUALITY] =
+            info.presets[RS_STREAM_FISHEYE][RS_PRESET_LARGEST_IMAGE] =
+            info.presets[RS_STREAM_FISHEYE][RS_PRESET_HIGHEST_FRAMERATE] = { true, 640, 480, RS_FORMAT_RAW8,   60 };
 
-            info.subdevice_modes.push_back({ 3, { 640, 480 }, pf_raw8, 60, rs_intrinsics, { /*TODO:ask if we need rect_modes*/ }, { 0 } });
-            info.subdevice_modes.push_back({ 3, { 640, 480 }, pf_raw8, 30, rs_intrinsics, {/*TODO:ask if we need rect_modes*/ }, { 0 } });
+            for (auto &fps : { 30, 60})
+                info.subdevice_modes.push_back({ 3, { 640, 480 }, pf_raw8, fps, rs_intrinsics, { /*TODO:ask if we need rect_modes*/ }, { 0 } });
 
             if (info.camera_info.find(RS_CAMERA_INFO_ADAPTER_BOARD_FIRMWARE_VERSION) != info.camera_info.end())
             {

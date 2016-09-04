@@ -3,4 +3,7 @@
   <ItemGroup>
     <ClCompile Include="..\..\examples\cpp-restart.cpp" />
   </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\examples\example.hpp" />
+  </ItemGroup>
 </Project>
