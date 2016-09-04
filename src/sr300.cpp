@@ -28,8 +28,8 @@ namespace rsimpl
     };
 
     static const cam_mode sr300_depth_modes[] = {
-        {{640, 480}, {5,15,30,60}}, 
-        {{640, 240}, {5,15,30,60,110}}
+        {{640, 480}, {10,30,60}},
+        {{640, 240}, {10,30,60,110}}
     };
 
     static const cam_mode sr300_ir_only_modes[] = {
