@@ -216,7 +216,7 @@ namespace rsimpl
         if (supports(RS_CAPABILITIES_FISH_EYE))
             auto_exposure = std::make_shared<auto_exposure_mechanism>(this, auto_exposure_state);
 
-        rs_device_base::start(source);
+        ds_device::start(source);
     }
 
     // Power off Fisheye camera
@@ -225,7 +225,7 @@ namespace rsimpl
         if ((supports(RS_CAPABILITIES_FISH_EYE)) && ((config.requests[RS_STREAM_FISHEYE].enabled)))
             toggle_motion_module_power(false);
 
-        rs_device_base::stop(source);
+        ds_device::stop(source);
         if (supports(RS_CAPABILITIES_FISH_EYE))
             auto_exposure.reset();
     }
