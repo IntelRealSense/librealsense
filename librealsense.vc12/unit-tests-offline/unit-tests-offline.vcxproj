@@ -24,6 +24,11 @@
   <ItemGroup>
     <ClCompile Include="..\..\unit-tests\unit-tests-offline.cpp" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\realsense\realsense.vcxproj">
+      <Project>{1ae4ceb5-9a0b-4b9f-9505-824fd56bb41f}</Project>
+    </ProjectReference>
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{B57FBF49-D142-4CCA-AFCB-E5F1687EE217}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>

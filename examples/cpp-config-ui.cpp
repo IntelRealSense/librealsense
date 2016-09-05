@@ -690,7 +690,7 @@ int main(int argc, char * argv[])
                             dev->stop();
                         }
 
-                        if (has_motion_module)
+                        if (has_motion_module && motion_tracking_enable)
                         {
                             running = false;
                             dev->stop(rs::source::motion_data);
@@ -707,7 +707,7 @@ int main(int argc, char * argv[])
                             dev->start();
                         }
 
-                        if (has_motion_module)
+                        if (has_motion_module && motion_tracking_enable)
                         {
                             running = true;
                             dev->start(rs::source::motion_data);

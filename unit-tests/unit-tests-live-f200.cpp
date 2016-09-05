@@ -119,6 +119,70 @@ TEST_CASE( "F200 device extrinsics are within expected parameters", "[live] [f20
     }
 }
 
+///////////////////////////
+// Depth streaming tests //
+///////////////////////////
+
+TEST_CASE("F200 streams depth (Z16)", "[live] [f200] [one-camera]")
+{
+    safe_context ctx;
+    REQUIRE(rs_get_device_count(ctx, require_no_error()) == 1);
+
+    rs_device * dev = rs_get_device(ctx, 0, require_no_error());
+    REQUIRE(dev != nullptr);
+    REQUIRE(rs_get_device_name(dev, require_no_error()) == std::string("Intel RealSense F200"));
+
+    SECTION("F200 streams depth 640x480 (VGA), [2,5,15,30,60] fps")
+    {
+        for (auto & fps : { 2, 5, 15, 30, 60 })
+        {
+            INFO("Testing " << fps << " fps");
+            test_streaming(dev, { { RS_STREAM_DEPTH, 640, 480, RS_FORMAT_Z16, fps } });
+        }
+    }
+
+    SECTION("F200 streams depth 640x240 (HVGA), [2,5,15,30,60] fps")
+    {
+        for (auto & fps : { 2, 5, 15, 30, 60})
+        {
+            INFO("Testing " << fps << " fps");
+            test_streaming(dev, { { RS_STREAM_DEPTH, 640, 240, RS_FORMAT_Z16, fps } });
+        }
+    }
+}
+
+//////////////////////////////
+// Infrared streaming tests //
+//////////////////////////////
+
+TEST_CASE("F200 streams infrared (Y16)", "[live] [f200] [one-camera]")
+{
+    safe_context ctx;
+    REQUIRE(rs_get_device_count(ctx, require_no_error()) == 1);
+
+    rs_device * dev = rs_get_device(ctx, 0, require_no_error());
+    REQUIRE(dev != nullptr);
+    REQUIRE(rs_get_device_name(dev, require_no_error()) == std::string("Intel RealSense F200"));
+
+    SECTION("F200 streams infrared 640x480 depth (VGA), [30,60,120,240,300] fps")
+    {
+        for (auto & fps : { 30, 60, 120, 240, 300 })
+        {
+            INFO("Testing " << fps << " fps")
+            test_streaming(dev, { { RS_STREAM_INFRARED, 640, 480, RS_FORMAT_Y16, fps } });
+        }
+    }
+
+    SECTION("F200 streams infrared 640x240 depth (HVGA), [30,60,120,240,300] fps")
+    {
+        for (auto & fps : { 30, 60, 120, 240, 300 })
+        {
+            INFO("Testing " << fps << " fps")
+            test_streaming(dev, { { RS_STREAM_INFRARED, 640, 240, RS_FORMAT_Y16, fps } });
+        }
+    }
+}
+
 TEST_CASE( "F200 has no INFRARED2 streaming modes", "[live] [f200]" )
 {
     // Require at least one device to be plugged in
@@ -142,7 +206,7 @@ TEST_CASE( "F200 has no INFRARED2 streaming modes", "[live] [f200]" )
 TEST_CASE( "a single F200 can stream a variety of reasonable streaming mode combinations", "[live] [f200] [one-camera]" )
 {
     safe_context ctx;
-    
+
     SECTION( "exactly one device is connected" )
     {
         int device_count = rs_get_device_count(ctx, require_no_error());

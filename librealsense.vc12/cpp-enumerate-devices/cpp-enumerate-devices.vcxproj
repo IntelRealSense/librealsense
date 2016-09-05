@@ -150,6 +150,11 @@
   <ItemGroup>
     <ClCompile Include="..\..\examples\cpp-enumerate-devices.cpp" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\realsense\realsense.vcxproj">
+      <Project>{1ae4ceb5-9a0b-4b9f-9505-824fd56bb41f}</Project>
+    </ProjectReference>
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
