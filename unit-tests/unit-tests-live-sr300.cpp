@@ -384,20 +384,24 @@ TEST_CASE( "a single SR300 can stream a variety of reasonable streaming mode com
 
     SECTION( "streaming is possible in some reasonable configurations" )
     {
+        INFO("Streaming Z16, 60 fps");
         test_streaming(dev, {
             {RS_STREAM_DEPTH, 640, 480, RS_FORMAT_Z16, 60}
         });
 
+        INFO("Streaming Depth + Color 60 fps");
         test_streaming(dev, {
             {RS_STREAM_DEPTH, 640, 480, RS_FORMAT_Z16, 60},
             {RS_STREAM_COLOR, 640, 480, RS_FORMAT_RGB8, 60}
         });
 
+        INFO("Streaming Depth + Infrared 60 fps");
         test_streaming(dev, {
             {RS_STREAM_DEPTH, 640, 480, RS_FORMAT_Z16, 60},
             {RS_STREAM_INFRARED, 640, 480, RS_FORMAT_Y16, 60}
         });
 
+        INFO("Streaming Depth + Infrared + Color 60 fps");
         test_streaming(dev, {
             {RS_STREAM_DEPTH, 640, 480, RS_FORMAT_Z16, 60},
             {RS_STREAM_COLOR, 640, 480, RS_FORMAT_RGB8, 60},
