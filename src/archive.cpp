@@ -317,7 +317,7 @@ int frame_archive::frame::get_framerate() const
 
 int frame_archive::frame::get_stride() const
 {
-    return additional_data.stride_x;
+    return (additional_data.stride_x * additional_data.bpp) / 8;
 }
 
 int frame_archive::frame::get_bpp() const

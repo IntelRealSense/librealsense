@@ -9,8 +9,8 @@ extern "C" {
 #endif
 
 #define RS_API_MAJOR_VERSION    1
-#define RS_API_MINOR_VERSION    9
-#define RS_API_PATCH_VERSION    6
+#define RS_API_MINOR_VERSION    10
+#define RS_API_PATCH_VERSION    0
 
 #define STRINGIFY(arg) #arg
 #define VAR_ARG_STRING(arg) STRINGIFY(arg)
@@ -741,7 +741,7 @@ unsigned long long rs_get_detached_frame_number(const rs_frame_ref * frame, rs_e
 const void * rs_get_detached_frame_data(const rs_frame_ref * frame, rs_error ** error);
 
 /**
-* retrive frame intrinsic width
+* retrive frame intrinsic width in pixels
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return            intrinsic width
 */
@@ -762,7 +762,7 @@ int rs_get_detached_frame_height(const rs_frame_ref * frame, rs_error ** error);
 int rs_get_detached_framerate(const rs_frame_ref * frameset, rs_error ** error);
 
 /**
-* retrive frame stride, meaning the actual line width in memory (not the logical image width)
+* retrive frame stride, meaning the actual line width in memory in bytes (not the logical image width)
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return            frame pad crop
 */
