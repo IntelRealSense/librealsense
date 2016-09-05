@@ -254,6 +254,7 @@ inline void test_wait_for_frames(rs_device * device, std::initializer_list<strea
 
 
 static std::mutex m;
+static std::mutex cb_mtx;
 static std::condition_variable cv;
 static std::atomic<bool> stop_streaming;
 static int done;
@@ -262,8 +263,11 @@ struct user_data{
     std::map<rs_stream, unsigned> number_of_frames_per_stream;
 };
 
+
 inline void frame_callback(rs_device * dev, rs_frame_ref * frame, void * user)
 {
+    std::lock_guard<std::mutex> lock(cb_mtx);
+
     if (stop_streaming || (rs_get_detached_frame_timestamp(frame, require_no_error()) == 0))
     {
         rs_release_frame(dev, frame, require_no_error());
