@@ -164,7 +164,7 @@ public:
         const double timestamp = frame.get_timestamp();
         if(timestamp != last_timestamp)
         {
-            upload(frame.get_data(), frame.get_width(), frame.get_height(), frame.get_format(), frame.get_stride());
+            upload(frame.get_data(), frame.get_width(), frame.get_height(), frame.get_format(), (frame.get_stride() * 8) / frame.get_bpp());
             last_timestamp = timestamp;
 
             ++num_frames;

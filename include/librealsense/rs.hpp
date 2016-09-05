@@ -396,6 +396,7 @@ namespace rs
             return r;
         }
 
+        // returns image width in pixels
         int get_width() const
         {
             rs_error * e = nullptr;
@@ -420,6 +421,7 @@ namespace rs
             return r;
         }
 
+        // retrive frame stride, meaning the actual line width in memory in bytes (not the logical image width)
         int get_stride() const
         {
             rs_error * e = nullptr;
