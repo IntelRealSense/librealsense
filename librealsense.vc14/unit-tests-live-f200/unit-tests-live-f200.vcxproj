@@ -25,6 +25,14 @@
     <ClCompile Include="..\..\unit-tests\unit-tests-live-f200.cpp" />
     <ClCompile Include="..\..\unit-tests\unit-tests-live.cpp" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\realsense-s\realsense-s.vcxproj">
+      <Project>{622186c4-6d7d-4288-b8fd-8f08419181c2}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\realsense\realsense.vcxproj">
+      <Project>{1ae4ceb5-9a0b-4b9f-9505-824fd56bb41f}</Project>
+    </ProjectReference>
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{D37BF473-AEE1-4097-9E0B-C1A8A5BF97EC}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>

@@ -21,6 +21,11 @@
   <ItemGroup>
     <ClCompile Include="..\..\examples\cpp-headless.cpp" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\realsense\realsense.vcxproj">
+      <Project>{1ae4ceb5-9a0b-4b9f-9505-824fd56bb41f}</Project>
+    </ProjectReference>
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{7F7D0E8C-1614-411C-AD0A-C3D583EC5811}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
