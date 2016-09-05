@@ -222,7 +222,6 @@ inline void test_wait_for_frames(rs_device * device, std::initializer_list<strea
                 REQUIRE( rs_is_stream_enabled(device, mode.stream, require_no_error()) == 1);
                 REQUIRE( rs_get_frame_data(device, mode.stream, require_no_error()) != nullptr);
                 REQUIRE( rs_get_frame_timestamp(device, mode.stream, require_no_error()) >= 0);
-                REQUIRE( rs_get_frame_number(device, mode.stream, require_no_error()) >= 0);
 
                 auto frame_number = rs_get_frame_number(device, mode.stream, require_no_error());
                 if (!duration_per_stream[mode.stream].is_end_time_initialized && last_frame_number[mode.stream] != frame_number)
@@ -325,10 +324,8 @@ inline void frame_callback(rs_device * dev, rs_frame_ref * frame, void * user)
         data->duration_per_stream[stream_type].is_start_time_initialized = true;
     }
 
-
     REQUIRE( rs_get_detached_frame_data(frame, require_no_error()) != nullptr );
     REQUIRE( rs_get_detached_frame_timestamp(frame, require_no_error()) >= 0 );
-    REQUIRE( rs_get_detached_frame_number(frame, require_no_error()) >= 0 );
 
     rs_release_frame(dev, frame, require_no_error());
 }

@@ -33,7 +33,7 @@ namespace rsimpl
     };
     static const cam_mode f200_depth_modes[] = {
         {{640, 480}, {2,5,15,30,60}}, 
-        {{640, 240}, {2,5,15,30,60,110}}
+        {{640, 240}, {2,5,15,30,60}}    // 110 FPS is excluded due to a bug in timestamp field
     };
     static const cam_mode f200_ir_only_modes[] = {
         {{640, 480}, {30,60,120,240,300}}, 

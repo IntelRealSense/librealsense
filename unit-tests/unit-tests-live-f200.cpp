@@ -141,9 +141,9 @@ TEST_CASE("F200 streams depth (Z16)", "[live] [f200] [one-camera]")
         }
     }
 
-    SECTION("F200 streams depth 640x240 (HVGA), [2,5,15,30,60,110] fps")
+    SECTION("F200 streams depth 640x240 (HVGA), [2,5,15,30,60] fps")
     {
-        for (auto & fps : { 2, 5, 15, 30, 60, 110 })
+        for (auto & fps : { 2, 5, 15, 30, 60})
         {
             INFO("Testing " << fps << " fps");
             test_streaming(dev, { { RS_STREAM_DEPTH, 640, 240, RS_FORMAT_Z16, fps } });

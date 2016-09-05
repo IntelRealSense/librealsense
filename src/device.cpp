@@ -333,7 +333,7 @@ void rs_device_base::start_video_streaming()
     // dispatching the uvc configuration for a requested stream to the hardware
     for(auto mode_selection : selected_modes)
     {
-        assert(mode_selection.mode.subdevice <= timestamp_readers.size());
+        assert((size_t)mode_selection.mode.subdevice <= timestamp_readers.size());
         auto timestamp_reader = timestamp_readers[mode_selection.mode.subdevice];
 
         // Create a stream buffer for each stream served by this subdevice mode
@@ -522,8 +522,8 @@ const char * rs_device_base::get_option_description(rs_option option) const
     case RS_OPTION_R200_LR_EXPOSURE                                : return "This control allows manual adjustment of the exposure time value for the L/R imagers";
     case RS_OPTION_R200_EMITTER_ENABLED                            : return "Enables / disables R200 emitter";
     case RS_OPTION_R200_DEPTH_UNITS                                : return "Micrometers per increment in integer depth values, 1000 is default (mm scale). Set before streaming";
-    case RS_OPTION_R200_DEPTH_CLAMP_MIN                            : return "Minimum depth in current depth units that will be output. Any values less than ‘Min Depth’ will be mapped to 0 during the conversion between disparity and depth. Set before streaming";
-    case RS_OPTION_R200_DEPTH_CLAMP_MAX                            : return "Maximum depth in current depth units that will be output. Any values greater than ‘Max Depth’ will be mapped to 0 during the conversion between disparity and depth. Set before streaming";
+    case RS_OPTION_R200_DEPTH_CLAMP_MIN                            : return "Minimum depth in current depth units that will be output. Any values less than 'Min Depth' will be mapped to 0 during the conversion between disparity and depth. Set before streaming";
+    case RS_OPTION_R200_DEPTH_CLAMP_MAX                            : return "Maximum depth in current depth units that will be output. Any values greater than 'Max Depth' will be mapped to 0 during the conversion between disparity and depth. Set before streaming";
     case RS_OPTION_R200_DISPARITY_MULTIPLIER                       : return "The disparity scale factor used when in disparity output mode. Can only be set before streaming";
     case RS_OPTION_R200_DISPARITY_SHIFT                            : return "{0 - 512}. Can only be set before streaming starts";
     case RS_OPTION_R200_AUTO_EXPOSURE_MEAN_INTENSITY_SET_POINT     : return "(Requires LR-Auto-Exposure ON) Mean intensity set point";

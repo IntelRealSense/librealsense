@@ -13,7 +13,7 @@ namespace rsimpl
 {
     struct stream_interface : rs_stream_interface
     {
-        stream_interface(calibration_validator in_validator, rs_stream in_stream) : validator(in_validator), stream(in_stream){};
+        stream_interface(calibration_validator in_validator, rs_stream in_stream) : stream(in_stream), validator(in_validator){};
                                                                  
         virtual rs_extrinsics                   get_extrinsics_to(const rs_stream_interface & other) const override;
         virtual rsimpl::pose                    get_pose() const = 0;
