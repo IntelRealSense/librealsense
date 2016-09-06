@@ -2,7 +2,7 @@
 
 [ ![License] [license-image] ] [license]
 
-[release-image]: http://img.shields.io/badge/release-1.9.6-blue.svg?style=flat
+[release-image]: http://img.shields.io/badge/release-1.9.7-blue.svg?style=flat
 [releases]: https://github.com/IntelRealSense/librealsense/releases
 
 [license-image]: http://img.shields.io/badge/license-Apache--2-blue.svg?style=flat
