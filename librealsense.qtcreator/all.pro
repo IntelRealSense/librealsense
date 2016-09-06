@@ -9,7 +9,7 @@ SUBDIRS += \
    ./cpp-tutorial-2-streams.pro \
    ./cpp-tutorial-3-pointcloud.pro \
    ./cpp-capture.pro \
-   ./cpp-motion-module.pro \
+   ./cpp-capturing-tool.pro \
    ./cpp-callback.pro \
    ./cpp-callback-2.pro \
    ./cpp-alignimages.pro \
