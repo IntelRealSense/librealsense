@@ -151,7 +151,7 @@ struct ts_and_frame_counter{
 class record{
 public:
     record(int num_of_buffers, int size_of_each_buffer_in_byte)
-        :save_index(0), mem_cpy_index(0), each_buffer_size(size_of_each_buffer_in_byte), max_buffers(num_of_buffers)
+        :save_index(0), mem_cpy_index(0), each_buffer_size(size_of_each_buffer_in_byte), max_buffers(num_of_buffers), stop_called(false), keep_thread_allive(true)
     {
         buffers.resize(num_of_buffers);
         for (auto& elem : buffers)
@@ -245,8 +245,8 @@ public:
     }
 
 private:
-    std::atomic<bool> keep_thread_allive = true;
-    std::atomic<bool> stop_called = false;
+    std::atomic<bool> keep_thread_allive;
+    std::atomic<bool> stop_called;
     std::mutex callback_mtx;
     bool action = false;
     std::mutex mutex;
