@@ -39,7 +39,7 @@ OBJECTS += $(addprefix libuvc/, $(notdir $(basename $(wildcard src/libuvc/*.c)))
 OBJECTS := $(addprefix obj/, $(addsuffix .o, $(OBJECTS)))
 
 # Sets of flags used by the example programs
-REALSENSE_FLAGS := -Iinclude -Llib -lrealsense -lm
+REALSENSE_FLAGS := -Iinclude -Llib -lrealsense -lm -lpthread
 
 ifeq ($(uname_S),Darwin)
 # OSX uses OpenGL as a framework
