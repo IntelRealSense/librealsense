@@ -107,14 +107,14 @@ private:
 concurrent_queue<string> str_fisheye_ts_queue;
 
 // Add frame data to 'str_fisheye_ts_queue'
-std::function<void(string, double, unsigned long long int /*frame_number*/)> save_frame_data = [&](string filename, double ts, unsigned long long int /*frame_number*/){
+std::function<void(string, double, unsigned long long int /*frame_number*/)> save_frame_ts = [&](string filename, double ts, unsigned long long int /*frame_number*/){
     stringstream ts_data;
     ts_data << filename << /*((frame_number) ? string("," + to_string(frame_number) + ",") : "") <<*/ "," << setprecision(10) << ts << endl;
     str_fisheye_ts_queue.push_back_data(ts_data.str());
 };
 
 // Save frame to png file
-std::function<void(string, rs::frame&)> save_frame = [&](string file_full_path, rs::frame& frame){
+std::function<void(string, rs::frame&)> save_frame_data = [&](string file_full_path, rs::frame& frame){
     stbi_write_png(file_full_path.data(),
         frame.get_width(), frame.get_height(),
         1,
@@ -136,8 +136,8 @@ std::function<void(rs::frame&)> save_motion_data_and_frame = [&](rs::frame& fram
     if (debug_mode)
         frame_number = frame.get_frame_number();
 
-    save_frame_data(filename.str(), frame.get_timestamp(), frame_number);
-    save_frame(file_full_path.str(), frame);
+    save_frame_ts(filename.str(), frame.get_timestamp(), frame_number);
+    save_frame_data(file_full_path.str(), frame);
 };
 
 struct ts_and_frame_counter{
@@ -160,7 +160,7 @@ public:
         }
 
         //  save frame data to a png file
-        thread grab([this](){
+        thread grab_thread([this](){
             while (true)
             {
                 std::unique_lock<std::mutex> lk(this->mutex);
@@ -177,7 +177,7 @@ public:
 
                 action = false;
                 lk.unlock();
-                save_frame_data(filename.str(), buffers[save_index].second.timestamp, buffers[save_index].second.frame_counter);
+                save_frame_ts(filename.str(), buffers[save_index].second.timestamp, buffers[save_index].second.frame_counter);
                 stbi_write_png(file_full_path.str().data(),
                     640, 480,
                     1,
@@ -188,7 +188,7 @@ public:
 
             }
         });
-        grab.detach();
+        grab_thread.detach();
     }
 
     ~record()
