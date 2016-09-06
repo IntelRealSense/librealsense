@@ -425,6 +425,22 @@ namespace rsimpl
         info.subdevice_modes.push_back({ 2,{ 1920, 1080 }, pf_yuy2, 15, c.intrinsicsThird[0],{ c.modesThird[0][0] },{ 0 } });
         info.subdevice_modes.push_back({ 2,{ 1920, 1080 }, pf_yuy2, 30, c.intrinsicsThird[0],{ c.modesThird[0][0] },{ 0 } });
 
+
+        //                             subdev native-dim      pf   fps           native_intrinsics                              rect_modes      crop-options
+        //                             ------ ----------      --   ---           -----------------                              ----------      ------------
+        info.subdevice_modes.push_back({ 2,{ 1280, 720 }, pf_yuy2, 15, scale_intrinsics(c.intrinsicsThird[0], 1280, 720),  { c.modesThird[0][1] }, { 0 } });
+        info.subdevice_modes.push_back({ 2, { 960, 540 }, pf_yuy2, 15, scale_intrinsics(c.intrinsicsThird[0], 960, 540),   { c.modesThird[0][1] }, { 0 } });
+        info.subdevice_modes.push_back({ 2, { 848, 480 }, pf_yuy2, 15, scale_intrinsics(c.intrinsicsThird[0], 848, 480),   { c.modesThird[0][1] }, { 0 } });
+        
+        info.subdevice_modes.push_back({ 2, { 640, 480 }, pf_yuy2, 15, c.intrinsicsThird[1], { c.modesThird[1][0] }, { 0 } });
+        info.subdevice_modes.push_back({ 2, { 640, 480 }, pf_rw16, 15, c.intrinsicsThird[1], { c.modesThird[1][0] }, { 0 } });
+        
+        info.subdevice_modes.push_back({ 2, { 640, 360 }, pf_yuy2, 15, scale_intrinsics(c.intrinsicsThird[1], 640, 360), { c.modesThird[1][0] }, { 0 } });
+        info.subdevice_modes.push_back({ 2, { 424, 240 }, pf_yuy2, 15, scale_intrinsics(c.intrinsicsThird[1], 424, 240), { c.modesThird[1][0] }, { 0 } });
+
+        info.subdevice_modes.push_back({ 2, { 320, 240 }, pf_yuy2, 15, scale_intrinsics(c.intrinsicsThird[1], 320, 240), { c.modesThird[1][1] }, { 0 } });
+        info.subdevice_modes.push_back({ 2, { 320, 180 }, pf_yuy2, 15, scale_intrinsics(c.intrinsicsThird[1], 320, 180), { c.modesThird[1][1] }, { 0 } });
+
         // Set up interstream rules for left/right/z images
         for(auto ir : {RS_STREAM_INFRARED, RS_STREAM_INFRARED2})
         {
