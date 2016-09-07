@@ -98,7 +98,7 @@ namespace rsimpl
         //                                  option                         min  max    step     def
         //                                  ------                         ---  ---    ----     ---
         info.options.push_back({ RS_OPTION_F200_LASER_POWER,                0,  16,     1,      16  });
-        info.options.push_back({ RS_OPTION_F200_ACCURACY,                   0,  3,      1,      1   });
+        info.options.push_back({ RS_OPTION_F200_ACCURACY,                   1,  3,      1,      1   });
         info.options.push_back({ RS_OPTION_F200_MOTION_RANGE,               0,  220,    1,      9   });
         info.options.push_back({ RS_OPTION_F200_FILTER_OPTION,              0,  7,      1,      5   });
         info.options.push_back({ RS_OPTION_F200_CONFIDENCE_THRESHOLD,       0,  15,     1,      3   });
