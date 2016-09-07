@@ -212,7 +212,7 @@ namespace rsimpl
 
             if(uvc::is_pu_control(options[i]))
             {
-                values[i] = uvc::get_pu_control(get_device(), 0, options[i]);
+                values[i] = uvc::get_pu_control_with_retry(get_device(), 0, options[i]);
                 continue;
             }
 
