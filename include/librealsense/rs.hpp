@@ -247,15 +247,10 @@ namespace rs
     {
         std::string function, args;
     public:
-        error(rs_error * err) : std::runtime_error(rs_get_error_message(err))
-        { 
-            function = (nullptr != rs_get_failed_function(err)) ? rs_get_failed_function(err) : std::string();
-            args = (nullptr != rs_get_failed_args(err)) ? rs_get_failed_args(err) : std::string();
-            rs_free_error(err); 
-        }
-        const std::string & get_failed_function() const { return function; }
-        const std::string & get_failed_args() const { return args; }
-        static void handle(rs_error * e) { if(e) throw error(e); }
+        error(rs_error * err);
+        const std::string & get_failed_function() const;
+        const std::string & get_failed_args() const;
+        static void handle(rs_error * e);
     };
 
     class context
