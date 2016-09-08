@@ -64,8 +64,9 @@ namespace rsimpl
     {
         const auto FISHEYE_HWMONITOR_INTERFACE = 2;
         const uvc::guid FISHEYE_WIN_USB_DEVICE_GUID = { 0xC0B55A29, 0xD7B6, 0x436E, { 0xA6, 0xEF, 0x2E, 0x76, 0xED, 0x0A, 0xBC, 0xA5 } };
-        // Translation of user-provided fourcc code into device supported one:           'GREY'      'Y8  '. Note the Big-Endian notation
-        const std::map<uint32_t, uint32_t> fourcc_map                       =       { { 0x47524559, 0x59382020 } };
+        // Translation of user-provided fourcc code into device supported one:           Note the Big-Endian notation
+        const std::map<uint32_t, uint32_t> fourcc_map = { { 0x47524559, 0x59382020 },       /* 'GREY' => 'Y8  '. */
+                                                          { 0x70524141, 0x52573130 } };    /* 'RW10' => 'pRAA'. */
 
         static std::string win_to_utf(const WCHAR * s)
         {
@@ -754,7 +755,7 @@ namespace rsimpl
             node.Property.Flags = KSPROPERTY_TYPE_SET | KSPROPERTY_TYPE_TOPOLOGY;
             node.NodeId = xu.node;
                 
-			ULONG bytes_received = 0;
+            ULONG bytes_received = 0;
             check("IKsControl::KsProperty", ks_control->KsProperty((PKSPROPERTY)&node, sizeof(KSP_NODE), data, len, &bytes_received));
         }
 
@@ -820,7 +821,7 @@ namespace rsimpl
                 sub.callback = callback;
                 return;
             }
-            throw std::runtime_error("no matching media type");
+            throw std::runtime_error(to_string() << "no matching media type for  pixel format " << std::hex << fourcc);
         }
 
         void set_subdevice_data_channel_handler(device & device, int subdevice_index, data_channel_callback callback)
