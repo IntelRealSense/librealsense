@@ -20,9 +20,9 @@ namespace rsimpl
     zr300_camera::zr300_camera(std::shared_ptr<uvc::device> device, const static_device_info & info, motion_module_calibration in_fe_intrinsic, calibration_validator validator)
     : ds_device(device, info, validator),
       motion_module_ctrl(device.get(), usbMutex),
-      fe_intrinsic(in_fe_intrinsic),
       auto_exposure(nullptr),
-      to_add_frames((auto_exposure_state.get_auto_exposure_state(RS_OPTION_FISHEYE_ENABLE_AUTO_EXPOSURE) == 1))
+      to_add_frames((auto_exposure_state.get_auto_exposure_state(RS_OPTION_FISHEYE_ENABLE_AUTO_EXPOSURE) == 1)),
+      fe_intrinsic(in_fe_intrinsic)
     {}
     
     zr300_camera::~zr300_camera()
@@ -54,15 +54,15 @@ namespace rsimpl
         {
             if (is_fisheye_uvc_control(options[i]))
             {
-                uvc::set_pu_control_with_retry(get_device(), 3, options[i], static_cast<int>(values[i]));
+                uvc::set_pu_control_with_retry(dev, 3, options[i], static_cast<int>(values[i]));
                 continue;
             }
 
             switch (options[i])
             {
-            case RS_OPTION_FISHEYE_STROBE:                            zr300::set_fisheye_strobe(get_device(), static_cast<uint8_t>(values[i])); break;
-            case RS_OPTION_FISHEYE_EXTERNAL_TRIGGER:                  zr300::set_fisheye_external_trigger(get_device(), static_cast<uint8_t>(values[i])); break;
-            case RS_OPTION_FISHEYE_EXPOSURE:                          zr300::set_fisheye_exposure(get_device(), static_cast<uint16_t>(values[i])); break;
+            case RS_OPTION_FISHEYE_STROBE:                            zr300::set_fisheye_strobe(dev, static_cast<uint8_t>(values[i])); break;
+            case RS_OPTION_FISHEYE_EXTERNAL_TRIGGER:                  zr300::set_fisheye_external_trigger(dev, static_cast<uint8_t>(values[i])); break;
+            case RS_OPTION_FISHEYE_EXPOSURE:                          zr300::set_fisheye_exposure(dev, static_cast<uint16_t>(values[i])); break;
             case RS_OPTION_FISHEYE_ENABLE_AUTO_EXPOSURE:              set_auto_exposure_state(RS_OPTION_FISHEYE_ENABLE_AUTO_EXPOSURE, values[i]); break;
             case RS_OPTION_FISHEYE_AUTO_EXPOSURE_MODE:                set_auto_exposure_state(RS_OPTION_FISHEYE_AUTO_EXPOSURE_MODE, values[i]); break;
             case RS_OPTION_FISHEYE_AUTO_EXPOSURE_ANTIFLICKER_RATE:    set_auto_exposure_state(RS_OPTION_FISHEYE_AUTO_EXPOSURE_ANTIFLICKER_RATE, values[i]); break;
@@ -546,7 +546,7 @@ namespace rsimpl
                 LOG_WARNING("Exstrinsics validation of" << from_stream <<" to "<< to_stream << " failed,  because the reading of calibration table failed");
                 return false;
             }
-            if (!fisheye_intrinsic.calib.mm_extrinsic.ver.size == fisheye_intrinsic.calib.mm_extrinsic.get_data_size())
+            if (fisheye_intrinsic.calib.mm_extrinsic.ver.size != fisheye_intrinsic.calib.mm_extrinsic.get_data_size())
             {
                 LOG_WARNING("Extrinsics validation of" << from_stream <<" to "<<to_stream<< " failed, ver.size = " << fisheye_intrinsic.calib.fe_intrinsic.ver.size << " real size = " << fisheye_intrinsic.calib.fe_intrinsic.get_data_size());
                 return false;
@@ -615,7 +615,7 @@ namespace rsimpl
         }
     }
 
-    auto_exposure_mechanism::auto_exposure_mechanism(zr300_camera* dev, fisheye_auto_exposure_state auto_exposure_state) : keep_alive(true), device(dev), sync_archive(nullptr), skip_frames(get_skip_frames(auto_exposure_state)), auto_exposure_algo(auto_exposure_state), frames_counter(0)
+    auto_exposure_mechanism::auto_exposure_mechanism(zr300_camera* dev, fisheye_auto_exposure_state auto_exposure_state) : device(dev), auto_exposure_algo(auto_exposure_state), sync_archive(nullptr), keep_alive(true), frames_counter(0), skip_frames(get_skip_frames(auto_exposure_state))
     {
         exposure_thread = std::make_shared<std::thread>([this]() {
             while (keep_alive)
@@ -740,7 +740,7 @@ namespace rsimpl
         double exp;
         auto it = std::find_if(exposure_and_frame_counter_queue.begin(), exposure_and_frame_counter_queue.end(),
             [&](const exposure_and_frame_counter& element) {
-            int diff = std::abs(static_cast<int>(frame_counter - element.frame_counter));
+            unsigned int diff = std::abs(static_cast<int>(frame_counter - element.frame_counter));
             if (diff < min)
             {
                 min = diff;
@@ -874,7 +874,7 @@ namespace rsimpl
         }
         histogram_metric score;
         histogram_score(H, total_weight, score);
-        int EffectiveDynamicRange = (score.highlight_limit - score.shadow_limit);
+        // int EffectiveDynamicRange = (score.highlight_limit - score.shadow_limit);
         ///
         float s1 = (score.main_mean - 128.0f) / 255.0f;
         float s2 = 0;

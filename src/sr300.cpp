@@ -216,7 +216,6 @@ namespace rsimpl
                 continue;
             }
 
-            uint8_t val=0;
             switch(options[i])
             {
             case RS_OPTION_SR300_AUTO_RANGE_ENABLE_MOTION_VERSUS_RANGE: values[i] = arr_reader.get(&ivcam::cam_auto_range_request::enableMvR); break; 
