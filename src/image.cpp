@@ -441,7 +441,7 @@ namespace rsimpl
     //////////////////////////
     const native_pixel_format pf_raw8       = { 'RAW8', 1, 1,{  { false, &copy_pixels<1>,                   { { RS_STREAM_FISHEYE,  RS_FORMAT_RAW8 } } } } };
     const native_pixel_format pf_rw16       = { 'RW16', 1, 2,{  { false, &copy_pixels<2>,                   { { RS_STREAM_COLOR,    RS_FORMAT_RAW16 } } } } };
-    const native_pixel_format pf_rw10       = { 'RW10', 1, 1,{  { false, &copy_raw10,                       { { RS_STREAM_COLOR,    RS_FORMAT_RAW10 } } } } };
+    const native_pixel_format pf_rw10       = { 'pRAA', 1, 1,{  { false, &copy_raw10,                       { { RS_STREAM_COLOR,    RS_FORMAT_RAW10 } } } } };
     const native_pixel_format pf_yuy2       = { 'YUY2', 1, 2,{  { true,  &unpack_yuy2<RS_FORMAT_RGB8 >,     { { RS_STREAM_COLOR,    RS_FORMAT_RGB8 } } },
                                                                 { false, &copy_pixels<2>,                   { { RS_STREAM_COLOR,    RS_FORMAT_YUYV } } },
                                                                 { true,  &unpack_yuy2<RS_FORMAT_RGBA8>,     { { RS_STREAM_COLOR,    RS_FORMAT_RGBA8 } } },

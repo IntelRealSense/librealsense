@@ -124,7 +124,7 @@ public:
                     }
                     in0 = in1; in1 += width*5/4;
                 }
-                glPixelStorei(GL_UNPACK_ROW_LENGTH, stride / 2);        // Update row strobe do to downsampling
+                glPixelStorei(GL_UNPACK_ROW_LENGTH, width / 2);        // Update row stride to reflect post-downsampling dimensions of the target texture
                 glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width/2, height/2, 0, GL_RGB, GL_UNSIGNED_BYTE, rgb.data());
             }
             break;
