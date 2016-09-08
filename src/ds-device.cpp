@@ -825,9 +825,6 @@ namespace rsimpl
             {
                 if (stream_depth.is_enabled() || stream_infrared.is_enabled() || stream_infrared2.is_enabled())
                 {
-                    if (stream_color.get_intrinsics().width > 640) // HD formats seem to not include DINGY
-                        return std::make_shared<serial_timestamp_generator>(stream_color.get_framerate());
-
                     // W/A for DS4 issue: when running at Depth 60 & Color 30 it seems that the frame counter is being incremented on every
                     // depth frame (or ir/ir2). This means we need to reduce color frame number accordingly
                     auto master_fps = stream_depth.is_enabled() ? stream_depth.get_framerate() : 0;
