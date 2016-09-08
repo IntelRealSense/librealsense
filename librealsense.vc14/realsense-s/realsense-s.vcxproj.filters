@@ -15,6 +15,9 @@
     <ClCompile Include="..\..\src\device.cpp">
       <Filter>src</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\error.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\f200.cpp">
       <Filter>src</Filter>
     </ClCompile>
