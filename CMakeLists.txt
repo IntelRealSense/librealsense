@@ -1,12 +1,30 @@
-cmake_minimum_required(VERSION 3.1)
+# ubuntu 12.04 LTS cmake version 2.8.7
+# ubuntu 14.04 LTS cmake version 2.8.12.2
+# ubuntu 16.04 LTS cmake version 3.5.1
+cmake_minimum_required(VERSION 2.8.3)
 
 project(Realsense)
 
-set(CMAKE_CXX_STANDARD 11)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
+# Save the command line compile commands in the build output
+set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
+# View the makefile commands during build
+#set(CMAKE_VERBOSE_MAKEFILE on)
+
+include(CheckCXXCompilerFlag)
+CHECK_CXX_COMPILER_FLAG("-std=c++11" COMPILER_SUPPORTS_CXX11)
+CHECK_CXX_COMPILER_FLAG("-std=c++0x" COMPILER_SUPPORTS_CXX0X)
+if(COMPILER_SUPPORTS_CXX11)
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c11")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+elseif(COMPILER_SUPPORTS_CXX0X)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
+else()
+    message(STATUS "The compiler ${CMAKE_CXX_COMPILER} has no C++11 support. Please use a different C++ compiler.")
+endif()
+
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/CMake)
 
-set(REALSENSE_CPP 
+set(REALSENSE_CPP
     src/context.cpp
     src/device.cpp
     src/f200-private.cpp
@@ -26,7 +44,7 @@ set(REALSENSE_CPP
     src/verify.c
 )
 
-set(REALSENSE_HPP 
+set(REALSENSE_HPP
     src/context.h
     src/device.h
     src/f200-private.h
@@ -65,21 +83,41 @@ if(UNIX)
         src/libuvc/libuvc_internal.h
         src/libuvc/utlist.h
     )
-    
-    find_package(LibUSB REQUIRED)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC -pedantic -mssse3 -Ofast")
+
+    find_package(PkgConfig REQUIRED)
+    pkg_search_module(LIBUSB1 REQUIRED libusb-1.0)
+    if(LIBUSB1_FOUND)
+      include_directories(SYSTEM ${LIBUSB1_INCLUDE_DIRS})
+    else()
+        message( FATAL_ERROR "Failed to find libusb-1.0" )
+    endif(LIBUSB1_FOUND)
+
+    set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS}   -fPIC -pedantic -D_BSD_SOURCE")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC -pedantic -Ofast -Wno-missing-field-initializers")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-switch -Wno-multichar")
+
+    execute_process(COMMAND ${CMAKE_C_COMPILER} -dumpmachine OUTPUT_VARIABLE MACHINE)
+    if(${MACHINE} MATCHES "arm-linux-gnueabihf")
+      set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS}   -mfpu=neon -mfloat-abi=hard -ftree-vectorize")
+      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mfpu=neon -mfloat-abi=hard -ftree-vectorize")
+    elseif(${MACHINE} MATCHES "aarch64-linux-gnu")
+      set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS}   -mstrict-align -ftree-vectorize")
+      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mstrict-align -ftree-vectorize")
+    else(${MACHINE} MATCHES "arm-linux-gnueabihf")
+      set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS}   -mssse3")
+      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mssse3")
+    endif(${MACHINE} MATCHES "arm-linux-gnueabihf")
 endif()
 
 option(BUILD_SHARED_LIBS "Build shared library" ON)
 if(BUILD_SHARED_LIBS)
     add_library(realsense SHARED ${REALSENSE_CPP} ${REALSENSE_HPP} ${REALSENSE_DEF})
-    target_link_libraries(realsense ${LibUSB_LIBRARIES})
+    target_link_libraries(realsense ${LIBUSB_LIBRARIES})
 else()
     add_library(realsense STATIC ${REALSENSE_CPP} ${REALSENSE_HPP})
 endif()
 
-target_include_directories(realsense PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include/ ${LibUSB_INCLUDE_DIRS})
+target_include_directories(realsense PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include/ ${LIBUSB_INCLUDE_DIRS})
 
 install( TARGETS realsense
     RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX}/bin
