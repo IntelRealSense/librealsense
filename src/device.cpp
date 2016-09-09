@@ -333,7 +333,7 @@ void rs_device_base::start_video_streaming()
     // dispatching the uvc configuration for a requested stream to the hardware
     for(auto mode_selection : selected_modes)
     {
-        assert(mode_selection.mode.subdevice <= timestamp_readers.size());
+        assert(static_cast<size_t>(mode_selection.mode.subdevice) <= timestamp_readers.size());
         auto timestamp_reader = timestamp_readers[mode_selection.mode.subdevice];
 
         // Create a stream buffer for each stream served by this subdevice mode
