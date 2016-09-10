@@ -25,37 +25,53 @@ endif()
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/CMake)
 
 set(REALSENSE_CPP
+    src/archive.cpp
     src/context.cpp
     src/device.cpp
-    src/f200-private.cpp
+    src/ds-device.cpp
+    src/ds-private.cpp
     src/f200.cpp
+    src/hw-monitor.cpp
     src/image.cpp
+    src/ivcam-private.cpp
+    src/ivcam-device.cpp
     src/log.cpp
-    src/r200-private.cpp
+    src/motion-module.cpp
     src/r200.cpp
     src/rs.cpp
+    src/sr300.cpp
     src/stream.cpp
     src/sync.cpp
+    src/timestamps.cpp
     src/types.cpp
     src/uvc-libuvc.cpp
     src/uvc-v4l2.cpp
     src/uvc-wmf.cpp
     src/uvc.cpp
     src/verify.c
+    src/zr300.cpp
 )
 
 set(REALSENSE_HPP
+    src/archive.h
     src/context.h
     src/device.h
-    src/f200-private.h
+    src/ds-device.h
+    src/ds-private.h
     src/f200.h
+    src/hw-monitor.h
     src/image.h
-    src/r200-private.h
+    src/ivcam-private.h
+    src/ivcam-device.h
+    src/motion-module.h
     src/r200.h
+    src/sr300.h
     src/stream.h
     src/sync.h
+    src/timestamps.h
     src/types.h
     src/uvc.h
+    src/zr300.h
 )
 
 if(WIN32)
@@ -131,3 +147,24 @@ if(BUILD_EXAMPLES)
   add_subdirectory(examples)
 endif()
 
+# Check for unreferenced files
+FILE(GLOB_RECURSE AllSources RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
+  "src/*.c" "src/*.cpp" "src/*.cc" "src/*.c++"
+  "src/*.h" "src/*.hpp" "src/*.hh" "src/*.h++")
+#message ( "${AllSources}" )
+#message ( "${REALSENSE_CPP}" )
+#message ( "${REALSENSE_HPP}" )
+foreach(afile ${REALSENSE_CPP})
+  list(REMOVE_ITEM AllSources ${afile})
+endforeach(afile)
+foreach(afile ${REALSENSE_HPP})
+  list(REMOVE_ITEM AllSources ${afile})
+endforeach(afile)
+list(LENGTH AllSources ignore_count)
+if(${ignore_count} GREATER 0)
+  if(${ignore_count} GREATER 1)
+    message ( WARNING "${ignore_count} source files ignored: ${AllSources}" )
+  else(${ignore_count} GREATER 1)
+    message ( WARNING "Source file ignored: ${AllSources}" )
+  endif(${ignore_count} GREATER 1)
+endif(${ignore_count} GREATER 0)
