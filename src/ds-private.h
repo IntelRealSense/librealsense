@@ -146,6 +146,22 @@ namespace rsimpl
             }
         }
 
+        inline std::string time_to_string(double val)
+        {
+            std::string date("Undefined value");
+
+            // rigorous validation is required due to improper handling of NAN by gcc
+            if (std::isnormal(val) && std::isfinite(val) && (!std::isnan(val)) )
+            {
+                auto time = time_t(val);
+                std::vector<char> outstr;
+                outstr.resize(200);
+                strftime(outstr.data(),outstr.size(),"%Y-%m-%d %H:%M:%S",std::gmtime(&time));
+                date = to_string()<< outstr.data() << " UTC";
+            }
+            return date;
+        }
+
 #pragma pack(push,1)
         /// The struct is aligned with the data layout in device
         struct ds_head_content

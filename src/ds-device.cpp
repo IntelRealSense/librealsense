@@ -387,19 +387,6 @@ namespace rsimpl
         return 30; // If no streams have yet been enabled, return the minimum possible left/right framerate, to allow the maximum possible exposure range
     }
 
-    inline std::string time_to_string(double val)
-    {
-        std::string date("Undefined value");
-
-        // More rigorous validation is required due to (-nan) being non recognized by gcc
-        if (std::isnormal(val) && std::isfinite(val) && (!std::isnan(val)) )
-        {
-            auto time = time_t(val);
-            date = to_string()<< std::put_time(std::gmtime(&time), "%Y-%m-%d %H:%M:%S") << " UTC";
-        }
-        return date;
-    }
-
     void ds_device::set_common_ds_config(std::shared_ptr<uvc::device> device, static_device_info& info, const ds::ds_info& cam_info)
     {
         auto & c = cam_info.calibration;

@@ -311,7 +311,6 @@ namespace rsimpl {
 
             serial_number = head_content.serial_number;
 
-            auto build_date = time_t(head_content.build_date), calib_date = time_t(head_content.calibration_date);
             LOG_INFO("Serial number                       = " << head_content.serial_number);
             LOG_INFO("Model number                        = " << head_content.imager_model_number);
             LOG_INFO("Revision number                     = " << head_content.module_revision_number);
@@ -325,8 +324,8 @@ namespace rsimpl {
             LOG_INFO("Lens coating for third imager       = " << head_content.lens_coating_type_third_imager);
             LOG_INFO("Nominal baseline (left to right)    = " << head_content.nominal_baseline << " mm");
             LOG_INFO("Nominal baseline (left to third)    = " << head_content.nominal_baseline_third_imager << " mm");
-            if(std::isfinite(head_content.build_date)) LOG_INFO("Built on " << std::put_time(std::gmtime(&build_date), "%Y-%m-%d %H:%M:%S") << " UTC");
-            if(std::isfinite(head_content.calibration_date)) LOG_INFO("Calibrated on " << std::put_time(std::gmtime(&calib_date), "%Y-%m-%d %H:%M:%S") << " UTC");
+            LOG_INFO("Built on "        << time_to_string(head_content.build_date)          << " UTC");
+            LOG_INFO("Calibrated on "   << time_to_string(head_content.calibration_date)    << " UTC");
             return head_content;
         }
 
