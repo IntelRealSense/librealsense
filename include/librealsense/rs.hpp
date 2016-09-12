@@ -47,33 +47,33 @@ namespace rs
 
     enum class format : int32_t
     {
-        any         ,  
+        any         ,
         z16         ,  ///< 16 bit linear depth values. The depth is meters is equal to depth scale * pixel value
         disparity16 ,  ///< 16 bit linear disparity values. The depth in meters is equal to depth scale / pixel value
         xyz32f      ,  ///< 32 bit floating point 3D coordinates.
-        yuyv        ,  
-        rgb8        ,  
-        bgr8        ,  
-        rgba8       ,  
-        bgra8       ,  
-        y8          ,  
-        y16         , 
+        yuyv        ,
+        rgb8        ,
+        bgr8        ,
+        rgba8       ,
+        bgra8       ,
+        y8          ,
+        y16         ,
         raw10       ,  ///< Four 10-bit luminance values encoded into a 5-byte macropixel
         raw16       ,  ///< Four 10-bit luminance filled in 16 bit pixel (6 bit unused)
-        raw8        
+        raw8
     };
 
     enum class output_buffer_format : int32_t
     {
         continous      ,
-        native         
+        native
     };
 
     enum class preset : int32_t
     {
-        best_quality     , 
-        largest_image    , 
-        highest_framerate  
+        best_quality     ,
+        largest_image    ,
+        highest_framerate
     };
 
     enum class distortion : int32_t
@@ -81,7 +81,7 @@ namespace rs
         none                  , ///< Rectilinear images, no distortion compensation required
         modified_brown_conrady, ///< Equivalent to Brown-Conrady distortion, except that tangential distortion is applied to radially distorted points
         inverse_brown_conrady ,  ///< Equivalent to Brown-Conrady distortion, except undistorts image instead of distorting it
-        distortion_ftheta      
+        distortion_ftheta
     };
 
     // reflection of rs_option
@@ -201,7 +201,7 @@ namespace rs
         event_imu_motion_cam,
         event_imu_g0_sync   ,
         event_imu_g1_sync   ,
-        event_imu_g2_sync   
+        event_imu_g2_sync
     };
 
     enum class timestamp_domain
@@ -269,7 +269,7 @@ namespace rs
         { 
             function = (nullptr != rs_get_failed_function(err)) ? rs_get_failed_function(err) : std::string();
             args = (nullptr != rs_get_failed_args(err)) ? rs_get_failed_args(err) : std::string();
-            rs_free_error(err); 
+            rs_free_error(err);
         }
         const std::string & get_failed_function() const { return function; }
         const std::string & get_failed_args() const { return args; }

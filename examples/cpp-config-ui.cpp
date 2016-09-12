@@ -94,18 +94,18 @@ struct gui
         {
             std::stringstream sstream;
             sstream << ": " << *value;
-            int2 newP { p.x + w, p.y };
+            int2 newP{ p.x + w, p.y };
             label(newP, c, sstream.str().c_str());
         }
 
-        rect bbox { p.x - 15, p.y - 10, p.x + w + 10, p.y + 5};
+        rect bbox{ p.x - 15, p.y - 10, p.x + w + 10, p.y + 5 };
         if (bbox.contains(cursor))
         {
             std::string hint = dev.get_option_description(opt);
             auto hint_w = stb_easy_font_width((char*)hint.c_str());
-            fill_rect({ cursor.x - hint_w - 7, cursor.y + 5, cursor.x + 7, cursor.y - 17 }, { 1.0f, 1.0f, 1.0f } );
-            fill_rect({ cursor.x - hint_w - 6, cursor.y + 4, cursor.x + 6, cursor.y - 16 }, { 0.0f, 0.0f, 0.0f } );
-            label({cursor.x - hint_w, cursor.y - 2}, {1.f, 1.f, 1.f}, hint.c_str());
+            fill_rect({ cursor.x - hint_w - 7, cursor.y + 5, cursor.x + 7, cursor.y - 17 }, { 1.0f, 1.0f, 1.0f });
+            fill_rect({ cursor.x - hint_w - 6, cursor.y + 4, cursor.x + 6, cursor.y - 16 }, { 0.0f, 0.0f, 0.0f });
+            label({ cursor.x - hint_w, cursor.y - 2 }, { 1.f, 1.f, 1.f }, hint.c_str());
         }
     }
 
@@ -322,10 +322,11 @@ void show_message(GLFWwindow* curr_window, const std::string& title, const std::
         glOrtho(0, w, h, 0, -1, +1);
 
 
+        size_t line_lenght = 80;
         int2 p;
         p.x = 20;
         p.y = 30;
-        if (message.size() < 80)
+        if (message.size() < line_lenght)
         {
             g.label(p, { 1, 1, 1 }, message.c_str());
         }
@@ -335,17 +336,19 @@ void show_message(GLFWwindow* curr_window, const std::string& title, const std::
             std::string temp_message = message;
             temp_message = find_and_replace(temp_message, "\n", " ");
             size_t index = 0;
-            while (index < temp_message.size())
+            size_t string_size = temp_message.size();
+            while (index < string_size)
             {
-                auto curr_index = index + temp_message.substr(index, 80).find_last_of(' ');
-                if (curr_index == 0)
+                if (index + line_lenght >= string_size)
                 {
                     str_vec.push_back(temp_message.substr(index));
                     break;
                 }
 
-                str_vec.push_back(temp_message.substr(index, index + curr_index));
-                index += curr_index;
+                auto curr_index = index + temp_message.substr(index, line_lenght).find_last_of(' ');
+
+                str_vec.push_back(temp_message.substr(index, curr_index - index));
+                index = curr_index;
             }
 
             for (auto& elem : str_vec)
@@ -372,8 +375,8 @@ void show_message(GLFWwindow* curr_window, const std::string& title, const std::
 
 struct option { rs::option opt; double min, max, step, value, def; bool supports; };
 
-static std::map<rs::option, std::vector<rs::option>> options_dependencies = 
-{ 
+static std::map<rs::option, std::vector<rs::option>> options_dependencies =
+{
   { rs::option::color_exposure, { rs::option::color_enable_auto_exposure } },
   { rs::option::color_white_balance, { rs::option::color_enable_auto_white_balance } },
   { rs::option::r200_lr_gain, { rs::option::r200_lr_auto_exposure_enabled } },
@@ -401,7 +404,7 @@ void update_related_options(rs::device& dev, rs::option opt, std::vector<option>
     {
         for (auto& related : it->second)
         {
-            auto opt_it = std::find_if(options.begin(), options.end(), [related](option o){ return related == o.opt; });
+            auto opt_it = std::find_if(options.begin(), options.end(), [related](option o) { return related == o.opt; });
             if (opt_it != options.end())
             {
                 try
@@ -533,7 +536,7 @@ void draw_autoexposure_roi_boundary(rs::stream s, const std::vector<option>& opt
         bottom = y + bottom * h;
 
         g.outline_rect({ (int)left + 1, (int)top + 1, (int)right - 1, (int)bottom - 1 }, { 1.0f, 1.0f, 1.0f });
-        g.label({ (int) left + 4, (int) bottom - 6 }, { 1.0f, 1.0f, 1.0f }, "AE ROI");
+        g.label({ (int)left + 4, (int)bottom - 6 }, { 1.0f, 1.0f, 1.0f }, "AE ROI");
     }
 }
 
@@ -541,11 +544,11 @@ int main(int argc, char * argv[])
 {
     rs::context ctx;
     GLFWwindow* win = nullptr;
-    const auto streams = 6;
-    gui g;
+    const auto streams = (unsigned short)rs::stream::fisheye + 1;       // Use camera-supported native streams
+    gui g = {};
     rs::device * dev = nullptr;
     std::atomic<bool> running(true);
-    bool has_motion_module;
+    bool has_motion_module = false;
     single_consumer_queue<rs::frame> frames_queue[streams];
     std::vector<option> options;
     texture_buffer buffers[streams];
@@ -586,32 +589,26 @@ int main(int argc, char * argv[])
 
         dev = ctx.get_device(0);
 
-        dev->enable_stream(rs::stream::depth, 0, 0, rs::format::z16, 60, rs::output_buffer_format::native);
-        dev->enable_stream(rs::stream::color, 640, 480, rs::format::rgb8, 60, rs::output_buffer_format::native);
-        dev->enable_stream(rs::stream::infrared, 0, 0, rs::format::y8, 60, rs::output_buffer_format::native);
+        int fps = 30;
+        struct w_h { int width, height; };
+        std::vector<rs::stream> streams = { rs::stream::depth, rs::stream::color, rs::stream::infrared, rs::stream::infrared2, rs::stream::fisheye };
+        std::vector<rs::format> formats = { rs::format::z16,   rs::format::rgb8,  rs::format::y8,       rs::format::y8,        rs::format::raw8 };
+        std::vector<w_h>        wh = { { 0,0 },{ 640,480 },{ 0,0 },{ 0,0 },{ 640,480 } };
 
-        resolutions[rs::stream::depth] = { dev->get_stream_width(rs::stream::depth), dev->get_stream_height(rs::stream::depth), rs::format::z16 };
-        resolutions[rs::stream::color] = { dev->get_stream_width(rs::stream::color), dev->get_stream_height(rs::stream::color), rs::format::rgb8 };
-        resolutions[rs::stream::infrared] = { dev->get_stream_width(rs::stream::infrared), dev->get_stream_height(rs::stream::infrared), rs::format::y8 };
-
-        bool supports_fish_eye = dev->supports(rs::capabilities::fish_eye);
-        bool supports_motion_events = dev->supports(rs::capabilities::motion_events);
-        has_motion_module = supports_fish_eye || supports_motion_events;
-        if (dev->supports(rs::capabilities::infrared2))
+        for (auto stream : streams)
         {
-            dev->enable_stream(rs::stream::infrared2, 0, 0, rs::format::y8, 60, rs::output_buffer_format::native);
-            resolutions[rs::stream::infrared2] = { dev->get_stream_width(rs::stream::infrared2), dev->get_stream_height(rs::stream::infrared2), rs::format::y8 };
+            if (dev->supports((rs::capabilities)stream))
+            {
+                dev->enable_stream(stream, wh[(int)stream].width, wh[(int)stream].height, formats[(int)stream], fps, rs::output_buffer_format::native);
+                resolutions[stream] = { dev->get_stream_width(stream), dev->get_stream_height(stream), formats[(int)stream] };
+            }
         }
 
-        if (supports_fish_eye)
-        {
-            dev->enable_stream(rs::stream::fisheye, 640, 480, rs::format::raw8, 60, rs::output_buffer_format::native);
-            resolutions[rs::stream::fisheye] = { dev->get_stream_width(rs::stream::fisheye), dev->get_stream_height(rs::stream::fisheye), rs::format::raw8 };
-        }
+        has_motion_module = dev->supports(rs::capabilities::fish_eye) || dev->supports(rs::capabilities::motion_events);
 
         if (has_motion_module)
         {
-            if (supports_motion_events)
+            if (dev->supports(rs::capabilities::motion_events))
             {
                 dev->enable_motion_tracking(on_motion_event, on_timestamp_event);
             }
@@ -619,13 +616,12 @@ int main(int argc, char * argv[])
             glfwSetWindowSize(win, 1100, 960);
         }
 
-        //std::this_thread::sleep_for(std::chrono::seconds(1));
         for (int i = 0; i < RS_OPTION_COUNT; ++i)
         {
             option o = { (rs::option)i };
-            try { 
+            try {
                 o.supports = dev->supports_option(o.opt);
-                if (o.supports) 
+                if (o.supports)
                 {
                     dev->get_option_range(o.opt, o.min, o.max, o.step, o.def);
                     o.value = dev->get_option(o.opt);
@@ -647,6 +643,12 @@ int main(int argc, char * argv[])
     {
         std::cerr << e.what() << std::endl;
         show_message(win, "Exception", e.what());
+        return 1;
+    }
+    catch (...)
+    {
+        std::cerr << "Unresolved error type during camera initialization" << std::endl;
+        show_message(win, "Exception", "Unresolved error type during camera initialization");
         return 1;
     }
 
@@ -799,7 +801,7 @@ int main(int argc, char * argv[])
                         {
                             pos_vec[i] = prev_pos;
                             gui_click_flag = !gui_click_flag;
-                            for (int j = 0 ; j < 5 ; ++j)
+                            for (int j = 0; j < 5; ++j)
                                 frame_clicked[j] = false;
 
                             g_clicked = false;
@@ -837,7 +839,7 @@ int main(int argc, char * argv[])
 
                 for (auto & o : options)
                 {
-                    if (!dev->supports_option(o.opt)) 
+                    if (!dev->supports_option(o.opt))
                     {
                         o.supports = false;
                         continue;
@@ -855,9 +857,9 @@ int main(int argc, char * argv[])
                     auto is_checkbox = (o.min == 0) && (o.max == 1) && (o.step == 1);
                     auto is_checked = o.value > 0;
 
-                    if (is_checkbox ? 
-                            g.checkbox({ w - 260, y + 10, w - 240, y + 30 }, is_checked) :
-                            g.slider((int)o.opt + 1, { w - 260, y + 16, w - 20, y + 36 }, o.min, o.max, o.step, o.value))
+                    if (is_checkbox ?
+                        g.checkbox({ w - 260, y + 10, w - 240, y + 30 }, is_checked) :
+                        g.slider((int)o.opt + 1, { w - 260, y + 16, w - 20, y + 36 }, o.min, o.max, o.step, o.value))
                     {
                         if (is_checkbox) dev->set_option(o.opt, is_checked ? 1 : 0);
                         else dev->set_option(o.opt, o.value);

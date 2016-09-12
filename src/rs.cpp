@@ -203,7 +203,7 @@ HANDLE_EXCEPTIONS_AND_RETURN(, device, stream)
 int rs_is_stream_enabled(const rs_device * device, rs_stream stream, rs_error ** error) try
 {
     VALIDATE_NOT_NULL(device);
-    VALIDATE_ENUM(stream);
+    VALIDATE_NATIVE_STREAM(stream);
     return device->get_stream_interface(stream).is_enabled();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, device, stream)
@@ -260,7 +260,7 @@ HANDLE_EXCEPTIONS_AND_RETURN(, device, intrinsic)
 void rs_set_frame_callback(rs_device * device, rs_stream stream, rs_frame_callback_ptr on_frame, void * user, rs_error ** error) try
 {
     VALIDATE_NOT_NULL(device);
-    VALIDATE_ENUM(stream);
+    VALIDATE_NATIVE_STREAM(stream);
     VALIDATE_NOT_NULL(on_frame);
     device->set_stream_callback(stream, on_frame, user);
 }
@@ -269,7 +269,7 @@ HANDLE_EXCEPTIONS_AND_RETURN(, device, stream, on_frame, user)
 void rs_set_frame_callback_cpp(rs_device * device, rs_stream stream, rs_frame_callback * callback, rs_error ** error) try
 {
     VALIDATE_NOT_NULL(device);
-    VALIDATE_ENUM(stream);
+    VALIDATE_NATIVE_STREAM(stream);
     VALIDATE_NOT_NULL(callback);
     device->set_stream_callback(stream, callback);
 }

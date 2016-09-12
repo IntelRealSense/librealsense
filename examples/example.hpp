@@ -187,8 +187,8 @@ public:
         glTexCoord2f(1, 0); glVertex2f(rx+rw, ry   );
         glTexCoord2f(1, 1); glVertex2f(rx+rw, ry+rh);
         glTexCoord2f(0, 1); glVertex2f(rx,    ry+rh);
-        glEnd();    
-        glDisable(GL_TEXTURE_2D);    
+        glEnd();
+        glDisable(GL_TEXTURE_2D);
         glBindTexture(GL_TEXTURE_2D, 0);
     }
 
