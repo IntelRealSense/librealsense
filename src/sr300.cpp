@@ -41,7 +41,7 @@ namespace rsimpl
         LOG_INFO("Connecting to Intel RealSense SR300");
        
         static_device_info info;
-        info.name = {"Intel RealSense SR300"};
+        info.name = "Intel RealSense SR300";
         
         // Color modes on subdevice 0
         info.stream_subdevices[RS_STREAM_COLOR] = 0;

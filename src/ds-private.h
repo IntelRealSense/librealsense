@@ -391,6 +391,8 @@ namespace rsimpl
                 case RS_OPTION_R200_AUTO_EXPOSURE_RIGHT_EDGE:
                     ret_val.exposure_right_edge = std::min((uint16_t)elem.max, ret_val.exposure_right_edge);
                     break;
+                default :
+                    break;
                 }
             }
             return ret_val;

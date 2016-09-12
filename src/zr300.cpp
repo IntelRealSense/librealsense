@@ -47,8 +47,6 @@ namespace rsimpl
         std::vector<rs_option>  base_opt;
         std::vector<double>     base_opt_val;
 
-        auto & dev = get_device();
-
         // Handle ZR300 specific options first
         for (size_t i = 0; i < count; ++i)
         {
@@ -548,7 +546,7 @@ namespace rsimpl
                 LOG_WARNING("Exstrinsics validation of" << from_stream <<" to "<< to_stream << " failed,  because the reading of calibration table failed");
                 return false;
             }
-            if (!fisheye_intrinsic.calib.mm_extrinsic.ver.size == fisheye_intrinsic.calib.mm_extrinsic.get_data_size())
+            if (!(fisheye_intrinsic.calib.mm_extrinsic.ver.size == fisheye_intrinsic.calib.mm_extrinsic.get_data_size()))
             {
                 LOG_WARNING("Extrinsics validation of" << from_stream <<" to "<<to_stream<< " failed, ver.size = " << fisheye_intrinsic.calib.fe_intrinsic.ver.size << " real size = " << fisheye_intrinsic.calib.fe_intrinsic.get_data_size());
                 return false;
@@ -864,7 +862,7 @@ namespace rsimpl
 
         histogram_metric score = {};
         histogram_score(H, total_weight, score);
-        int EffectiveDynamicRange = (score.highlight_limit - score.shadow_limit);
+        //int EffectiveDynamicRange = (score.highlight_limit - score.shadow_limit);
         ///
         float s1 = (score.main_mean - 128.0f) / 255.0f;
         float s2 = 0;
