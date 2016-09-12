@@ -7,6 +7,7 @@
 
 #include "uvc.h"
 #include <algorithm>
+#include <ctime>
 
 namespace rsimpl
 {
