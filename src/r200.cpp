@@ -29,7 +29,7 @@ namespace rsimpl
         LOG_INFO("Connecting to Intel RealSense R200");
 
         static_device_info info;
-        info.name = { "Intel RealSense R200" };
+        info.name =  "Intel RealSense R200" ;
         auto cam_info = ds::read_camera_info(*device);
 
         ds_device::set_common_ds_config(device, info, cam_info);
@@ -45,7 +45,7 @@ namespace rsimpl
         LOG_INFO("Connecting to Intel RealSense LR200");
 
         static_device_info info;
-        info.name = { "Intel RealSense LR200" };
+        info.name = "Intel RealSense LR200" ;
         auto cam_info = ds::read_camera_info(*device);
 
         ds_device::set_common_ds_config(device, info, cam_info);

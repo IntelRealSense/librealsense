@@ -428,7 +428,7 @@ namespace rsimpl
         LOG_INFO("Connecting to Intel RealSense ZR300");
 
         static_device_info info;
-        info.name = { "Intel RealSense ZR300" };
+        info.name =  "Intel RealSense ZR300" ;
         auto cam_info = ds::read_camera_info(*device);
 
         motion_module_calibration fisheye_intrinsic;
