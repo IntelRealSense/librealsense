@@ -396,10 +396,18 @@ HANDLE_EXCEPTIONS_AND_RETURN(0, device)
 int rs_supports(rs_device * device, rs_capabilities capability, rs_error ** error) try
 {
     VALIDATE_NOT_NULL(device);
+    VALIDATE_ENUM(capability);
     return device->supports(capability);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, device)
 
+int rs_supports_camera_info(rs_device * device, rs_camera_info info_param, rs_error ** error) try
+{
+    VALIDATE_NOT_NULL(device);
+    VALIDATE_ENUM(info_param);
+    return device->supports(info_param);
+}
+HANDLE_EXCEPTIONS_AND_RETURN(0, device)
 
 double rs_get_frame_timestamp(const rs_device * device, rs_stream stream, rs_error ** error) try
 {

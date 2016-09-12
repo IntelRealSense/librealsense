@@ -1,10 +1,11 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2016 Intel Corporation. All Rights Reserved.
+#include <iomanip>      // for std::put_time
 
 #include "hw-monitor.h"
 #include "ds-private.h"
 
-#pragma pack(push, 1) // All structs in this file are byte-aligend
+#pragma pack(push, 1) // All structs in this file are byte-aligned
 
 enum class command : uint32_t // Command/response codes
 {
@@ -303,115 +304,60 @@ namespace rsimpl {
             return cameraCalib;
         }
 
-        void read_camera_head_contents(const uint8_t(&flash_data_buffer)[SPI_FLASH_SECTOR_SIZE_IN_BYTES], uint32_t & serial_number)
+        ds_head_content read_camera_head_contents(const uint8_t(&flash_data_buffer)[SPI_FLASH_SECTOR_SIZE_IN_BYTES], uint32_t & serial_number)
         {
-            struct CameraHeadContents
-            {
-                enum { VERSION_NUMBER = 12 };
-                uint32_t serialNumber;
-                uint32_t modelNumber;
-                uint32_t revisionNumber;
-                uint8_t modelData[64];
-                double buildDate;
-                double firstProgramDate;
-                double focusAndAlignmentDate;
-                uint32_t nominalBaselineThird;
-                uint8_t moduleVersion;
-                uint8_t moduleMajorVersion;
-                uint8_t moduleMinorVersion;
-                uint8_t moduleSkew;
-                uint32_t lensTypeThird;
-                uint32_t OEMID;
-                uint32_t lensCoatingTypeThird;
-                uint8_t platformCameraSupport;
-                uint8_t reserved1[3];
-                uint32_t emitterType;
-                uint8_t reserved2[4];
-                uint32_t cameraFPGAVersion;
-                uint32_t platformCameraFocus; // This is the value during calibration
-                double calibrationDate;
-                uint32_t calibrationType;
-                double calibrationXError;
-                double calibrationYError;
-                double rectificationDataQres[54];
-                double rectificationDataPadding[26];
-                double CxQres;
-                double CyQres;
-                double CzQres;
-                double KxQres;
-                double KyQres;
-                uint32_t cameraHeadContentsVersion;
-                uint32_t cameraHeadContentsSizeInBytes;
-                double CxBig;
-                double CyBig;
-                double CzBig;
-                double KxBig;
-                double KyBig;
-                double CxSpecial;
-                double CySpecial;
-                double CzSpecial;
-                double KxSpecial;
-                double KySpecial;
-                uint8_t cameraHeadDataLittleEndian;
-                double rectificationDataBig[54];
-                double rectificationDataSpecial[54];
-                uint8_t cameraOptions1;
-                uint8_t cameraOptions2;
-                uint8_t bodySerialNumber[20];
-                double Dx;
-                double Dy;
-                double Dz;
-                double ThetaX;
-                double ThetaY;
-                double ThetaZ;
-                double registrationDate;
-                double registrationRotation[9];
-                double registrationTranslation[3];
-                uint32_t nominalBaseline;
-                uint32_t lensType;
-                uint32_t lensCoating;
-                int32_t nominalBaselinePlatform[3]; // NOTE: Signed, since platform camera can be mounted anywhere
-                uint32_t lensTypePlatform;
-                uint32_t imagerTypePlatform;
-                uint32_t theLastWord;
-                uint8_t reserved3[37];
-            };
+            //auto header = reinterpret_cast<const CameraHeadContents &>(flash_data_buffer[CAM_INFO_BLOCK_LEN]);
+            ds_head_content head_content = reinterpret_cast<const ds_head_content &>(flash_data_buffer[CAM_INFO_BLOCK_LEN]);
 
-            auto header = reinterpret_cast<const CameraHeadContents &>(flash_data_buffer[CAM_INFO_BLOCK_LEN]);
-            serial_number = header.serialNumber;
+            serial_number = head_content.serial_number;
 
-            //auto build_date = time_t(header.buildDate), calib_date = time_t(header.calibrationDate);
-            LOG_INFO("Serial number                       = " << header.serialNumber);
-            LOG_INFO("Model number                        = " << header.modelNumber);
-            LOG_INFO("Revision number                     = " << header.revisionNumber);
-            LOG_INFO("Camera head contents version        = " << header.cameraHeadContentsVersion);
-            if (header.cameraHeadContentsVersion != CameraHeadContents::VERSION_NUMBER) LOG_WARNING("Camera head contents version != 12, data may be missing/incorrect");
-            LOG_INFO("Module version                      = " << (int)header.moduleVersion << "." << (int)header.moduleMajorVersion << "." << (int)header.moduleMinorVersion << "." << (int)header.moduleSkew);
-            LOG_INFO("OEM ID                              = " << header.OEMID);
-            LOG_INFO("Lens type for left/right imagers    = " << header.lensType);
-            LOG_INFO("Lens type for third imager          = " << header.lensTypeThird);
-            LOG_INFO("Lens coating for left/right imagers = " << header.lensCoating);
-            LOG_INFO("Lens coating for third imager       = " << header.lensCoatingTypeThird);
-            LOG_INFO("Nominal baseline (left to right)    = " << header.nominalBaseline << " mm");
-            LOG_INFO("Nominal baseline (left to third)    = " << header.nominalBaselineThird << " mm");
-            //if(std::isfinite(header.buildDate)) LOG_INFO("Built on " << std::put_time(std::gmtime(&build_date), "%Y-%m-%d %H:%M:%S") << " UTC");
-            //if(std::isfinite(header.calibrationDate)) LOG_INFO("Calibrated on " << std::put_time(std::gmtime(&calib_date), "%Y-%m-%d %H:%M:%S") << " UTC");
+            auto build_date = time_t(head_content.build_date), calib_date = time_t(head_content.calibration_date);
+            LOG_INFO("Serial number                       = " << head_content.serial_number);
+            LOG_INFO("Model number                        = " << head_content.imager_model_number);
+            LOG_INFO("Revision number                     = " << head_content.module_revision_number);
+            LOG_INFO("Camera head contents version        = " << head_content.camera_head_contents_version);
+            if (head_content.camera_head_contents_version != ds_head_content::DS_HEADER_VERSION_NUMBER) LOG_WARNING("Camera head contents version != 12, data may be missing/incorrect");
+            LOG_INFO("Module version                      = " << (int)head_content.module_version << "." << (int)head_content.module_major_version << "." << (int)head_content.module_minor_version << "." << (int)head_content.module_skew_version);
+            LOG_INFO("OEM ID                              = " << head_content.oem_id);
+            LOG_INFO("Lens type for left/right imagers    = " << head_content.lens_type);
+            LOG_INFO("Lens type for third imager          = " << head_content.lens_type_third_imager);
+            LOG_INFO("Lens coating for left/right imagers = " << head_content.lens_coating_type);
+            LOG_INFO("Lens coating for third imager       = " << head_content.lens_coating_type_third_imager);
+            LOG_INFO("Nominal baseline (left to right)    = " << head_content.nominal_baseline << " mm");
+            LOG_INFO("Nominal baseline (left to third)    = " << head_content.nominal_baseline_third_imager << " mm");
+            if(std::isfinite(head_content.build_date)) LOG_INFO("Built on " << std::put_time(std::gmtime(&build_date), "%Y-%m-%d %H:%M:%S") << " UTC");
+            if(std::isfinite(head_content.calibration_date)) LOG_INFO("Calibrated on " << std::put_time(std::gmtime(&calib_date), "%Y-%m-%d %H:%M:%S") << " UTC");
+            return head_content;
         }
 
-        ds_calibration read_camera_info(uvc::device & device)
+        ds_info read_camera_info(uvc::device & device)
         {
             uint8_t flashDataBuffer[SPI_FLASH_SECTOR_SIZE_IN_BYTES];
             if (!read_admin_sector(device, flashDataBuffer, NV_CALIBRATION_DATA_ADDRESS_INDEX)) throw std::runtime_error("Could not read calibration sector");
 
-            auto calib = read_calibration_and_rectification_parameters(flashDataBuffer);
-            read_camera_head_contents(flashDataBuffer, calib.serial_number);
-            return calib;
+            ds_info cam_info = {};
+
+            try
+            {
+                cam_info.calibration = read_calibration_and_rectification_parameters(flashDataBuffer);
+                cam_info.head_content = read_camera_head_contents(flashDataBuffer, cam_info.calibration.serial_number);
+            }
+            catch (std::runtime_error &err){ LOG_ERROR("Failed to read camera info " << err.what()); }
+            catch (...){ LOG_ERROR("Failed to read camera info, may not work correctly"); }
+
+            return cam_info;
         }
 
         std::string read_firmware_version(uvc::device & device)
         {
             auto response = send_command_and_receive_response(device, CommandResponsePacket(command::get_fwrevision));
             return reinterpret_cast<const char *>(response.reserved);
+        }
+
+        std::string read_isp_firmware_version(uvc::device & device)
+        {
+            auto response = send_command_and_receive_response(device, CommandResponsePacket(command::get_fwrevision));
+            return to_string() << "0x" << std::hex << response.reserved[4];
         }
 
         void set_stream_intent(uvc::device & device, uint8_t & intent)

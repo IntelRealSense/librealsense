@@ -166,6 +166,24 @@ namespace rs
         camera_firmware_version       ,
         adapter_board_firmware_version,
         motion_module_firmware_version,
+        camera_type                   ,
+        oem_id                        ,
+        isp_fw_version                ,
+        content_version               ,
+        module_version                ,
+        imager_model_number           ,
+        build_date                    ,
+        calibration_date              ,
+        program_date                  ,
+        focus_alignment_date          ,
+        emitter_type                  ,
+        focus_value                   ,
+        lens_type                     ,
+        third_lens_type               ,
+        lens_coating_type             ,
+        third_lens_coating_type       ,
+        lens_nominal_baseline         ,
+        third_lens_nominal_baseline
     };
 
     enum class source : uint8_t
@@ -902,6 +920,18 @@ namespace rs
             auto r = rs_supports((rs_device *)this, (rs_capabilities)capability, &e);
             error::handle(e);
             return r? true: false;
+        }
+
+
+        /// determine device capabilities
+        /// \param[in] capability  the capability to check for support
+        /// \return                true if device has this capability
+        bool supports(camera_info info_param) const
+        {
+            rs_error * e = nullptr;
+            auto r = rs_supports_camera_info((rs_device *)this, (rs_camera_info)info_param, &e);
+            error::handle(e);
+            return r ? true : false;
         }
 
         /// retrieve the time at which the latest frame on a stream was captured
