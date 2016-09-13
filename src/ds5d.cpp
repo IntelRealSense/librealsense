@@ -34,8 +34,8 @@ namespace rsimpl
         // Populate miscellaneous information about the device
         info.name = dev_name;
         std::timed_mutex mutex;
-        ds5::get_module_serial_string(*device, mutex, info.serial, ds5::fw_version_offset);
-        ds5::get_firmware_version_string(*device, mutex, info.firmware_version);
+        ds5::get_string_of_gvd_field(*device, mutex, info.serial, ds5::asic_module_serial_offset);
+        ds5::get_string_of_gvd_field(*device, mutex, info.firmware_version, ds5::fw_version_offset);
         ds5::ds5_calibration calib;
         try
         {
@@ -222,20 +222,20 @@ namespace rsimpl
 
     std::shared_ptr<rs_device> make_ds5d_active_device(std::shared_ptr<uvc::device> device)
     {
-        LOG_INFO("Connecting to Intel RealSense DS5 Active");
+        LOG_INFO("Connecting to " << camera_official_name.at(cameras::ds5) << " Active");
 
         ds5::claim_ds5_monitor_interface(*device);
 
-        return std::make_shared<ds5d_camera>(device, get_ds5d_info(device, "Intel RealSense DS5 Active"), true);
+        return std::make_shared<ds5d_camera>(device, get_ds5d_info(device, camera_official_name.at(cameras::ds5) + std::string(" Active")), true);
     }
 
     std::shared_ptr<rs_device> make_ds5d_passive_device(std::shared_ptr<uvc::device> device)
     {
-        LOG_INFO("Connecting to Intel RealSense DS5 Passive");
+        LOG_INFO("Connecting to " << camera_official_name.at(cameras::ds5) << " Passive");
 
         ds5::claim_ds5_monitor_interface(*device);
 
-        return std::make_shared<ds5d_camera>(device, get_ds5d_info(device, "Intel RealSense DS5 Passive"), false);
+        return std::make_shared<ds5d_camera>(device, get_ds5d_info(device, camera_official_name.at(cameras::ds5) + std::string(" Passive")), false);
     }
 
     void ds5d_camera::set_fw_logger_option(double value)

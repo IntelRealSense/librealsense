@@ -288,7 +288,7 @@ void rs_device_base::start_fw_logger(char fw_log_op_code, int grab_rate_in_ms, s
     keep_fw_logger_alive = true;
     fw_logger = std::make_shared<std::thread>([this, fw_log_op_code, grab_rate_in_ms, &mutex]() {
         const int data_size = 500;
-        hw_monitor::hwmon_cmd cmd((int)fw_log_op_code);
+        hw_monitor::hwmon_cmd cmd(fw_log_op_code);
         cmd.Param1 = data_size;
         while (keep_fw_logger_alive)
         {
