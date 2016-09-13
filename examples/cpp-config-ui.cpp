@@ -591,9 +591,9 @@ int main(int argc, char * argv[])
 
         int fps = 30;
         struct w_h { int width, height; };
-        std::vector<rs::stream> streams = { rs::stream::depth, rs::stream::color, rs::stream::infrared, rs::stream::infrared2, rs::stream::fisheye };
-        std::vector<rs::format> formats = { rs::format::z16,   rs::format::rgb8,  rs::format::y8,       rs::format::y8,        rs::format::raw8 };
-        std::vector<w_h>        wh = { { 0,0 },{ 640,480 },{ 0,0 },{ 0,0 },{ 640,480 } };
+        std::vector<rs::stream> streams = { rs::stream::depth,  rs::stream::color,  rs::stream::infrared,   rs::stream::infrared2, rs::stream::fisheye };
+        std::vector<rs::format> formats = { rs::format::z16,    rs::format::rgb8,   rs::format::y8,         rs::format::y8,        rs::format::raw8 };
+        std::vector<w_h>        wh      = { { 0,0 },            { 640,480 },        { 0,0 },                { 0,0 },               { 640,480 } };
 
         for (auto stream : streams)
         {
