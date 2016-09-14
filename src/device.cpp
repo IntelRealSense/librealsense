@@ -378,6 +378,33 @@ void rs_device_base::start_video_streaming()
 
             auto requires_processing = mode_selection.requires_processing();
 
+            rs_option option[1];
+            double exposure_value[1];
+            if (streams[0] == rs_stream::RS_STREAM_FISHEYE)
+            {
+                // fisheye exposure value is embedded in the frame data from version 1.27.2.0
+                firmware_version firmware(get_camera_info(RS_CAMERA_INFO_ADAPTER_BOARD_FIRMWARE_VERSION));
+                if (firmware >= firmware_version("1.27.2.0"))
+                {
+                    auto data = static_cast<const char*>(frame);
+                    int exposure = 0;
+                    for (int i = 4, j = 7; i < 12; ++i, --j)
+                        exposure |= ((data[i] & 0x01) << j);
+
+                    exposure_value[0] = exposure;
+                }
+                else
+                {
+                    option[0] = RS_OPTION_FISHEYE_EXPOSURE;
+                    get_options(option, 1, exposure_value);
+                }
+            }
+            else
+            {
+                option[0] = RS_OPTION_COLOR_EXPOSURE;
+                get_options(option, 1, exposure_value);
+            }
+
             auto width = mode_selection.get_width();
             auto height = mode_selection.get_height();
             auto fps = mode_selection.get_framerate();
@@ -413,7 +440,8 @@ void rs_device_base::start_video_streaming()
                     bpp,
                     output.second,
                     output.first,
-                    mode_selection.pad_crop);
+                    mode_selection.pad_crop,
+                    exposure_value[0]);
 
                 // Obtain buffers for unpacking the frame
                 dest.push_back(archive->alloc_frame(output.first, additional_data, requires_processing));

@@ -193,6 +193,11 @@ void frame_archive::frameset::cleanup()
     }
 }
 
+double frame_archive::frame_ref::get_frame_metadata(rs_frame_metadata frame_metadata) const
+{
+    return frame_ptr ? frame_ptr->get_frame_metadata(frame_metadata) : 0;
+}
+
 const byte* frame_archive::frame_ref::get_frame_data() const
 {
     return frame_ptr ? frame_ptr->get_frame_data() : nullptr;
@@ -263,6 +268,18 @@ void frame_archive::frame_ref::update_frame_callback_start_ts(std::chrono::high_
     frame_ptr->update_frame_callback_start_ts(ts);
 }
 
+double frame_archive::frame::get_frame_metadata(rs_frame_metadata frame_metadata) const
+{
+    switch (frame_metadata)
+    {
+    case RS_FRAME_METADATA_EXPOSURE:
+        return additional_data.exposure_value;
+        break;
+    default:
+        throw std::logic_error("unsupported metadata type");
+        break;
+    }
+}
 
 const byte* frame_archive::frame::get_frame_data() const
 {
