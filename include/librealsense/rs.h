@@ -203,6 +203,24 @@ typedef enum rs_camera_info {
     RS_CAMERA_INFO_CAMERA_FIRMWARE_VERSION       ,
     RS_CAMERA_INFO_ADAPTER_BOARD_FIRMWARE_VERSION,
     RS_CAMERA_INFO_MOTION_MODULE_FIRMWARE_VERSION,
+    RS_CAMERA_INFO_CAMERA_TYPE                   ,
+    RS_CAMERA_INFO_OEM_ID                        ,
+    RS_CAMERA_INFO_ISP_FW_VERSION                ,
+    RS_CAMERA_INFO_CONTENT_VERSION               ,
+    RS_CAMERA_INFO_MODULE_VERSION                ,
+    RS_CAMERA_INFO_IMAGER_MODEL_NUMBER           ,
+    RS_CAMERA_INFO_BUILD_DATE                    ,
+    RS_CAMERA_INFO_CALIBRATION_DATE              ,
+    RS_CAMERA_INFO_PROGRAM_DATE                  ,
+    RS_CAMERA_INFO_FOCUS_ALIGNMENT_DATE          ,
+    RS_CAMERA_INFO_EMITTER_TYPE                  ,
+    RS_CAMERA_INFO_FOCUS_VALUE                   ,
+    RS_CAMERA_INFO_LENS_TYPE                     ,
+    RS_CAMERA_INFO_3RD_LENS_TYPE                 ,
+    RS_CAMERA_INFO_LENS_COATING__TYPE            ,
+    RS_CAMERA_INFO_3RD_LENS_COATING_TYPE         ,
+    RS_CAMERA_INFO_NOMINAL_BASELINE              ,
+    RS_CAMERA_INFO_3RD_NOMINAL_BASELINE          ,
     RS_CAMERA_INFO_COUNT
 } rs_camera_info;
 
@@ -679,6 +697,14 @@ int rs_poll_for_frames(rs_device * device, rs_error ** error);
  * \return                true if device has this capability
  */
 int rs_supports(rs_device * device, rs_capabilities capability, rs_error ** error);
+
+/**
+* specialization over generic support to verify camera header block support
+* \param[in] info_param  the parameter to check for support
+* \return                true if the parameter both exist and well-defined for the specific device
+*/
+int rs_supports_camera_info(rs_device * device, rs_camera_info info_param, rs_error ** error);
+
 
 /**
  * retrieve the time at which the latest frame on a stream was captured

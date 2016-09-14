@@ -141,7 +141,8 @@ public:
 
     void upload(rs::device & dev, rs::stream stream)
     {
-        assert(dev.is_stream_enabled(stream));
+        if (stream <= rs::stream::fisheye)
+            assert(dev.is_stream_enabled(stream));
 
         const double timestamp = dev.get_frame_timestamp(stream);
         if(timestamp != last_timestamp)
@@ -186,8 +187,8 @@ public:
         glTexCoord2f(1, 0); glVertex2f(rx+rw, ry   );
         glTexCoord2f(1, 1); glVertex2f(rx+rw, ry+rh);
         glTexCoord2f(0, 1); glVertex2f(rx,    ry+rh);
-        glEnd();    
-        glDisable(GL_TEXTURE_2D);    
+        glEnd();
+        glDisable(GL_TEXTURE_2D);
         glBindTexture(GL_TEXTURE_2D, 0);
     }
 
@@ -203,7 +204,7 @@ public:
 
     void show(rs::device & dev, rs::stream stream, int rx, int ry, int rw, int rh)
     {
-        if(!dev.is_stream_enabled(stream)) return;
+        if((stream <= rs::stream::fisheye) && (!dev.is_stream_enabled(stream))) return;
 
         upload(dev, stream);
         

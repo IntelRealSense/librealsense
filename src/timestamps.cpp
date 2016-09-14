@@ -102,6 +102,8 @@ void timestamp_corrector::update_source_id(rs_event_source& source_id, const rs_
     case RS_STREAM_FISHEYE:
         source_id = RS_EVENT_IMU_MOTION_CAM;
         break;
+    default:
+        throw std::runtime_error(to_string() << "Unsupported source stream requested " << rs_stream_to_string(stream));
     }
 }
 

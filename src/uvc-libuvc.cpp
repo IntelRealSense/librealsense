@@ -58,8 +58,6 @@ namespace rsimpl
                 uint8_t buffer[interrupt_buf_size];           /* 64 byte transfer buffer - dedicated channel */
                 int num_bytes = 0;                            /* Actual bytes transferred */
 
-                static int counter = 0;
-
                 // TODO - replace hard-coded values : 0x82 and 1000
                 int res = libusb_interrupt_transfer(handle, 0x84, buffer, interrupt_buf_size, &num_bytes, timeout);
                 if (0 == res)

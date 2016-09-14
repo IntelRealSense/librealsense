@@ -41,7 +41,7 @@ namespace rsimpl
         LOG_INFO("Connecting to Intel RealSense SR300");
        
         static_device_info info;
-        info.name = {"Intel RealSense SR300"};
+        info.name = "Intel RealSense SR300";
         
         // Color modes on subdevice 0
         info.stream_subdevices[RS_STREAM_COLOR] = 0;
@@ -216,7 +216,6 @@ namespace rsimpl
                 continue;
             }
 
-            uint8_t val=0;
             switch(options[i])
             {
             case RS_OPTION_SR300_AUTO_RANGE_ENABLE_MOTION_VERSUS_RANGE: values[i] = arr_reader.get(&ivcam::cam_auto_range_request::enableMvR); break; 

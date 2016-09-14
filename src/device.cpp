@@ -581,6 +581,12 @@ bool rs_device_base::supports(rs_capabilities capability) const
     return found && version_ok;
 }
 
+bool rs_device_base::supports(rs_camera_info info_param) const
+{
+    auto it = config.info.camera_info.find(info_param);
+    return (it != config.info.camera_info.end());
+}
+
 void rs_device_base::get_option_range(rs_option option, double & min, double & max, double & step, double & def)
 {
     if(uvc::is_pu_control(option))

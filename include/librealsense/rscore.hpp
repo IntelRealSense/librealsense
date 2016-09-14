@@ -97,7 +97,8 @@ struct rs_device
     virtual bool                            poll_all_streams() = 0;
                                             
     virtual bool                            supports(rs_capabilities capability) const = 0;
-                                            
+    virtual bool                            supports(rs_camera_info info_param) const = 0;
+
     virtual bool                            supports_option(rs_option option) const = 0;
     virtual void                            get_option_range(rs_option option, double & min, double & max, double & step, double & def) = 0;
     virtual void                            set_options(const rs_option options[], size_t count, const double values[]) = 0;

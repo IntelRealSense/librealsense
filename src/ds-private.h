@@ -7,6 +7,8 @@
 
 #include "uvc.h"
 #include <algorithm>
+#include <ctime>
+#include <cmath>
 
 namespace rsimpl
 {
@@ -28,8 +30,227 @@ namespace rsimpl
             float Rthird[9], T[3], B;
         };
 
-        ds_calibration read_camera_info(uvc::device & device);
+        enum ds_lens_type : uint32_t
+        {
+            DS_LENS_UNKNOWN         = 0,        ///< Lens either unknown or not needing special treatment
+            DS_LENS_DSL103          = 1,        ///< Sunex DSL103: Internal standard
+            DS_LENS_DSL821C         = 2,        ///< Sunex DSL 821C
+            DS_LENS_DSL202A         = 3,        ///< Sunex DSL 202A
+            DS_LENS_DSL203          = 4,        ///< Sunex DSL 203
+            DS_LENS_PENTAX2514      = 5,        ///< Pentax cmount lens 25mm
+            DS_LENS_DSL924A         = 6,        ///< Sunex DSL 924a
+            DS_LENS_AZW58           = 7,        ///< 58 degree lenses on the AZureWave boards (DS-526)
+            DS_LENS_Largan9386      = 8,        ///< 50 HFOV 38 VFOV (60DFOV): CTM2/6 Module L&R
+            DS_LENS_DS6100          = 9,        ///< Newmax 67.8 x 41.4 degs in 1080p
+            DS_LENS_DS6177          = 10,       ///< Newmax 71.7 x 44.2 degs in 1080p
+            DS_LENS_DS6237          = 11,       ///< Newmax 58.9 x 45.9 degs in VGA
+            DS_LENS_DS6233          = 12,       ///< IR lens
+            DS_LENS_DS917           = 13,       ///< RGB lens
+            DS_LENS_AEOT_1LS0901L   = 14,       /// AEOT lens
+            DS_LENS_COUNT           = 15        ///< Just count
+        };
+
+
+        inline std::ostream & operator<<(std::ostream & out, ds_lens_type type)
+        {
+            switch (type)
+            {
+            case DS_LENS_UNKNOWN: return out << "Unknown lens type";
+            case DS_LENS_DSL103:  return out << "Sunex DSL103: Internal standard";
+            case DS_LENS_DSL821C: return out << "Sunex DSL 821C";
+            case DS_LENS_DSL202A: return out << "Sunex DSL 202A";
+            case DS_LENS_DSL203:  return out << "Sunex DSL 203";
+            case DS_LENS_PENTAX2514: return out << "Pentax cmount lens 25mm";
+            case DS_LENS_DSL924A: return out << "Sunex DSL 924a";
+            case DS_LENS_AZW58: return out << "58 degree lenses on the AZureWave boards (DS-526)";
+            case DS_LENS_Largan9386: return out << "50 HFOV 38 VFOV (60DFOV): CTM2/6 Module L&R";
+            case DS_LENS_DS6100: return out << "Newmax 67.8 x 41.4 degs in 1080p";
+            case DS_LENS_DS6177: return out << "Newmax 71.7 x 44.2 degs in 1080p";
+            case DS_LENS_DS6237: return out << "Newmax 58.9 x 45.9 degs in VGA";
+            case DS_LENS_AEOT_1LS0901L: return out << "AEOT";
+            default: return out << "Other lens type (" << (int)type << "), application needs update";
+            }
+        }
+
+        enum ds_lens_coating_type : uint32_t
+        {
+            DS_LENS_COATING_UNKNOWN         = 0,
+            DS_LENS_COATING_IR_CUT          = 1,    ///< IR coating DS4: Innowave 670 cut off
+            DS_LENS_COATING_ALL_PASS        = 2,    ///< No IR coating
+            DS_LENS_COATING_IR_PASS         = 3,    ///< Visible-light block / IR pass:  center 860, width 25nm
+            DS_LENS_COATING_IR_PASS_859_43  = 4,    ///< Visible-light block / IR pass  center 859, width 43nm
+            DS_LENS_COATING_COUNT           = 5
+        };
+
+
+        inline std::ostream & operator<<(std::ostream & out, ds_lens_coating_type type)
+        {
+            switch (type)
+            {
+            case DS_LENS_COATING_UNKNOWN: return out << "Unknown lens coating type";
+            case DS_LENS_COATING_IR_CUT: return out << "IR coating";
+            case DS_LENS_COATING_ALL_PASS: return out << "No IR coating";
+            case DS_LENS_COATING_IR_PASS: return out << "Visible-light block / IR pass";
+            case DS_LENS_COATING_IR_PASS_859_43: return out << "Visible-light block / IR pass 43 nm width";
+            default: return out << "Other lens coating type (" << (int)type << "), application needs update";
+            }
+        }
+
+        enum ds_emitter_type : uint32_t
+        {
+            DS_EMITTER_NONE         = 0,
+            DS_EMITTER_LD2          = 1,    ///< Laser Driver 2, NO PWM Controls
+            DS_EMITTER_LD3          = 2,    ///< Laser Driver 3
+            DS_EMITTER_LD4_1        = 3,    ///< Laser Driver 4.1
+            DS_EMITTER_COUNT        = 4     ///< Just count
+        };
+
+        inline std::ostream & operator<<(std::ostream & out, ds_emitter_type type)
+        {
+            switch (type)
+            {
+            case DS_EMITTER_NONE: return out << "No emitter";
+            case DS_EMITTER_LD2:  return out << "Laser Driver 2, NO PWM Controls";
+            case DS_EMITTER_LD3:  return out << "Laser Driver 3";
+            case DS_EMITTER_LD4_1: return out << "Laser Driver 4.1";
+            default:
+                return out << "Other emitter type (" << (int)type << "), application needs update";
+            }
+        }
+
+        enum ds_oem_id : uint32_t
+        {
+            DS_OEM_NONE = 0
+        };
+
+        inline std::ostream & operator<<(std::ostream & out, ds_oem_id type)
+        {
+            switch (type)
+            {
+            case DS_OEM_NONE: return out << "OEM None";
+            default:
+                return out << "Unercognized OEM type (" << (int)type << "), application needs update";
+            }
+        }
+
+        enum ds_prq_type : uint8_t
+        {
+            DS_PRQ_READY= 1
+        };
+
+        inline std::ostream & operator<<(std::ostream & out, ds_prq_type type)
+        {
+            switch (type)
+            {
+            case DS_PRQ_READY: return out << "PRQ-Ready";
+            default:
+                return out << "Non-PRQ type (" << (int)type << ")";
+            }
+        }
+
+        inline std::string time_to_string(double val)
+        {
+            std::string date("Undefined value");
+
+            // rigorous validation is required due to improper handling of NAN by gcc
+            if (std::isnormal(val) && std::isfinite(val) && (!std::isnan(val)) )
+            {
+                auto time = time_t(val);
+                std::vector<char> outstr;
+                outstr.resize(200);
+                strftime(outstr.data(),outstr.size(),"%Y-%m-%d %H:%M:%S",std::gmtime(&time));
+                date = to_string()<< outstr.data() << " UTC";
+            }
+            return date;
+        }
+
+#pragma pack(push,1)
+        /// The struct is aligned with the data layout in device
+        struct ds_head_content
+        {
+            enum { DS_HEADER_VERSION_NUMBER = 12 };               // required camera header version number for DS devices
+            uint32_t        serial_number;
+            uint32_t        imager_model_number;
+            uint32_t        module_revision_number;
+            uint8_t         model_data[64];              // TODO requires additional info
+            double          build_date;
+            double          first_program_date;
+            double          focus_alignment_date;
+            int32_t         nominal_baseline_third_imager;
+            uint8_t         module_version;
+            uint8_t         module_major_version;
+            uint8_t         module_minor_version;
+            uint8_t         module_skew_version;
+            ds_lens_type    lens_type_third_imager;
+            ds_oem_id       oem_id;
+            ds_lens_coating_type lens_coating_type_third_imager;
+            uint8_t         platform_camera_support;
+            ds_prq_type     prq_type;
+            uint8_t         reserved1[2];
+            ds_emitter_type emitter_type;
+            uint8_t         reserved2[4];
+            uint32_t        camera_fpga_version;
+            uint32_t        platform_camera_focus;                  // This is the value during calibration
+            double          calibration_date;
+            uint32_t        calibration_type;
+            double          calibration_x_error;
+            double          calibration_y_error;
+            double          rectification_data_qres[54];
+            double          rectification_data_padding[26];
+            double          cx_qres;
+            double          cy_qres;
+            double          cz_qres;
+            double          kx_qres;
+            double          ky_qres;
+            uint32_t        camera_head_contents_version;
+            uint32_t        camera_head_contents_size_bytes;
+            double          cx_big;
+            double          cy_big;
+            double          cz_big;
+            double          kx_big;
+            double          ky_big;
+            double          cx_special;
+            double          cy_special;
+            double          cz_special;
+            double          kx_special;
+            double          ky_special;
+            uint8_t         camera_head_data_little_endian;
+            double          rectification_data_big[54];
+            double          rectification_data_special[54];
+            uint8_t         camera_options_1;
+            uint8_t         camera_options_2;
+            uint8_t         body_serial_number[20];
+            double          dx;
+            double          dy;
+            double          dz;
+            double          theta_x;
+            double          theta_y;
+            double          theta_z;
+            double          registration_date;
+            double          registration_rotation[9];
+            double          registration_translation[3];
+            uint32_t        nominal_baseline;
+            ds_lens_type    lens_type;
+            ds_lens_coating_type    lens_coating_type;
+            int32_t         nominal_baseline_platform[3];           // NOTE: Signed, since platform camera can be mounted anywhere
+            uint32_t        lens_type_platform;
+            uint32_t        imager_type_platform;
+            uint32_t        the_last_word;
+            uint8_t         reserved3[37];
+        };
+
+#pragma pack(pop)
+
+        struct ds_info
+        {
+            ds_head_content head_content;
+            ds_calibration calibration;
+        };
+
+
+        ds_info     read_camera_info(uvc::device & device);
         std::string read_firmware_version(uvc::device & device);
+        std::string read_isp_firmware_version(uvc::device & device);
 
         ///////////////////////////////
         //// Extension unit controls //
@@ -169,6 +390,8 @@ namespace rsimpl
 
                 case RS_OPTION_R200_AUTO_EXPOSURE_RIGHT_EDGE:
                     ret_val.exposure_right_edge = std::min((uint16_t)elem.max, ret_val.exposure_right_edge);
+                    break;
+                default :
                     break;
                 }
             }

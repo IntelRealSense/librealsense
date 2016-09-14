@@ -53,7 +53,7 @@ namespace rsimpl
             std::shared_ptr<frame_timestamp_reader> create_frame_timestamp_reader(int subdevice) const;
             std::vector<std::shared_ptr<frame_timestamp_reader>> create_frame_timestamp_readers() const override;
 
-            static void set_common_ds_config(std::shared_ptr<uvc::device> device, static_device_info& info, const ds::ds_calibration& c);
+            static void set_common_ds_config(std::shared_ptr<uvc::device> device, static_device_info& info, const ds::ds_info& cam_info);
 
             virtual void stop(rs_source source) override;
             virtual void start(rs_source source) override;
