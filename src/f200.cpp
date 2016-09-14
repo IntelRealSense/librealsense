@@ -33,7 +33,7 @@ namespace rsimpl
     };
     static const cam_mode f200_depth_modes[] = {
         {{640, 480}, {2,5,15,30,60}}, 
-        {{640, 240}, {2,5,15,30,60,110}}
+        {{640, 240}, {2,5,15,30,60}}    // 110 FPS is excluded due to a bug in timestamp field
     };
     static const cam_mode f200_ir_only_modes[] = {
         {{640, 480}, {30,60,120,240,300}}, 
@@ -45,7 +45,7 @@ namespace rsimpl
         LOG_INFO("Connecting to Intel RealSense F200");
         static_device_info info;
       
-        info.name = {"Intel RealSense F200"};
+        info.name = "Intel RealSense F200";
 
         // Color modes on subdevice 0
         info.stream_subdevices[RS_STREAM_COLOR] = 0;
@@ -88,7 +88,15 @@ namespace rsimpl
         info.presets[RS_STREAM_DEPTH   ][RS_PRESET_HIGHEST_FRAMERATE] = {true, 640, 480, RS_FORMAT_Z16,  60};
         info.presets[RS_STREAM_COLOR   ][RS_PRESET_HIGHEST_FRAMERATE] = {true, 640, 480, RS_FORMAT_RGB8, 60};
 
-        update_supported_options(*device.get(), ivcam::depth_xu, eu_F200_depth_controls, info.options);
+        // Hardcoded extension controls
+        //                                  option                         min  max    step     def
+        //                                  ------                         ---  ---    ----     ---
+        info.options.push_back({ RS_OPTION_F200_LASER_POWER,                0,  16,     1,      16  });
+        info.options.push_back({ RS_OPTION_F200_ACCURACY,                   1,  3,      1,      2   });
+        info.options.push_back({ RS_OPTION_F200_MOTION_RANGE,               0,  100,    1,      0   });
+        info.options.push_back({ RS_OPTION_F200_FILTER_OPTION,              0,  7,      1,      5   });
+        info.options.push_back({ RS_OPTION_F200_CONFIDENCE_THRESHOLD,       0,  15,     1,      6   });
+        info.options.push_back({ RS_OPTION_F200_DYNAMIC_FPS,                0,  1000,   1,      60  });
 
         rsimpl::pose depth_to_color = {transpose((const float3x3 &)c.Rt), (const float3 &)c.Tt * 0.001f}; // convert mm to m
         info.stream_poses[RS_STREAM_DEPTH] = info.stream_poses[RS_STREAM_INFRARED] = inverse(depth_to_color);

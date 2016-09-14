@@ -303,7 +303,7 @@ namespace rsimpl
         subdevice_mode_selection(const subdevice_mode & mode, int pad_crop, int unpacker_index) : mode(mode), pad_crop(pad_crop), unpacker_index(unpacker_index){}
 
         const pixel_format_unpacker & get_unpacker() const {
-            if (unpacker_index < mode.pf.unpackers.size())
+            if ((size_t)unpacker_index < mode.pf.unpackers.size())
                 return mode.pf.unpackers[unpacker_index];
             throw std::runtime_error("failed to fetch an unpakcer, most likely because enable_stream was not called!");
         }
