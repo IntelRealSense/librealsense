@@ -470,7 +470,7 @@ namespace rsimpl
             info.capabilities_vector.push_back(RS_CAPABILITIES_ADAPTER_BOARD);
 
             info.stream_subdevices[RS_STREAM_FISHEYE] = 3;
-            info.presets[RS_STREAM_FISHEYE][RS_PRESET_BEST_QUALITY] = { true, 640, 480, RS_FORMAT_RAW8,   60 };
+            info.presets[RS_STREAM_FISHEYE][RS_PRESET_BEST_QUALITY] = { true, 640, 480, RS_FORMAT_RAW8,   60, RS_OUTPUT_BUFFER_FORMAT_CONTINUOUS };
 
             info.subdevice_modes.push_back({ 3, { 640, 480 }, pf_raw8, 60, rs_intrinsics, { /*TODO:ask if we need rect_modes*/ }, { 0 } });
             info.subdevice_modes.push_back({ 3, { 640, 480 }, pf_raw8, 30, rs_intrinsics, {/*TODO:ask if we need rect_modes*/ }, { 0 } });
@@ -482,7 +482,7 @@ namespace rsimpl
                     info.options.push_back({ RS_OPTION_FISHEYE_EXPOSURE,                40, 331, 1,  40 });
             }
 
-            info.options.push_back({ RS_OPTION_FISHEYE_GAIN                                             });
+            info.options.push_back({ RS_OPTION_FISHEYE_GAIN,                            0,  0,   0,  0  });
             info.options.push_back({ RS_OPTION_FISHEYE_STROBE,                          0,  1,   1,  0  });
             info.options.push_back({ RS_OPTION_FISHEYE_EXTERNAL_TRIGGER,                0,  1,   1,  0  });
             info.options.push_back({ RS_OPTION_FISHEYE_ENABLE_AUTO_EXPOSURE,            0,  1,   1,  1  });
@@ -969,17 +969,17 @@ namespace rsimpl
         case int(auto_exposure_modes::auto_exposure_hybrid):          hybrid_decrease_exposure_gain(target_exposure, target_exposure0, exposure, gain); break;
         }
     }
-    void auto_exposure_algorithm::static_increase_exposure_gain(const float& target_exposure, const float& target_exposure0, float& exposure, float& gain)
+    void auto_exposure_algorithm::static_increase_exposure_gain(const float& /*target_exposure*/, const float& target_exposure0, float& exposure, float& gain)
     {
         exposure = std::max(minimal_exposure, std::min(target_exposure0 / base_gain, maximal_exposure));
         gain = std::min(gain_limit, std::max(target_exposure0 / exposure, base_gain));
     }
-    void auto_exposure_algorithm::static_decrease_exposure_gain(const float& target_exposure, const float& target_exposure0, float& exposure, float& gain)
+    void auto_exposure_algorithm::static_decrease_exposure_gain(const float& /*target_exposure*/, const float& target_exposure0, float& exposure, float& gain)
     {
         exposure = std::max(minimal_exposure, std::min(target_exposure0 / base_gain, maximal_exposure));
         gain = std::min(gain_limit, std::max(target_exposure0 / exposure, base_gain));
     }
-    void auto_exposure_algorithm::anti_flicker_increase_exposure_gain(const float& target_exposure, const float& target_exposure0, float& exposure, float& gain)
+    void auto_exposure_algorithm::anti_flicker_increase_exposure_gain(const float& target_exposure, const float& /*target_exposure0*/, float& exposure, float& gain)
     {
         std::vector< std::tuple<float, float, float> > exposure_gain_score;
 
@@ -1001,7 +1001,7 @@ namespace rsimpl
         exposure = std::get<1>(exposure_gain_score.front());
         gain = std::get<2>(exposure_gain_score.front());
     }
-    void auto_exposure_algorithm::anti_flicker_decrease_exposure_gain(const float& target_exposure, const float& target_exposure0, float& exposure, float& gain)
+    void auto_exposure_algorithm::anti_flicker_decrease_exposure_gain(const float& target_exposure, const float& /*target_exposure0*/, float& exposure, float& gain)
     {
         std::vector< std::tuple<float, float, float> > exposure_gain_score;
 

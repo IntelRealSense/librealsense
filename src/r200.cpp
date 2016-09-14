@@ -14,7 +14,7 @@ namespace rsimpl
     {
     }
 
-    void r200_camera::start_fw_logger(char fw_log_op_code, int grab_rate_in_ms, std::timed_mutex& mutex)
+    void r200_camera::start_fw_logger(char /*fw_log_op_code*/, int /*grab_rate_in_ms*/, std::timed_mutex& /*mutex*/)
     {
         throw std::logic_error("Not implemented");
     }

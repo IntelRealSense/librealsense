@@ -486,7 +486,7 @@ namespace rsimpl
                     for (auto output : outputs)
                     {
                         request.format = output.second;
-                        for (auto output_format = static_cast<int>(RS_OUTPUT_BUFFER_FORMAT_CONTINOUS); output_format < static_cast<int>(RS_OUTPUT_BUFFER_FORMAT_COUNT); output_format++)
+                        for (auto output_format = static_cast<int>(RS_OUTPUT_BUFFER_FORMAT_CONTINUOUS); output_format < static_cast<int>(RS_OUTPUT_BUFFER_FORMAT_COUNT); output_format++)
                         {
                             request.output_format = static_cast<rs_output_buffer_format>(output_format);
                             stream_requests[output.first].push_back(request);
