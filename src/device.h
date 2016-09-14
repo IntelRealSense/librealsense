@@ -112,6 +112,9 @@ protected:
 
     bool                                        motion_module_ready;
     std::atomic<bool>                           keep_fw_logger_alive;
+    
+    std::atomic<int>                            frames_drops_counter;
+
 public:
     rs_device_base(std::shared_ptr<rsimpl::uvc::device> device, const rsimpl::static_device_info & info, rsimpl::calibration_validator validator = rsimpl::calibration_validator());
     virtual ~rs_device_base();

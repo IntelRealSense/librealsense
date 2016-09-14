@@ -154,6 +154,7 @@ namespace rs
         fisheye_color_auto_exposure_skip_frames         , /**< In Fisheye auto-exposure sample every given number of frames */
         frames_queue_size                               , /**< Number of frames the user is allowed to keep per stream. Trying to hold-on to more frames will cause frame-drops.*/
         hardware_logger_enabled                         , /**< Enable / disable fetching log data from the device */
+        total_frame_drops                               , /**< Total number of detected frame drops from all streams*/
     };
 
     enum class blob_type {
