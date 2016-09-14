@@ -160,6 +160,12 @@
     <ProjectReference Include="..\..\examples\third_party\glfw\msvc120\glfw3.vcxproj">
       <Project>{979d0add-6ab7-403a-bb17-5434615e4446}</Project>
     </ProjectReference>
+    <ProjectReference Include="..\realsense\realsense.vcxproj">
+      <Project>{1ae4ceb5-9a0b-4b9f-9505-824fd56bb41f}</Project>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\examples\example.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets" />

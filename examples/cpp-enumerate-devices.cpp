@@ -27,7 +27,16 @@ int main() try
         if (dev->supports(rs::capabilities::motion_events)) std::cout << " Motion Module Firmware version: " << dev->get_info(rs::camera_info::motion_module_firmware_version) << "\n";
 
         // Show which options are supported by this device
-        std::cout << " Supported options:\n";
+        std::cout << " Camera info: \n";
+        for (int j = RS_CAMERA_INFO_DEVICE_NAME; j < RS_CAMERA_INFO_COUNT; ++j)
+        {
+            rs::camera_info param = (rs::camera_info)j;
+            if (dev->supports(param))
+                std::cout << "    " << std::left << std::setw(20) << rs_camera_info_to_string(rs_camera_info(param)) << ": \t" << dev->get_info(param) << std::endl;
+        }
+
+        // Show which options are supported by this device
+        std::cout << std::setw(55) << " Supported options:" << std::setw(10) << "min"  << std::setw(10) << " max" << std::setw(6) << " step" << std::setw(10) << " default" << std::endl;
         for(int j = 0; j < RS_OPTION_COUNT; ++j)
         {
             rs::option opt = (rs::option)j;
@@ -35,7 +44,7 @@ int main() try
             {
                 double min, max, step, def;
                 dev->get_option_range(opt, min, max, step, def);
-                std::cout << "    " << opt << " : " << min << " .. " << max << ", " << step << ", " << def << "\n";
+                std::cout   << "    " << std::left << std::setw(50)  << opt << " : " << std::setw(5) << min << "... " << std::setw(12) << max << std::setw(6) << step << std::setw(10) << def << "\n";
             }
         }
 

@@ -86,7 +86,7 @@ namespace rsimpl
             int         sizeOfSendCommandData;
             long        TimeOut;
             uint8_t     receivedOpcode[4];
-            uint8_t     receivedCommandData[IVCAM_MONITOR_MAX_BUFFER_SIZE];
+            uint8_t     receivedCommandData[HW_MONITOR_BUFFER_SIZE];
             size_t      receivedCommandDataLength;
         };
         

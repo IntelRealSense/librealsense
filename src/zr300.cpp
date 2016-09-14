@@ -47,8 +47,6 @@ namespace rsimpl
         std::vector<rs_option>  base_opt;
         std::vector<double>     base_opt_val;
 
-        auto & dev = get_device();
-
         // Handle ZR300 specific options first
         for (size_t i = 0; i < count; ++i)
         {
@@ -216,7 +214,7 @@ namespace rsimpl
         if (supports(RS_CAPABILITIES_FISH_EYE))
             auto_exposure = std::make_shared<auto_exposure_mechanism>(this, auto_exposure_state);
 
-        rs_device_base::start(source);
+        ds_device::start(source);
     }
 
     // Power off Fisheye camera
@@ -225,7 +223,7 @@ namespace rsimpl
         if ((supports(RS_CAPABILITIES_FISH_EYE)) && ((config.requests[RS_STREAM_FISHEYE].enabled)))
             toggle_motion_module_power(false);
 
-        rs_device_base::stop(source);
+        ds_device::stop(source);
         if (supports(RS_CAPABILITIES_FISH_EYE))
             auto_exposure.reset();
     }
@@ -428,8 +426,8 @@ namespace rsimpl
         LOG_INFO("Connecting to Intel RealSense ZR300");
 
         static_device_info info;
-        info.name = { "Intel RealSense ZR300" };
-        auto c = ds::read_camera_info(*device);
+        info.name =  "Intel RealSense ZR300" ;
+        auto cam_info = ds::read_camera_info(*device);
 
         motion_module_calibration fisheye_intrinsic;
         auto succeeded_to_read_fisheye_intrinsic = false;
@@ -470,10 +468,12 @@ namespace rsimpl
             info.capabilities_vector.push_back(RS_CAPABILITIES_ADAPTER_BOARD);
 
             info.stream_subdevices[RS_STREAM_FISHEYE] = 3;
-            info.presets[RS_STREAM_FISHEYE][RS_PRESET_BEST_QUALITY] = { true, 640, 480, RS_FORMAT_RAW8,   60 };
+            info.presets[RS_STREAM_FISHEYE][RS_PRESET_BEST_QUALITY] =
+            info.presets[RS_STREAM_FISHEYE][RS_PRESET_LARGEST_IMAGE] =
+            info.presets[RS_STREAM_FISHEYE][RS_PRESET_HIGHEST_FRAMERATE] = { true, 640, 480, RS_FORMAT_RAW8,   60 };
 
-            info.subdevice_modes.push_back({ 3, { 640, 480 }, pf_raw8, 60, rs_intrinsics, { /*TODO:ask if we need rect_modes*/ }, { 0 } });
-            info.subdevice_modes.push_back({ 3, { 640, 480 }, pf_raw8, 30, rs_intrinsics, {/*TODO:ask if we need rect_modes*/ }, { 0 } });
+            for (auto &fps : { 30, 60})
+                info.subdevice_modes.push_back({ 3, { 640, 480 }, pf_raw8, fps, rs_intrinsics, { /*TODO:ask if we need rect_modes*/ }, { 0 } });
 
             if (info.camera_info.find(RS_CAMERA_INFO_ADAPTER_BOARD_FIRMWARE_VERSION) != info.camera_info.end())
             {
@@ -492,9 +492,9 @@ namespace rsimpl
             info.options.push_back({ RS_OPTION_FISHEYE_AUTO_EXPOSURE_SKIP_FRAMES,       0,  3,   1,  2  });
             info.options.push_back({ RS_OPTION_HARDWARE_LOGGER_ENABLED,                 0,  1,   1,  0  });
         }
-        
-        ds_device::set_common_ds_config(device, info, c);
-        info.subdevice_modes.push_back({ 2, { 1920, 1080 }, pf_rw16, 30, c.intrinsicsThird[0], { c.modesThird[0][0] }, { 0 } });
+
+        ds_device::set_common_ds_config(device, info, cam_info);
+        info.subdevice_modes.push_back({ 2, { 1920, 1080 }, pf_rw16, 30, cam_info.calibration.intrinsicsThird[0], { cam_info.calibration.modesThird[0][0] }, { 0 } });
 
         if (succeeded_to_read_fisheye_intrinsic)
         {
@@ -519,17 +519,17 @@ namespace rsimpl
             }
             if (!succeeded_to_read_fisheye_intrinsic)
             {
-                LOG_WARNING("Intrinsics validation of"<<stream<<" failed, because the reading of calibration table failed");
+                LOG_WARNING("Intrinsics validation of "<<stream<<" failed, because the reading of calibration table failed");
                 return false;
             }
             if (fisheye_intrinsic.calib.fe_intrinsic.ver.size != fisheye_intrinsic.calib.fe_intrinsic.get_data_size())
             {
-                LOG_WARNING("Intrinsics validation of" << stream <<" failed, ver.size = " << fisheye_intrinsic.calib.fe_intrinsic.ver.size << " real size = " << fisheye_intrinsic.calib.fe_intrinsic.get_data_size());
+                LOG_WARNING("Intrinsics validation of " << stream << " failed, ver.size param. = " << (int)fisheye_intrinsic.calib.fe_intrinsic.ver.size << "; actual size = " << fisheye_intrinsic.calib.fe_intrinsic.get_data_size());
                 return false;
             }
             if (!fisheye_intrinsic.calib.fe_intrinsic.has_data())
             {
-                LOG_WARNING("Intrinsics validation of" << stream <<" failed, because the data is invalid");
+                LOG_WARNING("Intrinsics validation of " << stream <<" failed, because the data is invalid");
                 return false;
             }
             return true;
@@ -546,7 +546,7 @@ namespace rsimpl
                 LOG_WARNING("Exstrinsics validation of" << from_stream <<" to "<< to_stream << " failed,  because the reading of calibration table failed");
                 return false;
             }
-            if (!fisheye_intrinsic.calib.mm_extrinsic.ver.size == fisheye_intrinsic.calib.mm_extrinsic.get_data_size())
+            if (!(fisheye_intrinsic.calib.mm_extrinsic.ver.size == fisheye_intrinsic.calib.mm_extrinsic.get_data_size()))
             {
                 LOG_WARNING("Extrinsics validation of" << from_stream <<" to "<<to_stream<< " failed, ver.size = " << fisheye_intrinsic.calib.fe_intrinsic.ver.size << " real size = " << fisheye_intrinsic.calib.fe_intrinsic.get_data_size());
                 return false;
@@ -562,8 +562,6 @@ namespace rsimpl
 
         return std::make_shared<zr300_camera>(device, info, fisheye_intrinsic, calibration_validator(fisheye_extrinsics_validator, fisheye_intrinsics_validator));
     }
-
-   
 
     unsigned fisheye_auto_exposure_state::get_auto_exposure_state(rs_option option) const
     {
@@ -855,49 +853,27 @@ namespace rsimpl
         int rows = image->get_frame_height();
 
         const int number_of_pixels = cols * rows; //VGA
-        if (number_of_pixels == 0)
-        {
-            // empty image
-            return false;
-        }
+        if (number_of_pixels == 0)  return false;   // empty image
+
         std::vector<int> H(256);
-        int total_weight;
-        //    if (UseWeightedHistogram)
-        //    {
-        //        if ((Weights.cols != cols) || (Weights.rows != rows)) { /* weights matrix size != image size */ }
-        //        ImHistW(Image.get_data(), Weights.data, cols, rows, Image.step, Weights.step, &H[0], TotalWeight);
-        //    }
-        //    else
-        {
-            im_hist((uint8_t*)image->get_frame_data(), cols, rows, image->get_frame_bpp() / 8 * cols, &H[0]);
-            total_weight = number_of_pixels;
-        }
-        histogram_metric score;
+        int total_weight = number_of_pixels;
+
+        im_hist((uint8_t*)image->get_frame_data(), cols, rows, image->get_frame_bpp() / 8 * cols, &H[0]);
+
+        histogram_metric score = {};
         histogram_score(H, total_weight, score);
-        int EffectiveDynamicRange = (score.highlight_limit - score.shadow_limit);
+        //int EffectiveDynamicRange = (score.highlight_limit - score.shadow_limit);
         ///
         float s1 = (score.main_mean - 128.0f) / 255.0f;
         float s2 = 0;
-        if (total_weight != 0)
-        {
-            s2 = (score.over_exposure_count - score.under_exposure_count) / (float)total_weight;
-        }
-        else
-        {
-            LOG_ERROR("Weight=0 Error");
-            return false;
-        }
+
+        s2 = (score.over_exposure_count - score.under_exposure_count) / (float)total_weight;
+
         float s = -0.3f * (s1 + 5.0f * s2);
         LOG_DEBUG(" AnalyzeImage Score: " << s);
-        //std::cout << "----------------- " << s << std::endl;
-        /*if (fabs(s) < Hysteresis)
-        {
-        LOG_DEBUG(" AnalyzeImage < Hysteresis" << std::endl);
-        return false;
-        }*/
+
         if (s > 0)
         {
-            //        LOG_DEBUG(" AnalyzeImage: IncreaseExposure" << std::endl);
             direction = +1;
             increase_exposure_target(s, target_exposure);
         }
@@ -907,14 +883,13 @@ namespace rsimpl
             direction = -1;
             decrease_exposure_target(s, target_exposure);
         }
-        //if ((PrevDirection != 0) && (PrevDirection != Direction))
+
+        if (fabs(1.0f - (exposure * gain) / target_exposure) < hysteresis)
         {
-            if (fabs(1.0f - (exposure * gain) / target_exposure) < hysteresis)
-            {
-                LOG_DEBUG(" AnalyzeImage: Don't Modify (Hysteresis): " << target_exposure << " " << exposure * gain);
-                return false;
-            }
+            LOG_DEBUG(" AnalyzeImage: Don't Modify (Hysteresis): " << target_exposure << " " << exposure * gain);
+            return false;
         }
+
         prev_direction = direction;
         LOG_DEBUG(" AnalyzeImage: Modify");
         return true;

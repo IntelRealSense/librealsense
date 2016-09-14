@@ -270,7 +270,7 @@ namespace rsimpl
 
     struct static_device_info
     {
-        std::string name;                                                   // Model name of the camera        
+        std::string name;                                                   // Model name of the camera
         int stream_subdevices[RS_STREAM_NATIVE_COUNT];                      // Which subdevice is used to support each stream, or -1 if stream is unavailable
         int data_subdevices[RS_STREAM_NATIVE_COUNT];                        // Specify whether the subdevice supports events pipe in addition to streaming, -1 if data channels are unavailable
         std::vector<subdevice_mode> subdevice_modes;                        // A list of available modes each subdevice can be put into

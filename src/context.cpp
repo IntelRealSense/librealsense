@@ -44,6 +44,9 @@ constexpr std::array<char const, N1+N2-1> concat(char const (&a1)[N1], char cons
 
 constexpr auto rs_api_version = concat("VERSION: ",RS_API_VERSION_STR);
 
+#else    // manual version tracking is required
+static const std::string rs_api_version("VERSION: 1.9.6");
+
 #endif
 
 bool is_compatible(std::shared_ptr<rs_device> device)
@@ -93,6 +96,7 @@ rs_context_base::rs_context_base()
 rs_context* rs_context_base::instance = nullptr;
 int rs_context_base::ref_count = 0;
 std::mutex rs_context_base::instance_lock;
+std::string rs_context_base::api_version = std::string(rs_api_version.begin(),rs_api_version.end());
 
 rs_context* rs_context_base::acquire_instance()
 {
