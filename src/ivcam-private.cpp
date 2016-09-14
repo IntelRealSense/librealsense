@@ -170,9 +170,9 @@ namespace ivcam {
 
     // "Get Version and Date"
     // Reference: Commands.xml in IVCAM_DLL
-    void get_gvd(uvc::device & device, std::timed_mutex & mutex, size_t sz, char * gvd, int gvd_cmd)
+    void get_gvd(uvc::device & device, std::timed_mutex & mutex, size_t sz, char * gvd, uint8_t gvd_cmd)
     {
-        hwmon_cmd cmd((uint8_t)gvd_cmd);
+        hwmon_cmd cmd(gvd_cmd);
         perform_and_send_monitor_command_over_usb_monitor(device, mutex, cmd);
         auto minSize = std::min(sz, cmd.receivedCommandDataLength);
         memcpy(gvd, cmd.receivedCommandData, minSize);
@@ -208,14 +208,14 @@ namespace ivcam {
 
     void force_hardware_reset(uvc::device & device, std::timed_mutex & mutex)
     {
-        hwmon_cmd cmd((uint8_t)fw_cmd::HWReset);
+        hwmon_cmd cmd(fw_cmd::HWReset);
         cmd.oneDirection = true;
         perform_and_send_monitor_command_over_usb_monitor(device, mutex, cmd);
     }
 
     void enable_timestamp(uvc::device & device, std::timed_mutex & mutex, bool colorEnable, bool depthEnable)
     {
-        hwmon_cmd cmd((uint8_t)fw_cmd::TimeStampEnable);
+        hwmon_cmd cmd(fw_cmd::TimeStampEnable);
         cmd.Param1 = depthEnable ? 1 : 0;
         cmd.Param2 = colorEnable ? 1 : 0;
         perform_and_send_monitor_command_over_usb_monitor(device, mutex, cmd);
@@ -223,7 +223,7 @@ namespace ivcam {
 
     void set_auto_range(uvc::device & device, std::timed_mutex & mutex, int enableMvR, int16_t minMvR, int16_t maxMvR, int16_t startMvR, int enableLaser, int16_t minLaser, int16_t maxLaser, int16_t startLaser, int16_t ARUpperTH, int16_t ARLowerTH)
     {
-        hwmon_cmd CommandParameters((uint8_t)fw_cmd::SetAutoRange);
+        hwmon_cmd CommandParameters(fw_cmd::SetAutoRange);
         CommandParameters.Param1 = enableMvR;
         CommandParameters.Param2 = enableLaser;
 
@@ -254,7 +254,7 @@ namespace ivcam {
 
     FirmwareError get_fw_last_error(uvc::device & device, std::timed_mutex & mutex)
     {
-        hwmon_cmd cmd((uint8_t)fw_cmd::GetFWLastError);
+        hwmon_cmd cmd(fw_cmd::GetFWLastError);
         memset(cmd.data, 0, 4);
 
         perform_and_send_monitor_command_over_usb_monitor(device, mutex, cmd);
@@ -302,7 +302,7 @@ namespace f200
         // 6 - INVR HVGA (640x240)
         // 7 - INVR 640x360
 
-        hwmon_cmd command((uint8_t)fw_cmd::UpdateCalib);
+        hwmon_cmd command(fw_cmd::UpdateCalib);
 
         memcpy(command.data, coeffs.CoefValueArray, NUM_OF_CALIBRATION_COEFFS * sizeof(float));
         command.Param1 = 0; // todo - Send appropriate value at appropriate times, see above
@@ -318,7 +318,7 @@ namespace f200
 
     float read_mems_temp(uvc::device & device, std::timed_mutex & mutex)
     {
-        hwmon_cmd command((uint8_t)fw_cmd::GetMEMSTemp);
+        hwmon_cmd command(fw_cmd::GetMEMSTemp);
         command.Param1 = 0;
         command.Param2 = 0;
         command.Param3 = 0;
@@ -334,7 +334,7 @@ namespace f200
 
     int read_ir_temp(uvc::device & device, std::timed_mutex & mutex)
     {
-        hwmon_cmd command((uint8_t)fw_cmd::GetIRTemp);
+        hwmon_cmd command(fw_cmd::GetIRTemp);
         command.Param1 = 0;
         command.Param2 = 0;
         command.Param3 = 0;
@@ -622,7 +622,7 @@ namespace sr300 {
     ///////////////////
     void get_sr300_calibration_raw_data(uvc::device & device, std::timed_mutex & mutex, uint8_t * data, size_t & bytesReturned)
     {
-        hwmon_cmd command((uint8_t)fw_cmd::GetCalibrationTable);
+        hwmon_cmd command(fw_cmd::GetCalibrationTable);
         command.Param1 = (uint32_t)cam_data_source::TakeFromRAM;
 
         perform_and_send_monitor_command_over_usb_monitor(device, mutex, command);

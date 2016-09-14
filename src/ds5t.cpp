@@ -45,10 +45,10 @@ namespace rsimpl
         static_device_info info;
 
         // Populate miscellaneous info about device
-        info.name = {"Intel RealSense DS5 Tracking"};
+        info.name = { camera_official_name.at(cameras::ds5) + std::string(" Tracking")};
         std::timed_mutex mutex;
-        ds5::get_module_serial_string(*device, mutex, info.serial, ds5::fw_version_offset);
-        ds5::get_firmware_version_string(*device, mutex, info.firmware_version);
+        ds5::get_string_of_gvd_field(*device, mutex, info.serial, ds5::fw_version_offset);
+        ds5::get_string_of_gvd_field(*device, mutex, info.firmware_version, ds5::asic_module_serial_offset);
 
         info.nominal_depth_scale = 0.001f;
 
@@ -160,7 +160,7 @@ namespace rsimpl
 
     std::shared_ptr<rs_device> make_ds5t_device(std::shared_ptr<uvc::device> device)
     {
-        LOG_INFO("Connecting to Intel RealSense DS5 Tracking");
+        LOG_INFO("Connecting to " << camera_official_name.at(cameras::ds5) << " Tracking");
 
         ds5::claim_ds5_monitor_interface(*device);
         ds5::claim_ds5_motion_module_interface(*device);

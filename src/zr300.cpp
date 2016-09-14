@@ -335,7 +335,7 @@ namespace rsimpl
 
     unsigned long long zr300_camera::get_frame_counter_by_usb_cmd()
     {
-        hwmon_cmd cmd((int)adaptor_board_command::FRCNT);
+        hwmon_cmd cmd(adaptor_board_command::FRCNT);
         perform_and_send_monitor_command_over_usb_monitor(this->get_device(), usbMutex, cmd);
         unsigned long long frame_counter = 0;
         memcpy(&frame_counter, cmd.receivedCommandData, cmd.receivedCommandDataLength);
@@ -425,10 +425,10 @@ namespace rsimpl
 
     std::shared_ptr<rs_device> make_zr300_device(std::shared_ptr<uvc::device> device)
     {
-        LOG_INFO("Connecting to Intel RealSense ZR300");
+        LOG_INFO("Connecting to " << camera_official_name.at(cameras::zr300));
 
         static_device_info info;
-        info.name = { "Intel RealSense ZR300" };
+        info.name = { camera_official_name.at(cameras::zr300) };
         auto c = ds::read_camera_info(*device);
 
         motion_module_calibration fisheye_intrinsic;

@@ -2,6 +2,7 @@
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
 #include <iostream>
+#include <iomanip>
 #include "types.h"
 #include "hw-monitor.h"
 #include "ds-private.h"
@@ -138,45 +139,53 @@ namespace ds5 {
     }
 
     // "Get Version and Date"
-    void get_gvd(uvc::device & device, std::timed_mutex & mutex, size_t sz, char * gvd)
+    void get_gvd_raw(uvc::device & device, std::timed_mutex & mutex, size_t sz, unsigned char * gvd)
     {
-        hwmon_cmd cmd((uint8_t)fw_cmd::GVD);
+        hwmon_cmd cmd(fw_cmd::GVD);
         perform_and_send_monitor_command_over_usb_monitor(device, mutex, cmd);
-        auto minSize = std::min(sz, cmd.receivedCommandDataLength);
-        memcpy(gvd, cmd.receivedCommandData, minSize);
+
+        if (cmd.receivedCommandDataLength > sz)
+            LOG_WARNING("received command data length is greater than ds5 gvd_size");
+
+        auto min_size = std::min(sz, cmd.receivedCommandDataLength);
+        memcpy(gvd, cmd.receivedCommandData, min_size);
     }
 
-    void get_firmware_version_string(uvc::device & device, std::timed_mutex & mutex, std::string & version)
+    void get_string_of_gvd_field(uvc::device & device, std::timed_mutex & mutex, std::string & str, gvd_offset_fields offset)
     {
-        std::vector<char> gvd(1024);
-        get_gvd(device, mutex, 1024, gvd.data());
-        char fws[8];
-        memcpy(fws, gvd.data() + gvd_fields::fw_version_offset, sizeof(uint32_t)); // Four-bytes at address 0x20C
-        version = std::string(std::to_string(fws[3]) + "." + std::to_string(fws[2]) + "." + std::to_string(fws[1]) + "." + std::to_string(fws[0]));
-    }
+        if (offset > gvd_size)
+            throw std::logic_error("offset can't be greater than ds5 gvd_size");
 
-    void get_module_serial_string(uvc::device & device, std::timed_mutex & mutex, std::string & serial, unsigned int offset)
-    {
-        std::vector<char> gvd(1024);
-        get_gvd(device, mutex, 1024, gvd.data());
-        unsigned char ss[8];
-        memcpy(ss, gvd.data() + offset, 8);
-        char formattedBuffer[64];
-        if (offset == 96)
+        std::vector<unsigned char> gvd(gvd_size);
+        get_gvd_raw(device, mutex, gvd_size, gvd.data());
+        unsigned char* gvd_pointer = gvd.data() + offset;
+        std::stringstream ss;
+
+        switch (offset)
         {
-            sprintf(formattedBuffer, "%02X%02X%02X%02X%02X%02X", ss[0], ss[1], ss[2], ss[3], ss[4], ss[5]);
-            serial = std::string(formattedBuffer);
+        case gvd_offset_fields::asic_module_serial_offset:
+            ss << std::hex << std::setfill('0') << std::setw(2) << static_cast<int>(gvd_pointer[0]) <<
+                              std::setfill('0') << std::setw(2) << static_cast<int>(gvd_pointer[1]) <<
+                              std::setfill('0') << std::setw(2) << static_cast<int>(gvd_pointer[2]) <<
+                              std::setfill('0') << std::setw(2) << static_cast<int>(gvd_pointer[3]) <<
+                              std::setfill('0') << std::setw(2) << static_cast<int>(gvd_pointer[4]) <<
+                              std::setfill('0') << std::setw(2) << static_cast<int>(gvd_pointer[5]);
+            break;
+        case gvd_offset_fields::fw_version_offset:
+            ss << static_cast<int>(gvd_pointer[3]) << "." <<
+                  static_cast<int>(gvd_pointer[2]) << "." <<
+                  static_cast<int>(gvd_pointer[1]) << "." <<
+                  static_cast<int>(gvd_pointer[0]);
+            break;
+        default:
+            LOG_WARNING("DS5 gvd offset doesn't exist");
         }
-        else if (offset == 132)
-        {
-            sprintf(formattedBuffer, "%02X%02X%02X%02X%02X%-2X", ss[0], ss[1], ss[2], ss[3], ss[4], ss[5]);
-            serial = std::string(formattedBuffer);
-        }
+        str = ss.str();
     }
 
     void get_calibration_table_entry(uvc::device & device, std::timed_mutex & mutex,calibration_table_id table_id, std::vector<uint8_t> & raw_data)
     {
-        hwmon_cmd cmd((uint8_t)fw_cmd::GETINTCAL);
+        hwmon_cmd cmd(fw_cmd::GETINTCAL);
         cmd.Param1 = table_id;
         perform_and_send_monitor_command_over_usb_monitor(device, mutex, cmd);
         raw_data.resize(cmd.receivedCommandDataLength);

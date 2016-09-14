@@ -42,10 +42,10 @@ namespace rsimpl
 
     static static_device_info get_f200_info(std::shared_ptr<uvc::device> device, const ivcam::camera_calib_params & c)
     {
-        LOG_INFO("Connecting to Intel RealSense F200");
+        LOG_INFO("Connecting to " << camera_official_name.at(cameras::f200));
         static_device_info info;
       
-        info.name = {"Intel RealSense F200"};
+        info.name = { camera_official_name.at(cameras::f200) };
 
         // Color modes on subdevice 0
         info.stream_subdevices[RS_STREAM_COLOR] = 0;

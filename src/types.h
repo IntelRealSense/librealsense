@@ -653,6 +653,23 @@ namespace rsimpl
     float3x3 calc_rodrigues_matrix(const std::vector<double> rot);
     // Auxillary function that calculates standard 32bit CRC code. used in verificaiton
     uint32_t calc_crc32(uint8_t *buf, size_t bufsize);;
+
+    enum class cameras : int{
+        f200,
+        sr300,
+        r200,
+        lr200,
+        zr300,
+        ds5
+    };
+
+    static const std::map<cameras, const char*> camera_official_name = {{cameras::f200,  "Intel RealSense F200" },
+                                                                        {cameras::sr300, "Intel RealSense SR300"},
+                                                                        {cameras::r200,  "Intel RealSense R200" },
+                                                                        {cameras::lr200, "Intel RealSense LR200"},
+                                                                        {cameras::zr300, "Intel RealSense ZR300"},
+                                                                        {cameras::ds5,   "Intel RealSense DS5"  }};
+
 }
 
 #endif

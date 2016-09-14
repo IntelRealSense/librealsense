@@ -26,10 +26,10 @@ namespace rsimpl
 
     std::shared_ptr<rs_device> make_r200_device(std::shared_ptr<uvc::device> device)
     {
-        LOG_INFO("Connecting to Intel RealSense R200");
+        LOG_INFO("Connecting to " << camera_official_name.at(cameras::r200));
 
         static_device_info info;
-        info.name = { "Intel RealSense R200" };
+        info.name = { camera_official_name.at(cameras::r200) };
         auto c = ds::read_camera_info(*device);
 
         ds_device::set_common_ds_config(device, info, c);
@@ -42,10 +42,10 @@ namespace rsimpl
 
     std::shared_ptr<rs_device> make_lr200_device(std::shared_ptr<uvc::device> device)
     {
-        LOG_INFO("Connecting to Intel RealSense LR200");
+        LOG_INFO("Connecting to " << camera_official_name.at(cameras::lr200));
 
         static_device_info info;
-        info.name = { "Intel RealSense LR200" };
+        info.name = { camera_official_name.at(cameras::lr200) };
         auto c = ds::read_camera_info(*device);
 
         ds_device::set_common_ds_config(device, info, c);

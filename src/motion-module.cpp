@@ -129,7 +129,7 @@ void motion_module_control::set_control(mm_request request, bool on)
         throw std::logic_error(to_string() << " unsupported control requested :" << (int)request << " valid range is [1,2]");
     }
 
-    hw_monitor::hwmon_cmd cmd((uint8_t)cmd_opcode);
+    hw_monitor::hwmon_cmd cmd(cmd_opcode);
     cmd.Param1 = (on) ? 1 : 0;
 
     // Motion module will always use the auxillary USB handle (1) for
@@ -156,7 +156,7 @@ void motion_module_control::toggle_motion_module_events(bool on)
 // Write a buffer to the IAP I2C register.
 void motion_module_control::i2c_iap_write(uint16_t slave_address, uint8_t *buffer, uint16_t len)
 {
-    hw_monitor::hwmon_cmd cmd((int)adaptor_board_command::IAP_IWB);
+    hw_monitor::hwmon_cmd cmd(adaptor_board_command::IAP_IWB);
 
     cmd.Param1 = slave_address;
     cmd.Param2 = len;
