@@ -109,6 +109,7 @@ namespace rsimpl
         info.options.push_back({ RS_OPTION_DS5_LASER_POWER, 0, 1, 1, 0 });
         info.options.push_back({ RS_OPTION_COLOR_GAIN });
         info.options.push_back({ RS_OPTION_R200_LR_EXPOSURE, 40, 1660, 1, 100 });
+        info.options.push_back({ RS_OPTION_HARDWARE_LOGGER_ENABLED, 0, 1, 1, 0 });
 
         rsimpl::pose depth_to_infrared2 = { transpose((const float3x3 &)calib.depth_extrinsic.rotation), (const float3 &)calib.depth_extrinsic.translation * 0.001f }; // convert mm to m
         info.stream_poses[RS_STREAM_DEPTH] = info.stream_poses[RS_STREAM_INFRARED] = { { { 1,0,0 },{ 0,1,0 },{ 0,0,1 } },{ 0,0,0 } };
@@ -143,8 +144,9 @@ namespace rsimpl
 
             switch (options[i])
             {
-            case RS_OPTION_DS5_LASER_POWER:     ds5::set_laser_power(get_device(), static_cast<uint8_t>(values[i])); break;
-            case RS_OPTION_R200_LR_EXPOSURE:    ds5::set_lr_exposure(get_device(), static_cast<uint16_t>(values[i])); break;
+            case RS_OPTION_DS5_LASER_POWER:         ds5::set_laser_power(get_device(), static_cast<uint8_t>(values[i])); break;
+            case RS_OPTION_R200_LR_EXPOSURE:        ds5::set_lr_exposure(get_device(), static_cast<uint16_t>(values[i])); break;
+            case RS_OPTION_HARDWARE_LOGGER_ENABLED: set_fw_logger_option(values[i]); break;
 
             default: base_opt.push_back(options[i]); base_opt_val.push_back(values[i]); break;
             }
@@ -174,7 +176,8 @@ namespace rsimpl
 
             switch (options[i])
             {
-                case RS_OPTION_R200_LR_EXPOSURE:    values[i] = ds5::get_lr_exposure(get_device()); break;
+                case RS_OPTION_R200_LR_EXPOSURE:        values[i] = ds5::get_lr_exposure(get_device()); break;
+                case RS_OPTION_HARDWARE_LOGGER_ENABLED: values[i] = get_fw_logger_option(); break;
 
                 default: base_opt.push_back(options[i]); base_opt_val.push_back(values[i]); break;
             }
@@ -233,6 +236,25 @@ namespace rsimpl
         ds5::claim_ds5_monitor_interface(*device);
 
         return std::make_shared<ds5d_camera>(device, get_ds5d_info(device, "Intel RealSense DS5 Passive"), false);
+    }
+
+    void ds5d_camera::set_fw_logger_option(double value)
+    {
+        if (value >= 1)
+        {
+            if (!rs_device_base::keep_fw_logger_alive)
+                rs_device_base::start_fw_logger(char(ds5d_command::GLD), 100, usbMutex);
+        }
+        else
+        {
+            if (rs_device_base::keep_fw_logger_alive)
+                rs_device_base::stop_fw_logger();
+        }
+    }
+
+    unsigned ds5d_camera::get_fw_logger_option()
+    {
+        return rs_device_base::keep_fw_logger_alive;
     }
 
 } // namespace rsimpl::ds5d
