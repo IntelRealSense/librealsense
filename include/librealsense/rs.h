@@ -189,7 +189,9 @@ typedef enum rs_option
     RS_OPTION_FISHEYE_AUTO_EXPOSURE_SKIP_FRAMES               , /**< In Fisheye auto-exposure sample every given number of frames */
     RS_OPTION_FRAMES_QUEUE_SIZE                               , /**< Number of frames the user is allowed to keep per stream. Trying to hold-on to more frames will cause frame-drops.*/
     RS_OPTION_HARDWARE_LOGGER_ENABLED                         , /**< Enable / disable fetching log data from the device */
-    RS_OPTION_COUNT
+    RS_OPTION_TOTAL_FRAME_DROPS                               , /**< Total number of detected frame drops from all streams */
+    RS_OPTION_COUNT,
+
 } rs_option;
 
 typedef enum rs_blob_type {
