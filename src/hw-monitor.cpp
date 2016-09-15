@@ -128,7 +128,7 @@ namespace rsimpl
             }
         }
 
-        void perform_and_send_monitor_command(uvc::device & device, std::timed_mutex & mutex, unsigned char handle_id, hwmon_cmd & newCommand)
+        void perform_and_send_monitor_command(uvc::device & device, std::timed_mutex & mutex, unsigned char /*handle_id*/, hwmon_cmd & newCommand)
         {
             uint32_t opCodeXmit = (uint32_t)newCommand.cmd;
 

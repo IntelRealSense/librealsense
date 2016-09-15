@@ -90,7 +90,7 @@ rs_motion_intrinsics rs_device_base::get_motion_intrinsics() const
     throw std::runtime_error("Motion intrinsic is not supported for this device");
 }
 
-rs_extrinsics rs_device_base::get_motion_extrinsics_from(rs_stream from) const
+rs_extrinsics rs_device_base::get_motion_extrinsics_from(rs_stream /*from*/) const
 {
     throw std::runtime_error("Motion extrinsics does not supported");
 }

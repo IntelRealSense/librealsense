@@ -18,7 +18,7 @@ namespace rsimpl
         virtual rs_extrinsics                   get_extrinsics_to(const rs_stream_interface & other) const override;
         virtual rsimpl::pose                    get_pose() const = 0;
         virtual int                             get_mode_count() const override { return 0; }
-        virtual void                            get_mode(int mode, int * w, int * h, rs_format * f, int * fps) const override { throw std::logic_error("no modes"); }
+        virtual void                            get_mode(int /*mode*/, int * /*w*/, int * /*h*/, rs_format * /*f*/, int * /*fps*/) const override { throw std::logic_error("no modes"); }
         virtual rs_stream                       get_stream_type()const override { return stream; }
 
         const rs_stream   stream;

@@ -74,7 +74,7 @@ typedef enum rs_format
 
 typedef enum rs_output_buffer_format
 {
-    RS_OUTPUT_BUFFER_FORMAT_CONTINOUS      ,/**< Makes sure that the output frame is exposed as a single continuous buffer */
+    RS_OUTPUT_BUFFER_FORMAT_CONTINUOUS      ,/**< Makes sure that the output frame is exposed as a single continuous buffer */
     RS_OUTPUT_BUFFER_FORMAT_NATIVE         ,/**< Don't convert buffer to continuous, the user has to handle pitch manually */
     RS_OUTPUT_BUFFER_FORMAT_COUNT
 } rs_output_buffer_format;

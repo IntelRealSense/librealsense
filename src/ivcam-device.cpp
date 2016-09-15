@@ -21,7 +21,7 @@ namespace rsimpl
 
     rs_intrinsics MakeColorIntrinsics(const ivcam::camera_calib_params & c, const int2 & dims)
     {
-        rs_intrinsics intrin = { dims.x, dims.y, c.Kt[0][2] * 0.5f + 0.5f, c.Kt[1][2] * 0.5f + 0.5f, c.Kt[0][0] * 0.5f, c.Kt[1][1] * 0.5f, RS_DISTORTION_NONE };
+        rs_intrinsics intrin = { dims.x, dims.y, c.Kt[0][2] * 0.5f + 0.5f, c.Kt[1][2] * 0.5f + 0.5f, c.Kt[0][0] * 0.5f, c.Kt[1][1] * 0.5f, RS_DISTORTION_NONE, {} };
         if (dims.x * 3 == dims.y * 4) // If using a 4:3 aspect ratio, adjust intrinsics (defaults to 16:9)
         {
             intrin.fx *= 4.0f / 3;
@@ -70,7 +70,7 @@ namespace rsimpl
         rs_device_base::stop_fw_logger();
     }
 
-    void iv_camera::on_before_start(const std::vector<subdevice_mode_selection> & selected_modes)
+    void iv_camera::on_before_start(const std::vector<subdevice_mode_selection> & /*selected_modes*/)
     {
     }
 
@@ -201,7 +201,7 @@ namespace rsimpl
             return false;
         }
 
-        double get_frame_timestamp(const subdevice_mode & mode, const void * frame) override
+        double get_frame_timestamp(const subdevice_mode & /*mode*/, const void * frame) override
         {
             // Timestamps are encoded within the first 32 bits of the image
             int rolling_timestamp = *reinterpret_cast<const int32_t *>(frame);
@@ -218,7 +218,7 @@ namespace rsimpl
             const int timestamp = static_cast<int>(total / 100000);
             return timestamp;
         }
-        unsigned long long get_frame_counter(const subdevice_mode & mode, const void * frame) override
+        unsigned long long get_frame_counter(const subdevice_mode & /*mode*/, const void * /*frame*/) override
         {
             return ++counter;
         }
