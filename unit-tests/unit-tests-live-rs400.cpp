@@ -18,7 +18,7 @@
 #include "librealsense/rs.hpp"
 
 
-TEST_CASE("RS400 devices support all required options", "[live] [DS-device]")
+TEST_CASE("RS400 device supports all required options", "[live] [DS-device]")
 {
     rs::log_to_console(rs::log_severity::warn);
     // Require at least one device to be plugged in
@@ -110,7 +110,7 @@ TEST_CASE("RS400 asynchronous controls", "[live] [DS-device]")
         REQUIRE(std::string::npos != name.find("Intel RealSense RS400"));
 
         double lsr_init_power = 0.;
-        rs::option opt = rs::option::ds5_laser_power;
+        rs::option opt = rs::option::rs400_laser_power;
 
         dev->get_options(&opt, 1, &lsr_init_power);
         INFO("Initial laser power value obtained from hardware is " << lsr_init_power);
@@ -155,7 +155,7 @@ TEST_CASE("RS400 laser power control verification", "[live] [DS-device]")
     double set_val = 1., reset_val = 0., res = 0.;
 
     double lsr_init_power = 0.;
-    rs::option opt = rs::option::RS400_laser_power;
+    rs::option opt = rs::option::rs400_laser_power;
 
     dev->get_options(&opt, 1, &lsr_init_power);
     std::this_thread::sleep_for(std::chrono::milliseconds(20));

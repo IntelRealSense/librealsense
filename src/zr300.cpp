@@ -20,9 +20,9 @@ namespace rsimpl
     zr300_camera::zr300_camera(std::shared_ptr<uvc::device> device, const static_device_info & info, motion_module_calibration in_fe_intrinsic, calibration_validator validator)
     : ds_device(device, info, validator),
       motion_module_ctrl(device.get(), usbMutex),
-      fe_intrinsic(in_fe_intrinsic),
       auto_exposure(nullptr),
-      to_add_frames((auto_exposure_state.get_auto_exposure_state(RS_OPTION_FISHEYE_ENABLE_AUTO_EXPOSURE) == 1))
+      to_add_frames((auto_exposure_state.get_auto_exposure_state(RS_OPTION_FISHEYE_ENABLE_AUTO_EXPOSURE) == 1)),
+      fe_intrinsic(in_fe_intrinsic)
     {}
     
     zr300_camera::~zr300_camera()
@@ -613,7 +613,9 @@ namespace rsimpl
         }
     }
 
-    auto_exposure_mechanism::auto_exposure_mechanism(zr300_camera* dev, fisheye_auto_exposure_state auto_exposure_state) : keep_alive(true), device(dev), sync_archive(nullptr), skip_frames(get_skip_frames(auto_exposure_state)), auto_exposure_algo(auto_exposure_state), frames_counter(0)
+    auto_exposure_mechanism::auto_exposure_mechanism(zr300_camera* dev, fisheye_auto_exposure_state auto_exposure_state) :
+        device(dev), auto_exposure_algo(auto_exposure_state), sync_archive(nullptr), keep_alive(true),
+        frames_counter(0), skip_frames(get_skip_frames(auto_exposure_state))
     {
         exposure_thread = std::make_shared<std::thread>([this]() {
             while (keep_alive)
@@ -738,7 +740,7 @@ namespace rsimpl
         double exp;
         auto it = std::find_if(exposure_and_frame_counter_queue.begin(), exposure_and_frame_counter_queue.end(),
             [&](const exposure_and_frame_counter& element) {
-            int diff = std::abs(static_cast<int>(frame_counter - element.frame_counter));
+            unsigned long long diff = (ulong)std::abs(static_cast<int>(frame_counter - element.frame_counter));
             if (diff < min)
             {
                 min = diff;
