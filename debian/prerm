@@ -20,7 +20,7 @@ set -e
 case "$1" in
 
   remove)
-    dkms remove -m uvcvideo -v "1.1.1-1-realsense" --all || true
+    dkms remove -m uvcvideo -v "1.1.1-2-realsense" --all || true
   ;;
 
   upgrade|failed-upgrade|deconfigure)

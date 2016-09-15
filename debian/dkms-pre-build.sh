@@ -22,7 +22,7 @@ else
 fi
 
 PACKAGE_NAME="uvcvideo"
-PACKAGE_VERSION="1.1.1-1-realsense"
+PACKAGE_VERSION="1.1.1-2-realsense"
 
 PATCH_DIR="/usr/src/${PACKAGE_NAME}-${PACKAGE_VERSION}/patches/"
 PATCH="/dev/null"
@@ -59,18 +59,18 @@ fi
 
 # Check for uvcvideo patches in drivers/media/usb/uvc/uvc_driver.c
 UVC_MODULE_PATH="drivers/media/usb/uvc"
-PATCHED_FORMATS=$(/bin/egrep '\((Y8I|Y12I|Z16|RW10|INVZ|INZI|INVR|INRI|INVI|RELI)\)' \
+PATCHED_FORMATS=$(/bin/egrep '\((Y8I|Y12I|Z16|RW10|INVZ|INZI|INVR|INRI|INVI|RELI|L8|L16|D16)\)' \
     ${UVC_MODULE_PATH}/uvc_driver.c | /usr/bin/wc -l)
 case "${PATCHED_FORMATS}" in
-  10)
-    echo "INFO: Intel RealSense(TM) F200, R200, and SR300 cameras are already supported."
+  13)
+    echo "INFO: Intel RealSense(TM) F200, SR300, R200, LR200, and ZR300 cameras are already supported."
   ;;
   3)
-    PATCH="${PATCH_DIR}/realsense-uvcvideo-add-7-formats.patch"
+    PATCH="${PATCH_DIR}/realsense-uvcvideo-add-10-formats.patch"
     echo "INFO: Only Intel RealSense(TM) R200 camera is currently supported."
   ;;
   *)
-    PATCH="${PATCH_DIR}/realsense-uvcvideo-add-10-formats.patch"
+    PATCH="${PATCH_DIR}/realsense-uvcvideo-add-13-formats.patch"
     echo "INFO: No Intel RealSense(TM) cameras are currently supported."
   ;;
 esac
