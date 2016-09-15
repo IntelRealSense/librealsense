@@ -18,7 +18,7 @@
 #include "librealsense/rs.hpp"
 
 
-TEST_CASE("DS5 devices support all required options", "[live] [DS-device]")
+TEST_CASE("RS400 devices support all required options", "[live] [DS-device]")
 {
     rs::log_to_console(rs::log_severity::warn);
     // Require at least one device to be plugged in
@@ -26,7 +26,7 @@ TEST_CASE("DS5 devices support all required options", "[live] [DS-device]")
     const int device_count = rs_get_device_count(ctx, require_no_error());
     REQUIRE(device_count > 0);
 
-    const int supported_options[] = { RS_OPTION_DS5_LASER_POWER };
+    const int supported_options[] = { RS_OPTION_RS400_LASER_POWER };
 
     SECTION("DS5 supports specific extended UVC controls, and nothing else")
     {
@@ -55,7 +55,7 @@ TEST_CASE("DS5 devices support all required options", "[live] [DS-device]")
     }
 }
 
-TEST_CASE("DS5 correctly recognizes invalid options", "[live] [DS-device]")
+TEST_CASE("RS400 correctly recognizes invalid options", "[live] [DS-device]")
 {
     rs::context ctx;
     REQUIRE(ctx.get_device_count() == 1);
@@ -64,7 +64,7 @@ TEST_CASE("DS5 correctly recognizes invalid options", "[live] [DS-device]")
     REQUIRE(nullptr != dev);
 
     std::string name = dev->get_name();
-    REQUIRE(std::string::npos != name.find("Intel RealSense DS5"));
+    REQUIRE(std::string::npos != name.find("Intel RealSense RS400"));
 
     size_t index = 0;
     double val = 0;
@@ -93,7 +93,7 @@ TEST_CASE("DS5 correctly recognizes invalid options", "[live] [DS-device]")
     }
 }
 
-TEST_CASE("DS5 asynchronous controls", "[live] [DS-device]")
+TEST_CASE("RS400 asynchronous controls", "[live] [DS-device]")
 {
     for (int i=0; i< 10; i++)
     {
@@ -107,7 +107,7 @@ TEST_CASE("DS5 asynchronous controls", "[live] [DS-device]")
 
         std::string name = dev->get_name();
         INFO("Device name is " << name);
-        REQUIRE(std::string::npos != name.find("Intel RealSense DS5"));
+        REQUIRE(std::string::npos != name.find("Intel RealSense RS400"));
 
         double lsr_init_power = 0.;
         rs::option opt = rs::option::ds5_laser_power;
@@ -140,7 +140,7 @@ TEST_CASE("DS5 asynchronous controls", "[live] [DS-device]")
     }
 }
 
-TEST_CASE("DS5 laser power control verification", "[live] [DS-device]")
+TEST_CASE("RS400 laser power control verification", "[live] [DS-device]")
 {
     rs::context ctx;
     REQUIRE(ctx.get_device_count() == 1);
@@ -149,13 +149,13 @@ TEST_CASE("DS5 laser power control verification", "[live] [DS-device]")
     REQUIRE(nullptr != dev);
 
     std::string name = dev->get_name();
-    REQUIRE(std::string::npos != name.find("Intel RealSense DS5"));
+    REQUIRE(std::string::npos != name.find("Intel RealSense RS400"));
 
     int index = 0;
     double set_val = 1., reset_val = 0., res = 0.;
 
     double lsr_init_power = 0.;
-    rs::option opt = rs::option::ds5_laser_power;
+    rs::option opt = rs::option::RS400_laser_power;
 
     dev->get_options(&opt, 1, &lsr_init_power);
     std::this_thread::sleep_for(std::chrono::milliseconds(20));
@@ -181,7 +181,7 @@ TEST_CASE("DS5 laser power control verification", "[live] [DS-device]")
     REQUIRE(lsr_init_power == res);
 }
 
-TEST_CASE("DS5 Streaming Formats validation", "[live] [DS-device]")
+TEST_CASE("RS400 Streaming Formats validation", "[live] [DS-device]")
 {
     // Require only one device to be plugged in
     safe_context ctx;
@@ -192,7 +192,7 @@ TEST_CASE("DS5 Streaming Formats validation", "[live] [DS-device]")
     REQUIRE(dev != nullptr);
 
     std::string name = dev->get_name();
-    REQUIRE(std::string::npos != name.find("Intel RealSense DS5"));
+    REQUIRE(std::string::npos != name.find("Intel RealSense RS400"));
 
     SECTION( "Streaming depth configurations: [640X480] X [15,30,60]FPS ")
     {
@@ -205,7 +205,7 @@ TEST_CASE("DS5 Streaming Formats validation", "[live] [DS-device]")
     }
 }
 
-TEST_CASE("DS5 Manual Gain Control verification", "[live] [DS-device]")
+TEST_CASE("RS400 Manual Gain Control verification", "[live] [DS-device]")
 {
     rs::context ctx;
     REQUIRE(ctx.get_device_count() == 1);
@@ -214,7 +214,7 @@ TEST_CASE("DS5 Manual Gain Control verification", "[live] [DS-device]")
     REQUIRE(nullptr != dev);
 
     std::string name = dev->get_name();
-    REQUIRE(std::string::npos != name.find("Intel RealSense DS5"));
+    REQUIRE(std::string::npos != name.find("Intel RealSense RS400"));
 
     int index = 0;
     double set_val = 30., reset_val = 80., res = 0.;
@@ -246,7 +246,7 @@ TEST_CASE("DS5 Manual Gain Control verification", "[live] [DS-device]")
     REQUIRE(gain_ctrl_init == res);
 }
 
-TEST_CASE("DS5 Manual Exposure Control verification", "[live] [DS-device]")
+TEST_CASE("RS400 Manual Exposure Control verification", "[live] [DS-device]")
 {
     rs::context ctx;
     REQUIRE(ctx.get_device_count() == 1);
@@ -255,7 +255,7 @@ TEST_CASE("DS5 Manual Exposure Control verification", "[live] [DS-device]")
     REQUIRE(nullptr != dev);
 
     std::string name = dev->get_name();
-    REQUIRE(std::string::npos != name.find("Intel RealSense DS5"));
+    REQUIRE(std::string::npos != name.find("Intel RealSense RS400"));
 
     int index = 0;
     double set_val = 1200., reset_val = 80., res = 0.;
@@ -291,7 +291,7 @@ TEST_CASE("DS5 Manual Exposure Control verification", "[live] [DS-device]")
 // Calibration information tests //
 ///////////////////////////////////
 
-TEST_CASE("DS5 device extrinsics are within expected parameters", "[live] [sr300]")
+TEST_CASE("RS400 device extrinsics are within expected parameters", "[live] [sr300]")
 {
     // Require at least one device to be plugged in
     safe_context ctx;

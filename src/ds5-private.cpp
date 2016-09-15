@@ -31,7 +31,7 @@ namespace ds5 {
         uint16_t        version;        // major.minor
         uint16_t        table_type;     // ctCalibration
         uint32_t        table_size;     // full size including: TOC header + TOC + actual tables
-        uint32_t        param;          // This field is determined uniquely by each table
+        uint32_t        param;          // This field content is defined ny table type
         uint32_t        crc32;          // crc of all the actual table data excluding header/CRC
     };
 
@@ -100,8 +100,9 @@ namespace ds5 {
         float3x3            world2left_rot;             //  the inverse rotation of the left camera
         float3x3            world2right_rot;            //  the inverse rotation of the right camera
         float               baseline;                   //  the baseline between the cameras
+        uint32_t            brown_model;                // 0 - using DS distorion model, 1 - using Brown model
         float4              rect_params[max_ds5_rect_resoluitons];
-        uint8_t             reserved[156];
+        uint8_t             reserved[80];
     };
 
     struct depth_calibration_table
@@ -110,12 +111,12 @@ namespace ds5 {
         float               r_max;                      //  the maximum depth value in mm corresponding to 65535
         float3x3            k_left;                     //  Left intrinsic matrix, normalize by [-1 1]
         float               distortion_left[5];         //  Left forward distortion parameters, brown model
-        float               r_left[3];                  //  Left rotation angles (Rodrigues)
-        float               t_left[3];                  //  Left translation vector, mm
+        float3              r_left;                     //  Left rotation angles (Rodrigues)
+        float3              t_left;                     //  Left translation vector, mm
         float3x3            k_right;                    //  Right intrinsic matrix, normalize by [-1 1]
         float               distortion_right[5];        //  Right forward distortion parameters, brown model
-        float               r_right[3];                 //  Right rotation angles (Rodrigues)
-        float               t_right[3];                 //  Right translation vector, mm
+        float3              r_right;                    //  Right rotation angles (Rodrigues)
+        float3              t_right;                    //  Right translation vector, mm
         float3x3            k_depth;                    //  the Depth camera intrinsic matrix
         float               r_depth[3];                 //  Depth rotation angles (Rodrigues)
         float               t_depth[3];                 //  Depth translation vector, mm
@@ -235,9 +236,9 @@ namespace ds5 {
                 << stringify(res_1920_1080) << array2str((float_4&)table->rect_params[res_1920_1080]) << std::endl
                 << stringify(res_1280_720) << array2str((float_4&)table->rect_params[res_1280_720]) << std::endl
                 << stringify(res_640_480) << array2str((float_4&)table->rect_params[res_640_480]) << std::endl
-                << stringify(res_854_480) << array2str((float_4&)table->rect_params[res_854_480]) << std::endl
+                << stringify(res_848_480) << array2str((float_4&)table->rect_params[res_848_480]) << std::endl
                 << stringify(res_640_360) << array2str((float_4&)table->rect_params[res_640_360]) << std::endl
-                << stringify(res_432_240) << array2str((float_4&)table->rect_params[res_432_240]) << std::endl
+                << stringify(res_424_240) << array2str((float_4&)table->rect_params[res_424_240]) << std::endl
                 << stringify(res_320_240) << array2str((float_4&)table->rect_params[res_320_240]) << std::endl
                 << stringify(res_480_270) << array2str((float_4&)table->rect_params[res_480_270]));
 
@@ -269,7 +270,7 @@ namespace ds5 {
             calib.right_imager_intrinsic.model      = rs_distortion::RS_DISTORTION_BROWN_CONRADY;
 
             // Fill in actual data. Note that only the Focal and Principal points data varies between different resolutions
-            for (auto & i : { res_320_240 ,res_480_270, res_432_240, res_640_360, res_854_480, res_640_480, res_960_540, res_1280_720, res_1920_1080 })
+            for (auto & i : { res_320_240 ,res_480_270, res_424_240, res_640_360, res_848_480, res_640_480, res_1280_720, res_1920_1080 })
             {
                 calib.depth_intrinsic[i].width = resolutions_list[i].x;
                 calib.depth_intrinsic[i].height = resolutions_list[i].y;

@@ -155,8 +155,7 @@ namespace rs
         fisheye_color_auto_exposure_skip_frames         , /**< In Fisheye auto-exposure sample every given number of frames */
         frames_queue_size                               , /**< Number of frames the user is allowed to keep per stream. Trying to hold-on to more frames will cause frame-drops.*/
         hardware_logger_enabled                         , /**< Enable / disable fetching log data from the device */
-        ds5_laser_power                                 = 76
-
+        rs400_laser_power                               , /**< Enable / disable RealSense400 projector power */
     };
 
     enum class blob_type {

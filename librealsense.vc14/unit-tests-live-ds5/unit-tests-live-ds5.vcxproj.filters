@@ -4,7 +4,7 @@
     <ClInclude Include="..\..\unit-tests\unit-tests-common.h" />
     <ClInclude Include="..\..\unit-tests\unit-tests-live-ds-common.h" />
   </ItemGroup>
-  <ItemGroup>    
-    <ClCompile Include="..\..\unit-tests\unit-tests-live-ds5.cpp" />    
+  <ItemGroup>
+    <ClCompile Include="..\..\unit-tests\unit-tests-live-rs400.cpp" />
   </ItemGroup>
 </Project>
