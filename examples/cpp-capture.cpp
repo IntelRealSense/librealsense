@@ -12,7 +12,7 @@
 #include <map>
 #include <memory>
 
-texture_buffer buffers[RS_STREAM_COUNT];
+std::vector<texture_buffer> buffers(RS_STREAM_COUNT);
 bool align_depth_to_color = false;
 bool align_color_to_depth = false;
 bool color_rectification_enabled = false;
@@ -110,12 +110,22 @@ int main(int argc, char * argv[]) try
         glPushMatrix();
         glfwGetWindowSize(win, &w, &h);
         glOrtho(0, w, h, 0, -1, +1);
-        buffers[0].show(dev, align_color_to_depth ? rs::stream::color_aligned_to_depth : (color_rectification_enabled ? rs::stream::rectified_color : rs::stream::color), 0, 0, tile_w, tile_h);
-        buffers[1].show(dev, align_depth_to_color ? (color_rectification_enabled ? rs::stream::depth_aligned_to_rectified_color : rs::stream::depth_aligned_to_color) : rs::stream::depth, w / cols, 0, tile_w, tile_h);
-        buffers[2].show(dev, rs::stream::infrared, 0, h / rows, tile_w, tile_h);
-        buffers[3].show(dev, rs::stream::infrared2, w / cols, h / rows, tile_w, tile_h);
-        if (dev.is_stream_enabled(rs::stream::fisheye))
-            buffers[4].show(dev, rs::stream::fisheye, 2 * w / cols, 0, tile_w, tile_h);
+        for (int i =0; i< supported_streams.size(); i++)
+        {
+            auto stream = supported_streams[i];
+            int start_pixel_x = (i%cols) * tile_w;
+            int start_pixel_y = (i/cols) * tile_h;
+            switch (stream)
+            {
+            case rs::stream::depth:
+                buffers[(int)stream].show(dev, align_depth_to_color ? (color_rectification_enabled ? rs::stream::depth_aligned_to_rectified_color : rs::stream::depth_aligned_to_color) : rs::stream::depth, 0, 0, tile_w, tile_h); break;
+            case rs::stream::color:
+                buffers[(int)stream].show(dev, align_color_to_depth ? rs::stream::color_aligned_to_depth : (color_rectification_enabled ? rs::stream::rectified_color : rs::stream::color), w / cols, 0, tile_w, tile_h); break;
+            default:
+                buffers[(int)stream].show(dev, stream, start_pixel_x, start_pixel_y, tile_w, tile_h); break;
+            }
+        }
+
         glPopMatrix();
         glfwSwapBuffers(win);
     }
