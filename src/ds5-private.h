@@ -11,9 +11,12 @@
 namespace rsimpl {
     namespace ds5 {
 
-    enum gvd_fields : int32_t
+    const int gvd_size = 1024;
+
+    enum gvd_offset_fields : int32_t // data were taken from CommandsDS5.xml
     {
-        fw_version_offset = 12
+        fw_version_offset = 12,
+        asic_module_serial_offset = 115
     };
 
     enum calibration_modules_id
@@ -99,9 +102,8 @@ namespace rsimpl {
     void claim_ds5_motion_module_interface(uvc::device & device);
 
     // Read device state
-    void get_gvd(uvc::device & device, std::timed_mutex & mutex, size_t sz, char * gvd);
-    void get_firmware_version_string(uvc::device & dev, std::timed_mutex & mutex, std::string & version);
-    void get_module_serial_string(uvc::device & dev, std::timed_mutex & mutex, std::string & serial, unsigned int offset);
+    void get_gvd_raw(uvc::device & device, std::timed_mutex & mutex, size_t sz, unsigned char * gvd);
+    void get_string_of_gvd_field(uvc::device & device, std::timed_mutex & mutex, std::string & str, gvd_offset_fields offset);
     void read_calibration(uvc::device & dev, std::timed_mutex & mutex, ds5_calibration& calib);
 
     // XU read/write

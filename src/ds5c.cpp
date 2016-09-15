@@ -44,8 +44,8 @@ namespace rsimpl
         info.name = dev_name;
 
         std::timed_mutex mutex;
-        ds5::get_module_serial_string(*device, mutex, info.serial, ds5::fw_version_offset);
-        ds5::get_firmware_version_string(*device, mutex, info.firmware_version);
+        ds5::get_string_of_gvd_field(*device, mutex, info.serial, ds5::asic_module_serial_offset);
+        ds5::get_string_of_gvd_field(*device, mutex, info.firmware_version, ds5::fw_version_offset);
 
         info.nominal_depth_scale = 0.001f;
 
@@ -115,19 +115,19 @@ namespace rsimpl
 
     std::shared_ptr<rs_device> make_ds5c_rolling_device(std::shared_ptr<uvc::device> device)
     {
-        LOG_INFO("Connecting to Intel RealSense DS5 RGB with rolling shutter");
+        LOG_INFO("Connecting to " << camera_official_name.at(cameras::ds5) << " RGB with rolling shutter");
 
         ds5::claim_ds5_monitor_interface(*device);
 
-        return std::make_shared<ds5c_camera>(device, get_ds5c_info(device, "Intel RealSense DS5 RGB R"), false);
+        return std::make_shared<ds5c_camera>(device, get_ds5c_info(device, camera_official_name.at(cameras::ds5) + std::string(" RGB R")), false);
     }
 
     std::shared_ptr<rs_device> make_ds5c_global_wide_device(std::shared_ptr<uvc::device> device)
     {
-        LOG_INFO("Connecting to Intel RealSense DS5 RGB with global shutter");
+        LOG_INFO("Connecting to " << camera_official_name.at(cameras::ds5) << " RGB with global shutter");
 
         ds5::claim_ds5_monitor_interface(*device);
 
-        return std::make_shared<ds5c_camera>(device, get_ds5c_info(device,"Intel RealSense DS5 RGB GW"), true);
+        return std::make_shared<ds5c_camera>(device, get_ds5c_info(device, camera_official_name.at(cameras::ds5) + std::string(" RGB GW")), true);
     }
 } // namespace rsimpl::ds5c

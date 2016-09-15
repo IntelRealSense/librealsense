@@ -38,10 +38,10 @@ namespace rsimpl
 
     static static_device_info get_sr300_info(std::shared_ptr<uvc::device> device, const ivcam::camera_calib_params & c)
     {
-        LOG_INFO("Connecting to Intel RealSense SR300");
+        LOG_INFO("Connecting to " << camera_official_name.at(cameras::sr300));
        
         static_device_info info;
-        info.name = "Intel RealSense SR300";
+        info.name = camera_official_name.at(cameras::sr300);
         
         // Color modes on subdevice 0
         info.stream_subdevices[RS_STREAM_COLOR] = 0;

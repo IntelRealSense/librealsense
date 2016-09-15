@@ -246,7 +246,7 @@ namespace rsimpl
             PWR_STATE_IAP = 0x05
         };
 
-        enum class adaptor_board_command : uint32_t
+        enum adaptor_board_command : uint8_t
         {
             IRB         = 0x01,     // Read from i2c ( 8x8 )
             IWB         = 0x02,     // Write to i2c ( 8x8 )
