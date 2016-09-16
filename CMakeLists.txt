@@ -3,7 +3,27 @@
 # ubuntu 16.04 LTS cmake version 3.5.1
 cmake_minimum_required(VERSION 2.8.3)
 
-project(Realsense)
+IF(DEFINED ENV{ROS_DISTRO})
+  message("Building in a ROS environment ($ENV{ROS_DISTRO})")
+  project(librealsense)
+
+  #################################
+  # catkin specific configuration #
+  #################################
+  find_package(catkin REQUIRED)
+  # The catkin_package macro generates cmake config files for your package
+  # Declare things to be passed to dependent projects
+  # INCLUDE_DIRS: uncomment this if you package contains header files
+  # LIBRARIES: libraries you create in this project that dependent projects also need
+  # CATKIN_DEPENDS: catkin_packages dependent projects also need
+  # DEPENDS: system dependencies of this project that dependent projects also need
+  catkin_package(
+    INCLUDE_DIRS include
+    LIBRARIES realsense
+  )
+ELSE()
+  project(Realsense)
+ENDIF()
 
 # Save the command line compile commands in the build output
 set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
