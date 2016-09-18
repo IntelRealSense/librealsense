@@ -740,7 +740,7 @@ namespace rsimpl
         double exp;
         auto it = std::find_if(exposure_and_frame_counter_queue.begin(), exposure_and_frame_counter_queue.end(),
             [&](const exposure_and_frame_counter& element) {
-            unsigned long long diff = (ulong)std::abs(static_cast<int>(frame_counter - element.frame_counter));
+            unsigned long long diff = (unsigned long long)std::abs(static_cast<int>(frame_counter - element.frame_counter));
             if (diff < min)
             {
                 min = diff;
