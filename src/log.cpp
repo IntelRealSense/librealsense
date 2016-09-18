@@ -18,7 +18,7 @@ namespace rsimpl {
         log_callback_ptr callback;
 
     public:
-        logger_type() : callback(nullptr, [](rs_log_callback *c) {}) {}
+        logger_type() : callback(nullptr, [](rs_log_callback * /*c*/) {}) {}
 
         rs_log_severity get_minimum_severity() { return minimum_log_severity; }
 

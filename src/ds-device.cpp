@@ -234,11 +234,11 @@ namespace rsimpl
             case RS_OPTION_R200_LR_AUTO_EXPOSURE_ENABLED:                   values[i] = ds::get_lr_exposure_mode(get_device()); break;
 
             case RS_OPTION_R200_LR_GAIN: // Gain is framerate dependent
-                ds::set_lr_gain_discovery(get_device(), {get_lr_framerate()});
+                ds::set_lr_gain_discovery(get_device(), {get_lr_framerate(), 0, 0, 0, 0});
                 values[i] = ds::get_lr_gain(get_device()).value;
                 break;
             case RS_OPTION_R200_LR_EXPOSURE: // Exposure is framerate dependent
-                ds::set_lr_exposure_discovery(get_device(), {get_lr_framerate()});
+                ds::set_lr_exposure_discovery(get_device(), {get_lr_framerate(), 0, 0, 0, 0});
                 values[i] = ds::get_lr_exposure(get_device()).value;
                 break;
             case RS_OPTION_R200_EMITTER_ENABLED:
@@ -456,17 +456,17 @@ namespace rsimpl
         info.interstream_rules.push_back({ RS_STREAM_INFRARED, RS_STREAM_INFRARED2, &stream_request::height, 0, 0, RS_STREAM_COUNT, false, false, false });
         info.interstream_rules.push_back({ RS_STREAM_INFRARED, RS_STREAM_INFRARED2, nullptr, 0, 0, RS_STREAM_COUNT, false, false, true });
 
-        info.presets[RS_STREAM_INFRARED][RS_PRESET_BEST_QUALITY] = {true, 480, 360, RS_FORMAT_Y8,   60};
-        info.presets[RS_STREAM_DEPTH   ][RS_PRESET_BEST_QUALITY] = {true, 480, 360, RS_FORMAT_Z16,  60};
-        info.presets[RS_STREAM_COLOR   ][RS_PRESET_BEST_QUALITY] = {true, 640, 480, RS_FORMAT_RGB8, 60};
+        info.presets[RS_STREAM_INFRARED][RS_PRESET_BEST_QUALITY] = {true, 480, 360, RS_FORMAT_Y8,   60, RS_OUTPUT_BUFFER_FORMAT_CONTINUOUS};
+        info.presets[RS_STREAM_DEPTH   ][RS_PRESET_BEST_QUALITY] = {true, 480, 360, RS_FORMAT_Z16,  60, RS_OUTPUT_BUFFER_FORMAT_CONTINUOUS};
+        info.presets[RS_STREAM_COLOR   ][RS_PRESET_BEST_QUALITY] = {true, 640, 480, RS_FORMAT_RGB8, 60, RS_OUTPUT_BUFFER_FORMAT_CONTINUOUS};
 
-        info.presets[RS_STREAM_INFRARED][RS_PRESET_LARGEST_IMAGE] = {true, 640,   480, RS_FORMAT_Y8,   60};
-        info.presets[RS_STREAM_DEPTH   ][RS_PRESET_LARGEST_IMAGE] = {true, 640,   480, RS_FORMAT_Z16,  60};
-        info.presets[RS_STREAM_COLOR   ][RS_PRESET_LARGEST_IMAGE] = {true, 1920, 1080, RS_FORMAT_RGB8, 30};
+        info.presets[RS_STREAM_INFRARED][RS_PRESET_LARGEST_IMAGE] = {true, 640,   480, RS_FORMAT_Y8,   60, RS_OUTPUT_BUFFER_FORMAT_CONTINUOUS};
+        info.presets[RS_STREAM_DEPTH   ][RS_PRESET_LARGEST_IMAGE] = {true, 640,   480, RS_FORMAT_Z16,  60, RS_OUTPUT_BUFFER_FORMAT_CONTINUOUS};
+        info.presets[RS_STREAM_COLOR   ][RS_PRESET_LARGEST_IMAGE] = {true, 1920, 1080, RS_FORMAT_RGB8, 30, RS_OUTPUT_BUFFER_FORMAT_CONTINUOUS};
 
-        info.presets[RS_STREAM_INFRARED][RS_PRESET_HIGHEST_FRAMERATE] = {true, 320, 240, RS_FORMAT_Y8,   60};
-        info.presets[RS_STREAM_DEPTH   ][RS_PRESET_HIGHEST_FRAMERATE] = {true, 320, 240, RS_FORMAT_Z16,  60};
-        info.presets[RS_STREAM_COLOR   ][RS_PRESET_HIGHEST_FRAMERATE] = {true, 640, 480, RS_FORMAT_RGB8, 60};
+        info.presets[RS_STREAM_INFRARED][RS_PRESET_HIGHEST_FRAMERATE] = {true, 320, 240, RS_FORMAT_Y8,   60, RS_OUTPUT_BUFFER_FORMAT_CONTINUOUS};
+        info.presets[RS_STREAM_DEPTH   ][RS_PRESET_HIGHEST_FRAMERATE] = {true, 320, 240, RS_FORMAT_Z16,  60, RS_OUTPUT_BUFFER_FORMAT_CONTINUOUS};
+        info.presets[RS_STREAM_COLOR   ][RS_PRESET_HIGHEST_FRAMERATE] = {true, 640, 480, RS_FORMAT_RGB8, 60, RS_OUTPUT_BUFFER_FORMAT_CONTINUOUS};
 
         for(int i=0; i<RS_PRESET_COUNT; ++i)
             info.presets[RS_STREAM_INFRARED2][i] = info.presets[RS_STREAM_INFRARED][i];
@@ -595,7 +595,7 @@ namespace rsimpl
         // Gain min/max is framerate dependent
         if(option == RS_OPTION_R200_LR_GAIN)
         {
-            ds::set_lr_gain_discovery(get_device(), {get_lr_framerate()});
+            ds::set_lr_gain_discovery(get_device(), {get_lr_framerate(), 0, 0, 0, 0});
             auto disc = ds::get_lr_gain_discovery(get_device());
             min = disc.min;
             max = disc.max;
@@ -607,7 +607,7 @@ namespace rsimpl
         // Exposure min/max is framerate dependent
         if(option == RS_OPTION_R200_LR_EXPOSURE)
         {
-            ds::set_lr_exposure_discovery(get_device(), {get_lr_framerate()});
+            ds::set_lr_exposure_discovery(get_device(), {get_lr_framerate(), 0, 0, 0, 0});
             auto disc = ds::get_lr_exposure_discovery(get_device());
             min = disc.min;
             max = disc.max;
@@ -746,7 +746,7 @@ namespace rsimpl
     public:
         fisheye_timestamp_reader(int max_fps) : fps(max_fps), last_fisheye_counter(0), timestamp_wraparound(1, std::numeric_limits<uint32_t>::max()), frame_counter_wraparound(0, std::numeric_limits<uint32_t>::max()), validate(true){}
 
-        bool validate_frame(const subdevice_mode & mode, const void * frame) override
+        bool validate_frame(const subdevice_mode & /*mode*/, const void * frame) const override
         {
             if (!validate)
                 return true;
@@ -764,7 +764,7 @@ namespace rsimpl
             unsigned char msb : 4;
         };
 
-        unsigned long long get_frame_counter(const subdevice_mode & mode, const void * frame) override
+        unsigned long long get_frame_counter(const subdevice_mode & /*mode*/, const void * frame) override
         {
             std::lock_guard<std::mutex> guard(mutex);
 
@@ -802,7 +802,7 @@ namespace rsimpl
     public:
         color_timestamp_reader(int fps, int scale) : fps(fps), scale(scale), timestamp_wraparound(0, std::numeric_limits<uint32_t>::max()), frame_counter_wraparound(0, std::numeric_limits<uint32_t>::max()) {}
 
-        bool validate_frame(const subdevice_mode & mode, const void * frame) override
+        bool validate_frame(const subdevice_mode & /*mode*/, const void * /*frame*/) override
         {
             auto counter = get_frame_counter(mode, frame);
             
@@ -845,7 +845,7 @@ namespace rsimpl
     public:
         serial_timestamp_generator(int fps) : fps(fps), serial_frame_number(), timestamp_wraparound(0, std::numeric_limits<uint32_t>::max()), frame_counter_wraparound(0, std::numeric_limits<uint32_t>::max()) {}
 
-        bool validate_frame(const subdevice_mode & mode, const void * frame) override { return true; }
+        bool validate_frame(const subdevice_mode & /*mode*/, const void * /*frame*/) override { return true; }
         double get_frame_timestamp(const subdevice_mode &, const void *) override
         { 
             ++serial_frame_number;

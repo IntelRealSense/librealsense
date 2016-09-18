@@ -44,7 +44,8 @@ namespace rsimpl
 #define HANDLE_EXCEPTIONS_AND_RETURN(R, ...) catch(...) { std::ostringstream ss; rsimpl::stream_args(ss, #__VA_ARGS__, __VA_ARGS__); rsimpl::translate_exception(__FUNCTION__, ss.str(), error); return R; }
 #define VALIDATE_NOT_NULL(ARG) if(!(ARG)) throw std::runtime_error("null pointer passed for argument \"" #ARG "\"");
 #define VALIDATE_ENUM(ARG) if(!rsimpl::is_valid(ARG)) { std::ostringstream ss; ss << "bad enum value for argument \"" #ARG "\""; throw std::runtime_error(ss.str()); }
-#define VALIDATE_RANGE(ARG, MIN, MAX) if(ARG < MIN || ARG > MAX) { std::ostringstream ss; ss << "out of range value for argument \"" #ARG "\""; throw std::runtime_error(ss.str()); }
+#define VALIDATE_RANGE(ARG, MIN, MAX) if((ARG) < (MIN) || (ARG) > (MAX)) { std::ostringstream ss; ss << "out of range value for argument \"" #ARG "\""; throw std::runtime_error(ss.str()); }
+#define VALIDATE_LE(ARG, MAX) if((ARG) > (MAX)) { std::ostringstream ss; ss << "out of range value for argument \"" #ARG "\""; throw std::runtime_error(ss.str()); }
 #define VALIDATE_NATIVE_STREAM(ARG) VALIDATE_ENUM(ARG); if(ARG >= RS_STREAM_NATIVE_COUNT) { std::ostringstream ss; ss << "argument \"" #ARG "\" must be a native stream"; throw std::runtime_error(ss.str()); }
 
 rs_context * rs_create_context(int api_version, rs_error ** error) try
@@ -179,7 +180,7 @@ void rs_enable_stream(rs_device * device, rs_stream stream, int width, int heigh
     VALIDATE_RANGE(height, 0, INT_MAX);
     VALIDATE_ENUM(format);
     VALIDATE_RANGE(framerate, 0, INT_MAX);
-    device->enable_stream(stream, width, height, format, framerate, RS_OUTPUT_BUFFER_FORMAT_CONTINOUS);
+    device->enable_stream(stream, width, height, format, framerate, RS_OUTPUT_BUFFER_FORMAT_CONTINUOUS);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, device, stream, width, height, format, framerate)
 
@@ -610,7 +611,7 @@ HANDLE_EXCEPTIONS_AND_RETURN(, device, options, count)
 void rs_get_device_options(rs_device * device, const rs_option options[], unsigned int count, double values[], rs_error ** error) try
 {
     VALIDATE_NOT_NULL(device);
-    VALIDATE_RANGE(count, 0, INT_MAX);
+    VALIDATE_LE(count, INT_MAX);
     VALIDATE_NOT_NULL(options);
     for(size_t i=0; i<count; ++i) VALIDATE_ENUM(options[i]);
     VALIDATE_NOT_NULL(values);
@@ -621,7 +622,7 @@ HANDLE_EXCEPTIONS_AND_RETURN(, device, options, count, values)
 void rs_set_device_options(rs_device * device, const rs_option options[], unsigned int count, const double values[], rs_error ** error) try
 {
     VALIDATE_NOT_NULL(device);
-    VALIDATE_RANGE(count, 0, INT_MAX);
+    VALIDATE_LE(count, INT_MAX);
     VALIDATE_NOT_NULL(options);
     for(size_t i=0; i<count; ++i) VALIDATE_ENUM(options[i]);
     VALIDATE_NOT_NULL(values);
