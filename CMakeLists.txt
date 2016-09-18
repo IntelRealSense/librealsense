@@ -97,6 +97,9 @@ set(REALSENSE_HPP
 if(WIN32)
     set(BACKEND RS_USE_WMF_BACKEND)
     set(REALSENSE_DEF CMake/realsense.def)
+    # Makes VS15 find the DLL when trying to run examples/tests
+    set (CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
+    set (CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 elseif(APPLE)
     set(BACKEND RS_USE_LIBUVC_BACKEND)
 else()
