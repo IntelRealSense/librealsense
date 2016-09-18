@@ -185,7 +185,7 @@ namespace rsimpl
     public:
         rolling_timestamp_reader() : started(), total() {}
 
-        bool validate_frame(const subdevice_mode & mode, const void * frame) const override
+        bool validate_frame(const subdevice_mode & mode, const void * frame) override
         {
             // Validate that at least one byte of the image is nonzero
             for (const uint8_t * it = (const uint8_t *)frame, *end = it + mode.pf.get_image_size(mode.native_dims.x, mode.native_dims.y); it != end; ++it)
