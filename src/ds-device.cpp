@@ -746,7 +746,7 @@ namespace rsimpl
     public:
         fisheye_timestamp_reader(int max_fps) : fps(max_fps), last_fisheye_counter(0), timestamp_wraparound(1, std::numeric_limits<uint32_t>::max()), frame_counter_wraparound(0, std::numeric_limits<uint32_t>::max()), validate(true){}
 
-        bool validate_frame(const subdevice_mode & /*mode*/, const void * frame) const override
+        bool validate_frame(const subdevice_mode & /*mode*/, const void * frame) override
         {
             if (!validate)
                 return true;
@@ -802,7 +802,7 @@ namespace rsimpl
     public:
         color_timestamp_reader(int fps, int scale) : fps(fps), scale(scale), timestamp_wraparound(0, std::numeric_limits<uint32_t>::max()), frame_counter_wraparound(0, std::numeric_limits<uint32_t>::max()) {}
 
-        bool validate_frame(const subdevice_mode & /*mode*/, const void * /*frame*/) override
+        bool validate_frame(const subdevice_mode & mode, const void * frame) override
         {
             auto counter = get_frame_counter(mode, frame);
             

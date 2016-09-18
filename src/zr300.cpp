@@ -47,6 +47,8 @@ namespace rsimpl
         std::vector<rs_option>  base_opt;
         std::vector<double>     base_opt_val;
 
+        auto& dev = get_device();
+
         // Handle ZR300 specific options first
         for (size_t i = 0; i < count; ++i)
         {
