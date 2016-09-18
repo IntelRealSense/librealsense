@@ -618,7 +618,7 @@ int main(int argc, char * argv[])
 
         for (int i = 0; i < RS_OPTION_COUNT; ++i)
         {
-            option o = { (rs::option)i };
+            option o = { (rs::option)i,0,0,0,0,0,false };
             try {
                 o.supports = dev->supports_option(o.opt);
                 if (o.supports)

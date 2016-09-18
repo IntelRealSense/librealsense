@@ -135,7 +135,7 @@ int main(int argc, char * argv[]) try
         glBegin(GL_POINTS);
 
         auto points = reinterpret_cast<const rs::float3 *>(dev.get_frame_data(rs::stream::points));
-        auto depth = reinterpret_cast<const uint16_t *>(dev.get_frame_data(rs::stream::depth));
+        //auto depth = reinterpret_cast<const uint16_t *>(dev.get_frame_data(rs::stream::depth));
         
         for(int y=0; y<depth_intrin.height; ++y)
         {
