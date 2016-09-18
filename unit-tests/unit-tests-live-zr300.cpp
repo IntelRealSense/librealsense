@@ -313,7 +313,7 @@ TEST_CASE("ZR300 correctly recognizes invalid options", "[live] [DS-device]")
     }
 }
 
-TEST_CASE("ZR300 Motion Module Strobe", "[live] [DS-device]")
+TEST_CASE("ZR300 Motion Module Strobe", "[live] [ZR300] [one-camera]")
 {
     rs::context ctx;
     REQUIRE(ctx.get_device_count() == 1);
@@ -324,24 +324,62 @@ TEST_CASE("ZR300 Motion Module Strobe", "[live] [DS-device]")
     const char * name = dev->get_name();
     REQUIRE(name == std::string("Intel RealSense ZR300"));
 
-	double init_val = -1, test_val = -1, actual_val = -1;
+    double init_val = -1, test_val = -1, actual_val = -1;
 
-	rs::option opt = rs::option::fisheye_strobe;
+    rs::option opt = rs::option::fisheye_strobe;
 
-	// Strobe is a boolean option value
+    // Strobe is a boolean option value
     dev->get_options(&opt, 1, &init_val);
-	REQUIRE(init_val >= 0);
-	REQUIRE(init_val <= 1);
-	test_val = 1 - init_val;
-	// Change strobe
-	dev->set_options(&opt, 1, &test_val);
-	dev->get_options(&opt, 1, &actual_val);
-	REQUIRE(test_val == Approx(actual_val));
-	// Revert to initial value
-	dev->set_options(&opt, 1, &init_val);
-	dev->get_options(&opt, 1, &actual_val);
-	REQUIRE(init_val == Approx(actual_val));
+    REQUIRE(init_val >= 0);
+    REQUIRE(init_val <= 1);
+    test_val = 1 - init_val;
+    // Change strobe
+    dev->set_options(&opt, 1, &test_val);
+    dev->get_options(&opt, 1, &actual_val);
+    REQUIRE(test_val == Approx(actual_val));
+    // Revert to initial value
+    dev->set_options(&opt, 1, &init_val);
+    dev->get_options(&opt, 1, &actual_val);
+    REQUIRE(init_val == Approx(actual_val));
 }
 
+TEST_CASE( "Test ZR300 streaming mode combinations", "[live] [ZR300] [one-camera]" )
+{
+    safe_context ctx;
+
+    SECTION( "exactly one device is connected" )
+    {
+        int device_count = rs_get_device_count(ctx, require_no_error());
+        REQUIRE(device_count == 1);
+    }
+
+    rs_device * dev = rs_get_device(ctx, 0, require_no_error());
+    REQUIRE(dev != nullptr);
+
+    SECTION( "device name is Intel RealSense ZR300" )
+    {
+        const char * name = rs_get_device_name(dev, require_no_error());
+        REQUIRE(name == std::string("Intel RealSense ZR300"));
+    }
+
+    SECTION( "streaming with some configurations" )
+    {
+        test_streaming(dev, {
+            {RS_STREAM_DEPTH, 640, 480, RS_FORMAT_Z16, 60},
+            {RS_STREAM_COLOR, 640, 480, RS_FORMAT_RGB8, 60},
+            {RS_STREAM_INFRARED, 640, 480, RS_FORMAT_Y16, 60},
+            {RS_STREAM_INFRARED2, 640, 480, RS_FORMAT_Y16, 60},
+            {RS_STREAM_FISHEYE, 640, 480, RS_FORMAT_RAW8, 60}
+        });
+
+        test_streaming(dev, {
+            {RS_STREAM_DEPTH, 640, 480, RS_FORMAT_Z16, 30},
+            {RS_STREAM_COLOR, 640, 480, RS_FORMAT_RGB8, 30},
+            {RS_STREAM_INFRARED, 640, 480, RS_FORMAT_Y16, 30},
+            {RS_STREAM_INFRARED2, 640, 480, RS_FORMAT_Y16, 30},
+            {RS_STREAM_FISHEYE, 640, 480, RS_FORMAT_RAW8, 30}
+        });
+    }
+}
 
 #endif /* !defined(MAKEFILE) || ( defined(LIVE_TEST) && defined(ZR300_TEST) ) */

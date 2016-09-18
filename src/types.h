@@ -270,7 +270,7 @@ namespace rsimpl
 
     struct static_device_info
     {
-        std::string name;                                                   // Model name of the camera        
+        std::string name;                                                   // Model name of the camera
         int stream_subdevices[RS_STREAM_NATIVE_COUNT];                      // Which subdevice is used to support each stream, or -1 if stream is unavailable
         int data_subdevices[RS_STREAM_NATIVE_COUNT];                        // Specify whether the subdevice supports events pipe in addition to streaming, -1 if data channels are unavailable
         std::vector<subdevice_mode> subdevice_modes;                        // A list of available modes each subdevice can be put into
@@ -303,7 +303,7 @@ namespace rsimpl
         subdevice_mode_selection(const subdevice_mode & mode, int pad_crop, int unpacker_index) : mode(mode), pad_crop(pad_crop), unpacker_index(unpacker_index){}
 
         const pixel_format_unpacker & get_unpacker() const {
-            if (unpacker_index < mode.pf.unpackers.size())
+            if ((size_t)unpacker_index < mode.pf.unpackers.size())
                 return mode.pf.unpackers[unpacker_index];
             throw std::runtime_error("failed to fetch an unpakcer, most likely because enable_stream was not called!");
         }
@@ -652,7 +652,7 @@ namespace rsimpl
     ///////////////////////////////////////////
     float3x3 calc_rodrigues_matrix(const std::vector<double> rot);
     // Auxillary function that calculates standard 32bit CRC code. used in verificaiton
-    uint32_t calc_crc32(uint8_t *buf, size_t bufsize);;
+    uint32_t calc_crc32(uint8_t *buf, size_t bufsize);
 
     enum class cameras : int{
         f200,

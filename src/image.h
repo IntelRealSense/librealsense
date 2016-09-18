@@ -32,6 +32,7 @@ namespace rsimpl
     extern const native_pixel_format pf_rw16;       // 10 bit in 16 bit WORD with 6 bit unused
     extern const native_pixel_format pf_yuy2;       // Y0 U Y1 V ordered chroma subsampled macropixel
     extern const native_pixel_format pf_y8;         // 8 bit (left) IR image
+    extern const native_pixel_format pf_l8;         // 8 bit Luminocity Ir Image
     extern const native_pixel_format pf_y8i;        // 8 bits left IR + 8 bits right IR per pixel
     extern const native_pixel_format pf_y16;        // 16 bit (left) IR image
     extern const native_pixel_format pf_y12i;       // 12 bits left IR + 12 bits right IR per pixel

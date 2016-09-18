@@ -160,7 +160,7 @@ namespace rsimpl
         CASE(FISHEYE_ENABLE_AUTO_EXPOSURE)
         CASE(FISHEYE_AUTO_EXPOSURE_MODE)
         CASE(FISHEYE_AUTO_EXPOSURE_ANTIFLICKER_RATE)
-        CASE(DS5_LASER_POWER)
+        CASE(RS400_LASER_POWER)
         CASE(FISHEYE_AUTO_EXPOSURE_PIXEL_SAMPLE_RATE)
         CASE(FISHEYE_AUTO_EXPOSURE_SKIP_FRAMES)
         CASE(HARDWARE_LOGGER_ENABLED)
@@ -239,6 +239,24 @@ namespace rsimpl
         CASE(CAMERA_FIRMWARE_VERSION)
         CASE(ADAPTER_BOARD_FIRMWARE_VERSION)
         CASE(MOTION_MODULE_FIRMWARE_VERSION)
+        CASE(IMAGER_MODEL_NUMBER)
+        CASE(CAMERA_TYPE)
+        CASE(OEM_ID)
+        CASE(MODULE_VERSION)
+        CASE(BUILD_DATE)
+        CASE(CALIBRATION_DATE)
+        CASE(PROGRAM_DATE)
+        CASE(FOCUS_ALIGNMENT_DATE)
+        CASE(FOCUS_VALUE)
+        CASE(CONTENT_VERSION)
+        CASE(ISP_FW_VERSION)
+        CASE(LENS_TYPE)
+        CASE(LENS_COATING__TYPE)
+        CASE(NOMINAL_BASELINE)
+        CASE(3RD_LENS_TYPE)
+        CASE(3RD_LENS_COATING_TYPE)
+        CASE(3RD_NOMINAL_BASELINE)
+        CASE(EMITTER_TYPE)
         default: assert(!is_valid(value)); return unknown;
         }
         #undef CASE
@@ -296,6 +314,7 @@ namespace rsimpl
         }
         else
         {
+            
             // Otherwise unpack one row at a time
             assert(mode.pf.plane_count == 1); // Can't unpack planar formats row-by-row (at least not with the current architecture, would need to pass multiple source ptrs to unpack)
             for(int i=0; i<unpack_height; ++i)
@@ -476,7 +495,7 @@ namespace rsimpl
             {
                 for (auto & unpacker : mode.pf.unpackers)
                 {
-                    auto selection = subdevice_mode_selection(mode, pad_crop, (int)(&unpacker - mode.pf.unpackers.data()));
+                    auto selection = subdevice_mode_selection(mode, pad_crop, int(&unpacker - mode.pf.unpackers.data()));
 
                     request.enabled = true;
                     request.fps = selection.get_framerate();

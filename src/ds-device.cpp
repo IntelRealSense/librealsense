@@ -3,6 +3,7 @@
 
 #include <climits>
 #include <algorithm>
+#include <iomanip>      // for std::put_time
 
 #include "image.h"
 #include "ds-private.h"
@@ -386,8 +387,9 @@ namespace rsimpl
         return 30; // If no streams have yet been enabled, return the minimum possible left/right framerate, to allow the maximum possible exposure range
     }
 
-    void ds_device::set_common_ds_config(std::shared_ptr<uvc::device> device, static_device_info& info, const ds::ds_calibration& c)
+    void ds_device::set_common_ds_config(std::shared_ptr<uvc::device> device, static_device_info& info, const ds::ds_info& cam_info)
     {
+        auto & c = cam_info.calibration;
         info.capabilities_vector.push_back(RS_CAPABILITIES_ENUMERATION);
         info.capabilities_vector.push_back(RS_CAPABILITIES_COLOR);
         info.capabilities_vector.push_back(RS_CAPABILITIES_DEPTH);
@@ -425,6 +427,22 @@ namespace rsimpl
         info.subdevice_modes.push_back({ 2,{ 1920, 1080 }, pf_yuy2, 15, c.intrinsicsThird[0],{ c.modesThird[0][0] },{ 0 } });
         info.subdevice_modes.push_back({ 2,{ 1920, 1080 }, pf_yuy2, 30, c.intrinsicsThird[0],{ c.modesThird[0][0] },{ 0 } });
 
+
+        //                             subdev native-dim      pf   fps           native_intrinsics                              rect_modes      crop-options
+        //                             ------ ----------      --   ---           -----------------                              ----------      ------------
+        info.subdevice_modes.push_back({ 2,{ 1280, 720 }, pf_yuy2, 15, scale_intrinsics(c.intrinsicsThird[0], 1280, 720),  { c.modesThird[0][1] }, { 0 } });
+        info.subdevice_modes.push_back({ 2, { 960, 540 }, pf_yuy2, 15, scale_intrinsics(c.intrinsicsThird[0], 960, 540),   { c.modesThird[0][1] }, { 0 } });
+        info.subdevice_modes.push_back({ 2, { 848, 480 }, pf_yuy2, 15, scale_intrinsics(c.intrinsicsThird[0], 848, 480),   { c.modesThird[0][1] }, { 0 } });
+        
+        info.subdevice_modes.push_back({ 2, { 640, 480 }, pf_yuy2, 15, c.intrinsicsThird[1], { c.modesThird[1][0] }, { 0 } });
+        info.subdevice_modes.push_back({ 2, { 640, 480 }, pf_rw16, 15, c.intrinsicsThird[1], { c.modesThird[1][0] }, { 0 } });
+        
+        info.subdevice_modes.push_back({ 2, { 640, 360 }, pf_yuy2, 15, scale_intrinsics(c.intrinsicsThird[1], 640, 360), { c.modesThird[1][0] }, { 0 } });
+        info.subdevice_modes.push_back({ 2, { 424, 240 }, pf_yuy2, 15, scale_intrinsics(c.intrinsicsThird[1], 424, 240), { c.modesThird[1][0] }, { 0 } });
+
+        info.subdevice_modes.push_back({ 2, { 320, 240 }, pf_yuy2, 15, scale_intrinsics(c.intrinsicsThird[1], 320, 240), { c.modesThird[1][1] }, { 0 } });
+        info.subdevice_modes.push_back({ 2, { 320, 180 }, pf_yuy2, 15, scale_intrinsics(c.intrinsicsThird[1], 320, 180), { c.modesThird[1][1] }, { 0 } });
+
         // Set up interstream rules for left/right/z images
         for(auto ir : {RS_STREAM_INFRARED, RS_STREAM_INFRARED2})
         {
@@ -454,7 +472,7 @@ namespace rsimpl
             info.presets[RS_STREAM_INFRARED2][i] = info.presets[RS_STREAM_INFRARED][i];
 
         // Extended controls ranges cannot be retrieved from device, therefore the data is locally defined
-        //Option                                                                        Min     Max     Step    Default
+        //Option                                                Min     Max Step      Default
         info.options.push_back({ RS_OPTION_R200_LR_AUTO_EXPOSURE_ENABLED,               0,      1,      1,      0 });
         info.options.push_back({ RS_OPTION_R200_EMITTER_ENABLED,                        0,      1,      1,      0 });
         info.options.push_back({ RS_OPTION_R200_DEPTH_UNITS,                            0, INT_MAX,     1,      1000 });  // What is the real range?
@@ -501,9 +519,34 @@ namespace rsimpl
         info.serial = std::to_string(c.serial_number);
         info.firmware_version = ds::read_firmware_version(*device);
 
+        auto &h = cam_info.head_content;
         info.camera_info[RS_CAMERA_INFO_CAMERA_FIRMWARE_VERSION] = info.firmware_version;
         info.camera_info[RS_CAMERA_INFO_DEVICE_SERIAL_NUMBER] = info.serial;
         info.camera_info[RS_CAMERA_INFO_DEVICE_NAME] = info.name;
+
+        info.camera_info[RS_CAMERA_INFO_ISP_FW_VERSION]         = ds::read_isp_firmware_version(*device);
+        info.camera_info[RS_CAMERA_INFO_IMAGER_MODEL_NUMBER]    = to_string() << h.imager_model_number;
+        info.camera_info[RS_CAMERA_INFO_CAMERA_TYPE]            = to_string() << h.prq_type;
+        info.camera_info[RS_CAMERA_INFO_OEM_ID]                 = to_string() << h.oem_id;
+        info.camera_info[RS_CAMERA_INFO_MODULE_VERSION]         = to_string() << (int)h.module_version << "." << (int)h.module_major_version << "." << (int)h.module_minor_version << "." << (int)h.module_skew_version;
+        info.camera_info[RS_CAMERA_INFO_FOCUS_VALUE]            = to_string() << h.platform_camera_focus;
+        info.camera_info[RS_CAMERA_INFO_CONTENT_VERSION]        = to_string() << h.camera_head_contents_version;
+        info.camera_info[RS_CAMERA_INFO_LENS_TYPE]              = to_string() << h.lens_type;
+        info.camera_info[RS_CAMERA_INFO_LENS_COATING__TYPE]     = to_string() << h.lens_coating_type;
+        info.camera_info[RS_CAMERA_INFO_3RD_LENS_TYPE]          = to_string() << h.lens_type_third_imager;
+        info.camera_info[RS_CAMERA_INFO_3RD_LENS_COATING_TYPE]  = to_string() << h.lens_coating_type_third_imager;
+        info.camera_info[RS_CAMERA_INFO_NOMINAL_BASELINE]       = to_string() << h.nominal_baseline << " mm";
+        info.camera_info[RS_CAMERA_INFO_3RD_NOMINAL_BASELINE]   = to_string() << h.nominal_baseline_third_imager << " mm";
+        info.camera_info[RS_CAMERA_INFO_EMITTER_TYPE]           = to_string() << h.emitter_type;
+
+        if (std::isnormal(h.calibration_date))
+            info.camera_info[RS_CAMERA_INFO_CALIBRATION_DATE] = time_to_string(h.calibration_date);
+        if (std::isnormal(h.first_program_date))
+            info.camera_info[RS_CAMERA_INFO_PROGRAM_DATE] = time_to_string(h.first_program_date);
+        if (std::isnormal(h.focus_alignment_date))
+            info.camera_info[RS_CAMERA_INFO_FOCUS_ALIGNMENT_DATE] = time_to_string(h.focus_alignment_date);
+        if (std::isnormal(h.build_date))
+            info.camera_info[RS_CAMERA_INFO_BUILD_DATE] = time_to_string(h.build_date);
 
         // On LibUVC backends, the R200 should use four transfer buffers
         info.num_libuvc_transfer_buffers = 4;

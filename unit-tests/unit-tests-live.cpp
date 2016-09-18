@@ -39,6 +39,44 @@ TEST_CASE( "Device metadata enumerates correctly", "[live]" )
     }
 }
 
+////////////////////////////////////////////////////////
+// Test basic streaming functionality //
+////////////////////////////////////////////////////////
+TEST_CASE("Start-Stop stream sequence", "[live]")
+{
+    // Require at least one device to be plugged in
+    safe_context ctx;
+    const int device_count = rs_get_device_count(ctx, require_no_error());
+    REQUIRE(device_count > 0);
+
+    std::vector<rs_stream> supported_streams;
+
+    // For each device
+    for(int i=0; i<device_count; ++i)
+    {
+        rs_device * dev = rs_get_device(ctx, 0, require_no_error());
+        REQUIRE(dev != nullptr);
+
+        for (int i = (int)rs_capabilities::RS_CAPABILITIES_DEPTH; i <= (int)rs_capabilities::RS_CAPABILITIES_FISH_EYE; i++)
+            if (rs_supports(dev,(rs_capabilities)i, require_no_error()))
+                supported_streams.push_back((rs_stream)i);
+
+        // Configure all supported streams to run at 30 frames per second
+        for (auto & stream : supported_streams)
+            rs_enable_stream_preset(dev, stream, rs_preset::RS_PRESET_BEST_QUALITY, require_no_error());
+
+        for (int i = 0; i< 5; i++)
+        {
+            // Test sequence
+            rs_start_device(dev, require_no_error());
+            rs_stop_device(dev, require_no_error());
+        }
+
+        for (auto & stream : supported_streams)
+            rs_disable_stream(dev,stream,require_no_error());
+    }
+}
+
 ///////////////////////////////////
 // Calibration information tests //
 ///////////////////////////////////

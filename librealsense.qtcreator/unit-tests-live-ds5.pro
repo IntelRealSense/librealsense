@@ -20,7 +20,7 @@ LIBS += -L$$DESTDIR/ -lrealsense
 PRE_TARGETDEPS += $$DESTDIR/librealsense.a
 
 SOURCES += \
-    ../unit-tests/unit-tests-live-ds5.cpp
+    ../unit-tests/unit-tests-live-rs400.cpp
 
 HEADERS += \
     ../unit-tests/unit-tests-live-ds-common.h \

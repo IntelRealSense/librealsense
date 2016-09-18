@@ -229,4 +229,5 @@ namespace rsimpl
         auto the_reader = std::make_shared<rolling_timestamp_reader>(); // single shared timestamp reader for all subdevices
         return { the_reader, the_reader }; // clone the reference for color and depth
     }
+
 } // namespace rsimpl::f200

@@ -118,7 +118,7 @@ namespace rsimpl
             case mm_output_undefined:   return "undefined";
             case mm_video_output:       return "video";
             case mm_events_output:      return "motion_tracking";
-            default: return  ("unresolved request id: " + request);
+            default: return  std::string(to_string() << "unresolved request id: " << request).c_str();
             }
         }
 
@@ -136,7 +136,7 @@ namespace rsimpl
             case mm_streaming:      return "video";
             case mm_eventing:       return "motion";
             case mm_full_load:      return "video+motion";
-            default: return  ("unresolved mm state id: " + state);
+            default: return  std::string(to_string() << "unresolved mm state id: " << state).c_str();
             }
         }
 

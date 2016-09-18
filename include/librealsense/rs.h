@@ -190,7 +190,7 @@ typedef enum rs_option
     RS_OPTION_FISHEYE_AUTO_EXPOSURE_SKIP_FRAMES               , /**< In Fisheye auto-exposure sample every given number of frames */
     RS_OPTION_FRAMES_QUEUE_SIZE                               , /**< Number of frames the user is allowed to keep per stream. Trying to hold-on to more frames will cause frame-drops.*/
     RS_OPTION_HARDWARE_LOGGER_ENABLED                         , /**< Enable / disable fetching log data from the device */
-    RS_OPTION_DS5_LASER_POWER                                 , /**< DS5 Emitter enabled */
+    RS_OPTION_RS400_LASER_POWER                               , /**< RS400 Emitter enabled */
     RS_OPTION_COUNT                                           ,
 } rs_option;
 
@@ -205,6 +205,24 @@ typedef enum rs_camera_info {
     RS_CAMERA_INFO_CAMERA_FIRMWARE_VERSION       ,
     RS_CAMERA_INFO_ADAPTER_BOARD_FIRMWARE_VERSION,
     RS_CAMERA_INFO_MOTION_MODULE_FIRMWARE_VERSION,
+    RS_CAMERA_INFO_CAMERA_TYPE                   ,
+    RS_CAMERA_INFO_OEM_ID                        ,
+    RS_CAMERA_INFO_ISP_FW_VERSION                ,
+    RS_CAMERA_INFO_CONTENT_VERSION               ,
+    RS_CAMERA_INFO_MODULE_VERSION                ,
+    RS_CAMERA_INFO_IMAGER_MODEL_NUMBER           ,
+    RS_CAMERA_INFO_BUILD_DATE                    ,
+    RS_CAMERA_INFO_CALIBRATION_DATE              ,
+    RS_CAMERA_INFO_PROGRAM_DATE                  ,
+    RS_CAMERA_INFO_FOCUS_ALIGNMENT_DATE          ,
+    RS_CAMERA_INFO_EMITTER_TYPE                  ,
+    RS_CAMERA_INFO_FOCUS_VALUE                   ,
+    RS_CAMERA_INFO_LENS_TYPE                     ,
+    RS_CAMERA_INFO_3RD_LENS_TYPE                 ,
+    RS_CAMERA_INFO_LENS_COATING__TYPE            ,
+    RS_CAMERA_INFO_3RD_LENS_COATING_TYPE         ,
+    RS_CAMERA_INFO_NOMINAL_BASELINE              ,
+    RS_CAMERA_INFO_3RD_NOMINAL_BASELINE          ,
     RS_CAMERA_INFO_COUNT
 } rs_camera_info;
 
@@ -683,6 +701,14 @@ int rs_poll_for_frames(rs_device * device, rs_error ** error);
 int rs_supports(rs_device * device, rs_capabilities capability, rs_error ** error);
 
 /**
+* specialization over generic support to verify camera header block support
+* \param[in] info_param  the parameter to check for support
+* \return                true if the parameter both exist and well-defined for the specific device
+*/
+int rs_supports_camera_info(rs_device * device, rs_camera_info info_param, rs_error ** error);
+
+
+/**
  * retrieve the time at which the latest frame on a stream was captured
  * \param[in] stream  the stream whose latest frame we are interested in
  * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
@@ -744,7 +770,7 @@ unsigned long long rs_get_detached_frame_number(const rs_frame_ref * frame, rs_e
 const void * rs_get_detached_frame_data(const rs_frame_ref * frame, rs_error ** error);
 
 /**
-* retrive frame intrinsic width
+* retrive frame intrinsic width in pixels
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return            intrinsic width
 */
@@ -765,7 +791,7 @@ int rs_get_detached_frame_height(const rs_frame_ref * frame, rs_error ** error);
 int rs_get_detached_framerate(const rs_frame_ref * frameset, rs_error ** error);
 
 /**
-* retrive frame stride, meaning the actual line width in memory (not the logical image width)
+* retrive frame stride, meaning the actual line width in memory in bytes (not the logical image width)
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return            frame pad crop
 */

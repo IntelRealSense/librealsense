@@ -29,13 +29,13 @@ namespace rsimpl
         LOG_INFO("Connecting to " << camera_official_name.at(cameras::r200));
 
         static_device_info info;
-        info.name = { camera_official_name.at(cameras::r200) };
-        auto c = ds::read_camera_info(*device);
+        info.name = camera_official_name.at(cameras::r200);
+        auto cam_info = ds::read_camera_info(*device);
 
-        ds_device::set_common_ds_config(device, info, c);
+        ds_device::set_common_ds_config(device, info, cam_info);
 
         // R200 provides Full HD raw 10 format, its descriptors is defined as follows
-        info.subdevice_modes.push_back({ 2, {2400, 1081},  pf_rw10, 30, c.intrinsicsThird[0], {c.modesThird[0][0]}, {0}});
+        info.subdevice_modes.push_back({ 2, {2400, 1081},  pf_rw10, 30, cam_info.calibration.intrinsicsThird[0], { cam_info.calibration.modesThird[0][0]}, {0}});
 
         return std::make_shared<r200_camera>(device, info);
     }
@@ -45,14 +45,13 @@ namespace rsimpl
         LOG_INFO("Connecting to " << camera_official_name.at(cameras::lr200));
 
         static_device_info info;
-        info.name = { camera_official_name.at(cameras::lr200) };
-        auto c = ds::read_camera_info(*device);
+        info.name = camera_official_name.at(cameras::lr200);
+        auto cam_info = ds::read_camera_info(*device);
 
-        ds_device::set_common_ds_config(device, info, c);
+        ds_device::set_common_ds_config(device, info, cam_info);
 
         // LR200 provides Full HD raw 16 format as well for the color stream
-        info.subdevice_modes.push_back({ 2,{ 1920, 1080 }, pf_rw16, 30, c.intrinsicsThird[0],{ c.modesThird[0][0] },{ 0 } });
-
+        info.subdevice_modes.push_back({ 2,{ 1920, 1080 }, pf_rw16, 30, cam_info.calibration.intrinsicsThird[0],{ cam_info.calibration.modesThird[0][0] },{ 0 } });
 
         return std::make_shared<r200_camera>(device, info);
     }

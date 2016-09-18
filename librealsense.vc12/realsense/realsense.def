@@ -32,6 +32,7 @@ EXPORTS
     rs_get_motion_extrinsics_from
 
     rs_supports
+    rs_supports_camera_info
     rs_enable_motion_tracking
     rs_enable_motion_tracking_cpp
     rs_disable_motion_tracking

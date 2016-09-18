@@ -47,33 +47,33 @@ namespace rs
 
     enum class format : int32_t
     {
-        any         ,  
+        any         ,
         z16         ,  ///< 16 bit linear depth values. The depth is meters is equal to depth scale * pixel value
         disparity16 ,  ///< 16 bit linear disparity values. The depth in meters is equal to depth scale / pixel value
         xyz32f      ,  ///< 32 bit floating point 3D coordinates.
-        yuyv        ,  
-        rgb8        ,  
-        bgr8        ,  
-        rgba8       ,  
-        bgra8       ,  
-        y8          ,  
-        y16         , 
+        yuyv        ,
+        rgb8        ,
+        bgr8        ,
+        rgba8       ,
+        bgra8       ,
+        y8          ,
+        y16         ,
         raw10       ,  ///< Four 10-bit luminance values encoded into a 5-byte macropixel
         raw16       ,  ///< Four 10-bit luminance filled in 16 bit pixel (6 bit unused)
-        raw8        
+        raw8
     };
 
     enum class output_buffer_format : int32_t
     {
         continous      ,
-        native         
+        native
     };
 
     enum class preset : int32_t
     {
-        best_quality     , 
-        largest_image    , 
-        highest_framerate  
+        best_quality     ,
+        largest_image    ,
+        highest_framerate
     };
 
     enum class distortion : int32_t
@@ -155,8 +155,7 @@ namespace rs
         fisheye_color_auto_exposure_skip_frames         , /**< In Fisheye auto-exposure sample every given number of frames */
         frames_queue_size                               , /**< Number of frames the user is allowed to keep per stream. Trying to hold-on to more frames will cause frame-drops.*/
         hardware_logger_enabled                         , /**< Enable / disable fetching log data from the device */
-        ds5_laser_power                                 = 76
-
+        rs400_laser_power                               , /**< Enable / disable RealSense400 projector power */
     };
 
     enum class blob_type {
@@ -169,6 +168,24 @@ namespace rs
         camera_firmware_version       ,
         adapter_board_firmware_version,
         motion_module_firmware_version,
+        camera_type                   ,
+        oem_id                        ,
+        isp_fw_version                ,
+        content_version               ,
+        module_version                ,
+        imager_model_number           ,
+        build_date                    ,
+        calibration_date              ,
+        program_date                  ,
+        focus_alignment_date          ,
+        emitter_type                  ,
+        focus_value                   ,
+        lens_type                     ,
+        third_lens_type               ,
+        lens_coating_type             ,
+        third_lens_coating_type       ,
+        lens_nominal_baseline         ,
+        third_lens_nominal_baseline
     };
 
     enum class source : uint8_t
@@ -186,7 +203,7 @@ namespace rs
         event_imu_motion_cam,
         event_imu_g0_sync   ,
         event_imu_g1_sync   ,
-        event_imu_g2_sync   
+        event_imu_g2_sync
     };
 
     enum class timestamp_domain
@@ -254,7 +271,7 @@ namespace rs
         { 
             function = (nullptr != rs_get_failed_function(err)) ? rs_get_failed_function(err) : std::string();
             args = (nullptr != rs_get_failed_args(err)) ? rs_get_failed_args(err) : std::string();
-            rs_free_error(err); 
+            rs_free_error(err);
         }
         const std::string & get_failed_function() const { return function; }
         const std::string & get_failed_args() const { return args; }
@@ -399,6 +416,7 @@ namespace rs
             return r;
         }
 
+        // returns image width in pixels
         int get_width() const
         {
             rs_error * e = nullptr;
@@ -423,6 +441,7 @@ namespace rs
             return r;
         }
 
+        // retrive frame stride, meaning the actual line width in memory in bytes (not the logical image width)
         int get_stride() const
         {
             rs_error * e = nullptr;
@@ -903,6 +922,18 @@ namespace rs
             auto r = rs_supports((rs_device *)this, (rs_capabilities)capability, &e);
             error::handle(e);
             return r? true: false;
+        }
+
+
+        /// determine device capabilities
+        /// \param[in] capability  the capability to check for support
+        /// \return                true if device has this capability
+        bool supports(camera_info info_param) const
+        {
+            rs_error * e = nullptr;
+            auto r = rs_supports_camera_info((rs_device *)this, (rs_camera_info)info_param, &e);
+            error::handle(e);
+            return r ? true : false;
         }
 
         /// retrieve the time at which the latest frame on a stream was captured

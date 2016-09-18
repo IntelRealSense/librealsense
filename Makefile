@@ -71,7 +71,7 @@ install: lib/librealsense.so
 
 uninstall:
 	rm -rf /usr/local/include/librealsense
-	rm /usr/local/lib/librealsense.so
+	rm -f /usr/local/lib/librealsense.so
 	ldconfig
 
 clean:

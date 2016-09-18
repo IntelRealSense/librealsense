@@ -16,32 +16,32 @@ namespace rsimpl
                                                                               {rs_option::RS_OPTION_F200_CONFIDENCE_THRESHOLD, 0x06}};
 
     static const cam_mode sr300_color_modes[] = {
-        {{1920, 1080}, {5,15,30}},
-        {{1280,  720}, {5,15,30,60}},
-        {{ 960,  540}, {5,15,30,60}},
-        {{ 848,  480}, {5,15,30,60}},
-        {{ 640,  480}, {5,15,30,60}},
-        {{ 640,  360}, {5,15,30,60}},
-        {{ 424,  240}, {5,15,30,60}},
-        {{ 320,  240}, {5,15,30,60}},
-        {{ 320,  180}, {5,15,30,60}}
+        {{1920, 1080}, { 10,30 } },
+        {{1280,  720}, { 10,30,60 } },
+        {{ 960,  540}, { 10,30,60 } },
+        {{ 848,  480}, { 10,30,60 } },
+        {{ 640,  480}, { 10,30,60 } },
+        {{ 640,  360}, { 10,30,60 } },
+        {{ 424,  240}, { 10,30,60 } },
+        {{ 320,  240}, { 10,30,60 } },
+        {{ 320,  180}, { 10,30,60 } },
     };
 
     static const cam_mode sr300_depth_modes[] = {
-        {{640, 480}, {5,15,30,60}}, 
-        {{640, 240}, {5,15,30,60,110}}
+        {{640, 480}, {10,30,60}},
+        {{640, 240}, {10,30,60,110}}
     };
 
     static const cam_mode sr300_ir_only_modes[] = {
-        {{640, 480}, {30,60,120,200}}      
-    };    
+        {{640, 480}, {30,60,120,200}}
+    };
 
     static static_device_info get_sr300_info(std::shared_ptr<uvc::device> device, const ivcam::camera_calib_params & c)
     {
         LOG_INFO("Connecting to " << camera_official_name.at(cameras::sr300));
        
         static_device_info info;
-        info.name = { camera_official_name.at(cameras::sr300) };
+        info.name = camera_official_name.at(cameras::sr300);
         
         // Color modes on subdevice 0
         info.stream_subdevices[RS_STREAM_COLOR] = 0;
@@ -216,7 +216,6 @@ namespace rsimpl
                 continue;
             }
 
-            uint8_t val=0;
             switch(options[i])
             {
             case RS_OPTION_SR300_AUTO_RANGE_ENABLE_MOTION_VERSUS_RANGE: values[i] = arr_reader.get(&ivcam::cam_auto_range_request::enableMvR); break; 

@@ -19,12 +19,21 @@ namespace rsimpl
         {{ 480, 270}, {6,15,30,60}},
     };
 
-    static const cam_mode ds5d_ir_only_modes[] = {
+    static const cam_mode ds5d_ir_only_modes[] = {      /*  Left imager only */
         {{1280, 720}, {6,15,30}},
         {{ 960, 540}, {6,15,30,60}},
         {{ 640, 480}, {6,15,30,60}},
         {{ 640, 360}, {6,15,30,60}},
         {{ 480, 270}, {6,15,30,60}},
+    };
+
+    static const cam_mode ds5d_lr_only_modes[] = {      /* Left&Right imagers, calibration */
+        {{1920,1080}, {15,30}},
+        {{1280, 720}, {15,30}},
+        {{ 960, 540}, {15,30}},
+        {{ 640, 480}, {15,30}},
+        {{ 640, 360}, {15,30}},
+        {{ 480, 270}, {15,30}},
     };
 
     static static_device_info get_ds5d_info(std::shared_ptr<uvc::device> device, std::string dev_name)
@@ -72,10 +81,17 @@ namespace rsimpl
             auto intrinsic = (calib.data_present[coefficients_table_id])?  calib.left_imager_intrinsic :rs_intrinsics{ m.dims.x, m.dims.y };
 
             for(auto fps : m.fps)
-            {
-                info.subdevice_modes.push_back({ 1, m.dims, pf_y8, fps, intrinsic, {}, {0}});
-                info.subdevice_modes.push_back({ 1, m.dims, pf_y8i, fps,{ m.dims.x, m.dims.y },{},{ 0 } });
-            }
+                info.subdevice_modes.push_back({ 1, m.dims, pf_l8, fps, intrinsic, {}, {0}});
+        }
+
+
+        for(auto & m : ds5d_lr_only_modes)
+        {
+            calib.left_imager_intrinsic.width = m.dims.x;   // The same intrinsic apply for all resolutions, for now. TBD verification required
+            calib.left_imager_intrinsic.height = m.dims.y;
+
+            for(auto fps : m.fps)
+                info.subdevice_modes.push_back({ 1, m.dims, pf_y12i, fps,{ m.dims.x, m.dims.y },{},{ 0 } });
         }
 
         // Populate depth modes on subdevice 0
@@ -86,7 +102,7 @@ namespace rsimpl
             {
                 auto intrinsic = rs_intrinsics{ m.dims.x, m.dims.y };
 
-                if (calib.data_present[depth_calibration_id])
+                if (calib.data_present[coefficients_table_id])
                 {
                     // Apply supported camera modes, select intrinsic from flash, if available; otherwise use default
                     auto it = std::find_if(resolutions_list.begin(), resolutions_list.end(), [m](std::pair<ds5_rect_resolutions, int2> res) { return ((m.dims.x == res.second.x) && (m.dims.y == res.second.y)); });
@@ -106,7 +122,7 @@ namespace rsimpl
             info.presets[RS_STREAM_INFRARED2][i] = {true, 640, 480, RS_FORMAT_Y8, 30};
         }
 
-        info.options.push_back({ RS_OPTION_DS5_LASER_POWER, 0, 1, 1, 0 });
+        info.options.push_back({ RS_OPTION_RS400_LASER_POWER, 0, 1, 1, 0 });
         info.options.push_back({ RS_OPTION_COLOR_GAIN });
         info.options.push_back({ RS_OPTION_R200_LR_EXPOSURE, 40, 1660, 1, 100 });
         info.options.push_back({ RS_OPTION_HARDWARE_LOGGER_ENABLED, 0, 1, 1, 0 });
@@ -114,6 +130,20 @@ namespace rsimpl
         rsimpl::pose depth_to_infrared2 = { transpose((const float3x3 &)calib.depth_extrinsic.rotation), (const float3 &)calib.depth_extrinsic.translation * 0.001f }; // convert mm to m
         info.stream_poses[RS_STREAM_DEPTH] = info.stream_poses[RS_STREAM_INFRARED] = { { { 1,0,0 },{ 0,1,0 },{ 0,0,1 } },{ 0,0,0 } };
         info.stream_poses[RS_STREAM_INFRARED2] = depth_to_infrared2;
+
+
+        // Set up interstream rules for left/right/z images
+        for(auto ir : {RS_STREAM_INFRARED, RS_STREAM_INFRARED2})
+        {
+            info.interstream_rules.push_back({ RS_STREAM_DEPTH, ir, &stream_request::width, 0, 12, RS_STREAM_COUNT, false, false, false });
+            info.interstream_rules.push_back({ RS_STREAM_DEPTH, ir, &stream_request::height, 0, 12, RS_STREAM_COUNT, false, false, false });
+            info.interstream_rules.push_back({ RS_STREAM_DEPTH, ir, &stream_request::fps, 0, 0, RS_STREAM_COUNT, false, false, false });
+        }
+
+        info.interstream_rules.push_back({ RS_STREAM_INFRARED, RS_STREAM_INFRARED2, &stream_request::fps, 0, 0, RS_STREAM_COUNT, false, false, false });
+        info.interstream_rules.push_back({ RS_STREAM_INFRARED, RS_STREAM_INFRARED2, &stream_request::width, 0, 0, RS_STREAM_COUNT, false, false, false });
+        info.interstream_rules.push_back({ RS_STREAM_INFRARED, RS_STREAM_INFRARED2, &stream_request::height, 0, 0, RS_STREAM_COUNT, false, false, false });
+        info.interstream_rules.push_back({ RS_STREAM_INFRARED, RS_STREAM_INFRARED2, nullptr, 0, 0, RS_STREAM_COUNT, false, false, true });
 
         return info;
     }
@@ -144,7 +174,7 @@ namespace rsimpl
 
             switch (options[i])
             {
-            case RS_OPTION_DS5_LASER_POWER:         ds5::set_laser_power(get_device(), static_cast<uint8_t>(values[i])); break;
+            case RS_OPTION_RS400_LASER_POWER:         ds5::set_laser_power(get_device(), static_cast<uint8_t>(values[i])); break;
             case RS_OPTION_R200_LR_EXPOSURE:        ds5::set_lr_exposure(get_device(), static_cast<uint16_t>(values[i])); break;
             case RS_OPTION_HARDWARE_LOGGER_ENABLED: set_fw_logger_option(values[i]); break;
 
