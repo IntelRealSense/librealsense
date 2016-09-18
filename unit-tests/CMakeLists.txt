@@ -22,6 +22,10 @@ else()
 endif()
 
 set(DEPENDENCIES realsense)
+if(WIN32)
+else()
+    list(APPEND DEPENDENCIES m ${LIBUSB1_LIBRARIES})
+endif()
 
 add_executable(F200-live-test unit-tests-live.cpp unit-tests-live-f200.cpp)
 target_link_libraries(F200-live-test ${DEPENDENCIES})
@@ -40,19 +44,4 @@ target_link_libraries(ZR300-live-test ${DEPENDENCIES})
 
 add_executable(offline-test unit-tests-offline.cpp)
 target_link_libraries(offline-test ${DEPENDENCIES})
-
-install(
-    TARGETS
-    F200-live-test
-    LR200-live-test
-    R200-live-test
-    SR300-live-test
-    ZR300-live-test
-
-    offline-test
-
-    RUNTIME DESTINATION
-    ${CMAKE_INSTALL_PREFIX}/bin/tests
-)
-
 
