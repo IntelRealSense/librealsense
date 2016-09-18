@@ -23,7 +23,7 @@
     <ClInclude Include="..\..\unit-tests\unit-tests-live-ds-common.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\unit-tests\unit-tests-live-ds5.cpp" />
+    <ClCompile Include="..\..\unit-tests\unit-tests-live-rs400.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{0364A3F5-E0C7-46A1-9C82-343D05AB1843}</ProjectGuid>
