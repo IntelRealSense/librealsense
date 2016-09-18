@@ -91,7 +91,7 @@ rs_motion_intrinsics rs_device_base::get_motion_intrinsics() const
     throw std::runtime_error("Motion intrinsic is not supported for this device");
 }
 
-rs_extrinsics rs_device_base::get_motion_extrinsics_from(rs_stream from) const
+rs_extrinsics rs_device_base::get_motion_extrinsics_from(rs_stream /*from*/) const
 {
     throw std::runtime_error("Motion extrinsics does not supported");
 }
@@ -340,7 +340,7 @@ void rs_device_base::start_video_streaming()
     // dispatching the uvc configuration for a requested stream to the hardware
     for(auto mode_selection : selected_modes)
     {
-        assert((size_t)mode_selection.mode.subdevice <= timestamp_readers.size());
+        assert(static_cast<size_t>(mode_selection.mode.subdevice) <= timestamp_readers.size());
         auto timestamp_reader = timestamp_readers[mode_selection.mode.subdevice];
 
         // Create a stream buffer for each stream served by this subdevice mode

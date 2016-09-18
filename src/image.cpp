@@ -72,6 +72,7 @@ namespace rsimpl
     void unpack_y8_from_y16_10 (byte * const d[], const byte * s, int n) { unpack_pixels(d, n, reinterpret_cast<const uint16_t *>(s), [](uint16_t pixel) -> uint8_t  { return pixel >> 2; }); }
     void unpack_rw10_from_rw8 (byte *  const d[], const byte * s, int n)
     {
+#ifdef __SSSE3__
         auto src = reinterpret_cast<const __m128i *>(s);
         auto dst = reinterpret_cast<__m128i *>(d[0]);
 
@@ -86,6 +87,18 @@ namespace rsimpl
             __m128i  out8 = _mm_packus_epi16(out1_16, out2_16);
             _mm_store_si128(xout, out8);
         }
+#else  // Generic code for when SSSE3 is not available.
+        unsigned short* from = (unsigned short*)s;
+        byte* to = d[0];
+
+        for(int i = 0; i < n; ++i)
+        {
+          byte temp = (byte)(*from >> 2);
+          *to = temp;
+          ++from;
+          ++to;
+        }
+#endif
     }
 
     /////////////////////////////

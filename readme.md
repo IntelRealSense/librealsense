@@ -1,10 +1,8 @@
 # Intel® RealSense™ Cross Platform API
 
-**Development Branch** - [What's New?](./doc/whats_new.md)
-
 [ ![License] [license-image] ] [license]
 
-[release-image]: http://img.shields.io/badge/release-1.9.6-blue.svg?style=flat
+[release-image]: http://img.shields.io/badge/release-1.9.7-blue.svg?style=flat
 [releases]: https://github.com/IntelRealSense/librealsense/releases
 
 [license-image]: http://img.shields.io/badge/license-Apache--2-blue.svg?style=flat
@@ -43,8 +41,8 @@ A comprehensive suite of sample and tutorial applications are provided in the `/
   * [C API](./include/librealsense/rs.h) - With doxygen-style API comments
   * To build documentation locally from sources, on Ubuntu run the following commands:
     * `sudo apt-get install doxygen`
-	* `cd doc/Doxygen_API`
-	* `doxygen Doxyfile`
+	* `doxygen doc/Doxygen_API/Doxyfile`
+  * [What's New?](./doc/whats_new.md)
   * [Projection APIs](./doc/projection.md) - A guide on coordinate systems, calibration information, and projection
   * [Camera Spec Sheet](./doc/camera_specs.md) - A brief overview of R200, F200 and SR300
   * [Developer Notes](./doc/dev_log.md) - Several informal notes gathered during internal releases
@@ -95,7 +93,7 @@ For small-form factor usages, this library has been demonstrated to work on the 
 
 The library has been integrated with a number of third-party components and operating systems. While most of these projects are not directly supported by the team, they are useful resources for users of this library.
 
-  * [Robotic Operating System](https://github.com/intel-ros/realsense)
+  * [Robotic Operating System](https://github.com/intel-ros/realsense) (Intel Supported; R200, F200, SR300 all supported)
   * [Yocto / WindRiver Linux](https://github.com/IntelRealSense/meta-intel-librealsense)
   * [Arch Linux](https://aur.archlinux.org/packages/librealsense/)
 

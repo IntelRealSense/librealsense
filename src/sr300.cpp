@@ -36,7 +36,7 @@ namespace rsimpl
         {{640, 480}, {30,60,120,200}}
     };
 
-    static static_device_info get_sr300_info(std::shared_ptr<uvc::device> device, const ivcam::camera_calib_params & c)
+    static static_device_info get_sr300_info(std::shared_ptr<uvc::device> /*device*/, const ivcam::camera_calib_params & c)
     {
         LOG_INFO("Connecting to Intel RealSense SR300");
        
@@ -74,9 +74,9 @@ namespace rsimpl
 
         for(int i=0; i<RS_PRESET_COUNT; ++i)
         {
-            info.presets[RS_STREAM_COLOR   ][i] = {true, 640, 480, RS_FORMAT_RGB8, 60};
-            info.presets[RS_STREAM_DEPTH   ][i] = {true, 640, 480, RS_FORMAT_Z16, 60};
-            info.presets[RS_STREAM_INFRARED][i] = {true, 640, 480, RS_FORMAT_Y16, 60};
+            info.presets[RS_STREAM_COLOR   ][i] = {true, 640, 480, RS_FORMAT_RGB8, 60, RS_OUTPUT_BUFFER_FORMAT_CONTINUOUS};
+            info.presets[RS_STREAM_DEPTH   ][i] = {true, 640, 480, RS_FORMAT_Z16, 60, RS_OUTPUT_BUFFER_FORMAT_CONTINUOUS};
+            info.presets[RS_STREAM_INFRARED][i] = {true, 640, 480, RS_FORMAT_Y16, 60, RS_OUTPUT_BUFFER_FORMAT_CONTINUOUS};
         }
 
         info.options = {
@@ -98,7 +98,7 @@ namespace rsimpl
         //                                  option                         min  max    step     def
         //                                  ------                         ---  ---    ----     ---
         info.options.push_back({ RS_OPTION_F200_LASER_POWER,                0,  16,     1,      16  });
-        info.options.push_back({ RS_OPTION_F200_ACCURACY,                   0,  3,      1,      1   });
+        info.options.push_back({ RS_OPTION_F200_ACCURACY,                   1,  3,      1,      1   });
         info.options.push_back({ RS_OPTION_F200_MOTION_RANGE,               0,  220,    1,      9   });
         info.options.push_back({ RS_OPTION_F200_FILTER_OPTION,              0,  7,      1,      5   });
         info.options.push_back({ RS_OPTION_F200_CONFIDENCE_THRESHOLD,       0,  15,     1,      3   });
@@ -212,7 +212,7 @@ namespace rsimpl
 
             if(uvc::is_pu_control(options[i]))
             {
-                values[i] = uvc::get_pu_control(get_device(), 0, options[i]);
+                values[i] = uvc::get_pu_control_with_retry(get_device(), 0, options[i]);
                 continue;
             }
 

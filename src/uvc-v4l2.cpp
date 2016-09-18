@@ -243,7 +243,7 @@ namespace rsimpl
                     }
 
                     buffers.resize(req.count);
-                    for(int i=0; i<buffers.size(); ++i)
+                    for(size_t i = 0; i < buffers.size(); ++i)
                     {
                         v4l2_buffer buf = {};
                         buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
@@ -257,7 +257,7 @@ namespace rsimpl
                     }
 
                     // Start capturing
-                    for(int i = 0; i < buffers.size(); ++i)
+                    for(size_t i = 0; i < buffers.size(); ++i)
                     {
                         v4l2_buffer buf = {};
                         buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
@@ -288,7 +288,7 @@ namespace rsimpl
                     v4l2_buf_type type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
                     if(xioctl(fd, VIDIOC_STREAMOFF, &type) < 0) warn_error("VIDIOC_STREAMOFF");
 
-                    for(int i = 0; i < buffers.size(); i++)
+                    for(size_t i = 0; i < buffers.size(); i++)
                     {
                         if(munmap(buffers[i].start, buffers[i].length) < 0) warn_error("munmap");
                     }
@@ -505,7 +505,7 @@ namespace rsimpl
             device.subdevices[xu.subdevice]->set_control(xu, ctrl, data, len);
         }
 
-        void claim_interface(device & device, const guid & interface_guid, int interface_number)
+        void claim_interface(device & device, const guid & /*interface_guid*/, int interface_number)
         {
             if(!device.usb_handle)
             {
@@ -546,7 +546,7 @@ namespace rsimpl
             device.subdevices[subdevice_index]->set_data_channel_cfg(callback);
         }
 
-        void start_streaming(device & device, int num_transfer_bufs)
+        void start_streaming(device & device, int /*num_transfer_bufs*/)
         {
             device.start_streaming();
         }
@@ -596,7 +596,7 @@ namespace rsimpl
 
         int get_pu_control(const device & device, int subdevice, rs_option option)
         {
-            struct v4l2_control control = {get_cid(option)};
+            struct v4l2_control control = {get_cid(option), 0};
             if (xioctl(device.subdevices[subdevice]->fd, VIDIOC_G_CTRL, &control) < 0) throw_error("VIDIOC_G_CTRL");
             if (RS_OPTION_COLOR_ENABLE_AUTO_EXPOSURE==option)  { control.value = (V4L2_EXPOSURE_MANUAL==control.value) ? 0 : 1; }
             return control.value;
