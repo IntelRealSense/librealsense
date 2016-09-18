@@ -19,12 +19,21 @@ namespace rsimpl
         {{ 480, 270}, {6,15,30,60}},
     };
 
-    static const cam_mode ds5d_ir_only_modes[] = {
+    static const cam_mode ds5d_ir_only_modes[] = {      /*  Left imager only */
         {{1280, 720}, {6,15,30}},
         {{ 960, 540}, {6,15,30,60}},
         {{ 640, 480}, {6,15,30,60}},
         {{ 640, 360}, {6,15,30,60}},
         {{ 480, 270}, {6,15,30,60}},
+    };
+
+    static const cam_mode ds5d_lr_only_modes[] = {      /* Left&Right imagers, calibration */
+        {{1920,1080}, {15,30}},
+        {{1280, 720}, {15,30}},
+        {{ 960, 540}, {15,30}},
+        {{ 640, 480}, {15,30}},
+        {{ 640, 360}, {15,30}},
+        {{ 480, 270}, {15,30}},
     };
 
     static static_device_info get_ds5d_info(std::shared_ptr<uvc::device> device, std::string dev_name)
@@ -72,10 +81,17 @@ namespace rsimpl
             auto intrinsic = (calib.data_present[coefficients_table_id])?  calib.left_imager_intrinsic :rs_intrinsics{ m.dims.x, m.dims.y };
 
             for(auto fps : m.fps)
-            {
                 info.subdevice_modes.push_back({ 1, m.dims, pf_l8, fps, intrinsic, {}, {0}});
-                info.subdevice_modes.push_back({ 1, m.dims, pf_y8i, fps,{ m.dims.x, m.dims.y },{},{ 0 } });
-            }
+        }
+
+
+        for(auto & m : ds5d_lr_only_modes)
+        {
+            calib.left_imager_intrinsic.width = m.dims.x;   // The same intrinsic apply for all resolutions, for now. TBD verification required
+            calib.left_imager_intrinsic.height = m.dims.y;
+
+            for(auto fps : m.fps)
+                info.subdevice_modes.push_back({ 1, m.dims, pf_y12i, fps,{ m.dims.x, m.dims.y },{},{ 0 } });
         }
 
         // Populate depth modes on subdevice 0
