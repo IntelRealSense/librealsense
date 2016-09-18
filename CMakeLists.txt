@@ -167,6 +167,11 @@ if(BUILD_EXAMPLES)
   add_subdirectory(examples)
 endif()
 
+option(BUILD_UNIT_TESTS "Build realsense unit tests." ON)
+if(BUILD_UNIT_TESTS)
+  add_subdirectory(unit-tests)
+endif()
+
 # Check for unreferenced files
 FILE(GLOB_RECURSE AllSources RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
   "src/*.c" "src/*.cpp" "src/*.cc" "src/*.c++"
