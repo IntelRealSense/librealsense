@@ -435,7 +435,7 @@ bool is_any_stream_enable(rs::device* dev)
 }
 
 bool motion_tracking_enable = true;
-void enable_stream(rs::device * dev, int stream, bool enable, std::stringstream& stream_name)
+void enable_stream(rs::device * dev, int stream, rs::format format, int w, int h, int fps, bool enable, std::stringstream& stream_name)
 {
     stream_name.str("");
     if (stream == RS_CAPABILITIES_MOTION_EVENTS)
@@ -462,7 +462,7 @@ void enable_stream(rs::device * dev, int stream, bool enable, std::stringstream&
         if (enable)
         {
             if (!dev->is_stream_enabled((rs::stream)stream))
-                dev->enable_stream((rs::stream)stream, rs::preset::best_quality);
+                dev->enable_stream((rs::stream)stream, w, h, format, fps);
         }
         else
         {
@@ -560,6 +560,11 @@ int main(int argc, char * argv[])
     };
     std::map<rs::stream, resolution> resolutions;
 
+    int req_fps = 30;
+    struct w_h { int width, height; };
+    std::vector<rs::format> formats = { rs::format::z16,    rs::format::rgb8,   rs::format::y8,         rs::format::y8,        rs::format::raw8,    rs::format::any };
+    std::vector<w_h>        wh      = { { 0,0 },            { 640,480 },        { 0,0 },                { 0,0 },               { 640,480 },         {0,0}};
+
     try {
         rs::log_to_console(rs::log_severity::warn);
         //rs::log_to_file(rs::log_severity::debug, "librealsense.log");
@@ -589,18 +594,12 @@ int main(int argc, char * argv[])
 
         dev = ctx.get_device(0);
 
-        int fps = 30;
-        struct w_h { int width, height; };
-        std::vector<rs::stream> streams = { rs::stream::depth,  rs::stream::color,  rs::stream::infrared,   rs::stream::infrared2, rs::stream::fisheye };
-        std::vector<rs::format> formats = { rs::format::z16,    rs::format::rgb8,   rs::format::y8,         rs::format::y8,        rs::format::raw8 };
-        std::vector<w_h>        wh      = { { 0,0 },            { 640,480 },        { 0,0 },                { 0,0 },               { 640,480 } };
-
-        for (auto stream : streams)
+        for (int stream = 0; stream < streams; stream++)
         {
             if (dev->supports((rs::capabilities)stream))
             {
-                dev->enable_stream(stream, wh[(int)stream].width, wh[(int)stream].height, formats[(int)stream], fps, rs::output_buffer_format::native);
-                resolutions[stream] = { dev->get_stream_width(stream), dev->get_stream_height(stream), formats[(int)stream] };
+                dev->enable_stream((rs::stream)stream, wh[stream].width, wh[stream].height, formats[stream], req_fps);
+                resolutions[(rs::stream)stream] = { dev->get_stream_width((rs::stream)stream), dev->get_stream_height((rs::stream)stream), formats[stream] };
             }
         }
 
@@ -734,11 +733,11 @@ int main(int argc, char * argv[])
                             else
                                 enable = dev->is_stream_enabled(s);
 
-                            enable_stream(dev, i, enable, stream_name);
+                            enable_stream(dev, i, formats[i], wh[i].width, wh[i].height, req_fps, enable, stream_name);
 
                             if (!is_callback_set || g.checkbox({ w - 260, y, w - 240, y + 20 }, enable))
                             {
-                                enable_stream(dev, i, enable, stream_name);
+                                enable_stream(dev, i, formats[i], wh[i].width, wh[i].height, req_fps, enable, stream_name);
 
                                 if (enable)
                                 {

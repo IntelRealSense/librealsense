@@ -471,15 +471,13 @@ namespace rsimpl
         for(int i=0; i<RS_PRESET_COUNT; ++i)
             info.presets[RS_STREAM_INFRARED2][i] = info.presets[RS_STREAM_INFRARED][i];
 
-                                // Extended controls ranges cannot be retrieved from device, therefore the data is locally defined
-                                //Option                                                Min     Max Step      Default
+        // Extended controls ranges cannot be retrieved from device, therefore the data is locally defined
+        //Option                                                                        Min     Max     Step    Default
         info.options.push_back({ RS_OPTION_R200_LR_AUTO_EXPOSURE_ENABLED,               0,      1,      1,      0 });
         info.options.push_back({ RS_OPTION_R200_EMITTER_ENABLED,                        0,      1,      1,      0 });
         info.options.push_back({ RS_OPTION_R200_DEPTH_UNITS,                            0, INT_MAX,     1,      1000 });  // What is the real range?
         info.options.push_back({ RS_OPTION_R200_DEPTH_CLAMP_MIN,                        0, USHRT_MAX,   1,      0 });
         info.options.push_back({ RS_OPTION_R200_DEPTH_CLAMP_MAX,                        0, USHRT_MAX,   1,      USHRT_MAX });
-        info.options.push_back({ RS_OPTION_R200_DISPARITY_MULTIPLIER,                   1,      1000,    1,     32 });
-        info.options.push_back({ RS_OPTION_R200_DISPARITY_SHIFT,                        0,      1,      1,      0 });
         info.options.push_back({ RS_OPTION_R200_AUTO_EXPOSURE_MEAN_INTENSITY_SET_POINT, 0,      4095,   1,      512 });
         info.options.push_back({ RS_OPTION_R200_AUTO_EXPOSURE_BRIGHT_RATIO_SET_POINT,   0,      1,      1,      0 });
         info.options.push_back({ RS_OPTION_R200_AUTO_EXPOSURE_KP_GAIN,                  0,      1000,   1,      0 });
@@ -805,9 +803,7 @@ namespace rsimpl
         bool validate_frame(const subdevice_mode & mode, const void * frame) override
         {
             auto counter = get_frame_counter(mode, frame);
-            
-            LOG_WARNING("Validating color frame" << counter);
-            
+
             if (counter == 0 && first_frames) return false;
             first_frames = false;
             return true;
