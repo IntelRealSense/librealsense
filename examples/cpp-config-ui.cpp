@@ -247,6 +247,12 @@ std::mutex mm_mutex;
 rs::motion_data m_gyro_data;
 rs::motion_data m_acc_data;
 
+int fps = 30;
+struct w_h { int width, height; };
+std::vector<rs::stream> streams_names   = { rs::stream::depth,  rs::stream::color,  rs::stream::infrared,   rs::stream::infrared2, rs::stream::fisheye };
+std::vector<rs::format> formats         = { rs::format::z16,    rs::format::rgb8,   rs::format::y8,         rs::format::y8,        rs::format::raw8 };
+std::vector<w_h>        wh              = { { 640,480 },            { 640,480 },        { 0,0 },                { 0,0 },               { 640,480 } };
+
 void on_motion_event(rs::motion_data entry)
 {
     std::lock_guard<std::mutex> lock(mm_mutex);
@@ -462,7 +468,8 @@ void enable_stream(rs::device * dev, int stream, bool enable, std::stringstream&
         if (enable)
         {
             if (!dev->is_stream_enabled((rs::stream)stream))
-                dev->enable_stream((rs::stream)stream, rs::preset::best_quality);
+                dev->enable_stream((rs::stream)stream, wh[(int)stream].width, wh[(int)stream].height, formats[(int)stream], fps, rs::output_buffer_format::native);
+                //dev->enable_stream((rs::stream)stream, rs::preset::best_quality);
         }
         else
         {
@@ -544,7 +551,7 @@ int main(int argc, char * argv[])
 {
     rs::context ctx;
     GLFWwindow* win = nullptr;
-    const auto streams = (unsigned short)rs::stream::fisheye + 1;       // Use camera-supported native streams
+    const auto streams = streams_names.size();       // Use camera-supported native streams
     gui g = {};
     rs::device * dev = nullptr;
     std::atomic<bool> running(true);
@@ -589,13 +596,7 @@ int main(int argc, char * argv[])
 
         dev = ctx.get_device(0);
 
-        int fps = 30;
-        struct w_h { int width, height; };
-        std::vector<rs::stream> streams = { rs::stream::depth,  rs::stream::color,  rs::stream::infrared,   rs::stream::infrared2, rs::stream::fisheye };
-        std::vector<rs::format> formats = { rs::format::z16,    rs::format::rgb8,   rs::format::y8,         rs::format::y8,        rs::format::raw8 };
-        std::vector<w_h>        wh      = { { 0,0 },            { 640,480 },        { 0,0 },                { 0,0 },               { 640,480 } };
-
-        for (auto stream : streams)
+        for (auto stream : streams_names)
         {
             if (dev->supports((rs::capabilities)stream))
             {

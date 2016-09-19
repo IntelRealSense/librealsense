@@ -81,7 +81,10 @@ namespace rsimpl
             auto intrinsic = (calib.data_present[coefficients_table_id])?  calib.left_imager_intrinsic :rs_intrinsics{ m.dims.x, m.dims.y };
 
             for(auto fps : m.fps)
+            {
                 info.subdevice_modes.push_back({ 1, m.dims, pf_l8, fps, intrinsic, {}, {0}});
+                info.subdevice_modes.push_back({ 1, m.dims, pf_y8i, fps, intrinsic, {}, {0}});
+            }
         }
 
 
