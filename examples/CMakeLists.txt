@@ -76,6 +76,12 @@ target_link_libraries(cpp-tutorial-3-pointcloud ${DEPENDENCIES})
 add_executable(cpp-alignimages cpp-alignimages.cpp)
 target_link_libraries(cpp-alignimages ${DEPENDENCIES})
 
+add_executable(cpp-callback cpp-callback.cpp)
+target_link_libraries(cpp-callback ${DEPENDENCIES})
+
+add_executable(cpp-callback-2 cpp-callback-2.cpp)
+target_link_libraries(cpp-callback-2 ${DEPENDENCIES})
+
 add_executable(cpp-capture cpp-capture.cpp)
 target_link_libraries(cpp-capture ${DEPENDENCIES})
 
@@ -88,6 +94,9 @@ target_link_libraries(cpp-enumerate-devices ${DEPENDENCIES})
 add_executable(cpp-headless cpp-headless.cpp)
 target_link_libraries(cpp-headless ${DEPENDENCIES})
 
+add_executable(cpp-motion-module cpp-motion-module.cpp)
+target_link_libraries(cpp-motion-module ${DEPENDENCIES})
+
 add_executable(cpp-multicam cpp-multicam.cpp)
 target_link_libraries(cpp-multicam ${DEPENDENCIES})
 
@@ -96,6 +105,9 @@ target_link_libraries(cpp-pointcloud ${DEPENDENCIES})
 
 add_executable(cpp-restart cpp-restart.cpp)
 target_link_libraries(cpp-restart ${DEPENDENCIES})
+
+add_executable(cpp-stride cpp-stride.cpp)
+target_link_libraries(cpp-stride ${DEPENDENCIES})
 
 install(
     TARGETS
@@ -108,13 +120,17 @@ install(
     cpp-tutorial-3-pointcloud
 
     cpp-alignimages
+    cpp-callback
+    cpp-callback-2
     cpp-capture
     cpp-config-ui
     cpp-enumerate-devices
     cpp-headless
+    cpp-motion-module
     cpp-multicam
     cpp-pointcloud
     cpp-restart
+    cpp-stride
 
     RUNTIME DESTINATION
     ${CMAKE_INSTALL_PREFIX}/bin

@@ -97,6 +97,9 @@ set(REALSENSE_HPP
 if(WIN32)
     set(BACKEND RS_USE_WMF_BACKEND)
     set(REALSENSE_DEF CMake/realsense.def)
+    # Makes VS15 find the DLL when trying to run examples/tests
+    set (CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
+    set (CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 elseif(APPLE)
     set(BACKEND RS_USE_LIBUVC_BACKEND)
 else()
@@ -165,6 +168,11 @@ install(DIRECTORY ${PROJECT_SOURCE_DIR}/include/librealsense DESTINATION ${CMAKE
 option(BUILD_EXAMPLES "Build realsense examples." OFF)
 if(BUILD_EXAMPLES)
   add_subdirectory(examples)
+endif()
+
+option(BUILD_UNIT_TESTS "Build realsense unit tests." ON)
+if(BUILD_UNIT_TESTS)
+  add_subdirectory(unit-tests)
 endif()
 
 # Check for unreferenced files
