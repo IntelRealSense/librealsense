@@ -97,8 +97,6 @@ TEST_CASE("DS-device devices support all required options", "[live] [DS-device]"
                 RS_OPTION_R200_DEPTH_UNITS,
                 RS_OPTION_R200_DEPTH_CLAMP_MIN,
                 RS_OPTION_R200_DEPTH_CLAMP_MAX,
-                RS_OPTION_R200_DISPARITY_MULTIPLIER,
-                RS_OPTION_R200_DISPARITY_SHIFT,
                 RS_OPTION_R200_AUTO_EXPOSURE_MEAN_INTENSITY_SET_POINT,
                 RS_OPTION_R200_AUTO_EXPOSURE_TOP_EDGE,
                 RS_OPTION_R200_AUTO_EXPOSURE_BOTTOM_EDGE,
