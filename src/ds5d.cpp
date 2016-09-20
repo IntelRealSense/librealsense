@@ -18,6 +18,7 @@ namespace rsimpl
         {{ 640, 360}, {6,15,30,60,120}},
         {{ 480, 270}, {6,15,30,60,120}},
         {{ 424, 240}, {6,15,30,60,120}},
+        {{ 320, 240}, {6,15,30,60,120}},
     };
 
     static const cam_mode ds5d_ir_only_modes[] = {      /*  Left imager only */
@@ -27,6 +28,7 @@ namespace rsimpl
         {{ 640, 360}, {6,15,30,60,120}},
         {{ 480, 270}, {6,15,30,60,120}},
         {{ 424, 240}, {6,15,30,60,120}},
+        {{ 320, 240}, {6,15,30,60,120}},
     };
 
     static const cam_mode ds5d_lr_only_modes[] = {      /* Left&Right imagers, calibration */
