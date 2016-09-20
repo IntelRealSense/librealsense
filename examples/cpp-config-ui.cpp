@@ -550,7 +550,7 @@ int main(int argc, char * argv[])
 {
     rs::context ctx;
     GLFWwindow* win = nullptr;
-    const auto streams = streams_names.size();       // Use camera-supported native streams
+    const size_t streams = (size_t)rs::stream::fisheye+1;       // Use camera-supported native streams
     gui g = {};
     rs::device * dev = nullptr;
     std::atomic<bool> running(true);
