@@ -29,7 +29,7 @@
     <ProjectGuid>{0364A3F5-E0C7-46A1-9C82-343D05AB1843}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>testliveds4</RootNamespace>
-    <ProjectName>unit-tests-live-ds5</ProjectName>
+    <ProjectName>unit-tests-live-rs400</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">

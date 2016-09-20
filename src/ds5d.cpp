@@ -13,27 +13,31 @@ namespace rsimpl
 
     static const cam_mode ds5d_depth_modes[] = {
         {{1280, 720}, {6,15,30}},
-        {{ 960, 540}, {6,15,30,60}},
+        {{ 848, 480}, {6,15,30,60}},
         {{ 640, 480}, {6,15,30,60}},
-        {{ 640, 360}, {6,15,30,60}},
-        {{ 480, 270}, {6,15,30,60}},
+        {{ 640, 360}, {6,15,30,60,120}},
+        {{ 480, 270}, {6,15,30,60,120}},
+        {{ 424, 240}, {6,15,30,60,120}},
     };
 
     static const cam_mode ds5d_ir_only_modes[] = {      /*  Left imager only */
         {{1280, 720}, {6,15,30}},
-        {{ 960, 540}, {6,15,30,60}},
+        {{ 848, 480}, {6,15,30,60}},
         {{ 640, 480}, {6,15,30,60}},
-        {{ 640, 360}, {6,15,30,60}},
-        {{ 480, 270}, {6,15,30,60}},
+        {{ 640, 360}, {6,15,30,60,120}},
+        {{ 480, 270}, {6,15,30,60,120}},
+        {{ 424, 240}, {6,15,30,60,120}},
     };
 
     static const cam_mode ds5d_lr_only_modes[] = {      /* Left&Right imagers, calibration */
         {{1920,1080}, {15,30}},
         {{1280, 720}, {15,30}},
         {{ 960, 540}, {15,30}},
+        {{ 848, 480}, {15,30}},
         {{ 640, 480}, {15,30}},
         {{ 640, 360}, {15,30}},
         {{ 480, 270}, {15,30}},
+        {{ 424, 240}, {15,30}},
     };
 
     static static_device_info get_ds5d_info(std::shared_ptr<uvc::device> device, std::string dev_name)
@@ -80,8 +84,9 @@ namespace rsimpl
 
             auto intrinsic = (calib.data_present[coefficients_table_id])?  calib.left_imager_intrinsic :rs_intrinsics{ m.dims.x, m.dims.y };
 
-            for(auto fps : m.fps)
-                info.subdevice_modes.push_back({ 1, m.dims, pf_l8, fps, intrinsic, {}, {0}});
+            for(auto pf : {pf_l8, pf_y8i, pf_yuyvl })
+                for(auto fps : m.fps)
+                    info.subdevice_modes.push_back({ 1, m.dims, pf, fps, intrinsic, {}, {0}});
         }
 
 
@@ -143,7 +148,7 @@ namespace rsimpl
         info.interstream_rules.push_back({ RS_STREAM_INFRARED, RS_STREAM_INFRARED2, &stream_request::fps, 0, 0, RS_STREAM_COUNT, false, false, false });
         info.interstream_rules.push_back({ RS_STREAM_INFRARED, RS_STREAM_INFRARED2, &stream_request::width, 0, 0, RS_STREAM_COUNT, false, false, false });
         info.interstream_rules.push_back({ RS_STREAM_INFRARED, RS_STREAM_INFRARED2, &stream_request::height, 0, 0, RS_STREAM_COUNT, false, false, false });
-        info.interstream_rules.push_back({ RS_STREAM_INFRARED, RS_STREAM_INFRARED2, nullptr, 0, 0, RS_STREAM_COUNT, false, false, true });
+        //info.interstream_rules.push_back({ RS_STREAM_INFRARED, RS_STREAM_INFRARED2, nullptr, 0, 0, RS_STREAM_COUNT, false, false, true });
 
         return info;
     }
