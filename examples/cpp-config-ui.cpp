@@ -469,7 +469,6 @@ void enable_stream(rs::device * dev, int stream, bool enable, std::stringstream&
         {
             if (!dev->is_stream_enabled((rs::stream)stream))
                 dev->enable_stream((rs::stream)stream, wh[(int)stream].width, wh[(int)stream].height, formats[(int)stream], fps, rs::output_buffer_format::native);
-                //dev->enable_stream((rs::stream)stream, rs::preset::best_quality);
         }
         else
         {
