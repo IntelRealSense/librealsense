@@ -49,7 +49,7 @@ namespace rsimpl
         std::timed_mutex mutex;
         ds5::get_string_of_gvd_field(*device, mutex, info.serial, ds5::asic_module_serial_offset);
         ds5::get_string_of_gvd_field(*device, mutex, info.firmware_version, ds5::fw_version_offset);
-        ds5::ds5_calibration calib;
+        ds5::ds5_calibration calib = {};
         try
         {
             ds5::read_calibration(*device, mutex, calib);
@@ -79,10 +79,15 @@ namespace rsimpl
 
         for(auto & m : ds5d_ir_only_modes)
         {
-            calib.left_imager_intrinsic.width = m.dims.x;   // The same intrinsic apply for all resolutions, for now. TBD verification required
-            calib.left_imager_intrinsic.height = m.dims.y;
+            auto intrinsic = rs_intrinsics{ m.dims.x, m.dims.y };
 
-            auto intrinsic = (calib.data_present[coefficients_table_id])?  calib.left_imager_intrinsic :rs_intrinsics{ m.dims.x, m.dims.y };
+            if (calib.data_present[coefficients_table_id])
+            {
+                // Apply supported camera modes, select intrinsic from flash, if available; otherwise use default
+                auto it = std::find_if(resolutions_list.begin(), resolutions_list.end(), [m](std::pair<ds5_rect_resolutions, int2> res) { return ((m.dims.x == res.second.x) && (m.dims.y == res.second.y)); });
+                if (it != resolutions_list.end())
+                    intrinsic = calib.depth_intrinsic[(*it).first];
+            }
 
             for(auto pf : {pf_l8, pf_y8i, pf_yuyvl })
                 for(auto fps : m.fps)
@@ -92,7 +97,7 @@ namespace rsimpl
 
         for(auto & m : ds5d_lr_only_modes)
         {
-            calib.left_imager_intrinsic.width = m.dims.x;   // The same intrinsic apply for all resolutions, for now. TBD verification required
+            calib.left_imager_intrinsic.width = m.dims.x;
             calib.left_imager_intrinsic.height = m.dims.y;
 
             for(auto fps : m.fps)

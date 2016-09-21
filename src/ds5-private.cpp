@@ -8,7 +8,7 @@
 #include "ds-private.h"
 #include "ds5-private.h"
 
-#define stringify( name ) # name
+#define stringify( name ) # name "\t"
 
 using namespace rsimpl::hw_monitor;
 using namespace rsimpl::ds5;
@@ -100,14 +100,10 @@ namespace ds5 {
         float3x3            world2left_rot;             //  the inverse rotation of the left camera
         float3x3            world2right_rot;            //  the inverse rotation of the right camera
         float               baseline;                   //  the baseline between the cameras
-#ifdef SPEC_V_0_60
+        uint8_t             reserved1[88];
         uint32_t            brown_model;                // 0 - using DS distorion model, 1 - using Brown model
         float4              rect_params[max_ds5_rect_resoluitons];
-        uint8_t             reserved[80];
-#else
-        float4              rect_params[max_ds5_rect_resoluitons];
-        uint8_t             reserved[156];
-#endif
+        uint8_t             reserved2[80];
     };
 
     struct depth_calibration_table
@@ -209,7 +205,7 @@ namespace ds5 {
     {
         std::stringstream ss;
         for (int i = 0; i < arr_size(data); i++)
-            ss << " [" << i << "] = " << data[i];
+            ss << " [" << i << "] = " << data[i] << "\t";
         return std::string(ss.str().c_str());
     }
 
@@ -223,7 +219,12 @@ namespace ds5 {
         case coefficients_table_id:
         {
             if (raw_data.size() != sizeof(coefficients_table))
-                throw std::runtime_error(to_string() << "DS5 Coefficients table read error, actual size is " << raw_data.size());
+            {
+                std::stringstream ss; ss << "DS5 Coefficients table read error, actual size is " << raw_data.size() << " while expecting " << sizeof(coefficients_table) << " bytes";
+                std::string str(ss.str().c_str());
+                LOG_ERROR(str);
+                //throw std::runtime_error(str);	temporal patch for FW bug that does not work according to spec
+            }
             coefficients_table *table = reinterpret_cast<coefficients_table *>(raw_data.data());
             LOG_DEBUG("Table header: table version major.minor: " << std::hex  << table->header.version     << std::dec
                 << ",table type " << table->header.table_type          << ", size "    << table->header.table_size
@@ -231,24 +232,21 @@ namespace ds5 {
                 << ", CRC: " << table->header.crc32);
             // verify the parsed table
             if (table->header.crc32 != calc_crc32(raw_data.data() + sizeof(table_header), raw_data.size() - sizeof(table_header)))
-                throw std::runtime_error(to_string() << "DS5 Coefficients table CRC error, parsing aborted");
-            LOG_DEBUG(stringify(intrinsic_left) << array2str((float_9&)table->intrinsic_left) << std::endl
-                << stringify(intrinsic_right) << array2str((float_9&)table->intrinsic_right) << std::endl
-                << stringify(world2left_rot) << array2str((float_9&)table->world2left_rot) << std::endl
-                << stringify(world2right_rot) << array2str((float_9&)table->world2right_rot) << std::endl
-                << stringify(world2left_rot) << array2str((float_9&)table->world2left_rot) << std::endl
-                << "baseline = " << table->baseline << std::endl
+            {
+                std::string str("DS5 Coefficients table CRC error, parsing aborted");
+                LOG_ERROR(str);
+                throw std::runtime_error(str);
+            }
+
+            LOG_DEBUG( std::endl
+                << "baseline = " << table->baseline << " mm" << std::endl
+                << "Rect params:  \t fX\t\t fY\t\t ppX\t\t ppY \n"
                 << stringify(res_1920_1080) << array2str((float_4&)table->rect_params[res_1920_1080]) << std::endl
                 << stringify(res_1280_720) << array2str((float_4&)table->rect_params[res_1280_720]) << std::endl
-                << stringify(res_640_480) << array2str((float_4&)table->rect_params[res_640_480]));
-#ifdef SPEC_V_0_60
-                LOG_DEBUG( stringify(res_848_480) << array2str((float_4&)table->rect_params[res_848_480]) << std::endl
-                << stringify(res_424_240) << array2str((float_4&)table->rect_params[res_424_240]));
-#else
-                LOG_DEBUG(stringify(res_854_480) << array2str((float_4&)table->rect_params[res_854_480]) << std::endl
-                << stringify(res_432_240) << array2str((float_4&)table->rect_params[res_432_240]));
-#endif
-                LOG_DEBUG( stringify(res_640_360) << array2str((float_4&)table->rect_params[res_640_360]) << std::endl
+                << stringify(res_640_480) << array2str((float_4&)table->rect_params[res_640_480]) << std::endl
+                << stringify(res_848_480) << array2str((float_4&)table->rect_params[res_848_480]) << std::endl
+                << stringify(res_424_240) << array2str((float_4&)table->rect_params[res_424_240]) << std::endl
+                << stringify(res_640_360) << array2str((float_4&)table->rect_params[res_640_360]) << std::endl
                 << stringify(res_320_240) << array2str((float_4&)table->rect_params[res_320_240]) << std::endl
                 << stringify(res_480_270) << array2str((float_4&)table->rect_params[res_480_270]));
 
@@ -280,11 +278,7 @@ namespace ds5 {
             calib.right_imager_intrinsic.model      = rs_distortion::RS_DISTORTION_BROWN_CONRADY;
 
             // Fill in actual data. Note that only the Focal and Principal points data varies between different resolutions
-#ifdef SPEC_V_0_60
-            for (auto & i : { res_320_240 ,res_480_270, res_424_240, res_640_360, res_848_480, res_640_480, res_1280_720, res_1920_1080 })
-#else
-            for (auto & i : { res_320_240, res_480_270, res_432_240, res_640_360, res_854_480, res_640_480, res_960_540, res_1280_720, res_1920_1080 })
-#endif
+            for (auto & i : { res_480_270, res_320_240, res_424_240, res_640_360, res_848_480, res_640_480, res_1280_720, res_1920_1080 })
             {
                 calib.depth_intrinsic[i].width = resolutions_list[i].x;
                 calib.depth_intrinsic[i].height = resolutions_list[i].y;
@@ -294,7 +288,7 @@ namespace ds5 {
                 calib.depth_intrinsic[i].ppx = table->rect_params[i][2];
                 calib.depth_intrinsic[i].ppy = table->rect_params[i][3];
                 calib.depth_intrinsic[i].model = rs_distortion::RS_DISTORTION_BROWN_CONRADY;
-                memset(calib.depth_intrinsic[i].coeffs, 0, arr_size(calib.depth_intrinsic[i].coeffs));
+                memset(calib.depth_intrinsic[i].coeffs, 0, arr_size(calib.depth_intrinsic[i].coeffs));  // All coefficients are zeroed since rectified depth is defined as CS origin
             }
         }
         break;
@@ -340,7 +334,7 @@ namespace ds5 {
     void read_calibration(uvc::device & dev, std::timed_mutex & mutex, ds5_calibration& calib)
     {
         std::vector<uint8_t> table_raw_data;
-        std::vector<calibration_table_id> actual_list = { depth_calibration_id, coefficients_table_id /*, rgb_calibration_id, fisheye_calibration_id, imu_calibration_id, lens_shading_id, projector_id */};  // Will be extended as FW matures
+        std::vector<calibration_table_id> actual_list = { coefficients_table_id /*depth_calibration_id, rgb_calibration_id, fisheye_calibration_id, imu_calibration_id, lens_shading_id, projector_id */};  // Will be extended as FW matures
 
         for (auto & id : actual_list)     // Fetch and parse calibration data
         {
