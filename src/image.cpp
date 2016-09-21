@@ -549,7 +549,7 @@ namespace rsimpl
         auto out_z = (uint16_t *)(z_aligned_to_other);
         align_images(z_intrin, z_to_other, other_intrin, 
             [z_pixels, z_scale](int z_pixel_index) { return z_scale * z_pixels[z_pixel_index]; },
-            [out_z, z_pixels](int z_pixel_index, int other_pixel_index) { out_z[other_pixel_index] = z_pixels[z_pixel_index]; });
+            [out_z, z_pixels](int z_pixel_index, int other_pixel_index) { out_z[other_pixel_index] = out_z[other_pixel_index] ? std::min(out_z[other_pixel_index],z_pixels[z_pixel_index]) : z_pixels[z_pixel_index]; });
     }
 
     void align_disparity_to_other(byte * disparity_aligned_to_other, const uint16_t * disparity_pixels, float disparity_scale, const rs_intrinsics & disparity_intrin, const rs_extrinsics & disparity_to_other, const rs_intrinsics & other_intrin)
