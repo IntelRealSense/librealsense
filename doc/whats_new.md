@@ -10,15 +10,16 @@ This branch will provide continuous support for everyone for all new features as
 
 ## Enabled functionality
 Demos:
--  cpp-tutorial-2-streaming
+- cpp-tutorial-2-streaming
 - cpp-config-ui
 
 Supported stream types:
 - Linux:
     - Depth
-    - Infrared(Left)
+    - Infrared (Left)
     - Depth + Infrared
-    - Infrared Left + Right (Calibration mode)
+    - Calibration mode (Infrared Left + Right )
+    - Depth + Calibration
 
 - Windows
     - Depth only
@@ -27,9 +28,9 @@ Extrinsic and Intrinsic API
 Control:
 - Laser Power
 - Manual Exposure
-- Manual Gain (windows only)
+- Manual Gain
 
 ## Known Issues
-- Manual Gain control is not working properly on Linux
+- Exposure Control set value updates with delay
 - Camera often fails when changing stream configuration on Linux. Requires physical reconnection
 - No Infrared streaming on Windows
