@@ -43,7 +43,6 @@ namespace rsimpl {
         projector_id            =   36
     };
 
-#ifdef SPEC_V_0_60
     enum ds5_rect_resolutions : unsigned short
     {
         res_1920_1080,
@@ -71,38 +70,6 @@ namespace rsimpl {
         { res_1280_720, { 1280, 720 } },
         { res_1920_1080,{ 1920, 1080 } },
     };
-#else
-
-    enum ds5_rect_resolutions : unsigned short
-    {
-        res_1920_1080,
-        res_1280_720,
-        res_960_540,
-        res_640_480,
-        res_854_480,
-        res_640_360,
-        res_432_240,
-        res_320_240,
-        res_480_270,
-        reserved_1,
-        reserved_2,
-        reserved_3,
-        max_ds5_rect_resoluitons
-    };
-
-    static std::map< ds5_rect_resolutions, int2> resolutions_list = {
-        { res_320_240, { 320, 240 } },
-        { res_432_240, { 432, 240 } },
-        { res_480_270, { 480, 270 } },
-        { res_640_360, { 640, 360 } },
-        { res_640_480, { 640, 480 } },
-        { res_854_480, { 854, 480 } },
-        { res_960_540, { 960, 540 } },
-        { res_1280_720, { 1280, 720 } },
-        { res_1920_1080, { 1920, 1080 } },
-    };
-
-#endif
 
     struct ds5_calibration
     {
@@ -115,8 +82,11 @@ namespace rsimpl {
         rs_extrinsics   depth_extrinsic;
         std::map<calibration_table_id, bool> data_present;
 
-        ds5_calibration(): version(0)
+        ds5_calibration() : version(0), left_imager_intrinsic({}), right_imager_intrinsic({}),
+            left_imager_extrinsic({}), right_imager_extrinsic({}), depth_extrinsic({})
         {
+            for (auto i = 0; i < max_ds5_rect_resoluitons; i++)
+                depth_intrinsic[i] = {};
             data_present.emplace(coefficients_table_id, false);
             data_present.emplace(depth_calibration_id, false);
             data_present.emplace(rgb_calibration_id, false);
