@@ -29,11 +29,11 @@ namespace ds5 {
 
     struct table_header
     {
-        uint16_t        version;        // major.minor
-        uint16_t        table_type;     // ctCalibration
-        uint32_t        table_size;     // full size including: TOC header + TOC + actual tables
-        uint32_t        param;          // This field content is defined ny table type
-        uint32_t        crc32;          // crc of all the actual table data excluding header/CRC
+        big_endian<uint16_t>    version;        // major.minor. Big-endian
+        uint16_t                table_type;     // ctCalibration
+        uint32_t                table_size;     // full size including: TOC header + TOC + actual tables
+        uint32_t                param;          // This field content is defined ny table type
+        uint32_t                crc32;          // crc of all the actual table data excluding header/CRC
     };
 
     struct table_link
@@ -103,7 +103,7 @@ namespace ds5 {
         uint8_t             reserved1[88];
         uint32_t            brown_model;                // 0 - using DS distorion model, 1 - using Brown model
         float4              rect_params[max_ds5_rect_resoluitons];
-        uint8_t             reserved2[80];
+        uint8_t             reserved2[64];
     };
 
     struct depth_calibration_table
@@ -223,13 +223,12 @@ namespace ds5 {
                 std::stringstream ss; ss << "DS5 Coefficients table read error, actual size is " << raw_data.size() << " while expecting " << sizeof(coefficients_table) << " bytes";
                 std::string str(ss.str().c_str());
                 LOG_ERROR(str);
-                //throw std::runtime_error(str);	temporal patch for FW bug that does not work according to spec
+                throw std::runtime_error(str);
             }
             coefficients_table *table = reinterpret_cast<coefficients_table *>(raw_data.data());
-            LOG_DEBUG("Table header: table version major.minor: " << std::hex  << table->header.version     << std::dec
-                << ",table type " << table->header.table_type          << ", size "    << table->header.table_size
-                << ", calibration version [mjr.mnr.ptch.rev]: " << std::hex     << table->header.version
-                << ", CRC: " << table->header.crc32);
+            LOG_DEBUG("DS5 Coefficients table: version [mjr.mnr]: 0x" << std::hex  << std::setfill('0') << std::setw(4) << table->header.version << std::dec
+                << ", type " << table->header.table_type          << ", size "    << table->header.table_size
+                << ", CRC: " << std::hex << table->header.crc32);
             // verify the parsed table
             if (table->header.crc32 != calc_crc32(raw_data.data() + sizeof(table_header), raw_data.size() - sizeof(table_header)))
             {
@@ -292,40 +291,8 @@ namespace ds5 {
             }
         }
         break;
-        case depth_calibration_id:
-        {
-            if (raw_data.size() != sizeof(depth_calibration_table))
-                throw std::runtime_error(to_string() << "DS5 Calibration table read error, actual size is " << raw_data.size() << " while expecting " << sizeof(depth_calibration_table) << " bytes");
-            depth_calibration_table *table = reinterpret_cast<depth_calibration_table *>(raw_data.data());
-            LOG_DEBUG("Table header: table version major.minor: " << std::hex << table->header.version << std::dec
-                << ",table type " << table->header.table_type << ", size " << table->header.table_size
-                << ", calibration version [mjr.mnr.ptch.rev]: " << std::hex << table->header.version
-                << ", CRC: " << table->header.crc32);
-            // verify the parsed table
-            if (table->header.crc32 != calc_crc32(raw_data.data() + sizeof(table_header), raw_data.size() - sizeof(table_header)))
-                throw std::runtime_error(to_string() << "DS5 Depth Calibration table CRC error, parsing aborted");
-            LOG_DEBUG(stringify(distortion_left) << array2str(table->distortion_left) << std::endl
-                << stringify(distortion_right) << array2str(table->distortion_right) << std::endl
-                << stringify(k_depth) << array2str((float_9&)table->k_depth) << std::endl
-                << stringify(r_depth) << array2str(table->r_depth) << std::endl
-                << stringify(t_depth) << array2str(table->t_depth));
-            float3x3 rot = rsimpl::calc_rodrigues_matrix({ table->r_depth[0], table->r_depth[1], table->r_depth[2] });
-            calib.depth_extrinsic.rotation[0] = rot.x[0];
-            calib.depth_extrinsic.rotation[1] = rot.x[1];
-            calib.depth_extrinsic.rotation[2] = rot.x[2];
-            calib.depth_extrinsic.rotation[3] = rot.y[0];
-            calib.depth_extrinsic.rotation[4] = rot.y[1];
-            calib.depth_extrinsic.rotation[5] = rot.y[2];
-            calib.depth_extrinsic.rotation[6] = rot.z[0];
-            calib.depth_extrinsic.rotation[7] = rot.z[1];
-            calib.depth_extrinsic.rotation[8] = rot.z[2];
-            calib.depth_extrinsic.translation[0] = table->t_depth[0];
-            calib.depth_extrinsic.translation[1] = table->t_depth[1];
-            calib.depth_extrinsic.translation[2] = table->t_depth[2];
-        }
-        break;
         default:
-            LOG_WARNING("Parsing Calibration table type " << table_id << " is not supported yet");
+            LOG_WARNING("Parsing Calibration table type " << table_id << " is not supported");
         }
 
         calib.data_present[table_id] = true;
@@ -334,7 +301,7 @@ namespace ds5 {
     void read_calibration(uvc::device & dev, std::timed_mutex & mutex, ds5_calibration& calib)
     {
         std::vector<uint8_t> table_raw_data;
-        std::vector<calibration_table_id> actual_list = { coefficients_table_id /*depth_calibration_id, rgb_calibration_id, fisheye_calibration_id, imu_calibration_id, lens_shading_id, projector_id */};  // Will be extended as FW matures
+        std::vector<calibration_table_id> actual_list = { coefficients_table_id };
 
         for (auto & id : actual_list)     // Fetch and parse calibration data
         {
