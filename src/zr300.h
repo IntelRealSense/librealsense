@@ -185,7 +185,7 @@ namespace rsimpl
     public:
         fisheye_auto_exposure_state() :
             is_auto_exposure(true),
-            mode(auto_exposure_modes::static_auto_exposure),
+            mode(auto_exposure_modes::auto_exposure_hybrid),
             rate(60),
             sample_rate(1),
             skip_frames(2)

@@ -480,8 +480,10 @@ namespace rsimpl
             if (info.camera_info.find(RS_CAMERA_INFO_ADAPTER_BOARD_FIRMWARE_VERSION) != info.camera_info.end())
             {
                 firmware_version ver(info.camera_info[RS_CAMERA_INFO_ADAPTER_BOARD_FIRMWARE_VERSION]);
-                if (ver >= firmware_version("1.25.0.0"))
+                if (ver >= firmware_version("1.25.0.0") && ver < firmware_version("1.27.2.0"))
                     info.options.push_back({ RS_OPTION_FISHEYE_EXPOSURE,                40, 331, 1,  40 });
+                else if (ver >= firmware_version("1.27.2.0"))
+                    info.options.push_back({ RS_OPTION_FISHEYE_EXPOSURE,                3,  200, 1,  100 });
             }
 
             info.options.push_back({ RS_OPTION_FISHEYE_GAIN,                            0,  0,   0,  0  });
@@ -653,6 +655,7 @@ namespace rsimpl
                     if (sts)
                     {
                         bool modify_exposure, modify_gain;
+						LOG_DEBUG("Algo input exposure: " << exposure_value * 10.);
                         auto_exposure_algo.modify_exposure(exposure_value, modify_exposure, gain_value, modify_gain);
 
                         if (modify_exposure)
@@ -833,10 +836,11 @@ namespace rsimpl
                 exposure_value = exposure_to_value(exposure_value, RoundingMode);
                 LOG_DEBUG(" rounded to: " << exposure_value << std::endl);
 
-                if (std::fabs(prev_exposure - exposure) < minimal_exposure_step)
+                /*if (std::fabs(prev_exposure - exposure) < minimal_exposure_step)
                 {
                     exposure_value = exposure + direction * minimal_exposure_step;
-                }
+                }*/
+                LOG_DEBUG("output exposure by algo = " << exposure_value);
             }
             if (gain_value != gain)
             {
