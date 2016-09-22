@@ -668,7 +668,7 @@ namespace rsimpl
                                                                         {cameras::r200,  "Intel RealSense R200" },
                                                                         {cameras::lr200, "Intel RealSense LR200"},
                                                                         {cameras::zr300, "Intel RealSense ZR300"},
-                                                                        {cameras::ds5,   "Intel RealSense DS5"  }};
+                                                                        {cameras::ds5,   "Intel RealSense RS400"}};
 
 }
 
