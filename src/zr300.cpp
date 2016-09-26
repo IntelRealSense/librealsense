@@ -655,7 +655,7 @@ namespace rsimpl
                     if (sts)
                     {
                         bool modify_exposure, modify_gain;
-						LOG_DEBUG("Algo input exposure: " << exposure_value * 10.);
+                        LOG_DEBUG("Algo input exposure: " << exposure_value * 10.);
                         auto_exposure_algo.modify_exposure(exposure_value, modify_exposure, gain_value, modify_gain);
 
                         if (modify_exposure)
@@ -831,15 +831,7 @@ namespace rsimpl
             if (exposure_value != exposure)
             {
                 exp_modified = true;
-                exposure_value = exposure;
-                LOG_DEBUG("ExposureModified: exposure = " << exposure_value);
                 exposure_value = exposure_to_value(exposure_value, RoundingMode);
-                LOG_DEBUG(" rounded to: " << exposure_value << std::endl);
-
-                /*if (std::fabs(prev_exposure - exposure) < minimal_exposure_step)
-                {
-                    exposure_value = exposure + direction * minimal_exposure_step;
-                }*/
                 LOG_DEBUG("output exposure by algo = " << exposure_value);
             }
             if (gain_value != gain)
