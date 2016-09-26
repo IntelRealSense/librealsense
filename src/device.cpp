@@ -382,21 +382,21 @@ void rs_device_base::start_video_streaming()
             double exposure_value[1];
             if (streams[0] == rs_stream::RS_STREAM_FISHEYE)
             {
-                // fisheye exposure value is embedded in the frame data from version 1.27.2.0
+                // fisheye exposure value is embedded in the frame data from version 1.27.2.90
                 firmware_version firmware(get_camera_info(RS_CAMERA_INFO_ADAPTER_BOARD_FIRMWARE_VERSION));
-                if (firmware >= firmware_version("1.27.2.0"))
+                if (firmware >= firmware_version("1.27.2.90"))
                 {
                     auto data = static_cast<const char*>(frame);
-                    int exposure = 0;
-                    for (int i = 4, j = 7; i < 12; ++i, --j)
+                    int exposure = 0; // Embedded Fisheye exposure value is in units of 0.2 mSec
+                    for (int i = 4, j = 0; i < 12; ++i, ++j)
                         exposure |= ((data[i] & 0x01) << j);
 
                     exposure_value[0] = exposure;
                 }
-                else
+                else if (firmware < firmware_version("1.27.2.90"))
                 {
                     option[0] = RS_OPTION_FISHEYE_EXPOSURE;
-                    get_options(option, 1, exposure_value);
+                    get_options(option, 1, exposure_value); // Fisheye exposure value by extension control is in units of 10 mSec
                 }
             }
             else
