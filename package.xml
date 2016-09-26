@@ -26,7 +26,6 @@
 
   <depend>libusb-1.0-dev</depend>
   <depend>linux-headers-generic</depend>
-  <!-- <depend>openssl-dev</depend> -->
-  <!-- <depend>bc</depend> -->
+  <depend>libssl-dev</depend>
   <depend>dkms</depend>
 </package>
