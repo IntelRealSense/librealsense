@@ -846,6 +846,7 @@ namespace rsimpl
             if (exposure_value != exposure)
             {
                 exp_modified = true;
+                exposure_value = exposure;
                 exposure_value = exposure_to_value(exposure_value, RoundingMode);
                 LOG_DEBUG("output exposure by algo = " << exposure_value);
             }
