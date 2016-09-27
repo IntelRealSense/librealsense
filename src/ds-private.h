@@ -148,18 +148,20 @@ namespace rsimpl
             }
         }
 
-        inline std::string time_to_string(double val)
+        inline std::string time_to_string(const double &val)
         {
             std::string date("Undefined value");
 
             // rigorous validation is required due to improper handling of NAN by gcc
             if (std::isnormal(val) && std::isfinite(val) && (!std::isnan(val)) )
             {
-                auto time = time_t(val);
-                std::vector<char> outstr;
-                outstr.resize(200);
-                strftime(outstr.data(),outstr.size(),"%Y-%m-%d %H:%M:%S",std::gmtime(&time));
-                date = to_string()<< outstr.data() << " UTC";
+                auto tm = std::gmtime(((const time_t*)(&val)));
+                if (tm)
+                {
+                    std::vector<char> outstr(128);
+                    strftime(outstr.data(), outstr.size(), "%Y-%m-%d %H:%M:%S", tm);
+                    date = to_string() << outstr.data() << " UTC";
+                }
             }
             return date;
         }
