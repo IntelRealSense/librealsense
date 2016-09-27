@@ -275,6 +275,7 @@ namespace rsimpl
         std::string serial;                                                 // Serial number of the camera (from USB or from SPI memory)
         float nominal_depth_scale;                                          // Default scale
         std::vector<supported_capability> capabilities_vector;
+        std::vector<rs_frame_metadata> supported_metadata_vector;
         std::map<rs_camera_info, std::string> camera_info;
 
         static_device_info();

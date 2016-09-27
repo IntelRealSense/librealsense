@@ -48,6 +48,7 @@ namespace rsimpl
         bool poll_for_frames_safe(frameset ** frames);
 
         double get_frame_metadata(rs_stream stream, rs_frame_metadata frame_metadata) const;
+        bool supports_frame_metadata(rs_stream stream, rs_frame_metadata frame_metadata) const;
         const byte * get_frame_data(rs_stream stream) const;
         double get_frame_timestamp(rs_stream stream) const;
         unsigned long long get_frame_number(rs_stream stream) const;

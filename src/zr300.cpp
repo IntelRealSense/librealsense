@@ -483,7 +483,10 @@ namespace rsimpl
                 if (ver >= firmware_version("1.25.0.0") && ver < firmware_version("1.27.2.90"))
                     info.options.push_back({ RS_OPTION_FISHEYE_EXPOSURE,                40, 331, 1,  40 });
                 else if (ver >= firmware_version("1.27.2.90"))
-                    info.options.push_back({ RS_OPTION_FISHEYE_EXPOSURE,                2,  320, 1,  4  });
+                {
+                    info.supported_metadata_vector.push_back(RS_FRAME_METADATA_ACTUAL_EXPOSURE);
+                    info.options.push_back({ RS_OPTION_FISHEYE_EXPOSURE,                2,  320, 1,  4 });
+                }
             }
 
             info.options.push_back({ RS_OPTION_FISHEYE_GAIN,                            0,  0,   0,  0  });

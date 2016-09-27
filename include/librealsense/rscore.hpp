@@ -26,6 +26,7 @@ struct rs_stream_interface
     virtual int                             get_framerate() const = 0;
 
     virtual double                          get_frame_metadata(rs_frame_metadata frame_metadata) const = 0;
+    virtual bool                            supports_frame_metadata(rs_frame_metadata frame_metadata) const = 0;
     virtual int                             get_frame_stride() const = 0;
     virtual int                             get_frame_bpp() const = 0;
     virtual unsigned long long              get_frame_number() const = 0;
@@ -56,6 +57,7 @@ struct rs_frame_ref
     virtual rs_format                       get_frame_format() const = 0;
     virtual rs_stream                       get_stream_type() const = 0;
     virtual double                          get_frame_metadata(rs_frame_metadata frame_metadata) const = 0;
+    virtual bool                            supports_frame_metadata(rs_frame_metadata frame_metadata) const = 0;
 };
 
 // realsense device public interface

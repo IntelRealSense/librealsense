@@ -61,9 +61,9 @@ EXPORTS
     rs_get_frame_timestamp
     rs_get_frame_number
     rs_get_frame_data
-    rs_get_frame_metadata
 
     rs_get_detached_frame_metadata
+    rs_supports_frame_metadata
     rs_get_detached_framerate
     rs_get_detached_frame_timestamp
     rs_get_detached_frame_timestamp_domain

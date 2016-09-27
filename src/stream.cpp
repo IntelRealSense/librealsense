@@ -106,6 +106,13 @@ double native_stream::get_frame_metadata(rs_frame_metadata frame_metadata) const
     return archive->get_frame_metadata(stream, frame_metadata);
 }
 
+bool native_stream::supports_frame_metadata(rs_frame_metadata frame_metadata) const
+{
+    if (!is_enabled()) throw std::runtime_error(to_string() << "stream not enabled: " << stream);
+    if (!archive) throw  std::runtime_error(to_string() << "streaming not started!");
+    return archive->supports_frame_metadata(stream, frame_metadata);
+}
+
 unsigned long long native_stream::get_frame_number() const
 { 
     if (!is_enabled()) throw std::runtime_error(to_string() << "stream not enabled: " << stream);

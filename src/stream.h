@@ -52,6 +52,7 @@ namespace rsimpl
         int                                     get_framerate() const override { return get_mode().get_framerate(); }
 
         double                                  get_frame_metadata(rs_frame_metadata frame_metadata) const override;
+        bool                                    supports_frame_metadata(rs_frame_metadata frame_metadata) const override;
         unsigned long long                      get_frame_number() const override;
         double                                  get_frame_timestamp() const override;
         long long                               get_frame_system_time() const override;
@@ -79,6 +80,7 @@ namespace rsimpl
         int                                     get_framerate() const override { return source.get_framerate(); }
 
         double                                  get_frame_metadata(rs_frame_metadata frame_metadata) const override { return source.get_frame_metadata(frame_metadata); }
+        bool                                    supports_frame_metadata(rs_frame_metadata frame_metadata) const override { return source.supports_frame_metadata(frame_metadata); }
         unsigned long long                      get_frame_number() const override { return source.get_frame_number(); }
         double                                  get_frame_timestamp() const override{ return source.get_frame_timestamp(); }
         long long                               get_frame_system_time() const override { return source.get_frame_system_time(); }
@@ -107,6 +109,7 @@ namespace rsimpl
         int                                     get_framerate() const override { return source.get_framerate(); }
 
         double                                  get_frame_metadata(rs_frame_metadata frame_metadata) const override { return source.get_frame_metadata(frame_metadata); }
+        bool                                    supports_frame_metadata(rs_frame_metadata frame_metadata) const override { return source.supports_frame_metadata(frame_metadata); }
         unsigned long long                      get_frame_number() const override { return source.get_frame_number(); }
         double                                  get_frame_timestamp() const override { return source.get_frame_timestamp(); }
         long long                               get_frame_system_time() const override { return source.get_frame_system_time(); }
@@ -134,6 +137,7 @@ namespace rsimpl
         int                                     get_framerate() const override { return from.get_framerate(); }
 
         double                                  get_frame_metadata(rs_frame_metadata frame_metadata) const override { return from.get_frame_metadata(frame_metadata); }
+        bool                                    supports_frame_metadata(rs_frame_metadata frame_metadata) const override { return from.supports_frame_metadata(frame_metadata); }
         unsigned long long                      get_frame_number() const override { return from.get_frame_number(); }
         double                                  get_frame_timestamp() const override { return from.get_frame_timestamp(); }
         long long                               get_frame_system_time() const override { return from.get_frame_system_time(); }

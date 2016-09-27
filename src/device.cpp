@@ -358,7 +358,6 @@ void rs_device_base::start_video_streaming()
         }     
 
         std::shared_ptr<drops_status> frame_drops_status(new drops_status{});
-
         // Initialize the subdevice and set it to the selected mode
         set_subdevice_mode(*device, mode_selection.mode.subdevice, mode_selection.mode.native_dims.x, mode_selection.mode.native_dims.y, mode_selection.mode.pf.fourcc, mode_selection.mode.fps, 
             [this, mode_selection, archive, timestamp_reader, streams, capture_start_time, frame_drops_status](const void * frame, std::function<void()> continuation) mutable
@@ -441,6 +440,7 @@ void rs_device_base::start_video_streaming()
                     output.second,
                     output.first,
                     mode_selection.pad_crop,
+                    config.info.supported_metadata_vector,
                     exposure_value[0]);
 
                 // Obtain buffers for unpacking the frame
