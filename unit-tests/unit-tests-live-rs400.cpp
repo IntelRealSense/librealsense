@@ -77,7 +77,6 @@ TEST_CASE("RS400 XU Laser Power Control", "[live] [RS400]")
         INFO("Initial laser power value obtained from hardware is " << lsr_init_power);
         std::this_thread::sleep_for(std::chrono::milliseconds(20));
 
-        int index = 0;
         double set_val = 1., reset_val = 0., res = 0.;
 
         for (uint8_t j = 0; j < 2; j++) // Laser power is On/Off toggle
@@ -112,7 +111,6 @@ TEST_CASE("RS400 Manual Gain Control", "[live] [RS400]")
     std::string name = dev->get_name();
     REQUIRE(std::string::npos != name.find("Intel RealSense RS400"));
 
-    int index = 0;
     double set_val = 30., reset_val = 80., res = 0.;
 
     double gain_ctrl_init = 0.;
@@ -153,7 +151,6 @@ TEST_CASE("RS400 Manual Exposure Control", "[live] [RS400]")
     std::string name = dev->get_name();
     REQUIRE(std::string::npos != name.find("Intel RealSense RS400"));
 
-    int index = 0;
     double set_val = 1200., reset_val = 80., res = 0.;
 
     double exposure_ctrl_init = 0.;

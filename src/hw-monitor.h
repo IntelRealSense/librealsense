@@ -38,7 +38,7 @@ const uint16_t  IVCAM_MONITOR_MAGIC_NUMBER      = 0xcdab;
 const uint16_t  IVCAM_MONITOR_MAX_BUFFER_SIZE   = 1024;
 const uint16_t  IVCAM_MONITOR_MUTEX_TIMEOUT     = 3000;
 const uint16_t  HW_MONITOR_COMMAND_SIZE         = 1000;
-const uint16_t  HW_MONITOR_BUFFER_SIZE          = 1020; // Packet size 1024, minus Opcode field (4b)
+const uint16_t  HW_MONITOR_BUFFER_SIZE          = 1024;
 
 // IVCAM depth XU identifiers
 const uint8_t IVCAM_DEPTH_LASER_POWER           = 1;
