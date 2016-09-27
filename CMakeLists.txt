@@ -128,7 +128,7 @@ if(UNIX)
     if(LIBUSB1_FOUND)
       include_directories(SYSTEM ${LIBUSB1_INCLUDE_DIRS})
     else()
-        message( FATAL_ERROR "Failed to find libusb-1.0" )
+      message( FATAL_ERROR "Failed to find libusb-1.0" )
     endif(LIBUSB1_FOUND)
 
     set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS}   -fPIC -pedantic -D_BSD_SOURCE")
@@ -151,12 +151,12 @@ endif()
 option(BUILD_SHARED_LIBS "Build shared library" ON)
 if(BUILD_SHARED_LIBS)
     add_library(realsense SHARED ${REALSENSE_CPP} ${REALSENSE_HPP} ${REALSENSE_DEF})
-    target_link_libraries(realsense ${LIBUSB_LIBRARIES})
+    target_link_libraries(realsense ${LIBUSB1_LIBRARIES})
 else()
     add_library(realsense STATIC ${REALSENSE_CPP} ${REALSENSE_HPP})
 endif()
 
-target_include_directories(realsense PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include/ ${LIBUSB_INCLUDE_DIRS})
+target_include_directories(realsense PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include/ ${LIBUSB1_INCLUDE_DIRS})
 
 install( TARGETS realsense
     RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX}/bin
