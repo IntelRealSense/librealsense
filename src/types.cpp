@@ -701,7 +701,7 @@ namespace rsimpl
     /// for details: http://mesh.brown.edu/en193s08-2003/notes/en193s08-rots.pdf
     float3x3 calc_rodrigues_matrix(const std::vector<double> rot)
     {
-        float3x3 rot_mat;
+        float3x3 rot_mat{};
 
         double theta = sqrt(std::inner_product(rot.begin(), rot.end(), rot.begin(), 0.0));
         double r1 = rot[0], r2 = rot[1], r3 = rot[2];
