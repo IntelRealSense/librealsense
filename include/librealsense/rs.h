@@ -726,7 +726,7 @@ double rs_get_detached_frame_metadata(const rs_frame_ref * frame, rs_frame_metad
 * \param[in] metadata  the metadata to check for support
 * \return                true if device has this metadata
 */
-double rs_supports_frame_metadata(const rs_frame_ref * frame, rs_frame_metadata frame_metadata, rs_error ** error);
+int rs_supports_frame_metadata(const rs_frame_ref * frame, rs_frame_metadata frame_metadata, rs_error ** error);
 
 /**
  * retrieve the time at which the latest frame on a stream was captured

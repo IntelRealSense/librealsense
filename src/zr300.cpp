@@ -421,7 +421,6 @@ namespace rsimpl
         return intrinsic;
     }
 
-   
 
     std::shared_ptr<rs_device> make_zr300_device(std::shared_ptr<uvc::device> device)
     {
@@ -635,11 +634,25 @@ namespace rsimpl
                 auto frame_sts = try_pop_front_data(&frame_ref);
                 lk.unlock();
 
-                rs_option options[] = { RS_OPTION_FISHEYE_EXPOSURE, RS_OPTION_FISHEYE_GAIN };
                 double values[2] = {};
                 unsigned long long frame_counter;
                 try {
-                    device->get_options(options, 2, values);
+                    if (frame_ref->supports_frame_metadata(RS_FRAME_METADATA_ACTUAL_EXPOSURE))
+                    {
+                        double gain[1] = {};
+                        rs_option options[] = { RS_OPTION_FISHEYE_GAIN };
+                        device->get_options(options, 1, gain);
+                        values[0] = frame_ref->get_frame_metadata(RS_FRAME_METADATA_ACTUAL_EXPOSURE);
+                        values[0] /= 0.2; // Embedded Fisheye exposure value is in units of 0.2 mSec
+                        values[1] = gain[0];
+                    }
+                    else
+                    {
+                        rs_option options[] = { RS_OPTION_FISHEYE_EXPOSURE, RS_OPTION_FISHEYE_GAIN };
+                        device->get_options(options, 2, values);
+                        values[0] /= 10.; // Fisheye exposure value by extension control is in units of 10 mSec
+                    }
+
                     frame_counter = device->get_frame_counter_by_usb_cmd();
                     push_back_exp_and_cnt(exposure_and_frame_counter(values[0], frame_counter));
                 }
@@ -651,7 +664,7 @@ namespace rsimpl
                     double exp_by_frame_cnt;
                     auto exp_and_cnt_sts = try_get_exp_by_frame_cnt(exp_by_frame_cnt, frame_counter);
 
-                    auto exposure_value = static_cast<float>((exp_and_cnt_sts)? exp_by_frame_cnt : values[0] / 10.);
+                    auto exposure_value = static_cast<float>((exp_and_cnt_sts)? exp_by_frame_cnt : values[0]);
                     auto gain_value = static_cast<float>(values[1]);
 
                     bool sts = auto_exposure_algo.analyze_image(frame_ref);

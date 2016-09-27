@@ -377,8 +377,7 @@ void rs_device_base::start_video_streaming()
 
             auto requires_processing = mode_selection.requires_processing();
 
-            rs_option option[1];
-            double exposure_value[1];
+            double exposure_value[1] = {};
             if (streams[0] == rs_stream::RS_STREAM_FISHEYE)
             {
                 // fisheye exposure value is embedded in the frame data from version 1.27.2.90
@@ -392,16 +391,6 @@ void rs_device_base::start_video_streaming()
 
                     exposure_value[0] = exposure;
                 }
-                else if (firmware < firmware_version("1.27.2.90"))
-                {
-                    option[0] = RS_OPTION_FISHEYE_EXPOSURE;
-                    get_options(option, 1, exposure_value); // Fisheye exposure value by extension control is in units of 10 mSec
-                }
-            }
-            else
-            {
-                option[0] = RS_OPTION_COLOR_EXPOSURE;
-                get_options(option, 1, exposure_value);
             }
 
             auto width = mode_selection.get_width();

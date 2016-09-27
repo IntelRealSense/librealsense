@@ -423,7 +423,7 @@ namespace rs
             rs_error * e = nullptr;
             auto r = rs_supports_frame_metadata(frame_ref, frame_metadata, &e);
             error::handle(e);
-            return r;
+            return r != 0;
         }
 
         unsigned long long get_frame_number() const
