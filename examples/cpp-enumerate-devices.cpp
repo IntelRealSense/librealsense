@@ -12,8 +12,12 @@ int main() try
 
     // Obtain a list of devices currently present on the system
     rs::context ctx;
-    int device_count = ctx.get_device_count();   
-    if (!device_count) printf("No device detected. Is it plugged in?\n");
+    int device_count = ctx.get_device_count();
+    if (!device_count)
+    {
+        printf("No device detected. Is it plugged in?\n");
+        return EXIT_SUCCESS;
+    }
 
     for(int i = 0; i < device_count; ++i)
     {
