@@ -410,6 +410,20 @@ int rs_supports_camera_info(rs_device * device, rs_camera_info info_param, rs_er
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, device)
 
+double rs_get_detached_frame_metadata(const rs_frame_ref * frame, rs_frame_metadata frame_metadata, rs_error ** error) try
+{
+    VALIDATE_NOT_NULL(frame);
+    return frame->get_frame_metadata(frame_metadata);
+}
+HANDLE_EXCEPTIONS_AND_RETURN(0, frame)
+
+int rs_supports_frame_metadata(const rs_frame_ref * frame, rs_frame_metadata frame_metadata, rs_error ** error) try
+{
+    VALIDATE_NOT_NULL(frame);
+    return frame->supports_frame_metadata(frame_metadata);
+}
+HANDLE_EXCEPTIONS_AND_RETURN(0, frame)
+
 double rs_get_frame_timestamp(const rs_device * device, rs_stream stream, rs_error ** error) try
 {
     VALIDATE_NOT_NULL(device);

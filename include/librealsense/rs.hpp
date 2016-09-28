@@ -16,6 +16,11 @@
 
 namespace rs
 {
+    enum class frame_metadata
+    {
+        actual_exposure
+    };
+
     enum class capabilities : int32_t
     {
         depth                  ,
@@ -397,6 +402,28 @@ namespace rs
             auto r = rs_get_detached_frame_timestamp_domain(frame_ref, &e);
             error::handle(e);
             return static_cast<timestamp_domain>(r);
+        }
+
+        /// retrieve the current value of a single frame_metadata
+        /// \param[in] frame_metadata  the frame_metadata whose value should be retrieved
+        /// \return            the value of the frame_metadata
+        double get_frame_metadata(rs_frame_metadata frame_metadata) const
+        {
+            rs_error * e = nullptr;
+            auto r = rs_get_detached_frame_metadata(frame_ref, frame_metadata, &e);
+            error::handle(e);
+            return r;
+        }
+
+        /// determine if the device allows a specific metadata to be queried
+        /// \param[in] frame_metadata  the frame_metadata to check for support
+        /// \return            true if the frame_metadata can be queried
+        bool supports_frame_metadata(rs_frame_metadata frame_metadata) const
+        {
+            rs_error * e = nullptr;
+            auto r = rs_supports_frame_metadata(frame_ref, frame_metadata, &e);
+            error::handle(e);
+            return r != 0;
         }
 
         unsigned long long get_frame_number() const

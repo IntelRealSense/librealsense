@@ -358,7 +358,6 @@ void rs_device_base::start_video_streaming()
         }     
 
         std::shared_ptr<drops_status> frame_drops_status(new drops_status{});
-
         // Initialize the subdevice and set it to the selected mode
         set_subdevice_mode(*device, mode_selection.mode.subdevice, mode_selection.mode.native_dims.x, mode_selection.mode.native_dims.y, mode_selection.mode.pf.fourcc, mode_selection.mode.fps, 
             [this, mode_selection, archive, timestamp_reader, streams, capture_start_time, frame_drops_status](const void * frame, std::function<void()> continuation) mutable
@@ -377,6 +376,22 @@ void rs_device_base::start_video_streaming()
             auto recieved_time = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - capture_start_time).count();
 
             auto requires_processing = mode_selection.requires_processing();
+
+            double exposure_value[1] = {};
+            if (streams[0] == rs_stream::RS_STREAM_FISHEYE)
+            {
+                // fisheye exposure value is embedded in the frame data from version 1.27.2.90
+                firmware_version firmware(get_camera_info(RS_CAMERA_INFO_ADAPTER_BOARD_FIRMWARE_VERSION));
+                if (firmware >= firmware_version("1.27.2.90"))
+                {
+                    auto data = static_cast<const char*>(frame);
+                    int exposure = 0; // Embedded Fisheye exposure value is in units of 0.2 mSec
+                    for (int i = 4, j = 0; i < 12; ++i, ++j)
+                        exposure |= ((data[i] & 0x01) << j);
+
+                    exposure_value[0] = exposure;
+                }
+            }
 
             auto width = mode_selection.get_width();
             auto height = mode_selection.get_height();
@@ -413,7 +428,9 @@ void rs_device_base::start_video_streaming()
                     bpp,
                     output.second,
                     output.first,
-                    mode_selection.pad_crop);
+                    mode_selection.pad_crop,
+                    config.info.supported_metadata_vector,
+                    exposure_value[0]);
 
                 // Obtain buffers for unpacking the frame
                 dest.push_back(archive->alloc_frame(output.first, additional_data, requires_processing));
