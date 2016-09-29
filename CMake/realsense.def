@@ -1,0 +1,103 @@
+LIBRARY
+
+EXPORTS
+    rs_create_context
+    rs_delete_context
+    rs_get_device_count
+    rs_get_device
+
+    rs_supports
+    rs_get_device_name
+    rs_get_device_serial
+    rs_get_device_info
+    rs_get_device_firmware_version
+    rs_get_device_usb_port_id
+    rs_get_device_extrinsics
+    rs_get_device_depth_scale
+    rs_device_supports_option
+    rs_get_stream_mode_count
+    rs_get_stream_mode
+
+    rs_enable_stream
+    rs_enable_stream_ex
+    rs_enable_stream_preset
+    rs_disable_stream
+    rs_is_stream_enabled
+    rs_get_stream_width
+    rs_get_stream_height
+    rs_get_stream_format
+    rs_get_stream_framerate
+    rs_get_stream_intrinsics
+    rs_get_motion_intrinsics
+    rs_get_motion_extrinsics_from
+
+    rs_supports
+    rs_supports_camera_info
+    rs_enable_motion_tracking
+    rs_enable_motion_tracking_cpp
+    rs_disable_motion_tracking
+    rs_is_motion_tracking_active
+
+    rs_set_frame_callback
+    rs_set_frame_callback_cpp
+    rs_start_device
+    rs_stop_device
+    rs_start_source
+    rs_stop_source
+    rs_is_device_streaming
+
+    rs_reset_device_options_to_default
+    rs_get_device_option_range
+    rs_get_device_option_range_ex
+    rs_get_device_options
+    rs_set_device_options
+    rs_reset_device_options_to_default
+    rs_get_device_option
+    rs_set_device_option
+    rs_get_device_option_description
+
+    rs_wait_for_frames
+    rs_poll_for_frames
+    rs_get_frame_timestamp
+    rs_get_frame_number
+    rs_get_frame_data
+
+    rs_get_detached_frame_metadata
+    rs_supports_frame_metadata
+    rs_get_detached_framerate
+    rs_get_detached_frame_timestamp
+    rs_get_detached_frame_timestamp_domain
+    rs_get_detached_frame_data
+    rs_get_detached_frame_number
+    rs_get_detached_frame_height
+    rs_get_detached_frame_width
+    rs_get_detached_frame_stride
+    rs_get_detached_frame_bpp
+    rs_get_detached_frame_format
+    rs_get_detached_frame_stream_type
+
+    rs_release_frame
+    rs_send_blob_to_device
+
+    rs_get_failed_function
+    rs_get_failed_args
+    rs_get_error_message
+    rs_free_error
+
+    rs_stream_to_string
+    rs_format_to_string
+    rs_preset_to_string
+    rs_distortion_to_string
+    rs_option_to_string
+    rs_capabilities_to_string
+    rs_source_to_string
+    rs_event_to_string
+    rs_blob_type_to_string  
+    rs_camera_info_to_string
+    rs_timestamp_domain_to_string
+    rs_log_to_console
+    rs_log_to_file
+    rs_log_to_callback
+    rs_log_to_callback_cpp
+
+    rs_get_api_version

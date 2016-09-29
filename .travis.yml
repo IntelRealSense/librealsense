@@ -39,6 +39,9 @@ install:
 script:
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
       uname -a;
+      mkdir build;
+      cd build;
+      cmake .. -DBUILD_EXAMPLES:BOOL=true;
       make;
     fi
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
