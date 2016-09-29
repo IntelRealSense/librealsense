@@ -33,19 +33,19 @@ namespace rsimpl
     };
     static const cam_mode f200_depth_modes[] = {
         {{640, 480}, {2,5,15,30,60}}, 
-        {{640, 240}, {2,5,15,30,60,110}}
+        {{640, 240}, {2,5,15,30,60}}    // 110 FPS is excluded due to a bug in timestamp field
     };
     static const cam_mode f200_ir_only_modes[] = {
         {{640, 480}, {30,60,120,240,300}}, 
         {{640, 240}, {30,60,120,240,300}}        
     };
 
-    static static_device_info get_f200_info(std::shared_ptr<uvc::device> device, const ivcam::camera_calib_params & c)
+    static static_device_info get_f200_info(std::shared_ptr<uvc::device> /*device*/, const ivcam::camera_calib_params & c)
     {
         LOG_INFO("Connecting to Intel RealSense F200");
         static_device_info info;
       
-        info.name = {"Intel RealSense F200"};
+        info.name = "Intel RealSense F200";
 
         // Color modes on subdevice 0
         info.stream_subdevices[RS_STREAM_COLOR] = 0;
@@ -76,17 +76,17 @@ namespace rsimpl
             }
         }
 
-        info.presets[RS_STREAM_INFRARED][RS_PRESET_BEST_QUALITY] = {true, 640, 480, RS_FORMAT_Y8,   60};
-        info.presets[RS_STREAM_DEPTH   ][RS_PRESET_BEST_QUALITY] = {true, 640, 480, RS_FORMAT_Z16,  60};
-        info.presets[RS_STREAM_COLOR   ][RS_PRESET_BEST_QUALITY] = {true, 640, 480, RS_FORMAT_RGB8, 60};
+        info.presets[RS_STREAM_INFRARED][RS_PRESET_BEST_QUALITY] = {true, 640, 480, RS_FORMAT_Y8,   60, RS_OUTPUT_BUFFER_FORMAT_CONTINUOUS};
+        info.presets[RS_STREAM_DEPTH   ][RS_PRESET_BEST_QUALITY] = {true, 640, 480, RS_FORMAT_Z16,  60, RS_OUTPUT_BUFFER_FORMAT_CONTINUOUS};
+        info.presets[RS_STREAM_COLOR   ][RS_PRESET_BEST_QUALITY] = {true, 640, 480, RS_FORMAT_RGB8, 60, RS_OUTPUT_BUFFER_FORMAT_CONTINUOUS};
 
-        info.presets[RS_STREAM_INFRARED][RS_PRESET_LARGEST_IMAGE] = {true,  640,  480, RS_FORMAT_Y8,   60};
-        info.presets[RS_STREAM_DEPTH   ][RS_PRESET_LARGEST_IMAGE] = {true,  640,  480, RS_FORMAT_Z16,  60};
-        info.presets[RS_STREAM_COLOR   ][RS_PRESET_LARGEST_IMAGE] = {true, 1920, 1080, RS_FORMAT_RGB8, 60};
+        info.presets[RS_STREAM_INFRARED][RS_PRESET_LARGEST_IMAGE] = {true,  640,  480, RS_FORMAT_Y8,   60, RS_OUTPUT_BUFFER_FORMAT_CONTINUOUS};
+        info.presets[RS_STREAM_DEPTH   ][RS_PRESET_LARGEST_IMAGE] = {true,  640,  480, RS_FORMAT_Z16,  60, RS_OUTPUT_BUFFER_FORMAT_CONTINUOUS};
+        info.presets[RS_STREAM_COLOR   ][RS_PRESET_LARGEST_IMAGE] = {true, 1920, 1080, RS_FORMAT_RGB8, 60, RS_OUTPUT_BUFFER_FORMAT_CONTINUOUS};
 
-        info.presets[RS_STREAM_INFRARED][RS_PRESET_HIGHEST_FRAMERATE] = {true, 640, 480, RS_FORMAT_Y8,   60};
-        info.presets[RS_STREAM_DEPTH   ][RS_PRESET_HIGHEST_FRAMERATE] = {true, 640, 480, RS_FORMAT_Z16,  60};
-        info.presets[RS_STREAM_COLOR   ][RS_PRESET_HIGHEST_FRAMERATE] = {true, 640, 480, RS_FORMAT_RGB8, 60};
+        info.presets[RS_STREAM_INFRARED][RS_PRESET_HIGHEST_FRAMERATE] = {true, 640, 480, RS_FORMAT_Y8,   60, RS_OUTPUT_BUFFER_FORMAT_CONTINUOUS};
+        info.presets[RS_STREAM_DEPTH   ][RS_PRESET_HIGHEST_FRAMERATE] = {true, 640, 480, RS_FORMAT_Z16,  60, RS_OUTPUT_BUFFER_FORMAT_CONTINUOUS};
+        info.presets[RS_STREAM_COLOR   ][RS_PRESET_HIGHEST_FRAMERATE] = {true, 640, 480, RS_FORMAT_RGB8, 60, RS_OUTPUT_BUFFER_FORMAT_CONTINUOUS};
 
         // Hardcoded extension controls
         //                                  option                         min  max    step     def
@@ -194,7 +194,7 @@ namespace rsimpl
         }
     }
 
-    void f200_camera::start_fw_logger(char fw_log_op_code, int grab_rate_in_ms, std::timed_mutex& mutex)
+    void f200_camera::start_fw_logger(char /*fw_log_op_code*/, int /*grab_rate_in_ms*/, std::timed_mutex& /*mutex*/)
     {
         throw std::logic_error("Not implemented");
     }
@@ -236,7 +236,7 @@ namespace rsimpl
 
             if(uvc::is_pu_control(options[i]))
             {
-                values[i] = uvc::get_pu_control(get_device(), 0, options[i]);
+                values[i] = uvc::get_pu_control_with_retry(get_device(), 0, options[i]);
                 continue;
             }
 

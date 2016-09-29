@@ -2,7 +2,7 @@
 
 [ ![License] [license-image] ] [license]
 
-[release-image]: http://img.shields.io/badge/release-1.9.6-blue.svg?style=flat
+[release-image]: http://img.shields.io/badge/release-1.9.7-blue.svg?style=flat
 [releases]: https://github.com/IntelRealSense/librealsense/releases
 
 [license-image]: http://img.shields.io/badge/license-Apache--2-blue.svg?style=flat
@@ -93,7 +93,7 @@ For small-form factor usages, this library has been demonstrated to work on the 
 
 The library has been integrated with a number of third-party components and operating systems. While most of these projects are not directly supported by the team, they are useful resources for users of this library.
 
-  * [Robotic Operating System](https://github.com/intel-ros/realsense)
+  * [Robotic Operating System](https://github.com/intel-ros/realsense) (Intel Supported; R200, F200, SR300 all supported)
   * [Yocto / WindRiver Linux](https://github.com/IntelRealSense/meta-intel-librealsense)
   * [Arch Linux](https://aur.archlinux.org/packages/librealsense/)
 

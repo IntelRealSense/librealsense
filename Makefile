@@ -12,8 +12,12 @@ endif
 
 LIBUSB_FLAGS := `pkg-config --cflags --libs libusb-1.0`
 
-CFLAGS := -std=c11 -D_BSD_SOURCE -fPIC -pedantic -DRS_USE_$(BACKEND)_BACKEND $(LIBUSB_FLAGS) 
-CXXFLAGS := -std=c++11 -fPIC -pedantic -Ofast -Wno-missing-field-initializers
+CFLAGS := -std=c11 -D_BSD_SOURCE -fPIC -pedantic -g -DRS_USE_$(BACKEND)_BACKEND $(LIBUSB_FLAGS)
+CXXFLAGS := -std=c++11 -fPIC -pedantic -Ofast -Wall -Wextra
+# Replace -Wno-unknown-pragmas with -fopenmp to multithread image.cpp
+CXXFLAGS += -Wno-unknown-pragmas
+CXXFLAGS += -Wno-strict-aliasing
+CXXFLAGS += -Wno-unused-function
 CXXFLAGS += -Wno-switch -Wno-multichar -DRS_USE_$(BACKEND)_BACKEND $(LIBUSB_FLAGS) 
 
 # Add specific include paths for OSX

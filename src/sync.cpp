@@ -1,3 +1,4 @@
+#include <cmath>
 #include "sync.h"
 
 using namespace rsimpl;
@@ -46,6 +47,16 @@ int syncronizing_archive::get_frame_bpp(rs_stream stream) const
 frame_archive::frameset* syncronizing_archive::clone_frontbuffer()
 {
     return clone_frameset(&frontbuffer);
+}
+
+double syncronizing_archive::get_frame_metadata(rs_stream stream, rs_frame_metadata frame_metadata) const
+{
+    return frontbuffer.get_frame_metadata(stream, frame_metadata);
+}
+
+bool syncronizing_archive::supports_frame_metadata(rs_stream stream, rs_frame_metadata frame_metadata) const
+{
+    return frontbuffer.supports_frame_metadata(stream, frame_metadata);
 }
 
 unsigned long long rsimpl::syncronizing_archive::get_frame_number(rs_stream stream) const
@@ -123,7 +134,7 @@ void syncronizing_archive::get_next_frames()
         auto timestamp_of_old_frame = frontbuffer.get_frame_timestamp(s);
         auto timestamp_of_key_stream = frontbuffer.get_frame_timestamp(key_stream);
         if ((timestamp_of_new_frame > timestamp_of_key_stream) ||
-            (abs(timestamp_of_new_frame - timestamp_of_key_stream) <= abs(timestamp_of_old_frame - timestamp_of_key_stream)))
+            (std::fabs(timestamp_of_new_frame - timestamp_of_key_stream) <= std::fabs(timestamp_of_old_frame - timestamp_of_key_stream)))
         {
             dequeue_frame(s);
         }
@@ -189,7 +200,7 @@ void syncronizing_archive::cull_frames()
         bool valid_to_skip = true;
         for(auto s : other_streams)
         {
-            if (abs(t0 - frames[s].back().additional_data.timestamp) < abs(t1 - frames[s].back().additional_data.timestamp))
+            if (std::fabs(t0 - frames[s].back().additional_data.timestamp) < std::fabs(t1 - frames[s].back().additional_data.timestamp))
             {
                 valid_to_skip = false;
                 break;
@@ -208,7 +219,7 @@ void syncronizing_archive::cull_frames()
             if(frames[s].size() < 2) break;
             const double t0 = frames[s][0].additional_data.timestamp, t1 = frames[s][1].additional_data.timestamp;
 
-            if (abs(t0 - frames[key_stream].front().additional_data.timestamp) < abs(t1 - frames[key_stream].front().additional_data.timestamp)) break;
+            if (std::fabs(t0 - frames[key_stream].front().additional_data.timestamp) < std::fabs(t1 - frames[key_stream].front().additional_data.timestamp)) break;
             discard_frame(s);
         }
     }

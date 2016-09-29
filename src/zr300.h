@@ -185,7 +185,7 @@ namespace rsimpl
     public:
         fisheye_auto_exposure_state() :
             is_auto_exposure(true),
-            mode(auto_exposure_modes::static_auto_exposure),
+            mode(auto_exposure_modes::auto_exposure_hybrid),
             rate(60),
             sample_rate(1),
             skip_frames(2)
@@ -305,8 +305,8 @@ namespace rsimpl
         void get_option_range(rs_option option, double & min, double & max, double & step, double & def) override;
         void set_options(const rs_option options[], size_t count, const double values[]) override;
         void get_options(const rs_option options[], size_t count, double values[]) override;
-        void send_blob_to_device(rs_blob_type type, void * data, int size);
-        bool supports_option(rs_option option) const;
+        void send_blob_to_device(rs_blob_type type, void * data, int size) override;
+        bool supports_option(rs_option option) const override;
 
         void start_motion_tracking() override;
         void stop_motion_tracking() override;

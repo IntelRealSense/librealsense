@@ -97,8 +97,6 @@ TEST_CASE("DS-device devices support all required options", "[live] [DS-device]"
                 RS_OPTION_R200_DEPTH_UNITS,
                 RS_OPTION_R200_DEPTH_CLAMP_MIN,
                 RS_OPTION_R200_DEPTH_CLAMP_MAX,
-                RS_OPTION_R200_DISPARITY_MULTIPLIER,
-                RS_OPTION_R200_DISPARITY_SHIFT,
                 RS_OPTION_R200_AUTO_EXPOSURE_MEAN_INTENSITY_SET_POINT,
                 RS_OPTION_R200_AUTO_EXPOSURE_TOP_EDGE,
                 RS_OPTION_R200_AUTO_EXPOSURE_BOTTOM_EDGE,
@@ -127,6 +125,41 @@ TEST_CASE("DS-device devices support all required options", "[live] [DS-device]"
                     REQUIRE(rs_device_supports_option(dev, (rs_option)i, require_no_error()) == 1);
                 }
                 // There is no ELSE by design , as the test is intended to check only the common options support
+            }
+        }
+    }
+}
+
+TEST_CASE("DS-device head content verification", "[live] [DS-device]")
+{
+    // Require at least one device to be plugged in
+    safe_context ctx;
+    const int device_count = rs_get_device_count(ctx, require_no_error());
+    REQUIRE(device_count > 0);
+
+    std::vector<std::string> invalid_keywords = { "", "N/A" };
+    // For each device
+    for (int i = 0; i<device_count; ++i)
+    {
+        rs_device * dev = rs_get_device(ctx, 0, require_no_error());
+        REQUIRE(dev != nullptr);
+
+        SECTION("device supports standard picture options and DS-device extension options")
+        {
+            for (auto param = (int)rs_camera_info::RS_CAMERA_INFO_DEVICE_NAME; param < rs_camera_info::RS_CAMERA_INFO_COUNT; param++)
+            {
+                INFO("Testing " << rs_camera_info_to_string(rs_camera_info(param)));
+                if (rs_supports_camera_info(dev,rs_camera_info(param), require_no_error()))
+                {
+                    auto val = rs_get_device_info(dev, rs_camera_info(param), require_no_error());
+                    REQUIRE(std::none_of(invalid_keywords.begin(), invalid_keywords.end(), [&](std::string const& s) {return s == val; }));
+                }
+                else
+                {
+                    rs_error * e = nullptr;
+                    REQUIRE(nullptr == rs_get_device_info(dev, rs_camera_info(param), &e));
+                    REQUIRE(e != nullptr);
+                }
             }
         }
     }

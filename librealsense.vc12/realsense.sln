@@ -1,9 +1,12 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2013
-VisualStudioVersion = 12.0.31101.0
+VisualStudioVersion = 12.0.40629.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "realsense", "realsense\realsense.vcxproj", "{1AE4CEB5-9A0B-4B9F-9505-824FD56BB41F}"
+	ProjectSection(ProjectDependencies) = postProject
+		{622186C4-6D7D-4288-B8FD-8F08419181C2} = {622186C4-6D7D-4288-B8FD-8F08419181C2}
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "cpp-capture", "cpp-capture\cpp-capture.vcxproj", "{4074122F-153D-4761-9539-7B7D5E72B11D}"
 	ProjectSection(ProjectDependencies) = postProject
@@ -112,12 +115,25 @@ EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "glfw3", "..\examples\third_party\glfw\msvc120\glfw3.vcxproj", "{979D0ADD-6AB7-403A-BB17-5434615E4446}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "cpp-callback", "cpp-callback\cpp-callback.vcxproj", "{22315D69-5DB9-4C89-98FE-B45F1A5D6674}"
+	ProjectSection(ProjectDependencies) = postProject
+		{1AE4CEB5-9A0B-4B9F-9505-824FD56BB41F} = {1AE4CEB5-9A0B-4B9F-9505-824FD56BB41F}
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "cpp-motion-module", "cpp-motion-module\cpp-motion-module.vcxproj", "{D1A726B7-DF03-4F04-AEC8-936AB88FC372}"
+	ProjectSection(ProjectDependencies) = postProject
+		{1AE4CEB5-9A0B-4B9F-9505-824FD56BB41F} = {1AE4CEB5-9A0B-4B9F-9505-824FD56BB41F}
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "cpp-callback-2", "cpp-callback-2\cpp-callback-2.vcxproj", "{C3CB58F0-844A-4B8F-B3C6-159A9677E868}"
+	ProjectSection(ProjectDependencies) = postProject
+		{1AE4CEB5-9A0B-4B9F-9505-824FD56BB41F} = {1AE4CEB5-9A0B-4B9F-9505-824FD56BB41F}
+		{979D0ADD-6AB7-403A-BB17-5434615E4446} = {979D0ADD-6AB7-403A-BB17-5434615E4446}
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "cpp-stride", "cpp-stride\cpp-stride.vcxproj", "{78B5B485-34B9-4462-A284-B19118D3D0DA}"
+	ProjectSection(ProjectDependencies) = postProject
+		{1AE4CEB5-9A0B-4B9F-9505-824FD56BB41F} = {1AE4CEB5-9A0B-4B9F-9505-824FD56BB41F}
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "unit-tests-live-lr200", "unit-tests-live-lr200\unit-tests-live-lr200.vcxproj", "{9D0CA8E1-96E2-4A56-9000-F52035256190}"
 	ProjectSection(ProjectDependencies) = postProject

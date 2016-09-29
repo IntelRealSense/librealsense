@@ -155,6 +155,7 @@ namespace rsimpl
         CASE(FISHEYE_STROBE)
         CASE(FISHEYE_EXTERNAL_TRIGGER)
         CASE(FRAMES_QUEUE_SIZE)
+        CASE(TOTAL_FRAME_DROPS)
         CASE(FISHEYE_ENABLE_AUTO_EXPOSURE)
         CASE(FISHEYE_AUTO_EXPOSURE_MODE)
         CASE(FISHEYE_AUTO_EXPOSURE_ANTIFLICKER_RATE)
@@ -236,6 +237,24 @@ namespace rsimpl
         CASE(CAMERA_FIRMWARE_VERSION)
         CASE(ADAPTER_BOARD_FIRMWARE_VERSION)
         CASE(MOTION_MODULE_FIRMWARE_VERSION)
+        CASE(IMAGER_MODEL_NUMBER)
+        CASE(CAMERA_TYPE)
+        CASE(OEM_ID)
+        CASE(MODULE_VERSION)
+        CASE(BUILD_DATE)
+        CASE(CALIBRATION_DATE)
+        CASE(PROGRAM_DATE)
+        CASE(FOCUS_ALIGNMENT_DATE)
+        CASE(FOCUS_VALUE)
+        CASE(CONTENT_VERSION)
+        CASE(ISP_FW_VERSION)
+        CASE(LENS_TYPE)
+        CASE(LENS_COATING__TYPE)
+        CASE(NOMINAL_BASELINE)
+        CASE(3RD_LENS_TYPE)
+        CASE(3RD_LENS_COATING_TYPE)
+        CASE(3RD_NOMINAL_BASELINE)
+        CASE(EMITTER_TYPE)
         default: assert(!is_valid(value)); return unknown;
         }
         #undef CASE
@@ -475,7 +494,7 @@ namespace rsimpl
             {
                 for (auto & unpacker : mode.pf.unpackers)
                 {
-                    auto selection = subdevice_mode_selection(mode, pad_crop, &unpacker - mode.pf.unpackers.data());
+                    auto selection = subdevice_mode_selection(mode, pad_crop, int(&unpacker - mode.pf.unpackers.data()));
 
                     request.enabled = true;
                     request.fps = selection.get_framerate();
@@ -486,7 +505,7 @@ namespace rsimpl
                     for (auto output : outputs)
                     {
                         request.format = output.second;
-                        for (auto output_format = static_cast<int>(RS_OUTPUT_BUFFER_FORMAT_CONTINOUS); output_format < static_cast<int>(RS_OUTPUT_BUFFER_FORMAT_COUNT); output_format++)
+                        for (auto output_format = static_cast<int>(RS_OUTPUT_BUFFER_FORMAT_CONTINUOUS); output_format < static_cast<int>(RS_OUTPUT_BUFFER_FORMAT_COUNT); output_format++)
                         {
                             request.output_format = static_cast<rs_output_buffer_format>(output_format);
                             stream_requests[output.first].push_back(request);

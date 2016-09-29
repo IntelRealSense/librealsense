@@ -3,6 +3,7 @@
 
 #include <climits>
 #include <algorithm>
+#include <iomanip>      // for std::put_time
 
 #include "image.h"
 #include "ds-private.h"
@@ -233,11 +234,11 @@ namespace rsimpl
             case RS_OPTION_R200_LR_AUTO_EXPOSURE_ENABLED:                   values[i] = ds::get_lr_exposure_mode(get_device()); break;
 
             case RS_OPTION_R200_LR_GAIN: // Gain is framerate dependent
-                ds::set_lr_gain_discovery(get_device(), {get_lr_framerate()});
+                ds::set_lr_gain_discovery(get_device(), {get_lr_framerate(), 0, 0, 0, 0});
                 values[i] = ds::get_lr_gain(get_device()).value;
                 break;
             case RS_OPTION_R200_LR_EXPOSURE: // Exposure is framerate dependent
-                ds::set_lr_exposure_discovery(get_device(), {get_lr_framerate()});
+                ds::set_lr_exposure_discovery(get_device(), {get_lr_framerate(), 0, 0, 0, 0});
                 values[i] = ds::get_lr_exposure(get_device()).value;
                 break;
             case RS_OPTION_R200_EMITTER_ENABLED:
@@ -386,8 +387,9 @@ namespace rsimpl
         return 30; // If no streams have yet been enabled, return the minimum possible left/right framerate, to allow the maximum possible exposure range
     }
 
-    void ds_device::set_common_ds_config(std::shared_ptr<uvc::device> device, static_device_info& info, const ds::ds_calibration& c)
+    void ds_device::set_common_ds_config(std::shared_ptr<uvc::device> device, static_device_info& info, const ds::ds_info& cam_info)
     {
+        auto & c = cam_info.calibration;
         info.capabilities_vector.push_back(RS_CAPABILITIES_ENUMERATION);
         info.capabilities_vector.push_back(RS_CAPABILITIES_COLOR);
         info.capabilities_vector.push_back(RS_CAPABILITIES_DEPTH);
@@ -425,6 +427,22 @@ namespace rsimpl
         info.subdevice_modes.push_back({ 2,{ 1920, 1080 }, pf_yuy2, 15, c.intrinsicsThird[0],{ c.modesThird[0][0] },{ 0 } });
         info.subdevice_modes.push_back({ 2,{ 1920, 1080 }, pf_yuy2, 30, c.intrinsicsThird[0],{ c.modesThird[0][0] },{ 0 } });
 
+
+        //                             subdev native-dim      pf   fps           native_intrinsics                              rect_modes      crop-options
+        //                             ------ ----------      --   ---           -----------------                              ----------      ------------
+        info.subdevice_modes.push_back({ 2,{ 1280, 720 }, pf_yuy2, 15, scale_intrinsics(c.intrinsicsThird[0], 1280, 720),  { c.modesThird[0][1] }, { 0 } });
+        info.subdevice_modes.push_back({ 2, { 960, 540 }, pf_yuy2, 15, scale_intrinsics(c.intrinsicsThird[0], 960, 540),   { c.modesThird[0][1] }, { 0 } });
+        info.subdevice_modes.push_back({ 2, { 848, 480 }, pf_yuy2, 15, scale_intrinsics(c.intrinsicsThird[0], 848, 480),   { c.modesThird[0][1] }, { 0 } });
+        
+        info.subdevice_modes.push_back({ 2, { 640, 480 }, pf_yuy2, 15, c.intrinsicsThird[1], { c.modesThird[1][0] }, { 0 } });
+        info.subdevice_modes.push_back({ 2, { 640, 480 }, pf_rw16, 15, c.intrinsicsThird[1], { c.modesThird[1][0] }, { 0 } });
+        
+        info.subdevice_modes.push_back({ 2, { 640, 360 }, pf_yuy2, 15, scale_intrinsics(c.intrinsicsThird[1], 640, 360), { c.modesThird[1][0] }, { 0 } });
+        info.subdevice_modes.push_back({ 2, { 424, 240 }, pf_yuy2, 15, scale_intrinsics(c.intrinsicsThird[1], 424, 240), { c.modesThird[1][0] }, { 0 } });
+
+        info.subdevice_modes.push_back({ 2, { 320, 240 }, pf_yuy2, 15, scale_intrinsics(c.intrinsicsThird[1], 320, 240), { c.modesThird[1][1] }, { 0 } });
+        info.subdevice_modes.push_back({ 2, { 320, 180 }, pf_yuy2, 15, scale_intrinsics(c.intrinsicsThird[1], 320, 180), { c.modesThird[1][1] }, { 0 } });
+
         // Set up interstream rules for left/right/z images
         for(auto ir : {RS_STREAM_INFRARED, RS_STREAM_INFRARED2})
         {
@@ -438,30 +456,28 @@ namespace rsimpl
         info.interstream_rules.push_back({ RS_STREAM_INFRARED, RS_STREAM_INFRARED2, &stream_request::height, 0, 0, RS_STREAM_COUNT, false, false, false });
         info.interstream_rules.push_back({ RS_STREAM_INFRARED, RS_STREAM_INFRARED2, nullptr, 0, 0, RS_STREAM_COUNT, false, false, true });
 
-        info.presets[RS_STREAM_INFRARED][RS_PRESET_BEST_QUALITY] = {true, 480, 360, RS_FORMAT_Y8,   60};
-        info.presets[RS_STREAM_DEPTH   ][RS_PRESET_BEST_QUALITY] = {true, 480, 360, RS_FORMAT_Z16,  60};
-        info.presets[RS_STREAM_COLOR   ][RS_PRESET_BEST_QUALITY] = {true, 640, 480, RS_FORMAT_RGB8, 60};
+        info.presets[RS_STREAM_INFRARED][RS_PRESET_BEST_QUALITY] = {true, 480, 360, RS_FORMAT_Y8,   60, RS_OUTPUT_BUFFER_FORMAT_CONTINUOUS};
+        info.presets[RS_STREAM_DEPTH   ][RS_PRESET_BEST_QUALITY] = {true, 480, 360, RS_FORMAT_Z16,  60, RS_OUTPUT_BUFFER_FORMAT_CONTINUOUS};
+        info.presets[RS_STREAM_COLOR   ][RS_PRESET_BEST_QUALITY] = {true, 640, 480, RS_FORMAT_RGB8, 60, RS_OUTPUT_BUFFER_FORMAT_CONTINUOUS};
 
-        info.presets[RS_STREAM_INFRARED][RS_PRESET_LARGEST_IMAGE] = {true, 640,   480, RS_FORMAT_Y8,   60};
-        info.presets[RS_STREAM_DEPTH   ][RS_PRESET_LARGEST_IMAGE] = {true, 640,   480, RS_FORMAT_Z16,  60};
-        info.presets[RS_STREAM_COLOR   ][RS_PRESET_LARGEST_IMAGE] = {true, 1920, 1080, RS_FORMAT_RGB8, 30};
+        info.presets[RS_STREAM_INFRARED][RS_PRESET_LARGEST_IMAGE] = {true, 640,   480, RS_FORMAT_Y8,   60, RS_OUTPUT_BUFFER_FORMAT_CONTINUOUS};
+        info.presets[RS_STREAM_DEPTH   ][RS_PRESET_LARGEST_IMAGE] = {true, 640,   480, RS_FORMAT_Z16,  60, RS_OUTPUT_BUFFER_FORMAT_CONTINUOUS};
+        info.presets[RS_STREAM_COLOR   ][RS_PRESET_LARGEST_IMAGE] = {true, 1920, 1080, RS_FORMAT_RGB8, 30, RS_OUTPUT_BUFFER_FORMAT_CONTINUOUS};
 
-        info.presets[RS_STREAM_INFRARED][RS_PRESET_HIGHEST_FRAMERATE] = {true, 320, 240, RS_FORMAT_Y8,   60};
-        info.presets[RS_STREAM_DEPTH   ][RS_PRESET_HIGHEST_FRAMERATE] = {true, 320, 240, RS_FORMAT_Z16,  60};
-        info.presets[RS_STREAM_COLOR   ][RS_PRESET_HIGHEST_FRAMERATE] = {true, 640, 480, RS_FORMAT_RGB8, 60};
+        info.presets[RS_STREAM_INFRARED][RS_PRESET_HIGHEST_FRAMERATE] = {true, 320, 240, RS_FORMAT_Y8,   60, RS_OUTPUT_BUFFER_FORMAT_CONTINUOUS};
+        info.presets[RS_STREAM_DEPTH   ][RS_PRESET_HIGHEST_FRAMERATE] = {true, 320, 240, RS_FORMAT_Z16,  60, RS_OUTPUT_BUFFER_FORMAT_CONTINUOUS};
+        info.presets[RS_STREAM_COLOR   ][RS_PRESET_HIGHEST_FRAMERATE] = {true, 640, 480, RS_FORMAT_RGB8, 60, RS_OUTPUT_BUFFER_FORMAT_CONTINUOUS};
 
         for(int i=0; i<RS_PRESET_COUNT; ++i)
             info.presets[RS_STREAM_INFRARED2][i] = info.presets[RS_STREAM_INFRARED][i];
 
-                                // Extended controls ranges cannot be retrieved from device, therefore the data is locally defined
-                                //Option                                                Min     Max Step      Default
+        // Extended controls ranges cannot be retrieved from device, therefore the data is locally defined
+        //Option                                                                        Min     Max     Step    Default
         info.options.push_back({ RS_OPTION_R200_LR_AUTO_EXPOSURE_ENABLED,               0,      1,      1,      0 });
         info.options.push_back({ RS_OPTION_R200_EMITTER_ENABLED,                        0,      1,      1,      0 });
         info.options.push_back({ RS_OPTION_R200_DEPTH_UNITS,                            0, INT_MAX,     1,      1000 });  // What is the real range?
         info.options.push_back({ RS_OPTION_R200_DEPTH_CLAMP_MIN,                        0, USHRT_MAX,   1,      0 });
         info.options.push_back({ RS_OPTION_R200_DEPTH_CLAMP_MAX,                        0, USHRT_MAX,   1,      USHRT_MAX });
-        info.options.push_back({ RS_OPTION_R200_DISPARITY_MULTIPLIER,                   1,      1000,    1,     32 });
-        info.options.push_back({ RS_OPTION_R200_DISPARITY_SHIFT,                        0,      1,      1,      0 });
         info.options.push_back({ RS_OPTION_R200_AUTO_EXPOSURE_MEAN_INTENSITY_SET_POINT, 0,      4095,   1,      512 });
         info.options.push_back({ RS_OPTION_R200_AUTO_EXPOSURE_BRIGHT_RATIO_SET_POINT,   0,      1,      1,      0 });
         info.options.push_back({ RS_OPTION_R200_AUTO_EXPOSURE_KP_GAIN,                  0,      1000,   1,      0 });
@@ -501,9 +517,34 @@ namespace rsimpl
         info.serial = std::to_string(c.serial_number);
         info.firmware_version = ds::read_firmware_version(*device);
 
+        auto &h = cam_info.head_content;
         info.camera_info[RS_CAMERA_INFO_CAMERA_FIRMWARE_VERSION] = info.firmware_version;
         info.camera_info[RS_CAMERA_INFO_DEVICE_SERIAL_NUMBER] = info.serial;
         info.camera_info[RS_CAMERA_INFO_DEVICE_NAME] = info.name;
+
+        info.camera_info[RS_CAMERA_INFO_ISP_FW_VERSION]         = ds::read_isp_firmware_version(*device);
+        info.camera_info[RS_CAMERA_INFO_IMAGER_MODEL_NUMBER]    = to_string() << h.imager_model_number;
+        info.camera_info[RS_CAMERA_INFO_CAMERA_TYPE]            = to_string() << h.prq_type;
+        info.camera_info[RS_CAMERA_INFO_OEM_ID]                 = to_string() << h.oem_id;
+        info.camera_info[RS_CAMERA_INFO_MODULE_VERSION]         = to_string() << (int)h.module_version << "." << (int)h.module_major_version << "." << (int)h.module_minor_version << "." << (int)h.module_skew_version;
+        info.camera_info[RS_CAMERA_INFO_FOCUS_VALUE]            = to_string() << h.platform_camera_focus;
+        info.camera_info[RS_CAMERA_INFO_CONTENT_VERSION]        = to_string() << h.camera_head_contents_version;
+        info.camera_info[RS_CAMERA_INFO_LENS_TYPE]              = to_string() << h.lens_type;
+        info.camera_info[RS_CAMERA_INFO_LENS_COATING__TYPE]     = to_string() << h.lens_coating_type;
+        info.camera_info[RS_CAMERA_INFO_3RD_LENS_TYPE]          = to_string() << h.lens_type_third_imager;
+        info.camera_info[RS_CAMERA_INFO_3RD_LENS_COATING_TYPE]  = to_string() << h.lens_coating_type_third_imager;
+        info.camera_info[RS_CAMERA_INFO_NOMINAL_BASELINE]       = to_string() << h.nominal_baseline << " mm";
+        info.camera_info[RS_CAMERA_INFO_3RD_NOMINAL_BASELINE]   = to_string() << h.nominal_baseline_third_imager << " mm";
+        info.camera_info[RS_CAMERA_INFO_EMITTER_TYPE]           = to_string() << h.emitter_type;
+
+        if (std::isnormal(h.calibration_date))
+            info.camera_info[RS_CAMERA_INFO_CALIBRATION_DATE] = time_to_string(h.calibration_date);
+        if (std::isnormal(h.first_program_date))
+            info.camera_info[RS_CAMERA_INFO_PROGRAM_DATE] = time_to_string(h.first_program_date);
+        if (std::isnormal(h.focus_alignment_date))
+            info.camera_info[RS_CAMERA_INFO_FOCUS_ALIGNMENT_DATE] = time_to_string(h.focus_alignment_date);
+        if (std::isnormal(h.build_date))
+            info.camera_info[RS_CAMERA_INFO_BUILD_DATE] = time_to_string(h.build_date);
 
         // On LibUVC backends, the R200 should use four transfer buffers
         info.num_libuvc_transfer_buffers = 4;
@@ -552,7 +593,7 @@ namespace rsimpl
         // Gain min/max is framerate dependent
         if(option == RS_OPTION_R200_LR_GAIN)
         {
-            ds::set_lr_gain_discovery(get_device(), {get_lr_framerate()});
+            ds::set_lr_gain_discovery(get_device(), {get_lr_framerate(), 0, 0, 0, 0});
             auto disc = ds::get_lr_gain_discovery(get_device());
             min = disc.min;
             max = disc.max;
@@ -564,7 +605,7 @@ namespace rsimpl
         // Exposure min/max is framerate dependent
         if(option == RS_OPTION_R200_LR_EXPOSURE)
         {
-            ds::set_lr_exposure_discovery(get_device(), {get_lr_framerate()});
+            ds::set_lr_exposure_discovery(get_device(), {get_lr_framerate(), 0, 0, 0, 0});
             auto disc = ds::get_lr_exposure_discovery(get_device());
             min = disc.min;
             max = disc.max;
@@ -640,7 +681,7 @@ namespace rsimpl
     public:
         dinghy_timestamp_reader(int fps) : fps(fps), timestamp_wraparound(1, std::numeric_limits<uint32_t>::max()), frame_counter_wraparound(1, std::numeric_limits<uint32_t>::max()) {}
 
-        bool validate_frame(const subdevice_mode & mode, const void * frame) const override 
+        bool validate_frame(const subdevice_mode & mode, const void * frame) override
         {
             // Check magic number for all subdevices
             auto & dinghy = get_dinghy(mode, frame);
@@ -693,6 +734,26 @@ namespace rsimpl
 
     class fisheye_timestamp_reader : public frame_timestamp_reader
     {
+        int get_embedded_frame_counter(const void * frame) const
+        {
+            int embedded_frame_counter = 0;
+            firmware_version firmware(fw_version);
+            if (firmware >= firmware_version("1.27.2.90")) // Frame counter is exposed at first LSB bit in first 4-pixels from version 1.27.2.90
+            {
+                auto data = static_cast<const char*>(frame);
+
+                for (int i = 0, j = 0; i < 4; ++i, ++j)
+                    embedded_frame_counter |= ((data[i] & 0x01) << j);
+            }
+            else if (firmware < firmware_version("1.27.2.90")) // Frame counter is exposed by the 4 LSB bits of the first pixel from all versions under 1.27.2.90
+            {
+                embedded_frame_counter = reinterpret_cast<byte_wrapping&>(*((unsigned char*)frame)).lsb;
+            }
+
+            return embedded_frame_counter;
+        }
+
+        std::string fw_version;
         std::mutex mutex;
         int fps;
         unsigned last_fisheye_counter;
@@ -701,15 +762,15 @@ namespace rsimpl
         mutable bool validate;
 
     public:
-        fisheye_timestamp_reader(int max_fps) : fps(max_fps), last_fisheye_counter(0), timestamp_wraparound(1, std::numeric_limits<uint32_t>::max()), frame_counter_wraparound(0, std::numeric_limits<uint32_t>::max()), validate(true){}
+        fisheye_timestamp_reader(int max_fps, const char* fw_ver) : fps(max_fps), last_fisheye_counter(0), timestamp_wraparound(1, std::numeric_limits<uint32_t>::max()), frame_counter_wraparound(0, std::numeric_limits<uint32_t>::max()), validate(true), fw_version(fw_ver){}
 
-        bool validate_frame(const subdevice_mode & mode, const void * frame) const override
+        bool validate_frame(const subdevice_mode & /*mode*/, const void * frame) override
         {
             if (!validate)
                 return true;
 
             bool sts;
-            auto pixel_lsb = reinterpret_cast<byte_wrapping&>(*((unsigned char*)frame)).lsb;
+            auto pixel_lsb = get_embedded_frame_counter(frame);
             if ((sts = (pixel_lsb != 0)))
                 validate = false;
 
@@ -721,12 +782,12 @@ namespace rsimpl
             unsigned char msb : 4;
         };
 
-        unsigned long long get_frame_counter(const subdevice_mode & mode, const void * frame) override
+        unsigned long long get_frame_counter(const subdevice_mode & /*mode*/, const void * frame) override
         {
             std::lock_guard<std::mutex> guard(mutex);
 
             auto last_counter_lsb = reinterpret_cast<byte_wrapping&>(last_fisheye_counter).lsb;
-            auto pixel_lsb = reinterpret_cast<byte_wrapping&>(*((unsigned char*)frame)).lsb;
+            auto pixel_lsb = get_embedded_frame_counter(frame);
             if (last_counter_lsb == pixel_lsb)
                 return last_fisheye_counter;
 
@@ -754,12 +815,17 @@ namespace rsimpl
         int fps, scale;
         wraparound_mechanism<double> timestamp_wraparound;
         wraparound_mechanism<unsigned long long> frame_counter_wraparound;
+        bool first_frames = true;
 
     public:
         color_timestamp_reader(int fps, int scale) : fps(fps), scale(scale), timestamp_wraparound(0, std::numeric_limits<uint32_t>::max()), frame_counter_wraparound(0, std::numeric_limits<uint32_t>::max()) {}
 
-        bool validate_frame(const subdevice_mode & mode, const void * frame) const override
+        bool validate_frame(const subdevice_mode & mode, const void * frame) override
         {
+            auto counter = get_frame_counter(mode, frame);
+
+            if (counter == 0 && first_frames) return false;
+            first_frames = false;
             return true;
         }
 
@@ -795,7 +861,7 @@ namespace rsimpl
     public:
         serial_timestamp_generator(int fps) : fps(fps), serial_frame_number(), timestamp_wraparound(0, std::numeric_limits<uint32_t>::max()), frame_counter_wraparound(0, std::numeric_limits<uint32_t>::max()) {}
 
-        bool validate_frame(const subdevice_mode & mode, const void * frame) const override { return true; }
+        bool validate_frame(const subdevice_mode & /*mode*/, const void * /*frame*/) override { return true; }
         double get_frame_timestamp(const subdevice_mode &, const void *) override
         { 
             ++serial_frame_number;
@@ -831,16 +897,13 @@ namespace rsimpl
             break;
         case SUB_DEVICE_FISHEYE:
             if (stream_fisheye.is_enabled())
-                return std::make_shared<fisheye_timestamp_reader>(stream_fisheye.get_framerate());
+                return std::make_shared<fisheye_timestamp_reader>(stream_fisheye.get_framerate(), get_camera_info(RS_CAMERA_INFO_ADAPTER_BOARD_FIRMWARE_VERSION));
             break;
         case SUB_DEVICE_COLOR:
             if (stream_color.is_enabled())
             {
                 if (stream_depth.is_enabled() || stream_infrared.is_enabled() || stream_infrared2.is_enabled())
                 {
-                    if (stream_color.get_intrinsics().width > 640) // HD formats seem to not include DINGY
-                        return std::make_shared<serial_timestamp_generator>(stream_color.get_framerate());
-
                     // W/A for DS4 issue: when running at Depth 60 & Color 30 it seems that the frame counter is being incremented on every
                     // depth frame (or ir/ir2). This means we need to reduce color frame number accordingly
                     auto master_fps = stream_depth.is_enabled() ? stream_depth.get_framerate() : 0;

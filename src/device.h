@@ -59,7 +59,7 @@ namespace rsimpl
 
     struct frame_timestamp_reader
     {
-        virtual bool validate_frame(const subdevice_mode & mode, const void * frame) const = 0;
+        virtual bool validate_frame(const subdevice_mode & mode, const void * frame) = 0;
         virtual double get_frame_timestamp(const subdevice_mode & mode, const void * frame) = 0;
         virtual unsigned long long get_frame_counter(const subdevice_mode & mode, const void * frame) = 0;
     };
@@ -112,6 +112,9 @@ protected:
 
     bool                                        motion_module_ready;
     std::atomic<bool>                           keep_fw_logger_alive;
+    
+    std::atomic<int>                            frames_drops_counter;
+
 public:
     rs_device_base(std::shared_ptr<rsimpl::uvc::device> device, const rsimpl::static_device_info & info, rsimpl::calibration_validator validator = rsimpl::calibration_validator());
     virtual ~rs_device_base();
@@ -154,6 +157,7 @@ public:
     bool                                        poll_all_streams() override;
 
     virtual bool                                supports(rs_capabilities capability) const override;
+    virtual bool                                supports(rs_camera_info info_param) const override;
 
     virtual bool                                supports_option(rs_option option) const override;
     virtual void                                get_option_range(rs_option option, double & min, double & max, double & step, double & def) override;
@@ -167,7 +171,7 @@ public:
     const char *                                get_usb_port_id() const override;
     rs_frame_ref *                              clone_frame(rs_frame_ref * frame) override;
 
-    virtual void                                send_blob_to_device(rs_blob_type type, void * data, int size) { throw std::runtime_error("not supported!"); }
+    virtual void                                send_blob_to_device(rs_blob_type /*type*/, void * /*data*/, int /*size*/) { throw std::runtime_error("not supported!"); }
     static void                                 update_device_info(rsimpl::static_device_info& info);
 
     const char *                                get_option_description(rs_option option) const override;

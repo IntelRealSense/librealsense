@@ -16,32 +16,32 @@ namespace rsimpl
                                                                               {rs_option::RS_OPTION_F200_CONFIDENCE_THRESHOLD, 0x06}};
 
     static const cam_mode sr300_color_modes[] = {
-        {{1920, 1080}, {5,15,30}},
-        {{1280,  720}, {5,15,30,60}},
-        {{ 960,  540}, {5,15,30,60}},
-        {{ 848,  480}, {5,15,30,60}},
-        {{ 640,  480}, {5,15,30,60}},
-        {{ 640,  360}, {5,15,30,60}},
-        {{ 424,  240}, {5,15,30,60}},
-        {{ 320,  240}, {5,15,30,60}},
-        {{ 320,  180}, {5,15,30,60}}
+        {{1920, 1080}, { 10,30 } },
+        {{1280,  720}, { 10,30,60 } },
+        {{ 960,  540}, { 10,30,60 } },
+        {{ 848,  480}, { 10,30,60 } },
+        {{ 640,  480}, { 10,30,60 } },
+        {{ 640,  360}, { 10,30,60 } },
+        {{ 424,  240}, { 10,30,60 } },
+        {{ 320,  240}, { 10,30,60 } },
+        {{ 320,  180}, { 10,30,60 } },
     };
 
     static const cam_mode sr300_depth_modes[] = {
-        {{640, 480}, {5,15,30,60}}, 
-        {{640, 240}, {5,15,30,60,110}}
+        {{640, 480}, {10,30,60}},
+        {{640, 240}, {10,30,60,110}}
     };
 
     static const cam_mode sr300_ir_only_modes[] = {
-        {{640, 480}, {30,60,120,200}}      
-    };    
+        {{640, 480}, {30,60,120,200}}
+    };
 
-    static static_device_info get_sr300_info(std::shared_ptr<uvc::device> device, const ivcam::camera_calib_params & c)
+    static static_device_info get_sr300_info(std::shared_ptr<uvc::device> /*device*/, const ivcam::camera_calib_params & c)
     {
         LOG_INFO("Connecting to Intel RealSense SR300");
        
         static_device_info info;
-        info.name = {"Intel RealSense SR300"};
+        info.name = "Intel RealSense SR300";
         
         // Color modes on subdevice 0
         info.stream_subdevices[RS_STREAM_COLOR] = 0;
@@ -74,9 +74,9 @@ namespace rsimpl
 
         for(int i=0; i<RS_PRESET_COUNT; ++i)
         {
-            info.presets[RS_STREAM_COLOR   ][i] = {true, 640, 480, RS_FORMAT_RGB8, 60};
-            info.presets[RS_STREAM_DEPTH   ][i] = {true, 640, 480, RS_FORMAT_Z16, 60};
-            info.presets[RS_STREAM_INFRARED][i] = {true, 640, 480, RS_FORMAT_Y16, 60};
+            info.presets[RS_STREAM_COLOR   ][i] = {true, 640, 480, RS_FORMAT_RGB8, 60, RS_OUTPUT_BUFFER_FORMAT_CONTINUOUS};
+            info.presets[RS_STREAM_DEPTH   ][i] = {true, 640, 480, RS_FORMAT_Z16, 60, RS_OUTPUT_BUFFER_FORMAT_CONTINUOUS};
+            info.presets[RS_STREAM_INFRARED][i] = {true, 640, 480, RS_FORMAT_Y16, 60, RS_OUTPUT_BUFFER_FORMAT_CONTINUOUS};
         }
 
         info.options = {
@@ -98,7 +98,7 @@ namespace rsimpl
         //                                  option                         min  max    step     def
         //                                  ------                         ---  ---    ----     ---
         info.options.push_back({ RS_OPTION_F200_LASER_POWER,                0,  16,     1,      16  });
-        info.options.push_back({ RS_OPTION_F200_ACCURACY,                   0,  3,      1,      1   });
+        info.options.push_back({ RS_OPTION_F200_ACCURACY,                   1,  3,      1,      1   });
         info.options.push_back({ RS_OPTION_F200_MOTION_RANGE,               0,  220,    1,      9   });
         info.options.push_back({ RS_OPTION_F200_FILTER_OPTION,              0,  7,      1,      5   });
         info.options.push_back({ RS_OPTION_F200_CONFIDENCE_THRESHOLD,       0,  15,     1,      3   });
@@ -212,11 +212,10 @@ namespace rsimpl
 
             if(uvc::is_pu_control(options[i]))
             {
-                values[i] = uvc::get_pu_control(get_device(), 0, options[i]);
+                values[i] = uvc::get_pu_control_with_retry(get_device(), 0, options[i]);
                 continue;
             }
 
-            uint8_t val=0;
             switch(options[i])
             {
             case RS_OPTION_SR300_AUTO_RANGE_ENABLE_MOTION_VERSUS_RANGE: values[i] = arr_reader.get(&ivcam::cam_auto_range_request::enableMvR); break; 

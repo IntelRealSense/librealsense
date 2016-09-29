@@ -149,124 +149,115 @@ inline void test_sr300_streaming(std::initializer_list<stream_mode> modes)
 
     test_streaming(dev, modes);
 }
+///////////////////////////
+// Color streaming tests //
+///////////////////////////
+
+TEST_CASE("SR300 streams 1080p color", "[live] [sr300] [one-camera]")
+{
+    test_sr300_streaming({ { RS_STREAM_COLOR, 1920, 1080, RS_FORMAT_YUYV, 30 } });
+}
+
+TEST_CASE("SR300 streams 720p color", "[live] [sr300] [one-camera]")
+{
+    test_sr300_streaming({ { RS_STREAM_COLOR, 1280, 720, RS_FORMAT_YUYV, 30 } });
+}
+
+TEST_CASE("SR300 streams VGA color", "[live] [sr300] [one-camera]")
+{
+    test_sr300_streaming({ { RS_STREAM_COLOR, 640, 480, RS_FORMAT_YUYV, 30 } });
+}
+
+TEST_CASE("SR300 streams 720p color (60 fps)", "[live] [sr300] [one-camera]")
+{
+    test_sr300_streaming({ { RS_STREAM_COLOR, 1280, 720, RS_FORMAT_YUYV, 60 } });
+}
+
+TEST_CASE("SR300 streams VGA color (60 fps)", "[live] [sr300] [one-camera]")
+{
+    test_sr300_streaming({ { RS_STREAM_COLOR, 640, 480, RS_FORMAT_YUYV, 60 } });
+}
+
+TEST_CASE("SR300 streams VGA depth and HD color", "[live] [sr300] [one-camera]")
+{
+    test_sr300_streaming({ { RS_STREAM_DEPTH, 640, 480, RS_FORMAT_Z16, 60 },
+    { RS_STREAM_COLOR, 1920, 1080, RS_FORMAT_YUYV, 30 } });
+}
+
+TEST_CASE("SR300 streams HVGA depth and HD color", "[live] [sr300] [one-camera]")
+{
+    test_sr300_streaming({ { RS_STREAM_DEPTH, 640, 240, RS_FORMAT_Z16, 60 },
+    { RS_STREAM_COLOR, 1920, 1080, RS_FORMAT_YUYV, 30 } });
+}
+
+TEST_CASE("SR300 streams VGA depth and VGA color", "[live] [sr300] [one-camera]")
+{
+    test_sr300_streaming({ { RS_STREAM_DEPTH, 640, 480, RS_FORMAT_Z16, 60 },
+    { RS_STREAM_COLOR, 640, 480, RS_FORMAT_YUYV, 30 } });
+}
+
+TEST_CASE("SR300 streams HVGA depth and VGA color", "[live] [sr300] [one-camera]")
+{
+    test_sr300_streaming({ { RS_STREAM_DEPTH, 640, 240, RS_FORMAT_Z16, 60 },
+    { RS_STREAM_COLOR, 640, 480, RS_FORMAT_YUYV, 30 } });
+}
+
+TEST_CASE("SR300 streams VGA depth and VGA color (60 fps)", "[live] [sr300] [one-camera]")
+{
+    test_sr300_streaming({ { RS_STREAM_DEPTH, 640, 480, RS_FORMAT_Z16, 60 },
+    { RS_STREAM_COLOR, 640, 480, RS_FORMAT_YUYV, 60 } });
+}
+
+TEST_CASE("SR300 streams HVGA depth and VGA color (60 fps)", "[live] [sr300] [one-camera]")
+{
+    test_sr300_streaming({ { RS_STREAM_DEPTH, 640, 240, RS_FORMAT_Z16, 60 },
+    { RS_STREAM_COLOR, 640, 480, RS_FORMAT_YUYV, 60 } });
+}
 
 ///////////////////////////
 // Depth streaming tests //
 ///////////////////////////
 
-TEST_CASE( "SR300 streams 640x480 depth", "[live] [sr300] [one-camera]" )
+TEST_CASE("SR300 depth stream (Z16)", "[live] [sr300] [one-camera]")
 {
-    test_sr300_streaming({{RS_STREAM_DEPTH, 640, 480, RS_FORMAT_Z16, 60}});
-}
+    SECTION("SR300 streams depth 640x480 (VGA), [10,30,60] fps")
+    {
+        for (auto & fps : { 10,30,60 })
+        {
+            INFO("Testing " << fps << " fps")
+            test_sr300_streaming({ { RS_STREAM_DEPTH, 640, 480, RS_FORMAT_Z16, fps } });
+        }
+    }
 
-TEST_CASE( "SR300 streams 640x240 depth", "[live] [sr300] [one-camera]" )
-{
-    test_sr300_streaming({{RS_STREAM_DEPTH, 640, 240, RS_FORMAT_Z16, 60}});
-}
-
-TEST_CASE( "SR300 streams 640x480 depth (30 fps)", "[live] [sr300] [one-camera]" )
-{
-    test_sr300_streaming({{RS_STREAM_DEPTH, 640, 480, RS_FORMAT_Z16, 30}});
-}
-
-TEST_CASE( "SR300 streams 640x240 depth (30 fps)", "[live] [sr300] [one-camera]" )
-{
-    test_sr300_streaming({{RS_STREAM_DEPTH, 640, 240, RS_FORMAT_Z16, 30}});
-}
-
-TEST_CASE( "SR300 streams 640x240 depth (110 fps)", "[live] [sr300] [one-camera]" )
-{
-    test_sr300_streaming({{RS_STREAM_DEPTH, 640, 240, RS_FORMAT_Z16, 110}});
-}
-
-///////////////////////////
-// Color streaming tests //
-///////////////////////////
-
-TEST_CASE( "SR300 streams 1080p color", "[live] [sr300] [one-camera]" )
-{
-    test_sr300_streaming({{RS_STREAM_COLOR, 1920, 1080, RS_FORMAT_YUYV, 30}});
-}
-
-TEST_CASE( "SR300 streams 720p color", "[live] [sr300] [one-camera]" )
-{
-    test_sr300_streaming({{RS_STREAM_COLOR, 1280, 720, RS_FORMAT_YUYV, 30}});
-}
-
-TEST_CASE( "SR300 streams VGA color", "[live] [sr300] [one-camera]" )
-{
-    test_sr300_streaming({{RS_STREAM_COLOR, 640, 480, RS_FORMAT_YUYV, 30}});
-}
-
-TEST_CASE( "SR300 streams 720p color (60 fps)", "[live] [sr300] [one-camera]" )
-{
-    test_sr300_streaming({{RS_STREAM_COLOR, 1280, 720, RS_FORMAT_YUYV, 60}});
-}
-
-TEST_CASE( "SR300 streams VGA color (60 fps)", "[live] [sr300] [one-camera]" )
-{
-    test_sr300_streaming({{RS_STREAM_COLOR, 640, 480, RS_FORMAT_YUYV, 60}});
-}
-
-TEST_CASE( "SR300 streams VGA depth and HD color", "[live] [sr300] [one-camera]" )
-{
-    test_sr300_streaming({{RS_STREAM_DEPTH, 640, 480, RS_FORMAT_Z16, 60},
-                          {RS_STREAM_COLOR, 1920, 1080, RS_FORMAT_YUYV, 30}});
-}
-
-TEST_CASE( "SR300 streams HVGA depth and HD color", "[live] [sr300] [one-camera]" )
-{
-    test_sr300_streaming({{RS_STREAM_DEPTH, 640, 240, RS_FORMAT_Z16, 60},
-                          {RS_STREAM_COLOR, 1920, 1080, RS_FORMAT_YUYV, 30}});
-}
-
-TEST_CASE( "SR300 streams VGA depth and VGA color", "[live] [sr300] [one-camera]" )
-{
-    test_sr300_streaming({{RS_STREAM_DEPTH, 640, 480, RS_FORMAT_Z16, 60},
-                          {RS_STREAM_COLOR, 640, 480, RS_FORMAT_YUYV, 30}});
-}
-
-TEST_CASE( "SR300 streams HVGA depth and VGA color", "[live] [sr300] [one-camera]" )
-{
-    test_sr300_streaming({{RS_STREAM_DEPTH, 640, 240, RS_FORMAT_Z16, 60},
-                          {RS_STREAM_COLOR, 640, 480, RS_FORMAT_YUYV, 30}});
-}
-
-TEST_CASE( "SR300 streams VGA depth and VGA color (60 fps)", "[live] [sr300] [one-camera]" )
-{
-    test_sr300_streaming({{RS_STREAM_DEPTH, 640, 480, RS_FORMAT_Z16, 60},
-                          {RS_STREAM_COLOR, 640, 480, RS_FORMAT_YUYV, 60}});
-}
-
-TEST_CASE( "SR300 streams HVGA depth and VGA color (60 fps)", "[live] [sr300] [one-camera]" )
-{
-    test_sr300_streaming({{RS_STREAM_DEPTH, 640, 240, RS_FORMAT_Z16, 60},
-                          {RS_STREAM_COLOR, 640, 480, RS_FORMAT_YUYV, 60}});
+    SECTION("SR300 streams depth 640x240 (HVGA), [10,30,60,110] fps")
+    {
+        for (auto & fps : { 10,30,60,110 })
+        {
+            INFO("Testing " << fps << " fps")
+            test_sr300_streaming({ { RS_STREAM_DEPTH, 640, 240, RS_FORMAT_Z16, fps } });
+        }
+    }
 }
 
 //////////////////////////////
 // Infrared streaming tests //
 //////////////////////////////
 
-TEST_CASE( "SR300 streams 640x480 infrared (30 fps)", "[live] [sr300] [one-camera]" )
+TEST_CASE( "SR300 infrared stream (Y16)", "[live] [sr300] [one-camera]" )
 {
-    test_sr300_streaming({{RS_STREAM_INFRARED, 640, 480, RS_FORMAT_Y16, 30}});
+    SECTION("SR300 streams infrared 640x240 depth (VGA), [30,60,120,200] fps")
+    {
+        for (auto & fps : { 30,60,120,200 })
+        {
+            INFO("Testing " << fps << " fps")
+            test_sr300_streaming({ { RS_STREAM_INFRARED, 640, 480, RS_FORMAT_Y16, fps } });
+        }
+    }
 }
 
-TEST_CASE( "SR300 streams 640x480 infrared (60 fps)", "[live] [sr300] [one-camera]" )
-{
-    test_sr300_streaming({{RS_STREAM_INFRARED, 640, 480, RS_FORMAT_Y16, 60}});
-}
-
-TEST_CASE( "SR300 streams 640x480 infrared (120 fps)", "[live] [sr300] [one-camera]" )
-{
-    test_sr300_streaming({{RS_STREAM_INFRARED, 640, 480, RS_FORMAT_Y16, 120}});
-}
-
-TEST_CASE( "SR300 streams 640x480 infrared (200 fps)", "[live] [sr300] [one-camera]" )
-{
-    test_sr300_streaming({{RS_STREAM_INFRARED, 640, 480, RS_FORMAT_Y16, 200}});
-}
+//////////////////////////////////////////
+// Multiple-stream configurations tests //
+//////////////////////////////////////////
 
 TEST_CASE( "SR300 streams 640x480 depth and infrared", "[live] [sr300] [one-camera]" )
 {
@@ -393,20 +384,24 @@ TEST_CASE( "a single SR300 can stream a variety of reasonable streaming mode com
 
     SECTION( "streaming is possible in some reasonable configurations" )
     {
+        INFO("Streaming Z16, 60 fps");
         test_streaming(dev, {
             {RS_STREAM_DEPTH, 640, 480, RS_FORMAT_Z16, 60}
         });
 
+        INFO("Streaming Depth + Color 60 fps");
         test_streaming(dev, {
             {RS_STREAM_DEPTH, 640, 480, RS_FORMAT_Z16, 60},
             {RS_STREAM_COLOR, 640, 480, RS_FORMAT_RGB8, 60}
         });
 
+        INFO("Streaming Depth + Infrared 60 fps");
         test_streaming(dev, {
             {RS_STREAM_DEPTH, 640, 480, RS_FORMAT_Z16, 60},
             {RS_STREAM_INFRARED, 640, 480, RS_FORMAT_Y16, 60}
         });
 
+        INFO("Streaming Depth + Infrared + Color 60 fps");
         test_streaming(dev, {
             {RS_STREAM_DEPTH, 640, 480, RS_FORMAT_Z16, 60},
             {RS_STREAM_COLOR, 640, 480, RS_FORMAT_RGB8, 60},

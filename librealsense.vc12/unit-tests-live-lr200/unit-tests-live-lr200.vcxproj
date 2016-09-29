@@ -27,6 +27,11 @@
     <ClCompile Include="..\..\unit-tests\unit-tests-live-lr200.cpp" />
     <ClCompile Include="..\..\unit-tests\unit-tests-live.cpp" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\realsense\realsense.vcxproj">
+      <Project>{1ae4ceb5-9a0b-4b9f-9505-824fd56bb41f}</Project>
+    </ProjectReference>
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{9D0CA8E1-96E2-4A56-9000-F52035256190}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
