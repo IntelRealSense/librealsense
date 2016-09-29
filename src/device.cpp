@@ -389,7 +389,7 @@ void rs_device_base::start_video_streaming()
                     for (int i = 4, j = 0; i < 12; ++i, ++j)
                         exposure |= ((data[i] & 0x01) << j);
 
-                    exposure_value[0] = exposure;
+                    exposure_value[0] = exposure * 0.2 * 10.;
                 }
             }
 
