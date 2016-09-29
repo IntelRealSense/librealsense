@@ -68,8 +68,8 @@ std::string api_version_to_string(int version)
 void report_version_mismatch(int runtime, int compiletime)
 {
     throw std::runtime_error(rsimpl::to_string() << "API version mismatch: librealsense.so was compiled with API version " 
-        << runtime << " but the application was compiled with " 
-        << compiletime << "! Make sure correct version of the library is installed (make install)");
+        << api_version_to_string(runtime) << " but the application was compiled with " 
+        << api_version_to_string(compiletime) << "! Make sure correct version of the library is installed (make install)");
 }
 
 rs_context * rs_create_context(int api_version, rs_error ** error) try
