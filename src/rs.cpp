@@ -9,7 +9,6 @@
 #include "sync.h"
 #include "archive.h"
 
-
 ////////////////////////
 // API implementation //
 ////////////////////////
@@ -20,7 +19,6 @@ struct rs_error
     const char * function;
     std::string args;
 };
-
 
 // This facility allows for translation of exceptions to rs_error structs at the API boundary
 namespace rsimpl
@@ -48,12 +46,58 @@ namespace rsimpl
 #define VALIDATE_LE(ARG, MAX) if((ARG) > (MAX)) { std::ostringstream ss; ss << "out of range value for argument \"" #ARG "\""; throw std::runtime_error(ss.str()); }
 #define VALIDATE_NATIVE_STREAM(ARG) VALIDATE_ENUM(ARG); if(ARG >= RS_STREAM_NATIVE_COUNT) { std::ostringstream ss; ss << "argument \"" #ARG "\" must be a native stream"; throw std::runtime_error(ss.str()); }
 
+int major(int version)
+{
+    return version / 10000;
+}
+int minor(int version)
+{
+    return (version % 10000) / 100;
+}
+int patch(int version)
+{
+    return (version % 100);
+}
+
+std::string api_version_to_string(int version)
+{
+    if (major(version) == 0) return rsimpl::to_string() << version;
+    return rsimpl::to_string() << major(version) << "." << minor(version) << "." << patch(version);
+}
+
+void report_version_mismatch(int runtime, int compiletime)
+{
+    throw std::runtime_error(rsimpl::to_string() << "API version mismatch: librealsense.so was compiled with API version " 
+        << api_version_to_string(runtime) << " but the application was compiled with " 
+        << api_version_to_string(compiletime) << "! Make sure correct version of the library is installed (make install)");
+}
+
 rs_context * rs_create_context(int api_version, rs_error ** error) try
 {
     int runtime_api_version = rs_get_api_version(error);
     if (*error) throw std::runtime_error(rs_get_error_message(*error));
 
-    if (api_version != runtime_api_version) throw std::runtime_error("api version mismatch");
+    if ((runtime_api_version < 10) || (api_version < 10))
+    {
+        // when dealing with version < 1.0.0 that were still using single number for API version, require exact match
+        if (api_version != runtime_api_version) 
+            report_version_mismatch(runtime_api_version, api_version);
+    }
+    else if ((major(runtime_api_version) == 1 && minor(runtime_api_version) <= 9) 
+          || (major(api_version) == 1 && minor(api_version) <= 9))
+    {
+        // when dealing with version < 1.10.0, API breaking changes are still possible without minor version change, require exact match
+        if (api_version != runtime_api_version) 
+            report_version_mismatch(runtime_api_version, api_version);
+    }
+    else
+    {
+        // starting with 1.10.0, versions with same patch are compatible
+        if ((major(api_version) != major(runtime_api_version)) 
+         || (minor(api_version) != minor(runtime_api_version))) 
+            report_version_mismatch(runtime_api_version, api_version);
+    }
+
     return rs_context_base::acquire_instance();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, api_version)

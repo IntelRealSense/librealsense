@@ -24,11 +24,21 @@ OLDLIB="/usr/local/lib/librealsense.so"
 OLDHEADER="/usr/local/include/librealsense"
 OLDUDEV="/etc/udev/rules.d/99-realsense-libusb.rules"
 
+# Are we running in a Docker Environment?
+docker_cnt=$(awk -F/ '$2 == "docker"' /proc/1/cgroup  | wc -l)
+# docker_cnt > 0 we are in a docker environment
+
 case "$1" in
 
   configure)
-    # Enforce the newly installed  udev rules
-    (udevadm control --reload-rules && udevadm trigger) || true
+    # Set FORCE_UDEV_IN_DOCKER to non-empty to override
+    if [ ${docker_cnt} -gt 0 -a -z "${FORCE_UDEV_IN_DOCKER}" ]
+    then
+      echo "INFO: Docker environment not supported for udevadm; skipping."
+    else
+      # Enforce the newly installed  udev rules
+      (udevadm control --reload-rules && udevadm trigger) || true
+    fi
 
     # Warn user about /usr/local installation
     if [ -f ${OLDLIB} -o -d ${OLDHEADER} -o -f ${OLDUDEV} ]
@@ -48,40 +58,46 @@ case "$1" in
       fi
     fi
 
-    IS_DKMS_INSTALLED=$(dkms status uvcvideo/1.1.1-1-realsense)
-    case "${IS_DKMS_INSTALLED}" in
-        *Installed*|*installed*)
-            echo "INFO: DKMS module already installed"
-            ;;
-        *Added*|*added*)
-            dkms build -m uvcvideo -v "1.1.1-1-realsense" && dkms install -m uvcvideo -v "1.1.1-1-realsense" || true
-            ;;
-        *)
-            dkms add -m uvcvideo -v "1.1.1-1-realsense"
-            dkms build -m uvcvideo -v "1.1.1-1-realsense" && dkms install -m uvcvideo -v "1.1.1-1-realsense" || true
-            ;;
-    esac
+    # Set FORCE_DKMS_IN_DOCKER to non-empty to override
+    if [ ${docker_cnt} -gt 0 -a -z "${FORCE_DKMS_IN_DOCKER}" ]
+    then
+      echo "INFO: Docker environment not supported for DKMS; skipping."
+    else
+      IS_DKMS_INSTALLED=$(dkms status uvcvideo/1.1.1-2-realsense)
+      case "${IS_DKMS_INSTALLED}" in
+          *Installed*|*installed*)
+              echo "INFO: DKMS module already installed"
+              ;;
+          *Added*|*added*)
+              dkms build -m uvcvideo -v "1.1.1-2-realsense" && dkms install -m uvcvideo -v "1.1.1-2-realsense" || true
+              ;;
+          *)
+              dkms add -m uvcvideo -v "1.1.1-2-realsense"
+              dkms build -m uvcvideo -v "1.1.1-2-realsense" && dkms install -m uvcvideo -v "1.1.1-2-realsense" || true
+              ;;
+      esac
 
-    # Check for uvcvideo loadable kernel module patches in the running kernel
-    UVC_MODULE=$(modinfo -F filename uvcvideo)
-    PATCHED_FORMATS=$(/usr/bin/strings ${UVC_MODULE} | \
-      /bin/egrep '\((Y8I|Y12I|Z16|RW10|INVZ|INZI|INVR|INRI|INVI|RELI)\)' | \
-      /usr/bin/wc -l)
-    case "${PATCHED_FORMATS}" in
-      10)
-        echo "INFO: Intel RealSense(TM) F200, R200, and SR300 cameras are supported."
-      ;;
-      3)
-        echo "WARNING: Only Intel RealSense(TM) R200 camera is supported!"
-        echo "    Visit https://github.com/IntelRealSense/librealsense/blob/master/doc/installation.md"
-        echo "    to enable additional camera types."
-      ;;
-      *)
-        echo "WARNING: No Intel RealSense(TM) cameras are supported!"
-        echo "    Visit https://github.com/IntelRealSense/librealsense/blob/master/doc/installation.md"
-        echo "    to enable Intel RealSense (TM) camera types."
-      ;;
-    esac
+      # Check for uvcvideo loadable kernel module patches in the running kernel
+      UVC_MODULE=$(modinfo -F filename uvcvideo)
+      PATCHED_FORMATS=$(/usr/bin/strings ${UVC_MODULE} | \
+        /bin/egrep '\((Y8I|Y12I|Z16|RW10|INVZ|INZI|INVR|INRI|INVI|RELI|L8|L16|D16)\)' | \
+        /usr/bin/wc -l)
+      case "${PATCHED_FORMATS}" in
+        13)
+          echo "INFO: Intel RealSense(TM) F200, SR300, R200, LR200, and ZR300 cameras are supported."
+        ;;
+        3)
+          echo "WARNING: Only Intel RealSense(TM) R200 camera is supported!"
+          echo "    Visit https://github.com/IntelRealSense/librealsense/blob/master/doc/installation.md"
+          echo "    to enable additional camera types."
+        ;;
+        *)
+          echo "WARNING: No Intel RealSense(TM) cameras are supported!"
+          echo "    Visit https://github.com/IntelRealSense/librealsense/blob/master/doc/installation.md"
+          echo "    to enable Intel RealSense (TM) camera types."
+        ;;
+      esac
+    fi
   ;;
 
   abort-upgrade|abort-remove|abort-deconfigure)

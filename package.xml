@@ -7,9 +7,9 @@
 <package format="2">
   <name>librealsense</name>
   <!-- The version tag needs to be updated with each new release of librealsense -->
-  <version>0.9.3</version>
+  <version>1.11.0</version>
   <description>
-  This project is a cross-platform library (Linux, OSX, Windows) for capturing data from the Intel(R) RealSense(TM) F200, SR300 and R200 cameras. This effort was initiated to better support researchers, creative coders, and app developers in domains such as robotics, virtual reality, and the internet of things. Several often-requested features of RealSense(TM); devices are implemented in this project, including multi-camera capture.
+  Library for capturing data from the Intel(R) RealSense(TM) F200, SR300, R200, LR200 and ZR300 cameras. This effort was initiated to better support researchers, creative coders, and app developers in domains such as robotics, virtual reality, and the internet of things. Several often-requested features of RealSense(TM); devices are implemented in this project, including multi-camera capture.
   </description>
 
   <maintainer email="sergey.dorodnicov@intel.com">Sergey Dorodnicov</maintainer>
@@ -25,5 +25,7 @@
   <build_depend>pkg-config</build_depend>
 
   <depend>libusb-1.0-dev</depend>
+  <depend>linux-headers-generic</depend>
+  <depend>libssl-dev</depend>
   <depend>dkms</depend>
 </package>
