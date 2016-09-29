@@ -65,9 +65,11 @@ namespace rsimpl
         const auto FISHEYE_HWMONITOR_INTERFACE = 2;
         const uvc::guid FISHEYE_WIN_USB_DEVICE_GUID = { 0xC0B55A29, 0xD7B6, 0x436E, { 0xA6, 0xEF, 0x2E, 0x76, 0xED, 0x0A, 0xBC, 0xA5 } };
         // Translation of user-provided fourcc code into device supported one:           Note the Big-Endian notation
+                                                                                         /* host => librealsense     */
         const std::map<uint32_t, uint32_t> fourcc_map = { { 0x47524559, 0x59382020 },    /* 'GREY' => 'Y8  ' */
                                                           { 0x70524141, 0x52573130 },    /* 'RW10' => 'pRAA'.*/
-                                                          { 0x50000000, 0x5a313620 } };  /*  'P   '=> 'Y16 ' */
+                                                          { 0x32000000, 0x59382020 },    /* 'L8' => 'Y8  '   */
+                                                          { 0x50000000, 0x5a313620 } };  /* 'P' => 'Z16 '    */
 
         static std::string win_to_utf(const WCHAR * s)
         {
@@ -522,8 +524,8 @@ namespace rsimpl
                         {
                             if (stream_index_vector[index] == stream_index_status::configured)
                             {
-                                check("IMFSourceReader::ReadSample", sub.mf_source_reader->ReadSample(index, 0, NULL, NULL, NULL, NULL));
                                 stream_index_vector[index] = stream_index_status::streaming;
+                                check("IMFSourceReader::ReadSample", sub.mf_source_reader->ReadSample(index, 0, NULL, NULL, NULL, NULL));
                             }
                         }
                     }
@@ -532,17 +534,27 @@ namespace rsimpl
 
             void stop_streaming()
             {
-                for (auto& elem : stream_index_vector)
-                    elem = stream_index_status::stopped;
+                if (stream_index_vector.size() > 1)
+                {
+                    for (int index = 0; index < subdevices.size(); ++index)
+                    {
+                        if (stream_index_vector[index] == stream_index_status::streaming)
+                        {
+                            subdevices[index].mf_source_reader->Flush(index);
+                        }
+                    }
+                }
 
                 for(auto & sub : subdevices)
                 {
                     if(sub.mf_source_reader) sub.mf_source_reader->Flush(MF_SOURCE_READER_ALL_STREAMS);
                 }
+
+
                 while(true)
                 {
                     bool is_streaming = false;
-                    for(auto & sub : subdevices) is_streaming |= sub.reader_callback->is_streaming();                   
+                    for(auto & sub : subdevices) is_streaming |= sub.reader_callback->is_streaming();
                     if(is_streaming) std::this_thread::sleep_for(std::chrono::milliseconds(10));
                     else break;
                 }
@@ -561,6 +573,8 @@ namespace rsimpl
                     }
                     sub.callback = {};
                 }
+
+                stream_index_vector.clear();
             }
 
             com_ptr<IMFMediaSource> get_media_source(int subdevice_index)
@@ -715,14 +729,14 @@ namespace rsimpl
                                 buffer->Unlock();
                             };
 
-                            owner_ptr->subdevices[subdevice_index].callback(byte_buffer, continuation);
+                            owner_ptr->subdevices[dwStreamIndex].callback(byte_buffer, continuation);
                         }
                     }
                 }
 
                 if (auto owner_ptr_new = owner.lock())
                 {
-                    auto hr = owner_ptr_new->subdevices[subdevice_index].mf_source_reader->ReadSample(dwStreamIndex, 0, NULL, NULL, NULL, NULL);
+                    auto hr = owner_ptr_new->subdevices[dwStreamIndex].mf_source_reader->ReadSample(dwStreamIndex, 0, NULL, NULL, NULL, NULL);
                     switch (hr)
                     {
                     case S_OK: break;
@@ -804,37 +818,47 @@ namespace rsimpl
 
         void set_subdevice_mode(device & device, int subdevice_index, int width, int height, uint32_t fourcc, int fps, video_channel_callback callback)
         {
-            if (subdevice_index >= device.subdevices.size()) // W/A for DS5
-                subdevice_index = 0;
-
             auto & sub = device.subdevices[subdevice_index];
             
             if(!sub.mf_source_reader)
             {
                 com_ptr<IMFAttributes> pAttributes;
-                check("MFCreateAttributes", MFCreateAttributes(&pAttributes, 1));
-                check("IMFAttributes::SetUnknown", pAttributes->SetUnknown(MF_SOURCE_READER_ASYNC_CALLBACK, static_cast<IUnknown *>(sub.reader_callback)));
-                check("MFCreateSourceReaderFromMediaSource", MFCreateSourceReaderFromMediaSource(sub.get_media_source(), pAttributes, &sub.mf_source_reader));
-                pAttributes->SetGUID(MF_DEVSOURCE_ATTRIBUTE_SOURCE_TYPE, MF_DEVSOURCE_ATTRIBUTE_SOURCE_TYPE_VIDCAP_GUID);
-                UINT32 stream_index_count;
-                auto hr = pAttributes->GetCount(&stream_index_count);
-                if (hr != S_OK) throw std::exception("GetCount failed");
-                device.stream_index_vector.resize(stream_index_count);
-                for (auto& elem : device.stream_index_vector)
-                    elem = stream_index_status::stopped;
+                if (device.stream_index_vector.size() < 2)
+                {
+                    check("MFCreateAttributes", MFCreateAttributes(&pAttributes, 1));
+                    check("IMFAttributes::SetUnknown", pAttributes->SetUnknown(MF_SOURCE_READER_ASYNC_CALLBACK, static_cast<IUnknown *>(sub.reader_callback)));
+                    check("MFCreateSourceReaderFromMediaSource", MFCreateSourceReaderFromMediaSource(sub.get_media_source(), pAttributes, &sub.mf_source_reader));
+                    pAttributes->SetGUID(MF_DEVSOURCE_ATTRIBUTE_SOURCE_TYPE, MF_DEVSOURCE_ATTRIBUTE_SOURCE_TYPE_VIDCAP_GUID);
+
+                    UINT32 stream_index_count;
+                    auto hr = pAttributes->GetCount(&stream_index_count);
+                    if (hr != S_OK) throw std::exception("GetCount failed");
+                    device.stream_index_vector.resize(stream_index_count);
+
+                    for (auto& elem : device.stream_index_vector)
+                        elem = stream_index_status::stopped;
+                }
+                else if (!sub.mf_source_reader)
+                {
+                    for (auto& elem : device.subdevices)
+                    {
+                        if (elem.mf_source_reader)
+                        {
+                            sub.mf_source_reader = elem.mf_source_reader;
+                            break;
+                        }
+                    }
+                }
             }
 
             unsigned int stream_index_count = static_cast<unsigned int>(device.stream_index_vector.size());
             for (unsigned int sIndex = 0; sIndex < stream_index_count; ++sIndex)
             {
-                if (device.stream_index_vector[sIndex] == stream_index_status::stopped)
-                    check("IMFSourceReader::SetStreamSelection", sub.mf_source_reader->SetStreamSelection(sIndex, FALSE));
-
                 for (DWORD j = 0; ; j++)
                 {
                     com_ptr<IMFMediaType> media_type;
                     HRESULT hr = sub.mf_source_reader->GetNativeMediaType(sIndex, j, &media_type);
-                    if (hr == MF_E_NO_MORE_TYPES) break;
+                    if (hr == MF_E_NO_MORE_TYPES || hr == MF_E_INVALIDSTREAMNUMBER) break;
                     check("IMFSourceReader::GetNativeMediaType", hr);
 
                     UINT32 uvc_width, uvc_height, uvc_fps_num, uvc_fps_denom; GUID subtype;
@@ -852,6 +876,17 @@ namespace rsimpl
                     if (std::abs(fps - uvc_fps) > 1) continue;
 
                     check("IMFSourceReader::SetCurrentMediaType", sub.mf_source_reader->SetCurrentMediaType(sIndex, NULL, media_type));
+
+                    for (unsigned int i = 0; i < stream_index_count; ++i)
+                    {
+                        if (sIndex == i ||
+                            device.stream_index_vector[i] == stream_index_status::configured ||
+                            device.stream_index_vector[i] == stream_index_status::streaming)
+                            continue;
+
+                        try { sub.mf_source_reader->SetStreamSelection(i, FALSE); } catch (...) {};
+                    }
+
                     check("IMFSourceReader::SetStreamSelection", sub.mf_source_reader->SetStreamSelection(sIndex, TRUE));
                     sub.callback = callback;
                     device.stream_index_vector[sIndex] = stream_index_status::configured;
@@ -1143,6 +1178,13 @@ namespace rsimpl
                 dev->subdevices[subdevice_index].mf_activate = pDevice;
                 dev->subdevices[subdevice_index].vid = vid;
                 dev->subdevices[subdevice_index].pid = pid;
+
+                if (vid == 0x8086 && pid == 0x0ad1) // Duplicate subdevice on DS5 camera
+                {
+                    dev->subdevices.push_back(dev->subdevices[0]);
+                    dev->subdevices[1].reader_callback = dev->subdevices[0].reader_callback;
+                    //dev->subdevices[1].reader_callback = new reader_callback(dev, static_cast<int>(1));
+                }
             }
 
             for(auto& devA : devices) // Look for CX3 Fisheye camera
