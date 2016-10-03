@@ -3,21 +3,14 @@
 # ubuntu 16.04 LTS cmake version 3.5.1
 cmake_minimum_required(VERSION 2.8.3)
 
-get_cmake_property(_variableNames VARIABLES)
-foreach (_variableName ${_variableNames})
-    message(STATUS "${_variableName}=${${_variableName}}")
-endforeach()
-
-message(STATUS "----------------------------------------")
-execute_process(COMMAND "/usr/bin/printenv")
-message(STATUS "----------------------------------------")
-
-if(EXISTS "/opt/ros")
-  message(STATUS "/opt/ros does exist on this system")
+IF(DEFINED ENV{CMAKE_PREFIX_PATH})
+  IF($ENV{CMAKE_PREFIX_PATH} MATCHES "/opt/ros")
+    set(ROS_BUILD_TYPE TRUE)
+  ENDIF()
 ENDIF()
 
-IF(DEFINED ENV{ROS_DISTRO})
-  message(STATUS "Building in a ROS environment ($ENV{ROS_DISTRO})")
+IF (${ROS_BUILD_TYPE})
+  message(STATUS "Building in a ROS environment")
   project(librealsense)
 
   #################################
