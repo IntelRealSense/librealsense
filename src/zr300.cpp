@@ -815,7 +815,6 @@ namespace rsimpl
     void auto_exposure_algorithm::modify_exposure(float& exposure_value, bool& exp_modified, float& gain_value, bool& gain_modified)
     {
         float total_exposure = exposure * gain;
-        float prev_exposure = exposure;
         LOG_DEBUG("TotalExposure " << total_exposure << ", target_exposure " << target_exposure);
         if (fabs(target_exposure - total_exposure) > eps)
         {
