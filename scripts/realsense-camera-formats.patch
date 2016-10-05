@@ -41,7 +41,7 @@ index d11fd6a..c819a39 100644
 +		.fcc		= V4L2_PIX_FMT_RAW8,
 +	},
 +	{
-+		.name		= "Raw data 10-bit (RW16)",
++		.name		= "Raw data 16-bit (RW16)",
 +		.guid		= UVC_GUID_FORMAT_RW16,
 +		.fcc		= V4L2_PIX_FMT_RW16,
 +	},
