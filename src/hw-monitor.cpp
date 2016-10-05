@@ -43,15 +43,16 @@ namespace rsimpl
 
         void execute_usb_command(uvc::device & device, std::timed_mutex & mutex, uint8_t *out, size_t outSize, uint32_t & op, uint8_t * in, size_t & inSize)
         {
+            static const unsigned int timeout = 1000; // ms
             // write
             errno = 0;
 
-            int outXfer;
+            int outXfer{};
 
             if (!mutex.try_lock_for(std::chrono::milliseconds(IVCAM_MONITOR_MUTEX_TIMEOUT))) throw std::runtime_error("timed_mutex::try_lock_for(...) timed out");
             std::lock_guard<std::timed_mutex> guard(mutex, std::adopt_lock);
 
-            bulk_transfer(device, IVCAM_MONITOR_ENDPOINT_OUT, out, (int)outSize, &outXfer, 1000); // timeout in ms
+            bulk_transfer(device, IVCAM_MONITOR_ENDPOINT_OUT, out, (int)outSize, &outXfer, timeout);
 
             std::this_thread::sleep_for(std::chrono::milliseconds(20));
             // read
@@ -61,7 +62,7 @@ namespace rsimpl
 
                 errno = 0;
 
-                bulk_transfer(device, IVCAM_MONITOR_ENDPOINT_IN, buf, sizeof(buf), &outXfer, 1000);
+                bulk_transfer(device, IVCAM_MONITOR_ENDPOINT_IN, buf, sizeof(buf), &outXfer, timeout);
                 if (outXfer < (int)sizeof(uint32_t)) throw std::runtime_error("incomplete bulk usb transfer");
                 if (outXfer > IVCAM_MONITOR_MAX_BUFFER_SIZE) throw std::runtime_error("out buffer is greater than max buffer size");
 
@@ -91,7 +92,7 @@ namespace rsimpl
         {
             unsigned char outputBuffer[HW_MONITOR_BUFFER_SIZE];
 
-            uint32_t op;
+            uint32_t op{};
             size_t receivedCmdLen = HW_MONITOR_BUFFER_SIZE;
 
             execute_usb_command(device, mutex, details.sendCommandData, details.sizeOfSendCommandData, op, outputBuffer, receivedCmdLen);
