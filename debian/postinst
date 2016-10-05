@@ -63,36 +63,41 @@ case "$1" in
     then
       echo "INFO: Docker environment not supported for DKMS; skipping."
     else
-      IS_DKMS_INSTALLED=$(dkms status uvcvideo/1.1.1-2-realsense)
+      IS_DKMS_INSTALLED=$(dkms status uvcvideo/1.1.1-3-realsense)
       case "${IS_DKMS_INSTALLED}" in
           *Installed*|*installed*)
               echo "INFO: DKMS module already installed"
               ;;
           *Added*|*added*)
-              dkms build -m uvcvideo -v "1.1.1-2-realsense" && dkms install -m uvcvideo -v "1.1.1-2-realsense" || true
+              dkms build -m uvcvideo -v "1.1.1-3-realsense" && dkms install -m uvcvideo -v "1.1.1-3-realsense" || true
               ;;
           *)
-              dkms add -m uvcvideo -v "1.1.1-2-realsense"
-              dkms build -m uvcvideo -v "1.1.1-2-realsense" && dkms install -m uvcvideo -v "1.1.1-2-realsense" || true
+              dkms add -m uvcvideo -v "1.1.1-3-realsense"
+              dkms build -m uvcvideo -v "1.1.1-3-realsense" && dkms install -m uvcvideo -v "1.1.1-3-realsense" || true
               ;;
       esac
 
       # Check for uvcvideo loadable kernel module patches in the running kernel
       UVC_MODULE=$(modinfo -F filename uvcvideo)
       PATCHED_FORMATS=$(/usr/bin/strings ${UVC_MODULE} | \
-        /bin/egrep '\((Y8I|Y12I|Z16|RW10|INVZ|INZI|INVR|INRI|INVI|RELI|L8|L16|D16)\)' | \
+        /bin/egrep '\((Y8I|Y12I|Z16|SRGGB10P|RAW8|RW16|INVZ|INZI|INVR|INRI|INVI|RELI|L8|L16|D16)\)' | \
         /usr/bin/wc -l)
       case "${PATCHED_FORMATS}" in
-        13)
+        15)
           echo "INFO: Intel RealSense(TM) F200, SR300, R200, LR200, and ZR300 cameras are supported."
         ;;
-        3)
+        4)
           echo "WARNING: Only Intel RealSense(TM) R200 camera is supported!"
           echo "    Visit https://github.com/IntelRealSense/librealsense/blob/master/doc/installation.md"
           echo "    to enable additional camera types."
         ;;
-        *)
+        0)
           echo "WARNING: No Intel RealSense(TM) cameras are supported!"
+          echo "    Visit https://github.com/IntelRealSense/librealsense/blob/master/doc/installation.md"
+          echo "    to enable Intel RealSense (TM) camera types."
+        ;;
+        *)
+          echo "WARNING: Unknown configuration for Intel RealSense(TM) cameras!"
           echo "    Visit https://github.com/IntelRealSense/librealsense/blob/master/doc/installation.md"
           echo "    to enable Intel RealSense (TM) camera types."
         ;;

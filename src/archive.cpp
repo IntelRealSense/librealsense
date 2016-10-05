@@ -69,7 +69,7 @@ frame_archive::frame_ref* frame_archive::detach_frame_ref(frameset* frameset, rs
     auto new_ref = detached_refs.allocate();
     if (new_ref)
     {
-        *new_ref = std::move(frameset->detach_ref(stream));
+        *new_ref = frameset->detach_ref(stream);
     }
     return new_ref;
 }
