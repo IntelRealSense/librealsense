@@ -7,8 +7,8 @@ CONFIG -= qt
 QMAKE_CXXFLAGS += -std=c++11
 QMAKE_CXXFLAGS += -D_FORTIFY_SOURCE=2 -fstack-protector-strong -Wformat -Wformat-security
 QMAKE_CXXFLAGS += -z noexecstack -z relro -z now
-# add the desired -O2 if not present
-QMAKE_CXXFLAGS_RELEASE *= -O2
+QMAKE_CXXFLAGS += -Wno-unknown-pragmas -Wno-strict-aliasing -Wno-unused-function -Wall -Wextra
+QMAKE_CXXFLAGS_RELEASE *= -Ofast
 
 PKGCONFIG += libusb-1.0
 CONFIG += link_pkgconfig
