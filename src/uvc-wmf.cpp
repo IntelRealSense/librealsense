@@ -237,7 +237,7 @@ namespace rsimpl
             volatile bool streaming = false;
         public:
             reader_callback(std::weak_ptr<device> owner, std::map<int, int> in_subdevice_index_per_stream_index) : owner(owner), subdevice_index_per_stream_index(in_subdevice_index_per_stream_index), ref_count() {}
-            std::map<int, int> subdevice_index_per_stream_index;
+            std::map<int, int> subdevice_index_per_stream_index; // map<stream index, subdevice_index>
 
             bool is_streaming() const { return streaming; }
             void on_start() { streaming = true; }
@@ -451,13 +451,64 @@ namespace rsimpl
             }
         };
 
+        class adapter_subdevice
+        {
+        public:
+
+            const subdevice&  operator[](size_t index) const
+            {
+                return subscript_operator(index);
+            }
+
+            subdevice&  operator[](size_t index)
+            {
+                return subscript_operator(index);
+            }
+
+            std::vector<subdevice>& get_subdevice_vector()
+            {
+                return subdevices;
+            }
+
+            void push_back(const subdevice& elem)
+            {
+                subdevices.push_back(elem);
+            }
+
+            void resize(size_t size) { subdevices.resize(size); }
+
+            size_t size() const { return subdevices.size(); }
+        private:
+            subdevice& subscript_operator(size_t index) const
+            {
+                auto& sub = subdevices[index];
+                if (sub.vid == VID_INTEL_CAMERA && sub.pid == DS5_PSR_PID && subdevices.size() > 1
+                    && ((subdevices[0].mf_source_reader != nullptr) ^ (subdevices[1].mf_source_reader != nullptr)))
+                {
+                    if (subdevices[0].mf_source_reader)
+                    {
+                        subdevices[1].mf_source_reader = subdevices[0].mf_source_reader;
+                        subdevices[1].stream_index_vector = subdevices[0].stream_index_vector;
+                    }
+                    else if (subdevices[1].mf_source_reader)
+                    {
+                        subdevices[0].mf_source_reader = subdevices[1].mf_source_reader;
+                        subdevices[0].stream_index_vector = subdevices[1].stream_index_vector;
+                    }
+                }
+                return subdevices[index];
+            }
+
+            mutable std::vector<subdevice> subdevices;
+        };
+
         struct device
         {
             const std::shared_ptr<context> parent;
             const int vid, pid;
             const std::string unique_id;
 
-            std::vector<subdevice> subdevices;
+            adapter_subdevice subdevices;
 
             HANDLE usb_file_handle = INVALID_HANDLE_VALUE;
             WINUSB_INTERFACE_HANDLE usb_interface_handle = INVALID_HANDLE_VALUE;
@@ -483,7 +534,7 @@ namespace rsimpl
             void start_data_acquisition()
             {
                 std::vector<subdevice *> data_channel_subs;
-                for (auto & sub : subdevices)
+                for (auto & sub : subdevices.get_subdevice_vector())
                 {
                     if (sub.channel_data_callback)
                     {
@@ -516,7 +567,7 @@ namespace rsimpl
 
             void start_streaming()
             {
-                for(auto & sub : subdevices)
+                for(auto & sub : subdevices.get_subdevice_vector())
                 {
                     if(sub.mf_source_reader)
                     {
@@ -535,7 +586,7 @@ namespace rsimpl
 
             void stop_streaming()
             {
-                for(auto & sub : subdevices)
+                for(auto & sub : subdevices.get_subdevice_vector())
                 {
                     if (sub.stream_index_vector.size() > 1)
                     {
@@ -555,13 +606,13 @@ namespace rsimpl
                 while(true)
                 {
                     bool is_streaming = false;
-                    for(auto & sub : subdevices) is_streaming |= sub.reader_callback->is_streaming();
+                    for(auto & sub : subdevices.get_subdevice_vector()) is_streaming |= sub.reader_callback->is_streaming();
                     if(is_streaming) std::this_thread::sleep_for(std::chrono::milliseconds(10));
                     else break;
                 }
 
                 // Free up our source readers, our KS control nodes, and our media sources, but retain our original IMFActivate objects for later reuse
-                for(auto & sub : subdevices)
+                for(auto & sub : subdevices.get_subdevice_vector())
                 {
                     sub.mf_source_reader = nullptr;
                     sub.am_camera_control = nullptr;
@@ -819,26 +870,12 @@ namespace rsimpl
         void set_subdevice_mode(device & device, int subdevice_index, int width, int height, uint32_t fourcc, int fps, video_channel_callback callback)
         {
             auto & sub = device.subdevices[subdevice_index];
-            
+
             if(!sub.mf_source_reader)
             {
                 com_ptr<IMFAttributes> pAttributes;
                 if (sub.stream_index_vector.size() < 2)
                 {
-                    if (sub.vid == VID_INTEL_CAMERA && sub.pid == DS5_PSR_PID && (device.subdevices[0].mf_source_reader || device.subdevices[1].mf_source_reader))
-                    {
-                        if (device.subdevices[0].mf_source_reader)
-                        {
-                            device.subdevices[1].mf_source_reader = device.subdevices[0].mf_source_reader;
-                            device.subdevices[1].stream_index_vector = device.subdevices[0].stream_index_vector;
-                        }
-                        else if (device.subdevices[1].mf_source_reader)
-                        {
-                            device.subdevices[0].mf_source_reader = device.subdevices[1].mf_source_reader;
-                            device.subdevices[0].stream_index_vector = device.subdevices[1].stream_index_vector;
-                        }
-                    }
-                    else
                     {
                         check("MFCreateAttributes", MFCreateAttributes(&pAttributes, 1));
                         check("IMFAttributes::SetUnknown", pAttributes->SetUnknown(MF_SOURCE_READER_ASYNC_CALLBACK, static_cast<IUnknown *>(sub.reader_callback)));
@@ -865,7 +902,7 @@ namespace rsimpl
                 }
                 else if (!sub.mf_source_reader)
                 {
-                    for (auto& elem : device.subdevices)
+                    for (auto& elem : device.subdevices.get_subdevice_vector())
                     {
                         if (elem.mf_source_reader)
                         {
@@ -961,7 +998,7 @@ namespace rsimpl
 
         void set_pu_control(device & device, int subdevice, rs_option option, int value)
         {
-            auto & sub = device.subdevices[subdevice];
+            auto & sub = device.subdevices.get_subdevice_vector()[subdevice];
             sub.get_media_source();
             if (option == RS_OPTION_COLOR_EXPOSURE)
             {
@@ -1011,7 +1048,7 @@ namespace rsimpl
                 return;
             }
 
-            auto & sub = device.subdevices[subdevice];
+            auto& sub = device.subdevices[subdevice];
             const_cast<uvc::subdevice &>(sub).get_media_source();
             long minVal=0, maxVal=0, steppingDelta=0, defVal=0, capsFlag=0;
             if (option == RS_OPTION_COLOR_EXPOSURE)
@@ -1153,7 +1190,7 @@ namespace rsimpl
 
         bool is_device_connected(device & device, int vid, int pid)
         {
-            for(auto& dev : device.subdevices)
+            for(auto& dev : device.subdevices.get_subdevice_vector())
             {
                 if(dev.vid == vid && dev.pid == pid)
                     return true;
@@ -1204,13 +1241,13 @@ namespace rsimpl
                 if(subdevice_index >= dev->subdevices.size()) dev->subdevices.resize(subdevice_index+1);
 
                 std::map<int, int> subdevice_index_per_stream_index;
-                subdevice_index_per_stream_index.insert(std::make_pair(0, subdevice_index));
+                subdevice_index_per_stream_index.insert(std::make_pair(0, int(subdevice_index)));
                 dev->subdevices[subdevice_index].reader_callback = new reader_callback(dev, subdevice_index_per_stream_index);
                 dev->subdevices[subdevice_index].mf_activate = pDevice;
                 dev->subdevices[subdevice_index].vid = vid;
                 dev->subdevices[subdevice_index].pid = pid;
 
-                if (vid == VID_INTEL_CAMERA && pid == DS5_PSR_PID) // Duplicate subdevice on DS5 camera
+                if (vid == VID_INTEL_CAMERA && pid == DS5_PSR_PID) // Duplicate DS5 subdevice
                 {
                     dev->subdevices[0].reader_callback->subdevice_index_per_stream_index.insert(std::make_pair(1,1));
                     dev->subdevices.push_back(dev->subdevices[0]);
