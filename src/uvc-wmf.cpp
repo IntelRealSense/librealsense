@@ -67,9 +67,9 @@ namespace rsimpl
         // Translation of user-provided fourcc code into device supported one:           Note the Big-Endian notation
                                                                                          /* host => librealsense     */
         const std::map<uint32_t, uint32_t> fourcc_map = { { 0x47524559, 0x59382020 },    /* 'GREY' => 'Y8  ' */
-                                                          { 0x70524141, 0x52573130 },    /* 'RW10' => 'pRAA'.*/
-                                                          { 0x32000000, 0x59382020 },    /* 'L8' => 'Y8  '   */
-                                                          { 0x50000000, 0x5a313620 } };  /* 'P' => 'Z16 '    */
+                                                          { 0x70524141, 0x52573130 },    /* 'pRAA' => 'RW10'.*/
+                                                          { 0x59382020, 0x32000000 },    /* 'Y8' => 'L8  '   */
+                                                          { 0x5a313620, 0x50000000 } };  /* 'Z16' => 'D16 '    */
 
         static std::string win_to_utf(const WCHAR * s)
         {
@@ -934,8 +934,14 @@ namespace rsimpl
 
                     check("IMFMediaType::GetGUID", media_type->GetGUID(MF_MT_SUBTYPE, &subtype));
                     uint32_t device_fourcc = reinterpret_cast<const big_endian<uint32_t> &>(subtype.Data1);
-                    if (fourcc_map.count(device_fourcc))   device_fourcc = fourcc_map.at(device_fourcc);
-                    if (device_fourcc != fourcc) continue;
+
+                    if (device_fourcc != fourcc)
+                    {
+                        auto mapped_fourcc = fourcc;
+                        if (fourcc_map.count(fourcc))
+                            mapped_fourcc = fourcc_map.at(fourcc);
+                        if (device_fourcc != mapped_fourcc) continue;
+                    }
 
                     check("MFGetAttributeRatio", MFGetAttributeRatio(media_type, MF_MT_FRAME_RATE, &uvc_fps_num, &uvc_fps_denom));
                     if (uvc_fps_denom == 0) continue;
