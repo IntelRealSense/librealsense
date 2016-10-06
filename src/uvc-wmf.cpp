@@ -957,7 +957,7 @@ namespace rsimpl
                             sub.stream_index_vector[i] == stream_index_status::streaming)
                             continue;
 
-                        try { sub.mf_source_reader->SetStreamSelection(i, FALSE); } catch (...) {};
+                        sub.mf_source_reader->SetStreamSelection(i, FALSE);
                     }
 
                     check("IMFSourceReader::SetStreamSelection", sub.mf_source_reader->SetStreamSelection(sIndex, TRUE));
