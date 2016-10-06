@@ -20,6 +20,12 @@ extern "C" {
 /* Return version in "X.Y.Z" format */
 #define RS_API_VERSION_STR (VAR_ARG_STRING(RS_API_MAJOR_VERSION.RS_API_MINOR_VERSION.RS_API_PATCH_VERSION))
 
+typedef enum rs_frame_metadata
+{
+    RS_FRAME_METADATA_ACTUAL_EXPOSURE,
+    RS_FRAME_METADATA_COUNT
+} rs_frame_metadata;
+
 /* rs_capabilities defines the full set of functionality that a RealSense device might provide
    to check what functionality is supported by a particular device at runtime call dev->supports(capability) */
 typedef enum rs_capabilities
@@ -74,7 +80,7 @@ typedef enum rs_format
 
 typedef enum rs_output_buffer_format
 {
-    RS_OUTPUT_BUFFER_FORMAT_CONTINOUS      ,/**< Makes sure that the output frame is exposed as a single continuous buffer */
+    RS_OUTPUT_BUFFER_FORMAT_CONTINUOUS      ,/**< Makes sure that the output frame is exposed as a single continuous buffer */
     RS_OUTPUT_BUFFER_FORMAT_NATIVE         ,/**< Don't convert buffer to continuous, the user has to handle pitch manually */
     RS_OUTPUT_BUFFER_FORMAT_COUNT
 } rs_output_buffer_format;
@@ -190,8 +196,10 @@ typedef enum rs_option
     RS_OPTION_FISHEYE_AUTO_EXPOSURE_SKIP_FRAMES               , /**< In Fisheye auto-exposure sample every given number of frames */
     RS_OPTION_FRAMES_QUEUE_SIZE                               , /**< Number of frames the user is allowed to keep per stream. Trying to hold-on to more frames will cause frame-drops.*/
     RS_OPTION_HARDWARE_LOGGER_ENABLED                         , /**< Enable / disable fetching log data from the device */
+    RS_OPTION_TOTAL_FRAME_DROPS                               , /**< Total number of detected frame drops from all streams */
     RS_OPTION_RS400_LASER_POWER                               , /**< RS400 Emitter enabled */
     RS_OPTION_COUNT                                           ,
+
 } rs_option;
 
 typedef enum rs_blob_type {
@@ -707,6 +715,20 @@ int rs_supports(rs_device * device, rs_capabilities capability, rs_error ** erro
 */
 int rs_supports_camera_info(rs_device * device, rs_camera_info info_param, rs_error ** error);
 
+/**
+* retrive metadata from safe frame handle, returned from detach, clone_ref or from frame callback
+* \param[in] stream  the stream whose latest frame we are interested in
+* \param[in] frame_metadata  the rs_frame_metadata whose latest frame we are interested in
+* \return            the metadata value
+*/
+double rs_get_detached_frame_metadata(const rs_frame_ref * frame, rs_frame_metadata frame_metadata, rs_error ** error);
+
+/**
+* determine device metadata
+* \param[in] metadata  the metadata to check for support
+* \return                true if device has this metadata
+*/
+int rs_supports_frame_metadata(const rs_frame_ref * frame, rs_frame_metadata frame_metadata, rs_error ** error);
 
 /**
  * retrieve the time at which the latest frame on a stream was captured

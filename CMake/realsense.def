@@ -62,6 +62,8 @@ EXPORTS
     rs_get_frame_number
     rs_get_frame_data
 
+    rs_get_detached_frame_metadata
+    rs_supports_frame_metadata
     rs_get_detached_framerate
     rs_get_detached_frame_timestamp
     rs_get_detached_frame_timestamp_domain
@@ -90,7 +92,7 @@ EXPORTS
     rs_capabilities_to_string
     rs_source_to_string
     rs_event_to_string
-    rs_blob_type_to_string  
+    rs_blob_type_to_string
     rs_camera_info_to_string
     rs_timestamp_domain_to_string
     rs_log_to_console

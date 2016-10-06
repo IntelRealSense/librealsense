@@ -247,11 +247,12 @@ std::mutex mm_mutex;
 rs::motion_data m_gyro_data;
 rs::motion_data m_acc_data;
 
-int fps = 30;
 struct w_h { int width, height; };
 std::vector<rs::stream> streams_names   = { rs::stream::depth,  rs::stream::color,  rs::stream::infrared,   rs::stream::infrared2, rs::stream::fisheye };
-std::vector<rs::format> formats         = { rs::format::z16,    rs::format::rgb8,   rs::format::y8,         rs::format::y8,        rs::format::raw8 };
-std::vector<w_h>        wh              = { { 640,480 },            { 640,480 },        { 0,0 },                { 0,0 },               { 640,480 } };
+std::vector<rs::format> formats         = { rs::format::z16,    rs::format::rgb8,   rs::format::y8,         rs::format::y8,        rs::format::raw8    };
+std::vector<w_h>        wh              = { { 640,480 },        { 640,480 },        { 0,0 },                { 0,0 },               { 640,480 }         };
+std::vector<int>        fps             = { 60,                 30,                  60,                    60,                     60                 };
+
 
 void on_motion_event(rs::motion_data entry)
 {
@@ -468,7 +469,7 @@ void enable_stream(rs::device * dev, int stream, bool enable, std::stringstream&
         if (enable)
         {
             if (!dev->is_stream_enabled((rs::stream)stream))
-                dev->enable_stream((rs::stream)stream, wh[(int)stream].width, wh[(int)stream].height, formats[(int)stream], fps, rs::output_buffer_format::native);
+                dev->enable_stream((rs::stream)stream, wh[(int)stream].width, wh[(int)stream].height, formats[(int)stream], fps[(int)stream], rs::output_buffer_format::native);
         }
         else
         {
@@ -599,7 +600,7 @@ int main(int argc, char * argv[])
         {
             if (dev->supports((rs::capabilities)stream))
             {
-                dev->enable_stream(stream, wh[(int)stream].width, wh[(int)stream].height, formats[(int)stream], fps, rs::output_buffer_format::native);
+                dev->enable_stream(stream, wh[(int)stream].width, wh[(int)stream].height, formats[(int)stream], fps[(int)stream], rs::output_buffer_format::native);
                 resolutions[stream] = { dev->get_stream_width(stream), dev->get_stream_height(stream), formats[(int)stream] };
             }
         }
@@ -703,16 +704,16 @@ int main(int argc, char * argv[])
                 {
                     if (g.button({ w - 260, y, w - 20, y + 24 }, "Start Capture"))
                     {
-                        if (is_any_stream_enable(dev))
-                        {
-                            running = true;
-                            dev->start();
-                        }
-
                         if (has_motion_module && motion_tracking_enable)
                         {
                             running = true;
                             dev->start(rs::source::motion_data);
+                        }
+
+                        if (is_any_stream_enable(dev))
+                        {
+                            running = true;
+                            dev->start();
                         }
                     }
                 }

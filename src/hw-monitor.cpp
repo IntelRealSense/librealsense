@@ -157,7 +157,7 @@ namespace rsimpl
             uint32_t opCodeAsUint32 = pack(details.receivedOpcode[3], details.receivedOpcode[2], details.receivedOpcode[1], details.receivedOpcode[0]);
             if (opCodeAsUint32 != opCodeXmit)
             {
-                throw std::runtime_error("revieved opcode do not match to the expected opcode");
+                throw std::runtime_error("recieved opcode mismatch");
             }
         }
 

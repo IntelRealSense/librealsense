@@ -156,14 +156,15 @@ namespace rsimpl
         CASE(FISHEYE_GAIN)
         CASE(FISHEYE_STROBE)
         CASE(FISHEYE_EXTERNAL_TRIGGER)
-        CASE(FRAMES_QUEUE_SIZE)
         CASE(FISHEYE_ENABLE_AUTO_EXPOSURE)
         CASE(FISHEYE_AUTO_EXPOSURE_MODE)
         CASE(FISHEYE_AUTO_EXPOSURE_ANTIFLICKER_RATE)
-        CASE(RS400_LASER_POWER)
         CASE(FISHEYE_AUTO_EXPOSURE_PIXEL_SAMPLE_RATE)
         CASE(FISHEYE_AUTO_EXPOSURE_SKIP_FRAMES)
+        CASE(FRAMES_QUEUE_SIZE)
         CASE(HARDWARE_LOGGER_ENABLED)
+        CASE(TOTAL_FRAME_DROPS)
+        CASE(RS400_LASER_POWER)
         default: assert(!is_valid(value)); return unknown;
         }
         #undef CASE
@@ -506,7 +507,7 @@ namespace rsimpl
                     for (auto output : outputs)
                     {
                         request.format = output.second;
-                        for (auto output_format = static_cast<int>(RS_OUTPUT_BUFFER_FORMAT_CONTINOUS); output_format < static_cast<int>(RS_OUTPUT_BUFFER_FORMAT_COUNT); output_format++)
+                        for (auto output_format = static_cast<int>(RS_OUTPUT_BUFFER_FORMAT_CONTINUOUS); output_format < static_cast<int>(RS_OUTPUT_BUFFER_FORMAT_COUNT); output_format++)
                         {
                             request.output_format = static_cast<rs_output_buffer_format>(output_format);
                             stream_requests[output.first].push_back(request);

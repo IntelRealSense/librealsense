@@ -1099,7 +1099,7 @@ namespace rsimpl
                     devices.push_back(dev);
                 }
 
-                size_t subdevice_index = (mi+1)/2;	// Patch TODO - need to be refactored  Evgeni
+                size_t subdevice_index = (mi+1)/2;      // Patch TODO - requires unified approach
                 if(subdevice_index >= dev->subdevices.size()) dev->subdevices.resize(subdevice_index+1);
 
                 dev->subdevices[subdevice_index].reader_callback = new reader_callback(dev, static_cast<int>(subdevice_index));
