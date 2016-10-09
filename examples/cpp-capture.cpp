@@ -110,7 +110,7 @@ int main(int argc, char * argv[]) try
         glPushMatrix();
         glfwGetWindowSize(win, &w, &h);
         glOrtho(0, w, h, 0, -1, +1);
-        for (size_t i =0; i< supported_streams.size(); i++)
+        for (auto i =0; i< (int)supported_streams.size(); i++)
         {
             auto stream = supported_streams[i];
             int start_pixel_x = (i%cols) * tile_w;
