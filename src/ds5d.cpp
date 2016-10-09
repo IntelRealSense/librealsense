@@ -130,9 +130,9 @@ namespace rsimpl
         // Populate the presets
         for(int i=0; i<RS_PRESET_COUNT; ++i)
         {
-            info.presets[RS_STREAM_DEPTH][i]    = {true, 640, 480, RS_FORMAT_Z16, 30};
-            info.presets[RS_STREAM_INFRARED][i] = {true, 640, 480, RS_FORMAT_Y8, 30};
-            info.presets[RS_STREAM_INFRARED2][i] = {true, 640, 480, RS_FORMAT_Y8, 30};
+            info.presets[RS_STREAM_DEPTH][i]    = {true, 1280, 720, RS_FORMAT_Z16, 30};
+            info.presets[RS_STREAM_INFRARED][i] = {true, 1280, 720, RS_FORMAT_Y16, 30};
+            info.presets[RS_STREAM_INFRARED2][i] = {true, 1280, 720, RS_FORMAT_Y16, 30};
         }
 
         info.options.push_back({ RS_OPTION_RS400_LASER_POWER, 0, 1, 1, 0 });
