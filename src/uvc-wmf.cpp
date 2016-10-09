@@ -949,7 +949,7 @@ namespace rsimpl
             node.Property.Flags = KSPROPERTY_TYPE_BASICSUPPORT | KSPROPERTY_TYPE_TOPOLOGY;
             node.NodeId = xu.node;
 
-            KSPROPERTY_DESCRIPTION description;
+            KSPROPERTY_DESCRIPTION description{};
             unsigned long bytes_received = 0;
             check("IKsControl::KsProperty", ks_control->KsProperty(
                 (PKSPROPERTY)&node,
@@ -1197,7 +1197,7 @@ namespace rsimpl
             if (h == INVALID_HANDLE_VALUE) return "";
             auto h_gc = std::shared_ptr<void>(h, CloseHandle);
 
-            USB_NODE_INFORMATION info;
+            USB_NODE_INFORMATION info{};
             if (!DeviceIoControl(h, IOCTL_USB_GET_NODE_INFORMATION, &info, sizeof(info), &info, sizeof(info), nullptr, nullptr))
                 return "";
 
