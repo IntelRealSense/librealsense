@@ -471,7 +471,7 @@ namespace rsimpl
             info.stream_subdevices[RS_STREAM_FISHEYE] = 3;
             info.presets[RS_STREAM_FISHEYE][RS_PRESET_BEST_QUALITY] =
             info.presets[RS_STREAM_FISHEYE][RS_PRESET_LARGEST_IMAGE] =
-            info.presets[RS_STREAM_FISHEYE][RS_PRESET_HIGHEST_FRAMERATE] = { true, 640, 480, RS_FORMAT_RAW8,   60 };
+            info.presets[RS_STREAM_FISHEYE][RS_PRESET_HIGHEST_FRAMERATE] = { true, 640, 480, RS_FORMAT_RAW8, 60, RS_OUTPUT_BUFFER_FORMAT_CONTINUOUS };
 
             for (auto &fps : { 30, 60})
                 info.subdevice_modes.push_back({ 3, { 640, 480 }, pf_raw8, fps, rs_intrinsics, { /*TODO:ask if we need rect_modes*/ }, { 0 } });
