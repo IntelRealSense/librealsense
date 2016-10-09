@@ -14,12 +14,12 @@
 #include <GLFW/glfw3.h>
 
 double yaw, pitch, lastX, lastY; int ml;
-static void on_mouse_button(GLFWwindow * win, int button, int action, int mods)
+static void on_mouse_button(GLFWwindow * /*win*/, int button, int action, int /*mods*/)
 {
     if(button == GLFW_MOUSE_BUTTON_LEFT) ml = action == GLFW_PRESS;
 }
 static double clamp(double val, double lo, double hi) { return val < lo ? lo : val > hi ? hi : val; }
-static void on_cursor_pos(GLFWwindow * win, double x, double y)
+static void on_cursor_pos(GLFWwindow * /*win*/, double x, double y)
 {
     if(ml)
     {

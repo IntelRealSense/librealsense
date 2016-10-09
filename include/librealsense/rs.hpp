@@ -126,8 +126,8 @@ namespace rs
         r200_lr_exposure                                , /**< This control allows manual adjustment of the exposure time value for the L/R imagers*/
         r200_emitter_enabled                            , /**< Enables / disables R200 emitter*/
         r200_depth_units                                , /**< Micrometers per increment in integer depth values, 1000 is default (mm scale). Set before streaming*/
-        r200_depth_clamp_min                            , /**< Minimum depth in current depth units that will be output. Any values less than ‘Min Depth’ will be mapped to 0 during the conversion between disparity and depth. Set before streaming*/
-        r200_depth_clamp_max                            , /**< Maximum depth in current depth units that will be output. Any values greater than ‘Max Depth’ will be mapped to 0 during the conversion between disparity and depth. Set before streaming*/
+        r200_depth_clamp_min                            , /**< Minimum depth in current depth units that will be output. Any values less than 'Min Depth' will be mapped to 0 during the conversion between disparity and depth. Set before streaming*/
+        r200_depth_clamp_max                            , /**< Maximum depth in current depth units that will be output. Any values greater than 'Max Depth' will be mapped to 0 during the conversion between disparity and depth. Set before streaming*/
         r200_disparity_multiplier                       , /**< The disparity scale factor used when in disparity output mode. Can only be set before streaming*/
         r200_disparity_shift                            , /**< {0 - 512}. Can only be set before streaming starts*/
         r200_auto_exposure_mean_intensity_set_point     , /**< (Requires LR-Auto-Exposure ON) Mean intensity set point*/
@@ -793,7 +793,7 @@ namespace rs
         void enable_motion_tracking(std::function<void(motion_data)> motion_handler)
         {
             rs_error * e = nullptr;            
-            rs_enable_motion_tracking_cpp((rs_device *)this, new motion_callback(motion_handler), new timestamp_callback([](rs::timestamp_data data) {}), &e);
+            rs_enable_motion_tracking_cpp((rs_device *)this, new motion_callback(motion_handler), new timestamp_callback([](rs::timestamp_data /*data*/) {}), &e);
             error::handle(e);
         }
 

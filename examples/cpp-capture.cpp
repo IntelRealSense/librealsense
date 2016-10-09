@@ -66,7 +66,7 @@ int main(int argc, char * argv[]) try
     int tile_h = 480; // pixels
     GLFWwindow * win = glfwCreateWindow(tile_w*cols, tile_h*rows, ss.str().c_str(), 0, 0);
     glfwSetWindowUserPointer(win, &dev);
-    glfwSetKeyCallback(win, [](GLFWwindow * win, int key, int scancode, int action, int mods)
+    glfwSetKeyCallback(win, [](GLFWwindow * win, int key, int /*scancode*/, int action, int /*mods*/)
     {
         auto dev = reinterpret_cast<rs::device *>(glfwGetWindowUserPointer(win));
         if (action != GLFW_RELEASE) switch (key)
@@ -110,7 +110,7 @@ int main(int argc, char * argv[]) try
         glPushMatrix();
         glfwGetWindowSize(win, &w, &h);
         glOrtho(0, w, h, 0, -1, +1);
-        for (int i =0; i< supported_streams.size(); i++)
+        for (size_t i =0; i< supported_streams.size(); i++)
         {
             auto stream = supported_streams[i];
             int start_pixel_x = (i%cols) * tile_w;

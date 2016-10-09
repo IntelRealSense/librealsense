@@ -38,7 +38,7 @@ int main(int argc, char * argv[]) try
     GLFWwindow * win = glfwCreateWindow(640, 480, ss.str().c_str(), 0, 0);
     glfwSetWindowUserPointer(win, &app_state);
         
-    glfwSetMouseButtonCallback(win, [](GLFWwindow * win, int button, int action, int mods)
+    glfwSetMouseButtonCallback(win, [](GLFWwindow * win, int button, int action, int /*mods*/)
     {
         auto s = (state *)glfwGetWindowUserPointer(win);
         if(button == GLFW_MOUSE_BUTTON_LEFT) s->ml = action == GLFW_PRESS;
@@ -61,7 +61,7 @@ int main(int argc, char * argv[]) try
         s->lastY = y;
     });
         
-    glfwSetKeyCallback(win, [](GLFWwindow * win, int key, int scancode, int action, int mods)
+    glfwSetKeyCallback(win, [](GLFWwindow * win, int key, int /*scancode*/, int action, int /*mods*/)
     {
         auto s = (state *)glfwGetWindowUserPointer(win);
         if (action == GLFW_RELEASE)

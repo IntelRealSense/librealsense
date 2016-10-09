@@ -263,7 +263,7 @@ void on_motion_event(rs::motion_data entry)
         m_gyro_data = entry;
 }
 
-void on_timestamp_event(rs::timestamp_data entry)
+void on_timestamp_event(rs::timestamp_data /*entry*/)
 {
 }
 
@@ -273,7 +273,7 @@ struct user_data
     gui* g = nullptr;
 };
 
-void show_message(GLFWwindow* curr_window, const std::string& title, const std::string& message)
+void show_message(GLFWwindow* curr_window, const std::string& title, const std::string& message, bool terminate_app = true)
 {
     glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
     glfwWindowHint(GLFW_FLOATING, GL_TRUE);
@@ -284,27 +284,27 @@ void show_message(GLFWwindow* curr_window, const std::string& title, const std::
     int width, height;
     glfwGetWindowSize(curr_window, &width, &height);
 
-    int close_win_width = 550;
-    int close_win_height = 150;
-    auto closeWin = glfwCreateWindow(close_win_width, close_win_height, title.c_str(), nullptr, nullptr);
-    glfwMakeContextCurrent(closeWin);
-    glfwSetWindowPos(closeWin, xpos + width / 2 - close_win_width / 2, ypos + height / 2 - close_win_height / 2);
+    int msg_win_width = 550;
+    int msg_win_height = 150;
+    auto msgWin = glfwCreateWindow(msg_win_width, msg_win_height, title.c_str(), nullptr, nullptr);
+    glfwMakeContextCurrent(msgWin);
+    glfwSetWindowPos(msgWin, xpos + width / 2 - msg_win_width / 2, ypos + height / 2 - msg_win_height / 2);
 
     gui g;
 
     user_data data;
-    data.curr_window = curr_window;
+    data.curr_window = msgWin;
     data.g = &g;
 
-    glfwSetWindowUserPointer(closeWin, &data);
-    glfwSetWindowCloseCallback(closeWin, [](GLFWwindow* w) {
+    glfwSetWindowUserPointer(msgWin, &data);
+    glfwSetWindowCloseCallback(msgWin, [](GLFWwindow* w) {
         glfwDestroyWindow(w);
     });
 
-    glfwSetCursorPosCallback(closeWin, [](GLFWwindow * w, double cx, double cy) { reinterpret_cast<user_data *>(glfwGetWindowUserPointer(w))->g->cursor = { (int)cx, (int)cy }; });
-    glfwSetScrollCallback(closeWin, [](GLFWwindow * w, double x, double y) { reinterpret_cast<user_data *>(glfwGetWindowUserPointer(w))->g->scroll_vec = { (int)x, (int)y }; });
+    glfwSetCursorPosCallback(msgWin, [](GLFWwindow * w, double cx, double cy) { reinterpret_cast<user_data *>(glfwGetWindowUserPointer(w))->g->cursor = { (int)cx, (int)cy }; });
+    glfwSetScrollCallback(msgWin, [](GLFWwindow * w, double x, double y) { reinterpret_cast<user_data *>(glfwGetWindowUserPointer(w))->g->scroll_vec = { (int)x, (int)y }; });
 
-    glfwSetMouseButtonCallback(closeWin, [](GLFWwindow * w, int button, int action, int mods)
+    glfwSetMouseButtonCallback(msgWin, [](GLFWwindow * w, int /*button*/, int action, int /*mods*/)
     {
         auto data = reinterpret_cast<user_data *>(glfwGetWindowUserPointer(w));
         if (action == GLFW_PRESS)
@@ -316,15 +316,15 @@ void show_message(GLFWwindow* curr_window, const std::string& title, const std::
     });
 
 
-    while (!glfwWindowShouldClose(closeWin))
+    while (!glfwWindowShouldClose(msgWin))
     {
         glfwPollEvents();
         int w, h;
-        glfwGetFramebufferSize(closeWin, &w, &h);
+        glfwGetFramebufferSize(msgWin, &w, &h);
         glViewport(0, 0, w, h);
         glClear(GL_COLOR_BUFFER_BIT);
 
-        glfwGetWindowSize(closeWin, &w, &h);
+        glfwGetWindowSize(msgWin, &w, &h);
         glLoadIdentity();
         glOrtho(0, w, h, 0, -1, +1);
 
@@ -365,19 +365,27 @@ void show_message(GLFWwindow* curr_window, const std::string& title, const std::
             }
 
             if (p.y > 100)
-                glfwSetWindowSize(closeWin, close_win_width, p.y + 50);
+                glfwSetWindowSize(msgWin, msg_win_width, p.y + 50);
         }
 
         if (g.button({ w / 2 - 40, h - 40, w / 2 + 40, h - 10 }, "      OK"))
         {
-            glfwDestroyWindow(closeWin);
+            glfwSetWindowShouldClose(msgWin,true);
+
+            glfwMakeContextCurrent(curr_window);
+
+            if (terminate_app)
+                glfwDestroyWindow(curr_window);
         }
 
-        glfwSwapBuffers(closeWin);
+        glfwSwapBuffers(msgWin);
         g.click = false;
         if (!g.mouse_down) g.clicked_id = 0;
+
     }
-    glfwMakeContextCurrent(curr_window);
+
+    glfwDestroyWindow(msgWin);
+
 }
 
 struct option { rs::option opt; double min, max, step, value, def; bool supports; };
@@ -580,7 +588,7 @@ int main(int argc, char * argv[])
         glfwSetWindowUserPointer(win, &g);
         glfwSetCursorPosCallback(win, [](GLFWwindow * w, double cx, double cy) { reinterpret_cast<gui *>(glfwGetWindowUserPointer(w))->cursor = { (int)cx, (int)cy }; });
         glfwSetScrollCallback(win, [](GLFWwindow * w, double x, double y) { reinterpret_cast<gui *>(glfwGetWindowUserPointer(w))->scroll_vec = { (int)x, (int)y }; });
-        glfwSetMouseButtonCallback(win, [](GLFWwindow * w, int button, int action, int mods)
+        glfwSetMouseButtonCallback(win, [](GLFWwindow * w, int /*button*/, int action, int /*mods*/)
         {
             auto g = reinterpret_cast<gui *>(glfwGetWindowUserPointer(w));
             if (action == GLFW_PRESS)
@@ -600,8 +608,15 @@ int main(int argc, char * argv[])
         {
             if (dev->supports((rs::capabilities)stream))
             {
-                dev->enable_stream(stream, wh[(int)stream].width, wh[(int)stream].height, formats[(int)stream], fps[(int)stream], rs::output_buffer_format::native);
-                resolutions[stream] = { dev->get_stream_width(stream), dev->get_stream_height(stream), formats[(int)stream] };
+                try
+                {
+                    dev->enable_stream(stream, wh[(int)stream].width, wh[(int)stream].height, formats[(int)stream], fps[(int)stream], rs::output_buffer_format::native);
+                    resolutions[stream] = { dev->get_stream_width(stream), dev->get_stream_height(stream), formats[(int)stream] };
+                }
+                catch (const std::runtime_error &e)
+                {
+                    show_message(win, "Exception", e.what(),false);
+                }
             }
         }
 
@@ -893,12 +908,12 @@ int main(int argc, char * argv[])
 
             running = false;
 
-            for (auto i = 0; i < streams; i++) frames_queue[i].clear();
+            for (size_t i = 0; i < streams; i++) frames_queue[i].clear();
 
             if (dev->is_streaming())
                 dev->stop();
 
-            for (auto i = 0; i < streams; i++)
+            for (size_t i = 0; i < streams; i++)
             {
                 if (dev->is_stream_enabled((rs::stream)i))
                     dev->disable_stream((rs::stream)i);

@@ -14,6 +14,7 @@ QMAKE_CXXFLAGS += -std=c++11 -fPIC -pedantic -mssse3 -g
 QMAKE_CXXFLAGS += -Wno-missing-field-initializers -Wno-switch -Wno-multichar
 QMAKE_CXXFLAGS += -D_FORTIFY_SOURCE=2 -fstack-protector-strong -Wformat -Wformat-security
 QMAKE_CXXFLAGS += -z noexecstack -z relro -z now
+QMAKE_CXXFLAGS += -Wno-unknown-pragmas -Wno-strict-aliasing -Wno-unused-function -Wall -Wextra
 QMAKE_CXXFLAGS += -DRS_USE_V4L2_BACKEND
 QMAKE_CXXFLAGS_RELEASE *= -Ofast
 QMAKE_CXXFLAGS_WARN_ON += -Wno-unused-parameter
