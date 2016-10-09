@@ -804,7 +804,7 @@ namespace rsimpl
                 if (hr == MF_E_NO_MORE_TYPES) break;
                 check("IMFSourceReader::GetNativeMediaType", hr);
 
-                UINT32 uvc_width, uvc_height, uvc_fps_num, uvc_fps_denom; GUID subtype;
+                UINT32 uvc_width=0, uvc_height=0, uvc_fps_num=0, uvc_fps_denom=0; GUID subtype{};
                 check("MFGetAttributeSize", MFGetAttributeSize(media_type, MF_MT_FRAME_SIZE, &uvc_width, &uvc_height));
                 if(uvc_width != width || uvc_height != height) continue;
 
@@ -887,7 +887,7 @@ namespace rsimpl
                         if(value) check("IAMVideoProcAmp::Set", sub.am_video_proc_amp->Set(pu.property, 0, VideoProcAmp_Flags_Auto));
                         else
                         {
-                            long min, max, step, def, caps;
+                            long min=0, max=0, step=0, def=0, caps=0;
                             check("IAMVideoProcAmp::GetRange", sub.am_video_proc_amp->GetRange(pu.property, &min, &max, &step, &def, &caps));
                             check("IAMVideoProcAmp::Set", sub.am_video_proc_amp->Set(pu.property, def, VideoProcAmp_Flags_Manual));    
                         }

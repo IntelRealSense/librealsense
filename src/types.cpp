@@ -288,7 +288,7 @@ namespace rsimpl
     void subdevice_mode_selection::unpack(byte * const dest[], const byte * source) const
     {
         const int MAX_OUTPUTS = 2;
-        const auto & outputs = get_outputs();        
+        const auto & outputs = get_outputs();
         assert(outputs.size() <= MAX_OUTPUTS);
 
         // Determine input stride (and apply cropping)
@@ -315,13 +315,12 @@ namespace rsimpl
         }
         else
         {
-            
             // Otherwise unpack one row at a time
             assert(mode.pf.plane_count == 1); // Can't unpack planar formats row-by-row (at least not with the current architecture, would need to pass multiple source ptrs to unpack)
             for(int i=0; i<unpack_height; ++i)
             {
                 mode.pf.unpackers[unpacker_index].unpack(out, in, unpack_width);
-                for(size_t i=0; i<outputs.size(); ++i) out[i] += out_stride[i];
+                for(size_t j=0; j<outputs.size(); ++j) out[j] += out_stride[j];
                 in += in_stride;
             }
         }

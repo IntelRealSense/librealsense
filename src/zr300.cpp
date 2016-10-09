@@ -637,7 +637,7 @@ namespace rsimpl
                 lk.unlock();
 
                 double values[2] = {};
-                unsigned long long frame_counter;
+                unsigned long long frame_num{};
                 try {
                     if (frame_ref->supports_frame_metadata(RS_FRAME_METADATA_ACTUAL_EXPOSURE))
                     {
@@ -653,17 +653,17 @@ namespace rsimpl
                         device->get_options(options, 2, values);
                     }
 
-                    values[0] /= 10.; // Fisheye exposure value by extension control is in units of 10 mSec
-                    frame_counter = device->get_frame_counter_by_usb_cmd();
-                    push_back_exp_and_cnt(exposure_and_frame_counter(values[0], frame_counter));
+                    values[0] *= 0.1; // Fisheye exposure value by extension control is in units of 10 mSec
+                    frame_num = device->get_frame_counter_by_usb_cmd();
+                    push_back_exp_and_cnt(exposure_and_frame_counter(values[0], frame_num));
                 }
                 catch (...) {};
 
                 if (frame_sts)
                 {
-                    unsigned long long frame_counter = frame_ref->get_frame_number();
-                    double exp_by_frame_cnt;
-                    auto exp_and_cnt_sts = try_get_exp_by_frame_cnt(exp_by_frame_cnt, frame_counter);
+                    frame_num = frame_ref->get_frame_number();
+                    double exp_by_frame_cnt = 0;
+                    auto exp_and_cnt_sts = try_get_exp_by_frame_cnt(exp_by_frame_cnt, frame_num);
 
                     auto exposure_value = static_cast<float>((exp_and_cnt_sts)? exp_by_frame_cnt : values[0]);
                     auto gain_value = static_cast<float>(values[1]);
@@ -714,7 +714,7 @@ namespace rsimpl
 
     void auto_exposure_mechanism::add_frame(rs_frame_ref* frame, std::shared_ptr<rsimpl::frame_archive> archive)
     {
-        if (!keep_alive || (skip_frames && (frames_counter++) != skip_frames))
+        if (!keep_alive || (skip_frames && ((frames_counter++) != skip_frames)))
         {
             archive->release_frame_ref((rsimpl::frame_archive::frame_ref *)frame);
             return;
@@ -748,7 +748,7 @@ namespace rsimpl
         exposure_and_frame_counter_queue.push_back(exp_and_cnt);
     }
 
-    bool auto_exposure_mechanism::try_get_exp_by_frame_cnt(double& exposure, const unsigned long long frame_counter)
+    bool auto_exposure_mechanism::try_get_exp_by_frame_cnt(double& exposure, const unsigned long long frame_number)
     {
         std::lock_guard<std::mutex> lk(exp_and_cnt_queue_mtx);
 
@@ -759,7 +759,7 @@ namespace rsimpl
         double exp;
         auto it = std::find_if(exposure_and_frame_counter_queue.begin(), exposure_and_frame_counter_queue.end(),
             [&](const exposure_and_frame_counter& element) {
-            unsigned long long diff = (unsigned long long)std::abs(static_cast<int>(frame_counter - element.frame_counter));
+            unsigned long long diff = (unsigned long long)std::abs(static_cast<int>(frame_number - element.frame_counter));
             if (diff < min)
             {
                 min = diff;

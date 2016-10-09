@@ -72,7 +72,7 @@ namespace rsimpl
     void log_to_callback(rs_log_severity min_severity, void(*on_log)(rs_log_severity min_severity, const char * message, void * user), void * user);
     rs_log_severity get_minimum_severity();
 
-#define LOG(SEVERITY, ...) do { if(static_cast<int>(SEVERITY) >= rsimpl::get_minimum_severity()) { std::ostringstream ss; ss << __VA_ARGS__; rsimpl::log(SEVERITY, ss.str()); } } while(false)
+#define LOG(SEVERITY, ...) do { if(static_cast<int>(SEVERITY) >= rsimpl::get_minimum_severity()) { std::ostringstream _ss; _ss << __VA_ARGS__; rsimpl::log(SEVERITY, _ss.str()); } } while(false)
 #define LOG_DEBUG(...)   LOG(RS_LOG_SEVERITY_DEBUG, __VA_ARGS__)
 #define LOG_INFO(...)    LOG(RS_LOG_SEVERITY_INFO,  __VA_ARGS__)
 #define LOG_WARNING(...) LOG(RS_LOG_SEVERITY_WARN,  __VA_ARGS__)

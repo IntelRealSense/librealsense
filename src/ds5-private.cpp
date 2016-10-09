@@ -180,7 +180,7 @@ namespace ds5 {
                   static_cast<int>(gvd_pointer[0]);
             break;
         default:
-            LOG_WARNING("DS5 gvd offset doesn't exist");
+            LOG_WARNING( "DS5 field at offset " << offset <<  " is not supported");
         }
         str = ss.str();
     }
