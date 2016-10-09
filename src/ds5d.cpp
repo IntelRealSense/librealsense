@@ -91,7 +91,7 @@ namespace rsimpl
                     intrinsic = calib.depth_intrinsic[(*it).first];
             }
 
-            for(auto pf : {pf_l8, pf_y8i, pf_yuyvl })
+            for(auto pf : {pf_y8, pf_yuyvl })
                 for(auto fps : m.fps)
                     info.subdevice_modes.push_back({ 1, m.dims, pf, fps, intrinsic, {}, {0}});
         }
@@ -102,8 +102,9 @@ namespace rsimpl
             calib.left_imager_intrinsic.width = m.dims.x;
             calib.left_imager_intrinsic.height = m.dims.y;
 
-            for(auto fps : m.fps)
-                info.subdevice_modes.push_back({ 1, m.dims, pf_y12i, fps,{ m.dims.x, m.dims.y },{},{ 0 } });
+            for(auto pf : {pf_y8i, pf_y12i })
+                for(auto fps : m.fps)
+                    info.subdevice_modes.push_back({ 1, m.dims, pf, fps,{ m.dims.x, m.dims.y },{},{ 0 } });
         }
 
         // Populate depth modes on subdevice 0

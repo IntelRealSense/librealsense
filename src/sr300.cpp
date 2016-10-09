@@ -92,8 +92,7 @@ namespace rsimpl
             {RS_OPTION_SR300_AUTO_RANGE_LOWER_THRESHOLD,            0.0,              (double)USHRT_MAX,                         1.0,   -1.0},
             {RS_OPTION_HARDWARE_LOGGER_ENABLED,                     0,                1,                                         1,      0 }
         };
-	
-        
+
         // Hardcoded extension controls
         //                                  option                         min  max    step     def
         //                                  ------                         ---  ---    ----     ---

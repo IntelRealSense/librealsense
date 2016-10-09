@@ -62,7 +62,7 @@ namespace rsimpl
         }
     }
 
-    void ds5_camera::on_before_start(const std::vector<subdevice_mode_selection> & selected_modes)
+    void ds5_camera::on_before_start(const std::vector<subdevice_mode_selection> & /*selected_modes*/)
     {
 
     }

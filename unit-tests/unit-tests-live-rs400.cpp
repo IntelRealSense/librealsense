@@ -295,7 +295,7 @@ TEST_CASE("RS400 Streaming Formats", "[live] [RS400]")
         for (auto fps : { 6,15,30,60,120 })
         {
             if (((res.second == 480) && (fps > 60)) || ((res.second == 720) && (fps > 30))) return;   // Skip unsupported modes
-            std::stringstream ss; ss << "Streaming Z16 ", res.first, "X", res.second, " at ", fps, " fps";
+            std::stringstream ss; ss << "Streaming Z16 " << res.first <<  "X" << res.second << " at " << fps << " fps";
             INFO(ss.str().c_str());
             test_streaming(dev, { { RS_STREAM_DEPTH, res.first, res.second, RS_FORMAT_Z16, fps } });
         }

@@ -41,6 +41,7 @@ namespace rsimpl
                 int in_stride_x, int in_stride_y, int in_bpp, 
                 const rs_format in_format, rs_stream in_stream_type, int in_pad, std::vector<rs_frame_metadata> in_supported_metadata_vector, double in_exposure_value)
                 : timestamp(in_timestamp),
+                  exposure_value(in_exposure_value),
                   frame_number(in_frame_number),
                   system_time(in_system_time),
                   width(in_width),
@@ -52,8 +53,7 @@ namespace rsimpl
                   format(in_format),
                   stream_type(in_stream_type),
                   pad(in_pad),
-                  supported_metadata_vector(in_supported_metadata_vector),
-                  exposure_value(in_exposure_value) {}
+                  supported_metadata_vector(in_supported_metadata_vector){}
         };
 
         // Define a movable but explicitly noncopyable buffer type to hold our frame data

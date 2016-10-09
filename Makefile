@@ -23,7 +23,7 @@ endif
 LIBUSB_FLAGS := `pkg-config --cflags --libs libusb-1.0`
 
 CFLAGS := -std=c11 -D_BSD_SOURCE -fPIC -pedantic -g -DRS_USE_$(BACKEND)_BACKEND $(LIBUSB_FLAGS) 
-CXXFLAGS := -std=c++11 -fPIC -pedantic -Ofast -Wall -Wextra
+CXXFLAGS := -std=c++11 -fPIC -pedantic -Ofast -g -Wall -Wextra -Wno-missing-field-initializers
 # Replace -Wno-unknown-pragmas with -fopenmp to multithread image.cpp
 CXXFLAGS += -Wno-unknown-pragmas
 CXXFLAGS += -Wno-strict-aliasing

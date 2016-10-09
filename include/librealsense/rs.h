@@ -162,8 +162,8 @@ typedef enum rs_option
     RS_OPTION_R200_LR_EXPOSURE                                , /**< This control allows manual adjustment of the exposure time value for the L/R imagers*/
     RS_OPTION_R200_EMITTER_ENABLED                            , /**< Enables / disables R200 emitter*/
     RS_OPTION_R200_DEPTH_UNITS                                , /**< Micrometers per increment in integer depth values, 1000 is default (mm scale). Set before streaming*/
-    RS_OPTION_R200_DEPTH_CLAMP_MIN                            , /**< Minimum depth in current depth units that will be output. Any values less than ‘Min Depth’ will be mapped to 0 during the conversion between disparity and depth. Set before streaming*/
-    RS_OPTION_R200_DEPTH_CLAMP_MAX                            , /**< Maximum depth in current depth units that will be output. Any values greater than ‘Max Depth’ will be mapped to 0 during the conversion between disparity and depth. Set before streaming*/
+    RS_OPTION_R200_DEPTH_CLAMP_MIN                            , /**< Minimum depth in current depth units that will be output. Any values less than 'Min Depth' will be mapped to 0 during the conversion between disparity and depth. Set before streaming*/
+    RS_OPTION_R200_DEPTH_CLAMP_MAX                            , /**< Maximum depth in current depth units that will be output. Any values greater than 'Max Depth' will be mapped to 0 during the conversion between disparity and depth. Set before streaming*/
     RS_OPTION_R200_DISPARITY_MULTIPLIER                       , /**< The disparity scale factor used when in disparity output mode. Can only be set before streaming*/
     RS_OPTION_R200_DISPARITY_SHIFT                            , /**< {0 - 512}. Can only be set before streaming starts*/
     RS_OPTION_R200_AUTO_EXPOSURE_MEAN_INTENSITY_SET_POINT     , /**< (Requires LR-Auto-Exposure ON) Mean intensity set point*/

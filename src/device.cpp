@@ -372,7 +372,7 @@ void rs_device_base::start_video_streaming()
             // Determine the timestamp for this frame
             auto timestamp = timestamp_reader->get_frame_timestamp(mode_selection.mode, frame);
             auto frame_counter = timestamp_reader->get_frame_counter(mode_selection.mode, frame);
-            auto recieved_time = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - capture_start_time).count();
+            auto received_time = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - capture_start_time).count();
 
             auto requires_processing = mode_selection.requires_processing();
 
@@ -401,7 +401,8 @@ void rs_device_base::start_video_streaming()
             auto stride_y = mode_selection.get_stride_y();
             for (auto & output : mode_selection.get_outputs())
             {
-                LOG_DEBUG("FrameAccepted, RecievedAt," << recieved_time << ", FWTS," << timestamp << ", DLLTS," << recieved_time << ", Type," << rsimpl::get_string(output.first) << ",HasPair,0,F#," << frame_counter);
+                LOG_DEBUG("FrameAccepted, RecievedAt," << received_time
+                          << ", FWTS," << timestamp << ", DLLTS," << received_time << ", Type," << rsimpl::get_string(output.first) << ",HasPair,0,F#," << frame_counter);
             }
 
             frame_drops_status->was_initialized = true;
