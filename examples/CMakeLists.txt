@@ -56,58 +56,134 @@ endif()
 add_executable(c-tutorial-1-depth c-tutorial-1-depth.c)
 target_link_libraries(c-tutorial-1-depth ${DEPENDENCIES})
 
+set_target_properties (c-tutorial-1-depth PROPERTIES
+    FOLDER "C Tutorials"
+)
+
 add_executable(c-tutorial-2-streams c-tutorial-2-streams.c)
 target_link_libraries(c-tutorial-2-streams ${DEPENDENCIES})
 
+set_target_properties (c-tutorial-2-streams PROPERTIES
+    FOLDER "C Tutorials"
+)
+
 add_executable(c-tutorial-3-pointcloud c-tutorial-3-pointcloud.c)
 target_link_libraries(c-tutorial-3-pointcloud ${DEPENDENCIES})
+
+set_target_properties (c-tutorial-3-pointcloud PROPERTIES
+    FOLDER "C Tutorials"
+)
 
 # C++ Tutorials
 add_executable(cpp-tutorial-1-depth cpp-tutorial-1-depth.cpp)
 target_link_libraries(cpp-tutorial-1-depth ${DEPENDENCIES})
 
+set_target_properties (cpp-tutorial-1-depth PROPERTIES
+    FOLDER "C++ Tutorials"
+)
+
 add_executable(cpp-tutorial-2-streams cpp-tutorial-2-streams.cpp)
 target_link_libraries(cpp-tutorial-2-streams ${DEPENDENCIES})
 
+set_target_properties (cpp-tutorial-2-streams PROPERTIES
+    FOLDER "C++ Tutorials"
+)
+
 add_executable(cpp-tutorial-3-pointcloud cpp-tutorial-3-pointcloud.cpp)
 target_link_libraries(cpp-tutorial-3-pointcloud ${DEPENDENCIES})
+
+set_target_properties (cpp-tutorial-3-pointcloud PROPERTIES
+    FOLDER "C++ Tutorials"
+)
 
 # Examples
 add_executable(cpp-alignimages cpp-alignimages.cpp)
 target_link_libraries(cpp-alignimages ${DEPENDENCIES})
 
+set_target_properties (cpp-alignimages PROPERTIES
+    FOLDER Examples
+)
+
 add_executable(cpp-callback cpp-callback.cpp)
 target_link_libraries(cpp-callback ${DEPENDENCIES})
+
+
+set_target_properties (cpp-callback PROPERTIES
+    FOLDER Examples
+)
 
 add_executable(cpp-callback-2 cpp-callback-2.cpp)
 target_link_libraries(cpp-callback-2 ${DEPENDENCIES})
 
+
+set_target_properties (cpp-callback-2 PROPERTIES
+    FOLDER Examples
+)
+
 add_executable(cpp-capture cpp-capture.cpp)
 target_link_libraries(cpp-capture ${DEPENDENCIES})
+
+
+set_target_properties (cpp-capture PROPERTIES
+    FOLDER Examples
+)
 
 add_executable(cpp-config-ui cpp-config-ui.cpp)
 target_link_libraries(cpp-config-ui ${DEPENDENCIES})
 
+
+set_target_properties (cpp-config-ui PROPERTIES
+    FOLDER Applications
+)
+
 add_executable(cpp-enumerate-devices cpp-enumerate-devices.cpp)
 target_link_libraries(cpp-enumerate-devices ${DEPENDENCIES})
+
+set_target_properties (cpp-enumerate-devices PROPERTIES
+    FOLDER Examples
+)
 
 add_executable(cpp-headless cpp-headless.cpp)
 target_link_libraries(cpp-headless ${DEPENDENCIES})
 
+set_target_properties (cpp-headless PROPERTIES
+    FOLDER Examples
+)
+
 add_executable(cpp-motion-module cpp-motion-module.cpp)
 target_link_libraries(cpp-motion-module ${DEPENDENCIES})
+
+set_target_properties (cpp-motion-module PROPERTIES
+    FOLDER Examples
+)
 
 add_executable(cpp-multicam cpp-multicam.cpp)
 target_link_libraries(cpp-multicam ${DEPENDENCIES})
 
+set_target_properties (cpp-multicam PROPERTIES
+    FOLDER Examples
+)
+
 add_executable(cpp-pointcloud cpp-pointcloud.cpp)
 target_link_libraries(cpp-pointcloud ${DEPENDENCIES})
+
+set_target_properties (cpp-pointcloud PROPERTIES
+    FOLDER Examples
+)
 
 add_executable(cpp-restart cpp-restart.cpp)
 target_link_libraries(cpp-restart ${DEPENDENCIES})
 
+set_target_properties (cpp-restart PROPERTIES
+    FOLDER Examples
+)
+
 add_executable(cpp-stride cpp-stride.cpp)
 target_link_libraries(cpp-stride ${DEPENDENCIES})
+
+set_target_properties (cpp-stride PROPERTIES
+    FOLDER Examples
+)
 
 install(
     TARGETS

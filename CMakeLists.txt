@@ -70,12 +70,16 @@ set(REALSENSE_CPP
     src/sync.cpp
     src/timestamps.cpp
     src/types.cpp
-    src/uvc-libuvc.cpp
     src/uvc-v4l2.cpp
     src/uvc-wmf.cpp
     src/uvc.cpp
     src/verify.c
     src/zr300.cpp
+	src/ds5.cpp
+	src/ds5c.cpp
+	src/ds5t.cpp
+	src/ds5d.cpp
+	src/ds5-private.cpp
 )
 
 set(REALSENSE_HPP
@@ -98,6 +102,11 @@ set(REALSENSE_HPP
     src/types.h
     src/uvc.h
     src/zr300.h
+	src/ds5.h
+	src/ds5c.h
+	src/ds5t.h
+	src/ds5d.h
+	src/ds5-private.h
 )
 
 if(WIN32)
@@ -106,6 +115,8 @@ if(WIN32)
     # Makes VS15 find the DLL when trying to run examples/tests
     set (CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
     set (CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
+	
+	set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 elseif(APPLE)
     set(BACKEND RS_USE_LIBUVC_BACKEND)
 else()
@@ -114,21 +125,6 @@ endif()
 add_definitions(-D${BACKEND} -DUNICODE)
 
 if(UNIX)
-    list(APPEND REALSENSE_CPP
-        src/libuvc/ctrl.c
-        src/libuvc/dev.c
-        src/libuvc/diag.c
-        src/libuvc/frame.c
-        src/libuvc/init.c
-        src/libuvc/stream.c
-    )
-    list(APPEND REALSENSE_HPP
-        src/libuvc/libuvc_config.h
-        src/libuvc/libuvc.h
-        src/libuvc/libuvc_internal.h
-        src/libuvc/utlist.h
-    )
-
     find_package(PkgConfig REQUIRED)
     pkg_search_module(LIBUSB1 REQUIRED libusb-1.0)
     if(LIBUSB1_FOUND)
@@ -161,6 +157,10 @@ if(BUILD_SHARED_LIBS)
 else()
     add_library(realsense STATIC ${REALSENSE_CPP} ${REALSENSE_HPP})
 endif()
+
+set_target_properties (realsense PROPERTIES
+    FOLDER Library
+)
 
 target_include_directories(realsense PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include/ ${LIBUSB1_INCLUDE_DIRS})
 
