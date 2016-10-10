@@ -234,11 +234,11 @@ namespace rsimpl
             case RS_OPTION_R200_LR_AUTO_EXPOSURE_ENABLED:                   values[i] = ds::get_lr_exposure_mode(get_device()); break;
 
             case RS_OPTION_R200_LR_GAIN: // Gain is framerate dependent
-                ds::set_lr_gain_discovery(get_device(), {get_lr_framerate()});
+                ds::set_lr_gain_discovery(get_device(), {get_lr_framerate(), 0, 0, 0, 0});
                 values[i] = ds::get_lr_gain(get_device()).value;
                 break;
             case RS_OPTION_R200_LR_EXPOSURE: // Exposure is framerate dependent
-                ds::set_lr_exposure_discovery(get_device(), {get_lr_framerate()});
+                ds::set_lr_exposure_discovery(get_device(), {get_lr_framerate(), 0, 0, 0, 0});
                 values[i] = ds::get_lr_exposure(get_device()).value;
                 break;
             case RS_OPTION_R200_EMITTER_ENABLED:
@@ -456,30 +456,28 @@ namespace rsimpl
         info.interstream_rules.push_back({ RS_STREAM_INFRARED, RS_STREAM_INFRARED2, &stream_request::height, 0, 0, RS_STREAM_COUNT, false, false, false });
         info.interstream_rules.push_back({ RS_STREAM_INFRARED, RS_STREAM_INFRARED2, nullptr, 0, 0, RS_STREAM_COUNT, false, false, true });
 
-        info.presets[RS_STREAM_INFRARED][RS_PRESET_BEST_QUALITY] = {true, 480, 360, RS_FORMAT_Y8,   60};
-        info.presets[RS_STREAM_DEPTH   ][RS_PRESET_BEST_QUALITY] = {true, 480, 360, RS_FORMAT_Z16,  60};
-        info.presets[RS_STREAM_COLOR   ][RS_PRESET_BEST_QUALITY] = {true, 640, 480, RS_FORMAT_RGB8, 60};
+        info.presets[RS_STREAM_INFRARED][RS_PRESET_BEST_QUALITY] = {true, 480, 360, RS_FORMAT_Y8,   60, RS_OUTPUT_BUFFER_FORMAT_CONTINUOUS};
+        info.presets[RS_STREAM_DEPTH   ][RS_PRESET_BEST_QUALITY] = {true, 480, 360, RS_FORMAT_Z16,  60, RS_OUTPUT_BUFFER_FORMAT_CONTINUOUS};
+        info.presets[RS_STREAM_COLOR   ][RS_PRESET_BEST_QUALITY] = {true, 640, 480, RS_FORMAT_RGB8, 60, RS_OUTPUT_BUFFER_FORMAT_CONTINUOUS};
 
-        info.presets[RS_STREAM_INFRARED][RS_PRESET_LARGEST_IMAGE] = {true, 640,   480, RS_FORMAT_Y8,   60};
-        info.presets[RS_STREAM_DEPTH   ][RS_PRESET_LARGEST_IMAGE] = {true, 640,   480, RS_FORMAT_Z16,  60};
-        info.presets[RS_STREAM_COLOR   ][RS_PRESET_LARGEST_IMAGE] = {true, 1920, 1080, RS_FORMAT_RGB8, 30};
+        info.presets[RS_STREAM_INFRARED][RS_PRESET_LARGEST_IMAGE] = {true, 640,   480, RS_FORMAT_Y8,   60, RS_OUTPUT_BUFFER_FORMAT_CONTINUOUS};
+        info.presets[RS_STREAM_DEPTH   ][RS_PRESET_LARGEST_IMAGE] = {true, 640,   480, RS_FORMAT_Z16,  60, RS_OUTPUT_BUFFER_FORMAT_CONTINUOUS};
+        info.presets[RS_STREAM_COLOR   ][RS_PRESET_LARGEST_IMAGE] = {true, 1920, 1080, RS_FORMAT_RGB8, 30, RS_OUTPUT_BUFFER_FORMAT_CONTINUOUS};
 
-        info.presets[RS_STREAM_INFRARED][RS_PRESET_HIGHEST_FRAMERATE] = {true, 320, 240, RS_FORMAT_Y8,   60};
-        info.presets[RS_STREAM_DEPTH   ][RS_PRESET_HIGHEST_FRAMERATE] = {true, 320, 240, RS_FORMAT_Z16,  60};
-        info.presets[RS_STREAM_COLOR   ][RS_PRESET_HIGHEST_FRAMERATE] = {true, 640, 480, RS_FORMAT_RGB8, 60};
+        info.presets[RS_STREAM_INFRARED][RS_PRESET_HIGHEST_FRAMERATE] = {true, 320, 240, RS_FORMAT_Y8,   60, RS_OUTPUT_BUFFER_FORMAT_CONTINUOUS};
+        info.presets[RS_STREAM_DEPTH   ][RS_PRESET_HIGHEST_FRAMERATE] = {true, 320, 240, RS_FORMAT_Z16,  60, RS_OUTPUT_BUFFER_FORMAT_CONTINUOUS};
+        info.presets[RS_STREAM_COLOR   ][RS_PRESET_HIGHEST_FRAMERATE] = {true, 640, 480, RS_FORMAT_RGB8, 60, RS_OUTPUT_BUFFER_FORMAT_CONTINUOUS};
 
         for(int i=0; i<RS_PRESET_COUNT; ++i)
             info.presets[RS_STREAM_INFRARED2][i] = info.presets[RS_STREAM_INFRARED][i];
 
         // Extended controls ranges cannot be retrieved from device, therefore the data is locally defined
-        //Option                                                Min     Max Step      Default
+        //Option                                                                        Min     Max     Step    Default
         info.options.push_back({ RS_OPTION_R200_LR_AUTO_EXPOSURE_ENABLED,               0,      1,      1,      0 });
         info.options.push_back({ RS_OPTION_R200_EMITTER_ENABLED,                        0,      1,      1,      0 });
         info.options.push_back({ RS_OPTION_R200_DEPTH_UNITS,                            0, INT_MAX,     1,      1000 });  // What is the real range?
         info.options.push_back({ RS_OPTION_R200_DEPTH_CLAMP_MIN,                        0, USHRT_MAX,   1,      0 });
         info.options.push_back({ RS_OPTION_R200_DEPTH_CLAMP_MAX,                        0, USHRT_MAX,   1,      USHRT_MAX });
-        info.options.push_back({ RS_OPTION_R200_DISPARITY_MULTIPLIER,                   1,      1000,    1,     32 });
-        info.options.push_back({ RS_OPTION_R200_DISPARITY_SHIFT,                        0,      1,      1,      0 });
         info.options.push_back({ RS_OPTION_R200_AUTO_EXPOSURE_MEAN_INTENSITY_SET_POINT, 0,      4095,   1,      512 });
         info.options.push_back({ RS_OPTION_R200_AUTO_EXPOSURE_BRIGHT_RATIO_SET_POINT,   0,      1,      1,      0 });
         info.options.push_back({ RS_OPTION_R200_AUTO_EXPOSURE_KP_GAIN,                  0,      1000,   1,      0 });
@@ -595,7 +593,7 @@ namespace rsimpl
         // Gain min/max is framerate dependent
         if(option == RS_OPTION_R200_LR_GAIN)
         {
-            ds::set_lr_gain_discovery(get_device(), {get_lr_framerate()});
+            ds::set_lr_gain_discovery(get_device(), {get_lr_framerate(), 0, 0, 0, 0});
             auto disc = ds::get_lr_gain_discovery(get_device());
             min = disc.min;
             max = disc.max;
@@ -607,7 +605,7 @@ namespace rsimpl
         // Exposure min/max is framerate dependent
         if(option == RS_OPTION_R200_LR_EXPOSURE)
         {
-            ds::set_lr_exposure_discovery(get_device(), {get_lr_framerate()});
+            ds::set_lr_exposure_discovery(get_device(), {get_lr_framerate(), 0, 0, 0, 0});
             auto disc = ds::get_lr_exposure_discovery(get_device());
             min = disc.min;
             max = disc.max;
@@ -678,12 +676,12 @@ namespace rsimpl
     {
         int fps;
         wraparound_mechanism<double> timestamp_wraparound;
-        wraparound_mechanism<unsigned long long> frame_counter_wraparound;
+        mutable wraparound_mechanism<unsigned long long> frame_counter_wraparound;
         
     public:
         dinghy_timestamp_reader(int fps) : fps(fps), timestamp_wraparound(1, std::numeric_limits<uint32_t>::max()), frame_counter_wraparound(1, std::numeric_limits<uint32_t>::max()) {}
 
-        bool validate_frame(const subdevice_mode & mode, const void * frame) const override 
+        bool validate_frame(const subdevice_mode & mode, const void * frame) const override
         {
             // Check magic number for all subdevices
             auto & dinghy = get_dinghy(mode, frame);
@@ -725,7 +723,7 @@ namespace rsimpl
           return timestamp_wraparound.fix(frame_number * 1000. / fps);
         }
 
-        unsigned long long get_frame_counter(const subdevice_mode & mode, const void * frame) override
+        unsigned long long get_frame_counter(const subdevice_mode & mode, const void * frame) const override
         {
             auto frame_number = 0;
         
@@ -736,23 +734,43 @@ namespace rsimpl
 
     class fisheye_timestamp_reader : public frame_timestamp_reader
     {
-        std::mutex mutex;
+        int get_embedded_frame_counter(const void * frame) const
+        {
+            int embedded_frame_counter = 0;
+            firmware_version firmware(fw_version);
+            if (firmware >= firmware_version("1.27.2.90")) // Frame counter is exposed at first LSB bit in first 4-pixels from version 1.27.2.90
+            {
+                auto data = static_cast<const char*>(frame);
+
+                for (int i = 0, j = 0; i < 4; ++i, ++j)
+                    embedded_frame_counter |= ((data[i] & 0x01) << j);
+            }
+            else if (firmware < firmware_version("1.27.2.90")) // Frame counter is exposed by the 4 LSB bits of the first pixel from all versions under 1.27.2.90
+            {
+                embedded_frame_counter = reinterpret_cast<byte_wrapping&>(*((unsigned char*)frame)).lsb;
+            }
+
+            return embedded_frame_counter;
+        }
+
+        std::string fw_version;
         int fps;
-        unsigned last_fisheye_counter;
+        mutable unsigned last_fisheye_counter;
         wraparound_mechanism<double> timestamp_wraparound;
-        wraparound_mechanism<unsigned long long> frame_counter_wraparound;
+        mutable wraparound_mechanism<unsigned long long> frame_counter_wraparound;
         mutable bool validate;
+        mutable std::mutex mutex;
 
     public:
-        fisheye_timestamp_reader(int max_fps) : fps(max_fps), last_fisheye_counter(0), timestamp_wraparound(1, std::numeric_limits<uint32_t>::max()), frame_counter_wraparound(0, std::numeric_limits<uint32_t>::max()), validate(true){}
+        fisheye_timestamp_reader(int max_fps, const char* fw_ver) : fw_version(fw_ver), fps(max_fps), last_fisheye_counter(0), timestamp_wraparound(1, std::numeric_limits<uint32_t>::max()), frame_counter_wraparound(0, std::numeric_limits<uint32_t>::max()), validate(true) {}
 
-        bool validate_frame(const subdevice_mode & mode, const void * frame) const override
+        bool validate_frame(const subdevice_mode & /*mode*/, const void * frame) const override
         {
             if (!validate)
                 return true;
 
             bool sts;
-            auto pixel_lsb = reinterpret_cast<byte_wrapping&>(*((unsigned char*)frame)).lsb;
+            auto pixel_lsb = get_embedded_frame_counter(frame);
             if ((sts = (pixel_lsb != 0)))
                 validate = false;
 
@@ -764,17 +782,17 @@ namespace rsimpl
             unsigned char msb : 4;
         };
 
-        unsigned long long get_frame_counter(const subdevice_mode & mode, const void * frame) override
+        unsigned long long get_frame_counter(const subdevice_mode & /*mode*/, const void * frame) const override
         {
             std::lock_guard<std::mutex> guard(mutex);
 
-            auto last_counter_lsb = reinterpret_cast<byte_wrapping&>(last_fisheye_counter).lsb;
-            auto pixel_lsb = reinterpret_cast<byte_wrapping&>(*((unsigned char*)frame)).lsb;
+            auto last_counter_lsb = reinterpret_cast<const byte_wrapping&>(last_fisheye_counter).lsb;
+            auto pixel_lsb = get_embedded_frame_counter(frame);
             if (last_counter_lsb == pixel_lsb)
                 return last_fisheye_counter;
 
             auto last_counter_msb = (last_fisheye_counter >> 4);
-            auto wrap_around = reinterpret_cast<byte_wrapping&>(last_fisheye_counter).lsb;
+            auto wrap_around = reinterpret_cast<const byte_wrapping&>(last_fisheye_counter).lsb;
             if (wrap_around == 15 || pixel_lsb < last_counter_lsb)
             {
                 ++last_counter_msb;
@@ -796,17 +814,22 @@ namespace rsimpl
     {
         int fps, scale;
         wraparound_mechanism<double> timestamp_wraparound;
-        wraparound_mechanism<unsigned long long> frame_counter_wraparound;
+        mutable wraparound_mechanism<unsigned long long> frame_counter_wraparound;
+        mutable bool first_frames = true;
 
     public:
         color_timestamp_reader(int fps, int scale) : fps(fps), scale(scale), timestamp_wraparound(0, std::numeric_limits<uint32_t>::max()), frame_counter_wraparound(0, std::numeric_limits<uint32_t>::max()) {}
 
         bool validate_frame(const subdevice_mode & mode, const void * frame) const override
         {
+            auto counter = get_frame_counter(mode, frame);
+
+            if (counter == 0 && first_frames) return false;
+            first_frames = false;
             return true;
         }
 
-        unsigned long long get_frame_counter(const subdevice_mode & mode, const void * frame) override
+        unsigned long long get_frame_counter(const subdevice_mode & mode, const void * frame) const override
         {
             auto frame_number = 0;
             
@@ -833,18 +856,18 @@ namespace rsimpl
     {
         int fps, serial_frame_number;
         wraparound_mechanism<double> timestamp_wraparound;
-        wraparound_mechanism<unsigned long long> frame_counter_wraparound;
+        mutable wraparound_mechanism<unsigned long long> frame_counter_wraparound;
 
     public:
         serial_timestamp_generator(int fps) : fps(fps), serial_frame_number(), timestamp_wraparound(0, std::numeric_limits<uint32_t>::max()), frame_counter_wraparound(0, std::numeric_limits<uint32_t>::max()) {}
 
-        bool validate_frame(const subdevice_mode & mode, const void * frame) const override { return true; }
+        bool validate_frame(const subdevice_mode & /*mode*/, const void * /*frame*/) const override { return true; }
         double get_frame_timestamp(const subdevice_mode &, const void *) override
         { 
             ++serial_frame_number;
             return timestamp_wraparound.fix(serial_frame_number * 1000. / fps);
         }
-        unsigned long long get_frame_counter(const subdevice_mode &, const void *) override
+        unsigned long long get_frame_counter(const subdevice_mode &, const void *) const override
         {
             return frame_counter_wraparound.fix(serial_frame_number);
         }
@@ -874,16 +897,13 @@ namespace rsimpl
             break;
         case SUB_DEVICE_FISHEYE:
             if (stream_fisheye.is_enabled())
-                return std::make_shared<fisheye_timestamp_reader>(stream_fisheye.get_framerate());
+                return std::make_shared<fisheye_timestamp_reader>(stream_fisheye.get_framerate(), get_camera_info(RS_CAMERA_INFO_ADAPTER_BOARD_FIRMWARE_VERSION));
             break;
         case SUB_DEVICE_COLOR:
             if (stream_color.is_enabled())
             {
                 if (stream_depth.is_enabled() || stream_infrared.is_enabled() || stream_infrared2.is_enabled())
                 {
-                    if (stream_color.get_intrinsics().width > 640) // HD formats seem to not include DINGY
-                        return std::make_shared<serial_timestamp_generator>(stream_color.get_framerate());
-
                     // W/A for DS4 issue: when running at Depth 60 & Color 30 it seems that the frame counter is being incremented on every
                     // depth frame (or ir/ir2). This means we need to reduce color frame number accordingly
                     auto master_fps = stream_depth.is_enabled() ? stream_depth.get_framerate() : 0;
@@ -905,7 +925,7 @@ namespace rsimpl
         return nullptr;
     }
 
-    std::vector<std::shared_ptr<frame_timestamp_reader>> ds_device::create_frame_timestamp_readers() const 
+    std::vector<std::shared_ptr<frame_timestamp_reader>> ds_device::create_frame_timestamp_readers() const
     {
         return { create_frame_timestamp_reader(SUB_DEVICE_INFRARED),
                  create_frame_timestamp_reader(SUB_DEVICE_DEPTH),

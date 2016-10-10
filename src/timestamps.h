@@ -14,6 +14,8 @@ namespace rsimpl
     struct frame_interface
     { 
         virtual ~frame_interface() {}
+        virtual double get_frame_metadata(rs_frame_metadata frame_metadata) const = 0;
+        virtual bool supports_frame_metadata(rs_frame_metadata frame_metadata) const = 0;
         virtual unsigned long long get_frame_number() const = 0;
         virtual void set_timestamp(double new_ts) = 0;
         virtual void set_timestamp_domain(rs_timestamp_domain timestamp_domain) = 0;

@@ -66,10 +66,10 @@ namespace rsimpl
         const uvc::guid FISHEYE_WIN_USB_DEVICE_GUID = { 0xC0B55A29, 0xD7B6, 0x436E, { 0xA6, 0xEF, 0x2E, 0x76, 0xED, 0x0A, 0xBC, 0xA5 } };
         // Translation of user-provided fourcc code into device supported one:           Note the Big-Endian notation
                                                                                          /* host => librealsense     */
-        const std::map<uint32_t, uint32_t> fourcc_map = { { 0x47524559, 0x59382020 },    /* 'GREY' => 'Y8  ' */
-                                                          { 0x70524141, 0x52573130 },    /* 'pRAA' => 'RW10'.*/
-                                                          { 0x59382020, 0x32000000 },    /* 'Y8' => 'L8  '   */
-                                                          { 0x5a313620, 0x50000000 } };  /* 'Z16' => 'D16 '    */
+        const std::map<uint32_t, uint32_t> fourcc_map = { { 0x59382020, 0x47524559 },    /* 'GREY' => 'Y8  ' */
+                                                          { 0x52573130, 0x70524141 },    /* 'pRAA' => 'RW10'.*/
+                                                          { 0x32000000, 0x47524559 },    /* 'GREY' => 'L8  '   */
+                                                          { 0x50000000, 0x5a313620 } };  /* 'Z16' => 'D16 '    */
 
         static std::string win_to_utf(const WCHAR * s)
         {
@@ -928,20 +928,15 @@ namespace rsimpl
                     if (hr == MF_E_NO_MORE_TYPES) break;
                     check("IMFSourceReader::GetNativeMediaType", hr);
 
-                    UINT32 uvc_width, uvc_height, uvc_fps_num, uvc_fps_denom; GUID subtype;
+                UINT32 uvc_width=0, uvc_height=0, uvc_fps_num=0, uvc_fps_denom=0; GUID subtype{};
                     check("MFGetAttributeSize", MFGetAttributeSize(media_type, MF_MT_FRAME_SIZE, &uvc_width, &uvc_height));
                     if (uvc_width != width || uvc_height != height) continue;
 
                     check("IMFMediaType::GetGUID", media_type->GetGUID(MF_MT_SUBTYPE, &subtype));
                     uint32_t device_fourcc = reinterpret_cast<const big_endian<uint32_t> &>(subtype.Data1);
 
-                    if (device_fourcc != fourcc)
-                    {
-                        auto mapped_fourcc = fourcc;
-                        if (fourcc_map.count(fourcc))
-                            mapped_fourcc = fourcc_map.at(fourcc);
-                        if (device_fourcc != mapped_fourcc) continue;
-                    }
+                    if (device_fourcc != fourcc && fourcc_map.count(device_fourcc) && fourcc != fourcc_map.at(device_fourcc))
+                        continue;
 
                     check("MFGetAttributeRatio", MFGetAttributeRatio(media_type, MF_MT_FRAME_RATE, &uvc_fps_num, &uvc_fps_denom));
                     if (uvc_fps_denom == 0) continue;
@@ -1031,7 +1026,7 @@ namespace rsimpl
                         if(value) check("IAMVideoProcAmp::Set", sub.am_video_proc_amp->Set(pu.property, 0, VideoProcAmp_Flags_Auto));
                         else
                         {
-                            long min, max, step, def, caps;
+                            long min=0, max=0, step=0, def=0, caps=0;
                             check("IAMVideoProcAmp::GetRange", sub.am_video_proc_amp->GetRange(pu.property, &min, &max, &step, &def, &caps));
                             check("IAMVideoProcAmp::Set", sub.am_video_proc_amp->Set(pu.property, def, VideoProcAmp_Flags_Manual));    
                         }
@@ -1093,7 +1088,7 @@ namespace rsimpl
             node.Property.Flags = KSPROPERTY_TYPE_BASICSUPPORT | KSPROPERTY_TYPE_TOPOLOGY;
             node.NodeId = xu.node;
 
-            KSPROPERTY_DESCRIPTION description;
+            KSPROPERTY_DESCRIPTION description{};
             unsigned long bytes_received = 0;
             check("IKsControl::KsProperty", ks_control->KsProperty(
                 (PKSPROPERTY)&node,
@@ -1243,7 +1238,7 @@ namespace rsimpl
                     devices.push_back(dev);
                 }
 
-                size_t subdevice_index = (mi+1)/2;	// Patch TODO - need to be refactored  Evgeni
+                size_t subdevice_index = (mi+1)/2;      // Patch TODO - requires unified approach
                 if(subdevice_index >= dev->subdevices.size()) dev->subdevices.resize(subdevice_index+1);
 
                 std::map<int, int> subdevice_index_per_stream_index;
@@ -1352,7 +1347,7 @@ namespace rsimpl
             if (h == INVALID_HANDLE_VALUE) return "";
             auto h_gc = std::shared_ptr<void>(h, CloseHandle);
 
-            USB_NODE_INFORMATION info;
+            USB_NODE_INFORMATION info{};
             if (!DeviceIoControl(h, IOCTL_USB_GET_NODE_INFORMATION, &info, sizeof(info), &info, sizeof(info), nullptr, nullptr))
                 return "";
 

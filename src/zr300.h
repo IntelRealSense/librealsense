@@ -185,7 +185,7 @@ namespace rsimpl
     public:
         fisheye_auto_exposure_state() :
             is_auto_exposure(true),
-            mode(auto_exposure_modes::static_auto_exposure),
+            mode(auto_exposure_modes::auto_exposure_hybrid),
             rate(60),
             sample_rate(1),
             skip_frames(2)
@@ -266,7 +266,7 @@ namespace rsimpl
         void clear_queue();
         unsigned get_skip_frames(const fisheye_auto_exposure_state& auto_exposure_state) { return auto_exposure_state.get_auto_exposure_state(RS_OPTION_FISHEYE_AUTO_EXPOSURE_SKIP_FRAMES); }
         void push_back_exp_and_cnt(exposure_and_frame_counter exp_and_cnt);
-        bool try_get_exp_by_frame_cnt(double& exposure, const unsigned long long frame_counter);
+        bool try_get_exp_by_frame_cnt(double& exposure, const unsigned long long frame_number);
 
         const std::size_t                      max_size_of_exp_and_cnt_queue = 10;
         zr300_camera*                          device;

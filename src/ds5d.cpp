@@ -91,7 +91,7 @@ namespace rsimpl
                     intrinsic = calib.depth_intrinsic[(*it).first];
             }
 
-            for(auto pf : {pf_l8, pf_y8i, pf_yuyvl })
+            for(auto pf : {pf_y8, pf_yuyvl })
                 for(auto fps : m.fps)
                     info.subdevice_modes.push_back({ 1, m.dims, pf, fps, intrinsic, {}, {0}});
         }
@@ -186,7 +186,7 @@ namespace rsimpl
 
             switch (options[i])
             {
-            case RS_OPTION_RS400_LASER_POWER:         ds5::set_laser_power(get_device(), static_cast<uint8_t>(values[i])); break;
+            case RS_OPTION_RS400_LASER_POWER:       ds5::set_laser_power(get_device(), static_cast<uint8_t>(values[i])); break;
             case RS_OPTION_R200_LR_EXPOSURE:        ds5::set_lr_exposure(get_device(), static_cast<uint16_t>(values[i])); break;
             case RS_OPTION_HARDWARE_LOGGER_ENABLED: set_fw_logger_option(values[i]); break;
 

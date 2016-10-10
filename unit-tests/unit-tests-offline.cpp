@@ -37,8 +37,11 @@ TEST_CASE("wraparound_mechanism produces correct output", "[offline] [validation
 
 TEST_CASE( "rs_create_context() validates input", "[offline] [validation]" )
 {
-    REQUIRE(rs_create_context(RS_API_VERSION - 1, require_error("api version mismatch")) == nullptr);
-    REQUIRE(rs_create_context(RS_API_VERSION + 1, require_error("api version mismatch")) == nullptr);
+    REQUIRE(rs_create_context(RS_API_VERSION - 100, require_error("", false)) == nullptr);
+    REQUIRE(rs_create_context(RS_API_VERSION + 100, require_error("", false)) == nullptr);
+    auto ctx = rs_create_context(RS_API_VERSION + 1, require_no_error()); // make sure changes in patch do not fail context creation
+    REQUIRE(ctx != nullptr);
+    rs_delete_context(ctx, require_no_error());
 }
 
 TEST_CASE( "rs_delete_context() validates input", "[offline] [validation]" )

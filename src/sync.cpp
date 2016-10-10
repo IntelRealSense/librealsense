@@ -49,6 +49,16 @@ frame_archive::frameset* syncronizing_archive::clone_frontbuffer()
     return clone_frameset(&frontbuffer);
 }
 
+double syncronizing_archive::get_frame_metadata(rs_stream stream, rs_frame_metadata frame_metadata) const
+{
+    return frontbuffer.get_frame_metadata(stream, frame_metadata);
+}
+
+bool syncronizing_archive::supports_frame_metadata(rs_stream stream, rs_frame_metadata frame_metadata) const
+{
+    return frontbuffer.supports_frame_metadata(stream, frame_metadata);
+}
+
 unsigned long long rsimpl::syncronizing_archive::get_frame_number(rs_stream stream) const
 {
     return frontbuffer.get_frame_number(stream);

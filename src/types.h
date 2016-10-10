@@ -72,7 +72,7 @@ namespace rsimpl
     void log_to_callback(rs_log_severity min_severity, void(*on_log)(rs_log_severity min_severity, const char * message, void * user), void * user);
     rs_log_severity get_minimum_severity();
 
-#define LOG(SEVERITY, ...) do { if(static_cast<int>(SEVERITY) >= rsimpl::get_minimum_severity()) { std::ostringstream ss; ss << __VA_ARGS__; rsimpl::log(SEVERITY, ss.str()); } } while(false)
+#define LOG(SEVERITY, ...) do { if(static_cast<int>(SEVERITY) >= rsimpl::get_minimum_severity()) { std::ostringstream _ss; _ss << __VA_ARGS__; rsimpl::log(SEVERITY, _ss.str()); } } while(false)
 #define LOG_DEBUG(...)   LOG(RS_LOG_SEVERITY_DEBUG, __VA_ARGS__)
 #define LOG_INFO(...)    LOG(RS_LOG_SEVERITY_INFO,  __VA_ARGS__)
 #define LOG_WARNING(...) LOG(RS_LOG_SEVERITY_WARN,  __VA_ARGS__)
@@ -104,25 +104,25 @@ namespace rsimpl
     // World's tiniest linear algebra library //
     ////////////////////////////////////////////
 #pragma pack(push, 1)
-    struct int2 { int x,y; };
-    struct float3 { float x,y,z; float & operator [] (int i) { return (&x)[i]; } };
+    struct int2 { int x, y; };
+    struct float3 { float x, y, z; float & operator [] (int i) { return (&x)[i]; } };
     struct float4 { float x, y, z, w; float & operator [] (int i) { return (&x)[i]; } };
-    struct float3x3 { float3 x,y,z; float & operator () (int i, int j) { return (&x)[j][i]; } }; // column-major
+    struct float3x3 { float3 x, y, z; float & operator () (int i, int j) { return (&x)[j][i]; } }; // column-major
     struct pose { float3x3 orientation; float3 position; };
 #pragma pack(pop)
-    inline bool operator == (const float3 & a, const float3 & b) { return a.x==b.x && a.y==b.y && a.z==b.z; }
-    inline float3 operator + (const float3 & a, const float3 & b) { return {a.x+b.x, a.y+b.y, a.z+b.z}; }
-    inline float3 operator * (const float3 & a, float b) { return {a.x*b, a.y*b, a.z*b}; }
+    inline bool operator == (const float3 & a, const float3 & b) { return a.x == b.x && a.y == b.y && a.z == b.z; }
+    inline float3 operator + (const float3 & a, const float3 & b) { return{ a.x + b.x, a.y + b.y, a.z + b.z }; }
+    inline float3 operator * (const float3 & a, float b) { return{ a.x*b, a.y*b, a.z*b }; }
     inline bool operator == (const float4 & a, const float4 & b) { return a.x == b.x && a.y == b.y && a.z == b.z && a.w == b.w; }
     inline float4 operator + (const float4 & a, const float4 & b) { return{ a.x + b.x, a.y + b.y, a.z + b.z, a.w + b.w }; }
-    inline bool operator == (const float3x3 & a, const float3x3 & b) { return a.x==b.x && a.y==b.y && a.z==b.z; }
+    inline bool operator == (const float3x3 & a, const float3x3 & b) { return a.x == b.x && a.y == b.y && a.z == b.z; }
     inline float3 operator * (const float3x3 & a, const float3 & b) { return a.x*b.x + a.y*b.y + a.z*b.z; }
-    inline float3x3 operator * (const float3x3 & a, const float3x3 & b) { return {a*b.x, a*b.y, a*b.z}; }
-    inline float3x3 transpose(const float3x3 & a) { return {{a.x.x,a.y.x,a.z.x}, {a.x.y,a.y.y,a.z.y}, {a.x.z,a.y.z,a.z.z}}; }
-    inline bool operator == (const pose & a, const pose & b) { return a.orientation==b.orientation && a.position==b.position; }
+    inline float3x3 operator * (const float3x3 & a, const float3x3 & b) { return{ a*b.x, a*b.y, a*b.z }; }
+    inline float3x3 transpose(const float3x3 & a) { return{ {a.x.x,a.y.x,a.z.x}, {a.x.y,a.y.y,a.z.y}, {a.x.z,a.y.z,a.z.z} }; }
+    inline bool operator == (const pose & a, const pose & b) { return a.orientation == b.orientation && a.position == b.position; }
     inline float3 operator * (const pose & a, const float3 & b) { return a.orientation * b + a.position; }
-    inline pose operator * (const pose & a, const pose & b) { return {a.orientation * b.orientation, a * b.position}; }
-    inline pose inverse(const pose & a) { auto inv = transpose(a.orientation); return {inv, inv * a.position * -1}; }
+    inline pose operator * (const pose & a, const pose & b) { return{ a.orientation * b.orientation, a * b.position }; }
+    inline pose inverse(const pose & a) { auto inv = transpose(a.orientation); return{ inv, inv * a.position * -1 }; }
 
 
     ///////////////////
@@ -283,6 +283,7 @@ namespace rsimpl
         std::string serial;                                                 // Serial number of the camera (from USB or from SPI memory)
         float nominal_depth_scale;                                          // Default scale
         std::vector<supported_capability> capabilities_vector;
+        std::vector<rs_frame_metadata> supported_metadata_vector;
         std::map<rs_camera_info, std::string> camera_info;
 
         static_device_info();
@@ -297,9 +298,9 @@ namespace rsimpl
         subdevice_mode mode;                    // The streaming mode in which to place the hardware
         int pad_crop;                           // The number of pixels of padding (positive values) or cropping (negative values) to apply to all four edges of the image
         size_t unpacker_index;                  // The specific unpacker used to unpack the encoded format into the desired output formats
-        rs_output_buffer_format output_format = RS_OUTPUT_BUFFER_FORMAT_CONTINOUS; // The output buffer format. 
+        rs_output_buffer_format output_format = RS_OUTPUT_BUFFER_FORMAT_CONTINUOUS; // The output buffer format.
 
-        subdevice_mode_selection() : mode({}), pad_crop(), unpacker_index(), output_format(RS_OUTPUT_BUFFER_FORMAT_CONTINOUS){}
+        subdevice_mode_selection() : mode({}), pad_crop(), unpacker_index(), output_format(RS_OUTPUT_BUFFER_FORMAT_CONTINUOUS){}
         subdevice_mode_selection(const subdevice_mode & mode, int pad_crop, int unpacker_index) : mode(mode), pad_crop(pad_crop), unpacker_index(unpacker_index){}
 
         const pixel_format_unpacker & get_unpacker() const {
@@ -322,7 +323,7 @@ namespace rsimpl
         int get_unpacked_width() const;
         int get_unpacked_height() const;
 
-        bool requires_processing() const { return (output_format == RS_OUTPUT_BUFFER_FORMAT_CONTINOUS) || (mode.pf.unpackers[unpacker_index].requires_processing); }
+        bool requires_processing() const { return (output_format == RS_OUTPUT_BUFFER_FORMAT_CONTINUOUS) || (mode.pf.unpackers[unpacker_index].requires_processing); }
 
     };
 

@@ -16,6 +16,11 @@
 
 namespace rs
 {
+    enum class frame_metadata
+    {
+        actual_exposure
+    };
+
     enum class capabilities : int32_t
     {
         depth                  ,
@@ -121,8 +126,8 @@ namespace rs
         r200_lr_exposure                                , /**< This control allows manual adjustment of the exposure time value for the L/R imagers*/
         r200_emitter_enabled                            , /**< Enables / disables R200 emitter*/
         r200_depth_units                                , /**< Micrometers per increment in integer depth values, 1000 is default (mm scale). Set before streaming*/
-        r200_depth_clamp_min                            , /**< Minimum depth in current depth units that will be output. Any values less than ‘Min Depth’ will be mapped to 0 during the conversion between disparity and depth. Set before streaming*/
-        r200_depth_clamp_max                            , /**< Maximum depth in current depth units that will be output. Any values greater than ‘Max Depth’ will be mapped to 0 during the conversion between disparity and depth. Set before streaming*/
+        r200_depth_clamp_min                            , /**< Minimum depth in current depth units that will be output. Any values less than 'Min Depth' will be mapped to 0 during the conversion between disparity and depth. Set before streaming*/
+        r200_depth_clamp_max                            , /**< Maximum depth in current depth units that will be output. Any values greater than 'Max Depth' will be mapped to 0 during the conversion between disparity and depth. Set before streaming*/
         r200_disparity_multiplier                       , /**< The disparity scale factor used when in disparity output mode. Can only be set before streaming*/
         r200_disparity_shift                            , /**< {0 - 512}. Can only be set before streaming starts*/
         r200_auto_exposure_mean_intensity_set_point     , /**< (Requires LR-Auto-Exposure ON) Mean intensity set point*/
@@ -155,6 +160,7 @@ namespace rs
         fisheye_color_auto_exposure_skip_frames         , /**< In Fisheye auto-exposure sample every given number of frames */
         frames_queue_size                               , /**< Number of frames the user is allowed to keep per stream. Trying to hold-on to more frames will cause frame-drops.*/
         hardware_logger_enabled                         , /**< Enable / disable fetching log data from the device */
+        total_frame_drops                               , /**< Total number of detected frame drops from all streams*/
         rs400_laser_power                               , /**< Enable / disable RealSense400 projector power */
     };
 
@@ -398,6 +404,28 @@ namespace rs
             auto r = rs_get_detached_frame_timestamp_domain(frame_ref, &e);
             error::handle(e);
             return static_cast<timestamp_domain>(r);
+        }
+
+        /// retrieve the current value of a single frame_metadata
+        /// \param[in] frame_metadata  the frame_metadata whose value should be retrieved
+        /// \return            the value of the frame_metadata
+        double get_frame_metadata(rs_frame_metadata frame_metadata) const
+        {
+            rs_error * e = nullptr;
+            auto r = rs_get_detached_frame_metadata(frame_ref, frame_metadata, &e);
+            error::handle(e);
+            return r;
+        }
+
+        /// determine if the device allows a specific metadata to be queried
+        /// \param[in] frame_metadata  the frame_metadata to check for support
+        /// \return            true if the frame_metadata can be queried
+        bool supports_frame_metadata(rs_frame_metadata frame_metadata) const
+        {
+            rs_error * e = nullptr;
+            auto r = rs_supports_frame_metadata(frame_ref, frame_metadata, &e);
+            error::handle(e);
+            return r != 0;
         }
 
         unsigned long long get_frame_number() const
@@ -765,7 +793,7 @@ namespace rs
         void enable_motion_tracking(std::function<void(motion_data)> motion_handler)
         {
             rs_error * e = nullptr;            
-            rs_enable_motion_tracking_cpp((rs_device *)this, new motion_callback(motion_handler), new timestamp_callback([](rs::timestamp_data data) {}), &e);
+            rs_enable_motion_tracking_cpp((rs_device *)this, new motion_callback(motion_handler), new timestamp_callback([](rs::timestamp_data /*data*/) {}), &e);
             error::handle(e);
         }
 
@@ -923,7 +951,6 @@ namespace rs
             error::handle(e);
             return r? true: false;
         }
-
 
         /// determine device capabilities
         /// \param[in] capability  the capability to check for support

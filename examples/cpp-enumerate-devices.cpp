@@ -12,8 +12,12 @@ int main() try
 
     // Obtain a list of devices currently present on the system
     rs::context ctx;
-    int device_count = ctx.get_device_count();   
-    if (!device_count) printf("No device detected. Is it plugged in?\n");
+    int device_count = ctx.get_device_count();
+    if (!device_count)
+    {
+        printf("No device detected. Is it plugged in?\n");
+        return EXIT_SUCCESS;
+    }
 
     for(int i = 0; i < device_count; ++i)
     {
@@ -42,7 +46,7 @@ int main() try
             rs::option opt = (rs::option)j;
             if(dev->supports_option(opt))
             {
-                double min, max, step, def;
+                double min{}, max{}, step{}, def{};
                 dev->get_option_range(opt, min, max, step, def);
                 std::cout   << "    " << std::left << std::setw(50)  << opt << " : " << std::setw(5) << min << "... " << std::setw(12) << max << std::setw(6) << step << std::setw(10) << def << "\n";
             }
