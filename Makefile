@@ -86,7 +86,7 @@ install: lib/librealsense.so
 
 uninstall:
 	rm -rf $(DESTDIR)$(prefix)/include/librealsense
-	rm $(DESTDIR)$(prefix)/lib/librealsense.so
+	rm -f $(DESTDIR)$(prefix)/lib/librealsense.so
 	$(LDCONFIG)
 
 clean:
