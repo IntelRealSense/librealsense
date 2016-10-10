@@ -79,8 +79,9 @@ EXAMPLES := $(addprefix bin/, $(notdir $(basename $(EXAMPLES))))
 all: examples $(EXAMPLES) all-tests
 
 install: lib/librealsense.so
-	install -D -t $(DESTDIR)$(prefix)/include/librealsense include/librealsense/*
-	install -D -t $(DESTDIR)$(prefix)/lib lib/*
+	install -d $(DESTDIR)$(prefix)/include/librealsense
+	install -m644 -D -t $(DESTDIR)$(prefix)/include/librealsense include/librealsense/*
+	install -m644 -D -t $(DESTDIR)$(prefix)/lib lib/*
 	$(LDCONFIG)
 
 uninstall:
