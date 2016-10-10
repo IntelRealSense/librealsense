@@ -157,8 +157,9 @@ namespace rsimpl
             uint32_t opCodeAsUint32 = pack(details.receivedOpcode[3], details.receivedOpcode[2], details.receivedOpcode[1], details.receivedOpcode[0]);
             if (opCodeAsUint32 != opCodeXmit)
             {
-                throw std::runtime_error("revieved opcode do not match to the expected opcode");
+                throw std::runtime_error("received opcode mismatch");
             }
+
         }
 
         void perform_and_send_monitor_command_over_uvc_ext_ctrl(uvc::device & device, std::timed_mutex & mutex, hwmon_cmd & newCommand, const uvc::extension_unit & xu, uint8_t ctrl)

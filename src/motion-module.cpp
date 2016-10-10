@@ -317,7 +317,7 @@ std::vector<motion_event> motion_module_parser::operator() (const unsigned char*
 
         for (uint8_t i = 0; i < packets; i++)
         {
-            motion_event event_data = { 0 };
+            motion_event event_data = {};
 
             cur_packet = (unsigned char*)data + (i*motion_packet_size);
 

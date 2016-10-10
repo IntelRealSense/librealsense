@@ -2,6 +2,16 @@
 uname_S := $(shell sh -c 'uname -s 2>/dev/null || echo not')
 machine := $(shell sh -c "$(CC) -dumpmachine || echo unknown")
 
+# Always install everything under $(DESTDIR)$(prefix)
+# $DESTDIR is defined when the intall target is run with dh_auto_install
+# otherwise, it is likely empty
+prefix = /usr/local
+
+# Allow to bypass ldconfig, such as during dh_auto_install.
+# Bypassing can be done by setting LDCONFIG='echo ldconfig skipped'
+LDCONFIG = ldconfig
+
+
 # Specify BACKEND=V4L2 or BACKEND=LIBUVC to build a specific backend
 BACKEND := V4L2
 
@@ -12,8 +22,13 @@ endif
 
 LIBUSB_FLAGS := `pkg-config --cflags --libs libusb-1.0`
 
-CFLAGS := -std=c11 -D_BSD_SOURCE -fPIC -pedantic -DRS_USE_$(BACKEND)_BACKEND $(LIBUSB_FLAGS) 
-CXXFLAGS := -std=c++11 -fPIC -pedantic -Ofast -Wno-missing-field-initializers
+CFLAGS := -std=c11 -D_BSD_SOURCE -fPIC -pedantic -g -DRS_USE_$(BACKEND)_BACKEND $(LIBUSB_FLAGS) 
+CXXFLAGS := -std=c++11 -fPIC -pedantic -Ofast -g -Wall -Wextra -Wno-missing-field-initializers
+# Replace -Wno-unknown-pragmas with -fopenmp to multithread image.cpp
+CXXFLAGS += -Wno-unknown-pragmas
+CXXFLAGS += -Wno-strict-aliasing
+CXXFLAGS += -Wno-unused-function
+
 CXXFLAGS += -Wno-switch -Wno-multichar -DRS_USE_$(BACKEND)_BACKEND $(LIBUSB_FLAGS) 
 
 # Add specific include paths for OSX
@@ -64,15 +79,15 @@ EXAMPLES := $(addprefix bin/, $(notdir $(basename $(EXAMPLES))))
 all: examples $(EXAMPLES) all-tests
 
 install: lib/librealsense.so
-	install -m755 -d /usr/local/include/librealsense
-	cp -r include/librealsense/* /usr/local/include/librealsense
-	cp lib/librealsense.so /usr/local/lib
-	ldconfig
+	install -d $(DESTDIR)$(prefix)/include/librealsense
+	install -m644 -D -t $(DESTDIR)$(prefix)/include/librealsense include/librealsense/*
+	install -m644 -D -t $(DESTDIR)$(prefix)/lib lib/*
+	$(LDCONFIG)
 
 uninstall:
-	rm -rf /usr/local/include/librealsense
-	rm -f /usr/local/lib/librealsense.so
-	ldconfig
+	rm -rf $(DESTDIR)$(prefix)/include/librealsense
+	rm -f $(DESTDIR)$(prefix)/lib/librealsense.so
+	$(LDCONFIG)
 
 clean:
 	rm -rf obj
@@ -95,8 +110,10 @@ bin/cpp-%: examples/cpp-%.cpp lib/librealsense.so | bin
 	$(CXX) $< -std=c++11 $(REALSENSE_FLAGS) $(GLFW3_FLAGS) -o $@
 
 # Rules for building the library itself
+# DEB_LDFLAGS are set for debian builds to:
+# -fPIC -soname,librealsense.so.1 -Wl,-Bsymbolic-functions -Wl,-z,relro
 lib/librealsense.so: $(OBJECTS) | lib
-	$(CXX) -std=c++11 -shared $(OBJECTS) $(LIBUSB_FLAGS) -o $@
+	$(CXX) -std=c++11 $(DEB_LDFLAGS)  -shared $(OBJECTS) $(LIBUSB_FLAGS) -o $@
 
 lib/librealsense.a: $(OBJECTS) | lib
 	ar rvs $@ `find obj/ -name "*.o"`

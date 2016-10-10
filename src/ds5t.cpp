@@ -152,7 +152,7 @@ namespace rsimpl
         ds5_camera::get_options(options, count, values);
     }
 
-    rs_stream ds5t_camera::select_key_stream(const std::vector<rsimpl::subdevice_mode_selection> & selected_modes)
+    rs_stream ds5t_camera::select_key_stream(const std::vector<rsimpl::subdevice_mode_selection> & /*selected_modes*/)
     {
         // DS5t may have a different behaviour here. This is a placeholder
         throw std::runtime_error(to_string() << __FUNCTION__ << " is not implemented");

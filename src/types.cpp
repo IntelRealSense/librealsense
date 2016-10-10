@@ -156,14 +156,15 @@ namespace rsimpl
         CASE(FISHEYE_GAIN)
         CASE(FISHEYE_STROBE)
         CASE(FISHEYE_EXTERNAL_TRIGGER)
-        CASE(FRAMES_QUEUE_SIZE)
         CASE(FISHEYE_ENABLE_AUTO_EXPOSURE)
         CASE(FISHEYE_AUTO_EXPOSURE_MODE)
         CASE(FISHEYE_AUTO_EXPOSURE_ANTIFLICKER_RATE)
-        CASE(RS400_LASER_POWER)
         CASE(FISHEYE_AUTO_EXPOSURE_PIXEL_SAMPLE_RATE)
         CASE(FISHEYE_AUTO_EXPOSURE_SKIP_FRAMES)
+        CASE(FRAMES_QUEUE_SIZE)
         CASE(HARDWARE_LOGGER_ENABLED)
+        CASE(TOTAL_FRAME_DROPS)
+        CASE(RS400_LASER_POWER)
         default: assert(!is_valid(value)); return unknown;
         }
         #undef CASE
@@ -287,7 +288,7 @@ namespace rsimpl
     void subdevice_mode_selection::unpack(byte * const dest[], const byte * source) const
     {
         const int MAX_OUTPUTS = 2;
-        const auto & outputs = get_outputs();        
+        const auto & outputs = get_outputs();
         assert(outputs.size() <= MAX_OUTPUTS);
 
         // Determine input stride (and apply cropping)
@@ -314,13 +315,12 @@ namespace rsimpl
         }
         else
         {
-            
             // Otherwise unpack one row at a time
             assert(mode.pf.plane_count == 1); // Can't unpack planar formats row-by-row (at least not with the current architecture, would need to pass multiple source ptrs to unpack)
             for(int i=0; i<unpack_height; ++i)
             {
                 mode.pf.unpackers[unpacker_index].unpack(out, in, unpack_width);
-                for(size_t i=0; i<outputs.size(); ++i) out[i] += out_stride[i];
+                for(size_t j=0; j<outputs.size(); ++j) out[j] += out_stride[j];
                 in += in_stride;
             }
         }
@@ -506,7 +506,7 @@ namespace rsimpl
                     for (auto output : outputs)
                     {
                         request.format = output.second;
-                        for (auto output_format = static_cast<int>(RS_OUTPUT_BUFFER_FORMAT_CONTINOUS); output_format < static_cast<int>(RS_OUTPUT_BUFFER_FORMAT_COUNT); output_format++)
+                        for (auto output_format = static_cast<int>(RS_OUTPUT_BUFFER_FORMAT_CONTINUOUS); output_format < static_cast<int>(RS_OUTPUT_BUFFER_FORMAT_COUNT); output_format++)
                         {
                             request.output_format = static_cast<rs_output_buffer_format>(output_format);
                             stream_requests[output.first].push_back(request);

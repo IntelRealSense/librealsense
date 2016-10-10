@@ -3,4 +3,8 @@
   <ItemGroup>
     <ClCompile Include="..\..\examples\cpp-callback-2.cpp" />
   </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\examples\concurrency.hpp" />
+    <ClInclude Include="..\..\examples\example.hpp" />
+  </ItemGroup>
 </Project>

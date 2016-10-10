@@ -804,7 +804,7 @@ namespace rsimpl
                 if (hr == MF_E_NO_MORE_TYPES) break;
                 check("IMFSourceReader::GetNativeMediaType", hr);
 
-                UINT32 uvc_width, uvc_height, uvc_fps_num, uvc_fps_denom; GUID subtype;
+                UINT32 uvc_width=0, uvc_height=0, uvc_fps_num=0, uvc_fps_denom=0; GUID subtype{};
                 check("MFGetAttributeSize", MFGetAttributeSize(media_type, MF_MT_FRAME_SIZE, &uvc_width, &uvc_height));
                 if(uvc_width != width || uvc_height != height) continue;
 
@@ -887,7 +887,7 @@ namespace rsimpl
                         if(value) check("IAMVideoProcAmp::Set", sub.am_video_proc_amp->Set(pu.property, 0, VideoProcAmp_Flags_Auto));
                         else
                         {
-                            long min, max, step, def, caps;
+                            long min=0, max=0, step=0, def=0, caps=0;
                             check("IAMVideoProcAmp::GetRange", sub.am_video_proc_amp->GetRange(pu.property, &min, &max, &step, &def, &caps));
                             check("IAMVideoProcAmp::Set", sub.am_video_proc_amp->Set(pu.property, def, VideoProcAmp_Flags_Manual));    
                         }
@@ -949,7 +949,7 @@ namespace rsimpl
             node.Property.Flags = KSPROPERTY_TYPE_BASICSUPPORT | KSPROPERTY_TYPE_TOPOLOGY;
             node.NodeId = xu.node;
 
-            KSPROPERTY_DESCRIPTION description;
+            KSPROPERTY_DESCRIPTION description{};
             unsigned long bytes_received = 0;
             check("IKsControl::KsProperty", ks_control->KsProperty(
                 (PKSPROPERTY)&node,
@@ -1099,7 +1099,7 @@ namespace rsimpl
                     devices.push_back(dev);
                 }
 
-                size_t subdevice_index = (mi+1)/2;	// Patch TODO - need to be refactored  Evgeni
+                size_t subdevice_index = (mi+1)/2;      // Patch TODO - requires unified approach
                 if(subdevice_index >= dev->subdevices.size()) dev->subdevices.resize(subdevice_index+1);
 
                 dev->subdevices[subdevice_index].reader_callback = new reader_callback(dev, static_cast<int>(subdevice_index));
@@ -1197,7 +1197,7 @@ namespace rsimpl
             if (h == INVALID_HANDLE_VALUE) return "";
             auto h_gc = std::shared_ptr<void>(h, CloseHandle);
 
-            USB_NODE_INFORMATION info;
+            USB_NODE_INFORMATION info{};
             if (!DeviceIoControl(h, IOCTL_USB_GET_NODE_INFORMATION, &info, sizeof(info), &info, sizeof(info), nullptr, nullptr))
                 return "";
 

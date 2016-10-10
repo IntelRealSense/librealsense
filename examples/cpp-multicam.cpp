@@ -69,7 +69,7 @@ int main(int argc, char * argv[]) try
         for(auto dev : devices)
         {
             dev->poll_for_frames();
-            const auto c = dev->get_stream_intrinsics(rs::stream::color), d = dev->get_stream_intrinsics(rs::stream::depth);
+            //const auto c = dev->get_stream_intrinsics(rs::stream::color), d = dev->get_stream_intrinsics(rs::stream::depth);
             buffers[i++].show(*dev, rs::stream::color, x, 0, perTextureWidth, perTextureHeight);
             buffers[i++].show(*dev, rs::stream::depth, x, perTextureHeight, perTextureWidth, perTextureHeight);
             x += perTextureWidth;

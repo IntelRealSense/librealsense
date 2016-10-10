@@ -62,7 +62,7 @@ namespace rsimpl
         }
     }
 
-    void ds5_camera::on_before_start(const std::vector<subdevice_mode_selection> & selected_modes)
+    void ds5_camera::on_before_start(const std::vector<subdevice_mode_selection> & /*selected_modes*/)
     {
 
     }
@@ -91,7 +91,7 @@ namespace rsimpl
     // Sequential frame counter, Using host-arrival timestamp
     class ds5_timestamp_reader : public frame_timestamp_reader
     {
-        int serial_frame_number;
+        mutable int serial_frame_number;
         std::chrono::system_clock::time_point initial_ts;
 
     public:
@@ -117,7 +117,7 @@ namespace rsimpl
         {
             return std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::system_clock::now() - initial_ts).count()*0.000001;
         }
-        unsigned long long get_frame_counter(const subdevice_mode &, const void *) override
+        unsigned long long get_frame_counter(const subdevice_mode &, const void *) const override
         {
             return serial_frame_number++;
         }

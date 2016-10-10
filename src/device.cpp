@@ -22,7 +22,7 @@ rs_device_base::rs_device_base(std::shared_ptr<rsimpl::uvc::device> device, cons
     depth(config, RS_STREAM_DEPTH, validator), color(config, RS_STREAM_COLOR, validator), infrared(config, RS_STREAM_INFRARED, validator), infrared2(config, RS_STREAM_INFRARED2, validator), fisheye(config, RS_STREAM_FISHEYE, validator),
     points(depth), rect_color(color), color_to_depth(color, depth), depth_to_color(depth, color), depth_to_rect_color(depth, rect_color), infrared2_to_depth(infrared2,depth), depth_to_infrared2(depth,infrared2),
     capturing(false), data_acquisition_active(false), max_publish_list_size(MAX_FRAME_QUEUE_SIZE), event_queue_size(MAX_EVENT_QUEUE_SIZE), events_timeout(MAX_EVENT_TINE_OUT),
-    usb_port_id(""), motion_module_ready(false), keep_fw_logger_alive(false)
+    usb_port_id(""), motion_module_ready(false), keep_fw_logger_alive(false), frames_drops_counter(0)
 {
     streams[RS_STREAM_DEPTH    ] = native_streams[RS_STREAM_DEPTH]     = &depth;
     streams[RS_STREAM_COLOR    ] = native_streams[RS_STREAM_COLOR]     = &color;
@@ -90,7 +90,7 @@ rs_motion_intrinsics rs_device_base::get_motion_intrinsics() const
     throw std::runtime_error("Motion intrinsic is not supported for this device");
 }
 
-rs_extrinsics rs_device_base::get_motion_extrinsics_from(rs_stream from) const
+rs_extrinsics rs_device_base::get_motion_extrinsics_from(rs_stream /*from*/) const
 {
     throw std::runtime_error("Motion extrinsics does not supported");
 }
@@ -317,6 +317,12 @@ void rs_device_base::stop_fw_logger()
     fw_logger->join();
 }
 
+struct drops_status
+{
+    bool was_initialized = false;
+    unsigned long long prev_frame_counter = 0;
+};
+
 void rs_device_base::start_video_streaming()
 {
     if(capturing) throw std::runtime_error("cannot restart device without first stopping device");
@@ -333,7 +339,7 @@ void rs_device_base::start_video_streaming()
     // dispatching the uvc configuration for a requested stream to the hardware
     for(auto mode_selection : selected_modes)
     {
-        assert((size_t)mode_selection.mode.subdevice <= timestamp_readers.size());
+        assert(static_cast<size_t>(mode_selection.mode.subdevice) <= timestamp_readers.size());
         auto timestamp_reader = timestamp_readers[mode_selection.mode.subdevice];
 
         // Create a stream buffer for each stream served by this subdevice mode
@@ -348,10 +354,12 @@ void rs_device_base::start_video_streaming()
         for (auto & output : mode_selection.get_outputs())
         {
             streams.push_back(output.first);
-        }       
+        }
+
+        std::shared_ptr<drops_status> frame_drops_status(new drops_status{});
         // Initialize the subdevice and set it to the selected mode
         set_subdevice_mode(*device, mode_selection.mode.subdevice, mode_selection.mode.native_dims.x, mode_selection.mode.native_dims.y, mode_selection.mode.pf.fourcc, mode_selection.mode.fps, 
-            [this, mode_selection, archive, timestamp_reader, streams, capture_start_time](const void * frame, std::function<void()> continuation) mutable
+            [this, mode_selection, archive, timestamp_reader, streams, capture_start_time, frame_drops_status](const void * frame, std::function<void()> continuation) mutable
         {
             auto now = std::chrono::system_clock::now().time_since_epoch();
             auto sys_time = std::chrono::duration_cast<std::chrono::milliseconds>(now).count();
@@ -364,9 +372,25 @@ void rs_device_base::start_video_streaming()
             // Determine the timestamp for this frame
             auto timestamp = timestamp_reader->get_frame_timestamp(mode_selection.mode, frame);
             auto frame_counter = timestamp_reader->get_frame_counter(mode_selection.mode, frame);
-            auto recieved_time = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - capture_start_time).count();
+            auto received_time = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - capture_start_time).count();
 
             auto requires_processing = mode_selection.requires_processing();
+
+            double exposure_value[1] = {};
+            if (streams[0] == rs_stream::RS_STREAM_FISHEYE)
+            {
+                // fisheye exposure value is embedded in the frame data from version 1.27.2.90
+                firmware_version firmware(get_camera_info(RS_CAMERA_INFO_ADAPTER_BOARD_FIRMWARE_VERSION));
+                if (firmware >= firmware_version("1.27.2.90"))
+                {
+                    auto data = static_cast<const char*>(frame);
+                    int exposure = 0; // Embedded Fisheye exposure value is in units of 0.2 mSec
+                    for (int i = 4, j = 0; i < 12; ++i, ++j)
+                        exposure |= ((data[i] & 0x01) << j);
+
+                    exposure_value[0] = exposure * 0.2 * 10.;
+                }
+            }
 
             auto width = mode_selection.get_width();
             auto height = mode_selection.get_height();
@@ -377,7 +401,17 @@ void rs_device_base::start_video_streaming()
             auto stride_y = mode_selection.get_stride_y();
             for (auto & output : mode_selection.get_outputs())
             {
-                LOG_DEBUG("FrameAccepted, RecievedAt," << recieved_time << ", FWTS," << timestamp << ", DLLTS," << recieved_time << ", Type," << rsimpl::get_string(output.first) << ",HasPair,0,F#," << frame_counter);
+                LOG_DEBUG("FrameAccepted, RecievedAt," << received_time
+                          << ", FWTS," << timestamp << ", DLLTS," << received_time << ", Type," << rsimpl::get_string(output.first) << ",HasPair,0,F#," << frame_counter);
+            }
+
+            frame_drops_status->was_initialized = true;
+
+            // Not updating prev_frame_counter when first frame arrival
+            if (frame_drops_status->was_initialized)
+            {
+                frames_drops_counter.fetch_add(int(frame_counter - frame_drops_status->prev_frame_counter - 1));
+                frame_drops_status->prev_frame_counter = frame_counter;
             }
 
             for (auto & output : mode_selection.get_outputs())
@@ -394,10 +428,13 @@ void rs_device_base::start_video_streaming()
                     bpp,
                     output.second,
                     output.first,
-                    mode_selection.pad_crop);
+                    mode_selection.pad_crop,
+                    config.info.supported_metadata_vector,
+                    exposure_value[0]);
 
                 // Obtain buffers for unpacking the frame
                 dest.push_back(archive->alloc_frame(output.first, additional_data, requires_processing));
+
 
                 if (motion_module_ready) // try to correct timestamp only if motion module is enabled
                 {
@@ -556,6 +593,8 @@ const char * rs_device_base::get_option_description(rs_option option) const
     case RS_OPTION_FISHEYE_AUTO_EXPOSURE_PIXEL_SAMPLE_RATE         : return "In Fisheye auto-exposure sample frame every given number of pixels";
     case RS_OPTION_FISHEYE_AUTO_EXPOSURE_SKIP_FRAMES               : return "In Fisheye auto-exposure sample every given number of frames";
     case RS_OPTION_HARDWARE_LOGGER_ENABLED                         : return "Enables / disables fetching diagnostic information from hardware (and writting the results to log)";
+    case RS_OPTION_TOTAL_FRAME_DROPS                               : return "Total number of detected frame drops from all streams";
+    case RS_OPTION_RS400_LASER_POWER                               : return "Toggle RS400-series Projector Power, 0 = Power Off";
     default: return rs_option_to_string(option);
     }
 }
@@ -624,6 +663,9 @@ void rs_device_base::set_options(const rs_option options[], size_t count, const 
         case  RS_OPTION_FRAMES_QUEUE_SIZE:
             max_publish_list_size = (uint32_t)values[i];
             break;
+        case RS_OPTION_TOTAL_FRAME_DROPS:
+            frames_drops_counter = (uint32_t)values[i];
+            break;
         default:
             LOG_WARNING("Cannot set " << options[i] << " to " << values[i] << " on " << get_name());
             throw std::logic_error("Option unsupported");
@@ -640,6 +682,9 @@ void rs_device_base::get_options(const rs_option options[], size_t count, double
         {
         case  RS_OPTION_FRAMES_QUEUE_SIZE:
             values[i] = max_publish_list_size;
+            break;
+        case  RS_OPTION_TOTAL_FRAME_DROPS:
+            values[i] = frames_drops_counter;
             break;
         default:
             LOG_WARNING("Cannot get " << options[i] << " on " << get_name());
