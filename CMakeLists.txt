@@ -71,8 +71,7 @@ set(REALSENSE_CPP
     src/timestamps.cpp
     src/types.cpp
     src/uvc-v4l2.cpp
-    src/uvc-wmf.cpp
-    src/uvc.cpp
+    src/backend.cpp
     src/verify.c
     src/zr300.cpp
 	src/ds5.cpp
@@ -83,6 +82,11 @@ set(REALSENSE_CPP
 )
 
 set(REALSENSE_HPP
+	include/librealsense/rs.hpp
+	include/librealsense/rscore.hpp
+	include/librealsense/rs.h
+	include/librealsense/rsutil.h
+
     src/archive.h
     src/context.h
     src/device.h
@@ -100,7 +104,7 @@ set(REALSENSE_HPP
     src/sync.h
     src/timestamps.h
     src/types.h
-    src/uvc.h
+    src/backend.h
     src/zr300.h
 	src/ds5.h
 	src/ds5c.h
@@ -108,6 +112,70 @@ set(REALSENSE_HPP
 	src/ds5d.h
 	src/ds5-private.h
 )
+
+source_group("Header Files\\API" FILES 
+	include/librealsense/rs.hpp
+	include/librealsense/rscore.hpp
+	include/librealsense/rs.h
+	include/librealsense/rsutil.h
+	CMake/realsense.def
+	)
+
+source_group("Source Files\\Devices" FILES 
+    src/zr300.cpp
+	src/ds5.cpp
+	src/ds5c.cpp
+	src/ds5t.cpp
+	src/ds5d.cpp
+	src/ds5-private.cpp
+	src/sr300.cpp
+	src/ivcam-private.cpp
+    src/ivcam-device.cpp
+	src/ds-device.cpp
+    src/ds-private.cpp
+    src/f200.cpp
+	src/r200.cpp
+	)
+	
+source_group("Header Files\\Devices" FILES 
+    src/zr300.h
+	src/ds5.h
+	src/ds5c.h
+	src/ds5t.h
+	src/ds5d.h
+	src/ds5-private.h
+	src/sr300.h
+	src/ivcam-private.h
+    src/ivcam-device.h
+	src/ds-device.h
+    src/ds-private.h
+    src/f200.h
+	src/r200.h
+	)
+
+if(WIN32)
+	list(APPEND REALSENSE_CPP 
+		src/win/win-helpers.cpp
+		src/win/win-uvc.cpp
+		src/win/win-backend.cpp)
+		
+	source_group("Source Files\\Backend" FILES 
+		src/win/win-helpers.cpp
+		src/win/win-uvc.cpp
+		src/win/win-backend.cpp)
+		
+	list(APPEND REALSENSE_HPP 
+		src/win/win-helpers.h
+		src/win/win-uvc.h
+		src/win/win-backend.h)
+		
+	source_group("Header Files\\Backend" FILES 
+		src/win/win-helpers.h
+		src/win/win-uvc.h
+		src/win/win-backend.h)
+else()
+    
+endif()
 
 if(WIN32)
     set(BACKEND RS_USE_WMF_BACKEND)

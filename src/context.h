@@ -6,7 +6,7 @@
 #define LIBREALSENSE_CONTEXT_H
 
 #include "types.h"
-#include "uvc.h"
+#include "backend.h"
 
 struct rs_context_base : rs_context
 {

@@ -3,7 +3,7 @@
 
 #ifdef RS_USE_V4L2_BACKEND
 
-#include "uvc.h"
+#include "backend.h"
 
 #include <cassert>
 #include <cstdlib>

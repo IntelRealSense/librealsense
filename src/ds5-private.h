@@ -5,7 +5,7 @@
 #ifndef LIBREALSENSE_DS5_PRIVATE_H
 #define LIBREALSENSE_DS5_PRIVATE_H
 
-#include "uvc.h"
+#include "backend.h"
 #include <mutex>
 
 namespace rsimpl {

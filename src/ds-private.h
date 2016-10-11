@@ -5,7 +5,7 @@
 #ifndef LIBREALSENSE_DS_PRIVATE_H
 #define LIBREALSENSE_DS_PRIVATE_H
 
-#include "uvc.h"
+#include "backend.h"
 #include <algorithm>
 #include <ctime>
 #include <cmath>

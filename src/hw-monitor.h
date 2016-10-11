@@ -5,7 +5,7 @@
 #ifndef HW_MONITOR_PROTOCOL_H
 #define HW_MONITOR_PROTOCOL_H
 
-#include "uvc.h"
+#include "backend.h"
 
 #include <cstring>
 

@@ -5,7 +5,7 @@
 #ifndef LIBREALSENSE_DEVICE_H
 #define LIBREALSENSE_DEVICE_H
 
-#include "uvc.h"
+#include "backend.h"
 #include "stream.h"
 #include <chrono>
 #include <memory>
