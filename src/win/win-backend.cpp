@@ -9,16 +9,35 @@
 #include "win-backend.h"
 #include "win-uvc.h"
 
+#include <mfapi.h>
+
 namespace rsimpl
 {
     namespace uvc
     {
-        std::shared_ptr<uvc_device> wmf_backend::create_uvc_device(uvc_device_info info) const
+        wmf_backend::wmf_backend()
         {
-            return std::shared_ptr<uvc_device>(new wmf_uvc_device(info));
+            CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
+            MFStartup(MF_VERSION, MFSTARTUP_NOSOCKET);
         }
 
-        std::vector<uvc_device_info> wmf_backend::enumerate_uvc_devices() const
+        wmf_backend::~wmf_backend()
+        {
+            MFShutdown();
+            CoUninitialize();
+        }
+
+        std::shared_ptr<uvc_device> wmf_backend::create_uvc_device(uvc_device_info info) const
+        {
+            return std::shared_ptr<uvc_device>(new wmf_uvc_device(info, shared_from_this()));
+        }
+
+        std::shared_ptr<backend> create_backend()
+        {
+            return std::shared_ptr<backend>(new wmf_backend());
+        }
+
+        std::vector<uvc_device_info> wmf_backend::query_uvc_devices() const
         {
             std::vector<uvc_device_info> devices;
 

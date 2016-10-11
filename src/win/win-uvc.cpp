@@ -38,22 +38,22 @@ namespace rsimpl
 
             virtual ~source_reader_callback(void) {};
 
-            STDMETHODIMP QueryInterface(REFIID iid, void** ppv)
+            STDMETHODIMP QueryInterface(REFIID iid, void** ppv) override
             {
 #pragma warning( push )
 #pragma warning(disable : 4838)
                 static const QITAB qit[] =
                 {
                     QITABENT(source_reader_callback, IMFSourceReaderCallback),
-                    { 0 },
+                    { nullptr },
                 };
                 return QISearch(this, qit, iid, ppv);
 #pragma warning( pop )
             };
 
-            STDMETHODIMP_(ULONG) AddRef() { return InterlockedIncrement(&_refCount); }
+            STDMETHODIMP_(ULONG) AddRef() override { return InterlockedIncrement(&_refCount); }
 
-            STDMETHODIMP_(ULONG) Release() {
+            STDMETHODIMP_(ULONG) Release() override {
                 ULONG count = InterlockedDecrement(&_refCount);
                 if (count <= 0)
                 {
@@ -66,20 +66,16 @@ namespace rsimpl
                                       DWORD dwStreamIndex, 
                                       DWORD /*dwStreamFlags*/, 
                                       LONGLONG /*llTimestamp*/, 
-                                      IMFSample *sample)
+                                      IMFSample *sample) override
             {
                 auto owner = _owner.lock();
                 if (owner)
                 {
-                    auto hr = owner->_reader->ReadSample(0xFFFFFFFC, 0, 0, 0, 0, 0);
-                    if (FAILED(hr))
-                    {
-                        return false;
-                    }
+                    LOG_HR(owner->_reader->ReadSample(0xFFFFFFFC, 0, nullptr, nullptr, nullptr, nullptr));
 
                     if (sample)
                     {
-                        CComPtr<IMFMediaBuffer> buffer = NULL;
+                        CComPtr<IMFMediaBuffer> buffer = nullptr;
                         if (SUCCEEDED(sample->GetBufferByIndex(0, &buffer)))
                         {
                             byte* byte_buffer;
@@ -94,7 +90,7 @@ namespace rsimpl
                                     frame_object f{ byte_buffer };
                                     stream.callback(profile, f);
                                 }
-                                catch (const std::exception& ex)
+                                catch (...)
                                 {
                                     // TODO: log
                                 }
@@ -107,8 +103,8 @@ namespace rsimpl
                 
                 return S_OK;
             };
-            STDMETHODIMP OnEvent(DWORD /*sidx*/, IMFMediaEvent* /*event*/) { return S_OK; }
-            STDMETHODIMP OnFlush(DWORD)
+            STDMETHODIMP OnEvent(DWORD /*sidx*/, IMFMediaEvent* /*event*/) override { return S_OK; }
+            STDMETHODIMP OnFlush(DWORD) override
             {
                 auto owner = _owner.lock();
                 if (owner)
@@ -116,7 +112,7 @@ namespace rsimpl
                     SetEvent(owner->_isFlushed);
                 }
                 return S_OK;
-            };
+            }
 
         private:
             std::weak_ptr<wmf_uvc_device> _owner;
@@ -186,7 +182,7 @@ namespace rsimpl
                     if (i == _info && device)
                     {
                         wchar_t did[256];
-                        CHECK_HR(device->GetString(did_guid, did, sizeof(did) / sizeof(wchar_t), 0));
+                        CHECK_HR(device->GetString(did_guid, did, sizeof(did) / sizeof(wchar_t), nullptr));
 
                         CHECK_HR(MFCreateAttributes(&_pDeviceAttrs, 2));
                         CHECK_HR(_pDeviceAttrs->SetGUID(MF_DEVSOURCE_ATTRIBUTE_SOURCE_TYPE, type_guid));
@@ -198,10 +194,10 @@ namespace rsimpl
                         CHECK_HR(MFCreateAttributes(&_pReaderAttrs, 2));
                         CHECK_HR(_pReaderAttrs->SetUINT32(MF_SOURCE_READER_DISCONNECT_MEDIASOURCE_ON_SHUTDOWN, FALSE));
                         CHECK_HR(_pReaderAttrs->SetUnknown(MF_SOURCE_READER_ASYNC_CALLBACK,
-                                                                                     static_cast<IUnknown*>(_callback.get())));
+                                                           static_cast<IUnknown*>(_callback.get())));
 
                         CHECK_HR(_pReaderAttrs->SetUINT32(MF_READWRITE_ENABLE_HARDWARE_TRANSFORMS, TRUE));
-                        CHECK_HR(_pActivate->ActivateObject(IID_IMFMediaSource, (void **)&_pSource));
+                        CHECK_HR(_pActivate->ActivateObject(IID_IMFMediaSource, reinterpret_cast<void **>(&_pSource)));
                         CHECK_HR(MFCreateSourceReaderFromMediaSource(_pSource, _pReaderAttrs, &_reader));
 
                         UINT32 streamIndex;
@@ -241,13 +237,14 @@ namespace rsimpl
 
             CHECK_HR(_reader->SetStreamSelection(static_cast<DWORD>(MF_SOURCE_READER_ALL_STREAMS), TRUE));
 
-            for (unsigned int sIndex = 0, profileIndex = 0; sIndex < _streams.size(); ++sIndex)
+            for (unsigned int sIndex = 0; sIndex < _streams.size(); ++sIndex)
             {
                 for (auto k = 0;; k++)
                 {
                     auto hr = _reader->GetNativeMediaType(sIndex, k, &pMediaType);
                     if (FAILED(hr) || pMediaType == nullptr)
                     {
+                        LOG_HR(hr);
                         break;
                     }
 
@@ -296,8 +293,9 @@ namespace rsimpl
             return results;
         }
 
-        wmf_uvc_device::wmf_uvc_device(const uvc_device_info& info)
-            : _info(info)
+        wmf_uvc_device::wmf_uvc_device(const uvc_device_info& info, 
+                                       std::shared_ptr<const wmf_backend> backend)
+            : _info(info), _backend(backend)
         {
             _isFlushed = CreateEvent(nullptr, FALSE, FALSE, nullptr);
 
@@ -339,10 +337,7 @@ namespace rsimpl
                     auto hr = _reader->GetNativeMediaType(sIndex, k, &pMediaType);
                     if (FAILED(hr) || pMediaType == nullptr)
                     {
-                        if (pMediaType)
-                        {
-                            pMediaType = nullptr;
-                        }
+                        LOG_HR(hr);
                         break;
                     }
 
@@ -379,7 +374,7 @@ namespace rsimpl
                             {
                                 if (subtype == formatGuid)
                                 {
-                                    hr = _reader->SetCurrentMediaType(sIndex, 0, pMediaType);
+                                    hr = _reader->SetCurrentMediaType(sIndex, nullptr, pMediaType);
 
                                     if (SUCCEEDED(hr) && pMediaType)
                                     {

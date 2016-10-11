@@ -277,7 +277,8 @@ namespace rsimpl
 
     size_t subdevice_mode_selection::get_image_size(rs_stream stream) const
     {
-        return rsimpl::get_image_size(get_width(), get_height(), get_format(stream));
+        return 0;
+        //return rsimpl::get_image_size(get_width(), get_height(), get_format(stream));
     }
 
     void subdevice_mode_selection::set_output_buffer_format(const rs_output_buffer_format in_output_format)
@@ -302,8 +303,8 @@ namespace rsimpl
         for(size_t i=0; i<outputs.size(); ++i)
         {
             out[i] = dest[i];
-            out_stride[i] = rsimpl::get_image_size(get_width(), 1, outputs[i].second);
-            if(pad_crop > 0) out[i] += out_stride[i] * pad_crop + rsimpl::get_image_size(pad_crop, 1, outputs[i].second);
+            //out_stride[i] = rsimpl::get_image_size(get_width(), 1, outputs[i].second);
+            //if(pad_crop > 0) out[i] += out_stride[i] * pad_crop + rsimpl::get_image_size(pad_crop, 1, outputs[i].second);
         }
 
         // Unpack (potentially a subrect of) the source image into (potentially a subrect of) the destination buffers

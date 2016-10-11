@@ -10,7 +10,6 @@
 #define LIBREALSENSE_TYPES_H
 
 #include "../include/librealsense/rs.h"     // Inherit all type definitions in the public API
-#include "../include/librealsense/rscore.hpp" // Inherit public interfaces
 
 #include <cassert>                          // For assert
 #include <cstring>                          // For memcmp
@@ -65,19 +64,19 @@ namespace rsimpl
     // Logging mechanism //
     ///////////////////////
 
-    void log(rs_log_severity severity, const std::string & message);
-    void log_to_console(rs_log_severity min_severity);
-    void log_to_file(rs_log_severity min_severity, const char * file_path);
-    void log_to_callback(rs_log_severity min_severity, rs_log_callback * callback);
-    void log_to_callback(rs_log_severity min_severity, void(*on_log)(rs_log_severity min_severity, const char * message, void * user), void * user);
-    rs_log_severity get_minimum_severity();
+    //void log(rs_log_severity severity, const std::string & message);
+    //void log_to_console(rs_log_severity min_severity);
+    //void log_to_file(rs_log_severity min_severity, const char * file_path);
+    //void log_to_callback(rs_log_severity min_severity, rs_log_callback * callback);
+    //void log_to_callback(rs_log_severity min_severity, void(*on_log)(rs_log_severity min_severity, const char * message, void * user), void * user);
+    //rs_log_severity get_minimum_severity();
 
 #define LOG(SEVERITY, ...) do { if(static_cast<int>(SEVERITY) >= rsimpl::get_minimum_severity()) { std::ostringstream _ss; _ss << __VA_ARGS__; rsimpl::log(SEVERITY, _ss.str()); } } while(false)
-#define LOG_DEBUG(...)   LOG(RS_LOG_SEVERITY_DEBUG, __VA_ARGS__)
-#define LOG_INFO(...)    LOG(RS_LOG_SEVERITY_INFO,  __VA_ARGS__)
-#define LOG_WARNING(...) LOG(RS_LOG_SEVERITY_WARN,  __VA_ARGS__)
-#define LOG_ERROR(...)   LOG(RS_LOG_SEVERITY_ERROR, __VA_ARGS__)
-#define LOG_FATAL(...)   LOG(RS_LOG_SEVERITY_FATAL, __VA_ARGS__)
+#define LOG_DEBUG(...)   
+#define LOG_INFO(...)    
+#define LOG_WARNING(...) 
+#define LOG_ERROR(...)   
+#define LOG_FATAL(...)   
 
     /////////////////////////////
     // Enumerated type support //
@@ -332,7 +331,7 @@ namespace rsimpl
     typedef void(*timestamp_callback_function_ptr)(rs_device * dev, rs_timestamp_data data, void * user);
     typedef void(*log_callback_function_ptr)(rs_log_severity severity, const char * message, void * user);
 
-    class frame_callback : public rs_frame_callback
+    /*class frame_callback : public rs_frame_callback
     {
         frame_callback_function_ptr fptr;
         void * user;
@@ -446,16 +445,16 @@ namespace rsimpl
         ~frame_callback_ptr() { if (callback) callback->release(); }
         operator rs_frame_callback *() { return callback; }
         rs_frame_callback * operator*() { return callback; }
-    };
+    };*/
 
     struct device_config
     {
         const static_device_info            info;
         stream_request                      requests[RS_STREAM_NATIVE_COUNT];                       // Modified by enable/disable_stream calls
-        frame_callback_ptr                  callbacks[RS_STREAM_NATIVE_COUNT];                      // Modified by set_frame_callback calls
+        //frame_callback_ptr                  callbacks[RS_STREAM_NATIVE_COUNT];                      // Modified by set_frame_callback calls
         data_polling_request                data_request;                                           // Modified by enable/disable_events calls
-        motion_callback_ptr                 motion_callback{ nullptr, [](rs_motion_callback*){} };  // Modified by set_events_callback calls
-        timestamp_callback_ptr              timestamp_callback{ nullptr, [](rs_timestamp_callback*){} };
+        //motion_callback_ptr                 motion_callback{ nullptr, [](rs_motion_callback*){} };  // Modified by set_events_callback calls
+       // timestamp_callback_ptr              timestamp_callback{ nullptr, [](rs_timestamp_callback*){} };
         float depth_scale;                                              // Scale of depth values
 
         explicit device_config(const rsimpl::static_device_info & info) : info(info), depth_scale(info.nominal_depth_scale)

@@ -2,35 +2,82 @@
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
 #pragma once
-#ifndef LIBREALSENSE_SR300_H
-#define LIBREALSENSE_SR300_H
 
-#include <atomic>
-#include "ivcam-private.h"
-#include "ivcam-device.h"
+#include <vector>
 
-#define SR300_PRODUCT_ID 0x0aa5
+#include "device.h"
+#include "backend.h"
+
 
 namespace rsimpl
 {
-
-    class sr300_camera final : public iv_camera
+    struct sr300;
+    
+    struct sr300_info : rs_device_info
     {
-        void set_fw_logger_option(double value);
-        unsigned get_fw_logger_option();
+        rs_device* create(const rsimpl::uvc::backend& backend) const override;
 
-    public:
-        sr300_camera(std::shared_ptr<uvc::device> device, const static_device_info & info, const ivcam::camera_calib_params & calib);
-        ~sr300_camera() {};
+        rs_device_info* clone() const override
+        {
+            return new sr300_info(*this);
+        }
 
-        void set_options(const rs_option options[], size_t count, const double values[]) override;
-        void get_options(const rs_option options[], size_t count, double values[]) override;
+        sr300_info(uvc::uvc_device_info color,
+                   uvc::uvc_device_info depth);
 
-        virtual void start_fw_logger(char fw_log_op_code, int grab_rate_in_ms, std::timed_mutex& mutex) override;
-        virtual void stop_fw_logger() override;
+    private:
+        uvc::uvc_device_info _color;
+        uvc::uvc_device_info _depth;
     };
 
-    std::shared_ptr<rs_device> make_sr300_device(std::shared_ptr<uvc::device> device);
+    std::vector<std::shared_ptr<rs_device_info>> pick_sr300_devices(std::vector<uvc::uvc_device_info>& uvc);
+
+    struct sr300 : rs_device
+    {
+        sr300(const uvc::backend& backend,
+              const uvc::uvc_device_info& color,
+              const uvc::uvc_device_info& depth)
+        {
+            _color = backend.create_uvc_device(color);
+            _depth = backend.create_uvc_device(depth);
+        }
+
+    private:
+        std::shared_ptr<uvc::uvc_device> _color;
+        std::shared_ptr<uvc::uvc_device> _depth;
+    };
 }
 
-#endif
+
+//#ifndef LIBREALSENSE_SR300_H
+//#define LIBREALSENSE_SR300_H
+//
+//#include <atomic>
+//#include "ivcam-private.h"
+//#include "ivcam-device.h"
+//
+//#define SR300_PRODUCT_ID 0x0aa5
+//
+//namespace rsimpl
+//{
+//
+//    class sr300_camera final : public iv_camera
+//    {
+//        void set_fw_logger_option(double value);
+//        unsigned get_fw_logger_option();
+//
+//    public:
+//        sr300_camera(std::shared_ptr<uvc::device> device, const static_device_info & info, const ivcam::camera_calib_params & calib);
+//        ~sr300_camera() {};
+//
+//        void set_options(const rs_option options[], size_t count, const double values[]) override;
+//        void get_options(const rs_option options[], size_t count, double values[]) override;
+//
+//        virtual void start_fw_logger(char fw_log_op_code, int grab_rate_in_ms, std::timed_mutex& mutex) override;
+//        virtual void stop_fw_logger() override;
+//    };
+//
+//    std::shared_ptr<rs_device> make_sr300_device(std::shared_ptr<uvc::device> device);
+//}
+//
+//#endif

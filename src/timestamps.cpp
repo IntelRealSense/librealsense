@@ -1,5 +1,5 @@
 #include "timestamps.h"
-#include "sync.h"
+#include "types.h"
 #include <algorithm>
 
 using namespace rsimpl;

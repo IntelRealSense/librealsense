@@ -5,10 +5,7 @@
 #include <array>
 #include <string>
 
-#include "r200.h"
-#include "f200.h"
 #include "sr300.h"
-#include "zr300.h"
 #include "ds5d.h"
 #include "ds5c.h"
 #include "ds5t.h"
@@ -46,88 +43,21 @@ constexpr auto rs_api_version = concat("VERSION: ",RS_API_VERSION_STR);
 
 #else    // manual version tracking is required
 static const std::string rs_api_version("VERSION: Not Applicable");
-
 #endif
 
-bool is_compatible(std::shared_ptr<rs_device> device)
+rs_context::rs_context()
+    : _backend(rsimpl::uvc::create_backend())
 {
-    return device->supports(RS_CAPABILITIES_ENUMERATION);
 }
 
-rs_context_base::rs_context_base()
+rs_device_info_list* rs_context::query_devices() const
 {
-    context = rsimpl::uvc::create_context();
+    std::vector<std::shared_ptr<rs_device_info>> list;
 
-    for(auto device : query_devices(context))
-    {
-        LOG_INFO("UVC device detected with VID = 0x" << std::hex << get_vendor_id(*device) << " PID = 0x" << get_product_id(*device));
+    auto uvc_devices = _backend->query_uvc_devices();
 
-        if (get_vendor_id(*device) != VID_INTEL_CAMERA)
-            continue;
+    auto sr300_devices = rsimpl::pick_sr300_devices(uvc_devices);
+    for (auto& dev : sr300_devices) list.push_back(dev);
 
-        std::shared_ptr<rs_device> rs_dev;
-
-        switch(get_product_id(*device))
-        {
-            case R200_PRODUCT_ID:       rs_dev = rsimpl::make_r200_device(device); break;
-            case LR200_PRODUCT_ID:      rs_dev = rsimpl::make_lr200_device(device); break;
-            case ZR300_PRODUCT_ID:      rs_dev = rsimpl::make_zr300_device(device); break;
-            case F200_PRODUCT_ID:       rs_dev = rsimpl::make_f200_device(device); break;
-            case SR300_PRODUCT_ID:      rs_dev = rsimpl::make_sr300_device(device); break;
-            case DS5_PSR_PRODUCT_ID:    rs_dev = rsimpl::make_ds5d_passive_device(device); break;
-            case DS5_ASR_PRODUCT_ID:    rs_dev = rsimpl::make_ds5d_active_device(device); break;
-            case DS5_ASRC_PRODUCT_ID:   rs_dev = rsimpl::make_ds5c_rolling_device(device); break;
-            case DS5_AWGC_PRODUCT_ID:   rs_dev = rsimpl::make_ds5c_global_wide_device(device); break;
-            case DS5_AWGCT_PRODUCT_ID:  rs_dev = rsimpl::make_ds5t_device(device); break;
-        }
-
-        if (rs_dev && is_compatible(rs_dev))
-        {
-            devices.push_back(rs_dev);
-        }
-        else
-        {
-            LOG_ERROR("Device is not supported by librealsense!");
-        }
-    }
-}
-
-// Enforce singleton semantics on rs_context
-rs_context* rs_context_base::instance = nullptr;
-int rs_context_base::ref_count = 0;
-std::mutex rs_context_base::instance_lock;
-std::string rs_context_base::api_version = std::string(rs_api_version.begin(),rs_api_version.end());
-
-rs_context* rs_context_base::acquire_instance()
-{
-    std::lock_guard<std::mutex> lock(instance_lock);
-    if (ref_count++ == 0)
-    {
-        instance = new rs_context_base();
-    }
-    return instance;
-}
-
-void rs_context_base::release_instance()
-{
-    std::lock_guard<std::mutex> lock(instance_lock);
-    if (--ref_count == 0)
-    {
-        delete instance;
-    }
-}
-
-rs_context_base::~rs_context_base()
-{
-    assert(ref_count == 0);
-}
-
-size_t rs_context_base::get_device_count() const
-{
-    return devices.size();
-}
-
-rs_device* rs_context_base::get_device(int index) const
-{
-    return devices[index].get();
+    return new rs_device_info_list { list };
 }

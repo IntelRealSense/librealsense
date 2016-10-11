@@ -2,30 +2,21 @@
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
 #pragma once
-#ifndef LIBREALSENSE_CONTEXT_H
-#define LIBREALSENSE_CONTEXT_H
 
 #include "types.h"
 #include "backend.h"
 
-struct rs_context_base : rs_context
+struct rs_device_info_list
 {
-    std::shared_ptr<rsimpl::uvc::context>           context;
-    std::vector<std::shared_ptr<rs_device>>         devices;
-
-                                                    rs_context_base();
-                                                    ~rs_context_base();
-
-    static rs_context*                              acquire_instance();
-    static void                                     release_instance();
-
-    size_t                                          get_device_count() const override;
-    rs_device *                                     get_device(int index) const override;
-private:
-    static int                                      ref_count;
-    static std::mutex                               instance_lock;
-    static rs_context*                              instance;
-    static std::string                              api_version;
+    std::vector<std::shared_ptr<rs_device_info>> list;
 };
 
-#endif
+struct rs_context
+{
+    rs_context();
+
+    rs_device_info_list* query_devices() const;
+    const rsimpl::uvc::backend& get_backend() const { return *_backend; }
+private:
+    std::shared_ptr<rsimpl::uvc::backend> _backend;
+};

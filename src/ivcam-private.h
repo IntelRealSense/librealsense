@@ -11,7 +11,7 @@
 namespace rsimpl {
 namespace ivcam {
 
-    const uvc::extension_unit depth_xu{ 1, 6, 1, { 0xA55751A1, 0xF3C5, 0x4A5E, { 0x8D, 0x5A, 0x68, 0x54, 0xB8, 0xFA, 0x27, 0x16 } } };
+    //const uvc::extension_unit depth_xu{ 1, 6, 1, { 0xA55751A1, 0xF3C5, 0x4A5E, { 0x8D, 0x5A, 0x68, 0x54, 0xB8, 0xFA, 0x27, 0x16 } } };
 
     struct camera_calib_params
     {
@@ -129,7 +129,7 @@ namespace ivcam {
     };
 
     // Claim USB interface used for device
-    void claim_ivcam_interface(uvc::device & device);
+    /*void claim_ivcam_interface(uvc::device & device);
 
     // Read device state
     size_t prepare_usb_command(uint8_t * request, size_t & requestSize, uint32_t op, uint32_t p1 = 0, uint32_t p2 = 0, uint32_t p3 = 0, uint32_t p4 = 0, uint8_t * data = 0, size_t dataLength = 0);
@@ -152,7 +152,7 @@ namespace ivcam {
     void get_filter_option(const uvc::device & device, uint8_t & filter_option);
     void set_filter_option(uvc::device & device, uint8_t filter_option);
     void get_confidence_threshold(const uvc::device & device, uint8_t & conf_thresh);
-    void set_confidence_threshold(uvc::device & device, uint8_t conf_thresh);
+    void set_confidence_threshold(uvc::device & device, uint8_t conf_thresh);*/
 
 } // rsimpl::ivcam
 
@@ -193,22 +193,22 @@ namespace f200 {
     };
 
     // Read calibration or device state
-    std::tuple<ivcam::camera_calib_params, f200::cam_temperature_data, thermal_loop_params> read_f200_calibration(uvc::device & device, std::timed_mutex & mutex);
-    float read_mems_temp(uvc::device & device, std::timed_mutex & mutex);
-    int read_ir_temp(uvc::device & device, std::timed_mutex & mutex);
+    //std::tuple<ivcam::camera_calib_params, f200::cam_temperature_data, thermal_loop_params> read_f200_calibration(uvc::device & device, std::timed_mutex & mutex);
+    //float read_mems_temp(uvc::device & device, std::timed_mutex & mutex);
+    //int read_ir_temp(uvc::device & device, std::timed_mutex & mutex);
 
     // Modify device state
-    void update_asic_coefficients(uvc::device & device, std::timed_mutex & mutex, const ivcam::camera_calib_params & compensated_params); // todo - Allow you to specify resolution
+    //void update_asic_coefficients(uvc::device & device, std::timed_mutex & mutex, const ivcam::camera_calib_params & compensated_params); // todo - Allow you to specify resolution
 
-    void get_dynamic_fps(const uvc::device & device, uint8_t & dynamic_fps);
-    void set_dynamic_fps(uvc::device & device, uint8_t dynamic_fps);
+    //void get_dynamic_fps(const uvc::device & device, uint8_t & dynamic_fps);
+    //void set_dynamic_fps(uvc::device & device, uint8_t dynamic_fps);
 
 } // rsimpl::f200
 
 namespace sr300
 {
     // Read calibration or device state
-    ivcam::camera_calib_params read_sr300_calibration(uvc::device & device, std::timed_mutex & mutex);
+    //ivcam::camera_calib_params read_sr300_calibration(uvc::device & device, std::timed_mutex & mutex);
 } // rsimpl::sr300
 } // namespace rsimpl
 

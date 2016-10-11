@@ -38,9 +38,13 @@ namespace rsimpl
             return ss.str();
         }
 
-        void check(const char * call, HRESULT hr)
+        void check(const char * call, HRESULT hr, bool to_throw)
         {
-            if (FAILED(hr)) throw std::runtime_error(to_string() << call << "(...) returned " << hr_to_string(hr));
+            if (FAILED(hr))
+            {
+                if (to_throw) throw std::runtime_error(to_string() << call << "(...) returned " << hr_to_string(hr));
+                // TODO: Log 
+            }
         }
 
         std::string win_to_utf(const WCHAR * s)
@@ -48,7 +52,7 @@ namespace rsimpl
             auto len = WideCharToMultiByte(CP_UTF8, 0, s, -1, nullptr, 0, nullptr, nullptr);
             if(len == 0) throw std::runtime_error(to_string() << "WideCharToMultiByte(...) returned 0 and GetLastError() is " << GetLastError());
             std::string buffer(len-1, ' ');
-            len = WideCharToMultiByte(CP_UTF8, 0, s, -1, &buffer[0], (int)buffer.size()+1, NULL, NULL);
+            len = WideCharToMultiByte(CP_UTF8, 0, s, -1, &buffer[0], static_cast<int>(buffer.size())+1, nullptr, nullptr);
             if(len == 0) throw std::runtime_error(to_string() << "WideCharToMultiByte(...) returned 0 and GetLastError() is " << GetLastError());
             return buffer;
         }
@@ -219,7 +223,7 @@ namespace rsimpl
             {
                 // allocate something or other
                 char buf[sizeof(USB_NODE_CONNECTION_INFORMATION_EX)] = { 0 };
-                PUSB_NODE_CONNECTION_INFORMATION_EX pConInfo = (PUSB_NODE_CONNECTION_INFORMATION_EX)buf;
+                PUSB_NODE_CONNECTION_INFORMATION_EX pConInfo = reinterpret_cast<PUSB_NODE_CONNECTION_INFORMATION_EX>(buf);
 
                 // get info about port i
                 pConInfo->ConnectionIndex = i;
@@ -256,7 +260,7 @@ namespace rsimpl
             SP_DEVINFO_DATA devInfo = { sizeof(SP_DEVINFO_DATA) };
 
             // build a device info represent all imaging devices.
-            HDEVINFO device_info = SetupDiGetClassDevsEx((const GUID *)&GUID_DEVINTERFACE_IMAGE,
+            HDEVINFO device_info = SetupDiGetClassDevsEx(static_cast<const GUID *>(&GUID_DEVINTERFACE_IMAGE),
                 nullptr, 
                 nullptr, 
                 DIGCF_PRESENT,

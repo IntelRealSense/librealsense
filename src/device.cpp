@@ -12,13 +12,12 @@
 #include <sstream>
 
 using namespace rsimpl;
-using namespace rsimpl::motion_module;
 
-const int MAX_FRAME_QUEUE_SIZE = 20;
+/*const int MAX_FRAME_QUEUE_SIZE = 20;
 const int MAX_EVENT_QUEUE_SIZE = 500;
 const int MAX_EVENT_TINE_OUT   = 10;
 
-rs_device_base::rs_device_base(std::shared_ptr<rsimpl::uvc::device> device, const rsimpl::static_device_info & info, calibration_validator validator) : device(device), config(info),
+rs_device_base::rs_device_base(const rsimpl::static_device_info & info, calibration_validator validator) : config(info),
     depth(config, RS_STREAM_DEPTH, validator), color(config, RS_STREAM_COLOR, validator), infrared(config, RS_STREAM_INFRARED, validator), infrared2(config, RS_STREAM_INFRARED2, validator), fisheye(config, RS_STREAM_FISHEYE, validator),
     points(depth), rect_color(color), color_to_depth(color, depth), depth_to_color(depth, color), depth_to_rect_color(depth, rect_color), infrared2_to_depth(infrared2,depth), depth_to_infrared2(depth,infrared2),
     capturing(false), data_acquisition_active(false), max_publish_list_size(MAX_FRAME_QUEUE_SIZE), event_queue_size(MAX_EVENT_QUEUE_SIZE), events_timeout(MAX_EVENT_TINE_OUT),
@@ -54,7 +53,7 @@ rs_device_base::~rs_device_base()
 
 bool rs_device_base::supports_option(rs_option option) const 
 { 
-    if(uvc::is_pu_control(option)) return true;
+    //if(uvc::is_pu_control(option)) return true;
     for(auto & o : config.info.options) if(o.option == option) return true;
     return false; 
 }
@@ -90,7 +89,7 @@ rs_motion_intrinsics rs_device_base::get_motion_intrinsics() const
     throw std::runtime_error("Motion intrinsic is not supported for this device");
 }
 
-rs_extrinsics rs_device_base::get_motion_extrinsics_from(rs_stream /*from*/) const
+rs_extrinsics rs_device_base::get_motion_extrinsics_from(rs_stream /*from) const
 {
     throw std::runtime_error("Motion extrinsics does not supported");
 }
@@ -141,13 +140,13 @@ void rs_device_base::start_motion_tracking()
 {
     if (data_acquisition_active) throw std::runtime_error("cannot restart data acquisition without stopping first");
 
-    auto parser = std::make_shared<motion_module_parser>();
+    //auto parser = std::make_shared<motion_module_parser>();
 
     // Activate data polling handler
     if (config.data_request.enabled)
     {
         // TODO -replace hard-coded value 3 which stands for fisheye subdevice   
-        set_subdevice_data_channel_handler(*device, 3,
+        /*set_subdevice_data_channel_handler(*device, 3,
             [this, parser](const unsigned char * data, const int size) mutable
         {
             if (motion_module_ready)    //  Flush all received data before MM is fully operational 
@@ -180,14 +179,14 @@ void rs_device_base::start_motion_tracking()
         });
     }
 
-    start_data_acquisition(*device);     // activate polling thread in the backend
+    //start_data_acquisition(*device);     // activate polling thread in the backend
     data_acquisition_active = true;
 }
 
 void rs_device_base::stop_motion_tracking()
 {
     if (!data_acquisition_active) throw std::runtime_error("cannot stop data acquisition - is already stopped");
-    stop_data_acquisition(*device);
+    //stop_data_acquisition(*device);
     data_acquisition_active = false;
 }
 
@@ -282,7 +281,7 @@ std::string hexify(unsigned char n)
 
 void rs_device_base::start_fw_logger(char fw_log_op_code, int grab_rate_in_ms, std::timed_mutex& mutex)
 {
-    if (keep_fw_logger_alive)
+    /*if (keep_fw_logger_alive)
         throw std::logic_error("FW logger already started");
 
     keep_fw_logger_alive = true;
@@ -293,7 +292,7 @@ void rs_device_base::start_fw_logger(char fw_log_op_code, int grab_rate_in_ms, s
         while (keep_fw_logger_alive)
         {
             std::this_thread::sleep_for(std::chrono::milliseconds(grab_rate_in_ms));
-            hw_monitor::perform_and_send_monitor_command_over_usb_monitor(this->get_device(), mutex, cmd);
+            //hw_monitor::perform_and_send_monitor_command_over_usb_monitor(this->get_device(), mutex, cmd);
             char data[data_size];
             memcpy(data, cmd.receivedCommandData, cmd.receivedCommandDataLength);
 
@@ -358,7 +357,7 @@ void rs_device_base::start_video_streaming()
 
         std::shared_ptr<drops_status> frame_drops_status(new drops_status{});
         // Initialize the subdevice and set it to the selected mode
-        set_subdevice_mode(*device, mode_selection.mode.subdevice, mode_selection.mode.native_dims.x, mode_selection.mode.native_dims.y, mode_selection.mode.pf.fourcc, mode_selection.mode.fps, 
+        /*set_subdevice_mode(*device, mode_selection.mode.subdevice, mode_selection.mode.native_dims.x, mode_selection.mode.native_dims.y, mode_selection.mode.pf.fourcc, mode_selection.mode.fps, 
             [this, mode_selection, archive, timestamp_reader, streams, capture_start_time, frame_drops_status](const void * frame, std::function<void()> continuation) mutable
         {
             auto now = std::chrono::system_clock::now().time_since_epoch();
@@ -477,7 +476,7 @@ void rs_device_base::start_video_streaming()
     
     this->archive = archive;
     on_before_start(selected_modes);
-    start_streaming(*device, config.info.num_libuvc_transfer_buffers);
+    //start_streaming(*device, config.info.num_libuvc_transfer_buffers);
     capture_started = std::chrono::high_resolution_clock::now();
     capturing = true;
 }
@@ -485,7 +484,7 @@ void rs_device_base::start_video_streaming()
 void rs_device_base::stop_video_streaming()
 {
     if(!capturing) throw std::runtime_error("cannot stop device without first starting device");
-    stop_streaming(*device);
+    //stop_streaming(*device);
     archive->flush();
     capturing = false;
 }
@@ -628,7 +627,7 @@ bool rs_device_base::supports(rs_camera_info info_param) const
 
 void rs_device_base::get_option_range(rs_option option, double & min, double & max, double & step, double & def)
 {
-    if(uvc::is_pu_control(option))
+    /*if(uvc::is_pu_control(option))
     {
         int mn, mx, stp, df;
         uvc::get_pu_control_range(get_device(), config.info.stream_subdevices[RS_STREAM_COLOR], option, &mn, &mx, &stp, &df);
@@ -698,7 +697,7 @@ void rs_device_base::disable_auto_option(int subdevice, rs_option auto_opt)
 {
     static const int reset_state = 0;
     // Probe , then deactivate
-    if (uvc::get_pu_control(get_device(), subdevice, auto_opt))
+    /*if (uvc::get_pu_control(get_device(), subdevice, auto_opt))
         uvc::set_pu_control(get_device(), subdevice, auto_opt, reset_state);
 }
 
@@ -706,6 +705,7 @@ void rs_device_base::disable_auto_option(int subdevice, rs_option auto_opt)
 const char * rs_device_base::get_usb_port_id() const
 {
     std::lock_guard<std::mutex> lock(usb_port_mutex);
-    if (usb_port_id == "") usb_port_id = rsimpl::uvc::get_usb_port_id(*device);
+    //if (usb_port_id == "") usb_port_id = rsimpl::uvc::get_usb_port_id(*device);
     return usb_port_id.c_str();
 }
+*/

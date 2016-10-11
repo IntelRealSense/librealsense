@@ -14,6 +14,7 @@ namespace rsimpl
     namespace uvc
     {
         class source_reader_callback;
+        class wmf_backend;
 
         struct profile_and_callback
         {
@@ -27,8 +28,8 @@ namespace rsimpl
         class wmf_uvc_device : public std::enable_shared_from_this<wmf_uvc_device>, public uvc_device
         {
         public:
+            wmf_uvc_device(const uvc_device_info& info, std::shared_ptr<const wmf_backend> backend);
             ~wmf_uvc_device();
-            explicit wmf_uvc_device(const uvc_device_info& info);
 
             void play(stream_profile profile, frame_callback callback) override;
             void stop(stream_profile profile) override;
@@ -59,6 +60,8 @@ namespace rsimpl
 
             std::vector<profile_and_callback>       _streams;
             std::mutex                              _streams_mutex;
+
+            std::shared_ptr<const wmf_backend>      _backend;
         };
     }
 }

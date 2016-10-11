@@ -98,18 +98,69 @@ rs_context * rs_create_context(int api_version, rs_error ** error) try
             report_version_mismatch(runtime_api_version, api_version);
     }
 
-    return rs_context_base::acquire_instance();
+    return new rs_context();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, api_version)
 
-void rs_delete_context(rs_context * context, rs_error ** error) try
+void rs_delete_context(rs_context * context) try
 {
     VALIDATE_NOT_NULL(context);
-    rs_context_base::release_instance();
+    delete context;
 }
-HANDLE_EXCEPTIONS_AND_RETURN(, context)
+catch(...) {}
 
-int rs_get_device_count(const rs_context * context, rs_error ** error) try
+rs_device_info_list* rs_query_devices(const rs_context* context, rs_error** error) try
+{
+    VALIDATE_NOT_NULL(context);
+    return context->query_devices();
+}
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, context)
+
+int rs_get_device_list_size(const rs_device_info_list* info_list, rs_error** error) try
+{
+    VALIDATE_NOT_NULL(info_list);
+    return static_cast<int>(info_list->list.size());
+}
+HANDLE_EXCEPTIONS_AND_RETURN(0, info_list)
+
+void rs_delete_device_info_list(rs_device_info_list* info_list) try
+{
+    VALIDATE_NOT_NULL(info_list);
+    delete info_list;
+}
+catch (...) {}
+
+rs_device_info* rs_get_device_info(const rs_device_info_list* info_list, int index, rs_error** error) try
+{
+    VALIDATE_NOT_NULL(info_list);
+    VALIDATE_RANGE(index, 0, info_list->list.size() - 1);
+    return info_list->list[index]->clone();
+}
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, info_list, index)
+
+void rs_delete_device_info(rs_device_info* info_list) try
+{
+    VALIDATE_NOT_NULL(info_list);
+    delete info_list;
+}
+catch (...) {}
+
+rs_device* rs_create_device(const rs_context* context, const rs_device_info* info, rs_error** error) try
+{
+    VALIDATE_NOT_NULL(context);
+    VALIDATE_NOT_NULL(info);
+    return info->create(context->get_backend());
+}
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, context, info)
+
+void rs_delete_device(rs_device* device) try
+{
+    VALIDATE_NOT_NULL(device);
+    delete device;
+}
+catch (...) {}
+
+/*int rs_get_device_count(const rs_context * context, rs_error ** error) try
 {
     VALIDATE_NOT_NULL(context);
     return (int)context->get_device_count();
@@ -714,17 +765,6 @@ void rs_set_device_option(rs_device * device, rs_option option, double value, rs
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, device, option, value)
 
-// Verify  and provide API version encoded as integer value
-int rs_get_api_version(rs_error ** error) try
-{
-    // Each component type is within [0-99] range
-    VALIDATE_RANGE(RS_API_MAJOR_VERSION, 0, 99);
-    VALIDATE_RANGE(RS_API_MINOR_VERSION, 0, 99);
-    VALIDATE_RANGE(RS_API_PATCH_VERSION, 0, 99);
-    return RS_API_VERSION;
-}
-HANDLE_EXCEPTIONS_AND_RETURN(0, RS_API_MAJOR_VERSION, RS_API_MINOR_VERSION, RS_API_PATCH_VERSION)
-
 void rs_send_blob_to_device(rs_device * device, rs_blob_type type, void * data, unsigned int size, rs_error ** error) try
 {
     VALIDATE_NOT_NULL(device);
@@ -740,7 +780,18 @@ void rs_send_blob_to_device(rs_device * device, rs_blob_type type, void * data, 
     }
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, device, type, data, size)
+*/
 
+// Verify  and provide API version encoded as integer value
+int rs_get_api_version(rs_error ** error) try
+{
+    // Each component type is within [0-99] range
+    VALIDATE_RANGE(RS_API_MAJOR_VERSION, 0, 99);
+    VALIDATE_RANGE(RS_API_MINOR_VERSION, 0, 99);
+    VALIDATE_RANGE(RS_API_PATCH_VERSION, 0, 99);
+    return RS_API_VERSION;
+}
+HANDLE_EXCEPTIONS_AND_RETURN(0, RS_API_MAJOR_VERSION, RS_API_MINOR_VERSION, RS_API_PATCH_VERSION)
 
 void rs_free_error(rs_error * error) { if (error) delete error; }
 const char * rs_get_failed_function(const rs_error * error) { return error ? error->function : nullptr; }
@@ -763,12 +814,12 @@ const char * rs_timestamp_domain_to_string(rs_timestamp_domain info){ return rsi
 
 void rs_log_to_console(rs_log_severity min_severity, rs_error ** error) try
 {
-    rsimpl::log_to_console(min_severity);
+    //rsimpl::log_to_console(min_severity);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, min_severity)
 
 void rs_log_to_file(rs_log_severity min_severity, const char * file_path, rs_error ** error) try
 {
-    rsimpl::log_to_file(min_severity, file_path);
+    //rsimpl::log_to_file(min_severity, file_path);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, min_severity, file_path)
