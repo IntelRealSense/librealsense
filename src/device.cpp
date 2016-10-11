@@ -709,3 +709,31 @@ const char * rs_device_base::get_usb_port_id() const
     return usb_port_id.c_str();
 }
 */
+
+std::vector<stream_profile> uvc_endpoint::get_stream_profiles() const
+{
+    std::vector<stream_profile> results;
+    _device->set_power_state(uvc::D0);
+    auto hardware_list = _device->get_profiles();
+    _device->set_power_state(uvc::D3);
+    for (auto& hardware_profile : hardware_list)
+    {
+        if (_owner->supports_guid(hardware_profile.format))
+        {
+            stream_profile profile;
+            auto output = _owner->guid_to_format(hardware_profile.format);
+            profile.stream = output.stream;
+            profile.format = output.format;
+            profile.width = hardware_profile.width;
+            profile.height = hardware_profile.height;
+            profile.fps = hardware_profile.fps;
+            results.push_back(profile);
+        }
+        else
+        {
+            // TODO: log
+        }
+    }
+
+    return results;
+}

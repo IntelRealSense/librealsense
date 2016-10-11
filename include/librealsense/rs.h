@@ -327,6 +327,8 @@ typedef struct rs_device_info rs_device_info;
 typedef struct rs_device_info_list rs_device_info_list;
 typedef struct rs_device rs_device;
 typedef struct rs_error rs_error;
+typedef struct rs_stream_lock rs_stream_lock;
+typedef struct rs_stream_profile_list rs_stream_profile_list;
 
 typedef struct rs_frameset rs_frameset;
 typedef struct rs_frame_ref rs_frame_ref;
@@ -354,6 +356,11 @@ rs_device* rs_create_device(const rs_context* context, const rs_device_info* inf
 void rs_delete_device(rs_device* device);
 
 int rs_is_subdevice_supported(const rs_device* device, rs_subdevice subdevice, rs_error** error);
+
+rs_stream_profile_list* rs_get_supported_profiles(const rs_device* device, rs_subdevice subdevice, rs_error** error);
+void rs_get_profile(const rs_stream_profile_list* list, int index, rs_stream* stream, int* width, int* height, int* fps, rs_format* format, rs_error** error);
+int rs_get_profile_list_size(const rs_stream_profile_list* list, rs_error** error);
+void rs_delete_profiles_list(rs_stream_profile_list* list);
 
 /**
 * retrieve the API version from the source code. Evaluate that the value is conformant to the established policies

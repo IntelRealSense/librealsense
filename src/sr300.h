@@ -38,25 +38,13 @@ namespace rsimpl
               const uvc::uvc_device_info& color,
               const uvc::uvc_device_info& depth)
         {
-            _color = backend.create_uvc_device(color);
-            _depth = backend.create_uvc_device(depth);
-        }
-
-        bool supports(rs_subdevice subdevice) const override
-        {
-            switch(subdevice)
-            {
-            case RS_SUBDEVICE_COLOR:
-            case RS_SUBDEVICE_DEPTH:
-                return true;
-            default:
-                return false;
-            }
+            assign_endpoint(RS_SUBDEVICE_COLOR, std::make_shared<uvc_endpoint>(backend.create_uvc_device(color), this));
+            assign_endpoint(RS_SUBDEVICE_DEPTH, std::make_shared<uvc_endpoint>(backend.create_uvc_device(depth), this));
+            map_output(RS_FORMAT_Z16, RS_STREAM_DEPTH, "{5A564E49-2D90-4A58-920B-773F1F2C556B}");
         }
 
     private:
-        std::shared_ptr<uvc::uvc_device> _color;
-        std::shared_ptr<uvc::uvc_device> _depth;
+
     };
 }
 

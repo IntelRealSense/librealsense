@@ -42,9 +42,47 @@ namespace rs
         std::shared_ptr<rs_device_info> _info;
     };
 
+    struct stream_profile
+    {
+        rs_stream stream;
+        int width;
+        int height;
+        int fps;
+        rs_format format;
+    };
+
     class subdevice
     {
     public:
+        std::vector<stream_profile> get_stream_profiles() const
+        {
+            std::vector<stream_profile> results;
+
+            rs_error* e = nullptr;
+            std::shared_ptr<rs_stream_profile_list> list(
+                rs_get_supported_profiles(_dev, _index, &e),
+                rs_delete_profiles_list);
+            error::handle(e);
+
+            auto size = rs_get_profile_list_size(list.get(), &e);
+            error::handle(e);
+            
+            for (auto i = 0; i < size; i++)
+            {
+                stream_profile profile;
+                rs_get_profile(list.get(), i, 
+                    &profile.stream,
+                    &profile.width,
+                    &profile.height,
+                    &profile.fps,
+                    &profile.format,
+                    &e);
+                error::handle(e);
+                results.push_back(profile);
+            }
+
+            return results;
+        }
 
     private:
         friend device;

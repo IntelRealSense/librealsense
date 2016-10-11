@@ -16,6 +16,11 @@ EXPORTS
 
     rs_is_subdevice_supported
 
+    rs_get_supported_profiles
+    rs_get_profile
+    rs_get_profile_list_size
+    rs_delete_profiles_list
+
     rs_get_failed_function
     rs_get_failed_args
     rs_get_error_message

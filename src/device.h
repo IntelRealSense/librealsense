@@ -84,14 +84,94 @@ namespace rsimpl
     struct cam_mode { int2 dims; std::vector<int> fps; };
 }
 
+struct stream_profile
+{
+    rs_stream stream;
+    int width;
+    int height;
+    int fps;
+    rs_format format;
+};
+
+struct output_type
+{
+    rs_stream stream;
+    rs_format format;
+};
+
+
+namespace rsimpl
+{
+    class endpoint
+    {
+    public:
+        virtual std::vector<stream_profile> get_stream_profiles() const = 0;
+        virtual ~endpoint() = default;
+    };
+
+    class uvc_endpoint : public endpoint
+    {
+    public:
+        uvc_endpoint(std::shared_ptr<uvc::uvc_device> device,
+                     rs_device* owner)
+            : _device(std::move(device)), _owner(owner) {}
+
+        std::vector<stream_profile> get_stream_profiles() const override;
+
+    private:
+        std::shared_ptr<uvc::uvc_device> _device;
+        rs_device* _owner;
+    };
+}
+
+struct rs_stream_profile_list
+{
+    std::vector<stream_profile> list;
+};
+
 struct rs_device
 {
+    rs_device()
+    {
+        _endpoints.resize(RS_SUBDEVICE_COUNT);
+    }
+
     virtual ~rs_device() = default;
 
-    virtual bool supports(rs_subdevice subdevice) const = 0;
+    virtual bool supports(rs_subdevice subdevice) const
+    {
+        return _endpoints[subdevice].get() != nullptr;
+    }
 
+    const rsimpl::endpoint& get_endpoint(rs_subdevice sub) const { return *_endpoints[sub]; }
+    rsimpl::endpoint& get_endpoint(rs_subdevice sub) { return *_endpoints[sub]; }
+
+    virtual bool supports_guid(const std::string& guid) const
+    {
+        auto it = _guid_to_output.find(guid);
+        return it != _guid_to_output.end();
+    }
+
+    virtual output_type guid_to_format(const std::string& guid) const
+    {
+        auto it = _guid_to_output.find(guid);
+        return it->second;
+    }
+
+protected:
+    void assign_endpoint(rs_subdevice subdevice,
+                         std::shared_ptr<rsimpl::endpoint> endpoint)
+    {
+        _endpoints[subdevice] = std::move(endpoint);
+    }
+
+    void map_output(rs_format format, rs_stream stream, const std::string& guid)
+    {
+        _guid_to_output[guid] = { stream, format };
+    }
 private:
-
+    std::vector<std::shared_ptr<rsimpl::endpoint>> _endpoints;
+    std::map<std::string, output_type> _guid_to_output;
 };
 
 #endif

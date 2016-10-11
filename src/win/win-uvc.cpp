@@ -241,7 +241,7 @@ namespace rsimpl
             {
                 for (auto k = 0;; k++)
                 {
-                    auto hr = _reader->GetNativeMediaType(sIndex, k, &pMediaType);
+                    auto hr = _reader->GetNativeMediaType(sIndex, k, &pMediaType.p);
                     if (FAILED(hr) || pMediaType == nullptr)
                     {
                         LOG_HR(hr);

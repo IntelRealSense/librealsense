@@ -168,6 +168,47 @@ int rs_is_subdevice_supported(const rs_device* device, rs_subdevice subdevice, r
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, device, subdevice)
 
+rs_stream_profile_list* rs_get_supported_profiles(const rs_device* device, rs_subdevice subdevice, rs_error** error) try
+{
+    VALIDATE_NOT_NULL(device);
+    VALIDATE_ENUM(subdevice);
+    return new rs_stream_profile_list{ device->get_endpoint(subdevice).get_stream_profiles() };
+}
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, device, subdevice)
+
+void rs_get_profile(const rs_stream_profile_list* list, int index, rs_stream* stream, int* width, int* height, int* fps, rs_format* format, rs_error** error) try
+{
+    VALIDATE_NOT_NULL(list);
+    VALIDATE_RANGE(index, 0, list->list.size() - 1);
+
+    VALIDATE_NOT_NULL(stream);
+    VALIDATE_NOT_NULL(width);
+    VALIDATE_NOT_NULL(height);
+    VALIDATE_NOT_NULL(fps);
+    VALIDATE_NOT_NULL(format);
+
+    *stream = list->list[index].stream;
+    *width = list->list[index].width;
+    *height = list->list[index].height;
+    *fps = list->list[index].fps;
+    *format = list->list[index].format;
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, list, index, width, height, fps, format);
+
+int rs_get_profile_list_size(const rs_stream_profile_list* list, rs_error** error) try
+{
+    VALIDATE_NOT_NULL(list);
+    return list->list.size();
+}
+HANDLE_EXCEPTIONS_AND_RETURN(0, list)
+
+void rs_delete_profiles_list(rs_stream_profile_list* list) try
+{
+    VALIDATE_NOT_NULL(list);
+    delete list;
+}
+catch (...) {}
+
 /*int rs_get_device_count(const rs_context * context, rs_error ** error) try
 {
     VALIDATE_NOT_NULL(context);

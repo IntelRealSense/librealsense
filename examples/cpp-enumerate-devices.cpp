@@ -15,6 +15,11 @@ int main() try
         auto dev = ctx.create(info);
 
         auto& color = dev.color();
+        auto color_formats = color.get_stream_profiles();
+
+        auto& depth = dev.depth();
+        auto depth_formats = depth.get_stream_profiles();
+
     }
 
     return EXIT_SUCCESS;
