@@ -263,6 +263,13 @@ typedef enum rs_timestamp_domain
     RS_TIMESTAMP_DOMAIN_COUNT
 }rs_timestamp_domain;
 
+typedef enum rs_subdevice
+{
+    RS_SUBDEVICE_COLOR,
+    RS_SUBDEVICE_DEPTH,
+    RS_SUBDEVICE_COUNT
+} rs_subdevice;
+
 typedef struct rs_intrinsics
 {
     int           width;     /* width of the image in pixels */
@@ -320,6 +327,7 @@ typedef struct rs_device_info rs_device_info;
 typedef struct rs_device_info_list rs_device_info_list;
 typedef struct rs_device rs_device;
 typedef struct rs_error rs_error;
+
 typedef struct rs_frameset rs_frameset;
 typedef struct rs_frame_ref rs_frame_ref;
 typedef struct rs_motion_callback rs_motion_callback;
@@ -344,6 +352,8 @@ void rs_delete_device_info(rs_device_info* info_list);
 
 rs_device* rs_create_device(const rs_context* context, const rs_device_info* info, rs_error** error);
 void rs_delete_device(rs_device* device);
+
+int rs_is_subdevice_supported(const rs_device* device, rs_subdevice subdevice, rs_error** error);
 
 /**
 * retrieve the API version from the source code. Evaluate that the value is conformant to the established policies

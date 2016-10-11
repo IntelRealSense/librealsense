@@ -39,6 +39,19 @@ namespace rsimpl
         #undef CASE
     }
 
+    const char * get_string(rs_subdevice value)
+    {
+        #define CASE(X) case RS_SUBDEVICE_##X: return #X;
+        switch(value)
+        {
+        CASE(DEPTH)
+        CASE(COLOR)
+        default: assert(!is_valid(value)); return unknown;
+        }
+        #undef CASE
+    }
+
+
     const char * get_string(rs_format value)
     {
         #define CASE(X) case RS_FORMAT_##X: return #X;

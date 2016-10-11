@@ -29,6 +29,7 @@ namespace rs
     };
 
     class context;
+    class device;
 
     class device_info
     {
@@ -41,10 +42,68 @@ namespace rs
         std::shared_ptr<rs_device_info> _info;
     };
 
-    /*
-     * context object can be used for enumerating over currently connected devices
-     * and to create device object
-     */
+    class subdevice
+    {
+    public:
+
+    private:
+        friend device;
+        explicit subdevice(rs_device* dev, rs_subdevice index) 
+            : _dev(dev), _index(index) {}
+
+        rs_device* _dev;
+        rs_subdevice _index;
+    };
+
+    class device
+    {
+    public:
+        subdevice& get_subdevice(rs_subdevice sub)
+        {
+            if (sub < _subdevices.size() && _subdevices[sub].get()) 
+                return *_subdevices[sub];
+            throw std::exception("Requested subdevice is not supported!");
+        }
+
+        const subdevice& get_subdevice(rs_subdevice sub) const
+        {
+            if (sub < _subdevices.size() && _subdevices[sub].get()) 
+                return *_subdevices[sub];
+            throw std::exception("Requested subdevice is not supported!");
+        }
+
+        bool supports(rs_subdevice sub) const
+        {
+            return sub < _subdevices.size() && _subdevices[sub].get();
+        }
+
+        const subdevice& color() const { return get_subdevice(RS_SUBDEVICE_COLOR); }
+        subdevice& color() { return get_subdevice(RS_SUBDEVICE_COLOR); }
+
+        const subdevice& depth() const { return get_subdevice(RS_SUBDEVICE_DEPTH); }
+        subdevice& depth() { return get_subdevice(RS_SUBDEVICE_DEPTH); }
+
+
+    private:
+        friend context;
+        explicit device(std::shared_ptr<rs_device> dev) : _dev(dev)
+        {
+            _subdevices.resize(RS_SUBDEVICE_COUNT);
+            for (auto i = 0; i < RS_SUBDEVICE_COUNT; i++)
+            {
+                auto s = static_cast<rs_subdevice>(i);
+                rs_error* e = nullptr;
+                auto is_supported = rs_is_subdevice_supported(_dev.get(), s, &e);
+                error::handle(e);
+                if (is_supported) _subdevices[s].reset(new subdevice(_dev.get(), s));
+                else  _subdevices[s] = nullptr;
+            }
+        }
+
+        std::shared_ptr<rs_device> _dev;
+        std::vector<std::shared_ptr<subdevice>> _subdevices;
+    };
+
     class context
     {
     public:
@@ -81,6 +140,17 @@ namespace rs
             }
 
             return results;
+        }
+
+        device create(const device_info& info) const
+        {
+            rs_error* e = nullptr;
+            std::shared_ptr<rs_device> dev(
+                rs_create_device(_context.get(), info._info.get(), &e),
+                rs_delete_device);
+            error::handle(e);
+            device result(dev);
+            return result;
         }
 
     private:

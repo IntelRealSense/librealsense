@@ -12,7 +12,9 @@ int main() try
 
     for (auto& info : list)
     {
-        //auto dev = ctx.create()
+        auto dev = ctx.create(info);
+
+        auto& color = dev.color();
     }
 
     return EXIT_SUCCESS;

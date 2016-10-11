@@ -160,6 +160,14 @@ void rs_delete_device(rs_device* device) try
 }
 catch (...) {}
 
+int rs_is_subdevice_supported(const rs_device* device, rs_subdevice subdevice, rs_error** error) try
+{
+    VALIDATE_NOT_NULL(device);
+    VALIDATE_ENUM(subdevice);
+    return device->supports(subdevice) ? 1 : 0;
+}
+HANDLE_EXCEPTIONS_AND_RETURN(0, device, subdevice)
+
 /*int rs_get_device_count(const rs_context * context, rs_error ** error) try
 {
     VALIDATE_NOT_NULL(context);

@@ -42,6 +42,18 @@ namespace rsimpl
             _depth = backend.create_uvc_device(depth);
         }
 
+        bool supports(rs_subdevice subdevice) const override
+        {
+            switch(subdevice)
+            {
+            case RS_SUBDEVICE_COLOR:
+            case RS_SUBDEVICE_DEPTH:
+                return true;
+            default:
+                return false;
+            }
+        }
+
     private:
         std::shared_ptr<uvc::uvc_device> _color;
         std::shared_ptr<uvc::uvc_device> _depth;

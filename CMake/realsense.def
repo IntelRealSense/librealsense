@@ -14,6 +14,8 @@ EXPORTS
     rs_create_device
     rs_delete_device
 
+    rs_is_subdevice_supported
+
     rs_get_failed_function
     rs_get_failed_args
     rs_get_error_message

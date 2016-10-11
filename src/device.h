@@ -86,6 +86,9 @@ namespace rsimpl
 
 struct rs_device
 {
+    virtual ~rs_device() = default;
+
+    virtual bool supports(rs_subdevice subdevice) const = 0;
 
 private:
 
