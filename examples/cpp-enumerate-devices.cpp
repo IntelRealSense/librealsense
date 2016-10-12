@@ -16,10 +16,22 @@ int main() try
 
         auto& color = dev.color();
         auto color_formats = color.get_stream_profiles();
+        for (auto format : color_formats)
+        {
+            std::cout << format.stream << " " << format.format << " " << format.width << "x" << format.height << " " << format.fps << std::endl;
+
+            std::cout << "starting streaming " << std::endl;
+            auto streaming = dev.color().open(format);
+
+
+        }
 
         auto& depth = dev.depth();
         auto depth_formats = depth.get_stream_profiles();
-
+        for (auto format : depth_formats)
+        {
+            std::cout << format.stream << " " << format.format << " " << format.width << "x" << format.height << " " << format.fps << std::endl;
+        }
     }
 
     return EXIT_SUCCESS;

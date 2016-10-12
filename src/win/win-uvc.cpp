@@ -189,12 +189,12 @@ namespace rsimpl
                         CHECK_HR(_pDeviceAttrs->SetString(did_guid, did));
                         CHECK_HR(MFCreateDeviceSourceActivate(_pDeviceAttrs, &_pActivate));
 
-                        _callback.reset(new source_reader_callback(shared_from_this())); /// async I/O
+                        _callback = new source_reader_callback(shared_from_this()); /// async I/O
 
                         CHECK_HR(MFCreateAttributes(&_pReaderAttrs, 2));
                         CHECK_HR(_pReaderAttrs->SetUINT32(MF_SOURCE_READER_DISCONNECT_MEDIASOURCE_ON_SHUTDOWN, FALSE));
                         CHECK_HR(_pReaderAttrs->SetUnknown(MF_SOURCE_READER_ASYNC_CALLBACK,
-                                                           static_cast<IUnknown*>(_callback.get())));
+                                                           static_cast<IUnknown*>(_callback)));
 
                         CHECK_HR(_pReaderAttrs->SetUINT32(MF_READWRITE_ENABLE_HARDWARE_TRANSFORMS, TRUE));
                         CHECK_HR(_pActivate->ActivateObject(IID_IMFMediaSource, reinterpret_cast<void **>(&_pSource)));
@@ -334,7 +334,7 @@ namespace rsimpl
             {
                 for (auto k = 0;; k++)
                 {
-                    auto hr = _reader->GetNativeMediaType(sIndex, k, &pMediaType);
+                    auto hr = _reader->GetNativeMediaType(sIndex, k, &pMediaType.p);
                     if (FAILED(hr) || pMediaType == nullptr)
                     {
                         LOG_HR(hr);

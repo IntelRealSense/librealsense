@@ -11,14 +11,6 @@
 #include <memory>
 #include <vector>
 
-struct rs_device_info
-{
-    virtual rs_device* create(const rsimpl::uvc::backend& backend) const = 0;
-    virtual rs_device_info* clone() const = 0;
-
-    virtual ~rs_device_info() = default;
-};
-
 namespace rsimpl
 {
     
@@ -82,30 +74,42 @@ namespace rsimpl
         struct motion_module_parser;
     }
     struct cam_mode { int2 dims; std::vector<int> fps; };
+
+
 }
-
-struct stream_profile
-{
-    rs_stream stream;
-    int width;
-    int height;
-    int fps;
-    rs_format format;
-};
-
-struct output_type
-{
-    rs_stream stream;
-    rs_format format;
-};
 
 
 namespace rsimpl
 {
+    struct stream_profile
+    {
+        rs_stream stream;
+        int width;
+        int height;
+        int fps;
+        rs_format format;
+    };
+
+    struct output_type
+    {
+        rs_stream stream;
+        rs_format format;
+    };
+
+    class streaming_lock
+    {
+    public:
+        virtual ~streaming_lock() = default;
+    };
+
     class endpoint
     {
     public:
-        virtual std::vector<stream_profile> get_stream_profiles() const = 0;
+        virtual std::vector<stream_profile> get_stream_profiles() = 0;
+
+        virtual std::unique_ptr<streaming_lock> configure(
+            const std::vector<stream_profile>& request) = 0;
+
         virtual ~endpoint() = default;
     };
 
@@ -116,17 +120,90 @@ namespace rsimpl
                      rs_device* owner)
             : _device(std::move(device)), _owner(owner) {}
 
-        std::vector<stream_profile> get_stream_profiles() const override;
+        std::vector<stream_profile> get_stream_profiles() override;
+
+        std::unique_ptr<rsimpl::streaming_lock> configure(
+            const std::vector<stream_profile>& request) override;
+
+        void stop_streaming();
 
     private:
+        void acquire_power()
+        {
+            std::lock_guard<std::mutex> lock(_power_lock);
+            if (!_user_count) 
+            {
+                _device->set_power_state(uvc::D0);
+                // TODO: Map extension units
+            }
+            _user_count++;
+        }
+        void release_power()
+        {
+            std::lock_guard<std::mutex> lock(_power_lock);
+            _user_count--;
+            if (!_user_count) _device->set_power_state(uvc::D3);
+        }
+
+        struct power
+        {
+            explicit power(uvc_endpoint* owner)
+                : _owner(owner)
+            {
+                _owner->acquire_power();
+            }
+
+            ~power()
+            {
+                _owner->release_power();
+            }
+        private:
+            uvc_endpoint* _owner;
+        };
+
+        class streaming_lock : public rsimpl::streaming_lock
+        {
+        public:
+            explicit streaming_lock(uvc_endpoint* owner)
+                : _owner(owner), _power(owner)
+            {
+                
+            }
+
+            ~streaming_lock()
+            {
+                
+            }
+        private:
+            uvc_endpoint* _owner;
+            power _power;
+        };
+
         std::shared_ptr<uvc::uvc_device> _device;
         rs_device* _owner;
+        int _user_count = 0;
+        std::mutex _power_lock;
+        std::mutex _configure_lock;
+        std::vector<uvc::stream_profile> _configuration;
     };
 }
 
+struct rs_device_info
+{
+    virtual rs_device* create(const rsimpl::uvc::backend& backend) const = 0;
+    virtual rs_device_info* clone() const = 0;
+
+    virtual ~rs_device_info() = default;
+};
+
 struct rs_stream_profile_list
 {
-    std::vector<stream_profile> list;
+    std::vector<rsimpl::stream_profile> list;
+};
+
+struct rs_stream_lock
+{
+    std::unique_ptr<rsimpl::streaming_lock> lock;
 };
 
 struct rs_device
@@ -134,28 +211,40 @@ struct rs_device
     rs_device()
     {
         _endpoints.resize(RS_SUBDEVICE_COUNT);
+        map_output(RS_FORMAT_YUYV, RS_STREAM_COLOR, "{32595559-0000-0010-8000-00AA00389B71}");
     }
 
     virtual ~rs_device() = default;
 
-    virtual bool supports(rs_subdevice subdevice) const
+    bool supports(rs_subdevice subdevice) const
     {
         return _endpoints[subdevice].get() != nullptr;
     }
 
-    const rsimpl::endpoint& get_endpoint(rs_subdevice sub) const { return *_endpoints[sub]; }
     rsimpl::endpoint& get_endpoint(rs_subdevice sub) { return *_endpoints[sub]; }
 
-    virtual bool supports_guid(const std::string& guid) const
+    bool supports_guid(const std::string& guid) const
     {
         auto it = _guid_to_output.find(guid);
         return it != _guid_to_output.end();
     }
 
-    virtual output_type guid_to_format(const std::string& guid) const
+    rsimpl::output_type guid_to_format(const std::string& guid) const
     {
         auto it = _guid_to_output.find(guid);
         return it->second;
+    }
+
+    std::string format_to_guid(rs_stream stream, rs_format format) const
+    {
+        for (auto& kvp : _guid_to_output)
+        {
+            if (kvp.second.format == format && kvp.second.stream == stream)
+            {
+                return kvp.first;
+            }
+        }
+        throw std::runtime_error("Requested stream format is not supported by this device!");
     }
 
 protected:
@@ -171,7 +260,7 @@ protected:
     }
 private:
     std::vector<std::shared_ptr<rsimpl::endpoint>> _endpoints;
-    std::map<std::string, output_type> _guid_to_output;
+    std::map<std::string, rsimpl::output_type> _guid_to_output;
 };
 
 #endif

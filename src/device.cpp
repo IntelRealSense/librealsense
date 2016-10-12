@@ -710,12 +710,12 @@ const char * rs_device_base::get_usb_port_id() const
 }
 */
 
-std::vector<stream_profile> uvc_endpoint::get_stream_profiles() const
+std::vector<stream_profile> uvc_endpoint::get_stream_profiles()
 {
     std::vector<stream_profile> results;
-    _device->set_power_state(uvc::D0);
+    power on(this);
     auto hardware_list = _device->get_profiles();
-    _device->set_power_state(uvc::D3);
+    
     for (auto& hardware_profile : hardware_list)
     {
         if (_owner->supports_guid(hardware_profile.format))
@@ -736,4 +736,41 @@ std::vector<stream_profile> uvc_endpoint::get_stream_profiles() const
     }
 
     return results;
+}
+
+std::unique_ptr<rsimpl::streaming_lock> uvc_endpoint::configure(const std::vector<stream_profile>& request)
+{
+    std::lock_guard<std::mutex> lock(_configure_lock);
+    std::unique_ptr<streaming_lock> streaming(new streaming_lock(this));
+
+    std::vector<uvc::stream_profile> hardware_profiles;
+    for (auto& profile : request)
+    {
+        uvc::stream_profile hardware_profile;
+        hardware_profile.format = _owner->format_to_guid(profile.stream, profile.format);
+        hardware_profile.width = profile.width;
+        hardware_profile.height = profile.height;
+        hardware_profile.fps = profile.fps;
+        hardware_profiles.push_back(hardware_profile);
+    }
+
+    power on(this);
+
+    _configuration = hardware_profiles; // commit to this set of profiles
+    for (auto& profile : hardware_profiles)
+    {
+        _device->play(profile, [](uvc::stream_profile p, uvc::frame_object f) {});
+    }
+
+    return std::move(streaming);
+}
+
+void uvc_endpoint::stop_streaming()
+{
+    std::lock_guard<std::mutex> lock(_configure_lock);
+    for (auto& profile : _configuration)
+    {
+        _device->stop(profile);
+    }
+    _configuration.clear();
 }

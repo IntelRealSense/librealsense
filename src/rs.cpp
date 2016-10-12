@@ -168,7 +168,7 @@ int rs_is_subdevice_supported(const rs_device* device, rs_subdevice subdevice, r
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, device, subdevice)
 
-rs_stream_profile_list* rs_get_supported_profiles(const rs_device* device, rs_subdevice subdevice, rs_error** error) try
+rs_stream_profile_list* rs_get_supported_profiles(rs_device* device, rs_subdevice subdevice, rs_error** error) try
 {
     VALIDATE_NOT_NULL(device);
     VALIDATE_ENUM(subdevice);
@@ -198,7 +198,7 @@ HANDLE_EXCEPTIONS_AND_RETURN(, list, index, width, height, fps, format);
 int rs_get_profile_list_size(const rs_stream_profile_list* list, rs_error** error) try
 {
     VALIDATE_NOT_NULL(list);
-    return list->list.size();
+    return static_cast<int>(list->list.size());
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, list)
 
@@ -206,6 +206,23 @@ void rs_delete_profiles_list(rs_stream_profile_list* list) try
 {
     VALIDATE_NOT_NULL(list);
     delete list;
+}
+catch (...) {}
+
+rs_stream_lock* rs_open_subdevice(rs_device* device, rs_subdevice subdevice, 
+    rs_stream stream, int width, int height, int fps, 
+    rs_format format, rs_error** error) try
+{
+    std::vector<rsimpl::stream_profile> request;
+    request.push_back({ stream, width, height, fps, format });
+    return new rs_stream_lock{ device->get_endpoint(subdevice).configure(request) };
+}
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, device, subdevice, stream, width, height, fps, format)
+
+void rs_release_streaming_lock(rs_stream_lock* lock) try
+{
+    VALIDATE_NOT_NULL(lock);
+    delete lock;
 }
 catch (...) {}
 

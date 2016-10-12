@@ -50,7 +50,7 @@ namespace rsimpl
             const uvc_device_info                   _info;
             power_state                             _powerState = D3;
 
-            std::unique_ptr<source_reader_callback> _callback = nullptr;
+            CComPtr<source_reader_callback>         _callback = nullptr;
             CComPtr<IMFSourceReader>                _reader = nullptr;
             CComPtr<IMFMediaSource>                 _pSource = nullptr;
             CComPtr<IMFActivate>                    _pActivate = nullptr;

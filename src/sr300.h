@@ -40,6 +40,7 @@ namespace rsimpl
         {
             assign_endpoint(RS_SUBDEVICE_COLOR, std::make_shared<uvc_endpoint>(backend.create_uvc_device(color), this));
             assign_endpoint(RS_SUBDEVICE_DEPTH, std::make_shared<uvc_endpoint>(backend.create_uvc_device(depth), this));
+
             map_output(RS_FORMAT_Z16, RS_STREAM_DEPTH, "{5A564E49-2D90-4A58-920B-773F1F2C556B}");
         }
 

@@ -30,6 +30,7 @@ namespace rs
 
     class context;
     class device;
+    class subdevice;
 
     class device_info
     {
@@ -51,9 +52,38 @@ namespace rs
         rs_format format;
     };
 
+    class streaming_lock
+    {
+    public:
+
+    private:
+        friend subdevice;
+        explicit streaming_lock(std::shared_ptr<rs_stream_lock> lock)
+            : _lock(std::move(lock)) {}
+
+        std::shared_ptr<rs_stream_lock> _lock;
+    };
+
     class subdevice
     {
     public:
+        streaming_lock open(const stream_profile& profile) const
+        {
+            rs_error* e = nullptr;
+            std::shared_ptr<rs_stream_lock> lock(
+                rs_open_subdevice(_dev, _index, 
+                    profile.stream, 
+                    profile.width,
+                    profile.height,
+                    profile.fps,
+                    profile.format,
+                    &e),
+                rs_release_streaming_lock);
+            error::handle(e);
+
+            return streaming_lock(lock);
+        }
+
         std::vector<stream_profile> get_stream_profiles() const
         {
             std::vector<stream_profile> results;
@@ -103,22 +133,12 @@ namespace rs
             throw std::exception("Requested subdevice is not supported!");
         }
 
-        const subdevice& get_subdevice(rs_subdevice sub) const
-        {
-            if (sub < _subdevices.size() && _subdevices[sub].get()) 
-                return *_subdevices[sub];
-            throw std::exception("Requested subdevice is not supported!");
-        }
-
         bool supports(rs_subdevice sub) const
         {
             return sub < _subdevices.size() && _subdevices[sub].get();
         }
 
-        const subdevice& color() const { return get_subdevice(RS_SUBDEVICE_COLOR); }
         subdevice& color() { return get_subdevice(RS_SUBDEVICE_COLOR); }
-
-        const subdevice& depth() const { return get_subdevice(RS_SUBDEVICE_DEPTH); }
         subdevice& depth() { return get_subdevice(RS_SUBDEVICE_DEPTH); }
 
 
