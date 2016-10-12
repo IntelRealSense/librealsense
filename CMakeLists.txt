@@ -79,6 +79,7 @@ set(REALSENSE_CPP
 set(REALSENSE_HPP
 	include/librealsense/rs.hpp
 	include/librealsense/rs.h
+	include/librealsense/rscore.hpp
 
     src/archive.h
     src/context.h
@@ -125,6 +126,7 @@ if(WIN32)
 	source_group("Header Files\\API" FILES 
 		include/librealsense/rs.hpp
 		include/librealsense/rs.h
+		include/librealsense/rscore.hpp
 		CMake/realsense.def
 		)
 

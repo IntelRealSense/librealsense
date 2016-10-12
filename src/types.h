@@ -10,6 +10,7 @@
 #define LIBREALSENSE_TYPES_H
 
 #include "../include/librealsense/rs.h"     // Inherit all type definitions in the public API
+#include "../include/librealsense/rscore.hpp"
 
 #include <cassert>                          // For assert
 #include <cstring>                          // For memcmp
@@ -64,19 +65,19 @@ namespace rsimpl
     // Logging mechanism //
     ///////////////////////
 
-    //void log(rs_log_severity severity, const std::string & message);
-    //void log_to_console(rs_log_severity min_severity);
-    //void log_to_file(rs_log_severity min_severity, const char * file_path);
-    //void log_to_callback(rs_log_severity min_severity, rs_log_callback * callback);
-    //void log_to_callback(rs_log_severity min_severity, void(*on_log)(rs_log_severity min_severity, const char * message, void * user), void * user);
-    //rs_log_severity get_minimum_severity();
+    void log(rs_log_severity severity, const std::string & message);
+    void log_to_console(rs_log_severity min_severity);
+    void log_to_file(rs_log_severity min_severity, const char * file_path);
+    void log_to_callback(rs_log_severity min_severity, rs_log_callback * callback);
+    void log_to_callback(rs_log_severity min_severity, void(*on_log)(rs_log_severity min_severity, const char * message, void * user), void * user);
+    rs_log_severity get_minimum_severity();
 
-#define LOG(SEVERITY, ...) do { if(static_cast<int>(SEVERITY) >= rsimpl::get_minimum_severity()) { std::ostringstream _ss; _ss << __VA_ARGS__; rsimpl::log(SEVERITY, _ss.str()); } } while(false)
-#define LOG_DEBUG(...)   
-#define LOG_INFO(...)    
-#define LOG_WARNING(...) 
-#define LOG_ERROR(...)   
-#define LOG_FATAL(...)   
+#define LOG(SEVERITY, ...) do { if(static_cast<int>(SEVERITY) >= rsimpl::get_minimum_severity()) { std::ostringstream ss; ss << __VA_ARGS__; rsimpl::log(SEVERITY, ss.str()); } } while(false)
+#define LOG_DEBUG(...)   LOG(RS_LOG_SEVERITY_DEBUG, __VA_ARGS__)
+#define LOG_INFO(...)    LOG(RS_LOG_SEVERITY_INFO,  __VA_ARGS__)
+#define LOG_WARNING(...) LOG(RS_LOG_SEVERITY_WARN,  __VA_ARGS__)
+#define LOG_ERROR(...)   LOG(RS_LOG_SEVERITY_ERROR, __VA_ARGS__)
+#define LOG_FATAL(...)   LOG(RS_LOG_SEVERITY_FATAL, __VA_ARGS__)
 
     /////////////////////////////
     // Enumerated type support //
@@ -327,25 +328,25 @@ namespace rsimpl
 
     };
 
-    typedef void(*frame_callback_function_ptr)(rs_device * dev, rs_frame_ref * frame, void * user);
+    typedef void(*frame_callback_function_ptr)(const rs_stream_lock * lock, rs_frame_ref * frame, void * user);
     typedef void(*motion_callback_function_ptr)(rs_device * dev, rs_motion_data data, void * user);
     typedef void(*timestamp_callback_function_ptr)(rs_device * dev, rs_timestamp_data data, void * user);
     typedef void(*log_callback_function_ptr)(rs_log_severity severity, const char * message, void * user);
 
-    /*class frame_callback : public rs_frame_callback
+    class frame_callback : public rs_frame_callback
     {
         frame_callback_function_ptr fptr;
         void * user;
-        rs_device * device;
+        const rs_stream_lock * lock;
     public:
         frame_callback() : frame_callback(nullptr, nullptr, nullptr) {}
-        frame_callback(rs_device * dev, frame_callback_function_ptr on_frame, void * user) : fptr(on_frame), user(user), device(dev) {}
+        frame_callback(rs_stream_lock * lock, frame_callback_function_ptr on_frame, void * user) : fptr(on_frame), user(user), lock(lock) {}
 
         operator bool() { return fptr != nullptr; }
-        void on_frame (rs_device * dev, rs_frame_ref * frame) override { 
+        void on_frame (const rs_stream_lock * lock, rs_frame_ref * frame) override { 
             if (fptr)
             {
-                try { fptr(dev, frame, user); } catch (...) 
+                try { fptr(lock, frame, user); } catch (...) 
                 {
                     LOG_ERROR("Received an execption from frame callback!");
                 }
@@ -429,26 +430,9 @@ namespace rsimpl
     typedef std::unique_ptr<rs_log_callback, void(*)(rs_log_callback*)> log_callback_ptr;
     typedef std::unique_ptr<rs_motion_callback, void(*)(rs_motion_callback*)> motion_callback_ptr;
     typedef std::unique_ptr<rs_timestamp_callback, void(*)(rs_timestamp_callback*)> timestamp_callback_ptr;
-    class frame_callback_ptr
-    {
-        rs_frame_callback * callback;
-    public:
-        frame_callback_ptr() : callback(nullptr) {}
-        explicit frame_callback_ptr(rs_frame_callback * callback) : callback(callback) {}
-        frame_callback_ptr(const frame_callback_ptr&) = delete;
-        frame_callback_ptr& operator =(frame_callback_ptr&& other)
-        {
-            if (callback) callback->release();
-            callback = other.callback;
-            other.callback = nullptr;
-            return *this;
-        }
-        ~frame_callback_ptr() { if (callback) callback->release(); }
-        operator rs_frame_callback *() { return callback; }
-        rs_frame_callback * operator*() { return callback; }
-    };*/
+    typedef std::unique_ptr<rs_frame_callback, void(*)(rs_frame_callback*)> frame_callback_ptr;
 
-    struct device_config
+    /*struct device_config
     {
         const static_device_info            info;
         stream_request                      requests[RS_STREAM_NATIVE_COUNT];                       // Modified by enable/disable_stream calls
@@ -471,7 +455,7 @@ namespace rsimpl
         std::vector<subdevice_mode_selection> select_modes(const stream_request(&requests)[RS_STREAM_NATIVE_COUNT]) const;
         std::vector<subdevice_mode_selection> select_modes() const { return select_modes(requests); }
         bool validate_requests(stream_request(&requests)[RS_STREAM_NATIVE_COUNT], bool throw_exception = false) const;
-    };
+    };*/
 
     ////////////////////////////////////////
     // Helper functions for library types //

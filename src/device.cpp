@@ -738,10 +738,11 @@ std::vector<stream_profile> uvc_endpoint::get_stream_profiles()
     return results;
 }
 
-std::unique_ptr<rsimpl::streaming_lock> uvc_endpoint::configure(const std::vector<stream_profile>& request)
+std::shared_ptr<rsimpl::streaming_lock> uvc_endpoint::configure(
+    const std::vector<stream_profile>& request)
 {
     std::lock_guard<std::mutex> lock(_configure_lock);
-    std::unique_ptr<streaming_lock> streaming(new streaming_lock(this));
+    std::shared_ptr<streaming_lock> streaming(new streaming_lock(this));
 
     std::vector<uvc::stream_profile> hardware_profiles;
     for (auto& profile : request)
@@ -759,7 +760,39 @@ std::unique_ptr<rsimpl::streaming_lock> uvc_endpoint::configure(const std::vecto
     _configuration = hardware_profiles; // commit to this set of profiles
     for (auto& profile : hardware_profiles)
     {
-        _device->play(profile, [](uvc::stream_profile p, uvc::frame_object f) {});
+        std::weak_ptr<streaming_lock> stream_ptr(streaming);
+        _device->play(profile, [stream_ptr](uvc::stream_profile p, uvc::frame_object f)
+        {
+            auto stream = stream_ptr.lock();
+            if (stream)
+            {
+                auto now = std::chrono::system_clock::now().time_since_epoch();
+                auto sys_time = std::chrono::duration_cast<std::chrono::milliseconds>(now).count();
+
+                frame_continuation release_and_enqueue([]() {}, f.pixels);
+
+                auto output = stream->get_endpoint().get_device().guid_to_format(p.format);
+                std::vector<rs_frame_metadata> supported_metadata;
+                frame_additional_data additional_data(
+                    0,
+                    0,
+                    sys_time,
+                    p.width,
+                    p.height,
+                    0,
+                    p.width,
+                    p.height,
+                    1,
+                    output.format,
+                    output.stream,
+                    0,
+                    supported_metadata,
+                    0);
+
+                auto frame_ref = stream->alloc_frame(output.stream, additional_data);
+                stream->invoke_callback(frame_ref);
+            }
+        });
     }
 
     return std::move(streaming);

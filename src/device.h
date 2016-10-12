@@ -2,11 +2,10 @@
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
 #pragma once
-#ifndef LIBREALSENSE_DEVICE_H
-#define LIBREALSENSE_DEVICE_H
 
 #include "backend.h"
 #include "stream.h"
+#include "archive.h"
 #include <chrono>
 #include <memory>
 #include <vector>
@@ -75,12 +74,6 @@ namespace rsimpl
     }
     struct cam_mode { int2 dims; std::vector<int> fps; };
 
-
-}
-
-
-namespace rsimpl
-{
     struct stream_profile
     {
         rs_stream stream;
@@ -99,7 +92,61 @@ namespace rsimpl
     class streaming_lock
     {
     public:
-        virtual ~streaming_lock() = default;
+        streaming_lock()
+            : _callback(nullptr, [](rs_frame_callback*){}), _archive(nullptr), _owner(nullptr)
+        {
+            
+        }
+
+        void set_owner(const rs_stream_lock* owner) { _owner = owner; }
+
+        void play(frame_callback_ptr callback)
+        {
+            std::lock_guard<std::mutex> lock(_callback_mutex);
+            _callback = std::move(callback);
+        }
+
+        void stop()
+        {
+            flush();
+            std::lock_guard<std::mutex> lock(_callback_mutex);
+            _callback.reset();
+        }
+
+        void release_frame(rs_frame_ref* frame)
+        {
+            _archive.release_frame_ref(frame);
+        }
+
+        rs_frame_ref* alloc_frame(rs_stream stream, frame_additional_data additional_data)
+        {
+            _archive.alloc_frame(stream, additional_data, false);
+            return _archive.track_frame(stream);
+        }
+
+        void invoke_callback(rs_frame_ref* frame_ref) const
+        {
+            if (frame_ref)
+            {
+                frame_ref->update_frame_callback_start_ts(std::chrono::high_resolution_clock::now());
+                //frame_ref->log_callback_start(capture_start_time);
+                //on_before_callback(streams[i], frame_ref, archive);
+                _callback->on_frame(_owner, frame_ref);
+            }
+        }
+
+        virtual void flush() = 0;
+
+        virtual ~streaming_lock()
+        {
+            stop();
+        }
+
+    private:
+        std::mutex _callback_mutex;
+        frame_callback_ptr _callback;
+        frame_archive _archive;
+        const rs_stream_lock* _owner;
     };
 
     class endpoint
@@ -107,7 +154,7 @@ namespace rsimpl
     public:
         virtual std::vector<stream_profile> get_stream_profiles() = 0;
 
-        virtual std::unique_ptr<streaming_lock> configure(
+        virtual std::shared_ptr<streaming_lock> configure(
             const std::vector<stream_profile>& request) = 0;
 
         virtual ~endpoint() = default;
@@ -122,11 +169,12 @@ namespace rsimpl
 
         std::vector<stream_profile> get_stream_profiles() override;
 
-        std::unique_ptr<rsimpl::streaming_lock> configure(
+        std::shared_ptr<rsimpl::streaming_lock> configure(
             const std::vector<stream_profile>& request) override;
 
-        void stop_streaming();
+        const rs_device& get_device() const { return *_owner; }
 
+        void stop_streaming();
     private:
         void acquire_power()
         {
@@ -170,6 +218,10 @@ namespace rsimpl
                 
             }
 
+            void flush() override { }
+
+            const uvc_endpoint& get_endpoint() const { return *_owner; }
+
             ~streaming_lock()
             {
                 
@@ -203,7 +255,7 @@ struct rs_stream_profile_list
 
 struct rs_stream_lock
 {
-    std::unique_ptr<rsimpl::streaming_lock> lock;
+    std::shared_ptr<rsimpl::streaming_lock> lock;
 };
 
 struct rs_device
@@ -262,5 +314,3 @@ private:
     std::vector<std::shared_ptr<rsimpl::endpoint>> _endpoints;
     std::map<std::string, rsimpl::output_type> _guid_to_output;
 };
-
-#endif

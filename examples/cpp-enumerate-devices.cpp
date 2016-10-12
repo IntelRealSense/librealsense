@@ -4,10 +4,14 @@
 #include <librealsense/rs.hpp>
 #include <iostream>
 #include <iomanip>
+#include <chrono>
+#include <thread>
+
+using namespace rs;
 
 int main() try
 {
-    rs::context ctx;
+    context ctx;
     auto list = ctx.query_devices();
 
     for (auto& info : list)
@@ -23,7 +27,14 @@ int main() try
             std::cout << "starting streaming " << std::endl;
             auto streaming = dev.color().open(format);
 
+            streaming.play([](frame f)
+            {
+                std::cout << f.get_format() << " " << f.get_stream_type() << std::endl;
+            });
 
+            std::this_thread::sleep_for(std::chrono::seconds(10));
+
+            streaming.stop();
         }
 
         auto& depth = dev.depth();

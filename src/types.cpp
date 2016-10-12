@@ -397,7 +397,7 @@ namespace rsimpl
         }
     };
 
-    bool device_config::all_requests_filled(const stream_request(&requests)[RS_STREAM_NATIVE_COUNT]) const
+    /*bool device_config::all_requests_filled(const stream_request(&requests)[RS_STREAM_NATIVE_COUNT]) const
     {
         for (auto i = 0; i<RS_STREAM_NATIVE_COUNT; i++)
         {
@@ -677,7 +677,7 @@ namespace rsimpl
             }
         }
         return true;
-    }
+    }*/
 
     std::string firmware_version::to_string() const
     {

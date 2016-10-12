@@ -215,7 +215,9 @@ rs_stream_lock* rs_open_subdevice(rs_device* device, rs_subdevice subdevice,
 {
     std::vector<rsimpl::stream_profile> request;
     request.push_back({ stream, width, height, fps, format });
-    return new rs_stream_lock{ device->get_endpoint(subdevice).configure(request) };
+    auto result = new rs_stream_lock{ device->get_endpoint(subdevice).configure(request) };
+    result->lock->set_owner(result);
+    return result;
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, device, subdevice, stream, width, height, fps, format)
 
@@ -418,24 +420,33 @@ void rs_get_motion_intrinsics(const rs_device * device, rs_motion_intrinsics * i
     *intrinsic = device->get_motion_intrinsics();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, device, intrinsic)
+*/
 
-void rs_set_frame_callback(rs_device * device, rs_stream stream, rs_frame_callback_ptr on_frame, void * user, rs_error ** error) try
+void rs_play(rs_stream_lock* lock, rs_frame_callback_ptr on_frame, void * user, rs_error ** error) try
 {
-    VALIDATE_NOT_NULL(device);
-    VALIDATE_NATIVE_STREAM(stream);
+    VALIDATE_NOT_NULL(lock);
     VALIDATE_NOT_NULL(on_frame);
-    device->set_stream_callback(stream, on_frame, user);
+    rsimpl::frame_callback_ptr callback(
+        new rsimpl::frame_callback(lock, on_frame, user), 
+        [](rs_frame_callback* p) { delete p; });
+    lock->lock->play(std::move(callback));
 }
-HANDLE_EXCEPTIONS_AND_RETURN(, device, stream, on_frame, user)
+HANDLE_EXCEPTIONS_AND_RETURN(, lock, on_frame, user)
 
-void rs_set_frame_callback_cpp(rs_device * device, rs_stream stream, rs_frame_callback * callback, rs_error ** error) try
+void rs_play_cpp(rs_stream_lock* lock, rs_frame_callback * callback, rs_error ** error) try
 {
-    VALIDATE_NOT_NULL(device);
-    VALIDATE_NATIVE_STREAM(stream);
+    VALIDATE_NOT_NULL(lock);
     VALIDATE_NOT_NULL(callback);
-    device->set_stream_callback(stream, callback);
+    lock->lock->play({ callback, [](rs_frame_callback* p) { p->release(); } });
 }
-HANDLE_EXCEPTIONS_AND_RETURN(, device, stream, callback)
+HANDLE_EXCEPTIONS_AND_RETURN(, lock, callback)
+
+void rs_stop(rs_stream_lock* lock, rs_error ** error) try
+{
+    VALIDATE_NOT_NULL(lock);
+    lock->lock->stop();
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, lock)
 
 void rs_log_to_callback(rs_log_severity min_severity, rs_log_callback_ptr on_log, void * user, rs_error ** error) try
 {
@@ -451,7 +462,7 @@ void rs_log_to_callback_cpp(rs_log_severity min_severity, rs_log_callback * call
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, min_severity, callback)
 
-void rs_enable_motion_tracking(rs_device * device,
+/*void rs_enable_motion_tracking(rs_device * device,
     rs_motion_callback_ptr on_motion_event, void * motion_handler,
     rs_timestamp_callback_ptr on_timestamp_event, void * timestamp_handler,
     rs_error ** error) try
@@ -570,8 +581,9 @@ int rs_supports_camera_info(rs_device * device, rs_camera_info info_param, rs_er
     return device->supports(info_param);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, device)
+*/
 
-double rs_get_detached_frame_metadata(const rs_frame_ref * frame, rs_frame_metadata frame_metadata, rs_error ** error) try
+double rs_get_frame_metadata(const rs_frame_ref * frame, rs_frame_metadata frame_metadata, rs_error ** error) try
 {
     VALIDATE_NOT_NULL(frame);
     return frame->get_frame_metadata(frame_metadata);
@@ -585,6 +597,7 @@ int rs_supports_frame_metadata(const rs_frame_ref * frame, rs_frame_metadata fra
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, frame)
 
+/*
 double rs_get_frame_timestamp(const rs_device * device, rs_stream stream, rs_error ** error) try
 {
     VALIDATE_NOT_NULL(device);
@@ -608,50 +621,43 @@ const void * rs_get_frame_data(const rs_device * device, rs_stream stream, rs_er
     return device->get_stream_interface(stream).get_frame_data();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, device, stream)
-
-double rs_get_detached_frame_timestamp(const rs_frame_ref * frame_ref, rs_error ** error) try
+*/
+double rs_get_frame_timestamp(const rs_frame_ref * frame_ref, rs_error ** error) try
 {
     VALIDATE_NOT_NULL(frame_ref);
     return frame_ref->get_frame_timestamp();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, frame_ref)
 
-rs_timestamp_domain rs_get_detached_frame_timestamp_domain(const rs_frame_ref * frame_ref, rs_error ** error) try
+rs_timestamp_domain rs_get_frame_timestamp_domain(const rs_frame_ref * frame_ref, rs_error ** error) try
 {
     VALIDATE_NOT_NULL(frame_ref);
     return frame_ref->get_frame_timestamp_domain();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(RS_TIMESTAMP_DOMAIN_COUNT, frame_ref)
 
-const void * rs_get_detached_frame_data(const rs_frame_ref * frame_ref, rs_error ** error) try
+const void * rs_get_frame_data(const rs_frame_ref * frame_ref, rs_error ** error) try
 {
     VALIDATE_NOT_NULL(frame_ref);
     return frame_ref->get_frame_data();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, frame_ref)
 
-int rs_get_detached_frame_width(const rs_frame_ref * frame_ref, rs_error ** error) try
+int rs_get_frame_width(const rs_frame_ref * frame_ref, rs_error ** error) try
 {
     VALIDATE_NOT_NULL(frame_ref);
     return frame_ref->get_frame_width();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, frame_ref)
 
-int rs_get_detached_frame_height(const rs_frame_ref * frame_ref, rs_error ** error) try
+int rs_get_frame_height(const rs_frame_ref * frame_ref, rs_error ** error) try
 {
     VALIDATE_NOT_NULL(frame_ref);
     return frame_ref->get_frame_height();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, frame_ref)
 
-int rs_get_detached_framerate(const rs_frame_ref * frame_ref, rs_error ** error) try
-{
-    VALIDATE_NOT_NULL(frame_ref);
-    return frame_ref->get_frame_framerate();
-}
-HANDLE_EXCEPTIONS_AND_RETURN(0, frame_ref)
-
-int rs_get_detached_frame_stride(const rs_frame_ref * frame_ref, rs_error ** error) try
+int rs_get_frame_stride_in_bytes(const rs_frame_ref * frame_ref, rs_error ** error) try
 {
     VALIDATE_NOT_NULL(frame_ref);
     return frame_ref->get_frame_stride();
@@ -659,21 +665,21 @@ int rs_get_detached_frame_stride(const rs_frame_ref * frame_ref, rs_error ** err
 HANDLE_EXCEPTIONS_AND_RETURN(0, frame_ref)
 
 
-int rs_get_detached_frame_bpp(const rs_frame_ref * frame_ref, rs_error ** error) try
+int rs_get_frame_bits_per_pixel(const rs_frame_ref * frame_ref, rs_error ** error) try
 {
     VALIDATE_NOT_NULL(frame_ref);
     return frame_ref->get_frame_bpp();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, frame_ref)
 
-rs_format rs_get_detached_frame_format(const rs_frame_ref * frame_ref, rs_error ** error) try
+rs_format rs_get_frame_format(const rs_frame_ref * frame_ref, rs_error ** error) try
 {
     VALIDATE_NOT_NULL(frame_ref);
     return frame_ref->get_frame_format();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(RS_FORMAT_ANY, frame_ref)
 
-rs_stream rs_get_detached_frame_stream_type(const rs_frame_ref * frame_ref, rs_error ** error) try
+rs_stream rs_get_frame_stream_type(const rs_frame_ref * frame_ref, rs_error ** error) try
 {
     VALIDATE_NOT_NULL(frame_ref);
     return frame_ref->get_stream_type();
@@ -681,22 +687,22 @@ rs_stream rs_get_detached_frame_stream_type(const rs_frame_ref * frame_ref, rs_e
 HANDLE_EXCEPTIONS_AND_RETURN(RS_STREAM_COUNT, frame_ref)
 
 
-unsigned long long rs_get_detached_frame_number(const rs_frame_ref * frame, rs_error ** error) try
+unsigned long long rs_get_frame_number(const rs_frame_ref * frame, rs_error ** error) try
 {
     VALIDATE_NOT_NULL(frame);
     return frame->get_frame_number();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, frame)
 
-void rs_release_frame(rs_device * device, rs_frame_ref * frame, rs_error ** error) try
+void rs_release_frame(const rs_stream_lock * lock, rs_frame_ref * frame) try
 {
-    VALIDATE_NOT_NULL(device);
+    VALIDATE_NOT_NULL(lock);
     VALIDATE_NOT_NULL(frame);
-    device->release_frame(frame);
+    lock->lock->release_frame(frame);
 }
-HANDLE_EXCEPTIONS_AND_RETURN(, device, frame)
+catch (...) {}
 
-const char * rs_get_stream_name(rs_stream stream, rs_error ** error) try
+/*const char * rs_get_stream_name(rs_stream stream, rs_error ** error) try
 {
     VALIDATE_ENUM(stream);
     return rsimpl::get_string(stream);
@@ -878,14 +884,16 @@ const char * rs_blob_type_to_string(rs_blob_type type) { return rsimpl::get_stri
 const char * rs_camera_info_to_string(rs_camera_info info) { return rsimpl::get_string(info); }
 const char * rs_timestamp_domain_to_string(rs_timestamp_domain info){ return rsimpl::get_string(info); }
 
+const char * rs_subdevice_to_string(rs_subdevice subdevice) { return rsimpl::get_string(subdevice); }
+
 void rs_log_to_console(rs_log_severity min_severity, rs_error ** error) try
 {
-    //rsimpl::log_to_console(min_severity);
+    rsimpl::log_to_console(min_severity);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, min_severity)
 
 void rs_log_to_file(rs_log_severity min_severity, const char * file_path, rs_error ** error) try
 {
-    //rsimpl::log_to_file(min_severity, file_path);
+    rsimpl::log_to_file(min_severity, file_path);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, min_severity, file_path)

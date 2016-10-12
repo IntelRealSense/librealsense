@@ -24,6 +24,24 @@ EXPORTS
     rs_open_subdevice
     rs_release_streaming_lock
 
+    rs_play
+    rs_play_cpp
+    rs_stop
+
+    rs_get_frame_metadata
+    rs_supports_frame_metadata
+    rs_get_frame_timestamp
+    rs_get_frame_timestamp_domain
+    rs_get_frame_number
+    rs_get_frame_data
+    rs_get_frame_width
+    rs_get_frame_height
+    rs_get_frame_stride_in_bytes
+    rs_get_frame_bits_per_pixel
+    rs_get_frame_format
+    rs_get_frame_stream_type
+    rs_release_frame
+
     rs_get_failed_function
     rs_get_failed_args
     rs_get_error_message
@@ -40,7 +58,11 @@ EXPORTS
     rs_blob_type_to_string
     rs_camera_info_to_string
     rs_timestamp_domain_to_string
+    rs_subdevice_to_string
+
     rs_log_to_console
     rs_log_to_file
+    rs_log_to_callback
+    rs_log_to_callback_cpp
 
     rs_get_api_version

@@ -5,6 +5,7 @@
 #define LIBREALSENSE_RS_HPP
 
 #include "rs.h"
+#include "rscore.hpp"
 
 #include <string>
 #include <vector>
@@ -52,9 +53,177 @@ namespace rs
         rs_format format;
     };
 
+    class frame
+    {
+        const rs_stream_lock * lock;
+        rs_frame_ref * frame_ref;
+
+        frame(const frame &) = delete;
+
+    public:
+        frame() : lock(nullptr), frame_ref(nullptr) {}
+        frame(const rs_stream_lock * lock, rs_frame_ref * frame_ref) : lock(lock), frame_ref(frame_ref) {}
+        frame(frame&& other) : lock(other.lock), frame_ref(other.frame_ref) { other.frame_ref = nullptr; }
+        frame& operator=(frame other)
+        {
+            swap(other);
+            return *this;
+        }
+        void swap(frame& other)
+        {
+            std::swap(lock, other.lock);
+            std::swap(frame_ref, other.frame_ref);
+        }
+
+        ~frame()
+        {
+            if (lock && frame_ref)
+            {
+                rs_release_frame(lock, frame_ref);
+            }
+        }
+
+        /// retrieve the time at which the frame was captured
+        /// \return            the timestamp of the frame, in milliseconds since the device was started
+        double get_timestamp() const
+        {
+            rs_error * e = nullptr;
+            auto r = rs_get_frame_timestamp(frame_ref, &e);
+            error::handle(e);
+            return r;
+        }
+
+        /// retrieve the timestamp domain 
+        /// \return            timestamp domain (clock name) for timestamp values
+        rs_timestamp_domain get_frame_timestamp_domain() const
+        {
+            rs_error * e = nullptr;
+            auto r = rs_get_frame_timestamp_domain(frame_ref, &e);
+            error::handle(e);
+            return r;
+        }
+
+        /// retrieve the current value of a single frame_metadata
+        /// \param[in] frame_metadata  the frame_metadata whose value should be retrieved
+        /// \return            the value of the frame_metadata
+        double get_frame_metadata(rs_frame_metadata frame_metadata) const
+        {
+            rs_error * e = nullptr;
+            auto r = rs_get_frame_metadata(frame_ref, frame_metadata, &e);
+            error::handle(e);
+            return r;
+        }
+
+        /// determine if the device allows a specific metadata to be queried
+        /// \param[in] frame_metadata  the frame_metadata to check for support
+        /// \return            true if the frame_metadata can be queried
+        bool supports_frame_metadata(rs_frame_metadata frame_metadata) const
+        {
+            rs_error * e = nullptr;
+            auto r = rs_supports_frame_metadata(frame_ref, frame_metadata, &e);
+            error::handle(e);
+            return r != 0;
+        }
+
+        unsigned long long get_frame_number() const
+        {
+            rs_error * e = nullptr;
+            auto r = rs_get_frame_number(frame_ref, &e);
+            error::handle(e);
+            return r;
+        }
+
+        const void * get_data() const
+        {
+            rs_error * e = nullptr;
+            auto r = rs_get_frame_data(frame_ref, &e);
+            error::handle(e);
+            return r;
+        }
+
+        // returns image width in pixels
+        int get_width() const
+        {
+            rs_error * e = nullptr;
+            auto r = rs_get_frame_width(frame_ref, &e);
+            error::handle(e);
+            return r;
+        }
+
+        int get_height() const
+        {
+            rs_error * e = nullptr;
+            auto r = rs_get_frame_height(frame_ref, &e);
+            error::handle(e);
+            return r;
+        }
+
+        // retrive frame stride, meaning the actual line width in memory in bytes (not the logical image width)
+        int get_stride_in_bytes() const
+        {
+            rs_error * e = nullptr;
+            auto r = rs_get_frame_stride_in_bytes(frame_ref, &e);
+            error::handle(e);
+            return r;
+        }
+
+        /// retrieve bits per pixel
+        /// \return            number of bits per one pixel
+        int get_bits_per_pixel() const
+        {
+            rs_error * e = nullptr;
+            auto r = rs_get_frame_bits_per_pixel(frame_ref, &e);
+            error::handle(e);
+            return r;
+        }
+
+        rs_format get_format() const
+        {
+            rs_error * e = nullptr;
+            auto r = rs_get_frame_format(frame_ref, &e);
+            error::handle(e);
+            return r;;
+        }
+
+        rs_stream get_stream_type()
+        {
+            rs_error * e = nullptr;
+            auto s = rs_get_frame_stream_type(frame_ref, &e);
+            error::handle(e);
+            return s;
+        }
+    };
+
+    class frame_callback : public rs_frame_callback
+    {
+        std::function<void(frame)> on_frame_function;
+    public:
+        explicit frame_callback(std::function<void(frame)> on_frame) : on_frame_function(on_frame) {}
+
+        void on_frame(const rs_stream_lock *device, rs_frame_ref * fref) override
+        {
+            on_frame_function(std::move(frame(device, fref)));
+        }
+
+        void release() override { delete this; }
+    };
+
     class streaming_lock
     {
     public:
+        void play(std::function<void(frame)> callback) const
+        {
+            rs_error * e = nullptr;
+            rs_play_cpp(_lock.get(), new frame_callback(callback), &e);
+            error::handle(e);
+        }
+
+        void stop() const
+        {
+            rs_error * e = nullptr;
+            rs_stop(_lock.get(), &e);
+            error::handle(e);
+        }
 
     private:
         friend subdevice;
@@ -214,6 +383,61 @@ namespace rs
     private:
         std::shared_ptr<rs_context> _context;
     };
+
+    inline std::ostream & operator << (std::ostream & o, rs_stream stream) { return o << rs_stream_to_string(stream); }
+    inline std::ostream & operator << (std::ostream & o, rs_format format) { return o << rs_format_to_string(format); }
+    inline std::ostream & operator << (std::ostream & o, rs_preset preset) { return o << rs_preset_to_string(preset); }
+    inline std::ostream & operator << (std::ostream & o, rs_distortion distortion) { return o << rs_distortion_to_string(distortion); }
+    inline std::ostream & operator << (std::ostream & o, rs_option option) { return o << rs_option_to_string(option); }
+    inline std::ostream & operator << (std::ostream & o, rs_capabilities capability) { return o << rs_capabilities_to_string(capability); }
+    inline std::ostream & operator << (std::ostream & o, rs_source src) { return o << rs_source_to_string(src); }
+    inline std::ostream & operator << (std::ostream & o, rs_subdevice evt) { return o << rs_subdevice_to_string(evt); }
+
+
+    enum class log_severity : int32_t
+    {
+        debug = 0, // Detailed information about ordinary operations
+        info = 1, // Terse information about ordinary operations
+        warn = 2, // Indication of possible failure
+        error = 3, // Indication of definite failure
+        fatal = 4, // Indication of unrecoverable failure
+        none = 5, // No logging will occur
+    };
+
+    class log_callback : public rs_log_callback
+    {
+        std::function<void(log_severity, const char *)> on_event_function;
+    public:
+        explicit log_callback(std::function<void(log_severity, const char *)> on_event) : on_event_function(on_event) {}
+
+        void on_event(rs_log_severity severity, const char * message) override
+        {
+            on_event_function((log_severity)severity, message);
+        }
+
+        void release() override { delete this; }
+    };
+
+    inline void log_to_console(log_severity min_severity)
+    {
+        rs_error * e = nullptr;
+        rs_log_to_console((rs_log_severity)min_severity, &e);
+        error::handle(e);
+    }
+
+    inline void log_to_file(log_severity min_severity, const char * file_path)
+    {
+        rs_error * e = nullptr;
+        rs_log_to_file((rs_log_severity)min_severity, file_path, &e);
+        error::handle(e);
+    }
+
+    inline void log_to_callback(log_severity min_severity, std::function<void(log_severity, const char *)> callback)
+    {
+        rs_error * e = nullptr;
+        rs_log_to_callback_cpp((rs_log_severity)min_severity, new log_callback(callback), &e);
+        error::handle(e);
+    }
 };
 
 #endif // LIBREALSENSE_RS2_HPP
