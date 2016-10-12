@@ -193,7 +193,6 @@ namespace rsimpl
         small_heap<frame, RS_USER_QUEUE_SIZE> published_frames;
         small_heap<rs_frame_ref, RS_USER_QUEUE_SIZE> detached_refs;
 
-        frame backbuffer;
         std::vector<frame> freelist; // return frames here
         std::recursive_mutex mutex;
         std::chrono::high_resolution_clock::time_point capture_started;
@@ -213,9 +212,8 @@ namespace rsimpl
         }
 
         // Frame callback thread API
-        byte * alloc_frame(const size_t size, const frame_additional_data& additional_data, bool requires_memory);
-        rs_frame_ref * track_frame(rs_stream stream);
-        void attach_continuation(rs_stream stream, frame_continuation&& continuation);
+        frame alloc_frame(const size_t size, const frame_additional_data& additional_data, bool requires_memory);
+        rs_frame_ref * track_frame(frame& f);
         void log_frame_callback_end(frame* frame) const;
 
         void flush();

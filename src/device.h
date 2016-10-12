@@ -93,7 +93,9 @@ namespace rsimpl
     {
     public:
         streaming_lock()
-            : _callback(nullptr, [](rs_frame_callback*){}), _archive(nullptr), _owner(nullptr)
+            : _callback(nullptr, [](rs_frame_callback*){}), 
+              _archive(&max_publish_list_size), 
+              _owner(nullptr)
         {
             
         }
@@ -120,8 +122,8 @@ namespace rsimpl
 
         rs_frame_ref* alloc_frame(rs_stream stream, frame_additional_data additional_data)
         {
-            _archive.alloc_frame(stream, additional_data, false);
-            return _archive.track_frame(stream);
+            auto frame = _archive.alloc_frame(stream, additional_data, false);
+            return _archive.track_frame(frame);
         }
 
         void invoke_callback(rs_frame_ref* frame_ref) const
@@ -135,7 +137,10 @@ namespace rsimpl
             }
         }
 
-        virtual void flush() = 0;
+        void flush()
+        {
+            _archive.flush();
+        }
 
         virtual ~streaming_lock()
         {
@@ -146,6 +151,7 @@ namespace rsimpl
         std::mutex _callback_mutex;
         frame_callback_ptr _callback;
         frame_archive _archive;
+        std::atomic<uint32_t> max_publish_list_size;
         const rs_stream_lock* _owner;
     };
 
@@ -218,14 +224,7 @@ namespace rsimpl
                 
             }
 
-            void flush() override { }
-
             const uvc_endpoint& get_endpoint() const { return *_owner; }
-
-            ~streaming_lock()
-            {
-                
-            }
         private:
             uvc_endpoint* _owner;
             power _power;

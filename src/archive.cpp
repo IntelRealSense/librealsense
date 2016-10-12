@@ -53,8 +53,9 @@ rs_frame_ref* frame_archive::clone_frame(rs_frame_ref* frameset)
 }
 
 // Allocate a new frame in the backbuffer, potentially recycling a buffer from the freelist
-byte * frame_archive::alloc_frame(const size_t size, const frame_additional_data& additional_data, bool requires_memory)
+frame frame_archive::alloc_frame(const size_t size, const frame_additional_data& additional_data, bool requires_memory)
 {
+    frame backbuffer;
     //const size_t size = modes[stream].get_image_size(stream);
     {
         std::lock_guard<std::recursive_mutex> guard(mutex);
@@ -87,19 +88,14 @@ byte * frame_archive::alloc_frame(const size_t size, const frame_additional_data
     }
     backbuffer.update_owner(this);
     backbuffer.additional_data = additional_data;
-    return backbuffer.data.data();
+    return backbuffer;
 }
 
-void frame_archive::attach_continuation(rs_stream stream, frame_continuation&& continuation)
-{
-    backbuffer.attach_continuation(std::move(continuation));
-}
-
-rs_frame_ref* frame_archive::track_frame(rs_stream stream)
+rs_frame_ref* frame_archive::track_frame(frame& f)
 {
     std::unique_lock<std::recursive_mutex> lock(mutex);
 
-    auto published_frame = backbuffer.publish();
+    auto published_frame = f.publish();
     if (published_frame)
     {
         rs_frame_ref new_ref(published_frame); // allocate new frame_ref to ref-counter the now published frame
