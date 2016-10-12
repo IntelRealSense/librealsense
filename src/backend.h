@@ -19,6 +19,17 @@ namespace rsimpl
 {
     namespace uvc
     {
+        struct guid { uint32_t data1; uint16_t data2, data3; uint8_t data4[8]; };
+        struct extension_unit { int subdevice, unit, node; guid id; };
+
+        struct control_range
+        {
+            int min;
+            int max;
+            int def;
+            int step;
+        };
+
         enum power_state
         {
             D0,
@@ -79,6 +90,15 @@ namespace rsimpl
 
             virtual void set_power_state(power_state state) = 0;
             virtual power_state get_power_state() const = 0;
+
+            virtual void init_xu(const extension_unit& xu) = 0;
+            virtual void set_xu(const extension_unit& xu, uint8_t ctrl, void * data, int len) = 0;
+            virtual void get_xu(const extension_unit& xu, uint8_t ctrl, void * data, int len) const = 0;
+            virtual control_range get_xu_range(const extension_unit& xu, uint8_t ctrl) const = 0;
+
+            virtual int get_pu(rs_option opt) const = 0;
+            virtual void set_pu(rs_option opt, int value) = 0;
+            virtual control_range get_pu_range(rs_option opt) const = 0;
 
             virtual const uvc_device_info& get_info() const = 0;
 

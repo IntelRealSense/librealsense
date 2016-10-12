@@ -8,6 +8,9 @@
 #include <mfidl.h>
 #include <mfreadwrite.h>
 #include <atlcomcli.h>
+#include <strmif.h>
+#include <Ks.h>
+#include <ksproxy.h>
 
 namespace rsimpl
 {
@@ -34,29 +37,44 @@ namespace rsimpl
             void play(stream_profile profile, frame_callback callback) override;
             void stop(stream_profile profile) override;
             void set_power_state(power_state state) override;
-            power_state get_power_state() const override { return _powerState; }
+            power_state get_power_state() const override { return _power_state; }
             std::vector<stream_profile> get_profiles() const override;
             const uvc_device_info& get_info() const override { return _info; }
 
             static bool is_connected(const uvc_device_info& info);
             static void foreach_uvc_device(enumeration_callback action);
 
+            void init_xu(const extension_unit& xu) override;
+            void set_xu(const extension_unit& xu, uint8_t ctrl, void * data, int len) override;
+            void get_xu(const extension_unit& xu, uint8_t ctrl, void * data, int len) const override;
+            control_range get_xu_range(const extension_unit& xu, uint8_t ctrl) const override;
+
+            int get_pu(rs_option opt) const override;
+            void set_pu(rs_option opt, int value) override;
+            control_range get_pu_range(rs_option opt) const override;
+
         private:
             friend class source_reader_callback;
 
             void flush(int sIndex);
             void check_connection() const;
+            IKsControl* get_ks_control(const extension_unit& xu) const;
 
             const uvc_device_info                   _info;
-            power_state                             _powerState = D3;
+            power_state                             _power_state = D3;
 
             CComPtr<source_reader_callback>         _callback = nullptr;
             CComPtr<IMFSourceReader>                _reader = nullptr;
-            CComPtr<IMFMediaSource>                 _pSource = nullptr;
-            CComPtr<IMFActivate>                    _pActivate = nullptr;
-            CComPtr<IMFAttributes>                  _pDeviceAttrs = nullptr;
-            CComPtr<IMFAttributes>                  _pReaderAttrs = nullptr;
-            HANDLE                                  _isFlushed = nullptr;
+            CComPtr<IMFMediaSource>                 _source = nullptr;
+            CComPtr<IMFActivate>                    _activate = nullptr;
+            CComPtr<IMFAttributes>                  _device_attrs = nullptr;
+            CComPtr<IMFAttributes>                  _reader_attrs = nullptr;
+
+            CComPtr<IAMCameraControl>               _camera_control = nullptr;
+            CComPtr<IAMVideoProcAmp>                _video_proc = nullptr;
+            std::map<int, CComPtr<IKsControl>>      _ks_controls;
+
+            HANDLE                                  _is_flushed = nullptr;
 
             std::vector<profile_and_callback>       _streams;
             std::mutex                              _streams_mutex;

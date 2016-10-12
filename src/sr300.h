@@ -7,11 +7,11 @@
 
 #include "device.h"
 #include "backend.h"
-
+#include "ivcam-private.h"
 
 namespace rsimpl
 {
-    struct sr300;
+    struct sr300_camera;
     
     struct sr300_info : rs_device_info
     {
@@ -32,15 +32,22 @@ namespace rsimpl
 
     std::vector<std::shared_ptr<rs_device_info>> pick_sr300_devices(std::vector<uvc::uvc_device_info>& uvc);
 
-    struct sr300 : rs_device
+    struct sr300_camera final : rs_device
     {
-        sr300(const uvc::backend& backend,
+        sr300_camera(const uvc::backend& backend,
               const uvc::uvc_device_info& color,
               const uvc::uvc_device_info& depth)
         {
-            assign_endpoint(RS_SUBDEVICE_COLOR, std::make_shared<uvc_endpoint>(backend.create_uvc_device(color), this));
-            assign_endpoint(RS_SUBDEVICE_DEPTH, std::make_shared<uvc_endpoint>(backend.create_uvc_device(depth), this));
+            // create uvc-endpoint from backend uvc-device
+            auto color_ep = std::make_shared<uvc_endpoint>(backend.create_uvc_device(color), this);
+            auto depth_ep = std::make_shared<uvc_endpoint>(backend.create_uvc_device(depth), this);
+            depth_ep->register_xu(ivcam::depth_xu); // make sure the XU is initialized everytime we power the camera
 
+            // map subdevice to endpoint
+            assign_endpoint(RS_SUBDEVICE_COLOR, color_ep);
+            assign_endpoint(RS_SUBDEVICE_DEPTH, depth_ep);
+
+            // map formats, based on FW spec
             map_output(RS_FORMAT_Z16, RS_STREAM_DEPTH, "{5A564E49-2D90-4A58-920B-773F1F2C556B}");
         }
 

@@ -12,6 +12,7 @@
 #include "Shlwapi.h"
 #include <Windows.h>
 #include "mfapi.h"
+#include <vidcap.h>
 
 #pragma comment(lib, "Shlwapi.lib")
 #pragma comment(lib, "mf.lib")
@@ -109,7 +110,7 @@ namespace rsimpl
                 auto owner = _owner.lock();
                 if (owner)
                 {
-                    SetEvent(owner->_isFlushed);
+                    SetEvent(owner->_is_flushed);
                 }
                 return S_OK;
             }
@@ -127,6 +128,276 @@ namespace rsimpl
                 if (i == info) result = true;
             });
             return result;
+        }
+
+        IKsControl* wmf_uvc_device::get_ks_control(const extension_unit & xu) const
+        {
+            auto it = _ks_controls.find(xu.node);
+            if (it != std::end(_ks_controls)) return it->second;
+            throw std::runtime_error("Extension control must be initialized before use!");
+        }
+
+        void wmf_uvc_device::init_xu(const extension_unit& xu)
+        {
+            // Attempt to retrieve IKsControl
+            CComPtr<IKsTopologyInfo> ks_topology_info = nullptr;
+            CHECK_HR(_source->QueryInterface(__uuidof(IKsTopologyInfo), 
+                     reinterpret_cast<void **>(&ks_topology_info)));
+
+            GUID node_type;
+            CHECK_HR(ks_topology_info->get_NodeType(xu.node, &node_type));
+            const GUID KSNODETYPE_DEV_SPECIFIC_LOCAL{ 
+                0x941C7AC0L, 0xC559, 0x11D0,
+                { 0x8A, 0x2B, 0x00, 0xA0, 0xC9, 0x25, 0x5A, 0xC1 } 
+            };
+            if (node_type != KSNODETYPE_DEV_SPECIFIC_LOCAL) 
+                throw std::runtime_error(to_string() << 
+                    "Invalid extension unit node ID: " << xu.node);
+
+            CComPtr<IUnknown> unknown;
+            CHECK_HR(ks_topology_info->CreateNodeInstance(xu.node, IID_IUnknown, 
+                reinterpret_cast<LPVOID *>(&unknown)));
+
+            CComPtr<IKsControl> ks_control;
+            CHECK_HR(unknown->QueryInterface(__uuidof(IKsControl), 
+                reinterpret_cast<void **>(&ks_control)));
+            LOG_INFO("Obtained KS control node " << xu.node);
+            _ks_controls[xu.node] = ks_control;
+        }
+
+        void wmf_uvc_device::set_xu(const extension_unit& xu, uint8_t ctrl, void* data, int len)
+        {
+            auto ks_control = get_ks_control(xu);
+
+            KSP_NODE node;
+            memset(&node, 0, sizeof(KSP_NODE));
+            node.Property.Set = reinterpret_cast<const GUID &>(xu.id);
+            node.Property.Id = ctrl;
+            node.Property.Flags = KSPROPERTY_TYPE_SET | KSPROPERTY_TYPE_TOPOLOGY;
+            node.NodeId = xu.node;
+
+            ULONG bytes_received = 0;
+            CHECK_HR(ks_control->KsProperty(reinterpret_cast<PKSPROPERTY>(&node), sizeof(KSP_NODE), data, len, &bytes_received));
+        }
+
+        void wmf_uvc_device::get_xu(const extension_unit& xu, uint8_t ctrl, void* data, int len) const
+        {
+            auto ks_control = get_ks_control(xu);
+
+            KSP_NODE node;
+            memset(&node, 0, sizeof(KSP_NODE));
+            node.Property.Set = reinterpret_cast<const GUID &>(xu.id);
+            node.Property.Id = ctrl;
+            node.Property.Flags = KSPROPERTY_TYPE_GET | KSPROPERTY_TYPE_TOPOLOGY;
+            node.NodeId = xu.node;
+
+            ULONG bytes_received = 0;
+            CHECK_HR(ks_control->KsProperty(reinterpret_cast<PKSPROPERTY>(&node), sizeof(node), data, len, &bytes_received));
+            if (bytes_received != len) 
+                throw std::runtime_error("XU read did not return enough data");
+        }
+
+        control_range wmf_uvc_device::get_xu_range(const extension_unit& xu, uint8_t ctrl) const
+        {
+            control_range result;
+            auto ks_control = get_ks_control(xu);
+
+            /* get step, min and max values*/
+            KSP_NODE node;
+            memset(&node, 0, sizeof(KSP_NODE));
+            node.Property.Set = reinterpret_cast<const GUID &>(xu.id);
+            node.Property.Id = ctrl;
+            node.Property.Flags = KSPROPERTY_TYPE_BASICSUPPORT | KSPROPERTY_TYPE_TOPOLOGY;
+            node.NodeId = xu.node;
+
+            KSPROPERTY_DESCRIPTION description;
+            unsigned long bytes_received = 0;
+            CHECK_HR(ks_control->KsProperty(
+                reinterpret_cast<PKSPROPERTY>(&node),
+                sizeof(node),
+                &description,
+                sizeof(KSPROPERTY_DESCRIPTION),
+                &bytes_received));
+
+            auto size = description.DescriptionSize;
+            std::vector<BYTE> buffer(static_cast<long>(size));
+
+            CHECK_HR(ks_control->KsProperty(
+                reinterpret_cast<PKSPROPERTY>(&node),
+                sizeof(node),
+                buffer.data(),
+                size,
+                &bytes_received));
+
+            if (bytes_received != size) { throw  std::runtime_error("wrong data"); }
+
+            auto pRangeValues = buffer.data() + sizeof(KSPROPERTY_MEMBERSHEADER) + sizeof(KSPROPERTY_DESCRIPTION);
+
+            result.step = static_cast<int>(*pRangeValues);
+            pRangeValues++;
+            result.min = static_cast<int>(*pRangeValues);
+            pRangeValues++;
+            result.max = static_cast<int>(*pRangeValues);
+
+
+            /* get def value*/
+            memset(&node, 0, sizeof(KSP_NODE));
+            node.Property.Set = reinterpret_cast<const GUID &>(xu.id);
+            node.Property.Id = ctrl;
+            node.Property.Flags = KSPROPERTY_TYPE_DEFAULTVALUES | KSPROPERTY_TYPE_TOPOLOGY;
+            node.NodeId = xu.node;
+
+            bytes_received = 0;
+            CHECK_HR(ks_control->KsProperty(
+                reinterpret_cast<PKSPROPERTY>(&node),
+                sizeof(node),
+                &description,
+                sizeof(KSPROPERTY_DESCRIPTION),
+                &bytes_received));
+
+            size = description.DescriptionSize;
+            buffer.clear();
+            buffer.resize(size);
+
+            CHECK_HR(ks_control->KsProperty(
+                reinterpret_cast<PKSPROPERTY>(&node),
+                sizeof(node),
+                buffer.data(),
+                size,
+                &bytes_received));
+
+            if (bytes_received != size) { throw  std::runtime_error("wrong data"); }
+
+            pRangeValues = buffer.data() + sizeof(KSPROPERTY_MEMBERSHEADER) + sizeof(KSPROPERTY_DESCRIPTION);
+
+            result.def = static_cast<int>(*pRangeValues);
+            return result;
+        }
+
+        struct pu_control { rs_option option; long property; bool enable_auto; };
+        static const pu_control pu_controls[] = {
+            { RS_OPTION_COLOR_BACKLIGHT_COMPENSATION, VideoProcAmp_BacklightCompensation },
+            { RS_OPTION_COLOR_BRIGHTNESS, VideoProcAmp_Brightness },
+            { RS_OPTION_COLOR_CONTRAST, VideoProcAmp_Contrast },
+            { RS_OPTION_COLOR_GAIN, VideoProcAmp_Gain },
+            { RS_OPTION_COLOR_GAMMA, VideoProcAmp_Gamma },
+            { RS_OPTION_COLOR_HUE, VideoProcAmp_Hue },
+            { RS_OPTION_COLOR_SATURATION, VideoProcAmp_Saturation },
+            { RS_OPTION_COLOR_SHARPNESS, VideoProcAmp_Sharpness },
+            { RS_OPTION_COLOR_WHITE_BALANCE, VideoProcAmp_WhiteBalance },
+            { RS_OPTION_COLOR_ENABLE_AUTO_WHITE_BALANCE, VideoProcAmp_WhiteBalance, true },
+            { RS_OPTION_FISHEYE_GAIN, VideoProcAmp_Gain }
+        };
+
+        int wmf_uvc_device::get_pu(rs_option opt) const
+        {
+            long value = 0, flags = 0;
+            if (opt == RS_OPTION_COLOR_EXPOSURE)
+            {
+                CHECK_HR(_camera_control->Get(CameraControl_Exposure, &value, &flags));
+                return value;
+            }
+            if (opt == RS_OPTION_COLOR_ENABLE_AUTO_EXPOSURE)
+            {
+                CHECK_HR(_camera_control->Get(CameraControl_Exposure, &value, &flags));
+                return flags == CameraControl_Flags_Auto;
+            }
+            for (auto & pu : pu_controls)
+            {
+                if (opt == pu.option)
+                {
+                    CHECK_HR(_video_proc->Get(pu.property, &value, &flags));
+                    if (pu.enable_auto) return flags == VideoProcAmp_Flags_Auto;
+                    else return value;
+                }
+            }
+            throw std::runtime_error("Unsupported control!");
+        }
+
+        void wmf_uvc_device::set_pu(rs_option opt, int value)
+        {
+            if (opt == RS_OPTION_COLOR_EXPOSURE)
+            {
+                CHECK_HR(_camera_control->Set(CameraControl_Exposure, static_cast<int>(value), CameraControl_Flags_Manual));
+                return;
+            }
+            if (opt == RS_OPTION_COLOR_ENABLE_AUTO_EXPOSURE)
+            {
+                if (value)
+                {
+                    CHECK_HR(_camera_control->Set(CameraControl_Exposure, 0, CameraControl_Flags_Auto));
+                }
+                else
+                {
+                    long min, max, step, def, caps;
+                    CHECK_HR(_camera_control->GetRange(CameraControl_Exposure, &min, &max, &step, &def, &caps));
+                    CHECK_HR(_camera_control->Set(CameraControl_Exposure, def, CameraControl_Flags_Manual));
+                }
+                return;
+            }
+            for (auto & pu : pu_controls)
+            {
+                if (opt == pu.option)
+                {
+                    if (pu.enable_auto)
+                    {
+                        if (value)
+                        {
+                            CHECK_HR(_video_proc->Set(pu.property, 0, VideoProcAmp_Flags_Auto));
+                        }
+                        else
+                        {
+                            long min, max, step, def, caps;
+                            CHECK_HR(_video_proc->GetRange(pu.property, &min, &max, &step, &def, &caps));
+                            CHECK_HR(_video_proc->Set(pu.property, def, VideoProcAmp_Flags_Manual));
+                        }
+                    }
+                    else
+                    {
+                        CHECK_HR(_video_proc->Set(pu.property, value, VideoProcAmp_Flags_Manual));
+                    }
+                    return;
+                }
+            }
+            throw std::runtime_error("Unsupported control!");
+        }
+
+        control_range wmf_uvc_device::get_pu_range(rs_option opt) const
+        {
+            control_range result;
+            if (opt == RS_OPTION_COLOR_ENABLE_AUTO_EXPOSURE || 
+                opt == RS_OPTION_COLOR_ENABLE_AUTO_WHITE_BALANCE)
+            {
+                result.min = 0;
+                result.max = 1;
+                result.step = 1;
+                result.def = 1;
+                return result;
+            }
+
+            long minVal = 0, maxVal = 0, steppingDelta = 0, defVal = 0, capsFlag = 0;
+            if (opt == RS_OPTION_COLOR_EXPOSURE)
+            {
+                CHECK_HR(_camera_control->GetRange(CameraControl_Exposure, &minVal, &maxVal, &steppingDelta, &defVal, &capsFlag));
+                result.min = minVal;
+                result.max = maxVal;
+                result.step = steppingDelta;
+                result.def = defVal;
+                return result;
+            }
+            for (auto & pu : pu_controls)
+            {
+                if (opt == pu.option)
+                {
+                    CHECK_HR(_video_proc->GetRange(pu.property, &minVal, &maxVal, &steppingDelta, &defVal, &capsFlag));
+                    result.min = static_cast<int>(minVal);
+                    result.max = static_cast<int>(maxVal);
+                    result.step = static_cast<int>(steppingDelta);
+                    result.def = static_cast<int>(defVal);
+                    return result;
+                }
+            }
+            throw std::runtime_error("unsupported control");
         }
 
         void wmf_uvc_device::foreach_uvc_device(enumeration_callback action)
@@ -174,7 +445,7 @@ namespace rsimpl
 
         void wmf_uvc_device::set_power_state(power_state state)
         {
-            if (_powerState != D0 && state == D0)
+            if (_power_state != D0 && state == D0)
             {
                 foreach_uvc_device([this](const uvc_device_info& i, 
                                           IMFActivate* device)
@@ -184,24 +455,27 @@ namespace rsimpl
                         wchar_t did[256];
                         CHECK_HR(device->GetString(did_guid, did, sizeof(did) / sizeof(wchar_t), nullptr));
 
-                        CHECK_HR(MFCreateAttributes(&_pDeviceAttrs, 2));
-                        CHECK_HR(_pDeviceAttrs->SetGUID(MF_DEVSOURCE_ATTRIBUTE_SOURCE_TYPE, type_guid));
-                        CHECK_HR(_pDeviceAttrs->SetString(did_guid, did));
-                        CHECK_HR(MFCreateDeviceSourceActivate(_pDeviceAttrs, &_pActivate));
+                        CHECK_HR(MFCreateAttributes(&_device_attrs, 2));
+                        CHECK_HR(_device_attrs->SetGUID(MF_DEVSOURCE_ATTRIBUTE_SOURCE_TYPE, type_guid));
+                        CHECK_HR(_device_attrs->SetString(did_guid, did));
+                        CHECK_HR(MFCreateDeviceSourceActivate(_device_attrs, &_activate));
 
                         _callback = new source_reader_callback(shared_from_this()); /// async I/O
 
-                        CHECK_HR(MFCreateAttributes(&_pReaderAttrs, 2));
-                        CHECK_HR(_pReaderAttrs->SetUINT32(MF_SOURCE_READER_DISCONNECT_MEDIASOURCE_ON_SHUTDOWN, FALSE));
-                        CHECK_HR(_pReaderAttrs->SetUnknown(MF_SOURCE_READER_ASYNC_CALLBACK,
+                        CHECK_HR(MFCreateAttributes(&_reader_attrs, 2));
+                        CHECK_HR(_reader_attrs->SetUINT32(MF_SOURCE_READER_DISCONNECT_MEDIASOURCE_ON_SHUTDOWN, FALSE));
+                        CHECK_HR(_reader_attrs->SetUnknown(MF_SOURCE_READER_ASYNC_CALLBACK,
                                                            static_cast<IUnknown*>(_callback)));
 
-                        CHECK_HR(_pReaderAttrs->SetUINT32(MF_READWRITE_ENABLE_HARDWARE_TRANSFORMS, TRUE));
-                        CHECK_HR(_pActivate->ActivateObject(IID_IMFMediaSource, reinterpret_cast<void **>(&_pSource)));
-                        CHECK_HR(MFCreateSourceReaderFromMediaSource(_pSource, _pReaderAttrs, &_reader));
+                        CHECK_HR(_reader_attrs->SetUINT32(MF_READWRITE_ENABLE_HARDWARE_TRANSFORMS, TRUE));
+                        CHECK_HR(_activate->ActivateObject(IID_IMFMediaSource, reinterpret_cast<void **>(&_source)));
+                        CHECK_HR(MFCreateSourceReaderFromMediaSource(_source, _reader_attrs, &_reader));
+
+                        CHECK_HR(_source->QueryInterface(__uuidof(IAMCameraControl), (void **)&_camera_control));
+                        CHECK_HR(_source->QueryInterface(__uuidof(IAMVideoProcAmp), (void **)&_video_proc));
 
                         UINT32 streamIndex;
-                        CHECK_HR(_pDeviceAttrs->GetCount(&streamIndex));
+                        CHECK_HR(_device_attrs->GetCount(&streamIndex));
                         _streams.resize(streamIndex);
                         for (auto& elem : _streams)
                         {
@@ -210,18 +484,18 @@ namespace rsimpl
                     }
                 });
 
-                _powerState = D0;
+                _power_state = D0;
             }
 
-            if (_powerState != D3 && state == D3)
+            if (_power_state != D3 && state == D3)
             {
                 _reader = nullptr;
-                _pSource = nullptr;
-                _pReaderAttrs = nullptr;
-                _pActivate = nullptr;
-                _pDeviceAttrs = nullptr;
+                _source = nullptr;
+                _reader_attrs = nullptr;
+                _activate = nullptr;
+                _device_attrs = nullptr;
 
-                _powerState = D3;
+                _power_state = D3;
             }
         }
 
@@ -297,7 +571,7 @@ namespace rsimpl
                                        std::shared_ptr<const wmf_backend> backend)
             : _info(info), _backend(backend)
         {
-            _isFlushed = CreateEvent(nullptr, FALSE, FALSE, nullptr);
+            _is_flushed = CreateEvent(nullptr, FALSE, FALSE, nullptr);
 
             if (!is_connected(info))
             {
@@ -311,7 +585,7 @@ namespace rsimpl
                 flush(MF_SOURCE_READER_ALL_STREAMS);
                 wmf_uvc_device::set_power_state(D3);
 
-                CloseHandle(_isFlushed);
+                CloseHandle(_is_flushed);
             }
             catch (...)
             {
@@ -438,7 +712,7 @@ namespace rsimpl
                 if (_reader != nullptr)
                 {
                     CHECK_HR(_reader->Flush(sIndex));
-                    WaitForSingleObject(_isFlushed, INFINITE);
+                    WaitForSingleObject(_is_flushed, INFINITE);
                 }
             }
         }

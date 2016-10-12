@@ -180,6 +180,11 @@ namespace rsimpl
 
         const rs_device& get_device() const { return *_owner; }
 
+        void register_xu(uvc::extension_unit xu)
+        {
+            _xus.push_back(std::move(xu));
+        }
+
         void stop_streaming();
     private:
         void acquire_power()
@@ -188,7 +193,7 @@ namespace rsimpl
             if (!_user_count) 
             {
                 _device->set_power_state(uvc::D0);
-                // TODO: Map extension units
+                for (auto& xu : _xus) _device->init_xu(xu);
             }
             _user_count++;
         }
@@ -221,7 +226,6 @@ namespace rsimpl
             explicit streaming_lock(uvc_endpoint* owner)
                 : _owner(owner), _power(owner)
             {
-                
             }
 
             const uvc_endpoint& get_endpoint() const { return *_owner; }
@@ -236,6 +240,7 @@ namespace rsimpl
         std::mutex _power_lock;
         std::mutex _configure_lock;
         std::vector<uvc::stream_profile> _configuration;
+        std::vector<uvc::extension_unit> _xus;
     };
 }
 

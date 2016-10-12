@@ -7,7 +7,7 @@ namespace rsimpl
 {
     rs_device* sr300_info::create(const uvc::backend& backend) const
     {
-        return new sr300(backend, _color, _depth);
+        return new sr300_camera(backend, _color, _depth);
     }
 
     sr300_info::sr300_info(uvc::uvc_device_info color, 
@@ -108,7 +108,7 @@ namespace rsimpl
 //#include <algorithm>
 //
 //#include "image.h"
-//#include "sr300.h"
+//#include "sr300_camera.h"
 //
 //namespace rsimpl
 //{
@@ -141,10 +141,10 @@ namespace rsimpl
 //
 //    static static_device_info get_sr300_info(std::shared_ptr<uvc::device> /*device*/, const ivcam::camera_calib_params & c)
 //    {
-//        LOG_INFO("Connecting to " << camera_official_name.at(cameras::sr300));
+//        LOG_INFO("Connecting to " << camera_official_name.at(cameras::sr300_camera));
 //       
 //        static_device_info info;
-//        info.name = camera_official_name.at(cameras::sr300);
+//        info.name = camera_official_name.at(cameras::sr300_camera);
 //        
 //        // Color modes on subdevice 0
 //        info.stream_subdevices[RS_STREAM_COLOR] = 0;
@@ -353,7 +353,7 @@ namespace rsimpl
 //    {
 //        std::timed_mutex mutex;
 //        ivcam::claim_ivcam_interface(*device);
-//        auto calib = sr300::read_sr300_calibration(*device, mutex);
+//        auto calib = sr300_camera::read_sr300_calibration(*device, mutex);
 //        ivcam::enable_timestamp(*device, mutex, true, true);
 //
 //        uvc::set_pu_control_with_retry(*device, 0, rs_option::RS_OPTION_COLOR_BACKLIGHT_COMPENSATION, 0);
@@ -384,4 +384,4 @@ namespace rsimpl
 //        return std::make_shared<sr300_camera>(device, info, calib);
 //    }
 //
-//} // namespace rsimpl::sr300
+//} // namespace rsimpl::sr300_camera

@@ -596,7 +596,7 @@
 //        return xu_write(device, IVCAM_DEPTH_DYNAMIC_FPS, &dynamic_fps, sizeof(dynamic_fps));
 //    }
 //} // namespace f200
-//namespace sr300 {
+//namespace sr300_camera {
 //
 //    struct SR300RawCalibration
 //    {
@@ -640,5 +640,5 @@
 //        memcpy(&rawCalib, rawCalibrationBuffer, std::min(sizeof(rawCalib), bufferLength)); // Is this longer or shorter than the rawCalib struct?
 //        return rawCalib.CalibrationParameters;
 //    }
-//} // namespace rsimpl::sr300
+//} // namespace rsimpl::sr300_camera
 //} // namespace rsimpl
