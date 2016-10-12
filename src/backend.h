@@ -107,6 +107,89 @@ namespace rsimpl
             virtual ~uvc_device() = default;
         };
 
+        class retry_controls_work_around : public uvc_device
+        {
+        public:
+            explicit retry_controls_work_around(std::shared_ptr<uvc_device> dev)
+                : _dev(dev) {}
+
+            void play(stream_profile profile, frame_callback callback) override
+            {
+                _dev->play(profile, callback);
+            }
+            void stop(stream_profile profile) override
+            {
+                _dev->stop(profile);
+            }
+            void set_power_state(power_state state) override
+            {
+                _dev->set_power_state(state);
+            }
+            power_state get_power_state() const override
+            {
+                return _dev->get_power_state();
+            }
+            void init_xu(const extension_unit& xu) override
+            {
+                _dev->init_xu(xu);
+            }
+            void set_xu(const extension_unit& xu, uint8_t ctrl, void * data, int len) override
+            {
+                for (int i = 0; i<20; ++i)
+                {
+                    try { _dev->set_xu(xu, ctrl, data, len); return; }
+                    catch (...) { std::this_thread::sleep_for(std::chrono::milliseconds(50)); }
+                }
+                _dev->set_xu(xu, ctrl, data, len);
+            }
+            void get_xu(const extension_unit& xu, uint8_t ctrl, void * data, int len) const override
+            {
+                for (int i = 0; i<20; ++i)
+                {
+                    try { _dev->get_xu(xu, ctrl, data, len); return; }
+                    catch (...) { std::this_thread::sleep_for(std::chrono::milliseconds(50)); }
+                }
+                _dev->get_xu(xu, ctrl, data, len);
+            }
+            control_range get_xu_range(const extension_unit& xu, uint8_t ctrl) const override
+            {
+                return _dev->get_xu_range(xu, ctrl);
+            }
+            int get_pu(rs_option opt) const override
+            {
+                for (int i = 0; i<20; ++i)
+                {
+                    try { return _dev->get_pu(opt); }
+                    catch (...) { std::this_thread::sleep_for(std::chrono::milliseconds(50)); }
+                }
+                return _dev->get_pu(opt);
+            }
+            void set_pu(rs_option opt, int value) override
+            {
+                for (int i = 0; i<20; ++i)
+                {
+                    try { _dev->set_pu(opt, value); return; }
+                    catch (...) { std::this_thread::sleep_for(std::chrono::milliseconds(50)); }
+                }
+                _dev->set_pu(opt, value);
+            }
+            control_range get_pu_range(rs_option opt) const override
+            {
+                return _dev->get_pu_range(opt);
+            }
+            const uvc_device_info& get_info() const override
+            {
+                return _dev->get_info();
+            }
+            std::vector<stream_profile> get_profiles() const override
+            {
+                return _dev->get_profiles();
+            }
+
+        private:
+            std::shared_ptr<uvc_device> _dev;
+        };
+
         class usb_device
         {
         public:

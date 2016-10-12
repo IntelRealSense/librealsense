@@ -29,12 +29,13 @@ namespace rsimpl
 
         std::shared_ptr<uvc_device> wmf_backend::create_uvc_device(uvc_device_info info) const
         {
-            return std::shared_ptr<uvc_device>(new wmf_uvc_device(info, shared_from_this()));
+            return std::make_shared<retry_controls_work_around>(
+                            std::make_shared<wmf_uvc_device>(info, shared_from_this()));
         }
 
         std::shared_ptr<backend> create_backend()
         {
-            return std::shared_ptr<backend>(new wmf_backend());
+            return std::make_shared<wmf_backend>();
         }
 
         std::vector<uvc_device_info> wmf_backend::query_uvc_devices() const
